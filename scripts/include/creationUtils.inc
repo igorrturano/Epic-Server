@@ -1003,6 +1003,14 @@ function workingItems(who)
     if (skills[DomesticWork] >= 1 || skills[MEDICINE] >= 1)
         CreateItemInBackpack(who, 0xf9e, 1); // Scissors
     endif
+    
+    if (skills[ALCHEMY] >= 1)
+        CreateItemInBackpack(who, 0x0e9b, 1); // mortar
+        CreateItemInBackpack(who, 0x1832, 1); // balao
+        CreateItemInBackpack(who, 0x1830, 1); // beker
+        CreateItemInBackpack(who, 0x1849, 1); // aparato
+        CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
+    endif
 
     if (skills[ALCHEMY] == 2)
 		var book := createiteminbackpack(who, "alchemybook");
