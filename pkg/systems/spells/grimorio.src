@@ -1,0 +1,362 @@
+
+use uo;
+
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":spells:tnmagery";
+include ":spells:spellbooks";
+include "include/say";
+include ":attributes:attributes";
+include ":containers:containers";
+include ":itemutils:itemdesc";
+include "include/client";
+include ":fls_magery:basicMagery";
+include ":fls_magery:spells";
+include "include/sounds";
+include ":spells:tnmagery";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":spells:spellbooks";
+include ":spells:swordmage";
+include "include/facings";
+include ":tn:cooldown";
+
+program book( who, book )
+  if ( ( GetObjProperty( book, "NecroBook" ) ) && ( GetObjProperty( who, "advclass" )
+	   != "necro" ) )
+	SendSysMessageEx( who, "Voce nao entende esse livro.", SSM_FAIL );
+	return 1;
+  endif
+
+  if ( GetObjProperty( book, "SangriaBook" ) && GetObjProperty( who, "advclass" )
+	   != "kitahster" )
+	SendSysMessageEx( who, "Voce nao entende esse livro.", SSM_FAIL );
+	return 1;
+  endif
+
+  var donoGrimorio := GetObjProperty( book, "serialDono" );
+  if ( donoGrimorio )
+	if ( donoGrimorio != who.serial )
+	  SendSysMessageEx( who, "Voce nao entende esse livro.", SSM_FAIL );
+	  return 0;
+	endif
+  else
+	SetObjProperty( book, "serialDono", who.serial );
+  endif
+
+  var book_gump := CreateBookGump( book, who );
+  var result := GFSendGump( who, book_gump );
+
+  if ( result[0] > 900 )
+
+	var spell := result[0] - 900;
+
+	var spells := GetObjProperty( book, "spells" );
+	// sendsysmessage(who, " " + bookopt);
+
+	if ( spells[spell] )
+	  copyrecipe( who, spells[spell] );
+	endif
+  elseif ( result[0] < 900 && result[0] > 800 )
+	if ( yesno( who, "Você quer esquecer o feitiço?" ) )
+	  var spell := result[0] - 800;
+	  var spells := GetObjProperty( book, "spells" );
+	  if ( spells[spell] )
+		spells.erase( spell );
+		SetObjProperty( book, "spells", spells );
+		SendSysMessageEx( who, "Você esqueceu a magia.", SSM_INFO );
+	  endif
+	  return 0;
+	endif
+  else
+
+	var spell := result[0] - 100;
+
+	var spells := GetObjProperty( book, "spells" );
+	// sendsysmessage(who, " " + bookopt);
+
+	if ( spells[spell] )
+	  // sendsysmessage(who, "chamando castspell");
+	  Start_Script( "cast_spell", { who, spells[spell], 0 } );
+	endif
+  endif
+
+endprogram
+
+const OBJ_BLANK_SCROLL := 0xE34;
+const OBJ_RECIPE_SLIP := 0x6116;
+const OBJ_RECIPE_SLIP_SANGRIA := 0x2050;
+const OBJ_RECIPE_SLIP_SPELLCASTER := 0x2055;
+
+function copyrecipe( who, recipe )
+  writeSpellInfo( who, recipe );
+  // sendsysmessage(who, " " + spellinfo + " " + recipe + "  " + cint(recipe));
+  if ( ConsumeSubstance( who.backpack, OBJ_BLANK_SCROLL, 1 ) )
+	if ( ( SkillCheck( who, MAGERY, cint( recipe.Difficulty ), 0 ) > 0 ) )
+	  if ( !AP_ConsumeVital( who, MANA, recipe.mana ) )
+		SendSysMessageEx( who, "Voce esta sem mana.", SSM_FAIL );
+		return 1;
+	  endif
+
+	  if ( !TNCheckReagents( who, recipe, 0 ) )
+		SendSysMessageEx( who, "Voce nao tem os reagentes.", SSM_FAIL );
+		return 1;
+	  endif
+
+	  var item;
+
+	  if ( recipe.magic_path == "Sangria" )
+		item := createiteminbackpack( who, OBJ_RECIPE_SLIP_SANGRIA, 1 );
+	  elseif ( recipe.magic_path == "spellcaster" )
+		item := createiteminbackpack( who, OBJ_RECIPE_SLIP_SPELLCASTER, 1 );
+	  else
+		item := createiteminbackpack( who, OBJ_RECIPE_SLIP, 1 );
+	  endif
+
+	  if ( item == error )
+		sendsysmessage( who, "  " + item );
+	  endif
+
+	  setobjproperty( item, "spellinfo", recipe );
+	  SendSysMessageEx( who, "Voce fez uma copia do pergaminho.", SSM_INFO );
+	  printtext( who, "*escrevendo pergaminho*" );
+	else
+	  SendSysMessageEx( who, "Voce copiou o pergaminho sem cuidados e ela esta ilegivel.",
+					 SSM_FAIL );
+	endif
+  else
+	SendSysMessageEx( who, "Voce precisa de um pergaminho em branco.", SSM_FAIL );
+  endif
+endfunction
+
+function CreateBookGump( book, who )
+  var rune_list := GetObjProperty( book, "spells" );
+  if ( TypeOf( rune_list ) != "Array" )
+	rune_list := array{};
+	SetObjProperty( book, "spells", rune_list );
+  endif
+
+  var book_gump := GFCreateGump();
+  // Begin Page 0 Setup
+  GFGumpPic( book_gump, 100, 10, 2200 );
+  GFGumpPic( book_gump, 125, 50, 57 );
+  GFGumpPic( book_gump, 145, 50, 58 );
+  GFGumpPic( book_gump, 160, 50, 58 );
+  GFGumpPic( book_gump, 175, 50, 58 );
+  GFGumpPic( book_gump, 190, 50, 58 );
+  GFGumpPic( book_gump, 205, 50, 58 );
+  GFGumpPic( book_gump, 220, 50, 58 );
+  GFGumpPic( book_gump, 230, 50, 59 );
+  GFGumpPic( book_gump, 290, 50, 57 );
+  GFGumpPic( book_gump, 310, 50, 58 );
+  GFGumpPic( book_gump, 325, 50, 58 );
+  GFGumpPic( book_gump, 340, 50, 58 );
+  GFGumpPic( book_gump, 355, 50, 58 );
+  GFGumpPic( book_gump, 370, 50, 58 );
+  GFGumpPic( book_gump, 385, 50, 58 );
+  GFGumpPic( book_gump, 395, 50, 59 );
+
+  /* GFAddButton(book_gump, 130, 187, 2225, 2225, GF_PAGE_BTN, 2);
+	GFAddButton(book_gump, 165, 187, 2226, 2226, GF_PAGE_BTN, 3);
+	GFAddButton(book_gump, 200, 187, 2227, 2227, GF_PAGE_BTN, 4);
+	GFAddButton(book_gump, 235, 187, 2228, 2228, GF_PAGE_BTN, 5);
+	GFAddButton(book_gump, 300, 187, 2229, 2229, GF_PAGE_BTN, 6);
+	GFAddButton(book_gump, 335, 187, 2230, 2230, GF_PAGE_BTN, 7);
+	GFAddButton(book_gump, 370, 187, 2231, 2231, GF_PAGE_BTN, 8);
+	GFAddButton(book_gump, 405, 187, 2232, 2232, GF_PAGE_BTN, 9); */
+  // GFHTMLArea(book_gump,  140, 40, 80, 18, "Charges:");
+  // GFHTMLArea(book_gump,  300, 40, 100, 18, "Max Charges:");
+  // GFHTMLArea(book_gump,  220, 40, 80, 18, charges);
+  // GFHTMLArea(book_gump,  400, 40, 100, 18, max_charges);
+  // End Page 0 Setup
+
+  // Begin Page 1 Setup
+  GFPage( book_gump, 1 );
+  // GFAddButton(book_gump, 125, 15, 2472, 2473, GF_CLOSE_BTN, 50);
+  if ( GetObjProperty( book, "NecroBook" ) )
+	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro de Mesum" );
+  elseif ( GetObjProperty( book, "SangriaBook" ) )
+	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Sangria" );
+  else
+	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
+  endif
+
+  GFAddButton( book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, 2 );
+
+  if ( rune_list[1] )
+	GFAddButton( book_gump, 130, 65, 2103, 2104, GF_CLOSE_BTN, 101 );
+  endif
+  if ( rune_list[2] )
+	GFAddButton( book_gump, 130, 80, 2103, 2104, GF_CLOSE_BTN, 102 );
+  endif
+  if ( rune_list[3] )
+	GFAddButton( book_gump, 130, 95, 2103, 2104, GF_CLOSE_BTN, 103 );
+  endif
+  if ( rune_list[4] )
+	GFAddButton( book_gump, 130, 110, 2103, 2104, GF_CLOSE_BTN, 104 );
+  endif
+  if ( rune_list[5] )
+	GFAddButton( book_gump, 130, 125, 2103, 2104, GF_CLOSE_BTN, 105 );
+  endif
+  if ( rune_list[6] )
+	GFAddButton( book_gump, 130, 140, 2103, 2104, GF_CLOSE_BTN, 106 );
+  endif
+  if ( rune_list[7] )
+	GFAddButton( book_gump, 130, 155, 2103, 2104, GF_CLOSE_BTN, 107 );
+  endif
+  if ( rune_list[8] )
+	GFAddButton( book_gump, 130, 170, 2103, 2104, GF_CLOSE_BTN, 108 );
+  endif
+
+  if ( rune_list[9] )
+	GFAddButton( book_gump, 290, 65, 2103, 2104, GF_CLOSE_BTN, 109 );
+  endif
+  if ( rune_list[10] )
+	GFAddButton( book_gump, 290, 80, 2103, 2104, GF_CLOSE_BTN, 110 );
+  endif
+  if ( rune_list[11] )
+	GFAddButton( book_gump, 290, 95, 2103, 2104, GF_CLOSE_BTN, 111 );
+  endif
+  if ( rune_list[12] )
+	GFAddButton( book_gump, 290, 110, 2103, 2104, GF_CLOSE_BTN, 112 );
+  endif
+  if ( rune_list[13] )
+	GFAddButton( book_gump, 290, 125, 2103, 2104, GF_CLOSE_BTN, 113 );
+  endif
+  if ( rune_list[14] )
+	GFAddButton( book_gump, 290, 140, 2103, 2104, GF_CLOSE_BTN, 114 );
+  endif
+  if ( rune_list[15] )
+	GFAddButton( book_gump, 290, 155, 2103, 2104, GF_CLOSE_BTN, 115 );
+  endif
+  if ( rune_list[16] )
+	GFAddButton( book_gump, 290, 170, 2103, 2104, GF_CLOSE_BTN, 116 );
+  endif
+  // End Page 1 Setup
+
+  // Below you will notice in the loop, there are entries put BACK into page
+  // 1. Do not worry, we run an Optimize function on the gump to put all
+  // of those BACK into the initial Page 1 section we just made to keep our
+  // gump's arrays looking nice and clean.
+
+  var pOX := 145;
+  var pOY := 60;
+  var rune_pos := 1;
+
+  for i := 2 to 9
+	GFPage( book_gump, i );
+	GFAddButton( book_gump, 125, 14, 2205, 2205, GF_PAGE_BTN, ( i - 1 ) );
+	if ( i != 9 )
+	  GFAddButton( book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, ( i + 1 ) );
+	endif
+
+	var rune_entry := rune_list[rune_pos];
+	WritespellInfo( who, rune_entry );
+	rune_entry.description := "<BASEFONT COLOR=#000066>" + cstr( rune_entry.description )
+															  + "<br>" + cstr( rune_entry.flavortext ) + "<br> <BASEFONT COLOR=#330000> Componentes Materiais: <br> ";
+	var regkeys := rune_entry.reagents.keys();
+	foreach r in ( regkeys )
+	  rune_entry.description := rune_entry.description + cstr( r ) + " " + cstr( rune_entry.reagents[cstr(
+															r )] ) + "<br>";
+	endforeach
+	rune_entry.description := rune_entry.description + "Mana: " + rune_entry.mana;
+	if ( TypeOf( rune_entry ) == "Struct" )
+	  if ( rune_entry.name )
+		// This puts the rune in page 1's list.
+		GFPage( book_gump, 1 );
+		GFTextCrop( book_gump, pOX, pOY, 115, 17, 995, rune_entry.name );
+		GFPage( book_gump, i );
+
+		// GFHTMLArea(book_gump, 160, 15, 100, 18, rune_entry.name);
+		GFTextCrop( book_gump, 160, 15, 100, 18, 995, rune_entry.name );
+		if ( TemHabilidade( who, "Escrever Pergaminhos" ) )
+		  GFTextCrop( book_gump, 180, 35, 100, 18, 995, "Copiar" );
+		  GFAddButton( book_gump, 160, 38, 2103, 2104, GF_CLOSE_BTN, 900 + rune_pos );
+		endif
+
+		GFTextCrop( book_gump, 320, 194, 200, 17, 995, "Esquecer" );
+		GFAddButton( book_gump, 300, 198, 2103, 2104, GF_CLOSE_BTN, 800 + rune_pos );
+
+		GFHTMLArea( book_gump, 140, 60, 120, 140, cstr( rune_entry.description ), 0, 1 );
+
+	  endif
+	else
+	  GenerateEmptySide( book_gump, 1, pOX, pOY, i );
+	endif
+	rune_pos := rune_pos + 1;
+	pOY := pOY + 15;
+	if ( pOY > 165 )
+	  pOY := 60;
+	  pOX := 305;
+	endif
+
+	rune_entry := rune_list[rune_pos];
+	WritespellInfo( who, rune_entry );
+	rune_entry.description := "<BASEFONT COLOR=#000066>" + cstr( rune_entry.description )
+															  + "<br>" + cstr( rune_entry.flavortext ) + "<br> <BASEFONT COLOR=#330000> Componentes Materiais: <br> ";
+	regkeys := rune_entry.reagents.keys();
+	foreach r in ( regkeys )
+	  rune_entry.description := rune_entry.description + cstr( r ) + " " + cstr( rune_entry.reagents[cstr(
+															r )] ) + "<br>";
+	endforeach
+	rune_entry.description := rune_entry.description + "Mana: " + rune_entry.mana;
+
+	if ( TypeOf( rune_entry ) == "Struct" )
+	  if ( rune_entry.name )
+		// This puts the rune in page 1's list.
+		GFPage( book_gump, 1 );
+		GFTextCrop( book_gump, pOX, pOY, 115, 17, 995, rune_entry.name );
+		GFPage( book_gump, i );
+
+		// GFHTMLArea(book_gump, 300, 15, 100, 18, rune_entry.name);
+		GFTextCrop( book_gump, 300, 15, 115, 17, 995, rune_entry.name );
+		if ( TemHabilidade( who, "Escrever Pergaminhos" ) )
+		  GFTextCrop( book_gump, 320, 35, 150, 17, 995, "Copiar" );
+		  GFAddButton( book_gump, 300, 38, 2103, 2104, GF_CLOSE_BTN, 900 + rune_pos );
+		endif
+
+		GFTextCrop( book_gump, 320, 194, 200, 17, 995, "Esquecer" );
+		GFAddButton( book_gump, 300, 198, 2103, 2104, GF_CLOSE_BTN, 800 + rune_pos );
+
+		GFHTMLArea( book_gump, 300, 60, 120, 140, cstr( rune_entry.description ), 0, 1 );
+
+	  endif
+	else
+	  GenerateEmptySide( book_gump, 2, pOX, pOY, i );
+	endif
+
+	rune_pos := rune_pos + 1;
+	pOY := pOY + 15;
+	if ( pOY > 165 )
+	  pOY := 60;
+	  pOX := 305;
+	endif
+
+	SleepMS( 2 );
+  endfor
+
+  // GFOptimizeGump(book_gump);
+
+  return book_gump;
+endfunction
+
+function GenerateEmptySide( byref book_gump, side, pOX, pOY, page_num )
+
+  if ( side == 1 )
+	// This puts the rune in page 1's list.
+	GFPage( book_gump, 1 );
+	GFTextCrop( book_gump, pOX, pOY, 115, 17, 10, "" );
+	GFPage( book_gump, page_num );
+	GFTextCrop( book_gump, 145, 60, 115, 17, 10, "" );
+  else
+	// This puts the rune in page 1's list.
+	GFPage( book_gump, 1 );
+	GFTextCrop( book_gump, pOX, pOY, 115, 17, 10, "" );
+	GFPage( book_gump, page_num );
+	GFTextCrop( book_gump, 305, 60, 115, 17, 10, "" );
+  endif
+
+endfunction

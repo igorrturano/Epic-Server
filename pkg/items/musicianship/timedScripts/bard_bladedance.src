@@ -1,0 +1,21 @@
+
+use uo;
+use os;
+
+include ":musicianship:bardmusic";
+include "include/sysEvent";
+
+program  TimedScript_bard_bladedance(params)
+	var laminaAnimada := params[1];
+	var alvo := params[2];
+	var espadaBase := params[3];
+
+	var event := struct{"type":=SYSEVENT_ENGAGED, "source":=alvo};
+	SendEvent(laminaAnimada, event);
+	var i;
+	for ( i:=1; i<=15; i:=i+1)
+		PrintTextAbove(laminaAnimada, "*Espada danca no ar*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+		sleepms(4000);
+	endfor
+	return 1;
+endprogram

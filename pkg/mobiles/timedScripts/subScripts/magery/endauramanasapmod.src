@@ -1,0 +1,18 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+
+	if (GetObjProperty(mobile, "auraManaSapMod") != error)
+		var mod := GetObjProperty(mobile, "auraManaSapMod");
+		EraseObjProperty(mobile, "auraManaSapMod");
+		AP_SetVitalRegenRateMod(mobile, "Mana", AP_GetVitalRegenRateMod(mobile, "Mana") - mod);
+		RecalcVitals(mobile);
+	endif
+
+	return 1;
+endprogram

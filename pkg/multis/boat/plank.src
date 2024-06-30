@@ -1,0 +1,76 @@
+use os;
+use uo;
+
+include ":keys:key";
+include "plankUtil";
+
+program useplank(mob, plank)
+  set_critical(1);
+
+  if(mob.multi.serial == plank.multi.serial)
+	TimedOpenClose(plank);
+  elseif((FK(mob, plank) == 1) ||(!plank.locked))
+	if(!IsExtended(plank))
+	  TimedOpenClose(plank);
+	else
+	  YankOntoBoat(mob,plank);
+	endif
+  else
+	PrintTextAbovePrivate(plank, "Esta trancado.", mob);
+  endif
+endprogram
+
+function TimedOpenClose(plank)
+  if(IsExtended(plank))
+    if(!IsPlankOccupied(plank))
+      Retract(plank);
+      EraseObjProperty(plank, "#WhenOpened");
+    endif
+  else
+    var whenopened := ReadGameClock();
+    SetObjProperty(plank, "#WhenOpened", whenopened);
+    Extend(plank);
+    repeat
+    sleep(6);
+    until(!(plank && IsPlankOccupied(plank)));
+    if(GetObjProperty(plank, "#WhenOpened") == whenopened)
+      Retract(plank);
+      EraseObjProperty(plank, "#WhenOpened");
+    endif
+  endif
+endfunction
+
+function YankOntoBoat(mob, plank)
+  var sh := GetStandingHeight(plank.x, plank.y, plank.z);
+  if(sh)
+    var nx :=(plank.x + plank.multi.x) / 2;
+    var ny :=(plank.y + plank.multi.y) / 2;
+    MoveObjectToLocation(mob, nx, ny, plank.z, mob.realm);
+    return;
+  endif
+endfunction
+
+function CanWalkOntoPlank(plank)
+  var dx;
+  var dy;
+  case(plank.graphic)
+    GID_PLANK_EXTENDED_FACING_WEST:
+    GID_PLANK_RETRACTED_FACING_WEST:    dx := -1;
+                                        dy := 0;
+    GID_PLANK_EXTENDED_FACING_EAST:
+    GID_PLANK_RETRACTED_FACING_EAST:    dx := 1;
+                                        dy := 0;
+
+    GID_PLANK_EXTENDED_FACING_NORTH:
+    GID_PLANK_RETRACTED_FACING_NORTH:   dx := 0;
+                                        dy := -1;
+    GID_PLANK_EXTENDED_FACING_SOUTH:
+    GID_PLANK_RETRACTED_FACING_SOUTH:   dx := 0;
+                                        dy := 1;
+  endcase
+  if(GetStandingHeight(plank.x + dx, plank.y + dy, plank.z))
+    return 1;
+  else
+     return 0;
+  endif
+endfunction

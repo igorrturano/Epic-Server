@@ -1,0 +1,39 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+    var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
+    var weapon := attacker.weapon.objtype;
+	if (!(weapon in monk_weapons))
+		SendSysMessageEx(attacker, "Voce precisa estar cajados ou mãos nuas.", SSM_FAIL);
+		return 1;
+	endif
+
+	attacker.frozen := 1;
+    PrintText(attacker, "*meditando*");
+	sleep(2);
+    attacker.frozen := 0;
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+    PlaySoundEffect(attacker, 0x50E);
+	
+	PrintTextAbove(attacker, "*palma explosiva*");
+
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+    start_script(":combat:weaponHitScripts/FireHit", {attacker, defender, attacker.weapon, armor, basedamage, rawdamage*3});
+	DamageFLS(defender, total*4, DMG_FORCED, attacker);
+endprogram

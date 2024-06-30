@@ -1,0 +1,61 @@
+use uo;
+use cfgfile;
+use util;
+include "include/say";
+
+var booklist := {0x702D, 0x702C};
+
+function recipecfg(recipetype)
+	var alchemy := ReadConfigFile(":cooking:cookbook");
+	if (!alchemy || alchemy == error)
+		broadcast("Cant find cooking.cfg");
+		return 0;
+	endif
+	if (alchemy[recipetype])
+		return alchemy[recipetype];
+	else
+		return 0;
+	endif
+endfunction
+
+
+program fillbook(who, slip)
+	
+	if (cint(GetObjProperty(slip, "RecipeId")) == 0)
+		SetObjProperty(slip, "RecipeId", RandomInt(41)+1);
+	endif
+
+	SendSysMessageEx(who, "Escolha o livro de receitas para a receita " + recipecfg(cint(GetObjProperty(slip, "RecipeId"))).name , SSM_REQUEST);
+	var targ := target(who);	
+
+	if (targ.objtype in booklist)
+		if (getobjproperty(targ, "noadd") ) // Dont add recipes to gm made books. (They are used for players to copy recipes from).
+			SendSysMessageEx(who, "Voce nao pode adicionar receitas nesse livro.", SSM_FAIL);
+			return;
+		endif
+		var sliprecipe := cint(getobjproperty(slip, "RecipeId"));
+		
+		var recipelist := { };
+		if (getobjproperty(targ, "recipes"))
+			recipelist := getobjproperty(targ, "recipes");
+		endif
+		
+		if (len(recipelist) > 20)
+			SendSysMessageEx(who, "O livro esta cheio.", SSM_FAIL);
+			return;
+		endif
+			
+		if (sliprecipe in recipelist)
+			SendSysMessageEx(who, "Voce ja tem esta receita no livro.", SSM_FAIL);
+			return;
+		endif
+
+		recipelist.append(sliprecipe);
+		recipelist.sort();
+		setobjproperty(targ, "recipes", recipelist);
+		destroyitem(slip);
+		SendSysMessageEx(who, "Voce adicionou a receita no livro.", SSM_INFO);	
+	else
+		SendSysMessageEx(who, "Isto nao parece um livro de receitas.", SSM_FAIL);
+	endif
+endprogram

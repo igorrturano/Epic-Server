@@ -1,0 +1,184 @@
+
+use uo;
+use vitals;
+use math;
+
+include "include/say";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:skillCheck";
+include ":attributes:attributes";
+include ":containers:containers";
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":spells:tnmagery";
+include "include/client";
+include ":itemutils:itemdesc";
+include "include/facings";
+include "include/damage";
+include ":fls_core:fls_combat";
+include ":blood:blood";
+include ":combat:settings";
+include ":brainai:npcUtil";
+include ":fls_core:fls_characters";
+include ":fls_core:packets";
+include ":attributes:skillCheck";
+include "include/sysEvent";
+//include ":cooldown:cooldown";
+
+program habilidade(who, text)
+
+//	if (who.cmdlevel < 3)
+//		return;
+//	endif
+
+	if (who.dead)
+		return 1;
+	endif
+
+	if (!temHabilidade(who, text) && (who.cmdlevel < 2))
+		SendSysMessageEx(who, "Voce nao possui esta habilidade.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!text)
+		//CreateGumpHabilidade(who);
+		return;
+	endif
+
+
+		ProccessHab(who, text);
+
+endprogram
+
+
+function ProccessHab(who, hab)
+	hab := lower(hab);
+	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habelem := FindConfigElem(habcfg, hab);
+
+	if (!habelem)
+		SendSysMessageEx(who, "Habilidade nao encontrada.", SSM_FAIL);
+		return;
+	endif
+
+	var uso := GetConfigString(habelem, "uso");
+
+	if (uso != "Ativa")
+		SendSysMessageEx(who, "Esta habilidade nao pode ser ativada.");
+		return;
+	endif
+
+
+//	sendsysmessage(who, " " + TS_GetCooldown(who, hab) );
+	if ( TS_GetCooldown(who, hab) != error && who.cmdlevel < 3)
+		SendSysMessageEx(who, "Voce nao pode usar essa habilidade agora.", SSM_FAIL);
+		return 1;
+	endif
+
+	var stam := cint(GetConfigInt(habelem, "stam"));
+	if (stam != error)
+		if (!AP_ConsumeVital(who, STAMINA, stam))
+			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+	var mana := cint(GetConfigInt(habelem, "mana"));
+	if (mana != error)
+		if (!AP_ConsumeVital(who, MANA, mana))
+			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+        var script := GetConfigString(habelem, "script");
+	var duracao := GetConfigString(habelem, "duracao");
+
+	var delay := Cint(GetConfigInt(habelem, "delay"));
+
+	var mimic := 0;
+	if (GetObjProperty(who, "#mimico"))
+		mimic := SystemFindObjectBySerial(GetObjProperty(who, "#mimico"));
+		if (mimic && (Distance(mimic, who) < 12))
+			PrintText(mimic, "*copia a habilidade " + hab);
+		endif
+		EraseObjProperty(who, "#mimico");
+	endif
+
+	if (duracao == "1 ataque")
+		if (!script)
+			SendSysMessageEx(who, "Nao foi encontrado o script da habilidade: " + hab, SSM_FAIL);
+			return;
+		endif
+        if (hab == "lamina da escuridao")
+            PlayObjectCenteredEffectHuefx(who, 0x5487, 10, 20, 2296, 1);
+            PlaySoundEffect(who, 0x56e);
+        endif
+
+		SendSysMessageEx(who, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
+		SetObjProperty(who, "movement",  script);
+		SetObjProperty(who, "#movtime", ReadGameClock());
+		if (mimic)
+			SendSysMessageEx(mimic, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
+			SetObjProperty(mimic, "movement",  script);
+			SetObjProperty(mimic, "#movtime", ReadGameClock());
+		endif
+	else
+		var e := start_script(script, who );
+		if (mimic)
+			start_script(script, mimic );
+		endif
+		//sendsysmessage(who, " " + e );
+	endif
+
+	TS_StartCooldown(who, hab, delay);
+
+endfunction
+
+
+function CreateGumpHabilidade(who)
+
+	UnloadConfigFile(":charactercreation:config/habilidades");
+
+	var gump := GFCreateGump();
+
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 650);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 620);
+	GFTextMid(gump, 80, 50, 250, 1153, "Habilidades de Classe");
+
+	var habilidades := GetObjProperty(who, "habilidades");
+	if (!habilidades)
+		habilidades := dictionary;
+	endif
+
+	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+
+	var x := 40;
+	var y := 80;
+
+	foreach hab in (habilidades.keys())
+		var habelem := FindConfigElem(habcfg, hab);
+		var desc := GetConfigString(habelem, "desc");
+		var uso := GetConfigString(habelem, "uso");
+		var nome := GetConfigString(habelem, "nome");
+		var nivel := GetConfigInt(habelem, nivel);
+		//var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
+
+		//GFGumpPic(gump, x, y+20, gumpid) ;
+		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
+		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
+
+		y := y + 110;
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+
+
+
+endfunction

@@ -1,0 +1,27 @@
+include ":datafile:datafile";
+use http;
+
+
+program reportBugs()
+
+	var df := DFOpenDataFile(":help:bugs", DF_CREATE, DF_KEYTYPE_INTEGER);
+	var entradas := df.Keys();
+	var bugName, bugDesc, bugReporter;
+	var elem;
+	var i := entradas.size();
+
+	print("" + df + " " + i + " " + entradas);
+
+	WriteHtml( "<table align=center border=0 cellspacing=0 cellpadding=5 bordercolor=#000000 bgcolor=#EBDBCE>" + "  <tr><th background=imgs/wood.jpg align=center colspan=2><span class=style5>Bugs (" + i + ")</span></th></tr>");
+
+	foreach entrada in entradas
+		elem := df.FindElement( Cint(entrada) );
+		bugName := elem.GetProp("Title");
+		bugReporter := elem.GetProp("ReporterAccount");
+		bugDesc := elem.GetProp("page");
+		WriteHtml( "<tr><th align=left>"+ bugName +"</th><td align=left>"+ bugDesc +"<div align=right>enviado por "+ bugReporter +"</div></td></tr>");
+	endforeach
+
+	return 1;
+
+endprogram

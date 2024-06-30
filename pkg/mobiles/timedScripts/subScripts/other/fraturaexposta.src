@@ -1,0 +1,50 @@
+/* $Id: alcohol.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include "include/client";
+include ":timedscripts:timedScripts";
+include ":fls_core:packets";
+include "include/say";
+include ":blood:blood";
+include ":tn:cooldown";
+
+function StartScript(mobile, attacker := 0, level := 0)
+	while(AP_GetVital(mobile, "DP") <= 19 || GetCooldown(mobile, "hurt") > 0)
+        PlayerSpeedSlower(mobile, 1);
+		sleep(4);
+	endwhile
+
+   PlayerSpeedSlower(mobile, 0);
+   return 1;
+endfunction
+
+function EndScript(mobile)
+   PlayerSpeedSlower(mobile, 0);
+   return 1;
+endfunction
+
+function LogOffScript(mobile)
+   return 1;
+endfunction
+
+program TimedScriptInit(params)
+	var mobile := params[1];
+	var type   := params[2];
+	var level  := params[3];
+
+   if (typeof(type) == "String")
+      if (type == "End")
+         return EndScript(mobile);
+      elseif (type == "LogOff")
+         return LogOffScript(mobile);
+      endif
+   endif
+
+   return StartScript(mobile, type, level);
+endprogram

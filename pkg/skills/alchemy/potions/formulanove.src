@@ -1,0 +1,69 @@
+use uo;
+use os;
+use math;
+use vitals;
+
+include "include/say";
+include ":mounts:mounts";
+include ":attributes:attributes";
+include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include "include/damage";
+include ":alchemy:alchemy";
+
+program formula90(who, pocao)
+
+    if (!temhabilidade(who, "Transmutar"))
+        SendSysMessageEx(who, "Voce nao faz a menor ideia de como fazer isso", SSM_FAIL);
+		return 0;
+	endif
+
+    var cfg := ReadConfigFile(":systems:combat/itemdesc");
+
+	SendSysMessageEx(who, "Qual item deseja transmutar?", SSM_REQUEST);
+	var targ := Target(who);
+	
+
+	if (!targ)
+		SendSysMessage(who, "Cancelado");
+		return 0;
+	endif
+
+	if (targ in EnumerateItemsInContainer(who.backpack)) 
+		SendSysMessageEx(who, "Voce nao pode transmutar objetos em sua bolsa", SSM_FAIL);
+		return 0;
+	endif
+
+    if (targ.isA(POLCLASS_WEAPON) || targ.isA(POLCLASS_ARMOR))
+
+        var skill := AP_GetSkill( who, ALCHEMY );
+	    var item := Getobjproperty(targ, "material");
+
+        if( skill >= 100 )
+            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 10, targ.realm);
+        elseif( skill >= 80 )
+            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 8, targ.realm);
+        elseif( skill >= 60 )
+            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 6, targ.realm);
+        elseif( skill >= 40 )
+            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 4, targ.realm);
+        elseif( skill >= 20 )
+            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 2, targ.realm);
+        endif
+        
+        Destroyitem(pocao);
+        var book := createiteminbackpack(who, "emptybottle");
+	    playsoundeffect(who, 0x1EB);
+        var brilho := CreateItemAtLocation(targ.x, targ.y, (targ.z - 2), 0x375A, 1, targ.realm);
+	    sleepms(2000);
+	    Destroyitem( brilho );
+        destroyitem(targ);
+
+    else
+        SendSysMessage(who, "Voce pode transmutar apenas armas e armaduras de metal");
+        return 0;
+    endif
+
+endprogram 

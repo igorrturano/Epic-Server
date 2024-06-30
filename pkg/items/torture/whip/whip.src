@@ -1,0 +1,42 @@
+use uo;
+use os;
+use util;
+
+include "include/say";
+
+var male_scream := array(341, 342, 343, 344, 345);
+var female_scream := array(332, 333, 334, 335, 336);
+
+program WhipIt(who, whip)
+
+	SendSysMessage(who, "Quem voce deseja chicotear?");
+	
+	var targ := target(who);
+	
+	if ( distance(who, targ) > 2 )
+		SendSysMessage(who, "Muito longe.");
+		return;
+	elseif ( !targ.isa(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Cancelado");
+		return;
+	endif
+	
+	who.paralyzed := 1;
+	targ.paralyzed := 1;
+	
+	PerformAction(who, 0x000c);
+	if ( targ.graphic == 400 || targ.graphic == 401 || targ.graphic == 1828 || targ.graphic == 1829 || targ.graphic == 1830 || targ.graphic == 1831 || targ.graphic == 1832 || targ.graphic == 1833 || targ.graphic == 1834 || targ.graphic == 1835 )
+		PerformAction(targ, 0x0014);
+		PrintText(who, "*chicoteia "+targ.name+"*");
+	endif
+	PlaySoundEffect(who, 0x23A);
+	sleepms(100);
+	who.paralyzed := 0;
+	targ.paralyzed := 0;
+	
+	if ( !targ.gender )
+		PlaySoundEffect(targ, male_scream[RandomInt(female_scream.size())+1]);
+	else
+		PlaySoundEffect(targ, male_scream[RandomInt(female_scream.size())+1]);
+	endif
+endprogram	

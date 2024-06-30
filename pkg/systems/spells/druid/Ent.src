@@ -1,0 +1,47 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  var loop := 1;
+  params := 0; // No longer needed
+  var x := who.x;
+  var y := who.y;
+  var oldgraphic := who.graphic;
+  var trunk_objtype;
+  case (RandomInt(6))
+       0:  trunk_objtype := 0xccd;
+       1:  trunk_objtype := 0xcd0;
+       2:  trunk_objtype := 0xcd3;
+       3:  trunk_objtype := 0xcd6;
+       4:  trunk_objtype := 0xcda;
+       5:  trunk_objtype := 0xcdd;
+       6:  trunk_objtype := 0xce0;
+  endcase;
+  who.graphic := 800;
+  who.hidden := 1;
+  PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+  PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+  var tree:= CreateItemAtLocation(who.x, who.y, who.z, trunk_objtype, 1, who.realm);
+  SendSysMessageEx(who, "Voce esta em forma de arvore.", SSM_INFO);
+  while (loop == 1)
+        if (x != who.x || y != who.y)
+           who.graphic := oldgraphic;
+           who.hidden := 0;
+           SendSysMessageEx(who, "Voce saiu da forma de arvore.", SSM_INFO);
+           DestroyItem(tree);
+           return;
+        endif
+        Sleepms (2);
+  endwhile
+  return 1;
+endprogram
+

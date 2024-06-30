@@ -1,0 +1,13 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Seus ataques estao precisos!", SSM_INFO);
+	TS_StartTimer(attacker, "precisao", cint(AP_GetSkill(attacker, TACTICS)));
+
+
+endprogram 

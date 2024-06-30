@@ -1,0 +1,17 @@
+include ":awareness:awareness";
+include "include/say";
+
+program alert(mobile)
+	while ( mobile )
+		if ( mobile.connected )
+			examinarArea(mobile);
+		endif
+		if (TemHabilidade(mobile, "Sempre Alerta"))
+			sleep(3);
+		else
+			sleep(15);
+		endif
+	endwhile
+	
+	return 1;
+endprogram

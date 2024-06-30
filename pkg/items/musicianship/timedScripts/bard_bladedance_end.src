@@ -1,0 +1,23 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_bladedance(params)
+	var laminaAnimada := params[1];
+	var espadaBase := laminaAnimada.weapon;
+
+	var realm := laminaAnimada.realm;
+	if (!realm)
+		realm := _DEFAULT_REALM;
+	endif
+
+	PrintTextAbove(laminaAnimada, "*A espada para de dancar*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	MoveObjectToLocation(espadaBase, laminaAnimada.x, laminaAnimada.y, laminaAnimada.z+1, realm, MOVEITEM_IGNOREMOVABLE|MOVEOBJECT_FORCELOCATION);
+	sleepms (200);
+	SetObjProperty(laminaAnimada, "GuardKill", 1);
+	ApplyRawDamage(laminaAnimada, CInt(AP_GetVitalMaximumValue(laminaAnimada, "Hits")+20));
+	return 1;
+endprogram
+

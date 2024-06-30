@@ -1,0 +1,53 @@
+use uo;
+use util;
+use os;
+include ":charactercreation:habilidades";
+
+program colheReagente(who, item)
+
+	if (!Accessible(who, item))
+		SendSysMessage(who, "Voce nao alcanca este item.");
+		return 1;
+	endif
+
+	var amt := 1;
+
+	if (temHabilidade(who, "Sorte na Coleta"))
+		amt := amt + 1;
+	endif
+
+	if (temHabilidade(who, "Herbalista Experiente"))
+		if (RandomInt(100) < 30)
+			amt := amt + 1;
+		endif
+	endif
+
+	var newitem;
+	if (item.objtype == 6368)
+		newitem := CreateItemInBackpack(who, 0x18DE, 1);
+	elseif (item.objtype == 6370)
+		newitem := CreateItemInBackpack(who, 0x18E4, 1);
+	elseif (item.objtype == 6373 )
+		newitem := CreateItemInBackpack(who, 0x18E8, 1);
+	elseif (item.objtype == 6378)
+		newitem := CreateItemInBackpack(who, 0x18EC, 1);
+	elseif (item.objtype == 6366)
+		newitem := CreateItemInBackpack(who, 0xF86, amt);
+	elseif (item.objtype == 6372)
+		newitem := CreateItemInBackpack(who, 0xF84, amt);
+	elseif (item.objtype == 6376)
+		newitem := CreateItemInBackpack(who, 0xF88, amt);
+	elseif ( item.objtype == 6380)
+		newitem := CreateItemInBackpack(who, 0xF85, amt);
+	endif
+
+
+	if (!item)
+		SendSysMessage(who, "Voce nao tem espaço na sua mochila.");
+		return;
+	else
+		SendSysMessage(who, "Voce colheu a planta");
+		DestroyItem(item);
+	endif
+
+endprogram

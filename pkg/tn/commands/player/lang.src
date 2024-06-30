@@ -1,0 +1,57 @@
+use uo;
+include ":tn:tngumps";
+include ":attributes:attributes";
+include "include/say";
+
+program lingua(who)
+	var qt := cint((AP_GetTrueStat(who, INTELLIGENCE)-60)/10);
+	var linguas := GetObjProperty(who, "linguas");
+	var qt_atual := linguas.size();
+	var linguasDesejadas;
+	var linguasOpt := array{"Antigo vanirio", "Antigo aquilrano", "Antigo thuriao", "Antigo Asanita", "Antigo Zharkiano", "Draconiano", "Abissal", "Silvestre", "Lingua dos Mortos"};
+	if (linguas != error)
+		var qt_atual := linguas.size();
+		SendSysMessageEx(who, "Ja conhece lingua(s) extra(s).", SSM_FAIL);
+		if (qt_atual < qt)
+			SendSysMessageEx(who, "Aprendeu com sua inteligencia os idiomas: " + CStr(linguas), SSM_INFO);
+			linguasDesejadas := CheckBoxGump(who, 200, 300, "Escolha " + Cstr(qt-qt_atual) + ".", linguasOpt);
+			foreach idioma in linguas
+				if(!(idioma in  linguasDesejadas))
+					SendSysMessageEx(who, "Voce deve manter os idiomas anteriores.", SSM_FAIL);
+					return;
+				endif
+			endforeach
+			SendSysMessageEx(who, "Idiomas conhecidos salvos.", SSM_FAIL);
+		else
+			if(temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
+				linguas.append("Antigo Esquecido");
+				linguas.append("Alquimico");
+				linguas.append("Nobreza Memmar");
+				linguas.append("Memmar");
+				linguas.append("e le muitos outros.");
+			endif
+			SendSysMessageEx(who, "Conhece os seguintes idiomas: " + CStr(linguas), SSM_INFO);
+			return;
+		endif
+	else
+		if (qt > 0)
+			//SendSysMessageEx(who, "Escolha " + qt +" idiomas.", SSM_INFO);
+			linguasDesejadas := CheckBoxGump(who, 200, 300, "Escolha " + qt + " linguas:", linguasOpt);
+			if (linguasDesejadas.size() > qt)
+				SendSysMessageEx(who, "Voce escolheu mais do que devia.", SSM_FAIL);
+				return;
+			endif
+			SetObjProperty(who, "linguas", linguasDesejadas);
+			if(temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
+				linguasDesejadas.append("Antigo Esquecido");
+				linguasDesejadas.append("Alquimico");
+				linguasDesejadas.append("Nobreza Memmar");
+				linguasDesejadas.append("Memmar");
+				linguasDesejadas.append("e le muitos outros.");
+			endif
+			SendSysMessageEx(who, "Conhece os seguintes idiomas: " + CStr(linguasDesejadas) +".", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Voce eh burro demais para aprender outro idioma.", SSM_FAIL);
+		endif
+	endif
+endprogram

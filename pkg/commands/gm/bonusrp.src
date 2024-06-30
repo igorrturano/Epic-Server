@@ -1,0 +1,15 @@
+use uo;
+
+program BonusRP(who,rate)
+
+	if(!rate)
+		SendSysMessage(who,"BonusRP atual é " + GetGlobalProperty("BonusRP"));
+	elseif(cInt(rate) == 0)
+		SetGlobalProperty("BonusRP", 0);
+		SendSysMessage(who,"BonusRP cancelado");
+	else
+		SetGlobalProperty("BonusRP", rate);
+		SendSysMessage(who,"BonusRP ativado com multiplicador de  " + rate);
+	endif
+
+endprogram

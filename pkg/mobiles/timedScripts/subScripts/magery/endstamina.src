@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	SetObjProperty(mobile, "#stammod", CInt(GetObjProperty(mobile, "#stammod")) - 13);
+	SetObjProperty (mobile, "firstclick", 0); 
+	var oldgraphic := GetObjProperty (mobile, "oldgraphic");
+	var oldname := GetObjProperty (mobile, "oldname");
+	mobile.name := oldname;
+	mobile.graphic := oldgraphic;
+       var oldrace := GetObjProperty (mobile, "oldrace");
+	mobile.title_race := CStr (oldrace) ;
+	return 1;
+endprogram

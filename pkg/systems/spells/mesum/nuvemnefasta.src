@@ -1,0 +1,66 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+	var skill := Cint(AP_GetSkill(who, "Magery"));
+	var nuvemarray := array;
+	Set_Critical(1);
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y, targ.z , 14624, 1 , targ.realm));
+	if (skill > 55)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 60)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 70)
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 80)
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 90)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	endif
+	Corromper(who, 21, 0);
+
+	foreach item in nuvemarray
+		item.graphic := 14120;
+		item.name := "Nuvem Nefasta";
+		item.color := 563;
+		item.setDuration( cint(AP_GetSkill(who, MAGICLORE)) );
+		var lvl :=  cint(AP_GetSkill(who, MAGICLORE)/20);
+		if (lvl < 1 )
+			lvl := 1;
+		endif
+		SetObjProperty(item, "PoisonLevel", lvl);
+	endforeach
+	Set_Critical(0);
+
+	if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+
+	return 1;
+endprogram

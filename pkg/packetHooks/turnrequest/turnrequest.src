@@ -1,0 +1,25 @@
+use uo;
+use math;
+use polsys;
+include "include/say";
+
+
+CONST FACINGDIR := 1;
+
+program requestAttack()
+	Print( "INSTALLING: Turn Request PH..." );
+	return 1;
+endprogram
+
+
+exported function HandleTurnRequest( who, byref packet )
+	// var mob := SystemFindObjectBySerial(packet.GetInt32(BYTE_ID));
+	var dir := packet.GetInt8(FACINGDIR);
+
+
+	if(who.facing != dir)
+		who.facing := dir;
+	endif
+
+	return 0;
+endfunction

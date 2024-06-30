@@ -1,0 +1,6 @@
+
+use os;
+
+syslog("Inicializando o sistema de natureza");
+start_script("daynight");
+start_script("weathercontrol");

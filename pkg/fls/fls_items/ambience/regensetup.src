@@ -1,0 +1,54 @@
+use uo;
+include ":tn:tngumps";
+include ":gumps:requestGump";
+
+program setupsound(who, rune)
+	if (who.cmdlevel < 2)
+		return;
+	endif
+
+	var range := RequestInput(who, who.backpack, "Distancia maxima que os jogadores devem ficar para serem curados.");
+	if (!range)
+		range :=1;
+	endif
+	SetObjProperty(rune, "range", CInt(range));
+
+
+	var opt := array;
+	if ( GetObjProperty(rune, "hits"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(rune, "mana"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(rune, "stam"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	SendSysMessage(who, "Atributos que devem ser regenerados.");
+	var result := CheckBoxGump(who, 150, 200, "Opcoes de Regen", {"Hitpoints","Manapoints","Staminapoints"}, opt);
+
+	EraseObjProperty(rune, "hits");
+	EraseObjProperty(rune, "mana");
+	EraseObjProperty(rune, "stam");
+
+	foreach r in result
+		if (r == "Hitpoints")
+			var value := cint(RequestGump(who, "Quantos Hitpoints quer regenerar?"));
+			SetObjProperty(rune, "hits", value);
+		elseif (r ==  "Manapoints")
+			var value := cint(RequestGump(who, "Quantos Manapoints quer regenerar?"));
+			SetObjProperty(rune, "mana", value);
+		elseif (r == "Staminapoints")
+			var value := cint(RequestGump(who, "Quantos Staminapoints quer regenerar?"));
+			SetObjProperty(rune, "stam", value);
+		endif
+	endforeach
+
+	SendSysMessage(who, "Pronto");
+endprogram

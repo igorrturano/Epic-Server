@@ -1,0 +1,6 @@
+use uo;
+use os;
+
+program PopUpMenu(who, what)
+   return 1;
+endprogram

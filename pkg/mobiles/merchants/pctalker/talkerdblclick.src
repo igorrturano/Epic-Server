@@ -1,0 +1,47 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":fls_core:packets";
+include ":brainAI:npcCommands";
+
+program DblClickNerve(params)
+	var npc		:= params[1];
+	var player	:= params[3].source;
+
+	var serving := 0;
+	var busy := 0;
+//	sendsysmessage(player, "clicou");
+	while ( npc )
+		if ( player)
+			if ( busy.pid || player.cmdlevel < 1)
+			else
+				serving := player;
+				SendSysMessage(player, "Iniciando processo de programacao...");
+				busy := Start_Script(":merchants:pctalker/talker", {npc, player});
+				if ( busy.errortext )
+					AI_Speak(npc, "[Uh oh, I cant start my menu script! The error is ->"+busy.errortext+"]");
+				endif
+			endif
+		endif
+
+		var wait := 500;
+		if ( busy.pid )
+			wait := 1;
+		endif
+		
+		var ev := wait_for_event(wait);
+		if ( ev )
+			case ( ev.type )
+				SYSEVENT_DOUBLECLICKED:
+					player := ev.source;
+				NPCEVENT_DONE:
+					player := 0;
+			endcase
+		else
+			player := 0;
+		endif
+	endwhile
+endprogram
+ 

@@ -1,0 +1,727 @@
+// $Id: tracking.src 916 2005-11-05 23:44:32Z austin $
+
+use uo;
+use basic;
+use os;
+use util;
+use cfgfile;
+
+include "include/client";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":tn:cooldown";
+
+include "include/say";
+include ":itemutils:canAccess";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+
+include ":itemutils:objtype";
+
+include "include/sysEvent";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+
+var BKGND_SILVERTRIM := GFCfgConst("Defaults", "BackGround");
+
+
+program tracking(who)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+
+	InitGump(who);
+
+endprogram
+
+function InitGump(who)
+
+	var gump := GFCreateGump(50, 25);
+	GFResizePic(gump, 0, 25, 0x13BE, 300, 200);
+	GFResizePic(gump, 15, 40, 0xBB8, 270, 170);
+//	GFResizePic(gump, 2, 0, BKGND_SILVERTRIM, 300, 200);
+	GFTextLine(gump, 60, 50, 600, "Escolha o tipo de Rastreamento" );
+	GFTextLine(gump, 47, 80, 800, "Rastreamento de Criaturas");
+	GFAddButton(gump, 30, 84,  2103, 2104, GF_CLOSE_BTN, 1 );
+	GFTextLine(gump, 47, 100, 800, "Rastreamento de Itens");
+	GFAddButton(gump, 30, 104,  2103, 2104, GF_CLOSE_BTN, 2 );
+
+	var ifres := GFSendGump(who, gump);
+
+	if (ifres[0] != 0)
+		if (ifres[0] == 1)
+			MobileTracking(who);
+		endif
+		if (ifres[0] == 2)
+			ItemTracking(who);
+		endif
+	endif
+endfunction
+
+
+function MobileTracking(who)
+	var diff := 1;
+	if (TemHabilidade(who, "Sobrevivencia do Grupo"))
+		diff := -30;
+	endif
+	//SendSysMessage(who, "dif: "+diff);
+	if(SkillCheck(who, SURVIVAL, -1, 0, ADV_DISABLE) > diff)
+		var tracker := ReadGameClock();
+		SetObjProperty(who, "TrackingCounter", tracker);
+		var range := CInt((AP_GetSkill(who, SURVIVAL)/1.5));
+		if (range< 25)
+			range:= 25;
+		endif
+		if (TemHabilidade(who, "Sobrevivencia do Grupo"))
+			range := range + 15;
+		endif
+		var nmobiles := ListMobilesNearLocationEX(who.x,who.y, LIST_IGNORE_Z, range, 0x03, who.realm);
+		var mobiles := array;
+
+		foreach mob in nmobiles
+			if (!temHabilidade(mob, "Rastros Fantasmas") && mob != who)
+				mobiles.append(mob);
+			endif
+		endforeach
+
+var hostiles := ListHostiles(who, range); //check se esta sendo atacado
+	if ( hostiles[1] )
+		SendSysMessageEx(who, "Voce nao pode rastrear enquanto " + hostiles[1].name + " esta atacando voce.", SSM_FAIL);
+		return 0;
+	endif
+
+
+		PrintText(who, "*Estudando o local a sua volta*");
+
+		if(len(mobiles) < 1)
+			SendSysMessage(who, "Nao ha nenhuma criatura ao seu redor para ser seguida", 3, 660);
+			return;
+		endif
+
+		TrackGump(who, mobiles);
+
+	else
+  		SendSysMessage(who, " Voce falhou ao estudar o local ", 3, 38);
+  	endif
+endfunction
+
+
+function ItemTracking(who)
+
+	if(SkillCheck(who, SURVIVAL, -1, 0, ADV_DISABLE) >0)
+		var tracker := ReadGameClock();
+		SetObjProperty(who, "TrackingCounter", tracker);
+		var range := CInt((AP_GetSkill(who, SURVIVAL)/3));
+		if (range < 25)
+			range := 25;
+		endif
+		var items :=  listitemsnearlocation(who.x, who.y, LIST_IGNORE_Z, range, who.realm);
+
+		PrintText(who, "*Estudando o local a sua volta*");
+
+		if(len(items) < 1)
+			SendSysMessage(who, "Nao ha itens para serem rastreados", 3, 660);
+			return;
+		endif
+
+		ItemTrackGump(who, items);
+
+	else
+		SendSysMessage(who, " Voce falhou ao estudar o local ", 3, 38);
+  	endif
+endfunction
+
+
+
+//gump da lista de mobs
+function TrackGump(who, mobiles)
+
+	var gump := GFCreateGump(50, 25);
+
+	var mobdesc;
+	var x,y,b;
+	var mobarray := array;
+	x := 0;
+	y := 0;
+	b := 1;
+//	GFResizePic(gump, 2, 0, BKGND_SILVERTRIM, 600, 500);
+	GFResizePic(gump, 0, 25, 0x13BE, 630, 530);
+	GFResizePic(gump, 15, 40, 0xBB8, 600, 500);
+	GFTextLine(gump, 200, 45, 600, "Escolha o alvo a ser rastreado:" );
+	GFPage(gump, 1);
+	var colunas := 1;
+	var pages := 1;
+	foreach mobile in mobiles
+     	   if((mobile != who) && (!mobile.dead))
+		mobdesc := GetMobDesc(who, mobile);
+		mobarray.append(mobdesc);
+		GFTextLine(gump, (47 + x), (70 + y), ""+MobDistanceColor(who, mobile), mobdesc);
+		GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+		y := y + 20;
+		b := b + 1;
+		if (y > 380)
+			x := x + 150;
+			y := 0;
+			colunas := colunas + 1;
+		endif
+		if (colunas == 5) //adiciona uma page
+			colunas := 0;
+			x := 0;
+			y := 0;
+			pages := pages + 1;
+			GFAddButton(gump, 570, 520, 2224, 2224, GF_PAGE_BTN,  pages);
+			GFPage(gump, pages);
+			GFAddButton(gump, 30, 520, 2223, 2223, GF_PAGE_BTN,  pages-1);
+		endif
+	   endif
+	endforeach
+
+	var ifres := GFSendGump(who, gump);
+
+	if (ifres[0] != 0)
+		var mobontrack := mobiles[ifres[0]];
+		var mobname := mobarray[ifres[0]];
+		SendSysMessage(who, "Voce agora esta seguindo os rastros de um(a) " + mobname + mobontrack.x +mobontrack.y, 3, 191);
+		CreatureTrack(who, mobontrack,mobname);
+	endif
+
+
+endfunction
+
+
+//lista os corpos e acampamentos
+function ItemTrackGump(who, items)
+
+	var gump := GFCreateGump(50, 25);
+
+	var x,y,b;
+	var itemarray := array;
+	x := 0;
+	y := 0;
+	b := 1;
+//	GFResizePic(gump, 2, 0, BKGND_SILVERTRIM, 600, 500);
+	GFResizePic(gump, 0, 25, 0x13BE, 630, 530);
+	GFResizePic(gump, 15, 40, 0xBB8, 600, 500);
+	GFTextLine(gump, 200, 45, 600, "Escolha o evento/item a ser rastreado:" );
+	var temcoisa := 0;
+	foreach item in items
+     	   if(item.objtype == 3555)
+		itemarray.append(item);
+		GFTextLine(gump, (47 + x), (70 + y), 800, "Fogueira/Acampamento");
+		GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+		y := y + 20;
+		b := b + 1;
+		if (y > 380)
+			x := x + 150;
+			y := 0;
+		endif
+		temcoisa := 1;
+
+		elseif(item.objtype == 0xa5a)
+				itemarray.append(item);
+				GFTextLine(gump, (47 + x), (70 + y), 800, "Oasis");
+				GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+				y := y + 20;
+				b := b + 1;
+					if (y > 380)
+						x := x + 150;
+						y := 0;
+					endif
+				temcoisa := 1;
+
+		elseif(item.objtype == 0x108c)
+				itemarray.append(item);
+				GFTextLine(gump, (47 + x), (70 + y), 800, "Alavanca");
+				GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+				y := y + 20;
+				b := b + 1;
+					if (y > 380)
+						x := x + 150;
+						y := 0;
+					endif
+				temcoisa := 1;
+
+		elseif(item.objtype == 0xe807)
+				itemarray.append(item);
+				GFTextLine(gump, (47 + x), (70 + y), 800, "Baús");
+				GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+				y := y + 20;
+				b := b + 1;
+					if (y > 380)
+						x := x + 150;
+						y := 0;
+					endif
+				temcoisa := 1;
+
+		elseif(item.objtype == 0x5000 || item.objtype == 0x5003)
+				itemarray.append(item);
+				GFTextLine(gump, (47 + x), (70 + y), 800, "Champ Altar");
+				GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+				y := y + 20;
+				b := b + 1;
+					if (y > 380)
+						x := x + 150;
+						y := 0;
+					endif
+				temcoisa := 1;
+
+		elseif(item.objtype == 0x6008 || item.objtype == 0x6009 || item.objtype == 0xf6C || item.objtype == 0xDDA || item.objtype == 0x1FD4 || item.objtype == 0x1FE7 )
+				itemarray.append(item);
+				GFTextLine(gump, (47 + x), (70 + y), 800, "Portal");
+				GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+				y := y + 20;
+				b := b + 1;
+					if (y > 380)
+						x := x + 150;
+						y := 0;
+					endif
+				temcoisa := 1;
+
+
+     	   elseif(item.isa(POLCLASS_CORPSE))
+		itemarray.append(item);
+		GFTextLine(gump, (47 + x), (70 + y), 800, "Corpo");
+		GFAddButton(gump, (30 + x), (74 + y),  2103, 2104, GF_CLOSE_BTN, b );
+		y := y + 20;
+		b := b + 1;
+		if (y > 380)
+			x := x + 150;
+			y := 0;
+		endif
+		temcoisa := 1;
+	   endif
+	endforeach
+
+	if (!temcoisa)
+		SendSysMessage(who, "Nao ha itens para serem rastreados", 3, 660);
+		return;
+	endif
+	var ifres := GFSendGump(who, gump);
+
+	if (ifres[0] != 0)
+		var mobname := 0;
+		var mobontrack := itemarray[ifres[0]];
+		CreatureTrack(who, mobontrack,mobname);
+	endif
+
+
+endfunction
+
+
+//gump individual
+function CreatureTrack(who, mobontrack, mobname)
+
+	var local;
+	var end := 0;
+
+	while (end != 1)
+	var gump := GFCreateGump(50, 25);
+//	GFResizePic(gump, 2, 0, BKGND_SILVERTRIM, 300, 220);
+	GFResizePic(gump, 0, 25, 0x13BE, 300, 250);
+	GFResizePic(gump, 15, 40, 0xBB8, 270, 220);
+
+	//Titulo do gump
+	if (mobname == 0)
+		GFTextLine(gump, 40, 40, 600, "O que deseja analisar desse item" );
+	elseif ((mobname == 1) || (mobname == 2))
+		GFTextLine(gump, 40, 40, 600, "O que deseja analisar desse recurso" );
+	else
+		GFTextLine(gump, 40, 40, 600, "O que deseja analisar do rastro" );
+		GFTextLine(gump, 40, 60, 600, "de um(a) " + mobname );
+	endif
+
+	GFTextLine(gump, 47, 100, 800, "Localizacao do Alvo");
+	GFAddButton(gump, 30, 104,  2103, 2104, GF_CLOSE_BTN, 1 );
+	GFTextLine(gump, 47, 120, 800, "Seguir Alvo");
+	GFAddButton(gump, 30, 124,  2103, 2104, GF_CLOSE_BTN, 2 );
+
+	if ((mobname != 0) && (mobname != 1))
+		GFTextLine(gump, 47, 140, 800, "Profundidade do Rastro");
+		GFAddButton(gump, 30, 144,  2103, 2104, GF_CLOSE_BTN, 3 );
+//if (TemHabilidade(who, "Sobrevivencia do Grupo"))
+		GFTextLine(gump, 47, 160, 800, "Verificar Resistências e Dano");
+		GFAddButton(gump, 30, 164,  2103, 2104, GF_CLOSE_BTN, 4 );
+//endif
+	endif
+	GFTextLine(gump, 47, 180, 800, "Mudar de Alvo");
+	GFAddButton(gump, 30, 184,  2103, 2104, GF_CLOSE_BTN, 5 );
+	GFTextLine(gump, 47, 200, 800, "Marcar no mapa");
+	GFAddButton(gump, 30, 204,  2103, 2104, GF_CLOSE_BTN, 6 );
+	var char := GetObjProperty(mobontrack, "createdate");//check se é player
+if (TemHabilidade(who, "Marca da Caca") && !char)
+	GFTextLine(gump, 47, 220, 32, "Marca da Caça");
+	GFAddButton(gump, 30, 224,  2103, 2104, GF_CLOSE_BTN, 7 );
+endif
+	var ifres := GFSendGump(who, gump);
+
+
+	if (ifres[0] == 1)
+		end := DistanceCheck(who, mobontrack);
+		if (end != 1)
+			var local := MobLocalizate(who, mobontrack);
+			SendSysMessage(who, "" + local, 3, 191);
+		endif
+	elseif (ifres[0] == 2)
+		end := DistanceCheck(who, mobontrack);
+		if (end != 1)
+			var parar := 0;
+			while (parar < 5)
+				var local := MobLocalizate(who, mobontrack);
+				SendSysMessage(who, "" + local, 3, 191);
+				sleepms(5000);
+				parar := parar + 1;
+			endwhile
+		endif
+	elseif (ifres[0] == 3)
+		end := DistanceCheck(who, mobontrack);
+		if (end != 1)
+			var dist := MobDistance(who, mobontrack);
+			SendSysMessage(who, "" + dist, 3, 660);
+		endif
+	elseif (ifres[0] == 4)
+		end := DistanceCheck(who, mobontrack);
+		if (end != 1)
+			var band := ResistDmgVerify(who, mobname, mobontrack); //Alterado para ver tipo de Dano e resist
+			 GFSendGump(who, band);
+//			SendSysMessage(who, "" + band, 3, 0);
+		endif
+	elseif (ifres[0] == 5)
+		if (mobname == 0)
+			ItemTracking(who);
+		else
+			MobileTracking(who);
+		endif
+		end := 1;
+	elseif (ifres[0] == 6)
+		SendSysMessageEx(who, "Escolha o mapa.", SSM_REQUEST);
+		var targmap := 	Target(who);
+		if (!targmap.isa(POLCLASS_MAP))
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		else
+			if ( (mobontrack.x > targmap.xwest) && (mobontrack.x < targmap.xeast) && (mobontrack.y > targmap.ynorth ) && (mobontrack.y < targmap.ysouth) )
+				targmap.appendpin(mobontrack.x, mobontrack.y);
+				var pininfo := GetObjProperty(targmap, "pininfo");
+				if (pininfo == error)
+					pininfo := dictionary;
+				endif
+				var pin := struct;
+				pin.+name := RequestGump(who, "Escreva o nome dessa marca.");
+				pininfo[targmap.getpins().size()] := pin;
+				SetObjProperty(targmap, "pininfo", pininfo);
+				SendSysMessageEx(who, "Voce marcou a localizacao no mapa.", SSM_INFO);
+			else
+				SendSysMessageEx(who, "O alvo nao esta na regiao deste mapa.", SSM_INFO);
+			endif
+		endif
+	elseif (ifres[0] == 7)
+		if (GetCooldown(who, "marcadacaca") == 0)
+			var stam := 30;
+			if (!AP_ConsumeVital(who, STAMINA, stam))
+				SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+				return;
+			else
+				if (!GetObjProperty(who, "marcou_mob") )
+				else
+					var mob_marcado := SystemFindObjectBySerial(GetObjProperty(who, "marcou_mob"));
+					EraseObjProperty(mob_marcado, "marcadacaca");
+					PrintTextaboveprivate (who, "*Voce se concentra no novo alvo, esquecendo o anterior!*", who);
+					sleepms(300);
+				endif
+				SetObjProperty(mobontrack, "marcadacaca", 1); // Marca da caça, definida no scritp de damage.inc
+				SendSysMessageEx(who, "Voce rastreou as fragilidades do alvo, tornando seus golpes mais mortais!", SSM_INFO);
+				setCooldown(who, "marcadacaca", 600);
+				var mob_marcado := mobontrack.serial;
+				SetObjProperty(who, "marcou_mob", mob_marcado);
+				return;
+			endif
+		else
+			var tempo_falta := GetCooldown(who, "marcadacaca");
+			SendSysMessageEx(who, "Voce deve esperar "+tempo_falta+" segundos antes de usar Marca da Caca novamente.", SSM_FAIL);
+			return;
+		endif
+	elseif (ifres[0] == 0)
+		end := 1;
+		return 0;
+	endif
+	endwhile
+
+endfunction
+
+//	var stam := cint(GetConfigInt(habelem, "stam"));
+//	if (stam != error)
+//		if (!AP_ConsumeVital(who, STAMINA, stam))
+//			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+//			return 1;
+//		endif
+//	endif
+
+
+function MobDistance(who, mobontrack)
+
+	var relx,rely;
+	relx := mobontrack.x - who.x;
+	rely := mobontrack.y - who.y;
+	var dist := sqrt(pow(relx, 2) + pow(rely, 2));
+//	sendsysmessage(who, "dist " + dist + " " + mobontrack.x + " " + mobontrack.y);
+	if (dist > 100) return "perdeu";
+		elseif (dist > 80) return "O rastro parece estar quase sumindo";
+		elseif (dist > 64) return "O rastro e muito superficial";
+		elseif (dist > 48) return "O rastro e superficial";
+		elseif (dist > 32) return "O rastro comeca a ficar definido";
+		elseif (dist > 24) return "O rastro e bem definido";
+		elseif (dist > 12) return "O rastro e recente e cheio de detalhes";
+		elseif (dist > 1) return "A criatura com esse rastro deve estar bem perto";
+	endif
+
+endfunction
+
+function MobDistanceColor(who, mobontrack)
+
+	var relx,rely;
+	relx := mobontrack.x - who.x;
+	rely := mobontrack.y - who.y;
+	var dist := sqrt(pow(relx, 2) + pow(rely, 2));
+//	sendsysmessage(who, "dist " + dist + " " + mobontrack.x + " " + mobontrack.y);
+	if (dist > 100) return 833;
+		elseif (dist > 90) return 733;
+		elseif (dist > 80) return 633;
+		elseif (dist > 64) return 533;
+		elseif (dist > 48) return 433;
+		elseif (dist > 32) return 333;
+		elseif (dist > 24) return 233;
+		elseif (dist > 12) return 133;
+		elseif (dist > 1) return 33;
+	endif
+
+endfunction
+
+function MobLocalizate(who, critter)
+
+	var ns_desc:="";
+	var ew_desc:="";
+	var ret_val:="";
+
+	//sendsysmessage(who, " "+ critter.desc + " " + critter.x +  " " + critter.y);
+
+	if ( critter.y < who.y )
+		ns_desc := "norte ";
+	elseif ( critter.y > who.y )
+		ns_desc := "sul ";
+	endif
+	if ( critter.x < who.x )
+		ew_desc := "oeste";
+	elseif ( critter.x > who.x )
+		ew_desc := "leste";
+	endif
+
+	if ( !ns_desc && !ew_desc )
+		ret_val := "proximo";
+	else
+		ret_val := "para o "+ns_desc + " e " +ew_desc;
+	endif
+	return ret_val;
+
+endfunction
+
+//retorna so a sigla
+function MobLocalizateSigla(who, critter)
+
+	var ns_desc:="";
+	var ew_desc:="";
+	var ret_val:="";
+
+	//sendsysmessage(who, " "+ critter.desc + " " + critter.x +  " " + critter.y);
+
+	if ( critter.y < who.y )
+		ns_desc := "N";
+	elseif ( critter.y > who.y )
+		ns_desc := "S";
+	endif
+	if ( critter.x < who.x )
+		ew_desc := "O";
+	elseif ( critter.x > who.x )
+		ew_desc := "L";
+	endif
+
+	if ( !ns_desc && !ew_desc )
+		ret_val := "proximo";
+	else
+		ret_val := ns_desc+ew_desc;
+	endif
+	return ret_val;
+
+endfunction
+
+
+function GetMobDesc(who, mobile)
+
+if ((mobile.graphic == 400) || (mobile.graphic == 401) || (mobile.graphic == 1828) || (mobile.graphic == 1829) || (mobile.graphic == 1830) || (mobile.graphic == 1831 ) || (mobile.graphic == 1832) || (mobile.graphic == 1833) || (mobile.graphic == 1834) || (mobile.graphic == 1835))
+	var itemonmobile := ListEquippedItems( mobile );
+	foreach item in itemonmobile
+		if (item.graphic == 5903)
+			if (CheckLineOfSight( who, mobile ) && (mobile.hidden == 0))
+				return mobile.name + " [" + MobLocalizateSigla(who, mobile) + "]";
+			else
+				return "Humanoide com Sapatos" + " [" + MobLocalizateSigla(who, mobile) + "]";
+			endif
+		elseif (item.graphic == 5901)
+			if (CheckLineOfSight( who, mobile ) && (!mobile.hidden))
+				return mobile.name + " [" + MobLocalizateSigla(who, mobile) + "]";
+			else
+				return "Humanoide com Sandalhas"+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			endif
+		elseif (item.graphic == 5899)
+			if (CheckLineOfSight( who, mobile ) && (mobile.hidden == 0))
+				return mobile.name+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			else
+				return "Humanoide com Botas"+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			endif
+		elseif (item.graphic == 5905)
+			if (CheckLineOfSight( who, mobile ) && (mobile.hidden == 0))
+				return mobile.name+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			else
+				return "Humanoide com Botas Longas"+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			endif
+		elseif (item.graphic == 5137)
+			if (CheckLineOfSight( who, mobile ) && (mobile.hidden == 0))
+				return mobile.name+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			else
+				return "Humanoide com Calca de Placas"+ " [" + MobLocalizateSigla(who, mobile) + "]";
+			endif
+		endif
+	endforeach
+		if (CheckLineOfSight( who, mobile ) && (mobile.hidden == 0))
+			return mobile.name+ " [" + MobLocalizateSigla(who, mobile) + "]";
+		else
+			return "Humanoide Descalco"+ " [" + MobLocalizateSigla(who, mobile) + "]";
+		endif
+
+elseif (mobile.graphic == 1) return "Ogro" + " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 776) return "Sahagin Pequeno" + " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 795) return "Sahagin" + " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 796) return "Sahagin Gigante"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 999) return "Sahagin Gigante" + " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 35) return "Homem Lagarto"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 36) return "Homem Lagarto"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 43) return "Homem Rato"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 44) return "Homem Rato"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 42) return "Homem Rato"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 17) return "Goblin"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 7) return "Goblin"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 41) return "Goblin"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 245) return "Kobold"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 255) return "Kobold"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 253) return "Kobold"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 200) return "Cavalo"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 291) return "Cavalo"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 226) return "Cavalo"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 204) return "Cavalo"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 228) return "Cavalo"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+elseif (mobile.graphic == 6) return "Passaro"+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+endif
+
+if (mobile.isa(POLCLASS_MOBILE))
+return mobile.name+ " [" + MobLocalizateSigla(who, mobile) + "]";;
+else
+return mobile.desc + " [" + MobLocalizateSigla(who, mobile) + "]";;
+endif
+
+endfunction
+
+function DistanceCheck(who, mobontrack)
+	var dist := MobDistance(who, mobontrack);
+	if (dist == "perdeu")
+		SendSysMessage(who, "Voce nao consegue mais identificar os rastros desse alvo", 3, 28);
+		return 1;
+	else
+		return 0;
+	endif
+endfunction
+
+function ResistDmgVerify(who, mobname, mobontrack)
+var creature := mobontrack;
+
+    var r := ""+creature.resist_physical+"%"; //resist!
+    var rf := ""+creature.resist_fire+"%";
+    var rc := ""+creature.resist_cold+"%";
+	var re := ""+creature.resist_energy+"%";
+	var rp := ""+creature.resist_poison+"%";
+
+    var ar := ""+creature.damage_physical+"%"; //damage!
+    var arf := ""+creature.damage_fire+"%";
+    var arc := ""+creature.damage_cold+"%";
+	var are := ""+creature.damage_energy+"%";
+	var arp := ""+creature.damage_poison+"%";
+
+        var gump := GFCreateGump();
+        GFGumpPic(gump, 100, 100, 2080);
+        GFGumpPic(gump, 118, 137, 2081);
+        GFGumpPic(gump, 118, 207, 2081);
+        GFGumpPic(gump, 118, 277, 2081);
+        GFGumpPic(gump, 118, 347, 2081);
+        GFGumpPic(gump, 118, 389, 2083);
+        GFHTMLArea(gump,  147, 108, 210, 18, "<center><i>"+CStr(mobontrack)+"</i></center>");
+        GFAddButton(gump, 240, 77, 2093, 2093, GF_CLOSE_BTN, 2);
+
+		GFGumpPic(gump, 140, 138, 2091);
+        GFGumpPic(gump, 140, 371, 2091);
+
+		GFPage(gump, 1);
+        GFGumpPic(gump, 128, 152, 2086);
+        GFHTMLArea(gump, 147, 150, 160, 18, "<basefont color=#A52A2A>Resistencias");
+        GFHTMLArea(gump, 153, 168, 160, 18, "<basefont color=#4A3929>Fisica");
+        GFHTMLArea(gump, 320, 168,  35, 18, "<basefont color=#4A3929><div align=right>"+r+"</div>");
+        GFHTMLArea(gump, 153, 186, 160, 18, "<basefont color=#4A3929>Fogo");
+        GFHTMLArea(gump, 320, 186,  35, 18, "<basefont color=#4A3929><div align=right>"+rf+"</div>");
+        GFHTMLArea(gump, 153, 204, 160, 18, "<basefont color=#4A3929>Frio");
+        GFHTMLArea(gump, 320, 204,  35, 18, "<basefont color=#4A3929><div align=right>"+rc+"</div>");
+
+        GFHTMLArea(gump, 153, 222, 160, 18, "<basefont color=#4A3929>Energia");
+        GFHTMLArea(gump, 320, 222,  35, 18, "<basefont color=#4A3929><div align=right>"+re+"</div>");
+        GFHTMLArea(gump, 153, 240, 160, 18, "<basefont color=#4A3929>Veneno");
+        GFHTMLArea(gump, 320, 240,  35, 18, "<basefont color=#4A3929><div align=right>"+rp+"</div>");
+
+        GFGumpPic(gump, 128, 266, 2086); //246
+        GFHTMLArea(gump, 147, 263, 160, 18, "<basefont color=#A52A2A>Dano"); //243
+        GFHTMLArea(gump, 153, 281, 160, 18, "<basefont color=#4A3929>Fisico");//261
+        GFHTMLArea(gump, 320, 281,  35, 18, "<basefont color=#4A3929><div align=right>"+ar+"</div>");//261
+        GFHTMLArea(gump, 153, 299, 160, 18, "<basefont color=#4A3929>Fogo"); //279
+        GFHTMLArea(gump, 320, 299,  35, 18, "<basefont color=#4A3929><div align=right>"+arf+"</div>"); //279
+		GFHTMLArea(gump, 153, 317, 160, 18, "<basefont color=#4A3929>Frio");//297
+        GFHTMLArea(gump, 320, 317,  35, 18, "<basefont color=#4A3929><div align=right>"+arc+"</div>");//297
+		GFHTMLArea(gump, 153, 335, 160, 18, "<basefont color=#4A3929>Energia");// 315
+        GFHTMLArea(gump, 320, 335,  35, 18, "<basefont color=#4A3929><div align=right>"+are+"</div>"); //315
+		GFHTMLArea(gump, 153, 353, 160, 18, "<basefont color=#4A3929>Veneno"); //333
+        GFHTMLArea(gump, 320, 353,  35, 18, "<basefont color=#4A3929><div align=right>"+arp+"</div>");//333
+     //   GFAddButton(gump, 317, 358, 5603, 5607, GF_PAGE_BTN, 1);
+      //  GFAddButton(gump, 340, 358, 5601, 5605, GF_PAGE_BTN, 3);
+
+		return gump;
+
+
+endfunction
+/* function BandVerify(who, mobname, mobontrack)
+
+
+	var mobdesc;
+	var x := 0;
+   	var mobiles := ListMobilesNearLocation(mobontrack.x,mobontrack.y, LIST_IGNORE_Z, 10);
+
+	foreach mobile in mobiles
+		if((mobile != who) && (!mobile.dead))
+			mobdesc := GetMobDesc(who, mobile);
+			if (mobdesc == mobname)
+				x := x + 1;
+			endif
+		endif
+	endforeach
+
+	if (x >= 7)
+		return "E muito provavel que o alvo esteja em bando.";
+	elseif (x >= 3)
+		return "Talvez o alvo esteja em bando.";
+	else
+		return "Voce tem quase certeza que nao existe um bando.";
+	endif
+endfunction
+*/

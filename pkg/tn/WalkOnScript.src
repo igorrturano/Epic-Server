@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/tileEffects";
+include "include/sounds";
+//const MOVEOBJECT_NORMAL   := 0x0;
+var portal9;
+
+program WalkOnScript( who , item )
+
+if(GetObjProperty(item,"aberto") != 0)
+
+	var x:=cint(GetObjProperty(item,"x"));
+	var y:=cint(GetObjProperty(item,"y"));
+	var z:=cint(GetObjProperty(item,"z"));
+
+	if(x!= error)
+		x:=GetObjProperty(item,"x");
+	else
+		SetObjProperty(item,"x",0);
+	endif
+
+
+	if(y!= error)
+		y:=GetObjProperty(item,"y");
+	else
+		SetObjProperty(item,"y",0);
+	endif
+
+	if(y!= error)
+		z:=GetObjProperty(item,"z");
+	else
+		SetObjProperty(item,"z",0);
+	endif
+	
+	if(GetObjProperty(item,"aberto") ==1)
+		MoveObjectToLocation(who, x, y,z, who.realm, MOVEOBJECT_FORCELOCATION);
+		PlaySoundEffect(who,SFX_SPELL_GATE_TRAVEL).
+		PlayStationaryEffect(x, y, z, FX_CURSE_EFFECT, 2, 150);
+
+		portal9:=CreateItemAtLocation( x, y, z, 8148, 1, realm := _DEFAULT_REALM );
+		sleep(4);
+		DestroyItem(portal9);
+	else
+		return;
+	endif
+
+else
+	return;
+endif
+     
+
+endprogram

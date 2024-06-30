@@ -1,0 +1,24 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+include "include/sysEvent";
+include "include/eventID";
+
+program doubleattack(who)
+
+        var nearby := ListMobilesNearLocation( who.x ,who.y, who.z, 8);
+        foreach char in nearby
+		var event := struct{"type":=EVID_TAUNT, "source":=who};
+		SendEvent(char, event);
+        endforeach
+	SendSysMessageEx(who, "Voce virou uma muralha.", SSM_INFO);
+	SetCooldown(who, "barreiraindestrutivel", 20);
+
+endprogram
+

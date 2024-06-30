@@ -1,0 +1,55 @@
+function configurehitscript(who)
+
+	var options := CheckBoxGump(who, 200, 400, "Escolha as configuracoes do hitscript", array{"TimedScript", "Bonus Dano", "Dano Area", "Efeito Grafico", "Slayer", "Som", "Texto", "Criar Item", "OnKill"});
+	
+	var  hitopt := struct;
+	foreach option in options
+		if (option == "Bonus  Dano") //stamina, mana
+			var dmg := cdbl(RequestGump(who, "Quanto do rawdmg  da arma vai ser aumentado (de 0.1 a 1.0)?", "", "", 1));
+			var dmgtype := splitwords(RequestGump(who, "Digite os 5 dmg  mod  (de 0 a 100): Ph, Fi, Co, Po, EN ", "", "", 1));
+			hitopt.+dmg := dmg;
+			hitopy.+dmgtype := dmgtype;
+			var vitals := ChckBoxGump(who, 200, 300, "Qual tipo de vital sera afetado pelo dano?", array{"Stam", "Hits", "Mana"});
+			hitopt.+vitals := vitals;
+		elseif  (option == "Dano Area")
+			var area := Cint(RequestGump(who, "Qual a area do dano?", "", "", 1));
+			hitopt.+area := area;
+		elseif (option == "Som")
+			var som := cint(RequestGump(who, "Escreva o id do som?", "", "", 1));
+			hitopt .+som := som;
+		elseif (option == "Texto")
+			var textatacante := RequestGump(who, "Qual msg  vai aparecer no atacante?", "", "", 1);
+			var textdefensor := RequestGump(who, "Qual msg  vai aparecer no defensor?", "", "", 1);
+			if (textatacante != "")
+				hitopt.+textatacante := textatacante;
+			endif
+			if (textdefensor != "")
+				hitopt.+textdefensor := texdefensor;
+			endif
+		elseif (option  == "Efeito Grafico")
+			var fxatacante := RequestGump(who, "Qual o efeito no atacante (id, speed, loop?", "", "", 1);
+			var fxdefendor := RequestGump(who, "Qual o efeito no defensor (id, speed, loop?", "", "", 1);
+			if (fxatacante != "")
+				hitopt.+fxatacante := splitwords(fxatacante);
+			endif
+			if (fxdefensor != "")
+				hitopt.+fxdefensor := splitwords(fxdefensor);
+			endif
+		elseif (option == "Criar Item")
+			var where :=  CheckBoxGump(who, 200, 400, "Onde o item sera criado", array{"Atacante", "Defensor", "Random"});
+			var createitem := RequestGump(who, "Qual o item a ser criado?", "", "", 1);
+			hittop.+createitem := createitem;
+			hittop.+itemloc := splitwords(where);
+		elseif (option == "TimedScript")
+			hitopt.+timername := RequestGump(who, "Qual o nome do timer?", "", "", 1);
+			hitopt.+timerduration := cint(RequestGump(who, "Qual a duracao do timer?", "", "", 1));
+			hitopt.+level := cint(RequestGump(who, "Qual o level do timer?", "", "", 1));
+		elseif (option == "OnKill")
+		elseif (option == "Slayer")
+			hitopt.+slayer := RequestGump(who, "Qual o tipo de monstro (veja as aterogias no .createnpc)?", "", "", 1);
+		endif
+	endforeach
+
+	hitopt.+chance:= cint(RequestGump(who, "Digite a chance  do hitscript acontecer (1 a 100)?", "", "", 1));
+
+endfunction

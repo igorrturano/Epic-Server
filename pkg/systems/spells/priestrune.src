@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include "include/say";
+include ":tn:cooldown";
+include ":charactercreation:habilidades";
+
+program usavarinha(who, wand)
+    var chardata := GetObjProperty(who, "chardata");
+	if ( chardata.magia != "Sacerdote")
+        SendSysMEssageEx(who, "Voce nao esta em sintonia com o poder das runas", SSM_FAIL);
+		return 1;
+	endif
+
+	if (getobjproperty(wand, "spellinfo") == error)
+		var id := getobjproperty(wand, "runatype");
+		var spellinfo := struct;
+		spellinfo.+id := id;
+		SetObjProperty(wand, "spellinfo", spellinfo);
+	endif
+
+	var cargas := GetObjProperty(wand, "cargas");
+	if (cargas == error)
+		cargas := 40;
+		if ( temHabilidade(who, "Fluxo Divino") )
+			cargas := 50;
+		endif
+	endif
+	if (cargas <= 0)
+		SendSysMessageEx(who, "A runa esta sem cargas e se desfez.", SSM_FAIL);
+		DestroyItem(wand);
+		return;
+	else
+		cargas := cargas - 1;
+		SetObjProperty(wand, "description", "Cargas: " + cargas);
+		SetObjPRoperty(wand, "cargas", cargas);
+		SetName(wand, ""+wand.desc);
+	endif
+
+
+	var spellinfo := GetObjProperty(wand, "spellinfo");
+	var delay := 30;
+
+	 var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
+
+         if ( script.errortext )
+	       SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+	       return 0;
+	 endif
+
+endprogram

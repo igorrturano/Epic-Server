@@ -1,0 +1,23 @@
+use uo;
+include "include/client";
+include "include/say";
+include ":spells:tnmagery";
+
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+  var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+  if (!targ)
+    return;
+  endif
+  if (!targ.isa(POLCLASS_MOBILE))
+    SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+    return;
+  endif
+  PlaySoundEffect(targ, 0x1e4);
+  targ.setlightlevel( 0, 1800 );
+  SendSysMessageEx(who, "Voce consegue ver no escuro.", SSM_INFO);
+endprogram
+

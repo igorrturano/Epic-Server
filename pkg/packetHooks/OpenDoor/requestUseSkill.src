@@ -1,0 +1,34 @@
+use uo;
+
+include ":attributes:attributes";
+
+program SkillRequest()
+	Print( "Hooking Skill Request..." );
+	return 1;
+endprogram
+
+exported function HandleSkillRequest( who, byref packet )
+
+	var delay := GetObjProperty(who, "delayskill");
+	if(delay)
+		if(delay > ReadGameClock())
+			SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+			return 1;
+		endif
+	endif
+	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+
+	var blockSize := packet.GetInt16(1);
+	var num := CInt(packet.GetString(4, blockSize-4));
+	var skill := GetSkillNameByID(num);
+	
+	var chardata := GetObjProperty(who, "chardata");
+
+	if(!chardata.Skills[skill])
+		SendSysMessage(who, "Voce nao possui esta skill.");
+		return 1;
+	endif
+
+
+return 0;
+endfunction

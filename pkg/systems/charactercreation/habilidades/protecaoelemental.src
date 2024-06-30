@@ -1,0 +1,60 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+
+program manobra(who)
+
+	var elemental := GetObjProperty(who, "elementalprotection");
+	
+	if (elemental == error)
+		var prot := RadioGump(who, 200, 260, "Escolha o elemento", {"Fisica","Fogo", "Frio", "Veneno", "Energia"});
+		SendSysMessageEx(who, "Voce escolheu protecao contra " + prot, SSM_INFO);
+		if (prot == "Fisica")
+			SetObjProperty(who,"elementalprotection", DMG_PHYSICAL);
+			who.resist_physical_mod  := 25;
+			return;
+		elseif (prot == "Fogo")
+			SetObjProperty(who,"elementalprotection", DMG_FIRE);
+			who.resist_fire_mod  := 25;
+			return;
+		elseif (prot == "Frio")
+			SetObjProperty(who,"elementalprotection", DMG_COLD);
+			who.resist_cold_mod  := 25;
+			return;
+		elseif (prot == "Veneno")
+			SetObjProperty(who,"elementalprotection", DMG_POISON);
+			who.resist_poison_mod  := 25;
+			return;
+		elseif (prot == "Energia")
+			SetObjProperty(who,"elementalprotection", DMG_ENERGY);
+			who.resist_energy_mod  := 25;
+			return;
+		endif
+
+	elseif (elemental == DMG_PHYSICAL)
+		EraseObjProperty(who,"elementalprotection");
+			who.resist_physical_mod  := 0;
+			SendSysMEssageEx(who, "Voce desfaz sua protecao.", SSM_FAIL);
+	elseif (elemental == DMG_FIRE)
+		EraseObjProperty(who,"elementalprotection");
+			who.resist_fire_mod  := 0;
+			SendSysMEssageEx(who, "Voce desfaz sua protecao.", SSM_FAIL);
+	elseif (elemental == DMG_COLD)
+		EraseObjProperty(who,"elementalprotection");
+			who.resist_cold_mod  := 0;
+			SendSysMEssageEx(who, "Voce desfaz sua protecao.", SSM_FAIL);
+	elseif (elemental == DMG_POISON)
+		EraseObjProperty(who,"elementalprotection");
+			who.resist_poison_mod  := 0;
+			SendSysMEssageEx(who, "Voce desfaz sua protecao.", SSM_FAIL);	
+	elseif (elemental == DMG_ENERGY)
+		EraseObjProperty(who,"elementalprotection");
+			who.resist_energy_mod  := 0;
+			SendSysMEssageEx(who, "Voce desfaz sua protecao.", SSM_FAIL);
+	endif
+
+endprogram   

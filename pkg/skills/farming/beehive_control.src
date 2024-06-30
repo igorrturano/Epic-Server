@@ -1,0 +1,34 @@
+use uo;
+use os;
+use util;
+
+Const NEW_PLANT_GROW_TIME			:= 3600;
+Const REGROW_TIME					:= 3600;
+
+//Const NEW_PLANT_GROW_TIME			:= 10;
+//Const REGROW_TIME					:= 10;
+
+program control_plant (plant)
+
+	var harvested_amount := CInt(GetObjProperty (plant, "#harvested"));
+	
+	while (plant)
+		sleep (REGROW_TIME);
+
+		harvested_amount := CInt (GetObjProperty (plant, "#harvested"));
+		if (!harvested_amount)
+			EraseobjProperty (plant, "#harvested");
+		elseif (harvested_amount == 1)
+			EraseObjProperty (plant, "#harvested");
+		else
+			harvested_amount := CInt (harvested_amount - 1);
+			SetObjProperty (plant, "#harvested", harvested_amount);
+		endif
+	endwhile
+
+endprogram
+
+
+
+
+

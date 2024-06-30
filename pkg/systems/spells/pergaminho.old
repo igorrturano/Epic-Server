@@ -1,0 +1,87 @@
+use uo;
+use cfgfile;
+use util;
+
+program cria(item)
+
+	var spellinfo := struct;
+
+
+	
+	var spell := RandomInt(5)+1;
+	
+	case (spell)
+		1:
+			spellinfo.+name := "Cura pelas maos";
+			spellinfo.+powerwords := "Vitus Manus";
+			spellinfo.+Type := "Curar";
+			spellinfo.+alvo := "Unico";
+			spellinfo.+range := "Toque";
+			spellinfo.+targtype := "Animados";
+			spellinfo.+dmgtarg := "Vida";
+			spellinfo.+power := 1;
+			spellinfo.+mana := Cint(spellinfo.power)*10;
+			spellinfo.+delay := Cint(spellinfo.power)*300;
+			spellinfo.+difficulty := Cint(spellinfo.power)*20;
+			spellinfo.+description := "Esse encantamento tem suas origens perdidas no tempo, foi criado ha muitos seculos atras. Faz as maos do feiticeiro brilharem com uma energia intensa. Ao tocar em qualquer criatura viva, essa energia ajudara a cicatrizar os ferimentos, ossos fraturados e a passar a dor.";
+		2:	
+			spellinfo.+name := "Encantar Arma";
+			spellinfo.+powerwords := "Munire Gladium";
+			spellinfo.+Type := "Fortalecer";
+			spellinfo.+alvo := "Unico";
+			spellinfo.+range := "Distancia";
+			spellinfo.+targtype := "Inanimados";
+			spellinfo.+inanimado := "Armas";
+			spellinfo.+power := 2;
+			spellinfo.+mana := Cint(spellinfo.power)*10;
+			spellinfo.+delay := Cint(spellinfo.power)*300;
+			spellinfo.+difficulty := Cint(spellinfo.power)*20;
+			spellinfo.+description := "Esse encantamento criado por feiticeiros que preferem utilizar suas armas que suas magias, faz com que uma arma seja temporariamente encantada para se tornar mais mortal. Sempre que atinge sua vitima, a arma perfura mais a carne, ou esmaga mais os ossos, por um certo numero de vezes, ate que o encanto se enfraquece com o tempo e volta a ser uma arma normal. ";			
+		3:
+			spellinfo.+name := "Realcar Comida";
+			spellinfo.+powerwords := "Len Kaia";
+			spellinfo.+Type := "Fortalecer";
+			spellinfo.+alvo := "Unico";
+			spellinfo.+range := "Distancia";
+			spellinfo.+targtype := "Inanimados";
+			spellinfo.+inanimado := "Comida";
+			spellinfo.+power := 2;
+			spellinfo.+mana := Cint(spellinfo.power)*10;
+			spellinfo.+delay := Cint(spellinfo.power)*300;
+			spellinfo.+difficulty := Cint(spellinfo.power)*20;
+			spellinfo.+description := "Apreciado por feiticeiros aventureiros ou que viajam frequentemente, este encantamento faz com que a comida fique mais nutritiva, matando a fome por um tempo maior.";				
+			
+		4:
+			spellinfo.+name := "Curativos Encantados";
+			spellinfo.+powerwords := "Fea El";
+			spellinfo.+Type := "Fortalecer";
+			spellinfo.+alvo := "Unico";
+			spellinfo.+range := "Distancia";
+			spellinfo.+targtype := "Inanimados";
+			spellinfo.+inanimado := "Curativos";
+			spellinfo.+power := 2;
+			spellinfo.+mana := Cint(spellinfo.power)*10;
+			spellinfo.+delay := Cint(spellinfo.power)*300;
+			spellinfo.+difficulty := Cint(spellinfo.power)*20;
+			spellinfo.+description := "Encanta curativos com uma energia mistica e os torna mais eficientes para cicatrizar os ferimentos. Este e um encantamento bastante util para outras pessoas alem do mago, porque assim podem levar consigo os curativos e os utilizarem para uma cura mais rapida, mesmo sem o feiticeiro estar proximo.";							
+			
+		5:
+		
+			spellinfo.+name := "Maos Flamejantes";
+			spellinfo.+powerwords := "Flam Nor";
+			spellinfo.+Type := "Fortalecer";
+			spellinfo.+alvo := "Unico";
+			spellinfo.+range := "Toque";
+			spellinfo.+targtype := "Animados";
+			spellinfo.+dmgtarg := "Vida";
+			spellinfo.+dmgtype := "Fogo";
+			spellinfo.+power := 2;
+			spellinfo.+mana := Cint(spellinfo.power)*10;
+			spellinfo.+delay := Cint(spellinfo.power)*300;
+			spellinfo.+difficulty := Cint(spellinfo.power)*20;
+			spellinfo.+description := "Cria chamas nas maos do feiticeiro que podem queimar gravemente outra pessoa. Dizem que esta magia foi ensinada aos humanos por Tessekhan, um dos espiritos do fogo mais poderosos, na primeira vez em que os homens pisaram em seus dominios.";										
+			
+	endcase
+			
+
+endprogram

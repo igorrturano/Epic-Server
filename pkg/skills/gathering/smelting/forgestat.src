@@ -1,0 +1,12 @@
+use uo;
+use os;
+program forja(parms)
+  var item := parms[1];
+  var amt := parms[2];
+  PrintTextAbove(item, "*a forja esta acesa*");
+  sleep(5);
+  PlaySoundEffect(item, 0x01de);
+  SetObjProperty(item, "status", 1);
+  sleep(amt);
+  EraseObjProperty(item, "status");
+endprogram

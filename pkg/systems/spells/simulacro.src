@@ -1,0 +1,42 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":tn:npcutil";
+include ":brainAI:npcUtil";
+include ":ghaia:ghaia";
+include ":spells:summon";
+include ":taming:taming";
+
+program summontotem(params)
+
+	var who := params[1];
+	var targ := params[2];
+	var spellid := params[3];
+	params := 0; // No longer needed
+
+
+	//Efeito da magia
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+
+
+	var undead :=   summon(":brainai:simulacro", targ, who);		
+
+	if (undead)
+		SendSysMessageEx(who, "Voce teve sucesso em invocar  a criatura.", SSM_INFO);
+	endif
+
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2);	
+
+	return 1;
+
+endprogram
+
+

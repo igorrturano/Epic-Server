@@ -1,0 +1,28 @@
+use uo;
+
+include "include/say";
+
+program relock( who )
+
+    SendSysMessageEx( who, "Escolha a chave.", SSM_REQUEST );
+    var key := Target( who );
+    if(! key)
+       SendSysMessageEx( who, "Cancelado.", SSM_FAIL );
+       return;
+    endif
+
+    SendSysMessageEx( who, "Escolha a porta ou container.", SSM_REQUEST );
+    var lockeditem := Target( who );
+
+    if(! lockeditem)
+       SendSysMessageEx( who, "Cancelado.", SSM_FAIL );
+       return;
+    endif
+
+    var lockid := GetObjProperty(key, "LockId");
+
+    SetObjProperty( lockeditem, "LockId", lockid );
+   
+    SendSysMessageEx( who, "Trocado a fechadura para ser igual a chave.", SSM_INFO );
+
+endprogram

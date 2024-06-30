@@ -1,0 +1,58 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/damage";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":charactercreation:resists";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+
+	if (!GetObjProperty(targ, "#sleep"))
+		SendSysMessageEx(who, "O alvo precisa estar dormindo antes.");
+		return 1;
+	endif
+
+	var dmg := AP_GetSkill(who, MAGICLORE)*0.75;
+
+	if(TemHabilidade(who, "Vontade Esmagadora"))
+		if (CheckResist(targ, VONTADE, 70, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+			dmg := dmg/2;
+		endif
+	else
+		if (CheckResist(targ, VONTADE, 30, -CInt(AP_GetSkill(who, MAGICLORE)/2.5)))
+			dmg := dmg/2;
+		endif
+	endif
+
+	if (temHabilidade(who, "Tocado por Asan"))
+		if (isBloodied(who))
+			dmg := CInt(dmg*1.5);
+		endif
+	endif
+	DamageFLS(targ, dmg, DMG_FORCED, who);
+	PrintTextAbovePrivate(targ, "-"+dmg + " Vida", who, 3, 38); // vermelho
+
+    if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, 385);
+    endif
+
+	SendSysMessageEx(who, "O alvo esta tendo sonhos terriveis.", SSM_INFO);
+	Corromper(who, 31, targ);
+
+	if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+
+	return 1;
+endprogram

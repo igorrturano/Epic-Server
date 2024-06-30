@@ -1,0 +1,43 @@
+//$Id: canInsert.src 87 2006-05-23 19:04:43Z sroyalty $
+
+use uo;
+use os;
+use cfgfile;
+include ":attributes:attributes";
+include ":containers:checks";
+
+
+program canInsert(mobile, container, item, move_type, insert_type, adding_item, existing_stack, amount_to_add)
+
+	if ( move_type == MOVETYPE_COREMOVE )
+		return 1;
+	elseif ( CP_RootContainerLocked(item) )
+		SendSysMessage(mobile, "voce nao pode por isto em um container trancado.");
+		return 0;
+	endif
+
+	if (mobile)
+		if (!mobile.npctemplate)
+			var aux := container;
+			while (aux.container)
+				aux := aux.container;
+			endwhile
+			if (aux == mobile && maoLivre(mobile, 1, 0))
+				return 1;
+			endif
+
+			if (!maoLivre(mobile, 1))
+				return 0;
+			endif
+
+			if (mobile.frozen || mobile.paralyzed)
+				SendSysMessage(mobile, "Voce esta paralizado.");
+				return 0;
+			endif
+		endif
+	endif
+
+	//To-do
+	//Play sound effect now that item is being added.
+	return 1;
+endprogram

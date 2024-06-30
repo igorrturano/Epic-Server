@@ -1,0 +1,70 @@
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":acid:acid";
+include ":fls_core:packets";
+include ":timedScripts:timedScripts";
+include ":spells:puremage";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	//var armor	:= params[4];
+	//var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	var dmgtype := params[7];
+	var range := params[8];
+
+	if (!range || range == error)
+		range := 2;
+	endif
+
+	if (!dmgtype || dmgtype == error)
+		dmgtype := DMG_PHYSICAL;
+	endif
+
+	params := 0; // Not needed anymore.
+
+	//gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
+	if (GetCooldown(weapon, "romperencantamento") )
+		dispel(defender);
+		EraseObjProperty(weapon, "#romperencantamento");
+	endif
+	if (GetCooldown(weapon, "ataqueespiritual")  )
+		EraseObjProperty(weapon, "#ataqueespiritual");
+		var manadmg := cint(AP_GetSkill(attacker, MAGICLORE)/3);
+		AP_ConsumeVital(defender, MANA, manadmg);
+	endif
+	if (GetCooldown(weapon, "ataquefadiga")  )
+		EraseObjProperty(weapon, "#ataquefadiga");
+		var stamdmg := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+		AP_ConsumeVital(defender, STAMINA, stamdmg);
+	endif
+
+	
+	if ( dmgtype == DMG_COLD )
+
+		if (GetObjProperty(weapon, "prisaogelida") == 1)
+			EraseObjProperty(weapon, "prisaogelida");
+			var time := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+			TS_StartTimer(defender, "prisaogelida", time);
+		else
+			PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+			PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
+			TS_StartTimer(defender, "paralysis", 6);
+		endif
+
+	elseif (dmgtype == DMG_FIRE)
+
+		PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+		PlaySoundEffect(defender, SFX_EXPLOSION_11);
+		TS_StartTimer(defender, "chamasperpetuas", 20);
+	endif
+	return 1;
+endprogram
+ 
+ 

@@ -1,0 +1,23 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+	
+	var points := CInt(GetObjProperty(mobile, "irrefreavel"));
+	var hitsmod := Cint(GetObjProperty(mobile, "hitsmod"));
+	//sendsysmessage(mobile, "hitsmod " + hitsmod + " points " + points);
+	hitsmod := hitsmod - points;
+	SetObjProperty(mobile, "hitsmod",  hitsmod);
+	recalcvitals(mobile);
+	if ( GetVital(mobile, HITS) > GetVitalMaximumValue( mobile, HITS ))
+		SetVital(mobile, HITS, GetVitalMaximumValue( mobile, HITS ) );
+	endif
+
+	EraseObjProperty(mobile, "irrefreavel");
+
+	return 1;
+endprogram
+   

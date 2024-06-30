@@ -1,0 +1,61 @@
+/* $Id: openpack.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+include "include/client";
+include "include/say";
+include ":attributes:attributes";
+
+/*
+
+Item 0xF8F
+{
+Name			VolcanicAsh
+Desc			cinzas vulcanicas
+Weight			1/10
+MethodScript	reagents/method
+}
+*/
+program textcmd_openPack(who, item)
+    SendSysMessageEx(who, "Escolha o ingrediente que deseja misturar", SSM_REQUEST);
+	var targ := Target(who);
+    var hasMortarInBag := 0;
+
+	if ((item.objtype == 3983 && targ.objtype == 3980) 
+        || (item.objtype == 3980 && targ.objtype == 3983))
+        foreach itemInBag in EnumerateItemsInContainer(who.backpack)
+            if (itemInBag.objtype == 0x0e9b)
+                hasMortarInBag := 1;
+                break;
+            endif
+        endforeach
+    endif
+    var canMakePowder := 0;
+    if (AP_GetSkill(who, ALCHEMY) >= 50 || TemHabilidade(who, "Artilheiro Preparado"))
+        canMakePowder := 1;
+    else
+        SendSysMessageEx(who, "Voce nao sabe o que fazer com isso", SSM_FAIL);
+        return 0;
+    endif
+    
+    if (hasMortarInBag && canMakePowder)
+        var loop := 0;
+    	while(loop < 3)
+            PlaySoundEffect(who, 0x243); // 0x242 mortar 0x247 powder
+            PrintText(who, "*preparando a polvora*");
+            sleep(1);
+            loop := loop + 1;
+	    endwhile
+        PlaySoundEffect(who, 0x248);
+
+        CreateItemInBackpack(who, 0x9092, 1);
+        subtractamount(item, 1);
+        subtractamount(targ, 1);
+    else
+        SendSysMessageEx(who, "Voce nao tem um misturador na mochila", SSM_FAIL);
+    endif
+
+	return 1;
+endprogram

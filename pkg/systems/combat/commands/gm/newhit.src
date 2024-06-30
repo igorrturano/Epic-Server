@@ -1,0 +1,38 @@
+use uo;
+use vitals;
+
+include "include/say";
+include ":gumps:requestGump";
+include ":gumps:yesNo";
+include ":merchants:item_template";
+include ":attributes:attributes";
+include ":tn:tngumps";
+include ":gumps:yesNo";
+include ":combat:hitscripts";
+
+program createhit(who)
+
+	SendSysMessage(who, "Escolha a arma");
+	var item := target(who);
+	if (!item.isA(POLCLASS_WEAPON))
+		SendSysMessage(who, "Cancelado");
+		return;
+	endif
+
+	var hitopt := configurehitscript(who);
+
+	SetObjProperty(item, "generichit", hitopt);
+
+	var hit_scripts := GetObjProperty(item, "HitScripts");
+	if ( !hit_scripts )
+		hit_scripts := array{};
+	endif
+	foreach hit in hit_scripts
+		if (hit == ":combat:weaponHitScripts/generic")
+			return;
+		endif
+	endforeach
+	hit_scripts.Append(":combat:weaponHitScripts/generic");
+	SetObjProperty(item, "HitScripts", hit_scripts);
+
+endprogram

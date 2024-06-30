@@ -1,0 +1,23 @@
+use uo;
+use os;
+use util;
+
+include ":blood:blood";
+
+const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
+
+program usabalao(who, item)
+
+     var alvo := target(who);
+     SendSysMessage(who, "Escolha o que quer colocar aqui.");
+     if ( isBlood(item))
+        PlaySoundEffect (who, 0x241);
+        CreateItemInBackpack(who, 0xF7D, 1);
+        destroyitem(alvo);
+        destroyitem(item);
+     else
+       SendSysMessage(who, "Muito liquido para um tubo de ensaio.");
+       return;
+     endif
+
+endprogram

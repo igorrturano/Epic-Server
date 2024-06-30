@@ -1,0 +1,145 @@
+
+use uo;
+use os;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":containers:containers";
+include ":itemutils:itemdesc";
+include "include/client";
+include ":fls_magery:basicMagery";
+include ":fls_magery:spells";
+include "include/sounds";
+include ":spells:tnmagery";
+include "include/say";
+include ":spells:rituals";
+
+//existem 2 tipos de spells. os que ficam no cfg e sao referenciados por um id
+// e os que sao criados in game
+// quando o spellstarter inicia, se for do tipo que tem id, ele le o cfg e escreve a struct spellinfo
+// se for um spell criado ele ja tem o spellinfo ok;
+
+program SpellStarter(params)
+
+	var mobile := params[1]; // Caster
+	var ritualid := params[2];
+
+	if ( !Attach(mobile) )
+		SendSysMessageEx(mobile, "Voce ja esta fazendo alguma coisa.", SSM_FAIL);
+		return 0;
+	endif
+
+    if (GetCooldown(mobile, "silence") > 0)
+        SendSysMessageEx(mobile, "Voce esta silenciado e nao pode usar magias.");
+        return 1;
+    endif
+
+	// Already casting?
+	if ( GetObjProperty(mobile, "#Casting") )
+		SendSysMessageEx(mobile, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	else
+		if ( mobile.frozen )
+			SendSysMessageEx(mobile, "Voce nao pode invocar um encanto paralisado.", SSM_FAIL);
+			EraseObjProperty(mobile, "#Casting");
+			return 0;
+		endif
+	endif
+    var battlemageHabs := Array{"Concentracao Macabra", "Senhor do Medo", "Devocao", "Concentracao Aprimorada", "Colheita de Almas", "Campeao das Montanhas"};
+    var tem_hab := 0;
+    foreach hab in battlemageHabs
+        if (TemHabilidade(mobile, hab))
+            tem_hab := 1;
+        endif            
+    endforeach
+	// Perform various checks to see if mobile can perform the spell
+	if ( mobile.squelched && !mobile.npctemplate )
+		SendSysMessageEx(mobile, "Voce precisa falar devido os componentes verbais da magia.", SSM_FAIL);
+		FailSpell(mobile);
+		EraseObjProperty(mobile, "#Casting");
+		return 0;
+	elseif ( !EquipmentCheck(mobile) && !mobile.npctemplate && !tem_hab)
+		SendSysMessageEx(mobile, "Suas maos precisam estar livres para gesticular os componentes gestuais necessarios para a magia.", SSM_FAIL);
+		FailSpell(mobile);
+		EraseObjProperty(mobile, "#Casting");
+		return 0;
+//	elseif (!CheckIngredients(master, ritualid) )
+//		FailSpell(mobile);
+//		EraseObjProperty(mobile, "#Casting");
+//		return 0;
+    	else
+		/*mobile.hidden := 0;
+		EraseObjProperty(mobile, "#Medding");
+		if (!mobile.npctemplate)
+			if (spellinfo.powerwords)
+				PrintText(mobile, spellinfo.powerwords);
+			endif
+		endif
+		//SpeakPowerWords(mobile, spell_id);
+
+		var orig_hp := AP_GetVital(mobile, "Hits");
+		var delay := spellinfo.delay;
+		var moveCheck_script := Start_Script(":fls_magery:moveCheck/moveCheck", {mobile, Getpid()});
+		while ( delay > 0 )
+			// If mobile is injured and does not have the protection spell on, fail the spell
+			if ( (orig_hp > AP_GetVital(mobile, "Hits") && !GetObjProperty(mobile, "Protection")) )
+				SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.", SSM_FAIL);
+				FailSpell(mobile);
+				PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+				PlayObjectCenteredEffect(mobile, GFX_FIZZLE, 5, 50);
+				EraseObjProperty(mobile, "#Casting");
+				return 0;
+			endif
+	
+			// Check if we recieved an event from moveCheck_script, which means the mobile moved while targetting
+			if ( Events_Waiting() )
+				SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.", SSM_FAIL);
+				FailSpell(mobile);
+				PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+				EraseObjProperty(mobile, "#Casting");
+				return 0;
+			endif
+			
+			if ( delay % 50 )
+				SleepMS(delay % 50);
+				delay := delay - (delay % 50);
+			else
+				SleepMS(50);
+				delay := delay - 50;
+			endif
+
+		endwhile
+		
+		moveCheck_script.kill();
+		
+		var attribute;
+		attribute := MAGERY;
+
+		var difficulty := CInt(spellinfo.Difficulty);
+		
+		mobile.frozen := 0;
+		var skill_check := SkillCheck(mobile, attribute, difficulty);
+
+		// skill_check > 0 on success
+		if ( skill_check > 0 )
+			if (scroll)
+				if ((scroll != 999) && (scroll != 0) && (scroll != 1))//se nao for varinha
+					if (!SubtractAmount(scroll, 1))
+						EraseObjProperty(mobile, "#Casting");
+						return 0;
+					endif
+				endif
+			endif
+			CastSpell(mobile, spellinfo);
+		else
+			PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+			SendSysMessageEX(mobile, "Voce falhou em invocar a magia.", SSM_FAIL);
+		endif*/
+	endif
+
+	//MS_SpellDebug(mobile, "Spell starter completed.");
+	EraseObjProperty(mobile, "#Casting");
+	
+	return 1;
+endprogram 

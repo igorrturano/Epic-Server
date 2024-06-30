@@ -1,0 +1,73 @@
+use attributes; use basic; use boat; use cfgfile; use cliloc; use datafile; use file; use guilds; use http; use math; use npc; use os; use polsys; use storage; use unicode; use uo; use util; use vitals;
+
+// program textcommand(character, text, uc_text, langcode)
+program my_use( chr )
+	chr:=chr;
+	print("INI ################################################################");
+	var stt := struct;
+	var att := struct{"null":=0};
+	foreach script in (PolCore().all_scripts)
+
+		if(stt.exists(script.name))
+			stt[script.name].amount+=1;
+		else
+			stt.insert(script.name, struct{"amount":=1});
+		endif
+		if(script.attached_to)
+			if(att.exists(script.attached_to.name))
+				att[script.attached_to.name].amount+=1;
+			else
+				att.insert(script.attached_to.name, struct{"amount":=1});
+			endif
+		else
+			att["null"]+=1;
+		endif
+		sleepms(1);
+	endforeach
+	foreach namescript in (stt.keys())
+		print("Script "+namescript+" "+stt[namescript]);
+		sleepms(1);
+	endforeach
+	foreach nameobj in (att.keys())
+		print("attached_to "+nameobj+" "+att[nameobj]);
+		sleepms(1);
+	endforeach
+	print("################################################################");
+	foreach script in (PolCore().script_profiles)
+		print("script_profiles "+script);
+		sleepms(1);
+	endforeach
+	print("################################################################");
+	print("bytes_received "+PolCore().bytes_received);
+	print("bytes_sent "+PolCore().bytes_sent);
+	print("combat_operations_per_min "+PolCore().combat_operations_per_min);
+	print("compiledate "+PolCore().compiledate);
+	print("compiletime "+PolCore().compiletime);
+	print("error_creations_per_min "+PolCore().error_creations_per_min);
+	print("events_per_min "+PolCore().events_per_min);
+	print("instr_per_min "+PolCore().instr_per_min);
+	print("iostats "+PolCore().iostats);//array
+	print("itemcount "+PolCore().itemcount);
+	print("memory_usage "+PolCore().memory_usage);
+	print("mobilecount "+PolCore().mobilecount);
+	print("packages "+PolCore().packages);
+	print("pkt_status "+PolCore().pkt_status);
+	print("priority_divide "+PolCore().priority_divide);
+	print("queued_iostats "+PolCore().queued_iostats);
+	print("running_scripts "+PolCore().running_scripts);
+	print("scripts_late_per_min "+PolCore().scripts_late_per_min);
+	print("scripts_ontime_per_min "+PolCore().scripts_ontime_per_min);
+	print("skill_checks_per_min "+PolCore().skill_checks_per_min);
+	print("sysload "+PolCore().sysload);
+	print("sysload_severity "+PolCore().sysload_severity);
+	print("systime "+PolCore().systime);
+	print("tasks_late_per_min "+PolCore().tasks_late_per_min);
+	print("tasks_late_ticks_per_min "+PolCore().tasks_late_ticks_per_min);
+	print("tasks_ontime_per_min "+PolCore().tasks_ontime_per_min);
+	print("uptime "+PolCore().uptime);
+	print("version "+PolCore().version);
+	print("verstr "+PolCore().verstr);
+
+	print("FIM ################################################################");
+	PolCore().log_profile(1);
+endprogram

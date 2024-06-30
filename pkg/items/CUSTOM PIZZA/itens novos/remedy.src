@@ -1,0 +1,27 @@
+use os;
+use uo;
+
+
+program remedy( character )
+
+	PlaySoundEffect(character, 0x241);
+	  
+	if (GetObjProperty(character, "poison_level") > 0)
+	    EraseObjProperty(character, "poison_level");
+	endif
+	if (GetObjProperty(character, "fire") == 1)
+	    EraseObjProperty(character, "fire");
+	endif
+	if (GetObjProperty(character, "ice") == 1)
+	    EraseObjProperty(character, "ice");
+	endif
+	if (GetObjProperty(character, "wind") == 1)
+	    EraseObjProperty(character, "wind");
+	endif
+	if (GetObjProperty(character, "thunder") == 1)
+	    EraseObjProperty(character, "thunder");
+	endif
+
+	SendSysMessage(character, "You have been relieved of your ailments!");
+
+endprogram

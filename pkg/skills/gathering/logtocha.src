@@ -1,0 +1,70 @@
+use uo;
+
+const LITTORCH_OBJTYPE := 0x0a12;
+
+program turnLogIntoTorch(who, item)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, item))
+		return 0;
+	endif
+	if(!ReserveItem(item))
+		return 0;
+	endif
+
+	SendSysMessage(who, "Escolha a fonte de calor fazer sua tocha.");
+
+	var trg := Target(who);
+	if(!trg)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if(!Accessible(who, trg))
+		SendSysMessage(who, "Voce nao alcanca isto.");
+		return 0;
+	endif
+
+	if(isHeatSource(trg))
+		logToTorch(who, item);
+	else
+		SendSysMessage(who, "Isto nao serve.");
+	endif
+endprogram
+
+function isHeatSource(what)
+	if((what.objtype >= 0x08cf) && (what.objtype <= 0x08df))
+		return 1;
+	elseif((what.objtype >= 0x092b) && (what.objtype <= 0x096c))
+		return 1;
+	elseif((what.objtype >= 0x45d) && (what.objtype <= 0x48e))
+		return 1;
+	elseif((what.objtype >= 0x0de3) && (what.objtype <= 0x0de9))
+		return 1;
+	elseif((what.objtype >= 0x0e31) && (what.objtype <= 0x0e33))
+		return 1;
+	elseif((what.objtype >= 0x1849) && (what.objtype <= 0x1850))
+		return 1;
+	elseif((what.objtype >= 0x197a) && (what.objtype <= 0x19a9))
+		return 1;
+	elseif((what.objtype >= 0x0de3) && (what.objtype <= 0x0de9))
+		return 1;
+	elseif((what.objtype == 0x19bb) || (what.objtype == 0x0fb1))
+		return 1;
+	else
+		return 0;
+	endif
+endfunction
+
+function logToTorch(who, item)
+	var newitem;
+	if(SubtractAmount(item, 1))
+		newitem := CreateItemInBackpack(who, LITTORCH_OBJTYPE);
+		if(newitem)
+			SendSysMessage(who, "Voce guardou o item na sua mochila");
+		else
+			SendSysMessage(who, "Voce nao tem espaco na mochila.");
+		endif
+	endif
+	return 1;
+endfunction

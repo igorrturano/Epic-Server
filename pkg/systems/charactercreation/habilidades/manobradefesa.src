@@ -1,0 +1,21 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":attributes:attributes";
+
+program doubleattack(who)
+    if (GetObjProperty(who, "Postura") == "Ofensiva")
+        SendSysMessageEx(who, "Voce defendera o proximo golpe.", SSM_INFO);
+        SetObjProperty(who, "#tempparrybonus", 100);
+        //setObjProperty(who, "#attackfail", 1);
+        SetCooldown(who, "parrydelay", 0);
+    elseif(GetObjProperty(who, "Postura") == "Defensiva" )
+        SendSysMessageEx(who, "Firme, escudeiro! Sua defesa persistira.", SSM_INFO);
+        SetCooldown(who, "defesapersistente", 20);
+    endif
+
+    return 1;
+endprogram

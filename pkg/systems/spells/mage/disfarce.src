@@ -1,0 +1,24 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":gumps:requestGump";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var name := RequestGump(who, "Escolha um novo nome.");
+
+	PlaySoundEffect(who, SFX_SPELL_WEAKEN);
+	SendSysMessageEx(who, "Voce alterou sua aparencia.", SSM_INFO);
+	SetObjProperty(who, "disfarce", name);
+	TS_StartTimer(who, "disfarce", GetSpellDuration( AP_GetSkill(who, MAGICLORE)) );
+
+	return 1;
+endprogram

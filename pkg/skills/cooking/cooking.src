@@ -1,0 +1,196 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/client";
+include ":attributes:attributes";
+
+program cook(who, item)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!Accessible(who, item))
+    return;
+  endif
+  if(!ReserveItem(item))
+    return;
+  endif
+  if(cookon(who, item))
+    cookit(who, item);
+  endif
+endprogram
+
+function cookon(who, item)
+
+  if(!item)
+    return 0;
+  endif
+
+  SendSysMessage(who, "Escolha a fonte de calor para cozinhar.");
+
+  var trg := Target(who);
+  if(!trg)
+    SendSysMessage(who, "Cancelado.");
+    return 0;
+  endif
+
+  if(!Accessible(who, trg))
+    SendSysMessage(who, "Voce nao alcança isto.");
+    return 0;
+  endif
+
+  var cfg := ReadConfigFile(":cooking:cooking");
+  var needoven := cfg[item.objtype].oven;
+
+  if (needoven == 1)
+
+     if ((trg.objtype >= 0x0461) and (trg.objtype <= 0x046f))
+		return 1;
+     elseif ((trg.objtype >= 0x092b) and (trg.objtype <= 0x0934))
+		return 1;
+     endif
+     SendSysMessage(who, "Voce precisa de um forno para cozinhar isto.");
+     return 0;
+
+  else
+    if((trg.objtype >= 0x08cf) && (trg.objtype <= 0x08df))
+      return 1;
+    elseif((trg.objtype >= 0x092b) && (trg.objtype <= 0x096c))
+      return 1;
+    elseif((trg.objtype >= 0x45d) && (trg.objtype <= 0x48e))
+      return 1;
+    elseif((trg.objtype >= 0x0de3) && (trg.objtype <= 0x0de9))
+      return 1;
+    elseif((trg.objtype >= 0x0e31) && (trg.objtype <= 0x0e33))
+      return 1;
+    elseif((trg.objtype >= 0x1849) && (trg.objtype <= 0x1850))
+      return 1;
+    elseif((trg.objtype >= 0x197a) && (trg.objtype <= 0x19a9))
+      return 1;
+    elseif((trg.objtype >= 0x0de3) && (trg.objtype <= 0x0de9))
+      return 1;
+    elseif((trg.objtype == 0x19bb) || (trg.objtype == 0x0fb1))
+      return 1;
+    else
+      SendSysMessage(who, "Voce nao pode cozinhar comida nisto.");
+    return 0;
+    endif
+
+  endif
+endfunction
+
+function cookit(who,item);
+  var cfg := ReadConfigFile(":cooking:cooking");
+  var skill_needed := cfg[item.objtype].skill_needed;;
+  var points := Cint(cfg[item.objtype].points);
+  if (!points)
+	points := skill_needed*2;
+  endif
+  var elem      := FindConfigElem(cfg, item.objtype);
+  var products  := GetConfigStringArray(elem,"product");
+  var product   := Cint(products[RandomInt(len(products))+1]);
+  var ingredients := GetConfigStringArray(elem, "ingredient");
+  var theIngredients := {};
+  var newitem;
+  var ingredientsno;
+  var capmod_temp :=0;
+	if (ingredients)
+		theIngredients := GetIngredients(who, ingredients);
+		ingredientsno := theIngredients.size;
+		print ("Numero de ingredientes: " + ingredientsno);
+		if (theIngredients == error)
+            SendSysMessage(who, "Voce nao tem os igredientes necessarios.");
+            return;
+        endif
+        //Pega o capmod dos ingredientes
+        foreach ingred in theIngredients 
+            if (GetObjProperty(ingred, "capmod") == error)
+                SendSysMessage(who, "nao tem capmod." + ingred);
+                capmod_temp := capmod_temp;
+            else
+                capmod_temp := capmod_temp + CInt(GetObjProperty(ingred, "capmod" ));
+                SendSysMessage(who, "temcapmod."+ ingred);
+            endif
+        endforeach
+	endif
+  if(skill_needed)
+    if(SkillCheck( who, DomesticWork, skill_needed, 0) > 0);
+      var amt := item.amount;
+      if(DestroyItem(item))
+        newitem := CreateItemInBackpack(who, product, amt);
+		if(newitem)
+	      SendSysMessage(who, "Voce guardou o item na sua mochila");
+          var ingredients_temp := ingredientsno + capmod_temp;
+          SendSysMessage(who, "ingreds." + ingredients_temp); 
+		  case ( ingredients_temp )
+		  2:
+		  SetObjProperty(newitem, "capmod", 1);
+		  3:
+		  SetObjProperty(newitem, "capmod", 2);
+		  4:
+		  SetObjProperty(newitem, "capmod", 3);
+		  5:
+		  SetObjProperty(newitem, "capmod", 4);
+		  6:
+		  SetObjProperty(newitem, "capmod", 5);
+		  7:
+		  SetObjProperty(newitem, "capmod", 6);
+          8:
+		  SetObjProperty(newitem, "capmod", 7);
+          9:
+		  SetObjProperty(newitem, "capmod", 8);
+          10:
+		  SetObjProperty(newitem, "capmod", 9);
+		  endcase
+	    else
+	      SendSysMessage(who, "You dont have any room in your backpack.");
+	    endif
+	  endif
+    else
+      SendSysMessage(who, "Voce queimou a comida!");
+      SubtractAmount(item, 1);
+    endif
+    foreach thing in theIngredients
+      DestroyItem(thing);
+    endforeach
+  else
+    SendSysMessage(who, "Voce nao pode cozinhar isto.");
+  endif
+endfunction
+
+
+function GetIngredients(who, ingredients)
+var words := {};
+var objtypes;
+var tgt;
+var result := {};
+
+  foreach list in ingredients
+  
+    words := SplitWords(list);
+    objtypes := {};
+    foreach word in words
+      objtypes.append(CInt(word));
+    endforeach
+    
+    SendSysMessage(who, "Escolha o igrediente para cozinhar isto.");
+    tgt := Target(who);
+    
+    if (tgt.objtype in objtypes)
+      SendSysMessage(who, "Boa escolha!");
+      result.append(tgt);
+    else
+      SendSysMessage(who, "Este nao e o ingrediente correto!");
+      return error;
+    endif
+  endforeach
+
+  foreach item in result
+    if (!Accessible(who, item) || !ReserveItem(item))
+      SendSysMessage(who, "Voce nao pose usar isso!");
+      return error;
+    endif
+  endforeach
+
+  return result;
+
+endfunction

@@ -1,0 +1,35 @@
+use uo;
+
+include ":datafile:datafile";
+
+const MULTI_SCARECROW	:= 0x1E35;
+
+program OnDelete(character)
+	SysLog("Removing farm plots for "+character.name+" ["+Hex(character.serial)+"]");
+	
+	var data_file := DFOpenDataFile("farms", DF_NO_CREATE);
+	var farms := DFFindElement(data_file, hex(character.serial), DF_NO_CREATE);
+	var property := farms.GetProp("property");
+	if ( !property || property == error )
+		return;
+	endif
+	
+	foreach farm_serial in property
+		DeleteFarm(farm_serial);
+	endforeach
+	
+	data_file.DeleteElement(hex(character.serial));
+endprogram
+
+function DeleteFarm(farm_serial)
+	var farm := SystemFindObjectBySerial(farm_serial);
+	if ( farm )
+		SysLog("Removing farm ["+farm_serial+"]");
+		foreach item in (farm.components)
+			if ( item.objtype == MULTI_SCARECROW )
+				item.DestroyFarm();
+				return;
+			endif
+		endforeach
+	endif
+endfunction

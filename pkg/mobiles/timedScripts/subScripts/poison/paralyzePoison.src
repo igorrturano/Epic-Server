@@ -1,0 +1,11 @@
+use uo;
+use os;
+
+program poisonScript(params)
+	var mobile := params[1];
+	
+	SendSysMessage(mobile, "Voce esta incapaz de se mover.");
+	mobile.frozen := 1;
+	
+	return 1;
+endprogram

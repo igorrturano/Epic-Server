@@ -1,0 +1,309 @@
+use uo;
+use datafile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":ghaia:ghaia";
+include ":gumps:yesNo";
+include ":tn:tngumps";
+
+program gumpspawn(who, text)
+
+if (!text)
+	createSpawngump(who, 1);
+else
+	GetNpcBySerial(who, Cint(text), 0, 0, 1);
+endif
+endprogram
+
+function createSpawngump(who, type,  oldspawns := 0, start := 0, end := 0)
+
+	var df := OpenDataFile(":tn:summonsall");
+	if (!df)
+		df := CreateDataFile( ":tn:summonsall", DF_KEYTYPE_STRING);
+	endif
+
+	var spawns := array;
+
+	if (type == 1) //listar todos
+		foreach spawn in (df.keys())
+			var spawnpoint := Cint(spawn);
+			var summon_find := SystemFindObjectBySerial(spawnpoint);
+			if (spawnpoint == error)
+				df.deleteElement(spawn);
+			elseif (summon_find == error)
+				df.deleteElement(spawn);
+			else
+				spawns.append(spawnpoint);
+			endif
+			sleepms(2);
+		endforeach
+
+	elseif ( type == 2)//listar pelo povo
+		var npctemplatename := Requestgump(who, "Digite o povo dos npcs (zharkiano, aquilrano, numajene, vanirio, asanita, thuriao, outros, etc)");
+		foreach spawn in (df.keys())
+			var spawnpoint := Cint(spawn);
+			var cp_elem:= DFFindElement(df, spawn);
+			var elem := dfgetprop(cp_elem, "Povo");
+			if (elem == npctemplatename)
+				spawns.append(spawnpoint);
+			endif
+			sleepms(2);
+		endforeach
+	elseif ( type == 3) //Listar por regions
+		var regionrect := Requestgump(who, "Digite o x1, y1, x2, y2");
+		if (regionrect)
+			regionrect := SplitWords(regionrect);
+			foreach spawn in (df.keys())
+				var spawnpoint := SystemFindObjectBySerial(spawn);
+				if ( (spawnpoint.x > Cint(regionrect[1])) && (spawnpoint.y > Cint(regionrect[2])) && (spawnpoint.x < Cint(regionrect[3]) ) && (spawnpoint.y < Cint(regionrect[4]) ) )
+					spawns.append(spawnpoint);
+				endif
+				sleepms(2);
+			endforeach
+		endif
+	elseif (type == 4) //Registrar
+		var npc_target := Target(who); //TGTOPT_CHECK_LOS+TGTOPT_HELPFUL);
+		var nome := GetObjProperty(npc_target, "nome_inicial");
+		if ( !npc_target.IsA(POLCLASS_MOBILE) || nome )
+		SendSysMessageEx(who, "Isso nao eh um alvo valido! Somente npcs!", SSM_FAIL);
+		return;
+		endif
+		var rect :=  RequestGump(who, "Qual o povo do npc? (exp.: zharkiano, aquilrano, numajene, vanirio, asanita, thuriao, outros, etc)");
+		var spawn_serial := Cint(npc_target.serial);
+		foreach spawn in (df.keys())
+			var summon_find := SystemFindObjectBySerial(spawn);
+			var spawnpoint := Cint(spawn);
+			if (spawnpoint == error)
+				df.deleteElement(spawn);
+			else
+				spawns.append(spawnpoint);
+			endif
+			sleepms(2);
+		endforeach
+		var mina := df.createelement(""+Cint(spawn_serial));
+		mina.setprop("Povo", rect);
+		//mina.setprop("Index",number);
+		sleepms(2);
+		SendSysMessageEx(who, "Npc registrado com sucesso!", SSM_INFO);
+		createSpawngump(who, 1);
+		return;
+	elseif (oldspawns && start && end)
+		spawns.clear();
+		var k := start;
+		while (k <= end)
+			spawns.append(oldspawns[k]);
+			k := k + 1;
+			sleepms(2);
+		endwhile
+	endif
+
+	if (spawns.size() > 110)
+		createSpawngump(who, 100, spawns, 1, 100);
+		return 1;
+	endif
+
+	var gump := GFCreateGump();
+
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 470);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 440);
+	GFTextMid(gump, 15, 50, 620, 1153, "SUMMONS <basefont color=#34eb7a> (.summon serial para summon imediato)");
+
+	GFPage(gump, 0);
+	GFTextLine(gump, 40, 70, 1153, "Listar todos");
+	GFTextLine(gump, 40, 85, 1153, "Listar por povo");
+	GFTextLine(gump, 40, 100, 1153, "Listar por regiao");
+	GFTextLine(gump, 40, 115, 1153, "Registrar um Npc");
+	//GFTextLine(gump, 40, 130, 1153, "Listar por tipo de npc");
+
+	//GFTextLine(gump, 200, 70, 1153, "Carregar todos summons");
+	GFTextLine(gump, 200, 85, 1153, "Summonar selecionado(s)");
+	GFTextLine(gump, 200, 100, 1153, "Deletar/MATAR o(s) Npc(s)");
+	if (oldspawns)
+		GFTextLine(gump, 200, 115, 1153, "Exibindo: " + start +" ate " + end +" de "+ oldspawns.size() );
+	endif
+
+	if (oldspawns)
+		GFTextLine(gump, 200, 130, 1153, "Next 100 " );
+		GFTextLine(gump, 300, 130, 1153, "Prev 100 " );
+		GFAddButton( gump, 180, 133, 2103, 2104, 1, 9);
+		GFAddButton( gump, 280, 133, 2103, 2104, 1, 10);
+	endif
+
+	GFTextLine(gump, 40, 145, 1153, "Spawn");
+	GFTextLine(gump, 140, 145, 1153, "Povo");
+//	GFTextLine(gump, 170, 145, 1153, "Min");
+	GFTextLine(gump, 200, 145, 1153, "Serial");
+//	GFTextLine(gump, 230, 145, 1153, "Amt");
+	GFTextLine(gump, 260, 145, 1153, "X Y Z");
+
+	GFAddButton( gump, 20, 73, 2103, 2104, 1, 1);//Listar todos
+	GFAddButton( gump, 20, 88, 2103, 2104, 1, 2); //listar por povo
+	GFAddButton( gump, 20, 103, 2103, 2104, 1, 3); //listar por region
+	GFAddButton( gump, 20, 118, 2103, 2104, 1, 4); //Registrar npc
+	//GFAddButton( gump, 20, 133, 2103, 2104, 1, 5);
+
+	//GFAddButton( gump, 180, 73, 2103, 2104, 1, 6); //carregar todos os npcs
+	GFAddButton( gump, 180, 88, 2103, 2104, 1, 7); // Spawnar
+	GFAddButton( gump, 180, 103, 2103, 2104, 1, 8); //Deletar npcs selecionados
+
+	var x := 40;
+	var y := 160;
+	var i := 1;
+	var pagecount := 0;
+	var page := 1;
+	GFSetRadioGroup(gump, 1);
+	GFPage(gump, 1);
+	foreach spawn in spawns
+
+
+	var cp_elem:= DFFindElement(df, spawn);
+    var elem := dfgetprop(cp_elem, "Povo");
+	var summon := dfgetprop(cp_elem, "Serial");
+	var spawnpoint := SystemFindObjectBySerial(spawn);
+		GFTextLine(gump, x, y, 1153, ""+spawnpoint.name);
+		//mina.setprop("Povo", rect);
+		GFTextLine(gump, x+100, y, 1153, ""+elem);
+//		GFTextLine(gump, x+130, y, 1153, ""+elem);
+		GFTextLine(gump, x+160, y, 1153, ""+spawn);
+//		GFTextLine(gump, x+190, y, 1153, ""+GetObjProperty(spawn, "Amount"));
+		GFTextLine(gump, x+220, y, 1153, ""+spawnpoint.x + " " +spawnpoint.y+ " " +spawnpoint.z);
+		GFAddButton( gump, x+210, y+3, 2103, 2104, 1, 1000+i);
+		GFCheckBox( gump, 20, y+3, 2362, 2360, 0, 100+i);
+		y := y + 15;
+		i := i +1;
+		pagecount := pagecount + 1;
+		if (pagecount == 21)
+			y := 160;
+			pagecount := 0;
+			page := page+1;
+			GFAddButton(gump, 350, 470, 2437, 2437, GF_PAGE_BTN, page);
+			GFPage(gump, page);
+			GFAddButton(gump, 350, 160, 2436, 2436, GF_PAGE_BTN, page-1);
+		endif
+		if (i == 100)
+
+		endif
+		sleepms(2);
+	endforeach
+
+	SendSysMessage(who, "Total de npcs registrados: " + spawns.size());
+
+	var result := GFSendGump(who, gump);
+	if (result[0])
+		if (result[0] == 6)
+			if (who.cmdlevel < 4)
+				SendSysMessage(who, "Você nao pode fazer isso.");
+				return;
+			endif
+			var carrega := yesno(who, "Carregar todos os npcs pode demorar. Deseja fazer isso?");
+			if (carrega)
+				var list := ListObjectsInBox( 1,1, -128, 6140, 4090, 128, who.realm);
+				foreach x in list
+					if (x.objtype == 41985)
+						if (!df.FindElement(x.serial))
+							df.CreateElement(x.serial);
+							sleepms(2);
+						endif
+					endif
+				endforeach
+			endif
+		elseif (result[0] == 7) //FAZER SUMMON
+			var modificar := array;
+			foreach key in (result.keys)
+				if (key >= 100)
+					if (spawns[key-100]  )
+						modificar.append(spawns[key-100]);
+					endif
+				endif
+			endforeach
+
+			var result := CheckBoxGump(who, 150, 200, "Opcoes de Summon", {"Invisivel","Freeze"});
+				var opt1;
+				var opt2;
+				foreach r in result
+					if (r == "Invisivel")
+						opt1 := 1;
+					elseif (r ==  "Freeze")
+						opt2 := 1;
+					endif
+				endforeach
+
+			foreach serial_npc in modificar
+				GetNpcBySerial(who, serial_npc, opt1, opt2, 0);
+			endforeach
+		elseif (result[0] == 8 )//deletar
+			var modificar := array;
+			foreach key in (result.keys)
+				if (key >= 100)
+					if (spawns[key-100]  )
+						modificar.append(spawns[key-100]);
+					endif
+				endif
+			endforeach
+				foreach x in modificar
+	var kill := SystemFindObjectBySerial(x);
+	kill.Disable("invul");
+	SetObjProperty(kill, "GuardKill", 1);
+	ApplyRawDamage(kill, CInt(AP_GetVitalMaximumValue(kill, "Hits")));
+	SendSysMessageEx(who, "Npc(s) deletado/morto(s) com sucesso!", SSM_INFO);
+				endforeach
+		elseif (result[0] == 9 ) //next
+			var newstart := start + 100;
+			var newend := end + 100;
+			if ( newend > oldspawns.size() )
+				newend := oldspawns.size();
+			endif
+			if (newstart > oldspawns.size())
+				newstart := start;
+			endif
+			createSpawngump(who, 100, oldspawns, newstart, newend);
+			return 1;
+		elseif (result[0] == 10) //previou
+			var newstart := start - 100;
+			var newend := newstart + 99;
+			if (newstart < 0)
+				newstart := 0;
+			endif
+			if (newend > oldspawns.size())
+				newend := oldspawns.size();
+			endif
+			createSpawngump(who, 100, oldspawns, newstart, newend);
+			return 1;
+		elseif( result[0] >= 1000)
+			MoveObjectToLocation( who, SystemFindObjectBySerial(spawns[result[0]-1000]).x, SystemFindObjectBySerial(spawns[result[0]-1000]).y, SystemFindObjectBySerial(spawns[result[0]-1000]).z, SystemFindObjectBySerial(spawns[result[0]-1000]).realm, MOVEOBJECT_FORCELOCATION );
+		else
+			CreateSpawnGump(who, result[0]);
+		endif
+	endif
+
+endfunction
+
+function GetNpcBySerial(who, serial_npc, opt1, opt2, opt3)
+var npc_summon := SystemFindObjectBySerial(serial_npc);
+
+if (opt1 == 1)
+npc_summon.concealed := 1;
+else
+endif
+
+if (opt2 == 1)
+npc_summon.frozen := 1;
+else
+endif
+
+if (opt3 == 1)
+var result := CheckBoxGump(who, 150, 200, "Opcoes de Summon", {"Invisivel","Freeze"});
+foreach r in result
+		if (r == "Invisivel")
+			npc_summon.concealed := 1;
+		elseif (r ==  "Freeze")
+			npc_summon.frozen := 1;
+		endif
+	endforeach
+endif
+MoveObjectToLocation( npc_summon, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+
+endfunction

@@ -1,0 +1,24 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	if (!who.npctemplate);
+		SetObjProperty(who, "#RealColor", who.color);
+		who.color := 986;
+	endif		
+	
+	SendSysMessage(who, "Voce sente fraqueza e odor de morte no seu corpo", 3, 0);
+	SetObjProperty(who, "apodrecer", 1 );
+	
+	return 1;
+endprogram
+
+ 

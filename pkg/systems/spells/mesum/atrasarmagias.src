@@ -1,0 +1,30 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	TS_StartTimer(who, "atrasarmagias", cint(AP_GetSkill(who, MAGICLORE)) / 2, AP_GetSkill(who, MAGICLORE)*20, who, 0); //20 min
+	if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, 385);
+    endif
+    SendSysMessageEx(targ, "Voce se sente mais fraco.", SSM_INFO);
+	Corromper(who, 17, targ);
+
+	if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+	
+	return 1;
+endprogram 

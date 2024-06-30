@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_fascinar_end(alvo)
+	Set_Critical(1);
+	alvo.paralyzed := 0;
+	EraseObjProperty(alvo, "#Bard_fascinar");
+	Set_Critical(0);
+	SendSysMessage(alvo, "A fascinacao passou.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	return 1;
+endprogram

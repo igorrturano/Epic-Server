@@ -1,0 +1,37 @@
+use uo;
+
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":merchants:item_template";
+include ":tn:boss";
+
+program motherbrain(who)
+
+	var motherdata := OpenDataFile( ":tn:objetivos" );
+	if (motherdata == error)
+		motherdata := CreateDataFile( ":tn:objetivos", DF_KEYTYPE_STRING );
+	endif
+
+	var obj := struct;
+
+	obj.+name := RequestGump(who, "Escreva o nome do objetivo (o nome nao pode ser o mesmo dos existentes):", "", "", 1);
+	obj.+type := RadioGump(who, 400, 380, "Escolha o tipo do objetivo.", array{"Guerra", "Magia", "Crafting", "Farm"});
+
+	var loc := RequestGump(who, "Escreva as coordenadas x y z do objetivo", "", "", 1);
+	loc := SplitWords(loc);
+	obj.+x := loc[1];
+	obj.+y := loc[2];
+	obj.+z := loc[3];
+	obj.+conquistador := "";
+
+	var elem := motherdata.CreateElement(obj.name);
+	var ret := elem.setprop("objinfo", obj);
+	if (ret != error)
+		SendSysMessage(who, "Novo objetivo adicionado com sucesso.");
+	else
+		SendSysMessage(who, "Erro ao adicionar objetivo: " + ret);
+	endif
+
+endprogram

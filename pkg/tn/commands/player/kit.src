@@ -1,0 +1,69 @@
+
+use uo;
+use vitals;
+use math;
+
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":spells:tnmagery";
+
+program kit(who)
+
+	if ( GetObjProperty(who, "kit") == "movidopelahonra")
+		SetObjProperty(who, "kit", "movidopelagloria");
+	endif
+
+	if ( GetObjProperty(who, "kit") == "movidopelacompaixao")
+		var lastuse := Cint(GetObjProperty(who, "curamao"));
+		if ( lastuse != 0)
+			if ( readGameClock() >= lastuse + 1800 )
+				SetObjProperty(who, "lastuse", readgameclock());
+				healhand(who);
+			else
+				SendSysMessage(who, "Voce so pode usar esta habilidade depois de " + ( ((lastuse + 1800) - readgameclock())/60 )+ " minutos.");
+				return;
+			endif
+		else
+			SetObjProperty(who, "lastuse", readgameclock());
+			healhand(who);
+		endif
+	elseif ( GetObjProperty(who, "kit") == "movidopelagloria")
+		var lastuse := Cint(GetObjProperty(who, "curamao"));
+		if ( lastuse != 0)
+			if ( readGameClock() >= lastuse + 3600)
+				SetObjProperty(who, "lastuse", readgameclock());
+				TS_StartTimer(who, "gloria", 10);
+			else
+				SendSysMessage(who, "Voce so pode usar esta habilidade depois de " + ((lastuse+3600-readgameclock())/60) + " minutos.");
+				return;
+			endif
+		else
+			TS_StartTimer(who, "gloria", 10);
+			SetObjProperty(who, "lastuse", readgameclock());
+		endif
+	endif
+
+endprogram
+
+
+function healhand(who)
+	var alvo := Target(who);
+	SendSysMessage(who, "Quem voce deseja curar?");
+	if (distance(who, alvo) > 1)
+		SendSysMessage(who, "O alvo esta muito distante.");
+		return;
+	endif
+	if (alvo.warmode)
+		SendSysMessage(who, "O alvo esta muito agitado para ser curado agora.");
+		return;
+	endif
+	if (alvo == who)
+		SendSysMessage(who, "Voce nao pode curar a si mesmo.");
+		return;
+	endif
+	HealDamage(alvo, 50);
+	SetObjProperty(who, "curamao", ReadGameClock());
+endfunction

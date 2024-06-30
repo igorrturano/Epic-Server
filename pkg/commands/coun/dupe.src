@@ -1,0 +1,27 @@
+use uo;
+
+
+program textcmd_dupe( who )
+  var items;
+  var newitem;
+  var copyitem;
+  
+    SendSysMessage( who, "What do you want to dupe?" );
+
+    var what := Target( who, TGTOPT_NOCHECK_LOS );
+    
+    if (what.isA(POLCLASS_ITEM))
+      copyitem := CreateItemCopyAtLocation(who.x, who.y, who.z, what, who.realm);
+	  SetObjProperty(copyitem, "createdby", who.acctname + " " + who.name);
+	        
+      if (what.isA(POLCLASS_CONTAINER))
+        items := EnumerateItemsInContainer(what);
+        foreach item in items
+          newitem := CreateItemCopyAtLocation(who.x,who.y,who.z, item, who.realm);
+          MoveItemToContainer(newitem, copyitem, item.x, item.y);
+		  SetObjProperty(newitem, "createdby", who.acctname + " " + who.name);
+        endforeach
+     
+      endif
+    endif
+endprogram

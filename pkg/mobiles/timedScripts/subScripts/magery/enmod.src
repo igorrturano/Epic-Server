@@ -1,0 +1,33 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	var points := level;
+	
+	if (GetObjProperty(mobile, "enMod") != error)
+		return;
+	endif
+
+	if (GetObjProperty(mobile, "auraEnMod") != error)
+		mobile.resist_energy_mod := mobile.resist_energy_mod - GetObjProperty(mobile, "auraEnMod") + points;
+		SetObjProperty(mobile, "enMod", points);
+		EraseObjProperty(mobile, "auraEnMod");					
+	else
+		SetObjProperty(mobile, "enMod", points);
+		mobile.resist_energy_mod := mobile.resist_energy_mod + points;
+	endif
+	
+	//SetObjProperty(mobile, "enMod", points);
+	//mobile.resist_energy_mod := mobile.resist_energy_mod + points;	
+//	SetObjProperty(mobile, "EnergyResistMod", (cint(GetObjProperty(mobile, "EnergyResistMod" )) + points));
+	
+	return 1;
+endprogram
+

@@ -1,0 +1,182 @@
+use uo;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include "include/say";
+
+program skill_Stealth( who )
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if( GetEquipmentByLayer(who, 25) )
+		who.hidden := 0;
+		SendSysMessageEx(who, "Voce nao pode ficar furtivo montado!", SSM_FAIL);
+		return 0;
+	endif
+
+	/*
+	Como Stealth agora eh integrado, ele s� roda quando j� estiver em hiding mesmo
+	if ( !who.hidden )
+		var script := start_script(":hiding:hiding", who);
+		while ( script.pid )
+			sleepms(500);
+		endwhile
+		if (!who.hidden)
+			SendSysMessageEx(who, "Voce deve estar escondido para se mover furtivamente.", SSM_FAIL);
+			return;
+		endif
+	endif
+	*/
+
+	var skill := AP_GetSkill(who, SNEAK);
+	var skillTested := SNEAK;
+
+	if(getobjproperty(who, "metamorfose") != error)
+		skill := AP_GetSkill(who, MAGICLORE);
+		skillTested := MAGICLORE;
+	endif
+
+	if (temHabilidade(who, "Camuflagem"))
+		skill := AP_GetSkill(who, SURVIVAL);
+		if (skill < 50)
+			SendSysMessageEx(who, "Voce nao consegue se mover furtivamente!", SSM_FAIL);
+			return 0;
+		endif
+		skill := skill - 20;
+	endif
+
+	var baseSteps := qtdSteps(who, skill);
+    if (GetObjProperty(who, "chardata").trait == "Desapercebido")
+        baseSteps := Cint(baseSteps * 1.5);
+    endif
+
+	if (temHabilidade(who, "Furtividade Aprimorada"))
+		baseSteps:= baseSteps*2;
+	endif
+
+	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
+	var diff := 15 + atualStep * 10;
+	if (!temHabilidade(who, "Espionagem") || !temHabilidade(who, "Salto das Sombras"))
+		diff := diff + 50;
+	endif
+
+	if (temHabilidade(who, "Camuflagem"))
+		var region := GetRegionName(who);
+		if(region != "aghaja" && region != "zharkia")
+			diff := diff - 25;
+			if (diff <= 0)
+				diff := 5;
+			endif
+		endif
+			var check := SkillCheck(who, SURVIVAL, diff);
+			if( check > 0 )
+			who.stealthsteps := baseSteps;
+			SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
+
+				if (who.hidden == 1)
+					while (who.stealthsteps >= 1)
+						SendSysMessage(who, "Voce consegue dar aproximadamente "+who.stealthsteps+" passos escondido.");
+						sleep(3);
+						while (who.stealthsteps == 1)
+							SendSysMessage(who, "Seu proximo passo ira te revelar");
+							sleep(3);
+						endwhile
+					endwhile
+				endif
+
+				SetObjProperty(who, "#steathsteps", atualStep + 2);
+				return 1;
+			elseif (check >= -15)
+				SendSysMessageEx(who, "Voce falhou mas se manteve escondido.", SSM_FAIL);
+				return 0;
+			else
+				if (who.hidden)
+					SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
+					who.hidden := 0;
+					PrintText(who, "*aparece*");
+					var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
+					foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_NPC_ONLY)
+						if (GetObjProperty(monster, "guild"))
+							SendEvent(monster, struct{ "type" := 0x78460, source := who, "last_loc" := last_loc});
+						endif
+						sleepms(2);
+					endforeach
+				else
+					SendSysMessageEx(who, "Voce falhou.", SSM_FAIL);
+				endif
+				return 0;
+			endif
+	else
+		var check := SkillCheck(who, skillTested, diff);
+	if( check > 0 )
+		who.stealthsteps := baseSteps;
+		/*
+		Removido pois agora Furtividade Aprimorada � como se fosse pra habilitar Stealth e n�o mais dar bonus
+		if (temHabilidade(who, "Espionagem"))
+			var bonus := cint(who.stealthsteps * 0.5);
+			who.stealthsteps := who.stealthsteps + bonus;
+			SendSysMessageEx(who, "Voce ganhou " + bonus + " passos por sua furtividade aprimorada", SSM_INFO);
+		endif
+		*/
+		SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
+
+		if (who.hidden == 1)
+			while (who.stealthsteps >= 1)
+				SendSysMessage(who, "Voce consegue dar aproximadamente "+who.stealthsteps+" passos escondido.");
+				sleep(3);
+				while (who.stealthsteps == 1)
+					SendSysMessage(who, "Seu proximo passo ira te revelar");
+					sleep(3);
+				endwhile
+			endwhile
+		endif
+
+		SetObjProperty(who, "#steathsteps", atualStep + 2);
+		return 1;
+	elseif (check >= -15)
+		SendSysMessageEx(who, "Voce falhou mas se manteve escondido.", SSM_FAIL);
+		return 0;
+	else
+		if (who.hidden)
+			SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
+			who.hidden := 0;
+			PrintText(who, "*aparece*");
+			var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
+    		foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_NPC_ONLY)
+      			if (GetObjProperty(monster, "guild"))
+        			SendEvent(monster, struct{ "type" := 0x78460, source := who, "last_loc" := last_loc});
+      			endif
+		  		sleepms(2);
+	  		endforeach
+		else
+			SendSysMessageEx(who, "Voce falhou.", SSM_FAIL);
+		endif
+		return 0;
+	endif
+
+	endif
+
+
+endprogram
+
+function qtdSteps(who, skill)
+	if (skill >= 100)
+		return 15;
+	elseif (skill >= 90)
+		return 10;
+	elseif (skill >= 80)
+		return 9;
+	elseif (skill >= 70)
+		return 8;
+	elseif (skill >= 50)
+		return 6;
+	elseif (skill >= 40)
+		return 5;
+	elseif (skill >= 30)
+		return 4;
+	else
+		return 3;
+	endif
+endfunction

@@ -1,0 +1,50 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/tileEffects";
+include "include/sounds";
+var portal;
+
+program MultiPortalWalkOnScript(who, item)
+
+if(GetObjProperty(item,"aberto") == 1)
+    var portalNumber := GetObjProperty(item,"portalNumber");
+    var sourceColor := GetObjProperty(item,"sourceColor");
+
+	var x:=cint(GetObjProperty(item,"destinationX" + portalNumber));
+	var y:=cint(GetObjProperty(item,"destinationY" + portalNumber));
+	var z:=cint(GetObjProperty(item,"destinationZ" + portalNumber));
+
+	if(x == error)
+		SetObjProperty(item,"x",0);
+	endif
+
+
+	if(y == error)
+		SetObjProperty(item,"y",0);
+	endif
+
+	if(y == error)
+		SetObjProperty(item,"z",0);
+	endif
+	
+	if(GetObjProperty(item,"aberto") != 0)
+		MoveObjectToLocation(who, x, y, z, who.realm, MOVEOBJECT_FORCELOCATION);
+		PlaySoundEffect(who,SFX_SPELL_GATE_TRAVEL).
+		PlayStationaryEffect(x, y, z, FX_CURSE_EFFECT, 2, 150);
+
+		portal := CreateItemAtLocation(x, y, z, 8148, 1, realm := _DEFAULT_REALM );
+		portal.color := sourceColor;
+		sleep(4);
+		DestroyItem(portal);
+	else
+		return;
+	endif
+
+else
+	return;
+endif
+     
+
+endprogram

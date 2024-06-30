@@ -1,0 +1,16 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+	
+	var dmgbonus := Cdbl(GetObjProperty(mobile, "#dmgbonus"));
+	SetObjProperty(mobile, "#dmgbonus", dmgbonus - 0.2);
+
+	EraseObjProperty(mobile, "#heroismo");
+	
+	return 1;
+endprogram
+   

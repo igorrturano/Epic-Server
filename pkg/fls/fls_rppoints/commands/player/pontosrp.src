@@ -1,0 +1,417 @@
+use uo;
+use util;
+use file;
+include "include/client";
+include "include/say";
+include ":charactercreation:createchar";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":gumps:yesNo";
+include ":tn:tngumps";
+include ":attributes:attributes";
+include ":disguise:disguise";
+include ":crafting:craftingUtil";
+
+program CheckRPPoints(who, params)
+	params := splitwords(params);
+	var command := params[1];
+	var conta := params[2];
+
+	if (!command)
+		SendCheckRp(who, who.acctname);
+	else
+		If (!conta)
+			SendSysMessageEx(who, "Selecione o Jogador", SSM_INFO);
+			conta := target(who);
+			conta := conta.acctname;
+			if ((conta != who.acctname) && (who.cmdlevel == 0 ))
+			SendSysMessageEx(who, "Voce nao pode ver a ficha de outros", SSM_INFO);
+				return;
+			endif
+			if (!conta)
+				return;
+			endif
+		endif
+		if (conta == error)
+			return;
+		endif
+		SendCheckRp(who, conta);
+	endif
+endprogram
+
+function SendCheckRP(who, conta)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 25, 3600, 530, 400);
+
+	GFResizePic(gump, 15, 40, 0x13BE, 195, 145);
+	GFTextLine(gump, 20, 55, 1153, "Pontos RP Atuais:");
+	GFTextLine(gump, 165, 55, SSM_INFO, "" + getGrade(conta));
+
+//	GFResizePic(gump, 15, 75, 0x13BE, 195, 30);
+	GFTextLine(gump, 20, 90, 1153, "Recorde de Pontos RP:");
+	GFTextLine(gump, 165, 90, SSM_INFO, "" + getMaxGrade(conta));
+
+	if (CInt(findAccount(conta).GetProp("nota")) == 4)
+		GFTextLine(gump, 75, 125, 66, "+20 SKILLS!!!");
+	endif
+
+
+	GFAddButton(gump, 89, 158, 2128, 2129, GF_CLOSE_BTN, 0);
+
+	GFResizePic(gump, 215, 40, 0x13BE, 300, 145);
+	GFResizePic(gump, 215, 40, GFCfgConst("Backgrounds", "GOLDTRIM"), 300, 145);
+
+
+	var dialog := getGradeText(conta, "rplog");
+	GFHTMLArea(gump, 226, 51, 282, 123, dialog, 0, 1);
+
+	GFResizePic(gump, 15, 190, 0x13BE, 500, 220);
+//	GFGumpPic(gump, 240, 180, 0x756D);
+//	GFGumpPic(gump, 240, 392, 0x757D);
+
+	if (conta != who.acctname)
+		dialog := getGradeText(conta, "rpgasto");
+		//GFResizePic(gump, 20, 195, GFCfgConst("Backgrounds", "GOLDTRIM"), 492, 210);
+		GFHTMLArea(gump, 21, 210, 490, 180, dialog, 0, 1);
+	else
+		var x := 200;
+		GFTextLine(gump, 35, x, 1153, "[15] Aumentar 0.4 de uma Pericia Abaixo de 40.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 1);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[25] Aumentar 0.4 de uma Pericia entre 40 e 70.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 2);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[35] Aumentar 0.4 de uma Pericia Acima de 70.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 3);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[10] Mudar Cabelo, Barba e suas Cores. Corresponde ao seu povo.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 4);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[35] Mudar para qualquer Cabelo e Cores.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 7);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[200] Adicionar Nome e Descricao a um Objeto.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 5);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[30*Nivel] Adquirir um Pergaminho de Habilidade do Nivel Desejado.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 6);
+
+		x := x +20;
+		GFTextLine(gump, 35, x, 1153, "[600] Barganhar por um Objeto Especial de Roleplay.");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, 8);
+
+	endif
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] >= 1 && input[0] <= 15)
+		if ( !YesNo(who, "Deseja Mesmo Gastar Seus Pontos? Voce nao podera voltar atras.") )
+			return;
+		endif
+	endif
+
+	if (input[0] == 1)
+		if (CheckPoints(15, conta, who))
+			var chardata := GetObjProperty(who, "chardata");
+			var skill := RadioGump(who, 260, 200, "Escolha a pericia que deseja aumentar", chardata.Skills.keys());
+			if (AP_GetTrueSkill(who, skill) >= 40)
+				SendSysMessageEx(who, "Voce nao pode aumentar uma pericia maior que 40 dessa forma.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 0 && AP_GetTrueSkill(who, skill) >= 40)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 20 && AP_GetTrueSkill(who, skill) >= 70)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 40 && AP_GetTrueSkill(who, skill) >= 100)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(AP_GetTrueSkill(who, skill) + 0.4 > 40)
+                SendSysMessageEx(who, "Voce nao pode aumentar esta skill acima do cap.", SSM_FAIL);
+                return;
+			endif
+
+			var true_skill := AP_GetTrueSkill(who, skill);
+			var temp := true_skill+0.4;
+			AP_SetTrueSkill(who, skill, temp);
+			decGrade(who, 15);
+			MakeLog(conta, 15, "Aumentar Pericia", "Aumentou a Pericia " + skill);
+			SendSysMessageEx(who, "Voce aumentou sua skill de"+(AP_GetTrueSkill(who, skill) - 0.4)+" para "+AP_GetTrueSkill(who, skill),SSM_INFO);
+		endif
+	elseif (input[0] == 2)
+		if (CheckPoints(25, conta, who))
+			var chardata := GetObjProperty(who, "chardata");
+			var skill := RadioGump(who, 260, 200, "Escolha a pericia que deseja aumentar", chardata.Skills.keys());
+			if (AP_GetTrueSkill(who, skill) >= 70 || AP_GetTrueSkill(who, skill) <= 39.9)
+				SendSysMessageEx(who, "Voce nao pode aumentar uma pericia maior que 70 dessa forma.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 0 && AP_GetTrueSkill(who, skill) >= 40)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 20 && AP_GetTrueSkill(who, skill) >= 70)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 40 && AP_GetTrueSkill(who, skill) >= 100)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(AP_GetTrueSkill(who, skill) + 0.4 > 70)
+                SendSysMessageEx(who, "Voce nao pode aumentar esta skill acima do cap.", SSM_FAIL);
+                return;
+            endif
+			var true_skill := AP_GetTrueSkill(who, skill);
+			var temp := true_skill+0.4;
+			while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(who, skill)) )
+				// Kludge for an old core precision bug.
+				// Makes sure it always goes up atleast 0.1.
+				temp := temp+0.4;
+				sleepms(10);
+			endwhile
+			AP_SetTrueSkill(who, skill, temp);
+			decGrade(who, 25);
+			MakeLog(conta, 25, "Aumentar Pericia", "Aumentou a Pericia " + skill);
+			SendSysMessageEx(who, "Voce aumentou sua skill de "+(AP_GetTrueSkill(who, skill) - 0.4)+" para "+AP_GetTrueSkill(who, skill),SSM_INFO);
+		endif
+	elseif (input[0] == 3)
+		if (CheckPoints(35, conta, who))
+			var chardata := GetObjProperty(who, "chardata");
+			var skill := RadioGump(who, 260, 200, "Escolha a pericia que deseja aumentar", chardata.Skills.keys());
+			if (AP_GetTrueSkill(who, skill) >= 100 || AP_GetTrueSkill(who, skill) <= 70.9)
+				SendSysMessageEx(who, "Voce nao pode aumentar uma pericia maior que 100 dessa forma.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 0 && AP_GetTrueSkill(who, skill) >= 40)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 20 && AP_GetTrueSkill(who, skill) >= 70)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(chardata.Skills[skill] == 40 && AP_GetTrueSkill(who, skill) >= 100)
+				SendSysMessageEx(who, "Voce nao pode mais aumentar esta skill.", SSM_FAIL);
+				return;
+			elseif(AP_GetTrueSkill(who, skill) + 0.4 > 100)
+                SendSysMessageEx(who, "Voce nao pode aumentar esta skill acima do cap.", SSM_FAIL);
+                return;
+            endif
+			var true_skill := AP_GetTrueSkill(who, skill);
+			var temp := true_skill+0.4;
+			while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(who, skill)) )
+				// Kludge for an old core precision bug.
+				// Makes sure it always goes up atleast 0.1.
+				temp := temp+0.4;
+				sleepms(10);
+			endwhile
+			AP_SetTrueSkill(who, skill, temp);
+			decGrade(who, 35);
+			MakeLog(conta, 35, "Aumentar Pericia", "Aumentou a Pericia " + skill);
+			SendSysMessageEx(who, "Voce aumentou sua skill de "+(AP_GetTrueSkill(who, skill) - 0.4)+" para "+AP_GetTrueSkill(who, skill),SSM_INFO);
+		endif
+	elseif (input[0] == 4)
+		if (CheckPoints(10, conta, who))
+			Destroyitem(GetEquipmentByLayer(who, LAYER_HAIR));
+			DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+			var chardata := GetObjProperty(who, "chardata");
+			var disfarce := struct;
+			disfarce.+barba := "";
+			disfarce.+cabelo := "";
+			disfarce.+corcabelo := 1109;
+			disfarce.+corbarba := 1109;
+
+			escolherCabelo(who, disfarce, chardata.povo);
+			escolheCorCabelo(who, disfarce, 0, chardata.povo, 1);
+			if (chardata.raca != "Elfo")
+				escolherBarba(who, disfarce);
+			endif
+			var newbarba := CreateItemAtLocation(who.x, who.y, who.z, disfarce.barba, 1, who.realm);
+			newbarba.color := disfarce.corcabelo;
+
+			var newhair := CreateItemAtLocation(who.x, who.y, who.z, disfarce.cabelo, 1, who.realm);
+			newhair.color := disfarce.corcabelo;
+
+			EquipItem(who, newbarba);
+			EquipItem(who, newhair);
+
+			decGrade(who, 10);
+			MakeLog(conta, 10, "Trocar Barba/Cabelo", "");
+			SendSysMessageEx(who, "Voce trocou sua barba e cabelo.",SSM_INFO);
+		endif
+	elseif (input[0] == 5)
+		if (CheckPoints(200, conta, who))
+			var item;
+			while (1)
+				if (!item || !item.isA(POLCLASS_ITEM))
+					item := target(who);
+					SendSysMessageEx(who, "Voce DEVE escolher um objeto, nao pode cancelar agora.",SSM_INFO);
+				else
+					break;
+				endif
+			endwhile
+
+			var name := RequestGump(who, "Escreva o novo nome do item:");
+			SetName(item, name);
+			AddItemDescription(who, item);
+			UpdateItem(item);
+			decGrade(who, 200);
+			MakeLog(conta, 200, "Adicionar Nome/Descricao", "Nome "+name);
+			SendSysMessageEx(who, "Voce trocou nome e descricao do objeto.",SSM_INFO);
+		endif
+	elseif (input[0] == 6)
+		var diff := cint(RadioGump(who, 260, 200, "Escolha o Nivel do Pergaminho que deseja receber", array{"2","4","6"}));
+		diff := diff * 30;
+		if (CheckPoints(diff, conta, who))
+			diff := diff / 30;
+			var pergaminho;
+			if (diff == 2)
+				pergaminho := 0x6157;
+			elseif (diff == 4)
+				pergaminho := 0x6158;
+			elseif (diff == 6)
+				pergaminho := 0x6159;
+			endif
+			pergaminho := CreateItemInBackpack( who, pergaminho, 1);
+			if (!pergaminho)
+				SendSysMessageEx(who, "Algo aconteceu e seu pergaminho nao foi entregue",SSM_FAIL);
+			else
+				SetObjProperty(pergaminho, "PontosRP", (diff *10));
+				SendSysMessageEx(who, "O Pergaminho foi colocado na sua bolsa. Qualquer problema com ele, agora, e de sua responsabilidade.",SSM_INFO);
+				diff := diff * 30;
+				decGrade(who, diff);
+				MakeLog(conta, diff, "Comprou Pergaminho ", "Nivel "+(diff/30));
+			endif
+		endif
+	//elseif (input[0] == 7)
+		//if (CheckPoints(100, conta, who))
+
+		//endif
+	elseif (input[0] == 7)
+		if (CheckPoints(35, conta, who))
+			Destroyitem(GetEquipmentByLayer(who, LAYER_HAIR));
+			DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+			var chardata := GetObjProperty(who, "chardata");
+			var disfarce := struct;
+			disfarce.+barba := "";
+			disfarce.+cabelo := "";
+			disfarce.+corcabelo := 1109;
+			disfarce.+corbarba := 1109;
+
+			escolherCabelo(who, disfarce, "Qualquer");
+			escolheCorCabelo(who, disfarce, 0, "Qualquer", 1);
+			if (chardata.raca != "Elfo")
+				escolherBarba(who, disfarce);
+			endif
+			var newbarba := CreateItemAtLocation(who.x, who.y, who.z, disfarce.barba, 1, who.realm);
+			newbarba.color := disfarce.corcabelo;
+
+			var newhair := CreateItemAtLocation(who.x, who.y, who.z, disfarce.cabelo, 1, who.realm);
+			newhair.color := disfarce.corcabelo;
+
+			EquipItem(who, newbarba);
+			EquipItem(who, newhair);
+
+			decGrade(who, 35);
+			MakeLog(conta, 35, "Trocar Cabelo/Cor sem restricao.", "");
+			SendSysMessageEx(who, "Voce trocou seu cabelo e cor.",SSM_INFO);
+		endif
+
+		
+	elseif (input[0] == 8)
+		if (CheckPoints(600, conta, who))
+
+		endif
+	elseif (input[0] == 9)
+		if (CheckPoints(200, conta, who))
+			/*
+			if (findAccount(conta).GetProp("nota") == 2)
+				SendSysMessageEx(who, "Voce ja tem bonus no proximo personagem", SSM_FAIL);
+			else
+				findAccount(conta).setprop("nota", 2);
+				SendSysMessageEx(who, "O proximo personagem criado na sua conta recebera bonus nas Skills.",SSM_INFO);
+				decGrade(who, 200);
+				MakeLog(conta, 200, "Personagem Com Bonus nas Skills", "Data "+StrFormatTime("%d - %m - %Y", POLCore().systime));
+			endif
+			*/
+		endif
+	endif
+
+	if (input[0] >= 1 && input[0] <= 15)
+		SendCheckRP(who, conta);
+	endif
+
+endfunction
+
+function CheckPoints(cpts, conta, who)
+		var pts := getGrade(conta);
+		if (pts >= cpts)
+			return 1;
+		endif
+		SendSysMessageEx(who, "Voce nao tem pontos suficientes para gastar",SSM_FAIL);
+		return 0;
+endfunction
+
+function MakeLog(accname, pts, type, complement)
+
+	var acc := FindAccount(accname);
+	var msg := "- Gastou "+pts+" com "+type+": "+complement;
+	if (acc)
+		var logs := acc.getprop("rpgasto");
+		if (logs == error)
+			logs := array;
+		endif
+		logs.append(msg);
+		acc.setprop("rpgasto", logs);
+	endif
+
+endfunction
+
+function getGradeText(acctname, area)
+	var text_lines := FindAccount(acctname).getprop(area);
+	var dialog := "";
+
+	foreach line in text_lines
+		dialog := dialog+line+"\n\n";
+		sleepms(5);
+	endforeach
+
+	if (!dialog)
+		dialog := "Voce nunca recebeu Pontos de RP";
+	endif
+
+	return dialog;
+endfunction
+
+
+
+function getGrade(acctname)
+
+	return cint(FindAccount(acctname).getprop("RPpoints"));
+
+endfunction
+function getMaxGrade(acctname)
+
+	return cint(FindAccount(acctname).getprop("RPpointsMAX"));
+
+endfunction
+
+function setGrade(acctname, nota)
+
+	findAccount(acctname).setProp("RPpoints", nota);
+
+endfunction
+
+function decGrade(who, incnota)
+
+	var nota := getGrade(who.acctname);
+	if (nota)
+		nota := nota - cint(incnota);
+	else
+		nota := 1;
+	endif
+
+	setGrade(who.acctname, nota);
+
+endfunction

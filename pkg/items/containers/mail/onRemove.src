@@ -1,0 +1,27 @@
+/*
+ *
+ */
+
+use uo;
+use os;
+include "include/say";
+
+program onRemove(character, container, item, item_amount, movetype)
+	var pagamento := CInt(GetObjProperty(container, "pagamento"));
+	var pago;
+
+	if (container.color == 2123)
+		pago := 1;
+	else
+		pago := 0;
+	endif
+
+	if (pagamento && pago)
+		if (item.objtype == 47715)
+			SendSysMessageEx(character, "Voce removeu o pagamento!", SSM_FAIL);
+			container.color := 2117;
+		endif
+	endif
+
+	return 1;
+endprogram

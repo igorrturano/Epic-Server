@@ -1,0 +1,18 @@
+include "include/damage";
+use uo;
+
+program split(who, item)
+	var opened;
+	
+	if (item.objtype == 0x1726)
+		opened := 0x1725;
+	endif
+	SendSysMessage(who, "Voce abre o coco.");
+	playsoundeffect (who, 0x58);
+	if (!item.container)
+		createitematlocation(item.x, item.y, item.z, opened, 1);
+	else
+		createitemincontainer(item.container, opened);
+	endif
+	destroyitem(item);
+endprogram

@@ -1,0 +1,107 @@
+use uo;
+use vitals;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":taming:taming";
+include ":tn:combat";
+
+function golpeseispolegadas(who, dist, delay, attacker)
+
+	var x := 0;
+	var y := 0;
+
+	if (who.facing == 0)
+		y :=  1;
+	elseif (who.facing == 1)
+		y :=  1;
+		x := - 1;
+	elseif (who.facing == 2)
+		x :=  - 1;
+	elseif (who.facing == 3)
+		x :=  - 1;
+		y :=  - 1;
+	elseif (who.facing == 4)
+		y :=  - 1;
+	elseif (who.facing == 5)
+		x :=   1;
+		y :=  - 1;
+	elseif (who.facing == 6)
+		x :=   1;
+	elseif (who.facing == 7)
+		x :=  1;
+		y :=  1;
+	endif
+    var dmg := CInt(AP_GetSkill(attacker, TACTICS) / 2 );
+	var i := 0;
+    SetObjProperty(attacker, "#attackbonus", 100);
+    attacker.attack_once(who);
+
+    PlaySoundEffect(attacker, 0x50F);
+	
+	for( i := 1; i <= dist; i := i + 1)
+		var finalx := (who.x + x);
+		var finaly := (who.y + y);
+		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm );
+		sleepms(delay);
+		if (err == error)
+            damageFLS(who, cint(dmg), DMG_FORCED, attacker);
+			PrintText(who, "*bate no obstaculo*");
+			break;
+		endif
+	endfor
+
+	//calculo damage
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var basedamage := CalculateRawDamage(attacker, attacker.weapon);
+    var distancia := GetCoordsInLine(attacker.x, attacker.y, who.x + dist, who.y + dist);
+
+	//lista inimigos e aplica dano
+	var alreadydamaged := array{};
+	foreach pontos in distancia
+		var mobiles := ListMobilesNearLocation(pontos.x, pontos.y, attacker.z, 1, attacker.realm);
+		var allPets := array{};
+		var party_members := attacker.party.members;
+
+		if (who.party)
+			foreach member in party_members
+				if (member != attacker)
+					var memberObj := SystemFindObjectBySerial(member.serial);
+					var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+					foreach pet in allPetsAndSummonedPets
+							allPets.append(pet);
+					endforeach
+				endif
+			endforeach
+		endif
+
+		foreach mobile in mobiles
+			if (!(mobile.serial in alreadydamaged) && (mobile != attacker) && !(mobile in attacker.party.members) && !(mobile in allPets ))
+				alreadydamaged.Append(mobile.serial);
+				var total := cint(CalculateTotalDamage(mobile, basedamage, attacker, dmgList));
+				DamageFLS(mobile, total*4, DMG_FORCED, attacker);
+			endif
+			sleepms(20);
+		endforeach
+		sleepms(20);
+	endforeach
+
+endfunction
+
+program HitScript(params)
+
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	params := 0; // Not needed anymore.
+
+
+    var dist := CInt(AP_GetSkill(attacker, TACTICS) / 12 );
+    golpeseispolegadas(defender, dist, 300, attacker);
+	
+	return 1;
+endprogram
+
+

@@ -1,0 +1,30 @@
+use uo;
+use util;
+use vitals;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include "include/client";
+include ":mounts:mounts";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	//var weapon	:= params[3];
+	//var armor	:= params[4];
+	//var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+	var penal := AP_GetStatMod(attacker, "Dexterity");
+	if (penal >= 0)
+		var dmg := rawdamage/4;
+		//ApplyRawDamage(defender, CInt(dmg));
+		DamageFLS(defender, dmg, DMG_FORCED, attacker);
+	endif
+
+	return 1;
+endprogram

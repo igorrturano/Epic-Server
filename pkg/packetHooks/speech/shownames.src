@@ -1,0 +1,67 @@
+use uo;
+
+program speechHook()
+  Print("SystemHook: Hooking Shownames.");
+  return 1;
+endprogram
+
+const ITEM_ID := 3;
+const TEXT_TYPE := 9;
+const NAME := 14; //posição do Name de quem fala
+const SYS_MSG := 0x06;
+
+//Show names of incoming mobiles
+exported function handeSendSpeech(who, byref packet)
+
+	if(packet.GetInt8(TEXT_TYPE) == SYS_MSG)
+		var obj := SystemFindObjectBySerial(packet.GetInt32(ITEM_ID));
+    		If(obj.IsA(POLCLASS_MOBILE)) // Se for um mobile, não exibe o nome
+			return 1;
+		endif
+	endif
+
+	/*
+	var type := packet.GetInt8(TEXT_TYPE);
+
+	var serial := packet.GetInt32(ITEM_ID);
+	var source := SystemFindObjectBySerial(serial);
+
+	var length_of_text := ( packet.GetInt16(1) - 49 ) / 2;
+	var message_txt := packet.GetUnicodeString(48, length_of_text);
+
+
+	SendSysMessage(source,"cmd "+ packet.GetInt8(0));
+	SendSysMessage(source,"Packet len "+ packet.GetInt16(1));
+	SendSysMessage(source,"itemID "+ packet.GetInt32(3));
+	SendSysMessage(source,"model "+ packet.GetInt16(7));
+	SendSysMessage(source,"type "+ packet.GetInt8(8));
+	SendSysMessage(source,"Text Color "+ packet.GetInt16(10));
+	SendSysMessage(source,"Font "+ packet.GetInt16(12));
+	//SendSysMessage(source,"Language "+ packet.GetString(14,4));
+	SendSysMessage(source,"Name "+ packet.GetString(14, 30));
+	SendSysMessage(source,"msg "+ packet.GetUnicodeString(44,length_of_text));
+
+	//var tamanho := packet.GetInt16(1)-30+nome.size();
+
+	//SendSysMessage(source,tamanho);
+	//packet.SetInt16(1,tamanho);
+
+	packet.SetString(14, "Teste",1);
+
+	SendSysMessage(source,"ZZZZZZZZZZZZZZZZZZZZZZZ");
+
+
+	SendSysMessage(source,"cmd "+ packet.GetInt8(0));
+	SendSysMessage(source,"Packet len "+ packet.GetInt16(1));
+	SendSysMessage(source,"itemID "+ packet.GetInt32(3));
+	SendSysMessage(source,"model "+ packet.GetInt16(7));
+	SendSysMessage(source,"type "+ packet.GetInt8(8));
+	SendSysMessage(source,"Text Color "+ packet.GetInt16(10));
+	SendSysMessage(source,"Font "+ packet.GetInt16(12));
+	//SendSysMessage(source,"Language "+ packet.GetString(14,4));
+	SendSysMessage(source,"Name "+ packet.GetString(14, 30));
+	SendSysMessage(source,"msg "+ packet.GetUnicodeString(44,length_of_text));
+
+	return 0;
+	*/
+endfunction

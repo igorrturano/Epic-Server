@@ -1,0 +1,73 @@
+use uo;
+
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include "include/say";
+
+
+program map(who)
+
+	SendSysMessageEx(who, "Selecione o mapa.", SSM_REQUEST);
+	var map := Target(who);
+	if (!map.isa(POLCLASS_MAP))
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	SendPinInfoGump(who, map);
+
+endprogram
+
+function SendPinInfoGump(who,  map)
+
+	var gumpRP := GFCreateGump();
+	GFClosable(gumpRP, 1);
+	GFDisposable(gumpRP, 0);
+
+	GFResizePic(gumpRP, 0, 25, 0x13BE, 300, 380);
+	GFResizePic(gumpRP, 15, 40, 0xBB8, 270, 350);
+	GFTextMid(gumpRP, 15, 45, 270, 55, "Marcadores no Mapa");
+
+	var y := 75;
+	var pininfo := GetObjProperty(map, "pininfo");
+	var id := 1;
+	foreach pin in (map.getpins())
+		var name := pininfo[id].name;
+		if (name == error)
+			name := "Marca sem nome";
+		endif
+		GFTexTLine(gumpRP,  30, y, 270, id +  ": " + name);
+		GFAddButton(gumpRP, 210, y,  4011, 4012, GF_CLOSE_BTN, (100+id) );
+		GFAddButton(gumpRP, 245, y,  4017, 4018, GF_CLOSE_BTN, (200+id) );
+		y := y + 20;
+		id := id + 1;
+	endforeach
+
+	var input := GFSendGump(who, gumpRP);
+
+	if (input[0] > 200 )
+		map.erasepin(input[0]-201);
+		sendsysmessage(who, "Deletando marca " + (input[0]-200));
+		var newpininfo := dictionary;
+		var delpin := input[0]-200;
+		foreach pin in (pininfo.keys())
+			if (pin < delpin)
+				newpininfo[pin] := pininfo[pin];
+			else
+				if (pin != delpin)
+					newpininfo[pin-1] := pininfo[pin];
+				endif
+			endif
+		endforeach
+		SetObjProperty(map, "pininfo", newpininfo);
+
+	elseif (input[0] > 100)
+		var nome := RequestGump(who, "Digite o nome dessa marca.");
+		pininfo[input[0]-100].name := nome;
+		SetObjProperty(map, "pininfo", pininfo);
+		SendSysMessage(who, "Nome alterado.");
+	endif
+
+endfunction

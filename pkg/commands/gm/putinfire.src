@@ -1,0 +1,106 @@
+/*
+ * $Id: checkacc.src 87 2012-04-02 19:04:43Z Duttones $
+ *
+ */
+use uo;
+use os;
+use unicode;
+
+include ":attributes:attributes";
+
+program textcmd_putinfire(who)
+	SendSysMessage( who, "Onde voce deseja botar fogo?" );
+	
+	var targ := Target( who );
+	
+	if ( targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Cancelled.");
+		return 0;
+	endif
+	
+	PutFire(targ);
+
+	return 1;
+endprogram
+
+function PutFire(targ)
+
+	PrintTextAbove(targ, "*Pegando fogo*");
+	var objtype;
+	if (RandomInt(2) == 1)
+		objtype := RandomIntMinMax(14732,14737);
+	else
+		objtype := RandomIntMinMax(14742,14747);
+		if (objtype == 14744)
+			objtype := 14742;
+		endif
+	endif
+	
+	var fogo := CreateItemAtLocation( targ.x, targ.y, targ.z, objtype, 1, targ.realm );
+	sleep(80);
+	if (fogo)
+		Alastrar(fogo);
+		var Itens := ListItemsNearLocation( targ.x, targ.y, targ.z, 1, targ.realm);
+		if (RandomInt(2) == 1)
+			PrintTextAbove(targ, "*Objeto foi destruido pelo fogo*");
+			DestroyItem(targ);
+		else
+			targ.color := 2887;
+			var name;
+			if ( targ.name )
+				name := targ.name;
+			else
+				name := targ.desc;
+			endif
+			SetName(targ, "" + name + " Queimado");
+		endif
+		if (Itens[1])
+				PutFire(Itens[RandomInt(Itens.Size())]);
+		endif
+		sleep(20);
+				DestroyItem(fogo);
+	endif
+
+endfunction
+
+function Alastrar(fogo)
+
+	var objtype;
+	if (RandomInt(2) == 1)
+		objtype := RandomIntMinMax(14732,14737);
+	else
+		objtype := RandomIntMinMax(14742,14747);
+		if (objtype == 14744)
+			objtype := 14742;
+		endif
+	endif
+
+	var i := RandomInt(4);
+	var fogo2;
+
+	case(i)
+	1:
+	fogo2 := CreateItemAtLocation( fogo.x+1, fogo.y+1, fogo.z, objtype, 1, fogo.realm );
+	2:
+	fogo2 := CreateItemAtLocation( fogo.x+1, fogo.y-1, fogo.z, objtype, 1, fogo.realm );
+	3:
+	fogo2 := CreateItemAtLocation( fogo.x-1, fogo.y+1, fogo.z, objtype, 1, fogo.realm );
+	4:
+	fogo2 := CreateItemAtLocation( fogo.x-1, fogo.y-1, fogo.z, objtype, 1, fogo.realm );
+	endcase
+
+	PrintTextAbove(fogo2, "*Pegando fogo*");
+	sleep(80);
+
+	if (fogo2)
+		Alastrar(fogo2);
+		var itens := ListItemsNearLocation(fogo2.x, fogo2.y, fogo2.z, 1, fogo2.realm);
+			if (Itens[1])
+				PutFire(Itens[RandomInt(Itens.Size())]);
+			endif
+		sleep(20);
+		DestroyItem(fogo2);
+
+	endif
+
+endfunction

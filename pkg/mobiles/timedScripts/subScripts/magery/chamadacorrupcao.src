@@ -1,0 +1,22 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/damage";
+
+use vitals;
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+
+	var lvl := cInt(GetObjProperty(mobile, "corruption")/500);
+	var mlore := AP_GetSkillMod(mobile, MAGICLORE);
+	SetObjProperty(mobile, "chamadacorrupcao", lvl);
+	var bonus := lvl + mlore;
+	AP_SetSkillMod(mobile, MAGICLORE, bonus);
+
+
+	return 1;
+endprogram

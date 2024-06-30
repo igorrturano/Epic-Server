@@ -1,0 +1,55 @@
+use uo;
+use util;
+use vitals;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include ":brainAI:npcUtil";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	//var armor	:= params[4];
+	//var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	
+	if (!GetObjProperty(weapon, "slayer"))
+		var categorias := array{"Dragon","Undead","Giants","GiantAnimal","EvilHuman","Goblin", "Underdark"};
+		var selected := categorias[RandomIntMinMax(1,6)];
+		SetObjProperty(weapon, "slayer", selected);
+				case(selected)
+				"Dragon":
+				SetObjProperty(weapon, "description", "Empunhadura de osso de draconiano");
+				"Undead":
+				SetObjProperty(weapon, "description", "Empunhadura entalhada num femur");
+				"Giants":
+				SetObjProperty(weapon, "description", "Empunhadura esculpida da falange de um gigante");
+				"GiantAnimal":
+				SetObjProperty(weapon, "description", "Empunhadura decorada com enormes vertebras animais");
+				"EvilHuman":
+				SetObjProperty(weapon, "description", "Empunhadura esculpida num osso humano");
+				"Goblin":
+				SetObjProperty(weapon, "description", "Empunhadura entalhada num osso goblinoide");
+                "Underdark": 
+                SetObjProperty(weapon, "description", "Empunhadura entalhada num osso negro");
+			endcase
+	endif
+
+	if (defender.npctemplate)
+		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var inimigo := GetObjProperty(weapon, "slayer");
+			if (cfg[npctemplate.template].Category == inimigo)
+				var dmg := rawdamage / 2;
+				DamageFLS(defender, dmg, DMG_FORCED, attacker);
+			endif
+	endif
+	
+	return 1;
+endprogram

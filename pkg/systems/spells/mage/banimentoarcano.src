@@ -1,0 +1,49 @@
+    use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include ":spells:tnmagery";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if ( getObjProperty(targ, "summoned") != 1 )
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+	if (!CheckLineOfSight(targ, who))
+		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+		return;
+	endif
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+
+	PlayMovingEffectXYZEx( targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+
+	MoveObjectToLocation(targ, 10, 10, 10, targ.realm,  MOVEOBJECT_FORCELOCATION );
+
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+	ApplyRawDamage(targ, 200);
+
+	return 1;
+endprogram     

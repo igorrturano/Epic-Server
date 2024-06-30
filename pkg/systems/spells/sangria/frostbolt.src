@@ -1,0 +1,59 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include ":charactercreation:resists";
+
+program cast_frostbolt(params)
+    var caster := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(caster, "Alvo invalido.");
+		return 0;
+	endif
+
+    if (!targ)
+		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+
+    LaunchProjectile(caster, targ);
+endprogram
+
+function LaunchProjectile(caster, targ)
+    PlaySoundEffect(caster, SFX_AQUARIUM_USE);
+    PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
+    var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("8d8");
+    DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
+
+    if(TemHabilidade(caster, "Estudioso da Sangria"))
+		if (CheckResist(targ, VONTADE, 50, -CInt(AP_GetSkill(caster, MAGICLORE)/2.5)))
+			SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+
+			return 1;
+		endif
+	else
+		if (CheckResist(targ, VONTADE, 20, -CInt(AP_GetSkill(caster, MAGICLORE)/2.5)))
+			SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+
+			return 1;
+		endif
+	endif
+
+    PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 3, 4);
+    PlaySoundEffect(targ, SFX_GLASS_BREAK_3);
+    TS_Starttimer(targ, "lentidao", CINT(AP_GetSkill(caster, MAGICLORE)/10));
+
+    printText(targ, "*congelado*");
+endfunction

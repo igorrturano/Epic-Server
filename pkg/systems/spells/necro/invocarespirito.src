@@ -1,0 +1,81 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var skill := AP_GetSkill(who, "Magery");
+
+	//Random de Monstros
+
+	var undead;
+	var undeadtemplate;
+	var soulconsume;
+	var souls := Cint(GetObjProperty(who, "souls"));
+	
+	if ((souls >= 100))
+	undeadtemplate := ":brainai:ghost";
+	soulconsume := 100;
+	elseif ((souls < 100) && (souls >= 70))
+	undeadtemplate := ":brainai:spectre";
+	soulconsume := 70;
+	elseif ((souls < 70) && (souls >= 50))
+	undeadtemplate := ":brainai:shadow";
+	soulconsume := 50;
+	elseif ((souls < 50) && (souls >= 30))
+	undeadtemplate := ":brainai:rusalkaatormentada";
+	soulconsume := 30;
+	else
+	SendSysMessageEx(who, "Voce nao tem almas aprisionadas o suficiente", SSM_INFO);
+	return 0;
+	endif 
+
+	SendSysMessageEx(who, "Voce liberta as almas aprisionadas invocando um espirito", SSM_INFO);
+
+	//Efeito da magia
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x, who.y + 5, who.z, 14202, 1, 0, 0, who.realm );
+	PlaySoundEffect(who, 386);
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x - 5, who.y - 5, who.z, 14202, 1, 0, 0, who.realm );
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x + 5 , who.y  + 5, who.z, 14202, 1, 0, 0, who.realm );
+	PlaySoundEffect(who, 386);
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x, who.y - 5, who.z, 14202, 1, 0, 0, who.realm );
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x + 5  , who.y - 5, who.z, 14202, 1, 0, 0, who.realm );
+	PlaySoundEffect(who, 386);
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x + 5, who.y, who.z, 14202, 1, 0, 0, who.realm );
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x + 5, who.y - 5, who.z, 14202, 1, 0, 0, who.realm );
+	PlaySoundEffect(who, 386);
+	PlayMovingEffectXYZ( who.x, who.y, who.z, who.x - 5, who.y, who.z, 14202, 1, 0, 0, who.realm );
+
+
+	undead := createnpcfromtemplate(undeadtemplate, who.x, who.y, who.z, 0 , who.realm);
+	souls := souls - soulconsume;
+	SetObjProperty(who, "souls", souls);	
+
+	undead.SetMaster(who);
+		
+	SetObjProperty(undead, "GuardKill", 1);		
+	SetObjProperty(undead, "owner", who.serial);
+	SetObjProperty(undead, "name", undead.name);
+	SetObjproperty(undead, "script", undead.script);
+	SetObjProperty(undead, "AntigoTreinadorID", who.serial);
+	SetObjProperty(undead, "summoned", 1);		
+	undead.script := ":ghaia:tamed";
+	RestartScript(undead);
+				
+	Run_Script_To_Completion(":death:npcdeath", {undead});
+
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)));
+
+	SendSysMessageEx(who, "Voce teve sucesso ao invocar um espirirto.", SSM_INFO);
+	
+	return 1;
+endprogram 

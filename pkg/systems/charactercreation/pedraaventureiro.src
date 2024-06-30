@@ -1,0 +1,37 @@
+include ":tn:tngumps";
+include ":charactercreation:habilidades";
+include "include/say";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+
+program pergrad(who, item)
+	if (who.cmdlevel >= 1)
+		if (YesNo(who, "Deseja configurar a pedra?"))
+			SetObjProperty(item, "Nome", RequestGump(who, "Coloque o Nome da Pedra"));
+			SetObjProperty(item, "Lado", RadioGump(who, 260, 160, "Por qual lado da pedra os jogadores virao?", array{"Esquerda","Direita"}));
+			return;
+		endif
+	endif
+	if (TemHabilidade(who, "Hora da Aventura"))
+		var aventuras := GetObjProperty(who, "HoraDaAventura");
+		if (!aventuras[1])
+			aventuras := array{};
+		endif
+		foreach aventura in aventuras
+			if (aventura.nome == GetObjProperty(item, "Nome"))
+				SendSysMessageEx(who, "Voce ja registrou seu nome nesta pedra.", SSM_INFO);
+				return;
+			endif
+		endforeach
+		var aventuranova := struct;
+		aventuranova.+nome := GetObjProperty(item, "Nome");
+		aventuranova.+serial := item.serial;
+		aventuras.append(aventuranova);
+		SetObjProperty(who, "HoraDaAventura", aventuras);
+		SendSysMessageEx(who, "Voce registrou seu nome na pedra.", SSM_INFO);
+	else
+		SendSysMessage(who, "teste2");
+		SendSysMessageEx(who, "Somente um Aventureiro pode registrar o nome na Pedra Magica",SSM_FAIL);
+	endif
+endprogram
+

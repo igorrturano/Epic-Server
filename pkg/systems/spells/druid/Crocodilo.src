@@ -1,0 +1,36 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
+
+  SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+  var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+  if (!targ)
+    return;
+  endif
+
+  if (!targ.isa(POLCLASS_MOBILE))
+    SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+    return;
+  endif
+
+  var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+  TS_StartTimer(targ, "phmod", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), level, who, 1); //5 min
+
+  PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+  PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+  SendSysMessageEx(targ, "Voce esta coberto por uma armadura natural.", SSM_INFO);
+  SendStatus(targ);  
+  return 1;
+endprogram 
+

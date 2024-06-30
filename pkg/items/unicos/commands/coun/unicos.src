@@ -1,0 +1,345 @@
+use uo;
+use os;
+
+include ":unicos:unicos";
+include	":merchants:crafthelp";
+include ":gumps:requestGump";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+
+const ADD_ITEM_BTN		:= 0x1;
+const SHOW_ITEMS_BTN		:= 0x2;
+const ERASE_IT_ALL_BTN		:= 0x3;
+const GO_BTN			:= 0x4;
+const DESTROY_BTN		:= 0x5;
+const GET_BTN			:= 0x6;
+const REMOVE_BTN		:= 0x7;
+const REMOVEPDONO_BTN	:= 0x8;
+
+
+//Menu Position Constants
+const MENU_INTRO		:= 0x0;
+const MENU_ITEMS_LIST		:= 0x1;
+const MENU_ITEM_INFO		:= 0x2;
+
+//Gump Constants
+const BKGND_STONESLAB		:= 9200;  // Gray stone slab background
+const BKGND_BLUESLAB		:= 3600;  // Raised edge (blocky)
+const GF_STDCOLOR		:= 1890;
+const END_Y			:= 405;	  // nextpage
+
+
+program UniqueItemsMenu(player)
+
+	var cur_menu := MENU_INTRO;
+	var gump := MENU_INTRO;
+	var input := MENU_INTRO;
+	var item;
+
+	MAIN_LOOP: while ( 1 )
+		gump := MainLayout(player);
+
+		case ( cur_menu )
+			MENU_INTRO:
+				IntroGump(gump);
+			MENU_ITEMS_LIST:
+				if ( input == SHOW_ITEMS_BTN )
+					ShowItems(gump, player);
+				else
+					cur_menu := MENU_ITEM_INFO;
+					item := SystemFindObjectBySerial(input, 3);
+					if( !item )
+						GetItemsDataFile().DeleteElement(Hex(input));
+						SendSysMessage(player, "Este item nao existe mais e foi removido da lista.");
+					else
+						ShowItemInfo(gump, player, item);
+					endif
+				endif
+		endcase
+
+
+		input := GFSendGump(player, gump);
+		if ( player in EnumerateOnlineCharacters() )
+			input := input[0];
+		else
+			break MAIN_LOOP;
+		endif
+
+
+		case ( input )
+			0:
+				break MAIN_LOOP;
+			ADD_ITEM_BTN:
+				AddItem(player);
+				cur_menu := MENU_INTRO;
+			ERASE_IT_ALL_BTN:
+				ClearList(player);
+				cur_menu := MENU_INTRO;
+			SHOW_ITEMS_BTN:
+				cur_menu := MENU_ITEMS_LIST;
+			GO_BTN:
+				var cont := item;
+				while( cont.container )
+					cont := cont.container;
+					sleepms(2);
+				endwhile
+				MoveObjectToLocation(player, cont.x, cont.y, cont.z, cont.realm, MOVEOBJECT_FORCELOCATION);
+				SendSysMessage(player, "Voce se teleportou para o item com sucesso.");
+				return 1;
+			DESTROY_BTN:
+				RemoveItemOfTheList(item);
+				DestroyItem(item);
+				SendSysMessage(player, "Voce destruiu o item com sucesso.");
+				return 1;
+			GET_BTN:
+				item.movable := 1;
+				MoveItemToContainer(item, player.backpack);
+				SendSysMessage(player, "Voce moveu o item para sua bag.");
+				return 1;
+			REMOVE_BTN:
+				RemoveItemOfTheList(item);
+				EraseObjProperty(item, "itemunico");
+				SendSysMessage(player, "Voce removeu o item da lista.");
+				return 1;
+			REMOVEPDONO_BTN:
+				EraseObjProperty(item, "primeiro_dono");
+				SendSysMessage(player, "Voce removeu o primeiro dono da prop do item.");
+				return 1;
+		endcase
+	endwhile
+
+	return 1;
+endprogram
+
+function MainLayout(player)
+	var gump := GFCreateGump(0, 0);
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 640, 480);
+	GFResizePic(gump, 15, 15, BKGND_STONESLAB, 150, 450);
+
+	GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN, SHOW_ITEMS_BTN);
+	GFTextLine(gump, 40, 30, GF_STDCOLOR, "Existentes no Mundo");
+
+	GFAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, ADD_ITEM_BTN);
+	GFTextLine(gump, 40, 80, GF_STDCOLOR, "Adicionar item");
+
+	GFAddButton(gump, 20, 133, 2117, 2118, GF_CLOSE_BTN, ERASE_IT_ALL_BTN);
+	GFTextLine(gump, 40, 130, GF_STDCOLOR, "Apagar lista");
+
+	return gump;
+endfunction
+
+function IntroGump(byref gump)
+	GFPage(gump, 1);
+	GFResizePic(gump, 170, 15, BKGND_STONESLAB, 455, 450);
+	GFTextMid(gump, 170, 200, 455, GF_STDCOLOR, "Use os botoes da esquerda.");
+endfunction
+
+function ShowItemInfo(byref gump, player, item)
+	var elem := GetItemsDataElem(Hex(item.serial));
+	var color := 0;
+	if ( item.color )
+		color := item.color-1;
+	endif
+
+	GFResizePic(gump, 170, 15, BKGND_STONESLAB, 455, 450);
+	if( elem.GetProp("Title") )
+		GFTextMid(gump, 130, 25, 455, GF_STDCOLOR, elem.GetProp("Title"));
+	else
+		GFTextMid(gump, 130, 25, 455, GF_STDCOLOR, "Ligado ao char: " + elem.GetProp("OwnerName"));
+	endif
+	var primeiro_dono := Getobjproperty(item, "primeiro_dono");
+	GFTextLine(gump, 175, 60, GF_STDCOLOR, "Nome");
+	GFTextLine(gump, 205, 80, color, item.desc);
+
+	GFTextLine(gump, 175, 110, GF_STDCOLOR, "Quantidade");
+	GFTextLine(gump, 205, 130, 0, item.amount);
+
+	GFTextLine(gump, 370, 110, GF_STDCOLOR, "Primeiro Dono");
+	if(!primeiro_dono)
+		GFTextLine(gump, 400, 130, 0, "Sem ainda");
+	else
+		GFTextLine(gump, 400, 130, 0, primeiro_dono);
+	endif
+
+	GFTextLine(gump, 370, 60, GF_STDCOLOR, "GM Criador");
+	GFTextLine(gump, 400, 80, color, elem.GetProp("Creator"));
+
+
+	GFResizePic(gump, 500, 25, 2620, 120, 100);
+	GFTilePic(gump, 550, 60, item.graphic);
+
+	GFTextLine(gump, 180, 235, GF_STDCOLOR, "Descrição");
+	GFResizePic(gump, 175, 255, 2620, 445, 140);
+	var desc_lines := GFWordWrap(elem.GetProp("Description"), 455);
+	var y_pos := 260;
+	foreach line in desc_lines
+		GFTextLine(gump, 185, y_pos, GF_STDCOLOR, line);
+		y_pos := y_pos+20;
+	endforeach
+
+
+	var cont := item.container;
+	var graphic := item.graphic;
+	var txt;
+	while( cont.container )
+		cont := cont.container;
+		sleepms(2);
+	endwhile
+
+	GFResizePic(gump, 500, 125, 2620, 120, 100);
+	if( cont.isa(POLCLASS_ITEM) )
+		if (cont.desc["[Root Container]"])
+			var ownby := cont.desc;
+			ownby["[Root Container] Owner="] := "";
+			ownby := SystemFindObjectBySerial(CInt(ownby));
+			txt := "Esta no banco do personagem "+ownby.name+" da conta "+ownby.acctname;
+		else
+			txt := "Dentro de um " + cont.desc + " XYZ("+cont.x+","+cont.y+","+cont.z+")";
+		endif
+		graphic := cont.graphic;
+	elseif( cont.isa(POLCLASS_NPC) )
+		txt := "Está com o npc " + cont.name + " XYZ("+cont.x+","+cont.y+","+cont.z+")";
+		graphic := 8435; //gazer eh o simbolo de npcs =P
+	elseif( cont.acct )
+		txt := "Está com o personagem " + cont.name + " da conta " + cont.acctname;
+		if(cont.gender)
+			graphic := 8455; //female
+		else
+			graphic := 8454; //male
+		endif
+	else
+		txt := "Está jogado por ae no tile ("+item.x+","+item.y+","+item.z+")";
+		GFTilePic(gump, 520, 150, 6013);
+		GFTilePic(gump, 540, 130, 6013);
+		GFTilePic(gump, 540, 170, 6013);
+		GFTilePic(gump, 560, 150, 6013);
+	endif
+	GFTilePic(gump, 540, 150, graphic);
+
+	desc_lines := GFWordWrap(txt, 300);
+	y_pos := 180;
+	GFTextLine(gump, 175, y_pos - 20, GF_STDCOLOR, "Localização");
+	foreach line in desc_lines
+		GFTextLine(gump, 205, y_pos, 0, line);
+		y_pos := y_pos+20;
+	endforeach
+
+	GFAddButton(gump, 190, 430, 2151, 2154, 1, GO_BTN);
+	GFTextLine(gump, 225, 433, GF_STDCOLOR, "Ir até");
+
+	GFAddButton(gump, 275, 430, 2151, 2154, 1, DESTROY_BTN);
+	GFTextLine(gump, 310, 433, GF_STDCOLOR, "Destruir");
+
+	GFAddButton(gump, 370, 430, 2151, 2154, 1, GET_BTN);
+	GFTextLine(gump, 405, 433, GF_STDCOLOR, "Pegar");
+
+	GFAddButton(gump, 455, 430, 2151, 2154, 1, REMOVE_BTN);
+	GFTextLine(gump, 490, 433, GF_STDCOLOR, "Remover da lista");
+
+	GFAddButton(gump, 275, 396, 2151, 2154, 1, REMOVEPDONO_BTN);
+	GFTextLine(gump, 310, 399, GF_STDCOLOR, "Apagar Primeiro Dono");
+
+endfunction
+
+function AddItem(player)
+	SendSysMessage(player, "Qual item voce quer seja unico?");
+	var targ := target(player);
+	if ( !targ.IsA(POLCLASS_ITEM) )
+		SendSysMessage(player, "Cancelado.");
+		return;
+	endif
+
+	if ( GetObjProperty(targ, "itemunico") )
+		if( !YesNo(player, "Esse item já é unico. Continuar mesmo assim?", "Sim", "Não") )
+			SendSysMessage(player, "Cancelado.");
+			return;
+		endif
+	endif
+
+	var owner;
+	if( YesNo(player, "Deseja conectar o item a um player ou somente torna-lo único?", "Player", "único") )
+		SendSysMessage(player, "Selecione um player para ser o dono deste item unico.");
+		owner := target(player);
+		if ( !owner.acctname )
+			SendSysMessage(player, "Cancelado.");
+			return;
+		endif
+	else
+		owner := RequestGump(player, "Entre com um título do item para a staff identificar.", "O titulo só servirá para o Gump", "", 1);
+		if( !owner )
+			owner := targ.desc;
+		endif
+	endif
+
+	var desc := RequestGump(player, "Entre com uma pequena descrição do item.", "Isso é importante para sincronia de iGms", "", 1);
+	if ( !desc )
+		desc := "";
+	elseif ( Len(desc) > 300 )
+		desc := desc[0,300]+"...";
+	endif
+
+	var result := AddItemToList(player, owner, targ, desc);
+	if ( result != error )
+		SendSysMessage(player, "Item adicionado com sucesso.");
+	else
+		SendSysMessage(player, "Error =>"+result.errortext);
+	endif
+endfunction
+
+function ShowItems(byref gump, player)
+	GFResizePic(gump, 170, 15, BKGND_STONESLAB, 455, 450);
+	GFTextMid(gump, 200, 25, 455, 0, "TNS UNIQUE ITEMS TRACKING SYSTEM!");
+	GFPage(gump, 1);
+
+	var items:= GetItemsList();
+
+	var y_pos := 45;
+	foreach elem in items
+		var info := GetItemsDataElem(elem);
+		var name := info.GetProp("ItemDesc");
+		var owner := info.GetProp("OwnerName");
+		var acctname := info.GetProp("OwnerAcc");
+
+		if( y_pos > END_Y )
+			GFAddButton(gump, 580, 30, 2224, 2224, GF_PAGE_BTN, gump.cur_page+1);
+			y_pos := 45;
+			GFPage(gump, gump.cur_page+1);
+		endif
+		if(gump.cur_page > 1)
+			GFAddButton(gump, 550, 30, 2223, 2223, GF_PAGE_BTN, gump.cur_page-1);
+		endif
+
+		var xplus := 0;
+		GFAddButton(gump, 175, y_pos+3, 2117, 2118, 1, elem);
+		if( owner )
+			GFTextLine(gump, 195+xplus, y_pos, GF_STDCOLOR, name);
+			xplus += GFTextWidth(name);
+			GFTextLine(gump, 195+xplus, y_pos, 0, " do char ");
+			xplus += GFTextWidth(" do char ");
+			GFTextLine(gump, 195+xplus, y_pos, GF_STDCOLOR, owner);
+			xplus += GFTextWidth(owner);
+			GFTextLine(gump, 195+xplus, y_pos, 0, " da conta ");
+			xplus += GFTextWidth(" da conta ");
+			GFTextLine(gump, 195+xplus, y_pos, GF_STDCOLOR, acctname);
+			xplus += GFTextWidth(acctname);
+		else
+			GFTextLine(gump, 195, y_pos, GF_STDCOLOR, info.GetProp("Title"));
+		endif
+
+		y_pos := y_pos+20;
+		sleepms(2);
+
+	endforeach
+endfunction
+
+function ClearList(player)
+	if( !YesNo(player, "Tem certeza que quer apagar tudo?", "Sim", "Não") )
+		SendSysMessage(player, "Cancelado.");
+		return 0;
+	endif
+	RemoveAllofTheList();
+	SendSysMessage(player, "Voce limpou a lista, mas os itens ainda possuem a prop de unicos. Normal...");
+endfunction
+
+

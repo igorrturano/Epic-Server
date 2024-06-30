@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program oncreate_checkerboard (checkerboard)
+	SetObjProperty (checkerboard, "#creating_gameboard", 1);
+
+	for i := 1 to 12
+		var gamepiece := CreateItemInContainer (checkerboard, 0x70b3);
+		gamepiece.graphic := 0x3584;
+		gamepiece.name := "a checker";
+		SetObjProperty (gamepiece, "sole_container_serial", checkerboard.serial);
+	endfor
+
+	for i := 1 to 12
+		var gamepiece := CreateItemInContainer (checkerboard, 0x70b3);
+		gamepiece.graphic := 0x358b;
+		gamepiece.name := "a checker";
+		SetObjProperty (gamepiece, "sole_container_serial", checkerboard.serial);
+	endfor
+	
+	EraseObjProperty (checkerboard, "#creating_gameboard");
+endprogram

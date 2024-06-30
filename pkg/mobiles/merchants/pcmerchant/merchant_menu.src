@@ -1,0 +1,451 @@
+/*
+1- so quem tem tag pode por coisa pra vender OK
+2- cada coisa q vc colocou la tem seu id OK
+3- voce pode setar o pre�o das coisas OK
+4- voce pode remover coisas  OK
+5- quando o npc vende o dinheiro vai pro seu id (uma prop) e 10% vai pro npc  OK
+6- player comuns (sem tag)so podem comprar e nao vende OK
+*/
+
+use uo;
+use os;
+use basicio;;
+
+include ":gumps:requestGump";
+include "include/string";
+include ":gumps:gumps";
+include ":gumps:gumpPrompt";
+include ":merchants:merchant";
+include ":merchants:item_template";
+include	":merchants:crafthelp";
+include ":brainAI:npcCommands";
+include ":gumps:yesNo";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":tn:tngumps";
+include ":gumps:htmlGump";
+include ":faccao:faccao";
+include "include/arrays";
+include ":ghaia:ghaia";
+include ":faccao:npc";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var item_cfg := ReadConfigFile(":*:itemdesc");
+var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var guild, guild_leader;
+
+program MerchantMenu(params)
+	var npc := params[1];
+	var player := params[2];
+	var cur_menu := MENU_INTRO;
+	var gump := MENU_INTRO;
+	var input := MENU_INTRO;
+	var escondido := player.hidden;
+
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx (player, "Voce se revelou ao mercador.", SSM_FAIL);
+	endif
+	//print("SETUP");
+	//Setup(npc);
+	guild_leader  := _ifOr(guild.getProp("leader"), "null");
+
+	MAIN_LOOP: while ( 1 )
+		//print("MAIN LOOP");
+		gump := MainLayout(player); //Gera o Layout padrão do gump do mercador
+		//print("MAIN LOOP FEITO");
+		case ( cur_menu )
+			MENU_INTRO: //Se nenhuma opção do menu foi selecionada
+				//print("INTROGUMP");
+				IntroGump(gump); //Exibe instruções no gump
+				break;
+			MENU_ITENS_A_VENDA: //Se menu que está dendo utilizado é o de TODOS os itens a venda
+				if ( input == BOTAO_ITENS_TODOS_A_VENDA ) //Se o ultimo botão clicado é o que abre a lista de TODOS itens a venda
+					ShowForSaleItems(gump, npc, player); //Exiba os itens a venda
+				else //Caso contrário, foi clicado no botão de mostrar detalhes de algum item
+					cur_menu := MENU_ITENS_COMPRAR_CONFISCAR;
+					ShowForSaleItemsInfo(gump, npc, player, input); //Exiba as informações do item selecionado
+				endif
+				break;
+			MENU_ITENS_COMPRAR_CONFISCAR:
+				DoPurchase(npc, player, input); //Inicia o processo de compra ou confisco
+				break MAIN_LOOP; //Ao concluir operação, encerra o loop para dar chance de outros acessarem o vendor também
+			MENU_ITENS_MEUS_A_VENDA: //Se menu que está dendo utilizado é o de MEUS itens a venda
+				if ( input == BOTAO_ITENS_MEUS_A_VENDA ) //Se o ultimo botão clicado é o que abre a lista de MEUS itens a venda
+					ShowForSaleItems(gump, npc, player, 1); //Exiba os MEUS itens a venda, com permissões especiais
+				else //Caso contrário, foi clicado no botão de mostrar detalhes de algum item
+					cur_menu := MENU_ITENS_RETIRAR_DA_VENDA;
+					ShowForSaleItemsInfo(gump, npc, player, input, 1);//Exiba as informações do item selecionado
+				endif
+				break;
+			MENU_ITENS_RETIRAR_DA_VENDA:
+				RetrieveMyItem(npc, player, input); //Remove um item que coloquei anteriormente à venda
+				break MAIN_LOOP; //Ao concluir operação, encerra o loop para dar chance de outros acessarem o vendor também
+			MENU_ITENS_MEUS_GANHOS:
+				ShowMyProfit(gump, npc, player); //Exibes os ganho com as vendas que foram feitas e ainda não foi coletado o lucro
+				break;
+			default: //se tentarem por script forçar um valor diferente, abra a tela de instrções
+				IntroGump(gump); //Exibe instruções no gump
+				break;
+		endcase
+
+		input := GFSendGump(player, gump);
+		//print("ENVIADO GUMP");
+
+		if (!player.connected || player.hidden)
+			break MAIN_LOOP; //Encerra o loop se o char tiver offline para liberar o npc
+		else
+			input := input[0]; //Caso contrário, armazena a ultima seleção
+		endif
+
+		case ( input )
+			0: //Quando o gump é fechado
+				break MAIN_LOOP; //Encerra o loop para dar chance de outros acessarem o vendor também
+			BOTAO_ITENS_COLOCAR_A_VENDA:
+			if (!GetObjProperty(npc, "cofreid"))
+				cur_menu := MENU_INTRO;
+				return SendSysMessage(player, "O Vendedor ainda nao possui um cofre para coletar impostos");
+
+			else AddMyItemForSale(npc, player); //Executa a função de adicionar itens à venda
+				cur_menu := MENU_INTRO;
+			endif
+				/*AddMyItemForSale(npc, player); //Executa a função de adicionar itens à venda
+				cur_menu := MENU_INTRO;*/
+			BOTAO_ITENS_TODOS_A_VENDA:
+				cur_menu := MENU_ITENS_A_VENDA;
+			BOTAO_ITENS_MEUS_A_VENDA:
+				cur_menu := MENU_ITENS_MEUS_A_VENDA;
+			BOTAO_ITENS_MINHA_CONTA:
+				cur_menu := MENU_ITENS_MEUS_GANHOS;
+			BOTAO_ITENS_RETIRAR:
+				DoWithdraw(npc, player); //Executa a função de retirar item
+				cur_menu := MENU_INTRO;
+            BOTAO_HISTORICO:
+			if ( player.cmdlevel >= 3 || (GetObjProperty(npc, "faccao") != error) && (GetObjProperty(npc, "faccao") == GetObjProperty(player, "faccao")))
+				if (!player.concealed) PrintText(npc, "Aqui esta o historico de vendas, Sr."); endif
+				var historico := GetMerchantLog(npc);
+				historico := "<br> - {}".format("<br> -".join(historico));
+				SendHTMLGump(player, "Historico de Vendas", historico);
+				cur_menu := MENU_INTRO;
+			elseif (TemHabilidade(player, "Espionar"))
+					var prot := RadioGump(player, 200, 260, "Talvez possamos conversar", {"Pagar Mil Cobres", "Cancelar"});
+					if (prot == "Pagar Mil Cobres")
+						var custo := 1000;
+                		SendSysMessageEx(player, "Voce precisa pagar " + custo + " moedas para fazer o vendedor falar", SSM_REQUEST);
+						var targ := Target(player);
+                        if (!targ)
+                            SendSysMessage(player, "Cancelado.", SSM_FAIL);
+                            return;
+                        endif
+
+						if (targ.objtype == 47715)
+
+							if ( targ.amount < custo )
+								SendSysMessageEx(player, "Voce nao tem moedas suficientes.", SSM_INFO);
+								return;
+							endif
+
+							if (!SubtractAmount(targ, custo))
+								SendSysMessageEx(player, "Voce nao tem moedas suficientes.", SSM_INFO);
+								return;
+							else
+								SendSysMessageEx(player, "Voce efetuou o pagamento.", SSM_INFO);
+							endif
+						else
+							SendSysMessageEx(player, "Isto nao sao moedas.", SSM_FAIL);
+							return;
+                    	endif
+						var historico := GetMerchantLog(npc);
+						historico := "<br> - {}".format("<br> -".join(historico));
+						SendHTMLGump(player, "Historico de Vendas", historico);
+						cur_menu := MENU_INTRO;
+					endif
+			else
+				PrintText(npc, "Apenas membros da facção tem acesso a essas informações, Sr.");
+				cur_menu := MENU_INTRO;
+			endif
+			BOTAO_CONFISCADOS:
+			if ( player.cmdlevel >= 3 || (GetObjProperty(npc, "faccao") != error) && (GetObjProperty(npc, "faccao") == GetObjProperty(player, "faccao")))
+				if (!player.concealed) PrintText(npc, "Aqui esta o historico de itens confiscados, Sr."); endif
+				var confisc := GetMerchantConfiscadosLog(npc);
+				confisc := "<br> - {}".format("<br> -".join(confisc));
+				SendHTMLGump(player, "Historico de Confisco", confisc);
+				cur_menu := MENU_INTRO;
+			elseif (TemHabilidade(player, "Espionar"))
+					var prot := RadioGump(player, 200, 260, "Talvez possamos conversar", {"Pagar Mil Cobres", "Cancelar"});
+					if (prot == "Pagar Mil Cobres")
+						var custo := 1000;
+                		SendSysMessageEx(player, "Voce precisa pagar " + custo + " moedas para fazer o vendedor falar", SSM_REQUEST);
+						var targ := Target(player);
+                        if (!targ)
+                            SendSysMessage(player, "Cancelado.", SSM_FAIL);
+                            return;
+                        endif
+
+						if (targ.objtype == 47715)
+
+							if ( targ.amount < custo )
+								SendSysMessageEx(player, "Voce nao tem moedas suficientes.", SSM_INFO);
+								return;
+							endif
+
+							if (!SubtractAmount(targ, custo))
+								SendSysMessageEx(player, "Voce nao tem moedas suficientes.", SSM_INFO);
+								return;
+							else
+								SendSysMessageEx(player, "Voce efetuou o pagamento.", SSM_INFO);
+							endif
+						else
+							SendSysMessageEx(player, "Isto nao sao moedas.", SSM_FAIL);
+							return;
+                    	endif
+						var historico := GetMerchantConfiscadosLog(npc);
+						historico := "<br> - {}".format("<br> -".join(historico));
+						SendHTMLGump(player, "Historico de Conficações", historico);
+						cur_menu := MENU_INTRO;
+					endif
+			else
+				PrintText(npc, "Apenas membros da facção tem acesso a essas informações, Sr.");
+				cur_menu := MENU_INTRO;
+			endif
+			BOTAO_CONFIGURACAO:
+			if ( player.serial == guild_leader || player.cmdlevel >= 3);
+				vendoropt(npc, player);
+				cur_menu := MENU_INTRO;
+			else
+				SendSysMessage(player, "Apenas o lider da Faccao pode alterar essas opcoes");
+				cur_menu := MENU_INTRO;
+			endif
+			BOTAO_MOVERNPC:
+			if ( player.serial == guild_leader || player.cmdlevel >= 3);
+				andarnpc(npc, player);
+			else
+				SendSysMessage(player, "Apenas o lider da Faccao pode andar com o vendedor");
+				cur_menu := MENU_INTRO;
+			endif
+		endcase
+	endwhile
+
+	return 1;
+endprogram
+
+function MainLayout(player)
+	var gump := GFCreateGump(0, 0);
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 640, 480);
+	GFResizePic(gump, 15, 15, BKGND_STONESLAB, 150, 450);
+
+	GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_TODOS_A_VENDA);
+	GFTextLine(gump, 40, 30, GF_STDCOLOR, "Itens a venda");
+
+/*
+	//Marcknight: Usar esse codigo junto com o endif caso deseje que apenas classes especificas possam comercializar
+	var classes_permitidas := array{"Carpinteiro", "Cozinheiro", "Pescador", "Inventor",
+				   "Engenheiro", "Alfaiate", "Ferreiro", "Fazendeiro" };
+
+	if( ( GetObjProperty(player, "kit") in classes_permitidas ) || player.cmdlevel )
+*/
+	GFAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_COLOCAR_A_VENDA);
+	GFTextLine(gump, 40, 80, GF_STDCOLOR, "Adicionar items");
+
+	GFAddButton(gump, 20, 133, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_MEUS_A_VENDA);
+	GFTextLine(gump, 40, 130, GF_STDCOLOR, "Minhas vendas");
+
+	GFAddButton(gump, 20, 183, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_MINHA_CONTA);
+	GFTextLine(gump, 40, 180, GF_STDCOLOR, "Minha conta");
+
+    GFAddButton(gump, 20, 233, 2117, 2118, GF_CLOSE_BTN, BOTAO_HISTORICO);
+   	GFTextLine(gump, 40, 230, GF_STDCOLOR, "Historico de Vendas");
+
+	GFAddButton(gump, 20, 283, 2117, 2118, GF_CLOSE_BTN, BOTAO_CONFISCADOS);
+   	GFTextLine(gump, 40, 280, GF_STDCOLOR, "Confiscados");
+
+	GFAddButton(gump, 20, 333, 2117, 2118, GF_CLOSE_BTN, BOTAO_CONFIGURACAO);
+   	GFTextLine(gump, 40, 330, GF_STDCOLOR, "Opcoes de venda");
+
+	GFAddButton(gump, 20, 383, 2117, 2118, GF_CLOSE_BTN, BOTAO_MOVERNPC);
+   	GFTextLine(gump, 40, 380, GF_STDCOLOR, "Mover Vendedor");
+
+
+//	endif BOTAO_MOVERNPC
+
+	return gump;
+endfunction
+
+function IntroGump(byref gump)
+	GFPage(gump, 1);
+	GFResizePic(gump, 170, 15, BKGND_STONESLAB, 455, 450);
+	GFTextMid(gump, 170, 200, 455, GF_STDCOLOR, "Use os botoes da esquerda.");
+endfunction
+
+function vendoropt(npc, player)
+
+
+	/*
+	SendSysMessageEx(who, "Escolha o npc vendor", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.npctemplate)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	*/
+
+	var opt := array;
+	if ( GetObjProperty(npc, "secret"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "onlyartifice"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "taverneiro"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "onlygmsells"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "oneplayersells"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "startbuy") || GetObjProperty(npc, "endbuy"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "cofre") || GetObjProperty(npc, "cofre"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "Taxa") || GetObjProperty(npc, "taxap"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(npc, "faccao") )
+	opt.append(1);
+	else
+	opt.append(0);
+	endif
+
+
+	var result := CheckBoxGump(player, 350, 300, "Opcoes do Vendor", {"Secreto", "Kit Artifice", "Sem Limite Minimo de 10 cobres", "Apenas Um Player Vende", "Alterar Mensagens de Compra", "Cofre", "Taxa"}, opt);
+
+	EraseObjProperty(npc, "secret");
+	EraseObjProperty(npc, "onlyartifice");
+	EraseObjProperty(npc, "taverneiro");
+//	EraseObjProperty(targ, "onlygmsells");
+	EraseObjProperty(npc, "oneplayersells");
+	EraseObjProperty(npc, "startbuy");
+	EraseObjProperty(npc, "endbuy");
+
+	foreach r in result
+		if (r == "Secreto")
+			SetObjProperty(npc, "secret", 1);
+		elseif (r ==  "Kit Artifice")
+			SetObjProperty(npc, "onlyartifice", 1);
+		elseif (r == "Sem Limite Minimo de 10 cobres")
+			SetObjProperty(npc, "taverneiro", 1);
+		elseif ( r == "Apenas GM vende")
+			SetObjProperty(npc, "onlygmsells", 1);
+		elseif ( r == "Apenas Um Player Vende")
+			var oneplayer := cstr(RequestGump(player, "Qual o nome do player?"));
+			SetObjProperty(npc, "oneplayersells", oneplayer);
+		elseif ( r == "Alterar Mensagens de Compra")
+			var startbuy := cstr(RequestGump(player, "Qual a mensagem de boas-vindas? [Cancele para deixar padrao]"));
+			if (startbuy)
+				SetObjProperty(npc, "startbuy", startbuy);
+			endif
+			var endbuy := cstr(RequestGump(player, "Qual a mensage? [Cancele para deixar padrao]"));
+			if (endbuy)
+				SetObjProperty(npc, "endbuy", endbuy);
+			endif
+		elseif ( r == "Cofre")
+			SendSysMessageEx(player, "Escolha o cofre", SSM_REQUEST);
+			var cofre := Target(player);
+			if (cofre.objtype == 40512 || cofre.objtype == 0x9AB || cofre.objtype == 0xE7C || cofre.objtype == 0xE41 || cofre.objtype == 0xE40 || cofre.objtype == 0xE43 || cofre.objtype == 0xE42)
+			SetObjProperty(npc, "cofreid", cofre.serial);
+			SendSysMessageEx(player, "Os impostos do vendedor irao para este cofre, mantenha-o seguro", SSM_REQUEST);
+			else
+			SendSysMessageEx(player, "Escolha um bau grande o suficiente para recolher os impostos", SSM_REQUEST);
+			return 1;
+			endif
+		elseif ( r == "Taxa")
+			var imposto := cint(RequestGump(player, "Insira a taxa cobrada em porcentagem [10 = 10%]"));
+			SetObjProperty(npc, "taxap", imposto);
+		endif
+
+	endforeach
+
+endfunction
+
+function Setup(npc)
+   var npccfgfile := NPC_GetNPCConfig(npc);
+
+   if (!GetObjProperty(npc, "started"))
+     /* var rndint := RandomInt(3);
+      if (rndint == 2)
+         me.objtype := me.objtype+1;
+         me.graphic := me.graphic+1;
+         me.trueobjtype := me.objtype+1;
+         me.gender := 1;
+      endif */
+      SetupColor(npc);
+      SetupName(npc);
+      SetObjProperty(npc, "DaysOfService", polcore().systime);
+      SetObjProperty(npc, "started", 1);
+      //SetupSpecials(me);
+   endif
+
+   var guildid := GetObjProperty(npc, "faccao");
+
+   if (guildid)
+      guild := FindGuild(guildid);
+      if (!guild)
+         ApplyRawDamage(npc, 600);
+      endif
+   else
+      sleep(5);
+      Setup(npc);
+   endif
+
+   if ( !npc.backpack )
+      var new_pack := CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1);
+      EquipItem(npc, new_pack);
+   endif
+
+   guild_leader  := guild.getProp("leader");
+endfunction
+
+function andarnpc(npc, player)
+
+		npc.SetMaster(player);
+		SetObjProperty(npc, "owner", player.serial);
+		SetObjProperty(npc, "name", npc.name);
+
+		if ( !GetObjProperty(npc, "script") )
+			SetObjproperty(npc, "script", npc.script);
+		endif
+
+		npc.script := ":ghaia:controlled";
+		RestartScript(npc);
+
+		Run_Script_To_Completion(":death:npcdeath", {npc});
+
+endfunction

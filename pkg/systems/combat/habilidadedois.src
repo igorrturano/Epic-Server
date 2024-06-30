@@ -1,0 +1,89 @@
+
+use uo;
+use vitals;
+use math;
+
+include "include/say";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:skillCheck";
+include ":attributes:attributes";
+include ":containers:containers";
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":spells:tnmagery";
+include "include/client";
+include ":itemutils:itemdesc";
+include "include/facings";
+include "include/damage";
+include ":fls_core:fls_combat";
+include ":blood:blood";
+include ":combat:settings";
+include ":brainai:npcUtil";
+include ":fls_core:fls_characters";
+include ":fls_core:packets";
+include ":attributes:skillCheck";
+include "include/sysEvent";
+//include ":cooldown:cooldown";
+
+program habilidade(who)
+
+	if (who.dead)
+		return 1;
+	endif
+
+
+	ProccessHabdois(who);
+
+endprogram
+		
+
+function ProccessHabdois(who)
+    //hab := text;
+	var cfg:=ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, who.weapon.objtype);
+
+	var hab := GetObjProperty(who, "habilidadedois");
+	var delay := GetObjProperty(who, "cooldowndois");
+	var stam := GetObjProperty(who, "custodois");
+
+	if (!elem)
+		//Check druida
+		if(GetObjProperty(who, "metamorfose") != error )
+			
+			TS_StartCooldown(who, "habilidade dois", delay);
+			Start_Script(hab, who);
+
+			if(!TS_GetCooldown(who, "habilidade dois"))
+				if (!AP_ConsumeVital(who, STAMINA, stam))
+					SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+					return 1;
+				endif
+			endif
+	
+		else
+			SendSysMessageEx(who, "Habilidade nao encontrada.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+
+    //var weapon_scripts := array;
+	//if ( who.weapon.IsA(POLCLASS_WEAPON) )
+	//	weapon_scripts :=  GetConfigStringArray( cfg[who.weapon.objtype], "Specialmove1" );
+	//endif
+
+    
+
+
+    var script := GetConfigString(elem, "specialmove2");
+	//var duracao := GetConfigString(elem, "duracao");
+    //	var delay := Cint(GetConfigInt(elem, "delay"));
+
+	start_script(script, who);
+	
+	//TS_StartCooldown(who, hab, 30);
+endfunction

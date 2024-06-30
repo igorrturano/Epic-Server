@@ -1,0 +1,85 @@
+use uo;
+use util;
+use cfgfile;
+use os;
+
+//In order of most dry, to least dry.
+var dry_colors := dictionary;
+dry_colors[0] := 1509;
+dry_colors[1] := 1509;
+dry_colors[2] := 1505;
+dry_colors[3] := 1501;
+
+set_priority(2);
+
+program PlantGrower(grower)
+	if ( grower.IsDead() )
+		return;
+	endif
+
+	set_priority(1);
+	sleep(1);
+	if ( !GetObjProperty(grower, "seed") )
+		PrintTextAbove(grower, "No seed info. Destroying.");
+		DestroyItem(grower);
+		return;
+	elseif ( grower.GetPhase() <= 1 )
+		sleep(grower.Incubate());
+	endif
+
+	var max_produce := grower.GetMaxProduce();
+	var produce_regen_rate := grower.ProduceRegenRate();
+	var drink_rate := grower.DrinkRate();
+	var next_regen := polcore().systime+produce_regen_rate;
+	var next_drink := polcore().systime+drink_rate;
+	var phase_color := grower.color;
+	
+	while ( grower )
+		if ( !grower.CanHarvest() )
+			grower.graphic := grower.GetPhaseGraphic();
+			phase_color := grower.GetPhaseColor();
+			grower.color := phase_color;
+			sleep(grower.GetPhaseDelay());
+			grower.SetPhase(grower.GetPhase()+1);
+		else
+			sleep(20+RandomInt(10));
+		endif
+
+		var regen_dir;
+		if ( !GetObjProperty(grower, "gmplant") )
+			//descomentado
+			if ( polcore().systime >= next_drink )
+				next_drink := polcore().systime+3600; // 1 hour
+				var water_amt := grower.GetWaterAmount()-1;
+/*
+				if ( water_amt < 0 )
+					grower.MakeDead();
+					grower.color := dry_colors[0];
+					return;
+				else
+					grower.SetWaterAmount(water_amt);
+				endif
+
+				if ( dry_colors[water_amt] )
+					grower.color := dry_colors[water_amt];
+					regen_dir := -1;
+				else
+					grower.color := phase_color;
+					regen_dir := +1;
+				endif*/
+			endif
+			//descomentado
+		else
+			grower.color := phase_color;
+		endif
+
+		if ( polcore().systime >= next_regen )
+			next_regen := polcore().systime+produce_regen_rate;
+			var amount := grower.GetProduceAmount()+regen_dir;
+			if ( amount <= max_produce )
+				grower.SetProduceAmount(amount);
+			endif
+		endif
+
+	endwhile
+endprogram

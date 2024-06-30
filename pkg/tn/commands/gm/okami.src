@@ -1,0 +1,46 @@
+
+use uo;
+use util;
+use os;
+
+program okami(who)
+
+	detach();
+	var x := who.x;
+	var y := who.y;
+
+	var decayFlowers := array;
+	var flowers := { 3262, 3207, 3210, 3264, 3214, 3262 };
+
+	while( GetObjProperty(who, "okami")!= error)
+		if (!who.connected)
+			EraseObjProperty(who, "okami");
+		endif
+
+		if ( (who.x != x) || (who.y != y ) )
+			var flor := CreateITemAtLocation(who.x, who.y, who.z, flowers[RandomInt(flowers.size())+1] , 1, who.realm );
+
+			if (flor)
+				var florInfo := struct;
+				florInfo.+flor := flor;
+				florInfo.+time := 0; 
+				decayFlowers.append(florInfo);
+				flor.movable := 0;
+			endif
+
+			x := who.x;
+			y := who.y;
+		endif
+
+		var i := 1;
+		for (i := 1; i  < decayFlowers.size()+1; i := i + 1)
+			decayFlowers[i].time := decayFlowers[i].time + 1;
+			if ( decayFlowers[i].time > 6)
+				DestroyItem(decayFlowers[i].flor);
+			endif
+		endfor
+
+		sleepms(500);
+	endwhile
+
+endprogram 

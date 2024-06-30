@@ -1,0 +1,86 @@
+use uo;
+use util;
+use os;
+use vitals;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":attributes:vitals";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	var dmg := rawdamage;
+	if (dmg < 5)
+		dmg := 5;
+	endif
+
+	var pet_instinto := Cstr(Getobjproperty(attacker, "Critic"));
+	//print("instinto eh "+pet_instinto);
+	if (pet_instinto == "Bote")
+		printText(attacker, "*Bote*");
+		TS_StartTimer(defender, "paralysis", 5);
+	elseif (pet_instinto == "Teia")
+		PlayMovingEffect(attacker, defender, 0x10DD, 10, 1);
+		printText(defender, "*A teia emaranha o alvo*");
+		TS_StartTimer(defender, "paralysis", 5);
+	elseif (pet_instinto == "Coice")
+		attacker.facing := attacker.facing + 2;
+		printText(attacker, "*Coice*");
+		PushBack(defender, 3);
+		AP_ConsumeVital(defender, STAMINA, dmg);	
+	else
+		TS_StartTimer(defender, "paralysis", 5);
+	endif
+	
+	return 1;
+endprogram
+
+function PushBack(who, dist)
+
+	var x := 0;
+	var y := 0;
+
+	if (who.facing == 0)
+		y :=  1;
+	elseif (who.facing == 1)
+		y :=  1;
+		x := - 1;
+	elseif (who.facing == 2)
+		x :=  - 1;
+	elseif (who.facing == 3)
+		x :=  - 1;
+		y :=  - 1;
+	elseif (who.facing == 4)
+		y :=  - 1;
+	elseif (who.facing == 5)
+		x :=   1;
+		y :=  - 1;
+	elseif (who.facing == 6)
+		x :=   1;
+	elseif (who.facing == 7)
+		x :=  1;
+		y :=  1;
+	endif
+
+	var i := 0;
+	for( i := 1; i <= dist; i := i + 1)
+		var finalx := (who.x + x);
+		var finaly := (who.y + y);
+		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm );
+		if (err == error)
+		//	PrintText(who, "*bate no obstaculo*");
+			break;
+		endif
+	endfor
+
+endfunction

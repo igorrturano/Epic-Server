@@ -1,0 +1,65 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":spells:summon";
+include "include/client";
+include "include/dungeons";
+
+program summonSkeletaSteed(params)
+	var who := params[1];
+	var targ := params[2];
+
+	var template := ":brainai:sheep";
+    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+    var dice_roll := RandomDiceRoll("1d10");
+    PrintTextAbovePrivate(who, "rolou um "+dice_roll, who);
+    
+    case ( dice_roll )
+        1: template := ":brainai:sheep";
+        2: template := ":brainai:dog";
+        3: template := ":brainai:warg";
+        4: template := ":brainai:panther";
+        5: template := ":brainai:horse1";
+        6: template := ":brainai:GrizzlyBear";
+        7: template := ":brainai:Ent";
+        8: template := ":brainai:hellhound";
+        9: template := ":brainai:PoisonElemental";
+        10: template := ":brainai:Daemon";
+    endcase
+
+    if (template == error)
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return;
+	endif
+
+    var i := 0;
+    who.frozen := 1;
+    while (i < 4)
+        PerformAction(who, ANIM_CAST_DIR);
+        sleep(1);
+        i++;
+    endwhile
+    who.frozen := 0;
+	PlaySoundEffect(targ, SFX_SPELL_SUMMON_ELEMENTAL);
+    //PlaySoundEffect(who, 0x686);
+	var mount := summon(template, targ, who);
+    
+	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+
+	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
+    if (dice_roll == 9)
+        PlayObjectCenteredEffect(mount, 0x6D1D, 10, 20);
+        sleep(1);
+        PrintTextAbove(mount, "Teu chamado ressoou pelos planos, invocador ousado. Estou aqui para servir.");
+        duracao := Cint(AP_GetSkill(who, MAGICLORE));
+    elseif (dice_roll == 0)
+        PrintTextAbove(mount, "Beeh");
+    endif
+
+    SendSysMessageEx(who, "Sua invocacao caotica esta pronta para servir");
+	return 1;
+
+endprogram

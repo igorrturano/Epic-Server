@@ -1,0 +1,17 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+
+	SendSysMessageEx(who, "Voce esta em postura defensiva.", SSM_INFO);
+	SetObjProperty(who, "#tempparrybonus", 100);
+	//setObjProperty(who, "#attackfail", 1);
+	SetCooldown(who, "parrydelay", 0);
+	
+endprogram

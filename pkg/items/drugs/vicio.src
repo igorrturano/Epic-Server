@@ -1,0 +1,46 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include "include/say";
+
+program Hunger(chr)
+	if( chr.cmdlevel >= 2 )
+		return 0;
+	endif
+	
+	if ( GetObjProperty(chr, "#vicioMod") )
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	var vicio;
+	while( chr )
+		vicio := CInt(AP_GetVital(chr, "Vicio") / 17280);
+
+		if (vicio <= 1)
+			if((GetObjProperty(chr, "ultimouso") + 3000000) < polcore().systime)
+				SendSysMessageEx(chr, "Voce sente os efeitos da abstinencia.",  SSM_INFO);
+				var penalidadevicio := GetObjProperty(chr, "penalidadevicio");
+				SetObjProperty(chr, "penalidadevicio", penalidadevicio - 10);
+				var viciomod := GetObjProperty(chr, "#viciomod");
+				SetObjProperty(chr, "#viciomod", viciomod + 1);
+				AP_ModifyStatMod(chr, STRENGTH, penalidadevicio);
+				AP_ModifyStatMod(chr, DEXTERITY, penalidadevicio);
+			endif
+		elseif (vicio < 5 )
+			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substancias",  SSM_INFO);
+			var penalidadevicio := SetObjProperty(chr, "penalidadevicio", 0);
+			AP_ModifyStatMod(chr, STRENGTH, penalidadevicio);
+			AP_ModifyStatMod(chr, DEXTERITY, penalidadevicio);
+			EraseObjProperty(chr, "#viciomod");
+		endif
+
+		RecalcVitals(chr);
+
+		Sleep(60 * 600); //10 horas
+		EraseObjProperty(chr, "#viciomod");
+	endwhile
+endprogram

@@ -1,0 +1,23 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+
+	SendSysMessage(who, "Voce assume uma forma espectral.");
+	//printtextabove(who, " " + who.paralyzed);
+	SetObjProperty(who, "#spectralform", who.color);
+	who.color := 30000;
+	
+	return 1;
+endprogram
+
+   

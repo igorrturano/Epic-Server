@@ -1,0 +1,66 @@
+use uo;
+use os;
+use cfgfile;
+include ":spells:tnmagery";
+include ":attributes:attributes";
+include ":brainai:npcUtil";
+include "include/damage";
+include ":tn:combat";
+include ":tn:cooldown";
+include "include/say";
+include "include/client";
+include "include/sounds";
+include ":spells:summon";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/eventID";
+
+
+program SpellScript(params)
+
+	var who := params[1];
+	var targ := params[2];
+	var spellid:=params[3];
+
+	var hostiles:= ListHostiles( who, range := 20, flags := 0 );
+
+	if(Len(hostiles)==0)
+		SendSysMessageEx(who, "Voce nao esta sendo atacado.", SSM_FAIL);
+		return 0;
+	else
+		var cfg  :=  ReadConfigFile(":spells:allspells");
+		var elem := FindConfigElem(cfg, spellid);
+		var template := getConfigString(elem, "npcTemplate");
+
+		if (template == error)
+			SendSysMessage(who, "Erro ao ler o template" + template);
+			return;
+		endif
+
+
+		//TS_StartTimer(targ, "luzdivina", AP_GetSkill(who, MAGICLORE), level, who, 1); //5 min
+
+		//var globodeluz:=CreateNpcFromTemplate( ":brainai:globodeluz", who.x, who.y, who.z);
+		var globodeluz :=   summon(template, who, who);
+		SetObjProperty(globodeluz,"hitsmod",1000);
+
+		var duracao:= 10;
+		//var duracao := GetSpellDuration(AP_GetSkill(who, MAGICLORE))/3;
+
+		foreach hostile in hostiles
+			if (GetObjProperty(hostile,"raca")==error)
+				var event := struct{"type":=EVID_TAUNT, "source":=globodeluz};
+				SendEvent(hostile, event);
+			endif
+		endforeach
+
+		PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+		PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+		SendSysMessageEx(targ, "A luz ofuscou a visao dos seus inimigos.", SSM_INFO);
+		var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+		TS_StartTimer(globodeluz, "summon", duracao,level);
+
+
+	endif
+endprogram

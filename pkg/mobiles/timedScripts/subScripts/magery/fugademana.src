@@ -1,0 +1,21 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#manapenalty") )
+		return 0;
+	endif
+
+	SetObjProperty(mobile, "#manapenalty", level);
+	
+	return 1;
+endprogram

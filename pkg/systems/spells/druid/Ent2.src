@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":spells:tnmagery";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
+
+  var lastday := GetObjProperty (who, "lastday");
+  var actualday := CStr (getglobalproperty("day"));
+  if (actualday == lastday)
+     SendSysMessageEx(who, "Voce nao pode fazer isso novamente em um periodo menor do que 24hs.", SSM_FAIL);
+  else
+     CreateItemInBackpack(who, 0x76AC, 1);
+     CreateItemInBackpack(who, 0x76AD, 1);
+     CreateItemInBackpack(who, 0x76AE, 1);
+     CreateItemInBackpack(who, 0x76AF, 1);    
+     var day := getglobalproperty("day");
+     SetObjProperty (who, "lastday",CStr (day));
+  endif
+endprogram
+
+
+

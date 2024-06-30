@@ -1,0 +1,74 @@
+/* $Id$
+ *
+ */
+
+use uo;
+use util;
+use math;
+
+include "include/client";
+include "include/say";
+include "include/damage";
+include ":timedscripts:timedScripts";
+include ":charactercreation:habilidades";
+include ":charactercreation:resists";
+
+program trapScript(params)
+	var mobile := params[1];
+	var object := params[2];
+	var trap_info := params[3];
+	var sounds := { 560, 561, 562};
+	//var trap_index := params[4];
+	params := 0; // Not needed anymore.
+
+	PlaysoundEffect(object, sounds[RandomInt(sounds.size())+1] );
+	PlayStationaryEffect(object.x, object.y, object.z, GFX_POISON_GAS, 10,10, 0, object.realm);
+
+	var range := trap_info.Strength;
+	var poisonLvl := trap_info.Strength;
+	if (range < 1)
+		range := 1;
+	endif
+	range := range*3;
+
+	var mobiles := ListMobilesNearLocationEx(object.x, object.y, object.z, range, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
+
+	foreach mobile in mobiles
+		if (!mobile.npctemplate)
+			if (CheckResist(mobile, REFLEXOS, 30,-20*poisonLvl))
+				if (temHabilidade(mobile, "Desbravador Nato"))
+					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha venenosa.", SSM_INFO);
+					mobile.hidden := 0;
+					continue;
+				else
+					SendSysMessageEx(mobile, "Voce se expos parcialmente ao veneno da armadilha.", SSM_INFO);
+					if (CheckResist(mobile, FORTITUDE, 15,-20*poisonLvl)) // Um pouco mais de chance de resistir ao veneno, mas não muita
+						SendSysMessageEx(mobile, "Voce resistiu ao veneno.", SSM_INFO);
+						continue;
+					else
+						TS_StartTimer(mobile, "defaultPoison", 120, max(1,poisonLvl-1)); // O Veneno afeta um pouco menos
+					endif
+				endif
+			else
+				if (temHabilidade(mobile, "Evasao Aprimorada"))
+					SendSysMessageEx(mobile, "Por instinto voce se expos menos ao veneno da armadilha.", SSM_INFO);
+					if (CheckResist(mobile, FORTITUDE, 15,-20*poisonLvl)) // Um pouco mais de chance de resistir ao veneno, mas não muita
+						SendSysMessageEx(mobile, "Voce resistiu ao veneno.", SSM_INFO);
+						continue;
+					else
+						TS_StartTimer(mobile, "defaultPoison", 120, max(1,poisonLvl-1)); // O Veneno afeta um pouco menos
+					endif
+				endif
+				if (CheckResist(mobile, FORTITUDE, 30,-20*poisonLvl))
+					SendSysMessageEx(mobile, "Voce resistiu ao veneno.", SSM_INFO);
+					continue;
+				else
+					TS_StartTimer(mobile, "defaultPoison", 120, poisonLvl); // O Veneno afeta completamente
+				endif
+			endif
+			mobile.hidden := 0;
+			PerformAction(mobile, ANIM_HIT);
+		endif
+	endforeach
+	return 1;
+endprogram

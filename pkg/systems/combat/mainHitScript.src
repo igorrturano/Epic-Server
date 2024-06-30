@@ -1,0 +1,1447 @@
+/*
+ * $Id
+ *
+ */
+use uo;
+use os;
+use basic;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":brainai:npcUtil";
+include ":blood:blood";
+include ":combat:settings";
+include ":timedscripts:timedScripts";
+include "include/client";
+include "include/facings";
+include "include/damage";
+include ":tn:combat";
+include ":tn:cooldown";
+include ":fls_core:packets";
+include "include/say";
+include ":charactercreation:habilidades";
+include "include/client";
+include "include/sounds";
+include ":spells:swordmage";
+include ":taming:taming";
+include ":charactercreation:resists";
+include ":combat:combat";
+
+//include ":combat:include/mainHitScript";
+
+var item_cfg := ReadConfigFile(":*:itemdesc");
+var taming_cfg := ReadConfigFile(":taming:taming");
+
+program MainHitScript( params )
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var armor := params[4];
+	var basedamage := params[5];
+	var rawdamage := params[6];
+
+	//Garante dano mínimo de 1
+	if (rawdamage < 1)
+		rawdamage := 1;
+	endif
+
+	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
+		SendSysMessageEx(attacker, "Voce nao pode atacar o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	//Define attacker como o originador do ataque
+	SetScriptController(attacker);
+
+	//Aplica percentual de penalidade por dex e modificador da Hab Fintar
+	rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender); //penalidade da dex
+
+	//Impede de atacar-se
+	if (attacker == defender)
+		SendSysMessage(attacker, "attacker é igual ao defender");
+		return 0;
+	endif
+
+	//Impede de atacar gente escondida
+	if (defender.hidden)
+		return 0;
+
+	//Calcula se o atacante escondido revela ou não
+	elseif (attacker.hidden)
+		//Gasta a carga de Ataque Furtivo Aprimorado e não se revela
+		if (GetObjProperty(attacker, "ataquefurtivoaprimorado") == 1)
+			EraseObjProperty(attacker, "ataquefurtivoaprimorado");
+		//Revela o atacante
+		else
+			attacker.hidden := 0;
+		endif
+
+	//Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
+	elseif (!attacker.npctemplate && attacker.warmode && defender.npctemplate && defender.master)
+		LogToFile(":fls_core:pets.log", attacker.acctname+" atacou "+defender.name+" ("+defender.npctemplate+")", LOG_DATETIME);
+	endif
+
+	//Controla de o atacante está olhando pro alvo e se está por trás dele
+	FacingChecks(attacker, defender);
+
+	//Toca do som do alvo sofrendo ataque
+	PlayHitSounds(attacker, defender);
+
+	//Processa o aumento ou não de skill de combate
+	//SkillChecks(attacker, defender, weapon, rawdamage); //jogado pro combatHook.src para upar até quando errar o golpe
+
+	//Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+		//Calcula o bloqueio e os danos no escudo do defensor
+		ParryCheck(attacker, defender, rawdamage, weapon);
+	endif
+
+	//Calcula a chance do projétil não quebrar
+	ArrowRecovery(attacker, defender, weapon);
+
+	//Calcula os danos
+	basedamage := CalculateTotalDamageBonus(rawdamage, attacker, defender);
+	if (cint(GetObjProperty(attacker, "#mataroumorrer")) > 0 )
+		basedamage := basedamage*3;
+	endif
+	if(TemHabilidade(attacker, "Flanquear"))
+		if(IsBehind(defender,attacker.x, attacker.y))
+			basedamage := basedamage + basedamage * 0.4;
+		endif
+	endif
+
+
+	//Calcula os danos na arma do atacante
+	WearDownWeapon(attacker, weapon);
+
+	//Calcula os danos na armadura do defensor
+	WearDownArmor(defender, armor, rawdamage, weapon);
+
+
+	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
+	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
+
+	PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage);
+
+	//se tiver feito um movimento, executa ele e retorna (nao causa o dano normal)
+	var move := GetObjProperty(attacker, "movement");
+	var movtime := cint(GetObjProperty(attacker, "#movtime"));
+	if (move != error)
+		if (ReadGameClock() < movtime + 30 )
+			var e := start_script(cstr(move), array{attacker, defender, weapon, armor, basedamage, basedamage});
+//			printtextabove(attacker, " e  " + e + " move " + move);
+			EraseObjProperty(attacker, "movement");
+			return 1;
+		else
+			SendSysMessageEx(attacker, "Voce perdeu seu ataque especial.", SSM_INFO);
+			EraseObjProperty(attacker, "movement");
+		endif
+	endif
+
+	//printtextabove(attacker, "raw " + rawdamage);
+
+	var total;
+	if ( basedamage > 0 )
+		//seta info
+		//printtextabove(attacker, "raw maior que 0");
+		var lastHitInfo := struct;
+		lastHitInfo.+amount := total;
+		lastHitInfo.+attacker := attacker.serial;
+		var weapon_scripts := GetObjProperty(weapon, "HitScripts");
+		if (weapon_scripts != error)
+			lastHitInfo.+hitscript :=  weapon_scripts;
+		endif
+		weapon_scripts := GetObjProperty(attacker, "HitScripts"); //nos nps eh neles e nao na arma
+		if (weapon_scripts != error)
+			lastHitInfo.+hitscript :=  weapon_scripts;
+		endif
+		SetObjProperty(defender, "lastHit", lastHitInfo);
+		if ( (GetObjProperty(defender, "NeverRelease") == 1) )
+			var teste := AP_GetVital(defender, "DP");
+			SetObjPRoperty(defender, "LastDP", teste);
+		endif
+		if (!defender.npctemplate)
+			if (attacker.npctemplate)
+				SetObjProperty(defender, "lastNpcDmg", attacker.npctemplate);
+			endif
+		endif
+
+		if(getobjproperty(defender, "apodrecer"))
+			basedamage := CInt(basedamage * 1.2);
+		endif
+
+		if (getObjProperty(defender, "#alvomovel") == 1)
+			EraseObjProperty(defender, "#alvomovel");
+			var hostiles := ListHostiles(defender, 2);
+			var targ := hostiles[RandomInt(hostiles.size())+1 ];
+			defender := hostiles[targ];
+		endif
+
+		var dmgList := dictionary;
+		dmgList := getNewDamageList(attacker);
+		if (weapon.attribute == "Wrestling" && !attacker.npctemplate)
+			dmgList["Physical"] := 1.0;
+		endif
+
+		if (GetObjProperty(attacker, "#canalizacao") != error)
+			EraseObjProperty(attacker, "#canalizacao");
+			var encantada := GetObjProperty(attacker.weapon, "#elementalweapon");
+			var modphy := dmgList["Physical"];
+			dmgList["Physical"] := 0;
+			dmgList[encantada.type] := dmgList[encantada.type] + modphy ;
+		endif
+
+		//var menor :=  cint(getobjproperty(defender, "#chainofpain")) < readgameclock();
+		//printtextabove(attacker, " " +  getobjproperty(defender, "#chainofpain") + " "+ readgameclock() + "  " + menor );
+		if( getobjproperty(defender, "#chainofpain") != error )
+			//printtextabove(attacker, "tem chain");
+			if ( cint(getobjproperty(defender, "#chainofpain")) > readgameclock())
+				//printtextabove(attacker, "ta no delay");
+				//var copnumber := Cint(getobjproperty(defender, "copnumber"));
+				var copmobs := getobjproperty(defender, "#chainserials");
+				var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
+				var copdefenders := array;
+				var lvl := cdbl(AP_GetSkill(mage, MAGICLORE)/200);
+				foreach serial in copmobs
+					copdefenders.append(SystemFindObjectBySerial(serial));
+				endforeach
+				//basedamage := Cint(basedamage / copnumber);
+				foreach targ in copdefenders
+					defender := targ;
+					total := CalculateTotalDamage(defender, basedamage * lvl, attacker, dmgList);
+					//total := ApplyDamageWra(defender, basedamage, dmgList, attacker);
+					if (total < 1)
+						total := 1;
+					endif
+					DamageFLS(defender, total, DMG_FORCED, mage);
+				endforeach
+				return 1;
+			endif
+		endif
+
+		if (GetObjProperty(attacker, "#tiropenetrante"))
+			EraseObjProperty(attacker, "#tiropenetrante");
+			DamageFLS(defender, cint(basedamage-rawdamage*2), DMG_FORCED, attacker); //Não entendi bem o que faz
+		endif
+
+		total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);
+        var shaman_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
+        if (Getcooldown(attacker, "bloodlust") > 0)
+            PlayStationaryEffect(attacker.x, attacker.y, attacker.z, GFX_BLUE_SPARKLE_GROUND, 10, 20, 0, attacker.realm);
+            HealFLS(attacker, total * shaman_bonus/100);
+        endif
+		if (GetObjProperty(attacker, "#ignorardefesas") >= 1);
+			var ignr := getObjPRoperty(attacker, "#ignorardefesas");
+			ignr := ignr - 1;
+			if (ignr <= 0)
+				EraseObjPRoperty(attacker, "#ignorardefesas");
+			else
+				SetObjPRoperty(attacker, "#ignorardefesas", ignr);
+			endif
+			total := basedamage;
+		elseif (GetObjProperty(attacker, "marcou_mob") == defender.serial )
+			total := basedamage;
+		endif
+		if (total < 1)
+			total := 1;
+		endif
+
+		//printtextabove(attacker, " "+ total + " base " + basedamage + " raw " + rawdamage);
+
+		CriticalHitScripts(attacker, defender, weapon, armor, basedamage, total);
+
+		if ( temHabilidade(attacker, "Golpes Amplos"))
+			var pt := attacker.party.members;
+			if (!pt)
+				var inimigosx := ListHostiles(attacker, 1, LH_FLAG_LOS);
+				foreach inimigox in inimigosx
+					DamageFLS(inimigox, cint(total/3), DMG_PHYSICAL, attacker);
+				endforeach
+			else
+				var allPets := array{};
+				var party_members := attacker.party.members;
+
+				if (attacker.party)
+					foreach member in party_members
+						if (member != attacker)
+							var memberObj := SystemFindObjectBySerial(member.serial);
+							var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+							foreach pet in allPetsAndSummonedPets
+								allPets.append(pet);
+							endforeach
+						endif
+					endforeach
+				endif
+				var inimigos2x := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm);
+				foreach inimigox in inimigos2x
+					if(!(inimigox in allPets) && !(inimigox in attacker.party.members))
+						DamageFLS(inimigox, cint(total/3), DMG_PHYSICAL, attacker);
+					endif
+				endforeach
+			endif
+		endif
+
+
+		if ( AP_GetVital(defender, HITS) < total )
+			if ( temhabilidade(attacker, "Trespassar") )
+				Trespassar(attacker, defender);
+			elseif ( isBloodied(attacker) && temhabilidade(attacker, "Trespassar Critico") )
+				Trespassar(attacker, defender);
+			endif
+			if ( temHabilidade(defender, "Furia da Derrota") && IsRaging(defender))
+				PrintText(defender, "*Furia da Derrota*");
+				if (GetObjProperty(defender, "critdelay") > 0)
+					EraseObjProperty(defender, "critdelay");
+				endif
+				SetObjProperty(defender, "#attackbonus", 100);
+				SetObjProperty(defender, "#CriticalChance", 100);
+				defender.attack_once(attacker);
+				//EraseObjProperty(defender, "#CriticalChance");
+			endif
+			/*if ( temHabilidade(attacker, "Golpes Amplos"))
+				var pt := attacker.party.members;
+				if (!pt)
+				print("NÃO PODE");
+					var inimigosx := ListHostiles(attacker, 1, LH_FLAG_LOS);
+					foreach inimigox in inimigosx
+						DamageFLS(inimigox, cint(total/3), DMG_PHYSICAL, attacker);
+					endforeach
+				else
+					var pets := ListPetsNear(attacker, 5);
+					var petspt := struct;
+					foreach member in pt
+						petspt.append(ListPetsNear(member, 4));
+					endforeach
+					var inimigos2x := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm);
+					foreach inimigox in inimigos2x
+						if( !(inimigox in petspt) && !(inimigox in pets) && !(inimigox in attacker.party.members))
+							DamageFLS(inimigox, cint(total/3), DMG_PHYSICAL, attacker);
+						endif
+					endforeach
+				endif
+			endif*/
+		endif
+
+		//	if ( temHabilidade(attacker, "Assassinato Horrorizante") )
+		//		SetCooldown(attacker, "evasion_chance", 20);
+		//	endif
+	endif
+
+	if ( GetCooldown(attacker, "aleijar") > 0)
+		AP_ConsumeVital(defender, STAMINA, total);
+	endif
+
+    if (GetCooldown(defender, "defesasgloriosas") > 0)
+        PerformAction(defender, 0x0e);
+        PrintText(defender, "*Golpeia com o escudo*");
+        PlaySoundEffect(defender, 0x3b4);
+        TS_StartTimer(attacker, "paralysis", 5);
+        sleep(2);
+        defender.attack_once(attacker);
+
+        SetCooldown(defender, "defesasgloriosas", 0);
+    endif
+
+    if (GetCooldown(defender, "disarm") > 0)
+        disarmOpponent(defender, attacker);
+    endif
+
+	if ((TemHabilidade(defender, "Furia Imortal") || TemHabilidade(defender, "Trapaceiro Experiente" )) && (AP_GetVital(defender, HITS) < total))
+		if ( !GetCooldown(defender, "trapacearmorte_rodando") > 0 )
+			start_script(":charactercreation:habilidades/trapacearmorte", array{defender, total});
+		endif
+    elseif(GetObjProperty(defender, "chardata").vantagemracial == "Resistencia implacavel" && (AP_GetVital(defender, HITS) < total))
+        if (GetObjProperty(defender, "Resistencia implacavel"))
+            EraseObjProperty(defender, "Resistencia implacavel");
+            DamageFLS(defender, total, DMG_FORCED, attacker);
+        else  
+            AP_SetVital(defender, HITS, 1);
+            SendsysMessageEx(defender, "Sua resistencia implacavel o mantem de pe");
+            SetObjPRoperty(defender, "Resistencia implacavel", 1);
+        endif
+	else
+		//printtextabove(attacker, "causa dano");
+		var finalizar := 0;
+		if ( cint(GetObjProperty(attacker, "#finalizar")) == 1)
+			if ( !isBloodied(defender) )
+				finalizar := 1;
+			endif
+		endif
+		if (GetCooldown(defender, "vigordabatalha"))
+			DisplayDamage(defender, total, attacker);
+			SetCooldown(defender, "vigordabatalha", 0);
+			DamageStamina(defender, total);
+		else
+			if (GetObjProperty(attacker,  "backstab"))
+				//total := total*2;
+				EraseObjProperty(attacker, "backstab");
+				EraseObjProperty(attacker, "#nextcritical");
+                if (TemHabilidade(defender, "Sempre Alerta"))
+                    TS_StartTimer(attacker, "paralysis", 5);
+                    PrintTextAbove(defender, "*Sempre Alerta*");
+                else
+                    DamageFLS(defender, total, DMG_FORCED, attacker);
+                    ataqueFurtivo(attacker,defender);
+                endif
+            elseif(attacker.weapon.objtype == 0x166E)
+                var dist := Distance(attacker, defender);
+                if (dist == 1)
+                    DamageFLS(defender, cint(total/3), DMG_FORCED, attacker);
+                elseif(dist == 2)
+                    DamageFLS(defender, cint(total/2), DMG_FORCED, attacker);
+                else
+				    DamageFLS(defender, total, DMG_FORCED, attacker);
+                endif
+			else
+				DamageFLS(defender, total, DMG_FORCED, attacker);
+			endif
+		endif
+		if ( isBloodied(defender) && finalizar)
+			SetObjPRoperty(attacker, "#finalizar", 2);
+		endif
+	endif
+	EraseObjProperty(attacker, "backstab");
+
+
+	return 1;
+endprogram
+
+function ParseScriptString(crit)
+	var str := "";
+	var i := 1;
+
+	while(crit[i] != "/")
+		i := i + 1;
+	endwhile
+	i := i + 1;
+	while (crit[i])
+		str := str + crit[i];
+		i := i + 1;
+	endwhile
+
+	return lower(str);
+endfunction
+
+function FacingChecks(attacker, defender)
+	if ( !CS_GetSettingsCfgElem("General").ForceFacing )
+		return 0;
+	endif
+
+	if ( IsBehind(defender, attacker.x, attacker.y)  )
+		SetObjProperty(attacker, "#backstab", 2); //Cada 1 na propriedade adiciona 10% de dano
+	endif
+	return 1;
+endfunction
+
+//function PlayHitSounds(defender)
+//	if ( defender.IsA(POLCLASS_NPC) )
+//		var damaged_sound := NPC_GetNPCConfig(defender).DamagedSound;
+//		if (damaged_sound)
+//			PlaySoundEffect(defender, damaged_sound);
+//		endif
+//	endif
+//endfunction
+
+function PlayWeaponSounds(attacker)
+	//Toca o som da arma do atacante
+	var hitsound := GetObjProperty(attacker.weapon, "HitSound");
+	if (hitsound)
+		PlaySoundEffect(defender, hitsound);
+	endif
+endfunction
+
+/*
+//jogado pra ..\include\mainHitScript.inc pra poder chamar em outros scripts
+function SkillChecks(attacker, defender, weapon, rawdamage)
+
+	var skillUsedForCritical := TACTICS;
+	if(GetObjProperty(attacker, "kit") == "Mago de Combate")
+		skillUsedForCritical := MAGICLORE;
+	elseif(GetObjProperty(attacker, "kit") == "Medico de Combate")
+		skillUsedForCritical := MEDICINE;
+	elseif(temHabilidade(attacker, "Lobo Solitario"))
+		skillUsedForCritical := SURVIVAL;
+	endif
+	//Testa se é possivel ganhar skill com o NPC alvo
+	var skillAttacker, skillDefender;
+	if (defender.npctemplate && attacker.connected)
+		skillAttacker := cint(AP_GetSkill(attacker, attacker.weapon.attribute));
+		skillDefender := cint(AP_GetSkill(defender, WRESTLING));
+        if (attacker.weapon.objtype == 0x13b9 && !attacker.shield) // bastarda
+            skillAttacker := cint(AP_GetSkill(attacker, MELEECOMBAT2H));
+        endif
+        if (defender.weapon.objtype == 0x13b9 && !defender.shield)
+		    skillDefender := cint(AP_GetSkill(attacker, MELEECOMBAT2H));
+        endif
+		if(TemHabilidade(attacker, "Maestria de Devastacao"))
+			if(GetObjProperty(attacker.weapon, "swordmage") == attacker.serial)
+			skillAttacker := cint(AP_GetSkill(attacker, MELEECOMBAT1H));
+			endif
+		endif
+		if(TemHabilidade(defender, "Maestria de Devastacao"))
+			if(GetObjProperty(defender.weapon, "swordmage") == defender.serial)
+			skillDefender := cint(AP_GetSkill(defender,MELEECOMBAT1H));
+			endif
+		endif
+	endif
+
+	//se a skill do atacante for maior 10 pontos a mais que a do defesor, não upa
+	if (skillAttacker > (skillDefender+10))
+		PrintText(attacker, "DEBUG: SEM UP!!!");
+		return 0;
+	else
+		PrintText(attacker, "DEBUG: COM UP!!!");
+	endif
+
+	//Sendo o alvo um personagem jogador ou NPC com combate melhor que o atacante, permite o up de skill de combate
+	var can_gain := 0;
+	var next_gain := CInt(GetObjProperty(attacker, "#CS_GainTime"));
+	if ( ReadGameClock() >= next_gain )
+		if ( CS_GetSettingsCfgElem("General").PvPGains )
+			can_gain := 1;
+		elseif ( defender.IsA(POLCLASS_NPC) )
+			can_gain := 1;
+		endif
+	endif
+
+	if ( can_gain )
+		var gain_wait := CInt(CS_GetSettingsCfgElem("General").GainWait);
+		SetObjProperty(attacker, "#CS_GainTime", ReadGameClock()+gain_wait);
+		if ( rawdamage > 0 )
+			SkillCheck(attacker, weapon.attribute, -1);
+			sleepms(50);
+			SkillCheck(attacker, skillUsedForCritical, -1);
+		endif
+	endif
+endfunction
+*/
+
+function ArrowRecovery(attacker, defender, weapon)
+	if ( defender.IsA(POLCLASS_NPC) && defender.backpack )
+		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
+		if (TemHabilidade(attacker, "Recuperar Flechas"))
+			var chance := chance + 35;
+		endif
+		if ( RandomDiceRoll("1d100") <= chance )
+			var ammo := GetObjProperty(weapon, "ammo");
+			if ( ammo )
+				CreateItemInBackPack(defender, ammo, 1);
+			endif
+		endif
+	endif
+endfunction
+
+function WearDownArmor(defender, armor, rawdamage, weapon)
+
+	var bonus;
+	//Amplia o dano na armadura se a arma tiver a propriedade
+	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
+		bonus := RandomInt(3)+1;
+	endif
+
+	if (armor)
+		var armr_elem := CS_GetSettingsCfgElem("Armor");
+
+		// Verifica a poncentagem de manter equipado o item
+		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(armor.hp)) / 100.0;
+		//var dmg_to_wear := CInt(CInt(armr_elem.DmgToWear) * CInt(armor.hp) / 100);
+
+		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
+		var wearchance := armr_elem.WearChance;
+		if ( TemHabilidade(defender, "Conservar Equipamento"))
+			wearchance := wearchance/2;
+			//if (wearchance < 10)
+			//	wearchance := 10;
+			//endif
+		endif
+
+		//if (CInt(rawdamage) > dmg_to_wear)
+		if (RandomDiceRoll("1d100") <= wearchance)
+			SendSysMessage(defender, armor.desc+" foi danificada.");
+			var armorhp := armor.hp;
+			armorhp := armorhp - Cint(armr_elem.WearRate + bonus);
+			if ( armorhp <= 0 )
+				SendSysMessage(defender, armor.desc+" foi destruida.");
+				SetObjProperty(armor, "broken", 1);
+				SetObjProperty(armor, "realdesc", armor.desc);
+				SetName(armor, armor.desc+" [danificado]");
+				MoveItemToContainer(armor, defender.backpack);
+				//DestroyItem(armor);
+			elseif ( armor.hp > armor.maxhp )
+				armor.hp := armor.maxhp;
+			else
+				armor.hp := armorhp;
+			endif
+			var nome := armor.name;
+			SetName(armor, nome + " -");
+			sleepms(30);
+			SetName(armor, nome);
+		endif
+		//endif
+	endif
+
+	return 1;
+endfunction
+
+function WearDownShield(defender, shield, rawdamage, weapon)
+
+	var bonus := 0;
+	//Amplia o dano no escudo se a arma tiver a propriedade
+	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
+		bonus := RandomInt(3)+1;
+	endif
+
+	if (shield)
+		var armr_elem := CS_GetSettingsCfgElem("Parry");
+
+		// Verifica a poncentagem de manter equipado o item
+		//var dmg_to_wear := CInt(CInt(armr_elem.DmgToWear) * CInt(shield.hp) / 100);
+		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(shield.hp)) / 100.0;
+
+		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
+		var wearchance := armr_elem.WearChance;
+		if ( TemHabilidade(defender, "Conservar Equipamento"))
+			wearchance := wearchance/2;
+			//if (wearchance < 20)
+			//	wearchance := 20;
+			//endif
+		endif
+		//if (CInt(rawdamage) > dmg_to_wear)
+		if (RandomDiceRoll("1d100") <= wearchance)
+			SendSysMessage(defender, shield.desc+" foi danificado.");
+			var shieldhp := shield.hp;
+			shieldhp := shieldhp - Cint(armr_elem.WearRate + bonus);
+			if ( shieldhp <= 0 )
+				SendSysMessage(defender, shield.desc+" foi destruido.");
+				SetObjProperty(shield, "broken", 1);
+				SetObjProperty(shield, "realdesc", shield.desc);
+				SetName(shield, shield.desc+" [danificado]");
+				MoveItemToContainer(shield, defender.backpack);
+				//DestroyItem(shield);
+			elseif (shield.hp > shield.maxhp)
+				shield.hp := shield.maxhp;
+			else
+				shield.hp := shieldhp;
+			endif
+			var nome := shield.name;
+			SetName(shield, nome + " -");
+			sleepms(30);
+			SetName(shield, nome);
+		endif
+	endif
+	return 1;
+endfunction
+
+function WearDownWeapon(attacker, weapon)
+	if (weapon.IsA(POLCLASS_WEAPON))
+		//Se está desarmado não danifique a arma natural
+		if (weapon.objtype == 0x1F020)
+			return 1;
+		//Calcula danos nas armas normais
+		else
+			var wpn_elem := CS_GetSettingsCfgElem("Weapons");
+			var wearchance := CDbl(wpn_elem.WearChance);
+
+			//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
+			if (TemHabilidade(attacker, "Conservar Equipamento"))
+				wearchance := wearchance/2;
+				//if (wearchance < 10)
+				//	wearchance := 10;
+				//endif
+			endif
+
+			if ( RandomDiceRoll("1d100") <= wearchance )
+				var weaponhp := weapon.hp - 1;
+
+				if ( weaponhp <= 0 )
+					SendSysMessage(attacker, weapon.desc+" quebrou.");
+					MoveObjectToLocation(weapon, 1, 1, 1, attacker.realm, MOVEOBJECT_FORCELOCATION);
+					SetObjProperty(weapon, "broken", 1);
+					SetObjProperty(weapon, "realdesc", weapon.desc);
+					releasegems(attacker, weapon);
+					eraseobjproperty(weapon, "gems");
+					SetName(weapon, weapon.desc+" [danificado]");
+					MoveItemToContainer(weapon, attacker.backpack);
+					//DestroyItem(weapon);
+				elseif ( weapon.hp > weapon.maxhp )
+					weapon.hp := weapon.maxhp;
+				else
+					weapon.hp := weaponhp;
+				endif
+				var nome := weapon.name;
+				SetName(weapon, nome + " -");
+				sleepms(30);
+				SetName(weapon, nome);
+			endif
+			return 1;
+		endif
+	else
+		return 0;
+	endif
+endfunction
+
+function DamageInfo(attacker, defender, basedamage, rawdamage)
+	if ( attacker.cmdlevel )
+		PrintTextAbovePrivate(attacker, "Rawdamage:"+rawdamage+"  Base:"+basedamage, attacker);
+	endif
+	if ( defender.cmdlevel )
+		PrintTextAbovePrivate(attacker, "Rawdamage:"+rawdamage+"  Base:"+basedamage, defender);
+	endif
+endfunction
+
+function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage)
+	var weapon_scripts := array;
+	//if ( weapon.objtype == 0xF020 ) //
+	//	weapon_scripts := GetObjProperty(attacker, "HitScripts");
+	if ( weapon.IsA(POLCLASS_WEAPON) )
+		weapon_scripts := GetObjProperty(weapon, "HitScripts");
+		if (!weapon_scripts)
+			weapon_scripts := array;
+		endif
+		var other_scripts := GetConfigStringArray(item_cfg[weapon.objtype], "HitScripts");
+		foreach script in other_scripts
+			weapon_scripts.Append(script);
+		endforeach
+	endif
+
+	var hitopt;
+	if (attacker.npctemplate)
+		var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
+		var others_scripts := GetConfigStringArray(npcelem, "HitScripts");
+		if (weapon_scripts == error)
+			weapon_scripts := array;
+		endif
+		var body_scripts := GetObjProperty(attacker, "HitScripts");
+		foreach oscript in others_scripts
+			weapon_scripts.append(oscript);
+		endforeach
+		foreach oscript in body_scripts
+			weapon_scripts.append(oscript);
+		endforeach
+		hitopt := GetObjProperty(attacker, "generichit");
+	else
+		hitopt := GetObjProperty(weapon, "generichit");
+	endif
+
+	foreach hitscript in weapon_scripts
+		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage, hitopt});
+		if ( !script || script.errortext )
+			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessage(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+		endif
+		sleepms(2);
+	endforeach
+
+	if (GetCooldown(weapon, "ataqueelemental") )
+		EraseObjProperty(weapon, "#ataqueelemental");
+		var elemental := GetObjProperty(weapon, "#elementalweapon");
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		if (elemental != error)
+			if (elemental.type == DMG_FIRE)
+				start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
+			elseif (elemental.type == DMG_COLD)
+				start_script(":combat:weaponHitScripts/IceHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
+			elseif( elemental.type == DMG_ENERGY)
+				start_script(":combat:weaponHitScripts/LightningHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
+			endif
+		endif
+	endif
+
+	if (GetObjProperty(attacker, "#golpesangrento")) // VIVISEC do Igor
+		// EraseObjProperty(attacker, "#golpesangrento");
+		var dmg := 1;
+        if (TemHabilidade(attacker, "Golpe Afiado"))
+            dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, TACTICS)/100));
+            PlaySoundEffect(attacker, 0x510);
+        else
+            dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ALCHEMY)/100));
+            PlaySoundEffect(attacker, 0x511);
+        endif
+		start_script(":combat:weaponHitScripts/bleedingstrike", array{attacker, defender, weapon, armor, basedamage, dmg*2});
+	endif
+
+    //if (GetObjProperty(attacker, "#justicaderothen"))
+	//	var dmg := 1;
+    //    dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+        
+    //    Run_Script_To_Completion(":combat:weaponHitScripts/smiteEvil", array{attacker, defender, weapon, armor, basedamage, dmg*2});
+	//endif
+
+	if ( GetCooldown(weapon, "circulodevas") )
+		var elemental := GetObjProperty(weapon, "#elementalweapon");
+		if (elemental != error)
+			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			if(dmg < 3)
+				dmg := 3;
+			endif
+			start_script(":combat:weaponHitScripts/areadmg", array{attacker, defender, weapon, armor, basedamage, dmg*2, elemental.type, 3});
+		endif
+	endif
+
+//    if (TemHabilidade(attacker, "Golpes Amplos"))
+ //           var dmg  := AP_GetSkill(attacker, TACTICS)/10;
+//			if(dmg < 3)
+	//			dmg := 3;
+		//	endif
+        //start_script(":combat:weaponHitScripts/areadmg", array{attacker, defender, weapon, armor, basedamage, dmg*2, DMG_PHYSICAL});
+    //endif
+
+	if (GetCooldown(weapon, "habelemental") )
+		EraseObjProperty(weapon, "#habelemental");
+		var elemental := GetObjProperty(weapon, "#elementalweapon");
+		if (elemental != error)
+			start_script(":combat:weaponHitScripts/habelemental", array{attacker, defender, weapon, armor, basedamage, rawdamage*2, elemental.type, 3});
+		endif
+	endif
+
+	return 1;
+endfunction
+
+function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage, byref rawdamage)
+	var skillUsedForCritical := TACTICS;
+	if(GetObjProperty(attacker, "kit") == "Mago de Combate")
+		skillUsedForCritical := MAGICLORE;
+	elseif(GetObjProperty(attacker, "kit") == "Medico de Combate")
+		skillUsedForCritical := MEDICINE;
+	elseif(temHabilidade(attacker, "Lobo Solitario"))
+		skillUsedForCritical := SURVIVAL;
+	endif
+	var autoCritical := 0;
+	if (GetObjProperty(attacker, "#nextcritical"))
+		EraseObjProperty(attacker, "#nextcritical");
+		autoCritical := 1;
+	endif
+
+	if (!autoCritical)
+		if (GetCooldown(attacker, "critical") > 0)
+			return 1;
+		endif
+	endif
+
+	//chance total = prop da arma  (pra bonus magicos) + prop do mob (pra npcs ou magias) + valor no itemdesc
+
+	var skillCriticalBonus;
+	var categoriaDefender := GetObjProperty(defender, "Category");
+
+	if (GetObjProperty(attacker, "kit") == "Mago de Combate")
+		skillCriticalBonus := CInt(AP_GetSkill(attacker, MAGICLORE)/20); //Aplica bonus de magiclore na chance de critico quando é Mago de Combate
+	elseif (GetObjProperty(attacker, "kit") == "Medico de Combate")
+		skillCriticalBonus := CInt(AP_GetSkill(attacker, MEDICINE)/20); //Aplica bonus de medicine na chance de critico quando é Medico de Combate
+	elseif (GetObjProperty(attacker, "kit") == "Ranger")
+	//skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20); Aplica bonus de tactics na chance de critico quando não é nenhum caso específico
+		if(categoriaDefender == "GiantAnimal" || categoriaDefender == "Animal" || categoriaDefender == "EvilAnimal" || categoriaDefender == "Snow" || categoriaDefender == "Mount" || categoriaDefender == "Plantas" || categoriaDefender == "Terathan" || categoriaDefender == "Dragon")
+			skillCriticalBonus := skillCriticalBonus + CInt(AP_GetSkill(attacker, SURVIVAL)/20); //Aplica bonus de Survival se forem criaturas selvagens ou dragões
+		endif
+	else
+		skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20); //Aplica bonus de magiclore na chance de critico quando é Mago de Combate
+	endif
+	if(temHabilidade(attacker, "Lobo Solitario"))
+		skillCriticalBonus :=CInt(AP_GetSkill(attacker, SURVIVAL/20)); // Aplica bonus de survival quando é classe Caçador
+	endif
+	//critico base da arma, critico extra da CProp da da arma, critico extra do CProp do personagem, critico extra da skill do personagem, critico extra de Habilidade especial do personagem
+	var chance := Cint( Cint(GetObjProperty(weapon, "CriticalChance")) + Cint(GetObjProperty(attacker, "CriticalChance")) + Cint((item_cfg[weapon.objtype]).CriticalChance )) + skillCriticalBonus + Cint(GetObjProperty(attacker, "#CriticalChance"));	//Limpa a CProp de bonus critico para o próximo ataque
+	EraseObjProperty(attacker, "#CriticalChance");
+
+	if (!chance)
+		return 1;
+	endif
+
+	var critcooldown := 30;
+	if (TemHabilidade(attacker, "Maestria no Combate"))
+		chance := chance * 2.0;
+		critcooldown := 15;
+	endif
+// Inicio vivisec Igor-----------------------------
+	var bonus_Preservar_Orgaos := 0;
+	/*
+	if (TemHabilidade(defender, "Preservar Orgaos"))
+		bonus_Preservar_Orgaos := 25;
+	endif
+	*/
+    // if (GetObjProperty(attacker, "chardata").povo == "Orc")
+    //     chance := chance + 2;
+    // endif
+	var rand := Cint((RandomInt(100) + 1) + bonus_Preservar_Orgaos);
+	//printtextabove(attacker, "chance " + chance + " rand " + rand + " " + (chance > rand) );
+
+	if (TemHabilidade(defender, "Mumificacao"))
+		SendSysMessageEx(defender, "Seu corpo evita o critico", SSM_INFO);
+		SendSysMessageEx(attacker, "Seu critico nao surte efeito", SSM_FAIL);
+		chance := 0;
+	endif
+// FIM add vivisec igor----------------------------
+	var result := chance > rand;
+
+	if (autoCritical)
+		result := 1;
+	endif
+
+	if (  result == 0 )
+		return 1; //se nao passou
+	endif
+
+	if (TemHabilidade(defender, "Ladrao da Sorte"))
+		SendSysMessageEx(defender, "Voce desviou do critico e usara isso contra seu oponente!", SSM_INFO);
+		SetObjProperty(defender, "#nextcritical", 1);
+		return 1;
+	endif
+
+	if (!autoCritical)
+		SetCooldown(attacker, "critical", critcooldown);
+	endif
+
+	if ( temhabilidade(attacker, "Oportunidade Critica") )
+		printtext(attacker, "*ataque de oportunidade*");
+		if (defender)
+			attacker.attack_once(defender);
+		endif
+	endif
+
+	var weapon_scripts := array;
+	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
+	var pet_critic := GetObjProperty(attacker, "Critic");
+	var pet_txt := Cstr(GetConfigStringArray( taming_cfg[pet_critic], "Text" ));
+	var pet_selvagem := GetObjProperty(attacker, "Selvagem"); //verifica se é animal selvagem - nunca tamado, para dar dano critico
+	var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
+	var tem_critico := GetConfigStringArray( npcelem, "CriticalHitScripts" ); //Se tem critico no npcdesc definido
+	if ( !attacker.ip && weapon.IsA(POLCLASS_WEAPON) && !pet_instinto && !pet_selvagem )
+		if (tem_critico == {})
+			weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
+		else
+			weapon_scripts :=  GetConfigStringArray( npcelem, "CriticalHitScripts" );
+		endif
+	elseif (pet_instinto == 1 || pet_selvagem == 1)
+		weapon_scripts :=  GetConfigStringArray( taming_cfg[pet_critic], "CriticalHitScripts" );
+		sleepms(5);
+		printtextabove(attacker, ""+pet_txt);
+	else
+		weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
+	endif
+	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
+
+	//printtextabove(attacker, "critical hit scripts " + weapon_scripts);
+	if (weapon_scripts.size() > 0)
+		PrintText(attacker, "*CRITICO*", _DEFAULT_TEXT_FONT, 2118);
+		SetObjProperty(attacker, "critdelay", ReadGameClock()+180);
+		if (GetCooldown(defender, "vitalidadeinabalavel") > 0)
+			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);
+			SendSysMessageEx(attacker, "O defensor ignorou o critico", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0)
+		SendSysMessageEx(defender, "Voce nao leva o critico");
+		return;
+	endif
+
+	foreach hitscript in weapon_scripts
+		/*var crit := ParseScriptString(hitscript);
+		if (crit == "damage3")
+			rawdamage := rawdamage * 3;
+		elseif (crit == "damage2")
+			rawdamage := rawdamage * 2;
+		elseif (crit == "armorignore")
+			rawdamage := basedamage;
+		elseif ( crit == "stun")
+			TS_StartTimer(defender, "paralysis", 5);
+		elseif (Crit == "bleed")
+			TS_StartTimer(defender, "bleed", 30);
+		endif*/
+
+		//Modificando pra ficar legal - Katabrok burro, ficou legal nada, voltei ao que era
+
+		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage});
+		if ( !script || script.errortext )
+			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessage(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+		endif
+
+		sleepms(2);
+	endforeach
+
+	if (TemHabilidade(attacker, "Critico Elemental"))
+		CriticoElemental(attacker, defender, armor, basedamage, rawdamage);
+	endif
+
+	return 1;
+endfunction
+
+function ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage)
+	var body_scripts := GetObjProperty(defender, "ArmorHitScripts");
+	var armor_scripts := GetObjProperty(armor, "ArmorHitScripts");
+	var others_scripts := GetConfigStringArray( item_cfg[armor.objtype], "ArmorHitScripts" );
+	if (defender.npctemplate)
+		var npcelem := NPC_GetNPCConfig(defender.npctemplate);
+		others_scripts := GetConfigStringArray(npcelem, "ArmorHitScripts");
+	endif
+	if ( !body_scripts )
+		body_scripts := array{};
+	endif
+	if ( !armor_scripts )
+		armor_scripts := array{};
+	endif
+	if ( !others_scripts)
+		others_scripts := array{};
+	endif
+
+	//printtextabove(defender, " " + GetCooldown(defender, "campoeletrico"));
+
+	if (GetCooldown(defender, "campoeletrico"))
+		var e := start_script(":combat:armorHitScripts/campoeletrico", array{attacker, defender, weapon, armor, basedamage, rawdamage});
+		if (e == error)
+			printtextabove(defender, "  " + e);
+		endif
+	endif
+
+	armor_scripts := armor_scripts + body_scripts + others_scripts;
+
+	foreach hitscript in armor_scripts
+		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage});
+		if ( script.errortext )
+			SendSysMessage(attacker, "*Defender* armor script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessage(defender, "*Defender* armor script error starting ["+hitscript+"] :" + script.errortext);
+		endif
+		sleepms(2);
+	endforeach
+
+	return 1;
+endfunction
+
+
+function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
+	if ( rawdamage < 1 )
+		return 0;
+	endif
+	if (GetObjProperty(weapon, "ammo"))
+        var aljavas := array{0x791c, 0x2fb7};
+        var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
+
+		if (aljava.objtype in aljavas)
+			var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
+		else
+			aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
+		endif
+		var ammo := GetObjProperty(weapon, "ammo");
+		foreach arrow in (EnumerateItemsInContainer(aljava))
+			if (arrow.serial == ammo)
+				weapon := arrow;
+			endif
+		endforeach
+	endif
+
+	if (!attacker.npctemplate)//se nao for npc checa se tem poison na arma
+		if (attacker.graphic == 21)
+			if (IsPoisonImune(defender, "defaultPoison") )
+				return 0;
+			endif
+			if (randomint(100) < 20)
+				if (CheckResist(defender, FORTITUDE, 15,-20*2))
+					SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
+				else
+					TS_StartTimer(defender, "defaultPoison", 60, 2, attacker);
+				endif
+			endif
+		else
+			var poisonInfo := GetObjProperty(weapon, "poisonInfo" );
+			if (poisonInfo == error)
+				return 0;
+				var nome := weapon.name; //Armengo pra atualizar tooltip?
+				SetName(weapon, nome + " -");
+				sleepms(30);
+				SetName(weapon, nome);
+			endif
+			if (poisonInfo.dosage != "infinito")
+				poisonInfo.dosage := poisonInfo.dosage -1;
+			endif
+			if (poisonInfo.dosage <= 0 && poisonInfo.dosage != "infinito") //se nao tiver mais cargas de veneno, deleta
+				EraseObjProperty(weapon, "poisonInfo");
+				var nome := weapon.name; //Armengo pra atualizar tooltip?
+				SetName(weapon, nome + " -");
+				sleepms(30);
+				SetName(weapon, nome);
+				return 0;
+			else //se ainda tiver atualiza na arma
+				SetObjProperty(weapon, "poisonInfo", poisonInfo);
+			endif
+			var nome := weapon.name; //Armengo pra atualizar tooltip?
+			SetName(weapon, nome + " -");
+			sleepms(30);
+			SetName(weapon, nome);
+
+			if (IsPoisonImune(defender, poisonInfo.name) )
+				return 0;
+			endif
+            // Sempre que for mexer nesse timer, mexer também  no .arremessar ou criar funcao e chamar em ambos
+			if (poisonInfo.name == "paralyzePoison")
+                var duration := CInt(AP_GetSkill(attacker, ALCHEMY) / 20 );
+                if (duration < 2)
+                    duration := 2;
+                endif
+                if (temHabilidade(attacker, "Veneno Puro"))
+                    duration := duration * 2;
+                endif
+				poisonInfo.time := duration;
+			endif
+
+			if (CheckResist(defender, FORTITUDE, 15,-20*poisonInfo.level))
+				SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
+			else
+				TS_StartTimer(defender, poisonInfo.name, poisonInfo.time, poisonInfo.level, attacker);
+			endif
+		endif
+	else //se for npc checa a skill
+		if (temhabilidade(defender, "Senso da Natureza"))
+			return 0;
+		endif
+
+		var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
+		var poisonchance := GetConfigInt(npcelem, "Poisoning");
+		if (poisonChance > 0)
+			if ( RandomInt(100) < poisonChance )
+				var poisonName := GetConfigString(npcelem, "PoisonType");
+				var level := Cint(GetConfigInt(npcelem, "PoisonLevel"));
+				if (!level)
+					level := 1;
+				endif
+				if (poisonName == error)
+					return 0;
+				endif
+				if (IsPoisonImune(defender, poisonName) )
+					return 0;
+				endif
+				var time := level*15;
+				if (poisonName == "paralyzePoison")
+					time := 10;
+				endif
+				if (CheckResist(defender, FORTITUDE, 15,-20*level))
+					SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
+				else
+					TS_StartTimer(defender, poisonName, time, level, attacker);
+				endif
+			endif
+		else
+			return 0;
+		endif
+	endif
+
+endfunction
+
+
+//
+// Returns 1 on successful parry.
+//
+function ParryCheck(attacker, defender, byref rawdamage, weapon)
+	//Verifica se o atacante já pode ser bloqueado novamente.
+	if ( GetCooldown(attacker, "parrydelay") > 0 )
+		return 0;
+	endif
+
+	var usingWeapon := 0;
+	var parryBonus := 0;
+	var shield := defender.shield;
+
+	var blocker;
+	//Verifica se o defensor está sob efeito da a hab esudo do martir
+	var wall := defender.party.getProp("BarreiraDeEscudos");
+	var wallChance := 0;
+	if ( wall )
+		blocker := SystemFindObjectBySerial(wall.blocker);
+		if (GetCooldown( blocker, "BarreiraDeEscudos") > 0)
+			if (Distance(defender, blocker) < 2)
+				wallChance := CInt(wall.chance);
+			endif
+		else
+			defender.party.eraseProp("BarreiraDeEscudos");
+			blocker := 0;
+		endif
+	endif
+
+	//Verifica se vai tentar bloquear usando uma armda
+	if (!(shield.IsA(POLCLASS_ARMOR)))
+		usingweapon := 1;
+		shield := defender.weapon;
+		//Não bloqueia se estivem sem arma equipada ou utilizando arma de RangedCombat (Arcos e bestas)
+		if (shield.objtype == 0xF020 || shield.Attribute == RANGEDCOMBAT)
+			return 0;
+		endif
+	endif
+
+	parryBonus := GetObjProperty(shield, "parry_mod_percentual");
+	if(parryBonus)
+		parryBonus := 1.0 + parryBonus;
+	else
+		parryBonus := 0;
+	endif
+	//Calcula o Bonus basico de parry do escudo, Bonus de parry específico da CProp do escudo, Bonus de parry especifico da CProp do personagem
+	parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
+
+	//Calcula o Bonus temporário de parry, se houver
+	var tempParryBonus := CInt(getObjProperty(defender, "#tempparrybonus"));
+	if (tempParryBonus);
+		parryBonus := parryBonus + tempParryBonus;
+		EraseObjPRoperty(defender, "#tempparrybonus");
+	endif
+
+	var skill := CInt(AP_GetSkill(defender, PARRY));
+
+    if (TemHabilidade(defender, "Reflexo Estrategico"))
+        skill := CInt(AP_GetSkill(defender, TACTICS));
+    endif
+
+	//Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
+	var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
+
+	//Faz com que os bloqueios garantidos por cauda de habilidade resetem o delay de bloqueio
+	if (tempParryBonus == 100)
+		parryDelay := 0;
+	endif
+
+	//Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
+	if ( TemHabilidade(defender.party.leader, "Inspirar Defesas"))
+		parryDelay := parryDelay - 1;
+	endif
+
+	//Calcula o bonus de bloqueio com base no parry usando escudo
+	var parry_chance := CInt(skill/3);
+
+	//Aplica penalidade de chance de bloqueio se estiver usando apenas arma
+	if (usingweapon && !TemHabilidade(defender, "Caminho do Andarilho"))
+		parry_chance := CInt(parry_chance * 0.7);
+	endif
+
+	if (usingweapon && TemHabilidade(defender, "Caminho do Andarilho"))
+		parry_chance := CInt(parry_chance * 1.3);
+	endif
+	//Calcula a chance TOTAL de bloqueio
+	parry_chance := parry_chance + parryBonus;
+
+	//A habilidade do companheiro de party do defensor tentar bloquear em seu lugar só ativa se a chance de bloqueio dele for melhor que do defensor
+	if (wallChance > parry_chance)
+		parry_chance := wallChance;
+	endif
+
+	//Diminui a chance de bloqueio se estiver usando foices
+	if ((attacker.weapon.graphic == 0x26C4) || (attacker.weapon.graphic == 0x26C5)) // foice grande e foice pequena
+		parry_chance := parry_chance * 0.7; //diminui 30% da chance
+	endif
+
+	//Aplica o efeito da habilidade que deixa o defensor bloquear sempre
+	if (GetCooldown(defender, "barreiraindestrutivel"))
+		parry_chance := 100;
+		parryDelay := 2;
+	endif
+
+	//Calcula se defendeu ou não
+	var defendeu := 0;
+	if ( RandomInt(100) < parry_chance )
+		//Verifica habilidade Defesas Gloriosas e, se cabível, aplica seu efeito
+		defendeu := 1;
+		//PerformAction(defender, 13);
+
+
+		//Pike desarma defensor que bloquear sem escudo
+		if ((attacker.weapon.graphic == 0x26C8) && ( usingWeapon ))
+			var defweapon := defender.weapon;
+			if (defweapon.objtype != 0xF020)
+				var x := defender.x + RandomInt(2)+1;
+				var y := defender.y + RandomInt(2)+1;
+				MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);
+			endif
+		endif
+
+		//if (GetCooldown(defender, "defesarevigorante"))
+			//healdamage(defender, rawdamage);
+		//endif
+
+	endif
+
+	//sobe a skill
+	if (attacker.npctemplate && defender.connected)
+		if (defendeu)
+			SkillCheck(defender, PARRY, -1);
+		else
+			if ( RandomInt(5) == 1 )
+				SkillCheck(defender, PARRY, -1);
+			endif
+		endif
+	endif
+
+	if(!defendeu)
+		return 0;
+	endif
+
+	Performaction(defender,ANIM_TWIST_DODGE);
+
+	//Exibe o efeito visual do bloqueio
+
+	if (blocker)
+		PerformAction(defender, 13);
+		printtext(blocker, "*defende o golpe pelo aliado*");
+		SetCooldown(attacker, "parrydelay", parryDelay*2);
+	else
+		PerformAction(defender, 13);
+		PrintText(defender, "*defende o golpe*");
+		SetCooldown(attacker, "parrydelay", parryDelay);
+	endif
+	//Aplica dano no shield
+
+	WearDownShield(defender, shield, rawdamage, weapon);
+
+	rawdamage := 0;
+	return 1;
+endfunction
+
+//reduz dano por armadura pra archery e fencing
+//Calcula redução de dano com base nos redutores de Dextreza. Adiciona dano caso esteja usando a manobre Fintar
+function DmgPenaltyByArmor(rawdamage, attacker, weapon, defender);
+
+	var weapon_scripts := array;
+	if ( weapon.IsA(POLCLASS_WEAPON) )
+		weapon_scripts := GetObjProperty(weapon, "HitScripts");
+		if (!weapon_scripts)
+			weapon_scripts := array;
+		endif
+		var other_scripts := GetConfigStringArray(item_cfg[weapon.objtype], "HitScripts");
+		foreach script in other_scripts
+			weapon_scripts.Append(script);
+		endforeach
+	endif
+
+	if ( GetCooldown(defender, "finta") )
+			rawdamage := rawdamage + rawdamage*0.2;
+	endif
+
+	if (!attacker.npctemplate)
+		if ( ":combat:weaponHitScripts/FreeArmorHit"  in weapon_scripts)
+			var penal := AP_GetStatMod(attacker, "Dexterity");
+			if (penal < -12)
+				penal := rawdamage * 0.75;
+			elseif (penal < -6)
+				penal := rawdamage * 0.5;
+			elseif (penal < 0)
+				penal := rawdamage * 0.2;
+			else
+				penal := 0;
+				//rawdamage := rawdamage + rawdamage * 0.2; ta no freearmorhit.src
+			endif
+			rawdamage := rawdamage - penal;
+		endif
+	endif
+
+	if (rawdamage < 1)
+		rawdamage := 1;
+	endif
+
+	return rawdamage;
+
+endfunction
+
+function SacarRapido(who, shield := 0)
+
+	if (shield)
+		foreach item in (EnumerateItemsInContainer(who.backpack))
+			if ( Cint(item_cfg[item.objtype].parrybonus) > 0 )
+				if (item.container == who.backpack)
+					EquipItem(who, item);
+					PrintText(who, "*saca um escudo rapidamente*");
+				endif
+			endif
+		endforeach
+	else
+
+		foreach item in (EnumerateItemsInContainer(who.backpack))
+			if ( Cint(item.isa(POLCLASS_WEAPON))  )
+				if (item.container == who.backpack)
+					EquipItem(who, item);
+					PrintText(who, "*saca um escudo rapidamente*");
+				endif
+			endif
+		endforeach
+	endif
+
+endfunction
+
+function Trespassar(attacker, defender)
+
+	if (GetObjProperty(attacker, "#trespassando") == 1)
+		return;
+	endif
+
+	var list := array;
+	foreach mobile in (ListHostiles(attacker, 1, LH_FLAG_LOS))
+		if ( (mobile.serial != attacker.serial) && ( mobile.serial != defender.serial ))
+			list.append(mobile);
+		endif
+	endforeach
+
+	if (list.size() > 0)
+		SetObjProperty(attacker, "#trespassando", 1);
+		var targ := list[RandomInt(list.size())+1 ];
+		if (GetVital(targ, HITS) > 0)
+			PrintText(attacker, "*trespassar*" );
+			if ( TemHabilidade(attacker, "Trespassar Critico") )
+				SetObjProperty(attacker, "#nextcritical", 1);
+			endif
+			attacker.attack_once(targ);
+			EraseObjProperty(attacker, "#nextcritical");
+		endif
+		EraseObjProperty(attacker, "#trespassando");
+	endif
+
+endfunction
+
+function disarmOpponent(attacker, defender)
+	if (TemHabilidade(defender, "Nexus"))
+		if (GetObjProperty(defender.weapon, "swordmage") ==  defender.serial)//seta com a arma
+			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+	PrintTextAbove(attacker, "*desarmar*");
+    var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);
+	TS_StartTimer(defender, "desarmar", tactics_bonus, 0, attacker);
+	var defweapon := defender.weapon;
+    if ((defweapon.objtype == 0x1F020 || defender.npctemplate) && TemHabilidade(attacker, "Artista Marcial"))
+        TS_StartTimer(defender, "dmgreduction", tactics_bonus, 4, attacker);
+	elseif ((defender.isA(POLCLASS_NPC) || defender.npctemplate) && defweapon.objtype != 0x1F020)
+		TS_StartTimer(defender, "dmgreduction", 20, 2, attacker);
+		SetObjProperty(defender, "arma_desarmada", defweapon.objtype);
+		MoveItemToContainer(defweapon, defender.backpack);
+    else
+		var x := defender.x + RandomInt(2)+1;
+		var y := defender.y + RandomInt(2)+1;
+		MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+endfunction
+
+function ataqueFurtivo(attacker, defender)
+	var weapon := attacker.weapon;
+	var weaponBow := 0;
+	if (lower(weapon.attribute) == "rangedcombat")
+		weaponBow := 1;
+	endif
+
+	if ( IsBehind(defender, attacker.x, attacker.y) )
+		if ( !CanBackStab(attacker, weapon) )
+			return;
+		else
+			sleepms(100);
+			if ( weaponBow)
+				if (!AmmoCheck(attacker, defender))
+					return 1;
+				endif
+			else
+				PerformAction(attacker, 0x000a );
+			endif
+        endif
+    endif
+
+    var sneak_dmg := AP_GetSkill(attacker, SNEAK);
+	DamageFLS(defender, sneak_dmg, DMG_FORCED, attacker);
+    PlaySoundEffect(defender, 0X510);
+    MakeBleed(defender);
+    RevokePrivilege(attacker, "hiddenattack");
+    attacker.disable("hiddenattack");
+endfunction

@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	
+	EraseObjProperty(mobile, "chainofpain");
+	EraseObjProperty(mobile, "copnumber");
+	
+	return 1;
+endprogram
+ 

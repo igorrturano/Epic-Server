@@ -1,0 +1,25 @@
+/*CRIADO PARA SUBSTITUIR O RANDOM PORCO DO POL - By EvilLink
+MODO DE USAR:
+1. Random(VALORMAXIMO) -> Rola de 0 a VALORMAXIMO
+2. Random(VALORMINIMO, VALORMAXIMO) -> Rola de VALORMINIMO a VALORMAXIMO
+3. Random(VALORMINIMO, VALORMAXIMO, SEED) -> Rola de VALORMINIMO a VALORMAXIMO com um SEED específico (para testar um valor fixo)
+*/
+use uo;
+use basic;
+use math;
+use util;
+
+include "include/math";
+include "include/elrandom";
+
+program textcmd_random(character, params)
+    var valmax, valmin, valseed;
+    params := SplitWords(params);
+
+    if (params[1]) valmax := params[1]; endif
+    if (params[2]) valmin := params[2]; endif
+    if (params[3]) valseed := params[3]; endif
+    
+
+    SendSysMessage(character, "O valor deu: " +ELRandom(character, valmax, valmin, valseed));
+endprogram

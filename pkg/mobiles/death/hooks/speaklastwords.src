@@ -1,0 +1,24 @@
+use uo;
+use os;
+
+include "include/say";
+
+
+program speak(mobile)
+
+		mobile.frozen := 1;
+		SetObjPRoperty(mobile, "morrendo", 1);
+		var falas :=  GetObjProperty(mobile, "Ultimas Palavras");
+		EraseObjPRoperty(mobile, "Ultimas Palavras");
+		foreach fala in falas
+			if (fala != error)
+				PrintText(mobile, ""+ fala);
+				sleepms(800);
+			endif
+		endforeach
+		sleep(3);
+		EraseObjProperty(mobile, "morrendo");
+		mobile.kill();		
+
+
+endprogram

@@ -1,0 +1,113 @@
+use uo;
+use cfgfile;
+
+include "include/client";
+include ":food:drink";
+
+program fillpitcher (who, pitcher)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!Accessible(who, pitcher))
+    return;
+  endif
+  ReserveItem(pitcher);
+  SendSysMessage(who, "O que voce quer por no recipiente?", FONT_NORMAL, 90);
+  var targetted := TargetCoordinates(who);
+  if(!targetted)
+    SendSysMessage(who, "Cancelado.", FONT_NORMAL, 90);
+    return;
+  endif
+//  if(!can_access(who, targetted))
+//    return;
+//  endif
+//  if(!Accessible(who, targetted))
+//    SendSysMessage(who,"Voce nao pode ver isto.", FONT_NORMAL, 90);
+//    return;
+//  endif
+
+  var toCreate := check_for_bottle(who, targetted);
+  if(check_for_water(who, targetted))
+    PlaySoundEffect(who, 0x0026);
+    DestroyItem(pitcher);
+    CreateItemInBackpack(who, 0x1f91, 1);
+  elseif(check_for_cows(who, targetted))
+    PlaySoundEffect(who, 0x007a);
+    DestroyItem(pitcher);
+    CreateItemInBackpack(who, 0x1f89, 1);
+  elseif (toCreate!= error)
+    reduce_container_fullness (who, targetted.item);
+    PlaySoundEffect(who,  0x241);
+    DestroyItem(pitcher);
+    CreateItemInBackpack(who, toCreate, 1);	
+  else
+    SendSysMessage(who,"Voce nao pode encher o recipiente aqui.", FONT_NORMAL, 90);
+    return;
+  endif
+endprogram
+
+function  check_for_bottle(who, targ)
+
+	var cfg := ReadConfigFile("::itemdesc");
+	var elem := FindConfigElem(cfg, targ.objtype);
+	
+	var glass := GetConfigInt(elem, "glass");
+	return glass;
+
+endfunction
+
+function check_for_cows(who, theobj)
+  //  if (theobj.isA(POLCLASS_NPC))
+        if (theobj.objtype == 0xd8 || theobj.objtype == 0xe7)
+            return 1;
+        endif
+    //endif
+endfunction
+
+function check_for_water(who, theobj)
+    if ((theobj.objtype >= 0x1796) && (theobj.objtype <= 0x17b2) )
+        return 1;
+    elseif ((theobj.objtype >= 0x346e) && (theobj.objtype <= 0x3530))
+        return 1;
+    elseif ((theobj.objtype >= 0xb41) && (theobj.objtype <= 0xb44))
+       var agua := GetObjProperty(theobj, "agua");
+       if (!agua)
+          return 0;
+       else
+          if (agua  < 3)
+            return 0;
+          else
+            agua := agua -3;
+          endif
+          SetObjProperty(theobj, "agua", agua);
+          return 1;
+       endif
+    elseif (theobj.objtype == 0x0e7b || theobj.objtype == 0x154d)
+       var agua := GetObjProperty(theobj, "agua");
+       if (!agua)
+          return 0;
+       else
+          if (agua  < 3)
+            return 0;
+          else
+            agua := agua -3;
+          endif
+          SetObjProperty(theobj, "agua", agua);
+          return 1;
+       endif
+    else
+        return 0;
+    endif
+endfunction
+
+function check_accessible( who, x, y, z )
+    var xd, yd, zd;
+    xd := who.x - x;
+    if (xd < -2 || xd > 2)
+        return 0;
+    endif
+    yd := who.y - y;
+    if (yd < -2 || yd > 2)
+        return 0;
+    endif
+    return 1;
+endfunction

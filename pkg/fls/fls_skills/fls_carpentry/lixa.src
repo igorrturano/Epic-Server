@@ -1,0 +1,33 @@
+
+use uo;
+use os;
+
+program usalixa(who, item)
+
+  SendSysMEssage(who, "Escolha as tabuas para lixa-las.");
+  var item2 := target(who);
+
+  if(!item2)
+      SendSysMessage(who, "Cancelado");
+      return;
+ endif
+ 
+ if (GetObjProperty(item2, "tratada"))
+    SendSysMessage(who, "Essa madeira ja esta lixada.");
+    return;
+ endif 
+ 
+  if((item2.objtype != 0x1bdd)  && (item2.objtype != 0xee36) && (item2.objtype != 0xee37) && (item2.objtype != 0xee38) && (item2.objtype != 0xee3) && (item2.objtype != 0xee3a) && (item2.objtype != 0xee66) && (item2.objtype != 0xee67) && (item2.objtype != 0xee68) && (item2.objtype != 0xee69) && (item2.objtype != 0xee70)&& (item2.objtype != 0x1bd7) )
+     sendsysmessage(who, "Voce so pode lizar madeiras.");
+     return;
+  endif
+  
+   for i := 1 to 3
+	PlaySoundEffect (who, 0x5A);
+	sleep (1);
+   endfor
+
+   SetObjProperty(item2, "tratada", 1);
+   item2.name := item2.name + " [lixada]";
+
+endprogram 

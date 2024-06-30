@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessage(who, "Selecione o alvo.");
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Alvo invalido.");
+		return 0;
+	endif
+
+    if (!targ)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+	SendSysMessageEx(who, "Misseis magicos saem de sua mao", SSM_INFO);
+	var i := 1;
+    For (i := 1; i <= mlore; i += 1)
+        PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
+        PlaySoundEffect(who, SFX_AGILITY2);
+        var dice := cstr(mlore +"d4");
+        var dmg := RandomDiceRoll(dice);
+        DamageFLS(targ, dmg+mlore, DMG_FORCED, who, "magicmissile");
+        SleepMS(500);
+    EndFor
+	return 1;
+endprogram

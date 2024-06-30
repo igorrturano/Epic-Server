@@ -1,0 +1,34 @@
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcInit";
+include ":brainAI:npcCommands";
+include ":loot:include/lootParser";
+include "include/client";
+
+program BrainCriticalScript(params)
+	var npc		:= params[1];
+	var settings	:= params[2];
+	//var scripts	:= params[3];
+	params := 0; // Not needed anymore.
+	
+	var bag := NPC_SetupBackPack(npc);
+	NPC_SetupAmmo(npc);
+	NPC_SetupEquipment(npc);
+	
+	NPC_SetupRandomEquipment(npc);
+	
+	var hair := GetEquipmentByLayer(npc, LAYER_HAIR);
+	//printtextabove(npc, " " + hair);
+	if (hair)
+		var colors := { 52, 55, 150, 153, 340, 348, 442, 447, 542, 550, 902, 922};
+		hair.color := colors[RandomInt(12)+1];
+	endif
+	
+	NPC_SetupName(npc);
+	Loot_Generate(bag, settings["Loot"]);
+	
+	NPC_SetupColor(npc);
+	return 1;
+endprogram

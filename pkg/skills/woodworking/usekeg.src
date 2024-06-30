@@ -1,0 +1,328 @@
+use uo;
+
+include "include/say";
+include ":tn:tngumps";
+
+program usekeg(who, item)
+
+	var bebida := GetObjProperty(item, "bebida");
+	if (bebida != error)
+		if (bebida.type == "vinho incompleto")
+			SendSysMessageEx(who, "Escolha o fungo para por na bebida.", SSM_REQUEST);
+			var levedura := target(who);
+			if (levedura.objtype !=  49561 )
+				SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				return 1;
+			else
+				SubtractAmount(levedura, 1);
+				bebida.type := "vinho fermantando";
+				bebida.+endtime := polcore().systime + 7200;
+				SetObjProperty(item, "bebida", bebida);
+				SendSysMessageEx(who, "Aguarde um dia ate o vinho fermentar.", SSM_INFO);
+				var  name := item.desc;
+				SetObjProperty(item, "description", "Vinho fermentando");
+				SetName(item, name);
+				return 1;
+			endif
+		elseif (bebida.type == "vinho fermantando")//escrevi errado :/
+			if ( polcore().systime > bebida.endtime)
+				bebida.+objtype := 0xC878;
+				SendSysMessageEx(who, "O vinho  ja esta pronto.", SSM_INFO);
+				bebida.+doses := 80;
+				bebida.type := "";
+				SetObjProperty(item, "bebida",  bebida);
+				var  name := item.desc;
+				SetObjProperty(item, "description", "80 doses");
+				SetName(item, name);
+				return 1;
+			else
+				SendSysMEssageEx(who, "O vinho ainda nao esta pronto.", SSM_FAIL);
+				return 1;
+			endif 
+		elseif (bebida.type == "cidra incompleta")
+			if (bebida.levedura == error)
+				SendSysMessageEx(who, "Escolha a levedura para fermentar a bebida.", SSM_INFO);
+				var levedura := target(who);
+				if (levedura.objtype !=  49561 )
+					SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+					return 1;
+				else
+					SubtractAmount(levedura, 1);
+					bebida.+levedura := 1;
+					SetObjProperty(item, "bebida", bebida);
+					SendSysMessageEx(who, "Voce adicionou a levedura.", SSM_INFO);
+					return 1;
+				endif
+			elseif  (bebida.agua == error || bebida.agua < 10)
+				SendSysMessageEx(who, "Voce precisa por " + (10 - cint(bebida.agua)) + " jarras de agua.", SSM_INFO);
+				var agua := target(who);
+				if  (agua.objtype == 0x1f9e)
+					if  (bebida.agua == error)
+						bebida.agua:= 0;
+					endif
+					bebida.agua := bebida.agua + 1;
+					DestroyItem(agua);
+					CreateItemInBackpack(who, 0x1f81, 1);
+					PlaySoundEffect(who,  0x241);
+					SetObjProperty(item, "bebida", bebida);
+				else
+					SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+					return 1;
+				endif
+			endif
+			if (  bebida.agua == 10 && bebida.levedura)
+				bebida.type := "cidra fermentando";
+				bebida.+endtime := polcore().systime + 7200;
+				SetObjProperty(item, "bebida", bebida);
+				SendSysMessageEx(who, "Aguarde um dia ate a cidra fermentar.", SSM_INFO);
+				var  name := item.desc;
+				SetObjProperty(item, "description", "Cidra fermentando");
+				SetName(item, name);
+			endif
+		elseif (bebida.type == "cerveja incompleta")
+			if (bebida.levedura == error)
+				SendSysMessageEx(who, "Escolha a levedura para fermentar a bebida.", SSM_INFO);
+				var levedura := target(who);
+				if (levedura.objtype !=  49561 )
+					SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+					return 1;
+				else
+					SubtractAmount(levedura, 1);
+					bebida.+levedura := 1;
+					SetObjProperty(item, "bebida", bebida);
+					SendSysMessageEx(who, "Voce adicionou a levedura.", SSM_INFO);
+					return 1;
+				endif
+			elseif  (bebida.agua == error || bebida.agua < 10)
+				SendSysMessageEx(who, "Voce precisa por " +(10 - cint(bebida.agua)) + " jarras de agua.", SSM_INFO);
+				var agua := target(who);
+				if  (agua.objtype == 0x1f9e)
+					if  (bebida.agua == error)
+						bebida.agua:= 0;
+					endif
+					bebida.agua := bebida.agua + 1;
+					DestroyItem(agua);
+					CreateItemInBackpack(who, 0x1f81, 1);
+					PlaySoundEffect(who,  0x241);
+					SetObjProperty(item, "bebida", bebida);
+				else
+					SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+					return 1;
+				endif
+			elseif (bebida.lupulo == error)
+				SendSysMessageEx(who, "Escolha o lupulo para fermentar a bebida.", SSM_INFO);
+				var lupulo := target(who);
+				if (lupulo.graphic != 0x1AA2 )
+					SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+					return 1;
+				//elseif (lupulo.amount < 5)
+				//	SendSysMessageEx(who, "Voce precisa de 5 porcoes de lupulo.", SSM_FAIL);
+				//	return 1;
+				else
+					SubtractAmount(lupulo, 1);
+					bebida.+lupulo := 1;
+					SetObjProperty(item, "bebida", bebida);
+					SendSysMessageEx(who, "Voce adicionou o lupulo.", SSM_INFO);
+					return 1;
+				endif
+			endif
+			if (  bebida.agua == 10 && bebida.levedura && bebida.lupulo )
+				bebida.type := "cerveja fermentando";
+				bebida.+endtime := polcore().systime + 7200;
+				SetObjProperty(item, "bebida", bebida);
+				SendSysMessageEx(who, "Aguarde um dia ate a cerveja fermentar.", SSM_INFO);
+				var  name := item.desc;
+				SetObjProperty(item, "description", "cerveja fermentando");
+				SetName(item, name);
+			endif
+		elseif (bebida.type == "cidra fermentando")
+			if ( polcore().systime > bebida.endtime)
+				bebida.+objtype := 0xC879;
+				SendSysMessageEx(who, "A cidra ja esta pronta.", SSM_INFO);
+				bebida.+doses := 40;
+				bebida.type := "";
+				SetObjProperty(item, "bebida",  bebida);
+				var  name := item.desc;
+				SetObjProperty(item, "description", "40 doses");
+				SetName(item, name);
+				return 1;
+			else
+				SendSysMEssageEx(who, "A cidra ainda nao esta pronta.", SSM_FAIL);
+				return 1;
+			endif 
+		elseif (bebida.type == "cerveja fermentando")
+			if ( polcore().systime > bebida.endtime)
+				bebida.+objtype := 0xC877;
+				SendSysMessageEx(who, "A cerveja ja esta pronta.", SSM_INFO);
+				bebida.+doses := 40;
+				bebida.type := "";
+				SetObjProperty(item, "bebida",  bebida);
+				var  name := item.desc;
+				SetObjProperty(item, "description", "40 doses");
+				SetName(item, name);
+				return 1;
+			else
+				SendSysMEssageEx(who, "A cerveja ainda nao esta pronta.", SSM_FAIL);
+				return 1;
+			endif 
+		else
+			var opt := RadioGump(who, 200, 180, "Barril de bebidas", {"Remover", "Adicionar"});
+			if (opt == "Adicionar")
+				addDrink(who, item);
+			else
+				subDrink(who, item);
+			endif
+		endif
+	else //se nao tem prop
+		SendSysMessageEx(who, "O barril esta vazio, deseja guardar alguma bebida?", SSM_REQUEST);
+		addDrink(who, item);
+	endif
+
+endprogram
+
+function addDrink(who, item)
+
+	var  targ := Target(who);
+	if  (!targ)
+		SendSysMEssageEx(who, "Cancelado.", SSM_FAIL);
+		return 1;
+	endif
+
+	//so pode por garrafas ou potions no keg
+	if ( (targ.graphic == 3849) || (targ.graphic == 0xC878) || (targ.graphic == 0xC876) || (targ.graphic == 0xC877) || (targ.graphic == 0xC879) || (targ.graphic == 0xC960)  ||
+	(targ.graphic == 0xC961) || (targ.graphic == 0xC962) || (targ.graphic == 0xC964) )
+		if (getobjproperty(targ, "fullness") != error)
+			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
+			return 1;
+		endif
+	elseif (targ.objtype == 0x09d0 )
+		if (targ.amount < 10)
+			SendSysMessageEx(who, "Voce precisa de no minimo 10 frutas");
+			return 1;
+		endif
+
+		var bebida := struct;
+		bebida.+type := "cidra incompleta";
+		bebida.+macas := 10;
+		SetObjProperty(item, "bebida", bebida);
+		SubtractAmount(targ, 10);
+		SendSysMessageEx(who, "Voce precisa colocar 10 jarras de agua e levedura.", SSM_INFO);
+		return 1;
+	elseif (targ.objtype == 0x1ebd )
+
+		if (targ.amount < 10)
+			SendSysMessageEx(who, "Voce precisa de no minimo 10 feixes");
+			return 1;
+		endif
+
+		var bebida := struct;
+		bebida.+type := "cerveja incompleta";
+		bebida.+trigo := 10;
+		SetObjProperty(item, "bebida", bebida);
+		SubtractAmount(targ, 10);
+		SendSysMessageEx(who, "Voce precisa colocar 10 jarras de agua e levedura.", SSM_INFO);
+		return 1;
+	else 
+		SendSysMEssageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+	
+	var bebida := GetObjProperty(item, "bebida");
+
+	var cfg := ReadConfigFile("::itemdesc");
+	var elem := FindConfigElem(cfg, targ.objtype);
+	var dosesMod := cint(GetConfigInt(elem, "doses"));
+	//if (!dosesMod)
+		dosesMod := 1; //deixa sempre 1
+	//endif
+
+	if (bebida == error || bebida.doses <= 0)
+		bebida := struct;
+		bebida.+objtype := targ.objtype;
+		bebida.+doses := targ.amount*dosesMod;
+	else
+		if ( bebida.objtype != targ.objtype)
+			SendSysMessageEx(who, "Voce nao pode misturar essas bebidas.", SSM_FAIL);
+			return;
+		else
+			bebida.doses := bebida.doses + targ.amount*dosesMod;
+		endif
+	endif
+
+	SetObjProperty(item, "bebida", bebida);
+	
+	if (elem)
+		var leftover := GetConfigInt(elem, "return_type");
+		if (leftover)
+			CreateItemInBackpack(who, leftover, targ.amount);
+		else
+			CreateItemInBackpack(who, 0xF0E, targ.amount);
+		endif
+	else
+		CreateItemInBackpack(who, 0xF0E, targ.amount);
+	endif
+	DestroyItem(targ);
+	PlaySoundEffect(who,  0x241);
+	var  name := item.desc;
+	SetObjProperty(item, "description", bebida.doses + " doses");
+	SetName(item, name);
+
+endfunction
+
+function subDrink(who, item)
+
+	var bebida := GetObjPRoperty(item, "bebida");
+
+	if (bebida.doses > 0)
+		SendSysMessageEx(who, "Este barril tem ainda " + bebida.doses + " doses.  Escolha uma garrafa vazia para enche-la.", SSM_REQUEST);
+		var bottle :=  Target(who);
+
+		if (bottle.objtype != 0xF0E)
+			SendSysMessageEx(who, "Isso nao parece uma garrafa vazia.", SSM_FAIL);
+			return;
+		endif
+
+		var cfg := ReadConfigFile("::itemdesc");
+		var elem := FindConfigElem(cfg, item.objtype);
+		var dosesMod := cint(GetConfigInt(elem, "doses"));
+		dosesMod := 1;
+
+		//if ( isPotion(bebida.objtype))
+		//	if (bottle.objtype != 3854)
+		//		SendSysMessageEx(who, "Voce so pode armazenar esse liquido  em garrafas.", SSM_FAIL);
+		//		endif
+		//	endif
+		//	dosesMod := 1; //pocao semrpe sai 1
+		//else
+		//	if (!dosesMod) //se nao for pot e nao achou dosesmod tira 3
+		//		dosesMod := 3;
+		//	endif
+		//endif
+
+
+		if (bebida.doses < dosesMod)
+			SendSysMessageEx(who, "O barril nao tem liquido suficiente para encher este recipiente.", SSM_FAIL);
+			return 1;
+		endif
+		SubtractAmount(bottle, 1);
+		PlaySoundEffect(who,  0x241);
+		CreateItemInBackpack(who, bebida.objtype, 1);
+		
+		bebida.doses := bebida.doses - dosesMod;
+		if (bebida.doses == 0 )
+			SendSysMessageEx(who, "O barril secou.", SSM_FAIL);
+			EraseObjProperty(item, "bebida");
+		endif
+		SetObjProperty(item, "bebida", bebida);
+		var  name := item.desc;
+		SetObjProperty(item, "description", bebida.doses + " doses");
+		SetName(item, name);
+		return 1;
+	else
+		SendSysMessageEx(who, "O barril secou.", SSM_FAIL);
+		EraseObjProperty(item, "bebida");
+		return 1;
+	endif
+
+
+endfunction

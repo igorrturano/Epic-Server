@@ -1,0 +1,81 @@
+use uo;
+use cfgfile;
+
+include ":gumps:gumps";
+
+include ":attributes:attributes";
+
+include "include/say";
+
+program clickrecipe(who, scroll)
+	
+	var cfg:= ReadConfigFile(":recipes:recipes");
+
+	var recipe:= GetObjProperty(scroll, "recipe");
+
+	var elem := FindConfigElem(cfg, recipe);
+	var name:= GetConfigString(elem,"name");
+	var text:= GetConfigString(elem,"text");
+	
+	if ( elem == error)
+		return 0;
+	endif
+
+	//sendsysmessage(who, " " + cfg + " " + elem + " " + text + " " + elem.text + 		//ListConfigElemProps(elem));
+	var gump := GFCreateGump(140, 100);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
+	
+	GFTextLine(gump, 50, 10, 0, name);
+	GFHTMLArea( gump, 30, 40, 180, 120, text, 0, 1);
+
+	GFTextLine(gump, 55, 170, 0, "Aprender item");
+	
+	GFAddButton(gump, 40, 174, 2103, 2104, 1, 99);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 99)
+		
+		var list := GetObjProperty(who, "recipes");
+		if (list == error)
+			list := array;
+		endif
+	
+		if (recipe in list)
+			SendSysMessage(who, "Voce ja conhece como fazer este item.");
+			return 1;
+		else
+		
+		
+
+		//var skill := GetconfigString(elem, "mainskill");
+
+					//var skill := "Metalworking";
+	
+					//var dif := GetConfigInt(elem, "difficulty");
+			
+			
+					//if (AP_GetSkill(who, skill) + 15 < dif)
+				
+					//	SendSysMessageEx(who, "Voce nao entende como fazer este item.", SSM_FAIL);
+			
+					//else 
+				
+
+						list.append(recipe);
+						SetObjProperty(who, "recipes", list);
+						SendSysMessage(who, "Voce aprendeu como fazer um item novo");
+						DestroyItem(scroll);
+
+
+			return 1;
+		
+		endif
+
+
+	endif
+
+
+
+endprogram

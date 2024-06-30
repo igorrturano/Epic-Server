@@ -1,0 +1,14 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+
+	SendSysMessageEx(who, "Voce prepara um golpe perfeito.", SSM_INFO);
+	SetObjProperty(who, "#attackbonus", 100);
+    SetObjProperty(who, "#CriticalChance", 100);
+endprogram

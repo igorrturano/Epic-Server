@@ -1,0 +1,23 @@
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+
+	var encantada := GetObjProperty(who.weapon, "#elementalweapon");
+	if (encantada == error)
+		SendSysMessageEx(who, "Sua arma precisa estar encantada com algum poder elemental.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (readgameclock() > encantada.endtime )
+		SendSysMessageEx(who, "Sua arma precisa estar encantada com algum poder elemental.", SSM_FAIL);
+		return 1;
+	endif
+
+
+	SendSysMessageEx(who, "Voce transforma a arma no elemento.", SSM_INFO);
+	SetObjProperty(who, "#canalizacao", 1);
+	
+endprogram

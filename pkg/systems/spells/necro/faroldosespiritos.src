@@ -1,0 +1,103 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":tn:npcutil";
+include ":brainAI:npcUtil";
+include ":ghaia:ghaia";
+
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha a cabeca ou o corpo para usar essa magia", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+	var skill := AP_GetSkill(who, "Magery");
+
+	if ( targ.isa(POLCLASS_CORPSE) )
+		var npctemplate;
+		var category;
+		if (Distance(targ, who) > 1);
+			SendSysMessageEx(who, "Voce deve estar bem proximo do corpo para usar essa magia", SSM_FAIL);
+			return 0;
+		endif
+
+		if (GetObjproperty(targ, "SemCabeca"))
+			SendSysMessageEx(who, "Ja foi retirada a cabeca desse corpo", SSM_FAIL);
+			return 0;
+		endif
+
+		if (!GetObjproperty(targ, "npctemplate"))
+			if (!GetObjproperty(targ, "morto"))
+				SendSysMessageEx(who, "Essa magia so pode ser usada em corpos de pessoas mortas", SSM_FAIL);
+				return 0;
+			endif
+		else
+			var npctemplate := GetObjproperty(targ, "npctemplate");
+			var category := lower(getnpccategory( ParseTemplateName(npctemplate).template ));
+			if ( category != "evilhuman" )	
+				SendSysMessageEx(who, "Essa magia so pode ser usada em corpos de npcs humanos", SSM_FAIL);
+				return 0;
+			endif
+		endif
+
+		var m := 1;
+		PerformAction(who, ANIM_BOW);
+		while (m < 3)
+		CreateItemAtLocation(targ.x + m, targ.y, targ.z, 4650,1, targ.realm);
+		CreateItemAtLocation(targ.x - m, targ.y, targ.z, 4650,1, targ.realm);
+		CreateItemAtLocation(targ.x, targ.y + m, targ.z, 4650,1, targ.realm);
+		CreateItemAtLocation(targ.x, targ.y - m, targ.z, 4650,1, targ.realm);
+		m := m + 1;
+		sleepms(450);
+		endwhile
+
+		var cabeca := CreateItemInBackPack(who, 7401,1);
+		SetObjProperty(cabeca, "FarolEspiritos", 1);
+		SetObjProperty(targ, "SemCabeca", 1);
+		SetObjProperty(cabeca, "Magery", Cint(skill));
+		cabeca.name := "Cabeca Ritualistica";
+		SendSysMessageEx(who, "Voce extraiu uma cabeca para o ritual com perfeicao", SSM_INFO);
+	
+	elseif (GetObjProperty(targ, "FarolEspiritos"))
+		if (targ.container)
+			SendSysMessageEx(who, "A cabeca deve estar no chao.", SSM_FAIL);
+			return 0;
+		endif
+		var ghostspawnpoint := CreateItemAtLocation(targ.x, targ.y, targ.z, 41985, 1, who.realm); 
+		ghostspawnpoint.invisible := 1;
+		var sparkle := CreateItemAtLocation(targ.x, targ.y, targ.z - 3, 14154, 1, who.realm);
+		sparkle.color := 2921;
+		sparkle.movable := 0;
+		MoveObjectToLocation( targ, targ.x, targ.y, targ.z + 2, targ.realm, MOVEOBJECT_FORCELOCATION );
+		sleepms(300);
+		MoveObjectToLocation( targ, targ.x, targ.y, targ.z + 2, targ.realm, MOVEOBJECT_FORCELOCATION );
+		sleepms(300);
+		MoveObjectToLocation( targ, targ.x, targ.y, targ.z + 2, targ.realm, MOVEOBJECT_FORCELOCATION );
+		sleepms(300);
+		MoveObjectToLocation( targ, targ.x, targ.y, targ.z + 2, targ.realm, MOVEOBJECT_FORCELOCATION );
+		sleepms(300);
+		targ.movable := 0;
+		PlaySoundEffect(targ, 383);
+		
+		SetObjProperty(ghostspawnpoint, "Amount", Cint((skill/20) + 1) );
+		SetObjProperty(ghostspawnpoint, "Range", CInt(1));
+		SetObjProperty(ghostspawnpoint, "MinDelay", CInt(3));
+		SetObjProperty(ghostspawnpoint, "MaxDelay", CInt(5));
+		SetObjProperty(ghostspawnpoint, "Spawn", ":brainai:ghost");
+		SetObjProperty(ghostspawnpoint, "ResetMe", 1);
+
+	endif
+
+	return 1;
+endprogram 

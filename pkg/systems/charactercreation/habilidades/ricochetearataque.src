@@ -1,0 +1,48 @@
+ 
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+	
+	
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	PrintText(attacker, "*ricochetear ataque*");
+
+	var hostiles := ListHostiles( attacker, 4, LH_FLAG_LOS );
+	var targets := array;
+
+	foreach hostile in hostiles
+		if (hostile != defender)
+			targets.append(hostile);
+		endif
+	endforeach
+
+	var targ := hostiles[RandomInt(targets.size())+1 ];
+	printtext(targ, "*Ricocheteado*");
+
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var total := CalculateTotalDamage(attacker, basedamage, targ, dmgList);
+	ApplyRawDamage(targ, total);
+	MostraDano(attacker, targ, total);
+	MakeBleed(targ);
+
+
+endprogram 
+ 

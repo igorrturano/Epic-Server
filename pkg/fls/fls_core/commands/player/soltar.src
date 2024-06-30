@@ -1,0 +1,45 @@
+use uo;
+use util;
+
+include ":attributes:attributes";
+include "include/say";
+include ":charactercreation:habilidades";
+
+program soltar (me)
+	if (!GetObjProperty(me, "corda"))
+		SendSysMessage(me, "Esse comando nao ira lhe ajudar em nada.");
+		return;
+	elseif (me.dead)
+		SendSysMessage(me, "Voce esta morto...");
+		return;
+	elseif (AP_GetVital(me, "Stamina") < 25)
+		SendSysMessage(me, "Voce esta cansado demais para tentar algo...");
+		return;
+	endif
+	var chance;
+	if (temhabilidade(me, "Movimento Livre"))
+		chance := ( 30 + GetAttribute(me,"Dexterity") ) - (GetObjProperty(me, "corda") / 2);
+	elseif (GetObjProperty(me, "classe") == "Ladino")
+		chance := GetAttribute(me,"Dexterity") - GetObjProperty(me, "corda");
+	else
+		chance := GetAttribute(me,"Strength") - GetObjProperty(me, "corda");
+	endif
+	if (RandomInt(100) < chance)
+		if (RandomInt(100) > GetAttribute(me,"Dexterity"))
+			PrintText(me, "*consegue se soltar*");
+		else
+			SendSysMessage (me, "Voce conseguiu se soltar discretamente...");
+			var corda := CreateItemInBackpack (me, "rope");
+			SetObjProperty(corda, "diff", GetObjProperty(me, "corda"));
+		endif
+		EraseObjProperty (me, "corda");
+		me.frozen := 0;
+	elseif (RandomInt(100) > GetAttribute(me,"Dexterity"))
+		PrintText(me, "*tentando se soltar*");
+	else
+		SendSysMessage (me, "Voce falhou...");
+	endif
+
+	ConsumeVital (me, "Stamina", 2500);
+
+endprogram

@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+include ":charactercreation:habilidades";
+
+
+program camuflar(who)
+if(TemHabilidade(who, "Camuflagem"))
+   start_script(":sneak:sneak", who);
+endif
+endprogram
+

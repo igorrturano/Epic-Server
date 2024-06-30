@@ -1,0 +1,1237 @@
+use uo;
+use os;
+use npc;
+use util;
+
+include ":attributes:attributes";
+include "include/sysEvent";
+include "include/say";
+include ":mounts:mounts";
+include ":taming:taming";
+include ":tn:cooldown";
+
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var pack_animals := array(291, 292); 
+var mountables := array(200, 204, 226, 228);
+var me := self();
+var wait_time := 120;
+var next_watch := ReadGameClock();
+var guarding := 0;
+var last_following := 0;
+var following :=0;
+var fighting := 0;
+var opponent := 0;
+var going_loc := 0;
+
+
+//Owner info
+var owner_serial;
+var owner;
+
+//Custom events
+const FOLLOW_CMD	:= 0xA001;
+const ATTACK_CMD	:= 0xA002;
+const NEW_MASTER_CMD	:= 0xA003;
+const GUARD_CMD		:= 0xA004;
+const GO_LOC_CMD	:= 0xA008;
+
+
+
+program TamedAI()
+
+	EnableMainEvents();
+	Setup();
+
+	while ( me )
+		if ( wait_time < 1 )
+			sleepms(10);
+		endif
+
+		SpecialHab(me);
+
+		var ev := Wait_For_Event(wait_time);
+
+		case ( ev.type )
+
+//			EVID_FLEE:
+//				if (ev.source)
+//					flee(ev.source);
+//				endif
+
+			SYSEVENT_SPEECH:
+
+				ProcessSpeech(ev);
+
+			SYSEVENT_ENGAGED:
+
+
+			SYSEVENT_DAMAGED:
+
+				if ( (ev.source).IsA(POLCLASS_MOBILE) )
+					if ( Distance(ev.source, me) <= 1)
+
+					opponent := ev.source;
+					
+					endif
+
+				endif
+			EVID_HERDING:
+
+				going_loc := ev.targ;
+
+			FOLLOW_CMD:
+
+				following := ev.targ;
+
+			ATTACK_CMD:
+
+				opponent := ev.targ;
+
+			GUARD_CMD:
+
+				guarding := ev.targ;
+
+			NEW_MASTER_CMD:
+
+				Transfer(ev.targ);
+				
+
+			SYSEVENT_DOUBLECLICKED:
+
+				if ( ev.source == owner )
+					// if( (Distance(ev.source, me) > 0) )
+						if (ev.source == owner)
+							ProcessDoubleClick(ev);
+						endif
+
+					// elseif ( me.graphic in pack_animals )
+
+					// 	OpenPack(ev);
+
+					// elseif ( !GetEquipmentByLayer(ev.source, LAYER_MOUNT) && (Distance(ev.source, me) == 0))
+
+					// 	if ( IsMountable(me.graphic) && MoveObjectToLocation(ev.source, me.x, me.y, me.z, ev.source.realm))
+
+					// 		if (me.npctemplate == ":brainai:Unicorn")
+					// 			if (GetObjProperty(me, "aprimorado"))
+					// 				SetObjProperty(owner, "unicorn", 1);
+					// 			endif
+					// 		endif
+					// 		ev.source.hidden := 0;
+					// 		MP_Mount(ev.source, me);
+					// 		me.hidden := 0;
+
+					// 	else
+					// 		ProcessDoubleClick(ev);
+					// 	endif
+
+					// endif
+
+				endif
+
+			SYSEVENT_ITEM_GIVEN:
+
+				TakeItem(ev);
+
+					
+
+		endcase
+
+		if ( CInt(GetObjProperty(me, "happiness")) < 10 )
+
+			//var skill := AP_GetSkill(owner,ANIMAL_TAMING);
+
+			//skill := skill - 0.1;
+
+			//SetTrueSkill(owner, "Taming", skill);
+
+			//SendSysMessageEX(owner, "You become less proficient in Animal Taming.", SSM_INFO_IC);
+
+			
+
+			//if ( me.graphic in mountables )
+
+			//	UnMount(owner);
+
+			//endif			
+
+			//UnTame();
+
+		elseif ( opponent && !IsDead(opponent) && !opponent.concealed && !opponent.hidden )
+
+			Fight();
+			Follow();
+
+		elseif ( fighting && IsDead(opponent) )
+
+			following := last_following;
+			fighting := 0;
+			opponent := 0;
+			last_following := 0;
+		SetWarMode(0);
+
+		elseif ( following )
+
+			Follow();
+
+		elseif ( guarding )
+
+			Guard();
+		elseif ( going_loc )
+			goToLoc();
+
+		else
+
+			wait_time := 120;
+
+		endif
+
+	endwhile
+
+endprogram
+
+
+
+function ProcessSpeech(ev)
+
+	var text := lower(ev.text);
+	var name := lower(me.name);
+	//printtextabove(me, "meu nome " + name );
+
+	if ( (ev.source).serial != (me.master).serial )
+
+		//Say("Dear "+ev.source.name+", shut up. I only listen to my owner.");
+
+		return;
+
+	endif
+
+
+
+	if( text[name+" mate"] || text[name+" ataque"] || text["todos matem"] || text["todos ataquem"] )
+
+		var targ := target(me.master, TGTOPT_HARMFUL + TGTOPT_CHECK_LOS);
+		if ( targ == me || targ == ev.source || !targ.IsA(POLCLASS_MOBILE) )
+			return;
+		endif
+
+
+
+		if ( text["todos"] )
+			AllCommand(ATTACK_CMD, targ);
+		else
+		opponent := targ;
+		endif
+
+	elseif ( text["guarde"] )
+
+		if ( text["todos guardem"] )
+			if ( text["todos guardem-me"] )
+				guarding := ev.source;
+				following := ev.source;
+			else
+				var targ := target(me.master);
+				if ( targ.IsA(POLCLASS_MOBILE) )
+					AllCommand(GUARD_CMD, targ);
+				endif
+			endif
+		else
+
+			var targ := target(me.master);
+			if ( targ == me )
+				return;
+			elseif ( targ.IsA(POLCLASS_MOBILE) )
+				guarding := targ;
+				following := targ;
+			endif
+		endif
+
+	elseif( text[name+" pare"] || text["todos parem"] )
+
+		opponent := 0;
+		guarding := 0;
+		following := 0;
+		going_loc := 0;
+
+	elseif( text[name+" siga"] )
+
+		if ( text["siga-me"] )
+			following := ev.source;
+		else
+			following := target(me.master);
+		endif
+
+	elseif ( text["todos sigam"] )
+
+		if ( text["todos sigam-me"] )
+			following := ev.source;
+		else
+
+			var targ := target(me.master);
+			if ( targ.IsA(POLCLASS_MOBILE) )
+				AllCommand(FOLLOW_CMD, targ);
+			endif
+
+		endif
+
+	elseif ( text[name+" novo dono"] || text["todos novo dono"] )
+
+
+		var cfg := ReadConfigFile(":brainAI:npcdesc");
+		var npctemplate := me.npctemplate;
+		npctemplate := npctemplate[10, len(npctemplate)-9];
+		cfg := cfg[npctemplate];
+
+		if (GetObjPRoperty(me, "summon") == 1)
+			SendSysMessage(owner, "Outros nao podem controlar criaturas invocadas por voce.");
+			return;
+		endif
+
+		if (GetObjProperty(owner, "companheiro") == me.serial)
+			SendSysMessage(owner, "Voce nao pode transferir seu companheiro animal.");
+			return;
+		endif
+
+		var targ := target(ev.source);
+		if (cfg.TameDifficulty >= 61)
+			if ( AP_GetSkill(targ, HANDLEANIMAL) * 1.4 < cfg.TameDifficulty )
+				SendSysMessage(owner, "A criatura nao aceita o alvo como novo dono.");
+				return;
+			endif
+		endif
+
+		if ( !targ.acctname )
+			return;
+		elseif ( text["all transfer"] )
+			AllCommand(NEW_MASTER_CMD, targ);
+		else
+			Transfer(targ);
+		endif
+
+	elseif( text[name+" livre"] || text["todos livres"] )
+
+		if (GetObjPRoperty(me, "summon") == 1)
+			SendSysMessage(owner, "Criaturas invocadas nao podem ser libertadas normalmente.");
+			return;
+		endif
+
+		if (GetObjProperty(owner, "companheiro") == me.serial)
+			SendSysMessage(owner, "Seu companheiro animal nao quer deixar voce.");
+			return;
+		endif
+		
+		EraseObjProperty(me, "anchor");
+		UnTame();
+	endif
+
+endfunction
+
+
+
+function TakeItem(ev)
+
+	var cfg := ReadConfigFile(":*:itemdesc");
+	if ( cfg[(ev.item).objtype].script["eat"] )
+		PlaySoundEffect(me, CInt(0x3b)+ RandomInt(3));
+		DestroyItem(ev.item);
+		PrintTextAbovePrivate(me,"*O animal parece feliz*", ev.source);
+		SetObjProperty(me, "happiness", 100);
+	elseif ( ev.item.objtype IN {2482, 3701} && !(me.graphic in pack_animals) )
+		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
+			SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de coloca-la na montaria.");
+			return;
+		endif
+		if ( me.npctemplate == ":brainai:Horse3" || me.npctemplate == "Horse3")
+			SetObjProperty(me, "beforepack", me.graphic);
+			me.graphic := 291;
+			DestroyItem(ev.item);
+			PrintText(ev.source,"*prende uma mochila no cavalo*");
+		elseif ( me.npctemplate == ":brainai:Llama" || me.npctemplate == "Llama")
+			SetObjProperty(me, "beforepack", me.graphic);
+			me.graphic := 292;
+			DestroyItem(ev.item);
+			PrintText(ev.source,"*prende uma mochila na llama*");
+		endif
+
+		//if(IsMountable(me.graphic))
+		//	mount := 1;
+		//else
+		//	mount := 0;
+		//endif
+	else
+		SendSysMessage(ev.source, "Nao pode dar esse item!");
+	endif	
+
+endfunction
+
+
+
+function Fight()
+
+	if ( !fighting )
+
+		last_following := following;
+		following := opponent;
+		TurnToward(opponent);
+		SetOpponent(opponent);
+		fighting := 1;
+
+	endif
+
+endfunction
+
+
+
+function IsDead(opponent)
+
+	if ( !opponent )
+		return 1;
+	elseif ( !opponent.dead )
+		return 0;
+	elseif ( opponent.npctemplate )
+		return 0;
+	else
+		return 1;
+	endif
+
+endfunction
+
+
+
+function OpenPack(ev)
+
+	if ( ev.source != owner )
+		return;
+	elseif ( Distance(me, ev.source) > 2 )
+		return;
+	else
+		SendOpenSpecialContainer(owner, me.backpack);
+	endif
+
+endfunction
+
+
+
+function Follow()
+
+	var dist := Distance(me, following);
+
+	if ( opponent )
+
+		if ( dist > 1 )
+			var ma := 200 - me.run_speed;
+			me.run_speed := me.run_speed + ma;
+			CloseDistance(following);
+			me.run_speed := me.run_speed - ma;
+			wait_time := 0;
+		else
+			wait_time := 1;
+		endif
+
+	elseif( dist <= 1 )
+
+		wait_time := 1;
+
+	elseif( dist > 25 )
+
+		following := 0;
+		wait_time := 120;
+
+	elseif ( dist > 4 )
+
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		CloseDistance(following);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+
+	else
+
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		CloseDistance(following);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+
+	endif
+
+endfunction
+
+
+
+function Guard()
+
+	wait_time := 7;
+
+	if ( !guarding.IsA(POLCLASS_MOBILE) )
+		guarding := 0;
+	elseif ( Distance(me, guarding) > 15 )
+		guarding := 0;
+	elseif ( next_watch < ReadGameClock() )
+		next_watch := ReadGameClock()+7;
+		if ( RandomInt(8) == 1 )
+			Say("*guardando "+guarding.name+"*");
+		endif
+		foreach mob in ListHostiles(guarding, 9, LH_FLAG_LOS);
+			opponent := mob;
+			return;
+		endforeach
+
+	endif
+
+endfunction
+
+
+function goToLoc()
+	var dist :=CoordinateDistance(me.x, me.y, going_loc.x, going_loc.y);
+
+	if (dist > 20)
+		going_loc := 0;
+		return;
+	endif
+
+	if( dist < 1 )
+		wait_time := 1;
+		going_loc := 0;
+		return;
+	elseif( (going_loc.type == "run") || opponent )
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		PetMovement(going_loc,2);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+	else
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		PetMovement(going_loc,2);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+	endif
+
+endfunction
+
+
+
+function Transfer(targ)
+
+	if ( !targ.acctname )
+		return;
+	endif
+
+	 if ( (GetNumPets(targ) + GetPetCost(me)) > GetMaxPets(targ) ) 
+		Say("*" + me.name+ " nao aceita " + targ.name + "como dono.");
+		return;
+	endif
+
+
+	Say("*"+me.name+" aceita "+targ.name+" como novo dono*");
+
+	SetObjProperty(me, "owner", targ.serial);
+	ErasePet(me.master, me.serial);
+	AddPet(targ, me.serial);
+
+	me.SetMaster(targ);
+
+
+
+	RestartScript(me);
+
+endfunction
+
+
+
+
+
+function UnTame()
+
+	PrintTextAbovePrivate(me, "*"+me.name+" pode viver livre novamente.*", me.master);
+	ErasePet(me.master, me.serial);
+	me.SetMaster(0);
+
+	var orig_script := GetObjProperty(me, "script");
+
+	if ( !orig_script )
+
+		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		SysLog(me.name+" doesnt have an original script to use now that taming is done?!");
+		orig_script := ":brainai:brain";
+
+	elseif ( orig_script["tamed"] )
+
+		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		SysLog(me.name+" my original script was tamed.src ?!");
+		orig_script := ":brainai:brain";
+
+	endif
+
+	me.script := orig_script;
+	SetName(me, GetObjProperty(me, "name"));
+	EraseObjProperty(me, "owner");
+	EraseObjProperty(me, "name");
+	EraseObjproperty(me, "script");
+	EraseObjProperty(me, "happiness");
+	RestartScript(me);
+
+	ErasePetMods(me);
+
+endfunction
+
+
+
+function AllCommand(ev_type, targ)
+
+	var event := struct;
+	event.+type := ev_type;
+	event.+source := me;
+	event.+targ := targ;
+
+	foreach mobile in(ListMobilesNearLocation( me.x, me.y, me.z, 8, me.realm))
+
+		if ( (mobile.master).serial == (me.master).serial )
+			SendEvent(mobile, event);
+		endif
+
+		sleepms(2);
+
+	endforeach
+
+endfunction
+
+function ProcessDoubleClick(ev)
+
+	var targ := TargetCoordinates(owner);
+	if (targ)
+		if (targ.mobile == me && (Distance(ev.source, me) < 2 ))
+			if ( me.graphic in pack_animals)
+
+				var gump := GFCreateGump(220, 70);
+				//GFGumpPic(gump, 0, 0, 0x254E);
+				GFResizePic(gump, 0, 0, 0x254E, 100, 100);	
+				GFTextLine(gump, 30, 15, 2100, "Abre");
+				GFTextLine(gump, 30, 35, 2100, "Retira ");
+				
+				GFAddButton(gump, 15, 17, 2117, 2118, 1, 10);
+				GFAddButton(gump, 15, 37, 2117, 2118, 1, 20);
+				var input := GFSendGump(owner, gump);
+				input  := input[0];
+				
+				if (input == 10)
+					OpenPack(ev);
+				elseif (input ==  20)
+					if ((EnumerateItemsInContainer(me.backpack)).size() > 0)
+						SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
+						return;
+					endif
+					PrintText(ev.source, "*remove a mochila de "+me.name+"*");
+					me.graphic := GetObjProperty(me, "beforepack");
+					if(!GetObjProperty(me, "beforepack"))
+						if (me.graphic == 292)
+							me.graphic := 220;
+						elseif (me.graphic == 291)
+							me.graphic := 200;
+						endif
+					endif
+					CreateItemInBackpack(ev.source, "backpack");
+					EraseObjProperty(me, "beforepack");
+				endif
+			elseif (IsMountable(me.graphic) && MoveObjectToLocation(ev.source, me.x, me.y, me.z, ev.source.realm))
+				ev.source.hidden := 0;
+				MP_Mount(ev.source, me);
+				me.hidden := 0;
+			endif
+		elseif (targ.mobile && targ.mobile != me)
+			var gump := GFCreateGump(220, 70);
+			//GFGumpPic(gump, 0, 0, 0x254E);
+			GFResizePic(gump, 0, 0, 0x254E, 100, 100);	
+			GFTextLine(gump, 30, 15, 2100, "Guarda ");
+			GFTextLine(gump, 30, 35, 2100, "Segue ");
+			if (targ.mobile.serial != owner.serial)
+				GFTextLine(gump, 30, 55, 2100, "Ataca ");
+			endif
+			GFAddButton(gump, 15, 17, 2117, 2118, 1, 10);
+			GFAddButton(gump, 15, 37, 2117, 2118, 1, 20);
+			if (targ.mobile.serial != owner.serial)
+				GFAddButton(gump, 15, 57, 2117, 2118, 1, 30);
+			endif
+			var input := GFSendGump(owner, gump);
+			input  := input[0];
+			if (input == 10)
+				guarding := targ.mobile;
+			elseif (input ==  20)
+				following := targ.mobile;
+			elseif (input == 30)
+				opponent := targ.mobile;
+			endif
+				
+		elseif (!Cint(targ.mobile))//se nao for nem item nem mobile anda ate la
+			if (!Cint(targ.item))
+				following := 0;
+				opponent := 0;
+				going_loc := targ;
+			endif
+		endif
+	endif
+
+endfunction
+
+
+
+
+function EnableMainEvents()
+
+	EnableEvents(SYSEVENT_SPEECH, 10);
+	EnableEvents(SYSEVENT_ENGAGED);
+	EnableEvents(SYSEVENT_DAMAGED);
+	EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+	EnableEvents(SYSEVENT_ITEM_GIVEN, 5);
+
+endfunction
+
+
+
+function DisableMainEvents()
+
+	DisableEvents(SYSEVENT_SPEECH);
+	DisableEvents(SYSEVENT_ENGAGED);
+	DisableEvents(SYSEVENT_DAMAGED);
+	DisableEvents(SYSEVENT_ITEM_GIVEN);
+
+endfunction
+
+
+
+function Setup()
+
+	SetAnchor(me.x, me.y, 20, 0);
+
+	owner_serial := GetObjProperty(me, "owner");
+
+	owner := SystemFindObjectBySerial(owner_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+
+	if ( !owner )
+		UnTame();
+	elseif ( (me.master).serial != owner )
+		me.SetMaster(owner);
+	endif
+
+	var happiness := GetObjProperty(me, "happiness");
+	if ( !happiness || happiness == error )
+		happiness := 100;
+		SetObjProperty(me, "happiness", happiness);
+	endif
+
+	if ( !me.backpack )
+		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
+		EquipItem(me, new_pack);
+	endif
+
+	me.facing := me.facing+1;
+	TurnToward(me.master);
+
+	//if ( !GetProcess(GetObjProperty(me, "#happypid")) )
+
+	//	start_script(":taming:happycounter", {me, ReadGameClock()});
+
+	//endif
+
+	me.cmdlevel := 4;
+	SetWarMode(0);
+
+endfunction
+
+function SpecialHab(me)
+
+	if (owner)
+		if ( me.npctemplate == ":brainai:fadinha")
+			if (isBloodied(owner))
+				if (distance(me, owner) < 8)
+					if (!GetCooldown(me, "heal"))
+						CastFaerieHeal(me, owner);
+					endif
+				endif
+			endif
+		endif
+	endif
+
+endfunction
+
+function CastFaerieHeal(me, owner)
+
+	PrintText(me, "*bate as asas*");
+	PlaysoundEffect(me, 1137);
+	PlayObjectCenteredEffect( owner, 0x373a, 7, 0x10 );
+
+	var amt := RandomDiceRoll("1d10") + 20;
+	HealDamage(owner, amt);
+	SetCooldown(me, "heal", 150);
+
+endfunction
+
+function CalcPathAndMove(me, byref opponent, sleepdelay)
+
+  if (!opponent)
+    return 0;
+  endif
+
+   var face_str := getFacingString(GetFacing(me.x, me.y, opponent.x, opponent.y));
+   var stam := AP_GetVital(me, STAMINA);
+   var move_type := 1;
+
+   if (stam < 5)
+      move_type := 0;
+   endif
+
+	var path := GetObjProperty(me, "path"); //procura se ja calculou o path
+	var last_loc := GetObjProperty(me, "#enemy_last_loc"); //procura se ja calculou o path
+   if (last_loc && path) 
+      if (CoordinateDistance(opponent.x, opponent.y, last_loc[1], last_loc[2]) > 3)
+        me.concealed :=0;
+         path := 0;
+         EraseObjProperty(me, "path");
+         EraseObjProperty(me, "#enemy_last_loc");
+         last_loc := 0;
+      else
+         last_loc := 1;
+      endif
+   endif
+
+   if (stam <= 1)
+      var last_msg := GetObjProperty(me, "#fatigue");
+      if (!last_msg || last_msg < ReadGameClock())
+         SetObjProperty(me, "#fatigue", ReadGameClock()+15);
+         PrintText(me, "*fatigado*");
+      endif
+      sleep(1);
+   elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
+      EraseObjProperty(me, "path");
+      EraseObjProperty(me, "#enemy_last_loc");
+
+      if (move_type) 
+         RunToward( opponent );
+        //  Quebraquebra(me);
+      else 
+         WalkToward( opponent );
+      endif
+
+      var reachtry := GetObjProperty(me, "#reachtry");
+      if (reachtry == error || (reachtry[1].x != opponent.x && reachtry[1].y != opponent.y))
+         reachtry := array{struct{ x := opponent.x, y := opponent.y, z := opponent.z }, ReadGameClock()+5 };
+         SetObjProperty(me, "#reachtry", reachtry);
+      endif
+
+      if (reachtry[2] > ReadGameClock())
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, 0, 15);
+         if (!path)
+            //Flee(opponent);;
+            sleepms(sleepdelay);
+         else
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+      endif
+
+      sleepms(sleepdelay);
+	else
+      if (path == error || last_loc ) //se não calculou
+         var flags := FP_IGNORE_MOBILES;
+         if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+            flags := flags| FP_IGNORE_DOORS;
+         endif
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 15); //calcula o path
+         
+         if (!path[1] || !path || path == error)
+            //Flee(opponent);
+            sleepms(sleepdelay);
+         else
+            if (move_type) RunTowardLocation( path[1].x, path[1].y );
+            //Quebraquebra(me);
+            else WalkTowardLocation(path[1].x, path[1].y); endif
+
+				path.erase(1); //deleta a coordenada e vai pra proxima
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+		endif
+
+      var coord := path[1]; //pega a primeira coordenada
+      if (coord); 
+         var coordtry := GetObjProperty(me, "#coordtry");
+         if (coordtry == error || coordtry[1] != coord)
+            coordtry := array{coord, ReadGameClock()+5 };
+            SetObjProperty(me, "#coordtry", coordtry); 
+         endif
+         if (move_type) RunTowardLocation( coord.x, coord.y );
+         //Quebraquebra(me);
+         else WalkTowardLocation(coord.x, coord.y); endif
+         sleepms(sleepdelay);
+         Opendoors(me); //tenta abrir possiveis portas
+         if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia 
+            me.concealed :=0;
+            path.erase(1); //deleta a coordenada e vai pra proxima
+            if (path[1])
+               SetObjProperty(me, "path", path);
+            else
+               EraseObjProperty(me, "path");
+            endif
+         else // se não consegue chegar na coord 
+            if ( coordtry[2] > ReadGameClock()) //se ta tentando chegar la a mais de 5 segundos
+               EraseObjProperty(me, "path"); //deleta o path atual
+               me.remAggro(opponent);
+               var old_opponent := opponent;
+            //    ChooseHighestOpponent(me, opponent);
+               if (old_opponent == opponent) /*Flee(opponent);*/ endif
+            endif
+         endif
+      else
+         if (move_type) RunToward( opponent );
+        //  Quebraquebra(me);
+         else WalkToward( opponent ); endif
+         sleepms(sleepdelay);
+      endif
+	endif
+endfunction
+
+function CloseDistance( opponent )
+
+	if ( GetObjPRoperty(me, "noclosecombat") == 1)
+		return 0;
+	endif
+
+	var sleepdelay := 275 - me.run_speed;//(CInt(GetDexterity(me)) * 1.5);
+
+	if (sleepdelay < 0)
+		sleepdelay := 0;
+	endif
+
+/*
+    case (CoordinateDistance( me.x, me.y, opponent.x, opponent.y ))
+        1:              
+        0:
+            return 1;
+        default:
+		if (!CheckLineofSight(me, opponent)) //se nao consegue ver
+			var path := GetObjPRoperty(me, "path"); //procura se ja calculou o path
+			if (path == error) //se nao calculou
+				var flags := FP_IGNORE_MOBILES;
+				if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+					flags := flags| FP_IGNORE_DOORS;
+				endif
+				path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 10); //calcula o path
+				if (path == error) //TODO: se nao tiver outro inimigo correr ?
+					ChooseAnotherOpponent(me);
+				else
+					SetObjProperty(me, "path", path);
+				endif
+			else //se calculou o path
+				var coord := path[1]; //pega a primeira coordenada
+				if (coord) 
+					SetObjProperty(me, "#coordtry", ReadGameClock()); 
+					RunTowardLocation( coord.x, coord.y ); //anda na direcao
+					sleepms(sleepdelay);
+					Opendoors(me, opponent); //tenta abrir possiveis portas
+					if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia 
+						path.erase(1); //deleta a coordenada e vai pra proxima
+						if (path.size() > 0)
+							SetObjProperty(me, "path", path);
+						else
+							EraseObjProperty(me, "path");
+						endif
+					else // se nao consegue chegar na coord 
+						if ( cint(GetObjProperty(me, "#coordtry")) > ReadGameClock()+5) //se ta tentando chegar la a mais de 5 segundos
+							EraseObjProperty(me, "path"); //deleta o path atual
+							ChooseAnotherOpponent(me); //procura outro oponente TODO: se nao tiver outro oponente?
+						endif
+					endif
+				else
+					RunToward( opponent );
+					sleepms(sleepdelay);				
+				endif
+			endif
+		else
+			EraseObjProperty(me, "path");
+			RunToward( opponent );
+			sleepms(sleepdelay);
+		endif
+		RunToward( opponent );
+		sleepms(sleepdelay);
+
+            return 0;
+    endcase
+ */
+
+	var face_str := getFacingString(GetFacing(me.x, me.y, opponent.x, opponent.y));
+   var stam := AP_GetVital(me, STAMINA);
+   var move_type := 1;
+
+   if (stam < 5)
+      move_type := 0;
+   endif
+
+	var path := GetObjProperty(me, "path"); //procura se ja calculou o path
+	var last_loc := GetObjProperty(me, "#enemy_last_loc"); //procura se ja calculou o path
+   if (last_loc && path) 
+      if (CoordinateDistance(opponent.x, opponent.y, last_loc[1], last_loc[2]) > 3)
+         path := 0;
+         EraseObjProperty(me, "path");
+         EraseObjProperty(me, "#enemy_last_loc");
+         last_loc := 0;
+      else
+         last_loc := 1;
+      endif
+   endif
+
+   if (stam <= 1)
+      var last_msg := GetObjProperty(me, "#fatigue");
+      if (!last_msg || last_msg < ReadGameClock())
+         SetObjProperty(me, "#fatigue", ReadGameClock()+15);
+         PrintText(me, "*fatigado*");
+      endif
+      sleep(1);
+   elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
+      EraseObjProperty(me, "path");
+      EraseObjProperty(me, "#enemy_last_loc");
+
+      if (move_type) 
+         RunToward( opponent );
+      else 
+         WalkToward( opponent );
+      endif
+
+      var reachtry := GetObjProperty(me, "#reachtry");
+      if (reachtry == error || (reachtry[1].x != opponent.x && reachtry[1].y != opponent.y))
+         reachtry := array{struct{ x := opponent.x, y := opponent.y, z := opponent.z }, ReadGameClock()+5 };
+         SetObjProperty(me, "#reachtry", reachtry);
+      endif
+
+      if (reachtry[2] > ReadGameClock())
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, 0, 15);
+         if (!path)
+            //Flee(opponent);;
+            sleepms(sleepdelay);
+         else
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+      endif
+
+      sleepms(sleepdelay);
+	else
+      if (path == error || last_loc ) //se não calculou
+         var flags := FP_IGNORE_MOBILES;
+         if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+            flags := flags| FP_IGNORE_DOORS;
+         endif
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 15); //calcula o path
+         
+         if (!path[1] || !path || path == error)
+            //Flee(opponent);
+            sleepms(sleepdelay);
+         else
+            if (move_type) RunTowardLocation( path[1].x, path[1].y );
+            else WalkTowardLocation(path[1].x, path[1].y); endif
+
+				path.erase(1); //deleta a coordenada e vai pra proxima
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+		endif
+
+      var coord := path[1]; //pega a primeira coordenada
+      if (coord); 
+         var coordtry := GetObjProperty(me, "#coordtry");
+         if (coordtry == error || coordtry[1] != coord)
+            coordtry := array{coord, ReadGameClock()+5 };
+            SetObjProperty(me, "#coordtry", coordtry); 
+         endif
+         if (move_type) RunTowardLocation( coord.x, coord.y );
+         else WalkTowardLocation(coord.x, coord.y); endif
+         sleepms(sleepdelay);
+         Opendoors(me); //tenta abrir possiveis portas
+         if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia 
+		 
+		 	if (CoordinateDistance( me.x, me.y, opponent.x, opponent.y ) > 1)
+      			CalcPathAndMove(me, opponent, sleepdelay);
+     	 		return 0;
+   			else
+	   			return 1;
+   			endif  
+            path.erase(1); //deleta a coordenada e vai pra proxima
+            if (path[1])
+               SetObjProperty(me, "path", path);
+            else
+               EraseObjProperty(me, "path");
+            endif
+         else // se não consegue chegar na coord 
+            if ( coordtry[2] > ReadGameClock()) //se ta tentando chegar la a mais de 5 segundos
+               EraseObjProperty(me, "path"); //deleta o path atual
+               me.remAggro(opponent);
+               var old_opponent := opponent;
+            //    ChooseHighestOpponent(me, opponent);
+               if (old_opponent == opponent)/*Flee(opponent);*/ endif
+            endif
+         endif
+      else
+         if (move_type) RunToward( opponent );
+         else WalkToward( opponent ); endif
+         sleepms(sleepdelay);
+      endif
+	endif
+
+endfunction
+
+/*
+
+function ChooseAnotherOpponent(me)
+
+	var otherTarget := ListMobilesNearLocationEx( me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm );
+	if  (otherTarget.size() > 0)
+		foreach mob in otherTarget
+			if(CanFight(me, mob, align)) //verifica se eh inimigo
+				Fight(mob);
+			endif
+		endforeach
+	else
+	endif
+
+endfunction
+
+*/
+
+function Opendoors(me)
+
+  foreach door in (ListItemsNearLocation(me.x, me.y, me.z, 1))
+    if  ((door.isa(POLCLASS_DOOR)) and (!door.locked)) //se nao ta trancada
+
+//	if (CheckLosBetween( door.x, door.y, door.z, opponent.x, opponent.y, opponent.z, me.realm )) // se a porta vai me levar ate o oponente
+
+		if ( cint(GetObjProperty(me, "ignoredoor")) == 1)
+			PrintText(me, "*atravessa a porta*");
+			MoveObjectToLocation(me, door.x, door.y, door.z, door.realm, MOVEOBJECT_FORCELOCATION);
+		elseif (cint(GetObjProperty(me, "opendoor")) == 1)
+			PrintText(me, "*abre a porta*");
+			door.Open();
+		endif
+//	else
+//		printtextabove(me, "a porta nao ajudara");
+//	endif
+	endif
+  endforeach
+endfunction
+
+function look_around()
+  foreach npc in ListMobilesInLineOfSight(me, areasize)
+    if( CanFight(me, npc, align) )
+        Fight(npc);
+    endif
+    sleepms(2);
+  endforeach
+endfunction
+
+function getFacingString(me_face)
+   case (cint(me_face))
+      0:default: return "N";
+      1: return "S";
+      2: return "E";
+      3: return "W";
+      4: return "NW";
+      5: return "NE";
+      6: return "SW";
+      7: return "SE";
+   endcase
+endfunction
+
+function PetMovement(what, move_mode)
+   if (!CheckLosAt(me, what.x, what.y, what.z) || CanWalk("L", me.x, me.y, me.z, me.facing) == error) //se n�o consegue correr direto
+		var path := GetObjProperty(me, "path"); //procura se ja calculou o path
+		var last_loc := GetObjProperty(me, "#enemy_last_loc"); //procura se ja calculou o path
+		
+      if (path == error || ( last_loc && !(what in ListMobilesNearLocation(last_loc.x, last_loc.y, last_loc.z, 3)) )) //se n�o calculou
+         var flags := FP_IGNORE_MOBILES;
+         if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+            flags := flags| FP_IGNORE_DOORS;
+         endif
+         path := FindPath(  me.x, me.y, me.z, what.x, what.y, what.z, me.realm, flags, 15); //calcula o path
+         
+         if (!path[1] || !path || path == error)
+            sleepms(2);
+            what := 0;
+         else
+            if (move_mode == 2)
+               RunTowardLocation( path[1].x, path[1].y ); //anda na direcao
+            else
+               WalkTowardLocation( path[1].x, path[1].y ); //anda na direcao
+            endif
+				path.erase(1); //deleta a coordenada e vai pra proxima
+            set_critical(1);
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{what.x, what.y, what.z});
+            set_critical(0);
+         endif
+		endif
+
+      var coord := path[1]; //pega a primeira coordenada
+      if (coord); 
+         var coordtry := GetObjProperty(me, "#coordtry");
+         if (coordtry != error && coordtry[1] != coord)
+            SetObjProperty(me, "#coordtry", array{coord, ReadGameClock()+5 }); 
+         endif
+         if (move_mode == 2)
+            RunTowardLocation( coord.x, coord.y ); //anda na direcao
+         else
+            WalkTowardLocation( coord.x, coord.y ); //anda na direcao
+         endif
+         sleepms(2);
+         Opendoors(me); //tenta abrir possiveis portas
+         if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia 
+            path.erase(1); //deleta a coordenada e vai pra proxima
+            if (path[1])
+               SetObjProperty(me, "path", path);
+            else
+               EraseObjProperty(me, "path");
+            endif
+         else // se n�o consegue chegar na coord 
+            if ( coordtry[2] > ReadGameClock()) //se ta tentando chegar la a mais de 5 segundos
+               EraseObjProperty(me, "path"); //deleta o path atual
+               what := 0;
+            endif
+         endif
+      else
+         if (move_mode == 2)
+            RunTowardLocation( what.x, what.y );
+         else
+            WalkTowardLocation( what.x, what.y );
+         endif
+         RunTowardLocation( what.x, what.y );
+         sleepms(2);
+      endif
+   else
+      EraseObjProperty(me, "path");
+      EraseObjProperty(me, "#enemy_last_loc");
+      if (move_mode == 2)
+         RunTowardLocation( what.x, what.y );
+      else
+         WalkTowardLocation( what.x, what.y );
+      endif
+      sleepms(2);
+	endif
+endfunction
+
+function PetGoTo(destiny, move_type)
+   var flags := FP_IGNORE_MOBILES;
+   if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+      flags := flags| FP_IGNORE_DOORS;
+   endif
+   var path := FindPath(  me.x, me.y, me.z, destiny.x, destiny.y, destiny.z, me.realm, flags, 12); //calcula o path
+   var sleepdelay := 275 - me.run_speed;//(CInt(GetDexterity(me)) * 1.5);
+   foreach coord in path
+      if (move_type == 1)
+         WalkTowardLocation( coord.x, coord.y ); //anda na direcao
+      else
+         RunTowardLocation( coord.x, coord.y ); //anda na direcao
+      endif
+      OpenDoors(me);
+      sleepms(sleepdelay);
+   endforeach
+endfunction

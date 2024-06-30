@@ -1,0 +1,80 @@
+use uo;
+use datafile;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":help:help";
+
+program gmpage(who)
+
+	GmBugGump(who);
+
+endprogram
+
+function GMBugGump(who)
+
+	var pagegump := GFCreateGump();
+	var input;
+
+	GFDisposable(pagegump, 0);
+	GFResizePic(pagegump, 0, 25, 3600, 450, 480);	
+	GFResizePic(pagegump, 15, 40, 0x13BE, 420, 450);
+	GFTextMid(pagegump, 20, 50, 370, 1153, "Menu de Bugs");
+
+	GFTextLine(pagegump, 20, 70, 1153, "Nome");
+	GFTextLine(pagegump, 300, 70, 1153, "Descricao");
+	GFTextLine(pagegump, 370, 70, 1153, "Deletar");
+
+	var df := DFOpenDataFile("bugs", DF_CREATE, DF_KEYTYPE_INTEGER);
+	var pages := df.Keys();
+	var y := 90;
+	var i := 1;
+	var pagenum := 0;
+	var elem;
+	var player;
+	var fontcolor := 1153;
+	foreach page in pages
+		pagenum := pagenum + 1;
+		GFPage(pagegump, i);
+		elem := df.FindElement( Cint(page) );
+		player := elem.GetProp("Title");
+		GFTextLine(pagegump, 20, y, fontcolor, player); 
+		GFAddButton(pagegump, 320, y, 2117, 2118, 1, 800 + pagenum);
+		GFAddButton(pagegump, 380, y, 2117, 2118, 1, 1000 + pagenum);
+		y := y + 20;
+		if ( Cdbl(pagenum/18) == i)
+			i := i +1;
+			y := 90;
+			GFAddButton(pagegump, 380, 460, 2648, 2649, GF_PAGE_BTN, i);
+			GFPage(pagegump, i);
+			GFAddButton(pagegump, 380, 50, 2650, 2651, GF_PAGE_BTN, i-1);
+		endif
+	endforeach
+	
+
+	input := GFSendGump(who, pagegump);
+	input := input[0];
+
+
+	if ( (input > 800)  && (input < 1000) )
+		var serial := GetPageIndexByPageNum(input - 800, "bugs");
+		if ( serial )
+			var df := DFOpenDataFile("bugs", DF_CREATE, DF_KEYTYPE_INTEGER);
+			var elem := df.FindElement(serial);
+			if (elem == error)
+				SendSysMessage(who, "Esse bug foi deletado.");
+			else
+				PageDescGump(who, elem);
+			endif
+		else
+			SendSysMessage(who, "Esse bug foi deletado.");
+		endif	
+		GMBugGump(who);
+	elseif ( (input > 1000) )
+		var serial := GetPageIndexByPageNum(input - 1000, "bugs");
+		DeletePage( serial, "bugs");	
+		GMBugGump(who);
+	endif
+
+endfunction

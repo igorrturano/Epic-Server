@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	
+	var points := CInt(GetObjProperty(mobile, "#IntPoisonMod"));	
+	points := points * (-1);
+	AP_ModifyStatMod(mobile, INTELLIGENCE, points);
+	EraseObjProperty(mobile, "#IntPoisonMod");
+	
+	return 1;
+endprogram

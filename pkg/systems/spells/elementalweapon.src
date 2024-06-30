@@ -1,0 +1,63 @@
+use uo;
+use os;
+
+include "include/damage";
+
+program armasagrada(param)
+
+	var arma := param[1];
+	var time := param[2];
+	var type := param[3];
+	var who := param[4];
+
+	var sleeptime := cint( time/10 );
+
+	var originalColor := arma.color;
+	SetObjProperty(arma, "elementalWeaponOriginalColor", originalColor);
+	SetObjProperty(arma, "pid", Getpid());
+	//printtextabove(arma, " " + type);
+
+	if (type == DMG_FIRE)
+		arma.color := 1255;
+	elseif (type == DMG_COLD)
+		arma.color := 1261;
+	elseif (type == DMG_ENERGY)
+		arma.color := 1273;
+	endif
+
+	var i := 0;
+	var elemental := GetObjProperty(arma, "#elementalweapon");
+	while ( i <= 10)
+		elemental := GetObjProperty(arma, "#elementalweapon");
+		if (elemental == error)
+			break;
+		endif
+		sleep(sleeptime);
+		arcoiris(arma, type);
+		i := i + 1;
+
+		if (ReadGameClock() > elemental.endtime)
+			SendSysMessageEx(who, "Sua arma nao esta mais encantada.", SSM_INFO);
+			break;
+		endif
+	endwhile
+
+
+	arma.color := originalColor;
+endprogram
+
+function arcoiris(arma, type)
+
+	var k := 0;
+
+	for (k := 1; k < 5; k := k + 1)
+		var initcolor := arma.color;
+		var i := 1;
+		for ( i := 1; i <= 5; i := i + 1)
+			arma.color := initcolor + i;
+			sleepms(500);
+		endfor
+		arma.color := initcolor;
+	endfor
+
+endfunction

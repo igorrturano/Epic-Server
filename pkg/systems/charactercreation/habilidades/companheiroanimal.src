@@ -1,0 +1,60 @@
+
+use uo;
+
+include "include/say";
+include ":taming:taming";
+include ":gumps:yesNo";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+
+program pet(who)
+
+	var petserial := GetObjProperty(who, "companheiro");
+	var pet;
+	if (petserial != error)
+		pet := SystemFindObjectBySerial(petserial);
+	endif
+
+	if (pet)
+		var yes := YesNo(who, "Voce ja tem um companheiro animal, deseja torna-lo normal?");
+		if (yes)
+			var aprimorado := GetObjProperty(pet, "aprimorado");
+			if (aprimorado)
+				SendSysMessageEx(who, "Use a habilidade companheiro animal aprimorado.", SSM_FAIL);
+				return 1;
+			endif
+			SendSysMessageEx(who, "Seu companheiro animal volta a ser um animal comum.", SSM_INFO);
+			ErasePetMods(pet);
+			EraseObjProperty(who, "companheiro");
+			TS_LowerDuration(who, "Companheiro Animal", 10000, 1);
+			return 1;
+		else
+			SendSysMessageEx(who, "Voce continua com seu companheiro animal.", SSM_INFO);
+			TS_LowerDuration(who, "Companheiro Animal", 10000, 1);
+			return 1;
+		endif
+	else
+		SendSysMessageEx(who, "Escolha um dos seus animais para virar seu companheiro animal.", SSM_REQUEST);
+		var targ := target(who);
+		if (!targ)
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			TS_LowerDuration(who, "Companheiro Animal", 10000, 1);
+			return 1;
+		endif
+
+		var tamed := GetObjProperty(who, "TamedPets");
+		if ( targ.serial in tamed )
+			SetPetMods(targ);
+			PrintText(targ, "*a natureza escolhe esta criatura*");
+			SendSysMessageEx(who, "Voce escolheu seu companheiro animal.", SSM_INFO);
+			SetObjProperty(who, "companheiro", targ.serial);
+		else
+			SendSysMessageEx(who, "Voce precisa escolher um animal que voce adestrou.", SSM_FAIL);
+			TS_LowerDuration(who, "Companheiro Animal", 10000, 1);
+			return 1;
+		endif
+
+	endif
+
+
+endprogram

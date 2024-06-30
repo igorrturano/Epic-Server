@@ -1,0 +1,228 @@
+use cfgfile;
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":attributes:stats";
+include ":brainAI:include/npcCommands";
+include ":gumps:gumps_ex";
+include ":gumps:gumps"; //add
+include "include/say";
+include ":taming:taming";
+include ":mounts:mounts";
+include ":tn:characters";
+include ":tn:boss";
+include ":charactercreation:habilidades";
+//include ":damage:damage"; para os criticos talvez?
+
+const START_Y	   := 91;
+const END_Y	   := 311;
+const BACKGROUND   := 0xBB8;
+const FOREGROUND   := 0xDAC;
+const INIT_DET_PAGE := 10;
+
+var template;
+var index_list;
+var info_cfg;
+var entries_list := dictionary;
+var btn_maxId := 2;
+var new_list := array;
+var det_page := INIT_DET_PAGE; //numero da pagina de detalhes
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+program tamingskill(who)
+    taming(who);
+endprogram
+
+function taming(who)
+
+	if( who.hidden )
+		who.hidden := 0;
+	endif
+
+	SendSysMessageEx(who, "Que animal voce deseja adestrar?", SSM_REQUEST);
+	if( who.hidden )
+		who.hidden := 0;
+	endif
+	var targ := target(who);
+
+	var skill := AP_GetSkill(who, HANDLEANIMAL);
+
+	var bonus := 0;
+//	SendSysMEssage(who, " " + GetNumPets(who) + " " + GetPetCost(targ) + " " + GetMaxPets(who) );
+	if ( !targ.IsA(POLCLASS_NPC) )
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+//	elseif (Distance(who,targ) > 4)
+//		SendSysMessage(who, "Alvo esta muito distante.");
+//		return;
+	elseif ( targ.script[":ghaia:tamed"] )
+		//if( targ.master.serial == who.serial )
+		//	TeachGump(who, targ);
+		//else
+		SendSysMessageEx(who, targ.name+" nao pode ser adestrado.", SSM_FAIL);
+		//endif
+		return 0;
+	elseif ( (GetNumPets(who) + GetPetCost(targ)) > GetMaxPets(who) )
+		SendSysMessageEx(who, "Voce nao pode ter mais animais domados.", SSM_FAIL);
+		return 0;
+	else
+		if(TemHabilidade(who, "Rei do Gado") && (GetPetCost(targ) > 1))
+			SendSysMessageEx(who, "Rei do gado nao doma animais de mais de 1 slot.", SSM_FAIL);
+			return 0;
+		elseif(TemHabilidade(who, "Boiadeiro") && (GetPetCost(targ) > 2))
+			SendSysMessageEx(who, "Boiadeiro nao doma animais de mais de 2 slots.", SSM_FAIL);
+			return 0;
+		endif
+	/*elseif (who.serial IN GetObjProperty(targ, "#critical"))
+		SendSysMessage(who, targ.name+" nao aceita mais ser domado por voce.");
+		return 0;*/
+	endif
+
+	if(!CheckLineOfSight(who, targ))
+		SendSysMessage(who, "Voce nao pode ver isso!");
+		return;
+	endif
+
+	if (isBoss(targ))
+		SendSysMessageEx(who, "Essa criatura nao aceita ser domesticada.", SSM_FAIL);
+		return 0;
+	endif
+
+	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var npctemplate := targ.npctemplate;
+	npctemplate := npctemplate[10, len(npctemplate)-9];
+	cfg := cfg[npctemplate];
+//	Sendsysmessage(who, " " + cfg.TameDifficulty  + " " + skill);
+	if ( !cfg.TameDifficulty )
+		SendSysMessageEx(who, "Voce nao pode adestrar "+targ.name+".", SSM_FAIL);
+		return;
+	endif
+
+	var info := struct;
+	info.+x := who.x;
+	info.+y := who.y;
+	info.+facing := who.facing;
+	info.+difficulty := cfg.TameDifficulty;
+	if (info.difficulty > (skill + 15))
+		SendSysMessageEx(who, "Voce nao pode tentar adestrar "+targ.name+" ainda.");
+		return 0;
+	//elseif (GetSkill(who, HANDLEANIMAL) < CInt(info.difficulty))
+	//	SendSysMessageEx(who, "Voce nao pode tentar adestrar "+targ.name+" ainda.");
+	//	return 0;
+	endif
+
+	cfg := 0;
+
+	SetObjProperty(who, "#tamewait", ReadGameClock()+5);
+
+
+	while( TameLoop(who, targ, info) )
+			SetObjProperty(who, "#tamewait", ReadGameClock()+5);
+
+			sleep(3);
+			if ( SkillCheck(who, HANDLEANIMAL, CInt(info.difficulty)) > 0 )
+				SendSysMessageEx(who, "Voce ganhou a confianca de "+targ.name+".", SSM_INFO);
+				targ.SetMaster(who);
+				var erase_selvagem := GetObjProperty(targ, "Selvagem");
+				SetObjProperty(targ, "owner", who.serial);
+				SetObjProperty(targ, "name", targ.name);
+				SetObjproperty(targ, "script", targ.script);
+				SetObjProperty(targ,"happiness", 50);
+				SetObjProperty(targ, "AntigoTreinadorID", who.serial);
+				SetObjProperty(targ, "Fidelizar?", "nao");
+
+				var time := ReadGameClock();
+				SetObjProperty(targ,"countercheck", time);
+				if (erase_selvagem == 1)
+					EraseObjProperty(targ, "Selvagem");
+					EraseObjProperty(targ, "Critic");
+				endif
+				targ.script := ":ghaia:tamed";
+				RestartScript(targ);
+
+				Run_Script_To_Completion(":death:npcdeath", {targ});
+
+				var tamed := GetObjProperty(who, "TamedPets");
+				if ( !tamed )
+					tamed := array;
+				endif
+				tamed.append(targ.serial);
+				SetObjProperty(who, "TamedPets", tamed);
+
+				break;
+			endif
+
+		if ( events_waiting() )
+			clear_event_queue();
+		endif
+
+
+	endwhile
+
+endfunction
+
+function TameLoop(who, targ, byref info)
+	var my_hostiles := ListHostiles(who, 15);
+	var targ_hostiles := ListHostiles(targ, 15);
+
+	if ( targ.master )
+		SendSysMessage(who, targ.name+" nao pode ser adestrado.", SSM_FAIL);
+		return 0;
+	elseif ( targ_hostiles.size() > 0 )
+		SendSysMessageEx(who, "alguem esta atacando "+targ.name+" .", SSM_FAIL);
+		return 0;
+	elseif ( my_hostiles.size() > 0 )
+		SendSysMessageEx(who, "Voce nao pode adestrar "+targ.name+" enquanto esta sendo atacado", SSM_FAIL);
+		return 0;
+	elseif ( (who.x != info.x) || (who.y != info.y) || (who.facing != info.facing) )
+		SendSysMessageEx(who, "Voce desviou sua atencao.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(who, targ) > 2 )
+		SendSysMessageEx(who, "Voce esta muito longe.", SSM_FAIL);
+		return 0;
+	endif
+
+	PrintText(who, "*tentando adestrar " + targ.name + "*");
+
+	var ownerarray := GetObjProperty(targ, "LastOwners"); //identifica se teve último dono
+if(!ownerarray)
+    ownerarray := {};
+ endif
+	var check := SkillCheck(who, HANDLEANIMAL, info.difficulty);
+	if (( check > 0 ) || (who.serial in ownerarray) )
+		SendSysMessageEx(who, ""+targ.name+" parece ser seu amigo.", SSM_INFO);
+		AI_MoveXY(targ, info.x, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
+
+		return 1;
+	elseif (check < -15 )
+		var dist := Distance(who, targ);
+		SetObjProperty(targ, "#ForceFlee", 1);
+		AI_Move(targ, who, NEMOVE_AWAY, NEMOVE_RUN, NOWAKE, 100);
+		sleepms(160);
+		if ( dist == Distance(who, targ) )
+			SendSysMessageEx(who, targ.name+" nao aceitou voce como dono.", SSM_FAIL);
+		else
+			SendSysMessageEx(who, "Voce assustou "+targ.name+" .", SSM_FAIL);
+		endif
+		return 0;
+	else
+		SendSysMessageEx(who, "Voce falhou ao domar esse animal!", SSM_FAIL);
+		return 0;
+		//var dist := Distance(who, targ);
+		//SetObjProperty(targ, "#ForceFlee", 10);
+		//AI_Move(targ, who, NEMOVE_AWAY, NEMOVE_RUN, NOWAKE, 100);
+		//sleepms(160);
+		/*var critical := GetObjProperty(targ, "#critical");
+		if (!critical)
+			critical := array;
+			critical[1] := who.serial;
+		else
+			critical.append(who.serial);
+		endif
+		SetObjProperty(targ, "#critical", critical);
+		return 0;*/
+	endif
+endfunction

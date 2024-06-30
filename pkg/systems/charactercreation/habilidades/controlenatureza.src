@@ -1,0 +1,84 @@
+use uo;
+
+include "include/say";
+include ":nature:nature";
+include ":taming:taming";
+include ":tn:tngumps";
+include "include/client";
+include "include/damage";
+include ":timedscripts:timedScripts";
+
+program controlenatureza(who)
+
+
+	var terrain := "pantano";//getTerrainType(who.x, who.y);
+
+	if (terrain == "planicie")
+		
+
+	elseif (terrain == "caverna")
+
+	else
+		var mobs := ListMobilesNearLocation( who.x, who.y, who.z, 50, who.realm);
+		var enemies := array;
+		var enemiesref := array;
+		foreach mob in mobs
+			if (mob != who && !(mob in who.party.members) && mob.master != who )
+				if ( !mob.npctemplate || ( mob.npctemplate && (!isTamable(mob)) ) )
+					enemies.append(mob.name);
+					enemiesref.append(mob);
+				endif	
+			endif
+		endforeach
+
+		
+		var keys := AutoCheckBox(who, "Escolha os seus inimigos:", enemies, 1);
+
+		var mobrefs := array;
+		foreach x in keys
+			mobrefs.append(enemiesref[x]);
+		endforeach
+
+		if (terrain == "pantano")
+			SendSysMessageEx(who, "Fogo-fatuos explodem nos seus inimigos e gases venenosos sao exalados pelo pantano!", SSM_INFO);
+			SwampDruid(who, mobrefs);
+		elseif (terrain == "deserto")
+			SendSysMessageEx(who, "Tempestades de poeira e areia movedica prendem seus inimigos.", SSM_INFO);
+
+		elseif (terrain == "gelo" )
+			SendSysMessageEx(who, "Avalanches atingem seus inimigos e o vento frio impedem que continuem a caminhada.", SSM_INFO);
+		endif
+		
+	endif
+	
+
+
+endprogram 
+
+function SwampDruid(who, mobs)
+
+	var sounds := { 560, 561, 562};
+	
+
+	foreach mob in mobs
+		TS_StartTimer(mob, "defaultPoison", 60, 3, who);
+		SendSysMessage(mob, "Gases do pantano envenenam voce.", SSM_FAIL);
+		PlaysoundEffect(mob, sounds[RandomInt(sounds.size())+1] );
+	endforeach
+	
+	var i := 0;
+	while ( i < 5)
+		foreach mob in mobs
+			if (randomint(100) < 100)
+				PlaySoundEffect(mob, 0x208);
+				PlayStationaryEffect(mob.x, mob.y, mob.z, GFX_POISON_GAS, 10, 10, 0, mob.realm);
+				ApplyDamageEX(mob, RandomDiceRoll("1d10")+15, DMG_POISON);
+				PrintText(mob,  "Um fogo-fatuo explode proximo de voce!");
+			endif
+		endforeach
+
+		sleep(10);
+		i := i + 1;
+	endwhile
+
+endfunction

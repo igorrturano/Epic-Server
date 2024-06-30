@@ -1,0 +1,66 @@
+
+use uo;
+use os;
+
+include "include/client";
+include "include/sysEvent";
+include "include/say";
+include "include/tileEffects";
+include "include/sounds";
+
+program recarrega(item_recebe)
+
+	var event;
+	var palavra:="";
+	var item:="";
+	var itemcerto;
+	var flag:=1;
+	RegisterForSpeechEvents( item_recebe, 1 );
+        EnableEvents( SYSEVENT_SPEECH, 1 );
+ 
+ while(item_recebe)
+	event := wait_for_event( 120 );
+                If (event and event.type == SYSEVENT_SPEECH)
+			item:= ListItemsNearLocation(item_recebe.x,item_recebe.y,item_recebe.z,1,realm := _DEFAULT_REALM);
+			palavra:=GetObjProperty(item_recebe, "magicword");
+			If (event.text == palavra)
+					foreach key in item
+						if (key.objtype != 0x790B)
+							itemcerto:=key;
+							If(GetObjProperty(itemcerto, "charges") == 0)
+								SetObjProperty(itemcerto, "charges",GetObjProperty(itemcerto, "maxcharges"));
+								
+								var customText := GetObjProperty(item_recebe, "customText");
+								var cor_original:=itemcerto.color;
+
+								sleep(2);
+								itemcerto.movable:=0;
+								
+								while(flag !=8)
+									
+									itemcerto.color := 2320;
+									sleep(1);
+									itemcerto.color := cor_original;
+									sleep(1);
+							
+									flag:= flag + 1;
+								endwhile
+								flag:=1;
+								PlayStationaryEffect( item_recebe.x, item_recebe.y, item_recebe.z, FX_SPARK_EFFECT, 2, 80);
+								PlaySoundEffect(itemcerto, SFX_SPELL_HEAL);
+								
+									If (customText == error)
+										PrintTextAbove(itemcerto, "*As propriedades magicas foram reestabelecidas*");
+									Else
+										PrintTextAbove(itemcerto, customText);
+									Endif
+									
+									itemcerto.movable:=1;
+
+							Endif
+						Endif
+					endforeach	
+			Endif
+		Endif
+ endwhile
+endprogram 

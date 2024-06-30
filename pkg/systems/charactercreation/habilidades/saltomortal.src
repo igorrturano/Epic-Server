@@ -1,0 +1,89 @@
+use uo;
+use os;
+use cfgfile;
+use math;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/facings";
+include "include/utils";
+include "include/damage";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+
+program animateSword(params)
+	var who := params[1];
+	var spellinfo := params[2];
+	var targ := params[3];
+	params := 0; // No longer needed
+
+   if (who.warmode && who.opponent)
+      if (!who.weapon.IsBow())
+         // who.setswingtimer(50);
+         run_script(":combat:hooks/temporaryHook", array{who, who.opponent });
+      endif
+   endif
+
+   PrintText(who, "*salta e atira*");
+   who.attack_once(who.opponent);
+   
+   var world_z := GetStandingHeight( who.x, who.y, who.z+15, who.realm );
+   var moved := 0;
+   if (world_z.z <= who.z+1)
+      moved := 1;
+	   MoveObjectToLocation( who, who.x, who.y, who.z+15, who.realm, MOVEOBJECT_FORCELOCATION );
+   endif
+   sleepms(100);
+   PushBackEX(who, 4, 50);
+
+   sleepms(200);
+   if (moved)
+	   MoveObjectToLocation( who, who.x, who.y, who.z-15, who.realm);
+   endif
+
+   if (who.warmode && who.opponent)
+      if (who.weapon.IsBow() || who.weapon.IsMagicWeapon())
+         // who.setswingtimer(80);
+         run_script(":combat:hooks/temporaryHook", array{who, who.opponent});
+      endif
+   endif
+
+	return 1;
+endprogram
+
+function PushBackEX(who, dist, delay, invert := 0)
+   var mod := GetModByFacing(who.facing);
+	var x := mod[1];
+	var y := mod[2];
+
+	if (!invert)
+		x := x * -1;
+		y := y * -1;
+	endif
+
+   var finalx := who.x + (dist*x);
+   var finaly := who.y + (dist*y);
+   var world_z := GetStandingHeight( finalx, finaly, who.z-15, who.realm );
+   var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION, MOVEOBJECT_NORMAL);   
+   for i:= 1 to dist
+		var finalx := (who.x + x);
+		var finaly := (who.y + y);
+		if (!CheckLosAt(who, finalx, finaly, who.z))
+			return 0;
+		endif
+      var world_z := GetStandingHeight( who.x, who.y, who.z, who.realm );
+      if (world_z.z > who.z)
+         return 0;
+      endif
+
+		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm, force );
+		if (err == error)
+		//	PrintText(who, "*bate no obstaculo*");
+			return 0;
+		endif
+		sleepms(delay);
+	endfor
+
+   return 1;
+endfunction

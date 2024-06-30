@@ -1,0 +1,87 @@
+/* $Id$
+ *
+ */
+use uo;
+use os;
+use cfgfile;
+
+include ":spells:spellbooks";
+include "include/say";
+include ":attributes:skills";
+
+program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
+
+	amt            := amt;
+	existing_stack := existing_stack;
+	movetype       := movetype;
+	inserttype     := inserttype;
+
+	if( book.movable == 0 )
+		SendSysMessage(who, "Cancelado.");
+		MoveItemToContainer(item, who.backpack);
+		return 0;
+	elseif( !ReserveItem(book) || !ReserveItem(item) )
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessage(who, "O livro esta em uso.");
+		return 0;
+	else
+
+		if (!CanInsertScroll(book, item))
+			SendSysMessageEx(who, "Esse nao e o livro certo para esse tipo de pergaminho." , SSM_FAIL);
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+		endif
+
+		if( GetObjProperty(item, "spellinfo") )
+			if ( addScroll(who, book, item) == 1)
+				var e := DestroyItem(item);
+			endif
+		else
+			SendSysMessage(who, "Voce nao pode por isto no livro.");
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+		endif
+	endif
+
+	return 1;
+endprogram
+
+
+function addScroll(who, book, rune)
+	var rune_list := GetObjProperty(book, "spells");
+	var mlore := cint( AP_GetSkill( who, MAGICLORE ) );
+	var spell_caster_slots := Cint( mlore / 5 );
+
+	if (rune_list == error)
+		rune_list := array;
+	endif
+
+	if( GetObjProperty(who, "chardata").magia == "spellcaster" && rune_list.Size() > spell_caster_slots )
+		SendSysMessage(who,"este livro ja esta cheio.");
+		MoveItemToContainer(rune, who.backpack);
+		return 0;
+	elseif( rune_list.Size() > 15 )
+		SendSysMessage(who,"este livro ja esta cheio.");
+		MoveItemToContainer(rune, who.backpack);
+		return 0;
+	endif
+
+	if( !ReserveItem(rune) )
+		SendSysMessage(who,"Cancelado");
+		MoveItemToContainer(rune, who.backpack);
+		return 0;
+	endif
+
+	Set_Critical(1);
+
+	rune_list.Append(GetObjProperty(rune, "spellinfo"));
+
+	SetObjProperty(book, "spells", rune_list);
+
+	SendSysMessage(who, "Voce adicionou o pergaminho no livro.");
+	var e2 := ReleaseItem(rune);
+	var e := DestroyItem(rune);
+	Set_Critical(0);
+
+	return 1;
+endfunction

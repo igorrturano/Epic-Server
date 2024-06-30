@@ -1,0 +1,58 @@
+use os;
+use uo;
+
+include ":tn:tngumps";
+include ":gumps:yesNo";
+
+program renameboat(you, tillerman)
+
+	if (GetObjProperty(tillerman, "viagem") != error)
+		var destinos := GetObjProperty(tillerman, "viagem");
+		var options := array;
+		foreach dest in destinos
+			options.append(dest.name + " [" + dest.cost + " moedas]");
+		endforeach
+
+		var destname := RadioGump(you, 350, 200, "Escolha o destino da viagem. ", options);
+		if (destname)
+			foreach dest in destinos
+				if (destname == (dest.name + " [" + dest.cost + " moedas]"))
+					SendSysMessage(you, "Voce deve pagar " + dest.cost + " moedas por essa viagem.");
+					var moedas := target(you);
+					if ( moedas.objtype == 47715)
+						if (moedas.amount >= cint(dest.cost))
+							if (!SubtractAmount(moedas, cint(dest.cost)))
+								PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
+							endif
+						else
+							PrintTextAbove(tillerman, "Voce nao tem moedas necessarias.");
+							return;
+						endif
+					else
+						return;
+					endif
+					SetObjProperty(tillerman, "course", dest.plots);
+					SetObjProperty(tillerman, "nextwaypoint", 1);
+					PrintTextAbove(tillerman,"Viagem programada, iremos *partir* quando me ordenar!");
+				endif
+			endforeach
+		endif
+		return;
+	endif
+
+	if((GetObjProperty(tillerman,"owner") != you.serial) &&(you.cmdlevel < 2))
+		//PrintTextAbove(tillerman,"Stop that, or I'll throw ye overboard!");
+		return;
+	endif
+	if (YesNo(you, "Deseja Mudar o Nome do Barco?"))
+		var boatname := RequestInput(you, tillerman, "Entre com um novo nome para o barco.(max 40 characters)");
+		if(boatname)
+			if(len(boatname) <= 40)
+				tillerman.name := boatname;
+				SendSysMessage(you, "Barco renomeado.");
+			else
+				SendSysMessage(you, "Excedeu o numero de caracteres.");
+			endif
+		endif
+	endif
+endprogram

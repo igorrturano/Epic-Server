@@ -1,0 +1,24 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+
+	if ( GetObjProperty(who, "#dmgreductionspell") )
+		return 0;
+	endif
+
+	SetObjProperty(who, "dmgreduction", cdbl(GetObjProperty(who, "dmgreduction")) + cdbl(level*0.2));
+	SetObjProperty(who, "#dmgreductionspell", cdbl(level*0.2));
+	
+	return 1;
+endprogram
+   

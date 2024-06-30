@@ -1,0 +1,29 @@
+use uo;
+use util;
+
+program antidote(user, item)
+
+	var poison := Cint(GetObjProperty(user, "poison_level"));
+
+	PlaySoundEffect( user, 0x51 );
+	if(poison >= 1)
+	   Case(randomint(1))
+
+		0:  EraseObjProperty(user, "poison_level");
+		    user.setpoisoned(0);
+		    SendSysMessage(user, "You have purified yourself!");
+		    DestroyItem(item);
+		    return;
+	
+		1:  SendSysMessage(user, "The potion fails to purify you!");
+		    DestroyItem(item);
+		    return;
+
+	   endcase
+	else
+	   SubtractAmount(item, 1);
+	   SendSysMessage(user, "You are not poisoned!");
+	   return;
+	endif
+	
+endprogram

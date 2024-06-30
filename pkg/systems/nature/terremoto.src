@@ -1,0 +1,94 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":nature:tremor";
+
+program terremoto(params)
+    var who := params[1];
+    var regname := params[2];
+
+    SetObjProperty(who, "areaInstavel", 1);
+
+    //configurações de tremor.
+    var cfgfile := ReadConfigFile(":nature:config/terConfig");
+    var elem:= FindConfigElem(cfgfile , "configuracoes" );
+    var tchance := GetConfigInt(elem , "tchance" );
+    var danobase := GetConfigInt(elem , "danobase" );
+    var danoale := GetConfigInt(elem , "danoaleatorio" );
+    var dif := GetConfigInt(elem , "dificuldade" );
+
+    detach();
+    while (1)
+        sleep(60);
+
+        if (GetObjProperty(who,"areaInstavel") == error || who.cmdlevel > 0)
+            return;
+        endif
+
+        var config := ReadConfigFile(":nature:config/landtile");
+        config := config["EstradaNumaja"];
+        var landscape := CStr(GetMapInfo(who.x, who.y).landtile);
+
+        if (landscape in GetConfigStringArray(config, "landscape"))
+            PrintTextAbove(who, "*A floresta toda parece ter vida*");
+            continue;
+        endif
+
+        if (tchance >= RandomInt(100)) //chance de terremoto
+            if (GetObjProperty(who,"terremoto") == error)
+                SetObjProperty(who, "terremoto", 1);
+            endif
+            EfeitosTerremoto(who,danobase,danoale,dif);
+            EraseObjProperty(who, "terremoto");
+        elseif (20 >= RandomInt(100)) //chance de teleport
+            var hasNumajene := 0;
+            if (GetObjProperty(who, "chardata").povo != "Numajene")
+                foreach player in (who.party.members)
+                    if (GetObjProperty(player, "chardata").povo == "Numajene")
+                        if (Distance(who, player) <= 20)
+                            hasNumajene := 1;
+                        endif
+                    endif
+                endforeach
+            else
+                hasNumajene := 1;
+            endif
+
+            if(hasNumajene != 1)
+                var positionValid := 0;
+                var numajaX;
+                var numajaY;
+
+                while (positionValid == 0)
+                    numajaX := 2075 + RandomInt(450);
+                    numajaY := 1570 + RandomInt(200);
+                    if(canTeleport(who, numajaX, numajaY) == 1)
+                        positionValid := 1;
+                    endif
+                endwhile
+
+                MoveObjectToLocation(who, numajaX, numajaY, 5, who.realm, MOVEOBJECT_FORCELOCATION);
+                PrintTextAbove(who , "*Você parece perdido*");
+            endif
+        endif
+    endwhile;
+endprogram
+
+function canTeleport(who, x, y)
+    var statics := ListStaticsAtLocation(x, y, LIST_IGNORE_Z, ITEMS_IGNORE_MULTIS, who.realm);;
+    if(statics.size())
+        return 0;
+    endif
+    var itens :=  ListMultisInBox(x,y,20,x,y,-20,who.realm);
+    if(itens.size())
+        return 0;
+    endif
+    var objects := ListObjectsInBox(x,y,20,x,y,-20,who.realm);
+    if(objects.size())
+        return 0;
+    endif
+
+    return 1;
+endfunction

@@ -1,0 +1,22 @@
+use uo;
+
+include "include/say";
+
+program pswd(who, text)
+
+	var data := SplitWords(text);
+
+		if (data.size() != 2)
+			SendSysMessageEx(who, "Uso: pswd <conta> <nova senha> " , SSM_FAIL);
+			return;
+		endif
+
+		var  acct := FindAccount( data[1] );
+		if  (acct == error)
+			SendSysMessageEx(who, "Conta inexistente.", SSM_FAIL);
+			return;
+		else
+			acct.setpassword(data[2]);
+			SendSysMessageEx(who, "Senha alterada.", SSM_INFO);
+		endif
+endprogram

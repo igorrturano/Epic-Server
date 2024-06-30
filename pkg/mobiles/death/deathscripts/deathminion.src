@@ -1,0 +1,62 @@
+/* $Id$
+ *
+ */
+use uo;
+use os;
+use util;
+use cfgfile;
+use vitals;
+
+include "include/client";
+include "include/sysEvent";
+include ":attributes:attributes";
+include ":ghaia:include/ghaia";
+include "include/damage";
+include ":attributes:vitals";
+
+program DeathScript(params)
+	var corpse := params[1];
+
+	var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+	var npctemplate := GetobjProperty(corpse, "npctemplate");
+	var mytemplate := ParseTemplateName(npctemplate).template;
+	
+	var mother := GetobjProperty(corpse, "source");
+	var find_mother := SystemFindObjectbySerial(mother);
+	var txt := npccfgfile[mytemplate].DeathScriptTxt;
+	var order := npccfgfile[mytemplate].DeathScriptOrder;
+	var dmgtype := npccfgfile[mytemplate].DeathScriptDmgtype;
+	var life_mother := Cint(AP_GetVitalMaximumValue(find_mother, HITS));
+	var dmg;
+		if (order == 1)
+			dmg := life_mother*0.05;
+			case (dmgtype)
+			"fire":
+				DamageFLS(find_mother, Cint(dmg), DMG_FIRE );
+			"cold":
+				DamageFLS(find_mother, Cint(dmg), DMG_COLD );
+			"energy":
+				DamageFLS(find_mother, Cint(dmg), DMG_ENERGY );
+			"poison":
+				DamageFLS(find_mother, Cint(dmg), DMG_POISON );
+			"physical":
+				DamageFLS(find_mother, Cint(dmg), DMG_PHYSICAL );
+			endcase
+		else
+			dmg := life_mother*0.15;
+			case (dmgtype)
+			"fire":
+				DamageFLS(find_mother, Cint(dmg), DMG_FIRE );
+			"cold":
+				DamageFLS(find_mother, Cint(dmg), DMG_COLD );
+			"energy":
+				DamageFLS(find_mother, Cint(dmg), DMG_ENERGY );
+			"poison":
+				DamageFLS(find_mother, Cint(dmg), DMG_POISON );
+			"physical":
+				DamageFLS(find_mother, Cint(dmg), DMG_PHYSICAL );
+			endcase
+		endif
+			
+	return 1;
+endprogram

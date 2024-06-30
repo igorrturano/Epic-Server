@@ -1,0 +1,16 @@
+use uo;
+use os;
+use util;
+
+program andou(quem)
+sendsysmessage(quem, "DEBUG: checando contagem");
+var x := quem.x;
+var y := quem.y;
+
+while(quem.x == x && quem.y == y)
+	sleep(1);
+endwhile
+
+SetObjProperty(quem, "#torobando", 0);
+sendsysmessage(quem, "voce nao está mais furtando.");
+endprogram

@@ -1,0 +1,81 @@
+use cfgfile;
+use util;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:crafting";
+include ":crafting:craftingRepair";
+include ":crafting:toolWear";
+include ":itemutils:canAccess";
+include ":fls_core:fls_crafting";
+include "include/say";
+
+var item_config     := ReadConfigFile(":*:itemdesc");
+var craft_config    := ReadConfigFile(":DomesticWork:tailoring");
+
+program use_SmithTool(who, tool)
+
+	if(!can_access(who, tool))
+		return 0;
+	endif
+	if((!tool.movable) or !ReserveItem(tool))
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return 0;
+	endif
+	if(!tool in ListEquippedItems(who))
+		if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+			SendSysMessageEx(who, "O item nao esta na sua mochila nem equipado.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	var rinfo := sendCraftGump(who, "Tailoring");
+
+	// OK was pressed, close it on out
+	if(rinfo == 0)
+		return 0;
+	endif
+
+	var the_objtype := rinfo[1];
+	var amt         := rinfo[2];
+	var repairit    := rinfo[3];
+	var resmeltit   := rinfo[4];
+
+	if(repairit)		
+		repair_this(who, craft_skill);
+		return 0;
+	endif
+
+
+	makeTailoringItems(who, the_objtype, amt, tool);
+
+endprogram
+
+function makeTailoringItems(who, what, amt, tool)
+
+	var isRecipe := 0;
+	if (what < 0)
+		isRecipe := 1;
+	endif
+
+	if(!what)
+		SendSysMessage(who, "Cancelado");
+		return 0;
+	endif
+
+		var items := CraftItem(who, "Tailoring", tool, what, amt, 0, 0);
+
+		foreach item in (items)
+			if (item.objtype == 0x14F8) // Corda
+				SetObjProperty(item, "diff", CInt(AP_GetSkill(who, DomesticWork)+20));
+			endif
+		endforeach
+
+
+	return 0;
+
+endfunction

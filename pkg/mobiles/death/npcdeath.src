@@ -1,0 +1,431 @@
+/* $Id: npcdeath.src 916 2005-11-05 23:44:32Z austin $
+ *
+ * Purpose
+ * This script allows side effects to be triggered as a result of NPC death, like unmounting
+ * players off their dying mount, playing death sounds, etc. This script is common for all NPCs,
+ * and is called for each.
+ *
+ */
+use uo;
+use os;
+use util;
+use cfgfile;
+use storage;
+
+include ":containers:merchantUtil";
+include ":timedscripts:timedScripts";
+include ":death:death";
+include ":mounts:mounts";
+include ":taming:taming";
+include ":tn:questevent";
+include ":attributes:vitals";
+include ":combat:hitscripts";
+include "include/say";
+include "include/damage";
+include ":tn:npcutil";
+include ":taming:taming";
+
+//include ":spawnnet:spawnnet";
+//include ":spawnregion:spawn";
+
+program core_npcDeath(params)
+	var corpse := params[1];
+
+	var lastHit := GetObjProperty(corpse, "lastHit"); 
+	if (":combat:weaponHitScripts/generic" in lastHit.hitscript)
+		var attacker := SystemFindObjectBySerial(lastHit.attacker);
+		if (attacker != error)
+			execonkill(attacker, corpse);
+		endif
+	endif
+
+	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
+		CreateItemInContainer(corpse, "soulstone", 1);
+	endif
+
+	foreach item in (EnumerateItemsInContainer(corpse))
+	    //Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
+	    //var lista_itens := {
+        //    0x1415, //Plate
+        //    0x1416, //Plate
+        //    0x1410, //Plate
+        //    0x1417, //Plate
+        //    0x1411, //Plate
+        //    0x141A, //Plate
+        //    0x1414, //Plate
+        //    0x1418, //Plate
+        //    0x1413  //Plate
+	    //};
+
+	    //foreach item_lista in lista_itens
+	    //    if (item.objtype == item_lista)
+        //        SetObjProperty(item, "restrito_mob", 1);
+        //        break;
+        //    endif
+        //endforeach
+        if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
+            if (!GetObjProperty(item, "itemunico"))
+                item.hp -= Cint(item.hp * 0.8);
+            endif
+        endif
+    endforeach
+
+	if (getObjProperty(corpse, "owner")) //se for tamed, atualiza a prop tamedpets do master
+        var lastDamage := GetObjProperty(corpse, "LastDamage");
+        var region := GetRegionName(corpse);
+		var char_name := lastDamage.serial;
+        var tipo := "morreu";
+		var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		var nome := GetObjProperty(fin, "nome_inicial");
+		var coords := GetObjProperty(corpse, "anchor");
+		var trueBoss := GetObjProperty(corpse, "true_boss");
+        Start_script(":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse.desc, region, coords, 0});
+
+		var masterserial := getObjProperty(corpse, "owner");
+		var master := SystemFindObjectBySerial(masterserial);
+		var summon := GetObjProperty(corpse, "summoned");
+		if(summon == 1) // se for summon de totemista para retirar da barra de buff e liberar o slot
+			var masterseriali := getObjProperty(corpse, "owneri");
+			var masteri := SystemFindObjectBySerial(masterseriali);
+			var timer_num := GetObjProperty(corpse, "slot");
+			var timer := "summon_"+timer_num;
+			TS_LowerDuration(masteri, timer, -1);													   
+		elseif(!getobjproperty(corpse, "Necro"))
+			GetNumPets(master);
+			var teste := GetObjProperty(corpse, "LastDP");
+			if ( GetObjProperty(corpse, "NeverRelease") && (GetObjProperty(corpse, "LastDP") >= 20 ) )
+				sleep(180);
+				res_pet(corpse);
+				return;
+			endif
+		else
+			var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
+			SetObjProperty(master, "NecroSummons", (numbersummons - 1));
+		endif				
+	endif
+
+	if (getObjProperty(corpse, "oldbodydominio"))
+		var masterserial := getObjProperty(corpse, "oldbodydominio");
+		var master := SystemFindObjectBySerial(masterserial);
+		SetObjProperty(master, "oldbodymorto", 1);
+		EraseObjProperty(master, "oldbodyserial");
+	endif
+
+		
+	//nao existe mais		
+	/*if (getobjProperty(corpse, "devoraralma"))
+		var necroserial := getobjProperty(corpse, "devoraralma");
+		var necro := SystemFindObjectBySerial(necroserial);
+		var maxhp := Cint(getobjProperty(corpse, "maxhp"));
+		var souls := Cint(getobjProperty(necro, "souls"));
+		souls := souls + 1;
+		SetobjProperty(necro, "souls", souls);
+		var hprecupera := maxhp / 10;
+		var hpnow := AP_GetVital(necro, "hits");
+		var amount := hpnow + hprecupera;
+		AP_SetVital(necro, "hits", amount);
+		PlayMovingEffect( corpse, necro, 14202, 5, 0,  0 );
+		PlaySoundEffect(necro, 383);
+	endif*/
+
+    if (GetObjProperty(corpse, "soulharvest"))
+        var shamanserial := getobjProperty(corpse, "soulharvest");
+        var shaman := SystemFindObjectBySerial(shamanserial);
+        var shaman_reap_bonus := Cint(AP_GetSkill(shaman, MAGICLORE));
+
+        var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
+        if (!shaman_souls)
+            var shaman_souls := 0;
+        endif
+
+        if (shaman_souls < Cint(shaman_reap_bonus / 5))
+            shaman_souls := shaman_souls + 1;
+            PerformAction (shaman, ANIM_SALUTE);
+            sleep(1);
+            PlayStationaryEffectEx(corpse.x,corpse.y,corpse.z, shaman.realm, 0x6C6F, 0, 60, 2676 , 5, 0);
+            PlaySoundEffect(shaman, 0x653);
+
+            SendSysMessage(shaman, "Voce colhe uma alma.");
+        else
+            SendSysMessage(shaman, "Voce nao consegue conduzir mais almas.");
+        endif
+
+        SetobjProperty(shaman, "shaman_souls", shaman_souls);
+    endif
+
+	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
+		//printtextabove(corpse, "procurando mobs " + mob.name);
+		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
+		//	printtextabove(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );
+			if (cint(GetObjProperty(mob, "#satisfacaosadica")) > readgameclock())
+		//		printtextabove(corpse, "ta no time ");
+		//		var souls := Cint(getobjProperty(mob, "souls"));
+		//		souls := souls + 1;
+		//		SetobjProperty(mob, "souls", souls);
+				PlayMovingEffect( corpse, mob, 14202, 5, 1,  0 );
+				PlaySoundEffect(mob, 383);
+				HealFLS(mob, 5);
+				recalcvitals(mob);
+			endif
+		endif
+        
+        var shaman_reap_bonus := Cint(AP_GetSkill(mob, MAGICLORE));
+
+        // HABILIDADES SHAMAN
+        if (TemHabilidade(mob, "Sede de sangue"))
+            HealFLS(mob, Cint(shaman_reap_bonus / 10));
+            // colocar o efeito roxinho
+       endif
+        // FIM HABILIDADES SHAMAN
+
+        // GOLEM MAKER
+        if (Getobjproperty(mob, "golem_maker"))
+            EraseObjProperty(mob, "golem_maker");
+        endif
+        // FIM GOLEM MAKER
+
+		if ( (GetObjProperty(mob, "#presenteespiritual") != error) )
+			if (GetObjProperty(mob, "#presenteespiritual") > readgameclock())
+				var souls := Cint(getobjProperty(mob, "souls"));
+				souls := souls + 1;
+				SetobjProperty(mob, "souls", souls);
+				PlayMovingEffect( corpse, mob, 14202, 5, 1,  0 );
+				PlaySoundEffect(mob, 383);
+				HealMana(mob, 10);
+				//var mymana := AP_GetVital(mob, MANA) + 10;
+				//var maxmana := AP_GetVitalMaximumValue(mob, MANA);
+
+				//if (mymana > maxmana)
+				//	mymana := maxmana;
+				//endif
+
+				//AP_SetVital(mob, MANA, mymana);
+			endif
+		endif
+	endforeach
+
+	TS_Death(corpse); // Will still get the PID from the corpse.
+
+	var corpse_name := corpse.desc;
+	SetObjProperty(corpse, "originalname", corpse_name);
+	corpse_name["A corpse of"] := "corpo de";
+	SetName(corpse, corpse_name);
+	
+	var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
+	var npc_cfg := NPC_GetNPCConfig(template);
+	var death_script := npc_cfg.DeathScript;
+
+	var speech := GetConfigStringArray( npc_cfg[template], "diespeech" );
+	if (speech.size() > 0)
+		if (RandomInt(100)  < 30) //sempre 30% de chance de falar
+			printtextabove(corpse, speech[RandomInt(speech.size()+1)]);
+		endif
+	endif
+
+	var spawnpoint := SystemFindObjectBySerial(GetObjProperty(corpse, "spawnpoint"));	
+	//printtextabove(corpse, "spawnpoint " + spawnpoint);
+	if (GetObjProperty(corpse, "spawnkill") == error)
+	if (spawnpoint)
+		if (GetObjProperty(spawnpoint, "unique") == 1)
+			var boss := GetObjProperty(spawnpoint, "uniquestat");
+			if (boss.deathevent)
+				foreach nevent in (boss.deathevent)
+				//	printtextabove(corpse, " " + nevent.type);
+					if ( (nevent.type == "Criar Npcs") && (cint(nevent.x) == 6) && (cint(nevent.y) == 6) && (cint(nevent.z) == 6)  )
+						nevent.x := corpse.x;
+						nevent.y := corpse.y;
+						nevent.z := corpse.z;
+						//printtextabove(corpse, "mudei o evento");
+					endif
+					ExecuteEvent(nevent);				
+				endforeach
+			endif
+		endif
+	endif
+	endif
+
+	if (GetObjProperty(corpse, "spawnkill") == error)
+		if ( death_script )
+			params.Append(npc_cfg);
+			var result := Start_Script("deathscripts/"+death_script, params);
+			if ( result.errortext )
+				PrintTextAbove(corpse, "Error::Death Script -"+result.errortext);
+				SysLog("Error::Death Script Tmplt:["+template+"] Desc:["+corpse.desc+"] Ser:["+Hex(corpse.serial)+"] - "+result.errortext);
+			endif
+		endif
+	endif
+
+//	if (GetObjProperty(corpse, "spawnnet")) //se for spawnado pelo spawnet
+//		SpawnNet_Clear(corpse);
+//	elseif (GetObjProperty(corpse, "SpawnRegion") )//se for spawnado pelo regionspawn
+//		SpawnRegionDeath(corpse);
+//	endif		
+
+	DP_PlayDeathSound(corpse);
+	CPM_DeleteContainers(corpse);
+
+	//printtextabove(corpse, " " + corpse);	
+
+	if (corpse)
+		var loot := NoLootCheck(corpse, npc_cfg);
+		var corp := NoCorpseCheck(corpse, npc_cfg);
+		var lastDamage := GetObjProperty(corpse, "LastDamage");
+		
+	if(!lastDamage)
+        // Do nothing
+	else
+		var region := GetRegionName(corpse);
+		var char_name := lastDamage.serial;
+		var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		var nome := GetObjProperty(fin, "nome_inicial");
+		var coords := GetObjProperty(corpse, "anchor");
+		var trueBoss := GetObjProperty(corpse, "true_boss");
+		if ( isBoss(corpse) )
+			if (fin.cmdlevel <= 0 && trueBoss == 1)//Para acionar o DiscordWebhook
+				var tipo := "boss"; 
+				Start_script (":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse_name, region, coords, 0});
+			elseif (fin.cmdlevel == 4 && trueBoss == 1)
+				var finOwner := Cint(GetObjProperty(fin, "owner"));
+				var fin_owner := SystemFindObjectBySerial(finOwner);
+				if (!finOwner)
+				else
+				var tipo := "boss"; 
+				Start_script (":DiscordWebhook:discord", {tipo, nome, fin_owner.acctname, corpse_name, region, coords, 0});
+				endif
+			endif
+		ENDIF
+	endif
+
+		if (!(corp || loot))
+			MP_DeathUnmount(corpse);
+		endif
+	endif
+endprogram
+
+function NoLootCheck(corpse, npc_cfg)
+	if ( GetObjProperty(corpse, "GuardKill") );
+		// Nothing
+	elseif ( GetObjProperty(corpse, "guardkill") ); 
+		// Nothing - Old CProp
+	elseif ( npc_cfg.NoLoot );
+		// Nothing
+	elseif ( GetObjProperty(corpse, "NoCorpse") );
+		// Nothing
+	elseif ( GetObjProperty(corpse, "nocorpse") );
+		// Nothing - Old Cprop
+	elseif ( GetObjProperty(corpse, "summoned") );
+		// Nothing;
+	else
+		return 0;
+	endif
+	
+	// No corpse. Don't drop backpack contents.
+	//PrintTextAbove(corpse, "*guardkilling*");
+	foreach item in (EnumerateItemsInContainer(corpse))
+		if ( item.container == corpse )
+			DestroyItem(item);
+		endif
+		sleepms(2);
+	endforeach
+	//printtextabove(corpse, "no loot check");
+	//no loot  nao destroi o corpo, so NoCorpse
+	//DestroyItem(corpse);
+	
+	return 1;
+endfunction
+
+function NoCorpseCheck(corpse, npc_cfg)
+	if ( npc_cfg.NoCorpse );
+		// Nothing
+	elseif ( GetObjProperty(corpse, "NoCorpse") );
+		// Nothing
+	elseif ( GetObjProperty(corpse, "nocorpse") );
+		// Nothing - Old Cprop
+	elseif ( GetObjProperty(corpse, "summoned") );
+		// Nothing;
+	else
+		return 0;
+	endif
+	
+	// No corpse. Place backpack contents where the corpse is.
+	//printtextabove(corpse, "no corpse");
+	foreach item in (EnumerateItemsInContainer(corpse))
+		//if ( item.container == corpse )
+			var itm := MoveObjectToLocation(item, corpse.x, corpse.y, corpse.z, item.realm, MOVEOBJECT_FORCELOCATION);
+			
+		//endif
+		//printtextabove(corpse, " " + item + " " + itm);
+		sleepms(2);
+	endforeach
+	//printtextabove(corpse, "no corpse check");
+	DestroyItem(corpse);
+	
+	return 1;
+endfunction
+
+function res_pet(corpse)
+	var npc := CreateNpcFromTemplate( GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
+	CopyProps(corpse, npc);
+	var corpse_parsed := corpse.name[13, len(corpse.name)-12];
+	npc.script := ":ghaia:tamed";
+	RestartScript(npc);
+	Setname(npc, corpse_parsed);
+	recalcvitals(npc);
+	var ownerserial := GetObjProperty(corpse, "owner");
+	var owner := SystemFindObjectBySerial(ownerserial);
+		if (!owner)
+			destama(npc.serial);
+		else
+			if ( (GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner) )
+				SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
+				destama(npc.serial);
+			else
+				AddPet(owner, npc.serial);
+			endif
+		endif
+
+	DestroyItem(corpse);
+	SetCooldown(npc, "resurrect", 180);
+	var skills := GetObjProperty(npc, "petskills");
+    foreach skill in (skills.keys())
+        AP_SetTrueSkill(npc, skill, skills[skill]);
+    endforeach
+
+//Desconta o DP dos fieis
+if ( (Getobjproperty(npc, "bond") == "fiel") )
+	var DP := AP_GetVital(npc, "DP");
+	AP_SetVital(npc, "DP", DP -10);
+    if (DP < 0)
+        AP_SetVital(npc, "DP", 0);
+    endif
+endif
+
+//Para repor as habs do despertar natureza do pet
+var instincts := GetObjProperty(npc,"instincts");
+var ferocidade := instincts["Ferocidade"].ins_name;
+var fortaleza := instincts["Fortaleza"].ins_name;
+var flexibilidade := instincts["Flexibilidade"].ins_name;
+if (!instincts)
+else
+	if (ferocidade == "Ferocidade")
+		AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
+	endif
+	if (fortaleza == "Fortaleza")
+		var hits := CInt(AP_GetVitalMaximumValue(npc, "Hits"));
+		var variavel := Cint(hits / 3);
+		var variavel2 := Cint(variavel /2); //não sei pq ele duplica por isso a divisão pela metade
+		setObjProperty(npc, "hitsmod", variavel2);
+	endif
+	if (flexibilidade == "Flexibilidade")
+		AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
+	endif
+	RecalcVitals(npc);
+endif
+endfunction
+
+function CopyProps(origin, destiny)
+	var propnames := GetObjPropertyNames(origin);
+	foreach prop in propnames
+		SetObjPRoperty(destiny, prop, GetObjProperty(origin, prop));
+	endforeach
+endfunction

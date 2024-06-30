@@ -1,0 +1,36 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:poisonUtil";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
+
+  SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+  var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+  if (!targ)
+    return;
+  endif
+
+  if (!targ.isa(POLCLASS_MOBILE))
+    SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+    return;
+  endif
+
+  PlaySoundEffect(targ, SFX_SPELL_BLESS);
+  var amt := Cint( AP_GetSkill(who, MAGICLORE)*0.7);
+  if (amt < 20)
+    amt := 20;
+  endif
+  TS_StartTimer(targ, "gloria", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt); //dura de 40 a 200 seg e aumenta de 20 a 100%.
+  SendSysMessageEx(targ, "Voce tem a precisão de uma águia.", SSM_INFO);
+
+  return 1;
+endprogram
+

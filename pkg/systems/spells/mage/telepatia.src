@@ -1,0 +1,21 @@
+
+     use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	PlaySoundEffect(info, SFX_SPELL_TELEKINESIS);
+	SendSysMessageEx(who, "O alvo tem forca:" + AP_GetStat(info, STRENGTH) + " destreza: " + AP_GetStat(info, DEXTERITY) + " e inteligencia: " + AP_GetStat(info, INTELLIGENCE), SSM_INFO);
+	
+	SendViewContainer(who, info.backpack);
+	
+	return 1;
+endprogram 

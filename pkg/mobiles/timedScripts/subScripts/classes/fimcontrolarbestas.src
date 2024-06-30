@@ -1,0 +1,14 @@
+use uo;
+use vitals;
+
+include ":attributes:attributes";
+include ":taming:taming";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+	
+	destama(mobile.serial);
+
+	return 1;
+endprogram 
+ 

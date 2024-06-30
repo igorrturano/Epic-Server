@@ -1,0 +1,80 @@
+use uo;
+
+include ":spells:tnmagery";
+include ":charactercreation:habilidades";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+include ":brainAI:npcUtil";
+include "include/damage";
+include ":tn:npcutil";
+include ":tn:cooldown";
+include ":ghaia:ghaia";
+include "include/sysEvent";
+include "include/eventID";
+
+program textcmd_acalmar(who)
+	SendSysMessageEx(who, "Selecione a criatura que você deseja acalmar.", SSM_REQUEST);
+	var creature := Target(who, TGTOPT_CHECK_LOS);
+
+	var delay := GetObjProperty(who, "delayskill");
+	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+	if(delay)
+		if(delay > ReadGameClock())
+			SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+			return;
+		endif
+	endif
+	if( GetObjProperty(creature, "Blocked") || creature.frozen )
+		SendSysMessage(who, "O raciocinio por tras da sua analise esta incorreto.");
+		return 0;
+	endif
+
+	if( creature.serial == who.serial )
+		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+		return 0;
+	endif
+
+	if( !creature.isA(POLCLASS_NPC) || isBoss(creature) )
+		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+		return 0;
+	endif
+
+	if( (creature.graphic == 0x190) || (creature.graphic == 0x191) || (creature.graphic == 309) || (creature.graphic == 307) || (creature.graphic == 14) )
+		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+		return 0;
+	endif
+
+	var category := lower(getnpccategory( ParseTemplateName(creature.npctemplate).template ));
+
+	if ( (category == "animal") || ( category == "evilanimal") || ( category == "giantanimal") || ( category == "mount") || ( category == "snow") )
+	else
+		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+		return 0;
+	endif
+	//verifica a skill de combate do NPC
+
+	var advance_flags;
+	if(creature.script == ":ghaia:tamed")
+		advance_flags := ADV_DISABLE;
+	else
+		advance_flags := ADV_SKILL;
+	endif
+
+	var npcDificuldade := CInt(AP_GetSkill(creature, "Wrestling"));
+	PrintTextAbove(who,"*Tenta acalmar "+ creature.name + "*");
+	Sleep(1);
+	if( SkillCheck(who, HANDLEANIMAL, npcDificuldade, npcDificuldade-10, advance_flags) > 0)
+		var ev := struct;
+		ev.+type;
+		ev.type := EVID_PEACEMADE; // ajetra isso
+		ev.+source;
+		ev.source := who;
+		sendEvent( creature, ev);
+		SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, HANDLEANIMAL)));
+		PrintTextAbovePrivate(creature, "A criatura foi acalmada.", who);
+		return 1;
+	else
+		PrintTextAbovePrivate(creature, "Voce falha em acalmar o animal.", who);
+		return 0;
+	endif
+endprogram

@@ -1,0 +1,33 @@
+use uo;
+use util;
+use vitals;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include "include/client";
+include ":mounts:mounts";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	//var weapon	:= params[3];
+	//var armor	:= params[4];
+	//var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+	var mount := GetEquipmentByLayer(defender, LAYER_MOUNT);
+	
+	if (mount)
+		var dmg := rawdamage*0.2;
+		if (dmg < 2)
+			dmg := 2;
+		endif
+		DamageFLS(defender, cint(dmg), DMG_FORCED, attacker);
+		//ApplyRawDamage(defender, CInt(dmg));
+	endif
+	return 1;
+endprogram

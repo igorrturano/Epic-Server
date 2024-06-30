@@ -1,0 +1,75 @@
+use uo;
+use cfgfile;
+use util;
+use os;
+
+program cria( item )
+
+  if ( GetObjProperty( item, "spellinfo" ) != error )
+	return 1;
+  endif
+
+  var spellinfo := struct;
+
+  // pega o level do scroll
+  var scrollcfg := ReadConfigFile( ":spells:itemdesc" );
+  var lvl := scrollcfg[item.objtype].Circle;
+  var spelltype_item := scrollcfg[item.objtype].SpellType;
+
+  if ( !lvl )
+	lvl := 1;
+  endif
+
+  // pega todas magias do cfg com esse level e armazena no array
+  var spellcfg;
+  if ( spelltype_item == "Sangria" )
+	spellcfg := ReadConfigFile( ":spells:config/sangriaspells" );
+  elseif ( spelltype_item == "Mage" )
+	spellcfg := ReadConfigFile( ":spells:config/allspells" );
+  elseif ( spelltype_item == "spellcaster" )
+	spellcfg := ReadConfigFile( ":spells:config/spellcaster" );
+  else
+	Syslog( "Erro ao criar pergaminho" );
+	return 0;
+  endif
+
+  var keys := GetConfigIntKeys( spellcfg );
+  var randomspells := array;
+  foreach key in keys
+	var spelllvl := GetConfigInt( FindconfigElem( spellcfg, key ), "Circle" );
+	var spelltype := GetConfigString( FindconfigElem( spellcfg, key ), "Type" );
+	var school := GetConfigString( FindconfigElem( spellcfg, key ), "School" );
+	if ( ( spelllvl == lvl ) && ( spelltype == "Mesum" ) )
+	  var unico := GetConfigInt( FindConfigElem( spellcfg, key ), "Unico" );
+	  if ( !unico )
+		randomspells.append( key );
+	  endif
+	elseif ( ( spelllvl == lvl ) && ( spelltype == "Sangria" ) )
+	  randomspells.append( key );
+	elseif ( spelltype == "spellcaster" )
+	  randomspells.append( key );
+	endif
+  endforeach
+
+  var random_spell_id := RandomInt( randomspells.size() ) + 1;
+  spellinfo.+id := randomspells[random_spell_id];
+  spellinfo.+magic_path := spelltype_item;
+  if ( spellinfo.magic_path == "spellcaster" )
+	spellinfo.+School := GetConfigString( FindconfigElem( spellcfg, random_spell_id ),
+									   "School" );
+	if ( spellinfo.School == "Kaijin" )
+	  item.color := 0xA8;
+	elseif ( spellinfo.School == "Evocatium" )
+	  item.color := 0x85;
+	elseif ( spellinfo.School == "Velkyn" )
+	  item.color := 0xF;
+	elseif ( spellinfo.School == "Ahtaleloreth" )
+	  item.color := 0x319;
+	elseif ( spellinfo.School == "Aradalore" )
+	  item.color := 0x43;
+	endif
+  endif
+  SetObjProperty( item, "spellinfo", spellinfo );
+
+  return 1;
+endprogram

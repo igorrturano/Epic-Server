@@ -1,0 +1,199 @@
+use uo;
+use os;
+
+//include "include/client";
+//include "include/objtype";
+//include "include/canAccess";
+include "include/say";
+
+program use_curing(who, item)
+
+var carregar := GetObjProperty(item, "#uso");
+var temitem := GetObjProperty(item, "#item");
+
+if (carregar == "1" )
+   SendSysMessage(who, "Voce nao pode usar este item agora!");
+   return;
+
+else
+   if (temitem == "1" )
+      if (getobjproperty(item, "#itemtype") == "string" )
+         SendSysMessage(who, "Voce pegou a corda pra arco");
+         EraseObjProperty(item, "#item");
+         EraseObjProperty(item, "#itemtype");
+         CreateItemInBackpack(who, 0xee47 , 1);
+         PlaySoundEffect (who, 0x49);
+      elseif (getobjproperty(item, "#itemtype") == "couro")
+         SendSysMessage(who, "Voce pegou o couro curtido");
+         EraseObjProperty(item, "#item");
+         EraseObjProperty(item, "#itemtype");
+         CreateItemInBackpack(who, 0xee45, 1);
+         PlaySoundEffect (who, 0x49);
+      elseif (getobjproperty(item, "#itemtype") == "pelebege")
+         SendSysMessage(who, "Voce pegou a pele curtida");
+         EraseObjProperty(item, "#item");
+         EraseObjProperty(item, "#itemtype");
+         CreateItemInBackpack(who, 0xee57, 1);
+         PlaySoundEffect (who, 0x49);
+      elseif (getobjproperty(item, "#itemtype") == "pelecinza")
+         SendSysMessage(who, "Voce pegou a pele curtida");
+         EraseObjProperty(item, "#item");
+         EraseObjProperty(item, "#itemtype");
+         CreateItemInBackpack(who, 0xee55, 1);
+         PlaySoundEffect (who, 0x49);
+      elseif (getobjproperty(item, "#itemtype") == "pelemarrom")
+         SendSysMessage(who, "Voce pegou a pele curtida");
+         EraseObjProperty(item, "#item");
+         EraseObjProperty(item, "#itemtype");
+         CreateItemInBackpack(who, 0xee56, 1);
+         PlaySoundEffect (who, 0x49);
+      elseif (getobjproperty(item, "#itemtype") == "pelebranca")
+         SendSysMessage(who, "Voce pegou a pele curtida");
+         EraseObjProperty(item, "#item");
+         EraseObjProperty(item, "#itemtype");
+         CreateItemInBackpack(who, 0xee58, 1);
+         PlaySoundEffect (who, 0x49);
+      else
+         SendSysMessage(who, "Nao a nada aqui para pegar");
+      endif
+   else
+        EraseObjProperty(who, "IsMeditating");
+        EraseObjProperty(who, "HealTimer");
+        if(!Accessible(who, item))
+         return;
+        endif
+        SendSysMessage(who, "Escolha o que voce deseja usar aqui.");
+        var useon := Target(who);
+        if (!useon)
+         return;
+        endif
+        if(!ReserveItem(useon))
+         SendSysMessage(who,"Este item esta em uso.");
+         return;
+        endif
+
+        var obj_type := useon.objtype;
+        var prod_type;
+
+        case (obj_type)
+          0x1078:
+          0x1079:
+          //couro
+            prod_type := 0xee45;
+            break;
+          0xee46:
+          //corda
+            prod_type := 0xee47;
+            break;
+          0xee51:
+          //pelebege
+            prod_type := 0xee57;
+            break;
+          0xee52:
+          //pelepolar
+            prod_type := 0xee58;
+            break;
+          0xee53:
+          //pelemarrom
+            prod_type := 0xee56;
+            break;
+          0xee54:
+          //pelecinza
+            prod_type := 0xee55;
+            break;
+          0xef11:
+          //couroescamoso
+            prod_type := 0xef20;
+            break;
+          0xef12:
+          //couroespesso
+            prod_type := 0xef21;
+            break;
+          0xef13:
+          //couronegro
+            prod_type := 0xc605;
+            break;
+          0xef14:
+          //couroaspero
+            prod_type := 0xef23;
+            break;
+          0xef15:
+          //couropeludo
+            prod_type := 0xef24;
+            break;
+          0xef16:
+          //courocinzento
+            prod_type := 0xef25;
+            break;
+          0xef17:
+          //couropolar
+            prod_type := 0xef26;
+            break;
+          0xef18:
+          //courogigante
+            prod_type := 0xef27;
+            break;
+          0xef19:
+          //courorijo
+            prod_type := 0xef28;
+            break;
+          0xed20:
+          //courodraconiano
+            prod_type := 0xed29;
+            break;
+          0xef01:
+          //courorobusto
+            prod_type := 0xc601;
+            break;
+          0xeefd:
+          //couroanfibio
+            prod_type := 0xef22;
+            break;
+          0xef00:
+          //couromarinho
+            prod_type := 0xc602;
+            break;
+          0xeeff:
+          //couroescamosoduro
+            prod_type := 0xc603;
+            break;
+          0xeefe:
+          //courolamelar
+            prod_type := 0xACE5;
+            break;
+          default:
+             SendSysMessage(who,"Voce so pode usar couro aqui");
+             return;
+        endcase
+
+        var characterx := who.x;
+        var charactery := who.y;
+        var qtd := useon.amount;
+        repeat
+          if(qtd > 5)
+            if (SubtractAmount(useon, 5))
+              PrintText(who, "*curtindo couro*");
+              Sleep(3);
+              CreateItemInBackpack(who, prod_type, 5);
+              PlaySoundEffect (who, 0x49);
+              qtd := qtd -5;
+            else
+              SendSysMessage(who, "Voce nao tem mais material para usar aqui");
+              break;
+            endif
+          else
+            if (SubtractAmount(useon, qtd))
+              PrintText(who, "*curtindo couro*");
+              Sleep(3);
+              CreateItemInBackpack(who, prod_type, qtd);
+              PlaySoundEffect (who, 0x49);
+              break;
+            else
+              SendSysMessage(who, "Voce nao tem mais material para usar aqui");
+              break;
+            endif
+          endif
+        until (who.x != characterx || who.y != charactery);
+     endif
+  endif
+endprogram

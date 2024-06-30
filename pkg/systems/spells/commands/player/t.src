@@ -1,0 +1,76 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":spells:spellbooks";
+
+program magia(who, spellname)
+	if ( GetObjProperty(who, "#Casting") )
+		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
+		return 0;
+	endif
+
+	var cfg := ReadConfigFile(":spells:allspells");
+
+	var elem;
+	var id := 1;
+	var achou := 0;
+	foreach spell in ( GetConfigIntKeys(cfg) )
+		elem := FindConfigElem(cfg, id);
+		if ( GetConfigString(elem, "Name") == spellname)
+			achou := 1;
+			break;
+		endif
+		id := id + 1;
+	endforeach
+
+	if (!achou)
+		SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
+		return;
+	endif
+
+	var spellbook := 0;
+	var booktype;
+	foreach item in ( EnumerateItemsInContainer(who.backpack) )
+		if ( item.objtype == 0x6149)
+            var spells := GetObjProperty(item, "spells");
+            foreach s in spells
+                if ( s == id)
+                    spellbook := 1;
+                    booktype := GetBookType(item);
+                    break;
+                endif
+            endforeach
+		endif
+	endforeach
+    foreach item in ListEquippedItems(who)
+        if (item.objtype == 24905)
+            var spells := GetObjProperty(item, "spells");
+            foreach s in spells
+                if ( s == id)
+                    spellbook := 1;
+                    booktype := GetBookType(item);
+                    break;
+                endif
+            endforeach
+            break;
+        endif
+    endforeach
+
+	if ( !spellbook)
+		SendSysMessageEx(who, "Voce nao possui a magia " + spellname + " no seu totem.", SSM_FAIL);
+		return;
+	endif
+
+	var spellinfo := struct;
+	spellinfo.+id := id;
+        var script := Start_Script(":spells:cast_spell", {who, spellinfo, booktype});
+        if ( script.errortext )
+            SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+            return 0;
+	    endif
+
+
+
+endprogram

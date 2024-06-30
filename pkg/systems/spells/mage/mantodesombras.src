@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	PlaySoundEffect(who, SFX_SPELL_HEAL);
+
+	var x := who.x;
+	var y := who.y;
+	sleep(5);
+	if ( (x != who.x) || (y  != who.y) )
+		SendSysMessageEx(who, "Voce se movimentou e a magia falhou.", SSM_FAIL);
+		return;
+	endif
+	
+	if (!who.dead)
+		SendSysMessageEx(who, "Voce esta escondido.", SSM_INFO);
+		who.hidden := 1;
+	endif
+	
+	return 1;
+endprogram   

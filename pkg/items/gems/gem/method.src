@@ -1,0 +1,65 @@
+/* $Id$
+ *
+ */
+
+program Install()
+	return 1;
+endprogram
+
+exported function IsGem(item)
+	item := item; // Avoid unused var compiler warning
+
+	return 1;
+endfunction
+
+
+exported function GetGemName(item)
+
+	if (item.objtype == 0xf0f)
+		return "safira estelar";
+	elseif ( item.objtype == 0xf10)
+		return "esmeralda";
+	elseif ( item.objtype == 0xf11)
+		return "safira";
+	elseif (item.objtype == 0xf13 )
+		return "rubi";
+	elseif (item.objtype == 0xf15)
+		return "citrina";
+	elseif (item.objtype == 0xf16)
+		return "ametista";
+	elseif (item.objtype == 0xf18 )
+		return "turmalina";
+	elseif (item.objtype == 0xf25)
+		return "ambar";
+	elseif (item.objtype == 0xf30 )
+		return "diamante";
+	endif
+
+endfunction
+
+
+
+exported function GetGemColor(item)
+
+	if (item.objtype == 0xf0f)
+		return 1266;
+	elseif ( item.objtype == 0xf10)
+		return 1268;
+	elseif ( item.objtype == 0xf11)
+		return 1261;
+	elseif (item.objtype == 0xf13 )
+		return 1157;
+	elseif (item.objtype == 0xf15)
+		return 1161;
+	elseif (item.objtype == 0xf16)
+		return 1158;
+	elseif (item.objtype == 0xf18 )
+		return 1260;
+	elseif (item.objtype == 0xf25)
+		return 1260;
+	elseif (item.objtype == 0xf30 )
+		return 1153;
+	endif
+
+
+endfunction

@@ -1,0 +1,106 @@
+/* $Id: dblclickself.src 1345 2006-05-12 08:18:29Z austin $
+ *
+ * Purpose
+ * This script allows an alternate behavior other than the default 'open paperdoll' behavior.
+ * Useful for things like dismounting.
+ *
+ */
+use uo;
+use os;
+
+include "include/client";
+include ":gumps:gumps";
+include ":mounts:mounts";
+include ":tn:cooldown";
+include "include/say";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include "include/facings";
+
+program core_dblClickSelf(who)
+
+	//sendsysmessage(who, "dismont script");
+	var mount := GetEquipmentByLayer(who, LAYER_MOUNT);
+
+	//sendsysmessage(who, "mount " + mount);
+	if ( mount && !who.warmode )
+
+		// if (GetObjProperty(who, "unicorn") == 1)
+		// 	var op := TeleportGump(who);
+		// 	if (op == 2)
+		// 		var cd := GetCooldown(who, "unicornteleport");
+		// 		if ( cd > 0)
+		// 			SendSysMessage(who, "Ainda faltam " + cd + " segundos para voce usar essa habilidade novamente.");
+		// 			return;
+		// 		else
+		// 			teleport(who);
+		// 		endif
+		// 	elseif (op == 1)
+		// 		EraseObjProperty(who, "unicorn");
+		// 		return MP_Unmount(who);
+		// 	endif
+		// else
+			return MP_Unmount(who);
+		// endif
+
+	endif
+
+	return OpenPaperdoll(who, who);
+
+	return 1;
+endprogram
+
+function TeleportGump(who)
+
+	var gump := GFCreateGump();
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 220, 150);
+	GFResizePic(gump, 15, 40, 0x13BE, 190, 120);
+	GFTextLine(gump, 40, 50, 1153, "Teleporte de Unicornio");
+
+	GFAddButton(gump, 35, 95,  2103, 2104, GF_CLOSE_BTN, 2);
+	GFAddButton(gump, 35, 115, 2103, 2104, GF_CLOSE_BTN, 1);
+
+	GFTextLine(gump, 50, 90, 1153, "Teleportar");
+	GFTextLine(gump, 50, 110, 1153, "Desmontar");
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+
+	return input;
+
+endfunction
+
+function teleport(who)
+
+	SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
+	var loc := TargetCoordinates(who);
+	if ( !loc )
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if ( !CheckLosAt(who, loc.x, loc.y, loc.z) )
+		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	TurnObjectToward(who, loc.x, loc.y);
+
+	PlaySoundEffect(who, 169 );
+	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 , 2);
+	sleepms(400);
+	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 ,2);
+	sleepms(400);
+	MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
+
+	setCooldown(who, "unicornteleport", 300);
+
+endfunction

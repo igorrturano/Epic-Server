@@ -1,0 +1,96 @@
+
+use uo;
+include ":tn:quests";
+include ":gumps:gumps";
+include "include/arrays";
+include ":fls_core:fls_chargumps_ex";
+include ":attributes:attributes";
+include ":gumps:yesNo";
+include ":combat:hitscripts";
+
+program setquest(who)
+
+
+	BuildQuestGump(who);
+
+
+endprogram
+
+function BuildQuestGump(who)
+
+	var chargump := GFCreateGump();
+	var input;
+
+	GFClosable(chargump, 1);
+	GFDisposable(chargump, 0);
+	GFResizePic(chargump, 0, 25, 3600, 400, 430);
+	GFResizePic(chargump, 15, 40, 0x13BE, 370, 400);
+
+
+	GFTextMid(chargump, 20, 50, 300, 1153, "Edite as quests");
+	GFAddButton(chargump, 20, 73, 2360, 2361, 1, 9999);
+	GFTextLine(chargump, 30, 70, 1153, "Deleta Selecionadas");
+
+	GFAddButton(chargump, 220, 73, 2360, 2361, 1, 9998);
+	GFTextLine(chargump, 230, 70, 1153, "Edita Selecionadas");
+
+	var totalQuests := GetQuestsKeys();
+
+	var x := 60;
+	var y := 100;
+	var i;
+	GFSetRadioGroup(chargump, 1);
+
+	for (  i :=  1; i <= totalQuests.size(); i := i + 1)
+
+		GFTextLine(chargump, x, y, 1153, totalQuests[i]);
+
+		GFCheckBox(chargump, x-20, y+3, 2360, 2361, 0, i);
+
+		y := y + 15;
+
+		if ( i == 21 )
+			x := x + 140;
+			y := 100;
+		endif
+
+		sleepms(2);
+	endfor
+
+	//GFAddButton(chargump, 310, 400, 4502, 4502, 1, 999 );
+	//GFTextLine(chargump, 270, 410, 1153, "Termina");
+
+	input := GfSendGump(who, chargump);
+	if (input[0] == 9999)
+		foreach key in (input.keys)
+			if (key != 9999 && key != 0)
+
+				DeleteQuest(totalQuests[key]);
+
+
+			endif
+		endforeach
+	elseif ( input[0] == 9998)
+		foreach key in (input.keys)
+			//sendsysmessage(who, " " + key);
+			if (key != 9999 && key != 0 && key != 9998)
+
+  				var questdata := OpenDataFile(":tn:questdata" );
+
+  				var elem := questdata.findelement(totalQuests[key]);
+
+  				var questinfo := elem.getprop("questinfo");
+				sendsysmessage(who, " info " + questinfo);
+				if (questinfo)
+					createqueststructGump(who, questinfo);
+					var ret := elem.SetProp("questinfo", questinfo);
+				endif
+
+			endif
+		endforeach
+	endif
+
+
+	SendSysMessage(who, "Pronto.");
+
+endfunction

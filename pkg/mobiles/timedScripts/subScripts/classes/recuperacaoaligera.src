@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":timedscripts:poisonUtil";
+include "include/damage";
+
+program default_poison(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+
+    var tactics_bonus := CInt(AP_GetSkill(who, TACTICS) / 10);
+    var time := CInt(AP_GetSkill(who, TACTICS) / 5);
+    var i := 0;
+
+    var parry_bonus := CInt(AP_GetSkill(who, PARRY) / 10);
+    if (TemHabilidade(who, "Artista Marcial"))
+        while (1 < time)
+            if (who.dead)
+                break;
+            endif
+            HealFLS(who, tactics_bonus);
+            
+            sleep(2);
+        endwhile
+    elseif (TemHabilidade(who, "Manobra da Resiliencia"))
+        time := CInt(AP_GetSkill(who, PARRY) / 5);
+        while (1 < time)
+            if (who.dead)
+                break;
+            endif
+            HealFLS(who, parry_bonus);
+            
+            sleep(2);
+        endwhile
+    else
+        while( IsRaging(who) )
+            if (who.dead)
+                break;
+            endif
+            HealFLS(who, 5);
+
+            sleep(2);
+        endwhile
+    endif
+	var script := GetProcess(GetPid());
+	script.kill();
+	return;
+endprogram
+

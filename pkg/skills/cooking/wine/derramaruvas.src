@@ -1,0 +1,92 @@
+use uo;
+use os;
+
+program colocaruvas( who , item )
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	var carregado := Cint(GetObjProperty(item, "carregado"));
+	var uvas;
+  
+	if (carregado == 1)
+		SendSysMessage(who, "Este balde ja contem uvas frescas! Agora pise nelas!");
+		return;
+	else
+		SendSysMessage(who, "Selecione as 50 uvas.");
+		uvas := Target(who);
+		if(!uvas)
+			return;
+		endif
+
+		if ( (uvas.graphic != 0xd1a) )
+			SendSysMessage(who, "Isto nao sao uvas!");
+			return;
+		endif
+
+		if(uvas.movable == 0)
+			SendSysMessage(who, "Voce nao pode usar estas uvas.");
+			return;
+		endif
+		if(!Accessible(who, uvas))
+			SendSysMessage(who, "Voce nao alcanca isto.");
+			return;
+		elseif(distance(who, uvas) > 2)
+			SendSysMessage(who, "O alvo esta muito longe.");
+			return;
+		endif
+
+		if (uvas.amount < 50)
+			SendSysMessage(who, "Voce precisa por 50 uvas aqui!");
+			return;
+		else
+			SubtractAmount (uvas, 50);
+			SendSysMessage(who, "Voce derramou as uvas, agora e so pisar!");
+			ChangeVatGraphic(item, 2);
+			SetObjProperty(item, "carregado", 1);
+		endif  
+	endif
+endprogram
+
+
+function ChangeVatGraphic(item, mode)
+
+
+	if (mode == 1)//cheio pra vazio
+		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4);
+		foreach coisa in nearitens
+			if (coisa.graphic == 5409)
+				coisa.graphic := 5337;
+			elseif (coisa.graphic == 5410)
+				coisa.graphic := 5340;
+			elseif (coisa.graphic == 5411)
+				coisa.graphic := 5341;
+			elseif( coisa.graphic == 5406)
+				coisa.graphic := 5339;
+			elseif (coisa.graphic == 5413)
+				coisa.graphic := 5346;
+			elseif (coisa.graphic == 5408)
+				coisa.graphic := 5345;
+			endif
+		endforeach
+	else
+		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4);
+		foreach coisa in nearitens
+			if (coisa.graphic == 5337)
+				coisa.graphic := 5409;
+			elseif (coisa.graphic == 5340 )
+				coisa.graphic := 5410;
+			elseif (coisa.graphic == 5341 )
+				coisa.graphic := 5411;
+			elseif( coisa.graphic == 5339)
+				coisa.graphic := 5406;
+			elseif( coisa.graphic == 5346)
+				coisa.graphic := 5413;
+			elseif (coisa.graphic == 5345)
+				coisa.graphic := 5408;
+			endif
+		endforeach
+	endif
+	
+
+endfunction

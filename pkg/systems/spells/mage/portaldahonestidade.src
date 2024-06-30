@@ -1,0 +1,44 @@
+    use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include ":spells:tnmagery";
+include "include/shapes";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha onde quer abrir o portal.", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlayStationaryEffect(  targ.x, targ.y, targ.z, 6899, 1, 30, 0, who.realm );
+  	sleepms(2800);
+	var gate1 := CreateItemAtLocation( targ.x, targ.y, targ.z, "BlueMoonGate", 1, who.realm );
+	gate1.color := 2555;
+  	gate1.movable := 0;
+	gate1.SetDestination(  642, 2257, 60, REALM_BRITANNIA);
+
+  	Detach();
+  	sleep(30);
+	DestroyItem(gate1);
+
+	return 1;
+endprogram     
+
+
+ 

@@ -1,0 +1,53 @@
+     use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":charactercreation:habilidades";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	//if ( !targ.npctemplate && (targ == who))
+	//	SendSysMessageEx(who, "Voce nao pode ser alvejado por essa magia.", SSM_FAIL);
+	//	return;
+	//endif
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if ( IsBloodied(targ))
+		SendSysMessageEx(who, "O alvo esta muito ferido.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (GetVital( targ, HITS ) == GetVitalMaximumValue( targ, HITS ))
+		SendSysMessageEx(who, "O alvo nao parece feridoo.", SSM_FAIL);
+		return;
+	endif
+
+	var healed := cint( (AP_GetVitalMaximumValue(who, HITS) - GetHP(who))/2 );
+	DamageFLS(who, healed);
+	
+	//healdamage( targ, healed );
+	healFLS(targ, healed);
+	recalcVitals(targ);
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	
+	return 1;
+endprogram 

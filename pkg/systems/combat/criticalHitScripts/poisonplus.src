@@ -1,0 +1,46 @@
+use uo;
+use util;
+use os;
+use cfgfile;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":attributes:vitals";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+
+	params := 0; // Not needed anymore.
+	
+	
+var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
+var poisonchance := GetConfigInt(npcelem, "Poisoning");
+		if (poisonChance > 0)
+			if ( RandomInt(100) < poisonChance )
+				var poisonName := GetConfigString(npcelem, "PoisonType");
+				var level := Cint(GetConfigInt(npcelem, "PoisonLevel"));
+				if (!level)
+					level := 1;
+				endif
+				if (poisonName == error)
+					return 0;
+				endif
+				if (IsPoisonImune(defender, poisonName) )
+					return 0;
+				endif
+				var time := level*15;
+				if (poisonName == "paralyzePoison")
+					time := 10;
+				endif
+				TS_StartTimer(defender, poisonName, time, level +1, attacker);
+				printText(attacker, "*Acerta a veia no alvo, tornando a toxina mais efetiva*");
+			endif
+		else
+			return 0;
+		endif
+
+endprogram

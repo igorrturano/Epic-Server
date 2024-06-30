@@ -1,0 +1,16 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	var points := CInt(GetObjProperty(mobile, "#vinganca"));
+	
+	ApplyRawDamage(mobile, points);
+	EraseObjProperty(mobile, "#vinganca");
+	
+
+	return 1;
+endprogram

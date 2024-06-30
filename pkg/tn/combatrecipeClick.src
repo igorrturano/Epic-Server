@@ -1,0 +1,35 @@
+use uo;
+use os;
+
+include ":gumps:yesNo";
+
+program usaPergaminho(who, scroll)
+
+	var spellinfo := GetObjProperty(scroll, "spellinfo");
+
+	var gump := GFCreateGump(140, 100);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
+
+	 GFTextLine(gump, 50, 10, 0, spellinfo.name);
+	GFHTMLArea( gump, 30, 40, 180, 120, spellinfo.description, 0, 1);
+
+	GFTextLine(gump, 55, 170, 0, "Aprender manobra");
+	GFAddButton(gump, 40, 174, 2103, 2104, 1, 99);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 99)
+		if (GetObjProperty(who, spellinfo.name) == error)
+			if (DestroyItem(scroll))
+				SetObjProperty(who, spellinfo.name, 1);
+				SendSysMessage(who, "Voce aprendeu essa manobra, utilize o comando .manobra " + spellinfo.name);
+			endif
+		else
+			SendSysMessage(who, "Voce ja conhece essa manobra.");
+			return;
+		endif
+	endif
+
+
+endprogram

@@ -1,0 +1,40 @@
+use uo;
+use os;
+
+include "include/client";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":timedscripts:poisonUtil";
+include ":charactercreation:habilidades";
+
+program UseLeech(who, leech)
+	SendSysMessage(who, "Em quem voce deseja usar isto?");
+	var targ := target(who);
+
+	if ( !targ.acctname )
+		SendSysMessage(who, "Cancelado");
+		return;
+	elseif ( !targ.poisoned )
+		SendSysMessage(who, targ.name+" nao esta envenenado.");
+		return;
+	elseif ( Distance(who, targ) > 2 )
+		SendSysMessage(who, targ.name+" esta muito distante.");
+		return;
+	endif
+	if (temHabilidade(who, "Formacao Academica"))
+		if ( SkillCheck(who, MEDICINE, 60) > 0 )
+			SendSysMessage(who, "Voce aplicou a sanguessuga em "+targ.name);
+			var healing := AP_GetSkill(who, MEDICINE);
+			TS_CurePoison(targ, CInt(healing*2), "P", CInt(healing/15));
+			SendSysMessage(who, "A sanguessuga sobreviveu");
+		else
+			SendSysMessage(who, "Voce nao foi capaz de aplicar a sanguessuga corretamente em "+targ.name);
+			SendSysMessage(who, "A sanguessuga morreu");
+			SubtractAmount(leech, 1);
+		endif
+	else
+		SendSysMessage(who, "Voce tem jeito suficiente para aplicar a sanguessuga corretamente em "+targ.name);
+		SendSysMessage(who, "A sanguessuga morreu");
+		SubtractAmount(leech, 1);
+	endif
+endprogram

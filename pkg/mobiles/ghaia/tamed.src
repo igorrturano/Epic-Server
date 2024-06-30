@@ -1,0 +1,999 @@
+use uo;
+use os;
+use npc;
+use util;
+
+include ":attributes:attributes";
+include "include/sysEvent";
+include "include/eventID";
+include "include/say";
+include ":mounts:mounts";
+include ":taming:taming";
+include ":tn:cooldown";
+include ":ghaia:ghaia";
+
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var pack_animals := array(291, 292);
+var mountables := array(200, 204, 226, 228);
+var me := self();
+var wait_time := 120;
+var next_watch := ReadGameClock();
+var guarding := 0;
+var last_following := 0;
+var following := 0;
+var fighting := 0;
+var opponent := 0;
+var going_loc := 0;
+var areasize := 10;
+
+//Owner info
+var owner_serial;
+var owner;
+
+//Custom events
+const FOLLOW_CMD	:= 0xA001;
+const ATTACK_CMD	:= 0xA002;
+const NEW_MASTER_CMD	:= 0xA003;
+const GUARD_CMD		:= 0xA004;
+const GO_LOC_CMD	:= 0xA008;
+
+
+
+
+program TamedAI()
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+	EnableMainEvents();
+	Setup();
+
+	Detach();
+	var time := ReadGameClock();
+	SetObjProperty(me,"countercheck", time);
+	var parms := {};
+	parms[1] := me;
+	parms[2] := time;
+	start_script(":taming:happyCounter", parms);
+
+	while ( me )
+		if ( wait_time < 1 )
+			sleepms(10);
+		endif
+
+		SpecialHab(me);
+
+		var ev := Wait_For_Event(wait_time);
+		var time := ReadGameClock();
+		var parms := {};
+		parms[1] := me;
+		parms[2] := time;
+		//start_script(":taming:happycounter", {me, ReadGameClock()});
+
+		//npcs criam ovos ou outras coisas
+		//if ( (GetCooldown(me, "dropitem" ) == 0) && (CInt(npccfgfile[mytemplate].DropDelay) > 0) )
+		//   CreateItemAtLocation(me.x, me.y, me.z, CStr(npccfgfile[mytemplate].DropItem), 1, me.realm);
+		//   SetCooldown(me, "dropitem", CInt(npccfgfile[mytemplate].DropDelay));
+		//endif
+		//se for carneiro
+		if ( me.graphic == 223)
+			if (GetCooldown(me, "wool") == 0)
+				me.graphic := 207;
+			endif
+		endif
+
+		case ( ev.type )
+
+	//			EVID_FLEE:
+	//				if (ev.source)
+	//					flee(ev.source);
+	//				endif
+
+			SYSEVENT_SPEECH:
+				ProcessSpeech(ev);
+
+			SYSEVENT_ENGAGED:
+				if ( (ev.source).IsA(POLCLASS_MOBILE) )
+					if (ev.source == guarding)
+						Guard();
+					endif
+				endif
+
+			SYSEVENT_DAMAGED:
+				if ( (ev.source).IsA(POLCLASS_MOBILE) )
+					if ( Distance(ev.source, me) <= 1)
+						opponent := ev.source;
+					endif
+					if (ev.source == guarding)
+						Guard();
+					endif
+				endif
+			EVID_HERDING:
+
+				going_loc := struct;
+				going_loc.+x := ev.data.x;
+				going_loc.+y := ev.data.y;
+				going_loc.+type := "run";
+
+			FOLLOW_CMD:
+				following := ev.targ;
+
+			ATTACK_CMD:
+				opponent := ev.targ;
+
+			GUARD_CMD:
+				guarding := ev.targ;
+
+			NEW_MASTER_CMD:
+
+				Transfer(ev.targ);
+
+			GO_LOC_CMD:
+				going_loc := struct;
+				going_loc.+x := ev.targ.x;
+				going_loc.+y := ev.targ.y;
+				going_loc.+type := ev.targ.type;
+
+			SYSEVENT_DOUBLECLICKED:
+
+				if ( ev.source == owner )
+					if( (Distance(ev.source, me) > 1) )
+						if (ev.source == owner)
+							ProcessDoubleClick(ev);
+						endif
+
+					elseif ( me.graphic in pack_animals )
+
+						OpenPack(ev);
+
+					elseif ( !GetEquipmentByLayer(ev.source, LAYER_MOUNT) )
+
+						if ( IsMountable(me.graphic))
+							if(MoveObjectToLocation(ev.source, me.x, me.y, me.z, ev.source.realm))
+								if (me.npctemplate == ":brainai:Unicorn")
+									if (GetObjProperty(me, "aprimorado"))
+										SetObjProperty(owner, "unicorn", 1);
+									endif
+								endif
+								ev.source.hidden := 0;
+								MP_Mount(ev.source, me);
+								me.hidden := 0;
+							endif
+						else
+							if (ev.source == owner)
+								ProcessDoubleClick(ev);
+							endif
+						endif
+
+					endif
+
+				endif
+
+			SYSEVENT_ITEM_GIVEN:
+				TakeItem(ev);
+		endcase
+
+		var summoned := GetObjProperty(me, "summoned");
+		var fideliz := (GetObjProperty(me, "NeverRelease") == 1);
+		if ( CInt(GetObjProperty(me, "happiness")) < 10 && !GetCooldown(me,"aviso") && !summoned && !fideliz )
+			if (owner.cmdlevel < 2)
+				SendSysMessageEX(owner, me.name+" esta infeliz e o proximo comando sera o ultimo!", SSM_INFO_IC);
+			endif
+			SetCooldown(me, "aviso", 4);
+		endif
+
+		if ( opponent && !IsDead(opponent) && !opponent.concealed && !opponent.hidden )
+			Fight();
+			Follow();
+		elseif ( fighting && IsDead(opponent) )
+			following := last_following;
+			fighting := 0;
+			opponent := 0;
+			last_following := 0;
+			SetWarMode(0);
+		elseif ( following )
+			Follow();
+			look_around();
+		elseif ( guarding )
+			Guard();
+			look_around();
+		elseif ( going_loc )
+			goToLoc();
+		else
+			wait_time := 10;
+		endif
+
+		
+	endwhile
+
+endprogram
+
+function look_around()
+  foreach npc in ListMobilesNearLocation(me.x, me.y, me.z, areasize, me.realm)
+	if(npc != me && npc.warmode && IsDead(opponent) && guarding && (npc.opponent == guarding || npc.opponent.serial == guarding.serial))
+		Say("*correndo para defender*");
+		opponent := npc;
+	endif
+    sleepms(2);
+  endforeach
+endfunction
+
+function ProcessSpeech(ev)
+
+	var text := lower(ev.text);
+	var name := lower(me.name);
+	//printtextabove(me, "meu nome " + name );
+	var todos;
+	if ( (ev.source).serial != (me.master).serial )
+
+		//Say("Dear "+ev.source.name+", shut up. I only listen to my owner.");
+
+		return;
+
+	endif
+
+
+
+	if( text[name+" mate"] || text[name+" ataque"] || text["todos matem"] || text["todos ataquem"] )
+
+		var targ := target(me.master, TGTOPT_CHECK_LOS);
+		if ( targ == me || targ == ev.source || !targ.IsA(POLCLASS_MOBILE) )
+			return;
+		endif
+        if(obediencecheck()== 0)
+          return;
+        endif
+
+
+		if ( text["todos"] )
+			AllCommand(ATTACK_CMD, targ);
+		else
+		opponent := targ;
+		endif
+
+	elseif ( text["guarde"] )
+        if(obediencecheck()== 0)
+          return;
+        endif
+		if ( text["todos guardem"] )
+			if ( text["todos guardem-me"] )
+				guarding := ev.source;
+				following := ev.source;
+			else
+				var targ := target(me.master);
+				if ( targ.IsA(POLCLASS_MOBILE) )
+					AllCommand(GUARD_CMD, targ);
+				endif
+			endif
+		else
+
+			var targ := target(me.master);
+			if ( targ == me )
+				return;
+			elseif ( targ.IsA(POLCLASS_MOBILE) )
+				guarding := targ;
+				following := targ;
+			endif
+		endif
+
+	elseif( text[name+" pare"] || text["todos parem"] )
+        if(obediencecheck()== 0)
+          return;
+        endif
+		opponent := 0;
+		guarding := 0;
+		following := 0;
+		going_loc := 0;
+
+	elseif( text[name+" siga"] )
+        if(obediencecheck()== 0)
+          return;
+        endif
+		if ( text["siga-me"] )
+			following := ev.source;
+		else
+			following := target(me.master);
+		endif
+
+	elseif ( text["todos sigam"] )
+        if(obediencecheck()== 0)
+          return;
+        endif
+		if ( text["todos sigam-me"] )
+			following := ev.source;
+		else
+
+			var targ := target(me.master);
+			if ( targ.IsA(POLCLASS_MOBILE) )
+				AllCommand(FOLLOW_CMD, targ);
+			endif
+
+		endif
+
+	elseif ( text[name+" corra"] )
+		if(obediencecheck()== 0)
+			return;
+		endif
+		go("run", 0);
+
+elseif ( text["todos corram"])
+		if(obediencecheck()== 0)
+			return;
+		endif
+		go("run", todos := 1);
+
+	elseif ( text[name+" ande"] )
+		if(obediencecheck()== 0)
+			return;
+		endif
+		go("walk", 0);
+
+elseif ( text["todos andem"])
+		if(obediencecheck()== 0)
+			return;
+		endif
+		go("walk", todos := 1);
+
+	elseif ( text[name+" novo dono"] || text["todos novo dono"] )
+        if(obediencecheck()== 0)
+          return;
+        endif
+
+		var cfg := ReadConfigFile(":brainAI:npcdesc");
+		var npctemplate := me.npctemplate;
+		npctemplate := npctemplate[10, len(npctemplate)-9];
+		cfg := cfg[npctemplate];
+
+		if (GetObjProperty(me, "summon") == 1)
+			SendSysMessage(owner, "Outros nao podem controlar criaturas invocadas por voce.");
+			return;
+		endif
+
+		if (GetObjProperty(owner, "companheiro") == me.serial)
+			SendSysMessage(owner, "Voce nao pode transferir seu companheiro animal.");
+			return;
+		endif
+
+		var targ := target(ev.source);
+		if (cfg.TameDifficulty >= 61)
+			if ( AP_GetSkill(targ, HANDLEANIMAL) * 1.4 < cfg.TameDifficulty )
+				SendSysMessage(owner, "A criatura nao aceita o alvo como novo dono.");
+				return;
+			endif
+		endif
+
+		if ( !targ.acctname )
+			return;
+		elseif ( text["all transfer"] )
+			AllCommand(NEW_MASTER_CMD, targ);
+		else
+			Transfer(targ);
+		endif
+
+	elseif( text[name+" livre"] || text["todos livres"] )
+
+		if (GetObjProperty(me, "summoned"))
+			SendSysMessage(owner, "Criaturas invocadas nao podem ser libertadas normalmente.");
+			return;
+		endif
+
+		if (GetObjProperty(owner, "companheiro") == me.serial)
+			SendSysMessage(owner, "Seu companheiro animal nao quer deixar voce.");
+			return;
+		endif
+
+		EraseObjProperty(me, "anchor");
+		UnTame();
+	endif
+
+endfunction
+
+
+function TakeItem(ev)
+//cfgd
+	var cfgeat := ReadConfigFile(":*:itemdesc");
+	var cfg := ReadConfigFile("food");
+	var npccfg := ReadConfigFile(":brainai:npcdesc");
+
+if (GetObjProperty(me, "summoned"))
+	SendSysMessageEX(ev.source, "Caso nao saiba, espiritos nao se alimentam!", SSM_FAIL);
+	return;
+endif
+
+// relacionado as comidas do pet
+	var npctemplate := me.npctemplate;
+	npctemplate := npctemplate[10, len(npctemplate)-9];
+	var foodtype := npccfg[npctemplate].food;
+	if(!foodtype)
+		foodtype := "qualquer";
+	endif
+  var elem := FindConfigElem(cfg,foodtype);
+  var foodarray := GetConfigStringArray(elem,"Food");
+
+//relacionado ao tempo para inicio do bond (tudo em segundos!)
+	var happy := GetObjProperty(me,"happiness");
+  	var timebond := ReadGameClock(); //tempo do relógio
+	var startbond := GetObjProperty(me, "bond"); //hora que foi tamado
+	var adestramento := AP_GetSkill(owner, HANDLEANIMAL); //skill do owner
+	var adestramentocalc := (adestramento * 4320); //modificador com base na skill
+	var tempo_detreino := ( 432001 - adestramentocalc); //tempo que irá demorar para fidelizar
+	var tempo_fiel := (startbond + tempo_detreino);  // tempo em que irá ficar pronto o fidelizar
+
+ //check se quer fidelizar ou nao
+  var fidelizar := GetObjProperty(me, "Fidelizar?");
+
+ //if ( cfgeat[(ev.item).objtype].script["eat"]) //evento comida checando tds os itemdesc para ver se são comíveis
+	if (Cstr(ev.item.objtype) in foodarray)
+		if (happy >= 100)
+			PrintTextAbovePrivate(me,"O animal já está satisfeito", ev.source);
+			return;
+		endif
+		//checkbond para ver se já tem animal fidelizado
+		var check_bond := 0;
+		var pets := GetObjProperty(owner, "TamedPets");
+		var habs := TemHabilidade(owner, "Lider do Bando") || TemHabilidade(owner, "Rei do Gado");
+			foreach serial in pets
+				var pet := SystemFindObjectBySerial(serial);
+			if (GetObjProperty(pet, "bond") == "fiel")
+				if (!habs )
+					check_bond := 1;
+				else
+					check_bond := 2;
+				endif
+			endif
+			endforeach
+		if ((happy >= 20) && (ev.source == owner)) //checa a felicidade e se o dono que está dando comida
+			if (Cint(startbond)) //checa o bond para fidelizar
+
+				if ( (adestramento >= 1) && (tempo_fiel <= timebond) ) // Pelo menos 1 de skill e o tempo que demoraria para fidelizar tem q ser menor que o tempo de agora
+					SetObjProperty(me, "bond", "fiel");
+					SetobjProperty(me, "NeverRelease", 1);
+					PrintTextAbovePrivate(me, "*O animal se esfrega em voce*", owner);
+					PlaySoundEffect(me, npccfg[me.npctemplate].idlesound);
+					SendSysMessage(owner, +me.name+ " criou um vinculo de fidelidade com voce!", 0, 61);
+					SetObjProperty(me, "dpmod", -20);
+					RecalcVitals(me);
+				endif
+			elseif ((startbond == "fiel") || (check_bond == 1) || (fidelizar == "nao") ) //se já é fiel/se já tem animal fidelizado/marcado como nao fidelizar só vai comer
+			else //para iniciar o bond
+				SetObjProperty(me, "bond", timebond);
+				SendSysMessageEX(owner, "Voce comeca a construir uma fidelidade com seu animal.", SSM_INFO);
+			endif
+		endif
+		PlaySoundEffect(me, CInt(0x3b)+ RandomInt(3));
+		if (ev.item.amount >1)
+			SubtractAmount(ev.item, 1);
+		else
+			DestroyItem(ev.item);
+		endif
+		SetObjProperty(me,"happiness", happy +35);
+			if ( CInt(GetObjProperty(me, "happiness") > 100) ) // se passar de 100 o happiness volta pra 100
+				SetObjProperty(me, "happiness", 100);
+			endif
+		var tameinfo := "";
+		tameinfo := "* " +me.name+" "+GetHappy(happy)+"*";
+		PrintTextAbove(me, tameinfo);
+		return;
+	elseif(ev.item.graphic == 3701 || ev.item.graphic == 2482)
+		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
+			SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de coloca-la na montaria.");
+			return;
+		endif
+		if ( me.graphic == 228 )
+			SetObjProperty(me, "beforepack", me.graphic);
+			me.graphic := 291;
+			DestroyItem(ev.item);
+			PrintText(ev.source,"*prende uma mochila no cavalo*");
+		elseif ( me.graphic == 220)
+			SetObjProperty(me, "beforepack", me.graphic);
+			me.graphic := 292;
+			DestroyItem(ev.item);
+			PrintText(ev.source,"*prende uma mochila na llama*");
+		endif
+	else
+		SendSysMessage(ev.source, "Nao pode comer isso!");
+		return;
+	endif
+
+//endif
+
+endfunction
+
+
+
+function Fight()
+
+	if ( !fighting )
+
+		last_following := following;
+		following := opponent;
+		TurnToward(opponent);
+		SetOpponent(opponent);
+		fighting := 1;
+
+	endif
+
+endfunction
+
+
+
+function IsDead(opponent)
+
+	if ( !opponent )
+		return 1;
+	elseif ( !opponent.dead )
+		return 0;
+	elseif ( opponent.npctemplate )
+		return 0;
+	else
+		return 1;
+	endif
+
+endfunction
+
+
+
+function OpenPack(ev)
+
+	if ( ev.source != owner )
+		return;
+	elseif ( Distance(me, ev.source) > 2 )
+		return;
+	else
+		SendOpenSpecialContainer(owner, me.backpack);
+	endif
+
+endfunction
+
+
+
+function Follow()
+
+	var dist := Distance(me, following);
+
+	if ( opponent )
+
+		if ( dist > 1 )
+			var ma := 200 - me.run_speed;
+			me.run_speed := me.run_speed + ma;
+			RunToward(following);
+			me.run_speed := me.run_speed - ma;
+			wait_time := 0;
+		else
+			wait_time := 1;
+		endif
+
+	elseif( dist <= 1 )
+
+		wait_time := 1;
+
+	elseif( dist > 25 )
+
+		following := 0;
+		wait_time := 120;
+
+	elseif ( dist > 4 )
+
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		RunToward(following);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+
+	else
+
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		WalkToward(following);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+
+	endif
+
+endfunction
+
+
+
+function Guard()
+
+	wait_time := 3;
+
+	if ( !guarding.IsA(POLCLASS_MOBILE) )
+		guarding := 0;
+	elseif ( Distance(me, guarding) > 15 )
+		guarding := 0;
+	elseif ( next_watch < ReadGameClock() )
+		next_watch := ReadGameClock()+3;
+		if ( RandomInt(100) < 5 )
+			Say("*guardando "+guarding.name+"*");
+		endif
+		foreach mob in ListHostiles(guarding, 9, LH_FLAG_LOS);
+			opponent := mob;
+			return;
+		endforeach
+
+	endif
+
+endfunction
+
+
+function goToLoc()
+	var dist :=CoordinateDistance(me.x, me.y, going_loc.x, going_loc.y);
+
+	if (dist > 20)
+		going_loc := 0;
+		return;
+	endif
+
+	if( dist <= 1 )
+		wait_time := 1;
+		going_loc := 0;
+		return;
+	elseif( (going_loc.type == "run") || opponent )
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		RunTowardLocation(going_loc.x, going_loc.y);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+	else
+		var ma := 200 - me.run_speed;
+		me.run_speed := me.run_speed + ma;
+		WalkTowardLocation(going_loc.x, going_loc.y);
+		me.run_speed := me.run_speed - ma;
+		wait_time := 0;
+	endif
+
+endfunction
+
+
+
+function Transfer(targ)
+
+	if ( !targ.acctname )
+		return;
+	endif
+
+	if(GetObjProperty(me, "summoned"))
+		me.kill();
+		return;
+	endif
+
+	if ( (GetNumPets(targ) + GetPetCost(me)) > GetMaxPets(targ) )
+		Say("*" + me.name+ " nao aceita " + targ.name + "como dono.");
+		return;
+	endif
+
+
+	Say("*"+me.name+" aceita "+targ.name+" como novo dono*");
+
+	SetObjProperty(me, "owner", targ.serial);
+	ErasePet(me.master, me.serial);
+	AddPet(targ, me.serial);
+
+	me.SetMaster(targ);
+	EraseObjProperty(me, "bond");
+	EraseObjProperty(me, "NeverRelease");
+	SetObjProperty(me, "Fidelizar?", "nao");
+
+	RestartScript(me);
+
+endfunction
+
+
+function UnTame()
+
+	PrintTextAbovePrivate(me, "*"+me.name+" pode viver livre novamente.*", me.master);
+	ErasePet(me.master, me.serial);
+	me.SetMaster(0);
+	if(GetObjProperty(me, "summoned"))
+		me.kill();
+		return;
+	endif
+	var orig_script := GetObjProperty(me, "script");
+
+	if ( !orig_script )
+
+		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		SysLog(me.name+" doesnt have an original script to use now that taming is done?!");
+		orig_script := ":brainai:brain";
+
+	elseif ( orig_script["tamed"] )
+
+		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		SysLog(me.name+" my original script was tamed.src ?!");
+		orig_script := ":brainai:brain";
+
+	endif
+
+	me.script := orig_script;
+	SetName(me, GetObjProperty(me, "name"));
+	EraseObjProperty(me, "owner");
+	EraseObjProperty(me, "name");
+	EraseObjproperty(me, "script");
+	EraseObjProperty(me, "happiness");
+	EraseObjProperty(me, "bond");
+	EraseObjProperty(me,"countercheck");
+	EraseObjProperty(me, "NeverRelease");
+	EraseObjProperty(me, "Fidelizar?");
+	RestartScript(me);
+
+	ErasePetMods(me);
+
+endfunction
+
+
+
+function AllCommand(ev_type, targ)
+
+	var event := struct;
+	event.+type := ev_type;
+	event.+source := me;
+	event.+targ := targ;
+
+	foreach mobile in(ListMobilesNearLocation( me.x, me.y, me.z, 8, me.realm))
+
+		if ( (mobile.master).serial == (me.master).serial )
+			SendEvent(mobile, event);
+		endif
+
+		sleepms(2);
+
+	endforeach
+
+endfunction
+
+function ProcessDoubleClick(ev)
+
+	var targ := TargetCoordinates(owner);
+	if (targ)
+		if (targ.mobile == me)
+			if ( me.graphic in pack_animals )
+				if ((EnumerateItemsInContainer(me.backpack)).size() > 0)
+					SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de remove-la.");
+					return;
+				endif
+				PrintText(ev.source, "*remove a mochila de "+me.name+"*");
+				me.graphic := GetObjProperty(me, "beforepack");
+				CreateItemInBackpack(ev.source, "backpack");
+				EraseObjProperty(me, "beforepack");
+			endif
+		elseif (targ.mobile)
+			var gump := GFCreateGump(220, 70);
+			//GFGumpPic(gump, 0, 0, 0x254E);
+			GFResizePic(gump, 0, 0, 0x254E, 100, 100);
+			GFTextLine(gump, 30, 15, 2100, "Guarda ");
+			GFTextLine(gump, 30, 35, 2100, "Segue ");
+			if (targ.mobile.serial != owner.serial)
+				GFTextLine(gump, 30, 55, 2100, "Ataca ");
+			endif
+			GFAddButton(gump, 15, 17, 2117, 2118, 1, 10);
+			GFAddButton(gump, 15, 37, 2117, 2118, 1, 20);
+			if (targ.mobile.serial != owner.serial)
+				GFAddButton(gump, 15, 57, 2117, 2118, 1, 30);
+			endif
+			var input := GFSendGump(owner, gump);
+			input  := input[0];
+			if (input == 10)
+			    if(obediencecheck()== 0)
+					return;
+				endif
+				guarding := targ.mobile;
+			elseif (input ==  20)
+			    if(obediencecheck()== 0)
+					return;
+				endif
+				following := targ.mobile;
+			elseif (input == 30)
+			    if(obediencecheck()== 0)
+					return;
+				endif
+				opponent := targ.mobile;
+			endif
+
+		elseif (!Cint(targ.mobile))//se nao for nem item nem mobile anda ate la
+			if (!Cint(targ.item))
+			    if(obediencecheck()== 0)
+					return;
+				endif
+				following := 0;
+				going_loc := struct;
+				going_loc.+x := targ.x;
+				going_loc.+y := targ.y;
+				going_loc.+type := "run";
+			endif
+		endif
+	endif
+
+endfunction
+
+
+function EnableMainEvents()
+
+	EnableEvents(SYSEVENT_SPEECH, 10);
+	EnableEvents(SYSEVENT_ENGAGED);
+	EnableEvents(SYSEVENT_DAMAGED);
+	EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+	EnableEvents(SYSEVENT_ITEM_GIVEN, 5);
+
+endfunction
+
+
+function DisableMainEvents()
+
+	DisableEvents(SYSEVENT_SPEECH);
+	DisableEvents(SYSEVENT_ENGAGED);
+	DisableEvents(SYSEVENT_DAMAGED);
+	DisableEvents(SYSEVENT_ITEM_GIVEN);
+
+endfunction
+
+
+function Setup()
+
+	SetAnchor(me.x, me.y, 20, 0);
+
+	owner_serial := GetObjProperty(me, "owner");
+
+	owner := SystemFindObjectBySerial(owner_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+
+	if ( !owner )
+		UnTame();
+	elseif ( (me.master).serial != owner )
+		me.SetMaster(owner);
+	endif
+
+	var happiness := GetObjProperty(me, "happiness");
+	if ( !happiness || happiness == error )
+		happiness := 100;
+		SetObjProperty(me, "happiness", happiness);
+	endif
+
+	if ( !me.backpack )
+		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
+		EquipItem(me, new_pack);
+	endif
+
+	me.facing := me.facing+1;
+	TurnToward(me.master);
+
+//	if ( !GetProcess(GetObjProperty(me, "#happypid")) )
+
+	//	start_script(":taming:happycounter", {me, ReadGameClock()});
+
+	//endif
+
+	me.cmdlevel := 4;
+	SetWarMode(0);
+
+endfunction
+
+function obediencecheck()
+  var arry := { 0xcc, 0xc8, 0xe2, 0xe4, 0x123, 0x124, 0xd2, 0xdb };
+  if(me.objtype in arry)
+    return 1;
+  endif
+
+if(GetObjProperty(me, "summoned") == 1)
+	return;
+endif
+
+var npccfgfile := ReadConfigFile(":brainAI:npcdesc");
+var orneriness := npccfgfile[me.npctemplate].PetSlot;
+	if (!orneriness)
+		orneriness := 1;
+	endif
+var dmgsound := npccfgfile[me.npctemplate].damagedsound;
+var hit := npccfgfile[me.npctemplate].attackhitsound;
+
+  var maslore    := AP_GetSkill(owner, HANDLEANIMAL)/2;
+  var mastaming  := CInt(AP_GetSkill(owner, HANDLEANIMAL)+ maslore);
+  var checkvalue := CInt(mastaming - 25);//era 20
+  var happiness := GetObjProperty(me, "happiness");
+  var happybonus := happiness/10;
+  checkvalue := checkvalue + happybonus;
+  var defiance :=(orneriness * 20)-25; //era -30
+  //print("valor checkvalue eh "+checkvalue);
+  //print("valor happiness eh "+happybonus);
+  if(defiance < 1)
+    defiance := 1;
+  endif
+  var tamedPets := GetObjProperty(owner, "TamedPets");
+  var petcount := tamedPets.size();
+  defiance := defiance + petcount;
+  var finaldefiance := CInt(defiance + RandomInt(40) );
+  	if(happiness < 10)
+		if ((GetObjProperty(me, "NeverRelease") == 1))
+		else
+		SendSysMessage(owner, "*Seu pet "+me.name+" decidiu que eh melhor ficar sozinho*");
+		UnTame();
+		return 0;
+		endif
+	endif
+  if( (GetObjProperty(me, "summoned")== 1) || (GetObjProperty(me, "NeverRelease") == 1) )// se for summon ou fiel/bond não destama não desobedece
+	return 1;
+  elseif ( (happiness < 37) && (finaldefiance > checkvalue))
+    PrintTextAbovePrivate(me, "*O animal te ignora*", owner);
+	PlaySoundEffect(me, dmgsound);
+    happiness := happiness - orneriness;
+    SetObjProperty(me, "happiness",(happiness-1));
+  else
+    PlaySoundEffect(me,hit);
+    return 1;
+  endif
+
+endfunction
+
+function SpecialHab(me)
+
+	if (owner)
+		if ( me.npctemplate == ":brainai:fadinha")
+			if (isBloodied(owner))
+				if (distance(me, owner) < 8)
+					if (!GetCooldown(me, "heal"))
+						CastFaerieHeal(me, owner);
+					endif
+				endif
+			endif
+		endif
+	endif
+
+endfunction
+
+function CastFaerieHeal(me, owner)
+
+	PrintText(me, "*bate as asas*");
+	PlaysoundEffect(me, 1137);
+	PlayObjectCenteredEffect( owner, 0x373a, 7, 0x10 );
+
+	var amt := RandomDiceRoll("1d10") + 20;
+	HealDamage(owner, amt);
+	SetCooldown(me, "heal", 150);
+
+endfunction
+
+function GetHappy(percentage)
+  if(percentage >= 98)
+    return "parece maravilhosamente feliz.";
+  elseif(percentage >= 88)
+    return "parece extremamente feliz.";
+  elseif(percentage >= 78)
+    return "parece muito feliz";
+  elseif(percentage >= 68)
+    return "parece bastante feliz.";
+  elseif(percentage >= 58)
+    return "parece feliz.";
+  elseif(percentage >= 48)
+    return "parece normal.";
+  elseif(percentage >= 38)
+    return "parece normal, eu presumo.";
+  elseif(percentage >= 28)
+    return "parece infeliz.";
+  elseif(percentage >= 18)
+    return "parece bem triste.";
+  elseif(percentage >= 8)
+    return "parece muito triste.";
+  else
+    return "parece confuso e irritadiço.";
+  endif
+endfunction
+
+function Go(forma, todos)
+
+	SendSysMessage(owner, "Escolha para onde ir.");
+	var tloc := TargetCoordinates(owner);
+	if (!tloc)
+		return;
+	endif
+
+	var data := struct;
+	data.+x := tloc.x;
+	data.+y := tloc.y;
+	data.+type := forma;
+	following := 0;
+
+	if( todos == 1 )
+		AllCommand(GO_LOC_CMD, data);
+	else
+		going_loc := data;
+	endif
+
+endfunction

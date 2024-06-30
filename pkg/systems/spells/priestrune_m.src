@@ -1,0 +1,58 @@
+use uo;
+use os;
+
+include "include/say";
+include ":tn:cooldown";
+include ":charactercreation:habilidades";
+
+program usavarinha(params)
+
+	var who := params[1];
+	var wand := params[2];
+	var chardata := GetObjProperty(who, "chardata");
+
+	if ( chardata.magia != "Sacerdote")
+		SendSysMEssageEx(who, "Voce nao esta em sintonia com o poder das runas", SSM_FAIL);
+		return 0;
+	endif
+
+	if (chardata.povo == "Zharkiano" || (chardata.povo == "Drow") || chardata.povo == "Anao") //verifica se o povo é Bariyano ou Ferune ou drow ou paladino
+		if (getobjproperty(wand, "spellinfo") == error)
+			var id := getobjproperty(wand, "runatype");
+			var spellinfo := struct;
+			spellinfo.+id := id;
+			SetObjProperty(wand, "spellinfo", spellinfo);
+		endif
+
+		var cargas := GetObjProperty(wand, "cargas");
+		if (cargas == error)
+			cargas := 20;
+			if ( temHabilidade(who, "Fluxo Divino") )
+				cargas := 30;
+			endif
+		endif
+		if (cargas <= 0)
+			SendSysMEssageEx(who, "A runa esta sem cargas e se desfez.", SSM_FAIL);
+			DestroyItem(wand);
+			return;
+		else
+			cargas := cargas - 1;
+			SetObjProperty(wand, "description", "Cargas: " + cargas);
+			SetObjPRoperty(wand, "cargas", cargas);
+			SetName(wand, ""+wand.desc);
+		endif
+
+
+		var spellinfo := GetObjProperty(wand, "spellinfo");
+		var delay := 30;
+
+		var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
+
+			if ( script.errortext )
+			SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+			return 0;
+		endif
+	endif
+	
+
+endprogram

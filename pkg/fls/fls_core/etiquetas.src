@@ -1,0 +1,49 @@
+use uo;
+use util;
+
+include ":gumps:requestGump";
+include ":fls_core:fls_crafting";
+
+program usar_etiqueta(who, the_item)
+
+	if (!CheckForPen(who.backpack, 0))
+		SendSysMessage(who, "Voce nao possui uma pena e o tinteiro para escrever.");
+		return;
+	endif
+
+	var itemdesc :=  RequestGump(who, "Qual nome deseja escrever aqui?");
+	if(!itemdesc)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+	SendSysMessage(who, "Selecione o item para marcar com a etiqueta.");
+	var use_on := Target(who);
+
+	if(use_on.movable == 0)
+		SendSysMessage(who, "Voce nao pode banhar isto.");
+		return;
+	endif
+	if(!Accessible(who, use_on))
+		SendSysMessage(who, "Voce nao alcanca isto.");
+		return;
+	endif
+
+	if (use_on.graphic == 3849 || //Pocoes
+		use_on.graphic == 2474 || use_on.graphic == 3709 || //Wooden Box
+		use_on.graphic == 2473 || use_on.graphic == 3710 || //Small Crate
+		use_on.graphic == 3647 || use_on.graphic == 3646 || //Medium Crate
+		use_on.graphic == 3645 || //Large Crate
+		use_on.graphic == 3651 || use_on.graphic == 3650 || //Baú de madeira
+		use_on.graphic == 2482 || use_on.graphic == 3701 || //Backpag
+		use_on.graphic == 3702 //Bag
+		)
+		//Permite nomear poções, caixas, baús e bags
+		 SetName(use_on, itemdesc);
+		 use_on.color := the_item.color;
+	else
+		SendSysMessage(who, "Este item nao pode ser rotulado.");
+	endif
+
+
+   DestroyItem(the_item);
+endprogram

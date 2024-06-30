@@ -1,0 +1,34 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(params)
+	var who	:= params[1];
+	detach();
+	
+	var i := 0;
+	var lastx := who.x;
+	var lasty := who.y;
+
+	while ( i < 30)
+
+		if ( (who.x != lastx) || (who.y != lasty) )
+			var dmg := 5 * (CoordinateDistance(who.x, who.y, lastx, lasty) +1);
+			ApplyRawDamage(who, dmg);
+			MakeBleed(who);
+			lastx := who.x;
+			lasty := who.y;
+		endif
+
+		i := i + 1;
+		sleep(1);
+	endwhile
+
+	SendSysMessageEx(who, "Seus sangramentos pararam.", SSM_INFO);
+
+endprogram   

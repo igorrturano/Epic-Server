@@ -1,0 +1,11 @@
+use os;
+
+
+
+var script := start_script("regeneration/RegenerateResources");
+if ( script.errortext )
+	SysLog(script.errortext);
+else
+	Print("Starting mining resource regeneration script... ok.");
+endif
+

@@ -1,0 +1,75 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+use vitals;
+use attributes;
+include ":alchemy:alchemy";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/damage";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (cint(GetObjProperty(who, "#healingpotion")))
+		SendSysMessageEx(who, "Voce ja esta sob efeito de uma pocao de cura.", SSM_FAIL);
+		return;
+	endif
+
+	if ( TS_GetCooldown(who, "healingpot") != error)
+		SendSysMEssageEx(who, "Voce nao pode usar essa pocao agora.", SSM_FAIL);
+		return 1;
+	endif
+
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode beber isto.", SSM_FAIL);
+		return;
+	endif
+
+	if(GetObjProperty(who, "CannotHeal"))
+		SendSysMessageEx(who, "Essa pocao nao fara efeito nas atuais circunstacias", SSM_FAIL);
+		return;
+	endif
+
+	var obj := potion.objtype;
+
+	var healed;
+	var skill := cint(GetObjProperty(potion, "crafterskill"));
+	healed := skill/5;
+	var delay := 1000;
+	var cd := 5;
+
+	healed := AP_GetVitalMaximumValue(who, HITS);
+
+	case (potion.objtype)
+		56321: healed := cint(healed*0.20); delay := 750; cd := cint(healed*0.75*3);
+		56322: healed := cint(healed*0.40);  delay := 500; cd := cint(healed*0.5*3);
+		56323: healed := cint(healed*0.60); delay := 250; cd := cint(healed*0.25*3);
+		48914: healed := cint(healed*0.80);  delay := 130; cd := cint(healed*0.13*3);
+	endcase
+
+  	empty_bottle(who, potion, 1);
+	TS_StartCooldown(who, "healingpot", cd+1);
+
+	Detach();
+	var i := 0;
+
+	SetObjProperty(who, "#healingpotion", 1);
+	SendSysMessageEx(who, "Seus ferimentos estao cicatrizando...", SSM_INFO);
+	while (i < healed)
+		HealFLS(who, 1);
+		//HealDamage(who,  1 );
+		RecalcVitals(who);
+		i := i + 1;
+		sleepms(delay);
+	endwhile
+	EraseObjProperty(who, "#healingpotion");
+	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);
+
+endprogram
+ 

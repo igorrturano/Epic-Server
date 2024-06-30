@@ -1,0 +1,122 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+const INAC_WAIT := 300;		//  5 mins to sleep when inactive
+const BIG_CHECK_WAIT:=5;	//  5 secs, checks for % of dead monsters  - ideal would be 1 here, but its a bit... heavy loop, so im using 5
+const TINY_WAIT := 10;		// 10 msec to sleep between each spawn
+const ACTIVE_EACH := 8640;	// 24 hours, activate each
+const LVLDOWNCHECK := 1800;	// checks for level down each 30 mins
+
+include "champaltar";
+include ":tn:boss";
+
+
+program control(altar)
+
+	while(GetObjProperty(altar, "config")  == error)
+		printtextabove(altar,"Sem config" + GetObjProperty(altar, "config"));
+		sleep(10);
+	endwhile
+
+	//var altarRegion := GetRegionNameAtLocation( altar.x, altar.y, altar.realm );
+
+	var creatures := array;
+	var kills:=0, totalKills:=0, nextLvlUp := 20;
+	deactivateAltar(altar);		//erases any junk prop that might've passed by in the itemdesc
+	activateAltar(altar);		//and starts it
+	var nextLVLDownCheck:=ReadGameClock()+LVLDOWNCHECK;
+
+	var numRedSkulls := CInt(GetObjProperty(altar, "lrskull"));
+	for i := 1 to numRedSkulls
+   		destroyLastRedSkull(altar);
+	endfor
+
+	//SetObjProperty(altar, "#completed", 1);
+	while(altar)
+		if(CInt(GetObjProperty(altar, "#active")))
+			
+			kills:=0;
+			var champserial:=GetObjProperty(altar, "champ");
+
+			if(!champserial)		// Ok, champ didnt spawn yet, lets see how many creatures he killed and respawn
+				//printtextabove(altar, "sem champ serial");
+				if(GetObjProperty(altar, "#completed")) //se comppletou cria o champion
+					spawnChampion(altar);
+					champserial := GetObjProperty(altar, "champ");
+					//printtextabove(altar, "completo, spawnando champ");
+				else //se nao completou faz o loop pra determinar o level
+					var i;
+
+					for(i:=creatures.size(); i>0;i-=1) //conta os kills
+						if(!SystemFindObjectBySerial(creatures[i]))
+							creatures.erase(i);
+							kills+=1;
+						endif
+					endfor
+			
+					totalKills += kills;
+					var killPercent := (totalKills*100) / CInt(get_maxMonsters(altar));
+					if(killPercent>90) //se os kills ta mais de 90%
+						if(!GetObjProperty(altar, "#completed"))  //passa de lvl do altar
+							kills:=0;
+							totalKills:=0;
+							createNextRedSkull(altar);
+							nextLvlUp := 20;
+							nextLVLDownCheck:=ReadGameClock()+LVLDOWNCHECK;
+						else //caso contrario spawna o champion
+							spawnChampion(altar);
+						endif
+					elseif (killPercent>nextLvlUp) //se passou de lvl cria white skull
+						createNextWhiteSkull(altar);
+						nextLvlUp += 20;
+					elseif(ReadGameClock()>nextLVLDownCheck) //verifica se da um lvl down
+						kills:=0;
+						totalKills:=0;
+						if (killPercent>20)
+							createNextRedSkull(altar);
+						endif
+						nextLvlUp := 20;
+						destroyLastRedSkull(altar);
+						nextLVLDownCheck:=ReadGameClock()+LVLDOWNCHECK;
+					endif
+					if (!GetObjProperty(altar, "#completed")) //se nao ta completo spawnar os mobs
+						while(creatures.size()<=(50-get_subLevel(altar)) && altar)
+							var loc:= getSpawnLocation(altar);
+							var overide := struct;
+							var cprops := dictionary;
+							cprops["championspawn"] := 1;
+							overide.+CProps  := cprops;
+							var creature:=CreateNPCFromTemplate(get_spawn(altar), loc[1], loc[2], loc[3], overide, altar.realm);
+//							printtextabove(altar, "spawnando mob: " + creature);
+							if(creature)
+								creatures.append(creature.serial);
+								//moveobjecttolocation(creature, 10, 10, 10, creature.realm, MOVEOBJECT_FORCELOCATION);
+								SetObjPRoperty(creature, "#championspawn", altar.serial);
+								//SetObjPRoperty(creature, "championspawn", altar.serial);
+								
+								//ApplyRawDamage(creature, 6000);
+							endif
+							sleepms(TINY_WAIT);
+						endwhile
+					endif
+				endif
+			elseif(!SystemFindObjectBySerial(champserial))	// Champ is death
+				//printtextabove(altar, "desativando altar");
+				deactivateAltar(altar);
+			endif
+				
+			sleep(BIG_CHECK_WAIT);
+		else //se nao ta ativo, calcula quando vai ser ativado
+			if(ReadGameClock()>CInt(GetObjProperty(Altar, "#NextActiv")))
+				activateAltar(altar);
+			else
+				sleep(INAC_WAIT);
+			endif
+		endif
+
+	endwhile
+
+	return 0;
+endprogram

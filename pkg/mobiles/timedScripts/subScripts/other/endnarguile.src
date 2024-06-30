@@ -1,0 +1,19 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+
+	PrintTextAbove(mobile, "*Algumas ervas do Narguile estragaram*",3,0);
+	var tragadas := Cint(GetObjProperty(mobile, "tragadas"));
+	tragadas := (tragadas - 20);
+	if (tragadas < 0)
+	SetObjProperty(mobile, "tragadas", 0);
+	else
+	SetObjProperty(mobile, "tragadas", tragadas);
+	endif
+	
+	return 1;
+endprogram

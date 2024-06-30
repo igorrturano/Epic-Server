@@ -1,0 +1,23 @@
+use uo;
+use os;
+use vitals;
+use util;
+
+include "include/say";
+
+program TimedScript_Paralysis(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	sendsysmessage(who, " attacker " + attacker + " level "+ level); 
+
+	if (GetObjProperty(who, "#Cooldown"+level))
+		return;
+	endif
+
+	SetObjProperty(who, "#Cooldown"+level, 1);
+
+	return 1;
+endprogram
+  

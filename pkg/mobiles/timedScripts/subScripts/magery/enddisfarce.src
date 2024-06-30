@@ -1,0 +1,13 @@
+ use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var who := params[1];
+
+	var name := GetObjProperty(who, "originalname");
+	SetName(who, name);
+	
+	return 1;
+endprogram

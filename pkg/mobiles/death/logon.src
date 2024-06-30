@@ -1,0 +1,7 @@
+use uo;
+
+include ":death:death";
+
+/*program dpChecking(player)
+	RegenerateDeathPoints(player);
+endprogram*/

@@ -1,0 +1,35 @@
+use uo;
+use util;
+use os;
+use datafile;
+
+program control_trap(item)
+
+	var df := OpenDataFile( ":tn:traps" );
+	if (!df)
+		df := CreateDataFile( ":tn:traps", DF_KEYTYPE_INTEGER );
+	endif
+	
+	var elem := df.FindElement(item.serial);
+	if (!elem)
+		elem := df.CreateElement( item.serial ) ;
+	endif
+
+
+SetObjProperty(item, "walktrap", 1);
+item.movable := 0;
+item.invisible := 1;
+
+while (1)
+
+  sleep(3600);
+  if (!item.invisible)
+    item.invisible := 1;
+  endif
+  if (GetObjProperty(item, "trap_inativa"))
+     EraseObjProperty(item, "trap_inativa");
+  endif
+  
+endwhile
+
+endprogram

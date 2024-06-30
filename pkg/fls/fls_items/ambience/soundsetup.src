@@ -1,0 +1,32 @@
+use uo;
+
+
+program setupsound(who, rune)
+	if (who.cmdlevel < 2)
+		return;
+	endif
+	
+	var range := RequestInput(who, who.backpack, "Distancia maxima que o som pode ser ouvido:");
+	if (!range)
+		range :=1;
+	endif
+	SetObjProperty(rune, "range", CInt(range));
+	
+	var delay := RequestInput(who, who.backpack, "Tempo entre os sons: ");
+	if (!delay)
+		delay := 1;
+	endif
+	SetObjProperty(rune, "delay", CInt(delay));
+	
+	SendSysMessage(who, "Entre com a lista de sons.");
+	var soundlist := array;
+	var sound;
+	repeat
+		sound := CInt(RequestInput(who, who.backpack, "ID do som- ESC pra terminar."));
+		if ( sound )
+			soundlist.append(sound);
+			PlaySoundEffect(who, sound);
+		endif
+	until( !sound );
+	SetObjProperty(rune, "soundlist", soundlist);
+endprogram

@@ -1,0 +1,41 @@
+    use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include ":spells:tnmagery";
+include ":traps:traps";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+
+	var traps := GetObjProperty(targ, "TrapList");
+	var i := 1;
+	foreach trap in traps
+		if (trap.Name == "Magic")
+			RemoveTrap(targ, i);
+		endif
+		i := i + 1;
+	endforeach
+
+	return 1;
+endprogram      

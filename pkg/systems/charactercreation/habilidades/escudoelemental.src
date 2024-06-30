@@ -1,0 +1,27 @@
+ use uo;
+
+include "include/damage";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":spells:swordmage";
+
+program manobra(who)
+
+	var element ;
+	element := 	GetObjProperty(who.weapon, "#elementalweapon");
+	element := element.type;
+
+	if (element == "Fire")
+		SendSysMessageEx(who, "Voce esta protegido do fogo.", SSM_INFO);
+		TS_StartTimer(who, "fimod", 360, 100);
+	elseif (element == "Cold")
+		SendSysMessageEx(who, "Voce esta protegido do gelo.", SSM_INFO);
+		TS_StartTimer(who, "comod", 360, 100);
+	elseif( element == "Energy")
+		SendSysMessageEx(who, "Voce esta protegido da energia.", SSM_INFO);
+		TS_StartTimer(who, "enmod", 360, 100);
+	endif
+
+endprogram 
+ 

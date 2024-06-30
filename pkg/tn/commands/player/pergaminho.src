@@ -1,0 +1,13 @@
+use uo;
+
+program pergaminho(who, text)
+
+	var spellinfo := struct;
+	spellinfo.+id := cint(text);
+
+	sendsysmessage(who, "Escolha o pergaminho.");
+	var targ := Target(who);
+
+	SetObjProperty(targ, "spellinfo", spellinfo);
+
+endprogram 

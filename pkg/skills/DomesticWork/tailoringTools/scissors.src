@@ -1,0 +1,135 @@
+use uo;
+use cfgfile;
+
+include ":itemutils:objtype";
+include ":attributes:attributes";
+include "include/client";
+include ":itemutils:canAccess";
+include ":itemutils:toolWear";
+
+var scissors_cfg := ReadConfigFile("scissors");
+var cfg2 := ReadConfigFile("tailoring");
+var cfg3 := ReadConfigFile("leather");
+
+program use_scissors( who, scissors )
+	EraseObjProperty(who, "IsMeditating");
+	if(!Accessible(who, scissors))
+		return;
+	endif
+	SendSysMessage(who, "Escolha um item para cortar.");
+	var cloth := Target(who);
+
+	if(!cloth)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	elseif(!Accessible(who, cloth))
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return;
+	elseif(cloth.movable == 0)
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return;
+	elseif(cloth in ListEquippedItems(who))
+		SendSysMessage(who, "Voce nao pode cortar algo que esta vestindo!");
+		return;
+	endif
+//	SendSysMessage(who, "tipo "+ cloth.objtype);
+	var material := Cint(scissors_cfg[cloth.objtype].material);
+//	SendSysMessage(who, "material "+ material);
+	var clr := cloth.color;
+//	SendSysMessage(who, "color "+ clr);
+	var cont := cloth.container;
+	var newitem := Cint(scissors_cfg[cloth.objtype].newitem);
+//	SendSysMessage(who, "newitem "+ newitem);
+	var amt, newcloth;
+
+	if(material)
+		amt := (material * cloth.amount);
+//		SendSysMessage(who, "amt: "+ amt);
+		if(SubtractAmount(cloth, amt))
+			newcloth := CreateItemInBackpack(who, newitem, amt);
+			newcloth.color := clr;
+			if (cont)
+				MoveItemToContainer(newcloth, cont);
+			else
+				MoveItemToContainer(newcloth, who.backpack);
+			endif
+			CheckToolWear (who, scissors, DomesticWork);
+			PlaySoundEffect(who, 0x0249);
+			SendSysMessage(who, "Voce usou a tesoura para cortar o material.");
+			return;
+		else
+			SendSysMessage(who, "Voce nao pode cortar isto.");
+			return;
+		endif
+	else
+		material := Cint(cfg2[cloth.objtype].material);
+		var leftover := 0x1766;
+		if(!material)
+			if(cloth.objtype == UOBJ_BLANK_SCROLL)
+				makecartoes(who, cloth);
+				return;
+			endif
+			material := Cint(cfg3[cloth.objtype].material);
+			leftover := 0x1067;
+
+			if(!material)
+				SendSysMessage (who, "Voce nao pode usar as tesouras nisso.");
+				return;
+			endif
+		endif
+		PlaySoundEffect(who, 0x0249);
+		amt := CInt((material * AP_GetSkill(who,DomesticWork) * 75) / 10000);
+		if(amt < 1)
+			amt := 1;
+		endif
+		if(DestroyItem(cloth))
+			newcloth := CreateItemInContainer(who.backpack, leftover, amt);
+			CheckToolWear (who, scissors, DomesticWork);
+			if(newcloth)
+				newcloth.color := clr;
+			endif
+		else
+			SendSysMessage(who, "You can't use scissors on that.");
+			return;
+		endif
+	endif
+
+endprogram
+
+
+function MakeCartoes (who, papel)
+	if (!ReserveItem (papel))
+		SendSysMessage (who, "Voce nao pode usar este item!");
+		return;
+	endif
+
+	var sx := who.x;
+	var sy := who.y;
+	repeat
+		for i := 1 to 3
+			PlaySoundEffect (who, 0x0249);
+			sleep (1);
+		endfor
+
+		if (!SubtractAmount (papel, 1))
+			PrintTextAbovePrivate (who, "*Voce nao pode usar estes pergaminhos!*", who);
+			return;
+		endif
+
+
+			if (!CreateItemInContainer (who.backpack, 0xEE23, 1))
+				PrintTextAbovePrivate (who, "*Sua mochila esta cheia!*", who);
+				return;
+			endif
+
+			SendSysMessage (who, "Voce fez os cartoes.");
+
+		if (!papel)
+			SendSysMessage (who, "Voce nao tem mais pergaminhos");
+			return;
+		endif
+	until (who.x != sx or who.y != sy);
+
+	SendSysMessage (who, "Voce parou de fazer.");
+endfunction
+

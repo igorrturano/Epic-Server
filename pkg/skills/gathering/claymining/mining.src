@@ -1,0 +1,272 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/client";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:toolWear";
+include ":gathering:mining";
+include ":tn:tngumps";
+include ":gumps:yesNo";
+include "include/say";
+include ":charactercreation:habilidades";
+
+CONST CLAY_BALL := 0x6074;
+const MINING_ANIMATION := 0x0E;
+const MINING_SOUND := 0x043;
+
+DF_DEBUG_MODE := 0;
+
+var resources_data_file := DFOpenDataFile("MiscResources", DF_CREATE);
+
+program SandMining(who, scoop)
+
+	SendSysMessage(who, "O que voce deseja fazer?");
+	var targ := TargetCoordinates(who);
+var maps := GetMapsInBackpack(who);
+
+	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
+		SendSysMessage(who, "Muito longe.");
+		return;
+	endif
+	
+	if (maps.size() > 0)
+		var question := "Voce deseja procurar seu tesouro?";
+		var yes := "SIM";
+		var no := "NAO";
+		var create_method := YesNo(who, question, yes, no);
+		var item := 0;
+		if (create_method)
+			if (maps.size() > 0)
+			var map := maps[1];
+				if (maps.size() > 1)
+					SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
+					map := target(who);
+					if (!(isTreasureMap(map)))
+						return;
+					endif
+				endif
+			DigForMap(who, targ, map);
+			return;
+			else
+				SendSysMessageEx(who, "Seu mapa ja foi revelado.", SSM_FAIL);
+			return;
+			endif
+		else
+		endif
+	endif
+	
+	if (targ.item.objtype == 0xEFFF || targ.item.objtype == 0x2006)
+		EnterrarCorpo(who, scoop, targ);
+		return;
+	elseif (targ.item.objtype == 0x0EE0 || targ.item.objtype == 0x0EE1 || targ.item.objtype == 0x0EE2 || targ.item.objtype == 0x0EDF)
+		DesenterrarCorpo(who, scoop, targ);
+		return;
+	elseif ( !CanMine(targ, "Clay") )
+		SendSysMessage(who, "Voce nao pode procurar por argila aqui.");
+		return;
+	endif
+
+	var location_name := CStr( targ.x+"x"+targ.y );
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+
+
+	while (MiningLoop(who, scoop, my_x, my_y, my_facing, location_name) )
+		if(TemHabilidade(who, "Vigor do Extrator"))
+			if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+			break;
+			elseif (AP_GetVital(who, "Stamina") < 3)
+				SendSysMessage(who, "Voce esta muito cansado para minerar.");
+				break;
+			endif
+			AP_ConsumeVital(who, "Stamina", 3);
+		else
+			if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+				break;
+			elseif (AP_GetVital(who, "Stamina") < 5)
+				SendSysMessage(who, "Voce esta muito cansado para minerar.");
+				break;
+			endif
+			AP_ConsumeVital(who, "Stamina", 5);
+		endif
+		CheckToolWear(who, scoop, GATHERING);
+		sleep(3);
+	endwhile
+	SendSysMessage(who, "Voce parou de minerar.");
+endprogram
+
+function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
+
+	var i;
+	for (i:=0; i < RandomDiceRoll("2d3"); i := i+1)
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		sleep(1);
+		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+			return 0;
+		endif
+	endfor
+
+	var location_elem := DFFindElement(resources_data_file, location_name, DF_CREATE);
+	var resource_type := hex(CLAY_BALL);
+
+	var resource_amount := ResourceAmount( resource_type, location_elem );
+
+	if (resource_amount <= 0)
+		SendSysMessageEx(who, "Parece nao existir argila utilizavel por aqui.", SSM_FAIL);
+		return 0;
+	endif
+
+	SetResource(resource_type, location_elem, resource_amount-1);
+
+	var difficulty := 20;//CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
+
+	if ( SkillCheck(who, GATHERING, difficulty) > 0 )
+		CreateItemInBackPack(who, CLAY_BALL, 1);
+		SendSysMessageEx(who, "Voce pegou um pouco de argila.", SSM_INFO);
+		return 1;
+	else
+		SendSysMessageEx(who, "Voce falhou em pegar argila.", SSM_FAIL);
+	endif
+endfunction
+
+function GetOwner(corpse)
+	if ( corpse.ownerserial )
+		return SystemFindObjectBySerial(corpse.ownerserial);
+	elseif ( CInt(GetObjProperty(corpse, "ownerserial")) )
+		return SystemFindObjectBySerial(CInt(GetObjProperty(corpse, "ownerserial")));
+	endif
+endfunction
+
+function EnterrarCorpo(who, scoop, targ)
+	SendSysMessage(who, "Selecione o lugar que deseja enterrar o corpo.");
+	var lugar := TargetCoordinates(who);
+	var land_scape := CStr( GetMapInfo(lugar.x, lugar.y).landtile );
+	if (!lugar)
+		return;
+	elseif (!IsPlayerCorpse(targ.item) && !GetObjProperty(targ.item, "enterrado"))
+		SendSysMessageEX(who, "Somente e possivel enterrar corpos de jogadores.", SSM_FAIL);
+		return;
+	elseif (GetObjProperty(targ.item, "enterrado"))
+		var tempo := polcore().systime +600;
+		if (GetObjProperty(targ.item, "enterrado") < tempo)
+			SendSysMessageEX(who, "Voce deve aguardar 10 minutos para enterrar este corpo novamente.", SSM_FAIL);
+			return;
+		endif
+	elseif (!GetObjProperty(targ.item, "morto"))
+		SendSysMessageEX(who, "O jogador precisa estar morto para ser enterrado.", SSM_FAIL);
+		return;
+	elseif (CoordinateDistance(who.x, who.y, lugar.x, lugar.y) > 1)
+	SendSysMessage(who, "Muito longe do lugar.");
+		return;
+	elseif (land_scape >= 236 && land_scape <= 324)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	elseif (land_scape >= 467 && land_scape <= 715)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	elseif (land_scape >= 1001 && land_scape <= 1340)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	elseif (land_scape >= 1661 && land_scape <= 1696)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	elseif (land_scape >= 1641 && land_scape <= 1884)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	elseif (land_scape >= 1946 && land_scape <= 1965)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	elseif (land_scape >= 2500 && land_scape <= 16383)
+		SendSysMessageEX(who, "E impossivel cavar neste lugar.", SSM_FAIL);
+		return;
+	endif
+
+
+	var grave := cstr(RadioGump(who, 280, 250, "Deseja cavar em qual direção?", {"Leste","Oeste","Norte","Sul"}));
+	case ( grave )
+		"Leste": grave := 0x0EE2;
+		"Oeste": grave := 0x0EE0;
+		"Norte": grave := 0x0EE1;
+		"Sul": grave := 0x0EDF;
+	endcase
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+	var i;
+
+	for (i:=0; i < RandomDiceRoll("2d3"); i := i+1)
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		PrintTextAbove(who, "*Cavando a terra*");
+		sleep(3);
+		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+			return 0;
+		endif
+	endfor
+
+	if (!targ.item)
+		SendSysMessageEX(who, "Algo aconteceu com o corpo e voce nao consegui enterra-lo.", SSM_FAIL);
+		return;
+	endif
+	grave := CreateItemAtLocation(lugar.x, lugar.y, lugar.z, grave);
+	SetObjProperty(grave, "remainsof", GetObjProperty(targ.item, "charname"));
+	SetObjProperty(grave, "enterrado", polcore().systime);
+	SetObjProperty(grave, "deathtimer", GetObjProperty(targ.item, "deathtimer"));
+	SetObjProperty(grave, "WeaponKill", GetObjProperty(targ.item, "WeaponKill"));
+	SetObjProperty(grave, "recentname", targ.item.name);
+	grave.movable := 0;
+	DestroyItem( targ.item );
+
+	SendSysMessage(who, "Voce parou de cavar.");
+endfunction
+
+function DesenterrarCorpo(who, scoop, targ)
+	if (!YesNo(who, "Voce deseja mesmo desenterrar este tumulo?", "Sim: Voce nao podera enterrar novamente pelos proximos 10 minutos.", "Nao: nenhuma consequencia."))
+		return;
+	endif
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+	var i;
+
+	for (i:=0; i < RandomDiceRoll("2d3"); i := i+1)
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		PrintTextAbove(who, "*Revirando a terra*");
+		sleep(3);
+		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+			return 0;
+		endif
+	endfor
+	if (!targ.item)
+		SendSysMessageEX(who, "Algo aconteceu com o tumulo e você não conseguiu desenterra-lo", SSM_FAIL);
+		return;
+	endif
+	var dirth := CreateItemAtLocation(targ.x, targ.y, targ.z, 0x0914);
+	var remains := CreateItemAtLocation(targ.x, targ.y, targ.z+1, 0xEFFF);
+	SetObjProperty(remains, "remainsof", GetObjProperty(targ.item, "charname"));
+	SetObjProperty(remains, "WeaponKill", GetObjProperty(targ.item, "WeaponKill"));
+	SetObjProperty(remains, "enterrado", GetObjProperty(targ.item, "enterrado"));
+	SetObjProperty(remains, "deathtimer", GetObjProperty(targ.item, "deathtimer"));
+	SetName(remains, GetObjProperty(targ.item, "recentname"));
+	DestroyItem( targ.item );
+endfunction
+
+function IsPlayerCorpse(corpse)
+	var owner := GetOwner(corpse);
+
+	if ( owner )
+		return owner;
+	else
+		return error{"errortext":="Corpse does not have an owner."};
+	endif
+endfunction

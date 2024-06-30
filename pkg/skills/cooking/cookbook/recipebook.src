@@ -1,0 +1,479 @@
+use uo;
+use cfgfile;
+use os;
+use util;
+
+include ":attributes:attributes";
+include "include/say";
+
+Const OBJ_BLANK_SCROLL := 0xE34;
+Const OBJ_RECIPE_SLIP := 0x702e;
+
+var layout := 
+{
+	"page 0",
+	"gumppic 10 10 500"
+};
+var data := {};
+
+program cookbooks(who, cookbook)
+
+	var recipeprop := getobjproperty(cookbook, "recipes");
+	var maxpages := len(recipeprop);
+	var pagenum := 1;
+	var pageskip := cdbl(maxpages) / 20.0;
+	
+	if((pageskip - cint(pageskip)) >= 0.01)
+   		pageskip := (cint(pageskip) + 1);
+	else
+  		pageskip := cint(pageskip);
+	endif
+	tableofcontents(recipeprop, pagenum, pageskip);
+	
+	foreach recipe_num in recipeprop
+		pagenum := pagenum+1;
+		gumppage(recipe_num, pagenum, maxpages, pageskip);
+	endforeach
+	
+	var input := senddialoggump(who, layout, data);
+	input := input[0];
+	
+	if (input > 0)
+		makefood(who, input);
+	elseif (input < 0)
+		copyrecipe(who, (input * -1));
+	endif
+endprogram
+
+function tableofcontents(byref recipeprop, byref pagenum, byref pageskip)
+	var ypos := 45;
+	var pageside := "left";
+	var counter := 1;
+	
+	layout.append("page 1");
+	pageside := "left";
+	data.append("Indice");
+	layout.append("text 80 15 1893 " + (len(data)-1));
+	layout.append("gumppic 40 40 96");
+	
+	layout.append("page " + pagenum);
+	foreach recipe_num in recipeprop
+		if (pageside == "left")
+			layout.append("button 40 " + (ypos+5) + " 2103 2104 0 " + (pageskip+counter));
+			data.append(recipecfg(recipe_num).name);
+			layout.append("text 60 " + ypos + " 1893 " + (len(data)-1));
+			ypos := ypos + 18;
+		elseif (pageside == "right");
+			layout.append("button 240 " + (ypos+5) + " 2103 2104 0 " + (pageskip+counter));
+			data.append(recipecfg(recipe_num).name);
+			layout.append("text 260 " + ypos + " 1893 " + (len(data)-1));
+			ypos := ypos + 18;		
+		endif
+		
+		if (counter % 10 == 0)// && len(recipeprop)-counter != 0)
+			if (pageside == "left")
+				pageside := "right";
+				data.append("Indice");
+				layout.append("text 240 15 1893 " + (len(data)-1));
+				layout.append("gumppic 225 40 96");
+				ypos := 45;
+			elseif (pageside == "right")
+				if (len(recipeprop)-counter != 0)
+					
+					pagenum := pagenum+1;
+					layout.append("page " + pagenum);
+					layout.append("button 10 10 501 501 0 " + (pagenum-1));
+					pageside := "left";
+				
+					data.append("Indice");
+					layout.append("text 80 15 1893 " + (len(data)-1));
+					layout.append("gumppic 40 40 96");				
+					ypos := 45;
+				endif
+			endif
+		endif
+		counter := counter+1;
+	endforeach
+	
+	layout.append("button 366 10 502 502 0 " + (pagenum+1));
+	layout.append("gumppic 225 40 96");
+endfunction
+
+function gumppage(byref recipe_num, byref pagenum, byref maxpages, byref pageskip)
+	var recipeinfo := recipecfg(recipe_num);
+	
+	layout.append("page " + pagenum);
+	if (pagenum > 1)
+		layout.append("button 10 10 501 501 0 " + (pagenum-1));
+	endif
+	
+	if (pagenum-pageskip < maxpages)
+		layout.append("button 366 10 502 502 0 " + (pagenum+1));
+	endif
+	
+	data.append(recipeinfo.name);
+	layout.append("text 80 15 1893 " + (len(data)-1));
+	layout.append("gumppic 40 40 96");
+	
+	layout.append("tilepic 100 60 " + recipeinfo.icon);
+	
+	data.append("Criar");
+	layout.append("text 70 90 1893 " + (len(data)-1));
+	layout.append("button 50 95 5032 5300 1 0 " + recipe_num);
+	
+	data.append("Copiar Receita");
+	layout.append("text 70 110 1893 " + (len(data)-1));
+	layout.append("button 50 115 5032 4033 1 0 " + (recipe_num * -1));	
+
+	var iconx := 40, icony := 135, table := 1;
+	foreach line in getconfigstringarray(recipeinfo, "ingredient")
+		line := splitwords(line);
+		line := line[1];
+		while (line["||"])
+			line["||"] := " ";
+		endwhile
+		line := splitwords(line);
+		line := getobjtypebyname(line[1]);
+		var reagent := createitematlocation(1,1,1, line, 1);
+		line := reagent.graphic;
+		destroyitem(reagent);
+		layout.append("tilepic " + iconx + " " + icony + " " + line);
+		iconx := iconx+25;
+		table := table+1;
+		if (table > 5)
+			iconx := 40;
+			icony := icony + 35;
+			table := 1;
+		endif
+	endforeach
+	
+	foreach line in getconfigstringarray(recipeinfo, "tool")
+		line := splitwords(line);
+		line := line[1];
+		while (line["||"])
+			line["||"] := " ";
+		endwhile
+		line := splitwords(line);
+		line := getobjtypebyname(line[1]);
+		var tool := createitematlocation(1,1,1, line, 1);
+		line := tool.graphic;
+		destroyitem(tool);
+		layout.append("tilepic " + iconx + " " + icony + " " + line);
+		iconx := iconx+25;
+		table := table+1;
+		if (table > 5)
+			iconx := 40;
+			icony := icony + 35;
+			table := 1;
+		endif
+	endforeach
+	
+	data.append("Instrucoes");
+	layout.append("text 260 15 1893 " + (len(data)-1));
+	layout.append("gumppic 225 40 96");
+	
+	instructions(recipeinfo.guide);
+endfunction
+
+function instructions(text)
+	var wordlist := splitwords(text);
+	const maxlen := 26;
+	var sentences := {};
+	var curline := "", linelength := 0;
+	var ypos := 40;
+	foreach word in wordlist
+		if ((linelength + (len(word)+1)) >= maxlen)
+			sentences.append(curline);
+			linelength := 0;
+			curline := "";
+		endif
+		curline := curline + " " + word;
+		linelength := linelength + (len(word)+1);
+	endforeach
+	if (sentences[len(sentences)] != curline)
+		sentences.append(curline);
+	endif
+	
+	foreach line in sentences
+		data.append(line);
+		layout.append("text 220 " + ypos + " 1893 " + (len(data)-1));
+		ypos := ypos+20;
+	endforeach
+endfunction
+
+function makefood(who, input)
+	var recipeinfo := recipecfg(input);
+	
+	if (getconfigstring(recipeinfo, "firesource"))
+		var firesources := recipecfg(getconfigstring(recipeinfo, "firesource"));
+		
+		SendSysMessage(who, "" + firesources.ClickMsg);
+		var targ := targetcoordinates(who);
+		
+		if (!(cstr(targ.objtype) in getconfigstringarray(firesources, "heatsource")));
+			SendSysMessage(who, "Cancelled");
+			return;
+		endif
+	endif
+	
+	foreach line in getconfigstringarray(recipeinfo, "tool")
+		while(line["||"])
+			line["||"] := " ";
+		endwhile
+		
+		line := splitwords(line);
+		
+		var toollist := {};
+		foreach tool in line
+			toollist.append(getobjtypebyname(tool));		
+		endforeach
+		
+		if (!findtool(who, toollist))
+			var itemname := iteminfo(toollist[1]).Desc;
+			if (!itemname)
+				itemname := iteminfo(toollist[1]).name;
+			endif
+
+			SendSysMessageEx(who, "Escolha um [" + toollist[1] + "] " + itemname, SSM_REQUEST);
+			
+			var targ := targetcoordinates(who);
+			
+			if (targ.objtype in toollist);
+			else
+				SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				return;
+			endif
+		endif
+	endforeach
+
+	var myx := who.x;
+	var myy := who.y;
+	var makeamount := loopgump(who, recipeinfo.name);
+
+	for (makeamount; makeamount > 0; makeamount := makeamount-1)
+		if (myx > who.x + 10 || myx < who.x - 10)
+			SendSysMessageEx(who, "Voce andou e parou de cozinhar.", SSM_FAIL);
+			return;
+		elseif(myy > who.y + 10 || myy < who.y - 10)
+			SendSysMessage(who, "Voce andou e parou de cozinhar.", SSM_FAIL);
+			return;
+		endif
+		
+		var ingredientesno := 0;
+        var capmod_temp := 0;
+		var consumelist := {};
+		var details := struct;
+		details .+ vector;
+		details .+ amount;
+        
+		foreach line in getconfigstringarray(recipeinfo, "ingredient")
+			ingredientesno := ingredientesno +1;
+			line := splitwords(line);
+			var amount := cint(line[2]);
+
+			line := line[1];
+
+			while (line["||"])
+				line["||"] := " ";
+			endwhile
+
+			line := splitwords(line);
+            
+            foreach item in line
+                var ingred := FindObjtypeInContainer(who.backpack,getobjtypebyname(item));
+                if (GetObjProperty(ingred, "capmod") == error)
+                    capmod_temp := capmod_temp;
+                else
+                    capmod_temp := capmod_temp + CInt(GetObjProperty(ingred, "capmod" ));
+                endif
+            endforeach
+            
+			var yield := 0;
+			foreach item in line
+				yield := yield + searchpack(who, getobjtypebyname(item));
+			endforeach
+            
+			if (yield < amount)
+				SendSysMessageEx(who, "Voce nao possui ingredientes suficientes.", SSM_FAIL);
+				SendSysMessageEx(who, "Faltando " + amount + " " + line[1], SSM_FAIL);
+				return;
+			else
+                
+                
+				var temp := {}; // Build a list of ObjTypes from the names
+				foreach item in line
+					temp.append(getobjtypebyname(item));
+				endforeach
+				details.vector := temp;
+				details.amount := amount;
+
+				consumelist.append(details);
+			endif
+		endforeach
+
+		//Ok we know we got all the ingridients. Lets use them!
+		foreach element in consumelist
+			allocateresources(who, element.vector, element.amount);
+		endforeach
+
+
+		if (SkillCheck(who, DomesticWork, recipeinfo.skill, recipeinfo.skill*2) > 0)
+			var newitem := createiteminbackpack(who, getobjtypebyname(recipeinfo.objtype), 1);
+			SendSysMessageEx(who, "Voce guardou a comida na sua mochila.", SSM_INFO);
+            var ingredients_temp := ingredientesno + capmod_temp;
+			case ( ingredients_temp )
+		  2:
+		  SetObjProperty(newitem, "capmod", 1);
+		  3:
+		  SetObjProperty(newitem, "capmod", 2);
+		  4:
+		  SetObjProperty(newitem, "capmod", 3);
+		  5:
+		  SetObjProperty(newitem, "capmod", 4);
+		  6:
+		  SetObjProperty(newitem, "capmod", 5);
+		  7:
+		  SetObjProperty(newitem, "capmod", 6);
+          8:
+		  SetObjProperty(newitem, "capmod", 7);
+          9:
+		  SetObjProperty(newitem, "capmod", 8);
+          10:
+		  SetObjProperty(newitem, "capmod", 9);
+		  endcase
+		else
+			SendSysMessageEx(who, "Voce falhou e arruinou a comida!", SSM_FAIL);
+		endif
+
+		foreach line in getconfigstringarray(recipeinfo, "leftovers")
+			line := splitwords(line);
+			var item := line[1];
+			var amount := cint(line[2]);
+			if (!createiteminbackpack(who, item, amount))
+				for (amount; amount > 0; amount := amount-1) // For non-stackable items
+					createiteminbackpack(who, item, 1);
+				endfor
+			endif
+		endforeach
+
+		sleepms(900);
+	endfor
+endfunction
+
+function loopgump(mobile, foodname)
+	var  layout :=
+	{
+		"page 0",
+		"noclose",
+		"resizepic 10 140 3600 320 200",
+
+		"text 35 170 500 0",
+		"text 35 185 500 1",
+		"gumppic 35 215 1141",
+		"textentry 45 217 250 25 500 2 2",
+		"button 150 290 2076 2075 1 0 1"
+	};
+	var data :=
+	{
+		"Quantos " + foodname, "voce quer fazer?",
+		"" // Text Entry
+	};
+	var input :=  SendDialogGump(mobile, layout, data);
+	input := input[2];
+	input := input[4, len(input)];
+	input := cint(input);
+	return input;
+endfunction
+
+function copyrecipe(who, recipe)
+	var num := cint(recipe);
+	recipe := recipecfg(recipe);
+	if (ConsumeSubstance(who.backpack, OBJ_BLANK_SCROLL, 1))
+		if ((SkillCheck(who, DomesticWork, cint(recipe.scribe), cint(recipe.scribe+10)) > 0))
+			var item := createiteminbackpack(who, OBJ_RECIPE_SLIP, 1);
+			if (item == error)
+				sendsysmessage(who, "  " + item);
+			endif
+			setobjproperty(item, "RecipeId", num);
+			setname(item, "Receita de " + recipe.name);
+			SendSysMessageEx(who, "Voce fez uma copia da receita.", SSM_INFO);
+			printtext(who, "*escrevendo pergaminho*");
+		else
+			SendSysMessageEx(who, "Voce copiou a receita sem cuidados e ela esta ilegivel.", SSM_FAIL);
+		endif
+	else
+		SendSysMessageEx(who, "Voce precisa de um pergaminho em branco.", SSM_FAIL);
+	endif
+endfunction
+
+function recipecfg(recipetype)
+	var alchemy := ReadConfigFile(":cooking:cookbook");
+	if (!alchemy || alchemy == error)
+		broadcast("Cant find cooking.cfg");
+		return 0;
+	endif
+	if (alchemy[recipetype])
+		return alchemy[recipetype];
+	else
+		return 0;
+	endif
+endfunction
+
+function allocateresources(who, itemlist, amount)
+
+	// Find how much of each item to take.
+	var amountlist := { };
+	
+	foreach item in itemlist
+		var amountfound := searchpack(who, item);
+		if (amountfound > amount)
+			amountfound := amount;
+		endif
+		amountlist.append(amountfound);
+		amount := amount-amountfound;
+		if (amount <= 0)
+			break;
+		endif
+	endforeach
+	
+	var i := 1;
+	
+	for (i:=1; i<=len(itemlist); i:=i+1)
+		//SendSysMessage(who, "Debug: Consuming " + amountlist[i] + " " + itemlist[i]);
+		consumesubstance(who.backpack, itemlist[i], amountlist[i]);
+	endfor		
+endfunction
+
+function searchpack(mobile, objtype)
+	var amount := 0;
+	
+	foreach item in enumerateitemsincontainer(mobile.backpack)
+		if (cint(item.objtype) == cint(objtype))
+			amount := amount + item.amount;
+		endif
+	endforeach
+		
+	return amount;
+endfunction
+
+function findtool(mobile, objtype)
+	foreach item in enumerateitemsincontainer(mobile.backpack)
+		if(item.objtype in objtype)
+			return 1;
+		endif
+	endforeach
+	
+	foreach item in listitemsnearlocation(mobile.x, mobile.y, mobile.z, 5)
+		if (checklineofsight(mobile, item))
+			if (item.objtype in objtype)
+				return 1;
+			endif
+		endif
+	endforeach
+	return 0;
+endfunction
+
+function iteminfo(objtype)
+	var config := readconfigfile(":*:itemdesc");
+	return config[objtype];
+endfunction

@@ -1,0 +1,78 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/damage";
+
+program default_poison(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+	
+		if(GetObjProperty(who, "staminaPoison"))
+ 		SendSysMessageEx(who, "O alvo ja esta envenenado", SSM_FAIL);
+ 		return;
+	endif
+
+	if ( !level )
+		level := 1;
+	endif
+
+	if ( attacker )
+		SetScriptController(attacker);
+	endif
+
+	var stam := 0;
+	var poisonedmsg := "";
+	var time := 10;
+	var loops := 3;
+	case (level)
+		default:
+		1: 
+		   stam := 5;
+		   poisonedmsg := "Voce se sente um pouco cansado.";
+		2: 
+		   stam := 10;
+		   poisonedmsg := "Voce se sente cansado";
+		   time := 8;
+		   loops := 4;
+		3: 
+		   stam := 15;
+		   poisonedmsg := "Voce se sente muito cansado.";
+		   time := 6;
+		   loops := 6;
+		4: 
+		   stam := 20;
+		   poisonedmsg := "Voce esta extremamente cansado!";
+		   time := 4;
+		   loops := 8;
+		5: 
+		   stam := 25;
+		   poisonedmsg := "Voce esta totalmente sem folego!";
+		   time := 2;
+		   loops := 10;
+	endcase
+var i := 0;
+	while(i <= loops)
+		PrintTextAbovePrivate(who, poisonedmsg, who);	
+
+		Set_Critical(1);
+		var curr := CInt(AP_GetVital(who, "Stamina"));
+		if ( curr >= stam )
+			AP_SetVital(who, "Stamina", (curr-stam));
+		else
+			AP_SetVital(who, "Stamina", 0);
+		endif
+		Set_Critical(0);
+		i := i + 1;
+		sleep(time);
+	endwhile
+	
+	TS_LowerDuration(who, "staminaPoison", -1);
+	var script := GetProcess(GetPid());
+	script.kill();
+
+	return;
+endprogram
+

@@ -1,0 +1,30 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:vitals";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+	
+	var skill := Cint(AP_GetSkill(who, MAGERY));
+	var mobiles := ListMobilesNearLocation( who.x, who.y, who.z, skill/3, who.realm );
+	foreach mobile in mobiles
+		if (mobile.npctemplate)
+		var maxhp := AP_GetVitalMaximumValue(mobile, "hits");
+		SetObjProperty(mobile, "devoraralma", who.serial);
+		SetObjProperty(mobile, "maxhp", maxhp);
+		endif
+	endforeach
+
+	PlaySoundEffect(who, 387);
+	
+	return 1;
+endprogram 

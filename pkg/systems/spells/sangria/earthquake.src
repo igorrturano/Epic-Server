@@ -1,0 +1,69 @@
+use vitals;
+use uo;
+use util;
+
+include ":attributes:attributes";
+include ":magery:spells";
+include "include/client";
+include "include/damage";
+include "include/say";
+include "include/shapes";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/client";
+include "include/say"; 
+include ":taming:taming";
+
+program earthquake( parms )
+    var caster := parms[1];
+    var info := parms[2];
+
+    SendSysMessageEx(caster, "Voce ve o chao tremer com extrema violencia.", SSM_INFO);
+    PlaySoundEffect( caster, SFX_220 );
+    sleepms(200);
+    PlaySoundEffect( caster, SFX_221 );
+    sleepms(200);
+    PlaySoundEffect( caster, SFX_222 );
+    sleepms(200);
+    PlaySoundEffect( caster, SFX_223 );
+    sleepms(200);
+
+    var range := Cint(AP_GetSKill(caster, MAGICLORE)/10);
+
+    var alreadydamaged := array{};
+    var mobiles := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
+    var allPets := array{};
+	var party_members := caster.party.members;
+
+	if (caster.party)
+		foreach member in party_members
+			if (member != caster)
+				var memberObj := SystemFindObjectBySerial(member.serial);
+				var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, range * 4);
+				foreach pet in allPetsAndSummonedPets
+						allPets.append(pet);
+				endforeach
+			endif
+		endforeach
+	endif	
+    
+    foreach mobile in mobiles
+        if (!(mobile.serial in alreadydamaged) && (mobile != caster) && !(mobile in caster.party.members) && !(mobile in allPets))
+            PlaySoundEffect( mobile, SFX_220 );
+            sleepms(200);
+            PlaySoundEffect( mobile, SFX_221 );
+            sleepms(200);
+            PlaySoundEffect( mobile, SFX_222 );
+            sleepms(200);
+            PlaySoundEffect( mobile, SFX_223 );
+            sleepms(200);
+            alreadydamaged.Append(mobile.serial);
+            SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
+            var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("20d6");
+            DamageFLS(mobile, cint(dmg), DMG_FORCED, caster, "earthquake");
+        endif
+        sleepms(600);
+    endforeach
+
+	return 1;
+endprogram

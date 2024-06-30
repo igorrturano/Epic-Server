@@ -1,0 +1,85 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_florescer(params)
+	var centro := params[1];
+	var duration := params[2];
+	var range := params[3];
+	var ms := Max(500-(30*range),100);
+	print(ms);
+	var i,j,flor;
+	Set_Critical(1);
+	for(i:=0; i<=range; i:=i+1)
+		if(i==0)
+			flor := createitematlocation(centro.x, centro.y, centro.z, bard_flor_aleatoria(), 1, centro.realm);
+			TS_StartTimer(flor, "delete", duration); //durar apenas o tempo que resta do efeito
+			sleepms(ms);
+		else
+			for(j:=0; j<=i; j:=j+1) //preenche pra cima no primeiro quadrante
+				flor := createitematlocation((centro.x)+i , (centro.y)+j , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=i-1; j>=0; j:=j-1) //pra esquerda no primeiro quadrante
+				flor := createitematlocation((centro.x)+j , (centro.y)+i , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=1; j<=i; j:=j+1) //pra esquerda no segundo quadrante
+				flor := createitematlocation((centro.x)-j , (centro.y)+i , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=i-1; j>=0; j:=j-1) //pra baixo no segundo quadrante
+				flor := createitematlocation((centro.x)-i , (centro.y)+j , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=1; j<=i; j:=j+1) //pra baixo no terceiro quadrante
+				flor := createitematlocation((centro.x)-i , (centro.y)-j , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=i-1; j>=0; j:=j-1) //pra direita no terceiro quadrante
+				flor := createitematlocation((centro.x)-j , (centro.y)-i , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=1; j<=i; j:=j+1) //pra direita no quarto quadrante
+				flor := createitematlocation((centro.x)+j , (centro.y)-i , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+			for(j:=i-1; j>0; j:=j-1) //pra cima no quarto quadrante
+				flor := createitematlocation((centro.x)+i , (centro.y)-j , centro.z , bard_flor_aleatoria() , 1 ,  centro.realm);
+				TS_StartTimer(flor, "delete", duration);
+				sleepms(ms);
+			endfor
+		endif
+	endfor
+	Set_Critical(0);
+endprogram
+
+function bard_flor_aleatoria()
+	case (RandomInt(5))
+		1:
+			return 3207;
+			break;
+		2:
+			return 3210;
+			break;
+		3:
+			return 3264;
+			break;
+		4:
+			return 3214;
+			break;
+		default:
+			return 3262;
+			break;
+	endcase
+endfunction

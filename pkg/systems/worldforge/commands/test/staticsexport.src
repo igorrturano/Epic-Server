@@ -1,0 +1,236 @@
+//////////////////////////////////////////////////////
+//
+//   StaticsExport - Extract Items to make Static
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//     2001/12/02 Shinigami: Fix: ObjType -> Graphic
+//     2002/03/01 Shinigami: Fix: Letzte Nummer
+//
+//////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/statics.cfg
+//   statics/staticsno.cfg
+//
+////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use uo;
+Use os;
+Use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+Include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+Const ERRORMSGS_GERMAN:=
+  "{}StaticsExport: ExportArea aktiviert..."+
+  "{}StaticsExport: ExportArea beendet."+
+  "{}X1 muss kleiner-gleich X2 bzw. Y1 muss kleiner-gleich Y2 sein!"+
+  "{}%% darf nur 0 bis 4095 sein!"+
+  "{}%% darf nur 0 bis 6143 sein!"+
+  "{}Sie muessen 4 Paramter angeben: X1 Y1 X2 Y2"+
+  "{}Die Items wurden exportiert."+
+  "{}Probleme beim Lesen der Configdateien!";
+Const ERRORMSGS_ENGLISH:=
+  "{}StaticsExport: ExportArea started..."+
+  "{}StaticsExport: ExportArea done."+
+  "{}X1 must be lower/equal X2 and Y1 must be lower/equal Y2!"+
+  "{}%% must be between 0 and 4095!"+
+  "{}%% must be between 0 and 6143!"+
+  "{}U've to enter 4 Paramters: X1 Y1 X2 Y2"+
+  "{}Items have been exported."+
+  "{}Problems on Reading Config File!";
+
+Var IGNORE_ITEMS:=array{0xfaf, 0xfb0, 0x19f9, 0x19fc};
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+Program TextCMD_StaticsExport(who, params)
+  Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+  If (Len(who)>1) // Called by StaticsCheckExport
+    params:=who[2];
+    who:=who[1];
+  EndIf
+
+  params:=SplitWords(params);
+  If (params.size()==4)
+    If ((0<=CInt(params[1])) And (CInt(params[1])<6144))
+      If ((0<=CInt(params[2])) And (CInt(params[2])<4096))
+        If ((0<=CInt(params[3])) And (CInt(params[3])<6144))
+          If ((0<=CInt(params[4])) And (CInt(params[4])<4096))
+            If ((CInt(params[1])<=CInt(params[3])) And (CInt(params[2])<=CInt(params[4])))
+              PrintErrorMessage(1);
+              ExportArea(who, CInt(params[1]), CInt(params[2]), CInt(params[3]), CInt(params[4]));
+              PrintErrorMessage(2);
+            Else
+              PrintErrorMessage(3, array{ }, who);
+            EndIf
+          Else
+            PrintErrorMessage(4, array{"Y2"}, who);
+          EndIf
+        Else
+          PrintErrorMessage(5, array{"X2"}, who);
+        EndIf
+      Else
+        PrintErrorMessage(4, array{"Y1"}, who);
+      EndIf
+    Else
+      PrintErrorMessage(5, array{"X1"}, who);
+    EndIf
+  Else
+    PrintErrorMessage(6, array{ }, who);
+  EndIf
+EndProgram
+
+//////////////////////////////////////
+// ExportArea - Extrahiert die Items
+//////////////////////////////////////
+
+Function ExportArea(who, x1, y1, x2, y2)
+  Var datafile:=ReadConfigFile(":worldforge:config/statics");
+  Var datafileno:=ReadConfigFile(":worldforge:config/staticsno");
+
+  If (datafile And datafileno)
+    Var itemdesc:=ReadConfigFile("::itemdesc");
+    Var counter:=GetNextCounterNumber(datafile);
+    Var counterno:=GetNextCounterNumber(datafileno);
+
+    Var result;
+    Var elem;
+    ForEach item in ListObjectsInBox(x1, y1, -128, x2, y2, 127)
+      If (item.isa(POLCLASS_ITEM))
+        result:=ShouldMakeStatic(itemdesc, item);
+        If (result.makestatic)
+          elem:=array{ };
+          elem.append(array{"NAME",  "#"});
+          elem.append(array{"ID",    item.graphic});
+          elem.append(array{"X",     item.x});
+          elem.append(array{"Y",     item.y});
+          elem.append(array{"Z",     item.z});
+          elem.append(array{"COLOR", item.color});
+          elem.append(array{"CONT",  -1});
+          elem.append(array{"TYPE",  255});
+          AppendConfigFileElem(":worldforge:config/statics", "SECTION", "WORLDITEM "+counter, elem);
+
+          //DestroyItem(item);
+
+          counter:=counter+1;
+        Else
+          elem:=array{ };
+          elem.append(array{"ObjType", Hex(item.graphic)});
+          elem.append(array{"X",       item.x});
+          elem.append(array{"Y",       item.y});
+          elem.append(array{"Z",       item.z});
+          elem.append(array{"Color",   item.color});
+          If (result.name)
+            elem.append(array{"Name",  result.name});
+          EndIf
+          If (result.type<>"")
+            elem.append(array{"Type", result.type});
+          EndIf
+          If (result.usescript)
+            elem.append(array{"UseScript", result.usescript});
+          EndIf
+          If (result.script)
+            elem.append(array{"Script", result.script});
+          EndIf
+          If (result.walkonscript)
+            elem.append(array{"WalkOnScript", result.walkonscript});
+          EndIf
+          If (result.controlscript)
+            elem.append(array{"ControlScript", result.controlscript});
+          EndIf
+          AppendConfigFileElem(":worldforge:config/staticsno", "SECTION", "WORLDITEM "+counterno, elem);
+
+          counterno:=counterno+1;
+        EndIf
+      EndIf
+    EndForEach
+
+    UnloadConfigFile(":worldforge:config/staticsno");
+    UnloadConfigFile(":worldforge:config/statics");
+
+    PrintErrorMessage(7, array{ }, who);
+  Else
+    PrintErrorMessage(8, array{ }, who);
+  EndIf
+EndFunction
+
+/////////////////////////////////////////////////////////
+// GetNextCounterNumber - Die naechste Nummer ermitteln
+/////////////////////////////////////////////////////////
+
+Function GetNextCounterNumber(datafile)
+  Var counter:=GetConfigStringKeys(datafile);
+  If (Len(counter))
+    Return (Len(counter));
+  Else
+    Return (0);
+  EndIf
+EndFunction
+
+//////////////////////////////////////////////////////////
+// ShouldMakeStatic - Kann man das Item statisch machen?
+//////////////////////////////////////////////////////////
+//
+// Folgendes fliegt raus:
+//   Abschliessbares - Container, Tueren
+//   Multis          - Haeuser, Boote
+//   SpawnNet        - SpawnRunen, gespawnte Gegenstaende
+//   Name            - Gegenstaende mit unueblichem Namen
+//   UseScript       - Gegenstaende mit Script
+//   Script          - Gegenstaende mit Script
+//   WalkOnScript    - Gegenstaende mit WalkOnScript
+//   ControlScript   - Gegenstaende mit ControlScript
+//   IGNORE_ITEMS    - Sonstiges
+
+Function ShouldMakeStatic(itemdesc, item)
+  Var result:=array{ };
+  result.+makestatic:=1;
+
+  Var iteminfo:=itemdesc[item.graphic];
+  If (item.isa(POLCLASS_LOCKABLE) Or item.isa(POLCLASS_MULTI) Or GetObjProperty(item, "spawnnet") Or
+     (item.name And (item.name<>iteminfo.desc)) Or (item.graphic in IGNORE_ITEMS) Or
+     item.usescript Or iteminfo.script Or iteminfo.walkonscript Or iteminfo.controlscript)
+    result.+type:="";
+    If (item.isa(POLCLASS_LOCKABLE))
+      result.type:=result.type+"Lockable ";
+    EndIf
+    If (item.isa(POLCLASS_MULTI))
+      result.type:=result.type+"Multi ";
+    EndIf
+    If (GetObjProperty(item, "spawnnet"))
+      result.type:=result.type+"SpawnNet ";
+    EndIf
+    If ((iteminfo.facing==0) Or (iteminfo.facing))
+      result.type:=result.type+"Light ";
+    EndIf
+    If (item.name And (item.name<>iteminfo.desc))
+      result.+name:=item.name;
+    EndIf
+    result.+usescript:=item.usescript;
+    result.+script:=iteminfo.script;
+    result.+walkonscript:=iteminfo.walkonscript;
+    result.+controlscript:=iteminfo.controlscript;
+
+    result.makestatic:=0;
+  EndIf
+
+  Return (result);
+EndFunction

@@ -1,0 +1,9 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_bard_hamelin_end(alvo)
+	EraseObjProperty(alvo, "#Bard_hamelin");
+	return 1;
+endprogram

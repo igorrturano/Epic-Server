@@ -1,0 +1,32 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program explosion_timer(parms)
+  var potion := parms[1];
+  var who := parms[2];
+  if (potion.container)
+    PrintTextAbove(who, "3");
+  else
+    PrintTextAbove(potion, "3");
+  endif
+  sleep(1);
+  if (potion.container)
+    PrintTextAbove(who, "2");
+  else
+    PrintTextAbove(potion, "2");
+  endif
+  sleep(1);
+  if (potion.container)
+    PrintTextAbove(who, "1");
+  else
+    PrintTextAbove(potion, "1");
+  endif
+  sleep(1);
+  if (potion in EnumerateItemsInContainer(who.backpack)) 
+    MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION );
+  endif
+  start_script("potions/exploder", {potion, who});
+endprogram

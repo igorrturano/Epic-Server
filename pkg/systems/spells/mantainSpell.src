@@ -1,0 +1,95 @@
+use uo;
+include ":timedScripts:timedScripts";
+include ":gumps:yesNo";
+include ":attributes:attributes";
+include "include/say";
+include ":gumps:gumps";
+include ":charactercreation:habilidades";
+
+function SpellYesNo(who, nome, targname)
+	var gump := GfCreateGump(140, 100);
+	GfResizePic(gump, 0, 0, 0x53 ,200, 140);
+	GfAddAlphaRegion(gump, 0, 0, 200, 140);
+	GfTextLine(gump, 40, 20, 1153, "Manter Encantamento");
+	GfTextLine(gump, 40, 40, 1153, "" + nome);
+	GfTextLine(gump, 40, 60, 1153, "" + targname);
+	GfTextLine(gump, 40, 80, 1153, "Sim");
+	GfTextLine(gump, 40, 100, 1153, "Nao");
+
+	GfAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN,  10);
+	GfAddButton(gump, 20, 103, 2117, 2118, GF_CLOSE_BTN,  11);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 10)
+		return 1;
+	else
+		return 0;
+	endif
+//sendsysmessage(who, "Manter Encantamento");
+endfunction
+
+program spell(params)
+
+	var mage := params[1];
+	var targ := SystemFindObjectBySerial(params[2]);
+	if ( !targ)
+		return;
+	endif
+
+	if ( targ.dead)
+		return;
+	endif
+
+	var name := params[3];
+	var duration := params[4];
+	var level := params[5];
+
+	var mana := 0;
+	var cfg := ReadConfigFile(":spells:config/tnspells");
+	var elem;
+	var id := 0;
+	if (name == "weaken")
+		id := 26;
+	elseif ( name == "mantodabesta")
+		id := 2;
+	elseif ( name == "desviarprojetil")
+		id := 8;
+	elseif ( name== "gloria")
+		id := 15;
+	elseif ( name == "strength")
+		id := 16;
+	elseif ( name == "phmod")
+		id := 18;
+	elseif ( name == "intelligence")
+		id := 19;
+	elseif ( name == "agility")
+		id := 21;
+	elseif (name == "dmgreduction")
+		id := 34;
+    elseif (name == "dmgreturn")
+		id := 49;
+	endif
+
+
+	elem := FindConfigElem(cfg, id);
+	mana := GetConfigInt(elem, "Mana");
+	mana := mana*2;
+	var spellname := GetConfigString(elem, "Name");
+
+	if (temhabilidade(mage, "Manter Magias"))
+		mana := mana/2;
+	endif
+
+	if ( SpellYesNo(mage, spellname,  targ.name ) )
+	        if (!AP_ConsumeVital(mage, MANA, mana))
+                    SendSysMessageEx(mage, "Voce nao possui mana suficiente para manter esse encantamento.", SSM_FAIL);
+				return 1;
+		endif
+
+		TS_StartTimer(targ, name, duration, level, mage, 1) ;
+	else
+		SendSysMessageEx(mage, "Voce desistiu de manter o encantamento.", SSM_INFO);
+	endif
+
+endprogram

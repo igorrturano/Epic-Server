@@ -1,0 +1,27 @@
+/*
+ * $Id$
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var duration := (CInt(AP_GetSkill(who, MAGICLORE)) / 10);
+    //PlayStationaryEffect( x, y, z, effect, speed, loop := 0, explode := 0, realm := _DEFAULT_REALM );
+
+	PlayStationaryEffect(info.x, info.y, info.z-5, 0X6D01 , 7, 40, 0, info.realm);
+	TS_StartTimer(info, "paralysis", duration);
+
+	return 1;
+endprogram

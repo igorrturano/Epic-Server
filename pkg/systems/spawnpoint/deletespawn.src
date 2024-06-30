@@ -1,0 +1,13 @@
+use uo;
+use datafile;
+
+program deletespawn(item)
+
+	var df := OpenDataFile( ":tn:spawns" );
+	if (!df)
+		df := CreateDataFile( ":tn:spawns", DF_KEYTYPE_INTEGER );
+	endif
+	
+	var elem := df.DeleteElement(item.serial);
+
+endprogram

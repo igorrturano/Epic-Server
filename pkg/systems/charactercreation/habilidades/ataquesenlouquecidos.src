@@ -1,0 +1,18 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+
+program doubleattack(who)
+
+	if (IsRaging(who))
+		SendSysMessageEx(who, "Voce esta enlouquecido", SSM_INFO);
+		SetCooldown(who, "Ataques Enlouquecidos", 60);
+	else
+        SendSysMessageEx(who, "Voce precisa estar em furia.", SSM_INFO);
+	endif
+endprogram

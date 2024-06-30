@@ -1,0 +1,13 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker,  "Sua proxima magia sera discreta", SSM_INFO);
+	SetObjProperty(attacker, "#magiasilenciosa", 1);
+
+
+endprogram   

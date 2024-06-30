@@ -1,0 +1,43 @@
+/* $Id$
+ *
+ */
+ 
+use uo;
+use os;
+use util;
+
+include "include/client";
+include "include/sysEvent";
+include ":attributes:attributes";
+
+program DeathScript(params)
+	var corpse := params[1];
+	//var corpse_cfg := params[2];
+	//var template := params[3];
+	params := 0; // Not needed anymore
+	
+	var num := 3;
+	var tries := 0;
+	while (num > 0)
+		var x := (corpse.x + randomint(2));
+		var y := (corpse.y + randomint(2));
+		var npc := CreateNPCFromTemplate(":brainai:sahagin1", x,  y, GetWorldHeight(x, y), 0, corpse.realm);
+		RestartScript(npc);
+		if (npc)
+			num := num -1;
+			foreach item in (EnumerateItemsInContainer(corpse))
+				moveitemtocontainer(item, npc.backpack);
+				sleepms(2);
+			endforeach
+		endif
+		sleepms(2);
+		tries := tries + 1;
+		if (tries > 10)
+			break;
+		endif
+	endwhile
+	
+	DestroyItem(corpse);
+		
+	return 1;
+endprogram

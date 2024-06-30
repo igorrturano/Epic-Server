@@ -1,0 +1,46 @@
+use uo;
+use os;
+use polsys;
+use util;
+use unicode;
+include "include/say";
+
+program partymessage()
+	Print( "INSTALLING: partymessage..." );
+	return 1;
+endprogram
+
+
+exported function PartyMessageSpy( who, byref packet )
+
+    var message_txt := packet.GetUnicodeString(6, (packet.GetInt16(1) - 12) /2);
+
+
+	if (!message_txt)
+		return 0;
+	endif
+
+	foreach player in GetGlobalProperty("GmsOnlines")
+
+		player := SystemFindObjectBySerial(Cint(player));
+		if ( GetObjProperty(player, "PartySpyOn") && player.cmdlevel >= 3 && player != who)
+			var sender := who.name;
+			if (sender == "Desconhecido" || sender == "Incognito")
+				sender := GetObjProperty(who, "realname");
+			endif
+			var leader := who.party.leader.name;
+
+			if (GetObjProperty(player, "PartySpyOn") == "on")
+				leader := splitwords(leader);
+				leader := leader[1];
+				SendSysMessage(player, "[Party-"+leader+"]["+sender+"]: "+message_txt,_DEFAULT_TEXT_FONT , 0x003e);
+			elseif(GetObjProperty(player, "PartySpyOn") == leader)
+				SendSysMessage(player, "[PT-SPY]["+sender+"]: "+message_txt,_DEFAULT_TEXT_FONT , 0x003e);
+			endif
+
+		endif
+		Sleepms(2);
+	endforeach
+
+	return 0;
+endfunction

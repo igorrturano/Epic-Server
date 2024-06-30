@@ -1,0 +1,10 @@
+use uo;
+
+program ether(user, item)
+
+	PlaySoundEffect( user, 0x51 );
+	user.mana := user.mana + (user.maxmana / 2);
+	SubtractAmount(item, 1);
+	SendSysMessage(user, "Your mind has been rejuvenated!");
+	
+endprogram

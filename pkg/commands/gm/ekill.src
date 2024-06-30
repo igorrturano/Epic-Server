@@ -1,0 +1,32 @@
+/*
+ * $Id: ekill.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+use uo;
+
+include ":attributes:attributes";
+
+program textcmd_eKill(who, text)
+	SendSysMessage(who, "Select a target to kill.");
+	var targ := Target(who);
+
+	if (who.acctname == "gmcaim")
+		if (targ.cmdlevel > 1)
+			sendsysmessage(who, "Voce nao pode usar este comando.");
+			return 1;
+		endif
+	endif
+
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Cancelled.");
+		return 0;
+	endif
+
+	if ( text )
+		PlayMovingEffect(who, targ, CInt(text), 5, 1);
+	endif
+	
+	ApplyRawDamage(targ, CInt(AP_GetVitalMaximumValue(targ, "Hits")));
+	
+	return 1;
+endprogram

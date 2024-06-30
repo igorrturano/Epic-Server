@@ -1,0 +1,19 @@
+use uo;
+use os;
+use util;
+
+include ":moongates:moongate";
+include "include/say";
+include ":attributes:attributes";
+include "include/damage";
+include ":charactercreation:resists";
+include ":taming:taming";
+
+program subir(item)
+
+	SetObjProperty(item, "cooldown", 1);
+	sleep(60);
+	EraseObjProperty(item, "cooldown");
+	item.invisible := 1;
+		
+endprogram

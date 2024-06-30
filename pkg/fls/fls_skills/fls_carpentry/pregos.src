@@ -1,0 +1,23 @@
+use uo;
+use os;
+use util;
+
+program click_pregos(who, item)
+
+   if (!Accessible (who, item))
+	SendSysMessage (who, "Voce nao alcanca isto!");
+	return;
+   endif
+   if (!item.movable)
+	SendSysMessage (who, "Voce nao pode usar isto.");
+	return;
+   endif
+   if (!ReserveItem (item))
+	SendSysMessage (who, "Voce nao pode usar isto agora.");
+	return;
+   endif
+   
+   var restante := Cint(GetObjProperty(item, "qt"));
+   SendSysMessage(who, "Aqui ainda existem " + restante + " prego(s) nessa caixa. ");
+
+endprogram

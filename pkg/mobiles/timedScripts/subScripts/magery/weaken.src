@@ -1,0 +1,38 @@
+/*
+ * $Id: weaken.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Weaken(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var lvl := params[3];
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#WeakenMod") )
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+	
+	var cast_points := lvl;
+//	var defense := CInt(AP_GetSkill(mobile, RESISTING_SPELLS))/2;
+	var final := cast_points; // - defense;
+	if (final < 10)
+		final := 10;
+	endif
+	var stat := AP_GetStat(mobile, STRENGTH);
+	stat := CInt((stat*final)/100);
+	var points := stat * -1;
+	
+	
+	SetObjProperty(mobile, "#WeakenMod", points);
+	AP_ModifyStatMod(mobile, STRENGTH, points);
+	
+	return 1;
+endprogram

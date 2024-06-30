@@ -1,0 +1,88 @@
+/* $Id: openpack.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+include ":gumps:yesNo";
+include "include/say";
+include ":charactercreation:habilidades";
+
+program textcmd_openPack(who)
+	SendSysMessageEx(who, "Selecione o personagem que voce deseja revistar.", SSM_REQUEST);
+	var targ := Target(who);
+
+	if ( !targ )
+		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
+		return 0;
+	elseif ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	elseif ( targ.npctemplate )
+		SendSysMessageEx(who, "Voce so pode revistar jogadores.", SSM_FAIL);
+		return 0;
+	elseif ( !targ.backpack )
+		SendSysMessageEx(who, "Alvo nao possui uma bolsa.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(who, targ) > 1 )
+		SendSysMessageEx(who, "Muito longe.", SSM_FAIL);
+		return 0;
+	endif
+
+	var perm := YesNo(targ, "Você permite que "+who.name+" lhe reviste?" , "Sim.", "Não.");
+
+	if (!perm)
+		SendSysMessageEx(who, targ.name+" nao permitiu que voce o revistasse.", SSM_INFO);
+	else
+		var item;
+		if (TemHabilidade(targ, "Prestidigitador") && !GetObjProperty(targ, "ocultando"))
+			var esconde := YesNo(targ, "Voce deseja esconder algum objeto?" , "Sim.", "Não.");
+			if (esconde)
+				item := Target(targ);
+				var ok := 0;
+				var cont := item.container;
+				while (cont)
+					if (cont == targ.backpack)
+						ok := 1;
+						break;
+					endif
+					cont := cont.container;
+				endwhile
+				if (ok)
+					item.invisible := 1;
+					item.movable := 0;
+					SetObjProperty(targ, "ocultando", item.serial);
+				else
+					SendSysMessageEx(who, "O item deve estar na sua mochila.", SSM_FAIL);
+				endif
+			endif
+		endif
+		PrintText(who, "*revistando "+targ.name+"*");
+		SendOpenSpecialContainer(who, targ.backpack);
+
+		while(1)
+			if ( Distance(who, targ) > 2 )
+				SendSysMessageEx(who, "O alvo se afastou demais.", SSM_FAIL);
+				break;
+			endif
+		endwhile
+
+		who.facing := who.facing;
+
+		var x := who.x;
+		var y := who.y;
+		detach();
+		while ((who.x == x && who.y == y) || Distance(who,targ) < 2)
+			sleep(1);
+		endwhile
+		if (GetObjProperty(targ, "ocultando"))
+			item := SystemFindObjectBySerial(GetObjProperty(targ, "ocultando"));
+			item.invisible := 0;
+			item.movable := 1;
+			SendSysMessageEx(targ, who.name+" parou a revista, "+item.desc+" nao esta mais oculto.", SSM_INFO);
+			EraseObjProperty(targ, "ocultando");
+		endif
+	endif
+
+	return 1;
+endprogram

@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+include "include/say";
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#precisao") )
+		return 0;
+	endif
+	
+	SetObjProperty(mobile, "#precisao", 20);
+	mobile.hitchance_mod := mobile.hitchance_mod + 20;
+	
+	return 1;
+endprogram
+  

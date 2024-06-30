@@ -1,0 +1,47 @@
+
+use uo;
+use vitals;
+
+include ":attributes:vitals";
+include ":attributes:attributes";
+include "include/say";
+include "include/utils";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include ":tn:equipment";
+include "include/client";
+
+program manobra(who)
+   
+   if (GetEquipmentByLayer(who, LAYER_MOUNT))
+      return SendSysMessageEX(who, "Voce nao pode fazer uma esquiva montado", SSM_FAIL);
+   elseif (TS_GetCooldown(who, "esquiva"))
+		return SendSysMessageEX(who, "Esquiva em Cooldown!", SSM_FAIL);
+   elseif (AP_GetVital(who, "Stamina") < 20)
+      return SendSysMessageEX(who, "Vigor insuficiente!", SSM_FAIL);
+   endif
+
+   var penal := AP_GetStatMod(who, "Dexterity");
+	if (penal >= -1)
+		SetObjProperty(who, "evasao", 1);
+      AP_ConsumeVital(who, STAMINA, 20);
+      SendSysMessageEX(who, "Voce vai esquivar do proximo golpe", SSM_INFO);
+      TS_StartCooldown(who, "esquiva", 5);
+      return 0;
+	elseif (penal >= -10)
+      SetObjProperty(who, "evasao", 1);
+      AP_ConsumeVital(who, STAMINA, 25);
+      SendSysMessageEX(who, "Voce vai esquivar do proximo golpe", SSM_INFO);
+      TS_StartCooldown(who, "esquiva", 5);
+      return 0;
+   elseif (penal >= -15)
+      SetObjProperty(who, "evasao", 1);
+      AP_ConsumeVital(who, STAMINA, 30);
+      SendSysMessageEX(who, "Voce vai esquivar do proximo golpe", SSM_INFO);
+      TS_StartCooldown(who, "esquiva", 5);
+      return 0;
+   endif
+      
+   sleep(1);
+  
+endprogram

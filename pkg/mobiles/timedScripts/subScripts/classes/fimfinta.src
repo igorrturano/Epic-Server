@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+	
+	var points := CInt(GetObjProperty(mobile, "#finta"));	
+	mobile.hitchance_mod := mobile.hitchance_mod + points;
+	EraseObjProperty(mobile, "#finta");
+
+	return 1;
+endprogram
+   

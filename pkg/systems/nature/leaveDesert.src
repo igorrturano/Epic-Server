@@ -1,0 +1,13 @@
+use uo;
+use os;
+use vitals;
+
+program removecalor(who, textarea)
+    EraseObjProperty(who, "calor");
+    EraseObjProperty(who, "teste_de_calor");
+    EraseObjProperty(who, "stammod");
+	EraseObjProperty(who, "manamod");
+    EraseObjProperty(who, "penalidadedeserto");
+	EraseObjProperty(who, "penalidadedeserto2");
+	RecalcVitals(who);
+endprogram

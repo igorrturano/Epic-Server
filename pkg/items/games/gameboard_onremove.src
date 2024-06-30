@@ -1,0 +1,21 @@
+use os;
+use uo;
+
+program onremove_container (character, container, item)
+
+	sleep (30);
+	var itemcontainer := item.container;
+	if (!itemcontainer)
+		if (!MoveItemToContainer(item, container))
+			DestroyItem (item);
+			return;
+		endif
+		PrintTextAbove (item, "*a peca do jogo foi retirada*");
+	elseif (itemcontainer != container)
+		if (!MoveItemToContainer(item, container))
+			DestroyItem (item);
+			return;
+		endif
+		PrintTextAbove (item, "*a peca do jogo foi retirada*");
+	endif
+endprogram

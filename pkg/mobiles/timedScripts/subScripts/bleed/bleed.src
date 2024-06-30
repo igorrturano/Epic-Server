@@ -1,0 +1,60 @@
+use uo;
+use vitals;
+use os;
+
+include ":attributes:attributes";
+include ":attributes:skills";
+include ":timedscripts:timedScripts";
+include "include/damage";
+include ":blood:blood";
+
+program default_poison(params)
+
+	var who := params[1];
+	var attacker := params[2];
+	
+	if(GetObjProperty(who, "bleed"))
+ 		SendSysMessageEx(who, "O alvo ja esta sangrando", SSM_FAIL);
+ 		return;
+	endif
+
+	if ( attacker )
+		SetScriptController(attacker);
+	endif
+
+	var dmg := 8;
+	var i;
+	var loops := 6;
+	
+	var poisonedmsg := "";
+	var viewermsg := "";
+	poisonedmsg := "Voce esta com uma grave hemorragia!";
+	viewermsg := "* - " + who.name + " esta sangrando muito! - *";
+		
+			for ( i := 0; i < loops; i := i+1)
+				PrintTextAbovePrivate(who, poisonedmsg, who);
+					foreach mobile in ( ListMobilesInLineOfSight(who, 8) )
+						if( mobile.ip && mobile != who )
+							PrintTextAbovePrivate(who, viewermsg, mobile);
+						endif
+					sleepms(2);
+					endforeach		
+	
+			damageFLS(who, cint(dmg), DMG_FORCED, attacker);
+			MakeBleed(who);
+
+				if (who.dead)
+				break;
+				endif
+
+		
+			sleep(4);
+			endfor
+
+//	TS_CurePoison(who, 120,"P", 5);
+	TS_LowerDuration(who, "bleed", -1);
+	var script := GetProcess(GetPid());
+	script.kill();
+	
+	return;
+endprogram

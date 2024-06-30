@@ -1,0 +1,11 @@
+use unicode;
+include "include/say";
+
+program uncd(who)
+    SendSysMessageUC(who, "You are", "ENG"); // English
+    SendSysMessageUC(who, "Vous êtes", "FRA"); // French
+    SendSysMessageUC(who, "You are", "ENU"); // English (ENU is an alternative code for English)
+    SendSysMessageUC(who, "Você é", "BRA"); // Brazilian Portuguese
+
+    SendSysMessageEX(who, "você é");
+endprogram

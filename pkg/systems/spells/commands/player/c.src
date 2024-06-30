@@ -1,0 +1,71 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":spells:spellbooks";
+
+program magia(who, spellname)
+	if ( GetObjProperty(who, "#Casting") )
+		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
+		return 0;
+	endif
+
+	var cfg := ReadConfigFile(":spells:allspells");
+
+	var elem;
+	var id := 1;
+	var achou := 0;
+
+	foreach spell in ( GetConfigIntKeys(cfg) )
+		elem := FindConfigElem(cfg, id);
+		if ( Lower(GetConfigString(elem, "Name")) == Lower(spellname))
+			achou := 1;
+			break;
+		endif
+		id := id + 1;
+	endforeach
+
+	if (!achou)
+		SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
+		return;
+	endif
+
+	var cintosabio := 0xC892;
+	
+	//Tenta achar primeiro no cinto do sabio, depois na backpack
+	foreach equip in (ListEquippedItems(who))
+		if (equip.objtype == cintosabio)
+			foreach item in (EnumerateItemsInContainer(equip))
+
+				var runaId := GetObjProperty(item, "runatype");
+				if (runaId == id)
+					var script := start_script( ":spells:priestrune_m", {who, item});
+					if ( script.errortext )
+						SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+						return 0;
+					endif
+					return;
+				endif
+
+			endforeach
+		else
+			foreach item in (EnumerateItemsInContainer(who.backpack))
+			
+				var runaId := GetObjProperty(item, "runatype");
+				if (runaId == id)
+					var script := start_script( ":spells:priestrune_m", {who, item});
+					if ( script.errortext )
+						SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+						return 0;
+					endif
+					return;
+				endif
+
+			endforeach
+		endif
+
+	endforeach
+
+
+endprogram

@@ -1,0 +1,13 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Passe por cima de tudo!", SSM_INFO);
+	TS_StartTimer(attacker, "irrefreavel", cint(AP_GetSkill(attacker, TACTICS))*2);
+
+
+endprogram  

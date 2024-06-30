@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_firedance(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	return 1;
+endprogram

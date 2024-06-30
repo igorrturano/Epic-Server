@@ -1,0 +1,84 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program manobra(mobile)
+	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);
+	var who := Target(mobile);
+	SendSysMessageEx(mobile, "Escolha o doador da energia vital.", SSM_FAIL);
+	var targ := Target(mobile);
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(mobile, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+
+	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
+
+	var time := 0;
+	var oldx := mobile.x;
+	var oldy := mobile.y;
+
+	mobile.frozen := 1;
+
+	var amt := 10;
+
+	Corromper(mobile, 9, targ);
+
+	if(TemHabilidade(mobile, "Vontade Esmagadora"))
+
+		if (CheckResist(mobile, VONTADE, 70, -CInt(AP_GetSkill(mobile, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+			SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+			mobile.frozen := 0;
+			return;
+		endif
+	else
+		if (CheckResist(mobile, VONTADE, 30, -CInt(AP_GetSkill(mobile, MAGICLORE)/2.5)))
+			SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+			mobile.frozen := 0;
+			return;
+		endif
+	endif
+
+	while  (time < 10)
+
+		if ( (mobile.x != oldx) || (mobile.y != oldy))
+			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
+			break;
+		endif
+
+		if (Distance(who, targ) >= 16)
+			SendSysMessageEx(who, "O alvo se distanciou muito.", SSM_FAIL);
+			break;
+		endif
+
+		if(targ.dead)
+			break;
+		endif
+
+		//ApplyRawDamage( targ, 10, 0, DAMAGE_SHOW );
+		ApplyRawDamage( targ, amt );
+		HealDamage( who, amt);
+
+		if(targ.dead)
+			break;
+		endif
+
+		PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
+		PerformAction(mobile, ANIM_CAST_AREA);
+		time := time + 1;
+		sleep(1);
+	endwhile
+
+	mobile.frozen := 0;
+
+	return 1;
+endprogram

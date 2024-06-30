@@ -1,0 +1,44 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+
+program manobra(attacker)
+
+	var festa := attacker.party;
+
+	if (!festa)
+		SendSysMessageEx(attacker, "Voce nao tem aliados!", SSM_FAIL);
+		return;
+	endif
+
+	PrintText(attacker, "*ordena os aliados*");
+
+	foreach member in (festa.members)
+		if (member.serial != attacker.serial)
+			if (Distance(attacker, member) < 8)
+				var timer_list := TS_GetTimerList(member);
+				var names := array;
+
+
+				foreach timer in ( timer_list.keys() )
+					timer := lower(timer);
+					if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" 
+					|| timer == "desarmar" || timer == "desmontar" || timer == "polymorph" 
+					|| timer == "apodrecer" || timer == "clumsy" || timer == "atrasarmagias"
+					|| timer == "feebleMind" || timer == "dmgreduction" || timer == "sleep")
+						TS_LowerDuration(member, timer, -1);
+					endif
+		
+				endforeach
+
+
+			endif
+		endif
+	endforeach
+
+
+endprogram  
+

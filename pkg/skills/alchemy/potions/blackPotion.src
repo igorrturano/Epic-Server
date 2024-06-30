@@ -1,0 +1,27 @@
+use os;
+use uo;
+use cfgfile;
+include ":alchemy:alchemy";
+include ":timedscripts:timedScripts";
+
+program drink_blue(who, potion)
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+	if(!checkifcandrink(who, "black"))
+		return;
+	endif
+	empty_bottle(who, potion);
+	PlaySoundEffect(who, 0x1e4);
+	TS_StartTimer(who, "awabuff", 1800);
+	if (GetObjProperty(who, "chardata").povo != "Drow")
+		who.setlightlevel( 0, 1800 );
+	endif
+endprogram

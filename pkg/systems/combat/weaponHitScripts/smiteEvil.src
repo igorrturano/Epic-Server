@@ -1,0 +1,25 @@
+//use uo;
+//use util;
+
+//include "include/damage";
+//include "include/client";
+//include "include/sounds";
+//include ":charactercreation:resists";
+
+//program HitScript(params)
+//	var attacker	:= params[1];
+//	var defender	:= params[2];
+//	//var weapon	:= params[3];
+//	//var armor	:= params[4];
+//	//var basedamage	:= params[5];
+//	var rawdamage	:= params[6];
+//	params := 0; // Not needed anymore.
+	
+//	PlayObjectCenteredEffect(defender, 0xAFED, 7, 16);
+//	PlaySoundEffect(defender, 0x358);
+	
+//    var danomana := (AP_GetVitalMaximumValue(defender, "mana") - AP_GetVital(defender, "mana")) * 1.2;
+//    danomana += GetResist(attacker, VONTADE);
+//	DamageFLS(defender, danomana, DMG_FIRE, attacker);
+//	return 1;
+//endprogram

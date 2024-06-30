@@ -1,0 +1,25 @@
+use uo;
+use util;
+
+include "include/client";
+//include "include/others";
+include "include/arrays";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include "include/say";
+
+include ":mastermind:mastermind";
+
+program PuzzleChestOpen(who,container)
+
+	if(who.cmdlevel > 0)
+		SendViewContainer(who, container);
+	else
+		if(mastermind(who))
+			SendViewContainer(who, container);
+		else
+//lock chest or something
+		endif
+	endif
+
+endprogram

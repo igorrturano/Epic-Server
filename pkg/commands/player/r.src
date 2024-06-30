@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":survival:fishingFunctions";
+include ":gumps:requestGump";
+include ":attributes:attributes";
+include ":fls_core:packets";
+
+program reconhecer(who, param)
+	var conhecidos := dictionary;
+
+	if(GetObjProperty(who, "conhecidos"))
+		conhecidos := GetObjProperty(who, "conhecidos"); //Lista de pessoas conhecidadas
+	endif
+
+	var targ := Target(who);
+	if(GetObjProperty(targ, "realname"))
+		SendSysMessageEx(who, "Precisar ver o rosto pra reconhecer.", SSM_FAIL);
+		return 0;
+	endif
+
+	var ID := cstr(targ.serial); //Salva o serial do personagem
+	if(GetObjProperty(targ, "disfarce"))
+		ID := cstr(GetObjProperty(targ, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+	endif
+
+	if(targ.IsA(POLCLASS_MOBILE))
+		if(targ.npctemplate)
+			SendSysMessageEx(who, "Nao é um alvo valido.", SSM_FAIL);
+		elseif (param)
+			conhecidos[ID] := Cstr(param);
+			SetObjProperty(who, "conhecidos", conhecidos);
+			SetName(targ, targ.name);
+			SendSysMessageEx(who, "Novo nome salvo.", SSM_INFO);
+		else
+			var apelido := RequestGump(who, "Como quer reconhecer essa pessoa?");
+			if (apelido)
+				conhecidos[ID] := apelido;
+				SetObjProperty(who, "conhecidos", conhecidos);
+				SetName(targ, targ.name);
+				SendSysMessageEx(who, "Novo nome salvo.", SSM_INFO);
+			endif
+		endif
+		return 1;
+	else
+		SendSysMessageEx(who, "So pode reconhecer jogadores.", SSM_FAIL);
+		return 0;
+	endif
+endprogram

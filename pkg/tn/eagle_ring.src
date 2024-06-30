@@ -1,0 +1,47 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program Eagle_ring(who, ring)
+      var firstclick := GetObjProperty (who, "firstclick");
+      var cooldown := TS_GetCooldown(who, "aiwenor");
+
+      var mounted := GetEquipmentByLayer(who, 0x19);
+      if (mounted)
+		SendSysMessage(who, "Voce nao pode fazer isto montado.");
+		return ;
+      endif
+      if ( firstclick )
+         SetObjProperty (who, "firstclick", 0);
+         TS_LowerDuration(who, "stamina", -1);
+	  TS_LowerDuration(who, "velocidade", -1);
+	  var oldname := GetObjProperty (who, "oldname");
+	  who.name := CStr (oldname) ;
+	  var oldrace := GetObjProperty (who, "oldrace");
+	  who.title_race := CStr (oldrace) ;
+      else
+	   if  (cooldown.duration > 0)
+		SendSysMessageEx(who, "Voce deve esperar mais para usar este item novamente.", SSM_FAIL);
+  	   else
+          	var oldname := who.name;
+  		SetObjProperty (who, "oldname", CStr (oldname));
+          	var oldrace := who.title_race;
+  		SetObjProperty (who, "oldrace", CStr (oldrace));
+		var oldgraphic := who.graphic;
+	  	SetObjProperty (who, "oldgraphic", oldgraphic);
+	   	TS_StartTimer(who, "velocidade", 40);
+	   	TS_StartTimer(who, "stamina", 40);
+          	PlaySoundEffect(who, SFX_SPELL_BLESS);
+          	SendSysMessageEx(who, "Voce esta em forma de aguia.", SSM_INFO);
+	   	who.graphic := 5;
+          	who.name := "Aguia";
+		who.title_race := "";
+		SetObjProperty (who, "firstclick", 1);
+          	TS_StartCooldown(who, "aiwenor", 1200);
+          endif
+      endif
+
+endprogram

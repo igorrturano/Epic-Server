@@ -1,0 +1,389 @@
+use uo;
+use os;
+use npc;
+use cfgfile;
+
+include ":ghaia:generic";
+include ":ghaia:ghaia";
+include ":ghaia:objective";
+include "include/dungeons";
+include ":faccao:faccao";
+include ":ghaia:combatevents";
+include ":timedScripts:timedScripts";
+
+var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var me := self();
+var idlesnd1;
+var idlesnd2;
+var areasize;
+var alert_allies := 0;
+var flee_point := 0.1;
+var mystate := INITIALIZING;
+var align;
+var mytemplate;
+var throwinfo;
+var propallies;
+var following := 0;
+
+const FOLLOW_CMD	:= 0xA001;
+
+program KillPlayers()
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+	propallies := dictionary;
+	set_critical(1);
+	//printtextabove(me, "vai inicializr");
+	InitializeNPC(me);
+	set_critical(0);
+	//printtextabove(me, "done");
+	SetWarMode( 0 );
+
+    while (1)    
+        var hasPlayerNearMe := 0;
+        var nearby := ListMobilesNearLocationEx( me.x, me.y, LIST_IGNORE_Z, 30 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+
+        foreach player in nearby
+            if (player.acctname)
+                hasPlayerNearMe++;
+            endif
+        endforeach
+        if (hasPlayerNearMe >= 1)
+            genericBrain();
+        endif
+        sleep(20);
+    endwhile
+
+endprogram
+
+function genericBrain()
+	var ev;
+	var wanders;
+	ev := os::wait_for_event(0);
+	wanders := 0;
+	EnableMainEvents();
+	Set_Event_Queue_Size(1000);
+
+
+    while(me)
+        var timedes := TS_GetTimerNames(me);
+        //se tem objetivo, anda na direcao dele, se nao tem so wander
+        if ("encantar" in timedes) //se está seguindo o Pastor
+            wanders := 0;
+            PetFollow();
+        else
+        if (GetObjProperty(me, "objloc") != error)
+            wanders := 0;
+            DoObjective();
+        else
+            MoveAround();
+        endif
+        endif
+        
+        if (!("encantar" in timedes)) //Quando não está seguindo o pastor, feito pq a ação demorava quando wanders ativo
+        wanders := wanders +1;
+        if(wanders >= 30)
+            wanders := 0;
+            look_around();
+            ev := sleepmode();
+        else
+            ev := os::wait_for_event(10);
+        endif
+        endif
+
+        if(ev)
+            case(ev.type)
+                SYSEVENT_ENTEREDAREA:
+                    if (CheckLineOfSight(me, ev.source))
+                        if(CanFight(me, ev.source, align)) //verifica se eh inimigo
+                            wanders := 0;
+                            Fight(ev.source);
+                        endif
+                    endif
+                SYSEVENT_ENGAGED:	wanders := 0; Fight(ev.source);
+                SYSEVENT_DAMAGED:	wanders := 0; Fight(ev.source);
+                EVID_ALERT_ALLIES:	wanders := 0; Fight(ev.opponent, 1);
+                EVID_HERDING:		herd(ev);
+                EVID_TAUNT:
+                            if(ev.source)
+                                wanders := 0; Fight(ev.opponent, 1);
+                            endif
+                EVID_FLEE:
+                            if (ev.source)
+                                flee(ev.source);
+                            endif
+                FOLLOW_CMD:
+                    following := ev.source;
+                    PetFollow(ev.targ);
+            break;
+            endcase
+        endif
+
+        look_around();
+        sleepms(200);
+    endwhile
+endfunction
+
+function CloseDistance( opponent )
+
+	if ( GetObjPRoperty(me, "noclosecombat") == 1)
+		return 0;
+	endif
+
+	var sleepdelay := 275 - me.run_speed;//(CInt(GetDexterity(me)) * 1.5);
+
+	if (sleepdelay < 0)
+		sleepdelay := 0;
+	endif
+
+/*
+    case (CoordinateDistance( me.x, me.y, opponent.x, opponent.y ))
+        1:
+        0:
+            return 1;
+        default:
+		if (!CheckLineofSight(me, opponent)) //se nao consegue ver
+			var path := GetObjPRoperty(me, "path"); //procura se ja calculou o path
+			if (path == error) //se nao calculou
+				var flags := FP_IGNORE_MOBILES;
+				if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+					flags := flags| FP_IGNORE_DOORS;
+				endif
+				path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 10); //calcula o path
+				if (path == error) //TODO: se nao tiver outro inimigo correr ?
+					ChooseAnotherOpponent(me);
+				else
+					SetObjProperty(me, "path", path);
+				endif
+			else //se calculou o path
+				var coord := path[1]; //pega a primeira coordenada
+				if (coord)
+					SetObjProperty(me, "#coordtry", ReadGameClock());
+					RunTowardLocation( coord.x, coord.y ); //anda na direcao
+					sleepms(sleepdelay);
+					Opendoors(me, opponent); //tenta abrir possiveis portas
+					if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia
+						path.erase(1); //deleta a coordenada e vai pra proxima
+						if (path.size() > 0)
+							SetObjProperty(me, "path", path);
+						else
+							EraseObjProperty(me, "path");
+						endif
+					else // se nao consegue chegar na coord
+						if ( cint(GetObjProperty(me, "#coordtry")) > ReadGameClock()+5) //se ta tentando chegar la a mais de 5 segundos
+							EraseObjProperty(me, "path"); //deleta o path atual
+							ChooseAnotherOpponent(me); //procura outro oponente TODO: se nao tiver outro oponente?
+						endif
+					endif
+				else
+					RunToward( opponent );
+					sleepms(sleepdelay);
+				endif
+			endif
+		else
+			EraseObjProperty(me, "path");
+			RunToward( opponent );
+			sleepms(sleepdelay);
+		endif
+		RunToward( opponent );
+		sleepms(sleepdelay);
+
+            return 0;
+    endcase
+ */
+
+	var face_str := getFacingString(GetFacing(me.x, me.y, opponent.x, opponent.y));
+   var stam := AP_GetVital(me, STAMINA);
+   var move_type := 1;
+
+   if (stam < 5)
+      move_type := 0;
+   endif
+
+	var path := GetObjProperty(me, "path"); //procura se ja calculou o path
+	var last_loc := GetObjProperty(me, "#enemy_last_loc"); //procura se ja calculou o path
+   if (last_loc && path)
+      if (CoordinateDistance(opponent.x, opponent.y, last_loc[1], last_loc[2]) > 3)
+         path := 0;
+         EraseObjProperty(me, "path");
+         EraseObjProperty(me, "#enemy_last_loc");
+         last_loc := 0;
+      else
+         last_loc := 1;
+      endif
+   endif
+
+   if (stam <= 1)
+      var last_msg := GetObjProperty(me, "#fatigue");
+      if (!last_msg || last_msg < ReadGameClock())
+         SetObjProperty(me, "#fatigue", ReadGameClock()+15);
+         PrintText(me, "*fatigado*");
+      endif
+      sleep(1);
+   elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
+      EraseObjProperty(me, "path");
+      EraseObjProperty(me, "#enemy_last_loc");
+
+      if (move_type)
+         RunToward( opponent );
+      else
+         WalkToward( opponent );
+      endif
+
+      var reachtry := GetObjProperty(me, "#reachtry");
+      if (reachtry == error || (reachtry[1].x != opponent.x && reachtry[1].y != opponent.y))
+         reachtry := array{struct{ x := opponent.x, y := opponent.y, z := opponent.z }, ReadGameClock()+5 };
+         SetObjProperty(me, "#reachtry", reachtry);
+      endif
+
+      if (reachtry[2] > ReadGameClock())
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, 0, 15);
+         if (!path)
+            //Flee(opponent);;
+            sleepms(sleepdelay);
+         else
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+      endif
+
+      sleepms(sleepdelay);
+	else
+      if (path == error || last_loc ) //se não calculou
+         var flags := FP_IGNORE_MOBILES;
+         if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+            flags := flags| FP_IGNORE_DOORS;
+         endif
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 15); //calcula o path
+
+         if (!path[1] || !path || path == error)
+            //Flee(opponent);
+            sleepms(sleepdelay);
+         else
+            if (move_type) RunTowardLocation( path[1].x, path[1].y );
+            else WalkTowardLocation(path[1].x, path[1].y); endif
+
+				path.erase(1); //deleta a coordenada e vai pra proxima
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+		endif
+
+      var coord := path[1]; //pega a primeira coordenada
+      if (coord);
+         var coordtry := GetObjProperty(me, "#coordtry");
+         if (coordtry == error || coordtry[1] != coord)
+            coordtry := array{coord, ReadGameClock()+5 };
+            SetObjProperty(me, "#coordtry", coordtry);
+         endif
+         if (move_type) RunTowardLocation( coord.x, coord.y );
+         else WalkTowardLocation(coord.x, coord.y); endif
+         sleepms(sleepdelay);
+         Opendoors(me); //tenta abrir possiveis portas
+         if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia
+
+		 	if (CoordinateDistance( me.x, me.y, opponent.x, opponent.y ) > 1)
+      			CalcPathAndMove(me, opponent, sleepdelay);
+     	 		return 0;
+   			else
+	   			return 1;
+   			endif
+            path.erase(1); //deleta a coordenada e vai pra proxima
+            if (path[1])
+               SetObjProperty(me, "path", path);
+            else
+               EraseObjProperty(me, "path");
+            endif
+         else // se não consegue chegar na coord
+            if ( coordtry[2] > ReadGameClock()) //se ta tentando chegar la a mais de 5 segundos
+               EraseObjProperty(me, "path"); //deleta o path atual
+               me.remAggro(opponent);
+               var old_opponent := opponent;
+               ChooseHighestOpponent(me, opponent);
+               if (old_opponent == opponent)/*Flee(opponent);*/ endif
+            endif
+         endif
+      else
+         if (move_type) RunToward( opponent );
+         else WalkToward( opponent ); endif
+         sleepms(sleepdelay);
+      endif
+	endif
+
+endfunction
+
+/*
+
+function ChooseAnotherOpponent(me)
+
+	var otherTarget := ListMobilesNearLocationEx( me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm );
+	if  (otherTarget.size() > 0)
+		foreach mob in otherTarget
+			if(CanFight(me, mob, align)) //verifica se eh inimigo
+				Fight(mob);
+			endif
+		endforeach
+	else
+	endif
+
+endfunction
+
+*/
+
+function look_around()
+  foreach npc in ListMobilesInLineOfSight(me, areasize)
+    if( CanFight(me, npc, align) )
+        Fight(npc);
+    endif
+    sleepms(2);
+  endforeach
+endfunction
+
+
+function PetFollow(character := 0)
+   if (character)
+      if ( character == me || !character.IsA(POLCLASS_MOBILE) )
+         return;
+      endif
+      following := character;
+      return;
+   endif
+
+var dist := Distance(me, following); 
+var life := AP_GetVitalMaximumValue(me, HITS);
+var lifeatual := AP_GetVital(me, HITS);
+
+var timedes := TS_GetTimerNames(me);
+
+var xs := "encantar" in timedes;
+if (life != lifeatual)
+following := 0;
+TS_LowerDuration(me, "encantar", -1);
+printtextabove(me, "O animal estah assustado demais!");
+return;
+endif
+
+
+if(!("encantar" in timedes) )
+return;
+else
+   if( dist <= 2 )
+	os::wait_for_event(1);
+   elseif( dist > 25 )
+      following := 0;
+	  os::wait_for_event(20);
+	  TS_LowerDuration(me, "encantar", -1);
+	  return;
+   elseif ( dist > 4 )
+	  RunToward( following );
+	  os::wait_for_event(0);
+   else
+	  WalkToward( following );
+      os::wait_for_event(0);
+   endif
+endif
+//endwhile
+
+//printtextabove(me, "O animal parou de te seguir");
+//TS_LowerDuration(me, "encantar", -1);
+return 1;
+
+endfunction

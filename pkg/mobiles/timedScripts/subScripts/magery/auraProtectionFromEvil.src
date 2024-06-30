@@ -1,0 +1,48 @@
+ 
+use uo;
+use os;
+
+include "include/sounds";
+include "include/client";
+
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	
+	if (GetObjProperty(mobile, "auraProtectionFromEvilEffect") != error) 
+		return;
+	endif
+	
+	var points;
+	if (level > 20)
+		points := 20;
+	endif
+	
+	if (GetObjProperty(mobile, "enMod") != error)
+		return;
+	endif
+	
+	if (GetObjProperty(mobile, "auraEnMod") != error)
+		if (GetObjProperty(mobile, "auraEnMod") >= points)
+			return;
+		else
+			mobile.resist_energy_mod := mobile.resist_energy_mod - GetObjProperty(mobile, "auraEnMod") + points;
+			SetObjProperty(mobile, "auraEnMod", points);			
+		endif
+	else
+		SetObjProperty(mobile, "auraEnMod", points);
+		mobile.resist_energy_mod := mobile.resist_energy_mod + points;
+		sendsysmessage(mobile, "Proximo a "+attacker.name+" voce se sente mais resistente a energia.") ;
+	endif
+
+	PlaySoundEffect(mobile, SFX_BLESS);
+       PlayObjectCenteredEffectEx(mobile, GFX_BLUE_SPARKLE_BORDER, 7, 16, 13);
+			
+
+	//SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
+	
+	return 1;
+endprogram

@@ -1,0 +1,91 @@
+use uo;
+use util;
+
+include ":gumps:gumps";
+include ":combat:hitscripts";
+include ":gumps:requestGump";
+
+var blood_graphics := array(4650, 4651, 4652, 4653, 4654);
+
+program Setup(altar)
+
+
+
+
+	var i, j;
+	var item;
+
+	for (i := -2; i <= 2; i := i + 1)
+		for (j := -2; j <= 2; j := j + 1)
+			item :=CreateItemAtLocation( altar.x+i, altar.y+j, altar.z,0x750,1);
+			item.color:=0x497;
+			item.movable := 0;
+		endfor
+	endfor
+
+	for (i := -1; i <= 1; i := i + 1)
+		for (j := -1; j <= 1; j := j + 1)
+			item :=CreateItemAtLocation( altar.x+i, altar.y+j, altar.z+5,0x750,1);
+			item.color:=0x497;
+			item.movable := 0;
+		endfor
+	endfor
+
+	for (i := -1; i <= 1; i := i + 1)
+		item :=CreateItemAtLocation( altar.x-i, altar.y+2, altar.z+5,0x751,1);
+		item.color:=0x497;		item.movable := 0;
+		item :=CreateItemAtLocation( altar.x+2, altar.y+i, altar.z+5,0x752,1);
+		item.color:=0x497;		item.movable := 0;
+		item :=CreateItemAtLocation( altar.x+i, altar.y-2, altar.z+5,0x753,1);
+		item.color:=0x497;		item.movable := 0;
+		item :=CreateItemAtLocation( altar.x-2, altar.y+i, altar.z+5,0x754,1);
+		item.color:=0x497;		item.movable := 0;
+	endfor
+
+	item :=CreateItemAtLocation( altar.x-2, altar.y-2, altar.z+5,0x759,1);
+	item.color:=0x497;		item.movable := 0;
+	item :=CreateItemAtLocation( altar.x+2, altar.y+2, altar.z+5,0x75A,1);
+	item.color:=0x497;		item.movable := 0;
+	item :=CreateItemAtLocation( altar.x-2, altar.y+2, altar.z+5,0x75B,1);
+	item.color:=0x497;		item.movable := 0;
+	item :=CreateItemAtLocation( altar.x+2, altar.y-2, altar.z+5,0x75C,1);
+	item.color:=0x497;		item.movable := 0;
+
+	var pent:=array;
+	var mainPent;
+	item :=CreateItemAtLocation( altar.x, altar.y, altar.z+10,0x5003,1);
+	SetObjProperty(item, "status", "off");
+	item.movable := 0;		item.name:= "champion altar";
+	mainPent:=item;
+
+	pent.append(item.serial);
+	item :=CreateItemAtLocation( altar.x, altar.y-1, altar.z+10,0xfe8,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+	item :=CreateItemAtLocation( altar.x, altar.y+1, altar.z+10,0xfec,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+
+	item :=CreateItemAtLocation( altar.x-1, altar.y, altar.z+10,0xfe6,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+	item :=CreateItemAtLocation( altar.x-1, altar.y-1, altar.z+10,0xfe7,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+	item :=CreateItemAtLocation( altar.x-1, altar.y+1, altar.z+10,0xfe9,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+
+	item :=CreateItemAtLocation( altar.x+1, altar.y, altar.z+10,0xfee,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+	item :=CreateItemAtLocation( altar.x+1, altar.y-1, altar.z+10,0xfeb,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+	item :=CreateItemAtLocation( altar.x+1, altar.y+1, altar.z+10,0xfed,1);
+	item.movable := 0;		item.name:= "champion altar";
+	pent.append(item.serial);
+//	PrintTextAbove(mainPent, "1 - " + pent);
+	SetObjProperty(mainPent, "pentagram", pent);
+
+endprogram

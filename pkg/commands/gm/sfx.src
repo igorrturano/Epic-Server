@@ -1,0 +1,84 @@
+////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////
+
+//
+
+//  SFX.SRC - ingame command
+
+//
+
+//  Plays the supplied soundeffect, if it's valid.
+
+//
+
+//  Author: Ignatius 1999/01/26
+
+//
+
+//  Recent Modifications:
+//toca midi tbm
+//
+
+////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////
+
+
+
+use uo;
+
+include ":fls_core:packets";
+
+program textcmd_sfx( who, input )
+
+
+
+    if ( ! input )
+
+        SendSysMessage( who, "No argument supplied. Usage: .sfx [sfx ou midi] [sound id]." );
+
+        return;
+
+    endif
+
+
+
+    var argarray := SplitWords( input ); // split the arguments.
+
+//    PlaySoundEffect( who, argarray[1] );
+	
+    var soundtype := Cstr( argarray[ 1 ] );
+    var soundfx := Cint( argarray[ 2 ] );
+
+
+
+    if ( ! soundfx )
+
+        SendSysMessage( who, "Not a valid soundid." );
+        return;
+
+    endif
+
+    sendsysmessage(who, " " + soundtype + " " + soundfx);
+
+    if (soundtype == "sfx")
+	PlaySoundEffect( who, soundfx );
+    elseif (soundtype == "midi")
+	var mobiles := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
+	foreach mobile in mobiles
+		if (!mobile.npctemplate)
+		         PlayMidiMusic(mobile, soundfx);
+		endif
+	endforeach
+	PlayMidiMusic(who, soundfx);
+    else
+	SendSysMessage(who, "Modo se usar .sfx [soundtype] [sound] where soundtype can be sfx or midi.");
+    endif
+
+
+    SendSysMessage( who, "Playing: "+CStr( soundfx )+" / "+Hex( soundfx ) );
+
+
+
+endprogram

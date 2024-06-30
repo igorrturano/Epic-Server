@@ -1,0 +1,36 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+
+program cast_firebolt(params)
+    var caster := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(caster, "Alvo invalido.");
+		return 0;
+	endif
+
+    if (!targ)
+		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+
+    LaunchProjectile(caster, targ);
+endprogram
+
+function LaunchProjectile(caster, targ)
+    PlaySoundEffect(caster, SFX_AQUARIUM_USE);
+    PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
+    var dmg := cint(AP_GetSkill(caster, MAGICLORE))/8 + RandomDiceRoll("1d6");
+    DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
+endfunction

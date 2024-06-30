@@ -1,0 +1,54 @@
+     use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+include ":gumps:htmlGump";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+
+
+	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
+	if ( !ficharp_elem )
+		return 0;
+	endif
+	var comportamento := ficharp_elem.GetProp("Comportamento");
+	var objetivos := ficharp_elem.GetProp("Objetivos");
+
+
+	var texto := "";
+	texto := texto+"Comportamento<br>";
+	var i;
+	for (i := 1 ; i <= 6 ; i := i + 1)
+		texto := texto+comportamento[i]+"<br>";
+	endfor
+//	texto := texto+"<br><br>Objetivos<br>";
+//	for (i := 1 ; i <= 3 ; i := i + 1)
+//		texto := texto+objetivos[i]+"<br>";
+//	endfor
+	var e := SendHTMLGump(who, "Aura de "+targ.name, texto);
+//	SendSysMEssage(who, " " + e );
+	return 1;
+endprogram

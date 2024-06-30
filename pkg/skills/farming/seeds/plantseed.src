@@ -1,0 +1,175 @@
+use uo;
+use os;
+use cfgfile;
+
+var GROWTH_UNIT		:= GetObjTypeByName("GrowthUnit");
+
+const BOW_ANIM		:= 0x20;
+const PLANT_SOUND	:= 0x50;
+include ":attributes:skillCheck";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+include ":charactercreation:habilidades";
+include ":gumps:yesNo";
+
+program PlantSeed(who, seed)
+
+	var canplant := 0;
+	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 0, who.realm)
+		if ( item.objtype == 0x31F4 ) //dirtpatch
+			canplant := 1;
+		endif
+		sleepms(2);
+	endforeach
+
+	if (canplant == 0)
+		SendSysMessage(who, "Voce nao pode plantar aqui.");
+		return 1;
+	endif
+
+	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 0, who.realm)
+		if ( item.IsPlant() )
+			SendSysMessage(who, "Ja existe uma planta crescendo aqui.");
+			return;
+		endif
+		sleepms(2);
+	endforeach
+
+	PerformAction(who, BOW_ANIM);
+	sleepms(500);
+	PlaySoundEffect(who, PLANT_SOUND);
+
+	var cfg := ReadConfigFile(":*:itemdesc");
+	cfg := cfg[seed.objtype];
+	var award_diff := cfg.PlantDifficulty;
+	var difficulty := award_diff;
+
+	if(TemHabilidade(who,"Agricultor Talentoso"))
+		difficulty := difficulty-20;
+	endif
+
+	if ( SkillCheck(who, DomesticWork, difficulty, award_diff) > 0 )
+		var grower := CreateItemAtLocation(who.x, who.y, who.z+1, GROWTH_UNIT, 1, who.realm);
+		grower.SetGrowerType(seed.objtype);
+		SendSysMessage(who, "Voce plantou a semente.");
+		grower.SetWaterAmount(100);
+		if(TemHabilidade(who,"Dedo Verde"))
+			grower.SetGrowStep(5);
+		else
+			grower.SetGrowStep(0);
+		endif
+		var maxAmt := grower.GetDefaultMaxProduceAmount();
+		/*
+		if (TemHabilidade(who, "Agricultor Experiente"))
+			maxAmt := maxAmt*2;
+		endif
+		*/
+		grower.SetMaxProduceAmount( maxAmt );
+
+		if ( who.cmdlevel >= 1 )
+			if (!YesNo(who, "(GM) Deseja que esta planta precise ser regada?", "Sim.", "Nao."))
+				SendSysMessage(who, "Esta planta nao precisa de agua.");
+				SetObjProperty(grower, "gmplant", 1);
+			endif
+		endif
+
+		if (seed.objtype == 0x701E) //se for flor
+			var flower := selectflower(who);
+			setobjproperty(grower, "flower", flower);
+		endif
+
+	else
+		SendSysMessage(who, "Voce nao sabe se essa semente vai crescer.");
+	endif
+	SubtractAmount(seed, 1);
+endprogram
+
+function selectflower(who)
+
+	var gump := GFCreateGump();
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 320, 550);
+	GFResizePic(gump, 15, 40, 0x13BE, 290, 520);
+	GFTextLine(gump, 60, 50, 1153, "Escolha a flor dessa semente");
+
+	GFTilePic(gump, 50, 90, 3262);
+	GFTilePic(gump, 50, 140, 3263);
+	GFTilePic(gump, 50, 190, 3264);
+	GFTilePic(gump, 50, 240, 3265);
+	GFTilePic(gump, 50, 290, 3203);
+	GFTilePic(gump, 50, 340, 3204);
+	GFTilePic(gump, 50, 390, 3205);
+	GFTilePic(gump, 50, 440, 3206);
+	GFTilePic(gump, 50, 490, 3207);
+
+	GFTilePic(gump, 220, 90, 3208);
+	GFTilePic(gump, 220, 140, 3209);
+	GFTilePic(gump, 220, 190, 3210);
+	GFTilePic(gump, 220, 240, 3211);
+	GFTilePic(gump, 220, 290, 3212);
+	GFTilePic(gump, 220, 340, 3213);
+	GFTilePic(gump, 220, 390, 3214);
+	GFTilePic(gump, 220, 440, 9036);
+
+	GFAddButton(gump, 30, 100,  2103, 2104, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 30, 150, 2103, 2104, GF_CLOSE_BTN, 2);
+	GFAddButton(gump, 30, 200, 2103, 2104, GF_CLOSE_BTN, 3);
+	GFAddButton(gump, 30, 250, 2103, 2104, GF_CLOSE_BTN, 4);
+	GFAddButton(gump, 30, 300, 2103, 2104, GF_CLOSE_BTN, 5);
+	GFAddButton(gump, 30, 350, 2103, 2104, GF_CLOSE_BTN, 6);
+	GFAddButton(gump, 30, 400, 2103, 2104, GF_CLOSE_BTN, 7);
+	GFAddButton(gump, 30, 450, 2103, 2104, GF_CLOSE_BTN, 8);
+	GFAddButton(gump, 30, 500, 2103, 2104, GF_CLOSE_BTN, 9);
+
+	GFAddButton(gump, 210, 100,  2103, 2104, GF_CLOSE_BTN, 10);
+	GFAddButton(gump, 210, 150, 2103, 2104, GF_CLOSE_BTN, 11);
+	GFAddButton(gump, 210, 200, 2103, 2104, GF_CLOSE_BTN, 12);
+	GFAddButton(gump, 210, 250, 2103, 2104, GF_CLOSE_BTN, 13);
+	GFAddButton(gump, 210, 300, 2103, 2104, GF_CLOSE_BTN, 14);
+	GFAddButton(gump, 210, 350, 2103, 2104, GF_CLOSE_BTN, 15);
+	GFAddButton(gump, 210, 400, 2103, 2104, GF_CLOSE_BTN, 16);
+	GFAddButton(gump, 210, 450, 2103, 2104, GF_CLOSE_BTN, 17);
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+
+	if (input == 1)
+		return 3262;
+	elseif (input == 2)
+		return 3263;
+	elseif (input == 3)
+		return 3264;
+	elseif (input == 4 )
+		return 3265;
+	elseif  (input == 5)
+		return 3203;
+	elseif (input == 6)
+		return 3204;
+	elseif (input == 7)
+		return 3205;
+	elseif (input == 8)
+		return 3206;
+	elseif (input == 9)
+		return 3207;
+	elseif (input == 10)
+		return 3208;
+	elseif (input == 11)
+		return 3209;
+	elseif (input == 12)
+		return 3210;
+	elseif (input == 13)
+		return 3211;
+	elseif (input == 14)
+		return 3212;
+	elseif (input == 15)
+		return 3213;
+	elseif (input == 16)
+		return 3214;
+	elseif (input == 17)
+		return 9036;
+	else
+		return 0;
+	endif
+
+
+endfunction

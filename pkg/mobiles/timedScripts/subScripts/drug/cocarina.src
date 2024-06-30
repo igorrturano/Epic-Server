@@ -1,0 +1,40 @@
+/* $Id: alcohol.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":timedscripts:timedScripts";
+include ":attributes:attributes";
+
+program TimedScript_Alcohol(params)
+	var mobile := params[1];
+
+	var cycle := 0;
+	
+	AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") + 50 );
+	AP_ModifyStatMod(mobile, DEXTERITY, 20);
+	RecalcVitals(mobile);
+	while ( 1 )
+		cycle := cycle+1;
+		if  ( cycle == 10 )
+			SendSysMessage(mobile, "Voce se sente euforico.");
+		elseif ( cycle == 50 )
+			SendSysMessage(mobile, "Seus sente seu coracao pulsando mais forte e sua respiracao acelerada.");
+		elseif ( cycle == 120 )
+			SendSysMessage(mobile, "Voce sente um enjoo forte.");
+		elseif ( cycle == 250 )
+			SendSysMessage(mobile, "Voce se torna irritavel e quer usar mais cocarina.");
+		elseif ( cycle == 300 )
+			SendSysMessage(mobile, "Voce sente como se centenas de insetos andassem por baixo da sua pele.");
+		endif
+
+		
+		Sleep(RandomDiceRoll("1d10")+10);
+	endwhile
+	
+	return 1;
+endprogram

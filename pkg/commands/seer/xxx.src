@@ -1,0 +1,53 @@
+use uo;
+use os;
+use datafile;
+
+include ":gumps:yesNo";
+
+program teleto(who, param)
+	var tree;
+	while (!who.warmode)
+		tree := CreateItematLocation(who.x,who.y,who.z,3286, who.realm);
+		CreateItematLocation(tree.x,tree.y,tree.z,3287, who.realm);
+		sleep(1);
+	endwhile
+	SendSysMessage(who, "Stop");
+//	var process := GetProcess(CInt(param));
+//	SendSysMessage(who, "Processo: "+process+" Num: "+param);
+//	process.kill();
+/*
+	SendSysMessage(who, "Comando inicio.");
+	var ips, acc, acct, found;
+	foreach acc1 in (ListAccounts())
+		found := 0;
+		acc := FindAccount(acc1);
+		ips := acc.GetProp("IP");
+		if (acc.defaultcmdlevel > 0 || acc.banned)
+			continue;
+		endif
+		foreach ip in (ips)
+			foreach acc2 in (ListAccounts())
+				acct := FindAccount(acc2);
+				if (acct.defaultcmdlevel > 0 || acct.banned)
+					continue;
+				endif
+				if (acc.name == acct.name); // Do Nothing
+				elseif (ip in acct.GetProp("IP"))
+					SendSysMessage(who, acc.name+" = "+acct.name+" ("+ip+")");
+					found := 1;
+				endif
+				sleepms(1);
+			endforeach
+			sleepms(1);
+		endforeach
+		sleepms(1);
+		if (found)
+			var continuar := 1;//YesNo(who, "Deseja continuar?");
+			if (!continuar)
+				break;
+			endif
+		endif
+	endforeach
+	SendSysMessage(who, "Comando fim.");
+*/
+endprogram

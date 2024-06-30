@@ -1,0 +1,39 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/sounds";
+include "include/client";
+
+use vitals;
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	
+	var points := level;
+		
+	//if (GetObjProperty(mobile, "coMod") != error)
+	//	return;
+	//endif
+
+	var mana_regen := points;
+	
+	if (GetObjProperty(mobile, "auraHpRegenMod") != error)
+		return;
+	else
+		AP_SetVitalRegenRateMod(mobile, "Hits", AP_GetVitalRegenRateMod(mobile, "Hits") + mana_regen );
+		SetObjProperty(mobile, "auraHpRegenMod", mana_regen);
+		sendsysmessage(mobile, "Voce se sente seus ferimentos cicatrizarem mais depressa proximo a "+attacker.name) ;
+	endif
+
+	PlaySoundEffect(mobile, SFX_BLESS);
+       PlayObjectCenteredEffectEx(mobile, GFX_BLUE_SPARKLE_GROUND, 7, 16, 66);			
+
+	//SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
+	
+	return 1;
+endprogram

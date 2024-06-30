@@ -1,0 +1,36 @@
+ use uo;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/facings";
+
+program backstab(who)
+
+	who.hidden := 1;
+	var i;
+	for (i := 0; i < 4; i:=i+1 )
+		SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
+		var loc := TargetCoordinates(who);
+		if ( !loc )
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			i := i - 1;
+			continue;
+		endif
+
+		if ( !CheckLosAt(who, loc.x, loc.y, loc.z) )
+			SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+			i := i - 1;
+			continue;
+		endif
+
+		TurnObjectToward(who, loc.x, loc.y);
+
+		MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
+	endfor
+
+
+
+	return 1;
+
+
+endprogram 

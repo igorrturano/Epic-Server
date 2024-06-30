@@ -1,0 +1,10 @@
+use uo;
+
+program Install()
+	return 1;
+endprogram
+
+exported function GetWell(hook)
+	var well := GetObjProperty(hook, "house_serial");
+	return SystemFindObjectBySerial(well);
+endfunction

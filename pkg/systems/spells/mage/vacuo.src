@@ -1,0 +1,52 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var targets := array;
+	foreach mobile in (ListMobilesNearLocation( who.x, who.y, who.z, 8, who.realm))
+		if (CheckLineOfSight(who, mobile) )
+			targets.append(mobile);
+		endif
+	endforeach
+
+	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+
+	foreach mobile in targets
+		mobile.frozen := 1;
+	endforeach
+
+	foreach mobile in targets
+
+		SendSysMessageEx(mobile, "Uma forca move voce contra a sua vontade.", SSM_INFO);
+
+		var phase_coords := GetCoordsInLine(who.x, who.y, mobile.x, mobile.y);
+
+		var i := 0;
+		var j := phase_coords.size();	
+		for ( i := 1; i <= phase_coords.size(); i := i + 1)
+
+			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, cint(0x3728), 20, 20);
+			var z := GetWorldHeight(phase_coords[j].x, phase_coords[j].y, who.realm);
+			MoveObjectToLocation(mobile, phase_coords[j].x, phase_coords[j].y, z, who.realm, MOVEOBJECT_NORMAL);
+
+			j := j -1;		
+			sleepms(100);
+		endfor
+	endforeach
+	
+	foreach mobile in targets
+		mobile.frozen := 0;
+	endforeach
+
+	return 1;
+endprogram   

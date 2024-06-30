@@ -1,0 +1,33 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include "include/facings";
+
+program SpellScript(params)
+
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	SendSysMessageEx(who, "O tempo se distorce proximo de voce.", SSM_INFO);
+	var time := AP_GetSkill(who, MAGICLORE)/5;
+	TS_StartTimer(who, "dmgreturn", time);
+
+	return 1;
+
+endprogram
+
+
+ 

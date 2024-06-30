@@ -1,0 +1,89 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o corpo ou a parte de corpo para usar essa magia", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+	var skill := AP_GetSkill(who, "Magery");
+
+	if ( targ.isa(POLCLASS_CORPSE) )
+		if (GetObjproperty(targ, "npctemplate"))
+			SendSysMessageEx(who, "Essa magia so pode ser usada em players", SSM_FAIL);
+			return 0;
+		endif
+		if (Distance(targ, who) > 1);
+			SendSysMessageEx(who, "Voce deve estar bem proximo do corpo para usar essa magia", SSM_FAIL);
+			return 0;
+		endif
+		if (!GetObjproperty(targ, "morto"))
+			SendSysMessageEx(who, "Essa magia so pode ser usada em corpos de pessoas mortas", SSM_FAIL);
+			return 0;
+		endif
+		var m := 1;
+		while (m < 3)
+		CreateItemAtLocation(targ.x + m, targ.y, targ.z, 4650,1, targ.realm);
+		CreateItemAtLocation(targ.x - m, targ.y, targ.z, 4650,1, targ.realm);
+		CreateItemAtLocation(targ.x, targ.y + m, targ.z, 4650,1, targ.realm);
+		CreateItemAtLocation(targ.x, targ.y - m, targ.z, 4650,1, targ.realm);
+		m := m + 1;
+		sleepms(450);
+		endwhile
+		var coords := { targ.x, targ.y, targ.z };
+		var realname := GetObjProperty(targ, "realname");
+		var coracao := CreateItemInBackPack(who, 7405,1);
+		SetObjProperty(coracao, "RecallCoords", coords);
+		SetObjProperty(coracao, "Name", realname);
+		coracao.name := "Coracao de " + realname;
+		SendSysMessageEx(who, "Voce vinculou o coracao do alvo ao local da morte de " + realname, SSM_INFO);
+	
+	elseif (GetObjProperty(targ, "RecallCoords"))
+		var sparkle := CreateItemAtLocation(who.x, who.y, who.z, 14170, 1, who.realm);
+		sparkle.color := 1175;
+		sparkle.movable := 0;
+		who.frozen := 1;
+		sleepms(3000);
+		Destroyitem( sparkle );
+		var name := GetObjProperty(targ, "Name");
+		var location := GetObjProperty(targ, "RecallCoords");
+		var oldx, oldy, oldz;
+		oldx := CInt(location[1]);
+		oldy := CInt(location[2]);
+		oldz := CInt(location[3]);
+
+		SendSysMessageEx(who, "Seu corpo percorre o mundo procurando o vinculo da sepultura de " + name, SSM_INFO);
+		MoveObjectToLocation( who, 4549  , 3083 , 0, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 839 , 1794, 1, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 708 , 2137, 1, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 2492 , 2131, 20, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 1387 , 1293, 0, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 797 , 1504, 0, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 533 , 985, 31, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 2088 , 2470, 0, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, 719 , 516, 30, who.realm);
+		sleepms(500);
+		MoveObjectToLocation( who, oldx , oldy , oldz , who.realm);
+		who.frozen := 0;
+	endif
+
+	return 1;
+endprogram 

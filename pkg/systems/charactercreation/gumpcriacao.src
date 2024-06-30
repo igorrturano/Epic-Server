@@ -1,0 +1,1429 @@
+// use cfgfile;
+// use uo;
+// use os;
+
+// include ":gumps:gumps";
+// include ":gumps:gumps_ex";
+// include ":tn:tngumps";
+// include ":gumps:requestGump";
+// include ":attributes:attributes";
+// include "include/client";
+// include ":disguise:disguise";
+// include ":charactercreation:createchar";
+// include ":datafile:datafile";
+// include "include/say";
+
+// //cores: 1153 -> 2103 -> 2105
+
+// const OK_BUTTON			:= 10;
+
+// function RaceGump(who, byref  chardata)
+
+// var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 14",
+// 		"Button 470 580 9903 9905 1 2 14",
+
+// 		"page 1",
+
+// 		"text 150 170 2103 1",
+
+// 		"text 215 200 2105 8",
+
+// 		"text 265 220 2105 3",
+// 		"text 265 260 2105 4",
+// 		"text 265 300 2105 2",
+// 		"Radio 230 217 9726 9729 1 1", //asanita
+// 		"Radio 230 257 9726 9729 0 2", //thuriao
+// 		"Radio 230 297 9726 9729 0 3", //zharkiano
+
+// 		"text 215 330 2105 9",
+
+// 		"text 265 360 2105 7",
+// 		"text 265 400 2105 6",
+// 		"text 265 440 2105 5",
+// 		"Radio 230 357 9726 9729 0 4", //aquilrano
+// 		"Radio 230 397 9726 9729 0 5", //numajene
+// 		"Radio 230 437 9726 9729 0 6", //vanirio
+
+// 		"text 215 480 2105 13",
+
+//         "text 265 510 2105 10",
+// 		"text 265 550 2105 11",
+//         "text 265 590 2105 12",
+// 		"Radio 230 507 9726 9729 0 10", //Anao
+// 		"Radio 230 547 9726 9729 0 11", //Drow
+//         "Radio 230 587 9726 9729 0 12" //Orc
+// 		};
+// var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Escolha o povo do seu personagem:", //1
+// 		"Zharkiano", //2
+// 		"Asanita",  //3
+// 		"Thurião",  //4
+// 		"Vanírio", //5
+// 		"Numajene",//6
+// 		"Aquilrano", //7
+// 		"Humano", //8
+// 		"Elfo", //9
+//         "Anão", // 10
+//         "Drow", // 11
+//         "Orc", // 12
+//         "Povos Originários", //13
+// 		"Próximo" // 14
+// 		};
+
+
+
+// 	var ret := SendDialogGump( who, gflayout, gfdata );
+// 	if (1 in ret.keys)
+// 		chardata.+raca := "Humano";
+// 		chardata.+povo := "Asanita";
+// 	elseif (2 in ret.keys)
+// 		chardata.+raca := "Humano";
+// 		chardata.+povo := "Thuriao";
+// 	elseif (3 in ret.keys)
+// 		chardata.+raca := "Humano";
+// 		chardata.+povo := "Zharkiano";
+// 	elseif (4 in ret.keys)
+// 		chardata.+raca := "Elfo";
+// 		chardata.+povo := "Aquilrano";
+// 	elseif (5 in ret.keys)
+// 		chardata.+raca := "Elfo";
+// 		chardata.+povo := "Numajene";
+// 	elseif (6 in ret.keys)
+// 		chardata.+raca := "Elfo";
+// 		chardata.+povo := "Vanirio";
+//     elseif (10 in ret.keys)
+// 		chardata.+raca := "Anao";
+// 		chardata.+povo := "Anao";
+//         if (who.graphic == 400)
+//             who.graphic := 1828;
+//         else 
+//             who.graphic := 1829;
+//         endif
+//     elseif (11 in ret.keys)
+// 		chardata.+raca := "Drow";
+// 		chardata.+povo := "Drow";
+//     elseif (12 in ret.keys)
+// 		chardata.+raca := "Orc";
+// 		chardata.+povo := "Orc";
+//         if (who.graphic == 400)
+//             who.graphic := 1832;
+//         else 
+//             who.graphic := 1833;
+//         endif
+// 	endif
+
+//     if (who.graphic == 400 && (chardata.raca == "Elfo" || chardata.raca == "Drow"))
+//         who.graphic := 1830;
+//     elseif(who.graphic == 401 && (chardata.raca == "Elfo" || chardata.raca == "Drow"))
+//         who.graphic := 1831;
+//     endif
+
+// endfunction
+
+
+// function VantagemRacial(who, byref chardata)
+
+// var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 1",
+// 		"Button 470 580 9903 9905 1 2 11",
+
+// 		"page 1",
+// 		"text 150 160 2103 2",
+
+// 		"text 180 190 2105 3",
+// 		"Radio 150 187 9726 9729 1 1",
+// 		"HtmlGump 150 220 330 60 4 3000 0",
+
+// 		"text 180 290 2105 5",
+// 		"Radio 150 287 9726 9729 0 2",
+// 		"HtmlGump 150 320 330 60 6 3000 0"};
+// /*
+// 	if (chardata.povo == "Numajene")
+// 		gflayout.append("text 180 390 2105 7");
+// 		gflayout.append("Radio 150 387 9726 9729 0 3");
+// 		gflayout.append("HtmlGump 150 420 330 60 8 3000 0");
+// 	endif
+// */
+// 	var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Próximo", //1
+// 		"Escolha uma vantagem racial:" //2
+// 		};
+
+// 	if (chardata.raca == "Humano" || chardata.raca == "Anao"  || chardata.raca == "Orc")
+// 		gfdata.append("Versatilidade");
+// 		gfdata.append("Homens são movidos pela curiosidade, o que faz com que explorem várias áreas de conhecimento. Começa com +2 pontos de skills.");
+//         if (chardata.povo == "Zharkiano")
+//             gfdata.append("Resistentes");
+// 	    	gfdata.append("Zharkianos se adaptam bem a condições adversas por piores que sejam. Ganha +10 em todos os testes de resistências.");
+//         endif
+//         if (chardata.povo == "Thuriao")
+//             gfdata.append("Resiliente");
+// 	    	gfdata.append("Thuriões possuem uma constituição fora do normal. + 20 fortitude");
+//         endif
+//         if (chardata.povo == "Asanita")
+//             gfdata.append("Pacto com Asan");
+// 	    	gfdata.append("Asanitas são favorecidos pelo seu deus. + 2DP");
+//         endif
+//         if (chardata.povo == "Anao")
+//             gfdata.append("Constituicao Ana");
+// 	    	gfdata.append("Anões são mais resistentes a magia naturalmente.");
+//         endif
+//         if (chardata.povo == "Orc")
+//             gfdata.append("Resistencia implacavel");
+// 	    	gfdata.append("Orcs são um povo forte, sempre que um golpe te deixar com 0 de hp, você fica com 1");
+//         endif
+// 	elseif ( chardata.raca == "Elfo" || chardata.raca == "Drow")
+//         gfdata.append("Sabedoria dos Antigos");
+//         gfdata.append("Elfos são mais antigos que os outros povos e aprenderam a dar mais valor ao conhecimento. Habilidades terciárias podem ir até 50%");
+//         if (chardata.povo == "Vanirio")
+// 		    gfdata.append("Vontade de Ferro");
+// 		    gfdata.append("Elfos possuem uma grande força de vontade e autocontrole. Ganham +20 nos testes de Vontade.");
+//         elseif (chardata.povo == "Numajene")
+// 		    gfdata.append("Aliado da Natureza");
+// 		    gfdata.append("O povo élfico possui uma ligação maior com a natureza que os humanos. Animais selvagens não o atacam.");
+//         elseif (chardata.povo == "Aquilrano")
+//             gfdata.append("Agilidade");
+// 	    	gfdata.append("Aquilranos confiam muito em sua agilidade natural. + 20 reflexos");
+//         elseif (chardata.povo == "Drow")
+//             gfdata.append("Toxina natural");
+// 	    	gfdata.append("Sua alimentação baseada em fungos, fez com que desenvolvessem uma resistencia natural a venenos");
+//         endif
+// 	endif
+
+// 	var ret := SendDialogGump( who, gflayout, gfdata );
+// 	if (chardata.raca == "Humano" || chardata.raca == "Anao"  || chardata.raca == "Orc")
+// 		if (1 in ret.keys)
+// 			chardata.+vantagemracial := "Versatilidade";
+// 		elseif (2 in ret.keys && chardata.povo == "Zharkiano")
+// 			chardata.+vantagemracial := "Resistentes";
+//         elseif (2 in ret.keys && chardata.povo == "Thuriao")
+// 			chardata.+vantagemracial := "Resiliente";
+//         elseif (2 in ret.keys && chardata.povo == "Asanita")
+// 			chardata.+vantagemracial := "Pacto com Asan";
+//         elseif (2 in ret.keys && chardata.povo == "Anao")
+// 			chardata.+vantagemracial := "Constituicao Ana";
+//         elseif (2 in ret.keys && chardata.povo == "Orc")
+// 			chardata.+vantagemracial := "Resistencia implacavel";
+// 		endif
+// 	else
+// 		if (1 in ret.keys)
+// 			chardata.+vantagemracial := "Sabedoria dos Antigos";
+// 		elseif (2 in ret.keys && chardata.povo == "Vanirio")
+// 			chardata.+vantagemracial := "Vontade de Ferro";
+// 		elseif (2 in ret.keys && chardata.povo == "Numajene")
+// 			chardata.+vantagemracial := "Aliado da Natureza";
+//         elseif (2 in ret.keys && chardata.povo == "Aquilrano")
+// 			chardata.+vantagemracial := "Agilidade";
+//         elseif (2 in ret.keys && chardata.povo == "Drow")
+// 			chardata.+vantagemracial := "Toxina natural";
+// 		endif
+// 	endif
+//     //SetObjProperty(who, "chardata", chardata);
+// endfunction
+
+// function Classe(who, byref  chardata)
+
+// var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 1",
+// 		"Button 470 580 9903 9905 1 2 11",
+
+// 		"page 1",
+// 		"text 150 160 2103 2",
+
+// 		"text 180 200 2105 3",
+// 		"Radio 150 197 9726 9729 1 1",
+
+// 		"text 180 300 2105 4",
+// 		"Radio 150 297 9726 9729 0 2",
+
+// 		"text 180 400 2105 5",
+// 		"Radio 150 397 9726 9729 0 3",
+
+// 		"text 180 500 2105 6",
+// 		"Radio 150 497 9726 9729 0 4"
+
+
+// 		};
+
+// var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Próximo", //1
+// 		"Escolha o Caminho do seu personagem:", //2
+// 		"Caminho das Armas",
+// 		"Caminho do Subterfúgio",
+// 		"Caminho da Sabedoria",
+// 		"Caminho da Trabalhador"
+// 		};
+
+
+
+// 	var ret := SendDialogGump( who, gflayout, gfdata );
+// 	if (1 in ret.keys)
+// 		chardata.+classe := "Guerreiro";
+// 	elseif (2 in ret.keys)
+// 		chardata.+classe := "Ladino";
+// 	elseif (3 in ret.keys)
+// 		chardata.+classe := "Sabio";
+// 	elseif (4 in ret.keys)
+// 		chardata.+classe := "Artifice";
+// 	endif
+// endfunction
+
+// function buyskillsgump(who, byref chardata)
+
+// 	var skillspoints := 20;
+// //	if (  Cint(AP_GetStat(who, INTELLIGENCE)) >= 75 )
+// //		skillspoints := skillspoints +1;
+// //	endif
+// 	if (chardata.kit == "Sabe-Tudo");
+// 		skillspoints := skillspoints + 5;
+// 	endif
+// 	if (chardata.vantagemracial == "Versatilidade")
+// 		skillspoints := skillspoints + 2;
+// 	endif
+//  	var repeatGump := 0;
+
+// 	chardata.+Skills := dictionary;
+// 	chardata.+Primarias := 2;
+// 	if (chardata.kit == "Sabe-Tudo")
+// 		chardata.Primarias := 1;
+// 	endif
+
+// 	while ( (repeatGump != 1) )
+// 		if (!who.connected)
+// 			break;
+// 		endif
+// 		repeatGump := GumpSkills(who, chardata, skillspoints);
+// 	endwhile
+
+// 	//APLICA BONUS DE HERANÇA NAS SKILLS
+// 	var pri_bonus := 0;
+// 	var sec_bonus := 0;
+// 	var ter_bonus := 0;
+
+// 	var heir_skills := FindAccount(who.acctname).getprop("herdeiro");
+// 	if (heir_skills != error)
+// 		pri_bonus := heir_skills.bonus_primarias;
+// 		sec_bonus := heir_skills.bonus_secundarias;
+// 		ter_bonus := heir_skills.bonus_terciarias;
+// 	endif
+// 	var value;
+// 	var skillsmap := chardata.Skills;
+// 	var skillsArray := skillsmap.keys();
+// 	foreach skill in skillsArray
+// 		value := 0;
+// 		if ( chardata.Skills[skill] == 3)
+// 			value := 40 + pri_bonus;
+// 		elseif (chardata.Skills[skill] == 2)
+// 			value := 20 + sec_bonus;
+// 		else
+// 			value := 0 + ter_bonus;
+// 		endif
+// 		if ( AP_GetTrueSkill(who, skill) == 0)
+// 			AP_SetTrueSkill(who, skill, value);
+// 		endif
+// 	endforeach
+//  endfunction
+
+// // function GetSkillValueDesc(skill)
+
+// // 	if (!skill || skill == error)
+// // 		return "";
+// // 	elseif (skill == 1)
+// // 		return "Terciária";
+// // 	elseif (skill == 2)
+// // 		return "Secundária";
+// // 	elseif (skill == 3)
+// // 		return "Primária";
+// // 	endif
+
+// // endfunction
+
+
+// function GumpSkills(who, byref chardata, byref skillspoints)
+// 	var cfg;
+// 	var elem;
+
+// 	cfg := ReadConfigFile(":charactercreation:config/classes");
+// 	elem := FindConfigElem(cfg, cstr(chardata.classe) );
+
+
+// 	var primarias    := GetConfigStringArray(elem, "P");
+// 	var secundarias  := GetConfigStringArray(elem, "S");
+// 	var terciarias   := GetConfigStringArray(elem, "T");
+// 	var quaternarias := GetConfigStringArray(elem, "Q");
+
+//     var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 1",
+// 		"Button 470 580 9903 9905 1 2 99",
+
+// 		"page 1",
+// 		"text 150 160 2103 2"
+
+
+// 		};
+
+// var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Próximo", //1
+// 		"Defina suas skills iniciais, você tem " + skillspoints + " pontos. "//2
+// 		};
+
+// /*	var cfgatt := AP_GetAttributesCfgFile();
+// 	var keys := GetConfigStringKeys( cfgatt );
+// 	foreach key in keys
+// 		sendsysmessage(who, "key " + key);
+// 	endforeach
+// */
+// 	var x := 180;
+// 	var y := 200;
+// 	var skillCount := 1;
+
+// 	foreach skill in primarias
+// 		gfdata.append(cstr(skill));
+// 		gflayout.append("Text " + x + " " + y + " " + 88 + " " + (skillCount+2));
+
+// 		skillCount := skillCount + 1;
+// 		var value := chardata.Skills[skill];
+// 		gfdata.append( getSkillValueDesc(value) );
+// 		gflayout.append("Text " + (x+150) + " " + y + " " + 88 + " " + (skillCount+2));
+
+// 		gflayout.append("Button " + (x-10) + " " + (y+3) + " 2436 2436 1 2 " + GetSkillIdFromName(skill) );
+
+// 		if (chardata.Skills[skill] >= 1)
+// 			gflayout.append("Button " + (x-20) + " " + (y+3) + " 2437 2438 1 2 " + (200+GetSkillIdFromName(skill)) );
+// 		endif
+
+// 		skillCount := skillCount + 1;
+// 		y := y + 20;
+
+// 		//sendsysmessage(who, "skill " + skill +  " id " +  GetSkillIdFromName(skill));
+// 	endforeach
+
+// 	foreach skill in secundarias
+// 		gfdata.append(cstr(skill));
+// 		gflayout.append("Text " + x + " " + y + " " + 80 + " " + (skillCount+2));
+
+// 		skillCount := skillCount + 1;
+// 		var value := chardata.Skills[skill];
+// 		gfdata.append( getSkillValueDesc(value) );
+// 		gflayout.append("Text " + (x+150) + " " + y + " " + 80 + " " + (skillCount+2));
+
+// 		gflayout.append("Button " + (x-10) + " " + (y+3) + " 2436 2436 1 2 " + GetSkillIdFromName(skill) );
+
+// 		if (chardata.Skills[skill] >= 1)
+// 			gflayout.append("Button " + (x-20) + " " + (y+3) + " 2437 2438 1 2 " + (200+GetSkillIdFromName(skill)) );
+// 		endif
+
+// 		skillCount := skillCount + 1;
+// 		y := y + 20;
+// 	endforeach
+
+// 	foreach skill in terciarias
+// 		gfdata.append(cstr(skill));
+// 		gflayout.append("Text " + x + " " + y + " " + 52 + " " + (skillCount+2));
+
+// 		skillCount := skillCount + 1;
+// 		var value := chardata.Skills[skill];
+// 		gfdata.append( getSkillValueDesc(value) );
+// 		gflayout.append("Text " + (x+150) + " " + y + " " + 52 + " " + (skillCount+2));
+
+// 		gflayout.append("Button " + (x-10) + " " + (y+3) + " 2436 2436 1 2 " + GetSkillIdFromName(skill) );
+
+// 		if (chardata.Skills[skill] >= 1)
+// 			gflayout.append("Button " + (x-20) + " " + (y+3) + " 2437 2438 1 2 " + (200+GetSkillIdFromName(skill)) );
+// 		endif
+
+// 		skillCount := skillCount + 1;
+// 		y := y + 20;
+// 	endforeach
+
+// 	foreach skill in quaternarias
+// 		gfdata.append(cstr(skill));
+// 		gflayout.append("Text " + x + " " + y + " " + 38 + " " + (skillCount+2));
+
+// 		skillCount := skillCount + 1;
+// 		var value := chardata.Skills[skill];
+// 		gfdata.append( getSkillValueDesc(value) );
+// 		gflayout.append("Text " + (x+150) + " " + y + " " + 38 + " " + (skillCount+2));
+
+// 		gflayout.append("Button " + (x-10) + " " + (y+3) + " 2436 2436 1 2 " + GetSkillIdFromName(skill) );
+
+// 		if (chardata.Skills[skill] >= 1)
+// 			gflayout.append("Button " + (x-20) + " " + (y+3) + " 2437 2438 1 2 " + (200+GetSkillIdFromName(skill)) );
+// 		endif
+
+// 		skillCount := skillCount + 1;
+// 		y := y + 20;
+// 	endforeach
+
+// 	var ret := SendDialogGump( who, gflayout, gfdata );
+// 	var input  :=ret.keys[2];
+
+// //	return 1;
+
+// 	//sendsysmessage(who, " " + ret.keys);
+// 	if ( input != 99)
+
+// 		if (input >= 200)
+// 			input := input - 200;
+// 			var skillname := GetSkillNameFromId(input);
+// 			var custo := SkillPrice(skillname, primarias, secundarias, terciarias, quaternarias);
+// 			if (chardata.Skills[skillname] == 3)
+// 				chardata.Skills[skillname] := 2;
+// 				chardata.Primarias := chardata.Primarias + 1;
+// 				skillspoints := skillspoints + custo;
+// 			elseif ( chardata.Skills[skillname] == 2 )
+// 				chardata.Skills[skillname] := 1;
+// 				skillspoints := skillspoints + custo;
+// 			elseif (chardata.Skills[skillname] == 1)
+// 				chardata.Skills.erase(skillname);
+// 				skillspoints := skillspoints + custo;
+// 			endif
+// 		else
+// 			var skillname := GetSkillNameFromId(input);
+// 			var custo := SkillPrice(skillname, primarias, secundarias, terciarias, quaternarias);
+// 			//sendsysmessage(who, "skillname " + skillname + " custo " + custo + " input " + input);
+// 			if (skillspoints >= custo) //se tem pontos pra comprar
+// 				if (chardata.Skills[skillname] == 3)//se ja for primaria
+// 					//SendSysMessage(who, "Voce ja tem essa skill primaria!");
+// 				elseif (chardata.Skills[skillname] == 2) //se for secundaria
+// 					if (chardata.Primarias > 0)
+// 						chardata.Skills[skillname] := CInt(chardata.Skills[skillname])+1;
+// 						chardata.Primarias := chardata.Primarias - 1;
+// 						skillspoints := skillspoints - custo;
+// 					else
+// 						SendSysMessage(who, "Voce nao pode comprar mais skills primarias!");
+// 					endif
+// 				elseif (chardata.Skills[skillname] == 1) //se for terciaria
+// 					chardata.Skills[skillname] := CInt(chardata.Skills[skillname])+1;
+// 					skillspoints := skillspoints - custo;
+// 				else //se nao tiver comprado ainda
+// 					chardata.Skills[skillname] := CInt(chardata.Skills[skillname])+1;
+// 					skillspoints := skillspoints - custo;
+// 				endif
+// 			else
+// 				SendSysMessage(who, "Voce nao tem pontos para comprar esta skill.");
+// 			endif
+// 		endif
+// 	else
+// 		return 1;
+// 	endif
+
+
+
+// endfunction
+
+// function SkillPrice(input, primarias, secundarias, terciarias, quaternarias)
+
+// 	if (input in primarias)
+// 		return 1;
+// 	elseif (input in secundarias)
+// 		return 2;
+// 	elseif (input in terciarias)
+// 		return 3;
+// 	elseif (input in quaternarias)
+// 		return 4;
+// 	endif
+
+// endfunction
+
+// function BuyKits(who, byref  chardata)
+
+// 	var cfg := ReadConfigFile(":charactercreation:config/kits");
+// 	var keys := GetConfigStringKeys( cfg );
+
+// 	var kits := array;
+// 	var selectedkit := 1;
+// 	foreach key in keys
+// 		var elem  := FindConfigElem(cfg, key);
+// 		var canadd := 1;
+// 		var racas := GetConfigStringArray( elem, "Raca" );
+// 		var povos := GetConfigStringArray( elem, "Povo" );
+// 		var classes := GetConfigStringArray( elem, "Classe" );
+
+// 		if ((racas.size >= 1) && !(chardata.raca in racas))
+// 			//sendsysmessage(who, " racas " + racas + " chardata.raca " + chardata.raca);
+// 			canadd := 0;
+// 		endif
+// 		if ((classes.size()>=1) && !(chardata.classe in classes))
+// 			//sendsysmessage(who, " classes " + classes + " chardata.classe " + chardata.classe);
+// 			canadd := 0;
+// 		endif
+// 		if ((povos.size() >= 1) && !(chardata.povo in povos))
+// 			//sendsysmessage(who, " povos " + povos + " chardata.povo " + chardata.povo);
+// 			canadd := 0;
+// 		endif
+// //		sendsysmessage(who, "can add " + canadd);
+// 		if (canadd)
+// 			var kit  := struct;
+// 			kit.+nome := GetconfigString(elem, "Nome");
+// 			kit.+desc := GetconfigString(elem, "Desc");
+// 			kit.+vantagens := GetConfigString( elem, "Vantagens" );
+// 			kit.+desvantagens := GetConfigString( elem, "Desvantagens" );
+// 			kits.append(kit);
+// //			sendsysmessage(who, "kit " + kit);
+// 		endif
+// 	endforeach
+
+
+// 	kitgump(who, chardata, selectedkit, kits);
+
+// endfunction
+
+// function kitgump(who, byref chardata, byref selectedkit, byref  kits)
+
+// var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 1",
+// 		"Button 470 580 9903 9905 1 2 99",
+
+
+
+// 		"page 1",
+// 		"text 150 160 2103 2"
+
+
+// 		};
+
+// var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Próximo", //1
+// 		"Você pode escolher um  dos kits abaixo:" //2
+// 		};
+
+// 	var i := 1;
+// 	var x := 170;
+// 	var y := 200;
+// 	for ( i := 1; i <= kits.size(); i := i + 1)
+// 		gfdata.append(kits[i].nome);
+// 		if ( i == selectedkit)
+// 			gflayout.append("Text " + x + " " + y + " 2105 " + (i+2));
+// 		else
+// 			gflayout.append("Text " + x + " " + y + " 2103 " + (i+2));
+// 		endif
+// 		var selected := 0;
+// 		if (i == selectedkit)
+// 			selected := 1;
+// 		endif
+// 		if  (i == selectedkit)
+// 			gflayout.append("Button " + (x - 20) + " " + y +" 9703 9703 1 2 " + i);
+// 		else
+// 			gflayout.append("Button " + (x - 20) + " " + y +" 9702 9703 1 2 " + i);
+// 		endif
+// 		y := y + 20;
+// 		if (i == 14)
+// 			y := 200;
+// 			x := 400;
+// 		endif
+// 	endfor
+
+// 	var str := "";
+// 	if ( kits[selectedkit].desc)
+// 		str :=  str + kits[selectedkit].desc + "<BR>";
+// 	endif
+// 	if ( kits[selectedkit].vantagens)
+// 		str :=  str + kits[selectedkit].vantagens + "<BR>";
+// 	endif
+// 	if ( kits[selectedkit].desvantagens)
+// 		str :=  str + kits[selectedkit].desvantagens + "<BR>";
+// 	endif
+// 	gfdata.append(str);
+// 	gflayout.append("HtmlGump 150 480 330 100 " + (kits.size() + 2 + 1) + " 3000 1");
+
+// 	var ret := SendDialogGump( who, gflayout, gfdata );
+
+// 	//sendsysmessage(who, "ret.keys " + ret.keys[2]);
+
+// 	if (cint(ret.keys[2]) == 99)
+// 		chardata.+kit := kits[selectedkit].nome;
+// 		//SendSysMessageEx(who, "Seu kit sera: " + chardata.kit, SSM_INFO);
+// 		return 1;
+// 	else
+// 		kitgump(who, chardata, ret.keys[2], kits);
+// 	endif
+
+
+// endfunction
+
+// function ItemPicker(who, byref chardata)
+
+// var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 1",
+// 		"Button 470 580 9903 9905 1 2 99",
+
+// 		"text 180 160 2103 2",
+
+// 		"text 150 180 2105 3",
+// 		"text 200 180 2105 4",
+// 		"text 280 180 2105 5",
+// 		"text 330 180 2105 6",
+// 		"text 420 180 2105 7",
+
+// 		"Button 190 185 2437 2438 0 1 99",
+// 		"Button 270 185 2437 2438 0 2 99",
+// 		"Button 320 185 2437 2438 0 3 99",
+// 		"Button 410 185 2437 2438 0 4 99",
+// 		"Button 460 185 2437 2438 0 5 99"
+
+
+
+// 		};
+
+// var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Próximo", //1
+// 		"Compre seu equipamento inicial: " + chardata.credits + " creditos.", //2
+// 		"Armas",
+// 		"Armaduras",
+// 		"Roupas",
+// 		"Ferramentas",
+// 		"Outros"
+// 		};
+
+// 		UnloadConfigFile(":charactercreation:config/itempicker");
+// 		var cfg := ReadConfigFile(":charactercreation:config/itempicker");
+// 		var paginas := GetConfigStringArray(FindConfigElem(cfg, "pages"), "page");
+
+// 		var pagecount := 1;
+// 		var itemcount := 1;
+// 		var itemsname := array;
+// 		var itemscost := array;
+
+// 		foreach page in paginas
+// 			//sendsysmessage(who, "page "  + page + " "  + pagecount);
+
+// 			gflayout.append("page " + pagecount);
+// 			var elem := FindConfigElem(cfg, page);
+// 			//sendsysmessage(who, "elem " + elem);
+// 			var items := GetConfigStringDictionary(elem, "item");
+// 			var itemsgroups := GetConfigStringDictionary(elem, "Group");
+
+// 			//sendsysmessage(who, " " + items.keys());
+// 			//sendsysmessage(who, " " + itemsgroups.keys());
+
+// 			foreach item in (itemsgroups.keys())
+// 				items[item] :=  itemsgroups[item];
+// 				//SendSysMessage(who, " " +itemsgroups+ " "+itemsgroups[item]);
+// 			endforeach
+
+// 			var i := 1;
+// 			foreach item in (items.keys())
+// 				itemsname.append(item);
+// 				itemscost.append(CInt(items[item]));
+
+// 				gfdata.append(cstr(item) + " " + items[item]);
+// 				//sendsysmessage(who, "*Item " + item + " " + i + " gfdata " + gfdata[gfdata.size()-1] + " -> " + (gfdata.size()-1) );
+// 				gflayout.append("text 180 " + (200 + (i*20)) + " 2105 " + (gfdata.size()-1));
+// 				gflayout.append("Button 160 " +  (200 + (i*20)) + " 9702 9703 1 5 " + (100+itemcount));
+
+// 				itemcount := itemcount + 1;
+// 				i := i + 1;
+// 			endforeach
+
+// 			pagecount := pagecount + 1;
+// 		endforeach
+
+// 		//SendSysMessage(who, "Name: "+itemsname);
+// 		//SendSysMessage(who, "Custo: "+itemscost);
+
+// 		var ret := SendDialogGump( who, gflayout, gfdata );
+// 		var input := ret.keys[2];
+
+
+// 		if (input > 100 )
+// 			var index := input - 100;
+// 			var itemname := itemsname[index];
+// 			var custo := CInt(itemscost[index]);
+// 		//	SendSysMessageEx(who, itemname + " custa " + custo + " creditos.", SSM_INFO);
+// 			if (chardata.credits < custo)
+// 				SendsysMessageEx(who, "Voce nao possui creditos para este item.", SSM_FAIL);
+// 				ItemPicker(who, chardata);
+// 			else
+// 				chardata.credits := chardata.credits - custo;
+// 				var items := GetConfigStringDictionary(FindConfigElem(cfg, itemname), "item");
+// 				if (items == error) //nao eh group
+// 					var amount := Cint(GetconfigInt(FindConfigElem(cfg, "DefaultAmount"),  itemname));
+// 					if (amount == 0)
+// 						amount := 1;
+// 					endif
+// 					var itm := CreateItemInBackpack(who, itemname,  amount);
+// 					sendsysmessage(who, " " + itm);
+// 				else
+// 					foreach item in (items.keys())
+// 						var amount := Cint(GetconfigInt(FindConfigElem(cfg, "DefaultAmount"),  item));
+// 						if (amount == 0)
+// 							amount := 1;
+// 						endif
+// 						var itm := CreateItemInBackpack(who, item, amount);
+// 					endforeach
+// 				endif
+// 				ItemPicker(who, chardata);
+// 			endif
+
+// 		endif
+
+// endfunction
+
+// function atributos(who, byref chardata, byref points)
+
+// var gflayout := array{
+// 		"noclose",
+// 		"nodispose",
+// 		"nomove",
+// 		"page 0",
+//     		"resizepic 84 90 9260 460 535",
+// 		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+// 		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+// 		"gumppictiled 80 88 463 16 10100", //borda superior
+// 		"gumppictiled 84 610 457 16 10100", //borda inferior
+// 		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+// 		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+// 		"CheckerTrans 127 103 375 509",
+// 		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+// 		"gumppic 33 370 10402 0", //rado do dragao
+
+// 		"text 245 120 1153 0",
+
+// 		"Text  420 580 2103 1",
+// 		"Button 470 580 9903 9905 1 2 99",
+
+// 		"page 1",
+// 		"text 150 160 2103 2",
+
+// 		"text 200 200 2105 3",
+// 		"text 200 240 2105 4",
+// 		"text 200 280 2105 5",
+
+// 		"text 270 200 2105 6",
+// 		"text 270 240 2105 7",
+// 		"text 270 280 2105 8",
+
+// 		"Button 160 205 2436 2436 1 2 1",
+// 		"Button 160 245 2436 2436 1 2 2",
+// 		"Button 160 285 2436 2436 1 2 3",
+
+// 		"Button 180 205 2437 2438 1 2 4",
+// 		"Button 180 245 2437 2438 1 2 5",
+// 		"Button 180 284 2437 2438 1 2 6"
+
+
+// 		};
+
+// var gfdata := array{
+// 		"Forgotten Lore Shard", //0
+// 		"Próximo", //1
+// 		"Defina seus atributos: " + points + " restantes. ", //2
+// 		"Força: " ,
+// 		"Destreza: ",
+// 		"Inteligência: ",
+// 		" " + chardata.str,
+// 		" " + chardata.dex,
+// 		" " + chardata.int
+// 		};
+
+
+// 		var ret := SendDialogGump( who, gflayout, gfdata );
+// 		var input := ret.keys[2];
+
+// 		if (input == 1 )
+// 			if (chardata.str >= 100)
+// 				SendSysMessageEx(who, "Voce nao pode aumentar mais este atributo.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			if (points <= 0)
+// 				SendSysMessageEx(who, "Voce nao tem mais pontos.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			chardata.str := chardata.str+5;
+// 			points := points - 5;
+// 			atributos(who, chardata,points);
+// 		elseif (input == 2)
+// 			if (chardata.dex >= 100)
+// 				SendSysMessageEx(who, "Voce nao pode aumentar mais este atributo.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			if (points <= 0)
+// 				SendSysMessageEx(who, "Voce nao tem mais pontos.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			chardata.dex := chardata.dex+5;
+// 			points := points - 5;
+// 			atributos(who, chardata,points);
+// 		elseif (input == 3)
+// 			if (chardata.int >= 100)
+// 				SendSysMessageEx(who, "Voce nao pode aumentar mais este atributo.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			if (points <= 0)
+// 				SendSysMessageEx(who, "Voce nao tem mais pontos.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			chardata.int := chardata.int+5;
+// 			points := points - 5;
+// 			atributos(who, chardata,points);
+// 		elseif ( input == 4)
+// 			if (chardata.str <= 40)
+// 				SendSysMessageEx(who, "Voce nao pode diminuir mais este atributo.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			chardata.str := chardata.str-5;
+// 			points := points + 5;
+// 			atributos(who, chardata,points);
+
+// 		elseif (input == 5)
+// 			if (chardata.dex <= 40)
+// 				SendSysMessageEx(who, "Voce nao pode diminuir mais este atributo.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			chardata.dex := chardata.dex-5;
+// 			points := points + 5;
+// 			atributos(who, chardata,points);
+// 		elseif (input == 6)
+// 			if (chardata.int <= 40)
+// 				SendSysMessageEx(who, "Voce nao pode diminuir mais este atributo.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 			chardata.int := chardata.int-5;
+// 			points := points + 5;
+// 			atributos(who, chardata,points);
+// 		elseif (input == 99)
+// 			//sendsysmessage(who, "keys" + ret.keys);
+// 			if (points > 0)
+// 				SendSysMessageEx(who, "Voce ainda possui pontos para gastar.", SSM_FAIL);
+// 				atributos(who, chardata,points);
+// 				return 1;
+// 			endif
+// 		endif
+
+// endfunction
+
+// program createchar(who)
+
+// 	if (GetObjProperty(who, "criandochar") == 1 && who.cmdlevel < 1)
+// 		SendSysMessageEx(who, "Delete seu personagem antes de criar de novo.", SSM_FAIL);
+// 		return 1;
+// 	endif
+// 	if (GetObjProperty(who, "delete") == 1)
+// 		SendSysMessageEx(who, "Voce nao pode ter mais de um personagem por conta.", SSM_FAIL);
+// 		return 1;
+// 	endif
+
+// 	SetObjProperty(who, "criandochar", 1);
+
+// 	if (who.race == 1)
+// 		SendSysMessageEx(who, "Recrie o personagem na criacao do UO como Human!", SSM_FAIL);
+// 		SendSysMessageEx(who, "Aguarde cinco minutos para deletar o personagem atual.", SSM_FAIL);
+// 		return 0;
+// 	endif
+
+// 	//destroi todos os itens equipados e na bag
+// 	if (who.cmdlevel < 2)
+// 		var equiped := listequippeditems(who);
+// 		foreach item in  equiped
+// 			if (item != who.backpack)
+// 				if ( item.layer != LAYER_HAIR)
+// 					if (item.layer != LAYER_BEARD)
+// 						DestroyItem(item);
+// 					endif
+// 				endif
+// 			endif
+// 		endforeach
+// 		equiped := enumerateitemsincontainer(who.backpack);
+// 		foreach item in  equiped
+// 			DestroyItem(item);
+// 		endforeach
+// 		equiped := 0;
+// 	endif
+
+// 	//zeras as skills
+// 	foreach attrib in AP_ListAttributesByType()
+// 		AP_SetTrueSkill(who, attrib, 0);
+// 		sleepms(10);
+// 	endforeach
+
+
+// 	var chardata := struct;
+// 	chardata.+Skills := dictionary;
+// 	chardata.+Credits := 100;
+// 	chardata.+credits := 100;
+// 	chardata.+str := 40;
+// 	chardata.+dex := 40;
+// 	chardata.+int := 40;
+
+
+// 	//TODOS OS GUMPS:
+// 	RaceGump(who, chardata);
+// 	VantagemRacial(who, chardata);
+// 	Classe(who, chardata);
+// 	Atributos(who, chardata, 80);
+// 	BuyKits(who, chardata);
+// 	BuySkillsgump(who, chardata);
+// 	ItemPicker(who,  chardata);
+
+// 	//SETA as coisas
+// 	if (chardata.vantagemracial == "Aliado da Natureza")
+// 		SetObjProperty(who, "empatiacomanimais", 1);
+// 	endif
+
+// 	SetObjProperty(who, "chardata", chardata);
+// 	SetObjProperty(who, "raca", chardata.raca);
+// 	SetObjProperty(who, "classe", chardata.classe);
+// 	AP_SetTrueStat(who, STRENGTH, chardata.str);
+// 	AP_SetTrueStat(who, DEXTERITY, chardata.dex);
+// 	AP_SetTrueStat(who, INTELLIGENCE, chardata.int);
+// 	who.title_race := chardata.raca;
+// 	CreateItemInBackpack(who, 0xba63, 100); //dinheiro
+// 	who.race := chardata.raca;
+
+// 	//Esconde o nome de todas as mecanicas diretas do jogo
+// 	SetObjProperty(who, "nome_inicial", who.name);
+// 	who.name := who.title_race;
+
+// 	RecalcVitals(who);
+
+// 	var primarias := GetPrimarias(who);
+// 	var privalue := 40.0;
+// 	var secvalue := 20.0;
+// 	var tercvalue := 0.0;
+
+// 	/*
+// 	FindAccount(who.acctname).setprop("nota", 0);
+// 	if ( (CInt(FindAccount(who.acctname).getprop("nota")) == 4) || (FindAccount(who.acctname).getprop("mortelog") > 3888000))
+// 		privalue := 60.0;
+// 		secvalue := 40.0;
+// 		tercvalue := 20.0;
+// 		//Seta o prop de bonus, para ser usado no check de habs
+// 		SetObjProperty(who, "bonus_tempo", 1);
+// 	endif
+// 	*/
+
+// 	//ADICIONA OS BONUS DA HERANÇA PARA CAP DAS SKILL
+// 	var tempo_agora := polcore().systime;
+// 	var heir_skills := FindAccount(who.acctname).getprop("herdeiro");
+// 	if (heir_skills != error)
+//         var dias_herdados := FindAccount(who.acctname).getprop("heir_days");
+// 	    if (dias_herdados != error)
+// 	    	SetObjProperty(who, "heir_days", dias_herdados); //24horas*60minutos*60segundos = 86400 segundos
+// 	    	SetObjProperty(who, "createdate", (tempo_agora-(dias_herdados*86400))); //24horas*60minutos*60segundos = 86400 segundos
+// 	    else
+// 	    	SetObjProperty(who, "heir_days", 0); //24horas*60minutos*60segundos = 86400 segundos
+// 	        SetObjProperty(who, "createdate", tempo_agora);
+// 	    endif
+// 		FindAccount(who.acctname).setprop("herdado", dias_herdados);
+// 	else
+// 		SetObjProperty(who, "heir_days", 0); //24horas*60minutos*60segundos = 86400 segundos
+// 		SetObjProperty(who, "createdate", tempo_agora);
+// 	endif
+//     //FIM DA APLICAÇÃO DE BENEFICIOS DA HERANÇA
+
+// /*
+// 	foreach primaria in primarias
+// 		AP_setTrueSkill(who, primaria, privalue);
+// 	endforeach
+// 	var secundarias := GetSecundarias(who);
+// 	foreach secundaria in secundarias
+// 		AP_setTrueSkill(who, secundaria, secvalue);
+// 	endforeach
+// 	var terciarias := GetTerciarias(who);
+// 	foreach terciaria in terciarias
+// 		AP_setTrueSkill(who, terciaria, tercvalue);
+// 	endforeach
+// */
+
+//     var final_str := chardata.str;
+//     var final_dex := chardata.dex;
+//     var final_int := chardata.int;
+//     var final_dpmod := 0;
+// 	if (chardata.povo == "Asanita")
+//         final_dpmod += 10;
+//     elseif (chardata.povo == "Thuriao")
+//         final_str += 10;
+//     elseif (chardata.povo == "Aquilrano")
+//         final_dex += 10;
+//     elseif (chardata.povo == "Drow")
+//         final_dex += 5;
+//         final_int +=5;
+//     elseif (chardata.povo == "Orc")
+//         final_int += 10;
+// 	endif
+
+// 	//SETA O KIT
+// 	//printtextabove(who, "ALCHEMY1");
+// 	//PrintTextAbove(who, " ALCHEMY"+ chardata.Skills + " " + chardata.Skills["Alchemy"] );
+
+// 	// Edmond - 15/02/2012
+// 	if (chardata.Skills["Alchemy"] == 2)
+// 		var book := createiteminbackpack(who, "alchemybook");
+//         book.newbie := 1;
+// 		setobjproperty(book, "serialid", who.serial);
+// 		setobjproperty(book, "marked",who.name + " - " + who.acctname);
+
+//         var recipes := array;
+// 		recipes := CreateVeryBasicRecipes();
+// 		var basic_book := createiteminbackpack(who, "alchemybook");
+// 		setobjproperty(basic_book, "recipes", recipes);
+// 	elseif (chardata.Skills["Alchemy"] == 3)
+// 		var book1:= CreateItemInBackpack(who, "alchemybook");
+// 		setobjproperty(book1, "serialid", who.serial);
+// 		setobjproperty(book1, "marked",who.name + " - " + who.acctname);
+//         book1.newbie := 1;
+//         var recipes := array;
+// 		recipes := CreateBasicRecipes();
+// 		var book2 := createiteminbackpack(who, "alchemybook");
+//         book2.newbie := 1;
+// 		setobjproperty(book2, "recipes", recipes);
+// 		setobjproperty(book2, "serialid",who.serial);
+// 		setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+// 	endif
+
+// 	var ganheispell := 0;
+// 	setObjproperty(who, "kit", chardata.kit);
+
+// 	if (chardata.kit == "Corpulento")
+//         final_int -= 5;
+//         final_dex -= 5;
+//         final_str += 20;
+// 	elseif (chardata.kit == "Genio")
+//         final_str -= 5;
+//         final_dex -= 5;
+//         final_int += 20;
+// 	elseif (chardata.kit == "Agil")
+//         final_str -= 5;
+//         final_int -= 5;
+//         final_dex += 20;
+//     elseif (chardata.kit == "Afogado em Mana")
+//         final_str -= 30;
+//         final_dex -= 30;
+// 	elseif (chardata.kit == "Escravo Vanirio")
+// 		setObjProperty(who, "description", "Marca de escravo no rosto");
+// 		setObjProperty(who, "hitsmod", 20);
+// 	elseif (chardata.kit == "Velho") // Parece que foi removido por alguem
+//         final_str -= 10;
+//         final_dex -= 10;
+//         final_int += 40;
+// 	endif
+
+//     if (chardata.vantagemracial == "Pacto com Asan")
+//         final_dpmod += 20;
+//     endif
+//     if (chardata.kit == "Duro de Matar")
+//         final_dpmod += 20;
+//     endif
+
+//     AP_SetTrueStat(who, STRENGTH, final_str);
+//     AP_SetTrueStat(who, INTELLIGENCE, final_int);
+//     AP_SetTrueStat(who, DEXTERITY, final_dex);
+//     SetObjProperty(who, "dpmod", final_dpmod);
+// 	if (chardata.classe == "Sabio")
+// 		if (chardata.povo == "Asanita") //asanita eh sempre mesum
+// 				if (ganheispell == 0)
+// 				    chardata.magia := "Mesum";
+// 					var grimorio := createiteminbackpack(who, "grimorio", 1);
+// 					CreateItemInBackpack(who, "gravedust", 10);
+// 					CreateItemInBackpack(who, "BlackMoor", 10);
+// 					setobjproperty(grimorio, "serialid", who.serial);
+// 					setobjproperty(grimorio, "marked",who.name + " - " + who.acctname);
+//                     grimorio.newbie := 1;
+// 					var spellinfo := struct;
+// 					var p1 := createiteminbackpack(who, "pergaminhomagico1");
+// 					spellinfo.+id := 1;
+// 					SetObjProperty(p1, "spellinfo", spellinfo);
+// 					 p1 := createiteminbackpack(who, "pergaminhomagico1");
+// 					spellinfo.id := 3;
+// 					SetObjProperty(p1, "spellinfo", spellinfo);
+// 					p1:= createiteminbackpack(who, "pergaminhomagico1");
+// 					spellinfo.id := 2;
+// 					SetObjProperty(p1, "spellinfo", spellinfo);
+// 					p1 := createiteminbackpack(who, "pergaminhomagico1");
+// 					spellinfo.id := 28;
+// 					SetObjProperty(p1, "spellinfo", spellinfo);
+// 					ganheispell := 1;
+// 				endif
+//         elseif (chardata.povo == "Zharkiano" || (chardata.povo == "Drow" && who.graphic == 1831) || chardata.povo == "Anao")
+//             if (ganheispell == 0)
+//                 chardata.magia := "Sacerdote";
+//                 var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
+//                 CreateItemInBackpack(who, 0x166E, 1);
+//                 //var simbolo_sagrado := CreateItemInBackpack(who, 0xB888, 1); //Simbolo Sagrado
+// 				//SetName(simbolo_sagrado, "Símbolo Sagrado");
+//                 //SetObjProperty(simbolo_sagrado, "descmod", "Acólito de Zhark");
+//                 createiteminbackpack(who, "runaarmasagrada");
+//                 createiteminbackpack(who, "runacuraleve");
+//                 createiteminbackpack(who, "runadescanso");
+//                 ganheispell := 1;
+//             endif
+//         elseif (chardata.povo == "Numajene")
+//             if (ganheispell == 0)
+//                 var totem := CreateItemInBackpack(who, "totem", 1);
+//                 totem.newbie := 1;
+//                 var s1 := CreateItemInBackpack(who, "invocarespiritolobo", 1);
+//                 var s2 := CreateItemInBackpack(who, "metamorfoselobo", 1);
+//                 CreateItemInBackpack(who, "Deadwood", 10);
+//                 CreateItemInBackpack(who, "FertileDirt", 10);
+// 		        ganheispell:=1;
+// 		        chardata.+magia := "Totemista";
+//             endif
+//         elseif (chardata.povo == "Orc")
+//             if (ganheispell == 0)
+// 		        ganheispell:=1;
+// 		        chardata.+magia := "Shaman";
+//                 CreateItemInBackpack(who, 0x1452, 1);
+//                 CreateItemInBackpack(who, 0x1451, 1);
+//                 CreateItemInBackpack(who, 0x1450, 1);
+//                 CreateItemInBackpack(who, 0x144f, 1);
+//                 CreateItemInBackpack(who, 0x144e, 1);
+//             endif
+//         elseif (chardata.povo == "Vanirio" || chardata.povo == "Drow")
+//             if (ganheispell == 0)
+// 				var gump4 := GFCreateGump();
+//                 GFDisposable(gump4, 0);
+//                 GFResizePic(gump4, 0, 25, 3600, 170, 200);
+//                 GFResizePic(gump4, 15, 40, 0x13BE, 140, 170);
+//                 GFTextLine(gump4, 45, 50, 1153, "Escolha o caminho");
+
+//                 GFTextLine(gump4, 40, 70, 1153, "Kitah");
+// 				//if(who.cmdlevel >= 1) //TODO Deixei para o gump aparecer para cmdlevel igual ao acima do 2 para conseguirem testar
+//                 	GFTextLine(gump4, 40, 90, 1153, "Viajante Planar");
+// 				//endif
+
+//                 GfAddButton(gump4, 20, 73, 2117, 2118, GF_CLOSE_BTN,  10);
+// 				//if(who.cmdlevel >= 1) //TODO Deixei para o gump aparecer para cmdlevel igual ao acima do 2 para conseguirem testar
+//                 	GfAddButton(gump4, 20, 94 , 2117, 2118, GF_CLOSE_BTN,  20);
+// 				//endif
+
+//                 var input4 := GFSendGump(who, gump4);
+//                 input4 := input4[0];
+
+// 				if (input4 == 10) //Kitah
+// 					var gump3 := GFCreateGump();
+// 					GFDisposable(gump3, 0);
+// 					GFResizePic(gump3, 0, 25, 3600, 170, 200);
+// 					GFResizePic(gump3, 15, 40, 0x13BE, 140, 170);
+// 					GFTextLine(gump3, 45, 50, 1153, "Escolha o elemento");
+
+// 					GFTextLine(gump3, 40, 70, 1153, "Fogo");
+// 					GFTextLine(gump3, 40, 90, 1153, "Gelo");
+// 					GFTextLine(gump3, 40, 110, 1153, "Eletricidade");
+
+// 					GfAddButton(gump3, 20, 73, 2117, 2118, GF_CLOSE_BTN,  10);
+// 					GfAddButton(gump3, 20, 94 , 2117, 2118, GF_CLOSE_BTN,  20);
+// 					GfAddButton(gump3, 20, 113 , 2117, 2118, GF_CLOSE_BTN,  30);
+
+// 					var input3 := GFSendGump(who, gump3);
+// 					input3 := input3[0];
+
+//                     chardata.magia := "Kitah";
+// 					if (input3 == 10) //Fogo
+// 						createiteminbackpack(who, "pedralaminaflamejante");
+// 						createiteminbackpack(who, "pedraataqueelementalfogo");
+// 						CreateItemInBackpack(who, "SulphurousAsh", 10);
+// 					elseif (input3 == 20) //Gelo
+// 						createiteminbackpack(who, "pedralaminacongelante");
+// 						createiteminbackpack(who, "pedraataqueelementalgelo");
+// 						CreateItemInBackpack(who, "BlackPearl", 10);
+// 					elseif (input3 == 30) //Eletricidade
+// 						createiteminbackpack(who, "pedralaminaeletrificada");
+// 						createiteminbackpack(who, "pedraataqueelementalenergia");
+// 						CreateItemInBackpack(who, "Deadwood", 10);
+// 					endif
+// 					SetObjProperty(who, "EspadaArcana", 1);
+//                 elseif (input4 == 20) //Kitahster
+// 					chardata.magia := "kitahster";
+// 					SetObjProperty(who, "advclass", "kitahster");
+
+// 					var grimorio := createiteminbackpack(who, "grimoriorunas", 1);
+// 					SetObjProperty(grimorio, "SangriaBook", 1);
+// 					SetObjProperty(grimorio, "Booktype", "Sangria");
+// 					SetObjProperty(grimorio, "serialid", who.serial);
+// 					SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
+//                     grimorio.newbie := 1;
+// 					var spellinfo := struct;
+// 					spellinfo.+magic_path := "Sangria";
+// 					var p1 := createiteminbackpack(who, "pergaminhosangria1");
+// 					spellinfo.+id := 9;
+// 					SetObjProperty(p1, "spellinfo", spellinfo);
+// 					p1 := createiteminbackpack(who, "pergaminhosangria1");
+// 					spellinfo.id := 10;
+// 					SetObjProperty(p1, "spellinfo", spellinfo);
+// 					ganheispell := 1;
+//                 endif            
+//             endif
+// 		endif
+// 	endif
+
+// 	ExibeGumpAparencia(who, chardata);
+
+// 	//SendSysMessage(who, CSTR(chardata));
+// 	//SendSysMessage(who, GetObjProperty(who, "chardata"));
+//     SetObjProperty(who, "chardata", chardata);
+// 	MoveObjectToLocation( who, 4230, 25, 1, who.realm, MOVEOBJECT_FORCELOCATION);
+//     AP_SetVital(who, "Hunger", 0);
+// 	HealDamage(who, 200);
+// 	RecalcVitals(who);
+// endprogram
+
+// function ExibeGumpAparencia(who, chardata)
+// 	var disfarce := struct;
+//     disfarce.+barba := "";
+//     disfarce.+cabelo := "";
+//     disfarce.+corcabelo := -1;
+//     disfarce.+corbarba := -1;
+//     disfarce.+corpele := -1;
+
+//     escolherCabelo(who, disfarce, chardata.povo);
+//     escolheCorCabelo(who, disfarce, 0, chardata.povo, 1);
+//     if (chardata.raca == "Humano" && chardata.povo != "Orc")
+//         escolherBarba(who, disfarce);
+//     endif
+//     SkinGump(who, disfarce, chardata.povo, 1);
+
+//     who.color := disfarce.corpele;
+//     who.truecolor := disfarce.corpele;
+
+//     var mybarba := GetEquipmentByLayer(who, LAYER_BEARD);
+//     var newbarba := CreateItemAtLocation(who.x, who.y, who.z, disfarce.barba, 1, who.realm);
+
+//     newbarba.color := 1109;
+
+//     newbarba.color := disfarce.corcabelo;
+//     if (mybarba)
+//         DestroyItem(mybarba);
+//     endif
+//     var result := EquipItem(who, newbarba);
+
+//     var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
+//     var newhair := CreateItemAtLocation(who.x, who.y, who.z, disfarce.cabelo, 1, who.realm);
+
+//     newhair.color := 1109;
+
+//     newhair.color := disfarce.corcabelo;
+//     var result2 := DestroyItem(myhair);
+//     result := EquipItem(who, newhair);
+
+// 	if (YesNo(who, "Deseja manter esta aparência?" , "Sim.", "Não."))
+// 		return 1;
+// 	else
+// 		ExibeGumpAparencia(who, chardata);
+// 	endif
+// endfunction

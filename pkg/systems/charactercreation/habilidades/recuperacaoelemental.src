@@ -1,0 +1,19 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Seu corpo absorve a energia da gema e libera mana ao seu redor", SSM_INFO);
+	var timer := cInt(AP_GetSkill(attacker, MAGICLORE)/2);
+
+	
+	var mobiles := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 4, attacker.realm);
+		foreach mobile in mobiles
+			TS_StartTimer(attacker, "auramanaregenmod", 30+timer);
+		endforeach
+
+
+endprogram 

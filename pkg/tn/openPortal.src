@@ -1,0 +1,106 @@
+
+use uo;
+use os;
+
+include "include/client";
+include "include/sysEvent";
+include "include/say";
+include "include/tileEffects";
+include "include/sounds";
+
+program openPortal(item_recebe)
+
+	var event;
+	var palavra:="";
+	var item:="";
+	var itemcerto;
+	var flag:=1;
+	var portal1;
+	var portal2;
+	var portal3;
+	var portal4;
+	var portal5;
+	var portal6;
+	var portal7;
+	var portal8;
+	var portal9;
+
+	var x:=GetObjProperty(item_recebe,"x");
+	var y:=GetObjProperty(item_recebe,"y");
+	var z:=GetObjProperty(item_recebe,"z");
+	
+	RegisterForSpeechEvents( item_recebe, 1 );
+        EnableEvents( SYSEVENT_SPEECH, 1 );
+
+if(GetObjProperty(item_recebe,"magicword")== error)
+	SetObjProperty(item_recebe,"magicword","Informe a palavra");
+endif	
+ 
+
+ //SetObjProperty(item_recebe,"aberto",0);
+	
+	
+ while(item_recebe)
+if(GetObjProperty(item_recebe,"aberto") != 1)
+	event := wait_for_event( 120 );
+                If (event and event.type == SYSEVENT_SPEECH)
+			palavra:=GetObjProperty(item_recebe, "magicword");
+			If (event.text == palavra)
+				
+				
+				PlayStationaryEffect( item_recebe.x, item_recebe.y, item_recebe.z, FX_CURSE_EFFECT, 2, 255);
+				portal1:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8141, 1, realm := _DEFAULT_REALM );
+				portal1.color:=6568;
+				sleep(1);
+				DestroyItem(portal1);
+				
+				portal2:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8142, 1, realm := _DEFAULT_REALM );
+				portal2.color:=6568;
+				sleep(1);
+				DestroyItem(portal2);
+				
+				portal3:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8143, 1, realm := _DEFAULT_REALM );
+				portal3.color:=6568;
+				sleep(1);
+				DestroyItem(portal3);
+				
+				portal4:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8144, 1, realm := _DEFAULT_REALM );
+				portal4.color:=6568;
+				sleep(1);
+				DestroyItem(portal4);
+				
+				portal5:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8145, 1, realm := _DEFAULT_REALM );
+				portal5.color:=6568;
+				sleep(1);
+				DestroyItem(portal5);
+
+				portal6:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8146, 1, realm := _DEFAULT_REALM );
+				portal6.color:=6568;
+				sleep(1);
+				DestroyItem(portal6);
+
+
+				portal7:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8147, 1, realm := _DEFAULT_REALM );
+				portal7.color:=6568;
+				sleep(1);
+				DestroyItem(portal7);
+				
+				
+				portal8:=CreateItemAtLocation( item_recebe.x, item_recebe.y, item_recebe.z, 8148, 1, realm := _DEFAULT_REALM );
+				portal8.color:=6568;
+				SetObjProperty(item_recebe,"aberto",1);
+				sleep(10);
+				DestroyItem(portal8);
+			
+				SetObjProperty(item_recebe,"aberto",0);
+
+			Endif
+			 
+				
+		Endif
+
+else
+	return 0;
+endif
+endwhile
+endprogram 

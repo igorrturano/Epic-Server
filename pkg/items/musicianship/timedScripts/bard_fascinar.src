@@ -1,0 +1,15 @@
+use uo;
+use os;
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_fascinar(params)
+	var alvo := params[1];
+	var caster := params[2];
+	var modificador := params[3];
+	Set_Critical(1);
+	alvo.paralyzed := 1;
+	SetObjProperty(alvo, "#Bard_fascinar", modificador);
+	Set_Critical(0);
+	PrintTextAbove(alvo, "Fascinado(a)",BARD_FONT,BARD_FONT_COLOR_NEUTRA);
+	return 1;
+endprogram

@@ -1,0 +1,121 @@
+
+use uo;
+use datafile;
+use cfgfile;
+
+include ":tn:tngumps";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":help:help";
+
+const BUTTON_HELP_CANCEL := 1;
+const BUTTON_HELP_SENDGMPAGE := 2;
+const BUTTON_HELP_SENDCOUNPAGE := 3;
+const BUTTON_HELP_REPORTBUG := 4;
+
+program help_menu(who)
+	var chargump := GFCreateGump();
+	var input;
+	var first_name, last_name;
+	first_name := "";
+	last_name := "";
+
+	GFDisposable(chargump, 0);
+	GFResizePic(chargump, 0, 25, 3600, 350, 480);
+	GFResizePic(chargump, 15, 40, 0xA3C, 320, 450);
+
+	GFTextMid(chargump, 20, 50, 300, 1153, "Menu de Ajuda");
+	GFTextLine(chargump, 20, 70, 1153, "Comandos do shard:");
+
+	var cfgtext := ReadConfigFile(":help:config/commands");
+	var textelem := FindConfigElem( cfgtext, "commands" );
+	var lines := GetConfigString(textelem, "Line");
+	GFHTMLArea(chargump, 20, 95, 310, 300, lines, 0, 1);
+
+	GFTextLine(chargump, 50, 420, 1153, "Solicitar ajuda aos GMs");
+//	GFTextLine(chargump, 50, 440, 1153, "Solicitar ajuda aos Counselors");
+	GFTextLine(chargump, 50, 440, 1153, "Reportar Bug");
+	GFAddButton(chargump, 20, 424, 2117, 2118, 1, BUTTON_HELP_SENDGMPAGE );
+//	GFAddButton(chargump, 20, 444, 2117, 2118, 1, BUTTON_HELP_SENDCOUNPAGE  );
+	GFAddButton(chargump, 20, 444, 2117, 2118, 1, BUTTON_HELP_REPORTBUG );
+
+	input := GFSendGump(who, chargump);
+	input := input[0];
+
+	if (input == BUTTON_HELP_SENDGMPAGE )
+		var sendpage := YesNo(who, "Por favor, so envie msg apenas se seu problema so puder ser resolvido por GMs, caso contrario use o forum. Continuar?", "Sim, quero enviar a msg.", "Nao, nao quero enviar a msg."  );
+		if (sendpage)
+			var msg := SendPageDialog(who);
+			SendSysMessage(who, "Sua msg foi enviada aos GMs.");
+			SendGmPage(who, msg);
+		endif
+//	elseif (input == BUTTON_HELP_SENDCOUNPAGE )
+//		var sendpage2 := YesNo(who, "Counselors sao players comuns que se dispuseram a ajudar a staff ajudando outros players. Eles podem apenas responder perguntas. Continuar?", "Sim, quero enviar a msg.", "Nao, nao quero enviar a msg."  );
+//		if (sendpage2)
+//			var msg2 := SendPageDialog(who);
+//			SendSysMessage(who, "Sua msg foi enviada aos Counselors.");
+//			SendCounselorPage(who, msg2);
+//		endif
+	elseif (input == BUTTON_HELP_REPORTBUG )
+		var sendpage3 := YesNo(who, "Um Bug so pode ser resolvido por Scripters. Detalhe o maximo possivel como voce descobriu o bug. Continuar?", "Sim, quero reportar o bug.", "Nao, nao tenho bug para reportar."  );
+		if (sendpage3)
+			var title := RequestGump(who, "Digite um titulo para o bug (Ate 5 Palavras)", "", "", 1);
+			var msg3 := SendPageDialog(who);
+			SendSysMessage(who, "O bug foi reportado para a staff.");
+			ReportBug(who, msg3, title);
+		endif
+	endif
+
+endprogram
+
+function SendPageDialog(who)
+	var gump := GFCreateGump();
+	var num_lines := 15;
+	var msg_array := array;
+	var y_pos := 80;
+	var i;
+
+	GFResizePic(gump, 0, 0, 3600, 420, 405);
+	GFResizePic(gump, 15, 15, 0x13BE, 390, 55);
+	GFTextMid(gump, 15, 20, 390, 1153, "Descreva seu problema");
+	GFAddButton(gump, 325, 45, 2128, 2129, GF_CLOSE_BTN, 20);
+	GFResizePic(gump, 15, 70, 0xA3C, 390, 320);
+	for ( i:=1; i<=num_lines; i:=i+1 )
+		msg_array.Append(GFTextEntry(gump, 20, y_pos, 396, 20, 1153, ""));
+		y_pos := y_pos+19;
+	endfor
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 20)
+		var i;
+		for ( i:=1; i<=msg_array.Size(); i:=i+1 )
+			var line := GFExtractData(input, msg_array[i]);
+      //sendsysmessage(who, "extraindo linha " + line);
+			if ( line )
+				line := line + " ";
+				msg_array[i] := line;
+			else
+				msg_array[i] := "";
+			endif
+      //sendsysmessage(who, "linha final " + line);
+		endfor
+
+		//Clear off empty lines.
+		for ( i := msg_array.Size(); i>=1; i:=i-1 )
+			if ( Len(msg_array[i]) <= 0 )
+				msg_array.Erase(i);
+			endif
+			SleepMS(2);
+		endfor
+
+		var text := "";
+		for ( i:=1; i<=msg_array.Size(); i:=i+1 )
+			text := text + msg_array[i];
+			SleepMS(2);
+		endfor
+		return text;
+	endif
+endfunction

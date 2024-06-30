@@ -1,0 +1,40 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program TimedScript_sacrificio(params)
+	var who := params[1];
+	var duracao := params[3];
+	var bonus := params[4];
+	
+	var i := 1;
+	var targ := who.weapon;
+			while( who.weapon == targ )
+	
+			if (who.dead)
+				break;
+			endif
+			var dano := RandomIntMinMax(5,15);
+			var dmgbonus := cdbl(GetObjProperty(who, "#dmgbonus"));
+			ApplyRawDamage(who, dano);
+			
+			SetObjProperty(who, "#dmgbonus", dmgbonus + 0.2);
+			SetObjProperty(who, "#xsac", i);
+			PrintText(who, "*queimando com chamas da espada*");
+			sleep(5);
+			
+			i := i + 1;
+			
+			if (i>10)
+				break;
+			endif
+		endwhile
+endprogram
+

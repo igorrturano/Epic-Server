@@ -1,0 +1,115 @@
+use os;
+use uo;
+
+include ":datafile:datafile";
+include ":gathering:mining";
+include ":gathering:settings";
+include ":gathering:lumberJack";
+
+const REGEN_WAIT := 60 * 10;
+
+//Regenera areia, clay e madeira e ore.
+// o ore regenera 3x em 30 minutos, os outros 1x em 30 min
+
+program ResourceRegen()
+	SetGlobalProperty("#MiningRegenPid", GetPid());
+	var settings := LJ_GetSettingsCfgElem("Settings");
+
+	while(1)
+			UpOreAmounts();
+		sleep(REGEN_WAIT);
+			UpOreAmounts();
+		sleep(REGEN_WAIT);
+			UpOreAmounts();
+			UpMiscAmounts();
+			RegenWood(settings);
+		sleep(REGEN_WAIT);
+	endwhile
+
+endprogram
+
+function UpOreAmounts()
+
+	var data_file := DFOpenDataFile(":gathering:OreSettings", DF_CREATE);
+	var elems := DFGetElemNames(data_file);		
+	
+	SysLog("Running ore regeneration cycle. ("+elems.size()+" veins)");
+
+	foreach vein_serial in (elems)
+		var vein := DFFindElement(data_file, vein_serial);
+
+		var remaining_ore := CInt(vein.GetProp("RemainingOre"));
+		var amount := CInt(vein.GetProp("Amount"));
+	
+		if ( remaining_ore < MAX_RESOURCE_AMOUNT )
+			remaining_ore := remaining_ore + 1;
+			vein.SetProp("RemainingOre", CInt(remaining_ore));
+		endif
+		if ( amount < MAX_RESOURCE_AMOUNT )
+			amount := amount + 1;
+			vein.SetProp("Amount", CInt(amount));
+		endif
+
+		if (amount == MAX_RESOURCE_AMOUNT)
+			data_file.DeleteElement(vein_serial);
+		endif
+	
+		sleep(1);
+	endforeach
+	
+	//SysLog("Finished ore regeneration cycle.");
+endfunction
+
+function RegenWood(settings)
+	Print("Running wood regeneration cycle...");
+	var data_file := LJ_GetDataFile();
+	
+	foreach elem_name in DFGetElemNames(data_file)
+		var data_elem := LJ_GetDataElem(elem_name);
+		
+		var amount := CInt(data_elem.GetProp("Amount"));
+		if ( amount < CInt(settings.MaxWood) )
+			amount := amount+1;
+			data_elem.SetProp("Amount", amount);
+		endif
+		
+		sleep(1);
+	endforeach
+endfunction
+
+function UpMiscAmounts()
+	var data_file := DFOpenDataFile("MiscResources", DF_CREATE);
+	var elems := DFGetElemNames(data_file);
+
+	SysLog("Running mining-resource regeneration cycle. ("+elems.size()+") coordinates.");
+
+	foreach coordinate in elems
+		var coordinate_info := DFFindElement(data_file, coordinate);
+		var resources := coordinate_info.propnames();
+
+		foreach resource_type in ( resources )
+			var resource_amount := ResourceAmount(resource_type, coordinate_info)+1;
+
+			if ( ResourceAmount(resource_type, coordinate_info) >= MAX_RESOURCE_AMOUNT )
+				//Since by default, unassigned values are set to MAX_RESOURCE_AMOUNT we
+				//erase this and then remove one extra check.
+				coordinate_info.EraseProp(resource_type);
+			else
+				SetResource(resource_type, coordinate_info, resource_amount);
+			endif
+
+			sleepms(2);
+		endforeach
+
+		resources := coordinate_info.propnames();
+		if ( resources.size() < 1 )
+			//If all the cprops were removed, then lets remove the elem too
+			//to yet again make one less check later on.
+			data_file.DeleteElement(coordinate);
+		endif
+
+		sleep(1);
+	endforeach
+
+	//SysLog("Finished mining-resources regeneration cycle.");
+endfunction

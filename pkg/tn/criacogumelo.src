@@ -1,0 +1,22 @@
+use uo;
+use util;
+
+program criacogumelo(item)
+
+	var r := RandomInt(5) + 1;
+	
+	case (r)
+		1:
+			SetObjProperty(item, "type", "comestivel");
+		2:
+			SetObjProperty(item, "type", "alucinogeno");
+		3:
+			SetObjProperty(item, "type", "venenoso");
+		4:
+			SetObjProperty(item, "type", "inteligencia");
+			
+		5:
+			SetObjProperty(item, "type", "forca");
+	endcase
+
+endprogram

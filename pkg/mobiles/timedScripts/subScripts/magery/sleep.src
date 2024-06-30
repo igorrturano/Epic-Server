@@ -1,0 +1,52 @@
+use uo;
+use os;
+use util;
+include ":charactercreation:habilidades";
+
+program TimedScript_Paralysis(params)
+	var mobile := params[1];
+
+	PlaySoundEffect(mobile, 0x205);
+	
+	
+	case (mobile.graphic)
+	401:
+	  PlaySoundEffect( mobile, 0x334 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	400:
+	  PlaySoundEffect( mobile, 0x446 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1828: 
+	  PlaySoundEffect( mobile, 0x446 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1829:
+	  PlaySoundEffect( mobile, 0x334 );
+	  PrintTextAbove(mobile, "*Dormindo*");		
+	1830: 
+	  PlaySoundEffect( mobile, 0x446 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1831:
+	  PlaySoundEffect( mobile, 0x334 );
+	  PrintTextAbove(mobile, "*Dormindo*");	
+	1832: 
+	  PlaySoundEffect( mobile, 0x446 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1833:
+	  PlaySoundEffect( mobile, 0x334 );
+	  PrintTextAbove(mobile, "*Dormindo*");	
+	1834: 
+	  PlaySoundEffect( mobile, 0x446 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1835:
+	  PlaySoundEffect( mobile, 0x334 );
+	  PrintTextAbove(mobile, "*Dormindo*");		 
+	endcase 
+	
+	
+	SendSysMessage(mobile, "Voce esta dormindo.");
+	mobile.paralyzed := 1;
+	//printtextabove(mobile, " " + mobile.paralyzed);
+	SetObjProperty(mobile, "#sleep", 1);
+	
+	return 1;
+endprogram

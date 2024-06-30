@@ -1,0 +1,51 @@
+# IDE files
+.idea/
+
+# Logs
+log
+*.log
+*.dmp
+
+# Ecompiled Scripts
+*.ecl
+*.dep
+
+# Data Except pol.txt
+data
+*.bak
+
+# POL Server
+config/animxlate.cfg
+config/boats.cfg
+config/extobj.cfg
+core-changes.txt
+packethooks.txt
+packets.zip
+pol
+pol.cfg.example
+poltool
+uoconvert
+uoconvert.txt
+uotool
+scripts/ecompile
+scripts/ecompile.cfg.example
+scripts/modules
+scripts/runecl
+*.exe
+
+# UOConvert Files
+config/multis.cfg
+config/tiles.cfg
+config/landtiles.cfg
+uoconvert.bat
+landtiles.cfg
+multis.cfg
+tiles.cfg
+pol.cfg
+
+# Muls
+muls/
+realm/
+objtypes.txt
+pcs.txt
+

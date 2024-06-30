@@ -1,0 +1,188 @@
+use uo;
+use os;
+use math;
+use vitals;
+
+include ":timedscripts:timedScripts";
+include "include/say";
+include ":mounts:mounts";
+include ":attributes:attributes";
+//include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include "include/damage";
+include ":combat:combat";
+include ":tn:combat";
+include ":charactercreation:resists";
+
+program arremesso(params)
+	var who := params[1];
+	//var targ := params[2];
+	params := 0; // No longer needed
+	if (who.hidden && !TemHabilidade(who, "Espionagem"))
+		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
+		return 0;
+	//elseif (GetEquipmentByLayer(who, 0x19)) // Por que não poderia? For Rohan!
+	//	SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
+	//	return 0;
+	endif
+
+	if (AP_GetVital(who, "Stamina") < 20)
+		SendSysMessageEx(who, "Voce esta cansado demais para arremessar algo.", SSM_FAIL);
+		return 0;
+	endif
+	
+	SendSysMessageEx(who, "Escolha o que deseja arremessar", SSM_REQUEST);
+	var targ := Target(who);
+    var thrower_str := AP_GetStat(who, STRENGTH);
+    var targ_str := AP_GetStat(targ, STRENGTH);
+
+	if ( !targ )
+		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
+		return 0;
+	elseif ( targ.IsA(POLCLASS_MOBILE) && !TemHabilidade(who, "Brigador de Taverna") && !(thrower_str >= targ_str))
+		SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
+		return 0;
+	elseif ( targ.npctemplate && !TemHabilidade(who, "Brigador de Taverna"))
+		SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(who, targ) > 1 )
+		SendSysMessageEx(who, "Muito longe.", SSM_FAIL);
+		return 0;
+	//elseif (((!targ.movable) || !ReserveItem(targ)))
+	//	SendSysMessageEx(who, "Voce nao pode arremessar isto.", SSM_FAIL);
+	//	return 0;	
+	elseif ( targ.isa(POLCLASS_CORPSE) )
+		SendSysMessageEx(who, "Voce nao pode arremessar corpos.", SSM_FAIL);
+		return 0;
+    elseif (targ.serial == who.serial)
+        SendSysMessageEx(who, "Voce nao pode se arremessar.", SSM_FAIL);
+        return 0;
+	endif
+
+	SendSysMessageEx(who, "Aonde vai arremessar?", SSM_REQUEST);
+    var alvo := Target(who);
+	
+	if (alvo == who)
+		SendSysMessageEx(who, "Seu instinto de sobrevivencia nao permite.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (alvo in EnumerateItemsInContainer(who.backpack)) 
+		SendSysMessageEx(who, "Voce nao pode arremessar neste alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	if(!CheckLosAt(who, alvo.x, alvo.y, alvo.z))
+		SendSysMessageEx(who, "Voce nao consegue ver o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+    var dist := Distance(targ, alvo);
+    var throw_max_range := AP_GetStat(who, STRENGTH) / 10;
+    if (targ.IsA(POLCLASS_MOBILE))
+        throw_max_range := AP_GetStat(who, STRENGTH) / 20;
+    endif
+
+    if (dist > throw_max_range)
+        SendSysMessageEx(who, "Sua forca so permite voce arremesar ate " + Cint(throw_max_range) + " tiles.", SSM_FAIL);
+		return 0;
+    endif
+
+	AP_ConsumeVital(who, "Stamina", 20);
+
+	var to_miss_chance := 50;
+    if (alvo.isA(POLCLASS_MOBILE))
+        to_miss_chance := GetResist(alvo, REFLEXOS);
+    endif
+    
+    var dmg := 1;
+    if (targ.isA(POLCLASS_MOBILE))
+        dmg := AP_GetStat(targ, STRENGTH) * 0.2; // 20% de dano em força da pessoa arremessada
+    elseif(targ.isA(POLCLASS_WEAPON))
+        dmg := CalculateRawDamage(who, targ);
+    endif
+
+    var ranged_bonus := Cint(AP_GetSkill(who, RANGEDCOMBAT));
+    var str_bonus := AP_GetStat(who, STRENGTH);
+    var dex_bonus := AP_GetStat(who, DEXTERITY);
+    var random := Cint(RandomInt(80));
+    var to_hit_chance := random + ((str_bonus + dex_bonus + ranged_bonus) / 10);
+	if (targ.isA(POLCLASS_WEAPON))
+		var parry_chance := Cint(AP_GetSkill(alvo, PARRY) / 3);
+		if (alvo)
+			MoveObjectToLocation(targ, alvo.x, alvo.y, alvo.z, alvo.realm, MOVEOBJECT_FORCELOCATION);
+			PrintText(who, "*Arremessa " + targ.name + " em " + alvo.name +"*");
+			PlaySoundEffect(who, 0x51C);
+		endif	
+
+		if (to_hit_chance < (to_miss_chance + parry_chance)) // Erra ou defende
+            if (to_hit_chance > to_miss_chance)
+                PlayHitSounds(who, alvo);
+                PrintTextAbove(alvo, "*Defendeu!*");
+            endif
+			PrintTextAbove(who, "*Errou!*");
+	 		return 0;
+		else
+            var poisonInfo := GetObjProperty(targ, "poisonInfo");
+            var poison_amt := poisonInfo.dosage;
+            var poisonLvl := poisonInfo.level;
+            // Sempre que for mexer nesse timer, mexer também  no hitscript ou criar funcao e chamar em ambos
+            var poisonDuration := Cint(AP_GetSkill(who, ALCHEMY) / 20);
+            if (poisonDuration < 2)
+                poisonDuration := 2;
+            endif
+            if (temHabilidade(who, "Veneno Puro"))
+                poisonDuration := poisonDuration * 2;
+            endif
+            if (poisonInfo)
+                poison_amt--;
+                if (!CheckResist(alvo, FORTITUDE, 15,-20*poisonLvl))
+                    TS_StartTimer(alvo, poisonInfo.name, poisonDuration, poisonInfo.level, targ);
+                else
+                    SendSysMessage(alvo, "Voce resistiu ao veneno", SSM_INFO);
+                    SendSysMessage(who, "O alvo resistiu ao veneno", SSM_INFO);
+                endif
+            endif
+            PlayMovingEffect( who, alvo, 0x22C6, 10);
+            DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
+            PlaySoundEffect(alvo, 0x521);
+            PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
+            MakeBleed(alvo);
+            PlayHitSounds(who, alvo);
+    		return 1;
+		endif
+	else
+		//SendSysMessageEx(who, "No que deseja arremessar?", SSM_REQUEST);
+		if (alvo)
+			MoveObjectToLocation(targ, alvo.x, alvo.y, alvo.z, alvo.realm, MOVEOBJECT_FORCELOCATION);
+			PrintText(who, "*Arremessa " + targ.name + " em " + alvo.name +"*");
+			PlaySoundEffect(who, 0x51C);
+		endif	
+
+		if (to_hit_chance < to_miss_chance) // Errou!
+			PrintTextAbove(who, "*Errou!*");
+	 		return 0;
+		else
+			PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
+			PlaySoundEffect(alvo, 0x136);
+            DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
+            DamageFLS(targ, dmg, DMG_PHYSICAL, who);
+            PlaySoundEffect(alvo, 0x521);
+            PrintTextAbove(alvo, "*Foi acertado por " + targ.name +"*");
+		return 1;
+		endif
+	endif	
+
+    if (who.hidden && !TemHabilidade(who, "Furtividade Aprimorada"))
+        who.hidden := 0;
+    else
+        if (AP_GetVital(who, "Stamina") < 50)
+            who.hidden := 0;
+            SendSysMessageEx(who, "Voce esta cansado demais para se manter escondido.", SSM_FAIL);
+        else
+            AP_ConsumeVital(who, "Stamina", 50);
+        endif
+    endif
+endprogram

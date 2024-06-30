@@ -1,0 +1,10 @@
+use uo;
+use util;
+
+program OnCreate(object)
+	var graphics := array(4650, 4651, 4652, 4653, 4654);
+	
+	object.graphic := graphics[RandomInt(graphics.size())+1];
+	
+	return 1;
+endprogram

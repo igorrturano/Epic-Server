@@ -1,0 +1,96 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+include "include/client";
+//include "include/util_extend";
+
+program cachimbo (player, cachimbo)
+var preenchido := GetObjProperty (cachimbo,"preenchido");
+if (!preenchido)
+SendSysMessage( player, "Selecione o fumo:" );
+var targ := target(player);
+if (PodeFumar(targ))
+SetObjProperty (cachimbo, "preenchido", 1);
+SendSysMessage( player, "Voce colocou o fumo no cachimbo" );
+DestroyItem(targ);
+return;
+endif
+endif
+if (preenchido)
+Fumar (player, cachimbo);
+endif
+endprogram
+
+function fumar (player, cachimbo)
+PrintTextAbove(player, "*Acendendo um cachimbo*");
+Fumaca (player);
+var loop := 0;
+Sleep(4);
+while (loop < 4)
+PrintTextAbove(player, "*Dando tragadas em um cachimbo*");
+Fumaca (player);
+Sleep(4);
+Fumaca (player);
+Sleep(4);
+Fumaca (player);
+Sleep(4);
+loop := loop + 1;
+endwhile
+SendSysMessage( player, "O fumo do cachimbo acabou" );
+EraseObjProperty (cachimbo, "preenchido");
+endfunction
+
+function fumaca (player)
+var facing := player.facing;
+var x, y, z;
+case (facing)
+0:
+x := 0;
+y := -1;
+z := 6;
+1:
+x := 1;
+y := -1;
+z := 10;
+2:
+x := 1;
+y := 0;
+z := 10;
+3:
+x := 1;
+y := 1;
+z := 15;
+4:
+x := 0;
+y := 1;
+z := 10;
+5:
+x := -1;
+y := 0;
+z := 6;
+6:
+x := -1;
+y := 0;
+z := 6;
+7:
+x := -1;
+y := -1;
+z := 2;
+endcase
+PlayStationaryEffect( player.x + x, player.y + y , player.z + z , GFX_FIZZLE, 5, 50, 0, player.realm );
+x := 0;
+y := 0;
+z := 0;
+endfunction
+
+function PodeFumar(item)
+  var config := ReadConfigFile(":*:itemdesc");
+  config := config[item.objtype];
+
+  if ( config.PodeFumar )
+    return 1;
+  endif
+  return 0;
+endfunction
+

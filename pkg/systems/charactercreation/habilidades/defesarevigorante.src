@@ -1,0 +1,19 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+
+
+program doubleattack(who)
+
+	SendSysMessageEx(who, "Cada defesa voce se revigora.", SSM_INFO);
+	SetCooldown(who, "defesarevigorante", 10);
+	
+endprogram
+
+

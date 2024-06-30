@@ -1,0 +1,44 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+include "include/utils";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return;
+	endif
+
+	empty_bottle(who, potion);
+
+	SendSysMessage(who, "Voce espalhou o po ao redor.");
+	PrintTextAbove(who, "*espalha um fino po ao redor de si*");
+	PlaySoundEffect(who, 0x0248);
+	sleepms(200);
+	PlaySoundEffect(who, 0x0248);
+	var rect := GetPointsInRadius(who.x, who.y, 1);
+	foreach coord in rect
+		PlayStationaryEffect(coord.x, coord.y, who.z, 0x3728, 35, 35, who.realm);
+		sleepms(3);
+	endforeach
+	//Give hidden people a chance to sneak away.
+	sleepms(600);
+	
+	foreach coord in rect
+		foreach mobile in ListMobilesNearLocationEX(coord.x, coord.y, who.z, 2, LISTEX_FLAG_HIDDEN, who.realm)
+			SendSysMessage(mobile, "A poeira revelou voce.");
+			mobile.hidden := 0;
+			sleepms(2);
+		endforeach
+		sleepms(2);
+	endforeach
+
+	
+endprogram

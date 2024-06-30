@@ -1,0 +1,40 @@
+use uo;
+use cfgfile;
+use util;
+
+program cria(item)
+
+	var spellinfo := struct;
+
+	//pega o level do scroll
+	var scrollcfg := ReadConfigFile(":spells:itemdesc");
+	var lvl :=  GetConfigInt(FindconfigElem(scrollcfg, item.objtype), "Circle" );
+
+	if (!lvl)
+		lvl := 1;
+	endif
+
+	//pega todas magias do cfg com esse level e armazena no array
+	var spellcfg := ReadConfigFile(":spells:config/allspells");
+	var keys := GetConfigIntKeys(spellcfg);
+	var randomspells := array;
+	foreach key in keys
+		var spelllvl := GetConfigInt( FindconfigElem(spellcfg, key), "Circle" );
+		var spelltype := GetConfigString( FindconfigElem(spellcfg, key), "Type" );
+		if ( (spelllvl == lvl) && ( spelltype == "Mesum")) //so mesum tem scroll
+			randomspells.append(key);
+		endif
+	endforeach
+
+
+	spellinfo.+id := randomspells[RandomInt(randomspells.size())+1];
+
+	SetObjProperty(item, "spellinfo", spellinfo);
+	SetObjProperty(item, "magic", 1);
+	SetObjProperty(item, "cargas", (RandomInt(10*lvl) + 10));
+	SetObjProperty(item, "cancast", 1);
+
+	return 1;	
+
+
+endprogram

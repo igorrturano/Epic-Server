@@ -1,0 +1,50 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":combat:combat";
+
+program SpellScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	params := 0; // No longer needed
+
+    var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
+    //if (CheckResist(defender, FORTITUDE, tactics_bonus, -CInt(AP_GetSkill(attacker, TACTICS)/2.5))) // Muito mais Difícil de resistir
+    //    SendSysMessageEx(attacker, "Voce nota que o alvo se manteve de pé.", SSM_FAIL);
+    //    SendSysMessageEx(defender, "Voce resistiu ao nocaute.", SSM_INFO);
+    //    return;
+    //endif
+
+    PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	PrintTextAbove(attacker, "*punho de ferro*");
+	TS_StartTimer(defender, "sleep", tactics_bonus, 1, attacker, 0);
+	Detach();
+	Attach(defender);
+    printtextabove(defender, "*K.O.*");
+	PlaySoundEffect(attacker, 0x658);
+	SendSysMessageEx(attacker, "O alvo apagou.", SSM_INFO);
+    if (attacker.graphic == 400 || attacker.graphic == 401 || attacker.graphic == 1828 || attacker.graphic == 1829 || attacker.graphic == 1830 || attacker.graphic == 1831 || attacker.graphic == 1832 || attacker.graphic == 1833 || attacker.graphic == 1834 || attacker.graphic == 1835)
+        PlaySoundEffect(attacker, 0x515);
+    else
+        PlaySoundEffect(attacker, 0x514);
+    endif
+	PlayObjectCenteredEffect(defender, 0xB8FB, 3, 56);
+	sleep(3);
+
+    DamageFLS(defender, CInt(AP_GetSkill(attacker, TACTICS)), DMG_FORCED, attacker);
+	while ( GetObjProperty(defender, "#sleep") )
+        defender.paralyzed := 1;
+		PlayObjectCenteredEffect(defender, 0xB8FB, 3, 56);
+		sleep(3);
+	endwhile
+    defender.paralyzed := 0;
+	return 1;
+endprogram

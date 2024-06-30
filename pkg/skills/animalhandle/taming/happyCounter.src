@@ -1,0 +1,46 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+
+program happyCounter(parms)
+  var me := parms[1];
+  var timer := parms[2];
+  var happiness;
+  while((AP_GetVital(me, HITS) > 0) && (me.script == ":ghaia:tamed"))
+    if(GetObjProperty(me,"countercheck") != timer)
+	      break;
+    endif
+    if(GetObjProperty(me,"stabled"))
+      while(GetObjProperty(me,"stabled"))
+        if(GetObjProperty(me,"countercheck") != timer)
+          break;
+        endif
+        sleep(600);
+      endwhile
+    elseif(GetObjProperty(me,"onhold"))
+      while(GetObjProperty(me,"onhold"))
+        if(GetObjProperty(me,"countercheck") != timer)
+		           break;
+        endif
+        sleep(120);
+      endwhile
+    else
+      while((!GetObjProperty(me, "stabled")) && (!GetObjProperty(me, "onhold")))
+       if(GetObjProperty(me,"countercheck") != timer)
+		 break;
+       endif
+        happiness := GetObjProperty(me,"happiness");
+		if(!GetObjProperty(me, "previous_location"))
+        happiness := happiness - 1;
+		if (happiness < 0)
+			happiness := 0;
+		endif
+        SetObjProperty(me,"happiness", happiness);
+		endif
+        sleep(60);
+      endwhile
+    endif
+  endwhile
+endprogram

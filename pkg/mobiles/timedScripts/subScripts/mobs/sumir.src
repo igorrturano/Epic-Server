@@ -1,0 +1,32 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+	var random_x := RandomDiceroll("1d5+1");
+	var random_y := RandomDiceroll("1d5+1");
+	var random_move := RandomDiceroll("1d2");
+	sleep(1);
+	mobile.concealed := 1;
+	if (random_move==1)
+	Moveobjecttolocation(mobile, mobile.x+random_x, mobile.y+random_y, mobile.z, mobile.realm, MOVEOBJECT_NORMAL);
+	else
+	Moveobjecttolocation(mobile, mobile.x-random_x, mobile.y-random_y, mobile.z, mobile.realm, MOVEOBJECT_NORMAL);
+	endif
+	    var nearby := ListMobilesNearLocation( mobile.x ,mobile.y, mobile.z, 8);
+            foreach char in nearby
+                var event := struct{"type":=EVID_TAUNT, "source":=char};
+                SendEvent(mobile, event);
+            endforeach
+	
+	return 1;
+endprogram
+

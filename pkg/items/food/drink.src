@@ -1,0 +1,105 @@
+use uo;
+use cfgfile;
+use os;
+
+include ":food:drink";
+include ":timedScripts:poisonUtil";
+include "include/client";
+
+Const SOUND_DRINK_LIQUID		:= 0x31;
+Const SOUND_DRINK_ALCOHOL	:= 0x32;
+Const ACTION_DRINK	:= 0x0022;
+
+program drink ( character, drink )
+
+	if (drink.movable == 0)
+		SendSysmessage (character, "Voce nao pode beber isto.", FONT_NORMAL, 90);
+		return;
+	endif
+
+	if (!ReserveItem (drink))
+		SendSysMessage (character, "Voce nao pode beber isto.", FONT_NORMAL, 90);
+		return;
+	endif
+
+	var cfgfile := ReadConfigFile( "itemdesc" );
+	var elem := FindConfigElem( cfgfile, drink.objtype );
+	var drink_proof := GetConfigInt( elem, "Proof" );
+	var drink_emote := GetConfigString( elem, "Emote" );
+
+	PerformAction( character, ACTION_DRINK );
+
+	var poisonInfo := GetObjProperty(drink, "poisonInfo");
+
+	if(poisonInfo)
+		poisonInfo.dosage := poisonInfo.dosage - 1;
+		if (poisonInfo.dosage <= 0) //se nao tiver mais cargas de veneno, deleta
+			EraseObjProperty(drink, "poisonInfo");
+		else //se ainda tiver atualiza na arma
+			SetObjProperty(drink, "poisonInfo", poisonInfo);
+			if (!IsPoisonImune(character, poisonInfo.name) )
+				PrintTextAbovePrivate(character, "Algo comeca a queimar no seu pescoco", character);
+				TS_StartTimer(character, poisonInfo.name, poisonInfo.time, poisonInfo.level, character);
+			endif
+		endif
+	endif
+
+	if ((drink.objtype >= 0x1f7d and drink.objtype <= 0x1f94) or drink.objtype == 0x09ee or drink.objtype == 0x09ef)
+
+		var the_glass := CreateItemInBackpack (character, 0x1f81 );
+
+		if (GetObjProperty (drink, "EmptyName"))
+			the_glass.name := GetObjProperty (drink, "EmptyName");
+		endif
+	
+		SubtractAmount (drink, 1);
+
+	else
+		reduce_container_fullness (character, drink);
+	endif
+	
+	if (drink_emote)
+		PrintTextAbovePrivate(character, "*" + drink_emote + "*", character);
+	endif
+
+	if (drink_proof)
+		PlaySoundEffect( character, SOUND_DRINK_ALCOHOL );
+	else
+		PlaySoundEffect( character, SOUND_DRINK_LIQUID );
+		return;
+	endif
+
+	var drunkness := GetObjProperty( character, "#proof" );
+
+	if (!drunkness)
+		SetObjProperty( character , "#proof", drink_proof );
+		send_drunkness_message (character, drink_proof);
+		start_script( "drunk", character );
+	else
+		if (drunkness + drink_proof > 20)
+			drunkness := 20;
+		else
+			drunkness := drink_proof + drunkness;
+		endif
+		send_drunkness_message (character, drunkness);
+		SetObjProperty (character , "#proof", drunkness);
+	endif
+
+endprogram
+
+
+
+
+function send_drunkness_message (character, drunkness)
+	if (drunkness > 4 and drunkness <= 8)
+		SendSysmessage (character, "Voce se sente tonto.", FONT_NORMAL, 90);
+	elseif( drunkness > 8 and drunkness <= 12)
+		SendSysmessage( character , "Voce esta bebado.", FONT_NORMAL, 90 );
+	elseif( drunkness > 12 and drunkness <= 16)
+		SendSysmessage( character , "Voce esta muito bebado!", FONT_NORMAL, 90 );
+	elseif( drunkness > 16)
+		SendSysmessage( character , "Voce acha que vai ficar doente...", FONT_NORMAL, 90 );
+	endif
+endfunction
+
+

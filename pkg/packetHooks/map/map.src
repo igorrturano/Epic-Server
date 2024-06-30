@@ -1,0 +1,64 @@
+use uo;
+use polsys;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+
+program map()
+	Print( "INSTALLING: Request Map PH..." );
+	return 1;
+endprogram
+
+
+exported function sendgump( who, byref packet )
+
+
+	var map := SystemFindObjectBySerial(packet.GetInt32(1));
+
+	if (map.getpins().size == 0)
+		EraseObjProperty(map, "pininfo");
+	endif
+
+	if (GetObjProperty(map, "pininfo") != error)
+		SendSysMessageEx(who, "Este mapa tem pontos nomeados, digite .detalhemapa e selecione ele.", SSM_INFO);
+	endif
+
+
+	return 0;
+endfunction
+
+function SendPinInfoGump(who,  map)
+
+	var gumpRP := GFCreateGump();
+	GFClosable(gumpRP, 1);
+	GFDisposable(gumpRP, 0);
+
+	GFResizePic(gumpRP, 0, 25, 3600, 300, 380);
+	GFResizePic(gumpRP, 15, 40, 0x13BE, 270, 350);
+	GFTextMid(gumpRP, 15, 45, 270, 55, "Marcadores no Mapa");
+
+	var y := 75;
+	var pininfo := GetObjProperty(map, "pininfo");
+	var id := 1;
+	foreach pin in (map.getpins())
+		var name := pininfo[id].name;
+		if (name == error)
+			name := "Marca ";
+		endif
+		GFTexTLine(gumpRP,  85, y, 270, id +  ": " + name);
+		GFAddButton(gumpRP, 30, y,  4011, 4012, GF_CLOSE_BTN, (100+id) );
+		GFAddButton(gumpRP, 65, y,  4017, 4018, GF_CLOSE_BTN, (200+id) );
+		y := y + 20;
+		id := id + 1;
+	endforeach
+	
+	var input := GFSendGump(who, gumpRP);
+
+	if (input[0] > 200 )
+		SendSysMessage(who, "renomear");
+	elseif (input[0] > 100)
+		SendSysMessage(who, "deletar");
+	endif
+
+endfunction

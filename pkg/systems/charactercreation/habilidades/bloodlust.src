@@ -1,0 +1,23 @@
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":charactercreation:resists";
+
+program HitScript(who)
+	//PlayObjectCenteredEffect(defender, 0xAFED, 7, 16);
+	//PlaySoundEffect(defender, 0x358);
+    var shaman_souls := Cint(getobjProperty(who, "shaman_souls"));
+    if (!shaman_souls)
+        var shaman_souls := 1;
+    endif
+    var bonus_mlore := Cint(AP_GetSkill(who, MAGICLORE)/ 30);
+    Setcooldown(who, "bloodlust", shaman_souls);
+    HealFLS(who, shaman_souls * bonus_mlore);
+    PlayStationaryEffect(who.x, who.y, who.z+2, 0x546C, 0, 30);
+    EraseObjProperty(who, "shaman_souls");
+    SendSysMessage(who, "Voce concede as almas um novo proposito");
+	return 1;
+endprogram

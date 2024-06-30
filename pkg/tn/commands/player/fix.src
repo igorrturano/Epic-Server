@@ -1,0 +1,164 @@
+use uo;
+use os;
+use basic;
+
+include "include/say";
+
+program fix(who, param)
+	if (param == "help")
+		SendSysMessage(who, "Opcoes de uso do .fix:");
+		SendSysMessage(who, "\".fix\" Personagem fixa ou desfixa itens.");
+		SendSysMessage(who, "\".fix transferir\" Personagem passa controle do item para outro.");
+		if(who.cmdlevel)
+			SendSysMessage(who, "\".fix travar\" GM fixa ou desfixa itens (Player NAO PODE mais usar .fix).");
+			SendSysMessage(who, "\".fix liberar\" GM fixa ou desfixa itens (Qualquer Player pode tomar controle do item com .fix).");
+		endif
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Em qual item deseja aplicar o comando?", SSM_REQUEST);
+	var alvo := Target(who, TGTOPT_CHECK_LOS);
+	if (!alvo)
+		SendSysMessage(who, "Cancelado", SSM_FAIL);
+		return 0;
+	elseif (!Accessible(who, alvo,2))
+		SendSysMessageEx(who, "Voce nao alcanca o alvo.", SSM_FAIL);
+		return 0;
+/*	elseif (GetObjProperty(alvo, "canfix") != 1) //Sem isso qualquer item pode ser fizavel por qualquer um
+		SendSysMessageEx(who, "Voce nao pode fixar este item.");
+		return 0;
+*/
+	elseif (TypeOf(alvo.container) == "ItemRef")
+		SendSysMessageEx(who, "Voce nao pode fixar itens dentro de containers.", SSM_FAIL);
+		return 0;
+	endif
+	var fixer := GetObjProperty(alvo, "fixer");
+	if(!param)
+		if(who.cmdlevel)
+			if (alvo.movable == 0)
+				alvo.movable := 1;
+				SendSysMEssage(who, "O item esta solto.");
+			else
+				alvo.movable := 0;
+				SendSysMessage(who, "O item esta imovel.");
+			endif
+			return 1;
+		elseif (GetObjProperty(alvo, "crafterserial") == error)
+			SendSysMessageEx(who, "Esse item so pode ser fixado ou desfixado pela Staff.", SSM_FAIL);
+			return 0;
+/*
+			// Edmond - Atualizado para uso do script de placas. Marck - Sei nem que script é esse das placas
+			if ((alvo.objtype != 1111) || (alvo.objtype != 1112) || (alvo.objtype != 1113) ||  (alvo.objtype != 1114) || (alvo.objtype != 1115) || (alvo.objtype != 1118))
+				SendSysMessageEx(who, "Voce so pode fixar itens que foram criados por algum player.", SSM_FAIL);
+				return 0;
+			endif
+*/
+		else
+			if (!fixer)
+				SetObjProperty(alvo, "fixer", who.serial);
+			elseif (who.serial != fixer)
+				SendSysMessageEx(who, "Esse item precisa ser transferido para voce antes de usar esse comando.", SSM_FAIL);
+				return 0;
+			endif
+			if (alvo.movable == 1)
+				alvo.movable := 0;
+				PrintTextAbove(alvo, who.name +" fixou "+alvo.name+".");
+				SendSysMessageEx(who, "O item esta protegido contra decay.", SSM_INFO);
+			else
+				if (who.hidden)
+					PrintTextAbove(who, who.name +" tenta desfixar "+alvo.name+" e saiu do esconderijo.");
+					who.hidden := 1;
+				else
+					PrintTextAbove(who, who.name +" tenta desfixar "+alvo.name+".");
+				endif
+				Sleep(2);
+				alvo.movable := 1;
+				PrintTextAbove(alvo, who.name +" soltou "+alvo.name+".");
+			endif
+			return 1;
+		endif
+	elseif (param == "transferir")
+		if (who.serial != fixer)
+			SendSysMessageEx(who, "Esse item precisa ser transferido para voce antes de usar esse comando.", SSM_FAIL);
+			return 0;
+		endif
+
+		var crafterserial := GetObjProperty(alvo, "crafterserial");
+		if (crafterserial)
+			SendSysMessageEx(who, "Para quem voce quer transferir o controle do item?", SSM_REQUEST);
+			var novoDono := Target(who);
+			if (!novoDono.acctname)
+				SendSysMessage(who, "Cancelado", SSM_FAIL);
+				return 0;
+			endif
+			if (!fixer)
+				SetObjProperty(alvo, "fixer", novoDono.serial);
+				PrintTextAbove(alvo, who.name +" passou o controle de "+alvo.name+" para "+novoDono.name+".");
+				return 1;
+			else
+				SetObjProperty(alvo, "fixer", novoDono.serial);
+				PrintTextAbove(alvo, who.name +" passou o controle de "+alvo.name+" para "+novoDono.name+".");
+				return 1;
+			endif
+		else
+			SendSysMessageEx(who, "Esse item so pode ser fixado ou desfixado por comando exclusivo da Staff.", SSM_FAIL);
+			return 0;
+		endif
+
+	elseif (Cint(param) == "travar")
+		if(who.cmdlevel)
+			if (alvo.movable == 0)
+				EraseObjProperty(alvo, "crafterserial");
+				alvo.movable := 1;
+				SendSysMEssage(who, "O item esta solto e so pode ser fixado pela staff.");
+			else
+				EraseObjProperty(alvo, "crafterserial");
+				alvo.movable := 0;
+				SendSysMessage(who, "O item esta imovel e so pode ser solto pela staff.");
+			endif
+		else
+			return 0;
+	  	endif
+	   	return 1;
+	elseif (Cint(param) == "liberar")
+		if(who.cmdlevel)
+			SetObjProperty(alvo, "crafterserial",who.serial);
+			EraseObjProperty(alvo, "fixer");
+			if (alvo.movable == 0)
+				alvo.movable := 1;
+				SendSysMEssage(who, "O item esta solto e agora pode ser fixado por qualquer um.");
+			else
+				alvo.movable := 0;
+				SendSysMessage(who, "O item esta imovel e agora pode se solto por qualquer um.");
+			endif
+		else
+			return 0;
+		endif
+		return 1;
+	else
+		SendSysMessage(who, "Opcao invalida. Para listar opcoes use o comando .fix help");
+		return 0;
+	endif
+	return 0;
+endprogram
+
+function GetDeed(who, deed)
+	if (!GetObjProperty(deed, "FromDeed"))
+		return 1;
+	endif
+
+	Var NewDeed := CreateItemInBackpack(who, GetObjProperty(deed, "FromDeed"), 1);
+	NewDeed.color := deed.color;
+	NewDeed.movable := 1;
+	SetObjProperty(NewDeed, "crafterserial", GetObjProperty(deed, "crafterserial"));
+	SetObjProperty(NewDeed, "fixer", GetObjProperty(deed, "fixer"));
+
+	foreach part in GetObjProperty(deed, "ItemsCreatedSerials")
+		DestroyItem( SystemFindObjectBySerial( part ) );
+	endforeach
+
+	if (deed)
+		destroyitem( deed );
+	endif
+
+endfunction

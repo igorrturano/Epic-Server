@@ -1,0 +1,108 @@
+/* $Id$
+ *
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program on_insert(who, bainha, movetype, inserttype, item, existing_stack, amt);
+
+	amt            := amt;
+	existing_stack := existing_stack;
+	movetype       := movetype;
+	inserttype     := inserttype;
+
+	// Se for bainha de adaga, deixa colocar adagas
+    // Se for bainha de espada, deixa colocar espadas
+    // se for bainha de macas, deixa colocar macas
+    // se for bainha de machado, deixa colocar machados
+    // muda o grafico caso tenha algum item inserido
+    // só poder ter 1 item por vez
+	if (bainha.objtype == 0xa40e) // bainha de adaga
+        var adagas := Array{0x0ec4, 0x0ec2, 0x13f6, 0x27af, 0x0f51, 11566, 0x1401, 0x27ab, 11565};
+        if (item.objtype in adagas)
+            if (bainha.item_count > 2)
+                SendSysMessageEx(who, "Ja existe uma adaga nesta bainha.", SSM_FAIL);
+                MoveItemToContainer(item, who.backpack);
+                return 0;
+            endif
+        else 
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+        //bainha.graphic := 0xa40d; // TODO adicionar o grafico correto depois
+	elseif (bainha.objtype == 0xa40d) //bainha de espada
+        var espadas := Array{0x13b9, 0x13b5, 0x13fe, 0x1440, 0x0f5f, 0x0F60, 0x27EF, 0x27a9, 11570, 0x26C5};
+        if (item.objtype in espadas)
+            if (bainha.item_count > 2)
+                SendSysMessageEx(who, "Ja existe uma espada nesta bainha.", SSM_FAIL);
+                return 0;
+            endif
+        else 
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+        //bainha.graphic := xyz; TODO adicionar o grafico correto depois
+    elseif (bainha.objtype == 0xa40c) // bainha de maça
+        var macas := Array{0x1406, 0x143a, 0x13e4, 0x0f5c, 0x143c, 11568, 0x26C6, 0x13e3};
+        if (item.objtype in macas)
+            if (bainha.item_count > 2)
+                SendSysMessageEx(who, "Ja existe uma maca nesta bainha.", SSM_FAIL);
+                return 0;
+            endif
+        else 
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+        //bainha.graphic := xyz; TODO adicionar o grafico correto depois
+    elseif (bainha.objtype == 0xC60F) // bainha de machado costas
+        var machados := Array{0x143E, 0xF4E, 0x0f4c, 0x0f45, 0x13fa, 0x1442, 0x13AF, 0x2D34};
+        if (item.objtype in machados)
+            if (bainha.item_count > 2)
+                SendSysMessageEx(who, "Ja existe uma maca nesta bainha.", SSM_FAIL);
+                return 0;
+            endif
+        else 
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+        //bainha.graphic := xyz; TODO adicionar o grafico correto depois
+    elseif (bainha.objtype == 0xC604) // bainha de PoleWeapons
+        var pole := Array{0x1402, 0x26C8, 0x26C7, 0x26C9, 0xF63, 0x13f9, 0x0e81, 0x0e8a, 0x26CB};
+        if (item.objtype in pole)
+            if (bainha.item_count > 2)
+                SendSysMessageEx(who, "Ja existe uma maca nesta bainha.", SSM_FAIL);
+                return 0;
+            endif
+        else 
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+        //bainha.graphic := xyz; TODO adicionar o grafico correto depois
+	endif
+
+//	var items := EnumerateItemsInContainer( book );
+	if( bainha.movable == 0 )
+		SendSysMessage(who, "Cancelado.");
+		MoveItemToContainer(item, who.backpack);
+		return 0;
+	elseif( !ReserveItem(bainha) || !ReserveItem(item) )
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessage(who, "A bainha esta em uso.");
+		return 0;
+	else
+        return 1;
+	endif
+
+	return 1;
+endprogram
+
+
+

@@ -1,0 +1,14 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":tn:cooldown";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Faca um extrato.", SSM_INFO);
+
+	SetObjProperty(attacker, "extratoinstantaneo", 1);
+
+endprogram  
+

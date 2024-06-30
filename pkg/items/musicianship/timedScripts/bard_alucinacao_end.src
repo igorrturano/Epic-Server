@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_alucinacao_end(alvo)
+	EraseObjProperty(alvo, "#Alucinado");
+	//set_critical(1);
+	//var x := alvo.x;
+ 	//var y := alvo.y;
+ 	//var z := alvo.z;
+  	//MoveObjectToLocation(alvo, 6080, 1873, 0, alvo.realm, MOVEOBJECT_FORCELOCATION);//manda ele pra algum lugar preto
+  	//MoveObjectToLocation(alvo, x, y, z, alvo.realm, MOVEOBJECT_FORCELOCATION); //traz ele de voltar pra o lugar de onde saiu
+  	//set_critical(0);
+	start_script(":nature:logon", alvo); //recarrega efeitos de luminosidade
+	SendSysMessage(alvo, "As alucinacoes pararam.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	return 1;
+endprogram

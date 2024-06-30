@@ -1,0 +1,35 @@
+  
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha uma arma, alimento ou alguem armado.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cencelado", SSM_FAIL);
+		return;
+	endif
+
+	if (targ.isA(POLCLASS_WEAPON))
+		EraseObjProperty(targ, "poisonInfo");
+	elseif (targ.isa(POLCLASS_MOBILE))
+		EraseObjProperty(targ.weapon, "poisonInfo");
+	else
+		EraseObjProperty(targ, "poisonInfo");
+	endif         PlaySoundEffect(targ, SFX_BLESS);
+
+	SendSysMessageEx(who, "Voce removeu o veneno.", SSM_INFO);
+
+	
+	return 1;
+endprogram    

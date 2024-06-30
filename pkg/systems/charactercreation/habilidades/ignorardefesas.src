@@ -1,0 +1,14 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+
+	SendSysMessageEx(who, "Voce achou um ponto fraco!", SSM_INFO);
+	SetObjProperty(who, "#ignorardefesas", 1);
+	
+endprogram

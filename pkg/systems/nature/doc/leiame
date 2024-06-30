@@ -1,0 +1,15 @@
+dois scripts ficam rodando continuamente no server:
+daynight e weathercontrol.
+
+daynight fica mudando o lightlevel, os fatores que influencia o lightlevel sao:
+1- hora do dia (dia claro, noite escuro e transiçao entre eles)
+2- fase da lua, na lua cheia a noite eh mais clara , na lua nova eh mais escura.
+3- localizaçao do player no mapa (se ele esta em dungeon ou em uma "DarknessArea" ou "LightArea")
+4- raça do player e efeitos magicos sobre ele
+
+o weather control fica alterando a chance de chover, nevar ou cair tempestade. isso depende apenas
+da estação do ano e outros fatores randomicos.
+
+quando o player loga dois scripts sao executados nele:
+Logon.src que acerta o lightlevel do player 
+SeasonalEffects que envia o packet certo da estacao.

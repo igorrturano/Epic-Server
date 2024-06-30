@@ -1,0 +1,32 @@
+//$Id: canRemove.src 386 2005-10-03 00:22:39Z muaddiblsd $
+
+use uo;
+include ":attributes:attributes";
+include "include/say";
+
+program canRemove(character, container, item, move_type)
+	if (container.ownerserial == character.serial)
+		return 1;
+	elseif (!maoLivre(character, 1))
+		return 0;
+	elseif (character.frozen || character.paralyzed)
+		SendSysMessage(character, "Voce esta paralizado.");
+		return 0;
+	elseif(GetObjProperty(item, "OnlyKit"))
+		if (GetObjProperty(item, "OnlyKit") != GetObjProperty(character, "kit") )
+			return 0;
+		endif
+	endif
+
+	var is_cursed := GetObjProperty(item, "equip").cursed;
+	if (is_cursed && GetObjProperty(item, "#EquippedOn") == container.ownerserial)
+		SendSysMessage(character, "Este item parece estar preso ao usuario");
+		return 0;
+	endif
+
+	if (container.objtype == 0xEFFF) //Se for remains
+        PrintText(character, "*Pegou "+ item.desc +" do "+ container.desc +"*", 41); //Imprime a mensagem de removendo item
+    endif
+
+	return 1;
+endprogram

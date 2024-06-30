@@ -1,0 +1,80 @@
+
+use uo;
+
+include ":keys:key";
+include ":gumps:requestGump";
+include "include/string";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":attributes:attributes";
+include ":traps:traps";
+
+program UseKey(who, key)
+	SendSysMessageEx(who, "Onde voce deseja usar a chave magica?", SSM_REQUEST);
+	var targ := Target(who);
+
+	if ( !targ.IsA(POLCLASS_ITEM) )
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	elseif ( !targ.IsDoor() )
+		SendSysMessageEx(who, "Esta chave so pode ser usada em portas", SSM_FAIL);
+		return 0;
+	elseif ( !GetObjProperty(targ, "time") || !GetObjProperty(targ, "level") )
+		SendSysMessageEx(who, "Isto nao parece uma porta de dungeon.", SSM_FAIL);
+		return 0;
+	elseif ( targ.locked == 0 )
+		SendSysMessageEx(who, "Essa porta não esta trancada.", SSM_FAIL);
+		return 0;
+	elseif ( targ == key )
+		RenameKey(who, key);
+		return 1;
+	elseif ( !KP_IsLockable(targ) )
+		SendSysMessageEx(who, "Isto nao pode ser trancado.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(who, targ) > 1 )
+		SendSysMessageEx(who, "Voce esta muito longe do alvo!", SSM_FAIL);
+		return;
+	endif
+
+	if (GetObjProperty(targ, "TrapList") != error)
+		if (GetObjProperty(targ, "trap_inativa"))
+		else
+			RemoveTrap(targ, 1);
+			targ.usescript := "";
+			var name := targ.desc;
+			name[" [trapped]"] := "";
+			SetName(targ, name);
+		endif
+	endif
+
+	KP_ToggleLock(targ, who);
+	SetObjProperty(targ, "arrombado", "" + who.name);
+	SetObjProperty(targ, "locktime", polcore().systime);
+	PlaySoundEffect(targ, 0x0200);
+	PlayObjectCenteredEffect(targ, 0x3763, 1, 16);
+	SendSysMessageEX(who, "A chave se molda magicamente e abre a fechadura.", SSM_INFO);
+	SubtractAmount(key,1);
+
+
+	return 1;
+endprogram
+
+function RenameKey(who, key)
+	var new_name := RequestGump(who, "Escreva o nome para a chave", "Tamanho maximo sao 30 caracteres.", key.desc, CANCEL_BTN_ON);
+	var name_len := Len(new_name);
+
+	if ( !new_name )
+		SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	elseif ( name_len > 20 )
+		SendSysMessageEX(who, "O nome esta muito longo.",SSM_FAIL);
+		return 0;
+	elseif ( name_len < 1 )
+		SendSysMessageEx(who, "O nome esta muito curto.", SSM_FAIL);
+		return 0;
+	elseif ( new_name )
+		SetName(key, new_name);
+		return 1;
+	endif
+endfunction
+

@@ -1,0 +1,176 @@
+
+use uo;
+use os;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":fls_magery:basicMagery";
+include ":fls_magery:spells";
+include ":containers:containers";
+include ":itemutils:itemdesc";
+include "include/client";
+include "include/sounds";
+
+program SpellStarter(params)
+	var mobile := params[1]; // Caster
+	var spell_id := params[2]; // Id # of the spell
+	var scroll := params[3]; // Scroll object being used
+	var targ := params[4]; // NPC target
+
+	if ( !Attach(mobile) )
+		SendSysMessage(mobile, "Voce ja esta fazendo alguma coisa.");
+		return 0;
+	endif
+
+	var spell_elem := MS_GetSpellsCfgElem(spell_id);
+
+	// If spell is set to 'TestOnly 1', then it requires cmdlevel or #SpellTester CProp before it can be used.
+	if ( spell_elem.TestOnly and !mobile.cmdlevel )
+		// TestOnly spell, check for #SpellTester
+		if ( !GetObjProperty(mobile, "#SpellTester") )
+			SendSysMessage(mobile, "This spell has been temporarily disabled.");
+			FailSpell(mobile);
+			return 0;
+		endif
+	elseif ( spell_elem.NPCOnly && !mobile.npctemplate )
+		PrintTextAbove(mobile, "Unable to cast - NPC only spell.");
+		return 0;
+	endif
+
+	// Already casting?
+	if ( GetObjProperty(mobile, "#Casting") )
+		SendSysMessage(mobile, "Voce nao pode invocar magias arcanas agora.");
+		FailSpell(mobile);
+		return 0;
+	else
+		if ( mobile.frozen )
+			SendSysMessage(mobile, "Voce nao pode invocar magias paralisado.");
+			EraseObjProperty(mobile, "#Casting");
+			return 0;
+		else
+			// Perform casting animation depending on spell target
+			case ( spell_elem.Target )
+				"none":
+				"direct":
+					PerformAction(mobile, ANIM_CAST_DIR);
+					break;
+				"area":
+				"summon":
+					PerformAction(mobile, ANIM_CAST_AREA);
+					break;
+				default:
+					PerformAction(mobile, ANIM_CAST_DIR);
+			endcase
+
+			SetObjProperty(mobile, "#Casting", 1);
+			mobile.frozen := 1;
+		endif
+	endif
+    var battlemageHabs := Array{"Concentracao Macabra", "Senhor do Medo", "Devocao", "Concentracao Aprimorada", "Colheita de Almas", "Campeao das Montanhas"};
+    var tem_hab := 0;
+    foreach hab in battlemageHabs
+        if (TemHabilidade(mobile, hab))
+            tem_hab := 1;
+        endif            
+    endforeach
+	// Perform various checks to see if mobile can perform the spell
+	if ( mobile.squelched && !mobile.npctemplate )
+		SendSysMessage(mobile, "Voce precisa falar devido os componentes verbais da magia.");
+		FailSpell(mobile);
+		return 0;
+	elseif ( !EquipmentCheck(mobile) && !tem_hab)
+        SendSysMessage(mobile, "Suas maos precisam estar livres para gesticular os componentes gestuais necessarios para a magia.");
+        FailSpell(mobile);
+        return 0;
+	elseif ( !AP_ConsumeVital(mobile, MANA, spell_elem.ManaCost) )
+		SendSysMessage(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!");
+		FailSpell(mobile);
+		return 0;
+	elseif ( !CheckReagents(mobile, spell_elem, scroll) )
+		SendSysMessage(mobile, "Voce nao possui os componentes materiais necessarios para invocacao desta magia arcana.");
+		FailSpell(mobile);
+		return 0;
+    else
+		mobile.hidden := 0;
+		EraseObjProperty(mobile, "#Medding");
+		//SpeakPowerWords(mobile, spell_id);
+
+		var orig_hp := AP_GetVital(mobile, "Hits");
+		var delay := spell_elem.Delay;
+		var moveCheck_script := Start_Script(":fls_magery:moveCheck/moveCheck", {mobile, Getpid()});
+		while ( delay > 0 )
+			// If mobile is injured and does not have the protection spell on, fail the spell
+			if ( (orig_hp > AP_GetVital(mobile, "Hits") && !GetObjProperty(mobile, "Protection")) )
+				SendSysMessage(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.");
+				FailSpell(mobile);
+				PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+				PlayObjectCenteredEffect(mobile, GFX_FIZZLE, 5, 50);
+				return 0;
+			endif
+	
+			// Check if we recieved an event from moveCheck_script, which means the mobile moved while targetting
+			if ( Events_Waiting() )
+				SendSysMessage(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.");
+				FailSpell(mobile);
+				PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+				return 0;
+			endif
+			
+			if ( delay % 50 )
+				SleepMS(delay % 50);
+				delay := delay - (delay % 50);
+			else
+				SleepMS(50);
+				delay := delay - 50;
+			endif
+
+		endwhile
+		
+		moveCheck_script.kill();
+		
+		var attribute := spell_elem.Attribute;
+		if ( !attribute )
+			attribute := MAGERY;
+		endif
+
+		var difficulty := spell_elem.Difficulty;
+		if ( !difficulty )
+			difficulty := -1;
+		endif
+		
+		mobile.frozen := 0;
+		var skill_check := SkillCheck(mobile, attribute, difficulty);
+
+		// skill_check > 0 on success
+		if ( skill_check > 0 )
+//			if (GetObjProperty(mobile, "classe") == "sabio")
+//				SkillCheck(mobile, BEGGING, -1);
+//			endif
+			var info := struct;
+			info.+script := spell_elem.script;
+			info.+attribute := attribute;
+			info.+skill_check := skill_check;
+			info.+targ := targ;
+			info.+pid := GetPid();
+			info.+spellId := spell_id;
+
+			var script := Start_Script(spell_elem.SpellScript, {mobile, info, spell_id});
+			if ( script.errortext )
+				SendSysMessage(mobile, "Unable to start ["+spell_elem.SpellScript+"] -> "+script.errortext);
+			endif
+
+			var ev;
+			while ( script.pid && !ev )
+				ev := wait_for_event(1);
+			endwhile
+		else
+			PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+			SendSysMessage(mobile, "Voce falhou em invocar a magia.");
+		endif
+	endif
+
+	MS_SpellDebug(mobile, "Spell starter completed.");
+	EraseObjProperty(mobile, "#Casting");
+	
+	return 1;
+endprogram

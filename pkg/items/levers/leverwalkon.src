@@ -1,0 +1,29 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+use vitals;
+
+include "include/client";
+include ":attributes:attributes";
+include ":gumps:requestGump";
+include ":levers:lever";
+include ":traps:traps";
+include "include/damage";
+
+program loko(who, item)
+	if (who.npctemplate)
+		return 1;
+	endif
+
+  if(GetObjProperty(item, "#inuse") == 1)
+      return;
+   elseif (!GetObjProperty(item, "lever_opts").walkon)
+      return;
+   elseif (who.concealed)
+      return;
+  endif
+
+  normalusage(who, item);
+
+endprogram

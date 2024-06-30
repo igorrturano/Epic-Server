@@ -1,0 +1,12 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Voce tem alguns segundos para correr!", SSM_INFO);
+	TS_StartTimer(attacker, "conceal", 30);
+
+endprogram  

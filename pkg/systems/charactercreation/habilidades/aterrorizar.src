@@ -1,0 +1,41 @@
+use uo;
+use os;
+use util;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+
+    PrintText(who, "*Emana uma aura de medo*", SSM_INFO);
+   case (who.graphic)
+    401:
+		PlaySoundEffect( who, 0x339 );
+    400:
+		PlaySoundEffect( who, 0x44B );
+    1828:
+		PlaySoundEffect( who, 0x44B );
+    1829:
+		PlaySoundEffect( who, 0x339 );
+    1830:
+		PlaySoundEffect( who, 0x44B );
+    1831:
+		PlaySoundEffect( who, 0x339 );
+    1832:
+		PlaySoundEffect( who, 0x44B );
+    1833:
+		PlaySoundEffect( who, 0x339 );
+    1834:
+		PlaySoundEffect( who, 0x44B );
+    1835:
+		PlaySoundEffect( who, 0x339 );
+	endcase
+
+    SetObjProperty(who, "#aterrorizar", 1);
+
+    sleep(30);
+    EraseObjProperty(who, "#aterrorizar");
+endprogram

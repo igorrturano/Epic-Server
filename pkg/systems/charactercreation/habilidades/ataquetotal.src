@@ -1,0 +1,19 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+
+program doubleattack(who)
+
+	SendSysMessageEx(who, "Apenas ataque.", SSM_INFO);
+	SetCooldown(who, "ataquetotal", 60);
+
+endprogram
+
+
+

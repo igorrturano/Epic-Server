@@ -1,0 +1,267 @@
+
+use uo;
+use cfgfile;
+use os;
+use util;
+
+include "include/client";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:toolWear";
+include ":gathering:mining";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":tn:tngumps";
+
+const MINING_ANIMATION	:= 0xB;
+const MINING_SOUND	:= 0x126;
+
+
+program OreMining(who, tool)
+	if ( GetEquipmentByLayer(who, LAYER_MOUNT) )
+		SendSysMessage(who, "Voce nao pode minerar montado.");
+		return;
+	endif
+
+	SendSysMessageEx(who, "Onde voce deseja minerar?", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+	var quebravel := GetObjProperty(targ.item, "quebravel");
+
+	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
+		SendSysMessage(who, "Muito longe.");
+		return;
+	elseif (targ.item)
+		if (quebravel)
+			Quebraitem(who, tool, targ.item);
+			return 0;
+		endif
+	elseif ( !CanMine(targ, "Stone") )
+		var maps := GetMapsInBackpack(who);
+		//sendsysmessage(who, " " + maps);
+		if (maps.size() > 0)
+			var map := maps[1];
+			if (maps.size() > 1)
+				SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
+				map := target(who);
+				if (!(isTreasureMap(map)))
+					return;
+				endif
+			endif
+				DigForMap(who, targ, map);
+			return;
+		else
+			SendSysMessageEx(who, "Voce nao pode minerar aqui.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+		var my_x := who.x;
+		var my_y := who.y;
+		var my_facing := who.facing;
+
+		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+			SendsysMessage(who, "Voce parou de minerar.");
+			return;
+		endif
+
+		while(MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
+			CheckToolWear(who, tool, GATHERING);
+
+			if(TemHabilidade(who, "Vigor do Extrator"))
+				if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+					break;
+				elseif (AP_GetVital(who, "Stamina") < 3)
+					SendSysMessage(who, "Voce esta muito cansado para minerar.");
+					break;
+				endif
+				AP_ConsumeVital(who, "Stamina", 3);
+			else
+				if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+					break;
+				elseif (AP_GetVital(who, "Stamina") < 5)
+					SendSysMessage(who, "Voce esta muito cansado para minerar.");
+					break;
+				endif
+				AP_ConsumeVital(who, "Stamina", 5);
+			endif
+			sleep(3);
+		endwhile
+
+		SendSysMessage(who, "Voce parou de minerar.");
+
+endprogram
+
+function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
+	var i;
+	for ( i:=0; i<3; i:=i+1 )
+		if ( !CheckLoop(who, tool, my_x, my_y, my_facing) )
+			return 0;
+		endif
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		sleep(1);
+	endfor
+
+	var miningregion := GetMiningRegion(targx, targy); //feita
+	var ore_type := DetermineOreType(who, miningregion); //feit
+
+	var ore_amount := GetOreAmount(who.realm, targx, targy ); //feita
+	var difficulty := DetermineMiningDifficulty(ore_type); // feita
+
+	if (who.cmdlevel > 2)
+		SendSysMessage(who, "ore " + ore_type);
+		SendSysMessage(who, "region " + miningregion);
+		SendSysMessage(who, "amount " + ore_amount);
+		SendSysMessage(who, "difficulty " + difficulty);
+	endif
+
+	if (!ore_type)
+		return 0;
+/*	elseif (ore_type == 20481) // Se for pedra
+		if ( SkillCheck(who, GATHERING, difficulty) > 0 )
+			var minerio := CreateItemInBackPack(who, ore_type, 1);
+			minerio.movable := 1;
+			SendSysMessage(who, "Voce pegou alguns minerios. " );
+		else
+			SendSysMessage(who, "Voce falhou em pegar minerios.");
+		endif
+		return 1;*/
+	endif
+    var chardata := GetObjProperty(who, "chardata");
+	if ( ore_amount > 0 )
+		if (ore_type != 999) //999 eh quando nao passou na chance de raridade do minerio
+
+			if ( SkillCheck(who, GATHERING, difficulty) > 0)
+				var amt := Cint(AP_GetSkill(who, GATHERING)/20);
+				if(TemHabilidade(who, "Minerador Talentoso") || chardata.trait == "Cavar Buracos")
+					amt := amt + 2;
+				endif
+				if (amt <= 0)
+					amt := 1;
+				endif
+				ore_amount := ore_amount - amt;
+				if (ore_amount < 0)
+					ore_amount := 0;
+				endif
+				SetOreAmount(who.realm, targx, targy, ore_amount); //feita
+				var minerio := CreateItemInBackPack(who, ore_type, amt);
+				minerio.movable := 1;
+				SendSysMessage(who, "Voce pegou alguns minerios. " );
+				//Verifica se encontra joia
+				if(AP_GetSkill(who, GATHERING) > 40.0)
+					Garimpeiro(who);
+				endif
+				if(TemHabilidade(who, "Minerar Raridades"))
+					if (mineraRaroAleatorio(who))
+						PrinttextAbove(who, "*encontra algo chamativo*");
+					endif
+				endif
+			else
+				SendSysMessage(who, "Voce falhou em pegar minerios.");
+			endif
+		endif
+	else
+		SendSysMessage(who, "Parece nao ter mais minerios aqui.");
+		return 0;
+	endif
+
+
+	return 1;
+endfunction
+
+function mineraRaroAleatorio(who)
+	var rand := RandomFloat(100.0);
+	var achou := 0;
+	if(rand<0.1)
+		SendSysMessage(who, "Achou um pouco de Mithril em meio ao minerios.");
+		achou := 1;
+		CreateItemInBackPack(who, 0x6308, 1); // return 95; //mithril
+	elseif(rand<0.2)
+		SendSysMessage(who, "Achou um pouco de Galvorn em meio ao minerios.");
+		CreateItemInBackPack(who, 0x6310, 1); // return 95; //galvorn
+		achou := 1;
+	elseif(rand<0.4)
+		SendSysMessage(who, "Achou um pouco de Fulmetium  em meio ao minerios.");
+		CreateItemInBackPack(who, 0x6302, 1); // return 70; //fulmetium
+		achou := 1;
+	elseif(rand<0.6)
+		SendSysMessage(who, "Achou um pouco de Venetium em meio ao minerios.");
+		CreateItemInBackPack(who, 0x6303, 1); // return 70; //venetium
+		achou := 1;
+	elseif(rand<0.8)
+		SendSysMessage(who, "Achou um pouco de Ignium em meio ao minerios.");
+		CreateItemInBackPack(who, 0x6304, 1); // return 70; //ignium
+		achou := 1;
+	elseif(rand<1.0)
+		SendSysMessage(who, "Achou um pouco de frigutium em meio ao minerios.");
+		CreateItemInBackPack(who, 0x6460, 1); // return 70; //frigutium
+		achou := 1;
+	elseif(rand<1.2)
+		SendSysMessage(who, "Achou um pouco de Litan em meio ao minerios.");
+		return CreateItemInBackPack(who, 0x6301, 1); // return 60; //litan
+	elseif(rand<1.4)
+		SendSysMessage(who, "Achou um pouco de Ouro em meio ao minerios.");
+		CreateItemInBackPack(who, 0x6305, 1); // return 40; //golden
+		achou := 1;
+	endif
+	if(achou)
+		SkillCheck(who, GATHERING, -1);
+	endif
+	return achou;
+endfunction
+
+function Quebraitem(who, tool, item)
+	var quebravel := GetObjProperty(item, "quebravel");
+	if (quebravel == "gathering")
+
+		var mex := who.x;
+		var mey := who.y;
+		var hp;
+		var itens:=array;
+		var i := 3 ;
+
+		hp := GetObjProperty(item, "durabilidade");
+		var gatherer:= AP_GetSkill(who, GATHERING);
+				
+		PrintTextAbove(who, "*Batendo com força*");
+		CheckToolWear(who, tool, GATHERING);
+
+		while((i <= 9) && (who.x == mex) && (who.y == mey))
+
+			if((who.x != mex) && (who.y != mey))
+				break;
+			endif
+
+			PerformAction(who, 0x0b);
+			PlaySoundEffect(who, 0x126);
+
+			sleep(1);
+
+			if((who.x != mex) || (who.y != mey))
+				SendSysMessageEx(who,"Voce deve ficar parado enquanto trabalha", SSM_FAIL);
+				return;
+			endif
+			i := i + 1;
+		endwhile
+
+		hp := hp - gatherer;
+		SetObjProperty(item, "durabilidade", hp);
+
+		if (hp <= 0)
+			PrintTextAbove(item, "*quebra*");
+			sleep(2);
+
+			var itens := GetObjProperty(item,"itens");
+			foreach itemarray in itens
+				var itemcriado:=CreateItemAtLocation(item.x, item.y, item.z,itemarray , itemarray.amount, realm := _DEFAULT_REALM);
+				SetName(itemcriado, itemarray.name);
+			endforeach
+			DestroyItem(item);
+		endif
+	elseif ((quebravel == "survival") || (quebravel == "domesticwork"))
+		SendSysMessageEx(who, "Voce deve usar outra ferramenta para este servico", SSM_FAIL);
+		return;
+	endif
+endfunction

@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+include "include/damage";
+
+program TimedScript_Bard_tocando(params)
+	var alvo := params[1];
+	var caster := params[2];
+	var custo := params[3];
+	var stamina;
+	var tempo_offline :=0;
+	Set_Critical(1);
+	SetObjProperty(alvo, "#Bard_tocando",1);
+	while(GetObjProperty(alvo, "#Bard_tocando"))
+		//controle para parar o dano por segundo quando cai mais de 60s
+		if(tempo_offline >= 30)
+			EraseObjProperty(alvo, "#Bard_tocando");
+			return 0;
+		endif
+
+		stamina := CInt(AP_GetVital(alvo, "Stamina"));
+		if (stamina >= custo)
+			AP_SetVital(alvo, "Stamina", (stamina-custo));
+		else
+			AP_SetVital(alvo, "Stamina", 0);
+			damageFLS(alvo, cint(custo*2), DMG_FORCED, 0);
+			PrintTextAbovePrivate(alvo, "Voce esta tocando alem do seu limite fisico.", alvo, BARD_FONT, BARD_FONT_COLOR_BAD);
+		endif
+		//Efeito visual
+		PlayObjectCenteredEffectEx( alvo, 0xC462, 8, 17, 0, 0, 3, 0);
+		Sleepms(2000);
+		if(!alvo.connected)
+			tempo_offline += 2;
+		endif
+	endwhile
+	Set_Critical(0);
+endprogram

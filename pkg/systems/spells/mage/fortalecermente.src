@@ -1,0 +1,35 @@
+      use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var amt :=  Cint( AP_GetSKILL(who, MAGICLORE)*0.5 ) ;
+//	var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
+	TS_StartTimer(targ, "intelligence", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1); // min
+	
+
+	PlaySoundEffect(targ, SFX_SPELL_CUNNING);
+	SendSysMessageEx(targ, "Agora voce entendeu.", SSM_INFO);
+	
+	return 1;
+endprogram 

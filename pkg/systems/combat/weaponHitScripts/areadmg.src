@@ -1,0 +1,95 @@
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":acid:acid";
+include ":fls_core:packets";
+include ":taming:taming";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	//var defender	:= params[2];
+	//var weapon	:= params[3];
+	//var armor	:= params[4];
+	//var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	var dmgtype := params[7];
+	var range := params[8];
+
+	if (!range || range == error)
+		range := 2;
+	endif
+
+	if (!dmgtype || dmgtype == error)
+		dmgtype := DMG_PHYSICAL;
+	endif
+
+	params := 0; // Not needed anymore.
+	
+	var allPets := array{};
+	var party_members := attacker.party.members;
+
+	if (attacker.party)
+		foreach member in party_members
+			if (member != attacker)
+				var memberObj := SystemFindObjectBySerial(member.serial);
+				var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+				foreach pet in allPetsAndSummonedPets
+					allPets.append(pet);
+				endforeach
+			endif
+		endforeach
+	endif
+	
+	if ( dmgtype == DMG_COLD )
+		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
+			if ( !(defender in attacker.party.members ) && !(defender in allPets) )
+				if (defender.serial != attacker.serial)
+					PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+					PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
+					var total := ApplyDamageEX(defender, cint((rawdamage*0.5)+1), DMG_COLD);
+					DisplayDamage(defender, total, attacker);
+					
+				endif
+			endif
+		endforeach
+	elseif (dmgtype == DMG_FIRE)
+		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
+			if ( !(defender in attacker.party.members ) && !(defender in allPets))
+				if (defender.serial != attacker.serial)
+					PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+					PlaySoundEffect(defender, SFX_EXPLOSION_11);
+					var total := ApplyDamageEX(defender, cint((rawdamage*0.5)+1), DMG_FIRE);
+					DisplayDamage(defender, total, attacker);
+				endif
+			endif
+		endforeach
+	elseif (dmgtype == DMG_ENERGY)
+		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
+			if ( !(defender in attacker.party.members ) && !(defender in allPets) )
+				if (defender.serial != attacker.serial)
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x-1, defender.y, defender.z+15, GFX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x+1, defender.y, defender.z+15, GFX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y+1, defender.z+15, GFX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y-1, defender.z+15, GFX_ENERGY, 5, 25);
+					PlaySoundEffect(defender, SFX_LIGHTNING);
+					var total := ApplyDamageEX(defender, cint((rawdamage*0.5)+1), DMG_ENERGY);
+					DisplayDamage(defender, total, attacker);
+				endif
+			endif
+		endforeach		
+	elseif (dmgtype == DMG_PHYSICAL)
+		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
+			if ( !(defender in attacker.party.members ) && !(defender in allPets))
+				if (defender.serial != attacker.serial)
+					PlayObjectCenteredEffectEx( defender, 0x22c6, 1, 9);
+					ApplyDamageEX(defender, (rawdamage*1.5)+1, DMG_PHYSICAL);
+				endif
+			endif
+		endforeach		
+	endif
+	return 1;
+endprogram
+ 

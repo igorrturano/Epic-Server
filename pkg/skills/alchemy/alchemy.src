@@ -1,0 +1,57 @@
+
+use cfgfile;
+use uo;
+
+include ":attributes:attributes";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":loot:magicLoot";
+//include "include/damage";
+include ":charactercreation:habilidades";
+
+program skill_alchemy(who)
+
+    SendSysMessageEx(who, "Escolha uma pocao para avaliar.", SSM_REQUEST);
+	var item := Target(who, TGTOPT_CHECK_LOS);
+
+	if (!item)
+		SendSysMEssageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+    if (item.graphic == 3849)
+		PrintText(who, "*analisando um frasco*");
+
+		var identificado := GetObjProperty(item, "magicwho");
+
+		if (who.serial in identificado)
+			var cfg := ReadConfigFile(":*:itemdesc");
+			var entry := cfg[item.objtype];
+			SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: " + entry.Type, SSM_INFO);
+			return 1;
+		elseif (SkillCheck(who, ALCHEMY, -1) > 0)
+			var cfg := ReadConfigFile(":*:itemdesc");
+			var entry := cfg[item.objtype];
+			if (entry)
+				SetObjProperty(item, "pocaoname", entry.Type);
+				SendSysMessageEx(who, "Voce identificou o liquido do frasco: " + entry.Type, SSM_INFO);
+			endif
+			cfg := 0;
+			entry := 0;
+			var whos := GetObjProperty(item, "magicwho");
+			if (whos == error)
+				whos := array;
+			endif
+			if ( !(who.serial in whos))
+				whos.append(who.serial) ;
+				SetObjProperty(item, "magicwho", whos);
+			endif
+			var backup := GetAmount(item);
+			SubtractAmount(item, backup-1);
+			SetName(item, item.desc);
+			AddAmount(item, backup-1);
+		else
+			SendSysMessageEx(who, "Voce nao esta certo...", SSM_FAIL);
+		endif
+    endif
+endprogram

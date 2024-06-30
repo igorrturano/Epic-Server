@@ -1,0 +1,87 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/say";
+include "include/dungeons";
+include ":tn:cooldown";
+include ":taming:taming";
+include "include/damage";
+
+program truesight(who)
+    var range := cint(AP_GetSkill(who, MAGICLORE)/5);
+	var festa := who.party;
+
+    var nearby := ListMobilesNearLocation( who.x ,who.y, who.z, range, who.realm);
+    //var masterserial := getObjProperty(mobile, "owner");
+    //var master := SystemFindObjectBySerial(masterserial);
+    PerformAction(who, ANIM_CAST_AREA);
+    PlaySoundEffect(who, 0x684);
+
+    var allPets := array{};
+    var party_members := who.party.members;
+
+    if (who.party)
+        foreach member in party_members
+            if (member != who)
+                var memberObj := SystemFindObjectBySerial(member.serial);
+                var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+                foreach pet in allPetsAndSummonedPets
+                    allPets.append(pet);
+                endforeach
+            endif
+        endforeach
+    endif
+
+    var dano_mlore := CInt(AP_GetSkill(who, MAGICLORE) / 2);
+
+    foreach char in nearby
+        var char_owner := GetObjProperty(char, "owner");
+        if (!(char in (festa.members) || char == who))
+            if (!(char in allPets) && !(char in who.party.members) && !(char_owner == who.serial))
+                var duration := cint(AP_GetSkill(who, MAGICLORE)/8);
+                TS_StartTimer(char, "paralysis", duration);
+                PlayObjectCenteredEffect(char, 0x54F7, 10, 30);
+                // todo Play animation sparkles pra ficar bonito
+                PrintTextAbove(char, "*atormentado*");
+                DamageFLS(char, dano_mlore, DMG_FIRE, who);
+
+                if (InDarkness(char))
+                    duration += cint(AP_GetSkill(who, MAGICLORE)/5);
+                    SetCooldown(char, "blinded", duration);
+                    PrintTextAbove(char, "*cegueira*");
+                endif
+                sleepms(500);
+            endif
+        endif
+    endforeach
+endprogram
+
+function HidingParty(who)
+
+	var festa := who.party;
+
+	if (!festa)
+		return;
+	endif
+
+	var skill := AP_GetSkill(who, SNEAK);
+
+	foreach member in (festa.members)
+		if (member.serial != who.serial)
+			if (Distance(who, member) < 8)
+				if (CanHide(member, member.x, member.y, skill))
+					SendSysMessageEx(member, "Voce esta preparando a emboscada!", SSM_INFO);
+					member.hidden := 1;
+					start_script(":sneak:stealthmode", array{who});
+					SetObjProperty(member, "#overridehiding", skill);
+				else
+					SendSysMessageEx(member, "Voce nao pode se esconder!", SSM_FAIL);
+					SendSysMessageEx(who, member.name +" nao consegue se esconder!", SSM_FAIL);
+				endif
+			endif
+		endif
+	endforeach
+
+endfunction

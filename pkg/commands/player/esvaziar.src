@@ -1,0 +1,43 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include "include/client";
+include ":itemutils:canAccess";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_core:fls_characters";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":spells:swordmage";
+
+program do_empty(who)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	SendSysMessageEx(who, "Escolha a pocao que deseja esvaziar.", SSM_REQUEST);
+	var the_potion := Target(who);
+
+	if(!the_potion)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	elseif(!can_access(who, the_potion))
+		SendSysMessageEx(who, " Voce nao pode usar isto!", SSM_FAIL);
+		return;
+	elseif (Distance(who, the_potion) > 1)
+		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
+		return;
+	elseif (the_potion.graphic != 0x0f09)
+		SendSysMessageEx(who, "Isso nao parece ser uma pocao!", SSM_FAIL);
+		return;
+
+    else 
+        SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
+        PlaySoundEffect(who, 0x241);
+		CreateItemInBackpack(who, 0xf0e, the_potion.amount);
+        DestroyItem(the_potion);
+        return;
+    endif
+
+endprogram

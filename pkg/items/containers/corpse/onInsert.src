@@ -1,0 +1,21 @@
+/*
+ *
+ */
+
+use uo;
+use os;
+include "include/say";
+
+program onInsert(character, container, movetype, insert_type, adding_item, existing_stack, amount_to_add)
+
+	if (Cint(insert_type) == 2)
+		if ( !(character.concealed || character.hidden) )
+			PrintText(character, "*Acrescentou " + amount_to_add + ", totalizando " + existing_stack.desc + " na " + container.desc + "*", 6);
+		endif
+	else
+		if ( !(character.concealed || character.hidden) )
+			PrintText(character, "*Colocou "+ adding_item.desc +" no "+ container.desc +"*", 6);
+		endif
+	endif
+	return 1;
+endprogram

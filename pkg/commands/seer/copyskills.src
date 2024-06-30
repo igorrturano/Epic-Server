@@ -1,0 +1,71 @@
+/*
+ * $Id: copyskills
+ *
+ */
+
+use os;
+use uo;
+
+include ":attributes:attributes";
+include ":attributes:stats";
+include ":gumps:requestGump";
+
+program copyskills(who)
+
+	var valor;
+	var mod;
+	SendSysMessage(who, "Select mobile to be changed.");
+	var newlook := Target(who);
+
+	if (!newlook.isA(POLCLASS_MOBILE))
+		SendSysMessage(who, "Aborted.");
+		return 0;
+	endif
+
+	if ((newlook.acctname) && (newlook.cmdlevel < 1))
+		SendSysMessage(who, "Voce nao pode copiar skills para jogadores.");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Select mobile to copy.");
+	var oldlook := Target(who);
+
+	if (!oldlook.isA(POLCLASS_MOBILE))
+		SendSysMessage(who, "Aborted.");
+		return 0;
+	endif
+
+	foreach attrib_name in AP_ListAttributesByType()
+		valor:= GetAttribute( oldlook, attrib_name );
+		mod := AP_GetStatMod( oldlook, attrib_name ) * -1;
+		valor := valor + mod;
+		AP_SetTrueSkill(newlook, attrib_name, valor);
+		sleepms(10);
+	endforeach
+
+	if ((GetObjProperty(oldlook,"classe"))!=error)
+		SetObjProperty(newlook,"classe",GetObjProperty(oldlook,"classe"));
+	endif
+
+	if ((GetObjProperty(oldlook,"kit"))!=error)
+		SetObjProperty(newlook,"kit",GetObjProperty(oldlook,"kit"));
+	endif
+
+	if ((GetObjProperty(oldlook,"myhabs"))!=error)
+		SetObjProperty(newlook,"myhabs",GetObjProperty(oldlook,"myhabs"));
+	endif
+
+	if ((GetObjProperty(oldlook,"buyhab"))!=error)
+		SetObjProperty(newlook,"buyhab",GetObjProperty(oldlook,"buyhab"));
+	endif
+
+	//AP_SetVital( newlook, STAMINA, AP_GetVitalMaximumValue( oldlook, STAMINA ) );
+	//AP_SetVital( newlook, MANA, AP_GetVitalMaximumValue( oldlook, MANA ) );
+	//AP_SetVital( newlook, HITS,AP_GetVitalMaximumValue( oldlook, HITS ) );
+
+	AP_RefreshVitals(newlook);
+	RecalcVitals(newlook);
+
+	SendSysMessage(who, "Done.");
+	return 1;
+endprogram

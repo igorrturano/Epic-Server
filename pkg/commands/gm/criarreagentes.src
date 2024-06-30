@@ -1,0 +1,23 @@
+
+use uo;
+
+program faz_reagentes(who, quantos)
+
+var reagentes:=array{ 0xF7A,0xF7B,0xF84,0xF85,0xF86,0xF88,0xF8C,0xF8D};
+
+
+var bolsa:=CreateItemInBackpack( who , "bag" , 1 );
+bolsa.color:=1154;
+bolsa.name:="Bolsa de reagentes";
+
+
+if (!quantos)
+quantos:=80;
+sendsysmessage(who, "Voce pode usar o comando com numero");
+sendsysmessage(who, "Para definir quantos reagentes quer criar");
+sendsysmessage(who, "Sem especificacao vou criar 80 reagentes de cada para voce");
+endif
+foreach coisa in reagentes
+CreateItemInContainer( bolsa, coisa, amount := quantos );
+endforeach
+endprogram

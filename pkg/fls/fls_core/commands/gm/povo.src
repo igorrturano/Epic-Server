@@ -1,0 +1,15 @@
+use uo;
+
+program povo(who)
+
+	SendSysMessage(who,  "Escolha o alvo");
+	var targ := Target(who);
+	
+	if (targ)
+		var chardata := GetObjProperty(targ,  "chardata");
+		if (chardata != error)
+			sendsysmessage(who, "Povo do alvo: " + chardata.povo);
+		endif
+	endif
+	
+endprogram

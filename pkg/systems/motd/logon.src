@@ -1,0 +1,20 @@
+use uo;
+use os;
+use file;
+
+include ":datafile:datafile";
+
+program MOTD(who)
+	var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
+	var data_elem := DFFindElement(data_file, who.acctname);
+	
+	if ( data_elem.GetProp("noshow") )
+		var first_line := cstr(ReadFile("motd.txt")[1]);
+		var user_line := cstr(data_elem.GetProp("FirstLine"));		
+		if ( first_line != user_line )
+			SendSysMessage(who, "As Mensagens do Dia foram alteradas desde a ultima vez que voce a visualizou. Use .motd para ler.");
+		endif
+	else
+		Start_Script("motd", who);
+	endif
+endprogram

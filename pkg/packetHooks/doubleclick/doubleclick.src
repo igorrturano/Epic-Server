@@ -1,0 +1,68 @@
+use uo;
+use math;
+use polsys;
+include "include/say";
+
+CONST BYTE_DEFENDER := 1;
+
+program requestAttack()
+	Print( "INSTALLING: Double Click PH..." );
+	return 1;
+endprogram
+
+
+exported function HandleDoubleClick( who, byref packet )
+	CONST KIT_DISFARCE := "kit de disfarce";
+	CONST LOCKPICK := 0x14FB;
+
+	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
+	var escondido := who.hidden;
+
+	//nao sei como, mas as vezes vem sem, entao deixa o pol tratar
+	if (!defender)
+		return 0;
+	endif
+
+	if (defender == who.backpack)
+		return 0;
+	endif
+
+	if (defender.container == who.backpack)
+		//Caso o player esteja escondido e tente usar lockpick ou o kit de disfarce, ele vai setar uma prop para manter escondido
+		if (escondido && (defender.name == KIT_DISFARCE || defender.graphic == LOCKPICK))
+			SetObjProperty(who,"escondido", 1);
+		endif
+		return 0;
+	endif
+
+	var equips := ListEquippedItems(who);
+	if (defender in equips)
+		return 0;
+	endif
+
+	//se tiver dentro de container, checa a distancia pro container raiz
+	while (defender.container )
+		defender := defender.container;
+	endwhile
+
+	if( Distance(who, defender) > 15 )
+		SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+		return 1;
+	endif
+	if ( abs(who.z - defender.z ) > 10 )
+		SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+		return 1;
+	endif
+	if(!CheckLineOfSight(who, defender))
+		SendSysMessageEx(who, "Voce nao enxerga o alvo.", SSM_FAIL);
+		return 1;
+	endif
+
+	//Caso o player esteja escondido e tente usar lockpick ou o kit de disfarce, ele vai setar uma prop para manter escondido
+	//Caso o item nao esteja na backpack, ele vai tratar aqui
+	if (escondido && (defender.name == KIT_DISFARCE || defender.graphic == LOCKPICK))
+		SetObjProperty(who,"escondido", 1);
+	endif
+
+	return 0;
+endfunction

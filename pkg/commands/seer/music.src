@@ -1,0 +1,45 @@
+/////////////////////////////////////////////////////////////
+// MUSIC.SRC                                               //
+//                                                         //
+// Author: DC                                              //
+// Date: 1/25/99                                           //
+//                                                         //
+// Description: An admin text command that plays a UO midi //
+//                                                         //
+// program music: takes in the music ID from the user and  //
+//                makes sure it is 1 byte long.            //
+//                                                         //
+// function PlayMusic: a placeholder function that will be //
+//                     removed when a uo.em function is    //
+//                     created to play a midi.             //
+//                     Currently uses SendPacket to start  //
+//                     the music.                          //
+//                                                         //
+// TODO: Dont make the user type the music id in hex.      //
+/////////////////////////////////////////////////////////////
+
+use uo;
+use basic;
+
+include ":fls_core:packets";
+
+program music ( character , text )
+
+    var music_id := (text);
+    var id_len := Len(music_id);
+
+    if( id_len == 0 )
+	music_id := "00";
+    elseif( id_len == 1)
+	music_id := ("0"+music_id);
+    elseif( id_len > 2)
+	return 0;
+    endif
+
+    //print("musicid: "+music_id);
+
+    PlayMidiMusic( character, music_id );
+
+endprogram
+
+

@@ -1,0 +1,18 @@
+use uo;
+
+program Install()
+	return 1;
+endprogram
+
+exported function isTreasureMap(map)
+	return 1;
+endfunction
+
+
+exported function isSolved(map)
+    if(GetObjProperty(map, "Solved") == error)
+	return 0;
+    else
+	return 1;
+    endif
+endfunction

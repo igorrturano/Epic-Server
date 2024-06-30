@@ -1,0 +1,6 @@
+use uo;
+use os;
+
+program cleric(who)
+   	start_Script(":spells:viewSpells", who);
+endprogram

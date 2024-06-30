@@ -1,0 +1,148 @@
+
+use uo;
+use os;
+use util;
+include ":itemutils:canAccess";
+include ":attributes:attributes";
+include ":traps:traps";
+include "include/say";
+include ":charactercreation:habilidades";
+
+program skillremoveTrap(who)
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (!maolivre(who, 2))
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var item := Target(who);
+	if(!item)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if ( !Accessible(who,item)  )
+		SendSysMessageEx(who, "Voce nao alcanca o alvo!", SSM_FAIL);
+		return;
+	endif
+
+	if ( Distance(who, item) > 2)
+		SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+		return;
+	endif
+
+	if( GetObjProperty(item, "TrapList") != error )
+
+		var spotedTrap := Cint(GetObjProperty(item, "trapSpoted"));
+		var acharamArmadilha := array;
+		if(GetObjProperty(item, "acharamArmadilha"))
+			acharamArmadilha := GetObjProperty(item, "acharamArmadilha"); //Lista de pessoas que revelaram a armadilha só para si
+		endif
+		if (!spotedTrap && !(who.serial in acharamArmadilha))
+			SendSysMessageEx(who, "Nao tem armadilhas aqui.", SSM_INFO);
+			return;
+		endif
+
+		var traps := GetObjProperty(item, "TrapList");
+		foreach trap in traps
+			if (trap.Name == "Magic")
+				SendSysMessageEx(who, "Voce nao sabe desarmar essa armadilha.", SSM_FAIL);
+				return 1;
+			endif
+		endforeach
+
+		if(who.hidden)
+			SendSysMessageEx(who,"Desarmando armadilha em "+item.name+".", SSM_INFO);
+		else
+			PrintTextAbove(who, "*Desarmando armadilha em "+item.name+"*");
+		endif
+
+		if (!Wait(who, 5))
+			SendSysMessageEx(who, "Voce interrompeu o processo.", SSM_FAIL);
+			return;
+		endif
+		var dif;
+		var lvl := Cint(GetObjProperty(item, "level"));
+		case (lvl)
+			1: dif := 15;
+			2: dif := 40;
+			3: dif := 60;
+			4: dif := 86;
+			5: dif := 90;
+			6: dif := 110;
+			default: dif := 40;
+		endcase
+		var check := SkillCheck( who, MECHANICALAPITUDE, dif);
+		if( check > 0 )
+			if(who.hidden)
+				SendSysMessageEx(who, "Voce desarmou a armadilha com sucesso sem se revelar.", SSM_INFO);
+			else
+				PrintTextAbove(who, "*Desarmou a armadilha com sucesso.");
+				SendSysMessageEx(who, "Voce desarmou a armadilha com sucesso.", SSM_INFO);
+			endif
+			RemoveTrap(item, 1);
+			return 1;
+		else
+			if(who.hidden)
+				SendSysMessageEx(who, "Voce falhou em desarmar a armadilha.", SSM_FAIL);
+			else
+				PrintTextAbove(who, "*Falhou em desarmar a armadilha*");
+				SendSysMessageEx(who, "Voce falhou em desarmar a armadilha.", SSM_FAIL);
+			endif
+			if (!temHabilidade(who, "Especialista em Invasoes") && check < -20)
+				if (who.hidden)
+					who.hidden := 0;
+				endif
+				PrintTextAbove(who, "*"+who.name+" disparou a armadilha*");
+				SendSysMessageEx(who,"Voce disparou a armadilha.", SSM_FAIL);
+				RunTraps(item, who);
+			endif
+		endif
+	elseif ( item.isTrap() )
+		if (GetObjProperty(item, "trap_inativa"))
+			SendSysMessageEx(who, "Voce ja desativou essa armadilha.", SSM_INFO);
+			return;
+		endif
+		if(who.hidden)
+			SendSysMessageEx(who, "Desarmando armadilha.", SSM_INFO);
+		else
+			PrintTextAbove(who, "*Desarmando armadilha*");
+			SendSysMessageEx(who, "Desarmando armadilha.", SSM_INFO);
+		endif
+		if (!Wait(who, 5))
+			SendSysMessageEx(who, "Voce interrompeu o processo.", SSM_FAIL);
+			return;
+		endif
+		var dif;
+		var lvl := Cint(GetObjProperty(item, "level"));
+		case (lvl)
+			1: dif := 15;
+			2: dif := 40;
+			3: dif := 60;
+			4: dif := 86;
+			5: dif := 90;
+			6: dif := 110;
+			default: dif := -1;
+		endcase
+		if (SkillCheck( who, MECHANICALAPITUDE, dif) > 0)
+			if(who.hidden)
+				SendSysMessageEx(who, "Voce desativou a armadilha com sucesso sem se revelar.", SSM_INFO);
+			else
+				SendSysMessageEx(who, "Voce desativou a armadilha com sucesso.", SSM_INFO);
+				PrintTextAbove(who, "*Desativou a armadilha*");
+			endif
+			SetObjProperty(item, "trap_inativa", 1);
+		else
+			if(who.hidden)
+				SendSysMessageEx(who, "Voce falhou em desarmar a armadilha sem se revelar.", SSM_FAIL);
+			else
+				PrintTextAbove(who, "*Falhou em desarmar a armadilha*");
+				SendSysMessageEx(who, "Voce falhou em desarmar a armadilha.", SSM_FAIL);
+			endif
+		endif
+	else
+		SendSysMessageEx(who, "Nao tem armadilhas aqui.", SSM_INFO);
+	endif
+endprogram

@@ -1,0 +1,91 @@
+use uo;
+use os;
+use util;
+
+include ":datafile:datafile";
+include "../include/settings";
+
+CONST CYCLE_WAIT := 60*10;
+
+program GlobalPlantControl()
+	SetGlobalProperty("#GrowerControlPid", GetPid());
+	
+	sleep(1);
+	
+	//set_priority(1);
+	while(1)
+		GrowthChecks();
+		sleep(CYCLE_WAIT);
+	endwhile
+endprogram
+
+function GrowthChecks()
+	SysLog("Running plant-grower growth cycle.");
+	
+	var settings := FarmingGetSettingsCfgElem("GrowthUnit");
+	var max_produce;// := settings.MaxProduce;
+	
+	var data_file := DFOpenDataFile(":farming:growthunits", DF_CREATE);
+	foreach elem_name in DFGetElemNames(data_file)
+		var grower := SystemFindObjectBySerial(CInt(elem_name));
+		if ( grower.IsDead() )
+			continue;
+		endif
+		
+		if ( !grower.CanHarvest() )
+			//var phase_num := grower.GetGrowthPhase();
+			//phase_num := phase_num+1;
+			var growstep := grower.GetGrowStep();
+			growstep := growstep + 1;
+			var t1 := grower.SetGrowStep(growstep);
+			var t2 := grower.NewGrowIt();
+			//grower.SetGrowthPhase(phase_num);
+		endif
+		
+		//descomentado
+		var water_amt := grower.GetWaterAmount();
+		if ( !GetObjProperty(grower, "gmplant") )
+			water_amt := water_amt - 1;
+			grower.SetWaterAmount(water_amt);
+			if ( water_amt <= 10 )
+				DestroyPlant(grower, 1); //checa se esta fora da estação e destroi
+			endif
+		endif
+		//descomentado
+		
+		var produce_amt := grower.GetProduceAmount();
+		max_produce := grower.GetMaxProduceAmount();
+		if ( produce_amt < max_produce )
+			if (!DestroyPlant(grower, 0)) //checa se esta fora da estação
+				produce_amt := produce_amt + 1;
+				if (water_amt >= 10)
+					produce_amt := produce_amt + 2;
+				endif
+				grower.SetProduceAmount(produce_amt);
+			endif
+		endif
+		
+		sleepms(30);
+	endforeach
+endfunction
+
+function DestroyPlant(grower, candestroy:=0)
+	var cfgestacao:=ReadConfigFile(":farming:itemdesc");
+	var elemestacao := FindConfigElem(cfgestacao, grower.GetGrowerType());
+	var destroyestacao:= GetConfigStringArray( elemestacao, "DestroyIn" );
+	var estacao := cstr(getglobalproperty("season"));
+	if ( estacao in destroyestacao )
+		if (candestroy == 0)
+			return 1;
+		endif
+		if (GetObjProperty(grower, "top"))
+			foreach objeto in (ListItemsAtLocation(grower.x, grower.y, grower.z, grower.realm))
+				if (GetObjProperty(objeto, "bottom"))
+					destroyitem(objeto);
+				endif				
+			endforeach
+		endif
+		destroyitem(grower);
+	endif
+	return;
+endfunction

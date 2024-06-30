@@ -1,0 +1,37 @@
+  
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha uma arma ou alguem armado.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cencelado", SSM_FAIL);
+		return;
+	endif
+
+	if (targ.isA(POLCLASS_WEAPON))
+		DestroyItem(targ);
+	else
+		var wpn := targ.weapon;
+		if (wpn.objtype != 0xF020)
+			MoveObjectToLocation(wpn, who.x, who.y, who.z, who.realm);
+			DestroyItem(wpn);
+			PrintText(targ, "*arma quebrou*");
+		endif
+	endif
+
+        PlaySoundEffect(targ, SFX_SPELL_CURSE);
+	
+	return 1;
+endprogram    

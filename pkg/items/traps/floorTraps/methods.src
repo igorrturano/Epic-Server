@@ -1,0 +1,11 @@
+use uo;
+
+program Install()
+	return 1;
+endprogram
+
+exported function isTrap(trap)
+
+	return 1;
+
+endfunction

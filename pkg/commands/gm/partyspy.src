@@ -1,0 +1,31 @@
+/*
+ * $Id: kill.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+use uo;
+
+include ":attributes:attributes";
+
+program textcmd_partyspy(who, player)
+
+	
+	if (!GetObjProperty(who, "PartySpyOn"))
+		if (player)
+			var targ := Target(who);
+			if (!targ.party.leader.name)
+				SendSysMessage(who, "O alvo nao esta em Party");
+				return 1;
+			endif
+			SetObjProperty(who, "PartySpyOn", targ.party.leader.name);
+			SendSysMessage(who, "Party Spy Ativado para:" + targ.party.leader.name);
+			return 1;
+		endif
+		SetObjProperty(who, "PartySpyOn", "on");
+		SendSysMessage(who, "Party Spy Ativado");		
+	else
+		EraseObjProperty(who, "PartySpyOn");
+		SendSysMessage(who, "Party Spy Desativado");
+	endif
+	
+	return 1;
+endprogram

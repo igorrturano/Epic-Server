@@ -1,0 +1,63 @@
+////////////////////////////////////////////////////////////////////
+//
+//    TextCMD MultiBuild - Baut ein Multi aus den Einzelteilen auf
+//
+//      Author: Shinigami
+//      eMail:  Shinigami@gmx.net
+//
+//    Modification:
+//
+////////////////////////////////////////////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use uo;
+Use os;
+Use cfgfile;
+
+//////////////////
+// Hauptprogramm
+//////////////////
+
+Program TextCMD_MultiBuild(who, params)
+  params:=SplitWords(params);
+
+  Var sleeptime:=CInt(params[2]);
+  If (!sleeptime)
+    sleeptime:=0;
+  EndIf
+
+  Var multinumber:=CInt(params[1]);
+  If ((multinumber==0) Or multinumber)
+    Var multicfg:=ReadConfigFile("multis");
+    If (multicfg)
+      Var multi:=multicfg[multinumber];
+      If (multi)
+        ForEach itemtype in {"static", "dynamic"};
+          ForEach item in GetConfigStringArray(multi, itemtype)
+            Var splitted:=SplitWords(item);
+
+            Var item:=CreateItemAtLocation(who.x+CInt(splitted[2]), who.y+CInt(splitted[3]), who.z+CInt(splitted[4]), CInt(splitted[1]), 1);
+            If (item)
+              item.movable:=0;
+            Else
+              SendSysMessage(who, "Was impossible to execute following Entry: "+item+" !");
+            EndIf
+
+            If (sleeptime)
+              SleepMS(sleeptime);
+            EndIf
+          EndForEach
+        EndForEach
+      Else
+        SendSysMessage(who, "Multi "+Lower(Hex(multinumber))+" doesn't exist!");
+      EndIf
+    Else
+      SysLog("ERROR: Was impossible to open File 'multis.cfg' !");
+    EndIf
+  Else
+    SendSysMessage(who, "You've to enter a number!");
+  EndIf
+EndProgram

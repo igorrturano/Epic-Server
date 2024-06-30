@@ -1,0 +1,14 @@
+use uo;
+
+program change(mobile, item)
+
+	var raca := GetObjProperty(mobile, "raca");
+
+	if (raca == "Drow")
+		MoveObjectToLocation(mobile, 4077, 939, 21 );
+	else
+		MoveObjectToLocation(mobile, 206, 1079, 29);
+	endif		
+
+endprogram 
+ 

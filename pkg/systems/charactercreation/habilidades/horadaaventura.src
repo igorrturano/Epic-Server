@@ -1,0 +1,115 @@
+ use uo;
+ use os;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/sysEvent";
+include ":tn:tngumps";
+include ":attributes:attributes";
+
+program manobra(who)
+	var hostiles := ListHostiles(who, 10);
+	if ( who.warmode )
+		SendSysMessageEx(who, "Voce nao pode usar a habilidade em posicao de combate.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	elseif ( GetEquipmentByLayer(who, 0x19) ) // Equip de Montaria
+		SendSysMessageEx(who, "Voce nao pode fazer isto montado.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	elseif ( who.frozen )
+		SendSysMessageEx(who, "Voce nao pode fazer isto.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	elseif ( hostiles[1] )
+		SendSysMessageEx(who, "Voce nao pode partir enquanto " + hostiles[1].name + " esta atacando voce.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	elseif ( CInt(AP_GetVital(who, "Hunger") / 60) > 1 )
+		SendSysMessageEx(who, "Voce esta muito faminto.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	elseif ( CInt(AP_GetVital(who, "Hitpoints")) < ( CInt(AP_GetVitalMaximumValue(who, "Hitpoints")) -10) )
+		SendSysMessageEx(who, "Voce precisa estar com os pontos de vida cheios.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	elseif ( InRect(who, who.x, who.y, "3754 0 6140 4092") )
+		SendSysMessageEx(who, "Voce nao pode usar a habilidade dentro de dungeons.", SSM_FAIL);
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return 0;
+	endif
+	var aventuras := GetObjProperty(who, "HoraDaAventura");
+	if (!aventuras[1])
+		aventuras := array{};
+	endif
+	var aventurasnome := array{};
+	var i := 1;
+	foreach aventura in aventuras
+		if (SystemFindObjectBySerial(aventura.serial))
+			aventurasnome.append(aventura.nome);
+		else
+			aventuras.Erase(i);
+		endif
+		i := i+1;
+		sleepms(20);
+	endforeach
+	SetObjProperty(who, "HoraDaAventura", aventuras);
+	if (!aventurasnome[1])
+		SendSysMessageEx(who, "Voce nunca frequentou uma dungeon. Lembre-se de dar dois cliques na Pedra do Aventureiro", SSM_FAIL);
+		return 1;
+	endif
+	aventurasnome.append("Cancelar");
+	var y := aventurasnome.size() * 15;
+	var goaventura := RadioGump(who, 270, 100+y, "Para onde pretende ir?", aventurasnome);
+	if (goaventura == "Cancelar")
+		TS_LowerDuration(who, "hora da aventura", -1, 1);
+		return;
+	endif
+	
+	foreach aventura in aventuras
+		if (aventura.nome == goaventura)
+			var whoparty := who.party;
+			var aventuraobj := SystemFindObjectBySerial(aventura.serial);
+			var x;
+			var y;
+			var z;
+			if (GetObjProperty(aventuraobj, "Lado") == "Esquerda")
+				x := aventuraobj.x-2;
+				y := aventuraobj.y;
+				z := aventuraobj.z;
+			else
+				x := aventuraobj.x+2;
+				y := aventuraobj.y;
+				z := aventuraobj.z;
+			endif
+			
+			foreach player in (whoparty.members)
+				if (Distance( who, player ) < 6 && CheckLineOfSight( who, player) && player != who )
+					PrintText(player, "*Partindo para Aventura*");
+					sleep(1);
+					MoveObjectToLocation(player, x, y, z, aventuraobj.realm);
+				else
+					SendSysMessageEx(who, "Voce nao conseguiu trazer "+player.name+" junto de voce.", SSM_FAIL);
+				endif
+				sleepms(10);
+			endforeach
+			PrintText(who, "*Partindo para Aventura*");
+			sleep(1);
+			MoveObjectToLocation(who, x, y, z, aventuraobj.realm);
+		endif
+		sleepms(20);
+	endforeach
+	return 1;
+endprogram  
+
+function InRect(who, x_pos, y_pos, rect)
+
+	rect := SplitWords(rect);
+	var x1 := CInt(rect[1]);
+	var y1 := CInt(rect[2]);
+	var x2 := CInt(rect[3]);
+	var y2 := CInt(rect[4]);
+
+	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
+endfunction

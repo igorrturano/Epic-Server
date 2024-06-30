@@ -1,0 +1,99 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+
+function coordist ( x1 , y1 , x2 , y2 )
+
+	var xd := x1 - x2;
+	var yd := y1 - y2;
+	if (xd < 0)
+		xd := -xd;
+	endif
+	if (yd < 0)
+		yd := -yd;
+	endif
+	if (xd > yd)
+		return xd;
+	else
+		return yd;
+	endif
+
+endfunction
+
+program angry_bees (bees)
+	//the amount of time between bee attacks (in seconds), how much damage they do, and how long before they settle down
+	var time_between_attacks := 1;
+	var attack_damage := 1;
+	var attack_length := 15;
+
+	//setup for how long the bees last
+	var end_time := ReadGameClock() + attack_length;
+
+	//Wait a short time to see if we have a creator
+	var creator_serial := getobjproperty (bees, "creator");
+	if (!creator_serial)
+		var counter := 0;
+		repeat
+			sleepms (100);
+			counter := counter + 1;
+			creator_serial := getobjproperty (bees, "creator");
+		until (creator_serial or counter > 10);
+	endif
+
+	var creator := SystemFindObjectBySerial(creator_serial);
+	if (creator)
+		SetScriptController(creator);
+	endif
+
+	var victims := ListMobilesNearLocation (bees.x, bees.y, bees.z, 2, bees.realm);
+	var mainvictim := victims [Randomint (victims.size() ) + 1 ];
+	var lastattack := 0;
+
+	var moving := 1;
+	var start_x := bees.x;
+	var start_y := bees.y;
+	repeat
+		if ( ReadGameClock() > lastattack )
+
+			foreach mobile in ListMobilesNearLocation( bees.x, bees.y, bees.z, 1, bees.realm )
+				ApplyRawDamage(mobile, attack_damage );
+			endforeach
+			lastattack := ReadGameClock() + time_between_attacks;
+			PlaySoundEffect (bees, 0x5CD);
+		endif
+		sleepms(250);
+		if (!mainvictim or mainvictim.dead)
+			moving := 0;
+		endif
+
+		//Don't follow too far if we're not summoned bees
+		if (moving)
+			var thedistance := coordist (start_x, start_y, mainvictim.x, mainvictim.y);
+			if (creator)
+				if (thedistance > 50)
+					moving := 0;
+				endif
+			else
+				if (thedistance > 30)
+					moving := 0;
+				endif
+			endif
+		endif
+
+		if (moving)
+			if (bees.x != mainvictim.x or bees.y != mainvictim.y)
+				set_critical (1);
+				bees.movable := 1;
+				MoveObjectToLocation (bees, mainvictim.x, mainvictim.y, mainvictim.z+1, bees.realm, MOVEOBJECT_FORCELOCATION);
+				bees.movable := 0;
+				set_critical (0);
+			endif
+		endif
+	until (ReadGameClock() > end_time);
+	DestroyItem (bees);
+endprogram

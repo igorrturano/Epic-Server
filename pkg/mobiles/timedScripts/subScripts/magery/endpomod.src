@@ -1,0 +1,16 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+
+	if (GetObjProperty(mobile, "poMod") != error)
+		var mod := GetObjProperty(mobile, "poMod");
+		EraseObjProperty(mobile, "poMod");
+		mobile.resist_poison_mod := mobile.resist_poison_mod - mod;
+	endif
+	
+	return 1;
+endprogram

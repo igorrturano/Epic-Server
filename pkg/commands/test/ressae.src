@@ -1,0 +1,34 @@
+/*
+ * $Id: resurrect.src 1348 2006-05-12 08:47:00Z austin $
+ *
+ */
+
+use uo;
+use file;
+
+include ":death:resurrection";
+
+
+program textcmd_ResGump(who)
+	var targ;
+	if ( who.dead )
+		targ := who;
+	else
+		targ := Target(who);
+		if ( targ.IsA(POLCLASS_CORPSE) )
+			targ := SystemFindObjectBySerial(targ.ownerserial);
+			if ( !targ )
+				SendSysMessage(who, "No owner could be found for that corpse.");
+				return 0;
+			endif
+		endif
+		
+		if ( !targ.dead )
+			SendSysMessage(who, "Target is not dead.");
+			return 0;
+		endif
+	endif
+
+	LogToFile(":fls_core:ress.log", who.name+" ("+who.acctname+") ressou "+targ.name+" ("+targ.acctname+")", LOG_DATETIME);
+	Resurrect(targ);
+endprogram

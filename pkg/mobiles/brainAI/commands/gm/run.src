@@ -1,0 +1,25 @@
+use uo;
+use os;
+use npc;
+
+program textcmd_attack(who)
+	SendSysMessage(who, "Selecione o NPC.");
+	var targ := target(who);
+	if ( !targ.npctemplate ) 
+		SendSysMessage(who, "Cancelled");
+		return 0;
+	endif
+	
+	SendSysMessage(who, "Clique para onde ele deve ir.");
+	var loc := TargetCoordinates(who);
+
+	var time := ReadGameClock() + 60;
+	var dist := CoordinateDistance(targ.x, targ.y, loc.x, loc.y);
+	while (dist > 1 && ReadGameClock() > time)
+		RunTowardLocation(loc.x, loc.y);
+		dist := CoordinateDistance(targ.x, targ.y, loc.x, loc.y);
+		sleepms(10);
+	endwhile
+
+	return 1;
+endprogram

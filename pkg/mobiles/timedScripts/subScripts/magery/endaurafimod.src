@@ -1,0 +1,16 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+
+	if (GetObjProperty(mobile, "auraFiMod") != error)
+		var mod := GetObjProperty(mobile, "auraFiMod");
+		EraseObjProperty(mobile, "auraFiMod");
+		mobile.resist_fire_mod := mobile.resist_fire_mod - mod;
+	endif
+
+	return 1;
+endprogram

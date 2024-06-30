@@ -1,0 +1,49 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:habilidades";
+include ":timedScripts:timedScripts";
+include "include/damage";
+
+program loko(params)
+    var who := params[1];
+
+	if (TS_GetCooldown(who, "habilidade um"))
+		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
+	endif
+
+	SendSysMessage(who, "Selecione um alvo. ");
+	var targ := Target(who);
+
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) <= 3 && targ && targ != who)
+			// TS_StartCooldown(who, cdname, cdtime);
+			var y := AP_GetSkill(who, MAGERY)/10;
+			
+			who.frozen := 1;
+			PerformAction(who, 0x0d);
+			PrintTextAbove(who, "*se enrola no oponente*");
+			
+			TS_StartTimer(targ, "paralyze", y);
+			var i := 0;
+
+			while (i < y)
+				PrintTextAbove(targ, "*sendo segurado*");
+				DamageFLS(targ, AP_GetSkill(who, MAGICLORE)/20, DMG_FORCED, who);
+				Sleep(1);
+				if (!AP_ConsumeVital(who, STAMINA, 5))
+					break;
+				endif
+				i := i + 1;
+			endwhile
+			who.frozen := 0;
+			// if (randomint(100) < 5)
+			// 	SendSysMessageEx(targ, "Voce esta muito fraco com a perda de sangue.", SSM_FAIL);
+			// 	TS_StartTimer(targ,  "weaken", 360, 40, who, 1);
+			// endif
+	else
+		SendSysMessage(who, "Alvo invalido. ");
+	endif
+
+
+endprogram

@@ -1,0 +1,431 @@
+use uo;
+use os;
+use npc;
+use cfgfile;
+
+include ":ghaia:generic";
+include ":ghaia:ghaia";
+include ":ghaia:objective";
+include "include/dungeons";
+include ":ghaia:objective";
+include ":faccao:faccao";
+include ":ghaia:combatevents";
+
+var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var me := self();
+var idlesnd1;
+var idlesnd2;
+var areasize;
+var alert_allies := 0;
+var flee_point := 0.1;
+var mystate := INITIALIZING;
+var align;
+var mytemplate;
+var throwinfo;
+var propallies;
+
+program KillPlayers()
+
+	var ev;
+	var wanders;
+	propallies := dictionary;
+
+	set_critical(1);
+	//printtextabove(me, "vai inicializr");
+	InitializeNPC(me);
+	set_critical(0);
+	//printtextabove(me, "done");
+	SetWarMode( 0 );
+	ev := os::wait_for_event(0);
+	wanders := 0;
+	EnableMainEvents();
+	Set_Event_Queue_Size(1000);
+
+    	while(me)
+
+		//se tem objetivo, anda na direcao dele, se nao tem so wander
+		if (GetObjProperty(me, "objloc") != error)
+			wanders := 0;
+			DoObjective();
+		else
+			MoveAround();
+		endif
+
+		wanders := wanders +1;
+		if(wanders >= 30)
+			wanders := 0;
+			look_around();
+			ev := sleepmode();
+		else
+			ev := os::wait_for_event(10);
+		endif
+
+
+		if(ev)
+			case(ev.type)
+				SYSEVENT_ENTEREDAREA:
+					if (CheckLineOfSight(me, ev.source))
+						if(CanFight(me, ev.source, align)) //verifica se eh inimigo
+
+                            var mypack := GetEquipmentByLayer(me, 0x15);
+                            if (!mypack)
+                                mypack := CreateItemAtLocation(20, 20, 0, 0xe75, 1, me.realm);
+                            else
+                                MoveObjectToLocation(mypack, 20, 20, 0, me.realm, MOVEOBJECT_FORCELOCATION);
+                            endif
+
+                            var itemlist := ListEquippedItems(me);
+                            var y;
+
+                            foreach x in itemlist
+                                MoveItemToContainer(x, mypack);
+                            endforeach
+
+                            itemlist := ListEquippedItems(ev.source);
+                            foreach x in itemlist
+                                y := CreateItemCopyAtLocation(20, 20, 0, x);
+                                y.color := x.color;
+                                y.name := x.name;
+                                y.desc := x.desc;
+                                EquipItem(me, y);
+                            endforeach
+
+                            var desc:=GetObjProperty(ev.source,"description");
+
+                            if (desc!=error)
+                                SetObjProperty(me,"description",desc);
+                            else
+                                EraseObjProperty(me,"description");
+                            endif
+
+                            me.gender := ev.source.gender;
+                            me.graphic := ev.source.graphic;
+                            me.color := ev.source.color;
+                            me.title_race:=ev.source.title_race;
+                            me.title_suffix:=ev.source.title_suffix;
+                            me.title_prefix:=ev.source.title_prefix;
+                            me.name := ev.source.name;
+                            me.TrueColor := ev.source.TrueColor;
+                            me.trueobjtype := ev.source.trueobjtype;
+
+
+                            var newpack := GetEquipmentByLayer(me, 0x15);
+                            if (newpack)
+                                DestroyItem(newpack);
+                            endif
+
+                            EquipItem(me, mypack);
+
+                            var classe:= GetObjProperty(ev.source, "classe");
+
+                            if (classe == "Sabio")
+                                me.script := ":ghaia:spell";
+                                SetObjproperty(me, "script", me.script);
+                                RestartScript(me);
+                            elseif ( (ev.source.weapon.objtype == 0x13B2) || (ev.source.weapon.objtype == 0x26CC) || (ev.source.weapon.objtype == 0x0f4f) || (ev.source.weapon.objtype == 0x13fd) || (ev.source.weapon.objtype == 0x26CD) )
+                                me.script := ":ghaia:archer";
+                                SetObjproperty(me, "script", me.script);
+                                RestartScript(me);
+                            endif
+
+							wanders := 0;
+							Fight(ev.source);
+						endif
+					endif
+				SYSEVENT_ENGAGED:
+                	        var mypack := GetEquipmentByLayer(me, 0x15);
+                            if (!mypack)
+                                mypack := CreateItemAtLocation(20, 20, 0, 0xe75, 1, me.realm);
+                            else
+                                MoveObjectToLocation(mypack, 20, 20, 0, me.realm, MOVEOBJECT_FORCELOCATION);
+                            endif
+
+                            var itemlist := ListEquippedItems(me);
+                            var y;
+
+                            foreach x in itemlist
+                                MoveItemToContainer(x, mypack);
+                            endforeach
+
+                            itemlist := ListEquippedItems(ev.source);
+                            foreach x in itemlist
+                                y := CreateItemCopyAtLocation(20, 20, 0, x);
+                                y.color := x.color;
+                                y.name := x.name;
+                                y.desc := x.desc;
+                                EquipItem(me, y);
+                            endforeach
+
+                            var desc:=GetObjProperty(ev.source,"description");
+
+                            if (desc!=error)
+                                SetObjProperty(me,"description",desc);
+                            else
+                                EraseObjProperty(me,"description");
+                            endif
+
+                            me.gender := ev.source.gender;
+                            me.graphic := ev.source.graphic;
+                            me.color := ev.source.color;
+                            me.title_race:=ev.source.title_race;
+                            me.title_suffix:=ev.source.title_suffix;
+                            me.title_prefix:=ev.source.title_prefix;
+                            me.name := ev.source.name;
+                            me.TrueColor := ev.source.TrueColor;
+                            me.trueobjtype := ev.source.trueobjtype;
+
+
+                            var newpack := GetEquipmentByLayer(me, 0x15);
+                            if (newpack)
+                                DestroyItem(newpack);
+                            endif
+
+                            EquipItem(me, mypack);
+
+                            var classe:= GetObjProperty(ev.source, "classe");
+
+                            if (classe == "Sabio")
+                                me.script := ":ghaia:spell";
+                                SetObjproperty(me, "script", me.script);
+                                RestartScript(me);
+                            elseif ( (ev.source.weapon.objtype == 0x13B2) || (ev.source.weapon.objtype == 0x26CC) || (ev.source.weapon.objtype == 0x0f4f) || (ev.source.weapon.objtype == 0x13fd) || (ev.source.weapon.objtype == 0x26CD) )
+                                me.script := ":ghaia:archer";
+                                SetObjproperty(me, "script", me.script);
+                                RestartScript(me);
+                            endif
+
+                            wanders := 0; Fight(ev.source);
+				SYSEVENT_DAMAGED:	wanders := 0; Fight(ev.source);
+				EVID_ALERT_ALLIES:	wanders := 0; Fight(ev.opponent, 1);
+				EVID_HERDING:		herd(ev);
+				EVID_TAUNT:
+							if(ev.source)
+								wanders := 0; Fight(ev.opponent, 1);
+							endif
+				EVID_FLEE:
+							if (ev.source)
+								flee(ev.source);
+							endif
+			endcase
+		endif
+
+		look_around();
+		sleepms(2);
+	endwhile
+
+endprogram
+
+function CloseDistance( opponent )
+
+	if ( GetObjPRoperty(me, "noclosecombat") == 1)
+		return 0;
+	endif
+
+	var sleepdelay := 275 - me.run_speed;//(CInt(GetDexterity(me)) * 1.5);
+
+	if (sleepdelay < 0)
+		sleepdelay := 0;
+	endif
+
+/*
+    case (CoordinateDistance( me.x, me.y, opponent.x, opponent.y ))
+        1:
+        0:
+            return 1;
+        default:
+		if (!CheckLineofSight(me, opponent)) //se nao consegue ver
+			var path := GetObjPRoperty(me, "path"); //procura se ja calculou o path
+			if (path == error) //se nao calculou
+				var flags := FP_IGNORE_MOBILES;
+				if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+					flags := flags| FP_IGNORE_DOORS;
+				endif
+				path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 10); //calcula o path
+				if (path == error) //TODO: se nao tiver outro inimigo correr ?
+					ChooseAnotherOpponent(me);
+				else
+					SetObjProperty(me, "path", path);
+				endif
+			else //se calculou o path
+				var coord := path[1]; //pega a primeira coordenada
+				if (coord)
+					SetObjProperty(me, "#coordtry", ReadGameClock());
+					RunTowardLocation( coord.x, coord.y ); //anda na direcao
+					sleepms(sleepdelay);
+					Opendoors(me, opponent); //tenta abrir possiveis portas
+					if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia
+						path.erase(1); //deleta a coordenada e vai pra proxima
+						if (path.size() > 0)
+							SetObjProperty(me, "path", path);
+						else
+							EraseObjProperty(me, "path");
+						endif
+					else // se nao consegue chegar na coord
+						if ( cint(GetObjProperty(me, "#coordtry")) > ReadGameClock()+5) //se ta tentando chegar la a mais de 5 segundos
+							EraseObjProperty(me, "path"); //deleta o path atual
+							ChooseAnotherOpponent(me); //procura outro oponente TODO: se nao tiver outro oponente?
+						endif
+					endif
+				else
+					RunToward( opponent );
+					sleepms(sleepdelay);
+				endif
+			endif
+		else
+			EraseObjProperty(me, "path");
+			RunToward( opponent );
+			sleepms(sleepdelay);
+		endif
+		RunToward( opponent );
+		sleepms(sleepdelay);
+
+            return 0;
+    endcase
+ */
+
+	var face_str := getFacingString(GetFacing(me.x, me.y, opponent.x, opponent.y));
+   var stam := AP_GetVital(me, STAMINA);
+   var move_type := 1;
+
+   if (stam < 5)
+      move_type := 0;
+   endif
+
+	var path := GetObjProperty(me, "path"); //procura se ja calculou o path
+	var last_loc := GetObjProperty(me, "#enemy_last_loc"); //procura se ja calculou o path
+   if (last_loc && path)
+      if (CoordinateDistance(opponent.x, opponent.y, last_loc[1], last_loc[2]) > 3)
+         path := 0;
+         EraseObjProperty(me, "path");
+         EraseObjProperty(me, "#enemy_last_loc");
+         last_loc := 0;
+      else
+         last_loc := 1;
+      endif
+   endif
+
+   if (stam <= 1)
+      var last_msg := GetObjProperty(me, "#fatigue");
+      if (!last_msg || last_msg < ReadGameClock())
+         SetObjProperty(me, "#fatigue", ReadGameClock()+15);
+         PrintText(me, "*fatigado*");
+      endif
+      sleep(1);
+   elseif (CheckLosAt(me, opponent.x, opponent.y, opponent.z) && !path && CanMove(face_str))
+      EraseObjProperty(me, "path");
+      EraseObjProperty(me, "#enemy_last_loc");
+
+      if (move_type)
+         RunToward( opponent );
+      else
+         WalkToward( opponent );
+      endif
+
+      var reachtry := GetObjProperty(me, "#reachtry");
+      if (reachtry == error || (reachtry[1].x != opponent.x && reachtry[1].y != opponent.y))
+         reachtry := array{struct{ x := opponent.x, y := opponent.y, z := opponent.z }, ReadGameClock()+5 };
+         SetObjProperty(me, "#reachtry", reachtry);
+      endif
+
+      if (reachtry[2] > ReadGameClock())
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, 0, 15);
+         if (!path)
+            Flee(opponent);;
+            sleepms(sleepdelay);
+         else
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+      endif
+
+      sleepms(sleepdelay);
+	else
+      if (path == error || last_loc ) //se não calculou
+         var flags := FP_IGNORE_MOBILES;
+         if ( cint(GetObjProperty(me, "ignoredoor")) || cint(GetObjProperty(me, "opendoor")) )
+            flags := flags| FP_IGNORE_DOORS;
+         endif
+         path := FindPath(  me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, flags, 15); //calcula o path
+
+         if (!path[1] || !path || path == error)
+            Flee(opponent);
+            sleepms(sleepdelay);
+         else
+            if (move_type) RunTowardLocation( path[1].x, path[1].y );
+            else WalkTowardLocation(path[1].x, path[1].y); endif
+
+				path.erase(1); //deleta a coordenada e vai pra proxima
+            SetObjProperty(me, "path", path);
+            SetObjProperty(me, "#enemy_last_loc", array{opponent.x, opponent.y, opponent.z});
+         endif
+		endif
+
+      var coord := path[1]; //pega a primeira coordenada
+      if (coord);
+         var coordtry := GetObjProperty(me, "#coordtry");
+         if (coordtry == error || coordtry[1] != coord)
+            coordtry := array{coord, ReadGameClock()+5 };
+            SetObjProperty(me, "#coordtry", coordtry);
+         endif
+         if (move_type) RunTowardLocation( coord.x, coord.y );
+         else WalkTowardLocation(coord.x, coord.y); endif
+         sleepms(sleepdelay);
+         Opendoors(me); //tenta abrir possiveis portas
+         if (CoordinateDistance(me.x, me.y, coord.x, coord.y) <= 1) //se chegou onde devia
+
+		 	if (CoordinateDistance( me.x, me.y, opponent.x, opponent.y ) > 1)
+      			CalcPathAndMove(me, opponent, sleepdelay);
+     	 		return 0;
+   			else
+	   			return 1;
+   			endif
+            path.erase(1); //deleta a coordenada e vai pra proxima
+            if (path[1])
+               SetObjProperty(me, "path", path);
+            else
+               EraseObjProperty(me, "path");
+            endif
+         else // se não consegue chegar na coord
+            if ( coordtry[2] > ReadGameClock()) //se ta tentando chegar la a mais de 5 segundos
+               EraseObjProperty(me, "path"); //deleta o path atual
+               me.remAggro(opponent);
+               var old_opponent := opponent;
+               ChooseHighestOpponent(me, opponent);
+               if (old_opponent == opponent) Flee(opponent); endif
+            endif
+         endif
+      else
+         if (move_type) RunToward( opponent );
+         else WalkToward( opponent ); endif
+         sleepms(sleepdelay);
+      endif
+	endif
+
+endfunction
+
+/*
+
+function ChooseAnotherOpponent(me)
+
+	var otherTarget := ListMobilesNearLocationEx( me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm );
+	if  (otherTarget.size() > 0)
+		foreach mob in otherTarget
+			if(CanFight(me, mob, align)) //verifica se eh inimigo
+				Fight(mob);
+			endif
+		endforeach
+	else
+	endif
+
+endfunction
+
+*/
+
+function look_around()
+  foreach npc in ListMobilesInLineOfSight(me, areasize)
+    if( CanFight(me, npc, align) )
+         Fight(npc);
+    endif
+    sleepms(2);
+  endforeach
+endfunction

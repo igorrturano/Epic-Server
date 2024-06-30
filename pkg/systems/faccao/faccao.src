@@ -1,0 +1,1053 @@
+use uo;
+use os;
+
+include ":loot:lootParser";
+include ":attributes:attributes";
+include "include/say";
+include "include/arrays";
+include ":faccao:npc";
+include ":faccao:faccao";
+include ":faccao:laws";
+include ":gumps:gumps";
+include ":tn:tngumps";
+//include ":yggdrasil:boss";
+include ":gumps:yesNo";
+include ":merchants:item_template";
+include ":gumps:htmlGump";
+include ":keys:key";
+
+const BUTTON_BUY_UNIFORM := 0x2;
+const BUTTON_ADD_PLAYER := 0x3;
+const BUTTON_MONEY_TRANSFER := 0x5;
+const BUTTON_CHANGE_DOORS := 0x4;
+const BUTTON_BAN_PLAYER := 0x6;
+const BUTTON_CHANGE_PLAYER := 0x1222;
+
+const BUTTON_ADD_NPC := 0x100;
+const BUTTON_REPORT_NPC := 0x109;
+const BUTTON_CONTRACT_NPC := 0x110;
+const BUTTON_DISMISS_NPC := 0x115;
+
+const BUTTON_ADD_LAW := 0x200;
+const BUTTON_CHANGE_LAW := 0x225;
+
+const BUTTON_GM_OPTS := 0x301;
+
+const BTN_FACCAO := 0x100;
+const BTN_NEW_FACCAO := 0x4;
+
+const BUTTON_CHECK_GUILD := 0x350;
+
+
+var guild;
+var privilegies;
+var is_gm_or_leader;
+var priv_list := struct{
+   "above_guards"    := "Controle de Guardas",
+   "above_merchants" := "Controle de Mercadores",
+   "above_members"   := "Controle de Membros",
+   "giveprivs"       := "Controle de Permissões",
+   "contractnpc"     := "Contratar de Agentes",
+   "fixitems"        := "Controle de Objetos",
+   "unlockdoors"     := "Controle de Portas",
+   "buyuniforms"     := "Controle de Uniformes",
+   "abovelaws"     := "Leis não se aplicam a este personagem",
+   "equipguard"   := "Controle de Equipamento de Guardas"
+};
+
+var law_list := struct{
+   "nofight"    := "Proibir Combate",
+   "nolockpick" := "Proibir Arrombamentos",
+   "noweapon"   := "Proibir Usar Armas",
+   "noitem"     := "Proibir Item Especifico",
+   "norace"     := "Proibir Raça",
+   //"noguild"    := "Proibir Facção",
+   "nocerca"    := "Proibir Pular Cerca",
+   "nooutsider" := "Proibir Forasteiros",
+  // "nooutsideron" := "Proibir Forasteiros em Area",
+  // "nolawon" := "Não aplicar leis em",
+   "userban" := "Banir usuario",
+   "nohood"   := "Proibir Cobrir Rosto",
+   "nosneak"   := "Proibir Esconder-se"
+};
+
+var guild_obj, aboveguild;
+
+program faccao(params)
+   var who := params;
+   var targ := params;
+   var cmd;
+   if (typeof(params) == "Array")
+      who := params[1];
+      targ := params[2];
+      cmd := params[3];
+   endif
+
+   if (cmd == "guild")
+      guild := FindGuild(targ);
+   elseif (cmd == "isabove")
+      guild := FindGuild(targ);
+      aboveguild:= 1;
+   elseif (cmd)
+      return Faccoes(who);
+   else
+      guild := targ.guild;
+   endif
+
+   if (!guild)
+      return Faccoes(who);
+   endif
+
+   CloseGump(who, 0x689, 0);
+
+   var members := guild.members;
+   guild_obj := GetFaccao(guild);
+   var guild_leader;
+   if (guild_obj.leader)
+      guild_leader := SystemFindObjectBySerial(guild_obj.leader, SYSFIND_SEARCH_OFFLINE_MOBILES);
+      if (!guild_leader)
+         guild.SetProp("leader", 0x0);
+      endif
+      members := RemoveFromArray(members, guild_leader);
+   endif
+   is_gm_or_leader := (who == guild_leader || who.cmdlevel || aboveguild);
+   privilegies := guild.getProp(cstr(who.serial));
+   var gump := GFCreateGump();
+	GFPage(gump, 0);
+
+   if (is_gm_or_leader)
+      foreach g_n in (guild_obj.subguilds)
+	      GFResizePic(gump, 570, 40+(_g_n_iter * 38), 0x9C40, 200, 40); //background
+         GFHtmlShadowed(gump, 605, 48+(_g_n_iter * 38), 165, 20, "#FBE2B4", "{}".format(FindGuild(g_n).getProp("name")), 8);
+         GFAddButton(gump, 740, 48+(_g_n_iter * 38), 5605, 5605, GF_CLOSE_BTN, BUTTON_CHECK_GUILD+g_n);
+         sleepms(2);
+      endforeach
+   endif
+
+   GFSetId(gump, 0x689);
+	GFResizePic(gump, 26, 19, 39925, 573, 417); //background
+
+	GFResizePic(gump, 228, 29, 9350, 171, 34);
+
+   GFHtmlShadowed(gump,232, 36, 165, 20, "#FFC33C", "<center>{}".format(guild_obj.name), 8);
+
+   if (who.cmdlevel >= 2)
+      GFAddButton(gump, 430-20, 42+2, 5605, 5605, GF_CLOSE_BTN, BUTTON_GM_OPTS);
+      GFTextLine(gump, 430, 42, 49, "[GM] Alterar Facção");
+   endif
+
+	GFResizePic(gump, 48, 67, 9350, 172, 326); //members background
+	GFTextLine(gump, 100, 70, 0, "Membros");
+
+   var leader_name := guild_leader.name;
+   if (!leader_name)
+      leader_name := "";
+   elseif(who.cmdlevel || aboveguild)
+      GFAddButton(gump, 49, 91, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+guild_obj.leader);
+   endif
+   GFTextLine(gump, 67, 89, 49, "{}".format(leader_name));
+
+   var y := 107;
+   foreach mob in members
+      // mob := SystemFindObjectBySerial(mob.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+      if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
+         GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+mob.serial);
+      endif
+      GFTextLine(gump, 67, y-2, 0, "{}".format(mob.name));
+      var permissions := guild.GetProp(cstr(mob.serial));
+      var permission_text := "";
+      foreach priv in (permissions.keys())
+         if (permissions[priv])
+            permission_text += "{}<br>".format(priv_list[priv]);
+         endif
+         sleepms(2);
+      endforeach
+
+      if (!permission_text)
+         permission_text := "Nenhum privilegio";
+      endif
+
+      GFToolTipText(gump, permission_text);
+      sleepms(2);
+      y  += 18;
+   endforeach
+   y  += 18;
+
+   if (is_gm_or_leader || privilegies.above_members)
+      GFAddButton(gump, 67-10, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_ADD_PLAYER);
+      GFTextLine(gump, 67+10, y-2, 0, "Convidar");
+   endif
+
+   GFResizePic(gump, 228, 67, 9350, 172, 326); //leis background
+   GFTextLine(gump, 268, 72, 0, "Leis em Vigor");
+   y := 91;
+   foreach law in (guild_obj.laws)
+      if (is_gm_or_leader)
+         GFAddButton(gump, 246-18, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_LAW+_law_iter);
+      endif
+      var law_desc := "";
+      case (law.type)
+         "noitem": law_desc := "Item: {}".format(law.opt.name);
+         "norace": law_desc := "Raça: {}".format(law.opt);
+         //"noguild": law_desc := "Facção: {}".format(FindGuild(law.opt).getProp("name"));
+         "nofight": law_desc := "{}".format(law.opt);
+         "noweapon": law_desc := "{}".format(law.opt);
+        // "nooutsideron": law_desc := "{}".format(law.opt.name);
+        // "nolawon": law_desc := "{}".format(SystemFindObjectBySerial(law.opt, SYSFIND_SEARCH_OFFLINE_MOBILES).getName());
+         "userban": law_desc := "{}".format(law.opt);             //(SystemFindObjectBySerial(law.opt, SYSFIND_SEARCH_OFFLINE_MOBILES).getName());
+         "nohood" : law_desc := "{}".format(law.opt);
+         "nosneak" : law_desc := "{}".format(law.opt);
+
+      endcase
+      GFTextLine(gump, 246, y-2, 0, "{}".format(law_list[law.type]));
+      if (law_desc)  GFToolTipText(gump, law_desc); endif
+      sleepms(2);
+      y  += 18;
+   endforeach
+
+   if (is_gm_or_leader)
+      GFAddButton(gump, 246-10, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_ADD_LAW);
+      GFTextLine(gump, 246+10, y-2, 0, "Adicionar");
+   endif
+
+   var total_soldo := 0;
+	GFResizePic(gump, 48+360, 67, 9350, 172, 326); //agents background
+	GFTextLine(gump, 430, 69, 0, "Agentes Contratados");
+   y := 91;
+   var i := 0;
+   foreach npc in (guild_obj.npcs_active)
+      sleepms(2);
+      var mob := SystemFindObjectBySerial(npc.serial);
+      if (!mob)
+         DismissNPC(guild, _npc_iter-i);
+         i+=1;
+         continue;
+      endif
+      GFAddButton(gump, 426-18, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_DISMISS_NPC+_npc_iter-i);
+      GFTextLine(gump, 426, y-2, 0, "{}".format(mob.name));
+      var desc := "Soldo: {}<br>Tipo: {}".format(npc.price, npc.type);
+      total_soldo += npc.price;
+      GFToolTipText(gump, desc);
+      y  += 18;
+   endforeach
+
+   foreach item in ListItemsNearLocation(who.x, who.y, who.z, 2, who.realm)
+      if (is_gm_or_leader || privilegies.contractnpc)
+         if (guild_obj.npcs.size() >= 0 && (item.objtype == 0x46AE || who.cmdlevel >= 2))
+            GFAddButton(gump, 426-10, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CONTRACT_NPC);
+            GFTextLine(gump, 426+10, y-2, 0, "Contratar");
+
+            GFAddButton(gump, 426-10, y+18, 5605, 5605, GF_CLOSE_BTN, BUTTON_REPORT_NPC);
+            GFTextLine(gump, 426+10, y+18-2, 0, "Relatorio");
+         endif
+      endif
+
+      if (who.cmdlevel > 2)
+         GFAddButton(gump, 426-10, y+36, 5605, 5605, GF_CLOSE_BTN, BUTTON_ADD_NPC);
+         GFTextLine(gump, 426+10, y-2+36, 0, "Adicionar NPC");
+      endif
+   endforeach
+
+   
+	// GFPage(gump, 2);
+	// GFResizePic(gump, 227, 67, 9350, 346, 326);
+	// GFAddButton(gump, 362, 357, 2071, 2073, GF_CLOSE_BTN, 0);
+
+   GFResizePic(gump, 54, 398, 9350, 518, 29);
+
+   GFAddButton(gump, 59, 402, 40022, 40022, GF_CLOSE_BTN, BUTTON_MONEY_TRANSFER);
+	GFTextLine(gump, 82, 401, 0, "{} moedas".format(cint(guild_obj.money)));
+	GFTextLine(gump, 415, 401, 0, "Soldo Total: {} mc".format(total_soldo));
+	GFGumpPic(gump, 491, 330, 40034, 0);
+
+   // if (is_gm_or_leader || privilegies.above_members)
+   //    GFAddButton(gump, 205-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_BAN_PLAYER);
+   //    GFTextLine(gump, 205, 401, 0, "Banimentos");
+   // endif
+/*
+   if (is_gm_or_leader || privilegies.buyuniforms)
+      GFAddButton(gump, 330-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_BUY_UNIFORM);
+      GFTextLine(gump, 330, 401, 0, "Uniformes");
+   endif
+*/
+   if (is_gm_or_leader || privilegies.unlockdoors)
+      GFAddButton(gump, 240-15, 401+3, 0x845, 0x846, GF_CLOSE_BTN, BUTTON_CHANGE_DOORS);
+      GFTextLine(gump, 240, 401, 0, "Portas");
+   endif
+
+	var input := GFSendGump(who, gump);
+
+   if (input[0] >= BUTTON_BUY_UNIFORM && input[0] <= BUTTON_BAN_PLAYER)
+      guildHandler(who, input[0]);
+   elseif (input[0] == BUTTON_GM_OPTS)
+      if (gmHandler(who) == 99)
+         return;
+      endif
+   elseif (input[0] >= BUTTON_CHANGE_PLAYER)
+      playerHandler(who, input[0]);
+   elseif (input[0] >= BUTTON_ADD_NPC && input[0] <= BUTTON_ADD_NPC+0x50)
+      npcHandler(who, input[0]);
+   elseif (input[0] >= BUTTON_ADD_LAW && input[0] <= BUTTON_CHANGE_LAW+0x50)
+      lawHandler(who, input[0]);
+   elseif (input[0] >= BUTTON_CHECK_GUILD && input[0] <= BUTTON_CHECK_GUILD+20);
+      return start_script(":faccao:faccao", array{who, input[0]-BUTTON_CHECK_GUILD, "isabove"});
+   else
+      return;
+   endif
+   start_script(":faccao:faccao", array{who, guild.guildid, "guild"});
+endprogram
+
+function Faccoes(who)
+   var gump := GFCreateGump();
+   GFResizePic(gump, 84, 90, 9260, 280, 260);
+
+   GFGumpPicTiled(gump, 100,100,30,235,10460);
+   GFGumpPicTiled(gump, 320,100,30,235,10460);
+
+   var y := 120;
+
+   var guilds := ListGuilds();
+   foreach guild in guilds
+      //fix area
+      var name := guild.getprop("name");
+     // if (typeof(name[1]) != "Array")
+     //    name := array{name};
+     //    guild.setProp("name", name);
+     // endif
+      //fix area
+
+      GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp("name")));
+      // GFTextLine(gump, 220, y, 2103, "{}".format(chardata.raca));
+      GFAddButton(gump, 150, y+3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO+_guild_iter);
+      y+= 20;
+      sleepms(2);
+   endforeach
+   y+=10;
+   GFAddButton(gump, 172, y, 0x80E, 0x80E, GF_CLOSE_BTN, BTN_NEW_FACCAO);
+   GFHTMLArea(gump,  170, y, 115, 25, "<basefont color=#0555D4><center>Nova Facção", 1);
+
+   var input := GFSendGump(who, gump)[0];
+
+   if (input >= BTN_FACCAO)
+      var g := guilds[input - BTN_FACCAO];
+
+      if (is_gm_or_leader)
+         start_script(":faccao:faccao", array{who, g.guildid, "guild"});
+      elseif (who.guildid == guild.guildid || who.cmdlevel)
+         start_script(":faccao:faccao", array{who, g.guildid, "guild"});
+      elseif (who.guildid != guild.guildid)
+         SendSysMessage(who, "Voce nao faz parte dessa Faccao");
+         return;
+      endif
+
+   elseif (input == BTN_NEW_FACCAO)
+      var custo := 10000;
+      SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
+	   var targ := Target(who, options := TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
+         if (!targ)
+            SendSysMessage(who, "Cancelado.", SSM_FAIL);
+            return;
+         endif
+
+         if (targ.objtype == 47715)
+
+            if ( targ.amount < custo )
+               SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+               return;
+            endif
+
+               if (!SubtractAmount(targ, custo))
+                  SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+                  return;
+               else
+                  SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
+               endif
+         else
+            SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
+               return;
+         endif
+
+      var questions := array{};
+      questions.append(struct{ "title" := "Nome da facçãoo?", "marked" := ""} );
+      //questions.append(struct{ "title" := "Dinheiro inicial?", "marked" := "0"} );
+      var output := QuestionsGump(who, questions);
+      if (!output) return SendSysMessageEx(who, "Cancelado"); endif
+
+      var arearray := array{};
+   /*
+      while (1)
+         var area := GetInput(who, who.backpack, "Escreva a area em x1 y1 x2 y2 (aperte esc para cancelar)");
+         if (!area)
+            break;
+         endif
+         area := SplitWords(area);
+
+         if (area.size() < 4)
+            SendSysMessageEx(who, "Area invalida");
+         else
+            arearray.append(area);
+            SendSysMessageEx(who, "Area adicionada: {}".format(area));
+         endif
+      endwhile
+   */
+      CreateFaccao(output[1], arearray, cint(output[2]));
+      Faccoes(who);
+   endif
+endfunction
+
+function guildHandler(who, input)
+   if (input == BUTTON_ADD_PLAYER)
+      SendSysMessageEx(who, "Quem deseja convidar?", SSM_REQUEST);
+      var targ := Target(who);
+      if (!targ)
+         return SendSysMessageEx(who, "Cancelado");
+      elseif (!targ.isA(POLCLASS_MOBILE) || !targ.connected)
+         return SendSysMessageEx(who, "Alvo invalido ou nao esta online");
+      elseif (targ.guild)
+         return SendSysMessageEx(who, "Alvo ja pertence a uma faccao");
+      endif
+
+      SendSysMessageEx(who, "O alvo foi convidado para se juntar a faccao", SSM_INFO);
+
+      var guild_name := guild.getProp("name");
+      if (!YesNo(targ, "{} te convidou para se juntar a {}. Deseja aceitar?".format(who.name, guild_name)))
+         return SendSysMessageEx(who, "{} recusou o convite.".format(targ.name), SSM_INFO);
+      endif
+
+      AddMember(guild, targ);
+      SendSysMessageEx(who, "{} se juntou a faccao".format(targ.name), SSM_INFO);
+   elseif (input == BUTTON_MONEY_TRANSFER)
+
+         var opt_choice := array{"Acrescentar Moedas", "Transferir para outra Faccao"};
+         if (who.cmdlevel)
+            opt_choice.append("Remover Moedas");
+         endif
+         opt_choice.append("Cancelar");
+         var output := RadioGump(who, 300, 0, "Escolha uma opcao", opt_choice, 0, 1);
+         if (output["Cancelar"])
+            return;
+         elseif(output["Remover"])
+            var qty := cint(RequestGump(who, "Quanto vai ser retirado em moedas de cobre?"));
+            if (qty <= 0)
+               return SendSysMessageEx(who, "Cancelado");
+            elseif (guild.getProp("money") < qty)
+               return SendSysMessageEx(who, "Dinheiro insuficiente");
+            endif
+            guild.setProp("money", guild.getProp("money") - qty);
+            CreateItemInBackpack(who, 0xba63, qty);
+            SendSysMessageEx(who, "Moedas removidas");
+            return;
+         elseif (output["Transferir"])
+            var guild_opts := struct{};
+            var guilds := ListGuilds();
+            foreach guild_ref in guilds
+               if (guild_ref.guildid != guild.guildid)
+                  guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
+               endif
+               sleepms(2);
+            endforeach
+            guild_opts["Cancelar"] := 0;
+            var guildenemy := RadioGump(who, 400, 0, "Escolha qual faccao recebera o dinheiro", guild_opts.keys(), 0, guild_opts.keys().size());
+            if (guildenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
+
+            var qty := cint(GetInput(who, who.backpack, "Quanto deseja transferir? (aperte esc para cancelar)"));
+            if (qty <= 0)
+               return SendSysMessageEx(who, "Cancelado");
+            elseif (guild.getProp("money") < qty)
+               return SendSysMessageEx(who, "Dinheiro insuficiente");
+            endif
+            var rec_guild := FindGuild(guild_opts[guildenemy]);
+            guild.setProp("money", guild.getProp("money") - qty);
+            rec_guild.setProp("money", rec_guild.getProp("money") + qty);
+            SendSysMessageEx(who, "Moedas transferidas");
+            return;
+         endif
+
+      SendSysMessageEx(who, "Escolha as moedas que deseja transferir para a faccao. Nao sera possivel retira-las. (Esc para parar)", SSM_REQUEST);
+      var money := Target(who);
+      if (!money)
+         return SendSysMessageEx(who, "Cancelado");
+      elseif (money.objtype != 0xba63)
+         return SendSysMessageEx(who, "Isso nao parece com moedas");
+      endif
+
+      var g_money := cint(guild.getProp("money")) + money.amount;
+      DestroyItem(money);
+      guild.SetProp("money", g_money);
+      SendSysMessageEx(who, "Moedas transferidas");
+   elseif (input == BUTTON_CHANGE_DOORS)
+      if (who.cmdlevel)
+         SendSysMessageEx(who, "" +guild_obj.area);
+      endif
+      var area := guild_obj.area;
+      SendSysMessageEx(who, "Qual porta deseja modificar?", SSM_REQUEST);
+      var targ := Target(who);
+
+      var guildid := GetObjProperty(who, "guild");
+
+      if (!targ)
+         return SendSysMessageEx(who, "Cancelado");
+      elseif (!targ.IsDoor())
+         return SendSysMessageEx(who, "Isso nao e uma porta");
+      elseif (GetObjProperty(targ, "estalagem"))
+         return SendSysMessageEx(who, "Voce nao pode mexer em portas de estalagem");
+      //elseif (!InGuildRect(guild, targ))
+      elseif ( GetObjProperty(targ, "time") /*|| GetObjProperty(targ, "level")*/);
+         return SendSysMessageEx(who, "Voce nao pode adicionar trancas nessa porta");
+      endif
+
+      if((GetObjProperty(targ, "guild") == who.guildid) || (GetObjProperty(targ, "guild") == error))
+
+         var options := array{};
+         var ref_key := GetObjProperty(targ, "LockId");
+         if (ref_key)
+            options.append("Copiar chave");
+            options.append("Remover Fechadura");
+            options.append("Trocar Fechadura");
+            options.append("Tornar Alugavel");
+            options.append("Desfazer Alugavel");
+         else
+            options.append("Adicionar Fechadura");
+         endif
+         options.append("Cancelar");
+         var output := RadioGump(who, 300, 0, "Escolha uma opcao", options, 0, 1);
+
+         if (output["Copiar"])
+            SendSysMessageEx(who, "Escolha a chave que vai receber a copia", SSM_REQUEST);
+            var thekey := Target(who);
+            if (!thekey) return; endif
+
+            if ( thekey.GetLockId() )
+               SendSysMessageEx(who, "A chave destino nao pode ser copiada.", SSM_FAIL);
+               return 0;
+            endif
+            thekey.SetLockId(ref_key);
+            SendSysMessageEx(who, "Voce copiou a chave com sucesso.", SSM_INFO);
+         elseif (output["Remover"])
+            targ.locked := 0;
+            EraseObjProperty(targ, "level");
+            EraseObjProperty(targ, "LockId");
+            EraseObjProperty(targ, "guild");
+         elseif (output["Adicionar"] || output["Trocar"])
+            SendSysMessageEx(who, "Escolha a nova fechadura", SSM_REQUEST);
+            var fechadura := Target(who);
+            if (!fechadura) return; endif
+
+            if (fechadura.objtype != 0xfa1)
+               return SendSysMessageEx(who, "Isso nao e uma fechadura.");
+            endif
+
+            var lvl := Cint(GetObjProperty(fechadura, "level"));
+            if (!lvl) lvl := 1; endif
+
+            var lockid := CInt(GetObjProperty(fechadura, "LockId"));
+            if (!lockid) lockid := AllocLockId(); endif
+
+            SetObjProperty(targ, "LockId", lockid);
+            SetObjProperty(targ, "level", lvl);
+            SetObjProperty(targ, "guild", who.guildid);
+            SetObjProperty(targ, "lockinstaller", who.acctname);
+            DestroyItem(fechadura);
+            SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+         elseif (output["Tornar"])
+            //SetObjProperty(targ, "Alugavel", 1);
+            return SendSysMessageEx(who, "Sistema em construao");
+         elseif (output["Desfazer"])
+            EraseObjProperty(targ, "Alugavel");
+         endif
+      else
+         return SendSysMessageEx(who, "Este local ja pertence a outra faccao");
+      endif
+   endif
+/*   elseif (input == BUTTON_BUY_UNIFORM)
+      var options := array{};
+      if (who.cmdlevel)
+         options.append("Novo Uniforme");
+      endif
+
+      foreach uniform in (guild_obj.uniforms)
+         var desc := "{}".format(uniform.name);
+         options.append(desc);
+         sleepms(2);
+      endforeach
+
+      options.append("Cancelar");
+
+      var output := RadioGump(who, 300, 0, "Escolha o uniforme que deseja criar a receita", options, 1, 1);
+
+      if (output == 1 && who.cmdlevel)
+         var pieces := array{};
+         while (who.connected)
+            SendSysMessageEx(who, "Escolha as pe�as do uniforme", SSM_REQUEST);
+            var targ := Target(who);
+
+            if (!targ)
+               break;
+            endif
+
+            var template := CreateItemTemplate(targ);
+            pieces.append(template);
+         endwhile
+
+         if (pieces.size() < 1) return SendSysMessageEx(who, "Cancelado"); endif
+
+         var questions := array{};
+         questions.append(struct{ "title" := "Qual o nome do Uniforme?", "marked" := ""} );
+         questions.append(struct{ "title" := "Qual craft pode fazer o uniforme?", "marked" := 1, "radio" := array{"Costura", "Ferraria", "Marcenaria"}} );
+         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := "", "helper" := "metal, madeira, vidro, couro, pano, pontaflecha"} );
+         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
+         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
+         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
+         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
+         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
+
+         var form_output := QuestionsGump(who, questions);
+         if (!form_output || !form_output[1]) return SendSysMessageEx(who, "Cancelado"); endif
+         var materials := struct{};
+         for i := 3 to 8
+            if (!form_output[i]) break; endif
+            var prop := SplitWords(form_output[i]);
+            if (!prop || prop.size() < 2)
+               break;
+            elseif (!prop[1] || !prop[2])
+               break;
+            else
+               materials[prop[1]] := prop[2];
+            endif
+            sleepms(2);
+         endfor
+
+         var new_uniform := struct{
+            "name":= form_output[1],
+            "materials":= materials,
+            "pieces":= pieces,
+            "craft_skill" := form_output[2]
+         };
+         var uniform_list := guild.GetProp("uniforms");
+         uniform_list.append(new_uniform);
+         guild.SetProp("uniforms", uniform_list);
+
+         SendSysMessageEx(who, "Uniforme adicionado");
+      elseif (output == options.size())
+         return;
+      else
+         if (who.cmdlevel)
+            output -= 1;
+            if (!YesNo(who, "O que deseja fazer?", "Criar Uniforme", "Remover Uniforme"))
+               guild_obj.uniforms.Erase(output);
+               guild.SetProp("uniforms", guild_obj.uniforms);
+            endif
+         endif
+
+        if (!ConsumeSubstance(who.backpack, 0xE34, 1) && !who.cmdlevel)
+            SendSysMessageEx(who, "Voc� precisa de um pergaminho em branco.", SSM_FAIL);
+            return;
+         endif
+
+         var uniform := guild_obj.uniforms[output];
+         var props := struct{};
+         props.name := uniform.name;
+         props.difficulty  := 14;
+         props.colored     := 0;
+         props.mark        := 1;
+         props.exceptional := 1;
+         props.delay       := 2;
+         props.materials   := uniform.materials;
+         props.requires    := array{};
+         props.fastcraft   := 0;
+         props.RequireFeat := _ifElse(uniform.craft_skill["Costura"], 63, _ifElse(uniform.craft_skill["Ferraria"], 61, 62));
+         props.pieces := uniform.pieces;
+
+         var item := CreateItemInbackpack(who, 0x46AE);
+         foreach prop in (props.keys())
+            SetObjProperty(item, prop, props[prop]);
+            sleepms(2);
+         endforeach
+      endif
+   endif */
+endfunction
+
+function playerHandler(who, input)
+   input := input - BUTTON_CHANGE_PLAYER;
+   var player := SystemFindObjectBySerial(input, SYSFIND_SEARCH_OFFLINE_MOBILES);
+   var options := array{};
+   if (is_gm_or_leader || privilegies.giveprivs)
+      options.append("Alterar Privilegios");
+   endif
+
+   if (is_gm_or_leader || aboveguild)
+      options.append("Tornar Lider");
+   endif
+
+   if (who.cmdlevel || aboveguild)
+      if (guild_obj.leader == input)
+         options.append("Remover Lider");
+      endif
+   endif
+
+   if (is_gm_or_leader || privilegies.above_members || aboveguild)
+      options.append("Remover da Faccao");
+   endif
+
+   options.append("Cancelar");
+
+   if (options.size() < 1) return; endif
+
+   var output := RadioGump(who, 300, 0, "Escolha uma opcao", options, 0, 1);
+   if (output["Alterar"])
+      var privs := guild.GetProp(cstr(input));
+      var checked := array{};
+      var priv_opts := array{};
+      foreach opt in (privs.keys())
+         checked[_opt_iter] := privs[opt];
+         priv_opts[_opt_iter] := priv_list[opt];
+      endforeach
+
+      var output := CheckBoxGump(who, 300, 0, "Escolha os privilegios que deseja alterar", priv_opts, checked);
+      foreach opt in (privs.keys())
+         var name := priv_opts[_opt_iter];
+         privs[opt] := (name in output) >= 1;
+      endforeach
+
+      guild.SetProp(cstr(input), privs);
+   elseif (output["Remover Lider"])
+      guild.SetProp("leader", 0x0);
+      ResetAllNpcs();
+   elseif (output["Tornar Lider"])
+      guild.SetProp("leader", input);
+      SendSysMessageEx(who, "{} agora e o lider da faccao".format(player.name), SSM_INFO);
+      ResetAllNpcs();
+   elseif (output["Remover"])
+      if (YesNo(who, "Deseja mesmo remover este personagem da faccao?"))
+         RemMember(guild, player);
+         SendSysMessageEx(who, "{} removido da faccao".format(player.name), SSM_INFO);
+      endif
+   endif
+
+endfunction
+
+function gmHandler(who)
+   var opts := array{"Alterar Nome", "Alterar Area", "Alterar Prisoes","Pegar GuildID", "Alterar Sub-Guilds", "Remover Guilda", "Cancelar"};
+   var output := RadioGump(who, 300, 0, "Escolha uma opcao", opts, 0, opts.size());
+
+   if (output["Nome"])
+      var gname := GetInput(who, who.backpack, "Qual o novo nome da faccao? (aperte esc para cancelar)");
+      if (!gname) return SendSysMessageEx(who, "Cancelado"); endif
+
+      guild.SetProp("name", gname);
+      SendSysMessageEx(who, "Nome alterado pra {}".format(gname));
+   elseif (output["GuildID"])
+      SendSysMessageEx(who, "Guild ID: {}".format(guild.guildid));
+   elseif (output["Sub-Guilds"])
+      var guild_opts := struct{};
+      var guilds := ListGuilds();
+      foreach guild_ref in guilds
+         if (guild_ref.guildid != guild.guildid)
+            guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
+         endif
+         sleepms(2);
+      endforeach
+      var outputguilds := CheckBoxGump(who, 400, 0, "Escolha as fac��es subalternas", guild_opts.keys());
+
+      var selected_guilds := array{};
+      foreach guild_name in outputguilds
+         selected_guilds.append(guild_opts[guild_name]);
+         sleepms(2);
+      endforeach
+
+      guild.SetProp("subguilds", selected_guilds);
+   elseif (output["Area"])
+      var arearray := array{};
+      while (1)
+         var area := GetInput(who, who.backpack, "Escreva a area em x1 y1 x2 y2 (aperte esc para cancelar)");
+         if (!area)
+            break;
+         endif
+         area := SplitWords(area);
+
+         if (area.size() < 4)
+            SendSysMessageEx(who, "Area inv�lida");
+         else
+            arearray.append(area);
+            SendSysMessageEx(who, "Area adicionada: {}".format(area));
+         endif
+      endwhile
+
+      if (arearray.size() < 1)
+         return SendSysMessageEx(who, "Cancelado");
+      endif
+
+      guild.SetProp("area", arearray);
+      SendSysMessageEx(who, "Area alterada");
+   elseif (output["Prisoes"])
+      var prisoes := array{};
+      while (who.connected)
+         SendSysMessageEx(who, "Selecione um novo ponto de prisao. (Esc para parar)", SSM_INFO);
+         var targ := TargetCoordinates(who);
+         if (!targ)
+            break;
+         elseif(targ.isDoor())
+            targ.doToggle();
+            continue;
+         endif
+         prisoes.append(targ);
+      endwhile
+
+      if (prisoes.size() < 1) return SendSysMessageEx(who, "Cancelado"); endif
+      guild.SetProp("prisions", prisoes);
+
+      var soltar := array{};
+      while (who.connected)
+         SendSysMessageEx(who, "Selecione um novo ponto de soltura. (Esc para parar)", SSM_INFO);
+         var targ := TargetCoordinates(who);
+         if (!targ)
+            break;
+         elseif(targ.isDoor())
+            targ.doToggle();
+            continue;
+         endif
+         soltar.append(targ);
+      endwhile
+
+      if (soltar.size() < 1) return SendSysMessageEx(who, "Cancelado"); endif
+      guild.SetProp("prision_leave", soltar);
+
+      SendSysMessageEx(who, "Prisoes alteradas");
+   elseif (output["Remover Guilda"])
+      RemFaccao(guild.guildid);
+      SendSysMessageEx(who, "Guilda removida");
+      return 99;
+   endif
+endfunction
+
+function npcHandler(who, input)
+   if (input == BUTTON_REPORT_NPC)
+      var historico := guild.GetProp("reports");
+      if (!historico) historico := array{}; endif
+      historico := "<br> - {}".format("<br> -".join(historico));
+      SendHTMLGump(who, "Historico dos Guardas", historico);
+   elseif (input == BUTTON_CONTRACT_NPC)
+      var opts := array{};
+      foreach agent in (guild_obj.npcs)
+         opts[_agent_iter] := "{} [{} mc]".format(agent.name, agent.price);
+         sleepms(2);
+      endforeach
+      opts.append("Cancelar");
+
+      var npc_choice := RadioGump(who, 400, 0, "Qual agente deseja contratar?", opts, 1, 1);
+      if (opts.size() == npc_choice) return SendSysMessageEx(who, "Cancelado"); endif
+
+      var agent := guild_obj.npcs[npc_choice];
+
+      if (who.cmdlevel)
+         var opt_out := RadioGump(who, 300, 0, "Escolha uma opcao", array{"Alterar Configuracoes", "Equipamentos", "Contratar", "Cancelar"}, 0, 1);
+         if (opt_out["Cancelar"])
+            return;
+         endif
+         var npc_list := guild.getProp("npcs");
+         if (opt_out["Configuracoes"])
+            var questions := array{};
+            questions.append(struct{ "title" := "Template do agente?", "marked" := npc_list[npc_choice].template} );
+            questions.append(struct{ "title" := "Nome (representativo) do agente?", "marked" := npc_list[npc_choice].name} );
+            questions.append(struct{ "title" := "Preco do Soldo (em moedas)?", "marked" := cstr(npc_list[npc_choice].price)} );
+            var output := QuestionsGump(who, questions);
+            if (!output) return; endif
+
+            npc_list[npc_choice].template := output[1];
+            npc_list[npc_choice].price := cint(output[3]);
+            npc_list[npc_choice].name := output[2];;
+            guild.SetProp("npcs", npc_list);
+        // elseif (opt_out["Boss"])
+        //    CreatebossStructGump(who, npc_list[npc_choice].bossStruct);
+        //    guild.SetProp("npcs", npc_list);
+         elseif (opt_out["Equip"])
+             npc_list[npc_choice].equipment := array{};
+            while (who.connected)
+               SendSysMessageEx(who, "Escolha o equipamento. (esc para cancelar)", SSM_REQUEST);
+               var targ := Target(who);
+               if (!targ)
+                  break;
+               elseif (!targ.isA(POLCLASS_ITEM))
+                  SendSysMessageEx(who, "Item Invalido");
+               else
+                   npc_list[npc_choice].equipment.append(CreateItemTemplate(targ));
+               endif
+            endwhile
+            guild.SetProp("npcs", npc_list);
+         endif
+
+         if (!opt_out["Contratar"])
+            return;
+         endif
+      endif
+     /* if (!InGuildRect(guild, who) && !who.cmdlevel)
+         return SendSysMessageEx(who, "Voce nao pode contratar agentes estando fora da sua area de influencia.", SSM_FAIL);
+      endif */
+      var g_money := cint(guild.getProp("money"));
+      if (g_money < cint(agent.price))
+         return SendSysMessageEx(who, "Moedas de cobre insuficientes", SSM_FAIL);
+      endif
+
+      guild.setProp("money", g_money - cint(agent.price));
+
+      ContractNPC(guild, npc_choice, who, who);
+   elseif (input == BUTTON_ADD_NPC)
+      var questions := array{};
+      questions.append(struct{ "title" := "Template do agente?", "marked" := ":brainai:"} );
+      questions.append(struct{ "title" := "Nome (representativo) do agente?", "marked" := ""} );
+      questions.append(struct{ "title" := "Preco do Soldo (em moedas)?", "marked" := "20"} );
+      //questions.append(struct{ "title" := "Adicionar modificadores de boss?", "marked" := 1, "radio" := array{"N�o", "Sim"}} );
+     var output := QuestionsGump(who, questions);
+      if (!output) return SendSysMessageEx(who, "Cancelado"); endif
+
+      var npc_struct := struct{
+         "template" := output[1],
+         "price" := cint(output[3]),
+         "name" := output[2],
+         "equipment" := array{}
+      };
+
+      //if (output[4] == "Sim")
+      //   npc_struct.bossStruct := struct{};
+      //   CreatebossStructGump(who, npc_struct.bossStruct);
+      //endif
+
+      while (who.connected)
+         SendSysMessageEx(who, "Escolha o equipamento. (esc para cancelar)", SSM_REQUEST);
+         var targ := Target(who);
+         if (!targ)
+            break;
+         elseif (!targ.isA(POLCLASS_ITEM))
+            SendSysMessageEx(who, "Item Invalido");
+         else
+            npc_struct.equipment.append(CreateItemTemplate(targ));
+         endif
+      endwhile
+
+      if (AddNpc(guild, npc_struct))
+         SendSysMessageEx(who, "Agente adicionado");
+      else
+         SendSysMessageEx(who, "Agente deu errado");
+      endif
+   else
+      input -= BUTTON_DISMISS_NPC;
+      var npcs := guild.getProp("npcs_active");
+      var npc_obj := npcs[input];
+      var mob := SystemFindObjectBySerial(npc_obj.serial);
+      if (YesNo(who, "Deseja encerrar o contrato com este agente ({})?".format(mob.name)))
+         DismissNPC(guild, input, mob);
+      endif
+   endif
+endfunction
+
+function lawHandler(who, input)
+   if (input == BUTTON_ADD_LAW)
+      var law_opts := array{};
+      foreach opt in (law_list.keys())
+         law_opts[_opt_iter] := law_list[opt];
+      endforeach
+      law_opts.append("Cancelar");
+
+      var output := RadioGump(who, 400, 0, "Escolha qual lei quer adicionar", law_opts, 1, law_opts.size());
+      if (output == law_opts.size())
+         return;
+      endif
+
+      var new_law := struct{
+         "type" := law_list.keys()[output]
+      };
+
+      if (new_law.type["item"])
+         SendSysMessageEx(who, "Escolha o item que sera proibido (esc para cancelar)", SSM_REQUEST);
+         var targ := Target(who);
+         if (!targ)
+            return SendSysMessageEx(who, "Cancelado");
+         elseif (!targ.isA(POLCLASS_ITEM))
+            return SendSysMessageEx(who, "Cancelado");
+         endif
+         new_law.opt := struct{ "objtype" := targ.objtype, "name" := targ.name};
+      elseif (new_law.type["norace"])
+         var raceopts := array{"Ferune", "Bariyano", "Norde", "Balmute", "Picto", "Cazar", "Cancelar"};
+         var racenemy := RadioGump(who, 400, 0, "Escolha qual raca sera considerada inimiga", raceopts, 0, raceopts.size());
+         if (racenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
+         new_law.opt := racenemy;
+
+   /*   elseif (new_law.type["noguild"])
+         var guild_opts := struct{};
+         var guilds := ListGuilds();
+         foreach guild_ref in guilds
+            if (guild_ref.guildid != guild.guildid)
+               guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
+            endif
+            sleepms(2);
+         endforeach
+         guild_opts["Cancelar"] := 0;
+         var guildenemy := RadioGump(who, 400, 0, "Escolha qual faccao sera considerada inimiga", guild_opts.keys(), 0, guild_opts.keys().size());
+         if (guildenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
+
+         new_law.opt := guild_opts[guildenemy]; */
+      elseif (new_law.type["nolawon"] || new_law.type["userban"] )
+         SendSysMessageEx(who, "Escolha o alvo para aplicar esta lei", SSM_FAIL);
+         var targ := Target(who);
+         if (!targ)
+            return;
+         elseif (!targ.isA(POLCLASS_MOBILE) || targ.npctemplate)
+            return SendSysMessageEx(who, "Esta lei so pode ser aplicada em jogadores", SSM_FAIL);
+         endif
+// ALTEREI AQUI ///
+         new_law.opt := targ.name;
+        // new_law.opt := struct{ "serial" := targ.serial, "name" := targ.name};
+      elseif (new_law.type["nofight"] || new_law.type["noweapon"] || new_law.type["nohood"] || new_law.type["nosneak"])
+         var forceonguild := YesNo(who, "Esta lei sera aplicada a membros da faccao?");
+         if (!forceonguild)
+            new_law.opt := "Nao aplicada a membros";
+         endif
+      elseif (new_law.type["nooutsideron"])
+         SendSysMessageEx(who, "Clique no canto superior do retangulo", SSM_FAIL);
+         var targ1 := TargetCoordinates(who);
+
+         if (!targ1)
+            return;
+         endif
+
+         SendSysMessageEx(who, "Clique no canto inferior do retangulo", SSM_FAIL);
+         var targ2 := TargetCoordinates(who);
+
+         if (!targ2)
+            return;
+         endif
+
+         var gname := GetInput(who, who.backpack, "Qual o nome da Area? (aperte esc para cancelar)");
+         if (!gname) return SendSysMessageEx(who, "Cancelado"); endif
+
+         new_law.opt.ret := array{targ1.x, targ1.y, targ2.x, targ2.y, targ1.z};
+         new_law.opt.name := gname;
+      endif
+
+      if (AddLaw(guild, new_law))
+         SendSysMessageEx(who, "Lei adicionada", SSM_INFO);
+         ResetAllNpcs();
+      else
+         SendSysMessageEx(who, "Voce nao pode adicionar esta lei de novo", SSM_FAIL);
+      endif
+   else
+      input -= BUTTON_CHANGE_LAW;
+      var law_opts := array{"Remover", "Cancelar"};
+      var output := RadioGump(who, 250, 0, "O que deseja fazer?", law_opts, 0, law_opts.size());
+      if (output["Remover"]);
+         var laws := guild.getProp("laws");
+         laws.Erase(input);
+         guild.SetProp("laws", laws);
+         ResetAllNpcs();
+      endif
+   endif
+endfunction
+
+function ResetAllNpcs()
+   var npcs := guild.getProp("npcs_active");
+   foreach npc in npcs
+      npc := SystemFindObjectBySerial(npc.serial);
+      SendEvent(npc, struct{ "type" := 0x78457});
+      sleepms(2);
+   endforeach
+endfunction

@@ -1,0 +1,46 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/sounds";
+include "include/client";
+
+use vitals;
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	
+	var points := level;
+		
+	//if (GetObjProperty(mobile, "coMod") != error)
+	//	return;
+	//endif
+
+	var mana_regen := points;
+
+	//sendsysmessage(attacker, "AP_GetVitalRegenRateMod(mobile, Mana) "+AP_GetVitalRegenRateMod(mobile, "Mana"));
+	//sendsysmessage(attacker, "mana_regen "+mana_regen);
+	
+	if (GetObjProperty(mobile, "auraManaRegenMod") != error)
+		return;
+	else
+		//sendsysmessage(mobile, "ManaRegenRate anterior: "+AP_GetVitalRegenRateMod(mobile, "Mana")) ;
+		//sendsysmessage(mobile, "ManaRegenRate aplicado: "+(AP_GetVitalRegenRateMod(mobile, "Mana") + mana_regen)) ;
+		AP_SetVitalRegenRateMod(mobile, "Mana", AP_GetVitalRegenRateMod(mobile, "Mana") + mana_regen );
+		//sendsysmessage(mobile, "ManaRegenRate novo: "+AP_GetVitalRegenRateMod(mobile, "Mana")) ;
+		SetObjProperty(mobile, "auraManaRegenMod", mana_regen);
+		sendsysmessage(mobile, "Voce se sente a mana fluir mais intensamente proximo a "+attacker.name) ;
+		//RecalcVitals(mobile);
+	endif
+
+	PlaySoundEffect(mobile, SFX_BLESS);
+       PlayObjectCenteredEffectEx(mobile, GFX_BLUE_SPARKLE_GROUND, 7, 16, 97);			
+
+	//SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
+	
+	return 1;
+endprogram

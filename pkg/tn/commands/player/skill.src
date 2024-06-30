@@ -1,0 +1,45 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":attributes:attributes";
+//TODO seria mais facil olhar o skills.cfg que possuem script e executar ele
+
+program start_skill(who, txt)
+
+	if (who.dead)
+		SendSysMessage(who, "Voce esta morto e nao pode fazer isto.");
+		return;
+	endif
+
+	var delay := GetObjProperty(who, "delayskill");
+	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+	if(delay)
+		if(delay > ReadGameClock())
+			SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+			return;
+		endif
+	endif
+	
+	var skillname;
+	if (AP_GetAttributeCfgElem(txt))
+		skillname := txt;
+	endif
+	
+
+//no sistema de skillcap todos tem todas skills
+  if( skillname )
+	//var chardata := GetObjProperty(who, "chardata");
+	//if (chardata.Skills[skillname])
+		var script := AP_GetAttributeCfgElem(skillname).Script;
+		if( script )
+			start_script( script, who );
+		endif
+	//else
+	//	SendSysMessage(who, "Voce nao possui essa skill.");
+	//endif
+  else
+	SendSysMessage(who, "Essa skill nao existe.");
+  endif
+endprogram

@@ -1,0 +1,20 @@
+include "include/damage";
+use uo;
+
+program peel(who, fruit)
+	var peeled;
+	
+	if (fruit.objtype == 0x171f)
+		peeled := 0x171d;
+	elseif (fruit.objtype == 0x1720)
+		peeled := 0x171e;
+	endif
+	SendSysMessage(who, "Voce descasca a banana.");
+	playsoundeffect (who, 0x5a);
+	if (!fruit.container)
+		createitematlocation(fruit.x, fruit.y, fruit.z, peeled, 1);
+	else
+		createitemincontainer(fruit.container, peeled, 1);
+	endif
+	subtractamount(fruit, 1);
+endprogram

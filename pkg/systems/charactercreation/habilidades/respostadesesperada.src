@@ -1,0 +1,13 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Voce atacara sempre que tiver uma chance!", SSM_INFO);
+	SetCooldown(attacker, "RespostaDesesperada", 60);
+
+endprogram  

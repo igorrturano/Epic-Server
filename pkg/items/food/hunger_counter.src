@@ -1,0 +1,32 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":charactercreation:resists";
+include "include/say";
+include ":food:include/hunger";
+
+program HungerCounter(chr)
+	Sleep(1); //pra evitar bug no start do server
+
+	while( chr )
+		Erase(chr);
+		CalcHunger(chr);
+		RecalcVitals(chr);
+		Sleep(5);
+	endwhile
+
+endprogram
+
+function CalcHunger(chr)
+	var hunger_mod := Cint(chr.luck_mod) + CInt(AP_GetVital(chr, "Hunger")/10);
+	chr.luck_mod := hunger_mod;
+
+endfunction
+
+function Erase(chr)
+	chr.luck := 0;
+	chr.luck_mod := 0;
+	Recalcvitals(chr);
+endfunction

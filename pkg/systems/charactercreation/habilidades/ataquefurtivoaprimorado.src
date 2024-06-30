@@ -1,0 +1,168 @@
+//use uo;
+//use util;
+//use os;
+
+//include ":fls_core:packets";
+//include ":fls_core:fls_util";
+//include ":attributes:attributeConstants";
+//include ":attributes:attributes";
+//include ":attributes:skillCheck";
+//include ":attributes:stats";
+//include ":fls_core:fls_combat";
+//include ":blood:blood";
+//include "include/damage";
+//include ":fls_core:fls_characters";
+//include ":fls_core:packets";
+//include ":tn:combat";
+//include "include/packets";
+
+
+//program backstab(who)
+//	if(SkillCheck(who, SNEAK, -1))
+//		SetObjProperty(who, "ataquefurtivoaprimorado", 1);
+//	endif
+//	var weapon := who.weapon;
+//	var weaponBow := 0;
+//	if (lower(weapon.attribute) == "rangedcombat")
+//		weaponBow := 1;
+//	endif
+
+//	if ( !CanBackStab(who, weapon) )
+//		return;
+//	endif
+
+//	SendSysMessage(who, "Quem voce deseja atacar?");
+//	var targ := target(who, TGTOPT_HARMFUL+TGTOPT_CHECK_LOS);
+//	if ( !targ.ISA(POLCLASS_MOBILE) )
+//		SendSysMessage(who, "Voce nao pode atacar isto.");
+//		return;
+//	elseif ( who.weapon != weapon )
+//		SendSysMessage(who, "Voce nao pode atacar depois de ter trocado a arma.");
+//		return;
+//	elseif ( Distance(who, targ) > 2 )
+//		if ( Distance(who, targ) < 6 && weaponBow)
+//		else
+//			SendSysMessage(who, targ.name+" esta muito distante.");
+//			return;
+//		endif
+//	elseif ( targ.serial == who.serial)
+//		SendSysMessage(who, "Isso nao e muito esperto.");
+//		return;
+//	elseif ( IsBehind(targ, who.x, who.y) )
+//		if ( !CanBackStab(who, weapon) )
+//			return;
+//		else
+//			sleepms(100);
+
+//			if ( weaponBow)
+//				if (!AmmoCheck(who, targ))
+//					return 1;
+//				endif
+//			else
+//				PerformAction(who, 0x000a );
+//			endif
+
+
+//			SetObjProperty(who, "backstab", 1);
+//			SetObjProperty(who, "#nextcritical",1);
+
+//			var rawdamage := CInt(CalculateRawDamage(who, weapon)*(AP_GetSkill(who, SNEAK)/20));
+//			if (rawdamage < 1)
+//				rawdamage := 1;
+//			endif
+
+//			if ( rawdamage > 0 )
+//				var dmgList := dictionary;
+//				dmgList := getNewDamageList(who);
+//				var basedamage := CalculateTotalDamageBonus(rawdamage, who, targ);
+//				var total := CalculateTotalDamage(targ, basedamage, who, dmgList);
+//				if (total < 1)
+//					total := 1;
+//				endif
+//				ApplyRawDamage(targ, total);
+//				MostraDano(who, targ, total);
+//				MakeBleed(targ);
+//			endif
+//			EraseObjProperty(who, "backstab");
+//			SendSysMessage(who, "Voce acertou seu alvo!");
+//			if ( GetObjProperty(who, "ataquefurtivoaprimorado") == 1 )
+//				EraseObjProperty(who, "ataquefurtivoaprimorado");
+//				who.hidden := 1;
+//			else
+//				who.hidden := 0;
+//			endif
+
+//		endif
+//	else
+//		SendSysMessage(who, "Voce deve ficar atras de " + targ.name);
+//	endif
+//endprogram
+
+//function CanBackStab(who, weapon)
+
+//	var can_back_stab := 0;
+//	if ((weapon.attribute) == "MeleeCombat1H")
+//		can_back_stab := 1;
+//	endif
+
+//	if ((weapon.attribute) == "RangedCombat")
+//		can_back_stab := 1;
+//	endif
+
+
+//	if ( !can_back_stab )
+//		SendSysMessage(who, "Esta arma nao e apropriada para um ataque furtivo.");
+//		return 0;
+//	elseif ( !who.hidden )
+//		SendSysMessage(who, "Voce precisa estar escondido para realizar esse ataque.");
+//		return 0;
+//	endif
+
+//	return 1;
+//endfunction
+
+//function AmmoCheck(attacker, defender)
+//	var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
+
+//	if ( !wpn_a_elem.ProjectileType )
+//		return 1;
+//	endif
+
+//	var has_ammo := 0;
+
+//	var aljavas := array{0x791c, 0x2fb7};
+//	var aljava := GetEquipmentByLayer(attacker, 0x14);
+
+//		if (aljava.objtype in aljavas)
+//			aljava := GetEquipmentByLayer(attacker, 0x14);
+//		else
+//			aljava := GetEquipmentByLayer(attacker, 0xc);
+//		endif
+//	var ammo := GetObjProperty(attacker.weapon, "ammo");
+//	if (!ammo)
+//		SendSysMessage(attacker, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+//		return 0;
+//	endif
+
+//    var in_aljava := 0;
+//    foreach arrow in (EnumerateItemsInContainer(aljava))
+//		if (arrow.serial == ammo)
+//			in_aljava := 1;
+//        endif
+//    endforeach
+//    if (in_aljava == 0)
+//        return 0;
+//    endif
+
+
+//	if ( SubtractAmount( ammo, 1 ) )
+//		var cfg:=ReadConfigFile(":woodworking:itemdesc");
+//		var elem := FindConfigElem(cfg, GetObjType( ammo ));
+//		var ammo_color := elem.color;
+//		PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, ammo_color);
+//		return 1;
+//	else
+//		return 0;
+//	endif
+
+//endfunction

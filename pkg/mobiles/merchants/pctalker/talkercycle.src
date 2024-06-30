@@ -1,0 +1,63 @@
+use uo;
+use cfgfile;
+use os;
+use util;
+
+include "include/say";
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":brainAI:npcWatchList";
+
+program BrainNerve(params)
+	var npc		:= params[1];
+	//var nerve_name	:= params[2];
+	//var settings	:= params[3];
+	//var scripts	:= params[4];
+	params := 0; // Not needed anymore.
+	
+	while ( npc )
+		var frases := GetObjProperty(npc, "frases");
+		if (frases == error)
+			frases := 0;
+		endif
+		
+		var cycles := array{};
+		foreach i in frases
+			var frase := GetObjProperty(npc, "frase" + i);
+			cycles.Append(frase);
+			sleepms(5);
+		endforeach
+		
+		var cyclesize := cycles.size();
+		if (cycles.size() >= 1)
+			var random := RandomIntMinMax(1,cyclesize+1);
+			var text := cycles[random];
+			if (text.say)
+				AI_Speak(npc, "" + text.frase);
+			else
+				AI_Speak(npc, "" + text.frase, SPEAK_TEXTTYPE_YELL);
+			endif
+			if (text.lenght > 1)
+				var i := 1;
+				while (i < text.lenght)
+					if (text["say" + i])
+						AI_Speak(npc, "" + text["frase" + i]);
+					else
+						AI_Speak(npc, "" + text["frase" + i], SPEAK_TEXTTYPE_YELL);
+					endif
+					i := i + 1;
+				endwhile
+			endif
+		endif
+		
+		AI_ClearThoughts(npc, CLR_NERVE);
+		
+		var tempo := 900;
+		if (GetObjProperty(npc, "cyclewait"))
+			tempo := GetObjProperty(npc, "cyclewait");
+		else
+			SetObjProperty(npc, "cyclewait", 900);
+		endif
+		Sleep(tempo);
+	endwhile
+endprogram

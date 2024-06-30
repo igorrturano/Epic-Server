@@ -1,0 +1,45 @@
+use uo;
+include "include/damage";
+
+program jogar( who, dano )
+
+	SendSysMessage(who, "Escolha o item que deseja jogar.");
+
+	var item :=  Target(who);
+
+	if (!item)
+		SendSysMessage(who, "Selecione um item para jogar.");
+		return;
+	endif
+
+    SendSysMessage(who, "Escolha o alvo.");
+
+    var alvo :=  Target(who);
+
+    if (!alvo)
+		SendSysMessage(who, "Selecione um alvo.");
+		return;
+	endif
+
+	if (!CInt(dano) && CInt(dano) < 0)
+		SendSysMessage(who, "O valor do dano deve ser um numero maior ou igual a zero.");
+        return;
+    endif
+
+    PrintTextAbovePrivate(who, "*arremessa*", who);
+
+	PerformAction(who, 4);
+
+    alvo.frozen := 1;
+
+    ApplyDamageEX(alvo, CInt(dano), DMG_PHYSICAL);
+
+    CreateItemCopyAtLocation(alvo.x, alvo.y, item.z, item, item.realm);
+	item.movable := 1;
+
+	PlaySoundEffect(who, 0x5D3);
+
+    sleep(2);
+    alvo.frozen := 0;
+
+endprogram

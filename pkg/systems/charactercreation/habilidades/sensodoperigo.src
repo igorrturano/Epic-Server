@@ -1,0 +1,28 @@
+ use uo;
+ use os;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/sysEvent";
+include "include/eventID";
+
+program manobra(who)
+	var nearby := ListHostiles(who, 10);
+	var hostiles := array{};
+	SendSysMessage(who, "Senso do Perigo ativado");
+	foreach char in nearby
+			hostiles.append(char);
+		sleepms(20);
+	endforeach
+	who.concealed := 1;
+	foreach char in hostiles
+		SendSysMessage(who, "Senso do Perigo ajudou a evitar " + char.name);
+		SendEvent(char, struct{"type":=EVID_TAUNT, "source":=who});
+		//sleepms(20);
+	endforeach
+
+	sleepms(3000);
+	who.concealed := 0;
+	return 1;
+endprogram

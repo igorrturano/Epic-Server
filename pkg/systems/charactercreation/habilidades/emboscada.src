@@ -1,0 +1,13 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":tn:cooldown";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Use a skill hiding, quando voce passar, todos seus aliados ficaram escondidos tambem.", SSM_INFO);
+	
+
+	SetCooldown(attacker, "partyhiding", 30);
+endprogram  

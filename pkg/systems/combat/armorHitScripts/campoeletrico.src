@@ -1,0 +1,35 @@
+
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+	var returnamount := cdbl( AP_GetSkill(defender, MAGICLORE)/110 );
+	if (returnamount < 0.1)
+		returnamount := 0.1;
+	endif
+
+	PlayObjectCenteredEffectEx( defender, 0x22c6, 1, 9);
+	var dmg := rawdamage*returnamount;
+	if (dmg < 2)
+		dmg := 2;
+	endif
+	//ApplyDamageEX(attacker, dmg, DMG_ENERGY);
+	DamageFLS(attacker, dmg, DMG_ENERGY);
+	PlaySoundEffect(attacker, SFX_LIGHTNING);
+
+	return 1;
+endprogram
+

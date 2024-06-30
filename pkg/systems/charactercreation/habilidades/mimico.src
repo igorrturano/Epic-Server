@@ -1,0 +1,18 @@
+use uo;
+
+include "include/say";
+
+program mimico(who)
+
+	SendSysMessageEx(who, "Escolha o alvo para imitar.", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	SetObjProperty(targ, "#mimico", who.serial);
+
+
+endprogram 

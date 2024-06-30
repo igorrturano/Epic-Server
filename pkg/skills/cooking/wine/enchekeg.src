@@ -1,0 +1,104 @@
+
+include "include/say";
+
+
+use uo;
+
+
+program enchekeg(who, item)
+
+	var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 2);
+
+	foreach fundo in nearitens
+		if (fundo.graphic == 5409)
+			if (GetObjProperty(fundo, "doses") >= 1)
+				SendSysMessage(who, "Escolha o barril.");
+				var barril := target(who);
+				if (!barril)
+					return;
+				endif
+				if (!Accessible(who, barril))
+					SendSysMessage(who, "Voce nao alcanca o barril.");
+					return;
+				endif
+				if (barril.objtype == 6870 )
+					if (GetObjProperty(barril, "liquido") != error)
+						SendSysMessage(who, "Voce derramou o que tinha no barril para por outro liquido.");
+					endif
+					//SetObjProperty(barril, "liquido", "vinho");
+					var bebida := GetObjProperty(barril, "bebida");
+					if (bebida != error)
+						SendSysMessageEx(who, "Voce derramou a bebida do barril para adicionar a nova bebida.");
+					endif
+					bebida := struct;
+					bebida.+type := "vinho incompleto";
+					SetObjProperty(barril, "bebida", bebida);
+					SetObjProperty(fundo, "doses", (Cint(GetObjProperty(fundo, "doses")) -1) );
+					SetObjProperty(fundo, "passos", 0);   
+					SetObjProperty(fundo, "carregado", 0);
+					SendSysMessage(who, "Voce guardou o liquido no barril.");
+					PlaySoundEffect(who,  0x241);
+					ChangeVatGraphic(item, 1);
+				else
+					SendSysMessage(who, "Voce precisa de um barril.");
+					return;
+				endif
+			else
+				SendSysMessage(who, "Nao tem nenhum liquido aqui.");
+				return;
+			endif
+		endif
+	endforeach
+endprogram
+
+
+function ChangeVatGraphic(item, mode)
+
+	if (mode == 1)//cheio pra vazio
+		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4);
+		foreach coisa in nearitens
+			if (coisa.graphic == 5409)
+				coisa.graphic := 5337;
+			elseif (coisa.graphic == 5410)
+				coisa.graphic := 5340;
+			elseif (coisa.graphic == 5411)
+				coisa.graphic := 5341;
+			elseif( coisa.graphic == 5406)
+				coisa.graphic := 5339;
+			elseif (coisa.graphic == 5413)
+				coisa.graphic := 5346;
+			elseif (coisa.graphic == 5408)
+				coisa.graphic := 5345;
+			endif
+		endforeach
+	else
+		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4);
+		foreach coisa in nearitens
+			if (coisa.graphic == 5337)
+				coisa.graphic := 5409;
+			elseif (coisa.graphic == 5340 )
+				coisa.graphic := 5410;
+			elseif (coisa.graphic == 5341 )
+				coisa.graphic := 5411;
+			elseif( coisa.graphic == 5339)
+				coisa.graphic := 5406;
+			elseif( coisa.graphic == 5346)
+				coisa.graphic := 5413;
+			elseif (coisa.graphic == 5345)
+				coisa.graphic := 5408;
+			endif
+		endforeach
+	endif
+	
+
+endfunction
+
+
+
+
+
+
+
+
+
+

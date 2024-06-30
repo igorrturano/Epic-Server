@@ -1,0 +1,40 @@
+ 
+
+use uo;
+use os;
+
+program envergador(who, item)
+
+  SendSysMEssage(who, "Escolha as tabuas para enverga-las.");
+  var item2 := target(who);
+
+  if(!item2)
+      SendSysMessage(who, "Cancelado");
+      return;
+ endif
+  
+  if (!GetObjProperty(item2, "tratada"))
+     sendsysmessage(who, "Voce precisa usar madeira lixada.");
+     return;
+  endif
+  
+  var amt := cint(item2.amount/5);
+  
+  var i := 0;
+  for( i := 0; i<amt; i:= i+1)
+   if(SubtractAmount(item2, 5) )
+     PlaySoundEffect(who, 0x23e);
+     sleep(2);
+     PlaySoundEffect(who, 0x23e);
+     sleep(2);
+     PlaySoundEffect(who, 0x23e);
+     sleep(2);
+     SendSysMessage(who, "Voce envergou uma tabua.");
+     var barrelstaves := CreateItemInBackpack(who, 0x1eb2, 1);
+     barrelstaves.movable := 1;
+   endif
+  endfor
+
+
+
+endprogram

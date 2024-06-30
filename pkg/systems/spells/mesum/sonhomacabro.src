@@ -1,0 +1,74 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	Corromper(who, 30, targ);
+
+	if(TemHabilidade(who, "Vontade Esmagadora"))
+		if (CheckResist(targ, VONTADE, 70, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+			SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+
+			if (GetObjProperty(who, "#magiasilenciosa"))
+                SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+            endif
+            //Remove prop de magia silenciosa apos o cast ser completo
+            EraseObjProperty(who, "#magiasilenciosa");
+
+		    return;
+		endif
+	else
+		if (CheckResist(targ, VONTADE, 30, -CInt(AP_GetSkill(who, MAGICLORE)/2.5)))
+			SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+
+			if (GetObjProperty(who, "#magiasilenciosa"))
+                SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+            endif
+            //Remove prop de magia silenciosa apos o cast ser completo
+            EraseObjProperty(who, "#magiasilenciosa");
+
+		    return;
+		endif
+	endif
+
+	var e := TS_StartTimer(targ, "sleep", cint(AP_GetSkill(who, MAGICLORE)/2), 1, who, 0);
+	Detach();
+	Attach(targ);
+	if (e == error)
+		printtextabove(who, "sonho " + e);
+	endif
+	if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, 0x658);
+    endif
+	SendSysMessageEx(who, "O alvo adormeceu.", SSM_INFO);
+
+	PlayObjectCenteredEffect(targ, 0xB8FB, 3, 56);
+	sleep(3);
+
+	while ( GetObjProperty(targ, "#sleep") )
+		PlayObjectCenteredEffect(targ, 0xB8FB, 3, 56);
+		sleep(3);
+	endwhile
+	printtextabove(targ, "*desperta*");
+	targ.paralyzed := 0;
+
+    if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+
+	return 1;
+endprogram

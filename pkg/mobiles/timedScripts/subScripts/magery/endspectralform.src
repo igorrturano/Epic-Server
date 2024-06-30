@@ -1,0 +1,14 @@
+/*
+ * $Id: endParalysis.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+program TimedScript_EndParalysis(mobile)
+    var old_color := GetObjProperty(mobile, "#spectralform");
+	mobile.color := old_color;
+	EraseObjProperty(mobile, "#spectralform");
+	return 1;
+endprogram

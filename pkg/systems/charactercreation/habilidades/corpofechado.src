@@ -1,0 +1,59 @@
+use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":tn:cooldown";
+include ":attributes:attributes";
+include ":attributes:attributeConstants";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+	var vont := GetResist(who, VONTADE);
+	SetCooldown(who, "corpofechado", vont);
+	var stammod := cint(GetObjProperty(who, "stammod"));
+    var hitsmod := cint(GetObjProperty(who, "hitsmod"));
+    var manamod := cint(GetObjProperty(who, "manamod"));
+
+    AP_ModifyStatMod(who, STRENGTH, vont);
+    SetObjProperty(who, "hitsmod",  hitsmod + vont);
+	HealDamage(who, 1000);
+
+    var dex_vont_mod := Cint(vont/2);
+    AP_ModifyStatMod(who, DEXTERITY,  dex_vont_mod);
+	SetObjProperty(who, "stammod",  stammod + dex_vont_mod);
+	HealStamina(who, 1000);
+
+    var int_vont_mod := Cint(vont/3);
+    AP_ModifyStatMod(who, INTELLIGENCE, int_vont_mod);
+    SetObjProperty(who, "manamod",  manamod + int_vont_mod);
+	HealMana(who, 1000);
+
+    RecalcVitals(who);
+
+	SendSysMessageEx(who, "Hivytorn seleciona seu campeão", SSM_INFO);
+	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(who, SFX_SPELL_HEAL);
+
+    sleep(vont);
+
+    AP_ModifyStatMod(who, STRENGTH, (-1) * vont);
+    AP_ModifyStatMod(who, DEXTERITY, (-1) * dex_vont_mod);
+    AP_ModifyStatMod(who, INTELLIGENCE, (-1) * int_vont_mod);
+	AP_SetVital(who, "Hits", (-1) * vont);
+	AP_SetVital(who, "Stamina", (-1) * dex_vont_mod);
+    AP_SetVital(who, "Mana",(-1) * int_vont_mod);
+    EraseObjProperty(who, "stammod");
+	EraseObjProperty(who, "hitsmod");
+    EraseObjProperty(who, "manamod");
+
+    RecalcVitals(who);
+
+	return 1;
+endprogram 

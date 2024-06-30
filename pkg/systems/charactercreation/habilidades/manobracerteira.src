@@ -1,0 +1,29 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":attributes:attributes";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	PrintTextAbove(attacker, "*manobra certeira*");
+
+	//TODO colocar isso em uma funcao depois
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+	var bonus :=   1.0 - (AP_GetVital(attacker, STAMINA) / AP_GetVitalMaximumValue(attacker, STAMINA));
+	DamageFLS(defender, (total + total*bonus), DMG_FORCED, attacker);
+endprogram

@@ -1,0 +1,14 @@
+/*
+        Maintained by The POL Distro Team
+
+        2018-07-25
+*/
+use uo;
+use os;
+
+program LogOff(mobile)
+
+        EraseObjProperty( mobile, "#AuthCodeGiven" );
+        
+	return 1;
+endprogram

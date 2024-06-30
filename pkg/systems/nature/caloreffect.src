@@ -1,0 +1,176 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+include "include/damage";
+include ":attributes:attributes";
+
+var ironArmors := {0x1c04, 0x1408, 0x1409, 0x140A, 0x140B, 0x140C, 0x140D, 0x140E, 0x140F, 0x1412, 0x1419, 0x13ec, 0x13ed, 0x13ee, 0x13ef,
+                    0x13f0, 0x13f1, 0x13f2, 0x1415, 0x1416, 0x1410, 0x1417, 0x1411, 0x141A, 0x1414, 0x1418, 0x1413, 0x13BB, 0x13C0, 0x13BE, 0x13C3,
+                    0x13BF, 0x13C4, 0xF04A, 0xF04B, 0xF04C};
+
+program calor(params)
+
+	var who := params[1];
+
+    SetObjProperty(who, "calor", 1);
+    detach();
+
+    if (GetObjProperty(who, "teste_de_calor") == error)
+        while (1)
+            SetObjProperty(who, "teste_de_calor", 1);
+            sleep(300);
+
+            if ( GetObjProperty(who, "calor") == error)
+                var p := cint(GetObjProperty(who, "penalidadeclima"));
+                if (p > 0)
+                    RemoveHeatMod(who, 1);
+                endif
+                EraseObjProperty(who, "penalidadeclima");
+                EraseObjProperty(who, "teste_de_calor");
+                return;
+            endif
+
+            var dif := 105; //Quase Impossível
+
+            if (GetGlobalProperty("dia") == "dia")
+                 dif := dif + 15;
+            endif
+
+            if ( cint( GetGlobalProperty("season")) == 1) // if verão
+                dif := dif + 15;
+            endif
+
+            if ( cint( GetGlobalProperty("season")) == 3) // if inverno
+                dif := dif -15;
+            endif
+
+            if ( GetGlobalProperty("weather") != error) //ta chovendo ou nevando
+                dif := dif - 15;
+            endif
+
+            if ( GetObjProperty(who, "chardata").trait == "Nomade do Deserto")
+                dif := dif - 60;
+            endif
+
+            if ( GetObjProperty(who, "chardata").trait == "Adaptável")
+                dif := dif - 30;
+            endif
+
+            if ( TemHabilidade(who, "Corpo Diamante"))
+                dif := dif - 60;
+            endif
+            
+            if (GetObjProperty(who, "chardata").culture == CULTURA.BJORSKA)
+                dif := dif + 30;
+            endif
+
+            if ( GetObjProperty(who, "chardata").culture == CULTURA.GULTHRAK)
+                dif := dif - 60;
+            endif
+
+            if (GetObjProperty(who, "chardata").culture == CULTURA.LESTE)
+                dif := dif - 30;
+            endif
+
+            var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/2);
+            dif := dif - survivalBonus;
+
+            foreach item in (ListEquippedITems(who))
+                // Manto de Aquil facilita a resistência contra calor
+                if (item.objtype == 0xA35e)
+                    dif := dif - 15;
+                endif
+                // Itens de couro draconiano facilitam a resistência contra calor
+                if ( (GetObjProperty(item, "material") == 0xed29) )
+                    dif := dif - 8;
+                elseif (item in ironArmors)
+                    dif := dif + 2;
+                endif
+            endforeach
+
+            foreach item in ( ListItemsNearLocation( who.x, who.y, who.z, 8, who.realm ) )
+                 //Oasis facilita a resistência ao calor em três níveis de dificuldade
+                 if ((item.objtype == 0xa5a))
+                    dif := dif - 45;
+                    break;
+                endif
+                sleepms(20);
+            endforeach
+
+            var resistcheck;
+            var resistchecked;
+            foreach mobile in ( ListMobilesNearLocation( who.x, who.y, who.z, 10, who.realm ) )
+                if (mobile.npctemplate == ":brainai:protetordeclima")
+                    SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
+                    dif := dif - 90;
+                endif
+                if ((TemHabilidade(mobile, "Sobrevivencia do Grupo")) && who.party && (who.party.leader == mobile.party.leader))
+                    resistchecked := mobile;
+                endif
+                sleepms(20);
+            endforeach
+
+            var penalty := cint(GetObjProperty(who, "penalidadeclima"));
+
+            if (!resistchecked)
+                resistcheck := CheckResist(who,  FORTITUDE, dif);
+            else
+                resistcheck := CheckResist(resistchecked,  FORTITUDE, dif);
+            endif
+
+            if (resistcheck)
+                SendSysMessageEx(who, "Voce resiste aos efeito do calor.", SSM_INFO);
+                if (penalty == 1)
+                    penalty := 0;
+                    RemoveHeatMod(who, 1);
+                elseif (penalty == 2)
+                    penalty := 1;
+                endif
+            else
+                SendSysMessageEx(who, "Voce nao resiste aos efeito do calor.", SSM_FAIL);
+                if (penalty == 0)
+                    penalty := 1;
+                    ApplyHeatMod(who, 1);
+                elseif (penalty >= 1)
+                    penalty := 2;
+                    ApplyHeatMod(who, 2);
+                endif
+            endif
+            SetObjProperty(who, "penalidadeclima", penalty);
+        endwhile
+    endif
+endprogram
+
+function RemoveHeatMod(who, mod)
+Set_Critical(1);
+	if ( GetObjProperty(who, "penalidadedeserto") != error )
+		var stammod := cint(GetObjProperty(who, "stammod"));
+		var manamod := cint(GetObjProperty(who, "manamod"));
+		var penalidade := GetObjProperty(who, "penalidadedeserto");
+		var penalidade2 := GetObjProperty(who, "penalidadedeserto2");
+		SetObjProperty(who, "stammod",  stammod +  (0-penalidade) );
+		SetObjProperty(who, "manamod",  manamod +  (0-penalidade2) );
+        EraseObjProperty(who, "penalidadedeserto");
+		EraseObjProperty(who, "penalidadedeserto2");
+		RecalcVitals(who);
+	endif
+Set_Critical(0);
+endfunction
+
+function ApplyHeatMod(who, mod)
+	if (mod == 1)
+		var stammod := cint(GetObjProperty(who, "stammod"));
+		var manamod := cint(GetObjProperty(who, "manamod"));
+		SetObjProperty(who, "stammod",  stammod + (0 - cint(AP_GetVitalMaximumValue(who, STAMINA)/2) ));
+		SetObjProperty(who, "manamod",  manamod + (0 - cint(AP_GetVitalMaximumValue(who, MANA)/2) ));
+		SetObjProperty(who, "penalidadedeserto", (0 - cint(AP_GetVitalMaximumValue(who, STAMINA)/2)));
+		SetObjProperty(who, "penalidadedeserto2", (0 - cint(AP_GetVitalMaximumValue(who, MANA)/2)));
+		RecalcVitals(who);
+	elseif ( mod == 2)
+		var dmg := AP_GetVital(who, HITS) -  GetHP(who);
+        DamageFLS(who, dmg);
+		RecalcVitals(who);
+	endif
+endfunction

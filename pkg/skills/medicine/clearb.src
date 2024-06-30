@@ -1,0 +1,58 @@
+/* $Id: use.src 767 2006-08-28 08:16:27Z AustinHeilman $
+ *
+ * http://uo.stratics.com/content/skills/healing.php
+ *
+ */
+
+use uo;
+use os;
+
+include ":survival:fishingFunctions";
+include ":attributes:attributes";
+include "include/say";
+
+program UseBloodyBandage(mobile, bandage)
+    var targ := TargetCoordinates(mobile);
+    var restoBandage;
+    if( !targ )
+        SendSysMessage(mobile, "Cancelado.");
+        return 0;
+    endif
+    var locinfo := GetMapInfo( targ.x, targ.y, mobile.realm );
+    if (CoordinateDistance(mobile.x, mobile.y, targ.x, targ.y) > 2)
+        SendSysMessage(mobile, "Voce esta muito longe de onde deseja lavar as bandagens.");
+    elseif (/*IsCleanWater(targ)*/ IsWater(targ, locinfo))
+        restoBandage := bandage.amount % 5;
+        while (bandage)
+            if (!Wait(mobile, 2))
+                SendSysMessage(mobile, "Voce parou de lavar as bandagens.");
+                break;
+            elseif (restoBandage > 0)
+                SubtractAmount(bandage, restoBandage);
+                CreateItemInBackpack(mobile, 0xE21, restoBandage);
+                PlaySoundEffect(mobile, 0x26);
+                PrintText(mobile, "*lavando bandagem*");
+                restoBandage := 0;
+            else
+                SubtractAmount(bandage, 5);
+                CreateItemInBackpack(mobile, 0xE21, 5);
+                PlaySoundEffect(mobile, 0x26);
+                PrintText(mobile, "*lavando bandagem*");
+            endif
+        endwhile
+    else
+        SendSysMessage(mobile, "Voce precisa de agua para limpar o sangue.");
+    endif
+endprogram
+
+function IsCleanWater(obj)
+	if((obj.objtype >= 0x1797)&&(obj.objtype <= 0x179c))
+		return 1;
+	elseif((obj.objtype >= 0x346e)&&(obj.objtype <= 0x3485))
+		return 1;
+	elseif((obj.objtype >= 0x3490)&&(obj.objtype <= 0x34ab))
+		return 1;
+	elseif((obj.objtype >= 0x34b5)&&(obj.objtype <= 0x34d5))
+		return 1;
+	endif
+endfunction

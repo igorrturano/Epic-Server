@@ -1,0 +1,66 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":charactercreation:resists";
+
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if(TemHabilidade(who, "Vontade Esmagadora"))
+		if (CheckResist(targ, VONTADE, 70, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+			SendSysMessageEx(who, "O Alvo resistiu a magia.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+
+			if (GetObjProperty(who, "#magiasilenciosa"))
+                SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+            endif
+            //Remove prop de magia silenciosa apos o cast ser completo
+            EraseObjProperty(who, "#magiasilenciosa");
+
+			return 0;
+		endif
+	else
+		if (CheckResist(targ, VONTADE, 30, -CInt(AP_GetSkill(who, MAGICLORE)/2.5)))
+			SendSysMessageEx(who, "O Alvo resistiu a magia.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+
+			if (GetObjProperty(who, "#magiasilenciosa"))
+                SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+            endif
+            //Remove prop de magia silenciosa apos o cast ser completo
+            EraseObjProperty(who, "#magiasilenciosa");
+
+			return 0;
+		endif
+	endif
+
+	var e := TS_StartTimer(targ, "fugademana", cint(AP_GetSkill(who, MAGICLORE)/2), cint(AP_GetSkill(who, MAGICLORE)), who, 0);
+	if (e == error)
+		printtextabove(who, "sonho " + e);
+	endif
+
+	if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, 385);
+    endif
+
+	SendSysMessageEx(who, "A mana do alvo foge.", SSM_INFO);
+	Corromper(who, 18, targ);
+
+    if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+
+	return 1;
+endprogram
+

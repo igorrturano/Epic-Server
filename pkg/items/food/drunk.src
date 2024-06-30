@@ -1,0 +1,188 @@
+
+use uo;
+use os;
+use util;
+
+include "include/client";
+
+Const ACTION_BOW	:= 0x0020;
+Const ACTION_FALL	:= 0x0016;
+
+function Dismount (character, mount := 0)
+
+	var parms := array;
+	parms[1] := character;
+	parms[2] := mount;
+	return run_script_to_completion (":drocket:dismount", parms);
+
+endfunction
+
+program drunk (character)
+	if (GetObjProperty (character, "#doingdrunkstuff"))
+		if (GetProcess (GetObjProperty (character, "#doingdrunkstuff")))
+			return;
+		endif
+	endif
+	SetObjProperty (character, "#doingdrunkstuff", GetPid());
+
+	//detach the script so that the character can be doing other things while it runs in the background
+	detach();
+
+	//setup of a variable
+	var drunkness;
+
+	//now repeat the next section until the character is finally purged of all alcohol or the character logs out
+	repeat
+		drunkness := GetObjProperty( character , "#proof");
+		if (drunkness and drunkness > 0)
+			do_drunk_stuff( character, drunkness );
+			drunkness := GetObjProperty( character , "#proof");//in case they drank more
+			drunkness := drunkness - 1;
+
+			//some checks on the range of drunkness
+			if (drunkness < 0)
+				drunkness := 0;
+			elseif (drunkness > 20)
+				drunkness := 20;
+			endif
+
+			SetObjProperty( character, "#proof", drunkness );
+
+			//some sysmessages to inform the character of when they feel better
+			case (drunkness)
+				4:	SendSysmessage (character, "Voce se sente sobrio.", FONT_NORMAL, 90);
+				8:	SendSysmessage (character, "Voce nao se sente mais bebado.", FONT_NORMAL, 90);
+				12:	SendSysmessage (character, "Voce se sente menos bebado.", FONT_NORMAL, 90);
+				16:	SendSysmessage (character, "Voce se sente melhor.", FONT_NORMAL, 90);
+			endcase;
+		else
+			drunkness := 0;
+		endif
+	until ( (!drunkness) or (!character) );
+
+	EraseObjProperty( character, "#proof" );
+	SendSysmessage( character , "Seu corpo esta livre do alcool.", FONT_NORMAL, 90);
+
+endprogram
+
+
+
+///////////////////
+//This function makes the character stumble around and perhaps vomit depending on how
+//drunk they are.  It tends to be quite repetative...
+///////////////////
+
+function do_drunk_stuff ( character, drunkness )
+	//if they're only a tiny bit drunk, just give them the hiccups
+	if( drunkness > 4 and drunkness <= 8)
+		sleep(5);
+		PrintTextAbove( character, "*hic*" );
+		sleep(10);
+
+	//if they're somewhat more drunk, make them stumble a bit
+	elseif( drunkness > 8 and drunkness <= 12)
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(5);
+		PrintTextAbove( character, "*hic*" );
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(5);
+		PrintTextAbove( character, "*hic*" );
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(5);
+
+	//if they're even more drunk, make them stumble more with a small chance to vomit
+	elseif( drunkness > 12 and drunkness <= 16)
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		vomit(character, 1);
+		PerformAction( character, ACTION_BOW );
+		PrintTextAbove( character, "*hic*" );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		PerformAction( character, ACTION_BOW );
+		PrintTextAbove( character, "*hic*" );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		vomit(character, 1);
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+
+	//when they're extremely drunk, make them fall off their horse (if mounted), and otherwise fall down
+	elseif( drunkness > 16)
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		vomit(character, 4);
+		PerformAction( character, ACTION_BOW );
+		PrintTextAbove( character, "*hic*" );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		if ( GetEquipmentByLayer( character, 25 ) )
+			Dismount (character, 0);
+			SendSysmessage (character, "Voce caiu do cavalo.", FONT_NORMAL, 90);
+		else
+			PerformAction( character, ACTION_FALL );
+		endif
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		vomit(character, 4);
+		PrintTextAbove( character, "*hic*" );
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+		PerformAction( character, ACTION_BOW );
+		character.facing := RandomDiceRoll( "1d8" );
+		sleep(3);
+
+	//otherwise if they're not very drunk at all, just wait
+	else
+		sleep(15);
+	endif
+	EraseObjProperty (character, "#doingdrunkstuff");
+	return 1;
+endfunction
+
+
+
+
+///////////////////
+//This function gives the character a chance to vomit - a percentage based on the variable chance
+///////////////////
+
+function vomit ( character, chance )
+	if (randomint(100) <= chance)
+		PrintTextAbove(character, "*RALPH*");
+		var puke := CreateItemAtLocation(character.x,character.y,character.z, 0x0f3c, 1);
+		puke.name := cstr ( character.name + "'s vomit");
+
+		//random color
+		var random_number := RandomInt(4);
+		case (random_number)
+			0:	puke.color := 1422;
+			1:	puke.color := 540;
+			2:	puke.color := 555;
+			3:	puke.color := 970;
+		endcase;
+		puke.decayat := ReadGameClock() + 3;
+		puke.movable := 1;
+
+		//make the character hungry
+		var hunger := GetObjProperty(character, "hunger");
+		if (!hunger) 
+			hunger := 5;
+		elseif ((hunger + 5)>10)
+			hunger := 10;
+		else
+			hunger := hunger + 5;
+		endif
+		SetObjProperty(character, "hunger", hunger);
+	endif
+endfunction

@@ -1,0 +1,100 @@
+//
+// created by Zulu  zuluhotel@home.com
+// made Jan 15, 2000 - updated Jan 17, 2000
+//
+//   elem.change     #	(decimal)
+//   elem.changesnd  #	(decimal)
+//   elem.originsnd  #	(decimal)
+//   elem.staff	     #	(1-4)
+//
+
+use uo;
+use os;
+use cfgfile;
+
+program change(who, item )
+  var cfg := ReadConfigFile(":*:itemdesc");
+  var elem := FindConfigElem(cfg, item.objtype);
+  if(elem.staff > who.cmdlevel)
+    return;
+  endif
+  if(item.graphic == item.objtype)
+    if(elem.changesnd)
+      PlaySoundEffect(who, elem.changesnd);
+    endif
+    item.graphic := elem.change;
+    setobjproperty(item, "graphic", item.graphic);
+    if (item.graphic == 6222)
+       var k := 1;
+       while (k < 60 )
+          foreach balao in listitemsnearlocation (item.x, item.y, item.z, 1)
+             print(balao);
+             if ( (balao.objtype == 6194) || (balao.objtype == 6195) || (balao.objtype == 6196) )
+                  foreach beker in listitemsnearlocation (item.x, item.y, item.z, 1)
+                     if ( (beker.objtype == 6192) || (beker.objtype == 6193) )
+                         Destilar(balao, beker, who, item);
+                         k := 60;
+                         break;
+                     endif
+                  endforeach
+                  break;
+             endif
+          endforeach
+          k := k+1;
+          sleep(1);
+       endwhile
+       item.graphic := item.objtype;
+    endif
+  else
+    if(elem.originsnd)
+      PlaySoundEffect(who, elem.originsnd );
+    endif
+    item.graphic := item.objtype;
+    setobjproperty(item, "graphic", item.graphic);
+  endif
+endprogram
+
+function Destilar(balao, beker, who, item)
+
+   item.movable := 0;
+   balao.movable := 0;
+   beker.movable := 0;
+
+   SendSysMessage(who, "O extrato começa a ferver.");
+   sleep(5);
+   PlaySoundEffect (who, 0x0021);
+   PrintTextAbove(balao, "O liquido esta em ebulicao.");
+   sleep(5);
+   PlaySoundEffect (who, 0x241);
+   sleep(3);
+   
+   var extrato := CINT(GetObjProperty(balao, "extrato"));
+   print(extrato);
+   case (extrato)
+      61249:
+            SetObjProperty(beker, "pocao", 0xef46);
+      61250:
+            print("lol");
+            SetObjProperty(beker, "pocao", 0xef53);
+      61251:
+            SetObjProperty(beker, "pocao",  0xef47);
+      61252:
+            SetObjProperty(beker, "pocao", 0xef48);
+      61253:
+            SetObjProperty(beker, "pocao", 0xef49);
+      61254:
+            SetObjProperty(beker, "pocao", 0xef52);
+      61268:
+            SetObjProperty(beker, "pocao", 0xef55);
+      61270:
+            SetObjProperty(beker, "pocao", 0xef57);
+      61272:
+            SetObjProperty(beker, "pocao", 0xef59);
+   endcase
+
+   EraseObjProperty(balao, "extrato");
+   item.movable := 1;
+   balao.movable := 1;
+   beker.movable := 1;
+   
+endfunction

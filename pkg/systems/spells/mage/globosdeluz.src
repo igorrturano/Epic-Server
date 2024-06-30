@@ -1,0 +1,49 @@
+  use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Onde deseja criar o globo de luz?", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+
+	
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.");
+		return 1;
+	endif
+
+	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+		SendSysMessageEx(who, "Voce nao enxerga o alvo.");
+		return 1;
+	endif
+
+	PlaySoundEffect(who, 468);
+	var globo := CreateNpcFromTemplate(":brainai:globodeluz", targ.x, targ.y, targ.z, 0, who.realm);
+	
+	globo.SetMaster(who);
+				
+	SetObjProperty(globo, "owner", who.serial);
+	SetObjProperty(globo, "name", globo.name);
+	SetObjproperty(globo, "script", globo.script);
+	SetObjProperty(globo, "AntigoTreinadorID", who.serial);
+	SetObjProperty(globo, "summoned", 1);
+				
+	globo.script := ":ghaia:tamed";
+	RestartScript(globo);
+	//var backpack := CreateItemAtLocation(globo.x, globo.y, globo.x, "backpack");
+	//equipitem(globo, backpack);
+	var lantern := CreateItematLocation(globo.x, globo.y, globo.z, "lantern1", 1, globo.realm);
+	TS_StartTimer(globo, "summon", GetSpellDuration(who)+180);
+	//printtextabove(globo, " " + lantern);
+	EquipITem(globo, lantern);
+	return 1;
+endprogram   

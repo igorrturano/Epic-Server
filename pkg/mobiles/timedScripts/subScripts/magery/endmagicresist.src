@@ -1,0 +1,38 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":gumps:yesNo";
+include ":fls_magery:basicMagery";
+
+program TimedScript_Clumsy(params)
+
+	var mobile := params[1];
+	EraseObjProperty(mobile, "#MagicMod");
+	EraseObjProperty(mobile, "ColdResistMod");
+	EraseObjProperty(mobile, "FireResistMod");
+	EraseObjProperty(mobile, "EnergyResistMod");
+	EraseObjProperty(mobile, "PoisonResistMod");
+
+	if ( !mobile.npctemplate) //se quem ta com o efeito da magia nao eh um npc
+		var serial := GetObjProperty(mobile, "mage");
+		if (serial != error) //se alguem soltou essa magia
+			var mage := SystemFindObjectBySerial(serial);
+			if (!mage.npctemplate) //se quem soltou nao foi um npc
+				if (mage.connected) //e esta conectado
+					var manter := YesNo(mage, "Deseja manter a magia Maldicao em " + mobile.name + " ? ", "Sim", "Nao");
+					if (manter)
+						ManterMagia("escudomagico", mage, mobile);
+					else
+						SendSysMessage(mage, "O efeito da magia passou.");
+						SendSysMessage(mobile, "O efeito da magia passou.");
+					endif
+				endif
+			endif
+		endif
+	endif
+
+	return 1;
+endprogram
+

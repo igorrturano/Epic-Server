@@ -1,0 +1,48 @@
+use uo;
+use os;
+
+include "include/client";
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/dungeons";
+
+program vacuodemana(params)
+	var attacker	:= params[1];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+    var defender := Target(attacker);
+
+    if (!defender.isA(POLCLASS_MOBILE))
+        SendSysMEssage(defender, "alvo invalido");
+        return;
+    endif
+
+    var duration := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
+    var shaman_souls := Cint(getobjProperty(attacker, "shaman_souls"));
+    if (!shaman_souls)
+        var shaman_souls := 0;
+    else
+        PerformAction(attacker, ANIM_CAST_DIR);
+        TS_StartTimer(defender, "paralysis", duration);
+        SetCooldown(defender, "horrify", shaman_souls+duration);
+        PlaySoundEffect(defender, 0x654);
+        PlayObjectCenteredEffectHuefx(defender, 0x6c91, 1, 30, 2731, 0);
+        SendSysMEssage(defender, "Voce esta aterrorizado com visoes de morte");
+    endif
+
+    //TODO colocar isso em uma funcao depois
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+    var dano_mlore := cint(AP_GetSkill(attacker, MAGICLORE) + (shaman_souls * 5));
+	DamageFLS(defender, dano_mlore, DMG_POISON, attacker);
+    SetObjProperty(attacker, "shaman_souls", 0);
+    
+    return 1;
+endprogram 

@@ -1,0 +1,87 @@
+use cfgfile;
+use util;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:crafting";
+include ":crafting:craftingRepair";
+include ":crafting:toolWear";
+include ":itemutils:canAccess";
+include ":fls_core:fls_crafting";
+include ":recipes:recipes";
+
+var item_config     := ReadConfigFile(":*:itemdesc");
+var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
+
+program use_SmithTool(who, tool)
+
+	if(!can_access(who, tool))
+		return 0;
+	endif
+	if((!tool.movable) or !ReserveItem(tool))
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return 0;
+	endif
+	if(!tool in ListEquippedItems(who))
+		if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+			SendSysMessageEx(who, "O item nao esta na sua mochila nem equipado.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	var rinfo := sendCraftGump(who, "Blacksmithy");
+
+	// OK was pressed, close it on out
+	if(rinfo == 0)
+		return 0;
+	endif
+
+	var the_objtype := rinfo[1];
+	var amt         := rinfo[2];
+	var repairit    := rinfo[3];
+	var resmeltit   := rinfo[4];
+
+	if(repairit)
+		repair_this(who, craft_skill);
+		return 0;
+	endif
+	if(resmeltit)
+		resmelt(who, craft_skill);
+		return 0;
+	endif
+
+	makeBlacksmithItems(who, the_objtype, amt, tool);
+
+endprogram
+
+function makeBlacksmithItems(who, what, amt, tool )
+
+
+	if(!what)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	var anvil_near := 0;
+	var anvil;
+	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 3, who.realm)
+		if((item.objtype == 0x0faf) || (item.objtype == 0x0fb0))
+			anvil_near := 1;
+			anvil := item;
+			break;
+		endif
+	endforeach
+	if(anvil_near == 0)
+		SendSysMessageEx(who, "Voce precisa estar perto de uma bigorna para forjar itens.", SSM_FAIL);
+		return 0;
+	endif
+
+	var item := CraftItem(who, "Blacksmithy", tool, what, amt, 0, anvil);
+	return 1;
+
+
+endfunction

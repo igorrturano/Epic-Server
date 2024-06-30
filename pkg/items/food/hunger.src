@@ -1,0 +1,72 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":charactercreation:resists";
+include "include/say";
+include ":food:include/hunger";
+
+program Hunger(chr)
+	if( chr.cmdlevel >= 2 )
+		return 0;
+	endif
+	Sleep(1); //pra evitar bug no start do server
+
+	var hunger, debuff;
+	debuff := GetObjProperty(chr, "#fome");
+	if (debuff) //recolocar debuff caso ele saia por algum motivo com reset do shard ou algo do tipo
+		if(AP_GetStatMod(chr, STRENGTH) == 0 || AP_GetStatMod(chr, DEXTERITY) == 0 || AP_GetStatMod(chr, INTELLIGENCE) == 0)
+			SendSysMessageEx(chr, "DEBUG: DEBUFF DE FOME SETADO DE NOVO APOS RESET SERVER!", SSM_FAIL);
+			FomeApplyDebuff(chr, -(debuff."valdebuff"));
+		endif
+	endif
+
+	while( chr )
+		hunger := CInt(AP_GetVital(chr, "Hunger") / 60);
+		debuff := GetObjProperty(chr, "#fome");
+
+		case (hunger)
+			5:
+				SendSysMessageEx(chr, "Voce esta faminto e totalmente sem forcas.",  SSM_FAIL);
+				PrintTextAbove(chr, "*parece estar fraco e zonzo*");
+				ModStatFome(chr, hunger);
+				break;
+
+			4:
+				SendSysMessageEx(chr, "Voce esta com fome e fraco.",  SSM_FAIL);
+				PrintTextAbove(chr, "*barriga roncando alto*");
+				ModStatFome(chr, hunger);
+				break;
+				
+			3:
+				SendSysMessageEx(chr, "Voce esta com fome.",  SSM_FAIL);
+				PrintTextAbove(chr, "*barriga roncando*");
+				ModStatFome(chr, hunger);
+				break;
+
+			2:
+				SendSysMessageEx(chr, "Voce esta comecando a ficar com fome.", SSM_INFO);
+				PrintTextAbovePrivate(chr, "*barriga roncando baixo*", chr);
+				break;
+
+			default:
+				if (debuff)
+					SendSysMessageEx(chr, "Voce comeca a se sentir melhor.", SSM_INFO);
+				endif
+				ModStatFome(chr, hunger);
+		endcase
+		
+		/*if (hunger >= 5)
+			SendSysMessageEx(chr, "Voce esta faminto e totalmente sem forcas.",  SSM_INFO);
+		elseif (hunger >= 4)
+			SendSysMessageEx(chr, "Voce esta faminto e fraco.",  SSM_INFO);
+		endif*/
+
+		RecalcVitals(chr);
+
+		//Sleep(60 * 10); //10 min [antigo]
+		Sleep(60 * 5); //5 min
+		//Sleep(10); //para testes
+	endwhile
+endprogram

@@ -1,0 +1,479 @@
+use uo;
+include ":disguise:disguise";
+include ":gumps:gumps";
+include ":attributes:attributes";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":gumps:yesNo";
+include "include/say";
+include ":tn:tngumps";
+include "include/client";
+include ":charactercreation:habilidades";
+include ":timedscripts:timedScripts";
+
+//TODO: Criar constantes para os ID dos botões
+
+CONST CANCEL_BTN	:= 0xA00001;
+
+program disguise(who, kit)
+
+	if (!TemHabilidade(who, "Dissimulacao") && !TemHabilidade(who, "Disfarce Simplorio"))
+		SendSysMessageEx(who, "Voce nao sabe usar isto.", SSM_FAIL);
+		return 1;
+	elseif (GetObjProperty(who, "disfarce"))
+		SendSysMessageEx(who, "Caso deseje remover o disfarce digite .removerdisfarce", SSM_INFO);
+	endif
+
+	if (GetObjProperty(who, "escondido"))
+		who.hidden := 1;
+		SetObjProperty(who,"escondido", 0);
+	endif
+
+	var disfarce := struct;
+	disfarce.+barba := "";
+	disfarce.+cabelo := "";
+	disfarce.+corcabelo := -1;
+	disfarce.+corbarba := -1;
+	disfarce.+corpele := -1;
+	disfarce.+aparencia := "";
+	disfarce.+sexo := -1;
+	disfarce.+raca := "";
+	disfarce.+id := "";
+
+	var gump := GfCreateGump();
+	GFDisposable(gump, 0);
+	GfResizePic(gump, 0, 25, 3600, 250, 330);
+	GfResizePic(gump, 15, 40, 0x13be, 220, 300);
+	GfTextMid(gump, 20, 50, 250, 1153, "Kit de Disfarces");
+
+	GfTextLine(gump, 35, 80, 1153, "Remover disfarce");
+	GfTextLine(gump, 35, 100, 1153, "Criar disfarce");
+	if (TemHabilidade(who, "Dissimulacao"))
+		GfTextLine(gump, 35, 120, 1153, "Disfarcar-se de alguem");
+	endif
+	GfAddButton(gump, 20, 82, 2117, 2118, 1, 1);
+	GfAddButton(gump, 20, 102, 2117, 2118, 1, 2);
+	if (TemHabilidade(who, "Dissimulacao"))
+		GfAddButton(gump, 20, 122, 2117, 2118, 1, 3);
+	endif
+	GfTextLine(gump, 35, 160, 1153, "Disfarces:");
+	var disfarces := GetObjProperty(kit, "disfarces");
+	if (disfarces)
+		var y := 180;
+		var i := 1;
+		foreach d in disfarces
+			GfTextLine(gump, 35, y, 1153, ""+d.nome);
+			GfAddButton(gump, 20, y+2, 2117, 2118, 1,  10+i);
+			y := y + 20;
+			i := i + 1;
+		endforeach
+	endif
+
+	var input := GfSendGump(who, gump);
+
+	if (input[0] == 1)
+		removeDisfarce(who);
+	elseif (input[0] ==  2)
+		disguiseSelf(who, kit, disfarce);
+	elseif( input[0] == 3)
+		criaDisfarceTarget(who, kit);
+	elseif (input[0] > 10)
+		disguiseSelf(who, kit, disfarces[input[0] - 10]);
+	endif
+
+endprogram
+
+function criaDisfarceTarget(who, kit)
+
+	SendSysMessageEx(who, "Escolha o alvo para criar um disfarce igual", SSM_REQUEST);
+	var targ := target(who);
+
+	if (targ.npctemplate)
+		SendSysMessageEx(who, "Este nao e um alvo valido.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.connected)
+		SendSysMessageEx(who, "Este nao e um alvo valido.", SSM_FAIL);
+		return;
+	endif
+
+	if (who.trueobjtype != targ.trueobjtype)
+		if (!temHabilidade(who, "Dissimulacao"))
+			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outro sexo.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	if (GetObjProperty(who, "raca") != GetObjProperty(targ, "raca"))
+		if (!temHabilidade(who, "Dissimulacao"))
+			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outra raca.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	var disfarce := struct;
+
+	var beard := GetEquipmentByLayer(targ, LAYER_BEARD);
+	var hair := GetEquipmentByLayer(targ, LAYER_HAIR);
+
+	if (beard)
+		disfarce.+barba := beard.objtype;
+		disfarce.+corbarba := beard.color;
+	endif
+
+	if (hair)
+		disfarce.+cabelo := hair.objtype;
+		disfarce.+corcabelo := hair.color;
+	endif
+
+	disfarce.+corpele := targ.color;
+	disfarce.+aparencia := targ.name;
+
+	disfarce.+sexo := targ.trueobjtype;
+	disfarce.+raca := GetObjProperty(targ, "raca");
+	disfarce.+id := Cstr(targ.serial);
+
+	disguiseSelf(who, kit, disfarce);
+
+endfunction
+
+function usarDisfarce(who, disfarce)
+
+	if (TemHabilidade(who, "Dissimulacao"))
+		SendSysMessageEx(who, "Quem voce deseja disfarcar?", SSM_REQUEST);
+		var targ := target(who);
+		if (!targ)
+			SendSysMessageEx(who, "Cancelado");
+			return 0;
+		elseif (targ.connected && targ != who)
+			var pode := YesNo(targ, "Voce permite "+who.name+" disfarcar voce?");
+			if (pode)
+				who := targ;
+			else
+				SendSysMessageEx(who, targ.name+" nao permitiu ser disfarcado.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
+
+	if (GetObjProperty(who, "disfarce"))
+		SendSysMessageEx(who, who.name+" ja esta disfarcado.", SSM_FAIL);
+		return;
+	elseif (who.name == "Desconhecido")
+		SendSysMessageEx(who, who.name+" nao pode ser disfarcado com o rosto coberto.", SSM_FAIL);
+		return;
+	endif
+
+/*
+	if (GetObjProperty(who, "disfarce"))
+		removeDisfarce(who);
+		Print("Disguise");
+	endif
+*/
+
+	PrintText(who, "*usando um disfarce*");
+
+	var original := struct;
+
+       if (disfarce.barba != "")
+		var mybarba := GetEquipmentByLayer(who, LAYER_BEARD);
+		if (mybarba != error)
+			original.+barba := mybarba.objtype;
+		else
+			original.+barba := "null";
+		endif
+		var newbarba := CreateItemAtLocation(who.x, who.y, who.z, disfarce.barba, 1, who.realm);
+		if (mybarba)
+			original.+corbarba := mybarba.color;
+			DestroyItem(mybarba);
+		endif
+		var result := EquipItem(who, newbarba);
+	endif
+
+	if (disfarce.corbarba != -1)
+		var mybarba := GetEquipmentByLayer(who, LAYER_BEARD);
+		mybarba.color := disfarce.corbarba;
+	endif
+
+
+	if (disfarce.cabelo != "")
+		var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
+		if (myhair != error)
+			original.+cabelo := myhair.objtype;
+			original.+corcabelo := myhair.color;
+		else
+			original.+cabelo := "null";
+		endif
+		var newhair := CreateItemAtLocation(who.x, who.y, who.z, disfarce.cabelo, 1, who.realm);
+		if (disfarce.corcabelo != -1)
+			original.+corcabelo := myhair.color;
+			newhair.color := disfarce.corcabelo;
+		endif
+		var result2 := DestroyItem(myhair);
+		var result := EquipItem(who, newhair);
+		//sendsysmessage(who, "original hair " + original.myhair);
+	endif
+
+    if (disfarce.corcabelo != -1)
+	var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
+            original.+corcabelo := myhair.color;
+            myhair.color := disfarce.corcabelo;
+     endif
+
+	if (disfarce.corpele != -1)
+		original.+corpele := who.color;
+		who.color := disfarce.corpele;
+		who.truecolor := disfarce.corpele;
+	endif
+
+	if( disfarce.sexo != -1)
+		original.+sexo := who.graphic;
+		who.graphic := disfarce.sexo;
+		who.trueobjtype := disfarce.sexo;
+	endif
+
+	if ( disfarce.raca != "")
+		original.+raca := GetObjProperty(who, "raca");
+		SetObjProperty(who, "raca", disfarce.raca);
+		who.title_race := disfarce.raca;
+	endif
+
+	if(disfarce.id != "")
+		SetObjProperty(who, "FakeID", Cstr(disfarce.id));
+	else
+		SetObjProperty(who, "FakeID", Cstr(who.serial) + Cstr(disfarce.aparencia));
+	endif
+
+	if (disfarce.aparencia != "")
+		original.+aparencia := who.name;
+	endif
+
+	SetObjProperty(who, "disfarce", original);
+
+	SetName(who, who.name);
+
+/*	//Antes de ajusatar o .r para mostrar raça dos desconhecidos
+	if (disfarce.aparencia != "")
+		SetName(who, disfarce.aparencia);
+	else
+		SetName(who, who.name);
+	endif
+*/
+	if (!temHabilidade(who, "Dissimulacao"))
+		TS_StartTimer(who, "kitdisfarce", 600);
+	endif
+
+endfunction
+
+function disguiseSelf(who, kit, byref disfarce);
+
+	var gump := GFCreateGump();
+	var corcabelo := 1153;
+	var corbarba := 1153;
+	var corpele := 1153;
+	GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 250, 330);
+	GfResizePic(gump,  15, 40, 0x13be, 220, 300);
+	GFTextMid(gump, 20, 50, 250, 1153, "Crie seu disfarce");
+
+	GfTextLine(gump, 35, 80, 1153, "Usar barba falsa ");
+	GfTextLine(gump, 35, 100, 1153, "Usar peruca ");
+	GfTextLine(gump, 35, 120, 1153, "Pintar cabelo");
+	GfTextLine(gump, 35, 140, 1153, "Pintar barba");
+	GfTextLine(gump, 35, 160, 1153, "Maquiar a pele");
+     	GfAddButton(gump, 20, 82, 2117, 2118, 1, 10);
+      GfAddButton(gump, 20, 102, 2117, 2118, 1, 11);
+	GfAddButton(gump, 20, 122, 2117, 2118, 1, 12);
+	GfAddButton(gump, 20, 142, 2117, 2118, 1, 13);
+	GfAddButton(gump, 20, 162, 2117, 2118, 1, 14);
+
+	if (TemHabilidade(who, "Dissimulacao"))
+		GfTextLine(gump, 35, 180, 1153, "Alterar aparencia");
+		GfAddButton(gump, 20, 182, 2117, 2118, 1, 15);
+	endif
+
+	if (TemHabilidade(who, "Dissimulacao"))
+		GfTextLine(gump, 35, 200, 1153, "Alterar sexo");
+		GfAddButton(gump, 20, 202, 2117, 2118, 1, 16);
+		GfTextLine(gump, 35, 220, 1153, "Alterar raca");
+		GfAddButton(gump, 20, 222, 2117, 2118, 1, 17);
+	endif
+
+
+	GfTextLine(gump, 35, 260, 1153, "Usar Disfarce");
+	GfAddButton(gump, 20, 262, 2117, 2118, 1, 22);
+
+	GfTextLine(gump, 35, 300, 1153, "Salvar Disfarce");
+	GfAddButton(gump, 20, 302, 2117, 2118, 1, 20);
+
+	if (disfarce.saved)
+		GfTextLine(gump, 35, 320, 1153, "Deletar Disfarce");
+        	GfAddButton(gump, 20, 322, 2117, 2118, 1, 23);
+	endif
+
+      GfTextLine(gump, 35, 280, 1153, "Cancelar");
+	GfAddButton(gump, 20, 282, 2117, 2118, 1, 21);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 20)
+		if (!disfarce.saved)
+			disfarce.saved := 1;
+			var nome := RequestGump(who, "Qual o nome desse disfarce?");
+			disfarce.nome := nome;
+			var disfarces := GetObjProperty(kit, "disfarces");
+			if (disfarces == error)
+				disfarces := array;
+			endif
+			disfarces.append(disfarce);
+			SetObjProperty(kit, "disfarces", disfarces);
+		else
+			var disfarces := GetObjProperty(kit, "disfarces");
+			var i := 1;
+			foreach d in disfarces
+				if (d.nome == disfarces.nome)
+					disfarces[i] := disfarce;
+				endif
+				i := i + 1;
+			endforeach
+			setobjproperty(kit, "disfarces", disfarces);
+		endif
+		SendSysMessageEx(who, "Disfarce salvo.", SSM_INFO);
+
+	elseif ( input[0] == 21)
+		return 1;
+	elseif (input[0] == 22)
+		UsarDisfarce(who, disfarce);
+	elseif (input[0] == 23)
+		deletaDisfarce(kit, disfarce);
+	elseif ( input[0] == 10)
+		escolherBarba(who, disfarce);
+		disguiseSelf(who, kit, disfarce);
+	elseif (input[0] == 11)
+		escolherCabelo(who, disfarce);
+		disguiseSelf(who, kit, disfarce);
+	elseif ( input[0] == 12)
+
+		var gump2 := BuildHairDyeGump(corcabelo, GetObjProperty(who, "chardata").povo, who);
+		var input2 := GFSendGump(who, gump2);
+
+		if ( input2[0] == 0 || input2[CANCEL_BTN] )
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			return 0;
+		endif
+
+		foreach key in ( input2.keys )
+			if ( key > 2 )
+				disfarce.corcabelo := key;
+				SendSysMessageEx(who, "Voce escolheu a cor do cabelo.", SSM_INFO);
+				break;
+			endif
+			sleepms(2);
+		endforeach
+		disguiseSelf(who, kit, disfarce);
+	elseif ( input[0] == 13)
+		var gump2 := BuildHairDyeGump(corbarba, GetObjProperty(who, "chardata").povo, who);
+		var input2 := GFSendGump(who, gump2);
+
+		if ( input2[0] == 0 || input2[CANCEL_BTN] )
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			return 0;
+		endif
+
+		foreach key in ( input2.keys )
+			if ( key > 2 )
+				disfarce.corbarba := key;
+				SendSysMessageEx(who, "Voce escolheu a cor da barba.", SSM_INFO);
+				break;
+			endif
+			sleepms(2);
+		endforeach
+		disguiseSelf(who, kit, disfarce);
+	elseif ( input[0] == 14)
+		skinGump(who, disfarce);
+		disguiseSelf(who, kit, disfarce);
+	elseif( input[0] == 15)
+		disfarce.aparencia := RequestGump(who, "Escreva seu novo nome.", "", disfarce.aparencia, 1);
+		if (disfarce.aparencia == error)
+			disfarce.aparencia := "";
+			SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		else
+			SendSysMessageEx(who, "Voce alterou sua aparencia.", SSM_INFO);
+		endif
+		disguiseSelf(who, kit, disfarce);
+	elseif( input[0] == 16)
+
+		var sexo := RadioGump(who, 250, 330, "Escolha o sexo do disfarce.", {"Masculino", "Feminino"});
+		if (sexo == "Masculino")
+			disfarce.sexo := 400;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Feminino")
+			disfarce.sexo := 401;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Anão Masculino")
+			disfarce.sexo := 1828;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Anão Feminino")
+			disfarce.sexo := 1829;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "elfo Masculino")
+			disfarce.sexo := 1830;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Elfo Feminino")
+			disfarce.sexo := 1831;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Orc Masculino")
+			disfarce.sexo := 1832;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Orc Feminino")
+			disfarce.sexo := 1833;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "WolfKin Masculino")
+			disfarce.sexo := 1834;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		elseif (sexo == "Wolfkin Feminino")
+			disfarce.sexo := 1835;
+			SendSysMessageEx(who, "Voce escolheu o sexo para o disfarce.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		endif
+		disguiseSelf(who, kit, disfarce);
+	elseif (input[0] == 17)
+		var myraca := GetObjProperty(who, "raca");
+		if (myraca == "Anao")
+			SendSysMessageEx(who, "Voce nao pode criar disfarce de outras racas.", SSM_FAIL);
+		else
+			var raca := RadioGump(who, 250, 330, "Escolha a raca do disfarce.", {"Humano", "Elfo"});
+			SendSysMessageEx(who, "Voce escolheu a raca para o disfarce.", SSM_INFO);
+			disfarce.raca := raca;
+		endif
+		disguiseSelf(who, kit, disfarce);
+	else
+		disguiseSelf(who, kit, disfarce);
+	endif
+
+
+	return 1;
+endfunction
+
+function DeletaDisfarce(kit, disfarce)
+
+	var disfarces := GetObjProperty(kit, "disfarces");
+	var i := 1;
+	foreach d in disfarces
+		if (d.nome == disfarce.nome)
+			disfarces.erase(i);
+			break;
+		endif
+		i := i + 1;
+	endforeach
+	SetObjproperty(kit, "disfarces", disfarces);
+
+endfunction
+
+
+
+
+
+

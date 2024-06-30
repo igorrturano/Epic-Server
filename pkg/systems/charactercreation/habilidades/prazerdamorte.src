@@ -1,0 +1,31 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+
+program manobra(who)
+	
+	var corpos := ListItemsNearLocation(who.x, who.y, who.z, 2, who.realm);
+	foreach corpo in corpos
+		var drained := GetObjProperty(corpo, "drained");
+		if (corpo.corpsetype != error && drained == error)
+			var hits := AP_GetVital(who, HITS);
+			var bonus := AP_GetSkill(who, MAGICLORE)/2;
+			hits := hits+bonus;
+			AP_SetVital(who, HITS, hits+60);
+			SetObjProperty(corpo, "drained", 1);
+			corpo.color := 964;
+			SendSysMessageEx(who, "Voce drena a energia de um corpo proximo", SSM_FAIL);
+			return 0;
+		endif
+		
+	endforeach
+
+	SendSysMessageEx(who, "Nao existem corpos proximos para drenar a energia", SSM_FAIL);
+			
+		
+endprogram   
+

@@ -1,0 +1,35 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":fls_magery:basicMagery";
+include "include/say";
+
+program useScroll(who, scroll)
+
+	var item_cfg := ReadConfigFile(":*:itemdesc");
+	item_cfg := item_cfg[scroll.objtype];
+	var spell_id := item_cfg.SpellId;
+
+	if (!KnowSpell(who, spell_id))
+		SendSysMessage(who, "Voce nao conhecia essa magia arcana e leu o pergaminho para aprende-la!");
+		LearnSpell(who, spell_id);
+		destroyitem(scroll);
+		return;
+	else
+	
+		var script := Start_Script("spellStarter", {who, spell_id, scroll});
+		if ( script.errortext )
+			SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+			return 0;
+		endif
+	endif
+
+	if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+
+	return 1;
+endprogram

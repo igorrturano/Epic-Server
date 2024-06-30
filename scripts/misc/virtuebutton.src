@@ -1,0 +1,105 @@
+use cfgfile;
+use uo;
+use os;
+use datafile;
+
+program virtueachievements(who)
+
+var gflayout := array{
+//		"noclose",   
+		"nodispose", 
+//		"nomove",    
+		"page 0",    
+    		"resizepic 84 90 9260 460 535",
+		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
+		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
+		"gumppictiled 80 88 463 16 10100", //borda superior
+		"gumppictiled 84 610 457 16 10100", //borda inferior
+		"gumppic 50 80 10421 0", //cabeca dragao esquerda
+		"gumppic 83 79 10420 0", //corpo dragao esquerda
+
+		"CheckerTrans 127 103 375 509",
+		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
+		"gumppic 33 370 10402 0", //rado do dragao
+
+		"text 245 120 1153 0",
+
+		"Text  420 580 2103 1",
+		"Button 470 580 9903 9905 1 2 11",
+
+		"page 1",
+		"text 150 160 2103 2"
+
+
+		};
+
+var gfdata := array{
+		"Forgotten Lore Shard", //0
+		"Próximo", //1
+		"Realizações" //2
+		};
+
+
+	var x, y, text;
+	var count := 0;
+	text  :=  2; 
+	y := 200;
+	x := 180;
+	var accounts := listaccounts();
+	//sendsysmessage(who, " " + GetObjProperty(who, "lootmoedas"));
+	if (cint(GetObjProperty(who, "lootmoedas")) > 100000)
+		gfdata.append("Ladrão de Cadaveres");
+		gfdata.append("Você é um grande Looter e não deixa os bolsos dos desmaiados em paz. Porcentagem de jogadores: " + ( GetAchievements(who, "Ladrão de Cadaveres")/cdbl(accounts.size())*100 ));
+		text := text + 1;
+		gflayout.append("text " + x + " " + y + " 2105 " + text);
+		text := text + 1;
+		y := y + 20;
+		gflayout.append("HtmlGump " +  (x-30) + " " + y + " 150 60 "  + text + "  3000 1");
+		gflayout.append("Tilepic " + (x-50) + " " + (y - 25) + " 3823");
+		count := count + 1;
+	elseif ( cint(GetObjProperty(who, "mortes" )) > 100 )
+		gfdata.append("");
+		gfdata.append("Você é um grande Looter e não deixa os bolsos dos desmaiados em paz. Porcentagem de jogadores: " + ( GetAchievements(who, "Ladrão de Cadaveres")/cdbl(accounts.size())*100 ));
+		text := text + 1;
+		gflayout.append("text " + x + " " + y + " 2105 " + text);
+		text := text + 1;
+		y := y + 20;
+		gflayout.append("HtmlGump " +  (x-30) + " " + y + " 150 60 "  + text + "  3000 1");
+		gflayout.append("Tilepic " + (x-50) + " " + (y - 25) + " 3823");
+		count := count + 1;
+		
+	endif	
+
+	var ret := SendDialogGump( who, gflayout, gfdata );
+
+
+endprogram
+
+function getAchievements(who, type)
+
+	var df := OpenDataFile( "::achievements" );
+	if (!df)
+		df := CreateDataFile( "::achievements" );
+	endif
+
+	var elem := df.FindElement(type);
+	if (elem == error)
+		df.createElement(type);
+	endif
+
+	var members := elem.getprop("members");
+	if (members == error)
+		var a := array;
+		a.append(who.serial);
+		elem.setProp("members",  a);
+		members := elem.getProp("members",  a);
+	endif
+
+	if (!(who.serial in members))
+		members.append(who.serial);
+		elem.setProp("members", members);
+	endif
+
+	return members.size();
+endfunction
+

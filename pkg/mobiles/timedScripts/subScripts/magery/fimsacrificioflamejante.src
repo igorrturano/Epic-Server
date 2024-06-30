@@ -1,0 +1,21 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program TimedScript_sacrificio(params)
+	var who := params[1];
+
+		var bonus := cdbl(GetObjProperty(who, "#xsac") * 0.2);
+		SetObjProperty(who, "#dmgbonus", GetObjProperty(who, "#dmgbonus") - bonus);	
+		SendSysMessageEx(who,  "As chamas estao quietas.", SSM_INFO);
+		EraseObjProperty(who, "#xsac");
+		return 1;
+endprogram
+

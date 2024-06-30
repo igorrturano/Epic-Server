@@ -1,0 +1,33 @@
+use uo;
+use cfgfile;
+
+include "include/say";
+
+program versatil(who)
+
+	if (who.shield)
+		MoveItemToContainer(who.shield, who.backpack);
+	endif
+
+	if (!who.weapon)
+		SendSysMessageEx(who, "Equipe a sua arma.", SSM_FAIL);
+		return 1;
+	endif
+
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	if ( cfg[who.weapon.objtype].TwoHanded == 1)
+		SendSysMessageEx(who, "Voce tem que usar essa habilidade com armas de uma mao.", SSM_FAIL);
+		return 1;
+	endif
+
+
+	var valor := cint(GetObjProperty(who, "twohanded"));
+	if (!valor)
+		SetObjProperty(who, "twohanded", 1);
+		PrintText(who, "*empunha a arma com duas maos*");
+	else
+		EraseObjProperty(who, "twohanded");
+		PrintText(who, "*empunha a arma com uma mao*");
+	endif
+
+endprogram

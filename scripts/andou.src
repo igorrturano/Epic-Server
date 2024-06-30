@@ -1,0 +1,24 @@
+///////////////////////////////////////////////////
+//  script usado para remover a prop do stealing //
+///////////////////////////////////////////////////
+
+use uo;
+use os;
+use util;
+
+program andou(quem)
+var x := quem.x;
+var y := quem.y;
+
+while(quem.x == x && quem.y == y)
+	sleep(1);
+endwhile
+	var oitem := quem.getgottenitem();
+	if(oitem)
+	quem.cleargottenitem();
+	moveobjecttolocation(oitem, quem.x, quem.y, quem.z);
+	printtextaboveprivate(quem, "*deixa o item cair*", quem);
+endif
+SetObjProperty(quem, "#torobando", 0);
+EraseObjProperty(quem, "#pegueiesse");
+endprogram

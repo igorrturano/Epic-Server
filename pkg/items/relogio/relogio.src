@@ -1,0 +1,52 @@
+use uo;
+use os;
+use util;
+
+include "include/say";
+include "include/clock";
+
+program dclick(item)
+    //var tempo := GetTimeDesc(ReadGameClock() - getGlobalProperty("halfdaytime"), 1);
+    var tempo := calcularTempo(ReadGameClock() - getGlobalProperty("halfdaytime"));
+    //var minuto := G
+    PrintText(item, "Sao: {}".format(tempo));
+endprogram
+
+function calcularTempo(byref seconds)
+	seconds := CInt (seconds);
+	var minutes := CInt (seconds/60);
+	var hours := CInt (minutes/60);
+	var days := CInt (hours/24);
+
+    var hora, minuto, segundo;
+
+	if (seconds < 60)
+		segundo := seconds;
+	endif
+
+	hours := hours - days*24;
+	minutes := minutes - (days*24 + hours)*60;
+
+	if (hours > 1)
+        hora := hours;
+    else
+        hora := 1;
+    endif
+
+    if (minutes > 1)
+        minuto := minutes;
+    else
+        minuto := 1;
+    endif
+
+    seconds := CInt (seconds%60);
+    if (seconds > 1)
+        segundo := seconds;
+    elseif (seconds == 1)
+        segundo := 1;
+    else
+        segundo := 0;
+    endif
+
+	return "{} horas, {} minutos e {} segundos".format(hora, minuto, segundo);
+endfunction

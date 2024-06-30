@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+
+program Razor_Handshake(who)
+	SysLog("Sending Razor Handshake for "+who.name+" from account "+who.acctname);
+	
+	// SendPacket(who, "F0000CFEFFFFFFFFFFFFFFFF");
+	SendPacket(who, "F0000CFE0000000000030003");
+	
+	who.SetProp("#Shake", GetPid()); // reset the shake.
+	
+	var os := Wait_For_Event(30);	  // wait 30 seconds for the hand shake event
+	
+
+	if(who.GetProp("#Shake") != 1)
+		SendSysMessage(who, "You need to enable Razor Negotiate option! You will be disconnected now.");
+		SysLog("Character "+who.name+" from account "+who.acctname+" failed with razor handshake.");
+		DisconnectClient(who);
+	endif
+
+endprogram

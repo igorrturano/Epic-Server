@@ -1,0 +1,65 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+use vitals;
+use attributes;
+include ":alchemy:alchemy";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode beber isto.", SSM_FAIL);
+		return;
+	endif
+
+	if ( TS_GetCooldown(who, "manapot") != error)
+		SendSysMEssageEx(who, "Voce nao pode usar essa pocao agora.", SSM_FAIL);
+		return 1;
+	endif
+	if (cint(GetObjProperty(who, "#manapotion")))
+		SendSysMessageEx(who, "Voce ja esta sob efeito de uma pocao igual.", SSM_FAIL);
+		return;
+	endif
+
+	var obj := potion.objtype;
+
+	var healed;
+	var skill := cint(GetObjProperty(potion, "crafterskill"));
+	healed := skill/5;
+
+	healed := AP_GetVitalMaximumValue(who, MANA);
+	
+	var cd := 10;
+	case (potion.objtype)
+		0xbf17: healed := cint(healed*0.20); cd := healed*0.5;
+		0xbf18: healed := cint(healed*0.40); cd := healed*0.5;
+		0xbf19: healed := cint(healed*0.70); cd := healed*0.5;
+	endcase
+
+  	empty_bottle(who, potion, 1);
+	TS_StartCooldown(who, "manapot", cint(healed)*3);
+	SetObjProperty(who, "#manapotion", 1);
+	Detach();
+	var i := 0;
+	while (i < healed)
+		//if (GetVital(who, MANA) > GetVitalMaximumValue(who, MANA))
+		//	break;
+		//endif
+		//SetVital(who, MANA, GetVital(who, MANA)+1 );
+		i := i + 1;
+		HealMana(who, 1);
+		sleepms(500);
+	endwhile
+	EraseObjProperty(who, "#manapotion");
+	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);	
+endprogram
+ 
+ 

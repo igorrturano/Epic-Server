@@ -1,0 +1,36 @@
+use uo;
+use basic;
+
+include "include/say";
+include ":gumps:requestGump";
+include ":charactercreation:habilidades";
+
+program sinais(who)
+
+	var mensagem := RequestGump(who, "Digite sua mensagem (evite uso de acentos e cedilhas):");
+	var tam := len(mensagem);
+
+	if (tam > 25)
+		PrintText(who, "*gesticula bastante*");
+	elseif(tam > 10)
+		PrintText(who, "*faz alguns gestos*");
+	endif
+
+	SendSysMessageEx(who, "Escolha os personagens que irao lhe entender. (Esc para Cancelar)",SSM_INFO);
+	while (1)
+		var player := Target(who);
+		if (!player)
+			SendSysMessageEx(who, "Cancelado",SSM_INFO);
+			break;
+		endif
+		if (CheckLineOfSight(who, player)) // Se tiver na LOS
+			PrintTextAbovePrivate(who, "Sinais: " + mensagem, player);
+		else
+			SendSysMessageEx(who, "Fora de Visao",SSM_FAIL);
+		endif
+	endwhile
+
+	return 1;
+
+endprogram
+

@@ -1,0 +1,112 @@
+use uo;
+use os;
+
+include "include/client";
+include ":attributes:skillCheck";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+
+Program UseGrower(who, grower)
+	if ( !ReserveItem(grower) )
+		SendSysMessage(who, "Alguem ja esta colhendo isto.");
+		return;
+	endif
+
+	var where := struct;
+	where.+x := who.x;
+	where.+y := who.y;
+
+	var farm_bonus := CInt(AP_GetSkill(who, DomesticWork));
+
+	if(TemHabilidade(who,"Agricultor Talentoso"))
+		farm_bonus := farm_bonus + 20;
+	endif
+
+	var num_loops := 1 + CInt(farm_bonus/20);
+
+	farm_bonus := CInt(farm_bonus/10);
+
+	num_loops := num_loops + farm_bonus;
+
+	var sleep_time := 4000 - (farm_bonus * 120);
+
+	for ( num_loops; num_loops>=0; num_loops:=num_loops-1 )
+		if ( !CanPick(who, grower, where) )
+			break;
+		elseif ( !HarvestPlant(who, grower) )
+			break;
+		endif
+
+		PerformAction(who, ANIM_BOW);
+		sleepms(sleep_time);
+	endfor
+
+	SendSysMessage(who, "Voce parou de colher a planta...");
+endprogram
+
+function HarvestPlant(who, grower)
+	grower.SetProduceAmount(grower.GetProduceAmount()-1);
+	var award_diff := CInt(grower.GetDifficulty());
+	var difficulty := award_diff;
+	SendSysMessage(who, "dificuldade para colheita: " + difficulty);
+
+	if(TemHabilidade(who,"Agricultor Talentoso"))
+		difficulty := difficulty-20;
+	endif
+
+	if ( SkillCheck(who, DomesticWork, difficulty, award_diff) > 0 )
+		if(TemHabilidade(who,"Sorte na Coleta"))
+			CreateItemInBackPack(who, grower.GetProduceType(), 2);
+		else
+			CreateItemInBackPack(who, grower.GetProduceType(), 1);
+		endif
+		SendSysMessage(who, "Voce guardou os frutos na sua mochila.");
+		var seed_chance := grower.GetSeedDice();
+		var roll := RandomInt(100)+1;
+		if(TemHabilidade(who,"Replantio Garantido"))
+			SendSysMessage(who, "Voce sempre pega sementes.");
+			CreateItemInBackPack(who, grower.GetGrowerType(), 1);
+		elseif ( roll <= seed_chance )
+			SendSysMessage(who, "Voce pegou uma semente.");
+			CreateItemInBackPack(who, grower.GetGrowerType(), 1);
+		endif
+		if ( RandomInt(15) == 2 )
+			SendSysMessage(who, "Voce pegou um pouco de adubo.");
+			CreateItemInBackPack(who, "fertiledirt", 1);
+		endif
+		PlaySoundEffect(who, 0x0050);
+		return 1;
+	else
+		if(TemHabilidade(who,"Replantio Garantido"))
+			SendSysMessage(who, "Voce nao colheu nada utilizavel, mas voce sempre pega sementes.");
+			CreateItemInBackPack(who, grower.GetGrowerType(), 1);
+		else
+			SendSysMessage(who, "Voce e incapaz de pegar algo de util daqui.");
+		endif
+		return 0;
+	endif
+endfunction
+
+function CanPick(who, grower, where)
+	if ( who.hidden )
+		SendSysMessage(who, "Voce parou de colher para ficar escondido.");
+		return 0;
+	elseif ( grower.IsDead() )
+		SendSysMessage(who, "A planta esta morta.");
+		return 0;
+	elseif ( !grower.CanHarvest() )
+		SendSysMessage(who, "Esta planta nao parece estar pronta para ser colhida.");
+		return 0;
+	elseif ( grower.GetProduceAmount() <= 0 )
+		SendSysMessage(who, "Esta planta nao possui nada para ser colhida.");
+		return 0;
+	elseif ( GetEquipmentByLayer(who, LAYER_MOUNT) )
+		SendSysMessage(who, "Voce nao pode colher montado.");
+		return 0;
+	elseif ( (where.x != who.x) || (where.y != who.y) )
+		SendSysMessage(who, "Voce parou de colher.");
+		return 0;
+	else
+		return 1;
+	endif
+endfunction

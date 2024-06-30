@@ -1,0 +1,39 @@
+/* $Id: ondelete.src 1371 2006-05-12 23:55:57Z austin $
+ *
+ * Purpose
+ * This script allows the scripter to run code when a character is deleted.
+ *
+ */
+use uo;
+use os;
+use storage;
+
+include ":timeutils:time";
+include ":attributes:attributes";
+
+program core_onDelete(who)
+	var create_time := who.createdat;
+	var age := polcore().systime - create_time;
+
+	if ( who.cmdlevel )
+		var tamedpets := Getobjproperty(who, "TamedPets");
+		foreach pet in tamedpets
+			SetObjProperty(pet, "GuardKill", 1);
+			ApplyDamage(pet, 9999);
+		endforeach
+
+		return 1;
+	elseif ( age >= SECONDS_IN_WEEK )
+		SysLog("Account ["+who.acctname+"] deleting character "+who.name+" ("+who.serial+")");
+		
+		var tamedpets := Getobjproperty(who, "TamedPets");
+		foreach pet in tamedpets
+			SetObjProperty(pet, "GuardKill", 1);
+			ApplyRawDamage(pet, 9999);
+		endforeach
+
+		return 1;
+	else
+		return 0;
+	endif
+endprogram

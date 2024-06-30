@@ -1,0 +1,29 @@
+/*
+ * $Id: onDestroy.src 891 2005-11-04 06:29:43Z muaddiblsd $
+ *
+ */
+
+use uo;
+
+include ":tn:equipment";
+
+program OnDestroy(item)
+	var equipped := CInt(GetObjProperty(item, "#EquippedOn"));
+	if ( !equipped )
+		return 1;
+	endif
+
+	var mobile := SystemFindObjectBySerial(equipped);
+
+	RemoveEquipmentMods(mobile, item);
+
+	if (coverFace(item))
+		mobile.name := GetObjProperty(mobile, "realname");
+		mobile.title_race := GetObjProperty(mobile, "realrace");
+		EraseObjProperty(mobile, "realname");
+		EraseObjProperty(mobile, "realrace");
+		SetObjProperty(mobile, "url", GetObjProperty(mobile, "old_url"));
+	endif
+
+	return 1;
+endprogram

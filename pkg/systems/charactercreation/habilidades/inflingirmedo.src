@@ -1,0 +1,21 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+
+program manobra(who)
+
+	SendSysMessageEx(who, "Escolha o alvo do toque sombrio", SSM_INFO);
+	var targ := Target(who, TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
+	var lvl := cint(AP_GetSkill(who,MAGICLORE)/1.5);
+	
+	if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
+		SendSysMessageEx(who, "O Alvo nao esta visivel para voce.", SSM_FAIL);
+		return 1;
+	endif
+	
+	TS_StartTimer(targ, "temor", lvl, who);
+
+endprogram  

@@ -1,0 +1,33 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":timedScripts:timedScripts";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	PrintTextAbove(attacker, "*destroi arma*");
+
+	TS_StartTimer(defender, "desarmar", 60, 0, attacker);
+	var defweapon := defender.weapon;
+	if (defweapon.objtype != 0xF020)
+		var x := defender.x + RandomInt(2)+1;
+		var y := defender.y + RandomInt(2)+1;
+		MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);
+		destroyItem(defweapon);
+	endif
+
+endprogram  

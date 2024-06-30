@@ -1,0 +1,37 @@
+use uo;
+use cfgfile;
+use util;
+
+program cria(item)
+
+	var spellinfo := struct;
+
+
+	var spell := RandomInt(5)+1;
+	
+	case (spell)
+		1:
+			spellinfo.+name := "Desarmar";
+			spellinfo.+description := "Essa manobra faz voce alvejar a arma que o alvo possui e se acertar consegue desarma-lo fazendo a arma cair no chao.";
+		2:	
+			spellinfo.+name := "Giratorio";
+			spellinfo.+description := "Essa manobra faz voce acertar todos que estao ao seu redor, seja amigo ou inimigo.";
+		3:
+			spellinfo.+name := "Duplo";
+			spellinfo.+description := "Essa manobra faz voce realizar dois ataques no tempo de um.";
+			
+		4:
+			spellinfo.+name := "TiroMultiplo";
+			spellinfo.+description := "Usado somente com armas que usam projeteis, essa manobra faz voce disparar varios tipos rapidamente.";
+			
+		5:		
+			spellinfo.+name := "Fintar";
+			spellinfo.+description := "Essa manobra faz voce ludibriar seu adversario, ele nao sabe o que esperar de voce no combate e ganha varias penalidades.";
+
+	endcase
+
+	SetObjProperty(item, "spellinfo", spellinfo);
+
+			
+
+endprogram

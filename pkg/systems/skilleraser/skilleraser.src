@@ -1,0 +1,39 @@
+
+use uo;
+
+include ":attributes:attributes";
+
+program skilleraser()
+
+	while(1)
+
+		foreach player in (EnumerateOnlineCharacters())
+
+			var skillsToErase := GetObjProperty(player, "skillsToDelete");
+
+			if (skillsToErase)
+				foreach skill in (skillsToErase.keys())
+					if (skillsToErase[skill] > 0)
+						var skillvalue := AP_GetTrueSkill(player, skill);
+						if (skillvalue)
+							var value := SkillsToErase[skill];
+							value := value - 0.1;
+							SkillsToErase[skill] := value;
+							AP_SetTrueSkill(player, skill, (skillvalue - 0.1));
+							break;
+						else
+							skillsToErase.erase(skill);
+						endif
+					else
+						skillsToErase.erase(skill);
+					endif
+				endforeach
+				SetObjProperty(player, "skillsToDelete", skillsToErase);
+			endif
+	
+		endforeach
+
+		sleep(120);
+	endwhile
+
+endprogram

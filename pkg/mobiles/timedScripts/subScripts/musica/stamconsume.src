@@ -1,0 +1,20 @@
+use uo;
+use os;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+
+program cureScript(params)
+	var mobile := params[1];
+	var ok;
+	ok := 1;
+
+	while (ok != 0)
+		AP_ConsumeVital(mobile, "Stamina", 1.5);
+		sleepms(1000);
+	endwhile		
+
+	
+	
+endprogram

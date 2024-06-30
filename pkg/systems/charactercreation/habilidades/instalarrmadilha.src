@@ -1,0 +1,148 @@
+use uo;
+
+include "include/say";
+include ":mounts:mounts";
+include ":attributes:attributes";
+include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include "include/damage";
+include ":traps:traps";
+
+program instalararmadilha(who)
+
+	if (GetEquipmentByLayer(who, 0x19))
+		SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
+		return 0;
+	endif
+
+    SendSysMessageEx(who, "Qual armadilha deseja Instalar?", SSM_REQUEST);
+	var trap := Target(who);
+
+    if (!trap)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	    return 0;
+    endif
+
+    if ((!trap.objtype == 0x6076) || (!trap.objtype == 0xff97) || (!trap.objtype == 0x1BE6))
+        SendSysMessageEx(who, "Isto nao e uma armadilha.", SSM_FAIL);
+        return 0;
+    endif
+
+    if ((!trap.movable) or !ReserveItem(trap))
+		SendSysMessageEx(who, "Esta armadilha ja esta instalada.", SSM_FAIL);
+	    return 0;
+    endif
+
+	if (trap.objtype == 0xff97)
+		SendSysMessageEx(who, "Onde deseja Instalar a Armadilha?", SSM_REQUEST);
+       	var targetted := TargetCoordinates (who);
+		var armadilhanochao;
+
+	    if (!targetted)
+	        SendSysMessage (who, "Canceled.");
+	        return;
+		endif
+
+        if (Distance(targetted, who) > 2)
+		    SendSysMessageEx(who, "O alvo esta muito distante.", SSM_FAIL);
+		    return 0;
+	    endif
+
+		if ( targetted.IsA(POLCLASS_MOBILE) )
+			SendSysMessageEx(who, "Voce nao pode colocar uma armadilha nisso.", SSM_FAIL);
+			return 0;
+		elseif ( targetted.npctemplate )
+			SendSysMessageEx(who, "Voce nao pode colocar uma armadilha nisso.", SSM_FAIL);
+			return 0;
+		endif
+
+		if ( targetted.isa(POLCLASS_CORPSE) )
+			SendSysMessageEx(who, "Voce nao pode colocar armadilhas em corpos.", SSM_FAIL);
+			return 0;
+		endif
+
+		if (targetted == who)
+			SendSysMessageEx(who, "Voce acha que talvez isso nao seja uma boa ideia.", SSM_FAIL);
+			return 0;
+		endif
+
+		PrintText(who, "*instalando armadilha*");
+        DestroyITem(trap);
+		sleep(4);
+        armadilhanochao:= CreateItemAtLocation(who.x, who.y, who.z -1, 0xff98, 1, who.realm);
+        SendSysMessageEx(who, "Terminou de Instalar a Armadilha", SSM_FAIL);
+        sleep(5);
+        armadilhanochao.invisible := 1;
+		return 0;
+	endif
+
+    SendSysMessageEx(who, "Escolha onde quer instalar a armadilha.", SSM_REQUEST);
+	var alvo := Target(who);
+	var traptype := GetObjProperty(trap, "traptype");
+    var armadilhanochao;
+    var level := GetObjPRoperty(trap, "traplevel");
+
+    if (Distance(alvo, who) > 2)
+		SendSysMessageEx(who, "O alvo esta muito distante.", SSM_FAIL);
+		return 0;
+	endif
+
+    if ( alvo.IsA(POLCLASS_MOBILE) )
+		SendSysMessageEx(who, "Voce nao pode colocar uma armadilha nisso.", SSM_FAIL);
+		return 0;
+	elseif ( alvo.npctemplate )
+		SendSysMessageEx(who, "Voce nao pode colocar uma armadilha nisso.", SSM_FAIL);
+		return 0;
+    endif
+
+    if ( alvo.isa(POLCLASS_CORPSE) )
+		SendSysMessageEx(who, "Voce nao pode colocar armadilhas em corpos.", SSM_FAIL);
+		return 0;
+	endif
+
+    if (alvo == who)
+		SendSysMessageEx(who, "Voce acha que talvez isso nao seja uma boa ideia.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (alvo.isA(POLCLASS_CONTAINER))
+		
+		if (!level)
+			SendSysMessageEx(who, "Esta armadilha esta quebrada ou desarmada.", SSM_FAIL);
+			return;
+		endif
+
+		PrintText(who, "*instalando armadilha*");
+		sleep(4);
+        SendSysMessageEx(who, "Voce instalou a armadilha.", SSM_INFO);
+		AddTrap(alvo, traptype, level);
+		DestroyITem(trap);
+	else 
+        SendSysMessageEx(who, "Deseja instalar a armadilha no chão?", SSM_REQUEST);
+        var targetted := TargetCoordinates (who);
+
+	        if (!targetted)
+		        SendSysMessage (who, "Canceled.");
+		        return;
+	        endif
+
+            if (Distance(targetted, who) > 2)
+		        SendSysMessageEx(who, "O alvo esta muito distante.", SSM_FAIL);
+		        return 0;
+	        endif
+
+        PrintText(who, "*instalando armadilha*");
+        DestroyITem(trap);
+		sleep(4);
+        armadilhanochao:= CreateItemAtLocation(who.x, who.y, who.z -1 , 0x367a, 1, who.realm);
+		SetObjProperty(armadilhanochao, "traplevel", level);
+        SetObjProperty(armadilhanochao, "traptype", traptype);
+        SendSysMessageEx(who, "Terminou de Instalar a Armadilha", SSM_FAIL);
+        sleep(2);
+        armadilhanochao.invisible := 1;
+		return 0;
+	endif
+
+endprogram

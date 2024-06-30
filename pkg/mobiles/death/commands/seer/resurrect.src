@@ -1,0 +1,64 @@
+/*
+ * $Id: resurrect.src 1348 2006-05-12 08:47:00Z austin $
+ *
+ */
+
+use uo;
+use file;
+
+include ":death:resurrection";
+include ":tn:tngumps";
+include ":attributes:attributes";
+
+program textcmd_ResGump(who)
+	var targ;
+	if ( who.dead )
+		targ := who;
+	else
+		//if (who.acctname == "gha2")
+			targ := Target(who);
+		//else
+		//	SendSysMessage(who, "apenas o gha pode ressar");
+		//endif
+		if ( targ.IsA(POLCLASS_CORPSE) )
+			targ := SystemFindObjectBySerial(targ.ownerserial);
+			if ( !targ )
+				SendSysMessage(who, "No owner could be found for that corpse.");
+				return 0;
+			endif
+		endif
+		
+		if ( !targ.dead )
+			SendSysMessage(who, "Target is not dead.");
+			return 0;
+		endif
+	endif
+	var motiveress;
+	if (who.acctname != targ.acctname && targ.cmdlevel < 1)
+		motiveress := cstr(BigRequestGump(who , "Escreva detalhadamente o motivo deste ress:"));
+	endif
+	if (!motiveress && who.acctname != "gha2" && who.acctname != targ.acctname)
+		SendSysMessage(who, "Voce deve escrever o motivo!");
+		return 0;
+	endif
+	
+	if (who.acctname != targ.acctname && who.acctname != "gha2")
+		LogToFile(":fls_core:ress.log", who.name+" ("+who.acctname+") ressou "+targ.name+" ("+targ.acctname+"): "+motiveress, LOG_DATETIME);
+		var morto;
+		var dpoints := AP_GetVital(targ, "DP");
+		var assassinado;
+		if (GetObjProperty(targ, "morto"))
+			morto := "Sim";
+		else
+			morto := "Nao";
+		endif
+		if (GetObjProperty(targ, "WeaponKill"))
+			assassinado := "Sim";
+		else
+			assassinado := "Nao";
+		endif
+		LogToFile(":fls_core:ress.log", "Detalhes... Morto: "+morto+"... DeathPoints: "+dpoints+"... Assassinado: "+assassinado, LOG_DATETIME);
+	endif
+	Resurrect(targ);
+	EraseObjProperty(targ, "morto");
+endprogram

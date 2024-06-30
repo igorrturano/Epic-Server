@@ -1,0 +1,33 @@
+use uo;
+use util;
+use cfgfile;
+//include ":alchemy:drinkPotion";
+
+const UOBJ_EMPTY_BOTTLE := 0x0f0e;
+
+program drink_blue (who, potion)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!Accessible(who, potion))
+    return;
+  endif
+  if(potion.movable == 0)
+    SendSysMessage(who, "Voce nao pode usar isto.");
+    return;
+  endif
+  SendSysMessage(who, "Escolha o balde de tintas");
+  var what := Target(who, TGTOPT_CHECK_LOS);
+  if (!what)
+    SendSysMessage(who, "Cancelado");
+    return;
+  endif
+  if (what.objtype == 0x5EBE) 
+     what.color := potion.color;
+     DestroyItem(potion);
+     CreateItemInBackpack(who, UOBJ_EMPTY_BOTTLE, 1);
+     SetObjProperty(what, "fullness", 10);
+		 what.name := "Um balde de tinta para pintar couro cheio";
+  else
+     SendSysMessage(who, "Voce precisa usar no balde de tintas");
+  endif
+endprogram

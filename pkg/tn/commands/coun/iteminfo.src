@@ -1,0 +1,500 @@
+use uo;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":gumps:yesNo";
+include ":merchants:item_template";
+include ":attributes:attributes";
+include ":tn:recipes";
+include ":fls_core:packets";
+include "include/say";
+//TODO op?cao de salvar
+
+program iteminfo(who)
+
+	PlayerSpeedBoost(who, 0);
+
+	SendsysMessage(who, "Escolha o item para modificar ou aperte ESC pra ver os recipes criados.");
+	var item := Target(who);
+	if (!item)
+		ShowAllRecipes(who);
+	else
+		iteminfogump(who, item);
+	endif
+
+endprogram
+
+function ShowAllRecipes(who)
+
+	var df := OpenDataFile( ":tn:recipes" );
+	var spawns := df.Keys();
+
+	var gump := GFCreateGump();
+
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 470);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 440);
+	GFTextMid(gump, 20, 50, 250, 1153, "Recipes");
+
+	GFPage(gump, 0);
+
+	GFTextLine(gump, 40, 70, 1153, "Nome");
+	GFTextLine(gump, 140, 70, 1153, "Lvl");
+	GFTextLine(gump, 170, 70, 1153, "Item");
+	GFTextLine(gump, 200, 70, 1153, "Rcp");
+	GFTextLine(gump, 230, 70, 1153, "Del");
+	GFTextLine(gump, 260, 70, 1153, "Edit");
+
+
+	var x := 40;
+	var y := 90;
+	var i := 1;
+	var pagecount := 0;
+	var page := 1;
+	GFSetRadioGroup(gump, 1);
+	GFPage(gump, 1);
+	foreach recipe in spawns
+		var recipeelem := df.FindElement(recipe);
+		GFTextLine(gump, x, y, 1153, ""+ recipe);
+		GFTextLine(gump, x+100, y, 1153, ""+ recipeelem.GetProp("nivel"));
+		GFAddButton( gump, x+130, y+3, 2103, 2104, 1, 100+i);
+		GFAddButton( gump, x+160, y+3, 2103, 2104, 1, 200+i);
+		GFAddButton( gump, x+190, y+3, 2103, 2104, 1, 300+i);
+		GFAddButton( gump, x+220, y+3, 2103, 2104, 1, 400+i);
+
+		y := y + 15;
+		i := i +1;
+		pagecount := pagecount + 1;
+		if (pagecount == 21)
+			y := 160;
+			pagecount := 0;
+			page := page+1;
+			GFAddButton(gump, 350, 470, 2437, 2437, GF_PAGE_BTN, page);
+			GFPage(gump, page);
+			GFAddButton(gump, 350, 160, 2436, 2436, GF_PAGE_BTN, page-1);
+		endif
+		sleepms(2);
+	endforeach
+
+	SendSysMessage(who, "Total de recipes: " + spawns.size());
+
+	var result := GFSendGump(who, gump);
+
+	if ( result[0] > 100 && result[0] < 200)
+		var r := CreateRecipeItem(who.backpack, spawns[result[0]-100]);
+		SendSysMessage(who, " O item foi criado na sua backpack: " + r);
+	elseif ( result[0] > 200 && result[0] < 300)
+		var r := CreateRecipe(who.backpack, spawns[result[0]-200]);
+		SendSysMessage(who, "O recipe foi criado na sua backpack: " + r );
+	elseif ( result[0] > 300 && result[0] < 400 )
+		var r := DeleteRecipe(spawns[result[0]-300]);
+		SendSysMessage(who, "Recipe " + spawns[result[0]-300] + " deletado: " + r);
+	elseif ( result[0] > 400)
+		SendSysMessage(who, "Para editar o recipe, crie o item e depois edite ele com .iteminfo e clique em salvar recipe.");
+	endif
+
+endfunction
+
+function iteminfogump(who, item)
+	var gump := GFCreateGump();
+
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 470);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 440);
+	GFTextMid(gump, 20, 50, 250, 1153, "Modifique o Item");
+
+	GFPage(gump, 0);
+	GFTextLine(gump, 40, 70, 1153, "Principal");
+	GFTextLine(gump, 40, 85, 1153, "Scripts");
+	GFTextLine(gump, 40, 100, 1153, "Crafting");
+	GFTextLine(gump, 40, 115, 1153, "Criar Recipe");
+	GFTextLine(gump, 40, 130, 1153, "Historia");
+	GFTextLine(gump, 200, 70, 1153, "Loots");
+
+	GFAddButton( gump, 20, 73, 2103, 2104, 0, 2);
+	GFAddButton( gump, 20, 88, 2103, 2104, 0, 3);
+	GFAddButton( gump, 20, 103, 2103, 2104, 0, 4);
+	GFAddButton( gump, 20, 118, 2103, 2104, 1,99);
+	GFAddButton( gump, 20, 133, 2103, 2104, 1, 98);
+
+	GFAddButton( gump, 180, 73, 2103, 2104, 0, 5);
+
+	GFPage(gump, 2);
+
+	GFTextLine(gump, 40, 150, 1153, "Nome: " + lower(item.desc));
+	GFTextLine(gump, 40, 165, 1153, "Objtype: " + lower(item.objtype) + " / " + lower(hex(item.objtype)));
+	GFTextLine(gump, 40, 180, 1153, "Cor: " + item.color);
+	GFTextLine(gump, 40, 195, 1153, "Qualidade: " + item.quality);
+	GFTextLine(gump, 40, 210, 1153, "Hp: "  + item.hp);
+	GFTextLine(gump, 40, 225, 1153, "MaxHp_mod: " + item.maxhp_mod);
+	GFTextLine(gump, 40, 240, 1153, "MaxHp: "  + item.maxhp );
+	GFTextLine(gump, 40, 255, 1153, "Newbie: " + item.newbie);
+	GFTextLine(gump, 40, 270, 1153, "Dmg_mod: " + item.dmg_mod);
+	GFTextLine(gump, 40, 285, 1153, "Speed_mod: " + item.speed_mod);
+
+	GFAddButton( gump, 20, 153, 2103, 2104, 1, 10);
+	GFAddButton( gump, 20, 183, 2103, 2104, 1, 11);
+	GFAddButton( gump, 20, 198, 2103, 2104, 1, 12);
+	GFAddButton( gump, 20, 213, 2103, 2104, 1, 13);
+	GFAddButton( gump, 20, 243, 2103, 2104, 1, 14);
+	GFAddButton( gump, 20, 258, 2103, 2104, 1, 15);
+	GFAddButton( gump, 20, 273, 2103, 2104, 1, 16);
+	GFAddButton( gump, 20, 288, 2103, 2104, 1, 17);
+
+	GFPage(gump, 5);
+
+	var df := OpenDataFile( ":tn:recipes" );
+	if (!df)
+		df := CreateDataFile(":tn:recipes");
+	endif
+
+	var elem := df.FindElement( lower(item.desc) );
+	if (elem)
+		var loots := elem.GetProp("loots");
+		GFTextLine(gump, 40, 150, 1153, "Loots: " + loots);
+		GFAddButton( gump, 20, 153, 2103, 2104, 1, 50);
+	endif
+
+
+	GFPage(gump, 3);
+	var uses := GetObjProperty(item, "uses");
+	if (uses == error)
+		uses := "";
+	endif
+	var hitscripts := GetObjProperty(item, "HitScripts");
+	if (hitscripts == error)
+		hitscripts := "";
+	endif
+	var equip := GetObjProperty(item, "equip");
+	if (equip == error)
+		equip := "";
+	endif
+	GFTextLine(gump, 40, 150, 1153, "Usescript: " + uses);
+	GFTextLine(gump, 40, 165, 1153, "ArmorScripts: " );
+	GFTextLine(gump, 40, 180, 1153, "HitScript: " + hitscripts);
+	GFTextLine(gump, 40, 195, 1153, "EquipScript "  + equip);
+
+	GFAddButton( gump, 20, 153, 2103, 2104, 1, 20);
+	GFAddButton( gump, 20, 168, 2103, 2104, 1, 21);
+	GFAddButton( gump, 20, 183, 2103, 2104, 1, 22);
+	GFAddButton( gump, 20, 198, 2103, 2104, 1, 23);
+
+	GFPage(gump, 4);
+	var skillnames := GetRecipeCraftSkills( item.desc);
+	var materiais := GetRecipeMaterials( item.desc);
+
+	if (!skillnames)
+		skillnames:= dictionary;
+		GFTextLine(gump, 40, 150, 1153, "Skills: " );
+		GFTextLine(gump, 40, 165, 1153, "Valores: " );
+	else
+		var skval := array{};
+		foreach key in (skillnames.keys())
+			skval.append( skillnames[key] );
+		endforeach
+		GFTextLine(gump, 40, 150, 1153, "Skills: " + skillnames.keys() );
+		GFTextLine(gump, 40, 165, 1153, "Valores: " +  skval);
+	endif
+
+	if (!materiais)
+		materiais := dictionary;
+		GFTextLine(gump, 40, 180, 1153, "Materiais: " );
+		GFTextLine(gump, 40, 195, 1153, "Amount "  );
+	else
+		var matamt := array{};
+		foreach key in (materiais.keys())
+			matamt.append( materiais[key] );
+		endforeach
+		GFTextLine(gump, 40, 180, 1153, "Materiais: " + materiais.keys());
+		GFTextLine(gump, 40, 195, 1153, "Amount "  + matamt);
+	endif
+
+	GFAddButton( gump, 20, 153, 2103, 2104, 1, 30);
+	//GFAddButton( gump, 20, 168, 2103, 2104, 1, 31);
+	GFAddButton( gump, 20, 183, 2103, 2104, 1, 32);
+	//GFAddButton( gump, 20, 198, 2103, 2104, 1, 33);
+
+	var result := GFSendGump(who, gump);
+	if (result[0] == 10)
+		var desc := RequestGump(who, "Escreva o nome do item");
+		SetName(item, desc);
+		iteminfogump(who, item);
+	elseif ( result[0] == 11 )
+		var color := Cint(RequestGump(who, "Escreva o numero da cor do item"));
+		item.color := color;
+		iteminfogump(who, item);
+	elseif ( result[0] == 12 )
+		var q := Cdbl(RequestGump(who, "Escreva a qualidade"));
+		item.quality := q;
+		iteminfogump(who, item);
+	elseif ( result[0] == 13)
+		item.hp := Cint(RequestGump(who, "Escreva os hits do item"));
+		iteminfogump(who, item);
+	elseif ( result[0] == 14 )
+		item.maxhp_mod := Cint(RequestGump(who, "Escreva o hp_mod do item"));
+		iteminfogump(who, item);
+	elseif ( result[0] == 15  )
+		item.newbie := Cint(RequestGump(who, "Item vai ser newbie? 1/0"));
+		iteminfogump(who, item);
+	elseif (result[0] == 16 )
+		item.dmg_mod := Cint(RequestGump(who, "Escreva o dmg_mod do item"));
+		iteminfogump(who, item);
+	elseif (result[0] == 17 )
+		item.speed_mod := Cint(RequestGump(who, "Escreva o speed_mod do item"));
+		iteminfogump(who, item);
+	elseif ( result[0] == 20 )
+		var uses := CheckBoxGump(who, 150, 230, "Escolha os usescripts",  array{ "dmg", "heal", "timedscript", "combinacao", "upgrade" });
+		SetObjProperty(item, "uses",  uses);
+		foreach x in uses
+			if (x == "dmg" )
+				var amt := Cint(RequestGump(who, "Quanto dano o item causa?"));
+				SetObjProperty(item, "dmg", amt);
+				var dmgtype := RadioGump(who, 150, 230, "Qual o tipo de dano causado",  array{"fogo", "fisico", "gelo", "eletricidade", "veneno"});
+				setobjproperty(item, "dmgtype", dmgtype);
+			elseif (x == "heal" )
+				var amt2 := Cint(RequestGump(who, "Quanto o item cura?"));
+				SetObjProperty(item, "heal", amt2);
+				var healtrg := CheckBoxGump(who, 140, 180, "Qua vital ele vai curar?",  array{"hits", "stam", "mana"});
+				SetObjProperty(item, "healtrg", healtrg);
+			elseif (x == "changeform" )
+				var amt3 := Cint(RequestGump(who, "Para qual grafico o item muda?"));
+				SetObjProperty(item, "graphic", amt3);
+				var amt4 := Cint(RequestGump(who, "Quanto tempo dura o efeito?"));
+				SetObjProperty(item, "time", amt4);
+			elseif ( x == "combinacao")
+				var comb := struct;
+				comb.+materials := array;
+				var cont := 1;
+				while (cont)
+
+					var material := struct;
+					SendSysMessageEx(who, "Escolha o material ", SSM_REQUEST);
+					var mat := Target(who);
+					if (mat.isa(POLCLASS_ITEM))
+						material.+template := CreateItemTemplate(mat);
+						material.+qte := cint(RequestGump(who, "Digite a quantidade do item (itens nao stackaveis escreva 1)") );
+						comb.materials.append(material);
+					endif
+
+					cont := yesno(who, "Adicionar outro item? ");
+				endwhile
+
+				comb.+tocreate := array;
+				cont := 1;
+
+				while(cont)
+
+					var tocreate := struct;
+					SendSysMessageEx(who, "Escolha o item que sera criado.", SSM_REQUEST);
+					var t := target(who);
+					if (t.isa(POLCLASS_ITEM))
+						tocreate.+template := CreateItemTemplate(t);
+						comb.tocreate.append(tocreate);
+					endif
+					cont := yesno(who, "Outro item sera criado?");
+				endwhile
+				SetObjProperty(item, "combinacao", comb);
+				var destroy := YesNo(who, "O item vai ser destruido apos o uso?");
+				if (destroy)
+					SetObjProperty(item, "destroy", 1);
+					var resto := YesNo(who, "O item vai criar algo apos ser destruido?");
+					if (resto)
+						SendSysMessage(who, "Escolha o que o item criara quando for destruido.");
+						var restoitem := Target(who);
+						if (!restoitem)
+							SendSysMessage(who, "Cancelado");
+						endif
+						var template := CreateItemTemplate(restoitem);
+						setObjProperty(item, "resto",  template);
+					endif
+				endif
+				var cd := Cint(Requestgump(who, "Qual o cd para usar o item?"));
+				setobjproperty(item, "cd", cd);
+				iteminfogump(who, item);
+				item.usescript := ":tn:genericclik";
+
+				return 1;
+
+			elseif (x == "timedscript")
+				var yes := 1;
+				var timers := array;
+				while (yes)
+					var timer := struct;
+					timer.+timername := Cstr(RequestGump(who, "Qual o nome do timer?"));
+					//setobjproperty(item, "timername", timername);
+					timer.+level := Cint(RequestGump(who, "Qual o level do timer?"));
+					//SetObjProperty(item, "timerlevel", level);
+					timer.+time := Cint(RequestGump(who, "Qual a duracao do timer?"));
+					//SetObjProperty(item, "timertime", time);
+					yes := YesNo(who, "Adicionar outro timer?");
+					timers.append(timer);
+				endwhile
+				SetObjProperty(item, "timers", timers);
+			endif
+		endforeach
+		var target2 := YesNo(who, "Este item vai pedir target ( nao para itens target self)?");
+		if (target2)
+			SetObjProperty(item, "target", 1);
+		endif
+		var cargas := YesNo(who, "Este item vai ter cargas?");
+		if (cargas)
+			var charges := Cint(Requestgump(who, "Quantas cargas iniciais o item vai ter?"));
+			SetObjProperty(item, "charges", charges);
+			SetObjProperty(item,"maxcharges",charges);
+		endif
+		var destroy := YesNo(who, "O item vai ser destruido apos o uso?");
+		if (destroy)
+			SetObjProperty(item, "destroy", 1);
+			var resto := YesNo(who, "O item vai criar algo apos ser destruido?");
+			if (resto)
+				SendSysMessage(who, "Escolha o que o item criara quando for destruido.");
+				var restoitem := Target(who);
+				if (!restoitem)
+					SendSysMessage(who, "Cancelado");
+				endif
+				var template := CreateItemTemplate(restoitem);
+				setObjProperty(item, "resto",  template);
+			endif
+		endif
+
+		//if (target2)
+		//	var targettype := CheckBoxGump(who, 140, 400, "Este item funciona apenas em:",  array{"players", "npcs", "magos", "undeads"});
+		//	setObjProperty(item, "targettype", targettype);
+		//endif
+		var cd := Cint(Requestgump(who, "Qual o cd para usar o item?"));
+		setobjproperty(item, "cd", cd);
+		iteminfogump(who, item);
+		item.usescript := ":tn:genericclik";
+	elseif ( result[0] == 21 )
+		SendSysMessage(who, "Armor hit scripts nao implementado.");
+		iteminfogump(who, item);
+	elseif (result[0] == 22 )
+		SendSysMessage(who, "Use o comando .addhitscript.");
+		iteminfogump(who, item);
+	elseif (result[0] == 23)
+		var equip := CheckBoxGump(who, 150, 490, "Escolha que equipscript tera",  array{"cursed", "strmod", "dexmod", "intmod", "hitsmod", "manamod",  "stammod","skillmod", "resistmod", "setprop"});
+		var mods := dictionary;
+		//var amt := Cint(RequestGump(who, "Digite de quanto vai ser o mod"));
+		//setobjproperty(item, "magicamt", amt);
+		foreach eqp in  equip
+			if (eqp == "strmod")
+				var amt := Cint(RequestGump(who, "Digite o mod de str"));
+				//Set'strmod"ObjProperty(item, "strmod", amt);
+				mods["strmod"] := amt;
+			endif
+			if (eqp == "dexmod")
+				var amt := Cint(RequestGump(who, "Digite o mod de dex"));
+				//SetObjProperty(item, "dexmod", amt);
+				mods["dexmod"] := amt;
+			endif
+			if (eqp == "intmod")
+				var amt := Cint(RequestGump(who, "Digite o mod de int"));
+				//SetObjProperty(item, "intmod", amt);
+				mods["intmod"] := amt;
+			endif
+			if ( eqp ==  "skillmod" )
+				var skills := SplitWords(RequestGump(who, "Digite as skills que vao receber o mod"));
+				setobjproperty(item, "skillmod", skills);
+				var amt := SplitWords(RequestGump(who, "Digite o mod de cada skill. ex.: 10 20 pra duas skills."));
+				//setobjproperty(item, "skillamt", amt);
+				var k := 1;
+				foreach skill in skills
+					mods[skill] := amt[k];
+					k := k + 1;
+				endforeach
+			endif
+			if (eqp == "resistmod"  )
+				var resists := CheckBoxGump(who, 140, 420, "Escolha quais serao os resist mods", array{"physical", "cold", "fire", "energy", "poison"});
+				foreach resist in resists
+					if ( resist == "physical" )
+						var amt := Cint(RequestGump(who, "Digite de quanto vai ser physical mod"));
+						//SetObjProperty(item, "PhysicalResistMod", amt);
+						mods["PhysicalResistMod"] := amt;
+					elseif (resist == "cold")
+						var amt := Cint(RequestGump(who, "Digite de quanto vai ser cold mod"));
+						//SetObjProperty(item, "ColdResistMod", amt);
+						mods["ColdResistMod"] := amt;
+					elseif (resist == "fire")
+						var amt := Cint(RequestGump(who, "Digite de quanto vai ser fire mod"));
+						//SetObjProperty(item, "FireResistMod", amt);
+						mods["FireResistMod"] := amt;
+					elseif (resist == "energy")
+						var amt := Cint(RequestGump(who, "Digite de quanto vai ser energy mod"));
+						//SetObjProperty(item, "EnergyResistMod", amt);
+						mods["EnergyResistMod"] := amt;
+					elseif (resist == "poison")
+						var amt := Cint(RequestGump(who, "Digite de quanto vai ser poison mod"));
+						//SetObjProperty(item, "PoisonResistMod", amt);
+						mods["PoisonResistMod"] := amt;
+					endif
+				endforeach
+			endif
+			if (eqp == "setprop" )
+				var propname := requestgump(who, "Qual vai ser o nome da prop?");
+				var value := requestgump(who, "qual o valor da prop?");
+				SetObjProperty(item, "propname", propname);
+				SetObjProperty(item, "propvalue", value);
+				mods["setprop"] := 1;
+			endif
+			if (eqp == "hitsmod" )
+				var amt := Cint(RequestGump(who, "Digite de quanto vai ser o hits mod"));
+				//SetObjProperty(item, "hitsmod", amt);
+				mods["hitsmod"] := amt;
+			endif
+			if (eqp == "manamod" )
+				var amt := Cint(RequestGump(who, "Digite de quanto vai ser o mana mod"));
+				//SetObjProperty(item, "manamod", amt);
+				mods["manamod"] := amt;
+			endif
+			if (eqp == "stammod" )
+				var amt := Cint(RequestGump(who, "Digite de quanto vai ser stammod mod"));
+				//SetObjProperty(item, "stammod", amt);
+				mods["stammod"] := amt;
+			endif
+			if (eqp == "cursed")
+				mods["cursed"] := 1;
+			endif
+			//iteminfogump(who, item);
+		endforeach
+		setobjproperty(item, "magic", 1);
+		setobjproperty(item, "equip", mods);
+		iteminfogump(who, item);
+
+	elseif (result[0] == 32)
+		var mais := 1;
+		var mats := array;
+		var dict := dictionary;
+		while(mais)
+			var mattype := RadioGump(who, 260, 280, "Escolha o material que o item vai ser feito.", array{"wood", "metal", "ossos", "leather", "glass", "cloth", "outro"});
+			//SendSysMessage(who, "Selecione o material que sera utilizado. Aperte esc para cancelar");
+			var val := Cint(RequestGump(who, "Qual a quantidade desse item?"));
+			if (mattype == "outro")
+				SendSysMessage(who, "Escolha o material.");
+				var targ := Target(who);
+				if (targ)
+					mats.append(targ);
+					dict[targ.objtype] := val;
+				endif
+			else
+				mats.append(mattype);
+				dict[mattype] := val;
+			endif
+			mais := YesNo(who, "Deseja adicionar outro material?");
+		endwhile
+		var df := OpenDataFile( ":tn:recipes" );
+		if (!df)
+			df := CreateDataFile(":tn:recipes");
+		endif
+
+		var elem := df.FindElement( lower(item.desc ));
+		if (!elem)
+			SendSysMessage(who, "Apenas itens que sao recipes podem ser craftaveis.");
+		else
+			elem.setprop("craftmat", dict);
+		endif
+		iteminfogump(who, item);
+	endif
+
+endfunction

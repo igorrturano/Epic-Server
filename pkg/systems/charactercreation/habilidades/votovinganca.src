@@ -1,0 +1,14 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":tn:cooldown";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Complete sua vinganca.", SSM_INFO);
+
+	SetObjProperty(attacker, "votovinganca", 1);
+
+endprogram  
+

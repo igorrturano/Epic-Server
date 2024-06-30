@@ -1,0 +1,62 @@
+
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/damage";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
+	var targ := who.weapon; //Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
+	var time := AP_GetSkill(who, MAGICLORE)*10 + 180;
+
+	if (targ.isA(POLCLASS_WEAPON))
+
+		var encantada := GetObjProperty(targ, "#elementalweapon");
+		if (encantada != error)
+			if (readgameclock() < encantada.endtime )
+				SendSysMessageEx(who, "Esta arma ja esta com um encantamento.", SSM_FAIL);
+				return 1;
+			endif
+		endif
+
+		if ( GetCooldown(targ, "blessweapon") > 0 )
+			SendSysMessageEx(who, "Esta arma ja esta com um encantamento.", SSM_FAIL);
+			return 1;
+		endif
+
+		var dmg := struct;
+		dmg.+type := DMG_COLD;
+		dmg.+serial := who.serial;
+		dmg.+endtime := readgameclock() + time;
+		dmg.+bonus := AP_GetSkill(who, MAGICLORE)/400;
+		if  (dmg.bonus <= 0.1)
+			dmg.bonus := 0.1;
+		endif
+
+		SetObjProperty(targ, "#elementalweapon", dmg);
+
+		start_script( ":spells:elementalweapon", {targ, time, DMG_COLD, who} );
+        PlaySoundEffect(targ, SFX_BLESS);
+		SendSysMessageEx(who, "Uma fina camada de gelo cobre a arma.", SSM_INFO);
+
+		return 1;
+	endif
+
+	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+
+endprogram

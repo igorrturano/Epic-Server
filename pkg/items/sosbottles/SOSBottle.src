@@ -1,0 +1,55 @@
+
+use uo;
+use cfgfile;
+use os;
+use util;
+
+include ":itemutils:canAccess";
+
+program use_MessageBottle( who, bottle )
+
+	if( !can_access(who, bottle) )
+		return 0;
+	endif
+	if( !(bottle in EnumerateItemsInContainer(who.backpack)) )
+		SendSysMessage(who, "Este item nao esta em sua mochila.");
+		return 0;
+	endif
+	if( bottle.movable == 0 )
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return 0;
+	endif
+	if( !ReserveItem(bottle) )
+		return 0;
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	var cfg := ReadConfigFile(":sosbottles:config/sosarea");
+	if (!cfg)
+		Syslog("Could not read sosarea.cfg");
+		SendSysMessage(who, "Erro com sosarea!");
+		return 0;
+	endif
+
+	var maxi := GetConfigMaxIntKey(cfg);
+	var elem := cfg[RandomInt(maxi)+1];
+	var X := CInt(elem.x)+RandomInt(CInt(elem.range)*2) - CInt(elem.range);
+	var Y := CInt(elem.y)+RandomInt(CInt(elem.range)*2) - CInt(elem.range);
+	UnloadConfigFile("sosarea");
+	SetObjProperty(bottle, "tileX", X);
+	SetObjProperty(bottle, "tileY", Y);
+	var message := CreateItemInContainer(who.backpack, 0xa363);
+	if( !message )
+		DestroyItem(bottle);
+		SendSysMessage(who, "A mensagem se deteriorou em po quando voce a pegou!");
+		return 0;
+	endif
+	SetObjProperty(message, "tileX", X);
+	SetObjProperty(message, "tileY", Y);
+	SetObjProperty(message, "msgnum", RandomInt(4));
+	SendSysMessage(who, "Voce retirou a mensagem da garrafa!");
+	DestroyItem(bottle);
+
+endprogram

@@ -1,0 +1,79 @@
+use uo;
+use os;
+
+include ":water:buckets";
+
+const ITEM_BUCKET	:= 0x14E0;
+const HOOK_GRAPHIC	:= 7835;
+
+const SPLASH_SOUND	:= 0x26;
+
+const BOW_ANIM		:= 0x20;
+
+program FillBucket(who, hook)
+	SendSysMessage(who, "Select an empty water bucket.");
+	var bucket := target(who);
+	
+	if ( !ReserveItem(hook) )
+		SendSysMessage(who, "Someone else is already using that.");
+		return;
+	elseif ( bucket.objtype != ITEM_BUCKET )
+		SendSysMessage(who, "Cancelled");
+		return;
+	elseif ( Distance(hook, bucket) > 3 )
+		SendSysMessage(who, "That bucket is too far away.");
+		return;
+	elseif ( bucket.IsFilled() )
+		SendSysMessage(who, "That bucket is already full.");
+		return;
+	endif
+	ReserveItem(bucket);
+	
+	MoveHookInWell(hook, bucket);
+	
+	var well := hook.GetWell();
+	
+	PlaySoundEffect(hook, SPLASH_SOUND);
+	PlayStationaryEffect(well.x, well.y, well.z+1, 13613, 10, 10, 1);
+	bucket := bucket.FillBucket(FRESH_WATER_BUCKET);
+	sleepms(800);
+	if ( !bucket )
+		PrintTextAbove(hook, "I lost the bucket!");
+	endif
+	RemoveHookFromWell(hook, bucket);
+	if ( Distance(bucket, who) <= 1 )
+		if ( CheckLineOfSight(who, bucket) )
+			PerformAction(who, BOW_ANIM);
+			sleep(1);
+			MoveItemToContainer(bucket, who.backpack);
+		endif
+	endif
+
+endprogram
+
+function MoveHookInWell(hook, bucket)
+	hook.movable := 1;
+	MoveObjectToLocation(hook, hook.x-1, hook.y, hook.z, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(bucket, hook.x-2, hook.y, hook.z-4,  MOVEOBJECT_FORCELOCATION);
+	sleepms(600);
+	var i;
+	for ( i:=3; i>0; i:=i-1 )
+		MoveObjectToLocation(hook, hook.x, hook.y, hook.z-1, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(bucket, hook.x-1, hook.y, hook.z-4, MOVEOBJECT_FORCELOCATION);
+		sleepms(200);
+	endfor
+endfunction
+
+function RemoveHookFromWell(hook, bucket)
+	var i;
+	for ( i:=3; i>0; i:=i-1 )
+		MoveObjectToLocation(hook, hook.x, hook.y, hook.z+1, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(bucket, hook.x-1, hook.y, hook.z-4, MOVEOBJECT_FORCELOCATION);
+		sleepms(200);
+	endfor
+	MoveObjectToLocation(hook, hook.x+1, hook.y, hook.z, MOVEOBJECT_FORCELOCATION);
+	hook.movable := 0;
+	MoveObjectToLocation(bucket, hook.x-1, hook.y, hook.z-4, MOVEOBJECT_FORCELOCATION);
+	sleepms(600);
+	MoveObjectToLocation(bucket, hook.x, hook.y+1, hook.z-2);
+endfunction

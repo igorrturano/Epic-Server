@@ -1,0 +1,104 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":survival:fishingFunctions";
+
+
+program cabelo(who, estilo)
+
+var cabelo:= GetEquipmentByLayer( who, LAYER_HAIR );
+var corcabelo:= cabelo.color;
+var cabelonovo;
+var solto:=  0x203C;
+var preso:=  0x203d;
+var tranca:= 0x2049;
+var pena := 12224;
+var flor := 12236;
+var trancalonga := 12239;
+var preso1 := 12238;
+var preso2 := 12240;
+
+var realm:= who.realm;
+
+if(estilo == "lavar")
+	SendSysMessage(who, "Selecione um lugar para lavar o cabelo.");
+	var targ := TargetCoordinates(who);
+	if( !targ )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+	var locinfo := GetMapInfo( targ.x, targ.y, who.realm );
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
+		SendSysMessage(who, "Voce esta muito longe de onde deseja lavar as bandagens.");
+	elseif (IsWater(targ, locinfo))
+		PrintText(who, "*lava o cabelo*");
+		var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+		var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+		var origin := GetObjProperty(who, "haircolor");
+		if (origin)
+			hair.color := origin;
+			beard.color := origin;
+			EraseObjProperty(who, "haircolor");
+		endif
+	else
+		SendSysMessage(who, "Voce precisa de agua para lava o cabelo.");
+	endif
+	return 0;
+endif
+
+
+if (! (cabelo.objtype IN {solto, preso, tranca, pena, flor, trancalonga, preso1, preso2}) )
+SendSysMessage(who, "Seu Cabelo esta curto demais para fazer qualquer coisa.");
+return 0;
+elseif (!estilo)
+SendSysMessage(who, ".cabelo <prender, soltar, trancar, flor, trancalonga, pena, preso1, preso2>");
+return 0;
+endif
+
+case (estilo)
+"prender":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, preso,  1, realm );
+  PrintText(who, "*prende o cabelo*");
+  break;
+"soltar":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, solto,  1, realm );
+  PrintText(who, "*solta o cabelo*");
+  break;
+"trancar":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, tranca,  1, realm );
+  PrintText(who, "*trança o cabelo*");
+  break;
+"trancalonga":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, trancalonga,  1, realm );
+  PrintText(who, "*trança o cabelo*");
+  break;
+"flor":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, flor,  1, realm );
+  PrintText(who, "*coloca uma flor no cabelo*");
+  break;
+"pena":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, pena,  1, realm );
+  PrintText(who, "*coloca uma pena no cabelo*");
+  break;
+"preso1":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, preso1,  1, realm );
+  PrintText(who, "*prende o cabelo*");
+  break;
+"preso2":
+  cabelonovo:= CreateItemAtLocation( who.x, who.y, who.z-4, preso2,  1, realm );
+  PrintText(who, "*prende o cabelo*");
+  break;
+endcase
+
+	if ( estilo IN {"prender","soltar","trancar", "flor", "trancalonga", "pena", "preso1", "preso2"} )
+		DestroyItem ( cabelo );
+		cabelonovo.color:= corcabelo;
+		EquipItem( who, cabelonovo );
+	else
+		SendSysMessage(who, ".cabelo <prender, soltar, trancar>");
+	endif
+
+
+endprogram

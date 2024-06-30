@@ -1,0 +1,77 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+include "include/sysEvent";
+include ":timedScripts:timedScripts";
+
+program usenarguile(who, item)
+
+if (item.objtype == 0x9958)
+
+	Sendsysmessage(who, "Escolha a base de Narguile que voce vai preencher com a erva mentolada",3,191);
+	var narguile := target(who);
+	if (!narguile)
+		return 0;
+	endif
+
+	if (narguile.objtype == 0x9959)
+		Sendsysmessage(who, "Voce deve preencher a base do Narguile com a Erva!",3,28);
+	endif
+	
+	if (narguile.objtype == 0x9956)
+		PrintTextAbove(who, "*Preenchendo o Narguile com ervas mentolada*",3,0);
+		TS_StartTimer(narguile, "narguile", 600);
+		var tragadas := Getobjproperty(narguile, "tragadas");
+		if (tragadas == error)
+			tragadas := 0;
+		endif
+		Setobjproperty(narguile, "tragadas", (tragadas + 20));
+		SubtractAmount( item, 1 );
+	endif
+endif
+
+if (item.objtype == 0x9956)
+	var replace;
+	if (Getobjproperty(item, "tragadas") == 0)
+		Sendsysmessage(who, "Esse Narguile nao possui ervas para tragar",3,28);
+		return 0;
+	endif
+
+	if (!Getobjproperty(item, "tragadas"))
+		Sendsysmessage(who, "Esse Narguile nao possui ervas para tragar",3,28);
+		return 0;
+	endif
+
+	var items := ListItemsAtLocation( item.x, item.y, item.z, who.realm );
+	var x := 0;
+	foreach possivel in items
+		if (possivel.objtype == 0x9959)
+			replace := Createitematlocation(possivel.x, possivel.y, possivel.z, 0x9957, 1, who.realm);
+			Destroyitem ( possivel );	
+			x := x + 1;
+		endif
+	endforeach
+
+	if (x == 0)
+		Sendsysmessage(who, "Voce precisa do Narguile para tragar a erva",3,28);
+		return 0;
+	endif
+
+	PrintTextAbove(who, "*Tragando o Narguile*",3,0);
+	var fumaca := Createitematlocation(item.x, item.y, (item.z + 10), 14133, 1, who.realm);
+	fumaca.color := 1150;
+	sleepms(6000);
+	Destroyitem( fumaca );
+
+	var tragadas := Getobjproperty(item, "tragadas");
+	Setobjproperty(item, "tragadas", (tragadas - 1));
+
+	Createitematlocation(replace.x, replace.y, replace.z, 0x9959, 1, who.realm);
+	Destroyitem ( replace );
+endif
+
+
+endprogram

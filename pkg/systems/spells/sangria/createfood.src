@@ -1,0 +1,41 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":magery:spells";
+include "include/sounds";
+
+// Define uma lista de tipos de comida (objtypes)
+var food_objtypes := array{
+    0x09C0,
+    0x09C9,
+    0x09D0,
+    0x172C,
+    0x09D1,
+    0x1608,
+    0x09F2
+};
+
+program SpellScript(params)
+	var who := params[1];
+	//var info := params[2];
+	params := 0; // No longer needed
+	
+	var food_item := RandomFoodObjType();
+	
+	PlaySoundEffect(who, SFX_CREATE_FOOD);
+	
+	var food := CreateItemInBackPack(who, food_item, 1);
+	food.movable := 1;
+	
+	if ( food.errortext )
+		SendSysMessage(who, "Error creating food ("+food_item+") ->"+food.errortext);
+	endif
+	
+	return 1;
+endprogram
+
+function RandomFoodObjType()
+    var random_index := RandomIntMinMax(1, food_objtypes.size() + 1);
+    return food_objtypes[random_index];
+endfunction

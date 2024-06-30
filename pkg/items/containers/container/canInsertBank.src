@@ -1,0 +1,38 @@
+//$Id: canInsert.src 87 2006-05-23 19:04:43Z sroyalty $
+
+use uo;
+use cfgfile;
+include ":attributes:attributes";
+include ":containers:checks";
+
+
+program canInsert(mobile, container, movetype, inserttype, item, existing_stack, amount_to_add)
+	if (!maoLivre(mobile, 1))
+		return 0;
+	endif
+	if (mobile.frozen || mobile.paralyzed)
+		SendSysMessage(mobile, "Voce esta paralizado.");
+		return 0;
+	endif
+	var valid :=	{0xba63, 0xba64, 0xba65, // moedas
+			 0x1085, 0x1086, 0x1087, 0x1088, 0x1089, 0x108a, 0x2b6e, 0x2b6f, 0x2b70, 0xCE3D, 0xCE3E, 0xCE3F,// joias
+			 0x1011, 0x100E, 0x100F, 0x1010, 0x1012, 0x1013, // chaves
+			 0xFEF, 0xFF0, 0xFF1, 0xFF2, 0xFF3, 0xFF4, // livros
+			 0xF0F, 0xF10, 0xF11, 0xF13, 0xF15, 0xF16, 0xF18, 0xF25, 0xF30, // pedras preciosas
+			 0xE34, 0x6116, 0xff990, 0xff991, 0xff992, 0xff994, 0xff995, 0x2050, 0x2051, 0x2052, 0x2053, 0x2054, 0x2060, 0x2064, 0x2066, 0x2063, 0x2065,// pergaminhos
+			 0xfbf, // caneta tinteiro
+			 0x6100, 0x6103, 0xec29, // grimório
+			 0x6161,0x6157,0x6158,0x6159,0x6160,0x6162,0x6163,0x6164,0x6165,0x6166,0x6167 //pergaminhos radiantes
+			};
+	if (item.objtype IN valid)
+		return 1;
+	elseif (GetObjProperty(item, "bank"))
+		return 1;
+	endif
+
+	SendSysMessage(mobile, "O banco nao aceita todos os tipos de itens. Apenas pertences pessoais, tais como:");
+	SendSysMessage(mobile, "Moedas, joias, pedras preciosas, livros, chaves, pergaminhos.");
+	SendSysMessage(mobile, "Se o item que tiver tentando guardar no banco esteja em uma dessas categorias, envie page.");
+
+	return 0;
+endprogram

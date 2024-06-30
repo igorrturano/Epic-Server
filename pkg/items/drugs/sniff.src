@@ -1,0 +1,109 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":timedScripts:poisonUtil";
+include ":tn:cooldown";
+include "include/say";
+
+program use_drug(who, drug)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if(!Accessible(who, drug))
+		return;
+	endif
+	if(drug.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return;
+	endif
+
+        var viciolvl := AP_GetVital(who, "Vicio");
+
+	var drugcfg := ReadConfigFile(":*:itemdesc");
+	var themsg;
+	var drugvalue := Cint(drugcfg[drug.objtype].drugvalue);
+
+	var elem := drugcfg[drug.objtype];
+	print(drugcfg[drug.objtype].name);
+	case(drugcfg[drug.objtype].name)
+		"areiaceleste":
+			TS_StartTimer(who, "areiaceleste", 2400);
+		"dedobesta":
+			TS_StartTimer(who, "dedodabesta", 3600);
+		"cocarina":
+			TS_StartTimer(who, "cocarina", 1800);
+	endcase
+	
+	foreach line in getconfigstringarray(elem, "leftovers")
+		line := splitwords(line);
+		var item := line[1];
+		var amount := cint(line[2]);
+		if (!createiteminbackpack(who, item, amount))
+			for (amount; amount > 0; amount := amount-1) // For non-stackable items
+				createiteminbackpack(who, item, 1);
+			endfor
+		endif
+	endforeach
+	
+	var poisonInfo := GetObjProperty(drug, "poisonInfo");
+	var drugcharge := GetObjProperty(drug, "drugcharge");
+	var subtract;
+	if (drugcharge)
+		if (drugcharge > 0)
+			subtract := "yes";
+			SetObjProperty(drug, "drugcharge", drugcharge-1);
+		else
+			subtract := SubtractAmount(drug, 1);
+		endif
+	else
+		subtract := SubtractAmount(drug, 1);
+	endif
+	
+	if(subtract)
+		PlaySoundEffect(who, 0x445);
+		PerformAction(who, 0x22);
+        viciolvl := viciolvl - drugvalue*8640;
+        
+        if (viciolvl <= 0)
+			viciolvl := 0;
+		endif
+        
+        AP_SetVital(who, "Vicio", viciolvl);
+        
+		viciolvl  := cint(viciolvl /17280);
+		
+
+		case(viciolvl)
+			0:  themsg := "voce sente uma vontade imensuravel de usar novamente essa substancia";
+			1:  themsg := "voce se sente sobre-humano";
+			2:  themsg := "voce esta acelerado";
+			3:  themsg := "voce se sente bem e disposto";
+			4:  themsg := "voce se sente diferente";
+			5:  themsg := "voce nao sente nada";
+		endcase
+
+		
+
+		SendSysMessageEx(who, themsg, SSM_INFO);
+		var ultimouso := polcore().systime;
+		SetObjProperty(who, "ultimouso", ultimouso);
+
+		if(poisonInfo)
+			poisonInfo.dosage := poisonInfo.dosage - 1;
+			if (poisonInfo.dosage <= 0) //se nao tiver mais cargas de veneno, deleta
+				EraseObjProperty(drug, "poisonInfo");
+				return 0;
+			else //se ainda tiver atualiza na arma
+				SetObjProperty(drug, "poisonInfo", poisonInfo);
+			endif
+			
+			if (IsPoisonImune(who, poisonInfo.name) )
+				return 0;
+			endif
+			TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
+		endif
+	endif
+endprogram

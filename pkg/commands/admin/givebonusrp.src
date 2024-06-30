@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program givebonusrp(who, param)
+	if (!param) 
+		SendSysMessage(who, ".maxchar <nome da conta> ");
+		return;
+	endif
+
+	var acc := FindAccount(param);
+	if (!acc)
+		SendSysMessage(who, "Conta nao encontrada");
+	endif
+	
+	acc.setprop("nota", 2);
+	SendSysMessage(who, "A conta tera +20 na criacao de skills");
+endprogram

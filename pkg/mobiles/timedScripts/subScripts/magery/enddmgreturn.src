@@ -1,0 +1,21 @@
+/*
+ * $Id: endFeebleMind.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+include "include/say";
+
+include ":attributes:attributes";
+
+program TimedScript_EndFeebleMind(params)
+	var mobile := params[1];
+
+	EraseObjProperty(mobile, "dmgreturn");
+	EraseObjProperty(mobile, "ArmorHitScripts");
+	SendSysMessageEx(mobile, "A Retribuicao Profana se dissipou.", SSM_FAIL);
+	return 1;
+endprogram
+
+

@@ -1,0 +1,29 @@
+
+use uo;
+use os;
+
+program clearspawn(who)
+
+	var x;
+	var y;
+	var items;
+	var counter := 0;
+	SendSysMessage(who, "Deletando spawns.");
+	for ( x := 3325; x < 4490; x := x +1)
+		for( y := 2653; y < 4085; y := y + 1)
+			items := ListItemsAtLocation( x, y, LIST_IGNORE_Z );
+			foreach itm in items
+				if ( ( itm.objtype == 41985) || (itm.objtype == 41728) )
+					DestroyItem(itm);
+					counter := counter + 1;
+				endif
+				SleepMs(10);
+			endforeach
+			SleepMs(10);
+		endfor
+		SleepMs(10);
+	endfor
+
+	SendSysMessage(who, "Spawn removidos: " + counter);
+
+endprogram

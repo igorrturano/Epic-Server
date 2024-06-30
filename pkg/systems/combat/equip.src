@@ -1,0 +1,156 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":tn:equipment";
+include ":tn:cooldown";
+include "include/say";
+include "include/client";
+include ":itemsys:propitens";
+
+program equipweapon(who, item)
+
+	var descmod_item:=GetObjProperty(item,"descmod");
+	var descmod:=array;
+	var aux:=array;
+
+	descmod:=GetObjProperty(who,"descmod");
+
+	if(descmod_item != error)
+		var add := 1;
+		if(descmod != error)
+			foreach desc in descmod
+				if (descmod_item == desc)
+					add := 0;
+				endif
+			endforeach
+			if(add)
+				aux := descmod;
+				aux.append(descmod_item);
+			else
+				aux := descmod;
+			endif
+		else
+			aux.append(descmod_item);
+		endif
+	endif
+	if(aux.size() == 0)
+		if(!GetObjProperty(who, "descmod"))
+			EraseObjProperty(who,"descmod");
+		endif
+	else
+		SetObjProperty(who,"descmod",aux);
+	endif
+	var ori_name:=who.name;
+	SetName(who, " ");
+	SetName(who, ori_name);
+
+    //Nao deixa o player equipar itens que sao restritos a mobs
+	if (GetObjProperty(item,"restrito_mob"))
+        SendSysMessageEx(who, "Voce nao pode equipar esse item.", SSM_FAIL);
+        return 0;
+    endif
+
+    var dual_weapons := Array{0x27a9, 0x27ab, 0x8fd, 0x27af};
+    var left_hand := GetEquipmentByLayer(who, LAYER_HAND2);
+    var right_hand := GetEquipmentByLayer(who, LAYER_HAND1);
+    if (item.isA(POLCLASS_WEAPON) && ((left_hand && left_hand.isA(POLCLASS_WEAPON)) || (right_hand && right_hand.isA(POLCLASS_WEAPON))))
+        SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
+        return 0;
+    //elseif (item.isA(POLCLASS_WEAPON) && (left_hand.objtype in dual_weapons || right_hand.objtype in dual_weapons))
+    //       SendSysMessageEx(who, "Malandrinho :p", SSM_FAIL);
+    //       return 0;
+    endif
+	if (who.npctemplate)
+		return 1;
+	endif
+
+	if (GetObjProperty(who, "desarmar") == 1)
+		SendSysMessageEx(who, "Voce nao consegue se armar.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetObjProperty(who, "metamorfose") != error)
+		if (TemHabilidade(who, "Treinamento Druidico"))
+			if (item.isa(POLCLASS_WEAPON) || item.isa(POLCLASS_ARMOR))
+				SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
+				return 0;
+			endif
+		else
+			SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
+			return 0;
+		endif
+	endif
+
+	if (TemHabilidade(who, "Baixo Limiar de Furia"))
+			if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee || item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 || item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 || item.objtype == 0x13BE || item.objtype == 0x13C3 || item.objtype == 0x13BF || item.objtype == 0xFFE6 || item.objtype == 0x13C4 || item.objtype == 0x1415 || item.objtype == 0x1416 || item.objtype == 0x1410 || item.objtype == 0x1417 || item.objtype == 0x1411 || item.objtype == 0x141A || item.objtype == 0x1414 || item.objtype == 0x1418 || item.objtype == 0x1413) 
+				SendSysMessageEx(who, "Como Berserker voce se recusa a usar armaduras de metal", SSM_FAIL);
+				return 0;
+			endif
+	endif
+
+    var is_bone_armor_and_shields := array{0x144e, 0x144f, 0x1450, 0x1451, 0xF0C9, 0xF0CC, 0xF0CB, 0xF0CD, 0x1452, 0x1B73, 0x1B72, 0x1B74, 0x1B75, 0x1B76, 0x1B77, 0x1B78, 0x1B79, 0x1B7B, 0x1bc4, 0x1bc3, 0x1B7A, 0x1f0b};
+    if (TemHabilidade(who, "Colheita de Almas") && item.isA(POLCLASS_ARMOR))
+        var cfg := ReadConfigFile(":combat:itemdesc");
+	    var elem := FindConfigElem(cfg, item.objtype);
+        if (!(item.objtype in is_bone_armor_and_shields) && elem.TipoProtecao) 
+            SendSysMessageEx(who, "Como Shaman voce se recusa a usar armaduras que nao sejam de ossos", SSM_FAIL);
+            return 0;
+        endif
+	endif
+
+	if ( !GetCooldown(item, "blessweapon") && GetObjProperty(item, "armaSagradaOriginalColor") != error )
+		item.color := Cint(GetObjProperty(item, "armaSagradaOriginalColor"));
+		EraseObjProperty(item, "armaSagradaOriginalColor");
+	endif
+
+	var elementalWeapon := GetObjProperty(item, "#elementalweapon");
+	if ( elementalWeapon != error)
+		if (ReadGameClock() > elementalWeapon.endtime)
+			EraseObjProperty(item, "#elementalweapon");
+			item.color := cint(GetObjProperty(item, "elementalWeaponOriginalColor"));
+			EraseObjProperty(item, "elementalWeaponOriginalColor");
+		endif
+		if (who.serial != elementalWeapon.serial)
+			set_critical(1);
+			SendSysMessageEx(who, "Voce nao consegue manter a magia na arma.", SSM_FAIL);
+			EraseObjProperty(item, "#elementalweapon");
+			item.color := cint(GetObjProperty(item, "elementalWeaponOriginalColor"));
+			var p := GetProcess( cint(GetObjProperty(item, "pid") ) );
+			p.kill();
+			set_critical(0);
+		endif
+	endif
+
+	if (GetObjProperty(item, "armaespiritual"))
+		if (GetObjProperty(item, "swordmage") != who.serial)
+			SendSysMessageEx(who, "Voce nao pode usar esta arma.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (GetObjProperty(item, "swordmage") == who.serial)
+		var pid := GetObjProperty(item, "#swordmagepid");
+		if (pid)
+			var script := GetProcess(pid);
+			script.kill();
+		endif
+		start_script (":spells:swordmage", {who, item});
+	endif
+
+	//AtualizarItemAntigo(who, item); //SUBSTITUINDO POR NovoSistemaDeItens();
+	//SetarModsNoItem(who, item);
+
+	NovoSistemaDeItens(who, item, TOGGLELVL_EQUIP, 1); //[3] E [4] SÃO TOGGLES NO propitens.inc PARA LIMITAR O USO EM FASE DE TESTES
+
+	set_critical(1);
+	var ret := SetEquipmentMods(who, item);
+
+	var cfg := readconfigfile(":combat:itemdesc");
+	if ( cint(cfg[item.objtype].parrybonus) > 0 )
+		EraseObjProperty(who, "twohanded");
+	endif
+	set_critical(0);
+
+	return ret;
+endprogram

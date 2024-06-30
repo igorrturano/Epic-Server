@@ -1,0 +1,23 @@
+
+use uo;
+
+program faz_materiais(who, quantos)
+
+var materiais:=array{0X6309,0X6995,0X6993,0X630A,0X630B,0X630C,0X630D,0X6460,0X6310,0X6311,0X6997,0X6998,0X6999,0X699A,0X699B,0X1BDD,0X1BD7,0XEE66,0XEE67,0XEE68,0XEE69,0XEE70,0XEE73,0XEE74,0X1767,0XEE55,0XEE57,0XEE56,0XEE58,0XEF24,0XEF21,0XEF20,0XEF22,0XEF25,0XEF26,0XEF27,0XEF28,0XED29,0XEF23,0XEE45,0X1BE3,0X9087, 0X615};
+
+
+var bolsa:=CreateItemInBackpack( who , "backpack" , 1 );
+bolsa.color:=1154;
+bolsa.name:="Bolsa de Materiais";
+
+
+if (!quantos)
+quantos:=1000;
+sendsysmessage(who, "Voce pode usar o comando com numero");
+sendsysmessage(who, "Para definir quantos materiais quer criar");
+sendsysmessage(who, "Sem especificacao vou criar 1000 materiais de cada para voce");
+endif
+foreach coisa in materiais
+CreateItemInContainer( bolsa, coisa, amount := quantos );
+endforeach
+endprogram

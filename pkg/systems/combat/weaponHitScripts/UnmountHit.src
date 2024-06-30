@@ -1,0 +1,31 @@
+use uo;
+use util;
+use vitals;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include ":mounts:mounts";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	//var weapon	:= params[3];
+	//var armor	:= params[4];
+	//var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+	if (rawdamage > 6)
+		var mount := GetEquipmentByLayer(defender, LAYER_MOUNT);
+		if ( mount )
+			PrintTextAbove(attacker, "*derruba "+defender.name+" do cavalo*");
+			MP_Unmount(defender);
+			MoveObjectToLocation(defender.weapon, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+		endif
+	endif
+	
+	return 1;
+endprogram

@@ -1,0 +1,63 @@
+/* $Id$
+ *
+ */
+
+use uo;
+use util;
+
+include "include/client";
+include "include/say";
+include "include/damage";
+include ":charactercreation:habilidades";
+include ":charactercreation:resists";include ":charactercreation:resists";
+
+
+program trapScript(params)
+	var mobile := params[1];
+	var object := params[2];
+	var trap_info := params[3];
+	//var trap_index := params[4];
+	var dmg := CINT(trap_info.Strength);
+	if (!dmg)
+		dmg := 1;
+	endif
+	params := 0; // Not needed anymore.
+
+	var dmgfinal := 15*dmg;
+
+	var range := trap_info.Strength;
+	if (range < 1)
+		range := 1;
+	endif
+	range := range*3;
+
+	var mobiles := ListMobilesNearLocationEx(object.x, object.y, object.z, range, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
+
+	foreach mobile in mobiles
+		if (!mobile.npctemplate)
+			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha de dardos.", SSM_FAIL);
+
+			if (CheckResist(mobile, REFLEXOS, 30,-15*dmg))
+				if (temHabilidade(mobile, "Desbravador Nato"))
+					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha de dardos.", SSM_INFO);
+					mobile.hidden := 0;
+					continue;
+				else
+					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha de dardos.", SSM_INFO);
+					dmgfinal := CInt(dmgfinal * 0.5);
+				endif
+			else
+				if (temHabilidade(mobile, "Evasao Aprimorada"))
+					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha de dardos.", SSM_INFO);
+					dmgfinal := CInt(dmgfinal * 0.5);
+				endif
+			endif
+
+			PerformAction(mobile, ANIM_HIT);
+			DamageFLS(mobile, dmgfinal);
+			mobile.hidden := 0;
+		endif
+	endforeach
+
+	return 1;
+endprogram

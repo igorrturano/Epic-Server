@@ -1,0 +1,61 @@
+
+use uo;
+use os;
+use cfgfile;
+
+program change(who, item )
+  var cfg := ReadConfigFile(":*:itemdesc");
+  var elem := FindConfigElem(cfg, item.objtype);
+  if(item.graphic == item.objtype)
+    if(elem.changesnd)
+      PlaySoundEffect(who, elem.changesnd);
+    endif
+    item.graphic := elem.change;
+    if (item.graphic == 6222)
+          foreach balao in listitemsnearlocation (item.x, item.y, item.z, 1, item.realm)
+             if ( (balao.objtype == 6194) || (balao.objtype == 6195) || (balao.objtype == 6196) )
+                  foreach beker in listitemsnearlocation (item.x, item.y, item.z, 1, item.realm)
+                     if ( (beker.objtype == 6192) || (beker.objtype == 6193) )
+                         Destilar(balao, beker, who, item);
+                     endif
+                  endforeach
+                  break;
+             endif
+          endforeach
+       item.graphic := item.objtype;
+    endif
+  else
+    if(elem.originsnd)
+      PlaySoundEffect(who, elem.originsnd );
+    endif
+    item.graphic := item.objtype;
+  endif
+endprogram
+
+function Destilar(balao, beker, who, item)
+
+   item.movable := 0;
+   balao.movable := 0;
+   beker.movable := 0;
+
+   sleep(5);
+   PrintTextAbove(balao, "O extrato comeca a ferver.");
+   sleep(10);
+   PlaySoundEffect (who, 0x0021);
+   PrintTextAbove(balao, "O liquido esta em ebulicao.");
+   sleep(10);
+   PlaySoundEffect (who, 0x241);
+   sleep(10);
+   PrintTextAbove(beker, "O liquido esta no beker.");
+   
+   var extrato := CINT(GetObjProperty(balao, "extrato"));
+   SetObjProperty(beker, "pocao", extrato);
+   SetObjProperty(beker, "strength",  cint(GetObjProperty(balao, "strength")));
+
+   EraseObjProperty(balao, "extrato");
+   EraseObjProperty(balao, "strength");
+   item.movable := 1;
+   balao.movable := 1;
+   beker.movable := 1;
+   
+endfunction

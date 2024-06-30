@@ -1,0 +1,633 @@
+/////////////////////////////////////////////////////
+//
+//		".createroof" - Opens a gump to create a roof.
+//
+//		A powerful command that allows you to create
+//		roofs for houses in about 3 clicks. A gump is
+//		provided allowing the user to select both type,
+//		direction, and the base z-height of the roof.
+//		The base z-height is the height of the lowest
+//		portion of the roof, the first row of tiles.
+//		Then you select opposing corners of the structure
+//		you wish to build the roof on. Currently you can
+//		only create rectangular roofs.
+//
+//		CHANGE LOG:
+//			Version 1.0.0 -- Danielle Elora
+//				Initial Release
+//
+//			Version 1.0.1 -- Danielle Elora
+//				- Added a sleepms(); in the while loops to try and cut back on going runaway.
+//
+//			Version 1.1.0 -- Danielle Elora
+//				- Added the ability to manipulate the roof while previewing it.
+//				- Sped up roof creation speed.
+//				-	Roof tiles will now be "locked down" immediately after creation. This should
+//					prevent portions of the roof from decaying.
+//				- Added some additional message to try and increased user-friendliness.
+//				- Fixed some typos and very minor tweak to the help text.
+//
+//		Author: Danielle Elora, webmaster@nightscapeonline.com
+//		Nightscape Shard, http://www.nightscapeonline.com
+//
+/////////////////////////////////////////////////////
+
+
+use uo;
+use os;
+use math;
+use basic;
+
+var coordStructOne;
+var coordStructTwo;
+var n_side;
+var ns_peak;
+var s_side;
+var w_side;
+var ew_peak;
+var e_side;
+var gump_return;
+
+program textcmd_createroof(who)
+
+	//////////////////////
+	//	BUILD THE GUMP	//
+	//////////////////////
+	var gflayout := array{
+		"nodispose",
+		"noclose",
+		"page 0",
+		"resizepic 50 12 9200 420 518", // main background
+		"resizepic 96 20 9500 311 34", // title background
+		"button 425 18 22150 22152 1 0 9999", // close button
+		"button 448 18 22153 22155 0 3 0", // help button
+		"text 136 29 2485 0", // title text - 0 in array
+		"text 410 507 1952 10", // version text - 10 in array
+		"resizepic 270 350 9300 50 20", // z height text entry background
+		"textentry 275 350 40 20 0 5555 13",  // z height text entry - 13 in array
+		"gumppic 0 0 10400", // dragon head
+		"gumppic 0 227 10401", // dragon middle
+		"gumppic 0 453 10402", // dragon tail
+		"page 1", // PAGE ONE -- north-to-south direction
+
+		"text 85 62 1952 1", // item 1 text - 1 in array
+		"text 175 62 1952 2", // item 2 text - 2 in array
+		"text 278 62 1952 3", // item 3 text - 3 in array
+		"text 380 62 1952 4", // item 4 text - 4 in array
+		"text 79 208 1952 5", // item 5 text - 5 in array
+		"text 191 208 1952 6", // item 6 text - 6 in array
+		"text 284 208 1952 7", // item 7 text - 7 in array
+		"text 366 208 1952 8", // item 8 text - 8 in array
+
+		"resizepic 64 79 3500 93 87", // item 1 background
+		"resizepic 164 79 3500 93 87", // item 2 background
+		"resizepic 264 79 3500 93 87", // item 3 background
+		"resizepic 364 79 3500 93 87", // item 4 background
+		"resizepic 64 226 3500 93 87", // item 5 background
+		"resizepic 164 226 3500 93 87", // item 5 background
+		"resizepic 264 226 3500 93 87", // item 5 background
+		"resizepic 364 226 3500 93 87", // item 5 background
+		"button 79 167 247 248 1 0 100", // item 1 button
+		"button 179 167 247 248 1 0 200", // item 2 button
+		"button 279 167 247 248 1 0 300", // item 3 button
+		"button 379 167 247 248 1 0 400", // item 4 button
+		"button 79 315 247 248 1 0 500", // item 5 button
+		"button 179 315 247 248 1 0 600", // item 6 button
+		"button 279 315 247 248 1 0 700", // item 7 button
+		"button 379 315 247 248 1 0 800", // item 8 button
+		"tilepic 86 98 1532", // item 1 image
+		"tilepic 188 98 1427", // item 2 image
+		"tilepic 288 98 1441", // item 3 image
+		"tilepic 388 98 1539", // item 4 image
+		"tilepic 86 246 1634", // item 5 image
+		"tilepic 188 246 1448", // item 6 image
+		"tilepic 288 246 1471", // item 7 image
+		"tilepic 388 246 1486", // item 8 image
+		"gumppic 66 198 96", // left divider - top
+		"gumppic 270 198 96", // right divider - top
+		"gumppic 66 377 96", // left divider - bottom
+		"gumppic 270 377 96", // right divider - bottom
+		"button 63 349 4005 4007 0 2 0", // toggle direction button
+		"text 95 349 1952 12", // toggle direction text - 12 in array
+		"text 323 349 1952 14", // z height text label - 14 in array
+		"text 59 382 1952 11", // instructions title text - 11 in array
+		"htmlgump 59 402 400 100 9 1 1", // instructions - 9 in array
+		"page 2", // PAGE TWO -- east to west direction
+
+		"text 85 62 1952 1", // item 1 text - 1 in array
+		"text 175 62 1952 2", // item 2 text - 2 in array
+		"text 278 62 1952 3", // item 3 text - 3 in array
+		"text 380 62 1952 4", // item 4 text - 4 in array
+		"text 79 208 1952 5", // item 5 text - 5 in array
+		"text 191 208 1952 6", // item 6 text - 6 in array
+		"text 284 208 1952 7", // item 7 text - 7 in array
+		"text 366 208 1952 8", // item 8 text - 8 in array
+
+		"resizepic 64 79 3500 93 87", // item 1 background
+		"resizepic 164 79 3500 93 87", // item 2 background
+		"resizepic 264 79 3500 93 87", // item 3 background
+		"resizepic 364 79 3500 93 87", // item 4 background
+		"resizepic 64 226 3500 93 87", // item 5 background
+		"resizepic 164 226 3500 93 87", // item 5 background
+		"resizepic 264 226 3500 93 87", // item 5 background
+		"resizepic 364 226 3500 93 87", // item 5 background
+		"button 79 167 247 248 1 0 900", // item 9 button
+		"button 179 167 247 248 1 0 1000", // item 10 button
+		"button 279 167 247 248 1 0 1100", // item 11 button
+		"button 379 167 247 248 1 0 1200", // item 12 button
+		"button 79 315 247 248 1 0 1300", // item 13 button
+		"button 179 315 247 248 1 0 1400", // item 14 button
+		"button 279 315 247 248 1 0 1500", // item 15 button
+		"button 379 315 247 248 1 0 1600", // item 16 button
+		"tilepic 86 98 1520", // item 9 image
+		"tilepic 188 98 1424", // item 10 image
+		"tilepic 288 98 1429", // item 11 image
+		"tilepic 388 98 1612", // item 12 image
+		"tilepic 86 246 1608", // item 13 image
+		"tilepic 188 246 1445", // item 14 image
+		"tilepic 288 246 1459", // item 15 image
+		"tilepic 388 246 1474", // item 16 image
+		"gumppic 66 198 96", // left divider - top
+		"gumppic 270 198 96", // right divider - top
+		"gumppic 66 377 96", // left divider - bottom
+		"gumppic 270 377 96", // right divider - bottom
+		"button 63 349 4005 4007 0 1 0", // toggle direction button
+		"text 95 349 1952 12", // toggle direction text - 12 in array
+		"text 323 349 1952 14", // z height text label - 14 in array
+		"text 59 382 1952 11", // instructions title text - 11 in array
+		"htmlgump 59 402 400 100 9 1 1", // instructions - 9 in array
+		"page 3", // PAGE THREE -- help and support page
+		"text 62 65 1952 15", // help and support title - 15 in array
+		"button 390 61 2322 2323 0 1 0", // previous button
+		"htmlgump 62 85 400 420 16 1 1" // instructions - 16 in array
+	};
+	var gfdata := array{
+		"Danielle's  Quick  Roof  Creator", // 0
+		"Log Roof", // 1
+		"Palm Frond", // 2
+		"Blue Slate", // 3
+		"Blue Tent", // 4
+		"Grey Tent", // 5
+		"Thatch", // 6
+		"Red Tile", // 7
+		"Wood Shingle", // 8
+		"Choose which roof type you would like to use and then select two opposing corners like with the tile command. When selecting the northwest corner, you normally select just inside the wall. When you select the southeast corner, you will normally select just outside the wall.
+
+		If you make a mistake, don't worry, you can cancel and start over.
+
+		Note: Currently only rectangular roofs can be created with this tool.", // 9
+		"v. 1.1.0", // 10
+		"Instructions", // 11
+		"Toggle Roof Direction", // 12
+		(who.z + 20), // 13
+		"Base Z Height", // 14
+		"Help and Support", // 15
+		"First you should determine which direction you would like your roof to face. The normal rule of thumb is you always want the ridge line to be parallel with the longest part of the building.
+
+		Once you have determined the proper direction you should next determine what base z-height the roof needs to be created at. Base Z-height is the height of the first row of roof tiles. For most wall types this is 20 z's above the top floor. So you would take the floor height (say 5 z's) and add 20 to it. Your base Z-height would then be 25.
+
+		Next you'll need to pick which roof style you want to use. This is simply your personal preference.
+
+		Now you'll be presented with a target cursor. You need to select a corner of the house you wish to build the roof on. For simplicity sake, we'll do the northwest corner first (although any corner can be selected). Under most circumstances you'll need to select the corner just <i>inside</i> the wall. Don't worry, if you make a mistake and the roof  is wrong, you can easily cancel and start over.
+
+		Finally, you'll be presented with a second cursor. You'll need to select the opposite corner from what you selected last time. For example, if you choose the northwest corner you now need to pick the southeast corner. Assuming you picked the northwest corner as suggested, go ahead and target the southeast corner. Under most circumstances on the southeast corner you'll need to select the corner just <i>outside</i> of the wall. This is because for proper appearance the south and east walls must have an overhang.
+
+		Again, if you mess up, don't worry. You can cancel, automatically destroying all the roof tiles, and start over." // 16
+	};
+
+	// Display the gump menu
+	gump_return := SendDialogGump(who, gflayout, gfdata, 0, 0);
+
+	if (gump_return[9999])
+		SendSysMessage(who, "Cancelled!");
+		return 0;
+	endif
+
+	if (!gump_return[9999])
+		SendSysmessage(who, "Select the first corner of the house you wish to build the roof on.");
+		coordStructOne := TargetCoordinates(who);
+		if (!coordStructOne)
+			SendSysMessage(who, "Cancelled!");
+			return 0;
+		endif
+		SendSysmessage(who, "Now select the opposite corner of the house you wish to build on.");
+		coordStructTwo := TargetCoordinates(who);
+		if (!coordStructTwo)
+			SendSysMessage(who, "Cancelled!");
+			return 0;
+		endif
+	endif
+
+	if (gump_return[100])
+		// Create a NS Log Roof
+		n_side  := 0x5FE;
+		ns_peak := 0x5FC;
+		s_side  := 0x5FD;
+		CreateRoof(who, "ns_log");
+		return;
+	elseif (gump_return[200])
+		// Create a NS Palm Frond Roof
+		n_side  := 0x594;
+		ns_peak := 0x593;
+		s_side  := 0x592;
+		CreateRoof(who, "ns_palm");
+		return;
+	elseif (gump_return[300])
+		// Create a NS Slate Roof
+		n_side  := 0x5A3;
+		ns_peak := 0x5A1;
+		s_side  := 0x5A2;
+		CreateRoof(who, "ns_slate");
+		return;
+	elseif (gump_return[400])
+		// Create a NS Blue Tent Roof
+		n_side  := 0x600;
+		ns_peak := 0x603;
+		s_side  := 0x601;
+		CreateRoof(who, "ns_btent");
+		return;
+	elseif (gump_return[500])
+		// Create a NS Grey Tent Roof
+		n_side  := 0x65F;
+		ns_peak := 0x662;
+		s_side  := 0x660;
+		CreateRoof(who, "ns_gtent");
+		return;
+	elseif (gump_return[600])
+		// Create a NS Thatch Roof
+		n_side  := 0x5A9;
+		ns_peak := 0x5A8;
+		s_side  := 0x5A7;
+		CreateRoof(who, "ns_thatch");
+		return;
+	elseif (gump_return[700])
+		// Create a NS Tile Roof
+		n_side  := 0x5C1;
+		ns_peak := 0x5BF;
+		s_side  := 0x5C0;
+		CreateRoof(who, "ns_tile");
+		return;
+	elseif (gump_return[800])
+		// Create a NS Wood Shingle Roof
+		n_side  := 0x5D0;
+		ns_peak := 0x5CE;
+		s_side  := 0x5CF;
+		CreateRoof(who, "ns_wood");
+		return;
+
+	// East to West Direction Roofs
+
+	elseif (gump_return[900])
+		// Create a EW Log Roof
+		w_side  := 0x5F2;
+		ew_peak := 0x5F0;
+		e_side  := 0x5F1;
+		CreateRoof(who, "ew_log");
+		return;
+	elseif (gump_return[1000])
+		// Create a EW Palm Frond Roof
+		w_side  := 0x591;
+		ew_peak := 0x590;
+		e_side  := 0x58F;
+		CreateRoof(who, "ew_palm");
+		return;
+	elseif (gump_return[1100])
+		// Create a EW Slate Roof
+		w_side  := 0x597;
+		ew_peak := 0x595;
+		e_side  := 0x596;
+		CreateRoof(who, "ew_slate");
+		return;
+	elseif (gump_return[1200])
+		// Create a EW Blue Tent Roof
+		w_side  := 0x5FF;
+		ew_peak := 0x64C;
+		e_side  := 0x602;
+		CreateRoof(who, "ew_btent");
+		return;
+	elseif (gump_return[1300])
+		// Create a EW Grey Tent Roof
+		w_side  := 0x65E;
+		ew_peak := 0x648;
+		e_side  := 0x661;
+		CreateRoof(who, "ew_gtent");
+		return;
+	elseif (gump_return[1400])
+		// Create a EW Thatch Roof
+		w_side  := 0x5A6;
+		ew_peak := 0x5A5;
+		e_side  := 0x5A4;
+		CreateRoof(who, "ew_thatch");
+		return;
+	elseif (gump_return[1500])
+		// Create a EW Tile Roof
+		w_side  := 0x5B5;
+		ew_peak := 0x5B3;
+		e_side  := 0x5B4;
+		CreateRoof(who, "ew_tile");
+		return;
+	elseif (gump_return[1600])
+		// Create a EW Wood Shingle Roof
+		w_side  := 0x5C4;
+		ew_peak := 0x5C2;
+		e_side  := 0x5C3;
+		CreateRoof(who, "ew_wood");
+		return;
+	else
+		SendSysMessage(who, "Canceled.");
+		return;
+	endif
+
+set_debug(0);
+
+endprogram
+
+////////////////////////////////////////////
+//  Does the actual creation of the roof	//
+////////////////////////////////////////////
+function CreateRoof(who, rooftype)
+	SendSysMessage(who, "Creating the roof. Please wait...");
+
+	var startX;
+	var startY;
+	var endX;
+	var endY;
+	var totalwidth;
+	var halfwidth;
+	var usepeak;
+	var item;
+	var tileZ := CInt(gump_return[5555][6, len(gump_return[5555])]) - 3;
+	var itemlist := array{};
+
+	if (coordStructOne.x <= coordStructTwo.x)
+		startX  := coordStructOne.x;
+		endX    := coordStructTwo.x;
+	else
+		startX  := coordStructTwo.x;
+		endX    := coordStructOne.x;
+	endif
+
+	if (coordStructOne.y <= coordStructTwo.y)
+		startY  := coordStructOne.y;
+		endY    := coordStructTwo.y;
+	else
+		startY  := coordStructTwo.y;
+		endY    := coordStructOne.y;
+	endif
+
+	if (find(rooftype, "ns", 0))
+		// Creating a north-to-south oriented roof
+
+		totalwidth := CDbl((endY - startY) + 1);
+		halfwidth := totalwidth / 2;
+
+		if (find(halfwidth, ".", 0))
+			// Roof is correct width for a peak
+			usepeak := 1;
+		else
+			// Roof does not need a peak
+			usepeak := 0;
+		endif
+
+		halfwidth := floor(halfwidth);
+
+		var fooX := StartX; // store the original startY for use after each iteration.
+
+		// setup the first side
+		item := n_side;
+
+		var rowsdone := 0;
+		var i := 0;
+		while (startY <= endY)
+			rowsdone := rowsdone + 1;
+			if (rowsdone > halfwidth)
+				item := s_side;
+				tileZ := tileZ - 3;
+				if (usepeak)
+					tileZ := tileZ + 6;
+					usepeak := 0;
+					item := ns_peak;
+					i := 1;
+				endif
+				if (!i)
+					i := 1;
+					tileZ := tileZ + 3;
+				endif
+			else
+				tileZ := tileZ + 3;
+			endif
+			while (startX <= endX)
+				// create the item and append it to an array.
+				itemlist.append(CreateItemAtLocation(startX, startY, tileZ, item, 1));
+				startX := startX + 1;
+				sleepms(5);
+			endwhile
+			startX := fooX;
+			startY := startY + 1;
+			sleepms(3);
+		endwhile
+
+	else	// Creating a east-to-west oriented roof
+
+		totalwidth := CDbl((endX - startX) + 1);
+		halfwidth := totalwidth / 2;
+
+		if (find(halfwidth, ".", 0))
+			// Roof is correct width for a peak
+			usepeak := 1;
+		else
+			// Roof does not need a peak
+			usepeak := 0;
+		endif
+
+		halfwidth := floor(halfwidth);
+
+		var fooY := StartY; // store the original startY for use after each iteration.
+
+		// setup the first side
+		item := w_side;
+
+		var rowsdone := 0;
+		var i := 0;
+		while (startX <= endX)
+			rowsdone := rowsdone + 1;
+			if (rowsdone > halfwidth)
+				item := e_side;
+				tileZ := tileZ - 3;
+				if (usepeak)
+					tileZ := tileZ + 6;
+					usepeak := 0;
+					item := ew_peak;
+					i := 1;
+				endif
+				if (!i)
+					i := 1;
+					tileZ := tileZ + 3;
+				endif
+			else
+				tileZ := tileZ + 3;
+			endif
+			while (startY <= endY)
+				// create the item and append it to an array.
+				itemlist.append(CreateItemAtLocation(startX, startY, tileZ, item, 1));
+				item.movable := 0;
+				startY := startY + 1;
+				sleepms(5);
+			endwhile
+			startY := fooY;
+			startX := startX + 1;
+			sleepms(3);
+		endwhile
+		SendSysMessage(who, "Finished! You may now adjust it's position and decide to keep the roof or not.");
+	endif
+
+	var do_adjust_yesNo;
+	// DO POSITION/HEIGHT ADJUST AND CONFIRM ROOF IS OKAY
+	repeat
+		do_adjust_yesNo := adjust_roof(who);
+		if (do_adjust_yesNo[100])
+			// Adjust to the North (-Y)
+			SendSysMessage(who, "Moving the roof North. Please wait...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, (item.y - 1), item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+		elseif (do_adjust_yesNo[101])
+			// Adjust to the South (+X)
+			SendSysMessage(who, "Moving the roof South. Please wait...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, (item.y + 1), item.z,item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+		elseif (do_adjust_yesNo[102])
+			// Adjust to the East (+Y)
+			SendSysMessage(who, "Moving the roof East. Please wait...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, (item.x - 1), item.y, item.z,item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+		elseif (do_adjust_yesNo[103])
+			// Adjust to the West (-X)
+			SendSysMessage(who, "Moving the roof West. Please wait...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, (item.x + 1), item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+		elseif (do_adjust_yesNo[104])
+			// Adjust the Height Up (+Z)
+			SendSysMessage(who, "Increasing the roofs height. Please wait...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, item.y, (item.z + 1), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+		elseif (do_adjust_yesNo[105])
+			// Adjust the Height Down (-Z)
+			SendSysMessage(who, "Decreasing the roofs height. Please wait...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, item.y, (item.z - 1), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+		elseif (do_adjust_yesNo[5555])
+			// Adjust to the South (+X)
+			SendSysMessage(who, "Destroying the roof. Please wait...");
+			foreach item in itemlist
+				DestroyItem(item);
+				sleepms(10);
+			endforeach
+			SendSysMessage(who, "The roof has been destroyed!");
+		endif
+	until ((do_adjust_yesNo[9999]) OR (do_adjust_yesNo[5555]) OR (!do_adjust_yesNo) OR (!who.ip));
+
+	if (do_adjust_yesNo[9999])
+		SendSysmessage(who, "Roof successfully created!");
+	endif		
+
+endfunction
+
+
+function adjust_roof(who)
+
+	//////////////////////
+	//	BUILD THE GUMP	//
+	//////////////////////
+	var gflayout_adjust := array{
+		"nodispose",
+		"noclose",
+		"page 0",
+		"resizepic 10 10 9200 381 170", // outter background
+		"resizepic 13 16 3500 373 160", // inner background
+
+		"tilepic 71 84 3568", // black staff; forms the X
+		"tilepic 38 85 3569", // black staff; forms the X
+
+		"page 1",
+		"text 38 24 1952 0", // instructions text - 0 in array
+		"text 38 42 1952 1", // instructions text - 1 in array
+
+		"button 101 58 4501 4501 1 0 100", // North button
+		"button 46 114 4505 4505 1 0 101", // South button
+		"button 46 58 4507 4507 1 0 102",  // East button
+		"button 98 113 4503 4503 1 0 103", // West button
+
+
+		"text 36 60 1952 2", // "-X" text - 2 in array
+		"text 145 59 1952 3", // "-Y" text - 3 in array
+		"text 145 141 1952 4", // "+X" text - 4 in array
+		"text 35 141 1952 5", // "+Y" text - 5 in array
+
+		"text 73 101 1952 6", // "POSITION" text - 6 in array
+
+		"button 204 59 4500 4500 1 0 104", // Up button
+		"button 204 116 4504 4504 1 0 105", // Down button
+
+		"text 240 61 1952 7",  // "Up" text - 7 in array
+		"text 240 146 1952 8", // "Down" text - 8 in array
+
+		"text 209 103 1952 9", // "HEIGHT" text - 9 in array
+
+		"button 291 75 247 248 1 0 9999",  // Okay button
+		"button 291 122 243 241 1 0 5555" // Cancel button
+
+	};
+
+
+	var gfdata_adjust := array{
+		"Use the below controls to adjust the roofs position.",
+		"Hit \"Okay\" when done, or \"Cancel\" to destroy the roof.",
+		"-X",
+		"-Y",
+		"+X",
+		"+Y",
+		"POSITION",
+		"Up",
+		"Down",
+		"HEIGHT"
+	};
+
+	return SendDialogGump(who, gflayout_adjust, gfdata_adjust, 0, 0);
+
+endfunction

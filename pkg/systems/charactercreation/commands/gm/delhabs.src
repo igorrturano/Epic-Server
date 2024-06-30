@@ -1,0 +1,47 @@
+use uo;
+
+include "include/say";
+include ":tn:tngumps";
+
+program resethab(who)
+
+	sendsysmessageEx(who, "Escolha quem voce quer resetar as habs", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		return 1;
+	endif
+
+	var habs := GetObjProperty(targ, "buyhab");
+	var myhabs := GetObjProperty(targ, "myhabs");
+
+	var habnames := array;
+	foreach j in (myhabs.keys())
+		if (myhabs[j])
+			habnames.append(myhabs[j]);
+		endif
+	endforeach
+
+	var newsizey := myhabs.size() + 50;
+	var opts := CheckBoxGump(who, 300, 150+newsizey, "Escolha as habs para resetar", habnames);
+
+	sendsysmessage(who, "saida " + opts);
+
+	foreach hab in opts
+		var i := 0;
+		for (i := 0; i < 21; i := i + 1)
+			if ( myhabs[i] == hab )
+				myhabs.erase(i);
+				habs[i] := 1;
+				break;
+			endif
+		endfor
+	endforeach
+
+	SetObjProperty(targ, "buyhab", habs);
+	SetObjPRoperty(targ, "myhabs", myhabs);
+
+	SendSysMessageEx(who, "Habs resetadas do alvo: " + opts, SSM_INFO);
+	SendSysMessageEx(targ, "Suas habs foram resetadas " + opts);
+
+endprogram

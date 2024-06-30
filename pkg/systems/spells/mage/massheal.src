@@ -1,0 +1,33 @@
+/*
+ * $Id$
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+    var range := cint(AP_GetSkill(who, MAGICLORE)/10);
+    var points := (CInt(AP_GetSkill(who, MAGICLORE)) / 5) + RandomDiceRoll("6d8");
+    var hostiles := ListHostiles(who, range);
+    foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
+        if (!(mob in hostiles))
+            PlayObjectCenteredEffect(mob, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+            PlaySoundEffect(mob, SFX_HEAL);
+            HealDamage(mob, points);
+        endif
+    endforeach
+	
+	SendSysMessage(who, "Voce curou "+points+" pontos de vida.");
+	
+	return 1;
+endprogram

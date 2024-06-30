@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program cureScript(params)
+	var who := params[1];
+	//PrintText(mobile, "*sumindo pouco a pouco*");
+		var numsum := Getobjproperty(who, "Summon_num");
+		Setobjproperty(who, "Summon_num", numsum -1);
+			if (numsum < 0)
+			numsum := 0;
+			endif
+	Eraseobjproperty(who, "slot1");
+	return 1;
+endprogram

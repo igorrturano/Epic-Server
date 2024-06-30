@@ -1,0 +1,182 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha com quem sera feito o pacto", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (targ.npctemplate);
+		SendSysMessageEx(who, "Essa magia so pode ser usada em players", SSM_FAIL);
+		return;
+	endif		
+
+	var maxhpnecro := AP_GetVitalMaximumValue(who, "hits");
+	var maxhptarg := AP_GetVitalMaximumValue(targ, "hits");
+	targ.frozen := 1;
+	who.frozen := 1;
+
+	//Efeito da magia
+	var pentagrama;
+
+	PrintTextAbove(who, "*sangrando muito*", 3, 0);
+	pentagrama := CriarPentagrama(who, who);
+	if (pentagrama == "fail")
+		SendSysMessageEx(who, "O pacto falhou", SSM_INFO);
+		targ.frozen := 0;
+		who.frozen := 0;
+		return 0;
+	endif	
+
+	PlayMovingEffect( who, targ, 14154, 5, 0,  0 );
+	sleepms(700);
+
+	PrintTextAbove(targ, "*sangrando muito*", 3, 0);
+	pentagrama := CriarPentagrama(targ, who);
+	if (pentagrama == "fail")
+		SendSysMessageEx(who, "O pacto falhou", SSM_INFO);
+		targ.frozen := 0;
+		who.frozen := 0;
+		return 0;
+	endif	
+
+	//Fim do Efeito
+
+	targ.frozen := 0;
+	who.frozen := 0;
+	ApplyDamage(who, 9999);
+	ApplyDamage(targ, 9999);
+	PlaySoundEffect(targ, 383);
+	SendSysMessageEx(who, "O pacto tras a morte a ambos", SSM_INFO);
+	SendSysMessageEx(targ, "O pacto tras a morte a ambos", SSM_INFO);
+	
+	return 1;
+
+endprogram 
+
+
+function CriarPentagrama(who, necro)
+
+CreateItemAtLocation(who.x , who.y + 2 , who.z , 7410, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 1 , who.y + 2 , who.z , 7411, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 2 , who.y + 2 , who.z , 7412, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 3 , who.y + 1 , who.z , 7414, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 3 , who.y , who.z , 7415, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 3 , who.y - 1 , who.z , 7416, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 3 , who.y - 2 , who.z , 7417, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 2 , who.y - 2 , who.z , 7418, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 2 , who.y - 3 , who.z , 7419, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 1 , who.y - 3 , who.z , 7420, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x , who.y - 3 , who.z , 7421, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 1 , who.y - 3 , who.z , 7422, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 2 , who.y - 3 , who.z , 7423, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 2 , who.y - 2 , who.z , 7424, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 2 , who.y - 1 , who.z , 7425, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 2 , who.y , who.z , 7426, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 2 , who.y + 1 , who.z , 7427, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 1 , who.y + 1 , who.z , 7428, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x , who.y + 1 , who.z , 7429, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 1 , who.y + 1 , who.z , 7430, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 2 , who.y + 1 , who.z , 7431, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 2 , who.y , who.z , 7432, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 2 , who.y - 1 , who.z , 7433, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 1 , who.y - 2 , who.z , 7434, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x , who.y - 2 , who.z , 7435, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 1 , who.y - 2 , who.z , 7436, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 1 , who.y - 1 , who.z , 7437, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x + 1 , who.y , who.z , 7438, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x , who.y , who.z , 7439, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 1 , who.y , who.z , 7440, 1, who.realm); 
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x - 1 , who.y - 1 , who.z , 7441, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+CreateItemAtLocation(who.x , who.y - 1 , who.z , 7442, 1, who.realm);
+sleepms(500);
+if(CheckNecroDead(necro) == 1) return "fail"; endif
+endfunction
+
+function CheckNecroDead(necro)
+	var necrohp := AP_GetVital(necro, "hits");
+	if (necrohp == 0)
+		return 1;
+	else
+		return 0;
+	endif
+endfunction

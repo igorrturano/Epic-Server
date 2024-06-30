@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_inspirar_competencia_end(params)
+	var alvo := params[1];
+	var modificador := (-1) * GetObjProperty(alvo, "#Bard_inspirar_competencia");
+	Set_Critical(1);
+	AP_ModifySkillMod(alvo, ALCHEMY, modificador);
+	AP_ModifySkillMod(alvo, SNEAK, modificador);
+	AP_ModifySkillMod(alvo, PICKPOCKETING, modificador);
+	AP_ModifySkillMod(alvo, AWARENESS, modificador);
+	AP_ModifySkillMod(alvo, MECHANICALAPITUDE, modificador);
+	AP_ModifySkillMod(alvo, MEDICINE, modificador);
+	AP_ModifySkillMod(alvo, SURVIVAL, modificador);
+	AP_ModifySkillMod(alvo, METALWORKING, modificador);
+	AP_ModifySkillMod(alvo, WOODWORKING, modificador);
+	AP_ModifySkillMod(alvo, DomesticWork, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
+	AP_ModifySkillMod(alvo, GATHERING, modificador);
+	AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
+	EraseObjProperty(alvo, "#Bard_inspirar_competencia");
+	Set_Critical(0);
+	SendSysMessage(alvo, "Nao esta mais tao focado no trabalho.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	return 1;
+endprogram

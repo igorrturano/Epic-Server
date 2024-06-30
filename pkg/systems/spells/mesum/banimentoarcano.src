@@ -1,0 +1,67 @@
+    use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include ":spells:tnmagery";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if ( getObjProperty(targ, "summoned") != 1 )
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+	if (!CheckLineOfSight(targ, who))
+		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+		return;
+	endif
+
+    if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+    endif
+
+	if(TemHabilidade(who, "Vontade Esmagadora"))
+		if (CheckResist(targ, VONTADE, 25 + cint(AP_GetSkill(who, MAGICLORE))))
+			SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+			return;
+		endif
+	else
+		if (CheckResist(targ, VONTADE, cint(AP_GetSkill(who, MAGICLORE))))
+			SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+			return;
+		endif
+	endif
+
+	var location := {targ.x, targ.y, targ.z};
+
+    if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlayMovingEffectXYZEx( targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+    endif
+	Corromper(who, 27, targ);
+
+	MoveObjectToLocation(targ, 10, 10, 10, targ.realm,  MOVEOBJECT_FORCELOCATION );
+	sleep(120);
+	MoveObjectToLocation(targ, location[1], location[2], location[3], targ.realm,  MOVEOBJECT_FORCELOCATION );
+
+    if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+
+	return 1;
+endprogram     

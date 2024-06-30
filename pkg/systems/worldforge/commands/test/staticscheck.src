@@ -1,0 +1,246 @@
+/////////////////////////////////////////////////////////////////
+//
+//   StaticsCheck - Checks for Double Items
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//     2002/03/01 Shinigami: Fix: Letzte Nummer
+//     2004/02/28 Shingiami: Max. 3 Lichtquellen an einem Fleck
+//
+/////////////////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/staticscheck.cfg
+//   statics/staticscheckstacks.cfg
+//   statics/staticscheckstackslarge.cfg
+//
+//////////////////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use uo;
+Use os;
+Use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+Include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+Const ERRORMSGS_GERMAN:=
+  "{}StaticsCheck: CheckArea aktiviert..."+
+  "{}StaticsCheck: CheckArea beendet."+
+  "{}X1 muss kleiner-gleich X2 bzw. Y1 muss kleiner-gleich Y2 sein!"+
+  "{}%% darf nur 0 bis 4095 sein!"+
+  "{}%% darf nur 0 bis 6143 sein!"+
+  "{}Sie muessen 0 (ganze Welt) oder 4 Paramter angeben: X1 Y1 X2 Y2"+
+  "{}%%Region %% %% %% %%"+
+  "{}Die Ergebnisse wurden geschrieben."+
+  "{}Probleme beim Lesen der Configdateien!";
+Const ERRORMSGS_ENGLISH:=
+  "{}StaticsCheck: CheckArea started..."+
+  "{}StaticsCheck: ChecktArea done."+
+  "{}X1 must be lower/equal X2 and Y1 must be lower/equal Y2!"+
+  "{}%% must be between 0 and 4095!"+
+  "{}%% must be between 0 and 6143!"+
+  "{}U've to enter 0 (whole World) or 4 Paramters: X1 Y1 X2 Y2"+
+  "{}%%Region %% %% %% %%"+
+  "{}Results are written."+
+  "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+Program TextCMD_StaticsCheck(who, params)
+  Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+  If (Len(who)>1) // Called by StaticsCheckExport
+    params:=who[2];
+    who:=who[1];
+  EndIf
+
+  params:=SplitWords(params);
+  If (params.size()==4)
+    If ((0<=CInt(params[1])) And (CInt(params[1])<6144))
+      If ((0<=CInt(params[2])) And (CInt(params[2])<4096))
+        If ((0<=CInt(params[3])) And (CInt(params[3])<6144))
+          If ((0<=CInt(params[4])) And (CInt(params[4])<4096))
+            If ((CInt(params[1])<=CInt(params[3])) And (CInt(params[2])<=CInt(params[4])))
+              PrintErrorMessage(1);
+              CheckArea(who, CInt(params[1]), CInt(params[2]), CInt(params[3]), CInt(params[4]));
+              PrintErrorMessage(2);
+            Else
+              PrintErrorMessage(3, {}, who);
+            EndIf
+          Else
+            PrintErrorMessage(4, {"Y2"}, who);
+          EndIf
+        Else
+          PrintErrorMessage(5, {"X2"}, who);
+        EndIf
+      Else
+        PrintErrorMessage(4, {"Y1"}, who);
+      EndIf
+    Else
+      PrintErrorMessage(5, {"X1"}, who);
+    EndIf
+  ElseIf (params.size()==0)
+    PrintErrorMessage(1);
+    CheckArea(who, 0, 0, 6143, 4095);
+    PrintErrorMessage(2);
+  Else
+    PrintErrorMessage(6, {}, who);
+  EndIf
+EndProgram
+
+/////////////////////////////////////////
+// CheckArea - Durchsucht einen Bereich
+/////////////////////////////////////////
+
+Function CheckArea(who, x1, y1, x2, y2)
+  Var datafile:=ReadConfigFile(":worldforge:config/staticscheck");
+  If (datafile)
+    Var itemdesc:=ReadConfigFile("::itemdesc");
+    Var counter:=GetNextCounterNumber(datafile);
+
+    Var startx:=CInt(x1/64);
+    Var starty:=CInt(y1/64);
+    Var endx:=CInt(x2/64);
+    Var endy:=CInt(y2/64);
+
+    Var x;
+    Var y;
+    For (x:=startx; x<=endx; x:=x+1)
+      For (y:=starty; y<=endy; y:=y+1)
+        Var matrix:={};
+        matrix[1044481]:=0;
+
+        Var basestartx:=CInt(x*64);
+        Var basestarty:=CInt(y*64);
+        Var baseendx:=CInt(basestartx+63);
+        Var baseendy:=CInt(basestarty+63);
+        If (x==startx)
+          basestartx:=x1;
+        EndIf
+        If (y==starty)
+          basestarty:=y1;
+        EndIf
+        If (x==endx)
+          baseendx:=x2;
+        EndIf
+        If (y==endy)
+          baseendy:=y2;
+        EndIf
+
+        PrintErrorMessage(7, {"", basestartx, basestarty, baseendx, baseendy}, who);
+        PrintErrorMessage(7, {"StaticsCheck:   ", basestartx, basestarty, baseendx, baseendy});
+
+        Var number;
+        Var value;
+        ForEach item in ListObjectsInBox(basestartx, basestarty, -128, baseendx, baseendy, 127)
+          number:=(item.x-basestartx)+((item.y-basestarty)*64)+((item.z+128)*4096)+1;
+
+          value:=matrix[number];
+          If (!value)
+            matrix[number]:=1;
+          ElseIf (value==1)
+            Var subcounter:=0;
+            Var elem;
+
+            Var facing:=itemdesc[item.objtype].facing;
+            If (!((facing==0) Or (facing))) // Keine Lichtquelle
+              Var itemlist:={};
+
+              ForEach haufenitem in ListItemsAtLocation(item.x, item.y, item.z)
+                If (haufenitem.objtype in itemlist)
+                  elem:={};
+
+                  elem.append({"ObjType", Hex(haufenitem.objtype)});
+                  elem.append({"X",       haufenitem.x});
+                  elem.append({"Y",       haufenitem.y});
+                  elem.append({"Z",       haufenitem.z});
+                  elem.append({"Color",   haufenitem.color});
+                  elem.append({"Amount",  haufenitem.amount});
+                  elem.append({"Movable", haufenitem.movable});
+
+                  Var cprops:=Dictionary;
+                  ForEach cpropname in GetObjPropertyNames(haufenitem)
+                    cprops[cpropname]:=GetObjProperty(haufenitem, cpropname);
+                  EndForEach
+                  elem.append({"CProps", Pack(cprops)});
+
+                  If (haufenitem.amount==1) // Genau ein Item?
+                    AppendConfigFileElem(":worldforge:config/staticscheck", "SECTION", "WORLDITEM "+counter+" "+subcounter, elem);
+                    DestroyItem(haufenitem);
+                  ElseIf (haufenitem.amount<10) // Kleinere Stacks?
+                    AppendConfigFileElem(":worldforge:config/staticscheckstacks", "SECTION", "WORLDITEM "+counter+" "+subcounter, elem);
+                    DestroyItem(haufenitem);
+                  Else // Grosse Stacks
+                    AppendConfigFileElem(":worldforge:config/staticscheckstackslarge", "SECTION", "WORLDITEM "+counter+" "+subcounter, elem);
+                  EndIf
+
+                  subcounter:=subcounter+1;counter:=counter+1;
+                Else
+                  itemlist.append(haufenitem.objtype);
+                EndIf
+              EndForEach
+            Else // Ist eine Lichtquelle -> max. 3 gleiche Items
+              Var anzahl:=0;
+
+              ForEach haufenitem in ListItemsAtLocation(item.x, item.y, item.z)
+                If (haufenitem.objtype==item.objtype)
+                  anzahl:=anzahl+1;
+
+                  If (anzahl>3)
+                    elem:={};
+                    elem.append({"ObjType", Hex(haufenitem.objtype)});
+                    elem.append({"X",       haufenitem.x});
+                    elem.append({"Y",       haufenitem.y});
+                    elem.append({"Z",       haufenitem.z});
+                    elem.append({"Color",   haufenitem.color});
+                    AppendConfigFileElem("statics/staticscheck", "SECTION", "WORLDITEM "+counter+" "+subcounter, elem);
+
+                    DestroyItem(haufenitem);
+
+                    subcounter:=subcounter+1;counter:=counter+1;
+                  EndIf
+                EndIf
+              EndForEach
+            EndIf
+
+            matrix[number]:=-1;
+          EndIf
+        EndForEach
+      EndFor
+    EndFor
+
+    UnloadConfigFile(":worldforge:config/staticscheck");
+
+    PrintErrorMessage(8, {}, who);
+  Else
+    PrintErrorMessage(9, {}, who);
+  EndIf
+EndFunction
+
+/////////////////////////////////////////////////////////
+// GetNextCounterNumber - Die naechste Nummer ermitteln
+/////////////////////////////////////////////////////////
+
+Function GetNextCounterNumber(datafile)
+  Var counter:=GetConfigStringKeys(datafile);
+  If (Len(counter))
+    Return (Len(counter));
+  Else
+    Return (0);
+  EndIf
+EndFunction

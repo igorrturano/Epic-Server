@@ -1,0 +1,76 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+use storage;
+
+include ":containers:merchantUtil";
+include ":timedscripts:timedScripts";
+include ":death:death";
+include ":mounts:mounts";
+include ":taming:taming";
+include ":tn:questevent";
+include ":attributes:vitals";
+include ":combat:hitscripts";
+include "include/say";
+include "include/damage";
+include ":gumps:htmlGump";
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+var g_datafile := DFOpenDataFile(":commands:gm:comandos", DF_CREATE);
+
+program comandos(who)
+
+	var cfg := ReadConfigFile(":commands:config/comandos");
+	var elem:= FindConfigElem(cfg, "gm" );
+	var comandos:=GetConfigStringDictionary(elem, "gm");
+	BuildIndexGump(who,comandos);
+endprogram
+
+
+function BuildIndexGump(who,comandos)
+	Set_Priority(100);
+	var desc:=dictionary;
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	var i:=2;
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 480);
+	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 270, 450);
+	var y_pos := 40;
+	var counter := 1;
+	var page_num := 1;
+	GFTextMid(gump, 10, 20, 280, 2100, "Comandos");
+
+	GFPage(gump, page_num);
+	foreach comando in (comandos.keys())
+
+
+		GFAddButton(gump, 20, y_pos+3, 2117, 2118, GF_CLOSE_BTN, CStr(comandos[comando]));
+		GFTextLine(gump, 40, y_pos, 2100, comando);
+
+		y_pos := y_pos+20;
+		counter := counter+1;
+
+		if ( counter > 20 )
+			counter := 1;
+			y_pos := 40;
+			GFAddButton(gump, 265, 445, 2648, 2649, GF_PAGE_BTN, page_num+1);
+			page_num := page_num+1;
+			GFPage(gump, page_num);
+			GFAddButton(gump, 265, 15, 2650, 2651, GF_PAGE_BTN, page_num-1);
+		endif
+		desc[i]:=comandos[comando];
+		i:=i+1;
+		sleepms(2);
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	if(input[0] != 0);
+		SendHTMLGump(who, "Comandos",desc[input[0]]);
+		BuildIndexGump(who,comandos);
+	endif
+
+endfunction

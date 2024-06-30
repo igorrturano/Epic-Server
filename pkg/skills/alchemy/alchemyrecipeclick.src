@@ -1,0 +1,26 @@
+use uo;
+use os;
+
+include ":gumps:yesNo";
+
+program usaPergaminho(who, scroll)
+
+
+	var spellinfo := GetObjProperty(scroll, "spellinfo");
+
+
+	var gump := GFCreateGump(140, 100);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
+
+	 GFTextLine(gump, 50, 10, 0, spellinfo.name);
+	GFHTMLArea( gump, 30, 40, 180, 120, spellinfo.description, 0, 1);
+
+
+	var input := GFSendGump(who, gump);
+
+	//SendSysMessage(who, "O velho pergaminho se desfez em cinzas.");
+	//DestroyItem(scroll);
+
+
+endprogram

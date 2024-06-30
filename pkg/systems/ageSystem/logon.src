@@ -1,0 +1,87 @@
+use uo;
+use os;
+use file;
+use math;
+use vitals;
+
+include ":attributes:attributes";
+include ":datafile:datafile";
+
+var elem, cfg;
+
+program AgeSystem(who)
+	// Ler o arquivo de configuração
+    cfg := ReadConfigFile(":ageSystem:config/ageconfig");
+
+    if (!cfg)
+        Syslog("ageSystem error ReadConfigFile: " + cfg.errortext);
+        return;
+    endif
+    
+    elem := FindConfigElem(cfg, "AgeSystem");
+    if (!elem)
+        Syslog("ageSystem error FindConfigElem: " + elem.errortext);
+        return;
+    endif
+    
+    // Lê se o sistema está ativo
+    var enabled := GetConfigInt(elem, "Enabled");
+    if (enabled.errortext)
+        Syslog("ageSystem error GetConfigInt enabled: " + enabled.errortext);
+        return;
+    endif
+
+	if(enabled && who.cmdlevel <= 1)
+		ReduceDP(who);
+	endif
+endprogram
+
+function ReduceDP(player)
+    var creationDate := ageCharInDays(player); // Supondo que você armazene a data de criação como propriedade do objeto do jogador.
+    if (!creationDate)
+        Syslog("ageSystem personagem sem data de criação");
+        return;
+    endif
+
+    var daysSinceCreation := creationDate;
+    var dpLossInterval := getDpLossIntervalInDays(player); // Intervalo em dias para perda de DP.
+    var totalDPLoss := (daysSinceCreation / dpLossInterval); // Calcula o total de DP a ser perdido baseado nos dias desde a criação.
+    var lastDPLoss := GetObjProperty(player, "last_dp_loss") || 0;
+    // Verifica se o jogador deve perder DP baseado nos dias desde a última verificação.
+    if (totalDPLoss >= lastDPLoss)
+        var dpmod := GetObjProperty(player, "dpmod") || 0; // Obtém o DP atual do jogador.
+        if(AP_GetVitalMaximumValue(player, "DP") <= 10)
+            return;
+        endif
+        dpmod := dpmod - 10; // Reduz o DP
+        lastDPLoss += 1;
+        SetObjProperty(player, "dpmod", dpmod); // Atualiza o DP do jogador.
+        SetObjProperty(player, "last_dp_loss", lastDPLoss); // Atualiza a contagem de perda de DP para evitar redução múltipla.
+        RecalcVitals(player); //Recalcula os dps
+        SendSysMessage(player, "Você perdeu parte de sua energia vital.");
+    endif
+endfunction
+
+function getDpLossIntervalInDays(character)
+    var raca := Lower(GetObjProperty(character, "raca"));
+
+    var raceAge := GetConfigInt(elem, raca);
+
+    if (!raceAge)
+        Syslog("ageSystem error ao achar raça no arquivo de configurações.");
+    endif
+
+    return raceAge;
+endfunction
+
+function ageCharInDays(character)// para 10000 deu 292 segundos 300
+    var criadoEm := cint(GetObjProperty(character, "createdate"));
+    var tempoAgora := polcore().systime;// segundos
+    var dias_herdados := FindAccount(character.acctname).getprop("heir_days");
+    if (dias_herdados != error)
+        criadoEm := criadoEm + (dias_herdados*86400); //Adiciona o tempo de quem tem dias herdados para o calculo de retirar dps
+    endif
+    var tempoDevida:= tempoAgora - criadoEm;
+    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
+    return dias;
+endfunction

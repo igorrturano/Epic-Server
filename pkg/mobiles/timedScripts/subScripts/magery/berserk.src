@@ -1,0 +1,29 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#stammod") )
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	var dmgbonus := cdbl(GetObjProperty(mobile, "#dmgbonus"));
+	var dmg := cint( AP_GetSkill(mobile, MAGICLORE)/100);
+	SetObjProperty(mobile, "dmg", dmg );
+	SetObjProperty(mobile, "#dmgbonus", dmgbonus + dmg );
+
+	return 1;
+endprogram
+

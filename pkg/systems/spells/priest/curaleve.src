@@ -1,0 +1,73 @@
+     use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":charactercreation:habilidades";
+include "include/damage";
+include ":brainai:npcUtil";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	//if ( !targ.npctemplate && (targ == who) )
+	//	SendSysMessageEx(who, "Voce nao pode ser alvejado por essa magia.", SSM_FAIL);
+	//	return;
+	//endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetVital( targ, HITS ) == GetVitalMaximumValue( targ, HITS ))
+		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		return;
+	endif
+
+	var healed := cint(AP_GetSkill(who, MAGICLORE)/2);
+	if (healed < 20)
+		healed := 20;
+	endif
+	//sendsysmessage(who, "healed " + healed);
+	//healdamage(targ, healed);
+	if (GetObjProperty(who, "votovinganca") == 1)
+		EraseObjProperty(who, "votovinganca");
+		if (targ.npctemplate)
+			var elem := NPC_GetNPCConfig(targ.npctemplate);
+			var category := lower(GetConfigString(elem, "Category"));
+		
+			if (category == "undead" || category == "demons")
+
+				DamageFLS(targ, healed, DMG_FORCED, who);
+			else
+				Sendsysmessage(who, "Alvo invalido.");
+			endif
+		endif
+	else
+		if ( temHabilidade(who, "Ultimo Milagre"))
+			if ( isBloodied(targ))
+				healed := healed*2;
+			endif
+		endif
+		healFLS(targ, healed);
+	endif
+	recalcvitals(targ);
+	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	
+	return 1;
+endprogram 

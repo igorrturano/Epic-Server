@@ -1,0 +1,110 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":tn:npcutil";
+include ":brainAI:npcUtil";
+include ":ghaia:ghaia";
+
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	var skill := AP_GetSkill(who, "Magery");
+	var maxsummons := Cint(skill / 25);
+	var npctemplate := GetObjproperty(targ, "npctemplate");
+	var category := lower(getnpccategory( ParseTemplateName(npctemplate).template ));
+
+	if ( category == "undead" )	
+		SendSysMessageEx(who, "Nao resta energia vital nesse corpo para ser reanimado", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetObjProperty(who, "NecroSummons") == maxsummons);
+		SendSysMessageEx(who, "Voce ja levantou corpos demais para sua capacidade", SSM_FAIL);
+		return 0;
+	endif
+
+	if ( !targ.isa(POLCLASS_CORPSE) )
+		SendSysMessageEx(who, "Voce so pode usar esta magia em corpos", SSM_FAIL);
+		return 0;
+	endif
+	if (!GetObjproperty(targ, "npctemplate"))
+		SendSysMessageEx(who, "Essa magia nao pode ser usada em players", SSM_FAIL);
+		return 0;
+	endif
+	
+	//Efeito da magia
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	CreateItemAtLocation(targ.x, targ.y, targ.z, 4650, 1, targ.realm);
+	CreateItemAtLocation((targ.x - 1), targ.y, targ.z, 4650, 1, targ.realm);
+	sleepms(500);
+	CreateItemAtLocation(targ.x, (targ.y - 1), targ.z, 4650, 1, targ.realm);	
+	sleepms(500);
+	PlaySoundEffect(targ, 383);
+	CreateItemAtLocation((targ.x + 1), targ.y, targ.z, 4650, 1, targ.realm);
+	sleepms(500);
+	CreateItemAtLocation(targ.x, (targ.y - 1), targ.z, 4650, 1, targ.realm);
+	sleepms(500);
+	var brilho := CreateItemAtLocation(targ.x, targ.y, (targ.z - 7), 14154, 1, targ.realm);
+	sleepms(2000);
+	Destroyitem( brilho );
+
+
+	//Random de Monstros
+
+	var random := RandomInt(Cint(skill));
+	var undead;
+	
+	if (random < 20)
+		undead := createnpcfromtemplate(":brainai:headless", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 40)
+		undead := createnpcfromtemplate(":brainai:skeleton1", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 50)
+		undead := createnpcfromtemplate(":brainai:zombie", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 70)
+		undead := createnpcfromtemplate(":brainai:ossadaescarlate", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 80)
+		undead := createnpcfromtemplate(":brainai:zombielord", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 90)
+		undead := createnpcfromtemplate(":brainai:spectre", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 95)
+		undead := createnpcfromtemplate(":brainai:skeletonmage", targ.x, targ.y, targ.z, 0 , who.realm);
+	elseif (random < 5000)
+		undead := createnpcfromtemplate(":brainai:fleshgolem", targ.x, targ.y, targ.z, 0 , who.realm);
+	endif
+	PlaySoundEffect(targ, 383);
+
+
+	Destroyitem( targ );
+	undead.SetMaster(who);
+				
+	SetObjProperty(undead, "GuardKill", 1);	
+	SetObjProperty(undead, "owner", who.serial);
+	SetObjProperty(undead, "name", targ.name);
+	SetObjproperty(undead, "script", targ.script);
+	SetObjProperty(undead, "AntigoTreinadorID", who.serial);
+		
+	undead.script := ":ghaia:tamed";
+	RestartScript(undead);
+				
+	Run_Script_To_Completion(":death:npcdeath", {undead});
+				
+	SetObjProperty(undead, "Necro", 1);
+	var numbersummons := Cint(GetObjProperty(who, "NecroSummons"));
+	SetObjProperty(who, "NecroSummons", (numbersummons + 1));
+
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2);
+		
+
+	SendSysMessageEx(who, "Voce teve sucesso ao levantar o corpo", SSM_INFO);
+	
+	return 1;
+endprogram 

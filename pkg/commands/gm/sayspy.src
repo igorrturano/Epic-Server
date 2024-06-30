@@ -1,0 +1,88 @@
+/*
+ * $Id: kill.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+use uo;
+
+include ":attributes:attributes";
+
+program textcmd_sayspy(who, player)
+	if (player)
+		player := splitwords(player);
+		var sayspy := GetObjProperty(who, "SaySpyOn");
+
+		if (player[1] == "off")
+			EraseObjProperty(who, "SaySpyOn");
+			SendSysMessage(who, "Say Spy Desativado");
+			return 1;
+		elseif(player[1] == "remove")
+			if (!player[2] in sayspy)
+				SendSysMessage(who, "Este nome nao esta em seu sayspy.");
+				return 1;
+			endif
+			var i;
+			for(i:=1; i<=sayspy.Size(); i:=i+1)
+				if (sayspy[i] == player[2])
+					sayspy.erase(i);
+				endif
+				sleepms(20);
+			endfor
+			if (sayspy[1])
+				SetObjProperty(who, "SaySpyOn", sayspy);
+			else
+				EraseObjProperty(who, "SaySpyOn");
+			endif
+			
+			SendSysMessage(who, "jogador removido do seu sayspy.");
+			return 1;
+		elseif(player[1] == "add" && player[2])
+			if (sayspy == "on")
+				sayspy := error;
+			endif
+			if (sayspy)
+				sayspy.append(player[2]);
+			else
+				sayspy := { player[2] };
+			endif
+			SetObjProperty(who, "SaySpyOn", sayspy);
+			SendSysMessage(who, "Say Spy Ativado para:" + GetObjProperty(who, "SaySpyOn"));
+			return 1;
+		endif
+		
+		var targ := Target(who);
+		if (!targ)
+			SendSysMessage(who, "Aborted");
+			return 1;
+		elseif(targ in sayspy)
+			SendSysMessage(who, "Este alvo já esta no seu SaySpy");
+			return 1;
+		elseif(!targ.acctname)
+			SendSysMessage(who, "Voce so pode espionar jogadores");
+			return 1;
+		endif
+		
+		if (sayspy == "on")
+			sayspy := error;
+		endif
+		
+		if (sayspy)
+			sayspy.append(targ.name);
+		else
+			sayspy := { targ.name };
+		endif
+		
+		SetObjProperty(who, "SaySpyOn", sayspy);
+		SendSysMessage(who, "Say Spy Ativado para:" + GetObjProperty(who, "SaySpyOn"));
+		return 1;
+	endif
+	
+	if (!GetObjProperty(who, "SaySpyOn"))
+		SetObjProperty(who, "SaySpyOn", "on");
+		SendSysMessage(who, "Say Spy Ativado");		
+	else
+		EraseObjProperty(who, "SaySpyOn");
+		SendSysMessage(who, "Say Spy Desativado");
+	endif
+	
+	return 1;
+endprogram

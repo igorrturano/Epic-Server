@@ -1,0 +1,199 @@
+
+//use uo;
+
+//include "include/say";
+//include "include/client";
+//include ":timedScripts:timedScripts";
+//include "include/sounds";
+//include "include/damage";
+//include "include/facings";
+
+//program fireweapons(who, item)
+//    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+
+//	var wet := GetObjProperty(who, "molhado");
+//    var pistol := Array{0xC5FD, 0xC5FE};
+//    var handcannon := 0xC5FF;
+//    var carabine := 0xC600;
+//    var musket := 0x89A7;
+    
+//    var is_pistol := 0;
+//    var is_handcannon := 0;
+//    var is_musket := 0;
+//    var is_carabine := 0;
+
+//    if (item.objtype in pistol)
+//        is_pistol := 1;
+//    elseif(item.objtype == handcannon)
+//        is_handcannon := 1;
+//    elseif(item.objtype == carabine)
+//        is_carabine := 1;
+//    elseif (item.objtype == musket)
+//        is_musket := 1;
+//    endif
+
+//    // Verifica se a arma está equipada
+//    var weapon := GetEquipmentByLayer(who, LAYER_HAND2);
+//    if (item.objtype == 0xC5FE) // pistola destra
+//        weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+//        if (weapon.serial != item.serial)
+//		    SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
+//		    return;
+//        endif
+//	elseif (weapon.serial != item.serial)
+//		SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
+//		return;
+//	endif
+
+//    // Verifica se a arma está municiada
+//    if (wet == 1)
+//        PrintTextAbove(who, "*Molhado*", SSM_FAIL);
+//        return;
+//    endif
+//    printtext(who, "*Coloca polvora na arma*");
+//    sleep(2);
+//    printtext(who, "*Socando a polvora*");
+//    // Tempo de recarga baseado na arma
+//    var i := 0;
+//    var reload_time := 6;
+//    if (is_handcannon)
+//        reload_time := 12;
+//    elseif (is_pistol)
+//        reload_time := 4;
+//    elseif (is_musket)
+//        reload_time := 8;
+//    endif
+//    // Toca os sons de recarregar
+//    while (i < reload_time)
+//        PlaySoundEffect(who, SFX_HIT_19);
+//        sleep(1);
+//        i++;
+//    endwhile
+//    printtext(who, "*Municiando o equipamento*");
+//    for (i := 0; i < 2; i++)
+//        PlaySoundEffect(who, SFX_FARMING);
+//        sleep(2);
+//    endfor
+//    PlaySoundEffect(who, SFX_HIT_11);
+//    SetObjProperty(item, "balas", 1);
+//    printtext(who, "*Arma recarregada*");
+    
+//	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+//	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+//	if (!targ)
+//		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+//		return;
+//	endif
+//	if (targ.isa(POLCLASS_ITEM))
+//		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+//		return;
+//	endif
+//    // Tempo mirando baseado na arma
+//	var cd := 2;
+//    if (is_musket)
+//        cd := 4;
+//    elseif(is_carabine)
+//        cd := 3;
+//    elseif (is_pistol)
+//        cd := 1;
+//    endif
+
+//	TurnObjectToward(who, targ.x, targ.y);
+//	PrintText(who, "*mirando em *" + targ.name);
+//    PlaySoundEffect(who, 0x667);
+//	who.frozen := 1;
+//    var i := 0;
+//    for (i := 0; i < cd; i++)
+//        PerformAction(who, 0x13);
+//        sleep(1);
+//    endfor
+//	who.frozen := 0;
+
+//	if ( !CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm))
+//		SendSysMessageEx(who, "O alvo saiu do seu campo de visao.", SSM_FAIL);
+//		return;
+//	endif 
+//	var dist := distance(who, targ);
+
+//    // Calcula distancia minima de acordo com a arma
+//    var min_dist := 0;
+//    if (is_musket)
+//        min_dist := 4;
+//    elseif (is_carabine)
+//        min_dist := 3;
+//    elseif (is_handcannon)
+//        min_dist := 2;
+//    endif
+
+//    if (dist < min_dist)
+//        SendSysMessageEx(who, "O alvo esta muito proximo!", SSM_FAIL);
+//        return;
+//    endif
+
+//	var dmg := 40;
+//    if(is_musket)
+//        dmg := 100;
+//    elseif(is_carabine)
+//        dmg := 80;
+//    elseif(is_handcannon)
+//        dmg := 140;
+//    endif
+    
+//    // Cálculo de dano baseado na distância
+//    // TODO: Transformar numa função
+//    var max_range := 6;
+//    if (is_pistol)
+//        if (dist > max_range)
+//            dmg := dmg - ((dist - max_range) * 10);
+//        endif
+//    elseif (is_handcannon)
+//        if (dist > max_range)
+//            dmg := 0;
+//        endif
+//    elseif (is_carabine)
+//        max_range := 12;
+//        if (dist > max_range)
+//            dmg := dmg - ((dist - max_range) * 10);
+//        endif
+//    elseif (is_musket)
+//        max_range := 20;
+//        if (dist > max_range)
+//            dmg := dmg - ((dist - max_range) * 10);
+//        endif
+//    endif
+    
+//	if (dmg < 1 || (TemHabilidade(targ, "Pele de Rocha") && IsRaging(targ)))
+//		dmg := 1;
+//	endif
+
+//    // TODO: Transformar numa função
+//    var shot_sound := 0x4D0;
+//    if (is_pistol)
+//        shot_sound := 0x11C;
+//    elseif (is_carabine)
+//        shot_sound := 0x309;
+//    elseif (is_handcannon)
+//        shot_sound := 0x308;
+//    elseif(is_musket)
+//        shot_sound := 0x11E;
+//    endif
+
+//    if (wet == 1)
+//        SendSysMessageEx(who, "A polvora esta molhada", SSM_FAIL);
+//        PlaySoundEffect(who, 0x4D0);
+//        balas := balas - 1;
+//	    SetObjProperty(item, "balas", balas);
+//		return;
+//	endif
+//    var random := randomint(10);
+//    if (random <= 1)
+//        SendSysMessageEx(who, "O tiro saiu pela culatra!", SSM_FAIL);
+//        targ := who;
+//        DestroyItem(item);
+//    endif
+
+//    PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+//    PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
+//	PlaySoundEffect(who, shot_sound);
+//	DamageFLS(targ, dmg,  DMG_FORCED, who);
+//endprogram

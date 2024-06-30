@@ -1,0 +1,369 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+use http; //funcoes do HTML
+use cfgfile;
+use vitals;
+
+include ":datafile:datafile";
+
+CONST BORDA_DRAGAO_ESQUERDA := "0x28A0 0x28A1";
+CONST BORDA_DRAGAO_DIREITA := "0x28AA 0x28AB";
+CONST IMAGEM_TINTEIRO := "40034";
+CONST MOLDURA_EXTERNA := "39925";
+CONST MOLDURA_IMAGEM := "40000";
+CONST MOLDURA_TITULO_PONTOSRP := "40019";
+CONST MOLDURA_TITULO_PRINCIPAL := "1764";
+CONST MOLDURA_TITULO_BOTAO := "1589";
+CONST MOLDURA_PONTOSRP := "40135";
+CONST MOLDURA_NOME_PERSONAGEM := "1128";
+CONST MOLDURA_LOGO_FLS := "";
+CONST MOLDURA_INTERNA_TEXTO := "1579";
+
+
+CONST BOTAO_PREFIL := "5575 5576";
+CONST BOTAO_VIRTUDES_DEFEITOS := "5583 5584";
+CONST BOTAO_NOTAS_MENTAIS := "5581 5582";
+CONST BOTAO_BIOGRAFIA := "5563 5564";
+CONST BOTAO_OBJETIVOS := "5551 5552";
+CONST BOTAO_AVALIACOES_STAFF := "5585 5586";
+CONST BOTAO_PONTOS_RP := "4037 4037";//sacola de dinheiro
+CONST BOTAO_CANCELAR := "242 241";
+CONST BOTAO_OK := "247 248";
+CONST BOTAO_FOTO_PROXIMA := "9904 9903";
+CONST BOTAO_FOTO_ANTERIOR := "9910 9909";
+
+
+
+CONST BOTAO_PREFIL_ID := "111";
+CONST BOTAO_VIRTUDES_DEFEITOS_ID := "112";
+CONST BOTAO_NOTAS_MENTAIS_ID := "113";
+CONST BOTAO_BIOGRAFIA_ID := "114";
+CONST BOTAO_OBJETIVOS_ID := "115";
+CONST BOTAO_AVALIACOES_STAFF_ID := "116";
+CONST BOTAO_PONTOS_RP_ID := "117";
+CONST BOTAO_FOTO_PROXIMA_ID := "118";
+CONST BOTAO_FOTO_ANTERIOR_ID := "119";
+CONST BOTAO_CANCELAR_ID := "121";
+CONST BOTAO_OK_ID := "122";
+
+
+CONST BOTAO_MAIS := "1605 1605";
+CONST FONTE_FICHA := "0";
+CONST COR_FONTE_TITULO_BOTAO := "0";
+CONST COR_FONTE_TITULO_PONTOSRP := "2440";
+CONST COR_FONTE_FICHA_2 := "";
+CONST COR_FONTE_FICHA_3 := "";
+
+
+
+//Programa para acessar a ficha do personagem
+program ficha(who)
+	//cria variavel do gump;
+	var gump := array;
+
+	//Abre o arquivo com as Fichas RP
+	var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+
+	//Busca no arquivo a variável que armazena a FichaRP de "who"
+	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(who.serial), DF_NO_CREATE);
+
+	//verifica a imagem escolhida
+	var imagemFundo := ficharp_elem.GetProp("IMAGEM");
+	if((!imagemFundo) || (CInt(imagemFundo) > 30582) || (CInt(imagemFundo) < 30567))
+		imagemFundo := "30567";
+	endif
+
+	repeat
+		var PontosRP := "<BASEFONT color=black size=7><CENTER><b>"+FindAccount(who.acctname).getprop("RPpoints")+"</b></CENTER></BASEFONT>";
+		var nome := "<BASEFONT color=#ffffff size=7><CENTER><b>"+Upper(who.name)+"</b></CENTER></BASEFONT>";
+		//Prepara as definições de layout do gump
+		var gflayout := {
+			"NoClose",   // close by right-click forbidden
+			"NoDispose", // you did not want to hit esc, did you?
+			//"NoMove",    // you musn't move the window around
+
+			"ResizePic 0 0 "+MOLDURA_EXTERNA+" 720 600", //Dimensão externa do GUMP de tamanho dinâmico
+
+			//Botões do lado esquerdo
+			"Button 120 150 "+BOTAO_PREFIL+" 1 0 "+BOTAO_PREFIL_ID,  //Botão do Perfil | Button [x] [y] [released-id] [pressed-id] [quit] [page-id] [return-value]
+			"GumpPic 85 215 "+MOLDURA_TITULO_BOTAO, //Moldura do título do botão Perfil | GumpPic [x [y] [id]
+			"Text 130 218 "+ COR_FONTE_TITULO_BOTAO +" 0", //Título do botão Perfil | Text [x] [y] [color] [text-id]
+
+			"Button 85 300 "+BOTAO_VIRTUDES_DEFEITOS+" 1 0 "+BOTAO_VIRTUDES_DEFEITOS_ID, //Botão Virtudes e Defeitos
+			"GumpPic 45 365 "+MOLDURA_TITULO_BOTAO, //Moldura do título do botão Virtudes e Defeitos
+			"Text 45 368 "+ COR_FONTE_TITULO_BOTAO +" 1",//Título do botão Virtudes e Defeitos
+
+			"Button 120 450 "+BOTAO_NOTAS_MENTAIS+" 1 0 "+BOTAO_NOTAS_MENTAIS_ID, //Botão Notas Mentais
+			"GumpPic 85 515 "+MOLDURA_TITULO_BOTAO, //Moldura do título do botão Notas Mentais
+			"Text 100 518 "+ COR_FONTE_TITULO_BOTAO +" 2", //Título do botão Notas Mentais
+
+			//Botões do lado direito
+			"Button 560 150 "+BOTAO_BIOGRAFIA+" 1 0 "+BOTAO_BIOGRAFIA_ID, //Botão Biografia
+			"GumpPic 525 215 "+MOLDURA_TITULO_BOTAO, //Moldura do título do botão Biografia
+			"Text 555 218 "+ COR_FONTE_TITULO_BOTAO +" 3",//Título do botão Biografia
+
+			"Button 595 300 "+BOTAO_OBJETIVOS+" 1 0 "+BOTAO_OBJETIVOS_ID, //Botão Objetivos
+			"GumpPic 560 365 "+MOLDURA_TITULO_BOTAO, //Moldura do título do botão Objetivos
+			"Text 590 368 "+ COR_FONTE_TITULO_BOTAO +" 4", //Título do botão Objetivos
+
+			"Button 560 450 "+BOTAO_AVALIACOES_STAFF+" 1 0 "+BOTAO_AVALIACOES_STAFF_ID, //Botão Avaliações Staff
+			"GumpPic 525 515 "+MOLDURA_TITULO_BOTAO, //Moldura do título do botão Avaliações Staff
+			"Text 530 518 "+ COR_FONTE_TITULO_BOTAO +" 5",//Título do botão Avaliações Staff
+
+			//Moldura central com retrato do personagem
+			"ResizePic 240 116 "+MOLDURA_IMAGEM+" 248 409", //Dimensão externa do GUMP de tamanho dinâmico
+			"HtmlGump 250 155 240 340 6 0 0", //Html onde será exibida a imagem selecionada para o personagem | HtmlGump [x] [y] [width] [height] [text-id] [background] [scrollbar]
+			"GumpPic 244 120 "+imagemFundo, //Imagem do personagem
+			"HtmlGump 245 100 250 20 7 0 0", //Html onde será exibida o nome do personagem | HtmlGump [x] [y] [width] [height] [text-id] [background] [scrollbar]
+
+			//Botão PontosRP
+			"GumpPic 55 77 "+MOLDURA_PONTOSRP, //Moldura do valor de PontosRP | GumpPic [x [y] [id]
+			"Text 85 53 "+ COR_FONTE_TITULO_PONTOSRP +" 8",//Título do botão PontosRP
+			"HtmlGump 80 80 90 30 9 0 0", //Html onde será exibida o total de PontosRP | HtmlGump [x] [y] [width] [height] [text-id] [background] [scrollbar]
+			"Button 50 70 "+BOTAO_PONTOS_RP+" 1 0 "+BOTAO_PONTOS_RP_ID, //Botão PontosRP
+
+			"Button 218 310 "+BOTAO_FOTO_ANTERIOR+" 1 0 "+BOTAO_FOTO_ANTERIOR_ID, //Botão Avaliações Staff
+			"Button 489 310 "+BOTAO_FOTO_PROXIMA+" 1 0 "+BOTAO_FOTO_PROXIMA_ID, //Botão Avaliações Staff
+
+			"Button 260 560 "+BOTAO_CANCELAR+" 1 0 "+BOTAO_CANCELAR_ID, //Botão Cancelar
+			"Button 397 560 "+BOTAO_OK+" 1 0 "+BOTAO_OK_ID //Botão OK
+			};
+
+		//Prepara as definições dos dados a serem exibidor nos campos do gump
+		//Mais a frente é necessário um Append do conteudo de "partituraTxt" em "gfdata"
+		var gfdata := {
+			"PERFIL",
+			"VIRTUDES/DEFEITOS",
+			"NOTAS MENTAIS",
+			"BIOGRAFIA",
+			"OBJETIVOS",
+			"AVALIACOES STAFF",
+			"",
+			nome,
+			"PONTOS RP",
+			PontosRP
+			};
+
+		//Exibe o gump basico da fichaRP
+		gump := SendDialogGump(who, gflayout, gfdata);
+		print("a: "+gump[0]); //Valor do botao selecionado
+
+
+
+	/*
+		ficharp_elem.SetProp("VIRTUDES_DEFEITOS", comp);
+		ficharp_elem.SetProp("NOTAS_MENTAIS", comp);
+		ficharp_elem.SetProp("BIOGRAFIA", comp);
+		ficharp_elem.SetProp("OBJETIVOS", comp);
+		ficharp_elem.SetProp("IMAGEM", comp);
+		var temp := ficharp_elem.GetProp("Anotacoes", anotacoes); //Avaliações da staff
+		if(temp)
+			ficharp_elem.SetProp("AVALIACOES_STAFF", temp); //Avaliações da staff
+		endif
+
+	*/
+
+
+
+
+
+
+
+
+		case(CStr(gump[0]))
+
+			BOTAO_PREFIL_ID:
+				gump := gumpPerfil(who, ficharp_elem);
+				break;
+			BOTAO_VIRTUDES_DEFEITOS_ID:
+				gump := gumpVirtudesDefeitos(who, ficharp_elem);
+				break;
+			BOTAO_NOTAS_MENTAIS_ID:
+				gump := gumpNotasMentais(who, ficharp_elem);
+				break;
+			BOTAO_BIOGRAFIA_ID:
+				gump := gumpBiografia(who, ficharp_elem);
+				break;
+			BOTAO_OBJETIVOS_ID:
+				gump := gumpObjetivos(who, ficharp_elem);
+				break;
+			BOTAO_AVALIACOES_STAFF_ID:
+				gump := gumpAvaliacoesStaff(who, ficharp_elem);
+				break;
+			BOTAO_PONTOS_RP_ID:
+				gump := gumpPontosRP(who, ficharp_elem);
+				break;
+			BOTAO_FOTO_PROXIMA_ID:
+				if(CInt(imagemFundo) < 30582)
+					//muda para a imagem seguinte
+					imagemFundo := CStr(CInt(imagemFundo)+1);
+				else
+					//muda para ID mínimo das imagens
+					imagemFundo := CStr(30567);
+				endif
+				break;
+			BOTAO_FOTO_ANTERIOR_ID:
+				if(CInt(imagemFundo) > 30567)
+					//muda para a imagem anterior
+					imagemFundo := CStr(CInt(imagemFundo)-1);
+				else
+					//muda para ID máximo das imagens
+					imagemFundo := CStr(30582);
+				endif
+				break;
+			BOTAO_CANCELAR_ID:
+				return 0;
+			BOTAO_OK_ID:
+				//Salva a imagem escolhida
+				ficharp_elem.SetProp("IMAGEM",imagemFundo);
+				//Sempre que o char recém recebeu um bonus de +20 no novo personagem, zera a contagem
+				if (!GetObjProperty(who, "fichaRP"))
+					if(FindAccount(who.acctname).getprop("mortelog") > 3888000) //Ao criar a primeira ficharp, considera finalizada a criacao de personagem com +20 em todas as skills
+						FindAccount(who.acctname).setprop("mortelog",0);
+					endif
+				endif
+
+				RecalcVitals(who);
+				return 1;
+			default:
+				print("default");
+				return 0;
+		endcase
+		print("b: "+gump[0]); //Valor do botao selecionado
+	until (gump[0] == "121" || gump[0] == "122");
+	return 1;
+endprogram
+
+function gumpPerfil(who, byref ficharp_elem)
+
+	var nome := "<BASEFONT color=#ffffff size=7><CENTER><b>PERFIL DE "+Upper(who.name)+"</b></CENTER></BASEFONT>";
+
+	var info_cor_campo := {"<BASEFONT color=#ffff66 size=7><b>","</b></BASEFONT>"};
+	var info_cor_conteudo := {"<BASEFONT color=#e6f2ff size=7><b>","</b></BASEFONT>"};
+
+	var gflayout := {
+		"NoClose",   // close by right-click forbidden
+		"NoDispose", // you did not want to hit esc, did you?
+		//"NoMove",    // you musn't move the window around
+
+		"ResizePic 0 0 "+MOLDURA_EXTERNA+" 720 600", //Dimensão externa do GUMP de tamanho dinâmico
+		"HtmlGump 0 100 720 30 0 0 0", //Html onde será exibida o nome do pesonagem | HtmlGump [x] [y] [width] [height] [text-id] [background] [scrollbar]
+
+		//Raça
+
+		"GumpPic 20 100 "+IMAGEM_TINTEIRO,
+		"HtmlGump 100 175 400 30 1 0 0",
+		"HtmlGump 200 175 400 30 2 0 0",
+
+		//Povo
+
+		"GumpPic 20 150 "+IMAGEM_TINTEIRO,
+		"HtmlGump 100 225 400 30 3 0 0",
+		"HtmlGump 200 225 400 30 4 0 0",
+
+		//Classe
+
+		"GumpPic 20 200 "+IMAGEM_TINTEIRO,
+		"HtmlGump 100 275 400 30 5 0 0",
+		"HtmlGump 200 275 400 30 6 0 0",
+
+		//Kits
+
+		"GumpPic 20 250 "+IMAGEM_TINTEIRO,
+		"HtmlGump 100 325 400 30 7 0 0",
+		"HtmlGump 200 325 400 30 8 0 0",
+
+		//Descrição
+
+		"GumpPic 20 300 "+IMAGEM_TINTEIRO,
+		"HtmlGump 100 375 400 30 9 0 0",
+		"ResizePic 75 390 "+MOLDURA_INTERNA_TEXTO+" 570 160",
+		"TextEntry 80 395 560 150 0 2 10",
+
+		"Button 260 560 "+BOTAO_CANCELAR+" 1 0 "+BOTAO_CANCELAR_ID, //Botão Cancelar
+		"Button 397 560 "+BOTAO_OK+" 1 0 "+BOTAO_OK_ID //Botão OK
+		};
+
+	//Prepara as definições dos dados a serem exibidor nos campos do gump
+	//Mais a frente é necessário um Append do conteudo de "partituraTxt" em "gfdata"
+	var gfdata := {
+		nome,
+		info_cor_campo[1]+"RAÇA: "+info_cor_campo[2],
+		info_cor_conteudo[1]+"ELFO (AQUILRANO)"+info_cor_conteudo[2],
+		info_cor_campo[1]+"CLASSE: "+info_cor_campo[2],
+		info_cor_conteudo[1]+"CAMINHO DAS ARMAS (DESTRUIDOR)"+info_cor_conteudo[2],
+		info_cor_campo[1]+"IDADE: "+info_cor_campo[2],
+		info_cor_conteudo[1]+"7,9 Anos (416 Dias Reais) desde sua criação"+info_cor_conteudo[2],
+		info_cor_campo[1]+"KITS: "+info_cor_campo[2],
+		info_cor_conteudo[1]+"SABEDORIA DOS ANTIGOS, DURO DE MATAR"+info_cor_conteudo[2],
+		info_cor_campo[1]+"DESCRIÇÃO: "+info_cor_campo[2],
+		"DESCRIÇÃO
+		AQUI                   E AQUI
+		E ACOLÁ         		TESTANDO
+		1234"
+		};
+	print(gfdata);
+
+	//Exibe o gump basico da fichaRP
+	var gump := SendDialogGump(who, gflayout, gfdata);
+	print("Perfil: "+gump[0]); //Valor do botao selecionado
+
+
+
+
+
+
+
+
+	return 0;
+endfunction
+
+function gumpVirtudesDefeitos(who, byref ficharp_elem)
+	return 0;
+endfunction
+
+function gumpNotasMentais(who, byref ficharp_elem)
+	return 0;
+endfunction
+
+function gumpBiografia(who, byref ficharp_elem)
+	return 0;
+endfunction
+
+function gumpObjetivos(who, byref ficharp_elem)
+	return 0;
+endfunction
+
+function gumpAvaliacoesStaff(who, byref ficharp_elem)
+	return 0;
+endfunction
+function gumpPontosRP(who, byref ficharp_elem)
+	return 0;
+endfunction
+
+function AdicionaLogRP(accname, msg)
+	var acc := FindAccount(accname);
+	if (acc)
+		var logs := acc.getprop("rplog");
+		if (logs == error)
+			logs := array;
+		endif
+		logs.append(msg);
+		acc.setprop("rplog", logs);
+	endif
+endfunction
+
+
+function ConsultaNotaRP(who)
+	return CInt(FindAccount(who.acctname).getprop("nota"));
+endfunction
+
+function MudaNotaRP(who, nota)
+	var novaNota := nota;
+	if(nota < -4)
+		novaNota := -4;
+	elseif(nota>4)
+		novaNota := 4;
+	endif
+	findAccount(who.acctname).setProp("nota", novaNota);
+endfunction

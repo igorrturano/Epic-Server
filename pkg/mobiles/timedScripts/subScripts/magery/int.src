@@ -1,0 +1,36 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+	sendsysmessage(mobile, "startando int mod");
+	if ( GetObjProperty(mobile, "#IntMod") )
+		sendsysmessage(mobile, "int mod ja ok, retornando");
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	var cast_points := level;
+	if (cast_points < 10)
+		cast_points := 10;
+	endif
+	var stat := AP_GetStat(mobile, INTELLIGENCE);
+	stat := Cint((stat*cast_points)/100);
+	var points := stat;	
+
+	SetObjProperty(mobile, "#IntMod", points);
+	sendsysmessage(mobile, "int mod points: "  + points);
+	AP_ModifyStatMod(mobile, INTELLIGENCE, points);
+	
+	return 1;
+endprogram
+

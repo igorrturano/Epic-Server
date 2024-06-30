@@ -1,0 +1,19 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var sword := params[4];
+    var espada := SystemFindObjectBySerial( cint(GetObjProperty(mobile, "Espada")) );
+	
+	var newsword := MoveObjectToLocation(espada, mobile.x, mobile.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
+	PrintTextAbove(mobile, "*A espada adormece*",3,191);
+	SetObjProperty(mobile, "GuardKill", 1);
+	ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
+	DestroyItem( mobile );
+	
+	return 1;
+endprogram

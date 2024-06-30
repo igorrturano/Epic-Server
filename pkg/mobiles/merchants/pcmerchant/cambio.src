@@ -1,0 +1,111 @@
+use uo;
+use cfgfile;
+
+include ":gumps:gumps";
+include "include/say";
+
+program troca(params)
+
+	var who := params[2];
+	var npc := params[1];
+	var calculo:=0;
+	var resto:=0;
+
+	SendSysMessage(who,"Selecione as moedas que deseja trocar");
+	var moedas:=Target( who, options := TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
+
+if ((moedas.objtype == 0xba63) || (moedas.objtype == 0xba64) || (moedas.objtype == 0xba65))
+
+	var gump := GFCreateGump();
+        GFDisposable(gump, 0);
+	var sizey := 3;
+	GFResizePic(gump, 0, 25, 3600, 250, 180);
+	GFResizePic(gump, 15, 40, 0x13BE, 220, 150);
+	GFTextLine(gump, 30, 50, 1153, "Deseja trocar para: ");
+
+	var prata:=GFRadioButton(gump, 30, 80, 210, 211, 0, 1);
+	GFTextLine(gump, 50, 80, 1153, "Moedas de Prata");
+
+	var ouro:=GFRadioButton(gump, 30, 100, 210, 211, 0, 2);
+	GFTextLine(gump, 50, 100, 1153, "Moedas de Ouro");
+
+	var cobre:=GFRadioButton(gump, 30, 120, 210, 211, 0, 3);
+	GFTextLine(gump, 50, 120, 1153, "Moedas de Cobre");
+
+	GFAddButton(gump, 250-70, 130, 4502, 4502, 1, 999 );
+	GFTextLine(gump, 50, 145, 800, "Confirmar transação.");
+
+	var escolha:=GFSendGump(who,gump);
+	if (1 in escolha.keys) //prata
+
+		if (moedas.objtype == 0xba63) //cobre
+			if (moedas.amount >= 10)
+				calculo:=moedas.amount / 10;
+				resto:=moedas.amount % 10;
+				DestroyItem(moedas);
+				CreateItemInBackpack( who, 0xba64, amount := calculo);
+				CreateItemInBackpack( who, 0xba63, amount := resto);
+			else
+				SendSysMessage(who,"Quantidade insuficiente para troca.");
+			endif
+		elseif (moedas.objtype == 0xba64) //prata
+			SendSysMessage(who,"Nao foi possivel realizar a troca");
+		elseif (moedas.objtype == 0xba65) //ouro
+			calculo:= moedas.amount * 10;
+			DestroyItem(moedas);
+			CreateItemInBackpack( who, 0xba64, amount := calculo);
+		else
+			return 0;
+		endif
+
+	elseif (2 in escolha.keys) //Ouro
+		if (moedas.objtype == 0xba63) //cobre
+			if(moedas.amount >= 100)
+				calculo:=moedas.amount / 100;
+				resto:=moedas.amount % 100;
+				DestroyItem(moedas);
+				CreateItemInBackpack( who, 0xba65, amount := calculo);
+				CreateItemInBackpack( who, 0xba63, amount := resto);
+			else
+				SendSysMessage(who,"Quantidade insuficiente para troca.");
+			endif
+
+		elseif (moedas.objtype == 0xba64) //prata
+			if(moedas.amount >= 10)
+				calculo:= moedas.amount / 10;
+				resto:=moedas.amount % 10;
+				DestroyItem(moedas);
+				CreateItemInBackpack( who, 0xba65, amount := calculo);
+				CreateItemInBackpack( who, 0xba64, amount := resto);
+			else
+				SendSysMessage(who,"Quantidade insuficiente para troca.");
+			endif
+		elseif (moedas.objtype == 0xba65) // Ouro
+			SendSysMessage(who,"Nao foi possivel realizar a troca");
+		else
+			return 0;
+		endif
+
+    elseif (3 in escolha.keys)//cobre
+		if (moedas.objtype == 0xba63) // cobre
+			SendSysMessage(who,"Nao foi possivel realizar a troca");
+		elseif (moedas.objtype == 0xba64) // prata
+			calculo:=moedas.amount * 10;
+			DestroyItem(moedas);
+			CreateItemInBackpack( who, 0xba63, amount := calculo);
+		elseif (moedas.objtype == 0xba65) // ouro
+			calculo:=moedas.amount * 100;
+			DestroyItem(moedas);
+			CreateItemInBackpack( who, 0xba63, amount := calculo);
+		else
+			return 0;
+		endif
+
+   endif
+
+else
+	SendSysMessage(who,"Selecione apenas moedas.");
+endif
+
+endprogram
+

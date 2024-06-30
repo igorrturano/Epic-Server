@@ -1,0 +1,46 @@
+/*use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+
+program VacuoDeMana(attacker)
+
+	SendSysMessageEx(attacker, "Seu proximo golpe danificara a alma do oponente", SSM_INFO);
+	SetCooldown(attacker, "vacuodemana", 60);
+
+endprogram    */
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program tironojoelho(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	if (lower(weapon.attribute) == "RangedCombat")
+		SendSysMessage(attacker, "A habilidade falhou, voce precisa estar usando arco");
+		return 1;
+	endif	
+	
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+
+	TS_StartTimer(defender, "paralysis", 6);
+	Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, weapon, armor, basedamage, rawdamage});
+
+endprogram 
+
+

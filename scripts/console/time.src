@@ -1,0 +1,7 @@
+use uo;
+
+include "include/clock";
+
+program time( unused cmd )
+    print("System Message: Tempo no jogo: " + GetTimeofDay() );
+endprogram

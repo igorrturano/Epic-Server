@@ -1,0 +1,46 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(who)
+
+	SendSysMessageEx(who, "Escolha um item da sua mochila para por na mochila do alvo", SSM_REQUEST);
+	var itm := Target(who);
+	if (!itm)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
+	var aux := itm;
+	while (aux.container)
+		aux := aux.container;
+	endwhile
+	if (aux != who)
+		SendsysMessageEx(who, "O item deve estar na sua mochila.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Escolha o alvo que vai receber seu item.", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+	if (Distance(who, targ) > 1)
+		SendSysMessageEx(who, "Voce esta muito longe do alvo.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (SkillCheck(who, PICKPOCKETING, -1) > 0)
+		MoveObjectToLocation(itm, 0, 0, 0, who.realm);
+		MoveItemToContainer(itm, targ.backpack);
+
+		SendSysMessageEx(who, "Voce guardou o item na mochila do alvo." , SSM_INFO);
+	else
+		SendSysMessageEx(who, "Voce falhou ao por item na mochila do alvo." , SSM_FAIL);
+	endif
+
+endprogram  

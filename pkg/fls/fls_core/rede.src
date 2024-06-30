@@ -1,0 +1,58 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":gumps:yesNo";
+include "include/say";
+
+program rope(who, item)
+	var alvo := Target(who, TGTOPT_CHECK_LOS);
+	SendSysMessage(who, "Selecione um corpo.");
+	if (!alvo)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	elseif (Distance(who, alvo) > 2)
+		SendSysMessage(who, "Voce esta muito longe!");
+		return;
+	elseif (GetObjProperty(alvo, "corda"))
+		SendSysMessage(who, "Este alvo ja esta amarrado!");
+		return;
+	endif
+
+	var diff := GetObjProperty(item, "diff");
+	if (!diff)
+		diff := 100;
+	endif
+
+	if (alvo.corpsetype == 400 || alvo.corpsetype == 401 || alvo.corpsetype == 1828 || alvo.corpsetype == 1829 || alvo.corpsetype == 1830 || alvo.corpsetype == 1831 || alvo.corpsetype == 1832 || alvo.corpsetype == 1833 || alvo.corpsetype == 1834 || alvo.corpsetype == 1835) // Se for corpo
+		var char := SystemFindObjectBySerial(alvo.ownerserial);
+
+		if (!char)
+			SendSysMessage(who, "Voce nao pode usar corda nesse corpo!");
+			return;
+		endif
+
+		PrintText(who, "*amarra "+char.name+"*");
+		SubtractAmount(item, 1);
+		SetObjProperty (alvo, "corda", 1);
+		SetObjProperty (char, "corda", diff);
+	elseif (alvo.ip) // Se for player e tiver on
+		if (!alvo.connected)
+			SendSysMessage(who, "Nao pode amarrar um jogador deslogado.");
+			return;
+		endif
+		var ok := YesNo(alvo, "Voce permite ser amarrado por "+who.name+"?" , "Sim, permito.", "Nao.");
+		if (ok)
+			PrintText(who, "*amarra "+alvo.name+"*");
+			SubtractAmount(item, 1);
+			SetObjProperty (alvo, "corda", diff);
+			alvo.frozen := 1;
+		else
+			SendSysMessage(who, alvo.name+" nao permitiu que voce amarrasse!");
+		endif
+	else
+		SendSysMessage(who, "Voce nao pode amarrar isso!");
+		return;
+	endif
+endprogram

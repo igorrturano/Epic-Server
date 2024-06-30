@@ -1,0 +1,124 @@
+/*use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+
+program VacuoDeMana(attacker)
+
+	SendSysMessageEx(attacker, "Seu proximo golpe danificara a alma do oponente", SSM_INFO);
+	SetCooldown(attacker, "vacuodemana", 60);
+
+endprogram    */
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:vitals";
+include ":charactercreation:resists";
+include "include/facings";
+
+program vacuodemana(params)
+	var who	:= params[1];
+	params := 0; // Not needed anymore.
+    var has_ammo := 0;
+    var has_powder := 0;
+    var has_power_fixer := 0;
+    // Verificar se tem cannon ball
+    var itemsinbag := EnumerateItemsInContainer(who.backpack);
+    foreach item in itemsinbag
+        if (item.objtype == 0x4224 && !has_ammo) // cannon ball
+            has_ammo := 1;
+            subtractamount(item.objtype, 1);
+        endif
+        if (item.objtype == 0x9092 && !has_powder)
+            has_powder := 1;
+            subtractamount(item.objtype, 5);
+        endif
+        if (item.objtype == 0xC611)
+            has_power_fixer := 1;
+        endif
+    endforeach
+
+    if (!has_ammo || !has_powder || !has_power_fixer)
+        SendSysMessage(who, "Que artilheiro despreparado! Voce nao tem os materiais necessarios!");
+        return 0;
+    endif
+
+    if (GetObjProperty(who, "molhado"))
+        SendSysMessage(who, "Molhado desse jeito, eh impossivel manipular canhoes e polvoras!");
+        return 0;
+    endif
+
+    var targ := Target(who);
+    if (!targ)
+        SendSysMessageEx(who, "Cancelado");
+        return 0;
+    endif
+
+    if (!targ.isA(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "alvo invalido");
+        return 0;
+    endif
+
+    var what_channon := cannonPosition(who, targ);
+	var the_cannon := CreateItemAtLocation(who.x, who.y, who.z, what_channon, 1, who.realm);
+
+    who.frozen := 1;
+    TurnObjectToward(who, targ.x, targ.y);
+    sleep(1);
+    PrintTextAbove(who, "Acende o fusível do canhão");
+    sleep(1);
+    PlaySoundEffect(who, 0x667); //cannon_fuse
+    sleep(2);
+
+    PrintTextAbove(the_cannon, "*Dispara*");
+    PlaySoundEffect(who, 0x665); // Shot
+    PlayMovingEffect(the_cannon, targ, 0x5418, 5, 1, 0); // anim do disparo
+    sleep(1);
+    
+    PlaySoundEffect(who, 0x306); //explosion
+    PLayStationaryEffect(targ.x, targ.y+2, targ.z, 0x6D0E, 0, 10, 0, targ.realm); // A explosão
+
+    var bs_damage := Cint(AP_GetSkill(who, METALWORKING));
+    var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 3, targ.realm);
+    foreach mob in nearby
+        DamageFLS(mob, bs_damage+20, DMG_FIRE, who);
+        PLayStationaryEffect(mob.x, mob.y, mob.z, 0x36cc, 0, 10, 0, mob.realm);
+        TS_StartTimer(mob, "tombar", 10);
+    endforeach
+	destroycraft(targ, who);
+
+
+    PrintTextAbove(who, "*Desmonta o equipamento*");
+    sleep(2);
+    DestroyItem(the_cannon);
+    who.frozen := 0;
+
+    return 1;
+endprogram 
+
+function cannonPosition(who, targ)
+    var quadrant := 0;
+
+    var deltaX := targ.x - who.x;
+    var deltaY := targ.y - who.y;
+
+    if (deltaY < 0)
+        quadrant := 0x4218; // SW
+    elseif (deltaY > 0)
+        quadrant := 0x4216; // N 
+    elseif (deltaX > 0)
+        quadrant := 0x4219; // SE
+    else
+        quadrant := 0x4217; // NW
+    endif
+
+    return quadrant;
+endfunction

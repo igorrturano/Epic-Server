@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+	
+	mobile.concealed := 0;
+
+	EraseObjProperty(mobile, "conceal");
+	return 1;
+endprogram
+    

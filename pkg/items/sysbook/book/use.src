@@ -1,0 +1,60 @@
+// $Id: use.src 1178 2006-02-10 12:32:59Z austin $
+
+use uo;
+include ":attributes:attributes";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":gumps:requestGump";
+include ":gumps:yesNo";
+include ":charactercreation:habilidades";
+
+program useBook(who,book)
+	if ( !ReserveItem(book) )
+		SendSysMessage(who, "Outra pessoa esta usando este livro.", SSM_FAIL);
+		return 0;
+	endif
+	if(GetAttributeBaseValue(who, "Intelligence") < 40)
+		SendSysMessage(who, "Voce eh burro demais pra usar isso.", SSM_FAIL);
+		return 0;
+	endif
+
+	//check pra cartas
+	If (GetObjProperty(book, "Selado") == "sim")
+		var alterar := YesNo(who, "Esta carta esta selada. Para abri-la, voce precisara romper o selo. Deseja fazer isso?" , "Sim.", "Nao.");
+		if (!alterar)
+			if (who.cmdlevel > 1)
+				var GM := YesNo(who, "Como GM, voce pode optar por nao romper o selo e ainda ler a carta. Deseja faze-lo?" , "Sim.", "Nao.");
+				if (GM)
+					SendOpenBook(who, book);
+				endif
+			endif
+			if (TemHabilidade(who, "Falsificar"))
+				var GM := YesNo(who, "Voce pode optar por nao romper o selo e ainda ler a carta. Deseja faze-lo?" , "Sim.", "Nao.");
+				if (GM)
+					SendOpenBook(who, book);
+				endif
+			endif
+			SendSysMessage(who, "Voce optou por nao romper o selo");
+			return;
+		endif
+		PrintTextAbove(book, "Rompe o selo", who);
+		var desc := GetObjProperty(book, "description") + " [Rompido]";
+		SetObjProperty(book, "description", desc);
+		SetObjProperty(book, "Selado", "quebrado");
+		SetName(book, book.desc);
+	endif
+	//fim do check pra cartas
+
+	var linguagem := GetObjProperty(book, "lingua");
+	var linguas := GetObjProperty(who, "linguas");
+
+	if (linguagem != error)
+		if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
+			SendOpenBook(who, book);
+		else
+			SendSysMessageEx(who, "Voce nao conhece essa lingua: " + linguagem);
+		endif
+	else
+		SendOpenBook(who, book);
+	endif
+endprogram

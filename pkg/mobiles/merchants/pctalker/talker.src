@@ -1,0 +1,106 @@
+use uo;
+use cfgfile;
+use os;
+
+include ":gumps:gumps";
+include "include/say";
+include ":tn:tngumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+
+program talker(params)
+
+	var who := params[2];
+	var npc := params[1];
+
+	var gump := GFCreateGump();
+    GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 330, 350);
+	GFResizePic(gump, 15, 40, 0x13BE, 300, 320);
+	GFTextLine(gump, 125, 50, 1153, "Frases do NPC");
+
+	GFAddButton(gump, 20, 320, 2103, 2104, 1, 200 );
+	GFTextLine(gump, 35, 315, 1153, "Adicionar Nova Frase");
+
+	GFAddButton(gump, 188, 330, 2103, 2104, 1, 201 );
+	GFTextLine(gump, 200, 325, 1153, "Tempo Cycle:");
+
+	var tempo := 900;
+	if (GetObjProperty(npc, "cyclewait"))
+		tempo := GetObjProperty(npc, "cyclewait");
+	else
+		SetObjProperty(npc, "cyclewait", 900);
+	endif
+
+	GFTextLine(gump, 280,325, SSM_INFO, tempo);
+
+//	var tempocycle := GFTextEntry(gump, 280, 325, 255, 35, SSM_INFO, tempo);
+
+	var i := 1;
+	var x := 70;
+	var frases := array{};
+	if (GetObjProperty(npc, "frases"))
+		frases := GetObjProperty(npc, "frases");
+	endif
+	foreach checkfrase in frases
+		var frase := GetObjProperty(npc, "frase"+checkfrase[i]);
+		var tipo := "";
+		if (frase.frase1)
+			tipo := " [SubFrases]";
+		endif
+
+		GFTextLine(gump, 40, x, 1153, "" + frase.frase + tipo);
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, i);
+		i := i + 1;
+		x := x +15;
+		sleepms(20);
+	endforeach
+
+
+	var input := GFSendGump(who, gump);
+	if (input[0] == 200)
+		var frase := struct;
+		if (RadioGump(who, 200, 150, "Escolha um tipo de frase", array{"Say","Yell"}) == "Say")
+			frase.+say := 1;
+		else
+			frase.+yell := 1;
+		endif
+		frase.+frase := RequestGump(who, "Escreva a Frase");
+
+		var repeating := 1;
+
+		while (repeating)
+			if ( !YesNo(who, "Adicionar uma sequencia para esta frase?") )
+				break;
+			endif
+			if (RadioGump(who, 200, 150, "Escolha um tipo de frase", array{"Say","Yell"}) == "Say")
+				frase.insert("say"+repeating, 1);
+			else
+				frase.insert("yell"+repeating, 1);
+			endif
+			frase.insert("frase"+repeating, RequestGump(who, "Escreva a Frase"));
+			repeating := repeating + 1;
+			sleepms(5);
+		endwhile
+
+		frase.+lenght := repeating;
+		SetObjProperty(npc, "frase" + i, frase);
+
+		frases.Append(frases.size() + 1);
+		SetObjProperty(npc, "frases", frases);
+		SendSysMessageEX(who, "Frase Adicionada", SSM_INFO);
+	elseif (input[0] == 201)
+		var cyclewait := cint(RequestGump(who, "Coloque o tempo de Cycle (em segundos)"));
+		if (cyclewait < 300)
+			cyclewait := 300;
+		endif
+		SetObjProperty(npc, "cyclewait", cyclewait);
+		SendSysMessageEX(who, "Cycles Alterado", SSM_INFO);
+	elseif (input[0] >= 1)
+		frases.Erase(input[0]);
+		SetObjProperty(npc, "frases", frases);
+		EraseObjProperty(npc, "frase" + input[0]);
+		SendSysMessageEX(who, "Frase Removida", SSM_INFO);
+	endif
+	return;
+endprogram

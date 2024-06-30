@@ -1,0 +1,39 @@
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program HitScript(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	var returnamount := cdbl(GetObjProperty(defender, "dmgreturn"));
+	if (!returnamount)
+		returnamount := 0.2;
+	endif
+
+	PlayObjectCenteredEffectEx( defender, 0x22c6, 1, 9);
+	var dmg := rawdamage*returnamount;
+    if (GetCooldown(attacker, "corpofechado") > 0)
+        dmg := 1;
+    endif
+    var chardata := GetObjProperty(defender, "chardata");
+    
+    if(chardata.magia != "Mesum")
+	    ApplyDamageEX(attacker, dmg, DMG_PHYSICAL);
+    else
+        ApplyDamageEX(attacker, dmg, DMG_POISON);
+    endif
+
+	
+	return 1;
+endprogram
+ 

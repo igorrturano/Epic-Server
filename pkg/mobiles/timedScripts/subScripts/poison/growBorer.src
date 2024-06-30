@@ -1,0 +1,49 @@
+/* $Id$
+ *
+ */
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program PoisonScript(params)
+	var mobile := params[1];
+
+	var duration := CInt(GetObjProperty(mobile, "DarkBorer"));
+	if ( !duration )
+		duration := 90;
+	endif
+
+	while (  duration > 0)
+		SetObjProperty(mobile, "DarkBorer", duration);
+
+		sleep(60);
+		if ( duration == 89 )
+			SendSysMessage(mobile, "Seu estomago esta roncando.");
+		elseif ( duration == 60 )
+			SendSysMessage(mobile, "Voce sentre seu estomago se contorcer.");
+		elseif ( duration == 50 )
+			SendSysMessage(mobile, "Seu estomago parece inchado.");
+		elseif ( duration == 40 )
+			SendSysMessage(mobile, "Voce sente dor no estomago.");
+		elseif ( duration == 35 )
+			SendSysMessage(mobile, "Voce sente dor no estomago.");
+		elseif ( duration == 25 )
+			SendSysMessage(mobile, "Voce sente algo cortando o seu estomago.");
+		elseif ( duration == 15 )
+			SendSysMessage(mobile, "Voce sente intensamente pontadas de dor aguda no seu torso.");
+		elseif ( duration == 10 )
+			SendSysMessage(mobile, "Seu estomago esta sendo devorado por mordidas!");
+		elseif ( duration == 1 )
+			SendSysMessage(mobile, "Algo parece prestes a sair do seu corpo!");
+		endif
+		
+		duration:=duration-1;
+	endwhile
+
+	PrintTextAbove(mobile, "*uma larva negra rasga a pele*", 3, 55);
+	var baby := CreateNPCFromTemplate(":brainai:darkborer", mobile.x, mobile.y, mobile.z, 0, mobile.realm);
+	ApplyRawDamage(mobile, cint(AP_GetVitalMaximumValue(mobile, HITS))+3);
+
+	return 1;
+endprogram

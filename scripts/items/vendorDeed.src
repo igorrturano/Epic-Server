@@ -1,0 +1,75 @@
+use os;
+use uo;
+use cliloc;
+
+include "include/canAccess";
+include ":damage:damage";
+include ":attributes:attributes";
+include "include/housing";
+
+const SEARCH_RANGE := 10;
+
+program makevendor(who, deed)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!can_access(who, deed))
+    return;
+  endif
+  if(!ReserveItem(deed))
+    return;
+  endif
+  var place;
+  sign := GetHouseSign(who);
+  if(sign)
+    // var multi := who.multi;
+    // var sign;
+    // foreach thing in (multi.components)
+      // if(thing.objtype == 0xbd2)
+        // sign := thing;
+        // break;
+      // endif
+    // endforeach
+    // if(!sign)
+      // SendSysMessage(who, "You cannot place a vendor here.");
+      // return;
+    // endif
+	if(!sign.IsAffiliated(who))
+		SendSysMessageCL( who, 503242); // You must ask the owner of this building to name you a friend of the household in order to place a vendor here.
+		return 0;
+	endif
+    // if(!GetObjProperty(sign, "Public"))
+      // SendSysMessageCL(who, 503241, color := 33); // You cannot place this vendor or barkeep.  Make sure the house is public and has sufficient storage available.
+      // return;
+    // endif
+	SendSysMessage(who, "Where would you  like to place the vendor?", color := 88);
+	var location := TargetCoordinates(who);
+	if(!location)
+		SendSysMessageCL(who, 1042023, color := 33); // Cancelled.
+		return 0;
+	endif
+	if(!sign.IsLocationInsideHouse(location))
+		SendSysMessageCL( who, 503239, color := 33); // Vendors can only be placed in houses.
+		return 0;
+	endif
+    place := CreateNpcFromTemplate("playervendor", location.x, location.y, location.z, 0, location.realm);
+    if(!place)
+      SendSysMessageCL( who, 503250, color := 33); // Vendor was unable to be created there.
+      return;
+    else
+      SendSysMessage(who, "You have successfully created a vendor.", color := 66);
+      SetObjProperty(place, "master", who.serial);
+      SetObjProperty(place, "mn", who.name);
+      SetObjProperty(place, "r", 1500);
+      if(!DestroyItem(deed))
+        RevokePrivilege(place, "invul");
+        SetObjProperty(place, "guardkill", 1);
+        KillMobile(place);
+      endif
+	  Sleep(2);
+	  PrintTextAboveCL(place, 503246, color := 88); // Ah! It feels good to be working again!
+	endif
+  else
+	SendSysMessageCL( who, 503239, color := 33); // Vendors can only be placed in houses.
+	return;
+  endif
+endprogram

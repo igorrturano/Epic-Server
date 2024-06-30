@@ -1,0 +1,69 @@
+use os;
+use cfgfile;
+
+include ":timedScripts:timedScripts";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program voltar(params)
+
+    var who := params[1];
+
+
+	if(GetObjProperty(who, "metamorfose") == error)
+		SendSysMessageEx(who, "Voce nao esta metamorfoseado.", SSM_FAIL);
+		return;
+	endif
+
+	if(TS_GetCooldown(who, "voltarcd") > 0)
+		SendSysMessageEx(who, "Voce deve aguardar.", SSM_FAIL);
+		return;
+	endif
+	
+    TS_StartCoolDown(who, "voltarcd", 300);
+	
+	SendSysMessageEx(who, "Voce volta ao normal.", SSM_FAIL);
+
+	Destransforma(who);
+
+	TS_LowerDuration(who, "metamorfosedruida", -1, 1);
+	
+endprogram
+
+function Destransforma(who)
+
+	if (who.graphic == 212)
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 50);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 50;
+	elseif (who.graphic == 225)
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 10);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 10;
+	elseif (who.graphic == 21 )
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 20);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 20;
+
+	elseif (who.graphic == 5 )
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 10);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 10;
+	endif
+
+	var metamorfose := GetObjProperty(who, "metamorfose");
+	who.color := metamorfose.originalcolor;
+	who.graphic := metamorfose.originalgraphic;
+	who.truegraphic := metamorfose.originalgraphic;
+	//who.squelch(0);
+
+	EraseObjProperty(who, "metamorfose");
+
+endfunction
+	

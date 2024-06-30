@@ -1,0 +1,61 @@
+ 
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/damage";
+
+program resinaFOGO(who, resina)
+    var targ;
+	SendSysMessageEx(who, "Escolha sua arma:", SSM_REQUEST);
+    targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
+	var time := 180;
+	
+	if (targ.isA(POLCLASS_WEAPON))
+
+		var encantada := GetObjProperty(targ, "#elementalweapon");
+		if (encantada != error)
+			if (readgameclock() < encantada.endtime )
+				SendSysMEssageEx(who, "Esta arma ja esta com algum outro efeito.", SSM_FAIL);
+				return 1;
+			endif
+		endif
+
+		if ( GetCooldown(targ, "blessweapon") > 0 )
+			SendSysMEssageEx(who, "Esta arma ja esta com algum outro efeito.", SSM_FAIL);
+			return 1;
+		endif
+
+		var dmg := struct;
+		dmg.+type := DMG_COLD;
+		dmg.+serial := who.serial;
+		dmg.+endtime := readgameclock() + time;
+		dmg.+bonus := AP_GetSkill(who, ALCHEMY)/400.0;
+		if  (dmg.bonus <= 0.1)
+			dmg.bonus := 0.1;
+		endif
+
+		SetObjProperty(targ, "#elementalweapon", dmg);
+
+		start_script( ":spells:elementalweapon", {targ, time, DMG_COLD} );
+        	PlaySoundEffect(targ, SFX_BLESS);
+		SendSysMessageEx(who, "A arma ficou coberta de gelo.", SSM_INFO);
+        DestroyItem(resina);
+        CreateItemInBackpack(who, 0x0f0e, 1);
+		return 1;
+	endif
+
+	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+
+endprogram    

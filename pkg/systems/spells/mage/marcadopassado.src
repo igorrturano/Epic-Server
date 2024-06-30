@@ -1,0 +1,48 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include "include/facings";
+
+program SpellScript(params)
+
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var loc := Target(who);
+
+	if (!loc)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!loc.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif		
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	var rune := CreateItemAtLocation( who.x, who.y, who.z, 3682, 1, who.realm);
+
+	sleep(10);
+	PlayStationaryEffectEx(rune.x, rune.y, rune.z, rune.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 , 2);
+	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 ,2);
+	MoveObjectToLocation(loc, rune.x, rune.y, rune.z, who.realm, MOVEOBJECT_FORCELOCATION);
+	DestroyITem (rune);
+
+	return 1;
+
+endprogram
+
+
+ 

@@ -1,0 +1,59 @@
+use uo;
+use os;
+use vitals;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+program AggressiveParalysis(params)
+        var caster := params[1];
+        var targ := params[2];
+        var manacost := params[3];
+
+        var startx := caster.x;
+        var starty := caster.y;
+
+
+        var percent := 100;
+        percent := 1 ;
+
+       if (percent <= 25)
+               percent := 25;
+       endif
+
+       manacost := CInt(CDbl(manacost) * 100 / percent);
+
+       SetScriptController(caster);
+
+       if ( targ.dead )
+            return;
+       endif
+            if (ConsumeVital(caster, "Mana", manacost))
+                TS_StartTimer(targ, "paralysis", 3);
+                var contpara := 1;
+                while (contpara == 1)
+                       sleepms(1900);
+                       if ((caster.x != startx) || (caster.y != starty))
+                               SendSysMessageEX(caster, "Voce deve se manter imovel para manter a paralisia.", SSM_FAIL);
+                               contpara := 0;
+                        endif
+
+                        if ( !caster.connected )
+                                break;
+                        endif
+
+
+                        if (caster.dead || targ.dead || !targ)
+			     break;
+			endif
+			
+			if (!ConsumeVital(caster, "Mana", manacost))
+                               contpara := 0;
+                        endif
+                        TS_StartTimer(targ, "paralysis", 2);
+               endwhile
+        endif
+endprogram
+

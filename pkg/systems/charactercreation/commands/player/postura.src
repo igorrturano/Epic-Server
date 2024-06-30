@@ -1,0 +1,44 @@
+
+use uo;
+
+include ":charactercreation:createchar";
+include "include/say";
+include ":gumps:yesNo";
+include ":charactercreation:chargumps";
+include ":tn:characters";
+include ":tn:tngumps";
+include ":attributes:attributes";
+include ":tn:cooldown";
+
+program postura(who, text)
+    if (GetCooldown(who, "postura") > 0)
+        SendSysMessageEx(who, "Aguarde antes de trocar de postura novamente");
+        return 0;
+    endif
+
+    if (!TemHabilidade(who, "Provocar"))
+        SendSysMessageEx(who, "Somente escudeiros conseguem se beneficiar desse comando");
+        return 0;
+    endif
+
+    DamageStamina(who, 5);
+    SetCooldown(who, "postura", 30);
+    if (text == "Ofensiva")
+        SetObjProperty(who, "Postura", "Ofensiva");
+        performaction(who, 0x06);
+        PlaySoundEffect(who, 0x3b4);
+        SendSysMessageEx(who, "Voce abaixa seu escudo, erguendo sua arma");
+        PrintText(who, "Abaixa o escudo");
+    elseif (text == "Defensiva")
+        SetObjProperty(who, "Postura", "Defensiva");
+        performaction(who, 0x1e);
+        PlaySoundEffect(who, 0x3ab);
+        SendSysMessageEx(who, "Voce ergue seu escudo, recuando sua arma");
+        PrintText(who, "Ergue o escudo");
+    else
+        SendSysMessageEx(who, ".postura Ofensiva ou .postura Defensiva");
+        return 0;
+    endif
+
+    return 1;
+endprogram

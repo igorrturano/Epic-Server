@@ -1,0 +1,20 @@
+/* $Id$
+ *
+ */
+ 
+use uo;
+use os;
+use cfgfile;
+
+include "include/sounds";
+
+program Install()
+	return 1;
+endprogram
+
+exported function IsReagent(reag)
+	reag := reag;
+	return 1;
+endfunction
+
+

@@ -1,0 +1,57 @@
+/* $Id$
+ *
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
+
+	amt            := amt;
+	existing_stack := existing_stack;
+	movetype       := movetype;
+	inserttype     := inserttype;
+
+    var hunt_arrows := Array{0xf3f, 0x1bfb};
+    var war_arrows := Array{0x909E, 0x908E, 0x909D, 0x908D, 0x909C, 0x90A0, 0x908f, 0x908C, 0x909B, 0x908B, 0x909A, 0x908A, 0x9099, 0x9089, 0x9098, 0x9088};
+    var aljava_de_guerra := 0x791c;
+    var aljava_de_caca := 0x2fb7;
+	var aljava_de_cintura := 0xA36D;
+
+    if (book.objtype == aljava_de_guerra)
+	    if ( item.graphic == 0x1bfb || item.graphic == 0xf3f  )
+        else
+            SendSysMessageEx(who, "Voce nao pode guardar isto na aljava.", SSM_FAIL);
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+        endif
+    elseif (book.objtype == aljava_de_caca || book.objtype == aljava_de_cintura)
+        if (item.objtype in hunt_arrows)
+        elseif (item.objtype in war_arrows)
+            SendSysMessageEx(who, "Use uma aljava de guerra para esse tipo de municao", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        else
+			SendSysMessageEx(who, "Voce nao pode guardar isto na aljava.", SSM_FAIL);
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+		endif
+	endif
+
+//	var items := EnumerateItemsInContainer( book );
+	if( book.movable == 0 )
+		SendSysMessage(who, "Cancelado.");
+		MoveItemToContainer(item, who.backpack);
+		return 0;
+	elseif( !ReserveItem(book) || !ReserveItem(item) )
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessage(who, "A Aljava esta em uso.");
+		return 0;
+	else
+        return 1;
+	endif
+
+	return 1;
+endprogram

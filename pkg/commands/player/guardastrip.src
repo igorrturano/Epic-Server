@@ -1,0 +1,84 @@
+use uo;
+use os;
+use npc;
+use util;
+use guilds;
+
+include ":attributes:attributes";
+include "include/sysEvent";
+include "include/say";
+include ":mounts:mounts";
+include ":taming:taming";
+include ":tn:cooldown";
+//include ":ghaia:generic";
+include ":ghaia:objective";
+include ":ghaia:ghaiaInit";
+// include ":ghaia:habs";
+include ":faccao:npc";
+include ":combat:combat";
+include ":ghaia:combatevents";
+include ":faccao:faccao";
+include "include/dungeons";
+
+//include "include/uo_extend";
+
+program command_Strip(who)
+
+	var guild := GetObjProperty(who, "guild");
+	var guild_leader, guild_laws, fix_location, guild_prison, guild_prisonl;	
+	var guildid := GetObjProperty(who, "guild");
+	var privs := guild.GetProp(cstr(who.serial));
+   var is_member := guild.guildid == who.guildid;
+   var user_subguilds := who.guild.getProp("subguilds");
+
+   if (!user_subguilds) user_subguilds := array{}; endif
+   var is_leader := (who.serial == guild_leader || guild.guildid in user_subguilds);
+
+	SendSysMessage(who, "Select a mobile.");
+	var targ := Target(who);
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Cancelled.");
+		return 0;
+	endif
+
+	var guardguild := GetObjProperty(targ, "guild");
+
+    if (guild != guardguild)
+
+		if (privs.equipguard || is_leader)
+			SendSysMessage(who, "Voce nao tem permissao para fazer isso");
+			return 0;
+		endif
+
+		foreach item in ( EnumeratePhysicalItems(targ) )
+			MoveItemToContainer(item, who.backpack);
+			SleepMS(2);
+		endforeach
+
+	else 
+		SendSysMessage(who, "Voce nao faz parte dessa Faccao");
+		return;
+	endif
+	
+	SendSysMessage(who, "Feito");
+		
+	return 1;
+endprogram
+
+function EnumeratePhysicalItems(mobile)
+	var EquipList := array;
+
+	var SkipLayers := array{11, 16, 21, 25};
+	var i;
+
+	for (i:=0; i<=25; i:=i+1)
+		if (!(i in SkipLayers))
+			var layer := GetEquipmentByLayer(mobile, i);
+			if (layer)
+				EquipList.append(layer);
+			endif
+		endif
+	endfor
+
+	return EquipList;
+endfunction

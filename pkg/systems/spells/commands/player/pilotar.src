@@ -1,0 +1,31 @@
+use uo;
+use os;
+include ":charactercreation:habilidades";
+include ":commands:possess";
+
+program cleric(who)
+
+    if (!TemHabilidade(who, "Construtor de Golems"))
+        SendSysMessage(who, "Apenas construtores de golems sao capazes de pilota-los");
+        return 0;
+    endif
+    if (GetObjProperty(who, "pilotando"))
+        EraseObjProperty(who, "pilotando");
+        unpossess(who);
+        who.concealed := 0;
+        return 0;
+    endif
+
+    SendSysMessage(who, "Escolha o golem que sera pilotado");
+    var targ := Target(who);
+
+    if (targ.npctemplate != ":brainai:GolemMartelo")
+        SendSysMessage(who, "Alvo invalido.");
+        return 0;
+    endif
+
+    setObjproperty(who, "pilotando", 1);
+   	possess(who, targ);
+
+    return 1;
+endprogram

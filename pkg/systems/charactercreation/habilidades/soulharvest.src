@@ -1,0 +1,36 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:vitals";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+
+    var cfg := ReadConfigFile(":brainai:npcdesc");
+    var soul_less := array{"undead", "animal", "giantanimal"};
+
+	var magiclore := Cint(AP_GetSkill(who, MAGICLORE));
+	var mobiles := ListMobilesNearLocation( who.x, who.y, who.z, Cint(magiclore/10), who.realm );
+	foreach mobile in mobiles
+    var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
+		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "GiantAnimal" || cfg[npctemplate.template].Category == "Animal")
+            continue;
+        elseif( mobile == who || (mobile.acctname && AP_GetVital(mobile, "DP") >= 20))
+            continue;
+        else
+            SetObjProperty(mobile, "soulharvest", who.serial);
+            PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 2676, 10, 20, 0, mobile.realm);
+            sleepms(20);
+        endif
+	endforeach
+
+	PlaySoundEffect(who, 0x652);
+	
+	return 1;
+endprogram 

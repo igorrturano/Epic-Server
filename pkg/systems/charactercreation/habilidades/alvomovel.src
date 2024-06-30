@@ -1,0 +1,11 @@
+use uo;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+
+
+program backstab(who)
+
+	SetObjPRoperty(who, "#alvomovel", 1);
+
+endprogram  

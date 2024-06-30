@@ -1,0 +1,216 @@
+
+use uo;
+
+include "include/say";
+include ":taming:taming";
+include ":gumps:yesNo";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/facings";
+include "include/damage";
+include ":tn:combat";
+include ":combat:armorZones";
+include ":combat:combat";
+
+var item_cfg	:= ReadConfigFile(":*:itemdesc");
+var strat_cfg	:= ReadConfigFile("combatlevel");
+var npc_cfg	:= ReadConfigFile("::npcdesc");
+
+program tirocarregado(who)
+	SendSysMessageEx(who, "Escolha o alvo da sua flecha", SSM_INFO);
+	var targ := Target(who, TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
+	if (who.warmode == 0)
+		who.warmode := 1;
+	endif
+
+	var cfg:=ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, who.weapon.objtype);
+	var distance_max := GetConfigInt(elem, "maxrange");
+
+	if (Distance(who, targ) > distance_max)
+		SendSysMessageEx(who, "O Alvo esta muito distante.", SSM_FAIL);
+		return 1;
+	elseif (IsBehind(who, targ.x, targ.y))
+		SendSysMessageEx(who, "Voce esta de costas para o alvo!", SSM_FAIL);
+		return 1;
+	elseif (elem.Attribute != "RangedCombat")
+		SendSysMessageEx(who, "Voce precisa estar usando um arco.", SSM_FAIL);
+		return 1;
+	endif
+
+	var aljavas := array{0x791c, 0x2fb7};
+	var aljava := GetEquipmentByLayer(who, 0x14);
+
+		if (aljava.objtype in aljavas)
+			aljava := GetEquipmentByLayer(who, 0x14);
+		else
+			aljava := GetEquipmentByLayer(who, 0xc);
+		endif
+	var ammo := GetObjProperty(who.weapon, "ammo");
+	if (!ammo)
+		SendSysMessage(who, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+		return 1;
+    endif
+
+    var in_aljava := 0;
+    foreach arrow in (EnumerateItemsInContainer(aljava))
+		if (arrow.serial == ammo)
+			in_aljava := 1;
+        endif
+    endforeach
+    if (in_aljava == 0)
+        return 1;
+    endif
+
+	if ( SubtractAmount( ammo, 1 ) == error)
+		SendSysMessage(who, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+		return 1;
+	endif
+	who.frozen := 1;
+	Performaction(who, elem.Anim, 5, 2, ACTION_DIR_FORWARD, ACTION_REPEAT);
+	PrintText(who, "*mirando*");
+	sleep(2);
+	PrintText(who, "*mirando*");
+	sleep(2);
+	PlaySoundEffect(who, 0x235);
+	Performaction(who, elem.Anim);
+	var ammocfg:=ReadConfigFile(":woodworking:itemdesc");
+	var ammoelem := FindConfigElem(ammocfg, GetObjType( ammo ));
+	var ammo_color := ammoelem.color;
+	PlayMovingEffectXYZEx( who.x, who.y, who.z+1, targ.x, targ.y, targ.z, who.realm, elem.ProjectileAnim, 10, 10, 0, ammo_color);
+
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(who);
+	var basedamage := CalculateRawDamage(who, who.weapon);
+	var total := cint(CalculateTotalDamage(targ, basedamage, who, dmgList));
+	SendSysMessage(who, "Teste: " + total + " " + basedamage);
+
+	var armor :=  CS_GetEquipmentInArmorZone(who, CS_GetRandomArmorZone());
+	armor := armor[ RandomInt( len( armor ) ) + 1];
+
+	var extradamage := cint((total * 1.4) +total);
+
+	CriticalHitScripts(who, targ, who.weapon, armor, basedamage, total);
+	WeaponHitScripts(who, targ, who.weapon, armor, basedamage, total);
+	DamageFLS(targ, extradamage*2, DMG_FORCED, who);
+	who.frozen := 0;
+endprogram
+
+function CriticalHitScripts(attacker, defender, weapon, armor, basedamage, byref rawdamage)
+
+	var autoCritical := 0;
+	if (GetObjProperty(attacker, "#nextcritical"))
+		EraseObjProperty(attacker, "#nextcritical");
+		autoCritical := 1;
+	endif
+
+	if (!autoCritical)
+		if (GetCooldown(attacker, "critical") > 0)
+			return 1;
+		endif
+	endif
+
+	var chance := Cint( Cint(GetObjProperty(weapon, "CriticalChance")) + Cint(GetObjProperty(attacker, "CriticalChance")) + Cint((item_cfg[weapon.objtype]).CriticalChance )) + CInt(AP_GetSkill(attacker, TACTICS)/20) + Cint(GetObjProperty(attacker, "#CriticalChance"));
+	EraseObjProperty(attacker, "#CriticalChance");
+	if (!chance)
+		return 1;
+	endif
+
+	var critcooldown := 60;
+	if (TemHabilidade(attacker, "Maestria no Combate"))
+		chance := chance * 2;
+		critcooldown := 30;
+	endif
+
+	var rand := Cint((RandomInt(100) + 1));
+	var result := chance > rand;
+
+	if (autoCritical)
+		result := 1;
+	endif
+
+	if (  result == 0 )
+		return 1; //se nao passou
+	endif
+
+	if (TemHabilidade(defender, "Ladrao da Sorte"))
+		SendSysMessageEx(defender, "Voce desviou do critico e usara isso contra seu oponente!", SSM_INFO);
+		SetObjProperty(defender, "#nextcritical", 1);
+		return 1;
+	endif
+
+	if (!autoCritical)
+		SetCooldown(attacker, "critical", critcooldown);
+	endif
+
+	if ( temhabilidade(attacker, "Oportunidade Critica") )
+		printtext(attacker, "*ataque de oportunidade*");
+		if (defender)
+			attacker.attack_once(defender);
+		endif
+	endif
+
+	var weapon_scripts := array;
+	if ( weapon.IsA(POLCLASS_WEAPON) )
+		weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
+	elseif (attacker.npctemplate)
+		var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
+		weapon_scripts :=  GetConfigStringArray( npcelem, "CriticalHitScripts" );
+	endif
+
+	if (weapon_scripts.size() > 0)
+		PrintText(attacker, "*CRITICO*", _DEFAULT_TEXT_FONT, 2118);
+		SetObjProperty(attacker, "critdelay", ReadGameClock()+180);
+		if (getCooldown(defender, "#vitalidadeinabalavel") > 0)
+			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);
+			SendSysMessageEx(attacker, "O defensor ignorou o critico", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+	if (GetCooldown(defender, "VontadeIndomavel"))
+		SendSysMessageEx(defender, "Voce nao leva o critico");
+		return;
+	endif
+
+	foreach hitscript in weapon_scripts
+		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage});
+		if ( !script || script.errortext )
+			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessage(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+		endif
+
+		sleepms(2);
+	endforeach
+
+	return 1;
+endfunction
+
+function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage)
+	var weapon_scripts := array;
+	//if ( weapon.objtype == 0xF020 ) //
+	//	weapon_scripts := GetObjProperty(attacker, "HitScripts");
+	if ( weapon.IsA(POLCLASS_WEAPON) )
+		weapon_scripts := GetObjProperty(weapon, "HitScripts");
+		if (!weapon_scripts)
+			weapon_scripts := array;
+		endif
+		var other_scripts := GetConfigStringArray(item_cfg[weapon.objtype], "HitScripts");
+		foreach script in other_scripts
+			weapon_scripts.Append(script);
+		endforeach
+	endif
+
+	var hitopt := GetObjProperty(weapon, "generichit");
+
+	foreach hitscript in weapon_scripts
+		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage, hitopt});
+		if ( !script || script.errortext )
+			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessage(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+		endif
+		sleepms(2);
+	endforeach
+
+	return 1;
+endfunction

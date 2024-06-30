@@ -1,0 +1,36 @@
+
+use uo;
+
+include ":gumps:gumps";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include "include/say";
+include ":traps:traps";
+
+program settrap(who)
+
+	var traps := CheckBoxGump(who, 200, 220, "Escolha as traps", array{"Setas", "Veneno", "Explosao"});
+
+	if (traps.size() >= 1)
+		SendSysMessageEx(who, "Escolha onde quer colocar a trap.", SSM_REQUEST);
+		var targ := Target(who);
+
+		var level := cint(RequestGump(who, "Digite o level da trap (1 a 5):"));
+
+		if ( "Setas" in traps)
+			AddTrap(targ, "Needle", level);
+			SendSysMessage(who, "Voce colocou uma armadilha de setas no item.", SSM_INFO);
+		endif
+
+		if ( "Veneno" in traps)
+			AddTrap(targ, "PoisonGas", level);
+			SendSysMessage(who, "Voce colocou uma armadilha de veneno no item.", SSM_INFO);
+		endif
+
+		if ( "Explosao" in traps)
+			AddTrap(targ, "Explosion", level);
+			SendSysMessage(who, "Voce colocou uma armadilha de explosao no item.", SSM_INFO);
+		endif
+	endif
+
+endprogram

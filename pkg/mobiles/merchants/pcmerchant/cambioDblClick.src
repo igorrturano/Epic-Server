@@ -1,0 +1,66 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":fls_core:packets";
+include ":brainAI:npcCommands";
+
+program DblClickNerve(params)
+	var npc		:= params[1];
+	var nerve_name	:= params[2];
+	var player	:= params[3].source;
+	var settings	:= params[4];
+
+	var serving := 0;
+	var busy := 0;
+	//sendsysmessage(player, "clicou");
+	while ( npc )
+		if ( player )
+			if ( busy.pid )
+				AI_Speak(npc, "Desculpe, mas estou ajudando outra pessoa.");
+			else
+				serving := player;
+				if (GetObjProperty(npc, "startbuy"))
+					AI_Speak(npc, ""+GetObjProperty(npc, "startbuy"));
+				else
+					AI_Speak(npc, "Ola, no que posso ajuda-lo?");
+				endif
+				busy := Start_Script(":merchants:pcmerchant/cambio", {npc, player});
+				if ( busy.errortext )
+					AI_Speak(npc, "[Uh oh, I cant start my menu script! The error is ->"+busy.errortext+"]");
+				endif
+			endif
+		endif
+
+		var wait := 500;
+		if ( busy.pid )
+			if ( serving.hidden )
+				SendSysMessage(serving, "Você se esconde e interrompe seu negócio com o mercador.");
+				CloseGumpPacket(serving, busy.pid, 0);
+				sleepms(500);
+				busy.kill();
+			elseif ( Distance(npc, serving) > 3 && serving.cmdlevel < 1 )
+				SendSysMessage(serving, "Você desvia sua atenção da negociação com o mercador.");
+				CloseGumpPacket(serving, busy.pid, 0);
+				sleepms(500);
+				busy.kill();
+			else
+				wait := 1;
+			endif
+		endif
+		
+		var ev := wait_for_event(wait);
+		if ( ev )
+			case ( ev.type )
+				SYSEVENT_DOUBLECLICKED:
+					player := ev.source;
+				NPCEVENT_DONE:
+					player := 0;
+			endcase
+		else
+			player := 0;
+		endif
+	endwhile
+endprogram
+ 

@@ -1,0 +1,125 @@
+/*
+ * $Id$
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+
+program SpellScript(params)
+
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var targ := MS_Target(who, info.targ, "Escolha o alvo.", TGTOPT_CHECK_LOS+TGTOPT_HARMFUL);
+	if ( targ.IsA(POLCLASS_MOBILE) || (targ.multi.serial) || (targ.container.serial) )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	elseif ( !CheckLineOfSight(who, targ) )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );	
+
+	if ( targ.Telekinesis(who) );
+		sleepms(20);
+		foreach coord in GetCoordsInLine(who.x, who.y, targ.x, targ.y)
+			PlayStationaryEffect(coord.x, coord.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+			sleepms(20);
+		endforeach
+	else
+		if (targ.IsDoor())
+			targ.Toggle();
+		elseif ( targ.movable )
+			FloatItem(who, targ);
+		else
+			SendSysMessage(who, "Este item nao se move.");
+		endif
+	endif
+
+
+	return 1;
+
+endprogram
+
+function FloatItem(who, targ)
+	var point_array := GetCoordsInLine(targ.x, targ.y, who.x, who.y);
+	LiftItem(who, targ);
+	var sway := 2;
+	var run_away := 0;
+	foreach point in point_array
+		var height := GetWorldHeight(point.x, point.y);
+		if ( who.z > height )
+			height := who.z;
+		endif
+
+		sway := RandomInt(3);
+		height := (height+8)+sway;
+
+		var moved := MoveObjectToLocation(targ, point.x, point.y, height,  targ.realm ,MOVEOBJECT_FORCELOCATION);
+		if ( !moved )
+			break;
+		elseif ( targ.container )
+			break;
+		endif
+
+		PlayStationaryEffect(targ.x, targ.y, targ.z-10, FX_SPARK_EFFECT, 10, 10);
+		sleepms(400);
+
+		run_away := run_away+1;
+		if ( run_away > 30 )
+			break;
+		endif
+	endforeach
+	LowerItem(who, targ, sway);
+endfunction
+
+function LiftItem(who, item)
+	var i;
+	var start := item.z;
+	var stop := who.z+8;
+	for ( i:=start; i<=stop; i:=i+1 )
+		var moved := MoveObjectToLocation(item, item.x, item.y, item.z+1, item.realm, MOVEOBJECT_FORCELOCATION);
+		if ( !moved )
+			break;
+		elseif ( item.container )
+			break;
+		endif
+
+		PlayStationaryEffect(item.x, item.y, item.z-10, FX_SPARK_EFFECT, 2, 2);
+		sleepms(200);
+	endfor
+endfunction
+
+function LowerItem(who, item, sway)
+	var start := item.z;
+	var stop := item.z-(8+sway);
+	if ( who.cmdlevel >= 1 )
+		SendSysMessage(who, "Start->"+start+" Stop->"+stop+" Sway->"+sway);
+	endif
+	for ( start; start>stop; start:=start-1 )
+		var moved := MoveObjectToLocation(item, item.x, item.y, item.z-1, item.realm, MOVEOBJECT_FORCELOCATION);
+		if ( !moved )
+			break;
+		elseif ( item.container )
+			break;
+		endif
+
+		PlayStationaryEffect(item.x, item.y, item.z-10, FX_SPARK_EFFECT, 2, 2);
+		sleepms(200);
+		if ( item.z <= GetWorldHeight(item.x, item.y) )
+			break;
+		endif
+	endfor
+endfunction

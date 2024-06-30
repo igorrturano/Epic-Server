@@ -1,0 +1,82 @@
+use uo;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":gumps:yesNo";
+include "include/say";
+
+program memorizarmusica(who)
+
+	var bardgump := GFCreateGump();
+	GFResizePic(bardgump, 30, 30, 2600, 200, 200);
+	GFResizePic(bardgump, 50, 50, 3500, 160, 160); //55
+	GFTextLine(bardgump, 80, 63, 1890, "Suas Musicas:" );
+
+	var musicas := GetObjProperty(who, "musicas");
+	if (!musicas)
+		musicas := dictionary;
+	endif
+
+	var i := 1;
+	while ( i < 6)
+
+		if (musicas[i])
+			GFTextLine(bardgump, 86, 93 + ((i-1)*20), 600, " " + musicas[i].nome );
+			GFAddButton(bardgump, 71, 98 + ((i-1)*20), 2103, 2104, 1, i);
+		else
+			GFTextLine(bardgump, 86, 93 + ((i-1)*20), 600, "Memorizar" );
+			GFAddButton(bardgump, 71, 98 + ((i-1)*20), 2103, 2104, 1, 100+i);
+		endif
+
+		i := i + 1;
+	endwhile
+
+	var retv := GFSendGump(who, bardgump );
+
+	if (retv[0] > 100)
+
+		var slot := retv[0] - 100;
+		SendSysMessageEx(who, "Escolha a partitura magica.", SSM_REQUEST);
+		var targ := Target(who);
+		if (!targ || targ.container != who.backpack)
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			return 1;
+		endif
+
+		if (targ.objtype != 0x9925)
+			SendSysMessageEx(who, "Isto nao parece ser uma partitura magica.", SSM_FAIL);
+			return 1;
+		endif
+
+		var partitura := struct;
+		partitura.+nome := targ.name;
+		partitura.+compositor := getobjproperty(targ, "compositor");
+		partitura.+notas := getobjproperty(targ, "notas");
+		partitura.+tempo := getobjproperty(targ, "tempo");
+		partitura.+letra := getobjproperty(targ, "letra");
+		partitura.+magica := getobjproperty(targ, "magica");
+
+		musicas[slot] := partitura;
+
+		setObjProperty(who, "musicas", musicas);
+		SendSysMessageEx(who, "Voce memorizou a partitura " + targ.name + ".", SSM_INFO);
+
+		return 1;
+
+	elseif (retv[0] >= 1)
+
+		var slot := retv[0];
+		var del := YesNo(who, "Deseja desaprender a partitura " + musicas[slot].nome + "?");
+		if (del)
+			musicas.erase(slot);
+			SetObjProperty(who, "musicas", musicas);
+			SendSysMessageEx(who, "Partitura esquecida.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Cancelado.", SSM_INFO);
+		endif
+
+		return 1;
+	endif
+
+endprogram

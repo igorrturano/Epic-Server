@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include "include/say";
+include ":tn:cooldown";
+
+program usavarinha(who, wand)
+
+	if (getCooldown(who, "delay") > 0)
+		SendSysMessageEx(who, "Voce nao pode usar este item agora.", SSM_FAIL);
+		return 0;
+	endif
+
+	var magic := GetObjProperty(wand, "magic");
+	if (magic == 0)
+		return;
+	endif
+
+	var cargas := Cint(GetObjProperty(wand, "cargas"));
+	if (cargas <= 0)
+		SendSysMessageEx(who, "A varinha esta sem cargas.", SSM_FAIL);
+		return;
+	else
+		cargas := cargas - 1;
+		SetObjPRoperty(wand, "cargas", cargas);
+	endif
+
+
+	var spellinfo := GetObjProperty(wand, "spellinfo");
+
+	 var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
+	 setCoolDown(wand, "delay", 5);
+         if ( script.errortext )
+	       SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+	       return 0;
+	 endif  
+
+
+endprogram

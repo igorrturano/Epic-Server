@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_int_down_end(params)
+	var alvo := params[1];
+	Set_Critical(1);
+	AP_ModifyStatMod(alvo, INTELLIGENCE, (-1) * GetObjProperty(alvo, "#Bard_int_down"));
+	EraseObjProperty(alvo, "#Bard_int_down");
+	Set_Critical(0);
+	return 1;
+endprogram

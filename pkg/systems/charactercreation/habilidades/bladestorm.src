@@ -1,0 +1,75 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+include ":combat:combat";
+include ":tn:combat";
+
+
+
+program manobra(attacker)
+
+	var x1, y1, x2, y2, x3, y3;
+
+	SendSysMessageEx(attacker, "Corra entre seus inimigos.", SSM_INFO);
+	sleep(1);
+	PrintTextAbovePrivate(attacker, "3", attacker);
+	x1 := attacker.x;
+	y1 := attacker.y1;
+	sleep(1);
+	PrintTextAbovePrivate(attacker, "2", attacker);
+	x2 := attacker.x;
+	y2 := attacker.y;
+	sleep(1);
+	PrintTextAbovePrivate(attacker, "1", attacker);
+	x3 := attacker.x;
+	y3 := attacker.y;
+
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);	
+	var mobs := array;
+	var rawdamage := CalculateRawDamage(attacker, attacker.weapon); 
+
+	foreach mobile in (ListMobilesNearLocation(x1, y1, attacker.z, 1, attacker.realm ))
+		if (! (mobile.serial in mobs))
+			var basedamage := CalculateTotalDamageBonus(rawdamage, attacker, mobile);
+			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
+			ApplyRawDamage(mobile, total);
+			MostraDano(attacker, mobile, total);
+			MakeBleed(mobile);
+			PlayHitSounds(attacker, mobile);
+			mobs.append(mobile.serial);
+		endif
+	endforeach
+
+	foreach mobile in (ListMobilesNearLocation(x2, y2, attacker.z, 1, attacker.realm ))
+		if (! (mobile.serial in mobs))
+			var basedamage := CalculateTotalDamageBonus(rawdamage, attacker, mobile);
+			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
+			ApplyRawDamage(mobile, total);
+			MostraDano(attacker, mobile, total);
+			MakeBleed(mobile);
+			PlayHitSounds(attacker, mobile);
+			mobs.append(mobile.serial);
+		endif
+	endforeach
+
+	foreach mobile in (ListMobilesNearLocation(x3, y3, attacker.z, 1, attacker.realm ))
+		if (! (mobile.serial in mobs))
+			var basedamage := CalculateTotalDamageBonus(rawdamage, attacker, mobile);
+			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
+			ApplyRawDamage(mobile, total);
+			MostraDano(attacker, mobile, total);
+			MakeBleed(mobile);
+			PlayHitSounds(attacker, mobile);
+			mobs.append(mobile.serial);
+		endif
+	endforeach
+	
+
+
+endprogram   
+
+

@@ -1,0 +1,44 @@
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":attributes:attributes";
+
+program BrainNerve(params)
+	var npc		:= params[1];
+	var nerve_name	:= params[2];
+	var opponent	:= params[3];
+	var settings	:= params[4];
+	//var scripts	:= params[5];
+	params := 0; // Not needed anymore.
+
+	AI_WarMode(npc, 0);
+	var corpse := opponent.GetCorpse();
+
+	do
+		var dist := Distance(npc, corpse);
+		AI_Move(npc, corpse, NEMOVE_AWAY, NEMOVE_WALK, NOWAKE, dist);
+		sleep(dist-1);
+
+	dowhile( ShouldGoAway(npc, opponent, corpse, settings) );
+
+	AI_EndNerve(npc, nerve_name);
+endprogram
+
+
+
+function ShouldGoAway(npc, opponent, corpse, settings)
+
+	if ( !opponent )
+		return 0;
+	elseif ( !corpse )
+		return 0;
+	endif
+
+	if ( Distance(npc, corpse) > CInt(settings["attack_range"])+10 )
+		return 1;
+	endif
+
+	return 0;
+endfunction

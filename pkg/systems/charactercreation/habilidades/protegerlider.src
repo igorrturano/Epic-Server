@@ -1,0 +1,24 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/sysEvent";
+
+program manobra(attacker)
+
+		if (!attacker.opponent)
+			SendSysMessageEx(attacker, "Voce esta sem oponente.", SSM_FAIL);
+			return 1;
+		endif
+
+		SendSysMessageEx(attacker, "Escolha alguem da sua party para seu inimigo atacar", SSM_REQUEST);
+		var targ := target(attacker);
+		if (targ)
+			if (targ in attacker.party.members)
+				var event := struct{"type":=SYSEVENT_ENGAGED, "source":=targ};
+				SendEvent(attacker.opponent, event);
+			endif
+		endif
+
+endprogram   

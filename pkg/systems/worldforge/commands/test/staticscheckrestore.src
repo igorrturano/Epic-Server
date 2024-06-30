@@ -1,0 +1,95 @@
+/////////////////////////////////////////////////////////////////////////
+//
+//   StaticsCheckRestore - Stellt bestimmte, verlorene Daten wieder her
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+/////////////////////////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/staticscheckstackslarge.cfg
+//
+//////////////////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use uo;
+Use os;
+Use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+Include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+Const ERRORMSGS_GERMAN:=
+  "{}StaticsImport: ImportArea aktiviert..."+
+  "{}StaticsImport: ImportArea beendet."+
+  "{}StaticsImport: Item %% an %% %% %% konnte nicht erzeugt werden!"+
+  "{}Die Items wurden importiert."+
+  "{}Probleme beim Lesen der Configdateien!";
+Const ERRORMSGS_ENGLISH:=
+  "{}StaticsImport: ImportArea started..."+
+  "{}StaticsImport: ImportArea done."+
+  "{}StaticsImport: Was impossible to create Item %% at %% %% %%!"+
+  "{}Items have been imported."+
+  "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+Program TextCMD_StaticsImport(who)
+  Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+  PrintErrorMessage(1);
+  ImportArea(who);
+  PrintErrorMessage(2);
+EndProgram
+
+//////////////////////////////////////
+// ImportArea - Importiert die Items
+//////////////////////////////////////
+
+Function ImportArea(who)
+  Var datafile:=ReadConfigFile(":worldforge:config/staticscheckstackslarge");
+
+  If (datafile)
+    Var item;
+    Var object;
+
+    ForEach name in GetConfigStringKeys(datafile)
+      item:=datafile[name];
+      If (item)
+        object:=CreateItemAtLocation(item.x, item.y, item.z, item.objtype, item.amount);
+        If (object)
+          object.color:=item.color;
+          object.movable:=item.movable;
+
+          Var cprops:=UnPack(item.cprops);
+          ForEach cpropname in (cprops.keys())
+            SetObjProperty(object, cpropname, cprops[cpropname]);
+          EndForEach
+        Else
+          PrintErrorMessage(3, {item.objtype, item.x, item.y, item.z});
+        EndIf
+      EndIf
+    EndForEach
+
+    UnloadConfigFile(":worldforge:config/staticscheckstackslarge");
+
+    PrintErrorMessage(4, { }, who);
+  Else
+    PrintErrorMessage(5, { }, who);
+  EndIf
+EndFunction

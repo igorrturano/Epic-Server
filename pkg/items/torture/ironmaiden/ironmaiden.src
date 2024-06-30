@@ -1,0 +1,47 @@
+use uo;
+use os;
+use vitals;
+
+include ":blood:blood";
+
+const GRAPHIC_OPEN := 4681;
+const GRAPHIC_CLOSED := 4683;
+const GRAPHIC_BLOOD1 := 4684;
+const GRAPHIC_BLOOD2 := 4685;
+
+program UseIronMaiden(who, iron_maiden)
+
+	if ( Distance(who, iron_maiden) > 1 )
+		SendSysMessage(who, "Voce esta muito distante");
+	else
+		set_critical(1);
+		who.paralyzed := 1;
+		who.squelch(-1);
+		who.graphic := 386;
+		
+		SetObjProperty(iron_maiden, "OldName", iron_maiden.desc);
+		SetName(iron_maiden, who.name);
+		set_critical(0);
+		
+		iron_maiden.graphic := GRAPHIC_CLOSED;
+		PrintTextAbove(iron_maiden, "AHHHHHHHHHHHH!!!!", 3, 32);
+		sleep(1);
+		
+		iron_maiden.graphic := GRAPHIC_BLOOD1;
+		sleepms(700);
+		iron_maiden.graphic := GRAPHIC_BLOOD2;
+		
+		MakeBleed(who);
+		sleepms(1200);
+		
+		set_critical(1);
+		SetName(iron_maiden, GetObjProperty(iron_maiden, "OldName"));
+		iron_maiden.graphic := GRAPHIC_OPEN;
+		who.graphic := who.trueobjtype;
+		
+		ApplyRawDamage(who, 6000);
+		who.paralyzed := 0;
+		who.squelch(0);
+		set_critical(0);
+	endif
+endprogram

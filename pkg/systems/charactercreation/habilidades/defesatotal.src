@@ -1,0 +1,42 @@
+use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Voce nao pode se movimentar para manter essa habilidade", SSM_INFO);
+
+	var x := attacker.x;
+	var y := attacker.y;
+
+	SetCooldown(attacker, "defesatotal", CInt(AP_GetSkill(attacker, TACTICS)) );
+
+	PrintText(attacker, "*defesa total*");
+
+	detach();
+
+	attacker.evasionchance_mod := attacker.evasionchance_mod + 25;
+
+	while(attacker.connected)
+
+		if( (attacker.x != x) && (attacker.y != y) )
+			SendSysMessageEx(attacker, "Voce nao esta mais no local inicial", SSM_FAIL);
+			break;
+		endif
+
+		if (GetCooldown(attacker, "defesatotal") <= 0 )
+			SendSysMessageEx(attacker, "Sua postura defensiva terminou.", SSM_INFO);
+			break;
+		endif		
+
+		sleep(1);
+
+	endwhile
+
+	attacker.evasionchance_mod := attacker.evasionchance_mod - 25;
+
+endprogram 
+

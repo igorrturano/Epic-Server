@@ -1,0 +1,119 @@
+
+use uo;
+use os;
+
+include ":containers:storageAreas";
+include ":containers:containers";
+include ":gumps:requestGump";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include "include/say";
+include ":keys:key";
+include ":tn:tngumps";
+include ":gumps:htmlGump";
+
+//Gump Constants
+const BKGND_STONESLAB		:= 9200;  // Gray stone slab background
+const BKGND_BLUESLAB		:= 3600;  // Raised edge (blocky)
+const GF_STDCOLOR		:= 1890;
+
+const MOEDAS			:= 47715;
+
+var item_cfg := ReadConfigFile(":*:itemdesc");
+
+
+program MerchantMenu(params)
+
+	var npc := params[1];
+	var player := params[2];
+//	var npc := player;
+
+
+	if (player.hidden)
+		player.hidden := 0;
+		SendSysMessageEx (player, "Voce se revelou.", SSM_FAIL);
+	endif
+
+	var gump := GFCreateGump(0, 0);
+	GFResizePic(gump, 15, 50, 2620, 310, 380);
+
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 480);
+
+	GFResizePic(gump, 15, 12, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+	GFTextMid(gump, 15, 17, 330, 2100, "Rumores");
+
+	GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
+	//GFHTMLArea(gump, 22, 53, 322, 375, text, 0, 1);
+
+	GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+
+	if (player.cmdlevel >= 3)
+		GFAddButton(gump, 285, 440, 4011, 4030, GF_CLOSE_BTN, 20);
+		GFTextLine(gump, 170, 440, 2100, "Adicionar Rumor");
+	endif
+
+	//GFHTMLArea( gump, 35, 70,  280, 340, questinfo.description, 0, 1);
+	var i;
+	var y_pos := 70;
+	var rumores := GetObjProperty(npc, "rumores");
+	if (rumores == error)
+		rumores := array;
+	endif
+	for ( i:=1; i<= rumores.size(); i:=i+1 )
+		if (rumores[i].custo)
+			GFTextLine(gump, 45, y_pos, 2100, rumores[i].nome + " [" + rumores[i].custo + " moedas]" );
+		else
+			GFTextLine(gump, 45, y_pos, 2100, rumores[i].nome  );
+		endif
+		GFAddButton(gump, 25, y_pos+2, 2117, 2118, GF_CLOSE_BTN, 200+i);
+		y_pos := y_pos+19;
+	endfor
+
+	var input := GFSendGump(player, gump);
+
+	if (input[0] == 20)
+		var r := GetObjProperty(npc, "rumores");
+		if (r == error)
+			r :=array;
+		endif
+		var rumor := struct;
+		rumor.+nome := cstr(RequestGump(player, "Qual vai ser o nome do rumor?"));
+		rumor.+custo := cint(RequestGump(player, "Quanto vai custar?"));
+		rumor.+desc  := BigRequestGump(player, "Qual a descricao do rumor:");
+		r.append(rumor);
+		SetObjProperty(npc,"rumores", r);
+		SendSysMessage(player, "Novo rumor adicionado.");
+	elseif (input[0] > 200)
+		//SendSysMessage(player, " " + rumores[input[0]-200].desc);
+		var id := input[0]-200;
+		if (player.cmdlevel >= 3)
+			var result := RadioGump(player, 300, 200, "Opções de GM", {"Ler", "Apagar"});
+			if (result == "Apagar")
+				rumores.Erase(id);
+				SetObjProperty(npc, "rumores", rumores);
+				SendSysMessage(player, "rumor deletado.");
+			elseif (result == "Ler")
+				SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+			endif
+		else
+			if ( cint(rumores[id].custo) != 0)
+				PrintText(npc, "Eu conto tudo que sei por " + rumores[id].custo + " moedas .");
+				var moedas := target(player);
+				if ( moedas.objtype == 47715)
+					if (moedas.amount >= cint(rumores[id].custo))
+						if (!SubtractAmount(moedas, cint(rumores[id].custo)))
+							PrintText(npc, "Voce nao tem moedas necessarias.");
+						endif
+					else
+						PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+						return;
+					endif
+				else
+					return;
+				endif
+			endif
+			SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+		endif
+	endif
+
+endprogram

@@ -1,0 +1,40 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	var festa := attacker.party;
+
+	if (!festa)
+		SendSysMessageEx(attacker, "Voce nao tem aliados!", SSM_FAIL);
+		return;
+	endif
+	
+	var a :=array {cint(AP_GetSkill(attacker, MELEECOMBAT1H)), cint(AP_GetSkill(attacker, MELEECOMBAT2H)), cint(AP_GetSkill(attacker, RANGEDCOMBAT))};
+	var time := 0;
+	
+	foreach i in (a)
+	if(i > time)
+	time := i;
+	endif
+	endforeach
+	
+	var duracao := cint((time + AP_GetSkill(attacker, TACTICS)) / 2) ;
+	print(duracao);
+
+	PrintText(attacker, "*ordena os aliados*");
+
+	foreach member in (festa.members)
+		if (member.serial != attacker.serial)
+			if (Distance(attacker, member) < 8)
+				SendSysMessageEx(member, "Seus ataques estao poderosos!", SSM_INFO);
+				TS_StartTimer(member, "heroismo", duracao);
+			endif
+		endif
+	endforeach
+
+
+endprogram  

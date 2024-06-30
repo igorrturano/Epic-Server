@@ -1,0 +1,181 @@
+use uo;
+use os;
+use vitals;
+use npc;
+
+include ":charactercreation:habilidades";
+include ":timedScripts:timedScripts";
+include "include/damage";
+
+program loko(params)
+
+	var who := params[1];
+	var event := params[2];
+
+	printtextabove(who, "loko");
+	if (!who.opponent)
+		return;
+	endif
+
+	if (event.onlybloodied) 
+		if ( !IsBloodied(who) )
+			return;
+		endif
+	endif
+
+	//check distancia
+	if (event.dist > 0)
+		if (CoordinateDistance(who.x, who.y, who.opponent.x, who.opponent.y) > event.dist)
+			return;
+		endif
+	endif
+
+	//checa cooldown
+	if ( TS_GetCooldown(who, "event.name") != error)
+		return;
+	endif
+
+	TS_StartCooldown(who, "event.name", event.cd); 
+	//executa os states
+	foreach state in (event.steps)
+
+		if (state.type == "Move")
+			var sleepdelay := 275 - who.run_speed;//(CInt(GetDexterity(me)) * 1.5);
+
+			if (sleepdelay < 0)
+				sleepdelay := 0;
+			endif
+
+
+    			while (CoordinateDistance( who.x, who.y, state.x, state.y ))
+   				RunTowardLocation( state.x, state.y );
+				sleepms(sleepdelay);
+            			if (CoordinateDistance( who.x, who.y, state.x, state.y ) <= 1 )
+					break;
+				endif
+    			endwhile
+
+		elseif (state.type == "Teleport")
+			if (state.target == "Self")
+				MoveObjectToLocation(who, state.x, state.y, state.z, who.realm);
+			elseif (state.target == "Opponent")
+				MoveObjectToLocation(who.opponent, state.x, state.y, state.z, who.realm);
+			elseif (state.target == "All Opponents")
+				var opponents := GetAllOpponents(who);
+				foreach op in opponents
+					MoveObjectToLocation(op, state.x, state.y, state.z, who.realm);
+				endforeach
+			endif
+		elseif (state.type == "TimedScript")
+			var targ := array;
+			if (state.target == "Self")
+				targ.append(who);
+			elseif (state.target == "Opponent")
+				targ.append(who.opponent);
+			elseif (state.target == "All Opponents")
+				targ := GetAllOpponents(who);
+			endif
+			foreach t in targ
+				TS_StartTimer(t, state.timername, state.timerduration, state.level);
+			endforeach
+		elseif (state.type == "Perform Action" )
+			var targ := array;
+			if (state.target == "Self")
+				targ.append(who);
+			elseif (state.target == "Opponent")
+				targ.append(who.opponent);
+			elseif (state.target == "All Opponents")
+				targ := GetAllOpponents(who);
+			endif
+			foreach t in targ
+				PerformAction(t, state.id);
+			endforeach
+		elseif (state.type == "Text")
+			var targ := array;
+			if (state.target == "Self")
+				targ.append(who);
+			elseif (state.target == "Opponent")
+				targ.append(who.opponent);
+			elseif (state.target == "All Opponents")
+				targ := GetAllOpponents(who);
+			endif
+			foreach t in targ
+				PrintText(t, state.text, state.color);
+			endforeach
+		elseif (state.type == "Play Sound")
+			PlaySoundEffect(who, state.id);
+		elseif (state.type == "Delay")
+			Sleep(state.delay);
+		elseif (state.type == "Heal")
+			  HealFLS(who, state.healamt);
+			    RecalcVitals(who);
+		elseif ( state.type == "Graphic Effect")
+			var targ := array;
+			if (state.target == "Self")
+				targ.append(who);
+			elseif (state.target == "Opponent")
+				targ.append(who.opponent);
+			elseif (state.target == "All Opponents")
+				targ := GetAllOpponents(who);
+			endif
+			foreach t in targ
+				if (state.graphictype == "Stationary")
+					if (state.fxid == "Lightning")
+						PlayLightningBoltEffect(t);
+					else
+						PlayObjectCenteredEffect(t, state.fxid, state.speed, state.loop);
+					endif
+				elseif (state.graphictype == "Moving")
+					if (state.direction == "Mob->Player")
+						PlayMovingEffect(who, t, state.fxid, state.speed, state.loop);
+					else
+						PlayMovingEffect(t, who, state.fxid, state.speed, state.loop); 
+					endif
+				endif
+			endforeach
+
+		elseif (state.type == "Dmg")
+			var targ := array;
+			if (state.target == "Self")
+				targ.append(who);
+			elseif (state.target == "Opponent")
+				targ.append(who.opponent);
+			elseif (state.target == "All Opponents")
+				targ := GetAllOpponents(who);
+			endif
+			foreach vital in (state.vitals)
+				foreach t in targ
+					if (vital == "Hits")
+						DamageFLS(t, state.dmg, state.dmgtype, who);
+					elseif (vital == "Stam")
+						AP_ConsumeVital(t, STAMINA, state.dmg);
+					elseif (vital == "Mana")
+						AP_ConsumeVital(t, MANA, state.dmg);
+					endif
+				endforeach	
+			endforeach
+		elseif (state.type == "Summon Npcs") // NPC FALAR ALGO
+	           	var amt := 0;
+			while (amt < state.amount)
+                		var npc := CreateNpcFromTemplate( cstr(state.npctemplate), Cint(state.x) + RandomInt(2 * state.range) - state.range, Cint(state.y) + RandomInt(2 * state.range) - state.range, Cint(state.z));
+                		if (npc != error)
+                  			amt := amt + 1;
+                		endif
+              			sleepms(2);
+            		endwhile
+
+		endif
+		sleepms(500);
+	endforeach
+
+
+endprogram
+
+
+function GetAllOpponents(who)
+
+	var a := ListHostiles(who);
+	return a;
+
+
+endfunction

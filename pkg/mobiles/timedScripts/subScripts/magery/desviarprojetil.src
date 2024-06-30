@@ -1,0 +1,26 @@
+  
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+
+	SendSysMessageEx(who, "Voce esta protegido contra projeteis.", SSM_INFO);
+
+	if ( GetObjProperty(who, "#desviarprojetil") )
+		return 0;
+	endif
+	
+	SetObjProperty(who, "#desviarprojetil", 1);
+	
+	return 1;
+endprogram
+  

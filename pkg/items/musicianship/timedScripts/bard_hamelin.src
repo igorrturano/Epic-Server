@@ -1,0 +1,64 @@
+
+use uo;
+use os;
+use util;
+
+include ":musicianship:bardmusic";
+include ":attributes:attributes";
+include ":fls_core:packets";
+include "include/sysEvent";
+include ":timedScripts:timedScripts";
+
+program TimedScript_bard_hamelin(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var modificador := params[3];
+
+	var rand;
+	var rand1;
+	var rand2;
+	var rand3;
+	var rat;
+	var x;
+	var ratTemplate;
+
+	PrintTextAbove(mobile, "*Ratos saem de todas as partes*",BARD_FONT,BARD_FONT_COLOR_NEUTRA);
+	SetObjProperty(mobile, "#Bard_hamelin", modificador);
+	while (GetObjProperty(mobile, "#Bard_hamelin"))
+		rand := randomint(5);
+		rand1 := randomint(8);
+		rand2 := randomint(8);
+		rand3 := randomint(modificador);
+		if (modificador < 10) //terciario
+			ratTemplate:=":brainAI:hamelin_Rat1";
+		elseif (modificador < 20) //secundario
+			ratTemplate:=":brainAI:hamelin_Rat"+CStr(randomint(2)+1);
+		elseif (modificador < 40) //primario
+			ratTemplate:=":brainAI:hamelin_Rat"+CStr(randomint(4)+1);
+		else //lendario
+			ratTemplate:=":brainAI:hamelin_Rat"+CStr(randomint(6)+1);
+		endif
+
+		case (rand)
+			1:
+				rat := createnpcfromtemplate(ratTemplate, (mobile.x + rand1), (mobile.y + rand2), mobile.z, 0 , mobile.realm);
+				break;
+			2:
+				rat := createnpcfromtemplate(ratTemplate, (mobile.x - rand1), (mobile.y - rand2), mobile.z, 0 , mobile.realm);
+				break;
+			3:
+				rat := createnpcfromtemplate(ratTemplate, (mobile.x + rand1), (mobile.y - rand2), mobile.z, 0 , mobile.realm);
+				break;
+			4:
+				rat := createnpcfromtemplate(ratTemplate, (mobile.x - rand1), (mobile.y + rand2), mobile.z, 0 , mobile.realm);
+				break;
+			default:
+				rat := createnpcfromtemplate(ratTemplate, (mobile.x + rand1), (mobile.y + rand2), mobile.z, 0 , mobile.realm);
+				break;
+		endcase;
+		TS_StartTimer(rat, "bard_delete_mob", 50);
+		SetObjProperty(rat, "#Bard_delete_mob", 0);
+		sleepms (CInt(500-(params[3]*4)));
+	endwhile
+	return 1;
+endprogram

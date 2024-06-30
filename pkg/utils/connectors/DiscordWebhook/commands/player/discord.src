@@ -1,0 +1,24 @@
+Use uo;
+use os;
+use cfgfile;
+use file;
+
+include ":DiscordWebhook:outbound";
+include ":DiscordWebhook:report";
+
+program textcmd_testdiscordbot(who)
+	var presetType := RequestInput(who, who.backpack, "Qual campo vc quer usar(temos apenas BUG e SUGESTAO por enqto):" );
+	var message := RequestInput(who, who.backpack, "Qual o bug/sugestao:" );
+	var outbound := PresetDiscordMessage( message, presetType);
+
+	if(outbound == error)
+		SendsysMessage( who, outbound.errortext );
+	elseif (presetType == "bug")
+		MG_ReportText(who.acctname+ " sob o char " +who.name+ " escreveu o seguinte BUG: " +message, MG_REPORT_SYSLOG);
+	elseif (presetType == "sugestao")
+		MG_ReportText(who.acctname+ " sob o char " +who.name+ " escreveu a seguinte SUGESTAO: " +message, MG_REPORT_SYSLOG);
+	endif
+//	LogToFile("log/discordbot.log", who.name+" ("+who.acctname+") editou "+outbound+" ("+who.acctname+") <br>", LOG_DATETIME);
+	
+
+endprogram

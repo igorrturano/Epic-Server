@@ -1,0 +1,44 @@
+use uo;
+use os;
+
+include ":combat:armorZones";
+include ":tn:equipment";
+
+program UnequipTest(mobile, item)
+	var retval := 1;
+
+	if ( (mobile.frozen) || (mobile.paralyzed))
+		SendSysMessage(mobile, "You are unable to move in order to unequip that.");
+		retval := 0;
+	elseif ("cursed" in (GetObjProperty(item, "equip")))
+		retval := 0;
+	endif
+
+	if (mobile.hidden)
+		var zones := CS_GetArmorZone(item);
+		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
+			SendSysMessage(mobile, "Voce apareceu ao colocar "+item.desc+".");
+			mobile.hidden := 0;
+			PrintText(mobile, "*aparece*");
+		endif
+	endif
+
+	if ( retval )
+		//RemoveEquipmentMods(mobile, item);
+		EraseObjProperty(item, "#EquippedOn");
+		if (coverFace(item))
+			mobile.name := GetObjProperty(mobile, "realname");
+			mobile.title_race := GetObjProperty(mobile, "realrace");
+			if (GetObjProperty(mobile, "olddescription"))
+				SetObjProperty(mobile, "description", GetObjProperty(mobile, "olddescription"));
+				EraseObjProperty(mobile, "olddescription");
+			endif
+			EraseObjProperty(mobile, "realname");
+			EraseObjProperty(mobile, "realrace");
+			EraseObjProperty(mobile, "Incognito");
+			SetObjProperty(mobile, "url", GetObjProperty(mobile, "old_url"));
+		endif
+	endif
+
+	return retval;
+endprogram

@@ -1,0 +1,43 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":spells:summon";
+include "include/client";
+
+program summonSkeletaSteed(params)
+	var who := params[1];
+	var targ := params[2];
+    if (GetObjProperty(who, "dread_lord"))
+        SendSysMessage(who, "Voce precisa aguardar antes de invocar uma nova montaria");
+    endif
+
+	var template := ":brainai:SummonedSkeletalSteed";
+
+    if (template == error)
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return;
+	endif
+
+    var i := 0;
+    who.frozen := 1;
+    while (i < 4)
+        PerformAction(who, ANIM_CAST_DIR);
+        sleep(1);
+        i++;
+    endwhile
+    who.frozen := 0;
+	PlaySoundEffect(targ, SFX_SPELL_SUMMON_ELEMENTAL);
+
+	var mount := summon(template, targ, who);
+	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+
+	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
+    SetObjProperty(who, "dread_lord", 1);
+
+    SendSysMessageEx(who, "Sua montaria nefasta esta pronta para servi-lo");
+	return 1;
+
+endprogram

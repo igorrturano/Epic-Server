@@ -1,0 +1,81 @@
+use uo;
+use cfgfile;
+
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":taming:taming";
+include ":attributes:attributes";
+include "include/say";
+include ":taming:taming";
+include ":mounts:mounts";
+
+const FOREGROUND   := 0x4e2;
+program totem(who, wand)
+
+	var chardata := dictionary;
+	chardata:=GetObjProperty(who,"chardata");
+	if(chardata["magia"] != "Totemista")
+		return;
+	endif
+
+
+	var gump := GFCreateGump(50,50);
+	GFGumpPic(gump, 1, 7, FOREGROUND); //img do menu
+	GFTextLine(gump, 90, 20, 40, "MENU DE TOTEMISTA"); //Topo
+	GFGumpPic(gump, 90, 370, 0x5f); // Marca Rodapé lado esquerdo
+	GFGumpPic(gump, 225, 370, 0x61); // Marca rodapé lado direito
+	GFTextLine(gump, 111, 370, 40, "Summons: "+GetNumSummons(who)+" / "+GetMaxSummons(who)); //Rodapé
+
+//Parde do Menu que lista as magias
+	var spells := GetObjProperty(wand, "spells");
+	var x := 70;
+	var index := 1;
+	var cfg := ReadConfigFile(":spells:allspells");
+	var summoned := GetObjProperty(who, "Summons");
+	foreach spell in spells
+		var elem := FindConfigElem(cfg, spell);
+		var summon_cost := GetConfigString(elem, "npcTemplate");
+		if (elem != error)
+			if (!summon_cost)
+				GFTextLine(gump, 50, x, 1153, GetConfigString(elem, "Name"));
+			else
+				GFTextLine(gump, 50, x, 1153, GetConfigString(elem, "Name")+" ("+GetPetCost(elem)+" slots)");
+			endif
+			GFAddButton(gump, 32, x+4, 2103, 2104, GF_CLOSE_BTN, index);
+			x := x +15;
+			index := index +1;
+		endif
+	endforeach
+
+//Parte do Menu para liberar o summon
+	var xx := 35;
+	var i := 1;
+	var pets := GetObjProperty(who, "TamedPets");
+	 pets := GetObjProperty(who, "SummonedPets");
+	foreach serial in pets
+		var pet := SystemFindObjectBySerial(serial);
+			var pet_parse := pet.name[12, len(pet.name)-11];
+			var pets := GetObjProperty(who, "SummonedPets");
+		GFTextLine(gump, 30, 320, 0x84, "Liberar Invocações:"); //v"<basefont color=#cc0000>
+		GFTextLine(gump, xx, 340, 3171, pet_parse); //"<basefont color=#0000>"
+		if (GetObjProperty(pet, "summoned"))
+			GFAddButton(gump, xx-4, 343, 0x938, 0x938, GF_CLOSE_BTN, (100+i));
+		endif
+		i := i + 1;
+		xx := xx + 65;
+	endforeach
+
+//Comando do botão para libertar o summon
+	var input := GFSendGump(who, gump);
+	input := input[0];
+	if ((input >= 1) && (input <= 100))
+		var spellid := struct;
+		spellid.+id := spells[input[0]];
+		Start_Script("cast_spell", {who, spellid, 0});
+	elseif (input > 100)
+		SendSysMessageEx(who, "Voce libertou seu animal.", SSM_INFO);
+		ErasePet(who, pets[input-100]);
+		destama(pets[input-100]);
+	endif
+
+endprogram

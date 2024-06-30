@@ -1,0 +1,93 @@
+   use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include "include/sysEvent";
+include "include/eventID";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+
+
+	var globo := 0;
+	var tentativas := 0;
+
+	var r := RandomInt(4) + 1;
+	var template;
+	if (r == 1)
+		template := ":brainai:horse1";
+	elseif (r == 2)
+		template := ":brainai:horse2";
+	elseif( r == 3)
+		template := ":brainai:horse3";
+	elseif ( r == 4)
+		template := ":brainai:horse4";
+	endif
+
+	while( !globo )
+
+		var dir := RandomInt(6)+1;
+		var finalx := who.x;
+		var finaly := who.y;
+		if (dir == 1)
+			finalx := finalx + 13;
+			finaly := finaly + 13;
+		elseif (dir == 2)
+			finalx := finalx - 13;
+			finaly := finaly - 13;
+		elseif (dir == 3)
+			finalx := finalx + 13;
+			finaly := finaly - 13;
+		elseif (dir == 4)
+			finalx := finalx + 13;
+		elseif (dir == 5 )
+			finaly := finaly + 13;
+		elseif( dir == 6 )
+			finalx := finalx - 13;
+			finaly := finaly + 13;
+		endif
+
+		var height := GetWorldHeight(finalx, finaly, who.realm);
+		if (CheckLosAt( who, finalx, finaly, height ))
+			globo := CreateNpcFromTemplate(template, finalx, finaly, height, 0, who.realm);
+		endif
+		if (tentativas == 10)
+			SendSysMessageEx(who, "Nao existe nenhuma montaria por perto.", SSM_FAIL);
+			return 1;
+		endif
+	endwhile
+
+	if (RandomInt(2) == 1)
+		PlaySoundEffect(who, 169);
+	else
+		PlaySoundEffect(who, 170);
+	endif
+
+	globo.SetMaster(who);
+
+	SetObjProperty(globo, "owner", who.serial);
+	SetObjProperty(globo, "name", globo.name);
+	SetObjproperty(globo, "script", globo.script);
+	SetObjProperty(globo, "AntigoTreinadorID", who.serial);
+	SetObjProperty(globo, "summoned", 1);
+	globo.script := ":ghaia:tamed";
+	RestartScript(globo);
+	TS_StartTimer(globo, "summon", GetSpellDuration(who)+180);
+
+	var ev := struct;
+	ev.type := EVID_HERDING;
+	ev.data := who;
+	SendEvent(globo, ev);
+
+	sleep(3);
+	PerformAction(globo, ANIM_ATTACK_2HAND_WIDE);
+
+	return 1;
+endprogram

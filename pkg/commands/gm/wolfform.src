@@ -1,0 +1,37 @@
+ use uo;
+use os;
+use file;
+use cfgfile;
+include ":attributes:attributes";
+include ":attributes:attributes_ex";
+include ":attributes:skills";
+
+
+Program comand_formadeurso(who)
+
+                           if (getObjProperty(who, "wolfform"));
+                           who.graphic := GetObjProperty(who, "originalgraphic");
+                                                   SetObjProperty(who, "originalgraphic", who.graphic);
+                                                                        Eraseobjproperty(who, "#PhysicalResistMod");
+endif
+
+ SetObjProperty(who, "#PhysicalResistMod", GetObjProperty(who, "#PhysicalResistMod") + 50);
+
+
+
+                          AP_SetSkillMod(who, WRESTLING, AP_GetSkillMod(who, WRESTLING) - 70);
+ ConsumeMana( who, 40 ); 
+      SendSysMessage(who, "Você precisa de mana para se transformar!");
+       AP_SetSkillMod(who, WRESTLING, AP_GetSkillMod(who, WRESTLING) + 70);
+
+who.graphic := GetObjProperty(who, "originalgraphic");
+ who.graphic := 0xE1;
+   GetAttributeBaseValue( who, DEXTERITY );
+SetAttributeBaseValue( who, DEXTERITY, 10000 );
+      SendSysMessage(who,  "Seus caninos crescem, junto com pelos e musculos, e lentamente o equilibrio de seu corpo muda");
+                                setname(who,"Lobo cinzento");
+                
+
+      return 0;
+endprogram
+

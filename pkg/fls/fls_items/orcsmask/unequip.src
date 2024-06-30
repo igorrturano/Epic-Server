@@ -1,0 +1,19 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":attributes:attributes";
+
+
+program unequipweapon(who, item)
+	set_critical(1);
+
+	if (who.npctemplate || who.cmdlevel)
+		return 1;
+	endif
+
+	set_critical(0);
+
+	return 0;
+
+endprogram

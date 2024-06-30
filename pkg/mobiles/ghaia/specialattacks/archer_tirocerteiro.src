@@ -1,0 +1,37 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program tirocerteiro(params)
+var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	var dist := distance(attacker, defender);
+	CheckDistance (attacker, defender, dist);
+
+	Printtextabove(attacker, "Mira com precisão", SSM_INFO);
+	SetObjProperty(attacker, "#attackbonus", 100);
+
+endprogram 
+
+function CheckDistance(attacker, defender, dist)
+	if ( dist < 3 || dist > 10 )
+		return 0;
+	elseif (Abs(attacker.z - defender.z) >= 15)
+		return 0;
+	elseif ( !CheckLineOfSight(attacker, defender) )
+		return 0;
+	endif
+	
+	return 1;
+endfunction

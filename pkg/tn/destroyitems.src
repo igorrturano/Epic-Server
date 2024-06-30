@@ -1,0 +1,137 @@
+
+use uo;
+use os;
+use polsys;
+
+include "include/client";
+include "include/say";
+include ":tn:cooldown";
+include ":combat:combat";
+include ":attributes:attributes";
+include ":fls_core:packets";
+include ":blood:blood";
+include "include/damage";
+include "include/tileEffects";
+include ":fls_core:fls_objtypes";
+include "include/sysEvent";
+include "include/eventID";
+
+program destroyitems(parms)
+
+	var who:=parms[1];
+	var item:=parms[2];
+	var arma:=parms[3];
+
+	/*
+		0x0f51	dagger
+		0x13f6	butcher
+		0x0ec2	cleaver
+		0x0ec4	SkinningKnife
+		11565	karda
+	*/
+
+	if((arma.objtype == 0x0f51) || (arma.objtype ==0x13f6) || (arma.objtype ==0x0ec2) || (arma.objtype == 0x0ec4) || (arma.objtype ==11565))
+		SendSysMessageEx(who,"Voce nao pode quebrar " + item.desc + " com isto.",SSM_FAIL);
+		return 0;
+	endif
+
+	isBreakble(who,item);
+
+endprogram
+
+
+function isBreakble(who,item)
+
+	var cfg := ReadConfigFile(":destroyable:destroyitems");
+	var cfgitems:=GetConfigStringKeys( cfg);
+	var elem:=FindConfigElem( cfg, item.objtype);
+
+	var normal:=GetConfigString( elem, "normal");
+	var quebrado:=GetConfigString( elem, "quebrado");
+
+	if(Hex(item.graphic) == Hex(normal))
+		fBreak(who,item);
+		return 1;
+	elseif(Hex(item.graphic)==Hex(quebrado))
+		SendSysMessageEx(who,"Isto ja parece estar quebrado.",SSM_FAIL);
+		return 0;
+	endif
+
+endfunction
+
+function fBreak(who,item)
+	if(TemHabilidade(who, "Vigor do Extrator"))
+		if(AP_GetVital(who, "Stamina") < 8)
+			SendSysMessageEx(who, "Voce esta cansado demais.",SSM_FAIL);
+			return 0;
+		endif
+	else
+		if(AP_GetVital(who, "Stamina") < 15)
+			SendSysMessageEx(who, "Voce esta cansado demais.",SSM_FAIL);
+			return 0;
+		endif
+	endif
+	var cfg := ReadConfigFile(":destroyable:destroyitems");
+	var elem:=FindConfigElem( cfg, item.objtype);
+	var normal:=GetConfigString( elem, "normal");
+	var quebrado:=GetConfigString( elem, "quebrado");
+	var hits:= GetObjProperty(item,"hits");
+	var porta := array{};
+
+	//Se são portas emperradas
+	if(((item.objtype==0xec25)||(item.objtype==0xec26)) && (hits > 0))
+		var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, realm := _DEFAULT_REALM );
+
+		porta.append(item.x);
+	    porta.append(item.y);
+		var ev := struct;
+	        ev.+type := EVID_HERDING;
+	        ev.+data := porta;
+
+		foreach mob in mobiles
+			SendEvent(mob, ev);
+		endforeach
+
+		PlayAttackAnimation(who);
+		sleepms(600);
+		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
+		PlayStationaryEffect(item.x, item.y, item.z, FX_SMOKE, 2, 4);
+		//ConsumeVital( who, STAMINA, 2000 );
+		if (TemHabilidade(who, "Lenhador Eficaz"))
+			ConsumeVital( who, STAMINA, 1000 );
+			PrintText(item, "*Destroi " +item.desc+ " com um golpe*");
+			SetObjProperty(item,"hits",0);
+		else
+			ConsumeVital( who, STAMINA, 2000 );
+			PrintText(item, "*A " +item.desc+ " começa a ceder*");
+			SetObjProperty(item,"hits",hits-1);
+		endif
+
+	else
+
+		PlayAttackAnimation(who);
+		sleepms(600);
+		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
+		PlayStationaryEffect(item.x, item.y, item.z, FX_SMOKE, 2, 4);
+		ConsumeVital( who, STAMINA, 2000 );
+
+		item.graphic:=Cint(quebrado);
+		SetObjProperty(item,"hits",3);
+
+
+		if((item.objtype==0xec25)||(item.objtype==0xec26)|| (item.objtype==0xFF04)|| (item.objtype==0xec27)|| (item.objtype==0xec28) )
+			PrintText(who, "*Quebra a " +item.desc+ "*");
+			SetName(item,item.desc + " [Quebrada] ");
+		elseif(item.objtype == 0xec24)
+			PrintText(who, "*Quebra o " +item.desc+ "*");
+			SetName(item,item.desc + " [Quebrado] ");
+		endif
+		var itens := GetObjProperty(item,"itens");
+		foreach itemarray in itens
+			var itemcriado:=CreateItemAtLocation(item.x, item.y, item.z,itemarray , itemarray.amount, realm := _DEFAULT_REALM);
+			SetName(itemcriado, itemarray.name);
+		endforeach
+		return 1;
+
+	endif
+endfunction

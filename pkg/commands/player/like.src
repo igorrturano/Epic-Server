@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+
+program like(who, param)
+//TODO: Não poder dar like em si mesmo
+//TODO: Ter um limite de 24 h entre likes na mesma pessoa
+//TODO: Gump de Likes?
+//TODO: .like ver pra ver a quantidade de likes
+
+    if(param == "off")
+        SendSysMessage(who, "Likes desativados");
+        SetObjProperty(who, "nolikes", 1);
+        return;
+    endif
+    if(param == "on")
+        SendSysMessage(who, "Likes ativados");
+        SetObjProperty(who, "nolikes", 0);
+        return;
+    endif
+
+    if(param == "ver")
+        SendSysMessage(who, "Voce tem " + GetObjProperty(who, "likes") + " likes");
+        return;
+    endif
+
+
+    var targ := Target(who);
+
+    if (GetObjProperty(targ, "nolikes") == 1)
+        SendSysMessage(who, "Player nao quer receber likes.");
+        return;
+    endif
+
+    if(targ == who)
+        SendSysMessage(who, "Nao pode dar likes em si mesmo.");
+        return;
+    endif
+
+    if (GetObjProperty(targ, "likes") == error)
+        SetObjProperty(targ, "likes", 1);
+        SendSysMessage(who, "Voce deu um like em outro jogador.");
+        SendSysMessage(targ, "Voce ganhou um like por seu rp! Seu total agora e " + GetObjProperty(targ, "likes") + " likes");
+    else
+        var likes := GetObjProperty(targ, "likes");
+
+        SetObjProperty(targ, "likes", likes + 1 );
+        SendSysMessage(who, "Voce deu um like em outro jogador.");
+        SendSysMessage(targ, "Voce ganhou um like por seu rp! Seu total agora e " + GetObjProperty(targ, "likes") + " likes");
+    endif
+
+endprogram

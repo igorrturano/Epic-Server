@@ -1,0 +1,51 @@
+
+use os;
+use uo;
+use guilds;
+
+include ":faccao:faccao";
+include ":timeUtils:time";
+include ":attributes:attributes";
+
+program startprogram()
+   while (1)
+      ControleDeSoldo();
+      sleep(3600);
+   endwhile
+endprogram
+
+function ControleDeSoldo()
+   var guild_list := ListGuilds();
+   foreach guild in guild_list
+      var npcs := guild.GetProp("npcs_active");
+      var npcs_conf := guild.GetProp("npcs");
+      var money := guild.GetProp("money");
+
+      foreach npc_obj in npcs
+         sleepms(2);
+         var npc := SystemFindObjectBySerial(npc_obj.serial);
+         if (!npc) continue; endif
+
+         var soldo_last := GetObjProperty(npc, "DaysOfService");
+         var soldo := npcs_conf[GetObjProperty(npc, "conf_ref")].price;
+
+         if (!soldo) soldo := npc_obj.price; endif
+         if (!soldo_last) soldo_last := polcore().systime; endif
+
+         var diff := GetTimeBetween(soldo_last, GetTime(), "days");
+         if (diff >= 7)
+            if (money < soldo)
+               npc.Disable("invul");
+               SetObjProperty(npc, "GuardKill", 1);
+               ApplyRawDamage(npc, 900);
+            else
+               SetObjProperty(npc, "DaysOfService", polcore().systime);
+               money -= soldo;
+            endif
+         endif
+      endforeach
+
+      guild.SetProp("money", money);
+      sleepms(5);
+   endforeach
+endfunction

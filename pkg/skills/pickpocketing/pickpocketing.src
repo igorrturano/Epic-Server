@@ -1,0 +1,259 @@
+/* $Id: stealing.src 1053 2007-04-27 22:00:25Z tekproxy $
+ *
+ *
+ * http://uo.stratics.com/content/skills/stealing.shtml
+ *
+ */
+
+use uo;
+use os;
+use util;
+use cfgfile;
+use storage;
+
+include ":attributes:attributes";
+include "include/facings";
+include "include/say";
+include ":tn:npcutil";
+include ":timedscripts:timedScripts";
+include ":tn:boss";
+
+program skill_Stealing(mobile)
+	if ( GetProcess(CInt(GetObjProperty(mobile, "#PickPid"))) )
+		SendSysMessageEx(mobile, "Voce ja esta roubando alguem.", SSM_FAIL);
+		return;
+	else
+		SetObjProperty(mobile, "#PickPid", GetPid());
+	endif
+
+	if ( CInt(GetObjProperty(mobile, "#StealWait")) > ReadGameClock() )
+		SendSysMessageEx(mobile, "Voce deve aguardar um pouco para usar essa pericia novamente.", SSM_INFO);
+		return 0;
+	else
+		SetObjProperty(mobile, "#StealWait", ReadGameClock()+5);
+	endif
+
+	if (!maolivre(mobile, 1))
+		return 0;
+	endif
+
+	SendSysMessageEx(mobile, "Selecione que pessoa ou item voce deseja roubar.", SSM_REQUEST);
+	var targ := Target(mobile);
+	var difbonus := 0;
+	if (targ == mobile)
+		SendSysMessageEx(mobile, "Espertao voce hein..?", SSM_FAIL);
+		return 0;
+	elseif ( targ.connected == 0 )
+		SendSysMessageEx(mobile, "Voce nao pode roubar jogadores desconectados.", SSM_FAIL);
+		return 0;
+	//elseif ( targ.npctemplate )
+	//	SendSysMessageEx(mobile, "Voce so pode roubar jogadores.", SSM_FAIL);
+	//	return 0;
+	//elseif ( targ.warmode && targ.npctemplate )
+	//	SendSysMessageEx(mobile, "O alvo esta se movimentando demais lutando.", SSM_FAIL);
+	//	return 0;
+	elseif (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessageEx(mobile, "Voce so pode roubar jogadores.", SSM_FAIL);
+		return 0;
+	elseif (targ.npctemplate == ":merchants:estalagem")
+		SendSysMessageEx(mobile, "Voce nao pode roubar este tipo de NPC.", SSM_FAIL);
+		return 0;
+	elseif (isBoss(targ))
+		SendSysMessageEx(mobile, "Voce nao pode roubar este tipo de NPC.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(mobile, targ) > 2 )
+		SendSysMessageEx(mobile, "O alvo esta muito longe.", SSM_FAIL);
+		return 0;
+	elseif ( !IsBehind(targ, mobile.x, mobile.y) )
+		if(!temHabilidade(mobile, "Batedor de Carteira"))
+			SendSysMessageEx(mobile, "Voce precisa estar nas costas do alvo.", SSM_FAIL);
+			return 0;
+		else
+			difbonus := 10;
+		endif
+	endif
+
+	var diff := 15 + CInt(AP_GetSkill(targ, AWARENESS));
+	if (temHabilidade(mobile, "Valentao"))
+		var multidao := ListMobilesNearLocation(targ.x, targ.y, targ.z, 4, targ.realm).size();
+		if (multidao > 4)
+			var bonus := 5 * (multidao - 4);
+			diff := diff - bonus;
+			SendSysMessageEx(mobile, "Bonus de Ladrão de Multidões: +"+bonus+".", SSM_INFO);
+		endif
+	endif
+
+	var check := SkillCheck(mobile, PICKPOCKETING, diff);
+	if ( check > 0 )
+
+        if (!mobile.hidden)
+            var range :=  13 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/7);
+            var diff_awar := CInt(AP_GetSkill(mobile, PICKPOCKETING)) - 15;
+            foreach player in ( ListMobilesInLineOfSight(targ, range) )
+                if ( player.npctemplate );
+                elseif ( player == mobile );
+                elseif ( player == targ );
+                elseif ( !IsBehind(player, targ.x, targ.y) && (SkillCheck(player, AWARENESS, diff_awar) > 0))
+                    SendSysMessageEx(mobile, "Voce nota que "+player.name+" percebeu algo.", SSM_FAIL);
+                    SendSysMessageEx(player, "Voce nota "+mobile.name+" tentando roubar de "+targ.name+".", SSM_INFO);
+                endif
+                SleepMS(2);
+            endforeach
+        endif
+
+		SendSysMessageEx(mobile, "Voce conseguiu abrir a mochila de "+targ.name+".", SSM_INFO);
+		SendOpenSpecialContainer(mobile, targ.backpack);
+		SendSysMessageEx(mobile, "Se desejar parar de roubar, pressione Esc no momento da escolha do item.", SSM_INFO);
+
+		while (1)
+			SendSysMessageEx(mobile, "Escolha um item para roubar.", SSM_REQUEST);
+			var steal := Target(mobile);//, TGTOPT_NOCHECK_LOS);
+			if (!steal)
+				SendSysMessageEx(mobile, "Voce parou de roubar.", SSM_INFO);
+				break;
+			elseif ( Distance(mobile, targ) > 2 )
+				SendSysMessageEx(mobile, "O alvo se afastou demais.", SSM_FAIL);
+				break;
+			elseif ( !IsBehind(targ, mobile.x, mobile.y) )
+				if(!temHabilidade(mobile, "Batedor de Carteira"))
+				SendSysMessageEx(mobile, "O alvo nao esta mais de costas para voce.", SSM_FAIL);
+				break;
+				endif
+			elseif (steal == targ)
+				SendSysMessageEx(mobile, "Alvo invalido.", SSM_FAIL);
+				continue;
+			endif
+			var aux := steal;
+			while (aux.container)
+				aux := aux.container;
+			endwhile
+			if (aux != targ)
+				SendSysMessageEx(mobile, "Voce so pode roubar da bolsa que abriu.", SSM_FAIL);
+				continue;
+			elseif (steal.IsA(POLCLASS_CONTAINER) && steal.objtype != 0x1011)
+				if (steal.locked)
+					SendSysMessageEx(mobile, steal.desc+" esta trancado.", SSM_FAIL);
+				else
+					SendViewContainer(mobile, steal);
+					SendSysMessageEx(mobile, "Voce abriu "+steal.desc+".", SSM_INFO);
+				endif
+				continue;
+			endif
+
+			if (steal.objtype IN {0xba63, 0xba64, 0xba65}) // moeda
+				diff := CInt(steal.amount / 5);
+				if (temHabilidade(mobile, "Batedor de Carteira"))
+					diff := 0;
+				endif
+			elseif (steal.objtype IN {0x1085, 0x1086, 0x1087, 0x1088, 0xA349, 0x1089, 0x108a, 0x2b6e, 0x2b6f, 0x2b70, 0xCE3D, 0xCE3E, 0xCE3F}) // joias
+				diff := CInt(steal.weight*10);
+				if (temHabilidade(mobile, "Batedor de Carteira"))
+					diff := 0;
+				endif
+			elseif (steal.objtype IN {0x1011, 0x100E, 0x100F, 0x1010, 0x1012, 0x1013}) // chaves
+				diff := 35;
+				if (temHabilidade(mobile, "Batedor de Carteira"))
+					diff := 0;
+				endif
+			else
+				diff := CInt(steal.weight*10);
+			endif
+
+			diff := diff + difbonus;
+
+			if (diff > 1.5 * AP_GetSkill(mobile, PICKPOCKETING))
+				SendSysMessageEx(mobile, "Voce nao tentara roubar isso, pois tem certeza que falhara.", SSM_INFO);
+				continue;
+			endif
+
+			var check := SkillCheck(mobile, PICKPOCKETING, diff);
+			if ( check > 0 )
+				if (TemHabilidade(targ, "Nexus"))
+					if (GetObjProperty(steal, "swordmage") ==  targ.serial)//seta com a arma
+						SendSysMessageEx(mobile, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
+						return 1;
+					endif
+				endif
+				MoveObjectToLocation(steal, 0, 0, 0, mobile.realm);
+				MoveItemToContainer(steal, mobile.backpack);
+				SendSysMessageEx(mobile, "Voce roubou "+steal.desc+".", SSM_INFO);
+				SkillCheck(mobile, PICKPOCKETING, -1);
+
+				var region := GetRegionName(mobile);
+				var char_name := mobile.serial;
+				var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+				//var coords := GetObjProperty(mobile, "anchor");
+				var tipo := "furto";
+				var coords := {mobile.x, mobile.y};
+
+				var nome1 := GetObjProperty(mobile, "nome_inicial");
+				var nome2 := GetObjProperty(targ, "nome_inicial");
+				if ( targ.connected == 1 )
+					Start_script(":DiscordWebhook:discord", {tipo, nome1, fin.acctname, nome2, region, coords, steal.desc});
+				endif
+			else
+				SendSysMessageEx(mobile, "Voce nao conseguiu roubar "+steal.desc+".", SSM_FAIL);
+				if (TS_GetTimerInfo(targ, "sleep"))
+					SendSysMessageEx(mobile, "Voce acelerou o despertar do alvo!", SSM_FAIL);
+					var tempo_faltante := TS_GetTimerDuration(targ, "sleep");
+					var tempo_metade := tempo_faltante /2;
+					TS_LowerDuration(targ, "sleep", -1);
+					TS_StartTimer(targ, "sleep", tempo_metade, 1, 0, 0);
+					Detach();
+				endif
+				if ( check < -25 )
+					CriticalFailure(mobile, targ);
+				endif
+				break;
+			endif
+		endwhile
+		mobile.facing := mobile.facing; // Pra fechar o container! ;D
+	else
+		SendSysMessageEx(mobile, "Voce nota que o alvo percebeu algo.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce sentiu algo na sua bolsa.", SSM_INFO);
+
+        if (!mobile.hidden)
+            var range :=  13 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/7);
+            var diff_awar := CInt(AP_GetSkill(mobile, PICKPOCKETING)) - 15;
+            foreach player in ( ListMobilesInLineOfSight(targ, range) )
+                if ( player.npctemplate );
+                elseif ( player == mobile );
+                elseif ( player == targ );
+                elseif ( !IsBehind(player, targ.x, targ.y) && (SkillCheck(player, AWARENESS, diff_awar) > 0))
+                    SendSysMessageEx(mobile, "Voce nota que "+player.name+" percebeu algo.", SSM_FAIL);
+                    SendSysMessageEx(player, "Voce nota "+mobile.name+" tentando roubar de "+targ.name+".", SSM_INFO);
+                endif
+                SleepMS(2);
+            endforeach
+        endif
+
+		if (check < -10) // Falha Crítica
+			CriticalFailure(mobile, targ);
+		endif
+	endif
+endprogram
+
+function CriticalFailure(mobile, targ)
+	if (mobile.hidden)
+		mobile.hidden := 0;
+	endif
+	SendSysMessageEx(mobile, "Voce chamou muita atencao!", SSM_FAIL);
+				if (TS_GetTimerInfo(targ, "sleep"))
+					//print("entrou");
+					SendSysMessageEx(mobile, "Voce acordou o alvo!", SSM_FAIL);
+					TS_LowerDuration(targ, "sleep", -1);
+				endif
+	var range := 25 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/5);
+
+	foreach player in ( ListMobilesInLineOfSight(targ, range) )
+		if ( player.npctemplate );
+		elseif ( player == mobile );
+		elseif ( player == targ );
+		elseif ( !IsBehind(player, targ.x, targ.y) )
+			SendSysMessageEx(player, "Voce nota "+mobile.name+" tentando roubar de "+targ.name+".", SSM_INFO);
+		endif
+		SleepMS(2);
+	endforeach
+
+	return 1;
+endfunction

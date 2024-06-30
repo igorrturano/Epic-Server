@@ -1,0 +1,51 @@
+use uo;
+use util;
+use basic;
+use cfgfile;
+
+program GemasProps(object)
+
+	var tamanho := BuscaProp("Tamanho");
+	var brilho := BuscaProp("Brilho");
+
+	if (brilho || tamanho)
+		SetObjProperty(object,"valorgem", CInt(( object.buyprice/3 + CInt(brilho[2])) * CDbl(tamanho[2])) );
+		SetObjProperty(object,"brilho",brilho[1]);
+		SetObjProperty(object,"tamanho",tamanho[1]);
+		var nomegema := Trim(StrReplace(object.desc,  CStr(object.amount),"")); //marreta .create + amount
+		SetName(object,nomegema + " " + tamanho[1] + " " + brilho[1]);
+	endif
+
+	return 1;
+endprogram
+
+//Busca a propriedade no cfg. 
+function BuscaProp(strparam)
+	if (strparam == "Tamanho" || strparam == "Brilho")
+		var gemasp_cfg := ReadConfigFile(":*:gruposgemas");
+		var diretrizcfg :=  (strparam + CalcChanceGemaProp());
+		var gemasp_elem := FindConfigElem( gemasp_cfg, diretrizcfg );
+		var proparray := GetConfigStringArray( gemasp_elem, strparam );
+		var retorno := proparray[RandomInt(proparray.Size())+1];
+		retorno := SplitWords(retorno);
+		return retorno;
+	endif
+	return 0;
+
+endfunction
+
+//calcula a chance do grupo
+function CalcChanceGemaProp ()
+
+	var chance := RandomInt(100);
+	if (chance > 95) //5%
+		return "Raros";
+	elseif (chance >= 70 && chance < 95) // 25%
+		return "Comuns";
+	elseif (chance >= 0 && chance < 70) //70%
+		return "MuitoComuns";
+	endif
+	return "MuitoComuns";
+
+endfunction
+

@@ -1,0 +1,63 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+
+//As constantes e funcoes auxiliares estao nesse arquivo
+include "bardmusic";
+include "include/client";
+
+//Programa para tocar instrumentos
+program instrumentoMusical(who, item)
+	//Se o item nao estiver na bolsa envia um aviso e encerra o script
+	var mao1 := GetEquipmentByLayer(who, LAYER_HAND1);
+    var mao2 := GetEquipmentByLayer(who, LAYER_HAND2);
+	if (item.objtype != mao1.objtype && item.objtype != mao2.objtype )
+	//if(item.container != who.backpack)
+	//	SendSysMessage(who, "Este instrumento nao esta na sua mochila.",BARD_FONT,BARD_FONT_COLOR_BAD);
+		SendSysMessageEx(who, "O instrumento precisa estar na sua mao.", SSM_FAIL);
+		return 0;
+	elseif(Cint(GetObjProperty(who, "#LastMusic")) > ReadGameClock())
+		//Avisa para esperar se ainda estiver tocando ou compondo e encerra o script
+		SendSysMessage(who, "Espere um pouco antes de tocar novamente", BARD_FONT, BARD_FONT_COLOR_BAD);
+		return 0;
+	else //pede um target pra saber se toca partitura ou se toca musicas basicas
+		SendSysMessage(who, "Clique numa partitura ou no mesmo instrumento para tocar!" ,BARD_FONT,BARD_FONT_COLOR_BASICA);
+		var opcao := Target(who);
+		if (opcao[0].serial == item.serial)
+			//TODO adicionar verificacao de habilidade "Decorar Cancoes" e chamar um menu com as conhecidas. Tentar criar um atalho pra as musicas decoradas
+			DesgastaInstrumento(who, item);
+			return tocarBasico(who, item);
+		elseif (opcao[0].objtype == 0x9924 || opcao[0].objtype == 0x9925)
+			DesgastaInstrumento(who, item);
+			return tocarPartitura(who, item, opcao[0]); //aqui opcao[0] representa a partitura escolhida
+		else
+			SendSysMessage(who, "Alvo invalido.",BARD_FONT,BARD_FONT_COLOR_BAD);
+			return 0;
+		endif
+		return 0;
+	endif
+endprogram
+
+function DesgastaInstrumento(who, instrumento)
+	if (RandomDiceRoll("1d100") <= 20)
+		SendSysMessage(who, instrumento.desc+" desgastou um pouco.");
+		var instrumentohp := instrumento.hp;
+		instrumentohp := instrumentohp - 1;
+		if ( instrumentohp <= 0 )
+			SendSysMessage(who, instrumento.desc+" foi destruido.");
+			SetObjProperty(instrumento, "broken", 1);
+			SetObjProperty(instrumento, "realdesc", instrumento.desc);
+			SetName(instrumento, instrumento.desc+" [danificado]");
+			MoveItemToContainer(instrumento, who.backpack);
+			//DestroyItem(instrumento);
+		elseif (instrumento.hp > instrumento.maxhp)
+			instrumento.hp := instrumento.maxhp;
+		else
+			instrumento.hp := instrumentohp;
+		endif
+		var nome := instrumento.name;
+		SetName(instrumento, nome + " -");
+		sleepms(30);
+		SetName(instrumento, nome);
+	endif
+	return 1;
+endfunction

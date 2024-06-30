@@ -1,0 +1,5 @@
+use os;
+
+program startProgram(who)
+   start_script(":faccao:faccao", array{who, who});
+endprogram

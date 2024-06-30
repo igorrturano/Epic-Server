@@ -1,0 +1,24 @@
+use uo;
+
+include ":tn:tngumps";
+include "include/say";
+
+program settooltip(who)
+	SendSysMessageEx(who, "Escolha o item.", SSM_REQUEST);
+	var item := target(who);
+	if (!item)
+		return;
+	endif
+
+	 
+	AddItemDescMod(who, item);
+	SetName(item, item.desc);
+endprogram
+
+
+function AddItemDescMod(who, item)
+	var descmod:=GetObjProperty(item,"descmod");
+	var str := SmallRequestGump(who, "Descreva o item", 0);
+
+    SetObjProperty(item, "descmod", str + "<br>");
+endfunction

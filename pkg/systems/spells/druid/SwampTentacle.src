@@ -1,0 +1,34 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":spells:tnmagery";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
+
+  SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+  var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+  if (!targ)
+    return;
+  endif
+
+  if (!targ.isa(POLCLASS_MOBILE))
+    SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+    return;
+  endif
+
+  TS_StartTimer(targ, "graspingroots", 6 );
+  TS_StartTimer(targ, "Paralyze", 6 );
+
+  SendSysMessageEx(who, "Voce prendeu seu inimigo.", SSM_INFO);
+
+  return 1;
+endprogram
+
+
+

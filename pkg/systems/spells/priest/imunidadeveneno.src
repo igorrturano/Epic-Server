@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if ( !targ.isa(POLCLASS_MOBILE) )
+		SendSysMessageEx(who, "Voce so pode usar esta magia em coisas vivas.", SSM_FAIL);
+		return 0;
+	endif
+	
+	SetObjProperty(targ, "protecaoveneno", 1);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	SendSysMessageEx(who, "O alvo foi encantado com sucesso.", SSM_INFO);
+	
+	return 1;
+endprogram   

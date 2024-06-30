@@ -1,0 +1,36 @@
+use uo;
+use cfgfile;
+
+include ":dyes:dyescouro";
+
+program UseTub(mobile, dyetubcouro)
+	if( !ReserveItem(dyetubcouro) )
+		SendSysMessage(mobile, "Esta tina jah esta em uso.");
+		return 0;
+	endif
+
+	SendSysMessage(mobile, "O que vc quer usar nesta tina?");
+	var targ := target(mobile);
+
+	if ( !targ )
+		SendSysMessage(mobile, "Cancelled");
+		return;
+	elseif( !ReserveItem(targ) )
+		SendSysMessage(mobile, "Isso jah esta em uso.");
+		return 0;
+	endif
+
+ var dist := distance(mobile, targ);
+if ( dist > 1 )
+	SendSysMessage(mobile, "Esta muito longe!");
+	return;
+endif
+
+	if ( CanDyeCouro(targ) || mobile.cmdlevel )
+		PlaySoundEffect(mobile, 0x23F);
+		targ.color := dyetubcouro.color;
+	else
+		SendSysMessage(mobile, "Voce nao pode pintar isso.");
+	endif
+
+endprogram

@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program oncreate_checkerboard (backgammonboard)
+	SetObjProperty (backgammonboard, "#creating_gameboard", 1);
+
+	for i := 1 to 15
+		var gamepiece := CreateItemInContainer (backgammonboard, 0x70b3);
+		gamepiece.graphic := 0x3584;
+		gamepiece.name := "a checker";
+		SetObjProperty (gamepiece, "sole_container_serial", backgammonboard.serial);
+	endfor
+
+	for i := 1 to 15
+		var gamepiece := CreateItemInContainer (backgammonboard, 0x70b3);
+		gamepiece.graphic := 0x358b;
+		gamepiece.name := "a checker";
+		SetObjProperty (gamepiece, "sole_container_serial", backgammonboard.serial);
+	endfor
+	
+	EraseObjProperty (backgammonboard, "#creating_gameboard");
+endprogram

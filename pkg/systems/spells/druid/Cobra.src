@@ -1,0 +1,46 @@
+
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
+
+  SendSysMessageEx(who, "Escolha uma arma ou alguem armado.", SSM_REQUEST);
+  var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+  if (!targ)
+    SendSysMessageEx(who, "Cencelado", SSM_FAIL);
+    return;
+  endif
+
+  var poisonInfo := struct;
+  poisonInfo.+name := "defaultPoison";
+  poisonInfo.+level := cint(AP_GetSKill(who, MAGICLORE)/30);
+  poisonInfo.+skill := AP_GetSkill(who, MAGICLORE);
+  poisonInfo.+dosage := 5;
+  poisonInfo.+acc := who.acctname;
+  poisonInfo.+time := 40;
+
+  if (targ.isA(POLCLASS_WEAPON))
+    SetObjProperty(targ, "poisonInfo", poisonInfo);    
+  else
+    SetObjProperty(targ.weapon, "poisonInfo", poisonInfo);
+  endif
+
+        PlaySoundEffect(targ, SFX_SPELL_CURSE);
+
+  SendSysMessageEx(who, "A arma esta envenenada.", SSM_INFO);
+
+  
+  return 1;
+endprogram   
+
+
+

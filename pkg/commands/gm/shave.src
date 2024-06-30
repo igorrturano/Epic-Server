@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include "include/client";
+
+program command_RemoveHair(who, text)
+	text := Lower(text);
+
+	SendSysMessage(who, "Selecione o alvo.");
+	var targ := Target(who);
+
+	var cabelo := GetEquipmentByLayer(targ, LAYER_HAIR);
+	var barba := GetEquipmentByLayer(targ, LAYER_BEARD);
+
+	SendSysMessage(who, "Cor: "+CInt(cabelo.color)+" "+CInt(barba.color));
+
+	if ( text == "cabelo" )
+		DestroyItem(cabelo);
+	elseif ( text == "barba" )
+		DestroyItem(barba);
+	else
+		DestroyItem(cabelo);
+		DestroyItem(barba);
+	endif
+
+	return 1;
+endprogram

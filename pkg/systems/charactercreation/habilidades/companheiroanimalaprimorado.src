@@ -1,0 +1,126 @@
+
+use uo;
+
+include "include/say";
+include ":taming:taming";
+include ":gumps:yesNo";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include ":mounts:mounts";
+
+program pet(who)
+
+	var petserial := GetObjProperty(who, "companheiro");
+	var pet;
+	if (petserial != error)
+		pet := SystemFindObjectBySerial(petserial);
+	endif
+
+	var petAprimorado := GetObjProperty(pet, "aprimorado");
+
+	if (petAprimorado != error)
+		var yes := YesNo(who, "Voce ja tem um companheiro animal aprimorado, deseja liberta-lo?");
+		if (yes)
+			PlayMovingEffectXYZEx( pet.x, pet.y, pet.z, pet.x, pet.y, pet.z + 60, pet.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+
+			MoveObjectToLocation(pet, 10, 10, 10, pet.realm,  MOVEOBJECT_FORCELOCATION );
+			ErasePet(who, petserial);
+			pet.kill();
+
+			return 1;
+		else
+			SendSysMessageEx(who, "Voce continua com seu companheiro animal.", SSM_INFO);
+			TS_LowerDuration(who, "Companheiro Animal Aprimorado", 10000, 1);
+			return 1;
+		endif
+	else
+		SendSysMessageEx(who, "Escolha um dos seus animais para virar seu companheiro animal aprimorado.", SSM_REQUEST);
+		var targ := target(who);
+		if (!targ)
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			TS_LowerDuration(who, "Companheiro Animal Aprimorado", 10000, 1);
+			return 1;
+		endif
+
+		var tamed := GetObjProperty(who, "TamedPets");
+		if ( targ.serial in tamed )
+
+			var pettemplate := selectpet(who);
+
+			var z := targ.z+60;
+			if (z > 100)
+				z := 100;
+			endif
+
+			PlayMovingEffectXYZEx( targ.x, targ.y, z, targ.x, targ.y, targ.z, targ.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+			sleep(2);
+			var npc := CreateNpcFromTemplate(pettemplate, targ.x, targ.y, targ.z, 0, targ.realm );
+
+			if (npc)
+				SetObjProperty(npc, "owner", who.serial);
+				SetObjProperty(npc, "name", npc.name);
+				SetObjproperty(npc, "script", npc.script);
+				SetObjProperty(npc, "AntigoTreinadorID", who.serial);
+				SetObjProperty(npc, "aprimorado", 1);
+				SetObjProperty(who, "companheiro", npc.serial);
+
+				npc.script := ":ghaia:tamed";
+				RestartScript(npc);
+
+				MoveObjectToLocation(targ, 10, 10, 10, targ.realm,  MOVEOBJECT_FORCELOCATION );
+				targ.kill();
+				AddPet(who, npc.serial);
+			endif
+
+		else
+			SendSysMessageEx(who, "Voce precisa escolher um animal que voce adestrou.", SSM_FAIL);
+			TS_LowerDuration(who, "Companheiro Animal Aprimorado", 10000, 1);
+			return 1;
+		endif
+
+	endif
+
+
+endprogram
+
+function selectpet(who)
+
+	var gump := GFCreateGump();
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 220, 350);
+	GFResizePic(gump, 15, 40, 0x13BE, 190, 320);
+	GFTextLine(gump, 60, 50, 1153, "Companheiro Animal");
+
+	GFTilePic(gump, 50, 90, 9678);
+	GFTilePic(gump, 50, 140, 8399);
+	GFTilePic(gump, 50, 190, 9654);
+	GFTilePic(gump, 50, 240, 11670);
+
+	GFAddButton(gump, 30, 100,  2103, 2104, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 30, 150, 2103, 2104, GF_CLOSE_BTN, 2);
+	GFAddButton(gump, 30, 200, 2103, 2104, GF_CLOSE_BTN, 3);
+	GFAddButton(gump, 30, 250, 2103, 2104, GF_CLOSE_BTN, 4);
+
+	GFTextLine(gump, 100, 90, 1153, "Unicornio");
+	GFTextLine(gump, 100, 140, 1153, "Urso Espiritual");
+	GFTextLine(gump, 100, 190, 1153, "Pixie");
+	GFTextLine(gump, 100, 240, 1153, "Cusith");
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+
+	if (input == 2)
+		return ":brainai:spiritualbear";
+	elseif (input == 1)
+		return ":brainai:unicorn";
+	elseif (input == 3)
+		return ":brainai:fadinha";
+	elseif (input == 4 )
+		return ":brainai:cusidhe";
+	else
+		return 0;
+	endif
+
+
+endfunction

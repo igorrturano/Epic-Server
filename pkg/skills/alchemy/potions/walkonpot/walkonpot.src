@@ -1,0 +1,89 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/say";
+include "include/damage";
+
+program potionWalkOn(mobile, potion)
+	if ( mobile.dead )
+		// Ghosts dont trigger potions.
+		return 0;
+	elseif ( mobile.concealed )
+		// Concealed GM's dont trigger potions.
+		return 0;
+	endif
+	
+	var cfg := ReadConfigFile(":*:itemdesc");
+	cfg := cfg[potion.graphic];
+
+	if (potion.objtype == 0xdc08)
+
+		if (GetObjProperty(potion, "trap_inativa"))
+			return;
+		endif
+
+		var dmg := GetObjProperty(potion, "damage");
+		SendSysMessageEx(mobile, "Voce pisou em uma mina terrestre", SSM_FAIL);
+
+		foreach critter in (ListMobilesNearLocationEx( potion.x, potion.y, potion.z, 6, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, potion.realm ));
+			if (checkLineOfSight(potion, critter))
+
+				if ( critter.hidden)
+					critter.hidden := 0;
+					SendSysMessage(critter, "Voce foi revelado na explosao!");
+				endif
+
+				PlayObjectCenteredEffect( critter, 0x36b0, 7, 0x10 );
+				PlaySoundEffect( critter, 0x208);
+				//ApplyDamageEX(critter, dmg, DMG_FIRE);
+				DamageFLS(critter, dmg, DMG_FIRE);
+				efeitocascata(potion, mobile);
+
+			endif
+		endforeach
+
+		DestroyItem(potion);
+		
+	else
+
+    
+		PlaySoundEffect(potion, 0x03F);
+		PrintTextAbove(potion, "*Quebra*");
+		SendSysMessageEx(mobile, "Voce pisou em algo de vidro.", SSM_FAIL);
+
+		sleep(1);
+			
+		start_script("potions/exploder", {potion, mobile});
+
+		sleep(1);
+
+		DestroyItem(potion);
+		return 1;
+	endif
+
+endprogram
+
+function EfeitoCascata(potion, mobile)
+
+
+	var potions := {61280, 61281, 61282, 48915, 48916, 48917 };
+	var counter := 1;
+	foreach item in (ListItemsNearLocation(potion.x, potion.y, potion.z, 8, potion.realm))
+		if (checklineofsight(potion, item))
+			if((item.objtype in potions) && (item != potion))
+				if (counter > 10)
+					SetObjProperty(item, "nodmg", 1);
+				endif
+				SetObjProperty(item,"pause", 1);
+				SetObjProperty(item,"lit", 1);
+				var passparms := array;
+				passparms[1] := item;
+				passparms[2] := mobile;
+				var a := start_script(":alchemy:potions/exploder", passparms);
+				counter := counter + 1;
+			 endif
+		 endif
+	 endforeach
+	 endfunction

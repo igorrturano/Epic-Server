@@ -1,0 +1,76 @@
+use cfgfile;
+ 
+include ":spells:swordmage";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+
+program swordmage(who)
+
+	var prevsword := cint(GetObjProperty(who, "swordmage"));
+	if (prevsword)
+		var item := SystemFindObjectBySerial(prevsword);
+		if (item)
+			SendSysMessageEx(who, "Voce ja tem uma arma, ela vai virar uma arma comum.", SSM_FAIL);
+			EraseObjPRoperty(item, "swordmage");
+			EraseObjPRoperty(item, "cancast");
+			EraseObjPRoperty(item, "can_cast");
+			EraseObjProperty(who, "swordmage");
+			EraseObjProperty(item, "armaespiritual");
+			item.newbie := 0;
+			item.damage_physical_mod := 100;
+			item.damage_cold_mod := 100;
+			item.damage_fire_mod := 100;
+			item.damage_energy_mod := 100;
+			return; 
+		endif
+	endif
+
+	var opt := RadioGump(who, 200, 250, "Qual tipo de arma?", {"Axes", "Blunt", "Polearms", "Blades"});
+
+	var cfg := ReadConfigFile(":blacksmithy:SmithMenu");
+	var elem := FindConfigElem(cfg, opt);
+	var opts := GetConfigStringArray(elem, "Item");
+	
+	var arma := RadioGump(who, 200, 350, "Qual arma?", opts);
+
+	var wp := CreateItemInBackpack(who, GetObjTypeByName(arma), 1);
+
+	if (wp)
+		SetObjPRoperty(wp, "swordmage", who.serial);
+		SetObjPRoperty(wp, "cancast", 1);
+		SetObjPRoperty(wp, "can_cast", 1);
+		SetObjProperty(who, "swordmage", wp.serial);
+		SendSysMessageEx(who, "Voce criou a arma.", SSM_INFO);
+
+		if (TemHabilidade(wp, "Nexus"))
+			wp.newbie := 1;
+		endif
+
+		var dmg := RadioGump(who, 200, 250, "Qual o elemento da arma?", {"Fogo", "Energia", "Gelo"});
+
+		var info := struct;
+		if (dmg == "Fogo")
+			info.+type := DMG_FIRE;
+			wp.damage_physical_mod := -100;
+			wp.damage_fire_mod := 100;
+			wp.color := 1255;
+			SetObjProperty(wp, "HitScripts", {":combat:weaponHitScripts/FireHit"});
+		elseif (dmg == "Energia")
+			info.+type := DMG_ENERGY;
+			wp.damage_physical_mod := -100;
+			wp.damage_energy_mod := 100;
+			wp.color := 1273;
+			SetObjProperty(wp, "HitScripts", {":combat:weaponHitScripts/LightningHit"});
+		elseif( dmg == "Gelo")
+			info.+type := DMG_COLD;
+			wp.damage_physical_mod := -100;
+			wp.damage_cold_mod := 100;
+			wp.color := 1261;
+			SetObjProperty(wp, "HitScripts", {":combat:weaponHitScripts/IceHit"});
+		endif
+
+		SetObjProperty(wp, "armaespiritual", info);
+	endif
+
+endprogram

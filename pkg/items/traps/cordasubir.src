@@ -1,0 +1,96 @@
+use uo;
+use os;
+use util;
+
+include ":moongates:moongate";
+include "include/say";
+include ":attributes:attributes";
+include "include/damage";
+include ":charactercreation:resists";
+include ":taming:taming";
+
+program cordasubir(who,item)
+
+	if(!GetObjProperty(item, "cooldown"))
+		Start_Script(":traps:sumir:", item);
+	endif
+
+	var dest := GetObjProperty(item, "Destination");
+	var zdif;
+
+	if ( dest.z < who.z)
+		zdif := who.z - dest.z;
+	else
+		zdif := dest.z - who.z;
+	endif
+
+	var dmg := zdif/4;
+
+	if (Distance(who, item) > 1)
+		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
+		return;
+	endif
+
+	var i;
+	var j := GetObjProperty(item, "direcao");
+	var pets := ListPetsNear(who, 4);
+
+	for (i := 0;  i <= 5; i := i+1)
+
+	case(j)
+	"up":
+		PrintText(who, "*subindo*");
+		MoveObjectToLocation(who, who.x, who.y, who.z+1, who.realm, MOVEOBJECT_FORCELOCATION);
+
+		if (!Wait(who, 1))
+			if (CheckResist(who, REFLEXOS, 45))
+				SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
+				return 0;
+			else
+
+			SendSysMessageEx(who, "Voce se moveu e soltou da corda!", SSM_FAIL);
+			DamageFLS(who, cInt(dmg*i));
+			return 0;
+			endif
+		endif
+	"down":
+		PrintText(who, "*descendo*");
+		MoveObjectToLocation(who, who.x, who.y, who.z-1, who.realm, MOVEOBJECT_FORCELOCATION);
+
+		if (!Wait(who, 1))
+			if (CheckResist(who, REFLEXOS, 45))
+				SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
+				MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+				foreach pet in pets
+				MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+				endforeach
+			else
+
+			MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+			foreach pet in pets
+				MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+			endforeach
+			SendSysMessageEx(who, "Voce se moveu e soltou da corda!", SSM_FAIL);
+			DamageFLS(who, cInt(dmg/i));
+		endif
+		endif
+	endcase
+
+	endfor
+
+
+
+	if ( !dest )
+
+		return error{"errortext":="moongate has no destination set."};
+	else
+
+	MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		foreach pet in pets
+			MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		endforeach
+
+	endif
+
+
+endprogram

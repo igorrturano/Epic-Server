@@ -1,0 +1,173 @@
+
+use uo;
+use vitals;
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":tn:equipment";
+include "include/client";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+
+program formaselvagem(who)
+
+	if (GetObjProperty(who, "metamorfose") != error)
+		var human := yesno(who, "Voce quer voltar a forma humana?");
+		if (human)
+			Destransforma(who);
+		else
+			SendSysMessageEx(who, "Voce precisa virar humano antes de virar outra criatura.", SSM_FAIL);
+			TS_LowerDuration(who, "Forma Selvagem", 10000, 1);
+			return 1;
+		endif
+	endif
+
+	var gump := GFCreateGump();
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 220, 350);
+	GFResizePic(gump, 15, 40, 0x13BE, 190, 320);
+	GFTextLine(gump, 60, 50, 1153, "Forma Selvagem");
+
+	GFTilePic(gump, 50, 90, 8482);
+	GFTilePic(gump, 50, 120, 8478);
+	GFTilePic(gump, 50, 150, 8430);
+	GFTilePic(gump, 50, 180, 8444);
+
+	GFAddButton(gump, 30, 100,  2103, 2104, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 30, 130, 2103, 2104, GF_CLOSE_BTN, 2);
+	GFAddButton(gump, 30, 160, 2103, 2104, GF_CLOSE_BTN, 3);
+	GFAddButton(gump, 30, 190, 2103, 2104, GF_CLOSE_BTN, 4);
+
+	GFTextLine(gump, 100, 90, 1153, "Lobo");
+	GFTextLine(gump, 100, 120, 1153, "Urso");
+	GFTextLine(gump, 100, 160, 1153, "Passaro");
+	GFTextLine(gump, 100, 200, 1153, "Serpente");
+
+	var input := GFSendGump(who, gump);
+
+	input := input[0];
+	if (input == 2)
+		Transforma(who, "urso");
+	elseif (input == 1)
+		Transforma(who, "lobo");
+	elseif (input == 4)
+		Transforma(who, "cobra");
+	elseif (input == 3 )
+		Transforma(who, "aguia");
+	else
+		TS_LowerDuration(who, "Forma Selvagem", 10000, 1);
+	endif
+
+endprogram
+
+function Destransforma(who)
+
+	if (who.graphic == 212)
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 50);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 50;
+	elseif (who.graphic == 225)
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 10);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 10;
+	elseif (who.graphic == 21 )
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 20);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 20;
+
+	elseif (who.graphic == 5 )
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod - 10);
+		recalcvitals(who);
+		who.resist_physical_mod := who.resist_physical_mod - 10;
+	endif
+
+	var metamorfose := GetObjProperty(who, "metamorfose");
+	who.color := metamorfose.originalcolor;
+	who.graphic := metamorfose.originalgraphic;
+	who.truegraphic := metamorfose.originalgraphic;
+	//who.squelch(0);
+
+	EraseObjProperty(who, "metamorfose");
+
+endfunction
+
+function Transforma(who, animal)
+
+	UnequipAll(who);
+	PerformAction(who, ANIM_CAST_AREA);
+
+	var template;
+	var snd;
+	var graphic;
+	var newgraphic;
+
+	if (animal == "urso")
+		template := ":brainai:grizzlybear";
+		snd := 164;
+		graphic := 212;
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod + 50);
+		recalcvitals(who);
+		healdamage(who,  50);
+		who.resist_physical_mod := who.resist_physical_mod + 50;
+	elseif (animal == "lobo")
+		template := ":brainai:wolf";
+		snd := 231;
+		graphic := 225;
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod + 10);
+		recalcvitals(who);
+		healdamage(who,  10);
+		who.resist_physical_mod := who.resist_physical_mod + 10;
+	elseif (animal == "cobra")
+		template := ":brainai:giantserpent2";
+		snd := 221;
+		graphic := 21;
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod + 20);
+		recalcvitals(who);
+		healdamage(who,  20);
+		who.resist_physical_mod := who.resist_physical_mod + 20;
+	elseif (animal == "aguia")
+		template := ":brainai:eagle";
+		snd := 144;
+		graphic := 5;
+		var hitsmod := GetObjProperty(who, "hitsmod");
+		SetObjProperty(who, "hitsmod", hitsmod + 10);
+		recalcvitals(who);
+		healdamage(who,  10);
+		who.resist_physical_mod := who.resist_physical_mod + 10;
+	endif
+
+	var npc := CreateNpcFromTemplate(template, who.x,  who.y, who.z, 0, who.realm);
+
+	PrintText(who, "*transformando-se*");
+	if (npc)
+		//detach();
+		Playsoundeffect(npc, snd);
+		npc.facing := who.facing;
+		npc.frozen := 1;
+		npc.color  := 30000;
+		PerformAction(npc, 5);
+		sleep(2);
+		MoveObjectToLocation(npc, 10, 10, 10, npc.realm,  MOVEOBJECT_FORCELOCATION);
+		npc.kill();
+
+		var metamorfose := struct;
+		metamorfose.+originalcolor := who.color;
+		metamorfose.+originalgraphic := who.graphic;
+		metamorfose.+newgraphic := graphic;
+		SetObjProperty(who, "metamorfose", metamorfose);
+		who.graphic := graphic;
+		who.truegraphic := graphic;
+	//	who.squelch(-1);
+		who.color := 0;
+	endif
+
+
+endfunction

@@ -1,0 +1,49 @@
+ 
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	var time :=  AP_GetSkill(who, MAGICLORE);
+	var bonus;
+	if (time <= 40)
+		bonus := 0.4;
+	elseif ((time > 40) && (time <= 60) )
+		bonus := 0.6;
+	elseif ((time > 60) && (time <= 75) )
+		bonus := 0.8;
+	elseif ((time > 75) && (time <= 89) )
+		bonus := 0.9;
+	elseif (time > 89)
+		bonus := 1.1;
+	else
+		bonus := 0.4;
+	endif
+		
+	if (targ.isA(POLCLASS_WEAPON))
+		SetCooldown(targ, "blessweapon", time);
+		SetObjProperty(targ, "blessedbonus", bonus);
+		start_script( ":spells:armasagrada", {targ, time} );
+	else
+		SetCooldown(targ.weapon, "blessweapon", time);
+		SetObjProperty(targ.weapon, "blessedbonus", bonus);
+		start_script( ":spells:armasagrada", {targ.weapon, time} );
+	endif
+
+        PlaySoundEffect(targ, SFX_BLESS);
+
+	SendSysMessageEx(who, "Voce consagrou a arma.", SSM_INFO);
+
+	
+	return 1;
+endprogram    

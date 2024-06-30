@@ -1,0 +1,42 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/sounds";
+include "include/client";
+
+use vitals;
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	
+	var points := level;
+		
+	//if (GetObjProperty(mobile, "coMod") != error)
+	//	return;
+	//endif
+
+	var stam_regen := points;
+	
+	if (GetObjProperty(mobile, "auraStamRegenMod") != error)
+		return;
+	else
+		//sendsysmessage(mobile, "StamRegenRate anterior: "+AP_GetVitalRegenRateMod(mobile, "Stamina")) ;
+		//sendsysmessage(mobile, "StamRegenRate aplicado: "+(AP_GetVitalRegenRateMod(mobile, "Stamina") + stam_regen)) ;
+		AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") + stam_regen );
+		//sendsysmessage(mobile, "StamRegenRate novo: "+AP_GetVitalRegenRateMod(mobile, "Stamina")) ;
+		SetObjProperty(mobile, "auraStamRegenMod", stam_regen);
+		//sendsysmessage(mobile, "O seu folego se recupera mais depressa proximo a "+attacker.name) ;
+	endif
+
+	PlaySoundEffect(mobile, SFX_BLESS);
+       PlayObjectCenteredEffectEx(mobile, GFX_BLUE_SPARKLE_GROUND, 7, 16, 16);			
+
+	//SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
+	
+	return 1;
+endprogram

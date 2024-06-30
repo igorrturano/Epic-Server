@@ -1,0 +1,52 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/client";
+include "include/say";
+include "include/sysEvent";
+include "include/eventID";
+include ":tn:cooldown";
+
+program taunt(who)
+
+	PrintText(who, "*urra*");
+	case (who.graphic)
+    401:
+		PlaySoundEffect( who, 0x339 );
+    400:
+		PlaySoundEffect( who, 0x44B );
+    1828:
+		PlaySoundEffect( who, 0x44B );
+    1829:
+		PlaySoundEffect( who, 0x339 );
+    1830:
+		PlaySoundEffect( who, 0x44B );
+    1831:
+		PlaySoundEffect( who, 0x339 );
+    1832:
+		PlaySoundEffect( who, 0x44B );
+    1833:
+		PlaySoundEffect( who, 0x339 );
+    1834:
+		PlaySoundEffect( who, 0x44B );
+    1835:
+		PlaySoundEffect( who, 0x339 );
+	endcase
+	PerformAction(who, ANIM_HIT);
+    var nearby := ListMobilesNearLocation( who.x ,who.y, who.z, 8, who.realm);
+    var provoke_times := cint(AP_GetSkill(who, PARRY)/20);
+    var i := 0;
+    while(i < provoke_times)
+        foreach char in nearby
+            var event := struct{"type":=EVID_TAUNT, "source":=who};
+            SendEvent(char, event);
+        endforeach
+
+        sleep(2);
+        i++;
+    endwhile
+    SetCooldown(who, "resistenciaheroica", cint(AP_GetSkill(who, PARRY)/5));
+	//TS_StartTimer(who, "provocar", 10); //bonus de parry e de reduzir hit_chance
+endprogram

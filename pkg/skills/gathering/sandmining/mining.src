@@ -1,0 +1,114 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/client";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:toolWear";
+include ":gathering:mining";
+include "include/say";
+include ":charactercreation:habilidades";
+
+const SCOOP_OF_SAND := 0x6075;
+const MINING_ANIMATION := 0x0B;
+const MINING_SOUND := 0x126;
+
+DF_DEBUG_MODE := 0;
+
+var resources_data_file := DFOpenDataFile("MiscResources", DF_CREATE);
+
+program SandMining(who, scoop)
+
+	SendSysMessageEx(who, "Onde voce quer pegar areia?", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+
+	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
+		SendSysMessageEx(who, "Muito longe.", SSM_FAIL);
+		return;
+	elseif ( !CanMine(targ, "Sand") )
+		SendSysMessageEx(who, "Voce nao pode pegar areia aqui.", SSM_FAIL);
+		return;
+	endif
+
+	var location_name := CStr( targ.x+"x"+targ.y );
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+
+	while(MiningLoop(who, scoop, my_x, my_y, my_facing, location_name) )
+		if(TemHabilidade(who, "Vigor do Extrator"))
+			if ( AP_GetVital(who, "Stamina") < 2)
+				SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+				break;
+			endif
+			AP_ConsumeVital(who, "Stamina", 2);
+		else
+			if ( AP_GetVital(who, "Stamina") < 3)
+				SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+				break;
+			endif
+			AP_ConsumeVital(who, "Stamina", 3);
+		endif
+		CheckToolWear(who, scoop, GATHERING);
+		sleep(3);
+	endwhile
+	SendSysMessageEx(who, "Voce parou de cavar.", SSM_FAIL);
+endprogram
+
+function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
+
+	var i;
+	for (i:=0; i < RandomDiceRoll("1d2"); i := i+1)
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		sleep(1);
+		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+			return 0;
+		endif
+	endfor
+
+	var location_elem := DFFindElement(resources_data_file, location_name, DF_CREATE);
+	var resource_type := hex(SCOOP_OF_SAND);
+
+	var resource_amount := ResourceAmount( resource_type, location_elem );
+
+	if (resource_amount <= 0)
+		SendSysMessageEx(who, "Nao tem areia utilizavel por aqui.", SSM_FAIL);
+		return 0;
+	endif
+
+	SetResource(resource_type, location_elem, resource_amount-1);
+
+	var difficulty := 20;//CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
+
+	var skill := Cint(AP_GetSkill(who, GATHERING));
+
+	if ( SkillCheck(who, GATHERING, difficulty) > 0 )
+		var amt := min(CInt(resource_amount),CInt(skill/20));
+		if(TemHabilidade(who, "Minerador Talentoso"))
+			amt := amt + 2;
+		endif
+		if (amt <= 0)
+			amt := 1;
+		endif
+		resource_amount := resource_amount - amt;
+		if (resource_amount < 0)
+			resource_amount := 0;
+		endif
+		/*if(amt>1)
+			SendSysMessageEx(who, "Voce pegou "+amt+" porcoes de areia.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Voce pegou uma porcao de areia.", SSM_INFO);
+		endif*/
+		SendSysMessageEx(who, "Voce pegou {} porcao de areia.".format(amt), SSM_INFO);
+		SetResource(resource_type, location_elem, resource_amount); //diminui a quantidade de areia disponivel no local
+		CreateItemInBackPack(who, SCOOP_OF_SAND, amt);
+		return 1;
+	else
+		SendSysMessageEx(who, "Voce e incapaz de pegar areia aqui.", SSM_FAIL);
+	endif
+endfunction

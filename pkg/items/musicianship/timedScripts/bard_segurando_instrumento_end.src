@@ -1,0 +1,10 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_Bard_segurando_instrumento_end(alvo)
+	EraseObjProperty(alvo, "#Bard_instrumento");
+	return 1;
+endprogram

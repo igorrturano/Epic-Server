@@ -1,0 +1,240 @@
+/* $Id: flip.src 487 2006-06-29 11:23:05Z austinheilman $
+ *
+ */
+
+use uo;
+use os;
+use math;
+use util;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+
+var BKGND_SILVERTRIM := GFCfgConst("Defaults", "BackGround");
+
+program stonework(who)
+	SendSysMessageEx(who, "Selecione o Objeto de Construcao", SSM_INFO);
+	var item := Target(who);
+	//checa propriedades
+	if (!item)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	elseif (!GetObjProperty(item, "pedreiro"))
+		SendSysMessage(who, "Esse comando serve apenas para itens de construcao.");
+		return 0;
+	elseif (CInt(GetObjProperty(item, "pedreiro")) != who.serial)
+		SendSysMessage(who, "Voce nao fez esse item!");
+		return 0;
+	endif
+	
+	//inicia a gump;
+	while (1)
+		var gump := GFCreateGump();
+		GFDisposable(gump, 0);
+		GFResizePic(gump, 0, 25, 5120, 240, 150);
+		GFAddAlphaRegion(gump, 0, 25, 240, 150);
+		
+		GFAddButton(gump, 140, 20, 0x5686, 0x5687, GF_CLOSE_BTN);
+		
+		GFGumpPic(gump, 15, 43, 0x56D0);
+		GFTextLine(gump, 60, 50, 600, "-- Menu de Masonry --");
+		
+		
+		GFAddButton(gump, 20, 88, 2361, 2362, GF_CLOSE_BTN, 1);
+		GFTextLine(gump, 38, 85, 40, "Destruir");
+		
+		if ( ReadGameClock() < CInt(GetObjProperty(item, "validade")) )
+			GFAddButton(gump, 20, 113, 2361, 2362, GF_CLOSE_BTN, 2);
+			GFTextLine(gump, 38, 110, 40, "Girar");
+			
+			GFTextLine(gump, 135, 85, 40, "Mover Objeto");
+			GFAddButton(gump, 160, 105, 9760, 9761, GF_CLOSE_BTN, 3);
+			
+			GFAddButton(gump, 178, 125, 9762, 9763, GF_CLOSE_BTN, 4);
+			
+			GFAddButton(gump, 160, 145, 9764, 9765, GF_CLOSE_BTN, 5);
+			
+			GFAddButton(gump, 140, 125, 9766, 9767, GF_CLOSE_BTN, 6);
+			
+			GFTextLine(gump, 38, 135, 40, "Altura");
+			GFAddButton(gump, 90, 138, 9760, 9761, GF_CLOSE_BTN, 7);
+			
+			GFAddButton(gump, 105, 138, 9764, 9765, GF_CLOSE_BTN, 8);
+		endif
+
+		
+		
+		
+		var input := GFSendGump(who, gump);
+		
+//		SendSysMessage(who, "Input: " + input[0]);
+		
+		item.movable := 1;
+		case (input[0])
+			10: mudar(who, item); break;
+			1: DestroyItem(item); break;
+			2: turn(who, item); break;
+			3: MoveObjectToLocation(item, item.x, item.y-1, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			5: MoveObjectToLocation(item, item.x, item.y+1, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			4: MoveObjectToLocation(item, item.x+1, item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			6: MoveObjectToLocation(item, item.x-1, item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			7:
+				if (item.z+1 > 100)
+					SendSysMessage(who, "Nao foi possivel mover!");
+				elseif (item.desc["stair"] && item.z+1 < CInt(GetMapInfo(item.x, item.y, item.realm).z - 4))
+					SendSysMessage(who, "Nao foi possivel mover!");
+				elseif (!item.desc["stair"] && item.z+1 < GetMapInfo(item.x, item.y, item.realm).z)
+					SendSysMessage(who, "Nao foi possivel mover!");
+				else
+					MoveObjectToLocation(item, item.x, item.y, CInt(item.z+1), item.realm, MOVEOBJECT_FORCELOCATION);
+				endif
+			8:
+				if (item.z-1 < -100)
+					SendSysMessage(who, "Nao foi possivel mover!");
+				elseif (item.desc["stair"] && item.z-1 < CInt(GetMapInfo(item.x, item.y, item.realm).z - 4))
+					SendSysMessage(who, "Nao foi possivel mover!");
+				elseif (!item.desc["stair"] && item.z-1 < GetMapInfo(item.x, item.y, item.realm).z)
+					SendSysMessage(who, "Nao foi possivel mover!");
+				else
+					MoveObjectToLocation(item, item.x, item.y, CInt(item.z-1), item.realm, MOVEOBJECT_FORCELOCATION);
+				endif			
+		endcase
+		item.movable := 0;
+		
+		if (input[0] == 0 || input[0] == 1)
+			break;
+		endif
+		
+	endwhile
+	
+	
+	
+/*	
+
+
+	var param := SplitWords(text);
+	if (param.Size() < 1)
+		SendSysMessage(who, "Sintaxe: .stonework <parametro> <modificador>");
+		SendSysMessage(who, "Lista de parametros: girar, destruir, norte, sul, leste, oeste, altura");
+		SendSysMessage(who, "<modificador> vale apenas para altura");
+		return 0;
+	else
+		var item := Target(who);
+		if (!item)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		elseif (!GetObjProperty(item, "pedreiro"))
+			SendSysMessage(who, "Esse comando serve apenas para itens de construcao.");
+			return 0;
+		elseif (CInt(GetObjProperty(item, "pedreiro")) != who.serial)
+			SendSysMessage(who, "Voce nao fez esse item!");
+			return 0;
+		elseif (ReadGameClock() > CInt(GetObjProperty(item, "validade")) && param[1] != "destruir")
+			SendSysMessage(who, "Voce nao pode mais mover esse item! Existe um limite de tempo.");
+			SendSysMessage(who, "Unico parametro ainda valido: destruir");
+			return 0;
+		endif
+		item.movable := 1;
+		case (param[1])
+			"mudar": mudar(who, item); break;
+			"girar": turn(who, item); break;
+			"destruir": DestroyItem(item); break;
+			"norte": MoveObjectToLocation(item, item.x, item.y-1, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			"sul": MoveObjectToLocation(item, item.x, item.y+1, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			"leste": MoveObjectToLocation(item, item.x+1, item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			"oeste": MoveObjectToLocation(item, item.x-1, item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION); break;
+			"altura":
+				var mod := CInt(param[2]);
+				if (!mod)
+					SendSysMessage(who, "Voce precisa indicar o modificador da altura!");
+				elseif (mod < -20 || mod > 20)
+					SendSysMessage(who, "Nao foi possivel mover!");
+					SendSysMessage(who, "Limite do modificador: -20 a 20");
+				elseif (item.z+mod > 100 || item.z+mod < -100)
+					SendSysMessage(who, "Nao foi possivel mover!");
+				elseif (item.desc["stair"] && item.z+mod < CInt(GetMapInfo(item.x, item.y, item.realm).z - 4))
+					SendSysMessage(who, "Nao foi possivel mover!");
+				elseif (!item.desc["stair"] && item.z+mod < GetMapInfo(item.x, item.y, item.realm).z)
+					SendSysMessage(who, "Nao foi possivel mover!");
+				else
+					MoveObjectToLocation(item, item.x, item.y, CInt(item.z+mod), item.realm, MOVEOBJECT_FORCELOCATION); break;
+				endif
+				break;
+			default: SendSysMessage(who, "Parametro inexistente!");
+		endcase
+		item.movable := 0;
+	endif*/
+endprogram
+
+function turn(who, item)
+
+	var flipConfig  := ReadConfigFile(":stonework:turn");
+	var flipGraphic := flipConfig[CInt(item.graphic)].ChangeTo;
+
+	if( !flipGraphic )
+		SendSysMessage(who, "That item cannot be re-orientated.");
+		return 0;
+	endif
+
+	item.graphic := flipGraphic;
+
+	return 1;
+endfunction
+
+function mudar(who, item)
+
+	var cfg  := ReadConfigFile(":stonework:mudar");
+	var elems := GetconfigStringKeys(cfg);
+	var graphics;
+	var ok := 0;
+
+
+
+	foreach elem in elems
+		var cfgelem := FindConfigElem(cfg, elem);
+		var basegraphics := GetConfigString(cfgelem, "graphics");
+		basegraphics := SplitWords(basegraphics);
+			foreach graphic in basegraphics
+				if (CInt(graphic) == item.graphic)
+					graphics := GetConfigString(cfgelem, "graphics");
+					ok := 1;
+				endif
+			endforeach			
+	endforeach
+	if (ok == 0)
+		return 0;
+	endif
+
+	var b := 1;
+	var x := 0;
+	var y := 0;
+
+	var gump := GFCreateGump(50, 25);
+	GFResizePic(gump, 2, 0, BKGND_SILVERTRIM, 600, 600);
+	GFTextLine(gump, 200, 30, 600, "Escolha a Nova Forma desejada" );
+	GFTilePic(gump, 160, 30, 4020, 0);
+	GFTilePic(gump, 160, 30, 4021, 0);
+	GFTilePic(gump, 380, 30, 4020, 0);
+	GFTilePic(gump, 380, 30, 4021, 0);
+	graphics := SplitWords(graphics);
+	foreach graphic in graphics
+		GFTilePic(gump, (30 + x), (70 + y), CInt(graphic), 0);
+		GFAddButton(gump, (35 + x), (180 + y), 4005, 4007, GF_CLOSE_BTN, b );
+		x := x + 70;
+		b := b + 1;
+		if (x > 500)
+			y := y + 180;
+			x := 0;		
+		endif
+	endforeach
+
+	var ifres := GFSendGump(who, gump);
+	
+	if (ifres[0] != 0)
+	item.graphic := Cint(graphics[ifres[0]]);
+	endif
+
+	return 1;
+endfunction

@@ -1,0 +1,23 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	var disfarce := GetObjProperty(who, "disfarce");
+	if (!disfarce)
+		return;
+	endif
+
+	SetObjProperty(who, "originalname", who.name);
+	SetName(who, disfarce);
+	
+	return 1;
+endprogram
+ 

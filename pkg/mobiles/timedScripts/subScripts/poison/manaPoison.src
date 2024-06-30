@@ -1,0 +1,76 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/damage";
+
+program default_poison(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+	
+		if(GetObjProperty(who, "manaPoison"))
+ 		SendSysMessageEx(who, "O alvo ja esta envenenado", SSM_FAIL);
+ 		return;
+	endif
+
+	if ( !level )
+		level := 1;
+	endif
+
+	if ( attacker )
+		SetScriptController(attacker);
+	endif
+
+	var stam := 0;
+	var loop := 5;
+	var poisonedmsg := "";
+	var time := 10;
+	case (level)
+		default:
+		1: 
+		   stam := 5;
+		2: 
+		   stam := 10;
+		   time := 8;
+		   loop := 6;
+		3: 
+		   stam := 15;
+		   time := 6;
+		   loop := 8;
+		4: 
+		   stam := 20;
+		   time := 4;
+		   loop := 10;
+		5: 
+		   stam := 25;
+		   time := 2;
+		   loop := 12;
+	endcase
+	
+var i := 0;
+	while(i <= loop)
+
+		Set_Critical(1);
+		var curr := CInt(AP_GetVital(who, "Mana"));
+		if ( curr >= stam )
+			AP_SetVital(who, "Mana", (curr-stam));
+		else
+			AP_SetVital(who, "Mana", 0);
+		endif
+		Set_Critical(0);
+		
+		i := i + 1;
+		sleep(time);
+		
+	endwhile
+	
+	TS_LowerDuration(who, "manaPoison", -1);
+	var script := GetProcess(GetPid());
+	script.kill();
+	
+
+	return;
+endprogram
+

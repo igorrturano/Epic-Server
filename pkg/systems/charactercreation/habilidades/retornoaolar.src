@@ -1,0 +1,30 @@
+use uo;
+use os;
+
+include "include/say";
+
+program versatil(who)
+
+	SendSysMessageEx(who, "Escolha um item na sua mochila, em 2 minutos ele voltara para voce.", SSM_REQUEST);
+
+	var targ := Target(who);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	var aux := targ;
+	while (aux.container)
+		aux := aux.container;
+	endwhile
+	if (aux != who)
+		SendsysMessageEx(who, "O item deve estar na sua mochila.", SSM_FAIL);
+		return;
+	endif
+
+	detach();
+	sleep(120);
+	SendSysMessageEx(who, "Item retornou.", SSM_INFO);
+	MoveItemToContainer(targ, who.backpack);
+
+endprogram 

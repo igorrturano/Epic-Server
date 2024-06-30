@@ -1,0 +1,983 @@
+use uo;
+use math;
+use cfgfile;
+use vitals;
+use os;
+
+include "include/client";
+include "include/sounds";
+include ":attributes:attributes";
+include "include/damage";
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":fls_core:fls_crafting";
+
+program menurecipe(who)
+
+    if ( GetEquipmentByLayer(who, LAYER_MOUNT) )
+		SendSysMessage(who, "Voce nao pode pesquisar montado.");
+		return;
+	endif
+
+    if (!CheckforBooks(who))
+		SendSysMessage(who, "Voce esta distante demais de um local de estudo");
+		return;
+    endif
+
+	if (!CheckForPen(who.backpack, 0))
+		SendSysMessage(who, "Voce nao possui uma pena e o tinteiro para escrever.");
+		return;
+	endif
+
+	var pesquisador := AP_GetVitalMaximumValue(who, "MANA");
+
+	if (pesquisador < 40 )
+		SendSysMessage(who, "Voce nao sabe ler ou precisa comer algo");
+		return;
+	endif
+
+	var gump := GFCreateGump(220, 70);
+	GFGumpPic(gump, 0, 0, 0x254E);
+	GFResizePic(gump, 0, 0, 0x254E, 200, 100);
+	GFTextLine(gump, 30, 15, 2100, "Pesquisa Extensiva");
+	GFTextLine(gump, 30, 35, 2100, "Pesquisar Ativamente");
+	GFTextLine(gump, 30, 55, 2100, "Pesquisa em Andamento");
+	GFAddButton(gump, 15, 17, 2117, 2118, 1, 10);
+	GFAddButton(gump, 15, 37, 2117, 2118, 1, 20);
+	GFAddButton(gump, 15, 57, 2117, 2118, 1, 30);
+	var input := GFSendGump(who, gump);
+	input  := input[0];
+	if (input == 10)
+		aprenderrecipe(who);
+	elseif (input == 20)
+		aprenderreciperapido(who);
+	elseif (input ==  30)
+		pesquisalearn(who);
+	endif
+endprogram
+
+function aprenderrecipe(who)
+
+	var aprendendo := GetObjProperty(who, "aprenderrecipe");
+	if (aprendendo != error)
+		var cancelar := YesNo(who, "Voce ainda esta fazendo uma pesquisa. Deseja cancelar e comecar outra?", "Sim", "Nao");
+		if (!cancelar)
+			SendSysMessage(who, "Cancelado.");
+			return;
+		else
+			EraseObjProperty(who, "aprenderrecipe");
+		endif
+	endif
+
+	var recipe := struct;
+
+	var ferreiro:= AP_GetSkill(who, METALWORKING);
+	var costureiro:= AP_GetSkill(who, DomesticWork);
+	var alquimista:= AP_GetSkill(who, ALCHEMY);
+	var mago:= AP_GetSkill(who, MAGERY);
+	var carpenter:= AP_GetSkill(who, WOODWORKING);
+	var pesquisador := AP_GetVitalMaximumValue(who, "MANA");
+
+	if (( ( ferreiro >= 40) || (costureiro >= 40 ) || (carpenter >= 40 )) && (alquimista >= 50) )
+
+		var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Instrucao de Fabricacao", "Receita Alquimica", "Pesquisar Conhecimento Antigo"});
+			recipe.+type := type;
+
+			if (recipe.type == "Instrucao de Fabricacao")
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1", "2", "3"});
+
+				CalculateResearchTime(recipe);
+
+				if (Cint(recipe.power) == 1)
+					recipe.+difficulty := 40;
+				elseif (Cint(recipe.power) == 2 )
+					recipe.+difficulty := 60;
+				elseif (Cint(recipe.power) == 3 )
+					recipe.+difficulty := 80;
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa magia imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+			elseif (recipe.type == "Receita Alquimica")
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Receita Alquimica: ", {"1", "2", "3"});
+
+				CalculateResearchTime(recipe);
+
+				if (Cint(recipe.power) == 1)
+					recipe.+difficulty := 40;
+				elseif (Cint(recipe.power) == 2 )
+					recipe.+difficulty := 60;
+				elseif (Cint(recipe.power) == 3 )
+					recipe.+difficulty := 80;
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa pesquisa imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			elseif (recipe.type == "Pesquisar Conhecimento Antigo")
+
+				recipe.+power := RadioGump(who, 400, 305, "Nunca se sabe o que vai encontrar: ", {"Iniciar Pesquisa", "Cancelar"});
+
+				if (recipe.power == "Iniciar Pesquisa")
+
+					recipe.power := (RandomInt(3)+1);
+
+					CalculateResearchTime(recipe);
+
+					if (Cint(recipe.power) == 1)
+						recipe.+difficulty := 40;
+					elseif (Cint(recipe.power) == 2 )
+						recipe.+difficulty := 60;
+					elseif (Cint(recipe.power) == 3 )
+						recipe.+difficulty := 80;
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			endif
+
+	elseif ( ( mago >= 40) && (alquimista >= 40 ) )
+
+		var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Magia", "Receita Alquimica", "Pesquisar Conhecimento Antigo" });
+			recipe.+type := type;
+
+		if ( recipe.type == "Magia")
+			recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Magia: ", {"1", "2", "3"});
+
+			CalculateResearchTime(recipe);
+
+			if (Cint(recipe.power) == 1)
+				recipe.+difficulty := 40;
+			elseif (Cint(recipe.power) == 2 )
+				recipe.+difficulty := 60;
+			elseif (Cint(recipe.power) == 3 )
+				recipe.+difficulty := 80;
+			endif
+
+			var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa magia imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+		elseif ( recipe.type == "Receita Alquimica" )
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Receita Alquimica: ", {"1", "2", "3"});
+
+				CalculateResearchTime(recipe);
+
+				if (Cint(recipe.power) == 1)
+					recipe.+difficulty := 40;
+				elseif (Cint(recipe.power) == 2 )
+					recipe.+difficulty := 60;
+				elseif (Cint(recipe.power) == 3 )
+					recipe.+difficulty := 80;
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa pesquisa imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+		elseif (recipe.type == "Pesquisar Conhecimento Antigo")
+
+				recipe.+power := RadioGump(who, 400, 305, "Nunca se sabe o que vai encontrar: ", {"Iniciar Pesquisa", "Cancelar"});
+
+				if (recipe.power == "Iniciar Pesquisa")
+
+					recipe.power := (RandomInt(3)+1);
+
+					CalculateResearchTime(recipe);
+
+					if (Cint(recipe.power) == 1)
+						recipe.+difficulty := 40;
+					elseif (Cint(recipe.power) == 2 )
+						recipe.+difficulty := 60;
+					elseif (Cint(recipe.power) == 3 )
+						recipe.+difficulty := 80;
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+		endif
+
+	elseif ( ( ferreiro >= 40) || (costureiro >= 40 ) || (carpenter >= 40 ) )
+			var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Instrucao de Fabricacao", "Pesquisar Conhecimento Antigo" , "Cancelar"});
+			recipe.+type := type;
+
+			if (recipe.type == "Instrucao de Fabricacao")
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1", "2", "3"});
+
+				CalculateResearchTime(recipe);
+
+				if (Cint(recipe.power) == 1)
+					recipe.+difficulty := 40;
+				elseif (Cint(recipe.power) == 2 )
+					recipe.+difficulty := 60;
+				elseif (Cint(recipe.power) == 3 )
+					recipe.+difficulty := 80;
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa magia imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			elseif
+				(recipe.type == "Pesquisar Conhecimento Antigo")
+
+				recipe.+power := RadioGump(who, 400, 305, "Nunca se sabe o que vai encontrar: ", {"Iniciar Pesquisa", "Cancelar"});
+
+				if (recipe.power == "Iniciar Pesquisa")
+
+					recipe.power := (RandomInt(3)+1);
+
+					CalculateResearchTime(recipe);
+
+					if (Cint(recipe.power) == 1)
+						recipe.+difficulty := 40;
+					elseif (Cint(recipe.power) == 2 )
+						recipe.+difficulty := 60;
+					elseif (Cint(recipe.power) == 3 )
+						recipe.+difficulty := 80;
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+			else
+				SendSysMessage(who, "Cancelado.");
+				return;
+			endif
+
+	elseif ( ( mago >= 40) )
+			var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Magia", "Pesquisar Conhecimento Antigo", "Cancelar"});
+			recipe.+type := type;
+			if (recipe.type == "Magia")
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Magia: ", {"1", "2", "3"});
+
+				CalculateResearchTime(recipe);
+
+				if (Cint(recipe.power) == 1)
+					recipe.+difficulty := 40;
+				elseif (Cint(recipe.power) == 2 )
+					recipe.+difficulty := 60;
+				elseif (Cint(recipe.power) == 3 )
+					recipe.+difficulty := 80;
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa magia imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			elseif (recipe.type == "Pesquisar Conhecimento Antigo")
+
+				recipe.+power := RadioGump(who, 400, 305, "Nunca se sabe o que vai encontrar: ", {"Iniciar Pesquisa", "Cancelar"});
+
+				if (recipe.power == "Iniciar Pesquisa")
+
+					recipe.power := (RandomInt(3)+1);
+
+					CalculateResearchTime(recipe);
+
+					if (Cint(recipe.power) == 1)
+						recipe.+difficulty := 40;
+					elseif (Cint(recipe.power) == 2 )
+						recipe.+difficulty := 60;
+					elseif (Cint(recipe.power) == 3 )
+						recipe.+difficulty := 80;
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+			else
+				SendSysMessage(who, "Cancelado.");
+				return;
+			endif
+
+	elseif ( ( alquimista >= 40) )
+
+		var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Receita Alquimica", "Pesquisar Conhecimento Antigo", "Cancelar"});
+
+		recipe.+type := type;
+
+		if ( recipe.type == "Receita Alquimica" )
+
+			recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Receita Alquimica: ", {"1", "2", "3"});
+
+				CalculateResearchTime(recipe);
+
+				if (Cint(recipe.power) == 1)
+					recipe.+difficulty := 40;
+				elseif (Cint(recipe.power) == 2 )
+					recipe.+difficulty := 60;
+				elseif (Cint(recipe.power) == 3 )
+					recipe.+difficulty := 80;
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa? Ela vai requerer " + recipe.end + " dias de estudo. ", "Sim", "Nao");
+
+				if (aprender)
+					recipe.+start := GetGlobalProperty("daynumber");
+					recipe.+year := GetGlobalProperty("current_year");
+					if(who.cmdlevel > 1)
+						var gm := YesNo(who, "Voce eh gm, deseja concluir essa pesquisa imediatamente?", "Sim", "Nao");
+						if (gm)
+							recipe.end := 0;
+						endif
+					endif
+					if (!ConsumeSubstance(who.backpack, 0xE34, 20));
+						SendSysMessageEx(who, "Voce precisa de no minimo 20 pergaminhos em branco para iniciar uma pesquisa extensiva", SSM_FAIL);
+						return;
+					else
+						SetObjProperty(who, "aprenderrecipe", recipe);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+		elseif (recipe.type == "Pesquisar Conhecimento Antigo")
+
+				recipe.+power := RadioGump(who, 400, 305, "Nunca se sabe o que vai encontrar: ", {"Iniciar Pesquisa", "Cancelar"});
+
+				if (recipe.power == "Iniciar Pesquisa")
+
+					recipe.power := (RandomInt(3)+1);
+
+					CalculateResearchTime(recipe);
+
+					if (Cint(recipe.power) == 1)
+						recipe.+difficulty := 40;
+					elseif (Cint(recipe.power) == 2 )
+						recipe.+difficulty := 60;
+					elseif (Cint(recipe.power) == 3 )
+						recipe.+difficulty := 80;
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+		elseif ( ( pesquisador >= 40) )
+
+			var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Pesquisar Conhecimento Antigo", "Cancelar"});
+
+			recipe.+type := type;
+
+			if (recipe.type == "Pesquisar Conhecimento Antigo")
+
+				recipe.+power := RadioGump(who, 400, 305, "Nunca se sabe o que vai encontrar: ", {"Iniciar Pesquisa", "Cancelar"});
+
+				if (recipe.power == "Iniciar Pesquisa")
+
+					recipe.power := (RandomInt(3)+1);
+
+					CalculateResearchTime(recipe);
+
+					if (Cint(recipe.power) == 1)
+						recipe.+difficulty := 40;
+					elseif (Cint(recipe.power) == 2 )
+						recipe.+difficulty := 60;
+					elseif (Cint(recipe.power) == 3 )
+						recipe.+difficulty := 80;
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			endif
+		else
+			SendSysMessage(who, "Cancelado.");
+			return;
+		endif
+	endif
+
+endfunction
+
+function CalculateResearchTime(byref recipe)
+
+	var basictime := 0;
+
+	if (recipe.power == "1")
+		basictime := basictime + 2;
+	endif
+
+	if (recipe.power == "2")
+		basictime := basictime + 3;
+	endif
+
+	if (recipe.power == "3")
+		basictime := basictime + 4;
+	endif
+
+	if (recipe.type == "Receita Alquimica" )
+		basictime := basictime + 3;
+	endif
+
+	if (recipe.type == "Instrucao de Fabricacao" || recipe.type == "Receita Alquimica" )
+
+		basictime := basictime + ((recipe.power.size())*5);
+
+	elseif (recipe.type == "Magia")
+
+		basictime := basictime + ((recipe.power.size())*5);
+
+	elseif (recipe.type == "Conhecimento Antigo")
+
+		basictime := basictime + ((recipe.power.size())*5);
+
+	else
+		basictime := basictime + 1;
+	endif
+
+	recipe.+end := (basictime*cint(recipe.power))*2;
+
+endfunction
+
+function pesquisalearn(who)
+
+	var recipe := GetObjProperty(who, "aprenderrecipe");
+
+	if (recipe == error)
+		SendSysMessage(who, "Voce nao esta fazendo nenhuma pesquisa no momento");
+		return;
+	endif
+
+	var hoje := Cint(GetGlobalProperty("daynumber"));
+	var ano := GetGlobalProperty("current_year");
+	var pesquisador := AP_GetVitalMaximumValue(who, "MANA");
+
+	pesquisador := pesquisador/10;
+	pesquisador := pesquisador + pesquisador;
+	pesquisador := pesquisador/2;
+
+	if ( (RandomInt(100) > pesquisador ) )
+		SendSysMessageEx(who, "Voce nao descobriu nada de util", SSM_FAIL);
+		return;
+	endif
+
+	if (recipe.year == ano)
+		if (  (hoje - recipe.start) >= recipe.end  )
+			if ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "1"))
+				CreateItemInBackpack(who, 0xff990, 1);
+			elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "2"))
+				CreateItemInBackpack(who, 0xfe995, 1);
+			elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "3"))
+				CreateItemInBackpack(who, 0xfe996, 1);
+			elseif ( recipe.type == "Receita Alquimica" )
+				CreateItemInBackpack(who, 0xef1f, 1);
+			elseif ( (recipe.type == "Magia") && (recipe.power == "1"))
+				CreateItemInBackpack(who, 0x6116, 1);
+			elseif ( (recipe.type == "Magia") && (recipe.power == "2"))
+				CreateItemInBackpack(who, 0x6117, 1);
+			elseif ( (recipe.type == "Magia") && (recipe.power == "3"))
+				CreateItemInBackpack(who, 0x6118, 1);
+			endif
+			//Após terminar a pesquisa criando recipe, limpar a prop de pesquisa e encerra o script
+			EraseObjProperty(who, "aprenderrecipe");
+			return 1;
+		else
+			SendSysMessage(who, "Ainda faltam " + (recipe.end - (hoje - recipe.start)) + " dias para encerrar essa pesquisa");
+			return;
+		endif
+	else
+		var diaspassados := (365 - recipe.start) + hoje;
+		if (diaspassados >= recipe.end)
+			if ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "1"))
+				CreateItemInBackpack(who, 0xff990, 1);
+			elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "2"))
+				CreateItemInBackpack(who, 0xfe995, 1);
+			elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "3"))
+				CreateItemInBackpack(who, 0xfe996, 1);
+			elseif ( recipe.type == "Receita Alquimica" )
+				CreateItemInBackpack(who, 0xef1f, 1);
+			elseif ( (recipe.type == "Magia") && (recipe.power == "1"))
+				CreateItemInBackpack(who, 0x6116, 1);
+			elseif ( (recipe.type == "Magia") && (recipe.power == "2"))
+				CreateItemInBackpack(who, 0x6117, 1);
+			elseif ( (recipe.type == "Magia") && (recipe.power == "3"))
+				CreateItemInBackpack(who, 0x6118, 1);
+			endif
+			//Após terminar a pesquisa criando recipe, limpar a prop de pesquisa e encerra o script
+			EraseObjProperty(who, "aprenderrecipe");
+			return 1;
+		else
+			SendSysMessage(who, "Ainda faltam " + (recipe.end - diaspassados) + " dias para encerrar essa pesquisa");
+			return;
+		endif
+	endif
+
+endfunction
+
+function CheckforBooks(who)
+	foreach itm in ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
+		if(itm.objtype == 0xA9D or itm.objtype == 0xA9E or itm.objtype == 0x3C90
+        or itm.objtype == 0x3C91 or itm.objtype == 0x3CD5 or itm.objtype == 0x3CD6)
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction
+
+function studyloop(who, my_x, my_y, my_facing)
+
+	var i;
+	for ( i:=0; i<3; i:=i+1 )
+		if ( !CheckLoop(who, my_x, my_y, my_facing) )
+			return 0;
+		endif
+
+		if ( AP_GetVital(who, "Mana") < 3)
+			SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+			break;
+		endif
+
+		var action;
+		action:= RandomDiceRoll("1d3");
+
+		if (action == 1)
+			action := "*estudando*";
+		elseif (action == 2)
+			action := "*escrevendo*";
+		elseif (action == 3)
+			action := "*lendo um livro*";
+		endif
+
+		sleep(5);
+		PrintText(who, action);
+		PlaySoundEffect( who, 0x24a );
+		sleep(5);
+		AP_ConsumeVital(who, "Mana", 8);
+
+	endfor
+
+	var pesquisador := AP_GetVitalMaximumValue(who, "MANA");
+
+	pesquisador := pesquisador/100;
+	pesquisador := pesquisador+1;
+	pesquisador := pesquisador/2;
+
+	if ( (RandomInt(100) > pesquisador ) )
+		SendSysMessageEx(who, "Voce nao descobriu nada de util", SSM_FAIL);
+		return 0;
+	endif
+
+endfunction
+
+function pesquisaativa(who)
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+
+	if (!ConsumeSubstance(who.backpack, 0xE34, 5));
+		SendSysMessageEx(who, "Voce precisa de no minimo 5 pergaminhos em branco para iniciar uma pesquisa", SSM_FAIL);
+		return;
+	endif
+
+	while(studyloop(who, my_x, my_y, my_facing) )
+		if ( AP_GetVital(who, "Mana") < 3)
+			SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+			break;
+		endif
+		AP_ConsumeVital(who, "Mana", 8);
+		sleep(3);
+	endwhile
+
+endfunction
+
+function CheckLoop(who, my_x, my_y, my_facing)
+	if ( who.hidden )
+		SendSysMessage(who, "Voce parou de estudar para se esconder.");
+		return 0;
+	elseif ( (who.x != my_x) || (who.y != My_y) )
+		SendSysMessage(who, "Voce saiu de onde estava.");
+		return 0;
+	elseif ( who.facing != my_facing )
+		SendSysMessage(who, "Voce virou sua atencao para outra coisa.");
+		return 0;
+	elseif ( GetEquipmentByLayer(who, LAYER_MOUNT) )
+		SendSysMessage(who, "Voce nao pode estudar montado.");
+		return 0;
+	else
+		return 1;
+	endif
+endfunction
+
+/*
+function consomeperga (who, papel)
+
+	papel.objtype == 0xE34;
+
+	var sx := who.x;
+	var sy := who.y;
+
+	repeat
+		for i := 1 to 3
+			sleep (1);
+		endfor
+
+		if (!SubtractAmount (papel, 5))
+			PrintTextAbovePrivate (who, "*Voce nao pode usar estes pergaminhos!*", who);
+			return;
+		endif
+
+		if (!papel)
+			SendSysMessage (who, "Voce nao tem mais pergaminhos");
+			return;
+		endif
+	until (who.x != sx or who.y != sy);
+
+	SendSysMessage (who, "Voce parou de pesquisar.");
+endfunction
+*/
+
+function aprenderreciperapido(who)
+
+	var recipe := struct;
+
+	var ferreiro:= AP_GetSkill(who, METALWORKING);
+	var costureiro:= AP_GetSkill(who, DomesticWork);
+	var alquimista:= AP_GetSkill(who, ALCHEMY);
+	var mago:= AP_GetSkill(who, MAGERY);
+	var carpenter:= AP_GetSkill(who, WOODWORKING);
+
+	if (( ( ferreiro >= 40) || (costureiro >= 40 ) || (carpenter >= 40 ) ) && (alquimista >= 50) )
+
+		var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Instrucao de Fabricacao", "Receita Alquimica", "Pesquisar Conhecimento Antigo"});
+		recipe.+type := type;
+
+			if (recipe.type == "Instrucao de Fabricacao")
+
+				if ( ( ferreiro < 60) || (costureiro < 60 )  || (carpenter < 60 ) )
+
+					recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1"});
+
+				elseif (( ( ferreiro >= 60) || (costureiro >= 60 ) || (carpenter >= 60 ) ) )
+
+					recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1", "2"});
+
+				elseif (( ( ferreiro >= 75) || (costureiro >= 75 )|| (carpenter >= 75 ) ) )
+
+					recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1", "2", "3"});
+
+				endif
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+				if (aprender)
+
+					pesquisaativa(who);
+
+					if ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "1"))
+						CreateItemInBackpack(who, 0xff990, 1);
+					elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "2"))
+						CreateItemInBackpack(who, 0xfe995, 1);
+					elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "3"))
+						CreateItemInBackpack(who, 0xfe996, 1);
+					endif
+					//Após terminar a pesquisa rapida, encerra o script
+					return 1;
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+			elseif (recipe.type == "Receita Alquimica")
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+				if (aprender)
+
+					pesquisaativa(who);
+
+					if ( recipe.type == "Receita Alquimica" )
+						CreateItemInBackpack(who, 0xef1f, 1);
+					endif
+					//Após terminar a pesquisa rapida, encerra o script
+					return 1;
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+			endif
+
+	elseif ( ( mago >= 40) && (alquimista >= 40 ) )
+
+		var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Magia", "Receita Alquimica" });
+
+		recipe.+type := type;
+
+		if ( recipe.type == "Magia")
+
+			if ( ( mago >= 40) && (mago < 60) )
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Magia: ", {"1","2"});
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+				if (aprender)
+
+					pesquisaativa(who);
+
+					if ( (recipe.type == "Magia") && (recipe.power == "1"))
+						CreateItemInBackpack(who, 0x6116, 1);
+					elseif ( (recipe.type == "Magia") && (recipe.power == "2"))
+						CreateItemInBackpack(who, 0x6117, 1);
+					elseif ( (recipe.type == "Magia") && (recipe.power == "3"))
+						CreateItemInBackpack(who, 0x6118, 1);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+			elseif ( mago >= 70)
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Magia: ", {"1", "2","3"});
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+				if (aprender)
+
+					pesquisaativa(who);
+
+					if ( (recipe.type == "Magia") && (recipe.power == "1"))
+						CreateItemInBackpack(who, 0x6116, 1);
+					elseif ( (recipe.type == "Magia") && (recipe.power == "2"))
+						CreateItemInBackpack(who, 0x6117, 1);
+					elseif ( (recipe.type == "Magia") && (recipe.power == "3"))
+						CreateItemInBackpack(who, 0x6118, 1);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+
+		elseif ( recipe.type == "Receita Alquimica" )
+
+			var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+			if (aprender)
+
+				pesquisaativa(who);
+
+				if ( recipe.type == "Receita Alquimica" )
+					CreateItemInBackpack(who, 0xef1f, 1);
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			endif
+		endif
+
+	elseif (( ( ferreiro >= 40) || (costureiro >= 40 )) )
+
+		recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1"});
+
+	elseif(( ( ferreiro >= 60) || (costureiro >= 60 )) )
+
+		recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1", "2"});
+
+	elseif (( ( ferreiro >= 75) || (costureiro >= 75 )) )
+
+		recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Instrucao de Fabricacao: ", {"1", "2", "3"});
+
+		var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+			if (aprender)
+
+				pesquisaativa(who);
+
+				if ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "1"))
+					CreateItemInBackpack(who, 0xff990, 1);
+				elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "2"))
+					CreateItemInBackpack(who, 0xfe995, 1);
+				elseif ( (recipe.type == "Instrucao de Fabricacao") && (recipe.power == "3"))
+					CreateItemInBackpack(who, 0xfe996, 1);
+				endif
+			else
+				SendSysMessage(who, "Cancelado.");
+				return;
+			endif
+
+	elseif ( ( mago >= 40) )
+			var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Magia", "Cancelar"});
+			recipe.+type := type;
+
+			if (recipe.type == "Magia")
+
+				recipe.+power := RadioGump(who, 400, 305, "Defina a complexidade da Magia: ", {"1"});
+
+				var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+				if (aprender)
+					pesquisaativa(who);
+
+					if ( (recipe.type == "Magia") && (recipe.power == "1"))
+						CreateItemInBackpack(who, 0x6116, 1);
+					elseif ( (recipe.type == "Magia") && (recipe.power == "2"))
+						CreateItemInBackpack(who, 0x6117, 1);
+					elseif ( (recipe.type == "Magia") && (recipe.power == "3"))
+						CreateItemInBackpack(who, 0x6118, 1);
+					endif
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			else
+				SendSysMessage(who, "Cancelado.");
+				return;
+			endif
+
+	elseif ( ( alquimista >= 40) )
+
+		var type := RadioGump(who, 400, 380, "Escolha o tipo de Pesquisa", {"Receita Alquimica" , "Cancelar"});
+
+		recipe.+type := type;
+
+		if ( recipe.type == "Receita Alquimica" )
+
+			var aprender := YesNo(who, "Voce deseja iniciar essa pesquisa?", "Sim", "Nao");
+
+			if (aprender)
+
+				pesquisaativa(who);
+
+				if ( recipe.type == "Receita Alquimica" )
+					CreateItemInBackpack(who, 0xef1f, 1);
+				else
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
+			endif
+		else
+		 	SendSysMessage(who, "Cancelado.");
+			return;
+		endif
+	endif
+	endif
+
+endfunction

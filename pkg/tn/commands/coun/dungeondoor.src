@@ -1,0 +1,56 @@
+use uo;
+use datafile;
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":traps:traps";
+include ":tn:tngumps";
+
+program makedungeondoor(who)
+
+	SendSysMessage(who, "Escolha a porta.");
+	var door := Target(who);
+	if (!door)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	if (!door.IsDoor())
+		SendSysMessage(who, "Isto nao parece uma porta.");
+		return;
+	endif
+
+	door.locked := 1;
+
+	var time := Cint(RequestGump(who, "Digite de quanto em quanto tempo a porta se fecha (em minutos)"));
+	if (!time)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+	SetObjProperty(door, "time", time*60);
+	var lvl := Cint(RequestGump(who, "Digite o level dessa porta (de 1 a 6. 6 = magica)"));
+	if (!lvl)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+	SetObjProperty(door, "level", lvl);
+
+	var trap := YesNo(who, "Deseja adicionar alguma armadilha na porta?");
+	if (trap)
+		var type := Radiogump(who, 200, 240, "Escolha o tipo de armadilha", array{"Needle", "Explosion", "PoisonGas", "Magic"});
+		var lvltrap := Cint(RequestGump(who, "Escolha o lvl da armadilha (1 a 5)"));
+		AddTrap(door, type, lvltrap);
+	endif
+
+	var df := OpenDataFile( ":tn:doors" );
+	if (!df)
+		df := CreateDataFile( ":tn:doors", DF_KEYTYPE_INTEGER );
+	endif
+
+	var elem := df.FindElement(door.serial);
+	if (!elem)
+		elem := df.CreateElement( door.serial ) ;
+	endif
+
+	SendSysMessage(who, "Pronto.");
+
+endprogram

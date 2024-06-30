@@ -1,0 +1,110 @@
+use uo;
+use os;
+
+include ":attributes:skillCheck";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+
+const PLOUGH_SOUND 	:= 0x58;
+const ITEM_DIRT		:= 0x31F4;
+
+program UsePlough(who, plough)
+	if ( !ReserveItem(plough) )
+		SendSysMessage(who, "Alguem ja esta usando isto.");
+		return;
+	elseif ( Distance(who, plough) > 2 )
+		SendSysMessage(who, "Voce esta muito distante da ferramenta.");
+		return;
+	endif
+	
+	while ( who.ip )
+		SendSysMessage(who, "Onde voce deseja arar a terra?");
+		var targ := TargetCoordinates(who);
+		if ( !targ )
+			SendSysMessage(who, "Cancelado.");
+			return;
+		elseif ( CoordinateDistance(plough.x, plough.y, targ.x, targ.y) > 4 )
+			SendSysMessage(who, "Muito longe da ferramenta.");
+			return;
+		elseif ( !CheckLOSAt(who, targ.x, targ.y, targ.z) )
+			SendSysMessage(who, "Voce nao esta na linha de visao para este local.");
+			return;
+		elseif ( (targ.item).objtype == ITEM_DIRT )
+			SendSysMessage(who, "Este local ja esta arado.");
+			return;
+		elseif ( GetObjProperty(targ.item, "gmplant") )
+			return;
+		elseif ( !CanPlough(targ) )
+			SendSysMessage(who, "Voce nao pode arar a terra aqui.");
+			return;
+		else
+			var temp := FoundPlant(targ);
+			if ( temp )
+				PloughDelay(who);
+				RemovePlant(who, temp);
+			else
+				PloughDelay(who);
+				PloughDirt(who, targ);
+			endif
+		endif
+	endwhile
+		
+endprogram
+
+function FoundPlant(targ)
+	foreach item in ListItemsAtLocation(targ.x, targ.y, targ.z, targ.realm)
+		if ( item.IsPlant() )
+			if ( !GetObjProperty(item, "gmplant") )
+				return item;
+			endif
+		endif
+		sleepms(2);
+	endforeach
+	
+	return 0;
+endfunction
+
+function PloughDelay(who)
+	SendSysMessage(who, "Voce comecou a arar a terra...");
+	PlaySoundEffect(who, PLOUGH_SOUND);
+	sleep(2);
+	SendSysMessage(who, "Voce continuou a arar a terra...");
+	PlaySoundEffect(who, PLOUGH_SOUND);
+	sleep(2);
+	SendSysMessage(who, "Voce continuou a arar a terra...");
+	PlaySoundEffect(who, PLOUGH_SOUND);
+	sleep(2);
+endfunction
+
+function PloughDirt(who, targ)
+		if ( SkillCheck(who, DomesticWork, 30) > 0 )
+		SendSysMessage(who, "Voce conseguiu arar a terra com sucesso.");
+		CreateItemAtLocation(targ.x, targ.y, GetWorldHeight(targ.x,targ.y, targ.realm), "dirt", 1, targ.realm);
+	else
+		SendSysMessage(who, "Voce e incapaz de continuar utilizando essa ferramenta bem para arar a terra.");
+	endif
+endfunction
+
+function RemovePlant(who, targ)
+	SendSysMessage(who, "Voce arrancou a planta.");
+	DestroyItem(targ);
+endfunction
+
+function CanPlough(targ)
+	if ( (targ.item).IsPlant() )
+		return 1;
+	else	
+		var config := ReadConfigFile(":farming:config/plough");
+		config := config["Valid"];
+		print(" " + config);
+		var land_scape := CStr(GetMapInfo(targ.x, targ.y, targ.realm).landtile);
+		if ( targ.objtype )
+			if ( CStr(targ.objtype) in GetConfigStringArray(config, "static") )
+		 		return 1;
+			endif
+		elseif ( land_scape in GetConfigStringArray(config, "landscape") )
+			return 1;
+		endif
+	endif	
+	return 0;
+endfunction

@@ -1,0 +1,100 @@
+use uo;
+include "include/tileEffects";
+include ":attributes:attributes";
+include ":fls_magery:spells";
+include "include/damage";
+include "include/shapes";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/client";
+include "include/say"; 
+include ":taming:taming";
+
+program spell_fireball(params)
+    var caster := params[1];
+    var cast_on := params[2];
+	params := 0; // No longer needed
+
+    SendSysMessage(caster, "Selecione o alvo.");
+	//var cast_on := Target(caster);
+    if (!cast_on) // If no cast_on then get cast_on from parms[4]. Used mostly for NPC casting.
+        cast_on := params[4];
+    endif
+    if (!cast_on)
+        SendSysMessage (caster, "cancelado.", color := 33);
+        return 0;
+    endif
+
+    if ( !MS_MobileCheck(caster, cast_on) )
+        return 0;
+    endif
+
+    PlayMovingEffect(caster, cast_on, GFX_LARGE_FIREBALL, 10, 10, 1);
+
+	var coord_list := GetCoordsInLine(caster.x, caster.y, cast_on.x, cast_on.y);
+	foreach coord in coord_list
+		if ( _coord_iter < 4 ) // Dont make one where its standing
+			continue;
+		endif
+		
+		var field := CreateItemAtLocation(coord.x, coord.y, caster.z, "FireField_NS", 1, caster.realm);
+		field.SetDuration(0);
+		sleepms(105);
+	endforeach
+
+	foreach coord in GetCoordsInSquare(cast_on.x, cast_on.y, 5)
+		if ( RandomInt(2) != 1 ) // Don't place a fire field
+			continue;
+		endif
+		case( RandomInt(3) )
+			default:
+				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_1, 10, 10, 0, caster.realm);
+				break;
+			1:
+				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_2, 10, 10, 0, caster.realm);
+				break;
+			2:
+				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_3, 10, 10, 0, caster.realm);
+				break;
+		endcase
+		var field;
+		if ( RandomInt(2) )
+			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldNS", 1, caster.realm);
+		else
+			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldEW", 1, caster.realm);
+		endif
+		field.SetDuration(1);
+		sleepms(5);
+	endforeach
+
+	PlaySoundEffect(cast_on, 0x208);
+    
+    var alreadydamaged := array{};
+    
+	var range := cint(AP_GetSkill(caster, MAGICLORE)/10);
+    var mobiles := ListMobilesNearLocation(cast_on.x, cast_on.y, cast_on.z, range, caster.realm);
+	var allPets := array{};
+	var party_members := caster.party.members;
+
+	if (caster.party)
+		foreach member in party_members
+			if (member != caster)
+				var memberObj := SystemFindObjectBySerial(member.serial);
+				var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, range * 4);
+				foreach pet in allPetsAndSummonedPets
+						allPets.append(pet);
+				endforeach
+			endif
+		endforeach
+	endif	
+
+    foreach mobile in mobiles
+        if (!(mobile.serial in alreadydamaged) && (mobile != caster) && !(mobile in party_members) && !(mobile in allPets))
+            alreadydamaged.Append(mobile.serial);
+			var dmg := cint(AP_GetSkill(caster, MAGICLORE))/3 + RandomDiceRoll("8d10");
+            DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
+        endif
+        sleepms(20);
+    endforeach
+	destroycraft(cast_on, caster);
+endprogram

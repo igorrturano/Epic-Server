@@ -1,0 +1,29 @@
+use uo;
+use datafile;
+use os;
+include "include/say";
+
+program comand(who)
+
+	var df := OpenDataFile(":tn:spawns");
+	if (!df)
+		df := CreateDataFile( ":tn:spawns", DF_KEYTYPE_INTEGER );
+	endif
+	
+	var spawns := array;
+	
+	SendSysMessageEx(who, "Resetando spawns.", SSM_INFO);
+
+	var spawnkill := 0;
+	foreach spawn in (df.keys())
+		var spawnpoint := SystemFindObjectBySerial(spawn);
+
+		var spawns := GetObjProperty(spawnpoint, "Children");
+		
+		SetObjProperty(spawnpoint, "ResetMe", 1);
+		spawnkill := spawnkill + 1;
+		sleep(3);
+	endforeach 
+
+	SendSysMessageEx(who, "Spawns: " + spawnkill, SSM_INFO);
+endprogram

@@ -1,0 +1,13 @@
+use uo;
+
+include ":death:death";
+include ":timeutils:time";
+
+/*program dpChecking()
+	while(1)
+		foreach player in {EnumerateOnlineCharacters()}
+			RegenerateDeathPoints(player);
+		endforeach
+		sleep(SEC_HOUR);
+	endwhile
+endprogram*/

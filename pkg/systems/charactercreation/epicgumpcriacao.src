@@ -1,0 +1,538 @@
+use cfgfile;
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":tn:tngumps";
+include ":gumps:requestGump";
+include ":attributes:attributes";
+include "include/client";
+include ":charactercreation:createchar";
+include ":disguise:disguise";
+include ":datafile:datafile";
+include "include/say";
+include "include/creationUtils";
+
+program epicCreationGump(who)
+    resetCharacter(who);
+
+    var culture_pic := culturalSelection(who);
+    racialSelection(who, culture_pic);
+    classSelection(who, culture_pic);
+    backgroundSelection(who, culture_pic);
+    traitSelection(who, culture_pic);
+    skillSelection(who, culture_pic);
+    attributeSelection(who, culture_pic);
+    religionSelection(who);
+    gameModeSelection(who);
+    pathOfWisdom(who, culture_pic);
+    itemInheritance(who);
+    looksSelection(who);
+
+    SetObjProperty(who, "nome_inicial", who.name);
+    AP_SetVital(who, "Hunger", 0);
+	HealDamage(who, 200);
+	RecalcVitals(who);
+endprogram
+
+function culturalSelection(who)
+    var chardata := struct;
+    var culture_pic := 0x9E7;
+    var btn_value;
+    while (1)
+        var input := CultureGump(who, culture_pic);
+        btn_value := input[0]; 
+
+        if (btn_value == 201)
+            culture_pic++;
+        elseif (btn_value == 210) 
+            culture_pic--;
+        else
+            break;
+        endif
+
+        if (culture_pic < 0x9E7)
+            culture_pic := 0x9EE;
+        elseif (culture_pic > 0x9EE)
+            culture_pic := 0x9E7;
+        endif
+    endwhile
+    chardata.+culture := getCultureByPictureId(culture_pic);
+    chardata.+crafting := getCraftCultureByPictureId(culture_pic);
+    SetObjProperty(who, "chardata", chardata);
+
+    SendSysMessageEX(who, "Sua cultura será "+chardata.culture, SSM_INFO);
+    return culture_pic;
+endfunction
+
+function racialSelection(who, culture_pic)
+    var btn_value;
+    var chardata := GetObjProperty(who, "chardata");
+    while (1)
+        var input := EpicRaceGump(who, culture_pic);
+        foreach key in (input.keys)
+            btn_value := key;
+        endforeach
+        if (btn_value == 201)
+            chardata.raca := RACA.ANAO;
+            chardata.+vantagemracial := "Constituicao Ana";
+            break;
+        elseif (btn_value == 202) 
+            chardata.raca := RACA.DROW;
+            chardata.+vantagemracial := "Toxina natural";
+            break;
+        elseif (btn_value == 203) 
+            chardata.raca := RACA.ELFO;
+            break;
+        elseif (btn_value == 204) 
+            chardata.raca := RACA.HUMANO;
+            break;
+        elseif (btn_value == 205)
+            chardata.raca := RACA.ORC;
+            chardata.+vantagemracial := "Resistencia implacavel";
+            break;
+        elseif (btn_value == 206) 
+            chardata.raca := RACA.POLSKI;
+            break;
+        elseif (chardata.culture == CULTURA.AIGLANA || chardata.culture == CULTURA.LESTE)
+            SendSysMessageEX(who, "Escolha sua raça!", SSM_FAIL);
+        else
+            chardata.raca := getRaceByCulturalId(culture_pic)[1];
+            break;
+        endif
+    endwhile
+
+    if (who.graphic == 400 && (chardata.raca == RACA.ELFO || chardata.raca == RACA.DROW))
+        who.graphic := 1830;
+    elseif(who.graphic == 401 && (chardata.raca == RACA.ELFO || chardata.raca == RACA.DROW))
+        who.graphic := 1831;
+    elseif (who.graphic == 400 && (chardata.raca == RACA.ORC))
+        who.graphic := 1832;
+    elseif (who.graphic == 401 && (chardata.raca == RACA.ORC))
+        who.graphic := 1833;
+    elseif(who.graphic == 400 && (chardata.raca == RACA.ANAO || chardata.raca == RACA.POLSKI))
+        who.graphic := 1828;
+    elseif(who.graphic == 401 && (chardata.raca == RACA.ANAO || chardata.raca == RACA.POLSKI))
+        who.graphic := 1829;
+    endif
+
+    who.title_race := chardata.raca;
+	who.race := chardata.raca;
+
+    SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function classSelection(who, culture_pic)
+    var btn_value;
+    var chardata := GetObjProperty(who, "chardata");
+    while (1)
+        var input := ClassGump(who, culture_pic);
+        foreach key in (input.keys)
+            btn_value := key;
+        endforeach
+        if (btn_value == 201)
+            chardata.+classe := "Guerreiro";
+            break;
+        elseif (btn_value == 202) 
+            chardata.+classe := "Ladino";
+            break;
+        elseif (btn_value == 203) 
+            chardata.+classe := "Sabio";
+            break;
+        else
+            SendSysMessageEX(who, "Escolha seu caminho", SSM_FAIL);
+        endif
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+	SetObjProperty(who, "classe", chardata.classe);
+    SendSysMessageEX(who, "Você escolheu o caminho do "+chardata.classe, SSM_INFO);
+endfunction
+
+function backgroundSelection(who, culture_pic)
+    var btn_value;
+    var chardata := GetObjProperty(who, "chardata");
+    while (1)
+        var input := backgroundGump(who, culture_pic);
+        foreach key in (input.keys)
+            btn_value := key;
+        endforeach
+        if (btn_value == 201)
+            chardata.+background := BACKGROUNDS.DOMESTIC_WORK;
+            chardata.+bgBonus := DomesticWork;
+            break;
+        elseif (btn_value == 202) 
+            chardata.+background := BACKGROUNDS.GATHERING;
+            chardata.+bgBonus := GATHERING;
+            break;
+        elseif (btn_value == 203) 
+            chardata.+background := BACKGROUNDS.HANDLE_ANIMAL;
+            chardata.+bgBonus := HANDLEANIMAL;
+            break;
+        elseif (btn_value == 204) 
+            chardata.+background := BACKGROUNDS.MECHANICAL_APITUDE;
+            chardata.+bgBonus := MECHANICALAPITUDE;
+            break;
+        elseif (btn_value == 205) 
+            chardata.+background := BACKGROUNDS.MEDICINE;
+            chardata.+bgBonus := MEDICINE;
+            break;
+        elseif (btn_value == 206) 
+            chardata.+background := BACKGROUNDS.METAL_WORK;
+            chardata.+bgBonus := METALWORKING;
+            break;
+        elseif (btn_value == 207) 
+            chardata.+background := BACKGROUNDS.PICK_POCKETING;
+            chardata.+bgBonus := PICKPOCKETING;
+            break;
+        elseif (btn_value == 208) 
+            chardata.+background := BACKGROUNDS.SURVIVAL;
+            chardata.+bgBonus := SURVIVAL;
+            break;
+        elseif (btn_value == 209) 
+            chardata.+background := BACKGROUNDS.WOOD_WORK;
+                chardata.+bgBonus := WOODWORKING;
+            break;
+        elseif (btn_value == 210) 
+            chardata.+background := backgroundByCulture(who);
+            chardata.+bgBonus := culturalTraitBonus(who, chardata);
+            if (chardata.culture == CULTURA.BADURAN)
+                chardata.+bgBonus2 := METALWORKING;
+            endif
+            break;
+        else
+            SendSysMessageEX(who, "Escolha seu histórico", SSM_FAIL);
+        endif
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+    SendSysMessageEX(who, "Seu passado é "+chardata.background, SSM_INFO);
+endfunction
+
+function traitSelection(who, culture_pic)
+    var btn_value;
+    var chardata := GetObjProperty(who, "chardata");
+    var traits := listTraits(who, chardata);
+    var i := 1;
+
+    while(1)
+        var input := traitGump(who, culture_pic, traits);
+        foreach key in (input.keys)
+            btn_value := key;
+        endforeach
+        if (btn_value > 200)
+            chardata.+trait := traits[btn_value-200].Nome;
+            break;
+        else
+            SendSysMessageEX(who, "Escolha sua característica", SSM_FAIL);
+        endif
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+    SendSysMessageEX(who, "Sua característica é "+chardata.trait, SSM_INFO);
+endfunction
+
+function skillSelection(who, culture_pic)
+    var btn_value;
+    var chardata := GetObjProperty(who, "chardata");
+    var pri_allowed := howManyPrimarias(chardata);
+    var i := 1;
+    chardata.+points := 20;
+    if (chardata.trait == "Sabe-Tudo") chardata.points += 5; endif
+    if (chardata.raca == "Humano") chardata.points += 2; endif
+    chardata.+Skills := dictionary;
+    var points := chardata.points;
+    var pri_count := 0;
+    while(1)
+        if (chardata.points < 0)
+            SendSysMessageEX(who, "Compra de habilidade inválida", SSM_FAIL);
+            DisconnectClient(who);
+        endif
+        var input := skillGump(who, culture_pic, chardata);
+        foreach key in (input.keys)
+            btn_value := key;
+        endforeach
+        if (btn_value >= 100 && btn_value < 130)
+            var skill := GetSkillNameFromId(btn_value-100);
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] > 3)
+                chardata.Skills[skill] := 3;
+            endif
+            chardata.Skills[skill] -= 1;
+            chardata.points++;
+        elseif (btn_value >= 130 && btn_value < 200)
+            var skill := GetSkillNameFromId(btn_value-130);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] += 1;
+            chardata.points--;
+        endif
+        if (btn_value >= 200 && btn_value < 230)
+            var skill := GetSkillNameFromId(btn_value-200);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] -= 1;
+            chardata.points += 2;
+        elseif (btn_value >= 230 && btn_value < 300)
+            var skill := GetSkillNameFromId(btn_value-230);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] += 1;
+            chardata.points -= 2;
+        endif
+        if (btn_value >= 300 && btn_value < 330)
+            var skill := GetSkillNameFromId(btn_value-300);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] -= 1;
+            chardata.points += 3;
+        elseif (btn_value >= 330 && btn_value < 400)
+            var skill := GetSkillNameFromId(btn_value-330);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] += 1;
+            chardata.points -= 3;
+        endif
+        if (btn_value >= 400 && btn_value < 430)
+            var skill := GetSkillNameFromId(btn_value-400);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] -= 1;
+            chardata.points += 4;
+        elseif (btn_value >= 430 && btn_value < 500)
+            var skill := GetSkillNameFromId(btn_value-430);
+
+            chardata.Skills.+skill;
+            if (chardata.Skills[skill] < 1)
+                chardata.Skills[skill] := 0;
+            endif
+            chardata.Skills[skill] += 1;
+            chardata.points -= 4;
+        elseif (btn_value == 500)
+            chardata["Skills"].Erase("skill");
+            var skillsmap := chardata.Skills;
+            var skillsArray := skillsmap.keys();
+            foreach skill in skillsArray
+                if (chardata.Skills[skill] == 0)
+                    chardata.Skills.Erase(skill);
+                endif
+            endforeach
+            if (pri_count > pri_allowed)
+                SendSysMessageEX(who, "Você ultrapassou o número de primárias permitidas", SSM_FAIL);
+                pri_count := 0;
+                DisconnectClient(who);
+            endif
+
+            SetObjProperty(who, "chardata", chardata);
+            SetObjProperty(who, "skill", 1);
+            SendSysMessageEX(who, "Você definiu suas skills", SSM_INFO);
+            break;
+        endif
+    endwhile
+
+    var value;
+	var skillsmap := chardata.Skills;
+	var skillsArray := skillsmap.keys();
+	foreach skill in skillsArray
+		value := 0;
+		if ( chardata.Skills[skill] == 3)
+			value := 40;
+		elseif (chardata.Skills[skill] == 2)
+			value := 20;
+		else
+			value := 0;
+		endif
+		if ( AP_GetTrueSkill(who, skill) == 0)
+			AP_SetTrueSkill(who, skill, value);
+		endif
+	endforeach
+endfunction
+
+function attributeSelection(who, culture_pic)
+    var btn_value;
+    var chardata := GetObjProperty(who, "chardata");
+    chardata.+attribute_points := 80;
+    chardata.+str := 40;
+    chardata.+dex := 40;
+    chardata.+int := 40;
+    var traits := listTraits(who, chardata);
+    var i := 1;
+
+    while(1)
+        var input := attributeGump(who, culture_pic, chardata);
+       foreach key in (input.keys)
+           btn_value := key;
+       endforeach
+       if (btn_value == 200)
+            chardata.str += 5;
+            chardata.attribute_points -= 5;
+       elseif (btn_value == 201)
+            chardata.str -= 5;
+            chardata.attribute_points += 5; 
+       elseif (btn_value == 210)
+            chardata.dex += 5;
+            chardata.attribute_points -= 5;
+       elseif (btn_value == 211)
+            chardata.dex -= 5;
+            chardata.attribute_points += 5;
+       elseif (btn_value == 220)
+            chardata.int += 5;
+            chardata.attribute_points -= 5;
+       elseif (btn_value == 221)
+            chardata.int -= 5;
+            chardata.attribute_points += 5;
+        else
+            if (chardata.attribute_points < 0)
+                SendSysMessageEX(who, "Compra de atributo inválida", SSM_FAIL);
+                DisconnectClient(who);
+            endif
+
+            SetObjProperty(who, "chardata", chardata);
+            attributeBonusByRaceAndTraits(who);
+
+            SendSysMessageEX(who, "Você selecionou seus atributos", SSM_INFO);
+            break;
+       endif
+    endwhile
+endfunction
+
+function religionSelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    var religion_pic := 0x9F6;
+    var btn_value;
+    while (1)
+        var input := ReligionGump(who, religion_pic);
+        btn_value := input[0]; 
+
+        if (btn_value == 201)
+            religion_pic++;
+        elseif (btn_value == 210) 
+            religion_pic--;
+        else
+            break;
+        endif
+
+        if (religion_pic < 0x9EF)
+            religion_pic := 0x9F6;
+        elseif (religion_pic > 0x9F6)
+            religion_pic := 0x9EF;
+        endif
+    endwhile
+    chardata.+religion := getReligionByPictureId(religion_pic);
+    SetObjProperty(who, "chardata", chardata);
+
+    SendSysMessageEX(who, "Sua religião será "+chardata.religion, SSM_INFO);
+    return religion_pic;
+endfunction
+
+function gameModeSelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    var game_mode_pic := 0x9FB;
+    var btn_value;
+    while (1)
+        var input := gameModeGump(who, game_mode_pic);
+        btn_value := input[0]; 
+
+        if (btn_value == 201)
+            game_mode_pic++;
+        elseif (btn_value == 210) 
+            game_mode_pic--;
+        else
+            break;
+        endif
+
+        if (game_mode_pic < 0x9FB)
+            game_mode_pic := 0x9FC;
+        elseif (game_mode_pic > 0x9FC)
+            game_mode_pic := 0x9FB;
+        endif
+    endwhile
+    chardata.+game_mode := gameModeByPictureId(game_mode_pic);
+    SetObjProperty(who, "chardata", chardata);
+
+    SendSysMessageEX(who, "Seu modo de jogo será "+chardata.game_mode, SSM_INFO);
+    return game_mode_pic;
+endfunction
+
+function looksSelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    looksGump(who, chardata);
+endfunction
+
+function pathOfWisdom(who, culture_pic)
+    var chardata := GetObjProperty(who, "chardata");
+    var btn_value;
+    if (chardata.class != "Sabio")
+        return;
+    endif
+    while (1)
+        var input := pathOfWisdomGump(who, culture_pic);
+        foreach key in (input.keys)
+            btn_value := key;
+        endforeach
+
+        if (btn_value == 201)
+            chardata.+wisdom_path := "Mago";
+            chardata.+magia := "spellcaster";
+            var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
+            // SetObjProperty(grimorio, "SangriaBook", 1);
+            SetObjProperty(grimorio, "Booktype", "spellcaster");
+            SetObjProperty(grimorio, "serialid", who.serial);
+            SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
+            grimorio.newbie := 1;
+            var spellinfo := struct;
+            spellinfo.+magic_path := "spellcaster";
+            var p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
+            spellinfo.+id := 6;
+            SetObjProperty(p1, "spellinfo", spellinfo);
+            p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
+            spellinfo.id := 7;
+            SetObjProperty(p1, "spellinfo", spellinfo);
+            break;
+        elseif (btn_value == 202) 
+            chardata.+wisdom_path := "Alquimista";
+            break;
+        elseif (btn_value == 203 && chardata.culture == CULTURA.GULTHRAK) 
+            chardata.+wisdom_path := "Xamã";
+            chardata.+magia := "Shaman";
+            break;
+        elseif (btn_value == 203 && chardata.culture != CULTURA.GULTHRAK)
+            chardata.magia := "Sacerdote";
+            var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
+            CreateItemInBackpack(who, 0x166E, 1);
+            CreateItemInBackpack(who, "runaarmasagrada");
+            CreateItemInBackpack(who, "runacuraleve");
+            CreateItemInBackpack(who, "runadescanso");
+            chardata.+wisdom_path := "Clérigo";
+            break;
+        elseif (btn_value == 204) 
+            chardata.+wisdom_path := "Engenheiro";
+            break;
+        else
+            SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
+        endif
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+    SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
+endfunction

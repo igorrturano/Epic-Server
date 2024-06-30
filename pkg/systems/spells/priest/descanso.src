@@ -1,0 +1,39 @@
+     use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetVital( targ, STAMINA ) == GetVitalMaximumValue( targ, STAMINA ))
+		SendSysMessageEx(who, "O alvo nao parece cansado.", SSM_FAIL);
+		return;
+	endif
+
+//	SetVital( targ, STAMINA, cint(GetVital( targ, STAMINA ) + AP_GetSkill(targ, MAGICLORE)/10) );	
+
+	HealStamina(targ, AP_GetSkill(who, MAGICLORE)/4);
+	
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	
+	return 1;
+endprogram 

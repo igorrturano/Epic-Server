@@ -1,0 +1,29 @@
+ use uo;
+
+include ":attributes:attributes";
+include "include/say";
+include ":tn:cooldown";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Escolha quem deseja desafiar.", SSM_REQUEST);
+	var count := 0;
+	while (count < 4)
+
+		var targ := target(attacker);
+		if (!targ)
+			SendSysMessageEx(attacker, "Cancelado.", SSM_FAIL);
+			return;
+		endif
+
+		if (!targ.isa(POLCLASS_MOBILE))
+			SendSysMessageEx(attacker, "Cancelado.", SSM_FAIL);
+			return;
+		endif
+
+		SetCooldown(targ, "desafioheroico", cint(AP_GetSkill(attacker, TACTICS)));
+		SetObjProperty(targ, "#desafiante", attacker.serial);
+
+	endwhile
+
+endprogram 

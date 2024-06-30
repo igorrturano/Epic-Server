@@ -1,0 +1,16 @@
+use uo;
+
+program ResetWell(hook)
+	
+	var well := hook.GetWell();
+	
+	hook.movable := 1;
+	
+	MoveObjectToLocation(hook, well.x+2, well.y, well.z+5, MOVEOBJECT_FORCELOCATION);
+	
+	foreach item in ListItemsNearLocation(well.x, well.y, well.z, 1)
+		MoveObjectToLocation(item, hook.x, hook.y+1, well.z);
+	endforeach
+	
+	hook.movable := 0;
+endprogram

@@ -1,0 +1,123 @@
+use uo;
+use os;
+use util;
+
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include "include/damage";
+
+program cogumelo(who, item)
+
+	var type := GetObjProperty(item, "type");
+	
+	if (type == error)
+		type := "comestivel";
+	endif
+	
+	DestroyItem(item);
+	case(RandomInt(3) + 1)
+		1: PlaySoundEffect(who, 0x3b);
+		2: PlaySoundEffect(who, 0x3c);
+		3: PlaySoundEffect(who, 0x3d);
+	endcase
+
+	var chardata := GetObjProperty(who, "chardata");
+	var povo := chardata.povo;
+    var originalColor := who.color;
+
+    if (IsRaging(who))
+        SendSysMessage(who, "Voce ja esta em furia");
+        return;
+    else
+        var dmg := AP_GetVital(who, HITS) - GetHP(who) - 1;
+        if (povo != "Thuriao")
+            dmg := AP_GetVital(who, HITS);
+            SendSysMessageEx(who, "Voce nao eh digno", SSM_FAIL);
+            DamageFLS(who, dmg);
+            return;
+        endif
+        DamageFLS(who, dmg);
+        AP_ModifyStatMod(who, STRENGTH, 10);
+        RecalcVitals(who);
+        PrintTextAbove(who, "*Pupilas dilatam, a pele fica enrubrecida*");
+        who.color := 2841;
+
+        var i := 0;
+        while (i < 3)
+            case (who.graphic)
+            401:
+                PlaySoundEffect( who, 0x339 );
+            400:
+                PlaySoundEffect( who, 0x44B );
+            1828:
+                PlaySoundEffect( who, 0x44B );
+            1829:
+                PlaySoundEffect( who, 0x339 );         
+            1830:
+                PlaySoundEffect( who, 0x44B );
+            1831:
+                PlaySoundEffect( who, 0x339 );    
+            1832:
+                PlaySoundEffect( who, 0x44B );
+            1833:
+                PlaySoundEffect( who, 0x339 );   
+            1834:
+                PlaySoundEffect( who, 0x44B );
+            1835:
+                PlaySoundEffect( who, 0x339 );                   
+	        endcase
+            i++;
+            sleep(i);
+        endwhile
+    endif
+    
+    var i;
+    for(i:=0; i< 4; i:=i+1)
+        berserkerHallucination(who);
+        Sleep(10);
+    endfor
+    PrintTextAbove(who, "*Parece recobrar a sanidade*");
+    AP_ModifyStatMod(who, STRENGTH, -10);
+    RecalcVitals(who);
+
+    who.color := originalColor;
+endprogram
+
+function berserkerHallucination(who)
+	if(who.npctemplate)
+		return 0;
+	endif
+    var emotes := Array{
+        "*Implora para que você o faça em pedaços*",
+        "*Precisa ser morto imediatamente*",
+        "*Vai matar você caso você não o mate primeiro*",
+        "*Aponta para você e ri*",
+        "*Planeja matar você há anos*",
+        "*Diz que você é fraco e patético*",
+        "*Fala que Almak teria vergonha de você*",
+        "*Diz que sua mãe é um dos dragões que atacou Thuria*",
+        "*Zomba da sua cara e diz que voce eh indigno*",
+        "*Acredita que você roubou sua honra e exige reparação através do sangue*",
+        "*Afirma que os deuses o escolheram para erradicar a fraqueza, começando por você*",
+        "*Diz que o fio da sua espada anseia pelo gosto do seu sangue*",
+        "*Diz que voce nao pertence ao Stomra*",
+        "*Zomba de seus ancestrais*",
+        "*Corre em sua direção com arma em punhos*",
+        "*É uma afronta a sua própria existência*",
+        "*Merece uma morte rápida*",
+        "*Deseja que você lhe mande para o Stomra*",
+        "*Esta a servico de Gotesd e planeja tortura-lo*",
+        "*Eh um elfo*",
+        "*Mijou na sua cerveja*",
+        "*Poderia continuar vivendo, se você fosse fraco*",
+        "*Promete matar todos aqueles que você ama*",
+        "*A cada segundo que vive, sua desonra aumenta*"
+        };
+	foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 20)
+        if (mobile == who)
+        else
+            PrintTextAbovePrivate(mobile, emotes[RandomInt(emotes.size())], who, _DEFAULT_UCFONT, 2117);
+            sleepms(500);
+        endif
+	endforeach
+endfunction

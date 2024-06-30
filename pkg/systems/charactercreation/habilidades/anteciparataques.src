@@ -1,0 +1,12 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Voce antecipara os proximos ataques!", SSM_INFO);
+	TS_StartTimer(attacker, "evasao", 60);
+
+endprogram   

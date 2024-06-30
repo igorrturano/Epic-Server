@@ -1,0 +1,19 @@
+use uo;
+use cfgfile;
+use util;
+
+program createWand(wand)
+
+
+	var spellinfo := struct;
+	var cfg := ReadConfigFile(":spells:config/tnspells");
+	var keys := GetConfigIntKeys(cfg);
+
+	spellinfo.+id := RandomInt(keys.size())+1;
+	SetObjProperty(wand, "spellinfo", spellinfo);
+
+	SetObjProperty(wand, "magic", 1);
+	SetObjProperty(wand, "cargas", RandomIntMinMax(3,10));
+	SetObjProperty(wand, "cancast", 1);
+
+endprogram

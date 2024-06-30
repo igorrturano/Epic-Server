@@ -1,0 +1,58 @@
+
+use uo;
+use os;
+use math;
+use util;
+use cfgfile;
+
+include "include/client";
+include "include/say";
+include ":survival:fishingFunctions";
+include ":itemutils:canAccess";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+include ":crafting:toolWear";
+include ":itemutils:objtype";
+include ":loot:lootParser";
+include "include/sysEvent";
+
+program catarminhoca(who, dirt)
+
+	if (distance(who, dirt) > 1)
+	SendSysMessage(who, "Voce esta muito longe para catar minhocas",FONT_NORMAL,0);
+	return 0;
+	endif 
+
+	var currentskill := AP_GetSkill(who, DomesticWork);
+	var randomskill := RandomInt(cint(currentskill)) + 1;
+	var minhocachance := ((currentskill) + (randomskill / 2));
+	var randomchance := RandomInt(100) + 1;
+	var minhoca := cint("0x9980");
+	var randomcritical := RandomInt(200);
+
+
+	PerformAction( who, ANIM_BOW );
+	PrintTextAbove(who, "*revirando a terra*",FONT_NORMAL,0);
+	sleepms(1000);
+	PerformAction( who, ANIM_BOW );
+	sleepms(1000);
+
+	if (randomcritical == 0)
+		PrintTextAbove(dirt, "*tremor da terra*",FONT_NORMAL,0);
+		sleepms(1500);
+		SendSysMessage(who, "Isso nao parece uma minhoca",FONT_NORMAL,0);
+		var elemental := CreateNpcFromTemplate( "earthelemental", dirt.x, dirt.y, dirt.z );
+		SetName(elemental, "Espirito da Terra");
+		return 0;
+	endif
+
+	if (randomchance < minhocachance)
+		SendSysMessage(who, "Voce pegou algumas minhocas",FONT_NORMAL,0);
+		CreateItemInBackpack(who, minhoca, 1);
+	else
+		SendSysMessage(who, "Voce revirou a terra e nao achou nenhuma minhoca",FONT_NORMAL,0);
+	endif
+
+	return 1;
+
+endprogram

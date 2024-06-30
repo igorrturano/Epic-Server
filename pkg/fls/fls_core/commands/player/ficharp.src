@@ -1,0 +1,439 @@
+use uo;
+use os;
+use cfgfile;
+use vitals;
+
+include "include/client";
+include "include/say";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":gumps:yesNo";
+include ":datafile:datafile";
+
+function LogAccount(accname, msg)
+
+	var acc := FindAccount(accname);
+
+	if (acc)
+		var logs := acc.getprop("rplog");
+		if (logs == error)
+			logs := array;
+		endif
+		logs.append(msg);
+		acc.setprop("rplog", logs);
+	endif
+
+endfunction
+
+
+function getGrade(who)
+
+	return cint(FindAccount(who.acctname).getprop("nota"));
+
+endfunction
+
+function setGrade(who, nota)
+
+	findAccount(who.acctname).setProp("nota", nota);
+
+endfunction
+
+function incGrade(who)
+
+	var nota := getGrade(who);
+	if (nota < 2)
+		nota := nota + 1;
+	endif
+
+	setGrade(who, nota);
+
+endfunction
+
+program fichaRP(who, text)
+
+	var i;
+
+	if ( !text )
+		SendSysMessage(who, "Voce deve indicar sua acao: criar, ver, editar.");
+		return 0;
+	endif
+
+	var gumpRP, input, txt1, txt2, txt3, txt4, txt5, txt6;
+
+	if (text == "criar")
+	var anotacoes := array;
+
+    if ( GetObjProperty(who, "fichaRP") )
+        var continua := yesno(who, "Voce deseja realmente recriar sua ficha de RP? Isto fará perder tudo.", "Sim", "Nao");
+        if (!continua)
+            return 0;
+        else
+            var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+            var ficharp_elem := DFFindElement(ficharp_data_file, Hex(who.serial), DF_NO_CREATE);
+            if ( ficharp_elem ) //checa se já tem ficharp
+                anotacoes := ficharp_elem.GetProp("Anotacoes"); //guarda as anotações
+            endif
+            ficharp_data_file.DeleteElement(Hex(who.serial));
+
+            //EraseObjProperty(who, "nota");
+            EraseObjProperty(who, "fichaRP");
+            RecalcVitals(who);
+        endif
+    else
+        if (FindAccount(who.acctname).getprop("mortelog") > 3888000) //limita o mortelog inicial do char atual em 45 dias na primeira ficharp feita
+            FindAccount(who.acctname).setprop("mortelog",3888000);
+        endif
+        if(FindAccount(who.acctname).getprop("herdado"))
+            FindAccount(who.acctname).eraseprop("herdado");
+        endif
+        if (FindAccount(who.acctname).getprop("herdeiro"))
+            FindAccount(who.acctname).eraseprop("herdeiro");
+        endif
+        if (FindAccount(who.acctname).getprop("heir_days"))
+            FindAccount(who.acctname).eraseprop("heir_days");
+        endif
+    endif
+
+		var comp := Array;
+		var obj := Array;
+
+		// Comportamento (6 entradas)
+		gumpRP := GFCreateGump();
+		GFClosable(gumpRP, 0);
+		GFDisposable(gumpRP, 0);
+
+		GFResizePic(gumpRP, 0, 25, 3600, 300, 380);
+		GFResizePic(gumpRP, 15, 40, 0x13BE, 270, 350);
+		GFTextMid(gumpRP, 15, 45, 270, 55, "Ficha de RP");
+		GFTextLine(gumpRP, 20, 75, 600, "Caracteristicas Comportamentais" );
+		txt1 := GFTextEntry(gumpRP, 20, 95, 255, 35, 1153, "- ");
+		txt2 := GFTextEntry(gumpRP, 20, 130, 255, 35, 1153, "- ");
+		txt3 := GFTextEntry(gumpRP, 20, 165, 255, 35, 1153, "- ");
+		txt4 := GFTextEntry(gumpRP, 20, 200, 255, 35, 1153, "- ");
+		txt5 := GFTextEntry(gumpRP, 20, 235, 255, 35, 1153, "- ");
+		txt6 := GFTextEntry(gumpRP, 20, 270, 255, 35, 1153, "- ");
+		GFTextMid(gumpRP, 0, 315, 300, 600, "Existe um limite de caracteres");
+		GFTextMid(gumpRP, 0, 330, 300, 600, "nao escreva alem dele!");
+		GFAddButton(gumpRP, 95, 360, 2128, 2129, GF_CLOSE_BTN, 100);
+		GFAddButton(gumpRP, 155, 360, 2119, 2120, GF_CLOSE_BTN, 200);
+
+		input := GFSendGump(who, gumpRP);
+
+		if (input[0] == 200)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		else
+			comp[1] := GFExtractData(input, txt1);
+			comp[2] := GFExtractData(input, txt2);
+			comp[3] := GFExtractData(input, txt3);
+			comp[4] := GFExtractData(input, txt4);
+			comp[5] := GFExtractData(input, txt5);
+			comp[6] := GFExtractData(input, txt6);
+			for (i := 1 ; i <= 6 ; i := i + 1)
+				if (!comp[i])
+					comp[i] := "";
+				endif
+			endfor
+		endif
+
+		// Objetivos (3 entradas)
+		gumpRP := GFCreateGump();
+		GFClosable(gumpRP, 0);
+		GFDisposable(gumpRP, 0);
+
+		GFResizePic(gumpRP, 0, 25, 3600, 300, 380);
+		GFResizePic(gumpRP, 15, 40, 0x13BE, 270, 350);
+		GFTextMid(gumpRP, 15, 45, 270, 55, "Ficha de RP");
+		GFTextLine(gumpRP, 20, 75, 600, "Objetivos Atuais" );
+		txt1 := GFTextEntry(gumpRP, 20, 95, 255, 70, 1153, "- ");
+		txt2 := GFTextEntry(gumpRP, 20, 165, 255, 70, 1153, "- ");
+		txt3 := GFTextEntry(gumpRP, 20, 235, 255, 70, 1153, "- ");
+		GFTextMid(gumpRP, 0, 315, 300, 600, "Existe um limite de caracteres");
+		GFTextMid(gumpRP, 0, 330, 300, 600, "nao escreva alem dele!");
+		GFAddButton(gumpRP, 95, 360, 2128, 2129, GF_CLOSE_BTN, 100);
+		GFAddButton(gumpRP, 155, 360, 2119, 2120, GF_CLOSE_BTN, 200);
+
+		input := GFSendGump(who, gumpRP);
+
+		if (input[0] == 200)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		else
+			obj[1] := GFExtractData(input, txt1);
+			obj[2] := GFExtractData(input, txt2);
+			obj[3] := GFExtractData(input, txt3);
+			for (i := 1 ; i <= 3 ; i := i + 1)
+				if (!obj[i])
+					obj[i] := "";
+				endif
+			endfor
+		endif
+
+
+		var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+		var ficharp_elem := DFFindElement(ficharp_data_file, Hex(who.serial), DF_CREATE);
+		ficharp_elem.SetProp("Comportamento", comp);
+		ficharp_elem.SetProp("Objetivos", obj);
+		SetObjProperty(who, "fichaRP", 1);
+		if ( anotacoes ) //se existir as anotacoes, adiciona elas de novo.
+			ficharp_elem.SetProp("Anotacoes", anotacoes);
+		endif
+
+		RecalcVitals(who);
+
+
+	elseif (text == "ver")
+
+		var player;
+		if (who.cmdlevel || GetObjProperty(who, "Helper"))
+			player := Target(who);
+			if (!player)
+				player := who;
+			endif
+		else
+			player := who;
+		endif
+		var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+		var ficharp_elem := DFFindElement(ficharp_data_file, Hex(player.serial), DF_NO_CREATE);
+		if ( !ficharp_elem )
+			SendSysMessage(who, player.name+" nao tem ficha de RP.");
+			return 0;
+		endif
+		var anotacoes := ficharp_elem.GetProp("Anotacoes");
+		var comportamento := ficharp_elem.GetProp("Comportamento");
+		var objetivos := ficharp_elem.GetProp("Objetivos");
+
+		if (!anotacoes)
+			anotacoes := "Não foram feitas anotações nessa ficha de RP";
+		endif
+
+
+		var texto := "Comportamento<br>";
+		var i;
+		for (i := 1 ; i <= 6 ; i := i + 1)
+			texto := texto+comportamento[i]+"<br>";
+		endfor
+		texto := texto+"<br><br>Objetivos<br>";
+		for (i := 1 ; i <= 3 ; i := i + 1)
+			texto := texto+objetivos[i]+"<br>";
+		endfor
+		texto := texto+"<br><br>Anotacoes<br>";
+		for (i := 1 ; i <= anotacoes.size() ; i := i + 1)
+			texto := texto+anotacoes[i]+"<br>";
+		endfor
+
+		SendHTMLGump(who, "Ficha RP de "+player.name, texto);
+
+
+	elseif (text == "editar")
+
+
+		var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+		var ficharp_elem := DFFindElement(ficharp_data_file, Hex(who.serial), DF_NO_CREATE);
+		if ( !ficharp_elem )
+			SendSysMessage(who, who.name+" nao tem ficha de RP.");
+			return 0;
+		endif
+		var objetivos := ficharp_elem.GetProp("Objetivos");
+
+		var obj := Array;
+
+		gumpRP := GFCreateGump();
+		GFClosable(gumpRP, 0);
+		GFDisposable(gumpRP, 0);
+
+		GFResizePic(gumpRP, 0, 25, 3600, 300, 380);
+		GFResizePic(gumpRP, 15, 40, 0x13BE, 270, 350);
+		GFTextMid(gumpRP, 15, 45, 270, 55, "Ficha de RP");
+		GFTextLine(gumpRP, 20, 75, 600, "Objetivos Atuais" );
+		txt1 := GFTextEntry(gumpRP, 20, 95, 255, 70, 1153, objetivos[1]);
+		txt2 := GFTextEntry(gumpRP, 20, 165, 255, 70, 1153, objetivos[2]);
+		txt3 := GFTextEntry(gumpRP, 20, 235, 255, 70, 1153, objetivos[3]);
+		GFTextMid(gumpRP, 0, 315, 300, 600, "Para modificar seu comportamento");
+		GFTextMid(gumpRP, 0, 330, 300, 600, "e necessário recriar a ficha!");
+		GFAddButton(gumpRP, 95, 360, 2128, 2129, GF_CLOSE_BTN, 100);
+		GFAddButton(gumpRP, 155, 360, 2119, 2120, GF_CLOSE_BTN, 200);
+
+		input := GFSendGump(who, gumpRP);
+
+		if (input[0] == 200)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		else
+			obj[1] := GFExtractData(input, txt1);
+			obj[2] := GFExtractData(input, txt2);
+			obj[3] := GFExtractData(input, txt3);
+			for (i := 1 ; i <= 3 ; i := i + 1)
+				if (!obj[i])
+					obj[i] := "";
+				endif
+			endfor
+		endif
+
+		ficharp_elem.SetProp("Objetivos", obj);
+
+
+	elseif (text == "avaliar")
+
+		var player;
+		if (who.cmdlevel || GetObjProperty(who, "Helper"))
+			player := Target(who);
+			if (!player)
+				player := who;
+			endif
+		else
+			SendSysMessage(who, "Voce nao tem acesso a esse comando!");
+			return 0;
+		endif
+
+		var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+		var ficharp_elem := DFFindElement(ficharp_data_file, Hex(player.serial), DF_NO_CREATE);
+		if ( !ficharp_elem )
+			SendSysMessage(who, player.name+" nao tem ficha de RP.");
+			return 0;
+		endif
+		var anotacoes := ficharp_elem.GetProp("Anotacoes");
+		//var nota := GetObjProperty(player, "nota");
+		if (!anotacoes)
+			anotacoes := Array;
+		endif
+
+		//if (nota == error)
+		//	nota := "";
+		//endif
+
+		gumpRP := GFCreateGump();
+		GFClosable(gumpRP, 0);
+		GFDisposable(gumpRP, 0);
+
+		GFResizePic(gumpRP, 0, 25, 3600, 300, 380);
+		GFResizePic(gumpRP, 15, 40, 0x13BE, 270, 350);
+		GFTextMid(gumpRP, 15, 45, 270, 55, "Ficha de RP");
+		GFTextLine(gumpRP, 20, 75, 600, "Anotacoes" );
+		txt1 := GFTextEntry(gumpRP, 20, 95, 255, 200, 1153, "- ");
+//		GFTextLine(gumpRP, 40, 260, 600, "+1 [Atual: " + getGrade(who) + " ]" ); // se quiser voltar notarp
+//		GFAddButton(gumpRP, 20, 264, 2103, 2104, GF_CLOSE_BTN, 900);
+		GFTextMid(gumpRP, 0, 300, 300, 600, "Essa anotacao sera acrescentada");
+		GFTextMid(gumpRP, 0, 315, 300, 600, "as ja existentes, se houver, nessa");
+		GFTextMid(gumpRP, 0, 330, 300, 600, "ficha de RP!");
+		GFAddButton(gumpRP, 95, 360, 2128, 2129, GF_CLOSE_BTN, 100);
+		GFAddButton(gumpRP, 155, 360, 2119, 2120, GF_CLOSE_BTN, 200);
+
+		input := GFSendGump(who, gumpRP);
+
+		if (input[0] == 200)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+/*		elseif (input[0] == 900) // se quiser voltar notarp
+			if (GetGrade(player) == 2)
+				SendSysMessage(who, "A nota ja esta no maximo.");
+				return;
+			endif
+			SendSysMessage(who, "Voce aumentou a nota");
+			incGrade(player);
+			LogAccount(player.acctname, who.acctname + " subiu nota: " + getGrade(player));*/
+		else
+			var str :=  GFExtractData(input, txt1);
+			if (str != error)
+				str := str + " [por " + who.acctname + "]";
+				anotacoes.append(str);
+			endif
+			PrintTextAbovePrivate(player, "*Voce Recebeu Novas Avaliacoes*", player);
+			SendSysMessageEx(player, "Voce Recebeu Novas Avaliacoes", SSM_INFO);
+/*			if ( anotacoes.size() > 0 )
+				str :=
+				if (
+				anotacoes[anotacoes.size()+1] := GFExtractData(input, txt1);
+			else
+				anotacoes[1] := GFExtractData(input, txt1);
+			endif*/
+		endif
+
+		var i := 0;
+		for( i := 0; i < anotacoes.size(); i := i +1)
+			if (anotacoes[i] == error)
+				anotacoes.erase(i);
+			endif
+		endfor
+
+		ficharp_elem.SetProp("Anotacoes", anotacoes);
+		//nota := GFExtractData(input, txt2);
+		//LogToFile(":fls_core:rp.log", who.name+" ("+who.acctname+") avaliou "+player.name+" ("+player.acctname+") :: NOTA ["+CInt(GetObjProperty(player, "nota"))+" para "+CInt(nota)+"] e ANOTAÇÃO ["+anotacoes[anotacoes.size()]+"]", LOG_DATETIME);
+		//if (nota)
+		//	ficharp_elem.SetProp("Nota", nota);
+		//	SetObjProperty(player,"nota",CInt(nota));
+		//endif
+
+		RecalcVitals(player);
+	elseif (SplitWords(text)[1] == "nota")
+		var player;
+		if (who.cmdlevel)
+			player := Target(who);
+			if (!player)
+				player := who;
+			endif
+			var novaNota := SplitWords(text)[2];
+			if(!novaNota)
+				SendSysMessage(who, "Não inseriu o valor da nova nota!");
+				return 0;
+			else
+				var velhaNota := CInt(FindAccount(player.acctname).getprop("nota"));
+				FindAccount(player.acctname).setprop("nota",novaNota);
+				SendSysMessage(who, who.acctname + " definiu nota para "+ player.acctname +": "+ velhaNota + "=>" + novaNota);
+				LogAccount(player.acctname, who.acctname + " definiu nota para "+ player.acctname +": "+ velhaNota + "=>" + novaNota);
+				return 1;
+			endif
+		else
+			SendSysMessage(who, "Voce nao tem acesso a esse comando!");
+			return 0;
+		endif
+
+	elseif (SplitWords(text)[1] == "excluir")
+
+
+		var indice := SplitWords(text);
+		indice := indice[2];
+		if (!indice)
+			SendSysMessage(who, "Voce precisa indicar a observacao que deseja excluir.");
+		endif
+		var player;
+		if (who.cmdlevel || GetObjProperty(who, "Helper"))
+			player := Target(who);
+			if (!player)
+				player := who;
+			endif
+		else
+			SendSysMessage(who, "Voce nao tem acesso a esse comando!");
+			return 0;
+		endif
+
+		var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+		var ficharp_elem := DFFindElement(ficharp_data_file, Hex(player.serial), DF_NO_CREATE);
+		if ( !ficharp_elem )
+			SendSysMessage(who, player.name+" nao tem ficha de RP.");
+			return 0;
+		endif
+		var anotacoes := ficharp_elem.GetProp("Anotacoes");
+		if (!anotacoes)
+			SendSysMessage(who, player.name+" nao possui anotacoes.");
+			return 0;
+		elseif (indice == "tudo")
+			ficharp_elem.EraseProp("Anotacoes");
+		else
+			if (CInt(indice) > anotacoes.size())
+				SendSysMessage(who, "Essa anotacao nao existe.");
+				return 0;
+			else
+				anotacoes.erase(CInt(indice));
+				ficharp_elem.SetProp("Anotacoes", anotacoes);
+				SendSysMessage(who, "Anotacao "+indice+" excluida com sucesso!");
+			endif
+		endif
+
+
+	else
+		SendSysMessage (who, "Parametro inadequado!");
+	endif
+
+endprogram

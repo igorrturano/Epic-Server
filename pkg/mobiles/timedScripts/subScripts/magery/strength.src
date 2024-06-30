@@ -1,0 +1,35 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#StrengthMod") )
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	var cast_points := level;
+	//cast_points := cast_points/2;
+	if (cast_points < 10)
+		cast_points := 10;
+	endif
+	var stat := AP_GetStat(mobile, STRENGTH);
+	stat := (stat*cast_points)/100;
+	var points := CInt(stat);
+
+	SetObjProperty(mobile, "#StrengthMod", points);
+	AP_ModifyStatMod(mobile, STRENGTH, points);
+	
+	return 1;
+endprogram

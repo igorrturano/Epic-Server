@@ -1,0 +1,43 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+include "include/sounds";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+include "include/damage";
+include ":attributes:attributes";
+include "include/say";
+include ":attributes:attributeConstants";
+include ":charactercreation:resists";
+
+program SecondWind(params)
+    var who := params[1];
+    params := 0; // No longer needed
+    var targ := Target(who);
+
+    var timer_list := TS_GetTimerList(targ);
+    foreach timer in ( timer_list.keys() )
+        timer := lower(timer);
+        if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" 
+        || timer == "desarmar" || timer == "desmontar" || timer == "polymorph" 
+        || timer == "apodrecer" || timer == "clumsy" || timer == "atrasarmagias"
+        || timer == "feebleMind" || timer == "dmgreduction" || timer == "sleep")
+            TS_LowerDuration(who, timer, -1);
+        endif
+    endforeach
+	
+	var vont := (GetResist(who, VONTADE));
+    var heal_amt := (CInt(vont * 1.5));
+    var stam_amt := (CInt(vont * 0.5));
+//    var heal_amt := (CInt(AP_GetSkill(who, MEDICINE)) * 1.5);
+//    var stam_amt := (CInt(AP_GetSkill(who, MEDICINE)) * 0.5);
+
+    HealStamina(targ, stam_amt);
+    HealHits(targ, heal_amt);
+
+    SendSysMessageEx( targ, "Zanshir reconhece sua coragem!", SSM_INFO );
+    PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 10);
+    PlaySoundEffect(targ, SFX_SPELL_HEAL);
+endprogram 

@@ -1,0 +1,90 @@
+ 
+ 
+ 
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/damage";
+include "include/shapes";
+include ":nature:nature";
+include ":spells:swordmage";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
+	var targ := who.weapon; //Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
+
+	if (targ.isA(POLCLASS_WEAPON))
+
+		var elemental := GetObjProperty(targ, "#elementalweapon");
+		if (elemental.type != DMG_ENERGY)
+			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina Eletrificada.", SSM_FAIL);
+			return 1;
+		endif
+
+		if (!GetCooldown(targ, "circulodevas") )
+			SendSysMessageEx(who, "Esta arma precisa estar encantada com Circulo de Devastacao.", SSM_FAIL);
+			return 1;
+		endif
+
+		releasegems(who, targ);
+		targ.hp := 0;
+		SendSysMessage(who, targ.desc+" quebrou.");
+		MoveObjectToLocation(targ, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
+		SetObjProperty(targ, "broken", 1);
+		SetObjProperty(targ, "realdesc", targ.desc);
+		eraseobjproperty(targ, "gems");
+		SetName(targ, targ.desc+" [danificado]");
+		MoveItemToContainer(targ, who.backpack);
+
+
+		windsound( who);
+
+		var k := 0;
+		var bolts := 20;
+		while( k < bolts)
+			//if (RandomInt(100) < 15 )
+				DoBolt(who);
+			//endif
+			k := k + 1;
+			sleepms(10);
+		endwhile
+
+		foreach defender in (ListMobilesNearLocation( who.x, who.y, who.z, 12, who.realm ))
+			if ( !(defender in who.party.members ) )
+				if (defender.serial != who.serial)
+      					PlaySoundEffect(defender, 0x228);
+					var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
+      					PlayLightningBoltEffect( defender );
+					DamageFLS(defender, cint(dmg), DMG_COLD, who);
+				endif
+			endif
+    		endforeach
+	
+		return 1;
+	endif
+
+	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+
+endprogram 
+
+function windsound( person)
+	var wind := {21, 22, 23};
+	if (randomdiceroll("1d4") == 2)
+		playsoundeffect(person, wind[randomint(3)+1]);
+	endif
+endfunction

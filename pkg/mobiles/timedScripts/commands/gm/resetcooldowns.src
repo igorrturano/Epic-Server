@@ -1,0 +1,23 @@
+use uo;
+
+include ":timedscripts:timedScripts";
+
+program reset(who)
+
+	sendsysmessage(who, "Escolha o alvo.");
+	var targ := Target(who);
+
+	if (!targ || targ.npctemplate)
+		SendSysMessage(who, "Alvo invalido.");
+		return;
+	endif
+
+	var list := TS_GetCooldownList(targ);
+
+	foreach key in (list.keys())
+		SendSysMessage(who, " " + key + " resetado." );
+		TS_LowerDuration(targ, key, 10000, 1);
+	endforeach
+	
+
+endprogram 

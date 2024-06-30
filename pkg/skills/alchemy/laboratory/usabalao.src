@@ -1,0 +1,33 @@
+use uo;
+use os;
+use util;
+
+const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
+
+program usabalao(who, item)
+
+  if (GetObjProperty(item, "extrato"))
+     SendSysMEssage(who, "Ainda tem liquido nesse balao.");
+     return;
+  endif
+
+  SendSysMessage(who, "Escolha o liquido que deseja colocar aqui.");
+  var alvo := target(who);
+ 
+
+  if (!GetObjProperty(alvo, "extrato"))
+     SendSysMessage(who, "Esse liquido nao vai ser destilado usando esse balao!");
+     return;
+  endif
+  
+  PlaySoundEffect (who, 0x241);
+ 
+  //sleep(3);
+  var extrato := GetObjProperty(alvo, "extrato");
+  SendSysMessage(who, "Voce colocou o liquido no balao.");
+  SetObjProperty(item, "extrato", extrato);
+  SetObjProperty(item, "strength", cint(GetObjProperty(alvo, "strength")));
+ DestroyItem(alvo);   
+  CreateIteminBackpack(who, 0x0f0e, 1);
+  
+endprogram

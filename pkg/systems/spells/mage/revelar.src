@@ -1,0 +1,65 @@
+  use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+/*
+	foreach mobile in (ListMobilesNearLocationEx(who.x, who.y, who.z, 8, LISTEX_FLAG_HIDDEN, who.realm))
+		mobile.hidden := 0;
+		printtext(mobile, "*revelado*");
+	endforeach
+
+	var items  := ListItemsNearLocation( cint(who.x), cint(who.y), cint(who.z), 8, who.realm );
+    	foreach item in items
+		if ( GetObjProperty(item, "TrapList") != error )
+				SetObjProperty(item, "trapSpoted", 1);
+				PrintTextAbovePrivate(item, "*este item contem uma armadilha*", who);
+		elseif ( item.isTrap())
+				item.invisible := 0;
+				PrintTextAbovePrivate(item, "*este item contem uma armadilha*", who);
+		endif
+	 endforeach
+*/
+
+	foreach mobile in ListMobilesNearLocationEX(who.x, who.y, who.z, 5, LISTEX_FLAG_HIDDEN)
+		if ( mobile == who ); // Do Nothing
+		else
+			if ( CheckLineOfSight(who, mobile) )
+				mobile.hidden := 0;
+				PrintText(mobile, "*aparece*");
+				SendSysMessage(who, "Voce encontrou "+mobile.name+".");
+				SendSysMessage(mobile, who.name+" te encontrou!");
+			endif
+		endif
+		sleepms(2);
+	endforeach
+
+	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 5)
+		if ( item.invisible )
+			if ( item.isTrap() )
+				item.invisible := 0;
+				SendSysMessage(who, "Voce encontrou "+item.desc+".");
+				PrintTextAbovePrivate(item, "*!*", who);
+			else
+				var diff := CInt(GetObjProperty(item, "FindDiff"));
+				if ( diff )
+					item.invisible := 0;
+					SendSysMessage(who, "Voce encontrou "+item.desc+".");
+					PrintTextAbovePrivate(item, "*!*", who);
+				endif
+			endif
+		endif
+		sleepms(2);
+	endforeach
+
+	return 1;
+endprogram   

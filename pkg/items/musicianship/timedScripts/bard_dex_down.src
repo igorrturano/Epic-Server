@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_dex_down(params)
+	var alvo := params[1];
+	var caster := params[2];
+	var modificador := (-1) * params[3];
+	var teste := GetObjProperty(alvo, "#Bard_dex_down");
+	if(teste) //verifica se ja esta sob efeito similar
+		if(modificador < teste) //se o novo efeito é maior, aplica a diferença
+			Set_Critical(1);
+			SetObjProperty(alvo, "#Bard_dex_down", modificador);
+			AP_ModifyStatMod(alvo, DEXTERITY, modificador-teste);
+			Set_Critical(0);
+			PrintTextAbovePrivate(alvo, (modificador-teste) + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+			return 1;
+		else
+			return 0;
+		endif
+	else
+		Set_Critical(1);
+		SetObjProperty(alvo, "#Bard_dex_down", modificador);
+		AP_ModifyStatMod(alvo, DEXTERITY, modificador);
+		Set_Critical(0);
+		PrintTextAbovePrivate(alvo, modificador + " Dex", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+		return 1;
+	endif
+endprogram

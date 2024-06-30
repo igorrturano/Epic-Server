@@ -1,0 +1,258 @@
+use uo;
+use datafile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":ghaia:ghaia";
+include ":gumps:yesNo";
+
+program gumpspawn(who)
+
+	createSpawngump(who, 1);
+
+endprogram
+
+function createSpawngump(who, type,  oldspawns := 0, start := 0, end := 0)
+
+	var df := OpenDataFile(":tn:spawns");
+	if (!df)
+		df := CreateDataFile( ":tn:spawns", DF_KEYTYPE_INTEGER );
+	endif
+
+	var spawns := array;
+
+	if (type == 1)
+		foreach spawn in (df.keys())
+			var spawnpoint := SystemFindObjectBySerial(spawn);
+			if (spawnpoint == error)
+				df.deleteElement(spawn);
+			else
+				spawns.append(spawnpoint);
+			endif
+			sleepms(2);
+		endforeach
+	elseif ( type == 2)
+		var npctemplatename := Requestgump(who, "Digite o template do npcs. ex.: :brainai:skeleton4");
+		foreach spawn in (df.keys())
+			var spawnpoint := SystemFindObjectBySerial(spawn);
+			var spawnnpctemplate := GetObjProperty(spawnpoint, "Spawn");
+			if (spawnnpctemplate == npctemplatename)
+				spawns.append(spawnpoint);
+			endif
+			sleepms(2);
+		endforeach
+	elseif ( type == 3) //todo exibir as opções de regions
+		var regionrect := Requestgump(who, "Digite o x1, y1, x2, y2");
+		if (regionrect)
+			regionrect := SplitWords(regionrect);
+			foreach spawn in (df.keys())
+				var spawnpoint := SystemFindObjectBySerial(spawn);
+				if ( (spawnpoint.x > Cint(regionrect[1])) && (spawnpoint.y > Cint(regionrect[2])) && (spawnpoint.x < Cint(regionrect[3]) ) && (spawnpoint.y < Cint(regionrect[4]) ) )
+					spawns.append(spawnpoint);
+				endif
+				sleepms(2);
+			endforeach
+		endif
+	elseif (type == 4)
+		foreach spawn in (df.keys())
+			var spawnpoint := SystemFindObjectBySerial(spawn);
+			if ( GetObjProperty(spawnpoint, "unique") != error )
+				spawns.append(spawnpoint);
+			endif
+			sleepms(2);
+		endforeach
+	elseif ( type == 5)
+		var npctype := Requestgump(who, "Digite o tipo de npc (as categorias do .createnpc");
+		if (npctype)
+			foreach spawn in (df.keys())
+				var spawnpoint := SystemFindObjectBySerial(spawn);
+				var template := ParseTemplateName(GetObjProperty(spawnpoint, "Spawn")).template;
+				var cfg := ReadConfigFile("::npcdesc");
+				if (cfg)
+					var elem := FindConfigElem(cfg, template);
+					if ( GetConfigString(elem, "Category") == npctype)
+						spawns.append(spawnpoint);
+					endif
+				endif
+				sleepms(2);
+			endforeach
+		endif
+	elseif (oldspawns && start && end)
+		spawns.clear();
+		var k := start;
+		while (k <= end)
+			spawns.append(oldspawns[k]);
+			k := k + 1;
+			sleepms(2);
+		endwhile
+	endif
+
+	if (spawns.size() > 110)
+		createSpawngump(who, 100, spawns, 1, 100);
+		return 1;
+	endif
+
+	var gump := GFCreateGump();
+
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 470);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 440);
+	GFTextMid(gump, 20, 50, 250, 1153, "Spawns");
+
+	GFPage(gump, 0);
+	GFTextLine(gump, 40, 70, 1153, "Lista de todos");
+	GFTextLine(gump, 40, 85, 1153, "Listar por npctemplate");
+	GFTextLine(gump, 40, 100, 1153, "Listar por regiao");
+	GFTextLine(gump, 40, 115, 1153, "Listar por chefes");
+	GFTextLine(gump, 40, 130, 1153, "Listar por tipo de npc");
+
+	GFTextLine(gump, 200, 70, 1153, "Carregar todos spawns");
+	GFTextLine(gump, 200, 85, 1153, "Editar Selecionados");
+	GFTextLine(gump, 200, 100, 1153, "Deletar Selecionados");
+	if (oldspawns)
+		GFTextLine(gump, 200, 115, 1153, "Exibindo: " + start +" ate " + end +" de "+ oldspawns.size() );
+	endif
+
+	if (oldspawns)
+		GFTextLine(gump, 200, 130, 1153, "Next 100 " );
+		GFTextLine(gump, 300, 130, 1153, "Prev 100 " );
+		GFAddButton( gump, 180, 133, 2103, 2104, 1, 9);
+		GFAddButton( gump, 280, 133, 2103, 2104, 1, 10);
+	endif
+
+	GFTextLine(gump, 40, 145, 1153, "Spawn");
+	GFTextLine(gump, 140, 145, 1153, "Ran");
+	GFTextLine(gump, 170, 145, 1153, "Min");
+	GFTextLine(gump, 200, 145, 1153, "Max");
+	GFTextLine(gump, 230, 145, 1153, "Amt");
+	GFTextLine(gump, 260, 145, 1153, "X Y Z");
+
+	GFAddButton( gump, 20, 73, 2103, 2104, 1, 1);
+	GFAddButton( gump, 20, 88, 2103, 2104, 1, 2);
+	GFAddButton( gump, 20, 103, 2103, 2104, 1, 3);
+	GFAddButton( gump, 20, 118, 2103, 2104, 1, 4);
+	GFAddButton( gump, 20, 133, 2103, 2104, 1, 5);
+
+	GFAddButton( gump, 180, 73, 2103, 2104, 1, 6);
+	GFAddButton( gump, 180, 88, 2103, 2104, 1, 7);
+	GFAddButton( gump, 180, 103, 2103, 2104, 1, 8);
+
+	var x := 40;
+	var y := 160;
+	var i := 1;
+	var pagecount := 0;
+	var page := 1;
+	GFSetRadioGroup(gump, 1);
+	GFPage(gump, 1);
+	foreach spawn in spawns
+		GFTextLine(gump, x, y, 1153, ""+ ParseTemplateName(GetObjProperty(spawn, "Spawn")).template);
+		GFTextLine(gump, x+100, y, 1153, ""+GetObjProperty(spawn, "Range"));
+		GFTextLine(gump, x+130, y, 1153, ""+GetObjProperty(spawn, "MinDelay"));
+		GFTextLine(gump, x+160, y, 1153, ""+GetObjProperty(spawn, "MaxDelay"));
+		GFTextLine(gump, x+190, y, 1153, ""+GetObjProperty(spawn, "Amount"));
+		GFTextLine(gump, x+220, y, 1153, ""+spawn.x + " " + spawn.y + " " + spawn.z);
+		GFAddButton( gump, x+210, y+3, 2103, 2104, 1, 1000+i);
+		GFCheckBox( gump, 20, y+3, 2362, 2360, 0, 100+i);
+		y := y + 15;
+		i := i +1;
+		pagecount := pagecount + 1;
+		if (pagecount == 21)
+			y := 160;
+			pagecount := 0;
+			page := page+1;
+			GFAddButton(gump, 350, 470, 2437, 2437, GF_PAGE_BTN, page);
+			GFPage(gump, page);
+			GFAddButton(gump, 350, 160, 2436, 2436, GF_PAGE_BTN, page-1);
+		endif
+		if (i == 100)
+
+		endif
+		sleepms(2);
+	endforeach
+
+	SendSysMessage(who, "Total de spawns: " + spawns.size());
+
+	var result := GFSendGump(who, gump);
+	if (result[0])
+		if (result[0] == 6)
+			if (who.cmdlevel < 4)
+				SendSysMessage(who, "Você não pode fazer isso.");
+				return;
+			endif
+			var carrega := yesno(who, "Carregar todos os spawns do mundo aqui demora MUITO. Deseja fazer isso?");
+			if (carrega)
+				var list := ListObjectsInBox( 1,1, -128, 6140, 4090, 128, who.realm);
+				foreach x in list
+					if (x.objtype == 41985)
+						if (!df.FindElement(x.serial))
+							df.CreateElement(x.serial);
+							sleepms(2);
+						endif
+					endif
+				endforeach
+			endif
+		elseif (result[0] == 7)
+			var modificar := array;
+			foreach key in (result.keys)
+				if (key >= 100)
+					if (spawns[key-100]  )
+						modificar.append(spawns[key-100]);
+					endif
+				endif
+			endforeach
+			var template :=  Requestgump(who, "Digite o npctemplate. ex.: :brainai:rat");
+			var minvalue := Cint(Requestgump(who, "Digite o MinDelay"));
+			var maxvalue := Cint(Requestgump(who, "Digite o MaxDelay"));
+			var range := Cint(Requestgump(who, "Digite o Range"));
+			var amt := Cint(Requestgump(who, "Digite o Amount"));
+			foreach x in modificar
+				SetObjProperty(x, "Amount",   amt);
+				SetObjProperty(x, "Range",    range);
+				SetObjProperty(x, "MinDelay", minvalue);
+				SetObjProperty(x, "MaxDelay", maxvalue);
+				SetObjProperty(x, "Spawn",    template);
+				SetObjProperty(x, "ResetMe",  1);
+			endforeach
+		elseif (result[0] == 8 )
+			var modificar := array;
+			foreach key in (result.keys)
+				if (key >= 100)
+					if (spawns[key-100]  )
+						modificar.append(spawns[key-100]);
+					endif
+				endif
+			endforeach
+			foreach x in modificar
+				DestroyItem(x);
+			endforeach
+		elseif (result[0] == 9 )
+			var newstart := start + 100;
+			var newend := end + 100;
+			if ( newend > oldspawns.size() )
+				newend := oldspawns.size();
+			endif
+			if (newstart > oldspawns.size())
+				newstart := start;
+			endif
+			createSpawngump(who, 100, oldspawns, newstart, newend);
+			return 1;
+		elseif (result[0] == 10)
+			var newstart := start - 100;
+			var newend := newstart + 99;
+			if (newstart < 0)
+				newstart := 0;
+			endif
+			if (newend > oldspawns.size())
+				newend := oldspawns.size();
+			endif
+			createSpawngump(who, 100, oldspawns, newstart, newend);
+			return 1;
+		elseif( result[0] >= 1000)
+			MoveObjectToLocation( who, spawns[result[0]-1000].x, spawns[result[0]-1000].y, spawns[result[0]-1000].z, spawns[result[0]-1000].realm, MOVEOBJECT_FORCELOCATION );
+		else
+			CreateSpawnGump(who, result[0]);
+		endif
+	endif
+
+endfunction

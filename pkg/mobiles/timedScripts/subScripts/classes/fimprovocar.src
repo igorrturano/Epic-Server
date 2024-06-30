@@ -1,0 +1,16 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+	
+	var points := CInt(GetObjProperty(mobile, "parrybonus"));	
+	mobile.evasionchance_mod := mobile.evasionchance_mod - points;
+
+	EraseObjProperty(mobile, "parrybonus");
+	return 1;
+endprogram
+   
+

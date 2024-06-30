@@ -1,0 +1,121 @@
+use uo;
+use cfgfile;
+use os;
+use datafile;
+use util;
+
+program motherbrain()
+
+	var config := readconfigfile(":tn:config/motherbrain");
+	config := config["settings"];
+	var cycle := config.cycle;
+	unloadconfigfile("tn:config/motherbrain");
+	if (cycle == error)
+		cycle := 240;
+	endif
+
+	var socdata := OpenDataFile( ":tn:motherbrain" );
+	var objdata := OpenDataFile( ":tn:objetivos" );
+	
+	if (!socdata || !objdata)
+		syslog("Motherbrain can't start: incomplete data files.");
+		return 0;
+	endif
+
+	//loop da motherbrain, percorre todas as sociedades, spawna a quantidade base, depois percorre todos os bjetivos da sociedade
+	//e ve quais a socieade conquistou e quais nao conquistou, move as tropas para os qnao conquistados.
+	while(1)
+		
+		var sociedades := socdata.Keys();
+	
+		foreach key in sociedades
+			print("sociedade " + key);
+			var elem := socdata.FindElement(key);
+			var socinfo := elem.GetProp("societyinfo");
+			var npcs := SpawnNpcs(socinfo);
+			print("npc criados" + socinfo.npcs);
+			var possiveis := array{}; //possiveis objetivos
+			foreach obj in (socinfo.objetivos)
+				var elem := objdata.FindElement(obj);
+				print("avaliando objetivo: " + obj );
+				if (elem)
+					var objinfo := elem.GetProp("objinfo");
+					if (objinfo.conquistador != socinfo.nome) //se ele nao conquistou o objetivo
+						print("objetivo possivel: " + obj);
+						possiveis.append(obj);
+					endif
+				else
+					print("obj not found " + elem);
+				endif
+				sleepms(3);
+			endforeach
+			
+			//TODO fazer uma escolha nao random
+			if (possiveis.size() > 0)
+				var objalvo  := possiveis[RandomInt(possiveis.size())+1];
+				var objelem := objdata.FindElement(objalvo);
+				var objinfo := objelem.GetProp("objinfo");
+				var objloc := array{};
+				objloc.append(Cint(objinfo.x));
+				objloc.append(Cint(objinfo.y));
+				objloc.append(Cint(objinfo.z));
+				print("objetivo escolhido: " + objalvo + " " + objelem + " " + objinfo + " " + objloc);
+				foreach x in npcs
+					SetObjProperty(x, "objloc", objloc);
+					print("setando objetivo no npc: " + objloc);
+					sleepms(2);
+				endforeach
+			endif
+			sleepms(5);
+		endforeach
+	
+		sleep(cycle*60);
+	endwhile
+
+
+endprogram
+	
+function SpawnNpcs(byref socinfo)
+	
+	var type := socinfo.type;
+	var amt := socinfo.base.spawn;
+	var x := Cint(socinfo.base.x);
+	var y := Cint(socinfo.base.y);
+	var z := Cint(socinfo.base.z);
+	var range := 4;
+	x := x + RandomInt(2 * range) - range;
+	y := y  + RandomInt(2 * range) - range;
+	var template := GetTemplateByType(type);
+	
+	print("x " + x + " y " + y + " " + z);
+	
+	var ret := array{};
+	var i := 0;
+	while (i < amt)
+		var npc := CreateNpcFromTemplate( template, x , y, z, 0, socinfo.base.realm);
+		print( "npc criado " + npc);
+		SetObjProperty(npc, "socname", socinfo.nome);
+		socinfo.npcs.append(npc.serial);
+		ret.append(npc);
+		i := i + 1;
+	endwhile
+	
+	return ret;
+	
+endfunction
+
+function GetTemplateByType(type)
+
+	if (type == "Undeads")
+		return ":brainai:skeleton3";
+	elseif (type == "Ratmans")
+		return ":brainai:ratman1";
+	elseif ( type == "Lizardmans")
+		return ":brainai:LizardMan1";
+	elseif ( type == "Humanos")
+		return ":brainai:HumanWarrior";
+	elseif ( type == "Orcs")
+		return ":brainai:goblin1";
+	endif
+
+endfunction

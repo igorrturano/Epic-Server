@@ -1,0 +1,47 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+include "include/sysEvent";
+include ":timedScripts:timedScripts";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	var x := 0;
+	var qnt := 0;
+	var rand;
+	var rand2;
+	var rat;
+	PrintTextAbove(mobile, "*Ratos saem de todas as partes*",3,191);
+
+	while (x < 8)
+	rand := randomint(13);
+	rand2 := randomint(4);
+
+	if (rand2 == 1)
+	rat := createnpcfromtemplate(":brainai:rat", (mobile.x + rand), (mobile.y + rand), mobile.z, 0 , mobile.realm);
+	elseif (rand2 == 2)
+	rat := createnpcfromtemplate(":brainai:rat", (mobile.x - rand), (mobile.y - rand), mobile.z, 0 , mobile.realm);
+	elseif (rand2 == 3)
+	rat := createnpcfromtemplate(":brainai:rat", (mobile.x + rand), (mobile.y - rand), mobile.z, 0 , mobile.realm);
+	elseif (rand2 == 4)
+	rat := createnpcfromtemplate(":brainai:rat", (mobile.x - rand), (mobile.y + rand), mobile.z, 0 , mobile.realm);
+	elseif (rand2 == 0)
+	rat := createnpcfromtemplate(":brainai:rat", (mobile.x + rand), (mobile.y + rand), mobile.z, 0 , mobile.realm);
+	endif		
+
+	setobjproperty(rat, "bardmagic", 1);
+
+	TS_StartTimer(rat, "kill", 180);	
+
+	sleepms (500);
+	
+	x := x + 1;
+	endwhile
+	
+	return 1;
+endprogram

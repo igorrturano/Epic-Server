@@ -1,0 +1,25 @@
+use uo;
+
+include "include/say";
+
+program makekey ( who )
+
+    SendSysMessageEx( who, "Escolha a chave ou container.", SSM_REQUEST );
+    var lockeditem := Target( who);
+
+    if(! lockeditem)
+       SendSysMessageEx( who, "Cancelado.", SSM_FAIL );
+       return;
+    endif
+
+    var lockid := GetObjProperty(lockeditem, "LockId");
+
+    if (! lockid)
+	SendSysMessageEx( who, "Nao existe fechadura aqui. Use .rekey antes." );
+    else
+	var key := CreateItemInBackpack( who, "ironkey", 1 );
+	SetObjProperty( key, "LockId", lockid );   
+    	SendSysMessageEx( who, "Criada uma chave para essa fechadura.", SSM_INFO );
+    endif
+
+endprogram

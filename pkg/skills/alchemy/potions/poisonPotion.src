@@ -1,0 +1,22 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+
+program drink_blue(who, potion)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!Accessible(who, potion))
+    return;
+  endif
+  if(potion.movable == 0)
+    SendSysMessage(who, "Voce nao pode beber isto.");
+    return;
+  endif
+  if(!checkifcandrink(who, "green_potion"))
+    return;
+  endif
+  do_poison(who, potion);
+  Detach();
+endprogram

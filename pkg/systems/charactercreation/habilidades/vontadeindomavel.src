@@ -1,0 +1,35 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+
+program doubleattack(who)
+
+	if (IsRaging(who))
+		SendSysMessageEx(who, "Sua vontade e indomavel.", SSM_INFO);
+		SetCooldown(who, "VontadeIndomavel", cint(AP_GetSkill(who, TACTICS)));
+        SetObjProperty(who,"#vontadeindomavel",1);
+    else
+        SendSysMessageEx(who, "Voce precisa estar em furia.", SSM_INFO);
+	endif
+    
+    detach();
+    while(GetObjProperty(who, "#vontadeindomavel") != error)
+        if (GetCooldown(who, "VontadeIndomavel") > 0);//do nothing
+        else
+            SendSysMessageEx(who, "Sua vontade indomavel cessou.", SSM_INFO);
+            EraseObjProperty(who, "#vontadeindomavel");
+            return;
+        endif     
+        sleep(1);
+    endwhile
+    
+endprogram
+
+
+

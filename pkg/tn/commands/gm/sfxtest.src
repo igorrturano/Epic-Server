@@ -1,0 +1,9 @@
+use uo;
+program teste(who, text)
+
+	text := splitwords(text);
+	
+	sendsysmessage(who, " " + text);
+	PlayObjectCenteredEffect(who, text[1], text[2], text[3]);
+
+endprogram

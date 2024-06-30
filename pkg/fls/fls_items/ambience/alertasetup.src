@@ -1,0 +1,33 @@
+use uo;
+include ":tn:tngumps";
+include ":gumps:requestGump";
+
+program setupalerta(who, rune)
+	if (who.cmdlevel < 2)
+		return;
+	endif
+
+
+	var mensagem := CStr(RequestInput(who, who.backpack, "Qual o texto do alerta?"));
+	if (!mensagem)
+		mensagem :="Escuta algo estranho.";
+	endif
+	SetObjProperty(rune, "mensagem", mensagem);
+
+	var range := CInt(RequestInput(who, who.backpack, "Qual o alcance do alerta?"));
+	if (!range)
+		range :=10;
+	endif
+	SetObjProperty(rune, "range", range);
+
+	var intervalo := CInt(RequestInput(who, who.backpack, "A cada quantos segundos?"));
+	if (!intervalo)
+		intervalo := 10;
+	elseif(intervalo < 10)
+		intervalo := 10;
+	elseif(intervalo > 600)
+		intervalo := 600;
+	endif
+	SetObjProperty(rune, "intervalo", intervalo);
+	SendSysMessage(who, "Alerta configurado!");
+endprogram

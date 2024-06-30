@@ -1,0 +1,50 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+	var mortosrect := { "5251", "3741", "5291", "3777" };
+
+	
+	if (((who.x >= 5251) && (who.x <= 5291)) && ((who.y >= 3741) && (who.y <= 3777)))
+		PlaySoundEffect(who, 384);
+		var sparkle := CreateItemAtLocation(who.x, who.y, who.z, 14170, 1, who.realm);
+		sparkle.color := 1175;
+		sparkle.movable := 0;
+		who.frozen := 1;
+		sleepms(3000);
+		Destroyitem( sparkle );
+		var lastlocation := GetObjProperty(who, "#LastLocation");
+		EraseObjProperty(who, "#LastLocation");
+		var oldx, oldy, oldz;
+		oldx := CInt(lastlocation[1]);
+		oldy := CInt(lastlocation[2]);
+		oldz := CInt(lastlocation[3]);
+		MoveObjectToLocation( who, oldx , oldy , oldz , who.realm);
+		SendSysMessageEx(who, "Seu corpo transcede o veu ate o mundo dos vivos.", SSM_INFO);
+		who.frozen := 0;
+	else
+		var lastlocation := { who.x , who.y , who.z };
+		PlaySoundEffect(who, 384);
+		var sparkle := CreateItemAtLocation(who.x, who.y, who.z, 14170, 1, who.realm);
+		sparkle.color := 1175;
+		sparkle.movable := 0;
+		who.frozen := 1;
+		sleepms(3000);
+		Destroyitem( sparkle );
+		SetObjProperty(who, "#LastLocation", lastlocation);
+		MoveObjectToLocation( who, 5280, 3754, 20, who.realm);
+		SendSysMessageEx(who, "Seu corpo transcede o veu ate o mundo dos mortos.", SSM_INFO);
+		who.frozen := 0;
+	endif
+	
+	return 1;
+endprogram 

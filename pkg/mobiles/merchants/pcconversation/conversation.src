@@ -1,0 +1,469 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":merchants:pcconversation";
+include ":gumps:gumps";
+include "include/say";
+include ":tn:tngumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":attributes:attributes";
+include ":attributes:stats";
+include ":timedScripts:timedScripts";
+//include ":merchants:item_template";
+include ":tn:questevent";
+include ":combat:hitscripts";
+
+program npconversation(params)
+	var who := params[2];
+	var npc := params[1];
+
+	if (who.cmdlevel > 1)
+		if ( YesNo(who, "Deseja acessar a GUMP de GM ou de Players?", "GM", "Player") )
+			var input := ConversationGM(who, npc, "inicio");
+			while (input)
+				input := ConversationGM(who, npc, input);
+			endwhile
+			return;
+		endif
+	endif
+	var input := "inicio";
+	var i := 1;
+	while (input)
+		if (i%2 == 1)
+			PrintText(who, "*conversando*");
+			PrintText(npc, "*conversando*");
+		endif
+		input := ConversationPlayer(who, npc, input);
+		i := i+1;
+	endwhile
+	return;
+endprogram
+
+function ConversationPlayer(who, npc, conversation)
+	var npcelem := GetConversationDataElem(npc.serial);
+	var gump := GFCreateGump();
+    GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 420, 400);
+	GFResizePic(gump, 15, 40, 0x13BE, 390, 370);
+
+	GFGumpPic(gump, 23, 50, 0x1523);
+	GFTextLine(gump, 50, 50, 1153, "Dialogo de Conversa ["+npc.name+"]");
+
+	var dialog := npcelem.GetProp(conversation + "Dialogue");
+
+	if (!dialog)
+		dialog := "No Conversation";
+	endif
+
+	GFResizePic(gump, 20, 80, GFCfgConst("Backgrounds", "GOLDTRIM"), 380, 220);
+	GFHTMLArea(gump, 26, 86, 370, 208, dialog, 0, 1);
+
+	var x := 305;
+	var answers := npcelem.GetProp(conversation + "Options");
+	var i := 1;
+	foreach answer in answers
+		if (answer.int == 0 || answer.int < AP_GetStat(who, "Intelligence") )
+			if (!answer.checkhab || TemHabilidade(who, answer.checkhab))
+			if (!answer.checkkit || GetObjProperty(who, "kit") == answer.checkkit)
+				if (answer.noagain.type == 1 || !(who.serial in npcelem.GetProp(conversation+"Players"+answer.ID)))
+				var waiting := 0;
+				if (answer.noagain.wait)
+					waiting := answer.noagain.wait;
+				endif
+				if (answer.noagain.type != 2 || polcore().systime > waiting )
+					GFTextLine(gump, 55, x, 1153, answer.text);
+					GFAddButton(gump, 20, x, 0xFAE, 0x1764, GF_CLOSE_BTN, i);
+					x := x+20;
+					i := i+1;
+				endif
+				endif
+			endif
+			endif
+		endif
+		sleepms(20);
+	endforeach
+
+	GFTextLine(gump, 260, 385, 1153, "Terminar Conversa");
+	GFAddButton(gump, 370, 385, 0xFB1, 0xFB2, GF_CLOSE_BTN, 200);
+
+	var input := GFSendGump(who, gump);
+	if (input[0])
+		var element := answers[input[0]];
+		input := element.result;
+		if (element.song)
+			PlaySoundEffect( who, element.song );
+		endif
+		if (element.noagain)
+			if (element.noagain.type == 1)
+				var noagain := npcelem.GetProp(conversation+"Players"+element.ID);
+				if (!noagain)
+					noagain := array;
+				endif
+				noagain.append(who.serial);
+				npcelem.SetProp(conversation+"Players"+element.ID, noagain);
+			else
+				answers[input[0]].noagain.wait := polcore().systime + element.noagain.tempo;
+				npcelem.SetProp(conversation + "Options", answers);
+			endif
+		endif
+		if (element.noshow)
+			TS_StartTimer(npc, "conceal", element.noshow, 1);
+		endif
+		if (element.event)
+			if (element.event.x == 6 && element.event.y == 6 && element.event.z == 6)
+				element.event.x := npc.x;
+				element.event.y := npc.y;
+				element.event.z := npc.z;
+			endif
+			ExecuteEvent(element.event);
+/*			var state := element.spawnmonster;
+	        var amt := 0;
+			while (amt < state.amount)
+				var npc;
+				npc := CreateNpcFromTemplate( Cstr(state.npctemplate), Cint(state.x) + RandomInt(2 * state.range) - state.range,
+											  Cint(state.y) + RandomInt(2 * state.range) - state.range, Cint(state.z));
+                if (npc != error)
+					var duracaonpc := state.duracao;
+					if (!duracaonpc)
+						duracaonpc := 120;
+					endif
+					TS_StartTimer(npc, "summon", duracaonpc);
+                	amt := amt + 1;
+                endif
+              	sleepms(2);
+            endwhile*/
+		endif
+		if (element.requestitem)
+			SendSysMessage(who, "Selecione os Itens na ordem que foi pedido.");
+			var targ := Target(who);
+			i := 1;
+			while (1)
+				var item := element.requestitem[i];
+				var cost_name := targ.desc;
+				if ( targ.amount > 1 )
+					var RemoveNumber := splitwords(cost_name);
+					RemoveNumber.Erase(1);
+					cost_name := "";
+					foreach x in ( RemoveNumber )
+						cost_name := cstr(cost_name) + cstr(x) + " ";
+						sleepms(10);
+					endforeach
+				endif
+				if (cost_name != item.name)
+					SendSysMessageEx(who, "Item Invalido", SSM_FAIL);
+					input := item.result2;
+					break;
+				elseif (targ.amount < item.amount)
+					SendSysMessageEx(who, "Voce nao tem a quantidade requisitada.", SSM_FAIL);
+					input := item.result2;
+					break;
+				elseif (item.specialprop && !GetObjProperty(targ, item.specialprop))
+					SendSysMessageEx(who, "Item invalido.", SSM_FAIL);
+					input := item.result2;
+					break;
+				endif
+				SubtractAmount(targ, item.amount);
+				if (element.requestitem.size() < i)
+					SendSysMessage(who, "Selecione o proximo item.");
+					targ := Target(who);
+				else
+					break;
+				endif
+				i := i+1;
+			endwhile
+		endif
+		if (element.GiveItem)
+			foreach item in (element.GiveItem)
+				CreateIteminBackpackFromTemplate(who, item);
+			endforeach
+		endif
+	else
+		input := input[0];
+	endif
+
+	if (input == 200 || input == "Terminar Conversa")
+		return 0;
+	endif
+
+	return input;
+
+endfunction
+
+function ConversationGM(who, npc, conversation)
+	var npcelem := GetConversationDataElem(npc.serial);
+	var gump := GFCreateGump();
+    GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 350);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 320);
+	GFTextLine(gump, 100, 50, 1153, "Editar Conversacao ["+conversation+"]");
+
+	var x := 70;
+	var answers := npcelem.GetProp(conversation + "Options");
+	var i := 1;
+	foreach answer in answers
+
+		GFTextLine(gump, 40, x, 1153, answer.text+" ["+answer.result+"]");
+		GFAddButton(gump, 20, x+4, 2103, 2104, GF_CLOSE_BTN, i);
+		x := x+15;
+		i := i+1;
+	endforeach
+
+	GFAddButton(gump, 20, 290, 2103, 2104, 1, 203 );
+	GFTextLine(gump, 35, 285, 1153, "Alterar Texto de Dialogo desta Conversa");
+
+	GFAddButton(gump, 20, 305, 2103, 2104, 1, 202 );
+	GFTextLine(gump, 35, 300, 1153, "Adicionar Nova Conversa");
+
+	GFAddButton(gump, 20, 320, 2103, 2104, 1, 200 );
+	GFTextLine(gump, 35, 315, 1153, "Adicionar Nova Resposta");
+
+	GFAddButton(gump, 20, 335, 2103, 2104, 1, 201 );
+	GFTextLine(gump, 35, 330, 1153, "Apagar Conversa");
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 202)
+		var newconversation := RequestGump(who, "Escreva o nome da conversa (exemplo: warrior1)");
+
+		var newconversations := npcelem.GetProp("AllConversations");
+		if (newconversations == error)
+			newconversations := array;
+		endif
+
+		newconversations.Append(newconversation);
+
+		npcelem.SetProp("AllConversations", newconversations);
+
+		var newdialog := BigRequestGump(who, "Escreva o novo dialogo de conversacao:");
+		npcelem.SetProp(newconversation + "Dialogue", newdialog);
+		SendSysMessageEx(who, "Nova Conversa Adicionada. Atribua ela a alguma resposta para edita-la.", SSM_INFO);
+		input := conversation;
+	elseif (input[0] == 203)
+		var newdialog := BigRequestGump(who, "Escreva o novo dialogo de conversacao:");
+		npcelem.SetProp(conversation + "Dialogue", newdialog);
+		SendSysMessageEx(who, "O Dialogo da conversa foi alterado", SSM_INFO);
+		input := conversation;
+	elseif (input[0] == 200)
+		var theanswer := RequestGump(who, "Escreva a Resposta");
+		var newconv := allconversations(who, npcelem, conversation);
+		var newint := cint(RequestGump(who, "Coloque o Minimo de Int (deixe em branco para nao checar)"));
+		var newsong := cint(RequestGump(who, "Coloque o Som que o Npc fara ao trocar a resposta (deixe em branco para nenhum)"));
+		var newanswer := struct;
+		newanswer.+result := newconv;
+		newanswer.+int := newint;
+		newanswer.+ID := RandomInt(9999999);
+		newanswer.+text := theanswer;
+		newanswer.+song := newsong;
+		if (answers)
+			answers.Append(newanswer);
+		else
+			answers := array{ newanswer };
+		endif
+		npcelem.SetProp(conversation + "Options", answers);
+		SendSysMessageEx(who, "Nova Resposta Adicionada", SSM_INFO);
+		input := conversation;
+	elseif (input[0] == 201)
+		if (conversation == "inicio")
+			GetConversationDataFile().DeleteElement(npc.serial);
+			SendSysMessageEx(who, "Apagado todas as conversas do NPC", SSM_INFO);
+		else
+			npcelem.EraseProp(conversation);
+			npcelem.EraseProp(conversation + "Options");
+			npcelem.EraseProp(conversation + "Dialogue");
+			var newconversations := npcelem.GetProp("AllConversations");
+			var i := 1;
+			while (i < newconversations.Size())
+				if (newconversations[i] == conversation)
+					newconversations.Erase(i);
+				endif
+				i := i+1;
+			endwhile
+
+			npcelem.SetProp("AllConversations", newconversations);
+			SendSysMessageEx(who, "Apagado a conversa :" +conversation, SSM_INFO);
+		endif
+		input := "inicio";
+	elseif (input[0])
+		var question := RadioGump(who, 300, 375, "O que deseja mudar?", array{"Texto da Resposta", "Resultado da Resposta","Inteligencia Minima",
+																		"Alterar Som de Resposta","Checar se Possui Habilidade","Desaparecer",
+																		"Checar Se Possui Kit","Nao Mostrar Novamente","Fazer Evento","Pedir Itens","Dar Itens", "Remover Resposta","Acessar Conversa do Resultado","Cancelar"});
+		var elementpos := input[0];
+
+		input := conversation;
+		if (question == "Texto da Resposta")
+			answers[elementpos].text := RequestGump(who, "Escreva a Resposta");
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Alterado Texto de Resposta", SSM_INFO);
+		elseif (question == "Nao Mostrar Novamente")
+			question := RadioGump(who, 260, 200, "Escolha o tipo de Resultado", array{"Ao Jogador","Durante um tempo","Remover","Cancelar"});
+			if (question == "Ao Jogador")
+				answers[elementpos].noagain := struct;
+				answers[elementpos].noagain.type := 1;
+				npcelem.SetProp(conversation+"Players"+answers[elementpos].ID, array{});
+				answers[elementpos].noagain.players := array{};
+			elseif (question == "Durante um Tempo")
+				answers[elementpos].noagain := struct;
+				answers[elementpos].noagain.type := 2;
+				var tempo := cint(RequestGump(who, "Escreva o tempo que a resposta ficara insivel"));
+				answers[elementpos].noagain.tempo := tempo;
+			elseif (question == "Remover")
+				answers[elementpos].-noagain;
+				npcelem.EraseProp(conversation+"Players"+answers[elementpos].ID);
+			endif
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Alterado Nao Mostrar Novamente", SSM_INFO);
+		elseif (question == "Desaparecer")
+			if (!answers[elementpos].noshow)
+				var tempo := cint(RequestGump(who, "Escreva o tempo que o npc ficara invisivel"));
+				answers[elementpos].noshow := tempo;
+				SendSysMessageEx(who, "O NPC desaparecera apos a resposta.", SSM_INFO);
+			else
+				answers[elementpos].-noshow;
+				SendSysMessageEx(who, "O NPC nao desaparecera mais.", SSM_INFO);
+			endif
+			npcelem.SetProp(conversation + "Options", answers);
+
+		elseif (question == "Dar Itens")
+			if ( RadioGump(who, 260, 180, "Escolha o que deseja fazer", array{"Mudar Itens","Remover Opcao"}) == "Mudar Itens")
+				SendSysMessage(who, "Escolha o item do loot.");
+				var targ := Target(who);
+				var item := array{};
+				while (1)
+					item.append(CreateItemTemplate(targ));
+					if ( YesNo(who, "Deseja Adicionar outro Item?" ) )
+						SendSysMessage(who, "Escolha o item do loot.");
+						targ := Target(who);
+					else
+						break;
+					endif
+				endwhile
+
+				answers[elementpos].GiveItem := item;
+			else
+				answers[elementpos].-GiveItem;
+			endif
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Alterado Dar Itens", SSM_INFO);
+		elseif (question == "Pedir Itens")
+			if (!answers[elementpos].requestitem)
+				var result2 := allconversations(who, npcelem, conversation, "Se o jogador nao tiver os itens, para qual conversa ira?");
+				SendSysMessage(who, "Escolha o item que sera pedido.");
+				var targ := Target(who);
+				var item := array{};
+				while (1)
+					var newitem := struct;
+					var cost_name := targ.desc;
+					if ( targ.amount > 1 )
+						var RemoveNumber := splitwords(cost_name);
+						RemoveNumber.Erase(1);
+						cost_name := "";
+						foreach x in ( RemoveNumber )
+							cost_name := cstr(cost_name) + cstr(x) + " ";
+							sleepms(10);
+						endforeach
+					endif
+					newitem.+name := cost_name;
+					newitem.+amount := targ.amount;
+					newitem.+result2 := result2;
+					if ( YesNo(who, "Este item tera alguma propriedade (string) especial?" ) )
+						newitem.+specialprop := RequestGump(who, "Escreva a propriedade especial");
+					endif
+					item.append(newitem);
+					if ( YesNo(who, "Deseja Adicionar outro Item?" ) )
+						SendSysMessage(who, "Escolha o item do loot.");
+						targ := Target(who);
+					else
+						break;
+					endif
+				endwhile
+				answers[elementpos].requestitem := item;
+				SendSysMessageEx(who, "Adicionado Opcao de Pedir Itens", SSM_INFO);
+			else
+				answers[elementpos].-requestitem;
+				SendSysMessageEx(who, "Removido Opcao de Pedir Itens.", SSM_INFO);
+			endif
+			npcelem.SetProp(conversation + "Options", answers);
+		elseif (question == "Fazer Evento")
+/*			var newmonster := 1;
+			if (answers[elementpos].spawnmonster)
+				if (RadioGump(who, 260, 160, "Escolha o tipo de Resultado", array{"Mudar Invocacao","Remover"}) == "Remover" )
+					newmonster := 0;
+				endif
+			endif
+			if (newmonster)
+				answers[elementpos].spawnmonster := struct;
+				answers[elementpos].spawnmonster.amount := Cint(RequestGump(who, "Quantos npcs vao ser spawnados:"));
+	            var loc := RequestGump(who, "Digite o x y z onde eles vao aparecer:");
+	            loc := splitwords(loc);
+        	    answers[elementpos].spawnmonster.x :=  loc[1];
+         	    answers[elementpos].spawnmonster.y :=  loc[2];
+               	answers[elementpos].spawnmonster.z :=  loc[3];
+				answers[elementpos].spawnmonster.range := Cint(RequestGump(who, "Digite o raio de spawn:"));
+				answers[elementpos].spawnmonster.npctemplate := RequestGump(who, "Digite o npctemplate:");
+				answers[elementpos].spawnmonster.tempo := Cint(RequestGump(who, "Digite o tempo que os monstro ficarao vivos ate desaparecerem (default 2 minutos)"));
+			else
+				answers[elementpos].-spawnmonster;
+			endif*/
+			if (!answers[elementpos].event)
+				answers[elementpos].event := ConfigureEvent(who);
+				SendSysMessageEx(who, "Adicionado Novo Evento", SSM_INFO);
+			else
+				answers[elementpos].-event;
+				SendSysMessageEx(who, "Removido Eventos", SSM_INFO);
+			endif
+			npcelem.SetProp(conversation + "Options", answers);
+		elseif (question == "Checar Se Possui Kit")
+			answers[elementpos].checkkit := RequestGump(who, "Escreva o nome do Kit");
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Alterado checagem de Kit", SSM_INFO);
+		elseif (question == "Alterar Som de Resposta")
+			answers[elementpos].song := cint(RequestGump(who, "Coloque o Som que o Npc fara ao trocar a resposta (deixe em branco para nenhum)"));
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Alterado Som da Resposta", SSM_INFO);
+		elseif (question == "Checar se Possui Habilidade")
+			answers[elementpos].checkhab := RequestGump(who, "Escreva o nome da Habilidade");
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Alterado checagem de Habilidade", SSM_INFO);
+		elseif (question == "Resultado da Resposta")
+			var newconv := allconversations(who, npcelem, conversation);
+			answers[elementpos].result := newconv;
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Resultado da resposta alterado", SSM_INFO);
+
+		elseif (question == "Inteligencia Minima")
+			answers[elementpos].int := cint(RequestGump(who, "Coloque o Minimo de Int (0 para nao checar)"));
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Inteligencia Minima Alterada", SSM_INFO);
+		elseif (question == "Remover Resposta")
+			answers.Erase(elementpos);
+			npcelem.SetProp(conversation + "Options", answers);
+			SendSysMessageEx(who, "Resposta Removida", SSM_INFO);
+		elseif (question == "Acessar Conversa do Resultado")
+			input := answers[elementpos].result;
+			SendSysMessageEx(who, "Carregando Novo Menu de Dialogo", SSM_INFO);
+		endif
+	endif
+
+	return input;
+endfunction
+
+function allconversations(who, npcelem, conversation, texto := 0)
+	if (!texto)
+		texto := "Escolha para qual Conversa esta resposta levara";
+	endif
+	var newconversations := npcelem.GetProp("AllConversations");
+	var i := 1;
+	while (i < newconversations.Size())
+		if (newconversations[i] == conversation)
+			newconversations.Erase(i);
+		endif
+		i := i+1;
+	endwhile
+	newconversations.Append("inicio");
+	newconversations.Append("Terminar Conversa");
+	var y := newconversations.size() * 30;
+	return RadioGump(who, 350, 100+y, texto, newconversations);
+endfunction

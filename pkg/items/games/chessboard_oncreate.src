@@ -1,0 +1,109 @@
+use uo;
+use os;
+
+program oncreate_chessboard (chessboard)
+	SetObjProperty (chessboard, "#creating_gameboard", 1);
+
+	var gamepiece;
+	for i := 1 to 8
+		gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+		gamepiece.graphic := 0x3589;
+		gamepiece.name := "o peao";
+		SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+	endfor
+	
+	for i := 1 to 8
+		gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+		gamepiece.graphic := 0x3590;
+		gamepiece.name := "o peao";
+		SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+	endfor
+	
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3585;
+	gamepiece.name := "o bispo";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3585;
+	gamepiece.name := "o bispo";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3588;
+	gamepiece.name := "o cavaleiro";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3588;
+	gamepiece.name := "o cavaleiro";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3586;
+	gamepiece.name := "a torre";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3586;
+	gamepiece.name := "a torre";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358a;
+	gamepiece.name := "a rainha";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3587;
+	gamepiece.name := "o rei";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+
+
+
+
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358c;
+	gamepiece.name := "o bispo";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358c;
+	gamepiece.name := "o bispo";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358f;
+	gamepiece.name := "o cavaleiro";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358f;
+	gamepiece.name := "o cavaleiro";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358d;
+	gamepiece.name := "a torre";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358d;
+	gamepiece.name := "a torre";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x358e;
+	gamepiece.name := "o rei";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+	gamepiece := CreateItemInContainer (chessboard, 0x70b3);
+	gamepiece.graphic := 0x3591;
+	gamepiece.name := "a rainha";
+	SetObjProperty (gamepiece, "sole_container_serial", chessboard.serial);
+
+
+	EraseObjProperty (chessboard, "#creating_gameboard");
+endprogram

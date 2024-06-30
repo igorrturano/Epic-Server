@@ -1,0 +1,39 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/client";
+include "include/say"; 
+include ":taming:taming";
+//
+
+program newprogram(who)
+
+
+    if (TS_GetCooldown(who, "habilidade um"))
+		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
+	endif
+
+	var numLobos := 0;
+	var bonusAtk := AP_GetTrueSkill(who, MAGICLORE)/10;
+	PrintText(who, "*uiva*");
+	PlaySoundEffect( who, 231 );
+	PerformAction(who, ANIM_HIT);
+
+	var nearbyPets := ListPetsNear(who, 8);
+	foreach lobo in nearbyPets
+		if(lobo.graphic == 225)
+			numLobos := numLobos +1;
+		endif
+	endforeach
+
+	foreach lobo in nearbyPets
+		AP_SetSkillMod(lobo,"Wrestling",(bonusAtk * numLobos) + AP_GetSkillMod(lobo, "Wrestling"));
+		TS_StartTimer(lobo, "uivobuff", 10);
+	endforeach
+	
+endprogram
+

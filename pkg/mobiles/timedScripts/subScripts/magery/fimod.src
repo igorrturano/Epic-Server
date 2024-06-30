@@ -1,0 +1,37 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	var points := level;
+//	sendsysmessage(mobile, "fimod");
+	if (GetObjProperty(mobile, "fiMod") != error)
+//	sendsysmessage(mobile, "return");
+		return;
+	endif
+
+	if (GetObjProperty(mobile, "auraFiMod") != error)
+		mobile.resist_fire_mod := mobile.resist_fire_mod - GetObjProperty(mobile, "auraFiMod") + points;
+		SetObjProperty(mobile, "fiMod", points);
+		EraseObjProperty(mobile, "auraFiMod");					
+	else
+//		sendsysmessage(mobile, "setando fimod");
+		SetObjProperty(mobile, "fiMod", points);
+		mobile.resist_fire_mod := mobile.resist_fire_mod + points;
+	endif
+
+//sendsysmessage(mobile, "fiim");
+	
+	//SetObjProperty(mobile, "fiMod", points);
+	//mobile.resist_fire_mod := mobile.resist_fire_mod + points;	
+//	SetObjProperty(mobile, "FireResistMod", (cint(GetObjProperty(mobile, "FireResistMod" )) + points));
+	
+	return 1;
+endprogram
+

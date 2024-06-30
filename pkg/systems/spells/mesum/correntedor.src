@@ -1,0 +1,62 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	var targets := array;
+	var duration := +cint(AP_GetSkill(who, MAGICLORE));
+	if (duration < 20)
+		duration := 20;
+	endif
+
+	var range := Cint(AP_GetSKill(who, MAGICLORE)/20) + 2;
+	foreach mob in (ListMobilesNearLocation( targ.x, targ.y, targ.z, range, who.realm ))
+		if (mob.serial != who.serial)
+			if (!(mob in who.party.members)) 
+				targets.append(mob.serial);
+				SetObjProperty(mob, "#chainofpain", ReadGameClock() + duration );
+				SetObjProperty(mob, "#mageserial", who.serial);
+			endif
+		endif
+	endforeach
+
+	var y := 0;
+	foreach targs in targets
+		var mob := SystemFindObjectBySerial(targs);
+		if (y != len(targets))
+			y := y + 1;
+		else
+			y := 1;
+		endif
+		var mob2 := SystemFindObjectBySerial(targets[y]);
+		if (!GetObjProperty(who, "#magiasilenciosa"))
+            PlayObjectCenteredEffectEx( mob, 14186, 0, 10, 2444, 0, 0, 0 );
+            PlayMovingEffectEx( mob, mob2, 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0 );
+        endif
+		SetObjProperty(mob, "#chainserials", targets);
+	endforeach
+
+    if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, 384);
+    endif
+
+	SendSysMessageEx(who, "Voce fez um corrente de dor", SSM_INFO);
+	Corromper(who, 27, targ);
+
+	if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+	
+	return 1;
+endprogram 

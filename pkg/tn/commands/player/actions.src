@@ -1,0 +1,14 @@
+
+use basic;
+use uo;
+use util;
+use os;
+use cfgfile;
+
+include ":tn:actions_sounds_tools";
+
+program action(who, text)
+	var resultado := GetAction(who, text);
+
+	performaction(who, resultado[1], resultado[2], resultado[3], resultado[4] , resultado[5], resultado[6]);
+endprogram

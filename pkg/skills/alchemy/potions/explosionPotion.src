@@ -1,0 +1,85 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/damage";
+include ":attributes:attributes";
+include ":mounts:mounts";
+
+program use_explosion(who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return;
+	endif
+	if(!Accessible( who, potion))
+		SendSysMessage(who,"Voce nao pode pegar isto!");
+		return;
+	endif
+	who.hidden := 0;
+	SendSysMessage(who, "Escolha o alvo " );
+	if( !Cint(GetObjProperty(potion, "#bomb")))
+		var parms := {};
+		parms[1] := potion;
+		parms[2] := who;
+		var t := start_script("potions/explosionTimer", parms);
+	endif
+
+	SetObjProperty(potion, "#bomb", 1);
+
+	if (GetEquipmentByLayer(who, LAYER_MOUNT))
+		var chance := GetAttribute(who, "Dexterity");
+		
+		if (chance <= 20)
+			chance := 20;
+		endif
+
+		if (RandomInt(100) > chance)
+			SendSysMessageEx(who, "Voce falhou em um teste de reflexos e caiu do cavalo", SSM_FAIL);
+			PrintTextAbove(who, "*Perde o equilibrio e cai vergonhosamente*");
+			ApplyDamageEX(who, RandomDiceRoll( "4d10" ), DMG_PHYSICAL);
+			TS_StartTimer(who, "paralysis", 8);
+			TS_StartTimer(who, "desmontar", 10);
+			MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION );
+			return 1;
+		endif
+	endif
+
+	var cast_on := TargetCoordinates( who );
+	if(!cast_on)
+		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION );
+		return;
+	endif
+
+	if(!potion)
+		return;
+	endif
+
+	PrintText(who, "*joga um frasco*");
+	if(!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
+		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION );
+		SendSysMessage(who, "Voce nao consegue ver o alvo!");
+		return;
+	endif
+
+	if(!potion)
+		return;
+	endif
+
+	Detach();
+	PlayMovingEffectXYZ( who.x, who.y, who.z+15, cast_on.x, cast_on.y, cast_on.z, 0x0f09, 8, 0, 0 );
+
+	if(!potion)
+		return;
+	endif
+
+	MoveObjectToLocation(potion, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, MOVEOBJECT_FORCELOCATION );
+
+endprogram

@@ -1,0 +1,56 @@
+
+use uo;
+use datafile;
+
+include ":gumps:gumps";
+include ":combat:hitscripts";
+include ":tn:boss";
+//fechar porta
+//definir mobs
+//definir boss
+//teleporte
+
+program cfgdata(who, text)
+
+	var altar := ListItemsNearLocationOfType( who.x, who.y, who.z, 8, 0x5003, who.realm)[1];
+	sendsysmessage(who, "altar: " +altar);
+	
+	var cfg := GetObjProperty(altar,"config");
+	sendsysmessage(who, ""+cfg);
+	if  (cfg == error)
+		cfg := struct;
+		cfg.+lvl1mobs := "";
+		cfg.+lvl2mobs := "";
+		cfg.+lvl3mobs := "";
+		cfg.+boss := struct;
+		cfg.+teleporte := "";
+		cfg.+frase := "";
+		cfg.+sound := "";
+		cfg.+evento := struct;
+	endif
+	
+	var gump := GFCreateGump();
+	var lvl1mobs := Requestgump(who, "Escreva o npctemplate dos mobs lvl 1", "", cfg.lvl1mobs );
+	var lvl2mobs := Requestgump(who, "Escreva o npctemplate dos mobs lvl 2", "", cfg.lvl2mobs );
+	var lvl3mobs := Requestgump(who, "Escreva o npctemplate dos mobs lvl 3", "", cfg.lvl3mobs );
+	
+	cfg.lvl1mobs := lvl1mobs;
+	cfg.lvl2mobs := lvl2mobs;
+	cfg.lvl3mobs := lvl3mobs;
+	
+	CreateBossStructGump(who, cfg.boss);
+	
+	cfg.teleporte := Requestgump(who, "Escreva onde vai ser teleportado quem morrer", "", cfg.teleporte );
+	
+	cfg.sound := Requestgump(who, "Som especial pra quando o boss aparecer", "", cfg.sound );
+	cfg.frase := Requestgump(who, "FRASE que o boss vai falar quando aparecer", "", cfg.frase );
+	
+	cfg.evento := ConfigureEvent(who);
+	
+	var erro := setobjproperty(altar, "config", cfg);
+	
+	
+	SendSysmessage(who, "Configurado." + erro);
+	
+	
+endprogram

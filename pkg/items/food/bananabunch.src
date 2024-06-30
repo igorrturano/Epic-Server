@@ -1,0 +1,28 @@
+include "include/damage";
+use uo;
+use os;
+
+program bananabunch(who, bunch)
+	var fruit;
+	
+	if (bunch.objtype == 0x1721)
+		fruit := 0x1720;
+	elseif (bunch.objtype == 0x1722)
+		fruit := 0x171f;
+	endif
+	SendSysMessage(who, "Voce arrancou as bananas.");
+	playsoundeffect (who, 0x5a);
+	Sleep(1);
+	playsoundeffect (who, 0x5a);
+	Sleep(1);
+	playsoundeffect (who, 0x5a);
+	Sleep(1);
+	playsoundeffect (who, 0x5a);
+	Sleep(1);
+	if (!bunch.container)
+		createitematlocation(bunch.x, bunch.y, bunch.z, fruit, 6);
+	else
+		createitemincontainer(bunch.container, fruit, 6);
+	endif
+	destroyitem(bunch);
+endprogram

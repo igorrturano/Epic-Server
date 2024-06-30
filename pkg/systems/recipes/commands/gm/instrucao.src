@@ -1,0 +1,62 @@
+use uo;
+use util;
+use cfgfile;
+
+program instrucao(who, nome)
+	if(who.cmdlevel > 1)
+		var item;
+		var cfg;
+
+		//explica como usa a funcao caso nao sejam passados parametros
+		if(!nome)
+			SendSysMessage(who, "Usos validos:");
+			SendSysMessage(who, ".instrucao listar");
+			SendSysMessage(who, ".instrucao <nomedoitem>");
+			return 0;
+
+		//lista as opcoes de instrucoes de fabricacao
+		elseif (nome == "listar")
+			cfg := ReadConfigFile(":recipes:recipes");
+			var opcoes := "";
+
+			//prepara a lista de instruções
+			foreach key in (GetconfigStringKeys(cfg))
+				opcoes := opcoes + key + "\n";
+			endforeach
+
+			//Prepara as definições de layout do gump
+			var gflayout := {
+				//"noclose",   // close by right-click forbidden
+				"NoDispose", // you did not want to hit esc, did you?
+				//"nomove",    // you musn't move the window around
+				"GumpPic 0 0 1249", // Plano de fundo (dimensões: 400x320)
+				"text 50 50 0 0",
+				"HtmlGump 50 70 300 220 1 0 1"
+				};
+
+			//Prepara as definições dos dados a serem exibidor nos campos do gump
+			//Mais a frente é necessário um Append do conteudo de "partituraTxt" em "gfdata"
+			var gfdata := {
+				"Instrucoes de Fabricacao: ",
+				opcoes
+				};
+
+			//exibe o gump
+			SendDialogGump( who, gflayout, gfdata);
+			return 0;
+		else
+			cfg := ReadConfigFile(":recipes:recipes");
+			foreach key in (GetconfigStringKeys(cfg))
+				if (key==nome)
+					item := CreateItemInBackpack(who, 0xff990, 1);
+					SetObjProperty(item, "recipe",key);
+					return 1;
+				endif
+			endforeach
+			SendSysMessage(who, "Instrucao nao encontrada.");
+			return 0;
+		endif
+	else
+		return 0;
+	endif
+endprogram

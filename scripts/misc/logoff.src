@@ -1,0 +1,39 @@
+/* $Id: logoff.src 1345 2006-05-12 08:18:29Z austin $
+ *
+ * Purpose
+ * This script allows the scripter to run cleanup code after a character exits the world.
+ * Useful for stuff like cleaning up summoned NPCs, etc.
+ *
+ */
+
+use uo;
+use os;
+use polsys;
+include ":taming:taming";
+
+program LogOff(who)
+	logoutpets(who);
+	IsGm(who);
+	return 1;
+endprogram
+
+Function IsGm(who)
+	If (who.cmdlevel >= 1)
+		var GmsOnlines := GetGlobalProperty("GmsOnlines");
+		if (GmsOnlines)
+			var i;
+			for(i:=1; i<=GmsOnlines.Size(); i:=i+1)
+				if (GmsOnlines[i] == who.serial)
+					GmsOnlines.erase(i);
+				endif
+				sleepms(10);
+			endfor
+		endif
+		
+		if (GmsOnlines)
+			SetGlobalProperty("GmsOnlines", GmsOnlines);
+		else
+			EraseGlobalProperty("GmsOnlines");
+		endif
+	endif
+endfunction

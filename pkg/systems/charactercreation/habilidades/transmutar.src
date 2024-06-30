@@ -1,0 +1,305 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+include ":gumps:yesNo";
+
+program resinaelemental(who)
+
+	var custo := 10;
+	var prot := RadioGump(who, 200, 200, "Qual o elemento da resina?", {"Fogo","Eletricidade", "Gelo"});
+
+	if (prot == "Fogo")
+
+        SendSysMessageEX(who, "Voce precisa de " + custo + " cinzas de enxofre para o inicio", SSM_REQUEST);
+		var targ := Target(who);
+
+        if (!targ)
+            SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+            return;
+        endif
+
+        if (targ.objtype == 0xF8C)
+            if ( targ.amount < custo )
+                SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+                return;
+            endif
+
+            if (!SubtractAmount(targ, custo))
+                SendSysMessageEx(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+                return;
+            endif
+
+            SendSysMessageEX(who, "Agora voce precisa de " + custo + " madeiras mortas para continuar", SSM_REQUEST);
+			var targ2 := Target(who);
+
+			if (!targ2)
+                SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+                return;
+            endif
+
+			if (targ2.objtype == 0xF90)
+
+				if ( targ2.amount < custo )
+					SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+					return;
+				endif
+
+				if (!SubtractAmount(targ2, custo))
+					SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+					return;
+                endif
+
+				SendSysMessageEX(who, "Agora voce precisa de " + custo + " teias de aranha para continuar", SSM_REQUEST);
+				var targ3 := Target(who);
+
+				if (!targ3)
+					SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+					return;
+				endif
+
+				if (targ3.objtype == 0xF8D)
+					if ( targ3.amount < custo )
+						SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+						return;
+					endif
+
+					if (!SubtractAmount(targ3, custo))
+						SendSysMessageEx(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+						return;
+					endif
+
+					SendSysMessageEX(who, "Em qual frasco voce vai colocar a resina elemental?", SSM_REQUEST);
+					var targ4 := Target(who);
+
+
+					if (!targ4)
+						SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+						return;
+					endif
+
+					if (!targ4.objtype == 0x0F0E)
+						SendSysMessageEX(who, "Isto não é um frasco de vidro.", SSM_FAIL);
+						return;
+					endif
+
+					if (!SubtractAmount(targ4, 1))
+						SendSysMessageEX(who, "Voce nao tem frascos suficientes", SSM_INFO);
+						return;
+               		endif
+
+					PlaySoundEffect(who, 0x243);
+					PrintTextAbove(who, "*Misturando*");
+					sleep(2);
+					PrintTextAbove(who, "*Misturando*");
+					sleep(2);
+					PlaySoundEffect(who, 0x243);
+					PrintTextAbove(who, "*Misturando*");
+					sleep(2);
+					CreateItemInBackPack(who, 0x6071, 1);
+					PlaySoundEffect(who, 0x23F);
+					return;
+                else
+                    SendSysMessageEx(who, "Isto nao sao reagentes.", SSM_FAIL);
+					return;
+				endif
+            endif
+    	endif
+
+    elseif (prot == "Eletricidade")
+
+		SendSysMessageEX(who, "Voce precisa de " + custo + " perolas negras para o inicio", SSM_REQUEST);
+		var targ := Target(who);
+
+        if (!targ)
+            SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+            return;
+        endif
+
+        if (targ.objtype == 0xF7A)
+            if ( targ.amount < custo )
+                SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+                return;
+            endif
+
+            if (!SubtractAmount(targ, custo))
+                SendSysMessageEx(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+                return;
+            endif
+
+            SendSysMessageEX(who, "Agora voce precisa de " + custo + " madeiras mortas para continuar", SSM_REQUEST);
+			var targ2 := Target(who);
+
+			if (!targ2)
+                SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+                return;
+            endif
+
+			if (targ2.objtype == 0xF90)
+
+				if ( targ2.amount < custo )
+					SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+					return;
+				endif
+
+				if (!SubtractAmount(targ2, custo))
+					SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+					return;
+                endif
+
+				SendSysMessageEX(who, "Agora voce precisa de " + custo + " teias de aranha para continuar", SSM_REQUEST);
+				var targ3 := Target(who);
+
+				if (!targ3)
+					SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+					return;
+				endif
+
+				if (targ3.objtype == 0xF8D)
+					if ( targ3.amount < custo )
+						SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+						return;
+					endif
+
+					if (!SubtractAmount(targ3, custo))
+						SendSysMessageEx(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+						return;
+					endif
+
+					SendSysMessageEX(who, "Em qual frasco voce vai colocar a resina elemental?", SSM_REQUEST);
+					var targ4 := Target(who);
+
+
+					if (!targ4)
+						SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+						return;
+					endif
+
+					if (!targ4.objtype == 0x0F0E)
+						SendSysMessageEX(who, "Isto não é um frasco de vidro.", SSM_FAIL);
+						return;
+					endif
+
+					if (!SubtractAmount(targ4, 1))
+						SendSysMessageEX(who, "Voce nao tem frascos suficientes", SSM_INFO);
+						return;
+               		endif
+
+					PlaySoundEffect(who, 0x243);
+					PrintTextAbove(who, "*Misturando Reagentes*");
+					sleep(1);
+					PrintTextAbove(who, "*Misturando Reagentes*");
+					sleep(1);
+					PrintTextAbove(who, "*Misturando Reagentes*");
+					sleep(1);
+					PlaySoundEffect(who, 0x243);
+					CreateItemInBackPack(who, 0xBD14, 1);
+					return;
+                else
+                    SendSysMessageEx(who, "Isto nao sao reagentes.", SSM_FAIL);
+					return;
+				endif
+            endif
+    	endif
+
+    elseif (prot == "Gelo")
+
+		SendSysMessageEX(who, "Voce precisa de " + custo + " solanaceas para o inicio", SSM_REQUEST);
+		var targ := Target(who);
+
+        if (!targ)
+            SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+            return;
+        endif
+
+        if (targ.objtype == 0xF88)
+            if ( targ.amount < custo )
+                SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+                return;
+            endif
+
+            if (!SubtractAmount(targ, custo))
+                SendSysMessageEx(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+                return;
+            endif
+
+            SendSysMessageEX(who, "Agora voce precisa de " + custo + " madeiras mortas para continuar", SSM_REQUEST);
+			var targ2 := Target(who);
+
+			if (!targ2)
+                SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+                return;
+            endif
+
+			if (targ2.objtype == 0xF90)
+
+				if ( targ2.amount < custo )
+					SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+					return;
+				endif
+
+				if (!SubtractAmount(targ2, custo))
+					SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+					return;
+                endif
+
+				SendSysMessageEX(who, "Agora voce precisa de " + custo + " teias de aranha para continuar", SSM_REQUEST);
+				var targ3 := Target(who);
+
+				if (!targ3)
+					SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+					return;
+				endif
+
+				if (targ3.objtype == 0xF8D)
+					if ( targ3.amount < custo )
+						SendSysMessageEX(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+						return;
+					endif
+
+					if (!SubtractAmount(targ3, custo))
+						SendSysMessageEx(who, "Voce nao tem reagentes suficientes.", SSM_INFO);
+						return;
+					endif
+
+					SendSysMessageEX(who, "Em qual frasco voce vai colocar a resina elemental?", SSM_REQUEST);
+					var targ4 := Target(who);
+
+
+					if (!targ4)
+						SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+						return;
+					endif
+
+					if (!targ4.objtype == 0x0F0E)
+						SendSysMessageEX(who, "Isto não é um frasco de vidro.", SSM_FAIL);
+						return;
+					endif
+
+					if (!SubtractAmount(targ4, 1))
+						SendSysMessageEX(who, "Voce nao tem frascos suficientes", SSM_INFO);
+						return;
+               		endif
+
+					PlaySoundEffect(who, 0x243);
+					PrintTextAbove(who, "*Misturando Reagentes*");
+					sleep(1);
+					PrintTextAbove(who, "*Misturando Reagentes*");
+					sleep(1);
+					PrintTextAbove(who, "*Misturando Reagentes*");
+					sleep(1);
+					PlaySoundEffect(who, 0x243);
+					CreateItemInBackPack(who, 0x6070, 1);
+					return;
+                else
+                    SendSysMessageEx(who, "Isto nao sao reagentes.", SSM_FAIL);
+					return;
+				endif
+			endif
+		endif
+	endif
+endprogram

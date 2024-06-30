@@ -1,0 +1,91 @@
+
+use uo;
+use os;
+use cfgfile;
+
+include "include/client";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:toolWear";
+include ":gathering:mining";
+
+const BLOCK_OF_STONE := 0x5001;
+const MINING_ANIMATION := 0x0B;
+const MINING_SOUND := 0x126;
+
+DF_DEBUG_MODE := 0;
+
+var resource_data_file := DFOpenDataFile("MiscResources", DF_CREATE);
+
+program RockMining(who, tool)
+	
+	SendSysMessage(who, "Onde voce deseja minerar pedras?");
+	var targ := TargetCoordinates(who);
+	
+	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
+		SendSysMessage(who, "Muito longe.");
+		return;
+	elseif ( !CanMine(targ, "Stone") )
+		SendSysMessage(who, "Voce nao pode minerar pedras aqui.");
+		return;
+	endif
+	
+	var location_name := CStr( targ.x+"x"+targ.y );
+	
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+	
+	var i:=RandomDiceRoll("1d5");
+	for ( i; i>=0; i:=i-1 )
+		if ( !MiningLoop(who, tool, my_x, my_y, my_facing, location_name) )
+			break;
+		elseif ( !CheckToolWear(who, tool, GATHERING) )
+			break;
+		endif
+		sleep(3);
+	endfor
+	SendSysMessage(who, "Voce parou de minerar.");
+endprogram
+
+function MiningLoop(who, tool, my_x, my_y, my_facing, location_name)
+	
+	var i;
+	for (i:=0; i < RandomDiceRoll("5d5"); i := i+1)
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		sleep(1);
+		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+			return 0;
+		endif
+	endfor
+	
+	var location_elem := DFFindElement(resource_data_file, location_name, DF_CREATE);
+	var resource_type := hex(BLOCK_OF_STONE);
+	
+	var resource_amount := ResourceAmount( resource_type, location_elem );
+		
+	if (resource_amount <= 0)
+		SendSysMessage(who, "Parece nao existir pedra utilizavel por aqui.");
+		return 0;
+	endif
+	
+	SetResource(resource_type, location_elem, resource_amount-1);
+	
+	var difficulty := CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
+	
+	if ( SkillCheck(who, GATHERING, difficulty) > 0 || TemHabilidade(who, "Arquiteto"))
+		CreateItemInBackPack(who, BLOCK_OF_STONE, 1);
+		SendSysMessage(who, "Voce minerou um bloco de pedra.");
+		return 1;
+	else
+        if(!TemHabilidade(who, "Arquiteto")) //Habilidade de construcao necessaria para extrair pedras
+            SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
+            return;
+        endif
+		SendSysMessage(who, "Voce e incapaz de minerar pedras.");
+		return 0;
+	endif
+endfunction

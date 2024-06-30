@@ -1,0 +1,27 @@
+use uo;
+use os;
+use util;
+
+const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
+
+program usabalao(who, item)
+
+  if (GetObjProperty(item, "pocao"))
+     SendSysMessage(who, "Escolha onde quer colocar o liquido do beker.");
+     var alvo := target(who);
+     if (alvo.objtype == UOBJECT_EMPTY_BOTTLE)
+        PlaySoundEffect (who, 0x241);
+	
+	//sleep(3);
+        var pocao := GetObjProperty(item, "pocao");
+        CreateItemInBackpack(who, pocao, 1);
+	SetObjProperty(pocao, "strength", cint(GetObjProperty(item, "strength")));
+        EraseObjProperty(item, "pocao");
+	EraseObjProperty(item, "strength");
+	SubtractAmount(alvo, 1);     
+     else
+       SendSysMessage(who, "Coloque esse liquido em um frasco vazio!");
+     endif
+        
+  endif
+endprogram

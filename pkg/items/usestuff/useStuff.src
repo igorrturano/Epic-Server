@@ -1,0 +1,186 @@
+use uo;
+use util;
+use os;
+use cfgfile;
+ include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include "include/say";
+
+var config;
+var elem;
+
+program UseStuff(character, stuff)
+  EraseObjProperty(character, "#IsMeditating");
+  EraseObjProperty(character, "#HealTimer");
+
+  var skill, skill_needed, points;
+  var targetitem, prompt, target_quantity;
+  var desc, destroy_failure, quantity1, quantity2, dont_destroy_success;
+  var use_on, destroy_target_success, destroy_target_failure;
+  var leftover, leftover_amount, success_sound, failure_sound;
+  var targetted, key_id;
+
+  if(!Accessible(character, stuff))
+    SendSysMessageEx( character, "Voce nao alcanca isto!", SSM_FAIL );
+    return;
+  endif
+  prompt := "Escolha o objeto para usar nisto.";
+  SendSysMessageEx(character, prompt, SSM_REQUEST);
+  targetted := TargetCoordinates(character);
+  if(targetted.item.objtype)
+    if(!Accessible(character, targetted.item))
+      return;
+    endif
+    use_on := targetted.item;
+  elseif(targetted.mobile.objtype)
+    use_on := targetted.mobile;
+  else
+    if(!Accessible(character, targetted))
+      return;
+    endif
+    use_on := targetted;
+  endif
+
+  if(!Accessible(character, use_on))
+    SendSysMessageEx(character, "Voce nao alcanca isto!", SSM_FAIL);
+    return;
+  endif
+
+  config := ReadConfigFile( ":*:use_stuff");
+  key_id := CStr(stuff.objtype) + "+" + CStr(use_on.objtype);
+  elem := FindConfigElem(config, key_id);
+  if(!elem)
+    SendSysMessageEx(character, "Voce nao sabe como usar estes itens!", SSM_FAIL);
+    return;
+  endif
+
+  skill := CInt(GetConfigString(elem, "skill"));
+  targetitem := CInt(GetConfigString(elem, "product"));
+    skill_needed := CInt(GetConfigString(elem, "skill_needed"));
+    points := CInt(GetConfigString(elem, "points"));
+    target_quantity := CInt(GetConfigString(elem, "target_quantity"));
+    quantity1 := CInt(GetConfigString(elem, "quantity1"));
+    quantity2 := CInt(GetConfigString(elem, "quantity2"));
+    destroy_target_success := CInt(GetConfigString(elem, "destroy_target_on_success"));
+    destroy_target_failure := CInt(GetConfigString(elem, "destroy_target_on_failure"));
+    destroy_failure := CInt(GetConfigString(elem, "destroy_material_on_failure"));
+    dont_destroy_success := CInt(GetConfigString(elem, "dont_destroy_material_on_success"));
+    leftover := CInt(GetConfigString(elem, "leftover"));
+    leftover_amount := CInt(GetConfigString(elem, "leftover_amount"));
+    success_sound := CInt(GetConfigString(elem, "success_sound"));
+    failure_sound := CInt(GetConfigString(elem, "failure_sound"));
+
+
+    if (stuff.amount < quantity1)
+        SendSysMessageEx(character, "Voce nao possui material suficiente.", SSM_FAIL);
+        return;
+    endif
+
+    if (target_quantity == 0 )
+        target_quantity := 1;
+    endif
+
+
+
+    if (! use_on)
+        SendSysMessageEx(character, "Cancelado.", SSM_FAIL);
+        return;
+    endif
+
+    if (!Accessible(character, use_on))
+        SendSysMessageEx(character, "Voce nao alcanca isto!", SSM_FAIL);
+        return;
+    endif
+
+    if (use_on.amount < quantity2)
+        SendSysMessageEx(character, "Voce nao possui material suficiente.", SSM_FAIL);
+        return;
+    endif
+
+    if ( skill != 0)
+        if (SkillCheck(character, skill, skill_needed, points) > 0)
+            if (!dont_destroy_success)
+              SubtractAmount(stuff, quantity1);  //use material
+            endif
+            var item := CreateItemInBackpack(character, targetitem, target_quantity);
+	    if (item == error) 
+		var i := 0;
+		for (i := 0; i < target_quantity; i := i + 1)
+			CreateItemInBackpack(character,targetitem,  1);
+		endfor
+ 	    endif
+            if (target_quantity > 1)
+                desc := "items";
+            else
+                desc := "item";
+            endif
+
+            if (destroy_target_success)
+                SubtractAmount(use_on, 1);
+            endif
+            PlaySoundEffect(character, success_sound);
+            SendSysMessageEx(character, "Voce guardou o item na sua mochila.", SSM_INFO);
+            if (leftover)
+               var leftitem :=  CreateItemInBackpack(character, leftover, leftover_amount);
+	    	if (!leftitem)
+			var i := 0;
+			while ( i < leftover_amount)
+				CreateItemInBackpack(character, leftover, 1);
+				i := i + 1;
+			endwhile
+	   	 endif
+            endif
+        else
+            PlaySoundEffect(character, failure_sound);
+            if (destroy_failure)
+                SendSysMessageEx(character, "Voce falhou e destruiu parte do material.", SSM_FAIL);
+                SubtractAmount(stuff, 1);
+            else
+                SendSysMessageEx(character, "Voce falhou em fazer o item.", SSM_FAIL);
+            endif
+
+            if  (destroy_target_failure)
+                SubtractAmount(use_on, 1);
+            endif
+        endif
+
+    else
+        //don't need a skill check
+        if (!dont_destroy_success)
+          SubtractAmount(stuff, quantity1);
+        endif
+        var item := CreateItemInBackpack(character,targetitem,  target_quantity);
+	  if (item == error) 
+		var i := 0;
+		for (i := 0; i < target_quantity; i := i + 1)
+			CreateItemInBackpack(character,targetitem,  1);
+		endfor
+ 	  endif
+        if (target_quantity > 1)
+            desc := "items";
+        else
+            desc := "item";
+        endif
+
+        if (destroy_target_success)
+            SubtractAmount(use_on, 1);
+        endif
+        PlaySoundEffect(character, success_sound);
+        SendSysMessageEx(character, "Voce guardou o item na sua mochila.", SSM_INFO);
+        if (leftover)
+            var leftitem := CreateItemInBackpack(character, leftover, leftover_amount);
+	    if (!leftitem)
+		var i := 0;
+		while ( i < leftover_amount)
+			CreateItemInBackpack(character, leftover, 1);
+			i := i + 1;
+		endwhile
+	    endif
+        endif
+
+   endif
+
+endprogram
+
+

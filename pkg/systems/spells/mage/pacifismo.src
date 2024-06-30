@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var time := 60;
+//	if (SkillCheck(targ, RESISTING_SPELLS, -1) > 0	)
+//		time := 30;
+//	endif
+
+	var lvl := Cint(AP_GetSkill(who, MAGICLORE)/33);
+	if (lvl < 1)
+		lvl := 1;
+	endif
+	TS_StartTimer(info, "dmgreduction", time, lvl, who, 1);
+	PlaySoundEffect(info, SFX_SPELL_PROTECTION);
+	SendSysMessageEx(who, info.name+" foi encantado com sucesso", SSM_INFO);
+	
+	return 1;
+endprogram     

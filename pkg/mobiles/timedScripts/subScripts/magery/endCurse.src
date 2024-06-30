@@ -1,0 +1,48 @@
+/*
+ * $Id: endClumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":gumps:yesNo";
+include ":fls_magery:basicMagery";
+
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+
+	var points := CInt(GetObjProperty(mobile, "#ClumsyMod"));
+	AP_ModifyStatMod(mobile, DEXTERITY, (0-points));
+	EraseObjProperty(mobile, "#ClumsyMod");
+
+	points := CInt(GetObjProperty(mobile, "#WeakenMod"));
+	AP_ModifyStatMod(mobile, STRENGTH, (0-points));
+	EraseObjProperty(mobile, "#WeakenMod");
+
+	points := CInt(GetObjProperty(mobile, "#FeebleMindMod"));
+	AP_ModifyStatMod(mobile, INTELLIGENCE, (0-points));
+	EraseObjProperty(mobile, "#FeebleMindMod");
+
+	if ( !mobile.npctemplate) //se quem ta com o efeito da magia nao eh um npc
+		var serial := GetObjProperty(mobile, "mage");
+		if (serial != error) //se alguem soltou essa magia
+			var mage := SystemFindObjectBySerial(serial);
+			if (!mage.npctemplate) //se quem soltou nao foi um npc
+				if (mage.connected) //e esta conectado
+					var manter := YesNo(mage, "Deseja manter a magia Maldicao em " + mobile.name + " ? ", "Sim", "Nao");
+					if (manter)
+						ManterMagia("curse", mage, mobile);
+					else
+						SendSysMessage(mage, "O efeito da magia passou.");
+						SendSysMessage(mobile, "O efeito da magia passou.");
+					endif
+				endif
+			endif
+		endif
+	endif
+
+	return 1;
+endprogram
+

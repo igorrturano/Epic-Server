@@ -1,0 +1,67 @@
+
+include ":keys:key";
+include ":traps:traps";
+include "include/say";
+include ":gumps:yesNo";
+
+program troncoAlgema(who, item)
+
+	if (Distance(who,item)>2)
+		SendSysMessageEx(who, "O alvo esta distante",SSM_FAIL );
+		return 0;
+	endif
+
+	if (KP_HasKeyForLock(who, item))
+		SendSysMessageEx(who,"Quem você deseja prender?",SSM_REQUEST);
+		var targ := Target(who);
+
+		if (!targ)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+
+		if (Distance(targ,item)>2)
+			SendSysMessageEx(who, "O alvo esta distante",SSM_FAIL );
+			return 0;
+		endif
+
+		if (!targ.ip) // Se for player e tiver on
+			SendSysMessage(who, "Você nao pode algemar isto.");
+			return 0;
+		endif
+
+		if (GetObjProperty(targ,"algemado")== error)
+
+			if (GetObjProperty(targ,"corda")!=error)
+				EraseObjProperty(targ,"corda");
+			endif
+
+			if (GetObjProperty(targ,"alg_oriname")==error)
+				var alg_oriname := targ.name;
+				SetObjProperty(targ,"alg_oriname",targ.name);
+			endif
+
+			SetObjProperty(targ,"algemado",1);
+			targ.frozen := 1;
+			PrintText(who, "*fecha a algema*");
+			PlaySoundEffect(targ,0x04B);
+			SetName(targ, targ.name + " [ALGEMADO AO POSTE]" );
+		else
+			var ok := YesNo(who, "Voce deseja soltar "+targ.name+"?" , "Sim.", "Nao.");
+			if (ok)
+				EraseObjProperty(targ,"algemado");
+				targ.frozen := 0;
+				PrintText(who, "*abre a algema*");
+				PlaySoundEffect(targ,0x4D4);
+				SetName(targ, GetObjProperty(targ,"alg_oriname") );
+				EraseObjProperty(targ,"alg_oriname");
+			else
+				SendSysMessage(who, "Cancelado.");
+			endif
+		endif
+	else
+		SendSysMessageEx(who, "Você não possui a chave para abrir as algemas",SSM_FAIL );
+		return 0;
+	endif
+
+endprogram

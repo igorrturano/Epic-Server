@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":tn:cooldown";
+include ":combat:combat";
+
+include ":fls_core:packets";
+include ":blood:blood";
+include "include/damage";
+include "include/tileEffects";
+
+program controlDestroy(item)
+	var cfg := ReadConfigFile(":destroyable:destroyitems");
+while(item)
+
+	var elem:=FindConfigElem( cfg, item.objtype);
+	var normal:=GetConfigString( elem, "normal");
+	var quebrado:=GetConfigString( elem, "quebrado");
+
+	sleep(3600);
+		
+		if(Hex(item.graphic)==Hex(quebrado))
+		
+			if((item.objtype == 0xec25) || (item.objtype == 0xec26))
+				SetName(item,"porta emperrada");
+				item.graphic:=cint(normal);
+			endif	
+
+			if(item.objtype == 0xFF04)
+				SetName(item,"Caixa Grande Lacrada");
+				item.graphic:=cint(normal);
+			endif	
+			
+			if(item.objtype == 0xec24)
+				SetName(item,"Barril Lacrado");
+				item.graphic:=cint(normal);
+			endif
+	
+			if(item.objtype == 0xec27)
+				SetName(item,"Caixa Pequena Lacrada");
+				item.graphic:=cint(normal);
+			endif
+
+			if(item.objtype == 0xec28)
+				SetName(item,"Caixa Media Lacrada");
+				item.graphic:=cint(normal);
+			endif
+	
+		endif
+endwhile
+
+endprogram

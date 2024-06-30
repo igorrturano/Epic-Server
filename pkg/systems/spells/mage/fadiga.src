@@ -1,0 +1,39 @@
+  use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST+TGTOPT_HARMFUL);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if ( !targ.isa(POLCLASS_MOBILE) )
+		SendSysMessageEx(who, "Voce so pode usar esta magia em seres vivos.", SSM_FAIL);
+		return;
+	endif
+
+	var dmg := ( Cint(AP_GetSkill(who, MAGICLORE)));
+
+//	if (SkillCheck(targ, RESISTING_SPELLS, AP_GetSkill(who, MAGICLORE) > 0))
+//		dmg := dmg - Cint(AP_GetSkill(targ, RESISTING_SPELLS))/2;
+//		SendSysMessageEx(targ, "Voce consegue resistir a magia.", SSM_INFO); 
+//	endif
+
+	ConsumeVital( targ, STAMINA, dmg*100);
+        PlaySoundEffect(targ, SFX_SPELL_CURSE);
+	SendSysMessageEx(targ, "Subitamente voce se sente muito cansado.", SSM_FAIL);
+	SendSysMessage(who, "Voce deixou o alvo cansado.");
+	
+	return 1;
+endprogram   

@@ -1,0 +1,13 @@
+
+use uo;
+
+include ":tn:quests";
+
+program startquest(who, comands)
+
+	//comands := splitwords(comands);
+	SendSysMessage(who, "Quest " + comands);
+	ResetQuest( comands);
+	SetupQuest(comands);
+
+endprogram

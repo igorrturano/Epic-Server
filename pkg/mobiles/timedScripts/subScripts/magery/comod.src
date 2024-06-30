@@ -1,0 +1,34 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+
+	var points := level;
+	
+	if (GetObjProperty(mobile, "coMod") != error)
+		return;
+	endif
+
+	if (GetObjProperty(mobile, "auraCoMod") != error)
+		mobile.resist_cold_mod := mobile.resist_cold_mod - GetObjProperty(mobile, "auraCoMod") + points;
+		SetObjProperty(mobile, "coMod", points);
+		EraseObjProperty(mobile, "auraCoMod");					
+	else
+		SetObjProperty(mobile, "coMod", points);
+		mobile.resist_cold_mod := mobile.resist_cold_mod + points;
+	endif
+
+	
+	//SetObjProperty(mobile, "coMod", points);
+	//mobile.resist_cold_mod := mobile.resist_cold_mod + points;	
+//	SetObjProperty(mobile, "ColdResistMod", (cint(GetObjProperty(mobile, "ColdResistMod" )) + points));
+	
+	return 1;
+endprogram
+

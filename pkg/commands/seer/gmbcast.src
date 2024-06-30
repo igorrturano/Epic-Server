@@ -1,0 +1,16 @@
+use uo;
+include "include/say";
+
+program textcmd_bcast(who, text)
+  var ppl := EnumerateOnlineCharacters();
+  foreach x in ppl
+    if (x.cmdlevel > 0)
+		if (GetGlobalProperty("onlyuni"))
+			SendSysMessageUNI(x, "[GMBcast]["+who.name+"]: "+text, 0x0063, 0x02);
+		else
+			SendSysMessage(x, "[GMBcast]["+who.name+"]: "+text, 0x03, 0x0063);
+		endif
+    endif
+  endforeach
+endprogram
+

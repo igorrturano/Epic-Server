@@ -1,0 +1,126 @@
+use uo;
+
+include "include/client";
+
+program fillpitcher (who, pitcher)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!Accessible(who, pitcher))
+    return;
+  endif
+  ReserveItem(pitcher);
+  SendSysMessage(who, "Com o que voce quer encher o recipiente?", FONT_NORMAL, 90);
+  var targetted := TargetCoordinates(who);
+  if(!targetted)
+    SendSysMessage(who, "Cancelado.", FONT_NORMAL, 90);
+    return;
+  endif
+//  if(!can_access(who, targetted))
+//    return;
+//  endif
+  if(!check_accessible(who, targetted.x, targetted.y, targetted.z))
+    SendSysMessage(who,"Voce nao alcanca.", FONT_NORMAL, 90);
+    return;
+  endif
+  if(check_for_water(targetted))
+    PlaySoundEffect(who, 0x0026);
+    DestroyItem(pitcher);
+    CreateItemInBackpack(who, 0x1f9e, 1);
+  elseif(check_for_cows(targetted))
+    PlaySoundEffect(who, 0x007a);
+    DestroyItem(pitcher);
+    CreateItemInBackpack(who, 0x09ad, 1);
+  else
+    SendSysMessage(who,"Voce nao pode encher o recipiente aqui.", FONT_NORMAL, 90);
+    return;
+  endif
+endprogram
+
+function check_for_cows(theobj)
+  //  if (theobj.isA(POLCLASS_NPC))
+        if (theobj.objtype == 0xd8 || theobj.objtype == 0xe7)
+            return 1;
+        endif
+ //   endif
+endfunction
+
+function check_for_water(theobj)
+    if ((theobj.objtype >= 0x1796) && (theobj.objtype <= 0x17b2) )
+        return 1;
+    elseif ((theobj.objtype >= 0x346e) && (theobj.objtype <= 0x3530))
+        return 1;
+    elseif ((theobj.objtype >= 0xb41) && (theobj.objtype <= 0xb44))
+       var agua := GetObjProperty(theobj, "water");
+       if (!agua)
+          return 0;
+       else
+          if (agua  > 1)
+            agua := agua -1;
+          endif
+          SetObjProperty(theobj, "water", agua);
+          return 1;
+       endif
+    elseif ((theobj.graphic == 3707))
+		var waternumber := GetObjProperty(theobj, "water");
+		if (waternumber <= 0)
+			return 0;
+		endif
+		waternumber := waternumber -1;
+		SetObjProperty(theobj, "water", waternumber);
+		if (waternumber <= 0)
+			EmptyBalde(theobj);
+		endif
+    elseif (theobj.objtype == 0x0e7b || theobj.objtype == 0x154d)
+       var agua := GetObjProperty(theobj, "agua");
+       if (!agua)
+          return 0;
+       else
+          if (agua  > 1)
+            agua := agua -1;
+          endif
+          SetObjProperty(theobj, "agua", agua);
+          return 1;
+       endif
+    else
+        return 0;
+    endif
+endfunction
+
+function EmptyBalde(bucket)
+	var info := struct;
+	info.+container := bucket.container;
+	info.+color := bucket.color;
+	info.+x := bucket.x;
+	info.+y := bucket.y;
+	info.+z := bucket.z;
+	
+	ReleaseItem(bucket);
+
+	var new_bucket;
+	if ( info.container )
+		new_bucket := CreateItemInContainer(info.container, 3715, 1);
+	else
+		new_bucket := CreateItemAtLocation(info.x, info.y, info.z, 3715, 1);
+	endif
+	SetObjProperty(new_bucket, "canfix", GetObjProperty(bucket, "canfix"));
+	SetObjProperty(new_bucket, "crafterserial", GetObjProperty(bucket, "crafterserial"));
+	SetObjProperty(new_bucket, "fixer", GetObjProperty(bucket, "fixer"));
+	SetObjProperty(new_bucket, "water", 0);
+	new_bucket.color := info.color;
+	DestroyItem(bucket);
+	return new_bucket;
+endfunction
+
+function check_accessible( who, x, y, z )
+    z := z;
+    var xd, yd;
+    xd := who.x - x;
+    if (xd < -2 || xd > 2)
+        return 0;
+    endif
+    yd := who.y - y;
+    if (yd < -2 || yd > 2)
+        return 0;
+    endif
+    return 1;
+endfunction

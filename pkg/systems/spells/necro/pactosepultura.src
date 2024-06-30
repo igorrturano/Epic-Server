@@ -1,0 +1,42 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:regen";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetObjProperty(who, "pactodesepultura"))
+		SendSysMessageEx(who, "Voce ja esta em um pacto de sepultura", SSM_FAIL);
+		return;
+	endif
+	PlayMovingEffectEx( who, targ, 14202, 1, 0, 1001, 0, 0, 0, 0, 0, 0 );
+	PlayMovingEffectEx( targ, who, 14202, 1, 0, 1001, 0, 0, 0, 0, 0, 0 );
+
+
+	PlaySoundEffect( who, 384 );
+	
+	var necrovital := AP_GetVitalMaximumValue(who, "Hits");
+
+	SetObjProperty(who, "pactodesepulturadmg", necrovital);
+	SetObjProperty(who, "pactodesepultura", targ.serial);
+
+	SendSysMessageEx(who, "Voce e " + targ.name + " estao em um pacto de sepultura", SSM_INFO);
+	SendSysMessageEx(targ, "Voce e " + who.name + " estao em um pacto de sepultura", SSM_INFO);
+	
+	return 1;
+endprogram 

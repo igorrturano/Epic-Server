@@ -1,0 +1,17 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program TimedScript_sacrificio(params)
+	var who := params[1];
+    SendSysMessage(who, "O fogo se apaga.");
+	return 1;
+endprogram
+

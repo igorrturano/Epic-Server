@@ -1,0 +1,30 @@
+/*
+ * $Id: paralysis.src 128 2006-05-27 17:36:42Z austinheilman $
+ *
+ */
+ 
+use uo;
+use os;
+use util;
+include ":charactercreation:habilidades";
+include ":tn:cooldown";
+
+program TimedScript_Paralysis(params)
+	var mobile := params[1];
+
+	if (temhabilidade(mobile, "Movimento Livre") || GetCooldown(mobile, "vitalidadeinabalavel") || GetCooldown(mobile, "VontadeIndomavel") )
+			return;
+	endif
+	
+	PlaySoundEffect(mobile, 0x0016);
+	var originalcolor;
+	originalcolor := mobile.color;
+	SetObjProperty(mobile, "originalcolor", originalcolor);
+	mobile.color := 2221;
+	
+	SendSysMessage(mobile, "Voce esta congelado.");
+	mobile.frozen := 1;
+	
+	return 1;
+endprogram
+

@@ -1,0 +1,104 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include ":taming:taming";
+include "include/facings";
+include "include/shapes";
+include ":magery:fields";
+
+
+program SpellScript(params)
+	var caster := params[1];
+	var info := params[2];
+    var range := cint(AP_GetSkill(caster, MAGICLORE)/20);
+
+    SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
+    var targ := TargetCoordinates(caster);
+    if (!targ)
+        SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
+        return 0;
+    endif
+
+    SendSysMessageEx(caster, "Uma fina camada de chamas brota das pontas dos seus dedos estendidos.", SSM_INFO);
+    
+     // Use TurnObjectToward para virar o caster na direção do alvo.
+    TurnObjectToward(caster, targ.x, targ.y);
+    sleepms(300);
+
+    var effect_id := 0x6d70; // ID do efeito que você quer jogar
+    var lines_count := range; // Número de linhas que você quer criar
+    var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
+    var effect_duration := 30; // Duração do efeito
+
+    PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
+
+    var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
+    foreach mob in mobs
+        if (InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
+            if (mob == caster)
+                continue;
+            endif
+
+            var damage := cint(AP_GetSkill(caster, MAGICLORE)/8) + RandomDiceRoll("3d6");
+            PlaySoundEffect( mob, SFX_226 );
+            sleepms(100);
+            PlaySoundEffect( mob, SFX_227 );
+            sleepms(100);
+            PlaySoundEffect( mob, SFX_228 );
+            sleepms(100);
+            SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
+            DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
+            sleepms(100);         
+        endif
+    endforeach
+endprogram
+
+function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, realm)
+    var facing_direction := caster.facing;
+    var start_offset_x := 0;
+    var start_offset_y := 0;
+    var line_direction;
+    var i, j, line;
+
+    // Define a direção do efeito baseada na direção que o caster está olhando
+    if (facing_direction == 0 || facing_direction == 4) // Norte ou Sul
+        line_direction := "horizontal";
+        if (facing_direction == 0)
+            start_offset_y := -1;
+        else 
+            start_offset_y := 1;
+        endif
+    else // Leste ou Oeste
+        line_direction := "vertical";
+        if (facing_direction == 2)
+            start_offset_x := 1;
+        else
+            start_offset_x := -1;
+        endif
+    endif
+
+    // Cria linhas de efeitos em sequência
+    for (line := 0; line < lines_count; line+=1)
+        var current_effect_distance := line; // Diminui o alcance a cada linha
+        for (i := -current_effect_distance; i <= current_effect_distance; i+=1)
+            var pos_x := caster.x + start_offset_x * (line + 1);
+            var pos_y := caster.y + start_offset_y * (line + 1);
+            if (line_direction == "horizontal")
+                pos_x += i;
+            else
+                pos_y += i;
+            endif
+            PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
+        endfor
+    endfor
+endfunction
+

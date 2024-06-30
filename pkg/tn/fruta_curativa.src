@@ -1,0 +1,53 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+use vitals;
+use attributes;
+include ":alchemy:alchemy";
+include "include/say";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (cint(GetObjProperty(who, "#healingpotion")))
+		SendSysMessageEx(who, "Voce ja esta sob efeito de um item de cura.", SSM_FAIL);
+		return;
+	endif
+
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return;
+	endif
+
+	if(GetObjProperty(who, "CannotHeal"))
+		SendSysMessageEx(who, "Essa fruta nao fara efeito nas atuais circunstacias", SSM_FAIL);
+		return;
+	endif
+
+
+	var healed;
+	var skill := cint(GetObjProperty(potion, "crafterskill"));
+	healed := skill/5;
+	var delay := 500;
+       healed := healed + 55; 
+
+
+	Detach();
+	var i := 0;
+	DestroyItem(potion);
+	SetObjProperty(who, "#healingpotion", 1);
+	SendSysMessageEx(who, "Seus ferimentos estao cicatrizando...", SSM_INFO);
+	while (i < healed)
+		HealDamage(who,  1 );
+		i := i + 1;
+		sleepms(delay);
+	endwhile
+	EraseObjProperty(who, "#healingpotion");
+	SendSysMessageEx(who, "Terminou o efeito da cura.", SSM_INFO);
+
+endprogram

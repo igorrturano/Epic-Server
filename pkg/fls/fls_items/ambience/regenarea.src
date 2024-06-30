@@ -1,0 +1,49 @@
+use uo;
+use vitals;
+use os;
+include ":attributes:vitals";
+
+program setupsound(rune)
+	var i := 0;
+	while ( 1 )
+		var range := GetObjProperty(rune, "range");
+		if (!range)
+			range := 6;
+		endif
+
+		var nearbypeople := ListMobilesNearLocation( rune.x, rune.y, rune.z, range, rune.realm);
+		foreach people in nearbypeople
+			var name := splitwords(people.name);
+			name := name[1];
+			if (GetObjProperty(rune, "hits"))
+				healDamage(people, GetObjProperty(rune, "hits"));
+			endif
+
+			if (GetObjProperty(rune, "stam"))
+				var regen:= AP_GetVital(people, "stamina")+GetObjProperty(rune, "stam");
+				var vital:= AP_SetVital(people, "Stamina", regen);
+			endif
+
+			if (GetObjProperty(rune, "mana"))
+				var regen:= AP_GetVital(people, "mana")+GetObjProperty(rune, "mana");
+				var vital:= AP_SetVital(people, "Mana", regen);
+			endif
+
+			//regen de DP
+			if(i == 0)
+                var DP:= AP_GetVital(people, "DP");
+				AP_SetVital(people, "DP", DP+0.01);
+			endif
+
+		endforeach
+
+		sleep(4);
+
+		if(i >= 9)
+			i:=0;
+		else
+			i := i +1;
+		endif
+
+	endwhile
+endprogram

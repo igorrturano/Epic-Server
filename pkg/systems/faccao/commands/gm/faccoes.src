@@ -1,0 +1,7 @@
+use uo;
+use os;
+use guilds;
+
+program commandFaccoes(who)
+   start_script(":faccao:faccao", array{who, who, "adm"});
+endprogram

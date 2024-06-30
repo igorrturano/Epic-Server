@@ -1,0 +1,68 @@
+
+use uo;
+use cfgfile;
+include ":gathering:mining";
+include ":attributes:attributes";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":charactercreation:habilidades";
+
+program mining(who)
+
+	var where := GetMiningRegion(who.x, who.y);
+
+	var df := opendatafile(":gathering:miningspots");
+    if (df == error)
+        df :=  createdatafile(":gathering:miningspots");
+    endif
+
+    var elem := df.FindElement(where);
+    var ores := elem.GetProp("Ores");
+    var raridades := SplitWords(elem.GetProp("Rarity"));
+
+	var possiveis := {};
+	var raridade := {};
+	ores := SplitWords(ores);
+	var i := 1;
+	var k := 1;
+	
+	var skill := AP_GetSkill(who, GATHERING);
+	
+	foreach thing in ores 
+		var dif := DetermineMiningDifficulty( GetResourceId(thing) );
+		if (TemHabilidade(who, "Prospector"))
+			dif := 0;
+		endif
+		if ( (skill + 10) >=  dif)
+			possiveis[i] := thing;
+			raridade[i] := raridades[k];
+			i := i + 1;
+		endif
+		k := k + 1;
+	endforeach
+
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 250, 330);	
+	GFResizePic(gump, 15, 40, 0x13BE, 220, 300);
+	GFTextMid(gump, 20, 50, 250, 1153, "Minerios Disponiveis");
+	
+	var y := 80;
+	i := 1;
+	foreach x in possiveis
+		GFTextLine(gump, 35, y, 1153, x);
+		GFTextLine(gump, 120, y, 1153, GetOreRarityDesc(cint(raridade[i])));
+		GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
+		i := i + 1;
+		y := y + 20;
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+	
+	if (input > 400)
+		SendsysMessage(who, "Voce vai procurar por " + possiveis[input-400]);
+		SetObjProperty(who, "searchore", possiveis[input-400]);
+	endif
+
+endprogram

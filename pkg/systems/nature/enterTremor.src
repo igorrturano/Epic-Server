@@ -1,0 +1,9 @@
+use uo;
+use os;
+use util;
+
+include ":nature:tremor";
+
+program terremoto(who, regname)
+    start_script(":nature:terremoto", {who,regname});
+endprogram

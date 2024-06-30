@@ -1,0 +1,13 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Voce esta preparado para atacar com o escudo.", SSM_INFO);
+	SetObjProperty(attacker, "#ataquecomescudo", 1);
+
+endprogram

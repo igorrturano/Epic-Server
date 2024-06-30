@@ -1,0 +1,69 @@
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":charactercreation:resists";
+include ":survival:fishingFunctions";
+
+program HitScript(who)
+	var targ := Target(who);
+    SendSysMessage(who, "Escolha quem voce deseja aprisionar");
+
+    var dist := Distance(who, targ);
+    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+
+    if (dist > (mlore/ 5))
+        SendSysMessage(who, "O alvo esta muito distante");
+        return 0;
+    endif
+   
+	if ( !targ )
+		SendSysMessage(who, "Cancelled.");
+		return 0;
+	endif
+
+    if(!targ.isA(POLCLASS_MOBILE))
+        SendSysMessage(who, "Alvo Invalido.");
+        return 0;
+    endif
+
+    PerformAction(who, ANIM_CAST_DIR);
+    sleep(2);
+
+    var hell_gate :=0x6D1D;
+    var globe := 0x6E19;
+    targ.frozen := 1;
+    PlayStationaryEffect(targ.x, targ.y, targ.z, globe, 0, 40,0, who.realm); // globo invul
+    sleep(2);
+    var duration := Cint(AP_GetSkill(who, MAGICLORE)/ 5);
+    //if (targ.npctemplate)
+    //    targ.concealed := 1;
+    //    sleep(duration);
+    //    PlayStationaryEffect(targ.x, targ.y, targ.z, 0x6D1D, 200, 30,0, who.realm);// Portao do Inferno 
+    //    sleep(2);
+    //    targ.concealed := 0;
+    //    targ.frozen := 0;
+    //    PlaySoundEffect(targ, 0x1f2);
+    //    return;
+    //else
+        var x,y,z, the_realm;
+        x := targ.x;
+        y := targ.y;
+        z := targ.z;
+        the_realm := targ.realm;
+        MoveObjectToLocation(targ, 5934, 2411, 40, "britannia", MOVEOBJECT_FORCELOCATION);
+        //PlayObjectCenteredEffect(targ, globe, 0, duration * 10);
+        sleep(duration);
+        targ.concealed := 1;
+        PlayStationaryEffect(x, y, z, hell_gate, 200, 25,0, the_realm);// Portao do Inferno 
+        MoveObjectToLocation(targ, x, y, z, the_realm, MOVEOBJECT_FORCELOCATION);
+        sleep(2);
+        targ.concealed := 0;
+        targ.frozen := 0;
+        PlaySoundEffect(targ, 0x1f2);
+    //endif
+
+	return 1;
+endprogram

@@ -1,0 +1,115 @@
+/* $Id: mapmakersPen.src 905 2005-11-05 08:20:50Z muaddiblsd $
+ *
+ */
+use uo;
+use os;
+
+include ":tn:tngumps";
+include ":gumps:requestGump";
+include ":itemutils:canAccess";
+include "include/say";
+include ":gumps:yesNo";
+
+program use_Carimbo(who, tool)
+
+	if(!can_access(who, tool))
+		return 0;
+	endif
+	if((!tool.movable) or !ReserveItem(tool))
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return 0;
+	endif
+	if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+		SendSysMessage(who, "O item precisa estar na sua mochila.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!GetObjProperty(tool, "selo"))
+		var CarimboChoice := YesNo(who, "Este Sinente nao possui um selo, deseja atribuir algum?");
+		if (!CarimboChoice)
+			var SeloComum := YesNo(who, "Deseja usar um Selo Comum?");
+			if (!SeloComum)
+				return 0;
+			endif
+			SetObjProperty(tool, "selo", "Selo Comum");
+			SetObjProperty(tool, "description", "Sinete de Selo Comum");
+			SetName(tool, tool.desc);
+			return 1;
+		endif
+		if (who.cmdlevel >= 3)
+			var NomeDaFamilia := cstr(RequestGump(who, "(GM) Entre com o nome do selo."));
+			SetObjProperty(tool, "selo", NomeDaFamilia);
+			SetObjProperty(tool, "description", "Sinete de " + NomeDaFamilia);
+			SetName(tool, tool.desc);
+			return 1;
+		endif
+
+		SendSysMessageEx(who, "Selecione o Anel de Familia para criar o selo", SSM_REQUEST);
+		var anel := Target(who);
+		if (!anel)
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			return;
+		elseif (anel.objtype != 0x108a)
+			SendSysMessageEx(who, "Isto nao e um anel.", SSM_FAIL);
+			return;
+		elseif (!GetObjProperty(anel, "familia"))
+			SendSysMessageEx(who, "Este nao e um anel de familia nobre.", SSM_FAIL);
+			return;
+		endif
+
+		var NomeDaFamilia := GetObjProperty(anel, "familia");
+		SetObjProperty(tool, "selo", "Selo da Familia " + NomeDaFamilia);
+		SetObjProperty(tool, "description", "Carimbo de " + NomeDaFamilia);
+		SendSysMessageEx(who, "Selo atribuido ao Carimbo.", SSM_FAIL);
+		SetName(tool, tool.desc);
+		return 1;
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	SendSysMessageEx(who, "Selecione uma vela acesa para extrair a cera", SSM_REQUEST);
+	var vela := Target(who);
+	if (!vela)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	elseif ((vela.objtype != 5171) && (vela.objtype != 0x0A0F) && (vela.objtype != 0x0A26) && (vela.objtype != 0x0A29) && (vela.objtype != 0x142C) && (vela.objtype != 0x1853) && (vela.objtype != 0x1854) && (vela.objtype != 0x1856) && (vela.objtype != 0x1C14))
+		SendSysMessageEx(who, "Isto nao e uma vela acesa.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Selecione a carta para carimbar.", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	var blank_array := { 0xFF5 };
+	if (!targ.objtype in blank_array)
+		SendSysMessageEx(who, "Este Sinete so pode selar cartas.", SSM_FAIL);
+		return;
+	elseif (GetObjProperty(targ, "Selado") == "sim")
+		SendSysMessageEx(who, "Esta carta ja esta selada.", SSM_FAIL);
+		return;
+	elseif (targ.isBook())
+		var yes := YesNo(who, "Deseja mesmo carimbar esta carta? Ela nao podera sofrer alteracoes depois disso.");
+		if (!yes)
+			SendSysMessageEx(who, "Voce optou por nao carimbar a carta.", SSM_FAIL);
+			return;
+		endif
+		targ.ReadOnly(1);
+		var NomeDaFamilia := GetObjProperty(tool, "selo");
+		SetObjProperty(targ, "Selado", "sim");
+		SetObjProperty(targ, "description", NomeDaFamilia);
+		PrintTextAbove(who, "*selando uma carta*");
+		PlaySoundEffect( who, 0x4D4 );
+		SetName(targ, targ.desc);
+		return 1;
+	else
+		SendSysMessageEx(who, "Voce nao pode fazer nada com isto.", SSM_FAIL);
+		return;
+	endif
+
+endprogram

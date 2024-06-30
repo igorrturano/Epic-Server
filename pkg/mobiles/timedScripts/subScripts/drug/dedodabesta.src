@@ -1,0 +1,38 @@
+/* $Id: alcohol.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":timedscripts:timedScripts";
+include ":attributes:attributes";
+
+program TimedScript_Alcohol(params)
+	var mobile := params[1];
+
+	var cycle := 0;
+	AP_SetVitalRegenRateMod(mobile, "Mana", AP_GetVitalRegenRateMod(mobile, "Mana") + 60 );
+	RecalcVitals(mobile);
+	while ( 1 )
+		cycle := cycle+1;
+		if  ( cycle == 10 )
+			SendSysMessage(mobile, "Voce se sente relaxado.");
+		elseif ( cycle == 50 )
+			SendSysMessage(mobile, "Voce se sente leve.");
+		elseif ( cycle == 80 )
+			SendSysMessage(mobile, "Seu coracao esta agitado e sua mente a milhao.");
+		elseif ( cycle == 120 )
+			SendSysMessage(mobile, "Seus pensamentos se tornam introspectivos e voce comeca a ficar nervoso.");
+		elseif ( cycle == 200 )
+			SendSysMessage(mobile, "Sua mente esta embaralhada, tomada por alucinacoes, panico e paranoia.");
+		endif
+
+		
+		Sleep(RandomDiceRoll("1d10")+10);
+	endwhile
+	
+	return 1;
+endprogram

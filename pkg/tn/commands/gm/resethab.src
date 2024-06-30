@@ -1,0 +1,138 @@
+use uo;
+use cfgfile;
+
+include ":gumps:gumps";
+include "include/say";
+include ":charactercreation:habilidades";
+
+program reset(who)
+
+	var habs := GetObjProperty(who, "myhabs");
+	var buy := GetObjProperty(who, "buyhab");
+
+	if (!habs || !buy)
+		return 1;
+	endif
+
+	var gump := GFCreateGump();
+        GFDisposable(gump, 0);
+	var sizey := GetGumpSizeY(habs);
+	GFResizePic(gump, 0, 25, 3600, 250, sizey+70);	
+	GFResizePic(gump, 15, 40, 0x13BE, 220, sizey + 40);
+	GFTextLine(gump, 60, 50, 1153, "Resetar Habilidades");
+
+	var i := 1;
+	var y := 100;
+	foreach hab in habs
+		GFRadioButton(gump, 30, y, 210, 211, 0, i);
+		GFTextLine(gump, 50, y, 1153, hab);
+		var requisitos := retornaRequisitos( hab);
+		foreach req in requisitos
+			y := y + 20;
+			GFTextLine(gump, 70, y, SSM_REQUEST, req);
+		endforeach
+		y := y + 20;
+		i := i + 1;
+	endforeach
+
+  	GFAddButton(gump, 250-70, sizey+20, 4502, 4502, 1, 999 );
+	GFTextLine(gump, 250-110, sizey+30, 1153, "Pronto");
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 999)
+
+		var remover := array;
+		foreach key in (input.keys)
+			if (habs[habs.keys()[key]])
+				remover.append(habs[habs.keys()[key]]);// <-
+			endif
+		endforeach
+
+		//Sendsysmessage(who, "input: " + input.keys);
+		//Sendsysmessage(who, "habs: " + habs);
+		//Sendsysmessage(who, "Voce quer remover: " + remover);
+
+		var habfinal := array;
+		foreach key in (habs.keys())
+			if (! (habs[key] in remover))
+				habfinal.append(habs[key]);
+			endif
+		endforeach
+
+		//sendsysmessage(who, "hab final " + habfinal);
+
+		//verifica agora se as habs removidas nao sao dep pras q ficam
+		foreach hab in habfinal
+			var requisitos := retornaRequisitos( hab);
+			foreach req in requisitos
+				if ( !(req in habfinal))
+					SendSysMessageEx(who, "Voce nao pode remover a habilidade " + remover[1] + " porque e pre requisito para " + hab, SSM_FAIL);
+					return;
+				endif
+			endforeach
+		endforeach
+
+		var resethab := cint(GetObjProperty(who, "resethab"));
+		var classe := GetObjProperty(who, "classe");
+		resethab := resethab + 1;
+		var lvlhab := cint(NivelHabilidade(remover[1], classe));
+		var custo := (1000 + lvlhab * 100) * resethab; 
+		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para desaprender esta habilidade.", SSM_REQUEST);
+		var targ := Target(who);
+		if (!targ)
+			SendSysMessage(who, "Cancelado.", SSM_FAIL);
+			return;
+		endif
+		if (targ.objtype == 47715)
+			if (targ.amount < custo)
+				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+				return;
+			endif				
+			if (!SubtractAmount(targ, custo))
+				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+				return;
+			else
+				SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
+			endif
+		else
+			SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
+			return;
+		endif
+		SetObjProperty(who, "resethab", resethab);
+
+
+		//var classe := GetObjProperty(who, "classe");
+		foreach dep in remover
+			var nvl := cint(NivelHabilidade(dep, classe));
+			//sendsysmessage(who, " " + nvl);
+			var e := habs.erase( cint(nvl) );
+			//sendsysmessage(who, "erro " + e);
+			//sendsysmessage(who, "buy antes " + buy[nvl]);
+			buy[cint(nvl)] := 1; 
+			//sendsysmessage(who, "buy depois " + buy[nvl]);
+		endforeach
+
+		SetObjProperty(who, "myhabs", habs);
+		SetObjProperty(who, "buyhab", buy);
+		SendSysMessage(who, "Suas habilidades foram atualizadas.", SSM_INFO);
+		//Sendsysmessage(who, "habs final: " + habs);
+
+	endif
+
+endprogram 
+
+function GetGumpSizeY( habs)
+
+	var y := 100;
+	foreach hab in habs
+		var requisitos := retornaRequisitos( hab);
+		foreach req in requisitos
+			y := y + 20;
+		endforeach
+		y := y + 20;
+	endforeach
+
+	return y;
+
+endfunction

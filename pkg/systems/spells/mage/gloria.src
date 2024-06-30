@@ -1,0 +1,24 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:poisonUtil";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	PlaySoundEffect(who, SFX_SPELL_BLESS);
+	var amt := Cint( AP_GetSkill(who, MAGICLORE)*0.7);
+	if (amt < 20)
+		amt := 20;
+	endif
+	TS_StartTimer(who, "gloria", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt); //dura de 40 a 200 seg e aumenta de 20 a 100%.
+	SendSysMessageEx(who, "Voce esta preparado para o combate.", SSM_INFO);
+	
+	return 1;
+endprogram

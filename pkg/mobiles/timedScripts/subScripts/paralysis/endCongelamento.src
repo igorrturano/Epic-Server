@@ -1,0 +1,14 @@
+/*
+ * $Id: endParalysis.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+program TimedScript_EndParalysis(mobile)
+	mobile.frozen := 0;
+	var originalcolor := GetObjProperty(mobile, "originalcolor");
+	mobile.color := originalcolor;
+	return 1;
+endprogram

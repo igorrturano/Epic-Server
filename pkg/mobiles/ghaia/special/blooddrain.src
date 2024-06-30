@@ -1,0 +1,39 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:habilidades";
+include ":timedScripts:timedScripts";
+include "include/damage";
+
+program loko(params)
+
+	var who := params[1];
+	var cdtime := params[2];
+	var cdname := params[3];
+
+	//printtextabove(who, "loko");
+
+	if ( IsBloodied(who) && who.opponent) //
+		if (CoordinateDistance(who.x, who.y, who.opponent.x, who.opponent.y) <= 3)
+			TS_StartCooldown(who, cdname, cdtime);
+			who.frozen := 1;
+			PerformAction(who, 0x0d);
+			PrintTextAbove(who, "*drenando sangue*");
+			TS_StartTimer(who.opponent, "paralyze", 6);
+			var i := 0;
+			while (i < 5)
+				DamageFLS(who.opponent, 10, DMG_FORCED, who);
+				HealDamage(who, 10);
+				Sleep(1);
+				i := i + 1;
+			endwhile
+			who.frozen := 0;
+			if (randomint(100) < 5)
+				SendSysMessageEx(who.opponent, "Voce esta muito fraco com a perda de sangue.", SSM_FAIL);
+				TS_StartTimer(who.opponent,  "weaken", 360, 40, who, 1);
+			endif
+		endif
+	endif
+
+endprogram

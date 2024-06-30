@@ -1,0 +1,32 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+
+program manobra(attacker)
+
+	var festa := attacker.party;
+
+	if (!festa)
+		SendSysMessageEx(attacker, "Voce nao tem aliados!", SSM_FAIL);
+		return;
+	endif
+
+	PrintText(attacker, "*ordena os aliados*");
+
+	foreach member in (festa.members)
+		if (member.serial != attacker.serial)
+			if (Distance(attacker, member) < 8)
+				var cds := TS_GetCooldownList(member);
+				foreach cd in cds
+					TS_LowerDuration(member, cd, -1, 1);	
+				endforeach
+			endif
+		endif
+	endforeach
+
+
+endprogram  
+

@@ -1,0 +1,122 @@
+use uo;
+use os;
+
+include "include/damage";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":spells:swordmage";
+include ":spells:summon";
+include "include/shapes";
+include "include/sounds";
+include "include/client";
+
+program manobra(who)
+
+	var targ := Target(who);
+	var undead;
+	var template;
+
+	var element;
+	element := GetObjProperty(who.weapon, "#elementalweapon");
+	if (element == error)
+		SendSysMessageEx(who, "Voce precisa estar equipado com uma arma encantada.", SSM_INFO);
+		return 0;
+	endif
+	
+	element := element.type;
+	var duracao ;
+	duracao := AP_GetSkill(who, MAGICLORE);
+	case(element)
+		"Fire":
+		SendSysMessageEx(who, "Voce conjura uma explosao na direcao apontada.", SSM_INFO);
+		Rastrodefogo(who, targ, duracao);
+		"Cold":
+		SendSysMessageEx(who, "Voce invoca uma forte nevasca ao seu redor.", SSM_INFO);
+		foreach defender in (ListMobilesNearLocation( who.x, who.y, who.z, 10, who.realm ))
+			if ( !(defender in who.party.members ) )
+				if (defender.serial != who.serial)
+      					PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 3, 4);
+						PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
+						DamageFLS(defender, RandomIntMinMax(20, 35), DMG_ENERGY, who);
+						TS_Starttimer(defender, "congelamento", 3);
+				endif
+			endif
+    		endforeach
+		"Energy":
+		SendSysMessageEx(who, "Voce invoca uma tempestade.", SSM_INFO);
+		foreach defender in (ListMobilesNearLocation( who.x, who.y, who.z, 8, who.realm ))
+			if ( !(defender in who.party.members ) )
+				if (defender.serial != who.serial)
+      					PlaySoundEffect(defender, 0x2A);
+						PlayLightningBoltEffect( defender );
+					DamageFLS(defender, RandomIntMinMax(25, duracao), DMG_ENERGY, who);
+				endif
+			endif
+    		endforeach
+	endcase
+
+	
+endprogram
+
+function Rastrodefogo(npc, opponent, duracao)
+	if ( !CheckLineOfSight(npc, opponent) )
+	SendSysMessageEx(npc, "Voce nao ve o alvo.", SSM_INFO);
+		return 0;
+	endif
+
+	PerformAction(npc, 12);
+	PlaySoundEffect(npc, 0x208);
+	sleep(2);
+	PlayMovingEffect(npc, opponent, 0x36D4, 10, 10, 1);
+
+	var coord_list := GetCoordsInLine(npc.x, npc.y, opponent.x, opponent.y);
+	foreach coord in coord_list
+		if ( _coord_iter < 4 ) // Dont make one where its standing
+			continue;
+		endif
+		
+		var field := CreateItemAtLocation(coord.x, coord.y, npc.z, "FireField_NS", 1);
+		field.SetDuration(0);
+		sleepms(105);
+	endforeach
+
+	foreach coord in GetCoordsInSquare(opponent.x, opponent.y, 3)
+		if ( RandomInt(2) != 1 ) // Don't place a fire field
+			continue;
+		endif
+		case( RandomInt(3) )
+			default:
+				PlayStationaryEffect(coord.x, coord.y, npc.z, 0x36CB, 10, 10, 0);
+				break;
+			1:
+				PlayStationaryEffect(coord.x, coord.y, npc.z, 0x36BD, 10, 10, 0);
+				break;
+			2:
+				PlayStationaryEffect(coord.x, coord.y, npc.z, 0x36B0, 10, 10, 0);
+				break;
+		endcase
+		var field;
+		if ( RandomInt(2) )
+			field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldNS", 1);
+		else
+			field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldEW", 1);
+		endif
+		field.SetDuration(20);
+		sleepms(5);
+	endforeach
+
+	PlaySoundEffect(opponent, 0x208);
+
+	var chars := ListMobilesNearLocation(opponent.x, opponent.y, opponent.z, 4, npc.realm);
+	foreach mobile in chars
+		DamageFLS(mobile, RandomIntMinMax(40,cint(duracao)), DMG_FIRE, npc);
+	endforeach
+	
+
+	return 1;
+endfunction
+	
+	
+	
+ 

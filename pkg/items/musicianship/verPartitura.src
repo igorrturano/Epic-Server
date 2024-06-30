@@ -1,0 +1,75 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+
+//As constantes e funcoes auxiliares estao nesse arquivo
+//os includes de gump tambem
+include "bardmusic";
+
+//Programa para visualizar as partituras
+program verPartitura(who, item)
+	var name := item.name;
+	var compositor := GetObjProperty(item, "compositor");
+	var notas := GetObjProperty(item, "notas");
+	var notas2 := GetObjProperty(item, "notas2");
+	var tempo := GetObjProperty(item, "tempo");
+	var letra := GetObjProperty(item, "letra");
+	var magica := GetObjProperty(item, "magica");
+
+
+	//Prepara o nome da partitura para ser exibindo destacando se a partitura for magica
+	//Prepara tambem o nome do compositor
+
+	var titulo := array;
+	//armazena temporariamente o titulo e sua cor de fonte
+	if ((magica != error) && (magica > 5))
+	 	titulo[1] := name + " [Lendaria]";
+	 	titulo[2] := BARD_FONT_COLOR_LENDARIA;
+	else
+		titulo[1] := name;
+		titulo[2] := BARD_FONT_COLOR_COMUM;
+	endif
+
+
+	//junta todas as notas da partitura numa unica lista
+	foreach nota in (notas2)
+		notas.Append(nota);
+	endforeach
+
+	//prepara o conteudo da partitura para ser exibido
+	var partituraTxt := "";
+	var l := 1;
+	foreach delay in (tempo)
+		if (notas[_delay_iter] == "L") // "L" é o simbolo de Letra
+			partituraTxt += CStr(delay) + "ms (LETRA) " + letra[l] + "\n";
+			l += 1;
+		elseif (notas[_delay_iter] == "|")// "|" é o simbolo de Pausa
+			partituraTxt += CStr(delay) + "ms (PAUSA)\n";
+		else
+			partituraTxt += CStr(delay) + "ms (" + notas[_delay_iter] + ")\n";
+		endif
+	endforeach
+
+	//Prepara as definições de layout do gump
+	var gflayout := {
+		//"noclose",   // close by right-click forbidden
+		"NoDispose", // you did not want to hit esc, did you?
+		//"nomove",    // you musn't move the window around
+		"GumpPic 0 0 1249", // Plano de fundo (dimensões: 400x320)
+		"text 50 50 "+ titulo[2] +" 0",
+		"Text 50 70 "+ titulo[2] +" 1",
+		"Text 50 100 "+ BARD_FONT_COLOR_BASICA +" 2",
+		"HtmlGump 50 120 300 150 3 0 1"
+		};
+
+	//Prepara as definições dos dados a serem exibidor nos campos do gump
+	//Mais a frente é necessário um Append do conteudo de "partituraTxt" em "gfdata"
+	var gfdata := {
+		titulo[1],	 // these are only textlines which are used
+		"Compositor: " + compositor, // in the layout-nameription above, namely
+		"Intervalo (Nota) Letra", // in order from top to bottom.
+		partituraTxt
+		};
+
+	//exibe o gump
+	SendDialogGump( who, gflayout, gfdata);
+endprogram

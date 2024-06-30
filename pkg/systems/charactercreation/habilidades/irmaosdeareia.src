@@ -1,0 +1,47 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":spells:summon";
+include "include/client";
+include "include/dungeons";
+
+program summonSkeletaSteed(params)
+	var who := params[1];
+	var targ := TargetCoordinates(who);
+
+	var template := ":brainai:MonstrodaPoeira";
+    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+
+    if (template == error)
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return;
+	endif
+
+    var i := 0;
+    who.frozen := 1;
+    while (i < 4)
+        PerformAction(who, ANIM_CAST_DIR);
+        sleep(1);
+        i++;
+    endwhile
+    who.frozen := 0;
+	PlaySoundEffect(targ, SFX_SPELL_SUMMON_ELEMENTAL);
+
+	var mount := summon(template, targ, who);
+    var shaman_souls := Cint(getobjProperty(who, "shaman_souls"));
+    if (!shaman_souls)
+        var shaman_souls := 1;
+    endif
+	var duracao := 120 + (180 + shaman_souls) * AP_GetSkill(who, MAGICLORE)/ 100;
+
+	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
+
+    PlayObjectCenteredEffect(mount, 0x6d57, 10, 20);
+    printtextabove(mount, "ADAR KOR DOOM!");
+    SendSysMessageEx(who, "Xali'Gijak. PELA HORDA!");
+	return 1;
+
+endprogram

@@ -1,0 +1,80 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var graphic := targ.graphic;
+
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+
+	PrintText(targ, "*transformando-se*");
+	
+	targ.graphic := 81;
+	sleepms(400);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+
+	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.75);
+	var time := Cint(AP_GetSkill(who, MAGICLORE)/10) + 5;
+
+	TS_StartTimer(targ, "weaken", time, amt, who, 0);
+	TS_StartTimer(targ, "desarmar", time, 0, who);
+	TS_StartTimer(targ, "dmgreduction", time, 4, who);
+	TS_StartTimer(Targ, "desmontar", time, 0, who);
+	TS_StartTimer(targ, "polymorph", time, 81, who);	
+
+	foreach equip in ListEquippedItems( targ )
+		if ( (equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) && (equip.layer != LAYER_MOUNT) )
+				MoveObjectToLocation( equip, targ.x, targ.y, targ.z, targ.realm );
+		endif
+	endforeach
+
+	PlaySoundEffect(targ, 616);
+	SendSysMessageEx(targ, "Voce esta com a maldicao do sapo!", SSM_FAIL);
+	
+	return 1;
+endprogram   

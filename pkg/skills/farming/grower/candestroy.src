@@ -1,0 +1,9 @@
+use uo;
+use os;
+
+include ":datafile:datafile";
+
+program CanDestroy(grower)
+	grower.DeleteGrower();
+	return 1;
+endprogram

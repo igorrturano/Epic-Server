@@ -1,0 +1,214 @@
+/////////////////////////////////////////////////////
+//
+//		".mpaste" - Copies an entire area to memory for pasting in another location.
+//
+//		Allows you to select an entire area and all items are then copied to memory
+//		so you can then paste them at another location. Also provides a nudge tool
+//		for manipulating the items after pasting.
+//
+//		CHANGE LOG:
+//			Version 1.0.0
+//				Initial Release
+//
+//		Author: Danielle Elora, webmaster@nightscapeonline.com
+//		Nightscape Shard, http://www.nightscapeonline.com
+//
+/////////////////////////////////////////////////////
+
+use uo;
+use os;
+
+program textcmd_paste(who)
+
+	var master_list := GetObjProperty(who, "#copy");
+
+	while (who.connected)
+
+		SendSysMessage(who, "Where would you like to paste the last items copied?");
+		var dest := TargetCoordinates(who);
+		if (!dest)
+			SendSysMessage(who, "Canceled." );
+			return 0;
+		endif
+
+		var offset_z;
+		var offset_x_local;
+		var offset_y_local;
+		var item_color;
+		var new_item;
+		var items_paste := array{};
+		var item_count := 1;
+
+		SendSysMessage(who, "Pasting items at specified location. Please wait...");
+		foreach item in master_list
+			offset_x_local := item[2];
+			offset_y_local := item[3];
+			offset_z := item[4];
+			item_color := item[5];
+
+			new_item := CreateItemAtLocation(CInt(dest.x - offset_x_local), CInt(dest.y - offset_y_local), CInt(dest.z + offset_z), item[1], 1);
+			new_item.color := item_color;
+			items_paste.append(new_item);
+			item_count := item_count + 1;
+			sleepms(1);
+		endforeach
+
+		var movetype;
+		repeat
+
+			// display gump to allow moving the items
+			movetype := nudge_tool(who);
+
+			if (movetype[100])
+				// Adjust to the North (-Y)
+				SendSysMessage(who, "Moving the items North. Please wait...");
+				foreach item in items_paste
+					item.movable := 1;
+					MoveObjectToLocation(item, item.x, (item.y - 1), item.z, who.realm, MOVEOBJECT_FORCELOCATION);
+					item.movable := 0;
+					sleepms(3);
+				endforeach
+				SendSysMessage(who, "Finished!");
+
+			elseif (movetype[101])
+				// Adjust to the South (+X)
+				SendSysMessage(who, "Moving the items South. Please wait...");
+				foreach item in items_paste
+					item.movable := 1;
+					MoveObjectToLocation(item, item.x, (item.y + 1), item.z, who.realm, MOVEOBJECT_FORCELOCATION);
+					item.movable := 0;
+					sleepms(3);
+				endforeach
+				SendSysMessage(who, "Finished!");
+
+			elseif (movetype[102])
+				// Adjust to the East (+Y)
+				SendSysMessage(who, "Moving the items West. Please wait...");
+				foreach item in items_paste
+					item.movable := 1;
+					MoveObjectToLocation(item, (item.x - 1), item.y, item.z, who.realm, MOVEOBJECT_FORCELOCATION);
+					item.movable := 0;
+					sleepms(3);
+				endforeach
+				SendSysMessage(who, "Finished!");
+
+			elseif (movetype[103])
+				// Adjust to the West (-X)
+				SendSysMessage(who, "Moving the items East. Please wait...");
+				foreach item in items_paste
+					item.movable := 1;
+					MoveObjectToLocation(item, (item.x + 1), item.y, item.z, who.realm, MOVEOBJECT_FORCELOCATION);
+					item.movable := 0;
+					sleepms(3);
+				endforeach
+				SendSysMessage(who, "Finished!");
+
+			elseif (movetype[104])
+				// Adjust the Height Up (+Z)
+				SendSysMessage(who, "Moving the items Up. Please wait...");
+				foreach item in items_paste
+					item.movable := 1;
+					MoveObjectToLocation(item, item.x, item.y, (item.z + 1), who.realm, MOVEOBJECT_FORCELOCATION);
+					item.movable := 0;
+					sleepms(3);
+				endforeach
+				SendSysMessage(who, "Finished!");
+
+			elseif (movetype[105])
+				// Adjust the Height Down (-Z)
+				SendSysMessage(who, "Moving the items Down. Please wait...");
+				foreach item in items_paste
+					item.movable := 1;
+					MoveObjectToLocation(item, item.x, item.y, (item.z - 1), who.realm, MOVEOBJECT_FORCELOCATION);
+					item.movable := 0;
+					sleepms(3);
+				endforeach
+				SendSysMessage(who, "Finished!");
+
+			elseif (movetype[5555])
+				// Reset to orignal position
+				SendSysMessage(who, "Cancelling copypaste command. Please wait...");
+				foreach item in items_paste
+					DestroyItem(item);
+					sleepms(10);
+				endforeach
+				SendSysMessage(who, "Cancelled!");
+			endif
+
+		until ((movetype[9999]) OR (movetype[5555]) OR (!movetype) OR (!who.ip));
+
+		if (movetype[9999])
+			foreach item in items_paste
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysmessage(who, "Finished moving items!");
+		endif
+	endwhile
+
+endprogram
+
+//#########################################
+function nudge_tool(who)
+
+	//////////////////////
+	//	BUILD THE GUMP	//
+	//////////////////////
+	var gflayout_nudge_tool := array{
+		"nodispose",
+		"noclose",
+		"page 0",
+		"resizepic 10 10 9200 400 170", // outter background
+		"resizepic 13 16 3000 390 160", // inner background
+
+		"tilepic 71 84 3568", // black staff; forms the X
+		"tilepic 38 85 3569", // black staff; forms the X
+
+		"page 1",
+		"text 25 18 1952 0", // instructions text - 0 in array
+		"text 46 38 1952 1", // instructions text - 1 in array
+
+		"button 101 58 4501 4501 1 0 100", // North button
+		"button 46 114 4505 4505 1 0 101", // South button
+		"button 46 58 4507 4507 1 0 102",  // East button
+		"button 98 113 4503 4503 1 0 103", // West button
+
+		"text 36 60 1952 2", // "-X" text - 2 in array
+		"text 145 59 1952 3", // "-Y" text - 3 in array
+		"text 145 141 1952 4", // "+X" text - 4 in array
+		"text 35 141 1952 5", // "+Y" text - 5 in array
+
+		"text 73 101 1952 6", // "POSITION" text - 6 in array
+
+		"gumppictiled 188 62 2 102 2701", // divider
+
+		"button 217 59 4500 4500 1 0 104", // Up button
+		"button 217 116 4504 4504 1 0 105", // Down button
+
+		"text 253 61 1952 7",  // "Up" text - 7 in array
+		"text 253 146 1952 8", // "Down" text - 8 in array
+
+		"text 220 103 1952 9", // "HEIGHT" text - 9 in array
+
+		"gumppictiled 300 62 2 102 2701", // divider
+
+		"button 320 76 247 248 1 0 9999",  // Okay button
+		"button 320 123 243 241 1 0 5555" // Cancel button
+
+	};
+
+	var gfdata_nudge_tool := array{
+		"Use the controls below to adjust the position of the items.",
+		"Press Okay when done or Cancel to reset the items.",
+		"-X",
+		"-Y",
+		"+X",
+		"+Y",
+		"POSITION",
+		"Up",
+		"Down",
+		"HEIGHT"
+	};
+
+	return SendDialogGump(who, gflayout_nudge_tool, gfdata_nudge_tool);
+endfunction

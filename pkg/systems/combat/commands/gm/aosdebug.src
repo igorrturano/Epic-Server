@@ -1,0 +1,31 @@
+
+
+use uo;
+use os;
+use math;
+use file;
+
+include "include/damage";
+
+program command_showmyresists(who)
+
+	SendSysMessage( who, "Escolha o alvo");
+	var alvo := Target(who);
+
+
+	SendSysMessage(who, "Resist Physical: " +  alvo.resist_physical + " [" + alvo.resist_physical_mod + "]" );
+	SendSysMessage(who, "Resist Fire: " + alvo.resist_fire + " [" + alvo.resist_fire_mod + "]");
+	SendSysMessage(who, "Resist Cold: " + alvo.resist_cold + " [" + alvo.resist_cold_mod + "]");
+	SendSysMessage(who, "Resist Poison: " + alvo.resist_poison + " [" + alvo.resist_poison_mod + "]");
+	SendSysMessage(who, "Resist Energy: " + alvo.resist_energy + " [" + alvo.resist_energy_mod + "]");
+
+	//var DmgList := GetDamageList(alvo, alvo.weapon);
+
+	SendSysMessage(who, "Dmg Physical: " + alvo.damage_physical + " [" + alvo.damage_physical_mod + "]");
+	SendSysMessage(who, "Dmg Fire: " + alvo.damage_fire + " [" + alvo.damage_fire_mod + "]");
+	SendSysMessage(who, "Dmg Cold: " + alvo.damage_cold + " [" + alvo.damage_cold_mod + "]" );
+	SendSysMessage(who, "Dmg Poison: " + alvo.damage_poison + " [" + alvo.damage_poison_mod + "]");
+	SendSysMessage(who, "Dmg Energy: " + alvo.damage_energy + "[" + alvo.damage_energy_mod + "]");	
+
+
+endprogram

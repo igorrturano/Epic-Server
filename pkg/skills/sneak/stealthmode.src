@@ -1,0 +1,27 @@
+use uo;
+
+include ":awareness:awareness";
+include "include/colormap";
+
+program showdfdiff(params)
+
+	var who := params[1];
+
+	print(" " + who.name);
+
+	while(who.hidden && who.connected)
+
+		var mobs := ListMobilesInLineOfSight(who, 11);
+		foreach mob in mobs
+			if (!mob.hiding)
+				var dif := CalcSuccessPercent(mob, AWARENESS, cdbl(CalculateDHDiff(mob, who)),  AP_GetTrueSkill(mob, AWARENESS));
+				PrintTextAbovePrivate(mob, "" + dif, who, _DEFAULT_TEXT_FONT, GetMagentaMap(cint(dif/10)) );
+			endif
+			sleepms(2);
+		endforeach
+
+		sleep(3);
+	endwhile
+	
+
+endprogram

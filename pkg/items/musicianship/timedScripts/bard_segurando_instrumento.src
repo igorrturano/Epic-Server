@@ -1,0 +1,19 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_Bard_segurando_instrumento(params)
+	var alvo := params[1];
+	Set_Critical(1);
+	SetObjProperty(alvo, "#Bard_instrumento", 1);
+	while (GetObjProperty(alvo, "#Bard_instrumento"))
+		if(alvo.weapon.objtype != 0x1F020) // Intrinsic Weapon Objtype
+			MoveItemToContainer(alvo.weapon, alvo.backpack);
+			SendSysMessage(alvo, "Nao consegue segurar arma enquanto toca.",BARD_FONT,BARD_FONT_COLOR_BAD);
+		endif
+		Sleepms(300);
+	endwhile
+	Set_Critical(0);
+endprogram

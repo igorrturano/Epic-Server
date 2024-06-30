@@ -1,0 +1,50 @@
+use uo;
+use cfgfile;
+use os;
+
+include ":gumps:htmlGump";
+
+program Tame(who)
+	var targ := target(who);
+	var text := "";
+
+	var cmds := GetObjProperty(targ, "cmds");
+	var keys := array;
+	if(cmds)
+		keys := cmds.keys();
+	endif
+
+	if ( !targ.IsA(POLCLASS_NPC) )
+		SendSysMessage(who, "Soh use em NPCs!");
+		return;
+	endif
+
+	if( targ.master )
+		text += "Dono: " + targ.master.name + " (" + targ.master.acctname + ")<BR>";
+	endif
+
+	var group := GetObjProperty(targ, "Group");
+	if ( group )
+		text += "<BR>Comando de Grupo: " + group;
+	endif
+
+	var all := GetObjProperty(targ, "All");
+	if ( all )
+		text += "<BR>Comando para Todos: " + all;
+	endif
+
+	foreach iterator in keys
+		var cmd := cmds[iterator];
+		text += "<BR><BR>   --- " + cmd.cmd_name + " ---<BR>";
+		text += "Singular: " + cmd.singular + "<BR>";
+		text += "Plural: " + cmd.plural;
+	endforeach
+
+
+	if( len(keys) == 0 )
+		text += "Nenhum comando foi ensinado ainda.";
+	endif
+
+	SendHTMLGump(who, "Comandos Ensinados", text);
+
+endprogram

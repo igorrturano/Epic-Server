@@ -1,0 +1,13 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":tn:cooldown";
+include "include/say";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Por um minuto voce sera capaz substituir seus testes de Vontade por Reflexos.", SSM_INFO);
+
+	SetCooldown(attacker, "desviarmente", 60);
+
+endprogram  

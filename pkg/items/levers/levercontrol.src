@@ -1,0 +1,46 @@
+use uo;
+use os;
+use datafile;
+
+include "include/sysEvent";
+include "include/say";
+include ":levers:lever";
+
+program lever(item)
+
+    RegisterForSpeechEvents( item, 3 );
+   EnableEvents(SYSEVENT_SPEECH, 3 );
+   EnableEvents(SYSEVENT_ENTEREDAREA , 1);
+
+	var df := OpenDataFile( ":tn:lever" );
+	if (!df)
+		df := CreateDataFile( ":tn:lever", DF_KEYTYPE_INTEGER );
+	endif
+	
+	var elem := df.FindElement(item.serial);
+	if (!elem)
+		elem := df.CreateElement( item.serial ) ;
+	endif
+
+	while(item)
+		sleep(2);
+      var event := wait_for_event(600);
+      var powerevent := GetObjProperty(item, "powerword");
+      if (event && item.invisible)
+         if (event.type == SYSEVENT_SPEECH && powerevent)
+            var word := lower(event.text);
+            if (word == lower(powerevent))
+               item.invisible := 0;
+               //PrintText(item, "*Uma alavanca aparece*");
+               SetObjProperty(item, "reset_cd", polcore().systime+600);
+            endif
+         elseif (event.source.concealed)
+         elseif (event.type == SYSEVENT_ENTEREDAREA && event.source.connected && item.invisible && !powerevent)
+            item.invisible := 0;
+            //PrintText(item, "*!*");
+            SetObjProperty(item, "reset_cd", polcore().systime+600);
+         endif
+      endif
+		reset(item); //reset testa se ta ativado, se tiver volta pro normal.
+	endwhile
+endprogram

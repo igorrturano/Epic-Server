@@ -1,0 +1,27 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+
+program manobra(who)
+	MakeBleed(who);
+
+	
+	var mana := AP_GetVital(who, MANA);
+	var maxmana := AP_GetVitalMaximumValue(who, MANA);
+
+	var bonus := AP_GetSkill(who, MAGICLORE)*2;
+	mana := mana+bonus;
+
+	AP_SetVital(who, MANA, mana);
+
+	var dmg := AP_GetVital(who, HITS) -  GetHP(who);
+    DamageFLS(who, dmg);
+		
+	RecalcVitals(who);
+		
+endprogram   
+

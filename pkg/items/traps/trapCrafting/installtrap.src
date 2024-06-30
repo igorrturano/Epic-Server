@@ -1,0 +1,73 @@
+use uo;
+
+include "include/say";
+include ":traps:traps";
+include ":attributes:attributes";
+
+program installtrap(who, trap)
+
+	if (!ReserveITem( trap))
+		SendSysMessageEx(who,"Voce nao pode usar este item agora.", SSM_FAIL);
+		return;
+	elseif ( Distance(who, trap) > 2)
+		SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var alvo := Target(who);
+	if (!alvo)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (Distance(alvo, who) > 2)
+		SendSysMessageEx(who, "O alvo esta muito distante.", SSM_FAIL);
+		return 0;
+	endif
+
+	var traptype := "";
+	if (trap.objtype == 0x367a)
+		traptype := "PoisonGas";
+	elseif (trap.objtype == 0xff97)
+		traptype := "Explosion";
+	elseif (trap.objtype == 0xff98)
+		traptype := "Needle";
+	endif
+
+	if (alvo.isA(POLCLASS_CONTAINER))
+		var level := GetObjProperty(trap, "traplevel");
+		if (!level)
+			SendSysMessageEx(who, "Esta armadilha esta quebrada.", SSM_FAIL);
+			return;
+		endif
+		PrintText(who, "*instalando armadilha*");
+		sleep(4);
+		var dif := level * 20;
+		var check := SkillCheck(who, MECHANICALAPITUDE, dif);
+		if (check > 0)
+			SendSysMessageEx(who, "Voce instalou a armadilha.", SSM_INFO);
+			AddTrap(alvo, traptype, level);
+			DestroyITem(trap);
+		elseif (check >= 20 )
+			SendSysMessageEx(who, "Voce falhou em instalar a armadilha", SSM_INFO);
+			return;
+		else
+			PrintText(who, "*"+who.name+" disparou a armadilha.");
+			foreach mobile in ListMobilesNearLocation(alvo.x, alvo.y, alvo.z, level, alvo.realm)
+				//SendSysMessageEx(mobile, "A armadilha disparou!", SSM_FAIL);
+				var trap_list := array;
+				var trap_info := struct;
+				trap_info.+Name := traptype;
+				trap_info.+Strength := level;
+				trap_list.Append(trap_info);
+				RunTrapEffect(trap_list, mobile);
+			endforeach
+		endif
+	else
+		SendSysMessageEx(who, "Este nao e um alvo valido.", SSM_FAIL);
+		return 0;
+	endif
+
+
+endprogram

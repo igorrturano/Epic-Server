@@ -1,0 +1,53 @@
+/* $Id: bladed.src 1344 2006-05-12 08:12:38Z austin $
+ *
+ *
+ */
+ 
+use uo;
+use os;
+use util;
+
+include ":gathering:lumberJack";
+include ":survival:fishingFunctions";
+include ":fls_core:fls_objtypes";
+include ":itemutils:objtype";
+include ":attributes:attributes";
+include "include/client";
+include "include/say";
+include ":tn:cooldown";
+
+program use_Break(who, tool)
+	if (who.weapon != tool)
+		SendSysMessage(who, "Voce deve estar com a arma em maos.");
+		return 0;
+	endif
+	SendSysMessage(who, "O que voce deseja quebrar ?");
+	var targ := TargetCoordinates(who);
+	
+	if ( !targ )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+	
+	if (targ.item)
+		DestroyItems(who, tool, targ.item);
+	else
+		SendSysMessage(who,"Voce nao pode quebrar isto.");
+		return 0;
+	endif
+
+endprogram
+
+function DestroyItems(who, tool, item)
+
+	if ((item.objtype == 0xec24) || (item.objtype == 0xec25) || (item.objtype == 0xec26) || (item.objtype == 0xFF04)||(item.objtype == 0xec27) || (item.objtype == 0xec28)) 
+		if ((!CheckLineOfSight(who, item)) or (Distance(who, item) > 1))
+			SendSysMessage(who, "O alvo esta distante.");
+			return;
+		else
+			var parms;
+			var script := start_script (":tn:destroyitems", {who, item, tool});
+			return 1;
+		endif
+	endif
+endfunction

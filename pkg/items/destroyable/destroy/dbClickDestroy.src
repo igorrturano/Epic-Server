@@ -1,0 +1,157 @@
+use uo;
+use os;
+
+include "include/say";
+include ":merchants:item_template";
+var itensnobarril;
+
+program dbDestroyable(who,item)
+
+	if(item.objtype == 0xec24)
+		dbclickbarril(who,item);
+	elseif((item.objtype == 0xFF04)||(item.objtype == 0xec27)||(item.objtype == 0xec28))
+		dbclickcaixa(who,item);
+	elseif((item.objtype == 0xec25)|| (item.objtype == 0xec26))
+		dbclickportas(who,item);
+	endif
+endprogram
+
+function dbclickbarril(who,item)
+
+	var itens:=array;
+	if(who.cmdlevel > 0)
+		if(item.graphic != 4014)
+			item.graphic:=4014;
+			SetName(item,"Barril Lacrado");
+			return 0;
+		endif
+
+		SendSysMessage(who,"Selecione o item que deseja inserir no barril.");
+		var targ:= Target(who);
+
+		if(targ==0)
+			SendSysMessage(who,"Cancelado.");
+			return 0;
+		endif
+
+		if (!targ.IsA(POLCLASS_ITEM) )
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		endif
+
+		if (targ.objtype ==0xec24)
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		endif
+
+		var itemtemplate := CreateItemTemplate(targ);
+		itemtemplate.+amout := targ.amount;
+
+		if(GetObjProperty(item,"itens")==error)
+			itens.append(itemtemplate);
+			SetObjProperty(item,"itens",itens);
+		else
+			itens:=GetObjProperty(item,"itens");
+			itens.append(itemtemplate);
+			SetObjProperty(item,"itens",itens);
+		endif
+
+		SendSysMessageEx(who,"O item " + targ.desc + " foi inserido no barril.",SSM_INFO);
+	else
+
+		if(item.graphic == 4014)
+			SendSysMessageEx(who,"Este barril esta lacrado.",SSM_FAIL);
+			return 0;
+		elseif(item.graphic != 4014)
+			SendSysMessageEx(who,"Este barril ja esta quebrado.",SSM_FAIL);
+			return 0;
+		endif
+	endif
+endfunction
+
+function dbclickcaixa(who,item)
+
+	var itens:=array;
+	if(who.cmdlevel > 0)
+		if((item.objtype == 0xFF04) && (item.graphic == 3119))
+			item.graphic:=3645;
+			SetName(item,"Caixa Grande Lacrada");
+			return 0;
+
+		elseif((item.objtype == 0xec27) && (item.graphic == 3119))
+			item.graphic:=2473;
+			SetName(item,"Caixa Pequena Lacrada");
+			return 0;
+		elseif((item.objtype == 0xec28) && (item.graphic == 3119))
+			item.graphic:=3647;
+			SetName(item,"Caixa Media Lacrada");
+			return 0;
+		endif
+
+		SendSysMessage(who,"Selecione o item que deseja inserir na caixa.");
+		var targ:= Target(who);
+
+		if(targ==0)
+			SendSysMessage(who,"Cancelado.");
+			return 0;
+		endif
+
+		if (!targ.IsA(POLCLASS_ITEM) )
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		endif
+
+		if (targ.objtype == 0xFF04)
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		endif
+
+		var itemtemplate := CreateItemTemplate(targ);
+		itemtemplate.+amout := targ.amount;
+
+		if(GetObjProperty(item,"itens")==error)
+			itens.append(itemtemplate);
+			SetObjProperty(item,"itens",itens);
+		else
+			itens:=GetObjProperty(item,"itens");
+			itens.append(itemtemplate);
+			SetObjProperty(item,"itens",itens);
+		endif
+
+		SendSysMessageEx(who,"O item " + targ.desc + " foi inserido na caixa.",SSM_INFO);
+	else
+		if(item.graphic == 3645)
+			SendSysMessageEx(who,"A caixa esta lacrada.",SSM_FAIL);
+			return 0;
+
+		elseif(item.graphic != 3645)
+			SendSysMessageEx(who,"A caixa ja esta quebrada.",SSM_FAIL);
+			return 0;
+		endif
+	endif
+endfunction
+
+function dbclickportas (who,item)
+
+
+	if(who.cmdlevel > 0)
+
+		if((item.objtype == 0xec25) &&(item.graphic == 3119))
+			item.graphic:=1705;
+			SetName(item,"porta emperrada");
+			return 0;
+		elseif((item.objtype == 0xec26) &&(item.graphic == 3119))
+			item.graphic:=1713;
+			SetName(item,"porta emperrada");
+			return 0;
+		endif
+	else
+		if((item.graphic == 1705)||(item.graphic == 1713))
+			SendSysMessageEx(who,"A porta parece estar emperrada.",SSM_FAIL);
+			return 0;
+		elseif(item.graphic == 3119)
+			SendSysMessageEx(who,"A porta esta quebrada.",SSM_FAIL);
+			return 0;
+		endif
+	endif
+endfunction

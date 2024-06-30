@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include "include/client";
+include ":attributes:attributes";
+include "include/say";
+include ":food:include/hunger";
+
+program fome(who)
+	var msg, msgcolor;
+   	var fome := CInt(AP_GetVital(who, "Hunger") / 60);
+   	/*var msg;
+
+   	case (fome)
+	5 : msg := "Voce esta faminto.";
+	4 : msg := "Voce esta com fome.";
+	3 : msg := "Voce esta satisfeito.";
+	2 : msg := "Voce esta cheio.";
+	1 : msg := "Voce esta muito cheio.";
+	0 : msg := "Voce esta muito bem alimentado.";
+   	endcase*/
+	
+	msg := MSGFome(fome);
+	msgcolor := MSGFomeColor(fome);
+   	SendSysMessageEx(who, "" + msg, msgcolor);
+
+endprogram

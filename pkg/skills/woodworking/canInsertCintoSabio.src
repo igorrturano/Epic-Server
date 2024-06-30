@@ -1,0 +1,44 @@
+/* $Id$
+ *
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program on_insert(who, cinto, movetype, inserttype, item, existing_stack, amt);
+
+	amt            := amt;
+	existing_stack := existing_stack;
+	movetype       := movetype;
+	inserttype     := inserttype;
+
+    var runes := Array{0xC000, 0xC001, 0xC002, 0xC003, 0xC004, 0xC005, 0xC006, 0xC007, 0xC008, 0xC009, 0xC00A, 0xC00B, 0xC00C, 0xC00D, 0xC00E, 0xC00F, 0xC010, 0xC011, 0xC012, 0xC013, 0xC014, 0xC015, 0xC016, 0xC017};
+    var cinto_do_sabio := 0xC892;
+    
+    if (cinto.objtype == cinto_do_sabio) // cinto_do_sabio de adaga
+        if (item.objtype in runes)
+        else 
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+	endif
+
+	if( cinto.movable == 0 || item.movable == 0 )
+		SendSysMessage(who, "Cancelado.");
+		MoveItemToContainer(item, who.backpack);
+		return 0;
+	elseif( !ReserveItem(cinto))
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessage(who, "O cinto esta em uso.");
+		return 0;
+	elseif (!ReserveItem(item))
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessage(who, "A runa esta em uso.");
+		return 0;
+	endif
+
+	return 1;
+endprogram

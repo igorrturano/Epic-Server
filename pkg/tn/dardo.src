@@ -1,0 +1,58 @@
+use uo;
+use util;
+use os;
+
+include "include/say";
+
+program usedardo(who, dardo)
+
+	SendSysMessageEx(who, "Onde voce deseja atirar o dardo?", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!CheckLineOfSight(who, targ))
+		SendSysMessageEx(who, "Voce nao enxerga o alvo.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (targ.objtype != 0x1950)
+		SendSysMessageEx(who, "Este nao e um alvo valido.", SSM_FAIL);
+		return 1;
+	endif
+
+	if(!SubtractAmount(dardo, 1))
+		return 1;
+	endif
+
+	var rand := RandomInt(20) + 1;
+
+	PlayMovingEffect(who, targ, 3906, 15);	
+
+	if ( rand <= 15 )
+		var msg := RandomInt(3);
+		PlaySoundEffect(targ, 570);
+		if (msg == 0)
+			PrintText(targ, "*desvia*");
+		elseif (msg == 1)
+			PrintText(targ, "ha! errou!");
+		elseif (msg == 2)
+			PrintText(targ, "voce parece uma mocinha!");
+		endif
+		return 1;
+	elseif ( rand > 15 && rand <= 20 )
+		var msg := RandomInt(3);
+		if (msg == 0)
+			PrintText(targ, "arghh!");
+		elseif (msg == 1)
+			PrintText(targ, "argh! isso doi!");
+		elseif ( msg == 2)
+			PrintText(targ, "ikes! joga a mae!");
+		endif
+
+		targ.graphic := 6481;
+		PlaySoundEffect(targ, 0x1AA);
+		sleepms(800);
+		targ.graphic := 6480;
+	endif
+
+
+endprogram

@@ -1,0 +1,103 @@
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":attributes:attributes";
+
+program BrainNerve(params)
+	var npc		:= params[1];
+	var nerve_name	:= params[2];
+	var opponent	:= params[3];
+	var settings	:= params[4];
+	//var scripts	:= params[5];
+	params := 0; // Not needed anymore.
+	var has_looted := 0;
+
+	AI_WarMode(npc, 0);
+	var corpse := opponent.GetCorpse();
+	do
+		var dist := Distance(npc, corpse);
+		AI_Move(npc, corpse, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, dist);
+		sleep(dist-1);
+	dowhile( ShouldApproach(npc, opponent, corpse) );
+
+	if (has_looted == 0)
+
+		if (Distance(npc, corpse) <= 2)
+			var max_loot := AP_GetStat(npc, INTELLIGENCE)/10;
+			var i := 0;
+			while (i < max_loot)
+				LootSomething(npc, corpse);
+				i := i + 1;
+			endwhile
+			has_looted := 1;
+		endif
+	endif
+
+	AI_EndNerve(npc, nerve_name);
+endprogram
+
+function ShouldApproach(npc, opponent, corpse)
+	if ( !opponent )
+		return 0;
+	elseif ( !corpse )
+		return 0;
+	endif
+
+	if ( Distance(npc, corpse) > 1 )
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function LootSomething(npc, corpse)
+	if ( !npc.backpack )
+		EquipItem(npc, CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1));
+	endif
+
+	var contents := array;
+	foreach item in EnumerateItemsInContainer(corpse)
+		var inside := 0;
+		if ( item.IsA(POLCLASS_CONTAINER) )
+			inside := EnumerateItemsInContainer(item).size();
+		endif
+		
+		if ( inside > 0 );
+			//PrintTextAbove(corpse, item.desc+" is a container.. skipping it");
+			//Do nothing
+		elseif ( !item.movable );
+			//PrintTextAbove(corpse, item.desc+" cant be moved.. skipping it");
+			//Do nothing
+		else
+			//PrintTextAbove(corpse, item.desc+" is lootable.");
+			contents.append(item);
+		endif
+		sleepms(5);
+	endforeach
+
+	if ( contents.size() > 0 )
+		var item := contents[RandomInt(contents.size())+1];
+		contents := 0;
+		
+		if ( item )
+			PrintTextAbove(npc, "*revirando o corpo*");
+			MoveItemToContainer(item, npc.backpack);
+			
+			if ( item.layer )
+				var equip := GetEquipmentByLayer(npc, item.layer);
+				if ( !equip.IsA(POLCLASS_WEAPON) )
+					if ( item.ar > equip.ar )
+						MoveItemToContainer(equip, npc.backpack);
+						if ( !EquipItem(npc, item) )
+							EquipItem(npc, equip);
+						endif
+					endif
+				endif
+			elseif ( item.IsA(POLCLASS_EQUIPMENT) )
+				EquipItem(npc, item);
+			endif
+		endif
+	endif
+endfunction

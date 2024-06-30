@@ -1,0 +1,48 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#AgilityMod") )
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	if ( GetObjProperty(mobile, "#StrengthMod") )
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE)) + CInt(AP_GetSkill(attacker, MAGERY));
+	cast_points := cast_points/4;
+	printtextabove(mobile, "cast_points " + cast_points + " " + attacker);
+	if (cast_points < 10)
+		cast_points := 10;
+	endif
+	var stat := AP_GetStat(mobile, DEXTERITY);
+	stat := Cint((stat*cast_points)/100);
+	var points := stat;	
+
+	SetObjProperty(mobile, "#AgilityMod", points);
+	AP_ModifyStatMod(mobile, DEXTERITY, points);
+
+	stat := AP_GetStat(mobile, STRENGTH);
+	stat := Cint((stat*cast_points)/100);
+	points := stat;		
+
+	SetObjProperty(mobile, "#StrengthMod", points);
+	AP_ModifyStatMod(mobile, STRENGTH, points);
+
+	return 1;
+endprogram
+

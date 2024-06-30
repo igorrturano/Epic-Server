@@ -1,0 +1,87 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o corpo que deseja levantar", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+	var skill := AP_GetSkill(who, "Magery");
+	var maxsummons := Cint(skill / 25);
+
+
+	if (GetObjProperty(who, "NecroSummons") == maxsummons);
+		SendSysMessageEx(who, "Voce ja levantou corpos demais para sua capacidade", SSM_FAIL);
+		return 0;
+	endif
+
+	if ( !targ.isa(POLCLASS_CORPSE) )
+		SendSysMessageEx(who, "Voce so pode usar esta magia em corpos", SSM_FAIL);
+		return 0;
+	endif
+	var npctemplate := GetObjproperty(targ, "npctemplate");
+	if ((!npctemplate) || ((npctemplate != ":brainai:Horse1") && (npctemplate != ":brainai:Horse2") && (npctemplate != ":brainai:Horse3")  && (npctemplate != ":brainai:Horse4")))
+		SendSysMessageEx(who, "Essa magia so pode ser utilizada em cavalos mortos.", SSM_FAIL);
+		return 0;
+	endif
+	
+	//Efeito da magia
+	CreateItemAtLocation(targ.x, targ.y, targ.z, 4650, 1, targ.realm);
+	CreateItemAtLocation((targ.x - 1), targ.y, targ.z, 4650, 1, targ.realm);
+	sleepms(500);
+	CreateItemAtLocation(targ.x, (targ.y - 1), targ.z, 4650, 1, targ.realm);	
+	sleepms(500);
+	CreateItemAtLocation((targ.x + 1), targ.y, targ.z, 4650, 1, targ.realm);
+	sleepms(500);
+	CreateItemAtLocation(targ.x, (targ.y - 1), targ.z, 4650, 1, targ.realm);
+	sleepms(500);
+	var brilho := CreateItemAtLocation(targ.x, targ.y, (targ.z - 6), 14154, 1, targ.realm);
+	sleepms(2000);
+	Destroyitem( brilho );
+
+
+	//Random de Monstros
+
+	var random := RandomInt(Cint(skill));
+	var undead;
+	
+	undead := createnpcfromtemplate(":brainai:SkeletalSteed", targ.x, targ.y, targ.z, 0 , who.realm);
+	PlaySoundEffect(targ, 386);
+
+
+	Destroyitem( targ );
+	undead.SetMaster(who);
+		
+	SetObjProperty(undead, "GuardKill", 1);		
+	SetObjProperty(undead, "owner", who.serial);
+	SetObjProperty(undead, "name", targ.name);
+	SetObjproperty(undead, "script", targ.script);
+	SetObjProperty(undead, "AntigoTreinadorID", who.serial);
+	SetObjProperty(undead, "summoned", 1);	
+	undead.script := ":ghaia:tamed";
+	RestartScript(undead);
+				
+	Run_Script_To_Completion(":death:npcdeath", {undead});
+				
+	SetObjProperty(undead, "Necro", 1);
+	var numbersummons := Cint(GetObjProperty(who, "NecroSummons"));
+	SetObjProperty(who, "NecroSummons", (numbersummons + 1));
+
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)));
+
+	SendSysMessageEx(who, "Voce teve sucesso invocar a montaria nefasta.", SSM_INFO);
+	
+	return 1;
+endprogram 

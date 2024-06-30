@@ -1,0 +1,29 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+
+program manobra(who)
+
+	SendSysMessageEx(who, "Escolha o alvo do toque sombrio", SSM_INFO);
+	var targ := Target(who, TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
+	
+	if (Distance(who, targ) > 1)
+		SendSysMessageEx(who, "O alvo esta muito distante", SSM_INFO);
+		return 1;
+	endif
+	
+	var level := cInt(AP_GetSkill(who, MAGICLORE)/20);
+	
+	TS_StartTimer(targ, "regensombrio", 45, level, who);
+	DamageFLS(targ, level*22, DMG_FORCED, who);
+	
+	if(!targ.npctemplate)
+	SendSysMessageEx(targ, "Voce sente a vida se esvair pelo toque do mesumbeiro", SSM_INFO);
+	endif
+		
+
+
+endprogram  

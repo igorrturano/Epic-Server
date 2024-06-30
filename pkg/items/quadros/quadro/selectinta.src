@@ -1,0 +1,62 @@
+/*
+//	Script: Script para adicionar tintas para utilização no script de pintar quadros.
+*/
+
+use uo;
+use os;
+use cfgfile;
+
+include ":keys:key";
+include ":itemutils:objtype";
+include ":gumps:yesNo";
+include "include/say";
+
+program selecttinta(who, item)
+	var aTintas:={};
+
+	if (Distance(who,item)>2)
+		SendSysMessageEx(who, "O alvo esta distante",SSM_FAIL );
+		return 0;
+	endif
+
+	if (GetObjProperty(item,"tintas")!=error)
+		 aTintas:=GetObjProperty(item,"tintas");
+	endif
+
+	var flag:=0;
+	SendSysMessageEx(who, "Selecione as tintas desejadas, pressione ESC para cancelar ",SSM_REQUEST);
+
+	while(flag==0)
+		var targ	:=	Target(who);
+		if(!targ)
+			flag := 1;
+			break;
+		endif
+
+		if ( GetObjProperty(targ,"pocao") != "tinta")
+			SendSysMessageEx(who, "Isto nao se parece com tinta. ",SSM_FAIL);
+			SetObjProperty(item,"tintas",aTintas);
+			SetObjProperty(item,"description",Len(GetObjProperty(item,"tintas"))+" tinta(s).");
+			SetName(item,item.name);
+			return 0;
+		endif
+
+		if (targ.objtype in aTintas)
+			SendSysMessageEx(who, "Esta tinta ja foi utilizada. Selecione outra. ",SSM_FAIL);
+			SetObjProperty(item,"tintas",aTintas);
+			SetObjProperty(item,"description",Len(GetObjProperty(item,"tintas"))+" tinta(s).");
+			SetName(item,item.name);
+			return 0;
+		endif
+
+		aTintas.append(targ.objtype);
+		DestroyItem(targ);
+		SetObjProperty(item,"tintas",aTintas);
+		SetObjProperty(item,"description",Len(GetObjProperty(item,"tintas"))+" tinta(s).");
+		SetName(item,item.name);
+		sleep(2);
+
+	endwhile
+	SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+
+endprogram

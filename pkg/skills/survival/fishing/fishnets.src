@@ -1,0 +1,204 @@
+use uo;
+use os;
+use math;
+use util;
+use cfgfile;
+
+include "include/client";
+include ":itemutils:canAccess";
+include ":survival:fishingFunctions";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+include ":attributes:include/skillCheck";
+include ":attributes:include/skills";
+include ":survival:include/fishingFunctions";
+include ":itemutils:objtype";
+
+program use_FishNets(who, fishnet)
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if( !can_access(who, fishnet) )
+		return 0;
+	endif
+	if( fishnet.movable == 0 )
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return 0;
+	endif
+	if( !ReserveItem(fishnet) )
+		return 0;
+	endif
+	if( !(fishnet in EnumerateItemsInContainer(who.backpack)) )
+		SendSysMessage(who, "O item nao esta em sua mochila.");
+		return 0;
+	endif
+
+	var targetsquare := TargetCoordinates(who);
+	if( !targetsquare )
+		return 0;
+	endif
+
+	var locinfo:= GetMapInfo( targetsquare.x, targetsquare.y );
+	if( IsValidFishingSpot(who, targetsquare, locinfo) )
+		PerformAction(who, 0x9);
+		var newsplash := CreateItemAtLocation(targetsquare.x, targetsquare.y, targetsquare.z,  0x352d, 1);
+		newsplash.movable := 0;
+		PlaySoundEffect(who, 0x240);
+		sleepms(400);
+		set_critical(1);
+		DestroyItem(newsplash);
+		set_critical(0);
+		sleepms(2);
+		var rand := RandomInt(100);
+		var skill := AP_GetSkill(who,SURVIVAL);
+
+		if(skill >= 20)
+			CreateItemInContainer(who.backpack, 0x9984, 2); //pega camarao
+		else
+			SendSysMessage(who, "Nada ficou preso na rede.");
+			if(rand < 20) // Marcknight: 20% de chance de perder a rede se a skill for muito baixa
+				DestroyItem(fishnet);
+			endif
+			return 1;
+		endif
+
+		if(SkillCheck(who, SURVIVAL, 70) > 0 )
+			var peixeexiste := GetAvaliableFishID(who, targetsquare.x, targetsquare.y);
+
+			if (peixeexiste == 0)
+				SendSysMessage(who,"So tem camarao por aqui",FONT_NORMAL,60);
+			else
+				SendSysMessage(who,"Seus sonhos de uma bela pescaria foram atendidos!");
+				var fishcatch := PesoPeixe(who, peixeexiste, targetsquare);
+				var peixecriado := CreateItemAtLocation(who.x, who.y, who.z, peixeexiste, 5+ CInt((skill-60)/4), who.realm);
+				var newname := peixecriado.name + " [ Peso: " + fishcatch + " ]";
+				Setname(peixecriado, newname );
+			endif
+
+			if(rand == 0)
+				/*
+				var chance := RandomInt(6)+1;
+				case(chance)
+					1: CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+					2: CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+					3: CreateNpcFromTemplate( "walrus", targetsquare.x, targetsquare.y, targetsquare.z );
+					4: CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+					5: CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+					6: CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+				endcase
+				*/
+				var myskill := AP_GetSkill(who, SURVIVAL);
+				if(myskill <= 50)
+					//CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+				elseif(myskill <= 75)
+					/* //Marcknight: Usar se os NPC existirem
+					CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+					CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+					*/
+					//Marcknight: Serve no LVM
+					CreateNpcFromTemplate( "walrus", targetsquare.x, targetsquare.y, targetsquare.z );
+				elseif(myskill <= 99)
+					/* //Marcknight: Usar se os NPC existirem
+					CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+					CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+					CreateNpcFromTemplate( "walrus", targetsquare.x, targetsquare.y, targetsquare.z );
+					*/
+					//Marcknight: Serve no LVM
+					CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+				elseif(myskill >= 100)
+					/* //Marcknight: Usar se os NPC existirem
+					CreateNpcFromTemplate( "seaserpent", targetsquare.x, targetsquare.y, targetsquare.z );
+					CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+					CreateNpcFromTemplate( "kraken", targetsquare.x, targetsquare.y, targetsquare.z );
+					*/
+					//Marcknight: Serve no LVM
+					CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+					CreateNpcFromTemplate( "waterelemental", targetsquare.x, targetsquare.y, targetsquare.z );
+				endif
+				SendSysMessage(who, "Voce parece que pegou algo mais!");
+				DestroyItem(fishnet);
+			endif
+		endif
+	else
+		SendSysMessage(who, "Parece nao ter peixes aqui.");
+	endif
+	return 1;
+endprogram
+
+
+function lostbag(who)
+
+	var regloop, regcount,reg;
+	var fishing := GetEffectiveSkill(who, SURVIVAL);
+	var gold := fishing * (RandomInt(9)+1);
+	var bag := CreateItemInContainer(who.backpack,0x0E76, 1);
+	if(!bag)
+		bag := CreateItemAtLocation(0x0E76,who.x,who.y,who.z,1);
+	endif
+
+	for(regloop:=1;regloop<=5;regloop:=regloop+1)
+		regcount := RandomInt( (fishing-1) );
+		reg := RandomInt( 0x0f78 - 0x0f91 ) + 0x0f78;
+		CreateItemInContainer(bag,reg,regcount);
+	endfor
+
+	return 1;
+
+endfunction
+
+function InRect(who, x_pos, y_pos, rect)
+
+    rect := SplitWords(rect);
+    var x1 := CInt(rect[1]);
+    var y1 := CInt(rect[2]);
+    var x2 := CInt(rect[3]);
+    var y2 := CInt(rect[4]);
+
+    return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
+endfunction
+
+function GetAvaliableFishID(who, x, y)
+
+	var cfg := ReadConfigFile(":survival:config/fishingspots");
+	var elems := GetconfigStringKeys(cfg);
+	foreach elem in elems
+
+		var region := FindConfigElem(cfg, elem);
+		var rect := GetConfigString(region, "Rect");
+		if ( InRect(who, x, y, rect) )
+			var peixes := GetConfigString(region, "Peixes");
+			peixes := splitwords(peixes);
+			foreach peixe in peixes
+				if (peixe == "Manjuba") return "0xdd6";
+				elseif (peixe == "Lambari") return "0x9987";
+			 	elseif (peixe == "Atum") return "0xdd8";
+			 	elseif (peixe == "Dourado") return "0x9cf";
+			 	elseif (peixe == "Anchova") return "0x9ce";
+			 	elseif (peixe == "Sardinha") return "0xdd7";
+				elseif (peixe == "Perca") return "0x9cd";
+				elseif (peixe == "Robalo") return "0x9cc";
+			 	elseif (peixe == "PeixeGalo") return "0xdd9";
+				endif
+			endforeach
+		endif
+	endforeach
+
+	return 0;
+
+endfunction
+
+function PesoPeixe(who, pretfish, targetsquare);
+
+	if (pretfish == "0xdd6") return (2 + RandomInt(3)) ;
+	elseif (pretfish == "0x9987") return (2 + RandomInt(3)) ;
+ 	elseif (pretfish == "0xdd8") return (60 + RandomInt(30)) ;
+ 	elseif (pretfish == "0x9cf") return (40 + RandomInt(20)) ;
+ 	elseif (pretfish == "0x9ce") return (25 + RandomInt(20)) ;
+ 	elseif (pretfish == "0xdd7") return (6 + RandomInt(3)) ;
+	elseif (pretfish == "0x9cd") return (30 + RandomInt(20)) ;
+	elseif (pretfish == "0x9cc") return (30 + RandomInt(20)) ;
+ 	elseif (pretfish == "0xdd9") return (15 + RandomInt(10)) ;
+	endif
+	return 1;
+endfunction

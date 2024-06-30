@@ -1,0 +1,50 @@
+use uo;
+
+program select( who, item)
+
+//	var items := ListEquippedItems(who);
+//	if (item in items)
+//		SendSysMessage(who, "Voce deve desequipar sua arma.");
+//		return 1;
+//	endif
+
+	SendSysMessage(who, "Escolha o tipo de flecha.");
+	
+	var alvo := target(who);
+	
+	if ( (item.objtype == 0x13B2) || (item.objtype == 0xe137) || ( item.objtype == 0x26CC) || (item.objtype == 0xe139) || (item.objtype == 0x2D2A) || (item.objtype == 0x2D2B) || (item.objtype == 0x27A5) ) //bows
+		if ( (alvo.graphic == 11058) || (alvo.graphic == 3903) )
+			SetObjProperty(item, "ammo", alvo.serial);
+			var DmgMods := GetObjProperty(alvo, "dmgmods");
+			if (DmgMods)
+				item.damage_physical_mod := Cint(DmgMods[1]);
+				item.damage_fire_mod := Cint(DmgMods[2]);
+				item.damage_cold_mod := Cint(DmgMods[3]);
+				item.damage_poison_mod := Cint(DmgMods[4]);
+				item.damage_energy_mod := Cint(DmgMods[5]);
+			endif
+			SendSysMEssage(who, "Voce selecionou a municao que vai usar com este arco.");
+			return 1;
+		else
+			SendSysMessage(who, "Isto nao parece uma flecha.");
+			return 1;
+		endif
+	elseif ( (item.objtype == 0x0f4f) || (item.objtype == 0x13fd) || (item.objtype == 0x26CD) )
+		if (alvo.graphic != 7163 )//11061 )
+			SendSysMessage(who, "Isto nao parece um virote.");
+			return 1;
+		else
+			SetObjProperty(item, "ammo", alvo.serial);
+			var DmgMods := GetObjProperty(alvo, "dmgmods");
+			if (DmgMods)
+				item.damage_physical_mod := Cint(DmgMods[1]);
+				item.damage_fire_mod := Cint(DmgMods[2]);
+				item.damage_cold_mod := Cint(DmgMods[3]);
+				item.damage_poison_mod := Cint(DmgMods[4]);
+				item.damage_energy_mod := Cint(DmgMods[5]);
+			endif
+			SendSysMEssage(who, "Voce selecionou a municao que vai usar com esta besta.");
+			return 1;
+		endif
+	endif
+endprogram

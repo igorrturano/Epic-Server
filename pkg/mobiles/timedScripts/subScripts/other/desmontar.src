@@ -1,0 +1,53 @@
+use uo;
+use os;
+use vitals;
+use util;
+
+include ":mounts:mounts";
+
+program TimedScript_Paralysis(params)
+	var mobile := params[1];
+
+	if (GetEquipmentByLayer(mobile, LAYER_MOUNT))
+		MP_Unmount(mobile);
+		performaction(mobile, 0x15);
+		ApplyRawDamage(mobile, 20 + RandomInt(20));
+
+	
+	case (mobile.graphic)
+	401:
+	  PlaySoundEffect( mobile, 0x32F );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	400:
+	  PlaySoundEffect( mobile, 0x441 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1828: 
+	  PlaySoundEffect( mobile, 0x441 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1829:
+	  PlaySoundEffect( mobile, 0x32F );
+	  PrintTextAbove(mobile, "*Dormindo*");		
+	1830: 
+	  PlaySoundEffect( mobile, 0x441 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1831:
+	  PlaySoundEffect( mobile, 0x32F );
+	  PrintTextAbove(mobile, "*Dormindo*");	
+	1832: 
+	  PlaySoundEffect( mobile, 0x441 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1833:
+	  PlaySoundEffect( mobile, 0x32F );
+	  PrintTextAbove(mobile, "*Dormindo*");	
+	1834: 
+	  PlaySoundEffect( mobile, 0x441 );
+	  PrintTextAbove(mobile, "*Dormindo*");
+	1835:
+	  PlaySoundEffect( mobile, 0x32F );
+	  PrintTextAbove(mobile, "*Dormindo*");		 
+	endcase 
+	endif
+	SetObjProperty(mobile, "#desmontar", 1);
+	return 1;
+endprogram
+ 

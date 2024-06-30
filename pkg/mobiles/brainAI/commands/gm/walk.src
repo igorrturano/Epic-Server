@@ -1,0 +1,27 @@
+use uo;
+use os;
+include ":brainAI:npcCommands";
+
+program textcmd_attack(who)
+	SendSysMessage(who, "Selecione o NPC.");
+	var targ := target(who);
+	if ( !targ.npctemplate ) 
+		SendSysMessage(who, "Cancelled");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Clique para onde ele deve ir.");
+	var loc := TargetCoordinates(who);
+
+	var time := ReadGameClock() + 10;
+	var dist := CoordinateDistance(targ.x, targ.y, loc.x, loc.y);
+	while (dist > 1 && time > ReadGameClock())
+		//RunTowardLocation(loc.x, loc.y);
+		//WalkTowardLocation(loc.x, loc.y);
+		AI_MoveXY(targ, loc.x, loc.y, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 10);
+		dist := CoordinateDistance(targ.x, targ.y, loc.x, loc.y);
+		PrintTextAbove(targ, "Testando");
+		sleep(1);
+		//sleepms(400);
+	endwhile
+endprogram

@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program maxchar(who, param)
+	if (!param) 
+		SendSysMessage(who, ".maxchar <nome da conta> [quantidade]");
+		return;
+	endif
+
+	param := SplitWords(param);
+	var nomeconta := param[1];
+	var qtd := CInt(param[2]);
+
+	var acc := FindAccount(nomeconta);
+
+	if (!qtd)
+		SendSysMessage(who, "Max Char: "+CInt(acc.getprop("maxchars")));
+	else
+		acc.setprop("maxchars", qtd);
+		SendSysMessage(who, "Max Char: "+qtd);
+	endif
+endprogram

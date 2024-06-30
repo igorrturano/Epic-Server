@@ -1,0 +1,31 @@
+use uo;
+use basic;
+
+include "include/say";
+include ":gumps:requestGump";
+include ":charactercreation:habilidades";
+
+program forgery(who)
+
+	SendSysMessageEx(who, "Escolhe algum livro ou pergaminho para falsificar, ou uma barra de ouro", SSM_INFO);
+	var livro := Target(who);
+
+	if (livro.usescript == ":sysbook:book/use")
+		if ( GetObjProperty(livro,"ReadOnly"))
+			EraseObjProperty(livro, "ReadOnly");
+			SendSysMessageEx(who, "Voce pode escrever livremente.", SSM_INFO);
+		else
+			SetObjProperty(livro, "ReadOnly", 1);
+			SendSysMessageEx(who, "Voce selou o livro.", SSM_INFO);
+		endif
+	elseif(livro.objtype == 0x1be9)
+		CreateItemInBackpack( who, 0x6e, livro.amount*5 );
+		DestroyItem(livro);
+	else
+		SendSysMessageEx(who, "Essa habilidade funciona apenas em livros ou barras de ouro.", SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+
+endprogram

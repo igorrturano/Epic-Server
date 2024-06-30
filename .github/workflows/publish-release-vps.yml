@@ -1,0 +1,26 @@
+name: Compile scripts
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Compile scripts
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    # - name: Compilação no servidor
+    #   uses: appleboy/ssh-action@v1.0.3
+    #   with:
+    #     host: ${{ secrets.HOST }}
+    #     username: ${{ secrets.USERNAME }}
+    #     password: ${{ secrets.PASSWORD }}
+    #     port: ${{ secrets.PORT }}
+    #     script: |
+    #         cd POL-FLS-2023
+    #         git pull
+    #         ./compilar.sh

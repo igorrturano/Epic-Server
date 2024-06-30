@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":gumps:yesNo";
+include ":fls_magery:basicMagery";
+
+program cureScript(params)
+	var mobile := params[1];
+
+	eraseobjproperty(mobile, "#manapenalty");
+	return 1;
+endprogram

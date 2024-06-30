@@ -1,0 +1,16 @@
+use uo;
+program teste(who, text)
+sendsysmessage(who, "Hello World");
+var classe := GetObjProperty(who, "classe");
+if (classe == "Guerreiro")
+  SendSysMessage(who, "Musculos");
+elseif (classe == "Ladino")
+  SendSysMessage(who, "Gatuno");
+elseif (classe == "Sabio")
+  SendSysMessage(who, "Misterioso");
+elseif (classe == "Artifice");
+  SendSysMessage(who, "Habilidoso");
+else
+sendsysmessage (who, "Voce nao possui uma classe");
+endif
+endprogram

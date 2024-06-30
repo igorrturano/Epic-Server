@@ -1,0 +1,340 @@
+/////////////////////////////////////////////////////
+//
+//		".massmove" - moves an entire area at a time.
+//
+//		A command for manipulating all items within a specified bounding box. Will
+//		highlight all items being moved and provide a gump interface for
+//		manipulating the items.
+//
+//		CHANGE LOG:
+//			Version 1.0.0
+//				Initial Release
+//
+//		Author: Danielle Elora, webmaster@winterboard.com
+//		Nightscape Shard, http://www.nightscape.com
+//
+/////////////////////////////////////////////////////
+use uo;
+use os;
+
+// Defines the total number of items that can be moved at one time. If the number
+// exceeds this value, the command fails. Be careful setting this too high, you could
+// overwhelm your server or cause "black-holing"/crashing problems to clients in the area.
+Const ITEM_LIMIT := 6000;
+
+program textcmd_massmove(who, text)
+	
+	var item_filter;
+
+	if ((text == "help") or (text == "?"))
+		SendSysMessage(who, "USAGE: \".massmove [target|filter]\"");
+		SendSysMessage(who, "Text in brackets are optional switches you can use to change how the command functions. You can only use one switch at a time.");
+		SendSysMessage(who, "For example \".massmove target\" would allow you to target items to specify the maximum and minimum hieghts.");
+		return 0;
+	endif
+
+	if (text == "filter")
+		SendSysMessage(who, "Target the item type you would like to move...");
+		item_filter := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		if (!item_filter)
+			SendSysMessage(who, "Either no item targeted or not a valid item. Exiting filter mode.");
+		endif
+	endif
+
+	SendSysmessage(who, "Select coordinate #1");
+	var coordStructOne := TargetCoordinates(who);
+	if (!coordStructOne)
+		SendSysMessage(who, "Cancelled!");
+		return 0;
+	endif
+	
+	SendSysmessage(who, "Select coordinate #2");
+	var coordStructTwo := TargetCoordinates(who);
+	if (!coordStructTwo)
+		SendSysMessage(who, "Cancelled!");
+		return 0;
+	endif
+
+	if ((!coordStructOne) OR (!coordStructTwo)) // check that we got two valid coordstructs.
+		SendSysmessage(who, "One or more coordinates are missing. Aborting!");
+		return 0;
+	endif
+
+	var zplus;
+	var z_plus;
+	if (text != "target")
+		zplus := SendTextEntryGump(who, "Enter the maximum z-hieght:", TE_CANCEL_ENABLE, TE_STYLE_NORMAL);
+		z_plus := CInt(zplus);
+	else
+		SendSysMessage(who, "Target the item that represents the maximum z-hieght...");
+		zplus := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		if (!zplus)
+			SendSysMessage(who, "Cancelled!");
+			return 0;
+		endif
+		z_plus := zplus.z;
+	endif
+	
+	if (!(z_plus or (z_plus == 0)))
+		SendSysMessage(who, "You must enter a number or target a valid item!");
+		return 0;
+	endif
+
+	var zminus;
+	var z_minus;
+	if (text != "target")
+		zminus := SendTextEntryGump(who, "Enter the minimum z-hieght:", TE_CANCEL_ENABLE, TE_STYLE_NORMAL);
+		z_minus := CInt(zminus);
+	else
+		SendSysMessage(who, "Target the item that represents the minimum z-hieght...");
+		zminus := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		if (!zminus)
+			SendSysMessage(who, "Cancelled!");
+			return 0;
+		endif
+		z_minus := zminus.z;
+	endif
+
+	if (!(z_minus or (z_minus == 0)))
+		SendSysMessage ( who, "You must enter a number or target a valid item!");
+		return 0;
+	endif
+
+	if ((z_minus < -127) OR (z_plus > 128))
+		SendSysmessage(who, "Z-height is out of bounds. Aborting!");
+		return 0;
+	endif
+
+	var high_x;
+	var high_y;
+	var low_x;
+	var low_y;
+
+	if (coordStructOne.x < coordStructTwo.x)
+		high_x := coordStructOne.x;
+		low_x := coordStructTwo.x;
+	else
+		high_x := coordStructTwo.x;
+		low_x := coordStructOne.x;
+	endif
+	if (coordStructOne.y < coordStructTwo.y)
+		high_y := coordStructOne.y;
+		low_y := coordStructTwo.y;
+	else
+		high_y := coordStructTwo.y;
+		low_y := coordStructOne.y;
+	endif
+
+	var temp_list := ListObjectsInBox(high_x, high_y, z_minus, low_x, low_y, z_plus);
+
+	if (item_filter)
+		var temp_list2 :=  array{};
+		foreach item in temp_list
+			if (item.isa(POLCLASS_ITEM) AND (item.objtype == item_filter.objtype))
+				temp_list2.append(item);
+			endif
+		endforeach
+		temp_list := temp_list2;
+	endif
+
+	if (temp_list.size() > ITEM_LIMIT)
+		SendSysMessage(who, "Item count out of bounds. You can only move up to 6,000 items at a time.");
+		return 0;
+	endif
+
+	if (temp_list.size() == 0)
+		SendSysMessage(who, "No items found.");
+		return 0;
+	endif
+
+	var master_list := array{};
+	SendSysMessage(who, "Counting and highlighting items to be moved. Please wait...");
+	foreach item in temp_list
+		if (item.isa(POLCLASS_ITEM))
+			SetObjProperty(item, "orig_x", item.x);
+			SetObjProperty(item, "orig_y", item.y);
+			SetObjProperty(item, "orig_z", item.z);
+			SetObjProperty(item, "orig_r", item.realm);
+			SetObjProperty(item, "orig_c", item.color);
+			item.color := 0x35;
+			master_list.append(item);
+		endif
+		sleepms(2);
+	endforeach
+
+	SendSysMessage(who, "Found " + master_list.size() + " items. You may now adjust them as needed.");
+
+	var movetype;
+	repeat
+
+		// display gump to allow moving the items
+		movetype := nudge_tool(who);
+
+		if (movetype[100])
+			// Adjust to the North (-Y)
+			SendSysMessage(who, "Moving the items North. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, (item.y - 1), item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+
+		elseif (movetype[101])
+			// Adjust to the South (+X)
+			SendSysMessage(who, "Moving the items South. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, (item.y + 1), item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+
+		elseif (movetype[102])
+			// Adjust to the East (+Y)
+			SendSysMessage(who, "Moving the items West. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, (item.x - 1), item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+
+		elseif (movetype[103])
+			// Adjust to the West (-X)
+			SendSysMessage(who, "Moving the items East. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, (item.x + 1), item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+
+		elseif (movetype[104])
+			// Adjust the Height Up (+Z)
+			SendSysMessage(who, "Moving the items Up. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, item.y, (item.z + 1), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+
+		elseif (movetype[105])
+			// Adjust the Height Down (-Z)
+			SendSysMessage(who, "Moving the items Down. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, item.y, (item.z - 1), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "Finished!");
+
+
+		elseif (movetype[5555])
+			// Reset to orignal position
+			SendSysMessage(who, "Reseting the items to their original position. Please wait...");
+			foreach item in master_list
+				item.movable := 1;
+				MoveObjectToLocation(item, GetObjProperty(item, "orig_x"), GetObjProperty(item, "orig_y"), GetObjProperty(item, "orig_z"), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(3);
+			endforeach
+			SendSysMessage(who, "The items have been reset!");
+		endif
+
+	until ((movetype[9999]) OR (movetype[5555]) OR (!movetype) OR (!who.ip));
+
+	foreach item in master_list
+		item.color := GetObjProperty(item, "orig_c");
+		EraseObjProperty(item, "orig_x");
+		EraseObjProperty(item, "orig_y");
+		EraseObjProperty(item, "orig_z");
+		EraseObjProperty(item, "orig_r");
+		EraseObjProperty(item, "orig_c");
+		sleepms(2);
+	endforeach
+
+	if (movetype[9999])
+		SendSysmessage(who, "Finished moving items.!");
+	endif		
+
+endprogram
+
+
+function nudge_tool(who)
+
+	//////////////////////
+	//	BUILD THE GUMP	//
+	//////////////////////
+	var gflayout_nudge_tool := array{
+		"nodispose",
+		"noclose",
+		"page 0",
+		"resizepic 10 10 9200 400 170", // outter background
+		"resizepic 13 16 3000 390 160", // inner background
+
+		"tilepic 71 84 3568", // black staff; forms the X
+		"tilepic 38 85 3569", // black staff; forms the X
+
+		"page 1",
+		"text 25 18 1952 0", // instructions text - 0 in array
+		"text 46 38 1952 1", // instructions text - 1 in array
+
+		"button 101 58 4501 4501 1 0 100", // North button
+		"button 46 114 4505 4505 1 0 101", // South button
+		"button 46 58 4507 4507 1 0 102",  // East button
+		"button 98 113 4503 4503 1 0 103", // West button
+
+		"text 36 60 1952 2", // "-X" text - 2 in array
+		"text 145 59 1952 3", // "-Y" text - 3 in array
+		"text 145 141 1952 4", // "+X" text - 4 in array
+		"text 35 141 1952 5", // "+Y" text - 5 in array
+
+		"text 73 101 1952 6", // "POSITION" text - 6 in array
+
+		"gumppictiled 188 62 2 102 2701", // divider
+
+		"button 217 59 4500 4500 1 0 104", // Up button
+		"button 217 116 4504 4504 1 0 105", // Down button
+
+		"text 253 61 1952 7",  // "Up" text - 7 in array
+		"text 253 146 1952 8", // "Down" text - 8 in array
+
+		"text 220 103 1952 9", // "HEIGHT" text - 9 in array
+
+		"gumppictiled 300 62 2 102 2701", // divider
+
+		"button 320 76 247 248 1 0 9999",  // Okay button
+		"button 320 123 243 241 1 0 5555" // Cancel button
+
+	};
+
+
+	var gfdata_nudge_tool := array{
+		"Use the controls below to adjust the position of the items.",
+		"Press Okay when done or Cancel to reset the items.",
+		"-X",
+		"-Y",
+		"+X",
+		"+Y",
+		"POSITION",
+		"Up",
+		"Down",
+		"HEIGHT"
+	};
+
+	return SendDialogGump(who, gflayout_nudge_tool, gfdata_nudge_tool, 0, 0);
+
+endfunction

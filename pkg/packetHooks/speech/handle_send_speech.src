@@ -1,0 +1,187 @@
+use uo;
+use math;
+use os;
+include "include/say";
+include ":charactercreation:habilidades";
+program speech_hooks()
+  Print( "Hooking Unicode Outgoing..." );
+  return 1;
+endprogram
+
+const ITEM_ID := 3;
+const TEXT_TYPE := 9;
+const NAME_ID := 18; //posição do Name de quem fala
+const SYS_MSG := 0x06;
+
+exported function handleUCOutgoing( character, byref packet )
+
+	var type := packet.GetInt8(TEXT_TYPE);
+
+	var serial := packet.GetInt32(ITEM_ID);
+	var source := SystemFindObjectBySerial(serial);
+
+	var length_of_text := ( packet.GetInt16(1) - 49 ) / 2;
+	var message_txt := packet.GetUnicodeString(48, length_of_text);
+
+	var Object_Name;
+	if (source.IsA(POLCLASS_MOBILE))
+		//PREENCHE NOME DO MOBILE
+		Object_Name := source.name;
+
+		//Cor do nome dos NPC conforme skill de combate
+		if (!source.npctemplate)
+			//Caso em que tá desconhecido
+			if(GetObjProperty(source, "realname"))
+				Object_Name := "Incognito";
+			else
+
+				//Verifica se o char já foi reconhecido por who
+				var conhecidos := dictionary;
+				if(GetObjProperty(character, "conhecidos"))
+					var ID := Cstr(source.serial); //Salva o serial do personagem
+					if(GetObjProperty(source, "disfarce"))
+						ID := Cstr(GetObjProperty(source, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+					endif
+
+					conhecidos := GetObjProperty(character, "conhecidos"); //Lista de pessoas conhecidadas
+					if(conhecidos.Exists(ID))
+						Object_Name := conhecidos[ID];
+					else
+						Object_Name := source.name;
+					endif
+				else
+					Object_Name := source.name;
+				endif
+			endif
+			packet.SetString(NAME_ID, Object_Name,1);
+		endif
+	endif
+
+
+	//SendSysMessage(source,"cmd "+ packet.GetInt8(0));
+	//SendSysMessage(source,"length "+ packet.GetInt16(1));
+	//SendSysMessage(source,"ID "+ packet.GetInt32(3));
+	//SendSysMessage(source,"model "+ packet.GetInt16(7));
+	//SendSysMessage(source,"type "+ packet.GetInt8(8));
+	//SendSysMessage(source,"color "+ packet.GetInt16(10));
+	//SendSysMessage(source,"font "+ packet.GetInt16(12));
+	//SendSysMessage(source,"Language "+ packet.GetString(14,4));
+	//SendSysMessage(source,"Name "+ packet.GetString(18, 30));
+	//SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
+
+	////var tamanho := packet.GetInt16(1)-30+nome.size();
+
+	////SendSysMessage(source,tamanho);
+	////packet.SetInt16(1,tamanho);
+
+	//packet.SetString(18, "Teste",1);
+
+	//SendSysMessage(source,"ZZZZZZZZZZZZZZZZZZZZZZZ");
+
+
+	//SendSysMessage(source,"cmd "+ packet.GetInt8(0));
+	//SendSysMessage(source,"length "+ packet.GetInt16(1));
+	//SendSysMessage(source,"ID "+ packet.GetInt32(3));
+	//SendSysMessage(source,"model "+ packet.GetInt16(7));
+	//SendSysMessage(source,"type "+ type);
+	//SendSysMessage(source,"color "+ packet.GetInt16(10));
+	//SendSysMessage(source,"font "+ packet.GetInt16(12));
+	//SendSysMessage(source,"Language "+ packet.GetString(14,4));
+	//SendSysMessage(source,"Name "+ packet.GetString(18,30));
+	//SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
+
+
+	if ( (getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Treinamento Druidico")) || (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
+		if  (type != 0x02)
+			return 1;
+		endif
+	endif
+
+	if  (type == 0x0E)
+		if (source.cmdlevel >= 1 && GetObjProperty(source, "LastMSG") != message_txt)
+			SetObjProperty(source, "LastMSG", message_txt);
+			foreach player in GetGlobalProperty("GmsOnlines")
+				var sender := source.name;
+				if (GetObjProperty(source, "realname"))
+					sender := GetObjProperty(source, "realname");
+				endif
+				if (GetGlobalProperty("onlyuni"))
+					SendSysMessageUNI(player, "[GMBcast]["+sender+"]: "+message_txt, 0x0063, 0x02);
+				else
+					SendSysMessage(player, "[GMBcast]["+sender+"]: "+message_txt, 0x03, 0x0063);
+				endif
+
+			endforeach
+		endif
+		return 1;
+	endif
+
+	var unvalid := { message_txt[1, 7], message_txt[1, 9], message_txt[1, 9], message_txt[1, 14], message_txt[1,13], message_txt[1,7] };
+	if (source.acctname && GetObjProperty(source, "LastMSG") != message_txt && unvalid[1] != "*Tirou " && unvalid[2] != "*Guardou " && unvalid[3] != "*Colocou " && unvalid[4] != "*escalpelando " && unvalid[5] != "*Acrescentou " && unvalid[6] != "*Pegou " && message_txt != "*defende o golpe*" && message_txt != "*usando ataduras em si mesmo*" && message_txt != "*parou de aplicar bandagens*" && message_txt != "*arrombando a fechadura*" && message_txt != "*desarmando armadilha*" && message_txt != "*preparando um extrato*")
+		foreach player in GetGlobalProperty("GmsOnlines")
+			player := SystemFindObjectBySerial(Cint(player));
+			if ( GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != source)
+				var sender := source.name;
+				if (GetObjProperty(source, "realname")) //Se está com rosto coberto
+					sender := GetObjProperty(source, "realname");
+				endif
+				if (GetObjProperty(player, "SaySpyOn") == "on")
+					if (GetGlobalProperty("onlyuni"))
+						SendSysMessageUNI(player, "["+sender+"]: "+message_txt);
+					else
+						SendSysMessage(player, "["+sender+"]: "+message_txt);
+					endif
+				elseif(sender in GetObjProperty(player, "SaySpyOn"))
+					if (GetGlobalProperty("onlyuni"))
+						SendSysMessageUNI(player, "["+sender+"]: "+message_txt);
+					else
+						SendSysMessage(player, "["+sender+"]: "+message_txt);
+					endif
+				endif
+			endif
+			Sleepms(2);
+		endforeach
+		SetObjProperty(source, "LastMSG", message_txt);
+	endif
+
+
+	if( !CheckLineOfSight(source, character) )
+		if(type == 0x09)
+			return 0;
+		elseif(temHabilidade(character,"Mestre Espiao"))
+			return 0;
+		else
+			if (temHabilidade(character, "Espionagem"))
+				if (Distance(character, source) < 12 && abs(character.z - source.z ) < 19) // A hab só serve pra ouvir até 8 tile e 19 z
+					return 0;
+				else
+					return 1;
+				endif
+			else
+                //if (type == 0)
+                //    return 0;
+                //endif
+				return 0;
+			endif
+		endif
+	endif
+
+	return 0;
+endfunction
+
+exported function handleUCOrequest( character, byref packet )
+
+	var type := packet.GetInt8(4);
+
+//	sendsysmessage(character, "type" + type);
+
+	if (getObjProperty(character, "metamorfose") != error)
+		if  ( type == 0x00)
+			return 1;
+		else
+			return 0;
+		endif
+	endif
+
+	return 0;
+endfunction

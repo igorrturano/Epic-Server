@@ -1,0 +1,123 @@
+
+use uo;
+
+include "include/say";
+include "include/client";
+include ":timedScripts:timedScripts";
+include "include/sounds";
+include "include/damage";
+include "include/facings";
+
+program fireweapon(who, item)
+
+	var weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+	if (weapon.serial != item.serial)
+		SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
+		return;
+	endif
+
+	var firecd := TS_GetCooldown(who, "fireweapon");
+	if (firecd )
+		SendSysMessageEx(who, "Voce so podera disparar novamente depois de alguns segundos.");
+		return;
+	endif
+
+	var balas := cint(GetObjProperty(item, "balas"));
+	if (balas <= 0)
+		SendSysMessageEx(who, "A arma esta descarregada, escolha uma pocao para carrega-la.", SSM_FAIL);
+		var pot := Target(who);
+		if (!pot)
+			SendSysMessageEx(who, "Cancelado.");
+			return;
+		endif
+		var valid := 0;
+		case (pot.objtype)
+			0xdc08: valid := 1; SetObjProperty(item, "tipo", 2); break;
+			0xef60: valid := 1; SetObjProperty(item, "tipo", 1); break;
+			0xef61: valid := 1; SetObjProperty(item, "tipo", 2); break;
+			0xef62: valid := 1; SetObjProperty(item, "tipo", 3); break;
+			default: return;
+		endcase
+
+		if (pot.movable && Accessible(who, pot) && valid)
+			if (subtractamount(pot, 1))
+				SetObjProperty(item, "balas", 1);
+				printtext(who, "*recarrega a arma*");
+				TS_StartTimer(who, "paralysis", 5);
+				return;
+			endif
+		else
+			SendSysMessageEx(who, "Item invalido.", SSM_FAIL);
+			return;
+		endif		
+
+	endif
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if (targ.isa(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+	var cd := 3;
+
+	TurnObjectToward(who, targ.x, targ.y);
+	PrintText(who, "*mirando em *" + targ.name);
+	who.frozen := 1;
+	sleep(cd);
+	who.frozen := 0;
+
+	//testa 2x
+	weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+	if (weapon.serial != item.serial)
+		SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
+		return;
+	endif
+
+
+	if ( !CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm))
+		SendSysMessageEx(who, "O alvo saiu do seu campo de visao.", SSM_FAIL);
+		return;
+	endif 
+	
+	balas := balas - 1;
+	SetObjProperty(item, "balas", balas);
+
+	var dmg := 40;
+	var bonus := 0;
+	var dist := distance(who, targ);
+	if (dist < 2)
+		bonus := dmg*0.5;
+	elseif (dist > 5)
+		if (dist > 12)
+			bonus := 0-dmg*0.6;
+		elseif (dist > 8 )
+			bonus := 0-dmg*0.3;
+		endif
+	endif
+
+	//pocao fraca reduz o bonus do dano em 20% a forte aumenta o dano em 30%
+	var pottype := GetObjProperty(item, "tipo");
+	if (pottype == 1)
+		bonus := bonus - dmg * 0.2;
+	elseif (pottype == 3)
+		bonus := bonus + dmg * 0.3;
+	endif
+
+	var finaldmg := bonus + dmg;
+	if (finaldmg < 10)
+		finaldmg := 10;
+	endif
+
+	TS_StartCooldown(who, "fireweapon", 15);
+	PlayMovingEffect(who, targ, GFX_SMALL_FIREBALL, 5, 1);
+	PlaySoundEffect(who, SFX_MAGIC_ARROW);
+	DamageFLS(targ, finaldmg,  DMG_FORCED, who);
+
+
+endprogram

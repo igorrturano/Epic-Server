@@ -1,0 +1,62 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/facings";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessage(who, "Selecione o alvo.");
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Alvo invalido.");
+		return 0;
+	endif
+
+    if (!targ)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+	SendSysMessageEx(who, "O disparo mistico sai de sua mao", SSM_INFO);
+
+    PlayMovingEffectEx(who, targ, 0xCDD2, 10, 20, 2442, 2);
+    PlaySoundEffect(who, SFX_AGILITY2);
+    var dice := cstr(mlore +"d4");
+    var dmg := RandomDiceRoll(dice);
+    DamageFLS(targ, (dmg+mlore)*mlore, DMG_FORCED, who, "magicmissile");
+    SleepMS(500);
+    SetCooldown(who, "disparomistico", mlore);
+
+    if (getCooldown(who, "disparomisticoHit"))
+        SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
+        var loc := TargetCoordinates(who);
+        if ( !loc )
+            SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+            return 0;
+        endif
+
+        if ( !CheckLosAt(who, loc.x, loc.y, loc.z) )
+            SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+            return 0;
+        endif
+
+        TurnObjectToward(who, loc.x, loc.y);
+
+        PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );	
+        PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 , 2);
+        sleepms(400);
+        PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 ,2);
+        sleepms(400);
+        MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
+    endif
+
+	return 1;
+endprogram

@@ -1,0 +1,43 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/client";
+
+program manobra(attacker)
+
+	var targ := Target(attacker);
+	var lvl := cint(AP_GetSkill(attacker,MAGICLORE));
+	
+	if (!CheckLOSAt(attacker, targ.x, targ.y, targ.z))
+		SendSysMessageEx(attacker, "O Alvo nao esta visivel para voce.", SSM_FAIL);
+		return 1;
+	endif
+
+    if (!targ.isA(POLCLASS_CORPSE))
+		SendSysMessageEx(attacker, "Voce precisa usar um corpo.", SSM_FAIL);
+		return 1;
+	endif
+    var time := lvl/10;
+    var i := 0;
+
+    attacker.frozen := 1;
+    for (i := 0; i < time; i++)
+        PerformAction(attacker, ANIM_CAST_AREA);
+        PlayObjectCenteredEffect(targ, FX_CURSE_EFFECT, 1, 16);
+	    sleep(1);
+    endfor
+    attacker.frozen := 0;
+    PlaySoundEffect(targ, SFX_SPELL_SUMMON_DAEMON);
+	if (lvl >= 40 && lvl < 60)
+		CreateNpcFromTemplate(":brainai:ossadaescarlateinvoked", targ.x, targ.y, targ.z, 0, targ.realm);
+		CreateNpcFromTemplate(":brainai:ossadaescarlateinvoked", targ.x, targ.y, targ.z, 0, targ.realm);
+	elseif(lvl >= 60 && lvl < 80)
+		CreateNpcFromTemplate(":brainai:fleshgoleminvoked", targ.x, targ.y, targ.z, 0, targ.realm);
+	elseif(lvl >= 80)
+		CreateNpcFromTemplate(":brainai:esqueletotitan", targ.x, targ.y, targ.z, 0, targ.realm);
+	else
+		CreateNpcFromTemplate(":brainai:skeletoninvoked", targ.x, targ.y, targ.z, 0, targ.realm);
+	endif
+endprogram  

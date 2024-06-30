@@ -1,0 +1,89 @@
+//////////////////////////////////////////////////
+//
+//   CoastImport - Import Coast Items (UO Coast)
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+//////////////////////////////////////////////////
+//
+// Needs:
+//   statics/coast.cfg
+//
+////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use uo;
+Use os;
+Use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+Include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+Const ERRORMSGS_GERMAN:=
+  "{}StaticsImport: CoastArea aktiviert..."+
+  "{}StaticsImport: CoastArea beendet."+
+  "{}StaticsImport: Item %% an %% %% %% konnte nicht erzeugt werden!"+
+  "{}Die Items wurden importiert."+
+  "{}Probleme beim Lesen der Configdateien!";
+Const ERRORMSGS_ENGLISH:=
+  "{}StaticsImport: CoastArea started..."+
+  "{}StaticsImport: CoastArea done."+
+  "{}StaticsImport: Was impossible to create Item %% at %% %% %%!"+
+  "{}Items have been imported."+
+  "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+Program TextCMD_CoastImport(who)
+  Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+  PrintErrorMessage(1);
+  CoastArea(who);
+  PrintErrorMessage(2);
+EndProgram
+
+/////////////////////////////////////
+// CoastArea - Importiert die Items
+/////////////////////////////////////
+
+Function CoastArea(who)
+  Var datafile:=ReadConfigFile(":worldforge:config/coast");
+  If (datafile)
+    Var item;
+    Var object;
+    ForEach name in GetConfigStringKeys(datafile)
+      item:=datafile[name];
+      If (item)
+        object:=CreateItemAtLocation(item.x, item.y, item.z, item.id, 1);
+        If (object)
+          object.color:=item.color;
+          object.decayat:=0;
+          object.movable:=0;
+        Else
+          PrintErrorMessage(3, {item.id, item.x, item.y, item.z});
+        EndIf
+      EndIf
+    EndForEach
+
+    UnloadConfigFile(":worldforge:config/coast");
+
+    PrintErrorMessage(4, { }, who);
+  Else
+    PrintErrorMessage(5, { }, who);
+  EndIf
+EndFunction

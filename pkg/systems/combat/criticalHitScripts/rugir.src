@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":attributes:skills";
+include ":timedscripts:timedScripts";
+include "include/damage";
+include ":charactercreation:resists";
+
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	params := 0; // No longer needed
+	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var creature_who := NPC_ParseTemplateName(attacker.npctemplate).template;
+	var urro_sound := GetConfigInt(npccfgfile[creature_who], "UrroSound"); // identifca o som de urro do npcdesc
+
+	var lvl := Cint(AP_GetStat(attacker, STRENGTH)/23);
+	if (lvl < 1)
+		lvl := 1;
+	endif
+
+		if (!CheckResist(defender, VONTADE, 30, -CInt(AP_GetStat(attacker, STRENGTH)/2.5)))
+			TS_StartTimer(defender, "dmgreduction", Cint(AP_GetStat(attacker, STRENGTH)), lvl, attacker, 1);
+				PlaySoundEffect(attacker, urro_sound);
+			printText(defender, "*Apavorado*");
+			//SendSysMessageEx(who, "O alvo esta apavorado.", SSM_INFO);3
+		else
+				PlaySoundEffect(attacker, urro_sound);
+			printText(defender, "*O alvo resiste e ignora o rugido*");
+			return 1;
+		endif
+
+
+endprogram

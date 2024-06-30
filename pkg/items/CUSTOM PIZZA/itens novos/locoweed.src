@@ -1,0 +1,20 @@
+use uo;
+use util;
+
+program locoweed(user, item)
+
+	SendSysMessage(user, "Select someone to protect from stillness");
+
+	var targ := Target( user );
+	if(!targ)
+	    return;	
+	endif
+
+	SubtractAmount(item, 1);
+
+	PlaySoundEffect(targ, 0x3D);
+	SetObjProperty(targ, "still_prot", 1);
+
+	SendSysMessage(targ, "You are now potected from stillness!");
+		
+endprogram

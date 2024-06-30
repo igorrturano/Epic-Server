@@ -1,0 +1,24 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program poisonScript(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0;
+	
+	if ( GetObjProperty(mobile, "#DexPoisonMod") )
+		return 0;
+	endif
+	
+	var points := (AP_GetStat(mobile, DEXTERITY) * level * 10 )/100;
+	points := 0 - points;
+	
+	SetObjProperty(mobile, "#DexPoisonMod", points);
+	AP_ModifyStatMod(mobile, DEXTERITY, points);
+	
+	return 1;
+endprogram
+

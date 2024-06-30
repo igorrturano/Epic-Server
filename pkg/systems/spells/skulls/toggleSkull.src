@@ -1,0 +1,11 @@
+use os;
+
+program toggleskull(params)
+
+	var item := params[1];
+	var time := params[2];	
+
+	sleep(time);
+	item.color := 0;
+
+endprogram

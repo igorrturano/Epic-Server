@@ -1,0 +1,73 @@
+use uo;
+use cfgfile;
+use os;
+use vitals;
+
+const SOUND_MOVEDOWN := 557;
+const SOUND_MOVEUP := 241;
+const ACTION_BOW := 32;
+const ITEM_HEAD := 0x1CE1;
+
+program UseGuillotine(who, guillotine)
+
+	if (Distance(who, guillotine) > 1)
+		SendSysMessage(who, "Muito Longe.");
+		return;
+	endif
+	
+	if ( !GetObjProperty(guillotine, "direction") )
+		SetObjProperty(guillotine, "direction", "MoveDown");
+	endif
+	
+	var direction := GetObjProperty(guillotine, "direction");
+	
+	if (direction["Up"])
+		MoveUp(guillotine);
+	else
+		who.frozen := 1;
+		SetObjProperty(who, "DeathPoints", 0);
+		PerformAction(who, ACTION_BOW);
+		MoveDown(guillotine);
+		ApplyRawDamage(who, 6000);
+		who.frozen := 0;
+		sleepms(500);
+		var corpse := GetObjProperty(who, "corpse_serial");
+		corpse := SystemFindObjectBySerial(corpse);
+		var head := CreateItemAtLocation(corpse.x, corpse.y, corpse.z, "head", 1);
+		MoveObjectToLocation(head, corpse.x, corpse.y, corpse.z+3, corpse.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+
+endprogram
+
+function MoveUp(guillotine)
+	var config := NewGraphic(guillotine);
+	guillotine.graphic := GetConfigInt(config, "MoveUp");
+	
+	PlaySoundEffect(guillotine, SOUND_MOVEUP);
+	
+	config := NewGraphic(guillotine);
+	if (!GetConfigInt(config, "MoveUp"))
+		SetObjProperty(guillotine, "direction", "MoveDown");
+	endif
+endfunction
+
+function MoveDown(guillotine)
+	var config := NewGraphic(guillotine);
+	while (GetConfigInt(config, "MoveDown"))
+		sleepms(400);
+		guillotine.graphic := GetConfigInt(config, "MoveDown");
+		config := NewGraphic(guillotine);
+	endwhile
+	PlaySoundEffect(guillotine, SOUND_MOVEDOWN);
+	SetObjProperty(guillotine, "direction", "MoveUp");
+endfunction
+
+function NewGraphic(guillotine)
+	var guillotine_cfg := ReadConfigFile(":torture:config/guillotine");
+	if ( guillotine_cfg.errortext )
+		PrintTextAbove(guillotine, "Error - Could not open :torture:config/guillotine.cfg ->"+guillotine_cfg.errortext);
+		return guillotine.graphic;
+	endif
+	
+	return guillotine_cfg[guillotine.graphic];
+endfunction

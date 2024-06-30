@@ -1,0 +1,110 @@
+//////////////////////////////////////////
+//
+//   StaticsImport - Import Static Items
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+//////////////////////////////////////////
+//
+// Needs:
+//   statics/statics.cfg
+//   statics/staticsno.cfg
+//
+////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use uo;
+Use os;
+Use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+Include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+Const ERRORMSGS_GERMAN:=
+  "{}StaticsImport: ImportArea aktiviert..."+
+  "{}StaticsImport: ImportArea beendet."+
+  "{}StaticsImport: Item %% an %% %% %% konnte nicht erzeugt werden!"+
+  "{}Die Items wurden importiert."+
+  "{}Probleme beim Lesen der Configdateien!";
+Const ERRORMSGS_ENGLISH:=
+  "{}StaticsImport: ImportArea started..."+
+  "{}StaticsImport: ImportArea done."+
+  "{}StaticsImport: Was impossible to create Item %% at %% %% %%!"+
+  "{}Items have been imported."+
+  "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+Program TextCMD_StaticsImport(who)
+  Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+  PrintErrorMessage(1);
+  ImportArea(who);
+  PrintErrorMessage(2);
+EndProgram
+
+//////////////////////////////////////
+// ImportArea - Importiert die Items
+//////////////////////////////////////
+
+Function ImportArea(who)
+  Var datafile1:=ReadConfigFile(":worldforge:config/statics");
+  Var datafile2:=ReadConfigFile(":worldforge:config/staticsno");
+
+  If (datafile1 And datafile2)
+    Var item;
+    Var object;
+    ForEach name in GetConfigStringKeys(datafile1)
+      item:=datafile1[name];
+      If (item)
+        object:=CreateItemAtLocation(item.x, item.y, item.z, item.id, 1);
+        If (object)
+          object.color:=item.color;
+          object.decayat:=0;
+          object.movable:=0;
+        Else
+          PrintErrorMessage(3, array{item.id, item.x, item.y, item.z});
+        EndIf
+      EndIf
+    EndForEach
+
+    ForEach name in GetConfigStringKeys(datafile2)
+      item:=datafile2[name];
+      If (item)
+        object:=CreateItemAtLocation(item.x, item.y, item.z, item.objtype, 1);
+        If (object)
+          If (item.name)
+            SetName(object, item.name);
+          EndIf
+          object.color:=item.color;
+          object.decayat:=0;
+          object.movable:=0;
+        Else
+          PrintErrorMessage(3, array{item.objtype, item.x, item.y, item.z});
+        EndIf
+      EndIf
+    EndForEach
+
+    UnloadConfigFile(":worldforge:config/staticsno");
+    UnloadConfigFile(":worldforge:config/statics");
+
+    PrintErrorMessage(4, array{ }, who);
+  Else
+    PrintErrorMessage(5, array{ }, who);
+  EndIf
+EndFunction

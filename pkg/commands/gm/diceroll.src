@@ -1,0 +1,25 @@
+use uo;
+use os;
+use util;
+
+//include ":attributes:attributes";
+//include ":charactercreation:createchar";
+
+program diceroll(who, text)
+
+	if ( !text )
+		SendSysMessage(who, ".diceroll 1d6, 1d4, 1d20, 1d100, etc.");
+		return 0;
+	endif
+
+    SendSysMessage(who, "Quem vai ver a rolagem de dados?");
+    var targ := Target(who);
+// 0x245 msytery3
+// 0x2E2 dropgem2
+    var roll := RandomDiceRoll(text);
+    PrintTextAbove(targ, "*" + text + " = " + roll + "*");
+    PlaySoundEffect(targ, 738);
+    PlaySoundEffect(targ, 739);
+// 0x503 shaku bad (fail)
+// 0x504 shaku good (succ)
+endprogram

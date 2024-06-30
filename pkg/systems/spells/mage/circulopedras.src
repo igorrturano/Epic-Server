@@ -1,0 +1,168 @@
+   use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include "include/sysEvent";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+
+	var parts := array;
+
+	PlaySoundEffect(who, 756);
+
+	var z := getWorldHeight(who.x+2, who.y+3, who.realm);
+	var s1 := CreateItemAtLocation(who.x+2, who.y+3, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+3, who.y+2, who.realm);
+	var s2 := CreateItemAtLocation(who.x+3, who.y+2, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+4, who.y+1, who.realm);
+	var s3 := CreateItemAtLocation(who.x+4, who.y+1, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+4, who.y, who.realm);
+	var s4 := CreateItemAtLocation(who.x+4, who.y, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+4, who.y-1, who.realm);
+	var s5 := CreateItemAtLocation(who.x+4, who.y-1, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+3, who.y-2, who.realm);
+	var s6 := CreateItemAtLocation(who.x+3, who.y-2, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+2, who.y-3, who.realm);
+	var s7 := CreateItemAtLocation(who.x+2, who.y-3, z-20, 2272, 1, who.realm);
+
+	z := getWorldHeight(who.x-2, who.y+3, who.realm);
+	var s8 := CreateItemAtLocation(who.x-2, who.y+3, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x-3, who.y+2, who.realm);
+	var s9 := CreateItemAtLocation(who.x-3, who.y+2, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x-4, who.y+1, who.realm);
+	var s10 := CreateItemAtLocation(who.x-4, who.y+1, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x-4, who.y, who.realm);
+	var s11 := CreateItemAtLocation(who.x-4, who.y, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x-4, who.y-1, who.realm);
+	var s12 := CreateItemAtLocation(who.x-4, who.y-1, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x-3, who.y-2, who.realm);
+	var s13 := CreateItemAtLocation(who.x-3, who.y-2, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x-2, who.y-3, who.realm);
+	var s14 := CreateItemAtLocation(who.x-2, who.y-3, z-20, 2272, 1, who.realm);
+
+	z := getWorldHeight(who.x-1, who.y+4, who.realm);
+	var s15 := CreateItemAtLocation(who.x-1, who.y+4, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x, who.y+4, who.realm);
+	var s16 := CreateItemAtLocation(who.x, who.y+4, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+1, who.y+4, who.realm);
+	var s17 := CreateItemAtLocation(who.x+1, who.y+4, z-20, 2272, 1, who.realm);
+
+	z := getWorldHeight(who.x-1, who.y-4, who.realm);
+	var s18 := CreateItemAtLocation(who.x-1, who.y-4, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x, who.y-4, who.realm);
+	var s19 := CreateItemAtLocation(who.x, who.y-4, z-20, 2272, 1, who.realm);
+	z := getWorldHeight(who.x+1, who.y-4, who.realm);
+	var s20 := CreateItemAtLocation(who.x+1, who.y-4, z-20, 2272, 1, who.realm);
+
+	z := getWorldHeight(who.x+2, who.y+4, who.realm);
+	var s21 := CreateItemAtLocation(who.x+2, who.y+4, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x+3, who.y+3, who.realm);
+	var s22 := CreateItemAtLocation(who.x+3, who.y+3, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x+4, who.y+2, who.realm);
+	var s23 := CreateItemAtLocation(who.x+4, who.y+2, z-20, 2274, 1, who.realm);
+
+	z := getWorldHeight(who.x-4, who.y-2, who.realm);
+	var s24 := CreateItemAtLocation(who.x-4, who.y-2, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x-3, who.y-3, who.realm);
+	var s25 := CreateItemAtLocation(who.x-3, who.y-3, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x-2, who.y-4, who.realm);
+	var s26 := CreateItemAtLocation(who.x-2, who.y-4, z-20, 2274, 1, who.realm);
+
+	z := getWorldHeight(who.x+2, who.y-4, who.realm);
+	var s27 := CreateItemAtLocation(who.x+2, who.y-4, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x+3, who.y-3, who.realm);
+	var s28 := CreateItemAtLocation(who.x+3, who.y-3, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x+4, who.y-2, who.realm);
+	var s29 := CreateItemAtLocation(who.x+4, who.y-2, z-20, 2274, 1, who.realm);
+
+	z := getWorldHeight(who.x-4, who.y+2, who.realm);
+	var s30 := CreateItemAtLocation(who.x-4, who.y+2, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x-3, who.y+3, who.realm);
+	var s31 := CreateItemAtLocation(who.x-3, who.y+3, z-20, 2274, 1, who.realm);
+	z := getWorldHeight(who.x-2, who.y+4, who.realm);
+	var s32 := CreateItemAtLocation(who.x-2, who.y+4, z-20, 2274, 1, who.realm);
+
+
+	parts.append(s1);	
+	parts.append(s2);
+	parts.append(s3);
+	parts.append(s4);
+	parts.append(s5);
+	parts.append(s6);
+	parts.append(s7);
+	parts.append(s8);
+	parts.append(s9);
+	parts.append(s10);
+	parts.append(s11);
+	parts.append(s12);
+	parts.append(s13);
+	parts.append(s14);
+	parts.append(s15);
+	parts.append(s16);
+	parts.append(s17);
+	parts.append(s18);
+	parts.append(s19);
+	parts.append(s20);
+	parts.append(s21);
+	parts.append(s22);
+	parts.append(s23);
+	parts.append(s24);
+	parts.append(s25);
+	parts.append(s26);
+	parts.append(s27);
+	parts.append(s28);
+	parts.append(s29);
+	parts.append(s30);
+	parts.append(s31);
+	parts.append(s32);
+
+
+	var i := 1;
+	while ( i <= 21 )
+
+		foreach part in parts			
+			MoveObjectToLocation( part, part.x, part.y, part.z+1, part.realm, MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE );
+		endforeach
+
+		i := i +1;
+		sleepms(100);
+	endwhile
+
+	detach();
+
+	var time := cint(AP_GetSkill(who, MAGICLORE) );
+	if (time < 30 )
+		time := 30;
+	endif
+	sleep( time  );
+
+	PlaySoundEffect(who, 756);
+
+	i := 1;
+	while ( i <= 21 )
+
+		foreach part in parts			
+			MoveObjectToLocation( part, part.x, part.y, part.z-1, part.realm, MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE );
+		endforeach
+
+		i := i +1;
+		sleepms(100);
+	endwhile
+
+
+	foreach part in parts			
+		DestroyItem(part);
+	endforeach
+
+	
+	return 1;
+endprogram   
+ 

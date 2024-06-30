@@ -1,0 +1,32 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	
+	EraseObjProperty(who, "desarmar");
+	var arma := GetObjProperty(who, "arma_desarmada");
+
+	if ((who.isA(POLCLASS_NPC) || who.npctemplate) && arma)
+		foreach item in EnumerateItemsInContainer(who.backpack)
+			if (item.objtype == arma)
+				arma := item;
+				break;
+			endif
+		endforeach
+
+		EquipItem(who, arma);
+		EraseObjProperty(who, "arma_desarmada");
+	endif
+	
+	return 1;
+endprogram
+
+  

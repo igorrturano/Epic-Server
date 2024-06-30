@@ -1,0 +1,17 @@
+use uo;
+
+program spawn(who, text)
+	sendsysmessage(who, CStr(text));
+
+	var values := SplitWords(text);
+
+	var spawnpoint := CreateItemAtLocation(who.x, who.y, who.z, "spawnpoint", 1, who.realm );
+
+	SetObjProperty(spawnpoint, "Amount", CInt(values[2]));
+	SetObjProperty(spawnpoint, "Range", CInt(values[3]));
+	SetObjProperty(spawnpoint, "MinDelay", CInt(values[4]));
+	SetObjProperty(spawnpoint, "MaxDelay", CInt(values[5]));
+	SetObjProperty(spawnpoint, "Spawn", CStr(values[1]));
+	SetObjProperty(spawnpoint, "ResetMe", 1);
+	spawnpoint.invisible := 1;
+endprogram

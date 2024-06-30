@@ -1,0 +1,79 @@
+use uo;
+use os;
+
+include ":tn:equipment";
+include ":combat:armorZones";
+include "include/say";
+
+program EquipTest(mobile, item, start_up)
+	var retval := 0;
+
+	if ( start_up )
+		// POL is starting up, yes the mobile can equip it
+		retval := 1;
+	elseif ( mobile.npctemplate )
+		// NPCs can wear anything
+		retval := 1;
+	elseif ( mobile.cmdlevel )
+		// CmdLevel > 0 can equip anything.
+		retval := 1;
+	elseif ( item.isa(POLCLASS_CONTAINER) )
+		// Makes backpacks always equippable.
+		retval := 1;
+	elseif ( (mobile.frozen) || (mobile.paralyzed) )
+		// Frozen players cant equip stuff
+		SendSysMessage(mobile, "You are unable to move in order to equip that.");
+		return 0;
+	else
+		retval := 1;
+	endif
+
+	if ( item.graphic IN array{9920, 9930} )
+		var mounted := GetEquipmentByLayer(mobile, 0x19);
+		if ( !mounted )
+			SendSysMessage(mobile, "Voce nao pode equipar essa arma desmontado.");
+			return 0;
+		endif
+	endif
+
+	if (GetObjProperty(item, "broken") == 1)
+		SendSysMessageEx(mobile, "Voce nao pode equipar um item danificado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (mobile.hidden)
+		var zones := CS_GetArmorZone(item);
+		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
+			SendSysMessage(mobile, "Voce apareceu ao colocar "+item.desc+".");
+			mobile.hidden := 0;
+			PrintText(mobile, "*aparece*");
+		endif
+	endif
+
+	if ( retval )
+		SetObjProperty(item, "#EquippedOn", mobile.serial);
+		//SetEquipmentMods(mobile, item);
+		if (coverFace(item) && !mobile.npctemplate)
+			if (!GetObjProperty(mobile, "realname") && !GetObjProperty(mobile, "realrace"))
+				SetObjProperty(mobile, "realname", mobile.name);
+				SetObjproperty(mobile, "realrace", mobile.title_race);
+			endif
+			if (GetObjProperty(mobile, "description"))
+				SetObjProperty(mobile, "olddescription", GetObjProperty(mobile, "description"));
+				EraseObjProperty(mobile, "description");
+			endif
+			mobile.name := "Desconhecido";
+			mobile.title_race := "Desconhecido";
+
+			SetObjProperty(mobile, "Incognito", "true");
+			var old_url := GetObjProperty(mobile, "url");
+			SetObjProperty(mobile, "old_url", old_url);
+			SetObjProperty(mobile, "url", "https://th.bing.com/th/id/OIG.0XmfkJZCmPd.wGE6C9x_?pid=ImgGn&w=1024&h=1024&rs=1");
+		endif
+	else
+		// Unable to equip but no reaso was given above.
+		SendSysMessage(mobile, "Unable to equip ->"+item.desc);
+	endif
+
+	return retval;
+endprogram

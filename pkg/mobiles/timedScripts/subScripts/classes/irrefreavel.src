@@ -1,0 +1,28 @@
+use uo;
+use os;
+use vitals;
+include "include/say";
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
+
+	if ( GetObjProperty(mobile, "irrefreavel") )
+		return 0;
+	endif
+
+	SetObjProperty(mobile, "irrefreavel", 60);
+	var hitsmod := Cint(GetObjProperty(mobile, "hitsmod"));
+	sendsysmessage(mobile, "hitsmod" + hitsmod);
+	hitsmod := hitsmod + 60;
+	SetObjProperty(mobile, "hitsmod",  hitsmod);
+	recalcvitals(mobile);
+	HealDamage(mobile, 60);
+
+	return 1;
+endprogram
+
+

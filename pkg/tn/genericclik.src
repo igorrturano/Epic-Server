@@ -1,0 +1,194 @@
+
+use uo;
+use vitals;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":timedScripts:timedScripts";
+
+program genericscript(who, item)
+
+
+	if ( TS_GetCooldown(who, item.desc) != error)
+		SendSysMessageEx(who, "Voce nao pode usar esse item agora.", SSM_FAIL);
+		return 1;
+	endif
+	
+	//verifica se usa cargas, se usar gasta
+	var charges := -10;
+	if (GetObjProperty(item, "charges") != error)
+		
+		charges := Cint(GetObjProperty(item, "charges"));
+
+		if(GetObjProperty(item, "maxcharges") == error)
+			SetObjProperty(item,"maxcharges",charges);
+		endif
+
+		if (charges == 0)
+			SendSysMessage(who, "As cargas desse item acabaram.");
+			return 1;
+		else
+			charges := charges - 1;
+			SetObjProperty(item, "charges", charges);
+		endif
+	endif
+	
+
+	var scripts :=  GetObjProperty(item, "uses");
+	if (scripts.size() < 0)
+		return;
+	endif
+	
+	//verifica quem vai ser o alvo
+	var trg := GetObjProperty(item, "target");
+	var othertarg := 0; //othertarg guarda a info se o targ eh quem ta clicando ou outra pessoa
+	if (trg == error)
+		trg  := who;
+	else
+		SendSysMessage(who, "Escolha o alvo.");
+		trg := Target(who);
+		if (!trg)
+			SendSysMessage(who, "Cancelado");
+			return 1;
+		endif
+		othertarg := 1;
+		/*var targtype := GetObjProperty(item, "targettype");
+		if (targtype != error)
+			if (targtype == "npcs") //se so funciona em npcs
+				if ( !trg.npctemplate ) //e nao for um npc
+					SendSysMessage(who, "Este item nao funciona neste alvo.");
+					return 1;
+				endif
+			elseif (targtype == "players") //se so funciona em players
+				if (trg.npctemplate)
+					SendSysMessage(who, "Este item nao funciona neste alvo.");
+					return 1;
+				endif
+			elseif (targtype == "magos") //TODO
+				if ( AP_GetSKILL(trg, MAGERY ) < 10)
+					SendSysMessage(who, "Este item nao funciona neste alvo.");
+					return 1;
+				endif
+			elseif (targtype == "undeads");
+			endif
+		endif
+*/
+	endif
+	
+	
+	if ( "heal" in scripts)
+		var vitals := GetObjProperty(item, "healtrg");
+		var amt := Cint(GetObjProperty(item, "heal"));
+		foreach vit in vitals
+			if (vit == "hits")
+				HealDamage(trg, amt);
+			elseif (vit == "mana")
+				HEalMana(trg, amt);
+			elseif (vit == "stam")
+				HealStamina(trg, amt);
+			endif
+		endforeach
+		PlayObjectCenteredEffect(trg, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+		PlaySoundEffect(trg, SFX_HEAL);
+	elseif ( "dmg" in scripts)
+			var dmgtype := dictionary;
+			var itemdmgtype := GetObjProperty(item, "dmgtype");
+			var dmg := Cint(GetObjProperty(item, "dmg"));
+			if (itemdmgtype == "fogo")
+				if (othertarg)
+					PlayMovingEffect(who, trg, GFX_LARGE_FIREBALL, 10, 10, 1);
+					PlaySoundEffect(trg, 0x208);
+				else
+					PlayObjectCenteredEffect(trg, GFX_EXPLODE_1, 7, 16);
+					PlaySoundEffect(trg, SFX_EXPLOSION_11);
+				endif
+				ApplyDamageEX(trg, dmg, DMG_FIRE);	
+			elseif (itemdmgtype == "gelo")
+				if (othertarg)
+					PlayObjectCenteredEffect(trg, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+					PlaySoundEffect(trg, SFX_GLASS_BREAK_3);
+				else
+					PlayObjectCenteredEffect(trg, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+					PlaySoundEffect(trg, SFX_GLASS_BREAK_3);
+				endif
+				ApplyDamageEX(trg, dmg, DMG_COLD);	
+			elseif (itemdmgtype == "eletricidade")
+				if (othertarg)
+					PlayLightningBoltEffect(trg);
+					PlaySoundEffect(trg, SFX_LIGHTNING);
+				else
+					PlayMovingEffectXYZ(trg.x, trg.y, trg.z+15, trg.x-1, trg.y, trg.z+15, GFX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(trg.x, trg.y, trg.z+15, trg.x+1, trg.y, trg.z+15, GFX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(trg.x, trg.y, trg.z+15, trg.x, trg.y+1, trg.z+15, GFX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(trg.x, trg.y, trg.z+15, trg.x, trg.y-1, trg.z+15, GFX_ENERGY, 5, 25);
+					PlaySoundEffect(trg, SFX_LIGHTNING);
+				endif
+				ApplyDamageEX(trg, dmg, DMG_ENERGY);
+			elseif (itemdmgtype == "fisico")
+				if (othertarg)
+				else
+				endif
+				ApplyDamageEX(trg, dmg, DMG_PHYSICAL);
+			elseif (itemdmgtype == "veneno")
+				ApplyDamageEX(trg, dmg, DMG_POISON);	
+				PlayStationaryEffect(trg.x, trg.y, trg.z, GFX_POISON_GAS, 10,10, 0, trg.realm);
+			endif
+		
+	elseif ("changeform" in scripts)
+		TS_StartTimer(trg, "polymorph", Cint(GetObjProperty(item, "time")), Cint(GetObjProperty(item, "graphic")) );
+	elseif ("timedscript" in scripts)
+		//printtextabove(trg, "timed script usando " + GetObjProperty(item, "timername") + " " + Cint(GetObjProperty(item, "timertime")) + " " + Cint(GetObjProperty(item, "timerlevel")));
+
+		var timers := GetObjProperty(item, "timers");
+		if (timers == error)
+			TS_StartTimer(trg, GetObjProperty(item, "timername"), Cint(GetObjProperty(item, "timertime")), Cint(GetObjProperty(item, "timerlevel")) );
+		else
+			foreach timer in timers
+				TS_StartTimer(trg, cstr(timer.timername), cint(timer.time), cint(timer.level) );
+			endforeach
+		endif
+	elseif ("combinacao" in scripts)
+		var comb := GetObjproperty(item, "combinacao");
+		var todestroy := array;
+		foreach m in (comb.materials)
+			SendSysMessageEx(who, "Escolha o item " + m.template.desc);
+			var mtarg := Target(who);
+			if ( mtarg.objtype == m.template.objtype && mtarg.graphic == m.template.graphic && mtarg.color == m.template.color)
+				todestroy.append(mtarg);
+			else
+				SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+				return;
+			endif
+		endforeach
+
+
+		var i := 1;
+		foreach d in todestroy
+			if (!SubtractAmount(d, comb.materials[i].qte))
+				SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				return 1;
+			endif
+			i := i + 1;
+		endforeach
+
+		foreach it in (comb.tocreate)
+			CreateItemInBAckpack(who, it.template, 1);
+		endforeach
+	endif
+	
+	var delay := Cint(GetObjProperty(item, "cd"));
+	if (!delay)
+		delay := 10;
+	endif
+	TS_StartCooldown(who, item.desc, delay);	
+
+	if (Cint(GetObjProperty(item, "destroy") == 1))
+		DestroyItem(item);
+		var resto := GetObjProperty(item, "resto");
+		if (resto)
+			CreateItemInBackpack(who, resto);
+		endif
+	endif
+
+endprogram

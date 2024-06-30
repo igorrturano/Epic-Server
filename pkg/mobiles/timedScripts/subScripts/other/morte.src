@@ -1,0 +1,15 @@
+use uo;
+use os;
+use vitals;
+use util;
+
+include ":mounts:mounts";
+
+program TimedScript_Paralysis(params)
+	var mobile := params[1];
+
+	SetObjProperty(mobile, "#deathtime", 1);
+	return 1;
+endprogram
+ 
+ 

@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program cureScript(params)
+	var mobile := params[1];
+
+	EraseObjProperty(mobile, "#desmontar");
+	return 1;
+endprogram  

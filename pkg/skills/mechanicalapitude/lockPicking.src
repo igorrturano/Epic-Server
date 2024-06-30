@@ -1,0 +1,151 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include ":itemutils:objtype";
+//include "include/OLD/sound";
+include ":itemutils:canAccess";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include "include/say";
+include ":charactercreation:habilidades";
+
+program skill_lockpicking( me, lockpick )
+
+	EraseObjProperty(me, "IsMeditating");
+	EraseObjProperty(me, "HealTimer");
+	var sucesso := 0;
+	if (!maolivre(me, 2))
+		return 0;
+	endif
+
+	if(!can_access(me, lockpick))
+		return 0;
+	endif
+
+	if(lockpick.movable == 0)
+		SendSysMessageEx(me, "Voce nao pode usar isto.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!ReserveItem(lockpick))
+		return 0;
+	endif
+
+	if (GetObjProperty(me, "escondido"))
+		me.hidden := 1;
+		SetObjProperty(me,"escondido", 0);
+	endif
+
+	SendSysMessageEx(me, "O que voce deseja fazer com isto?", SSM_REQUEST);
+	var chest := Target(me);
+	if (!chest)
+		SendSysMessageEx(me,"Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+	if ( (!Accessible(me,chest)) || (!Accessible(me,lockpick)) )
+		SendSysMessageEx(me, "Voce nao alcanca o alvo!", SSM_FAIL);
+		return 0;
+	endif
+	if ( Distance(me, chest) > 2)
+		SendSysMessageEx(me, "Voce esta muito distante.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetObjProperty(chest,"level"))
+		if(valorInicial(me, AWARENESS) >= 40)
+			if(me.hidden)
+				SendSysMessageEx(me, "Tenta arrombar a fechadura. [silencioso]", SSM_INFO);
+			else
+				PrintTextAbove(me, "*Tenta arrombar a fechadura [silencioso]*");
+			endif
+		else
+			PrintTextAbove(me, "*Tenta arrombar a fechadura [barulhento]*");
+			//Fez muito barulho e apareceu do sneak
+			me.hidden := 0;
+			PlaySoundEffect(chest, 0x242); //lockpick.wav
+		endif
+		if (!Wait(me, 5))
+			SendSysMessageEx(me, "Voce interrompeu o processo.", SSM_FAIL);
+			return 0;
+		endif
+		sucesso := PickTreasureChest(me, lockpick, chest); //funciona tanto pra chests quando pra portas
+	else
+		SendSysMessageEx(me, "Esse nao e um alvo valido.", SSM_FAIL);
+	endif
+	ReleaseItem(lockpick);
+	return sucesso;
+endprogram
+
+function PickTreasureChest(me, lockpick, chest)
+
+	var lvl := CInt(GetObjProperty(chest,"level"));
+	if (!chest.locked)
+		SendSysMessageEx(me,"O alvo nao parece estar tracado.", SSM_INFO);
+		return;
+	endif
+	if(valorInicial(me, AWARENESS) >= 40)
+		if(me.hidden)
+			SendSysMessageEx(me, "*Arrombando a fechadura. [silencioso]*", SSM_INFO);
+		else
+			PrintTextAbove(me, "*Arrombando a fechadura. [silencioso]*");
+		endif
+	else
+		PrintTextAbove(me, "*Arrombando a fechadura. [barulhento]*");
+		//Fez muito barulho e apareceu do sneak
+		me.hidden := 0;
+		PlaySoundEffect(chest, 0x0242);   //lockpick.wav
+	endif
+	sleep(1);
+
+	var diff;
+	case (lvl)
+		1: diff := 15;
+		2: diff := 40;
+		3: diff := 60;
+		4: diff := 86;
+		5: diff := 90;
+		6: diff := 110;
+		default: diff := 40;
+	endcase
+
+	var diffmod := Cint(GetObjProperty(me, "conhecimentosobrefechaduras"))*5;
+	diff := diff - diffmod;
+	if (diff <= 0)
+		diff := 5;
+	endif
+	var check := SkillCheck(me, MECHANICALAPITUDE, diff);
+
+	if ( check > 0 )
+		if(valorInicial(me, AWARENESS) >= 40)
+			SendSysMessageEx(me, "*Destrancou [silencioso]*", SSM_INFO);
+			PrintTextAbovePrivate(chest, "*$*", me);
+		else
+			PrintTextAbove(me, "*Destrancou [barulhento]*");
+			//Fez muito barulho e apareceu do sneak
+			me.hidden := 0;
+			PlaySoundEffect(chest, 0x200); //unlock.wav
+			SendSysMessageEx(me, "*Destrancou [barulhento]*", SSM_INFO);
+		endif
+		set_critical(1);
+		SetObjProperty(chest, "arrombado", "" + me.name);
+		SetObjProperty(chest, "locktime", ReadGameClock());
+		chest.locked := 0;
+		set_critical(0);
+	else
+		if(me.hidden)
+			me.hidden := 0;
+		endif
+		PlaySoundEffect(chest, 0x122); //feet01b.wav
+		PrintTextAbove(me, "*Falhou em arrombar*");
+		Sleepms(500);
+		if (!temHabilidade(me, "Especialista em Invasoes") && check < -20)
+			PlaySoundEffect(chest,0x0F3); //shut07a.wav
+			SendSysMessageEx(me,"Sua gazua quebrou!", SSM_FAIL);
+			SubtractAmount(lockpick,1);
+		endif
+		return 0;
+	endif
+	return 1;
+endfunction

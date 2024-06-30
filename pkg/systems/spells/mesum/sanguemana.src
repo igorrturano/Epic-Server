@@ -1,0 +1,45 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":blood:blood";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+
+
+	MakeBleed(who);
+
+	
+//	ApplyRawDamage( who, 10, 0, DAMAGE_SHOW );
+	ApplyRawDamage( who, 10);
+	var mana := AP_GetVital(who, MANA);
+	var maxmana := AP_GetVitalMaximumValue(who, MANA);
+
+	var bonus := 10 + 10 * AP_GetSkill(who, MAGICLORE)/100; //da de +10 a +20 de mana
+	mana := mana+bonus;
+
+	if(mana > maxmana)
+		mana := maxmana;
+	endif
+	AP_SetVital(who, MANA, mana);
+	
+    if (!GetObjProperty(who, "#magiasilenciosa"))
+        PlaySoundEffect(who, 385);
+    endif
+	SendSysMessageEx(who, "Voce converteu sua energia vital em mana", SSM_INFO);
+
+	if (GetObjProperty(who, "#magiasilenciosa"))
+        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(who, "#magiasilenciosa");
+	
+	return 1;
+endprogram 

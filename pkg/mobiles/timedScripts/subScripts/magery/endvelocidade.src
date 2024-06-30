@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+
+program cureScript(params)
+	var mobile := params[1];
+	
+	PlayerSpeedBoost(mobile, 0);
+	
+	return 1;
+endprogram

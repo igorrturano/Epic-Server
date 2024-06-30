@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	
+	EraseObjProperty(mobile, "CannotHeal");	
+	var oldhitregen := Cint(GetObjProperty(mobile, "#OldHitRegen"));
+	EraseObjProperty(mobile, "#OldHitRegen");
+	AP_SetVitalRegenRateMod(mobile, "Hits", oldhitregen);
+	
+	return 1;
+endprogram

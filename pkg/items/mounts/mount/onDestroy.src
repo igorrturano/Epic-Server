@@ -1,0 +1,26 @@
+use uo;
+
+include ":attributes:attributes";
+include ":brainAI:include/npcUtil";
+
+program UnMountingScript(mount_piece)
+
+	var mount := SystemFindObjectBySerial( GetObjProperty(mount_piece, "serial") );
+	var who := SystemFindObjectBySerial( GetObjProperty(mount_piece, "riderserial") );
+
+	var who_stamina := AP_GetVital(who, "Stamina");
+	var mount_stamina := AP_GetVital(mount, "Stamina");
+	//Broadcast("oldvit: " + CInt(GetObjProperty(who, "OldVitality")));
+
+	SetObjProperty(who, "Vitality", CInt(GetObjProperty(who, "OldVitality")));
+	EraseObjProperty(mount, "Vitality");
+	EraseObjProperty(who, "OldVitality");
+
+	RecalcVitals(who);
+	RecalcVitals(mount);
+
+	AP_SetVital(who, "Stamina", mount_stamina);
+	AP_SetVital(mount, "Stamina", who_stamina);
+
+	return 1;
+endprogram

@@ -1,0 +1,6 @@
+use os;
+use uo;
+
+Program RazorLogon(who)
+	Start_Script(":razornegotiate:handshake", who);
+endprogram

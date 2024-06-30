@@ -1,0 +1,36 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#PrisaoGelida") )
+		return 0;
+	endif
+
+	mobile.frozen := 1;
+	PrintText(mobile, "*congelado*");
+
+	foreach item in (ListEquippedItems(mobile))
+		if (!GetObjProperty(item, "#elementalweapon"))
+			SetObjProperty(item, "originalcolor", item.color);
+			item.color := 1153;
+		endif
+	endforeach
+
+	SetObjProperty(mobile, "originalcolor", mobile.color);
+	mobile.color := 1153;
+	SetObjProperty(mobile, "#PrisaoGelida", 1);
+	
+	return 1;
+endprogram
+ 

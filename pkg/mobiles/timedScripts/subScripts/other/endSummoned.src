@@ -1,0 +1,30 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+include ":mounts:mounts";
+
+program cureScript(params)
+	var mobile := params[1];
+
+	PrintText(mobile, "*sumindo pouco a pouco*");
+	if (getObjProperty(mobile, "owner"))
+		var masterserial := getObjProperty(mobile, "owner");
+		var master := SystemFindObjectBySerial(masterserial);
+	    if (GetEquipmentByLayer(master, LAYER_MOUNT) && getObjProperty(master, "dread_lord"))
+		    MP_Unmount(master);
+            EraseObjProperty(master, "dread_lord");
+        endif
+		if(getobjproperty(mobile, "Necro"))
+			var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
+			SetObjProperty(master, "NecroSummons", (numbersummons - 1));
+		endif
+	endif
+	sleep(5);
+	while ((AP_GetVital(mobile, HITS)>=0))
+		ApplyRawDamage(mobile, 200);
+		sleepms(500);
+	endwhile
+	return 1;
+endprogram

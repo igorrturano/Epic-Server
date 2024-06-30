@@ -1,0 +1,59 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":spells:summon";
+include "include/client";
+include "include/dungeons";
+
+program summonSkeletaSteed(params)
+	var who := params[1];
+	var targ := params[2];
+
+    //GiantSpider
+    //DreadGiantSpider
+    //HugeSpider
+    //BlackHugeSpider
+	var template := ":brainai:GiantSpider";
+    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+
+    if (lvl >= 90)
+        template := ":brainai:BlackHugeSpider";
+    elseif (lvl >= 70 )
+        template := ":brainai:HugeSpider";
+    elseif (lvl >= 50)
+        template := ":brainai:DreadGiantSpider";
+    endif
+
+
+    if (template == error)
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return;
+	endif
+
+    var i := 0;
+    who.frozen := 1;
+    while (i < 4)
+        PerformAction(who, ANIM_CAST_DIR);
+        sleep(1);
+        i++;
+    endwhile
+    who.frozen := 0;
+	PlaySoundEffect(targ, SFX_SPELL_SUMMON_ELEMENTAL);
+    PlaySoundEffect(who, 0x686);
+
+	var mount := summon(template, targ, who);
+	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+    var mount2 := summon(template, targ, who);
+	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
+    if (InDarkness(who))
+        TS_StartTimer(mount2, "summon", duracao ); //inicio do timedScripts no summon
+    endif
+    PlayObjectCenteredEffect(mount, 0x37C4, 10, 20);
+
+    SendSysMessageEx(who, "Sua prole sombria esta pronta para servi-la");
+	return 1;
+
+endprogram

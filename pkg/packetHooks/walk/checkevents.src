@@ -1,0 +1,91 @@
+use uo;
+use math;
+use polsys;
+use file;
+use util;
+include "include/say";
+include ":charactercreation:habilidades";
+// include "include/packets";
+
+program checkeventsonwalk()
+	Print( "INSTALLING: checkeventsonwalk..." );
+	return 1;
+endprogram
+
+
+exported function CheckEventsWalk( who, byref packet )
+	if (who.hidden == 1)
+		if (who.stealthsteps >= 1)
+		var passos := who.stealthsteps -1;
+			SendSysMessage(who, "Ainda lhe restam "+passos+" passos.");
+		endif
+	endif
+
+	// foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm)
+
+	// 	if (mobile.serial != who.serial && !who.npctemplate)
+	// 		if (!CheckLineOfSight(who,mobile))
+	// 			UpdatePlayerGraphic(mobile, who, 16000, mobile.color);
+	// 		//Who está vendo mobile
+	// 		else
+	// 			UpdatePlayerGraphic(mobile, who, mobile.graphic, mobile.color);
+	// 		endif
+	// 	endif
+	// endforeach
+
+	if (GetObjProperty(who, "neve") && who.concealed == 0 && !GetObjProperty(who, "noprints") && TemHabilidade(who, "Movimento Livre") == 0)
+		if (who.facing == 0 || who.facing == 7);
+			CreateItemAtLocation(who.x, who.y, who.z+1, 0x1E04, 1, who.realm);
+		elseif (who.facing == 1 || who.facing == 2);
+			CreateItemAtLocation(who.x, who.y, who.z+1, 0x1E05, 1, who.realm);
+		elseif (who.facing == 3 || who.facing == 4);
+			CreateItemAtLocation(who.x, who.y, who.z+1, 0x1E06, 1, who.realm);
+		elseif (who.facing == 5 || who.facing == 6);
+			CreateItemAtLocation(who.x, who.y, who.z+1, 0x1E03, 1, who.realm);
+		endif
+	endif
+
+	return 0;
+endfunction
+
+function UpdatePlayerGraphic( who, forwho, graphic, color )
+
+    if( !graphic )
+        graphic := who.graphic;
+    endif
+
+    var packetString := "77";
+    packetString := packetString + fixPacketLength(hex(who.serial),4);
+    packetString := packetString + fixPacketLength(hex(graphic),2);
+    packetString := packetString + fixPacketLength(hex(who.x),2);
+    packetString := packetString + fixPacketLength(hex(who.y),2);
+    packetString := packetString + fixPacketLength(hex(who.z),1);
+    packetString := packetString + fixPacketLength(hex(who.facing),1);
+    packetString := packetString + fixPacketLength(hex(who.color),2); //Colour (doesnt work)
+    packetString := packetString + fixPacketLength(hex(0),1); //Flag... dunno?
+    packetString := packetString + fixPacketLength(hex(0),1); //Highlight colour (doesnt work)
+    return SendPacket( forwho, packetString );
+endfunction
+
+function fixPacketLength( packetString, byteLength )
+    if( !packetString || packetString == error )
+        packetString := 0;
+    endif
+    packetString := cStr(packetString);
+
+    if( packetString[1,2] == "0x" )
+        packetString := cStr(packetString[3,len(packetString)]);
+    endif
+
+    if( len(packetString) > byteLength * 2 )
+//		var extraBytes := (byteLength*2) - len(packetString);
+		var extraBytes := len(packetString) - (byteLength*2) + 1;
+		return cStr(packetString[extraBytes,len(packetString)]);
+    endif
+
+    while( len(packetString) < byteLength * 2 )
+        packetString := "0" + packetString;
+    endwhile
+
+    return packetString;
+endfunction

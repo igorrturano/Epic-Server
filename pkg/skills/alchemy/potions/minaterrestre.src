@@ -1,0 +1,57 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/damage";
+include ":attributes:attributes";
+include ":mounts:mounts";
+
+program use_explosion(who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return;
+	endif
+	if(!Accessible( who, potion))
+		SendSysMessage(who,"Voce nao pode pegar isto!");
+		return;
+	endif
+	who.hidden := 0;
+	//SendSysMessage(who, "Escolha o alvo " );
+	if( !Cint(GetObjProperty(potion, "#bomb")))
+		var parms := {};
+		parms[1] := potion;
+		parms[2] := who;
+		var t := start_script("potions/explosionTimer", parms);
+	endif
+
+	SetObjProperty(potion, "#bomb", 1);
+
+	if (GetEquipmentByLayer(who, LAYER_MOUNT))
+		var chance := GetAttribute(who, "Dexterity");
+		
+		if (chance <= 20)
+			chance := 20;
+		endif
+
+		if (RandomInt(100) > chance)
+			SendSysMessageEx(who, "Voce falhou em um teste de reflexos e caiu do cavalo", SSM_FAIL);
+			PrintTextAbove(who, "*Perde o equilibrio e cai vergonhosamente*");
+			ApplyDamageEX(who, RandomDiceRoll( "4d10" ), DMG_PHYSICAL);
+			TS_StartTimer(who, "paralysis", 8);
+			TS_StartTimer(who, "desmontar", 10);
+			MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION );
+			return 1;
+		endif
+	endif
+
+	Detach();
+
+endprogram

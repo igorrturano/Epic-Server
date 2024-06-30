@@ -1,0 +1,21 @@
+
+use uo;
+
+program textcmd_spawncommand(who, text )
+
+
+	var values := SplitWords(text);
+	
+	SendSysMessage(who, "template: " + values[1] + " amount: " + values[2] + " range: " + values[3] + " min: " + values[4] + " max: " + values[5] );
+
+	var spawnpoint := CreateItemAtLocation(who.x, who.y, who.z, "spawnpoint", 1, who.realm );
+
+	SetObjProperty(spawnpoint, "Amount",   values[2]);
+	SetObjProperty(spawnpoint, "Range",    values[3]);
+	SetObjProperty(spawnpoint, "MinDelay", values[4]);
+	SetObjProperty(spawnpoint, "MaxDelay", values[5]);
+	SetObjProperty(spawnpoint, "Spawn",    values[1]);
+	SetObjProperty(spawnpoint, "ResetMe",  1);
+	spawnpoint.invisible := 1;
+
+endprogram

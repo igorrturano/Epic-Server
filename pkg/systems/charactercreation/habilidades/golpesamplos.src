@@ -1,0 +1,35 @@
+ 
+ 
+// use uo;
+//use os;
+
+//include ":spells:tnmagery";
+//include "include/client";
+//include "include/sounds";
+//include "include/say";
+//include ":timedscripts:timedScripts";
+//include ":tn:cooldown";
+//include "include/damage";
+
+//program SpellScript(params)
+//	var who := params[1];
+//	var info := params[2];
+//	params := 0; // No longer needed
+
+//	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
+//	var targ := who.weapon;//Spell_Target(who, TGTOPT_CHECK_LOS);
+//	if (!targ)
+//		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+//		return;
+//	endif
+
+//	var time := GetSpellDuration( AP_GetSkill(who, TACTICS) );
+//	var duration := Cint(AP_GetSkill(who, TACTICS));
+
+//		SetCooldown(who, "circulodevas", duration);
+//        PlaySoundEffect(who, 0x236);
+//		SendSysMessageEx(who, "Seus golpes causarao estragos a todos ao seu redor!", SSM_INFO);
+//		return 1;
+//	//SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+//endprogram    
+ 

@@ -1,0 +1,24 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+
+program manobra(attacker)
+
+	SendSysMessageEx(attacker, "Seu escudo e uma barreira!", SSM_INFO);
+	var party := attacker.party;
+	foreach member in (party.members)
+		SendSysMessageEx(member, "Fique proximo do seu aliado com o escudo para se proteger!", SSM_INFO);
+	endforeach
+	var barreira := struct;
+	barreira.+blocker := attacker.serial;
+	barreira.+chance := cint(AP_GetSkill(attacker, PARRY)/4);
+    if (TemHabilidade(attacker, "Parede de Escudos"))
+        barreira.chance := cint(AP_GetSkill(attacker, MAGICLORE)/4);
+    endif
+	party.setprop("BarreiraDeEscudos", barreira);
+	SetCooldown(attacker, "BarreiraDeEscudos", 60);
+	
+endprogram    

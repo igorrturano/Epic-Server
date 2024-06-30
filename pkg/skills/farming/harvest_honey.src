@@ -1,0 +1,88 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":tn:actions_sounds_tools";
+
+CONST ITEM_SWARM := 0x091b;
+CONST SOUND_SCRUNCH := 0x58;
+CONST ACTION_BOW := 0x0020;
+CONST UOBJ_HONEY := 0x9ec;
+CONST UOBJ_WAX := 0x1422;
+CONST COLMEIA_FONT_COLOR_NEUTRAL := 0;
+CONST COLMEIA_FONT_COLOR_BAD := 40;
+CONST COLMEIA_FONT_COLOR_GOOD := 90;
+
+CONST MAX_PER_HIVE	:= 10;
+
+program harvest_honey (character, beehive)
+	//Verifica a distância entre o personagem e a Colmeia
+	if (Distance(character, beehive) > 1)
+		SendSysMessage(character, "Voce este muito distante!", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
+		return 0;
+	else
+		SendSysMessage(character, "Voce comecou a mexer na Colmeia.");
+		var already_harvested_amount;
+		//armazena a posição inicial do personagem
+		var character_x1 := character.x;
+		var character_y1 := character.y;
+		repeat
+			PlaySoundEffect(character, SOUND_SCRUNCH);
+			PerformAction(character, ACTION_BOW);
+			sleep (2);
+			PlaySoundEffect(character, SOUND_SCRUNCH);
+			PerformAction(character, ACTION_BOW);
+			sleep (3);
+			if ((character.x == character_x1) && (character.y == character_y1))
+				//Verifica se já acabou a quantidade de cera e mel disponíveis na Colmeia
+				already_harvested_amount := CInt(GetObjProperty(beehive, "#harvested"));
+				if (already_harvested_amount >= MAX_PER_HIVE)
+					SendSysMessage(character, "Nao ha mais nada para ser retirado daqui.", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
+					return 1;
+				//Testa a skill para retirar a cera de abelha e o mel
+				elseif (SkillCheck(character, DomesticWork, 20, 0) > 0 || SkillCheck(character, GATHERING, 20, 0) > 0)
+					if (!already_harvested_amount)
+						SetObjProperty(beehive, "#harvested", 1);
+					else
+						SetObjProperty(beehive, "#harvested", already_harvested_amount + 1);
+					endif
+					//Coloca os recursos coletados na bolsa
+					if(TemHabilidade(character,"Sorte na Coleta"))
+						CreateItemInBackpack(character, UOBJ_HONEY, 2);
+						CreateItemInBackpack(character, UOBJ_WAX, 2);
+						SendSysMessage(character, "Coletou bastante de mel e cera de abelha.", FONT_NORMAL, COLMEIA_FONT_COLOR_GOOD);
+					else
+						CreateItemInBackpack(character, UOBJ_HONEY, 1);
+						CreateItemInBackpack(character, UOBJ_WAX, 1);
+						SendSysMessage(character, "Coletou um pouco de mel e cera de abelha.", FONT_NORMAL, COLMEIA_FONT_COLOR_GOOD);
+					endif
+				else
+					SendSysMessage(character, "Falhou em coletar mel e cera de abelha.", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
+				endif
+				//Testa se as abelhas ficaram furiosas
+				if (!(SkillCheck(character, HANDLEANIMAL, 15, 0) > 0))
+					if(!TemHabilidade(character,"Sorte na Coleta"))
+						if (RandomInt (4) == 1)
+							CreateItemAtLocation(beehive.x, beehive.y, beehive.z, ITEM_SWARM, 1, character.realm);
+							SendSysMessage(character, "Voce enfureceu as abelhas!", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
+							if (character.graphic == 401)
+								PlaySoundEffect(character, 0x32F);
+								PrintTextAbove(character, "*Gritando*");
+							else
+								PlaySoundEffect(character, 0x441);
+								PrintTextAbove(character, "*Gritando*");
+							endif
+							return 0;
+						endif
+					endif
+				endif
+			else
+				SendSysMessage(character, "Voce andou e parou de mexer na Colmeia.", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
+				return 0;
+			endif
+		until ((character.x != character_x1) || (character.y != character_y1));
+	endif
+endprogram

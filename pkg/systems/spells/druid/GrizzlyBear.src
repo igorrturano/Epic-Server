@@ -1,0 +1,23 @@
+   use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  params := 0; // No longer needed
+
+  var amt :=  cint( AP_GetSkill(who, MAGICLORE)*0.5);
+
+  TS_StartTimer(who, "berserk", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1 );
+
+  PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+  SendSysMessageEx(who, "Voce entrou em um estado de furia.", SSM_INFO);
+
+  return 1;
+endprogram                    

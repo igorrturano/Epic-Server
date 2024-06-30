@@ -1,0 +1,28 @@
+/* $Id: openpack.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+include "include/client";
+include "include/say";
+
+program textcmd_openPack(who, robe)
+	var equip := GetEquipmentByLayer(who, LAYER_ROBE);
+	if (robe != equip)
+		SendSysMessageEx(who, "Voce precisa esta vestindo o robe.", SSM_FAIL);
+		return 0;
+	endif
+	MoveItemToContainer(robe, who.backpack);
+	if (robe.graphic == 0x1f03)
+		robe.graphic := 0x2684;
+		PrintText(who, "*veste o capuz*");
+	else
+		robe.graphic := 0x1f03;
+		PrintText(who, "*remove o capuz*");
+	endif
+	EquipItem(who, robe);
+
+
+	return 1;
+endprogram

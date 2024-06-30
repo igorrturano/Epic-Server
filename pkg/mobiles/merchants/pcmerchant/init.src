@@ -1,0 +1,110 @@
+///////////////////////////////////////////////
+// npc.src
+//
+// Created 7/26/2002 11:31AM
+// Updated 2/14/2003 9:04AM
+//
+// By Austin Heilman
+// http://www.tsse.net
+//
+///////////////////////////////////////////////
+//
+// This init script will give a npc a random
+// gender and replace <random> in its name with
+// a real name using functions from NPC_Setup.inc
+//
+///////////////////////////////////////////////
+use uo;
+use util;
+use os;
+
+include ":brainAI:include/npcInit";
+include ":dyes:include/dyes";
+
+program InitScript(params)
+	var npc := params[1];
+	var settings := params[2];
+
+	npc.color := 1056 - RandomInt(55); // 1002-1056
+	npc.truecolor := npc.color;
+
+	var result;
+	case( RandomInt(1) )
+		0: // Male
+			npc.gender := 0;
+			npc.graphic := 400;
+			result := NPC_SetupName(npc, "Human_Male");
+		1: //Female
+			npc.gender := 1;
+			npc.graphic := 401;
+			result := NPC_SetupName(npc, "Human_Female");
+		2: //ANÃO MACHO
+			npc.gender := 2;
+			npc.graphic := 1828;
+			result := NPC_SetupName(npc, "Dwarf_Male");
+		3: //ANÃO FEMEA
+			npc.gender := 3;
+			npc.graphic := 1829;
+			result := NPC_SetupName(npc, "Dwarf_Female");
+		4: //ELFO MACHO
+			npc.gender := 4;
+			npc.graphic := 1830;
+			result := NPC_SetupName(npc, "Elf_Male");
+		5: //ELFO FEMEA
+			npc.gender := 5;
+			npc.graphic := 1831;
+			result := NPC_SetupName(npc, "Elf_Female");
+		6: //ORC MACHO
+			npc.gender := 6;
+			npc.graphic := 1832;
+			result := NPC_SetupName(npc, "Orc_Male");
+		7: //ORC FEMEA
+			npc.gender := 7;
+			npc.graphic := 1833;
+			result := NPC_SetupName(npc, "Orc_Female");
+		8: //WOLFKIN MACHO
+			npc.gender := 8;
+			npc.graphic := 1834;
+			result := NPC_SetupName(npc, "Wolfkin_Male");
+		9: //WOLFKIN FEMEA
+			npc.gender := 9;
+			npc.graphic := 1835;
+			result := NPC_SetupName(npc, "Wolfkin_Female");
+	endcase	
+	
+	if (npc.npctemplate == ":merchants:estalagem")
+		var innkeepers := getglobalproperty("InnKeeper");
+		if (innkeepers == error)
+			innkeepers := array;
+		endif
+		if (npc.serial in innkeepers)
+		else
+			innkeepers.Append(npc.serial);
+			setglobalproperty("InnKeeper",innkeepers);
+		endif
+	endif
+
+	if (npc.npctemplate == ":merchants:merchant")
+		SetObjProperty(npc, "faccao", "A.C.");
+	endif
+	
+	if ( result.errortext )
+		return result;
+	endif
+
+	result := NPC_SetupRandomEquipment(npc);
+	if ( result.errortext )
+		PrintTextAbove(npc, result.errortext);
+		return 0;
+	endif
+	
+	foreach item in ( ListEquippedItems(npc) )
+		if ( CanDye(item) )
+			item.color := RandomDyeColor();
+		endif
+
+		SleepMS(2);
+	endforeach
+	
+	return 1;
+endprogram

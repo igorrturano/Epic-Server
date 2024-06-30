@@ -1,0 +1,67 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+	var targets := array;
+	var copmobs := array;
+	var x := 0;
+	var repetido;
+	
+	var skill := AP_GetSkill(who, "Magery");
+	var maxtargets := Cint(skill / 20);
+
+	While (x < maxtargets)
+	SendSysMessageEx(who, "Escolha os alvos que estarao na corrente. Digite ESC para nao escolher nenhum.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	foreach mobile in targets
+		if (mobile.serial == targ.serial)
+			SendSysMessageEx(who, "Voce ja adicionou esse alvo.", SSM_FAIL);
+			repetido := 1;
+		endif
+	endforeach
+	if (!targ)
+		SendSysMessageEx(who, "Nenhum alvo Escolhido", SSM_FAIL);
+		x := x + 1;
+	elseif (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode pertencer a corrente.", SSM_FAIL);
+	elseif (repetido != 1)
+		SendSysMessageEx(who, targ.name + " escolhido como alvo", SSM_FAIL);
+		copmobs.append(targ.serial);
+		targets.append(targ);
+		x := x + 1;	
+	endif
+	repetido := 0;
+	endwhile
+
+	var sparkles := array;
+
+	var y := 1;
+	foreach targs in targets
+		if (y != len(targets))
+			y := y + 1;
+		else
+			y := 1;
+		endif
+		PlayObjectCenteredEffectEx( targs, 14186, 0, 10, 2444, 0, 0, 0 );
+		PlayMovingEffectEx( targs, targets[y], 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0 );
+		SetObjProperty(targs, "chainofpain", copmobs);
+		SetObjProperty(targs, "copnumber", len(targets));	
+		TS_StartTimer(targs, "chainofpain", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 4, 0, who, 0);
+	endforeach
+
+	PlaySoundEffect(who, 384);
+
+
+	SendSysMessageEx(who, "Voce fez um corrente de dor", SSM_INFO);
+	
+	return 1;
+endprogram 

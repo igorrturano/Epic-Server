@@ -1,0 +1,24 @@
+   use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var amt :=  cint( AP_GetSkill(who, MAGICLORE)*0.4);
+	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
+	//printtextabove(who, "maic lore " + AP_GetSkill(who, MAGICLORE)); 
+	TS_StartTimer(info, "strength", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1 );
+
+	PlaySoundEffect(info, SFX_SPELL_STRENGTH);
+	SendSysMessageEx(who, "Voce deixou o alvo mais forte.", SSM_INFO);
+	
+	return 1;
+endprogram 

@@ -1,0 +1,33 @@
+ 
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha uma arma.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cencelado", SSM_FAIL);
+		return;
+	endif
+
+	if (targ.isA(POLCLASS_WEAPON))
+		targ.maxhp_mod := Cint(AP_GetSkill(who, MAGICLORE)) + 10;	
+        	PlaySoundEffect(targ, SFX_BLESS);
+		SendSysMessageEx(who, "Voce encantou a arma.", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Esta magia so funciona em armas.", SSM_FAIL);
+	endif
+
+	
+	return 1;
+endprogram     

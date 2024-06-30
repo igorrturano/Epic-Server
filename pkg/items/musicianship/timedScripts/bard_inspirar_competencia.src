@@ -1,0 +1,56 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_inspirar_competencia(params)
+	var alvo := params[1];
+	var caster := params[2];
+	var modificador := CInt(params[3]/5);
+	var teste := GetObjProperty(alvo, "#Bard_inspirar_competencia");
+	if(teste) //verifica se ja esta sob efeito similar
+		if(modificador > teste) //se o novo efeito é maior, aplica a diferença
+			Set_Critical(1);
+			SetObjProperty(alvo, "#Bard_inspirar_competencia", modificador);
+			modificador := modificador-teste;
+			AP_ModifySkillMod(alvo, ALCHEMY, modificador);
+			AP_ModifySkillMod(alvo, SNEAK, modificador);
+			AP_ModifySkillMod(alvo, PICKPOCKETING, modificador);
+			AP_ModifySkillMod(alvo, AWARENESS, modificador);
+			AP_ModifySkillMod(alvo, MECHANICALAPITUDE, modificador);
+			AP_ModifySkillMod(alvo, MEDICINE, modificador);
+			AP_ModifySkillMod(alvo, SURVIVAL, modificador);
+			AP_ModifySkillMod(alvo, METALWORKING, modificador);
+			AP_ModifySkillMod(alvo, WOODWORKING, modificador);
+			AP_ModifySkillMod(alvo, DomesticWork, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
+			AP_ModifySkillMod(alvo, GATHERING, modificador);
+			AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
+			Set_Critical(0);
+			PrintTextAbovePrivate(alvo, "+" + modificador + " nas skills pacificas", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+			SendSysMessage(alvo, "Sente-se mais focado no trabalho.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+			return 1;
+		else
+			return 0;
+		endif
+	else
+		Set_Critical(1);
+		SetObjProperty(alvo, "#Bard_inspirar_competencia", modificador);
+		AP_ModifySkillMod(alvo, ALCHEMY, modificador);
+		AP_ModifySkillMod(alvo, SNEAK, modificador);
+		AP_ModifySkillMod(alvo, PICKPOCKETING, modificador);
+		AP_ModifySkillMod(alvo, AWARENESS, modificador);
+		AP_ModifySkillMod(alvo, MECHANICALAPITUDE, modificador);
+		AP_ModifySkillMod(alvo, MEDICINE, modificador);
+		AP_ModifySkillMod(alvo, SURVIVAL, modificador);
+		AP_ModifySkillMod(alvo, METALWORKING, modificador);
+		AP_ModifySkillMod(alvo, WOODWORKING, modificador);
+		AP_ModifySkillMod(alvo, DomesticWork, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
+		AP_ModifySkillMod(alvo, GATHERING, modificador);
+		AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
+		Set_Critical(0);
+		PrintTextAbovePrivate(alvo, "+" + modificador + " nas skills pacificas", caster, BARD_FONT, BARD_FONT_COLOR_GOOD);
+		SendSysMessage(alvo, "Sente-se mais focado no trabalho.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+		return 1;
+	endif
+endprogram

@@ -1,0 +1,6 @@
+use os;
+use uo;
+
+Program RazorReconnect(who)
+	Start_Script(":razornegotiate:handshake", who);
+endprogram

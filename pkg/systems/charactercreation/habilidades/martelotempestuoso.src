@@ -1,0 +1,65 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/dungeons";
+include ":tn:combat";
+
+program vacuodemana(params)
+	var attacker	:= params[1];
+    var basedamage := CalculateRawDamage(attacker, attacker.weapon);
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+    var defender := Target(attacker);
+    if (!defender)
+        return;
+    endif
+	
+    var dist := Distance(attacker, defender);
+    if (dist > 6)
+        SendSysMessage(attacker, "O alvo esta muito distante");
+        return 1;
+    endif
+
+    var dano_mlore := CInt(AP_GetSkill(attacker, MAGICLORE));
+    var cfg := ReadConfigFile(":combat:itemdesc");
+    var elem := FindConfigElem(cfg, attacker.weapon.objtype);
+    
+    if (elem.TipoAtaque != "Contusivo")
+        SendSysMessage(attacker, "Voce precisa utilizar armas contusivas");
+        return 1;
+    endif
+    //PlayAttackAnimation(attacker); // animacao de overhead 2h 
+    PerformAction(attacker, 12);
+    PlaymovingEffect(attacker, defender, 0x379f, 0, 40);
+    sleep(2);
+    PlaymovingEffect(defender, attacker, 0x379f, 0, 40);
+
+    var duration := cint(AP_GetSkill(attacker, MAGICLORE)/10);
+    TS_StartTimer(defender, "paralysis", duration);
+
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+    PlayAttackAnimation(attacker);
+    PlayHitSounds(attacker, defender);
+	DamageFLS(defender, total, DMG_FORCED, attacker);
+	DamageFLS(defender, dano_mlore, DMG_FORCED, attacker);
+    PlayLightningBoltEffect(defender);
+	PlayLightningSoundEffect(defender);
+
+    return 1;
+endprogram 
+
+function PlayLightningSoundEffect(mobile)
+
+	var lightning := {41, 42, 519};
+
+	playsoundeffect(mobile, lightning[(randomint(3)+1)]);
+
+endfunction

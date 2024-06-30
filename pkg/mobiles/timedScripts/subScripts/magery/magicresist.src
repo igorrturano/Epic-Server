@@ -1,0 +1,21 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+
+	var points := (CInt(AP_GetSkill(attacker, MAGERY))/5)+5;
+
+	SetObjProperty(mobile, "#MagicMod", points);
+   SetObjProperty(mobile, "ColdResistMod", points);
+   SetObjProperty(mobile, "FireResistMod", points);
+   SetObjProperty(mobile, "EnergyResistMod", points);
+   SetObjProperty(mobile, "PoisonResistMod", points);
+	
+	return 1;
+endprogram
+

@@ -1,0 +1,41 @@
+use uo;
+use math;
+use os;
+use basicio;
+include "include/say";
+include ":charactercreation:habilidades";
+program speech_hooks()
+  Print( "Hooking Unicode Outgoing..." );
+  return 1;
+endprogram
+
+const ITEM_ID := 3;
+const TEXT_TYPE := 9;
+const NAME_ID := 19; //posição do Name de quem fala
+const SYS_MSG := 0x06;
+
+exported function handleSendLocalized( character, byref packet )
+	var clilocID := packet.GetInt32(14);
+
+	if(clilocID == 1008087)
+		SendSysMessage(character, "Alguem voltou para party.");
+		return 1;
+	elseif (clilocID == 1008091)
+		SendSysMessage(character, "Convite para party recusado.");
+		return 1;
+	elseif (clilocID == 1008094)
+		SendSysMessage(character, "Convite para party aceito.");
+		return 1;
+	endif
+
+/*
+	print("Localized:"+packet.GetString(NAME_ID,20));
+	print("Localized id body:" + packet.GetInt32(3) + " " + packet.GetInt16(7));
+	packet.SetInt32(3,0xfff);
+	print("Localized id body2:" + packet.GetInt32(3) + " " + packet.GetInt16(7));
+	print("Localized message number:" + packet.GetInt32(14));
+	print("flags:" + packet.GetInt8(18));
+	print("name:" + packet.Getstring(19,20));
+*/
+	return 0;
+endfunction

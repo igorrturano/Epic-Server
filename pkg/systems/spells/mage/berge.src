@@ -1,0 +1,95 @@
+use uo;
+use os;
+
+include "include/say";
+include ":attributes:attributes";
+include "include/client";
+const PARA_MANA_DRAIN := 5;
+
+Program spell(params)
+        var who := params[1];
+	var info := params[2];
+
+	SendSysMessageEx(who, "Escolha qual longe quer que a magia va.", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 15 )
+		SendSysMessageEX(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
+	var cast_points := CInt(AP_GetSkill(who, MAGICLORE)/10);
+	var i;
+	var coord_list := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
+	var num_loops := coord_list.size();
+	
+	for ( i:=2; i<= num_loops; i:=i+1 )
+	     var coord := coord_list[i];
+	     var zspot := who.z+15;
+	     if ( GetWorldHeight(coord.x, coord.y) )
+	         zspot := GetWorldHeight(coord.x, coord.y)+15;
+	     endif
+             PlayStationaryEffect(coord.x, coord.y, zspot, 0x36fe, 10, 10);
+             foreach mobile in ListMobilesNEarLocation(coord.x, coord.y, zspot, 0, who.realm)
+                          //if ( AP_GetSkill(mobile, RESISTING_SPELLS)/10 > cast_points )
+                                  MoveMobile(mobile, targ, coord_list[i+1], who);
+                          //else
+                           //       SendSysMessageEX(mobile, "Voce resiste aos efeitos da magia.", SSM_INFO);
+                          //endif
+              endforeach
+
+              sleepms(600);
+       endfor
+endprogram
+
+
+function MoveMobile(mobile, targ, next_spot, caster)
+        var coord := struct;
+	coord.+x;
+	coord.+y;
+	var move_list := array;
+        var x_shift := Abs(targ.x - mobile.x);
+        var y_shift := Abs(targ.y - mobile.y);
+	
+	if ( x_shift < y_shift )
+	      //Move on the X
+	      if ( CheckLosAt(mobile, mobile.x-1, mobile.y, mobile.z) )
+	           coord.x := mobile.x-1;
+                   coord.y := mobile.y;
+                   move_list.append(coord);
+        	endif
+
+		if ( CheckLosAt(mobile, mobile.x+1, mobile.y, mobile.z) )
+                	 coord.x := mobile.x+1;
+	                 coord.y := mobile.y;
+	                 move_list.append(coord);
+                endif
+        elseif ( y_shift < x_shift )
+               //Move on the Y
+               if ( CheckLosAt(mobile, mobile.x, mobile.y-1, mobile.z) )
+                    coord.x := mobile.x;
+                    coord.y := mobile.y-1;
+                    move_list.append(coord);
+               endif
+               if ( CheckLosAt(mobile, mobile.x, mobile.y+1, mobile.z) )
+                    coord.x := mobile.x;
+                    coord.y := mobile.y+1;
+                    move_list.append(coord);
+               endif
+        endif
+
+	if ( move_list.size() > 0 )
+                var move_to := move_list[RandomInt(move_list.size())+1];
+                MoveObjectToLocation(mobile, move_to.x, move_to.y, mobile.z, MOVEOBJECT_FORCELOCATION);
+        else
+               if ( CheckLosAt(mobile, next_spot.x, next_spot.y, mobile.z) )
+                    MoveObjectToLocation(mobile, next_spot.x, next_spot.y, mobile.z, MOVEOBJECT_FORCELOCATION);
+               endif
+        endif
+
+       SendSysMessageEX(mobile, "Voce ficou tonto com o ataque.", SSM_INFO);
+       var parainfo := array();
+       parainfo[1] := caster;
+       parainfo[2] := mobile;
+       parainfo[3] := PARA_MANA_DRAIN;
+       Start_Script("tn/paralyze", parainfo);
+endfunction

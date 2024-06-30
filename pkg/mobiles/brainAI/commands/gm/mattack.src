@@ -1,0 +1,37 @@
+/* $Id: attack.src 1383 2006-05-13 09:26:14Z austin $
+ *
+ */
+//Example: .attack -> Makes an npc attack another mobile.
+
+use uo;
+use os;
+
+include "include/sysEvent";
+include ":ghaia:ghaiaInit";
+
+program textcmd_attack(who, range)
+	range := CInt(range);
+	if ( !range )
+		SendSysMessage(who, "You must say a radius.");
+	endif
+
+	SendSysMessage(who, "Select a mobile (defender).");
+	var targ2 := target(who);
+	if ( !targ2.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Cancelled");
+		return 0;
+	endif
+	
+	
+	var mobile_list := ListMobilesNearLocationEX(who.x, who.y, who.z, CInt(range), LISTEX_FLAG_NORMAL+LISTEX_FLAG_HIDDEN, who.realm);
+	
+	var event := struct{"type":=SYSEVENT_ENGAGED, "source":=targ2};
+	foreach mobile in (mobile_list)
+		if ( mobile.npctemplate && mobile.alignment == 1 ) // Se evil
+			SendEvent(mobile, event);
+		endif
+		sleepms(2);
+	endforeach
+	
+	return 1;
+endprogram

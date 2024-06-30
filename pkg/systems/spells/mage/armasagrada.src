@@ -1,0 +1,33 @@
+ 
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	var time :=  AP_GetSkill(who, MAGICLORE);
+	
+	if (targ.isA(POLCLASS_WEAPON))
+		SetCooldown(targ, "blessweapon", time);
+		start_script( ":spells:armasagrada", {targ, time} );
+	else
+		SetCooldown(targ.weapon, "blessweapon", time);
+		start_script( ":spells:armasagrada", {targ.weapon, time} );
+	endif
+
+        PlaySoundEffect(targ, SFX_BLESS);
+
+	SendSysMessageEx(who, "Voce consagrou a arma.", SSM_INFO);
+
+	
+	return 1;
+endprogram    

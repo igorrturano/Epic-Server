@@ -1,0 +1,71 @@
+use cfgfile;
+use uo;
+use os;
+use util;
+
+
+//var bowcraftconfigfile := ReadConfigFile(":bowcraft:bowcraft");
+//var itemcfg := ReadConfigFile(":bowcraft:bowcraft");
+
+program montar(who, item)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if(!Accessible(who, item))
+		SendSysMessage(who, "Voce nao alcanca o alvo.");
+		return;
+	endif
+	if(!ReserveItem(item))
+		SendSysMessage(who, "Este item ja esta em uso.");
+		return;
+	endif
+	SendSysMessage(who, "Onde voce deseja usar isto? ");
+	var use_on := Target(who);
+	if(!use_on)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+	if(!Accessible(who, use_on))
+		SendSysMessage(who, "Voce nao alcanca o alvo.");
+		return;
+	endif
+	var checkme := use_on.objtype;
+	if((checkme == 0x1380) || (checkme == 0x1381) || (checkme == 0x1382)
+	|| (checkme == 0x1383) ||(checkme == 0x1384)  || (checkme == 0x1385)
+	|| (checkme == 0x9107))
+		montar_arco(who, item, use_on);
+	endif
+endprogram
+
+function montar_arco(who, corda, arco_sc)
+
+	var arco;
+	case (arco_sc.objtype)
+		0x1380: arco:=0x13B2; //arco curto
+		0x1381: arco:= 0xe137; //arco curto composto
+		0x1382: arco:=0x26CC; //arco longo
+		0x1383: arco:=0xe139; //arco longo composto
+		0x1384: arco:=0x0f4f;  //besta
+		0x1385: arco:=0x13fd;  //besta pesada
+		0x9107: arco:=0x26CD; //besta de repeti�ao
+	endcase
+
+	var color := arco_sc.color;  //pra mudar a cor do item com a corda
+	var quality := arco_sc.quality;
+	DestroyItem(corda);  //gasta a corda
+	DestroyItem(arco_sc); //destroi o arco sem corda
+
+	PlaySoundEffect(who, 0x5a);
+	PerformAction(who, 0x021);
+	sleep(2);
+	PlaySoundEffect(who, 0x5a);
+	PerformAction(who, 0x021);
+	sleep(2);
+
+	var itembc := CreateItemInBackpack(who, arco);
+
+	itembc.color:=color;
+	itembc.quality := quality;
+	itembc.hp := itembc.maxhp;
+   
+endfunction

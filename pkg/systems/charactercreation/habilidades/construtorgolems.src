@@ -1,0 +1,99 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":spells:summon";
+include "include/client";
+include ":gumps:yesNo";
+include "include/sounds";
+program summonSkeletaSteed(params)
+	var who := params[1];
+
+    if (GetObjProperty(who, "golem_maker"))
+        SendSysMessage(who, "Ter mais de um golem para uso pessoal, eh um desperdicio de recursos!");
+        return 0;
+    endif
+
+	var template := ":brainai:GolemMartelo";
+
+    if (template == error)
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return 0;
+	endif
+
+    //var dano_mlore := CInt(AP_GetSkill(who, MAGICLORE));
+    
+    if (who.weapon.objtype != 0x13e3)
+        SendSysMessage(who, "Use um martelo de ferreiro.");
+        return 0;
+    endif
+
+    var anvil_near := 0;
+	var anvil;
+	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 1, who.realm)
+		if((item.objtype == 0xA102 || item.objtype == 0xA108))
+			anvil_near := 1;
+			anvil := item;
+			break;
+		endif
+	endforeach
+	if(anvil_near == 0)
+		SendSysMessageEx(who, "Voce precisa estar perto de uma bigorna para criar seu golem.", SSM_FAIL);
+		return 0;
+	endif
+
+    if(!yesno(who, "Voce utilizara 100 minerios de Mitrhil e 50 couros curtidos. Deseja continuar?"))
+        return 0;
+    endif
+
+    foreach item in EnumerateItemsInContainer(who.backpack)
+        if (item.objtype == 0x6311) // mithril
+            if (!SubtractAmount(item, 100));
+                SendSysMessageEx(who, "Voce precisa de 100 minerios mithril.", SSM_FAIL);
+            endif
+        endif
+        if (item.objtype == 0xee45)  // courocurtido
+            if (!SubtractAmount(item, 50));
+                SendSysMessageEx(who, "Voce precisa de 50 couros curtidos.", SSM_FAIL);
+            endif
+        endif
+    endforeach
+
+    var i := 0;
+    who.frozen := 1;
+    if (anvil.objtype == 0xA108)
+        anvil.graphic := 0xA103;
+    elseif (anvil.objtype == 0xA102)
+        anvil.graphic := 0xA109;
+    endif
+    while (i < 10)
+        PerformAction(who, 12);
+        PrintTextAbove(who, "*Construindo*");
+        PlaySoundEffect(who, SFX_ANVIL); // Som de martelada
+        PlayStationaryEffect(who.x, who.y, who.z, 0x6DF1, 0, 40,0, who.realm);
+
+        sleep(4);
+        i++;
+    endwhile
+    if (anvil.graphic == 0xA103)
+        anvil.graphic := 0xA108;
+    elseif (anvil.graphic == 0xA109)
+        anvil.graphic := 0xA102;
+    endif
+    who.frozen := 0;
+	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
+    var golem := CreateNpcFromTemplate( template, who.x, who.y, who.z, 0, who.realm);
+    golem.frozen := 1;
+    PrintTextAbove(golem, "O mecanismo esta pronto para ser operado");
+	//var mount := summon(template, targ, who);
+	//var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+
+	//TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
+    SetObjProperty(who, "golem_maker", 1);
+
+    SendSysMessageEx(who, "Sua arte. Escupilda em aco!");
+	return 1;
+
+endprogram

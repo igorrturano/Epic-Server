@@ -1,0 +1,162 @@
+use uo;
+use os;
+use math;
+use util;
+use cfgfile;
+
+
+include "include/client";
+include "include/say";
+include ":survival:fishingFunctions";
+
+
+
+
+program clima(who)
+
+var estacao := cint(getglobalproperty("season"));
+var basetemp; 
+var fase := GetGlobalProperty("moonfase");
+var diaounoite := GetGlobalProperty("dia");
+var estacaonow;
+var sensacao;
+var regiontempmod;
+var itemtempmod;
+var diamodtemp;
+var color;
+var colore;
+var solpos;
+var tempestade := GetGlobalProperty("tempestade");
+var climamodtemp;
+
+	//Posicao do Sol
+	var config := readconfigfile(":nature:config/daynight");
+	config := config["settings"];
+	var daylength := cint(config.daylength) * 60;
+	var horanascer := cint(getGlobalProperty("halfdaytime"));	
+	if ((ReadGameClock() - horanascer) < (daylength / 5)) solpos := "Parece ter nascido a pouco"; 
+	elseif ((ReadGameClock() - horanascer) < ((2 * daylength) / 5)) solpos := "Caminhando ao topo do ceu";
+	elseif ((ReadGameClock() - horanascer) < ((3 * daylength) / 5)) solpos := "A Pino";
+	elseif ((ReadGameClock() - horanascer) < ((4 * daylength) / 5)) solpos := "Caminhando ao horizonte";
+	elseif ((tempestade == 0) || (tempestade == 1) || (tempestade == 2)) solpos := "A tempestade atrapalha a visao do sol";
+	else solpos := "Quase se pondo";
+	endif
+
+
+	//Modificador de Clima Dependendo da Regiao
+	regiontempmod := CINT(GetTempRegion(diaounoite, who, who.x, who.y));
+	if (cint(regiontempmod) == 999) return 0; endif
+
+	//Modificador de Clima Com Itens de Aquecimento
+	itemtempmod := CINT(VerificaItensAquecimento(who, who.x, who.y, who.z, who.realm));
+	
+	//Modificador de Clima A Noite
+      	if(diaounoite == "noite")
+	diamodtemp := -5;
+       endif
+
+	//Modificar de Clima pela Condicao do Tempo
+	if ((tempestade == 0) || (tempestade == 1)) climamodtemp := -5 ;
+	elseif (tempestade == 2) climamodtemp := -9 ;
+	else climamodtemp := 0 ;
+       endif
+
+	//Temperatura Base da Estacao + Mods
+       case(estacao)
+       1:
+       estacaonow:= "Verao";
+	basetemp := (RandomInt(15) + 25 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+	colore := 48;
+	2:
+	estacaonow:= "Outono";
+	basetemp := (RandomInt(5) + 20 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+	colore := 550;
+	3:
+	estacaonow:= "Inverno";
+	basetemp := (RandomInt(10) + 0 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+	colore := 96;
+	5:
+	estacaonow:= "Primavera";
+	basetemp := (RandomInt(5) + 20 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+	colore := 28;
+	endcase
+
+
+	//Especificando Faixa de Temperaturas
+	if (basetemp >= 40)  sensacao := "Extremamente Quente"; color := 38;  endif
+	if ((basetemp < 40) && (basetemp >= 35))  sensacao := "Muito Quente"; color := 338; endif
+	if ((basetemp < 35) && (basetemp >= 27))  sensacao := "Quente"; color := 48; endif
+	if ((basetemp < 27) && (basetemp >= 16))  sensacao := "Agradavel"; color := 60; endif
+	if ((basetemp < 16) && (basetemp >= 5))  sensacao := "Frio"; color := 96; endif
+	if ((basetemp < 5) && (basetemp >= -10))  sensacao := "Muito Frio"; color := 96; endif
+	if ((basetemp < -10)) sensacao := "Extremamente Frio"; color := 92; endif
+
+	
+
+	//Mensagens para o Usuario
+	SendSysMessageEx(who, "Estacao do Ano: " + estacaonow, colore);
+       if(diaounoite == "noite")
+	SendSysMessageEx(who, "Fase da Lua: " + fase, SSM_INFO);
+       endif
+       if(diaounoite == "dia")
+	SendSysMessageEx(who, "Posicao do Sol: " + solpos, SSM_INFO);
+       endif
+	SendSysMessageEx(who, "Sensacao Termica: " + sensacao, color);
+
+
+endprogram
+
+function InRect(who, x_pos, y_pos, rect)
+
+	rect := SplitWords(rect);
+	var x1 := CInt(rect[1]);
+	var y1 := CInt(rect[2]);
+	var x2 := CInt(rect[3]);
+	var y2 := CInt(rect[4]);
+
+	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
+endfunction
+
+function GetTempRegion(diaounoite, who, x, y)
+
+	var cfg := ReadConfigFile(":commands:config/tempregions");
+	var elems := GetconfigStringKeys(cfg);
+
+	
+	foreach elem in elems
+	
+		var region := FindConfigElem(cfg, elem);
+		var rect := GetConfigString(region, "Rect");
+		if ( InRect(who, x, y, rect) )
+			if (who.cmdlevel > 2) SendSysMessage(who, "Regiao que Estou: " + elem); endif
+			var tempmod := cint(GetConfigString(region, "TempMod"));
+			//DESERTO FRIO DENOITE
+			if ((diaounoite == "noite") && ((elem == "adesertointerior") || (elem == "adesertointerior2") || (elem == "desertolitoral"))) 
+				tempmod := (tempmod - 16);
+			endif
+			if (elem == "regiaodungeons")
+				SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
+				return 999;
+			endif
+			return tempmod;
+		endif 
+		
+	endforeach
+	
+	return 0;
+
+endfunction
+
+
+
+function VerificaItensAquecimento(who, x, y, z, realm)
+	var items := ListItemsNearLocation(x, y, z, 5, realm);
+	var mod := 0;
+	foreach item in items
+		if ((item.objtype == 0x0DE3) || (item.objtype == 0x398C) || (item.objtype == 0x3996) || (item.objtype == 0x0FAC) || (item.objtype == 0x19AB))
+			mod := mod + (5 - Distance(who, item));
+		endif
+	endforeach
+	return mod;
+endfunction
+	

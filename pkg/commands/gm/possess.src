@@ -1,0 +1,24 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+
+include ":commands:possess";
+include ":gumps:yesNo";
+
+program textcmd_possess( me )
+
+	set_critical(1);
+
+	var npc := Target(me, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+	if (!npc.npctemplate)
+		sendsysmessage(me, "That is not an npc!");
+		return;
+	endif
+	if (YesNo(me, "Voce deseja ativar o unattack (mobs nao te atacam)?", "Sim.", "Nao."))
+		SetObjProperty(me, "unattack", "sim");
+	endif
+
+	possess(me, npc);
+
+endprogram

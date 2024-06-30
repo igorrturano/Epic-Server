@@ -1,0 +1,59 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/dungeons";
+include ":tn:combat";
+
+program vacuodemana(params)
+	var attacker	:= params[1];
+    var basedamage := CalculateRawDamage(attacker, attacker.weapon);
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+    var defender := Target(attacker);
+    if (!defender)
+        return;
+    endif
+	
+    var dist := Distance(attacker, defender);
+    if (dist > 3)
+        SendSysMessage(attacker, "O alvo esta muito distante");
+        return 1;
+    endif
+
+    SetObjProperty(attacker, "#attackbonus", 100);
+
+    var dano_mlore := CInt(AP_GetSkill(attacker, MAGICLORE));
+    if (attacker.weapon.objtype != 0x166E)
+        SendSysMessage(attacker, "Voce precisa estar usando chicote para usar essa habilidade");
+        return 1;
+    endif
+
+    var duration := cint(AP_GetSkill(attacker, MAGICLORE)/10);
+    if (InDarkness(attacker))
+        PlaySoundEffect(attacker, 0x685);
+        TS_StartTimer(defender, "paralysis", duration);
+    endif
+
+    //TODO colocar isso em uma funcao depois
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+    PlayAttackAnimation(attacker);
+    PlayHitSounds(attacker, defender);
+
+	DamageFLS(defender, total, DMG_FORCED, attacker);
+	DamageFLS(defender, dano_mlore, DMG_COLD, attacker);
+    if (attacker.hidden || attacker.concealed)
+    	PlayAttackAnimation(attacker);
+	    PlayHitSounds(attacker, defender);
+        DamageFLS(defender, total, DMG_PHYSICAL, attacker);
+        DamageFLS(defender, dano_mlore, DMG_COLD, attacker);
+    endif
+
+    return 1;
+endprogram 

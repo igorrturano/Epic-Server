@@ -1,0 +1,52 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+		return;
+	endif
+
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+	var phase_coords := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
+
+	var i := 0;
+	var j := phase_coords.size();
+	for ( i := 1; i <= phase_coords.size(); i := i + 1)
+
+		PlayStationaryEffect(who.x, who.y, who.z, cint(0x3728), 20, 20);
+		var z := GetWorldHeight(phase_coords[i].x, phase_coords[i].y, who.realm);
+		MoveObjectToLocation(who, phase_coords[i].x, phase_coords[i].y, z, who.realm, MOVEOBJECT_NORMAL);
+
+		PlayStationaryEffect(targ.x, targ.y, targ.z, cint(0x3728), 20, 20);
+		z := GetWorldHeight(phase_coords[j].x, phase_coords[j].y, who.realm);
+		MoveObjectToLocation(targ, phase_coords[j].x, phase_coords[j].y, z, who.realm, MOVEOBJECT_NORMAL);
+
+		j := j -1;		
+		sleepms(100);
+	endfor
+
+	
+	return 1;
+endprogram  

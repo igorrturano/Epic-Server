@@ -1,0 +1,16 @@
+/* $Id: unlock.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+use uo;
+
+
+program command_unlock(who)
+    SendSysMessage(who, "What do you wish to unlock?");
+
+	var what := Target(who, TGTOPT_NOCHECK_LOS);
+	if (what)
+		what.locked := 0;
+	endif
+
+	return;
+endprogram

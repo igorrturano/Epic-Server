@@ -1,0 +1,9 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+use util; //funcoes de gerar aleatorio
+include "bardmusic"; //As constantes estao nesse arquivo
+
+//Programa para adicionar propriedades de partitura magica ao item
+program criarPartituraMagica(item) //mag é um parametro a ser utilizado se desejar criar uma partitura magica especifica
+	return preenchePartituraMagica(item);
+endprogram

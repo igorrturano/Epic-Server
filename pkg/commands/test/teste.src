@@ -1,0 +1,10 @@
+/* $Id$
+ *
+ */
+
+use os;
+use uo;
+
+program textcmd_UnloadAll(who)
+	who.cleargottenitem();
+endprogram

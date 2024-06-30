@@ -1,0 +1,279 @@
+use uo;
+use os;
+use math;
+
+include ":attributes:attributes";
+include ":datafile:datafile";
+include ":gathering:settings";
+include ":gathering:lumberJack";
+include "include/client";
+include ":fls_lumberjacking:fls_lumberjack";
+include ":fls_core:fls_objtypes";
+include ":crafting:toolWear";
+include "include/facings";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":fls_core:fls_objtypes";
+
+program skill_LumberJack(who,tool)
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	SendSysMessage(who, "Escolha a arvore para cortar.");
+	var targ := TargetCoordinates(who);
+
+	if ( !targ )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+	var quebravel := GetObjProperty(targ.item, "quebravel");
+
+	if (targ.item)
+		if (quebravel)
+			Quebraitem(who, tool, targ.item);
+			return 0;
+		endif
+	endif
+
+	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1 )
+		SendSysMessage(who, "Muito longe.");
+		return 0;
+	endif
+
+		if ((targ.item.objtype == 0xec24) || (targ.item.objtype == 0xec25) || (targ.item.objtype == 0xec26) || (targ.item.objtype == 0xFF04)||(targ.item.objtype == 0xec27) || (targ.item.objtype == 0xec28))
+		if ((!CheckLineOfSight(who, targ.item)) or (Distance(who, targ.item) > 1))
+			SendSysMessage(who, "O alvo esta distante.");
+			return;
+		else
+			var parms;
+			var script := start_script (":tn:destroyitems", {who, targ.item, tool});
+			return 1;
+		endif
+	endif
+
+	if ( !LJ_IsTree(targ.objtype) )
+		SendSysMessage(who, "Isto nao e uma arvore.");
+		return 0;
+	endif
+
+
+	var orig_x := who.x;
+	var orig_y := who.y;
+
+	//SendSysMessage(who," e" + CanChop(who, tool, targ,  orig_x, orig_y));
+	while(CanChop(who, tool, targ,  orig_x, orig_y) )
+		if(TemHabilidade(who, "Vigor do Extrator"))
+			if ( AP_GetVital(who, "Stamina") < 2)
+				SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+				break;
+			endif
+			//ChopTree(who, tool, targ, orig_x, orig_y);
+			AP_ConsumeVital(who, "Stamina", 2);
+		else
+			if ( AP_GetVital(who, "Stamina") < 4)
+				SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+				break;
+			endif
+			//ChopTree(who, tool, targ, orig_x, orig_y);
+			AP_ConsumeVital(who, "Stamina", 4);
+		endif
+		ChopTree(who, tool, targ, orig_x, orig_y);
+		//AP_ConsumeVital(who, "Stamina", 5);
+		CheckToolWear(who, tool, GATHERING );
+		sleep(1);
+		if (LJ_GetWoodAmount(who.realm, targ.x, targ.y)== 0 )
+			PrinttextAbove(who, "*derruba a arvore*");
+			break;
+		endif
+	endwhile
+
+	SendSysMessage(who, "Voce parou de cortar a arvore.");
+endprogram
+
+function ChopTree(who, tool, targ, orig_x, orig_y)
+	var i:=1;//RandomDiceRoll("3d3");
+	for ( i; i>=0; i:=i-1 )
+		if ( !CanChop(who, tool, targ, orig_x, orig_y) )
+			return 0;
+		endif
+
+			PerformAction(who, 0x0b);
+		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
+		sleepms(1200);
+	endfor
+
+	var wood_type := GetWoodType(targ);
+	var wood_amount := LJ_GetWoodAmount(who.realm, targ.x, targ.y);
+
+	var max_wood := CInt(LJ_GetSettingsCfgElem("Settings").MaxWood);
+	var difficulty := DetermineLumberDifficulty(wood_type); // feita
+	// The less wood there is, the more difficult it becomes.
+/*
+	//var difficulty := CInt(105 - (100 * wood_amount / max_wood));
+	//var difficulty := CInt(0 + (max_wood - wood_amount)*3);
+
+	if (difficulty > 30)
+		difficulty := 30;
+	endif
+*/
+	if (tool.objtype == 0x0f43)
+		difficulty := difficulty - 10;
+			if (difficulty < 0)
+				difficulty := 0;
+			endif
+	endif
+
+	//if ( who.cmdlevel )
+	//	SendSysMessage(who, "MaxWood="+max_wood+"    CurWood="+wood_amount);
+	//	SendSysMessage(who, "Difficulty ->"+difficulty);
+	//endif
+
+	if ( SkillCheck(who, GATHERING, difficulty) > 0  || TemHabilidade(who, "Arquiteto"))
+		var amt := Cint(AP_GetSkill(who, GATHERING)/20);
+		if(TemHabilidade(who, "Lenhador Talentoso"))
+			amt := amt + 4;
+		endif
+		if (amt <= 0)
+			amt := 1;
+		endif
+		if (amt > wood_amount)
+			amt := wood_amount;
+		endif
+		wood_amount := wood_amount - amt;
+		LJ_SetWoodAmount(who.realm, targ.x, targ.y, wood_amount);
+		if (wood_amount < 0)
+			wood_amount := 0;
+		endif
+		var item;
+		if(TemHabilidade(who, "Corte Limpo"))
+			item := CreateItemInBackPack(who, wood_type, amt*2);
+		else
+			item := CreateItemInBackPack(who, wood_type, amt);
+		endif
+		if ( item.errortext )
+			SendSysMessage(who, "Nao foi possivel criar: "+wood_type+" ->"+item.errortext);
+			return 0;
+		else
+			SendSysMessage(who, "Voce colocou a madeira na sua mochila.");
+			return 1;
+		endif
+	endif
+
+	SendSysMessage(who, "Voce e incapaz de conseguir madeira usavel dessa arvore.");
+	return 0;
+endfunction
+
+function CanChop(who, axe, targ, orig_x, orig_y)
+	if ( who.hidden )
+	SendSysMessage(who, "Voce parou de cortar a arvore para se esconder!");			return 0;
+	elseif ( who.x != orig_x || who.y != orig_y )
+		SendSysMessage(who, "Voce parou de cortar a arvore.");
+		return 0;
+        elseif ( !IsFacing(who, targ.x, targ.y)  )
+               SendSysMessage(who, "Voce precisa estar virado para a arvore.");
+               return 0;
+	elseif ( !(axe in ListEquippedItems(who)) )
+		SendSysMessage(who, "Voce parou de cortar a arvore.");
+		return 0;
+	elseif ( LJ_GetWoodAmount(who.realm, targ.x, targ.y) <= 0 )
+		SendSysMessage(who, "Esta arvore ja esta derrubada.");
+		return 0;
+	elseif ( GetEquipmentByLayer(who, LAYER_MOUNT) )
+		SendSysMessage(who, "Voce nao pode cortar arvore montado.");
+		return 0;
+	elseif ( Distance(who, targ) > 1 )
+		SendSysMessage(who, "Voce nao pode cortar de tao longe.");
+		return 0;
+	endif
+	return 1;
+endfunction
+
+//dificuldade de PEGAR o minerio
+
+function DetermineLumberDifficulty(logtype)
+
+	case (logtype)
+        0x1bdd:
+        	return 10; //madeira;
+        0xee36:
+        	return 20; //pinheiro
+        0xee37:
+        	return 50; //carvalho
+        0xee39:
+        	return 60; //salgueiro
+        0xee3a:
+        	return 60; //sipreste
+        0xee38:
+        	return 60; //nogueira
+		0xee3d:
+            return 70; //polar
+		0xee3e:
+            return 70; //Teixo 
+		0xee3f:
+            return 70; //Imbuia
+        0xee40:
+            return 80; //mogno
+		0xee3c:
+            return 80; //Cogumelo   
+        0xee3b:
+        	return 95; //ebano
+        default:
+        	return 0;
+    endcase
+
+
+endfunction
+
+function Quebraitem(who, tool, item)
+	var quebravel := GetObjProperty(item, "quebravel");
+	if (quebravel == "gathering")
+
+		var mex := who.x;
+		var mey := who.y;
+		var hp;
+		var itens:=array;
+		var i := 3 ;
+
+		hp := GetObjProperty(item, "durabilidade");
+		var gatherer:= AP_GetSkill(who, GATHERING);
+				
+		PrintTextAbove(who, "*Batendo com força*");
+		CheckToolWear(who, tool, GATHERING);
+
+		while((i <= 9) && (who.x == mex) && (who.y == mey))
+
+			if((who.x != mex) && (who.y != mey))
+				break;
+			endif
+
+			PerformAction(who, 0x0b);
+			PlaySoundEffect(who, 0x126);
+
+			sleep(1);
+
+			if((who.x != mex) || (who.y != mey))
+				SendSysMessageEx(who,"Voce deve ficar parado enquanto trabalha", SSM_FAIL);
+				return;
+			endif
+			i := i + 1;
+		endwhile
+
+		hp := hp - gatherer;
+		SetObjProperty(item, "durabilidade", hp);
+
+		if (hp <= 0)
+			PrintTextAbove(item, "*quebra*");
+			sleep(2);
+
+			var itens := GetObjProperty(item,"itens");
+			foreach itemarray in itens
+				var itemcriado:=CreateItemAtLocation(item.x, item.y, item.z,itemarray , itemarray.amount, realm := _DEFAULT_REALM);
+				SetName(itemcriado, itemarray.name);
+			endforeach
+			DestroyItem(item);
+		endif
+	elseif ((quebravel == "survival") || (quebravel == "domesticwork"))
+			SendSysMessageEx(who, "Voce deve usar outra ferramenta para este servico", SSM_FAIL);
+			return;
+	endif
+endfunction

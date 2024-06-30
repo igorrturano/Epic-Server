@@ -1,0 +1,48 @@
+use uo;
+use os;
+use util;
+
+include ":charactercreation:habilidades";
+include ":gumps:yesNo";
+include "include/say";
+
+const ANIM_ATTACK_1HAND_DOWN := 0x000b;
+const SOUND_EFFECT_JOGAR := 0x36;
+
+program cara_ou_coroa(who,item)
+	if (item.amount > 1)
+		SendSysMessageEx(who, "Voce so pode jogar uma moeda por vez.", SSM_FAIL);
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	var cara;
+	if (TemHabilidade(who, "Prestidigitador"))
+		var usarhab := YesNo(who, "Deseja usar sua habilidade de roubar o resultado?" , "Sim.", "Não.");
+
+		if (usarhab)
+			cara := YesNo(who, "Qual resultado deseja?" , "Cara", "Coroa");
+			if (cara)
+				PrintText(who, "*jogou uma moeda e deu cara*");
+			else
+				PrintText(who, "*jogou uma moeda e deu coroa*");
+			endif
+		else
+			coin(who); // Random normal
+		endif
+	else
+		coin(who); // Random normal
+	endif
+
+	PerformAction(who, ANIM_ATTACK_1HAND_DOWN );
+	PlaySoundEffect(who, SOUND_EFFECT_JOGAR);
+
+		return 1;
+endprogram
+
+function coin(who)
+	if (RandomInt(2) == 1)
+		PrintText(who, "*jogou uma moeda e deu coroa*");
+	else
+		PrintText(who, "*jogou uma moeda e deu cara*");
+	endif
+endfunction

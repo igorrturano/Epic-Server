@@ -1,0 +1,204 @@
+/* $Id: sendStats.src 1054 2007-04-28 13:30:16Z tekproxy $
+ *
+ */
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  name:    Send Stats Packet Hook
+//  version: 1.1a
+//  author:  MuadDib
+//
+//  Purpose:  This hooks the core 0x11 stats packet, and rewrites it for sending the char all the
+//            extended stats for Age of Shadows like Pet Count, Min/Max Damage, statcap, etc. 2
+//            Flags used per a CONST in order to decide which of the type to send.
+//
+//  Notes:    This is done only for example functionality. Pet Count, Damage Reports, etc is NOT
+//            implemented into anything nor is the resists and luck. You can also change the global
+//            var STATCAP to be a variable if required for special rising stat cap systems.
+//
+// CONST settings:
+// BIT_MASK  = 0x00000003 DO NOT CHANGE!
+//
+// Global Variables:
+// STATCAP = Set this to your shard's Stat Cap. If based on age, race, etc, just add a function
+//           at the beginning of the exported function to check and set the statcap variable.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////
+use polsys;
+
+include ":taming:taming";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include "include/client";
+include "include/damage";
+
+program sendStats()
+	Print( "INSTALLING: Outgoing Status PH..." );
+	return 1;
+endprogram
+
+CONST BIT_MASK := 0x00000003;
+
+var STATCAP := 225;
+var MODE    := 0;
+var STATLOCK:= 0;
+
+
+const PLAYER_ID := 3;
+const NAME_ID := 7;
+
+exported function HandleSendStats( character, byref packet )
+	var serial := packet.GetInt32(PLAYER_ID);
+	var source := SystemFindObjectBySerial(serial);
+	var Object_Name;
+	var url;
+
+	url := GetObjProperty(source, "url");
+
+	if (source.IsA(POLCLASS_MOBILE))
+		//PREENCHE NOME DO MOBILE
+		Object_Name := source.name;
+
+
+		//Cor do nome dos NPC conforme skill de combate
+		if (!source.npctemplate)
+			//Caso em que tá desconhecido
+			if(GetObjProperty(source, "realname"))
+				Object_Name := "Incognito";
+			else
+				//Verifica se o char já foi reconhecido por who
+				var conhecidos := dictionary;
+				if(GetObjProperty(character, "conhecidos"))
+					var ID := Cstr(source.serial); //Salva o serial do personagem
+					if(GetObjProperty(source, "disfarce"))
+						ID := Cstr(GetObjProperty(source, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+					endif
+
+					conhecidos := GetObjProperty(character, "conhecidos"); //Lista de pessoas conhecidadas
+					if(conhecidos.Exists(ID))
+						Object_Name := conhecidos[ID];
+					else
+						Object_Name := source.name;
+					endif
+				else
+					Object_Name := source.name;
+				endif
+			endif
+			if (character.cmdlevel > 1) //Staff consegue ver mais
+				Object_Name := Object_Name + " [" + GetObjProperty(source, "nome_inicial") + "]";
+			endif
+			packet.SetString(NAME_ID, Object_Name,1);
+		endif
+		//Envia a url do portrait junto com o status
+		packet.SetString(121, url, 1);
+	endif
+/*
+	var serial := packet.GetInt32(PLAYER_ID);
+	var source := SystemFindObjectBySerial(serial);
+	SendSysMessage(character, source.name);
+
+	var nome := packet.GetString(7, 30);
+	SendSysMessage(character, nome);
+	nome := "Arrombado";
+
+	packet.SetString(NAME_ID, nome, 1);
+	//HandleExtended(character, packet);
+*/
+	return 0;
+endfunction
+
+/*
+//  If (MODE==4 )
+//    BYTE[2]  statcap
+//    BYTE     pets current
+//    BYTE     pets max
+//    BYTE[2]  fireresist
+//    BYTE[2]  coldresist
+//    BYTE[2]  poisonresist
+//    BYTE[2]  energyresist
+//    BYTE[2]  luck
+//    BYTE[2]  damage max
+//    BYTE[2]  damage min
+//    BYTE[4]  titching points
+function HandleExtended(character, byref packet)
+	// Increase by 22 for the new info to be added
+	packet.SetSize(((packet.GetSize())+22));
+	// We do this to make sure it is the correct packet form. Otherwise it is for someone else
+	// and there is no need to send the additional info.
+	var packet_mode := packet.GetInt8(42);
+	var chk := 0;
+	case ( packet_mode )
+		0: return 0;    // Base packet, so not needed
+		1:
+		3:
+		4:
+		5: chk := 1; // Continue processing! At this time 5 is not used, but it may in the future! Thanks OSI!
+		default: return 0;   // OHHHH, mommy :o
+	endcase
+
+	if ( chk )
+
+		var petcnt := GetNumPets(character);
+		if ( !petcnt )
+			petcnt := 0;
+		endif
+
+
+		var petmax := GetMaxPEts(character);
+		if ( !petmax )
+			petmax := 1;
+		endif
+
+		packet.SetInt8(42, 4);
+		// Done this way due to reverse padding expected by the client
+		// Due to some backward settings, this check is required to set the Statcap
+		// in the packet.
+		if ( STATCAP <= 255 )
+			// Set the STATCAP in the packet
+			packet.SetInt8(67, STATCAP);
+		else
+			// Set the STATCAP in the packet
+			packet.SetInt16(66, STATCAP);
+		endif
+		// Sets their current pet count in packet
+		packet.SetInt8(68, petcnt);
+		// Sets their current pet max count based on taming in packet
+		packet.SetInt8(69, petmax);
+
+		packet.SetInt16(62, CInt(character.resist_physical));
+		packet.SetInt16(70, CInt(character.resist_fire));
+		packet.SetInt16(72, CInt(character.resist_cold));
+		packet.SetInt16(74, CInt(character.resist_poison));
+		packet.SetInt16(76, 99);
+
+
+		var luck := 0;
+		if ( luck > 0 )
+			packet.SetInt16(78, luck);
+		else
+			packet.SetInt16(78, 0x10000 + luck);
+		endif
+
+
+		var tithing := 0;
+		if ( tithing > 0 )
+			packet.SetInt16(86, tithing);
+		else
+			packet.SetInt16(86, 0x10000 + tithing);
+		endif
+
+
+		var min_dmg := 0, max_dmg := 0;
+		//var descriptor := GetItemDescriptor((character.weapon).objtype);
+		//if ( descriptor )
+		//	min_dmg := CInt(descriptor.MinDamage);
+		//	max_dmg := CInt(descriptor.MaxDamage);
+		//endif
+
+		packet.SetInt8(81, min_dmg);
+		packet.SetInt8(83, max_dmg);
+	endif
+
+	return 0;
+endfunction
+
+*/

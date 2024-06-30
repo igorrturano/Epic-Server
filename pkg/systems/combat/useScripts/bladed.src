@@ -1,0 +1,423 @@
+//Reworked by Marcknight
+use uo;
+use os;
+use util;
+
+include ":gathering:lumberJack";
+include ":survival:fishingFunctions";
+include ":fls_core:fls_objtypes";
+include ":itemutils:objtype";
+include ":attributes:attributes";
+include "include/client";
+include "include/say";
+include ":tn:cooldown";
+include ":charactercreation:habilidades";
+
+program use_Bladed(who, tool)
+	if (who.weapon != tool)
+		SendSysMessage(who, "Voce deve estar com a arma em maos.");
+		return 0;
+	endif
+
+	SendSysMessage(who, "O que voce deseja cortar com esta lamina?");
+	var targ := TargetCoordinates(who);
+
+	if ( !targ )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if ( LJ_IsTree(targ.objtype) ) //Alvo é arvore
+		CarveObject(who, tool, targ.objtype,targ);
+	elseif ( targ.item )
+		CarveItems(who, tool, targ.item);
+	elseif ( targ.mobile )
+		CarveMobiles(who, tool, targ.mobile);
+	else
+		CarveObject(who, tool, targ.objtype,targ);
+	endif
+
+endprogram
+
+function CarveItems(who, tool, item)
+	var quebravel := GetObjProperty(item, "quebravel");
+	if ( item.IsA(POLCLASS_CORPSE) ) //Escalpela e esquarteja corpo
+		return start_script(":survival:skinning", {who, item, tool});
+
+	elseif (quebravel == "survival")
+				var mex := who.x;
+				var mey := who.y;
+				var hp;
+				var itens:=array;
+				var i := 3 ;
+
+				hp := GetObjProperty(item, "durabilidade");
+				var gatherer:= AP_GetSkill(who, SURVIVAL);
+				
+				PrintTextAbove(who, "*Rasgando Intensamente*");
+
+				while((i <= 9) && (who.x == mex) && (who.y == mey))
+
+					if((who.x != mex) && (who.y != mey))
+						break;
+					endif
+
+					PerformAction(who, 0x0b);
+					PlaySoundEffect(who, 0x126);
+
+					sleep(1);
+
+					if((who.x != mex) || (who.y != mey))
+						SendSysMessageEx(who,"Voce deve ficar parado enquanto trabalha", SSM_FAIL);
+						return;
+					endif
+					i := i + 1;
+				endwhile
+
+				if (hp <= 0)
+					var itens := GetObjProperty(item,"itens");
+					foreach itemarray in itens
+						var itemcriado:=CreateItemAtLocation(item.x, item.y, item.z,itemarray , itemarray.amount, realm := _DEFAULT_REALM);
+						SetName(itemcriado, itemarray.name);
+					endforeach
+					DestroyItem(item);
+				endif
+
+				hp := hp - gatherer;
+
+				SetObjProperty(item, "durabilidade", hp);
+
+	elseif ((quebravel == "gathering") || (quebravel == "domesticwork"))
+			SendSysMessageEx(who, "Voce deve usar outra ferramenta para este servico", SSM_FAIL);
+			return;
+	else
+		case (item.objtype)
+			0x97E:
+				return CortaComida(who,item,0x97C,8,"Voce cortou cada queijo em oito partes.");
+				break;
+			0x97D:
+				return CortaComida(who,item,0x97C,5,"Voce cortou cada queijo em cinco partes.");
+				break;
+			0x09e9:
+			0x469F:
+			0xee4f:
+			0x3D4B:
+				return CortaComida(who,item,0xC96C,8,"Voce cortou cada bolo em oito partes.");
+				break;
+			0x9C9:
+				return CortaComida(who,item,0x976,2,"Voce cortou cada presunto em duas partes.");
+				break;
+			0x977:
+				return CortaComida(who,item,0x979,8,"Voce cortou cada bacon em oito fatias.");
+				break;
+			0x1728:
+				return CortaComida(who,item,0x1729,1,"Voce cortou cada limao ao meio.");
+				break;
+			0x172a:
+				return CortaComida(who,item,0x172b,1,"Voce cortou cada lima ao meio.");
+				break;
+			0x1078:
+			0x1079:
+				return FazPergaminhoEmBranco(who, item);
+				break;
+			0xec24:
+			0xec25:
+			0xec26:
+			0xFF04:
+			0xec27:
+			0xec28:
+				if ((!CheckLineOfSight(who, item)) || (Distance(who, item) > 1))
+					SendSysMessage(who, "O alvo esta distante.");
+					return 0;
+				else
+					return start_script(":tn:destroyitems", {who, item, tool}); //Script para quebrar itens quebraveis.
+				endif
+				break;
+			default:
+				if(((item.objtype >= UOBJ_FISH_START) && (item.objtype <= UOBJ_FISH_END)) || ((item.objtype >= UOBJ_SFISH_START) && (item.objtype <= UOBJ_SFISH_END))|| item.objtype==0x9987) //item cortado é peixe ou peixe pequeno
+					return CortaPeixe(who, tool, item);
+				else
+					SendSysMessage(who, "Alvo invalido.");
+				endif
+				break;
+		endcase
+	endif
+
+endfunction
+
+function CortaComida(who,item,id_item_resultante,numero_pedacos,mesagem_sucesso);
+	if((Accessible(who, item, 2)) && CheckLineOfSight(who, item))
+		if ((!ReserveItem(item)) || (item.movable == 0))
+			SendSysMessage(who, "Voce nao pode cortar este item.");
+			return 0;
+		else
+			var item_resultante := CreateItemInBackpack(who, id_item_resultante, (numero_pedacos*item.amount));
+			var item_capmod := GetObjProperty(item, "capmod");
+			if(item_capmod)
+				SetObjProperty(item_resultante, "capmod", item_capmod);
+			endif
+			DestroyItem(item);
+			Set_Critical(0);
+			SendSysMessage(who, mesagem_sucesso);
+			return 1;
+		endif
+	else
+		SendSysMessage(who, "A comida esta fora do seu alcance.");
+		return 0;
+	endif
+	if (!ReserveItem (item))
+		SendSysMessage (who, "Voce nao pode usar este item!");
+		return;
+	endif
+
+endfunction
+
+function CortaPeixe(who, blade, peixe)
+
+//  Tirar do comentário caso deseje requisito minimo de skill
+//	var RequiredSkill := 10;
+//	var SurvivalSkill := AP_GetSkill (who, SURVIVAL);
+//	if (SurvivalSkill < RequiredSkill)
+//		SendSysMessage(who, "Voce nao sabe como limpar o peixe.");
+//		return 0;
+//	endif
+
+	var peso;
+	var num_steaks;
+
+	//var myskill := AP_GetSkill (who, SURVIVAL);
+
+	if((Accessible(who, peixe, 2)) && CheckLineOfSight(who, peixe))
+		if ((!ReserveItem(peixe)) || (peixe.movable == 0))
+			SendSysMessage(who, "Voce nao pode cortar este peixe.");
+			return 0;
+		else
+			if (peixe.amount > 1)
+				case (peixe.objtype) //se estiver empilhado usa como peso base para os calcula algum valor entre o minimo e o medio
+					0xdd6:
+						peso := (2 + RandomInt(2));
+					0x9987:
+						peso := (2 + RandomInt(2));
+					0xdd8:
+						peso := (60 + RandomInt(15));
+					0x9cf:
+						peso := (40 + RandomInt(10));
+					0x9ce:
+						peso := (25 + RandomInt(10));
+					0xdd7:
+						peso := (6 + RandomInt(1));
+					0x9cd:
+						peso := (30 + RandomInt(10));
+					0xdd9:
+						peso := (15 + RandomInt(5));
+					0x9cc:
+						peso := (30 + RandomInt(10));
+					default:
+						ReleaseItem(peixe);
+						SendSysMessage(who, "Se isso for um peixe eu nunca vi.");
+						return 0;
+				endcase
+				SendSysMessage(who, "Para melhor aproveitamento dos peixes, corte-os um por vez.");
+			else
+				peso := max(3,CInt(splitwords(peixe.name)[4]));
+			endif
+			num_steaks := Cint(peixe.amount*peso/3);
+
+			PlaySoundEffect(who, 0x0057);
+			sleep(1);
+			var tipoDePeixe := GetObjtypeByName("Filede"+peixe.name);
+			if (tipoDePeixe)
+				CreateItemInBackpack(who, tipoDePeixe, num_steaks);
+			else
+				var peixeCru := CreateItemInBackpack(who, 0x097a, num_steaks);
+				Setname(peixeCru, "Files de "+peixe.name);
+			endif
+			case (peixe.objtype) //se estiver empilhado usa como peso base para os calcula algum valor entre o minimo e o medio
+				0x9987: // Lambari
+					for i := 1 to peixe.amount
+						CreateItemInBackpack(who, 0x9982, 1); // Isca Dourado (No stackeable)
+					endfor
+				0x9cf: // Dourado
+					CreateItemInBackpack(who, 0x9985, peixe.amount); // Isca Perca (Yes Stackeable)
+				0x9cd: // Perca
+					for i := 1 to peixe.amount
+						CreateItemInBackpack(who, 0x9981, 1); // Isca Atum (No Stackeable)
+					endfor
+				0xdd7: // Sardinha
+					for i := 1 to peixe.amount
+						CreateItemInBackpack(who, 0x9983, 1); // Isca Anchova (No Stackeable)
+					endfor
+				0x9cc: // Robalo
+					for i := 1 to peixe.amount
+						CreateItemInBackpack(who, 0x9981, 1); // Isca Atum (No Stackeable)
+					endfor
+				default:
+					break;
+			endcase
+			DestroyItem(peixe);
+			SendSysMessage(who, "Terminou de limpar os peixes.");
+		endif
+	else
+		SendSysMessage(who, "O peixe esta fora do seu alcance.");
+		return 0;
+	endif
+endfunction
+
+
+function FazPergaminhoEmBranco(who, item)
+	if (!ReserveItem(item))
+		SendSysMessage(who, "Voce nao pode usar este couro");
+		return 0;
+	else
+		var RequiredSkill := 10;
+		var SurvivalSkill := AP_GetSkill (who, SURVIVAL);
+		//sendsysmessage(who, "gmdebug: skinning " + myskill);
+
+		if (SurvivalSkill < RequiredSkill)
+			SendSysMessage(who, "Voce nao sabe como fazer este item.");
+			return 0;
+		endif
+
+		var xInicial := who.x;
+		var yInicial := who.y;
+		PrintText(who, "*cortando couro*");
+
+		while(item)
+			if (who.x != xInicial || who.y != yInicial)
+				SendSysMessageEx(who, "Voce se moveu do local e parou de fazer os pergaminhos!", SSM_FAIL);
+				return 0;
+			else
+				if (!SubtractAmount(item, 1))
+					SendSysMessageEx(who, "Nao consegue utilizar o couro.", SSM_FAIL);
+					//return 0;
+				else
+					for i := 1 to 3
+						PlaySoundEffect(who, 0x5A);
+						PerformAction(who, ANIM_SALUTE);
+						sleep(1);
+					endfor
+					if (SkillCheck(who, SURVIVAL, RequiredSkill));
+						if (!CreateItemInContainer(who.backpack, UOBJ_BLANK_SCROLL, 1))
+							PrintTextAbovePrivate (who, "*Sua mochila esta cheia!*", who);
+							return 0;
+						else
+							SendSysMessage(who, "Voce fez um pergaminho em branco.");
+						endif
+					else
+						SendSysMessageEx(who, "Voce arruinou os materiais.", SSM_FAIL);
+					endif
+				endif
+				if (!item)
+					SendSysMessageEx(who, "Voce nao tem mais couros nessa pilha.", SSM_FAIL);
+					//return 0;
+				endif
+			endif
+		endwhile;
+		SendSysMessage(who, "Voce parou de fazer os pergaminhos.");
+	endif
+endfunction
+
+function CarveMobiles(who, tool, mobile)
+	if(mobile.graphic == 223)
+		SendSysMessage(who,"Esta ovelha nao tem pelo suficiente ainda.");
+		return 0;
+	elseif (mobile.graphic == 207) //Tirar lã de ovelha
+		if((!CheckLineOfSight(who, mobile)) || (distance(who, mobile) > 2))
+			SendSysMessage(who, "Ovelha fora do alcance.");
+			return 0;
+		else
+			mobile.graphic := 223;
+			var qtd := 2;
+			if(TemHabilidade(who, "Sem Desperdicio"))
+				qtd := qtd + CInt(AP_GetSkill(who, SURVIVAL)/20);
+			endif
+			CreateItemInContainer(who.backpack, 0xf125, qtd);
+			SetCooldown(mobile, "wool", 900);
+			return 1;
+		endif
+	elseif (GetObjProperty(mobile, "corda")) //Desamarra alguem
+		PrintTextAbove(who, "*"+mobile.name+" foi solto da corda*");
+		EraseObjProperty(mobile, "corda");
+		mobile.frozen := 0;
+		return 1;
+	endif
+endfunction
+
+
+function CarveObject(who, tool, objtype, targ)
+	if ( LJ_IsTree(objtype) ) //Alvo é arvore
+		if(CoordinateDistance(who.x, who.y, targ.x, targ.y)>2)
+			SendSysMessage(who, "O alvo esta distante demais.");
+			return 0;
+		else
+			var kindling;
+			case (objtype)
+				0xcd8:
+					kindling := CreateItemInBackpack(who, 0xee25, 1);
+					kindling.color := 2109; //pinheiro
+				0xcd6:
+					kindling := CreateItemInBackpack(who, 0xee25, 1);
+					kindling.color := 2109; //pinheiro
+				0xcda:
+					kindling := CreateItemInBackpack(who, 0xee26, 1);
+					//kindling.color := 1853; //carvalho
+				0xcdd:
+					kindling := CreateItemInBackpack(who, 0xee26, 1);
+					//kindling.color := 1853; //carvalho
+				0xce0:
+					kindling := CreateItemInBackpack(who, 0xee27, 1);
+					//kindling.color := 2117; //nogueira
+				0xce3:
+					kindling := CreateItemInBackpack(who, 0xee27, 1);
+					//kindling.color := 2117; //nogueira
+				0xcf8:
+					kindling := CreateItemInBackpack(who, 0xee28, 1);
+					//kindling.color := 2129; //cypress
+				0xcfb:
+					kindling := CreateItemInBackpack(who, 0xee28, 1);
+					//kindling.color := 2129; //cypress
+				0xcfe:
+					kindling := CreateItemInBackpack(who, 0xee28, 1);
+					//kindling.color := 2129; //cypress
+				0xd01:
+					kindling := CreateItemInBackpack(who, 0xee28, 1);
+					//kindling.color := 2129; //cypress
+				0x247d:
+					kindling := CreateItemInBackpack(who, 0xc01a, 1);
+					//kindling.color := 2512; //polar
+				0x12b9:
+					kindling := CreateItemInBackpack(who, 0xc020, 1);
+					//kindling.color := 2355; //teixo
+				0xa5ce:
+					kindling := CreateItemInBackpack(who, 0xc023, 1);
+					//kindling.color := 2354; //imbuia
+				0x309c:
+					kindling := CreateItemInBackpack(who, 0xc026, 1);
+					//kindling.color := 2353; //mogno
+				0x222e:
+					kindling := CreateItemInBackpack(who, 0xc02c, 1);
+					//kindling.color := 2352; //cogumelo
+				0x222f:
+					kindling := CreateItemInBackpack(who, 0xc02c, 1);
+					//kindling.color := 2352; //cogumelo
+				0x2231:
+					kindling := CreateItemInBackpack(who, 0xc02c, 1);
+					//kindling.color := 2352; //cogumelo
+				0x2230:
+					kindling := CreateItemInBackpack(who, 0xc02c, 1);
+					//kindling.color := 2352; //cogumelo
+				0x30bd:
+					kindling := CreateItemInBackpack(who, 0xc02f, 1);
+					//kindling.color := 0455; //ebano
+
+
+				default:
+					CreateItemInBackpack(who, UOBJ_KINDLING, 1);
+			endcase
+			SendSysMessage(who, "Voce colocou alguns gravetos na sua mochila.");
+			return 1;
+		endif
+	else
+		return 0;
+	endif
+endfunction

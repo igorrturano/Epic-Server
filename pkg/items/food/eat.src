@@ -1,0 +1,157 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":timedScripts:poisonUtil";
+include ":tn:cooldown";
+include "include/say";
+include ":food:include/hunger";
+
+program eat_food(who, food)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if(!Accessible(who, food))
+		return;
+	endif
+	if(food.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return;
+	endif
+
+        var hungerlvl := AP_GetVital(who, "Hunger");
+	if(hungerlvl <= 10)
+		SendSysMessageEx(who, "Voce esta muito cheio para comer mais.", SSM_FAIL);
+		return;
+	endif
+
+	var foodcfg := ReadConfigFile(":*:itemdesc");
+	var themsg;
+	var foodvalue := Cint(foodcfg[food.objtype].foodvalue);
+
+	var elem := foodcfg[food.objtype];
+	foreach line in getconfigstringarray(elem, "leftovers")
+		line := splitwords(line);
+		var item := line[1];
+		var amount := cint(line[2]);
+		if (!createiteminbackpack(who, item, amount))
+			for (amount; amount > 0; amount := amount-1) // For non-stackable items
+				createiteminbackpack(who, item, 1);
+			endfor
+		endif
+	endforeach
+
+	if ( CINT(getObjProperty(food, "blessedfood")) == 1 ) 
+		foodvalue := 5;
+	endif
+	
+	if (getObjProperty(food, "capmod"))
+		var capmod := getObjProperty(food, "capmod");
+			case(capmod)
+			1:
+			TS_StartTimer(who, "capmod", 600, 1, 0, 1);
+			2:
+			TS_StartTimer(who, "capmod", 720, 2, 0, 1);
+			3:
+			TS_StartTimer(who, "capmod", 840, 3, 0, 1);
+			4:
+			TS_StartTimer(who, "capmod", 960, 4, 0, 1);
+			5:
+			TS_StartTimer(who, "capmod", 1080, 5, 0, 1);
+			6:
+			TS_StartTimer(who, "capmod", 1200, 6, 0, 1);
+            7:
+			TS_StartTimer(who, "capmod", 1200, 7, 0, 1);
+            8:
+			TS_StartTimer(who, "capmod", 1200, 8, 0, 1);
+            9:
+			TS_StartTimer(who, "capmod", 1200, 9, 0, 1);
+			endcase
+		RecalcVitals(who);	
+	endif
+
+	var surprisemsg := "";
+	var surpriseabove := "";
+	if (food.objtype == 0xc92e) //silverleaf pie
+		surprisemsg := "Voce se sente corajoso!";
+	elseif (food.objtype == 0x0c6d)//cebola
+		if (GetCooldown(who, "cebola") > 0)
+			surpriseabove := "*mau halito*";
+		else
+			SetCooldown(who, "cebola", 5);
+		endif
+	endif
+	
+	var poisonInfo := GetObjProperty(food, "poisonInfo");
+	var foodcharge := GetObjProperty(food, "foodcharge");
+	var subtract;
+	if (foodcharge)
+		if (foodcharge > 0)
+			subtract := "yes";
+			SetObjProperty(food, "foodcharge", foodcharge-1);
+		else
+			subtract := SubtractAmount(food, 1);
+		endif
+	else
+		subtract := SubtractAmount(food, 1);
+	endif
+	
+	if(subtract)
+		printtext(who, "*morde um pedaço de comida*");
+		if (surprisemsg != "")
+			SendSysMessageEx(who, ""+ surprisemsg, SSM_INFO);
+		endif
+
+		if (surpriseabove)
+			printtext(who, ""+surpriseabove);
+		endif
+
+		hungerlvl := hungerlvl - foodvalue*60;
+		case(RandomInt(3) + 1)
+			1: PlaySoundEffect(who, 0x3b);
+			2: PlaySoundEffect(who, 0x3c);
+			3: PlaySoundEffect(who, 0x3d);
+		endcase
+		PerformAction(who, 0x22);
+                
+		hungerlvl  := cint(hungerlvl /60);
+		if (hungerlvl <= 0)
+			hungerlvl := 0;
+		endif
+
+		AP_SetVital(who, "Hunger", hungerlvl*60);
+
+		var msg, msgcolor;
+		var fome := CInt(AP_GetVital(who, "Hunger") / 60);
+		msg := MSGFome(fome);
+		msgcolor := MSGFomeColor(fome);
+
+		/*case(hungerlvl)
+			0:  themsg := "Voce esta muito bem alimentado!";
+			1:  themsg := "Voce esta muito cheio!";
+			2:  themsg := "Voce esta cheio!";
+			3:  themsg := "Voce esta satisfeito!";
+			4:  themsg := "Voce ainda esta com fome!";
+			5:  themsg := "Voce ainda esta muito faminto!";
+		endcase*/
+
+		SendSysMessageEx(who, msg, msgcolor);
+
+		if(poisonInfo)
+			poisonInfo.dosage := poisonInfo.dosage - 1;
+			if (poisonInfo.dosage <= 0) //se nao tiver mais cargas de veneno, deleta
+				EraseObjProperty(food, "poisonInfo");
+				return 0;
+			else //se ainda tiver atualiza na arma
+				SetObjProperty(food, "poisonInfo", poisonInfo);
+			endif
+			
+			if (IsPoisonImune(who, poisonInfo.name) )
+				return 0;
+			endif
+			TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
+		endif
+	endif
+endprogram

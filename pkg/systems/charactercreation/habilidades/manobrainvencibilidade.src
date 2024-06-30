@@ -1,0 +1,40 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+
+program doubleattack(who)
+    if (GetObjProperty(who, "Postura") == "Ofensiva") // Golpe com escudo
+        SendSysMessageEx(who, "Voce se prepara para contra-atacar", SSM_INFO);
+	    SetCooldown(who, "contraataque", cint(AP_GetSkill(who, PARRY)/3));
+    elseif(GetObjProperty(who, "Postura") == "Defensiva" ) // Desarmar
+        SendSysMessageEx(who, "Seu escudo eh impenetravel", SSM_INFO);
+        SendSysMessageEx(who, "Voce nao pode se movimentar para manter essa habilidade", SSM_INFO);
+
+        var x := who.x;
+        var y := who.y;
+
+        SetCooldown(who, "defesatotal", CInt(AP_GetSkill(who, TACTICS)) );
+        PrintText(who, "*defesa total*");
+        detach();
+        who.evasionchance_mod := who.evasionchance_mod + 25;
+        while(who.connected)
+            if( (who.x != x) && (who.y != y) )
+                SendSysMessageEx(who, "Voce nao esta mais no local inicial", SSM_FAIL);
+                break;
+            endif
+            if (GetCooldown(who, "defesatotal") <= 0 )
+                SendSysMessageEx(who, "Sua postura defensiva terminou.", SSM_INFO);
+                break;
+            endif		
+            sleep(1);
+        endwhile
+	    who.evasionchance_mod := who.evasionchance_mod - 25;
+    endif
+
+    return 1;
+endprogram

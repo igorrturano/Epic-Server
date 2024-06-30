@@ -1,0 +1,57 @@
+use uo;
+use os;
+use cfgfile;
+use attributes;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+
+program usaquadro(who, self)
+    
+    if(who.serial != GetObjProperty(self, "crafterserial"))
+        var title := self.name;
+        var url := GetObjProperty(self, "url");
+        
+        var gump := GFCreateGump();
+
+        GFPage(gump, 0);
+        GFResizePic(gump, 0, 2, 9250, 400, 400);
+        GFResizePic(gump, 92, 380, 9200, 215, 27);
+        GFHTMLArea(gump, 100, 386, 200, 16, "<center>"+title+"</>");
+        GFHTMLArea(gump, 25, 25, 350, 350,"<img src=\"" + url + "\" width=\"350\" height=\"350\" x=\"0\" y=\"0\">");
+        GFSendGump(who, gump);
+
+    else
+        var titulo := GFCreateGump();
+
+        GFPage(titulo, 0);
+        GFResizePic(titulo, 0, 1, 9200, 364, 239);
+        var txt1 := GFTextEntry(titulo, 6, 28, 343, 43, 0x00, self.name, 0);
+        var txt2 := GFTextEntry(titulo, 11, 111, 331, 66, 0x00, GetObjProperty(self,"url"), 0);
+        GFTextLine(titulo, 10, 5, 0x00, "Titulo");
+        GFTextLine(titulo, 12, 84, 0x00, "URL");
+        var okay := GFAddButton(titulo, 278, 202, 247, 248, GF_CLOSE_BTN, 0);
+        var input := GFSendGump(who, titulo);
+
+        if(input)
+			SetName(self,GFExtractData(input, txt1));
+            SetObjProperty(self,"url", GFExtractData(input, txt2));
+
+            var gump := GFCreateGump();
+
+            GFPage(gump, 0);
+            GFResizePic(gump, 0, 2, 9250, 400, 400);
+            GFResizePic(gump, 92, 380, 9200, 215, 27);
+            GFHTMLArea(gump, 100, 386, 200, 16, "<center>"+self.name+"</>");
+            GFHTMLArea(gump, 25, 25, 350, 350,"<img src=\"" + GetObjProperty(self,"url") + "\" width=\"350\" height=\"350\" x=\"0\" y=\"0\">");
+            GFSendGump(who, gump);
+        endif
+
+
+    endif
+
+
+
+endprogram

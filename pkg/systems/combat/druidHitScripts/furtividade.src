@@ -1,0 +1,37 @@
+/*
+ * $Id$
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include ":timedScripts:timedScripts";
+
+program SpellScript(who)
+
+    if (TS_GetCooldown(who, "habilidade um") && who.hidden == 0)
+		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
+	endif
+
+	Start_Script(":sneak:sneak", who);
+
+	// var who := params[1];
+	// params := 0; // No longer needed
+
+	// PlaySoundEffect(who, SFX_SPELL_INVISIBILITY);
+
+	// who.hidden := 1;
+	// who.stealthsteps := CINT(AP_GetSkill(who, MAGERY)/10);
+
+	// SendSysMessage(who, "Voce se camufla no ambiente.");
+
+	// return 1;
+
+endprogram

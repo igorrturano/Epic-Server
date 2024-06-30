@@ -1,0 +1,9 @@
+
+use os;
+
+program reagentspan()
+
+print("Starting Skill Eraser");
+start_script( "skilleraser" );
+
+endprogram

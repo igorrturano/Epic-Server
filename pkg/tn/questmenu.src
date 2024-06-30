@@ -1,0 +1,88 @@
+use uo;
+
+include ":tn:quests";
+include ":gumps:gumpPrompt";
+include ":tn:tngumps";
+
+//script utilizando pelo npc quester
+program SendQuestMenu(params)
+
+	var player := params[1];
+	var quests := params[3];
+	var me := params[2];
+	//quests := quests[1];
+
+	quests := RadioGump(player, 200, 300, "Aventuras que conheco", quests);
+
+	var elem := GetQuestElem(quests);
+	var questinfo := elem.getprop("questinfo");
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 15, 50, 2620, 310, 380);
+
+	GFResizePic(gump, 15, 20, GFCfgConst("Defaults", "ForeGround"), 310, 30);
+	GFResizePic(gump, 15, 430, GFCfgConst("Defaults", "ForeGround"), 310, 30);
+
+	GFAddButton(gump, 285, 440, 4011, 4030, GF_CLOSE_BTN, 20);
+	GFTextLine(gump, 170, 440, 2100, "Aceitar Quest");
+	GFTextLine(gump, 35, 20, 2100, ""+questinfo.nome);
+
+	//GFHTMLArea( gump, 35, 70,  280, 340, questinfo.description, 0, 1);
+	var i;
+	var y_pos := 70;
+	for ( i:=1; i<= 10; i:=i+1 )
+
+		GFTextLine(gump, 35, y_pos, 2100, cstr(questinfo.description[i]) );
+		y_pos := y_pos+19;
+	endfor
+
+	var input := GFSendGump(player, gump);
+
+	if (input[0] == 20)
+		//vai pegar a quest:
+		// testa se nao ja fez antes
+		// avisa e inicia o timer no npc
+		// armazena a prop do cara q pegou a quest
+		var finalizadas := GetObjProperty(player, "quests");
+		if (finalizadas == error)
+			finalizadas := array;
+		endif
+		foreach q in finalizadas
+			if (q.name == questinfo.nome)
+				SendSysMessageEx(player, "Voce nao pode mais fazer essa missao.", SSM_FAIL);
+				return;
+			endif
+		endforeach
+		var qinfo := struct;
+		qinfo.+name := questinfo.nome;
+		qinfo.+start := POLCore().systime;
+		qinfo.+status := "running";
+		finalizadas.append(qinfo);
+		SetObjProperty(player, "quests", finalizadas);
+		GumpPrompt(player,"Voce tem " +  questinfo.time + " para terminar a missao " + questinfo.nome);
+		TS_StartCooldown(me, "quest"+questinfo.name, questinfo.time, player);
+		SetupQuest(questinfo.name);
+/*	elseif (input[0] == 666 ) // TEM QUE FAZER
+		var finished := YesNo(player, "Voce concluiu a quest?", "Sim", "Nao");
+		if (finished)
+			var testRequisites := CheckQuestRequisites(questinfo, player);
+			if (testRequisites)
+				var agradecimento := questinfo.agradecimento;
+				if (agradecimento)
+					PrintTextAbove(me, "" + agradecimento);
+				endif
+				//CreateRecompense(questinfo, player);
+				//SendSysMEssage(player, " " + questinfo.recompensas);
+				Printtextabove(me, "Obrigado. Voce concluiu a tarefa. ");
+				foreach premio in (questinfo.recompensas)
+					//printtextabove(me, " " + premio);
+					ExecuteEvent(premio);
+				endforeach
+				EraseObjProperty(me, "runningquest");
+			else
+				PrintTextAbove(me, "Voce nao conseguiu concluir a quest");
+			endif
+		endif*/
+	endif
+
+endprogram

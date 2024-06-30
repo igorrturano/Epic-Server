@@ -1,0 +1,10 @@
+use uo;
+
+program droplets(user, item)
+
+	PlaySoundEffect( user, 0x23 );
+	user.setlightlevel(0, 500);
+	SubtractAmount(item, 1);
+	SendSysMessage(user, "You can now see better!");
+	
+endprogram

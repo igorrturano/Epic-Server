@@ -1,0 +1,19 @@
+ 
+use uo;
+
+include "include/say";
+include ":tn:cooldown";
+
+program ataque(who)
+
+	SendSysMessageEx(who, "Quem voce quer distrair?", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.");
+		return;
+	endif
+
+	PrintText(targ, "*baixou a guarda*");
+	SetCooldown(targ, "parrydelay", 60);
+
+endprogram

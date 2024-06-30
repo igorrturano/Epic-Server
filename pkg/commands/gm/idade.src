@@ -1,0 +1,10 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:include/advanceCheck";
+
+program GetAge(who)
+	var what := Target(who);
+	SendSysMessage(who, "Personagem tem " + idadeChar(what) + " dias.");
+endprogram

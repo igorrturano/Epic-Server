@@ -1,0 +1,74 @@
+use uo;
+use os;
+use util;
+
+include ":charactercreation:habilidades";
+include ":gumps:yesNo";
+include "include/say";
+include ":tn:tngumps";
+
+//const ANIM_ATTACK_1HAND_DOWN := 0x000b;
+const SOUND_EFFECT_JOGAR := 0x36;
+
+program diceroll(who,item)
+
+	EraseObjProperty(who, "IsMeditating");
+
+	if (TemHabilidade(who, "Prestidigitador"))
+		var usarhab := YesNo(who, "Deseja usar sua habilidade de roubar no resultado?" , "Sim.", "Nao.");
+        var segundoresultado:=(RandomInt(6)+1);
+		if (usarhab)
+			var valor:= RadioGump(who, 200, 260, "Escolha o valor", {"1","2","3","4","5","6"});
+			PrintText(who, "*Primeiro Dado: " + valor +"*");
+            PrintText(who, "*Segundo Dado: " + segundoresultado +"*");
+		else
+			coin(who); // Random normal
+		endif
+	else
+		coin(who); // Random normal
+	endif
+
+	PerformAction(who, ANIM_ATTACK_1HAND_DOWN );
+	PlaySoundEffect(who, SOUND_EFFECT_JOGAR);
+
+	return 1;
+
+endprogram
+
+function coin(who)
+    var dado1:= (RandomInt(6)+1);
+    var dado2:= (RandomInt(6)+1);
+    var dado3:= (RandomInt(6)+1);
+    var dado4:= (RandomInt(6)+1);
+    var dado5:= (RandomInt(6)+1);
+    var dado6:= (RandomInt(6)+1);
+
+
+    var valor:= RadioGump(who, 200, 260, "Vai rolar quantos dados?", {"1","2","3","4","5","6"});
+    PrintText(who, "*Rola " + valor + " Dados*");
+        if (valor == "1")
+	        PrintText(who, "Resultado: " + dado1 +"");
+            PlaySoundEffect(who, 0x2E4);
+            return;
+        elseif (valor == "2")
+            PrintText(who, "Resultado: " + dado1 +", " + dado2 +"");
+            PlaySoundEffect(who, 0x2E4);
+            return;
+        elseif (valor == "3")
+            PrintText(who, "Resultado: " + dado1 +", " + dado2 +", " + dado3 +"");
+            PlaySoundEffect(who, 0x2E4);
+            return;
+        elseif (valor == "4")
+            PrintText(who, "Resultado: " + dado1 +", " + dado2 +", " + dado3 +", " + dado4 +"");
+            PlaySoundEffect(who, 0x2E4);
+            return;
+        elseif (valor == "5")
+            PrintText(who, "Resultado: " + dado1 +", " + dado2 +", " + dado3 +", " + dado4 +", " + dado5 +"");
+            PlaySoundEffect(who, 0x2E4);
+            return;
+        elseif (valor == "6")
+            PrintText(who, "Resultado: " + dado1 +", " + dado2 +", " + dado3 +", " + dado4 +", " + dado5 +", " + dado6 +"");
+            PlaySoundEffect(who, 0x2E4);
+            return;
+        endif
+endfunction

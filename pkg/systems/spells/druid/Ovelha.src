@@ -1,0 +1,25 @@
+use uo;
+include "include/client";
+include ":spells:tnmagery";
+include "include/say";
+
+program SpellScript(params)
+  var who := params[1];
+  var info := params[2];
+  SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+  var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+  if (!targ)
+    return;
+  endif
+  if (!targ.isa(POLCLASS_MOBILE))
+    SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+    return;
+  endif
+  var hair := GetEquipmentByLayer( targ, LAYER_HAIR );
+  var color := hair.color;
+  DestroyItem(hair);
+  var newhair:= CreateItemAtLocation(targ.x, targ.y, targ.z, 8252, 1, targ.realm);
+  newhair.color := color;
+  EquipItem( targ, newhair );  
+
+endprogram

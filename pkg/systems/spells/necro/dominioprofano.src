@@ -1,0 +1,141 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":attributes:vitals";
+include ":tn:npcutil";
+include ":brainAI:npcUtil";
+include ":ghaia:ghaia";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o morto que deseja dominar", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+	var skill := AP_GetSkill(who, "Magery");
+
+	var npctemplate := targ.npctemplate;
+	var category := lower(getnpccategory( ParseTemplateName(npctemplate).template ));
+
+	if ( category != "undead" )	
+		SendSysMessageEx(who, "Voce so pode usar essa magia em mortos-vivo", SSM_FAIL);
+		return 0;
+	endif
+
+
+	if ( !targ.isa(POLCLASS_MOBILE) )
+		SendSysMessageEx(who, "Voce nao pode alvejar isso com essa magia", SSM_FAIL);
+		return 0;
+	endif
+
+
+	var oldbody := createnpcfromtemplate(":brainai:Examplenpc", who.x, who.y, who.z, 0 , who.realm);
+	oldbody.name := who.name;
+	who.name := targ.name;
+	SetObjProperty(who, "oldbodyserial", oldbody.serial);
+	SetObjProperty(who, "dpnpctemplate", targ.npctemplate);
+	SetObjProperty(oldbody, "oldbodydominio", who.serial);
+	clone(oldbody, who);
+	clone(who, targ);
+  	MoveObjectToLocation (targ, 5950, 3486, 0, targ.realm);
+	SetObjProperty(targ, "GuardKill", 1);
+	ApplyDamage(targ, 9999);
+	TS_StartTimer(who, "dominioprofano", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 3);
+
+	
+	return 1;
+endprogram 
+
+function clone (character, npc)
+  if (!npc.backpack)
+    var newbackpack := CreateItemAtLocation (character.x, character.y, character.z-10, 0x9B2, character.realm);
+    EquipItem (npc, newbackpack);
+  endif
+
+  if (!character.backpack)
+    var newbackpack := CreateItemAtLocation (character.x, character.y, character.z-10, 0x9B2, character.realm);
+    EquipItem (character, newbackpack);
+  endif
+
+  character.graphic := npc.graphic;
+  character.color := npc.color;
+  character.truecolor := npc.truecolor;
+  character.facing := npc.facing;
+  character.hidden := npc.hidden;
+  
+  SetAttributeBaseValue (character, "Strength", GetAttributeBaseValue (npc, "Strength"));
+  SetAttributeBaseValue (character, "Intelligence", GetAttributeBaseValue (npc, "Intelligence"));
+  SetAttributeBaseValue (character, "Dexterity", GetAttributeBaseValue (npc, "Dexterity"));
+  RecalcVitals (character);
+  SetObjProperty(character, "hitsmod", AP_GetVitalMaximumValue(npc, "Life") - AP_GetVitalMaximumValue(character, "Life"));
+  RecalcVitals (character);
+  
+  SetVital (character, "Life", GetVital (npc, "Life"));
+  SetVital (character, "Mana", GetVital (npc, "Mana"));
+  SetVital (character, "Stamina", GetVital (npc, "Stamina"));
+
+
+ foreach attribute_name in ( AP_ListAttributesByType("Skill") )
+    var skillnpc:= AP_GetTrueSkill(npc, attribute_name);
+    var skillplay:= AP_GetTrueSkill(character, attribute_name);
+
+    AP_SetTrueSkill(npc,attribute_name,skillplay);
+    AP_SetTrueSkill(character,attribute_name, skillnpc);
+
+  endforeach
+
+  var dpsplay:= AP_GetVital(character,"DP");
+  AP_SetVital(npc, "DP", dpsplay);
+  AP_SetVital(character, "DP", 0);
+
+
+
+	var backpacktransf := CreateItemAtLocation (character.x, character.y, character.z-10, 0x9B2, character.realm);
+
+	var itemsinbag := EnumerateItemsInContainer( character.backpack );
+	foreach iteminbag in itemsinbag
+     		var copyitem := CreateItemCopyAtLocation(character.x, character.y, character.z - 10, iteminbag);
+		MoveItemToContainer( copyitem, backpacktransf );
+		destroyitem ( iteminbag );
+	endforeach 
+
+	itemsinbag := EnumerateItemsInContainer( npc.backpack );
+	foreach iteminbag in itemsinbag
+     		var copyitem := CreateItemCopyAtLocation(character.x, character.y, character.z - 10, iteminbag);
+		MoveItemToContainer( copyitem, character.backpack );
+		destroyitem ( iteminbag );
+	endforeach 
+
+	itemsinbag := EnumerateItemsInContainer( backpacktransf );
+	foreach iteminbag in itemsinbag
+     		var copyitem := CreateItemCopyAtLocation(character.x, character.y, character.z - 10, iteminbag);
+		MoveItemToContainer( copyitem, npc.backpack);
+		destroyitem ( iteminbag );
+	endforeach 
+
+	Destroyitem (backpacktransf);
+
+
+	var equipeditems := ListEquippedItems( npc );
+	foreach itemequiped in equipeditems
+		if (itemequiped != npc.backpack)
+     		var copyitem := CreateItemCopyAtLocation(character.x, character.y, character.z - 10, itemequiped);
+		EquipItem( character , copyitem );
+		destroyitem ( itemequiped );
+		endif
+	endforeach 
+
+  MoveObjectToLocation (character, npc.x, npc.y, npc.z, character.realm);
+
+endfunction
+

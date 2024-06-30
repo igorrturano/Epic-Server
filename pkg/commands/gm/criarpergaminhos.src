@@ -1,0 +1,23 @@
+
+use uo;
+
+program faz_pergaminhos(who, quantos)
+
+var materiais:=array{0x6161,0x6157,0x6158,0x6159,0x6160,0x6162,0x6163,0x6164,0x6165,0x6166,0x6167};
+
+
+var bolsa:=CreateItemInBackpack( who , "backpack" , 1 );
+bolsa.color:=2502;
+bolsa.name:="Bolsa de Pergaminhos";
+
+
+if (!quantos)
+quantos:=1;
+sendsysmessage(who, "Voce pode usar o comando com numero");
+sendsysmessage(who, "Para definir quantos materiais quer criar");
+sendsysmessage(who, "Sem especificacao vou criar 1 pergaminho de cada para voce");
+endif
+foreach coisa in materiais
+CreateItemInContainer( bolsa, coisa, amount := quantos );
+endforeach
+endprogram

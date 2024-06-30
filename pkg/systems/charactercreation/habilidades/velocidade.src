@@ -1,0 +1,12 @@
+use uo;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+
+
+program backstab(who)
+
+	SendSysMessageEx(who, "Sua velocidade esta sobrehumana.", SSM_INFO);
+	TS_StartTimer(who, "velocidade", 30); //30 seg
+
+endprogram 

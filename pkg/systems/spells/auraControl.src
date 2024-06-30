@@ -1,0 +1,150 @@
+
+use uo;
+use os;
+
+include "include/sysEvent";
+include ":spells:tnmagery";
+include ":timedScripts:timedScripts";
+include ":charactercreation:habilidades";
+
+program aura(params)
+
+	var who := params[1];
+	
+	if(TemHabilidade(who, "Magia Divina"))
+		//SendSysMessage(who, "clerigo "+ who.name);
+
+		//var myhabs := dictionary;
+		//myhabs.insert(1,"Magia Divina");
+		//var habs := SetObjProperty(who, "myhabs", myhabs);
+
+		var nearbyMobiles;
+		while(who.connected)
+			SendSysMessage(who, "refresh auras");
+			nearbyMobiles := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 6, LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN);
+			foreach mobile in ( nearbyMobiles )
+				
+				//protecao fisica
+				if ((GetObjProperty(who, "auraProtecao")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+						TS_StartTimer(mobile, "auraphmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "->hidden: "+mobile.concealed);
+					endif
+				endif;
+
+				//protecao fogo
+				if ((GetObjProperty(who, "auraProtecaoFogo")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+						TS_StartTimer(mobile, "aurafimod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoFogo");
+					endif
+				endif;
+
+				//protecao frio
+				if ((GetObjProperty(who, "auraProtecaoFrio")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+						TS_StartTimer(mobile, "auracomod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoFrio");
+					endif
+				endif;
+
+				//protecao energia
+				if ((GetObjProperty(who, "auraProtecaoEnergia")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+						TS_StartTimer(mobile, "auraenmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+				//hpRegen
+				if ((GetObjProperty(who, "auraHpRegen")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))*30);
+						TS_StartTimer(mobile, "aurahpregenmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+
+				//staminaRegen
+				if ((GetObjProperty(who, "auraStamRegen")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))*50);
+
+						TS_StartTimer(mobile, "aurastamregenmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+
+				//manaRegen
+				if ((GetObjProperty(who, "auraManaRegen")) && who.concealed == 0 && (!mobile.isa(POLCLASS_NPC) || mobile.master))
+					if (!GetObjProperty(who, "partyAura") || (GetObjProperty(who, "partyAura") && who.party.leader == mobile.party.leader))
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))*30);
+						TS_StartTimer(mobile, "auramanaregenmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+				//hpSap
+				if (GetObjProperty(who, "auraHpSap") && who.concealed == 0 && !mobile.isa(POLCLASS_NPC))
+					if (who.party.leader != mobile.party.leader)
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))*40);
+						TS_StartTimer(mobile, "aurahpsapmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+
+				//staminaSap
+				if (GetObjProperty(who, "auraStamSap") && who.concealed == 0 && !mobile.isa(POLCLASS_NPC))
+					if (who.party.leader != mobile.party.leader)
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))*50);
+
+						TS_StartTimer(mobile, "aurastamsapmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+
+				//manaSap
+				if (GetObjProperty(who, "auraManaSap") && who.concealed == 0 && !mobile.isa(POLCLASS_NPC))
+					if (who.party.leader != mobile.party.leader)
+						var level := (CInt(AP_GetSkill(who, MAGICLORE))*60);
+						TS_StartTimer(mobile, "auramanasapmod", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+				//ProtectionFromEvil
+				if (GetObjProperty(who, "auraProtectionFromEvil") && who.concealed == 0 && mobile.isa(POLCLASS_NPC))
+					if ((who.npctemplate == "Undead" || who.npctemplate == "Demons") && GetObjProperty(who, "auraProtectionFromEvilEffect") == error)
+						var level := (CInt(AP_GetSkill(who, MAGICLORE)));
+						TS_StartTimer(mobile, "auraProtectionFromEvil", 10, level, who, 0);
+
+						//SendSysMessage(who, "auraProtecaoEnergia");
+					endif
+				endif;
+
+
+			endforeach
+			sleep(5);
+		endwhile
+	endif
+
+
+endprogram

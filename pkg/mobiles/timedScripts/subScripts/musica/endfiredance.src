@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var item := params[1];
+	
+	var item2 := createitematlocation( item.x , item.y , item.z , 3555 , 1 , item.realm );
+	item2.movable := 1;
+	destroyitem( item );
+	
+	return 1;
+endprogram

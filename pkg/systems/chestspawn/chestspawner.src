@@ -1,0 +1,156 @@
+use uo;
+use os;
+
+include ":loot:lootParser";
+include ":traps:traps";
+include ":chestspawn:treasurechest";
+
+
+program spawntesthet(item)
+	var rng := GetObjProperty(item,"range");
+	var amt := GetObjProperty(item,"amount");
+	var frq := GetObjProperty(item,"duration");
+
+	sleep(20+RandomInt(20)+RandomInt(80));
+
+	//RESETA OS BAUS CRIADOS
+	foreach thing in ListItemsNearLocation(cint(item.x), cint(item.y), LIST_IGNORE_Z, CInt(rng)*2,  item.realm)
+		if(GetObjProperty(thing,"level"))
+			if (thing.serial != item.serial) // se nao for o spawnpoint (pq ele tbm tem a prop level)
+				DestroyItem(thing);
+			endif
+		endif
+		sleepms(10);
+	endforeach
+	EraseObjProperty(item, "chests");
+
+	if((!amt) || (!frq))
+		print("Chest Spawner " + item.serial + " at: " + item.x + ", " + item.y + " is improperly configured");
+		return;
+	endif
+
+	if(frq < 7200) //intervalo de atualização mínimo a cada 2h
+		frq := 7200;
+	endif
+
+    while (1)    
+        var hasPlayerNearMe := 0;
+        var nearby := ListMobilesNearLocationEx( item.x, item.y, LIST_IGNORE_Z, 30 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, item.realm);
+
+        foreach player in nearby
+            if (player.acctname)
+                hasPlayerNearMe++;
+            endif
+        endforeach
+        if (hasPlayerNearMe >= 1)
+            makeChests(item, frq, amt, rng);
+        endif
+        sleep(20);
+    endwhile
+endprogram
+
+function makeChests(item, frq, amt, rng)
+	var current, newamt;
+	var lvl := GetObjProperty(item, "level");
+	var lootname;
+	var class := cstr(GetObjProperty(item, "class"));
+	var race  := cstr(GetObjProperty(item, "race"));
+	lootname := race+class+"Chest"+lvl;
+	var chests;
+	while(item)
+		CleanArray(item);
+		var currentChests := GetObjProperty(item, "chests");
+		if (!currentChests)
+			currentChests := array;
+		endif
+		current := currentChests.size();
+		//current := len(chestarray);
+		newamt := CInt(amt - current);
+//		printtextabove(item, "current " + current + " amt " + amt + " new amt " + newamt);
+		if(newamt > 0)
+			/*while( 1 )
+				var playernear := hasplayernear(item.x, item.y, item.realm);
+
+				if (!playernear)
+					break;
+				else
+					sleep(60);
+				endif
+			endwhile */
+			chests := CreateTreasureChests(lvl, newamt, rng, item.x, item.y, item.z, item.realm, lootname);
+//			printtextabove(item, " criados " + chests.size());
+			foreach chest in chests
+				SetObjProperty(chest,"link", item.serial);
+				var e := currentChests.append( cint( chest.serial) );
+//				printtextabove(item, " criado " + chest.serial);
+			endforeach
+//			printtextabove(item, " novo current " + currentChests.size());
+			SetObjProperty(item, "chests", currentChests);
+		 endif
+
+		//RESETA OS BAUS CRIADOSe looteados
+		foreach thing in ListItemsNearLocation(cint(item.x), cint(item.y), LIST_IGNORE_Z, CInt(rng)*2,  item.realm)
+			if(thing.locked == 0)
+				if (thing.serial != item.serial) // se nao for o spawnpoint (pq ele tbm tem a prop level)
+					DestroyItem(thing);
+				endif
+			endif
+			sleepms(10);
+		endforeach
+
+		sleep(frq);
+	endwhile
+endfunction
+
+function ClearChests(spawn)
+
+	var chests := GetObjProperty(item, "chests");
+	foreach chestserial in chests
+			var item := SystemFindObjectBySerial(chestserial);
+			DestroyItem(item);
+	endforeach
+
+	EraseObjProperty(spawn, "chests");
+
+endfunction
+
+function cleanarray(item)
+
+	var chests := GetObjProperty(item, "chests");
+	if (!chests)
+		chests := array;
+	endif
+	var index := 1;
+	foreach chestserial in chests
+		var chest := SystemFindObjectBySerial(chestserial);
+		//printtextabove(item, "serial " + chestserial + " " + chest);
+		if (chest.locked == 0)
+			DestroyItem(chest);
+			chests.erase(index);
+//			printtextabove(item, "deletando chest aberta");
+		endif
+
+		if (!chest)
+			DestroyItem(chest);
+			chests.erase(index);
+//			printtextabove(item, "deletando chest nao encontrada");
+		endif
+		index := index + 1;
+		sleep(1);
+	endforeach
+	SetObjProperty(item, "chests", chests);
+
+//codigo velho
+/*  var newarray := {};
+
+  foreach chestserial in chestarray
+    var chest := SystemFindObjectBySerial(chest);
+    if((chest.locked == 0) || (!chest))
+      DestroyItem(chest);
+    elseif(chest)
+      newarray.append(chest.serial);
+    endif
+	 sleepms(10);
+  endforeach
+  chestarray := newarray;*/
+endfunction

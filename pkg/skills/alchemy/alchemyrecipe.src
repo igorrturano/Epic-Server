@@ -1,0 +1,40 @@
+use uo;
+use cfgfile;
+use util;
+
+program cria(item)
+
+	if (GetObjProperty(item, "spellinfo") != error)
+		return 1;
+	endif
+
+	var spellinfo := struct;
+	var cfg := readconfigfile(":alchemy:config/recipes");
+	var keys := getconfigintkeys(cfg);
+
+	var possiveis := array;
+	foreach elem in keys
+		var entry :=  FindConfigElem(cfg, elem);
+		var magic := GetconfigInt(entry, "magic");
+		if (magic)
+			//printtextabove(item, " " + magic + " " + GetconfigString(entry, "name"));
+			possiveis.append(elem);
+		endif
+	endforeach
+
+	var chosen := RandomInt(possiveis.size()) + 1;
+	//printtextabove(item, "chosen " + chosen);
+	var elem := FindConfigelem(cfg, possiveis[chosen]);
+
+	if (elem)
+		spellinfo.+name := GetConfigString(elem, "name");
+		spellinfo.+id := GetConfigInt(elem, "id");
+		spellinfo.+description := GetConfigString(elem, "desc");
+	endif
+
+	SetObjProperty(item, "spellinfo", spellinfo);
+
+			
+
+endprogram
+

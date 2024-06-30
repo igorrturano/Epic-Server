@@ -1,0 +1,39 @@
+ use uo;
+
+include ":attributes:attributes";
+include "include/say";
+include ":tn:tngumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+// Falta achar como identificar o domado dele
+program personalizaranimal(who)
+	SendSysMessageEx(who, "Escolha um animal para pesonalizar", SSM_REQUEST);
+	var animal := Target(who);
+	if (!animal)
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	elseif(animal.master != who)
+		SendSysMessage(who, "Esse animal nao e seu!");
+		return;
+	else
+		var name := animal.name;
+		SetName(animal, "atualizando descricao");
+		DescreveAnimal(who, animal);
+		SetName(animal, name);
+	endif
+endprogram
+
+function DescreveAnimal(who, item)
+	var repeating := 3;
+	var str;
+	SendSysMessage(who, "Descreva seu animal em 3 linhas.");
+	while (repeating)
+		str := SmallRequestGump(who, "Qual a nova descricao?", 1);
+		if (len(str) < 84)
+			break;
+		endif
+		SendSysMessage(who, "Voce excedeu o numero maximo 83 caracteres!");
+		repeating := repeating - 1;
+	endwhile
+	SetObjProperty(item, "description", str);
+endfunction

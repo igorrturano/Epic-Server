@@ -1,0 +1,10 @@
+use uo;
+use os;
+
+program LogOn(character)
+//	if ( temHab(character, SEMPREALERTA) )
+	if (!character.cmdlevel)
+		Start_Script("alert", character);
+	endif
+//	endif
+endprogram

@@ -1,0 +1,108 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":timedscripts:poisonUtil";
+include "include/damage";
+
+program default_poison(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+
+	if ( !level )
+		level := 1;
+	endif
+
+	if ( attacker )
+		SetScriptController(attacker);
+	endif
+
+	var dmg := 0;
+	var time := 15;
+	var rand;
+	var loops := 5;
+	case (level)
+		default:
+
+		1: 
+		   rand := (RandomInt(5)+1)/100.0;
+		   time := 5;
+		   loops := 4;
+		2: 
+		   rand := (RandomInt(5)+5)/100.0;
+		   time := 4;
+		   loops := 6;
+		3: 
+		   rand := (RandomInt(5)+10)/100.0;
+		   time := 4;
+		   loops := 7;
+		4: 
+		   rand := (RandomInt(5)+15)/100.0;
+		   time := 3;
+		   loops := 8;
+		5: 
+		   rand := (RandomInt(5)+20)/100.0;
+		   time := 3;
+		   loops := 8;
+	endcase
+
+	var i := 0;
+	while( i < loops)
+
+		dmg := Cint(AP_GetVital(who, "Hits"))*rand;
+		case (level)
+			1:
+		   		if (dmg < 2)
+					dmg := 2;
+				elseif ( dmg > 6)
+					dmg := 6;	
+		   		endif
+			2:
+		   		if(dmg < 4)
+					dmg := 4;
+				elseif (dmg > 10)
+					dmg := 10;
+  		   		endif
+			3:
+		   		if(dmg < 8)
+					dmg := 8;
+		  		 elseif (dmg > 16)
+					dmg := 16;
+		   		endif
+			4:
+		   		if(dmg < 10)
+					dmg := 10;
+		  		 elseif (dmg > 20)
+					dmg := 20;
+		   		endif
+
+			5:
+		   		if(dmg < 14)
+					dmg := 14;
+		  		 elseif (dmg > 40)
+					dmg := 40;
+		   		endif
+		
+
+		endcase	
+	
+		damageFLS(who, cint(dmg), DMG_FORCED, attacker);
+
+		if (who.dead)
+			break;
+		endif
+
+		
+		sleep(time);
+		i := i + 1;
+	endwhile
+
+//	TS_CurePoison(who, 120,"P", 5);
+	TS_LowerDuration(who, "defaultPoison", -1);
+	var script := GetProcess(GetPid());
+	script.kill();
+	
+	return;
+endprogram

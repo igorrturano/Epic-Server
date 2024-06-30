@@ -1,0 +1,120 @@
+use uo;
+
+include ":tn:tngumps";
+include "include/say";
+include ":gumps:requestGump";
+
+program vendoropt(who)
+
+	SendSysMessageEx(who, "Escolha o npc vendor", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.npctemplate)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	var opt := array;
+	if ( GetObjProperty(targ, "secret"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "onlyartifice"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "taverneiro"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "onlygmsells"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "onlyplayersells"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "startbuy") || GetObjProperty(targ, "endbuy"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "cofre") || GetObjProperty(targ, "cofre"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "Taxa") || GetObjProperty(targ, "taxap"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(targ, "faccao") )
+	opt.append(1);
+	else
+	opt.append(0);
+	endif
+
+
+	var result := CheckBoxGump(who, 300, 235, "Opcoes do Vendor", {"Secreto", "Kit Artifice", "Sem Limite Minimo de 10", "Apenas GM vende", "Apenas Um Player Vende", "Alterar Mensagens de Compra", "Cofre", "Taxa", "Faccao"}, opt);
+
+	EraseObjProperty(targ, "secret");
+	EraseObjProperty(targ, "onlyartifice");
+	EraseObjProperty(targ, "taverneiro");
+	EraseObjProperty(targ, "onlygmsells");
+	EraseObjProperty(targ, "oneplayersells");
+	EraseObjProperty(targ, "startbuy");
+	EraseObjProperty(targ, "endbuy");
+
+	foreach r in result
+		if (r == "Secreto")
+			SetObjProperty(targ, "secret", 1);
+		elseif (r ==  "Kit Artifice")
+			SetObjProperty(targ, "onlyartifice", 1);
+		elseif (r == "Sem Limite Minimo de 10")
+			SetObjProperty(targ, "taverneiro", 1);
+		elseif ( r == "Apenas GM vende")
+			SetObjProperty(targ, "onlygmsells", 1);
+		elseif ( r == "Apenas Um Player Vende")
+			var oneplayer := cstr(RequestGump(who, "Qual o nome do player?"));
+			SetObjProperty(targ, "oneplayersells", oneplayer);
+		elseif ( r == "Alterar Mensagens de Compra")
+			var startbuy := cstr(RequestGump(who, "Qual a mensagem de boas-vindas? [Cancele para deixar padrao]"));
+			if (startbuy)
+				SetObjProperty(targ, "startbuy", startbuy);
+			endif
+			var endbuy := cstr(RequestGump(who, "Qual a mensage? [Cancele para deixar padrao]"));
+			if (endbuy)
+				SetObjProperty(targ, "endbuy", endbuy);
+			endif
+		elseif ( r == "Cofre")
+			SendSysMessageEx(who, "Escolha o cofre", SSM_REQUEST);
+			var cofre := Target(who);
+			if (cofre.objtype == 40512)
+			SetObjProperty(targ, "cofreid", cofre.serial);
+			else
+			SendSysMessageEx(who, "Escolha um container", SSM_REQUEST);
+			return 1;
+			endif
+		elseif ( r == "Taxa")
+			var taxa := cint(RequestGump(who, "Insira a taxa cobrada em porcentagem [somente numeros inteiros]"));
+			SetObjProperty(targ, "taxap", taxa);
+		elseif ( r == "faccao")
+			var faccao := RequestGump(who, "Insira a faccao deste npc");
+			SetObjProperty(targ, "faccao", faccao);
+			endif
+
+	endforeach
+
+endprogram

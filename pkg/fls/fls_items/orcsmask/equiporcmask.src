@@ -1,0 +1,21 @@
+
+
+use uo;
+
+program equiporcmask(character, item)
+
+	var raca := GetObjProperty(character, "raca");
+	if ( cstr(raca) == "orc")
+		SendSysMessage(character, "Voce e um orc. Mantenha sua orcmask equipada.");
+		item.color := character.color;
+		return 1;
+	elseif (character.cmdlevel > 1)
+		SendSysMessage(character, "Voce e um GM pode equipar a orcmask.");
+		item.color := character.color;
+		return 1;
+	else
+		SendSysMessage(character, "Voce nao pode equipar isto.");
+		return 0;
+	endif
+
+endprogram

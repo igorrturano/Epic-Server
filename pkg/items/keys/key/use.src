@@ -1,0 +1,88 @@
+
+use uo;
+
+include ":keys:key";
+include ":gumps:requestGump";
+include "include/string";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":attributes:attributes";
+
+program UseKey(who, key)
+	SendSysMessageEx(who, "Onde voce deseja usar a chave?", SSM_REQUEST);
+	var targ := Target(who);
+
+	if ( !targ.IsA(POLCLASS_ITEM) )
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	elseif ( targ == key )
+		RenameKey(who, key);
+		return 1;
+	elseif ( targ.IsKey() )
+		CopyKey(who, key, targ);
+		return 1;
+	elseif ( !KP_IsLockable(targ) )
+		SendSysMessageEx(who, "Isto nao pode ser trancado.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(who, targ) > 1 )
+		SendSysMessageEx(who, "Voce esta muito longe do alvo!", SSM_FAIL);
+		return;
+	endif
+
+	if ( key.KeyMatchesLock(targ) )
+		KP_ToggleLock(targ, who);
+	else
+		SendSysMessageEX(who, "Essa chave nao combina com a fechadura.", SSM_FAIL);
+	endif
+
+	return 1;
+endprogram
+
+function RenameKey(who, key)
+	var new_name := RequestGump(who, "Escreva o nome para a chave", "Tamanho maximo sao 30 caracteres.", key.desc, CANCEL_BTN_ON);
+	var name_len := Len(new_name);
+
+	if ( !new_name )
+		SendSysMessageEX(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	elseif ( name_len > 20 )
+		SendSysMessageEX(who, "O nome esta muito longo.",SSM_FAIL);
+		return 0;
+	elseif ( name_len < 1 )
+		SendSysMessageEx(who, "O nome esta muito curto.", SSM_FAIL);
+		return 0;
+	elseif ( new_name )
+		SetName(key, new_name);
+		return 1;
+	endif
+endfunction
+
+function CopyKey(who, key, targ)
+	if ( !(targ in EnumerateItemsInContainer(who.backpack)) )
+		SendSysMessageEx(who, "A chave destino deve estar na sua mochila.", SSM_FAIL);
+		return 0;
+	endif
+
+	var key_id := key.GetLockId();
+	if ( !key_id )
+		SendSysMessageEx(who, "Voce nao pode copiar essa chave.", SSM_FAIL);
+		return 0;
+	elseif ( targ.GetLockId() )
+		SendSysMessageEx(who, "A chave destino nao pode ser copiada.", SSM_FAIL);
+		return 0;
+	elseif ( Cint(GetObjProperty(key, "uncopy")) == 1)
+		SendSysMessageEx(who, "Esta chave nao pode ser copiada.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (TemHabilidade(who, "Truque Sujo") || SkillCheck(who, "MetalWorking", 25) > 0)
+		targ.SetLockId(key_id);
+		SendSysMessageEx(who, "Voce copiou a chave.", SSM_INFO);
+		PrintText(who, "*copia uma chave*");
+	else
+		SendSysMessageEx(who, "Voce quebrou a chave.", SSM_FAIL);
+		DestroyItem(targ);
+	endif
+
+	return 1;
+endfunction

@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program DirtRemover(dirt)
+	const minutes := 25;
+	sleep(minutes*60);
+	DestroyItem(dirt);
+endprogram

@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include "include/facings";
+include ":gumps:yesNo";
+
+program SpellScript(params)
+
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	var savegame := GetObjProperty(who, "savegame");
+	if (savegame == error)
+		savegame := struct;
+	else
+		var  del  :=  YesNo(who, "Deseja cancelar esta magia?");
+		if (del)
+			EraseObjProperty(who, "savegame");
+			SendSysMessageEx(who, "A magia foi cancelada",  SSM_INFO);
+			return;
+		endif
+		savegame := struct;
+	endif
+
+	savegame.+x := who.x;
+	savegame.+y := who.y;
+	savegame.+z := who.z;
+	savegame.+realm := who.realm;
+	savegame.+hits := AP_GetVital(who,HITS);
+	savegame.+stamina := AP_GetVital(who,  STAMINA);
+	savegame.+mana := AP_GetVital(who, MANA);
+
+	SetObjProperty(who,"savegame", savegame);
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+
+	SendSysMessageEx(who, "O estado foi salvo.", SSM_INFO);
+
+	return 1;
+
+endprogram
+
+
+

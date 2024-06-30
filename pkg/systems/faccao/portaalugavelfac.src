@@ -1,0 +1,81 @@
+use uo;
+use os;
+
+include ":containers:storageAreas";
+include ":containers:containers";
+include ":gumps:include/requestGump";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include "include/say";
+include ":keys:key";
+include ":tn:tngumps";
+
+//Gump Constants
+const BKGND_STONESLAB		:= 9200;  // Gray stone slab background
+const BKGND_BLUESLAB		:= 3600;  // Raised edge (blocky)
+const GF_STDCOLOR		:= 1890;
+
+const MOEDAS			:= 47715;
+
+var item_cfg := ReadConfigFile(":*:itemdesc");
+
+function portafacc(params)
+
+        var porta := params[1];
+        var player := params[2];
+    //	var npc := player;
+
+        if (player.hidden)
+            player.hidden := 0;
+            SendSysMessageEx (player, "Voce se revelou", SSM_FAIL);
+        endif
+
+        var gump := GFCreateGump(0, 0);
+        GFPage(gump, 0);
+        GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 640, 480);
+        GFResizePic(gump, 15, 15, BKGND_STONESLAB, 150, 450);
+
+        var quartos := GetObjProperty(porta, "quartos");
+        var taxa;
+        var valortaxa;
+
+       // if (getObjProperty(npc, "taxap"))
+       //     taxa := (getObjProperty(npc, "taxap"));
+       // endif
+
+        var souInquilino := 0;
+        var meuquarto := -1;
+        var j := 1;
+        foreach quarto in quartos
+            if (quarto.inquilino == player.serial)
+                souInquilino := 1;
+                meuquarto := j;
+                break;
+            endif
+            j := j + 1;
+        endforeach
+
+        GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN,  200);
+        GFTextLine(gump, 40, 30, GF_STDCOLOR, "Listar Quartos");
+
+
+        if (souInquilino)
+            GFAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, 100);
+            GFTextLine(gump, 40, 80, GF_STDCOLOR, "Trocar Fechadura");
+
+            GFAddButton(gump, 20, 133, 2117, 2118, GF_CLOSE_BTN, 400);
+            GFTextLine(gump, 40, 130, GF_STDCOLOR, "Entregar Quarto");
+
+        endif
+
+        if (player.cmdlevel > 1)
+            GFAddButton(gump, 20, 183, 2117, 2118, GF_CLOSE_BTN,  300);
+            GFTextLine(gump, 40, 180, GF_STDCOLOR, "Adicionar Quarto");
+
+            GFAddButton(gump, 20, 233, 2117, 2118, GF_CLOSE_BTN,  500);
+            GFTextLine(gump, 40, 230, GF_STDCOLOR, "Cobrar Aluguel");
+
+            //GFAddButton(gump, 20, 283, 2117, 2118, GF_CLOSE_BTN,  600);
+            //GFTextLine(gump, 40, 280, GF_STDCOLOR, "Mural de Recados");
+        endif
+endfunction

@@ -1,0 +1,110 @@
+
+use uo;
+
+include "include/say";
+include ":taming:taming";
+include ":gumps:yesNo";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/facings";
+include "include/damage";
+include ":tn:combat";
+
+program tirodesfocado(who)
+	SendSysMessageEx(who, "Escolha a direcao que ira disparar a flecha", SSM_INFO);
+	var targ := TargetCoordinates(who);
+	if (who.warmode == 1)
+		who.warmode := 0;
+	endif
+
+	var cfg:=ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, who.weapon.objtype);
+
+	if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
+		SendSysMessageEx(who, "O Alvo nao esta visivel para voce.", SSM_FAIL);
+		return 1;
+	elseif (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 13)
+		SendSysMessageEx(who, "O Alvo esta muito distante.", SSM_FAIL);
+		return 1;
+	elseif (IsBehind(who, targ.x, targ.y))
+		SendSysMessageEx(who, "Voce esta de costas para o alvo!", SSM_FAIL);
+		return 1;
+	elseif (elem.Attribute != "RangedCombat")
+		SendSysMessageEx(who, "Voce precisa estar usando um arco.", SSM_FAIL);
+		return 1;
+	endif
+
+	var aljavas := array{0x791c, 0x2fb7};
+	var aljava := GetEquipmentByLayer(who, 0x14);
+
+		if (aljava.objtype in aljavas)
+			aljava := GetEquipmentByLayer(who, 0x14);
+		else
+			aljava := GetEquipmentByLayer(who, 0xc);
+		endif
+	var ammo := GetObjProperty(who.weapon, "ammo");
+	if (!ammo)
+		SendSysMessage(who, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+		return 1;
+    endif
+
+    var in_aljava := 0;
+    foreach arrow in (EnumerateItemsInContainer(aljava))
+		if (arrow.serial == ammo)
+			in_aljava := 1;
+        endif
+    endforeach
+    if (in_aljava == 0)
+        return 1;
+    endif
+
+    if ( SubtractAmount( ammo, 1 ) == error)
+		SendSysMessage(who, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+		return 1;
+	endif
+
+	PlaySoundEffect(who, 0x235);
+	Performaction(who, elem.Anim);
+	PlayMovingEffectXYZ( who.x, who.y, who.z+3, targ.x, targ.y, targ.z, elem.ProjectileAnim, 10, 10, 0, who.realm);
+	sleepms(35);
+	PlayMovingEffectXYZ( who.x, who.y, who.z+3, targ.x, targ.y, targ.z, 0x377A, 6, 10, 0, who.realm);
+
+	var distancia := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
+
+	//calculo damage
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(who);
+	var basedamage := CalculateRawDamage(who, who.weapon);
+
+	//lista inimigos e aplica dano
+	var alreadydamaged := array{};
+	foreach pontos in distancia
+		var mobiles := ListMobilesNearLocation(pontos.x, pontos.y, who.z, 1, who.realm);
+		var allPets := array{};
+		var party_members := who.party.members;
+
+		if (who.party)
+			foreach member in party_members
+				if (member != who)
+					var memberObj := SystemFindObjectBySerial(member.serial);
+					var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+					foreach pet in allPetsAndSummonedPets
+						allPets.append(pet);
+					endforeach
+				endif
+			endforeach
+		endif
+		foreach mobile in mobiles
+			if (!(mobile.serial in alreadydamaged) && (mobile != who) && !(mobile in who.party.members) && !(mobile in allPets ))
+				alreadydamaged.Append(mobile.serial);
+				var total := cint(CalculateTotalDamage(mobile, basedamage, who, dmgList));
+				DamageFLS(mobile, total*2, DMG_FORCED, who);
+			endif
+			sleepms(20);
+		endforeach
+		sleepms(20);
+	endforeach
+
+	who.warmode := 1;
+	CreateItemAtLocation( targ.x, targ.y, targ.z, GetObjType( ammo ), 1, who.realm);
+endprogram

@@ -1,0 +1,44 @@
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST+TGTOPT_HARMFUL);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if ( !targ.isa(POLCLASS_MOBILE) )
+		SendSysMessageEx(who, "Voce so pode alvejar seres vivos com esta magia.", SSM_FAIL);
+		return;
+	endif
+        var kickbackx := Cint((RandomInt(10) - 5 ));
+        var kickbacky := Cint((RandomInt(10) - 5 ));
+        var newxloc := (targ.x - kickbackx);
+	var newyloc := (targ.y + kickbacky);
+	PlaySoundEffect(targ, SFX_108);
+        PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+        PlaySoundEffect(targ, SFX_109);
+
+	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
+	TS_StartTimer(targ, "clumsy", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), 0, who);
+	TS_StartTimer(targ, "lentidao", CInt(AP_GetSkill(who, MAGICLORE)/4), 0, who);
+
+        if (CheckLosAt( targ, newxloc, newyloc, GetWorldHeight(newxloc, newyloc) ))
+		MoveObjectToLocation(targ, newxloc, newyloc, GetWorldHeight(newxloc, newyloc), targ.realm);
+	endif
+
+	SendSysMessageEx(targ, "Uma rajada de vento frio atinge voce.", SSM_FAIL);
+	
+	return 1;
+endprogram  

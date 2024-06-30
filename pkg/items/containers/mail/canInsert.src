@@ -1,0 +1,32 @@
+//$Id: canInsert.src 87 2006-05-23 19:04:43Z sroyalty $
+
+use uo;
+use cfgfile;
+include ":attributes:attributes";
+include ":containers:checks";
+include "include/say";
+
+
+program canInsert(mobile, container, movetype, inserttype, item, existing_stack, amount_to_add)
+	if (!maoLivre(mobile, 1))
+		return 0;
+	endif
+	if (mobile.frozen || mobile.paralyzed)
+		SendSysMessage(mobile, "Voce esta paralizado.");
+		return 0;
+	endif
+	var valid :=	{0xba63, 0xba64, 0xba65, // moedas
+			 0xFEF, 0xFF0, 0xFF1, 0xFF2, 0xFF3, 0xFF4, // livros
+			 0x1011, 0x100E, 0x100F, 0x1010, 0x1012, 0x1013, // chaves
+			 0xE34 // pergaminho em branco
+			};
+	if (GetObjProperty(container, "LockId") == GetObjProperty(item, "LockId"))
+		return 1;
+	elseif (item.objtype IN valid)
+		return 1;
+	endif
+
+	SendSysMessageEx(mobile, "Voce nao pode inserir esse item na caixa!", SSM_FAIL);
+
+	return 0;
+endprogram

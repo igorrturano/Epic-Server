@@ -1,0 +1,17 @@
+
+use uo;
+
+program unequiporcmask(character, item)
+	var raca := GetObjProperty(character, "raca");
+	if ( cstr(raca) == "orc")
+		SendSysMessage(character, "Voce nao pode desequipar isto.");
+		item.color := character.color;
+		return 0;
+	elseif (character.cmdlevel > 1)
+		SendSysMessage(character, "Voce eh gm, pode desequipar.");
+		return 1;
+	else
+		return 1;
+	endif
+
+endprogram

@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var who := params[1];
+
+	var lvl := CDbl(GetObjProperty(who, "#glory"));	
+	SetObjProperty(who, "#dmgbonus", cdbl(GetObjProperty(who, "dmgbonus")) - lvl );
+	SetObjProperty(who, "#hitbonus", cdbl(GetObjProperty(who, "hitbonus")) - (lvl*30) );
+	EraseObjProperty(who, "#glory");
+	
+	return 1;
+endprogram

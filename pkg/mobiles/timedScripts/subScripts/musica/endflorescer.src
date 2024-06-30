@@ -1,0 +1,10 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+
+	return 1;
+endprogram

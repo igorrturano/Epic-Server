@@ -1,0 +1,109 @@
+use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+include ":tn:cooldown";
+include "include/client";
+include "include/imersao";
+
+program reanimar(who)
+
+	SendSysMessageEx(who, "Escolha quem voce quer reanimar.", SSM_REQUEST);
+	var targ_corpse := Target(who);
+
+    if (!targ_corpse)
+		return;
+	endif
+
+    if ( !targ_corpse.IsA(POLCLASS_CORPSE) )
+        SendSysMessage(who, "Precisa ser um corpo.");
+        return 0;
+    endif
+
+    if (GetCooldown(targ_corpse, "morto_recentemente") > 0 )
+        var targ := SystemFindObjectBySerial(targ_corpse.ownerserial);
+        var plytarget := GetPersonBySerial(targ.serial);
+        var serialC := targ.serial;
+
+        if (GetObjProperty(targ_corpse, "assassinado") || GetObjProperty(targ, "assassinado") || GetObjProperty(plytarget, "assassinado"))
+            SendSysMessage(who, "O corpo foi violado e voce nao podera ajuda-lo");
+            return 0;
+        endif
+
+        if(GetCooldown(plytarget, "reani_recent") > 0)
+            SendSysMessageEx(who, "Essa pessoa ja foi reanimada recentemente e voce nao pode fazer nada por ela.", SSM_FAIL);
+            return 0;
+        endif
+
+        who.paralyzed := 1;
+        printText(who, "*pressionando o peito da pessoa*");
+        PerformAction(who, Cint(29));
+        Imersao(who, "arfar");
+        sleep(3);
+        printText(who, "*pressionando o peito da pessoa*");
+        PerformAction(who, Cint(29));
+        Imersao(who, "arfar");
+        sleep(3);
+        printText(who, "*pressionando o peito da pessoa*");
+        PerformAction(who, Cint(29));
+        Imersao(who, "arfar");
+        sleep(3);
+        printText(who, "*pressionando o peito da pessoa*");
+        PerformAction(who, Cint(29));
+        Imersao(who, "arfar");
+        sleep(3);
+        SendSysMessageEx(who, "Voce ouve o coracao bater.", SSM_INFO);
+        who.paralyzed := 0;
+
+        MoveObjectToLocation(plytarget, targ_corpse.x, targ_corpse.y, targ_corpse.z, targ_corpse.realm, MOVEOBJECT_FORCELOCATION);
+        Resurrect(targ);
+        EraseObjProperty(targ, "morto");
+        var dpmod := cint(GetObjProperty(targ, "dpmod"));
+        if (!dpmod)
+            dpmod := 0;
+        endif
+        SetObjProperty(targ, "dpmod", dpmod);
+        recalcvitals(targ);
+
+        var ressrobe := GetEquipmentByLayer(plytarget, 0x16);
+        DestroyItem(ressrobe);
+        foreach item in EnumerateItemsInContainer(targ_corpse)
+            if (item.container == targ_corpse)
+                MoveObjectToLocation(item, plytarget.x, plytarget.y, plytarget.z, plytarget.realm);
+                MoveItemToContainer(item, plytarget.backpack);
+                if ( CInt(GetObjProperty(item, "#EquippedOn")) == serialC )
+                    if ( !EquipItem(plytarget, item) )
+                        EraseObjProperty(item, "#EquippedOn");
+                    endif
+                endif
+            endif
+        endforeach
+        DestroyItem(targ_corpse);
+        
+        var tempo := 3600;
+        SetCooldown(plytarget, "reani_recent", tempo);
+        SendSysMessage(plytarget, "Voce fraturou alguns ossos!");
+        SetCoolDown(plytarget, "hurt", tempo);
+        TS_StartTimer(plytarget, "fraturaexposta", 1);
+    else
+        SendSysMessageEx(who, "O coracao ja parou faz muito tempo.", SSM_FAIL);
+		return 0;
+    endif
+
+endprogram
+
+function GetPersonBySerial(name_text)
+
+	foreach player in EnumerateOnlineCharacters()
+		if ( player.serial == name_text)
+				return player;
+		endif
+		SleepMS(2);
+	endforeach	
+	
+	return 0;
+
+endfunction

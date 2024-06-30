@@ -1,0 +1,74 @@
+use uo;
+use os;
+//use cfg;
+//Falta adicionar os cristais
+ 
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+include ":crafting:include/craftingUtil";
+
+program Canalizar(who)
+var crystal := FindObjtypeInContainer(who.backpack, 0xee49);
+if(!crystal)
+	SendSysMessageEX(who, "Voce nao tem cristais para canilizacao.", SSM_FAIL);
+	return;
+endif
+
+SendSysMessageEx(who, "Selecione a arma magica", SSM_INFO);
+var origin := Target(who, TGTOPT_CHECK_LOS+TGTOPT_HELPFUL);
+if (!origin)
+	SendSysMessageEx(who, "Processo Cancelado!", SSM_FAIL);
+	return;
+endif
+if (GetObjProperty(origin, "magic") != 2)
+	SendSysMessageEx(who, "Isso nao eh um item magico ativado!", SSM_FAIL);
+	return;
+endif
+
+SendSysMessageEx(who, "Agora selecione uma arma excepcional de sua autoria", SSM_INFO);
+var destiny := Target(who, TGTOPT_CHECK_LOS+TGTOPT_HELPFUL);
+if (!destiny )
+	SendSysMessageEx(who, "Processo Cancelado!", SSM_FAIL);
+	return;
+endif
+if (!GetObjProperty(destiny, "Exceptional"))
+	SendSysMessageEx(who, "Isso nao eh um item excepcional!", SSM_FAIL);
+	return;
+endif
+var crafter_serial := GetObjProperty(destiny, "crafterserial");
+if (crafter_serial != who.serial)
+	SendSysMessageEx(who, "Esse item excepcional nao foi feito por voce!", SSM_FAIL);
+	return;
+endif
+ 
+CopyPropsMagic(origin, destiny);
+destiny.dmg_mod := destiny.dmg_mod + origin.dmg_mod;
+var name := RequestGump(who, "Qual sera o nome do item?");
+	if (name != error)
+		SetName(destiny, name);
+	endif
+	if ( YesNo(who, "Deseja adicionar uma descricao no item?"))
+		AddItemDescription(who, destiny);
+	endif
+
+SubtractAmount(crystal, 1);
+
+EraseObjPRoperty(destiny, "magic");
+SetObjProperty(destiny,"magic_excep", 1);
+
+var backup := GetAmount(destiny);
+SubtractAmount(destiny, backup-1);
+SetName(destiny, destiny.desc);
+AddAmount(destiny, backup-1);
+
+Destroyitem(origin);
+
+endprogram
+
+function CopyPropsMagic(origin, destiny)
+	var propnames := GetObjPropertyNames(origin);
+	foreach prop in propnames
+		SetObjPRoperty(destiny, prop, GetObjProperty(origin, prop));
+	endforeach
+endfunction

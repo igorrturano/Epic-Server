@@ -1,0 +1,16 @@
+use uo;
+use os;
+
+program ct(who)
+
+	detach();
+	if (who.acctname == "ghaplayer")
+		SetObjProperty(who.weapon, "CriticalChance", 100);
+		who.hitchance_mod :=  who.hitchance_mod +100;
+	
+	sleep(5);
+	EraseObjProperty(who.weapon, "CriticalChance");
+	who.hitchance_mod :=  who.hitchance_mod -100;
+	endif
+	
+endprogram

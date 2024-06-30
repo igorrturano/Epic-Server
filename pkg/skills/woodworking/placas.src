@@ -1,0 +1,57 @@
+use uo;
+
+include ":tn:tngumps";
+include "include/say";
+
+program placas(who,item)
+
+if ( Distance(who, item) > 2)
+		SendSysMessageEx(who, "Voce esta muito distante do alvo.", SSM_FAIL);
+		return 0;
+endif
+
+if (!Accessible(who, item))
+		SendSysMessageEx(who, "Voce nao alcanca o alvo.", SSM_FAIL);
+		return 0;
+endif
+
+var description	:=	GetObjProperty(item,"description");
+var marked	:=	GetObjProperty(item,"marked");
+var playerid	:=	(who.name + " - " + who.acctname);
+
+if (GetObjProperty(item,"danificada") == 1)
+	SendSysMessageEx(who,"Voc� n�o pode usar este item.",SSM_FAIL);
+	return 1;
+endif
+	if (description != error)
+		if (marked != error)
+			return 0;
+				// if (GetObjProperty(item,"marked") != playerid)
+				// 	PrintText(who, "*voc� danificou a placa ao retira-la*");
+				// 	if (item.movable == 0)
+				// 		item.movable:=1;
+				// 	endif
+				// 	MoveItemToContainer( item, who.backpack);
+				// 	SetObjProperty(item,"danificada",1);
+				// 	EraseObjProperty(item,"canfix");
+				// 	SetName(item,item.name + " [Danificada]");
+				// 	SetObjProperty(item,"retirada",(who.name + " - " + who.acctname));
+				// 	return 0;
+				// else
+				// 	return 0;
+				// endif
+		endif
+	endif
+
+	AddTexto(who, item);
+	SetName(item, item.desc);
+endprogram
+
+function AddTexto(who, item)
+	var texto	:=	SmallRequestGump(who, "Conte�do da placa:", 1);
+	var marked	:=	who.name + " - " + who.acctname;
+	
+	SetObjProperty(item, "description", texto); 
+	SetObjProperty(item, "marked", marked);
+	
+endfunction

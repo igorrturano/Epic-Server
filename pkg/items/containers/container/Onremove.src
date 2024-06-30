@@ -1,0 +1,41 @@
+/*
+ *
+ */
+
+use uo;
+use os;
+include "include/say";
+
+program onRemove(character, container, item, item_amount, movetype)
+	var aux := container;
+	while (aux.container)
+		aux := aux.container;
+	endwhile
+	if (aux == character)
+		return 1;
+	endif
+
+	if (character.concealed || character.hidden || aux.objtype == 0xEFFD || movetype == MOVETYPE_COREMOVE);
+	else
+		if (GetObjProperty(character, "maosleves") == 1)
+			EraseObjProperty(character, "maosleves");
+		else
+			PrintText(character, "*Tirou " + item.desc + " da " + container.desc + "*", 41);
+		endif
+	endif
+
+	var primeira := GetObjProperty(item, "primeiro_dono");// Para o DiscordWebhook funcionar
+	if (GetObjProperty(item, "itemunico") == 1 && !primeira && (character.cmdlevel <= 0))
+		Setobjproperty(item, "primeiro_dono", character.name);
+		var region := GetRegionName(character);
+		var char_name := character.serial;
+		var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		var coords := {character.x, character.y};
+		var tipo := "unico";
+		var nome := GetObjProperty(character, "nome_inicial");
+		Start_script(":DiscordWebhook:discord", {tipo, nome, fin.acctname, container.name, region, coords, item.desc});
+	endif
+
+
+	return 1;
+endprogram

@@ -1,0 +1,8 @@
+use os;
+
+var script := start_script("soldocontrol");
+if ( script.errortext )
+	SysLog(script.errortext);
+else
+	Print("Starting guild npc check script... ok.");
+endif

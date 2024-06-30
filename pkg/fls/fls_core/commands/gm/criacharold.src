@@ -1,0 +1,68 @@
+use cfgfile;
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+include "include/client";
+include ":fls_core:fls_chargumps";
+include ":fls_core:fls_characters";
+
+//introdução - ok
+//Nome do Personagem, Classe e Raça - ok
+//Escolha de cabelo, barba, cor de cabelo e barba e de pele. - ok
+//Compra de atributos - ok
+//compra de skills -  ok
+//compra de itens - ok
+
+const OK_BUTTON			:= 10;
+
+program createchar(who)
+
+	UnloadConfigFile(":fls_core:config/introduction");
+	UnloadConfigFile(":fls_core:config/classes");
+	UnloadConfigFile(":fls_core:config/racas");
+	UnloadConfigFile(":fls_core:config/itempicker");
+
+	DestroyItem(GetEquipmentByLayer(who, LAYER_HAND1));
+	DestroyItem(GetEquipmentByLayer(who, LAYER_HAND2));
+	DestroyItem(GetEquipmentByLayer(who, LAYER_SHOES));
+	DestroyItem(GetEquipmentByLayer(who, LAYER_PANTS));
+	DestroyItem(GetEquipmentByLayer(who, LAYER_SHIRT));
+	DestroyItem(GetEquipmentByLayer(who, LAYER_SKIRT));
+
+	var chardata := struct;
+	chardata.+Credits := 100;
+
+	//Gumps
+	IntroGump(who);
+	NameClassRace(who, chardata);
+	HairColor(who, chardata);
+	AttributesGump(who, chardata);
+	SkillsGump(who, chardata);
+	ItemPickerGump(who, chardata);
+
+	//Outras funcoes
+	//DefineCharacterSize(who);
+	who.title_race := GetTitleRace(GetObjProperty(who, "raca"));
+
+	//Salva as informacoes da criacao do char
+	SetObjProperty(who, "chardata", chardata);
+
+	//move pra sala de tintas
+	MoveObjectToLocation(who, 5185, 1195, 4, who.realm );
+
+	/*if ( (GetObjProperty(who, "raca") == "elfo") || ((GetObjProperty(who, "raca") == "drow")) )
+		who.race := RACE_ELF;
+		if (who.graphic == 0x190)
+				who.graphic := 0x25d;
+				who.trueobjtype := 0x25d;
+		else
+				who.graphic := 0x25e;
+				who.trueobjtype := 0x25e;
+		endif
+	endif*/
+
+endprogram
+

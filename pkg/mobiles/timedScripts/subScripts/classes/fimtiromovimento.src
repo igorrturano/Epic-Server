@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+program TimedScript_EndClumsy(params)
+	var mobile := params[1];
+
+	RevokePrivilege(mobile, "firewhilemoving");
+	mobile.disable("firewhilemoving");	
+	SendSysMessageEX(mobile, "Voce nao pode mais atirar em movimento", SSM_INFO);
+
+	return 1;
+endprogram
+   

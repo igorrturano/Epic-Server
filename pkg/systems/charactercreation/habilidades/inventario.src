@@ -1,0 +1,196 @@
+// O script puxa informaçoes de cada cfg de ferreiro, carpinteiro e costureiro. Caso seja feita alguma mudança nos groups (adiçao/supressã) vai ser necessário
+//que se altere e inclua (ou retire) esse group aqui da lista. A inclusão ou exclusão de recipe não afeta o script. As opções "esp" e "inventario" são passadas
+//no habilidades.inc no instante em que o player os seleciona lá.
+use uo;
+use util;
+use cfgfile;
+ 
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+include ":crafting:include/craftingUtil";
+include "include/arrays";
+
+program Inventario(params)
+	var who := params[1];
+	var esp := params[2];
+	var inventario := params[3];
+
+var list := array;	
+
+var recipes_old := array;
+var recipes_jatem := who.getprop("recipes");
+var recipes_jatem_total := recipes_jatem.size();
+recipes_old := ParseMembers(who, recipes_jatem, recipes_jatem_total, recipes_old);
+
+//FERREIRO
+if (esp == "ferreiro")
+	var cfg := ReadConfigFile(":metalworking:SmithMenu");
+	var listarm := array;
+	var listarmad:=array;
+	var listescudo:=array;
+
+	foreach key in (GetconfigStringKeys(cfg))
+		var level := FindConfigElem(cfg, key);
+		var recipe := GetConfigStringArray( level, "Recipe" );
+		var recipe_um := GetConfigString( level, "Recipe" );
+		if (key == "Blades" || key == "Blunt" || key == "Polearms" || key == "Axes" )
+			var total := recipe.size();
+				if (total > 1)
+					listarm := ParseMembers(who, recipe, total, listarm);
+				elseif (total < 1)
+				else
+					listarm.append(Cstr(recipe_um));
+				endif
+		elseif (key == "RingMail" || key == "ChainMail" || key == "Platemail" || key == "Helmets" )
+			var total := recipe.size();
+				if (total > 1)
+					listarmad := ParseMembers(who, recipe, total, listarmad);
+				elseif (total < 1)
+				else
+					listarmad.append(Cstr(recipe_um));
+				endif
+		elseif (key == "Shields")
+			var total := recipe.size();
+				if (total > 1)
+					listescudo := ParseMembers(who, recipe, total, listescudo);
+				elseif (total < 1)
+				else
+					listescudo.append(Cstr(recipe_um));
+				endif
+		endif	
+	endforeach
+
+	if(inventario == "Armas")
+		foreach itemi in recipes_old
+			listarm.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes",listarm);
+	elseif(inventario == "Armaduras")
+		foreach itemi in recipes_old
+			listarmad.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes", listarmad);
+	elseif(inventario == "Escudos")
+		foreach itemi in recipes_old
+			listescudo.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes", listescudo);
+	endif
+
+//CARPINTEIRO
+elseif (esp == "carpinteiro")
+	var cfg := ReadConfigFile(":woodworking:CarpMenu");
+	var cfg2 := ReadConfigFile(":woodworking:FletchMenu");
+	var listmobilia := array;
+	var listequip:=array;
+
+	foreach key in (GetconfigStringKeys(cfg))
+		var level := FindConfigElem(cfg, key);
+		var recipe := GetConfigStringArray( level, "Recipe" );
+		var recipe_um := GetConfigString( level, "Recipe" );
+
+		if (key == "Recipientes" || key == "Assentos" || key == "Mesas e Balcoes" || key == "Armarios" || key == "Cercas e Portas" || key == "Postes e Suportes" || key == "Ferramentas e Equips" || key == "Jogos e Instrumentos" || key == "Construcoes" )
+			var total := recipe.size();
+				if (total > 1)
+					listmobilia := ParseMembers(who, recipe, total, listmobilia);
+				elseif (total < 1)
+				else
+					listmobilia.append(Cstr(recipe_um));
+				endif
+		elseif (key == "Armas e Armaduras" )
+			var total := recipe.size();
+				if (total > 1)
+					listequip := ParseMembers(who, recipe, total, listequip);
+				elseif (total < 1)
+				else
+					listequip.append(Cstr(recipe_um));
+				endif
+		endif	
+	endforeach
+
+	foreach key in (GetconfigStringKeys(cfg2))
+		var level := FindConfigElem(cfg2, key);
+		var recipe := GetConfigStringArray( level, "Recipe" );
+		var recipe_um := GetConfigString( level, "Recipe" );
+
+		if (key == "Armas" )
+			var total := recipe.size();
+				if (total > 1)
+					listequip := ParseMembers(who, recipe, total, listequip);
+				elseif (total < 1)
+				else
+					listequip.append(Cstr(recipe_um));
+				endif
+		endif	
+	endforeach
+
+	if(inventario == "Mobilia")
+		foreach itemi in recipes_old
+			listmobilia.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes",listmobilia);
+	elseif(inventario == "Equipamentos")
+		foreach itemi in recipes_old
+			listequip.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes", listequip);
+	endif
+
+//COSTUREIRO
+elseif (esp == "costureiro")
+	var cfg := ReadConfigFile(":DomesticWork:TailorMenu");
+	var listtecido := array;
+	var listcouro:=array;
+
+	foreach key in (GetconfigStringKeys(cfg))
+		var level := FindConfigElem(cfg, key);
+		var recipe := GetConfigStringArray( level, "Recipe" );
+		var recipe_um := GetConfigString( level, "Recipe" );
+
+		if (key == "Hats" || key == "Shirts" || key == "Pants" || key == "Miscellaneous" )
+			var total := recipe.size();
+				if (total > 1)
+					listtecido := ParseMembers(who, recipe, total, listtecido);
+				elseif (total < 1)
+				else
+					listtecido.append(Cstr(recipe_um));
+				endif
+		elseif (key == "Footwear" || key == "LeatherArmor" || key == "StuddedArmor" || key == "Gibao de Peles" || key == "Armaduras de Ossos" || key == "Armaduras especiais")
+			var total := recipe.size();
+				if (total > 1)
+					listcouro := ParseMembers(who, recipe, total, listcouro);
+				elseif (total < 1)
+				else
+					listcouro.append(Cstr(recipe_um));
+				endif
+		endif	
+	endforeach
+
+	if(inventario == "Tecido")
+		foreach itemi in recipes_old
+			listtecido.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes",listtecido);
+	elseif(inventario == "Couro")
+		foreach itemi in recipes_old
+			listcouro.append(itemi);
+		endforeach
+		SetObjProperty(who, "recipes", listcouro);
+	endif
+
+endif
+SendSysmessageEX(who, "Receitas de "+esp+" com especializacao em "+inventario+" aprendidas com sucesso!", SSM_INFO);
+endprogram
+						
+function ParseMembers(who, members, total, list)
+   print("member eh"+members+" total eh "+total+" list eh "+list);
+   var i := 1;
+   while (i < total)
+       var x := total - i;
+       list.Append(members[x]);
+       i := i + 1;
+   endwhile
+   list.append(members[total]);
+   return list;
+endfunction

@@ -1,0 +1,20 @@
+use uo;
+
+include ":tn:tngumps";
+include "include/say";
+include ":crafting:craftingUtil";
+
+program settooltip(who)
+
+	SendSysMessageEx(who, "Escolha o item.", SSM_REQUEST);
+	var item := target(who);
+	if (!item)
+		return;
+	endif
+
+	
+	AddItemDescription(who, item);
+	SetName(item, item.desc);
+
+
+endprogram

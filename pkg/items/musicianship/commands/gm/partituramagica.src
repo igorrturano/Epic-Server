@@ -1,0 +1,20 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+use util; //funcoes de gerar aleatorio
+include ":musicianship:bardmusic"; //As constantes estao nesse arquivo
+
+//Programa para adicionar propriedades de partitura magica ao item
+program partituraMagica(who, mag) //mag é um parametro a ser utilizado se desejar criar uma partitura magica especifica
+	var item := CreateItemInBackpack(who, 0x9925);
+	print(item+" "+mag);
+	//verifica se criacao personalizada ou aleatoria
+	var magica;
+	if (!mag)
+		magica := (Randomint(BARD_TOTAL_LENDARIAS) + 5); // Aleatoria entre as partituras lendarias, pulando as 4 musicas básicas
+	else
+		magica := CInt(mag);
+	endif
+
+	preenchePartituraMagica(item, magica);
+	return 1;
+endprogram

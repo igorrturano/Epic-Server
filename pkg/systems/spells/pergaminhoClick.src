@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+include ":gumps:yesNo";
+include ":spells:tnmagery";
+include "include/say";
+include ":spells:spellbooks";
+
+program usaPergaminho(who, scroll)
+
+	var spellinfo := GetObjProperty(scroll, "spellinfo");
+
+	WritespellInfo(who, spellinfo);
+
+	var gump := GFCreateGump(140, 100);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
+
+	//sendsysmessage(who, " " + spellinfo.description + "<br>" + spellinfo.flavortext);
+
+	 GFTextLine(gump, 50, 10, 0, spellinfo.name);
+	GFHTMLArea( gump, 30, 40, 180, 120, cstr(spellinfo.description + "<br>" + spellinfo.flavortext) , 0, 1);
+
+	GFTextLine(gump, 55, 170, 0, "Invocar pergaminho");
+	GFAddButton(gump, 40, 174, 2103, 2104, 1, 99);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 99)
+		var script := Start_Script("cast_spell", {who, spellinfo, scroll});
+		if ( script.errortext )
+			SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+			return 0;
+		endif
+	endif
+
+
+endprogram

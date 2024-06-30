@@ -1,0 +1,11 @@
+use uo;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":tn:cooldown";
+
+program backstab(who)
+
+	SetCooldown(who, "faroporsangue", 60); //1 min
+
+endprogram  

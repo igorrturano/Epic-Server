@@ -1,0 +1,42 @@
+use uo;
+use os;
+include ":gumps:gumps";
+
+program TopScripts(who, size_of_list)
+    var result := PerformanceMeasure();
+    var topNumber := Cint(size_of_list);
+    var count;
+    
+    if (result != error)
+        var totalObserved := result["total_number_observed"];
+        var totalInstructions := result["total_instructions"];
+        var scripts := result["scripts"];
+        
+        SendSysMessage(who, "=====================");
+        SendSysMessage(who, "Total Scripts Observed: " + totalObserved);
+        SendSysMessage(who, "Total Instructions: " + totalInstructions);
+        SendSysMessage(who, "=====================");
+
+        if (topNumber <= 0 || topNumber > scripts.size())
+            topNumber := scripts.size();
+        endif
+
+        // Exibe apenas os 'top' scripts
+        for (count := 1; count <= topNumber; count := count + 1)
+            var script := scripts[count];
+            var name := "Unnamed Script";
+            If(script["name"])
+                name := script["name"];
+            endif
+            var instructions := script["instructions"];
+            var pid := script["pid"];
+            var percent := script["percent"];
+
+            SendSysMessage(who, "Script: " + name + " (PID: " + pid + ") - Instructions: " + instructions + " (" + percent + "%)");
+            SendSysMessage(who, "=====================");
+            sleepms(100); // Pausa entre cada exibição para evitar sobrecarga
+        endfor
+    else
+        SendSysMessage(who, "Error obtaining performance data: " + result.errortext);
+    endif
+endprogram

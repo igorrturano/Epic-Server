@@ -1,0 +1,97 @@
+
+use uo;
+use os;
+
+include ":fls_magery:basicMagery";
+include ":fls_magery:spells";
+include ":gumps:gumps";
+
+program cast_spell(who, text)
+
+	if (who.cmdlevel == 0)
+		if ( Cint(GetObjProperty(who, "arcanista") != 1) )
+			SendSysMessage(who, "Voce nao conhece magias arcanas.");
+			return 0;
+		endif
+	endif
+
+	var spellid;
+	case (lower(text))
+		"encanto de protecao": spellid := 1; break;
+		"encantodeprotecao": spellid := 1; break;
+		"bola de fogo": spellid := 2; break;
+		"boladefogo": spellid := 2; break;
+		"invisibilidade": spellid := 3; break;
+		"maldicao":  spellid := 4; break;
+		"telecinese": spellid := 5; break;
+		"escudomagico": spellid := 6; break;
+		"escudo magico": spellid := 6; break;
+		"bencao": spellid := 7; break;
+		"paralizar": spellid := 8; break;
+		"reparar armas e armaduras": spellid := 9; break;
+		"reparararmasearmaduras": spellid:= 9; break;
+		"revigorar alimentos": spellid := 10; break;
+		"revigoraralimentos": spellid:= 10; break;
+		"arma afiada": spellid := 11; break;
+		"armaafiada": spellid := 11; break;
+		"encanto da cura": spellid := 12; break;
+		"encantodacura": spellid := 13; break;
+		"menu": OpenMageryMenu(who); return;
+		default: SendSysMessage(who, "Nao foi possivel invocar esta magia."); return 0;
+
+	endcase
+
+	if (who.cmdlevel > 1)
+		SendSysMessage(who, "spellid " + spellid);
+	endif
+
+	if (!KnowSpell(who, spellid))
+		SendSysMessage(who, "Voce nao tem conhecimento sobre esta magia.");
+		return 0;
+	endif
+
+	//SendSysMessage(who, "Invocando magia: " + spellid);
+	var script := Start_Script(":fls_magery:spellStarter", {who, spellid, 0});
+	if (script.errortext)
+		SendSysMessage(who, "Nao foi possivel encontrar o script spellStarter. Notifique o GM.");
+	endif
+
+endprogram
+
+function OpenMageryMenu(who)
+
+
+	var spellList := GetObjProperty(who, "magespells");
+
+	if (spellList == error)
+		SendSysMessage(who, "Voce nao conhece nenhuma magia.");
+		return 0;
+	endif
+
+	var chargump := GFCreateGump();
+	GFClosable(chargump, 1);
+	GFDisposable(chargump, 0);
+	GFResizePic(chargump, 0, 25, 3600, 300, 480);
+	GFResizePic(chargump, 15, 40, 0x13BE, 270, 450);
+	GFTextLine(chargump, 50, 60, 1153, "Sistema de Magia");
+
+	var y := 80;
+	foreach spell in SpellList
+		GFTextLine(chargump, 45, y, 1153, GetSpellName(spell));
+		GFAddButton(chargump, 30, y+3, 2103, 2104, 1, Cint(spell));
+		y := y + 20;
+	endforeach
+
+	var input := GFSendGump(who, chargump);
+	input := input[0];
+	if (input <=0)
+		return;
+	endif
+
+	var script := Start_Script(":fls_magery:spellStarter", {who, input, 0});
+	if (script.errortext)
+		SendSysMessage(who, "Nao foi possivel encontrar o script spellStarter. Notifique o GM.");
+	endif
+
+endfunction
+

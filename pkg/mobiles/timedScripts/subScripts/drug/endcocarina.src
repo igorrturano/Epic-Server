@@ -1,0 +1,21 @@
+/* $Id: alcohol.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":timedscripts:timedScripts";
+include ":attributes:attributes";
+
+program TimedScript_Alcohol(params)
+	var mobile := params[1];
+	
+	AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") - 50 );
+	AP_ModifyStatMod(mobile, DEXTERITY, -20);
+	RecalcVitals(mobile);
+
+	
+endprogram

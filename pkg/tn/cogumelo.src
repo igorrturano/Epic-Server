@@ -1,0 +1,32 @@
+use uo;
+use util;
+
+include ":timedScripts:timedScripts";
+
+program cogumelo(who, item)
+
+	var type := GetObjProperty(item, "type");
+	
+	if (type == error)
+		type := "comestivel";
+	endif
+	
+	DestroyItem(item);
+	case(RandomInt(3) + 1)
+		1: PlaySoundEffect(who, 0x3b);
+		2: PlaySoundEffect(who, 0x3c);
+		3: PlaySoundEffect(who, 0x3d);
+	endcase
+
+	case (type)
+		"venenoso": TS_StartTimer(who, "defaultPoison", 60, 2); SendSysMessage(who, "Voce comeu um cogumelo venenoso!");
+	
+		"forca": TS_StartTimer(who, "strength", (360), 20);  SendSysMessage(who, "Voce se sente mais forte!");
+	
+		"inteligencia": TS_StartTimer(who, "intelligence", (360), 20); SendSysMessage(who, "Seu cerebro esta fervilhando de ideias!");
+	
+		"alucinogeno": TS_StartTimer(who, "hallucination", 60, 1); SendSysMessage(who, "Voce comeu um cogumelo alucinogeno!");
+	
+	endcase
+	
+endprogram

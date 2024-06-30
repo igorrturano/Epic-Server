@@ -1,0 +1,55 @@
+  
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+var item_cfg := ReadConfigFile(":*:itemdesc");
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha uma arma de projetil ou alguem armado.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cencelado", SSM_FAIL);
+		return;
+	endif
+
+	var shots := Cint(AP_GetSkill(who, MAGICLORE)/25);
+	if (shots < 1)
+		shots := 1;
+	endif
+
+	if (targ.isA(POLCLASS_WEAPON))
+		if ((item_cfg[targ.objtype]).Projectile)
+			SetObjProperty(targ, "tirocerteiro", shots);
+			item_cfg := 0;
+		else
+			SendSysMessageEx(who, "Esta arma nao dispara projeteis.", SSM_FAIL);
+			item_cfg := 0;
+			return;
+		endif
+	else
+		if ((item_cfg[targ.weapon.objtype]).Projectile)
+			SetObjProperty(targ.weapon, "tirocerteiro", shots);
+			item_cfg := 0;
+		else
+			SendSysMessageEx(who, "Esta arma nao dispara projeteis.", SSM_FAIL);
+			item_cfg := 0;
+			return;
+		endif
+	endif
+
+        PlaySoundEffect(targ, SFX_BLESS);
+
+	SendSysMessageEx(who, "Voce encantou a arma.", SSM_INFO);
+
+	
+	return 1;
+endprogram    

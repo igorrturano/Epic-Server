@@ -1,0 +1,34 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+include ":timedScripts:timedScripts";
+include ":timedScripts:poisonUtil";
+
+program drink_orange (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+	if(!checkifcandrink(who, "orange"))
+		return;
+	endif	
+	var potion_strength := 1;
+	var time := 120;
+	case(potion.objtype)
+		0xdc14: potion_strength := 2;  time := 120;
+		0xdc15: potion_strength := 3; time := 240;
+		0xdc16: potion_strength := 5; time := 480;
+	endcase
+	empty_bottle(who, potion);
+
+	var bonus := cint(getobjproperty(potion, "crafterskill")/5);
+	TS_CurePoison(who, time+bonus, "P", potion_strength);
+
+endprogram

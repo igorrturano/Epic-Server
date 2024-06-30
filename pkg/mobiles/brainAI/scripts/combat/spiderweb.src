@@ -1,0 +1,134 @@
+/*
+ * $Id*
+ *
+ */
+
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":brainAI:commonFunctions";
+include ":attributes:attributes";
+include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include "include/damage";
+
+program BrainNerve(params)
+	var npc		:= params[1];
+	var nerve_name	:= params[2];
+	var event	:= params[3];
+	var settings	:= params[4];
+	var scripts	:= params[5];
+	params := 0; // Not needed anymore.
+
+	//Store it here so it does not have to do the math over and over.
+	var flee_level := NPC_GetFleeLevel(npc, settings["FleeLevel"]);
+
+	var opponent := event.source;
+	var flee_mode := 0;
+
+	AI_SetOpponent(npc, opponent);
+
+	while( npc )
+		var dist := Distance(npc, opponent);
+		if ( ShouldFlee(npc, flee_level, flee_mode) )
+			flee_mode := 1;
+			AI_Move(npc, opponent, NEMOVE_AWAY, NEMOVE_RUN, WAKEUP, 25);
+		elseif ( DoneFighting(npc, opponent, dist) )
+			if ( scripts.Exists("EndFight") )
+				params := array{npc, "EndFight", opponent, settings, scripts};
+				AI_StartNerve(npc, "EndFight", scripts["EndFight"].script, params);
+			else
+				AI_WarMode(npc, 0);
+			endif
+			AI_EndNerve(npc, nerve_name);
+		elseif( dist > 8)
+			AI_Move(npc, opponent, NEMOVE_TOWARD, NEMOVE_RUN, WAKEUP, dist);
+		elseif( dist > settings["WebRange"] )
+			AI_Move(npc, opponent, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, dist);
+			SpiderAttack(npc, opponent, dist);
+		elseif ( dist > 1);
+			AI_Move(npc, opponent, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, dist);
+		else
+			npc.facing := GetFacing(npc.x, npc.y, opponent.x, opponent.y);
+		endif
+
+		sleepms(400);
+		AI_ClearThoughts(npc, CLR_NERVE);
+	endwhile
+endprogram
+
+function DoneFighting(npc, opponent, byref dist)
+	if ( opponent.dead )
+		return 1;
+	elseif ( !opponent )
+		return 1;
+	elseif ( opponent.hidden )
+		return 1;
+	elseif ( opponent.concealed > npc.cmdlevel )
+		return 1;
+	elseif ( dist > 20 )
+		return 1;
+	elseif ( dist > 10 && !CheckLineOfSight(npc, opponent) )
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function ShouldFlee(npc, byref flee_level, byref flee_mode)
+	if ( AP_GetVital(npc, "Hits") < flee_level )
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function SpiderAttack(npc, opponent, byref dist)
+	if ( dist < 3 || dist > 10 )
+		return 0;
+	elseif ( !CheckLineOfSight(npc, opponent) )
+		return 0;
+	elseif ( opponent.frozen )
+		return 0;
+	elseif (GetEquipmentByLayer(opponent, 0x19))
+		return 0;
+	endif
+
+	var next_shoot := CInt(GetObjProperty(npc, "#NextShoot"));
+	if ( next_shoot > ReadGameClock() )
+		return 0;
+	endif
+
+	npc.frozen := 1;
+
+	sleepms(50);
+	var web;
+	case( RandomInt(4) )
+		0: web := 3811; break;
+		1: web := 3812; break;
+		2: web := 3813; break;
+		3: web := 3814; break;
+	endcase
+	PlayMovingEffect(npc, opponent, web, 10);
+
+	npc.frozen := 0;
+	opponent.frozen := 1;
+
+	var preso1 := CreateItemAtLocation(opponent.x, opponent.y, opponent.z+1, 4317, 1);
+	var preso2 := CreateItemAtLocation(opponent.x, opponent.y, opponent.z+1, 4314, 1);
+	sleepms(5);
+	AI_Move(npc, opponent, NEMOVE_TOWARD, NEMOVE_RUN, WAKEUP, dist);
+	sleep(4);
+	DestroyItem(preso1);
+	DestroyItem(preso2);
+	sleepms(50);
+	opponent.frozen := 0;
+
+	SetObjProperty(npc, "#NextShoot", ReadGameClock()+6);
+
+	return 1;
+endfunction

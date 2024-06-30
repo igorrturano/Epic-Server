@@ -1,0 +1,232 @@
+/*
+//	Script: Script para pintar quadros.
+*/
+use uo;
+use os;
+use cfgfile;
+use attributes;
+
+include ":keys:key";
+include ":itemutils:objtype";
+include ":gumps:yesNo";
+include "include/say";
+include ":itemutils:canAccess";
+include ":attributes:attributeConstants";
+
+include "include/say";
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":itemutils:canAccess";
+include ":attributes:attributes";
+include ":traps:traps";
+include "include/say";
+include ":charactercreation:habilidades";
+
+ program quadros(who, item)
+
+	if (Distance(who,item)>2)
+		SendSysMessageEx(who, "O alvo esta distante",SSM_FAIL );
+		return 0;
+	endif
+
+	if (!maolivre(who, 2))
+		return 0;
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (GetObjProperty(item,"tela_moldura") == 1)
+		var ok := YesNo(who, "Voce deseja continuar pintando?", "Sim.", "Nao, retire a tela e a moldura.");
+			if (!ok)
+				EraseObjProperty(item,"tela_moldura");
+				PrintText(who, "*retira a tela e a moldura*");
+				CreateItemInBackpack(who, 0x7029 , amount := 1 );
+				CreateItemInBackpack(who, 4606 , amount := 1 );
+
+				if (item.objtype == 1328)
+					item.graphic:=0x0F65;
+				elseif (item.objtype == 1329)
+					item.graphic:=0x0F67;
+				endif
+				return 0;
+			else
+				pintaquadro(who,item);
+				return 0;
+			endif
+	endif
+
+	SendSysMessageEx(who, "Selecione a moldura a ser utilizada",SSM_REQUEST);
+	var targmold:=Target(who);
+
+	if (targmold.objtype != 4606 && targmold.objtype != 4607)
+		SendSysMessageEx(who,"Isto nao se parece com uma moldura.",SSM_FAIL);
+		return 0;
+	endif
+
+	DestroyItem(targmold);
+
+	SendSysMessageEx(who, "Selecione a tela a ser utilizada",SSM_REQUEST);
+	var targtela:=Target(who);
+
+	if (targtela.objtype != 0x7029)
+		SendSysMessageEx(who,"Isto nao se parece com uma tela.",SSM_FAIL);
+		CreateItemInBackpack(who, 4606 , amount := 1 );
+		return 0;
+	endif
+
+	DestroyItem(targtela);
+
+	if (item.objtype == 1328)
+		item.graphic:=0x0F66;
+	elseif (item.objtype == 1329)
+		item.graphic:=0x0F68;
+	endif
+
+	SetObjProperty(item, "tela_moldura",1);
+	pintaquadro(who,item);
+
+	return 1;
+endprogram
+
+
+function pintaquadro(who,item)
+
+	 var cfg := ReadConfigFile(":quadros:itemdesc");
+	 var aItens:= GetConfigStringKeys( cfg );
+	 var i,j,k:=1;
+	 var menu := CreateMenu("Escolha o quadro.");
+	 var elem;
+	 var desc;
+	 var int;
+	 var ntintas;
+	 var ori_x:=who.x;
+	 var ori_y:=who.y;
+
+	 for( i := 1; i <= len(aItens);i:=i+1)
+		elem	:= FindConfigElem( cfg, aItens[i] );
+		desc	:= GetConfigString( elem, "desc" );
+		ntintas	:= GetConfigString( elem, "qtdtintas" );
+		int	:= GetConfigString( elem, "int" );
+		if ((GetAttributeBaseValue( who, "Intelligence"))/10 >= cint(int))
+			AddMenuItem(menu, aItens[i], cStr(desc) +" - " + cStr(ntintas) + " tintas." );
+		endif
+	endfor
+
+	var choice := SelectMenuItem2(who, menu).index;
+
+	if(choice==error)
+		SendSysMessageEx(who,"Cancelado.",SSM_FAIL);
+		return 0;
+	endif
+
+	var quadro_escolhido:= FindConfigElem( cfg, aItens[choice] );
+	var qtd_tinta_quad  := GetConfigString( quadro_escolhido, "qtdtintas" );
+
+	var ret:=CalcTinta(who,qtd_tinta_quad);
+
+	if (!ret)
+		return 0;
+	endif
+
+	while(k!=4)
+		if ( who.x != ori_x || who.y != ori_y )
+			SendSysMessageEx(who, "Voce parou de pintar o quadro.", SSM_FAIL);
+			return 0;
+		endif
+		PrintText(who,"*pintando um quadro*");
+		Performaction(who, 0x09, 5, 1, ACTION_DIR_FORWARD , 0, 1);
+		PlaySoundEffect(who,0x501);
+		sleep(5);
+		k:=k+1;
+	endwhile
+
+	var quadro:= CreateItemInBackpack(who, aItens[choice], amount := 1 );
+	SetObjProperty(quadro,"crafterserial",who.serial);
+	SendSysMessageEx(who,"Voce termina de pintar o quadro.",SSM_INFO);
+
+	EraseObjProperty(item,"tela_moldura");
+	GumpSetDesc( who,item,quadro);
+
+	if (item.objtype == 1328)
+		item.graphic:=0x0F65;
+	elseif (item.objtype == 1329)
+		item.graphic:=0x0F67;
+	endif
+
+	return 1;
+ endfunction
+
+// Gump para setar nome e descricao no quadro.
+function GumpSetDesc( who,item,quadro )
+	var linhas	:=	64;
+	var input;
+	var txt1,txt2;
+
+	var gflayout := {   "page 0",
+			    "resizepic 50 80 2620 400 180",
+			    "checkertrans 56 86 386 288",
+			    "text 160 100 2101 0",
+			    "text 160 150 2101 1",
+			    "TextEntryLimited 150 120 200 50 99 2 2 30",
+			    "TextEntryLimited 150 170 200 50 99 3 3 " + Cstr(linhas),
+			    "Button 150 220 2128 2129 1 0 99",
+			    "Button 290 220 2119 2120 1 0 999"
+			};
+
+
+	var gfdata := { "Nome do Quadro",
+			"Descricao do Quadro",
+			"",
+			""     // The default text of the textentry
+		      };
+
+	var result := SendDialogGump( who, gflayout, gfdata );
+
+	input  := result.keys[4];
+
+	if (input == 99)
+		txt1:=(result[2][4, len(result[2])]);
+		txt2:=(result[3][4, len(result[3])]);
+		SetName(quadro,txt1);
+		SetObjProperty(quadro,"description",txt2);
+	endif
+
+	return 1;
+
+endfunction
+
+
+// Verifica se possui a quantidade de tinta correta para o quadro escolhido.
+function CalcTinta(who,qtd_tinta_quad)
+	var tintas;
+	var qtdtintas;
+
+	SendSysMessageEx(who, "Selecione o pincel e a paleta a serem utilizados.",SSM_REQUEST);
+	var targtinta:=Target(who);
+
+		if (targtinta.objtype != 0x0E74)
+			SendSysMessageEx(who,"Isto nao se parece com um pincel.",SSM_FAIL);
+			return 0;
+		endif
+
+	if (GetObjProperty(targtinta,"tintas")==error)
+		qtdtintas:=0;
+	else
+		tintas:=GetObjProperty(targtinta,"tintas");
+		qtdtintas:=Len(tintas);
+	endif
+
+	if (cint(qtd_tinta_quad) > cint(qtdtintas) )
+		SendSysMessageEx(who,"Voce precisa de mais tintas para pintar este quadro.",SSM_FAIL);
+		return 0;
+	endif
+
+	EraseObjProperty(targtinta,"tintas");
+	SetObjProperty(targtinta,"description","0 tinta(s).");
+	SetName(targtinta,targtinta.name);
+
+	return 1;
+
+endfunction

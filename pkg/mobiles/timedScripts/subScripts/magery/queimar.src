@@ -1,0 +1,27 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program TimedScript_sacrificio(params)
+	var who := params[1];
+	var duracao := params[3];
+	var bonus := params[4];
+
+    while(1)
+		if ( RandomInt(4) == 1 )
+            SendSysMessage(who, "Voce queima.");
+			var dmg := RandomDiceRoll("2d8");
+            ApplyRawDamage(who, dmg);
+		endif
+		
+		sleep(2);
+	endwhile
+endprogram
+

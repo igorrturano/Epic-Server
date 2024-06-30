@@ -1,0 +1,86 @@
+include "include/say";
+include ":taming:taming";
+include ":mounts:mounts";
+include ":tn:characters";
+
+
+program start_pet(who, txt)
+
+	if (who.dead)
+		SendSysMessage(who, "Voce esta morto e nao pode fazer isto.");
+		return;			
+	endif
+
+	//SendSysMessage(who, txt);
+
+	txt := splitwords(txt);
+
+	//var input  := array;
+	//sendsysmessage(who, " " + txt.size());
+
+	var targ := 0;
+	
+	if (txt.size() == 2)
+		var pets := GetObjProperty(who, "TamedPets");
+		//sendsysmessage(who, "(txt.size() == 2)");
+		foreach serial in pets
+			//sendsysmessage(who, "serial " + serial);
+			var pet := SystemFindObjectBySerial(serial);
+			//sendsysmessage(who, "pet " + pet.name);
+			if ((lower(txt[1])=="todos") || (txt[1]==pet.name))
+				//sendsysmessage(who, "quem " + txt[1]);
+				if (txt[2]=="falar")	
+					var cfg := ReadConfigFile(":brainAI:npcdesc");
+					var npctemplate := pet.npctemplate;
+					npctemplate := npctemplate[10, len(npctemplate)-9];
+					//sendsysmessage(who, "npctemplate " + npctemplate );					
+					cfg := cfg[npctemplate];
+					//sendsysmessage(who, "oque " + txt[2]);
+					//sendsysmessage(who, "som  " + cfg.IdleSound);				
+					PlaySoundEffect(pet, cfg.IdleSound);
+				elseif (txt[2]=="seguir")
+					//sendsysmessage(who, "pet.following " + GetObjProperty(pet, "following"));
+					if (targ == 0)
+						targ := target(who);											
+					endif
+					var ev := struct;
+					ev.+type := 0xA001;
+					ev.+targ := targ;
+					SendEvent(pet,ev); //envia evento de following pro pet	
+				//elseif (txt[2]=="guardar")
+				//	if (targ == 0)
+				//		targ := target(who);
+				//	endif
+				//	var ev := struct;
+				//	ev.+type := 0xA004;
+				//	ev.+targ := targ;
+				//	SendEvent(pet,ev); //envia evento de guard pro pet								 
+				elseif (txt[2]=="parar")
+					var ev := struct;
+					ev.+type := 0xA010;
+					ev.+source := who;
+					SendEvent(pet,ev); //envia evento de stop pro pet						
+				elseif (txt[2]=="atacar")
+					if (targ == 0)
+						targ := target(who);
+					endif
+					var ev := struct;
+					ev.+type := 0xA002;
+					ev.+targ := targ;
+					SendEvent(pet,ev); //envia evento de attack pro pet					
+				elseif (txt[2]=="dono" && (txt[1]==pet.name)) //so muda um pet por vez de dono
+					if (targ == 0)
+						targ := target(who);
+					endif
+					var ev := struct;
+					ev.+type := 0xA003;
+					ev.+targ := targ;
+					SendEvent(pet,ev); //envia evento de new_master pro pet								
+				endif
+			endif
+		endforeach
+
+	endif
+
+	
+endprogram

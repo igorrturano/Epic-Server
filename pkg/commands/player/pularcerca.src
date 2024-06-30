@@ -1,0 +1,60 @@
+use uo;
+use os;
+use math;
+use vitals;
+
+include "include/say";
+include ":mounts:mounts";
+
+program cabelo(who)
+
+	if (who.hidden)
+		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
+		return 0;
+	elseif (GetEquipmentByLayer(who, 0x19))
+		SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Selecione a cerca que deseja pular.", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+	if(!targ)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1 || abs(who.z-targ.z) > 10)
+		SendSysMessageEx(who, "Voce esta muito longe disto.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!targ.objtype)
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var grafico := targ.graphic;
+	if (!grafico)
+		grafico := targ.objtype;
+	endif
+
+var cerca := Cint(Getobjproperty(targ.item, "cerca"));
+
+	if (grafico IN {947, 948, 949, 2101, 2102, 2103, 2140, 2141, 2142, 2143, 2144, 2145, 2149, 2167, 2168, 8657, 8658, 8659, 8660}|| cerca == 1)//2146, 2147, 2148,2186 e 2187 retirados para proibir de usar nas fazendas
+		if (GetVital(who, "Stamina") < GetVitalMaximumValue(who, "Stamina"))
+			SendSysMessageEx(who, "Voce precisa estar bastante disposto para fazer isto.", SSM_FAIL);
+			return 0;
+		endif
+		SetVital(who, "Stamina", 0);
+		who.hidden := 0;
+		if (GetEquipmentByLayer(who, 0x19))
+			MP_Unmount(who);
+		endif
+		MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
+		PrintText(who, "*pulou a cerca*");
+	else
+		SendSysMessageEx(who, "Voce nao pode pular isto.", SSM_FAIL);
+		return 0;
+	endif
+
+endprogram

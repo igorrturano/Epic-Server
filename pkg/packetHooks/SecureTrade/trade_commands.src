@@ -1,0 +1,22 @@
+use uo;
+use math;
+use os;
+include ":charactercreation:habilidades";
+include "include/say";
+
+program trade_hooks()
+  Print( "Tradeing Hooks going..." );
+  return 1;
+endprogram
+
+exported function intrade( player, byref packet )
+	var type := packet.GetInt8(3);
+	var character := SystemFindObjectBySerial(Cint(packet.GetInt32(4)));
+	if (player.concealed < 1 && character.concealed < 1 && !GetObjProperty(player, "nomsgtrade") && !GetObjProperty(character, "nomsgtrade"))
+		if (type == 0x00)
+			PrintText(player, "*"+player.name+" realizando uma troca com "+character.name+"*", 6);
+		endif
+	endif
+
+	return 0;
+endfunction

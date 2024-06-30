@@ -1,0 +1,120 @@
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":itemutils:objtype";
+include ":itemutils:canAccess";
+include ":timeutils:time";
+include ":death:death";
+include "include/say";
+
+//const UOBJ_LIGHTSOURCE := 0x1647;
+const UOBJ_TORCH := 0x0a12;
+
+program UseWood( who, wood )
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if( !can_access(who, wood) )
+		return 0;
+	endif
+	if( wood.movable == 0 )
+		SendSysMessageEx(who, "Voce nao pode acender isso.", SSM_FAIL);
+		return 0;
+	endif
+	var camptimer := 0;//GetObjProperty(who, "CampTimer");
+	if( camptimer )
+		if( camptimer > ReadGameClock() )
+			SendSysMessageEX(who, "Voce deve esperar alguns segundos para fazer isto novamente.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+	SetObjProperty(who, "CampTimer", ReadGameClock() + 3);
+	if( !Accessible(who, wood) )
+		SendSysMessageEx( who, "Voce nao alcanca isto!", SSM_FAIL );
+		return 0;
+	endif
+	if( wood.container )
+		SendSysMessageEx( who, "Coloque no chao primeiro!", SSM_FAIL );
+		return 0;
+	endif
+
+	PrintText(who, "*tenta acender uma fogueira*");
+	var TesteSkill;
+	if (GetEquipmentByLayer(who, 0x02).objtype == 2578)
+		TesteSkill := SkillCheck(who, SURVIVAL, 8);
+	else
+		TesteSkill := SkillCheck(who, SURVIVAL, 15);
+	endif
+
+	if( TesteSkill > 0 )
+		var x := wood.x;
+		var y := wood.y;
+		var z := wood.z;
+                var itemnearby := ListItemsNearLocation( x, y, z, 8 );
+		foreach item in itemnearby
+			if ( (item.graphic == 3555) )
+				SendSysMessageEx(who, "Já existe outro acampamento pronto por perto.", SSM_FAIL );
+				return;
+			endif
+		endforeach  
+
+		Detach();
+                PrintTextAbove( who, "*acendendo uma fogueira*");
+                sleep (5);
+		var campfire := CreateItemAtLocation( x, y, z, UOBJ_CAMPFIRE, 1, who.realm );
+		var torch := CreateItemAtLocation( x, y, z-4, UOBJ_TORCH, 1, who.realm );
+		SetName(torch, "fogueira");
+                PrintText( campfire, "Um acampamento foi preparado.");
+		campfire.movable := 0;
+                var time := AP_GetSkill(who, SURVIVAL) + 30;
+		time := time * wood.amount;
+		DestroyItem(wood);
+                var tempocura := 0;
+                var continuehealing := 1;
+                var healpoints := (AP_GetSkill(who, SURVIVAL) / 20) + 1;
+
+		while( time > 0 )
+			if (GetObjProperty(campfire, "encantado") == 1)
+				time := time + 60;
+				healpoints := healpoints*2;
+				EraseObjProperty(campfire, "encantado");
+			endif
+			time := time - 1;
+			tempocura := tempocura + 1;
+			if (tempocura == 10)
+				tempocura := 0;
+				var nearbypeople := ListMobilesNearLocation( x ,y, z, 6);
+				foreach char in (nearbypeople)
+					if (char.warmode)
+						continuehealing := 0;
+						PrintText(campfire, "Algo atrapalha o acampamento.");
+					endif
+				endforeach
+				if (continuehealing == 1)
+					foreach char in (nearbypeople)
+						healdamage(char, healpoints);
+						//SetVital( char, "DP", 1*100 );
+					endforeach
+				endif
+			endif
+			sleep(1);
+		endwhile
+		DestroyItem(campfire);
+		DestroyItem(torch);
+
+		campfire := CreateItemAtLocation(x,y,z,UOBJ_ASHES,1, who.realm);
+		x := campfire.x;
+		y := campfire.y;
+		sleep(60);
+		if( (campfire.x == x) && (campfire.y == y) )
+			DestroyItem(campfire);
+		endif
+
+	else
+                PrintText( who, "*acendendo uma fogueira*");
+                sleep(3);
+		SendSysMessageEx( who, "Voce nao conseguiu acender o fogo", SSM_FAIL );
+	endif
+
+endprogram

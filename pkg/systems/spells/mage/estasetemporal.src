@@ -1,0 +1,62 @@
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/tileEffects";
+include "include/say";
+include "include/facings";
+include "include/shapes";
+
+program SpellScript(params)
+
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+
+	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS );
+	var coords := GetCoordsInSquare(who.x, who.y, 6);
+
+	//sendsysmessage(who, " " +coords);
+
+	var items := array;
+
+	foreach coord in coords
+		var rune := CreateItemAtLocation( coord.x, coord.y, GetWorldHeight(coord.x, coord.y), 3682, 1, who.realm);
+		items.append(rune);
+	//	sendsysmessage(who,  " " + rune);
+	endforeach	
+
+	var time := Cint(AP_GetSkill(who, MAGICLORE));
+	TS_StartTimer(who, "paralysis", time);
+	TS_StartTimer(who, "invul", time);
+
+	while (time > 0)
+		var  mobs := ListMobilesNearLocation(who.x, who.y,  who.z, 6, who.realm);
+		//sendsysmessage(who, "mobs " + mobs);
+		foreach mob in (mobs)
+			if (!mob.frozen)
+				PrintText(mob, "*paralisado*");
+				TS_StartTimer(mob, "paralysis", time);
+				TS_StartTimer(who, "invul", time);
+				mob.squelched(time);
+			endif
+		endforeach
+		time := time - 1;
+		sleep(1);
+	endwhile
+
+	foreach item in items
+		DestroyItem(item);
+	endforeach	
+
+	return 1;
+
+endprogram

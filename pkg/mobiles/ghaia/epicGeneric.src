@@ -1,0 +1,33 @@
+//program KillPlayers()
+//    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+//	set_critical(1);
+//	InitializeNPC(me);
+//	set_critical(0);
+//	SetWarMode(0);
+
+//    var hasPlayerNearMe := 0;
+//    var nearby := ListMobilesNearLocationEx( me.x, me.y, LIST_IGNORE_Z, 30 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+//    foreach player in nearby
+//        if (player.acctname)
+//            hasPlayerNearMe := 1;
+//            break;
+//        endif
+//    endforeach
+//    EnableEvents(SYSEVENT_ENTEREDAREA, 30, EVMASK_ONLY_PC);
+
+//    while (1)
+//        if (hasPlayerNearMe)
+//            epicGenericBrain();
+//        endif
+//        hasPlayerNearMe := 0;
+//	    var ev := wait_for_event(86400);
+//        if (ev.source.acctname)
+//            hasPlayerNearMe := 1;
+//        endif
+//    endwhile
+//endprogram
+
+//function epicGenericBrain();
+
+
+//endfunction

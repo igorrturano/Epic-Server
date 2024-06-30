@@ -1,0 +1,187 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include "include/client";
+include ":itemutils:canAccess";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_core:fls_characters";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":spells:swordmage";
+
+program do_poisoning(who)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	SendSysMessageEx(who, "Escolha a pocao de veneno.", SSM_REQUEST);
+	var the_poison := Target(who);
+
+	if(!the_poison)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	elseif(!can_access(who, the_poison))
+		SendSysMessageEx(who, " Voce nao pode usar isto!", SSM_FAIL);
+		return;
+	elseif (Distance(who, the_poison) > 1)
+		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
+		return;
+	elseif (the_poison.graphic != 0x0f09)
+		SendSysMessageEx(who, "Isso nao parece ser uma pocao!", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Escolha o objeto que voce deseja aplicar o veneno.", SSM_REQUEST);
+	var the_item := Target(who, TGTOPT_CHECK_LOS);
+	if(!the_item)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	elseif(!can_access(who, the_item))
+		SendSysMessageEx(who, "Voce nao pode usar isto!", SSM_FAIL);
+		return;
+	elseif (Distance(who, the_poison) > 1)
+		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
+		return;
+	endif
+
+	//pega info sobre a poçao
+	var acfgfile := ReadConfigFile(":*:itemdesc");
+	var theitem := acfgfile[the_item.objtype];
+	var level, difficulty, points, poisonType;
+	level := Cint(GetObjProperty(the_poison, "level"));
+	if (!level)
+		level := RandomDiceRoll("1d5");
+	endif
+	//se for uma poçao que nao a default a formula eh essa:
+	difficulty := 15*level + 10;
+	points := difficulty;
+	case(the_poison.objtype)
+		0xbf00: level := 1; difficulty := 40; points := 50; poisonType := "defaultPoison";
+    	0xbf01: poisonType :="strPoison"; difficulty := 60; points := 70;
+		0xbf07: poisonType :="dexPoison"; difficulty := 60; points := 70;
+		0xbf06: poisonType :="intPoison"; difficulty := 60; points := 70;
+		0xbf02: poisonType:="staminaPoison"; difficulty := 60; points := 70;
+		0xbf03: poisonType:="paralyzePoison"; difficulty := 80; points := 100;
+		0xef54: poisonType :="manaPoison"; difficulty := 40; points := 70;
+		0xbf04: level := 4; difficulty := 80; points := 60; poisonType := "defaultPoison";
+        0x6072: level := 3; difficulty := 70; points := 50; poisonType := "defaultPoison";
+		0xdc04: level := 2; difficulty := 60; points := 40; poisonType := "defaultPoison";
+		0xbf05: level := 5; difficulty := 100; points := 100; poisonType := "defaultPoison";
+		default: difficulty := 0; points := 0; poisonType := "invalid";
+	endcase
+
+	var canBePoisoned := 0;
+	var isFood := 0;
+	if (the_item.objtype IN {0x0df0,0x13f9,0x0e8a,0x0f5c,0x1406,0x1438,0x143a,0x143c,0x13e4,0x13b3,0x13e3,0x27a6,0x26C6}) // Staffs e Maces
+		SendSysMessageEx(who, "Voce nao pode envenenar armas impactantes.", SSM_FAIL);
+		return 0;
+	elseif(theitem.Attribute == "RangedCombat")
+		SendSysMessageEx(who, "Voce nao pode envenenar arcos ou bestas.", SSM_FAIL);
+		return 0;
+	elseif (the_item.IsA(POLCLASS_WEAPON))
+		canBePoisoned := 1;
+	elseif( the_item.graphic == 0x1bfb || the_item.graphic == 0xf3f  )
+		if(the_item.amount > 10)
+			SendSysMessageEx(who, "Voce so pode envenenar 10 flechas de uma vez.", SSM_FAIL);
+			return 0;
+		endif
+		canBePoisoned := 1;
+	else
+		var cookingcfg := ReadConfigFile(":food:itemdesc");
+		var foodelem := FindConfigElem(cookingcfg, the_item.objtype);
+		if (foodelem == error)
+			canBePoisoned := 0;
+		else
+			canBePoisoned := 1;
+			isFood := 1;
+		endif
+	endif
+	if (!canBePoisoned)
+		SendSysMessageEx(who, "Isto nao pode ser envenenado.", SSM_FAIL);
+		return;
+	endif
+
+	if (isFood)
+		if (!TemHabilidade(who, "Mestre dos Venenos"))
+			SendSysMessageEx(who, "Voce nao sabe como envenenar isto sem deixar obvio que o item contem veneno.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	if (poisonType == "invalid")
+		SendSysMessageEx(who, "Voce aplicou o liquido mas ele nao parece com veneno.", SSM_FAIL);
+		return;
+	endif
+	if(TemHabilidade(who, "Mestre dos Venenos") || level == 1 || who.cmdlevel > 1)
+		//if (GetObjProperty(who, "classe") == "ladino")
+		//	SkillCheck(who, BEGGING, -1);
+		//endif
+		PlaySoundEffect(who, 0x248);
+		SendSysMessageEx(who, "Voce aplicou o veneno com sucesso.", SSM_INFO);
+		var poisonInfo := struct;
+		poisonInfo.+name := poisonType;
+		poisonInfo.+level := level;
+		poisonInfo.+dosage := 20 - (level*2);
+		poisonInfo.+acc := who.acctname;
+		poisonInfo.+time := 40 + level*10;
+		if (temHabilidade(who, "Veneno Puro"))
+			poisonInfo.dosage := CInt(poisonInfo.dosage * 1.5);
+			poisonInfo.time := CInt(poisonInfo.time * 1.25);
+		endif
+		if ( the_item.graphic == 0x1bfb || the_item.graphic == 0xf3f  )
+			poisonInfo.dosage := "infinito"; //Era 100 antes
+			poisonInfo.time := 50; //CInt(poisonInfo.dosage * 0.5);
+		endif
+		SetObjProperty(the_item, "poisonInfo", poisonInfo);
+		if (the_item.isA(POLCLASS_WEAPON))
+			if (!TemHabilidade(who, "Mestre dos Venenos"))
+				if(the_item.hp < 11);
+					MoveObjectToLocation(the_item, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
+					SetObjProperty(the_item, "broken", 1);
+					SetObjProperty(the_item, "realdesc", the_item.desc);
+					releasegems(who, the_item);
+					eraseobjproperty(the_item, "gems");
+					SetName(the_item, the_item.desc+" [danificado]");
+					MoveItemToContainer(the_item, who.backpack);
+					SendSysMessageEx(who, "A arma ja estava muito danificada e se quebrou na aplicacao do veneno.", SSM_FAIL);
+				else
+					the_item.hp := the_item.hp - 10;
+					var nome := the_item.name;
+					SetName(the_item, nome + " -");
+					sleepms(30);
+					SetName(the_item, nome);
+				endif
+			endif
+		endif
+	else
+		SendSysMessageEx(who, "Voce falhou e envenenou a si mesmo!", SSM_FAIL);
+		TS_StartTimer(who, poisonType, 60, level, who);
+	endif
+
+	if ( GetObjProperty(the_poison, "doses") == error )
+		SetObjProperty(the_poison, "doses", 2);
+		SendSysMessageEx(who, "Ainda tem veneno para 2 doses.", SSM_INFO);
+	else
+		var doses := cint(GetObjProperty(the_poison, "doses"));
+		doses := doses - 1;
+		if (doses > 0)
+			SetObjProperty(the_poison, "doses", doses);
+			SendSysMessageEx(who, "Ainda tem veneno para " + doses + " doses.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Voce usou todas as doses do veneno.", SSM_INFO);
+			SubtractAmount(the_poison, 1);
+			EraseObjProperty(the_poison, "doses");
+			CreateItemInBackpack(who, 0xf0e, 1);
+		endif
+	endif
+
+		var nome_antigo := the_item.name;
+	if ( the_item.graphic == 0xf3f ) 
+		the_item.name := nome_antigo+" envenenadas";
+	elseif( the_item.graphic == 0x1bfb )
+		the_item.name := nome_antigo+" envenenados";
+	endif
+
+endprogram

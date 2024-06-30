@@ -1,0 +1,95 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":combat:combat";
+include "include/say";
+include "include/damage";
+include ":tn:combat";
+
+program aura_of_hate(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+    var basedamage := CalculateRawDamage(attacker, attacker.weapon);
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+    
+    var corrupcao := Cint(GetObjProperty(attacker, "corruption")/1000);
+    if (corrupcao < 1)
+        corrupcao := 1;
+    endif
+	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE)) + corrupcao;
+	cast_points := cast_points;
+	var final := cast_points;
+	if (final < 10)
+		final := 10;
+	endif
+    // Dex Debuff
+	var stat := AP_GetStat(defender, DEXTERITY);
+	stat := Cint((stat*final)/100);
+	var points := stat * -1;
+	var dex_points := points;
+	
+    SetObjProperty(defender, "#ClumsyMod", points);
+	AP_ModifyStatMod(defender, DEXTERITY, points);
+
+    // Str Debuff
+	stat := AP_GetStat(defender, STRENGTH);
+	stat := Cint((stat*final)/100);
+	points := stat * -1;
+    var str_points := points;
+	SetObjProperty(defender, "#WeakenMod", points);
+	AP_ModifyStatMod(defender, STRENGTH, points);
+
+    // Int Debuff
+	stat := AP_GetStat(defender, INTELLIGENCE);
+	stat := Cint((stat*final)/100);
+	points := stat * -1;
+    var int_points := points;
+
+	SetObjProperty(defender, "#FeebleMindMod", points);
+	AP_ModifyStatMod(defender, INTELLIGENCE, points);
+
+    PlayAttackAnimation(attacker);
+    if (!GetObjProperty(attacker, "#magiasilenciosa"))
+        PlayObjectCenteredEffectEx(defender, 0x3789, 7, 32, 2485, 1);
+        PlaySoundEffect(defender, 0x58E);
+    endif
+
+	SendSysMessageEx(attacker, "Nao te falta odio!", SSM_INFO);
+	var hate_dmg := cast_points * 1;
+    SetObjProperty(attacker, "repreensao", 1);
+
+	var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+	DamageFLS(defender, total, DMG_FORCED, attacker);
+
+    DamageFLS(defender, hate_dmg, DMG_PHYSICAL, attacker);
+    var curse_time := CInt(AP_GetSkill(attacker, MAGICLORE) / 3);
+
+	Sleep(curse_time);
+    EraseObjProperty(defender, "#ClumsyMod");
+    EraseObjProperty(defender, "#WeakenMod");
+    EraseObjProperty(defender, "#FeebleMindMod");
+    
+    AP_ModifyStatMod(defender, DEXTERITY, dex_points * -1);
+    AP_ModifyStatMod(defender, INTELLIGENCE, int_points * -1);
+    AP_ModifyStatMod(defender, STRENGTH, str_points * -1);
+
+    if (GetObjProperty(attacker, "#magiasilenciosa"))
+        SendSysMessageEx(attacker,  "O efeito da magia silenciosa acabou.", SSM_INFO);
+    endif
+    //Remove prop de magia silenciosa apos o cast ser completo
+    EraseObjProperty(attacker, "#magiasilenciosa");
+
+	return 1;
+endprogram
+

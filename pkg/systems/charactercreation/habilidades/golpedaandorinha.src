@@ -1,0 +1,97 @@
+use uo;
+use os;
+use cfgfile;
+use math;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/facings";
+include "include/utils";
+include "include/damage";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":tn:combat";
+include ":taming:taming";
+
+program animateSword(params)
+	var who := params[1];
+	params := 0; // No longer needed
+
+    var cfg:=ReadConfigFile(":combat:itemdesc");
+    var elem := FindConfigElem(cfg, who.weapon.objtype);
+
+    Performaction(who, elem.Anim);
+    PlaySoundEffect(who, 0x520);
+    PrintTextAbove(who, "*Golpe da Andorinha*");
+
+    sleepms(2);
+    PushBackEX(who, 5, 50, 1);
+	return 1;
+endprogram
+
+function PushBackEX(who, dist, delay, invert := 0)
+   var mod := GetModByFacing(who.facing);
+	var x := mod[1];
+	var y := mod[2];
+
+	if (!invert)
+		x := x * -1;
+		y := y * -1;
+	endif
+
+   var finalx := who.x + (dist*x);
+   var finaly := who.y + (dist*y);
+   	var dmgList := dictionary;
+    var alreadydamaged := array{};
+
+	dmgList := getNewDamageList(who);
+    var basedamage := CalculateRawDamage(who, who.weapon);
+   var world_z := GetStandingHeight( finalx, finaly, who.z-15, who.realm );
+   var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION, MOVEOBJECT_NORMAL);   
+   for i:= 1 to dist
+		var finalx := (who.x + x);
+		var finaly := (who.y + y);
+		if (!CheckLosAt(who, finalx, finaly, who.z))
+			return 0;
+		endif
+      var world_z := GetStandingHeight( who.x, who.y, who.z, who.realm );
+      if (world_z.z > who.z)
+         return 0;
+      endif
+        PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 10, 20, 0, who.realm);
+        var mobiles := ListMobilesNearLocation(who.x, who.y, who.z, 1 , who.realm );
+		var allPets := array{};
+		var party_members := who.party.members;
+
+		if (who.party)
+			foreach member in party_members
+				if (member != who)
+					var memberObj := SystemFindObjectBySerial(member.serial);
+					var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+					foreach pet in allPetsAndSummonedPets
+							allPets.append(pet);
+					endforeach
+				endif
+			endforeach
+		endif	
+
+		foreach mobile in mobiles
+			if (!(mobile.serial in alreadydamaged) && (mobile != who) && !(mobile in who.party.members) && !(mobile in allPets ))
+				alreadydamaged.Append(mobile.serial);
+				var total := cint(CalculateTotalDamage(mobile, basedamage, who, dmgList));
+				DamageFLS(mobile, total*2, DMG_FORCED, who);
+			endif
+			sleepms(20);
+		endforeach
+
+		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm, force );
+		if (err == error)
+		//	PrintText(who, "*bate no obstaculo*");
+			return 0;
+		endif
+		sleepms(delay);
+	endfor
+
+   return 1;
+endfunction

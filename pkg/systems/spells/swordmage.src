@@ -1,0 +1,59 @@
+
+use uo;
+use os;
+
+include "include/client";
+include "include/sysEvent";
+
+program swordmagebook(parms)
+
+	detach();
+	var who := parms[1];
+	var item := parms[2];
+
+	var pid := GetPid();
+	SetObjProperty(item, "#swordmagepid", pid);
+	var event;
+
+	while(who.connected)
+		
+	        RegisterForSpeechEvents( item, 1 );
+        	EnableEvents( SYSEVENT_SPEECH, 1 );
+
+		//sendsysmessage(who, " ev " + event);
+
+		event := wait_for_event( 120 );
+                if (event and event.type == SYSEVENT_SPEECH)
+			//sendsysmessage(who, "1:" + event.text);
+			if (IsEquipped(event.source, item) )
+				//sendsysmessage(who, "2");
+				if (event.source ==  who)
+					var gems := GetObjProperty(item, "gems");
+					//sendsysmessage(who, "3: " + gems[event.text].id);
+					if ( gems[event.text].id )
+						//sendsysmessage(who, "4");
+						var spellinfo := struct;
+						spellinfo.+id := gems[event.text].id;
+						var e := Start_Script("cast_spell", {who, spellinfo, 0});
+						//sendsysmessage(who, "error " + e);
+					endif
+				endif
+			endif
+		endif		
+
+	endwhile
+
+endprogram 
+
+function IsEquipped(character, staff)
+
+        var weaponone := GetEquipmentByLayer( character,  LAYER_HAND1 );
+        var weapontwo := GetEquipmentByLayer( character,  LAYER_HAND2 );
+
+        if ( ( weaponone == staff ) or (weapontwo == staff ) )
+                return 1;
+        else
+                return 0;
+        endif
+
+endfunction

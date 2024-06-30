@@ -1,0 +1,16 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+
+include ":commands:possess";
+
+program textcmd_unpossess( me, freeze )
+	if (freeze)
+		freeze := 1;
+	else
+		freeze := 0;
+	endif
+	unpossess(me, freeze);
+
+endprogram

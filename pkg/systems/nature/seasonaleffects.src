@@ -1,0 +1,25 @@
+
+use uo;
+
+program seasonaleffects(params)
+	//return;
+	//sem efeitos das estacoes
+	var who := params[1];
+	
+	var season := cint(getglobalproperty("season"));
+	if (!season)
+		season := 1;
+	endif
+	
+	if ( cint(GetGlobalProperty("desolation")) == 1)
+		season := 4;
+	endif
+	
+	if (who)
+		SendPacket(who, "BC0"+season+"01");
+	else
+		foreach player in enumerateonlinecharacters()
+			SendPacket(player, "BC0"+season+"01");
+		endforeach
+	endif
+endprogram

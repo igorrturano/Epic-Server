@@ -1,0 +1,91 @@
+use uo;
+use datafile;
+use cfgfile;
+include ":gumps:gumps";
+include ":gumps:requestGump";
+
+program configmining(who)
+
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 250, 430);
+	GFResizePic(gump, 15, 40, 0x13BE, 220, 400);
+	GFTextMid(gump, 20, 50, 250, 1153, "Controle das minas");
+
+	var y := 60;
+	GFTextLine(gump, 35, y, 1153, "Adicionar Nova");
+	GFAddButton(gump, 20, y+2, 2117, 2118, 1, 100);
+
+	var minasdf := opendatafile(":gathering:miningspots");
+	if (minasdf == error)
+		minasdf :=  createdatafile(":gathering:miningspots");
+	endif
+
+	var i := 1;
+	foreach mina in (minasdf.keys())
+		y := y+ 15;
+		GFTextLine(gump, 35, y, 1153, ""+mina);
+		GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
+		i := i + 1;
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+
+	if (input == 100)
+
+		var  nome := RequestGump(who, "Escolha o nome da mina");
+		var ores := RequestGump(who, "Escreva os ores da mina");
+		var rarity := RequestGump(who, "Descreva a raridade para cada ore adicionado anteriormente  (de0 a 999)");
+		var rect :=  RequestGump(who, "Qual o rect da mina?");
+        var realm := RequestGump(who, "Qual o realm da mina?");
+
+		var mina := minasdf.createelement(""+nome);
+		mina.setprop("Name", nome);
+		mina.setprop("Ores", ores);
+		mina.setprop("Rarity", rarity);
+		mina.setprop("Rect", rect);
+        mina.setprop("Realm", realm);
+
+	elseif(input >= 400)
+
+		var index :=  input - 400;
+		var  elem := minasdf.FindElement(minasdf.keys()[index]);
+
+		var gump2 := GFCreateGump(220, 300);
+		GFResizePic(gump2, 0,  0, 3600, 220, 200);
+
+		GFTextLine(gump2, 45, 15, 2100, "Name: "+elem.getprop("Name"));
+		GFTextLine(gump2, 45, 35, 2100, "Ores: "+elem.getprop("Ores"));
+		GFTextLine(gump2, 45, 55, 2100, "Rariry: "+elem.getprop("Rarity"));
+		GFTextLine(gump2, 45, 70, 2100, "Rect: "+elem.getprop("Rect"));
+        GFTextLine(gump2, 45, 85, 2100, "Realm: "+elem.getprop("Realm"));
+		GFTextLine(gump2, 45,  100, 2100, "Deletar  Mina ");
+		GFAddButton(gump2, 20, 102, 2117, 2118, 1, 100);
+		GFTextLine(gump2, 45, 115, 2100, "Editar Mina ");
+		GFAddButton(gump2, 20, 1117, 2117, 2118, 1, 200);
+
+		var input2 := GFSendGump(who, gump2);
+		input2 := input2[0];
+
+		if (input2 == 100)
+			minasdf.deleteelement(minasdf.keys()[index]);
+			SendSysMessage(who, "Mina deletada.");
+		elseif (input2 == 200)
+			var  nome := RequestGump(who, "Escolha o nome da mina", "",elem.getprop("Name"));
+			var ores := RequestGump(who, "Escreva os ores da mina", "", elem.getprop("Ores"));
+			var rarity := RequestGump(who, "Descreva a raridade para cada ore adicionado anteriormente  (de0 a 999)", "", elem.getprop("Rarity"));
+			var rect :=  RequestGump(who, "Qual o rect da mina?","", elem.getprop("Rect"));
+            var realm :=  RequestGump(who, "Qual o realm da mina?","", elem.getprop("Realm"));
+
+			elem.setprop("Name", nome);
+			elem.setprop("Ores", ores);
+			elem.setprop("Rarity", rarity);
+			elem.setprop("Rect", rect);
+            elem.setprop("Realm", realm);
+		endif
+
+
+	endif
+
+endprogram

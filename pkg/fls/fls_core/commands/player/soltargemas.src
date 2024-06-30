@@ -1,0 +1,54 @@
+use uo;
+include ":spells:swordmage";
+include "include/say";
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+
+program soltarGemas(who)
+    if (!Cint(GetObjProperty(who, "EspadaArcana"))) //verifica se é Kitahne
+            return 1;
+    endif
+
+    if(!AP_ConsumeVital(who, MANA, 40))  
+        PlaySoundEffect(who, SFX_SPELL_FAIL);
+        PlayObjectCenteredEffectEx(who, FX_SPELL_FAIL, 7, 16, 86);	
+        SendSysMessage(who, "Voce precisa de mana para remover a gema!");
+        return 1;
+    endif
+
+    SendSysMessage(who, "Escolha a arma");
+    var armaAntiga := cint(GetObjProperty(who, "swordmage"));
+    var targ := Target(who);
+
+    who.frozen := 1;
+    SendSysMessage(who, "Voce comeca o processo de extracao das gemas");
+    sleep(5);
+    PlaySoundEffect(who, SFX_BLESS);
+    PlayObjectCenteredEffectEx(who, FX_BLESS_EFFECT, 7, 16, 86);	
+    who.frozen := 0;
+    SendSysMessage(who, "Voce extraiu as gemas");
+
+    if (armaAntiga) //verifica se existe
+        if (armaAntiga != targ.serial) //verifica se a arma é sua
+            SendSysMessageEx(who, "Esta arma não lhe pertence." , SSM_FAIL);
+            return 1;
+        endif
+    endif
+        
+    var arma := targ;
+    if (!targ)
+        return;
+    else
+    var gems := GetObjProperty(arma, "gems"); //remove as gemas e as recria na bag.
+    foreach gem in (gems.keys())
+        createiteminbackpack(who, gems[gem].objtype);
+    endforeach
+    //remove propriedades da arma e player
+    eraseObjPRoperty(targ, "swordmage");
+    eraseObjPRoperty(targ, "cancast");
+    eraseObjPRoperty(targ, "can_cast");
+    eraseObjPRoperty(targ, "gems");
+    eraseObjProperty(who, "swordmage");
+    endif
+endprogram

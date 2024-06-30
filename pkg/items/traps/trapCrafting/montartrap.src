@@ -1,0 +1,295 @@
+use uo;
+
+include "include/say";
+include ":mounts:mounts";
+include ":attributes:attributes";
+include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include "include/damage";
+include ":traps:traps";
+include ":tn:tngumps";
+include ":itemutils:canAccess";
+
+program Make_Trap(who, trap)
+
+    if ((temHabilidade(who, "Instalar Armadilha")) || (temHabilidade(who, "Armadilheiro")))
+
+    else
+        SendSysMessageEx(who, "Voce nao tem a menor ideia de como usar isso.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (trap.objtype == 0xff97)
+        SendSysMessageEx(who, "Esta armadilha ja esta pronta para uso.", SSM_FAIL);
+        return 0;
+    endif
+
+    var trapcheck := GetObjProperty(trap, "traptype");
+
+    if (Distance(trap, who) > 2)
+		SendSysMessageEx(who, "Muito distante.", SSM_FAIL);
+		return 0;
+	endif
+
+    if ((trapcheck == "PoisonGas") || (trapcheck == "Explosion") || (trapcheck == "Needle") || (trapcheck == "PoisonGas"))
+        SendSysMessageEx(who, "Esta armadilha ja foi armada", SSM_FAIL);
+        return 0;
+    endif
+
+	if(!can_access(who, trap))
+		return 0;
+	endif
+
+	if((!trap.movable) or !ReserveItem(trap))
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return 0;
+	endif
+
+    niveldarmardilha(who, trap);
+
+endprogram
+
+function niveldarmardilha (who, trap)
+
+    var level;
+
+        if ( trap.objtype == 0x6076)
+			SendSysMessageEx(who, "Escolha a pocao venenosa ou um explosivo.", SSM_REQUEST);
+			var pot := Target(who);
+
+            if (Distance(pot, who) > 1)
+	        	SendSysMessageEx(who, "A pocao deve estar em sua bolsa ou proxima de voce.", SSM_FAIL);
+	        	return 0;
+	        endif
+
+			if (!pot)
+				SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				//DestroyItem(trap);
+				return;
+			else
+				if ( (pot.objtype == 0xbf00) || (pot.objtype == 0xdc04) || (pot.objtype == 0x6072) || (pot.objtype == 0xbf04) || (pot.objtype == 0xef60) || (pot.objtype == 0xef61) || (pot.objtype == 0xef62))
+                    //VENENOS
+					if (pot.objtype == 0xbf00)
+						level := 1;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "PoisonGas");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+                    elseif ( pot.objtype == 0xdc04)
+						level := 2;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "PoisonGas");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+					elseif ( pot.objtype == 0x6072)
+						level := 3;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "PoisonGas");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+					elseif ( pot.objtype == 0xbf04 )
+						level := 4;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "PoisonGas");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+                    //BOMBAS
+                    elseif (pot.objtype == 0xef60)
+						level := 3;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "Explosion");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+					elseif ( pot.objtype == 0xef61)
+						level := 4;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "Explosion");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+					elseif ( pot.objtype == 0xef62)
+						level := 5;
+						SetObjProperty(trap, "traplevel", level);
+                        SetObjProperty(trap, "traptype", "Explosion");
+                        DestroyItem(pot);
+                        SendSysMessageEx(who, "Voce armou a armadilha com sucesso", SSM_INFO);
+                        return;
+					endif
+				else
+					SendSysMessageEx(who, "Esta nao e a pocao certa.", SSM_FAIL);
+					//DestroyItem(trap);
+					return;
+				endif
+			endif
+		elseif (trap.objtype == 0x1BE6)
+            var prot := RadioGump(who, 200, 200, "Escolha o nivel da armadilha", {"1", "2", "3", "4", "5"});
+		    if (prot == "1")
+                var custo := 10;
+                SendSysMessageEx(who, "Voce precisa de " + custo + " virotes para essa armadilha.", SSM_REQUEST);
+                var virotes := Target(who);
+
+                    if (Distance(virotes, who) > 1)
+	                	SendSysMessageEx(who, "Os virotes devem estar em sua bolsa ou proximos de voce.", SSM_FAIL);
+	        	        return 0;
+	                endif
+
+                    if (!virotes)
+                        SendSysMessage(who, "Cancelado.", SSM_FAIL);
+                        return;
+                    endif
+
+                    if (!virotes in EnumerateItemsInContainer(who.backpack))
+		                SendSysMessageEx(who, "Os virotes devem estar na sua bolsa.", SSM_FAIL);
+		                return 0;
+	                endif
+
+                    if (virotes.objtype == 0x1bfb)
+                        if ( virotes.amount < custo )
+                             SendSysMessageEx(who, "Voce nao tem virotes suficientes", SSM_INFO);
+                            return;
+                        endif
+
+                        if (!SubtractAmount(virotes, custo))
+                            SendSysMessageEx(who, "Voce nao tem virotes suficientes.", SSM_INFO);
+                            return;
+                        else
+                            SendSysMessageEx(who, "Voce armou a armadilha com os virotes", SSM_INFO);
+                            SetObjProperty(trap, "traplevel", 1);
+                            SetObjProperty(trap, "traptype", "Needle");
+                            return;
+                        endif
+                    endif
+		    elseif (prot == "2")
+                var custo := 20;
+                SendSysMessageEx(who, "Voce precisa de " + custo + " virotes para essa armadilha", SSM_REQUEST);
+                var virotes := Target(who);
+
+                    if (Distance(virotes, who) > 1)
+	                	SendSysMessageEx(who, "Os virotes devem estar em sua bolsa ou proximos de voce.", SSM_FAIL);
+	        	        return 0;
+	                endif
+
+                    if (!virotes)
+                        SendSysMessage(who, "Cancelado.", SSM_FAIL);
+                        return;
+                    endif
+
+                    if (virotes.objtype == 0x1bfb)
+                        if ( virotes.amount < custo )
+                             SendSysMessageEx(who, "Voce nao tem virotes suficientes", SSM_INFO);
+                            return;
+                        endif
+
+                        if (!SubtractAmount(virotes, custo))
+                            SendSysMessageEx(who, "Voce nao tem virotes suficientes.", SSM_INFO);
+                            return;
+                        else
+                            SendSysMessageEx(who, "Voce armou a armadilha com os virotes", SSM_INFO);
+                            SetObjProperty(trap, "traplevel", 2);
+                            SetObjProperty(trap, "traptype", "Needle");
+                            return;
+                        endif
+                    endif
+            elseif (prot == "3")
+                var custo := 30;
+                SendSysMessageEx(who, "Voce precisa de " + custo + " virotes para essa armadilha", SSM_REQUEST);
+                var virotes := Target(who);
+
+                    if (Distance(virotes, who) > 1)
+	                	SendSysMessageEx(who, "Os virotes devem estar em sua bolsa ou proximos de voce.", SSM_FAIL);
+	        	        return 0;
+	                endif
+
+                    if (!virotes)
+                        SendSysMessage(who, "Cancelado.", SSM_FAIL);
+                        return;
+                    endif
+
+                    if (virotes.objtype == 0x1bfb)
+                        if ( virotes.amount < custo )
+                             SendSysMessageEx(who, "Voce nao tem virotes suficientes", SSM_INFO);
+                            return;
+                        endif
+
+                        if (!SubtractAmount(virotes, custo))
+                            SendSysMessageEx(who, "Voce nao tem virotes suficientes.", SSM_INFO);
+                            return;
+                        else
+                            SendSysMessageEx(who, "Voce armou a armadilha com os virotes", SSM_INFO);
+                            SetObjProperty(trap, "traplevel", 3);
+                            SetObjProperty(trap, "traptype", "Needle");
+                            return;
+                        endif
+                    endif
+            elseif (prot == "4")
+                var custo := 40;
+                SendSysMessageEx(who, "Voce precisa de " + custo + " virotes para essa armadilha", SSM_REQUEST);
+                var virotes := Target(who);
+
+                    if (Distance(virotes, who) > 1)
+	                	SendSysMessageEx(who, "Os virotes devem estar em sua bolsa ou proximos de voce.", SSM_FAIL);
+	        	        return 0;
+	                endif
+
+                    if (!virotes)
+                        SendSysMessage(who, "Cancelado.", SSM_FAIL);
+                        return;
+                    endif
+
+                    if (virotes.objtype == 0x1bfb)
+                        if ( virotes.amount < custo )
+                             SendSysMessageEx(who, "Voce nao tem virotes suficientes", SSM_INFO);
+                            return;
+                        endif
+
+                        if (!SubtractAmount(virotes, custo))
+                            SendSysMessageEx(who, "Voce nao tem virotes suficientes.", SSM_INFO);
+                            return;
+                        else
+                            SendSysMessageEx(who, "Voce armou a armadilha com os virotes", SSM_INFO);
+                            SetObjProperty(trap, "traplevel", 4);
+                            SetObjProperty(trap, "traptype", "Needle");
+                            return;
+                        endif
+                    endif
+            elseif (prot == "5")
+                var custo := 50;
+                SendSysMessageEx(who, "Voce precisa de " + custo + " virotes para essa armadilha", SSM_REQUEST);
+                var virotes := Target(who);
+
+                    if (Distance(virotes, who) > 1)
+	                	SendSysMessageEx(who, "Os virotes devem estar em sua bolsa ou proximos de voce.", SSM_FAIL);
+	        	        return 0;
+	                endif
+
+                    if (!virotes)
+                        SendSysMessage(who, "Cancelado.", SSM_FAIL);
+                        return;
+                    endif
+
+                    if (virotes.objtype == 0x1bfb)
+                        if ( virotes.amount < custo )
+                             SendSysMessageEx(who, "Voce nao tem virotes suficientes", SSM_INFO);
+                            return;
+                        endif
+
+                        if (!SubtractAmount(virotes, custo))
+                            SendSysMessageEx(who, "Voce nao tem virotes suficientes.", SSM_INFO);
+                            return;
+                        else
+                            SendSysMessageEx(who, "Voce armou a armadilha com os virotes", SSM_INFO);
+                            SetObjProperty(trap, "traplevel", 5);
+                            SetObjProperty(trap, "traptype", "Needle");
+                            return;
+                        endif
+                    endif
+            endif
+        endif
+endfunction

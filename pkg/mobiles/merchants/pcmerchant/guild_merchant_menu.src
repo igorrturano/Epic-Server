@@ -1,0 +1,171 @@
+/*
+1- so quem tem tag pode por coisa pra vender OK
+2- cada coisa q vc colocou la tem seu id OK
+3- voce pode setar o pre?o das coisas OK
+4- voce pode remover coisas  OK
+5- quando o npc vende o dinheiro vai pro seu id (uma prop) e 10% vai pro npc  OK
+6- player comuns (sem tag)so podem comprar e nao vende OK
+*/
+
+use uo;
+use os;
+use guilds;
+
+include ":gumps:requestGump";
+include "include/string";
+include ":gumps:gumps";
+include ":gumps:gumpPrompt";
+include ":merchants:merchant";
+include ":merchants:item_template";
+include	":merchants:crafthelp";
+include ":brainAI:npcCommands";
+include ":gumps:yesNo";
+include "include/say";
+include ":charactercreation:habilidades";
+
+
+var item_cfg := ReadConfigFile(":*:itemdesc");
+var npc;
+var player;
+var cur_menu := MENU_INTRO;
+var gump := MENU_INTRO;
+var input := MENU_INTRO;
+var escondido := player.hidden;
+var imposto := 0.1;
+var guild, above_merchant, is_guild_member;
+
+
+program MerchantMenu(params)
+	npc := params[1];
+	player := params[2];
+   if( GetObjProperty(params.me, "guild"))
+      guild := FindGuild(GetObjProperty(params.me, "guild"));
+      above_merchant := (guild.getProp("leader") == params.source.serial || guild.getProp(params.source.serial).above_merchants || params.source.cmdlevel >= 3);
+      is_guild_member := guild.guildid == params.source.guildid;
+   else
+      above_merchant := params.source.cmdlevel >= 3;
+   endif
+
+   if (GetObjproperty(params.me, "imposto") != error)
+      imposto := GetObjproperty(params.me, "imposto");
+   endif
+
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx (player, "Voce se revelou ao mercador.", SSM_FAIL);
+	endif
+
+	MAIN_LOOP: while ( 1 )
+      if (!player.concealed)
+         PrintText(player, "O que tem a venda?", SSM_FAIL);
+         PrintText(npc, array{"Olhe so este produto...", "Bem-vindo, vamos ver...", "Esta procurando algo especifico?"}.randomentry(), SSM_INFO);
+      endif
+		gump := MainLayout(player); //Gera o Layout padr�o do gump do mercador
+
+		case ( cur_menu )
+			MENU_INTRO: //Se nenhuma op��o do menu foi selecionada
+				IntroGump(gump); //Exibe instru��es no gump
+				break;
+			MENU_ITENS_A_VENDA: //Se menu que est� dendo utilizado � o de TODOS os itens a venda
+				if ( input == BOTAO_ITENS_TODOS_A_VENDA ) //Se o ultimo bot�o clicado � o que abre a lista de TODOS itens a venda
+					ShowForSaleItems(gump, npc, player); //Exiba os itens a venda
+				else //Caso contr�rio, foi clicado no bot�o de mostrar detalhes de algum item
+					cur_menu := MENU_ITENS_COMPRAR_CONFISCAR;
+					ShowForSaleItemsInfo(gump, npc, player, input); //Exiba as informa��es do item selecionado
+				endif
+				break;
+			MENU_ITENS_COMPRAR_CONFISCAR:
+				DoPurchase(npc, player, input); //Inicia o processo de compra ou confisco
+				break MAIN_LOOP; //Ao concluir opera��o, encerra o loop para dar chance de outros acessarem o vendor tamb�m
+			MENU_ITENS_MEUS_A_VENDA: //Se menu que est� dendo utilizado � o de MEUS itens a venda
+				if ( input == BOTAO_ITENS_MEUS_A_VENDA ) //Se o ultimo bot�o clicado � o que abre a lista de MEUS itens a venda
+					ShowForSaleItems(gump, npc, player, 1); //Exiba os MEUS itens a venda, com permiss�es especiais
+				else //Caso contr�rio, foi clicado no bot�o de mostrar detalhes de algum item
+					cur_menu := MENU_ITENS_RETIRAR_DA_VENDA;
+					ShowForSaleItemsInfo(gump, npc, player, input, 1);//Exiba as informa��es do item selecionado
+				endif
+				break;
+			MENU_ITENS_RETIRAR_DA_VENDA:
+				RetrieveMyItem(npc, player, input); //Remove um item que coloquei anteriormente � venda
+				break MAIN_LOOP; //Ao concluir opera��o, encerra o loop para dar chance de outros acessarem o vendor tamb�m
+			MENU_ITENS_MEUS_GANHOS:
+				ShowMyProfit(gump, npc, player); //Exibes os ganho com as vendas que foram feitas e ainda n�o foi coletado o lucro
+				break;
+			default: //se tentarem por script for�ar um valor diferente, abra a tela de instr��es
+				IntroGump(gump); //Exibe instru��es no gump
+				break;
+		endcase
+
+		input := GFSendGump(player, gump);
+
+		if (!player.connected || player.hidden)
+			break MAIN_LOOP; //Encerra o loop se o char tiver offline para liberar o npc
+		else
+			input := input[0]; //Caso contr�rio, armazena a ultima sele��o
+		endif
+
+		case ( input )
+			0: //Quando o gump � fechado
+				break MAIN_LOOP; //Encerra o loop para dar chance de outros acessarem o vendor tamb�m
+			BOTAO_ITENS_COLOCAR_A_VENDA:
+				AddMyItemForSale(npc, player); //Executa a fun��o de adicionar itens � venda
+				cur_menu := MENU_INTRO;
+			BOTAO_ITENS_TODOS_A_VENDA:
+				cur_menu := MENU_ITENS_A_VENDA;
+			BOTAO_ITENS_MEUS_A_VENDA:
+				cur_menu := MENU_ITENS_MEUS_A_VENDA;
+			BOTAO_ITENS_MINHA_CONTA:
+				cur_menu := MENU_ITENS_MEUS_GANHOS;
+			BOTAO_ITENS_RETIRAR:
+				DoWithdraw(npc, player); //Executa a fun��o de retirar item
+				cur_menu := MENU_INTRO;
+         BOTAO_HISTORICO:
+            if (!player.concealed) PrintText(npc, "Aqui esta o historico de vendas, Sr."); endif
+            var historico := GetMerchantLog(npc);
+            historico := "<br> - {}".format("<br> -".join(historico));
+            SendHTMLGump(player, "Historico de Vendas", historico);
+            cur_menu := MENU_INTRO;
+		endcase
+	endwhile
+
+	return 1;
+endprogram
+
+function MainLayout(player)
+	var gump := GFCreateGump(0, 0);
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 640, 480);
+	GFResizePic(gump, 15, 15, BKGND_STONESLAB, 150, 450);
+
+	GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_TODOS_A_VENDA);
+	GFTextLine(gump, 40, 30, GF_STDCOLOR, "Itens a venda");
+
+/*
+	//Marcknight: Usar esse codigo junto com o endif caso deseje que apenas classes especificas possam comercializar
+	var classes_permitidas := array{"Carpinteiro", "Cozinheiro", "Pescador", "Inventor",
+				   "Engenheiro", "Alfaiate", "Ferreiro", "Fazendeiro" };
+
+	if( ( GetObjProperty(player, "kit") in classes_permitidas ) || player.cmdlevel )
+*/
+	GFAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_COLOCAR_A_VENDA);
+	GFTextLine(gump, 40, 80, GF_STDCOLOR, "Adicionar items");
+
+	GFAddButton(gump, 20, 133, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_MEUS_A_VENDA);
+	GFTextLine(gump, 40, 130, GF_STDCOLOR, "Minhas vendas");
+
+	GFAddButton(gump, 20, 183, 2117, 2118, GF_CLOSE_BTN, BOTAO_ITENS_MINHA_CONTA);
+	GFTextLine(gump, 40, 180, GF_STDCOLOR, "Minha conta");
+
+   GFAddButton(gump, 20, 233, 2117, 2118, GF_CLOSE_BTN, BOTAO_HISTORICO);
+   GFTextLine(gump, 40, 230, GF_STDCOLOR, "Historico de Compras");
+
+//	endif
+
+	return gump;
+endfunction
+
+function IntroGump(byref gump)
+	GFPage(gump, 1);
+	GFResizePic(gump, 170, 15, BKGND_STONESLAB, 455, 450);
+	GFTextMid(gump, 170, 200, 455, GF_STDCOLOR, "Use os botoes da esquerda.");
+endfunction

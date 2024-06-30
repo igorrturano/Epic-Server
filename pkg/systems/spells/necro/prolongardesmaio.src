@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	var skill := AP_GetSkill(who, "Magery");
+
+
+	if (GetObjProperty(targ, "japrolongou"));
+		SendSysMessageEx(who, "Voce so pode usar essa magia uma vez em cada corpo", SSM_FAIL);
+		return 0;
+	endif
+
+	if ( !targ.isa(POLCLASS_CORPSE) )
+		SendSysMessageEx(who, "Voce so pode usar esta magia em corpos", SSM_FAIL);
+		return 0;
+	endif
+	if (GetObjproperty(targ, "npctemplate"))
+		SendSysMessageEx(who, "Essa magia so pode ser usada em players", SSM_FAIL);
+		return 0;
+	endif
+	
+	//Efeito da magia
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	SetObjProperty(targ, "prolongardesmaio", 1);
+		
+	SendSysMessageEx(who, "Os batimentos cardiacos do corpo sao reduzidos e seu desmaio sera prolongado", SSM_INFO);
+	
+	return 1;
+endprogram 

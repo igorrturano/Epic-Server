@@ -1,0 +1,132 @@
+use uo;
+use os;
+
+include "include/client";
+include ":itemutils:objtype";
+include ":itemutils:canAccess";
+include "include/say";
+
+const uobj_wheel_start := 0x1015;
+const uobj_wheel_end := 0x101e;
+
+program use_wool(who, wool)
+  EraseObjProperty(who, "IsMeditating");
+  EraseObjProperty(who, "HealTimer");
+  if(!can_access(who, wool))
+    return;
+  endif
+  if(wool.movable == 0)
+    SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+    return;
+  endif
+  if(!ReserveItem(wool))
+    return;
+  endif
+  SendSysMessageEx( who, "Escolha a roda de fiar.", SSM_REQUEST );
+  var use_on := Target(who);
+  if (!use_on)
+    SendSysMessageEx(who,"Cancelado.", SSM_FAIL);
+    return;
+  endif
+  var obj := use_on.objtype;
+  if (((obj >= uobj_wheel_start) && (obj <= uobj_wheel_end)) || ((obj >= 0x10a4) && (obj <= 0x10a6)))
+    PrintText(who, "*comecou a fiar algo*");
+  	var gfx;
+  	case(obj)
+    		4117:   gfx := 0x1016;
+    		4119:   gfx := 0x1016;
+    		4121:   gfx := 0x101a;
+    		4123:   gfx := 0x101a;
+    		4124:   gfx := 0x101d;
+    		4126:   gfx := 0x101d;
+    		4260:   gfx := 0x10a5;
+    		4262:   gfx := 0x10a5;
+  	endcase
+
+    var initx := who.x;
+    var inity := who.y;
+
+    while (wool.amount >= 1)
+
+    	use_on.graphic := gfx;
+      Detach();
+    	sleep(1);
+    	use_on.graphic := use_on.objtype;
+    	if (FazFio(who, wool) == 0)
+    	  break;
+      endif
+
+    	if ((who.x != initx) || (who.y != inity))
+    		SendSysMessageEx(who, "Voce desviou sua atencao.", SSM_FAIL);
+    		break;
+    	endif
+    endwhile
+    SendSysMessageEx(who, "Voce parou de fiar.", SSM_INFO);
+  else
+    SendSysMessageEx(who, "Voce precisa usar isto na roda de fiar.", SSM_FAIL);
+  endif
+endprogram
+
+function FazFio(who, item)
+  if (!Accessible(who, item))
+    SendSysMessageEx(who, "Voce nao possui o material!", SSM_FAIL);
+    return 0;
+  endif
+  var obj_type := item.objtype;
+  var obj_color := item.color;
+  var prod_type;
+  var prod_material;
+  case (obj_type)
+    0xdf9:
+    //algodao
+      prod_type := 0xf94; //fioalgodao
+      break;
+    0xf125:
+    //lã
+      prod_type := 0x1a93; //fiola
+      break;
+    0x1A9C:
+    //fibra linho
+      prod_type := 0x1a95; //fiolinho
+      break;
+    0xF8D:
+    //teia de aranha (seda)
+      prod_type := 0x1a94; //fioseda
+      break;
+    0xdfa:
+    //fibramalva
+      prod_type := 0x1a96; //fiomalva
+      break;
+    0xdfb:
+    //fibrasisal
+      prod_type := 0x1a97; //fiosisal
+      break;
+    0xdfc:
+    //fibradenin
+      prod_type := 0x1a98; //fiodenin
+      break;
+    0xdfd:
+    //fibrarami
+      prod_type := 0x1a99; //fiorami
+      break;
+    0xdf6:
+    //algodaoflamel
+      prod_type := 0x1a9a; //fio flamel
+      break;
+    0xdf7:
+    //algodaorajal
+      prod_type := 0x1a9b; //fio rajal
+      break;
+    default:
+      SendSysMessage (who, "Este item so serve para fiar.");
+      return 0;
+  endcase
+	if(SubtractAmount(item, 1))
+    CreateItemInBackpack(who, prod_type, 1);
+    PlaySoundEffect(who, 0x49);
+		return 1;
+	else
+		SendSysMessageEx(who, "Voce nao possui mais material suficiente.", SSM_FAIL);
+		return 0;
+	endif
+endfunction

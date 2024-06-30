@@ -1,0 +1,157 @@
+use uo;
+use datafile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":ghaia:ghaia";
+include ":gumps:yesNo";
+
+program gumpspawn(who)
+
+	createChestSpawngump(who, 1);
+
+endprogram
+
+function createChestSpawngump(who, type)
+
+	var df := OpenDataFile(":tn:chestspawns");
+	if (!df)
+		df := CreateDataFile( ":tn:chestspawns", DF_KEYTYPE_INTEGER );
+	endif
+
+	var spawns := array;
+
+	if (type == 1)
+		foreach spawn in (df.keys())
+			var spawnpoint := SystemFindObjectBySerial(spawn);
+			if (!spawnpoint)
+				df.deleteElement(spawn);
+			else
+				spawns.append(spawnpoint);
+			endif
+		endforeach
+	elseif ( type == 2)
+		var npctemplatename := Requestgump(who, "Digite o lvl do spawn");
+		foreach spawn in (df.keys())
+			var spawnpoint := SystemFindObjectBySerial(spawn);
+			var spawnnpctemplate := GetObjProperty(spawnpoint, "level");
+			if (spawnnpctemplate == npctemplatename)
+				spawns.append(spawnpoint);
+			endif
+		endforeach
+	elseif ( type == 3) //todo exibir as opções de regions
+		var regionrect := Requestgump(who, "Digite o x1, y1, x2, y2");
+		if (regionrect)
+			regionrect := SplitWords(regionrect);
+			foreach spawn in (df.keys())
+				var spawnpoint := SystemFindObjectBySerial(spawn);
+				if ( (spawnpoint.x > regionrect[1]) && (spawnpoint.y > regionrect[2]) && (spawnpoint.x < regionrect[3] ) && (spawnpoint.y < regionrect[4] ) )
+					spawns.append(spawnpoint);
+				endif
+			endforeach
+		endif
+	endif
+
+	var gump := GFCreateGump();
+
+        GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 380, 470);
+	GFResizePic(gump, 15, 40, 0x13BE, 350, 440);
+	GFTextMid(gump, 20, 50, 250, 1153, "Spawns");
+
+	GFPage(gump, 0);
+	GFTextLine(gump, 40, 70, 1153, "Lista de todos");
+	GFTextLine(gump, 40, 85, 1153, "Listar por nivel");
+	GFTextLine(gump, 40, 100, 1153, "Listar por regiao");
+
+	GFTextLine(gump, 200, 85, 1153, "Editar Selecionados");
+	GFTextLine(gump, 200, 100, 1153, "Deletar Selecionados");
+
+	GFTextLine(gump, 40, 145, 1153, "Lvl");
+	GFTextLine(gump, 70, 145, 1153, "Ran");
+	GFTextLine(gump, 100, 145, 1153, "Amt");
+	GFTextLine(gump, 130, 145, 1153, "Time");
+	GFTextLine(gump, 160, 145, 1153, "Loot");
+	GFTextLine(gump, 240, 145, 1153, "X Y Z");
+
+	GFAddButton( gump, 20, 73, 2103, 2104, 1, 1);
+	GFAddButton( gump, 20, 88, 2103, 2104, 1, 2);
+	GFAddButton( gump, 20, 103, 2103, 2104, 1, 3);
+
+	GFAddButton( gump, 180, 88, 2103, 2104, 1, 7);
+	GFAddButton( gump, 180, 103, 2103, 2104, 1, 8);
+
+	var x := 40;
+	var y := 160;
+	var i := 1;
+	var pagecount := 0;
+	var page := 1;
+	GFSetRadioGroup(gump, 1);
+	GFPage(gump, 1);
+	foreach spawn in spawns
+		GFTextLine(gump, x, y, 1153, ""+GetObjProperty(spawn, "level"));
+		GFTextLine(gump, x+30, y, 1153, ""+GetObjProperty(spawn, "range"));
+		GFTextLine(gump, x+60, y, 1153, ""+GetObjProperty(spawn, "amount"));
+		GFTextLine(gump, x+90, y, 1153, ""+GetObjProperty(spawn, "duration"));
+		GFTextLine(gump, x+120, y, 1153, ""+GetObjProperty(spawn, "class"));
+		GFTextLine(gump, x+200, y, 1153, ""+spawn.x + " " + spawn.y + " " + spawn.z);
+		GFAddButton( gump, x+180, y, 2103, 2104, 1, 1000+i);
+		GFCheckBox( gump, 20, y+3, 2362, 2360, 0, 100+i);
+		y := y + 15;
+		i := i +1;
+		pagecount := pagecount + 1;
+		if (pagecount == 21)
+			y := 160;
+			pagecount := 0;
+			page := page+1;
+			GFAddButton(gump, 350, 470, 2437, 2437, GF_PAGE_BTN, page);
+			GFPage(gump, page);
+			GFAddButton(gump, 350, 160, 2436, 2436, GF_PAGE_BTN, page-1);
+		endif
+	endforeach
+
+	var result := GFSendGump(who, gump);
+	if (result[0])
+		if (result[0] == 7)
+			var modificar := array;
+			foreach key in (result.keys)
+				if (key >= 100)
+					if (spawns[key-100]  )
+						modificar.append(spawns[key-100]);
+					endif
+				endif
+			endforeach
+			var amt := Cint(Requestgump(who, "Digite o Amount"));
+			var range := Cint(Requestgump(who, "Digite o Range"));
+			var lvl :=  Cint(Requestgump(who, "Digite o Level do bau"));
+			var time := Cint(Requestgump(who, "Digite o Time"));
+			var loot := Cstr(Requestgump(who, "Digite o Loot: Artifice, Guerreiro, Ladino ou Sabio."));
+			foreach x in modificar
+				SetObjProperty(x, "amount",   amt);
+				SetObjProperty(x, "range",    range);
+				SetObjProperty(x, "level",    lvl);
+				SetObjProperty(x, "duration", time);
+				SetObjProperty(x, "race", "Humano");
+				SetObjProperty(x, "class", loot);
+			endforeach
+		elseif (result[0] == 8 )
+			var modificar := array;
+			foreach key in (result.keys)
+				if (key >= 100)
+					if (spawns[key-100]  )
+						modificar.append(spawns[key-100]);
+					endif
+				endif
+			endforeach
+			foreach x in modificar
+				DestroyItem(x);
+			endforeach
+		elseif( result[0] >= 1000)
+			MoveObjectToLocation( who, spawns[result[0]-1000].x, spawns[result[0]-1000].y, spawns[result[0]-1000].z, spawns[result[0]-1000].realm, MOVEOBJECT_FORCELOCATION );
+		else
+			CreateChestSpawnGump(who, result[0]);
+		endif
+	endif
+
+endfunction

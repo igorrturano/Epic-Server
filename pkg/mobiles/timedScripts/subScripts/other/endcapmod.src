@@ -1,0 +1,19 @@
+/* $Id: alcohol.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":timedscripts:timedScripts";
+include ":attributes:attributes";
+
+program TimedScript_Alcohol(params)
+	var mobile := params[1];
+	var level := params[3];
+
+	SetObjProperty(mobile, "capmod", 0);
+	RecalcVitals(mobile);
+endprogram

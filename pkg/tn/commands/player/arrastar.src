@@ -1,0 +1,92 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/sysEvent";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+
+program Test(who)
+
+	if (!maolivre(who, 2))
+		return 0;
+	elseif (AP_GetVital(who, "Stamina") < 10)
+		SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
+		return;
+	endif
+
+	var targ:="targ";
+
+
+	if(targ=="targ")
+		SendSysMessage( who, "Mover qual corpo?" );
+		targ := Target( who );
+	endif
+
+
+	var type;
+
+
+	if (targ.isa(POLCLASS_CORPSE))
+		type := "corpo"; // corpse
+	elseif (GetObjProperty(targ, "corda") && !GetObjProperty(targ, "algemado"))
+		type := "alvo"; // player
+	elseif (GetObjProperty(targ, "deathdetails"))
+		type := "corpo";
+	else
+		SendSysMessage(who, "Voce nao pode arrastar isto.");
+		return;
+	endif
+
+
+	if( CoordinateDistance(targ.x, targ.y, who.x, who.y) > 2 )
+		SendSysMessage( who, "O "+type+" esta muito longe." );
+		return;
+	endif
+
+
+	targ.movable := 1;
+
+	if (!(who.hidden || who.concealed))
+		if (type == "corpo")
+			PrintText(who, "*arrastando "+targ.desc+"*");
+		else
+			PrintText(who, "*arrastando "+targ.name+"*");
+		endif
+	endif
+
+	if (!maolivre(who, 2))
+		return 0;
+	elseif (AP_GetVital(who, "Stamina") < 10)
+		SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
+		return;
+	endif
+
+	var desgaste := 500;
+	if(TemHabilidade(who, "Vigor do Extrator"))
+		desgaste := desgaste -100;
+	endif
+	if(TemHabilidade(who, "Carregador"))
+		desgaste := desgaste -200;
+	endif
+
+	while(1)
+		if (AP_GetVital(who, "Stamina") < 10)
+			SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
+			break;
+		endif
+		if(who.warmode == 1)
+			SendSysMessage(who, "Voce solta o corpo");
+			break;
+		endif
+		MoveObjectToLocation(targ, who.x, who.y, who.z, who.realm);
+		var mob := SystemFindObjectBySerial(targ.ownerserial);
+
+		ConsumeVital (who, "Stamina", desgaste);
+
+		sleep(2);
+	endwhile
+	targ.movable := 0;
+
+return;
+endprogram

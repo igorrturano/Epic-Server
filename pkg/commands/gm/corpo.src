@@ -1,0 +1,26 @@
+/*
+ * $Id: kill.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+use uo;
+
+include ":attributes:attributes";
+
+program textcmd_Kill(who)
+	SendSysMessage(who, "Select the ghost.");
+	var targ := Target(who);
+	
+	if ( !targ.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(who, "Cancelled.");
+		return 0;
+	endif
+	
+	var corpse := targ.GetCorpse();
+	if (corpse)
+		MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
+	else
+		SendSysMessage(who, "Corpse not found.");
+	endif
+	
+	return 1;
+endprogram

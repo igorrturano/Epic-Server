@@ -1,0 +1,16 @@
+use uo;
+
+include ":tn:characters";
+
+program Logon(who)
+	
+	var acc := who.acct;
+	if( acc.uo_expansion != "SA" )
+		acc.set_uo_expansion("SA");
+	endif
+ 
+	EraseObjProperty(who, "Vitality");
+	EraseObjProperty(who, "OldVitality");
+
+	return 1;
+endprogram

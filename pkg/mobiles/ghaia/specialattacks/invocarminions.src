@@ -1,0 +1,98 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:habilidades";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/sysEvent";
+
+var minion;
+
+program invocarminions(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	
+	var minion_template := GetobjProperty (attacker, "minion"); //tem que ser setado no Cprop do npcdesc
+		if(!minion_template)
+			Printtextabove(attacker, "Nao foi setado minion para esse mob, avise a staff por favor!");
+		endif
+	var minion_template2 := GetobjProperty (attacker, "minion2"); //tb np cprop, é um minion mais forte que surgirá com life menor q a metade do mother
+		
+	var enemy := array;
+	foreach player in ListMobilesNearLocationEX(attacker.x, attacker.y, attacker.z, 15, LISTEX_FLAG_NORMAL, attacker.realm)
+		var pet := GetobjProperty(player, "owner");
+		if (player.ip || pet)
+			//if (!CheckLOSAt(attacker, player.x, player.y, player.z))
+				//printtextabove(attacker, "O Alvo nao esta visivel para voce.");
+			//else
+				enemy.append(player.serial);
+			//endif
+			sleepms(2);
+		endif
+	endforeach
+	
+	if ( isBloodied(attacker) && minion_template2 )
+		var roll := Randomdiceroll("1d3");
+			if (roll == 1) //EM TODOS os players
+				SummonAll(attacker, defender, enemy, minion_template2);
+			elseif (roll == 2) //SÓ UM DELES dos players
+				SummonOne(attacker, defender, enemy, minion_template2);
+			elseif (roll == 3)//EM METADE DELES dos players
+				SummonHalf(attacker, defender, enemy, minion_template2);
+			endif
+	else 
+		var roll := Randomdiceroll("1d3");
+			if (roll == 1) //EM TODOS os players
+				SummonAll(attacker, defender, enemy, minion_template);
+			elseif (roll == 2) //SÓ UM DELES dos players
+				SummonOne(attacker, defender, enemy, minion_template);
+			elseif (roll == 3)//EM METADE DELES dos players
+				SummonHalf(attacker, defender, enemy, minion_template);
+			endif
+	endif
+
+endprogram  
+
+function SummonAll(attacker, defender, enemy, miniontemplate)
+	foreach player in enemy
+		var player_find := SystemFindObjectbySerial(player);
+		minion := CreateNpcFromTemplate(miniontemplate, player_find.x, player_find.y, player_find.z, 1, player_find.realm);
+		Setobjproperty(minion, "source", attacker.serial);
+		sleepms(20);
+		var event := struct{"type":=SYSEVENT_ENGAGED, "source":=player_find};
+		SendEvent(minion, event);
+	endforeach
+endfunction
+
+function SummonOne(attacker, defender, enemy, miniontemplate)
+	var player_sort := enemy.randomentry();
+	var player_find := SystemFindObjectbySerial(player_sort);
+	minion := CreateNpcFromTemplate(miniontemplate, defender.x, defender.y, defender.z, 1, defender.realm);
+	Setobjproperty(minion, "source", attacker.serial);
+	sleepms(20);
+	var event := struct{"type":=SYSEVENT_ENGAGED, "source":=player_find};
+	SendEvent(minion, event);
+endfunction
+
+function SummonHalf(attacker, defender, enemy, miniontemplate)
+	var total_enemy := enemy.size();
+	var enemy_metade := total_enemy/2;
+	var i := 0;
+	var enemy_half := array;
+	
+	while (i < enemy_metade)
+		i := i + 1;
+		enemy_half.append(enemy[i]);
+	endwhile
+print("enemy_half eh "+enemy_half);
+	foreach player in enemy_half
+		var player_find := SystemFindObjectbySerial(player);
+		minion := CreateNpcFromTemplate(miniontemplate, player_find.x, player_find.y, player_find.z, 1, player_find.realm);
+		Setobjproperty(minion, "source", attacker.serial);
+		sleepms(20);
+		var event := struct{"type":=SYSEVENT_ENGAGED, "source":=player_find};
+		SendEvent(minion, event);
+	endforeach
+endfunction

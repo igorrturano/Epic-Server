@@ -1,0 +1,9 @@
+// $Id: cantuse.src,v 1.1 2006/07/15 10:09:39 bytehawk Exp $
+
+use uo;
+
+program cantuse(who)
+
+  SendSysMessage (who, "This was built by architect. You can't use it!");
+
+endprogram

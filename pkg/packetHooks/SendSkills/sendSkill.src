@@ -1,0 +1,21 @@
+const TYPE := 3;
+
+program sendSkill()
+  Print( "Hooking Send Skill..." );
+  return 1;
+endprogram
+
+exported function HandleSendSkillSent( who, byref packet )
+  who := who;
+  var tipo := packet.GetInt8(TYPE);
+  if(!tipo)
+    return 0;
+  endif
+  return 1;
+endfunction
+
+exported function HandleSendSkillReceived( who, byref packet )
+  who := who;
+  packet := packet;
+  return 1;
+endfunction

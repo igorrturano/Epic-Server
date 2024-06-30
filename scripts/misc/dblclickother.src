@@ -1,0 +1,41 @@
+/* $Id: dblclickother.src 898 2005-11-04 07:39:41Z muaddiblsd $
+ *
+ * Purpose
+ * This script allows an alternate behavior other than the default 'open paperdoll' behavior.
+ *
+ */
+use uo;
+use os;
+use npc;
+
+program core_dblClickSelf(who, clicked)
+	if ( HasPDGraphic(clicked) )
+		return OPenPaperDoll(who, clicked);
+	endif
+	
+	return 0;
+endprogram
+
+function HasPDGraphic(clicked)
+	case ( clicked.graphic )
+		400:	return 1; break; // Male
+		401:	return 1; break; // Female
+		402:	return 1; break; // Male ghost
+		403:	return 1; break; // Female ghost
+		987:	return 1; break; // GM robe
+		1828:	return 1; break; //anao F
+		1829:	return 1; break; //anao M
+		1830:	return 1; break; //elfo M
+		1831:	return 1; break; //elfo F
+		1832:	return 1; break; //orc M
+		1833:	return 1; break; //orc F
+		1834:	return 1; break; //lobo M
+		1835:	return 1; break; //lobo F
+	endcase
+	
+	if (clicked.race == 1)
+		return 1;
+	endif
+	
+	return 0;
+endfunction

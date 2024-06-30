@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include "include/say";
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
+
+	mobile.SetMaster(attacker);
+		
+	SetObjProperty(mobile, "owner", attacker.serial);
+	SetObjProperty(mobile, "name", mobile.name);
+	SetObjproperty(mobile, "script", mobile.script);
+	SetObjProperty(mobile, "AntigoTreinadorID", attacker.serial);
+			
+	mobile.script := ":ghaia:tamed";
+	RestartScript(mobile);
+	
+	return 1;
+endprogram
+
+    
+ 

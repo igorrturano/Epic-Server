@@ -1,0 +1,550 @@
+
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":death:death";
+include ":mounts:mounts";
+include ":death:settings";
+include ":attributes:attributes";
+include "include/say";
+include ":tn:cooldown";
+include ":charactercreation:habilidades";
+include ":attributes:advanceCheck";
+include ":charactercreation:resists";
+include ":charactercreation:createchar";
+include ":containers:storageAreas";
+include ":keys:key";
+
+program death(params)
+
+	var corpse := params[1];
+	var ghost := params[2];
+	var lastDamage := GetObjProperty(ghost, "LastDamage");
+	Setobjproperty(corpse, "account", ghost.acctname);
+		//sendsysmessage(ghost, " " + corpse.x + " " + corpse.y);
+
+	if (GetObjProperty(ghost, "forjoumorte") == 1)
+		return 1;
+	endif
+
+	// Se virou fantasma, para de dar dano
+	if(GetObjProperty(ghost, "defaultPoison"))
+		TS_LowerDuration(ghost, "defaultPoison", -1);
+	endif
+
+	var lastHit := GetObjProperty(ghost, "lastHit");
+	var killer := SystemFindObjectBySerial(lastHit.attacker);
+	var dmg := lastHit.amount;
+
+	if (killer.npctemplate || killer.connected) // Assassino existente
+		if ( temhabilidade(ghost, "Ultimo Suspiro") && Distance(killer, corpse) <= 2)
+			PrintText(corpse, "*acerta um ponto vital de "+killer.name+"*");
+			TS_StartTimer(killer, "bleed", 30);
+		endif
+	endif
+
+	//var protecao := Cint(GetObjProperty(ghost, "protecaomorte"));
+	var save := 0;
+    var protecao := GetCooldown(ghost, "protecaomorte") > 0;
+
+	if (getObjProperty(ghost, "savegame") != error)
+		protecao := 1;
+		save := 1;
+	endif
+
+	//Check no Chain Of Pain, para retirar 1 do copnumber se for o caso.
+	if (getObjProperty(corpse, "chainofpain"))
+		var seriais := getObjProperty(corpse, "chainofpain");
+		var copnumber := getObjProperty(corpse, "copnumber");
+		copnumber := copnumber - 1;
+		foreach serial in seriais
+			var mobile := SystemFindObjectBySerial(serial);
+			SetObjProperty(mobile, "copnumber", copnumber);
+		endforeach
+	endif
+
+	if (corpse.x >= 4855 && corpse.y >= 879)
+
+		if ( corpse.x <= 4869 && corpse.y <=  890)
+			corpse.movable := 1;
+			var e := MoveObjectToLocation(corpse, 4859, 876, 1, corpse.realm, MOVEOBJECT_FORCELOCATION);
+			corpse.movable := 0;
+		//	sendsysmessage(ghost, " " + e);
+		endif
+	endif
+
+	if (corpse.x >= 4919 && corpse.y >= 1044)
+
+		if ( corpse.x <= 4933 && corpse.y <=  1066)
+			corpse.movable := 1;
+			var e := MoveObjectToLocation(corpse, 4893, 1014, 1, corpse.realm, MOVEOBJECT_FORCELOCATION);
+			corpse.movable := 0;
+		//	sendsysmessage(ghost, " " + e);
+		endif
+	endif
+
+	if (getObjProperty(corpse, "oldbodyserial"))
+		KataWakeUp(ghost, corpse);
+	endif
+	if (protecao) // Proteção Contra Morte
+		SendSysMessageEx(ghost, "Sua alma esta protegida");
+	elseif (!killer.acctname || ghost.cmdlevel) // Foi morto por NPC ou é GM
+		if (!protecao)
+			//if (getCoolDown(ghost, "deathtime") == 0 )
+			if (killer.npctemplate && killer.script  == ":ghaia:tamed")  //se for tamed nao tira dp
+			elseif(lastDamage.spell)  //se for spell nao tira dp
+			else
+				EraseObjProperty(ghost, "#Casting");
+				AP_ConsumeVital(ghost, "DP", 10);
+				SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP")/10);
+			endif
+			//	//setcooldown(ghost, "deathtime", 30);
+			//endif
+            var tempo := 180;
+            if (AP_GetVital(ghost, "DP") <= 19)
+            	if (!CheckResist(ghost,  FORTITUDE, 90))
+                	SendSysMessage(ghost, "Voce esta bastante ferido, e melhor se cuidar");
+                	TS_StartTimer(ghost, "fraturaexposta", 1);
+            	endif
+            elseif (AP_GetVital(ghost, "DP") < 30)
+                if (!CheckResist(ghost,  FORTITUDE, 60))
+                    tempo := 300;
+                    SendSysMessage(ghost, "Voce fraturou um osso!");
+                    SetCoolDown(ghost, "hurt", tempo);
+                    TS_StartTimer(ghost, "fraturaexposta", 1);
+                endif
+            elseif (AP_GetVital(ghost, "DP") < 40)
+                if (!CheckResist(ghost,  FORTITUDE, 40))
+                    tempo := 240;
+                    SendSysMessage(ghost, "Voce fraturou um osso!");
+                    SetCoolDown(ghost, "hurt", tempo);
+                    TS_StartTimer(ghost, "fraturaexposta", 1);
+                endif
+            elseif ((AP_GetVital(ghost, "DP") < 50))
+                if (!CheckResist(ghost,  FORTITUDE, 30))
+                    tempo := 180;
+                    SendSysMessage(ghost, "Voce fraturou um osso!");
+                    SetCoolDown(ghost, "hurt", tempo);
+                    TS_StartTimer(ghost, "fraturaexposta", 1);
+                endif
+            endif
+			if ( AP_GetVital(ghost, "DP") < 10 || CInt(GetObjProperty(ghost, "morto")) )
+				SendSysMessage(ghost, "Voce morreu.");
+				var region := GetRegionName(corpse);
+				var tipo := "morreu";
+				var coords := {corpse.x, corpse.y};
+				var nome := GetObjProperty(ghost, "nome_inicial");
+				ProcurarItensQuarto(ghost);
+				Start_script(":DiscordWebhook:discord", {tipo, nome, ghost.acctname, killer.name, region, coords});
+				SetCooldown(corpse, "morto_recentemente", 300);
+				SetObjProperty(corpse, "morto", 1);
+				SetObjProperty(ghost, "morto", 1);
+				SetObjProperty(corpse, "deathtimer", polcore().systime);
+				//var dias := GetObjProperty(ghost, "createdate");
+                var dias := idadeCharInDays(ghost);
+                if (dias < 2 || dias == error || dias > 1000) // byte hell, char recriado muitas vzes tava vindo com 19k+ dias
+                    dias := 2;
+                endif
+	            SendSysMessage(ghost, "Seu proximo char comecara com " + Cint((dias / 2)) + " dias de cap.");
+	            FindAccount(ghost.acctname).setprop("heir_days", CInt(dias/2));
+    	    	SetObjProperty(ghost, "heir_days", CInt(dias/2)); //24horas*60minutos*60segundos = 86400 segundos //esse é só pra ver se foi calculado certo
+
+	            var skill_heir := get_heir_skills(ghost);
+
+	            FindAccount(ghost.acctname).setprop("herdeiro", skill_heir);
+	            if(FindAccount(ghost.acctname).getprop("herdado")) //limpa a variavel caso exista
+		            FindAccount(ghost.acctname).eraseprop("herdado");
+		        endif
+				//dias := (polcore().systime - dias);
+                //if (dias == error)
+                //    dias := polcore().systime;
+                //endif
+
+				//var logs := FindAccount(ghost).getprop("mortelog");
+				//if (logs == error || logs < dias)
+				//	logs := dias;
+				//endif
+				//FindAccount(ghost.acctname).setprop("mortelog", logs);
+				sleep(5);
+				return 1;
+			endif
+		endif
+	endif
+
+    if(killer.acctname)
+        var region := GetRegionName(corpse);
+        var tipo := "pvp";
+        var coords := {corpse.x, corpse.y};
+        var nome := GetObjProperty(killer, "nome_inicial");
+        var nome_ghost := GetObjProperty(ghost, "nome_inicial");
+        Start_script(":DiscordWebhook:discord", {tipo, nome, killer.acctname, nome_ghost, region, coords, ghost.acctname});
+    endif
+        SendSysMessage(ghost, "Voce desmaiou.");
+
+	var pacto := PactoSepulturaCheck(ghost, corpse);
+	if (pacto == 1)
+		return 234;
+	endif
+
+	var tempo := 4; // em minutos
+	if ( dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS)/5) )
+		tempo := tempo * 2;
+	endif
+	if ( temhabilidade(ghost, "Recuperacao"))
+		tempo := tempo /2;
+	endif
+	if (save)
+		tempo := 0;
+	endif
+	while (tempo > 0)
+		if (tempo%2 == 0)
+			SendSysMessage(ghost, "Voce acordara em "+(tempo/2)+" minuto(s).");
+		endif
+		if (tempo != 1)
+			sleep(30);
+		else
+			SendSysMessage(ghost, "30 segundos...");
+			sleep(10);
+			SendSysMessage(ghost, "20 segundos...");
+			sleep(10);
+			SendSysMessage(ghost, "10 segundos...");
+			sleep(10);
+		endif
+		if ( GetObjProperty(corpse, "curado") )
+			SendSysMessage(ghost, "Voce foi curado e acordara em 5 segundos!");
+            EraseObjProperty(ghost, "hurt");
+            TS_LowerDuration(ghost, "fraturaexposta", -1);
+			EraseObjProperty(corpse, "prolongardesmaio");
+			sleep(5);
+			break;
+		elseif ( GetObjProperty(corpse, "prolongardesmaio") )
+			SendSysMessage(ghost, "Seus batimentos cardiacos se reduzem, e você tem mais dificuldade em recobrar a consciencia.",3 , 0);
+			EraseObjProperty(corpse, "prolongardesmaio");
+			SetObjProperty(corpse, "japrolongou", 1);
+			tempo := tempo * 2;
+		elseif ( CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(ghost, "morto")) )
+			SendSysMessage(ghost, "Algo aconteceu... Voce morreu.");
+			SetObjProperty(corpse, "morto", 1);
+			SetObjProperty(ghost, "morto", 1);
+			SetObjProperty(corpse, "deathtimer", polcore().systime);
+			SetCooldown(corpse, "morto_recentemente", 300);
+			ProcurarItensQuarto(ghost);
+            var dias := idadeCharInDays(ghost);
+            if (dias < 2 || dias == error || dias > 1000) // byte hell, char recriado muitas vzes tava vindo com 19k+ dias
+                dias := 2;
+            endif
+            SendSysMessage(ghost, "Seu proximo char comecara com " + Cint((dias / 2)) + " dias de cap.");
+            FindAccount(ghost.acctname).setprop("heir_days", CInt(dias/2));
+	    	SetObjProperty(ghost, "heir_days", CInt(dias/2)); //24horas*60minutos*60segundos = 86400 segundos //esse é só pra ver se foi calculado certo
+
+            var skill_heir := get_heir_skills(ghost);
+
+            FindAccount(ghost.acctname).setprop("herdeiro", skill_heir);
+            if(FindAccount(ghost.acctname).getprop("herdado")) //limpa a variavel caso exista
+	            FindAccount(ghost.acctname).eraseprop("herdado");
+	        endif
+
+            //dias := Cint((dias / 2)) * 86400; // 24h em segundos
+            //dias := (polcore().systime - dias);
+
+			//var logs := FindAccount(ghost).getprop("mortelog");
+            //if (logs == error || logs < dias)
+            //    logs := dias;
+            //endif
+            //FindAccount(ghost.acctname).setprop("mortelog", logs);
+			return 1;
+		endif
+		tempo := tempo - 1;
+	endwhile
+	EraseObjProperty(corpse, "japrolongou");
+
+//	RessPlayer(ghost, corpse);
+	KataWakeUp(ghost, corpse);
+	return 1;
+endprogram
+
+/* Move o player
+ * Ressucita
+ * Equipa os itens no corpo
+ * Destroi o corpo
+ * Seta os vitals
+*/
+
+function RessPlayer(who, corpse)
+
+
+	MoveObjectToLocation( who, corpse.x, corpse.y, corpse.z, corpse.realm);
+	who.frozen := 1;
+	sleep(1);
+	who.frozen := 0;
+	Resurrect(who);
+
+	var mypack := who.backpack;
+	if(!mypack)
+		return;
+	endif
+
+	DestroyItem(GetEquipmentByLayer(who, 0x16)); //layer da robe
+
+	foreach thing in EnumerateItemsInContainer(corpse)
+		if(thing.container == corpse)
+
+			MoveObjectToLocation(thing, who.x, who.y, who.z, who.realm);
+			MoveItemToContainer(thing, who.backpack);
+		endif
+	endforeach
+
+	foreach thing in EnumerateItemsInContainer(who.backpack)
+			EquipItem(who, thing);
+	endforeach
+
+	var regen := CInt(DP_GetVitalsRegen());
+	if (!regen)
+		regen := 0.25;
+	endif
+
+	var hp := AP_GetVitalMaximumValue(who, HITS);
+	var stam := AP_GetVitalMaximumValue(who, STAMINA);
+	AP_SetVital(who, HITS, hp*regen);
+	AP_SetVital(who, STAMINA, stam*regen);
+	DestroyItem(corpse);
+
+endfunction
+
+function KataWakeUp(ghost, corpse)
+	var serialC := ghost.serial;
+	//TS_StartTimer(ghost, "mortedelay", 10);
+	setcooldown(ghost, "deathtime", 25);
+	if ( !MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION) )
+		SendSysMessage(ghost, "Ocorreu algum problema ao retornar seu personagem para o corpo. Solicite ajude da Staff");
+
+		if (!CInt(GetObjProperty(corpse, "morto")) && !CInt(GetObjProperty(ghost, "morto")))
+			//Seta a prop para caso dê algum erro para o player acordar
+			SetObjProperty(corpse, "erro_retornar_corpo", 1);
+			//Seta o decay para nunca = 0
+			corpse.decayat := 0;
+
+			foreach item in EnumerateItemsInContainer(corpse)
+				if (item.container == corpse)
+					item.decayat := 0;
+				endif
+			endforeach
+
+			return;
+		endif
+	endif
+
+	Resurrect(ghost);
+	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
+	DestroyItem(ressrobe);
+
+	foreach item in EnumerateItemsInContainer(corpse)
+		if (item.container == corpse)
+			MoveObjectToLocation(item, ghost.x, ghost.y, ghost.z, ghost.realm);
+			MoveItemToContainer(item, ghost.backpack);
+			if ( CInt(GetObjProperty(item, "#EquippedOn")) == serialC )
+				if ( !EquipItem(ghost, item) )
+					EraseObjProperty(item, "#EquippedOn");
+				endif
+			endif
+		endif
+	endforeach
+
+	if (TemHabilidade(ghost, "Recuperacao") )
+		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits")*0.9));
+	else
+//		printtextabove(ghost, " " + GetHP(ghost));
+		HealDamage(ghost, GetHP(ghost)+1);
+	endif
+	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina")*0.5));
+	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana")*0.5));
+	RecalcVitals(ghost);
+
+
+	DestroyItem(corpse);
+
+	if (GetObjProperty(ghost, "corda"))
+		PrintText(ghost, "*amarrado*");
+		SendSysMessage(ghost, "Para tentar se soltar utilize o comando .soltar");
+		var item;
+		item := GetEquipmentByLayer(ghost, LAYER_HAND1);
+		if (item)
+			MoveItemToContainer(item, ghost.backpack);
+		endif
+		item := GetEquipmentByLayer(ghost, LAYER_HAND2);
+		if (item)
+			MoveItemToContainer(item, ghost.backpack);
+		endif
+		ghost.frozen := 1;
+	endif
+	//SetCoolDown(ghost, "deathtime", 30);
+
+	var save := GetObjProperty(ghost, "savegame");
+	if (save != error)
+		MoveObjectToLocation(ghost, save.x, save.y, save.z, save.realm, MOVEOBJECT_FORCELOCATION);
+		AP_SetVital(ghost, STAMINA, cint(save.stamina));
+		AP_SetVital(ghost, MANA, cint(save.mana));
+		AP_SetVital(ghost, HITS, cint(save.hits));
+		eraseobjproperty(ghost, "savegame");
+	endif
+	TS_LowerDuration(ghost, "metamorfosedruida", 10000, 1);
+
+endfunction
+
+function PactoSepulturaCheck(ghost, corpse)
+
+	var pacto := 0;
+	if (getobjProperty(ghost, "pactodesepultura"))
+		var targserial := getobjProperty(ghost, "pactodesepultura");
+		var targ := SystemFindObjectBySerial(targserial);
+		var dmg := Cint(getobjProperty(corpse, "pactodesepulturadmg"));
+		ApplyDamage(targ, dmg);
+		var targhp := AP_GetVital(targ, "hits");
+		if (targhp <= 0)
+			SendSysMessage(ghost, "Voce voltara a vida com o pacto de sepultura.", 3, 191);
+			sleepms(1500);
+			KataWakeUp(ghost, corpse);
+			pacto := 1;
+		endif
+		EraseObjProperty(ghost, "pactodesepultura");
+		EraseObjProperty(ghost, "pactodesepulturadmg");
+		EraseObjProperty(corpse, "pactodesepultura");
+		EraseObjProperty(corpse, "pactodesepulturadmg");
+	endif
+	return pacto;
+
+endfunction
+
+function get_heir_skills(who)
+    var primarias := GetPrimarias(who);
+    var chardata := GetObjProperty(who, "chardata");
+    var primarias_sum := 0;
+    foreach skill in primarias
+        primarias_sum += Cint(AP_GetTrueSkill(who, skill));
+    endforeach
+    if (chardata.kit == "Sabe-Tudo")
+        primarias_sum *= 2;
+    endif
+    var bonus_primarias := (primarias_sum - 80) / 4; //metade da media de pontos upados acima de 40 nas primarias
+
+    var secundarias := GetSecundarias(who);
+    var count := 0;
+    var secundarias_sum := 0;
+
+    foreach skill in secundarias
+        count++;
+        secundarias_sum += Cint(AP_GetTrueSkill(who, skill));
+    endforeach
+    var bonus_secundarias := (secundarias_sum - (count * 20)) / (count * 2); //metade da media de pontos upados acima de 20 nas secundárias
+
+    var terciarias := GetTerciarias(who);
+    var terciarias_sum := 0;
+    count := 0;
+    foreach skill in terciarias
+        count++;
+        terciarias_sum += Cint(AP_GetTrueSkill(who, skill));
+    endforeach
+    var bonus_terciarias := (terciarias_sum / (count * 2)); //metade da media de pontos upados acima de 0 ns terciárias
+
+    var skills_bonus := struct;
+    skills_bonus.+bonus_primarias := bonus_primarias;
+    skills_bonus.+bonus_secundarias := bonus_secundarias;
+    skills_bonus.+bonus_terciarias := bonus_terciarias;
+    return skills_bonus;
+endfunction
+
+function idadeCharInDays(character)// para 10000 deu 292 segundos 300
+    var criadoEm := cint(GetObjProperty(character, "createdate"));
+    var tempoAgora := polcore().systime;// segundos
+    var tempoDevida:= tempoAgora - criadoEm;
+    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
+    return dias;
+endfunction
+
+function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
+	var objects := ListItemsNearLocation( x, y, z, 10, r);
+	var backpack;
+	if (player && player != error)
+		backpack := CreateItemAtLocation( x, y, z, hex(3701), 1, r);
+		backpack.desc := player.name;
+	endif
+	foreach obj in objects
+		if (CheckLosBetween( x, y, z, obj.x, obj.y, obj.z, r))
+			if (GetObjProperty(obj, "crafterserial"))
+				if (player && player != error)
+					obj.movable := 1;
+					MoveItemToContainer( obj, backpack);
+				else
+					DestroyItem(obj);
+				endif
+
+
+			elseif (obj.IsA(POLCLASS_CONTAINER))
+				var container := EnumerateItemsInContainer( obj, ENUMERATE_IGNORE_LOCKED );
+				foreach item in container
+				if (player && player != error)
+					item.movable := 1;
+					MoveItemToContainer( item, backpack);
+				else
+					DestroyItem(item);
+				endif
+					sleepms(20);
+				endforeach
+			endif
+		endif
+		sleepms(20);
+	endforeach
+	if (player && player != error)
+		if ( !npc.backpack )
+			Set_Critical(1);
+			var newpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1, npc.realm);
+			if ( !EquipItem(npc, newpack) )
+				DestroyItem(newpack);
+				return 0;
+			endif
+		endif
+		MoveItemToContainer( backpack, npc.backpack);
+	endif
+	return 1;
+endfunction
+
+function ProcurarItensQuarto(who)
+	var innkeepers := getglobalproperty("InnKeeper");
+
+	if (innkeepers[1] == error)
+		return 1;
+	endif
+
+	var x := 1;
+	while (x <= innkeepers.size())
+		var npc := SystemFindObjectBySerial(cint(innkeepers[x]));
+		if (npc.errortext)
+			innkeepers.erase(x);
+			SetGlobalProperty("InnKeeper", innkeepers);
+		endif
+
+		var quartos := GetObjProperty(npc, "quartos");
+
+		var i := 1;
+		while (i <= quartos.size())
+			if (quartos[i].inquilino == who.serial)
+				var quarto := quartos[i];
+				var cent := quarto.centro;
+				if (cent[1])
+					MoverItensQuartoParaNpc(cent[1], cent[2], cent[3], npc.realm, who, npc);
+					if (cent[4])
+						MoverItensQuartoParaNpc(cent[4], cent[5], cent[6], npc.realm, who, npc);
+					endif
+				endif
+			endif
+			i := i + 1;
+			sleepms(20);
+		endwhile
+
+		x := x+1;
+		sleepms(20);
+	endwhile
+endfunction

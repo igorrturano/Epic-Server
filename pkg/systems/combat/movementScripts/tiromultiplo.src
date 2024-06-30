@@ -1,0 +1,52 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":timedScripts:timedScripts";
+include ":fls_core:packets";
+include "include/packets";
+
+program doubleattack(params)
+        var attacker    := params[1];
+	var defender    := params[2];
+	var weapon      := params[3];
+	var armor       := params[4];
+	var basedamage  := params[5];
+	var rawdamage   := params[6];
+	params := 0; // Not needed anymore.
+							        
+        PlayAttackAnimation(attacker);
+       PlayHitSounds(attacker, defender);
+										      
+	PrintTextAbove(attacker, "*tiro multiplo*");
+
+	var ammo := GetObjProperty(attacker.weapon, "ammo");
+
+	if (SubtractAmount(ammo, 3) )
+		var elem := GetWpnCfgInfo(attacker, attacker.weapon);
+		PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);
+		sleepms(500);
+		 PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);
+		 sleepms(500);
+		 PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);
+	else
+		SendSysMessage(attacker, "Voce nao tem projeteis suficientes.");
+		return 1;
+	endif
+	
+       basedamage := basedamage*2;
+
+
+       var dmgList := dictionary;
+       dmgList := getNewDamageList(attacker);
+	var total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);
+	ApplyDamage(defender, total);
+//       var total := ApplyDamageWra(defender, basedamage, dmgList);
+       MostraDano(attacker, defender, total);
+       MakeBleed(defender);
+
+
+endprogram
+

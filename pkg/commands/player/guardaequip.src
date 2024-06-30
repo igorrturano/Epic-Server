@@ -1,0 +1,37 @@
+use uo;
+
+program textcmd_equip( speaker )
+    SendSysMessage( speaker, "O que deve ser equipado?" );
+
+    var what := Target( speaker );
+    if (!what)
+        return;
+    endif
+
+    SendSysMessage( speaker, "Em que "+what.desc+" sera equipado?" );
+    var who := Target( speaker );
+
+    if ( !who.IsA(POLCLASS_MOBILE) )
+		SendSysMessage(speaker, "Cancelled.");
+		return 0;
+	endif
+
+    var guild := GetObjProperty(speaker, "guild");
+    var guildid := GetObjProperty(who, "guild");
+
+    if (guild == guildid)
+        SendSysMessage(speaker, "Voce nao faz parte dessa Faccao");
+        return;
+	endif
+
+    if (!who)
+        return;
+    endif
+
+    var res := EquipItem( who, what );
+    if (res)
+        SendSysMessage( speaker, "Done!" );
+    else
+        SendSysMessage( speaker, "Unable to equip item: "+res.errortext );
+    endif
+endprogram

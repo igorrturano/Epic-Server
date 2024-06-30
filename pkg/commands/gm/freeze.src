@@ -1,0 +1,38 @@
+use uo;
+
+program freezeAll(who, text)
+	var range := CInt(text);
+	if( range >= 25 )
+		SendSysMessage(who, "Range muito alto.");
+		return 0;
+	elseif( range < 0 )
+		SendSysMessage(who, "Range zero nao pode.");
+		return 0;
+	endif
+
+	if ( range == 0 )
+		SendSysMessage(who, "Escolha quem voce vai dexar mudo e frozen.");
+		var targ := Target(who);
+		if( targ.isa(POLCLASS_MOBILE) )
+			if (!targ.cmdlevel)
+				targ.frozen := 1 - targ.frozen;
+				targ.squelch((-1)*( 1-targ.squelched));
+			endif
+		endif
+		return 1;
+		
+	endif
+
+	SendSysMessage(who, "Atuando sobre os players no raio de " + range + " tiles.");
+	var list := ListMobilesNearLocationEx( who.x, who.y, who.z, range, 3);
+	foreach player in list
+	SendSysMessage(who, "name:"+player.name);
+		if (!player.cmdlevel)
+			player.frozen := 1 - player.frozen;
+			player.squelch((-1)*( 1-player.squelched));
+		endif
+	endforeach
+
+	SendSysMessage(who, "Comando concluido.");
+
+endprogram

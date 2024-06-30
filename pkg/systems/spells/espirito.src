@@ -1,0 +1,27 @@
+use uo;
+
+include "include/say";
+
+program spirit(who ,item)
+
+	SendSysMessageEx(who, "Escolha o totem para armazenar o espirito.", SSM_INFO);
+	var targ := Target(who);
+	
+	if  (targ.graphic  ==  0xA349)
+		
+		var spells := GetObjProperty(targ, "spells");
+		if (spells == error)
+			spells := array;
+		endif
+		var spellid := Cint(GetObjProperty(item, "id"));
+	
+		if (!(spellid in spells))
+			spells.append(spellid);
+			SendSysMessageEx(who, "Espirito adicionado no totem.", SSM_INFO);
+			SetObjProperty(targ, "spells", spells);
+			DestroyItem(item);
+		endif
+	
+	endif
+
+endprogram

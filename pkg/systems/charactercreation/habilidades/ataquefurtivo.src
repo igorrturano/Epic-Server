@@ -1,0 +1,33 @@
+use uo;
+use util;
+use os;
+
+include ":fls_core:packets";
+include ":fls_core:fls_util";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":attributes:stats";
+include ":fls_core:fls_combat";
+include ":blood:blood";
+include "include/damage";
+include ":fls_core:fls_characters";
+include ":fls_core:packets";
+include ":tn:combat";
+include ":combat:combat";
+include "include/packets";
+
+program backstab(who)
+	if ( !CanBackStab(who, who.weapon) )
+		return;
+	endif
+    SetObjProperty(who, "backstab", 1);
+    if (who.hidden)
+        SetObjProperty(who, "#attackbonus", 100);
+        if (TemHabilidade(who, "Instinto Assassino"))
+            SetObjProperty(who, "#nextcritical", 1);
+        endif
+    endif
+    GrantPrivilege(who, "hiddenattack");
+    who.enable("hiddenattack");
+endprogram

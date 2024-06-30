@@ -1,0 +1,157 @@
+// Baseado na versao "r1y2002" do Hallucination.src por "? 2002 Maximilian Scherr"
+
+use uo;
+use os;
+use util;
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_alucinacao(params)
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+
+	var alvo := params[1];
+	var caster := params[2];
+	var modificador := params[3];
+
+	if (alvo.client)
+		PrintTextAbovePrivate(alvo, "*Alucinado*", caster, BARD_FONT, BARD_FONT_COLOR_BAD);
+		var i;
+		for(i:=0; i< 4; i:=i+1)
+			Hallucinate(alvo);
+    		Sleep(10);
+	  	endfor
+	  	//set_critical(1);
+  		//var x := alvo.x;
+ 		//var y := alvo.y;
+ 		//var z := alvo.z;
+	  	//MoveObjectToLocation(alvo, 6080, 1873, 0, alvo.realm, MOVEOBJECT_FORCELOCATION);//manda ele pra algum lugar preto
+	  	//MoveObjectToLocation(alvo, x, y, z, alvo.realm, MOVEOBJECT_FORCELOCATION); //traz ele de voltar pra o lugar de onde saiu
+	  	//set_critical(0);
+	  	start_script(":nature:logon", alvo); //recarrega efeitos de luminosidade
+	endif
+	return 1;
+endprogram
+
+function Hallucinate(who)
+	if(who.npctemplate)
+		return 0;
+	endif
+	var graphicarray;
+	var chardata := GetObjProperty(who, "chardata");
+	var povo := chardata.povo;
+	case (povo)
+		"Asanita":
+			graphicarray := array {102,306,311,174}; //DEMONIO, IMPALADOR, CAVALEIRO SOMBRIO, SUCUBBUS.
+			break;
+		"Thuriao":
+			graphicarray := array {1,2,49,55}; //OGRO, ETTIN, DRAGÃO WYRM, TROLL DO GELO.
+			break;
+		"Zharkiano":
+			graphicarray := array {3,7,17,26}; //ZUMBI, GOBLIN CAPITÃO, ORC, GHOUL.
+			break;
+		"Aquilrano":
+			graphicarray := array {59,281,788,787}; //DRAGÃO, MINOTAURO, ESFINGE, LEÃO FORMIGA.
+			break;
+		"Numajene":
+			graphicarray := array {72,87,250,271}; //TERATHAN, OPHIDIAN, LOBISOMEM DE 3 CABEÇAS, SATIRO.
+			break;
+		"Vanirio":
+			graphicarray := array {38,69,76,77}; //DEMONIO DA SANGRIA, GAZER, TITAN, KRAKEN.
+			break;
+		default:
+			graphicarray := array {3,7,17,26}; //ZUMBI, GOBLIN CAPITÃO, ORC, GHOUL.
+			break;
+		break;
+	endcase
+
+	var graphic := graphicarray[RandomInt(len(graphicarray)) + 1];
+	var color := RandomInt(99) + 2;
+	DrawGamePlayer(who, graphic, color);
+	foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 30)
+		graphic := graphicarray[RandomInt(len(graphicarray)) + 1];
+		color := RandomInt(99) + 2;
+		if (mobile.serial != who.serial)
+			DeleteObject(who, mobile);
+			DrawObject(who, mobile, graphic, color, 1);
+		endif
+	endforeach
+	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 30)
+		color := RandomInt(99) + 2;
+		if ((item.amount == 1) && (!item.isa(POLCLASS_CORPSE)) && (!item.invisible))
+			DeleteObject(who, item);
+			DrawObject(who, item, item.graphic, color);
+		endif
+	endforeach
+endfunction
+
+// the following functions have been pasted from SendPacket.inc
+
+function ConvertIntToHex(astring, alength)
+	astring := Hex(astring);
+	astring := CStr(astring);
+	if (astring["0x"])
+		astring := astring[3, len(astring)];
+	endif
+	if (len(astring) > alength * 2)
+		return;
+	endif
+	while (len(astring) < alength * 2)
+		astring := "0"+ astring;
+	endwhile
+	return astring;
+endfunction
+
+function DrawGamePlayer(who, jgraphic, jcolor)
+	var PacketHexString := "20"+ ConvertIntToHex(who.serial, 4);
+	PacketHexString := PacketHexString + ConvertIntToHex(jgraphic, 2);
+	PacketHexString := PacketHexString +"00";
+	PacketHexString := PacketHexString + ConvertIntToHex(jcolor, 2);
+	PacketHexString := PacketHexString +"00";
+	PacketHexString := PacketHexString + ConvertIntToHex(who.x, 2);
+	PacketHexString := PacketHexString + ConvertIntToHex(who.y, 2);
+	PacketHexString := PacketHexString +"0000";
+	PacketHexString := PacketHexString + ConvertIntToHex(who.facing, 1);
+	PacketHexString := PacketHexString + ConvertIntToHex(who.z, 1);
+	SendPacket(who, PacketHexString);
+endfunction
+
+function DrawObject(ktowhom, kobj, kgraphic, kcolor, keqitrandcolor := 0)
+	var PacketHexStringPart1 := "78";
+	var PacketHexStringPart2 := ConvertIntToHex(kobj.serial, 4) + ConvertIntToHex(kgraphic, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.x, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.y, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.z, 1);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.facing, 1);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kcolor, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 +"0000";
+	if ((kobj.isa(POLCLASS_MOBILE)) && ((kobj.graphic == 400) || (kobj.graphic == 401)|| (kobj.graphic == 1828) || (kobj.graphic == 1829) || (kobj.graphic == 1830) || (kobj.graphic == 1831) || (kobj.graphic == 1832) || (kobj.graphic == 1833) || (kobj.graphic == 1834) || (kobj.graphic == 1835)))
+		var color;
+		var graphic;
+		foreach item in ListEquippedItems(kobj)
+			PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.serial, 4);
+			if (keqitrandcolor == 1)
+				color := RandomInt(99) + 2;
+			else
+				color := item.color;
+			endif
+			if (color == 0)
+				graphic := item.graphic;
+			else
+				graphic := item.graphic + 32768;
+			endif
+			PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(graphic, 2);
+			PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.layer, 1);
+			if (color != 0)
+				PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(color, 2);
+			endif
+		endforeach
+	endif
+	PacketHexStringPart2 := PacketHexStringPart2 +"00000000";
+	var FullPacketHexStringLength := (len(PacketHexStringPart1) + len(PacketHexStringPart2)) / 2 + 2;
+	var FullPacketHexString := PacketHexStringPart1 + ConvertIntToHex(FullPacketHexStringLength, 2) + PacketHexStringPart2;
+	SendPacket(ktowhom, FullPacketHexString);
+endfunction
+
+function DeleteObject(who, lobj)
+	var PacketHexString := "1D"+ ConvertIntToHex(lobj.serial, 4);
+	SendPacket(who, PacketHexString);
+endfunction

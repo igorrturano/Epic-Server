@@ -1,0 +1,51 @@
+use uo;
+use cfgfile;
+use os;
+use util;
+
+include "include/say";
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":brainAI:npcWatchList";
+
+program BrainNerve(params)
+	var npc		:= params[1];
+	//var nerve_name	:= params[2];
+	var event	:= params[3];
+	//var settings	:= params[4];
+	//var scripts	:= params[5];
+	params := 0; // Not needed anymore.
+	while ( npc )
+		if ( event )
+			case ( event.type )
+				SYSEVENT_ENTEREDAREA:
+					var frases := GetObjProperty(npc, "frases");
+					if (frases == error)
+						frases := 0;
+					endif
+					
+					var enterarea := array{};
+					foreach i in frases
+						var frase := GetObjProperty(npc, "frase" + i);
+						if (frase.enteredarea)
+							enterarea.Append(frase.frase);
+						endif
+						sleepms(20);
+					endforeach
+					
+					var cyclesize := enterarea.size();
+					if (enterarea.size() >= 1)
+						PrintText(npc, "" + enterarea[RandomIntMinMax(1,cyclesize-1)]);
+					endif
+					break;
+				default:
+					break;
+			endcase
+			
+			event := 0;
+		endif
+		
+		sleepms(5);
+		event := wait_for_event(600);
+	endwhile
+endprogram

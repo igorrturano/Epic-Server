@@ -1,0 +1,24 @@
+ 
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+	
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	attacker.setwarmode(0);
+	attacker.hidden := 1;
+
+endprogram 

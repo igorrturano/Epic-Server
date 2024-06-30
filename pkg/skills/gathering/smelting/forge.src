@@ -1,0 +1,31 @@
+use uo;
+use os;
+program forja(who, item)
+
+   var status := GetObjProperty(item, "status");
+   if (status != 1)
+        SendSysMessage(who, "Selecione a madeira para colocar na forja.");
+        var alvo := target(who);
+        if (alvo.graphic == 7133)
+           if (alvo.amount > 10)
+              SendSysMessage(who, "Voce pode colocar no maximo 10 toras de madeira pro vez.");
+              return;
+           else
+              var parms := {};
+              parms[1] := item;
+              var amt := alvo.amount*180;
+              DestroyItem(alvo);
+              parms[2] := amt;
+              start_script("forgestat", parms);
+           endif
+        else
+           SendSysMessage(who, "Esse nao e um bom combustivel!");
+           return;
+        endif
+   else
+      SendSysMessage(who, "Ainda tem combustivel queimando nessa forja!");
+      return;
+   endif
+
+
+endprogram

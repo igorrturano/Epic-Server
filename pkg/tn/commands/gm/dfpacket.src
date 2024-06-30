@@ -1,0 +1,121 @@
+use uo;
+use os;
+use vitals;
+
+include ":tn:boss";
+include ":fls_core:packets";
+include ":tn:tngumps";
+use polsys;
+
+function SpellYesNo(who, nome, targname)
+
+	var gump := GfCreateGump(140, 100);
+	GfResizePic(gump, 0, 0, 0x53 ,200, 140);
+	GfAddAlphaRegion(gump, 0, 0, 200, 120);
+	GfTextLine(gump, 40, 20, 1153, "Manter Encantamento");
+	GfTextLine(gump, 40, 40, 1153, "" + nome);
+	GfTextLine(gump, 40, 60, 1153, "" + targname);
+	GfTextLine(gump, 40, 80, 1153, "Sim");
+	GfTextLine(gump, 40, 100, 1153, "Nao");
+
+	GfAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN,  10);
+	GfAddButton(gump, 20, 103, 2117, 2118, GF_CLOSE_BTN,  11);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 10)
+		return 1;
+	else
+		return 0;
+	endif
+	
+endfunction
+
+
+
+program DFPacket(mobile, text)
+
+	
+	text := splitwords(text);
+
+	sendsysmessage(mobile, "text 1 " + text[1] + " " +text[2]);
+	sendsysmessage(mobile, " " + text);
+	var a := PlayObjectCenteredEffect(mobile, cint(text[1]), cint(text[2]), cint(text[3]));
+	sendsysmessage(mobile,  " " + a);
+
+	//SendBuff(mobile, cint(text[1]), cint(text[2]), 10, 1015014, 10604850, " teste " );
+
+/*	var targ := Target(mobile);
+	var spellinfo := struct;
+
+	spellinfo.+id := show;
+	SetObjProperty(targ, "spellinfo", spellinfo);
+
+	return;
+	//var targ := Target(mobile);
+	sendsysmessage(mobile, " " + GetVitalRegenRate(targ, "mana"));
+
+	if (show)
+		SendQuestArrow(mobile, 6144, 4096);
+	else
+		SendQuestArrow(mobile);
+	endif
+
+	SendStringAsTipWindow( mobile, "quest arrow fake" );
+	return 1;
+//	SendBuff(mobile, show, 1031, 10, 1015014, 10604850, " teste " );
+
+//	return 1;
+	//spellyesno(mobile, "Forca do Touro", "Ghagha");
+//	SmallRequestGump(mobile, "Descreva");
+//	return 1;
+
+//SendSysMessage(mobile, " " + ReadGameClock() );
+//sendbuff(mobile, 1, 1030, 60, 0, 0, " ");
+//return 1;
+//	var boss := struct;
+//	createbossstructgump(mobile, boss);
+
+//	sendsysmessage(mobile, "dfpacket");
+   if ( show )
+      show := CInt(show);
+   else
+      show := 0;
+   endif
+   var icon := 1047;
+   var cliloc1 := 1015014;
+   var cliloc2 := 1060485;
+   var duration := 20;
+   var str := " mensagem do ghagha";   // the space at the start is important. Use cliloc parm rules for multiple parameters
+
+   // define the offsets to make it easier
+   var   OFFSET_SERIAL := 3;
+   var   OFFSET_ICONNUMBER1 := 7;
+   var   OFFSET_SHOW1 := 9;
+   var   OFFSET_ICONNUMBER2 := 15;
+   var   OFFSET_SHOW2 := 17;
+   var   OFFSET_TIME := 23;
+   var   OFFSET_CLILOC1 := 28;
+   var   OFFSET_CLILOC2 := 32;
+   var   OFFSET_CLILOC2PARMS := 42;
+
+//   var   BLANK_CLILOC := 1005007;   // a cliloc number with blank text
+//   var   ERROR_CLILOC := 500267;      // an cliloc showing an error
+
+
+   var packet := CreatePacket(0xDF, MSGLEN_VARIABLE);
+   packet.setint32(OFFSET_SERIAL, mobile.serial);
+   packet.setint16(OFFSET_ICONNUMBER1, icon);
+   packet.setint16(OFFSET_SHOW1, show);
+   if ( show )
+      packet.setint16(OFFSET_ICONNUMBER2, icon);
+      packet.setint16(OFFSET_SHOW2, show);
+      packet.setint16(OFFSET_TIME, duration);
+      packet.setint32(OFFSET_CLILOC1, cliloc1);
+      packet.setint32(OFFSET_CLILOC2, cliloc2);
+      packet.SetUnicodeStringFlipped(OFFSET_CLILOC2PARMS, CAscZ(str), 1);
+      var Length_ID := packet.GetSize();
+      packet.setint16(Length_ID, 0x1);
+   endif
+   packet.sendpacket(mobile); */
+endprogram   

@@ -1,0 +1,148 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/sysEvent";
+include "include/say";
+include "include/tileEffects";
+include "include/sounds";
+
+program MultiPortal(multiportal)
+    var palavras := array{};
+	var event;
+	var x := 0;
+    var y := 0;
+    var z := 0;
+    var r := "";
+
+    EnableEvents(SYSEVENT_SPEECH, 1);
+	RegisterForSpeechEvents(multiportal, 1);
+
+    if(GetObjProperty(multiportal,"aberto") == error)
+        SetObjProperty(multiportal,"aberto",0);
+        SetObjProperty(multiportal, "sourceColor", 10);
+
+        //Portal para Zharkia
+        SetObjProperty(multiportal,"magicword0","Valsharess Ilhar");
+        SetObjProperty(multiportal,"destinationX0",5298);
+        SetObjProperty(multiportal,"destinationY0",524);
+        SetObjProperty(multiportal,"destinationZ0",0);
+        SetObjProperty(multiportal,"destinationR0",0);
+
+        //Portal para Thuria
+        SetObjProperty(multiportal,"magicword1","Thuria");
+        SetObjProperty(multiportal,"destinationX1",1815);
+        SetObjProperty(multiportal,"destinationY1",146);
+        SetObjProperty(multiportal,"destinationZ1",0);
+        SetObjProperty(multiportal,"destinationR1",0);
+
+        //Portal para Asan
+        SetObjProperty(multiportal,"magicword2","Asan");
+        SetObjProperty(multiportal,"destinationX2",815);
+        SetObjProperty(multiportal,"destinationY2",1146);
+        SetObjProperty(multiportal,"destinationZ2",0);
+        SetObjProperty(multiportal,"destinationR2",0);
+
+        //Portal para Aquil
+        SetObjProperty(multiportal,"magicword3","Aquil");
+        SetObjProperty(multiportal,"destinationX3",2321);
+        SetObjProperty(multiportal,"destinationY3",2191);
+        SetObjProperty(multiportal,"destinationZ3",0);
+        SetObjProperty(multiportal,"destinationR3",0);
+
+// ### PIZZA - > adicionei a parte de baixo porque esta sem a opção de criar novos portais
+        //Portal para Zharkia
+        SetObjProperty(multiportal,"magicword0","");
+        SetObjProperty(multiportal,"destinationX0",0);
+        SetObjProperty(multiportal,"destinationY0",0);
+        SetObjProperty(multiportal,"destinationZ0",0);
+        SetObjProperty(multiportal,"destinationR0",0);
+    endif
+	
+    while(multiportal)
+        if(GetObjProperty(multiportal,"aberto") == 0)
+            event := wait_for_event(120);
+            if(event and event.type == SYSEVENT_SPEECH)
+                var magicwordcounter := 0;
+                while (GetObjProperty(multiportal,"magicword" + CStr(magicwordcounter)) != error)
+                    palavras.Append(GetObjProperty(multiportal, "magicword" + CStr(magicwordcounter)));
+                    magicwordcounter := magicwordcounter + 1;
+                endwhile
+
+                var i;
+                for (i := 0; i <= magicwordcounter; i := i+1)
+                    if (event.text == palavras[i])
+                        var portalNumber := CStr(i-1);
+                        SetObjProperty(multiportal, "portalNumber", portalNumber);
+                        SetObjProperty(multiportal, "aberto", 1);
+
+                        var color;
+                        var chardata := GetObjProperty(event.source, "chardata");
+
+                        if (chardata.magia == "Mesum")
+                            color := 2850;
+                        elseif (chardata.magia == "Kitah")
+                            color := 1100;
+                        elseif (chardata.magia == "Totemista")
+                            color := 2920;
+                        else
+                            color := 1200;
+                        endif
+
+                        SetObjProperty(multiportal, "sourceColor", color);
+
+                        AbrirPortal(multiportal, color);
+                    endif
+                endfor
+            endif
+        else
+            return 0;
+        endif
+    endwhile
+endprogram
+
+function AbrirPortal(multiportal, color)
+    var portal;
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8141, 1, realm := multiportal.r );
+    portal.color := color;
+    sleep(1);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8142, 1, realm := multiportal.r );
+    portal.color := color;
+    sleep(1);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8143, 1, realm := multiportal.r );
+    portal.color := color;
+    sleep(1);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8144, 1, realm := multiportal.r );
+    portal.color := color;
+    sleep(1);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8145, 1, realm := multiportal.r );
+    portal.color := color;
+    sleep(1);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8146, 1, realm := _DEFAULT_REALM );
+    portal.color := color;
+    sleep(0.5);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8147, 1, realm := _DEFAULT_REALM );
+    portal.color := color;
+    sleep(1);
+    DestroyItem(portal);
+
+    portal := CreateItemAtLocation(multiportal.x, multiportal.y, multiportal.z, 8148, 1, realm := _DEFAULT_REALM );
+    portal.color := color;
+    sleep(15);
+    DestroyItem(portal);
+
+    SetObjProperty(multiportal,"aberto",0);
+endfunction

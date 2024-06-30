@@ -1,0 +1,1704 @@
+// $Id: architect.src,v 1.10 2006/07/18 05:38:30 bytehawk Exp $
+/*
+	Comentado SAVEONEXIT
+	Comentado USESCRIPT
+	If alterado para só poder ser usado por staffers
+
+
+*/
+use cfgfile;
+use datafile;
+use file;
+use math;
+use os;
+use uo;
+use util;
+
+include ":keys:key";
+include ":containers:containers";
+include "include/say";
+include ":gumps:yesNo";
+include ":architect:include/architect";
+include ":architect:include/systemclock";
+include ":charactercreation:habilidades";
+
+const SIGENA:= 0;
+const BLOCK_OF_STONE := 0x5001;
+
+/*if (SIGENA)
+  include ":mrhousing:include/housing";
+endif*/
+
+var lang:= GetLangMessages();
+var rectcfg:= ReadConfigFile (":architect:config/rectangles");
+
+if (!rectcfg)
+  SysLog ("ERROR: pkg architect unable to read rectangles config!");
+  exit;
+endif
+
+var staffmode:= 0;
+var undo:= array{};
+
+program architect_gump(who)
+  Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+  
+    if (who.cmdlevel < STAFFMODELEVEL)
+        if(!TemHabilidade(who, "Arquiteto")) //Habilidade de construcao necessaria para executar o comando
+            SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
+            return 0;
+        endif
+    else
+        staffmode := 1;
+        SendSysMessage(who, "*running in staff mode*");
+    endif
+
+  //TODO Comentado, mas nao sei os riscos
+  // if (!staffmode)
+  //   if (GetGlobalProperty ("#architect"))
+  //     SendSysMessage (who, lang["running"]);
+  //     return 0;
+  //   endif
+
+ /*   if (CALLFROMCITY && (FindCity(who) == "no city"))
+      SendSysMessage (who, lang["nocallarea"]);
+      return 0;
+    endif*/
+
+  //   SetGlobalProperty ("#architect", who.serial);
+  // endif
+
+  var choice:= GetObjProperty (who, "#architect_choice");
+  var col:= 0;
+  var data:= array{};
+  var gpos:= GetObjProperty (who, "#architect_gumppos");
+  var groupparts:= array{};
+  var hidden:= array{};
+  var layout:= array{};
+  var marked:= array{};
+  var parts:= ReadConfigFile (":architect:config/parts");
+  var result;
+  var row:= 41;
+  var maingroups:= GetConfigStringKeys (parts);
+  var starteqp:= array{};
+  var subgroups:= array{};
+  maingroups.sort ();
+
+  if (!parts)
+    SysLog ("ERROR: pkg architect unable to read parts config!");
+    SendSysMessage (who, "ERROR: pkg architect unable to read parts config!");
+    EraseGlobalProperty ("#architect");
+    exit;
+  endif
+
+  var dummy;
+  var playerloc:= array{who.x, who.y, who.z};
+  var x:= 0;
+  var y:= 0;
+
+  if (!staffmode)
+    // remember what he brought to the construction site
+    foreach dummy in ListEquippedItems (who)
+      starteqp.append (dummy.serial);
+      // ReserveItem (dummy);
+    endforeach
+
+    foreach dummy in EnumerateItemsInContainer (who.backpack)
+      starteqp.append (dummy.serial);
+      // ReserveItem (dummy);
+    endforeach
+
+    // cleanup construction site
+    foreach dummy in ListObjectsInBox (startloc[1], startloc[2], GetWorldHeight(startloc[1], startloc[2]), startloc[1] + SITESIZE, startloc[2] + SITESIZE, 120)
+      DestroyItem (dummy);
+    endforeach
+
+    // create construction site borders
+    for (x:= startloc[1] + 1; x <= startloc[1] + SITESIZE - 1; x:= x + 1)
+      dummy:= CreateItemAtLocation (x, startloc[2], GetWorldHeight (x, startloc[2], who.realm), 52, 1, who.realm);
+      dummy.saveonexit:= 0;
+      dummy:= CreateItemAtLocation (x, startloc[2] + SITESIZE, GetWorldHeight (x, startloc[2] + SITESIZE, who.realm), 52, 1, who.realm);
+      dummy.saveonexit:= 0;
+    endfor
+
+    for (y:= startloc[2] + 1; y <= startloc[2] + SITESIZE - 1; y:= y + 1)
+      dummy:= CreateItemAtLocation (startloc[1], y, GetWorldHeight (startloc[1], y), 53, 1, who.realm);
+      dummy.saveonexit:= 0;
+      dummy:= CreateItemAtLocation (startloc[1] + SITESIZE, y, GetWorldHeight (startloc[1] + SITESIZE, y, who.realm), 53, 1, who.realm);
+      dummy.saveonexit:= 0;
+    endfor
+
+    dummy:= CreateItemAtLocation (startloc[1], startloc[2], GetWorldHeight (startloc[1], startloc[2], who.realm), 54, 1, who.realm);
+    dummy.saveonexit:= 0;
+    dummy:= CreateItemAtLocation (startloc[1] + SITESIZE, startloc[2], GetWorldHeight (startloc[1] + SITESIZE, startloc[2]), 52, 1, who.realm);
+    dummy.saveonexit:= 0;
+    dummy:= CreateItemAtLocation (startloc[1], startloc[2] + SITESIZE, GetWorldHeight (startloc[1], startloc[2] + SITESIZE), 53, 1, who.realm);
+    dummy.saveonexit:= 0;
+    dummy:= CreateItemAtLocation (startloc[1] + SITESIZE, startloc[2] + SITESIZE, GetWorldHeight (startloc[1], startloc[2] + SITESIZE, who.realm), 51, 1, who.realm);
+    dummy.saveonexit:= 0;
+  endif
+
+  // check for sub groups too large to fit in the gump
+  foreach dummy in GetConfigStringKeys (parts)
+    foreach entry in ListConfigElemProps (parts[dummy])
+      var grpsize:= GetConfigStringArray (parts[dummy], entry).size ();
+
+      if (grpsize > 52)
+        SendSysMessage (who, "Warning: " + dummy + "/" + entry + " has " + grpsize + " entries.");
+        SendSysMessage (who, "This will overflow the gump.");
+      endif
+    endforeach
+  endforeach
+
+  if (!choice)
+    choice:= array {0, "Walls", "BambooWall", 527, 0, 0, 0, 0};
+  endif
+
+  if (!gpos)
+    gpos:= array{0, 30};
+    SetObjProperty (who, "#architect_gumppos", gpos);
+  endif
+
+  while (who.ip)
+    // We're not cycling, so create the gump
+    if (choice[1] == 0)
+      data:= array{"-- Menu de Arquiteto " + ARCHITECT_VERSION + " --",
+              choice[2],
+              choice[3],
+              lang["options"],
+              lang["create"],
+              lang["line"],
+              lang["tile"],
+              lang["ring"],
+              lang["mark"],
+              lang["unmark"],
+              lang["hide"],         // 10
+              lang["delete"],
+              lang["undo"],
+              lang["save"],
+              lang["load"],
+              lang["repeat"],
+              lang["marked"],
+              lang["rect"],
+              lang["tile_floor"],
+              choice[7],
+              lang["clear_design"], // 20
+              lang["read_docu"],
+              "Sets",
+              lang["show_hexdec"],
+              lang["quit"],
+              "Export in sphere TXT Format",
+              "Baukosten schotzen",
+              "Mover" //27
+      };
+      layout:= array{
+            "page 0",
+       "nodispose",
+         "noclose",
+       "resizepic " + (gpos[1] +   0) + " " + gpos[2] + " 5120 260 531",                // background
+    "checkertrans " + (gpos[1] +   0) + " " + gpos[2] + " 250 531",
+       "resizepic " + (gpos[1] +   6) + " " + (gpos[2] +  70) + " 2620 122 456",        // background IDs
+            "text " + (gpos[1] +  10) + " " + (gpos[2] +   2) + " 600 0",               // title
+          "button " + (gpos[1] +   8) + " " + (gpos[2] +  23) + " 2437 2437 0 10",      // main group ("Walls")
+            "text " + (gpos[1] +  22) + " " + (gpos[2] +  18) + " 600 1",
+          "button " + (gpos[1] +   8) + " " + (gpos[2] +  39) + " 2437 2437 0 11",      // sub group ("Log Wall")
+            "text " + (gpos[1] +  22) + " " + (gpos[2] +  34) + " 600 2",
+          "button " + (gpos[1] +   8) + " " + (gpos[2] +  55) + " 2437 2437 0 12",      // Options
+            "text " + (gpos[1] +  22) + " " + (gpos[2] +  50  ) + " 600 3",
+         "tilepic " + (gpos[1] + 170) + " " + (gpos[2] +  40) + " " + choice[4],
+
+          // nudge buttons
+          "button " + (gpos[1] + 152) + " " + (gpos[2] + 200) + " 9760 9760 1 0 -308",
+          "button " + (gpos[1] + 130) + " " + (gpos[2] + 220) + " 9766 9766 1 0 -309",
+          "button " + (gpos[1] + 174) + " " + (gpos[2] + 220) + " 9762 9762 1 0 -310",
+          "button " + (gpos[1] + 152) + " " + (gpos[2] + 240) + " 9764 9764 1 0 -311",
+          "button " + (gpos[1] + 143) + " " + (gpos[2] + 260) + " 9760 9760 1 0 -312",
+          "button " + (gpos[1] + 159) + " " + (gpos[2] + 260) + " 9764 9764 1 0 -313",
+
+          "button " + (gpos[1] + 193) + " " + (gpos[2] + 200) + " 9760 9760 1 0 -314",
+          "button " + (gpos[1] + 210) + " " + (gpos[2] + 200) + " 9760 9760 1 0 -315",
+          "button " + (gpos[1] + 227) + " " + (gpos[2] + 200) + " 9760 9760 1 0 -316",
+            "text " + (gpos[1] + 209) + " " + (gpos[2] + 218) + " 40 19",
+          "button " + (gpos[1] + 193) + " " + (gpos[2] + 240) + " 9764 9764 1 0 -317",
+          "button " + (gpos[1] + 210) + " " + (gpos[2] + 240) + " 9764 9764 1 0 -318",
+          "button " + (gpos[1] + 227) + " " + (gpos[2] + 240) + " 9764 9764 1 0 -319",
+
+          // construction functions
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 310) + " 2361 2361 1 0 -301",  // create
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 306) + " 40 4",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 328) + " 2361 2361 1 0 -302",  // line
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 324) + " 40 5",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 346) + " 2361 2361 1 0 -303",  // tile
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 342) + " 40 6",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 364) + " 2361 2361 1 0 -304",  // ring
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 360) + " 40 7",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 382) + " " + (2360 + (marked.size () == 0)) + " " + (2360 + (marked.size () == 0)) + " 1 0 -305",  // mark
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 378) + " 40 8",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 400) + " 2361 2361 1 0 -306",  // unmark
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 396) + " 40 9",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 418) + " " + (2360 + (hidden.size () == 0)) + " " + (2360 + (hidden.size () == 0)) + " 1 0 -307",  // (un)hide
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 414) + " 40 10",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 436) + " 2361 2361 1 0 -330",  // delete
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 432) + " 40 11",
+          "button " + (gpos[1] + 135) + " " + (gpos[2] + 454) + " 2361 2361 1 0 -331",  // undo
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 450) + " 40 12",
+
+        "checkbox " + (gpos[1] + 133) + " " + (gpos[2] + 494) + " 3 4 " + (choice[1] != 0) + " 1",
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 491) + " 40 15",
+        "checkbox " + (gpos[1] + 133) + " " + (gpos[2] + 511) + " 3 4 " + (choice[5] != 0) + " 2",
+            "text " + (gpos[1] + 152) + " " + (gpos[2] + 508) + " 40 16"
+      };
+
+      row:= 37;
+      col:= 0;
+
+      // page 10: chose main group ("Walls", "Roofs"...)
+      layout.append("text " + (gpos[1] + 140) + " " + (gpos[2] + 180) + " 40 27"); //Texto Mover
+
+      layout.append ("page 10");
+      layout.append ("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 320 490");
+      layout.append ("button " + (gpos[1] + 8 + col) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
+
+      foreach group in maingroups
+        layout.append ("text " + (gpos[1] + 31 + col) + " " + (gpos[2] + row) + " 0 " + data.size ());
+
+        if (group == choice[2])
+          layout.append ("button " + (gpos[1] + 13 + col) + " " + (gpos[2] + row + 4) + " 2360 2360 1 0 " + -(200 + _group_iter));
+        else
+          layout.append ("button " + (gpos[1] + 13 + col) + " " + (gpos[2] + row + 4) + " 2361 2361 1 0 " + -(200 + _group_iter));
+        endif
+
+        data.append (group);
+        row:= row + 18;
+
+        if (row > 518)
+          row:= 41;
+          col:= col + 150;
+        endif
+
+        Sleepms (2);
+      endforeach
+
+
+      // page 11: chose sub group ("Log Wall", "Sandstone"...)
+      col:= 0;
+      row:= 51;
+      subgroups:= ListConfigElemProps (parts[choice[2]]);
+      subgroups.sort ();
+      layout.append ("page 11");
+      layout.append ("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
+
+      if (subgroups.size () > 26)
+        layout.append ("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 320 474");
+      else
+        layout.append ("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 240 474");
+      endif
+
+      foreach subgroup in subgroups
+        layout.append ("text " + (gpos[1] + 31 + col) + " " + (gpos[2] + row) + " 0 " + data.size ());
+
+        if (subgroup == choice[3])
+          layout.append ("button " + (gpos[1] + 13 + col) + " " + (gpos[2] + row + 4) + " 2360 2360 1 0 " + -(100 + _subgroup_iter));
+        else
+          layout.append ("button " + (gpos[1] + 13 + col) + " " + (gpos[2] + row + 4) + " 2361 2361 1 0 " + -(100 + _subgroup_iter));
+        endif
+
+        data.append (subgroup);
+        row:= row + 18;
+
+        // Change to next column at end of column
+        if (row > 514)
+          row:= 59;
+          col:= col + 150;
+        endif
+
+        Sleepms (2);
+      endforeach
+
+
+      // page 12: options (save, load...)
+      row:= 69;
+      layout.append ("page 12");
+      layout.append ("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 240 456");
+      layout.append ("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
+
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 10) + " 2361 2361 1 0 -320");  // rects
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 6) + " 0 17");
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 28) + " 2361 2361 1 0 -321");  // floors
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 24) + " 0 18");
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 46) + " 2361 2361 1 0 -322");  // sets
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 42) + " 0 22");
+
+      if (SIGENA)
+        layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 64) + " 2361 2361 1 0 -339"); // calculate costs
+        layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 60) + " 0 26");
+      endif
+
+      // options
+      if (staffmode)
+        layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 138) + " 2361 2361 1 0 -338"); // save txt
+        layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 134) + " 0 25");
+      endif
+
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 156) + " " + (2360 + (choice[8] != 1)) + " " + (2360 + (choice[8] != 1)) + " 1 0 -336");  // show hex ID
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 152) + " 0 23");
+
+      if (websites[LANGUAGE] != "")
+        layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 174) + " 2361 2361 1 0 -335");  // read docs
+        layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 170) + " 0 21");
+      endif
+
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 192) + " 2361 2361 1 0 -334");  // clear design
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 188) + " 0 20");
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 210) + " 2361 2361 1 0 -332"); // save
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 206) + " 0 13");
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 228) + " 2361 2361 1 0 -333"); // load
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 224) + " 0 14");
+      layout.append ("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 246) + " 2361 2361 1 0 -337"); // quit
+      layout.append ("text " + (gpos[1] + 31) + " " + (gpos[2] + row + 242) + " 0 24");
+
+
+      // page 1: List members of the chosen sub group
+      var partcount:= 0;
+      groupparts:= GetConfigStringArray (parts[choice[2]], choice[3]);
+      makeArrayNumerical(groupparts);
+      groupparts.sort ();
+      layout.append ("page 1");
+      col:= 14;
+      row:= 89;
+
+      foreach grouppart in groupparts
+        partcount:= partcount + 1;
+        layout.append ("text " + (col + 15) + " " + CStr (row + 18) + " 40 " + data.size ());
+
+        if (choice[8])
+          data.append (lower(Hex (grouppart)[3, 99]));
+        else
+          data.append (grouppart);
+        endif
+
+        if (CInt (grouppart) == choice[4])
+          layout.append ("button " + col + " " + CStr (row + 22) + " 2360 2360 1 0 " + grouppart);
+        else
+          layout.append ("button " + col + " " + CStr (row + 22) + " 2361 2361 1 0 " + grouppart);
+        endif
+
+        row:= row + 17;
+
+        if (row > 520)
+          row:= 89;
+          col:= col + 56;
+        endif
+
+        Sleepms (2);
+      endforeach
+
+      result:= SendDialogGump (who, layout, data);
+
+    // we're cycling, so repeat last order
+    else
+      result[0]:= choice[1];
+      SendSysMessage (who, lang["cycling"]);
+    endif
+
+    // use on marked?
+    if (result[2])
+      choice[5]:= 1;
+    else
+      choice[5]:= 0;
+    endif
+
+    // action
+    if (result[0] < -300)
+      if (result[1])
+        choice[1]:= result[0];
+      endif
+
+      case (Abs (result[0] + 300))
+      1:  // create
+          var coords:= get_coords(who, 1);
+
+          if (!coords)
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          var created:= create_marked(who, coords[1], coords[2], choice[7], choice[4]).serial;
+          undo.append (array{1, array{created}});
+          break;
+
+      2:  // line
+          var coords:= get_coords(who);
+
+          if (!coords)
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          if (Abs (coords[4] - coords[2]) > Abs (coords[3] - coords[1]))
+            coords[3]:= coords[1];
+          else
+            coords[4]:= coords[2];
+          endif
+
+          var created_array:= array {};
+
+          for (x:= coords[1]; x <= coords[3]; x:= x + 1)
+            for (y:= coords[2]; y <= coords[4]; y:= y + 1)
+              created_array.append (create_marked(who, x, y, choice[7], choice[4]).serial);
+            endfor
+          endfor
+
+          undo.append (array{1, created_array});
+          break;
+
+      3:  // tile
+          var coords:= get_coords(who);
+
+          if (!coords)
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          var created_array:= array {};
+
+          for (x:= coords[1]; x <= coords[3]; x:= x + 1)
+            for (y:= coords[2]; y <= coords[4]; y:= y + 1)
+              created_array.append (create_marked(who, x, y, choice[7], choice[4]).serial);
+            endfor
+          endfor
+
+          undo.append (array{1, created_array});
+          break;
+
+      4:  // ring
+          var coords:= get_coords(who);
+
+          if (!coords)
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          var created_array:= array {};
+
+          for (x:= coords[1]; x <= coords[3]; x:= x + 1)
+            created_array.append (create_marked(who, x, coords[2], choice[7], choice[4]).serial);
+            created_array.append (create_marked(who, x, coords[4], choice[7], choice[4]).serial);
+          endfor
+
+          for (y:= coords[2] + 1; y < coords[4]; y:= y + 1)
+            created_array.append (create_marked(who, coords[1], y, choice[7], choice[4]).serial);
+            created_array.append (create_marked(who, coords[3], y, choice[7], choice[4]).serial);
+          endfor
+
+          undo.append (array{1, created_array});
+          break;
+
+      5:  // mark
+          var tbm:= Target (who, TGTOPT_NOCHECK_LOS);
+
+          if (!tbm ||
+              (GetObjProperty (tbm, "built_by_architect") != who.serial))
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          if (!(tbm in marked))
+            tbm.color:= HILITE_MARK;
+            marked.append (tbm);
+          else
+            SendSysMessage (who, "vorher " + marked.size ());
+            tbm.color:= 0;
+            marked.erase (GetIndex(marked, tbm));
+            SendSysMessage (who, "nachher " + marked.size ());
+          endif
+
+          break;
+
+      6:  // unmark
+          foreach dummy in marked
+            dummy.color:= 0;
+          endforeach
+
+          choice[1]:= 0;  // 1 would cause endloss loop
+          marked:= array{};
+          break;
+
+      7:  // un/hide
+          var tbh;
+
+          if (choice[1] != 0) // cycling
+            tbh:= Target (who, TGTOPT_NOCHECK_LOS);
+
+            if (!tbh)
+              SendSysMessage (who, lang["cancelled"]);
+              choice[1]:= 0;
+              break;
+            endif
+
+            if(!GetObjProperty(tbh, "built_by_architect"))
+              SendSysMessage(who, "Somente e possivel esconder itens feitos pelo Architect");
+              break;
+            endif
+
+            tbh.invisible:= 1;
+            tbh.color:= 0;
+            hidden.append (tbh);
+            break;
+          endif
+
+          // nothing's hidden atm
+          if (hidden.size () < 1)
+            if (choice[5] == 1) // use on marked
+              foreach element in marked
+                element.invisible:= 1;
+                element.color:= 0;
+                hidden.append (element);
+              endforeach
+            else  // select target
+              tbh:= Target (who, TGTOPT_NOCHECK_LOS);
+
+              if (!tbh)
+                SendSysMessage (who, lang["cancelled"]);
+                choice[1]:= 0;
+                break;
+              endif
+            endif
+
+            tbh.invisible:= 1;
+            tbh.color:= 0;
+            hidden.append (tbh);
+
+          // unhide all hidden parts
+          else
+            foreach element in hidden
+              element.invisible:= 0;
+            endforeach
+
+            hidden:= array{};
+          endif
+
+          break;
+
+      // nudge
+      8:
+      9:
+      10:
+      11:
+      12:
+      13: var delta:= array{0, 0, 0};
+
+          case (Abs (result[0] + 300))
+           8: delta:= array{ 0, -1,  0};
+           9: delta:= array{-1,  0,  0};
+          10: delta:= array{ 1,  0,  0};
+          11: delta:= array{ 0,  1,  0};
+          12: delta:= array{ 0,  0,  1};
+          13: delta:= array{ 0,  0, -1};
+          endcase
+
+          var tbm;
+
+          if (choice[5] == 1)
+            // check if parts would be moved outside the borders
+            var valid:= 1;
+            
+            //Moveu para fora da borda, então não deixar mover 
+            foreach tbm in marked   
+              if (!check_coords(who, struct {x:= tbm.x + delta[1],
+                                             y:= tbm.y + delta[2]}))
+                  valid:= 0;
+                  break;
+              endif
+            endforeach
+
+            if (valid)
+              foreach tbm in marked
+                undo.append (array{3, tbm, tbm.x, tbm.y, tbm.z});
+                set_critical (1);
+                  tbm.movable:= 1;
+                  var passed := MoveObjectToLocation (tbm, tbm.x + delta[1], tbm.y + delta[2], tbm.z + delta[3], who.realm, MOVEOBJECT_FORCELOCATION);
+                  tbm.movable:= 0;
+                set_critical (0);
+              endforeach
+            endif
+          else
+            tbm:= Target (who, TGTOPT_NOCHECK_LOS);
+
+            if (!tbm ||
+                (GetObjProperty (tbm, "built_by_architect") != who.serial))
+              SendSysMessage (who, lang["cancelled"]);
+              choice[1]:= 0;
+              break;
+            endif
+
+            if (!check_coords(who, struct {x:= tbm.x + delta[1],
+                                           y:= tbm.y + delta[2]}))
+              choice[1]:= 0;
+              break;
+            endif
+
+            undo.append (array{3, tbm, tbm.x, tbm.y, tbm.z});
+            set_critical (1);
+            tbm.movable:= 1;
+            MoveObjectToLocation (tbm, tbm.x + delta[1], tbm.y + delta[2], tbm.z + delta[3], who.realm, MOVEOBJECT_FORCELOCATION);
+            tbm.movable:= 0;
+            set_critical (0);
+          endif
+
+          choice[1]:= 0;
+          break;
+
+      // set z coordinate
+      14:
+      15:
+      16:
+      17:
+      18:
+      19: case (Abs (result[0] + 300))
+          14: choice[7]:= choice[7] + 1;
+          15: choice[7]:= choice[7] + 5;
+          16: choice[7]:= choice[7] + 10;
+          17: choice[7]:= choice[7] - 1;
+          18: choice[7]:= choice[7] - 5;
+          19: choice[7]:= choice[7] - 10;
+          endcase
+
+          if ((choice[7] < 0) ||
+              (choice[7] > 120))
+            choice[7]:= 0;
+          endif
+
+          choice[1]:= 0;
+          break;
+
+      // rectangles and floors
+      20:
+      21: var elem;
+          var floorparts:= array{};
+          var rectfloortype:= 0;
+          var rectortile:= 0;
+          var tile_data:= array{};
+          var tile_layout:= array{};
+          var tile_result;
+
+          case (Abs (result[0] + 300))
+          20: // rect
+              tile_data:= array{"-"};
+              tile_layout:= array{
+                      "page 0",
+                 "nodispose",
+                 "resizepic " + (gpos[1] +  15) + " " + gpos[2] + " 5120 570 460",
+              "checkertrans " + (gpos[1] +  15) + " " + gpos[2] + " 570 460"
+              };
+
+              col:= 25;
+              row:= 10;
+
+              // browse through all entries in rectangles.cfg
+              foreach key in GetConfigIntKeys (rectcfg)
+                // this isn't an entry of a rectangle. Go to next entry
+                if (rectcfg[key].type != "rect")
+                  continue;
+                endif
+
+                foreach dummy in array{20, 10, 5}
+                  if (GetConfigString (rectcfg[key], "h" + dummy))
+                    tile_layout.append ("button " + (gpos[1] + col) + " " + (gpos[2] + row + (_dummy_iter * 20) + 7) + " 2361 2360 1 0 " + (30000 + (_dummy_iter * 10000) + CInt (key)));
+                  else
+                    tile_layout.append ("text " + (gpos[1] + col + 2) + " " + (gpos[2] + row + (_dummy_iter * 20)) + " 40 0");
+                  endif
+                endforeach
+
+                tile_layout.append ("tilepic " + (gpos[1] + col + 18) + " " + (gpos[2] + row) + " " + key);
+                row:= row + 110;
+
+                if (row > 370)
+                  row:= 10;
+                  col:= col + 80;
+                endif
+              endforeach
+
+              tile_result:= SendDialogGump (who, tile_layout, tile_data);
+
+              // set appropriate cfg entry, depending on chosen height
+              if (tile_result[0] > 60000)
+                elem:= "h5";
+                rectfloortype:= (tile_result[0] - 60000);
+              elseif (tile_result[0] > 50000)
+                elem:= "h10";
+                rectfloortype:= (tile_result[0] - 50000);
+              elseif (tile_result[0] > 40000)
+                elem:= "h20";
+                rectfloortype:= (tile_result[0] - 40000);
+              endif
+
+              rectortile:= 1;
+
+          21: // floor
+              col:= 5;
+              row:= 0;
+              tile_data:= array{lang["orientation"],
+                           lang["northsouth"],
+                           lang["westeast"]
+              };
+              tile_layout:= array{
+                      "page 0",
+                 "nodispose",
+                 "resizepic " + (gpos[1] + col) + " " + (gpos[2] + row) + " 5120 250 376",
+              "checkertrans " + (gpos[1] + col) + " " + (gpos[2] + row) + " 250 376",
+                      "text " + (gpos[1] + col + 10) + " " + (gpos[2] + row +  2) + " 40 0",
+                     "group 1",
+                     "radio " + (gpos[1] + col + 10) + " " + (gpos[2] + row + 24) + " 2361 2360 1 1",
+                      "text " + (gpos[1] + col + 25) + " " + (gpos[2] + row + 20) + " 40 1",
+                     "radio " + (gpos[1] + col + 10) + " " + (gpos[2] + row + 42) + " 2361 2360 0 2",
+                      "text " + (gpos[1] + col + 25) + " " + (gpos[2] + row + 38) + " 40 2"
+              };
+
+              col:= 15;
+              row:= 70;
+
+              foreach key in GetConfigIntKeys (rectcfg)
+                if (rectcfg[key].type == "floor")
+                  tile_layout.append ("button " + (gpos[1] + col) + " " + (gpos[2] + row + 17) + " 2361 2360 1 0 " + key);
+                  tile_layout.append ("tilepic " + (gpos[1] + col + 18) + " " + (gpos[2] + row) + " " + key);
+                  row:= row + 50;
+
+                  if (row > 340)
+                    row:= 70;
+                    col:= col + 80;
+                  endif
+                endif
+              endforeach
+
+              tile_result:= SendDialogGump (who, tile_layout, tile_data);
+              elem:= "ns";
+
+              // use WE set, if there actually is one
+              if ((tile_result[2] == 1) &&
+                  rectcfg[rectfloortype].we)
+                elem:= "we";
+              endif
+
+              // What type are we to build?
+              foreach thing in (tile_result.keys)
+                if (tile_result[thing] > 1)
+                  rectfloortype:= tile_result[thing];
+                endif
+              endforeach
+
+              // make random edges (caves)?
+              if (rectcfg[rectfloortype].ns == "random")
+                rectortile:= 3;
+              else
+                rectortile:= 2;
+              endif
+          endcase
+
+          // nothing chosen
+          if (!rectfloortype)
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          // select corners
+          var coords:= get_coords(who);
+
+          if (!coords)
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          // chosen area is quite a bit too small
+          if (((coords[4] - coords[2]) < 2) &&
+              ((coords[3] - coords[1]) < 2))
+            SendSysMessage (who, lang["toosmall"]);
+            break;
+          endif
+
+          // finally, we're building the rect or floor
+          case (rectortile)
+          1:
+          2:  foreach dummy in SplitWords (GetConfigString (rectcfg[rectfloortype], elem))
+                floorparts.append (array{dummy});
+              endforeach
+
+          3:  foreach index in array{"e", "n", "ne", "nw", "s", "se", "sw", "w"}
+                floorparts.append (SplitWords (GetConfigString (rectcfg[rectfloortype], index)));
+              endforeach
+          endcase
+
+          // build the corners...
+          var created_array:= array {};
+          created_array.append (create_marked(who, coords[1], coords[2], choice[7], CInt (floorparts[4][RandomInt (floorparts[4].size ()) + 1])).serial);
+          created_array.append (create_marked(who, coords[3], coords[4], choice[7], CInt (floorparts[6][RandomInt (floorparts[6].size ()) + 1])).serial);
+          created_array.append (create_marked(who, coords[1], coords[4], choice[7], CInt (floorparts[7][RandomInt (floorparts[7].size ()) + 1])).serial);
+          created_array.append (create_marked(who, coords[3], coords[2], choice[7], CInt (floorparts[3][RandomInt (floorparts[3].size ()) + 1])).serial);
+
+          // ...the north and south sides...
+          for (x:= (coords[1] + 1); x < coords[3]; x:= x + 1)
+            created_array.append (create_marked(who, x, coords[2], choice[7], CInt (floorparts[2][RandomInt (floorparts[2].size ()) + 1])).serial);
+            created_array.append (create_marked(who, x, coords[4], choice[7], CInt (floorparts[5][RandomInt (floorparts[5].size ()) + 1])).serial);
+          endfor
+
+          // ...as well as the west and east.
+          for (y:= (coords[2] + 1); y < coords[4]; y:= y + 1)
+            created_array.append (create_marked(who, coords[1], y, choice[7], CInt (floorparts[8][RandomInt (floorparts[8].size ()) + 1])).serial);
+            created_array.append (create_marked(who, coords[3], y, choice[7], CInt (floorparts[1][RandomInt (floorparts[1].size ()) + 1])).serial);
+          endfor
+
+          // create center only for floors, not rects
+          if (rectortile in array{2, 3})
+            if (((coords[4] - coords[2]) >= 2) ||
+                ((coords[3] - coords[1]) >= 2))
+              var centerparts:= SplitWords (GetConfigString (rectcfg[rectfloortype], elem + "_center"));
+
+              for (x:= (coords[1] + 1); x < coords[3]; x:= x + 1)
+                for (y:= (coords[2] + 1); y < coords[4]; y:= y + 1)
+                  created_array.append (create_marked(who, x, y, choice[7], CInt (centerparts[RandomInt (centerparts.size ()) + 1])).serial);
+                endfor
+              endfor
+            endif
+          endif
+
+          undo.append (array{1, created_array});
+          break;
+
+      22: // sets
+          var set_cfg:= ReadConfigFile (":architect:config/sets");
+          var set_data:= array{"Chose set to build:"};
+          var set_layout:= array{
+                  "page 0",
+             "nodispose",
+             "resizepic " + (gpos[1] +  5) + " " + gpos[2] + " 5120 270 298",
+          "checkertrans " + (gpos[1] +  5) + " " + gpos[2] + " 270 298",
+                  "text " + (gpos[1] + 15) + " " + (gpos[2] + 2) + " 600 0"
+          };
+
+          col:= 15;
+          row:= 20;
+
+          // browse through all entries in sets.cfg
+          foreach key in GetConfigIntKeys (set_cfg)
+            set_layout.append ("button " + (gpos[1] + col) + " " + (gpos[2] + row + 6) + " 2361 2360 1 0 " + _key_iter);
+            set_layout.append ("text " + (gpos[1] + col + 15) + " " + (gpos[2] + row) + " 40 " + set_data.size());
+            set_data.append (set_cfg[key].name);
+            row:= row + 18;
+
+            if (row > 286)
+              row:= 20;
+              col:= col + 90;
+            endif
+          endforeach
+
+          var set_result:= SendDialogGump (who, set_layout, set_data);
+
+          if (set_result[0] > 0)
+            var coords:= get_coords(who, 1);
+
+            if (!coords)
+              SendSysMessage (who, lang["cancelled"]);
+              choice[1]:= 0;
+              break;
+            endif
+
+            var created_array:= array {};
+
+            foreach dummy in GetConfigStringArray (set_cfg[CInt (set_result[0])], "item")
+              dummy:= SplitWords (dummy);
+
+              // would this be inside contruction site borders?
+              if (check_coords(who, struct {x:= coords[1] - CInt (dummy[2]),
+                                            y:= coords[2] - CInt (dummy[3])}))
+                created_array.append (create_marked(who, coords[1] - CInt (dummy[2]), coords[2] - CInt (dummy[3]), choice[7] - CInt (dummy[4]), CInt (dummy[1])).serial);
+              endif
+            endforeach
+
+            undo.append (array{1, created_array});
+          endif
+
+          choice[1]:= 0;
+          break;
+
+      30: // delete
+          var tbd:= array {};
+
+          // delete marked
+          if (choice[5] == 1)
+            tbd:= marked;
+            choice[1]:= 0;
+            marked:= array{};
+          else
+            SendSysMessage (who, lang["delete_what"]);
+            tbd.append (Target (who, TGTOPT_NOCHECK_LOS));
+
+            if (!tbd[1])
+              SendSysMessage (who, lang["cancelled"]);
+              choice[1]:= 0;
+              break;
+            endif
+          endif
+
+          foreach element in tbd
+            if(staffmode) //Se for staff, pode deletar qualquer coisa
+                undo.append (array{2, element.objtype, element.x, element.y, element.z});
+                DestroyItem (element);
+            else
+                if (GetObjProperty (element, "built_by_architect") != who.serial)
+                  SendSysMessage (who, lang["delete_err"]);
+                else
+                  undo.append (array{2, element.objtype, element.x, element.y, element.z});
+                  DestroyItem (element);
+                endif
+            endif
+          endforeach
+
+          break;
+
+      31: // undo
+          choice[1]:= 0;
+          var lastaction:= undo[undo.size ()];
+          var undone:= 0;
+
+          case (lastaction[1])
+          1:  // undo creation (just this one, not creation in all)
+              foreach dummy in (lastaction[2])
+                var tbd:= SystemFindObjectBySerial (dummy);
+
+                if (GetObjProperty (tbd, "built_by_architect") == who.serial)
+                  var objtype := GetObjProperty(tbd, "architect_objtype");
+                  CreateItemInBackPack(who, objtype, 10);
+                  DestroyItem (tbd);
+                  undone:= 1;
+                endif
+
+                Sleepms (2);
+              endforeach
+
+              undo.erase (undo.size ());
+              marked:= array{};
+              break;
+
+          2:  // undo deletion
+              create_marked(who, lastaction[3], lastaction[4], lastaction[5], lastaction[2]);
+              undo.erase (undo.size ());
+              marked:= array{};
+              undone:= 1;
+
+          3:  // undo nudge
+              set_critical (1);
+                lastaction[2].movable:= 1;
+                MoveObjectToLocation (lastaction[2], lastaction[3], lastaction[4], lastaction[5], who.realm, MOVEOBJECT_FORCELOCATION);
+                lastaction[2].movable:= 0;
+              set_critical (0);
+              undo.erase (undo.size ());
+              marked:= array{};
+              undone:= 1;
+          endcase
+
+          if (!undone)
+            SendSysMessage (who, lang["undo_err"]);
+          endif
+
+          choice[1]:= 0;
+          break;
+
+      32: // save
+          var designdata:= OpenDataFile ("architect");
+
+          if (designdata.errortext)
+            designdata:= CreateDataFile ("architect", 1);
+          endif
+
+          var designelem:= designdata.FindElement (CInt (who.serial));
+
+          if (!designelem)
+            designelem:= designdata.CreateElement (who.serial);
+            designelem.SetProp ("index", array{});
+          endif
+
+          var save_data:= array{lang["save_select"],
+                           lang["empty"]};
+          var save_layout:= array{
+                  "page 0",
+             "nodispose",
+             "resizepic " + (gpos[1] +  5) + " " + gpos[2] + " 5120 270 230",
+          "checkertrans " + (gpos[1] +  5) + " " + gpos[2] + " 270 298",
+                  "text " + (gpos[1] + 15) + " " + (gpos[2] + 2) + " 600 0"
+          };
+
+          var i;
+          var saveindex:= designelem.GetProp ("index");
+          row:= 20;
+
+          if (!saveindex)
+            saveindex:= array {};
+          endif
+
+          for (i:= 1; i <= MAXSAVES; i:= i + 1)
+            save_layout.append ("button " + (gpos[1] + 15) + " " + (gpos[2] + row + 4) + " 2361 2360 1 0 " + i);
+
+            if (CStr (i) in designelem.PropNames ())
+              save_layout.append ("text " + (gpos[1] + 33) + " " + (gpos[2] + row) + " 600 " + save_data.size ());
+              save_data.append (saveindex[i][1] + ": " + saveindex[i][2]);
+            else
+              save_layout.append ("text " + (gpos[1] + 33) + " " + (gpos[2] + row) + " 600 1");
+            endif
+
+            row:= row + 20;
+          endfor
+
+          foreach dummy in hidden
+            dummy.invisible:= 0;
+          endforeach
+
+          var ergebnis:= SendDialogGump (who, save_layout, save_data);
+
+          if (!ergebnis[0])
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          hidden:= array {};
+          var botright:= array {};
+          var topleft:= array {};
+
+          if (!staffmode)
+            topleft:= array {startloc[1], startloc[2], GetWorldHeight (startloc[1], startloc[2])};
+            botright:= array {startloc[1] + SITESIZE, startloc[2] + SITESIZE, 120};
+          else
+            var dummy:= get_coords(who);
+            topleft:= array {dummy[1], dummy[2], GetWorldHeight (dummy[1], dummy[2])};
+            botright:= array {dummy[3], dummy[4], GetWorldHeight (dummy[3], dummy[4])};
+          endif
+
+          var output:= array{};
+
+          foreach item in ListObjectsInBox (topleft[1], topleft[2], topleft[3], botright[1], botright[2], botright[3])
+            if (GetObjProperty (item, "built_by_architect") == who.serial)
+              output.append (array {CInt (item.objtype), (item.x - topleft[1]), (item.y - topleft[2]), (item.z - topleft[3])});
+            endif
+          endforeach
+
+          var designname:= SendTextEntryGump (who, lang["save_name"], TE_CANCEL_ENABLE, TE_STYLE_NORMAL, 16);
+
+          if (!designname)
+            designname:= "---";
+          endif
+
+          saveindex[CInt (ergebnis[0])]:= array {GetSysDate().toString, designname};
+          designelem.SetProp ("index", saveindex);
+          designelem.SetProp (CStr (ergebnis[0]), output);
+          SendSysMessage (who, lang["saved"]);
+          choice[1]:= 0;
+          break;
+
+      33: // load
+          if (!staffmode)
+            if (!clear_site(who))
+              choice[1]:= 0;
+              break;
+            endif
+          endif
+
+          var designdata:= OpenDataFile ("architect");
+          var designelem:= 0;
+
+          if (designdata.errortext)
+            designdata:= CreateDataFile ("architect", 1);
+          endif
+
+          // staff can load player designs
+          if (who.cmdlevel >= SEEPLAYERDESIGNS)
+            var staff_data:= array{"Chose player:"};
+            var staff_layout:= array{
+                    "page 0",
+               "nodispose",
+               "resizepic " + (gpos[1] +  5) + " " + gpos[2] + " 5120 270 230",
+            "checkertrans " + (gpos[1] +  5) + " " + gpos[2] + " 270 298",
+                    "text " + (gpos[1] + 15) + " " + (gpos[2] + 2) + " 600 0"
+            };
+            row:= 20;
+
+            foreach dummy in (designdata.keys ())
+              var player:= SystemFindObjectBySerial (dummy, SYSFIND_SEARCH_OFFLINE_MOBILES);
+
+              // player's been deleted
+              if (!player)
+                if (yesNo(who, array{"player deleted", "erase his designs?"}))
+                  designdata.DeleteElement (dummy);
+                  SendSysMessage (who, "Data entries deleted");
+                endif
+
+                continue;
+              endif
+
+              staff_layout.append ("button " + (gpos[1] + 15) + " " + (gpos[2] + row + 4) + " 2361 2360 1 0 " + dummy);
+              staff_layout.append ("text " + (gpos[1] + 33) + " " + (gpos[2] + row) + " 600 " + staff_data.size ());
+              staff_data.append (player.name);
+              row:= row + 20;
+            endforeach
+
+            var result:= SendDialogGump (who, staff_layout, staff_data);
+
+            if (result[0])
+              designelem:= designdata.FindElement (result[0]);
+            endif
+
+          else
+            designelem:= designdata.FindElement (CInt (who.serial));
+          endif
+
+          if (!designelem)
+            SendSysMessage (who, lang["load_noentry"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          var load_data:= array{lang["save_select"],
+                           lang["empty"]};
+          var load_layout:= array{
+                  "page 0",
+             "nodispose",
+             "resizepic " + (gpos[1] +  5) + " " + gpos[2] + " 5120 270 230",
+          "checkertrans " + (gpos[1] +  5) + " " + gpos[2] + " 270 298",
+                  "text " + (gpos[1] + 15) + " " + (gpos[2] + 2) + " 600 0"
+          };
+
+          row:= 20;
+
+          foreach dummy in (designelem.GetProp ("index"))
+            if (dummy.size () < 1)
+              continue;
+            endif
+
+            load_layout.append ("button " + (gpos[1] + 15) + " " + (gpos[2] + row + 4) + " 2361 2360 1 0 " + _dummy_iter);
+            load_layout.append ("text " + (gpos[1] + 33) + " " + (gpos[2] + row) + " 600 " + load_data.size ());
+            load_data.append (dummy[1] + ": " + dummy[2]);
+            row:= row + 20;
+          endforeach
+
+          var ergebnis:= SendDialogGump (who, load_layout, load_data);
+
+          if (!ergebnis[0])
+            SendSysMessage (who, lang["cancelled"]);
+            choice[1]:= 0;
+            break;
+          endif
+
+          var topleft:= array {};
+
+          if (!staffmode)
+            topleft:= array {startloc[1], startloc[2], GetWorldHeight (startloc[1], startloc[2])};
+          else
+            topleft:= array {who.x, who.y, who.z};
+          endif
+
+          foreach dummy in (designelem.GetProp (CStr (ergebnis[0])))
+            create_marked(who, topleft[1] + dummy[2], topleft[2] + dummy[3], topleft[3] + dummy[4], dummy[1]);
+          endforeach
+
+          choice[1]:= 0;
+          choice[5]:= 0;
+          choice[6]:= 0;
+          choice[7]:= 0;
+          hidden:= array{};
+          marked:= array{};
+          undo:= array{};
+          break;
+
+      34: // clear design
+          clear_site(who);
+          choice[1]:= 0;
+          choice[5]:= 0;
+          choice[6]:= 0;
+          choice[7]:= 0;
+          hidden:= array {};
+          marked:= array {};
+          undo:= array {};
+          break;
+
+      35: // read docs
+          //OpenWebSite(who, websites[LANGUAGE]);
+          choice[1]:= 0;
+
+      36: // show hex ID
+          choice[8]:= !choice[8];
+          choice[1]:= 0;
+
+      37: // end architect
+          if (!staffmode)
+            SendSysMessage (who, lang["end_confirm"]);
+
+            if (!yesNo(who, array{"Sair do sistema de arquitetura", "sem salvar?"}))
+              choice[1]:= 0;
+              break;
+            endif
+            //TODO Ele sempre move o player e nao entendi, removi e vamos ver o que acontece
+            //MoveObjectToLocation (who, playerloc[1], playerloc[2], playerloc[3], who.realm, MOVEOBJECT_FORCELOCATION);
+            EraseGlobalProperty ("#architect");
+
+            foreach dummy in starteqp
+              // ReleaseItem (dummy); //Comentado todos os reserveitem e releaseitem, assim não impede o jogador de mexer na bolsa
+            endforeach
+          endif
+
+          SetObjProperty (who, "#architect_choice", choice);
+          return 1;
+
+      38: // save in sphere txt format
+          var output:= array{"6 version",
+                              "0 template id",
+                              "-1 item version",
+                              ""};
+
+          var dummy:= get_coords(who);
+
+          foreach item in ListObjectsInBox (dummy[1], dummy[2], GetWorldHeight (dummy[1], dummy[2]), dummy[3], dummy[4], 120)
+            if (GetObjProperty (item, "built_by_architect") == who.serial)
+              output.append (CInt (item.objtype) + " " + (item.x - who.x) + " " + (item.y - who.y) + " " + (item.z - who.z) + " " + 1);
+            endif
+          endforeach
+
+          output[4]:= (output.size () - 4) + " num components";
+          var savename:= SendTextEntryGump (who, "file name", TE_CANCEL_ENABLE, TE_STYLE_NORMAL, 12);
+
+          if (!savename)
+            SendSysMessage (who, lang["cancelled"]);
+            break;
+          endif
+
+          WriteFile (savename + ".txt", output);
+          SendSysMessage (who, "saved");
+          choice[1]:= 0;
+
+      39: // calculate costs
+          // this works on Sigena shard only!
+          foreach dummy in hidden
+            dummy.invisible:= 0;
+          endforeach
+
+          foreach dummy in marked
+            dummy.color:= 0;
+          endforeach
+
+          choice[1]:= 0;
+          hidden:= array {};
+          marked:= array {};
+          //kostenschaetzung(who, marked);
+      endcase
+
+    // main group chosen
+    elseif (result[0] < -200)
+      choice[2]:= maingroups[Abs (result[0] + 200)];
+      subgroups:= ListConfigElemProps (parts[choice[2]]);
+      subgroups.sort ();
+      choice[3]:= subgroups[1];
+      DrawResourcesOnGump(subgroups[1], who);
+      groupparts:= GetConfigStringArray (parts[choice[2]], choice[3]);
+      makeArrayNumerical(groupparts);
+      groupparts.sort ();
+      choice[4]:= groupparts[1];
+
+    // sub group chosen
+    elseif (result[0] < -100)
+      choice[3]:= subgroups[Abs (result[0] + 100)];
+      groupparts:= GetConfigStringArray (parts[choice[2]], choice[3]);
+      makeArrayNumerical(groupparts);
+      groupparts.sort ();
+      choice[4]:= groupparts[1];
+
+    // part chosen
+    elseif (result[0] > 0)
+      choice[4]:= CInt (result[0]);
+
+    else
+      break;
+    endif
+  endwhile
+
+  if (!staffmode)
+    foreach dummy in starteqp
+      // ReleaseItem (dummy);
+    endforeach
+
+    MoveObjectToLocation (who, playerloc[1], playerloc[2], playerloc[3], who.realm, MOVEOBJECT_FORCELOCATION);
+    EraseGlobalProperty ("#architect");
+  endif
+
+  SetObjProperty (who, "#architect_choice", choice);
+
+endprogram
+
+
+
+/* Searches for <needle> in array <haystack> and returns its index
+ * == This function was taken from arrays.inc by Shilohen ==
+ *
+ * returns <integer> index of needle in haystack
+ *         <error> on error
+*/
+function GetIndex(haystack, needle)
+
+  haystack.sort ();
+  var maximum:= haystack.size ();
+
+  if (!maximum)
+    var ret:= error;
+    ret.+errortext:= "Element not found";
+    return ret;
+  endif
+
+  var ctr;
+  var minimum:= 1;
+
+  if (haystack[1].isA (POLCLASS_UOBJECT))
+    while (minimum <= maximum)
+      ctr:= CInt ((minimum + maximum) / 2);
+
+      if (haystack[ctr].serial == needle.serial)
+        return ctr;
+      elseif (haystack[ctr].serial < needle.serial)
+        minimum:= ctr + 1;
+      else
+        maximum:= ctr - 1;
+      endif
+    endwhile
+
+    var ret:= error;
+    ret.+errortext:= "Element not found";
+    return ret;
+  else
+    while (minimum <= maximum)
+      ctr:= CInt ((minimum + maximum) / 2);
+
+      if (haystack[ctr] == needle)
+        return ctr;
+      elseif (haystack[ctr] < needle)
+        minimum:= ctr + 1;
+      else
+        maximum:= ctr - 1;
+      endif
+    endwhile
+
+    var ret:= error;
+    ret.+errortext:= "Element not found";
+    return ret;
+  endif
+
+endfunction
+
+
+
+/* Let the player target one or two locations
+ *
+ * howmany <integer 1|2> Ask for 1 or two coords?
+ *
+ * returns <array> either {x1, y1} or {x1, y1, x2, y2}
+ *         0 if coords are invalid or targeting was cancelled
+*/
+function get_coords(who, howmany:= 2)
+
+  if (howmany == 1)
+    SendSysMessage (who, lang["target_chose"]);
+  else
+    SendSysMessage (who, lang["target_ul"]);
+  endif
+
+  var top_left:= TargetCoordinates (who);
+
+  if (!top_left || !check_coords(who, top_left))
+    SendSysMessage (who, lang["cancelled"]);
+    return 0;
+  endif
+
+  if (howmany == 1)
+    return (array {top_left.x, top_left.y});
+  endif
+
+  SendSysMessage (who, lang["target_lr"]);
+  var bot_right:= TargetCoordinates (who);
+
+  if (!bot_right || !check_coords(who, bot_right))
+    SendSysMessage (who, lang["cancelled"]);
+    return 0;
+  endif
+
+  var dummy:= 0;
+
+  if (top_left.x > bot_right.x)
+    dummy:= top_left.x;
+    top_left.x:= bot_right.x;
+    bot_right.x:= dummy;
+  endif
+
+  if (top_left.y > bot_right.y)
+    dummy:= top_left.y;
+    top_left.y:= bot_right.y;
+    bot_right.y:= dummy;
+  endif
+
+  return (array {top_left.x, top_left.y, bot_right.x, bot_right.y});
+
+endfunction
+
+
+
+/* Check if the selected coordinates are within the borders of the construction site
+ *
+ * coords  <struct .x .y>
+ *
+ * returns 1 if coords are within the borders
+ *         0 if they aren't
+*/
+function check_coords(who, coords)
+
+  if (staffmode)
+    return 1;
+  endif
+
+  //Retorna a localizacao de onde esta a pessoa
+  var where := GetResidenciasRegion(who);
+
+  var df := opendatafile(":architect:areas");
+  if (df == error)
+      df :=  createdatafile(":architect:areas");
+  endif
+
+  var elem := df.FindElement(where);
+  //Se nao tiver a prop Name, ele da um erro para nao conseguir construir fora do contexto da area
+  if(!elem.GetProp("Name"))
+    SendSysMessage (who, lang["outofbounds"]);
+    return 0;
+  endif
+
+  return 1;
+
+endfunction
+
+/* Creates 1 item at passed coords and adds a flag to it
+ *
+ * x, y, z coordinates to create the item at
+ * type    objtyopeof the item to be created
+ *
+ * returns <objref> to the created item
+*/
+function create_marked(who, x, y, z, type)
+    var prop := dictionary;
+    var parts:= ReadConfigFile(":architect:config/parts");
+    var groupName := FindGroupNameByType(parts, type);
+    var item_obj_type;
+
+    if (!groupName)
+        SendSysMessageEx(who, "Tipo de item desconhecido.", SSM_INFO);
+        return;
+    endif
+
+    // Recuperar informações dos recursos necessários
+    var resourcesConfig := ReadConfigFile(":architect:config/resources");
+    var resourceName := GetConfigString( FindconfigElem(resourcesConfig, groupName), "resourceName" );
+    var quantity := GetConfigInt( FindconfigElem(resourcesConfig, groupName), "quantity" );
+
+    // Obter objtype de cada recurso
+    var resourceTypeConfig := ReadConfigFile(":architect:config/resource_type");
+    var resourcesIdList := GetConfigStringArray( FindconfigElem(resourceTypeConfig, resourceName), "resourcesIdList" );
+    var resourcesNameList := GetConfigStringArray( FindconfigElem(resourceTypeConfig, resourceName), "resourcesNameList" );
+
+    // Verifica se tem recursos suficientes
+    if (!staffmode) // Se não for staff, verifica os recursos
+        var total_recursos := CheckResources(who, resourcesNameList, quantity, prop);
+
+        if (total_recursos < quantity)
+            SendSysMessageEx(who, "Voce nao tem recursos suficientes.", SSM_INFO);
+            return;
+        endif
+
+        // Subtrair os recursos da mochila
+        item_obj_type := SubtractResources(who, resourcesIdList, resourcesNameList, quantity);
+    endif
+
+    SendSysMessageEx(who, "Voce usou o(s) recurso(s).", SSM_INFO);
+    var z_real := z;
+    if(who.realm == "britannia_alt") //O mapa novo tem uma diferenca de -60 no Z, por isso tem esse tratamento
+      z_real := z - 60;
+    endif
+    var created:= CreateItemAtLocation (x, y, z_real, type, 1, who.realm);
+    created.movable:= 0;
+
+    SetObjProperty (created, "built_by_architect", who.serial);
+    SetObjProperty (created, "architect_objtype", item_obj_type);
+
+    SetupNewLockDoor(who, created);
+
+    return created;
+endfunction
+
+function SetupNewLockDoor(who, created)
+  if (KP_IsLockable(created))
+      var fechadura := YesNo(who, "Voce deseja por uma fechadura nesse item?");
+      if (fechadura)
+        SendSysMessageEx(who, "Escolha a fechadura para por neste item.", SSM_REQUEST);
+        var targ := Target(who);
+        if (targ)
+          if (targ.objtype == 4001)
+            if (!created.isDoor())
+              var lvl := Cint(GetObjProperty(targ, "level"));
+              if (!lvl)
+                lvl := 1;
+              endif
+              SetObjProperty(created, "level", lvl);
+            endif
+            var lockid := CInt(GetObjProperty(targ, "LockId"));
+            SetObjProperty(created, "LockId", lockid);
+            DestroyItem(targ);
+            SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+          else
+            SendSysMessageEx(who, "Isto nao parece uma fechadura.", SSM_FAIL);
+          endif
+        endif
+      endif
+    endif
+endfunction
+
+function SubtractResources(who, resourcesIdList, resourcesNameList, quantity)
+  foreach item in EnumerateItemsInContainer(who.backpack)
+      if (Cstr(item.objtype) in SplitWords(resourcesIdList) || Lower(Cstr(Hex(item.objtype))) in SplitWords(resourcesIdList) || item.Name in SplitWords(resourcesNameList) || Lower(item.Name) in SplitWords(resourcesNameList))
+          if(!SubtractAmount(item, quantity))
+            continue;
+          else
+            return Cint(item.objtype);
+          endif
+      endif
+  endforeach
+endfunction
+
+function FindGroupNameByType(parts, type)
+    foreach dummy in GetConfigStringKeys(parts)
+      foreach entry in ListConfigElemProps(parts[dummy])
+        foreach line in GetConfigStringArray(parts[dummy], entry)
+          foreach item in SplitWords(line)
+            if (item == type || item == Hex(type) || item == CStr(Hex(type)) || Hex(item) == Hex(type))
+              return entry;
+              break;
+            endif 
+          endforeach
+        endforeach
+      endforeach
+    endforeach
+
+    return "";
+endfunction
+
+function CheckResources(who, resourcesNameList, quantity, prop)
+    var total_recursos := 0;
+
+    foreach resourceNameItem in SplitWords(resourcesNameList)
+        prop["objtype"] := GetObjTypeByName(resourceNameItem);
+        total_recursos := AmountInContainer(who.backpack, prop);
+        if (total_recursos >= quantity) // Se já tem recursos suficientes, para o loop
+            break;
+        endif
+    endforeach
+
+    return total_recursos;
+endfunction
+
+/* turns an alphanumerical array into a numerical one
+ *
+ * returns nothing
+*/
+function makeArrayNumerical(byref arr)
+
+  foreach dummy in arr
+    dummy:= dummy; // suppress compiler warnings
+    arr[_dummy_iter]:= CInt (arr[_dummy_iter]);
+  endforeach
+
+endfunction
+
+
+
+/* Reads the system messages from language.cfg depending on the LANGUAGE set
+ * in architect.inc
+ *
+ * returns <directory> of strings
+*/
+function GetLangMessages()
+
+  var langcfg:= ReadConfigFile (":architect:config/language");
+
+  if (!langcfg ||
+      !langcfg[LANGUAGE])
+    SysLog ("ERROR: pkg architect unable to read language config!");
+    exit;
+  endif
+
+  var result:= dictionary;
+
+  foreach propname in ListConfigElemProps (langcfg[LANGUAGE])
+    result[propname]:= GetConfigString (langcfg[LANGUAGE], propname);
+  endforeach
+
+  return result;
+
+endfunction
+
+
+
+/* Clears the construction site of all built pieces
+ *
+ * returns 0 if user chose to not clear the site
+*/
+function clear_site(who)
+
+  var clear_coords:= array {startloc[1], startloc[2], GetWorldHeight (startloc[1], startloc[2]), startloc[1] + SITESIZE, startloc[2] + SITESIZE};
+
+  if (staffmode)
+    var dummy:= get_coords(who);
+    clear_coords:= {dummy[1], dummy[2], GetWorldHeight (dummy[1], dummy[2]),
+                    dummy[3], dummy[4]};
+  else
+    SendSysMessage (who, lang["clear_warn"]);
+
+    if (!yesNo(who, lang["clear_confirm"]))
+      SendSysMessage (who, lang["cancelled"]);
+      return 0;
+    endif
+  endif
+
+  foreach built in ListObjectsInBox (clear_coords[1], clear_coords[2], clear_coords[3], clear_coords[4], clear_coords[5], 120)
+    if (GetObjProperty (built, "built_by_architect") == who.serial)
+      DestroyItem (built);
+    endif
+
+    Sleepms (2);
+  endforeach
+
+  return 1;
+
+endfunction
+
+function DrawResourcesOnGump(groupName, who)
+    var resourcesConfig := ReadConfigFile(":architect:config/resources");
+    var resourceTypeConfig := ReadConfigFile(":architect:config/resource_type");
+
+    if (FindconfigElem(resourcesConfig, groupName) == error)
+        Syslog("Grupo de recursos não encontrado: " + groupName);
+        return error;
+    endif
+
+    var resourceName := GetConfigString( FindconfigElem(resourcesConfig, groupName), "resourceName" );
+    var quantity := GetConfigInt( FindconfigElem(resourcesConfig, groupName), "quantity" );
+    var resourcesIdList := GetConfigStringArray( FindconfigElem(resourceTypeConfig, resourceName), "resourcesIdList" );
+    var resourcesNameList := GetConfigStringArray( FindconfigElem(resourceTypeConfig, resourceName), "resourcesNameList" );
+    //TODO Depois vai precisar ler o array e retornar na tela isso
+    SendSysMessageEx(who, "Esse grupo precisa de " + quantity + " " + resourceName + "s por item.", SSM_INFO);
+endfunction

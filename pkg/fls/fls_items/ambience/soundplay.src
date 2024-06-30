@@ -1,0 +1,29 @@
+use uo;
+use os;
+use util;
+
+
+program SoundPlay(soundrune)
+	while (1)
+		var center := soundrune;
+		while ( center.container )
+			center := center.container;
+		endwhile
+		
+		var range := CInt(GetObjProperty(soundrune, "range"));
+		if ( !range )
+			range := 1;
+		endif
+		
+		var delay := CInt(GetObjProperty(soundrune, "delay"));
+		if ( !delay )
+			delay := 1;
+		endif
+		
+		var sound_list := GetObjProperty(soundrune, "soundlist");
+		
+		var effect := sound_list[randomint(len(sound_list))+1];
+		PlaySoundEffect(soundrune, effect);
+		sleep(delay);	
+	endwhile
+endprogram

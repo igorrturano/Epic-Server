@@ -1,0 +1,24 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	
+	SetObjProperty(who, "aparenciacadaverica", 1);
+
+	TS_StartTimer(who, "aparenciacadaverica", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2, 1, who, 0); //20 min
+	PlaySoundEffect(who, 385);
+	SendSysMessageEx(who, "A sua aparencia se torna cadaverica", SSM_INFO);
+	
+	return 1;
+endprogram 

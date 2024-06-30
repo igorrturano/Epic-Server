@@ -1,0 +1,30 @@
+/*
+ * $Id$
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+
+program SpellScript(params)
+
+	var who := params[1];
+	params := 0; // No longer needed
+
+	PlaySoundEffect(who, SFX_SPELL_INVISIBILITY);
+
+	who.hidden := 1;
+	who.stealthsteps := CINT(AP_GetSkill(who, MAGERY)/10);
+
+	SendSysMessage(who, "Voce esta invisivel.");
+
+	return 1;
+
+endprogram

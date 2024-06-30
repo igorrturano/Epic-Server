@@ -1,0 +1,8 @@
+use uo;
+use util;
+
+program OnCreate(dirt)
+	var graphics := array(12788, 12789, 12790, 12791);
+	
+	dirt.graphic := graphics[RandomInt(graphics.size())+1];
+endprogram

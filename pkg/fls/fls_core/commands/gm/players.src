@@ -1,0 +1,212 @@
+/*===============================================================
+* FLS - PLAYERS COMMAND
+===============================================================*/
+
+use uo;
+use vitals;
+use os;
+use cfgfile;
+use util;
+
+include ":gumps:include/gumps";
+include ":gumps:include/gumps_ex";
+include ":datafile:datafile";
+include "include/client";
+include "include/say";
+include ":gumps:htmlGump";
+include ":gumps:yesNo";
+
+program command_Message(who, text)
+		PlayersGump(who);
+endprogram
+
+function PlayersGump(who)
+	var gump := GFCreateGump();
+
+	GFResizePic(gump, 0, 0, 0x13BE, 570, 420);
+	GFResizePic(gump, 10, 10, /*0xBB8*/0x2486, 550, 400);
+	GFAddAlphaRegion(gump, 10, 10, 550, 400);
+	GFTextLine(gump, 25, 20, 2100, "Player Name");
+	GFTextLine(gump, 255, 20, 2100, "Msg");
+	GFTextLine(gump, 305, 20, 2100, "Go");
+	GFTextLine(gump, 345, 20, 2100, "Summon");
+	GFTextLine(gump, 405, 20, 2100, "Freeze");
+	GFTextLine(gump, 465, 20, 2100, "Info");
+	GFTextLine(gump, 510, 20, 2100, "Ficharp");
+
+	var acc_list := GetAccList(who);
+	var num_players := acc_list.size();
+	var counter := 0;
+	var page_num := 1;
+	var y_pos := 45;
+
+	GFPage(gump, 1);
+	foreach acc in (acc_list.keys())
+		var name_color := 2100;
+		if (SystemFindObjectBySerial(acc_list[acc]).cmdlevel > 0)
+			name_color := 168;
+		endif
+		var char := SystemFindObjectBySerial(acc_list[acc]);
+		//var charname := char.name;
+		var name_real := GetObjProperty(char, "nome_inicial");
+		//GFTextLine(gump, 25, y_pos, 2100, name_real);
+//		if (charname == "Desconhecido")
+	//		charname := GetObjProperty(char, "realname");
+		//endif
+		GFTextLine(gump, 25, y_pos, name_color, acc + " - "+char.title_race+" ["+name_real + "]"  );
+		GFAddButton(gump, 260, y_pos+3, 2117, 2118, GF_CLOSE_BTN, _acc_iter);
+		GFAddButton(gump, 308, y_pos+3, 2117, 2118, GF_CLOSE_BTN, _acc_iter+200);
+		GFAddButton(gump, 360, y_pos+3, 2117, 2118, GF_CLOSE_BTN, _acc_iter+400);
+		GFAddButton(gump, 410, y_pos+3, 2117, 2118, GF_CLOSE_BTN, _acc_iter+800);
+		GFAddButton(gump, 470, y_pos+3, 2117, 2118, GF_CLOSE_BTN, _acc_iter+600);
+		GFAddButton(gump, 520, y_pos+3, 2117, 2118, GF_CLOSE_BTN, _acc_iter+1000);
+		y_pos := y_pos+20;
+		counter := counter+1;
+
+		if ( counter >= 18 && _acc_iter < num_players )
+			GFAddButton(gump, 523, 385, 0xA92, 0xA93, GF_PAGE_BTN, page_num+1);
+			page_num := page_num+1;
+			GFPage(gump, page_num);
+			GFAddButton(gump, 523, 40, 0xA90, 0xA91, GF_PAGE_BTN, page_num-1);
+			counter := 0;
+			y_pos := 40;
+		endif
+		SleepMS(2);
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	input := input[0];
+
+	if ( !input )
+		SendSysMessage(who, "Cancelado");
+		return 0;
+	elseif (input < 200 ) //msg
+		acc_list := acc_list.keys();
+		var playermsg := acc_list[input];
+		SendMessage(who, acc_list[input]);
+	elseif ( (input > 200) && (input < 400) )//go
+		acc_list := acc_list.keys();
+		var nome := acc_list[input-200];
+		var plytarget := GetPersonByName(nome);
+		MoveObjectToLocation( who, plytarget.x, plytarget.y, plytarget.z, plytarget.realm, MOVEOBJECT_FORCELOCATION);
+	elseif ( (input > 400) && (input < 600) )//summon
+		acc_list := acc_list.keys();
+		var nome := acc_list[input-400];
+		var plytarget := GetPersonByName(nome);
+		MoveObjectToLocation( plytarget, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+	elseif ( (input > 600) && (input < 800) )//info
+		acc_list := acc_list.keys();
+		var nome := acc_list[input-600];
+		var plytarget := GetPersonByName(nome);
+		Start_Script(":commands:gm/info", array{ who, plytarget.serial });
+	elseif ( (input > 800) && (input < 1000) )//freeze
+		acc_list := acc_list.keys();
+		var nome := acc_list[input-800];
+		var plytarget := GetPersonByName(nome);
+		if (plytarget.frozen)
+			plytarget.frozen := 0;
+		else
+			plytarget.frozen := 1;
+		endif
+	elseif ( (input > 1000) )//ress
+		acc_list := acc_list.keys();
+		var nome := acc_list[input-1000];
+		var player := GetPersonByName(nome);
+		//var find_plyr := SystemFindObjectBySerial(player.serial);
+		fichaRP(who, player);
+	endif
+
+endfunction
+
+function GetPersonByName(name_text)
+
+	foreach player in EnumerateOnlineCharacters()
+		if ( player.acctname == name_text)
+				return player;
+		endif
+		SleepMS(2);
+	endforeach
+
+	return 0;
+
+endfunction
+
+function GetAccList(who)
+	var the_list := dictionary;
+
+	foreach person in EnumerateOnlineCharacters()
+	var fraj := (person.acctname == "frajolas");
+			if(!fraj)
+			the_list.Insert(person.acctname, person.serial);
+			endif
+		SleepMS(2);
+	endforeach
+
+	return the_list;
+endfunction
+
+function SendMessage(who, name_text, is_reply:=0)
+
+	var can_msg := 0;
+	if ( is_reply )
+		can_msg := 1;
+	elseif ( name_text in (GetAccList(who).keys()) )
+		can_msg := 1;
+	endif
+
+	if ( !can_msg )
+		SendSysMessage(who, name_text+" nao esta online.");
+		return 0;
+	endif
+
+	var message_txt := RequestInput(who, who.backpack, "Qual mensagem voce quer enviar para "+name_text+"? (esc para cancelar)");
+	if ( !message_txt )
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	foreach player in EnumerateOnlineCharacters()
+		if ( player.acctname == name_text )
+			SendSysMessage(player, "Mensagem da Staff: "+message_txt);
+			SendSysMessage(who, "Voce enviou uma mensagem para ["+player.name+"]: "+message_txt);
+		endif
+
+		SleepMS(2);
+	endforeach
+endfunction
+
+function fichaRP(who, player)
+	var i;
+
+	var gump, input, txt1, txt2, txt3, txt4, txt5, txt6;
+
+		var ficharp_data_file := DFOpenDataFile("ficharp", DF_CREATE);
+		var ficharp_elem := DFFindElement(ficharp_data_file, Hex(player.serial), DF_NO_CREATE);
+		if ( !ficharp_elem )
+			SendSysMessage(who, player.name+" nao tem ficha de RP.");
+			return 0;
+		endif
+		var anotacoes := ficharp_elem.GetProp("Anotacoes");
+		var comportamento := ficharp_elem.GetProp("Comportamento");
+		var objetivos := ficharp_elem.GetProp("Objetivos");
+
+		if (!anotacoes)
+			anotacoes := "Não foram feitas anotações nessa ficha de RP";
+		endif
+
+
+		var texto := "Comportamento<br>";
+		for (i := 1 ; i <= 6 ; i := i + 1)
+			texto := texto+comportamento[i]+"<br>";
+		endfor
+		texto := texto+"<br><br>Objetivos<br>";
+		for (i := 1 ; i <= 3 ; i := i + 1)
+			texto := texto+objetivos[i]+"<br>";
+		endfor
+		texto := texto+"<br><br>Anotacoes<br>";
+		for (i := 1 ; i <= anotacoes.size() ; i := i + 1)
+			texto := texto+anotacoes[i]+"<br>";
+		endfor
+		var name_real := GetObjProperty(player, "nome_inicial");
+		SendHTMLGump(who, "Ficha RP de "+name_real, texto);
+endfunction

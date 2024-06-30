@@ -1,0 +1,83 @@
+use uo;
+use os;
+use attributes;
+use vitals;
+
+include "include/tileEffects";
+include "include/sounds";
+include ":attributes:attributes";
+include ":attributes:vitals";
+include "include/client";
+include "include/damage";
+
+program catapulta(who,item)
+
+var cont:= 1;
+
+var ori_hp:=AP_GetVital(who,HITS);
+
+if (GetObjProperty(item,"engatilhado")!=1)
+
+	SendSysMessage(who,"Selecione as bolas de ferro.");
+	var bola := Target(who, TGTOPT_CHECK_LOS);
+
+	SendSysMessage(who,"Selecione o enxofre.");
+	var enxofre:=Target(who, TGTOPT_CHECK_LOS);
+
+	if ((bola.graphic == 0x0E73) && (enxofre.graphic == 0x0F8C)) 
+		SubtractAmount(bola,1);
+		SubtractAmount(enxofre,1);
+		who.frozen:=1;
+		while(cont !=6)
+			if(ori_hp == AP_GetVital(who,HITS))
+				PrintTextAbove(item, "*Corda sendo puxada*");
+				PlaySoundEffect(item, SFX_4C);
+				sleep(10);
+				cont+=1;
+			else
+				PrintTextAbove(who, "*Solta a corda*");
+				AddAmount(bola,1);
+				AddAmount(enxofre,1);
+				who.frozen:=0;
+				return 0;
+			endif
+		endwhile
+		who.frozen:=0;
+		
+		PlaySoundEffect(item,SFX_4B);
+		PrintTextAbove(item, "*Engatilhado*");
+		
+		
+		SetObjProperty(item, "engatilhado", 1);
+	else
+		SendSysMessage(who,"Selecione o material correto.");
+	endif
+
+else
+	SendSysMessage(who,"Selecione o alvo");
+	var pos:=TargetCoordinates(who);
+	
+	if(CheckLosAt( who, pos.x, pos.y, pos.z));
+		PrintTextAbove(item, "*Corta a corda da catapulta*");
+		PlaySoundEffect(item,SFX_235);
+		sleep(1);
+		SetObjProperty(item, "engatilhado", 0);
+	
+	
+		var chars:=ListMobilesNearLocation( pos.x,pos.y,pos.z, 5, realm := _DEFAULT_REALM );
+		
+		PlayStationaryEffect( pos.x, pos.y, pos.z, 0x36b0, 7, 10, 1);
+		PlaySoundEffect(item, 0x208);
+		PlayStationaryEffect(pos.x + 1, pos.y + 1, pos.z + 1, FX_SMOKE, 10, 10, 0);
+		var field := CreateItemAtLocation(pos.x, pos.y, pos.z, "FireFieldEW", 1);
+		field.SetDuration(10);
+
+			foreach mobile in chars
+				ApplyDamage(mobile,500);
+			endforeach
+	else
+		SendSysMessage(who,"Impossivel enxergar o alvo.");
+	endif
+endif
+
+endprogram

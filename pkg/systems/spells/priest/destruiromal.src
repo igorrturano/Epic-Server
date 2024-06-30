@@ -1,0 +1,54 @@
+
+     use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+include ":brainai:npcUtil";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+
+	foreach mobile in (ListMobilesNearLocation( targ.x ,targ.y, targ.z, 6, targ.realm))
+
+		if (mobile.npctemplate)
+			var elem := NPC_GetNPCConfig(mobile.npctemplate);
+			var category := lower(GetConfigString(elem, "Category"));
+		
+			if (category == "undead" || category == "demons")
+				PlayMovingEffectXYZEx( mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60, mobile.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+
+				MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm,  MOVEOBJECT_FORCELOCATION );
+
+				ApplyRawDamage(mobile, 200);
+				ApplyRawDamage(mobile, 200);
+				ApplyRawDamage(mobile, 200);
+				ApplyRawDamage(mobile, 200);
+				ApplyRawDamage(mobile, 200);
+
+			endif
+		
+		endif
+
+	endforeach
+
+	return 1;
+endprogram 

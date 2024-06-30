@@ -1,0 +1,20 @@
+use uo;
+
+
+program WalkOn(mobile, plant)
+	
+	if ( mobile.concealed < 1 )
+		if ((mobile.objtype == 0x06) || (mobile.objtype == 0xFE) || (mobile.objtype == 0x95))
+			PrintTextAbove(mobile, "*come as frutinhas e sementes*");
+			plant.SetProduceAmount(0);
+			return;
+		endif
+		if ((mobile.objtype == 0xD8))
+			PrintTextAbove(mobile, "*Come a planta*");
+			destroyitem(plant);
+			return;
+		endif
+		PrintTextAbove(plant, "*crunch*");
+		SendSysMessage(mobile, "Voce escuta a planta quebrar quando caminha por cima dela.");
+	endif
+endprogram

@@ -1,0 +1,68 @@
+use uo;
+include ":tn:tngumps";
+include ":gumps:requestGump";
+include "include/damage";
+
+program danosetup(who, rune)
+	if (who.cmdlevel < 2)
+		return;
+	endif
+
+	var range := RequestInput(who, who.backpack, "Raio da area de dreno:");
+	if (!range)
+		range :=6;
+	endif
+	SetObjProperty(rune, "range", CInt(range));
+
+	var intervalo := RequestInput(who, who.backpack, "Intervalo entre os drenos:");
+	if (!intervalo)
+		intervalo :=4;
+	endif
+	SetObjProperty(rune, "intervalo", CInt(intervalo));
+
+	var opt := array;
+	if ( GetObjProperty(rune, "hits"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(rune, "mana"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	if ( GetObjProperty(rune, "stam"))
+		opt.append(1);
+	else
+		opt.append(0);
+	endif
+	SendSysMessage(who, "Atributos que devem drenados na area:");
+	var result := CheckBoxGump(who, 180, 180, "Opcoes de Regen", {"Hitpoints","Manapoints","Staminapoints"}, opt);
+
+	EraseObjProperty(rune, "hits");
+	EraseObjProperty(rune, "mana");
+	EraseObjProperty(rune, "stam");
+
+	SendSysMessage(who, "Qual o tipo do dano da area:");
+
+	foreach r in result
+		if (r == "Hitpoints")
+			var value := cint(RequestGump(who, "Quantos Hitpoints Drenar?"));
+			SetObjProperty(rune, "hits", value);
+			var tipodano := RadioGump(who, 180, 240, "Tipos de dano:", {DMG_FORCED, DMG_PHYSICAL, DMG_FIRE, DMG_COLD, DMG_POISON, DMG_ENERGY});
+			SetObjProperty(rune, "tipodano", tipodano);
+		elseif (r ==  "Manapoints")
+			var value := cint(RequestGump(who, "Quantos Manapoints Drenar?"));
+			SetObjProperty(rune, "mana", value);
+		elseif (r == "Staminapoints")
+			var value := cint(RequestGump(who, "Quantos Staminapoints Drenar?"));
+			SetObjProperty(rune, "stam", value);
+		endif
+	endforeach
+
+	var mensagem := CStr(RequestInput(who, who.backpack, "Qual o texto para o player?"));
+	if (!mensagem)
+		mensagem :="O ambiente afeta seu corpo.";
+	endif
+	SetObjProperty(rune, "mensagem", mensagem);
+endprogram

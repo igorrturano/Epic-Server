@@ -1,0 +1,35 @@
+/* $Id: walkOn.src 999 2005-11-14 20:13:45Z muaddiblsd $
+ *
+ */
+use uo;
+use os;
+
+program snow_WalkOn(mobile, snow)
+	if( TypeOf(mobile) == "Array" )
+		snow := mobile[2];
+		mobile := mobile[1];
+	endif
+	if ( mobile.concealed )
+		return 0;
+	elseif ( mobile.dead )
+		return 0;
+	endif
+
+	if (GetObjProperty(snow, "pegadas"))
+		return 0;
+	endif
+	SendSysMessage(mobile, "*Voce pisou na neve!*");
+	SetObjProperty(snow, "pegadas", 1);
+	if (mobile.facing == 0 || mobile.facing == 7);
+		CreateItemAtLocation(snow.x, snow.y, snow.z+1, 0x1E04, 1, snow.realm);
+	elseif (mobile.facing == 1 || mobile.facing == 2);
+		CreateItemAtLocation(snow.x, snow.y, snow.z+1, 0x1E05, 1, snow.realm);
+	elseif (mobile.facing == 3 || mobile.facing == 4);
+		CreateItemAtLocation(snow.x, snow.y, snow.z+1, 0x1E06, 1, snow.realm);
+	elseif (mobile.facing == 5 || mobile.facing == 6);
+		CreateItemAtLocation(snow.x, snow.y, snow.z+1, 0x1E03, 1, snow.realm);
+	endif
+	sleep(40);
+	EraseObjProperty(snow, "pegadas");
+	return 1;
+endprogram

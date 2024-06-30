@@ -1,0 +1,30 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+include ":timedScripts:timedScripts";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+
+	if(!checkifcandrink(who, "int"))
+		return;
+	endif
+
+	var bonus := cint(GetObjProperty(potion, "crafterskill")/10);
+
+	case(potion.objtype)
+		48903:	TS_StartTimer(who, "intelligence", (360+bonus*10), 20); 
+		48904: TS_StartTimer(who, "intelligence", (600+bonus*10), 40); 
+	endcase
+	empty_bottle(who, potion);
+endprogram

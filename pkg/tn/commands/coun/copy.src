@@ -1,0 +1,162 @@
+/////////////////////////////////////////////////////
+//
+//		".copy" - Copies an entire area a temporary cprop for later pasting.
+//
+//		Allows you to select an entire area and all items are then saved to a
+//		temporary cprop so you can then paste them at another location
+//		with ".paste" or ".mpaste".
+//
+//		CHANGE LOG:
+//			Version 1.0.0 -- Danielle Elora
+//				Initial Release
+//
+//		Author: Danielle Elora, webmaster@nightscapeonline.com
+//		Nightscape Shard, http://www.nightscapeonline.com
+//
+/////////////////////////////////////////////////////
+
+use uo;
+use os;
+
+include ":gumps:yesNo";
+
+// Defines the total number of items that can be moved at one time. If the number
+// exceeds this value, the command fails. Be careful setting this too high, you could
+// overwhelm your server or cause "black-holing"/crashing problems to clients in the area.
+Const ITEM_LIMIT := 6000;
+
+
+program textcmd_copy(who, text)
+
+	// FIRST CORNER OF THE "BOX"
+	SendSysMessage(who, "Select coordinate #1");
+	var coordStructOne := TargetCoordinates(who);
+	if (!coordStructOne)
+		SendSysMessage(who, "Canceled." );
+		return 0;
+	endif
+
+	// SECOND CORNER OF THE "BOX"
+	SendSysMessage(who, "Select coordinate #2");
+	var coordStructTwo := TargetCoordinates(who);
+	if (!coordStructTwo)
+		SendSysMessage(who, "Canceled.");
+		return 0;
+	endif
+
+	var who_z := who.z;
+
+	var zplus;
+	var z_plus;
+	if (text != "target")
+		zplus := SendTextEntryGump(who, "Enter the maximum z-hieght:", TE_CANCEL_ENABLE, TE_STYLE_NORMAL);
+		z_plus := CInt(zplus);
+	else
+		SendSysMessage(who, "Target the item that represents the maximum z-hieght...");
+		zplus := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		if (!zplus)
+			SendSysMessage(who, "Cancelled!");
+			return 0;
+		endif
+		z_plus := zplus.z;
+	endif
+	if (!(z_plus or (z_plus == 0)))
+		SendSysMessage(who, "You must enter a number or target a valid item!");
+		return 0;
+	endif
+
+	var zminus;
+	var z_minus;
+	if (text != "target")
+		zminus := SendTextEntryGump(who, "Enter the minimum z-hieght:", TE_CANCEL_ENABLE, TE_STYLE_NORMAL);
+		z_minus := CInt(zminus);
+	else
+		SendSysMessage(who, "Target the item that represents the minimum z-hieght...");
+		zminus := Target(who, TGTOPT_NOCHECK_LOS+TGTOPT_NEUTRAL);
+		if (!zminus)
+			SendSysMessage(who, "Cancelled!");
+			return 0;
+		endif
+		z_minus := zminus.z;
+	endif
+	if (!(z_minus or (z_minus == 0)))
+		SendSysMessage ( who, "You must enter a number or target a valid item!");
+		return 0;
+	endif
+
+	var high_x;
+	var high_y;
+	var low_x;
+	var low_y;
+
+	if (coordStructOne.x < coordStructTwo.x)
+		high_x := coordStructOne.x;
+		low_x := coordStructTwo.x;
+	else
+		high_x := coordStructTwo.x;
+		low_x := coordStructOne.x;
+	endif
+	if (coordStructOne.y < coordStructTwo.y)
+		high_y := coordStructOne.y;
+		low_y := coordStructTwo.y;
+	else
+		high_y := coordStructTwo.y;
+		low_y := coordStructOne.y;
+	endif
+
+	var temp_list := ListObjectsInBox(high_x, high_y, z_minus, low_x, low_y, z_plus);
+
+	if (temp_list.size() > ITEM_LIMIT)
+		SendSysMessage(who, "Item count out of bounds. You can only move up to " + ITEM_LIMIT + " items at a time.");
+		SendSysMessage(who, "Use \".copypaste\" instead; which allows copying more items at a time.");
+		return 0;
+	endif
+
+	if (temp_list.size() == 0)
+		SendSysMessage(who, "No items found.");
+		return 0;
+	endif
+
+	var master_list := array{};
+	SendSysMessage(who, "Counting and highlighting items to be copied. Please wait...");
+	foreach item in temp_list
+		if (item.isa(POLCLASS_ITEM))
+			SetObjProperty(item, "orig_c", item.color);
+			item.color := 0x35;
+			master_list.append(item);
+		endif
+		sleepms(2);
+	endforeach
+
+	// Lets ask the user if the highlighted items are okay.
+	var checkokay := yesNo(who, "Copy these items?");
+	foreach item in master_list
+		item.color := GetObjProperty(item, "orig_c");
+		EraseObjProperty(item, "orig_c");
+		sleepms(2);
+	endforeach
+	if (!checkokay) // Wasn't okay, reset all the items
+		SendSysMessage(who, "Canceled!");
+		return 0;
+	endif
+
+	var entry := array{};
+	var final_list := array{};
+	SendSysMessage(who, "Storing information for items to be copied. Please wait...");
+	foreach item in master_list
+		entry := array{};
+		entry.append(item.objtype);
+		entry.append(high_x - item.x);
+		entry.append(high_y - item.y);
+		entry.append(item.z - who_z);
+		entry.append(item.color);
+		final_list.append(entry);
+		sleepms(2);
+	endforeach
+
+	SetObjProperty(who, "#copy", final_list);
+
+	SendSysMessage(who, final_list.size() + " items copied");
+	SendSysMessage(who, "Use \".paste\" or \".mpaste\" to paste them at the desired location.");
+
+endprogram

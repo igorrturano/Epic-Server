@@ -1,0 +1,41 @@
+use uo;
+include ":gumps:yesNo";
+
+program setpins(who)
+
+	var map := target(who);
+	SendSysMEssage(who, "Escolha o tilerman.");
+	//sendsysmessage(who, );
+	var viagens := array;
+	var yesdest := 1;
+
+	while(yesdest)
+		var dest := struct;
+		dest.+plots := array;
+		var yes := 1;
+
+		dest.+name := RequestInput(who, map, "Escreva o nome do destino da viagem:");
+		dest.+cost := cint(RequestInput(who, map, "Quanto vai custar a viagem:"));
+
+		while(yes)
+			var plot;
+
+			plot := RequestInput(who, map, "Escreva o X e Y do mapa");
+			plot := splitwords(plot);
+
+			var plotinfo := struct;
+			plotinfo.+x := plot[1];
+			plotinfo.+y := plot[2];
+
+			yes := YesNo(who,  "Deseja adicionar outra coordenada?");
+
+			dest.plots.append(plotinfo);
+		endwhile
+		viagens.append(dest);
+		yesdest := YesNo(who,  "Deseja adicionar outro local?");
+	endwhile
+
+	//SendSysMEssage(who, "Coordenadas adicionadas no mapa.");
+	SetObjProperty(map, "viagem", viagens);
+
+endprogram

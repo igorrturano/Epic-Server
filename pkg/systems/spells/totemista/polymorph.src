@@ -1,0 +1,163 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":tn:npcutil";
+include ":brainAI:npcUtil";
+include ":ghaia:ghaia";
+include ":spells:summon";
+
+
+
+program summontotem(params)
+
+	var who := params[1];
+	var targ := params[2];
+	var spellid := params[3];
+	params := 0; // No longer needed
+
+	if(GetObjProperty(who, "metamorfose") != error)
+		SendSysMessageEx(who, "Voce ja esta metamorfoseado.", SSM_FAIL);
+		return;
+	endif
+
+	//Efeito da magia
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	var cfg;
+	if(who.magic_path == "spellcaster" || GetObjProperty(who, "chardata").magia == "spellcaster")
+		cfg  :=  ReadConfigFile(":spells:spellcaster");
+	else
+		cfg  :=  ReadConfigFile(":spells:allspells");
+	endif
+	var elem := FindConfigElem(cfg, spellid);
+	var graphic := getConfigInt(elem, "graphic");
+
+	var skill_a := getConfigInt(elem, "skill_a");
+	var skill_d := getConfigInt(elem, "skill_d");
+    var bonus := CINT(AP_GetSkill(who, MAGICLORE)/5);
+	if (temHabilidade(who, "Forma Atroz"))
+		skill_a := skill_a + bonus;
+		skill_d := skill_d + bonus;
+	endif
+
+
+	var dicedmg := getConfigString(elem, "dicedmg");
+	var hitsmod := getConfigInt(elem, "hitsmod");
+	var resistmod := getConfigInt(elem, "resistmod");
+	var template := getConfigString(elem, "template");
+	var snd := getConfigInt(elem, "snd");
+	var namepoly:=GetConfigString(elem, "namepoly");
+
+	if (graphic == error)
+			SendSysMessage(who, "erro ao ler o template" + template);
+			return;
+	endif
+
+    var moon_fase := GetGlobalProperty("moonfase");
+    if (graphic == 1070 && moon_fase == "cheia")
+    	SetObjProperty(who, "polymorphbonus_moon", bonus);
+    	AP_SetSkillMod(who, TACTICS, AP_GetSkillMod(who, TACTICS) + bonus);
+		skill_a := skill_a + bonus;
+		skill_d := skill_d + bonus;
+
+        resistmod := resistmod + bonus;
+        hitsmod := hitsmod + bonus + 50;
+    endif
+
+	//seta os mods
+	SetObjProperty(who, "skill_a", skill_a);
+	SetObjProperty(who, "skill_d", skill_d);
+	SetObjProperty(who, "dicedmg", dicedmg);
+	SetObjProperty(who, "polymorphhitsmod", hitsmod);
+
+	who.resist_physical_mod := who.resist_physical_mod + resistmod;
+	who.resist_fire_mod := who.resist_fire_mod + resistmod;
+	who.resist_cold_mod := who.resist_cold_mod + resistmod;
+	who.resist_poison_mod := who.resist_poison_mod + resistmod;
+	who.resist_energy_mod := who.resist_energy_mod + resistmod;
+	SetObjProperty(who, "resitmod", resistmod);
+
+	SetObjProperty(who, "hitsmod", hitsmod + hitsmod);
+	recalcvitals(who);
+	HealDamage(who, hitsmod);
+
+	var metamorfosetime := 60 + 540 * AP_GetSkill(who, MAGICLORE) / 100;
+
+	if(temHabilidade(who,"Fera Natural"))
+		metamorfosetime := metamorfosetime * 2;
+	endif
+
+	Transforma(who, template, snd, graphic,namepoly);
+	TS_StartTimer(who, "metamorfosedruida", metamorfosetime);
+
+	return 1;
+
+endprogram
+
+
+function Transforma(who, animal, snd, graphic,namepoly)
+
+
+	// Alterado por Edmond
+	if (GetObjProperty(who,"charname") == error)
+		SetObjProperty(who,"charname",who.name);
+	endif
+
+	//UnequipAll(who); //Se quiser que desequipe tudo
+	if(temHabilidade(who,"Treinamento Druidico")) //Desequipa armaduras mas deixa as roupas em paz
+		UnequipArmor(who);
+		UnequipWeapons(who);
+	else //Desequipa tudo
+		UnequipAll(who);
+	endif
+
+	PerformAction(who, ANIM_CAST_AREA);
+
+	var npc := CreateNpcFromTemplate(animal, who.x,  who.y, who.z, 0, who.realm);
+
+	PrintText(who, "*transformando-se*");
+	if (npc)
+		//detach();
+		Playsoundeffect(npc, snd);
+		npc.facing := who.facing;
+		npc.frozen := 1;
+		npc.color  := 30000;
+		PerformAction(npc, 5);
+		sleep(2);
+		MoveObjectToLocation(npc, 10, 10, 10, npc.realm,  MOVEOBJECT_FORCELOCATION);
+		npc.kill();
+
+		var metamorfose := struct;
+		//Define a cor do cabelo como cor do polymorph
+		var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+		var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+		var polymorphColor := CInt(hair.color);
+		if(!polymorphColor)
+			polymorphColor := CInt(beard.color);
+		endif
+		metamorfose.+originalcolor := who.color;
+		metamorfose.+originalgraphic := who.graphic;
+		metamorfose.+newgraphic := graphic;
+		SetObjProperty(who, "metamorfose", metamorfose);
+		who.graphic := graphic;
+		// who.truegraphic := graphic;
+        //if (TemHabilidade(who, "Treinamento Druidico"))
+        //    who.squelch(0);
+        //else
+        //    who.squelch(-1);
+        //endif
+		who.color := polymorphColor;
+	endif
+
+	// Alterado por Edmond
+	//print("name: " + namepoly);
+	SetName(who,namepoly);
+
+endfunction

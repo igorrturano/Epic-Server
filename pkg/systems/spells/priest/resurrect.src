@@ -1,0 +1,81 @@
+use uo;
+use file;
+
+include ":death:resurrection";
+include ":attributes:attributes";
+include "include/client";
+include ":tn:cooldown";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+    var targ := Target(who);
+
+	if (!targ)
+		return;
+	endif
+
+    if ( targ.IsA(POLCLASS_CORPSE) )
+        targ := SystemFindObjectBySerial(targ.ownerserial);
+        if ( !targ )
+            SendSysMessage(who, "Precisa ser um corpo.");
+            return 0;
+        endif
+    endif
+
+    if ( !targ.dead )
+        SendSysMessage(who, "O alvo não está morto");
+        return 0;
+    endif
+
+    if (GetObjProperty(targ, "assassinado"))
+        SendSysMessage(who, "O corpo foi violado e voce nao podera ajuda-lo");
+    endif
+
+    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    if (GetCooldown(targ, "morto_recentemente") > 0 )   
+        RessPlayer(targ);
+        if (mlore <= 70) DecreaseDP(who); endif // Remove DP de clerigo secundario
+        DecreaseDP(targ);
+    else
+        if (mlore >= 90)
+            RessPlayer(targ);
+        endif
+    endif
+
+    var plytarget := GetPersonBySerial(targ.serial);
+    var tempo := 3600;
+    SendSysMessage(plytarget, "Voce fraturou alguns ossos!");
+    SetCoolDown(plytarget, "hurt", tempo);
+    TS_StartTimer(plytarget, "fraturaexposta", 1);
+
+    MoveObjectToLocation( plytarget, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
+    recalcvitals(targ);
+endprogram
+
+function GetPersonBySerial(name_text)
+	foreach player in EnumerateOnlineCharacters()
+		if ( player.serial == name_text)
+				return player;
+		endif
+		SleepMS(2);
+	endforeach	
+	
+	return 0;
+endfunction
+
+function RessPlayer(targ)
+    PlaySoundEffect(targ, SFX_RESURRECT);
+    PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10,10);
+    Resurrect(targ);
+    EraseObjProperty(targ, "morto");
+endfunction
+
+function DecreaseDP(mobile)
+    var dpmod := cint(GetObjProperty(mobile, "dpmod"));
+    if (!dpmod)
+        dpmod := 0;
+    endif
+    dpmod := dpmod - 10;
+    SetObjProperty(mobile, "dpmod", dpmod);
+endfunction

@@ -1,0 +1,352 @@
+use uo;
+use cfgfile;
+use util;
+use os;
+
+//include "include/character";
+include ":attributes:attributes";
+include "include/client";
+include ":alchemy:alchemy";
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include "include/say";
+include ":charactercreation:habilidades";
+
+
+const REAGENT_START := 0x0f78;
+const REAGENT_STOP := 0x0f91;
+const SOUND_EFFECT_GRIND := 0x243;
+const SOUND_EFFECT_POUR := 0x241;
+const SOUND_EFFECT_BUBBLE :=  0x4f;
+const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
+
+var recipes := ReadConfigFile(":alchemy:config/recipes");
+
+program advalchemy(who, item)
+
+	if(!Accessible(who, item))
+		SendSysMessageEx(who, "Voce nao alcanca o item.", SSM_FAIL);
+		return;
+	endif
+	if(!ReserveItem(item))
+		SendSysMessageEx(who, "Este item esta em uso.", SSM_FAIL);
+		return;
+	endif
+	Detach();
+
+	var advgump := GFCreateGump();
+	
+	GFResizePic(advgump, 0, 0, DEFAULT_BACKGROUND, 240, 340);
+	GFResizePic(advgump, 10, 10, DEFAULT_FOREGROUND, 220, 320);
+
+	GFAddButton(advgump, 210, 20, 0x3, 0x4, 1, 10 );
+	GFTextLine(advgump, 60, 24, 1890, "Ingredientes: " );
+	var reags := GetObjProperty(item, "reagentes");
+	var r_keys := reags.keys();
+
+	if (!reags)
+		reags := dictionary;
+		r_keys := array;
+		GFTextLine(advgump, 40, 60, 600, "Esta vazio.");
+	else
+		var i := 1;
+		foreach reagente in r_keys
+			GFTextLine( advgump, 60, 40 + (20*i), 600, GetReagName(reagente) );
+			GFTextLine( advgump, 40, 40 + (20*i), 600, reags[reagente] );
+			i := i + 1;
+		endforeach
+	endif
+       
+	GFTextLine(advgump, 48, 237, 600, "Remover Ingredientes");
+	GFTextLine(advgump, 48, 257, 600, "Adicionar Ingredientes");
+	GFTextLine(advgump, 48, 277, 600, "Preparar Extrato");
+	GFAddButton(advgump, 37, 261, 2103, 2104, 1, 11);//adicionar
+	GFAddButton(advgump, 37, 281, 2103, 2104, 1, 12);//misturar
+	GFAddButton(advgump, 37, 241, 2103, 2104, 1, 13);//remover
+	
+	var retv := GFSendGump( who, advgump );
+    
+	if ( retv[10] )
+		return;
+	elseif ( retv[11])
+		SendSysMessageEX(who, "Escolha os componentes materiais.", SSM_REQUEST);
+		var alvo := target(who);
+		if (!alvo)
+			return;
+		endif
+
+		if ( !(alvo.isReagent() || isOtherReagent(alvo)) )
+			SendSysMessageEx(who, "Isso nao parece ser um ingrediente valido!", SSM_FAIL);
+			return;
+        endif
+
+		if ( alvo.amount > 8 )
+			DestroyItem(alvo);
+			SendSysMessageEx(who, "voce tentou colocar mais reagentes do que o necessario por engano e acabou estragando as propriedades de todos deles", SSM_FAIL);
+		endif
+
+		if (reags[alvo.objtype]  >= 10 )
+			SendSysMessageEx(who, "Muitos componentes materiais desse tipo.", SSM_FAIL);
+			return;
+		endif
+
+		if( reags[alvo.objtype] )
+			reags[alvo.objtype] += GetAmount(alvo);
+		else
+			reags.insert(alvo.objtype, GetAmount(alvo));
+		endif
+		if (alvo.objtype == 0x1f91)
+			CreateItemInBackpack(who, 0x1f81, 1);
+		endif
+		DestroyItem(alvo);
+
+		SetObjProperty(item, "reagentes", reags);
+
+	elseif ( retv[13] )
+		foreach reagente in r_keys
+			if (reagente != 0x1f91)
+				CreateItemInBackpack( who, reagente, reags[reagente] );
+			endif
+		endforeach
+
+		EraseObjProperty(item, "reagentes"); 
+	
+	elseif ( retv[12])
+		FazPotion(who, item);
+	endif
+    
+endprogram
+
+function FazPotion(who, item)
+
+	var regs := GetObjProperty(item, "reagentes");
+	if (!regs)
+		SendSysMessageEx(who, "Nao tem reagentes aqui para misturar.", SSM_FAIL);
+		return;
+	endif
+	var r_keys := regs.keys();
+
+
+	var objtype;
+	foreach elem in GetConfigStringKeys( recipes )
+		objtype := elem;
+		var regsNeeded := GetConfigStringDictionary( recipes[elem], "Reg" );
+		var rN_keys := regsNeeded.keys();
+		if( len(r_keys) == len(rN_keys) )
+			foreach reg in rN_keys
+				if( CInt(regsNeeded[reg]) != regs[CInt(reg)] ) 
+					objtype := 0;
+					break;
+				endif
+			endforeach
+		else
+			objtype := 0;
+		endif
+
+		if(objtype)
+			break;
+		endif
+	endforeach
+
+	if (recipes[objtype].magic)
+		if (!FindInBook(who, objtype))
+			SendSysMessageEx(who, "Voce nao sabe a receita dessa formula.", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+	if(objtype)
+		MakePotion( objtype, item, who, recipes[objtype].magic, cint(recipes[objtype].strength) );
+	else
+
+		if (RandomInt(100) <= 25)
+			FalhaCritica(who, item);
+		else
+			var loop := 0;
+			while(loop < 3)
+				PlaySoundEffect(who, SOUND_EFFECT_GRIND);
+				PrintText(who, "*preparando um extrato*");
+				sleep(1);
+				loop := loop + 1;
+			endwhile
+			PlaySoundEffect(who, SOUND_EFFECT_POUR);
+			SendSysMessageEx(who, "Voce nao conseguiu fazer nada com isso.", SSM_FAIL);
+			EraseObjProperty(item, "reagentes");
+		endif
+	endif
+   
+endfunction
+
+function FindInBook(who, objtype)
+	objtype := cint(objtype);
+	foreach item in (EnumerateItemsInContainer(who.backpack))
+		if (item.objtype == 60457)
+			var recipes := GetObjProperty(item, "recipes");
+			foreach recipe in recipes
+				sendsysmessage(who, " " + cint(recipe.id) + " " + objtype );
+				if (cint(recipe.id ) == objtype)
+					return 1;
+				endif
+			endforeach
+		endif
+	endforeach
+	return 0;
+endfunction
+
+function MakePotion ( pot, item, who, magic, strength := 0)
+
+	var difficulty := recipes[pot].skill;
+	var loop := 0;
+    
+	if(SkillCheck(who, ALCHEMY, difficulty) > 0) 
+		//if (GetObjProperty(who, "classe") == "sabio")
+		//	SkillCheck(who, BEGGING, -1);
+		//endif
+		var hasbottle:= 0;
+		set_critical(1);
+		foreach item in EnumerateItemsInContainer(who.backpack)
+			if((item.objtype == UOBJECT_EMPTY_BOTTLE) && (item.container.objtype != 0x1940))
+				if (temHabilidade(who, "Extrato Instantaneo Duplicado"))
+					if(SubtractAmount(item, 2))
+						hasbottle := 1;
+						break;				
+					endif
+				elseif (SubtractAmount(item, 1))
+					hasbottle := 1;
+					break;
+				endif
+			endif
+		endforeach
+		set_critical(0);
+
+		if(hasbottle)
+			while(loop < 3)
+				PlaySoundEffect(who, SOUND_EFFECT_GRIND);
+				PrintText(who, "*preparando um extrato*");
+				sleep(1);
+				loop := loop + 1;
+			endwhile
+			var thing;
+			if (!magic)//se nao tiver o flag magic como as tintas, cria o item
+				thing := CreateItemInBackpack(who, pot, 1);
+			else //se nao cria so o extrato
+				thing := CreateItemInBackpack(who, 0xcfff, 1);
+				SetObjProperty(thing, "extrato", pot);
+				if (strength)
+					SetObjProperty(thing, "strength", strength);
+				endif
+			endif
+			if (GetObjProperty(who, "extratoinstantaneo"))
+				if (temHabilidade(who, "Extrato Instantaneo Duplicado"))
+					SendSysMessageEx(who, "Voce fez dois extratos instantaneamente.", SSM_INFO);
+					var amt := 2;
+					var pocao := GetObjProperty(thing, "extrato");
+    				var pot := CreateItemInBackpack(who, pocao, amt);
+					SetObjProperty(pot, "strength", cint(GetObjProperty(thing, "strength")));
+					DestroyItem(thing);
+					EraseObjProperty(who, "extratoinstantaneo");
+				else
+					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
+					var pocao := GetObjProperty(thing, "extrato");
+    				var pot := CreateItemInBackpack(who, pocao, 1);
+					SetObjProperty(pot, "strength", cint(GetObjProperty(thing, "strength")));
+					DestroyItem(thing);
+					EraseObjProperty(who, "extratoinstantaneo");
+					endif
+			endif
+			SetObjProperty(thing, "crafterskill", AP_GetSkill(who, ALCHEMY) );
+			PlaySoundEffect(who, SOUND_EFFECT_POUR);
+			SendSysMessageEx(who, "Voce fez a pocao e a guardou na sua mochila.", SSM_INFO);
+			EraseObjProperty(item, "reagentes");
+			return;
+        
+		else
+			SendSysMessageEx(who, "Voce nao tem frascos.", SSM_FAIL);
+			return;
+		endif
+      
+	elseif (Cint(AP_GetSkill(who, "Alchemy")) <= 39)
+		var falha1 := RandomInt(100)+1;
+		if 	(falha1 <= 15)
+			FalhaCritica(who, item);
+		endif
+	
+	elseif (Cint(AP_GetSkill(who, "Alchemy")) <= 59)
+		var falha2 := RandomInt(100)+1;
+		if 	(falha2 <= 10)
+			FalhaCritica(who, item);
+		endif
+
+	elseif (Cint(AP_GetSkill(who, "Alchemy")) <= 70)
+		var falha3 := RandomInt(100)+1;
+		if 	(falha3 <= 5)
+		FalhaCritica(who, item);
+		endif
+
+	else
+		EraseObjProperty(item, "reagentes");
+		PlaySoundEffect(who, SOUND_EFFECT_POUR);
+		SendSysMessageEx(who, "Voce nao conseguiu fazer nada com isso.", SSM_FAIL);
+		return;
+	endif
+endfunction
+
+function FalhaCritica(who, item)
+	EraseObjProperty(item, "reagentes");
+	EraseObjProperty(item, "reagamt");
+
+	if (TemHabilidade(who, "Alquimista Precavido"))
+		return 1;
+	endif
+
+	var falha := RandomInt(100)+1;
+	var loop := 0;
+	if (falha < 65 )
+		while(loop < 3)
+			PlaySoundEffect(who, SOUND_EFFECT_GRIND);
+			PrintText(who, "*preparando um extrato*");
+			sleep(1);
+			loop := loop + 1;
+		endwhile
+		PlaySoundEffect(who, SOUND_EFFECT_POUR);
+		SendSysMessageEx(who, "Voce nao conseguiu fazer nada com isso.", SSM_FAIL);
+		return;
+	//elseif ( falha < 68 )
+	//	SendSysMEssageEx(who,"AHH!  Seu cabelo caiu!!!", SSM_FAIL);
+	//	DestroyItem(GetEquipmentByLayer (who, LAYER_HAIR));
+	//	DestroyItem(GetEquipmentByLayer (who, LAYER_BEARD));
+	//	return;
+	elseif ( falha < 78 )
+		SendSysMessageEx(who,"Ugh... Voce nao esta se sentindo muito bem...", SSM_FAIL);
+		TS_StartTimer(who, "strPoison", 120, 2);
+	elseif ( falha < 82 )
+		SendSysMessageEx(who,"Ahh!", SSM_FAIL);
+		who.color := 18;
+		Detach();
+		sleep(180);
+		who.color := who.truecolor;
+	elseif ( falha < 86 )
+		SendSysMEssageEx(who,"O que foi isso?!", SSM_FAIL);
+		if (who.graphic == 401)
+			who.graphic := 400; who.graphic := 1828; who.graphic := 1829; who.graphic := 1830; who.graphic := 1831; who.graphic := 1832; who.graphic := 1833; who.graphic := 1834; who.graphic := 1835;      
+		else
+			who.graphic := 401;
+		endif
+		sleep(600);
+		Detach();
+		who.graphic := who.objtype;
+	elseif ( falha < 95 )
+		SendSysMEssageEx(who,"VAI EXPLO...", SSM_FAIL);
+		PlayStationaryEffect( who.x, who.y, who.z, 0x36b0, 7, 10, 1);
+		PlaySoundEffect(who, 0x208);
+		ApplyRawDamage(who, cint(30+ randomInt(100) ) );
+	else
+		SendSysMessageEX(who,"Voce esta envenenado!!", SSM_FAIL);
+		TS_StartTimer(who, "defaultPoison", 120, 5);
+	endif
+endfunction
+
+
+
+
+

@@ -1,0 +1,11 @@
+use uo;
+use cfgfile;
+
+include "include/say";
+
+program versatil(who)
+
+	SendSysMessageEx(who, "Ninguem percebera seu proximo roubo.", SSM_INFO);
+	SetObjProperty(who, "maosleves", 1);
+
+endprogram 

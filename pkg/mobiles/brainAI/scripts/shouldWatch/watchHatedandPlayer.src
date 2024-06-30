@@ -1,0 +1,79 @@
+/* $Id: watchFeared.src 891 2005-11-04 06:29:43Z muaddiblsd $
+ *
+ */
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":brainAI:npcWatchList";
+include ":brainAI:npcUtil";
+
+program BrainCriticalScript(params)
+	var npc := params[1];
+	var mobile := params[2];
+	//var settings := params[3];
+	params := 0; // Not needed anymore
+
+		var hate_config := ReadConfigFile(":brainAI:config/hatelist");
+		var config_list := FindConfigElem(hate_config, NPC_ParseTemplateName(npc.npctemplate).template);
+	if ( mobile.cmdlevel )
+		return 0;
+	elseif ( mobile.npctemplate )
+		var my_hate_list := GetConfigStringArray(config_list, "Hates");
+		//var my_hateprop_list := GetConfigStringArray(config_list, "HateProp");
+		if( !(NPC_ParseTemplateName(mobile.npctemplate).template in my_hate_list) )
+			return 0;
+		else
+			return 1;
+		endif
+	elseif ( mobile.connected )
+		var my_hateprop_list := GetConfigStringArray(config_list, "HateProp");
+		if (!EnemyInHatepropList(mobile, my_hateprop_list))
+			return 0;
+		else
+			return 1;
+		endif
+	else
+		return 0;
+	endif
+endprogram
+
+function EnemyInHatepropList(mobile, my_hateprop_list)
+
+	var desc;
+	foreach prop in my_hateprop_list
+
+		desc := SplitWords(prop);
+
+		if (desc[1] == "undead")
+			var value := cint(GetObjProperty(mobile, "undead"));
+			if (value)//se o player tem a prop undead
+				if (cint(desc[2]) ) //se o npc ataca undeads
+					if (value == 1) //e o player eh undead
+						return 1; //ataca o player
+					endif
+				else	//se o npc nao ataca undeads
+					if (value == 1) //se o player eh undead
+						return 0;
+					endif
+				endif
+			else//se o player nao tem a prop undead. logo eh atacado
+				return 1;
+			endif
+		elseif ( desc[1] == "raca")
+			var value := GetObjProperty(mobile, "raca");
+			if (value != error)//se o player tem raca
+				if (value == desc[2])//e for a mesma raca da prop
+					if ( cint(desc[3]))//se o npc ataca essa raca
+						return 1;//ataca o player
+					else
+						return 0;
+					endif
+				else
+					return 0;
+				endif
+			endif	
+		endif
+
+	endforeach
+
+	return 1; //se chegou aqui eh pq nao tem nenhuma prop e eh um player comum entao ataca
+endfunction

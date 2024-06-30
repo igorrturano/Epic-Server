@@ -1,0 +1,26 @@
+use uo;
+use os;
+include "include/say";
+include ":merchants:pcconversation";
+
+exported function CanDie(mobile)
+	if (mobile.template == ":merchants:conversation")
+		var pcdata := GetConversationDataFile();
+		pcdata.DeleteElement(mobile.serial);
+	endif
+
+	if (GetObjProperty(mobile, "morrendo") == 1)
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "Ultimas Palavras") != error)
+		start_script(":death:hooks/speaklastwords", mobile);
+		//if (e == error)
+		//	printtextabove(mobile, "error "+ e);
+		//endif
+		return 0;
+	else
+		return 1;
+	endif
+
+endfunction

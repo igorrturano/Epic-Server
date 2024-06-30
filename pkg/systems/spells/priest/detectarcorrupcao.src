@@ -1,0 +1,49 @@
+     use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":charactercreation:habilidades";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if ( IsBloodied(targ))
+		SendSysMessageEx(who, "O alvo esta muito ferido.", SSM_FAIL);
+		return 1;
+	endif
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	
+	var corrupcao := Cint(GetObjProperty(targ, "corruption"));
+
+	if (corrupcao >= 10000)
+		SendSysMessageEx(who, "A corrupcao de " + targ.name + " esta razoavel.", SSM_FAIL);
+	elseif (corrupcao >= 15000)
+		SendSysMessageEx(who, "A corrupcao de " + targ.name + " esta alta.", SSM_FAIL);
+	elseif (corrupcao >= 20000)
+		SendSysMessageEx(who, "A corrupcao de " + targ.name + " esta muito alta.", SSM_FAIL);
+	else
+		SendSysMessageEx(who, "A corrupcao de " + targ.name + " e muito baixa ou inexistente.", SSM_FAIL);
+	endif 
+	SendSysMessageEx(who, "O alvo tem " + cint(GetObjProperty(targ, "corruption")) + " pontos de corrupcao." );
+	
+	return 1;
+endprogram 

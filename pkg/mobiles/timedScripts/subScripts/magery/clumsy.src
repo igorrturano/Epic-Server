@@ -1,0 +1,45 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+ */
+ 
+use uo;
+use os;
+
+include "include/say";
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
+	
+	if ( GetObjProperty(mobile, "#ClumsyMod") )
+		return 0;
+	endif
+	
+	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE)) ;
+	cast_points := cast_points/2; //dificuldade maxima 100%
+	var final := cast_points*0.7; //maximo de debuff 50% 
+
+//	if (SkillCheck(mobile, RESISTING_SPELLS, cast_points) > 0)
+//		SendSysMessageEx(mobile, "Voce resiste ao encantamento.", SSM_INFO);
+//		var defense := CInt(AP_GetSkill(mobile, RESISTING_SPELLS))/2;
+//		final := cast_points - defense;
+//		if (final < 10)
+//			final := 10;
+//		endif
+//	endif
+
+	var stat := AP_GetStat(mobile, DEXTERITY);
+	stat := Cint((stat*final)/100);
+	var points := stat * -1;
+	
+	
+	SetObjProperty(mobile, "#ClumsyMod", points);
+	AP_ModifyStatMod(mobile, DEXTERITY, points);
+	
+	return 1;
+endprogram
+

@@ -1,0 +1,133 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/sysEvent";
+include ":attributes:attributes";
+include "include/tnmagery";
+include ":timeUtils:time";
+include ":tn:tngumps";
+
+const SPELL_BTN := 200;
+const GUMPID_CLERICSPELL := 0x00001C;
+
+program clericPowerWords(who)
+	detach();
+    var magia := GetObjProperty(who, "chardata").magia;
+   if (magia != "Shaman")
+      SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
+      return;
+   endif
+   CloseGump(who, GUMPID_CLERICSPELL); 
+
+   var mlore := cint(AP_GetSkill(who, MAGICLORE));
+   var cleric_slots := Cint(mlore / 5);
+
+   var shaman_list  := GetObjProperty(who, "shaman_list");
+   if (!shaman_list) shaman_list := array{}; endif
+   var slots_used := 0;
+    foreach spell in shaman_list
+        slots_used += cint(spell.circle);
+    endforeach
+   var available_slots := cleric_slots - slots_used;
+   var canceled := 0;
+   while (!canceled)
+      var input := CreateClericGump(who, shaman_list, available_slots);
+
+      if (!input[0])
+         canceled := 1;
+      elseif (input[0] >= 200)
+         var slot := input[0] - 200;
+         shaman_list := GetObjProperty(who, "shaman_list");
+         shaman_list.Erase(slot);
+         SetObjProperty(who, "shaman_list", shaman_list);
+         SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+         canceled := 1;
+      endif
+   endwhile
+endprogram
+
+function CreateClericGump(who, shaman_list, available_slots)
+	var gump := GFCreateGump(); 
+ 
+   var size := shaman_list.Size();
+
+   if (size >= 1)
+      size := size * 26;
+   else
+      size := 0;
+   endif
+
+   GFSetId(gump, GUMPID_CLERICSPELL);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 10, 26, 9390, 476, 140+size);
+	GFHTMLArea(gump, 180, 65, 192, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0); //shadow
+	GFHTMLArea(gump, 182, 67, 192, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0);
+	GFHTMLArea(gump, 181, 66, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Lista de Rituais", 0, 0); //shadow
+	GFGumpPic(gump, 139, 84, 1469);
+	// GFTextLine(gump, 187, 66, 0, "Lista de Bençãos");
+	GFGumpPic(gump, 31, 98, 9773, 0);
+	GFTextLine(gump, 56, 95, 1445, "Ritos");
+	GFTextLine(gump, 255, 96, 1445, "Palavras de Poder");
+
+//   for i := 1 to available_slots
+//      shaman_list.append(struct{});
+//   endfor
+   
+   var y := 116;
+   foreach spell in shaman_list
+      var not_empty := isNotEmpty(spell);
+      var spellname := "<basefont Size= 1>Empty";
+      var powerwords := "";
+
+      if (spell)
+         spellname := spell.name;
+         powerwords := ", ".join(splitwords(spell.powerwords));
+      endif
+
+      var color := "";
+      if (not_empty == 3 || not_empty == 1)
+         color := "<BASEFONT color=#b20000>";
+         powerwords := "{}Rito usado.".format(color);
+      endif
+
+      GFHTMLArea(gump, 52, y, 192, 24, "{}{}".format(color, spellname), 1, 0);
+      GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format("A020F0", spell.flavortext));
+      if (spell.time)
+         var time := GetTimeBetween(polcore().systime, spell.time, "minutes");
+         if (time > 0)
+            GFToolTipText(gump, "<BASEFONT color=#{}>Pode esquecer em: {} minuto(s)".format("b20000",time));
+         endif
+      endif
+
+      GFHTMLArea(gump, 253, y, 185, 24, "{}".format(powerwords), 1, 0);
+
+      if (not_empty == 0 || not_empty == 3)
+         GFAddButton(gump, 442, y+2, 22150, 22151, GF_CLOSE_BTN, SPELL_BTN+_spell_iter);
+         GFToolTipText(gump, "Esquecer ritual");
+      endif
+        var shaman_souls := GetObjProperty(who, "shaman_souls");
+        if (shaman_souls)
+        	GFTextLine(gump, 52, y+35, 1445, "Colheita: {} almas".format(shaman_souls));
+        endif
+
+      y += 26;
+      sleepms(2);
+   endforeach
+
+   return GFSendGump(who, gump);
+endfunction
+
+function isNotEmpty(spell)
+   if (spell.id == 1 || !spell.time)
+      return 2; //cannot remove
+   elseif(spell.time < polcore().systime && spell.used)
+      return 3; // can remove and already used
+   elseif (spell.time < polcore().systime)
+      return 0; //can remove
+   elseif(spell.used)
+      return 1; // already used
+   endif
+
+   return 2; //cannot remove
+endfunction

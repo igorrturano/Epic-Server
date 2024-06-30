@@ -1,0 +1,120 @@
+
+use uo;
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":spells:tnmagery";
+include ":merchants:item_template";
+include ":tn:boss";
+include ":tn:quests";
+include ":combat:hitscripts";
+
+/* formato da struct
+  nome
+  description
+  type
+	Trazer X itens
+		itemdiferentes
+		itemamount //array
+		itemobj //array
+		itemdesc //array
+	Trazer item unico
+		numitems
+		items //itemdescriptor array
+		numSpawns
+		npcspawns //array de struct
+			amount
+			x
+			y
+			z
+			npctemplate
+			range
+			item //indice da array items do item que esse spawn guarda
+			bossinfo //struct
+				nome
+				cor
+				statusbonus
+				hitsbonus
+				skillbonus
+	Levar item para local X
+	recompensas //array
+	agradecimento //string
+	recompensa //struct
+		type
+			Status
+				str //int
+				dex //int
+				int //int
+			Skills
+				skillname //int
+			Item
+			Prop
+				nome
+				value
+			DestruirItens
+				items//
+			CriarItems
+				items//
+			Spawn npcs
+				tammed
+				npcspawns// array
+					amount
+					x
+					y
+					z
+					npctemplate
+					range
+
+TODO:
+- requisitos pra ganhar quest (classe, faccao, raca)
+ok - questmenu pode receber varias quests: fazer menu paginado
+- poder usar html na description da quest
+- quest terminar automaticamente  <- foda de fazer
+ok - menu de quest no paperdoll
+- fazer novos tipos de quests:
+	escolta
+	levar item para alguem
+	deixar item em algum lugar
+	matar x mobs
+	matar mob especifico
+
+*/
+
+program createquest(who)
+
+	var questdata := OpenDataFile( ":tn:questdata" );
+	if (questdata == error)
+		questdata := CreateDataFile( ":tn:questdata", DF_KEYTYPE_STRING );
+	endif
+
+	var questinfo := struct;
+	createqueststructGump(who, questinfo);
+	var elem := questdata.CreateElement(questinfo.nome);
+	var ret := elem.SetProp("questinfo", questinfo);
+	return;
+
+
+/*	elseif ( questinfo.type == "Levar item para local X" ) //TODO terminar
+		var loc := RequestGump(who, "Digite o x y z onde sera o destino do item:", "", "", 1);
+		loc := splitwords(loc);
+		questinfo.+itemx :=  loc[1];
+		questinfo.+itemy :=  loc[2];
+		questinfo.+itemz :=  loc[3];
+		var npcs := YesNo("Deseja criar spawns de npcs?");
+		if (npcs)
+			questinfo.+numSpawns := Cint(RequestGump(who, "Quantos spawns de npcs voce deseja criar:", "", "", 1));
+			var numSpawns2 := questinfo.numSpawns;
+			questinfo.+npcspawns := {};
+			while ( numSpawns2 > 0)
+				var npcinfo := SetupNpcSpawn(who);
+				questinfo.npcspawns.append(npcinfo);
+				numSpawns2 := numSpawns2 - 1;
+			endwhile
+		endif
+		var elem := questdata.CreateElement(questinfo.nome);
+		var ret := elem.SetProp("questinfo", questinfo);
+		SendSysMessage(who, "Quest salvada com sucesso.");
+	endif*/
+
+endprogram

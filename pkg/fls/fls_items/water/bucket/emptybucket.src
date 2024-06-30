@@ -1,0 +1,209 @@
+use uo;
+use os;
+
+include ":water:buckets";
+
+const SOUND_POUR1	:= 0x241;
+const SOUND_POUR2	:= 0x26;
+const WATER_AMT		:= 48;
+
+const PLANT_DONOTHING	:= "nothing";
+const PLANT_WATERED	:= "watered";
+const PLANT_ISDEAD	:= "isdead";
+const PLANT_SALTED	:= "salted";
+
+program EmptyBucket(who, bucket)
+	SendSysMessage(who, "Onde voce quer usar isso?");
+	var targ := target(who);
+	if ( !targ )
+		SendSysMessage(who, "Cancelled");
+		return;
+	elseif ( Distance(who, targ) > 3 )
+		SendSysMessage(who, "That is too far away.");
+		return;
+	elseif ( targ.IsPlant() )
+		WaterPlant(who, bucket, targ, WATER_AMT, 1);
+		bucket.EmptyBucket();
+	elseif ( targ.objtype == GetObjTypeByName("scarecrow-multi") )
+		if ( IrrigateFarm(who, bucket, targ) )
+			bucket.EmptyBucket();
+		endif
+	elseif ( targ.objtype == GetObjTypeByName("glasspitcher") )
+		FillPitcher(who, bucket, targ);
+	else
+		SplashObject(who, bucket, targ);
+	endif
+endprogram
+
+function IrrigateFarm(who, bucket, scarecrow)
+	if ( Distance(who, scarecrow) > 1 )
+		SendSysMessage(who, "Voce precisa estar perto para por agua ali.");
+		return;
+	endif
+	
+	var plant_list := array;
+	var rect := scarecrow.GetFarmRect(scarecrow.GetMulti());
+	foreach item in ListObjectsInBox(rect[1], rect[2], rect[3], rect[4], rect[5], rect[6])
+		if ( item.IsPlant() )
+			plant_list.append(item);
+		endif
+		sleepms(2);
+	endforeach
+	
+	var num_plants := plant_list.size();
+	var water_per := CInt((WATER_AMT * 2)/ num_plants);
+	if ( water_per < 2 )
+		water_per := 2;
+	endif
+
+	var result := dictionary
+	{ 
+		PLANT_DONOTHING	-> 0, 
+		PLANT_WATERED	-> 0, 
+		PLANT_ISDEAD	-> 0, 
+		PLANT_SALTED	-> 0 
+	};
+
+	SendSysMessage(who, "Voce distribui o conteudo do bucket para cada planta da fazenda.");
+	PlaySoundEffect(who, SOUND_POUR2); // since it's not done in WaterPlant() due to "sendmsg:=0"
+	foreach plant in plant_list
+		var ret := WaterPlant(who, bucket, plant, water_per, 0); // no messages!
+		result[ret] := result[ret] + 1;
+		//PrintTextAbovePrivate(plant, "*has been watered a little*", who);
+		sleepms(10);
+	endforeach
+	// No message for watering properly.
+	// Salted or NoEffect messages
+	if ( result[PLANT_SALTED] > 0 )
+		SendSysMessage(who, "As plantas nao parecem muito felizes.");
+	elseif ( result[PLANT_DONOTHING] > 0 )
+		SendSysMessage(who, "Voce duvida que isso tenha ajudado as plantas em algo.");
+	endif
+	// Are any of the plants dead?
+	if ( result[PLANT_ISDEAD] > 0 )
+		SendSysMessage(who, "Voce percebe que algumas plantas estao mortas e nao reagem a agua.");
+	endif
+	return 1;
+endfunction
+
+function WaterPlant(who, bucket, targ, amount:=0, sendmsg:=0)
+	if ( targ.IsDead() )
+		if (sendmsg)
+			SendSysMessage(who, "A planta esta morta.");
+		endif
+		return PLANT_ISDEAD;
+	endif
+
+	if (sendmsg)
+		SendSysMessage(who, "Voce regou "+ targ.desc);
+		PlaySoundEffect(targ, SOUND_POUR2);
+	endif
+	if ( bucket.objtype == SALT_WATER_BUCKET )
+		if (sendmsg)
+			SendSysMessage(who, "A planta nao parece muito feliz.");
+		endif
+		targ.SetWaterAmount(0);
+		return PLANT_SALTED;
+	elseif ( bucket.objtype == FRESH_WATER_BUCKET )
+		var wateramount := targ.GetWaterAmount()+amount;
+		if (wateramount >= 99)
+			if (sendmsg)
+				SendSysMessage(who, "Você forma uma poca de lama envolta da planta.");
+				var aguinha := CreateItemAtLocation( targ.x, targ.y, targ.z, 4091, 1, targ.realm);
+			endif
+			wateramount := 48;
+		endif
+		targ.SetWaterAmount(wateramount);
+		SendSysMessage(who, "Dias: " + cint(wateramount /24));
+		return PLANT_WATERED;
+	endif
+
+	// If we get here, it's milk! :-)
+	// (which does the plant no good whatsoever!)
+	if (sendmsg)
+		SendSysMessage(who, "Voce acha que nao regou muito bem.");
+	endif
+	return PLANT_DONOTHING;
+endfunction
+
+function FillPitcher(who, bucket, targ)
+	if ( !(targ in EnumerateItemsInContainer(who.backpack)) )
+		SendSysMessage(who, "That is not in your backpack.");
+		return;
+	endif
+
+	var type := 0;
+	var contents := 0;
+	if ( bucket.objtype == FRESH_WATER_BUCKET )
+		type := "pitcherofwater";
+		contents := "water";
+	elseif ( bucket.objtype == MILK_BUCKET )
+		type := "pitcherofmilk";
+		contents := "milk";
+	else
+		//No salt water pitchers
+		SendSysMessage(who, "Cancelled");
+		return;
+	endif
+
+	SendSysMessage(who, "You empty the "+contents+" into your pitcher.");
+	SubtractAmount(targ, 1);
+	PlaySoundEffect(who, SOUND_POUR1);
+	var new_pitcher := CreateItemInBackPack(who, type, 1);
+	if ( new_pitcher.errortext )
+		SendSysMessage(who, "Error creating new pitcher ->"+new_pitcher.errortext);
+		return;
+	endif
+	bucket.EmptyBucket();
+	return 1;
+endfunction
+
+function SplashObject(who, bucket, targ)
+	PerformAction(who, 0xD);
+	PrintTextAbove(who, "*"+who.name+" joga agua do balde*");
+	sleepms(800);
+	PlayMovingEffect(who, targ, 8111, 7, 10);
+	PlaySoundEffect(targ, SOUND_POUR2);
+
+	var name;
+	if ( targ.name )
+		name := targ.name;
+	else
+		name := targ.desc;
+	endif
+
+	var aguinha := CreateItemAtLocation( targ.x, targ.y, targ.z, 4091, 1, targ.realm);
+	if (targ.isa(POLCLASS_MOBILE))
+		PrintTextAbove(targ, "*"+name+" fica molhado*");
+		if ( bucket.objtype == MILK_BUCKET )
+			aguinha.color := 2322;
+			SetName(aguinha, "leite derramado");
+			PrintTextAbove(targ, "*"+name+" esta cheirando leite*");
+	//	elseif ( targ.IsA(POLCLASS_MOBILE) )
+	//		CureSpecific(targ, "poostink", -1);
+		endif
+        SetObjProperty(targ, "molhado", 1);
+        sleep(15);
+        EraseObjProperty(targ, "molhado");
+	else
+		if ((targ.objtype >= 14732) && (targ.objtype <= 14746))
+			PrintTextAbove(targ, "*O fogo apaga*");
+			DestroyItem(targ);
+		elseif (targ.objtype == 3555)
+			PrintTextAbove(targ, "*A fogueira apaga");
+			DestroyItem(targ);
+		else
+			PrintTextAbove(targ, "*fica molhado*");
+		endif
+	endif
+
+	if ( targ.npctemplate )
+		var ev := struct;
+		ev.+type := "WATER";
+		ev.+source := who;
+
+		SendEvent(targ, ev);
+	endif
+	bucket.EmptyBucket();
+	return 1;
+endfunction

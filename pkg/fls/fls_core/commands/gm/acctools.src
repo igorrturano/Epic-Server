@@ -1,0 +1,122 @@
+
+
+use datafile;
+use uo;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":fls_core:fls_acct";
+
+program gmtools(who)
+
+	SendSysMessage(who, "Escolha quem voce deseja ver a acc. Pressione ESC para escrever a accname caso o alvo nao esteja online.");
+	var targ := target(who);
+	var acctname, input;
+	if (!targ)
+		acctname := RequestGump(who, "Digite a acc:", "", "", 1);
+	else
+		acctname := targ.acctname;
+	endif
+
+	var acct := FindAccount( acctname );
+
+	if ( (!acct) || (acct == error))
+		SendSysMessage(who, "Conta inexistente.");
+		return;
+	endif
+
+	var chargump := GFCreateGump();
+	GFDisposable(chargump, 0);
+
+	GFResizePic(chargump, 0, 25, 3600, 300, 480);
+	GFResizePic(chargump, 15, 40, 0x13BE, 270, 450);
+	GFTextMid(chargump, 15, 45, 300, 1153, "Menu de Contas");
+	GFTextLine(chargump, 50, 75, 1153, "Name");
+	GFTextLine(chargump, 50, 95, 1153, "Enabled");
+	GFTextLine(chargump, 50, 115, 1153, "Banned");
+	GFTextLine(chargump, 50, 135, 1153, "Expansion");
+	GFTextLine(chargump, 50, 155, 1153, "New Password");
+	GFTextLine(chargump, 50, 175, 1153, "Acc Notes");
+	GFTextLine(chargump, 50, 195, 1153, "Characters:");
+
+	GFTextLine(chargump, 150, 75, 1153, "" + acctname);
+	GFTextLine(chargump, 150, 95, 1153, "" + acct.enabled);
+	GFTextLine(chargump, 150, 115, 1153, "" + acct.banned);
+	GFTextLine(chargump, 150, 135, 1153, "" + acct.uo_expansion);
+
+	GFAddButton(chargump, 30, 99, 2117, 2118, 1, 10);
+	GFAddButton(chargump, 30, 119, 2117, 2118, 1, 11);
+	GFAddButton(chargump, 30, 139, 2117, 2118, 1, 12);
+	GFAddButton(chargump, 30, 159, 2117, 2118, 1, 13);
+	GFAddButton(chargump, 30, 179, 2117, 2118, 1, 14);
+
+	var char := acct.GetCharacter(1);
+	if (char != error)
+		GFTextLine(chargump, 50, 215, 1153, "" + char.name);
+		GFAddButton(chargump, 30, 219, 2117, 2118, 1, 1);
+	endif
+	char := acct.GetCharacter(2);
+	if (char != error)
+		GFTextLine(chargump, 50, 235, 1153, "" + char.name);
+		GFAddButton(chargump, 30, 239, 2117, 2118, 1, 2);
+	endif
+	char := acct.GetCharacter(3);
+	if (char != error)
+		GFTextLine(chargump, 50, 255, 1153, "" + char.name);
+		GFAddButton(chargump, 30, 259, 2117, 2118, 1, 3);
+	endif
+	char := acct.GetCharacter(4);
+	if (char != error)
+		GFTextLine(chargump, 50, 275, 1153, "" + char.name);
+		GFAddButton(chargump, 30, 279, 2117, 2118, 1, 4);
+	endif
+	char := acct.GetCharacter(5);
+	if (char != error)
+		GFTextLine(chargump, 50, 295, 1153, "" + char.name);
+		GFAddButton(chargump, 30, 299, 2117, 2118, 1, 5);
+	endif
+
+	input := GFSendGump(who, chargump);
+	input := input[0];
+
+	if (input == 10 )
+		if ( !acct.enabled ) //
+			var jail := YesNo(who, "Deseja realmente desjailar essa conta?", "Sim.", "Nao."  );
+			if (jail)
+				acct.enable();
+			endif
+		else
+			var jail := YesNo(who, "Deseja realmente jailar essa conta?", "Sim.", "Nao."  );
+			if (jail)
+				var time := Cint(RequestGump(who, "Digite o tempo (14 dias max)", "", "", 1));
+				time := time * 86400;
+				jailAcc(acct, time);
+			endif
+		endif
+	elseif (input == 11)
+		if (!acct.banned)
+			var ban := YesNo(who, "Deseja realmente banir essa conta?", "Sim.", "Nao."  );
+			if (ban)
+				acct.ban();
+			endif
+		else
+			var unban := YesNo(who, "Deseja realmente desbanir essa conta?", "Sim.", "Nao."  );
+			if (unban)
+				acct.unban();
+			endif
+		endif
+	elseif (input == 12 )
+		var expansion := cstr(RequestGump(who, "Digite a expansao: LBR, AOS, SE ou T2A", "", "", 1));
+		if (expansion != error)
+			acct.Set_UO_Expansion(expansion);
+		endif
+	elseif (input == 13)
+		var pswd := cstr(RequestGump(who, "Digite o novo pswd:", "", "", 1));
+		if (pswd != error)
+			acct.SetPassword(pswd);
+		endif
+	endif
+
+endprogram

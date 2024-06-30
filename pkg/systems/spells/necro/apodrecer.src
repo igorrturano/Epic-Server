@@ -1,0 +1,40 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+	
+	var targcolor;
+	if (!targ.npctemplate);
+		targcolor := targ.color;
+		SetObjProperty(targ, "#RealColor", targcolor);
+		targ.color := 986;
+	endif		
+
+	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
+	//sendsysmessage(who, " amt "+ amt);
+	TS_StartTimer(targ, "apodrecer", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2, targ.color, who, 0); //20 min
+	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
+	SendSysMessageEx(who, "O corpo do alvo se torna podre e menos resistente", SSM_INFO);
+	
+	return 1;
+endprogram 

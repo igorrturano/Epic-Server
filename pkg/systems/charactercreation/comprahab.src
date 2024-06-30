@@ -1,0 +1,11 @@
+include ":charactercreation:habilidades";
+use cfgfile;
+include ":tn:tngumps";
+include "include/say";
+include ":attributes:attributes";
+
+program pergrad(who, item)
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+
+	return comprarHabilidade(who, item, -1);
+endprogram

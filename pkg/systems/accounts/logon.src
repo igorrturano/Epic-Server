@@ -1,0 +1,138 @@
+/*
+ * $Id: logon.src 116 2006-05-27 14:07:32Z austinheilman $
+ *
+ */
+ 
+use uo;
+use os;
+include "include/facings";
+include ":accounts:accounts";
+
+program Logon(who)
+	ACCT_SetLastLogin(who.acct);
+	// SendSysMessage(who, "Login");
+	// NormaliseGamePlayer(who);
+	
+	// if(who.cmdlevel < 1)	
+	// 	foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 18, who.realm)
+
+	// 		if (mobile.serial != who.serial && !who.npctemplate)
+	// 			if (!CheckLineOfSight(who,mobile))
+	// 				UpdatePlayerGraphic(mobile, who, 16000, mobile.color);
+	// 			//Who está vendo mobile
+	// 			else
+	// 				UpdatePlayerGraphic(mobile, who, mobile.graphic, mobile.color);
+	// 			endif
+	// 		endif
+	// 	endforeach
+	// endif
+	return 1;
+endprogram
+
+function UpdatePlayerGraphic( who, forwho, graphic, color )
+
+    if( !graphic )
+        graphic := who.graphic;
+    endif
+
+    var packetString := "77";
+    packetString := packetString + fixPacketLength(hex(who.serial),4);
+    packetString := packetString + fixPacketLength(hex(graphic),2);
+    packetString := packetString + fixPacketLength(hex(who.x),2);
+    packetString := packetString + fixPacketLength(hex(who.y),2);
+    packetString := packetString + fixPacketLength(hex(who.z),1);
+    packetString := packetString + fixPacketLength(hex(who.facing),1);
+    packetString := packetString + fixPacketLength(hex(who.color),2); //Colour (doesnt work)
+    packetString := packetString + fixPacketLength(hex(0),1); //Flag... dunno?
+    packetString := packetString + fixPacketLength(hex(0),1); //Highlight colour (doesnt work)
+    return SendPacket( forwho, packetString );
+endfunction
+
+function DrawGamePlayer(who, jgraphic, jcolor)
+	var PacketHexString := "20"+ ConvertIntToHex(who.serial, 4);
+	PacketHexString := PacketHexString + ConvertIntToHex(jgraphic, 2);
+	PacketHexString := PacketHexString +"00";
+	PacketHexString := PacketHexString + ConvertIntToHex(jcolor, 2);
+	PacketHexString := PacketHexString +"00";
+	PacketHexString := PacketHexString + ConvertIntToHex(who.x, 2);
+	PacketHexString := PacketHexString + ConvertIntToHex(who.y, 2);
+	PacketHexString := PacketHexString +"0000";
+	PacketHexString := PacketHexString + ConvertIntToHex(who.facing, 1);
+	PacketHexString := PacketHexString + ConvertIntToHex(who.z, 1);
+	SendPacket(who, PacketHexString);
+endfunction
+
+function ConvertIntToHex(astring, alength)
+	astring := Hex(astring);
+	astring := CStr(astring);
+	if (astring["0x"])
+		astring := astring[3, len(astring)];
+	endif
+	if (len(astring) > alength * 2)
+		return;
+	endif
+	while (len(astring) < alength * 2)
+		astring := "0"+ astring;
+	endwhile
+	return astring;
+endfunction
+
+function DrawObject(ktowhom, kobj, kgraphic, kcolor, keqitrandcolor := 0)
+	var PacketHexStringPart1 := "78";
+	var PacketHexStringPart2 := ConvertIntToHex(kobj.serial, 4) + ConvertIntToHex(kgraphic, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.x, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.y, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.z, 1);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.facing, 1);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kcolor, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 +"0000";
+	if ((kobj.isa(POLCLASS_MOBILE)) && ((kobj.graphic == 400) || (kobj.graphic == 401)|| (kobj.graphic == 1828) || (kobj.graphic == 1829) || (kobj.graphic == 1830) || (kobj.graphic == 1831) || (kobj.graphic == 1832) || (kobj.graphic == 1833) || (kobj.graphic == 1834) || (kobj.graphic == 1835)))
+		var color;
+		var graphic;
+		foreach item in ListEquippedItems(kobj)
+			PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.serial, 4);
+			if (keqitrandcolor == 1)
+				color := RandomInt(99) + 2;
+			else
+				color := item.color;
+			endif
+			if (color == 0)
+				graphic := item.graphic;
+			else
+				graphic := item.graphic + 32768;
+			endif
+			PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(graphic, 2);
+			PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.layer, 1);
+			if (color != 0)
+				PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(color, 2);
+			endif
+		endforeach
+	endif
+	PacketHexStringPart2 := PacketHexStringPart2 +"00000000";
+	var FullPacketHexStringLength := (len(PacketHexStringPart1) + len(PacketHexStringPart2)) / 2 + 2;
+	var FullPacketHexString := PacketHexStringPart1 + ConvertIntToHex(FullPacketHexStringLength, 2) + PacketHexStringPart2;
+	SendPacket(ktowhom, FullPacketHexString);
+endfunction
+
+function fixPacketLength( packetString, byteLength )
+    if( !packetString || packetString == error )
+        packetString := 0;
+    endif
+    packetString := cStr(packetString);
+
+    if( packetString[1,2] == "0x" )
+        packetString := cStr(packetString[3,len(packetString)]);
+    endif
+
+    if( len(packetString) > byteLength * 2 )
+//		var extraBytes := (byteLength*2) - len(packetString);
+		var extraBytes := len(packetString) - (byteLength*2) + 1;
+		return cStr(packetString[extraBytes,len(packetString)]);
+    endif
+
+    while( len(packetString) < byteLength * 2 )
+        packetString := "0" + packetString;
+    endwhile
+
+    return packetString;
+endfunction

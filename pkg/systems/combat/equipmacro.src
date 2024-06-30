@@ -1,0 +1,47 @@
+
+use uo;
+use vitals;
+
+include ":attributes:attributes";
+include "include/say";
+include "include/utils";
+
+program manobra(params)
+   var who := params[1];
+   var item_list := params[2];
+   params := 0;
+
+   var all_unequip := 0;
+
+   foreach item in item_list
+      sleepms(5);
+      item := SystemFindObjectBySerial(item);
+      if (!item) continue;
+      elseif (!IsInMyBackpack(who, item)) continue; endif
+      
+      var item_in_layer := GetEquipmentByLayer(who, item.tile_layer);
+      if (item_in_layer == item)
+         if (_item_iter == 1) all_unequip := 1; endif
+         if (all_unequip) MoveItemToContainer( item_in_layer, who.backpack ); endif
+         continue;
+      endif
+
+      if (!all_unequip)
+         MoveItemToContainer( item_in_layer, who.backpack );
+         EquipItem(who, item);
+      endif
+   endforeach
+endprogram
+
+function IsInMyBackpack(who, item)
+   var f_cont := item.container;
+   if (!f_cont) return; endif
+
+   while (f_cont.container)
+      f_cont := f_cont.container;
+      sleepms(2);
+   endwhile
+
+   if (f_cont == who) return 1; endif
+   return 0;
+endfunction

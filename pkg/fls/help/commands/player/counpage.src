@@ -1,0 +1,110 @@
+use uo;
+use datafile;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":help:help";
+
+program gmpage(who)
+
+	GMPageGump(who);
+
+endprogram
+
+function GMPageGump(who)
+
+	var pagegump := GFCreateGump();
+	var input;
+
+	if ( (getObjproperty(who, "counselor") != 1) )
+		if (who.cmdlevel < 1)
+			return;
+		endif
+	endif
+
+	GFDisposable(pagegump, 0);
+	GFResizePic(pagegump, 0, 25, 3600, 450, 480);	
+	GFResizePic(pagegump, 15, 40, 0x13BE, 420, 450);
+	GFTextMid(pagegump, 20, 50, 370, 1153, "Menu de Pages");
+
+	GFTextLine(pagegump, 20, 70, 1153, "Nome");
+	GFTextLine(pagegump, 200, 70, 1153, "Msg");
+	GFTextLine(pagegump, 300, 70, 1153, "Descricao");
+	GFTextLine(pagegump, 370, 70, 1153, "Deletar");
+
+	var df := DFOpenDataFile("counpages", DF_CREATE);
+	var pages := df.Keys();
+	
+	var y := 90;
+	var i := 1;
+	var pagenum := 0;
+	var elem;
+	var player;
+	var fontcolor := 1153;
+	foreach page in pages
+		pagenum := pagenum + 1;
+		GFPage(pagegump, i);
+		elem := df.FindElement( page );
+		player := SystemFindObjectBySerial(Cint(page));
+		GFTextLine(pagegump, 20, y, fontcolor, player.name); 
+		GFAddButton(pagegump, 205, y, 2117, 2118, 1, 400 + pagenum);
+		GFAddButton(pagegump, 320, y, 2117, 2118, 1, 800 + pagenum);
+		GFAddButton(pagegump, 380, y, 2117, 2118, 1, 1000 + pagenum);
+		y := y + 20;
+		if ( Cdbl(pagenum/18) == i)
+			i := i +1;
+			y := 90;
+			GFAddButton(pagegump, 380, 460, 2648, 2649, GF_PAGE_BTN, i);
+			GFPage(pagegump, i);
+			GFAddButton(pagegump, 380, 50, 2650, 2651, GF_PAGE_BTN, i-1);
+		endif
+	endforeach
+	
+
+	input := GFSendGump(who, pagegump);
+	input := input[0];
+
+
+	if ( (input > 800)  && (input < 1000) )
+		var serial := GetPageIndexByPageNum(input - 800, "counpages");
+		if ( serial )
+			var player := SystemFindObjectBySerial(Cint(serial));
+			var df := DFOpenDataFile("counpages", DF_CREATE, DF_KEYTYPE_INTEGER);
+			var elem := DFFindElement(df, cint(serial), DF_CREATE);
+			if (elem == error)
+				SendSysMessage(who, "Essa page foi deletada.");
+			else
+				PageDescGump(who, elem);
+			endif
+		else
+			SendSysMessage(who, "Essa page foi deletada.");
+		endif	
+		GMPageGump(who);
+	elseif ( (input > 400) && (input < 600) )
+		var serial := GetPageIndexByPageNum(input - 400, "counpages");
+		if ( serial )
+			var player := SystemFindObjectBySerial(Cint(serial));
+			if (player == error)
+				SendSysMessage(who, "Esse personagem foi deletado!");
+			else
+				var message_txt := RequestInput(who, who.backpack, "Digite sua mensagem: ");
+				if ( !message_txt )
+					SendSysMessage(who, "Cancelado.");
+					return 0;
+				else
+					SendSysMessage(who, "Resposta enviada para " + player.name + " .");
+					SendSysMessage(player, "Counselor: " +  message_txt);
+				endif;
+			endif
+		else
+			SendSysMessage(who, "Essa page foi deletada.");
+		endif
+		GMPageGump(who);
+	elseif ( (input > 1000) )
+		var serial := GetPageIndexByPageNum(input - 1000, "counpages");
+		DeletePage( serial, "counpages");	
+		GMPageGump(who);
+	endif
+
+endfunction

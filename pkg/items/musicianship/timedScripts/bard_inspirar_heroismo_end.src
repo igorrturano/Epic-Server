@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_inspirar_heroismo_end(params)
+	var alvo := params[1];
+	var modificador := (-1) * GetObjProperty(alvo, "#Bard_inspirar_heroismo");
+	Set_Critical(1);
+	AP_ModifySkillMod(alvo, MAGERY, modificador);
+	AP_ModifySkillMod(alvo, MAGICLORE, modificador);
+	AP_ModifySkillMod(alvo, PARRY, modificador);
+	AP_ModifySkillMod(alvo, MELEECOMBAT1H, modificador);
+	AP_ModifySkillMod(alvo, MELEECOMBAT2H, modificador);
+	AP_ModifySkillMod(alvo, RANGEDCOMBAT, modificador);
+	AP_ModifySkillMod(alvo, TACTICS, modificador);
+	EraseObjProperty(alvo, "#Bard_inspirar_heroismo");
+	Set_Critical(0);
+	SendSysMessage(alvo, "Nao esta mais tao focado para batalha.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	return 1;
+endprogram

@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+program underwearswitch( who )
+
+	var underwear;
+
+	underwear := 0;
+
+	if(underwear)
+			who.color := who.color + 32768;
+			underwear := 1;
+		elseif(!underwear)
+			who.color := who.color + 32768;
+			underwear := 0;
+	endif
+
+endprogram

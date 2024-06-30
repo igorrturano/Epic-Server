@@ -1,0 +1,23 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	
+	mobile.frozen := 0;
+
+	foreach item in (ListEquippedItems(mobile))
+		if (!GetObjProperty(item, "#elementalweapon"))
+			item.color := cint(GetObjProperty(item, "originalcolor"));
+		endif
+	endforeach
+
+	mobile.color := cint(GetObjProperty(mobile, "originalcolor"));
+
+	EraseObjProperty(mobile, "#PrisaoGelida");	
+
+	return 1;
+endprogram
+ 

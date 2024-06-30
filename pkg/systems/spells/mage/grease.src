@@ -1,0 +1,31 @@
+/*
+ * $Id$
+ *
+ */
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+    var duration := (CInt(AP_GetSkill(who, MAGICLORE)) / 10);
+
+    PlayStationaryEffect(info.x, info.y, info.z, 0x6cb7, 10, 20, 0, who.realm);
+    foreach mob in ListMobilesNearLocation(info.x, info.y, info.z, 3, info.realm)
+        var lama := CreateItemAtLocation(mob.x, mob.y, mob.z, 4653, 1, mob.realm);
+        lama.color := 1008;
+        lama.name := "lama";
+        TS_StartTimer(mob, "lentidao", duration);
+    endforeach
+		
+	return 1;
+endprogram

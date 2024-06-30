@@ -1,0 +1,35 @@
+     use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":itemutils:objtype";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	SendSysMessageEx(who, "Escolha a fogueira.", SSM_REQUEST);
+	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		return;
+	endif
+
+	if (targ.graphic != UOBJ_CAMPFIRE)
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	SetObjProperty(targ, "encantado", 1);
+
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PrintText(targ, "A fogueira queima mais intensamente.");
+	
+	return 1;
+endprogram  

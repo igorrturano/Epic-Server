@@ -1,0 +1,86 @@
+
+use uo;
+include ":tn:quests";
+include ":gumps:gumps";
+include "include/arrays";
+include ":fls_core:fls_chargumps_ex";
+include ":attributes:attributes";
+include ":gumps:yesNo";
+
+program setquest(who)
+
+	SendSysMessage(who, "Escolha o npc que deseja gerenciar as quests.");
+
+	var npc :=  Target(who);
+
+	if (!npc)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	BuildQuestGump(who, npc);
+
+
+endprogram
+
+function BuildQuestGump(who, npc)
+
+	var chargump := GFCreateGump();
+	var input;
+
+	GFClosable(chargump, 0);
+	GFDisposable(chargump, 0);
+	GFResizePic(chargump, 0, 25, 3600, 400, 430);
+	GFResizePic(chargump, 15, 40, 0x13BE, 370, 400);
+
+
+	GFTextMid(chargump, 20, 50, 300, 1153, "Ative ou desative quests no npc");
+
+	var totalQuests := GetQuestsKeys();
+	var npcquests := GetObjProperty(npc, "quests");
+	if (!npcquests)
+		npcquests := {};
+	endif
+
+	var x := 60;
+	var y := 100;
+	var i;
+	GFSetRadioGroup(chargump, 1);
+
+	for (  i :=  1; i <= totalQuests.size(); i := i + 1)
+
+		GFTextLine(chargump, x, y, 1153, totalQuests[i]);
+		var haveThisQuest := 0;
+		if ( totalQuests[i] in npcquests)
+			haveThisQuest := 1;
+		endif
+		GFCheckBox(chargump, x-20, y+3, 2360, 2361, haveThisQuest, i);
+
+		y := y + 15;
+
+		if ( i == 21 )
+			x := x + 140;
+			y := 100;
+		endif
+
+		sleepms(2);
+	endfor
+
+	GFAddButton(chargump, 310, 400, 4502, 4502, 1, 999 );
+	GFTextLine(chargump, 270, 410, 1153, "Termina");
+
+	input := GfSendGump(who, chargump);
+	npcquests := array;
+	foreach key in (input.keys)
+		if (key != 999 && key != 0)
+
+			var result := npcquests.append(totalQuests[key]);
+			SendSysMessage(who, "Adicionando quest: " + totalQuests[key] + " " + result);
+
+		endif
+	endforeach
+
+	SetObjProperty(npc, "quests", npcquests);
+	SendSysMessage(who, "Pronto.");
+
+endfunction

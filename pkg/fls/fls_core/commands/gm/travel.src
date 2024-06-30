@@ -1,0 +1,30 @@
+
+use uo;
+
+//x, y, realm
+program textcmd_travel( who, text )
+
+	var params := SplitWords( text );
+	var res;
+	if (len(params) == 2) 
+		params[3] := GetMapInfo( CInt(params[1]), CInt(params[2]) ).z;
+		res := MoveObjectToLocation( who, CInt(params[1]), CInt(params[2]), CInt(params[3]), who.realm, MOVEOBJECT_FORCELOCATION );
+	elseif ( len(params == 3) )
+		params[4]:= GetMapInfo( CInt(params[1]), CInt(params[2]) ).z;
+		if (params[3] == "britannia")
+			params[3] := REALM_BRITANNIA;
+		elseif (params[3] == "ilshenar" )
+			params[3] := REALM_ILSHENAR;
+		elseif (params[3] == "malas" )
+			params[3] := REALM_MALAS;
+		elseif (params[3] == "tokuno" )
+			params[3] := REALM_TOKUNO;
+		endif
+		res := MoveObjectToLocation( who, CInt(params[1]), CInt(params[2]), CInt(params[4]), params[3], MOVEOBJECT_FORCELOCATION );
+	endif
+
+	if (!res)
+		SendSysMessage( who, "Nao e possivel ir para este local: " + res.errortext );
+	endif
+    
+endprogram

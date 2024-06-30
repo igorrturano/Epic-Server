@@ -1,0 +1,81 @@
+use cfgfile;
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+include "include/client";
+include ":fls_core:fls_chargumps";
+include ":fls_core:fls_characters";
+
+//introdução - ok
+//Nome do Personagem, Classe e Raça - ok
+//Escolha de cabelo, barba, cor de cabelo e barba e de pele. - ok
+//Compra de atributos - ok
+//compra de skills -  ok
+//compra de itens - ok
+
+const OK_BUTTON			:= 10;
+
+program createchar(who)
+
+	if (who.cmdlevel < 2)
+		var equiped := listequippeditems(who);
+		foreach item in  equiped
+			if (item != who.backpack)
+				DestroyItem(item);
+			endif
+		endforeach
+		equiped := enumerateitemsincontainer(who.backpack);
+		foreach item in  equiped
+			DestroyItem(item);
+		endforeach
+		equiped := 0;
+	endif	
+
+	UnloadConfigFile(":fls_core:config/introduction");
+	UnloadConfigFile(":fls_core:config/classes");
+	UnloadConfigFile(":fls_core:config/racas");
+	UnloadConfigFile(":fls_core:config/itempicker");
+
+	var chardata := struct;
+	chardata.+Credits := 100;
+
+	//Gumps
+	IntroGump(who);
+	NameClassRace(who, chardata);
+	HairColor(who, chardata);
+	AttributesGump(who, chardata);
+	SkillsGump(who, chardata);
+
+	//move pra sala de tintas
+	MoveObjectToLocation(who, 5185, 1195, 4, who.realm );
+
+	ItemPickerGump(who, chardata);
+
+	//Outras funcoes
+	//DefineCharacterSize(who);
+	who.title_race := GetTitleRace(GetObjProperty(who, "raca"));
+
+	//Salva as informacoes da criacao do char
+	SetObjProperty(who, "chardata", chardata);
+
+	//ultimso ajustes, cria o paperdoll
+	var myrace := GetObjProperty(who, "raca");
+	if ( myrace == "orc" )
+		var orcmask := CreateItemInBackpack(who, 0x141C); //orcmask
+		orcmask.newbie := 1;
+		orcmask.color := who.color;
+		EquipItem( who, orcmask );
+		CreateItemInBackpack(who, 0xff22, 100); //moeda de orc
+	else
+		CreateItemInBackpack(who, 0xff21, 100); //moeda de humano
+		SetObjProperty(who, "temskin", 1);
+		EquipRaceSkin(who);
+	endif
+
+	who.race := RACE_HUMAN;
+
+endprogram
+

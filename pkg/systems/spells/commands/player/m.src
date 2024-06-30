@@ -1,0 +1,83 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":spells:spellbooks";
+include ":charactercreation:habilidades";
+
+program magia( who, spellname )
+  if ( GetObjProperty( who, "#Casting" ) )
+    SendSysMessageEx( who, "Voce nao pode invocar um encanto agora.", SSM_FAIL );
+    return 0;
+  endif
+
+  var chardata := GetObjProperty( who, "chardata" );
+  var cfgFile := GetSpellConfigFilePath( chardata, who );
+  var spellInfo := FindSpellInConfig( spellname, cfgFile );
+
+  if ( !spellInfo )
+    SendSysMessageEx( who, "A magia " + spellname + " nao existe.", SSM_FAIL );
+    return;
+  endif
+
+  var spellBookInfo := FindSpellInSpellBooks( who, spellInfo.id );
+  if ( !spellBookInfo && spellInfo.circle != 0 && !( TemHabilidade( who, "Sensibilidade Arcana" )
+       ) )
+    SendSysMessageEx( who, "Voce nao possui a magia " + spellname + " nos seu grimorio.",
+                      SSM_FAIL );
+    return;
+  endif
+  var script := Start_Script( ":spells:cast_spell", { who, spellInfo, spellBookInfo.booktype });
+  if ( script.errortext )
+    SendSysMessage( who, "Error - Could not start spell starter ->" + script.errortext );
+    return 0;
+  endif
+endprogram
+
+function GetSpellConfigFilePath( chardata, who )
+  if ( TemHabilidade( who, "Sensibilidade Arcana" ) )
+    return ":spells:config/tricksterspells";
+  elseif( chardata.trait == "Natureza Arcana" )
+    return ":spells:config/cantripspells";
+  endif
+ 
+   return ":spells:config/spellcaster";
+endfunction
+
+function FindSpellInConfig( spellname, cfgFile )
+  var cfg := ReadConfigFile( cfgFile );
+  foreach spellId in ( GetConfigIntKeys( cfg ) )
+    var elem := FindConfigElem( cfg, spellId );
+    if ( Lower( GetConfigString( elem, "Name" ) ) == Lower( spellname ) )
+      return dictionary{ "id" -> spellId,
+                         "circle" -> GetConfigInt(
+                         elem,
+                         "Circle" ),
+                         "name" -> spellname,
+                         "script" -> GetConfigString( elem, "SpellScript"),
+                         "type" -> GetConfigString( elem, "Type"),
+                         "powerwords" -> GetConfigString( elem, "PowerWords"),
+                         "school" -> GetConfigString( elem, "School")
+                         };
+    endif
+  endforeach
+  return 0;
+endfunction
+
+function FindSpellInSpellBooks( who, spellId )
+  foreach item in ( EnumerateItemsInContainer( who.backpack ) )
+    if ( item.objtype == 24832 || item.objtype == 24835 || item.objtype == 40576 ) // Livros
+      var donoGrimorio := GetObjProperty( item, "serialDono" );
+      if ( donoGrimorio == who.serial )
+        var spells := GetObjProperty( item, "spells" );
+        foreach s in spells
+          if ( s.id == spellId )
+            return dictionary{ "found" -> 1, "booktype" -> GetBookType( item ) };
+          endif
+        endforeach
+      endif
+    endif
+  endforeach
+  return dictionary{ "found" -> 0, "booktype" -> 0 };
+endfunction

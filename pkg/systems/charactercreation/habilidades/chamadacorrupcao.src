@@ -1,0 +1,12 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+
+program manobra(who)
+
+	TS_StartTimer(who, "chamadacorrupcao", 60);
+
+endprogram  

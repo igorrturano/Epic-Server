@@ -1,0 +1,60 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		return;
+	endif
+	var skill := Cint(AP_GetSkill(who, "Magery"));
+	var nuvemarray := array;
+	
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y, targ.z , 14624, 1 , targ.realm));
+	if (skill > 55)	
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 60)	
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 70)
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 80)
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 90)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	endif
+	
+
+	foreach item in nuvemarray 
+		item.graphic := 14120;
+		item.name := "Nuvem Nefasta";
+		item.movable := 0;
+		item.color := 563;
+		item.decayat := ReadGameClock()+ cint(GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 10);
+	endforeach	
+	
+	return 1;
+endprogram 

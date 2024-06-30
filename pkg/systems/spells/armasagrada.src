@@ -1,0 +1,20 @@
+use uo;
+use os;
+
+
+program armasagrada(param)
+
+	var arma := param[1];
+	var time := param[2];
+
+	var originalColor := arma.color;
+	SetObjProperty(arma, "armaSagradaOriginalColor", originalColor);
+	arma.color := 2570;
+
+	sleep(time);
+
+	arma.color := originalColor;
+	EraseObjProperty(arma, "armaSagradaOriginalColor");
+
+
+endprogram

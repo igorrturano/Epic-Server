@@ -1,0 +1,123 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":timedscripts:timedScripts";
+include "include/sysEvent";
+include "include/utils";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+    var cfg := ReadConfigFile(":brainai:npcdesc");
+
+
+	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+	
+	var gliphs := array{};
+	var newmobiles;
+	var oldx := who.x;
+	var oldy := who.y;
+	
+	CreateRandomGliph(gliphs, who.x-1, who.y+3, who.z, who.realm);
+	CreateRandomGliph(gliphs, who.x-2, who.y+3, who.z, who.realm);
+	CreateRandomGliph(gliphs, who.x-3, who.y+3, who.z, who.realm);
+	CreateRandomGliph(gliphs, who.x-3, who.y+2, who.z, who.realm);
+	
+	CreateRandomGliph(gliphs, who.x+1, who.y-3, who.z, who.realm);
+	CreateRandomGliph(gliphs, who.x+2, who.y-3, who.z, who.realm);
+	CreateRandomGliph(gliphs, who.x+3, who.y-3, who.z, who.realm);
+	CreateRandomGliph(gliphs, who.x+3, who.y-2, who.z, who.realm);
+
+	SendSystemReport(who, "'Mova-se para parar a conjuração!'", SSM_INFO);
+
+    SetObjProperty(who, "#Casting", 1);
+	while ( who.connected && !who.frozen && !who.paralyzed )
+		if (oldx != who.x || oldy != who.y)
+			break;
+		endif
+		
+		newmobiles := ListMobilesNearLocation( who.x ,who.y, who.z, 5, who.realm);
+		
+		foreach mobile in newmobiles
+            var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
+			if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
+                ForceDirection(mobile, 0);
+			endif
+			sleepms(2);
+		endforeach
+
+		foreach gliph in gliphs
+			if ((who.x-3 == gliph.x && who.y+3 == gliph.y)
+				|| (who.x-2 == gliph.x && who.y+3 == gliph.y)
+				|| (who.x-1 == gliph.x && who.y+3 == gliph.y)
+				|| (who.x == gliph.x && who.y+3 == gliph.y)
+				|| (who.x+1 == gliph.x && who.y+3 == gliph.y)
+				|| (who.x+2 == gliph.x && who.y+3 == gliph.y))
+				MoveObjectToLocation( gliph, gliph.x+1, gliph.y, gliph.z, who.realm, flags := MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
+			elseif ((who.x+3 == gliph.x && who.y+3 == gliph.y)
+				|| (who.x+3 == gliph.x && who.y+2 == gliph.y)
+				|| (who.x+3 == gliph.x && who.y+1 == gliph.y)
+				|| (who.x+3 == gliph.x && who.y == gliph.y)
+				|| (who.x+3 == gliph.x && who.y-1 == gliph.y)
+				|| (who.x+3 == gliph.x && who.y-2 == gliph.y))
+				MoveObjectToLocation( gliph, gliph.x, gliph.y-1, gliph.z, who.realm, flags := MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
+
+			elseif ((who.x+3 == gliph.x && who.y-3 == gliph.y)
+				|| (who.x+2 == gliph.x && who.y-3 == gliph.y)
+				|| (who.x+1 == gliph.x && who.y-3 == gliph.y)
+				|| (who.x == gliph.x && who.y-3 == gliph.y)
+				|| (who.x-1 == gliph.x && who.y-3 == gliph.y)
+				|| (who.x-2 == gliph.x && who.y-3 == gliph.y))
+				MoveObjectToLocation( gliph, gliph.x-1, gliph.y, gliph.z, who.realm, flags := MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
+
+	
+			elseif ((who.x-3 == gliph.x && who.y-3 == gliph.y)
+				|| (who.x-3 == gliph.x && who.y-2 == gliph.y)
+				|| (who.x-3 == gliph.x && who.y-1 == gliph.y)
+				|| (who.x-3 == gliph.x && who.y == gliph.y)
+				|| (who.x-3 == gliph.x && who.y+1 == gliph.y)
+				|| (who.x-3 == gliph.x && who.y+2 == gliph.y))
+				MoveObjectToLocation( gliph, gliph.x, gliph.y+1, gliph.z, who.realm, flags := MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
+				
+			endif
+			
+			sleepms(5);
+		endforeach
+		PerformAction(who, ANIM_CAST_AREA);
+		sleepms(800);
+	endwhile
+   EraseObjProperty(who, "#Casting");
+	
+	foreach gliph in gliphs
+		DestroyItem(gliph);
+      sleepms(2);
+	endforeach
+	
+	return 1;
+endprogram 
+
+function ForceDirection(mobile, back := 0)
+   PushBack(mobile, 8, 100, back);
+   var ev := struct{
+		type := EVID_PEACEMADE
+   };
+   SendEvent(mobile, ev);
+endfunction
+
+function CreateRandomGliph(byref gliphs, x, y, z, realm)
+	var gliph_graphics := array{0x485F, 0x4844, 0x4841, 0x483B, 0x4862, 0x4865, 0x4868, 0x487A, 0x487D, 0x485C, 0x485F};
+	var gliph := CreateItemAtLocation(x, y, z, 0x790d);
+	
+	gliph.graphic := gliph_graphics.randomentry();
+	
+	if (typeof(gliphs) == "Array")
+		gliphs.append(gliph);
+	else
+		return gliph;
+	endif
+endfunction

@@ -1,0 +1,16 @@
+/* $Id: bcast.src 129 2006-05-27 18:08:54Z austinheilman $
+ *
+ */
+use uo;
+
+include ":attributes:skills";
+
+program command_bcast(who)
+
+	var tgt := Target(who);
+
+	SendSysMessage(who, "Total Cap: "+AP_CheckSkillsTotal(tgt));
+
+	return 1;
+
+endprogram

@@ -1,0 +1,39 @@
+use uo;
+
+
+include ":fls_core:fls_characters";
+program changeSkill(who, text)
+
+	var param := SplitWords(text);
+		if ( param.size() < 2 )
+			SendSysMessage(who, "SYNTAX: .cskill <skillname> <value>");
+			return;
+		endif
+
+
+	var dequem := Target(who);
+
+	if( (!dequem) || (!dequem.acct) )
+		SendSysMessage(who, "Alvo Invalido!");
+		return 0;
+	endif
+
+	var skill := param[1];
+	var pos := Find(text, param[2], Len(param[1])+1);
+	var value := CInt(text[pos, Len(text)]);
+
+
+	var chardata := GetObjProperty(dequem, "chardata");
+
+	SendSysMessage(who, "oldvalue: " + chardata.Skills[skill]);
+	SendSysMessage(who, "newvalue: " + value);
+
+	if(!chardata.Skills[skill])
+		chardata.Skills.insert(skill, value);
+	else
+		chardata.Skills[skill] := value;
+	endif
+
+	SetObjProperty(dequem, "chardata", chardata);
+
+endprogram

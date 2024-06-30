@@ -1,0 +1,23 @@
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":timedScripts:timedScripts";
+
+
+program doubleattack(attacker)
+	
+	PrintTextAbove(attacker, "*distraindo os inimigos*");
+
+	foreach mobile in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm ))
+		if ( !(mobile in attacker.party.members )) 
+			PlayAttackAnimation(attacker);
+			PlayHitSounds(attacker, mobile);
+			sleepms(250);
+			attacker.facing := attacker.facing + 1;
+			TS_StartTimer(mobile, "paralysis", 5);
+		endif
+	endforeach
+	
+
+endprogram 

@@ -1,0 +1,39 @@
+ 
+ use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+	if ( !targ.isa(POLCLASS_MOBILE) )
+		SendSysMessageEx(targ, "Voce so pode usar esta magia em seres vivos.", SSM_FAIL);
+		return ;
+	endif
+
+        PlaySoundEffect(targ, SFX_BLESS);
+        PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+
+	var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+	if ( temHabilidade(who, "Ultimo Milagre"))
+			if ( isBloodied(targ))
+				level := level + cint(level*0.5);
+			endif
+	endif
+	TS_StartTimer(targ, "enmod", AP_GetSkill(who,MAGICLORE), level); //20 min
+
+	SendSysMessageEx(targ, "Voce esta protegido contra energia.", SSM_INFO);
+
+	
+	return 1;
+endprogram  

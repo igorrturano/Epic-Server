@@ -1,0 +1,60 @@
+use uo;
+use vitals;
+
+include ":attributes:vitals";
+include ":attributes:attributes";
+include "include/say";
+
+program manobra(who, name)
+
+	if (GetObjProperty(who, name) == error)
+		SendSysMessage(who, "Voce nao conhece esta manobra.");
+		return 1;
+	endif
+
+	if (!who.warmode)
+		SendSysMessage(who, "Voce nao esta atacando ninguem.");
+		return 1;
+	endif
+	
+	if (!who.opponent)
+		SendSysMessage(who, "Voce nao esta atacando ninguem.");
+		return 1;
+	endif
+
+	var lastTime := Cint(GetObjProperty(who, "#lastmovement"));
+	
+	if (lastTime)
+		if (lastTime + 180 >  ReadGameClock())
+			SendSysMessage(who, "Voce nao pode fazer outra manobra de combate agora.");
+			return 1;
+		endif
+	endif
+
+	name := lower(name);
+	
+	if (name == "tiromultiplo")
+		var ammo := GetObjProperty(who.weapon, "ammo");
+		if (ammo == error)
+			SendSysMessageEx(who, "Voce precisa escolher o tipo de projetil dessa arma.", SSM_FAIL);
+			return 1;
+		endif
+	endif
+
+	if ( (name == "tiromultiplo") || (name == "desarmar") || (name == "fintar") || (name == "duplo") || (name == "giratorio"))
+		if (GetVital(who, MANA) > 40)
+			AP_ConsumeVital(who, MANA, 40);
+		else
+			SendSysMessage(who, "Voce nao consegue fazer esta manobra.");
+			return 1;
+		endif
+		SendSysMessage(who, "Voce tenta executar a manobra.");
+		SetObjProperty(who, "movement",  ":combat:movementScripts/"+name);
+		SetObjProperty(who, "#lastmovement", ReadGameClock());
+	else
+		SendSysMessage(who, "Voce deve digitar a manobra de combate: tiromultiplo, desarmar, fintar, duplo ou giratorio.");
+	endif
+		
+	return 1;
+
+endprogram

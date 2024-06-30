@@ -1,0 +1,34 @@
+use uo;
+use basic;
+
+include ":tn:quests";
+
+// esse script eh chmado pelo timerControl.src quando o tempo da quest expira
+
+program finalquest(params)
+
+	var mob := params[1];
+	var timerinfo := params[2];
+
+
+	var questname := cint( timerinfo.name[6,len(timerinfo.name) ]);		
+	var mob2 :=  timerinfo.attacker; //SystemFindObjectBySerial(serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+
+	if (!mob2) //deu pal nao sei pq
+		print("Pol says: Cant find serial: " + mob + ". Avisem ao ghagha plz");
+		return;
+	endif
+	
+	//remove a quest do char
+	var quests := GetObjProperty(mob2, "quests");
+	foreach q in quests
+		if (q.name == questname)
+			q.status := "finalized";
+		endif
+	endforeach
+	SetObjProperty(mob2, "quests", quests);
+
+	//reseta a quest (mata npcs, etc)
+	ResetQuest(questname);
+
+endprogram

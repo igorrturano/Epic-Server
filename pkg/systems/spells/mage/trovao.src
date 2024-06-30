@@ -1,0 +1,25 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+
+program cast_lightningbolt(params)
+    var caster := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+    LaunchProjectile(caster, info);
+endprogram
+
+function LaunchProjectile(caster, info)
+    PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
+    PlayLightningBoltEffect(info);
+    var dmg := cint(AP_GetSkill(caster, MAGICLORE)) + RandomDiceRoll("4d8");
+    DamageFLS(info, cint(dmg), DMG_ENERGY, caster);
+endfunction

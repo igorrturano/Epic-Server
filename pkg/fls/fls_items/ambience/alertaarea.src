@@ -1,0 +1,38 @@
+use uo;
+use vitals;
+use os;
+include "include/say";
+
+program alerta(rune)
+	while ( 1 )
+
+		var range := GetObjProperty(rune, "range");
+		if (!range)
+			range := 10;
+		elseif(range > 50)
+			range := 50;
+		endif
+
+		var mensagem := GetObjProperty(rune, "mensagem");
+		if (!mensagem)
+			mensagem :="Escuta algo estranho.";
+		endif
+
+		var intervalo := GetObjProperty(rune, "intervalo");
+		if (!intervalo)
+			intervalo := 10;
+		elseif(intervalo < 10)
+			intervalo := 10;
+		elseif(intervalo > 600)
+			intervalo := 600;
+		endif
+
+		var nearbypeople := ListMobilesNearLocation( rune.x, rune.y, rune.z, range, rune.realm);
+		foreach people in nearbypeople
+			if(!people.npctemplate)
+				SendSysMessage(people, mensagem, _DEFAULT_TEXT_FONT, 91);
+			endif
+		endforeach
+		sleep(intervalo);
+	endwhile
+endprogram

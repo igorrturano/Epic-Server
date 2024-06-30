@@ -1,0 +1,73 @@
+use uo;
+use util;
+use os;
+use cfgfile;
+use math;
+
+include ":nature:nature";
+
+program weathercontrol()
+   setglobalproperty("weatherpid", getpid());
+
+   while (1)
+    var daynumber := cint(getglobalproperty("daynumber"));
+    var season := cint(getglobalproperty("season"));
+    var depth;
+    var fromedge;
+    if (season != 1)	// sem clima no verao
+      if (daynumber <= 180)	//2 Outono
+         depth := daynumber - 180;
+         fromedge := abs(depth - 46);
+      elseif (daynumber <= 272)	//3 inverno
+         depth := daynumber - 272;
+         fromedge := abs(depth - 58);
+      else 		//5 primavera
+         depth := daynumber - 360;
+         fromedge := abs(depth - 42);
+      endif
+			// Below we need to first see if we get weather.
+			// Then pick which weather type to use.
+			// Then how long hte weather lasts.
+			// chance is greatest 
+      var chanceofstorm := abs(58 - fromedge);
+			//var weatherroll := getglobalproperty("stormchance");
+      var stormtype:= 255;
+      var duration := randomdiceroll("1d6");
+      var temp1 := randomdiceroll("5d70");
+      if (temp1 < chanceofstorm)
+         depth := abs(depth);
+         output("Chance de chuva:" + temp1 + ":" + chanceofstorm);
+         SetGlobalProperty("chance_clima", temp1 + ":" + chanceofstorm);
+         output("Estacao eh " + season + " depth is " + depth);
+         case(season)
+            2: if (depth > 80)
+                 stormtype := 1;
+               else
+                 stormtype := 0;
+               endif
+					
+             3: if (depth > 100)
+                  stormtype := 1;
+                elseif (depth < 25)
+                  stormtype := 1;
+                else
+                  stormtype := 2;
+                endif
+             5:	stormtype := 0;
+                default: stormtype := 0;
+         endcase
+         output("Enviando clima " + stormtype);
+         output("Duracao de: " + cint((duration*150)/60) + " minutos");
+
+         weathereffects(stormtype , duration);
+	 SetGlobalProperty("weather", stormtype);
+         endweather();
+	 EraseGlobalProperty("weather");
+      endif
+    endif
+
+    sleep(5*60);
+ endwhile
+endprogram
+
+

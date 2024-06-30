@@ -1,0 +1,38 @@
+use uo;
+use os;
+include ":attributes:attributes";
+include ":tn:cooldown";
+
+program sanctuary(params)
+	var who := params[1];
+
+    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 2);
+    var i := 0;
+    PLaySoundEffect(who, 0x216);
+	while (protected(who) && i < duration)
+        GrantPrivilege(who, "invul");
+        who.enable("invul");
+
+		PlayObjectCenteredEffect(who, 0x375a, 10, 80);
+		sleep(1);
+        i++;
+	endwhile
+
+    RevokePrivilege(who, "invul");
+	who.disable("invul");	
+endprogram
+
+function protected(who)
+    if (GetEquipmentByLayer(who, 1) || GetEquipmentByLayer(who, 2))
+        SendSysMessage(who, "Voce esta equipado e cancelou o santuario");
+		return 0;
+	elseif (who.warmode)
+        SendSysMessage(who, "Voce entrou em modo de combate e cancelou o santuario");
+		return 0;
+    elseif (GetCooldown(who, "martir") > 0)
+        SendSysMessage(who, "Voce optou pelo sacrificio pessoal");
+        return 0;
+	endif
+
+	return 1;
+endfunction

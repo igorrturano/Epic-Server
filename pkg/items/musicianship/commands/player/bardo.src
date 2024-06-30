@@ -1,0 +1,79 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+include ":musicianship:bardmusic"; //As constantes estao nesse arquivo
+
+//Programa para selecionar os alvos das magias de bardo
+program menuBardo(who)
+	if (TemHabilidade(who, "Compositor Talentoso"))
+		var alvos := GetObjProperty(who, "BardTargets");
+
+		//caso seja o primeiro uso do comando, inicializa a CProp de Alvos
+		if(!alvos) //TODO: inserir isso no else da verificação do dominio musical para garantir que quem troque de caminho nao mantenha o alvo anteriormente definido
+			alvos := struct{"Buffs":=ALVO_BUFF_TODOS, "Debuffs":=ALVO_DEBUFF_TODOS};
+		endif
+
+		//Prepara as definições de layout do gump
+		var gflayout := {
+			"NoClose",   // close by right-click forbidden
+			"NoDispose", // you did not want to hit esc, did you?
+			//"NoMove",    // you musn't move the window around
+			"GumpPic 0 0 1249", // Plano de fundo
+			"Button 270 250 1594 1595 1 0 15",
+			"text 282 252 "+ BARD_FONT_COLOR_LENDARIA +" 14",
+			"Group 0",  //Grupo para os alvos de buffs
+			"text 50 50 "+ BARD_FONT_COLOR_BASICA +" 0", //Titulo Buffs
+			"text 70 80 "+ BARD_FONT_COLOR_NEUTRA +" 1",
+			"text 150 80 "+ BARD_FONT_COLOR_NEUTRA +" 2",
+			"text 240 80 "+ BARD_FONT_COLOR_NEUTRA +" 3",
+			"text 70 110 "+ BARD_FONT_COLOR_NEUTRA +" 4",
+			"text 150 110 "+ BARD_FONT_COLOR_NEUTRA +" 5",
+			"text 240 110 "+ BARD_FONT_COLOR_NEUTRA +" 6",
+			"radio 50 80 5540 5541 "+ (alvos.Buffs==ALVO_BUFF_TODOS) +" "+ ALVO_BUFF_TODOS,
+			"radio 130 80 5540 5541 "+ (alvos.Buffs==ALVO_BUFF_PARTY) +" "+ ALVO_BUFF_PARTY,
+			"radio 220 80 5540 5541 "+ (alvos.Buffs==ALVO_BUFF_PLAYER) +" "+ ALVO_BUFF_PLAYER,
+			"radio 50 110 5540 5541 "+ (alvos.Buffs==ALVO_BUFF_EVIL) +" "+ ALVO_BUFF_EVIL,
+			"radio 130 110 5540 5541 "+ (alvos.Buffs==ALVO_BUFF_NO_PARTY) +" "+ ALVO_BUFF_NO_PARTY,
+			"radio 220 110 5540 5541 "+ (alvos.Buffs==ALVO_BUFF_NO_PLAYER) +" "+ ALVO_BUFF_NO_PLAYER,
+			"Group 1",  //Grupo para os alvos de buffs
+			"text 50 150 "+ BARD_FONT_COLOR_BASICA +" 7", //Titulo Debuffs
+			"text 70 180 "+ BARD_FONT_COLOR_NEUTRA +" 8",
+			"text 150 180 "+ BARD_FONT_COLOR_NEUTRA +" 9",
+			"text 240 180 "+ BARD_FONT_COLOR_NEUTRA +" 10",
+			"text 70 210 "+ BARD_FONT_COLOR_NEUTRA +" 11",
+			"text 150 210 "+ BARD_FONT_COLOR_NEUTRA +" 12",
+			"text 240 210 "+ BARD_FONT_COLOR_NEUTRA +" 13",
+			"radio 50 180 5540 5541 "+ (alvos.Debuffs==ALVO_DEBUFF_TODOS) +" "+ ALVO_DEBUFF_TODOS,
+			"radio 130 180 5540 5541 "+ (alvos.Debuffs==ALVO_DEBUFF_PARTY) +" "+ ALVO_DEBUFF_PARTY,
+			"radio 220 180 5540 5541 "+ (alvos.Debuffs==ALVO_DEBUFF_PLAYER) +" "+ ALVO_DEBUFF_PLAYER,
+			"radio 50 210 5540 5541 "+ (alvos.Debuffs==ALVO_DEBUFF_EVIL) +" "+ ALVO_DEBUFF_EVIL,
+			"radio 130 210 5540 5541 "+ (alvos.Debuffs==ALVO_DEBUFF_NO_PARTY) +" "+ ALVO_DEBUFF_NO_PARTY,
+			"radio 220 210 5540 5541 "+ (alvos.Debuffs==ALVO_DEBUFF_NO_PLAYER) +" "+ ALVO_DEBUFF_NO_PLAYER
+			};
+
+		//Prepara as definições dos dados a serem exibidor nos campos do gump
+		//Mais a frente é necessário um Append do conteudo de "partituraTxt" em "gfdata"
+		var gfdata := {
+			"Alvos dos BUFFS:",
+			"Todos",
+			"Party",
+			"Player+Pets",
+			"Evil NPC",
+			"Nao Party",
+			"Nao Player",
+			"Alvos dos DEBUFFS:",
+			"Todos",
+			"Party",
+			"Player+Pets",
+			"Evil NPC",
+			"Nao Party",
+			"Nao Player",
+			"OK"
+			};
+		//exibe o gump
+		var output := SendDialogGump( who, gflayout, gfdata);
+		var keys := output.keys;
+		SetObjProperty(who, "BardTargets",struct{"Buffs":=keys[3], "Debuffs":=keys[4]});
+	else
+		return 1;
+	endif
+endprogram

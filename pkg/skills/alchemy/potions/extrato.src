@@ -1,0 +1,6 @@
+use uo;
+
+program lol(who)
+   SendSysMessage(who, "Seja la o que diabos for isso, nao e para beber!!");
+   return;
+endprogram

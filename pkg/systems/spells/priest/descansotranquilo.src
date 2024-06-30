@@ -1,0 +1,70 @@
+     use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+	
+	if (GetObjProperty(targ, "#descansotranquilo"))
+		SendSysMessageEx(who, "Voce so pode orar uma magia ao mesmo tempo.", SSM_FAIL);
+		return;
+	endif
+
+	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
+
+	var x := targ.x; 
+	var y := targ.y;
+	var i := 0; 
+	var heal := AP_GetSkill(who, MAGICLORE) /20;
+	SetObjProperty(targ, "#descansotranquilo", 1);
+
+	while ( i < AP_GetSkill(who, MAGICLORE) )
+
+		if (targ.x != x || targ.y != y)
+			SendSysMessageEx(who, "Voce cancelou a magia.", SSM_FAIL);
+			break;
+		endif
+
+		var nearbypeople := ListMobilesNearLocation( targ.x ,targ.y, targ.z, 6);
+		var continuehealing := 1;
+		foreach char in (nearbypeople)
+			if (char.warmode)
+				continuehealing := 0;
+				SendSysMessageEx(who,  "A magia foi interrompida por um conflito.", SSM_FAIL);
+				break;
+			endif
+		endforeach
+
+		if (!continuehealing)
+			break;
+		endif
+
+		foreach char in (nearbypeople)
+			if (char != who)
+				healDamage(char, heal);
+			endif
+		endforeach
+
+	
+		sleep(2);
+	endwhile
+	EraseObjProperty(targ, "#descansotranquilo");
+	return 1;
+endprogram 

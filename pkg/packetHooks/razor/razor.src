@@ -1,0 +1,21 @@
+use uo;
+use os;
+use polsys;
+
+program razor_negotiate()
+	Print("Installing hook - Razor Negotiate.");
+	return 1;
+endprogram
+
+
+exported function razornegotiate(who, byref packet)
+	//SysLog("Received a Razor Handshake for "+who.name+" from account "+who.acctname);
+	
+	// send event to handshake script, to stop waiting.
+	var script := GetProcess(who.GetProp("#Shake"));
+	script.SendEvent("Handshake!");
+	
+	who.SetProp("#Shake", 1);
+	
+	return 1; // prevent endless loop - do not allow packet to reach server.
+endfunction

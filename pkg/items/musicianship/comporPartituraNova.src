@@ -1,0 +1,31 @@
+use uo; //funcaoes basicas do uo
+use os; //funcoes do sistema
+
+//As constantes e funcoes auxiliares estao nesse arquivo
+include "bardmusic";
+
+//Programa para composicao de Partituras
+program comporPartituraNova(who, item)
+	//Verifica se o item esta acessivel
+	if(Accessible(who, item))
+		//Estando acessivel, verifica se ja esta compondo
+		if (Cint(GetObjProperty(who, "#LastMusic")) > ReadGameClock())
+			//Avisa para esperar se ainda estiver tocando ou compondo e encerra o script
+			SendSysMessage(who, "Espere um pouco antes de compor novamente.",BARD_FONT,BARD_FONT_COLOR_BAD);
+			return 0;
+		else
+			//TODO: Inserir verificação de pena para escrever
+
+			//Comeca a compor se o papel pautado esta acessivel e nao esta compondo ainda
+			SendSysMessage(who, "Voce comeca a compor uma musica",BARD_FONT,BARD_FONT_COLOR);
+			printtextabove(who, "*Compondo uma musica*",BARD_FONT,BARD_FONT_COLOR);
+			//Comeca a editar uma partitura do zero
+			return comporPartitura(who,item);
+		endif
+	//Se o item nao esta acessivel, encerra o script
+	else
+		SendSysMessage(who, "A partirtura esta fora do alcance.",BARD_FONT,BARD_FONT_COLOR_BAD);
+		return 0;
+	endif
+endprogram
+

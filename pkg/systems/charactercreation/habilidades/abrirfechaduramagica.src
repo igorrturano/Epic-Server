@@ -1,0 +1,51 @@
+ use uo;
+ use os;
+
+include "include/say";
+include ":keys:key";
+include "include/string";
+include ":traps:traps";
+
+program manobra(who)
+	SendSysMessageEx(who, "Qual fechadura magica deseja abrir?", SSM_REQUEST);
+	var targ := Target(who);
+	
+	if ( !targ.IsA(POLCLASS_ITEM) )
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	elseif ( !targ.IsDoor() )
+		SendSysMessageEx(who, "Voce so pode destruir barreiras em portas", SSM_FAIL);
+		return 0;
+	elseif ( !GetObjProperty(targ, "time") || !GetObjProperty(targ, "level") )
+		SendSysMessageEx(who, "Isto nao parece uma porta de dungeon.", SSM_FAIL);
+		return 0;
+	elseif ( targ.locked == 0 )
+		SendSysMessageEx(who, "Essa porta não esta trancada.", SSM_FAIL);
+		return 0;
+	elseif ( !KP_IsLockable(targ) )
+		SendSysMessageEx(who, "Isto nao pode ser destrancado.", SSM_FAIL);
+		return 0;
+	elseif ( Distance(who, targ) > 1 )
+		SendSysMessageEx(who, "Voce esta muito longe do alvo!", SSM_FAIL);
+		return;
+	endif
+	
+	if (GetObjProperty(targ, "TrapList") != error)
+		if (GetObjProperty(targ, "trap_inativa"))
+		else
+			RemoveTrap(targ, 1);
+			targ.usescript := "";
+			var name := targ.desc;
+			name[" [trapped]"] := "";
+			SetName(targ, name);
+		endif
+	endif
+	
+	KP_ToggleLock(targ, who);
+	SetObjProperty(targ, "arrombado", "" + who.name);
+	SetObjProperty(targ, "locktime", polcore().systime);
+	PlaySoundEffect(targ, 0x0200);
+	PlayObjectCenteredEffect(targ, 0x3763, 1, 16);
+	SendSysMessageEX(who, "Voce magicamente destroi a barreira e abre a fechadura.", SSM_INFO);
+	return 1;
+endprogram  

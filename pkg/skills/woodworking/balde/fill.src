@@ -1,0 +1,94 @@
+use uo;
+use os;
+use cfgfile; 
+include "include/say";
+var config := ReadConfigFile("water");
+
+const SPLASH_SOUND	:= 0x26;
+
+
+program FillBalde(who, bucket)
+	if ( !ReserveItem(bucket) )
+		SendSysMessage(who, "Alguem ja esta usando isto.");
+		return;
+	endif
+	if (GetObjProperty(bucket, "water") > 1)
+		SendSysMessage(who, "Este balde ja esta cheio.");
+		return;
+	endif
+	
+	SendSysMessage(who, "Onde voce deseja usar isto?");
+	var targ := TargetCoordinates(who);
+	
+	if ( targ.mobile )
+		return;
+	else
+		GetWater(who, targ, bucket);
+	endif
+endprogram
+
+function GetWater(who, targ, bucket)
+	if ( !IsWater(targ) )
+		SendSysMessage(who, "Esta nao e uma boa fonte de agua!");
+		return;
+	elseif ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 3 )
+		SendSysMessage(who, "O alvo esta muito distante.");
+		return;
+	elseif ( targ.movable == 0)
+		SendSysMessage(who, "Voce nao pode enxer baldes fixados no mapa.");
+		return;
+	endif
+
+	PlaySoundEffect(who, SPLASH_SOUND);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 13613, 10, 10, 1);
+	
+	var new_bucket;
+	SendSysMessage(who, "Voce encheu o balde com agua doce.");
+	ReleaseItem(bucket);
+	new_bucket := FillBucket(bucket);
+
+	if ( new_bucket.errortext )
+		SendSysMessage(who, "Unable to create filled bucket ->"+new_bucket.errortext);
+	endif
+endfunction
+
+
+function FillBucket(bucket)
+	var info := struct;
+	info.+container := bucket.container;
+	info.+color := bucket.color;
+	info.+x := bucket.x;
+	info.+y := bucket.y;
+	info.+z := bucket.z;
+	
+	ReleaseItem(bucket);
+
+	var new_bucket;
+	if ( info.container )
+		new_bucket := CreateItemInContainer(info.container, 0x5103, 1);
+	else
+		new_bucket := CreateItemAtLocation(info.x, info.y, info.z, 0x5103, 1);
+	endif
+	SetObjProperty(new_bucket, "canfix", GetObjProperty(bucket, "canfix"));
+	SetObjProperty(new_bucket, "crafterserial", GetObjProperty(bucket, "crafterserial"));
+	SetObjProperty(new_bucket, "fixer", GetObjProperty(bucket, "fixer"));
+	SetObjProperty(new_bucket, "water", 20);
+	new_bucket.color := info.color;
+	new_bucket.movable := 1;
+	DestroyItem(bucket);
+	return new_bucket;
+endfunction
+
+
+function IsWater(targ)
+	var tiles := config["WaterTiles"];
+	var land_scape := CStr( GetMapInfo(targ.x, targ.y).landtile );
+	if ( targ.objtype )
+		if ( CStr(targ.objtype) in GetConfigStringArray(tiles, "static") )
+		 	return 1;
+		endif
+	elseif ( land_scape in GetConfigStringArray(tiles, "landscape") )
+		return 1;
+	endif
+	return 0;
+endfunction

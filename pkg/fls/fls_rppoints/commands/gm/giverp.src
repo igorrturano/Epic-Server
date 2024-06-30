@@ -1,0 +1,112 @@
+use uo;
+use file;
+use util;
+include ":gumps:yesNo";
+include "include/say";
+include ":tn:tngumps";
+
+function LogRPpoints(who, player, nota)
+	var today := StrFormatTime("%d - %m - %Y", POLCore().systime);
+	today := "Logs/" + today + ".log";
+	var msg := "- "+ who.acctname + " concedeu "+nota+" Pontos de RP a "+player+".";
+
+	return LogToFile( today, msg );
+endfunction
+
+function LogAccount(player, who, nota)
+	if (FindAccount(player))
+		var msg := "- " + who.acctname + " concedeu: " + nota + " PontosRP.";
+		var logs := FindAccount(player).getprop("rplog");
+		if (logs == error)
+			logs := array;
+		endif
+		if (logs.size() > 200)
+			LogToFile( "Logs/Backup.src", "" + player + ": "+ logs);
+			logs := { "Logs Reiniciados pelo Sistema." };
+		endif
+		logs.append(msg);
+		FindAccount(player).setprop("rplog", logs);
+	endif
+
+endfunction
+
+
+function getGrade(acctname)
+
+	return cint(FindAccount(acctname).getprop("RPpoints"));
+
+endfunction
+
+function setGrade(acctname, nota)
+
+	findAccount(acctname).setProp("RPpoints", nota);
+
+endfunction
+
+function incGrade(who, incnota)
+
+	var nota := getGrade(who);
+	if (nota || nota != error)
+		nota := nota + cint(incnota);
+	else
+		nota := 1;
+	endif
+	var maxnota := cint(FindAccount(who).getprop("RPpointsMAX"));
+	if (nota > maxnota || !maxnota || maxnota == error)
+		findAccount(who).setProp("RPpointsMAX", nota);
+	endif
+
+	setGrade(who, nota);
+
+endfunction
+
+program giverp(who, params)
+	params := splitwords(params);
+	var conta := params[1];
+	var nota := cint(params[2]);
+	if (!nota)
+		var nota := cint(conta);
+		if (!nota || typeof(nota) != "Integer")
+			SendSysMessageEX(who, "Os pontos precisam ser um numero inteiro!", SSM_FAIL);
+			return;
+		endif
+		SendSysMessageEx(who, "Selecione o jogador que vai receber nota.", SSM_INFO);
+		var player := Target(who);
+		if (!player)
+			return;
+		endif
+		var oldnota := getGrade(player.acctname);
+		incGrade(player.acctname, nota);
+		LogAccount(player.acctname, who, nota);
+		LogRPpoints(who, player.name, nota);
+		SendSysMessageEx(who, "A Nota do player "+player.acctname+" aumentou de "+oldnota+" para "+getGrade(player.acctname), SSM_INFO);
+	else
+		if (!findAccount(conta) || findAccount(conta) == error)
+			SendSysMessageEX(who, "A Conta "+conta+" nao existe!", SSM_FAIL);
+			return;
+		endif
+		if (!nota || typeof(nota) != "Integer")
+			SendSysMessageEX(who, "Os pontos precisam ser um numero inteiro!", SSM_FAIL);
+			return;
+		endif
+		SendSysMessage(who, "nota: "+nota);
+		var oldnota := getGrade(conta);
+		incGrade(conta, nota);
+		LogAccount(conta, who, nota);
+		LogRPpoints(who, findAccount(conta).GetCharacter(1).name, nota);
+		SendSysMessageEx(who, "A Nota do player "+conta+" aumentou de "+oldnota+" para "+getGrade(conta), SSM_INFO);
+	endif
+endprogram
+
+
+function PointsRPMotive(who);
+	var reasons := GetGlobalProperty("RPReasons");
+	if (!reasons[1])
+		reasons := array;
+	endif
+
+
+
+
+
+endfunction

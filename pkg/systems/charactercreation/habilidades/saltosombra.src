@@ -1,0 +1,72 @@
+use os;
+
+include "include/say";
+include "include/utils";
+include ":timedscripts:timedScripts";
+//include ":ghaia:ghaiaUtil";
+include ":fls_core:fls_characters";
+include "include/client";
+include "include/facings";
+
+
+program startTalent(param)
+   var who := param[1];
+   var talent_name := param[2];
+   var stam := param[3].stam;
+   var res := movimentoRapido(who);
+   //if (!res)
+  //    TS_LowerDuration(who, talent_name, -1, 1);
+  //    HealStamina(who, stam);
+  // endif
+endprogram
+
+function movimentoRapido(param)
+   var who := param[1];
+   if (!who.hidden)
+		SendSysMessageEx(who, "Voce precisa estar furtivo.", SSM_FAIL);
+      return 0;
+   elseif (who.frozen || who.paralyzed)
+		SendSysMessageEx(who, "Voce nao consegue se mover.", SSM_FAIL);
+      return 0;
+	endif
+    var range := Cint(Ap_GetSkill(who, SNEAK)/ 5);
+	SendSysMessageEx(who, "Escolha o alvo", SSM_REQUEST);
+	var targ := Target(who);
+   if (!targ)
+      return 0;
+   elseif (!targ.isA(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo Invalido.", SSM_FAIL);
+      return 0;
+   elseif (Distance(who, targ) > range || abs(who.z - targ.z ) > 19)
+		SendSysMessageEx(who, "Alvo muito distante.", SSM_FAIL);
+      return 0;
+   elseif (!CheckLineOfSight(who, targ))
+		SendSysMessageEx(who, "Alvo fora da linha de visao.", SSM_FAIL);
+      return 0;
+   endif
+
+   var coords := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
+   coords.Erase(coords.size());
+   foreach coord in coords
+      MoveObjectToLocation(who, coord.x, coord.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
+      sleepms(50);
+   endforeach
+
+   var behind := InverseFacing(targ.facing);
+
+   behind := GetModByFacing(behind);
+   if (CanWalk("L", who.x, who.y, who.z, targ.x+behind[1], targ.y+behind[2]))
+      MoveObjectToLocation(who, targ.x+behind[1], targ.y+behind[2], targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
+   else
+	   var radius := GetPointsInRadius(targ.x, targ.y, 1);
+      var random := radius.randomentry();
+      while (!MoveObjectToLocation(who,random.x,random.y, targ.z, who.realm))
+         random := radius.randomentry();
+         sleep(2);
+      endwhile
+   endif
+
+   who.SetFacing(GetFacing(who.x, who.y, targ.x, targ.y));
+
+   return 1;
+endfunction

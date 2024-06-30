@@ -1,0 +1,82 @@
+
+use cfgfile;
+use util;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:crafting";
+include ":crafting:craftingRepair";
+include ":crafting:toolWear";
+include ":itemutils:canAccess";
+include ":fls_core:fls_crafting";
+include ":recipes:recipes";
+
+var item_config     := ReadConfigFile(":*:itemdesc");
+var craft_config    := ReadConfigFile(":magery:runecraft");
+
+program use_Runecraft(who, tool)
+    var chardata := GetObjProperty(who, "chardata");
+
+	if (chardata.magia != "Sacerdote" && !(who.cmdlevel > 1))
+		SendSysMEssageEx(who, "Apenas Acolitos e Paladinos dominam o conhecimento para confeccao de runas.", SSM_FAIL);
+		return 0;
+	endif
+
+	/*if(!can_access(who, tool))
+		return 0;
+	endif
+	if((!tool.movable) or !ReserveItem(tool))
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return 0;
+	endif
+	if(!tool in ListEquippedItems(who))
+		if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+			SendSysMessageEx(who, "O item nao esta na sua mochila nem equipado.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+	*/
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	var rinfo := sendCraftGump(who, "Magery");
+
+	// OK was pressed, close it on out
+	if(rinfo == 0)
+		return 0;
+	endif
+
+	var the_objtype := rinfo[1];
+	var amt         := rinfo[2];
+	/*var repairit    := rinfo[3];
+	var resmeltit   := rinfo[4];
+
+	if(repairit)
+		repair_this(who, craft_skill);
+		return 0;
+	endif
+	if(resmeltit)
+		resmelt(who, craft_skill);
+		return 0;
+	endif
+    */
+	makeRuneitems(who, the_objtype, amt, tool);
+
+endprogram
+
+function makeRuneitems(who, what, amt, tool )
+
+
+	if(!what)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+
+
+	var item := CraftItem(who, "Magery", tool, what, amt, 0, 0);
+	return 1;
+
+
+endfunction

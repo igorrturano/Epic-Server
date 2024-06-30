@@ -1,0 +1,25 @@
+////////////////////////////////////////////////////////////
+//
+//   MultiCheckExport - Calls StaticsCheck and MultiExport
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+////////////////////////////////////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+Use os;
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+Program TextCMD_StaticsCheckExport(who, params)
+  Run_Script_to_Completion("textcmd/test/staticscheck", {who, params});
+  Run_Script_to_Completion("textcmd/test/multiexport", {who, params});
+EndProgram

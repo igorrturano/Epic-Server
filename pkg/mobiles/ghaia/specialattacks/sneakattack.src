@@ -1,0 +1,46 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include ":timedScripts:timedScripts";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+    var dist := distance(attacker, defender);
+	if ( dist > 1 )
+		return;
+	elseif (Abs(attacker.z - defender.z) >= 4)
+		return;
+	elseif ( !CheckLineOfSight(attacker, defender) )
+		return;
+	endif
+    GrantPrivilege(attacker, "runwhilestealth");
+    attacker.enable("runwhilestealth");
+
+    attacker.hidden := 1;
+    attacker.stealthsteps := 20;
+    
+    GrantPrivilege(attacker, "hiddenattack");
+    attacker.enable("hiddenattack");
+    sleep(5);
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	PrintTextAbove(attacker, "*golpe furtivo*");
+
+    var dmgList := dictionary;
+	dmgList := getNewDamageList(attacker);
+	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
+	DamageFLS(defender, total*2, DMG_FORCED, attacker);
+    attacker.hidden := 0;
+
+endprogram  

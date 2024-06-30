@@ -1,0 +1,16 @@
+ use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include "include/damage";
+
+program manobra(attacker)
+	if (IsRaging(attacker) || TemHabilidade(attacker, "Artista Marcial"))
+    	SendSysMessageEx(attacker, "Voce sente seus sangramentos diminuirem.", SSM_INFO);
+		TS_StartTimer(attacker, "recuperacaoaligera", 60);
+	else
+        SendSysMessageEx(attacker, "Voce precisa estar em furia.", SSM_INFO);
+	endif
+endprogram
+

@@ -1,0 +1,39 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program doubleattack(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+	var weapon	:= params[3];
+	var armor	:= params[4];
+	var basedamage	:= params[5];
+	var rawdamage	:= params[6];
+	params := 0; // Not needed anymore.
+
+var dist := distance(attacker, defender);
+	if ( dist > 2 )
+		SendSysMessage(defender, "O atacante lancou o ataque a esmo, desperdicando-o!");
+		return;
+	elseif (Abs(attacker.z - defender.z) >= 4)
+		SendSysMessage(defender, "O atacante lancou o ataque a esmo, desperdicando-o!");
+		return;
+	elseif ( !CheckLineOfSight(attacker, defender) )
+		SendSysMessage(defender, "O atacante lancou o ataque a esmo, desperdicando-o!");
+		return;
+	endif
+	
+	PlayAttackAnimation(attacker);
+	PlayHitSounds(attacker, defender);
+	
+	PrintText(attacker, "*desmontar*");
+
+	TS_StartTimer(defender, "desmontar", cint(AP_GetSkill(attacker, TACTICS)));
+
+endprogram 
