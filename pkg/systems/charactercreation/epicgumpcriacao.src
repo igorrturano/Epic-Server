@@ -482,7 +482,7 @@ endfunction
 function pathOfWisdom(who, culture_pic)
     var chardata := GetObjProperty(who, "chardata");
     var btn_value;
-    if (chardata.class != "Sabio")
+    if (chardata.classe != "Sabio")
         return;
     endif
     while (1)
@@ -495,7 +495,6 @@ function pathOfWisdom(who, culture_pic)
             chardata.+wisdom_path := "Mago";
             chardata.+magia := "spellcaster";
             var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
-            // SetObjProperty(grimorio, "SangriaBook", 1);
             SetObjProperty(grimorio, "Booktype", "spellcaster");
             SetObjProperty(grimorio, "serialid", who.serial);
             SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
