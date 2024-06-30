@@ -387,7 +387,9 @@ exported function MegaCliloc( who, byref packet )
 		//EXIBE SE TEM DOSES DE VENENO
 		if (GetObjProperty(item,"poisonInfo") != error )
 			//xDesc := xDesc + softgreen + "Envenenado<br>";
-			xDesc := xDesc + softgreen + "Doses de Veneno: " + GetObjProperty(item,"poisonInfo").dosage +  "<br>";
+			if (item.graphic == 0x0F01)
+				xDesc := xDesc + softgreen + "Doses de Veneno: " + GetObjProperty(item,"poisonInfo").dosage +  "<br>";
+			endif
 		endif
 
 		var descmods := GetObjProperty(item, "descmod");
