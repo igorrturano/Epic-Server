@@ -168,39 +168,32 @@ function backgroundSelection(who, culture_pic)
             chardata.+bgBonus := GATHERING;
             break;
         elseif (btn_value == 203) 
-            chardata.+background := BACKGROUNDS.HANDLE_ANIMAL;
-            chardata.+bgBonus := HANDLEANIMAL;
-            break;
-        elseif (btn_value == 204) 
             chardata.+background := BACKGROUNDS.MECHANICAL_APITUDE;
             chardata.+bgBonus := MECHANICALAPITUDE;
             break;
-        elseif (btn_value == 205) 
+        elseif (btn_value == 204)
             chardata.+background := BACKGROUNDS.MEDICINE;
             chardata.+bgBonus := MEDICINE;
             break;
-        elseif (btn_value == 206) 
+        elseif (btn_value == 205)
             chardata.+background := BACKGROUNDS.METAL_WORK;
             chardata.+bgBonus := METALWORKING;
             break;
-        elseif (btn_value == 207) 
+        elseif (btn_value == 206) 
             chardata.+background := BACKGROUNDS.PICK_POCKETING;
             chardata.+bgBonus := PICKPOCKETING;
             break;
-        elseif (btn_value == 208) 
+        elseif (btn_value == 207) 
             chardata.+background := BACKGROUNDS.SURVIVAL;
             chardata.+bgBonus := SURVIVAL;
             break;
-        elseif (btn_value == 209) 
+        elseif (btn_value == 208) 
             chardata.+background := BACKGROUNDS.WOOD_WORK;
                 chardata.+bgBonus := WOODWORKING;
             break;
-        elseif (btn_value == 210) 
+        elseif (btn_value == 209) 
             chardata.+background := backgroundByCulture(who);
             chardata.+bgBonus := culturalTraitBonus(who, chardata);
-            if (chardata.culture == CULTURA.BADURAN)
-                chardata.+bgBonus2 := METALWORKING;
-            endif
             break;
         else
             SendSysMessageEX(who, "Escolha seu histórico", SSM_FAIL);

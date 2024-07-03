@@ -102,8 +102,8 @@ const VENERATIO := 0x9F5;
 
 var CULTURA := struct{AIGLANA := "Aiglana", HAROLOTH := "Har'oloth", LESTE := "Povos do Leste", BJORSKA := "Björska", ALURIEL := "Alüriel", BADURAN := "Badûran", GULTHRAK := "Gulthrak", POLKINEA := "Polkinea"};
 var RACA := struct{ANAO := "Anão", DROW := "Drow", ELFO := "Elfo", ORC := "Orc", HUMANO :="Humano", POLSKI := "Polski"};
-var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", HANDLE_ANIMAL := "Domador de Feras", SURVIVAL := "Caçador", MEDICINE := "Curandeiro itinerante", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Templo da Mente", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho da Montanha", "Povos do Leste" := "Andarilho"};
+var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
 var RELIGIAO := struct{VENERATIO := "Veneratio", ELUITHORTH := "Eluith'orth", KAI := "Kai", HALLEUAD := "Halleuad", LORE := "Lórё", BOKK_BHARAZ := "Bokk Bharaz", USHKRAR := "Ushkr'ar"};
 
 function getCultureByPictureId(culture_id)
@@ -495,7 +495,7 @@ function skillGump(who, culture_pic, byref chardata)
     var value := 1;
     var btn_value;
     x+=10;
-    for (i := 1; i <= primarias.size()+2; i++)
+    for (i := 1; i <= primarias.size()+1; i++)
         var skill := primarias[i];
         btn_value := GetSkillIdFromName(skill);
         if (i == primarias.size()+1)
@@ -505,20 +505,8 @@ function skillGump(who, culture_pic, byref chardata)
             endif
             skill := chardata.bgBonus;
             btn_value := GetSkillIdFromName(skill);
-            // if (chardata.bgBonus2)
-            //     i -= 1;
-            //     skill := chardata.bgBonus2;
-            //     chardata.Erase("bgBonus2");
-            // endif
          endif
-        if (i == primarias.size()+2 && chardata.bgBonus2)
-            if (chardata.bgBonus2 in primarias)
-                i++;
-                break;
-            endif
-            skill := chardata.bgBonus2;
-            btn_value := GetSkillIdFromName(skill);
-        endif
+
         if (skill == error)
             continue;
         endif
@@ -574,9 +562,6 @@ function skillGump(who, culture_pic, byref chardata)
     value := 4;
     foreach skill in quaternarias
         if (skill == chardata.bgBonus)
-            continue;
-        endif
-        if (chardata.background == "Filho da Montanha" && skill == METALWORKING )
             continue;
         endif
 
@@ -639,14 +624,14 @@ function culturalTraitBonus(who, byref chardata)
         return chardata.+bgBonus := AWARENESS;
     elseif (culturalBg == "Pés Leves")
         return chardata.+bgBonus := SNEAK;
-    elseif (culturalBg == "Templo da Mente")
-        return chardata.+bgBonus := MAGICLORE;
+    elseif (culturalBg == "Aliança natural")
+        return chardata.+bgBonus := HANDLEANIMAL;
     elseif (culturalBg == "Escaramuçador")
         return chardata.+bgBonus := RANGEDCOMBAT;
     elseif (culturalBg == "Brutamontes")
         return chardata.+bgBonus := TACTICS;
-    elseif (culturalBg == "Filho da Montanha")
-        return chardata.+bgBonus := GATHERING;
+    elseif (culturalBg == "Filho do progresso")
+        return chardata.+bgBonus := ALCHEMY;
     elseif (culturalBg == "Andarilho")
         return chardata.+bgBonus := MELEECOMBAT1H;
     endif
@@ -761,15 +746,13 @@ function getReligionDescriptionByPictureId(culture_id)
 endfunction
 
 function itemInheritance(who)
-var chardata := GetObjProperty(who, "chardata");
+    var chardata := GetObjProperty(who, "chardata");
 
-genericItems(who);
-armorsByCulture(who);
-weaponsByClassAndCulture(who);
-workingItems(who);
-itemsByTrait(who);
+    genericItems(who);
+    armorsByCulture(who);
+    weaponsByClassAndCulture(who);
+    workingItems(who);
 endfunction
-
 
 function genericItems(who)
     var chardata := GetObjProperty(who, "chardata");
@@ -1034,36 +1017,6 @@ function workingItems(who)
 		setobjproperty(book2, "serialid",who.serial);
 		setobjproperty(book2, "marked",who.name + " - " + who.acctname);
 	endif
-endfunction
-
-function itemsByTrait(who)
-    var chardata := GetObjProperty(who, "chardata");
-
-    if ( chardata.trait == "Força da Legião")
-        CreateItemInBackpack(who, 0xc68d, 1); // Scutum
-    endif
-
-    if (chardata.trait == "Cavalaria de Escaramuça")
-        var mount := createnpcfromtemplate(":brainai:horse1", who.x, who.y, who.z, 0 , who.realm);
-        mount.SetMaster(who);
-        SetObjProperty(mount, "owner", who.serial);
-        SetObjProperty(mount, "name", mount.name);
-        if ( !GetObjProperty(mount, "script") )
-            SetObjproperty(mount, "script", mount.script);
-        endif
-        mount.script := ":ghaia:tamed";
-        RestartScript(mount);
-
-        Run_Script_To_Completion(":death:npcdeath", {mount});
-    endif
-
-    if (chardata.trait == "Cavar Buracos")
-        CreateItemInBackpack(who, 0x0e85, 2); // pickaxe
-    endif
-
-    if (chardata.trait == "Defensor Anão")
-        CreateItemInBackpack(who, 0x4203, 1); // dwarven shield
-    endif
 endfunction
 
 function attributeBonusByRaceAndTraits(who)
