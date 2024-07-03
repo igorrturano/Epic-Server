@@ -50,16 +50,13 @@ function FindSpellInConfig( spellname, cfgFile )
   foreach spellId in ( GetConfigIntKeys( cfg ) )
     var elem := FindConfigElem( cfg, spellId );
     if ( Lower( GetConfigString( elem, "Name" ) ) == Lower( spellname ) )
-      return dictionary{ "id" -> spellId,
-                         "circle" -> GetConfigInt(
-                         elem,
-                         "Circle" ),
-                         "name" -> spellname,
-                         "script" -> GetConfigString( elem, "SpellScript"),
-                         "type" -> GetConfigString( elem, "Type"),
-                         "powerwords" -> GetConfigString( elem, "PowerWords"),
-                         "school" -> GetConfigString( elem, "School")
-                         };
+        var dict := dictionary{ "id" -> spellId,
+                            "circle" -> GetConfigInt(
+                            elem,
+                            "Circle" ),
+                            "name" -> GetConfigString( elem, "Name" )
+                            };
+      return dict;
     endif
   endforeach
   return 0;

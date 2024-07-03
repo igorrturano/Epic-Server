@@ -623,15 +623,13 @@ endfunction
 function WritespellInfo(who, byref spellinfo)
 	var cfg;
 	var myrace := Lower(GetObjProperty(who, "raca"));
-
+	var chardata := GetObjProperty(who, "chardata");
     if (GetObjProperty(who, "chardata").magia == "Shaman")
         cfg := ReadConfigFile(":spells:config/shamanspells");
         spellinfo.used := 1;
-	elseif ((myrace == "elfo" || myrace == "drow") && spellinfo.magic_path == "cantripspells")
+	elseif ((chardata.trait == "Natureza Arcana") && spellinfo.magic_path == "cantripspells")
         cfg := ReadConfigFile(":spells:config/cantripspells");
-	elseif(spellinfo.magic_path == "Sangria")
-        cfg := ReadConfigFile(":spells:config/sangriaspells");
-	elseif (GetObjProperty(who, "chardata").magia == "spellcaster" && spellinfo.magic_path == "spellcaster")
+	elseif (GetObjProperty(who, "chardata").magia == "spellcaster" /* && spellinfo.magic_path == "spellcaster" */)
         cfg := ReadConfigFile(":spells:config/spellcaster");
 	elseif(spellinfo.magic_path == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
         cfg := ReadConfigFile(":spells:config/tricksterspells");

@@ -164,8 +164,6 @@ function CheckResist(who, resist, dif, mod := 0)
 	//printtextabove(who, "dado " + dado + " valor " + valor + " diff " + dif);
 	if (dado + valor + mod >= dif)
 		return 1;
-
-	//Quando é Zharkiano e estiver Bloodied ativa a habilidade racial "Segunda chance"
 	elseif ((GetObjProperty(who, "chardata")).raca == RACA.HUMANO && IsBloodied(who))
 		dado := RandomInt(40) + 1;
 		if (dado + valor + mod >= dif)
