@@ -101,7 +101,7 @@ function LiftItem(who, item)
 	var start := item.z;
 	var stop := who.z+8;
 	for ( i:=start; i<=stop; i:=i+1 )
-		var moved := MoveObjectToLocation(item, item.x, item.y, item.z+1, item.realm, MOVEOBJECT_FORCELOCATION);
+		var moved := MoveObjectToLocation(item, item.x, item.y, who.z+1, item.realm, MOVEOBJECT_FORCELOCATION);
 		if ( !moved )
 			break;
 		elseif ( item.container )
@@ -116,11 +116,12 @@ endfunction
 function LowerItem(who, item, sway)
 	var start := item.z;
 	var stop := item.z-(8+sway);
+	var height := GetWorldHeight(who.x, who.y);
 	if ( who.cmdlevel >= 1 )
 		SendSysMessage(who, "Start->"+start+" Stop->"+stop+" Sway->"+sway);
 	endif
 	for ( start; start>stop; start:=start-1 )
-		var moved := MoveObjectToLocation(item, item.x, item.y, item.z-1, item.realm, MOVEOBJECT_FORCELOCATION);
+		var moved := MoveObjectToLocation(item, item.x, item.y, who.z-1, item.realm, MOVEOBJECT_FORCELOCATION);
 		if ( !moved )
 			break;
 		elseif ( item.container )
