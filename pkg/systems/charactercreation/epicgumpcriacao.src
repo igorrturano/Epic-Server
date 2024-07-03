@@ -337,6 +337,11 @@ function skillSelection(who, culture_pic)
                     chardata.Skills.Erase(skill);
                 endif
             endforeach
+            foreach skill in skillsArray
+                if (chardata.Skills[skill] == 3)
+                    pri_count++;
+                endif
+            endforeach
             if (pri_count > pri_allowed)
                 SendSysMessageEX(who, "Você ultrapassou o número de primárias permitidas", SSM_FAIL);
                 pri_count := 0;
@@ -518,7 +523,9 @@ function pathOfWisdom(who, culture_pic)
         elseif (btn_value == 203 && chardata.culture != CULTURA.GULTHRAK)
             chardata.magia := "Sacerdote";
             var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
-            CreateItemInBackpack(who, 0x166E, 1);
+            if (chardata.culture == CULTURA.HAROLOTH)
+                CreateItemInBackpack(who, 0x166E, 1);
+            endif
             CreateItemInBackpack(who, "runaarmasagrada");
             CreateItemInBackpack(who, "runacuraleve");
             CreateItemInBackpack(who, "runadescanso");

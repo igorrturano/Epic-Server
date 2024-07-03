@@ -767,6 +767,7 @@ genericItems(who);
 armorsByCulture(who);
 weaponsByClassAndCulture(who);
 workingItems(who);
+itemsByTrait(who);
 endfunction
 
 
@@ -783,6 +784,7 @@ function genericItems(who)
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
 endfunction
+
 
 function weaponsByClassAndCulture(who)
     var chardata := GetObjProperty(who, "chardata");
@@ -802,10 +804,10 @@ function weaponsByClassAndCulture(who)
 
     if (chardata.culture == CULTURA.AIGLANA)
         if (skills[MELEECOMBAT1H] >= 1)
-            CreateItemInBackpack(who, 0x27EF, 1); // espada curta
+            CreateItemInBackpack(who, 0x0f63, 1); // espada curta
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInBackpack(who, 0x1B76, 1); // Torre
+            CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
         endif
         if (skills[MELEECOMBAT2H ] >= 1)
             CreateItemInBackpack(who, 0x1402, 1); // short spear
@@ -838,11 +840,12 @@ function weaponsByClassAndCulture(who)
 
     if (chardata.culture == CULTURA.BJORSKA)
         if (skills[MELEECOMBAT1H] >= 1)
-            CreateItemInBackpack(who, 0x0f63, 1); // long spear
+            CreateItemInBackpack(who, 0x13AF, 1); // waraxe
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B7A, 1); // wooden shield
         endif
+
         if (skills[MELEECOMBAT2H ] >= 1)
             CreateItemInBackpack(who, 0x0f49, 1); // axe
         endif
@@ -882,8 +885,6 @@ function weaponsByClassAndCulture(who)
         if (skills[MELEECOMBAT2H ] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); // crescent
         endif
-        if (skills[RANGEDCOMBAT] >= 1)
-        endif
     endif
 
     if (skills[RANGEDCOMBAT] >= 1)
@@ -898,9 +899,8 @@ function weaponsByClassAndCulture(who)
             CreateItemInBackpack(who, 0x13B2, 1); // bow
             CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
         endif
+        CreateItemInBackpack(who, 0x2fb7, 1); // aljava
     endif
-
-    CreateItemInBackpack(who, 0x2fb7, 1); // aljava
 endfunction
 
 function armorsByCulture(who)
@@ -921,12 +921,12 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0x13f2, 1); // Armadura de aneis
     endif
 
-    if (chardata.culture == CULTURA.AIGLANOS)
-        CreateItemInBackpack(who, 0x13BE, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0x13BF, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0x13C0, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0x13C1, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0x13C2, 1); // Lorica Segmentata
+    if (chardata.culture == CULTURA.AIGLANA)
+        CreateItemInBackpack(who, 0xc684, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc680, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc681, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc683, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc682, 1); // Lorica Segmentata
     endif
 
     if (chardata.culture == CULTURA.HAROLOTH)
@@ -965,7 +965,6 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0x27c9, 1); // Armadura de fibra
         CreateItemInBackpack(who, 0x277a, 1); // Armadura de fibra
     endif
-
 endfunction
 
 function workingItems(who)
@@ -1035,6 +1034,36 @@ function workingItems(who)
 		setobjproperty(book2, "serialid",who.serial);
 		setobjproperty(book2, "marked",who.name + " - " + who.acctname);
 	endif
+endfunction
+
+function itemsByTrait(who)
+    var chardata := GetObjProperty(who, "chardata");
+
+    if ( chardata.trait == "Força da Legião")
+        CreateItemInBackpack(who, 0xc68d, 1); // Scutum
+    endif
+
+    if (chardata.trait == "Cavalaria de Escaramuça")
+        var mount := createnpcfromtemplate(":brainai:horse1", who.x, who.y, who.z, 0 , who.realm);
+        mount.SetMaster(who);
+        SetObjProperty(mount, "owner", who.serial);
+        SetObjProperty(mount, "name", mount.name);
+        if ( !GetObjProperty(mount, "script") )
+            SetObjproperty(mount, "script", mount.script);
+        endif
+        mount.script := ":ghaia:tamed";
+        RestartScript(mount);
+
+        Run_Script_To_Completion(":death:npcdeath", {mount});
+    endif
+
+    if (chardata.trait == "Cavar Buracos")
+        CreateItemInBackpack(who, 0x0e85, 2); // pickaxe
+    endif
+
+    if (chardata.trait == "Defensor Anão")
+        CreateItemInBackpack(who, 0x4203, 1); // dwarven shield
+    endif
 endfunction
 
 function attributeBonusByRaceAndTraits(who)

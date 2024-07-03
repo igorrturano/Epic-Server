@@ -72,7 +72,7 @@ function FloatItem(who, targ)
 	foreach point in point_array
 		var height := GetWorldHeight(point.x, point.y);
 		if ( who.z > height )
-			height := who.z;
+			height := targ.z;
 		endif
 
 		sway := RandomInt(3);

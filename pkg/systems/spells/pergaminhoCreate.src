@@ -58,15 +58,15 @@ program cria( item )
 	spellinfo.+School := GetConfigString( FindconfigElem( spellcfg, random_spell_id ),
 									   "School" );
 	if ( spellinfo.School == "Kaijin" )
-	  item.color := 0xA8;
+	  item.graphic := 0x0E39;
 	elseif ( spellinfo.School == "Evocatium" )
-	  item.color := 0x85;
+	  item.graphic := 0x0E35;
 	elseif ( spellinfo.School == "Velkyn" )
-	  item.color := 0xF;
+	  item.graphic := 0x0E3A;
 	elseif ( spellinfo.School == "Ahtaleloreth" )
-	  item.color := 0x319;
+	  item.graphic := 0x0E38;
 	elseif ( spellinfo.School == "Aradalore" )
-	  item.color := 0x43;
+	  item.graphic := 0x0E37;
 	endif
   endif
   SetObjProperty( item, "spellinfo", spellinfo );
