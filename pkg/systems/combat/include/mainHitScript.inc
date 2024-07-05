@@ -39,19 +39,19 @@ function SkillChecks(attacker, defender, weapon, rawdamage)
 		skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
 		skillDefender := AP_GetSkill(defender, WRESTLING);
         if (attacker.weapon.objtype == 0x13b9 && !attacker.shield) // bastarda
-            skillAttacker := AP_GetSkill(attacker, MELEECOMBAT2H);
+            skillAttacker := AP_GetSkill(attacker, TWOHANDED);
         endif
         if (defender.weapon.objtype == 0x13b9 && !defender.shield)
-		    skillDefender := AP_GetSkill(defender, MELEECOMBAT2H);
+		    skillDefender := AP_GetSkill(defender, TWOHANDED);
         endif
 		if(TemHabilidade(attacker, "Maestria de Devastacao"))
 			if(GetObjProperty(attacker.weapon, "swordmage") == attacker.serial)
-			skillAttacker := AP_GetSkill(attacker, MELEECOMBAT1H);
+			skillAttacker := AP_GetSkill(attacker, ONEHANDED);
 			endif
 		endif
 		if(TemHabilidade(defender, "Maestria de Devastacao"))
 			if(GetObjProperty(defender.weapon, "swordmage") == defender.serial)
-			skillDefender := AP_GetSkill(defender,MELEECOMBAT1H);
+			skillDefender := AP_GetSkill(defender,ONEHANDED);
 			endif
 		endif
 	endif
@@ -79,9 +79,9 @@ function SkillChecks(attacker, defender, weapon, rawdamage)
 		//if ( rawdamage > 0 )
 			if (attacker.weapon.objtype == 0x13b9)
 				if (!attacker.shield)
-					SkillCheck(attacker, MELEECOMBAT2H, -1);
+					SkillCheck(attacker, TWOHANDED, -1);
 				else
-					SkillCheck(attacker, MELEECOMBAT1H, -1);
+					SkillCheck(attacker, ONEHANDED, -1);
 				endif
 			else
 				SkillCheck(attacker, weapon.attribute, -1);

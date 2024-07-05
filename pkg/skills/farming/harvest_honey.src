@@ -43,7 +43,7 @@ program harvest_honey (character, beehive)
 					SendSysMessage(character, "Nao ha mais nada para ser retirado daqui.", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
 					return 1;
 				//Testa a skill para retirar a cera de abelha e o mel
-				elseif (SkillCheck(character, DomesticWork, 20, 0) > 0 || SkillCheck(character, GATHERING, 20, 0) > 0)
+				elseif (SkillCheck(character, Domestic_Work, 20, 0) > 0 || SkillCheck(character, GATHERING, 20, 0) > 0)
 					if (!already_harvested_amount)
 						SetObjProperty(beehive, "#harvested", 1);
 					else

@@ -69,7 +69,7 @@ function ExceptionalCraftChance(who, skillname, skillvalue, skillreq, theitem)
   var chance := CDbl(skillvalue - skillreq) / 5.0; //Variação de 0% a 20% de chance
   //SendSysMessage(who, "who:"+who.name+" skillvalue:"+ skillvalue+" skillreq:"+ skillreq+ " theitem:" +theitem);
   if(chance > 0.0) //A diferença de skill entre o crafter e o necessário passa a ser o percentual de fazer excepcional
-    if(skillname == "MetalWorking")
+    if(skillname == "Metal_Working")
       if(TemHabilidade(who,"Maestria em Armas") && (theitem.TipoAtaque == "Cortante"))
         chance := (chance * 2.0) + CDbl(GetObjProperty(who, "craftexcepmod"));
       endif
@@ -113,14 +113,14 @@ function ExceptionalCraftChance(who, skillname, skillvalue, skillreq, theitem)
       if(TemHabilidade(who,"Maestria em Armaduras") && (theitem.TipoProtecao == "Escudo Leve Fraco" || theitem.TipoProtecao == "Escudo Leve Medio" || theitem.TipoProtecao == "Escudo Leve Forte"))
         chance := (chance * 2.0) + CDbl(GetObjProperty(who, "craftexcepmod"));
       endif
-    elseif(skillname == "WoodWorking")
+    elseif(skillname == "Wood_Working")
       if(TemHabilidade(who,"Maestria em Carpintaria"))
         chance := (chance * 2.0) + CDbl(GetObjProperty(who, "craftexcepmod"));
       endif
       if(TemHabilidade(who,"Maestria em Carpintaria") && !theitem.isa(POLCLASS_WEAPON) && !theitem.isa(POLCLASS_ARMOR))
         chance := 100.0;
       endif
-    elseif(skillname == "DomesticWork")
+    elseif(skillname == "Domestic_Work")
       if((CInt(theitem.resist_physical)==0)) //Não é armadura
         if(TemHabilidade(who,"Maestria em Alfaiataria"))
           chance := (chance * 2.0) + CDbl(GetObjProperty(who, "craftexcepmod"));

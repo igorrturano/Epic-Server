@@ -71,7 +71,7 @@ function makeTailoringItems(who, what, amt, tool)
 
 		foreach item in (items)
 			if (item.objtype == 0x14F8) // Corda
-				SetObjProperty(item, "diff", CInt(AP_GetSkill(who, DomesticWork)+20));
+				SetObjProperty(item, "diff", CInt(AP_GetSkill(who, Domestic_Work)+20));
 			endif
 		endforeach
 

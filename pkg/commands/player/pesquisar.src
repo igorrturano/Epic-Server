@@ -75,7 +75,7 @@ function aprenderrecipe(who)
 	var recipe := struct;
 
 	var ferreiro:= AP_GetSkill(who, METALWORKING);
-	var costureiro:= AP_GetSkill(who, DomesticWork);
+	var costureiro:= AP_GetSkill(who, Domestic_Work);
 	var alquimista:= AP_GetSkill(who, ALCHEMY);
 	var mago:= AP_GetSkill(who, MAGERY);
 	var carpenter:= AP_GetSkill(who, WOODWORKING);
@@ -758,7 +758,7 @@ function aprenderreciperapido(who)
 	var recipe := struct;
 
 	var ferreiro:= AP_GetSkill(who, METALWORKING);
-	var costureiro:= AP_GetSkill(who, DomesticWork);
+	var costureiro:= AP_GetSkill(who, Domestic_Work);
 	var alquimista:= AP_GetSkill(who, ALCHEMY);
 	var mago:= AP_GetSkill(who, MAGERY);
 	var carpenter:= AP_GetSkill(who, WOODWORKING);

@@ -13,7 +13,7 @@ function checkifcandrink(character, type)
   var equippedright := GetEquipmentByLayer(character, 0x01);
   var equippedleft := GetEquipmentByLayer(character, 0x02);
   var cfg := ReadConfigFile(":*:itemdesc");
-  var twohanded := Cint(cfg[equippedleft.objtype].TwoHanded);
+  var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
   if (equippedright and equippedleft || twohanded)
     SendSysMessage(character, "Voce precisa de pelo menos uma mao livre!");
     return 0;

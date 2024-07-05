@@ -11,7 +11,7 @@ include ":gumps:yesNo";
 include ":tn:characters";
 include "include/say";
 
-  var skilllist := array{"Anatomy", "Alchemy", "MagicLore", "Meditation",   "AnimalLore", "ItemLore", "Survival", "AnimalTaming", "Cartography", "DetectingHidden", "Healing", "ResistingSpells", "Cooking", "Musicianship",
+  var skilllist := array{"Anatomy", "Alchemy", "Magic_Lore", "Meditation",   "AnimalLore", "ItemLore", "Survival", "AnimalTaming", "Cartography", "DetectingHidden", "Healing", "ResistingSpells", "Cooking", "Musicianship",
 "Hiding", "Stealth", "Lockpicking", "RemoveTrap", "Poisoning", "Stealing",  "Carpentry", "Blacksmithy", "Tailoring", "Tinkering", "Skinning",
 "Fencing", "Archery",
 "Swordsmanship", "MaceFighting", "Wrestling", "Parry", "Axe", "PoleArms", "Staff", "Tactics", "Lumberjacking", "Mining",
@@ -44,7 +44,7 @@ function SelectSkills(who, nivel, value)
 	skillAux := "ArmsLore";
       elseif ( skillAux == "Survival")
 	skillAux := "Camping";
-      elseif (skillAux == "MagicLore")
+      elseif (skillAux == "Magic_Lore")
 	skillAux := "Inscription";
       endif
       var elem := AP_GetAttributeCfgElem(skillAux);
@@ -88,7 +88,7 @@ function SelectSkills(who, nivel, value)
       selectedskill := "ArmsLore";
     elseif ( selectedskill == "EvidanceGathering")
       selectedskill := "EvaluatingIntelligence";
-    elseif ( selectedskill == "MagicLore")
+    elseif ( selectedskill == "Magic_Lore")
       selectedskill := "Inscription";
     endif
     AP_SetTrueSkill(who, selectedskill, value);

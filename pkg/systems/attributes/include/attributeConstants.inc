@@ -25,27 +25,28 @@ endenum
 enum SKILLS
 	ALCHEMY			:= "Alchemy",
 	MAGERY			:= "Magery",
-	MAGICLORE		:= "MagicLore",
+	MAGICLORE		:= "Magic_Lore",
 
 	PARRY			:= "Parry",
-	MELEECOMBAT1H		:= "MeleeCombat1H",
-	MELEECOMBAT2H		:= "MeleeCombat2H",
-	RANGEDCOMBAT		:= "RangedCombat",
+	ONEHANDED		:= "One_Handed",
+	TWOHANDED		:= "Two_Handed",
+	DUALWIELD		:= "Dual_Wield",
+	RANGED			:= "Ranged",
 	TACTICS			:= "Tactics",
 
 	SNEAK			:= "Sneak",
 	PICKPOCKETING		:= "Pickpocketing",
 	AWARENESS		:= "Awareness",
-	MECHANICALAPITUDE	:= "MechanicalApitude",
+	MECHANICS	:= "Mechanics",
 
 	MEDICINE		:= "Medicine",
 	SURVIVAL		:= "Survival",
 
-	METALWORKING		:= "MetalWorking",
-	WOODWORKING		:= "WoodWorking",
-	DomesticWork		:= "DomesticWork",
+	METALWORKING		:= "Metal_Working",
+	WOODWORKING		:= "Wood_Working",
+	Domestic_Work		:= "Domestic_Work",
 	GATHERING		:= "Gathering",
-	HANDLEANIMAL		:= "HandleAnimal",
+	HANDLEANIMAL		:= "Handle_Animal",
 
 	//pros npcs
 	WRESTLING		:= "Wrestling"

@@ -18,12 +18,12 @@ program TimedScript_bard_inspirar_competencia(params)
 			AP_ModifySkillMod(alvo, SNEAK, modificador);
 			AP_ModifySkillMod(alvo, PICKPOCKETING, modificador);
 			AP_ModifySkillMod(alvo, AWARENESS, modificador);
-			AP_ModifySkillMod(alvo, MECHANICALAPITUDE, modificador);
+			AP_ModifySkillMod(alvo, MECHANICS, modificador);
 			AP_ModifySkillMod(alvo, MEDICINE, modificador);
 			AP_ModifySkillMod(alvo, SURVIVAL, modificador);
 			AP_ModifySkillMod(alvo, METALWORKING, modificador);
 			AP_ModifySkillMod(alvo, WOODWORKING, modificador);
-			AP_ModifySkillMod(alvo, DomesticWork, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
+			AP_ModifySkillMod(alvo, Domestic_Work, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
 			AP_ModifySkillMod(alvo, GATHERING, modificador);
 			AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
 			Set_Critical(0);
@@ -40,12 +40,12 @@ program TimedScript_bard_inspirar_competencia(params)
 		AP_ModifySkillMod(alvo, SNEAK, modificador);
 		AP_ModifySkillMod(alvo, PICKPOCKETING, modificador);
 		AP_ModifySkillMod(alvo, AWARENESS, modificador);
-		AP_ModifySkillMod(alvo, MECHANICALAPITUDE, modificador);
+		AP_ModifySkillMod(alvo, MECHANICS, modificador);
 		AP_ModifySkillMod(alvo, MEDICINE, modificador);
 		AP_ModifySkillMod(alvo, SURVIVAL, modificador);
 		AP_ModifySkillMod(alvo, METALWORKING, modificador);
 		AP_ModifySkillMod(alvo, WOODWORKING, modificador);
-		AP_ModifySkillMod(alvo, DomesticWork, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
+		AP_ModifySkillMod(alvo, Domestic_Work, modificador); //UNICA CONSTANTE DECLARADA MINUSCULA
 		AP_ModifySkillMod(alvo, GATHERING, modificador);
 		AP_ModifySkillMod(alvo, HANDLEANIMAL, modificador);
 		Set_Critical(0);

@@ -1457,7 +1457,7 @@ function IsOneHandedWeapon (byref item)
 	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
 	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
 	if (weapon_elem)
-		if (weapon_elem.TwoHanded)
+		if (weapon_elem.Two_Handed)
 			return 0;
 		else
 			return 1;
@@ -1473,7 +1473,7 @@ function IsTwoHandedWeapon (byref item)
 	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
 	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
 	if (weapon_elem)
-		if (weapon_elem.TwoHanded)
+		if (weapon_elem.Two_Handed)
 			return 1;
 		endif
 	endif

@@ -37,7 +37,7 @@ program swordmagegem(who, item)
 			return;
 		else
 			if (targ.isa(POLCLASS_WEAPON))
-				if(targ.attribute == RANGEDCOMBAT)
+				if(targ.attribute == RANGED)
 					SendSysMessageEx(who, "Voce nao pode usar gemas em armas ranged.", SSM_FAIL);
 					return;
 				endif

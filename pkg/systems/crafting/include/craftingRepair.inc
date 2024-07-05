@@ -32,7 +32,7 @@ var repairdelay:=3;
 
 if (craft_skill == METALWORKING)
 	cfg := ReadConfigFile(":metalworking:blacksmithy");
-elseif (craft_skill == DomesticWork)
+elseif (craft_skill == Domestic_Work)
 	cfg := ReadConfigFile(":DomesticWork:tailoring");
 elseif (craft_skill == WOODWORKING)
 	cfg := ReadConfigFile(":woodworking:carpentry");
@@ -186,7 +186,7 @@ function AnimRepair(who, skill, delay)
   for i:=1 to delay
     case (craft_skill)
       METALWORKING: Imersao(who, "mw"); break;
-      DomesticWork: Imersao(who, "dw"); break;
+      Domestic_Work: Imersao(who, "dw"); break;
       WOODWORKING: Imersao(who, "ww"); break;
     endcase
     sleep(2);
@@ -200,7 +200,7 @@ function CreateRepairDeed(who, scroll, craft_skill)
      METALWORKING: 		type := "Blacksmith"; color := CInt(2107);
      WOODWORKING: 	type := "Bowyer"; color := CInt(2116);
      //CARPENTRY: 		type := "Carpenter"; color := CInt(2113);
-     DomesticWork: 		type := "Tailor"; color := CInt(2128);
+     Domestic_Work: 		type := "Tailor"; color := CInt(2128);
   endcase
   var ramt := AP_GetSkill(who, craft_skill);
   if(ramt < 50)
@@ -274,7 +274,7 @@ function repair_this(who, craft_skill := METALWORKING)
     METALWORKING:
       forge := 1;
       break;
-    DomesticWork:
+    Domestic_Work:
       if (is_tailor_item(use_on.objtype))
         repair_item( who, use_on, craft_skill);
       else

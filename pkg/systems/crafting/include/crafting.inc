@@ -222,7 +222,7 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 				//SendSysMessage(who, "Não achou o material.", 0, 133);
 				if ( targMaterials[thing] < ( ( materials[thing] * ( 1 + more ) ) ) )
 					SendSysMessageEx(who, "Faltou "+ TruncatePlural(thing) + "." , SSM_FAIL);
-					if((craft_skill == "WoodWorking") && (TemHabilidade(who,"Recursos Improvisados")))
+					if((craft_skill == "Wood_Working") && (TemHabilidade(who,"Recursos Improvisados")))
 						if(RandomInt(100) < 10) //10% de chance
 							SendSysMessageEx(who, "Voce improvisou um dos materiais." , SSM_INFO);
 							targMaterials[thing] := materials[thing];
@@ -290,7 +290,7 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 
 		if(check > 0)
 			if (!SubtractMaterial(who, targMaterials, 1+more))
-				if(craft_skill == "WoodWorking" && TemHabilidade(who,"Recursos Improvisados"))
+				if(craft_skill == "Wood_Working" && TemHabilidade(who,"Recursos Improvisados"))
 					SendSysMessageEx(who, "Seu improviso deu certo." , SSM_INFO);
 				else
 					SendSysMessageEx(who, "Voce nao possui todos os materiais.", SSM_FAIL);
@@ -449,8 +449,8 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 		theitem.damage_energy_mod := (theitem.damage_energy_mod + Cint(DmgMods[5]));//-(theitem.damage_physical-theitem.damage_physical_mod);
 
 		sendsysmessage(who,craft_skill);
-		if(craft_skill == "MetalWorking")
-			sendsysmessage(who,"Usou MetalWorking");
+		if(craft_skill == "Metal_Working")
+			sendsysmessage(who,"Usou Metal_Working");
 			//Aplica velocidade extra em armas de metal
 			if(TemHabilidade(who,"Armas Velozes"))
 				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed*0.1)); //Bors sugestão - Bonus habs de 10%
@@ -470,7 +470,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 				theitem.dmg_mod := theitem.dmg_mod + CInt(elem.MaxDam * 0.1); //Bors sugestão - Bonus habs de 10%
 				attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
 			endif
-		elseif(craft_skill == "WoodWorking")
+		elseif(craft_skill == "Wood_Working")
 			if(TemHabilidade(who,"Entalhe para Combate"))
 				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed*0.1)); //Bors sugestão - Bonus habs de 10%
 				attr["hab_speedmod"] := CInt(elem.Speed*0.1);
@@ -485,7 +485,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
         var cfg:=ReadConfigFile(":combat:itemdesc");
         var elem := FindConfigElem(cfg, theitem.objtype);
         //ESSA HAB NÃO MODIFICA A RESISTENCIA FISICA PARA NAO DESBALANCEAR AS ARMADURAS NO GERAL.
-        if((craft_skill == "DomesticWork") && TemHabilidade(who,"Realce de Material"))
+        if((craft_skill == "Domestic_Work") && TemHabilidade(who,"Realce de Material"))
 	        theitem.resist_physical_mod := theitem.resist_physical_mod + Cint(ResistMods[1]);
 	        theitem.resist_fire_mod := theitem.resist_fire_mod + 2 * Cint(ResistMods[2]);
 	        theitem.resist_cold_mod := theitem.resist_cold_mod + 2 * Cint(ResistMods[3]);
@@ -515,8 +515,8 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 			hpmod := hpmod*5;
     	endif
 
-		if(craft_skill == "MetalWorking")
-			//sendsysmessage(who,"Usou MetalWorking");
+		if(craft_skill == "Metal_Working")
+			//sendsysmessage(who,"Usou Metal_Working");
 	    	if(TemHabilidade(who,"Armaduras Articuladas"))
 	    		var DexPenBonus := Cint(elem.DexPenalty);
 	    		if(DexPenBonus > 0)
@@ -597,7 +597,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 			    	endif
 				endif
 			endif
-		elseif(craft_skill == "WoodWorking")
+		elseif(craft_skill == "Wood_Working")
 			if(TemHabilidade(who,"Entalhe para Combate"))
 	    		var DexPenBonus := Cint(elem.DexPenalty);
 	    		if(DexPenBonus > 0)
@@ -629,7 +629,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 					attr["hab_parrymod"] := parrybonus;
 				endif
 			endif
-		elseif(craft_skill == "DomesticWork")
+		elseif(craft_skill == "Domestic_Work")
 			if((CInt(theitem.resist_physical)==0)) //Não é armadura
 				if(TemHabilidade(who,"Tratar Tecido e Couro"))
 					var ct := 0;
@@ -674,7 +674,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 	theitem.maxhp_mod := theitem.maxhp_mod + hpmod;
 	attr["base_hpmod"] := theitem.maxhp_mod;
 
-	if(craft_skill == "MetalWorking")
+	if(craft_skill == "Metal_Working")
 		//Adiciona modificador de Habilidade de nível
 		if(TemHabilidade(who,"Preparo do Metal"))
 			//(HP total x 1.5) x (HP total - HP inicial)
@@ -682,14 +682,14 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 			attr["hab_hpmod"] := CInt(temp);
 			theitem.maxhp_mod := CInt(temp);
 		endif
-	elseif(craft_skill == "WoodWorking")
+	elseif(craft_skill == "Wood_Working")
 		if(TemHabilidade(who,"Secagem da Madeira"))
 			//(HP total x 1.5) x (HP total - HP inicial)
 			var temp := (theitem.maxhp * 1.5) - (theitem.maxhp-theitem.maxhp_mod);
 			theitem.maxhp_mod := CInt(temp);
 			attr["hab_hpmod"] := CInt(temp);
 		endif
-	elseif(craft_skill == "DomesticWork")
+	elseif(craft_skill == "Domestic_Work")
 		if(TemHabilidade(who,"Alta Costura"))
 			//(HP total x 1.5) x (HP total - HP inicial)
 			var temp := (theitem.maxhp * 1.5) - (theitem.maxhp-theitem.maxhp_mod);

@@ -16,7 +16,7 @@ Program UseGrower(who, grower)
 	where.+x := who.x;
 	where.+y := who.y;
 
-	var farm_bonus := CInt(AP_GetSkill(who, DomesticWork));
+	var farm_bonus := CInt(AP_GetSkill(who, Domestic_Work));
 
 	if(TemHabilidade(who,"Agricultor Talentoso"))
 		farm_bonus := farm_bonus + 20;
@@ -54,7 +54,7 @@ function HarvestPlant(who, grower)
 		difficulty := difficulty-20;
 	endif
 
-	if ( SkillCheck(who, DomesticWork, difficulty, award_diff) > 0 )
+	if ( SkillCheck(who, Domestic_Work, difficulty, award_diff) > 0 )
 		if(TemHabilidade(who,"Sorte na Coleta"))
 			CreateItemInBackPack(who, grower.GetProduceType(), 2);
 		else

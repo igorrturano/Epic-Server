@@ -104,7 +104,7 @@ program arremesso(params)
         dmg := CalculateRawDamage(who, targ);
     endif
 
-    var ranged_bonus := Cint(AP_GetSkill(who, RANGEDCOMBAT));
+    var ranged_bonus := Cint(AP_GetSkill(who, RANGED));
     var str_bonus := AP_GetStat(who, STRENGTH);
     var dex_bonus := AP_GetStat(who, DEXTERITY);
     var random := Cint(RandomInt(80));

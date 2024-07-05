@@ -453,7 +453,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	if (TemHabilidade(who, "Estilo Mao Livre"))
-		if (who.weapon.attribute == "MeleeCombat1H" && !who.shield)
+		if (who.weapon.attribute == "One_Handed" && !who.shield)
 			other := other + 0.2;
 		endif
 	endif

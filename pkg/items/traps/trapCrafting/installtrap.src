@@ -44,7 +44,7 @@ program installtrap(who, trap)
 		PrintText(who, "*instalando armadilha*");
 		sleep(4);
 		var dif := level * 20;
-		var check := SkillCheck(who, MECHANICALAPITUDE, dif);
+		var check := SkillCheck(who, MECHANICS, dif);
 		if (check > 0)
 			SendSysMessageEx(who, "Voce instalou a armadilha.", SSM_INFO);
 			AddTrap(alvo, traptype, level);

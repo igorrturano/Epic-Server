@@ -123,7 +123,7 @@ function AddQualityDamageMod(who, craft_skill, byref theitem, quality )
 
 // BORS sugestao eliminado bônus de dano aleatório - Somente bônus dos elementos dos ORES agora
 		var modadc := (((quality-1)/20)); //Bors Sugestao mudado cálculo para Habs darem no máximo 10% a mais - antigamente podia chegar a 60% 
-		if(craft_skill == "MetalWorking")
+		if(craft_skill == "Metal_Working")
 			if(TemHabilidade(who,"Armas Velozes"))
 				//SendSysMessage(who,"bonus velocidade" + (quality-1)/2 + "qualidade: "+ quality);
 				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed * modadc) + attr."hab_speedmod"); //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
@@ -144,7 +144,7 @@ function AddQualityDamageMod(who, craft_skill, byref theitem, quality )
 				theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
 				attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
 			endif
-		elseif(craft_skill == "WoodWorking")
+		elseif(craft_skill == "Wood_Working")
 			if(TemHabilidade(who,"Entalhe para Combate"))
 				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed * modadc)+ attr["hab_speedmod"]); //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
 				attr_excp["speedmod"] := CInt(elem.Speed * modadc) + attr["hab_speedmod"];

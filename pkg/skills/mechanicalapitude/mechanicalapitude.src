@@ -74,7 +74,7 @@ program skillremoveTrap(who)
 			6: dif := 110;
 			default: dif := 40;
 		endcase
-		var check := SkillCheck( who, MECHANICALAPITUDE, dif);
+		var check := SkillCheck( who, MECHANICS, dif);
 		if( check > 0 )
 			if(who.hidden)
 				SendSysMessageEx(who, "Voce desarmou a armadilha com sucesso sem se revelar.", SSM_INFO);
@@ -126,7 +126,7 @@ program skillremoveTrap(who)
 			6: dif := 110;
 			default: dif := -1;
 		endcase
-		if (SkillCheck( who, MECHANICALAPITUDE, dif) > 0)
+		if (SkillCheck( who, MECHANICS, dif) > 0)
 			if(who.hidden)
 				SendSysMessageEx(who, "Voce desativou a armadilha com sucesso sem se revelar.", SSM_INFO);
 			else

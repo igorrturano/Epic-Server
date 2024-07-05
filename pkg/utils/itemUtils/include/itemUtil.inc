@@ -79,7 +79,7 @@ function EmptyHands_Check( mobile )
                 endif
                 
 		var cfg := ReadConfigFile( ":*:itemdesc" ),
-		    two_handed := Cint( cfg[equipped_left.objtype].TwoHanded );
+		    two_handed := Cint( cfg[equipped_left.objtype].Two_Handed );
       
                 if( two_handed )
 			return 0;

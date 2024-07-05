@@ -387,7 +387,7 @@ exported function Attack(attacker, defender)
 		endif
 
 		if ( (GetCooldown(defender, "ataqueoportunidade") > 0) || oportunidade == 1)
-			if (Distance(attacker,defender)<=1 && defender.weapon.attributte != "RangedCombat")
+			if (Distance(attacker,defender)<=1 && defender.weapon.attributte != "Ranged")
 				if (GetObjProperty(defender, "#atacandooportunidade") == error)
 					SetObjProperty(defender, "#atacandooportunidade", 1);
 					printtext(defender, "*ataque de oportunidade*");
@@ -409,7 +409,7 @@ exported function Attack(attacker, defender)
 					EraseObjProperty(defender, "#atacandooportunidade");
 				endif
 
-			elseif(Distance(attacker,defender)>1 && defender.weapon.attributte == "RangedCombat")
+			elseif(Distance(attacker,defender)>1 && defender.weapon.attributte == "Ranged")
 				if (GetObjProperty(defender, "#atacandooportunidade") == error)
 					SetObjProperty(defender, "#atacandooportunidade", 1);
 					printtext(defender, "*ataque de oportunidade*");
@@ -485,10 +485,10 @@ function CalculateHitChance(attacker, defender)
 		endif
 
 		if (wpn_a.attribute == WRESTLING) // Ajustar se for soco pra melhor melee combat
-			if (AP_GetSkill(attacker, MELEECOMBAT1H) > AP_GetSkill(attacker, MELEECOMBAT2H))
-				skill_a := AP_GetSkill(attacker, MELEECOMBAT1H);
+			if (AP_GetSkill(attacker, ONEHANDED) > AP_GetSkill(attacker, TWOHANDED))
+				skill_a := AP_GetSkill(attacker, ONEHANDED);
 			else
-				skill_a := AP_GetSkill(attacker, MELEECOMBAT2H);
+				skill_a := AP_GetSkill(attacker, TWOHANDED);
 			endif
 		endif
 
@@ -506,10 +506,10 @@ function CalculateHitChance(attacker, defender)
 			skill_d := skill_d / 2;
 		endif
 		if (wpn_d.attribute == WRESTLING)
-			if (AP_GetSkill(defender, MELEECOMBAT1H) > AP_GetSkill(defender, MELEECOMBAT2H))
-				skill_d := AP_GetSkill(defender, MELEECOMBAT1H);
+			if (AP_GetSkill(defender, ONEHANDED) > AP_GetSkill(defender, TWOHANDED))
+				skill_d := AP_GetSkill(defender, ONEHANDED);
 			else
-				skill_d := AP_GetSkill(defender, MELEECOMBAT2H);
+				skill_d := AP_GetSkill(defender, TWOHANDED);
 			endif
 		endif
 	else

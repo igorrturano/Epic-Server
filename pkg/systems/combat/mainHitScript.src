@@ -468,19 +468,19 @@ function SkillChecks(attacker, defender, weapon, rawdamage)
 		skillAttacker := cint(AP_GetSkill(attacker, attacker.weapon.attribute));
 		skillDefender := cint(AP_GetSkill(defender, WRESTLING));
         if (attacker.weapon.objtype == 0x13b9 && !attacker.shield) // bastarda
-            skillAttacker := cint(AP_GetSkill(attacker, MELEECOMBAT2H));
+            skillAttacker := cint(AP_GetSkill(attacker, TWOHANDED));
         endif
         if (defender.weapon.objtype == 0x13b9 && !defender.shield)
-		    skillDefender := cint(AP_GetSkill(attacker, MELEECOMBAT2H));
+		    skillDefender := cint(AP_GetSkill(attacker, TWOHANDED));
         endif
 		if(TemHabilidade(attacker, "Maestria de Devastacao"))
 			if(GetObjProperty(attacker.weapon, "swordmage") == attacker.serial)
-			skillAttacker := cint(AP_GetSkill(attacker, MELEECOMBAT1H));
+			skillAttacker := cint(AP_GetSkill(attacker, ONEHANDED));
 			endif
 		endif
 		if(TemHabilidade(defender, "Maestria de Devastacao"))
 			if(GetObjProperty(defender.weapon, "swordmage") == defender.serial)
-			skillDefender := cint(AP_GetSkill(defender,MELEECOMBAT1H));
+			skillDefender := cint(AP_GetSkill(defender,ONEHANDED));
 			endif
 		endif
 	endif
@@ -1161,8 +1161,8 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	if (!(shield.IsA(POLCLASS_ARMOR)))
 		usingweapon := 1;
 		shield := defender.weapon;
-		//Não bloqueia se estivem sem arma equipada ou utilizando arma de RangedCombat (Arcos e bestas)
-		if (shield.objtype == 0xF020 || shield.Attribute == RANGEDCOMBAT)
+		//Não bloqueia se estivem sem arma equipada ou utilizando arma de Ranged (Arcos e bestas)
+		if (shield.objtype == 0xF020 || shield.Attribute == RANGED)
 			return 0;
 		endif
 	endif

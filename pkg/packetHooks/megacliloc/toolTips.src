@@ -291,9 +291,9 @@ exported function MegaCliloc( who, byref packet )
 						Object_Name :=  "<BASEFONT COLOR=#f5d189>" + Object_Name;
 					endif
 				else
-					var sk1 := AP_GetSkill(who, MELEECOMBAT1H);
-					var sk2 := AP_GetSkill(who, MELEECOMBAT2H);
-					var sk3 := AP_GetSkill(who, RANGEDCOMBAT);
+					var sk1 := AP_GetSkill(who, ONEHANDED);
+					var sk2 := AP_GetSkill(who, TWOHANDED);
+					var sk3 := AP_GetSkill(who, RANGED);
 					var maxsk := sk1;
 					if (sk2 > maxsk)
 						maxsk := sk2;

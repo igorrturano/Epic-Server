@@ -33,7 +33,7 @@ program tirocarregado(who)
 	elseif (IsBehind(who, targ.x, targ.y))
 		SendSysMessageEx(who, "Voce esta de costas para o alvo!", SSM_FAIL);
 		return 1;
-	elseif (elem.Attribute != "RangedCombat")
+	elseif (elem.Attribute != "Ranged")
 		SendSysMessageEx(who, "Voce precisa estar usando um arco.", SSM_FAIL);
 		return 1;
 	endif

@@ -1609,7 +1609,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 		SetObjProperty(who, "BardTargets",struct{"Buffs":=ALVO_BUFF_TODOS, "Debuffs":=ALVO_DEBUFF_TODOS});
 	endif
 
-	var MagicLore := AP_GetSkill(who, MAGICLORE);
+	var Magic_Lore := AP_GetSkill(who, MAGICLORE);
 
 	//Variaveis importantes para os efeitos
 	var modifier := 0;
@@ -1617,27 +1617,27 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 	var range := 0;
 	var duration := tempo;
 	var sound_duration := tempo/1000;
-	var resistencia_mod := - CInt(MagicLore/2.0);  //Redutor nos testes de resistência inimigos
+	var resistencia_mod := - CInt(Magic_Lore/2.0);  //Redutor nos testes de resistência inimigos
 	var HarmoniaPerfeita, Vituperio;
 
 	//Calcula o modificador base da intensidade dos efeitos
-	if(MagicLore < 40)
-		modifier := 5 + CInt(MagicLore/10); //limite 5-9
-		range := 2 + CInt(MagicLore/10); //limite 2-6
-		duration  := (tempo * (1.0 + (MagicLore/400)))/1000; //limite 1.0-1.1 vezes o tempo base
-	elseif (MagicLore < 70)
-		modifier := 5 + CInt(MagicLore/5); //limite 13-19
-		range := 5 + CInt(MagicLore/10); //limite 9-12
-		duration  := (tempo * (1.0 + (MagicLore/200)))/1000; //limite 1.2-1.35 vezes o tempo base
-	elseif (MagicLore < 100)
-		modifier := 5 + CInt(MagicLore/4); //limite 22-30
-		range := CInt(MagicLore/5); //limite 14-20
-		duration  := (tempo * (1.0 + (MagicLore/100)))/1000; //limite 1.7-2.0 vezes o tempo base
-	elseif (MagicLore >= 100) //Lendário
-		modifier := 5 + CInt(MagicLore/2); //limite 55-60
-		range := CInt(MagicLore/5); //limite 14-20
-		duration  := (tempo * (1.0 + (MagicLore/50)))/1000; //limite 3.0-3.2 vezes o tempo base
-	else ///caso de MagicLore negativo
+	if(Magic_Lore < 40)
+		modifier := 5 + CInt(Magic_Lore/10); //limite 5-9
+		range := 2 + CInt(Magic_Lore/10); //limite 2-6
+		duration  := (tempo * (1.0 + (Magic_Lore/400)))/1000; //limite 1.0-1.1 vezes o tempo base
+	elseif (Magic_Lore < 70)
+		modifier := 5 + CInt(Magic_Lore/5); //limite 13-19
+		range := 5 + CInt(Magic_Lore/10); //limite 9-12
+		duration  := (tempo * (1.0 + (Magic_Lore/200)))/1000; //limite 1.2-1.35 vezes o tempo base
+	elseif (Magic_Lore < 100)
+		modifier := 5 + CInt(Magic_Lore/4); //limite 22-30
+		range := CInt(Magic_Lore/5); //limite 14-20
+		duration  := (tempo * (1.0 + (Magic_Lore/100)))/1000; //limite 1.7-2.0 vezes o tempo base
+	elseif (Magic_Lore >= 100) //Lendário
+		modifier := 5 + CInt(Magic_Lore/2); //limite 55-60
+		range := CInt(Magic_Lore/5); //limite 14-20
+		duration  := (tempo * (1.0 + (Magic_Lore/50)))/1000; //limite 3.0-3.2 vezes o tempo base
+	else ///caso de Magic_Lore negativo
 		modifier := 1; //limite 1
 		range := 1; //limite 1
 		duration  := CInt(tempo/2000); //limite 1.0-1.1 vezes o tempo base

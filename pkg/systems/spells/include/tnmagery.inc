@@ -624,12 +624,12 @@ function WritespellInfo(who, byref spellinfo)
 	var cfg;
 	var myrace := Lower(GetObjProperty(who, "raca"));
 	var chardata := GetObjProperty(who, "chardata");
-    if (GetObjProperty(who, "chardata").magia == "Shaman")
+    if (chardata.magia == "Shaman")
         cfg := ReadConfigFile(":spells:config/shamanspells");
         spellinfo.used := 1;
 	elseif ((chardata.trait == "Natureza Arcana") && spellinfo.magic_path == "cantripspells")
         cfg := ReadConfigFile(":spells:config/cantripspells");
-	elseif (GetObjProperty(who, "chardata").magia == "spellcaster" /* && spellinfo.magic_path == "spellcaster" */)
+	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
         cfg := ReadConfigFile(":spells:config/spellcaster");
 	elseif(spellinfo.magic_path == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
         cfg := ReadConfigFile(":spells:config/tricksterspells");

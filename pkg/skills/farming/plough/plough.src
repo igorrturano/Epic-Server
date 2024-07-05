@@ -77,7 +77,7 @@ function PloughDelay(who)
 endfunction
 
 function PloughDirt(who, targ)
-		if ( SkillCheck(who, DomesticWork, 30) > 0 )
+		if ( SkillCheck(who, Domestic_Work, 30) > 0 )
 		SendSysMessage(who, "Voce conseguiu arar a terra com sucesso.");
 		CreateItemAtLocation(targ.x, targ.y, GetWorldHeight(targ.x,targ.y, targ.realm), "dirt", 1, targ.realm);
 	else

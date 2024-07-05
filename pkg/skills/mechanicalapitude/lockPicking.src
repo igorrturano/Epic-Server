@@ -115,7 +115,7 @@ function PickTreasureChest(me, lockpick, chest)
 	if (diff <= 0)
 		diff := 5;
 	endif
-	var check := SkillCheck(me, MECHANICALAPITUDE, diff);
+	var check := SkillCheck(me, MECHANICS, diff);
 
 	if ( check > 0 )
 		if(valorInicial(me, AWARENESS) >= 40)

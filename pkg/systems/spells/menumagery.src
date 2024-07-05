@@ -158,7 +158,7 @@ function SendGumpEspadaArcana(who)
 			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 			return;
 		endif
-		if ( CS_GetWeaponInfo(targ, "TwoHanded") == 1)
+		if ( CS_GetWeaponInfo(targ, "Two_Handed") == 1)
 			if (!TemHabilidade(who, "Maestria de Devastacao"))
 				SendSysMessageEx(who, "Voce precisa usar uma arma de uma mao.", SSM_FAIL);
 				return;

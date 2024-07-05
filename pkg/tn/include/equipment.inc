@@ -73,7 +73,7 @@ function SetEquipmentMods(who, item)
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-	AP_ModifySkillMod(who, MECHANICALAPITUDE, penalty);
+	AP_ModifySkillMod(who, MECHANICS, penalty);
 
 	//awareness
 	penalty := CInt(itemdesc[item.objtype].AwarenessPenalty);
@@ -248,7 +248,7 @@ function RemoveEquipmentMods(who, item)
 	if (TemHabilidade(who, "Ignorar Armadura"))
 		penalty := cint(penalty*0.5);
 	endif
-  	AP_ModifySkillMod(who, MECHANICALAPITUDE, (-1)*penalty);
+  	AP_ModifySkillMod(who, MECHANICS, (-1)*penalty);
 
 	//awareness
   	penalty := CInt(itemdesc[item.objtype].AwarenessPenalty);

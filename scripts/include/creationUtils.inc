@@ -1,3 +1,5 @@
+use basic;
+
 include ":attributes:attributes";
 include ":disguise:disguise";
 include ":charactercreation:createchar";
@@ -510,7 +512,7 @@ function skillGump(who, culture_pic, byref chardata)
         if (skill == error)
             continue;
         endif
-        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#0000CC >{}".format(skill), 1, 0);
+        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#0000CC >{}".format(StrReplace(skill, "_", " ")), 1, 0);
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 100+btn_value);
         endif
@@ -528,7 +530,7 @@ function skillGump(who, culture_pic, byref chardata)
         endif
 
         btn_value := GetSkillIdFromName(skill);
-        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(skill), 1, 0);
+        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
         endif
@@ -547,7 +549,7 @@ function skillGump(who, culture_pic, byref chardata)
         endif
 
         btn_value := GetSkillIdFromName(skill);
-        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#FFE700 >{}".format(skill), 1, 0);
+        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#FFE700 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 300+btn_value);
         endif
@@ -566,7 +568,7 @@ function skillGump(who, culture_pic, byref chardata)
         endif
 
         btn_value := GetSkillIdFromName(skill);
-        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#CC0000 >{}".format(skill), 1, 0);
+        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#CC0000 >{}".format(StrReplace(skill, "_", " ")), 1, 0);
         if (chardata.Skills[skill] >= 1)
             GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 400+btn_value);
         endif
@@ -627,13 +629,13 @@ function culturalTraitBonus(who, byref chardata)
     elseif (culturalBg == "Aliança natural")
         return chardata.+bgBonus := HANDLEANIMAL;
     elseif (culturalBg == "Escaramuçador")
-        return chardata.+bgBonus := RANGEDCOMBAT;
+        return chardata.+bgBonus := RANGED;
     elseif (culturalBg == "Brutamontes")
         return chardata.+bgBonus := TACTICS;
     elseif (culturalBg == "Filho do progresso")
         return chardata.+bgBonus := ALCHEMY;
     elseif (culturalBg == "Andarilho")
-        return chardata.+bgBonus := MELEECOMBAT1H;
+        return chardata.+bgBonus := ONEHANDED;
     endif
 endfunction
 
@@ -774,104 +776,104 @@ function weaponsByClassAndCulture(who)
     var skills := chardata.Skills;
 
     if (chardata.culture == CULTURA.GULTHRAK)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x26C6, 1); // scepter
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B78, 1); // shield
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x0F4E, 1); // bardiche
         endif
     endif
 
     if (chardata.culture == CULTURA.AIGLANA)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x0f63, 1); // espada curta
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x1402, 1); // short spear
         endif
     endif
 
     if (chardata.culture == CULTURA.HAROLOTH)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x1401, 1); //kryss
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B73, 1); // buckler
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); //crescent
         endif
     endif
 
     if (chardata.culture == CULTURA.POLKINEA)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x1440, 1); //cutlass
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B73, 1); // buckler
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x0e87, 1); //crescent
         endif
     endif
 
     if (chardata.culture == CULTURA.BJORSKA)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x13AF, 1); // waraxe
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B7A, 1); // wooden shield
         endif
 
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x0f49, 1); // axe
         endif
     endif
 
     if (chardata.culture == CULTURA.LESTE)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x13fe, 1); // wakizashi
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B72, 1); // round shield
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x27A2, 1); // Katana
         endif
     endif
 
     if (chardata.culture == CULTURA.BADURAN)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x143c, 1); // HAMMERPICK
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B74, 1); // Kite shield 
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x1438, 1); // warhammer
         endif
     endif
 
     if (chardata.culture == CULTURA.ALURIEL)
-        if (skills[MELEECOMBAT1H] >= 1)
+        if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x0f5f, 1); // rapiera
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B73, 1); // buckler
         endif
-        if (skills[MELEECOMBAT2H ] >= 1)
+        if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); // crescent
         endif
     endif
 
-    if (skills[RANGEDCOMBAT] >= 1)
-        var ammo_amount := skills[RANGEDCOMBAT] * 80;
+    if (skills[RANGED] >= 1)
+        var ammo_amount := skills[RANGED] * 80;
         if (chardata.culture == CULTURA.ALURIEL)
             CreateItemInBackpack(who, 0x26CC, 1); // longbow
             CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
@@ -974,15 +976,15 @@ function workingItems(who)
         CreateItemInBackpack(who, 0xe21, (skills[MEDICINE] * 40)); // Bandages
     endif
 
-    if (skills[MECHANICALAPITUDE] >= 1)
-        CreateItemInBackpack(who, 0x1035, (skills[MECHANICALAPITUDE] * 8)); // lockpick
+    if (skills[MECHANICS] >= 1)
+        CreateItemInBackpack(who, 0x1035, (skills[MECHANICS] * 8)); // lockpick
     endif
 
-    if (skills[DomesticWork] >= 1)
+    if (skills[Domestic_Work] >= 1)
         CreateItemInBackpack(who, 0x0f9d, 1); // sewingkit
     endif
 
-    if (skills[DomesticWork] >= 1 || skills[MEDICINE] >= 1)
+    if (skills[Domestic_Work] >= 1 || skills[MEDICINE] >= 1)
         CreateItemInBackpack(who, 0xf9e, 1); // Scissors
     endif
     

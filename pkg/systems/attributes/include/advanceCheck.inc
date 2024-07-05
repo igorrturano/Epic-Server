@@ -165,11 +165,11 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         var skillsmap := chardata.Skills;
         var skillsArray := skillsmap.keys();
         foreach skill in skillsArray
-            if (skill == "MeleeCombat1H")
-                skill_name := "MeleeCombat1H";
+            if (skill == "One_Handed")
+                skill_name := "One_Handed";
                 break;
-            elseif (skill == "MeleeCombat2H")
-                skill_name := "MeleeCombat2H";
+            elseif (skill == "Two_Handed")
+                skill_name := "Two_Handed";
                 break;
             endif
         endforeach

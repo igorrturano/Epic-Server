@@ -214,7 +214,7 @@ endfunction
 function GetSOSTreasure(who, targetsquare, sosmsg)
 
 	targetsquare := targetsquare;
-	if( SkillCheck(who, DomesticWork, 80, 200) > 0 )
+	if( SkillCheck(who, Domestic_Work, 80, 200) > 0 )
 		var itemcfg := ReadConfigFile(":*:itemdesc");
 		var it, oldname;
 		if( RandomInt(100) < 75 )

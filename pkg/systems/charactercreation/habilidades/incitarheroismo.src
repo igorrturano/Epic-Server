@@ -13,7 +13,7 @@ program manobra(attacker)
 		return;
 	endif
 	
-	var a :=array {cint(AP_GetSkill(attacker, MELEECOMBAT1H)), cint(AP_GetSkill(attacker, MELEECOMBAT2H)), cint(AP_GetSkill(attacker, RANGEDCOMBAT))};
+	var a :=array {cint(AP_GetSkill(attacker, ONEHANDED)), cint(AP_GetSkill(attacker, TWOHANDED)), cint(AP_GetSkill(attacker, RANGED))};
 	var time := 0;
 	
 	foreach i in (a)

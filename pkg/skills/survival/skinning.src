@@ -26,7 +26,7 @@ program skinning(parms)
 		var cfg := ReadConfigFile(":combat:itemdesc");
 		var equippedright := GetEquipmentByLayer(who, 0x01);
 		var equippedleft := GetEquipmentByLayer(who, 0x02);
-		var twohanded := Cint(cfg[equippedleft.objtype].TwoHanded);
+		var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
 		if (equippedright || equippedleft || twohanded)
 			SendSysMessage(who, "Voce precisa das duas maos livres!");
 			return 0;

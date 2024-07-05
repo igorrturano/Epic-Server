@@ -317,7 +317,7 @@ function makefood(who, input)
 		endforeach
 
 
-		if (SkillCheck(who, DomesticWork, recipeinfo.skill, recipeinfo.skill*2) > 0)
+		if (SkillCheck(who, Domestic_Work, recipeinfo.skill, recipeinfo.skill*2) > 0)
 			var newitem := createiteminbackpack(who, getobjtypebyname(recipeinfo.objtype), 1);
 			SendSysMessageEx(who, "Voce guardou a comida na sua mochila.", SSM_INFO);
             var ingredients_temp := ingredientesno + capmod_temp;
@@ -389,7 +389,7 @@ function copyrecipe(who, recipe)
 	var num := cint(recipe);
 	recipe := recipecfg(recipe);
 	if (ConsumeSubstance(who.backpack, OBJ_BLANK_SCROLL, 1))
-		if ((SkillCheck(who, DomesticWork, cint(recipe.scribe), cint(recipe.scribe+10)) > 0))
+		if ((SkillCheck(who, Domestic_Work, cint(recipe.scribe), cint(recipe.scribe+10)) > 0))
 			var item := createiteminbackpack(who, OBJ_RECIPE_SLIP, 1);
 			if (item == error)
 				sendsysmessage(who, "  " + item);

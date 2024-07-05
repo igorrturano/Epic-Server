@@ -75,7 +75,7 @@ function CopyKey(who, key, targ)
 		return 0;
 	endif
 
-	if (TemHabilidade(who, "Truque Sujo") || SkillCheck(who, "MetalWorking", 25) > 0)
+	if (TemHabilidade(who, "Truque Sujo") || SkillCheck(who, "Metal_Working", 25) > 0)
 		targ.SetLockId(key_id);
 		SendSysMessageEx(who, "Voce copiou a chave.", SSM_INFO);
 		PrintText(who, "*copia uma chave*");

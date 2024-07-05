@@ -31,14 +31,16 @@ exported function HandleAttackRequest( who, byref packet )
 	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
 
 	if (defender.npctemplate && !who.npctemplate) //se o target for npc e quem clicou for player (sempre eh)
-		if ( who.weapon.attribute == "RangedCombat")
+		if ( who.weapon.attribute == "Ranged")
 			if (Distance(who, defender) > 18)
-				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+
 				return 1;
 			endif
 		else
 			if (Distance(who, defender) > 6)
-				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+				SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
+
 				return 1;
 			endif
 		

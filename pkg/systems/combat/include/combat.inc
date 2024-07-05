@@ -157,11 +157,11 @@ endfunction
 function CanBackStab(who, weapon)
 
 	var can_back_stab := 0;
-	if ((weapon.attribute) == "MeleeCombat1H")
+	if ((weapon.attribute) == "One_Handed")
 		can_back_stab := 1;
 	endif
 
-	if ((weapon.attribute) == "RangedCombat")
+	if ((weapon.attribute) == "Ranged")
 		can_back_stab := 1;
 	endif
 

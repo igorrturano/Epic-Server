@@ -15,7 +15,7 @@ program versatil(who)
 	endif
 
 	var cfg := ReadConfigFile(":combat:itemdesc");
-	if ( cfg[who.weapon.objtype].TwoHanded == 1)
+	if ( cfg[who.weapon.objtype].Two_Handed == 1)
 		SendSysMessageEx(who, "Voce tem que usar essa habilidade com armas de uma mao.", SSM_FAIL);
 		return 1;
 	endif

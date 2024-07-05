@@ -23,7 +23,7 @@ include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 
-var skillList := array{"Alchemy", "MagicLore", "Magery", "Survival", "HandleAnimal", "Awareness", "Medicine", "DomesticWork", "Sneak", "MechanicalApitude", "Pickpocketing", "WoodWorking", "MetalWorking", "RangedCombat", "MeleeCombat2H", "MeleeCombat1H", "Parry", "Tactics", "Gathering"};
+var skillList := array{"Alchemy", "Magic_Lore", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering"};
 
 program core_skillWin(who)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
@@ -119,7 +119,7 @@ program core_skillWin(who)
 			valor_mod := "";
 		endif
 
-		GFTextLine(charGump, x, y , 1153, skill + " [" + GetSkillDescValue(chardata.Skills[skill]) +"]" );
+		GFTextLine(charGump, x, y , 1153, StrReplace(skill, "_", " ") + " [" + GetSkillDescValue(chardata.Skills[skill]) +"]" );
 		GFTextLine(charGump, x+145, y , GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetLevelTitle(AP_GetSKill(who, skill))) + valor_mod);
 		GFTextRight(charGump, x+279, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetTrueSkill(who, skill)));
 
@@ -509,7 +509,7 @@ function SkillEraser(who)
             skillAux := "ArmsLore";
         elseif ( skillAux == "Survival")
             skillAux := "Camping";
-        elseif (skillAux == "MagicLore")
+        elseif (skillAux == "Magic_Lore")
             skillAux := "Inscription";
         endif
         var elem := AP_GetAttributeCfgElem(skillAux);
@@ -564,7 +564,7 @@ function SkillEraser(who)
             selectedSkill := "ArmsLore";
         elseif ( selectedSkill == "EvidanceGathering")
             selectedSkill := "EvaluatingIntelligence";
-        elseif ( selectedSkill == "MagicLore")
+        elseif ( selectedSkill == "Magic_Lore")
             selectedSkill := "Inscription";
         endif
         var value := cdbl(RequestGump(who, "Quantos pontos vai abaixar da pericia " + selectedSkill + " ? " ));

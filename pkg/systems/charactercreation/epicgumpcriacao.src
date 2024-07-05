@@ -161,7 +161,7 @@ function backgroundSelection(who, culture_pic)
         endforeach
         if (btn_value == 201)
             chardata.+background := BACKGROUNDS.DOMESTIC_WORK;
-            chardata.+bgBonus := DomesticWork;
+            chardata.+bgBonus := Domestic_Work;
             break;
         elseif (btn_value == 202) 
             chardata.+background := BACKGROUNDS.GATHERING;
@@ -169,7 +169,7 @@ function backgroundSelection(who, culture_pic)
             break;
         elseif (btn_value == 203) 
             chardata.+background := BACKGROUNDS.MECHANICAL_APITUDE;
-            chardata.+bgBonus := MECHANICALAPITUDE;
+            chardata.+bgBonus := MECHANICS;
             break;
         elseif (btn_value == 204)
             chardata.+background := BACKGROUNDS.MEDICINE;
@@ -497,6 +497,7 @@ function pathOfWisdom(who, culture_pic)
             SetObjProperty(grimorio, "serialid", who.serial);
             SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
             grimorio.newbie := 1;
+            grimorio.graphic := 0x0EFA;
             var spellinfo := struct;
             spellinfo.+magic_path := "spellcaster";
             var p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");

@@ -113,7 +113,7 @@ function cookit(who,item);
         endforeach
 	endif
   if(skill_needed)
-    if(SkillCheck( who, DomesticWork, skill_needed, 0) > 0);
+    if(SkillCheck( who, Domestic_Work, skill_needed, 0) > 0);
       var amt := item.amount;
       if(DestroyItem(item))
         newitem := CreateItemInBackpack(who, product, amt);
