@@ -23,7 +23,7 @@ const OFFSET_UNICODE_TEXT    := 0x14;
 
 function GetDmgStringDesc(elem, item)
 	var dmg_mod := CInt(item.dmg_mod);
-	var resultado := CSTR(elem.MinDam) + "-" + CSTR(elem.MaxDam);
+	var resultado := CSTR(elem.Damage);
 	if (dmg_mod>0)
 		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
 	elseif (dmg_mod<0)
@@ -170,7 +170,7 @@ endfunction
 
 function getTipoStringDesc(elem, item) //Exibe o tipo de arma
 	if (item.isa(POLCLASS_WEAPON))
-		return CStr(elem.TipoAtaque) + "<br>" + CSTR(elem.Attribute);
+		return CStr(elem.TipoAtaque) + "<br>" + CSTR(StrReplace(elem.Attribute, "_", " "));
 	elseif (item.isa(POLCLASS_ARMOR))
 		return CStr(elem.TipoProtecao) + "<br>";
 	endif
@@ -180,12 +180,25 @@ endfunction
 function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
 	var speedI := GetObjProperty(item,"attackspeedbonus");
 	var speedE := Cint(elem.Speed);
-	if (speedI != error && speedI > 0)
-		return CSTR(elem.speed) + " (+" + CSTR(speedI) + ")";
-	elseif (speedI != error && speedI < 0)
-		return CSTR(elem.speed) + " (" + CSTR(speedI) + ")";
+	var speedDesc := "";
+	if (speedE >= 41)
+		speedDesc := "Muito Rápida";
+	elseif (speedE >= 37)
+		speedDesc := "Rápida";
+	elseif (speedE >= 33)
+		speedDesc := "Normal";
+	elseif (speedE >= 29)
+		speedDesc := "Lenta";
 	else
-		return CSTR(elem.speed);
+		speedDesc := "Muito Lenta";
+	endif
+
+	if (speedI != error && speedI > 0)
+		return speedDesc + " (+" + CSTR(speedI) + ")";
+	elseif (speedI != error && speedI < 0)
+		return speedDesc + " (" + CSTR(speedI) + ")";
+	else
+		return speedDesc;
 	endif
 endfunction
 
