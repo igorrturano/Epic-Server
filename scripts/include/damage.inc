@@ -496,15 +496,15 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	if (GetObjProperty(who, "twohanded") == 1)
-		other := other + 0.1; //10% de bonus - balanceamento depois da mudanca de calculo do dano
+		other := other + 0.5;
 	endif
 
 	if (GetObjProperty(who, "fococomarma") == who.weapon.objtype)
-		other := other + 0.1; //10% de bonus - balanceamento depois da mudanca de calculo do dano
+		other := other + 0.1;
 	endif
 
 	if ( GetObjProperty(who, "armapredileta") == who.weapon.objtype )
-		other := other + 0.5; //50% de bonus - balanceamento depois da mudanca de calculo do dano
+		other := other + 0.5; 
 	endif
 
 	if (GetObjProperty(who, "#SequenciaDevastadoraAcumulada"))
@@ -537,7 +537,11 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	//Multiplicador de tactics X multiplicador de força X multiplicadores de habilidades e itens X Multiplicador de buff X multiplicador de Debuff
 	//dmg := CInt(dmg*(1.0+(2*tatics))*(1.0+str)*(1.0+(weapon+other))*(inimigo_predileto)*(1.0+blessbonus)*(1.0-reducao_dano));
 	//dmg := CInt(dmg*Pow(1.0+tatics,1.5)*(1.0+str)*(1.0+(weapon+other))*(inimigo_predileto)*(1.0+blessbonus)*(1.0-reducao_dano));
-	dmg := CInt(dmg * (Pow(1.0+tatics,1.5) + str) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
+	print("dmg: "+dmg);
+	print("weapon: "+weapon);
+	print("other: "+other);
+	print("reducao_dano: "+reducao_dano);
+	dmg := CInt( (dmg + (((str-50)/10)+(tatics/10))) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
 	if (dmg < 1)
 		dmg := 1;
 	endif
