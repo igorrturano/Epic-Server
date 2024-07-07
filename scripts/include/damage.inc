@@ -456,9 +456,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		endif
 	endif
 
-    if (who.weapon.objtype == 0x13b9 && !who.shield)
-        other := other + 0.1;
-    endif
+
 
 	if (isBloodied(defender))
 		if (temHabilidade(who, "Golpe de Misericordia"))
@@ -538,6 +536,11 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	var weaponcfg := ReadConfigFile(":*:itemdesc");
 	var weaponelem := FindConfigElem(weaponcfg, who.weapon.objtype);
 	var weapon_dice := RandomDiceRoll(cstr(weaponelem.Damage));
+
+	if (who.weapon.objtype == 0x13b9 && !who.shield) // Usando espada bastarda com as duas mãos
+		other := other + 0.5;
+        weapon_dice := RandomDiceRoll("1d10");
+    endif
 
 	dmg := CInt( (dmg + (((str-50)/10)+(tatics*10)+weapon_dice)) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
 	if (dmg < 1)
