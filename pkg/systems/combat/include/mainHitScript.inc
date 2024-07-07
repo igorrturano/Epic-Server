@@ -24,13 +24,6 @@ include ":charactercreation:resists";
 
 function SkillChecks(attacker, defender, weapon, rawdamage)
 	var skillUsedForCritical := TACTICS;
-	if(GetObjProperty(attacker, "kit") == "Mago de Combate")
-		skillUsedForCritical := MAGICLORE;
-	elseif(GetObjProperty(attacker, "kit") == "Medico de Combate")
-		skillUsedForCritical := MEDICINE;
-	elseif(temHabilidade(attacker, "Lobo Solitario"))
-		skillUsedForCritical := SURVIVAL;
-	endif
 	//Testa se é possivel ganhar skill com o NPC alvo
 	var skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
     var skillDefender := AP_GetSkill(defender, defender.weapon.attribute);
