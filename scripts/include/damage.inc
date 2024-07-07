@@ -10,6 +10,7 @@ use os;
 use math;
 use cfgfile;
 USE math;
+use util;
 
 include ":tn:cooldown";
 include ":brainAI:npcUtil";
@@ -19,7 +20,6 @@ include ":charactercreation:habilidades";
 include "include/say";
 include ":blood:blood";
 include ":fls_core:packets";
-
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
  * These could be attributes, but not every shard will want to
@@ -299,12 +299,6 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (who.npctemplate) //Se for NPC utiliza tactics
 		tatics := CDbl(AP_GetSkill(who, TACTICS))/100.0; //Armazena o valor da skill que afeta dano
 		SkillCheck(who, TACTICS, -1);
-	elseif (GetObjProperty(who, "kit") == "Mago de Combate")
-		tatics := CDbl(AP_GetSkill(who, MAGICLORE))/100.0; //Aplica bonus de magiclore na chance de critico quando é Mago de Combate
-		SkillCheck(who, MAGICLORE, -1);
-	elseif (GetObjProperty(who, "kit") == "Medico de Combate")
-		tatics := CDbl(AP_GetSkill(who, MEDICINE))/100.0; //Aplica bonus de medicine na chance de critico quando é Medico de Combate
-		SkillCheck(who, MAGICLORE, -1);
 	 elseif (GetObjProperty(who, "kit") == "Ranger")
 		tatics := CDbl(AP_GetSkill(who, TACTICS))/100.0; //Aplica bonus de tactics na chance de critico quando não é nenhum caso específico
 		SkillCheck(who, TACTICS, -1);
@@ -328,7 +322,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (temHabilidade(who, "Ataques Oportunistas"))
 		stat := INTELLIGENCE;
 	endif
-	var strBonus := 0.0;
+	var strBonus := 1.2;
 	/*
 	if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
 		strBonus := 10.0;
@@ -339,15 +333,20 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	*/
 	var str;
 	if (who.npctemplate)
-		str := CDbl(AP_GetStat(who, stat))/200.0;
+		str := CDbl(AP_GetStat(who, stat));
 	else
-		str := CDbl(AP_GetStat(who, stat)-60.0)/200.0;
+		str := CDbl(AP_GetStat(who, stat));
 	endif
+	print("str: "+str);
+	if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
+		str *= strBonus;
+	endif
+	print("strInBonus: "+str);
+
 	//Quando equipado arco curto, longo, besta, besta pesada e besta de repeticao a força não implica em modificador de dano
 	if ( (who.weapon.objtype == 0x13B2) || (who.weapon.objtype == 0x26CC) || (who.weapon.objtype == 0x0f4f) || (who.weapon.objtype == 0x13fd) || (who.weapon.objtype == 0x26CD) )
 		str := 0;
 	endif
-
 
 	//Bonus de prop da arma
 	var weapon := CDbl(GetObjProperty(who.weapon, "dmgbonus")) + CDbl(GetObjProperty(who.weapon, "#dmgbonus"));
@@ -495,7 +494,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		EraseObjProperty(who, "#backstab");
 	endif
 
-	if (GetObjProperty(who, "twohanded") == 1)
+	if (IsTwoHandedWeapon(who.weapon))
 		other := other + 0.5;
 	endif
 
@@ -537,11 +536,20 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	//Multiplicador de tactics X multiplicador de força X multiplicadores de habilidades e itens X Multiplicador de buff X multiplicador de Debuff
 	//dmg := CInt(dmg*(1.0+(2*tatics))*(1.0+str)*(1.0+(weapon+other))*(inimigo_predileto)*(1.0+blessbonus)*(1.0-reducao_dano));
 	//dmg := CInt(dmg*Pow(1.0+tatics,1.5)*(1.0+str)*(1.0+(weapon+other))*(inimigo_predileto)*(1.0+blessbonus)*(1.0-reducao_dano));
-	print("dmg: "+dmg);
-	print("weapon: "+weapon);
-	print("other: "+other);
-	print("reducao_dano: "+reducao_dano);
-	dmg := CInt( (dmg + (((str-50)/10)+(tatics/10))) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
+	var weaponcfg := ReadConfigFile(":*:itemdesc");
+	var weaponelem := FindConfigElem(weaponcfg, who.weapon.objtype);
+	var weapon_dice := RandomDiceRoll(cstr(weaponelem.Damage));
+	if (!who.npctemplate)
+		print("dmg: "+dmg);
+		print("weapon: "+weapon);
+		print("other: "+other);
+		print("tactics*10: "+cint(tatics*10));
+		print("just_Tactics: "+tatics);
+		print("weapon_dice: "+weapon_dice);
+		print("reducao_dano: "+reducao_dano);
+		print("-----");
+	endif
+	dmg := CInt( (dmg + (((str-50)/10)+(tatics*10)+weapon_dice)) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
 	if (dmg < 1)
 		dmg := 1;
 	endif
@@ -644,3 +652,17 @@ function CanDestroyCraft(who)
     return 0;
 endfunction
 //TODO: adicionar influencia do .dmg_mod das armas
+
+function IsTwoHandedWeapon (byref item)
+	if (!item.isa (POLCLASS_WEAPON))
+		return 0;
+	endif
+	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
+	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
+	if (weapon_elem)
+		if (weapon_elem.Two_Handed)
+			return 1;
+		endif
+	endif
+	return 0;
+endfunction
