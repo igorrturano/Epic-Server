@@ -332,16 +332,15 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	var str := CDbl(AP_GetStat(who, stat)+strBonus)/150.0;
 	*/
 	var str;
-	if (who.npctemplate)
+/* 	if (who.npctemplate)
 		str := CDbl(AP_GetStat(who, stat));
-	else
-		str := CDbl(AP_GetStat(who, stat));
-	endif
-	print("str: "+str);
+	else */
+	str := CDbl(AP_GetStat(who, stat));
+/* 	endif
+ */
 	if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
 		str *= strBonus;
 	endif
-	print("strInBonus: "+str);
 
 	//Quando equipado arco curto, longo, besta, besta pesada e besta de repeticao a força não implica em modificador de dano
 	if ( (who.weapon.objtype == 0x13B2) || (who.weapon.objtype == 0x26CC) || (who.weapon.objtype == 0x0f4f) || (who.weapon.objtype == 0x13fd) || (who.weapon.objtype == 0x26CD) )
@@ -516,7 +515,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
     endif
 
     if (TemHabilidade(who, "Artista Marcial") )
-		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
+		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var isArmor := array{"ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve"};
     	if ( who.weapon.objtype in monk_weapons)
 			other := other + 2.0;
@@ -539,16 +538,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	var weaponcfg := ReadConfigFile(":*:itemdesc");
 	var weaponelem := FindConfigElem(weaponcfg, who.weapon.objtype);
 	var weapon_dice := RandomDiceRoll(cstr(weaponelem.Damage));
-	if (!who.npctemplate)
-		print("dmg: "+dmg);
-		print("weapon: "+weapon);
-		print("other: "+other);
-		print("tactics*10: "+cint(tatics*10));
-		print("just_Tactics: "+tatics);
-		print("weapon_dice: "+weapon_dice);
-		print("reducao_dano: "+reducao_dano);
-		print("-----");
-	endif
+
 	dmg := CInt( (dmg + (((str-50)/10)+(tatics*10)+weapon_dice)) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
 	if (dmg < 1)
 		dmg := 1;
