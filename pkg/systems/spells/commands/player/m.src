@@ -22,7 +22,7 @@ program magia( who, spellname )
   endif
 
   var spellBookInfo := FindSpellInSpellBooks( who, spellInfo.id );
-  if ( !spellBookInfo && spellInfo.circle != 0 && !( TemHabilidade( who, "Sensibilidade Arcana" )
+  if ( !spellBookInfo.found && spellInfo.circle != 0 && !( TemHabilidade( who, "Sensibilidade Arcana" )
        ) )
     SendSysMessageEx( who, "Voce nao possui a magia " + spellname + " nos seu grimorio.",
                       SSM_FAIL );
@@ -64,7 +64,7 @@ endfunction
 
 function FindSpellInSpellBooks( who, spellId )
   foreach item in ( EnumerateItemsInContainer( who.backpack ) )
-    if ( item.objtype == 24832 || item.objtype == 24835 || item.objtype == 40576 ) // Livros
+    if ( item.objtype == 0x9E80 ) // Livro da magia
       var donoGrimorio := GetObjProperty( item, "serialDono" );
       if ( donoGrimorio == who.serial )
         var spells := GetObjProperty( item, "spells" );
