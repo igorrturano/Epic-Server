@@ -10,6 +10,8 @@ var ironArmors := {0x1c04, 0x1408, 0x1409, 0x140A, 0x140B, 0x140C, 0x140D, 0x140
                     0x13f0, 0x13f1, 0x13f2, 0x1415, 0x1416, 0x1410, 0x1417, 0x1411, 0x141A, 0x1414, 0x1418, 0x1413, 0x13BB, 0x13C0, 0x13BE, 0x13C3,
                     0x13BF, 0x13C4, 0xF04A, 0xF04B, 0xF04C};
 
+var chitinArmor := { 0xF990, 0xF991, 0xF992, 0xF993, 0xF994, 0xF995 };
+
 program calor(params)
 
 	var who := params[1];
@@ -85,6 +87,8 @@ program calor(params)
                 // Itens de couro draconiano facilitam a resistência contra calor
                 if ( (GetObjProperty(item, "material") == 0xed29) )
                     dif := dif - 8;
+                elseif (item in chitinArmor)
+                    dif := dif - 2;
                 elseif (item in ironArmors)
                     dif := dif + 2;
                 endif
