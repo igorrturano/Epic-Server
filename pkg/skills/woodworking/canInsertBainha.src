@@ -74,7 +74,7 @@ program on_insert(who, bainha, movetype, inserttype, item, existing_stack, amt);
         endif
         //bainha.graphic := xyz; TODO adicionar o grafico correto depois
     elseif (bainha.objtype == 0xC604) // bainha de PoleWeapons
-        var pole := Array{0x1402, 0x26C8, 0x26C7, 0x26C9, 0xF63, 0x13f9, 0x0e81, 0x0e8a, 0x26CB};
+        var pole := Array{0x1402, 0xF985, 0x26BD, 0x26C9, 0xF63, 0x13f9, 0x0e81, 0x0e8a, 0x26CB};
         if (item.objtype in pole)
             if (bainha.item_count > 2)
                 SendSysMessageEx(who, "Ja existe uma maca nesta bainha.", SSM_FAIL);
