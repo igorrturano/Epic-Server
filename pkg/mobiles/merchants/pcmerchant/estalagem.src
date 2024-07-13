@@ -45,6 +45,14 @@ program MerchantMenu(params)
 	var quartos := GetObjProperty(npc, "quartos");
 	var taxa;
 	var valortaxa;
+	var npc_culture := GetObjProperty(npc, "culture");
+
+	if (npc_culture)
+		if (npc_culture != GetObjProperty(player, "chardata").culture) 
+			SendSysMessageEx(player, "Voce nao pode alugar quartos aqui.", SSM_FAIL);
+			return 1;
+		endif
+	endif
 
 	if (getObjProperty(npc, "taxap"))
 		taxa := (getObjProperty(npc, "taxap"));
