@@ -5,43 +5,56 @@ include ":tn:cooldown";
 include ":attributes:attributes";
 include "include/say";
 
-
 program underwater(params)
     var who := params[1];
+    var underwaterMessageSent := 0; // Flag to track if the underwater message was sent
 
-    // Check if the player is in britannia_alt realm and below z < -60
-    var z := GetWorldHeight(who.x, who.y, who.realm);
-    if (who.realm == "britannia_alt" && z < -60)
-        // Set the underwater property if not already set
-        if (!GetObjProperty(who, "underwater"))
-            SetObjProperty(who, "underwater", 1);
-        endif
-        
-        // While the player is underwater
-        while (z < -60)
-            // Check if the player has the can_breath cooldown
-            if (GetCooldown(who, "can_breath") > 0)
-                return;
+    // Check if the player is in britannia_alt realm
+    if (who.realm == "britannia_alt")
+        // Set the underwater property if the player is below -80z
+        var z := GetWorldHeight(who.x, who.y, who.realm);
+        if (z < -80)
+            if (!GetObjProperty(who, "underwater"))
+                SetObjProperty(who, "underwater", 1);
+                SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
+                underwaterMessageSent := 1;
             endif
-            
-            // Deplete stamina or health
-            while (GetObjProperty(who, "underwater"))
-                z := GetWorldHeight(who.x, who.y, who.realm);
-                
-                if (!AP_ConsumeVital(who, "Stamina",10))
-                    AP_ConsumeVital(who, "Hits", 10);
-                endif
+        endif
 
-                // If player is no longer underwater, erase the property and exit
-                if (z >= -60)
-                    EraseObjProperty(who, "underwater");
+        // Main loop to check the player's position and apply effects
+        while (1)
+            z := GetWorldHeight(who.x, who.y, who.realm);
+            
+            // If the player is below -80z, apply stamina/health effects
+            if (z < -80)
+                if (GetCooldown(who, "can_breath") > 0)
                     return;
                 endif
 
-                sleepms(2000);
-            endwhile
+                if (GetObjProperty(who, "underwater"))
+                    if (!underwaterMessageSent)
+                        SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
+                        underwaterMessageSent := 1;
+                    endif
 
-            SendSysMessageEx(who, "Você está sem ar!", SSM_FAIL);
+                    if (!AP_ConsumeVital(who, "Stamina", 5))
+                        AP_ConsumeVital(who, "Hits", 5);
+                    endif
+                else
+                    SetObjProperty(who, "underwater", 1);
+                    SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
+                    underwaterMessageSent := 1;
+                endif
+            else
+                // If the player is above -80z, remove the underwater property
+                if (GetObjProperty(who, "underwater"))
+                    EraseObjProperty(who, "underwater");
+                    SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
+                    underwaterMessageSent := 0; // Reset the flag when the player leaves underwater
+                endif
+            endif
+
+            sleepms(2000);
         endwhile
     endif
 endprogram
