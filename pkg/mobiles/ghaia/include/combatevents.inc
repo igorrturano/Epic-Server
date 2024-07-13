@@ -763,7 +763,7 @@ function CombatEventsOptions(who, state, no_mobile := 0)
       if (state.diff) resist := state.diff; endif
       if (state.duration) duration := state.duration; endif
 
-      var trilha_types := array{"Fogo", "Veneno", "Eletrecidade"};
+      var trilha_types := array{"Fogo", "Veneno", "Eletricidade"};
 
       var input_list := array{};
       input_list.append(struct{ "title" := "Qual o alvo?", "marked" := _ifElse(state.target, state.target in targ_opts, 1), "radio" := targ_opts});

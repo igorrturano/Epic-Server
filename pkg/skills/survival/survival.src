@@ -568,7 +568,7 @@ if ((mobile.graphic == 400) || (mobile.graphic == 401) || (mobile.graphic == 182
 			if (CheckLineOfSight( who, mobile ) && (!mobile.hidden))
 				return mobile.name + " [" + MobLocalizateSigla(who, mobile) + "]";
 			else
-				return "Humanoide com Sandalhas"+ " [" + MobLocalizateSigla(who, mobile) + "]";
+				return "Humanoide com Sandálias"+ " [" + MobLocalizateSigla(who, mobile) + "]";
 			endif
 		elseif (item.graphic == 5899)
 			if (CheckLineOfSight( who, mobile ) && (mobile.hidden == 0))

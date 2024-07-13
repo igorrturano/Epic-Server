@@ -1239,7 +1239,6 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		defendeu := 1;
 		//PerformAction(defender, 13);
 
-
 		//Pike desarma defensor que bloquear sem escudo
 		if ((attacker.weapon.graphic == 0xF985) && ( usingWeapon ))
 			var defweapon := defender.weapon;
