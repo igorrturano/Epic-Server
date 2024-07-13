@@ -23,9 +23,9 @@ program arremesso(params)
 	if (who.hidden && !TemHabilidade(who, "Espionagem"))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;
-	//elseif (GetEquipmentByLayer(who, 0x19)) // Por que não poderia? For Rohan!
-	//	SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
-	//	return 0;
+	elseif (GetEquipmentByLayer(who, 0x19) && GetObjProperty(who, "chardata").trait != "Cavalaria de Escaramuça") // Por que não poderia? For Rohan!
+		SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
+		return 0;
 	endif
 
 	if (AP_GetVital(who, "Stamina") < 20)
@@ -90,7 +90,11 @@ program arremesso(params)
 		return 0;
     endif
 
-	AP_ConsumeVital(who, "Stamina", 20);
+	if (IsThrowingWeapon(who.weapon))
+		AP_ConsumeVital(who, "Stamina", 10);
+	else
+		AP_ConsumeVital(who, "Stamina", 20);
+	endif
 
 	var to_miss_chance := 50;
     if (alvo.isA(POLCLASS_MOBILE))
