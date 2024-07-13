@@ -11,9 +11,11 @@ program select( who, item)
 	SendSysMessage(who, "Escolha o tipo de flecha.");
 	
 	var alvo := target(who);
-	
-	if ( (item.objtype == 0x13B2) || (item.objtype == 0xe137) || ( item.objtype == 0x26CC) || (item.objtype == 0xe139) || (item.objtype == 0x2D2A) || (item.objtype == 0x2D2B) || (item.objtype == 0x27A5) ) //bows
-		if ( (alvo.graphic == 11058) || (alvo.graphic == 3903) )
+	var bows := array{0x13B2, 0xe137, 0x2D2B};
+	var longbows := array{0x27A5, 0x2D2A, 0xe139, 0x26CC};
+	var crossbows := array{0x0f4f, 0x13fd, 0x26CD, 0xF983};
+	if (item.objtype in bows || item.objtype in longbows)
+		if (alvo.graphic == 3903)
 			SetObjProperty(item, "ammo", alvo.serial);
 			var DmgMods := GetObjProperty(alvo, "dmgmods");
 			if (DmgMods)
@@ -29,8 +31,8 @@ program select( who, item)
 			SendSysMessage(who, "Isto nao parece uma flecha.");
 			return 1;
 		endif
-	elseif ( (item.objtype == 0x0f4f) || (item.objtype == 0x13fd) || (item.objtype == 0x26CD) )
-		if (alvo.graphic != 7163 )//11061 )
+	elseif ( (item.objtype in crossbows)  )
+		if (alvo.graphic != 7163 )
 			SendSysMessage(who, "Isto nao parece um virote.");
 			return 1;
 		else

@@ -659,3 +659,17 @@ function IsTwoHandedWeapon (byref item)
 	endif
 	return 0;
 endfunction
+
+function IsThrowingWeapon (byref item)
+	if (!item.isa (POLCLASS_WEAPON))
+		return 0;
+	endif
+	var weaponcfgfile := ReadConfigFile (":*:itemdesc");
+	var weapon_elem := FindConfigElem (weaponcfgfile, item.objtype);
+	if (weapon_elem)
+		if (weapon_elem.Throwing)
+			return 1;
+		endif
+	endif
+	return 0;
+endfunction
