@@ -1,0 +1,47 @@
+use uo;
+use vitals;
+
+include ":tn:cooldown";
+include ":attributes:attributes";
+include "include/say";
+
+
+program underwater(params)
+    var who := params[1];
+
+    // Check if the player is in britannia_alt realm and below z < -60
+    var z := GetWorldHeight(who.x, who.y, who.realm);
+    if (who.realm == "britannia_alt" && z < -60)
+        // Set the underwater property if not already set
+        if (!GetObjProperty(who, "underwater"))
+            SetObjProperty(who, "underwater", 1);
+        endif
+        
+        // While the player is underwater
+        while (z < -60)
+            // Check if the player has the can_breath cooldown
+            if (GetCooldown(who, "can_breath") > 0)
+                return;
+            endif
+            
+            // Deplete stamina or health
+            while (GetObjProperty(who, "underwater"))
+                z := GetWorldHeight(who.x, who.y, who.realm);
+                
+                if (!AP_ConsumeVital(who, "Stamina",10))
+                    AP_ConsumeVital(who, "Hits", 10);
+                endif
+
+                // If player is no longer underwater, erase the property and exit
+                if (z >= -60)
+                    EraseObjProperty(who, "underwater");
+                    return;
+                endif
+
+                sleepms(2000);
+            endwhile
+
+            SendSysMessageEx(who, "Você está sem ar!", SSM_FAIL);
+        endwhile
+    endif
+endprogram
