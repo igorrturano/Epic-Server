@@ -1,0 +1,28 @@
+use uo;
+
+include "include/say";
+include ":tn:cooldown";
+include "include/damage";
+include ":spells:tnmagery";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	SetCooldown(targ, "can_breath", 120 * (AP_GetSkill(who, "MAGICLORE")/20));
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	
+	return 1;
+endprogram 
