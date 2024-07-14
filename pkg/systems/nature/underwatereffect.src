@@ -37,8 +37,8 @@ program underwater(params)
                         underwaterMessageSent := 1;
                     endif
 
-                    if (!AP_ConsumeVital(who, "Stamina", 5))
-                        AP_ConsumeVital(who, "Hits", 5);
+                    if (!AP_ConsumeVital(who, "Stamina", 10))
+                        AP_ConsumeVital(who, "Hits", 10);
                     endif
                 else
                     SetObjProperty(who, "underwater", 1);

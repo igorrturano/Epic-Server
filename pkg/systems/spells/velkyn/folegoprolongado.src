@@ -19,7 +19,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	SetCooldown(targ, "can_breath", 120 * (AP_GetSkill(who, "MAGICLORE")/20));
+	SetCooldown(targ, "can_breath", 120 * Cint((AP_GetSkill(who, "MAGICLORE")/20)));
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
