@@ -1023,23 +1023,24 @@ endfunction
 
 function attributeBonusByRaceAndTraits(who)
     var chardata := GetObjProperty(who, "chardata");
-
+    
     var raca := chardata.raca;
     var final_str := chardata.str;
     var final_dex := chardata.dex;
     var final_int := chardata.int;
 
-    if (raca == RACA.ANAO)
+    if (raca == "Anão")
         final_str += 10;
-    elseif (raca == RACA.ELFO)
+    elseif (raca == "Elfo")
+        print("elfo int: "+ final_int);
         final_int += 10;
-    elseif (raca == RACA.DROW)
+    elseif (raca == "Drow")
         final_dex += 5;
         final_int +=5;
-    elseif (raca == RACA.ORC)
+    elseif (raca == "Orc")
         final_str += 5;
         final_int +=5;
-    elseif (raca == RACA.POLSKI)
+    elseif (raca == "Polski")
         final_dex += 10;
     endif
 
