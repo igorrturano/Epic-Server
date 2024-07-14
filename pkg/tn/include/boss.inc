@@ -916,11 +916,10 @@ function CombatEventsOptions(who, state)
 			state.+z := loc.z;
 		elseif ( opt == "TimedScript")
 			state.+target := RadioGump(who, 200, 180, "Quem vai realizar a action?", array{"Self", "Opponent", "All Opponents"});
-			var timername := RadioGump(who, 270, 580, "Escolha o timedscript", array{"defaultPoison", "hallucination", "paralysis", "clumsy", "feeblemind", "weaken", "atrasarmagias", "fugademana", "staminaPoison", "manaPoison", "bleed", "darkborer", "agility", "strength", "invisibilidade", "desviarprojetil", "dmgreduction", "evasao", "precisao", "phmod", "fimod", "comod", "pomod", "enmod"});
+			var timername := RadioGump(who, 270, 580, "Escolha o timedscript", array{"defaultPoison", "hallucination", "paralysis", "clumsy", "feeblemind", "weaken", "atrasarmagias", "fugademana", "staminaPoison", "manaPoison", "bleed", "darkborer", "agility", "strength", "invis", "desviarprojetil", "dmgreduction", "evasao", "precisao", "phmod", "fimod", "comod", "pomod", "enmod"});
 			state.+timername := timername;
 			state.+timerduration := cint(RequestGump(who, "Qual a duracao do timer?", "Nunca mais de 120s", "", 1));
 			state.+level := cint(RequestGump(who, "Qual o level do timer?", "", "", 1));
-
 		elseif ( opt == "Perform Action" )
 			state.+target := RadioGump(who, 200, 180, "Quem vai realizar a action?", array{"Self", "Opponent", "All Opponents"});
 			state.+id := cint(RequestGump(who, "Qual o ID da animacao?", "", "", 1));
