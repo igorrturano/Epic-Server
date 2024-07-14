@@ -97,6 +97,7 @@ exported function handleUCOutgoing( character, byref packet )
 		endif
 	endif
 
+
 	if  (type == 0x0E)
 		if (source.cmdlevel >= 1 && GetObjProperty(source, "LastMSG") != message_txt)
 			SetObjProperty(source, "LastMSG", message_txt);
@@ -163,6 +164,21 @@ exported function handleUCOutgoing( character, byref packet )
                 //endif
 				return 0;
 			endif
+		endif
+	endif
+
+	if (!source.npctemplate && type != 0x02)
+		var chosen_language := GetObjProperty(source, "lingua_escolhida");
+		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
+
+		if (playerKnownLanguages != error && chosen_language in playerKnownLanguages || message_txt == "*Incompreensível*")
+			return 0;
+		endif
+
+		if (source != character)
+			var original_language := GetObjProperty(character, "lingua_escolhida");
+			PrintTextAbovePrivate(source, "*Incompreensível*", character);
+			return 1;
 		endif
 	endif
 
