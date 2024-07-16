@@ -1,17 +1,24 @@
 use uo;
+include ":gumps:requestGump";
 
 program spawn(who, text)
-	sendsysmessage(who, CStr(text));
+	// sendsysmessage(who, CStr(text));
 
-	var values := SplitWords(text);
+	// var values := SplitWords(text);
+
+	var template :=  Requestgump(who, "Digite o npctemplate. ex.: rat // Nao precisa do :brainai:");
+	var minvalue := Cint(Requestgump(who, "Digite o MinDelay"));
+	var maxvalue := Cint(Requestgump(who, "Digite o MaxDelay"));
+	var range := Cint(Requestgump(who, "Digite o Range"));
+	var amt := Cint(Requestgump(who, "Digite o Amount"));
 
 	var spawnpoint := CreateItemAtLocation(who.x, who.y, who.z, "spawnpoint", 1, who.realm );
 
-	SetObjProperty(spawnpoint, "Amount", CInt(values[2]));
-	SetObjProperty(spawnpoint, "Range", CInt(values[3]));
-	SetObjProperty(spawnpoint, "MinDelay", CInt(values[4]));
-	SetObjProperty(spawnpoint, "MaxDelay", CInt(values[5]));
-	SetObjProperty(spawnpoint, "Spawn", CStr(values[1]));
+	SetObjProperty(spawnpoint, "Amount", CInt(amt));
+	SetObjProperty(spawnpoint, "Range", CInt(range));
+	SetObjProperty(spawnpoint, "MinDelay", CInt(minvalue));
+	SetObjProperty(spawnpoint, "MaxDelay", CInt(maxvalue));
+	SetObjProperty(spawnpoint, "Spawn", CStr(":brainai:"+template));
 	SetObjProperty(spawnpoint, "ResetMe", 1);
 	spawnpoint.invisible := 1;
 endprogram
