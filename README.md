@@ -37,10 +37,15 @@ Este guia abrange a transferência de arquivos para o launcher e host, além da 
 Para atualizar os arquivos no launcher, siga os comandos abaixo:
 
 ```
-scp * marcknight@149.100.142.227:~/Launcher/Server/patchDrowCity
-ssh marcknight@149.100.142.227
-cd Launcher/Server/patchDrowCity
-mv * ../'Ultima Online'
+scp * root@epic-shard.com:~/epic-launcher/Server/patch
+ssh root@epic-shard.com
+mv ~/epic-launcher/Server/patch/* ~/epic-launcher/Server/'Ultima Online'
+
+depois ps ax, procura o patcher (mono UltimaIPL.Patch.Server.exe -manifest)
+
+kill -9 iddopatcher
+cd epic-launcher/Server/
+./run.sh
 ```
 
 Após mover os arquivos:
@@ -53,11 +58,10 @@ Após mover os arquivos:
 Para atualizar os mapas no servidor, utilize os seguintes comandos:
 
 ```
-scp * root@149.100.142.227:~/POL-FLS-2023/muls/drowpatch
-ssh root@149.100.142.227
-cd POL-FLS-2023/muls/drowpatch
-mv * ../
-cd ../../
+scp * root@epic-shard.com:~/epic-shard/muls/newpatch
+ssh root@epic-shard.com
+mv epic-shard/muls/newpatch/* epic-shard/muls/
+cd epic-shard/
 ./uoconvert.sh
 ```
 
