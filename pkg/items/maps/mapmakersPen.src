@@ -86,7 +86,7 @@ program use_MapmakersPen(who, tool)
 		if (!targ.isWritable() )
 			var content := targ.ExtractInfo();
 			var linguagem := GetObjProperty(targ, "lingua");
-			var linguas := GetObjProperty(who, "linguas");
+			var linguas := GetObjProperty(who, "linguas_conhecidas");
 
 			if ( content.Contents.size() > 1)
 				SendSysMessageEx(who, "Escolha outro livro para copiar.", SSM_REQUEST);
@@ -135,16 +135,12 @@ program use_MapmakersPen(who, tool)
 			endif
 		else
 			var linguagem := GetObjProperty(targ, "lingua");
-			var linguas := GetObjProperty(who, "linguas");
+			var linguas := GetObjProperty(who, "linguas_conhecidas");
 			var yes;
 			var idiomaEscrita;
 
 			if(temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
-				linguas := array{"Antigo vanirio", "Antigo aquilrano", "Antigo thuriao", "Antigo Asanita", "Antigo Zharkiano", "Draconiano", "Abissal", "Silvestre", "Lingua dos Mortos"};
-				linguas.append("Antigo Esquecido");
-				linguas.append("Alquimico");
-				linguas.append("Nobreza Memmar");
-				linguas.append("Memmar");
+				linguas := array{"Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk", "Grumnak", "Björ", "Idrith'har"};
 			endif
 
 			if (targ.ExtractInfo().Contents.size() > 1) //O livro não está vazio

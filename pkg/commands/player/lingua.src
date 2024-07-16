@@ -15,7 +15,7 @@ program linguas(parms)
     var culture := GetObjProperty(who, "chardata").culture;
     var known_languages := GetObjProperty(who, "linguas_conhecidas");
 
-    var linguasOpt := array{"Aiglana", "Badûran", "Alüriel", "Leste", "Polkinea", "Gulthrak", "Björska", "Har'oloth"};
+    var linguasOpt := array{"Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk", "Grumnak", "Björ", "Idrith'har"};
     var filtered_languages := array;
 
     if (known_languages == error)

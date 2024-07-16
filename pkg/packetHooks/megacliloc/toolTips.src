@@ -434,7 +434,7 @@ exported function MegaCliloc( who, byref packet )
 		if (desc!=error)
 			var linguagem := GetObjProperty(item, "lingua");
 			if (linguagem!=error)
-				var linguas := GetObjProperty(who, "linguas");
+				var linguas := GetObjProperty(who, "linguas_conhecidas");
 				if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
 					xDesc := xDesc + white + "" + desc + "<br>";
 				else

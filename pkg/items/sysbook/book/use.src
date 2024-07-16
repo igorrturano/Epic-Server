@@ -46,7 +46,7 @@ program useBook(who,book)
 	//fim do check pra cartas
 
 	var linguagem := GetObjProperty(book, "lingua");
-	var linguas := GetObjProperty(who, "linguas");
+	var linguas := GetObjProperty(who, "linguas_conhecidas");
 
 	if (linguagem != error)
 		if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
