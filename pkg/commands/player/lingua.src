@@ -30,6 +30,9 @@ program linguas(parms)
             if (known_languages.size() > total_amount)
                 SendSysMessageEx(who, "Você escolheu mais do que devia.", SSM_FAIL);
                 return;
+            elseif (known_languages.size() < total_amount)
+                SendSysMessageEx(who, "Você não escolheu a quantidade correta de idiomas.", SSM_FAIL);
+                return;
             endif
 
             known_languages.append(culture);
@@ -50,8 +53,8 @@ program linguas(parms)
         endif
     endif
 
-    var chosen_language := RadioGump(who, 200, 180, "Em que idioma deseja se comunicar?", known_languages);
-    
+    var chosen_language := RadioGump(who, 250, 200, "Em que idioma deseja se comunicar?", known_languages);
+
     SendSysMessageEX(who, "Você se comunicará em " + chosen_language, SSM_INFO);
     SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", chosen_language);
