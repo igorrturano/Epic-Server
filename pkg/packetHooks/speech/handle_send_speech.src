@@ -172,7 +172,7 @@ exported function handleUCOutgoing( character, byref packet )
 		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
 
 		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*")
-			if (message_txt != "..." && message_txt != "*Incompreensível*" && message_txt != "")
+			if (message_txt != "..." /* && message_txt != "*Incompreensível*" */ && message_txt != "")
 				var full_message := "[" + chosen_language + "] " + message_txt;
 				packet.SetUnicodeString(48, full_message, 1);
 			endif
