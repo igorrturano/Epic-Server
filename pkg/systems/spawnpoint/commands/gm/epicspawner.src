@@ -1,0 +1,52 @@
+use uo;
+use datafile;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:requestGump";
+
+program epicspawner(who)
+
+    var spawner := ListItemsNearLocationOfType( who.x, who.y, who.z, 8, 0x5000, who.realm)[1];
+    if (!spawner)
+	    spawner := CreateItemAtLocation( who.x, who.y, who.z, 0x5000, 1 ,who.realm);
+    endif
+    spawner.invisible := 1;
+	sendsysmessage(who, "spawner: " +spawner);
+
+    var cfg := GetObjProperty(spawner, "config");
+	sendsysmessage(who, ""+cfg);
+
+	if (cfg == error)
+		cfg := struct;
+		cfg.+mobslvl1 := "";
+        cfg.+mobslvl2 := "";
+        cfg.+mobslvl3 := "";
+        cfg.+amtlvl1 := 0;
+        cfg.+amtlvl2 := 0;
+        cfg.+amtlvl3 := 0;
+        cfg.+rect := "";
+	endif
+
+    var gump := GFCreateGump();
+	var mobslvl1 := Requestgump(who, "Escreva o npctemplate dos mobs level 1", "", cfg.mobslvl1 );
+    var amtlvl1 := Requestgump(who, "Quantos mobs level? 1", "", cfg.amtlvl1 );
+
+    var mobslvl2 := Requestgump(who, "Escreva o npctemplate dos mobs level 2", "", cfg.mobslvl2 );
+    var amtlvl2 := Requestgump(who, "Quantos mobs level 2", "", cfg.amtlvl2 );
+
+    var mobslvl3 := Requestgump(who, "Escreva o npctemplate dos mobs level 3", "", cfg.mobslvl3 );
+    var amtlvl3 := Requestgump(who, "Quantos mobs level 3", "", cfg.amtlvl3 );
+
+    var rect := Requestgump(who, "Digite o x1, y1, x2, y2", "", cfg.rect );
+
+    cfg.mobslvl1 := mobslvl1;
+    cfg.amtlvl1 := amtlvl1;
+    cfg.mobslvl2 := mobslvl2;
+    cfg.amtlvl2 := amtlvl2;
+    cfg.mobslvl3 := mobslvl3;
+    cfg.amtlvl3 := amtlvl3;
+    cfg.rect := rect;
+
+    SetObjProperty(spawner, "config", cfg);
+endprogram

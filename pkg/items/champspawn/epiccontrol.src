@@ -1,0 +1,157 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+const TINY_WAIT := 2;
+const RESPAWN_DELAY := 30; // 1 hora
+
+include "champaltar";
+include ":tn:boss";
+
+program control(altar)
+    while (GetObjProperty(altar, "config") == error)
+        printtextabove(altar, "Sem config" + GetObjProperty(altar, "config"));
+        sleep(10);
+    endwhile
+
+    var mobsBySerial := dictionary{};
+    var totalMobs := array{};
+
+    print("Initializing mobs count...");
+    var cfg := GetObjProperty(altar, "config");
+    totalMobs[1] := cfg.amtlvl1;
+    totalMobs[2] := cfg.amtlvl2;
+    totalMobs[3] := cfg.amtlvl3;
+
+    if (!GetObjProperty(altar, "spawned"))
+        print("Summoning initial mobs for level 1...");
+        mobsBySerial[1] := summonLevelMobs(altar, 1, mobsBySerial, totalMobs[1]);
+
+        print("Summoning initial mobs for level 2...");
+        mobsBySerial[2] := summonLevelMobs(altar, 2, mobsBySerial, totalMobs[2]);
+
+        print("Summoning initial mobs for level 3...");
+        mobsBySerial[3] := summonLevelMobs(altar, 3, mobsBySerial, totalMobs[3]);
+
+        SetObjProperty(altar, "spawned", 1);
+    endif
+    while (altar)
+        validateAndResummonMobs(altar, mobsBySerial, totalMobs);
+        sleep(RESPAWN_DELAY);
+    endwhile
+
+    return 0;
+endprogram
+
+function getEpicSpawnLocation(altar)
+    var cfg := GetObjProperty(altar, "config");
+    var rect := cfg.rect;
+    var loc := SplitWords(rect);
+
+    var xMin := Cint(loc[1]);
+    var yMin := Cint(loc[2]);
+    var xMax := Cint(loc[3]);
+    var yMax := Cint(loc[4]);
+
+    var x := RandomIntMinMax(xMin, xMax);
+    var y := RandomIntMinMax(yMin, yMax);
+    var z := GetMapInfo(x, y).z;
+
+    return {x, y, z};
+endfunction
+
+function summonLevelMobs(altar, level, mobsBySerial, totalMobs)
+    var amt := Cint(totalMobs);
+    mobsBySerial := dictionary{};
+    mobsBySerial[level] := array{};
+
+    while (amt > 0)
+        var loc := getEpicSpawnLocation(altar);
+        var mobTemplate := getEpicSpawn(altar, level);
+        var creature := CreateNPCFromTemplate(mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
+        if (creature)
+            mobsBySerial[level].append(creature.serial);
+        endif
+        amt := amt - 1;
+        sleep(TINY_WAIT);
+    endwhile
+    return mobsBySerial[level];
+endfunction
+
+function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
+    print("Validating mobs count...");
+    print("mobsBySerial: " + mobsBySerial);
+    print("totalMobs: " + totalMobs);
+
+    // Ensure we're iterating over the correct levels
+    var levels := {1, 2, 3};  // Assuming levels 1, 2, and 3
+
+    foreach level in levels
+        print("Level: " + level);
+
+        var currentMobs := array{};
+        var mobs := mobsBySerial[level];
+
+        // Initialize mobs if not already done
+        if (!mobs)
+            mobs := array{};
+        endif
+
+        print("mobs for level " + level + ": " + mobs);
+
+        foreach serial in mobs
+            print("Checking mob: serial=" + serial);
+            var mob := SystemFindObjectBySerial(serial);
+            if (mob)
+                currentMobs.append(serial);
+                print("Mob found: serial=" + serial);
+            else
+                print("Mob missing: serial=" + serial);
+            endif
+        endforeach
+
+        var missingCount := Cint(totalMobs[level]) - currentMobs.size();
+        print("Level " + level + ": missing mobs count=" + missingCount);
+
+        var i;
+        if (missingCount > 0)
+            for (i := 1; i <= missingCount; i++)
+                var loc := getEpicSpawnLocation(altar);
+                var mobTemplate := getEpicSpawn(altar, level);
+                print("Resummoning missing mob: level=" + level + ", template=" + mobTemplate + ", location=(" + loc[1] + ", " + loc[2] + ", " + loc[3] + ")");
+                var creature := CreateNPCFromTemplate(mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
+                if (creature)
+                    currentMobs.append(creature.serial);
+                    print("Mob resummoned: serial=" + creature.serial);
+                endif
+                sleep(TINY_WAIT);
+            endfor
+        endif
+
+        mobsBySerial[level] := currentMobs;
+        print("Updated mobsBySerial for level " + level + ": " + mobsBySerial[level]);
+    endforeach
+endfunction
+
+function getEpicSpawn(altar, level)
+    var cfg := GetObjProperty(altar, "config");
+    var spawns;
+
+    if (level == 1)
+        spawns := SplitWords(cfg.mobslvl1);
+    elseif (level == 2)
+        spawns := SplitWords(cfg.mobslvl2);
+    else
+        spawns := SplitWords(cfg.mobslvl3);
+    endif
+
+    if (!spawns)
+        PrintTextAbove(altar, "ERRO: " + spawns);
+        return error;
+    endif
+
+    var chosenSpawn := spawns[RandomInt(spawns.size()) + 1];
+    print("Chosen spawn template: level=" + level + ", template=" + chosenSpawn);
+    return chosenSpawn;
+endfunction
