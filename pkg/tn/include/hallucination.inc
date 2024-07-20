@@ -26,18 +26,22 @@ endfunction
 // the following functions have been pasted from SendPacket.inc
 
 function ConvertIntToHex(astring, alength)
-  astring := Hex(astring);
-  astring := CStr(astring);
-  if (astring["0x"])
-    astring := astring[3, len(astring)];
-  endif
-  if (len(astring) > alength * 2)
-    return;
-  endif
-  while (len(astring) < alength * 2)
-    astring := "0"+ astring;
-  endwhile    
-  return astring;
+    if (astring < 0)
+        astring := (1 << (alength * 8)) + astring;  // Convert to two's complement for negative values
+    endif
+
+    astring := Hex(astring);
+    astring := CStr(astring);
+    if (astring["0x"])
+        astring := astring[3, len(astring)];
+    endif
+    if (len(astring) > alength * 2)
+        return "";
+    endif
+    while (len(astring) < alength * 2)
+        astring := "0" + astring;
+    endwhile
+    return astring;
 endfunction
 
 function DrawGamePlayer(who, jgraphic, jcolor)
