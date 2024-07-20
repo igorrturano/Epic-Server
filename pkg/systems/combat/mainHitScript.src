@@ -342,6 +342,14 @@ program MainHitScript( params )
         SetCooldown(defender, "defesasgloriosas", 0);
     endif
 
+	if (GetObjProperty(attacker, "surprise_attack") && attacker.hidden)
+		PerformAction(defender, 0x0e);
+        PlaySoundEffect(defender, 0x3b4);
+
+		TS_StartTimer(attacker, "paralysis", 5);
+        sleep(2);
+	endif
+
     if (GetCooldown(defender, "disarm") > 0)
         disarmOpponent(defender, attacker);
     endif
