@@ -15,6 +15,7 @@ program skill_Hide(who)
 	EraseObjProperty(who, "#overridehiding");
 	var orig_x := who.x;
 	var orig_y := who.y;
+	var isPolski := GetObjProperty(who, "chardata").race == RACA.POLSKI;
 
 	if ( who.hidden )
 		Start_Script("stealth", who);
@@ -32,9 +33,12 @@ program skill_Hide(who)
 	SendSysMessageEx(who, "Voce comecou a tentar se esconder...", SSM_INFO);
 
 	if (temHabilidade(who, "Camuflagem"))
-
 		while ( 1 )
-			sleep(2);
+			if (isPolski)
+				sleep(2);
+			else
+				sleep(3);
+			endif
 
 			if ( !CanHide(who, orig_x, orig_y) )
 				break;
@@ -43,13 +47,14 @@ program skill_Hide(who)
 			var diff;
 	
 			var region := GetRegionName(who);
-			if(region != "aghaja" && region != "zharkia")
+			var towns := {"Kazad", "Nygurath", "Kaijing", "Gulshurr", "Borfjell", "Aldorathrim", "Feira", "Colhesol", "Aigla"};
+			if(!(region in towns))
 				diff := diff - 50;
 				if (diff <= 0)
 					diff := 5;
 				endif
 			else
-			diff := 50;
+				diff := 50;
 			endif
 									
 			if ( GetObjProperty(who, "forjoumorte") == 1 )
@@ -83,7 +88,11 @@ program skill_Hide(who)
 		return;
 	elseif(GetObjPRoperty(who, "metamorfose") != error)
 			while ( 1 )
-			sleep(2);
+			if (isPolski)
+				sleep(2);
+			else
+				sleep(3);
+			endif
 
 			if ( !CanHide(who, orig_x, orig_y) )
 				break;
@@ -112,7 +121,7 @@ program skill_Hide(who)
 	else
 
 		while ( 1 )
-			if (GetObjProperty(who, "chardata").race == RACA.POLSKI)
+			if (isPolski)
 				sleep(2);
 			else
 				sleep(3);

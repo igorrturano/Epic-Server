@@ -1,0 +1,75 @@
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program camuflagem(who)
+    var nearby := ListMobilesNearLocationEx( who.x, who.y, LIST_IGNORE_Z, 5 ,LISTEX_FLAG_NORMAL, who.realm);
+    var skill_bonus := Cint(AP_GetSkill(who, SURVIVAL) / 5);
+    foreach mob in nearby
+        if (mob.master.serial == who.serial)
+            if (mob.hidden)
+                SendSysMessageEx(who, "Seu animal já está escondido.", SSM_FAIL);
+                return;
+            endif
+            mob.hidden := 1;
+            mob.stealthsteps := skill_bonus;
+            SetObjproperty(mob, "surprise_attack", 1);
+            SendSysMessageEx(who, "Você escondeu seu animal.", SSM_INFO);
+            while (mob.hidden)
+                exibeCharEscondido(who, mob, 2766);
+                sleep(1);
+            endwhile
+        endif
+    endforeach
+endprogram
+
+function exibeCharEscondido(who, escondido, cor)
+	DeleteObject(who, escondido);
+	DrawObject(who, escondido, escondido.graphic, cor);
+endfunction
+
+function ConvertIntToHex(astring, alength)
+    if (astring < 0)
+        astring := (1 << (alength * 8)) + astring;  // Convert to two's complement for negative values
+    endif
+
+    astring := Hex(astring);
+    astring := CStr(astring);
+    if (astring["0x"])
+        astring := astring[3, len(astring)];
+    endif
+    if (len(astring) > alength * 2)
+        return "";
+    endif
+    while (len(astring) < alength * 2)
+        astring := "0" + astring;
+    endwhile
+    return astring;
+endfunction
+
+function DrawObject(ktowhom, kobj, kgraphic, kcolor)
+	var PacketHexStringPart1 := "78";
+	var PacketHexStringPart2 := ConvertIntToHex(kobj.serial, 4) + ConvertIntToHex(kgraphic, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.x, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.y, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.z , 1);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kobj.facing, 1);
+	PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kcolor, 2);
+	PacketHexStringPart2 := PacketHexStringPart2 +"0000";
+	foreach item in ListEquippedItems(kobj)
+		PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.serial, 4);
+		PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.graphic, 2);
+		PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(item.layer, 1);
+		PacketHexStringPart2 := PacketHexStringPart2 + ConvertIntToHex(kcolor, 2);
+	endforeach
+	PacketHexStringPart2 := PacketHexStringPart2 +"00000000";
+	var FullPacketHexStringLength := (len(PacketHexStringPart1) + len(PacketHexStringPart2)) / 2 + 2;
+	var FullPacketHexString := PacketHexStringPart1 + ConvertIntToHex(FullPacketHexStringLength, 2) + PacketHexStringPart2;
+	SendPacket(ktowhom, FullPacketHexString);
+endfunction
+
+function DeleteObject(who, lobj)
+	var PacketHexString := "1D"+ ConvertIntToHex(lobj.serial, 4);
+	SendPacket(who, PacketHexString);
+endfunction

@@ -64,12 +64,16 @@ program skill_Stealth( who )
 
 	if (temHabilidade(who, "Camuflagem"))
 		var region := GetRegionName(who);
-		if(region != "aghaja" && region != "zharkia")
-			diff := diff - 25;
+		var towns := {"Kazad", "Nygurath", "Kaijing", "Gulshurr", "Borfjell", "Aldorathrim", "Feira", "Colhesol", "Aigla"};
+		if(!(region in towns))
+			diff := diff - 50;
 			if (diff <= 0)
 				diff := 5;
 			endif
+		else
+			diff := 50;
 		endif
+		
 			var check := SkillCheck(who, SURVIVAL, diff);
 			if( check > 0 )
 			who.stealthsteps := baseSteps;
