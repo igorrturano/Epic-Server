@@ -33,7 +33,7 @@ program textcmdcreateNPC(who, template)
 
 	//Sendsysmessage(who, " " + template.length() + " " + template.size());
 
-	var npc := CreateNPCFromTemplate(template, targ.x, targ.y, targ.z, 0, who.realm);
+	var npc := CreateNPCFromTemplate(":brainai:"+template, targ.x, targ.y, targ.z, 0, who.realm);
 	npc.facing := who.facing;
 	if ( npc.errortext )
 		SendSysMessage(who, "Error creating NPC ["+template+"] -> "+npc.errortext);

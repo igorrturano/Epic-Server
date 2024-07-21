@@ -1,11 +1,7 @@
 use uo;
 include ":gumps:requestGump";
 
-program spawn(who, text)
-	// sendsysmessage(who, CStr(text));
-
-	// var values := SplitWords(text);
-
+program spawn(who)
 	var template :=  Requestgump(who, "Digite o npctemplate. ex.: rat // Nao precisa do :brainai:");
 	var minvalue := Cint(Requestgump(who, "Digite o MinDelay"));
 	var maxvalue := Cint(Requestgump(who, "Digite o MaxDelay"));

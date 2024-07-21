@@ -84,7 +84,7 @@ function createthenpc(who, template)
 	endif
 	var props := struct;
 	props.+facing := who.facing;
-	var result := CreateNpcFromTemplate( template, loc.x, loc.y, loc.z, props, loc.realm );
+	var result := CreateNpcFromTemplate( ":brainai:"+template, loc.x, loc.y, loc.z, props, loc.realm );
 	if (!result)
 		SendSysMessage( who, "NPC Creation Failed: " + result.errortext );
 	endif
