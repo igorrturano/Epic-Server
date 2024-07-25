@@ -295,7 +295,7 @@ function GetWatchingPeople(who)
 	endforeach
 	var counterliq:= counter-counterpt;
 	return counterliq;
-	endfunction
+endfunction
 
 function GetHidingRange( skill )
 

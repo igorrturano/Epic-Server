@@ -11,7 +11,7 @@ program rope(who, item)
 	var alvo := Target(who, TGTOPT_CHECK_LOS);
 
     if (alvo.objtype == 0x14f8)
-		if (temHabilidade(who, "Armadilheiro"))
+		if (temHabilidade(who, "Caçador Experiente"))
 			PrintText(who, "*Amarrando varios pontos da corda*");
 			sleep(4);
 			SendSysMessage(who, "Voce usou a corda para fazer uma rede");

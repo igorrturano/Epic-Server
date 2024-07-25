@@ -245,7 +245,7 @@ function GetPH(who)
 		ph := 75;
 	endif
 
-	if (TemHabilidade(who, "Grande Fortitude"))
+	if (TemHabilidade(who, "Caçador Implacável"))
 		ph := ph + 25;
 	endif
 

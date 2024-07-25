@@ -1,0 +1,12 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+include "include/damage";
+
+program sandstorm(who, regioname)
+    start_script(":nature:sandstorm", {who});
+endprogram
+
+

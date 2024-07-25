@@ -404,7 +404,7 @@ function comprarHabilidade(who, item, nv:=-1)
         endif
 
 		SendSysMessageEx(who, "Voce comprou a habilidade: " + escolhida, SSM_INFO);
-		if (escolhida == "Grande Fortitude")
+		if (escolhida == "Caçador Implacável")
 			var hitsmod := cint(GetObjProperty(who, "hitsmod"));
 			hitsmod := hitsmod + 20;
 			setObjProperty(who, "hitsmod", hitsmod);

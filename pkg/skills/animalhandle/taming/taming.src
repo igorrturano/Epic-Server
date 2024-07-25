@@ -44,7 +44,7 @@ program TamingSkill(who)
 //checar se já tem animal fidelizado
 	var check_bond := 0;
 	var petsi := GetObjProperty(who, "TamedPets");
-	var habs := TemHabilidade(who, "Lider do Bando") || TemHabilidade(who, "Rei do Gado");
+	var habs := TemHabilidade(who, "Espreita Selvagem") || TemHabilidade(who, "Rei do Gado");
 		foreach serial in petsi
 			var pety := SystemFindObjectBySerial(serial);
 			if (GetObjProperty(pety, "bond") == "fiel")
@@ -72,7 +72,7 @@ program TamingSkill(who)
 	GFAddButton(yn_gump, 20, (83), 2117, 2118, GF_CLOSE_BTN, 2);
 	GFTextLine(yn_gump, 40, 80, 1153, "Informações sobre o animal.");
 
-	if (TemHabilidade(who, "Instintos Selvagens") || TemHabilidade(who, "Despertar Natureza") )
+	if (TemHabilidade(who, "Mestre de Feras") /* || TemHabilidade(who, "Despertar Natureza") */ ) // juntei tudo Igor
 		GFAddButton(yn_gump, 20, (103), 2117, 2118, GF_CLOSE_BTN, 3);
 		GFTextLine(yn_gump, 40, 100, 1153, "Despertar");
 	endif
@@ -141,7 +141,7 @@ program TamingSkill(who)
 		endif
 		//resetar os demais para "nao" e deixa só o selecionado como "sim"
 		var pets_all := GetObjProperty(who, "TamedPets");
-		var habs := TemHabilidade(who, "Lider do Bando") || TemHabilidade(who, "Rei do Gado");
+		var habs := TemHabilidade(who, "Espreita Selvagem") || TemHabilidade(who, "Rei do Gado");
 		foreach serial in pets_all
 			var pet_each := SystemFindObjectBySerial(serial);
 			if ( habs && GetObjProperty(pet_each, "bond") == "fiel")
@@ -350,7 +350,7 @@ if(!ownerarray)
 endfunction
 
 function Teach(who)
-	if (!TemHabilidade(who, "Despertar Natureza") && !TemHabilidade(who, "Instintos Selvagens") )
+	if (/* !TemHabilidade(who, "Despertar Natureza") && */ !TemHabilidade(who, "Mestre de Feras") )
 		SendSysMessageEx(who, "Voce nao tem a habilidade para treinar animais domesticados.", SSM_FAIL);
 		return;
 	endif
@@ -482,13 +482,13 @@ function BuildInstincts(who, creature, byref gump, ins_elem, byref y_pos)
 	endif
 
 	if( y_pos == START_Y )//texto inicial e títulos
-		GFTextLine(gump, 178, 87, 10, "Despertar Natureza");
+		GFTextLine(gump, 178, 87, 10, "Mestre de Feras");
 		GFTextLine(gump, 12, 37, 0, "Você pode despertar a natureza (stats) ou ");
 		GFTextLine(gump, 12, 50, 0, "instinto selvagem (crítico-dano) do seu fiel animal.");
 		GFTextLine(gump, 12, 62, 0,	"Clique no botão para mais info sobre o instinto.");
 		GFTextLine(gump, 10, 437, 30,	" OBS: o animal só pode ter um despertar ou");
 		GFTextLine(gump, 10, 450, 30,	"   instinto (caso você saiba as duas habilidades)");
-		GFTextLine(gump, 30, 275, 90, "Instintos Selvagens");
+		GFTextLine(gump, 30, 275, 90, "Mestre de Feras");
 	endif
 
 	if(gump.cur_page > 1) //botão de número da página
@@ -504,7 +504,7 @@ var creature_taxonomy := GetConfigString(npccfgfile[creature_who], "Taxonomy"); 
 var pet_instinct := GetConfigStringArray(ins_elem, "Taxonomy"); // LISTA TODOS do cfg
 var equal_taxonomy := (creature_taxonomy in pet_instinct); //identifica a taxonomy do cfg de acordo com o alvo
 //print("A criatura eh "+creature_who+" Os taxonomys sao "+creature_taxonomy+" e os iguais sao "+equal_taxonomy); DEBUG
-	if( (ins_elem.Type == 0) && TemHabilidade(who, "Despertar Natureza") ) //listagem dos instintos naturais
+	if( (ins_elem.Type == 0) && TemHabilidade(who, "Mestre de Feras") ) //listagem dos instintos naturais
 
 		GFTextLine(gump, 170, y_pos+20, 1890, ins_elem.Nome); // tive que listar individualmente pra não dar bode, a lista do cfg de acordo com o CONST inicial começa no 10
 		if(ins_elem.Nome == "Ferocidade")
@@ -525,12 +525,12 @@ var equal_taxonomy := (creature_taxonomy in pet_instinct); //identifica a taxono
 		//GFAddButton(gump, 290, y_pos+23, 1209, 1210, GF_PAGE_BTN, 14);
 
 		//y_pos := y_pos+20;
-	elseif ( (ins_elem.Type == 2 && sense_ones) && TemHabilidade(who, "Despertar Natureza") ) // Aqui inseri o senso aguçado, type 2 no cfg
+	elseif ( (ins_elem.Type == 2 && sense_ones) && TemHabilidade(who, "Mestre de Feras") ) // Aqui inseri o senso aguçado, type 2 no cfg
 		GFTextLine(gump, 170, y_pos+20, 1890, ins_elem.Nome);
 		GFAddButton(gump, 290, y_pos+23, 1209, 1210, GF_PAGE_BTN, 13);
 
 		y_pos := y_pos+20;
-	elseif((ins_elem.Type == 1) && (equal_taxonomy) && TemHabilidade(who, "Instintos Selvagens")) //instintos selvagens listados de acordo com o alvo e cfg
+	elseif((ins_elem.Type == 1) && (equal_taxonomy) && TemHabilidade(who, "Mestre de Feras")) //instintos selvagens listados de acordo com o alvo e cfg
 	GFTextLine(gump, 27, y_pos+148, 1890, ins_elem.Nome);
 	var det_pagex := ins_elem.Number; //inseri um valor number no cfg pra ficar mais facil para listar, lá começa no 15
 	GFAddButton(gump, 10, y_pos+151, 1209, 1210, GF_PAGE_BTN, det_pagex);
@@ -538,11 +538,11 @@ var equal_taxonomy := (creature_taxonomy in pet_instinct); //identifica a taxono
 	//det_page := det_page + 5;
 	y_pos := y_pos+20;
 	else
-	if ( !TemHabilidade(who, "Despertar Natureza") )
+	if ( !TemHabilidade(who, "Mestre de Feras") )
 		GFTextLine(gump, 170, 154, 1890, "Você não tem a ");
 		GFTextLine(gump, 170, 166, 1890, "habilidade necessária.");
 		y_pos := y_pos+10;
-	elseif ( !TemHabilidade(who, "Instintos Selvagens") )
+	elseif ( !TemHabilidade(who, "Mestre de Feras") )
 		GFTextLine(gump, 27, 334, 1890, "Você não tem a ");
 		GFTextLine(gump, 27, 346, 1890, "habilidade necessária.");
 		//y_pos := y_pos+10;

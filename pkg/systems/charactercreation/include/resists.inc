@@ -53,7 +53,7 @@ function GetResist(who, resist)
 	endif
 
 	if (resist == FORTITUDE)
-		if (TemHabilidade(who, "Grande Fortitude"))
+		if (TemHabilidade(who, "Caçador Implacável"))
 			valor := valor + 30;
         endif
         if (TemHabilidade(who, "Campeao das Montanhas"))

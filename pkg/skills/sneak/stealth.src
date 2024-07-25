@@ -52,6 +52,10 @@ program skill_Stealth( who )
         baseSteps := Cint(baseSteps * 1.5);
     endif
 
+	if (TemHabilidade(who, "Espreita Selvagem"))
+		baseSteps := Cint(baseSteps * 2.0);;
+	endif
+
 	if (temHabilidade(who, "Furtividade Aprimorada"))
 		baseSteps:= baseSteps*2;
 	endif

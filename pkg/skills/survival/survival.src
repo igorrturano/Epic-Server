@@ -61,7 +61,7 @@ endfunction
 
 function MobileTracking(who)
 	var diff := 1;
-	if (TemHabilidade(who, "Sobrevivencia do Grupo"))
+	if (TemHabilidade(who, "Caçador Experiente"))
 		diff := -30;
 	endif
 	//SendSysMessage(who, "dif: "+diff);
@@ -72,7 +72,7 @@ function MobileTracking(who)
 		if (range< 25)
 			range:= 25;
 		endif
-		if (TemHabilidade(who, "Sobrevivencia do Grupo"))
+		if (TemHabilidade(who, "Caçador Experiente"))
 			range := range + 15;
 		endif
 		var nmobiles := ListMobilesNearLocationEX(who.x,who.y, LIST_IGNORE_Z, range, 0x03, who.realm);

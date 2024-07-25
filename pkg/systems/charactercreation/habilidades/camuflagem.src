@@ -4,6 +4,10 @@ include "include/damage";
 include "include/say";
 
 program camuflagem(who)
+    if (!who.hidden)
+        SendSysMessageEx(who, "Você não está escondido.", SSM_FAIL);
+        return;
+    endif
     var nearby := ListMobilesNearLocationEx( who.x, who.y, LIST_IGNORE_Z, 5 ,LISTEX_FLAG_NORMAL, who.realm);
     var skill_bonus := Cint(AP_GetSkill(who, SURVIVAL) / 5);
     foreach mob in nearby
@@ -14,6 +18,9 @@ program camuflagem(who)
             endif
             mob.hidden := 1;
             mob.stealthsteps := skill_bonus;
+            if (TemHabilidade(who, "Espreita Selvagem"))
+                mob.stealthsteps := Cint(skill_bonus * 2);
+	        endif
             SetObjproperty(mob, "surprise_attack", 1);
             SendSysMessageEx(who, "Você escondeu seu animal.", SSM_INFO);
             while (mob.hidden)

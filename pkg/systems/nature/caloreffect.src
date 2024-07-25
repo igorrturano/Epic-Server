@@ -110,7 +110,7 @@ program calor(params)
                     SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
                     dif := dif - 90;
                 endif
-                if ((TemHabilidade(mobile, "Sobrevivencia do Grupo")) && who.party && (who.party.leader == mobile.party.leader))
+                if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party && (who.party.leader == mobile.party.leader))
                     resistchecked := mobile;
                 endif
                 sleepms(20);

@@ -133,7 +133,7 @@ program neve(params)
                     SendSysMessageEX(who, "O Protetor de Fogo lhe protege do frio.", SSM_INFO);
                     dif := dif - 60;
                 endif
-                if ((TemHabilidade(mobile, "Sobrevivencia do Grupo")) && who.party && (who.party.leader == mobile.party.leader))
+                if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party && (who.party.leader == mobile.party.leader))
                     resistchecked := mobile;
                 endif
                 sleepms(20);
