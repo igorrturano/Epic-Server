@@ -1,0 +1,73 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include "include/say";
+include ":tn:tngumps";
+include ":charactercreation:resists";
+
+program sandstormEffect(who)
+    PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 10, 20, 0, who.realm); // Redemoinho
+    PrintTextAbove(who, "Você nota que uma tempestade de areia se aproxima");
+    
+    Sleep(5);
+    
+    var survival_skill := AP_GetSkill(who, SURVIVAL);
+    var difficulty := 105; // Dificuldade base alta
+
+    if (GetObjProperty(who, "chardata").culture == "Gulthrak")
+        difficulty := 65; // Dificuldade base baixa
+    endif
+    
+    if (CheckResist(who, SURVIVAL, difficulty))
+        PrintTextAbove(who, "Você consegue se proteger da tempestade de areia!");
+    else
+        PrintTextAbove(who, "A tempestade de areia o atinge com força total!");
+        var effect := RandomInt(3);
+        case (effect)
+            0: InvokeCreature(who);
+            1: TeleportPlayer(who);
+            2: FreezeinSand(who);
+        endcase
+    endif
+endprogram
+
+function InvokeCreature(who)
+    // Implemente a lógica para invocar uma criatura
+    PrintTextAbove(who, "Uma criatura misteriosa surge da tempestade!");
+    // Exemplo: CreateNpcFromTemplate(":brainai:sandstormcreature", who.x, who.y, who.z, 0, who.realm);
+    CreateNPCFromTemplate(":brainai:caninoatroz", who.x, who.y, who.z, 0, who.realm);
+endfunction
+
+function TeleportPlayer(who)
+    // Implemente a lógica para teleportar o jogador
+    PrintTextAbove(who, "A tempestade o arrasta para outro lugar!");
+    var loc := randomLocation(who);
+    // Exemplo: MoveObjectToLocation(who, RandomInt(100)+5000, RandomInt(100)+1000, 0, who.realm, MOVEOBJECT_FORCELOCATION);
+    MoveObjectToLocation(who, loc[1], loc[2], loc[2], who.realm, MOVEOBJECT_FORCELOCATION);
+endfunction
+
+function FreezeinSand(who)
+    PrintTextAbove(who, "Você fica atolado na areia!");
+    who.frozen := 1;
+    Sleep(10);
+    who.frozen := 0;
+    PrintTextAbove(who, "Você consegue se libertar da areia.");
+endfunction
+
+function randomLocation(who)
+    var rect := "1460 1030 2154 1577"; // desertogulthrak no regions.cfg
+    var loc := SplitWords(rect);
+
+    var xMin := Cint(loc[1]);
+    var yMin := Cint(loc[2]);
+    var xMax := Cint(loc[3]);
+    var yMax := Cint(loc[4]);
+
+    var x := RandomIntMinMax(xMin, xMax);
+    var y := RandomIntMinMax(yMin, yMax);
+    var z := GetMapInfo(x, y).z;
+
+    return {x, y, z};
+endfunction
