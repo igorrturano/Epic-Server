@@ -37,23 +37,9 @@ program epicCreationGump(who)
 	RecalcVitals(who);
 
     // Prólogo
-    MoveObjectToLocation(who, 3480, 1194, 0, "britannia", MOVEOBJECT_FORCELOCATION);
 
-	PlaySoundEffectPrivate(who, 0x306, who);
-    sleep(3);
-	PlaySoundEffectPrivate(who, 0x2F4, who);
+    startAdventure(who);
 
-	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
-
-    SendSysMessageEX(who, "Por muito pouco você não escapa do desmoronamento da caverna.", SSM_INFO); 
-    sleep(10);
-    SendSysMessageEX(who, "Você se encontra em um lugar desconhecido, com um ar diferente, uma sensação estranha toma conta de você.", SSM_INFO);
-    sleep(10);
-    SendSysMessageEX(who, "A poeira torna difícil respirar, você olha para frente e vê que houveram mais alguns sobreviventes.", SSM_INFO);
-    sleep(10);
-    SendSysMessageEX(who, "Porém não há muito mais o que ser feito, a comida não ia durar caso minerassem o caminho de volta, explodir pode ser uma má idéia.", SSM_INFO);
-    sleep(10);
-    SendSysMessageEX(who, "Você decide seguir em frente, em busca de uma saída, ou de algo que possa te ajudar a sobreviver.", SSM_INFO);
 endprogram
 
 function culturalSelection(who)
@@ -555,4 +541,22 @@ function pathOfWisdom(who, culture_pic)
 
     SetObjProperty(who, "chardata", chardata);
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
+endfunction
+
+
+function startAdventure(who)
+    MoveObjectToLocation(who, 3479, 1190, 3, "britannia", MOVEOBJECT_FORCELOCATION);
+
+	PlaySoundEffectPrivate(who, 0x306, who);
+    PlayStationaryEffect(3480, 1189, 5, GFX_SMOKE, 10, 20, 0, who.realm);
+    sleep(1);
+    PlayStationaryEffect(3477, 1189, 4, GFX_SMOKE, 10, 20, 0, who.realm);
+    sleep(1);
+    PlayStationaryEffect(3477, 1190, 2, GFX_SMOKE, 10, 20, 0, who.realm);
+    sleep(1);
+	PlaySoundEffectPrivate(who, 0x2F4, who);
+
+	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
+    sleep(1);
+    startAdventureGump(who);
 endfunction

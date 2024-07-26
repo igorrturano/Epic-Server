@@ -85,6 +85,12 @@ const trueModeText := "No modo verdadeiro, o personagem pode ser morto e pode ma
 - Não pode reclamar que foi morto por outro jogador caso tenha sido dentro do RP. Se você escolheu conflito, você aceitou as consequências.
 - Seu rate de UP é maior";
 
+const adventureStartText := "Por muito pouco você não escapa do desmoronamento da caverna.
+Você se encontra em um lugar desconhecido, com um ar diferente, uma sensação estranha toma conta de você.
+A poeira torna difícil respirar, você olha para frente e vê que houveram mais alguns sobreviventes.
+Porém não há muito mais o que ser feito, a comida não ia durar caso minerassem o caminho de volta, explodir pode ser uma má idéia
+Você decide seguir em frente, em busca de uma saída, ou de algo que possa te ajudar a sobreviver.";
+
 const AIGLA_ID := 0x9E7;
 const ALURIEL_ID := 0x9E8;
 const BADURAN_ID := 0x9E9;
@@ -1245,6 +1251,31 @@ function pathOfWisdomGump(who, culture_pic)
         y += 26;
         i++;
     endforeach
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
+    return GFSendGump(who, gump);
+endfunction
+
+function startAdventureGump(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+    var i := 1;
+    x := 255;
+    y := 90;
+    // Background
+    GFGumpPic(gump, 17, 31, 0x9E6); 
+    //Header
+    GFHTMLArea(gump, x+1, y-24, 292, 40, "<BASEFONT Size=55 Color=#999999 > Epic! Prólogo - Uma jornada inesperada", 0, 0); //shadow
+    GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
+
+    // Adventure main image
+    GFGumpPic(gump, 50, 100, 0xFFFE);
+
+    // Adventure Description
+    GFHTMLArea(gump, 100, 550, 650, 120, adventureStartText, 1, 1);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
     return GFSendGump(who, gump);
