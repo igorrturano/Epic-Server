@@ -187,11 +187,11 @@ function CalculateDamage(defender, type, dmg)
 		if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR) ) // Se tiver a hab e usar escudo
 			resist := resist + (AP_GetTrueSkill(defender,PARRY)/1000); // Ganha até +10% de bonus
 		endif
-		if (IsRaging(defender) && TemHabilidade(defender, "Pele de Rocha"))
+		if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
 			if (resist < 0.6)
 				resist := 0.6;
 			endif
-        elseif (TemHabilidade(defender, "Pele de Rocha"))
+        elseif (TemHabilidade(defender, "Resiliência Bárbara"))
             if (resist < 0.3)
                 resist := 0.3;
             endif
@@ -465,6 +465,14 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (isBloodied(defender))
 		if (temHabilidade(who, "Burz"))
 			other:= other + 0.75; //75% - balanceamento depois da mudanca de calculo do dano
+		endif
+	endif
+
+	var rage_bonus := AP_GetSkill(who, TACTICS) / 100;
+	if (GetCooldown(who, "furia"))
+		other := other + rage_bonus;
+		if (TemHabilidade(who, "Destruidor"))
+			other := other + 0.5;
 		endif
 	endif
 

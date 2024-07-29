@@ -1,0 +1,20 @@
+use uo;
+use os;
+use util;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program doubleattack(who)
+	if (GetCooldown(who, "furia"))
+		SendSysMessageEx(who, "Voce esta cego de violencia.", SSM_INFO);
+        TS_StartTimer(who, "irrefreavel", cint(AP_GetSkill(who, TACTICS))*2);
+		SetCooldown(who, "FerocidadeEnsanguentada", 60);
+	else
+        SendSysMessageEx(who, "Voce precisa estar em furia.", SSM_INFO);
+	endif
+endprogram

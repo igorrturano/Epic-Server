@@ -14,13 +14,13 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif
 
-	SetObjProperty(mobile, "irrefreavel", 60);
+	SetObjProperty(mobile, "irrefreavel", 30);
 	var hitsmod := Cint(GetObjProperty(mobile, "hitsmod"));
 	sendsysmessage(mobile, "hitsmod" + hitsmod);
-	hitsmod := hitsmod + 60;
+	hitsmod := hitsmod + 30;
 	SetObjProperty(mobile, "hitsmod",  hitsmod);
 	recalcvitals(mobile);
-	HealDamage(mobile, 60);
+	HealDamage(mobile, 30);
 
 	return 1;
 endprogram

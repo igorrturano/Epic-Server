@@ -37,6 +37,10 @@ function GetResist(who, resist)
 		resist := REFLEXOS;
 	endif
 
+	if (resist == VONTADE && (TemHabilidade(who, "Fúria Indomável") && GetCooldown(who, "furia")))
+		resist := FORTITUDE;
+	endif
+
 	// Aplica os bonus e redutores dos Kits
 	if (kit == "Fortitude do Urso")
 		if (resist == FORTITUDE)

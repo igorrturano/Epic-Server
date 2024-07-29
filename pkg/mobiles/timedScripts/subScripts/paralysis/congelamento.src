@@ -12,7 +12,7 @@ include ":tn:cooldown";
 program TimedScript_Paralysis(params)
 	var mobile := params[1];
 
-	if (temhabilidade(mobile, "Movimento Livre") || GetCooldown(mobile, "vitalidadeinabalavel") || GetCooldown(mobile, "VontadeIndomavel") )
+	if (temhabilidade(mobile, "Movimento Livre") || GetCooldown(mobile, "vitalidadeinabalavel") || GetCooldown(mobile, "VontadeIndomavel") || (TemHabilidade(mobile, "Fúria Indomável") && GetCooldown(mobile, "furia")) )
 			return;
 	endif
 	

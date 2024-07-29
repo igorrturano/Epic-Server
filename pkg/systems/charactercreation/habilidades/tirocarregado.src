@@ -117,7 +117,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, basedamage, byref
 	endif
 
 	var critcooldown := 60;
-	if (TemHabilidade(attacker, "Maestria no Combate"))
+	if (TemHabilidade(attacker, "Destruidor"))
 		chance := chance * 2;
 		critcooldown := 30;
 	endif
@@ -168,7 +168,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, basedamage, byref
 		endif
 	endif
 
-	if (GetCooldown(defender, "VontadeIndomavel"))
+	if (GetCooldown(defender, "VontadeIndomavel") || (TemHabilidade(defender, "Fúria Indomável") && GetCooldown(defender, "furia")))
 		SendSysMessageEx(defender, "Voce nao leva o critico");
 		return;
 	endif

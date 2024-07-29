@@ -855,9 +855,9 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	endif
 
 	var critcooldown := 30;
-	if (TemHabilidade(attacker, "Maestria no Combate"))
+	if (TemHabilidade(attacker, "Destruidor"))
 		chance := chance * 2.0;
-		critcooldown := 15;
+		critcooldown := 20;
 	endif
 // Inicio vivisec Igor-----------------------------
 	var bonus_Preservar_Orgaos := 0;

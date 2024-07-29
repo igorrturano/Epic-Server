@@ -1,0 +1,28 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+
+program doubleattack(who)
+    var rage_time := Cint(AP_GetSkill(who, TACTICS));
+    
+    PrintTextAbove(who, "RRRAARRRRGHH!!!", SSM_INFO);
+    SetCooldown(who, "furia", rage_time);
+
+    shoutByGender(who);
+    return;
+endprogram
+
+function shoutByGender(who)
+    var male := {400, 1828, 1830, 1832, 1834};
+
+    if (who.graphic in male)
+    	PlaySoundEffect( who, 0x44B );
+    else
+        PlaySoundEffect( who, 0x339 );
+    endif
+endfunction
