@@ -1,0 +1,19 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+
+program doubleattack(who)
+	if (IsRaging(who))
+		SendSysMessageEx(who, "O deserto recompensa os audazes.", SSM_INFO);
+        SetCooldown(who, "lobosolitario", 60);
+		SetCooldown(who, "FuriaPrimordial", 60);
+	else
+        SendSysMessageEx(who, "Você precisa dar mais sangue", SSM_INFO);
+	endif
+endprogram

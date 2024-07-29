@@ -450,6 +450,10 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		endif
 	endif
 
+	if (GetCooldown(defender, "prey"))
+		inimigo_predileto := inimigo_predileto + 1.0;
+	endif
+
 	if (TemHabilidade(who, "Estilo Mao Livre"))
 		if (who.weapon.attribute == "One_Handed" && !who.shield)
 			other := other + 0.2;
@@ -459,13 +463,13 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 
 
 	if (isBloodied(defender))
-		if (temHabilidade(who, "Golpe de Misericordia"))
+		if (temHabilidade(who, "Burz"))
 			other:= other + 0.75; //75% - balanceamento depois da mudanca de calculo do dano
 		endif
 	endif
 
 	if ( IsRaging(who))
-		if (temHabilidade(who, "Baixo Limiar de Furia") || GetObjProperty(who, "NpcFuria"))
+		if (temHabilidade(who, "Nazg Khalug") || GetObjProperty(who, "NpcFuria"))
 			other:= other + 1.0; //50% de bonus - balanceamento depois da mudanca de calculo do dano
 			PrintText(who, "*enfurecido*");
 		endif

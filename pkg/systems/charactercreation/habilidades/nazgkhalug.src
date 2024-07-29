@@ -1,0 +1,24 @@
+use uo;
+use os;
+use util;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+
+    SendSysMessageEx(who, "Escolha a sua presa", SSM_INFO);
+    var targ := Target(who);
+    PlayObjectCenteredEffectHuefx(targ, 0x6c91, 1, 30, 0, 0);
+
+	if (targ.npctemplate)
+		SetCooldown(who, "prey", Cint(AP_GetSkill(who, SURVIVAL) / 2));
+	else
+        SendSysMessageEx(who, "Criatura inválida", SSM_INFO);
+		return;
+	endif
+
+endprogram

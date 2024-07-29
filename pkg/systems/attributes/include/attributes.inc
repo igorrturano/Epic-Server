@@ -222,8 +222,8 @@ endfunction
 function GetHP(who)
 	var hp := CInt(AP_GetTrueStat(who, "Strength"))/2;
 
-	if (TemHabilidade(who, "Sangue Grosso"))
-		hp := hp + 35;
+	if (TemHabilidade(who, "Nazg Gûl"))
+		hp := hp + 25;
 	endif
 
 	hp := hp + Cint(GetObjProperty(who, "hitsmod")) + Cint(GetObjProperty(who, "#hitsmod"));
