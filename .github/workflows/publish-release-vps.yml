@@ -21,6 +21,6 @@ jobs:
         password: ${{ secrets.PASSWORD }}
         port: ${{ secrets.PORT }}
         script: |
-            cd POL-FLS-2023
+            cd epic-shard
             git pull
             ./compilar.sh
