@@ -1,0 +1,71 @@
+use uo;
+use util;
+
+include "include/damage";
+include "include/client";
+include "include/sounds";
+include ":charactercreation:resists";
+include ":survival:fishingFunctions";
+include "include/dungeons";
+
+program HitScript(who)
+    if(!InDarkness(who))
+        SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
+        return 0;
+    endif
+
+    who.frozen := 1;
+    PerformAction(who, ANIM_CAST_AREA);
+    sleep(2);
+
+	var targ := Target(who);
+    var dist := Distance(who, targ);
+    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+
+    if(!CheckLosAt(who, targ.x, targ.y, targ.z))
+		SendSysMessage(who, "Voce nao consegue ver o alvo.");
+        who.concealed := 0;
+        who.frozen := 0;
+		return 0;
+	endif
+
+    if (dist > (mlore/ 5))
+        SendSysMessage(who, "O alvo esta muito distante");
+        who.concealed := 0;
+        who.frozen := 0;
+        return 0;
+    endif
+   
+	var locinfo:= GetMapInfo( targ.x, targ.y, who.realm );
+	if(IsWater(targ, locinfo))
+        SendSysMessage(who, "Voce nao pode clicar na agua");
+        who.concealed := 0;
+        who.frozen := 0;
+        return 0;
+    endif
+
+	if ( !targ )
+		SendSysMessage(who, "Cancelled.");
+        who.concealed := 0;
+        who.frozen := 0;
+		return 0;
+	endif
+    
+	if(!CheckLosAt( who, targ.x, targ.y, targ.z ) );
+		SendSysMessageEx( who, "Voce nao ve o alvo.", SSM_FAIL );
+		return 0;
+	endif
+    PlaySoundEffect(targ, 0x688);
+    PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
+
+    targ.concealed := 1;
+
+    var moveTo := TargetCoordinates(who);
+	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm, MOVEOBJECT_FORCELOCATION);
+    sleep(1);
+    targ.concealed := 0;
+    who.frozen := 0;
+    PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
+
+	return 1;
+endprogram
