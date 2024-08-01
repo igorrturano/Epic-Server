@@ -100,7 +100,7 @@ program summontotem(params)
 	AP_SetTrueSkill(espirito, WRESTLING, AP_GetTrueSkill(espirito, WRESTLING) + fator);
 	AP_SetTrueSkill(espirito, TACTICS, AP_GetTrueSkill(espirito, WRESTLING) + fator);
 
-	if (temHabilidade(who, "Espirito Protetor"))
+	if (temHabilidade(who, "Guardião do Bosque"))
 		espirito.resist_physical_mod  := 25;
 		espirito.resist_cold_mod  := 25;
 		espirito.resist_poison_mod  := 25;
@@ -113,7 +113,7 @@ program summontotem(params)
 
 	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
 
-	if (temHabilidade(who, "Invocacao Duradoura"))
+	if (temHabilidade(who, "Treinamento Druídico"))
 		duracao := duracao*2; //skill 0 -> 50s // Skill 20 -> 72s // Skill 40 -> 98s // Skill 100 -> 170s
 	endif
 
