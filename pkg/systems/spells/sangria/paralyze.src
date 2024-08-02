@@ -41,7 +41,7 @@ program SpellScript(params)
 	var duration := CINT(AP_GetSkill(who, MAGICLORE)/5);
 
 	//Bonus de especialização
-    if(Temhabilidade(who, "Evocator"))
+    if(Temhabilidade(who, "Valdruk"))
         duration := duration * 1.2;
     endif
 
