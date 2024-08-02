@@ -15,7 +15,7 @@ program SpellScript(params)
     var tempo := cint(AP_GetSkill(who, MAGICLORE))/10;
 
     //Bonus de especialização
-    if(Temhabilidade(who, "Salto Etéreo"))
+    if(Temhabilidade(caster, "Evocator"))
         tempo := tempo * 1.2;
     endif
 

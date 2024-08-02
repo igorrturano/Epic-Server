@@ -51,7 +51,7 @@ program SpellScript(params)
             var damage := cint(AP_GetSkill(caster, MAGICLORE)/8) + RandomDiceRoll("3d6");
 
             //Bonus de especialização
-            if(Temhabilidade(caster, "Salto Etéreo"))
+            if(Temhabilidade(caster, "Evocator"))
                 damage := damage * 1.2;
             endif
 

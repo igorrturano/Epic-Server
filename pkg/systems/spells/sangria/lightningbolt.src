@@ -34,7 +34,7 @@ function LaunchProjectile(caster, targ)
     var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("8d8");
 
     //Bonus de especialização
-    if(Temhabilidade(caster, "Salto Etéreo"))
+    if(Temhabilidade(caster, "Evocator"))
         dmg := dmg * 1.2;
     endif
 

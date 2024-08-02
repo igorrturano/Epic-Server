@@ -57,7 +57,7 @@ program SpellScript(params)
         var level := (CInt(magiclore_skill)/5)+5;
 
         //Bonus de especialização
-        if(Temhabilidade(who, "Salto Etéreo"))
+        if(Temhabilidade(who, "Evocator"))
             level := level * 1.2;
         endif
 
