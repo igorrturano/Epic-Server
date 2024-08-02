@@ -47,7 +47,6 @@ program summontotem(params)
 		skill_d := skill_d + bonus;
 	endif
 
-
 	var dicedmg := getConfigString(elem, "dicedmg");
 	var hitsmod := getConfigInt(elem, "hitsmod");
 	var resistmod := getConfigInt(elem, "resistmod");
@@ -69,6 +68,14 @@ program summontotem(params)
 
         resistmod := resistmod + bonus;
         hitsmod := hitsmod + bonus + 50;
+    endif
+
+    //Bonus de especialização
+    if(Temhabilidade(who, "Treinamento Druídico"))
+        skill_a := skill_a * 1.2;
+        skill_d := skill_d * 1.2;
+        resistmod := resistmod * 1.2;
+        hitsmod := hitsmod * 1.2;
     endif
 
 	//seta os mods

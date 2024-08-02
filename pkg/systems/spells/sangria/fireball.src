@@ -92,6 +92,12 @@ program spell_fireball(params)
         if (!(mobile.serial in alreadydamaged) && (mobile != caster) && !(mobile in party_members) && !(mobile in allPets))
             alreadydamaged.Append(mobile.serial);
 			var dmg := cint(AP_GetSkill(caster, MAGICLORE))/3 + RandomDiceRoll("8d10");
+
+            //Bonus de especialização
+            if(Temhabilidade(caster, "Salto Etéreo"))
+                dmg := dmg * 1.2;
+            endif
+
             DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
         endif
         sleepms(20);

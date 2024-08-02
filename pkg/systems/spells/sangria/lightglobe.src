@@ -55,6 +55,12 @@ program SpellScript(params)
         PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
         SendSysMessageEx(targ, "A luz ofuscou a visao dos seus inimigos.", SSM_INFO);
         var level := (CInt(magiclore_skill)/5)+5;
+
+        //Bonus de especialização
+        if(Temhabilidade(who, "Salto Etéreo"))
+            level := level * 1.2;
+        endif
+
 		TS_StartTimer(globodeluz, "summon", duracao, level);
 	endif
 endprogram   

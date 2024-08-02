@@ -32,6 +32,12 @@ program SpellScript(params)
         PlaySoundEffect(who, SFX_AGILITY2);
         var dice := cstr(mlore +"d4");
         var dmg := RandomDiceRoll(dice);
+
+        //Bonus de especialização
+        if(Temhabilidade(who, "Salto Etéreo"))
+            dmg := dmg * 1.2;
+        endif
+
         DamageFLS(targ, dmg+mlore, DMG_FORCED, who, "magicmissile");
         SleepMS(500);
     EndFor

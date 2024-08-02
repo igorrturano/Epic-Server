@@ -34,6 +34,12 @@ program wall_of_fire( parms )
 	var duration := CInt(3 + AP_GetSkill(caster, MAGICLORE) * 0.4);
 	var area_size := CInt(AP_GetSkill(caster, MAGICLORE) / 10);
 
+	//Bonus de especialização
+    if(Temhabilidade(caster, "Salto Etéreo"))
+        duration := duration * 1.2;
+        area_size := area_size * 1.2;
+    endif
+
 	var coordinates := GetCoordinatesForField(cast_on.x, cast_on.y, direction, CInt(area_size/2));
 	foreach coord in ( coordinates )
 		var cast_on_z := cast_on.z;

@@ -13,6 +13,12 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
     var tempo := cint(AP_GetSkill(who, MAGICLORE))/10;
+
+    //Bonus de especialização
+    if(Temhabilidade(who, "Salto Etéreo"))
+        tempo := tempo * 1.2;
+    endif
+
 	TS_StartTimer(who, "velocidade", tempo);
 
 	PlaySoundEffect(who, SFX_SPELL_AGILITY);
