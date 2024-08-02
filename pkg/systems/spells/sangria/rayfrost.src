@@ -32,5 +32,11 @@ function LaunchProjectile(caster, targ)
     PlaySoundEffect(caster, SFX_AQUARIUM_USE);
     PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
     var dmg := cint(AP_GetSkill(caster, MAGICLORE))/8 + RandomDiceRoll("1d6");
+
+    //Bonus de especialização
+    if(Temhabilidade(caster, "Evocator"))
+        dmg := dmg * 1.2;
+    endif
+
     DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
 endfunction

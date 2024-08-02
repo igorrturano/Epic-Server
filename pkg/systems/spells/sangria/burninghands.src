@@ -49,6 +49,12 @@ program SpellScript(params)
             endif
 
             var damage := cint(AP_GetSkill(caster, MAGICLORE)/8) + RandomDiceRoll("3d6");
+
+            //Bonus de especialização
+            if(Temhabilidade(caster, "Evocator"))
+                damage := damage * 1.2;
+            endif
+
             PlaySoundEffect( mob, SFX_226 );
             sleepms(100);
             PlaySoundEffect( mob, SFX_227 );

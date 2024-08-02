@@ -97,6 +97,11 @@ program summontotem(params)
 
 	var fator := (AP_GetSkill(who, MAGICLORE)-20.0)/4; //skill 0 -> -5 // Skill 20 -> 0 // Skill 40 -> +5 // Skill 100 -> +20
 
+	//Bonus de especialização
+    if(Temhabilidade(who, "Treinamento Druídico"))
+        fator := fator * 1.2;
+    endif
+
 	AP_SetTrueSkill(espirito, WRESTLING, AP_GetTrueSkill(espirito, WRESTLING) + fator);
 	AP_SetTrueSkill(espirito, TACTICS, AP_GetTrueSkill(espirito, WRESTLING) + fator);
 
@@ -113,15 +118,28 @@ program summontotem(params)
 
 	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
 
+	//Bonus de especialização
+    if(Temhabilidade(who, "Treinamento Druídico"))
+        espirito.resist_physical_mod  := 25 * 1.2;
+        espirito.resist_cold_mod  := 25 * 1.2;
+        espirito.resist_poison_mod  := 25 * 1.2;
+        espirito.resist_energy_mod  := 25 * 1.2;
+        espirito.resist_fire_mod  := 25 * 1.2;
+        SetObjProperty(espirito, "#ReflexosMod", 25 * 1.2);
+        SetObjProperty(espirito, "#FortitudeMod", 25 * 1.2);
+        SetObjProperty(espirito, "#VontadeMod", 25 * 1.2);
+        duracao := duracao * 1.2;
+    endif
+
 	if (temHabilidade(who, "Treinamento Druídico"))
-		duracao := duracao*2; //skill 0 -> 50s // Skill 20 -> 72s // Skill 40 -> 98s // Skill 100 -> 170s
+		duracao := duracao * 2; //skill 0 -> 50s // Skill 20 -> 72s // Skill 40 -> 98s // Skill 100 -> 170s
 	endif
 
 
-var summon_number := GetNumSummons(who) + 1;
+    var summon_number := GetNumSummons(who) + 1;
 	TS_StartTimer(espirito, "summon", duracao ); //inicio do timedScripts no summon
 	TS_StartTimer(who, "summon_"+slot, duracao ); //inicio do timedScripts no char
-SetObjProperty(espirito, "slot", slot); //seta o slot que o summon vai usar (se 1, 2, 3 ou 4)
+    SetObjProperty(espirito, "slot", slot); //seta o slot que o summon vai usar (se 1, 2, 3 ou 4)
 	return 1;
 
 endprogram
