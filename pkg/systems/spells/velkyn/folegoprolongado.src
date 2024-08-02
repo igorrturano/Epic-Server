@@ -22,7 +22,7 @@ program SpellScript(params)
     var duration := 120 * Cint((AP_GetSkill(who, "MAGICLORE")/20));
 
     //Bonus de especialização
-    if(Temhabilidade(who, "Mestre das Trevas") || Temhabilidade(who, "Valdruk"))
+    if(Temhabilidade(who, "Valdruk"))
         duration := duration * 1.2;
     endif
 

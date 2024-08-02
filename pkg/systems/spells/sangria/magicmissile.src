@@ -34,7 +34,7 @@ program SpellScript(params)
         var dmg := RandomDiceRoll(dice);
 
         //Bonus de especialização
-        if(Temhabilidade(who, "Salto Etéreo"))
+        if(Temhabilidade(who, "Evocator"))
             dmg := dmg * 1.2;
         endif
 

@@ -24,7 +24,7 @@ program SpellScript(params)
     var duration := CInt(magiclore_skill * 5);
 
     //Bonus de especialização
-    if(Temhabilidade(who, "Salto Etéreo"))
+    if(Temhabilidade(who, "Evocator"))
         duration := duration * 1.2;
     endif
 
