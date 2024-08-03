@@ -23,6 +23,11 @@ program SpellScript(params)
 	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
     var duration := CInt(magiclore_skill * 5);
 
+    //Bonus de especialização
+    if(Temhabilidade(who, "Evocator"))
+        duration := duration * 1.2;
+    endif
+
 	who.setlightlevel(1, duration);
 
 	if (GetObjProperty(who, "#magiasilenciosa"))
