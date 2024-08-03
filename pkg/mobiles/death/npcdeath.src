@@ -202,6 +202,12 @@ program core_npcDeath(params)
 				//AP_SetVital(mob, MANA, mymana);
 			endif
 		endif
+
+		if (TemHabilidade(mob, "Valm Oloth") && InDarkness(mob))
+			PlayMovingEffect( corpse, mob, 14202, 5, 1,  0 );
+			PlaySoundEffect(mob, 383);
+			HealMana(mob, 10);
+		endif
 	endforeach
 
 	TS_Death(corpse); // Will still get the PID from the corpse.

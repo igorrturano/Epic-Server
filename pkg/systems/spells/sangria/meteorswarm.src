@@ -44,6 +44,12 @@ program spell_meteorSwarm( parms )
 
             alreadydamaged.Append(mobile.serial);
             var dmg := cint(AP_GetSkill(caster, MAGICLORE)) + RandomDiceRoll("20d6");
+
+            //Bonus de especialização
+            if(Temhabilidade(caster, "Evocator"))
+                dmg := dmg * 1.2;
+            endif
+
             DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "meteorSwarm");
         endif
         sleepms(20);

@@ -42,11 +42,10 @@ program summontotem(params)
 	var skill_a := getConfigInt(elem, "skill_a");
 	var skill_d := getConfigInt(elem, "skill_d");
     var bonus := CINT(AP_GetSkill(who, MAGICLORE)/5);
-	if (temHabilidade(who, "Forma Atroz"))
+	if (temHabilidade(who, "Instinto de Sobrevivência"))
 		skill_a := skill_a + bonus;
 		skill_d := skill_d + bonus;
 	endif
-
 
 	var dicedmg := getConfigString(elem, "dicedmg");
 	var hitsmod := getConfigInt(elem, "hitsmod");
@@ -71,6 +70,14 @@ program summontotem(params)
         hitsmod := hitsmod + bonus + 50;
     endif
 
+    //Bonus de especialização
+    if(Temhabilidade(who, "Treinamento Druídico"))
+        skill_a := skill_a * 1.2;
+        skill_d := skill_d * 1.2;
+        resistmod := resistmod * 1.2;
+        hitsmod := hitsmod * 1.2;
+    endif
+
 	//seta os mods
 	SetObjProperty(who, "skill_a", skill_a);
 	SetObjProperty(who, "skill_d", skill_d);
@@ -90,7 +97,7 @@ program summontotem(params)
 
 	var metamorfosetime := 60 + 540 * AP_GetSkill(who, MAGICLORE) / 100;
 
-	if(temHabilidade(who,"Fera Natural"))
+	if(temHabilidade(who,"Treinamento Druídico"))
 		metamorfosetime := metamorfosetime * 2;
 	endif
 
@@ -111,7 +118,7 @@ function Transforma(who, animal, snd, graphic,namepoly)
 	endif
 
 	//UnequipAll(who); //Se quiser que desequipe tudo
-	if(temHabilidade(who,"Treinamento Druidico")) //Desequipa armaduras mas deixa as roupas em paz
+	if(temHabilidade(who,"Elo Natural")) //Desequipa armaduras mas deixa as roupas em paz
 		UnequipArmor(who);
 		UnequipWeapons(who);
 	else //Desequipa tudo
@@ -148,7 +155,7 @@ function Transforma(who, animal, snd, graphic,namepoly)
 		SetObjProperty(who, "metamorfose", metamorfose);
 		who.graphic := graphic;
 		// who.truegraphic := graphic;
-        //if (TemHabilidade(who, "Treinamento Druidico"))
+        //if (TemHabilidade(who, "Elo Natural"))
         //    who.squelch(0);
         //else
         //    who.squelch(-1);

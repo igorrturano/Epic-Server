@@ -58,6 +58,12 @@ program chainLightning( params )
             PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
             alreadydamaged.Append(mobile.serial);
             var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("14d6");
+
+            //Bonus de especialização
+            if(Temhabilidade(caster, "Evocator"))
+                dmg := dmg * 1.2;
+            endif
+
             DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
         endif
         sleepms(600);
