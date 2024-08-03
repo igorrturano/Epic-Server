@@ -38,7 +38,14 @@ program SpellScript(params)
 
 	printText(targ, "*paralisado*");
 
-	TS_StartTimer(targ, "paralysis", CINT(AP_GetSkill(who, MAGICLORE)/5), who);
+	var duration := CINT(AP_GetSkill(who, MAGICLORE)/5);
+
+	//Bonus de especialização
+    if(Temhabilidade(who, "Valdruk"))
+        duration := duration * 1.2;
+    endif
+
+	TS_StartTimer(targ, "paralysis", duration, who);
 	
 
 	if (!GetObjProperty(who, "#magiasilenciosa"))
