@@ -42,6 +42,12 @@ program spell_iceStorm( parms )
             PlaySoundEffect( mobile, 0x5c7 );
             PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6DFF, 0 ,70, 0, mobile.realm);
             var dmg := cint(AP_GetSkill(caster, MAGICLORE)) + RandomDiceRoll("14d6");
+
+            //Bonus de especialização
+            if(Temhabilidade(caster, "Evocator"))
+                dmg := dmg * 1.2;
+            endif
+
             alreadydamaged.Append(mobile.serial);
             DamageFLS(mobile, cint(dmg), DMG_COLD, caster, "icestorm");
         endif

@@ -71,7 +71,7 @@ program equipweapon(who, item)
 	endif
 
 	if (GetObjProperty(who, "metamorfose") != error)
-		if (TemHabilidade(who, "Treinamento Druidico"))
+		if (TemHabilidade(who, "Elo Natural"))
 			if (item.isa(POLCLASS_WEAPON) || item.isa(POLCLASS_ARMOR))
 				SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
 				return 0;

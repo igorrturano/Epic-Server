@@ -91,7 +91,7 @@ exported function handleUCOutgoing( character, byref packet )
 	//SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
 
 
-	if ( (getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Treinamento Druidico")) || (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
+	if ( (getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Elo Natural")) || (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
 		if  (type != 0x02)
 			return 1;
 		endif
@@ -171,7 +171,7 @@ exported function handleUCOutgoing( character, byref packet )
 		var chosen_language := GetObjProperty(source, "lingua_escolhida");
 		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
 
-		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*")
+		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*" || source.cmdlevel >= 1)
 			if (message_txt != "..." /* && message_txt != "*Incompreensível*" */ && message_txt != "")
 				var full_message := "[" + chosen_language + "] " + message_txt;
 				packet.SetUnicodeString(48, full_message, 1);

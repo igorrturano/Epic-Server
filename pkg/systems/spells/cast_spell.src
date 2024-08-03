@@ -45,7 +45,7 @@ program SpellStarter(params)
 	endif
 
 	if ( GetObjProperty(mobile, "metamorfose") != error )
-		if ( !TemHabilidade(mobile, "Treinamento Druidico"))
+		if ( !TemHabilidade(mobile, "Elo Natural"))
 			SendSysMessageEx(mobile, "Voce nao pode usar magias metamorfoseado.");
 			return 1;
 		endif

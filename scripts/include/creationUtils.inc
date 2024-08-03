@@ -767,7 +767,8 @@ function genericItems(who)
     var skills := chardata.Skills;
 
     CreateItemInBackpack(who, 0x0F52, 1); // Adaga
-    CreateItemInBackpack(who, 0x1F03, 1); // Roupa
+    var robe := CreateItemInBackpack(who, 0x1F03, 1); // Roupa
+    EquipItem(who, robe);
 	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
     CreateItemInBackpack(who, 0x170D, 1); // Sandals
     CreateItemInBackpack(who, 0x0F60, 1); // longsword

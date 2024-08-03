@@ -475,6 +475,12 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 			other := other + 0.5;
 		endif
 	endif
+	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(defender, HITS) <= AP_GetSkill(who, MAGICLORE))
+		if (GetObjProperty(who, "metamorfose") != error)
+			other:= other + 1.0;
+			PrintText(who, "*enfurecido*");
+		endif
+	endif
 
 	if ( IsRaging(who))
 		if (temHabilidade(who, "Nazg Khalug") || GetObjProperty(who, "NpcFuria"))
