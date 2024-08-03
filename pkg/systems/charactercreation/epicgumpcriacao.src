@@ -28,10 +28,13 @@ program epicCreationGump(who)
     religionSelection(who);
     gameModeSelection(who);
     pathOfWisdom(who, culture_pic);
+    languageSelection(who, culture_pic);
     itemInheritance(who);
     looksSelection(who);
 
     SetObjProperty(who, "nome_inicial", who.name);
+    who.name := who.title_race;
+    
     AP_SetVital(who, "Hunger", 0);
 	HealDamage(who, 200);
 	RecalcVitals(who);
@@ -543,7 +546,6 @@ function pathOfWisdom(who, culture_pic)
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
 endfunction
 
-
 function startAdventure(who)
     MoveObjectToLocation(who, 3479, 1190, 3, "britannia", MOVEOBJECT_FORCELOCATION);
 
@@ -559,4 +561,41 @@ function startAdventure(who)
 	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
     sleep(1);
     startAdventureGump(who);
+endfunction
+
+function languageSelection(who, culture_pic)
+    var linguasOpt := array{"Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk", "Grumnak", "Björ", "Idrith'har", "Comum"};
+    var known_languages := array;
+    var btn_value;
+
+    while (1)
+        var total_amount := 1;
+        known_languages.append(parseLanguageByCulture(who, linguasOpt));
+        if(AP_GetTrueStat(who, INTELLIGENCE) >= 40)
+            total_amount += cint(((AP_GetTrueStat(who, INTELLIGENCE) - 40) / 30) + 1);
+            known_languages.append("Comum");
+        endif
+        var input := languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount);
+
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200)
+                if (linguasOpt[key-200])
+                    known_languages.append(linguasOpt[key-200]);
+                endif
+            endif
+
+        endforeach
+        if (known_languages.size() < total_amount || known_languages.size() > total_amount)
+            known_languages := array;
+            SendSysMessageEx(who, "Você não escolheu a quantidade correta de idiomas.", SSM_FAIL);
+        else
+            break;
+        endif
+
+    endwhile
+
+    SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
+    SetObjProperty(who, "linguas_conhecidas", known_languages);
+    SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
 endfunction

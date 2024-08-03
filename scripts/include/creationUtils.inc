@@ -3,6 +3,7 @@ use basic;
 include ":attributes:attributes";
 include ":disguise:disguise";
 include ":charactercreation:createchar";
+include ":tn:tngumps";
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -771,7 +772,6 @@ function genericItems(who)
     EquipItem(who, robe);
 	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
     CreateItemInBackpack(who, 0x170D, 1); // Sandals
-    CreateItemInBackpack(who, 0x0F60, 1); // longsword
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
@@ -792,6 +792,9 @@ function weaponsByClassAndCulture(who)
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x0F4E, 1); // bardiche
         endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0x8fd, 1);
+        endif
     endif
 
     if (chardata.culture == CULTURA.AIGLANA)
@@ -803,6 +806,9 @@ function weaponsByClassAndCulture(who)
         endif
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x1402, 1); // short spear
+        endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0xF9CA, 1);
         endif
     endif
 
@@ -816,6 +822,9 @@ function weaponsByClassAndCulture(who)
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); //crescent
         endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0xFA4D, 1);
+        endif
     endif
 
     if (chardata.culture == CULTURA.POLKINEA)
@@ -828,6 +837,9 @@ function weaponsByClassAndCulture(who)
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x0e87, 1); //crescent
         endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0xFA4E, 1);
+        endif
     endif
 
     if (chardata.culture == CULTURA.BJORSKA)
@@ -837,9 +849,11 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B7A, 1); // wooden shield
         endif
-
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x0f49, 1); // axe
+        endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0xF99B, 1);
         endif
     endif
 
@@ -853,6 +867,9 @@ function weaponsByClassAndCulture(who)
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x27A2, 1); // Katana
         endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0x27af, 1);
+        endif
     endif
 
     if (chardata.culture == CULTURA.BADURAN)
@@ -865,6 +882,9 @@ function weaponsByClassAndCulture(who)
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x1438, 1); // warhammer
         endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0x8fd, 1);
+        endif
     endif
 
     if (chardata.culture == CULTURA.ALURIEL)
@@ -876,6 +896,9 @@ function weaponsByClassAndCulture(who)
         endif
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); // crescent
+        endif
+        if (skills[DUALWIELD] >= 1)
+            CreateItemInBackpack(who, 0xF9A0, 1);
         endif
     endif
 
@@ -1039,7 +1062,6 @@ function attributeBonusByRaceAndTraits(who)
     if (raca == "Anão")
         final_str += 10;
     elseif (raca == "Elfo")
-        print("elfo int: "+ final_int);
         final_int += 10;
     elseif (raca == "Drow")
         final_dex += 5;
@@ -1117,6 +1139,9 @@ function resetCharacter(who)
 		AP_SetTrueSkill(who, attrib, 0);
 		sleepms(10);
 	endforeach
+
+    EraseObjProperty(who, "linguas_conhecidas");
+    EraseObjProperty(who, "lingua_escolhida");
 endfunction
 
 function resetGender(who)
@@ -1280,4 +1305,56 @@ function startAdventureGump(who)
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
     return GFSendGump(who, gump);
+endfunction
+
+function languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+    var i := 1;
+    showPreviousGumpInformation(gump, who, culture_pic, x, y);
+    x := 555;
+    y := 100;
+    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha suas línguas", 0, 0); //shadow
+    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha suas línguas", 0, 0);
+
+    var chardata := GetObjProperty(who, "chardata");
+    var culture := chardata.culture;
+    foreach lang in linguasOpt
+        var color := "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, lang), 1, 0);
+        if (!(lang in known_languages) || (known_languages.size() < total_amount))
+            GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
+        endif
+        sleepms(2);
+        y += 26;
+        i++;
+    endforeach
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
+    return GFSendGump(who, gump);
+endfunction
+
+function parseLanguageByCulture(who, linguasOpt)
+        var culture := GetObjProperty(who, "chardata").culture;
+
+        if (culture == CULTURA.AIGLANA)
+            return linguasOpt[1];
+        elseif (culture == CULTURA.BADURAN)
+            return linguasOpt[2];
+        elseif (culture == CULTURA.ALURIEL)
+            return linguasOpt[3];
+        elseif (culture == CULTURA.LESTE)
+            return linguasOpt[4];
+        elseif (culture == CULTURA.POLSKI)
+            return linguasOpt[5];
+        elseif (culture == CULTURA.GULTHRAK)
+            return linguasOpt[6];
+        elseif (culture == CULTURA.BJORSKA)
+            return linguasOpt[7];
+        elseif (culture == CULTURA.HAROLOTH)
+            return linguasOpt[8];
+        endif
 endfunction

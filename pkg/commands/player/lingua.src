@@ -6,56 +6,13 @@ include "include/sysEvent";
 include "include/say";
 include ":fls_core:fls_characters";
 include ":tn:tngumps";
+include "include/CreationUtils";
 
 program linguas(parms)
     var who := parms[1];
-
-    var total_amount := cint((AP_GetTrueStat(who, INTELLIGENCE) - 40) / 30);
-
-    var culture := GetObjProperty(who, "chardata").culture;
     var known_languages := GetObjProperty(who, "linguas_conhecidas");
-
-    var linguasOpt := array{"Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk", "Grumnak", "Björ", "Idrith'har"};
-    var filtered_languages := array;
-
-    if (known_languages == error)
-        if (AP_GetTrueStat(who, INTELLIGENCE) >= 70)
-            foreach lang in linguasOpt
-                if (lang != culture)
-                    filtered_languages.append(lang);
-                endif
-            endforeach
-
-            known_languages := CheckBoxGump(who, 200, 300, "Escolha " + Cstr(total_amount) + ".", filtered_languages);
-            if (known_languages.size() > total_amount)
-                SendSysMessageEx(who, "Você escolheu mais do que devia.", SSM_FAIL);
-                return;
-            elseif (known_languages.size() < total_amount)
-                SendSysMessageEx(who, "Você não escolheu a quantidade correta de idiomas.", SSM_FAIL);
-                return;
-            endif
-
-            known_languages.append(culture);
-            known_languages.append("Comum");
-
-            SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
-            SetObjProperty(who, "linguas_conhecidas", known_languages);
-        elseif (AP_GetTrueStat(who, INTELLIGENCE) >= 40)
-            known_languages := array{culture, "Comum"};
-            SetObjProperty(who, "linguas_conhecidas", known_languages);
-            SendSysMessageEx(who, "Você compreende " + culture + " e Comum", SSM_INFO);
-        else
-            SendSysMessageEx(who, "Sua inteligência só permite que você fale seu idioma nativo", SSM_FAIL);
-            SendSysMessageEx(who, "Você se comunicará em " + culture, SSM_INFO);
-            known_languages := array{culture};
-            SetObjProperty(who, "linguas_conhecidas", known_languages);
-            return;
-        endif
-    endif
-
     var chosen_language := RadioGump(who, 250, 200, "Em que idioma deseja se comunicar?", known_languages);
 
     SendSysMessageEX(who, "Você se comunicará em " + chosen_language, SSM_INFO);
-    SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", chosen_language);
 endprogram
