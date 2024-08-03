@@ -1,12 +1,8 @@
 use uo;
 use os;
 
-include "include/client";
-include "include/sysEvent";
 include "include/say";
-include ":fls_core:fls_characters";
 include ":tn:tngumps";
-include "include/CreationUtils";
 
 program linguas(parms)
     var who := parms[1];
