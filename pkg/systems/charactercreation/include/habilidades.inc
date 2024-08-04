@@ -1,6 +1,7 @@
 use cfgfile;
 
 include ":attributes:attributes";
+include "include/epicConstants";
 
 function NivelHabilidade(habilidade, classe)
 
@@ -360,6 +361,8 @@ function comprarHabilidade(who, item, nv:=-1)
 	endif
 	var classe := GetObjProperty(who, "classe");
 	var faccao := GetObjProperty(who, "faccao"); //facção
+	var cultura := GetObjProperty(who, "chardata").culture;
+	var raca := GetObjProperty(who, "chardata").raca;
 
 	var habs := GetObjProperty(who, "buyhab");
 	if (habs[0] == error)
@@ -398,7 +401,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
-        if (escolhida == "Visao verdadeira" && who.graphic != 1831 && GetObjProperty(who, "chardata").povo != "Drow")
+        if (escolhida == "Visao verdadeira" && who.graphic != 1831 && raca != DROW)
             SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
             return 0;
         endif
@@ -466,8 +469,8 @@ function comprarHabilidade(who, item, nv:=-1)
             who.carrying_capacity_mod := 50;
         elseif(escolhida == "Bolsa Infinita")
             who.carrying_capacity_mod := 120;
-		elseif(escolhida == "Elo Natural" && GetObjProperty(who, "chardata").culture == CULTURA.HAROLOTH)
-            SendSysMessageEx(who, "Drows har'oloth não podem ser druidas.", SSM_FAIL);
+		elseif(escolhida == "Elo Natural" && cultura == HAROLOTH)
+            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
             return 0;
 		endif
 		myhabs[nivel] := escolhida;
