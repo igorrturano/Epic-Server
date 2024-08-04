@@ -634,7 +634,7 @@ function WritespellInfo(who, byref spellinfo)
 	elseif(spellinfo.magic_path == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
         cfg := ReadConfigFile(":spells:config/tricksterspells");
 	else
-		cfg := ReadConfigFile(":spells:config/allspells");
+		cfg := ReadConfigFile(":spells:config/cantripspells");
     endif
 
 	//sendsysmessage(who, "cfg" + cfg + " " + spellinfo.id);
