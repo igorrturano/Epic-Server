@@ -102,13 +102,13 @@ const HAROLOTH_ID := 0x9EC;
 const POLKINEA_ID := 0x9ED;
 const LESTE_ID := 0x9EE;
 
-const BOKK_BHARAZ := 0x9EF;
-const ELUITHORTH := 0x9F0;
-const HALLEUAD := 0x9F1;
-const KAI := 0x9F2;
-const LORE := 0x9F3;
-const USHKRAR := 0x9F4;
-const VENERATIO := 0x9F5;
+const BOKK_BHARAZ_ID := 0x9EF;
+const ELUITHORTH_ID := 0x9F0;
+const HALLEUAD_ID := 0x9F1;
+const KAI_ID := 0x9F2;
+const LORE_ID := 0x9F3;
+const USHKRAR_ID := 0x9F4;
+const VENERATIO_ID := 0x9F5;
 
 // var CULTURA := struct{AIGLANA := "Aiglana", HAROLOTH := "Har'oloth", LESTE := "Povos do Leste", BJORSKA := "Björska", ALURIEL := "Alüriel", BADURAN := "Badûran", GULTHRAK := "Gulthrak", POLKINEA := "Polkinea"};
 // var RACA := struct{ANAO := "Anão", DROW := "Drow", ELFO := "Elfo", ORC := "Orc", HUMANO :="Humano", POLSKI := "Polski"};
@@ -719,38 +719,38 @@ endfunction
 
 function getReligionByPictureId(religion_id)
     case (religion_id)
-        VENERATIO:
+        VENERATIO_ID:
             return VENERATIO;
-        LORE:
+        LORE_ID:
             return LORE;
-        BOKK_BHARAZ:
+        BOKK_BHARAZ_ID:
             return BOKK_BHARAZ;
-        HALLEUAD:
+        HALLEUAD_ID:
             return HALLEUAD;
-        KAI:
+        KAI_ID:
             return KAI;
-        ELUITHORTH:
+        ELUITHORTH_ID:
             return ELUITHORTH;
-        USHKRAR:
+        USHKRAR_ID:
             return USHKRAR;
     endcase
 endfunction
 
 function getReligionDescriptionByPictureId(culture_id)
     case (culture_id)
-        VENERATIO:
+        VENERATIO_ID:
             return veneratioText;
-        LORE:
+        LORE_ID:
             return loreText;
-        BOKK_BHARAZ:
+        BOKK_BHARAZ_ID:
             return bokk_bharazText;
-        HALLEUAD:
+        HALLEUAD_ID:
             return halleuadText;
-        KAI:
+        KAI_ID:
             return kaiText;
-        ELUITHORTH:
+        ELUITHORTH_ID:
             return eluithorthText;
-        USHKRAR:
+        USHKRAR_ID:
             return ushkrarText;
     endcase
 endfunction
