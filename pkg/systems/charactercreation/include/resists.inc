@@ -121,7 +121,7 @@ function GetResist(who, resist)
 		valor := valor + CInt(GetObjProperty(who, "#VontadeMod"));
 
 		// Aplica modificadores de vantagens raciais
-		if ((GetObjProperty(who, "chardata")).culture == CULTURA.ALURIEL)
+		if ((GetObjProperty(who, "chardata")).culture == ALURIEL)
 		//if (vantagem == "Vontade de Ferro" || who.npctemplate)
 			valor := valor + 20; // +200% do VALOR_REFERENCIA
 		endif
@@ -168,7 +168,7 @@ function CheckResist(who, resist, dif, mod := 0)
 	//printtextabove(who, "dado " + dado + " valor " + valor + " diff " + dif);
 	if (dado + valor + mod >= dif)
 		return 1;
-	elseif ((GetObjProperty(who, "chardata")).raca == RACA.HUMANO && IsBloodied(who))
+	elseif ((GetObjProperty(who, "chardata")).raca == HUMANO && IsBloodied(who))
 		dado := RandomInt(40) + 1;
 		if (dado + valor + mod >= dif)
 			SendSysMessageEx(who, "Humanos são insistentes!", SSM_INFO);
@@ -186,7 +186,7 @@ function CheckResist(who, resist, dif, mod := 0)
 			SendSysMessageEx(who, "Sua constituição anã o salvou da magia", SSM_INFO);
 			return 1;
 		endif
-    elseif(GetObjProperty(who, "chardata").culture == CULTURA.POLKINEA)
+    elseif(GetObjProperty(who, "chardata").culture == POLKINEA)
 		dado := RandomInt(40) + 1;
 		if (dado + valor + mod >= dif)
 			SendSysMessageEx(who, "Um polski sempre pode contar com a própria sorte", SSM_INFO);
