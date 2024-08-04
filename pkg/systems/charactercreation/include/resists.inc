@@ -121,7 +121,7 @@ function GetResist(who, resist)
 		valor := valor + CInt(GetObjProperty(who, "#VontadeMod"));
 
 		// Aplica modificadores de vantagens raciais
-		if ((GetObjProperty(who, "chardata")).raca == RACA.ELFO)
+		if ((GetObjProperty(who, "chardata")).culture == CULTURA.ALURIEL)
 		//if (vantagem == "Vontade de Ferro" || who.npctemplate)
 			valor := valor + 20; // +200% do VALOR_REFERENCIA
 		endif

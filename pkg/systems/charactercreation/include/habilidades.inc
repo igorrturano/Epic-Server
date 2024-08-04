@@ -445,7 +445,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif (escolhida == "Inventario Costureiro")
 			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Couro","Tecido"});
 			Start_Script(":charactercreation:habilidades/inventario", {who, "costureiro", inventario});
-		elseif (escolhida == "Senso da Natureza")
+		elseif (escolhida == "Elo Natural") // Antigo senso da natureza
 			setObjProperty(who, "empatiacomanimais", 1);
 		elseif(escolhida == "Protecao Elemental Kitahne")
 			who.resist_fire_mod  := who.resist_fire_mod + 25;
@@ -466,6 +466,9 @@ function comprarHabilidade(who, item, nv:=-1)
             who.carrying_capacity_mod := 50;
         elseif(escolhida == "Bolsa Infinita")
             who.carrying_capacity_mod := 120;
+		elseif(escolhida == "Elo Natural" && GetObjProperty(who, "chardata").culture == CULTURA.HAROLOTH)
+            SendSysMessageEx(who, "Drows har'oloth não podem ser druidas.", SSM_FAIL);
+            return 0;
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;
