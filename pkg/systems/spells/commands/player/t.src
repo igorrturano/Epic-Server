@@ -3,74 +3,102 @@ use os;
 use cfgfile;
 
 include "include/say";
-include ":spells:spellbooks";
+include ":charactercreation:habilidades";
 
+const SPELL_BTN := 200;
+const GUMPID_CLERICSPELL := 0x00001C;
 program magia(who, spellname)
+	var cfg := ReadConfigFile(":spells:cantripspells");
+
+
 	if ( GetObjProperty(who, "#Casting") )
 		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
 		return 0;
 	endif
-
-	var cfg := ReadConfigFile(":spells:allspells");
-
-	var elem;
+	var chardata := GetObjProperty(who, "chardata");
+    var magia := chardata.magia;
+	if (magia != "spellcaster" && chardata.trait == "Natureza Arcana" )
+		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
+		return;
+	endif
 	var id := 1;
-	var achou := 0;
-	foreach spell in ( GetConfigIntKeys(cfg) )
-		elem := FindConfigElem(cfg, id);
-		if ( GetConfigString(elem, "Name") == spellname)
-			achou := 1;
-			break;
+	var elem;
+
+	if (!spellname)
+		var cantrips_list := struct;
+		foreach id in (GetConfigIntKeys(cfg))
+			elem := FindConfigElem(cfg, id);
+			cantrips_list.insert(elem);
+		endforeach
+		CantripsGump(who, GetConfigIntKeys(cfg));
+	else
+		id := 1;
+		elem;
+		var achou := 0;
+		foreach spell in ( GetConfigIntKeys(cfg) )
+			elem := FindConfigElem(cfg, id);
+			if ( Lower(GetConfigString(elem, "Name")) == Lower(spellname))
+				achou := 1;
+				break;
+			endif
+			id := id + 1;
+		endforeach
+
+		if (!achou)
+			SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
+			return;
 		endif
-		id := id + 1;
-	endforeach
 
-	if (!achou)
-		SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
-		return;
-	endif
-
-	var spellbook := 0;
-	var booktype;
-	foreach item in ( EnumerateItemsInContainer(who.backpack) )
-		if ( item.objtype == 0x6149)
-            var spells := GetObjProperty(item, "spells");
-            foreach s in spells
-                if ( s == id)
-                    spellbook := 1;
-                    booktype := GetBookType(item);
-                    break;
-                endif
-            endforeach
+		var spellinfo := struct;
+		spellinfo.+id := id;
+		spellinfo.+magic_path == "cantripspells";
+		var script := Start_Script(":spells:cast_spell", {who, spellinfo});
+		if ( script.errortext )
+			SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
+			return 0;
 		endif
-	endforeach
-    foreach item in ListEquippedItems(who)
-        if (item.objtype == 24905)
-            var spells := GetObjProperty(item, "spells");
-            foreach s in spells
-                if ( s == id)
-                    spellbook := 1;
-                    booktype := GetBookType(item);
-                    break;
-                endif
-            endforeach
-            break;
-        endif
-    endforeach
-
-	if ( !spellbook)
-		SendSysMessageEx(who, "Voce nao possui a magia " + spellname + " no seu totem.", SSM_FAIL);
-		return;
 	endif
-
-	var spellinfo := struct;
-	spellinfo.+id := id;
-        var script := Start_Script(":spells:cast_spell", {who, spellinfo, booktype});
-        if ( script.errortext )
-            SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
-            return 0;
-	    endif
-
-
-
 endprogram
+
+function CantripsGump(who, shaman_list)
+	var gump := GFCreateGump(); 
+ 	var cfg := ReadConfigFile(":spells:cantripspells");
+
+   var size := shaman_list.Size();
+   if (size >= 1)
+      size := size * 26;
+   else
+      size := 0;
+   endif
+
+    GFSetId(gump, GUMPID_CLERICSPELL);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 10, 26, 9390, 276, 140+size);
+	GFHTMLArea(gump, 80, 65, 142, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Truques", 0, 0); //shadow
+	GFHTMLArea(gump, 82, 67, 142, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Truques", 0, 0);
+	GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#ffffff >Lista de Truques", 0, 0); //shadow
+	GFGumpPic(gump, 41, 84, 1469);
+	// GFTextLine(gump, 187, 66, 0, "Lista de Bençãos");
+	// GFGumpPic(gump, 31, 98, 9773, 0);
+   var y := 116;
+   foreach spell in shaman_list
+	spell := FindConfigElem(cfg, spell);
+
+      var spellname := "<basefont Size= 1>Empty";
+      var powerwords := "";
+
+      if (spell)
+         spellname := spell.name;
+      endif
+
+      var color := "";
+
+      GFHTMLArea(gump, 52, y, 192, 24, "{}{}".format(color, spellname), 1, 0);
+      GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format("A020F0", spell.flavortext));
+
+      y += 26;
+      sleepms(2);
+   endforeach
+
+   return GFSendGump(who, gump);
+endfunction
