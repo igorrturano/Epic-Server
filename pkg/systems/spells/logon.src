@@ -27,6 +27,10 @@ program Logon(who)
       Start_Script(":spells:powerWords", array{who});
    endif
 
+   if (magia == "Sacerdote" && !GetProcess(GetObjProperty(who, "#priestpid")))
+     Start_Script(":spells:powerWords", array{who});
+   endif
+
 	return 1;
 endprogram
 
