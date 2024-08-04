@@ -8,76 +8,155 @@ include "include/say";
 include "include/tnmagery";
 include ":fls_core:fls_characters";
 
-program clericPowerWords(parms)
-   detach();
-   var who := parms[1];
-   var pid := GetPid();
-   SetObjProperty(who, "#clericpid", pid);
+program clericPowerWords( parms )
+  detach();
+  var who := parms[1];
+  var pid := GetPid();
 
-   RegisterForSpeechEvents( who, 3 );
-   EnableEvents( SYSEVENT_SPEECH, 1 );
-   
-   var event;
-   while(who.connected)
+  var magia := GetObjProperty( who, "chardata" ).magia;
+
+  if ( magia == "Shaman" )
+    SetObjProperty( who, "#clericpid", pid );
+
+    RegisterForSpeechEvents( who, 3 );
+    EnableEvents( SYSEVENT_SPEECH, 1 );
+
+    var event;
+    while ( who.connected )
       event := wait_for_event( 120 );
-      if ( event && !who.dead && event.source ==  who && event.type == SYSEVENT_SPEECH)
-         var shaman_list := GetObjProperty(who, "shaman_list");
-         var cantrips := GetObjProperty(who, "cantrips");
-         
-         if (!shaman_list) shaman_list := array{}; endif;
-         if (shaman_list.size() < 1 || GetObjProperty(who, "#Casting"))
+      if ( event && !who.dead && event.source == who && event.type == SYSEVENT_SPEECH )
+        var shaman_list := GetObjProperty( who, "shaman_list" );
+        var cantrips := GetObjProperty( who, "cantrips" );
+
+        if ( !shaman_list )
+          shaman_list := array{};
+        endif
+        if ( shaman_list.size() < 1 || GetObjProperty( who, "#Casting" ) )
+          continue;
+        endif
+
+        var spell_id := 1;
+        foreach spell in cantrips
+          var verified := 0;
+          if ( !spell.powerwords || spell.used == 1 )
+            spell_id++;
             continue;
-         endif
+          endif
+          var text := Lower( event.text );
 
-         var spell_id := 1;
-         foreach spell in cantrips
-            var verified := 0;
-            if (!spell.powerwords || spell.used == 1)
-                spell_id++;
-               continue;
+          foreach powerword in splitwords( ( spell.powerwords ) )
+            if ( Lower( text ).find( Lower( powerword ) ) )
+              verified += 1;
             endif
-            var text := Lower(event.text);
-            
-            foreach powerword in splitwords((spell.powerwords))
-               if (Lower(text).find(Lower(powerword)))
-                  verified += 1;
-               endif
-               sleepms(2);
-            endforeach
+            sleepms( 2 );
+          endforeach
 
-            if (verified == splitwords(spell.powerwords).size())
-               Start_Script(":spells:cast_spell", {who, spell, "Shaman"});
-               break;
-            endif
+          if ( verified == splitwords( spell.powerwords ).size() )
+            Start_Script( ":spells:cast_spell", { who, spell, "Shaman" } );
+            break;
+          endif
+          spell_id++;
+          sleepms( 2 );
+        endforeach
+        spell_id := 1;
+        foreach spell in shaman_list
+          var verified := 0;
+          if ( !spell.powerwords || spell.used == 1 )
             spell_id++;
-            sleepms(2);
-         endforeach
-         spell_id := 1;
-         foreach spell in shaman_list
-            var verified := 0;
-            if (!spell.powerwords || spell.used == 1)
-                spell_id++;
-               continue;
-            endif
-            var text := Lower(event.text);
-            
-            foreach powerword in splitwords((spell.powerwords))
-               if (Lower(text).find(Lower(powerword)))
-                  verified += 1;
-               endif
-               sleepms(2);
-            endforeach
+            continue;
+          endif
+          var text := Lower( event.text );
 
-            if (verified == splitwords(spell.powerwords).size())
-               Start_Script(":spells:cast_spell", {who, spell, "Shaman"});
-               shaman_list[spell_id].used := 0; //TODO Comentado até o fim do evento
-               SetObjProperty(who, "shaman_list", shaman_list);
-               break;
+          foreach powerword in splitwords( ( spell.powerwords ) )
+            if ( Lower( text ).find( Lower( powerword ) ) )
+              verified += 1;
             endif
-            spell_id++;
-            sleepms(2);
-         endforeach
+            sleepms( 2 );
+          endforeach
+
+          if ( verified == splitwords( spell.powerwords ).size() )
+            Start_Script( ":spells:cast_spell", { who, spell, "Shaman" } );
+            shaman_list[spell_id].used := 0; // TODO Comentado até o fim do evento
+            SetObjProperty( who, "shaman_list", shaman_list );
+            break;
+          endif
+          spell_id++;
+          sleepms( 2 );
+        endforeach
       endif
-      sleepms(10);
-   endwhile
+      sleepms( 10 );
+    endwhile
+  elseif ( magia == "Sacerdote" )
+    SetObjProperty( who, "#priestpid", pid );
+
+    RegisterForSpeechEvents( who, 3 );
+    EnableEvents( SYSEVENT_SPEECH, 1 );
+
+    var event;
+    while ( who.connected )
+      event := wait_for_event( 120 );
+      if ( event && !who.dead && event.source == who && event.type == SYSEVENT_SPEECH )
+        var priest_list := GetObjProperty( who, "priest_list" );
+        var cantrips := GetObjProperty( who, "cantrips" );
+
+        if ( !priest_list )
+          priest_list := array{};
+        endif
+        if ( priest_list.size() < 1 || GetObjProperty( who, "#Casting" ) )
+          continue;
+        endif
+
+        var spell_id := 1;
+        foreach spell in cantrips
+          var verified := 0;
+          if ( !spell.powerwords || spell.used == 1 )
+            spell_id++;
+            continue;
+          endif
+          var text := Lower( event.text );
+
+          foreach powerword in splitwords( ( spell.powerwords ) )
+            if ( Lower( text ).find( Lower( powerword ) ) )
+              verified += 1;
+            endif
+            sleepms( 2 );
+          endforeach
+
+          if ( verified == splitwords( spell.powerwords ).size() )
+            Start_Script( ":spells:cast_spell", { who, spell, "Sacerdote" } );
+            break;
+          endif
+          spell_id++;
+          sleepms( 2 );
+        endforeach
+
+        spell_id := 1;
+        foreach spell in priest_list
+          var verified := 0;
+          if ( !spell.powerwords || spell.used == 1 )
+            spell_id++;
+            continue;
+          endif
+          var text := Lower( event.text );
+
+          foreach powerword in splitwords( ( spell.powerwords ) )
+            if ( Lower( text ).find( Lower( powerword ) ) )
+              verified += 1;
+            endif
+            sleepms( 2 );
+          endforeach
+
+          if ( verified == splitwords( spell.powerwords ).size() )
+            Start_Script( ":spells:cast_spell", { who, spell, "Sacerdote" } );
+            priest_list[spell_id].used := 0; // TODO Comentado até o fim do evento
+            SetObjProperty( who, "priest_list", priest_list );
+            break;
+          endif
+          spell_id++;
+          sleepms( 2 );
+        endforeach
+      endif
+      sleepms( 10 );
+    endwhile
+  endif
 endprogram
