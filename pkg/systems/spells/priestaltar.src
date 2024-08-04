@@ -86,9 +86,9 @@ function CreateClericGump(who, spell_list, available_slots)
    endif
 	GFResizePic(gump, 17, 31, 9390, 359, 125+size);
 	// GFHtmlShadowed(gump, 115, 70, 192, 20, "#feb98e ", "<BASEFONT Size=5>Lista de Bençãos");
-	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Ukshar", 0, 0); //shadow
-	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Ukshar", 0, 0); //shadow
-	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Ukshar", 0, 0);
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Augur", 0, 0);
 	GFGumpPic(gump, 63, 91, 1469);
 	GFGumpPic(gump, 80, 91, 1469);
 	GFTextLine(gump, 63, 100, 0, "Rituais Augures");
