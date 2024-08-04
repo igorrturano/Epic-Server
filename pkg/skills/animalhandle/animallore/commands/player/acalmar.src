@@ -13,6 +13,11 @@ include "include/sysEvent";
 include "include/eventID";
 
 program textcmd_acalmar(who)
+	if (who.hidden)
+		SendSysMessageEx(who, "Você precisa ser visto para acalmar criaturas.", SSM_FAIL);
+		return;
+	endif
+
 	SendSysMessageEx(who, "Selecione a criatura que você deseja acalmar.", SSM_REQUEST);
 	var creature := Target(who, TGTOPT_CHECK_LOS);
 

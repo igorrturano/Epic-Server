@@ -766,8 +766,7 @@ endfunction
 function genericItems(who)
     var chardata := GetObjProperty(who, "chardata");
     var skills := chardata.Skills;
-
-    CreateItemInBackpack(who, 0x0F52, 1); // Adaga
+    
     var robe := CreateItemInBackpack(who, 0x1F03, 1); // Roupa
     EquipItem(who, robe);
 	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
@@ -783,6 +782,8 @@ function weaponsByClassAndCulture(who)
     var skills := chardata.Skills;
 
     if (chardata.culture == CULTURA.GULTHRAK)
+        CreateItemInBackpack(who, 0xF9FC, 1); // Adaga
+
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x26C6, 1); // scepter
         endif
@@ -798,6 +799,8 @@ function weaponsByClassAndCulture(who)
     endif
 
     if (chardata.culture == CULTURA.AIGLANA)
+        CreateItemInBackpack(who, 0xF99F, 1); // Adaga
+
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x0f63, 1); // espada curta
         endif
@@ -813,6 +816,8 @@ function weaponsByClassAndCulture(who)
     endif
 
     if (chardata.culture == CULTURA.HAROLOTH)
+        CreateItemInBackpack(who, 0x0f51, 1); // Adaga
+
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x1401, 1); //kryss
         endif
@@ -828,6 +833,9 @@ function weaponsByClassAndCulture(who)
     endif
 
     if (chardata.culture == CULTURA.POLKINEA)
+        CreateItemInBackpack(who, 0xF998, 1); // Adaga
+
+    
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x1440, 1); //cutlass
         endif
@@ -843,6 +851,8 @@ function weaponsByClassAndCulture(who)
     endif
 
     if (chardata.culture == CULTURA.BJORSKA)
+        CreateItemInBackpack(who, 0xF99B, 1); // Adaga
+
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x13AF, 1); // waraxe
         endif
@@ -853,11 +863,14 @@ function weaponsByClassAndCulture(who)
             CreateItemInBackpack(who, 0x0f49, 1); // axe
         endif
         if (skills[DUALWIELD] >= 1)
-            CreateItemInBackpack(who, 0xF99B, 1);
+            CreateItemInBackpack(who, 0xF9F4, 1);
         endif
     endif
 
     if (chardata.culture == CULTURA.LESTE)
+        CreateItemInBackpack(who, 0xF99A, 1); // Adaga
+
+    
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x13fe, 1); // wakizashi
         endif
@@ -873,6 +886,9 @@ function weaponsByClassAndCulture(who)
     endif
 
     if (chardata.culture == CULTURA.BADURAN)
+        CreateItemInBackpack(who, 0xF999, 1); // Adaga
+
+    
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x143c, 1); // HAMMERPICK
         endif
@@ -888,6 +904,8 @@ function weaponsByClassAndCulture(who)
     endif
 
     if (chardata.culture == CULTURA.ALURIEL)
+        CreateItemInBackpack(who, 0xF99D, 1); // Adaga
+
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x0f5f, 1); // rapiera
         endif
