@@ -64,15 +64,15 @@ program calor(params)
                 dif := dif - 60;
             endif
             
-            if (GetObjProperty(who, "chardata").culture == CULTURA.BJORSKA)
+            if (GetObjProperty(who, "chardata").culture == BJORSKA)
                 dif := dif + 30;
             endif
 
-            if ( GetObjProperty(who, "chardata").culture == CULTURA.GULTHRAK)
+            if ( GetObjProperty(who, "chardata").culture == GULTHRAK)
                 dif := dif - 60;
             endif
 
-            if (GetObjProperty(who, "chardata").culture == CULTURA.LESTE)
+            if (GetObjProperty(who, "chardata").culture == LESTE)
                 dif := dif - 30;
             endif
 

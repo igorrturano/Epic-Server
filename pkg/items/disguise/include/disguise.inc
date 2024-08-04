@@ -247,7 +247,7 @@ function BuildHairDyeGump(cur_color := 0, raca := 0, who)
 
 	GFPage(gump, 0);
 	//GFClosable(gump, 0);
-	if (raca == RACA.HUMANO)
+	if (raca == HUMANO)
 		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 420, 550 * 2);
 		GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 120, 520 * 2);
 		GFResizePic(gump, 140, 15, GFCfgConst("Defaults", "ForeGround"), 265, 486 * 2);

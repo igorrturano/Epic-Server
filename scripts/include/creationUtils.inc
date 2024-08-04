@@ -4,6 +4,7 @@ include ":attributes:attributes";
 include ":disguise:disguise";
 include ":charactercreation:createchar";
 include ":tn:tngumps";
+include "include/epicConstants";
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -101,38 +102,38 @@ const HAROLOTH_ID := 0x9EC;
 const POLKINEA_ID := 0x9ED;
 const LESTE_ID := 0x9EE;
 
-const BOKK_BHARAZ := 0x9EF;
-const ELUITHORTH := 0x9F0;
-const HALLEUAD := 0x9F1;
-const KAI := 0x9F2;
-const LORE := 0x9F3;
-const USHKRAR := 0x9F4;
-const VENERATIO := 0x9F5;
+const BOKK_BHARAZ_ID := 0x9EF;
+const ELUITHORTH_ID := 0x9F0;
+const HALLEUAD_ID := 0x9F1;
+const KAI_ID := 0x9F2;
+const LORE_ID := 0x9F3;
+const USHKRAR_ID := 0x9F4;
+const VENERATIO_ID := 0x9F5;
 
-var CULTURA := struct{AIGLANA := "Aiglana", HAROLOTH := "Har'oloth", LESTE := "Povos do Leste", BJORSKA := "Björska", ALURIEL := "Alüriel", BADURAN := "Badûran", GULTHRAK := "Gulthrak", POLKINEA := "Polkinea"};
-var RACA := struct{ANAO := "Anão", DROW := "Drow", ELFO := "Elfo", ORC := "Orc", HUMANO :="Humano", POLSKI := "Polski"};
+// var CULTURA := struct{AIGLANA := "Aiglana", HAROLOTH := "Har'oloth", LESTE := "Povos do Leste", BJORSKA := "Björska", ALURIEL := "Alüriel", BADURAN := "Badûran", GULTHRAK := "Gulthrak", POLKINEA := "Polkinea"};
+// var RACA := struct{ANAO := "Anão", DROW := "Drow", ELFO := "Elfo", ORC := "Orc", HUMANO :="Humano", POLSKI := "Polski"};
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
 var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
-var RELIGIAO := struct{VENERATIO := "Veneratio", ELUITHORTH := "Eluith'orth", KAI := "Kai", HALLEUAD := "Halleuad", LORE := "Lórё", BOKK_BHARAZ := "Bokk Bharaz", USHKRAR := "Ushkr'ar"};
+// var RELIGIAO := struct{VENERATIO := "Veneratio", ELUITHORTH := "Eluith'orth", KAI := "Kai", HALLEUAD := "Halleuad", LORE := "Lórё", BOKK_BHARAZ := "Bokk Bharaz", USHKRAR := "Ushkr'ar"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
         AIGLA_ID:
-            return CULTURA.AIGLANA;
+            return AIGLANA;
         ALURIEL_ID:
-            return CULTURA.ALURIEL;
+            return ALURIEL;
         BADURAN_ID:
-            return CULTURA.BADURAN;
+            return BADURAN;
         BJORSKA_ID:
-            return CULTURA.BJORSKA;
+            return BJORSKA;
         GULTHRAK_ID:
-            return CULTURA.GULTHRAK;
+            return GULTHRAK;
         HAROLOTH_ID:
-            return CULTURA.HAROLOTH;
+            return HAROLOTH;
         POLKINEA_ID:
-            return CULTURA.POLKINEA;
+            return POLKINEA;
         LESTE_ID:
-            return CULTURA.LESTE;
+            return LESTE;
     endcase
 endfunction
 
@@ -240,19 +241,19 @@ function getRaceByCulturalId(culture_pic)
     var races;
     case (culture_pic)
         HAROLOTH_ID:
-            races := {RACA.DROW};
+            races := {DROW};
         ALURIEL_ID:
-            races := {RACA.ELFO};
+            races := {ELFO};
         POLKINEA_ID:
-            races := {RACA.POLSKI};
+            races := {POLSKI};
         GULTHRAK_ID:
-            races := {RACA.ORC};
+            races := {ORC};
         BADURAN_ID:
-            races := {RACA.ANAO};
+            races := {ANAO};
         BJORSKA_ID:
-            races := {RACA.HUMANO};
+            races := {HUMANO};
         default:
-            races := array{RACA.ANAO, RACA.DROW, RACA.ELFO, RACA.HUMANO, RACA.ORC, RACA.POLSKI};
+            races := array{ANAO, DROW, ELFO, HUMANO, ORC, POLSKI};
     endcase
     return races;
 endfunction
@@ -718,38 +719,38 @@ endfunction
 
 function getReligionByPictureId(religion_id)
     case (religion_id)
-        VENERATIO:
-            return RELIGIAO.VENERATIO;
-        LORE:
-            return RELIGIAO.LORE;
-        BOKK_BHARAZ:
-            return RELIGIAO.BOKK_BHARAZ;
-        HALLEUAD:
-            return RELIGIAO.HALLEUAD;
-        KAI:
-            return RELIGIAO.KAI;
-        ELUITHORTH:
-            return RELIGIAO.ELUITHORTH;
-        USHKRAR:
-            return RELIGIAO.USHKRAR;
+        VENERATIO_ID:
+            return VENERATIO;
+        LORE_ID:
+            return LORE;
+        BOKK_BHARAZ_ID:
+            return BOKK_BHARAZ;
+        HALLEUAD_ID:
+            return HALLEUAD;
+        KAI_ID:
+            return KAI;
+        ELUITHORTH_ID:
+            return ELUITHORTH;
+        USHKRAR_ID:
+            return USHKRAR;
     endcase
 endfunction
 
 function getReligionDescriptionByPictureId(culture_id)
     case (culture_id)
-        VENERATIO:
+        VENERATIO_ID:
             return veneratioText;
-        LORE:
+        LORE_ID:
             return loreText;
-        BOKK_BHARAZ:
+        BOKK_BHARAZ_ID:
             return bokk_bharazText;
-        HALLEUAD:
+        HALLEUAD_ID:
             return halleuadText;
-        KAI:
+        KAI_ID:
             return kaiText;
-        ELUITHORTH:
+        ELUITHORTH_ID:
             return eluithorthText;
-        USHKRAR:
+        USHKRAR_ID:
             return ushkrarText;
     endcase
 endfunction
@@ -781,7 +782,7 @@ function weaponsByClassAndCulture(who)
     var chardata := GetObjProperty(who, "chardata");
     var skills := chardata.Skills;
 
-    if (chardata.culture == CULTURA.GULTHRAK)
+    if (chardata.culture == GULTHRAK)
         CreateItemInBackpack(who, 0xF9FC, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
@@ -798,7 +799,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.AIGLANA)
+    if (chardata.culture == AIGLANA)
         CreateItemInBackpack(who, 0xF99F, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
@@ -815,7 +816,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.HAROLOTH)
+    if (chardata.culture == HAROLOTH)
         CreateItemInBackpack(who, 0x0f51, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
@@ -832,7 +833,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.POLKINEA)
+    if (chardata.culture == POLKINEA)
         CreateItemInBackpack(who, 0xF998, 1); // Adaga
 
     
@@ -850,7 +851,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.BJORSKA)
+    if (chardata.culture == BJORSKA)
         CreateItemInBackpack(who, 0xF99B, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
@@ -867,7 +868,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.LESTE)
+    if (chardata.culture == LESTE)
         CreateItemInBackpack(who, 0xF99A, 1); // Adaga
 
     
@@ -885,7 +886,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.BADURAN)
+    if (chardata.culture == BADURAN)
         CreateItemInBackpack(who, 0xF999, 1); // Adaga
 
     
@@ -903,7 +904,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == CULTURA.ALURIEL)
+    if (chardata.culture == ALURIEL)
         CreateItemInBackpack(who, 0xF99D, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
@@ -922,10 +923,10 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        if (chardata.culture == CULTURA.ALURIEL)
+        if (chardata.culture == ALURIEL)
             CreateItemInBackpack(who, 0x26CC, 1); // longbow
             CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        elseif (chardata.culture == CULTURA.BADURAN)
+        elseif (chardata.culture == BADURAN)
             CreateItemInBackpack(who, 0x0f4f, 1); // crossbow
             CreateItemInBackpack(who, 0x1bfb, ammo_amount); // bolts
         else
@@ -939,7 +940,7 @@ endfunction
 function armorsByCulture(who)
     var chardata := GetObjProperty(who, "chardata");
 
-    if (chardata.culture == CULTURA.GULTHRAK)
+    if (chardata.culture == GULTHRAK)
         CreateItemInBackpack(who, 0x144e, 1); // Armadura de ossos
         CreateItemInBackpack(who, 0x144f, 1); // Armadura de ossos
         CreateItemInBackpack(who, 0x1450, 1); // Armadura de ossos
@@ -947,14 +948,14 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0x1452, 1); // Armadura de ossos
     endif
 
-    if (chardata.culture == CULTURA.BADURAN)
+    if (chardata.culture == BADURAN)
         CreateItemInBackpack(who, 0x13ec, 1); // Armadura de aneis
         CreateItemInBackpack(who, 0x13ee, 1); // Armadura de aneis
         CreateItemInBackpack(who, 0x13f0, 1); // Armadura de aneis
         CreateItemInBackpack(who, 0x13f2, 1); // Armadura de aneis
     endif
 
-    if (chardata.culture == CULTURA.AIGLANA)
+    if (chardata.culture == AIGLANA)
         CreateItemInBackpack(who, 0xc684, 1); // Lorica Segmentata
         CreateItemInBackpack(who, 0xc680, 1); // Lorica Segmentata
         CreateItemInBackpack(who, 0xc681, 1); // Lorica Segmentata
@@ -962,7 +963,7 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0xc682, 1); // Lorica Segmentata
     endif
 
-    if (chardata.culture == CULTURA.HAROLOTH)
+    if (chardata.culture == HAROLOTH)
         CreateItemInBackpack(who, 0x13D6, 1); // Studded Leather
         CreateItemInBackpack(who, 0x13D5, 1); // Studded Leather
         CreateItemInBackpack(who, 0x13D4, 1); // Studded Leather
@@ -970,7 +971,7 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0x13DB, 1); // Studded Leather
     endif
 
-    if (chardata.culture == CULTURA.POLKINEA)
+    if (chardata.culture == POLKINEA)
         CreateItemInBackpack(who, 0x13C7, 1); // Armadura de couro simples
         CreateItemInBackpack(who, 0x13CD, 1); // Armadura de couro simples
         CreateItemInBackpack(who, 0x1DB9, 1); // Armadura de couro simples
@@ -978,7 +979,7 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0x13CC, 1); // Armadura de couro simples
     endif
 
-    if (chardata.culture == CULTURA.ALURIEL)
+    if (chardata.culture == ALURIEL)
         CreateItemInBackpack(who, 0x13D6, 1); // Studded Leather
         CreateItemInBackpack(who, 0x13D5, 1); // Studded Leather
         CreateItemInBackpack(who, 0x13D4, 1); // Studded Leather
@@ -986,13 +987,13 @@ function armorsByCulture(who)
         CreateItemInBackpack(who, 0x13DB, 1); // Studded Leather
     endif
 
-    if (chardata.culture == CULTURA.BJORSKA)
+    if (chardata.culture == BJORSKA)
         CreateItemInBackpack(who, 0x13BB, 1); // Cota de malhas
         CreateItemInBackpack(who, 0x13BE, 1); // Cota de malhas
         CreateItemInBackpack(who, 0x13BF, 1); // Cota de malhas
     endif
 
-    if (chardata.culture == CULTURA.LESTE)
+    if (chardata.culture == LESTE)
         CreateItemInBackpack(who, 0x27c6, 1); // Armadura de fibra
         CreateItemInBackpack(who, 0x2786, 1); // Armadura de fibra
         CreateItemInBackpack(who, 0x27c9, 1); // Armadura de fibra
@@ -1180,7 +1181,7 @@ function looksGump(who, chardata)
 
     escolherCabelo(who, disfarce, chardata.raca);
     escolheCorCabelo(who, disfarce, 0, chardata.raca, 1);
-    if (chardata.raca != RACA.ELFO && chardata.raca != RACA.DROW)
+    if (chardata.raca != ELFO && chardata.raca != DROW)
         escolherBarba(who, disfarce);
     endif
 
@@ -1277,14 +1278,14 @@ function pathOfWisdomGump(who, culture_pic)
     var wisdomPaths := array{"Mago", "Alquimista"};
     var chardata := GetObjProperty(who, "chardata");
     var culture := chardata.culture;
-    if (culture == CULTURA.GULTHRAK)
+    if (culture == GULTHRAK)
         wisdomPaths.append("Xamã");
-    elseif (culture == CULTURA.BADURAN)
+    elseif (culture == BADURAN)
         wisdomPaths.append("Martelo Divino");
         wisdomPaths.append("Engenheiro");
-    elseif (culture == CULTURA.AIGLANA)
+    elseif (culture == AIGLANA)
         wisdomPaths.append("Augur");
-    elseif (culture == CULTURA.HAROLOTH && who.graphic == 1831)
+    elseif (culture == HAROLOTH && who.graphic == 1831)
         wisdomPaths.append("Clériga de Idrith");
     endif
     foreach path in wisdomPaths
@@ -1358,21 +1359,21 @@ endfunction
 function parseLanguageByCulture(who, linguasOpt)
         var culture := GetObjProperty(who, "chardata").culture;
 
-        if (culture == CULTURA.AIGLANA)
+        if (culture == AIGLANA)
             return linguasOpt[1];
-        elseif (culture == CULTURA.BADURAN)
+        elseif (culture == BADURAN)
             return linguasOpt[2];
-        elseif (culture == CULTURA.ALURIEL)
+        elseif (culture == ALURIEL)
             return linguasOpt[3];
-        elseif (culture == CULTURA.LESTE)
+        elseif (culture == LESTE)
             return linguasOpt[4];
-        elseif (culture == CULTURA.POLSKI)
+        elseif (culture == POLKINEA)
             return linguasOpt[5];
-        elseif (culture == CULTURA.GULTHRAK)
+        elseif (culture == GULTHRAK)
             return linguasOpt[6];
-        elseif (culture == CULTURA.BJORSKA)
+        elseif (culture == BJORSKA)
             return linguasOpt[7];
-        elseif (culture == CULTURA.HAROLOTH)
+        elseif (culture == HAROLOTH)
             return linguasOpt[8];
         endif
 endfunction
