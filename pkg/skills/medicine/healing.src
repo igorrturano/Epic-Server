@@ -186,7 +186,7 @@ program UseBandage(mobile, bandage)
 
 	var valor;
 	if ( targ.IsA(POLCLASS_CORPSE) )
-		if (aux_skill < 50.0 || heal_skill < 50.0)
+		if (aux_skill < 40.0 || heal_skill < 40.0)
 			SendSysMessageEx(mobile, "Voce nao tem conhecimento suficiente para acordar alguem.", SSM_FAIL);
 			return 0;
 		elseif (GetObjProperty(targ, "morto"))
