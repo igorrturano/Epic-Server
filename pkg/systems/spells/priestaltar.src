@@ -1,0 +1,158 @@
+use uo;
+use os;
+use polsys;
+
+include "include/client";
+include "include/sysEvent";
+include ":tn:tngumps";
+include "include/say";
+include ":attributes:attributes";
+include "include/tnmagery";
+include ":timeUtils:time";
+
+const SPELL_BTN := 200;
+
+program orderSpells(who, item)
+   var magia := GetObjProperty(who, "chardata").magia;
+
+   if (magia != "Sacerdote")
+        SendSysMessageEx(who, "O altar parece imponente.", SSM_INFO);
+        return;
+   endif
+
+   var mlore := cint(AP_GetSkill(who, MAGICLORE));
+   var cfg          := ReadConfigFile(":spells:config/priestspells");
+   var priest_slots := Cint(mlore / 5);
+
+   var priest_list  := GetObjProperty(who, "priest_list");
+   if (!priest_list)
+      priest_list := array{};
+   endif
+
+   var spell_list := array{};
+   var slots_used := 0;
+    
+   foreach spell in (GetConfigIntKeys(cfg))
+      spell := FindConfigElem(cfg, spell);
+      sleepms(2);
+      WriteSpellInfo(spell, ":spells:config/priestspells");
+      var spell_found := FindAllElemInArray(priest_list, struct{ id := spell.SpellId }, 1);
+      if (spell_found)
+         slots_used += cint(spell.circle * spell_found.size());
+         foreach i in spell_found
+            priest_list[spell_found].circle := spell.circle;
+            sleepms(2);
+         endforeach
+      endif
+      if (spell.circle >  Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
+         continue;
+      elseif (spell.type == "Auto")
+         continue;
+      endif
+      spell_list.append(spell);
+      sleepms(2);
+   endforeach
+
+   var available_slots := priest_slots - slots_used;
+   var canceled := 0;
+   while (!canceled)
+      RemoveUsedSpells(who, priest_list, available_slots);
+      var input := CreateClericGump(who, spell_list, available_slots);
+
+      if (input[0] >= 200)
+         if (TS_GetTimerInfo(who, "orderspell")) // TODO
+            return SendSysMessageEx(who, "Voce deve aguardar um pouco antes de pedir por bencaos novamente.", SSM_FAIL);
+         endif
+         var spell := spell_list[input[0]-200];
+         var ret := StoreSpell(who, spell, priest_list, available_slots);
+         if (ret)
+            item.graphic := 0xA066;
+            sleep(2);
+            item.graphic := 0xA065;
+         endif
+      elseif (!input[0])
+         canceled := 1;
+      endif
+   endwhile
+endprogram
+
+function CreateClericGump(who, spell_list, available_slots)
+   var gump := GFCreateGump();
+   var size := spell_list.Size();
+   if (size >= 1)
+      size := size * 26 - (8 * 26); // Cantrips
+   else
+      size := 0;
+   endif
+	GFResizePic(gump, 17, 91, 9390, 359, 255+size);
+	// GFHtmlShadowed(gump, 115, 70, 192, 20, "#feb98e ", "<BASEFONT Size=5>Lista de Bençãos");
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Augur", 0, 0);
+	GFGumpPic(gump, 63, 91, 1469);
+	GFGumpPic(gump, 80, 91, 1469);
+	GFTextLine(gump, 63, 100, 0, "Rituais Augures");
+	GFTextLine(gump, 259, 100, 0, "Slots");
+	GFTextLine(gump, 304, 100, 0, "Receber");
+	GFGumpPic(gump, 38, 103, 9773, 0);
+	GFGumpPic(gump, 296, 0, 9000, 0);
+
+   var y := 121;
+   foreach spell in spell_list
+      var color := "a745a7";
+      if (spell.circle != 0)
+        GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+        GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color, spell.desc));
+        GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
+        if (available_slots >= spell.circle)
+            GFAddButton(gump, 319, y+4, 10006, 10006, GF_CLOSE_BTN, 200+_spell_iter);
+        else
+            GFGumpPic(gump, 319, y+5, 10006, 1891);
+        endif
+        sleepms(2);
+        y += 26;
+      endif
+   endforeach
+
+   return GFSendGump(who, gump);
+endfunction
+
+function StoreSpell(who, spellinfo, byref priest_list, byref available_slots)
+   if (available_slots-spellinfo.circle < 0)
+      SendSysMessageEx(who, "Sem slots suficientes para memorizar.", SSM_FAIL);
+      return 0;
+   elseif (!AP_ConsumeVital(who, MANA, 5*spellinfo.circle))
+      SendSysMessageEx(who, "Voce nao consegue se concentrar em sua oracao.", SSM_FAIL);
+      sleep(2);
+      return 0;
+   endif
+
+   var new_spell := struct{
+      "id"         := spellinfo.SpellId,
+      "name"       := spellinfo.name,
+      "powerwords" := spellinfo.powerwords,
+      "circle"     := spellinfo.circle,
+      "time"       := AddTimeTo(polcore().systime, 20, "minutes"),
+      "flavortext" := spellinfo.flavortext,
+      "used"       := 0
+   };
+
+   available_slots -= spellinfo.circle;
+   priest_list.append(new_spell);
+   SetObjProperty(who, "priest_list", priest_list);
+   SendSysMessageEx(who, "Obteve a benção dos Deuses.", SSM_INFO);
+   return 1;
+endfunction
+
+function RemoveUsedSpells(who, byref priest_list, byref available_slots)
+   foreach spell in priest_list
+      if (spell.used && polcore().systime > spell.time)
+         var index := FindInArray(priest_list, spell);
+         priest_list.Erase(index);
+         available_slots += spell.circle;
+      endif
+      sleepms(2);
+   endforeach
+
+   SetObjProperty(who, "priest_list", priest_list);
+endfunction
