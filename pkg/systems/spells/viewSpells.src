@@ -14,37 +14,62 @@ const GUMPID_CLERICSPELL := 0x00001C;
 program clericPowerWords(who)
 	detach();
     var magia := GetObjProperty(who, "chardata").magia;
-   if (magia != "Shaman")
+   if (magia != "Shaman" || magia != "Sacerdote" )
       SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
       return;
    endif
-   CloseGump(who, GUMPID_CLERICSPELL); 
+   CloseGump(who, GUMPID_CLERICSPELL);
 
    var mlore := cint(AP_GetSkill(who, MAGICLORE));
-   var cleric_slots := Cint(mlore / 5);
+      var cleric_slots := Cint(mlore / 5);
 
-   var shaman_list  := GetObjProperty(who, "shaman_list");
-   if (!shaman_list) shaman_list := array{}; endif
-   var slots_used := 0;
-    foreach spell in shaman_list
-        slots_used += cint(spell.circle);
-    endforeach
-   var available_slots := cleric_slots - slots_used;
-   var canceled := 0;
-   while (!canceled)
-      var input := CreateClericGump(who, shaman_list, available_slots);
+   if (magia == "Shaman")
+        var shaman_list  := GetObjProperty(who, "shaman_list");
+           if (!shaman_list) shaman_list := array{}; endif
+           var slots_used := 0;
+            foreach spell in shaman_list
+                slots_used += cint(spell.circle);
+            endforeach
+           var available_slots := cleric_slots - slots_used;
+           var canceled := 0;
+           while (!canceled)
+              var input := CreateClericGump(who, shaman_list, available_slots);
 
-      if (!input[0])
-         canceled := 1;
-      elseif (input[0] >= 200)
-         var slot := input[0] - 200;
-         shaman_list := GetObjProperty(who, "shaman_list");
-         shaman_list.Erase(slot);
-         SetObjProperty(who, "shaman_list", shaman_list);
-         SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
-         canceled := 1;
-      endif
-   endwhile
+              if (!input[0])
+                 canceled := 1;
+              elseif (input[0] >= 200)
+                 var slot := input[0] - 200;
+                 shaman_list := GetObjProperty(who, "shaman_list");
+                 shaman_list.Erase(slot);
+                 SetObjProperty(who, "shaman_list", shaman_list);
+                 SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+                 canceled := 1;
+              endif
+           endwhile
+   elseif (magia == "Sacerdote")
+    var priest_list  := GetObjProperty(who, "priest_list");
+       if (!priest_list) priest_list := array{}; endif
+       var slots_used := 0;
+        foreach spell in priest_list
+            slots_used += cint(spell.circle);
+        endforeach
+       var available_slots := cleric_slots - slots_used;
+       var canceled := 0;
+       while (!canceled)
+          var input := CreateClericGump(who, priest_list, available_slots);
+
+          if (!input[0])
+             canceled := 1;
+          elseif (input[0] >= 200)
+             var slot := input[0] - 200;
+             priest_list := GetObjProperty(who, "priest_list");
+             priest_list.Erase(slot);
+             SetObjProperty(who, "priest_list", priest_list);
+             SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+             canceled := 1;
+          endif
+       endwhile
+  endif
 endprogram
 
 function CreateClericGump(who, shaman_list, available_slots)

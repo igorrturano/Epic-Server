@@ -171,7 +171,7 @@ program SpellStarter(params)
 		//EraseObjProperty(mobile, "#Medding");
 		if (!mobile.npctemplate)
 			if (spellinfo.powerwords ) //checa powerwords
-				if (GetObjProperty(mobile, "#magiasilenciosa") == error || scroll == "Shaman")
+				if (GetObjProperty(mobile, "#magiasilenciosa") == error || scroll == "Shaman" || scroll == "Sacerdote")
 					PrintText(mobile, spellinfo.powerwords);
 				endif
 			endif
