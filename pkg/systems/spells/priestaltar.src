@@ -66,9 +66,9 @@ program orderSpells(who, item)
          var spell := spell_list[input[0]-200];
          var ret := StoreSpell(who, spell, priest_list, available_slots);
          if (ret)
-            item.graphic := 0xA06B;
+            item.graphic := 0xA066;
             sleep(2);
-            item.graphic := 0xA06A;
+            item.graphic := 0xA065;
          endif
       elseif (!input[0])
          canceled := 1;
