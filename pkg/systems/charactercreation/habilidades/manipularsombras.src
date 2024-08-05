@@ -60,13 +60,13 @@ program HitScript(who)
     targ.concealed := 1;
 
     var moveTo := TargetCoordinates(who);
-    if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm))
-    	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm, MOVEOBJECT_FORCELOCATION);
-    else
+    if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
         SendSysMessage(who, "Local Inacessível");
         targ.concealed := 0;
         who.frozen := 0;
         return 0;
+    else
+    	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm, MOVEOBJECT_FORCELOCATION);
     endif
 
     sleep(1);
