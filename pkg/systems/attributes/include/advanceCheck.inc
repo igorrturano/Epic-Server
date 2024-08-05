@@ -307,7 +307,7 @@ endfunction
 
 //retorna quanto o cara comecou com aquela skill
 function valorInicial(mobile, skill_name)
-	var skill_inicial := 0;
+	var skill_inicial := 0.0;
 
 	if (mobile.npctemplate)
 		return 100;
@@ -441,7 +441,7 @@ endfunction
 function idadeChar( character)// para 10000 deu 292 segundos 300
     var criadoEm := cint(GetObjProperty(character, "createdate"));
     var tempoAgora := polcore().systime;// segundos
-    var tempoDevida:= tempoAgora - criadoEm;
+    var tempoDevida := tempoAgora - criadoEm;
     var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
     return dias;
 endfunction
@@ -454,32 +454,31 @@ function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
     return dias;
 endfunction
 
+// Calculo total do cap
 function limiteportempo(who)
-	if (who.npctemplate)
-		return 100;
-	endif
+    if (who.npctemplate)
+        return 100;
+    endif
 
-	var dias := CInt(idadeChar(who)); // Colocar aqui a prop pra pegar os dias do char
-	var lim := 0;
+    var dias := CInt(idadeChar(who));
+    var lim := 12;
 
-	if(dias >= 0)
-		if(dias > 11)
-			if(dias > 67)
-				if(dias > 92) //dias 93 a 126 => Primárias até 10 (Até level 20)
-					lim := 50.0 + cdbl(dias-92) * 0.3;
-				else //dias 68 a 92 => Primárias até 90 (Até level 16)
-					lim := 40.0 + cdbl(dias-67) * 0.4;
-				endif
-			else // dias 13 a 67 => Primárias até 80 (Até level 13)
-				lim := 12.0 + cdbl(dias-11) * 0.5;
-			endif
-		else //dias 1 a 12 => Primárias 40-52 (Até level 4)
-			lim := 1.0 + cdbl(dias);
-		endif
-	endif
-	//SendSysMessage(who,lim);
-	return lim;
+    if (dias <= 10)
+        // Dias 1-10: Travado em 12
+        lim := 100; // 100 pra primeira fase do E.A.
+    elseif (dias <= 30)
+        // Dias 11-30: Aumento rápido (2 por dia)
+        lim := 12 + (dias - 10) * 2;
+    elseif (dias <= 60)
+        // Dias 31-60: Aumento médio (1 por dia)
+        lim := 52 + (dias - 30);
+    else
+        // Dias 61+: Aumento lento (0.5 por dia)
+        lim := 82 + (dias - 60) * 0.5;
+    endif
 
+    return Min(lim, 100);
+endfunction
 /*
    var lim := 6; // Valor inicial
 
@@ -502,4 +501,3 @@ function limiteportempo(who)
       lim := 2.5; // Valor minimo de 2.5
    endif
 */
- endfunction

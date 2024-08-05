@@ -14,13 +14,13 @@ program HitScript(who)
         return 0;
     endif
 
-    who.frozen := 1;
     PerformAction(who, ANIM_CAST_AREA);
     sleep(2);
 
 	var targ := Target(who);
     var dist := Distance(who, targ);
     var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    who.frozen := 1;
 
     if(!CheckLosAt(who, targ.x, targ.y, targ.z))
 		SendSysMessage(who, "Voce nao consegue ver o alvo.");
@@ -55,13 +55,20 @@ program HitScript(who)
 		SendSysMessageEx( who, "Voce nao ve o alvo.", SSM_FAIL );
 		return 0;
 	endif
-    PlaySoundEffect(targ, 0x688);
     PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
 
     targ.concealed := 1;
 
     var moveTo := TargetCoordinates(who);
-	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm, MOVEOBJECT_FORCELOCATION);
+    if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
+        SendSysMessage(who, "Local Inacessível");
+        targ.concealed := 0;
+        who.frozen := 0;
+        return 0;
+    else
+    	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm, MOVEOBJECT_FORCELOCATION);
+    endif
+
     sleep(1);
     targ.concealed := 0;
     who.frozen := 0;

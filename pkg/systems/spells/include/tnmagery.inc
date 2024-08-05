@@ -627,8 +627,11 @@ function WritespellInfo(who, byref spellinfo)
     if (chardata.magia == "Shaman")
         cfg := ReadConfigFile(":spells:config/shamanspells");
         spellinfo.used := 1;
-	elseif ((chardata.trait == "Natureza Arcana") && spellinfo.magic_path == "cantripspells")
+	elseif ((chardata.trait == "Natureza Arcana") || spellinfo.magic_path == "cantripspells")
         cfg := ReadConfigFile(":spells:config/cantripspells");
+    elseif (chardata.magia == "Sacerdote")
+        cfg := ReadConfigFile(":spells:config/priestspells");
+        spellinfo.used := 1;
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
         cfg := ReadConfigFile(":spells:config/spellcaster");
 	elseif(spellinfo.magic_path == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))

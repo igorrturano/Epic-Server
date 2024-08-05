@@ -52,7 +52,7 @@ program SpellScript(params)
 
             //Bonus de especialização
             if(Temhabilidade(caster, "Evocator"))
-                damage := damage * 1.2;
+                damage := Cint(damage * 1.2);
             endif
 
             PlaySoundEffect( mob, SFX_226 );
