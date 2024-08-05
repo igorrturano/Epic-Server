@@ -39,6 +39,8 @@ program epicCreationGump(who)
     AP_SetVital(who, "Hunger", 0);
 	HealDamage(who, 200);
 	RecalcVitals(who);
+	var tempo_agora := polcore().systime;
+    SetObjProperty(who, "createdate", tempo_agora);
 
     // Prólogo
 

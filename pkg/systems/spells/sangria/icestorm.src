@@ -24,6 +24,19 @@ program spell_iceStorm( parms )
     var allPets := array{};
 	var party_members := caster.party.members;
 
+    	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
+	var dist := Distance(caster, targ);
+    var dist_allowed := 5 + mlore;
+
+    if (TemHabilidade(caster, "Evocator"))
+        dist_allowed := dist_allowed + (mlore * 2);
+    endif
+
+    if (dist > dist_allowed)
+        SendSysMessage(caster, "O alvo esta muito distante");
+        return 0;
+    endif
+
 	if (caster.party)
 		foreach member in party_members
 			if (member != caster)
