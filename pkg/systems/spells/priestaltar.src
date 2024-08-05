@@ -80,7 +80,7 @@ function CreateClericGump(who, spell_list, available_slots)
    var gump := GFCreateGump();
    var size := spell_list.Size();
    if (size >= 1)
-      size := size * 36 - (8 * 36); // Cantrips
+      size := size * 40 - (8 * 40); // Cantrips
    else
       size := 0;
    endif
