@@ -44,6 +44,12 @@ program SpellStarter(params)
 		writeSpellInfo(mobile, spellinfo);
 	endif
 
+	if (spellinfo.School == "Evocatium")
+		if(GetObjProperty(mobile, "#magiasilenciosa"))
+			EraseObjProperty(mobile, "#magiasilenciosa");
+		endif
+	endif
+
 	if ( GetObjProperty(mobile, "metamorfose") != error )
 		if ( !TemHabilidade(mobile, "Elo Natural"))
 			SendSysMessageEx(mobile, "Voce nao pode usar magias metamorfoseado.");

@@ -14,13 +14,13 @@ program HitScript(who)
         return 0;
     endif
 
-    who.frozen := 1;
     PerformAction(who, ANIM_CAST_AREA);
     sleep(2);
 
 	var targ := Target(who);
     var dist := Distance(who, targ);
     var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    who.frozen := 1;
 
     if(!CheckLosAt(who, targ.x, targ.y, targ.z))
 		SendSysMessage(who, "Voce nao consegue ver o alvo.");
