@@ -14,6 +14,7 @@ include ":datafile:datafile";
 include "include/say";
 include "include/creationUtils";
 include "include/sounds";
+include "include/epicConstants";
 
 program epicCreationGump(who)
     resetCharacter(who);
@@ -84,27 +85,27 @@ function racialSelection(who, culture_pic)
             btn_value := key;
         endforeach
         if (btn_value == 201)
-            chardata.raca := RACA.ANAO;
+            chardata.raca := ANAO;
             chardata.+vantagemracial := "Constituicao Ana";
             break;
         elseif (btn_value == 202) 
-            chardata.raca := RACA.DROW;
+            chardata.raca := DROW;
             chardata.+vantagemracial := "Toxina natural";
             break;
         elseif (btn_value == 203) 
-            chardata.raca := RACA.ELFO;
+            chardata.raca := ELFO;
             break;
         elseif (btn_value == 204) 
-            chardata.raca := RACA.HUMANO;
+            chardata.raca := HUMANO;
             break;
         elseif (btn_value == 205)
-            chardata.raca := RACA.ORC;
+            chardata.raca := ORC;
             chardata.+vantagemracial := "Resistencia implacavel";
             break;
         elseif (btn_value == 206) 
-            chardata.raca := RACA.POLSKI;
+            chardata.raca := POLSKI;
             break;
-        elseif (chardata.culture == CULTURA.AIGLANA || chardata.culture == CULTURA.LESTE)
+        elseif (chardata.culture == AIGLANA || chardata.culture == LESTE)
             SendSysMessageEX(who, "Escolha sua raça!", SSM_FAIL);
         else
             chardata.raca := getRaceByCulturalId(culture_pic)[1];
@@ -112,17 +113,17 @@ function racialSelection(who, culture_pic)
         endif
     endwhile
 
-    if (who.graphic == 400 && (chardata.raca == RACA.ELFO || chardata.raca == RACA.DROW))
+    if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
         who.graphic := 1830;
-    elseif(who.graphic == 401 && (chardata.raca == RACA.ELFO || chardata.raca == RACA.DROW))
+    elseif(who.graphic == 401 && (chardata.raca == ELFO || chardata.raca == DROW))
         who.graphic := 1831;
-    elseif (who.graphic == 400 && (chardata.raca == RACA.ORC))
+    elseif (who.graphic == 400 && (chardata.raca == ORC))
         who.graphic := 1832;
-    elseif (who.graphic == 401 && (chardata.raca == RACA.ORC))
+    elseif (who.graphic == 401 && (chardata.raca == ORC))
         who.graphic := 1833;
-    elseif(who.graphic == 400 && (chardata.raca == RACA.ANAO || chardata.raca == RACA.POLSKI))
+    elseif(who.graphic == 400 && (chardata.raca == ANAO || chardata.raca == POLSKI))
         who.graphic := 1828;
-    elseif(who.graphic == 401 && (chardata.raca == RACA.ANAO || chardata.raca == RACA.POLSKI))
+    elseif(who.graphic == 401 && (chardata.raca == ANAO || chardata.raca == POLSKI))
         who.graphic := 1829;
     endif
 
@@ -519,14 +520,14 @@ function pathOfWisdom(who, culture_pic)
         elseif (btn_value == 202) 
             chardata.+wisdom_path := "Alquimista";
             break;
-        elseif (btn_value == 203 && chardata.culture == CULTURA.GULTHRAK) 
+        elseif (btn_value == 203 && chardata.culture == GULTHRAK) 
             chardata.+wisdom_path := "Xamã";
             chardata.+magia := "Shaman";
             break;
-        elseif (btn_value == 203 && chardata.culture != CULTURA.GULTHRAK)
+        elseif (btn_value == 203 && chardata.culture != GULTHRAK)
             chardata.magia := "Sacerdote";
             var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
-            if (chardata.culture == CULTURA.HAROLOTH)
+            if (chardata.culture == HAROLOTH)
                 CreateItemInBackpack(who, 0x166E, 1);
             endif
             CreateItemInBackpack(who, "runaarmasagrada");
