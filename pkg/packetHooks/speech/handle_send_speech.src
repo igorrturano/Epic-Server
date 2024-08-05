@@ -168,7 +168,7 @@ exported function handleUCOutgoing( character, byref packet )
 	endif
 
 	var isGeneralAction := array{"*Tirou", "*Guardou", "*Colocou", "*escalpelando", "*Acrescentou", "*Pegou"};
-	var isSkillAction := array{"*defende o golpe*", "*tratando a si mesmo*", "*arrombando a fechadura*", "*desarmando armadilha*" , "*preparando um extrato*"};
+	var isSkillAction := array{"*defende o golpe*", "*tratando a si mesmo*", "*arrombando a fechadura*", "*desarmando armadilha*" , "*preparando um extrato*", "*tentando se esconder*"};
 	if (!source.npctemplate && type != 0x02)
 		var chosen_language := GetObjProperty(source, "lingua_escolhida");
 		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
