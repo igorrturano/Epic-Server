@@ -80,11 +80,11 @@ function CreateClericGump(who, spell_list, available_slots)
    var gump := GFCreateGump();
    var size := spell_list.Size();
    if (size >= 1)
-      size := size * 26 - (8 * 26); // Cantrips
+      size := size * 40 - (8 * 40); // Cantrips
    else
       size := 0;
    endif
-	GFResizePic(gump, 17, 91, 9390, 359, 255+size);
+	GFResizePic(gump, 17, 31, 9390, 359, 125+size);
 	// GFHtmlShadowed(gump, 115, 70, 192, 20, "#feb98e ", "<BASEFONT Size=5>Lista de Bençãos");
 	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
 	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
