@@ -37,11 +37,12 @@ program SpellScript(params)
 	sleepms(400);
 	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0 ,2);
 	sleepms(400);
-	if (CanWalk("L", who.x, who.y, who.z, loc.x, loc.y, who.realm))
-		MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
-	else
-		SendSysMessageEx(who, "Local Inacessível.", SSM_FAIL);
-	endif
+    if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
+        SendSysMessage(who, "Local Inacessível");
+        return 0;
+    else
+    	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm, MOVEOBJECT_FORCELOCATION);
+    endif
 
 	return 1;
 
