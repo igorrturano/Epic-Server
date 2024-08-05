@@ -1,0 +1,26 @@
+//
+// nightsight.src
+//
+// Never be alone in the dark.
+//
+// Created: 9/24/2001 11:25AM
+// Updated: 9/24/2001 11:25AM
+//
+
+use uo;
+
+//include "include/requestgump";
+
+program nightsight (who, level)
+	//if ( !level )
+	//	level := RequestGump(who, "Light Level", "Enter -1 to see the real light level.", "0");
+	//endif
+	
+	level := CInt(level);
+	if ( level >= 0 )
+		who.setlightlevel(level, 9000);
+	else
+		SendSysMessage(who, "Restoring normal vision.");
+		who.setlightlevel(1, 0);
+	endif
+endprogram
