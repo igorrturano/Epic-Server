@@ -134,7 +134,7 @@ function GetTempRegion(diaounoite, who, x, y)
 			if ((diaounoite == "noite") && ((elem == "adesertointerior") || (elem == "adesertointerior2") || (elem == "desertolitoral"))) 
 				tempmod := (tempmod - 16);
 			endif
-			if (elem == "regiaodungeons")
+			if (elem == "regiaodungeons" || elem == "umbraeterna")
 				SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
 				return 999;
 			endif

@@ -55,7 +55,6 @@ program HitScript(who)
 		SendSysMessageEx( who, "Voce nao ve o alvo.", SSM_FAIL );
 		return 0;
 	endif
-    PlaySoundEffect(targ, 0x688);
     PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
 
     targ.concealed := 1;
