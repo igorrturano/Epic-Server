@@ -43,22 +43,25 @@ function ReduceDP(player)
         return;
     endif
 
+
     var daysSinceCreation := creationDate;
-    var dpLossInterval := getDpLossIntervalInDays(player); // Intervalo em dias para perda de DP.
-    var totalDPLoss := (daysSinceCreation / dpLossInterval); // Calcula o total de DP a ser perdido baseado nos dias desde a criação.
-    var lastDPLoss := GetObjProperty(player, "last_dp_loss") || 0;
-    // Verifica se o jogador deve perder DP baseado nos dias desde a última verificação.
-    if (totalDPLoss >= lastDPLoss)
-        var dpmod := GetObjProperty(player, "dpmod") || 0; // Obtém o DP atual do jogador.
-        if(AP_GetVitalMaximumValue(player, "DP") <= 10)
-            return;
+    if (daysSinceCreation >= 90)
+        var dpLossInterval := getDpLossIntervalInDays(player); // Intervalo em dias para perda de DP.
+        var totalDPLoss := (daysSinceCreation / dpLossInterval); // Calcula o total de DP a ser perdido baseado nos dias desde a criação.
+        var lastDPLoss := GetObjProperty(player, "last_dp_loss") || 0;
+        // Verifica se o jogador deve perder DP baseado nos dias desde a última verificação.
+        if (totalDPLoss >= lastDPLoss)
+            var dpmod := GetObjProperty(player, "dpmod") || 0; // Obtém o DP atual do jogador.
+            if(AP_GetVitalMaximumValue(player, "DP") <= 10)
+                return;
+            endif
+            dpmod := dpmod - 10; // Reduz o DP
+            lastDPLoss += 1;
+            SetObjProperty(player, "dpmod", dpmod); // Atualiza o DP do jogador.
+            SetObjProperty(player, "last_dp_loss", lastDPLoss); // Atualiza a contagem de perda de DP para evitar redução múltipla.
+            RecalcVitals(player); //Recalcula os dps
+            SendSysMessage(player, "Você perdeu parte de sua energia vital.");
         endif
-        dpmod := dpmod - 10; // Reduz o DP
-        lastDPLoss += 1;
-        SetObjProperty(player, "dpmod", dpmod); // Atualiza o DP do jogador.
-        SetObjProperty(player, "last_dp_loss", lastDPLoss); // Atualiza a contagem de perda de DP para evitar redução múltipla.
-        RecalcVitals(player); //Recalcula os dps
-        SendSysMessage(player, "Você perdeu parte de sua energia vital.");
     endif
 endfunction
 

@@ -25,6 +25,17 @@ program SpellScript(params)
 		return 0;
 	endif
     var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var dist := Distance(who, targ);
+    var dist_allowed := 5 + mlore;
+
+    if (Temhabilidade(who, "Evocator"))
+        dist_allowed := dist_allowed + (mlore * 2);
+    endif
+
+    if (dist > dist_allowed)
+        SendSysMessage(who, "O alvo esta muito distante");
+        return 0;
+    endif
 	SendSysMessageEx(who, "Misseis magicos saem de sua mao", SSM_INFO);
 	var i := 1;
     For (i := 1; i <= mlore; i += 1)

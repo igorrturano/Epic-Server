@@ -460,8 +460,6 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		endif
 	endif
 
-
-
 	if (isBloodied(defender))
 		if (temHabilidade(who, "Burz"))
 			other:= other + 0.75; //75% - balanceamento depois da mudanca de calculo do dano
@@ -526,7 +524,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
     var itemdesc := ReadConfigFile("::itemdesc");
 
-    if (TemHabilidade(who, "Brigador de Taverna") && (who.weapon.objtype == 0x1F020))
+    if (TemHabilidade(who, "Brigador de Taverna") && (who.weapon.objtype == 0x1F020) && (dmg != 0))
         dmg += 5;
     endif
 
@@ -559,6 +557,11 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		other := other + 0.5;
         weapon_dice := RandomDiceRoll("1d10");
     endif
+
+	if (dmg == 0) // Check de Parry que tava atravessando por conta do novo calculo de dano
+		dmg := 1;
+		return dmg;
+	endif
 
 	dmg := CInt( (dmg + (((str-50)/10)+(tatics*10)+weapon_dice)) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
 	if (dmg < 1)

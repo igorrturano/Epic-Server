@@ -19,6 +19,19 @@ program spell_meteorSwarm( parms )
     var targ := parms[2];
 
     SendSysMessage(caster, "Selecione o alvo.");
+    var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);
+    var dist := Distance(caster, targ);
+    var dist_allowed := 5 + mlore;
+
+    if (TemHabilidade(caster, "Evocator"))
+        dist_allowed := dist_allowed + (mlore * 2);
+    endif
+
+    if (dist > dist_allowed)
+        SendSysMessage(caster, "O alvo esta muito distante");
+        return 0;
+    endif
+
     var alreadydamaged := array{};
     var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 5, targ.realm);
     var allPets := array{};
