@@ -49,6 +49,12 @@ program textcmd_acalmar(who)
 		return 0;
 	endif
 
+	var dist := Distance(who, creature);
+	if (dist > 8)
+		SendSysMessageEx(who, "Você está longe demais.");
+		return 0;
+	endif
+
 	var category := lower(getnpccategory( ParseTemplateName(creature.npctemplate).template ));
 
 	if ( (category == "animal") || ( category == "evilanimal") || ( category == "giantanimal") || ( category == "mount") || ( category == "snow") )

@@ -1344,13 +1344,16 @@ function languageSelectionGump(who, culture_pic, linguasOpt, known_languages, to
     foreach lang in linguasOpt
         var color := "#000000";
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, lang), 1, 0);
-        if (!(lang in known_languages) || (known_languages.size() < total_amount))
+        if (!(lang in known_languages) && (known_languages.size() < total_amount))
             GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
         endif
         sleepms(2);
         y += 26;
         i++;
     endforeach
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha {} línguas".format(Cint(total_amount - known_languages.size())), 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha {} línguas".format(Cint(total_amount - known_languages.size())), 0, 0); //shadow
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
     return GFSendGump(who, gump);

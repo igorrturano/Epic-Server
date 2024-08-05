@@ -1,0 +1,26 @@
+use uo;
+use cfgfile;
+
+program make_scrolls(who, amt)
+
+    if (!amt)
+        amt := 1;
+    endif
+
+    var bolsa:=CreateItemInBackpack( who , "backpack" , 1 );
+    bolsa.color:=2600;
+    bolsa.name:="Bolsa de Pergaminhos magicos";
+
+    var cfg := ReadConfigFile(":spells:spellcaster");
+
+    var spellinfo := struct;
+    var perg;
+    spellinfo.+id;
+    spellinfo.+magic_path := "spellcaster";
+    foreach spell in ( GetConfigIntKeys(cfg) )
+        spellinfo.id := spell;
+        SetObjProperty(perg, "spellinfo", spellinfo);
+        
+        perg := CreateItemInContainer(bolsa, "pergaminhospellcaster1", amount := amt);
+    endforeach
+endprogram
