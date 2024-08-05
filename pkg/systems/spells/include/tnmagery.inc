@@ -627,14 +627,14 @@ function WritespellInfo(who, byref spellinfo)
     if (chardata.magia == "Shaman")
         cfg := ReadConfigFile(":spells:config/shamanspells");
         spellinfo.used := 1;
-	elseif ((chardata.trait == "Natureza Arcana") && spellinfo.magic_path == "cantripspells")
+	elseif ((chardata.trait == "Natureza Arcana") || spellinfo.magic_path == "cantripspells")
         cfg := ReadConfigFile(":spells:config/cantripspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
         cfg := ReadConfigFile(":spells:config/spellcaster");
 	elseif(spellinfo.magic_path == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
         cfg := ReadConfigFile(":spells:config/tricksterspells");
 	else
-		cfg := ReadConfigFile(":spells:config/cantripspells");
+		cfg := ReadConfigFile(":spells:config/allspells");
     endif
 
 	//sendsysmessage(who, "cfg" + cfg + " " + spellinfo.id);

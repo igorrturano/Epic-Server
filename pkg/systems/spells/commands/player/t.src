@@ -17,10 +17,11 @@ program magia(who, spellname)
 	endif
 	var chardata := GetObjProperty(who, "chardata");
     var magia := chardata.magia;
-	if (magia != "spellcaster" && chardata.trait == "Natureza Arcana" )
+	if (magia != "spellcaster" && chardata.trait != "Natureza Arcana")
 		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
 		return;
 	endif
+
 	var id := 1;
 	var elem;
 
@@ -51,7 +52,7 @@ program magia(who, spellname)
 
 		var spellinfo := struct;
 		spellinfo.+id := id;
-		spellinfo.+magic_path == "cantripspells";
+		spellinfo.+magic_path := "cantripspells";
 		var script := Start_Script(":spells:cast_spell", {who, spellinfo});
 		if ( script.errortext )
 			SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
