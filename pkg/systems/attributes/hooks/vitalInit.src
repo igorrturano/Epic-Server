@@ -42,7 +42,7 @@ exported function GetHitsMaximumValue(mobile)
 		vital_points := (GetHP(mobile) + GetPH(mobile)) * 100;
 	endif
 
-    if (GetObjProperty(mobile, "chardata").culture == CULTURA.BADURAN)
+    if (GetObjProperty(mobile, "chardata").culture == BADURAN)
         vital_points := vital_points + 1000;
     endif
 
@@ -127,7 +127,7 @@ exported function GetStaminaRegenRate(mobile)
 		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Stamina) * 100;
 	endif
 
-	if (GetObjProperty(mobile, "chardata").culture == CULTURA.AIGLANA)
+	if (GetObjProperty(mobile, "chardata").culture == AIGLANA)
 		base_regen *= 1.5;
 	endif
 	
@@ -140,7 +140,7 @@ exported function GetStaminaMaximumValue(mobile)
 	vital_points := GetNPCVitalSetting(mobile, "STAM");
 	if (!vital_points);
 		vital_points := CInt(AP_GetTrueStat(mobile, "Dexterity")) * 100;
-        if (GetObjProperty(mobile, "chardata").culture == CULTURA.BADURAN)
+        if (GetObjProperty(mobile, "chardata").culture == BADURAN)
 			vital_points := vital_points + 1000;
 		endif
 	endif

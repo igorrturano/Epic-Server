@@ -13,6 +13,11 @@ include "include/sysEvent";
 include "include/eventID";
 
 program textcmd_acalmar(who)
+	if (who.hidden)
+		SendSysMessageEx(who, "Você precisa ser visto para acalmar criaturas.", SSM_FAIL);
+		return;
+	endif
+
 	SendSysMessageEx(who, "Selecione a criatura que você deseja acalmar.", SSM_REQUEST);
 	var creature := Target(who, TGTOPT_CHECK_LOS);
 
@@ -41,6 +46,12 @@ program textcmd_acalmar(who)
 
 	if( (creature.graphic == 0x190) || (creature.graphic == 0x191) || (creature.graphic == 309) || (creature.graphic == 307) || (creature.graphic == 14) )
 		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+		return 0;
+	endif
+
+	var dist := Distance(who, creature);
+	if (dist > 8)
+		SendSysMessageEx(who, "Você está longe demais.");
 		return 0;
 	endif
 
