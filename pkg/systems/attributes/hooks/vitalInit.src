@@ -235,7 +235,7 @@ exported function GetDPRegenRate(mobile)
 endfunction
 
 exported function GetDPMaximumValue(mobile)
-	return 40*100 + CInt(GetObjProperty(mobile, "dpmod"))*100;
+	return 50*100 + CInt(GetObjProperty(mobile, "dpmod"))*100;
 endfunction
 
 // *****

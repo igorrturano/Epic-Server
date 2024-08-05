@@ -34,7 +34,7 @@ program epicCreationGump(who)
 
     SetObjProperty(who, "nome_inicial", who.name);
     who.name := who.title_race;
-    
+
     AP_SetVital(who, "Hunger", 0);
 	HealDamage(who, 200);
 	RecalcVitals(who);
