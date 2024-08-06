@@ -44,7 +44,6 @@ program core_skillWin(who)
 
 	//PRIMÁRIAS - START
 	var primarias := getPrimarias(who);
-	print("primarias: " + primarias);
 	var pri := primarias[1];
 	var cappri := Cdbl(limiteportempo(who)) + Cdbl(valorinicial(who, pri));
 	var capprimax := 100;

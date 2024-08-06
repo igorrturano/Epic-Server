@@ -85,7 +85,8 @@ program HitScript(params)
 			if ( !(defender in attacker.party.members ) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffectEx( defender, 0x22c6, 1, 9);
-					ApplyDamageEX(defender, (rawdamage*1.5)+1, DMG_PHYSICAL);
+					var total := ApplyDamageEX(defender, cint((rawdamage*1.5)+1), DMG_PHYSICAL);
+					DisplayDamage(attacker, total, defender);
 				endif
 			endif
 		endforeach		

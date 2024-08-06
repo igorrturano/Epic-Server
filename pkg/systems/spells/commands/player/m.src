@@ -38,8 +38,6 @@ endprogram
 function GetSpellConfigFilePath( chardata, who )
   if ( TemHabilidade( who, "Sensibilidade Arcana" ) )
     return ":spells:config/tricksterspells";
-  elseif( chardata.trait == "Natureza Arcana" )
-    return ":spells:config/cantripspells";
   endif
  
    return ":spells:config/spellcaster";
@@ -54,7 +52,8 @@ function FindSpellInConfig( spellname, cfgFile )
                             "circle" -> GetConfigInt(
                             elem,
                             "Circle" ),
-                            "name" -> GetConfigString( elem, "Name" )
+                            "name" -> GetConfigString( elem, "Name" ),
+                            "Difficulty" -> GetConfigInt( elem, "Difficulty" )
                             };
       return dict;
     endif
@@ -63,18 +62,33 @@ function FindSpellInConfig( spellname, cfgFile )
 endfunction
 
 function FindSpellInSpellBooks( who, spellId )
-  foreach item in ( EnumerateItemsInContainer( who.backpack ) )
-    if ( item.objtype == 0x9E80 ) // Livro da magia
-      var donoGrimorio := GetObjProperty( item, "serialDono" );
-      if ( donoGrimorio == who.serial )
-        var spells := GetObjProperty( item, "spells" );
-        foreach s in spells
-          if ( s.id == spellId )
-            return dictionary{ "found" -> 1, "booktype" -> GetBookType( item ) };
+	foreach item in (ListEquippedItems(who))
+    if (item.objtype == 0x9E80)
+        var donoGrimorio := GetObjProperty( item, "serialDono" );
+        if ( donoGrimorio == who.serial )
+          var spells := GetObjProperty( item, "spells" );
+          foreach s in spells
+            if ( s.id == spellId )
+              return dictionary{ "found" -> 1, "booktype" -> GetBookType( item ) };
+            endif
+          endforeach
+        endif
+      else
+        foreach item in (EnumerateItemsInContainer(who.backpack))
+          if (item.objtype == 0x9E80)
+            var donoGrimorio := GetObjProperty( item, "serialDono" );
+            if ( donoGrimorio == who.serial )
+              var spells := GetObjProperty( item, "spells" );
+              foreach s in spells
+                if ( s.id == spellId )
+                  return dictionary{ "found" -> 1, "booktype" -> GetBookType( item ) };
+                endif
+              endforeach
+            endif
           endif
         endforeach
       endif
-    endif
   endforeach
+
   return dictionary{ "found" -> 0, "booktype" -> 0 };
 endfunction
