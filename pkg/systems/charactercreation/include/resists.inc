@@ -64,6 +64,11 @@ function GetResist(who, resist)
             valor := valor + 20;
 		endif
 
+		if (GetObjProperty(who, "corruption"))
+			var corruption_penalty := GetObjProperty(who, "corruption_penalty");
+			valor := valor - corruption_penalty;
+		endif
+
 		// Aplica os bonus base do Caminho para a resistência
 		if (classe == "Guerreiro")
 			valor := valor + 20;

@@ -11,6 +11,20 @@ include ":attributes:attributes";
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var dist := Distance(who, targ);
+    var dist_allowed := 5 + mlore;
+
+    if (Temhabilidade(who, "Valdruk"))
+        dist_allowed := dist_allowed + (mlore * 2);
+    endif
+
+    if (dist > dist_allowed)
+        SendSysMessage(who, "O alvo esta muito distante");
+        return 0;
+    endif
+
 	params := 0; // No longer needed
 	var skill := Cint(AP_GetSkill(who, "Magery"));
 	var nuvemarray := array;
@@ -42,12 +56,17 @@ program SpellScript(params)
 	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 2, targ.z , 14624, 1 , targ.realm));
 	endif
 	Corromper(who, 21, 0);
+	var duration := cint(AP_GetSkill(who, MAGICLORE)/20);
+
+	if (TemHabilidade(who, "Valdruk"))
+		duration := Cint(duration * 1.2);
+	endif
 
 	foreach item in nuvemarray
 		item.graphic := 14120;
 		item.name := "Nuvem Nefasta";
 		item.color := 563;
-		item.setDuration( cint(AP_GetSkill(who, MAGICLORE)) );
+		item.setDuration( duration );
 		var lvl :=  cint(AP_GetSkill(who, MAGICLORE)/20);
 		if (lvl < 1 )
 			lvl := 1;

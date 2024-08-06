@@ -10,7 +10,6 @@ const GUMPID_CLERICSPELL := 0x00001C;
 program magia(who, spellname)
 	var cfg := ReadConfigFile(":spells:cantripspells");
 
-
 	if ( GetObjProperty(who, "#Casting") )
 		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
 		return 0;

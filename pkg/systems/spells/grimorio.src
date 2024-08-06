@@ -16,27 +16,12 @@ include "include/client";
 include ":fls_magery:basicMagery";
 include ":fls_magery:spells";
 include "include/sounds";
-include ":spells:tnmagery";
-include "include/say";
 include ":charactercreation:habilidades";
-include ":spells:spellbooks";
 include ":spells:swordmage";
 include "include/facings";
 include ":tn:cooldown";
 
 program book( who, book )
-  if ( ( GetObjProperty( book, "NecroBook" ) ) && ( GetObjProperty( who, "advclass" )
-	   != "necro" ) )
-	SendSysMessageEx( who, "Voce nao entende esse livro.", SSM_FAIL );
-	return 1;
-  endif
-
-  if ( GetObjProperty( book, "SangriaBook" ) && GetObjProperty( who, "advclass" )
-	   != "kitahster" )
-	SendSysMessageEx( who, "Voce nao entende esse livro.", SSM_FAIL );
-	return 1;
-  endif
-
   var donoGrimorio := GetObjProperty( book, "serialDono" );
   if ( donoGrimorio )
 	if ( donoGrimorio != who.serial )
@@ -55,7 +40,6 @@ program book( who, book )
 	var spell := result[0] - 900;
 
 	var spells := GetObjProperty( book, "spells" );
-	// sendsysmessage(who, " " + bookopt);
 
 	if ( spells[spell] )
 	  copyrecipe( who, spells[spell] );

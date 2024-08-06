@@ -41,7 +41,11 @@ program SpellStarter(params)
 	endif
 
 	if (spellinfo.id != error) //le o cfg pra escrever a info
-		writeSpellInfo(mobile, spellinfo);
+		if (spellinfo.magic_path == "cantripspells")
+			WriteCantripSpellInfo(mobile, spellinfo);
+		else
+			writeSpellInfo(mobile, spellinfo);
+		endif
 	endif
 
 	if (spellinfo.School == "Evocatium")

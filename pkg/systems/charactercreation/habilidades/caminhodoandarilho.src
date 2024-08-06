@@ -8,7 +8,10 @@ include "include/damage";
 include "include/say";
 
 program doubleattack(who)
-
+	if (who.shield)
+		SendSysMessageEx(who, "Um verdadeiro samurai não usaria escudo.", SSM_FAIL);
+		return;
+	endif
 	SendSysMessageEx(who, "Voce garante uma defesa com sua lamina.", SSM_INFO);
 	SetObjProperty(who, "#tempparrybonus", 100);
 	SetCooldown(who, "parrydelay", 0);
