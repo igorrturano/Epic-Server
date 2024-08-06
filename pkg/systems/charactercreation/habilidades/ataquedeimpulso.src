@@ -1,0 +1,14 @@
+use uo;
+
+include "include/say";
+include ":tn:cooldown";
+
+program doubleattack(who)
+	if (who.shield)
+		SendSysMessageEx(who, "Um verdadeiro samurai não usaria escudo.", SSM_FAIL);
+		return;
+	endif
+	SendSysMessageEx(who, "Voce prepara um golpe duplo.", SSM_INFO);
+	SetObjProperty(who, "ataquedeimpulso", 1);
+
+endprogram

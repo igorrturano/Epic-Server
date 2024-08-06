@@ -18,12 +18,17 @@ program animateSword(params)
 	var who := params[1];
 	params := 0; // No longer needed
 
+	if (who.shield)
+		SendSysMessageEx(who, "Um verdadeiro samurai não usaria escudo.", SSM_FAIL);
+		return;
+	endif
+
     var cfg:=ReadConfigFile(":combat:itemdesc");
     var elem := FindConfigElem(cfg, who.weapon.objtype);
 
     Performaction(who, elem.Anim);
     PlaySoundEffect(who, 0x520);
-    PrintTextAbove(who, "*Golpe da Andorinha*");
+    PrintTextAbove(who, "*Ryu no Ikari*");
 
     sleepms(2);
     PushBackEX(who, 5, 50, 1);
@@ -59,7 +64,11 @@ function PushBackEX(who, dist, delay, invert := 0)
       if (world_z.z > who.z)
          return 0;
       endif
-        PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 10, 20, 0, who.realm);
+	  	var hue := 0;
+		if (GetObjProperty(who, "chardata").religion == KAI)
+			hue := 2597;
+		endif
+        PlayStationaryEffectEx(who.x, who.y, who.z,who.realm, 0x6d57, 10, 20, hue, 0);
         var mobiles := ListMobilesNearLocation(who.x, who.y, who.z, 1 , who.realm );
 		var allPets := array{};
 		var party_members := who.party.members;

@@ -20,11 +20,11 @@ function TemRequisito(who, habilidade, msg := 1)
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
-
+	var chardata := GetObjProperty(who, "chardata");
 	foreach req in (requisitos)
 		if (req["kit"]) // Ver se tem Kit!
 			req["kit "] := "";
-			if ((!GetObjProperty(who, "chardata")).trait in (req))
+			if ((!chardata).trait in (req))
 				if (msg == 1)
 					SendSysMessageEx(who, "Voce nao possui a Caracteristica: " + req, SSM_FAIL);
 				endif
@@ -32,7 +32,7 @@ function TemRequisito(who, habilidade, msg := 1)
 			endif
         elseif (req["povo"]) // Adiciona busca por povos
             req["povo"] := "";
-            if ((!GetObjProperty(who, "chardata")).povo in (req))
+            if (!((chardata).povo in (req)))
 				if (msg == 1)
 					SendSysMessageEx(who, "Voce nao pertence ao povo: " + req, SSM_FAIL);
 				endif
@@ -361,9 +361,9 @@ function comprarHabilidade(who, item, nv:=-1)
 	endif
 	var classe := GetObjProperty(who, "classe");
 	var faccao := GetObjProperty(who, "faccao"); //facção
-	var cultura := GetObjProperty(who, "chardata").culture;
-	var raca := GetObjProperty(who, "chardata").raca;
-
+	var chardata := GetObjProperty(who, "chardata");
+	var cultura := chardata.culture;
+	var raca := chardata.raca;
 	var habs := GetObjProperty(who, "buyhab");
 	if (habs[0] == error)
 		habs[0] := 1;
@@ -374,7 +374,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		myhabs := dictionary;
 	endif
 	//SendSysMessage(who, GetObjProperty(who, "chardata").classe +" "+ GetObjProperty(who, "chardata").povo + " " + nivel);
-	var possiveis := HabilidadesPorNivelPossiveis(who, GetObjProperty(who, "chardata").classe, GetObjProperty(who, "chardata").povo, nivel);
+	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.povo, nivel);
 
 	//var possiveis := HabilidadesPorNivel(who, classe, nivel);
 	var possiveisfaccao := HabilidadesPorNivelFaccao(who, faccao, nivel); //facção
@@ -466,6 +466,10 @@ function comprarHabilidade(who, item, nv:=-1)
                 endif
             endforeach
         elseif(escolhida == "Artilheiro Preparado")
+			if (chardata.wisdom_path != "Engenheiro")
+				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
+				return 0;
+			endif
             who.carrying_capacity_mod := 50;
         elseif(escolhida == "Bolsa Infinita")
             who.carrying_capacity_mod := 120;

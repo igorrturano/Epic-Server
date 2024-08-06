@@ -146,17 +146,17 @@ function SmeltOre(who, item, ore)
   var dif := DetermineMiningDifficulty(ore.objtype);
   var ingot := "";
   case (ore.objtype) //de acordo com ore no pot indica o ingot certo
-    0x1bdd:  ingot := 0x1bde; //carvao
-    0xee36: ingot := 0x1bde; //carvao
-    0xee37: ingot := 0x1bde; //carvao
-    0xee38: ingot := 0x1bde; //carvao
-    0xee39: ingot := 0x1bde; //carvao
-    0xee3a: ingot := 0x1bde; //carvao
-    0xee3b: ingot := 0x1bde; //carvao
-    0xee3c: ingot := 0x1bde; //carvao
-    0xee3d: ingot := 0x1bde; //carvao
-    0xee3e: ingot := 0x1bde; //carvao
-    0xee3f: ingot := 0x1bde; //carvao
+    0x1bdd: dif := 5; ingot := 0x1bde; //carvao
+    0xee36: dif := 5; ingot := 0x1bde; //carvao
+    0xee37: dif := 5; ingot := 0x1bde; //carvao
+    0xee38: dif := 5; ingot := 0x1bde; //carvao
+    0xee39: dif := 5; ingot := 0x1bde; //carvao
+    0xee3a: dif := 5; ingot := 0x1bde; //carvao
+    0xee3b: dif := 5; ingot := 0x1bde; //carvao
+    0xee3c: dif := 5; ingot := 0x1bde; //carvao
+    0xee3d: dif := 5; ingot := 0x1bde; //carvao
+    0xee3e: dif := 5; ingot := 0x1bde; //carvao
+    0xee3f: dif := 5; ingot := 0x1bde; //carvao
 
     0x6075:  dif := 5; ingot := 0x1be3; //vidro
     0x6450:  ingot := 0x6465; //copper
