@@ -39,6 +39,8 @@ include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include ":faccao:faccao";
 include ":combat:include/mainHitScript";
+include "include/dungeons";
+include "include/epicConstants";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -124,6 +126,9 @@ exported function Attack(attacker, defender)
 	if (GetCooldown(defender, "ataquetotal"))
 		hit_chance := 100;
 	endif
+
+	// Verifica acerto na escuridão
+	DarknessHitModifier(attacker, defender, hit_chance);
 
 	if (cint(GetObjProperty(attacker, "#finalizar")) == 2)
 		hit_chance := hit_chance + 100;
@@ -819,4 +824,60 @@ function FacingChecks(attacker, defender)
 	endif
 
 	return retval;
+endfunction
+
+function DarknessHitModifier(attacker, defender, byref hit_chance)
+    var attacker_race := GetObjProperty(attacker, "chardata").raca;
+    var in_darkness := InDarkness(attacker);
+
+    if (in_darkness && attacker_race != DROW)
+        if (!HasLightNearby(defender))
+            SendSysMessageEx(attacker, "darkness_penalty", SSM_FAIL);
+            hit_chance := hit_chance - 20;
+        endif
+    elseif (!in_darkness && attacker_race == DROW)
+		SendSysMessageEx(attacker, "drow_light_penalty", SSM_FAIL);
+        hit_chance := hit_chance - 20;
+    endif
+endfunction
+
+function HasLightNearby(defender)
+    const SEARCH_RANGE := 2;
+    
+    // Check for items with light flag
+    var flag_lightsources := ListItemsNearLocationWithFlag(defender.x, defender.y, defender.z, SEARCH_RANGE, TILEDATA_FLAG_LIGHTSOURCE, defender.realm);
+    if (flag_lightsources.size() > 0)
+        return 1;
+    endif
+
+    // Check for specific light source objects
+	UnloadConfigFile(":combat:config/lightsources");
+    var cfg := ReadConfigFile(":combat:config/lightsources");
+    var elem := cfg["LightSources"];
+    var objtype_lightsources := array{};
+
+	foreach light in GetConfigStringArray(elem, "LightSource")
+        objtype_lightsources.append(light);
+	endforeach
+    var nearby_items := ListItemsNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
+    foreach obj in nearby_items
+        if (obj.objtype in objtype_lightsources)
+            return 1;
+        endif
+    endforeach
+
+	var nearby_mobiles := ListMobilesNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
+	var isEquippedLightSource := {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC628}; // tocha e lanterna acesas
+
+	foreach mob in nearby_mobiles
+		if (!mob.npctemplate)
+			foreach item in (listequippeditems(mob))
+				if (item.objtype in isEquippedLightSource)
+					return 1;
+				endif
+			endforeach
+		endif
+	endforeach
+    
+	return 0;
 endfunction

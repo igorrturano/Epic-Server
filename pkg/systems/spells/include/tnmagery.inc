@@ -620,38 +620,46 @@ function GetSpellDuration(skill)
 
 endfunction
 
+function WriteCantripSpellInfo(who, byref spellinfo)
+	var cfg := ReadConfigFile(":spells:config/cantripspells");
+
+	var elem := FindConfigElem(cfg, spellinfo.id);
+	spellinfo.+name := GetConfigString( elem, "Name" );
+    spellinfo.+circle := GetConfigStringArray( elem, "Circle" );
+	spellinfo.+alvo := GetConfigString( elem, "Target" );
+	spellinfo.+type := GetConfigString( elem, "Type" );
+	spellinfo.+range := GetConfigString( elem, "Range" );
+	spellinfo.+mana := GetConfigInt( elem, "Mana" );
+	spellinfo.+delay := GetConfigInt( elem, "Delay" );
+	spellinfo.+difficulty := GetConfigInt( elem, "Difficulty" );
+	spellinfo.+description := GetConfigString( elem, "Desc" );
+	spellinfo.+script := GetConfigString( elem, "SpellScript" );
+	spellinfo.+spelltype := GetConfigString(elem, "Type");
+	spellinfo.+flavortext := GetConfigString( elem, "FlavorText" );
+	spellinfo.+cycles := GetConfigInt( elem, "Cycles" );
+	if (spellinfo.flavortext == error)
+		spellinfo.flavortext := "";
+	else
+		spellinfo.flavortext := "<I> "  + spellinfo.flavortext + " </I>";
+	endif
+endfunction
+
 function WritespellInfo(who, byref spellinfo)
 	var cfg;
-	var myrace := Lower(GetObjProperty(who, "raca"));
 	var chardata := GetObjProperty(who, "chardata");
-    if (chardata.magia == "Shaman")
-        cfg := ReadConfigFile(":spells:config/shamanspells");
-        spellinfo.used := 1;
-	elseif ((chardata.trait == "Natureza Arcana") || spellinfo.magic_path == "cantripspells")
-        cfg := ReadConfigFile(":spells:config/cantripspells");
-    elseif (chardata.magia == "Sacerdote")
-        cfg := ReadConfigFile(":spells:config/priestspells");
-        spellinfo.used := 1;
+	if (chardata.magia == "Shaman")
+		cfg := ReadConfigFile(":spells:config/shamanspells");
+		spellinfo.used := 1;
+	elseif (chardata.magia == "Sacerdote")
+		cfg := ReadConfigFile(":spells:config/priestspells");
+		spellinfo.used := 1;
+	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
+		cfg := ReadConfigFile(":spells:config/tricksterspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
-        cfg := ReadConfigFile(":spells:config/spellcaster");
-	elseif(spellinfo.magic_path == "Trickster" || TemHabilidade(who, "Sensibilidade Arcana"))
-        cfg := ReadConfigFile(":spells:config/tricksterspells");
-	else
-		cfg := ReadConfigFile(":spells:config/allspells");
-    endif
-
-	//sendsysmessage(who, "cfg" + cfg + " " + spellinfo.id);
-
-	if (!cfg)
-//		SendSysMessageEx(who, "spell.cfg nao encontrado", SSM_FAIL);
-		return;
+		cfg := ReadConfigFile(":spells:config/spellcaster");
 	endif
+
 	var elem := FindConfigElem(cfg, spellinfo.id);
-	//sendsysmessage(who, "elem " + elem);
-	if (elem == error)
-//		SendSysMessageEx(who, "spellid nao encontrado " + spellinfo.id, SSM_FAIL);
-		return;
-	endif
 
 	spellinfo.+name := GetConfigString( elem, "Name" );
 	spellinfo.+powerwords := GetConfigString( elem, "PowerWords" );
@@ -680,8 +688,6 @@ function WritespellInfo(who, byref spellinfo)
 	else
 		spellinfo.flavortext := "<I> "  + spellinfo.flavortext + " </I>";
 	endif
-
-	//sendsysmessage(who, " " + spellinfo.script);
 
 endfunction
 
@@ -791,7 +797,7 @@ function Corromper(who, spell, targ)
 		return 0;
 	endif
 
-	SendSysMessageEx(who, "Voce falhou em resistir a corrupcao e Asan se apoderou mais um pouco de sua alma.", SSM_FAIL);
+	SendSysMessageEx(who, "Você não resiste a corrupção inevitável da arte necromântica. Seu corpo começa a sentir.", SSM_FAIL);
 	//fim de checagem
 
 	//checa se e magia banida e define a variavel
@@ -841,18 +847,19 @@ function Corromper(who, spell, targ)
 	if ((corrupcao >= 5000) && (corrupcao < 9999) )
 		if (GetObjProperty(who, "corruptionalert") < 1)
 			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'muito baixa' para 'baixa'.", SSM_FAIL);
+			SetObjProperty(who, "corruption_penalty", 5);
 			SetObjProperty(who, "corruptionalert", 1);
 		endif
 	elseif ((corrupcao >= 10000) && (corrupcao < 14999) )
 		if (GetObjProperty(who, "corruptionalert") < 2)
 			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'baixa' para 'razoavel'.", SSM_FAIL);
-			//SendSysMessageEx(who, "Voce comeca a sentir os efeitos da insanidade.", SSM_INFO);
+			SetObjProperty(who, "corruption_penalty",10);
 			SetObjProperty(who, "corruptionalert", 2);
 		endif
 	elseif ((corrupcao >= 15000) && (corrupcao < 19999) )
 		if (GetObjProperty(who, "corruptionalert") < 3)
 			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'razoavel' para 'alta'.", SSM_FAIL);
-			//SendSysMessageEx(who, "Voce esta ficando insano.", SSM_INFO);
+			SetObjProperty(who, "corruption_penalty", 15);
 			SetObjProperty(who, "corruptionalert", 3);
 /*
 			var originalcorruptionbody := struct;
@@ -877,7 +884,7 @@ function Corromper(who, spell, targ)
 	elseif (corrupcao >= 20000)
 		if (GetObjProperty(who, "corruptionalert") < 4)
 			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'alta' para 'muito alta'.", SSM_FAIL);
-			//SendSysMessageEx(who, "A insanidade agora faz parte do seu dia-a-dia.", SSM_INFO);
+			SetObjProperty(who, "corruption_penalty", 20);
 			SetObjProperty(who, "corruptionalert", 4);
 /*
 			case ( RandomIntMinMax(1,3) )

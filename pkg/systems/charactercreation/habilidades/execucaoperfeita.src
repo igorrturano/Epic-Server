@@ -5,10 +5,30 @@ include ":combat:combat";
 include ":blood:blood";
 include "include/damage";
 include "include/say";
+include "include/epicConstants";
+include "include/sounds";
 
 program doubleattack(who)
-
+	if (who.shield)
+		SendSysMessageEx(who, "Um verdadeiro samurai não usaria escudo.", SSM_FAIL);
+		return;
+	endif
+	
 	SendSysMessageEx(who, "Voce prepara um golpe perfeito.", SSM_INFO);
 	SetObjProperty(who, "#attackbonus", 100);
     SetObjProperty(who, "#CriticalChance", 100);
+	
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata.religion == KAI && isMale(who))
+		PlaySoundEffect(who, 0x569);
+	endif
 endprogram
+
+function isMale(who)
+var male_graphics := {400, 1830, 1832, 1828};
+	if (who.graphic in male_graphics)
+		return 1;
+	endif
+
+	return 0;
+endfunction

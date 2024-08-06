@@ -786,13 +786,13 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
-//    if (TemHabilidade(attacker, "Golpes Amplos"))
- //           var dmg  := AP_GetSkill(attacker, TACTICS)/10;
-//			if(dmg < 3)
-	//			dmg := 3;
-		//	endif
-        //start_script(":combat:weaponHitScripts/areadmg", array{attacker, defender, weapon, armor, basedamage, dmg*2, DMG_PHYSICAL});
-    //endif
+	if (getCooldown(attacker, "golpesamplos"))
+		var dmg  := AP_GetSkill(attacker, TACTICS)/20;
+			if(dmg < 1)
+				dmg := 1;
+			endif
+		start_script(":combat:weaponHitScripts/areadmg", array{attacker, defender, weapon, armor, basedamage, dmg, DMG_PHYSICAL});
+	endif
 
 	if (GetCooldown(weapon, "habelemental") )
 		EraseObjProperty(weapon, "#habelemental");
@@ -800,6 +800,15 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		if (elemental != error)
 			start_script(":combat:weaponHitScripts/habelemental", array{attacker, defender, weapon, armor, basedamage, rawdamage*2, elemental.type, 3});
 		endif
+	endif
+
+	if ( GetObjProperty(attacker, "ataquedeimpulso") > 0)
+		printtext(attacker, "*Kaze no Ichigeki*");
+		if (defender)
+			attacker.attack_once(defender);
+			PlaySoundEffect(attacker, 0x51f);
+		endif
+		EraseObjProperty(attacker, "ataquedeimpulso");
 	endif
 
 	return 1;
@@ -904,6 +913,8 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 			attacker.attack_once(defender);
 		endif
 	endif
+
+
 
 	var weapon_scripts := array;
 	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
@@ -1214,11 +1225,11 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	var parry_chance := CInt(skill/3);
 
 	//Aplica penalidade de chance de bloqueio se estiver usando apenas arma
-	if (usingweapon && !TemHabilidade(defender, "Caminho do Andarilho"))
+	if (usingweapon && !TemHabilidade(defender, "Tabibito no Michi"))
 		parry_chance := CInt(parry_chance * 0.7);
 	endif
 
-	if (usingweapon && TemHabilidade(defender, "Caminho do Andarilho"))
+	if (usingweapon && TemHabilidade(defender, "Tabibito no Michi"))
 		parry_chance := CInt(parry_chance * 1.3);
 	endif
 	//Calcula a chance TOTAL de bloqueio
@@ -1255,6 +1266,14 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 				var y := defender.y + RandomInt(2)+1;
 				MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);
 			endif
+		endif
+
+		if (TemHabilidade(defender, "Ken no Tatsujin") && !defender.shield)
+			printtextabove(defender, "*Ken no Tatsujin*");
+			PlaySoundEffect(defender, 0x51f);
+			defender.attack_once(attacker);
+		else
+			SendSysMessageEX(defender, "Você está usando escudo e falhou a habilidade", SSM_INFO);
 		endif
 
 		//if (GetCooldown(defender, "defesarevigorante"))
