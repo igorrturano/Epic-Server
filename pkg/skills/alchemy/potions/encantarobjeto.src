@@ -50,7 +50,7 @@ function setBonus( who, item, bonus )
 
   if ( item.isA( POLCLASS_WEAPON ) )
     case ( item.color )
-      2501: // IgniumIngot
+      2501: // Ignium
         item.damage_fire_mod := (item.damage_fire_mod - oldBonus) + bonus;
         break;
       1428: // Venetita
@@ -65,7 +65,7 @@ function setBonus( who, item, bonus )
     endcase
   elseif ( item.isA( POLCLASS_ARMOR ) )
     case ( item.color )
-      2501: // IgniumIngot
+      2501: // Ignium
         item.resist_fire_mod := (item.resist_fire_mod - oldBonus) + bonus;
         break;
       1428: // Venetita
@@ -83,6 +83,12 @@ function setBonus( who, item, bonus )
       1218: // Draconiano
         item.resist_fire_mod := (item.resist_fire_mod - oldBonus) + bonus;
         break;
+      2687: //Gigante
+        item.resist_energy_mod := (item.resist_energy_mod - oldBonus) + bonus;
+        break;
+      1150: //Polar
+          item.resist_cold_mod := (item.resist_cold_mod - oldBonus) + bonus;
+          break;
     endcase
   endif
 
