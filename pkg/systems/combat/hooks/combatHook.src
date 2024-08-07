@@ -128,8 +128,9 @@ exported function Attack(attacker, defender)
 	endif
 
 	// Verifica acerto na escuridão
-	DarknessHitModifier(attacker, defender, hit_chance);
-
+	if (!attacker.npctemplate)
+		DarknessHitModifier(attacker, defender, hit_chance);
+	endif
 	if (cint(GetObjProperty(attacker, "#finalizar")) == 2)
 		hit_chance := hit_chance + 100;
 		EraseObjProperty(attacker, "#finalizar");
@@ -850,6 +851,7 @@ function HasLightNearby(defender)
         return 1;
     endif
 
+	var statics_lightsources := ListStaticsInBox( defender.x+SEARCH_RANGE, defender.y+SEARCH_RANGE, defender.z+5, defender.x-SEARCH_RANGE, defender.y-SEARCH_RANGE, defender.z-5, 0, defender.realm);
     // Check for specific light source objects
 	UnloadConfigFile(":combat:config/lightsources");
     var cfg := ReadConfigFile(":combat:config/lightsources");
@@ -859,6 +861,15 @@ function HasLightNearby(defender)
 	foreach light in GetConfigStringArray(elem, "LightSource")
         objtype_lightsources.append(light);
 	endforeach
+
+	foreach light in objtype_lightsources
+		foreach static in statics_lightsources
+			if (CInt(static.objtype) == CInt(light))
+				return 1;
+			endif
+		endforeach
+	endforeach
+
     var nearby_items := ListItemsNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
     foreach obj in nearby_items
         if (obj.objtype in objtype_lightsources)
@@ -872,7 +883,7 @@ function HasLightNearby(defender)
 	foreach mob in nearby_mobiles
 		if (!mob.npctemplate)
 			foreach item in (listequippeditems(mob))
-				if (item.objtype in isEquippedLightSource)
+				if (Cint(item.graphic) in isEquippedLightSource)
 					return 1;
 				endif
 			endforeach
