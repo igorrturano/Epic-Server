@@ -1,0 +1,96 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+include ":itemsys:propitens";
+
+program drink_blue( who, potion )
+  EraseObjProperty( who, "IsMeditating" );
+  EraseObjProperty( who, "HealTimer" );
+
+  if ( !Accessible( who, potion ) )
+    return;
+  endif
+
+  if ( potion.movable == 0 )
+    SendSysMessage( who, "Voce nao pode usar isto." );
+    return;
+  endif
+
+  SendSysMessageEx( who, "Qual item deseja encantar?", SSM_REQUEST );
+  var use_on := Target( who );
+
+  if ( !use_on )
+    SendSysMessage( who, "Cancelado" );
+    return 0;
+  endif
+
+  if ( !use_on.isA( POLCLASS_WEAPON ) && !use_on.isA( POLCLASS_ARMOR ))
+    SendSysMessageEx( who, "Isto não pode ser banhado por essa poção.", SSM_FAIL );
+    return;
+  endif
+
+  DestroyItem(potion);
+
+  var bonus := Cint( AP_GetSkill( who, "Alchemy" ) / 20 );
+
+  SendSysMessageEx( who, "Você encantou o objeto.", SSM_INFO );
+  PlayStationaryEffect( who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2 );
+  PlaySoundEffect( who, SFX_SPELL_HEAL );
+  setBonus( who, use_on, bonus );
+endprogram
+
+function setBonus( who, item, bonus )
+  var oldBonus := getObjProperty( item, "encantado_objeto_bonus" );
+
+    if(!oldBonus)
+        oldBonus := 0;
+    endif
+
+  if ( item.isA( POLCLASS_WEAPON ) )
+    case ( item.color )
+      2501: // Ignium
+        item.damage_fire_mod := (item.damage_fire_mod - oldBonus) + bonus;
+        break;
+      1428: // Venetita
+        item.damage_poison_mod := (item.damage_poison_mod - oldBonus) + bonus;
+        break;
+      2360: // Frigutium
+        item.damage_cold_mod := (item.damage_cold_mod - oldBonus) + bonus;
+        break;
+      2726: // Fulmium
+        item.damage_fire_mod := (item.damage_fire_mod - oldBonus) + bonus;
+        break;
+    endcase
+  elseif ( item.isA( POLCLASS_ARMOR ) )
+    case ( item.color )
+      2501: // Ignium
+        item.resist_fire_mod := (item.resist_fire_mod - oldBonus) + bonus;
+        break;
+      1428: // Venetita
+        item.resist_poison_mod := (item.resist_poison_mod - oldBonus) + bonus;
+        break;
+      2360: // Frigutium
+        item.resist_cold_mod := (item.resist_cold_mod - oldBonus) + bonus;
+        break;
+      2726: // Fulmium
+        item.resist_fire_mod := (item.resist_fire_mod - oldBonus) + bonus;
+        break;
+      2976: // Escamoso
+        item.resist_poison_mod := (item.resist_poison_mod - oldBonus) + bonus;
+        break;
+      1218: // Draconiano
+        item.resist_fire_mod := (item.resist_fire_mod - oldBonus) + bonus;
+        break;
+      2687: //Gigante
+        item.resist_energy_mod := (item.resist_energy_mod - oldBonus) + bonus;
+        break;
+      1150: //Polar
+          item.resist_cold_mod := (item.resist_cold_mod - oldBonus) + bonus;
+          break;
+    endcase
+  endif
+
+  SetObjProperty( item, "encantado_objeto_bonus", bonus );
+endfunction
