@@ -364,6 +364,7 @@ function comprarHabilidade(who, item, nv:=-1)
 	var chardata := GetObjProperty(who, "chardata");
 	var cultura := chardata.culture;
 	var raca := chardata.raca;
+	var religiao := chardata.religion;
 	var habs := GetObjProperty(who, "buyhab");
 	if (habs[0] == error)
 		habs[0] := 1;
@@ -401,7 +402,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
-        if (escolhida == "Visao verdadeira" && who.graphic != 1831 && raca != DROW)
+        if (escolhida == "Visao verdadeira" && who.graphic != 1831 && raca != DROW && religiao != ELUITHORTH)
             SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
             return 0;
         endif
@@ -476,6 +477,12 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif(escolhida == "Elo Natural" && cultura == HAROLOTH)
             SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
             return 0;
+		elseif(escolhida == "Valm Oloth" && cultura != HAROLOTH && religiao != ELUITHORTH && who.graphic != 1830)
+			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		elseif(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
+			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;

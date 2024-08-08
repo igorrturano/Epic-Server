@@ -30,4 +30,5 @@ program backstab(who)
     endif
     GrantPrivilege(who, "hiddenattack");
     who.enable("hiddenattack");
+    SendSysMessageEx(who, "Voce está preparado para um ataque furtivo", SSM_INFO);
 endprogram

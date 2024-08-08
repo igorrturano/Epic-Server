@@ -172,7 +172,7 @@ function CreateBasicRecipes()
 
 
 	var spellinfo12 := struct;
-	spellinfo12.+name := "Pocao da visao noturna";
+	spellinfo12.+name := "Pocao de aprimorar visao";
         spellinfo12.+id := 56550;
 	spellinfo12.+description := "Duas teias de aranha gigante fazem a pupila dos seus olhos dilatarem e receberem mais luz, consequentemente ambientes escuros ou com pouca luz ficam bem claros para quem beber esta pocao. Dificuldade baixa.";
 	x.append(spellinfo12);
@@ -213,7 +213,7 @@ function CreateVeryBasicRecipes()
 	x.append(spellinfo7);
 
 	var spellinfo12 := struct;
-	spellinfo12.+name := "Pocao da visao noturna";
+	spellinfo12.+name := "Pocao de aprimorar visao";
     spellinfo12.+id := 56550;
 	spellinfo12.+description := "Duas teias de aranha gigante fazem a pupila dos seus olhos dilatarem e receberem mais luz, consequentemente ambientes escuros ou com pouca luz ficam bem claros para quem beber esta pocao. Dificuldade baixa.";
 	x.append(spellinfo12);

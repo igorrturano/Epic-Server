@@ -11,6 +11,7 @@ program cleric(who)
     endif
     if (GetObjProperty(who, "pilotando"))
         EraseObjProperty(who, "pilotando");
+        leaveGolem(who);
         unpossess(who);
         who.concealed := 0;
         return 0;
@@ -25,7 +26,55 @@ program cleric(who)
     endif
 
     setObjproperty(who, "pilotando", 1);
+    enterGolem(who);
    	possess(who, targ);
 
     return 1;
 endprogram
+
+
+function enterGolem(who)
+    //seta os mods
+    var skill_a := Ap_GetSkill(who, METALWORKING) * 0.8;
+    var skill_d := Ap_GetSkill(who, METALWORKING) * 0.6;
+    var dicedmg := "1d12";
+    var hitsmod := 200;
+
+	SetObjProperty(who, "skill_a", skill_a);
+	SetObjProperty(who, "skill_d", skill_d);
+	SetObjProperty(who, "dicedmg", dicedmg);
+	SetObjProperty(who, "golemhitsmod", hitsmod);
+
+    var resistmod := 60;
+	who.resist_physical_mod := resistmod;
+	who.resist_fire_mod := resistmod;
+	who.resist_cold_mod := resistmod;
+	who.resist_poison_mod := resistmod;
+	who.resist_energy_mod := 0;
+    
+	SetObjProperty(who, "resitmod", resistmod);
+	SetObjProperty(who, "hitsmod", hitsmod);
+
+	recalcvitals(who);
+	HealDamage(who, hitsmod);
+endfunction
+
+function leaveGolem(who)
+	EraseObjProperty(who, "skill_a");
+	EraseObjProperty(who, "skill_d");
+	EraseObjProperty(who, "dicedmg");
+
+    var hitsmod := cint(getObjProperty(who, "golemhitsmod"));
+	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
+	var resist := cint(GetObjProperty(who, "resitmod"));
+
+	who.resist_physical_mod := who.resist_physical_mod - resist;
+	who.resist_fire_mod := who.resist_fire_mod - resist;
+	who.resist_cold_mod := who.resist_cold_mod - resist;
+	who.resist_poison_mod := who.resist_poison_mod - resist;
+	who.resist_energy_mod := who.resist_energy_mod - resist;
+
+	EraseObjProperty(who, "polymorphbonus");
+	EraseObjProperty(who, "metamorfose");
+	EraseObjProperty(who, "golemhitsmod");
+endfunction

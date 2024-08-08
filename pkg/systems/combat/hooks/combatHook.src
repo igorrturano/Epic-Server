@@ -506,6 +506,11 @@ function CalculateHitChance(attacker, defender)
 		skill_a := cint(GetObjProperty(attacker, "skill_a"));
 	endif
 
+	// Piloto de Golem
+	if ( GetObjProperty(attacker, "pilotando") != error)
+		skill_a := cint(GetObjProperty(attacker, "skill_a"));
+	endif
+
 	if ( !defender.npctemplate )
 		skill_d := CDbl(AP_GetSkill(defender, wpn_d.attribute));
 		if ( GetEquipmentByLayer(defender, LAYER_MOUNT) && GetObjProperty(defender, "chardata").trait != "Cavalaria de Escaramuça")
@@ -523,6 +528,11 @@ function CalculateHitChance(attacker, defender)
 	endif
 
 	if ( GetObjProperty(defender, "metamorfose") != error)
+		skill_d := cint(GetObjProperty(defender, "skill_d"));
+	endif
+
+	// Piloto de Golem
+	if ( GetObjProperty(defender, "pilotando") != error)
 		skill_d := cint(GetObjProperty(defender, "skill_d"));
 	endif
 
@@ -830,15 +840,26 @@ endfunction
 function DarknessHitModifier(attacker, defender, byref hit_chance)
     var attacker_race := GetObjProperty(attacker, "chardata").raca;
     var in_darkness := InDarkness(attacker);
-
+	var darkness_intensity := "muita";
     if (in_darkness && attacker_race != DROW)
         if (!HasLightNearby(defender))
-            SendSysMessageEx(attacker, "darkness_penalty", SSM_FAIL);
-            hit_chance := hit_chance - 20;
+			if (GetCooldown(attacker, "nightvision") > 0)
+            	hit_chance := hit_chance - 10;
+            	SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
+			else
+				hit_chance := hit_chance - 20;
+				SendSysMessageEx(attacker, "Você luta com muita dificuldade.", SSM_FAIL);
+			endif
         endif
     elseif (!in_darkness && attacker_race == DROW)
-		SendSysMessageEx(attacker, "drow_light_penalty", SSM_FAIL);
-        hit_chance := hit_chance - 20;
+		SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
+		if (GetCooldown(attacker, "lightvision") > 0)
+			hit_chance := hit_chance - 10;
+			SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
+		else
+			hit_chance := hit_chance - 20;
+			SendSysMessageEx(attacker, "Você luta com muita dificuldade.", SSM_FAIL);
+		endif
     endif
 endfunction
 

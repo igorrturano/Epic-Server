@@ -30,12 +30,7 @@ program summontotem(params)
 	//Efeito da magia
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
-	var cfg;
-	if(who.magic_path == "spellcaster" || GetObjProperty(who, "chardata").magia == "spellcaster")
-		cfg  :=  ReadConfigFile(":spells:spellcaster");
-	else
-		cfg  :=  ReadConfigFile(":spells:allspells");
-	endif
+	var cfg  :=  ReadConfigFile(":spells:spellcaster");
 	var elem := FindConfigElem(cfg, spellid);
 	var graphic := getConfigInt(elem, "graphic");
 
@@ -55,8 +50,8 @@ program summontotem(params)
 	var namepoly:=GetConfigString(elem, "namepoly");
 
 	if (graphic == error)
-			SendSysMessage(who, "erro ao ler o template" + template);
-			return;
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return;
 	endif
 
     var moon_fase := GetGlobalProperty("moonfase");
@@ -72,10 +67,10 @@ program summontotem(params)
 
     //Bonus de especialização
     if(Temhabilidade(who, "Treinamento Druídico"))
-        skill_a := skill_a * 1.2;
-        skill_d := skill_d * 1.2;
-        resistmod := resistmod * 1.2;
-        hitsmod := hitsmod * 1.2;
+        skill_a := Cint(skill_a * 1.2);
+        skill_d := Cint(skill_d * 1.2);
+        resistmod := Cint(resistmod * 1.2);
+        hitsmod := Cint(hitsmod * 1.2);
     endif
 
 	//seta os mods

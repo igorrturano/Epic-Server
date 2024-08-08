@@ -84,8 +84,8 @@ function getQuality(num)
 endfunction
 
 function getCondition(item) //Durabilidade dos itens
-	return CSTR(item.hp) + "/" + CSTR(item.maxhp);
-	/*
+	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
+	
 	var c := cdbl(item.hp) / cdbl(item.maxhp);
 
 	if (c > 0.9)
@@ -97,7 +97,7 @@ function getCondition(item) //Durabilidade dos itens
 	else
 		return "Quebradiça";
 	endif
-	*/
+	
 endfunction
 
 function TranslateCritical(crit)

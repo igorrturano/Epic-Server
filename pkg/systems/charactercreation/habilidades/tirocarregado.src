@@ -157,11 +157,11 @@ function CriticalHitScripts(attacker, defender, weapon, armor, basedamage, byref
 		var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
 		weapon_scripts :=  GetConfigStringArray( npcelem, "CriticalHitScripts" );
 	endif
-
+	var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
 	if (weapon_scripts.size() > 0)
-		PrintText(attacker, "*CRITICO*", _DEFAULT_TEXT_FONT, 2118);
+		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
 		SetObjProperty(attacker, "critdelay", ReadGameClock()+180);
-		if (getCooldown(defender, "#vitalidadeinabalavel") > 0)
+		if (getCooldown(defender, "#vitalidadeinabalavel") > 0 || isDwarverDefender)
 			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);
 			SendSysMessageEx(attacker, "O defensor ignorou o critico", SSM_FAIL);
 			return 1;

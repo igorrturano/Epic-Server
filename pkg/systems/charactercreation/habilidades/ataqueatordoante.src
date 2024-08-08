@@ -22,5 +22,6 @@ program doubleattack(params)
 	PrintTextAbove(attacker, "*ataque atordoante*");
 
 	TS_StartTimer(defender, "paralysis", 5);
+	PrintTextAbove(defender, "*atordoado*");
 
 endprogram  

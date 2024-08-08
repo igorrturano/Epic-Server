@@ -25,10 +25,11 @@ program SpellScript(params)
 
     //Bonus de especialização
     if(Temhabilidade(who, "Evocator"))
-        duration := duration * 1.2;
+        duration := Cint(duration * 1.2);
     endif
 
-	who.setlightlevel(1, duration);
+	who.setlightlevel(15, duration);
+    SetCooldown(who, "nightvision", duration);
 
 	if (GetObjProperty(who, "#magiasilenciosa"))
         SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);

@@ -108,10 +108,14 @@ program spell_fireball(params)
 
             //Bonus de especialização
             if(Temhabilidade(caster, "Evocator"))
-                dmg := dmg * 1.2;
+                dmg := Cint(dmg * 1.2);
             endif
-
-            DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
+			
+			if (Getcooldown(mobile, "spellthief"))
+            	DamageFLS(caster, cint(dmg), DMG_FIRE, caster, "fireball");
+			else
+				DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
+			endif
         endif
         sleepms(20);
     endforeach
