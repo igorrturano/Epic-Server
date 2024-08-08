@@ -18,18 +18,22 @@ program SpellScript(params)
 	    PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);	
     endif
 
-	SendSysMessageEx(who, "Voce passa a enxergar no escuro", SSM_INFO);
+	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
 
 	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
     var duration := CInt(magiclore_skill * 5);
 
     //Bonus de especialização
-    if(Temhabilidade(who, "Evocator"))
+    if(Temhabilidade(who, "Treinamento Druídico"))
         duration := Cint(duration * 1.2);
     endif
 
 	who.setlightlevel(15, duration);
-    SetCooldown(who, "nightvision", duration);
+	if (GetObjProperty(who, "chardata").raca != DROW)
+    	SetCooldown(who, "nightvision", duration);
+	else
+		SetCooldown(who, "lightvision", duration);
+	endif
 
 	if (GetObjProperty(who, "#magiasilenciosa"))
         SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
