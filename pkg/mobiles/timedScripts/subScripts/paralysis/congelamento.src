@@ -20,7 +20,7 @@ program TimedScript_Paralysis(params)
 			return;
 	endif
 	
-	PlaySoundEffect(mobile, 0x0016);
+	PlaySoundEffect(mobile, 0x65b);
 	var originalcolor;
 	originalcolor := mobile.color;
 	SetObjProperty(mobile, "originalcolor", originalcolor);

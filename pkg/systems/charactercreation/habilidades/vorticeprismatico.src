@@ -1,0 +1,72 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include "include/epicConstants";
+include ":magery:spells";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include ":tn:cooldown";
+include ":taming:taming";
+
+program doubleattack(who)
+
+	SendSysMessageEx(who, "Você carrega seu vórtice prismático.", SSM_INFO);
+	SetCooldown(who, "vortice_prismatico", 10);
+    PlayObjectCenteredEffectHuefx(who, 0xB468, 10, 60, 0, 1);
+
+    sleep(10);
+    
+    var range := cint(AP_GetSkill(who, MAGICLORE)/10);
+    var nearby := ListMobilesNearLocation( who.x ,who.y, who.z, range, who.realm);
+	var festa := who.party;
+    var effect := who.weapon.color;
+    var total_dmg := Cint(Cint(GetObjProperty(who, "vortice_dmg")) + Cint(AP_GetSkill(who, MAGICLORE)));
+    PerformAction(who, ANIM_CAST_AREA);
+
+    var allPets := array{};
+    var party_members := who.party.members;
+        if (who.party)
+        foreach member in party_members
+            if (member != who)
+                var memberObj := SystemFindObjectBySerial(member.serial);
+                var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+                foreach pet in allPetsAndSummonedPets
+                    allPets.append(pet);
+                endforeach
+            endif
+        endforeach
+    endif
+// 0x5CF
+    foreach char in nearby
+        var char_owner := GetObjProperty(char, "owner");
+        if (!(char in (festa.members) || char == who))
+            if (!(char in allPets) && !(char in who.party.members) && !(char_owner == who.serial))
+                if (effect == FOGO)
+                    PlaySoundEffect(char, 0x5D0);
+                    PlayObjectCenteredEffect(char, 0x6d77, 7, 60);
+                    DamageFLS(char, total_dmg, DMG_FIRE, who);
+                    TS_StartTimer(char, "queimar", 10);
+                elseif (effect == GELO)
+                	PlaySoundEffect(mobile, 0x65b);
+                    PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, GELO, 0);
+                    DamageFLS(char, total_dmg, DMG_COLD, who);
+                    TS_StartTimer(char, "congelamento", 10);
+                elseif (effect == RAIO)
+                    PlaySoundEffect(char, 0x5CF);
+                    DamageFLS(char, Cint(total_dmg * 1.2), DMG_ENERGY, who);
+			        PlayObjectCenteredEffect(char, 0xcdaf, 7, 30);
+                endif
+                sleepms(20);
+            endif
+        endif
+    endforeach
+    EraseObjPRoperty(who, "vortice_dmg");
+	return 1;
+
+endprogram

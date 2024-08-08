@@ -195,6 +195,16 @@ function CalculateDamage(defender, type, dmg)
             if (resist < 0.3)
                 resist := 0.3;
             endif
+		elseif (TemHabilidade(defender, "Vínculo Elemental"))
+			var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.7;
+			if (GetCooldown(defender, "armor_drain") > 0)
+				arcane_armor += AP_GetSkill(defender, MAGICLORE) / 100 * 0.3;
+				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
+			endif
+			if (resist < arcane_armor)
+				resist := arcane_armor;
+				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
+			endif
 		endif
 	endif
 
@@ -571,7 +581,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (GetObjProperty(who, "chardata").trait == "Defensor Anão")
         dmg := Cint(dmg * 0.7);
     endif
-
+	
 	return dmg;
 
 endfunction

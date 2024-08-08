@@ -11,5 +11,6 @@ program doubleattack(who)
 
 	SendSysMessageEx(who, "Voce vai comecar bem.", SSM_INFO);
 	SetObjProperty(who, "#bomcomeco", 1);
-	
+	PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 60, 0, 1);
+
 endprogram

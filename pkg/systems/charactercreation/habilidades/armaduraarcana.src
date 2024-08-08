@@ -1,0 +1,49 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+include "include/epicConstants";
+program doubleattack(who)
+    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 10);
+	SendSysMessageEx(who, "Sua armadura está em comunhão com os elementos.", SSM_INFO);
+
+    var effect := grantBonus(who, duration);
+    sleep(duration);
+    revokeBonus(who, effect);
+endprogram
+
+function grantBonus(who, duration)
+    var weapon := who.weapon;
+    var effect_color := 0;
+	if (weapon.color == FOGO)
+        effect_color := FOGO;
+        who.resist_fire_mod := who.resist_fire_mod + 100;
+        SetCooldown(who, "incinerate_enemy", duration);
+	elseif (weapon.color == GELO)
+        effect_color := GELO;
+        who.resist_cold_mod := who.resist_cold_mod + 100;
+        SetCooldown(who, "freeze_enemy", duration);
+	elseif (weapon.color == RAIO) 
+        effect_color := RAIO;
+        who.resist_energy_mod := who.resist_energy_mod + 100;
+        SetCooldown(who, "move_speed", duration);
+    endif
+    //0x6d4b
+    PlayObjectCenteredEffectHuefx(who, 0x6cf0, 6, duration * 20, effect_color, 0);
+    return effect_color;
+endfunction
+
+function revokeBonus(who, effect)
+    if (effect == FOGO)
+        who.resist_fire_mod := who.resist_fire_mod - 100;
+    elseif(effect == GELO)
+        who.resist_cold_mod := who.resist_cold_mod - 100;
+    elseif(effect == RAIO)
+        who.resist_energy_mod := who.resist_energy_mod - 100;
+    endif
+endfunction
