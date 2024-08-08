@@ -568,6 +568,10 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		dmg := 1;
 	endif
 
+	if (GetObjProperty(who, "chardata").trait == "Defensor Anão")
+        dmg := Cint(dmg * 0.7);
+    endif
+
 	return dmg;
 
 endfunction
@@ -603,9 +607,7 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	endif
 
   	DisplayDamage(defender, totaldmg, source);
-    if (GetObjProperty(defender, "chardata").trait == "Defensor Anão")
-        totaldmg -= Cint(AP_GetSkill(defender, PARRY) / 30);
-    endif
+
 	ApplyRawDamage(defender, totaldmg);
 
 

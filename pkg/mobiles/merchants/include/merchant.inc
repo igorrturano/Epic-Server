@@ -1283,7 +1283,7 @@ function GetTooltipText(item_template, who)
 
 		if(elem.TipoAtaque)
 			xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item_template) + "<br>";
-			xDesc := xDesc + "Velocidade: " + GetVelStringDescTemplate(elem, item_template) + "<br>";
+			xDesc := xDesc + "Velocidade: " + getVelStringDesc(elem, item_template) + "<br>";
 			xDesc := xDesc + GetTipoStringDescTemplate(elem, item_template) + "<br>";
 			var crits := GetCriticalInfoTemplate(elem);
 			if (crits != "")
@@ -1414,9 +1414,40 @@ endfunction
 
 //COPIA DO GERADOR DE TOOLTIP DO MEGACLILOC.SRC
 
+// function GetDmgStringDesc(elem, item)
+// 	var dmg_mod := CInt(item.dmg_mod);
+// 	var resultado := CSTR(elem.MinDam) + "-" + CSTR(elem.MaxDam);
+// 	if (dmg_mod>0)
+// 		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
+// 	elseif (dmg_mod<0)
+// 		resultado := resultado + " (" + CSTR(dmg_mod) +")";
+// 	endif
+// 	return resultado;
+// 	/*
+// 	var avgdmg := cint(elem.MinDam + elem.MaxDam)/2;
+
+// 	if(avgdmg >= 20)
+// 		return "Letal";
+// 	elseif(avgdmg >= 18)
+// 		return "Muito";
+// 	elseif(avgdmg >= 16)
+// 		return "Bom";
+// 	elseif(avgdmg >= 14)
+// 		return "Mediano";
+// 	elseif(avgdmg >= 12)
+// 		return "Pouco";
+// 	elseif(avgdmg >= 10)
+// 		return "Pouquissimo ";
+// 	else
+// 		return "Inofensivo";
+// 	endif
+// 	*/
+
+// endfunction
+
 function GetDmgStringDesc(elem, item)
 	var dmg_mod := CInt(item.dmg_mod);
-	var resultado := CSTR(elem.MinDam) + "-" + CSTR(elem.MaxDam);
+	var resultado := CSTR(elem.Damage);
 	if (dmg_mod>0)
 		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
 	elseif (dmg_mod<0)
@@ -1462,8 +1493,8 @@ function getQualityTemplate(num)
 endfunction
 
 function GetConditionTemplate(item) //Durabilidade dos itens
-	return CSTR(item.hp) + "/" + CSTR(item.maxhp);
-	/*
+	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
+	
 	var c := cdbl(item.hp) / cdbl(item.maxhp);
 
 	if (c > 0.9)
@@ -1475,7 +1506,7 @@ function GetConditionTemplate(item) //Durabilidade dos itens
 	else
 		return "Quebradiça";
 	endif
-	*/
+	
 endfunction
 
 function TranslateCriticalTemplate(crit)
@@ -1554,18 +1585,18 @@ function GetTipoStringDescTemplate(elem, item) //Exibe o tipo de arma
 	endif
 endfunction
 
-
-function GetVelStringDescTemplate(elem, item) //Velocidade da arma. Mostra diferença pra item base
-	var speedI := CInt(item.CProps.attackspeedbonus);
-	var speedE := Cint(elem.Speed);
-	if (speedI != error)
-		return CSTR(elem.speed) + " (+" + CSTR(speedI) + ")";
-	elseif (speedI < 0)
-		return CSTR(elem.speed) + " (" + CSTR(speedI) + ")";
-	else
-		return CSTR(elem.speed);
-	endif
-endfunction
+// Mudei -- Igor
+// function GetVelStringDescTemplate(elem, item) //Velocidade da arma. Mostra diferença pra item base
+// 	var speedI := CInt(item.CProps.attackspeedbonus);
+// 	var speedE := Cint(elem.Speed);
+// 	if (speedI != error)
+// 		return CSTR(elem.speed) + " (+" + CSTR(speedI) + ")";
+// 	elseif (speedI < 0)
+// 		return CSTR(elem.speed) + " (" + CSTR(speedI) + ")";
+// 	else
+// 		return CSTR(elem.speed);
+// 	endif
+// endfunction
 
 function getParryBonusTemplate(elem, item)
 	var parrybonusI := Cint(item.CProps.parrybonus);
@@ -1621,4 +1652,29 @@ function ParseScriptStringTemplate(crit)
 
 	return str;
 
+endfunction
+
+function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
+	var speedI := GetObjProperty(item,"attackspeedbonus");
+	var speedE := Cint(elem.Speed);
+	var speedDesc := "";
+	if (speedE >= 41)
+		speedDesc := "Muito Rápida";
+	elseif (speedE >= 37)
+		speedDesc := "Rápida";
+	elseif (speedE >= 33)
+		speedDesc := "Normal";
+	elseif (speedE >= 29)
+		speedDesc := "Lenta";
+	else
+		speedDesc := "Muito Lenta";
+	endif
+
+	if (speedI != error && speedI > 0)
+		return speedDesc + " (+" + CSTR(speedI) + ")";
+	elseif (speedI != error && speedI < 0)
+		return speedDesc + " (" + CSTR(speedI) + ")";
+	else
+		return speedDesc;
+	endif
 endfunction

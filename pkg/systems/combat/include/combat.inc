@@ -157,21 +157,16 @@ endfunction
 function CanBackStab(who, weapon)
 
 	var can_back_stab := 0;
-	if ((weapon.attribute) == "One_Handed")
+	if ((weapon.attribute) != "Two_Handed")
 		can_back_stab := 1;
 	endif
-
-	if ((weapon.attribute) == "Ranged")
-		can_back_stab := 1;
-	endif
-
 
 	if ( !can_back_stab )
 		SendSysMessage(who, "Esta arma nao e apropriada para um ataque furtivo.");
 		return 0;
 	endif
 
-	return 1;
+	return can_back_stab;
 endfunction
 
 function AmmoCheck(attacker, defender)

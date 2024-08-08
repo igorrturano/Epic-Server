@@ -19,6 +19,8 @@ function CalculateRawDamage(attacker, weapon)
 		var dmg;
 		if ( GetObjProperty(attacker, "metamorfose") != error)
       		dmg := RandomDiceRoll( GetObjProperty(attacker, "dicedmg"));
+		elseif(GetObjProperty(attacker, "pilotando") != error)
+			dmg := RandomDiceRoll( GetObjProperty(attacker, "dicedmg"));
 		else
     		dmg :=  RandomDiceRoll(cstr(weaponelem.Damage));
     	endif

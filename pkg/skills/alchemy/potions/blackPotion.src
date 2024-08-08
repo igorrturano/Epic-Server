@@ -3,7 +3,7 @@ use uo;
 use cfgfile;
 include ":alchemy:alchemy";
 include ":timedscripts:timedScripts";
-
+include "include/epicConstants";
 program drink_blue(who, potion)
 
 	EraseObjProperty(who, "IsMeditating");
@@ -18,10 +18,19 @@ program drink_blue(who, potion)
 	if(!checkifcandrink(who, "black"))
 		return;
 	endif
+
 	empty_bottle(who, potion);
 	PlaySoundEffect(who, 0x1e4);
-	TS_StartTimer(who, "awabuff", 1800);
-	if (GetObjProperty(who, "chardata").povo != "Drow")
-		who.setlightlevel( 0, 1800 );
+	TS_StartTimer(who, "nightvision", 300);
+
+	var alch_skill := AP_GetSkill(who, ALCHEMY);
+    var duration := CInt(alch_skill * 5);
+
+	if (GetObjProperty(who, "chardata").raca != DROW)
+    	SetCooldown(who, "nightvision", duration);
+	else
+		SetCooldown(who, "lightvision", duration);
 	endif
+
+	who.setlightlevel(15, duration);
 endprogram

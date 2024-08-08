@@ -67,16 +67,8 @@ program SpellStarter(params)
     endif
 
 	//se magia nao for de swordmage e tiver kit de swordmage, retorna.
-	if ( (spellinfo.spelltype != "Swordmage") && (TemHabilidade(mobile, "Concentracao Aprimorada")))
+	if ( (spellinfo.School != "Ahtaleloreth") && (TemHabilidade(mobile, "Concentracao Aprimorada")))
 		SendSysMessageEx(mobile, "Voce nao pode utilizar essas magias.", SSM_FAIL);
-		return 1;
-	endif
-
-	//se magia for kitahster e estiver usando alguma arma fora da lista, ele n vai conseguir castar
-	var kitahster_weapons := array{0x0e81, 0x0e8a, 0x13f9, 0xECE6, 0x0df0, 0x1F020};
-	var kitahster_chardata := GetObjProperty(mobile, "chardata");
-	if (kitahster_chardata.magia == "kitahster" && ((mobile.weapon).IsA(POLCLASS_WEAPON) && !(mobile.weapon.objtype in kitahster_weapons)))
-		SendSysMessageEx(mobile, "Voce nao pode utilizar esse tipo de arma para conjurar.", SSM_FAIL);
 		return 1;
 	endif
 
@@ -132,7 +124,11 @@ program SpellStarter(params)
 			endif
 		endif
 	endif
-    var battlemageHabs := Array{"Concentracao Macabra", "Senhor do Medo", "Devocao", "Concentracao Aprimorada", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira"};
+	var can_cast_with_weapon := 0;
+	if (spellinfo.School == "Ahtaleloreth")
+		can_cast_with_weapon := 1;
+	endif
+    var battlemageHabs := Array{"Concentracao Macabra", "Senhor do Medo", "Devocao", "Concentracao Aprimorada", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
     var tem_hab := 0;
     foreach hab in battlemageHabs
         if (TemHabilidade(mobile, hab))
@@ -144,7 +140,7 @@ program SpellStarter(params)
 		FailSpell(mobile);
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
-	elseif ( !EquipmentCheck(mobile) && !mobile.npctemplate && !tem_hab)
+	elseif ( !EquipmentCheck(mobile) && !mobile.npctemplate && !tem_hab && !can_cast_with_weapon)
 		SendSysMessageEx(mobile, "Suas maos precisam estar livres para gesticular os componentes gestuais necessarios para a magia.", SSM_FAIL);
 		mobile.frozen := 0;
 		EraseObjProperty(mobile, "#medding");

@@ -34,12 +34,19 @@ var dist := distance(attacker, defender);
 	
 	PrintText(attacker, "*desarma "+defender.name+"*");
 
+	var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);
+	TS_StartTimer(defender, "desarmar", tactics_bonus, 0, attacker);
 	var defweapon := defender.weapon;
-	if (defweapon.objtype != 0xF020)
+    if ((defweapon.objtype == 0x1F020 || defender.npctemplate))
+        TS_StartTimer(defender, "dmgreduction", tactics_bonus, 4, attacker);
+	elseif ((defender.isA(POLCLASS_NPC) || defender.npctemplate) && defweapon.objtype != 0x1F020)
+		TS_StartTimer(defender, "dmgreduction", 20, 2, attacker);
+		SetObjProperty(defender, "arma_desarmada", defweapon.objtype);
+		MoveItemToContainer(defweapon, defender.backpack);
+    else
 		var x := defender.x + RandomInt(2)+1;
 		var y := defender.y + RandomInt(2)+1;
 		MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);
 		MoveItemToContainer(defweapon, attacker.backpack);
 	endif
-
 endprogram  
