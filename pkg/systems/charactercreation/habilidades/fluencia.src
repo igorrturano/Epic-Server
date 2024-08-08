@@ -1,0 +1,83 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":tn:cooldown";
+include "include/epicConstants";
+
+program doubleattack(who)
+    var mlore_bonus := Cint(AP_GetSkill(who, MAGICLORE));
+    SetCooldown(who, "desviardisparos", mlore_bonus);
+
+	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if (targ.isa(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+    var enchantmentColors := array{FOGO, GELO, RAIO};
+    if (!(who.weapon.color in enchantmentColors))
+        SendSysMessageEx(who, "Sua arma não está encantada!", SSM_FAIL);
+        return;
+    endif
+    grantBonus(who, targ);
+	SendSysMessageEx(who, "Você drenou parte da armadura do alvo.", SSM_INFO);
+    SendSysMessageEx(targ, "Suas defesas são drenadas!", SSM_FAIL);
+	SetObjProperty(who, "#bomcomeco", 1);
+
+    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 10);
+    SetCooldown(who, "armor_drain", duration);
+    sleep(duration);
+
+    revokeBonus(who, targ);
+    SendSysMessageEx(who, "O efeito se dissipa.", SSM_INFO);
+    SendSysMessageEx(targ, "Suas defesas normalizam", SSM_INFO);
+endprogram
+
+function grantBonus(who, targ)
+    var weapon := who.weapon;
+    var effect_color := 0;
+    var armor_drain := Cint(AP_GetSkill(who, MAGICLORE) * 0.3);
+	if (weapon.color == FOGO)
+        effect_color := FOGO;
+	    targ.resist_fire_mod := targ.resist_fire_mod - armor_drain;
+        who.resist_fire_mod := who.resist_fire_mod + armor_drain;
+	elseif (weapon.color == GELO)
+        effect_color := GELO;
+	    targ.resist_cold_mod := targ.resist_cold_mod - armor_drain;
+        who.resist_cold_mod := who.resist_cold_mod + armor_drain;
+	elseif (weapon.color == RAIO) 
+        effect_color := RAIO;
+        targ.resist_energy_mod := targ.resist_energy_mod - armor_drain;
+        who.resist_energy_mod := who.resist_energy_mod + armor_drain;
+        PlaySoundEffect(char, 0x5CF);
+    endif
+    PlayObjectCenteredEffectHuefx(targ, 0x6db6, 10, 20, effect_color, 0);
+endfunction
+
+function revokeBonus(who, targ)
+    var weapon := who.weapon;
+    var effect_color := 0;
+    var armor_drain := Cint(AP_GetSkill(who, MAGICLORE) * 0.3);
+	if (weapon.color == FOGO)
+        effect_color := FOGO;
+	    targ.resist_fire_mod := targ.resist_fire_mod + armor_drain;
+        who.resist_fire_mod := who.resist_fire_mod - armor_drain;
+	elseif (weapon.color == GELO)
+        effect_color := GELO;
+	    targ.resist_cold_mod := targ.resist_cold_mod + armor_drain;
+        who.resist_cold_mod := who.resist_cold_mod - armor_drain;
+	elseif (weapon.color == RAIO)
+        effect_color := RAIO;
+        targ.resist_energy_mod := targ.resist_energy_mod + armor_drain;
+        who.resist_energy_mod := who.resist_energy_mod - armor_drain;
+    endif
+endfunction

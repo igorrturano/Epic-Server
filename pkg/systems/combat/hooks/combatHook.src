@@ -201,6 +201,22 @@ exported function Attack(attacker, defender)
             defender.frozen := 0;
         endif
 
+		// Armadura Arcana
+		var dist := Distance(attacker, defender);
+		if (GetCooldown(defender, "freeze_enemy") && dist == 1)
+			PlaySoundEffect(mobile, 0x65b);
+		    PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
+			TS_Starttimer(attacker, "congelamento", 5);
+		elseif(GetCooldown(defender, "incinerate_enemy") && dist == 1)
+			PlaySoundEffect(char, 0x5D0);
+		    PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
+			TS_Starttimer(attacker, "queimar", 5, 1 , defender);
+		elseif(GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
+			PlaySoundEffect(char, 0x5CF);
+			PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
+			TS_StartTimer(defender, "velocidade", 5);
+		endif
+
         var trickster_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 20);
         if (getCooldown(attacker, "disparomistico"))
             PrintTextAbovePrivate(attacker, "*passo nebuloso*", attacker);

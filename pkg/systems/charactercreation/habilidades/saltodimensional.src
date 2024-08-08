@@ -60,7 +60,7 @@ program HitScript(who)
         who.frozen := 0;
         return 0;
     else
-    	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
+    	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm);
     endif
 
     

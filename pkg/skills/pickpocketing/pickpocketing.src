@@ -168,7 +168,7 @@ program skill_Stealing(mobile)
 
 			var check := SkillCheck(mobile, PICKPOCKETING, diff);
 			if ( check > 0 )
-				if (TemHabilidade(targ, "Nexus"))
+				if (TemHabilidade(targ, "Vínculo Elemental"))
 					if (GetObjProperty(steal, "swordmage") ==  targ.serial)//seta com a arma
 						SendSysMessageEx(mobile, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 						return 1;

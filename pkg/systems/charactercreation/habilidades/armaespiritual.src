@@ -4,6 +4,7 @@ include ":spells:swordmage";
 include "include/say";
 include ":tn:tngumps";
 include "include/damage";
+include "include/epicConstants";
 
 program swordmage(who)
 
@@ -43,7 +44,7 @@ program swordmage(who)
 		SetObjProperty(who, "swordmage", wp.serial);
 		SendSysMessageEx(who, "Voce criou a arma.", SSM_INFO);
 
-		if (TemHabilidade(wp, "Nexus"))
+		if (TemHabilidade(wp, "Vínculo Elemental"))
 			wp.newbie := 1;
 		endif
 
@@ -54,19 +55,19 @@ program swordmage(who)
 			info.+type := DMG_FIRE;
 			wp.damage_physical_mod := -100;
 			wp.damage_fire_mod := 100;
-			wp.color := 1255;
+			wp.color := FOGO;
 			SetObjProperty(wp, "HitScripts", {":combat:weaponHitScripts/FireHit"});
 		elseif (dmg == "Energia")
 			info.+type := DMG_ENERGY;
 			wp.damage_physical_mod := -100;
 			wp.damage_energy_mod := 100;
-			wp.color := 1273;
+			wp.color := RAIO;
 			SetObjProperty(wp, "HitScripts", {":combat:weaponHitScripts/LightningHit"});
 		elseif( dmg == "Gelo")
 			info.+type := DMG_COLD;
 			wp.damage_physical_mod := -100;
 			wp.damage_cold_mod := 100;
-			wp.color := 1261;
+			wp.color := GELO;
 			SetObjProperty(wp, "HitScripts", {":combat:weaponHitScripts/IceHit"});
 		endif
 
