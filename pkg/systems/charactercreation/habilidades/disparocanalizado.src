@@ -51,7 +51,7 @@ program meditar(who)
                 mlore *= 2;
                 targ.frozen := 0;
             else
-                TS_StartTimer(targ, "congelamento", mlore);
+                TS_StartTimer(targ, "congelamento", Cint(mlore/2));
             endif
             
             start_script(":combat:weaponHitScripts/IceHit", array{who, targ, 0, 0, 0, mlore});

@@ -7,19 +7,21 @@ include ":faccao:faccao";
 function DistanceChecks(attacker, defender)
 	var cur_range := Distance(attacker, defender);
 	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-	var arcane_bow_min := Cint(wpn_a_elem2.MinRange + 1);
-	var arcane_bow_range := Cint(wpn_a_elem2.MaxRange + Cint(Ap_GetSkill(attacker, MAGICLORE)/10));
+	var weapon_max_range := wpn_a_elem2.MaxRange;
+	var weapon_min_range := wpn_a_elem2.MinRange;
 	if ( wpn_a_elem2.MaxRange == error )
 		return 1;
 	endif
 	if (TemHabilidade(attacker, "Tirothan") && GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype == 0xF997)
-		wpn_a_elem2.MaxRange := arcane_bow_range;
-		wpn_a_elem2.MinRange := arcane_bow_min;
+		var arcane_bow_range := Cint(Cint(weapon_max_range) + Cint(Ap_GetSkill(attacker, MAGICLORE)/10));
+		var arcane_bow_min := Cint(weapon_min_range + 1);
+		weapon_max_range := arcane_bow_range;
+		weapon_min_range := arcane_bow_min;
 	endif
-	if ( cur_range > wpn_a_elem2.MaxRange )
+	if ( cur_range > weapon_max_range )
 		CombatDbgMsg(attacker, "Oponente esta muito longe.");
 		return 0;
-	elseif ( cur_range < wpn_a_elem2.MinRange )
+	elseif ( cur_range < weapon_min_range )
 		CombatDbgMsg(attacker, "Oponente esta muito perto.");
 		return 0;
 	else
@@ -32,7 +34,7 @@ function GetWpnCfgInfo(mobile, weapon)
 	var npc_cfg2	:= ReadConfigFile("::npcdesc");
 	var item_cfg2	:= ReadConfigFile(":*:itemdesc");
 
-	if ( mobile.IsA(POLCLASS_NPC) && weapon.objtype == 0xF020 )
+	if ( mobile.IsA(POLCLASS_NPC) && weapon.objtype == 0x1F020 )
 		var npctemplate := mobile.npctemplate;
 		npctemplate := npctemplate[10, len(npctemplate)-9];
 		return npc_cfg2[npctemplate];

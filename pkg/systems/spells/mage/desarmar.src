@@ -37,7 +37,7 @@ program SpellScript(params)
 	TS_StartTimer(targ, "desarmar", CInt(AP_GetSkill(who, MAGICLORE)/4), 0, who);
 	//TS_StartTimer(targ, "dmgreduction", 30, 1, who);
 	var defweapon := targ.weapon;
-	if (defweapon.objtype != 0xF020)
+	if (defweapon.objtype != 0x1F020)
 		var x := targ.x;
 		var y := targ.y;
 		//if (checklosat(targ, x, y, GetWorldHeight(x, y)))

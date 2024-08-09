@@ -33,7 +33,7 @@ program spell_fireball(params)
 	var dist := Distance(caster, cast_on);
     var dist_allowed := 5 + mlore;
 
-    if (TemHabilidade(caster, "Evocator"))
+    if (TemHabilidade(caster, "Evocator") || TemHabilidade(caster, "Tirothan"))
         dist_allowed := dist_allowed + (mlore * 2);
     endif
 
