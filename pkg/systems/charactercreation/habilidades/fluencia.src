@@ -11,8 +11,6 @@ include "include/epicConstants";
 
 program doubleattack(who)
     var mlore_bonus := Cint(AP_GetSkill(who, MAGICLORE));
-    SetCooldown(who, "desviardisparos", mlore_bonus);
-
 	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
 
 	if (!targ)
@@ -45,21 +43,26 @@ endprogram
 function grantBonus(who, targ)
     var weapon := who.weapon;
     var effect_color := 0;
+    var sound;
     var armor_drain := Cint(AP_GetSkill(who, MAGICLORE) * 0.3);
 	if (weapon.color == FOGO)
         effect_color := FOGO;
 	    targ.resist_fire_mod := targ.resist_fire_mod - armor_drain;
         who.resist_fire_mod := who.resist_fire_mod + armor_drain;
+        sound := 0x5cb;
 	elseif (weapon.color == GELO)
         effect_color := GELO;
 	    targ.resist_cold_mod := targ.resist_cold_mod - armor_drain;
         who.resist_cold_mod := who.resist_cold_mod + armor_drain;
+        sound := 0x5c8;
 	elseif (weapon.color == RAIO) 
         effect_color := RAIO;
         targ.resist_energy_mod := targ.resist_energy_mod - armor_drain;
         who.resist_energy_mod := who.resist_energy_mod + armor_drain;
-        PlaySoundEffect(char, 0x5CF);
+        sound := 0x666;
     endif
+
+    PlaySoundEffect(who, 0x5CF);
     PlayObjectCenteredEffectHuefx(targ, 0x6db6, 10, 20, effect_color, 0);
 endfunction
 

@@ -1,0 +1,57 @@
+include "include/say";
+include ":tn:cooldown";
+include "include/epicConstants";
+include ":attributes:attributes";
+include ":fls_core:packets";
+include ":timedscripts:timedScripts";
+
+use os;
+use uo;
+
+program meditar(who)
+    if (!GetCooldown(who, "arcane_bow"))
+        SendSysMessageEx(who, "Você precisa estar com seu arco elemental conjurado!", SSM_FAIL);
+        return;
+    endif
+    PrintTextAbove(who, "*Disparo Canalizando*");
+
+    var isFireArrow := GetObjProperty(who, "fire_arrow");
+    var isColdArrow := GetObjProperty(who, "cold_arrow");
+    var isEnergyArrow := GetObjProperty(who, "energy_arrow");
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/5);
+    var targ := Target(who);
+    if (!targ)
+        SendSysMessage(who, "Você precisa selecionar um alvo.");
+        return;
+    endif
+
+    if (!CheckLineOfSight(who, targ) )
+        SendSysMessage(who, "Você não tem linha de visão para o alvo.");
+        return; 
+    endif
+
+    var ammo_color := 0;
+    var sound;
+	if (isFireArrow)
+		ammo_color := FOGO;
+        sound := 0x5cb;
+	elseif (isEnergyArrow)
+		ammo_color := RAIO;
+        var sound := 0x666; // Energy
+	elseif (isColdArrow)
+		ammo_color := GELO;
+        sound := 0x5c8;
+	endif
+
+    PlaySoundEffect(who, sound);// hammer
+    PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, ammo_color);   
+
+    if (isFireArrow)
+        Run_Script(":spells:sangria/meteorswarm", {who, targ});
+    elseif(isColdArrow)
+        Run_Script(":spells:sangria/icestorm", {who, targ});
+    elseif(isEnergyArrow)
+        Run_Script(":spells:sangria/chainlightning", {who, targ});
+    endif
+
+endprogram

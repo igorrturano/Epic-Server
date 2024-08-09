@@ -1,0 +1,62 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":fls_magery:basicMagery";
+include "include/client";
+include "include/epicConstants";
+
+program doubleattack(who)
+    if ( !EquipmentCheck(who))
+        SendSysMessage(who, "Suas maos precisam estar livres para gesticular os componentes gestuais necessarios para a magia.");
+        FailSpell(who);
+        return 0;
+    endif
+
+    if (GetCooldown(who, "arcane_bow"))
+        SendSysMessage(who, "Você já possui um arco elemental!");
+        return 0;
+    endif
+
+    var color;
+    var sound;
+    who.frozen := 1;
+    var i := 1;
+    while (i <= 3)
+        PerformAction(who, ANIM_CAST_DIR);
+        PrintTextAbove(who, "*Conjurando*");
+        if (i == 1)
+            sound := 0x5cb;
+            color := FOGO;
+        elseif(i == 2)
+            sound := 0x5c8;
+            color := GELO;
+        elseif (i == 3)
+            sound := 0x666;
+            color := RAIO;
+        endif
+        //PlayStationaryEffectHuefx( x, y, z, effect, speed, loop := 0, explode := 0, color := 0,translucent := 0)
+        PlaySoundEffect(who, sound);
+        PlayStationaryEffectHuefx(who.x, who.y, who.z, 0xB462, 8, 40, 0, color);
+
+        sleep(3);
+        i++;
+    endwhile
+    PlaySoundEffect(who, 0x245);
+    sleep(2);
+    who.frozen := 0;
+
+    var arcane_bow := CreateItemInBackpack(who, 0xF997, 1);
+    EquipItem(who, arcane_bow);
+    var duration := Cint(Ap_GetSkill(who, MAGICLORE)/10 * 60);
+    SetCooldown(who, "arcane_bow", duration);
+
+    sleep(duration);
+
+    DestroyItem(arcane_bow);
+    SendSysMessageEx(who, "Seu arco se dissipou!", SSM_FAIL);
+endprogram

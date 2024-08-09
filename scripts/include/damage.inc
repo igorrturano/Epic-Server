@@ -529,6 +529,32 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		other := other + 0.5; 
 	endif
 
+	//#shooting_effects
+	if (TemHabilidade(who, "Ainalaith"))
+		var arrow_effects := GetObjProperty(who, "#shooting_effects");
+		if (!arrow_effects)
+			return 0; // No effects recorded, exit early
+		endif
+
+		var arrow_types := array{"fire_arrow", "cold_arrow", "energy_arrow"};
+		foreach arrow_type in arrow_types
+			if (arrow_effects[arrow_type] >= 3)
+				case (arrow_type)
+					"fire_arrow":
+						TS_StartTimer(defender, "queimar", 10);
+					"cold_arrow":
+						TS_StartTimer(defender, "lentidao", 10);
+					"energy_arrow":
+						other := other + 0.3;
+				endcase
+
+				// Reset the counter for this arrow type
+				arrow_effects[arrow_type] := 0;
+				SetObjProperty(who, "#shooting_effects", arrow_effects);
+			endif
+		endforeach
+	endif
+
 	if (GetObjProperty(who, "#SequenciaDevastadoraAcumulada"))
 		other := CDbl(GetObjProperty(who, "#SequenciaDevastadoraAcumulada")) * 0.2; //20% de bonus - balanceamento depois da mudanca de calculo do dano
 	endif

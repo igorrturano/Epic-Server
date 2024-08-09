@@ -33,8 +33,8 @@ function grantBonus(who, duration)
         who.resist_energy_mod := who.resist_energy_mod + 100;
         SetCooldown(who, "move_speed", duration);
     endif
-    //0x6d4b
-    PlayObjectCenteredEffectHuefx(who, 0x6cf0, 6, duration * 20, effect_color, 0);
+    //0x6d4b, 0x6cf0
+    PlayObjectCenteredEffectHuefx(who, 0x5454, 6, duration * 20, effect_color, 0);
     return effect_color;
 endfunction
 

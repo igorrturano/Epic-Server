@@ -760,6 +760,24 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
+	// Arqueiro arcano
+	if (GetCooldown(attacker, "arcane_bow") )
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var arcane_damage := dmg*0.5;
+
+		if (TemHabilidade(attacker, "Tirothan"))
+			arcane_damage := dmg*1.0;
+		endif
+
+		if (GetObjProperty(attacker, "fire_arrow"))
+			start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
+		elseif (GetObjProperty(attacker, "cold_arrow"))
+			start_script(":combat:weaponHitScripts/IceHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
+		elseif(GetObjProperty(attacker, "energy_arrow"))
+			start_script(":combat:weaponHitScripts/LightningHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
+		endif
+	endif
+
 	if (GetObjProperty(attacker, "#golpesangrento")) // VIVISEC do Igor
 		// EraseObjProperty(attacker, "#golpesangrento");
 		var dmg := 1;

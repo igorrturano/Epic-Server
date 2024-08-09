@@ -53,7 +53,7 @@ program doubleattack(who)
                     DamageFLS(char, total_dmg, DMG_FIRE, who);
                     TS_StartTimer(char, "queimar", 10);
                 elseif (effect == GELO)
-                	PlaySoundEffect(mobile, 0x65b);
+                	PlaySoundEffect(char, 0x65b);
                     PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, GELO, 0);
                     DamageFLS(char, total_dmg, DMG_COLD, who);
                     TS_StartTimer(char, "congelamento", 10);

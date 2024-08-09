@@ -1,0 +1,49 @@
+include "include/say";
+include ":tn:cooldown";
+use os;
+
+program meditar(who, text)
+    if (!GetCooldown(who, "arcane_bow"))
+        SendSysMessageEx(who, "Você precisa estar com seu arco elemental conjurado!", SSM_FAIL);
+        return;
+    endif
+    if (!text)
+		var result := Run_Script(":combat:arcane_arrows", {who});
+        if ( result.errortext )
+		    SendSysMessageEX(who, "Error: "+result.errortext);
+	    endif
+        return;
+    endif
+
+    if (Lower(text) == "fogo")
+        SetObjProperty(who, "fire_arrow", 1);
+
+        EraseObjPRoperty(who, "cold_arrow");
+        EraseObjProperty(who, "energy_arrow");
+    elseif(Lower(text) == "gelo")
+        SetObjProperty(who, "cold_arrow", 1);
+
+        EraseObjProperty(who, "energy_arrow");
+        EraseObjProperty(who, "fire_arrow");
+    elseif(Lower(text) == "raio")
+        SetObjProperty(who, "energy_arrow", 1);
+        
+        EraseObjProperty(who, "fire_arrow");
+        EraseObjPRoperty(who, "cold_arrow");
+    endif
+
+    who.frozen := 1;
+    var sound := 0x666; // Energy
+    if (GetObjProperty(who, "fire_arrow"))
+        sound := 0x5cb;
+    elseif (GetObjProperty(who, "cold_arrow"))
+        sound := 0x5c8;
+    endif
+    PrintTextAbove(who, "*Canalizando Elemento*");
+    PlaySoundEffect(who, sound);// hammer
+    sleep(2);
+    PlaySoundEffect(who, 0x656); // purgeMagic
+
+    who.frozen := 0;
+    
+endprogram
