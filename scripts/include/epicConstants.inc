@@ -31,7 +31,7 @@ enum RELIGIAO
 endenum
 
 enum CORES_ELEMENTAIS
-    FOGO := 1255,
-    GELO := 1261,
-    RAIO := 1273
+    FOGO := 2481,
+    GELO := 2892,
+    RAIO := 2343
 endenum
