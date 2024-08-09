@@ -117,7 +117,6 @@ program MainHitScript( params )
 	//Calcula os danos na armadura do defensor
 	WearDownArmor(defender, armor, rawdamage, weapon);
 
-
 	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 
@@ -401,6 +400,12 @@ program MainHitScript( params )
 				    DamageFLS(defender, total, DMG_FORCED, attacker);
                 endif
 			else
+				if (GetCooldown(defender, "vortice_prismatico") > 0)
+					var vortice_dmg := 0;
+					vortice_dmg += total;
+					SetObjProperty(defender, "vortice_dmg", vortice_dmg);
+					total := 1;
+				endif
 				DamageFLS(defender, total, DMG_FORCED, attacker);
 			endif
 		endif
@@ -752,6 +757,24 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 			elseif( elemental.type == DMG_ENERGY)
 				start_script(":combat:weaponHitScripts/LightningHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
 			endif
+		endif
+	endif
+
+	// Arqueiro arcano
+	if (GetCooldown(attacker, "arcane_bow") )
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var arcane_damage := dmg*0.5;
+
+		if (TemHabilidade(attacker, "Tirothan"))
+			arcane_damage := dmg*1.0;
+		endif
+
+		if (GetObjProperty(attacker, "fire_arrow"))
+			start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
+		elseif (GetObjProperty(attacker, "cold_arrow"))
+			start_script(":combat:weaponHitScripts/IceHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
+		elseif(GetObjProperty(attacker, "energy_arrow"))
+			start_script(":combat:weaponHitScripts/LightningHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
 		endif
 	endif
 
@@ -1419,7 +1442,7 @@ function Trespassar(attacker, defender)
 endfunction
 
 function disarmOpponent(attacker, defender)
-	if (TemHabilidade(defender, "Nexus"))
+	if (TemHabilidade(defender, "Vínculo Elemental"))
 		if (GetObjProperty(defender.weapon, "swordmage") ==  defender.serial)//seta com a arma
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;

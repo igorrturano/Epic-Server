@@ -22,7 +22,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (TemHabilidade(targ, "Nexus"))
+	if (TemHabilidade(targ, "Vínculo Elemental"))
 		if (GetObjProperty(targ.weapon, "swordmage") ==  targ.serial)//seta com a arma
 			SendSysMessageEx(who, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;

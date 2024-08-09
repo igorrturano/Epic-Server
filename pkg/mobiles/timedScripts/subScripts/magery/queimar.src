@@ -8,20 +8,21 @@ use os;
 
 include ":attributes:attributes";
 include "include/say";
+include ":fls_core:packets";
 
 program TimedScript_sacrificio(params)
 	var who := params[1];
 	var duracao := params[3];
 	var bonus := params[4];
-
+	var source := params[5];
     while(1)
 		if ( RandomInt(4) == 1 )
-            SendSysMessage(who, "Voce queima.");
 			var dmg := RandomDiceRoll("2d8");
+            PrintTextAbove(who, "Incinerado: "+ Cstr(dmg));
             ApplyRawDamage(who, dmg);
+			PlayObjectCenteredEffectHuefx(who, 0x6e26, 10, 20, 0, 1);
 		endif
 		
 		sleep(2);
 	endwhile
 endprogram
-

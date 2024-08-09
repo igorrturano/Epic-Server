@@ -2,7 +2,7 @@ use uo;
 use os;
 
 include "include/damage";
-
+include "include/epicConstants";
 program armasagrada(param)
 
 	var arma := param[1];
@@ -18,11 +18,11 @@ program armasagrada(param)
 	//printtextabove(arma, " " + type);
 
 	if (type == DMG_FIRE)
-		arma.color := 1255;
+		arma.color := FOGO;
 	elseif (type == DMG_COLD)
-		arma.color := 1261;
+		arma.color := GELO;
 	elseif (type == DMG_ENERGY)
-		arma.color := 1273;
+		arma.color := RAIO;
 	endif
 
 	var i := 0;

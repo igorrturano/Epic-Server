@@ -67,7 +67,7 @@ program SpellStarter(params)
     endif
 
 	//se magia nao for de swordmage e tiver kit de swordmage, retorna.
-	if ( (spellinfo.School != "Ahtaleloreth") && (TemHabilidade(mobile, "Concentracao Aprimorada")))
+	if ( (spellinfo.School != "Ahtaleloreth") && (TemHabilidade(mobile, "Vínculo Elemental")))
 		SendSysMessageEx(mobile, "Voce nao pode utilizar essas magias.", SSM_FAIL);
 		return 1;
 	endif
@@ -93,7 +93,7 @@ program SpellStarter(params)
 			EraseObjProperty(mobile, "#Casting");
 			return 0;
 		else
-			if(!TemHabilidade(mobile, "Concentracao Aprimorada") && !TemHabilidade(mobile, "Concentracao Macabra"))
+			if(!TemHabilidade(mobile, "Vínculo Elemental") && !TemHabilidade(mobile, "Concentracao Macabra"))
 			mobile.frozen := 1;
 			endif
 		endif
@@ -128,7 +128,7 @@ program SpellStarter(params)
 	if (spellinfo.School == "Ahtaleloreth")
 		can_cast_with_weapon := 1;
 	endif
-    var battlemageHabs := Array{"Concentracao Macabra", "Senhor do Medo", "Devocao", "Concentracao Aprimorada", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
+    var battlemageHabs := Array{"Concentracao Macabra", "Senhor do Medo", "Devocao", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
     var tem_hab := 0;
     foreach hab in battlemageHabs
         if (TemHabilidade(mobile, hab))
@@ -199,7 +199,7 @@ program SpellStarter(params)
 		var orig_hp := AP_GetVital(mobile, "Hits");
 		var delay := spellinfo.delay + Cint(GetObjProperty(mobile, "#delayspell"));
 		var moveCheck_script;
-		if(!TemHabilidade(mobile, "Concentracao Aprimorada"))
+		if(!TemHabilidade(mobile, "Vínculo Elemental"))
 			moveCheck_script := Start_Script(":fls_magery:moveCheck/moveCheck", array{mobile, Getpid()});
 		endif
 
@@ -210,7 +210,7 @@ program SpellStarter(params)
 
 		while(cycles)
 			// If mobile is injured and does not have the protection spell on, fail the spell
-			if ( (orig_hp > AP_GetVital(mobile, "Hits") &&  (!TemHabilidade(mobile, "Concentracao Aprimorada") ||  !TemHabilidade(mobile, "Concentracao Macabra"))))
+			if ( (orig_hp > AP_GetVital(mobile, "Hits") &&  (!TemHabilidade(mobile, "Vínculo Elemental") ||  !TemHabilidade(mobile, "Concentracao Macabra"))))
 				SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.", SSM_FAIL);
 				FailSpell(mobile);
 				if (TemHabilidade(mobile, "Mago Precavido"))
@@ -264,7 +264,7 @@ program SpellStarter(params)
 
 		while ( delay > 0 )
 			// If mobile is injured and does not have the protection spell on, fail the spell
-			if ( orig_hp > AP_GetVital(mobile, "Hits") && (!TemHabilidade(mobile, "Concentracao Aprimorada") || !TemHabilidade(mobile, "Concentracao Macabra")))
+			if ( orig_hp > AP_GetVital(mobile, "Hits") && (!TemHabilidade(mobile, "Vínculo Elemental") || !TemHabilidade(mobile, "Concentracao Macabra")))
 				SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.", SSM_FAIL);
 				FailSpell(mobile);
                 if (!GetObjProperty(mobile, "#magiasilenciosa"))

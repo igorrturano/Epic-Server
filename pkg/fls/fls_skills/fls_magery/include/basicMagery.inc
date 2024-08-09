@@ -5,7 +5,7 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-
+include "include/sounds";
 function ManterMagia(magia, mage, mobile)
 
 	var mana;

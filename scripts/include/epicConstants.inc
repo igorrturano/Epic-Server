@@ -29,3 +29,9 @@ enum RELIGIAO
     BOKK_BHARAZ := "Bokk Bharaz", 
     USHKRAR := "Ushkr'ar"
 endenum
+
+enum CORES_ELEMENTAIS
+    FOGO := 2481,
+    GELO := 2892,
+    RAIO := 2343
+endenum

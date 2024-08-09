@@ -195,6 +195,16 @@ function CalculateDamage(defender, type, dmg)
             if (resist < 0.3)
                 resist := 0.3;
             endif
+		elseif (TemHabilidade(defender, "Vínculo Elemental"))
+			var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.7;
+			if (GetCooldown(defender, "armor_drain") > 0)
+				arcane_armor += AP_GetSkill(defender, MAGICLORE) / 100 * 0.3;
+				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
+			endif
+			if (resist < arcane_armor)
+				resist := arcane_armor;
+				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
+			endif
 		endif
 	endif
 
@@ -519,6 +529,32 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		other := other + 0.5; 
 	endif
 
+	//#shooting_effects
+	if (TemHabilidade(who, "Ainalaith"))
+		var arrow_effects := GetObjProperty(who, "#shooting_effects");
+		if (!arrow_effects)
+			return 0; // No effects recorded, exit early
+		endif
+
+		var arrow_types := array{"fire_arrow", "cold_arrow", "energy_arrow"};
+		foreach arrow_type in arrow_types
+			if (arrow_effects[arrow_type] >= 3)
+				case (arrow_type)
+					"fire_arrow":
+						TS_StartTimer(defender, "queimar", 10);
+					"cold_arrow":
+						TS_StartTimer(defender, "lentidao", 10);
+					"energy_arrow":
+						other := other + 0.3;
+				endcase
+
+				// Reset the counter for this arrow type
+				arrow_effects[arrow_type] := 0;
+				SetObjProperty(who, "#shooting_effects", arrow_effects);
+			endif
+		endforeach
+	endif
+
 	if (GetObjProperty(who, "#SequenciaDevastadoraAcumulada"))
 		other := CDbl(GetObjProperty(who, "#SequenciaDevastadoraAcumulada")) * 0.2; //20% de bonus - balanceamento depois da mudanca de calculo do dano
 	endif
@@ -571,7 +607,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (GetObjProperty(who, "chardata").trait == "Defensor Anão")
         dmg := Cint(dmg * 0.7);
     endif
-
+	
 	return dmg;
 
 endfunction

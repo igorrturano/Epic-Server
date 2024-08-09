@@ -104,6 +104,8 @@ exported function Attack(attacker, defender)
 		return 1;
 	elseif ( GetCooldown(attacker, "defesatotal") > 0 )
 		return 1;
+	elseif(!arcane_shooting(attacker, defender))
+		return 1;
 	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
 	//	return 1;
 	endif
@@ -200,6 +202,22 @@ exported function Attack(attacker, defender)
         if (defender.frozen)
             defender.frozen := 0;
         endif
+
+		// Armadura Arcana
+		var dist := Distance(attacker, defender);
+		if (GetCooldown(defender, "freeze_enemy") && dist == 1)
+			PlaySoundEffect(attacker, 0x65b);
+		    PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
+			TS_Starttimer(attacker, "congelamento", 5);
+		elseif(GetCooldown(defender, "incinerate_enemy") && dist == 1)
+			PlaySoundEffect(attacker, 0x5D0);
+		    PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
+			TS_Starttimer(attacker, "queimar", 5, 1 , defender);
+		elseif(GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
+			PlaySoundEffect(attacker, 0x5CF);
+			PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
+			TS_StartTimer(defender, "velocidade", 5);
+		endif
 
         var trickster_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 20);
         if (getCooldown(attacker, "disparomistico"))
@@ -321,6 +339,40 @@ exported function Attack(attacker, defender)
 			SetObjProperty(attacker, "#SequenciaDevastadoraAcumulada", ataques);
 		endif
 
+		if (TemHabilidade(attacker, "Tirothan"))
+			var mlore_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
+			hit_chance := hit_chance + mlore_bonus;
+		endif
+
+		if (TemHabilidade(attacker, "Ainalaith"))
+			var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
+			if (!arrow_effects)
+				arrow_effects := struct{
+					"fire_arrow" := 0,
+					"cold_arrow" := 0,
+					"energy_arrow" := 0
+				};
+			endif
+
+			var arrow_type := "";
+			if (GetObjProperty(attacker, "fire_arrow"))
+				arrow_type := "fire_arrow";
+			elseif (GetObjProperty(attacker, "cold_arrow"))
+				arrow_type := "cold_arrow";
+			elseif (GetObjProperty(attacker, "energy_arrow"))
+				arrow_type := "energy_arrow";
+			endif
+
+			if (arrow_type != "")
+				var current_count := arrow_effects[arrow_type];
+				current_count += 1;
+				arrow_effects[arrow_type] := current_count;
+
+				SetObjProperty(attacker, "#shooting_effects", arrow_effects);
+			endif
+		endif
+
+
 		if (GetCooldown(defender, "FerocidadeEnsanguentada"))
 			if (IsRaging(defender))
                 if (GetObjProperty(defender, "#contraatacando") == error)
@@ -378,6 +430,7 @@ exported function Attack(attacker, defender)
 			SetObjProperty(defender, "#contraataquepoderoso", (GetObjProperty(defender, "#contraataquepoderoso")+1) );
 		endif
 
+		EraseObjProperty(attacker, "#shooting_effects");
 
 		EraseObjProperty(attacker, "#SequenciaDevastadoraAcumulada");
 		if (TemHabilidade(attacker, "Insistencia"))
@@ -704,7 +757,10 @@ endfunction
 // Arqueiros
 
 function AmmoCheckCombatHook(attacker, defender)
-	if ( !wpn_a_elem.ProjectileType )
+	if ( !wpn_a_elem.ProjectileType  )
+		return 1;
+	endif
+	if ( GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype == 0xF997)
 		return 1;
 	endif
 
@@ -749,6 +805,32 @@ function AmmoCheckCombatHook(attacker, defender)
 		return 0;
 	endif
 
+endfunction
+
+function arcane_shooting(attacker, defender)
+	if ( !wpn_a_elem.ProjectileType )
+		return 1;
+	endif
+
+	if ( !GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype != 0xF997)
+		return 1;
+	endif
+
+	if (!DamageMANA(attacker, 5))
+		SendSysMessage(attacker, "Você está sem mana!");
+		return 0;
+	endif
+	var ammo_color := 0;
+	if (GetObjProperty(attacker, "fire_arrow"))
+		ammo_color := FOGO;
+	elseif (GetObjProperty(attacker, "energy_arrow"))
+		ammo_color := RAIO;
+	elseif (GetObjProperty(attacker, "cold_arrow"))
+		ammo_color := GELO;
+	endif
+
+	PlayMovingEffectXYZHued(attacker, defender, 0xf42, 10, 10, 0, ammo_color);
+	return 1;
 endfunction
 
 function ArqueiroNPC(attacker, defender)

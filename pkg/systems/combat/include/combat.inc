@@ -7,8 +7,14 @@ include ":faccao:faccao";
 function DistanceChecks(attacker, defender)
 	var cur_range := Distance(attacker, defender);
 	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	var arcane_bow_min := Cint(wpn_a_elem2.MinRange + 1);
+	var arcane_bow_range := Cint(wpn_a_elem2.MaxRange + Cint(Ap_GetSkill(attacker, MAGICLORE)/10));
 	if ( wpn_a_elem2.MaxRange == error )
 		return 1;
+	endif
+	if (TemHabilidade(attacker, "Tirothan") && GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype == 0xF997)
+		wpn_a_elem2.MaxRange := arcane_bow_range;
+		wpn_a_elem2.MinRange := arcane_bow_min;
 	endif
 	if ( cur_range > wpn_a_elem2.MaxRange )
 		CombatDbgMsg(attacker, "Oponente esta muito longe.");
@@ -176,6 +182,9 @@ function AmmoCheck(attacker, defender)
 		return 1;
 	endif
 
+	if ( !GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype != 0xF997 && !wpn_a_elem.ProjectileType)
+		return 1;
+	endif
 	var has_ammo := 0;
 
 	var aljavas := array{0x791c, 0x2fb7};

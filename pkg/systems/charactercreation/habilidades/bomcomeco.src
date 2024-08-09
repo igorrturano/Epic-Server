@@ -11,5 +11,4 @@ program doubleattack(who)
 
 	SendSysMessageEx(who, "Voce vai comecar bem.", SSM_INFO);
 	SetObjProperty(who, "#bomcomeco", 1);
-	
 endprogram
