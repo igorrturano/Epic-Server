@@ -454,10 +454,10 @@ exported function MegaCliloc( who, byref packet )
 			endif
 
 			var cond := GetCondition(item);
-			xDesc := xDesc + "HP: " + GetCondition(item) + "<br>";
+			xDesc := xDesc + "Condição: " + GetCondition(item) + "<br>";
 
 			if (item.isA(POLCLASS_WEAPON))
-				xDesc := xDesc + "Min Str: " + elem.strrequired + "<br>";
+				xDesc := xDesc + "Força exigida: " + elem.strrequired + "<br>";
 				xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item) + "<br>";
 				xDesc := xDesc + "Velocidade: " + GetVelStringDesc(elem, item) + "<br>";
 				xDesc := xDesc + GetTipoStringDesc(elem, item) + "<br>";

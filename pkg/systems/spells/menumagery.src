@@ -11,7 +11,7 @@ include ":charactercreation:habilidades";
 
 program menumagery(who)
 
-	if (TemHabilidade(who, "Concentracao Aprimorada"))
+	if (TemHabilidade(who, "Vínculo Elemental"))
 		SendGumpEspadaArcana(who);
 	elseif (TemHabilidade(who, "Magia Divina"))
 		SendGumpMagiaDivina(who);
@@ -173,7 +173,7 @@ function SendGumpEspadaArcana(who)
 		SetObjPRoperty(targ, "can_cast", 1);
 		SetObjProperty(who, "swordmage", targ.serial);
 		SendSysMessageEx(who, "Voce se tornou apenas um com sua arma.", SSM_INFO);
-		if (TemHabilidade(who, "Nexus"))
+		if (TemHabilidade(who, "Vínculo Elemental"))
 			targ.newbie := 1;
 		endif
 		return;

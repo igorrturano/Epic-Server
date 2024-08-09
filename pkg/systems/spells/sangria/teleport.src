@@ -41,7 +41,7 @@ program SpellScript(params)
         SendSysMessage(who, "Local Inacessível");
         return 0;
     else
-    	MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm, MOVEOBJECT_FORCELOCATION);
+    	MoveObjectToLocation(who, loc.x, loc.y, loc.z, who.realm);
     endif
 
 	return 1;

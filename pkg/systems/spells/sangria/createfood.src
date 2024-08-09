@@ -24,8 +24,14 @@ program SpellScript(params)
 	var food_item := RandomFoodObjType();
 	
 	PlaySoundEffect(who, SFX_CREATE_FOOD);
-	
-	var food := CreateItemInBackPack(who, food_item, 1);
+
+	//Bonus de especialização
+	var amt := 1;
+    if(Temhabilidade(who, "Treinamento Druídico"))
+        amt := 2;
+    endif
+
+	var food := CreateItemInBackPack(who, food_item, amt);
 	food.movable := 1;
 	
 	if ( food.errortext )

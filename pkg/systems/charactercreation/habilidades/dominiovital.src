@@ -1,0 +1,73 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+
+program doubleattack(who)
+	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if (targ.isa(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+    var dist := Distance(who, targ);
+    var total_distance := Cint(AP_GetSkill(who, MAGICLORE)/10);
+
+    PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 20, 0, 1);
+    if (dist == 1)
+        PushBack(targ, total_distance, 300);
+    else
+        MoveObjectToLocation(targ, who.x, who.y, who.z, who.realm);
+    endif
+    PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 20, 0, 1);
+
+endprogram
+
+function PushBack(who, dist, delay)
+
+	var x := 0;
+	var y := 0;
+
+	if (who.facing == 0)
+		y :=  1;
+	elseif (who.facing == 1)
+		y :=  1;
+		x := - 1;
+	elseif (who.facing == 2)
+		x :=  - 1;
+	elseif (who.facing == 3)
+		x :=  - 1;
+		y :=  - 1;
+	elseif (who.facing == 4)
+		y :=  - 1;
+	elseif (who.facing == 5)
+		x :=   1;
+		y :=  - 1;
+	elseif (who.facing == 6)
+		x :=   1;
+	elseif (who.facing == 7)
+		x :=  1;
+		y :=  1;
+	endif
+
+	var i := 0;
+	for( i := 1; i <= dist; i := i + 1)
+		var finalx := (who.x + x);
+		var finaly := (who.y + y);
+		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm );
+		sleepms(delay);
+		if (err == error)
+			break;
+		endif
+	endfor
+
+endfunction

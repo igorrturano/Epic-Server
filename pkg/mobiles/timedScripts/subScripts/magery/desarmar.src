@@ -13,7 +13,7 @@ program TimedScript_Clumsy(params)
 
 	params := 0; // Not needed anymore.
 
-	if (TemHabilidade(who, "Nexus"))
+	if (TemHabilidade(who, "Vínculo Elemental"))
 		if (GetObjProperty(who.weapon, "swordmage") ==  who.serial)//seta com a arma
 			return 1;
 		endif

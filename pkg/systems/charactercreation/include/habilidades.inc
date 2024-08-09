@@ -483,6 +483,12 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
 			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
+		elseif(escolhida == "Ainalaith")
+			var damage_effect := struct{};
+			damage_effect.+fire_arrow := 0;
+			damage_effect.+cold_arrow := 0;
+			damage_effect.+energy_arrow := 0;
+			SetObjProperty(who, "#shooting_effects", damage_effect);
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;

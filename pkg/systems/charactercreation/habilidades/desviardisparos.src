@@ -14,5 +14,3 @@ program doubleattack(who)
 	SendSysMessageEx(who, "Você eleva sua guarda.", SSM_INFO);
 	SetCooldown(who, "desviardisparos", tactics_bonus);
 endprogram
-
-
