@@ -188,7 +188,7 @@ endfunction
 
 function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var weapon_scripts := array;
-	//if ( weapon.objtype == 0xF020 ) //
+	//if ( weapon.objtype == 0x1F020 ) //
 	//	weapon_scripts := GetObjProperty(attacker, "HitScripts");
 	if ( weapon.IsA(POLCLASS_WEAPON) )
 		weapon_scripts := GetObjProperty(weapon, "HitScripts");

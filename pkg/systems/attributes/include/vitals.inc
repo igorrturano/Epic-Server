@@ -204,17 +204,18 @@ function DamageMANA(mobile, points)
 	points := CDbl(points);
 	var cur_amount := AP_GetVital(mobile, MANA);
 
+	// Se não houver mana suficiente, retornar falha (0) sem consumir mana
 	if ( points > cur_amount )
-		cur_amount := 0;
+		return 0;
 	else
 		cur_amount := cur_amount-points;
+		AP_SetVital(mobile, MANA, cur_amount);
+		return 1;  // Sucesso
 	endif
 
-	AP_SetVital(mobile, MANA, cur_amount);
-	return 1;
-
-
 endfunction
+
+
 
 
 function DamageStamina(mobile, points)
