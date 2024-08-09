@@ -44,12 +44,10 @@ function TabelaMaterialResistMod(item)
     var resource_modifiers := ReadResourceModifiers("resist");
 
     if (material in resource_modifiers)
-        Syslog("TabelaMaterialResistMod - Valor encontrado");
         return resource_modifiers[material];
     endif
 
     // Valor padrão caso o material não seja encontrado
-    Syslog("TabelaMaterialResistMod - Não foi encontrado valores para o " + material);
     return array{0, 0, 0, 0, 0, 0};
 endfunction
 
@@ -58,12 +56,10 @@ function TabelaMaterialDamageMod(item) //objtype do material: return {FISICO, FI
     var resource_modifiers := ReadResourceModifiers("damage");
 
     if (material in resource_modifiers)
-        Syslog("TabelaMaterialDamageMod - Valor encontrado");
         return resource_modifiers[material];
     endif
 
     // Valor padrão caso o material não seja encontrado
-    Syslog("TabelaMaterialDamageMod - Não foi encontrado valores para o " + material);
     return array{0, 0, 0, 0, 0, 0};
 endfunction
 
