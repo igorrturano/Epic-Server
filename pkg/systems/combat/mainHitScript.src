@@ -704,7 +704,7 @@ endfunction
 
 function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var weapon_scripts := array;
-	//if ( weapon.objtype == 0xF020 ) //
+	//if ( weapon.objtype == 0x1F020 ) //
 	//	weapon_scripts := GetObjProperty(attacker, "HitScripts");
 	if ( weapon.IsA(POLCLASS_WEAPON) )
 		weapon_scripts := GetObjProperty(weapon, "HitScripts");
@@ -1205,7 +1205,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		usingweapon := 1;
 		shield := defender.weapon;
 		//Não bloqueia se estivem sem arma equipada ou utilizando arma de Ranged (Arcos e bestas)
-		if (shield.objtype == 0xF020 || shield.Attribute == RANGED)
+		if (shield.objtype == 0x1F020 || shield.Attribute == RANGED)
 			return 0;
 		endif
 	endif
@@ -1285,7 +1285,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		//Pike desarma defensor que bloquear sem escudo
 		if ((attacker.weapon.graphic == 0xF985) && ( usingWeapon ))
 			var defweapon := defender.weapon;
-			if (defweapon.objtype != 0xF020)
+			if (defweapon.objtype != 0x1F020)
 				var x := defender.x + RandomInt(2)+1;
 				var y := defender.y + RandomInt(2)+1;
 				MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);

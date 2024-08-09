@@ -24,7 +24,7 @@ program SpellScript(params)
 		DestroyItem(targ);
 	else
 		var wpn := targ.weapon;
-		if (wpn.objtype != 0xF020)
+		if (wpn.objtype != 0x1F020)
 			MoveObjectToLocation(wpn, who.x, who.y, who.z, who.realm);
 			DestroyItem(wpn);
 			PrintText(targ, "*arma quebrou*");

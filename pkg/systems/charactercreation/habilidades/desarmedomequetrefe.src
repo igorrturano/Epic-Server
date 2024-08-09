@@ -23,7 +23,7 @@ program doubleattack(params)
 	PrintText(attacker, "*desarma "+defender.name+"*");
 
 	var defweapon := defender.weapon;
-	if (defweapon.objtype != 0xF020)
+	if (defweapon.objtype != 0x1F020)
 		var x := defender.x + RandomInt(2)+1;
 		var y := defender.y + RandomInt(2)+1;
 		MoveObjectToLocation(defweapon, x, y,  GetWorldHeight(x, y), attacker.realm, MOVEOBJECT_FORCELOCATION);
