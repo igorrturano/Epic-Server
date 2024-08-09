@@ -46,7 +46,7 @@ program SpellScript(params)
 
         //Bonus de especialização
         if(Temhabilidade(who, "Evocator"))
-            dmg := dmg * 1.2;
+            dmg := Cint(dmg * 1.2);
         endif
 
         DamageFLS(targ, dmg+mlore, DMG_FORCED, who, "magicmissile");
