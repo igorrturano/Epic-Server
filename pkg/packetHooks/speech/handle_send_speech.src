@@ -170,7 +170,7 @@ exported function handleUCOutgoing( character, byref packet )
 	var isGeneralAction := array{"*Tirou", "*Guardou", "*Colocou", "*escalpelando", "*Acrescentou", "*Pegou", "*Abriu"};
 	var isSkillAction := array{"*defende o golpe*", "*tratando a si mesmo*", "*arrombando a fechadura*", "*desarmando armadilha*", 
 	"*preparando um extrato*", "*tentando se esconder*", "*CRÍTICO*", "*aparece*",
-	"*veste o capuz*", "*remove o capuz*", "*Golpeia com o escudo*", "*morde um pedaço de comida*"};
+	"*veste o capuz*", "*remove o capuz*", "*Golpeia com o escudo*", "*morde um pedaço de comida*", "*Kaze no Ichigeki*"};
 	if (!source.npctemplate && type != 0x02)
 		var chosen_language := GetObjProperty(source, "lingua_escolhida");
 		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
