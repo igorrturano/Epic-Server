@@ -9,6 +9,7 @@ include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include "include/damage";
+include "include/epicCombatUtils";
 
 program resinaFOGO(who, resina)
     var targ;
@@ -17,6 +18,11 @@ program resinaFOGO(who, resina)
 
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	endif
+
+	if (isWoodWeapon(who))
+		SendSysMessageEx(who, "Arma de madeiras não podem ser encantadas por elementos.", SSM_FAIL);
 		return;
 	endif
 

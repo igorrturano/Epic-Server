@@ -374,7 +374,7 @@ exported function Attack(attacker, defender)
 
 
 		if (GetCooldown(defender, "FerocidadeEnsanguentada"))
-			if (IsRaging(defender))
+			// if (IsRaging(defender))
                 if (GetObjProperty(defender, "#contraatacando") == error)
                     SetObjProperty(defender, "#contraatacando", 1);
                     printtext(defender, "*contra ataque*");
@@ -392,7 +392,7 @@ exported function Attack(attacker, defender)
                     endif
                     EraseObjProperty(defender, "#contraatacando");
                 endif
-			endif
+			// endif
 		endif
 
 		if (GetCooldown(defender, "contraataque") > 0)

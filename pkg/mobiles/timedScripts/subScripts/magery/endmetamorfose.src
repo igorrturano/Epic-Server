@@ -10,7 +10,11 @@ include ":attributes:vitals";
 
 program cureScript(params)
 	var who := params[1];
-
+	// Caso tenha saído da metamorfose pelo comando .voltar
+	if (GetObjProperty(who, "voltou"))
+		EraseObjProperty(who, "voltou");
+		return;
+	endif
 	var metamorfose := GetObjProperty(who, "metamorfose");
 	who.color := metamorfose.originalcolor;
 	who.graphic := metamorfose.originalgraphic;

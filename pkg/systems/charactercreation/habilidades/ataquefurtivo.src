@@ -16,12 +16,18 @@ include ":fls_core:packets";
 include ":tn:combat";
 include ":combat:combat";
 include "include/packets";
+include "include/epicCombatUtils";
 
 program backstab(who)
 	if ( !CanBackStab(who, who.weapon) )
 		return;
 	endif
+    if (!isAssassinWeapon(who))
+        SendSysMessageEx(who, "Voce nao pode usar esta arma para ataque furtivo", SSM_FAIL);
+        return;
+    endif
     SetObjProperty(who, "backstab", 1);
+    SetObjProperty(who.weapon, "backstab", 1);
     if (who.hidden)
         SetObjProperty(who, "#attackbonus", 100);
         if (TemHabilidade(who, "Instinto Assassino"))
