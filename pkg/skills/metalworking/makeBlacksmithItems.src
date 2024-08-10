@@ -75,10 +75,10 @@ function makeBlacksmithItems(who, what, amt, tool )
 			break;
 		endif
 	endforeach
-	if(anvil_near == 0)
-		SendSysMessageEx(who, "Voce precisa estar perto de uma bigorna para forjar itens.", SSM_FAIL);
-		return 0;
-	endif
+ 	if(anvil_near == 0)
+ 		SendSysMessageEx(who, "Voce precisa estar perto de uma bigorna para forjar itens.", SSM_FAIL);
+ 		return 0;
+ 	endif
 
 	var item := CraftItem(who, "Blacksmithy", tool, what, amt, 0, anvil);
 	return 1;

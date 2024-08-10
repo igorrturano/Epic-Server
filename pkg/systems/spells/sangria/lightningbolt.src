@@ -44,11 +44,11 @@ endprogram
 function LaunchProjectile(caster, targ)
     PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
     PlayMovingEffectXYZHued(caster, targ, 0x379f, 10, 1643, 0);
-    var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("8d8");
+    var dmg := cint(AP_GetSkill(caster, MAGICLORE)/2) + RandomDiceRoll("8d8");
 
     //Bonus de especialização
     if(Temhabilidade(caster, "Evocator"))
-        dmg := dmg * 1.2;
+        dmg := Cint(dmg * 1.2);
     endif
 
     DamageFLS(targ, cint(dmg), DMG_ENERGY, caster, "lightningbolt");

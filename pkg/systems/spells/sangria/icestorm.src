@@ -58,7 +58,7 @@ program spell_iceStorm( parms )
 
             //Bonus de especialização
             if(Temhabilidade(caster, "Evocator"))
-                dmg := dmg * 1.2;
+                dmg := Cint(dmg * 1.2);
             endif
 
             alreadydamaged.Append(mobile.serial);

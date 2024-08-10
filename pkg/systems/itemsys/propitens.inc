@@ -211,7 +211,6 @@ endfunction
 
 function BuscarValorMaterial(item)
     var valor := 0;
-
     if(item.IsA(POLCLASS_ARMOR)) valor := TabelaMaterialResistMod(item);
     elseif(item.IsA(POLCLASS_WEAPON)) valor := TabelaMaterialDamageMod(item);
     endif
