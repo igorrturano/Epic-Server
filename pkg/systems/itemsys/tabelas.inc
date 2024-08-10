@@ -134,7 +134,7 @@ function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, CO
         //TIER 5
         "0xef23": //ASPERO
         "0xc605": //NEGRO
-            return {0,2,2,0,0}; //MOD COUROS
+            return {0,0,0,0,0}; //MOD COUROS
 
         //////////OSSO
         //TIER 1
@@ -155,7 +155,7 @@ function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, CO
 
         //TIER 5
         "0xef29": //DEMONÍACO
-            return {0,0,0,2,0}; //MOD OSSOS
+            return {0,0,0,0,0}; //MOD OSSOS
 
         //////////TECIDO
         //TIER 1
@@ -212,36 +212,36 @@ function TabelaTipoProtecaoMod(item) // TipoProtecao -=> return {RESIST, DEXPENA
         "armadura leve forte": return {2,0,0,0};
 
         //TIER 2
-        "armadura media fraca": return {3,1,0,0};
-        "armadura media media": return {4,2,0,0};
-        "armadura media forte": return {5,2,0,0};
+        "armadura media fraca": return {3,0,0,0};
+        "armadura media media": return {4,0,0,0};
+        "armadura media forte": return {5,0,0,0};
 
         //TIER 3
-        "armadura pesada fraca": return {6,3,0,0};
-        "armadura pesada media": return {7,4,0,0};
-        "armadura pesada forte": return {8,4,0,0};
+        "armadura pesada fraca": return {6,0,0,0};
+        "armadura pesada media": return {7,0,0,0};
+        "armadura pesada forte": return {8,0,0,0};
     endcase
 
     case(tipo)
         //TIER 1
-        "escudo leve fraco": return {0,0,0,-1};
-        "escudo leve medio": return {1,-1,1,0};
-        "escudo leve forte": return {2,-2,2,1};
+        "escudo leve fraco": return {0,0,0,0};
+        "escudo leve medio": return {1,0,0,0};
+        "escudo leve forte": return {2,0,0,0};
 
         //TIER 2
-        "escudo medio fraco": return {2,-2,2,1};
-        "escudo medio medio": return {3,-4,3,2};
-        "escudo medio forte": return {5,-6,5,2};
+        "escudo medio fraco": return {2,0,0,0};
+        "escudo medio medio": return {3,0,0,0};
+        "escudo medio forte": return {5,0,0,0};
 
         //TIER 3
-        "escudo pesado fraco": return {6,-8,6,3};
-        "escudo pesado medio": return {7,-9,7,4};
-        "escudo pesado forte": return {8,-10,8,5};
+        "escudo pesado fraco": return {6,0,0,0};
+        "escudo pesado medio": return {7,0,0,0};
+        "escudo pesado forte": return {8,0,0,0};
 
         //TIER 4
-        "escudo de corpo fraco": return {9,-12,10,6};
-        "escudo de corpo medio": return {10,-14,12,6};
-        "escudo de corpo forte": return {11,-16,14,6};
+        "escudo de corpo fraco": return {9,0,0,0};
+        "escudo de corpo medio": return {10,0,0,0};
+        "escudo de corpo forte": return {11,0,0,0};
     endcase
 endfunction
 function TabelaSlot(item)
