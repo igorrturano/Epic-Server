@@ -431,7 +431,6 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
     var hpmod := GetConfigInt(elem, "hpmod"); //modificador de durabilidade do item pelo material
 	*/
 	var DmgMods := TabelaMaterialDamageMod(theitem); //EVILLINK1.0
-	Syslog("item: " + theitem.name);
 	var ResistMods := TabelaMaterialResistMod(theitem); //EVILLINK1.0
 	var hpmod := 0;
 	if (theitem.IsA(POLCLASS_WEAPON)) var hpmod := DmgMods[6];
