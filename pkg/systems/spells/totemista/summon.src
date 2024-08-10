@@ -25,7 +25,7 @@ program summontotem(params)
 	//Efeito da magia
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
-	var cfg  :=  ReadConfigFile(":spells:allspells");
+	var cfg  :=  ReadConfigFile(":spells:spellcaster");
 	var elem := FindConfigElem(cfg, spellid);
 	var template := getConfigString(elem, "npcTemplate");
 	var cfg2 := ReadConfigFile(":brainAI:npcdesc");

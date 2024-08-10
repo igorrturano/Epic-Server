@@ -33,37 +33,42 @@ program voltar(params)
 endprogram
 
 function Destransforma(who)
-
-	if (who.graphic == 212)
-		var hitsmod := GetObjProperty(who, "hitsmod");
-		SetObjProperty(who, "hitsmod", hitsmod - 50);
-		recalcvitals(who);
-		who.resist_physical_mod := who.resist_physical_mod - 50;
-	elseif (who.graphic == 225)
-		var hitsmod := GetObjProperty(who, "hitsmod");
-		SetObjProperty(who, "hitsmod", hitsmod - 10);
-		recalcvitals(who);
-		who.resist_physical_mod := who.resist_physical_mod - 10;
-	elseif (who.graphic == 21 )
-		var hitsmod := GetObjProperty(who, "hitsmod");
-		SetObjProperty(who, "hitsmod", hitsmod - 20);
-		recalcvitals(who);
-		who.resist_physical_mod := who.resist_physical_mod - 20;
-
-	elseif (who.graphic == 5 )
-		var hitsmod := GetObjProperty(who, "hitsmod");
-		SetObjProperty(who, "hitsmod", hitsmod - 10);
-		recalcvitals(who);
-		who.resist_physical_mod := who.resist_physical_mod - 10;
-	endif
-
 	var metamorfose := GetObjProperty(who, "metamorfose");
 	who.color := metamorfose.originalcolor;
 	who.graphic := metamorfose.originalgraphic;
 	who.truegraphic := metamorfose.originalgraphic;
 	//who.squelch(0);
 
-	EraseObjProperty(who, "metamorfose");
+	var namechar:=GetObjProperty(who,"charname");
 
+	EraseObjProperty(who, "skill_a");
+	EraseObjProperty(who, "skill_d");
+	EraseObjProperty(who, "dicedmg");
+
+	//Alterado por Edmond
+	SetName(who,namechar);
+
+	var hitsmod := cint(getObjProperty(who, "polymorphhitsmod"));
+	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
+	var resist := cint(GetObjProperty(who, "resitmod"));
+
+	var bonus := GetObjProperty(who, "polymorphbonus_moon");
+
+	if(bonus)
+		AP_SetSkillMod(who, TACTICS, AP_GetSkillMod(who, TACTICS) - bonus);
+	endif
+
+	who.resist_physical_mod := who.resist_physical_mod - resist;
+	who.resist_fire_mod := who.resist_fire_mod - resist;
+	who.resist_cold_mod := who.resist_cold_mod - resist;
+	who.resist_poison_mod := who.resist_poison_mod - resist;
+	who.resist_energy_mod := who.resist_energy_mod - resist;
+
+	EraseObjProperty(who, "polymorphbonus");
+	EraseObjProperty(who, "metamorfose");
+	EraseObjProperty(who, "polymorphhitsmod");
+	EraseObjProperty(who,"namechar");
+
+	SetObjProperty(who, "voltou", 1);
 endfunction
 	
