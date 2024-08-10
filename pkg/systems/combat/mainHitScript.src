@@ -379,9 +379,10 @@ program MainHitScript( params )
 			SetCooldown(defender, "vigordabatalha", 0);
 			DamageStamina(defender, total);
 		else
-			if (GetObjProperty(attacker,  "backstab"))
+			if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
 				//total := total*2;
 				EraseObjProperty(attacker, "backstab");
+				EraseObjProperty(attacker.weapon, "backstab");
 				EraseObjProperty(attacker, "#nextcritical");
                 if (TemHabilidade(defender, "Sempre Alerta"))
                     TS_StartTimer(attacker, "paralysis", 5);
@@ -825,12 +826,11 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
-	if ( GetObjProperty(attacker, "ataquedeimpulso") > 0)
+	if ( GetObjProperty(attacker, "ataquedeimpulso"))
 		printtext(attacker, "*Kaze no Ichigeki*");
-		if (defender)
-			attacker.attack_once(defender);
-			PlaySoundEffect(attacker, 0x51f);
-		endif
+		attacker.attack_once(defender);
+		PlaySoundEffect(attacker, 0x51f);
+		sleepms(20);
 		EraseObjProperty(attacker, "ataquedeimpulso");
 	endif
 

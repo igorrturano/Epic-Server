@@ -66,12 +66,6 @@ program SpellStarter(params)
         return 1;
     endif
 
-	//se magia nao for de swordmage e tiver kit de swordmage, retorna.
-	if ( (spellinfo.School != "Ahtaleloreth") && (TemHabilidade(mobile, "Vínculo Elemental")))
-		SendSysMessageEx(mobile, "Voce nao pode utilizar essas magias.", SSM_FAIL);
-		return 1;
-	endif
-
 	//Se é kitahster e tem habilidade e esta sangrando, não pode gastar mana
 	if (TemHabilidade(mobile, "Determinacao Elemental") && isBloodied(mobile))
 		HealMana(mobile, cint(spellinfo.mana));

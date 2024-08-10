@@ -377,7 +377,8 @@ endfunction
 
 //funcao pra tocar as musicas simples de bardo
 function tocarBasico(byref who, byref item) //Habilita os efeitos magicos da musica e manda tocar o som da musica
-	if (!TemHabilidade(who, "Talento Musical") && !TemHabilidade(who, "Compositor Talentoso"))
+	var can_play := ((RandomInt(120) + 1) < AP_GetTrueStat(who, DEXTERITY));
+	if (!can_play && !TemHabilidade(who, "Talento Musical") && !TemHabilidade(who, "Compositor Talentoso"))
 		return basicoSom(who,item,0);//Efeito de som errado
 	elseif(Cint(GetObjProperty(who, "#MagicaMusic")) > ReadGameClock()) //verifica se pode voltar a tocar
 		SendSysMessage(who, "Voce deve esperar um momento antes de tocar novamente.",BARD_FONT,BARD_FONT_COLOR_BAD);
@@ -824,7 +825,12 @@ function partituraSom(byref who,byref instrumento,byref partitura)
 endfunction
 
 function escrevePartitura(byref who, byref partitura)
-	if (TemHabilidade(who, "Talento Musical") || TemHabilidade(who, "Compositor Talentoso"))
+	// Cria um teste de Int para ser capaz de escrever partitura
+	var can_write := (1 + RandomInt(120) < AP_GetTrueStat(who, INTELLIGENCE));
+	// var intteligence := AP_GetTrueStat(who, INTELLIGENCE);
+		//Verifica se o personagem tem a habilidade de escrever partituras
+
+	if (can_write || TemHabilidade(who, "Compositor Talentoso"))
 		printtextabove(who, "*Escrevendo a partitura*",BARD_FONT,0);
 		PlaySoundEffect(who, 0x24a); //Toca som de escrita
 		sleepms(2000);

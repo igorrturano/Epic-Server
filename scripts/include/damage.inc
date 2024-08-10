@@ -20,6 +20,7 @@ include ":charactercreation:habilidades";
 include "include/say";
 include ":blood:blood";
 include ":fls_core:packets";
+include "epicCombatUtils";
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
  * These could be attributes, but not every shard will want to
@@ -196,7 +197,7 @@ function CalculateDamage(defender, type, dmg)
                 resist := 0.3;
             endif
 		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.7;
+			var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.4;
 			if (GetCooldown(defender, "armor_drain") > 0)
 				arcane_armor += AP_GetSkill(defender, MAGICLORE) / 100 * 0.3;
 				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
@@ -212,8 +213,8 @@ function CalculateDamage(defender, type, dmg)
 //	printtextabove(defender, "dano " + type + " resist " + resist + " total dmg  " + dmg + " resistido " + (dmg*resist) + " final " + (dmg - (dmg*resist)) );
 
 	if (!defender.npctemplate)
-		if (resist >= 0.8)
-			resist := 0.8;
+		if (resist >= 0.7)
+			resist := 0.7;
 		endif
 	endif
 
@@ -424,9 +425,8 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
     if (TemHabilidade(who, "Arsenal Sombrio"))
-        var assassin_weapons := {0x27EF, 0x27ab, 0x27af, 11570, 11565, 11566, 0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2, 0xF9FC, 0xF99F, 0xF998, 0xF99B, 0xF99A, 0xF999, 0xF99D, 0xF9A1, 0xF9A2, 0xF9D2, 0xF9CA, 0xF9DC, 0xF9F4,  0xF9A0, 0xF9D4, 0xF9DE, 0xF9E5, 0xF9A9, 0xF9B5, 0xF9C1, 0xF99E};
         var sneak_dmg := AP_GetSkill(who, SNEAK) / 200;
-        if (who.weapon.objtype in assassin_weapons)
+        if (isAssassinWeapon(who))
             other += sneak_dmg;
         endif
     endif

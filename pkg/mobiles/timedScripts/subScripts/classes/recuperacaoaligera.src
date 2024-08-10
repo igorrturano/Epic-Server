@@ -35,13 +35,13 @@ program default_poison(params)
             
             sleep(2);
         endwhile
-    else
-        while( IsRaging(who) )
+    else // Fúria
+        while (1 < time)
             if (who.dead)
                 break;
             endif
-            HealFLS(who, 5);
-
+            HealFLS(who, tactics_bonus);
+            
             sleep(2);
         endwhile
     endif

@@ -83,6 +83,7 @@ function ProccessHab(who, hab)
 	if (stam != error)
 		if (!AP_ConsumeVital(who, STAMINA, stam))
 			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+			HealStamina(who, stam);
 			return 1;
 		endif
 	endif
@@ -91,11 +92,12 @@ function ProccessHab(who, hab)
 	if (mana != error)
 		if (!AP_ConsumeVital(who, MANA, mana))
 			SendSysMessageEx(who, "Voce esta muito cansado para usar esta habilidade.", SSM_FAIL);
+			HealMana(who, mana);
 			return 1;
 		endif
 	endif
 
-        var script := GetConfigString(habelem, "script");
+	var script := GetConfigString(habelem, "script");
 	var duracao := GetConfigString(habelem, "duracao");
 
 	var delay := Cint(GetConfigInt(habelem, "delay"));
