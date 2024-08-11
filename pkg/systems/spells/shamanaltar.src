@@ -94,7 +94,7 @@ program orderSpells(who, item)
          var spell := spell_list[input[0]-200];
          var ret := StoreSpell(who, spell, shaman_list, available_slots);
          if (ret)
-            playAltarAnimations(who, altar);
+            playAltarAnimations(who, item);
          endif
       elseif (!input[0])
          canceled := 1;

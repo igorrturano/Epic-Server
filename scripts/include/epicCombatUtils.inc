@@ -11,8 +11,8 @@ function isAssassinWeapon(who)
             return 1;
         endif
     endforeach
-    return 0;
 
+    return 0;
 endfunction
 
 function isWoodWeapon(who)
@@ -25,5 +25,6 @@ function isWoodWeapon(who)
             return 1;
         endif
     endforeach
+
     return 0;
 endfunction

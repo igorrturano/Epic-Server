@@ -326,22 +326,14 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	//Bonus STR
-	var stat := STRENGTH;
-	if (temHabilidade(who, "Ataques Precisos"))
+	var cfg:=ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, who.weapon.objtype);
+
+	var	stat := STRENGTH;
+	if (elem.Attribute == "Ranged")
 		stat := DEXTERITY;
 	endif
-	if (temHabilidade(who, "Ataques Oportunistas"))
-		stat := INTELLIGENCE;
-	endif
-	var strBonus := 1.2;
-	/*
-	if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
-		strBonus := 10.0;
-	endif
 
-	//Calcula modificador total do atributo
-	var str := CDbl(AP_GetStat(who, stat)+strBonus)/150.0;
-	*/
 	var str;
 /* 	if (who.npctemplate)
 		str := CDbl(AP_GetStat(who, stat));
@@ -349,14 +341,17 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	str := CDbl(AP_GetStat(who, stat));
 /* 	endif
  */
-	if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
-		str *= strBonus;
-	endif
+ 	// var strBonus := 1.2;
 
+	// if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
+	// 	str *= strBonus;
+	// endif
+
+	// 11 DE AGOSTO 2024 - Armas ranged usam Dex pra calculo de dano
 	//Quando equipado arco curto, longo, besta, besta pesada e besta de repeticao a força não implica em modificador de dano
-	if ( (who.weapon.objtype == 0x13B2) || (who.weapon.objtype == 0x26CC) || (who.weapon.objtype == 0x0f4f) || (who.weapon.objtype == 0x13fd) || (who.weapon.objtype == 0x26CD) )
-		str := 0;
-	endif
+	// if ( (who.weapon.objtype == 0x13B2) || (who.weapon.objtype == 0x26CC) || (who.weapon.objtype == 0x0f4f) || (who.weapon.objtype == 0x13fd) || (who.weapon.objtype == 0x26CD) )
+	// 	str := 0;
+	// endif
 
 	//Bonus de prop da arma
 	var weapon := CDbl(GetObjProperty(who.weapon, "dmgbonus")) + CDbl(GetObjProperty(who.weapon, "#dmgbonus"));

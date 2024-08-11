@@ -29,7 +29,9 @@ program cria( item )
 	var school := GetConfigString( FindconfigElem( spellcfg, key ), "School" );
 
 	if ( spelltype == "spellcaster" )
-	  randomspells.append( key );
+    if ( spelllvl == lvl )
+	    randomspells.append( key );
+    endif
 	endif
   endforeach
 
@@ -37,18 +39,18 @@ program cria( item )
   spellinfo.+id := randomspells[random_spell_id];
   spellinfo.+magic_path := spelltype_item;
   if ( spellinfo.magic_path == "spellcaster" )
-	spellinfo.+School := GetConfigString( FindconfigElem( spellcfg, random_spell_id ), "School" );
-	if ( spellinfo.School == "Kaijin" )
-	  item.graphic := 0x0E39;
-	elseif ( spellinfo.School == "Evocatium" )
-	  item.graphic := 0x0E35;
-	elseif ( spellinfo.School == "Velkyn" )
-	  item.graphic := 0x0E3A;
-	elseif ( spellinfo.School == "Ahtaleloreth" )
-	  item.graphic := 0x0E38;
-	elseif ( spellinfo.School == "Aradalore" )
-	  item.graphic := 0x0E37;
-	endif
+	  spellinfo.+School := GetConfigString( FindconfigElem( spellcfg, random_spell_id ), "School" );
+    if ( spellinfo.School == "Kaijin" )
+      item.graphic := 0x0E39;
+    elseif ( spellinfo.School == "Evocatium" )
+      item.graphic := 0x0E35;
+    elseif ( spellinfo.School == "Velkyn" )
+      item.graphic := 0x0E3A;
+    elseif ( spellinfo.School == "Ahtaleloreth" )
+      item.graphic := 0x0E38;
+    elseif ( spellinfo.School == "Aradalore" )
+      item.graphic := 0x0E37;
+    endif
   endif
   SetObjProperty( item, "spellinfo", spellinfo );
 
