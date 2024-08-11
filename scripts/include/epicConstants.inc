@@ -36,3 +36,8 @@ enum CORES_ELEMENTAIS
     GELO := 2892,
     RAIO := 2343
 endenum
+
+enum GAME_MODE
+    TRUE_MODE := "True Mode",
+    STORY_MODE := "Story Mode"
+endenum

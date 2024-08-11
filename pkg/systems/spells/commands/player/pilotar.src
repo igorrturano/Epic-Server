@@ -12,7 +12,7 @@ program cleric(who)
     if (GetObjProperty(who, "pilotando"))
         EraseObjProperty(who, "pilotando");
         leaveGolem(who);
-        printtextabove("*Fecha a escotilha*");
+        printtextabove(who, "*Fecha a escotilha*");
         unpossess(who);
         who.concealed := 0;
         return 0;
@@ -27,7 +27,7 @@ program cleric(who)
     endif
 
     setObjproperty(who, "pilotando", 1);
-    printtextabove("*Abre a escotilha*");
+    printtextabove(targ, "*Abre a escotilha*");
     enterGolem(who);
    	possess(who, targ);
 
