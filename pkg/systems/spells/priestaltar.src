@@ -9,15 +9,26 @@ include "include/say";
 include ":attributes:attributes";
 include "include/tnmagery";
 include ":timeUtils:time";
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 const SPELL_BTN := 200;
 
 program orderSpells(who, item)
    var magia := GetObjProperty(who, "chardata").magia;
+   var religiao := GetObjProperty(who, "chardata").religion;
+   var altar := altarByObjtype(who, item);
 
    if (magia != "Sacerdote")
-        SendSysMessageEx(who, "O altar parece imponente.", SSM_INFO);
-        return;
+      if (religiao == altar && !GetCooldown(who, "religion_bless"))
+         SetCooldown(who, "protecaomorte", 180);
+         SetCooldown(who, "religion_bless", 60 * 60 * 2); // duas horas
+         playAltarAnimations(who, item);
+         SendSysMessageEx(who, "Você sente uma aura de proteção envolta de sua alma.", SSM_INFO);
+         return;
+      endif
+      SendSysMessageEx(who, "O altar parece imponente.", SSM_INFO);
+      return;
    endif
 
    var mlore := cint(AP_GetSkill(who, MAGICLORE));
@@ -66,9 +77,7 @@ program orderSpells(who, item)
          var spell := spell_list[input[0]-200];
          var ret := StoreSpell(who, spell, priest_list, available_slots);
          if (ret)
-            item.graphic := 0xA066;
-            sleep(2);
-            item.graphic := 0xA065;
+            playAltarAnimations(who, altar);
          endif
       elseif (!input[0])
          canceled := 1;
@@ -156,3 +165,4 @@ function RemoveUsedSpells(who, byref priest_list, byref available_slots)
 
    SetObjProperty(who, "priest_list", priest_list);
 endfunction
+

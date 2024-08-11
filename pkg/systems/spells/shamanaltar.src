@@ -10,17 +10,25 @@ include ":attributes:attributes";
 //include ":spells:tnmagery";
 include "include/tnmagery";
 include ":timeUtils:time";
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 const SPELL_BTN := 200;
 
 program orderSpells(who, item)
    var magia := GetObjProperty(who, "chardata").magia;
-   if (GetObjProperty(who, "chardata").povo == "Orc" && magia != "Shaman")
-        SendSysMessageEx(who, "Voce presta homenagens a Gruntam", SSM_INFO);
-        return;
-    elseif (magia != "Shaman")
-        SendSysMessageEx(who, "O altar parece te observar de volta", SSM_INFO);
-        return;
+   var religiao := GetObjProperty(who, "chardata").religion;
+   if (magia != "Shaman")
+      if (religiao == USHKRAR && !GetCooldown(who, "religion_bless"))
+         SetCooldown(who, "protecaomorte", 180);
+         SetCooldown(who, "religion_bless", 60 * 60 * 2); // duas horas
+         playAltarAnimations(who, item);
+         
+         SendSysMessageEx(who, "O Deserto te prepara para as adversidades da guerra.", SSM_INFO);
+         return;
+      endif
+      SendSysMessageEx(who, "O altar parece te observar de volta", SSM_INFO);
+      return;
    endif
    var mlore := cint(AP_GetSkill(who, MAGICLORE));
    var cfg          := ReadConfigFile(":spells:config/shamanspells");
@@ -86,9 +94,7 @@ program orderSpells(who, item)
          var spell := spell_list[input[0]-200];
          var ret := StoreSpell(who, spell, shaman_list, available_slots);
          if (ret)
-            item.graphic := 0xA06B;
-            sleep(2);
-            item.graphic := 0xA06A;
+            playAltarAnimations(who, altar);
          endif
       elseif (!input[0])
          canceled := 1;

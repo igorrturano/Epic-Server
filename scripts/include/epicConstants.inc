@@ -27,7 +27,8 @@ enum RELIGIAO
     HALLEUAD := "Halleuad",
     LORE := "Lórё", 
     BOKK_BHARAZ := "Bokk Bharaz", 
-    USHKRAR := "Ushkr'ar"
+    USHKRAR := "Ushkr'ar",
+    CETICOS := "Céticos"
 endenum
 
 enum CORES_ELEMENTAIS
