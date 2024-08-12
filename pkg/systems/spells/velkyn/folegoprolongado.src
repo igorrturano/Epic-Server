@@ -23,7 +23,7 @@ program SpellScript(params)
 
     //Bonus de especialização
     if(Temhabilidade(who, "Valdruk"))
-        duration := duration * 1.2;
+        duration := Cint(duration * 1.2);
     endif
 
 	SetCooldown(targ, "can_breath", duration);
