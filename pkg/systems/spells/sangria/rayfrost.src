@@ -14,6 +14,9 @@ include "include/epicMageryUtils";
 program cast_firebolt(params)
     var caster := params[1];
 	var targ := params[2];
+    var spell := params[3];
+
+    var spell_circle := spell.Circle;
 	params := 0; // No longer needed
 
 	SendSysMessage(caster, "Selecione o alvo.");
@@ -36,13 +39,13 @@ program cast_firebolt(params)
         return 0;
     endif
 
-    LaunchProjectile(caster, targ);
+    LaunchProjectile(caster, targ, spell_circle);
 endprogram
 
-function LaunchProjectile(caster, targ)
+function LaunchProjectile(caster, targ, spell_circle)
     PlaySoundEffect(caster, SFX_AQUARIUM_USE);
     PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
-    var dmg := cint(AP_GetSkill(caster, MAGICLORE))/8 + RandomDiceRoll("1d6");
+    var dmg := epicSpellDamageRoll(caster, spell_circle);
     dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
     DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");

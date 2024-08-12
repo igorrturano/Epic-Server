@@ -19,6 +19,8 @@ include "include/epicMageryUtils";
 program spell_iceStorm( parms )
     var caster := parms[1];
     var targ := parms[2];
+    var spell := parms[3];
+    var spell_circle := spell.Circle;
 
     SendSysMessage(caster, "Selecione o alvo.");
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
@@ -35,7 +37,7 @@ program spell_iceStorm( parms )
         SendSysMessageEx(mobile, "Voce olha para cima e ve uma chuva de gelo em sua direcao.", SSM_FAIL);
         PlaySoundEffect( mobile, 0x5c7 );
         PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6DFF, 0 ,70, 0, mobile.realm);
-        var dmg := cint(AP_GetSkill(caster, MAGICLORE)) + RandomDiceRoll("14d6");
+        var dmg := epicSpellDamageRoll(caster, spell_circle);
         dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
         DamageFLS(mobile, cint(dmg), DMG_COLD, caster, "icestorm");

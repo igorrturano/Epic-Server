@@ -15,6 +15,8 @@ include "include/epicMageryUtils";
 program spell_fireball(params)
     var caster := params[1];
     var cast_on := params[2];
+	var spell := params[3];
+	var spell_circle := spell.Circle;
 	params := 0; // No longer needed
 
     SendSysMessage(caster, "Selecione o alvo.");
@@ -85,9 +87,9 @@ program spell_fireball(params)
 	PlaySoundEffect(cast_on, 0x208);
     
 	var range := cint(AP_GetSkill(caster, MAGICLORE)/10);
-    var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
+    var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, cast_on);
     foreach mobile in allMobiles
-		var dmg := cint(AP_GetSkill(caster, MAGICLORE))/3 + RandomDiceRoll("8d10");
+		var dmg := epicSpellDamageRoll(caster, spell_circle);
 
 		dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
