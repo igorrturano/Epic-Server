@@ -465,7 +465,7 @@ function limiteportempo(who)
 
     if (dias <= 10)
         // Dias 1-10: Travado em 12
-        lim := 100; // 100 pra primeira fase do E.A.
+        lim := 12;
     elseif (dias <= 30)
         // Dias 11-30: Aumento rápido (2 por dia)
         lim := 12 + (dias - 10) * 2;

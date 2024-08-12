@@ -206,7 +206,7 @@ function Habilidades(who)
 				GFTextLine(charGump, 100, y, 300, "Comprar Status");
 				GFAddButton(charGump, 20, y+5, 2103, 2104, 1, i+1 );
 			else
-				if(i <= 6) //Até o level 6 você compra sem precisar de perg
+				if(i == 0) //Até o level 6 você compra sem precisar de perg // if(i <= 6) // Mudei pra 0
 					GFTextLine(chargump, 100, y, 300, "Escolha a Habilidade");
 					GFAddButton(chargump, 20, y+5, 2103, 2104, 1, i+1 );
 				else //Depois você precisa de perg
@@ -262,6 +262,7 @@ function Habilidades(who)
                     habs[input] := 2;
                     SetObjProperty(who, "buyhab", habs);
                     AP_SetTrueStat(who, STRENGTH, AP_GetTrueStat(who, STRENGTH)+2);
+	
                 elseif (input2 == 20)
                     habs[input] := 2;
                     SetObjProperty(who, "buyhab", habs);
@@ -271,6 +272,20 @@ function Habilidades(who)
                     SetObjProperty(who, "buyhab", habs);
                     AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
                 endif
+				
+				var hp_up := 0;
+				if (chardata.classe == GUERREIRO)
+					hp_up := 10;
+				elseif (chardata.classe == LADINO)
+					hp_up := 8;
+				elseif (chardata.classe == SABIO)
+					hp_up := 6;
+				endif
+				var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
+				hitsmod := hitsmod + hp_up;
+				SetObjProperty(who, "hitsmod",  hitsmod);
+				recalcvitals(who);
+				HealDamage(who, hp_up);
             else
                 SendSysMessage(who, "Voce nao pode comprar esse status.");
             endif

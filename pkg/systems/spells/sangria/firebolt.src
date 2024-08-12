@@ -8,6 +8,8 @@ include ":magery:spells";
 include "include/client";
 include "include/sounds";
 include "include/damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 program cast_firebolt(params)
     var caster := params[1];
@@ -27,11 +29,7 @@ program cast_firebolt(params)
 
     var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, targ);
-    var dist_allowed := 5 + mlore;
-
-    if (TemHabilidade(caster, "Evocator"))
-        dist_allowed := dist_allowed + (mlore * 2);
-    endif
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
 
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
@@ -44,12 +42,8 @@ endprogram
 function LaunchProjectile(caster, targ, effect)
     PlaySoundEffect(caster, SFX_MAGIC_ARROW);
     PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 10, 1643, 0);
-    var dmg := cint(AP_GetSkill(caster, MAGICLORE)/8) + RandomDiceRoll("1d6");
-
-    //Bonus de especialização
-    if(Temhabilidade(caster, "Evocator"))
-        dmg := Cint(dmg * 1.2);
-    endif
+    var dmg := cint(AP_GetSkill(caster, MAGICLORE))/8 + RandomDiceRoll("1d6");
+    dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
     DamageFLS(targ, cint(dmg), DMG_FORCED, caster, "firebolt");
 endfunction

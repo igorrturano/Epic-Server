@@ -19,7 +19,8 @@ program summontotem(params)
 
 	var who := params[1];
 	var targ := params[2];
-	var spellid := params[3];
+	var spell := params[3];
+	var spellid := spell.id;
 	params := 0; // No longer needed
 
 	//Efeito da magia

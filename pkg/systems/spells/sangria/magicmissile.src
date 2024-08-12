@@ -7,12 +7,14 @@ include ":magery:spells";
 include "include/client";
 include "include/sounds";
 include "include/damage";
-
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
-	params := 0; // No longer needed
+    var spellinfo := params[3];
+    var spell_circle := spellinfo.Circle;
 
 	SendSysMessage(who, "Selecione o alvo.");
 	if ( !targ.IsA(POLCLASS_MOBILE) )
@@ -24,13 +26,12 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
-    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
-    var dist := Distance(who, targ);
-    var dist_allowed := 5 + mlore;
-
-    if (Temhabilidade(who, "Evocator"))
-        dist_allowed := dist_allowed + (mlore * 2);
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/25);
+    if (TemHabilidade(who, "Evocator"))
+        mlore := mlore + 1;
     endif
+    var dist := Distance(who, targ);
+    var dist_allowed := distanceAllowedForSpells(who, mlore, EVOCATIUM);
 
     if (dist > dist_allowed)
         SendSysMessage(who, "O alvo esta muito distante");
@@ -41,15 +42,10 @@ program SpellScript(params)
     For (i := 1; i <= mlore; i += 1)
         PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
         PlaySoundEffect(who, SFX_AGILITY2);
-        var dice := cstr(mlore +"d4");
-        var dmg := RandomDiceRoll(dice);
+        var dmg := epicSpellDamageRoll(who, spell_circle);
+        var total_dmg := bonusSpellDamageForSpecialists(who, dmg, EVOCATIUM);
 
-        //Bonus de especialização
-        if(Temhabilidade(who, "Evocator"))
-            dmg := Cint(dmg * 1.2);
-        endif
-
-        DamageFLS(targ, dmg+mlore, DMG_FORCED, who, "magicmissile");
+        DamageFLS(targ, total_dmg, DMG_FORCED, who, "magicmissile");
         SleepMS(500);
     EndFor
 	return 1;
