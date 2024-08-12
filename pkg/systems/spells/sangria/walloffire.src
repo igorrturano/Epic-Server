@@ -12,6 +12,8 @@ include "include/epicMageryUtils";
 
 program wall_of_fire( parms )
   	var caster := parms[1];
+	var spell := parms[3];
+	var spell_circle := spell.Circle;
     SendSysMessage(caster, "Selecione o alvo.");
 	var cast_on  := TargetCoordinates(caster);
     if (!cast_on) // If no cast_on then get cast_on from parms[4]. Used mostly for NPC casting.
@@ -69,11 +71,11 @@ program wall_of_fire( parms )
 			continue;
 		endif
 
-		var dmg := RandomDiceRoll("4d6");
+		var dmg := epicSpellDamageRoll(caster, spell_circle);
 		dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
 		SetObjProperty(item, "SummonedField", caster.serial);
-        SetObjProperty(item, "DamageDice", "4d6+"+Cstr(dmg));
+        SetObjProperty(item, "DamageDice", Cstr(dmg));
 		item.SetOwner(caster);
 		item.SetDuration(duration);
 		SleepMS(2);

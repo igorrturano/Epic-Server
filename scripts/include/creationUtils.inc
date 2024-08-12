@@ -639,7 +639,7 @@ function culturalTraitBonus(who, byref chardata)
     elseif (culturalBg == "Escaramuçador")
         return chardata.+bgBonus := RANGED;
     elseif (culturalBg == "Brutamontes")
-        return chardata.+bgBonus := TACTICS;
+        return chardata.+bgBonus := TWOHANDED;
     elseif (culturalBg == "Filho do progresso")
         return chardata.+bgBonus := ALCHEMY;
     elseif (culturalBg == "Andarilho")
