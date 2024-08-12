@@ -66,9 +66,8 @@ program SpellStarter(params)
         return 1;
     endif
 
-	//Se é kitahster e tem habilidade e esta sangrando, não pode gastar mana
-	if (TemHabilidade(mobile, "Determinacao Elemental") && isBloodied(mobile))
-		HealMana(mobile, cint(spellinfo.mana));
+	if (TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, MANA, spellinfo.mana))
+		AP_ConsumeVital(mobile, STAM, spellinfo.mana)
 	endif
 
 	if ( !Attach(mobile) )
@@ -141,7 +140,7 @@ program SpellStarter(params)
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	elseif ( !AP_ConsumeVital(mobile, MANA, spellinfo.mana) && !mobile.npctemplate)
-		if ( !TemHabilidade(mobile, "Determinacao Elemental"))
+		if ( !TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, STAM, spellinfo.mana))
 			SendSysMessageEx(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!", SSM_FAIL);
 			FailSpell(mobile);
 			EraseObjProperty(mobile, "#Casting");
@@ -156,7 +155,7 @@ program SpellStarter(params)
 		endif
 	elseif ( !TNCheckReagents(mobile, spellinfo, scroll) )
 		//if (!Elementalista(mobile, spellinfo)) //elementalista nao gastam reagentes
-		if ( !TemHabilidade(mobile, "Determinacao Elemental") && !isBloodied(mobile) )
+		if ( !TemHabilidade(mobile, "Determinacao Arcana") && !isBloodied(mobile) )
 
 			SendSysMessageEx(mobile, "Voce nao possui os componentes materiais necessarios para invocacao desta magia arcana.", SSM_FAIL);
 			if (TemHabilidade(mobile, "Mago Precavido"))
