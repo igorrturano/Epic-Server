@@ -67,7 +67,7 @@ program SpellStarter(params)
     endif
 
 	if (TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, MANA, spellinfo.mana))
-		AP_ConsumeVital(mobile, STAM, spellinfo.mana)
+		AP_ConsumeVital(mobile, STAMINA, spellinfo.mana);
 	endif
 
 	if ( !Attach(mobile) )
@@ -140,7 +140,7 @@ program SpellStarter(params)
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	elseif ( !AP_ConsumeVital(mobile, MANA, spellinfo.mana) && !mobile.npctemplate)
-		if ( !TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, STAM, spellinfo.mana))
+		if ( !TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, STAMINA, spellinfo.mana))
 			SendSysMessageEx(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!", SSM_FAIL);
 			FailSpell(mobile);
 			EraseObjProperty(mobile, "#Casting");
