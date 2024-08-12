@@ -145,13 +145,13 @@ function classSelection(who, culture_pic)
             btn_value := key;
         endforeach
         if (btn_value == 201)
-            chardata.+classe := "Guerreiro";
+            chardata.+classe := GUERREIRO;
             break;
         elseif (btn_value == 202) 
-            chardata.+classe := "Ladino";
+            chardata.+classe := LADINO;
             break;
         elseif (btn_value == 203) 
-            chardata.+classe := "Sabio";
+            chardata.+classe := SABIO;
             break;
         else
             SendSysMessageEX(who, "Escolha seu caminho", SSM_FAIL);

@@ -100,7 +100,7 @@ program arremesso(params)
     if (alvo.isA(POLCLASS_MOBILE))
         to_miss_chance := GetResist(alvo, REFLEXOS);
     endif
-    
+
     var dmg := 1;
     if (targ.isA(POLCLASS_MOBILE))
         dmg := AP_GetStat(targ, STRENGTH) * 0.2; // 20% de dano em força da pessoa arremessada
@@ -108,9 +108,12 @@ program arremesso(params)
         dmg := CalculateRawDamage(who, targ);
     endif
 
+
     var ranged_bonus := Cint(AP_GetSkill(who, RANGED));
     var str_bonus := AP_GetStat(who, STRENGTH);
     var dex_bonus := AP_GetStat(who, DEXTERITY);
+	var dmg_bonus := Cint((str_bonus + dex_bonus) / 2);
+	dmg += dmg_bonus;
     var random := Cint(RandomInt(80));
     var to_hit_chance := random + ((str_bonus + dex_bonus + ranged_bonus) / 10);
 	if (targ.isA(POLCLASS_WEAPON))

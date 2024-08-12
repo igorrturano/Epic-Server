@@ -12,6 +12,7 @@ program cleric(who)
     if (GetObjProperty(who, "pilotando"))
         EraseObjProperty(who, "pilotando");
         leaveGolem(who);
+        printtextabove(who, "*Fecha a escotilha*");
         unpossess(who);
         who.concealed := 0;
         return 0;
@@ -26,12 +27,12 @@ program cleric(who)
     endif
 
     setObjproperty(who, "pilotando", 1);
+    printtextabove(targ, "*Abre a escotilha*");
     enterGolem(who);
    	possess(who, targ);
 
     return 1;
 endprogram
-
 
 function enterGolem(who)
     //seta os mods

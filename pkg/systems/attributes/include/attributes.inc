@@ -235,14 +235,14 @@ function GetPH(who)
 	var ph;
 	var classe := GetObjProperty(who, "classe");
 
-	if ( (classe == "Guerreiro") || (GetObjProperty(who, "kit") == "Mago de Combate"))
-		ph := 125;
+	if ( (classe == "Guerreiro") || (GetObjProperty(who, "kit") == "Mago de Combate")) // 125
+		ph := 25; // 25 + 10;
     elseif (classe == "Artifice")
 		ph := 105;
-	elseif (classe == "Ladino")
-		ph := 100;
-	else
-		ph := 75;
+	elseif (classe == "Ladino") // 100
+		ph := 20; // 20 + 80
+	else // 75
+		ph := 15; // 15 + 60; 
 	endif
 
 	if (TemHabilidade(who, "Caçador Implacável"))

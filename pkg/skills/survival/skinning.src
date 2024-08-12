@@ -21,7 +21,8 @@ program skinning(parms)
 	var who := parms[1];
 	var cadaver := parms[2];
 	var blade := parms[3];
-
+	var isStoryMode := GetObjProperty(who, "chardata").game_mode == STORY_MODE;
+	var isCorpseStoryMode := GetObjProperty(cadaver, "chardata").game_mode == STORY_MODE;
 	if (who.weapon != blade)
 		var cfg := ReadConfigFile(":combat:itemdesc");
 		var equippedright := GetEquipmentByLayer(who, 0x01);
@@ -56,11 +57,12 @@ program skinning(parms)
 		endforeach
 		//DestroyItem(cadaver);
 		return;
-
-
 	elseif((GetObjProperty(cadaver,"npctemplate")== error) && (GetObjProperty(cadaver, "morto")!=1))
 		if ((idadeChar( who) > 30))
-			if (YesNo(who, "Voce deseja mesmo matar o alvo?", "Sim: o alvo morrera e voce perdera 1 DP permanentemente.", "Nao: nenhuma consequencia.")) //quer matar mesmo
+			if (isStoryMode || isCorpseStoryMode)
+				SendSysMessage(who, "O Modo Estória não permite essa ação.");
+				return;
+			elseif (YesNo(who, "Voce deseja mesmo matar o alvo?", "Sim: perde 1dp", "Nao: nenhuma consequencia.")) //quer matar mesmo
 				DesmembreCorpse(cadaver);
 				//retira 1 dp
 				var dpmod := cint(GetObjProperty(who, "dpmod"));

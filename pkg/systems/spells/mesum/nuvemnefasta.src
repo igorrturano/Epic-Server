@@ -7,18 +7,15 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
-
+include "include/epicConstants";
+include "include/epicMageryUtils";
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 
     var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
     var dist := Distance(who, targ);
-    var dist_allowed := 5 + mlore;
-
-    if (Temhabilidade(who, "Valdruk"))
-        dist_allowed := dist_allowed + (mlore * 2);
-    endif
+    var dist_allowed := distanceAllowedForSpells(who, mlore, VELKYN);
 
     if (dist > dist_allowed)
         SendSysMessage(who, "O alvo esta muito distante");

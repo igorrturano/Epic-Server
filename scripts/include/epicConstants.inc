@@ -27,11 +27,31 @@ enum RELIGIAO
     HALLEUAD := "Halleuad",
     LORE := "Lórё", 
     BOKK_BHARAZ := "Bokk Bharaz", 
-    USHKRAR := "Ushkr'ar"
+    USHKRAR := "Ushkr'ar",
+    CETICOS := "Céticos"
 endenum
 
 enum CORES_ELEMENTAIS
     FOGO := 2481,
     GELO := 2892,
     RAIO := 2343
+endenum
+
+enum GAME_MODE
+    TRUE_MODE := "True Mode",
+    STORY_MODE := "Story Mode"
+endenum
+
+enum ARCANE_SCHOOLS
+    EVOCATIUM := "Evocatium",
+    VELKYN := "Velkyn",
+    ARADALORE := "Aradalorë",
+    AHTALELORETH := "Ahtalelorëth",
+    KAIJIN := "Kaijin"
+endenum
+
+enum CAMINHOS
+    GUERREIRO := "Guerreiro",
+    LADINO := "Ladino",
+    SABIO := "Sabio"
 endenum

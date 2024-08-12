@@ -733,6 +733,8 @@ function getReligionByPictureId(religion_id)
             return ELUITHORTH;
         USHKRAR_ID:
             return USHKRAR;
+        default:
+            return CETICOS;
     endcase
 endfunction
 
@@ -871,9 +873,9 @@ function weaponsByClassAndCulture(who)
     if (chardata.culture == LESTE)
         CreateItemInBackpack(who, 0xF99A, 1); // Adaga
 
-    
+        // 0xF9DD
         if (skills[ONEHANDED] >= 1)
-            CreateItemInBackpack(who, 0x13fe, 1); // wakizashi
+            CreateItemInBackpack(who, 0x27EF, 1); // wakizashi
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B72, 1); // round shield
@@ -1243,13 +1245,11 @@ function gameModeGump(who, religion_pic)
 endfunction
 
 function gameModeByPictureId(gameModeId)
-    var trueMode := "True Mode";
-    var storyMode := "Story Mode";
     case (gameModeId)
         0x9FC:
-            return trueMode;
+            return TRUE_MODE;
         0x9FB:
-            return storyMode;
+            return STORY_MODE;
     endcase
 endfunction
 
