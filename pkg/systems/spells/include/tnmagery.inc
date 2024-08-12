@@ -247,7 +247,7 @@ function CastSpell(mobile, spellinfo, targ)
     endif
         
 	if (spellinfo.script != error)
-		var e := Start_Script(spellinfo.script, {mobile, targ, spellinfo.id});
+		var e := Start_Script(spellinfo.script, {mobile, targ, spellinfo});
 		//sendsysmessage(mobile, " " );
 		return;
 	else

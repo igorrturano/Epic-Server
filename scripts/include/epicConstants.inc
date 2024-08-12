@@ -41,3 +41,17 @@ enum GAME_MODE
     TRUE_MODE := "True Mode",
     STORY_MODE := "Story Mode"
 endenum
+
+enum ARCANE_SCHOOLS
+    EVOCATIUM := "Evocatium",
+    VELKYN := "Velkyn",
+    ARADALORE := "Aradalorë",
+    AHTALELORETH := "Ahtalelorëth",
+    KAIJIN := "Kaijin"
+endenum
+
+enum CAMINHOS
+    GUERREIRO := "Guerreiro",
+    LADINO := "Ladino",
+    SABIO := "Sabio"
+endenum

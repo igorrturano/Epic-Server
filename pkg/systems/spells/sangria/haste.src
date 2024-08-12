@@ -16,7 +16,7 @@ program SpellScript(params)
 
     //Bonus de especialização
     if(Temhabilidade(who, "Evocator"))
-        tempo := tempo * 1.2;
+        tempo := Cint(tempo * 1.2);
     endif
 
 	TS_StartTimer(who, "velocidade", tempo);
