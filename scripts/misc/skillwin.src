@@ -262,6 +262,7 @@ function Habilidades(who)
                     habs[input] := 2;
                     SetObjProperty(who, "buyhab", habs);
                     AP_SetTrueStat(who, STRENGTH, AP_GetTrueStat(who, STRENGTH)+2);
+	
                 elseif (input2 == 20)
                     habs[input] := 2;
                     SetObjProperty(who, "buyhab", habs);
@@ -271,6 +272,20 @@ function Habilidades(who)
                     SetObjProperty(who, "buyhab", habs);
                     AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
                 endif
+				
+				var hp_up := 0;
+				if (chardata.classe == GUERREIRO)
+					hp_up := 10;
+				elseif (chardata.classe == LADINO)
+					hp_up := 8;
+				elseif (chardata.classe == SABIO)
+					hp_up := 6;
+				endif
+				var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
+				hitsmod := hitsmod + hp_up;
+				SetObjProperty(who, "hitsmod",  hitsmod);
+				recalcvitals(who);
+				HealDamage(who, hp_up);
             else
                 SendSysMessage(who, "Voce nao pode comprar esse status.");
             endif

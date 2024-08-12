@@ -73,14 +73,18 @@ function graphicByAltar(altar)
       default:
          graphic := 0;
    endcase
-    print ("graphic: " + graphic);
    return graphic;
 endfunction
 
+function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
+   if (targ != 0)
+      targ := who;
+   endif
 
-function listAllMobilesNearbyButPetsAndParty(who)
    var mobiles := array{};
    var allies := who.party;
+	var alreadydamaged := array{};
+
    var party_members := who.party.members;
       if (who.party)
       foreach member in party_members
@@ -94,15 +98,62 @@ function listAllMobilesNearbyButPetsAndParty(who)
       endforeach
    endif
 
-   var nearby := ListMobilesNearLocation( who.x ,who.y, who.z, range, who.realm);
+   var nearby := ListMobilesNearLocation( targ.x ,targ.y, targ.z, range, targ.realm);
    foreach char in nearby
       var char_owner := GetObjProperty(char, "owner");
       if (!(char in (allies.members) || char == who))
-         if (!(char in allPets) && !(char in who.party.members) && !(char_owner == who.serial))
+         if (!(char.serial in alreadydamaged) && !(char in mobiles) && !(char in who.party.members) && !(char_owner == who.serial))
+            alreadydamaged.Append(char.serial);
             mobiles.append(char);
          endif
       endif
    endforeach
 
    return mobiles;
+endfunction
+
+function distanceAllowedForSpells(who, mlore, school)
+   var dist_allowed := 5 + mlore;
+
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+      dist_allowed := dist_allowed + (mlore * 2);
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+      dist_allowed := dist_allowed + (mlore * 2); 
+   endif
+
+   return dist_allowed;
+endfunction
+
+function bonusSpellDamageForSpecialists(who, dmg ,school)
+   var bonus := 1.2;
+
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+      dmg := Cint(dmg * bonus);
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+      dmg := Cint(dmg * bonus);
+   endif
+
+   return dmg;
+endfunction
+
+function epicSpellDamageRoll(who, spell_circle)
+   var dice := cstr("1d4");
+   if (spell_circle == 1)
+      dice := cstr("2d4");
+   elseif (spell_circle == 2)
+      dice := cstr("4d6");
+   elseif (spell_circle == 3)
+      dice := cstr("6d8");
+   elseif (spell_circle == 4) 
+      dice := cstr("8d10");
+   elseif (spell_circle == 5) 
+      dice := cstr("10d12");
+   endif
+
+   var dmg := RandomDiceRoll(dice);
+   var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
+   var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 10); 
+   dmg := Cint(dmg + int_bonus + mlore);
+
+   return dmg;
 endfunction

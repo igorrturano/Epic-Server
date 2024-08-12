@@ -11,6 +11,7 @@ include "include/sounds";
 include "include/damage";
 include "include/tileEffects";
 include ":taming:taming";
+include "include/epicMageryUtils";
 
 program chainLightning( params )
     var caster := params[1];
@@ -23,49 +24,27 @@ program chainLightning( params )
         return 0;
     endif
     if ( !CheckLosAt(caster, caster.x, caster.y, caster.z) )
-            SendSysMessageEx(caster, "Voce nao enxerga o alvo.", SSM_FAIL);
-            return 0;
+        SendSysMessageEx(caster, "Voce nao enxerga o alvo.", SSM_FAIL);
+        return 0;
     endif
 
     SendSysMessageEx(caster, "Voce ve raio saindo de sua mao e passando por seus inimigos.", SSM_INFO);
 
     var range := cint(AP_GetSkill(caster, MAGICLORE)/20);
-    var alreadydamaged := array{};
-    var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, range, targ.realm);
-    var allPets := array{};
-	var party_members := caster.party.members;
-
-	if (caster.party)
-		foreach member in party_members
-			if (member != caster)
-				var memberObj := SystemFindObjectBySerial(member.serial);
-				var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, range * 4);
-				foreach pet in allPetsAndSummonedPets
-						allPets.append(pet);
-				endforeach
-			endif
-		endforeach
-	endif	
+    var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
 
     var casterThenNextMobile := caster;
-    foreach mobile in mobiles
-        if (!(mobile.serial in alreadydamaged) && (mobile != caster) && !(mobile in caster.party.members) && !(mobile in allPets))
-			SetObjProperty(mobile, "LastHit", {caster.name, caster.serial, "chain lightning"});
-            //PlayLightningBoltEffect( mobile );
-            PlayMovingEffect(casterThenNextMobile, mobile , 0x379f, 0, 20 );
-            //ChainEffect(casterThenNextMobile, mobile);
-            casterThenNextMobile := mobile;
-            PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
-            alreadydamaged.Append(mobile.serial);
-            var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("14d6");
+    foreach mobile in allMobiles
+        SetObjProperty(mobile, "LastHit", {caster.name, caster.serial, "chain lightning"});
+        //PlayLightningBoltEffect( mobile );
+        PlayMovingEffect(casterThenNextMobile, mobile , 0x379f, 0, 20 );
+        //ChainEffect(casterThenNextMobile, mobile);
+        casterThenNextMobile := mobile;
+        PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
+        var dmg := cint(AP_GetSkill(caster, MAGICLORE))/2 + RandomDiceRoll("14d6");
+        dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
-            //Bonus de especialização
-            if(Temhabilidade(caster, "Evocator"))
-                dmg := dmg * 1.2;
-            endif
-
-            DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
-        endif
+        DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
         sleepms(600);
     endforeach
 endprogram

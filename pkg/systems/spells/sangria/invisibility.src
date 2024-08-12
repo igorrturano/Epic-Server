@@ -16,7 +16,11 @@ program SpellScript(params)
 
 	var x := who.x;
 	var y := who.y;
-	sleep(2);
+	var delay := 2;
+	if(TemHabilidade(who, "Valdruk"))
+		delay := 1;
+	endif
+	sleep(delay);
 	if ( (x != who.x) || (y  != who.y) )
 		SendSysMessageEx(who, "Voce se movimentou e a magia falhou.", SSM_FAIL);
 		return;

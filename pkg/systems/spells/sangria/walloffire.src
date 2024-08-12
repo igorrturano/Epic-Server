@@ -7,6 +7,8 @@ include ":magery:spells";
 include ":magery:fields";
 include ":attributes:attributes";
 include "include/say";
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 program wall_of_fire( parms )
   	var caster := parms[1];
@@ -26,11 +28,7 @@ program wall_of_fire( parms )
 	
 	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, cast_on);
-    var dist_allowed := 5 + mlore;
-
-    if (TemHabilidade(caster, "Evocator"))
-        dist_allowed := dist_allowed + (mlore * 2);
-    endif
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
 
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
@@ -71,8 +69,11 @@ program wall_of_fire( parms )
 			continue;
 		endif
 
+		var dmg := RandomDiceRoll("4d6");
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+
 		SetObjProperty(item, "SummonedField", caster.serial);
-        SetObjProperty(item, "DamageDice", "4d6");
+        SetObjProperty(item, "DamageDice", "4d6+"+Cstr(dmg));
 		item.SetOwner(caster);
 		item.SetDuration(duration);
 		SleepMS(2);

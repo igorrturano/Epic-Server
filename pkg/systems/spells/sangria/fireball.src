@@ -9,6 +9,8 @@ include "include/sysEvent";
 include "include/client";
 include "include/say"; 
 include ":taming:taming";
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 program spell_fireball(params)
     var caster := params[1];
@@ -31,9 +33,9 @@ program spell_fireball(params)
 
 	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, cast_on);
-    var dist_allowed := 5 + mlore;
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
 
-    if (TemHabilidade(caster, "Evocator") || TemHabilidade(caster, "Tirothan"))
+    if (TemHabilidade(caster, "Tirothan"))
         dist_allowed := dist_allowed + (mlore * 2);
     endif
 
@@ -82,41 +84,19 @@ program spell_fireball(params)
 
 	PlaySoundEffect(cast_on, 0x208);
     
-    var alreadydamaged := array{};
-    
 	var range := cint(AP_GetSkill(caster, MAGICLORE)/10);
-    var mobiles := ListMobilesNearLocation(cast_on.x, cast_on.y, cast_on.z, range, caster.realm);
-	var allPets := array{};
-	var party_members := caster.party.members;
+    var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
+    foreach mobile in allMobiles
+		var dmg := cint(AP_GetSkill(caster, MAGICLORE))/3 + RandomDiceRoll("8d10");
 
-	if (caster.party)
-		foreach member in party_members
-			if (member != caster)
-				var memberObj := SystemFindObjectBySerial(member.serial);
-				var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, range * 4);
-				foreach pet in allPetsAndSummonedPets
-						allPets.append(pet);
-				endforeach
-			endif
-		endforeach
-	endif	
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
 
-    foreach mobile in mobiles
-        if (!(mobile.serial in alreadydamaged) && (mobile != caster) && !(mobile in party_members) && !(mobile in allPets))
-            alreadydamaged.Append(mobile.serial);
-			var dmg := cint(AP_GetSkill(caster, MAGICLORE))/3 + RandomDiceRoll("8d10");
+		if (Getcooldown(mobile, "spellthief"))
+			DamageFLS(caster, cint(dmg), DMG_FIRE, caster, "fireball");
+		else
+			DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
+		endif
 
-            //Bonus de especialização
-            if(Temhabilidade(caster, "Evocator"))
-                dmg := Cint(dmg * 1.2);
-            endif
-			
-			if (Getcooldown(mobile, "spellthief"))
-            	DamageFLS(caster, cint(dmg), DMG_FIRE, caster, "fireball");
-			else
-				DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
-			endif
-        endif
         sleepms(20);
     endforeach
 	destroycraft(cast_on, caster);

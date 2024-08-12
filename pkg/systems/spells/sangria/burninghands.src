@@ -14,11 +14,14 @@ include ":taming:taming";
 include "include/facings";
 include "include/shapes";
 include ":magery:fields";
-
+include "include/epicConstants";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var caster := params[1];
 	var info := params[2];
+    var spellinfo := params[3];
+    var spell_circle := spellinfo.Circle;
     var range := cint(AP_GetSkill(caster, MAGICLORE)/20);
 
     SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
@@ -48,12 +51,8 @@ program SpellScript(params)
                 continue;
             endif
 
-            var damage := cint(AP_GetSkill(caster, MAGICLORE)/8) + RandomDiceRoll("3d6");
-
-            //Bonus de especialização
-            if(Temhabilidade(caster, "Evocator"))
-                damage := Cint(damage * 1.2);
-            endif
+            var damage := epicSpellDamageRoll(caster, spell_circle);
+            damage := bonusSpellDamageForSpecialists(caster, damage, EVOCATIUM);
 
             PlaySoundEffect( mob, SFX_226 );
             sleepms(100);
