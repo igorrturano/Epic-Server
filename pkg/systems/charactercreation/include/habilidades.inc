@@ -2,6 +2,7 @@ use cfgfile;
 
 include ":attributes:attributes";
 include "include/epicConstants";
+include "include/epicUtils";
 
 function NivelHabilidade(habilidade, classe)
 
@@ -69,7 +70,7 @@ function TemHabilidade(who, habilidade)
 	var habs := GetObjProperty(who, "myhabs");
 
 	foreach key in (habs.keys())
-		if (Lower(habs[key]) == Lower(habilidade))
+		if (RemoveAcentos(Lower(habs[key])) == RemoveAcentos(Lower(habilidade)))
 			return 1;
 		endif
 
