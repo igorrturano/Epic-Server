@@ -2,7 +2,7 @@ use uo;
 
 // Função auxiliar para remover acentos
 function RemoveAcentos(texto)
-    var acentos := "áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ";
+    /*var acentos := "áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ";
     var semAcentos := "aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC";
     var resultado := "";
 
@@ -15,5 +15,6 @@ function RemoveAcentos(texto)
         endif
     endforeach
 
-    return resultado;
+    return resultado;*/
+    return texto;
 endfunction
