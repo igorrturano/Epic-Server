@@ -1,4 +1,5 @@
 use uo;
+use util;
 
 // Função auxiliar para remover acentos
 function RemoveAcentos(text)
@@ -19,4 +20,12 @@ function RemoveAcentos(text)
     endfor
 
     return novoTexto;
+endfunction
+
+// Função para normalizar uma string
+function NormalizeString(text)
+    text := Lower(RemoveAcentos(text));
+    text := StrReplace(text, "_", " ");
+    text := StrReplace(text, "  ", " ");
+    return Trim(text);
 endfunction
