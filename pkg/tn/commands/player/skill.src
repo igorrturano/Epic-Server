@@ -21,12 +21,12 @@ program start_skill(who, txt)
      endif
 
      // Aplicar RemoveAcentos e Lower ao txt
-     txt := Lower(RemoveAcentos(txt));
+     txt := NormalizeString(txt);
 
      var skillname := "";
      var attributes := AP_ListAttributesByType("Skill");
      foreach attribute in attributes
-         if (Lower(RemoveAcentos(attribute)) == txt)
+         if (NormalizeString(attribute) == txt)
              skillname := attribute;
              break;
          endif
