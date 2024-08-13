@@ -139,20 +139,16 @@ program SpellStarter(params)
 		EraseObjProperty(mobile, "#medding");
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
-	elseif ( !AP_ConsumeVital(mobile, MANA, spellinfo.mana) && !mobile.npctemplate)
-		if ( !TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, STAMINA, spellinfo.mana))
+	elseif ( !AP_ConsumeVital(mobile, MANA, spellinfo.mana) && !mobile.npctemplate && !TemHabilidade(mobile, "Determinacao Arcana"))
 			SendSysMessageEx(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!", SSM_FAIL);
 			FailSpell(mobile);
 			EraseObjProperty(mobile, "#Casting");
-			return 0;
-		else
-			if (  !isBloodied(mobile) )
-				SendSysMessageEx(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!", SSM_FAIL);
-				FailSpell(mobile);
-				EraseObjProperty(mobile, "#Casting");
-				return 0;
-			endif
-		endif
+            return 0;
+    elseif (TemHabilidade(mobile, "Determinacao Arcana") && !AP_ConsumeVital(mobile, STAMINA, spellinfo.mana - AP_GetVital(mobile, MANA)) && !AP_ConsumeVital(mobile, MANA, AP_GetVital(mobile, MANA)))
+            SendSysMessageEx(mobile, "Voce nao possui energia suficiente em seu corpo para invocar esta magia!", SSM_FAIL);
+			FailSpell(mobile);
+			EraseObjProperty(mobile, "#Casting");
+            return 0;
 	elseif ( !TNCheckReagents(mobile, spellinfo, scroll) )
 		//if (!Elementalista(mobile, spellinfo)) //elementalista nao gastam reagentes
 		if ( !TemHabilidade(mobile, "Determinacao Arcana") && !isBloodied(mobile) )
