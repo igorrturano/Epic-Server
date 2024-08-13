@@ -263,6 +263,11 @@ program fireweapons(who, item)
             dmg := dmg - ((dist - max_range) * 10);
         endif
     endif
+
+    if (GetObjProperty(item, "Excepcional"))
+        dmg *= 1.2;
+        max_range += 2;
+    endif
     
 	if (dmg < 1 || (TemHabilidade(targ, "Pele de Rocha") && IsRaging(targ)))
 		dmg := 1;
@@ -298,4 +303,8 @@ program fireweapons(who, item)
     PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
 	PlaySoundEffect(who, shot_sound);
 	DamageFLS(targ, dmg, DMG_FORCED, who);
+    // Gambiarra pra atualizar tooltip
+    MoveItemToContainer(item, who.backpack);
+    EquipItem(who, item);
+
 endprogram

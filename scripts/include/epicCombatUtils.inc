@@ -28,3 +28,17 @@ function isWoodWeapon(who)
 
     return 0;
 endfunction
+
+function isFireWeapon(item)
+    var fire_weapons := { 
+        0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7
+    };
+
+    foreach weapon in fire_weapons
+        if (weapon == item.objtype)
+            return 1;
+        endif
+    endforeach
+
+    return 0;
+endfunction
