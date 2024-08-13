@@ -1,6 +1,6 @@
 
 use uo;
-
+use os;
 include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
@@ -137,6 +137,7 @@ program fireweapons(who, item)
                     PlaySoundEffect(who, SFX_HIT_11);
                     SetObjProperty(item, "balas", 1);
                     printtext(who, "*Arma recarregada*");
+                    updateToolTip(item);
                     return;
                 endif
             endwhile
@@ -225,19 +226,20 @@ program fireweapons(who, item)
 	balas := balas - 1;
 	SetObjProperty(item, "balas", balas);
 
-	var dmg := 40;
+	var dmg_dice := "2d4";
     if(is_musket)
-        dmg := 100;
+        dmg_dice := "6d8"; 
     elseif(is_carabine)
-        dmg := 80;
+        dmg_dice := "4d6";
     elseif(is_handcannon)
-        dmg := 140;
+        dmg_dice := "8d10";
     endif
 
+    var dmg := RandomDiceRoll(dmg_dice);
     if (GetObjProperty(who, "Municao Explosiva"))
-        dmg += 40;
+        dmg += RandomDiceRoll("4d6");
     endif
-    
+  
     // Cálculo de dano baseado na distância
     // TODO: Transformar numa função
     var max_range := 6;
@@ -246,7 +248,7 @@ program fireweapons(who, item)
     endif
     if (is_pistol)
         if (dist > max_range)
-            dmg := dmg - ((dist - max_range) * 10);
+            dmg := dmg - ((dist - max_range) * 5);
         endif
     elseif (is_handcannon)
         if (dist > max_range)
@@ -255,17 +257,17 @@ program fireweapons(who, item)
     elseif (is_carabine)
         max_range += 6;
         if (dist > max_range)
-            dmg := dmg - ((dist - max_range) * 10);
+            dmg := dmg - ((dist - max_range) * 5);
         endif
     elseif (is_musket)
         max_range += 14;
         if (dist > max_range)
-            dmg := dmg - ((dist - max_range) * 10);
+            dmg := dmg - ((dist - max_range) * 5);
         endif
     endif
 
     if (GetObjProperty(item, "Excepcional"))
-        dmg *= 1.2;
+        dmg := Cint(dmg * 1.2);
         max_range += 2;
     endif
     
@@ -303,8 +305,6 @@ program fireweapons(who, item)
     PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
 	PlaySoundEffect(who, shot_sound);
 	DamageFLS(targ, dmg, DMG_FORCED, who);
-    // Gambiarra pra atualizar tooltip
-    MoveItemToContainer(item, who.backpack);
-    EquipItem(who, item);
 
+    updateToolTip(item);
 endprogram
