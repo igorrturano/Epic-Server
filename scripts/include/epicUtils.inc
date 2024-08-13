@@ -1,7 +1,6 @@
 use uo;
 use util;
 
-// Função auxiliar para remover acentos
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
     var semAcentos := "aaaaaeeeeiiiiooooouuuuucAAAAAEEEEIIIIOOOOOUUUUUC";
@@ -22,7 +21,6 @@ function RemoveAcentos(text)
     return novoTexto;
 endfunction
 
-// Função para normalizar uma string
 function NormalizeString(text)
     text := Lower(RemoveAcentos(text));
     text := StrReplace(text, "_", " ");
