@@ -14,36 +14,22 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	var time :=  AP_GetSkill(who, MAGICLORE);
-	var bonus;
-	if (time <= 40)
-		bonus := 0.4;
-	elseif ((time > 40) && (time <= 60) )
-		bonus := 0.6;
-	elseif ((time > 60) && (time <= 75) )
-		bonus := 0.8;
-	elseif ((time > 75) && (time <= 89) )
-		bonus := 0.9;
-	elseif (time > 89)
-		bonus := 1.1;
-	else
-		bonus := 0.4;
-	endif
+	var mlore :=  Cint(AP_GetSkill(who, MAGICLORE));
+	var duration := Cint(mlore);
+	var bonus := Cint(mlore/10);
 		
 	if (targ.isA(POLCLASS_WEAPON))
-		SetCooldown(targ, "blessweapon", time);
+		SetCooldown(targ, "blessweapon", duration);
 		SetObjProperty(targ, "blessedbonus", bonus);
-		start_script( ":spells:armasagrada", {targ, time} );
+		start_script( ":spells:armasagrada", {targ, duration} );
 	else
-		SetCooldown(targ.weapon, "blessweapon", time);
+		SetCooldown(targ.weapon, "blessweapon", duration);
 		SetObjProperty(targ.weapon, "blessedbonus", bonus);
-		start_script( ":spells:armasagrada", {targ.weapon, time} );
+		start_script( ":spells:armasagrada", {targ.weapon, duration} );
 	endif
 
-        PlaySoundEffect(targ, SFX_BLESS);
-
+	PlaySoundEffect(targ, SFX_BLESS);
 	SendSysMessageEx(who, "Voce consagrou a arma.", SSM_INFO);
-
 	
 	return 1;
 endprogram    

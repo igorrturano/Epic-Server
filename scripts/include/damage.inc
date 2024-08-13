@@ -586,7 +586,6 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (who.npctemplate)
 		weapon_dice := 0; // Tava dando dano duas vzs
 	endif
-	print("weapon_dice: " + weapon_dice);
 	if (who.weapon.objtype == 0x13b9 && !who.shield) // Usando espada bastarda com as duas mãos
 		other := other + 0.5;
         weapon_dice := RandomDiceRoll("1d10");
