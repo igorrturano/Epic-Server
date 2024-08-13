@@ -15,6 +15,8 @@ include ":charactercreation:habilidades";
 include ":tn:boss";
 include "include/client";
 include "include/say";
+include "include/epicCombatUtils";
+
 
 const OFFSET_OBJECT_SERIAL   := 0x05;
 const OFFSET_CLILOC_ID       := 0x0F;
@@ -375,12 +377,12 @@ exported function MegaCliloc( who, byref packet )
 				if(GetObjProperty(item, "disfarce"))
 					xDesc := xDesc + white + " [disfarce] [" + item.acctname + "]" + "<br>";
 				endif
-				var povo;
+				var culture;
 				if (GetObjProperty(item, "chardata"))
-					povo := GetObjProperty(item, "chardata").povo;
+					culture := GetObjProperty(item, "chardata").culture;
 				endif
-				if (povo)
-					xDesc := xDesc + white + povo + "<br>";
+				if (culture)
+					xDesc := xDesc + white + culture + "<br>";
 				endif
 			endif
 		endif
@@ -406,6 +408,14 @@ exported function MegaCliloc( who, byref packet )
 		endif
 
 		var descmods := GetObjProperty(item, "descmod");
+
+		if (isFireWeapon(item))
+			if (!GetObjProperty(item, "balas"))
+				xDesc := xDesc + white + "Sem Munição<br>";
+			else
+				xDesc := xDesc + white + "Munição: " + GetObjProperty(item, "balas") + "<br>";
+			endif
+		endif
 
 		//JUNTA AS DESCRIÇÕES DO DOS PROPS DO PERSONAGEM
 

@@ -370,7 +370,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 			if (lower(categoriaDefender) == "undead" )
 				blessbonus := CDbl(GetObjProperty(who.weapon, "blessedbonus"));
 				if (!blessbonus)
-					blessbonus := 0.4; //20% - balanceamento depois da mudanca de calculo do dano
+					blessbonus := 0;
 				endif
 			endif
 		endif
