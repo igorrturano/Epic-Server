@@ -20,7 +20,6 @@ program start_skill(who, txt)
          endif
      endif
 
-     // Aplicar RemoveAcentos e Lower ao txt
      txt := NormalizeString(txt);
 
      var skillname := "";
