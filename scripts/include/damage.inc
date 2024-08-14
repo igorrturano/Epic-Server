@@ -300,30 +300,12 @@ endfunction
 
 
 function CalculateTotalDamageBonus(dmg, who, defender)
-	//Bonus de dano por skill
 	var tatics;
 	var skillCriticalBonus;
 	var categoriaDefender := NPC_GetNPCConfig(defender.npctemplate).Category;
-	//print("Categoria: "+categoriaDefender);
 
-
-	if (who.npctemplate) //Se for NPC utiliza tactics
-		tatics := CDbl(AP_GetSkill(who, TACTICS))/100.0; //Armazena o valor da skill que afeta dano
-		SkillCheck(who, TACTICS, -1);
-	 elseif (GetObjProperty(who, "kit") == "Ranger")
-		tatics := CDbl(AP_GetSkill(who, TACTICS))/100.0; //Aplica bonus de tactics na chance de critico quando não é nenhum caso específico
-		SkillCheck(who, TACTICS, -1);
-		if(categoriaDefender == "GiantAnimal" || categoriaDefender == "Animal" || categoriaDefender == "EvilAnimal" || categoriaDefender == "Snow" || categoriaDefender == "Mount" || categoriaDefender == "Plantas" || categoriaDefender == "Terathan" || categoriaDefender == "Dragon")
-			tatics := tatics + CDbl(AP_GetSkill(who, SURVIVAL))/150.0; //Aplica bonus de Survival se forem criaturas selvagens ou dragões
-			SkillCheck(who, SURVIVAL, -1);
-		endif
-	else
-		tatics := CDbl(AP_GetSkill(who, TACTICS))/100.0; //Armazena o valor da skill que afeta dano
-	endif
-	if(temHabilidade(who, "Lobo Solitario"))
-		tatics := CDbl(AP_GetSkill(who, SURVIVAL))/100.0; //Aplica bonus de tactics na chance de critico quando é classe Ranger
-		SkillCheck(who, SURVIVAL, -1);
-	endif
+	SkillCheck(who, TACTICS, -1);
+	tatics := Cint(AP_GetSkill(who, TACTICS)/10);
 
 	//Bonus STR
 	var cfg:=ReadConfigFile(":combat:itemdesc");
@@ -335,42 +317,25 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	var str;
-/* 	if (who.npctemplate)
-		str := CDbl(AP_GetStat(who, stat));
-	else */
-	str := CDbl(AP_GetStat(who, stat));
-/* 	endif
- */
- 	// var strBonus := 1.2;
-
-	// if (AP_GetStat(who, stat) >= 100 ) //Calcula um bonus se tiver mais de 100 do atributo que afeta o dano
-	// 	str *= strBonus;
-	// endif
-
-	// 11 DE AGOSTO 2024 - Armas ranged usam Dex pra calculo de dano
-	//Quando equipado arco curto, longo, besta, besta pesada e besta de repeticao a força não implica em modificador de dano
-	// if ( (who.weapon.objtype == 0x13B2) || (who.weapon.objtype == 0x26CC) || (who.weapon.objtype == 0x0f4f) || (who.weapon.objtype == 0x13fd) || (who.weapon.objtype == 0x26CD) )
-	// 	str := 0;
-	// endif
+	str := Cint(AP_GetStat(who, stat));
 
 	//Bonus de prop da arma
-	var weapon := CDbl(GetObjProperty(who.weapon, "dmgbonus")) + CDbl(GetObjProperty(who.weapon, "#dmgbonus"));
+	var weapon_bonus_dmg := Cint(GetObjProperty(who.weapon, "dmgbonus")) + Cint(GetObjProperty(who.weapon, "#dmgbonus"));
 
 	//Bonus de prop do mobile
-	var other := CDbl(GetObjProperty(who, "dmgbonus")) + CDbl(GetObjProperty(who, "#dmgbonus"));
+	var other := Cint(GetObjProperty(who, "dmgbonus")) + Cint(GetObjProperty(who, "#dmgbonus"));
 
 	//Bonus de Spells
 	var reducao_dano := CDbl(GetObjProperty(who, "dmgreduction"));
 
 	var blessbonus := 0.0;
 	if (GetCooldown(who.weapon, "blessweapon"))
+		var cursed_creatures := {"undead", "demon"};
 		if (defender.npctemplate)
-			//var elem := NPC_GetNPCConfig(defender.npctemplate);
-			//var category := lower(categoriaDefender);
-			if (lower(categoriaDefender) == "undead" )
-				blessbonus := CDbl(GetObjProperty(who.weapon, "blessedbonus"));
+			if (lower(categoriaDefender) in cursed_creatures )
+				blessbonus := Cint(GetObjProperty(who.weapon, "blessedbonus"));
 				if (!blessbonus)
-					blessbonus := 0.4; //20% - balanceamento depois da mudanca de calculo do dano
+					blessbonus := 0;
 				endif
 			endif
 		endif
@@ -379,14 +344,14 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (getCooldown(who, "faroporsangue"))
 		var bonus := AP_GetVital(defender, HITS) / AP_GetVitalMaximumValue(defender, HITS);
         if (bonus <= 0.25)
-			bonus := 0.75;
+			bonus := "1d12";
 		elseif (bonus <= 0.5)
-			bonus := 0.5;
+			bonus := "1d10";
         elseif (bonus <= 0.75)
-            bonus := 0.25;
+            bonus := "1d8";
 		endif
-
-		other := other + bonus;
+		var bonus_dice := RandomDiceRoll(bonus);
+		other := other + bonus_dice;
 	endif
 
 	//Bonus de Habilidades especiais
@@ -395,46 +360,30 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		var manamoment 	:= AP_GetVital(who, "MANA");
 		var manatotal	:= AP_GetVitalMaximumValue(who, "MANA");
 		if 	(manamoment >= manatotal / 2)
-			other := other + (manamoment / 200);
+			other := other + Cint(manamoment / 20);
 		endif
-	endif
-
-	var habesgrimista := cint(GetObjProperty(who, "#contraataquepoderoso"))-1.0;
-	if (habesgrimista > 0)
-		other := other +habesgrimista;
 	endif
 
 	if (GetCooldown(who, "lobosolitario"))
 		var inimigos := ListHostiles(who, 3, LH_FLAG_LOS);
 		if (inimigos > 2)
-			other := other + 0.5; //50% - balanceamento depois da mudanca de calculo do dano
+			other := other + Cint(AP_GetSkill(who, SURVIVAL) / 10); 
 		endif
 	endif
 
-//	if (GetCooldown(who, "marcadacaca"))
-//			other := other + 0.75; //75% - balanceamento depois da mudanca de calculo do dano
-//	endif
-
 	if (TemHabilidade(who, "Precisao Cirurgica"))
-		other := other + 0.50; //50% - balanceamento depois da mudanca de calculo do dano
+		other := other + Cint(AP_GetSkill(who, ALCHEMY) / 10);
 	endif
 
     if (TemHabilidade(who, "Arsenal Sombrio"))
-        var sneak_dmg := AP_GetSkill(who, SNEAK) / 200;
+        var sneak_dmg := Cint(AP_GetSkill(who, SNEAK) / 20);
         if (isAssassinWeapon(who))
             other += sneak_dmg;
         endif
     endif
 
-	var inimigo_predileto := 1.0;
-	if (TemHabilidade(who, "Inimigo Predileto II"))
-		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
-		var inimigo := GetObjProperty(who, "InimigoPrediletoII");
-		if (cfg[npctemplate.template].Category == inimigo)
-			inimigo_predileto := inimigo_predileto + 2.0; //triplica o dano se for inimigo predileto 2
-		endif
-	elseif (TemHabilidade(who, "Inimigo Predileto"))
+	var inimigo_predileto := Cint(AP_GetSkill(who, SURVIVAL) / 10);
+	if (TemHabilidade(who, "Inimigo Predileto"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 		var inimigo := GetObjProperty(who, "InimigoPredileto");
@@ -447,81 +396,70 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
 			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
 		endif
-    elseif (TemHabilidade(who, "Regencia de Asan"))
-        var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
-		if (cfg[npctemplate.template].Category == "EvilHuman" || cfg[npctemplate.template].Category == "GiantAnimal")
-			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
-		endif
 	endif
 
 	if (GetCooldown(defender, "prey"))
-		inimigo_predileto := inimigo_predileto + 1.0;
+		inimigo_predileto := inimigo_predileto + Cint(AP_GetSkill(who, SURVIVAL) / 10);
 	endif
 
 	if (TemHabilidade(who, "Estilo Mao Livre"))
 		if (who.weapon.attribute == "One_Handed" && !who.shield)
-			other := other + 0.2;
+			other := other + Cint(AP_GetSkill(who, TACTICS) / 25);
 		endif
 	endif
 
 	if (isBloodied(defender))
 		if (temHabilidade(who, "Burz"))
-			other:= other + 0.75; //75% - balanceamento depois da mudanca de calculo do dano
+			other := other + Cint(AP_GetSkill(who, TACTICS) / 10);
 		endif
 	endif
 
-	var rage_bonus := AP_GetSkill(who, TACTICS) / 100;
+	var rage_bonus := Cint(AP_GetSkill(who, TACTICS) / 10);
 	if (GetCooldown(who, "furia"))
 		other := other + rage_bonus;
 		if (TemHabilidade(who, "Destruidor"))
-			other := other + 0.5;
+			other := other + rage_bonus * 2;
 		endif
 	endif
+
 	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(defender, HITS) <= AP_GetSkill(who, MAGICLORE))
 		if (GetObjProperty(who, "metamorfose") != error)
-			other:= other + 1.0;
+			other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
 			PrintText(who, "*enfurecido*");
 		endif
 	endif
 
 	if ( IsRaging(who))
 		if (temHabilidade(who, "Nazg Khalug") || GetObjProperty(who, "NpcFuria"))
-			other:= other + 1.0; //50% de bonus - balanceamento depois da mudanca de calculo do dano
+			other:= other + Cint(AP_GetSkill(who, TACTICS) / 10);
 			PrintText(who, "*enfurecido*");
 		endif
 		if (temHabilidade(who, "Furia Primitiva"))
 			if (GetObjProperty(who, "metamorfose") != error)
-				other:= other + 1.0; //50% de bonus - balanceamento depois da mudanca de calculo do dano
+				other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
 				PrintText(who, "*enfurecido*");
 			endif
 		endif
 		if (GetCooldown(who, "FuriaPrimordial"))
 			var inimigos := ListHostiles(who, 3, LH_FLAG_LOS);
 			inimigos := inimigos.size();
-			other := other + 0.15*inimigos; //15% de bonus - balanceamento depois da mudanca de calculo do dano
+			other := other + Cint(inimigos.size()); //15% de bonus - balanceamento depois da mudanca de calculo do dano
 		endif
 		if (GetCooldown(who, "furiamortal"))
-			var bonus := (AP_GetVitalMaximumValue(who, HITS) - AP_GetVital(who, HITS))/150.0;
+			var bonus := Cint((AP_GetVitalMaximumValue(who, HITS) - AP_GetVital(who, HITS)) / 10);
 			other := other + bonus;
 		endif
 	endif
 	var backStab := CDbl(GetObjProperty(who, "#backstab"));
 	if (backStab)
-		other := other + (0.1*backStab);
+		other := other + 2;
 		EraseObjProperty(who, "#backstab");
 	endif
 
-	if (IsTwoHandedWeapon(who.weapon))
-		other := other + 0.5;
-	endif
 
-	if (GetObjProperty(who, "fococomarma") == who.weapon.objtype)
-		other := other + 0.1;
-	endif
 
 	if ( GetObjProperty(who, "armapredileta") == who.weapon.objtype )
-		other := other + 0.5; 
+		other := other + Cint(AP_GetSkill(who, TACTICS) / 25); 
 	endif
 
 	//#shooting_effects
@@ -540,7 +478,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 					"cold_arrow":
 						TS_StartTimer(defender, "lentidao", 10);
 					"energy_arrow":
-						other := other + 0.3;
+						other := other + Cint(AP_GetSkill(who, MAGICLORE) / 20); 
 				endcase
 
 				// Reset the counter for this arrow type
@@ -550,20 +488,17 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		endforeach
 	endif
 
-	if (GetObjProperty(who, "#SequenciaDevastadoraAcumulada"))
-		other := CDbl(GetObjProperty(who, "#SequenciaDevastadoraAcumulada")) * 0.2; //20% de bonus - balanceamento depois da mudanca de calculo do dano
-	endif
     var itemdesc := ReadConfigFile("::itemdesc");
 
     if (TemHabilidade(who, "Brigador de Taverna") && (who.weapon.objtype == 0x1F020) && (dmg != 0))
-        dmg += 5;
+        dmg += Cint(AP_GetSkill(who, TACTICS) / 20);
     endif
 
     if (TemHabilidade(who, "Artista Marcial") )
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var isArmor := array{"ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve"};
     	if ( who.weapon.objtype in monk_weapons)
-			other := other + 2.0;
+			other := other + Cint(AP_GetSkill(who, TACTICS) / 10);
 		endif
         var i_config := ReadConfigFile(":*:itemdesc");
 		var this_item := "";
@@ -577,26 +512,28 @@ function CalculateTotalDamageBonus(dmg, who, defender)
         endforeach
 	endif
 
-	//Multiplicador de tactics X multiplicador de força X multiplicadores de habilidades e itens X Multiplicador de buff X multiplicador de Debuff
-	//dmg := CInt(dmg*(1.0+(2*tatics))*(1.0+str)*(1.0+(weapon+other))*(inimigo_predileto)*(1.0+blessbonus)*(1.0-reducao_dano));
-	//dmg := CInt(dmg*Pow(1.0+tatics,1.5)*(1.0+str)*(1.0+(weapon+other))*(inimigo_predileto)*(1.0+blessbonus)*(1.0-reducao_dano));
 	var weaponcfg := ReadConfigFile(":*:itemdesc");
 	var weaponelem := FindConfigElem(weaponcfg, who.weapon.objtype);
 	var weapon_dice := RandomDiceRoll(cstr(weaponelem.Damage));
 	if (who.npctemplate)
 		weapon_dice := 0; // Tava dando dano duas vzs
-	endif
-	if (who.weapon.objtype == 0x13b9 && !who.shield) // Usando espada bastarda com as duas mãos
-		other := other + 0.5;
-        weapon_dice := RandomDiceRoll("1d10");
-    endif
+ 	endif
 
 	if (dmg == 0) // Check de Parry que tava atravessando por conta do novo calculo de dano
 		dmg := 1;
 		return dmg;
 	endif
 
-	dmg := CInt( (dmg + (((str-50)/10)+(tatics*10)+weapon_dice)) * (1.0+(weapon+other+blessbonus)) * (inimigo_predileto) * (1.0-reducao_dano));
+	if (IsTwoHandedWeapon(who.weapon))
+		other := other + Cint(dmg * 1.5);
+	endif
+
+	if (who.weapon.objtype == 0x13b9 && !who.shield) // Usando espada bastarda com as duas mãos
+		other := other + Cint(dmg * 1.5);
+        weapon_dice := RandomDiceRoll("1d10");
+    endif
+
+	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
 	if (dmg < 1)
 		dmg := 1;
 	endif
