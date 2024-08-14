@@ -86,10 +86,11 @@ program vacuodemana(params)
     PlaySoundEffect(who, 0x306); //explosion
     PLayStationaryEffect(targ.x, targ.y+2, targ.z, 0x6D0E, 0, 10, 0, targ.realm); // A explosão
 
-    var bs_damage := Cint(AP_GetSkill(who, METALWORKING));
+    var bs_damage := Cint(AP_GetSkill(who, METALWORKING)/10);
+    var dmg_dice := RandomDiceRoll(cstr(bs_damage+"d12") + Cint((AP_GetStat(who, DEXTERITY) - 50) / 10) + Cint(AP_GetSkill(who, METALWORKING) / 10));
     var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 3, targ.realm);
     foreach mob in nearby
-        DamageFLS(mob, bs_damage+20, DMG_FIRE, who);
+        DamageFLS(mob, dmg_dice, DMG_FIRE, who);
         PLayStationaryEffect(mob.x, mob.y, mob.z, 0x36cc, 0, 10, 0, mob.realm);
         TS_StartTimer(mob, "tombar", 10);
     endforeach

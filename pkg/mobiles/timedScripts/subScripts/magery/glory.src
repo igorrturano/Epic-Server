@@ -13,11 +13,11 @@ program TimedScript_Clumsy(params)
 	if (GetObjProperty(who, "#glory"))
 		return;
 	endif
-	level := CDbl(level/200.0);
+	level := Cint(level/10);
 
 	SetObjProperty(	who, "#glory", level);
-	SetObjProperty(who, "#dmgbonus", cdbl(GetObjProperty(who, "#dmgbonus")) + level );
-	SetObjProperty(who, "#hitbonus", cdbl(GetObjProperty(who, "#hitbonus")) + (level*30) );
+	SetObjProperty(who, "#dmgbonus", cdbl(GetObjProperty(who, "#dmgbonus")) + level);
+	SetObjProperty(who, "#hitbonus", cdbl(GetObjProperty(who, "#hitbonus")) + level);
 	
 	return 1;
 endprogram

@@ -22,10 +22,10 @@ program TimedScript_sacrificio(params)
 				break;
 			endif
 			var dano := RandomIntMinMax(5,15);
-			var dmgbonus := cdbl(GetObjProperty(who, "#dmgbonus"));
+			var dmgbonus := Cint(GetObjProperty(who, "#dmgbonus"));
 			ApplyRawDamage(who, dano);
 			
-			SetObjProperty(who, "#dmgbonus", dmgbonus + 0.2);
+			SetObjProperty(who, "#dmgbonus", dmgbonus + Cint(AP_GetSkill(who, MAGICLORE)/ 20));
 			SetObjProperty(who, "#xsac", i);
 			PrintText(who, "*queimando com chamas da espada*");
 			sleep(5);

@@ -27,3 +27,7 @@ function NormalizeString(text)
     text := StrReplace(text, "  ", " ");
     return Trim(text);
 endfunction
+
+function updateToolTip(obj_reference)
+   IncRevision(obj_reference);
+endfunction
