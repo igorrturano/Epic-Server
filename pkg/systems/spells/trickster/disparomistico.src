@@ -8,6 +8,7 @@ include "include/client";
 include "include/sounds";
 include "include/damage";
 include "include/facings";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -29,9 +30,8 @@ program SpellScript(params)
 
     PlayMovingEffectEx(who, targ, 0xCDD2, 10, 20, 2442, 2);
     PlaySoundEffect(who, SFX_AGILITY2);
-    var dice := cstr(mlore +"d4");
-    var dmg := RandomDiceRoll(dice);
-    DamageFLS(targ, (dmg+mlore)*mlore, DMG_FORCED, who, "magicmissile");
+    var dmg := epicSpellDamageRoll(who, 1);
+    DamageFLS(targ, dmg, DMG_FORCED, who, "disparomistico");
     SleepMS(500);
     SetCooldown(who, "disparomistico", mlore);
 
