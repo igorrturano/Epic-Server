@@ -8,11 +8,6 @@ include "include/sounds";
 include "include/damage";
 include "include/facings";
 
-/*
-    Fukia (532) anim para rifle e carabina
-    Assassin Spike (953) para pistola
-*/
-
 program fireweapons(who, item)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
 
@@ -41,16 +36,7 @@ program fireweapons(who, item)
     // Verifica se a arma está equipada
     var weapon1 := GetEquipmentByLayer(who, LAYER_HAND1);
     var weapon2 := GetEquipmentByLayer(who, LAYER_HAND2);
-    /*if (item.objtype == 0xC5FE) // pistola destra
-        weapon := GetEquipmentByLayer(who, LAYER_HAND1);
-        if (weapon.serial != item.serial)
-		    SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
-		    return;
-        endif
-	elseif (weapon.serial != item.serial)
-		SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
-		return;
-	endif*/
+
     if (item.objtype != weapon1.objtype && item.objtype != weapon2.objtype) //novo check de mão
         SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
         return;
@@ -125,12 +111,20 @@ program fireweapons(who, item)
                     endif
                     // Toca os sons de recarregar
                     while (i < reload_time)
+                        if (who.x != current_x || who.y != current_y)
+                            SendSysMessage(who, "Voce so consegue recarregar essa arma parado.");
+                            return;
+                        endif
                         PlaySoundEffect(who, SFX_HIT_19);
                         sleep(1);
                         i++;
                     endwhile
                     printtext(who, "*Municiando o equipamento*");
                     for (i := 0; i < 2; i++)
+                        if (who.x != current_x || who.y != current_y)
+                            SendSysMessage(who, "Voce so consegue recarregar essa arma parado.");
+                            return;
+                        endif
                         PlaySoundEffect(who, SFX_FARMING);
                         sleep(2);
                     endfor
@@ -187,17 +181,6 @@ program fireweapons(who, item)
         SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
         return;
     endif
-
-    /*if (item.objetype == 0xC5FE) // pistola destra
-        weapon := GetEquipmentByLayer(who, LAYER_HAND1);
-        if (weapon.serial != item.serial)
-		    SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
-		    return;
-        endif
-	elseif (weapon.serial != item.serial)
-		SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
-		return;
-	endif*/
 
 	if ( !CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm))
 		SendSysMessageEx(who, "O alvo saiu do seu campo de visao.", SSM_FAIL);
@@ -266,14 +249,12 @@ program fireweapons(who, item)
         endif
     endif
 
+    dmg += Cint((AP_GetStat(who, DEXTERITY) - 50) / 10) + Cint(AP_GetSkill(who, TACTICS) / 10);
+
     if (GetObjProperty(item, "Excepcional"))
         dmg := Cint(dmg * 1.2);
         max_range += 2;
     endif
-    
-	if (dmg < 1 || (TemHabilidade(targ, "Pele de Rocha") && IsRaging(targ)))
-		dmg := 1;
-	endif
 
     // TODO: Transformar numa função
     var shot_sound := 0x4D0;
