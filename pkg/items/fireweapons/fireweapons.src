@@ -112,7 +112,7 @@ program fireweapons(who, item)
                     // Toca os sons de recarregar
                     while (i < reload_time)
                         if (who.x != current_x || who.y != current_y)
-                            SendSysMessage(who, "Voce so consegue recarregar essa arma parado.");
+                            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
                             return;
                         endif
                         PlaySoundEffect(who, SFX_HIT_19);
@@ -122,7 +122,7 @@ program fireweapons(who, item)
                     printtext(who, "*Municiando o equipamento*");
                     for (i := 0; i < 2; i++)
                         if (who.x != current_x || who.y != current_y)
-                            SendSysMessage(who, "Voce so consegue recarregar essa arma parado.");
+                            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
                             return;
                         endif
                         PlaySoundEffect(who, SFX_FARMING);
@@ -136,7 +136,7 @@ program fireweapons(who, item)
                 endif
             endwhile
             if (!GetObjProperty(item, "balas") && (who.x != current_x || who.y != current_y))
-                SendSysMessage(who, "Voce so consegue recarregar essa arma parado.");
+                SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
                 return;
             endif
 		else

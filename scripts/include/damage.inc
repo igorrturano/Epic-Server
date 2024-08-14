@@ -533,7 +533,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
         weapon_dice := RandomDiceRoll("1d10");
     endif
 
-	dmg := CInt( (dmg + (((str-50)/10)+(tatics*10)+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
+	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
 	if (dmg < 1)
 		dmg := 1;
 	endif
