@@ -7,10 +7,13 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
 	params := 0; // No longer needed
 
 	if (!targ.isa(POLCLASS_MOBILE))
@@ -19,40 +22,25 @@ program SpellScript(params)
 	endif
 
 	var amt;
-	if(TemHabilidade(who, "Vontade Esmagadora"))
-		if (!CheckResist(targ, VONTADE, 70, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
-			amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
-		else
-			amt := Cint(AP_GetSkill(who, MAGICLORE)*0.25);
-		endif
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	if (!CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
 	else
-		if (!CheckResist(targ, VONTADE, 30, -CInt(AP_GetSkill(who, MAGICLORE)/2.5)))
-			amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
-		else
-			amt := Cint(AP_GetSkill(who, MAGICLORE)*0.25);
-		endif
+		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.25);
 	endif
 
-	if (temHabilidade(who, "Tocado por Asan"))
+	if (temHabilidade(who, "Sacrificio da Carne"))
 		if (isBloodied(who))
 			amt := CInt(amt*1.5);
 		endif
 	endif
 
-
 	TS_StartTimer(targ, "feebleMind", cint(AP_GetSkill(who, MAGICLORE)), amt, who, 1); //20 min
 	PrintTextAbovePrivate(targ, "-"+amt + " Str", who, 3, 38); // vermelho
-	if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
-    endif
+
+	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "Voce deixou o alvo mais burro.", SSM_INFO);
 	Corromper(who, 2, targ);
-
-    if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
 
 	return 1;
 endprogram

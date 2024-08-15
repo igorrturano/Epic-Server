@@ -9,6 +9,7 @@ include ":attributes:regen";
 include ":attributes:vitals";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -22,13 +23,6 @@ program SpellScript(params)
 
 	var lvl := cdbl(AP_GetSkill(who, MAGICLORE) * 0.6 / 100);
 
-
-	/*
-	if (lvl > 0.7)
-		lvl := 0.7;
-	endif
-	*/
-
     if (TemHabilidade(targ, "Aura de corrupcao"))
     	SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
         lvl *= 1.34;
@@ -38,12 +32,6 @@ program SpellScript(params)
 	Corromper(who, 28, targ);
 	SendSysMessageEx(targ, "Olho por olho...", SSM_INFO);
 	TS_StartTimer(targ, "dmgreturn", time, lvl, who, 1);
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
 
 	return 1;
 endprogram

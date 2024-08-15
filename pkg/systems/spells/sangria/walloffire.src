@@ -14,6 +14,7 @@ program wall_of_fire( parms )
   	var caster := parms[1];
 	var spell := parms[3];
 	var spell_circle := spell.Circle;
+	var spell_school := spell.School;
     SendSysMessage(caster, "Selecione o alvo.");
 	var cast_on  := TargetCoordinates(caster);
     if (!cast_on) // If no cast_on then get cast_on from parms[4]. Used mostly for NPC casting.
@@ -30,7 +31,7 @@ program wall_of_fire( parms )
 	
 	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, cast_on);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
@@ -72,7 +73,7 @@ program wall_of_fire( parms )
 		endif
 
 		var dmg := epicSpellDamageRoll(caster, spell_circle);
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		SetObjProperty(item, "SummonedField", caster.serial);
         SetObjProperty(item, "DamageDice", Cstr(dmg));
