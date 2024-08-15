@@ -19,7 +19,7 @@ program earthquake( parms )
     var info := parms[2];
     var spell := parms[3];
     var spell_circle := info.Circle;
-
+    var spell_school := spell.School;
 
     SendSysMessageEx(caster, "Voce ve o chao tremer com extrema violencia.", SSM_INFO);
     PlaySoundEffect( caster, SFX_220 );
@@ -45,7 +45,7 @@ program earthquake( parms )
         sleepms(200);
         SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
         var dmg := epicSpellDamageRoll(caster, spell_circle);
-        dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+        dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
         DamageFLS(mobile, cint(dmg), DMG_FORCED, caster, "earthquake");
         sleepms(600);
