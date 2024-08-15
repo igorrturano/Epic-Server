@@ -124,7 +124,7 @@ function distanceAllowedForSpells(who, mlore, school)
    return dist_allowed;
 endfunction
 
-function bonusSpellDamageForSpecialists(who, dmg ,school)
+function bonusSpellDamageForSpecialists(who, dmg, school)
    var bonus := 1.2;
 
    if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
@@ -156,4 +156,41 @@ function epicSpellDamageRoll(who, spell_circle)
    dmg := Cint(dmg + int_bonus + mlore);
 
    return dmg;
+endfunction
+
+function handleSilentMagic(who, targ := 0, sound := 0)
+    if (!GetObjProperty(who, "#magiasilenciosa") && sound != 0 && targ != 0)
+        PlaySoundEffect(targ, sound);
+    endif
+
+    SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
+    EraseObjProperty(who, "#magiasilenciosa");
+    return 0;
+endfunction
+
+function handleSpellResistDiffForSpecialists(who, school)
+   var diff := 30;
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+      diff := 70;
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+      diff := 70;
+   elseif (TemHabilidade(who, "Cetro da Morte") && school == KAIJIN)
+		diff := 70;
+   endif
+ 
+   return diff;
+endfunction
+
+function bonusSpellDurationForSpecialists(who, duration, school)
+   var bonus := 1.2;
+
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+      duration := Cint(duration * bonus);
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+      duration := Cint(duration * bonus);
+   elseif(Temhabilidade(who, "Treinamento Druídico") && school == ARADALORE)
+      duration := Cint(duration * bonus);
+   endif
+
+   return duration;
 endfunction

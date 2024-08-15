@@ -6,7 +6,8 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
-
+include "include/epicConstants";
+include "include/epicMageryUtils";
 program manobra(mobile)
 	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);
 	var who := Target(mobile);
@@ -17,7 +18,6 @@ program manobra(mobile)
 		SendSysMessageEx(mobile, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
-
 
 	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
 
@@ -30,22 +30,13 @@ program manobra(mobile)
 	var amt := 10;
 
 	Corromper(mobile, 9, targ);
+	var diff := handleSpellResistDiffForSpecialists(mobile, KAIJIN);
 
-	if(TemHabilidade(mobile, "Vontade Esmagadora"))
-
-		if (CheckResist(mobile, VONTADE, 70, -CInt(AP_GetSkill(mobile, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
-			SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
-			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-			mobile.frozen := 0;
-			return;
-		endif
-	else
-		if (CheckResist(mobile, VONTADE, 30, -CInt(AP_GetSkill(mobile, MAGICLORE)/2.5)))
-			SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
-			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-			mobile.frozen := 0;
-			return;
-		endif
+	if (CheckResist(mobile, VONTADE, diff, -CInt(AP_GetSkill(mobile, MAGICLORE)/2.5)))
+		SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+		mobile.frozen := 0;
+		return;
 	endif
 
 	while  (time < 10)

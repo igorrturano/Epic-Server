@@ -7,6 +7,7 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -17,14 +18,12 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
-	
 
 	var duration := AP_GetSkill(who, MAGICLORE);
-	TS_StartTimer(targ, "nocure", duration, targ.color, who, 0); //20 min
-	if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
-    endif
+	TS_StartTimer(targ, "nocure", duration, targ.color, who, 0);
+
+	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
+
 	Corromper(who, 91, targ);
 	return 1;
-endprogram 
-
+endprogram

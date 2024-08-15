@@ -15,6 +15,7 @@ program SpellScript(params)
 	var targ := params[2];
     var spellinfo := params[3];
     var spell_circle := spellinfo.Circle;
+    var spell_school := spellinfo.School;
 
 	SendSysMessage(who, "Selecione o alvo.");
 	if ( !targ.IsA(POLCLASS_MOBILE) )
@@ -31,7 +32,7 @@ program SpellScript(params)
         mlore := mlore + 1;
     endif
     var dist := Distance(who, targ);
-    var dist_allowed := distanceAllowedForSpells(who, mlore, EVOCATIUM);
+    var dist_allowed := distanceAllowedForSpells(who, mlore, spell_school);
 
     if (dist > dist_allowed)
         SendSysMessage(who, "O alvo esta muito distante");
@@ -43,7 +44,7 @@ program SpellScript(params)
         PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
         PlaySoundEffect(who, SFX_AGILITY2);
         var dmg := epicSpellDamageRoll(who, spell_circle);
-        var total_dmg := bonusSpellDamageForSpecialists(who, dmg, EVOCATIUM);
+        var total_dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
 
         DamageFLS(targ, total_dmg, DMG_FORCED, who, "magicmissile");
         SleepMS(500);
