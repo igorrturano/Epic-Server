@@ -171,10 +171,11 @@ exported function handleUCOutgoing( character, byref packet )
 	var isSkillAction := array{"*defende o golpe*", "*tratando a si mesmo*", "*arrombando a fechadura*", "*desarmando armadilha*", 
 	"*preparando um extrato*", "*tentando se esconder*", "*CRÍTICO*", "*aparece*", "*Abre a escotilha*", "*Fecha a escotilha*",
 	"*veste o capuz*", "*remove o capuz*", "*Golpeia com o escudo*", "*morde um pedaço de comida*", "*Kaze no Ichigeki*"};
+
 	if (!source.npctemplate && type != 0x02)
 		var chosen_language := GetObjProperty(source, "lingua_escolhida");
 		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
-		var firstActionWord:= (splitwords(message_txt)[1]);
+		var firstActionWord := (splitwords(message_txt)[1]);
 
 		if (firstActionWord in (isGeneralAction))
 			return 0;
@@ -184,8 +185,12 @@ exported function handleUCOutgoing( character, byref packet )
 			return 0;
 		endif
 
+		if (GetObjProperty(source, "ghostvoice"))
+			return handleGhostVoice(source, character, chosen_language, message_txt, packet);
+		endif
+
 		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*" || character.cmdlevel >= 1 )
-			if (message_txt != "..." /* && message_txt != "*Incompreensível*" */ && message_txt != "")
+			if (message_txt != "..." && message_txt != "")
 				var full_message := "[" + chosen_language + "] " + message_txt;
 				packet.SetUnicodeString(48, full_message, 1);
 			endif
@@ -214,5 +219,24 @@ exported function handleUCOrequest( character, byref packet )
 		endif
 	endif
 
+	return 0;
+endfunction
+
+function handleGhostVoice(source, character, chosen_language, message_txt, byref packet)
+	var caster_serial := GetObjProperty(source, "ghostvoice");
+	var caster := SystemFindObjectBySerial(caster_serial);
+	SetObjProperty(source, "voice_color", packet.GetInt16(10));
+	SetObjProperty(source, "voice_font", packet.GetInt16(12) );
+
+	if (message_txt != "..." && message_txt != "")
+		var full_message := "[" + chosen_language + "] " + message_txt;
+		if (TemHabilidade(caster, "Valdruk"))
+			chosen_language := GetObjProperty(source, "lingua_escolhida");
+			full_message := message_txt;
+		endif
+
+		packet.SetUnicodeString(48, full_message, 1);
+	endif
+	EraseObjProperty(source, "ghostvoice");
 	return 0;
 endfunction

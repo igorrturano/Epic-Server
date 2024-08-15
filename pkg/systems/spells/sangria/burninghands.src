@@ -22,6 +22,7 @@ program SpellScript(params)
 	var info := params[2];
     var spellinfo := params[3];
     var spell_circle := spellinfo.Circle;
+    var spell_school := spellinfo.School;
     var range := cint(AP_GetSkill(caster, MAGICLORE)/20);
 
     SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
@@ -52,7 +53,7 @@ program SpellScript(params)
             endif
 
             var damage := epicSpellDamageRoll(caster, spell_circle);
-            damage := bonusSpellDamageForSpecialists(caster, damage, EVOCATIUM);
+            damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
 
             PlaySoundEffect( mob, SFX_226 );
             sleepms(100);

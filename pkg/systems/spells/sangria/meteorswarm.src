@@ -21,11 +21,12 @@ program spell_meteorSwarm( parms )
     var targ := parms[2];
     var spell := parms[3];
     var spell_circle := spell.Circle;
+    var spell_school := spell.School;
 
     SendSysMessage(caster, "Selecione o alvo.");
     var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);
     var dist := Distance(caster, targ);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
@@ -39,7 +40,7 @@ program spell_meteorSwarm( parms )
         PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6CCE, 0 ,70, 0, mobile.realm);
 
         var dmg := epicSpellDamageRoll(caster, spell_circle);
-        dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+        dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
         DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "meteorSwarm");
         sleepms(20);

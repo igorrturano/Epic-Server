@@ -280,10 +280,8 @@ function checkSpellInterruption(mobile, orig_hp)
             HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
         endif
         if (!GetObjProperty(mobile, "#magiasilenciosa"))
-            PlaySoundEffect(mobile, SFX_SPELL_FAIL);
-            PlayObjectCenteredEffect(mobile, GFX_FIZZLE, 5, 50);
+            FailSpell(mobile);
         endif
-        EraseObjProperty(mobile, "#Casting");
         return 0;
     endif
 
@@ -291,9 +289,9 @@ function checkSpellInterruption(mobile, orig_hp)
         SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.", SSM_FAIL);
         FailSpell(mobile);
         if (!GetObjProperty(mobile, "#magiasilenciosa"))
-            PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+            FailSpell(mobile);
         endif
-        EraseObjProperty(mobile, "#Casting");
+
         if (TemHabilidade(mobile, "Mago Precavido"))
             HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
         endif
@@ -426,7 +424,7 @@ function handleFailedSpell(mobile, spellinfo)
     endif
     
     if (!GetObjProperty(mobile, "#magiasilenciosa"))
-        PlaySoundEffect(mobile, SFX_SPELL_FAIL);
+        FailSpell(mobile);
     endif
     
     SendSysMessageEx(mobile, "Voce falhou em invocar a magia.", SSM_FAIL);

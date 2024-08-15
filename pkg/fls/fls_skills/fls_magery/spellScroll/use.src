@@ -4,7 +4,7 @@ use cfgfile;
 
 include ":fls_magery:basicMagery";
 include "include/say";
-
+include "include/epicMageryUtils";
 program useScroll(who, scroll)
 
 	var item_cfg := ReadConfigFile(":*:itemdesc");
@@ -25,11 +25,7 @@ program useScroll(who, scroll)
 		endif
 	endif
 
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
+	handleSilentMagic(who, 0);
 
 	return 1;
 endprogram

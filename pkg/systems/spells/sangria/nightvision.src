@@ -7,16 +7,15 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
 	params := 0; // No longer needed
 
-	if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(who, SFX_BLESS);
-	    PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);	
-    endif
+	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);	
+	handleSilentMagic(who, who, SFX_BLESS);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
 
@@ -34,12 +33,6 @@ program SpellScript(params)
 	else
 		SetCooldown(who, "lightvision", duration);
 	endif
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
 	
 	return 1;
 endprogram 

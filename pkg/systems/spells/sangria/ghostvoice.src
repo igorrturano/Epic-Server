@@ -17,15 +17,16 @@ program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	params := 0; // No longer needed
+	SetObjProperty(targ, "ghostvoice", who.serial);
+	var chosen_language := GetObjProperty(who, "lingua_escolhida");
+	if (TemHabilidade(who, "Valdruk"))
+		chosen_language := GetObjProperty(targ, "lingua_escolhida");
+	endif
 
 	var frase := RequestGump(who, "Escreva a frase");
-	PrintText(targ, ""+frase );
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
-
+	var color := GetObjProperty(targ, "voice_color");
+	var font := GetObjProperty(targ, "voice_font");
+	var result := PrintTextAbove(targ, "[" + chosen_language + "] "+frase, Cint(font), Cint(color));
+	
 	return 1;
 endprogram

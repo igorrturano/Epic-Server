@@ -21,13 +21,14 @@ program spell_iceStorm( parms )
     var targ := parms[2];
     var spell := parms[3];
     var spell_circle := spell.Circle;
+    var spell_school := spell.School;
 
     SendSysMessage(caster, "Selecione o alvo.");
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
 
     var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, targ);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
@@ -38,7 +39,7 @@ program spell_iceStorm( parms )
         PlaySoundEffect( mobile, 0x5c7 );
         PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6DFF, 0 ,70, 0, mobile.realm);
         var dmg := epicSpellDamageRoll(caster, spell_circle);
-        dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+        dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
         DamageFLS(mobile, cint(dmg), DMG_COLD, caster, "icestorm");
         sleepms(20);

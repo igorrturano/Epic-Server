@@ -17,6 +17,8 @@ program spell_fireball(params)
     var cast_on := params[2];
 	var spell := params[3];
 	var spell_circle := spell.Circle;
+	var spell_school := spell.School;
+
 	params := 0; // No longer needed
 
     SendSysMessage(caster, "Selecione o alvo.");
@@ -35,7 +37,7 @@ program spell_fireball(params)
 
 	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, cast_on);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
     if (TemHabilidade(caster, "Tirothan"))
         dist_allowed := dist_allowed + (mlore * 2);
@@ -91,7 +93,7 @@ program spell_fireball(params)
     foreach mobile in allMobiles
 		var dmg := epicSpellDamageRoll(caster, spell_circle);
 
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		if (Getcooldown(mobile, "spellthief"))
 			DamageFLS(caster, cint(dmg), DMG_FIRE, caster, "fireball");
