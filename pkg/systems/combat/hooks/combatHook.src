@@ -635,7 +635,9 @@ function CalculateHitChance(attacker, defender)
 	// endif
 
 	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
-		hit_chance := hit_chance + 10;
+		if (!TemHabilidade(defender, "Fortitudo Impia"))
+			hit_chance := hit_chance + 10;
+		endif
 	endif
 
 	if ( cint(GetObjProperty(attacker, "#attackbonus")) != 0 )

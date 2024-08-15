@@ -16,6 +16,11 @@ program manobra(who)
 		return 1;
 	endif
 	
+	if (temhabilidade(targ, "Fortitudo Impia"))
+		SendSysMessageEx(who, "O alvo resistiu a magia.", SSM_FAIL);
+		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
+		return 1;
+	endif
 	TS_StartTimer(targ, "temor", lvl, who);
 
 endprogram  

@@ -17,6 +17,12 @@ program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	params := 0; // No longer needed
+
+	if (!targ.acctname)
+		SendSysMessageEx(who, "Você não pode usar este feitiço nesse alvo.", SSM_FAIL);
+		return 0;
+	endif
+
 	SetObjProperty(targ, "ghostvoice", who.serial);
 	var chosen_language := GetObjProperty(who, "lingua_escolhida");
 	if (TemHabilidade(who, "Valdruk"))
@@ -26,7 +32,7 @@ program SpellScript(params)
 	var frase := RequestGump(who, "Escreva a frase");
 	var color := GetObjProperty(targ, "voice_color");
 	var font := GetObjProperty(targ, "voice_font");
-	var result := PrintTextAbove(targ, "[" + chosen_language + "] "+frase, Cint(font), Cint(color));
+	var result := PrintTextAbove(targ, "[" + chosen_language + "] "+frase, _DEFAULT_TEXT_FONT, Cint(color));
 	
 	return 1;
 endprogram

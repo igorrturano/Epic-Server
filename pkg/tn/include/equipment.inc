@@ -84,7 +84,7 @@ function SetEquipmentMods(who, item)
 
 	//magery
 	penalty := CInt(itemdesc[item.objtype].MageryPenalty);
-	if (!(TemHabilidade(who, "Senhor do Medo") || TemHabilidade(who, "Devocao") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
+	if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas")|| TemHabilidade(who, "Campeao das Montanhas")))
         AP_ModifySkillMod(who, MAGERY, penalty);
     endif
     
@@ -258,7 +258,7 @@ function RemoveEquipmentMods(who, item)
   	AP_ModifySkillMod(who, AWARENESS, (-1)*penalty);
 
 	penalty := CInt(itemdesc[item.objtype].MageryPenalty);
-	if (!(TemHabilidade(who, "Senhor do Medo") || TemHabilidade(who, "Devocao") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
+	if (!(TemHabilidade(who, "Aura Mortis") || TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Colheita de Almas") || TemHabilidade(who, "Campeao das Montanhas")))
 	  	AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
 	endif
 

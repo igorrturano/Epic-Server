@@ -403,10 +403,14 @@ function comprarHabilidade(who, item, nv:=-1)
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
-        if (escolhida == "Visao verdadeira" && who.graphic != 1831 && raca != DROW && religiao != ELUITHORTH)
+        if (escolhida == "Visao verdadeira" && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
             SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
             return 0;
         endif
+		if (escolhida == "Aura Mortis" && religiao != VENERATIO && cultura != AIGLANA)
+			SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
 
 		SendSysMessageEx(who, "Voce comprou a habilidade: " + escolhida, SSM_INFO);
 		if (escolhida == "Caçador Implacável")
@@ -457,12 +461,12 @@ function comprarHabilidade(who, item, nv:=-1)
 			who.resist_cold_mod  := who.resist_cold_mod + 25;
 			who.resist_poison_mod  := who.resist_poison_mod + 25;
 			who.resist_energy_mod  := who.resist_energy_mod + 25;
-		elseif(escolhida == "Senhor do Medo" || escolhida == "Devocao" || escolhida == "Colheita de Almas" || escolhida == "Campeao das Montanhas")
+		elseif(escolhida == "Aura Mortis" || escolhida == "Dominatio Animae" || escolhida == "Colheita de Almas" || escolhida == "Campeao das Montanhas")
             var equips := EnumeratePhysicalItemsInMobile(who);
             //foreach para pegar todos os equips no corpo e remover as penalidades
             foreach equip in equips
                 if ((equip.isa(POLCLASS_ARMOR)) && equip.resist_physical > 0)
-                    //Quando comprar a habilidade de Aura de Corrupca ou Devocao, a penalidade eh removida
+                    //Quando comprar a habilidade de Aura de Corrupca ou Dominatio Animae, a penalidade eh removida
                     var penalty := CInt(itemdesc[equip.objtype].MageryPenalty);
                     AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
                 endif
