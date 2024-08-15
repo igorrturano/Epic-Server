@@ -1,0 +1,33 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+    var lich_serial := GetObjProperty(who, "phylactery");
+    var the_lich := SystemFindObjectBySerial(lich_serial);
+    if (lich_serial != who.serial)
+        var destroyPhylactery := YesNo(who, "Você deseja destruir o filactério?");
+        if (destroyPhylactery)
+            PrintTextAbove(potion, "*Quebra*");
+            PlaySoundEffect(potion, 0x03F);
+            sleep(1);
+            SetCooldown(the_lich, "#phylactery", 0);
+            PlaySoundEffect(potion, 583);
+
+            DestroyItem(potion);
+            SendSysMessageEx(the_lich, "SEU FILACTÉRIO FOI DESTRUÍDO!!!", SSM_FAIL);
+        endif
+        return;
+    endif
+
+    var duration := 3600 * 8; // 8 horas
+    SetCooldown(the_lich, "#phylactery", duration);
+    SendSysMessageEx(who, "O poder do seu filactério foi renovado!", SSM_INFO);
+endprogram

@@ -223,20 +223,20 @@ exported function handleUCOrequest( character, byref packet )
 endfunction
 
 function handleGhostVoice(source, character, chosen_language, message_txt, byref packet)
-	var caster_serial := GetObjProperty(source, "ghostvoice");
-	var caster := SystemFindObjectBySerial(caster_serial);
-	SetObjProperty(source, "voice_color", packet.GetInt16(10));
-	SetObjProperty(source, "voice_font", packet.GetInt16(12) );
+    var caster_serial := GetObjProperty(source, "ghostvoice");
+    var caster := SystemFindObjectBySerial(caster_serial);
+    SetObjProperty(source, "voice_font", packet.GetInt16(12));
 
-	if (message_txt != "..." && message_txt != "")
-		var full_message := "[" + chosen_language + "] " + message_txt;
-		if (TemHabilidade(caster, "Valdruk"))
-			chosen_language := GetObjProperty(source, "lingua_escolhida");
-			full_message := message_txt;
-		endif
+    if (message_txt != "..." && message_txt != "")
+        var full_message := message_txt;
+        
+        if (!TemHabilidade(caster, "Valdruk"))
+            full_message := "[" + chosen_language + "] " + message_txt;
+        endif
 
-		packet.SetUnicodeString(48, full_message, 1);
-	endif
-	EraseObjProperty(source, "ghostvoice");
-	return 0;
+        packet.SetUnicodeString(48, full_message, 1);
+    endif
+    
+    EraseObjProperty(source, "ghostvoice");
+    return 0;
 endfunction

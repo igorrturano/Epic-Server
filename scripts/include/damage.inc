@@ -390,7 +390,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		if (cfg[npctemplate.template].Category == inimigo)
 			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
 		endif
-    elseif (TemHabilidade(who, "Equilibrio Khummardigan"))
+    elseif (TemHabilidade(who, "Exitium Maleficorum"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")

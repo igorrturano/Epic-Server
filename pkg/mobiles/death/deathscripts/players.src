@@ -48,8 +48,10 @@ program death(params)
 
 	//var protecao := Cint(GetObjProperty(ghost, "protecaomorte"));
 	var save := 0;
-    var protecao := GetCooldown(ghost, "protecaomorte") > 0;
-
+    var protecao := 0;
+	if (GetCooldown(ghost, "#phylactery") > 0 || GetCooldown(ghost, "protecaomorte") > 0)
+		protecao := 1;
+	endif
 	if (getObjProperty(ghost, "savegame") != error)
 		protecao := 1;
 		save := 1;

@@ -27,6 +27,11 @@ program SpellScript(params)
 	endif
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	if (temhabilidade(targ, "Fortitudo Impia"))
+		SendSysMessageEx(who, "O alvo resistiu a magia.", SSM_FAIL);
+		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
+		return 1;
+	endif
 	if (!CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
 		TS_StartTimer(targ, "dmgreduction", Cint(AP_GetSkill(who, MAGICLORE)), lvl, who, 1);
 		handleSilentMagic(who, targ, SFX_SPELL_PROTECTION);

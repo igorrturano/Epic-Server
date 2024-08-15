@@ -27,7 +27,7 @@ program HitScript(params)
     endif
     var chardata := GetObjProperty(defender, "chardata");
     
-    if(chardata.magia != "Mesum")
+    if(chardata.magia != "spellcaster")
 	    ApplyDamageEX(attacker, dmg, DMG_PHYSICAL);
     else
         ApplyDamageEX(attacker, dmg, DMG_POISON);
