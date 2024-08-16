@@ -1,0 +1,16 @@
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:combat";
+include "include/epicCombatUtils";
+include "include/client";
+
+program tironojoelho(who, tool)
+    EquipItem(who, tool);
+    SendSysMessageEx(who, "Você equipa sua arma!", SSM_INFO);
+endprogram 

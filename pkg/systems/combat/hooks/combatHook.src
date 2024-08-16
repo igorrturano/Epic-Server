@@ -90,7 +90,6 @@ exported function Attack(attacker, defender)
        	anim := 0x0c;
     endif
 
-
 	if ( (attacker.paralyzed) || (attacker.frozen) )
 		SendSysMessage(attacker, "Voce nao consegue atacar.");
 		return 1;
@@ -106,6 +105,8 @@ exported function Attack(attacker, defender)
 		return 1;
 	elseif(!arcane_shooting(attacker, defender))
 		return 1;
+	// elseif ( !throwCheckCombatHook(attacker, defender) )
+	// 	return 1;
 	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
 	//	return 1;
 	endif
@@ -527,7 +528,7 @@ exported function Attack(attacker, defender)
 		EraseObjProperty(attacker, "movement");
 		PlayMissSound(attacker);
 	endif
-
+	playSoundAndEffectForThroiwingWeapons(attacker, defender);
 	return 1;
 
 endfunction
@@ -809,6 +810,26 @@ function AmmoCheckCombatHook(attacker, defender)
 
 endfunction
 
+function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
+	if ( !wpn_a_elem.Throwable  )
+		return;
+	endif
+
+	if(attacker.npctemplate)
+		ThrowerNPC(attacker, defender);
+		return;
+	endif
+
+	PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, wpn_a_elem.color);
+
+    PlayAttackAnimation(attacker); // 0x9
+    // PlayHitSounds(attacker, defender);
+
+	MoveObjectToLocation(wpn_a, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+
+endfunction
+
+
 function arcane_shooting(attacker, defender)
 	if ( !wpn_a_elem.ProjectileType )
 		return 1;
@@ -870,6 +891,13 @@ function ArqueiroNPC(attacker, defender)
 
 endfunction
 
+function ThrowerNPC(attacker, defender)
+
+	PlayMovingEffectXYZHued(attacker, defender, wpn_a.graphic, 10, 10, 0, 0); //ammo_color);
+
+	return 1;
+
+endfunction
 
 function CombatDbgMsg(mobile, text)
 	SendSysMessage(mobile, "CombatHook:"+text);
