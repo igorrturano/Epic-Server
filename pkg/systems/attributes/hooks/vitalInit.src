@@ -76,10 +76,6 @@ exported function GetManaRegenRate(mobile)
 		base_regen := base_regen + base_regen;
 	endif
 
-	if (TemHabilidade(mobile, "Estudioso da Sangria"))
-		base_regen := (base_regen + base_regen) + (cint(AP_GetSkill(mobile, MAGICLORE)) * 20);
-	endif
-
 	if (TemHabilidade(mobile, "Fluxo Divino"))
 		base_regen := base_regen + base_regen;
 	endif
@@ -227,7 +223,7 @@ endfunction
 // Note: This vital is to kill all.
 // *****
 exported function GetDPRegenRate(mobile)
-	if (temHabilidade(mobile, "Espirito Forte"))
+	if (temHabilidade(mobile, "Dominatio Animae"))
 		return 34;
 	else
 		return 17; // 1 DP por hora
