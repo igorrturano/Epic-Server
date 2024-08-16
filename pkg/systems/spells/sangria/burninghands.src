@@ -69,42 +69,46 @@ program SpellScript(params)
 endprogram
 
 function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, realm)
-    var facing_direction := caster.facing;
-    var start_offset_x := 0;
-    var start_offset_y := 0;
-    var line_direction;
-    var i, j, line;
+    var facing := caster.facing;
+    var start_x := caster.x;
+    var start_y := caster.y;
 
-    // Define a direção do efeito baseada na direção que o caster está olhando
-    if (facing_direction == 0 || facing_direction == 4) // Norte ou Sul
-        line_direction := "horizontal";
-        if (facing_direction == 0)
-            start_offset_y := -1;
-        else 
-            start_offset_y := 1;
-        endif
-    else // Leste ou Oeste
-        line_direction := "vertical";
-        if (facing_direction == 2)
-            start_offset_x := 1;
-        else
-            start_offset_x := -1;
-        endif
-    endif
+    for line := 0 to lines_count
+        var width := line * 2 + 1;
+        for i := -line to line
+            var pos_x, pos_y;
+            case (facing)
+                0: // North
+                    pos_x := start_x + i;
+                    pos_y := start_y - line;
+                1: // Northeast
+                    pos_x := start_x + line;
+                    pos_y := start_y - line + i;
+                2: // East
+                    pos_x := start_x + line;
+                    pos_y := start_y + i;
+                3: // Southeast
+                    pos_x := start_x + line;
+                    pos_y := start_y + line - i;
+                4: // South
+                    pos_x := start_x + i;
+                    pos_y := start_y + line;
+                5: // Southwest
+                    pos_x := start_x - line;
+                    pos_y := start_y + line - i;
+                6: // West
+                    pos_x := start_x - line;
+                    pos_y := start_y + i;
+                7: // Northwest
+                    pos_x := start_x - line;
+                    pos_y := start_y - line + i;
+            endcase
 
-    // Cria linhas de efeitos em sequência
-    for (line := 0; line < lines_count; line+=1)
-        var current_effect_distance := line; // Diminui o alcance a cada linha
-        for (i := -current_effect_distance; i <= current_effect_distance; i+=1)
-            var pos_x := caster.x + start_offset_x * (line + 1);
-            var pos_y := caster.y + start_offset_y * (line + 1);
-            if (line_direction == "horizontal")
-                pos_x += i;
-            else
-                pos_y += i;
+            if (pos_x != start_x || pos_y != start_y) // Don't place effect on caster
+                PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
             endif
-            PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
         endfor
+        sleepms(50);
     endfor
 endfunction
 

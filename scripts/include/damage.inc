@@ -317,8 +317,11 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	var str;
-	str := Cint(AP_GetStat(who, stat));
-
+	if (elem.Throwable)
+		str := Cint(AP_GetStat(who, DEXTERITY)) + Cint(AP_GetStat(who, STRENGTH) / 2);
+	else
+		str := Cint(AP_GetStat(who, stat));
+	endif
 	//Bonus de prop da arma
 	var weapon_bonus_dmg := Cint(GetObjProperty(who.weapon, "dmgbonus")) + Cint(GetObjProperty(who.weapon, "#dmgbonus"));
 

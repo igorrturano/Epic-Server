@@ -167,7 +167,7 @@ exported function handleUCOutgoing( character, byref packet )
 		endif
 	endif
 
-	var isGeneralAction := array{"*Tirou", "*Guardou", "*Colocou", "*escalpelando", "*Acrescentou", "*Pegou", "*Abriu"};
+	var isGeneralAction := array{"*Tirou", "*Guardou", "*Colocou", "*escalpelando", "*Acrescentou", "*Pegou", "*Abriu", "*Arremessa"};
 	var isSkillAction := array{"*defende o golpe*", "*tratando a si mesmo*", "*arrombando a fechadura*", "*desarmando armadilha*", 
 	"*preparando um extrato*", "*tentando se esconder*", "*CRÍTICO*", "*aparece*", "*Abre a escotilha*", "*Fecha a escotilha*",
 	"*veste o capuz*", "*remove o capuz*", "*Golpeia com o escudo*", "*morde um pedaço de comida*", "*Kaze no Ichigeki*"};
@@ -225,7 +225,6 @@ endfunction
 function handleGhostVoice(source, character, chosen_language, message_txt, byref packet)
     var caster_serial := GetObjProperty(source, "ghostvoice");
     var caster := SystemFindObjectBySerial(caster_serial);
-    SetObjProperty(source, "voice_font", packet.GetInt16(12));
 
     if (message_txt != "..." && message_txt != "")
         var full_message := message_txt;
