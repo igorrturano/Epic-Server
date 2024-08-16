@@ -23,7 +23,7 @@ program SpellScript(params)
 
 	var lvl := cdbl(AP_GetSkill(who, MAGICLORE) * 0.6 / 100);
 
-    if (TemHabilidade(targ, "Aura de corrupcao"))
+    if (TemHabilidade(targ, "Aura Mortis"))
     	SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
         lvl *= 1.34;
     endif

@@ -1,0 +1,49 @@
+
+use uo;
+
+include ":fls_core:packets";
+include ":combat:combat";
+include ":blood:blood";
+include "include/damage";
+include "include/say";
+include ":fls_magery:basicMagery";
+include "include/client";
+include "include/epicConstants";
+
+program doubleattack(who)
+    if ( !EquipmentCheck(who))
+        SendSysMessage(who, "Suas maos precisam estar livres para gesticular os componentes gestuais necessarios para a magia.");
+        FailSpell(who);
+        return 0;
+    endif
+
+    if (GetObjProperty(who, "phylactery"))
+        SendSysMessage(who, "Você já possui um filactério!");
+        return 0;
+    endif
+
+    var sound;
+    who.frozen := 1;
+    var i := 1;
+    while (i <= 3)
+        PerformAction(who, ANIM_CAST_DIR);
+        PrintTextAbove(who, "*Conjurando*");
+        if (i == 1)
+            sound := 583;
+        elseif(i == 2)
+            sound := 584;
+        elseif (i == 3)
+            sound := SFX_SPELL_WEAKEN;
+        endif
+        PlaySoundEffect(who, sound);
+        PlayStationaryEffectHuefx(who.x, who.y, who.z, 0x548F, 8, 40, 0, 0);
+
+        sleep(3);
+        i++;
+    endwhile
+    PlaySoundEffect(who, 0x245);
+    sleep(2);
+    who.frozen := 0;
+    var phylactery := CreateItemInBackpack(who, 0x0240, 1);
+    SetObjProperty(who, "phylactery", who.serial);
+endprogram

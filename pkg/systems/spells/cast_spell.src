@@ -99,7 +99,7 @@ function performPreCastingChecks(mobile, byref spellinfo)
     spellinfo.mana += CInt(spellinfo.mana * GetObjProperty(mobile, "#manapenalty") / 100);
 
     var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth");
-    var battlemageHabs := {"Concentracao Macabra", "Senhor do Medo", "Devocao", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
+    var battlemageHabs := {"Concentracao Macabra", "Aura Mortis", "Dominatio Animae", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
     var tem_hab := 0;
     foreach hab in battlemageHabs
         if (TemHabilidade(mobile, hab))
