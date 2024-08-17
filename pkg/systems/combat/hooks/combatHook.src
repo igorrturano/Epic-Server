@@ -815,6 +815,11 @@ function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
 		return;
 	endif
 
+	if ( !AP_ConsumeVital(attacker, STAMINA, 10) )
+		SendSysMessageEx(attacker, "Você está exausto!");
+		return;
+	endif
+
 	if(attacker.npctemplate)
 		ThrowerNPC(attacker, defender);
 		return;
