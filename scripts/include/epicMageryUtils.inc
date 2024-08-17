@@ -26,6 +26,10 @@ function effectByAltar(altar)
          effect := 0x6d57;
       USHKRAR:
          effect := 0X6C91;
+      CETICOS:
+         effect := 0;
+      HALLEUAD:
+         effect := 0x6CEB; //
    endcase
 
    return effect;
@@ -59,17 +63,21 @@ function graphicByAltar(altar)
    var graphic := 0;
    case (altar)
       ELUITHORTH:
-         graphic := 0xFA20;
+         graphic := 0xA4A9; //0xFA20;
       LORE:
-         graphic := 0xFA25;
+         graphic := 0xA070;//0xFA25;
       VENERATIO:
-         graphic := 0xD1EA;
+         graphic := 0xA066;//0xD1EA;
       BOKK_BHARAZ:
-         graphic := 0xD1EF;
+         graphic := 0x9DF2; // 0xD1EF;
       KAI:
-         graphic := 0xD1F4;
+         graphic := 0xA253;//0xD1F4;
       USHKRAR:
-         graphic := 0xD1F9;
+         graphic := 0xA06B;//0xD1F9;
+      HALLEUAD:
+         graphic := 0xA061;
+      CETICOS:
+         graphic := 0xA262;
       default:
          graphic := 0;
    endcase
