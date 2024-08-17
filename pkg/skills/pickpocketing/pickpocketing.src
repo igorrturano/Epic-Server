@@ -37,6 +37,12 @@ program skill_Stealing(mobile)
 		return 0;
 	endif
 
+	var metamorfose := GetObjProperty(mobile, "metamorfose");
+	if (metamorfose != error)
+		SendSysMessageEx(mobile, "Voce nao pode roubar enquanto estiver metamorfoseado.", SSM_FAIL);
+		return 0;
+	endif
+
 	SendSysMessageEx(mobile, "Selecione que pessoa ou item voce deseja roubar.", SSM_REQUEST);
 	var targ := Target(mobile);
 	var difbonus := 0;

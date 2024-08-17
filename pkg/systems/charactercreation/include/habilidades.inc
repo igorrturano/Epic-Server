@@ -31,11 +31,11 @@ function TemRequisito(who, habilidade, msg := 1)
 				endif
 				return 0;
 			endif
-        elseif (req["povo"]) // Adiciona busca por povos
-            req["povo"] := "";
-            if (!((chardata).povo in (req)))
+        elseif (req["cultura"]) // Adiciona busca por culturas
+            req["cultura"] := "";
+            if (!((chardata).culture in (req)))
 				if (msg == 1)
-					SendSysMessageEx(who, "Voce nao pertence ao povo: " + req, SSM_FAIL);
+					SendSysMessageEx(who, "Voce nao pertence a cultura: " + req, SSM_FAIL);
 				endif
 				return 0;
 			endif
@@ -366,6 +366,7 @@ function comprarHabilidade(who, item, nv:=-1)
 	var cultura := chardata.culture;
 	var raca := chardata.raca;
 	var religiao := chardata.religion;
+	var magia := chardata.magia;
 	var habs := GetObjProperty(who, "buyhab");
 	if (habs[0] == error)
 		habs[0] := 1;
@@ -376,7 +377,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		myhabs := dictionary;
 	endif
 	//SendSysMessage(who, GetObjProperty(who, "chardata").classe +" "+ GetObjProperty(who, "chardata").povo + " " + nivel);
-	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.povo, nivel);
+	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
 
 	//var possiveis := HabilidadesPorNivel(who, classe, nivel);
 	var possiveisfaccao := HabilidadesPorNivelFaccao(who, faccao, nivel); //facção
@@ -494,6 +495,9 @@ function comprarHabilidade(who, item, nv:=-1)
 			damage_effect.+cold_arrow := 0;
 			damage_effect.+energy_arrow := 0;
 			SetObjProperty(who, "#shooting_effects", damage_effect);
+		elseif(escolhida == "Gwaenedh" && magia != "Arqueiro Arcano")
+			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;

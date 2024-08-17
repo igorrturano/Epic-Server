@@ -24,6 +24,8 @@ include "include/say";
 include "include/damage";
 include ":tn:npcutil";
 include ":taming:taming";
+include "include/epicCombatUtils";
+include ":commands:possess";
 
 //include ":spawnnet:spawnnet";
 //include ":spawnregion:spawn";
@@ -127,6 +129,27 @@ program core_npcDeath(params)
 		PlayMovingEffect( corpse, necro, 14202, 5, 0,  0 );
 		PlaySoundEffect(necro, 383);
 	endif*/
+
+	var pilot := GetObjProperty(corpse, "golem_maker");
+	if (pilot)
+		var who := SystemFindObjectBySerial(pilot);
+        EraseObjProperty(who, "pilotando");
+        leaveGolem(who);
+		sleep(1);
+        unpossess(who);
+		printtextabove(corpse, "*EJETAR*");
+        who.concealed := 0;
+		sleep(1);
+		PushBackEX(who, 3, 300);
+		printtextabove(corpse, "*Iniciar auto destruição*");
+		var i := 1;
+		while (i <= 3)
+			sleep(1);
+			printtextabove(corpse, Cstr(i));
+			i++;
+		endwhile
+		Run_Script(":spells:sangria/fireball", {corpse, corpse});
+    endif
 
     if (GetObjProperty(corpse, "soulharvest"))
         var shamanserial := getobjProperty(corpse, "soulharvest");
@@ -434,4 +457,40 @@ function CopyProps(origin, destiny)
 	foreach prop in propnames
 		SetObjPRoperty(destiny, prop, GetObjProperty(origin, prop));
 	endforeach
+endfunction
+
+function PushBackEX(who, dist, delay, invert := 0)
+   var mod := GetModByFacing(who.facing);
+	var x := mod[1];
+	var y := mod[2];
+
+	if (!invert)
+		x := x * -1;
+		y := y * -1;
+	endif
+
+   var finalx := who.x + (dist*x);
+   var finaly := who.y + (dist*y);
+   var world_z := GetStandingHeight( finalx, finaly, who.z-15, who.realm );
+   var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION, MOVEOBJECT_NORMAL);   
+   for i:= 1 to dist
+		var finalx := (who.x + x);
+		var finaly := (who.y + y);
+		if (!CheckLosAt(who, finalx, finaly, who.z))
+			return 0;
+		endif
+      var world_z := GetStandingHeight( who.x, who.y, who.z, who.realm );
+      if (world_z.z > who.z)
+         return 0;
+      endif
+
+		var err := MoveObjectToLocation( who, finalx, finaly, who.z, who.realm, force );
+		if (err == error)
+		//	PrintText(who, "*bate no obstaculo*");
+			return 0;
+		endif
+		sleepms(delay);
+	endfor
+
+   return 1;
 endfunction
