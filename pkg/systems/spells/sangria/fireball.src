@@ -35,10 +35,6 @@ program spell_fireball(params)
 	var dist := Distance(caster, cast_on);
     var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
-    if (TemHabilidade(caster, "Tirothan"))
-        dist_allowed := dist_allowed + (mlore * 2);
-    endif
-
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
         return 0;
