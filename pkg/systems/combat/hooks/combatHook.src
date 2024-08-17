@@ -105,6 +105,8 @@ exported function Attack(attacker, defender)
 		return 1;
 	elseif(!arcane_shooting(attacker, defender))
 		return 1;
+	// elseif ( !throwCheckCombatHook(attacker, defender) )
+	// 	return 1;
 	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
 	//	return 1;
 	endif
