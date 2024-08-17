@@ -186,7 +186,7 @@ exported function handleUCOutgoing( character, byref packet )
 		endif
 
 		if (GetObjProperty(source, "ghostvoice"))
-			return handleGhostVoice(source, character, chosen_language, message_txt, packet);
+			return handleGhostVoice(source, message_txt, packet);
 		endif
 
 		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*" || character.cmdlevel >= 1 )
@@ -222,20 +222,9 @@ exported function handleUCOrequest( character, byref packet )
 	return 0;
 endfunction
 
-function handleGhostVoice(source, character, chosen_language, message_txt, byref packet)
-    var caster_serial := GetObjProperty(source, "ghostvoice");
-    var caster := SystemFindObjectBySerial(caster_serial);
+function handleGhostVoice(source, message_txt, byref packet)
+	packet.SetUnicodeString(48, message_txt, 1);
 
-    if (message_txt != "..." && message_txt != "")
-        var full_message := message_txt;
-        
-        if (!TemHabilidade(caster, "Valdruk"))
-            full_message := "[" + chosen_language + "] " + message_txt;
-        endif
-
-        packet.SetUnicodeString(48, full_message, 1);
-    endif
-    
     EraseObjProperty(source, "ghostvoice");
     return 0;
 endfunction
