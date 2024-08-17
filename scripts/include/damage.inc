@@ -605,6 +605,10 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 		SetObjProperty( defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + totaldmg));
 	endif
 
+	if (defender.frozen)
+		defender.frozen := 0;
+	endif
+
 	return totaldmg;
 
 endfunction

@@ -30,7 +30,7 @@ program SpellScript(params)
 	endif
 
 	var frase := RequestGump(who, "Escreva a frase");
-	var result := PrintTextAbove(targ, "[" + chosen_language + "] "+frase, _DEFAULT_TEXT_FONT, Cint(color));
+	var result := PrintTextAbove(targ, "[" + chosen_language + "] "+frase, _DEFAULT_TEXT_FONT, targ.last_textcolor);
 	
 	return 1;
 endprogram
