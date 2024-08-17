@@ -126,7 +126,9 @@ function distanceAllowedForSpells(who, mlore, school)
    if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
       dist_allowed := dist_allowed + (mlore * 2);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
-      dist_allowed := dist_allowed + (mlore * 2); 
+      dist_allowed := dist_allowed + (mlore * 2);
+   elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
+      dist_allowed := dist_allowed + (mlore * 2);
    endif
 
    return dist_allowed;
