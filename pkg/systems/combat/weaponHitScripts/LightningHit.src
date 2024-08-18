@@ -15,10 +15,13 @@ program HitScript(params)
 	params := 0; // Not needed anymore.
 	
 	// Makes the defender emit static-electricity.
-	PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x-1, defender.y, defender.z+15, GFX_ENERGY, 5, 25);
-	PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x+1, defender.y, defender.z+15, GFX_ENERGY, 5, 25);
-	PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y+1, defender.z+15, GFX_ENERGY, 5, 25);
-	PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y-1, defender.z+15, GFX_ENERGY, 5, 25);
+	// PlayMovingEffectXYZHued(attacker, defender, GFX_ENERGY, 5, 1, 1, RAIO, 0);
+	PlayObjectCenteredEffectEx(defender, GFX_ENERGY, 7, 16, RAIO);
+
+	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x-1, defender.y, defender.z+15, GFX_ENERGY, 5, 25);
+	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x+1, defender.y, defender.z+15, GFX_ENERGY, 5, 25);
+	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y+1, defender.z+15, GFX_ENERGY, 5, 25);
+	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y-1, defender.z+15, GFX_ENERGY, 5, 25);
 	PlaySoundEffect(defender, SFX_LIGHTNING);
 	
 	//ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_ENERGY);

@@ -32,9 +32,9 @@ enum RELIGIAO
 endenum
 
 enum CORES_ELEMENTAIS
-    FOGO := 2481,
-    GELO := 2892,
-    RAIO := 2343
+    FOGO := 2480,
+    GELO := 2891,
+    RAIO := 2342
 endenum
 
 enum GAME_MODE
