@@ -34,11 +34,6 @@ program skill_Stealth( who )
 	var skill := AP_GetSkill(who, SNEAK);
 	var skillTested := SNEAK;
 
-	if(getobjproperty(who, "metamorfose") != error)
-		skill := AP_GetSkill(who, MAGICLORE);
-		skillTested := MAGICLORE;
-	endif
-
 	if (temHabilidade(who, "Camuflagem"))
 		skill := AP_GetSkill(who, SURVIVAL);
 		if (skill < 50)

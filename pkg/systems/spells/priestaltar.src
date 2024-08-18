@@ -15,9 +15,19 @@ include "include/epicMageryUtils";
 const SPELL_BTN := 200;
 
 program orderSpells(who, item)
-   var magia := GetObjProperty(who, "chardata").magia;
-   var religiao := GetObjProperty(who, "chardata").religion;
+   var chardata := GetObjProperty(who, "chardata");
+   var magia := chardata.magia;
+   var religiao := chardata.religion;
    var altar := altarByObjtype(who, item);
+   var cultura := chardata.culture;
+   var classe := chardata.classe;
+
+   if (altar == LORE && cultura == ALURIEL && !TemHabilidade(who, "Gwaenedh") && classe == SABIO)
+      if (ArcaneArcherDevotion(who))
+         playAltarAnimations(who, item);
+         return;
+      endif
+   endif
 
    if (magia != "Sacerdote")
       if (religiao == altar && !GetCooldown(who, "religion_bless"))
@@ -167,19 +177,13 @@ function RemoveUsedSpells(who, byref priest_list, byref available_slots)
 endfunction
 
 function ArcaneArcherDevotion(who)
-   if (religion == LORE && culture == ALURIEL && magia == "spellcaster")
-      var chardata := GetObjProperty(who, "chardata");
-      var religion := chardata.religion;
-      var culture := chardata.culture;
-      var magia := chardata.magia;
-      var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
-      if (yes)
-         chardata.magia := "Arqueiro Arcano";
-         SetObjProperty(who, "chardata", chardata);
-         SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
-         return 1;
-      endif
+   var chardata := GetObjProperty(who, "chardata");
+   var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
+   if (yes)
+      chardata.magia := "Arqueiro Arcano";
+      SetObjProperty(who, "chardata", chardata);
+      SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
+      return 1;
    endif
-
    return 0;
 endfunction
