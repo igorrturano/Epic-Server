@@ -39,20 +39,22 @@ function altarByObjtype(who, altar)
    var objtype := altar.objtype;
    var religion := "";
    case (objtype)
-      0xFA67:
+      0xA4A8: //0xFA67
          religion := ELUITHORTH;
-      0xFA68:
+      0xA06F: //0xFA68
          religion := LORE;
-      0xFA63:
+      0xA065: // 0xFA63
          religion := VENERATIO;
-      0xFA64:
+      0x9E81: // 0xFA64
          religion := BOKK_BHARAZ;
-      0xFA65:
+      0xA252: //0xFA65
          religion := KAI;
-      0xFA66:
+      0xA06A: // 0xFA66
          religion := USHKRAR;
-      default:
+      0xA261:
          religion := CETICOS;
+      0xA060:
+         religion := HALLEUAD;
    endcase
 
    return religion;
@@ -85,7 +87,7 @@ function graphicByAltar(altar)
 endfunction
 
 function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
-   if (targ != 0)
+   if (targ == 0)
       targ := who;
    endif
 
