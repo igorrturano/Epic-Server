@@ -425,9 +425,9 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		endif
 	endif
 
-	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(defender, HITS) <= AP_GetSkill(who, MAGICLORE))
+	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(who, HITS) <= (AP_GetSkill(who, MAGICLORE) / 2))
 		if (GetObjProperty(who, "metamorfose") != error)
-			other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
+			other := other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
 			PrintText(who, "*enfurecido*");
 		endif
 	endif
@@ -440,7 +440,6 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		if (temHabilidade(who, "Furia Primitiva"))
 			if (GetObjProperty(who, "metamorfose") != error)
 				other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
-				PrintText(who, "*enfurecido*");
 			endif
 		endif
 		if (GetCooldown(who, "FuriaPrimordial"))

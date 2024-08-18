@@ -87,7 +87,7 @@ function graphicByAltar(altar)
 endfunction
 
 function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
-   if (targ != 0)
+   if (targ == 0)
       targ := who;
    endif
 

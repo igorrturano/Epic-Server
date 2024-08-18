@@ -124,7 +124,7 @@ function Transforma(who, animal, snd, graphic,namepoly)
 	PerformAction(who, ANIM_CAST_AREA);
 
 	var npc := CreateNpcFromTemplate(animal, who.x,  who.y, who.z, 0, who.realm);
-
+	who.frozen := 1;
 	PrintText(who, "*transformando-se*");
 	if (npc)
 		//detach();
@@ -158,6 +158,7 @@ function Transforma(who, animal, snd, graphic,namepoly)
         //endif
 		who.color := polymorphColor;
 	endif
+	who.frozen := 0;
 
 	// Alterado por Edmond
 	//print("name: " + namepoly);
