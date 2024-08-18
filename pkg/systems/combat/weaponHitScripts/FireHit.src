@@ -13,8 +13,8 @@ program HitScript(params)
 	//var basedamage	:= params[5];
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
-	
-	PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+
+	PlayObjectCenteredEffectEx(defender, GFX_EXPLODE_1, 7, 16, FOGO);
 	PlaySoundEffect(defender, SFX_EXPLOSION_11);
 	
 	//ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_FIRE, attacker);
