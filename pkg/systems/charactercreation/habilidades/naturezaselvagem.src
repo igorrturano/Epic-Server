@@ -27,8 +27,10 @@ program SpellScript(params)
     PerformAction(who, ANIM_CAST_AREA);
     foreach mobile in allMobiles
         PlayStationaryEffect(mobile.x, mobile.y, mobile.z-5, 0X6D01 , 7, 40, 0, mobile.realm);
+        SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);
         TS_StartTimer(mobile, "paralysis", duration);
-        sleepms(20);
+        sleep(5);
+        SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
         TS_StartTimer(mobile, "bleed", AP_GetSkill(who, MAGICLORE) / 4);
         sleepms(20);
     endforeach

@@ -404,12 +404,34 @@ function comprarHabilidade(who, item, nv:=-1)
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
+
         if (escolhida == "Visao verdadeira" && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
             SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
             return 0;
         endif
+
 		if (escolhida == "Aura Mortis" && religiao != VENERATIO && cultura != AIGLANA)
 			SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
+
+		if(escolhida == "Elo Natural" && cultura == HAROLOTH)
+            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
+            return 0;
+		endif
+
+		if(escolhida == "Valm Oloth" && cultura != HAROLOTH && religiao != ELUITHORTH && who.graphic != 1830)
+			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
+
+		if(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
+			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
+
+		if(escolhida == "Gwaenedh" && magia != "Arqueiro Arcano")
+			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
 
@@ -480,24 +502,12 @@ function comprarHabilidade(who, item, nv:=-1)
             who.carrying_capacity_mod := 50;
         elseif(escolhida == "Bolsa Infinita")
             who.carrying_capacity_mod := 120;
-		elseif(escolhida == "Elo Natural" && cultura == HAROLOTH)
-            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
-            return 0;
-		elseif(escolhida == "Valm Oloth" && cultura != HAROLOTH && religiao != ELUITHORTH && who.graphic != 1830)
-			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
-			return 0;
-		elseif(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
-			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
-			return 0;
 		elseif(escolhida == "Ainalaith")
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;
 			damage_effect.+cold_arrow := 0;
 			damage_effect.+energy_arrow := 0;
 			SetObjProperty(who, "#shooting_effects", damage_effect);
-		elseif(escolhida == "Gwaenedh" && magia != "Arqueiro Arcano")
-			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
-			return 0;
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;
