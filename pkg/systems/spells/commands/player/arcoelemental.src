@@ -17,20 +17,20 @@ program meditar(who, text)
     endif
 
     if (Lower(text) == "fogo")
-        SetObjProperty(who, "fire_arrow", 1);
+        SetObjProperty(who.weapon, "fire_arrow", 1);
 
-        EraseObjPRoperty(who, "cold_arrow");
-        EraseObjProperty(who, "energy_arrow");
+        EraseObjPRoperty(who.weapon, "cold_arrow");
+        EraseObjProperty(who.weapon, "energy_arrow");
     elseif(Lower(text) == "gelo")
-        SetObjProperty(who, "cold_arrow", 1);
+        SetObjProperty(who.weapon, "cold_arrow", 1);
 
-        EraseObjProperty(who, "energy_arrow");
-        EraseObjProperty(who, "fire_arrow");
+        EraseObjProperty(who.weapon, "energy_arrow");
+        EraseObjProperty(who.weapon, "fire_arrow");
     elseif(Lower(text) == "raio")
-        SetObjProperty(who, "energy_arrow", 1);
+        SetObjProperty(who.weapon, "energy_arrow", 1);
         
-        EraseObjProperty(who, "fire_arrow");
-        EraseObjPRoperty(who, "cold_arrow");
+        EraseObjProperty(who.weapon, "fire_arrow");
+        EraseObjPRoperty(who.weapon, "cold_arrow");
     endif
 
     who.frozen := 1;

@@ -73,7 +73,7 @@ program vacuodemana(params)
     who.frozen := 1;
     TurnObjectToward(who, targ.x, targ.y);
     sleep(1);
-    PrintTextAbove(who, "Acende o fusível do canhão");
+    PrintTextAbove(who, "*Acende o fusível do canhão*");
     sleep(1);
     PlaySoundEffect(who, 0x667); //cannon_fuse
     sleep(2);

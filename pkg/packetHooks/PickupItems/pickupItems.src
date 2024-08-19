@@ -37,6 +37,12 @@ exported function HandleItemPickup( who, byref packet )
 			//SendSysMessage(who, "Voce precisa de uma mao livre.");
 			SendPacket(who, "2700");
 			return 1;
+		elseif (GetObjProperty(who, "pilotando"))
+			SendSysMessageEx(who, "Você não consegue pegar itens com as mãos de um golem.", SSM_INFO);
+			return 0;
+		elseif (GetObjProperty(who, "metamorfose") != error)
+			SendSysMessageEx(who, "Você não consegue pegar itens enquanto estiver metamorfoseado.", SSM_INFO);
+			return 0;
 		else
 			if (item.movable != 0)
 				var primeira := GetObjProperty(item, "primeiro_dono");

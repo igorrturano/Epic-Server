@@ -770,11 +770,11 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 			arcane_damage := dmg*1.0;
 		endif
 
-		if (GetObjProperty(attacker, "fire_arrow"))
+		if (GetObjProperty(attacker.weapon, "fire_arrow"))
 			start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
-		elseif (GetObjProperty(attacker, "cold_arrow"))
+		elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
 			start_script(":combat:weaponHitScripts/IceHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
-		elseif(GetObjProperty(attacker, "energy_arrow"))
+		elseif(GetObjProperty(attacker.weapon, "energy_arrow"))
 			start_script(":combat:weaponHitScripts/LightningHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
 		endif
 	endif
