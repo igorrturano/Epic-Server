@@ -28,8 +28,8 @@ program cleric(who)
         return 0;
     endif
 
-    setObjproperty(who, "pilotando", 1);
-    if(IsBehind(who, targ.x, targ.y))
+    if(IsBehind(targ, who.x, who.y))
+        setObjproperty(who, "pilotando", 1);
         printtextabove(targ, "*Abre a escotilha*");
         enterGolem(who);
         possess(who, targ);

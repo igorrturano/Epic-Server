@@ -356,11 +356,11 @@ exported function Attack(attacker, defender)
 			endif
 
 			var arrow_type := "";
-			if (GetObjProperty(attacker, "fire_arrow"))
+			if (GetObjProperty(attacker.weapon, "fire_arrow"))
 				arrow_type := "fire_arrow";
-			elseif (GetObjProperty(attacker, "cold_arrow"))
+			elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
 				arrow_type := "cold_arrow";
-			elseif (GetObjProperty(attacker, "energy_arrow"))
+			elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
 				arrow_type := "energy_arrow";
 			endif
 
@@ -372,7 +372,6 @@ exported function Attack(attacker, defender)
 				SetObjProperty(attacker, "#shooting_effects", arrow_effects);
 			endif
 		endif
-
 
 		if (GetCooldown(defender, "FerocidadeEnsanguentada"))
 			// if (IsRaging(defender))
@@ -849,11 +848,11 @@ function arcane_shooting(attacker, defender)
 		return 0;
 	endif
 	var ammo_color := 0;
-	if (GetObjProperty(attacker, "fire_arrow"))
+	if (GetObjProperty(attacker.weapon, "fire_arrow"))
 		ammo_color := FOGO;
-	elseif (GetObjProperty(attacker, "energy_arrow"))
+	elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
 		ammo_color := RAIO;
-	elseif (GetObjProperty(attacker, "cold_arrow"))
+	elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
 		ammo_color := GELO;
 	endif
 

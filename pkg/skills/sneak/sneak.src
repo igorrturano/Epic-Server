@@ -87,39 +87,6 @@ program skill_Hide(who)
 		endwhile
 		SetObjProperty(who, "#hidewait", readgameclock()+5);
 		return;
-	elseif(GetObjPRoperty(who, "metamorfose") != error)
-			while ( 1 )
-			if (isPolski)
-				sleep(2);
-			else
-				sleep(3);
-			endif
-
-			if ( !CanHide(who, orig_x, orig_y) )
-				break;
-			endif
-			var check := SkillCheck(who, MAGERY, -1);
-			var diff := 0;
-
-			var semfalha := AP_GetSkill(who, MAGERY);
-
-			if( check > diff )
-				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
-				who.hidden := 1;
-				var a := start_script(":sneak:stealthmode", array{who});
-				//sendsysmessage(who, " "+ a);
-				EraseObjProperty(who, "#steathsteps");
-				break;
-			elseif (check >= -25)
-				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
-				who.hidden := 0;
-			elseif (semfalha <= 79) // Falha Cr�tica
-				PrintText(who, "*tentando se esconder*");
-			endif
-		endwhile
-		SetObjProperty(who, "#hidewait", readgameclock()+5);
-		return;
-
 	elseif (temHabilidade(who, "Valm Oloth") && InDarkness(who))
 		while ( 1 )
 			if (isPolski)
@@ -276,10 +243,6 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 	endif
 
 	if (temHabilidade(who, "Valm Oloth") && InDarkness(who))
-		var skill := AP_GetSkill(who, MAGICLORE);
-	endif
-
-	if (getobjproperty(who, "metamorfose") != error)
 		var skill := AP_GetSkill(who, MAGICLORE);
 	endif
 
