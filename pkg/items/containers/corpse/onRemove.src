@@ -16,6 +16,12 @@ program onRemove(character, container, item, item_amount, move_type)
 		else
 			PrintText(character, "*Pegou "+ item.desc +" do "+ container.desc +"*", 41);
 		endif
+	elseif (GetObjProperty(character, "pilotando"))
+		SendSysMessageEx(character, "Você não pode pegar itens enquanto estiver pilotando um golem.", SSM_INFO);
+		return 0;
+	elseif (GetObjProperty(character, "metamorfose") != error)
+		SendSysMessageEx(character, "Você não pode pegar itens enquanto estiver metamorfoseado.", SSM_INFO);
+		return 0;
 	endif
 
 var primeira := GetObjProperty(item, "primeiro_dono");
