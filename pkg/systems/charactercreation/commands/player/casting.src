@@ -1,0 +1,85 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_magery:spells";
+include "include/damage";
+include "include/shapes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/say"; 
+include ":taming:taming";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+program spell_fireball(params)
+    var who := params[1];
+    var targ := TargetCoordinates(who);
+    var info := params[3];
+    var spell := params[4];
+    var spell_circle := spell.Circle;
+    var spell_school := spell.School;
+
+    params := 0; // No longer needed
+
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);   
+    var range := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var dist_allowed := distanceAllowedForSpells(who, mlore, spell_school);
+
+    if (TemHabilidade(who, "Tirothan"))
+        dist_allowed := dist_allowed + (mlore * 2);
+    endif
+
+    var dist := Distance(who, targ);
+    if (dist > dist_allowed)
+        SendSysMessage(who, "The target is too far away");
+        return 0;
+    endif
+
+    var skill := Cint(AP_GetSkill(who, "Magery"));
+    var fireballArray := array{};
+    Set_Critical(1);
+
+    var i;
+    var coords := GetCoordsInSquare(targ.x, targ.y, range);
+
+    foreach coord in coords
+        fireballArray.append(CreateItemAtLocation(coord.x, coord.y , targ.z, 0x373A, 1, targ.realm));
+		sleepms(5);
+	endforeach
+
+    SendSysMessage(who, "Cast Fireball here? (Y/N)");
+    if (!YesNo(who, "Cast Fireball?"))
+        foreach item in fireballArray
+            DestroyItem(item);
+        endforeach
+        SendSysMessage(who, "Spell cancelled.", color := 33);
+        return 0;
+    endif
+
+    foreach item in fireballArray
+        DestroyItem(item);
+    endforeach
+
+    Set_Critical(0);
+
+    PlayMovingEffect(who, targ, GFX_LARGE_FIREBALL, 10, 10, 1);
+    PlaySoundEffect(targ, 0x208);
+
+    var allMobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, range, targ.realm);
+    foreach mobile in allMobiles
+        if (mobile != who)
+            var dmg := epicSpellDamageRoll(who, spell_circle);
+            dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
+
+            if (Getcooldown(mobile, "spellthief"))
+                DamageFLS(who, cint(dmg), DMG_FIRE, who, "fireball");
+            else
+                DamageFLS(mobile, cint(dmg), DMG_FIRE, who, "fireball");
+            endif
+        endif
+        sleepms(20);
+    endforeach
+
+    return 1;
+endprogram
