@@ -11,7 +11,7 @@ include ":gumps:yesNo";
 include ":tn:characters";
 include "include/say";
 
-  var skilllist := array{"Anatomy", "Alchemy", "Magic_Lore", "Meditation",   "AnimalLore", "ItemLore", "Survival", "AnimalTaming", "Cartography", "DetectingHidden", "Healing", "ResistingSpells", "Cooking", "Musicianship",
+  var skilllistGump := array{"Anatomy", "Alchemy", "Magic_Lore", "Meditation",   "AnimalLore", "ItemLore", "Survival", "AnimalTaming", "Cartography", "DetectingHidden", "Healing", "ResistingSpells", "Cooking", "Musicianship",
 "Hiding", "Stealth", "Lockpicking", "RemoveTrap", "Poisoning", "Stealing",  "Carpentry", "Blacksmithy", "Tailoring", "Tinkering", "Skinning",
 "Fencing", "Archery",
 "Swordsmanship", "MaceFighting", "Wrestling", "Parry", "Axe", "PoleArms", "Staff", "Tactics", "Lumberjacking", "Mining",
@@ -38,8 +38,8 @@ function SelectSkills(who, nivel, value)
   var i;
   GFSetRadioGroup(chargump, 1);
 
-  for (  i :=  1; i <= skilllist.size(); i := i + 1)
-      var skillAux := skilllist[i];
+  for (  i :=  1; i <= skilllistGump.size(); i := i + 1)
+      var skillAux := skilllistGump[i];
       if (skillAux == "ItemLore")
 	skillAux := "ArmsLore";
       elseif ( skillAux == "Survival")
@@ -53,7 +53,7 @@ function SelectSkills(who, nivel, value)
 	stat := "---";
       endif
       var nstat := stat[1]+stat[2]+stat[3];
-      GFTextLine(chargump, x, y, 1153, skilllist[i] + " [" + lower(nstat)+"]");
+      GFTextLine(chargump, x, y, 1153, skilllistGump[i] + " [" + lower(nstat)+"]");
       GFRadioButton(chargump, x-20, y+3, 2360, 2361, 0, i);
 
       y := y + 15;
@@ -79,7 +79,7 @@ function SelectSkills(who, nivel, value)
      endforeach
   endif
 
-  var selectedskill := skilllist[selected];
+  var selectedskill := skilllistGump[selected];
   SendSysMessageEx(who, "Voce escolheu para " + nivel + " a skill: " + selectedskill + " ", SSM_INFO );
 
     if (selectedskill == "Survival")
@@ -93,7 +93,7 @@ function SelectSkills(who, nivel, value)
     endif
     AP_SetTrueSkill(who, selectedskill, value);
 
-    skilllist.erase(selected);
+    skilllistGump.erase(selected);
 
 endfunction
 

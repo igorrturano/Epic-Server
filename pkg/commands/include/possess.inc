@@ -8,6 +8,7 @@ include ":datafile:datafile";
 include ":attributes:attributes";
 include ":attributes:stats";
 include ":gumps:requestGump";
+include ":tn:equipment";
 
 function possess (me, npc)
 	if (GetObjProperty (me, "lastpossessedserial"))
@@ -242,22 +243,4 @@ function clonar(newlook, oldlook)
 	endif
 
 	return 1;
-endfunction
-
-function EnumeratePhysicalItems(mobile)
-	var EquipList := array;
-
-	var SkipLayers := array{11, 16, 21, 25};
-	var i;
-
-	for (i:=0; i<=25; i:=i+1)
-		if (!(i in SkipLayers))
-			var layer := GetEquipmentByLayer(mobile, i);
-			if (layer)
-				EquipList.append(layer);
-			endif
-		endif
-	endfor
-
-	return EquipList;
 endfunction
