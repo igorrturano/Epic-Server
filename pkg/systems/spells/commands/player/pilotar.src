@@ -15,8 +15,9 @@ program cleric(who)
         EraseObjProperty(who, "pilotando");
         leaveGolem(who);
         printtextabove(who, "*Fecha a escotilha*");
-        unpossess(who);
+        unpossess(who, 1);
         who.concealed := 0;
+
         return 0;
     endif
 
@@ -31,6 +32,8 @@ program cleric(who)
     if(IsBehind(targ, who.x, who.y))
         setObjproperty(who, "pilotando", 1);
         printtextabove(targ, "*Abre a escotilha*");
+        UnequipAll(who);
+        sleep(2);
         enterGolem(who);
         possess(who, targ);
     else

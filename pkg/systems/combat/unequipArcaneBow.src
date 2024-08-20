@@ -1,0 +1,12 @@
+use uo;
+use os;
+include "include/say";
+include ":tn:cooldown";
+
+program unequipweapon(who, item)
+    sleep(5);
+    Start_Script("destroythis", item);
+    SetCooldown(who, "arcane_bow", 0);
+    SendSysMessageEx(who, "Seu arco se dissipou!", SSM_FAIL);
+    return 0;
+endprogram
