@@ -55,7 +55,8 @@ program doubleattack(who)
     SetCooldown(who, "arcane_bow", duration);
 
     sleep(duration);
-
-    DestroyItem(arcane_bow);
-    SendSysMessageEx(who, "Seu arco se dissipou!", SSM_FAIL);
+    if (arcane_bow)
+        DestroyItem(arcane_bow);
+        SendSysMessageEx(who, "Seu arco se dissipou!", SSM_FAIL);
+    endif
 endprogram

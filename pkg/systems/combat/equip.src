@@ -81,6 +81,11 @@ program equipweapon(who, item)
 			return 0;
 		endif
 	endif
+
+	if (GetObjProperty(who, "pilotando"))
+		SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
+		return 0;
+	endif
 	
 	if (TemHabilidade(who, "Fúria"))
 			if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee || item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 || item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 || item.objtype == 0x13BE || item.objtype == 0x13C3 || item.objtype == 0x13BF || item.objtype == 0xFFE6 || item.objtype == 0x13C4 || item.objtype == 0x1415 || item.objtype == 0x1416 || item.objtype == 0x1410 || item.objtype == 0x1417 || item.objtype == 0x1411 || item.objtype == 0x141A || item.objtype == 0x1414 || item.objtype == 0x1418 || item.objtype == 0x1413) 
