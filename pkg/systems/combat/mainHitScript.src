@@ -826,14 +826,6 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
-	if ( GetObjProperty(attacker, "ataquedeimpulso"))
-		printtext(attacker, "*Kaze no Ichigeki*");
-		attacker.attack_once(defender);
-		PlaySoundEffect(attacker, 0x51f);
-		sleepms(20);
-		EraseObjProperty(attacker, "ataquedeimpulso");
-	endif
-
 	return 1;
 endfunction
 

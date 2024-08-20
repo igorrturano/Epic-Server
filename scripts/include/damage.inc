@@ -599,8 +599,7 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	if (source)
 		SetScriptController(source);
 	endif
-
-	if (cint(GetObjProperty(defender, "#vinganca")) > 1 )
+	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty( defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + totaldmg));
 	endif
 
