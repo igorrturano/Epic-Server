@@ -136,7 +136,6 @@ program core_npcDeath(params)
         EraseObjProperty(who, "pilotando");
         leaveGolem(who);
 		sleep(1);
-        unpossess(who);
 		printtextabove(corpse, "*EJETAR*");
         who.concealed := 0;
 		sleep(1);
@@ -148,6 +147,7 @@ program core_npcDeath(params)
 			printtextabove(corpse, Cstr(i));
 			i++;
 		endwhile
+		AP_SetTrueSkill(corpse, MAGICLORE, 100);
 		Run_Script(":spells:sangria/fireball", {corpse, corpse});
     endif
 

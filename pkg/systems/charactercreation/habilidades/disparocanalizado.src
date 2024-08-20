@@ -15,9 +15,9 @@ program meditar(who)
     endif
     PrintTextAbove(who, "*Disparo Canalizando*");
 
-    var isFireArrow := GetObjProperty(who, "fire_arrow");
-    var isColdArrow := GetObjProperty(who, "cold_arrow");
-    var isEnergyArrow := GetObjProperty(who, "energy_arrow");
+    var isFireArrow := GetObjProperty(who.weapon, "fire_arrow");
+    var isColdArrow := GetObjProperty(who.weapon, "cold_arrow");
+    var isEnergyArrow := GetObjProperty(who.weapon, "energy_arrow");
     var mlore := cint(AP_GetSkill(who, MAGICLORE)/5);
     var targ;
 
