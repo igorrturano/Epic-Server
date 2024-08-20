@@ -371,7 +371,6 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	endif
 	return 1;
 endfunction
-
 function HealCorpse(mobile, targ, aux_skill, restauraDP)
 	var name := targ.desc;
 	name["corpo de "] := "";
@@ -415,7 +414,7 @@ function HealNpcCorpse(mobile, targ, aux_skill)
 	name["corpo de "] := "";
 	PrintText(mobile, "*tentando estabilizar o paciente*");
 	if ( !Wait(mobile, 10) )
-		SendSysMessage(mobile, "Voce interrompeu a cura.");
+		SendSysMessage(mobile, "Você interrompeu a cura.");
 		return 0;
 	endif
 	var diff := CInt(100 - CInt(aux_skill/1.2));
