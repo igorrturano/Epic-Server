@@ -71,27 +71,27 @@ endfunction
  * Returns an array of item references.
  *
  */
-function EnumeratePhysicalItems(mobile)
-	var equip_list := array{};
+// function EnumeratePhysicalItems(mobile)
+// 	var equip_list := array{};
 
-	// Hair, beard, backpack, mount
-	var skip_layers := array{11, 16, 21, 25};
-	var i;
+// 	// Hair, beard, backpack, mount
+// 	var skip_layers := array{11, 16, 21, 25};
+// 	var i;
 
-	for ( i:=0; i<=25; i:=i+1 )
-		if ( i in skip_layers ) 
-			continue;
-		else
-			var item := GetEquipmentByLayer(mobile, i);
-			if ( item )
-				equip_list.Append(item);
-			endif
-		endif
-		SleepMS(2);
-	endfor
+// 	for ( i:=0; i<=25; i:=i+1 )
+// 		if ( i in skip_layers ) 
+// 			continue;
+// 		else
+// 			var item := GetEquipmentByLayer(mobile, i);
+// 			if ( item )
+// 				equip_list.Append(item);
+// 			endif
+// 		endif
+// 		SleepMS(2);
+// 	endfor
 
-	return equip_list;
-endfunction
+// 	return equip_list;
+// endfunction
 
 /*
  * GetIsAType(object, flags)
