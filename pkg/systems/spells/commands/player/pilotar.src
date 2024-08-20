@@ -4,6 +4,7 @@ include ":charactercreation:habilidades";
 include ":commands:possess";
 include "include/epicCombatUtils";
 include "include/facings";
+include ":tn:equipment";
 
 program cleric(who)
 
@@ -45,7 +46,6 @@ program cleric(who)
 endprogram
 
 function enterGolem(who)
-    //seta os mods
     var skill_a := Ap_GetSkill(who, METALWORKING) * 0.8;
     var skill_d := Ap_GetSkill(who, METALWORKING) * 0.6;
     var dicedmg := "1d12";

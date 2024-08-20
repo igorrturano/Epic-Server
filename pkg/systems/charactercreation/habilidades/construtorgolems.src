@@ -52,11 +52,13 @@ program summonSkeletaSteed(params)
         if (item.objtype == 0x6311) // mithril
             if (!SubtractAmount(item, 100));
                 SendSysMessageEx(who, "Voce precisa de 100 minerios mithril.", SSM_FAIL);
+                return 0;
             endif
         endif
         if (item.objtype == 0xee45)  // courocurtido
             if (!SubtractAmount(item, 50));
                 SendSysMessageEx(who, "Voce precisa de 50 couros curtidos.", SSM_FAIL);
+                return 0;
             endif
         endif
     endforeach
