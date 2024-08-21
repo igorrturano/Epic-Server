@@ -31,15 +31,9 @@ program resinaFOGO(who, resina)
 	
 	if (targ.isA(POLCLASS_WEAPON))
 
-		if(if(if(if(checkForElementalWeapons(who, targ))
+		if(checkForElementalWeapons(who, targ))
 	        return 0;
-        endif(who, targ))
-	        return 0;
-        endif(who, targ))
-	return 0;
-endif(who, targ))
-			return 0;
-		endif
+        endif
 
 		var dmg := struct;
 		dmg.+type := DMG_ENERGY;
