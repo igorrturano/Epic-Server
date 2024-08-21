@@ -3,7 +3,7 @@ use cfgfile;
 include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicUtils";
-
+include ":tn:equipment";
 function NivelHabilidade(habilidade, classe)
 
 	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
@@ -329,24 +329,6 @@ function ComprarHabGump(who, habs, habsfac)
 
 endfunction
 
-function EnumeratePhysicalItemsInMobile(mobile)
-	var EquipList := array;
-
-	var SkipLayers := {11, 16, 21, 25};
-	var i;
-
-	for (i:=0; i<=25; i:=i+1)
-		if (!(i in SkipLayers))
-			var layer := GetEquipmentByLayer(mobile, i);
-			if (layer)
-				EquipList.append(layer);
-			endif
-		endif
-	endfor
-
-	return EquipList;
-endfunction
-
 function comprarHabilidade(who, item, nv:=-1)
 	//SendSysMessage(who,"[Interno] Tentando comprar Hab Level "+nv);
 	var itemdesc := ReadConfigFile("::itemdesc");
@@ -485,7 +467,7 @@ function comprarHabilidade(who, item, nv:=-1)
 			who.resist_poison_mod  := who.resist_poison_mod + 25;
 			who.resist_energy_mod  := who.resist_energy_mod + 25;
 		elseif(escolhida == "Aura Mortis" || escolhida == "Dominatio Animae" || escolhida == "Colheita de Almas" || escolhida == "Campeao das Montanhas")
-            var equips := EnumeratePhysicalItemsInMobile(who);
+            var equips := EnumeratePhysicalItems(who);
             //foreach para pegar todos os equips no corpo e remover as penalidades
             foreach equip in equips
                 if ((equip.isa(POLCLASS_ARMOR)) && equip.resist_physical > 0)
