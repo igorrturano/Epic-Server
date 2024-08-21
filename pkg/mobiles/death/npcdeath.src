@@ -133,6 +133,7 @@ program core_npcDeath(params)
 	var pilot := GetObjProperty(corpse, "golem_maker");
 	if (pilot)
 		var who := SystemFindObjectBySerial(pilot);
+		EraseObjProperty(who, "golem_maker");
         EraseObjProperty(who, "pilotando");
         leaveGolem(who);
 		sleep(1);
