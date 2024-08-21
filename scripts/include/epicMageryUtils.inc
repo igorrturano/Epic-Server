@@ -206,3 +206,25 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 
    return duration;
 endfunction
+
+function checkForElementalWeapons(who, targ)
+		var encantada := GetObjProperty(targ, "#elementalweapon");
+		if (encantada != error)
+			if (readgameclock() < encantada.endtime )
+				SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+				return 1;
+			endif
+		endif
+
+		if ( GetCooldown(targ, "blessweapon") > 0 )
+			SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+			return 1;
+		endif
+
+      if (targ.objtype == FIST)
+         SendSysMessageEx(who, "Você não pode encantar suas mãos.", SSM_FAIL);
+         return 1;
+      endif
+
+      return 0;
+endfunction
