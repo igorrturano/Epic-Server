@@ -23,7 +23,7 @@ include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 
-var skillList := array{"Alchemy", "Magic_Lore", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering"};
+var skillList := array{"Alchemy", "Magic_Lore", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering", "Dual_Wield"};
 
 program core_skillWin(who)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log

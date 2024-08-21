@@ -53,6 +53,7 @@ program doubleattack(who)
     EquipItem(who, arcane_bow);
     var duration := Cint(Ap_GetSkill(who, MAGICLORE)/10 * 60 * 3);
     SetCooldown(who, "arcane_bow", duration);
+    SetObjProperty(arcane_bow, "fire_arrow", 1);
 
     sleep(duration);
     if (arcane_bow)
