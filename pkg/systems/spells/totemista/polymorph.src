@@ -105,14 +105,11 @@ endprogram
 
 
 function Transforma(who, animal, snd, graphic,namepoly)
-
-
 	// Alterado por Edmond
 	if (GetObjProperty(who,"charname") == error)
 		SetObjProperty(who,"charname",who.name);
 	endif
 
-	//UnequipAll(who); //Se quiser que desequipe tudo
 	if(temHabilidade(who,"Elo Natural")) //Desequipa armaduras mas deixa as roupas em paz
 		UnequipArmor(who);
 		UnequipWeapons(who);
