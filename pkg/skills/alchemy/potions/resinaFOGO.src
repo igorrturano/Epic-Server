@@ -35,7 +35,6 @@ program resinaFOGO(who, resina)
 	        return 0;
         endif        
 
-
 		var dmg := struct;
 		dmg.+type := DMG_FIRE;
 		dmg.+serial := who.serial;
