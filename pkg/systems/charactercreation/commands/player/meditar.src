@@ -44,7 +44,7 @@ program meditar(who, text)
             EraseObjProperty(who, "#Casting");
 			return 0;
         endif
-        if (!EquipmentCheck(who))
+        if (!EquipmentCheck(who) && who.weapon.objtype != 0xF997) // arcane bow
             SendSysMessage(who, "Suas maos precisam estar livres");
 			return 0;
         endif
