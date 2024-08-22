@@ -37,6 +37,12 @@ program skill_Stealing(mobile)
 		return 0;
 	endif
 
+	var metamorfose := GetObjProperty(mobile, "metamorfose");
+	if (metamorfose != error)
+		SendSysMessageEx(mobile, "Voce nao pode roubar enquanto estiver metamorfoseado.", SSM_FAIL);
+		return 0;
+	endif
+
 	SendSysMessageEx(mobile, "Selecione que pessoa ou item voce deseja roubar.", SSM_REQUEST);
 	var targ := Target(mobile);
 	var difbonus := 0;
@@ -169,7 +175,7 @@ program skill_Stealing(mobile)
 			var check := SkillCheck(mobile, PICKPOCKETING, diff);
 			if ( check > 0 )
 				if (TemHabilidade(targ, "Vínculo Elemental"))
-					if (GetObjProperty(steal, "swordmage") ==  targ.serial)//seta com a arma
+					if (GetObjProperty(steal.weapon, "#elementalweapon"))
 						SendSysMessageEx(mobile, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 						return 1;
 					endif

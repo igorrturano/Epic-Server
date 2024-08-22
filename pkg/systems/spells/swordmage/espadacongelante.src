@@ -9,6 +9,7 @@ include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include "include/damage";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -26,18 +27,9 @@ program SpellScript(params)
 
 	if (targ.isA(POLCLASS_WEAPON))
 
-		var encantada := GetObjProperty(targ, "#elementalweapon");
-		if (encantada != error)
-			if (readgameclock() < encantada.endtime )
-				SendSysMessageEx(who, "Esta arma ja esta com um encantamento.", SSM_FAIL);
-				return 1;
-			endif
-		endif
-
-		if ( GetCooldown(targ, "blessweapon") > 0 )
-			SendSysMessageEx(who, "Esta arma ja esta com um encantamento.", SSM_FAIL);
-			return 1;
-		endif
+		if(checkForElementalWeapons(who, targ))
+	        return 0;
+        endif        
 
 		var dmg := struct;
 		dmg.+type := DMG_COLD;

@@ -42,3 +42,23 @@ function isFireWeapon(item)
 
     return 0;
 endfunction
+
+function leaveGolem(who)
+	EraseObjProperty(who, "skill_a");
+	EraseObjProperty(who, "skill_d");
+	EraseObjProperty(who, "dicedmg");
+
+    var hitsmod := cint(getObjProperty(who, "golemhitsmod"));
+	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
+	var resist := cint(GetObjProperty(who, "resitmod"));
+
+	who.resist_physical_mod := who.resist_physical_mod - resist;
+	who.resist_fire_mod := who.resist_fire_mod - resist;
+	who.resist_cold_mod := who.resist_cold_mod - resist;
+	who.resist_poison_mod := who.resist_poison_mod - resist;
+	who.resist_energy_mod := who.resist_energy_mod - resist;
+
+	EraseObjProperty(who, "polymorphbonus");
+	EraseObjProperty(who, "metamorfose");
+	EraseObjProperty(who, "golemhitsmod");
+endfunction

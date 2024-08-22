@@ -17,6 +17,7 @@ program cast_frostbolt(params)
 	var targ := params[2];
 	var spellinfo := params[3];
 	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
 	params := 0; // No longer needed
 
 	SendSysMessage(caster, "Selecione o alvo.");
@@ -32,38 +33,29 @@ program cast_frostbolt(params)
 
 	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
 	var dist := Distance(caster, targ);
-    var dist_allowed := distanceAllowedForSpells(caster, mlore, EVOCATIUM);
+    var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
     if (dist > dist_allowed)
         SendSysMessage(caster, "O alvo esta muito distante");
         return 0;
     endif
 
-    LaunchProjectile(caster, targ, spell_circle);
+    LaunchProjectile(caster, targ, spell_circle, spell_school);
 endprogram
 
-function LaunchProjectile(caster, targ, spell_circle)
+function LaunchProjectile(caster, targ, spell_circle, spell_school)
     PlaySoundEffect(caster, SFX_AQUARIUM_USE);
     PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
     var dmg := epicSpellDamageRoll(caster, spell_circle);
-    dmg := bonusSpellDamageForSpecialists(caster, dmg, EVOCATIUM);
+    dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
     DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(caster, MAGICLORE)/2.5)))
+		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 
-    if(TemHabilidade(caster, "Estudioso da Sangria"))
-		if (CheckResist(targ, VONTADE, 50, -CInt(AP_GetSkill(caster, MAGICLORE)/2.5)))
-			SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
-			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-
-			return 1;
-		endif
-	else
-		if (CheckResist(targ, VONTADE, 20, -CInt(AP_GetSkill(caster, MAGICLORE)/2.5)))
-			SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
-			SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-
-			return 1;
-		endif
+		return 1;
 	endif
 
     PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 3, 4);

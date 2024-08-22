@@ -762,7 +762,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 	endif
 
 	// Arqueiro arcano
-	if (GetCooldown(attacker, "arcane_bow") )
+	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype == 0xF997)
 		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
 		var arcane_damage := dmg*0.5;
 
@@ -770,11 +770,11 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 			arcane_damage := dmg*1.0;
 		endif
 
-		if (GetObjProperty(attacker, "fire_arrow"))
+		if (GetObjProperty(attacker.weapon, "fire_arrow"))
 			start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
-		elseif (GetObjProperty(attacker, "cold_arrow"))
+		elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
 			start_script(":combat:weaponHitScripts/IceHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
-		elseif(GetObjProperty(attacker, "energy_arrow"))
+		elseif(GetObjProperty(attacker.weapon, "energy_arrow"))
 			start_script(":combat:weaponHitScripts/LightningHit", array{attacker, defender, weapon, armor, basedamage, arcane_damage});
 		endif
 	endif
@@ -826,26 +826,12 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
-	if ( GetObjProperty(attacker, "ataquedeimpulso"))
-		printtext(attacker, "*Kaze no Ichigeki*");
-		attacker.attack_once(defender);
-		PlaySoundEffect(attacker, 0x51f);
-		sleepms(20);
-		EraseObjProperty(attacker, "ataquedeimpulso");
-	endif
-
 	return 1;
 endfunction
 
 function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage, byref rawdamage)
 	var skillUsedForCritical := TACTICS;
-	if(GetObjProperty(attacker, "kit") == "Mago de Combate")
-		skillUsedForCritical := MAGICLORE;
-	elseif(GetObjProperty(attacker, "kit") == "Medico de Combate")
-		skillUsedForCritical := MEDICINE;
-	elseif(temHabilidade(attacker, "Lobo Solitario"))
-		skillUsedForCritical := SURVIVAL;
-	endif
+
 	var autoCritical := 0;
 	if (GetObjProperty(attacker, "#nextcritical"))
 		EraseObjProperty(attacker, "#nextcritical");
@@ -858,26 +844,12 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 		endif
 	endif
 
-	//chance total = prop da arma  (pra bonus magicos) + prop do mob (pra npcs ou magias) + valor no itemdesc
 
 	var skillCriticalBonus;
 	var categoriaDefender := GetObjProperty(defender, "Category");
 
-	if (GetObjProperty(attacker, "kit") == "Mago de Combate")
-		skillCriticalBonus := CInt(AP_GetSkill(attacker, MAGICLORE)/20); //Aplica bonus de magiclore na chance de critico quando é Mago de Combate
-	elseif (GetObjProperty(attacker, "kit") == "Medico de Combate")
-		skillCriticalBonus := CInt(AP_GetSkill(attacker, MEDICINE)/20); //Aplica bonus de medicine na chance de critico quando é Medico de Combate
-	elseif (GetObjProperty(attacker, "kit") == "Ranger")
-	//skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20); Aplica bonus de tactics na chance de critico quando não é nenhum caso específico
-		if(categoriaDefender == "GiantAnimal" || categoriaDefender == "Animal" || categoriaDefender == "EvilAnimal" || categoriaDefender == "Snow" || categoriaDefender == "Mount" || categoriaDefender == "Plantas" || categoriaDefender == "Terathan" || categoriaDefender == "Dragon")
-			skillCriticalBonus := skillCriticalBonus + CInt(AP_GetSkill(attacker, SURVIVAL)/20); //Aplica bonus de Survival se forem criaturas selvagens ou dragões
-		endif
-	else
-		skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20); //Aplica bonus de magiclore na chance de critico quando é Mago de Combate
-	endif
-	if(temHabilidade(attacker, "Lobo Solitario"))
-		skillCriticalBonus :=CInt(AP_GetSkill(attacker, SURVIVAL/20)); // Aplica bonus de survival quando é classe Caçador
-	endif
+	skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20);
+	
 	//critico base da arma, critico extra da CProp da da arma, critico extra do CProp do personagem, critico extra da skill do personagem, critico extra de Habilidade especial do personagem
 	var chance := Cint( Cint(GetObjProperty(weapon, "CriticalChance")) + Cint(GetObjProperty(attacker, "CriticalChance")) + Cint((item_cfg[weapon.objtype]).CriticalChance )) + skillCriticalBonus + Cint(GetObjProperty(attacker, "#CriticalChance"));	//Limpa a CProp de bonus critico para o próximo ataque
 	EraseObjProperty(attacker, "#CriticalChance");
@@ -936,8 +908,6 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 			attacker.attack_once(defender);
 		endif
 	endif
-
-
 
 	var weapon_scripts := array;
 	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
@@ -1443,7 +1413,7 @@ endfunction
 
 function disarmOpponent(attacker, defender)
 	if (TemHabilidade(defender, "Vínculo Elemental"))
-		if (GetObjProperty(defender.weapon, "swordmage") ==  defender.serial)//seta com a arma
+		if (GetObjProperty(defender.weapon, "#elementalweapon"))//seta com a arma
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;
 		endif

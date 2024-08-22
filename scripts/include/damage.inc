@@ -317,8 +317,11 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	var str;
-	str := Cint(AP_GetStat(who, stat));
-
+	if (elem.Throwable)
+		str := Cint(AP_GetStat(who, DEXTERITY)) + Cint(AP_GetStat(who, STRENGTH) / 2);
+	else
+		str := Cint(AP_GetStat(who, stat));
+	endif
 	//Bonus de prop da arma
 	var weapon_bonus_dmg := Cint(GetObjProperty(who.weapon, "dmgbonus")) + Cint(GetObjProperty(who.weapon, "#dmgbonus"));
 
@@ -390,7 +393,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		if (cfg[npctemplate.template].Category == inimigo)
 			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
 		endif
-    elseif (TemHabilidade(who, "Equilibrio Khummardigan"))
+    elseif (TemHabilidade(who, "Exitium Maleficorum"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
@@ -422,9 +425,9 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		endif
 	endif
 
-	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(defender, HITS) <= AP_GetSkill(who, MAGICLORE))
+	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(who, HITS) <= (AP_GetSkill(who, MAGICLORE) / 2))
 		if (GetObjProperty(who, "metamorfose") != error)
-			other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
+			other := other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
 			PrintText(who, "*enfurecido*");
 		endif
 	endif
@@ -437,7 +440,6 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		if (temHabilidade(who, "Furia Primitiva"))
 			if (GetObjProperty(who, "metamorfose") != error)
 				other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
-				PrintText(who, "*enfurecido*");
 			endif
 		endif
 		if (GetCooldown(who, "FuriaPrimordial"))
@@ -597,9 +599,12 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	if (source)
 		SetScriptController(source);
 	endif
-
-	if (cint(GetObjProperty(defender, "#vinganca")) > 1 )
+	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty( defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + totaldmg));
+	endif
+
+	if (defender.frozen)
+		defender.frozen := 0;
 	endif
 
 	return totaldmg;

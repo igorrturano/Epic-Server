@@ -26,6 +26,10 @@ function effectByAltar(altar)
          effect := 0x6d57;
       USHKRAR:
          effect := 0X6C91;
+      CETICOS:
+         effect := 0;
+      HALLEUAD:
+         effect := 0x6CEB; //
    endcase
 
    return effect;
@@ -35,20 +39,22 @@ function altarByObjtype(who, altar)
    var objtype := altar.objtype;
    var religion := "";
    case (objtype)
-      0xFA67:
+      0xA4A8: //0xFA67
          religion := ELUITHORTH;
-      0xFA68:
+      0xA06F: //0xFA68
          religion := LORE;
-      0xFA63:
+      0xA065: // 0xFA63
          religion := VENERATIO;
-      0xFA64:
+      0x9E81: // 0xFA64
          religion := BOKK_BHARAZ;
-      0xFA65:
+      0xA252: //0xFA65
          religion := KAI;
-      0xFA66:
+      0xA06A: // 0xFA66
          religion := USHKRAR;
-      default:
+      0xA261:
          religion := CETICOS;
+      0xA060:
+         religion := HALLEUAD;
    endcase
 
    return religion;
@@ -59,17 +65,21 @@ function graphicByAltar(altar)
    var graphic := 0;
    case (altar)
       ELUITHORTH:
-         graphic := 0xFA20;
+         graphic := 0xA4A9; //0xFA20;
       LORE:
-         graphic := 0xFA25;
+         graphic := 0xA070;//0xFA25;
       VENERATIO:
-         graphic := 0xD1EA;
+         graphic := 0xA066;//0xD1EA;
       BOKK_BHARAZ:
-         graphic := 0xD1EF;
+         graphic := 0x9DF2; // 0xD1EF;
       KAI:
-         graphic := 0xD1F4;
+         graphic := 0xA253;//0xD1F4;
       USHKRAR:
-         graphic := 0xD1F9;
+         graphic := 0xA06B;//0xD1F9;
+      HALLEUAD:
+         graphic := 0xA061;
+      CETICOS:
+         graphic := 0xA262;
       default:
          graphic := 0;
    endcase
@@ -77,7 +87,7 @@ function graphicByAltar(altar)
 endfunction
 
 function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
-   if (targ != 0)
+   if (targ == 0)
       targ := who;
    endif
 
@@ -118,13 +128,15 @@ function distanceAllowedForSpells(who, mlore, school)
    if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
       dist_allowed := dist_allowed + (mlore * 2);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
-      dist_allowed := dist_allowed + (mlore * 2); 
+      dist_allowed := dist_allowed + (mlore * 2);
+   elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
+      dist_allowed := dist_allowed + (mlore * 2);
    endif
 
    return dist_allowed;
 endfunction
 
-function bonusSpellDamageForSpecialists(who, dmg ,school)
+function bonusSpellDamageForSpecialists(who, dmg, school)
    var bonus := 1.2;
 
    if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
@@ -156,4 +168,63 @@ function epicSpellDamageRoll(who, spell_circle)
    dmg := Cint(dmg + int_bonus + mlore);
 
    return dmg;
+endfunction
+
+function handleSilentMagic(who, targ := 0, sound := 0)
+    if (!GetObjProperty(who, "#magiasilenciosa") && sound != 0 && targ != 0)
+        PlaySoundEffect(targ, sound);
+    endif
+
+    SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
+    EraseObjProperty(who, "#magiasilenciosa");
+    return 0;
+endfunction
+
+function handleSpellResistDiffForSpecialists(who, school)
+   var diff := 30;
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+      diff := 70;
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+      diff := 70;
+   elseif (TemHabilidade(who, "Cetro da Morte") && school == KAIJIN)
+		diff := 70;
+   endif
+ 
+   return diff;
+endfunction
+
+function bonusSpellDurationForSpecialists(who, duration, school)
+   var bonus := 1.2;
+
+   if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
+      duration := Cint(duration * bonus);
+   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+      duration := Cint(duration * bonus);
+   elseif(Temhabilidade(who, "Treinamento Druídico") && school == ARADALORE)
+      duration := Cint(duration * bonus);
+   endif
+
+   return duration;
+endfunction
+
+function checkForElementalWeapons(who, targ)
+		var encantada := GetObjProperty(targ, "#elementalweapon");
+		if (encantada != error)
+			if (readgameclock() < encantada.endtime )
+				SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+				return 1;
+			endif
+		endif
+
+		if ( GetCooldown(targ, "blessweapon") > 0 )
+			SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+			return 1;
+		endif
+
+      if (targ.objtype == FIST)
+         SendSysMessageEx(who, "Você não pode encantar suas mãos.", SSM_FAIL);
+         return 1;
+      endif
+
+      return 0;
 endfunction

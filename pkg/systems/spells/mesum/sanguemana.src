@@ -8,6 +8,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":blood:blood";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -30,16 +31,8 @@ program SpellScript(params)
 	endif
 	AP_SetVital(who, MANA, mana);
 	
-    if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(who, 385);
-    endif
+	handleSilentMagic(who, who, 385);
 	SendSysMessageEx(who, "Voce converteu sua energia vital em mana", SSM_INFO);
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
 	
 	return 1;
 endprogram 

@@ -13,6 +13,7 @@ include ":brainAI:npcUtil";
 include ":ghaia:ghaia";
 include ":spells:summon";
 include ":taming:taming";
+include "include/epicMageryUtils";
 
 program summontotem(params)
 
@@ -21,11 +22,7 @@ program summontotem(params)
 	var spellid := params[3];
 	params := 0; // No longer needed
 
-
-	//Efeito da magia
-	if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(targ, SFX_SPELL_HEAL);
-    endif
+	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
 
 	var undead :=   summon(":brainai:simulacro", targ, who);		
 
@@ -35,13 +32,6 @@ program summontotem(params)
 	endif
 
 	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2);
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
-
 	return 1;
 endprogram
 

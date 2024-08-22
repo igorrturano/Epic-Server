@@ -19,6 +19,7 @@ include ":combat:combat";
 include ":ghaia:combatevents";
 include ":faccao:faccao";
 include "include/dungeons";
+include ":tn:equipment";
 
 //include "include/uo_extend";
 
@@ -64,21 +65,3 @@ program command_Strip(who)
 		
 	return 1;
 endprogram
-
-function EnumeratePhysicalItems(mobile)
-	var EquipList := array;
-
-	var SkipLayers := array{11, 16, 21, 25};
-	var i;
-
-	for (i:=0; i<=25; i:=i+1)
-		if (!(i in SkipLayers))
-			var layer := GetEquipmentByLayer(mobile, i);
-			if (layer)
-				EquipList.append(layer);
-			endif
-		endif
-	endfor
-
-	return EquipList;
-endfunction

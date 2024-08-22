@@ -6,7 +6,7 @@ use cfgfile;
 include ":attributes:attributes";
 include ":body:shrink";
 include ":itemutils:itemUtil_ex";
-include ":itemutils:layers";
+include "include/client";
 
 program shrink_textcmd( mobile )
 
@@ -88,7 +88,7 @@ function SaveShrunkenInventory( byref use_on, byref shrunken_npc )
 
 	var items := Array,
 		item := 0;
-	foreach layer in ( { LAYER_HAND1, LAYER_HAND2, LAYER_SHOES, LAYER_PANTS, LAYER_SHIRT, LAYER_HELM, LAYER_GLOVES, LAYER_RING, LAYER_TALISMAN, LAYER_NECK, LAYER_HAIR, LAYER_WAIST, LAYER_CHEST, LAYER_WRIST, LAYER_BEARD, LAYER_TUNIC, LAYER_EARS, LAYER_ARMS, LAYER_CAPE, LAYER_ROBE, LAYER_SKIRT, LAYER_LEGS, LAYER_MOUNT } )
+	foreach layer in ( { LAYER_HAND1, LAYER_HAND2, LAYER_SHOES, LAYER_PANTS, LAYER_SHIRT, LAYER_HELM, LAYER_GLOVES, LAYER_RING, LAYER_UNUSED9, LAYER_NECK, LAYER_HAIR, LAYER_WAIST, LAYER_CHEST, LAYER_WRIST, LAYER_BEARD, LAYER_TUNIC, LAYER_EARS, LAYER_ARMS, LAYER_CAPE, LAYER_ROBE, LAYER_SKIRT, LAYER_LEGS, LAYER_MOUNT } )
 		item := GetEquipmentByLayer( use_on, layer );
 		if( !item.IsA( POLCLASS_ITEM ) )
 			continue;

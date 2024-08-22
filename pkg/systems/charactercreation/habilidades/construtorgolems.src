@@ -52,11 +52,13 @@ program summonSkeletaSteed(params)
         if (item.objtype == 0x6311) // mithril
             if (!SubtractAmount(item, 100));
                 SendSysMessageEx(who, "Voce precisa de 100 minerios mithril.", SSM_FAIL);
+                return 0;
             endif
         endif
         if (item.objtype == 0xee45)  // courocurtido
             if (!SubtractAmount(item, 50));
                 SendSysMessageEx(who, "Voce precisa de 50 couros curtidos.", SSM_FAIL);
+                return 0;
             endif
         endif
     endforeach
@@ -86,6 +88,7 @@ program summonSkeletaSteed(params)
 	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
     var golem := CreateNpcFromTemplate( template, who.x, who.y, who.z, 0, who.realm);
     golem.frozen := 1;
+    SetObjProperty(golem, "golem_maker", who.serial);
     PrintTextAbove(golem, "O mecanismo esta pronto para ser operado");
 	//var mount := summon(template, targ, who);
 	//var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;

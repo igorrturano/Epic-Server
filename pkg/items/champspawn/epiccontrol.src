@@ -152,13 +152,13 @@ function customizeNpc(mob)
 
     var calculate_level_hp := Cint(npc_wrestling + npc_tactics - 80);
 
-	var hp := 15;
-	if (classe == GUERREIRO)
-		hp := 25;
+	var hp := 25;
+	if (classe == SABIO)
+		hp := 15;
 	elseif (classe == LADINO)
 		hp := 20;
 	endif
-	
+
 	var hitsmod := GetObjProperty(mob, "hitsmod");
 	if (!hitsmod)
 		hitsmod := 0;
@@ -189,7 +189,9 @@ function customizeNpc(mob)
 	elseif (tier == 3)
 		mob_skill += RandomIntMinMax(60, 80);
 	endif
+    var tactics := RandomIntMinMax(tier * 20, tier * 30);
 
 	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
+	AP_SetTrueSkill(mob, TACTICS, tactics);
 
 endfunction
