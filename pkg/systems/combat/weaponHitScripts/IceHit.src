@@ -5,6 +5,7 @@ include "include/damage";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";
+include "include/epicConstants";
 
 program HitScript(params)
 	var attacker	:= params[1];
@@ -14,8 +15,8 @@ program HitScript(params)
 	//var basedamage	:= params[5];
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
-	
-	PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+
+	PlayObjectCenteredEffectEx(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16, GELO);
 	PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
 	
 	//ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_COLD, attacker);

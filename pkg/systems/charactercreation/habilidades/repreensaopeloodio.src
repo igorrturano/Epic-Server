@@ -20,6 +20,12 @@ program aura_of_hate(params)
     var basedamage := CalculateRawDamage(attacker, attacker.weapon);
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
+
+	var defender_religion := GetObjProperty(defender, "chardata").religion;
+	if (defender_religion == CETICOS)
+		SendSysMessageEx(attacker, "Você não pode aprisionar o deus de quem não acredita em um.", SSM_FAIL);
+		return 0;
+	endif
     
     var corrupcao := Cint(GetObjProperty(attacker, "corruption")/1000);
     if (corrupcao < 1)
@@ -31,6 +37,7 @@ program aura_of_hate(params)
 	if (final < 10)
 		final := 10;
 	endif
+	
     // Dex Debuff
 	var stat := AP_GetStat(defender, DEXTERITY);
 	stat := Cint((stat*final)/100);

@@ -19,7 +19,6 @@ program onRemove(character, container, item, item_amount, movetype)
 	else
 		if (GetObjProperty(character, "maosleves") == 1)
 			EraseObjProperty(character, "maosleves");
-		else
 			PrintText(character, "*Tirou " + item.desc + " da " + container.desc + "*", 41);
 		endif
 	endif

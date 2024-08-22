@@ -9,6 +9,5 @@ program doubleattack(who)
 		return;
 	endif
 	SendSysMessageEx(who, "Voce prepara um golpe duplo.", SSM_INFO);
-	SetObjProperty(who, "ataquedeimpulso", 1);
-
+	who.attack_once();
 endprogram

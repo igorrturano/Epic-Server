@@ -2,6 +2,9 @@ use uo;
 use os;
 include ":charactercreation:habilidades";
 include ":commands:possess";
+include "include/epicCombatUtils";
+include "include/facings";
+include ":tn:equipment";
 
 program cleric(who)
 
@@ -13,8 +16,9 @@ program cleric(who)
         EraseObjProperty(who, "pilotando");
         leaveGolem(who);
         printtextabove(who, "*Fecha a escotilha*");
-        unpossess(who);
+        unpossess(who, 1);
         who.concealed := 0;
+
         return 0;
     endif
 
@@ -26,16 +30,22 @@ program cleric(who)
         return 0;
     endif
 
-    setObjproperty(who, "pilotando", 1);
-    printtextabove(targ, "*Abre a escotilha*");
-    enterGolem(who);
-   	possess(who, targ);
+    if(IsBehind(targ, who.x, who.y))
+        setObjproperty(who, "pilotando", 1);
+        printtextabove(targ, "*Abre a escotilha*");
+        UnequipAll(who);
+        sleep(2);
+        enterGolem(who);
+        possess(who, targ);
+    else
+        SendSysMessage(who, "Voce precisa estar atras do golem para pilotar.");
+        return 0;
+    endif
 
     return 1;
 endprogram
 
 function enterGolem(who)
-    //seta os mods
     var skill_a := Ap_GetSkill(who, METALWORKING) * 0.8;
     var skill_d := Ap_GetSkill(who, METALWORKING) * 0.6;
     var dicedmg := "1d12";
@@ -58,24 +68,4 @@ function enterGolem(who)
 
 	recalcvitals(who);
 	HealDamage(who, hitsmod);
-endfunction
-
-function leaveGolem(who)
-	EraseObjProperty(who, "skill_a");
-	EraseObjProperty(who, "skill_d");
-	EraseObjProperty(who, "dicedmg");
-
-    var hitsmod := cint(getObjProperty(who, "golemhitsmod"));
-	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
-	var resist := cint(GetObjProperty(who, "resitmod"));
-
-	who.resist_physical_mod := who.resist_physical_mod - resist;
-	who.resist_fire_mod := who.resist_fire_mod - resist;
-	who.resist_cold_mod := who.resist_cold_mod - resist;
-	who.resist_poison_mod := who.resist_poison_mod - resist;
-	who.resist_energy_mod := who.resist_energy_mod - resist;
-
-	EraseObjProperty(who, "polymorphbonus");
-	EraseObjProperty(who, "metamorfose");
-	EraseObjProperty(who, "golemhitsmod");
 endfunction

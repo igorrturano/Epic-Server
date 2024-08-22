@@ -6,28 +6,22 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
 	params := 0; // No longer needed
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
-		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-
-		if (GetObjProperty(who, "#magiasilenciosa"))
-            SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-        endif
-        //Remove prop de magia silenciosa apos o cast ser completo
-        EraseObjProperty(who, "#magiasilenciosa");
-
+		handleSilentMagic(who);
 		return;
 	endif
 
-    if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
-    endif
+	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 
 	var time := 0;
 	var oldx := who.x;
@@ -36,33 +30,12 @@ program SpellScript(params)
 	who.frozen := 1;
 
 	Corromper(who, 13, targ);
-
-	if(TemHabilidade(who, "Vontade Esmagadora"))
-		if (CheckResist(targ, VONTADE, 70, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
-			SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
-			who.frozen := 0;
-
-			if (GetObjProperty(who, "#magiasilenciosa"))
-                SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-            endif
-            //Remove prop de magia silenciosa apos o cast ser completo
-            EraseObjProperty(who, "#magiasilenciosa");
-
-		    return;
-		endif
-	else
-		if (CheckResist(targ, VONTADE, 30, -CInt(AP_GetSkill(who, MAGICLORE)/2.5)))
-			SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
-			who.frozen := 0;
-
-			if (GetObjProperty(who, "#magiasilenciosa"))
-                SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-            endif
-            //Remove prop de magia silenciosa apos o cast ser completo
-            EraseObjProperty(who, "#magiasilenciosa");
-
-		    return;
-		endif
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+		who.frozen := 0;
+		handleSilentMagic(who);
+		return;
 	endif
 
 	targ.frozen := 1;
@@ -99,23 +72,15 @@ program SpellScript(params)
 			break;
 		endif
 
-        if (!GetObjProperty(who, "#magiasilenciosa"))
-            PerformAction(who, ANIM_CAST_AREA);
-            PlayObjectCenteredEffect(who, GFX_RED_SPARKLES, 7, 7);
-            PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
-            time := time + 1;
-            sleep(1);
-        endif
+		PerformAction(who, ANIM_CAST_AREA);
+		PlayObjectCenteredEffect(who, GFX_RED_SPARKLES, 7, 7);
+		PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+		time := time + 1;
+		sleep(1);
 	endwhile
 
 	who.frozen := 0;
 	targ.frozen := 0;
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
 
 	return 1;
 endprogram

@@ -14,7 +14,6 @@ include ":ghaia:ghaia";
 include ":spells:summon";
 
 
-
 program summontotem(params)
 
 	var who := params[1];
@@ -106,14 +105,11 @@ endprogram
 
 
 function Transforma(who, animal, snd, graphic,namepoly)
-
-
 	// Alterado por Edmond
 	if (GetObjProperty(who,"charname") == error)
 		SetObjProperty(who,"charname",who.name);
 	endif
 
-	//UnequipAll(who); //Se quiser que desequipe tudo
 	if(temHabilidade(who,"Elo Natural")) //Desequipa armaduras mas deixa as roupas em paz
 		UnequipArmor(who);
 		UnequipWeapons(who);
@@ -124,7 +120,7 @@ function Transforma(who, animal, snd, graphic,namepoly)
 	PerformAction(who, ANIM_CAST_AREA);
 
 	var npc := CreateNpcFromTemplate(animal, who.x,  who.y, who.z, 0, who.realm);
-
+	who.frozen := 1;
 	PrintText(who, "*transformando-se*");
 	if (npc)
 		//detach();
@@ -158,6 +154,7 @@ function Transforma(who, animal, snd, graphic,namepoly)
         //endif
 		who.color := polymorphColor;
 	endif
+	who.frozen := 0;
 
 	// Alterado por Edmond
 	//print("name: " + namepoly);

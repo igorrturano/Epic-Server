@@ -18,14 +18,19 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	if (!targ.acctname)
+		SendSysMessageEx(who, "Você não pode usar este feitiço nesse alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	SetObjProperty(targ, "ghostvoice", who.serial);
+	var chosen_language := GetObjProperty(who, "lingua_escolhida");
+	if (TemHabilidade(who, "Valdruk"))
+		chosen_language := GetObjProperty(targ, "lingua_escolhida");
+	endif
+
 	var frase := RequestGump(who, "Escreva a frase");
-	PrintText(targ, ""+frase );
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
-
+	var result := PrintTextAbove(targ, "[" + chosen_language + "] "+frase, _DEFAULT_TEXT_FONT, targ.last_textcolor);
+	
 	return 1;
 endprogram

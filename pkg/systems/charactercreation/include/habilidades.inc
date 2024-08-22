@@ -3,7 +3,7 @@ use cfgfile;
 include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicUtils";
-
+include ":tn:equipment";
 function NivelHabilidade(habilidade, classe)
 
 	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
@@ -31,11 +31,11 @@ function TemRequisito(who, habilidade, msg := 1)
 				endif
 				return 0;
 			endif
-        elseif (req["povo"]) // Adiciona busca por povos
-            req["povo"] := "";
-            if (!((chardata).povo in (req)))
+        elseif (req["cultura"]) // Adiciona busca por culturas
+            req["cultura"] := "";
+            if (!((chardata).culture in (req)))
 				if (msg == 1)
-					SendSysMessageEx(who, "Voce nao pertence ao povo: " + req, SSM_FAIL);
+					SendSysMessageEx(who, "Voce nao pertence a cultura: " + req, SSM_FAIL);
 				endif
 				return 0;
 			endif
@@ -329,24 +329,6 @@ function ComprarHabGump(who, habs, habsfac)
 
 endfunction
 
-function EnumeratePhysicalItemsInMobile(mobile)
-	var EquipList := array;
-
-	var SkipLayers := {11, 16, 21, 25};
-	var i;
-
-	for (i:=0; i<=25; i:=i+1)
-		if (!(i in SkipLayers))
-			var layer := GetEquipmentByLayer(mobile, i);
-			if (layer)
-				EquipList.append(layer);
-			endif
-		endif
-	endfor
-
-	return EquipList;
-endfunction
-
 function comprarHabilidade(who, item, nv:=-1)
 	//SendSysMessage(who,"[Interno] Tentando comprar Hab Level "+nv);
 	var itemdesc := ReadConfigFile("::itemdesc");
@@ -366,6 +348,7 @@ function comprarHabilidade(who, item, nv:=-1)
 	var cultura := chardata.culture;
 	var raca := chardata.raca;
 	var religiao := chardata.religion;
+	var magia := chardata.magia;
 	var habs := GetObjProperty(who, "buyhab");
 	if (habs[0] == error)
 		habs[0] := 1;
@@ -376,7 +359,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		myhabs := dictionary;
 	endif
 	//SendSysMessage(who, GetObjProperty(who, "chardata").classe +" "+ GetObjProperty(who, "chardata").povo + " " + nivel);
-	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.povo, nivel);
+	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
 
 	//var possiveis := HabilidadesPorNivel(who, classe, nivel);
 	var possiveisfaccao := HabilidadesPorNivelFaccao(who, faccao, nivel); //facção
@@ -403,10 +386,36 @@ function comprarHabilidade(who, item, nv:=-1)
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
-        if (escolhida == "Visao verdadeira" && who.graphic != 1831 && raca != DROW && religiao != ELUITHORTH)
+
+        if (escolhida == "Visao verdadeira" && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
             SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
             return 0;
         endif
+
+		if (escolhida == "Aura Mortis" && religiao != VENERATIO && cultura != AIGLANA)
+			SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
+
+		if(escolhida == "Elo Natural" && cultura == HAROLOTH)
+            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
+            return 0;
+		endif
+
+		if(escolhida == "Valm Oloth" && cultura != HAROLOTH && religiao != ELUITHORTH && who.graphic != 1830)
+			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
+
+		if(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
+			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
+
+		if(escolhida == "Gwaenedh" && magia != "Arqueiro Arcano")
+			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
+			return 0;
+		endif
 
 		SendSysMessageEx(who, "Voce comprou a habilidade: " + escolhida, SSM_INFO);
 		if (escolhida == "Caçador Implacável")
@@ -457,12 +466,12 @@ function comprarHabilidade(who, item, nv:=-1)
 			who.resist_cold_mod  := who.resist_cold_mod + 25;
 			who.resist_poison_mod  := who.resist_poison_mod + 25;
 			who.resist_energy_mod  := who.resist_energy_mod + 25;
-		elseif(escolhida == "Senhor do Medo" || escolhida == "Devocao" || escolhida == "Colheita de Almas" || escolhida == "Campeao das Montanhas")
-            var equips := EnumeratePhysicalItemsInMobile(who);
+		elseif(escolhida == "Aura Mortis" || escolhida == "Dominatio Animae" || escolhida == "Colheita de Almas" || escolhida == "Campeao das Montanhas")
+            var equips := EnumeratePhysicalItems(who);
             //foreach para pegar todos os equips no corpo e remover as penalidades
             foreach equip in equips
                 if ((equip.isa(POLCLASS_ARMOR)) && equip.resist_physical > 0)
-                    //Quando comprar a habilidade de Aura de Corrupca ou Devocao, a penalidade eh removida
+                    //Quando comprar a habilidade de Aura de Corrupca ou Dominatio Animae, a penalidade eh removida
                     var penalty := CInt(itemdesc[equip.objtype].MageryPenalty);
                     AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
                 endif
@@ -475,15 +484,6 @@ function comprarHabilidade(who, item, nv:=-1)
             who.carrying_capacity_mod := 50;
         elseif(escolhida == "Bolsa Infinita")
             who.carrying_capacity_mod := 120;
-		elseif(escolhida == "Elo Natural" && cultura == HAROLOTH)
-            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
-            return 0;
-		elseif(escolhida == "Valm Oloth" && cultura != HAROLOTH && religiao != ELUITHORTH && who.graphic != 1830)
-			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
-			return 0;
-		elseif(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
-			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
-			return 0;
 		elseif(escolhida == "Ainalaith")
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;

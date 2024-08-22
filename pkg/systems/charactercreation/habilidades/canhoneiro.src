@@ -73,7 +73,7 @@ program vacuodemana(params)
     who.frozen := 1;
     TurnObjectToward(who, targ.x, targ.y);
     sleep(1);
-    PrintTextAbove(who, "Acende o fusível do canhão");
+    PrintTextAbove(who, "*Acende o fusível do canhão*");
     sleep(1);
     PlaySoundEffect(who, 0x667); //cannon_fuse
     sleep(2);
@@ -87,7 +87,7 @@ program vacuodemana(params)
     PLayStationaryEffect(targ.x, targ.y+2, targ.z, 0x6D0E, 0, 10, 0, targ.realm); // A explosão
 
     var bs_damage := Cint(AP_GetSkill(who, METALWORKING)/10);
-    var dmg_dice := RandomDiceRoll(cstr(bs_damage+"d12") + Cint((AP_GetStat(who, DEXTERITY) - 50) / 10) + Cint(AP_GetSkill(who, METALWORKING) / 10));
+    var dmg_dice := RandomDiceRoll(cstr(bs_damage+"d12")) + Cint((AP_GetStat(who, DEXTERITY) - 50) / 10) + Cint(AP_GetSkill(who, METALWORKING) / 10);
     var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 3, targ.realm);
     foreach mob in nearby
         DamageFLS(mob, dmg_dice, DMG_FIRE, who);

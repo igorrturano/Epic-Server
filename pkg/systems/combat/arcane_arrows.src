@@ -14,46 +14,46 @@ program select(params)
 	var player := params[1];
 
 	SendSysMessage(player, "Defina o elemento de sua flecha");
-
+    
     var mlore := Cint(AP_GetSkill(player, MAGICLORE));
     var input := create_portal_gump(player);
     if (input[0] == 201) // Fogo
-        if (GetObjProperty(player, "energy_arrow"))
-            EraseObjProperty(player, "energy_arrow");
+        if (GetObjProperty(player.weapon, "energy_arrow"))
+            EraseObjProperty(player.weapon, "energy_arrow");
         endif
-        if (GetObjProperty(player, "cold_arrow"))
-            EraseObjProperty(player, "cold_arrow");
+        if (GetObjProperty(player.weapon, "cold_arrow"))
+            EraseObjProperty(player.weapon, "cold_arrow");
         endif
-        if (!GetObjProperty(player, "fire_arrow"))
-            SetObjProperty(player, "fire_arrow", 1);
+        if (!GetObjProperty(player.weapon, "fire_arrow"))
+            SetObjProperty(player.weapon, "fire_arrow", 1);
         endif
     elseif (input[0] == 202) // Cold
-        if (GetObjProperty(player, "energy_arrow"))
-            EraseObjProperty(player, "energy_arrow");
+        if (GetObjProperty(player.weapon, "energy_arrow"))
+            EraseObjProperty(player.weapon, "energy_arrow");
         endif
-        if (GetObjProperty(player, "fire_arrow"))
-            EraseObjProperty(player, "fire_arrow");
+        if (GetObjProperty(player.weapon, "fire_arrow"))
+            EraseObjProperty(player.weapon, "fire_arrow");
         endif
-        if (!GetObjProperty(player, "cold_arrow"))
-            SetObjProperty(player, "cold_arrow", 1);
+        if (!GetObjProperty(player.weapon, "cold_arrow"))
+            SetObjProperty(player.weapon, "cold_arrow", 1);
         endif
     elseif (input[0] == 203) // Energy
-        if (GetObjProperty(player, "fire_arrow"))
-            EraseObjProperty(player, "fire_arrow");
+        if (GetObjProperty(player.weapon, "fire_arrow"))
+            EraseObjProperty(player.weapon, "fire_arrow");
         endif
-        if (GetObjProperty(player, "cold_arrow"))
-            EraseObjProperty(player, "cold_arrow");
+        if (GetObjProperty(player.weapon, "cold_arrow"))
+            EraseObjProperty(player.weapon, "cold_arrow");
         endif
-        if (!GetObjProperty(player, "energy_arrow"))
-            SetObjProperty(player, "energy_arrow", 1);
+        if (!GetObjProperty(player.weapon, "energy_arrow"))
+            SetObjProperty(player.weapon, "energy_arrow", 1);
         endif
     endif
 
     player.frozen := 1;
     var sound := 0x666; // Energy
-    if (GetObjProperty(player, "fire_arrow"))
+    if (GetObjProperty(player.weapon, "fire_arrow"))
         sound := 0x5cb;
-    elseif (GetObjProperty(player, "cold_arrow"))
+    elseif (GetObjProperty(player.weapon, "cold_arrow"))
         sound := 0x5c8;
     endif
     PrintTextAbove(player, "*Canalizando Elemento*");

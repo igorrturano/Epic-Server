@@ -134,7 +134,7 @@ function GetResist(who, resist)
 		// Aplica modificadores decorrentes de habilidades
 		if ( GetCooldown(who, "VontadeIndomavel")) // Habilidade ativa
 			valor := valor + 40; // +400% do VALOR_REFERENCIA
-		elseif (temHabilidade(who, "Devocao")) // Habilidade passiva
+		elseif (temHabilidade(who, "Dominatio Animae")) // Habilidade passiva
 			valor := valor + 40; // +400% do VALOR_REFERENCIA
         elseif (TemHabilidade(who, "Campeao das Montanhas"))
             valor := valor + 20;
@@ -183,6 +183,12 @@ function CheckResist(who, resist, dif, mod := 0)
         mod += 30;
 		if (dado + valor + mod >= dif)
 			SendSysMessageEx(who, "Seu organismo drow expurga o veneno", SSM_INFO);
+			return 1;
+		endif
+	elseif(TemHabilidade(who, "Fortitudo Impia") && resist == FORTITUDE)
+		mod += 30;
+		if (dado + valor + mod >= dif)
+			SendSysMessageEx(who, "Sua resiliência ímpia expurga o veneno", SSM_INFO);
 			return 1;
 		endif
     elseif(GetObjProperty(who, "chardata").vantagemracial == "Constituicao Ana" && resist == VONTADE)

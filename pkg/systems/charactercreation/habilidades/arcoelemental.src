@@ -39,9 +39,8 @@ program doubleattack(who)
             sound := 0x666;
             color := RAIO;
         endif
-        //PlayStationaryEffectHuefx( x, y, z, effect, speed, loop := 0, explode := 0, color := 0,translucent := 0)
         PlaySoundEffect(who, sound);
-        PlayStationaryEffectHuefx(who.x, who.y, who.z, 0xB462, 8, 40, 0, color);
+        PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, color);
 
         sleep(3);
         i++;
@@ -54,9 +53,11 @@ program doubleattack(who)
     EquipItem(who, arcane_bow);
     var duration := Cint(Ap_GetSkill(who, MAGICLORE)/10 * 60 * 3);
     SetCooldown(who, "arcane_bow", duration);
+    SetObjProperty(arcane_bow, "fire_arrow", 1);
 
     sleep(duration);
-
-    DestroyItem(arcane_bow);
-    SendSysMessageEx(who, "Seu arco se dissipou!", SSM_FAIL);
+    if (arcane_bow)
+        DestroyItem(arcane_bow);
+        SendSysMessageEx(who, "Seu arco se dissipou!", SSM_FAIL);
+    endif
 endprogram

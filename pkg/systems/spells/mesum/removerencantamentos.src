@@ -6,6 +6,7 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -19,9 +20,8 @@ program SpellScript(params)
 
 	var timer_list := TS_GetTimerList(targ);
 	var names := array;
-	if (!GetObjProperty(who, "#magiasilenciosa"))
-        PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
-    endif
+
+	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
 
 	foreach timer in ( timer_list.keys() )
 		timer := lower(timer);
@@ -61,12 +61,5 @@ program SpellScript(params)
 	EraseObjProperty(targ, "evasao");
 	SendSysMessageEx(targ, "Seus encantamentos nao funcionam mais.", SSM_INFO);
 	Corromper(who, 26, targ);
-
-	if (GetObjProperty(who, "#magiasilenciosa"))
-        SendSysMessageEx(who,  "O efeito da magia silenciosa acabou.", SSM_INFO);
-    endif
-    //Remove prop de magia silenciosa apos o cast ser completo
-    EraseObjProperty(who, "#magiasilenciosa");
-	
 	return 1;
 endprogram  
