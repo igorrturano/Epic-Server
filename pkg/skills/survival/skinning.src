@@ -60,7 +60,10 @@ program skinning(parms)
 	elseif((GetObjProperty(cadaver,"npctemplate")== error) && (GetObjProperty(cadaver, "morto")!=1))
 		if ((idadeChar( who) > 30))
 			if (isStoryMode || isCorpseStoryMode)
-				SendSysMessage(who, "O Modo Estória não permite essa ação.");
+				SendSysMessageEx(who, "O Modo Estória não permite essa ação.");
+				return;
+			elseif (GetCooldown(cadaver, "#phylactery") > 0)
+				SendSysMessageEx(who, "O corpo está protegido por um feitiço de ressurreição.");
 				return;
 			elseif (YesNo(who, "Voce deseja mesmo matar o alvo?", "Sim: perde 1dp", "Nao: nenhuma consequencia.")) //quer matar mesmo
 				DesmembreCorpse(cadaver);
