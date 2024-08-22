@@ -2,20 +2,39 @@
 
 use uo;
 use cfgfile;
+include ":attributes:attributes";
+include ":containers:checks";
 
-program CanInsert(mobile, container, movetype, insert_type, adding_item, existing_stack, amt_to_add)
+program CanInsert(mobile, container, move_type, insert_type, item, existing_stack, amt_to_add)
 
-	amt_to_add := amt_to_add;
-	existing_stack := existing_stack;
-	insert_type := insert_type;
-	movetype := movetype;
-	container := container;
+	if ( move_type == MOVETYPE_COREMOVE )
+    		return 1;
+    elseif ( CP_RootContainerLocked(item) )
+        SendSysMessage(mobile, "voce não pode por isto em um container trancado.");
+        return 0;
+    endif
 
-	if ( adding_item.IsBook() )
-		return 1;
-	else
-		SendSysMessage(mobile, "That is not a book.");
-		return 0;
-	endif
+    if (mobile)
+        if (!mobile.npctemplate)
+            var aux := container;
+            while (aux.container)
+                aux := aux.container;
+            endwhile
+            if (aux == mobile && maoLivre(mobile, 1, 0))
+                return 1;
+            endif
+
+            if (!maoLivre(mobile, 1))
+                return 0;
+            endif
+
+            if (mobile.frozen || mobile.paralyzed)
+                SendSysMessage(mobile, "Voce esta paralizado.");
+                return 0;
+            endif
+        endif
+    endif
+
+    return 1;
 
 endprogram
