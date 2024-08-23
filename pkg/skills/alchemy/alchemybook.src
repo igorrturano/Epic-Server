@@ -87,7 +87,7 @@ function MakePotion ( pot, who)
 
 	foreach reag in (reagent_costs.keys())
 		amount := CInt( reagent_costs[reag] );
-		if (temHabilidade(who, "Formacao Academica") && (amount >1))
+		if (temHabilidade(who, "Alquimista Experiente") && (amount >1))
 			amount := CInt(amount/2);
 		endif
 		if (!amount)
@@ -134,7 +134,7 @@ function MakePotion ( pot, who)
 				if (GetObjProperty(who, "extratoinstantaneo"))
 					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
 					var pocao := GetObjProperty(thing, "extrato");
-       					var pot := CreateItemInBackpack(who, pocao, 1);
+					var pot := CreateItemInBackpack(who, pocao, 1);
 					SetObjProperty(pot, "strength", cint(GetObjProperty(thing, "strength")));
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");

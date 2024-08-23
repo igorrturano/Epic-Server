@@ -113,7 +113,6 @@ function createguard(who)
 
 endfunction
 
-
 function DisplayNPCSelectionMenu(who)
 
 	var Taxonomy_props := {};
