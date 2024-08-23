@@ -61,6 +61,15 @@ program arremesso(params)
     elseif (targ.serial == who.serial)
         SendSysMessageEx(who, "Voce nao pode se arremessar.", SSM_FAIL);
         return 0;
+	elseif (targ == who.backpack)
+		SendSysMessageEx(who, "Voce nao pode arremessar sua própria bolsa.", SSM_FAIL);
+		return 0;
+	elseif(targ.movable)
+		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
+		return 0;
+	elseif (targ.objtype == 0xF997)
+		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
+		return 0;
 	endif
 
 	SendSysMessageEx(who, "Aonde vai arremessar?", SSM_REQUEST);
