@@ -15,7 +15,7 @@ include ":survival:skinning";
 include ":brainAi:npcUtil";
 include ":gumps:yesNo";
 include ":charactercreation:habilidades";
-
+include ":tn:cooldown";
 
 program skinning(parms)
 	var who := parms[1];
