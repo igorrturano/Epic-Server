@@ -28,7 +28,7 @@ program exploder(parms)
 	endwhile
 	SetScriptController(who);
 
-	var skill := CInt(GetObjProperty(potion, "crafterskill")/10);
+	var skill := CInt(GetObjProperty(potion, "bonus"));
 	var dmg := skill;
 	if (cint(GetObjProperty(potion, "nodmg")) != 1)
 		case (potion.objtype)
