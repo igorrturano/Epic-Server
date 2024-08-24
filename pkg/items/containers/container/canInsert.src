@@ -10,7 +10,7 @@ include ":containers:checks";
 program canInsert(mobile, container, item, move_type, insert_type, adding_item, existing_stack, amount_to_add)
 
 	if ( move_type == MOVETYPE_COREMOVE )
-		var who := SystemFindObjectBySerial(container.character_owner.serial);
+		var who := container.character_owner;
 		if (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
 			SendSysMessageEx(mobile, "Heh, nope.", SSM_INFO);
 			return 0;
