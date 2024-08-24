@@ -28,7 +28,7 @@ program drink_orange (who, potion)
 	endcase
 	empty_bottle(who, potion);
 
-	var bonus := cint(getobjproperty(potion, "crafterskill")/5);
+	var bonus := cint(getobjproperty(potion, "bonus")/5);
 	TS_CurePoison(who, time+bonus, "P", potion_strength);
 
 endprogram

@@ -51,9 +51,11 @@ function Destilar(balao, beker, who, item)
    var extrato := CINT(GetObjProperty(balao, "extrato"));
    SetObjProperty(beker, "pocao", extrato);
    SetObjProperty(beker, "strength",  cint(GetObjProperty(balao, "strength")));
+   SetObjProperty(beker, "bonus",  cint(GetObjProperty(balao, "bonus")));
 
    EraseObjProperty(balao, "extrato");
    EraseObjProperty(balao, "strength");
+   EraseObjProperty(balao, "bonus");
    item.movable := 1;
    balao.movable := 1;
    beker.movable := 1;

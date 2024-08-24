@@ -119,4 +119,3 @@ function do_poison(who, potion)
     SendSysMessage(who, "Voce resistiu ao veneno", 3, 90);
   endif
 endfunction
-

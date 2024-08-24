@@ -39,7 +39,7 @@ program drink_blue (who, potion)
 	var obj := potion.objtype;
 
 	var healed;
-	var skill := cint(GetObjProperty(potion, "crafterskill"));
+	var skill := cint(GetObjProperty(potion, "bonus"));
 	healed := skill/5;
 	var delay := 1000;
 	var cd := 5;
