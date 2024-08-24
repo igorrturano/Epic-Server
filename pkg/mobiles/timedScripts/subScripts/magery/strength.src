@@ -20,13 +20,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	var cast_points := level;
-	//cast_points := cast_points/2;
-	if (cast_points < 10)
-		cast_points := 10;
-	endif
-	var stat := AP_GetStat(mobile, STRENGTH);
-	stat := (stat*cast_points)/100;
-	var points := CInt(stat);
+	var points := cast_points;
 
 	SetObjProperty(mobile, "#StrengthMod", points);
 	AP_ModifyStatMod(mobile, STRENGTH, points);
