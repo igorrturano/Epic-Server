@@ -20,12 +20,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	var cast_points := level;
-	if (cast_points < 10)
-		cast_points := 10;
-	endif
-	var stat := AP_GetStat(mobile, INTELLIGENCE);
-	stat := Cint((stat*cast_points)/100);
-	var points := stat;	
+	var points := cast_points;
 
 	SetObjProperty(mobile, "#IntMod", points);
 	sendsysmessage(mobile, "int mod points: "  + points);

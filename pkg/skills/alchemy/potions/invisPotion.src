@@ -20,7 +20,8 @@ program drink_blue (who, potion)
 		return;
 	endif
 
-	var bonus := cint(GetObjProperty(potion, "crafterskill")/10);
+	var bonus := GetObjProperty (potion, "bonus");
+	bonus := PotionSpecialistBonus (who, bonus, BUFF);
 
 	
 	case(potion.objtype)

@@ -27,6 +27,7 @@ program usabalao(who, item)
   SendSysMessage(who, "Voce colocou o liquido no balao.");
   SetObjProperty(item, "extrato", extrato);
   SetObjProperty(item, "strength", cint(GetObjProperty(alvo, "strength")));
+  SetObjProperty(item, "bonus", cint(GetObjProperty(alvo, "bonus")));
  DestroyItem(alvo);   
   CreateIteminBackpack(who, 0x0f0e, 1);
   

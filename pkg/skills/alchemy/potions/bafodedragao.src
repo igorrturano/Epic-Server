@@ -65,8 +65,7 @@ program use_explosion(who, potion)
 
 	PlayMovingEffect(who, cast_on, GFX_LARGE_FIREBALL, 10, 10, 1);
 
-    var dano := (AP_GetSkill(who, ALCHEMY));
-    dano := dano/2;
+    var dano := (cint("bonus")*2);
     //var lvl := (AP_GetSkill(who, ALCHEMY)/10);
 	//lvl:=lvl/2;
     //lvl := lvl +1;

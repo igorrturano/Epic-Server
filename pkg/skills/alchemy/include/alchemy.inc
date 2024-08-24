@@ -3,6 +3,7 @@ include ":tn:cooldown";
 include "include/say";
 include ":fls_core:fls_characters";
 include ":charactercreation:resists";
+include "include/epicConstants";
 use cfgfile;
 
 
@@ -278,4 +279,32 @@ function do_poison(who, potion)
     else
       TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
     endif
+endfunction
+
+Function PotionSpecialistBonus (who, bonus, science)
+	var spec := 2;
+
+		if (TemHabilidade(who, "Bombardeiro") && science == BOMBA);
+			bonus := Cint(bonus * spec);
+		elseif (TemHabilidade(who, "Veneno Puro") && science == VENENO);
+			bonus := Cint(bonus * spec);
+		elseif (TemHabilidade(who, "Mutagenicos") && science == BUFF);
+			bonus := Cint(bonus * spec);
+		endif
+
+    return bonus;
+endfunction
+
+Function epicPotionDamageRoll(lvl)
+  var dice := cstr("1d4");
+  if (lvl == 2)
+    dice := cstr("2d6");
+  elseif (lvl == 3)
+    dice := cstr("3d8");
+  endif
+
+  var dmg := RandomDiceRoll(dice);
+  dmg := Cint(dmg + bonus);
+
+  return dmg;
 endfunction

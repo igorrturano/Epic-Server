@@ -20,11 +20,12 @@ program drink_blue (who, potion)
 		return;
 	endif
 
-	var bonus := cint(GetObjProperty(potion, "crafterskill")/10);
+	var bonus := GetObjProperty (potion, "bonus");
+	bonus := PotionSpecialistBonus (who, bonus, BUFF);
 
 	case(potion.objtype)
-		56332:	TS_StartTimer(who, "agility", (360+bonus*10), 20); 
-		56333: TS_StartTimer(who, "agility", (600+bonus*10), 40); 
+		56332:	TS_StartTimer(who, "agility", (360+bonus*10), Cint(10+bonus)); 
+		56333: TS_StartTimer(who, "agility", (600+bonus*10), Cint(15+bonus)); 
 	endcase
 	empty_bottle(who, potion);
 endprogram

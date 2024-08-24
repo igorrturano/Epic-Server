@@ -50,6 +50,13 @@ enum ARCANE_SCHOOLS
     KAIJIN := "Kaijin"
 endenum
 
+enum ALCHEMICAL_SCIENCES
+    BOMBA := "Bomba",
+    VENENO := "Veneno",
+    BUFF := "Buff",
+    ENCANTAR := "Encantar"
+endenum
+
 enum CAMINHOS
     GUERREIRO := "Guerreiro",
     LADINO := "Ladino",
