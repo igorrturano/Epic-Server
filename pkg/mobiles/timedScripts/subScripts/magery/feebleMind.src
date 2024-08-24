@@ -19,15 +19,14 @@ program TimedScript_FeebleMind(params)
 		// Prevents mod from being applied twice.
 		return 0;
 	endif
-	
-	var cast_points := lvl;
-	var stat := AP_GetStat(mobile, INTELLIGENCE);
-		var final := cast_points; // - defense;
-	if (final < 10)
-		final := 10;
-	endif
-	stat := (stat*final)/100;
-	var points := cint(stat * -1);
+	
+
+	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE));
+	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
+	cast_points := CInt(((int_bonus - 50)/10) + (cast_points/10));
+	var final := cast_points + 10;
+
+	var points := Cint(final*-1);
 	
 	SetObjProperty(mobile, "#FeebleMindMod", points);
 	AP_ModifyStatMod(mobile, INTELLIGENCE, points);

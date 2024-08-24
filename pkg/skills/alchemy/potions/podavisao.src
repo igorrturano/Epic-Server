@@ -8,6 +8,7 @@ include "include/utils";
 program drink_blue (who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
+	var tier := potion.tier;
 	if(!Accessible(who, potion))
 		return;
 	endif
@@ -32,7 +33,7 @@ program drink_blue (who, potion)
 	sleepms(600);
 	
 	foreach coord in rect
-		foreach mobile in ListMobilesNearLocationEX(coord.x, coord.y, who.z, 2, LISTEX_FLAG_HIDDEN, who.realm)
+		foreach mobile in ListMobilesNearLocationEX(coord.x, coord.y, who.z, tier+1, LISTEX_FLAG_HIDDEN, who.realm)
 			SendSysMessage(mobile, "A poeira revelou voce.");
 			mobile.hidden := 0;
 			sleepms(2);

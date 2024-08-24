@@ -232,6 +232,7 @@ function MakePotion ( pot, item, who, magic, strength := 0)
 			else //se nao cria so o extrato
 				thing := CreateItemInBackpack(who, 0xcfff, 1);
 				SetObjProperty(thing, "extrato", pot);
+				SetObjProperty(thing, "bonus", AP_GetSkill(who, ALCHEMY) );
 				if (strength)
 					SetObjProperty(thing, "strength", strength);
 				endif
@@ -243,6 +244,7 @@ function MakePotion ( pot, item, who, magic, strength := 0)
 					var pocao := GetObjProperty(thing, "extrato");
     				var pot := CreateItemInBackpack(who, pocao, amt);
 					SetObjProperty(pot, "strength", cint(GetObjProperty(thing, "strength")));
+					SetObjProperty(pot, "bonus", cint(GetObjProperty(thing, "bonus")));
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");
 				else
@@ -250,11 +252,11 @@ function MakePotion ( pot, item, who, magic, strength := 0)
 					var pocao := GetObjProperty(thing, "extrato");
     				var pot := CreateItemInBackpack(who, pocao, 1);
 					SetObjProperty(pot, "strength", cint(GetObjProperty(thing, "strength")));
+					SetObjProperty(pot, "bonus", cint(GetObjProperty(thing, "bonus")));
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");
 					endif
 			endif
-			SetObjProperty(thing, "crafterskill", AP_GetSkill(who, ALCHEMY) );
 			PlaySoundEffect(who, SOUND_EFFECT_POUR);
 			SendSysMessageEx(who, "Voce fez a pocao e a guardou na sua mochila.", SSM_INFO);
 			EraseObjProperty(item, "reagentes");
