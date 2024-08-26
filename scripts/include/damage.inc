@@ -385,24 +385,25 @@ function CalculateTotalDamageBonus(dmg, who, defender)
         endif
     endif
 
-	var inimigo_predileto := Cint(AP_GetSkill(who, SURVIVAL) / 10);
+	var inimigo_predileto := 0;
+	var inimigo_dmg := Cint(AP_GetSkill(who, SURVIVAL) / 10);
 	if (TemHabilidade(who, "Inimigo Predileto"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 		var inimigo := GetObjProperty(who, "InimigoPredileto");
 		if (cfg[npctemplate.template].Category == inimigo)
-			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
+			inimigo_predileto := inimigo_predileto + inimigo_dmg; //dobra o dano se for inimigo predileto
 		endif
     elseif (TemHabilidade(who, "Exitium Maleficorum"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
-			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
+			inimigo_predileto := inimigo_predileto + inimigo_dmg; //dobra o dano se for inimigo predileto
 		endif
 	endif
 
 	if (GetCooldown(defender, "prey"))
-		inimigo_predileto := inimigo_predileto + Cint(AP_GetSkill(who, SURVIVAL) / 10);
+		inimigo_predileto := inimigo_predileto + inimigo_dmg;
 	endif
 
 	if (TemHabilidade(who, "Estilo Mao Livre"))
@@ -534,6 +535,21 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		other := other + Cint(dmg * 1.5);
         weapon_dice := RandomDiceRoll("1d10");
     endif
+	var sharpened_weapon := GetObjProperty(who.weapon, "Aprimoramentos")["Arma Afiada"];
+	if(sharpened_weapon)
+		other += sharpened_weapon;
+	endif
+	if (GetObjProperty(who, "showdmg"))
+		SendSysMessageEX(who, "Dano base: " + Cint(dmg), SSM_INFO);
+		SendSysMessageEX(who, "Rolagem de dano da arma: " + weapon_dice, SSM_INFO);
+		SendSysMessageEX(who, "Dano de habilidades: " + (other - sharpened_weapon), SSM_INFO);
+		SendSysMessageEX(who, "Dano de tatics: " + tatics, SSM_INFO);
+		SendSysMessageEX(who, "Dano de força: " + ((str-50)/10), SSM_INFO);
+		SendSysMessageEX(who, "Dano de bêncãos: " + blessbonus, SSM_INFO);
+		SendSysMessageEX(who, "Dano de inimigo predileto: " + inimigo_predileto, SSM_INFO);
+		SendSysMessageEX(who, "Redução de dano: " + (-1 * reducao_dano), SSM_FAIL);
+		SendSysMessageEX(who, "Arma Afiada: " + sharpened_weapon, SSM_INFO);
+	endif
 
 	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
 	if (dmg < 1)
@@ -543,6 +559,19 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if (GetObjProperty(who, "chardata").trait == "Defensor Anão")
         dmg := Cint(dmg * 0.7);
     endif
+
+	var polida := GetObjProperty(who.weapon, "polida");
+	if (!polida)
+		dmg := Cint(dmg * 0.8);
+	else
+		polida := polida - 1;
+		if (polida < 1)
+			EraseObjProperty(who.weapon, "polida");
+			SendSysMessageEX(who, "Sua arma perdeu a polidez.", SSM_INFO);
+		else
+			SetObjProperty(who.weapon, "polida", polida);
+		endif
+	endif
 	
 	return dmg;
 
