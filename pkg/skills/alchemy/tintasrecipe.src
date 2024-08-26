@@ -9,7 +9,7 @@ program cria(item)
 	endif
 
 	var spellinfo := struct;
-	var cfg := readconfigfile(":alchemy:config/recipes");
+	var cfg := readconfigfile(":alchemy:config/recipestintas");
 	var keys := getconfigintkeys(cfg);
 
 	var possiveis := array;
