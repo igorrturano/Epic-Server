@@ -2,10 +2,13 @@ use os;
 use uo;
 include "include/say";
 include ":attributes:attributes";
+include ":alchemy:alchemy";
+include "include/sounds";
 
 program drink_blue (who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
+
 
     var targ;
 	SendSysMessageEx(who, "Escolha sua arma:", SSM_REQUEST);
@@ -17,22 +20,33 @@ program drink_blue (who, potion)
     endif
 
     if (!targ.isA(POLCLASS_WEAPON))
-        SendSysMessageEx(who, "Isto não pode ser encerado.", SSM_FAIL);
+        SendSysMessageEx(who, "Isto não pode ser polido.", SSM_FAIL);
         return; 
     endif
-    
-	empty_bottle(who, potion);
 
-    SendSysMessageEx(who, "Você amolou a arma", SSM_INFO);
+    var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
+    var elem     := craft_config[targ.objtype];
 
-    var cfg := ReadConfigFile(":combat:itemdesc");
-    var skill := Cstr(cfg[targ.objtype].Attribute);
-    print("skill: "+ skill);
-    var combat := Cint(AP_GetSkill(who, skill));
+    if (elem.principalMaterial != "metal")
+        SendSysMessageEx(who, "Isto não pode ser polido.", SSM_FAIL);
+        return;
+    endif
 
     if (!maolivre(who, 1))
         return 0;
     endif
-    
+
+    who.frozen := 1;
+    for i := 0 to 3
+        PlaySoundEffect(who, 0x5af);
+        sleep(2);
+    endfor
+
+    var cfg := ReadConfigFile(":combat:itemdesc");
+    var skill := Cstr(cfg[targ.objtype].Attribute);
+    var combat := Cint(AP_GetSkill(who, skill));
+
+    who.frozen := 0;
+    SendSysMessageEx(who, "Você amolou a arma", SSM_INFO);
     SetObjProperty(targ, "polida", combat * 5);
 endprogram

@@ -23,6 +23,14 @@ program select(player, tool)
         return;
     endif
 
+    var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
+    var elem     := craft_config[targ.objtype];
+    
+    if (elem.principalMaterial != "metal")
+        SendSysMessageEx(player, "Isto não pode ser aprimorado.", SSM_FAIL);
+        return;
+    endif
+
     var improvements;
     if (targ.isA(POLCLASS_WEAPON))
         improvements := GetWeaponImprovements();
@@ -134,7 +142,7 @@ function create_improvement_gump(player, item, improvements, selected_improvemen
         y += 26;
     endfor
 
-    GFAddButton(gump, 274, y+30, 4005, 4007, GF_CLOSE_BTN, 200); // Botao de fechar
+    GFAddButton(gump, 274, y+10, 4005, 4007, GF_CLOSE_BTN, 200); // Botao de fechar
 
     return GFSendGump(player, gump);
 endfunction
