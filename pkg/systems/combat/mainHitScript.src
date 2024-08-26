@@ -946,7 +946,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	if (weapon_scripts.size() > 0 && can_crit)
 		var critdelay := ReadGameClock()+180;
 		if (!GetObjProperty(weapon, "polida"))
-			SendSysMessageEx(attacker, "Sua está embotada!", SSM_FAIL);
+			SendSysMessageEx(attacker, "Sua arma está embotada!", SSM_FAIL);
 			critdelay := ReadGameClock()+240;
 		endif
 		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);

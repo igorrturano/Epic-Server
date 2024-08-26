@@ -4,44 +4,46 @@ use cfgfile;
 use datafile;
 
 program create(item)
-if (!GetObjProperty(item, "recipe"));
+	if (!GetObjProperty(item, "recipe"));
 
-	var level1:={};
-	var level2:={};
-	var level3:={};
-	var level4:={};
-	var level5:={};
-	var cfg := ReadConfigFile(":recipes:recipes");	
-	
-foreach key in (GetconfigStringKeys(cfg))
-    var level := FindConfigElem(cfg, key);
-	var level_achar := level."level";
-case(level_achar)
-1:
-	level1.append(key);
-2:
-	level2.append(key);
-3:
-	level3.append(key);
-4:	
-	level4.append(key);
-5:
-	level5.append(key);
-endcase
-endforeach
+		var level1:={};
+		var level2:={};
+		var level3:={};
+		var level4:={};
+		var level5:={};
+		var cfg := ReadConfigFile(":recipes:recipes");	
+		
+		foreach key in (GetconfigStringKeys(cfg))
+			var level := FindConfigElem(cfg, key);
+			var level_achar := level."level";
+			print("level_achar: "+ level_achar);
+			case(level_achar)
+			1:
+				level1.append(key);
+			2:
+				level2.append(key);
+			3:
+				level3.append(key);
+			4:	
+				level4.append(key);
+			5:
+				level5.append(key);
+			endcase
+		endforeach
 
-var sorteado;
-if (item.objtype == 0xFF990)
-	sorteado := level1[RandomIntMinMax(1, level1.size()+1)];
-elseif (item.objtype == 0xfe995)
-	sorteado := level2[RandomIntMinMax(1, level1.size()+1)];
-elseif (item.objtype == 0xfe996)
-	sorteado := level3[RandomIntMinMax(1, level1.size()+1)];
-elseif (item.objtype == 0xfe997)
-	sorteado := level4[RandomIntMinMax(1, level1.size()+1)];
-elseif (item.objtype == 0xfe998)
-	sorteado := level5[RandomIntMinMax(1, level1.size()+1)];
-endif
-	SetObjProperty(item, "recipe",sorteado);
-endif
+		var sorteado;
+		if (item.objtype == 0xFF990)
+			sorteado := level1[RandomIntMinMax(1, level1.size()+1)];
+		elseif (item.objtype == 0xfe995)
+			sorteado := level2[RandomIntMinMax(1, level2.size()+1)];
+		elseif (item.objtype == 0xfe996)
+			sorteado := level3[RandomIntMinMax(1, level3.size()+1)];
+		elseif (item.objtype == 0xfe997)
+			sorteado := level4[RandomIntMinMax(1, level4.size()+1)];
+		elseif (item.objtype == 0xfe998)
+			sorteado := level5[RandomIntMinMax(1, level5.size()+1)];
+		endif
+			SetObjProperty(item, "recipe", sorteado);
+	endif
+
 endprogram
