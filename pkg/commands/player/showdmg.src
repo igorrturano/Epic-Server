@@ -1,0 +1,15 @@
+use uo;
+
+include "include/say";
+
+program showdmg(who)
+    if(!GetObjProperty(who, "showdmg"))
+        SetObjProperty(who, "showdmg", 1);
+        SendSysMessageEx(who, "Agora você está mostrando o dano.", SSM_INFO);
+        return 0;
+    else
+        EraseObjProperty(who, "showdmg");
+        SendSysMessageEx(who, "Agora você não está mostrando o dano.", SSM_INFO);
+        return 1;
+    endif
+endprogram

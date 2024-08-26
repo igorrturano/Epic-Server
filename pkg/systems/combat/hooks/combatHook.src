@@ -631,6 +631,10 @@ function CalculateHitChance(attacker, defender)
 	if ( GetObjProperty(attacker, "armapreferida") == attacker.weapon.objtype )
 		hit_chance := hit_chance + 5;
 	endif
+	var balanced_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"];
+	if (balanced_weapon)
+		hit_chance := hit_chance + balanced_weapon;
+	endif
 
     // if ( GetObjProperty(attacker, "#aterrorizar") )
 	// 	hit_chance := hit_chance + 20;

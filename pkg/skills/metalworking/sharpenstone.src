@@ -1,0 +1,38 @@
+use os;
+use uo;
+include "include/say";
+include ":attributes:attributes";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+    var targ;
+	SendSysMessageEx(who, "Escolha sua arma:", SSM_REQUEST);
+    targ := Target(who);
+
+    if (!targ)
+        SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+        return;
+    endif
+
+    if (!targ.isA(POLCLASS_WEAPON))
+        SendSysMessageEx(who, "Isto não pode ser encerado.", SSM_FAIL);
+        return; 
+    endif
+    
+	empty_bottle(who, potion);
+
+    SendSysMessageEx(who, "Você amolou a arma", SSM_INFO);
+
+    var cfg := ReadConfigFile(":combat:itemdesc");
+    var skill := Cstr(cfg[targ.objtype].Attribute);
+    print("skill: "+ skill);
+    var combat := Cint(AP_GetSkill(who, skill));
+
+    if (!maolivre(who, 1))
+        return 0;
+    endif
+    
+    SetObjProperty(targ, "polida", combat * 5);
+endprogram
