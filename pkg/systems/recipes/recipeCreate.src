@@ -16,7 +16,6 @@ program create(item)
 		foreach key in (GetconfigStringKeys(cfg))
 			var level := FindConfigElem(cfg, key);
 			var level_achar := level."level";
-			print("level_achar: "+ level_achar);
 			case(level_achar)
 			1:
 				level1.append(key);
