@@ -771,8 +771,8 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
-	// Arqueiro arcano
-	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype == 0xF997)
+    var arcane_bows := array{0xFA6D, 0XF997};
+	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype in arcane_bows)
 		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
 		var arcane_damage := dmg*0.5;
 

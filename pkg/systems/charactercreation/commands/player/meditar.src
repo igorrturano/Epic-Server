@@ -17,7 +17,8 @@ program meditar(who, text)
     var full_mana := AP_GetVitalMaximumValue(who, MANA);
     var current_mana := AP_GetVital(who, MANA);
     var start_hp := AP_GetVital(who, "Hits");
-    
+    var arcane_bows := array{0xFA6D, 0XF997};
+
 	var oldx := who.x;
 	var oldy := who.y;
     if (GetCooldown(who, "meditation"))
@@ -44,7 +45,7 @@ program meditar(who, text)
             EraseObjProperty(who, "#Casting");
 			return 0;
         endif
-        if (!EquipmentCheck(who) && who.weapon.objtype != 0xF997) // arcane bow
+        if (!EquipmentCheck(who) && !(who.weapon.objtype in arcane_bows))
             SendSysMessage(who, "Suas maos precisam estar livres");
 			return 0;
         endif
