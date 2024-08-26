@@ -37,6 +37,7 @@ program arremesso(params)
 	
 	SendSysMessageEx(who, "Escolha o que deseja arremessar", SSM_REQUEST);
 	var targ := Target(who);
+    var arcane_bows := array{0xFA6D, 0XF997};
 
 	if ( !targ )
 		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
@@ -67,7 +68,7 @@ program arremesso(params)
 	elseif(targ.movable)
 		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
 		return 0;
-	elseif (targ.objtype == 0xF997)
+	elseif (targ.objtype in arcane_bows)
 		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
 		return 0;
 	endif

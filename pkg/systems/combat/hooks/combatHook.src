@@ -765,10 +765,11 @@ endfunction
 // Arqueiros
 
 function AmmoCheckCombatHook(attacker, defender)
+    var arcane_bows := array{0xFA6D, 0XF997};
 	if ( !wpn_a_elem.ProjectileType  )
 		return 1;
 	endif
-	if ( GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype == 0xF997)
+	if ( GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype in arcane_bows)
 		return 1;
 	endif
 
@@ -845,7 +846,8 @@ function arcane_shooting(attacker, defender)
 		return 1;
 	endif
 
-	if ( !GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype != 0xF997)
+    var arcane_bows := array{0xFA6D, 0XF997};
+	if ( !GetCooldown(attacker, "arcane_bow") && !(attacker.weapon.objtype in arcane_bows))
 		return 1;
 	endif
 
