@@ -31,32 +31,19 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif	
 
-	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE)) + CInt(AP_GetSkill(attacker, MAGERY));
-	cast_points := cast_points/4;
-//	var defense := CInt(AP_GetSkill(mobile, RESISTING_SPELLS))/4;
-	var final := cast_points;// - defense;
-	if (final < 10)
-		final := 10;
-	endif
-	var stat := AP_GetStat(mobile, DEXTERITY);
-	stat := Cint((stat*final)/100);
-	var points := stat * -1;
+	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE));
+	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
+	cast_points := CInt(((int_bonus - 50)/10) + (cast_points/10));
+	var final := cast_points;
+	var points := cint(final * -1);
 	
 	
 	SetObjProperty(mobile, "#ClumsyMod", points);
 	AP_ModifyStatMod(mobile, DEXTERITY, points);
-
-	stat := AP_GetStat(mobile, STRENGTH);
-	stat := Cint((stat*final)/100);
-	points := stat * -1;
 	
 	
 	SetObjProperty(mobile, "#WeakenMod", points);
 	AP_ModifyStatMod(mobile, STRENGTH, points);
-
-	stat := AP_GetStat(mobile, INTELLIGENCE);
-	stat := Cint((stat*final)/100);
-	points := stat * -1;
 	
 	SetObjProperty(mobile, "#FeebleMindMod", points);
 	AP_ModifyStatMod(mobile, INTELLIGENCE, points);

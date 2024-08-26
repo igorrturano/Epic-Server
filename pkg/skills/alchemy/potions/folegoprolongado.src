@@ -19,7 +19,9 @@ program drink_blue (who, potion)
 		return;
 	endif
 	empty_bottle(who, potion);
-	var bonus := Cint(120 * (GetObjProperty(potion, "crafterskill")/20));
-	SendSysMessageEx(who, "Você pode respirar debaixo d'água por mais " + bonus + " segundos.", SSM_INFO);
-	SetCooldown(who, "can_breath", bonus);
+	var bonus := GetObjProperty(potion, "bonus");
+	bonus := PotionSpecialistBonus(who, bonus, BUFF);
+	var duration := Cint(25*bonus+225);
+	SendSysMessageEx(who, "Você pode respirar debaixo d'água por mais " + duration + " segundos.", SSM_INFO);
+	SetCooldown(who, "can_breath", duration);
 endprogram
