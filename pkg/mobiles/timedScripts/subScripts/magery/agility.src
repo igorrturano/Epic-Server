@@ -19,12 +19,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	var cast_points := level;
-	if (cast_points < 10)
-		cast_points := 10;
-	endif
-	var stat := AP_GetStat(mobile, DEXTERITY);
-	stat := Cint((stat*cast_points)/100);
-	var points := CInt(stat);
+	var points := cast_points;
 
 	SetObjProperty(mobile, "#AgilityMod", points);
 	AP_ModifyStatMod(mobile, DEXTERITY, points);
