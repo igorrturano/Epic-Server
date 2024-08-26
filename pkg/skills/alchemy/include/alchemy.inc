@@ -50,7 +50,7 @@ function empty_bottle(character, potion, potiontype := 0)
   var goles;
 
 	if (!GetObjProperty(potion, "goles"))
-		goles := 3;
+		goles := cint(GetObjProperty(potion, "crafterskill") / 20);
 		SetObjProperty(potion, "goles", goles);
 	else
 		goles := cint(GetObjProperty(potion, "goles"));
