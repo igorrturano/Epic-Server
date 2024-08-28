@@ -19,8 +19,7 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif
 
-	var cast_points := level;
-	var points := cast_points;
+	var points := level;
 
 	SetObjProperty(mobile, "#StrengthMod", points);
 	AP_ModifyStatMod(mobile, STRENGTH, points);

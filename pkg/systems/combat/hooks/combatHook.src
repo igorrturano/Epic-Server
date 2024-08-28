@@ -733,6 +733,10 @@ function CalculateHitChance(attacker, defender)
         hit_chance := hit_chance - swash_bonus;
     endif
     
+	var witcher_bonus := Cint(AP_GetSkill(attacker, ALCHEMY) / 5);
+	if (TemHabilidade(attacker, "Oleo do Cacador"))
+		hit_chance := hit_chance + witcher_bonus;
+	endif
 
 	if (hit_chance < 5.0)
 		hit_chance := 5.0;

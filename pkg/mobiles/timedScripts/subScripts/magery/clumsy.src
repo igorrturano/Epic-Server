@@ -7,8 +7,8 @@ use uo;
 use os;
 
 include "include/say";
-
 include ":attributes:attributes";
+include "include/epicMageryUtils";
 
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
@@ -19,12 +19,8 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif
 	
-	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE));
-	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
-	cast_points := CInt(((int_bonus - 50)/10) + (cast_points/10));
-	var final := cast_points + 10;
-
-	var points := Cint(final*-1);
+	var points := cint(epicCastPoint(attacker)+10);
+	points := points * -1;
 	
 	
 	SetObjProperty(mobile, "#ClumsyMod", points);

@@ -21,11 +21,20 @@ program drink_blue (who, potion)
 	endif
 
 	var bonus := GetObjProperty (potion, "bonus");
-	bonus := PotionSpecialistBonus (who, bonus, BUFF);
+	var duration := bonus;
+	duration := PotionSpecialistBonus (who, bonus, BUFF);
 
 	case(potion.objtype)
-		48903:	TS_StartTimer(who, "intelligence", (360+bonus*10), Cint(10+bonus)); 
-		48904: TS_StartTimer(who, "intelligence", (600+bonus*10), Cint(15+bonus)); 
+		48903:
+			if (temHabilidade(who, "Mutagenicos"))
+				TS_StartTimer(who, "intelligence", (360+duration*10), Cint(15+bonus)); 
+			endif
+				TS_StartTimer(who, "intelligence", (360+duration*10), Cint(10+bonus)); 
+		48904: 
+			if (TemHabilidade(who, "Mutagenicos"))
+				TS_StartTimer(who, "intelligence", (600+duration*10), Cint(20+bonus));
+			endif
+				TS_StartTimer(who, "intelligence", (600+duration*10), Cint(15+bonus)); 
 	endcase
 	empty_bottle(who, potion);
 endprogram

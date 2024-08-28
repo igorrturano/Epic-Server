@@ -31,9 +31,7 @@ program drink_blue( who, potion )
     return;
   endif
 
-  DestroyItem(potion);
-
-  var bonus := Cint( AP_GetSkill( who, "Alchemy" ) );
+  var bonus := Cint( GetObjProperty(potion, "crafterskill" ) );
   var cfg := ReadConfigFile(":*:itemdesc");
   var elem := FindConfigElem(cfg, use_on.objtype);
 
@@ -43,6 +41,8 @@ program drink_blue( who, potion )
       bonus := bonus / 100;
       bonus := Cint(elem.PhysicalResist * (bonus * 0.8)); // 80% do alchemy na proteção física da arma em proteção elemental
   endif
+
+  DestroyItem(potion);
 
   SendSysMessageEx( who, "Você encantou o objeto.", SSM_INFO );
   PlayStationaryEffect( who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2 );
