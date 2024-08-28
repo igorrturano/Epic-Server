@@ -28,6 +28,9 @@ program usabalao(who, item)
   SetObjProperty(item, "extrato", extrato);
   SetObjProperty(item, "strength", cint(GetObjProperty(alvo, "strength")));
   SetObjProperty(item, "bonus", cint(GetObjProperty(alvo, "bonus")));
+  SetObjProperty(item, "tier", cint(GetObjProperty(alvo, "tier")));
+  SetObjProperty(item, "crafterskill", cint(GetObjProperty(alvo,"crafterskill")));
+  SetObjProperty(item, "science", cint(GetObjProperty(alvo,"science")));
  DestroyItem(alvo);   
   CreateIteminBackpack(who, 0x0f0e, 1);
   

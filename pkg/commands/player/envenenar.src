@@ -12,6 +12,7 @@ include ":fls_core:fls_characters";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":spells:swordmage";
+include ":alchemy:alchemy";
 
 program do_poisoning(who)
 	EraseObjProperty(who, "IsMeditating");
@@ -50,9 +51,14 @@ program do_poisoning(who)
 	var acfgfile := ReadConfigFile(":*:itemdesc");
 	var theitem := acfgfile[the_item.objtype];
 	var level, difficulty, points, poisonType;
+	var bonus := Cint(GetObjProperty(the_poison, "bonus"));
+	bonus := PotionSpecialistBonus(who, bonus, VENENO);
 	level := Cint(GetObjProperty(the_poison, "level"));
 	if (!level)
-		level := RandomDiceRoll("1d5");
+		level := (bonus/5);
+	endif
+	if (level < 1)
+		level := 1;
 	endif
 	//se for uma poçao que nao a default a formula eh essa:
 	difficulty := 15*level + 10;
@@ -60,11 +66,11 @@ program do_poisoning(who)
 	case(the_poison.objtype)
 		0xbf00: level := 1; difficulty := 40; points := 50; poisonType := "defaultPoison";
     	0xbf01: poisonType :="strPoison"; difficulty := 60; points := 70;
-		0xbf07: poisonType :="dexPoison"; difficulty := 60; points := 70;
-		0xbf06: poisonType :="intPoison"; difficulty := 60; points := 70;
-		0xbf02: poisonType:="staminaPoison"; difficulty := 60; points := 70;
-		0xbf03: poisonType:="paralyzePoison"; difficulty := 80; points := 100;
-		0xef54: poisonType :="manaPoison"; difficulty := 40; points := 70;
+		0xbf20: poisonType :="dexPoison"; difficulty := 60; points := 70;
+		0xef54: poisonType :="intPoison"; difficulty := 60; points := 70;
+		0xbf02: poisonType :="staminaPoison"; difficulty := 60; points := 70;
+		0xbf03: poisonType :="paralyzePoison"; difficulty := 80; points := 100;
+		0xbf06: level := 3; difficulty := 60; points := 70; poisonType := "manaPoison";
 		0xbf04: level := 4; difficulty := 80; points := 60; poisonType := "defaultPoison";
         0x6072: level := 3; difficulty := 70; points := 50; poisonType := "defaultPoison";
 		0xdc04: level := 2; difficulty := 60; points := 40; poisonType := "defaultPoison";
