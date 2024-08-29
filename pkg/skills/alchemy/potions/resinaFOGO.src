@@ -10,6 +10,7 @@ include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include "include/damage";
 include "include/epicCombatUtils";
+include "include/epicMageryUtils";
 
 program resinaFOGO(who, resina)
     var targ;
@@ -30,18 +31,9 @@ program resinaFOGO(who, resina)
 	
 	if (targ.isA(POLCLASS_WEAPON))
 
-		var encantada := GetObjProperty(targ, "#elementalweapon");
-		if (encantada != error)
-			if (readgameclock() < encantada.endtime )
-				SendSysMEssageEx(who, "Esta arma ja esta com algum outro efeito.", SSM_FAIL);
-				return 1;
-			endif
-		endif
-
-		if ( GetCooldown(targ, "blessweapon") > 0 )
-			SendSysMEssageEx(who, "Esta arma ja esta com algum outro efeito.", SSM_FAIL);
-			return 1;
-		endif
+		if(checkForElementalWeapons(who, targ))
+	        return 0;
+        endif        
 
 		var dmg := struct;
 		dmg.+type := DMG_FIRE;

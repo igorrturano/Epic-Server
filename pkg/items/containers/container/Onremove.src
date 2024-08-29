@@ -14,16 +14,11 @@ program onRemove(character, container, item, item_amount, movetype)
 	if (aux == character)
 		return 1;
 	endif
-	var cannotPickItems := GetObjProperty(character, "pilotando") || GetObjProperty(character, "metamorfose") != error;
 
 	if (character.concealed || character.hidden || aux.objtype == 0xEFFD || movetype == MOVETYPE_COREMOVE);
 	else
 		if (GetObjProperty(character, "maosleves") == 1)
 			EraseObjProperty(character, "maosleves");
-		elseif (cannotPickItems)
-			SendSysMessageEx(character, "Você não consegue pegar itens com essas mãos.", SSM_INFO);
-			return 0;
-		else
 			PrintText(character, "*Tirou " + item.desc + " da " + container.desc + "*", 41);
 		endif
 	endif

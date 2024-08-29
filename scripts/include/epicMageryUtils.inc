@@ -207,10 +207,33 @@ function bonusSpellDurationForSpecialists(who, duration, school)
    return duration;
 endfunction
 
+
 function epicCastPoint (who)
    var mlore := CInt(AP_GetSkill(who, MAGICLORE));
 	var int_bonus := CInt(AP_GetStat(who, INTELLIGENCE));
 	var cast_points := CInt(((int_bonus - 50)/10) + (mlore/10));
 	
    return cast_points;
+endfunction
+
+function checkForElementalWeapons(who, targ)
+		var encantada := GetObjProperty(targ, "#elementalweapon");
+		if (encantada != error)
+			if (readgameclock() < encantada.endtime )
+				SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+				return 1;
+			endif
+		endif
+
+		if ( GetCooldown(targ, "blessweapon") > 0 )
+			SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+			return 1;
+		endif
+
+      if (targ.objtype == FIST)
+         SendSysMessageEx(who, "Você não pode encantar suas mãos.", SSM_FAIL);
+         return 1;
+      endif
+
+      return 0;
 endfunction

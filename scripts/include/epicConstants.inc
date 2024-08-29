@@ -61,3 +61,5 @@ enum CAMINHOS
     LADINO := "Ladino",
     SABIO := "Sabio"
 endenum
+
+const FIST := 0x1F020;

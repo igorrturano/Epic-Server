@@ -1,0 +1,36 @@
+// //$Id: bowcraft.src 905 2005-11-05 08:20:50Z muaddiblsd $
+
+use cfgfile;
+use util;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:crafting";
+include ":crafting:craftingRepair";
+include ":crafting:toolWear";
+include ":itemutils:canAccess";
+
+var item_config     := ReadConfigFile(":*:itemdesc");
+var amount;
+
+program use_Taxidermiatool(who, tool)
+
+	if(!can_access(who, tool))
+		return 0;
+	endif
+	if((!tool.movable) or !ReserveItem(tool))
+		SendSysMessage(who, "Voce nao pose usar isto.");
+		return 0;
+	endif
+	if( !(tool in EnumerateItemsInContainer(who.backpack)) )
+		SendSysMessage(who, "Este item nao esta na sua mochila.");
+		return 0;
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+
+    SendSysMessage(who, "Item sem funções ainda.");
+endprogram
