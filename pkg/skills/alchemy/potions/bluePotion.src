@@ -28,13 +28,15 @@ program drink_blue (who, potion)
 		56332:	
 			if (temHabilidade(who, "Mutagenicos"))
 				TS_StartTimer(who, "agility", (360+duration*10), Cint(15+bonus)); 
-			endif
+			else
 				TS_StartTimer(who, "agility", (360+duration*10), Cint(10+bonus));
+			endif
 		56333: 
 			if (TemHabilidade(who, "Mutagenicos"))
 				TS_StartTimer(who, "agility", (600+duration*10), Cint(20+bonus));
-			endif
+			else
 				TS_StartTimer(who, "agility", (600+duration*10), Cint(15+bonus)); 
+			endif
 	endcase
 	empty_bottle(who, potion);
 endprogram
