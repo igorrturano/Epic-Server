@@ -206,11 +206,3 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 
    return duration;
 endfunction
-
-function epicCastPoint (who)
-   var mlore := CInt(AP_GetSkill(who, MAGICLORE));
-	var int_bonus := CInt(AP_GetStat(who, INTELLIGENCE));
-	var cast_points := CInt(((int_bonus - 50)/10) + (mlore/10));
-	
-   return cast_points;
-endfunction
