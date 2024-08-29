@@ -113,23 +113,6 @@ program core_npcDeath(params)
 		EraseObjProperty(master, "oldbodyserial");
 	endif
 
-		
-	//nao existe mais		
-	/*if (getobjProperty(corpse, "devoraralma"))
-		var necroserial := getobjProperty(corpse, "devoraralma");
-		var necro := SystemFindObjectBySerial(necroserial);
-		var maxhp := Cint(getobjProperty(corpse, "maxhp"));
-		var souls := Cint(getobjProperty(necro, "souls"));
-		souls := souls + 1;
-		SetobjProperty(necro, "souls", souls);
-		var hprecupera := maxhp / 10;
-		var hpnow := AP_GetVital(necro, "hits");
-		var amount := hpnow + hprecupera;
-		AP_SetVital(necro, "hits", amount);
-		PlayMovingEffect( corpse, necro, 14202, 5, 0,  0 );
-		PlaySoundEffect(necro, 383);
-	endif*/
-
 	var pilot := GetObjProperty(corpse, "golem_maker");
 	if (pilot)
 		var who := SystemFindObjectBySerial(pilot);

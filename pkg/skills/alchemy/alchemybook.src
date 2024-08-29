@@ -154,7 +154,7 @@ function MakePotion ( pot, who)
 					SetObjProperty(pot, "bonus", bonus);
 					SetObjProperty(pot, "tier", tier);
 					SetObjProperty(pot, "crafterskill", crafterskill);
-					SetObjProperty(thing, "science", science);
+					SetObjProperty(pot, "science", science);
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");
 				endif

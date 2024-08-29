@@ -105,6 +105,8 @@ exported function Attack(attacker, defender)
 		return 1;
 	elseif(!arcane_shooting(attacker, defender))
 		return 1;
+	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
+		return 1;
 	// elseif ( !throwCheckCombatHook(attacker, defender) )
 	// 	return 1;
 	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
@@ -629,6 +631,10 @@ function CalculateHitChance(attacker, defender)
 	if ( GetObjProperty(attacker, "armapreferida") == attacker.weapon.objtype )
 		hit_chance := hit_chance + 5;
 	endif
+	var balanced_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"];
+	if (balanced_weapon)
+		hit_chance := hit_chance + balanced_weapon;
+	endif
 
     // if ( GetObjProperty(attacker, "#aterrorizar") )
 	// 	hit_chance := hit_chance + 20;
@@ -763,10 +769,11 @@ endfunction
 // Arqueiros
 
 function AmmoCheckCombatHook(attacker, defender)
+    var arcane_bows := array{0xFA6D, 0XF997};
 	if ( !wpn_a_elem.ProjectileType  )
 		return 1;
 	endif
-	if ( GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype == 0xF997)
+	if ( GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype in arcane_bows)
 		return 1;
 	endif
 
@@ -843,7 +850,8 @@ function arcane_shooting(attacker, defender)
 		return 1;
 	endif
 
-	if ( !GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype != 0xF997)
+    var arcane_bows := array{0xFA6D, 0XF997};
+	if ( !GetCooldown(attacker, "arcane_bow") && !(attacker.weapon.objtype in arcane_bows))
 		return 1;
 	endif
 

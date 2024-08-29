@@ -12,12 +12,7 @@ function DistanceChecks(attacker, defender)
 	if ( wpn_a_elem2.MaxRange == error )
 		return 1;
 	endif
-	if (TemHabilidade(attacker, "Tirothan") && GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype == 0xF997)
-		var arcane_bow_range := Cint(Cint(weapon_max_range) + Cint(Ap_GetSkill(attacker, MAGICLORE)/10));
-		var arcane_bow_min := Cint(weapon_min_range + 1);
-		weapon_max_range := arcane_bow_range;
-		weapon_min_range := arcane_bow_min;
-	endif
+	
 	if ( cur_range > weapon_max_range )
 		CombatDbgMsg(attacker, "Oponente esta muito longe.");
 		return 0;
@@ -183,8 +178,9 @@ function AmmoCheck(attacker, defender)
 	if ( !wpn_a_elem.ProjectileType )
 		return 1;
 	endif
+    var arcane_bows := array{0xFA6D, 0XF997};
 
-	if ( !GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype != 0xF997 && !wpn_a_elem.ProjectileType)
+	if ( !GetCooldown(attacker, "arcane_bow") && !(attacker.weapon.objtype in arcane_bows) && !wpn_a_elem.ProjectileType)
 		return 1;
 	endif
 	var has_ammo := 0;

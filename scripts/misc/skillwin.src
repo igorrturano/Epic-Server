@@ -34,7 +34,7 @@ program core_skillWin(who)
 	endif
 
 	var charGump := GFCreateGump();
-	var input;
+	var input; 
 
 	GFResizePic(charGump, 0, 25, 3600, 355, 380);
 	GFResizePic(charGump, 15, 40, 0x13BE, 325, 350);
@@ -47,15 +47,6 @@ program core_skillWin(who)
 	var pri := primarias[1];
 	var cappri := Cdbl(limiteportempo(who)) + Cdbl(valorinicial(who, pri));
 	var capprimax := 100;
-	/*
-	if (pri1 > pri2)
-		cappri := limiteportempo(who) + valorinicial(who, pri1);
-		capprimax := AP_CheckClassSkillCap(who, pri1);
-	else
-		cappri := limiteportempo(who) + valorinicial(who, pri2);
-		capprimax := AP_CheckClassSkillCap(who, pri2);
-	endif
-	*/
 
 	//SECUNDÁRIAS - START
 	var secundarias := getSecundarias(who);
@@ -296,113 +287,9 @@ function Habilidades(who)
 
 		EraseObjProperty(who, "#gumphab");
 		return 1;
-/*
-		var classe := GetObjProperty(who, "classe");
-		var possiveis := HabilidadesPorNivel(who, classe, input);
-		if ( possiveis.size() > 0)
-			SendSysMessageEx(who, "Escolha sua habilidade.", SSM_REQUEST);
-			var escolhida := ComprarHabGump(who, possiveis);
-			if (!escolhida)
-				SendSysMessageEx(who, "Voce cancelou a compra da habilidade.", SSM_FAIL);
-				return 0;
-			endif
-			//var escolhida := RadioGump(who, 300, 380, "Escolha a habilidade que quer aprender", possiveis);
-			if (!temRequisito(who, escolhida))
-				return 0;
-			endif
-			SendSysMessageEx(who, "Voce comprou a habilidade: " + escolhida, SSM_INFO);
-			if (escolhida == "Grande Fortitude")
-				var hitsmod := cint(GetObjProperty(who, "hitsmod"));
-				hitsmod := hitsmod + 20;
-				setObjProperty(who, "hitsmod", hitsmod);
-				recalcvitals(who);
-			elseif (escolhida == "Acuidade com Arma")
-				SendSysMessageEx(who, "Escolha qual vai ser sua arma preferida.", SSM_REQUEST);
-				var targ := Target(who);
-				while(!targ.isA(POLCLASS_WEAPON))
-					targ := Target(who);
-				endwhile
-				SetObjProperty(who, "armapreferida", targ.objtype);
-				SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-			elseif (escolhida == "Foco com Arma")
-				SendSysMessageEx(who, "Escolha qual vai ser sua arma para a habilidade foco com arma.", SSM_REQUEST);
-				var targ := Target(who);
-				while(!targ.isA(POLCLASS_WEAPON))
-					targ := Target(who);
-				endwhile
-				SetObjProperty(who, "fococomarma", targ.objtype);
-				SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-			elseif (escolhida == "Senso da Natureza")
-				setObjProperty(who, "empatiacomanimais", 1);
-			endif
-			myhabs[input] := escolhida;
-			habs[input] := 2;
-			SetObjProperty(who, "buyhab", habs);
-			SetObjProperty(who, "myhabs", myhabs);
-		endif
-		*/
+
 	endif
 endfunction
-/*
-function ComprarHabGump(who, habs)
-	UnloadConfigFile(":charactercreation:config/habilidades");
-	var gump := GFCreateGump();
-	var sizey := (habs.size()*100) + 120;
-
-    GFDisposable(gump, 0);
-	GFResizePic(gump, 0, 25, 3600, 380, sizey+30);
-	GFResizePic(gump, 15, 40, 0x13BE, 350, sizey);
-	GFTextMid(gump, 80, 50, 250, 1153, "Habilidades de Classe");
-
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-
-	var x := 40;
-	var y := 80;
-
-	var i := 1;
-	foreach hab in habs
-		var habelem := FindConfigElem(habcfg, hab);
-		var desc := GetConfigString(habelem, "desc");
-		var uso := GetConfigString(habelem, "uso");
-		var nome := GetConfigString(habelem, "nome");
-		if (uso == "Ativa")
-			var delay := GetConfigInt(habelem, "delay");
-			nome := nome + " ["+delay+" s]";
-			var stam := GetConfigInt(habelem, "stam");
-			if (!stam)
-				stam := GetConfigInt(habelem, "mana");
-				nome := nome + " [" + stam + " mana]";
-			else
-				nome := nome + " [" + stam + " stam]";
-			endif
-		endif
-		var nivel := GetConfigInt(habelem, nivel);
-		var requisitos := getConfigstringArray(habelem, "requisito");
-
-		GFAddButton(gump, 20, y+4, 2103, 2104, 1, i );
-		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
-		if (requisitos.size() )
-			desc := desc + "<cr> Pre-Requisitos: ";
-			foreach req in requisitos
-				desc := desc + req + " ";
-			endforeach
-		endif
-		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
-
-		i := i + 1;
-		y := y + 110;
-	endforeach
-
-	var input := GFSendGump(who, gump);
-	input := input[0];
-
-	if (input > 0)
-		return habs[input];
-	else
-		return 0;
-	endif
-endfunction
-*/
 
 function GetSkillColor(skill)
 	var temp := cint(skill/10);
