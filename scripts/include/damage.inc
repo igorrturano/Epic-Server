@@ -385,6 +385,7 @@ function CalculateTotalDamageBonus(dmg, who, defender)
         endif
     endif
 
+	var witcher := Cint(AP_GetSkill(who, ALCHEMY) / 10);
 	var inimigo_predileto := Cint(AP_GetSkill(who, SURVIVAL) / 10);
 	if (TemHabilidade(who, "Inimigo Predileto"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
@@ -399,7 +400,15 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
 			inimigo_predileto := inimigo_predileto + 1.0; //dobra o dano se for inimigo predileto
 		endif
+	elseif (TemHabilidade(who, "Oleo do Cacador"))
+		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var inimigo := GetObjProperty(who, "Óleo");
+		if (cfg[npctemplate.template].Category == inimigo)
+			inimigo_predileto := witcher + 1.0; //dobra o dano se for inimigo predileto
+		endif
 	endif
+	
 
 	if (GetCooldown(defender, "prey"))
 		inimigo_predileto := inimigo_predileto + Cint(AP_GetSkill(who, SURVIVAL) / 10);
