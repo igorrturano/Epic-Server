@@ -13,14 +13,13 @@ include "include/epicMageryUtils";
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	params := 0; // Not needed anymore.
+	var lvl := params [3];
 	
 	if ( GetObjProperty(mobile, "#ClumsyMod") )
 		return 0;
 	endif
 	
-	var points := cint(epicWisdomPathBonus(attacker)+10);
-	points := points * -1;
+	var points := lvl * -1;
 	
 	
 	SetObjProperty(mobile, "#ClumsyMod", points);
