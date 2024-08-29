@@ -206,7 +206,7 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 
    return duration;
 endfunction
-
+ 
 function checkForElementalWeapons(who, targ)
 		var encantada := GetObjProperty(targ, "#elementalweapon");
 		if (encantada != error)
