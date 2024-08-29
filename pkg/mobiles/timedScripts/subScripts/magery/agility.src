@@ -8,7 +8,7 @@ program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
 	var level := params[3];
-	var points := level;
+	
 	
 	if ( GetObjProperty(mobile, "#AgilityMod") )
 		// Condition is met if the mobile logs out and back in.
@@ -17,8 +17,8 @@ program TimedScript_Clumsy(params)
 	endif
 
 
-	SetObjProperty(mobile, "#AgilityMod", points);
-	AP_ModifyStatMod(mobile, DEXTERITY, points);
+	SetObjProperty(mobile, "#AgilityMod", level);
+	AP_ModifyStatMod(mobile, DEXTERITY, level);
 	
 	return 1;
 endprogram
