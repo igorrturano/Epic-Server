@@ -22,7 +22,7 @@ program TimedScript_Weaken(params)
 	endif
 	
 
-	var points := cint(epicCastPoint(attacker)+10);
+	var points := cint(epicWisdomPathBonus(attacker)+10);
 	points := points * -1;
 	
 	
