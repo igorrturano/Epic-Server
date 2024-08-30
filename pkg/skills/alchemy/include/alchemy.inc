@@ -242,20 +242,26 @@ endfunction
 function do_poison(who, potion)
   var level, difficulty, points, poisonType;
   level := Cint(GetObjProperty(potion, "level"));
-  if (!level)
-    level := RandomDiceRoll("1d5");
-  endif
+  var bonus := Cint(GetObjProperty(potion, "bonus"));
+	bonus := PotionSpecialistBonus(who, bonus, VENENO);
+	level := Cint(GetObjProperty(potion, "level"));
+	if (!level)
+		level := (bonus/5);
+	endif
+	if (level < 1)
+		level := 1;
+	endif
   //se for uma poçao que nao a default a formula eh essa:
   difficulty := 15*level + 10;
   points := difficulty;
   case(potion.objtype)
     0xbf00: level := 1; difficulty := 40; points := 50; poisonType := "defaultPoison";
     0xbf01: poisonType :="strPoison"; difficulty := 60; points := 70;
-    0xbf07: poisonType :="dexPoison"; difficulty := 60; points := 70;
-    0xbf06: poisonType :="intPoison"; difficulty := 60; points := 70;
+    0xbf20: poisonType :="dexPoison"; difficulty := 60; points := 70;
+    0xef54: poisonType :="intPoison"; difficulty := 60; points := 70;
     0xbf02: poisonType:="staminaPoison"; difficulty := 60; points := 70;
     0xbf03: poisonType:="paralyzePoison"; difficulty := 80; points := 100;
-    0xef54: poisonType :="manaPoison"; difficulty := 40; points := 70;
+    0xbf06: level := 3; difficulty := 40; points := 70; poisonType :="manaPoison";
     0xbf04: level := 3; difficulty := 80; points := 60; poisonType := "defaultPoison";
     0xdc04: level := 2; difficulty := 60; points := 40; poisonType := "defaultPoison";
     0xbf05: level := 4; difficulty := 100; points := 100; poisonType := "defaultPoison";
@@ -284,24 +290,24 @@ endfunction
 Function PotionSpecialistBonus (who, bonus, science)
 	var spec := 2;
 
-		if (TemHabilidade(who, "Bombardeiro") && science == BOMBA);
+		if (TemHabilidade(who, "Bombardeiro Eficiente") && science == BOMBA);
 			bonus := Cint(bonus * spec);
 		elseif (TemHabilidade(who, "Veneno Puro") && science == VENENO);
 			bonus := Cint(bonus * spec);
-		elseif (TemHabilidade(who, "Mutagenicos") && science == BUFF);
+		elseif (TemHabilidade(who, "Impulso Metabolico") && science == BUFF);
 			bonus := Cint(bonus * spec);
 		endif
 
     return bonus;
 endfunction
 
-Function epicPotionDamageRoll(lvl)
+Function epicPotionDamageRoll(tier, bonus)
   var dice := cstr("1d4");
-  if (lvl == 2)
-    dice := cstr("2d6");
-  elseif (lvl == 3)
-    dice := cstr("3d8");
-  endif
+    if (tier == 2)
+      dice := cstr("2d6");
+    elseif (tier == 3)
+      dice := cstr("3d8");
+    endif
 
   var dmg := RandomDiceRoll(dice);
   dmg := Cint(dmg + bonus);
