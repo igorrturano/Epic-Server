@@ -1,0 +1,53 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+include ":charactercreation:resists";
+
+program manobra(who)
+
+	var resist := GetObjProperty(who, "formaadaptavel");
+    var bonus := (Cint(AP_GetSkill(who, ALCHEMY))/4);
+    bonus := (bonus+25);
+	
+	if (resist == error)
+		var prot := RadioGump(who, 200, 260, "Escolha a resistencia", {"Fortitude","Reflexos", "Vontade"});
+		SendSysMessageEx(who, "Voce escolheu aprimorar " + prot, SSM_INFO);
+		if (prot == "Fortitude")
+			SetObjProperty(who,"formaadaptavel", FORTITUDE);
+            SetObjProperty(who, "Mutacao", bonus);
+            SetObjProperty(who, "#FortitudeMod", bonus + GetObjProperty(who, "#FortitudeMod"));
+			return;
+		elseif (prot == "Reflexos")
+			SetObjProperty(who,"formaadaptavel", REFLEXOS);
+            SetObjProperty(who, "Mutacao", bonus);
+            SetObjProperty(who, "#ReflexosMod", bonus + GetObjProperty(who, "#ReflexosMod"));
+			return;
+		elseif (prot == "Vontade")
+			SetObjProperty(who,"formaadaptavel", VONTADE);
+            SetObjProperty(who, "Mutacao", bonus);
+            SetObjProperty(who, "#VontadeMod", bonus + GetObjProperty(who, "#VontadeMod"));
+			return;
+		endif
+
+	elseif (resist == FORTITUDE)
+		EraseObjProperty(who,"formaadaptavel");
+        SetObjProperty(who, "#FortitudeMod", GetObjProperty(who, "#FortitudeMod") - GetObjProperty(who, "Mutacao"));
+        EraseObjProperty (who, "Mutacao");
+		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
+	elseif (resist == REFLEXOS)
+		EraseObjProperty(who,"formaadaptavel");
+        SetObjProperty(who, "#ReflexosMod", GetObjProperty(who, "#ReflexosMod") - GetObjProperty(who, "Mutacao"));
+        EraseObjProperty (who, "Mutacao");
+		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
+	elseif (resist == VONTADE)
+		EraseObjProperty(who,"formaadaptavel");
+        SetObjProperty(who, "#VontadeMod", GetObjProperty(who, "#VontadeMod") - GetObjProperty(who, "Mutacao"));
+        EraseObjProperty (who, "Mutacao");
+		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
+	endif
+
+endprogram   

@@ -1,0 +1,122 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include "include/damage";
+include "include/facings";
+include "include/shapes";
+include ":magery:fields";
+include "include/epicConstants";
+include ":alchemy:alchemy";
+
+program use_explosion(who, potion)
+    EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode usar isto.");
+		return;
+	endif
+	if(!Accessible( who, potion))
+		SendSysMessage(who,"Voce nao pode pegar isto!");
+		return;
+	endif
+
+    SendSysMessage(who, "Escolha a direcao para onde expandira o fogo");
+    var targ := TargetCoordinates(who);
+    if (!targ)
+        SendSysMessageEx(who, "Voce cancelou.", SSM_FAIL);
+        return 0;
+    endif
+
+    PrintTextAbove(who, "Sopra uma baforada de fogo.");
+    
+     // Use TurnObjectToward para virar o who na direção do alvo.
+    TurnObjectToward(who, targ.x, targ.y);
+    sleepms(300);
+
+    var range := cint(GetObjProperty(potion, "crafterskill")/20);
+    var effect_id := 0x36b0; // ID do efeito que você quer jogar
+    var lines_count := range; // Número de linhas que você quer criar
+    var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
+    var effect_duration := 15; // Duração do efeito
+
+    PlayEffectLines(who, effect_id, lines_count, effect_distance, effect_duration, who.realm);
+
+    var mobs := ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm);
+    foreach mob in mobs
+        if (InPosition(who, mob.x, mob.y, FACE_POS_INFRONT))
+            if (mob == who)
+                continue;
+            endif
+            ;
+            var tier := cint(GetObjProperty(potion, "tier"));
+            var bonus := cint(GetObjProperty(potion, "bonus"));
+            var damage := epicPotionDamageRoll(tier, bonus);
+
+            PlaySoundEffect( mob, SFX_226 );
+            sleepms(100);
+            PlaySoundEffect( mob, SFX_227 );
+            sleepms(100);
+            PlaySoundEffect( mob, SFX_228 );
+            sleepms(100);
+            SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
+            DamageFLS(mob, cint(damage), DMG_FIRE, who);
+            sleepms(100);         
+        endif
+    endforeach
+    DestroyItem(Potion);
+endprogram
+
+function PlayEffectLines(who, effect_id, lines_count, effect_distance, effect_duration, realm)
+    var facing := who.facing;
+    var start_x := who.x;
+    var start_y := who.y;
+
+    for line := 0 to lines_count
+        var width := line * 2 + 1;
+        for i := -line to line
+            var pos_x, pos_y;
+            case (facing)
+                0: // North
+                    pos_x := start_x + i;
+                    pos_y := start_y - line;
+                1: // Northeast
+                    pos_x := start_x + line;
+                    pos_y := start_y - line + i;
+                2: // East
+                    pos_x := start_x + line;
+                    pos_y := start_y + i;
+                3: // Southeast
+                    pos_x := start_x + line;
+                    pos_y := start_y + line - i;
+                4: // South
+                    pos_x := start_x + i;
+                    pos_y := start_y + line;
+                5: // Southwest
+                    pos_x := start_x - line;
+                    pos_y := start_y + line - i;
+                6: // West
+                    pos_x := start_x - line;
+                    pos_y := start_y + i;
+                7: // Northwest
+                    pos_x := start_x - line;
+                    pos_y := start_y - line + i;
+            endcase
+
+            if (pos_x != start_x || pos_y != start_y) // Don't place effect on who
+                PlayStationaryEffect(pos_x, pos_y, who.z, effect_id, 10, effect_duration, 0, realm);
+            endif
+        endfor
+        sleepms(50);
+    endfor
+endfunction
+
