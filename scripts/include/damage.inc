@@ -389,7 +389,6 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	var witcher := Cint(AP_GetSkill(who, ALCHEMY) / 10);
 	var inimigo_predileto := 0;
 	var inimigo_dmg := Cint(AP_GetSkill(who, SURVIVAL) / 10);
-
 	if (TemHabilidade(who, "Inimigo Predileto"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
