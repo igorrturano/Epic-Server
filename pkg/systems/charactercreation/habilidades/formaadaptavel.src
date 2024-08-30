@@ -37,17 +37,17 @@ program manobra(who)
 		EraseObjProperty(who,"formaadaptavel");
         SetObjProperty(who, "#FortitudeMod", GetObjProperty(who, "#FortitudeMod") - GetObjProperty(who, "Mutacao"));
         EraseObjProperty (who, "Mutacao");
-			SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
+		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
 	elseif (resist == REFLEXOS)
 		EraseObjProperty(who,"formaadaptavel");
         SetObjProperty(who, "#ReflexosMod", GetObjProperty(who, "#ReflexosMod") - GetObjProperty(who, "Mutacao"));
         EraseObjProperty (who, "Mutacao");
-			SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
+		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
 	elseif (resist == VONTADE)
 		EraseObjProperty(who,"formaadaptavel");
         SetObjProperty(who, "#VontadeMod", GetObjProperty(who, "#VontadeMod") - GetObjProperty(who, "Mutacao"));
         EraseObjProperty (who, "Mutacao");
-			SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
+		SendSysMEssageEx(who, "Voce volta ao normal.", SSM_FAIL);
 	endif
 
 endprogram   
