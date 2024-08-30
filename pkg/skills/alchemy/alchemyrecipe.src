@@ -30,11 +30,10 @@ program cria(item)
 		spellinfo.+name := GetConfigString(elem, "name");
 		spellinfo.+id := GetConfigInt(elem, "id");
 		spellinfo.+description := GetConfigString(elem, "desc");
-	endif
+	endif
+
 
 	SetObjProperty(item, "spellinfo", spellinfo);
-
-			
 
 endprogram
 
