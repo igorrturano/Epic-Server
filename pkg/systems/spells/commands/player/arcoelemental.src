@@ -3,7 +3,9 @@ include ":tn:cooldown";
 use os;
 
 program meditar(who, text)
-    if (!GetCooldown(who, "arcane_bow") && !(who.weapon.objtype == 0xF997))
+    var arcane_bows := array{0xFA6D, 0XF997};
+
+    if (!GetCooldown(who, "arcane_bow") && !(who.weapon.objtype in arcane_bows))
         SendSysMessageEx(who, "Você precisa estar com seu arco elemental conjurado!", SSM_FAIL);
         return;
     endif

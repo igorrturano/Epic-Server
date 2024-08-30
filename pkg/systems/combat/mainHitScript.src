@@ -79,6 +79,8 @@ program MainHitScript( params )
 	//Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
 	elseif (!attacker.npctemplate && attacker.warmode && defender.npctemplate && defender.master)
 		LogToFile(":fls_core:pets.log", attacker.acctname+" atacou "+defender.name+" ("+defender.npctemplate+")", LOG_DATETIME);
+	elseif (defender.npctemplate == ":brainai:GolemMartelo")
+		return 0;
 	endif
 
 	//Controla de o atacante está olhando pro alvo e se está por trás dele
@@ -553,6 +555,10 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 		bonus := RandomInt(3)+1;
 	endif
 
+	if (!GetObjProperty(armor, "encerada"))
+		bonus := RandomInt(3)+1;
+	endif
+
 	if (armor)
 		var armr_elem := CS_GetSettingsCfgElem("Armor");
 
@@ -571,7 +577,11 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 
 		//if (CInt(rawdamage) > dmg_to_wear)
 		if (RandomDiceRoll("1d100") <= wearchance)
-			SendSysMessage(defender, armor.desc+" foi danificada.");
+			if (bonus > 0)
+				SendSysMessage(defender, armor.desc+" foi bem danificada.");
+			else
+				SendSysMessage(defender, armor.desc+" foi danificada.");
+			endif
 			var armorhp := armor.hp;
 			armorhp := armorhp - Cint(armr_elem.WearRate + bonus);
 			if ( armorhp <= 0 )
@@ -761,8 +771,8 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		endif
 	endif
 
-	// Arqueiro arcano
-	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype == 0xF997)
+    var arcane_bows := array{0xFA6D, 0XF997};
+	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype in arcane_bows)
 		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
 		var arcane_damage := dmg*0.5;
 
@@ -916,6 +926,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	var pet_selvagem := GetObjProperty(attacker, "Selvagem"); //verifica se é animal selvagem - nunca tamado, para dar dano critico
 	var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
 	var tem_critico := GetConfigStringArray( npcelem, "CriticalHitScripts" ); //Se tem critico no npcdesc definido
+	var can_crit := GetObjProperty(weapon, "Aprimoramentos")["Arma Elaborada"] && !attacker.npctemplate && weapon != FIST;
 	if ( !attacker.ip && weapon.IsA(POLCLASS_WEAPON) && !pet_instinto && !pet_selvagem )
 		if (tem_critico == {})
 			weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
@@ -932,15 +943,23 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
 
 	//printtextabove(attacker, "critical hit scripts " + weapon_scripts);
-	if (weapon_scripts.size() > 0)
+	if (weapon_scripts.size() > 0 && can_crit)
+		var critdelay := ReadGameClock()+180;
+		if (!GetObjProperty(weapon, "polida"))
+			SendSysMessageEx(attacker, "Sua arma está embotada!", SSM_FAIL);
+			critdelay := ReadGameClock()+240;
+		endif
 		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
-		SetObjProperty(attacker, "critdelay", ReadGameClock()+180);
-			var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
+		SetObjProperty(attacker, "critdelay", ReadGameClock()+critdelay);
+		var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
 		if (GetCooldown(defender, "vitalidadeinabalavel") > 0 || isDwarverDefender)
 			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);
 			SendSysMessageEx(attacker, "O defensor ignorou o critico", SSM_FAIL);
 			return 1;
 		endif
+	elseif (!can_crit)
+		SendsysMessageEx(attacker, "Apenas armas elaboradas causam crítico", SSM_FAIL);
+		return 1;
 	endif
 
 	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0)
@@ -1413,7 +1432,7 @@ endfunction
 
 function disarmOpponent(attacker, defender)
 	if (TemHabilidade(defender, "Vínculo Elemental"))
-		if (GetObjProperty(defender.weapon, "swordmage") ==  defender.serial)//seta com a arma
+		if (GetObjProperty(defender.weapon, "#elementalweapon"))//seta com a arma
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;
 		endif
