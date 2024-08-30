@@ -126,13 +126,13 @@ function MakePotion ( pot, who)
 		if(hasbottle)
 			var thing;
 			var crafterskill := AP_GetSkill (who, ALCHEMY);
-			var crafterInt := AP_GetStat (who, INTELLIGENCE);
+			var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
 			var bonus := (((crafterInt-50)/10)+(crafterskill/10));
 			if (!magic)//se nao tiver o flag magic como as tintas, cria o item
 				thing := CreateItemInBackpack(who, pot, 1);
 			else //se nao cria so o extrato
 				thing := CreateItemInBackpack(who, 0xcfff, 1);
-				if (temhabilidade (who, "Bombardeiro Eficiente") && science == (BOMBA));
+				if (temhabilidade (who, "Bombardeiro Eficiente") && science == BOMBA);
 					thing := CreateItemInBackpack(who, 0xcfff, 1);
 				endif
 				SetObjProperty(thing, "extrato", pot);
@@ -147,14 +147,14 @@ function MakePotion ( pot, who)
 					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
 					var pocao := GetObjProperty(thing, "extrato");
        				var pot := CreateItemInBackpack(who, pocao, 1);
-					if (temhabilidade (who, "Bombardeiro Eficiente") && science == (BOMBA));
+					if (temhabilidade (who, "Bombardeiro Eficiente") && science == BOMBA);
 						pot := CreateItemInBackpack(who, pocao, 1);
 					endif
 					SetObjProperty(pot, "strength", strength);
 					SetObjProperty(pot, "bonus", bonus);
 					SetObjProperty(pot, "tier", tier);
 					SetObjProperty(pot, "crafterskill", crafterskill);
-					SetObjProperty(thing, "science", science);
+					SetObjProperty(pot, "science", science);
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");
 				endif

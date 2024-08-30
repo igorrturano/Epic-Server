@@ -294,7 +294,7 @@ Function PotionSpecialistBonus (who, bonus, science)
 			bonus := Cint(bonus * spec);
 		elseif (TemHabilidade(who, "Veneno Puro") && science == VENENO);
 			bonus := Cint(bonus * spec);
-		elseif (TemHabilidade(who, "Mutagenicos") && science == BUFF);
+		elseif (TemHabilidade(who, "Impulso Metabolico") && science == BUFF);
 			bonus := Cint(bonus * spec);
 		endif
 

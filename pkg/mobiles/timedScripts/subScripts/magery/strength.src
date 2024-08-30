@@ -9,20 +9,15 @@ program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
 	var level := params[3];
-	params := 0; // Not needed anymore.
 
-	params := 0; // Not needed anymore.
-	
 	if ( GetObjProperty(mobile, "#StrengthMod") )
 		// Condition is met if the mobile logs out and back in.
 		// Prevents mod from being applied twice.
 		return 0;
 	endif
 
-	var points := level;
-
-	SetObjProperty(mobile, "#StrengthMod", points);
-	AP_ModifyStatMod(mobile, STRENGTH, points);
+	SetObjProperty(mobile, "#StrengthMod", level);
+	AP_ModifyStatMod(mobile, STRENGTH, level);
 	
 	return 1;
 endprogram
