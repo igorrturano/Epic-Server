@@ -1,0 +1,102 @@
+
+use uo;
+use os;
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":attributes:attributes";
+
+const SPELL_BTN := 200;
+const GUMPID_CLERICSPELL := 0x00001C;
+
+program canalizadorDaSangria(player)
+    var input := create_portal_gump(player);
+    if (input[0] == 201) // Infusão Elétrica
+        if (GetObjProperty(player, "Infusão Ígnea"))
+            EraseObjProperty(player, "Infusão Ígnea");
+        endif
+        if (GetObjProperty(player, "Infusão Gélida"))
+            EraseObjProperty(player, "Infusão Gélida");
+        endif
+        if (!GetObjProperty(player, "Infusão Elétrica"))
+            SetObjProperty(player, "Infusão Elétrica", 1);
+        endif
+    elseif (input[0] == 202) // Infusão Ígnea
+        if (GetObjProperty(player, "Infusão Gélida"))
+            EraseObjProperty(player, "Infusão Gélida");
+        endif
+        if (GetObjProperty(player, "Infusão Elétrica"))
+            EraseObjProperty(player, "Infusão Elétrica");
+        endif
+        if (!GetObjProperty(player, "Infusão Ígnea"))
+            SetObjProperty(player, "Infusão Ígnea", 1);
+        endif
+    elseif (input[0] == 203) // Infusão Gélida
+        if (GetObjProperty(player, "Infusão Elétrica"))
+            EraseObjProperty(player, "Infusão Elétrica");
+        endif
+        if (GetObjProperty(player, "Infusão Ígnea"))
+            EraseObjProperty(player, "Infusão Ígnea");
+        endif
+        if (!GetObjProperty(player, "Infusão Gélida"))
+            SetObjProperty(player, "Infusão Gélida", 1);
+        endif
+    endif
+
+    player.frozen := 1;
+    var sound := 0x666; // Infusão Elétrica
+    if (GetObjProperty(player, "Infusão Gélida"))
+        sound := 0x5c8;
+    elseif (GetObjProperty(player, "Infusão Ígnea"))
+        sound := 0x5cb;
+    endif
+    PrintTextAbove(player, "*Infundindo poção*");
+    PlaySoundEffect(player, sound);// hammer
+
+    PlaySoundEffect(player, 0x243);
+    sleep(1);
+    PlaySoundEffect(player, 0x241);
+    sleep(3);
+
+    player.frozen := 0;
+endprogram
+
+function create_portal_gump(player)
+    var gump := GFCreateGump();
+    var quinquilharias := GetObjProperty(player, "quinquilharias");
+    if (!quinquilharias)
+        quinquilharias := array{};
+        quinquilharias.Append("Infusão Elétrica");
+        quinquilharias.Append("Infusão Ígnea");
+        quinquilharias.Append("Infusão Gélida");
+        SetObjProperty(player, "quinquilharias", quinquilharias);
+    endif
+
+    GFResizePic(gump, 17, 31, 9390, 359, 125+quinquilharias.size()*26);
+    GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Granadeiro", 0, 0); //shadow
+    GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Granadeiro", 0, 0); //shadow
+    GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Granadeiro", 0, 0);
+    GFGumpPic(gump, 63, 91, 1469);
+    GFGumpPic(gump, 80, 91, 1469);
+    GFTextLine(gump, 63, 100, 0, "Aprimoramentos");
+    GFTextLine(gump, 259, 100, 0, "Modificar");
+    //GFTextLine(gump, 320, 100, 0, "Abrir");
+    GFGumpPic(gump, 38, 103, 9773, 0);
+    GFGumpPic(gump, 296, 0, 9000, 0);
+
+    var y := 121;
+    var i := 0;
+    for (i := 1; i <= quinquilharias.size(); i++)
+        var upgrade := quinquilharias[i];
+ 
+        var color := "#000000";
+        GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, upgrade), 1, 0);
+        GFAddButton(gump, 274, y+5, 10006, 10006, GF_CLOSE_BTN, 200+i);
+        sleepms(2);
+        y += 26;
+    endfor
+
+    SetObjProperty(player, "quinquilharias", quinquilharias);
+    return GFSendGump(player, gump);
+endfunction

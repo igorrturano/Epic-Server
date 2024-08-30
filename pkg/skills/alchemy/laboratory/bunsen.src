@@ -52,10 +52,16 @@ function Destilar(balao, beker, who, item)
    SetObjProperty(beker, "pocao", extrato);
    SetObjProperty(beker, "strength",  cint(GetObjProperty(balao, "strength")));
    SetObjProperty(beker, "bonus",  cint(GetObjProperty(balao, "bonus")));
+   SetObjProperty(beker, "tier", cint(GetObjProperty(balao, "tier")));
+   SetObjProperty(beker, "crafterskill", cint(GetObjProperty(balao,"crafterskill")));
+   SetObjProperty(beker, "science", cint(GetObjProperty(balao,"science")));
 
    EraseObjProperty(balao, "extrato");
    EraseObjProperty(balao, "strength");
    EraseObjProperty(balao, "bonus");
+   EraseObjProperty(balao, "tier");
+   EraseObjProperty(balao, "crafterskill");
+   EraseObjProperty(balao, "science");
    item.movable := 1;
    balao.movable := 1;
    beker.movable := 1;

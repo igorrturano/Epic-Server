@@ -101,11 +101,11 @@ function do_poison(who, potion)
   case(the_poison.objtype)
     0xbf00: level := 1; difficulty := 40; points := 50; poisonType := "defaultPoison";
       0xbf01: poisonType :="strPoison"; difficulty := 60; points := 70;
-    0xbf07: poisonType :="dexPoison"; difficulty := 60; points := 70;
-    0xbf06: poisonType :="intPoison"; difficulty := 60; points := 70;
+    0xbf20: poisonType :="dexPoison"; difficulty := 60; points := 70;
+    0xef54: poisonType :="intPoison"; difficulty := 60; points := 70;
     0xbf02: poisonType:="staminaPoison"; difficulty := 60; points := 70;
     0xbf03: poisonType:="paralyzePoison"; difficulty := 80; points := 100;
-    0xef54: poisonType :="manaPoison"; difficulty := 40; points := 70;
+    0xbf06: poisonType :="manaPoison"; difficulty := 40; points := 70;
     0xbf04: level := 3; difficulty := 80; points := 60; poisonType := "defaultPoison";
     0xdc04: level := 2; difficulty := 60; points := 40; poisonType := "defaultPoison";
     0xbf05: level := 4; difficulty := 100; points := 100; poisonType := "defaultPoison";
