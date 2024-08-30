@@ -7,27 +7,20 @@ use uo;
 use os;
 
 include ":attributes:attributes";
+include "include/epicMageryUtils";
 
 program TimedScript_Weaken(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	var lvl := params[3];
-	params := 0; // Not needed anymore.
+	var level := params[3];
 	
 	if ( GetObjProperty(mobile, "#WeakenMod") )
 		// Condition is met if the mobile logs out and back in.
 		// Prevents mod from being applied twice.
 		return 0;
 	endif
-	
 
-	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE));
-	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
-	cast_points := CInt(((int_bonus - 50)/10) + (cast_points/10));
-	var final := cast_points + 10;
-
-	var points := Cint(final*-1);
-	
+	var points := level * -1;
 	
 	SetObjProperty(mobile, "#WeakenMod", points);
 	AP_ModifyStatMod(mobile, STRENGTH, points);

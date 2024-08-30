@@ -17,9 +17,15 @@ program usabalao(who, item)
                 var pot := CreateItemInBackpack(who, pocao, 1);
 	SetObjProperty(pot, "strength", cint(GetObjProperty(item, "strength")));
         SetObjProperty(pot, "bonus", cint(GetObjProperty(item, "bonus")));
+        SetObjProperty(pot, "tier", cint(GetObjProperty(item, "tier")));
+        SetObjProperty(pot, "crafterskill", cint(GetObjProperty(item,"crafterskill")));
+         SetObjProperty(pot, "science", cint(GetObjProperty(item,"science")));
         EraseObjProperty(item, "pocao");
 	EraseObjProperty(item, "strength");
         EraseObjProperty(item, "bonus");
+        EraseObjProperty(item, "tier");
+        EraseObjProperty(item, "crafterskill");
+        EraseObjProperty(item, "science");
 	SubtractAmount(alvo, 1);     
      else
        SendSysMessage(who, "Coloque esse liquido em um frasco vazio!");

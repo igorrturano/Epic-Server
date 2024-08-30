@@ -23,24 +23,41 @@ program potionWalkOn(mobile, potion)
 		if (GetObjProperty(potion, "trap_inativa"))
 			return;
 		endif
-
+			var color := FOGO;
+			var dmg_type := DMG_FIRE;
+				if (GetObjProperty(Potion, "Infusão Gélida"));
+					color := GELO;
+					dmg_type := DMG_COLD;
+				Elseif (GetObjProperty(Potion, "Infusão Elétrica"));
+					color := RAIO;
+					dmg_type := DMG_ENERGY;
+				endif
 		var dmg := GetObjProperty(potion, "damage");
 		SendSysMessageEx(mobile, "Voce pisou em uma mina terrestre", SSM_FAIL);
 
 		foreach critter in (ListMobilesNearLocationEx( potion.x, potion.y, potion.z, 6, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, potion.realm ));
 			if (checkLineOfSight(potion, critter))
-
-				if ( critter.hidden)
+				if(temHabilidade(critter, "Essencia Explosiva"))
+					SendSysMessageEx(critter, "Por instinto voce escapou parcialmente da explosao.", SSM_INFO);
+					PlayObjectCenteredEffectHuefx( critter, 0x36b0, 7, 0x10, color );
+					DamageFLS(critter, CInt(dmg/2), dmg_type);
+					efeitocascata(potion, mobile);
+						if ( critter.hidden)
+						critter.hidden := 0;
+						SendSysMessage(critter, "Voce foi revelado na explosao!");
+						endif
+				else
+					if ( critter.hidden)
 					critter.hidden := 0;
 					SendSysMessage(critter, "Voce foi revelado na explosao!");
+					endif
+
+					PlayObjectCenteredEffectHuefx( critter, 0x36b0, 7, 0x10, color );
+					PlaySoundEffect( critter, 0x208);
+					//ApplyDamageEX(critter, dmg, DMG_FIRE);
+					DamageFLS(critter, dmg, dmg_type);
+					efeitocascata(potion, mobile);
 				endif
-
-				PlayObjectCenteredEffect( critter, 0x36b0, 7, 0x10 );
-				PlaySoundEffect( critter, 0x208);
-				//ApplyDamageEX(critter, dmg, DMG_FIRE);
-				DamageFLS(critter, dmg, DMG_FIRE);
-				efeitocascata(potion, mobile);
-
 			endif
 		endforeach
 

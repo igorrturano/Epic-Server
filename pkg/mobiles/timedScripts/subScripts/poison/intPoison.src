@@ -13,7 +13,7 @@ program poisonScript(params)
 		return 0;
 	endif
 	
-	var points := (AP_GetStat(mobile, INTELLIGENCE) * level*10)/100;
+	var points := level*5;
 	points := 0 - points;
 	
 	SetObjProperty(mobile, "#IntPoisonMod", points);

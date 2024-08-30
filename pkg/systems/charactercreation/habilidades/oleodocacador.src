@@ -1,0 +1,25 @@
+  use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:tngumps";
+include "include/damage";
+
+program manobra(who)
+
+	var oleo := GetObjProperty(who, "Óleo");
+
+	recalcvitals(who);
+	
+	if (oleo == error)
+		var inimigo := RadioGump(who, 200, 260, "Escolha o Óleo", {"Dragon","EvilHuman", "GiantAnimal", "Giants", "Goblin", "Undead", "Underdark"});
+		SendSysMessageEx(who, "Voce escolheu Óleo de " + inimigo, SSM_INFO);
+		inimigo := cstr(inimigo);
+        SetObjProperty(who,"Óleo", inimigo);
+	else
+        SendSysMessageEx(who, "Você removeu o Óleo");
+        EraseObjProperty(who,"Óleo");
+	endif
+
+endprogram   

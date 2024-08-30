@@ -21,11 +21,14 @@ program drink_blue (who, potion)
 	endif
 
 	var bonus := GetObjProperty (potion, "bonus");
-	bonus := PotionSpecialistBonus (who, bonus, BUFF);
+	var tier := getObjProperty(potion, "tier");
+	var stat := AP_GetTrueStat(who, INTELLIGENCE);
+	if (temHabilidade(who, "Impulso Metabolico"));
+	tier := (tier + 2);
+	endif
+	var buff := 0.05 * tier;
+	buff := stat*buff+bonus;
 
-	case(potion.objtype)
-		48903:	TS_StartTimer(who, "intelligence", (360+bonus*10), Cint(10+bonus)); 
-		48904: TS_StartTimer(who, "intelligence", (600+bonus*10), Cint(15+bonus)); 
-	endcase
+	TS_StartTimer(who, "intelligence", (180*tier), buff);
 	empty_bottle(who, potion);
 endprogram
