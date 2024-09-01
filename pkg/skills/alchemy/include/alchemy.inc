@@ -32,8 +32,7 @@ function checkifcandrink(character, type)
   endif
 endfunction
 
-
-function empty_bottle(character, potion, potiontype := 0)
+function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
 
   if(GetObjProperty(potion, "acabou") == 1)
 	var pot2 := SubtractAmount( potion, 1 );
@@ -46,7 +45,9 @@ function empty_bottle(character, potion, potiontype := 0)
 	return 1;
 	endif
 
-  PlaySoundEffect(character, DRINK_SOUND);
+  if (drinkSound)
+    PlaySoundEffect(character, DRINK_SOUND);
+  endif
   PrintText(character, "*usa uma pocao*");
   var goles;
 

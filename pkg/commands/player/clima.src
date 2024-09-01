@@ -9,9 +9,6 @@ include "include/client";
 include "include/say";
 include ":survival:fishingFunctions";
 
-
-
-
 program clima(who)
 
 var estacao := cint(getglobalproperty("season"));

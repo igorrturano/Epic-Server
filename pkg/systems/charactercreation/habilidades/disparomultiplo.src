@@ -1,0 +1,16 @@
+use uo;
+
+include "include/say";
+
+program doubleattack(who)
+    var shot_rounds := Cint(Ap_GetTrueSkill(who, TACTICS) / 40);
+
+    if (who.weapon.attribute == "Ranged")
+        SendSysMessageEx(who, "Seus dedos deslizam pelo arco", SSM_INFO);
+        for i := 0 to shot_rounds
+            who.attack_once(); 
+        endfor
+    else
+        SendSysMessageEx(who, "Você não pode usar essa habilidade com essa arma", SSM_FAIL);
+    endif
+endprogram
