@@ -5,6 +5,7 @@ use vitals;
 include ":charactercreation:resists";
 include "include/damage";
 include ":attributes:attributes";
+include "include/epicConstants";
 
 var ironArmors := {0x1c04, 0x1408, 0x1409, 0x140A, 0x140B, 0x140C, 0x140D, 0x140E, 0x140F, 0x1412, 0x1419, 0x13ec, 0x13ed, 0x13ee, 0x13ef,
                     0x13f0, 0x13f1, 0x13f2, 0x1415, 0x1416, 0x1410, 0x1417, 0x1411, 0x141A, 0x1414, 0x1418, 0x1413, 0x13BB, 0x13C0, 0x13BE, 0x13C3,
@@ -34,46 +35,42 @@ program calor(params)
                 return;
             endif
 
-            var dif := 105; //Quase Impossível
+            var dif := RESIST_ALMOST_IMPOSSIBLE;
 
             if (GetGlobalProperty("dia") == "dia")
-                 dif := dif + 15;
+                 dif := dif + 1;
             endif
 
             if ( cint( GetGlobalProperty("season")) == 1) // if verão
-                dif := dif + 15;
+                dif := dif + 1;
             endif
 
             if ( cint( GetGlobalProperty("season")) == 3) // if inverno
-                dif := dif -15;
+                dif := dif -1;
             endif
 
             if ( GetGlobalProperty("weather") != error) //ta chovendo ou nevando
-                dif := dif - 15;
+                dif := dif - 1;
             endif
 
-            if ( GetObjProperty(who, "chardata").trait == "Nomade do Deserto")
-                dif := dif - 60;
+            if ( GetObjProperty(who, "chardata").trait == "Cria do Deserto")
+                dif := dif - 5;
             endif
 
             if ( GetObjProperty(who, "chardata").trait == "Adaptável")
-                dif := dif - 30;
-            endif
-
-            if ( TemHabilidade(who, "Corpo Diamante"))
-                dif := dif - 60;
+                dif := dif - 2;
             endif
             
             if (GetObjProperty(who, "chardata").culture == BJORSKA)
-                dif := dif + 30;
+                dif := dif + 2;
             endif
 
             if ( GetObjProperty(who, "chardata").culture == GULTHRAK)
-                dif := dif - 60;
+                dif := dif - 5;
             endif
 
             if (GetObjProperty(who, "chardata").culture == LESTE)
-                dif := dif - 30;
+                dif := dif - 2;
             endif
 
             var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/2);
@@ -82,13 +79,13 @@ program calor(params)
             foreach item in (ListEquippedITems(who))
                 // Manto de Aquil facilita a resistência contra calor
                 if (item.objtype == 0xA35e)
-                    dif := dif - 15;
+                    dif := dif - 1;
                 endif
                 // Itens de couro draconiano facilitam a resistência contra calor
                 if ( (GetObjProperty(item, "material") == 0xed29) )
-                    dif := dif - 8;
-                elseif (item in chitinArmor)
                     dif := dif - 2;
+                elseif (item in chitinArmor)
+                    dif := dif - 1;
                 elseif (item in ironArmors)
                     dif := dif + 2;
                 endif
@@ -97,7 +94,7 @@ program calor(params)
             foreach item in ( ListItemsNearLocation( who.x, who.y, who.z, 8, who.realm ) )
                  //Oasis facilita a resistência ao calor em três níveis de dificuldade
                  if ((item.objtype == 0xa5a))
-                    dif := dif - 45;
+                    dif := dif - 3;
                     break;
                 endif
                 sleepms(20);
@@ -108,7 +105,7 @@ program calor(params)
             foreach mobile in ( ListMobilesNearLocation( who.x, who.y, who.z, 10, who.realm ) )
                 if (mobile.npctemplate == ":brainai:protetordeclima")
                     SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
-                    dif := dif - 90;
+                    dif := dif - 5;
                 endif
                 if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party && (who.party.leader == mobile.party.leader))
                     resistchecked := mobile;

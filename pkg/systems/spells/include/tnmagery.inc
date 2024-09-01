@@ -790,10 +790,10 @@ function Corromper(who, spell, targ)
 
 	//testa resistencia de vontade
 	if (temHabilidade(who, "Pacto com Shimoria"))
-		if (CheckResist(who, VONTADE, 20*spellinfo.cycles))
+		if (CheckResist(who, VONTADE, RESIST_MEDIUM+spellinfo.cycles))
 		return 0;
 		endif
-	elseif (CheckResist(who, VONTADE, 30*spellinfo.cycles))
+	elseif (CheckResist(who, VONTADE, RESIST_HARD+spellinfo.cycles))
 		return 0;
 	endif
 

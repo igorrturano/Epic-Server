@@ -118,7 +118,7 @@ function PoisonEffect(who, potion, lvl)
 	foreach critter in (ListMobilesNearLocation( potion.x, potion.y, potion.z, 3, potion.realm ));
 		if ( CheckLineOfSight(potion, critter))
 			PlayStationaryEffect(critter.x, critter.y, critter.z, GFX_POISON_GAS, 10,10, 0, critter.realm);
-			if (CheckResist(critter, FORTITUDE, 15,-20*lvl))
+			if (CheckResist(critter, FORTITUDE, RESIST_EASY,-2*lvl))
 				SendSysMessageEx(critter, "Voce resistiu ao veneno.", SSM_INFO);
 			else
 				TS_StartTimer(critter, "defaultPoison", 30, lvl, who);
@@ -213,7 +213,7 @@ function ExplosionEffect(who, potion, dmg)
 				critter.hidden := 0;
 				SendSysMessage(critter, "Voce foi revelado na explosao!");
 			endif
-			if (CheckResist(critter, REFLEXOS, 30,-2*dmg))
+			if (CheckResist(critter, REFLEXOS, RESIST_MEDIUM,-2*dmg))
 				if (temHabilidade(critter, "Desbravador Nato"))
 					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
 					critter.hidden := 0;
@@ -273,7 +273,7 @@ function Sleepeffect(who, potion, bonus)
 	potion.graphic := 1;
 	foreach critter in (ListMobilesNearLocation( potion.x, potion.y, potion.z, 6, potion.realm ));
 		if (checkLineOfSight(potion, critter))
-			if (CheckResist(critter, FORTITUDE, 80, -1*bonus))
+			if (CheckResist(critter, FORTITUDE, RESIST_VERY_HARD, -1*bonus))
 				SendSysMessage(critter, "Voce resiste ao sono.");
 			elseif(temHabilidade(critter, "Essencia Explosiva"))
 				SendSysMessage(critter, "Voce resiste ao sono.");

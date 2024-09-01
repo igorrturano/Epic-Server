@@ -1,6 +1,7 @@
 use uo;
 
 include "include/say";
+include ":attributes:attributes";
 
 program doubleattack(who)
     var shot_rounds := Cint(Ap_GetTrueSkill(who, TACTICS) / 40);
