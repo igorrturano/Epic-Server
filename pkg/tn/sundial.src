@@ -1,0 +1,66 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program sundial(who, sundial)
+    var config := ReadConfigFile(":nature:config/daynight");
+    config := config["settings"];
+    var daylength := cint(config.daylength) * 60;
+    var horanascer := cint(GetGlobalProperty("halfdaytime"));
+    var currentTime := ReadGameClock();
+    var timeSinceSunrise := (currentTime - horanascer) % daylength;
+    
+    var hour, minute, period;
+    var timeOfDay;
+    
+    if (timeSinceSunrise < 0)
+        timeSinceSunrise += daylength;
+    endif
+    
+    // Convert game time to a 12-hour clock format
+    hour := (timeSinceSunrise / (daylength / 24)) % 24;
+    minute := (timeSinceSunrise % (daylength / 24)) * (60 / (daylength / 24));
+    print("hour: " + hour + " minute: " + minute);
+    if (hour < 6 || hour >= 18)
+        timeOfDay := "O sol não está visível. O relógio de sol não pode mostrar a hora.";
+    else
+        if (hour >= 12)
+            period := "PM";
+            if (hour > 12)
+                hour -= 12;
+            endif
+        else
+            period := "AM";
+            if (hour == 0)
+                hour := 12;
+            endif
+        endif
+        
+        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + FormatMinute(minute) + " " + period;
+        
+        // Add description based on sun position
+        if (hour < 9)
+            timeOfDay += ". O sol esta subindo no ceu da manha.";
+        elseif (hour < 12)
+            timeOfDay += ". O sol esta se aproximando do ponto mais alto no ceu.";
+        elseif (hour == 12)
+            timeOfDay += ". O sol esta no ponto mais alto do ceu.";
+        elseif (hour < 15)
+            timeOfDay += ". O sol comecou sua descida no ceu da tarde.";
+        else
+            timeOfDay += ". O sol esta se aproximando do horizonte.";
+        endif
+    endif
+    
+    SendSysMessageEx(who, timeOfDay, SSM_INFO);
+endprogram
+
+function FormatMinute(minute)
+    if (minute < 10)
+        return "0" + minute;
+    else
+        return "" + minute;
+    endif
+endfunction
