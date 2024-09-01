@@ -490,6 +490,9 @@ function comprarHabilidade(who, item, nv:=-1)
 			damage_effect.+cold_arrow := 0;
 			damage_effect.+energy_arrow := 0;
 			SetObjProperty(who, "#shooting_effects", damage_effect);
+		elseif (escolhida == "Tiro em Movimento")
+			GrantPrivilege(who, "firewhilemoving");
+			who.enable("firewhilemoving");	
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;
