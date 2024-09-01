@@ -1,11 +1,11 @@
+use cfgfile;
+
 include ":timedScripts:timedScripts";
 include ":tn:cooldown";
 include "include/say";
 include ":fls_core:fls_characters";
 include ":charactercreation:resists";
 include "include/epicConstants";
-use cfgfile;
-
 
 CONST DRINK_SOUND := 0x32;
 
@@ -281,7 +281,7 @@ function do_poison(who, potion)
       poisonInfo.time := CInt(poisonInfo.time * 1.25);
     endif
 
-    if (CheckResist(who, FORTITUDE, 15,-20*poisonInfo.level))
+    if (CheckResist(who, FORTITUDE, RESIST_MEDIUM,-2*poisonInfo.level))
       SendSysMessageEx(who, "Voce resistiu ao veneno.", SSM_INFO);
     else
       TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
