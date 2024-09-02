@@ -73,7 +73,7 @@ program neve(params)
                 dif := dif + 2;
             endif
 
-            var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/2);
+            var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/20);
             dif := dif - survivalBonus;
 
             foreach item in (ListEquippedITems(who))
