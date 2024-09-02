@@ -213,7 +213,7 @@ function ExplosionEffect(who, potion, dmg)
 				critter.hidden := 0;
 				SendSysMessage(critter, "Voce foi revelado na explosao!");
 			endif
-			if (CheckResist(critter, REFLEXOS, RESIST_MEDIUM,-2*dmg))
+			if (CheckResist(critter, REFLEXOS, RESIST_EASY,-1*dmg))
 				if (temHabilidade(critter, "Desbravador Nato"))
 					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
 					critter.hidden := 0;
