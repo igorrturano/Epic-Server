@@ -390,8 +390,8 @@ function AtualizarItemAntigo(who, item)
     var propexcpantiga := item.GetProp("Exceptional");
 
     if (attr["Atualiza"] != 0 && attr["Atualiza"] != 1)
-        SendSysMessageEx(who, "Item {} com base de dados antiga, atualizando para novo modelo...".Format(Hex(item.objtype)), SSM_FAIL);
-        SendSysMessageEx(who, "----------");
+        // SendSysMessageEx(who, "Item {} com base de dados antiga, atualizando para novo modelo...".Format(Hex(item.objtype)), SSM_FAIL);
+        // SendSysMessageEx(who, "----------");
 
         SetarPropTipo(item);
         SetarPropItem(item);
@@ -472,16 +472,17 @@ function AtualizarItemAntigo(who, item)
 
             endif
             if (itemhab)
-                SendSysMessageEx(who, "Item com propriedade de HABILIDADE detectado! Adicionando valores...", FONTCOLOR_YELLOW);
-                SendSysMessageEx(who, "Propriedades encontradas: "+attr);
-            else SendSysMessageEx(who, "Item SEM PROPRIEDADE de Habilidade ou Excepcional! Adicionando valores...", FONTCOLOR_YELLOW);
+                // SendSysMessageEx(who, "Item com propriedade de HABILIDADE detectado! Adicionando valores...", FONTCOLOR_YELLOW);
+                // SendSysMessageEx(who, "Propriedades encontradas: "+attr);
+            else 
+                // SendSysMessageEx(who, "Item SEM PROPRIEDADE de Habilidade ou Excepcional! Adicionando valores...", FONTCOLOR_YELLOW);
             endif
         endif
 
         SetarProp(item, attr);
         //if (item.hp<item.maxhp) item.hp := item.hp+item.maxhp_mod; endif //COMPENSAR O HP CORRIGIDO
 
-        SendSysMessageEx(who, "----------");
-        SendSysMessageEx(who, "Item {} atualizado para novo modelo de base de dados com SUCESSO !!!".Format(Hex(item.objtype)), SSM_INFO);
+        // SendSysMessageEx(who, "----------");
+        // SendSysMessageEx(who, "Item {} atualizado para novo modelo de base de dados com SUCESSO !!!".Format(Hex(item.objtype)), SSM_INFO);
     endif
 endfunction

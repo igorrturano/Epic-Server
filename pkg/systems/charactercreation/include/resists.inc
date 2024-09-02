@@ -2,8 +2,8 @@ include ":attributes:attributes";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include "include/say";
-include "include/creationUtils";
 include "include/epicConstants";
+include "include/epicUtils";
 
 const FORTITUDE := "Fortitude";
 const REFLEXOS := "Reflexos";
@@ -17,7 +17,7 @@ function GetResist(who, resist)
 	var raca := chardata.raca;
 	var valor := 0;
 
-	// EraseResist(who, resist);//Para uso da barra de status, apaga o que tem para calcular de novo
+	Recalcvitals(who);
     if (resist == VONTADE && (TemHabilidade(who, "Ladrao de Magias")))
 		resist := REFLEXOS;
 	endif
