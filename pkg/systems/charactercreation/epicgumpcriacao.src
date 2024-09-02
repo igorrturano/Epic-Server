@@ -15,12 +15,14 @@ include "include/say";
 include "include/creationUtils";
 include "include/sounds";
 include "include/epicConstants";
+include ":charactercreation:include/RPTraits";
 
 program epicCreationGump(who)
     resetCharacter(who);
 
     var culture_pic := culturalSelection(who);
     racialSelection(who, culture_pic);
+    caracteristicasRPSelection(who, culture_pic);  // Nova linha adicionada aqui TRACOSRP
     classSelection(who, culture_pic);
     backgroundSelection(who, culture_pic);
     traitSelection(who, culture_pic);
@@ -42,6 +44,65 @@ program epicCreationGump(who)
 	var tempo_agora := polcore().systime;
     SetObjProperty(who, "createdate", tempo_agora);
 
+// Definir informações de cidadania, nobreza e cargos profissionais no chardata KINGDOM
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        chardata := struct{};
+    endif
+
+    chardata.+citizenship_title := "Indigente";
+    chardata.+available_citizenship_titles := array{
+        "Banido",
+        "Indigente",
+        "Plebeu",
+        "Cidadão",
+        "Nobre"
+    };
+
+    // Definir títulos de nobreza baseados no gênero do personagem
+    if (who.gender == 0) // Masculino
+        chardata.+nobility_titles := array{
+            "Rei",
+            "Príncipe",
+            "Duque",
+            "Marquês",
+            "Conde",
+            "Visconde",
+            "Barão",
+            "Cavaleiro",
+            "Lorde",
+            "Escudeiro"
+        };
+    else // Feminino
+        chardata.+nobility_titles := array{
+            "Rainha",
+            "Princesa",
+            "Duquesa",
+            "Marquesa",
+            "Condessa",
+            "Viscondessa",
+            "Baronesa",
+            "Dama",
+            "Lady",
+            "Escudeira"
+        };
+    endif
+
+    chardata.+current_nobility_title := ""; // Inicialmente sem título de nobreza
+
+    // Definir cargos profissionais disponíveis
+    chardata.+available_professional_positions := array{
+        "Imperador",
+        "Mão do Rei",
+        "Conselheiro Nobre",
+        "Arcebispo",
+        "Senador",
+        "Serviçal"
+    };
+
+    chardata.+current_professional_position := ""; // Inicialmente sem cargo profissional
+
+    SetObjProperty(who, "chardata", chardata);
     // Prólogo
 
     startAdventure(who);
@@ -81,6 +142,14 @@ endfunction
 function racialSelection(who, culture_pic)
     var btn_value;
     var chardata := GetObjProperty(who, "chardata");
+    var CaracteristicasCategories := array{
+    "Altura",
+    "Peso",
+    "Olhos",
+    "Estrutura_Ossea",
+    "Idade Aparente",
+    "Voz"
+};
     while (1)
         var input := EpicRaceGump(who, culture_pic);
         foreach key in (input.keys)
@@ -115,6 +184,8 @@ function racialSelection(who, culture_pic)
         endif
     endwhile
 
+  SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
+
     if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
         who.graphic := 1830;
     elseif(who.graphic == 401 && (chardata.raca == ELFO || chardata.raca == DROW))
@@ -130,11 +201,37 @@ function racialSelection(who, culture_pic)
     endif
 
     who.title_race := chardata.raca;
-	who.race := chardata.raca;
+    who.race := chardata.raca;
 
-    SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
+   chardata.+caracteristicas_rp := struct {};
+    foreach category in CaracteristicasCategories
+        chardata.caracteristicas_rp[category] := 0; // Inicializa com 0 (nenhuma opção selecionada)
+    endforeach
+
     SetObjProperty(who, "chardata", chardata);
 endfunction
+
+
+function caracteristicasRPSelection(who, culture_pic)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata.caracteristicas_rp)
+        chardata.caracteristicas_rp := struct{};
+    endif
+
+    var racial_traits := GetRacialTraits(chardata.raca, chardata);
+    var categories := GetPageCategories(1);
+
+    var input := CaracteristicasRPGump(who, chardata, culture_pic);
+    while (input[0] != 222)  // 222 é o botão de finalizar
+        ProcessSelection(chardata, input[0], 1);
+        input := CaracteristicasRPGump(who, chardata, culture_pic);
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+    SendSysMessageEX(who, "Características raciais selecionadas com sucesso.", SSM_INFO);
+    print("Características RP selecionadas: " + chardata.caracteristicas_rp);
+endfunction
+
 
 function classSelection(who, culture_pic)
     var btn_value;

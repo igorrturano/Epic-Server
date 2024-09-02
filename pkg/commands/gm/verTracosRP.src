@@ -30,6 +30,8 @@ program verTracosRaciais(who)
         return 0;
     endif
     
+    print("Conteúdo completo de chardata: " + chardata);
+    
     var gump := GFCreateGump();
     GFClosable(gump, 1);
     GFResizePic(gump, 0, 0, 0x13BE, 800, 600);
@@ -47,7 +49,18 @@ program verTracosRaciais(who)
     endif
     
     var y_pos := 110;
-    var racial_traits := GetRacialTraits(chardata.raca);
+    
+    print("Raça do personagem: " + chardata.raca);
+    print("Características RP armazenadas: " + chardata.caracteristicas_rp);
+    
+    var racial_traits := GetRacialTraits(chardata.raca, chardata);
+    print("Traços raciais obtidos: " + racial_traits);
+
+    if (racial_traits == error)
+        print("Erro ao obter traços raciais para a raça: " + chardata.raca);
+        SendSysMessageEX(who, "Erro ao obter traços raciais.", SSM_FAIL);
+        return 0;
+    endif
     
     var CaracteristicasCategories := array{
         "Altura",
@@ -60,7 +73,12 @@ program verTracosRaciais(who)
     foreach category in CaracteristicasCategories
         var value := "Não selecionado";
         if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) && chardata.caracteristicas_rp[category] != 0)
-            value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+            if (racial_traits.exists(category) && racial_traits[category].opcoes.size() >= chardata.caracteristicas_rp[category])
+                value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+            else
+                print("Erro: categoria " + category + " não encontrada ou índice inválido");
+                value := "Erro: valor inválido";
+            endif
         endif
         
         var category_name := racial_traits[category].nome;
