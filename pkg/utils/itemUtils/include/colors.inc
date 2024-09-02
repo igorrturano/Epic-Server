@@ -69,7 +69,7 @@ var cores_neutro := RandomIntMinMax(1801, 1908);
 var cores_cinza := array{0, 946, 947};
 
 //Cores Gerais
-var cores_geral := array{cores_rosa, cores_azul, cores_verde, cores_laranja, cores_vermelho, cores_amarelo, cores_neutro, cores_cinza}
+var cores_geral := array{cores_rosa, cores_azul, cores_verde, cores_laranja, cores_vermelho, cores_amarelo, cores_neutro, cores_cinza};
 
 
 // Cores dos Povos -- Roupas

@@ -5,9 +5,9 @@ program bcitem(who,item)
 	
 	var texto;
 	var cor;
-if (who.cmdlevel > 0)
-SendSysMessage (who, "Configure o <texto> e <cor> com o .propedit no sino");
-endif
+	if (who.cmdlevel > 0)
+		SendSysMessage (who, "Configure o <texto> e <cor> com o .propedit no sino");
+	endif
 
 	texto:=GetObjProperty(item,"texto");
 	
@@ -15,7 +15,7 @@ endif
 	
 
 	if (texto == error) 
-		SetObjProperty(item,"texto","*Os Sinos do Templo De Zharkia Soam*");
+		SetObjProperty(item,"texto","*Os Sinos do Templo Soam*");
 		texto:=GetObjProperty(item,"texto");
 	endif
 
@@ -29,4 +29,3 @@ endif
 	Broadcast(texto, font := 0, color := cor);
 
 endprogram
-
