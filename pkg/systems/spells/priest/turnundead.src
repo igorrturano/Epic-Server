@@ -34,7 +34,7 @@ program SpellScript(params)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
 			var category := lower(GetConfigString(elem, "Category"));
 			if (category == "undead" )
-				if (CheckResist(mobile, VONTADE, 30, -bonus))
+				if (CheckResist(mobile, VONTADE, 30, -CInt(AP_GetSkill(who, MAGICLORE)/2.5)))
 					var ev :=  struct;
 					ev.+source := who;
 					ev.+type := EVID_FLEE;
