@@ -8,6 +8,55 @@ include ":containers:storageAreas";
 include ":containers:containers";
 include ":fls_core:tax";
 
+function OpenAICompletion(systemMessage, questions)
+
+   var formatedQuestions := array{ struct{
+      "role" := "system",
+      "content" := systemMessage
+   } };
+
+   foreach question in questions
+      if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
+         return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
+      endif
+
+      if (question.exists("assistant"))
+         formatedQuestions.append(struct{
+            "role" := "assistant",
+            "content" := question["assistant"]
+         });
+      endif
+
+      if (question.exists("user"))
+         formatedQuestions.append(struct{
+            "role" := "user",
+            "content" := question["user"]
+         });
+      endif
+   endforeach
+
+   var apiURL := "https://api.openai.com/v1/chat/completions";
+   var method := "POST";
+   var jsonData := PackJSON(struct{
+      "model" := "gpt-4o-mini",
+      "messages" := formatedQuestions
+   });
+
+   var apiResponse := HTTPRequest(
+         apiURL,
+         method,
+         struct{
+            data := jsonData,
+            headers := struct{
+               "Content-Type" := "application/json",
+               "Authorization" := "Bearer {1}".format(GetEnvironmentVariable("OPENAI_KEY"))
+            }
+         }
+      );
+   var unpackedJSON := UnpackJSON(apiResponse);
+   return unpackedJSON["choices"][1]["message"]["content"];
+endfunction
+
 program BrainNerve(params)
 	var npc		:= params[1];
 	//var nerve_name:= params[2];
@@ -55,6 +104,8 @@ function SpeechEvent(npc, byref event)
 
 
 	if ( text["banco"] || text["cofre"] )
+		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
+		var sourceDescription := GetObjProperty(event.source, "descricao");
 		if (Distance(npc, event.source) > 2)
 			AI_Speak(npc, "Se aproxime para mexer no seu cofre.");
 			return 0;
@@ -62,9 +113,14 @@ function SpeechEvent(npc, byref event)
 		AI_Turn(npc, source, NETURN_TOWARD);
 		var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_NOCREATE);
 		if ( !bank_box ) 
-			AI_Speak(npc, "Voce nao possui conta nesse banco, se desejar pode se *registrar* a cidade para ter uma.");
-			AI_Speak(npc, "Se voce for cidadao registrado passa a pagar impostos, mas recebe todos os beneficios da cidade.");
-			AI_Speak(npc, "Voce so pode se *registrar* em uma cidade ou perdera suas coisas no banco das outras cidades.");
+			//var systemMessage := "Você é um banqueiro medieval. Provavelmente o aventureiro está perguntando do seu dia. Seja amigável. Responda como tal. Máximo de 25 caracteres.";
+			//var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é maléfico, conhecido na cidade como bandido. Máximo de 30 caracteres.";
+			//var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é defensor renomado na cidade, conhecido na cidade como braço direito do rei. Máximo de 40 caracteres.";
+			var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é um " + sourceRaca + "com descrição" + sourceDescription + ". Máximo de 50 caracteres.";
+			var questions := array{ struct{ "user" := text } };
+			var responseText := OpenAICompletion(systemMessage, questions);
+            AI_Speak(npc, responseText); // usa a responsa do modelo
+			
 		else 
 			bank_box := CP_GetStorageContainerForMobile(source, bank_region);
 			PayTaxes(source.serial, bank_region, bank_box);
