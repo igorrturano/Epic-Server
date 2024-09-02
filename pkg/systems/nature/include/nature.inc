@@ -180,6 +180,11 @@ endfunction
 
 
 function SeasonRotate()
+    const SUMMER := 1;
+    const AUTUMN := 2;
+    const WINTER := 3;
+    const SPRING := 0;
+
     var season := cint(getglobalproperty("season"));
     var daynumber := cint(getglobalproperty("daynumber"));
     var current_year := CINT(GetGlobalProperty("current_year"));
@@ -200,7 +205,7 @@ function SeasonRotate()
     daynumber := daynumber+1;
     if (daynumber > 308)
         daynumber := 1;
-        current_year := current_year + 1;
+        current_year := current_year + 1; 
     endif
 	
     setglobalproperty("daynumber", daynumber);
@@ -208,16 +213,16 @@ function SeasonRotate()
 	
     if (daynumber == 1)
         Broadcast("É verão.");
-        setglobalproperty("season", 1);
+        setglobalproperty("season", SUMMER);
     elseif (daynumber == 78)
         Broadcast("As folhas das arvores começam a cair.");
-        setglobalproperty("season", 2);
+        setglobalproperty("season", AUTUMN);
     elseif (daynumber == 155)
         Broadcast("O vento sopra gelado e a neve comeca a cair..");
-        setglobalproperty("season", 3);
+        setglobalproperty("season", WINTER);
     elseif (daynumber == 232)
         Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante.");
-        setglobalproperty("season", 5);
+        setglobalproperty("season", SPRING);
     endif
 endfunction
 
