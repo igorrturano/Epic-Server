@@ -8,6 +8,7 @@ include ":attributes:attributes";
 include "include/damage";
 include ":charactercreation:resists";
 include ":taming:taming";
+include "include/epicConstants";
 
 program cordasubir(who,item)
 
@@ -43,7 +44,7 @@ program cordasubir(who,item)
 		MoveObjectToLocation(who, who.x, who.y, who.z+1, who.realm, MOVEOBJECT_FORCELOCATION);
 
 		if (!Wait(who, 1))
-			if (CheckResist(who, REFLEXOS, 45))
+			if (CheckResist(who, REFLEXOS, RESIST_MEDIUM))
 				SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
 				return 0;
 			else
@@ -58,7 +59,7 @@ program cordasubir(who,item)
 		MoveObjectToLocation(who, who.x, who.y, who.z-1, who.realm, MOVEOBJECT_FORCELOCATION);
 
 		if (!Wait(who, 1))
-			if (CheckResist(who, REFLEXOS, 45))
+			if (CheckResist(who, REFLEXOS, RESIST_MEDIUM))
 				SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
 				MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
 				foreach pet in pets

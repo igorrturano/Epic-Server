@@ -164,7 +164,7 @@ program arremesso(params)
             endif
             if (poisonInfo)
                 poison_amt--;
-                if (!CheckResist(alvo, FORTITUDE, 15,-20*poisonLvl))
+                if (!CheckResist(alvo, FORTITUDE, RESIST_EASY,-2*poisonLvl))
                     TS_StartTimer(alvo, poisonInfo.name, poisonDuration, poisonInfo.level, targ);
                 else
                     SendSysMessage(alvo, "Voce resistiu ao veneno", SSM_INFO);

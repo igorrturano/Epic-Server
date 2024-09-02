@@ -26,6 +26,7 @@ include ":spells:swordmage";
 include ":taming:taming";
 include ":charactercreation:resists";
 include ":combat:combat";
+include "include/epicUtils";
 
 //include ":combat:include/mainHitScript";
 
@@ -359,7 +360,7 @@ program MainHitScript( params )
 		if ( !GetCooldown(defender, "trapacearmorte_rodando") > 0 )
 			start_script(":charactercreation:habilidades/trapacearmorte", array{defender, total});
 		endif
-    elseif(GetObjProperty(defender, "chardata").vantagemracial == "Resistencia implacavel" && (AP_GetVital(defender, HITS) < total))
+    elseif(GetObjProperty(defender, "chardata").raca == ORC && (AP_GetVital(defender, HITS) < total))
         if (GetObjProperty(defender, "Resistencia implacavel"))
             EraseObjProperty(defender, "Resistencia implacavel");
             DamageFLS(defender, total, DMG_FORCED, attacker);
@@ -1068,7 +1069,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 				return 0;
 			endif
 			if (randomint(100) < 20)
-				if (CheckResist(defender, FORTITUDE, 15,-20*2))
+				if (CheckResist(defender, FORTITUDE, RESIST_EASY,-2*2))
 					SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
 				else
 					TS_StartTimer(defender, "defaultPoison", 60, 2, attacker);
@@ -1078,28 +1079,19 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 			var poisonInfo := GetObjProperty(weapon, "poisonInfo" );
 			if (poisonInfo == error)
 				return 0;
-				var nome := weapon.name; //Armengo pra atualizar tooltip?
-				SetName(weapon, nome + " -");
-				sleepms(30);
-				SetName(weapon, nome);
+				updateToolTip(weapon);
 			endif
 			if (poisonInfo.dosage != "infinito")
 				poisonInfo.dosage := poisonInfo.dosage -1;
 			endif
 			if (poisonInfo.dosage <= 0 && poisonInfo.dosage != "infinito") //se nao tiver mais cargas de veneno, deleta
 				EraseObjProperty(weapon, "poisonInfo");
-				var nome := weapon.name; //Armengo pra atualizar tooltip?
-				SetName(weapon, nome + " -");
-				sleepms(30);
-				SetName(weapon, nome);
+				updateToolTip(weapon);;
 				return 0;
 			else //se ainda tiver atualiza na arma
 				SetObjProperty(weapon, "poisonInfo", poisonInfo);
 			endif
-			var nome := weapon.name; //Armengo pra atualizar tooltip?
-			SetName(weapon, nome + " -");
-			sleepms(30);
-			SetName(weapon, nome);
+			updateToolTip(weapon);
 
 			if (IsPoisonImune(defender, poisonInfo.name) )
 				return 0;
@@ -1116,7 +1108,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 				poisonInfo.time := duration;
 			endif
 
-			if (CheckResist(defender, FORTITUDE, 15,-20*poisonInfo.level))
+			if (CheckResist(defender, FORTITUDE, RESIST_EASY,-2*poisonInfo.level))
 				SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
 			else
 				TS_StartTimer(defender, poisonInfo.name, poisonInfo.time, poisonInfo.level, attacker);
@@ -1146,7 +1138,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 				if (poisonName == "paralyzePoison")
 					time := 10;
 				endif
-				if (CheckResist(defender, FORTITUDE, 15,-20*level))
+				if (CheckResist(defender, FORTITUDE, RESIST_EASY,-2*level))
 					SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
 				else
 					TS_StartTimer(defender, poisonName, time, level, attacker);
