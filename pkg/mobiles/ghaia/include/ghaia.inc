@@ -508,7 +508,7 @@ function doCombatSpecialNotBoss(me, opponent)
     RESIST_VERY_HARD,
     RESIST_EXTREMELY_HARD,
     RESIST_ALMOST_IMPOSSIBLE
-  }
+  };
   var diff_aleatorio := diffs.RandomInt(diffs.size());
   var script := GetConfigString(npccfgfile[mytemplate],  "SpecialAttack");
   var delay := GetConfigInt(npccfgfile[mytemplate],  "SpecialAttackDelay");
@@ -559,6 +559,16 @@ if (throwinfo.notcreateitemfloor != 1)
   item.movable := 1;
 endif
 
+  var diffs := {	
+    RESIST_EASY,
+    RESIST_MEDIUM,
+    RESIST_HARD,
+    RESIST_VERY_HARD,
+    RESIST_EXTREMELY_HARD,
+    RESIST_ALMOST_IMPOSSIBLE
+  };
+
+  var diff_aleatorio := diffs.RandomInt(diffs.size());
 if (CheckResist(opponent, REFLEXOS, diff_aleatorio)) // Errou!
 	PrintTextAbove(npc, "*Errou!*", _DEFAULT_TEXT_FONT, 38);
     if (throwinfo.misssound)

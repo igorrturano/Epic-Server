@@ -24,7 +24,7 @@ program textcmdcreateNPC(who, template)
 			return 0;
 		endif
 	endif
-	print("entrei");
+
 	var targ := TargetCoordinates(who);
 	if ( !targ )
 		SendSysMessage(who, "Cancelled");
