@@ -1,0 +1,93 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+
+program command_cargo(who, text)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Você não tem permissão para usar este comando.");
+        return 0;
+    endif
+
+    var targ := Target(who);
+    if (!targ)
+        SendSysMessage(who, "Cancelado.");
+        return 0;
+    endif
+
+    if (!targ.isA(POLCLASS_MOBILE))
+        SendSysMessage(who, "Você deve selecionar um jogador.");
+        return 0;
+    endif
+
+    var chardata := GetObjProperty(targ, "chardata");
+    if (!chardata)
+        SendSysMessage(who, "Erro: chardata não encontrado para o jogador selecionado.");
+        return 0;
+    endif
+
+    if (!chardata.current_nobility_title || chardata.current_nobility_title == "")
+        SendSysMessage(who, "Erro: O personagem precisa ter um título de nobreza antes de receber um cargo político.");
+        return 0;
+    endif
+
+    if (!chardata.available_professional_positions)
+        SendSysMessage(who, "Erro: cargos profissionais não definidos para este jogador.");
+        return 0;
+    endif
+
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 450);
+    GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 280, 430);
+
+    GFTextMid(gump, 10, 20, 280, 2100, "Definir Cargo Profissional");
+
+    // Mostrar o cargo atual em dourado
+    if (chardata.current_professional_position)
+        GFTextMid(gump, 10, 50, 280, 53, "Cargo atual: " + chardata.current_professional_position);
+    endif
+
+    var y := 80;
+    var i := 1;
+    foreach position in (chardata.available_professional_positions)
+        GFAddButton(gump, 20, y, 2117, 2118, GF_CLOSE_BTN, i);
+        GFTextLine(gump, 40, y, 2100, position);
+        y += 30;
+        i += 1;
+    endforeach
+
+    // Mover o botão "Remover cargo" para baixo
+    GFAddButton(gump, 20, 400, 2117, 2118, GF_CLOSE_BTN, i);
+    GFTextLine(gump, 40, 400, 2100, "Remover cargo");
+
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] > 0)
+        if (input[0] <= chardata.available_professional_positions.size())
+            var new_position := chardata.available_professional_positions[input[0]];
+            var old_position := chardata.current_professional_position;
+            chardata.current_professional_position := new_position;
+            SetObjProperty(targ, "chardata", chardata);
+            
+            if (!old_position || old_position == "")
+                SendSysMessage(who, "Cargo profissional de " + targ.name + " definido para: " + new_position);
+                SendSysMessage(targ, "Você acabou de ganhar seu primeiro cargo no reino: " + new_position);
+                SendSysMessage(targ, "Honre seu rei e o povo!");
+            else
+                SendSysMessage(who, "Cargo profissional de " + targ.name + " alterado de '" + old_position + "' para '" + new_position + "'.");
+                SendSysMessage(targ, "Seu cargo profissional foi alterado de '" + old_position + "' para '" + new_position + "'.");
+            endif
+        else
+            var old_position := chardata.current_professional_position;
+            chardata.current_professional_position := "";
+            SetObjProperty(targ, "chardata", chardata);
+            SendSysMessage(who, "Cargo profissional '" + old_position + "' de " + targ.name + " removido.");
+            SendSysMessage(targ, "Seu cargo profissional '" + old_position + "' foi removido.");
+        endif
+    else
+        SendSysMessage(who, "Operação cancelada.");
+    endif
+
+endprogram

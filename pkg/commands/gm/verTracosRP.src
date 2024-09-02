@@ -1,0 +1,81 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":charactercreation:RPTraits";
+include "include/say";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program verTracosRaciais(who)
+    if (!who.IsA(POLCLASS_MOBILE))
+        return 0;
+    endif
+    
+    var isGM := (who.cmdlevel >= 3);
+    var targ := who;
+    
+    if (isGM)
+        SendSysMessage(who, "Selecione o alvo para ver os traços raciais (ou selecione a si mesmo).");
+        targ := Target(who);
+        if (!targ || !targ.IsA(POLCLASS_MOBILE))
+            SendSysMessage(who, "Alvo inválido.");
+            return 0;
+        endif
+    endif
+    
+    var chardata := GetObjProperty(targ, "chardata");
+    if (!chardata)
+        SendSysMessageEX(who, "O alvo não possui dados de personagem.", SSM_FAIL);
+        return 0;
+    endif
+    
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFResizePic(gump, 0, 0, 0x13BE, 800, 600);
+    
+    var gump_width := 800;
+    var race_text := "Raça: " + chardata.raca;
+    var text_width := GFTextWidth(race_text);
+    var center_x := (gump_width - text_width) / 2;
+    GFTextLine(gump, center_x, 30, 2103, race_text);
+    
+    if (isGM && targ != who)
+        GFTextMid(gump, 25, 70, 750, 33, "Características de: " + targ.name);
+    else
+        GFTextMid(gump, 25, 70, 750, 1153, "Minhas Características");
+    endif
+    
+    var y_pos := 110;
+    var racial_traits := GetRacialTraits(chardata.raca);
+    
+    var CaracteristicasCategories := array{
+        "Altura",
+        "Peso",
+        "Olhos",
+        "Idade Aparente",
+        "Voz"
+    };
+    
+    foreach category in CaracteristicasCategories
+        var value := "Não selecionado";
+        if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) && chardata.caracteristicas_rp[category] != 0)
+            value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+        endif
+        
+        var category_name := racial_traits[category].nome;
+        AddInfoLine(gump, y_pos, category_name, value);
+    endforeach
+    
+    if (isGM)
+        GFTextMid(gump, 25, y_pos + 20, 750, 33, "Você está vendo isso como GM");
+    endif
+    
+    GFSendGump(who, gump);
+endprogram
+
+function AddInfoLine(byref gump, byref y_pos, title, value)
+    GFTextLine(gump, 50, y_pos, 53, title + ":");
+    GFTextLine(gump, 370, y_pos, 230, value);
+    y_pos := y_pos + 30;
+endfunction
