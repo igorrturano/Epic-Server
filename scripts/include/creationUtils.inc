@@ -258,6 +258,91 @@ function getRaceByCulturalId(culture_pic)
     return races;
 endfunction
 
+
+function CaracteristicasRPGump(who, byref chardata, culture_pic)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    var x_left := 63;
+    var x_right := x_left + 500;
+    var y := 60;
+
+    // Exibir informações da raça/cultura
+    GFHTMLArea(gump, 149, 76, 192, 40, "<BASEFONT Size=55 Color=#999999>Raça", 0, 0);
+    GFHTMLArea(gump, 148, 75, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Raça", 0, 0);
+    
+    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(chardata.raca), 1, 0);
+
+    // Exibir imagem da cultura
+    GFGumpPic(gump, 298, 100, culture_pic);
+
+    // Título "Características Físicas e Pessoais" 
+    GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
+    GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
+
+    var racial_traits := GetRacialTraits(chardata.raca);
+    var categories := GetPageCategories(1);
+
+    var y_start := 160;
+    var category_iter := 0;
+    var x := x_left;
+    var current_y := y_start;
+    var i, option_y, button_id, is_selected;
+
+    foreach category in categories
+        if (category_iter == 3)
+            x := x_right;
+            current_y := y_start;
+        endif
+
+        GFHTMLArea(gump, x+1, current_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999>" + racial_traits[category].nome, 0, 0);
+        GFHTMLArea(gump, x, current_y, 192, 40, "<BASEFONT Size=55 Color=#ffffff>" + racial_traits[category].nome, 0, 0);
+        
+        var options := racial_traits[category].opcoes;
+        current_y := current_y + 30;
+        for (i := 1; i <= options.size(); i := i + 1)
+            option_y := current_y + ((i-1) * 25);
+            button_id := 100 + (category_iter * 5) + (i - 1);
+            is_selected := (chardata.caracteristicas_rp[category] == i);
+            GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
+            
+            if (is_selected)
+                GFAddButton(gump, x+200, option_y, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, button_id);
+            else
+                GFAddButton(gump, x+200, option_y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, button_id);
+            endif
+        endfor
+        current_y := current_y + 140;
+        category_iter := category_iter + 1;
+    endforeach
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 222);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetPageCategories(page)
+    case (page)
+        1: return array{"Altura", "Peso", "Olhos", "Idade Aparente", "Voz"};
+        default: return array{};
+    endcase
+endfunction
+
+function ProcessSelection(byref chardata, input, page)
+    if (page == 1)
+        var categories := GetPageCategories(page);
+        var category_index := (input - 100) / 5;
+        var option := (input - 100) % 5 + 1;
+        
+        if (category_index < categories.size())
+            var category := categories[category_index + 1];
+            chardata.caracteristicas_rp[category] := option;
+        endif
+    endif
+endfunction
+
 function ClassGump(who, culture_pic)
     var gump := GFCreateGump();
     GFClosable(gump, 0);

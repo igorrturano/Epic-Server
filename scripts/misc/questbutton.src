@@ -1,110 +1,528 @@
-use cfgfile;
 use uo;
 use os;
-use datafile;
+use cfgfile;
+use vitals;
 
-program QuestButton( character )
-    SendSysmessage(character,"You clicked the Questbutton.");
+include "include/client";
+include "include/say";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":gumps:yesNo";
+include ":datafile:datafile";
+include ":fls_core:fls_characters";
+include ":charactercreation:resists";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":charactercreation:RPTraits";
+
+const BOTAO_NOBREZA := 1;
+const BOTAO_FICHARP := 2;
+const BOTAO_TRACOS := 3;
+const BOTAO_AVALIAR := 4;
+const BOTAO_EFEITOS := 5;
+
+const MENU_NOBREZA := 1;
+const MENU_FICHARP := 2;
+const MENU_TRACOS := 3;
+const MENU_AVALIAR := 4;
+const MENU_EFEITOS := 5;
+
+const GUMP_WIDTH := 520;
+const GUMP_HEIGHT := 570;
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const INTERNAL_WIDTH := 435;
+const VERTICAL_SPACING := 20;
+const BACKGROUND_WIDTH := 465;
+
+var button_states := array{1, 0, 0, 0, 0};
+var last_clicked_button := BOTAO_NOBREZA;
+
+
+
+
+
+
+program questbutton(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (chardata == error)
+        SendSysMessage(who, "Erro: Dados do personagem não encontrados.");
+        return 0;
+    endif
+
+    var isGM := (who.cmdlevel >= 3);
+    var targ := who;
+    var input := ShowNobilityGump(who, targ, isGM);
+
+    while (input[0] != 0)
+        var new_menu := AtualizarEstadoMenu(input[0], isGM);
+        case (new_menu)
+            MENU_NOBREZA: 
+                input := ShowNobilityGump(who, targ, isGM);
+            MENU_FICHARP: 
+                input := ShowFichaRPGump(who, targ, isGM);
+            MENU_TRACOS:
+                input := ShowTracosRaciaisGump(who, targ);
+            MENU_AVALIAR: 
+                if (isGM)
+                    input := AvaliarFichaRP(who, targ);
+                else
+                    SendSysMessage(who, "Acesso não autorizado.");
+                    input := ShowNobilityGump(who, targ, isGM);
+                endif
+            MENU_EFEITOS:
+                if (!isGM)
+                    input := ShowEfeitosGump(who, targ);
+                else
+                    SendSysMessage(who, "Opção não disponível para GMs.");
+                    input := ShowNobilityGump(who, targ, isGM);
+                endif
+        endcase
+    endwhile
+
+    return 1;
 endprogram
-/*
-program virtueachievements(who)
 
-var gflayout := {
-//		"noclose",   
-		"nodispose", 
-//		"nomove",    
-		"page 0",    
-    		"resizepic 84 90 9260 460 535",
-		"gumppictiled 100 100 30 510 10460", //primeira borda lateral esquerda
-		"gumppictiled 500 100 30 510 10460", //segunda borda lateral direita
-		"gumppictiled 80 88 463 16 10100", //borda superior
-		"gumppictiled 84 610 457 16 10100", //borda inferior
-		"gumppic 50 80 10421 0", //cabeca dragao esquerda
-		"gumppic 83 79 10420 0", //corpo dragao esquerda
+function ShowEfeitosGump(who, targ)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
 
-		"CheckerTrans 127 103 375 509",
-		"gumppic 96 200 10411 0", //cont do corpo dragao esquerda
-		"gumppic 33 370 10402 0", //rado do dragao
+    var base_text := "Efeitos de ";
+    var text_width := GFTextWidth(base_text);
+    var space_width := GFTextWidth(" ");
 
-		"text 245 120 1153 0",
+    GFTextLine(gump, 25, 22, 53, "Efeitos");
+    GFTextLine(gump, 25 + GFTextWidth("Efeitos") + space_width -10, 22, 53, "de");
+    GFTextLine(gump, 25 + text_width + space_width - 18, 22, 230, targ.name);
 
-		"Text  420 580 2103 1",
-		"Button 470 580 9903 9905 1 2 11",
+    // Garantir que o botão Efeitos esteja ativo
+    button_states := array{0, 0, 0, 0, 1};
+    AdicionarBotoesNavegacao(gump, 0);  // 0 porque esta função só é chamada para jogadores não-GM
 
-		"page 1",
-		"text 150 160 2103 2"
+    // Aqui você pode adicionar a lógica para mostrar os efeitos do personagem
+    GFTextMid(gump, 100, 280, 400, 2100, "Funcionalidade de Efeitos ainda não implementada.");
 
-
-		};
-
-var gfdata := {
-		"Forgotten Lore Shard", //0
-		"Próximo", //1
-		"Realizações" //2
-		};
-
-
-	var x, y, text;
-	var count := 0;
-	text  :=  2; 
-	y := 200;
-	x := 180;
-	var accounts := listaccounts();
-	//sendsysmessage(who, " " + GetObjProperty(who, "lootmoedas"));
-	if (cint(GetObjProperty(who, "lootmoedas")) > 100000)
-		gfdata.append("Ladrão de Cadaveres");
-		gfdata.append("Voce é um grande Looter e não deixa os bolsos dos desmaiados em paz. Porcentagem de jogadores: " + ( GetAchievements(who, "Ladrão de Cadaveres")/cdbl(accounts.size())*100 ));
-		text := text + 1;
-		gflayout.append("text " + x + " " + y + " 2105 " + text);
-		text := text + 1;
-		y := y + 20;
-		gflayout.append("HtmlGump " +  (x-30) + " " + y + " 150 60 "  + text + "  3000 1");
-		gflayout.append("Tilepic " + (x-50) + " " + (y - 25) + " 3823");
-		count := count + 1;
-	elseif ( cint(GetObjProperty(who, "mortes" )) > 100 )
-		gfdata.append("");
-		gfdata.append("Voce é um grande Looter e não deixa os bolsos dos desmaiados em paz. Porcentagem de jogadores: " + ( GetAchievements(who, "Ladrão de Cadaveres")/cdbl(accounts.size())*100 ));
-		text := text + 1;
-		gflayout.append("text " + x + " " + y + " 2105 " + text);
-		text := text + 1;
-		y := y + 20;
-		gflayout.append("HtmlGump " +  (x-30) + " " + y + " 150 60 "  + text + "  3000 1");
-		gflayout.append("Tilepic " + (x-50) + " " + (y - 25) + " 3823");
-		count := count + 1;
-		
-	endif	
-
-	var ret := SendDialogGump( who, gflayout, gfdata );
-
-
-endprogram
-
-function getAchievements(who, type)
-
-	var df := OpenDataFile( "::achievements" );
-	if (!df)
-		df := CreateDataFile( "::achievements" );
-	endif
-
-	var elem := df.FindElement(type);
-	if (elem == error)
-		df.createElement(type);
-	endif
-
-	var members := elem.getprop("members");
-	if (members == error)
-		var a := array;
-		a.append(who.serial);
-		elem.setProp("members",  a);
-		members := elem.getProp("members",  a);
-	endif
-
-	if (!(who.serial in members))
-		members.append(who.serial);
-		elem.setProp("members", members);
-	endif
-
-	return members.size();
+    var input := GFSendGump(who, gump);
+    return input;
 endfunction
 
-*/
+function ShowNobilityGump(who, targ, isGM)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+    
+    var base_text := "Informações de ";
+    var text_width := GFTextWidth(base_text);
+    var space_width := GFTextWidth(" ");
+
+    GFTextLine(gump, 25, 22, 53, "Informações");
+    GFTextLine(gump, 25 + GFTextWidth("Informações") + space_width, 22, 53, "de");
+    GFTextLine(gump, 25 + text_width + space_width - 8, 22, 230, targ.name);
+
+    AdicionarBotoesNavegacao(gump, isGM);
+
+    var chardata := GetObjProperty(targ, "chardata");
+    if (!chardata)
+        chardata := struct{};
+    endif
+
+    var y_pos := 60;
+    
+    MostrarInformacoesBasicas(gump, targ, chardata, y_pos);
+    MostrarInformacoesJogo(gump, targ, chardata, y_pos);
+    MostrarInformacoesNobreza(gump, targ, chardata, y_pos);
+
+    var input := GFSendGump(who, gump);
+    return input;
+endfunction
+
+function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
+    GFTextMid(gump, 23, y_pos + 33, GUMP_WIDTH - 50, 53, "Básico");
+    y_pos += 50;
+    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 180);
+    y_pos += 20;
+    AddInfoLine(gump, y_pos, "Nome", targ.name);
+    AddInfoLine(gump, y_pos, "Raca", targ.title_race);
+    AddInfoLine(gump, y_pos, "Sexo", GetGenderString(targ.gender));
+    AddInfoLine(gump, y_pos, "Classe", GetCharDataValue(chardata, "classe"));
+    AddInfoLine(gump, y_pos, "Background", GetCharDataValue(chardata, "background"));
+    AddInfoLine(gump, y_pos, "Caracteristica", GetCharDataValue(chardata, "trait"));
+endfunction
+
+
+function MostrarInformacoesJogo(byref gump, targ, chardata, byref y_pos)
+    y_pos += 20;
+    GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Jogo");
+    y_pos += 25;
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 60);
+    y_pos += 10;
+    AddInfoLine(gump, y_pos, "Modo de Jogo", GetCharDataValue(chardata, "game_mode"));
+    AddInfoLine(gump, y_pos, "DPs Restantes", GetDPsDescription(targ));
+endfunction
+
+function MostrarInformacoesNobreza(byref gump, targ, chardata, byref y_pos)
+    y_pos += 20;
+    GFTextMid(gump, 38, y_pos, GUMP_WIDTH - 50, 53, "Sistema de Nobreza");
+    y_pos += 25;
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 90);
+    y_pos += 10;
+    AddInfoLine(gump, y_pos, "Status de Cidadania", GetCharDataValue(chardata, "citizenship_title"));
+    AddInfoLine(gump, y_pos, "Titulo de Nobreza", GetCharDataValue(chardata, "current_nobility_title"));
+    AddInfoLine(gump, y_pos, "Cargo Ocupado", GetCharDataValue(chardata, "current_professional_position"));
+endfunction
+
+function ShowFichaRPGump(who, targ, isGM)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+
+    var base_text := "Ficha RP de ";
+    var text_width := GFTextWidth(base_text);
+    var space_width := GFTextWidth(" ");
+
+    GFTextLine(gump, 25, 22, 53, "Ficha RP");
+    GFTextLine(gump, 25 + GFTextWidth("Ficha RP") + space_width -20, 22, 53, "de");
+    GFTextLine(gump, 25 + text_width + space_width -30, 22, 230, targ.name);
+
+    AdicionarBotoesNavegacao(gump, isGM);
+
+    var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+    var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
+    
+    if (!ficharp_elem)
+        GFTextMid(gump, 238, 280, 400, 2100, "Nenhuma ficha RP encontrada para este personagem.");
+        return GFSendGump(who, gump);
+    endif
+    
+    var comportamento := ficharp_elem.GetProp("Comportamento");
+    var objetivos := ficharp_elem.GetProp("Objetivos");
+    var anotacoes := ficharp_elem.GetProp("Anotacoes");
+
+    if (!comportamento)
+        comportamento := array{};
+    endif
+    if (!objetivos)
+        objetivos := array{};
+    endif
+    if (!anotacoes)
+        anotacoes := array{"Não foram feitas anotações nessa ficha de RP"};
+    endif
+
+ var y_pos := 110;
+
+    GFTextMid(gump, 47, y_pos - 15, GUMP_WIDTH - 50, 53, "Comportamento");
+    y_pos += 10;
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 150);
+    GFHTMLArea(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 10, 140, FormatarConteudo(comportamento), 1, 1);
+
+    y_pos += 160;
+    GFTextMid(gump, 40, y_pos, GUMP_WIDTH - 50, 53, "Objetivos");
+    y_pos += 25;
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 100);
+    GFHTMLArea(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 10, 90, FormatarConteudo(objetivos), 1, 1);
+
+    y_pos += 110;
+    GFTextMid(gump, 35, y_pos, GUMP_WIDTH - 50, 53, "Anotações");
+    y_pos += 25;
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 130);
+    GFHTMLArea(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 10, 120, FormatarConteudo(anotacoes), 1, 1);
+
+    var input := GFSendGump(who, gump);
+    return input;
+endfunction
+
+function AvaliarFichaRP(who, targ)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+
+    var base_text := "Avaliar Ficha RP de ";
+    var text_width := GFTextWidth(base_text);
+    var space_width := GFTextWidth(" ");
+
+    GFTextLine(gump, 25, 22, 53, "Avaliar Ficha RP");
+    GFTextLine(gump, 25 + GFTextWidth("Avaliar Ficha RP") + space_width -30, 22, 53, "de");
+    GFTextLine(gump, 25 + text_width + space_width -40, 22, 230, targ.name);
+
+    AdicionarBotoesNavegacao(gump, 1);
+
+    var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+    var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_CREATE);
+
+    var anotacoes := ficharp_elem.GetProp("Anotacoes");
+    if (!anotacoes)
+        anotacoes := array{};
+    endif
+
+    var y_pos := 90;
+    GFTextMid(gump, 45, y_pos, 450, 53, "Nova Avaliação");
+    y_pos += 25;
+    GFResizePic(gump, 50, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH - 10, 80);
+    var txt_avaliacao := GFTextEntry(gump, 55, y_pos + 5, BACKGROUND_WIDTH - 20, 70, 1153, "");
+
+    y_pos += 100;
+    GFAddButton(gump, 240, y_pos -15, 2128, 2129, 1, 100);
+
+    y_pos += 35;
+    GFTextMid(gump, 50, y_pos, 450, 53, "Avaliações Existentes");
+    y_pos += 25;
+    GFResizePic(gump, 50, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH - 10, 280);
+    GFHTMLArea(gump, 55, y_pos + 5, BACKGROUND_WIDTH - 20, 270, FormatarConteudoAvaliacoes(anotacoes), 1, 1);
+
+    var input := GFSendGump(who, gump);
+
+    if (input[0] == 100)
+        var nova_avaliacao := GFExtractData(input, txt_avaliacao);
+        if (nova_avaliacao != error && nova_avaliacao != "")
+            nova_avaliacao := nova_avaliacao + " [por " + who.name + "]";
+            anotacoes.append(nova_avaliacao);
+            ficharp_elem.SetProp("Anotacoes", anotacoes);
+            SendSysMessage(who, "Avaliação adicionada com sucesso.");
+            SendSysMessage(targ, "Você recebeu uma nova avaliação em sua Ficha RP.");
+            return AvaliarFichaRP(who, targ);
+        else
+            SendSysMessage(who, "Nenhuma avaliação foi adicionada.");
+        endif
+    endif
+
+    return input;
+endfunction
+
+function ShowTracosRaciaisGump(who, targ)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+
+    var base_text := "Traços Raciais de ";
+    var text_width := GFTextWidth(base_text);
+    var space_width := GFTextWidth(" ");
+
+    GFTextLine(gump, 25, 22, 53, "Traços Raciais");
+    GFTextLine(gump, 25 + GFTextWidth("Traços Raciais") + space_width - 20, 22, 53, "de");
+    GFTextLine(gump, 25 + text_width + space_width - 30, 22, 230, targ.name);
+
+    var isGM := (who.cmdlevel >= 3);
+    AdicionarBotoesNavegacao(gump, isGM);
+
+    var chardata := GetObjProperty(targ, "chardata");
+    if (!chardata)
+        GFTextMid(gump, 238, 280, 400, 2100, "Nenhum dado de personagem encontrado.");
+        return GFSendGump(who, gump);
+    endif
+
+    var y_pos := 90;
+    var racial_traits := GetRacialTraits(chardata.raca);
+    
+    if (!racial_traits)
+        GFTextMid(gump, 238, 280, 400, 2100, "Nenhum traço racial encontrado para esta raça.");
+        return GFSendGump(who, gump);
+    endif
+
+    var CaracteristicasCategories := array{
+        "Altura",
+        "Peso",
+        "Olhos",
+        "Idade Aparente",
+        "Voz"
+    };
+
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 460);
+    y_pos += 10;
+
+    foreach category in CaracteristicasCategories
+        if (racial_traits.exists(category))
+            var value := "Não selecionado";
+            if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) && chardata.caracteristicas_rp[category] != 0)
+                value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+            endif
+            
+            var category_name := racial_traits[category].nome;
+            AddInfoLineTracos(gump, y_pos, category_name, value);
+        endif
+    endforeach
+
+    var input := GFSendGump(who, gump);
+    return input;
+endfunction
+
+
+
+
+function AdicionarBotoesNavegacao(byref gump, isGM)
+    var textos := array{"Informações Básicas", "Ficha RP", "Traços"};
+    var x_positions := array{80, 240, 340};
+    var botoes := array{BOTAO_NOBREZA, BOTAO_FICHARP, BOTAO_TRACOS};
+    
+    if (isGM)
+        textos.append("Avaliar");
+        x_positions.append(425);
+        botoes.append(BOTAO_AVALIAR);
+    else
+        textos.append("Efeitos");
+        x_positions.append(425);
+        botoes.append(BOTAO_EFEITOS);
+    endif
+
+    var start_x := 45;
+    var end_x := GUMP_WIDTH - 10;
+    var width := end_x - start_x;
+    GFResizePic(gump, start_x, 42, INTERNAL_BACKGROUND, width, 35);
+
+    for i := 1 to textos.size()
+        var gump_button := 2151;
+        var text_color := 53;
+        
+        if (botoes[i] == last_clicked_button)
+            gump_button := 2153;
+            text_color := 230;
+        endif
+        
+        GFTextLine(gump, x_positions[i], 50, text_color, textos[i]);
+        GFAddButton(gump, x_positions[i] - 35, 45, gump_button, gump_button, 1, botoes[i]);
+    endfor
+endfunction
+
+
+function AdicionarMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function AddInfoLineTracos(byref gump, byref y_pos, title, value)
+    GFTextLine(gump, 50, y_pos, 53, title + ":");
+    GFTextLine(gump, 310, y_pos, 230, value);
+    y_pos := y_pos + 25;
+endfunction
+
+function AddInfoLine(byref gump, byref y_pos, title, value)
+    GFTextLine(gump, 50, y_pos, 53, title + ":");
+    GFTextLine(gump, 370, y_pos, 230, value);
+    y_pos := y_pos + 30;
+endfunction
+
+function GetCharDataValue(chardata, key, default_value := "Nenhum")
+    if (chardata && chardata.exists(key))
+        if (key == "religion" && chardata[key] == 0)
+            return "Nenhuma";
+        endif
+        return chardata[key];
+    endif
+    return default_value;
+endfunction
+
+function GetDPs(who)
+    var DPs := CInt(AP_GetVital(who, "DP") / 10);
+    return DPs;
+endfunction
+
+function UpdateDPs(who, amount)
+    var dpmod := CInt(GetObjProperty(who, "dpmod"));
+    if (dpmod == error)
+        dpmod := 0;
+    endif
+    dpmod := dpmod + (amount * 10);  // Converte DPs para pontos
+    SetObjProperty(who, "dpmod", dpmod);
+    return CInt(dpmod / 10);  // Retorna o novo valor em DPs
+endfunction
+
+function GetDPsDescription(who)
+    var DPs := CInt(AP_GetVital(who, "DP") / 10);
+    case (DPs)
+        0: return "0 (Morto)";
+        1: return "1 ";
+        2: return "2 ";
+        3: return "3 ";
+        4: return "4 ";
+        5: return "5";
+        6: return "6";
+        7: return "7";
+        8: return "8";
+        default: return CStr(DPs);
+    endcase
+endfunction
+
+function GetGenderString(gender)
+    if (gender)
+        return "Feminino";
+    else
+        return "Masculino";
+    endif
+endfunction
+
+function FormatarConteudo(array_conteudo)
+    var conteudo_html := "";
+    foreach item in array_conteudo
+        conteudo_html += "- " + item + "<br>";
+    endforeach
+    return conteudo_html;
+endfunction
+
+function FormatarConteudoAvaliacoes(anotacoes)
+    var conteudo_html := "";
+    foreach anotacao in anotacoes
+        conteudo_html += "- " + anotacao + "<br><br>";
+    endforeach
+    if (conteudo_html == "")
+        conteudo_html := "Nenhuma avaliação foi feita ainda.";
+    endif
+    return conteudo_html;
+endfunction
+
+function AtualizarEstadoMenu(input, isGM)
+     last_clicked_button := input;
+    case (input)
+        BOTAO_NOBREZA:
+            button_states := array{1, 0, 0, 0, 0};
+            return MENU_NOBREZA;
+        BOTAO_FICHARP:
+            button_states := array{0, 1, 0, 0, 0};
+            return MENU_FICHARP;
+        BOTAO_TRACOS:
+            button_states := array{0, 0, 1, 0, 0};
+            return MENU_TRACOS;
+        BOTAO_AVALIAR:
+            if (isGM)
+                button_states := array{0, 0, 0, 1, 0};
+                return MENU_AVALIAR;
+            endif
+        BOTAO_EFEITOS:
+            if (!isGM)
+                button_states := array{0, 0, 0, 0, 1};
+                return MENU_EFEITOS;
+            endif
+    endcase
+
+    // Se nenhum caso for atendido, retornamos para o menu de nobreza
+    button_states := array{1, 0, 0, 0, 0};
+    return MENU_NOBREZA;
+endfunction
