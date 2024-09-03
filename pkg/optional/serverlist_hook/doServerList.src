@@ -14,7 +14,7 @@ program doServerList()
 endprogram
 
 exported function handleSendStatusRequest(connection, byref packet)
-	return 0;
+	return 1;
 endfunction
 
 // 0xF1 subcommands that we know
