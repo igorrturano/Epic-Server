@@ -28,7 +28,7 @@ function GetCharacteristicasRP(race)
 endfunction
 
 function GetRacialTraits(race, chardata := 0)
-    print("GetRacialTraits chamado com raça: " + race);
+
     case (race)
         ANAO: return GetBaduranCaracteristicas();
         DROW: return GetHarolothCaracteristicas();
@@ -46,31 +46,31 @@ function GetRacialTraits(race, chardata := 0)
             endif
         POLSKI: return GetPolkineaCaracteristicas();
         default: 
-            print("Erro: Raça desconhecida '" + race + "'");
+
             return error; // Retorna error em vez de struct vazio
     endcase
 endfunction
 
 function RacaToString(raca)
     case (raca)
-        ANAO: return "Anão";
-        DROW: return "Drow";
-        ELFO: return "Elfo";
-        ORC: return "Orc";
-        HUMANO: return "Humano";
-        POLSKI: return "Polski";
+        ANAO: return "anão";
+        DROW: return "drow";
+        ELFO: return "elfo";
+        ORC: return "orc";
+        HUMANO: return "humano";
+        POLSKI: return "polski";
         default: return "Desconhecido";
     endcase
 endfunction
 
 function TranslateRacialTrait(race, category, value, chardata := 0)
-   print("Raça do personagem: " + chardata.raca);
-print("Características RP armazenadas: " + chardata.caracteristicas_rp);
+
+
 var racial_traits := GetRacialTraits(chardata.raca, chardata);
-print("Traços raciais obtidos: " + racial_traits);
+
 
 if (racial_traits == error)
-    print("Erro ao obter traços raciais para a raça: " + chardata.raca);
+
     return 0;
 endif
 
@@ -118,11 +118,11 @@ function GetAiglanosCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (20-30 anos)",
-                "adulto (31-40 anos)",
-                "meia-idade (41-50 anos)",
-                "maduro (51-60 anos)",
-                "idoso (61+ anos)"
+                "jovem (20 anos)",
+                "adulto (30 anos)",
+                "meia-idade (40 anos)",
+                "maduro (50 anos)",
+                "idoso (60 anos)"
             }
         },
         "Voz" := struct{
@@ -171,11 +171,11 @@ function GetBaduranCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (50-100 anos)",
-                "adulto (101-150 anos)",
-                "meia-idade (151-200 anos)",
-                "maduro (201-250 anos)",
-                "idoso (251+ anos)"
+                "jovem (75 anos)",
+                "adulto (120 anos)",
+                "meia-idade (170 anos)",
+                "maduro (230 anos)",
+                "idoso (250 anos)"
             }
         },
         "Voz" := struct{
@@ -225,11 +225,11 @@ function GetBjorskeCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (20-30 anos)",
-                "adulto (31-40 anos)",
-                "meia-idade (41-50 anos)",
-                "veterano (51-60 anos)",
-                "ancião (61+ anos)"
+                "jovem (20 anos)",
+                "adulto (30 anos)",
+                "meia-idade (40 anos)",
+                "veterano (50 anos)",
+                "ancião (60 anos)"
             }
         },
         "Voz" := struct{
@@ -278,11 +278,11 @@ function GetHarolothCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (50-100 anos)",
-                "adulto (101-200 anos)",
-                "meia-idade (201-300 anos)",
-                "maduro (301-400 anos)",
-                "ancião (401+ anos)"
+                "jovem (75 anos)",
+                "adulto (150 anos)",
+                "meia-idade (250 anos)",
+                "maduro (350 anos)",
+                "ancião (400 anos)"
             }
         },
         "Voz" := struct{
@@ -332,11 +332,11 @@ function GetAlurielCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (50-100 anos)",
-                "adulto (101-200 anos)",
-                "meia-idade (201-500 anos)",
-                "maduro (501-700 anos)",
-                "ancião (701+ anos)"
+                "jovem (75 anos)",
+                "adulto (150 anos)",
+                "meia-idade (350 anos)",
+                "maduro (600 anos)",
+                "ancião (700 anos)"
             }
         },
         "Voz" := struct{
@@ -386,11 +386,11 @@ function GetGulthrakCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem adulto (15-20 anos)",
-                "adulto (21-30 anos)",
-                "meia-idade (31-40 anos)",
-                "veterano (41-50 anos)",
-                "ancião (51+ anos)"
+                "jovem adulto (15 anos)",
+                "adulto (25 anos)",
+                "meia-idade (35 anos)",
+                "veterano (45 anos)",
+                "ancião (50 anos)"
             }
         },
         "Voz" := struct{
@@ -440,11 +440,11 @@ function GetPolkineaCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem adulto (20-30 anos)",
-                "adulto (31-50 anos)",
-                "meia-idade (51-70 anos)",
-                "maduro (71-90 anos)",
-                "ancião (91+ anos)"
+                "jovem adulto (25 anos)",
+                "adulto (40 anos)",
+                "meia-idade (55 anos)",
+                "maduro (70 anos)",
+                "ancião (90+ anos)"
             }
         },
         "Voz" := struct{
@@ -494,11 +494,11 @@ function GetPovoDoLesteCaracteristicas()
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem adulto (20-30 anos)",
-                "adulto (31-45 anos)",
-                "meia-idade (46-60 anos)",
-                "maduro (61-75 anos)",
-                "ancião (76+ anos)"
+                "jovem adulto (25 anos)",
+                "adulto (35 anos)",
+                "meia-idade (50 anos)",
+                "maduro (65 anos)",
+                "ancião (75 anos)"
             }
         },
         "Voz" := struct{
@@ -511,4 +511,28 @@ function GetPovoDoLesteCaracteristicas()
         }
     };
     return caracteristicas;
+endfunction
+
+function ExtractAgeValue(race, chosen_age_index)
+    var racial_traits := GetRacialTraits(race);
+    if (racial_traits == error)
+        return error;
+    endif
+
+    var age_options := racial_traits["Idade Aparente"].opcoes;
+    if (chosen_age_index < 1 || chosen_age_index > age_options.size())
+        return error;
+    endif
+
+    var chosen_age_string := age_options[chosen_age_index];
+    var age_value := 0;
+
+    // Extrai o número entre parênteses
+    var start := chosen_age_string.find("(");
+    var end := chosen_age_string.find(" anos)");
+    if (start != error && end != error)
+        age_value := CInt(chosen_age_string[start+1, end-start-1]);
+    endif
+
+    return age_value;
 endfunction

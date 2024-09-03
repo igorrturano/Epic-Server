@@ -148,32 +148,59 @@ endfunction
 function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
     GFTextMid(gump, 23, y_pos + 33, GUMP_WIDTH - 50, 53, "Básico");
     y_pos += 50;
-    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 180);
+    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 220);
     y_pos += 20;
-    AddInfoLine(gump, y_pos, "Nome", targ.name);
+    
+    var nome_real := GetObjProperty(targ, "nome_inicial");
+    if (!nome_real)
+        nome_real := targ.name;
+    endif
+    AddInfoLine(gump, y_pos, "Nome", nome_real);
+    
     AddInfoLine(gump, y_pos, "Raca", targ.title_race);
     AddInfoLine(gump, y_pos, "Sexo", GetGenderString(targ.gender));
     AddInfoLine(gump, y_pos, "Classe", GetCharDataValue(chardata, "classe"));
     AddInfoLine(gump, y_pos, "Background", GetCharDataValue(chardata, "background"));
     AddInfoLine(gump, y_pos, "Caracteristica", GetCharDataValue(chardata, "trait"));
+    
+    // Adicionando a Data de Nascimento
+    var birthdate := GetCharDataValue(chardata, "birthdate");
+    var birth_string := "Não definida";
+    if (birthdate != "Nenhum" && TypeOf(birthdate) == "Struct")
+        birth_string := birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.";
+    endif
+    AddInfoLine(gump, y_pos, "Data de Nascimento", birth_string);
+
+    // Adicionando a Idade
+    var age_string := "Não definida";
+    if (chardata.current_age)
+        age_string := CStr(chardata.current_age) + " anos";
+    else
+        // Se current_age não estiver definido, calcule-o
+        var current_year := CINT(GetGlobalProperty("current_year"));
+        if (chardata.birthdate && current_year)
+            var age := current_year - chardata.birthdate.year;
+            age_string := CStr(age) + " anos";
+        endif
+    endif
+    AddInfoLine(gump, y_pos, "Idade", age_string);
 endfunction
 
-
 function MostrarInformacoesJogo(byref gump, targ, chardata, byref y_pos)
-    y_pos += 20;
+    y_pos += 15; // Reduzido de 20 para 15
     GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Jogo");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 60);
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 55); // Reduzido de 60 para 55
     y_pos += 10;
     AddInfoLine(gump, y_pos, "Modo de Jogo", GetCharDataValue(chardata, "game_mode"));
     AddInfoLine(gump, y_pos, "DPs Restantes", GetDPsDescription(targ));
 endfunction
 
 function MostrarInformacoesNobreza(byref gump, targ, chardata, byref y_pos)
-    y_pos += 20;
+    y_pos += 15; // Reduzido de 20 para 15
     GFTextMid(gump, 38, y_pos, GUMP_WIDTH - 50, 53, "Sistema de Nobreza");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 90);
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 80); // Reduzido de 90 para 80
     y_pos += 10;
     AddInfoLine(gump, y_pos, "Status de Cidadania", GetCharDataValue(chardata, "citizenship_title"));
     AddInfoLine(gump, y_pos, "Titulo de Nobreza", GetCharDataValue(chardata, "current_nobility_title"));
@@ -418,16 +445,17 @@ function AdicionarMoldura(byref gump)
     endforeach
 endfunction
 
+// Modifique a função AddInfoLineTracos, se ela existir
 function AddInfoLineTracos(byref gump, byref y_pos, title, value)
     GFTextLine(gump, 50, y_pos, 53, title + ":");
-    GFTextLine(gump, 310, y_pos, 230, value);
+    GFTextLine(gump, 260, y_pos, 230, value); // Alterado de 310 para 300
     y_pos := y_pos + 25;
 endfunction
 
 function AddInfoLine(byref gump, byref y_pos, title, value)
     GFTextLine(gump, 50, y_pos, 53, title + ":");
-    GFTextLine(gump, 370, y_pos, 230, value);
-    y_pos := y_pos + 30;
+    GFTextLine(gump, 310, y_pos, 230, value); // Alterado de 370 para 360
+    y_pos := y_pos + 25;
 endfunction
 
 function GetCharDataValue(chardata, key, default_value := "Nenhum")
