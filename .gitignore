@@ -18,6 +18,7 @@ data
 config/animxlate.cfg
 config/boats.cfg
 config/extobj.cfg
+config/servers.cfg
 core-changes.txt
 packethooks.txt
 packets.zip
@@ -49,4 +50,6 @@ muls/
 realm/
 objtypes.txt
 pcs.txt
+
+# Others
 
