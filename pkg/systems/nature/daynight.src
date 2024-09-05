@@ -19,12 +19,15 @@ program daynightsystem()
 	
 	var i;
 	while(1)
+		//TODO: Checar a Season antes (se é solstício [inverno/verão]) e multiplicar daylenght por 1.2 (ou 0.8) e nightlenght por 0.8 (ou 1.2)
+		//TODO: IF para checar se é Idrithae, se VERDADEIRO subtrair 0.3 (ou definir valor absoluto = 0.5) em daylenght e somar 0.3 em nightlenght (ou definir valor absoluto = 1.5)
+
 		SeasonRotate();  //muda o dia do ano e estação
 		MoonFase();      // muda a fase da lua
 		// Temperature();   //mmuda a temperatura local
 		Broadcast("O sol esta nascendo.");
-                SetGlobalProperty("dia", "dia");
-                darkness := GeTMoonLightMod();
+		SetGlobalProperty("dia", "dia");
+		darkness := GeTMoonLightMod();
 		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, memmar e etc)
 		for (i:=darkness;i>=0;i:=i-1)
 			// setregionlightlevel("Umbraeterna", i);
