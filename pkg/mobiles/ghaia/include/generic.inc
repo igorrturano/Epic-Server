@@ -122,13 +122,34 @@ function Fight(opponent, alerted := 0)
  // else
 //	printtextabove(me, "fui alertado, nao vou alertar");
   endif
-
-   var speech := GetConfigStringArray( npccfgfile[mytemplate], "InitCombatSpeech" );
-   if (speech.size() > 0)
-	if (RandomInt(100)  < 50) //sempre 50% de chance de falar
-		Say(speech[RandomInt(speech.size()+1)]);
-	endif
+   var sourceRaca := GetObjProperty(opponent, "chardata").raca;
+	 var sourceDescription := GetObjProperty(opponent, "descricao");
+   var categoria := GetConfigString(npccfgfile[mytemplate], "Category");
+   var npcTemp := me.npctemplate;
+   
+   // Fazendo split na string para obter apenas a raça
+   if (npcTemp.Contains(":"))
+    var npcTempParts := SplitWords(npcTemp, ":", -1); // Dividir a string em partes
+    if (npcTempParts.Length() > 1)
+        npcTemp := npcTempParts[npcTempParts.Length() - 1]; // Pegar a última parte (Nordic, por exemplo)
+    endif
    endif
+   if (categoria == "EvilHuman")
+    var npcTemp := me.npctemplate;   
+    var npc := ":brainai:Nordic";
+    var language := "bad";
+    var event := "fighting";
+    var mood := "None";
+    var npcEvil := True;
+    var gossip := False;
+    var specialLore := True;
+    var playerinput := "ei!";
+    // Define the system message based on the parameters
+    var responseText := handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+    Say(responseText); // usa a responsa do modelo
+    print("npcTemp: " + npcTemp);
+   endif
+   
 
 
   var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
