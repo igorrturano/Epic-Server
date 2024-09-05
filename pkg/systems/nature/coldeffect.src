@@ -49,8 +49,8 @@ program neve(params)
                 dif := dif + 1;
             endif
 
-            if ( GetObjProperty(who, "chardata").trait == "Cria do Deserto")
-                dif := dif + 4;
+            if ( GetObjProperty(who, "chardata").trait == "Nomade do Deserto")
+                dif := dif + 30; // Quatro níveis mais difícil
             endif
 
             if ( GetObjProperty(who, "chardata").trait == "Adaptável")

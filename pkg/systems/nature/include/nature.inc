@@ -180,9 +180,9 @@ endfunction
 
 
 function SeasonRotate()
-    var season := cint(getglobalproperty("season"));
-    var daynumber := cint(getglobalproperty("daynumber"));
-    var current_year := CINT(GetGlobalProperty("current_year"));
+	var season := cint(getglobalproperty("season"));
+	var daynumber := cint(getglobalproperty("daynumber"));
+        var current_year := CINT(GetGlobalProperty("current_year"));
         
     if (!season)
         Season := 1;
@@ -197,28 +197,32 @@ function SeasonRotate()
         current_year := 456; // E.A. year - Dois anos antes da fase começar
     endif
  
-    daynumber := daynumber+1;
-    if (daynumber > 308)
-        daynumber := 1;
-        current_year := current_year + 1;
-    endif
+	daynumber := daynumber+1;
+	if (daynumber > 360)
+		daynumber := 1;
+                current_year := current_year + 1;
+	endif
 	
     setglobalproperty("daynumber", daynumber);
     SetGlobalProperty("current_year", current_year);
 	
-    if (daynumber == 1)
-        Broadcast("É verão.");
-        setglobalproperty("season", 1);
-    elseif (daynumber == 78)
-        Broadcast("As folhas das arvores começam a cair.");
-        setglobalproperty("season", 2);
-    elseif (daynumber == 155)
-        Broadcast("O vento sopra gelado e a neve comeca a cair..");
-        setglobalproperty("season", 3);
-    elseif (daynumber == 232)
-        Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante.");
-        setglobalproperty("season", 5);
-    endif
+	if (daynumber == 1)
+		Broadcast("E verao.");
+		setglobalproperty("season", 1);
+		//start_script("seasonaleffects");
+	elseif (daynumber == 91)
+		Broadcast("As folhas das arvores comecam a cair.");
+		setglobalproperty("season", 2);
+		//start_script("seasonaleffects");
+	elseif (daynumber == 180)
+		Broadcast("O vento sopra gelado e a neve comeca a cair..");
+		setglobalproperty("season", 3);
+		//start_script("seasonaleffects");
+	elseif (daynumber == 272)
+		Broadcast("Os passaros cantam felizes e a vida selvagem e ambudante.");
+		setglobalproperty("season", 5);
+		//start_script("seasonaleffects");
+	endif
 endfunction
 
 
