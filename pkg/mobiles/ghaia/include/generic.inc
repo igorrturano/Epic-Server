@@ -147,7 +147,7 @@ function Fight(opponent, alerted := 0)
     // Define the system message based on the parameters
     var responseText := handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, specialLore, playerinput);
     Say(responseText); // usa a responsa do modelo
-    print("npcTemp: " + npcTemp);
+    //print("AI says: " + responseText);
    endif
    
 

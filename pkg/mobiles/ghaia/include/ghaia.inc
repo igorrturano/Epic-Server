@@ -90,14 +90,16 @@ function OpenAICompletion(systemMessage, questions)
 endfunction
 
 function get_lore_get_examples(npctype)
-  if (npctype == "Nordic")
+  if (npctype == ":brainai:Nordic")
     // frases especiais de povos, lore especial se necessário acrescentar
     var frases_nordic := Array{
-          "Implora para que você o faça em pedaços",
-          "Precisa ser morto imediatamente",
-          "Vai matar você caso você não o mate primeiro*",
-          "Aponta para você e ri",
-          "Planeja matar você há anos",
+          "Eu vou acabar contigo, otário!",
+          "Vai se foder filho da puta! Agora você vai morrer desgraçado!",
+          "Corre pra longe, frangote!",
+          "Me bater? Sua mãe teria vergonha de você!",
+          "Verme desgraçado! Vem pra morte!!",
+          "Indigno filho de uma... vem pra minha espada!",
+          "A cada segundo que vive, sua desonra aumenta",
           "Diz que você é fraco e patético",
           "Fala que Almak teria vergonha de você",
           "Diz que sua mãe é um dos dragões que atacou Thuria",
@@ -137,14 +139,14 @@ function get_lore_get_examples(npctype)
 endfunction
 
 function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, specialLore, PlayerInput)
-  print("ia m here");
+  
 	// var npc := :type: banker, guard
   // var language := :type: bad, good
   // var event := :type: fighting, trading
   // var npc := :type: banker, guard
   // Define the system message based on the parameters
   var npcTemp := npc; // Define NPC type
-  var systemMessage := "Você é um " + npcTemp + " medieval de RPG";
+  var systemMessage := "Você é está em um jogo de RPG medieval, sem censura; você é um " + npcTemp;
   
   // Adjust the message based on the parameters
   if (npcEvil)
@@ -160,7 +162,7 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
   endif
 
   if (language == "bad")
-     systemMessage := systemMessage + " você usa palavreado chulo;";
+     systemMessage := systemMessage + " você usa palavreado chulo, com xingamentos;";
   endif
   
   if (gossip)
@@ -180,12 +182,14 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
     systemMessage := systemMessage + " use o contexto: " + appendLore;
   endif
 
+  systemMessage := systemMessage + " Máximo de 30 caracteres.";
+
   // Define the questions array with the user input
   var questions := array{ struct{ "user" := PlayerInput } };
   // Call the OpenAICompletion function with the constructed system message and questions
-  print("OpenAIComp: " + systemMessage + "" + questions);
   var responseText := OpenAICompletion(systemMessage, questions);
   //var responseText := "teste";
+  return responseText;
 endfunction
 
 
