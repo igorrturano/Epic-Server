@@ -16,7 +16,9 @@ var MONTHS := array{
     struct{ "name" := "Demiurgus", "days" := 33 },
     struct{ "name" := "Crassus", "days" := 32 },
     struct{ "name" := "Lleuadae", "days" := 31 },
-    struct{ "name" := "Phrugum", "days" := 31 }
+    struct{ "name" := "Phrugum", "days" := 31 },
+    struct{ "name" := "", "days" := 30},
+    struct{ "name" := "", "days" := 30}
 };
 
 var WEEKDAYS := array{
@@ -26,6 +28,17 @@ var WEEKDAYS := array{
 var MOON_PHASES := array{
     "Kalendae", "Nonae", "Idus", "Decrescens"
 };
+
+var qtdDiasNoAno := calcQtdDias();
+
+function calcQtdDias()
+    var totalDays := 0;
+    foreach month in MONTHS
+        totalDays += month.days;
+    endforeach
+
+    return totalDays;
+endfunction
 
 
 function playweathersound(type, person)
@@ -190,7 +203,7 @@ function SeasonRotate()
     var current_year := CINT(GetGlobalProperty("current_year"));
         
     if (!season)
-        Season := 1;
+        Season := SUMMER;
         SetGlobalProperty("season", Season);
     endif
  
@@ -203,14 +216,15 @@ function SeasonRotate()
     endif
  
     daynumber := daynumber+1;
-    if (daynumber > 308)
+    if (daynumber > qtdDiasNoAno)
         daynumber := 1;
-        current_year := current_year + 1; 
+        current_year := current_year + 1;
     endif
 	
     setglobalproperty("daynumber", daynumber);
     SetGlobalProperty("current_year", current_year);
 	
+
     if (daynumber == 1)
         Broadcast("É verão.");
         setglobalproperty("season", SUMMER);
