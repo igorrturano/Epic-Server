@@ -2,6 +2,7 @@
 include ":datafile:include/datafile";
 include ":merchants:item_template";
 include ":spells:swordmage";
+include ":brainAI:npcUtil";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -453,7 +454,26 @@ function DoPurchase(npc, player, input)
 							totalPago += faltaPagar;
 							SubtractAmount(moeda, faltaPagar);
 							faltaPagar := 0;
-							AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
+
+							
+							// AI Speak Open AI Start
+							var npcType := "vendedor";
+							if ( GetObjProperty(npc, "taverneiro"))
+								var npcType := "taverneiro"; // Get a propriedade "npc_type"
+							else
+								var npcType := "vendedor";
+							endif
+							var language := "None";
+							var event := "comercio";
+							var mood := "None";
+							var npcEvil := False;
+							var gossip := True;
+							var specialLore := False;
+							var playerinput := "<o personagem pega o item>";
+
+							var responseText := handle_open_ai_npc_speech(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
+							AI_Speak(npc, responseText);
 							break;
 						endif
 					endforeach
