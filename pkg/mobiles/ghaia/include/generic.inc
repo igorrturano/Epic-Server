@@ -135,8 +135,7 @@ function Fight(opponent, alerted := 0)
     endif
    endif
    if (categoria == "EvilHuman")
-    var npcTemp := me.npctemplate;   
-    var npc := ":brainai:Nordic";
+    var npcTemplate := me.npctemplate; //:brainai: ainda ta aparecendo ":brainai:Nordic" 
     var language := "bad";
     var event := "fighting";
     var mood := "None";
@@ -145,9 +144,10 @@ function Fight(opponent, alerted := 0)
     var specialLore := True;
     var playerinput := "ei!";
     // Define the system message based on the parameters
-    var responseText := handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+    var responseText := handle_open_ai_npc_speech(npcTemplate, language, event, npcEvil, mood, gossip, specialLore, playerinput);
     Say(responseText); // usa a responsa do modelo
     //print("AI says: " + responseText);
+    
    endif
    
 
