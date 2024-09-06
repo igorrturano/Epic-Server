@@ -31,7 +31,7 @@ program BrainCriticalScript(params)
 	
 	NPC_SetupColor(npc);
 	
-    SetObjProperty(who, "linguas_conhecidas", {"Comum"});
-    SetObjProperty(who, "lingua_escolhida", "Comum");
+    SetObjProperty(npc, "linguas_conhecidas", {"Comum"});
+    SetObjProperty(npc, "lingua_escolhida", "Comum");
 	return 1;
 endprogram
