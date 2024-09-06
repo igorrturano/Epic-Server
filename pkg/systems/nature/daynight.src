@@ -9,22 +9,57 @@ include ":nature:nature";
 include ":death:death";
 
 program daynightsystem()
-	setglobalproperty("daynightpid", getpid());
+	print("DEBUG: ENTROU DAYNIGHTSISTEM");
+	SetGlobalProperty("daynightpid", getpid());
+	//SetGlobalProperty("daynumber", 1);
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var darkness := cint(config.darkness);
-	var daylength := cint(config.daylength) * 60;
-	var nightlength := cint(config.nightlength) * 60;
-	var transspeed := cint(config.transspeed);
+	//var transspeed := cint(config.transspeed);
+	var transspeed := 60;
 	
 	var i;
 	while(1)
-		//TODO: Checar a Season antes (se é solstício [inverno/verão]) e multiplicar daylenght por 1.2 (ou 0.8) e nightlenght por 0.8 (ou 1.2)
-		//TODO: IF para checar se é Idrithae, se VERDADEIRO subtrair 0.3 (ou definir valor absoluto = 0.5) em daylenght e somar 0.3 em nightlenght (ou definir valor absoluto = 1.5)
+		print("DEBUG: ENTROU WHILE DAYNIGHTSISTEM");
+		var daylength := 1;
+		//var daylength := cint(config.daylength) * 60;
+		var nightlength;
+		//var nightlength := cint(config.nightlength) * 60;
 
 		SeasonRotate();  //muda o dia do ano e estação
 		MoonFase();      // muda a fase da lua
 		// Temperature();   //mmuda a temperatura local
+
+		var season := CInt(GetGlobalProperty("season"));
+		var seasonid := GetSeasonId();
+		var durationDayMod := 1;
+		var month := getMonth();
+
+		print("DEBUG: Dia: " + GetGlobalProperty("daynumber"));
+		print("DEBUG: Mes: " + month);
+		print("DEBUG: Ano: " + GetGlobalProperty("current_year"));
+		print("DEBUG: Estacao: " + season);
+
+		if (month == "Idrithae")
+			durationDayMod -= 0.3;
+		endif
+
+		if (season == seasonid.SUMMER) //Checa se é solstício de verão ou inverno
+			print("DEBUG: Estacao: VERAO");
+			print("DEBUG: Eh Solsticio? VERAO");
+			durationDayMod += 0.2;
+		elseif (season == seasonid.WINTER)
+			print("DEBUG: Estacao: VERAO");
+			print("DEBUG: Eh Solsticio? VERAO");
+			durationDayMod -= 0.2;
+		endif
+
+		daylength := daylength*durationDayMod;
+		nightlength := 2-daylength;
+
+		print("DEBUG: Duracao do dia: " + daylength);
+		print("DEBUG: Duracao da noite: " + nightlength);
+
 		Broadcast("O sol esta nascendo.");
 		SetGlobalProperty("dia", "dia");
 		darkness := GeTMoonLightMod();
@@ -55,6 +90,8 @@ program daynightsystem()
 
 		SetGlobalProperty("halfdaytime", ReadGameClock());
 		sleep(nightlength);
+		
+		advanceDay();
 
 	endwhile
 endprogram
