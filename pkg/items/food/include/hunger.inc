@@ -54,7 +54,7 @@ function ModStatFome(who, fome)
 	var debuff := GetObjProperty(who, "#fome");
 	var debufffome := Dictionary;
 	var resist := GetResist(who, FORTITUDE);
-	var dado := RandomFloat(100);
+	var dado := RESIST_MEDIUM;
 	
 	if (fome >= limiar)
 		if (resist >= dado)

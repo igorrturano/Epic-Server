@@ -30,5 +30,8 @@ program BrainCriticalScript(params)
 	Loot_Generate(bag, settings["Loot"]);
 	
 	NPC_SetupColor(npc);
+	
+    SetObjProperty(npc, "linguas_conhecidas", {"Comum"});
+    SetObjProperty(npc, "lingua_escolhida", "Comum");
 	return 1;
 endprogram
