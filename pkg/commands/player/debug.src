@@ -1,0 +1,38 @@
+use uo;
+
+include ":commands:debugsystem";
+
+program CMD_debug(who, debugName)
+    case (debugName)
+        "clima":
+            if (checkLv(who, 1))
+                setDebug(who, debugName);
+            endif
+            break;
+
+        default:
+            SendSysMessage(who, "DEBUG Mode: Debug para " + debugName + " inexistente. Confira se a tag está correta.");
+    endcase
+endprogram
+
+function checkLv(who, level)
+    if (who.cmdlevel >= level)
+        return true;
+    endif
+
+    SendSysMessage(who, "DEBUG Mode: Nível insuficiente.");
+    return false;
+endfunction
+
+function setDebug(who, debugName)
+    var propName := PROPTAG + debugName;
+    var prop := getDebugProp(who, debugName);
+
+    if (!prop)
+        SetObjProperty(who, propName, true);
+        SendSysMessage(who, "DEBUG Mode: Debug para " + debugName + " ativado com sucesso!");
+    else
+        EraseObjProperty(who, propName);
+        SendSysMessage(who, "DEBUG Mode: Debug para " + debugName + " desativado com sucesso!");
+    endif
+endfunction

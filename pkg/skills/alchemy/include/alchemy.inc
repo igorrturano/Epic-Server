@@ -1,11 +1,11 @@
+use cfgfile;
+
 include ":timedScripts:timedScripts";
 include ":tn:cooldown";
 include "include/say";
 include ":fls_core:fls_characters";
 include ":charactercreation:resists";
 include "include/epicConstants";
-use cfgfile;
-
 
 CONST DRINK_SOUND := 0x32;
 
@@ -32,8 +32,7 @@ function checkifcandrink(character, type)
   endif
 endfunction
 
-
-function empty_bottle(character, potion, potiontype := 0)
+function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
 
   if(GetObjProperty(potion, "acabou") == 1)
 	var pot2 := SubtractAmount( potion, 1 );
@@ -46,7 +45,9 @@ function empty_bottle(character, potion, potiontype := 0)
 	return 1;
 	endif
 
-  PlaySoundEffect(character, DRINK_SOUND);
+  if (drinkSound)
+    PlaySoundEffect(character, DRINK_SOUND);
+  endif
   PrintText(character, "*usa uma pocao*");
   var goles;
 
@@ -280,7 +281,7 @@ function do_poison(who, potion)
       poisonInfo.time := CInt(poisonInfo.time * 1.25);
     endif
 
-    if (CheckResist(who, FORTITUDE, 15,-20*poisonInfo.level))
+    if (CheckResist(who, FORTITUDE, RESIST_MEDIUM,-2*poisonInfo.level))
       SendSysMessageEx(who, "Voce resistiu ao veneno.", SSM_INFO);
     else
       TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
@@ -309,6 +310,7 @@ Function epicPotionDamageRoll(tier, bonus)
       dice := cstr("3d8");
     elseif (tier == 4)
       dice := cstr("4d10");
+
     endif
 
   var dmg := RandomDiceRoll(dice);

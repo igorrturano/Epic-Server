@@ -310,7 +310,7 @@ const UOBJ_FORGE6       := 0x198e;
 const UOBJ_FORGE7       := 0x1992;
 const UOBJ_FORGE8       := 0x1986;
 const UOBJ_FORGE9       := 0x198a;
-const UOBJ_ANVIL1       := 0x0faf;
+const UOBJ_ANVIL1       := 0xe1b;
 const UOBJ_ANVIL2       := 0x0fb0;
 
 const UOBJ_IRON_ORE             := 0x16300;

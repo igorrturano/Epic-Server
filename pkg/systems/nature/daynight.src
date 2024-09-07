@@ -9,22 +9,57 @@ include ":nature:nature";
 include ":death:death";
 
 program daynightsystem()
-	setglobalproperty("daynightpid", getpid());
+	SetGlobalProperty("daynightpid", getpid());
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var darkness := cint(config.darkness);
-	var daylength := cint(config.daylength) * 60;
-	var nightlength := cint(config.nightlength) * 60;
 	var transspeed := cint(config.transspeed);
 	
 	var i;
-	while(1)
+	while(true)
+		var daylength := CInt(config.daylength) * 60;
+		var fullDay := daylength*2;
+		var nightlength;
+
 		SeasonRotate();  //muda o dia do ano e estação
 		MoonFase();      // muda a fase da lua
 		// Temperature();   //mmuda a temperatura local
+
+		var season := getSeason();
+		var seasonid := GetSeasonId();
+		var durationDayMod := 1;
+		var date := getCurrentDate();
+
+		print("DEBUG: Dia do ano: " + date.dayYear);
+		print("DEBUG: Dia: " + date.day);
+		print("DEBUG: Mes: " + date.month);
+		print("DEBUG: Ano: " + date.year);
+		print("DEBUG: Lua: " + date.moonPhase);
+		print("DEBUG: Estacao: " + season);
+
+		if (date.month == "Idrithae")
+			durationDayMod -= 0.3;
+		endif
+
+		if (season == seasonid.SUMMER) //Checa se é solstício de verão ou inverno
+			print("DEBUG: Estacao: SUMMER");
+			print("DEBUG: Eh Solsticio de: SUMMER");
+			durationDayMod += 0.2;
+		elseif (season == seasonid.WINTER)
+			print("DEBUG: Estacao: WINTER");
+			print("DEBUG: Eh Solsticio de: WINTER");
+			durationDayMod -= 0.2;
+		endif
+
+		daylength := daylength*durationDayMod;
+		nightlength := fullDay-daylength;
+
+		print("DEBUG: Duracao do dia: " + daylength / 60 + "min");
+		print("DEBUG: Duracao da noite: " + nightlength / 60 + "min");
+
 		Broadcast("O sol esta nascendo.");
-                SetGlobalProperty("dia", "dia");
-                darkness := GeTMoonLightMod();
+		SetGlobalProperty("dia", "dia");
+		darkness := GeTMoonLightMod();
 		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, memmar e etc)
 		for (i:=darkness;i>=0;i:=i-1)
 			// setregionlightlevel("Umbraeterna", i);
@@ -52,7 +87,8 @@ program daynightsystem()
 
 		SetGlobalProperty("halfdaytime", ReadGameClock());
 		sleep(nightlength);
-
+		
+		advanceDay();
 	endwhile
 endprogram
 

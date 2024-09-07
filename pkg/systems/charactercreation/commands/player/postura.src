@@ -23,13 +23,13 @@ program postura(who, text)
 
     DamageStamina(who, 5);
     SetCooldown(who, "postura", 30);
-    if (text == "Ofensiva")
+    if (Lower(text) == "ofensiva")
         SetObjProperty(who, "Postura", "Ofensiva");
         performaction(who, 0x06);
         PlaySoundEffect(who, 0x3b4);
         SendSysMessageEx(who, "Voce abaixa seu escudo, erguendo sua arma");
         PrintText(who, "Abaixa o escudo");
-    elseif (text == "Defensiva")
+    elseif (Lower(text) == "defensiva")
         SetObjProperty(who, "Postura", "Defensiva");
         performaction(who, 0x1e);
         PlaySoundEffect(who, 0x3ab);

@@ -91,8 +91,6 @@ exported function GetManaMaximumValue(mobile)
 		vital_points := CInt(AP_GetTrueStat(mobile, "Intelligence")) * 100;
 		if (GetObjProperty(mobile, "chardata").trait == "Conexão com Alora")
 			vital_points := vital_points + 1000;
-		elseif (GetObjProperty(mobile, "chardata").trait == "Afogado em Mana")
-			vital_points := vital_points + 4000;
 		endif
 	endif
 
@@ -101,12 +99,6 @@ exported function GetManaMaximumValue(mobile)
 		if (hunger >= FomeGetLimiar())
 			vital_points := vital_points - (FomeCalcDebuff(hunger)*50);
 		endif
-
-		/*if (hunger == 5)
-			vital_points := vital_points - 2000;
-		elseif (hunger == 4)
-			vital_points := vital_points - 1000;
-		endif*/
 	endif
 
 	vital_points := vital_points + ((Cint( GetObjProperty(mobile, "manamod") ) + Cint( GetObjProperty(mobile, "#manamod")))*100);

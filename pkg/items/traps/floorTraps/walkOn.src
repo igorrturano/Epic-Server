@@ -19,6 +19,7 @@ include ":charactercreation:resists";
 include "include/sysEvent";
 include "include/eventID";
 include ":timedscripts:timedScripts";
+include "include/epicConstants";
 
 program TrapWalkOn(mobile, trap)
 	if ( mobile.dead )
@@ -66,7 +67,7 @@ program TrapWalkOn(mobile, trap)
 				var tempo := 15;
 				var dmg := CInt(RandomDiceRoll("1d10"))+20;
 				SendSysMessageEx(mobile, "Voce ativou uma armadilha!", SSM_FAIL);
-				if (CheckResist(mobile, REFLEXOS, 60)) // Difícil
+				if (CheckResist(mobile, REFLEXOS, RESIST_HARD))
 					if (temHabilidade(mobile, "Desbravador Nato"))
 						SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 						sleep(10);
@@ -126,7 +127,7 @@ program TrapWalkOn(mobile, trap)
 		PlayStationaryEffect(trap.x, trap.y, trap.z, CInt(cfg.Animation), 100, 11, 0, trap.realm);
 		//TODO colocar level nas traps
 		var dmg := CInt(RandomDiceRoll("1d10"))+20;
-		if (CheckResist(mobile, REFLEXOS, 60)) //Difícil
+		if (CheckResist(mobile, REFLEXOS, RESIST_HARD))
 			if (temHabilidade(mobile, "Desbravador Nato"))
 				SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 				sleep(10);
