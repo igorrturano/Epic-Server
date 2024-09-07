@@ -73,8 +73,6 @@ program	text_command_createnpc(who, template)
 
 endprogram
 
-
-
 /////////////////////////////////////////////////////////////////
 // Start functions
 /////////////////////////////////////////////////////////////////
@@ -90,14 +88,15 @@ function createthenpc(who, template)
 	var result := CreateNpcFromTemplate( ":brainai:"+template, loc.x, loc.y, loc.z, props, loc.realm );
 	customizeNpc(result);
 	if (!result)
-		SendSysMessage( who, "NPC Creation Failed: " + result.errortext );
+		result := CreateNpcFromTemplate( ":merchants:"+template, loc.x, loc.y, loc.z, props, loc.realm );
+		if(!result)
+			SendSysMessage( who, "NPC Creation Failed: " + result.errortext );
+		endif
 	endif
 endfunction
 
 function createmerc(who)
-
 	Start_Script( ":merchantnodes:textcmd/gm/createnode", who );
-
 endfunction
 
 function createguard(who)

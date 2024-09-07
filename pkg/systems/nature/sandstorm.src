@@ -6,6 +6,7 @@ include ":attributes:attributes";
 include "include/say";
 include ":tn:tngumps";
 include ":charactercreation:resists";
+include "include/epicConstants";
 
 program sandstormEffect(who)
     PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 10, 20, 0, who.realm); // Redemoinho
@@ -14,13 +15,13 @@ program sandstormEffect(who)
     Sleep(5);
     
     var survival_skill := AP_GetSkill(who, SURVIVAL);
-    var difficulty := 105; // Dificuldade base alta
+    var difficulty := RESIST_EXTREMELY_HARD;
 
     if (GetObjProperty(who, "chardata").culture == "Gulthrak")
-        difficulty := 65; // Dificuldade base baixa
+        difficulty := RESIST_MEDIUM; 
     endif
     
-    if (CheckResist(who, SURVIVAL, difficulty))
+    if (CheckResist(who, FORTITUDE, difficulty, +Cint(survival_skill/20)))
         PrintTextAbove(who, "Você consegue se proteger da tempestade de areia!");
     else
         PrintTextAbove(who, "A tempestade de areia o atinge com força total!");

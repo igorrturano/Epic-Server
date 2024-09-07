@@ -1439,7 +1439,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 		ALVO_DEBUFF_TODOS:
 			foreach mobile in mobiles
 				if ((mobile.connected) && (mobile != who)) //Afeta alvos logados ou NPCs. Não afeta o próprio bardo
-					resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+					resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 					if(!resistiu)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1453,7 +1453,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			foreach mobile in mobiles
 				if ((mobile.connected) && (mobile != who))
 					if (mobile.acctname)
-						resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1461,7 +1461,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 							PrintTextAbovePrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 						endif
 					elseif (GetObjProperty(mobile,"owner"))
-						resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextAbovePrivate(mobile, mensagemSucesso, SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1477,7 +1477,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 				if ((mobile.connected) && (mobile != who))
 					if (!mobile.acctname)
 						if (!GetObjProperty(mobile,"owner"))
-							resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+							resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 							if(!resistiu)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 								PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1493,7 +1493,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			if (!who.Party) //trata em caso de nao estar em party, aplicando para todos os alvos
 				foreach mobile in mobiles
 					if ((mobile.connected) && (mobile != who))
-						resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1508,7 +1508,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					if ((mobile.connected) && (mobile != who))
 						if (mobile.acctname)
 							if (who.Party == mobile.Party)
-								resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1519,7 +1519,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						elseif (GetObjProperty(mobile,"owner"))
 							dono := SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner")));
 							if (who.Party == dono.Party)
-								resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1536,7 +1536,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			if (!who.Party) //trata em caso de nao estar em party, aplicando para todos os alvos
 				foreach mobile in mobiles
 					if ((mobile.connected) && (mobile != who))
-						resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1551,7 +1551,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					if ((mobile.connected) && (mobile != who))
 						if (mobile.acctname)
 							if (who.Party != mobile.Party)
-								resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1562,7 +1562,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						elseif (GetObjProperty(mobile,"owner"))
 							dono := SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner")));
 							if (who.Party != dono.Party)
-								resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1571,7 +1571,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 								endif
 							endif
 						else
-							resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+							resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 							if(!resistiu)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 								PrintTextAbovePrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1587,7 +1587,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			foreach mobile in mobiles
 				print (mobile.name + ":" +mobile.alignment);
 				if ((mobile.connected) && (mobile != who) && (mobile.alignment == 1)) //Alvo Evil
-					resistiu := CheckResist(mobile, VONTADE, 30, resistencia_mod); //Alvo passou no teste de resistencia
+					resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 					if(!resistiu)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 						PrintTextAbovePrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -2080,7 +2080,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			foreach mobile in mobiles
 				if ((mobile.graphic == 52) || (mobile.graphic == 21)) //Graficos de cobras
-					resistiu := CheckResist(mobile, VONTADE, 60, resistencia_mod); //Mais difícil de resistir pela especificidade do alvo
+					resistiu := CheckResist(mobile, VONTADE, RESIST_VERY_HARD, resistencia_mod); //Mais difícil de resistir pela especificidade do alvo
 					if(!resistiu)
 						if ((mobile.connected) && (mobile != who)) //Verificar se esta funcionando nos MOB
 							TS_StartTimer(mobile, "bard_fascinar", duration, DebuffModifier, who, 0);

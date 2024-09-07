@@ -88,11 +88,9 @@ function racialSelection(who, culture_pic)
         endforeach
         if (btn_value == 201)
             chardata.raca := ANAO;
-            chardata.+vantagemracial := "Constituicao Ana";
             break;
         elseif (btn_value == 202) 
             chardata.raca := DROW;
-            chardata.+vantagemracial := "Toxina natural";
             break;
         elseif (btn_value == 203) 
             chardata.raca := ELFO;
@@ -102,7 +100,6 @@ function racialSelection(who, culture_pic)
             break;
         elseif (btn_value == 205)
             chardata.raca := ORC;
-            chardata.+vantagemracial := "Resistencia implacavel";
             break;
         elseif (btn_value == 206) 
             chardata.raca := POLSKI;
@@ -532,9 +529,6 @@ function pathOfWisdom(who, culture_pic)
             if (chardata.culture == HAROLOTH)
                 CreateItemInBackpack(who, 0x166E, 1);
             endif
-            CreateItemInBackpack(who, "runaarmasagrada");
-            CreateItemInBackpack(who, "runacuraleve");
-            CreateItemInBackpack(who, "runadescanso");
             chardata.+wisdom_path := "Clérigo";
             break;
         elseif (btn_value == 204) 

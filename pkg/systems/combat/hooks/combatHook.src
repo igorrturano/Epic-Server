@@ -336,12 +336,6 @@ exported function Attack(attacker, defender)
 			EraseObjProperty(defender, "#contraataquepoderoso");
 		endif
 
-		if ( GetCooldown(attacker, "SequenciaDevastadora"))
-			var ataques := cint(GetObjProperty(attacker, "#SequenciaDevastadoraAcumulada"));
-			ataques := ataques + 1;
-			SetObjProperty(attacker, "#SequenciaDevastadoraAcumulada", ataques);
-		endif
-
 		if (TemHabilidade(attacker, "Tirothan"))
 			var mlore_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
 			hit_chance := hit_chance + mlore_bonus;
@@ -434,7 +428,6 @@ exported function Attack(attacker, defender)
 
 		EraseObjProperty(attacker, "#shooting_effects");
 
-		EraseObjProperty(attacker, "#SequenciaDevastadoraAcumulada");
 		if (TemHabilidade(attacker, "Insistencia"))
 			SetObjProperty(attacker, "insistencia", 1);
 		endif

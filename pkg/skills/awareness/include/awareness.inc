@@ -150,14 +150,6 @@ function examinarArea(who)
 		range := range + 5;
 	endif
 
-/*	var raca := GetObjProperty(who, "raca");
-	if ( raca == "elfo" )
-		range := range + 10;
-	elseif ( raca == "meio-elfo" || raca == "drow" )
-		range := range + 5;
-	endif
-*/
-
 	var diff;
 	var lvl;
 	var found := 0;

@@ -29,8 +29,8 @@ program drink_blue (who, potion)
         return; 
     endif
 
-	empty_bottle(who, potion);
-
+	empty_bottle(who, potion, 0, 0);
+ 
     SendSysMessageEx(who, "Você encerou a armadura", SSM_INFO);
 
 	SetObjProperty(targ, "encerada", 1);

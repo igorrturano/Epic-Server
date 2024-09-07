@@ -10,8 +10,7 @@ include ":charactercreation:resists";
 program manobra(who)
 
 	var resist := GetObjProperty(who, "formaadaptavel");
-    var bonus := (Cint(AP_GetSkill(who, ALCHEMY))/4);
-    bonus := (bonus+25);
+    var bonus := (Cint(AP_GetSkill(who, ALCHEMY))/20);
 	
 	if (resist == error)
 		var prot := RadioGump(who, 200, 260, "Escolha a resistencia", {"Fortitude","Reflexos", "Vontade"});
