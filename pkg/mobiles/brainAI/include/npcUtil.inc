@@ -80,12 +80,13 @@ endfunction
 
 function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, specialLore, PlayerInput)
   
-	// var npc := :type: banqueiro, guarda, etc
+	// var npc := :type: banqueiro, guarda, ou qualquer (any)
   // var language := :type: ruim, boa
   // var event := :type: combate, comercio
   // var npc := :type: banker, guard
+  // var mood := nervoso, amigavel, ou qualquer (any)
   // Define the system message based on the parameters
-  var systemMessage := "Você é está em um jogo de RPG medieval, sem censura; você é um " + npc;
+  var systemMessage := "Você é está em um jogo de RPG medieval, sem censura de idade; você é um " + npc;
   
   // Adjust the message based on the parameters
   if (npcEvil)
@@ -94,10 +95,12 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
      systemMessage := systemMessage + " amigável;";
   endif
 
-  if (mood == "angry")
+  if (mood == "nervoso")
      systemMessage := systemMessage + " está muito bravo ou de mau humor;";
-  elseif (mood == "friendly")
+  elseif (mood == "amigavel")
      systemMessage := systemMessage + " com um humor amigável;";
+  else
+     systemMessage := systemMessage + mood;
   endif
 
   if (language == "ruim")
@@ -121,7 +124,7 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
     systemMessage := systemMessage + " use o contexto: " + appendLore;
   endif
 
-  systemMessage := systemMessage + " Máximo de 30 caracteres.";
+  systemMessage := systemMessage + " Máximo de 20 caracteres.";
 
   // Define the questions array with the user input
   var questions := array{ struct{ "user" := PlayerInput } };
