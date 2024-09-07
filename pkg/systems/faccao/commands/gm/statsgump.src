@@ -1,0 +1,25 @@
+include ":attributes:attributes";
+
+program statsGump(who)
+		who.damage_physical_mod := 1;
+		who.damage_fire_mod := 2;
+		who.damage_cold_mod := 3;
+		who.damage_poison_mod := 4;
+		who.damage_energy_mod := 5;
+		who.lower_reagent_cost_mod := 5;
+		who.spell_damage_increase_mod := 6;
+		who.faster_casting_mod := 7;
+		who.faster_cast_recovery_mod := 8;
+		who.defence_increase_mod := 9;
+		who.lower_mana_cost_mod := 10;
+		who.hit_chance_mod := 11;
+		who.swing_speed_mod := 12;
+		who.damage_increase_mod := 13;
+		who.luck_mod := 14;
+        who.resist_physical_mod :=15;
+		who.resist_fire_mod := 16;
+		who.resist_cold_mod := 17;
+		who.resist_poison_mod := 18;
+		who.resist_energy_mod := 19;
+        Recalcvitals(who);
+endprogram

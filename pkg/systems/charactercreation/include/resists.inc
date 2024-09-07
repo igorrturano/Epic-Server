@@ -2,8 +2,8 @@ include ":attributes:attributes";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include "include/say";
+include "include/creationUtils";
 include "include/epicConstants";
-include "include/epicUtils";
 
 const FORTITUDE := "Fortitude";
 const REFLEXOS := "Reflexos";

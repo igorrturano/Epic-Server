@@ -54,7 +54,7 @@ program calor(params)
             endif
 
             if ( GetObjProperty(who, "chardata").trait == "Cria do Deserto")
-                dif := dif - 5;
+                dif := dif - 10;
             endif
 
             if ( GetObjProperty(who, "chardata").trait == "Adaptável")
