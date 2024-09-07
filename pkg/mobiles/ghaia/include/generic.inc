@@ -134,15 +134,20 @@ function Fight(opponent, alerted := 0)
         npcTemp := npcTempParts[npcTempParts.Length() - 1]; // Pegar a última parte (Nordic, por exemplo)
     endif
    endif
-   if (categoria == "EvilHuman")
+   if (categoria == "EvilHuman" || categoria == "Goblin" || categoria == "Giants")
     var npcTemplate := me.npctemplate; //:brainai: ainda ta aparecendo ":brainai:Nordic" 
-    var language := "bad";
-    var event := "fighting";
+    if (categoria == "Goblin")
+      npcTemplate := " Goblin de nome " + me.name +  " que fala de forma primitiva (como '<nome> detestar humanus' sem conjugar verbos);";
+    elseif (categoria == "Giants")
+      npcTemplate := " Gigante de nome que fala de forma primitiva (como 'esmagar ser');";
+    endif
+    var language := "ruim";
+    var event := "combate";
     var mood := "None";
     var npcEvil := True;
     var gossip := False;
     var specialLore := True;
-    var playerinput := "ei!";
+    var playerinput := "<" + sourceRaca + " se aproxima";
     // Define the system message based on the parameters
     var responseText := handle_open_ai_npc_speech(npcTemplate, language, event, npcEvil, mood, gossip, specialLore, playerinput);
     Say(responseText); // usa a responsa do modelo

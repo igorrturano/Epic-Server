@@ -99,6 +99,8 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
      systemMessage := systemMessage + " está muito bravo ou de mau humor;";
   elseif (mood == "amigavel")
      systemMessage := systemMessage + " com um humor amigável;";
+  elseif (mood == "None")
+     systemMessage := systemMessage;
   else
      systemMessage := systemMessage + mood;
   endif
@@ -114,14 +116,16 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
   endif
 
   if (event == "combate")
-     systemMessage := systemMessage + " O personagem que fala com você vem te atacar;";
+     systemMessage := systemMessage + " O personagem que se aproxima vem te atacar;";
   elseif (event == "comercio")
      systemMessage := systemMessage + " O personagem faz negocios com voce;";
   endif
 
   if (specialLore)
     var appendLore := get_lore_get_examples(npc);
+    if (appendLore != 0)
     systemMessage := systemMessage + " use o contexto: " + appendLore;
+    endif
   endif
 
   systemMessage := systemMessage + " Máximo de 20 caracteres.";
