@@ -9,56 +9,53 @@ include ":nature:nature";
 include ":death:death";
 
 program daynightsystem()
-	print("DEBUG: ENTROU DAYNIGHTSISTEM");
 	SetGlobalProperty("daynightpid", getpid());
-	//SetGlobalProperty("daynumber", 1);
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var darkness := cint(config.darkness);
-	//var transspeed := cint(config.transspeed);
-	var transspeed := 60;
+	var transspeed := cint(config.transspeed);
 	
 	var i;
-	while(1)
-		print("DEBUG: ENTROU WHILE DAYNIGHTSISTEM");
-		var daylength := 1;
-		//var daylength := cint(config.daylength) * 60;
+	while(true)
+		var daylength := CInt(config.daylength) * 60;
+		var fullDay := daylength*2;
 		var nightlength;
-		//var nightlength := cint(config.nightlength) * 60;
 
 		SeasonRotate();  //muda o dia do ano e estação
 		MoonFase();      // muda a fase da lua
 		// Temperature();   //mmuda a temperatura local
 
-		var season := CInt(GetGlobalProperty("season"));
+		var season := getSeason();
 		var seasonid := GetSeasonId();
 		var durationDayMod := 1;
-		var month := getMonth();
+		var date := getCurrentDate();
 
-		print("DEBUG: Dia: " + GetGlobalProperty("daynumber"));
-		print("DEBUG: Mes: " + month);
-		print("DEBUG: Ano: " + GetGlobalProperty("current_year"));
+		print("DEBUG: Dia do ano: " + date.dayYear);
+		print("DEBUG: Dia: " + date.day);
+		print("DEBUG: Mes: " + date.month);
+		print("DEBUG: Ano: " + date.year);
+		print("DEBUG: Lua: " + date.moonPhase);
 		print("DEBUG: Estacao: " + season);
 
-		if (month == "Idrithae")
+		if (date.month == "Idrithae")
 			durationDayMod -= 0.3;
 		endif
 
 		if (season == seasonid.SUMMER) //Checa se é solstício de verão ou inverno
-			print("DEBUG: Estacao: VERAO");
-			print("DEBUG: Eh Solsticio? VERAO");
+			print("DEBUG: Estacao: SUMMER");
+			print("DEBUG: Eh Solsticio de: SUMMER");
 			durationDayMod += 0.2;
 		elseif (season == seasonid.WINTER)
-			print("DEBUG: Estacao: VERAO");
-			print("DEBUG: Eh Solsticio? VERAO");
+			print("DEBUG: Estacao: WINTER");
+			print("DEBUG: Eh Solsticio de: WINTER");
 			durationDayMod -= 0.2;
 		endif
 
 		daylength := daylength*durationDayMod;
-		nightlength := 2-daylength;
+		nightlength := fullDay-daylength;
 
-		print("DEBUG: Duracao do dia: " + daylength);
-		print("DEBUG: Duracao da noite: " + nightlength);
+		print("DEBUG: Duracao do dia: " + daylength / 60 + "min");
+		print("DEBUG: Duracao da noite: " + nightlength / 60 + "min");
 
 		Broadcast("O sol esta nascendo.");
 		SetGlobalProperty("dia", "dia");
@@ -92,7 +89,6 @@ program daynightsystem()
 		sleep(nightlength);
 		
 		advanceDay();
-
 	endwhile
 endprogram
 

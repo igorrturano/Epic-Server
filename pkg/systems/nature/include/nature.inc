@@ -5,7 +5,6 @@ use cfgfile;
 
 include "include/damage";
 
-// Season Id based on UO packet
 
 // Calendar constants
 var MONTHS := array{
@@ -22,8 +21,8 @@ var MONTHS := array{
     struct{ "name" := "Lleuadae", "days" := 31 },
 
     struct{ "name" := "Phrugum", "days" := 31 },
-    struct{ "name" := "Mes 11", "days" := 30},
-    struct{ "name" := "Mes 12", "days" := 30}
+    struct{ "name" := "Mes 11", "days" := 30}, //TODO: FALTA NOME
+    struct{ "name" := "Mes 12", "days" := 30} //TODO: FALTA NOME
 };
 
 var WEEKDAYS := array{
@@ -35,12 +34,17 @@ var MOON_PHASES := array{
 };
 
 var daysInYear := calcDaysInYear();
+
+// Season Id based on UO packet
 const SUMMER := 1;
 const AUTUMN := 2;
 const WINTER := 3;
 const SPRING := 4;
 
 
+function getSeason()
+    return CInt(GetGlobalProperty("season"));
+endfunction
 function GetSeasonId()
     return struct{
         "SUMMER" := 1,
@@ -206,139 +210,47 @@ function endweather()
 endfunction
 
 function WhatSeason()
-    print("DEBUG: ENTROU WhatSeason");
-    var daynumber := cint(GetGlobalProperty("daynumber"));
+    var daynumber := getDay();
     if (daynumber > daysInYear*0)
         if (daynumber > daysInYear*0.25)
             if (daynumber > daysInYear*0.50)
                 if (daynumber > daysInYear*0.75)
-                    print("DEBUG: WhatSeason: SPRING");
                     return SPRING;
                 endif
-                print("DEBUG: WhatSeason: WINTER");
                 return WINTER;
             endif
-            print("DEBUG: WhatSeason: AUTUMN");
             return AUTUMN;
         endif
-        print("DEBUG: WhatSeason: VERAO");
         return SUMMER;
     endif
 endfunction
 
-/*function SeasonRotate()
-    print("DEBUG: ENTROU NO ROTATE");
-    var season := CInt(GetGlobalProperty("season"));
-    var daynumber := CInt(GetGlobalProperty("daynumber"));
-    var current_year := CInt(GetGlobalProperty("current_year"));
-        
-    if (!season)
-        Season := SUMMER;
-        SetGlobalProperty("season", Season);
-    endif
- 
-    if (!daynumber)
-        daynumber := 1;
-    endif
-
-    if (!current_year)
-        current_year := 456; // E.A. year - Dois anos antes da fase começar
-    endif
- 
-    daynumber++;
-    print("DEBUG: ANO TEM " + daysInYear + " DIAS");
-    if (daynumber > daysInYear)
-        daynumber := 1;
-        current_year := current_year + 1;
-    endif
-	
-    SetGlobalProperty("daynumber", daynumber);
-    SetGlobalProperty("current_year", current_year);
-	
-    case (WhatSeason())
-        SUMMER:
-            Broadcast("O sol está mais forte que o comum...");
-            SetGlobalProperty("season", SUMMER);
-            break;
-
-        AUTUMN:
-            Broadcast("As folhas das arvores começam a cair...");
-            SetGlobalProperty("season", AUTUMN);
-            break;
-
-        WINTER:
-            Broadcast("O vento sopra gelado e a neve comeca a cair...");
-            SetGlobalProperty("season", WINTER);
-            weathereffects(2, 1);
-            break;
-
-        SPRING:
-            Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante...");
-            SetGlobalProperty("season", SPRING);
-            break;
-    endcase
-    
-    
-    if (daynumber == 1)
-        Broadcast("É verão.");
-        setglobalproperty("season", SUMMER);
-    elseif (daynumber == 78)
-        Broadcast("As folhas das arvores começam a cair.");
-        setglobalproperty("season", AUTUMN);
-    elseif (daynumber == 155)
-        Broadcast("O vento sopra gelado e a neve comeca a cair..");
-        setglobalproperty("season", WINTER);
-    elseif (daynumber == 232)
-        Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante.");
-        setglobalproperty("season", SPRING);
-    endif
-endfunction*/
-
-function CheckCalendar()
-    var season := CInt(GetGlobalProperty("season"));
-    var daynumber := CInt(GetGlobalProperty("daynumber"));
-    var current_year := CInt(GetGlobalProperty("current_year"));
-
-    if (!season)
-        SetGlobalProperty("season", SUMMER);
-    endif
- 
-    if (!daynumber)
-        SetGlobalProperty("daynumber", 1);
-    endif
-
-    if (!current_year)
-        SetGlobalProperty("current_year", 456); // E.A. year - Dois anos antes da fase começar
-    endif
-endfunction
-
 function SeasonRotate()
-    CheckCalendar();
+    getCurrentDate(); // Usado aqui para checar se as props estão corretas e setar padrão caso não tenha.
 
     case (WhatSeason())
+        
         SUMMER:
-            Broadcast("O sol está mais forte que o comum...");
+            Broadcast("O sol é mais forte que o comum...");
             SetGlobalProperty("season", SUMMER);
-            return;
+            break;
 
         AUTUMN:
             Broadcast("As folhas das arvores começam a cair...");
             SetGlobalProperty("season", AUTUMN);
-            return;
+            break;
 
         WINTER:
             Broadcast("O vento sopra gelado e a neve comeca a cair...");
             SetGlobalProperty("season", WINTER);
-            weathereffects(2, 1);
-            return;
+            break;
 
         SPRING:
             Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante...");
             SetGlobalProperty("season", SPRING);
-            return;
+            break;
     endcase
 endfunction
-
 
 function MoonFase()
     var currentDate := getCurrentDate();
@@ -424,17 +336,42 @@ function output(msgtext)
 	print("Weather debug:" + msgtext);
 endfunction
 
-function getMonth()
-    var totalDays := GetGlobalProperty("daynumber");
-    if (!totalDays)
-        totalDays := 1;
-        SetGlobalProperty("daynumber", totalDays);
+function getDay()
+    var day := GetGlobalProperty("daynumber");
+
+    if (!day)
+        resetCalendar();
+        day := GetGlobalProperty("daynumber");
     endif
+
+    return CInt(day);
+endfunction
+
+function setDay(day)
+    SetGlobalProperty("daynumber", day);
+endfunction
+
+function getDayOfMonth()
+    var day := getDay();
+
+    var dayCount := 0;
+    foreach month in MONTHS
+        if (day <= (dayCount + month.days))
+            return (day - dayCount);
+        endif
+        dayCount += month.days;
+    endforeach
+
+    return "Error: Day out of range";
+endfunction
+
+function getMonth()
+    var day := getDay();
 
     var dayCount := 0;
     foreach month in MONTHS
         dayCount += month.days;
-        if (totalDays <= dayCount)
+        if (day <= dayCount)
             return month.name;
         endif
     endforeach
@@ -442,48 +379,57 @@ function getMonth()
     return "Error: Day out of range";
 endfunction
 
-function getDayOfMonth()
-    var totalDays := GetGlobalProperty("daynumber");
-    if (!totalDays)
-        totalDays := 1;
-        SetGlobalProperty("daynumber", totalDays);
+function getYear()
+    var current_year := GetGlobalProperty("current_year");
+
+    if (!current_year)
+        resetCalendar();
+        current_year := GetGlobalProperty("current_year");
     endif
 
-    var dayCount := 0;
-    foreach month in MONTHS
-        if (totalDays <= (dayCount + month.days))
-            return (totalDays - dayCount);
-        endif
-        dayCount += month.days;
-    endforeach
+    return CInt(current_year);
+endfunction
 
-    return "Error: Day out of range";
+function setYear(year)
+    SetGlobalProperty("current_year", year);
+endfunction
+
+function advanceDay()
+    var day := getDay();
+    var year := getYear();
+
+    day++;
+    if (day > daysInYear)
+        day := 1;
+        year++;
+    endif
+
+    SetGlobalProperty("daynumber", day);
+    SetGlobalProperty("current_year", year);
 endfunction
 
 function getWeekday()
-    var totalDays := GetGlobalProperty("daynumber");
-    if (!totalDays)
-        totalDays := 1;
-        SetGlobalProperty("daynumber", totalDays);
+    var day := getDay();
+    if (!day)
+        resetCalendar();
+        day := getDay();
     endif
 
-    return WEEKDAYS[(totalDays - 1) % 7 + 1];
+    return WEEKDAYS[(day - 1) % 7 + 1];
 endfunction
 
 function getMoonPhase()
-    print("DEBUG: Entrou getMoonPhase");
-    var totalDays := GetGlobalProperty("daynumber");
-    if (!totalDays)
-        totalDays := 1;
-        SetGlobalProperty("daynumber", totalDays);
-    endif
-
+    var day := getDay();
     var weeklength := WEEKDAYS.Size();
-    var fase := (totalDays / weeklength);
-    while (fase > 4)
-        fase := (fase / weeklength);
+    var moonphases := MOON_PHASES.Size();
+
+    var fase := day / weeklength;
+    while (fase >= moonphases)
+        fase := fase - moonphases;
     endwhile
     fase++;
+
+    print("DEBUG: FASE: " +fase);
     
     case (fase)
         1: return MOON_PHASES[1];
@@ -491,39 +437,27 @@ function getMoonPhase()
         3: return MOON_PHASES[3];
         4: return MOON_PHASES[4];
     endcase
-
-    //return MOON_PHASES[(totalDays - 1) % 4 + 1];
 endfunction
 
-function advanceDay()
-    var totalDays := GetGlobalProperty("daynumber");
-    if (!totalDays)
-        totalDays := 1;
-    endif
-
-    totalDays += 1;
-    if (totalDays > 308)
-        totalDays := 1;
-    endif
-
-    SetGlobalProperty("daynumber", totalDays);
-    SeasonRotate();
-    moonfase();
+function resetCalendar()
+    SetGlobalProperty("daynumber", 1);
+    SetGlobalProperty("current_year", 456); // E.A. year - Dois anos antes da fase começar
 endfunction
 
 function getCurrentDate()
-    print("DEBUG: ENTROU NO CURRENTDATE");
-    var month := getMonth();
+    var dayYear := getDay();
     var day := getDayOfMonth();
+    var month := getMonth();
+    var year := getYear();
     var weekday := getWeekday();
     var moonPhase := getMoonPhase();
 
-    print("DEBUG: FASE DA LUA: " + moonPhase);
-
     return struct{
-        "month" := month,
         "day" := day,
+        "month" := month,
+        "year" := year,
         "weekday" := weekday,
+        "dayYear" := dayYear,
         "moonPhase" := moonPhase
     };
 endfunction
