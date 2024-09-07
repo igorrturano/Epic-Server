@@ -48,7 +48,7 @@ program Hunger(chr)
 	while( chr )
 		viciostr := CInt(AP_GetVital(chr, "viciostr"));
 
-		if (viciostr <= 30)
+		if (viciostr <= 50)
 			if((GetObjProperty(chr, "ultimastr") + 7200) < polcore().systime)
 				SendSysMessageEx(chr, "Voce sente os efeitos da abstinencia.",  SSM_INFO);
 				var abstinenciastr := GetObjProperty(chr, "abstinenciastr");
@@ -56,7 +56,6 @@ program Hunger(chr)
 				var viciomodstr := GetObjProperty(chr, "#viciomodstr");
 				SetObjProperty(chr, "#viciomodstr", viciomodstr + 1);
 				AP_ModifyStatMod(chr, STRENGTH, abstinenciastr);
-				AP_ModifyStatMod(chr, DEXTERITY, abstinenciastr);
 			endif
 		elseif (viciostr < 80 )
 			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substancias",  SSM_INFO);
@@ -75,7 +74,7 @@ program Hunger(chr)
 	while( chr )
 		viciodex := CInt(AP_GetVital(chr, "viciodex"));
 
-		if (viciodex <= 30)
+		if (viciodex <= 50)
 			if((GetObjProperty(chr, "ultimadex") + 7200) < polcore().systime)
 				SendSysMessageEx(chr, "Voce sente os efeitos da abstinencia.",  SSM_INFO);
 				var abstinenciadex := GetObjProperty(chr, "abstinenciadex");
