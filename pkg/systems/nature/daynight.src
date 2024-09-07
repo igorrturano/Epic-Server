@@ -26,7 +26,6 @@ program daynightsystem()
 		// Temperature();   //mmuda a temperatura local
 
 		var season := getSeason();
-		var seasonid := GetSeasonId();
 		var durationDayMod := 1;
 		var date := getCurrentDate();
 
@@ -41,11 +40,11 @@ program daynightsystem()
 			durationDayMod -= 0.3;
 		endif
 
-		if (season == seasonid.SUMMER) //Checa se é solstício de verão ou inverno
+		if (season == SUMMER) //Checa se é solstício de verão ou inverno
 			print("DEBUG: Estacao: SUMMER");
 			print("DEBUG: Eh Solsticio de: SUMMER");
 			durationDayMod += 0.2;
-		elseif (season == seasonid.WINTER)
+		elseif (season == WINTER)
 			print("DEBUG: Estacao: WINTER");
 			print("DEBUG: Eh Solsticio de: WINTER");
 			durationDayMod -= 0.2;
