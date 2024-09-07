@@ -141,7 +141,11 @@ function SpeechEvent(npc, byref event)
 				endif
 			else
 				
-				AI_Speak(npc, "Aqui esta seu cofre.") ;
+				var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é um " + sourceRaca + " com descrição " + sourceDescription + ". Máximo de 50 caracteres.";
+				var questions := array{ struct{ "user" := text } };
+				var responseText := OpenAICompletion(systemMessage, questions);
+				AI_Speak(npc, responseText); // usa a responsa do modelo
+				//AI_Speak(npc, "Aqui esta seu cofre.") ;
 				SendOpenSpecialContainer(source, bank_box);
 			endif
 		endif
