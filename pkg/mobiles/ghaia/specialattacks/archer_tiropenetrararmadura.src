@@ -21,8 +21,6 @@ var attacker	:= params[1];
 
 	Printtextabove(attacker, "Voce achou um ponto fraco!", SSM_INFO);
 	SetObjProperty(attacker, "#tiropenetrante", 1);
-	
-	
 endprogram
 
 function CheckDistance(attacker, defender, dist)

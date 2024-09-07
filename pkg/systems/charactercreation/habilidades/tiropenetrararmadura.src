@@ -7,8 +7,7 @@ include "include/damage";
 include "include/say";
 
 program doubleattack(who)
-
 	SendSysMessageEx(who, "Voce achou um ponto fraco!", SSM_INFO);
+	SetObjProperty(who, "#attackbonus", 100);
 	SetObjProperty(who, "#tiropenetrante", 1);
-	
 endprogram
