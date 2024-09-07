@@ -23,3 +23,13 @@ function debugMsg(who, debugName, msg)
         SendSysMessageEx(who, msg, SSM_INFO);
     endif
 endfunction
+
+function debugMsgEvent(debugName, msg) 
+    foreach who in EnumerateOnlineCharacters()
+        if (checkDebug(who, debugName) || checkDebug(who, "all"))
+            msg := "DEBUG "+debugName+": "+msg;
+
+            SendSysMessageEx(who, msg, SSM_INFO);
+        endif
+    endforeach
+endfunction
