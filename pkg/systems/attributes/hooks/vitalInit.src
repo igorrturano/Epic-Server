@@ -284,7 +284,7 @@ exported function GetVicioMaximumValue(mobile)
 endfunction
 
 exported function GetVicioPotRegenRate(mobile)
-	var base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 13) + (cint(ap_getstat(mobile, "strength"))/10);
+	var base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 14) + (getobjproperty(mobile, "chardata").fortitude);
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "vicio");
 
 	return regen;
