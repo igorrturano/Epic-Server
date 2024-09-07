@@ -1154,6 +1154,9 @@ function resetCharacter(who)
 
     EraseObjProperty(who, "linguas_conhecidas");
     EraseObjProperty(who, "lingua_escolhida");
+
+    AP_SetVital(who, "Hunger", 0);
+	RecalcVitals(who);
 endfunction
 
 function resetGender(who)

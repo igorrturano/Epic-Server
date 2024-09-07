@@ -1,0 +1,39 @@
+
+use uo;
+
+include "include/say";
+include ":attributes:attributes";
+include ":tn:cooldown";
+
+program postura(who, text)
+    if (GetCooldown(who, "estilo") > 0)
+        SendSysMessageEx(who, "Aguarde antes de trocar de estilo novamente");
+        return 0;
+    endif
+
+    if (!TemHabilidade(who, "Artista Marcial"))
+        SendSysMessageEx(who, "Somente monges conseguem se beneficiar desse comando");
+        return 0;
+    endif
+
+    DamageStamina(who, 5);
+    SetCooldown(who, "estilo", 30);
+    if (Lower(text) == "ofensivo")
+        SetObjProperty(who, "estilo", "ofensivo");
+        performaction(who, 0x06);
+        PlaySoundEffect(who, 0x3b4);
+        SendSysMessageEx(who, "Você abaixa a guarda, se pondo de frente para o inimigo, como um dragão", SSM_INFO);
+        PrintText(who, "Abaixa o escudo");
+    elseif (Lower(text) == "defensivo")
+        SetObjProperty(who, "estilo", "defensivo");
+        performaction(who, 0x1e);
+        PlaySoundEffect(who, 0x3ab);
+        SendSysMessageEx(who, "Voce ergue a guarda, separando as pernas e ficando de lado, como um caranguejo", SSM_INFO);
+        PrintText(who, "Ergue o escudo");
+    else
+        SendSysMessageEx(who, ".estilo ofensivo ou .estilo defensivo");
+        return 0;
+    endif
+
+    return 1;
+endprogram
