@@ -21,6 +21,8 @@ include "include/say";
 include ":blood:blood";
 include ":fls_core:packets";
 include "epicCombatUtils";
+include ":commands:debugsystem";
+
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
  * These could be attributes, but not every shard will want to
@@ -548,16 +550,17 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	if(sharpened_weapon)
 		other += sharpened_weapon;
 	endif
-	if (GetObjProperty(who, "showdmg"))
-		SendSysMessageEX(who, "Dano base: " + Cint(dmg), SSM_INFO);
-		SendSysMessageEX(who, "Rolagem de dano da arma: " + weapon_dice, SSM_INFO);
-		SendSysMessageEX(who, "Dano de habilidades: " + (other - sharpened_weapon), SSM_INFO);
-		SendSysMessageEX(who, "Dano de tatics: " + tatics, SSM_INFO);
-		SendSysMessageEX(who, "Dano de força: " + ((str-50)/10), SSM_INFO);
-		SendSysMessageEX(who, "Dano de bêncãos: " + blessbonus, SSM_INFO);
-		SendSysMessageEX(who, "Dano de inimigo predileto: " + inimigo_predileto, SSM_INFO);
-		SendSysMessageEX(who, "Redução de dano: " + (-1 * reducao_dano), SSM_FAIL);
-		SendSysMessageEX(who, "Arma Afiada: " + sharpened_weapon, SSM_INFO);
+
+	if (getDebugProp(who, "damage"))
+		debugMsg(who, "Dano base: " + Cint(dmg));
+		debugMsg(who, "Rolagem de dano da arma: " + weapon_dice);
+		debugMsg(who, "Dano de habilidades: " + (other - sharpened_weapon));
+		debugMsg(who, "Dano de tatics: " + tatics);
+		debugMsg(who, "Dano de força: " + ((str-50)/10));
+		debugMsg(who, "Dano de bêncãos: " + blessbonus);
+		debugMsg(who, "Dano de inimigo predileto: " + inimigo_predileto);
+		debugMsg(who, "Redução de dano: " + (-1 * reducao_dano));
+		debugMsg(who, "Arma Afiada: " + sharpened_weapon);
 	endif
 
 	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );

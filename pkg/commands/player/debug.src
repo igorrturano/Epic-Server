@@ -1,26 +1,39 @@
+/**
+/ O comando checa (e cria/remove) uma CProp temporária com o nome passado no debugName
+/ Modelo da CProp: #debug_<string>
+/ Exemplo da CProp: #debug_clima
+/
+/ 
+**/
 use uo;
 
 include ":commands:debugsystem";
+include "include/say";
+
+var listDebugs := array{
+    struct { name := "clima", "level" := 1 }, 
+    struct { name := "damage", "level" := 1 }
+};
 
 program CMD_debug(who, debugName)
-    case (debugName)
-        "clima":
-            if (checkLv(who, 1))
+    foreach debug in listDebugs
+        if (debugName == debug.name)
+            if (checkLv(who, debug.level))
                 setDebug(who, debugName);
+                return;
+            else
+                SendSysMessageEx(who, "DEBUG " + debugName + ": Nível insuficiente.");
             endif
-            break;
+        endif
+    endforeach
 
-        default:
-            SendSysMessage(who, "DEBUG Mode: Debug para " + debugName + " inexistente. Confira se a tag está correta.");
-    endcase
+    SendSysMessageEx(who, "DEBUG " + debugName + ": inexistente. Confira se a tag está correta.");
 endprogram
 
 function checkLv(who, level)
     if (who.cmdlevel >= level)
         return true;
     endif
-
-    SendSysMessage(who, "DEBUG Mode: Nível insuficiente.");
     return false;
 endfunction
 
@@ -30,9 +43,9 @@ function setDebug(who, debugName)
 
     if (!prop)
         SetObjProperty(who, propName, true);
-        SendSysMessage(who, "DEBUG Mode: Debug para " + debugName + " ativado com sucesso!");
+        SendSysMessageEx(who, "DEBUG " + debugName + ": ativado!");
     else
         EraseObjProperty(who, propName);
-        SendSysMessage(who, "DEBUG Mode: Debug para " + debugName + " desativado com sucesso!");
+        SendSysMessageEx(who, "DEBUG " + debugName + ": desativado!");
     endif
 endfunction
