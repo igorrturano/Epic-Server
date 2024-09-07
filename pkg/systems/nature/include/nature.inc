@@ -5,24 +5,18 @@ use cfgfile;
 
 include "include/damage";
 
-
 // Calendar constants
 var MONTHS := array{
-    struct{ "name" := "Kaius", "days" := 30 },
     struct{ "name" := "Duwus", "days" := 31 },
     struct{ "name" := "Alorae", "days" := 30 },
-
+    struct{ "name" := "Galgrumirius", "days" := 30 },
+    struct{ "name" := "Kaius", "days" := 30 },
+    struct{ "name" := "Idrithae", "days" := 30 },
     struct{ "name" := "Adarae", "days" := 30 },
     struct{ "name" := "Demiurgus", "days" := 33 },
     struct{ "name" := "Crassus", "days" := 32 },
-
-    struct{ "name" := "Galgrumirius", "days" := 30 },
-    struct{ "name" := "Idrithae", "days" := 30 },
     struct{ "name" := "Lleuadae", "days" := 31 },
-
-    struct{ "name" := "Phrugum", "days" := 31 },
-    struct{ "name" := "Mes 11", "days" := 30}, //TODO: FALTA NOME
-    struct{ "name" := "Mes 12", "days" := 30} //TODO: FALTA NOME
+    struct{ "name" := "Phrugum", "days" := 31 }
 };
 
 var WEEKDAYS := array{
