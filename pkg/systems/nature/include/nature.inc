@@ -39,6 +39,15 @@ function getSeason()
     return CInt(GetGlobalProperty("season"));
 endfunction
 
+function GetSeasonId()
+    return struct{
+        "SUMMER" := 1,
+        "AUTUMN" := 2,
+        "WINTER" := 3,
+        "SPRING" := 4
+    };
+endfunction
+
 function calcDaysInYear()
     var totalDays := 0;
     foreach month in MONTHS
@@ -83,6 +92,7 @@ function DoBolt(who)
     MoveObjectToLocation(mob,10,10,10, mob.realm, MOVEOBJECT_FORCELOCATION);
     mob.kill();
 endfunction
+
 
 function DruidWeather(who, type, duration, radius, som, bolt := 0, ventoForte := 0 )
 	var originalx, originaly;
