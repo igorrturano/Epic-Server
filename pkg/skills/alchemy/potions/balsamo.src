@@ -38,6 +38,11 @@ program drink_blue (who, potion)
 
 	var obj := potion.objtype;
 
+	var vicio := cint ((AP_getvital(who, "viciostr")));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
 	var healed;
 	var skill := cint(GetObjProperty(potion, "bonus"));
 	healed := skill/5;
@@ -47,10 +52,10 @@ program drink_blue (who, potion)
 	healed := AP_GetVitalMaximumValue(who, HITS);
 
 	case (potion.objtype)
-		56321: healed := cint(healed*0.20); delay := 750; cd := cint(healed*0.75*3);
-		56322: healed := cint(healed*0.40);  delay := 500; cd := cint(healed*0.5*3);
-		56323: healed := cint(healed*0.60); delay := 250; cd := cint(healed*0.25*3);
-		48914: healed := cint(healed*0.80);  delay := 130; cd := cint(healed*0.13*3);
+		56321: healed := cint(healed*0.20*vicio); delay := 750; cd := cint(healed*0.75*3);
+		56322: healed := cint(healed*0.40*vicio);  delay := 500; cd := cint(healed*0.5*3);
+		56323: healed := cint(healed*0.60*vicio); delay := 250; cd := cint(healed*0.25*3);
+		48914: healed := cint(healed*0.80*vicio);  delay := 130; cd := cint(healed*0.13*3);
 	endcase
 
   	empty_bottle(who, potion, 1);
@@ -70,6 +75,8 @@ program drink_blue (who, potion)
 	endwhile
 	EraseObjProperty(who, "#healingpotion");
 	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);
+
+	VicioSTR(who,potion);
 
 endprogram
  
