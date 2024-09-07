@@ -22,15 +22,19 @@ program drink_blue(who, potion)
 	empty_bottle(who, potion);
 	PlaySoundEffect(who, 0x1e4);
 	TS_StartTimer(who, "nightvision", 300);
-
-	var alch_skill := AP_GetSkill(who, ALCHEMY);
-    var duration := CInt(alch_skill * 5);
+	var vicio := cint ((AP_getvital(who, "Viciodex")));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
+	var crafterskill := getobjProperty(potion, "crafterskill");
+    var duration := CInt((crafterskill * 5)*vicio);
 
 	if (GetObjProperty(who, "chardata").raca != DROW)
     	SetCooldown(who, "nightvision", duration);
 	else
 		SetCooldown(who, "lightvision", duration);
 	endif
-
+	VicioDEX(who, potion);
 	who.setlightlevel(15, duration);
 endprogram

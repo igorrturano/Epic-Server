@@ -8,6 +8,7 @@ include ":timedscripts:timedScripts";
 include ":food:include/hunger";
 include ":attributes:skills";
 
+
 program Install()
 	print("INSTALLING: Exported Vital - RegenRate and MaxValue functions ...");
 	return 1;
@@ -290,3 +291,13 @@ exported function GetVicioMaximumValue(mobile)
 	return 86400*100;
 endfunction
 
+exported function GetVicioPotRegenRate(mobile)
+	var base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 13) + (cint(ap_getstat(mobile, "strength"))/10);
+	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "vicio");
+
+	return regen;
+endfunction
+
+exported function GetViciopotMaximumValue(mobile)
+	return 100*100;
+endfunction
