@@ -6,7 +6,7 @@ include ":brainai:npcUtil";
 include ":attributes:attributes";
 include ":fls_core:fls_chargumps_ex";
 include "include/dungeons";
-
+include "include/epicConstants";
 function EquipRaceSkin(who)
 
 	var myrace := GetObjProperty(who, "raca");
@@ -97,7 +97,7 @@ endfunction
 
 function HaveReverseVision(who)
 
-	if (GetObjProperty(who, "chardata").raca == "Drow")
+	if (GetObjProperty(who, "chardata").raca == DROW)
 		return 1;
 	elseif (cint(GetObjProperty(who, "reversevision")) == 1)
 		return 1;

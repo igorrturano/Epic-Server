@@ -459,7 +459,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif (escolhida == "Inventario Costureiro")
 			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Couro","Tecido"});
 			Start_Script(":charactercreation:habilidades/inventario", {who, "costureiro", inventario});
-		elseif (escolhida == "Elo Natural") // Antigo senso da natureza
+		elseif (escolhida == "Elo Natural")
 			setObjProperty(who, "empatiacomanimais", 1);
 		elseif(escolhida == "Protecao Elemental Kitahne")
 			who.resist_fire_mod  := who.resist_fire_mod + 25;
@@ -490,6 +490,9 @@ function comprarHabilidade(who, item, nv:=-1)
 			damage_effect.+cold_arrow := 0;
 			damage_effect.+energy_arrow := 0;
 			SetObjProperty(who, "#shooting_effects", damage_effect);
+		elseif (escolhida == "Tiro em Movimento")
+			GrantPrivilege(who, "firewhilemoving");
+			who.enable("firewhilemoving");	
 		endif
 		myhabs[nivel] := escolhida;
 		habs[nivel] := 2;

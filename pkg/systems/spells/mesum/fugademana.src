@@ -18,7 +18,8 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, VONTADE, diff, -bonus))
 		SendSysMessageEx(who, "O Alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 		handleSilentMagic(who, who, 385);
