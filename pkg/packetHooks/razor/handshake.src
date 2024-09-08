@@ -12,11 +12,11 @@ program Razor_Handshake(who)
 	
 	var os := Wait_For_Event(30);	  // wait 30 seconds for the hand shake event
 	
-
-	if(who.GetProp("#Shake") != 1)
+    //Desativado para funcionar o classicuo web
+	/*if(who.GetProp("#Shake") != 1)
 		SendSysMessage(who, "You need to enable Razor Negotiate option! You will be disconnected now.");
 		SysLog("Character "+who.name+" from account "+who.acctname+" failed with razor handshake.");
 		DisconnectClient(who);
-	endif
+	endif*/
 
 endprogram

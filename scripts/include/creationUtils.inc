@@ -110,7 +110,6 @@ const LORE_ID := 0x9F3;
 const USHKRAR_ID := 0x9F4;
 const VENERATIO_ID := 0x9F5;
 
-
 const CUIDADOR_ID := 0x152;
 const GOVERNADOR_ID := 0x153;
 const HEROI_ID := 0x154;
@@ -122,15 +121,10 @@ const MAGO_ID := 0x159;
 const EXPLORADOR_ID := 0x15A;
 const FORADALEI_ID := 0x15B;
 const INOCENTE_ID := 0x15C;
-const SABIO_ID := 0x15D
+const SABIO_ID := 0x15D;
 
-;
-
-// var CULTURA := struct{AIGLANA := "Aiglana", HAROLOTH := "Har'oloth", LESTE := "Povos do Leste", BJORSKA := "Björska", ALURIEL := "Alüriel", BADURAN := "Badûran", GULTHRAK := "Gulthrak", POLKINEA := "Polkinea"};
-// var RACA := struct{ANAO := "Anão", DROW := "Drow", ELFO := "Elfo", ORC := "Orc", HUMANO :="Humano", POLSKI := "Polski"};
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
 var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
-// var RELIGIAO := struct{VENERATIO := "Veneratio", ELUITHORTH := "Eluith'orth", KAI := "Kai", HALLEUAD := "Halleuad", LORE := "Lórё", BOKK_BHARAZ := "Bokk Bharaz", USHKRAR := "Ushkr'ar"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -1181,42 +1175,36 @@ function attributeBonusByRaceAndTraits(who)
     var final_dex := chardata.dex;
     var final_int := chardata.int;
 
-    if (raca == "Anão")
+    if (raca == ANAO)
         final_str += 10;
-    elseif (raca == "Elfo")
+    elseif (raca == ELFO)
         final_int += 10;
-    elseif (raca == "Drow")
+    elseif (raca == DROW)
         final_dex += 5;
         final_int +=5;
-    elseif (raca == "Orc")
+    elseif (raca == ORC)
         final_str += 5;
         final_int +=5;
-    elseif (raca == "Polski")
+    elseif (raca == POLSKI)
         final_dex += 10;
     endif
 
     if (chardata.trait == "Corpulento")
         final_int -= 5;
         final_dex -= 5;
-        final_str += 20;
+        final_str += 10;
 	elseif (chardata.trait == "Genio")
         final_str -= 5;
         final_dex -= 5;
-        final_int += 20;
+        final_int += 10;
 	elseif (chardata.trait == "Agil")
         final_str -= 5;
         final_int -= 5;
-        final_dex += 20;
-    elseif (chardata.trait == "Afogado em Mana")
-        final_str -= 10;
-        final_dex -= 10;
+        final_dex += 10;
 	elseif (chardata.trait == "Robusto")
-        final_str += 25;
+        final_str += 15;
         final_int -= 5;
-	elseif (chardata.trait == "Velho") // Parece que foi removido por alguem
-        final_str -= 10;
-        final_dex -= 10;
-        final_int += 40;
+        final_dex -= 5;
 	endif
 
     AP_SetTrueStat(who, STRENGTH, final_str);
@@ -1264,6 +1252,9 @@ function resetCharacter(who)
 
     EraseObjProperty(who, "linguas_conhecidas");
     EraseObjProperty(who, "lingua_escolhida");
+
+    AP_SetVital(who, "Hunger", 0);
+	RecalcVitals(who);
 endfunction
 
 function resetGender(who)

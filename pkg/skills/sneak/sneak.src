@@ -164,7 +164,7 @@ program skill_Hide(who)
 			endif
             var chardata := GetObjProperty(who, "chardata");
             if (chardata.trait == "Sorrateiro")
-                diff := -25;
+                diff := -10;
                 if (diff <= 0)
                     diff := 5;
                 endif
