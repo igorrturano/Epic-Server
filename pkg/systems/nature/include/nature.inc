@@ -16,7 +16,9 @@ var MONTHS := array{
     struct{ "name" := "Demiurgus", "days" := 33 },
     struct{ "name" := "Crassus", "days" := 32 },
     struct{ "name" := "Lleuadae", "days" := 31 },
-    struct{ "name" := "Phrugum", "days" := 31 }
+    struct{ "name" := "Phrugum", "days" := 31 },
+    struct{ "name" := "Igorsmonth", "days" := 31 },
+    struct{ "name" := "Enzosmonth", "days" := 31 }
 };
 
 var WEEKDAYS := array{
