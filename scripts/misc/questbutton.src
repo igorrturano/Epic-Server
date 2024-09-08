@@ -148,7 +148,7 @@ endfunction
 function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
     GFTextMid(gump, 23, y_pos + 33, GUMP_WIDTH - 50, 53, "Básico");
     y_pos += 50;
-    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 220);
+    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 230); // Aumentado de 220 para 230
     y_pos += 20;
     
     var nome_real := GetObjProperty(targ, "nome_inicial");
@@ -166,7 +166,7 @@ function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
     // Adicionando a Data de Nascimento
     var birthdate := GetCharDataValue(chardata, "birthdate");
     var birth_string := "Não definida";
-    if (birthdate != "Nenhum" && TypeOf(birthdate) == "Struct")
+    if (birthdate != "Nenhum" && TypeOf(birthdate) == "Struct" && birthdate.day && birthdate.month && birthdate.year)
         birth_string := birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.";
     endif
     AddInfoLine(gump, y_pos, "Data de Nascimento", birth_string);
@@ -184,23 +184,29 @@ function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
         endif
     endif
     AddInfoLine(gump, y_pos, "Idade", age_string);
+
+    // Adicionando a linha para o Signo
+    var signo := GetCharDataValue(chardata, "sign", "Não definido");
+    AddInfoLine(gump, y_pos, "Signo", signo);
+
+    y_pos += 10; // Adicionando 10 pixels extras no final desta seção
 endfunction
 
 function MostrarInformacoesJogo(byref gump, targ, chardata, byref y_pos)
-    y_pos += 15; // Reduzido de 20 para 15
+    y_pos -= 10; // Subindo 10 pixels
     GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Jogo");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 55); // Reduzido de 60 para 55
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 55);
     y_pos += 10;
     AddInfoLine(gump, y_pos, "Modo de Jogo", GetCharDataValue(chardata, "game_mode"));
     AddInfoLine(gump, y_pos, "DPs Restantes", GetDPsDescription(targ));
 endfunction
 
 function MostrarInformacoesNobreza(byref gump, targ, chardata, byref y_pos)
-    y_pos += 15; // Reduzido de 20 para 15
+
     GFTextMid(gump, 38, y_pos, GUMP_WIDTH - 50, 53, "Sistema de Nobreza");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 80); // Reduzido de 90 para 80
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 80);
     y_pos += 10;
     AddInfoLine(gump, y_pos, "Status de Cidadania", GetCharDataValue(chardata, "citizenship_title"));
     AddInfoLine(gump, y_pos, "Titulo de Nobreza", GetCharDataValue(chardata, "current_nobility_title"));
@@ -229,7 +235,7 @@ function ShowFichaRPGump(who, targ, isGM)
     var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
     
     if (!ficharp_elem)
-        GFTextMid(gump, 238, 280, 400, 2100, "Nenhuma ficha RP encontrada para este personagem.");
+        GFTextMid(gump, 100, 280, 400, 2100, "Nenhuma ficha RP encontrada para este personagem.");
         return GFSendGump(who, gump);
     endif
     
@@ -460,7 +466,9 @@ endfunction
 
 function GetCharDataValue(chardata, key, default_value := "Nenhum")
     if (chardata && chardata.exists(key))
-        if (key == "religion" && chardata[key] == 0)
+        if (TypeOf(chardata[key]) == "Struct")
+            return chardata[key]; // Retorna a estrutura inteira
+        elseif (key == "religion" && chardata[key] == 0)
             return "Nenhuma";
         endif
         return chardata[key];
