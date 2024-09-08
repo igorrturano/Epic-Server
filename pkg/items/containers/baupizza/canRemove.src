@@ -2,7 +2,7 @@ use uo;
 include "include/say";
 
 program CanRemove(mobile, container, item, move_type)
-    // Verificar se o usuário tem permissão para remover itens
+
     if (!CanRemoveItems(mobile))
         SendSysMessage(mobile, "Você não tem permissão para remover itens deste baú.");
         return 0;
