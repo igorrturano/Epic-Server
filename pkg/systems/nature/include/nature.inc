@@ -39,15 +39,6 @@ function getSeason()
     return CInt(GetGlobalProperty("season"));
 endfunction
 
-function GetSeasonId()
-    return struct{
-        "SUMMER" := 1,
-        "AUTUMN" := 2,
-        "WINTER" := 3,
-        "SPRING" := 4
-    };
-endfunction
-
 function calcDaysInYear()
     var totalDays := 0;
     foreach month in MONTHS
@@ -324,7 +315,7 @@ endfunction
 function output(msgtext)
 	foreach player in enumerateonlinecharacters()
 		if (player.cmdlevel)
-			SendSysMessage(player, "Weather debug:" + msgtext, 3, 87);
+			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
 		endif
 	endforeach
 	print("Weather debug:" + msgtext);
@@ -422,8 +413,6 @@ function getMoonPhase()
         fase := fase - moonphases;
     endwhile
     fase++;
-
-    print("DEBUG: FASE: " +fase);
     
     case (fase)
         1: return MOON_PHASES[1];
