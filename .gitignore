@@ -52,3 +52,5 @@ objtypes.txt
 pcs.txt
 
 # Others
+ecompile.cfg
+scripts/ecompile.cfg
