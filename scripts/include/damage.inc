@@ -23,6 +23,7 @@ include ":fls_core:packets";
 include "epicCombatUtils";
 include ":commands:debugsystem";
 
+
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
  * These could be attributes, but not every shard will want to
@@ -551,17 +552,16 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 		other += sharpened_weapon;
 	endif
 
-	if (getDebugProp(who, "damage"))
-		debugMsg(who, "Dano base: " + Cint(dmg));
-		debugMsg(who, "Rolagem de dano da arma: " + weapon_dice);
-		debugMsg(who, "Dano de habilidades: " + (other - sharpened_weapon));
-		debugMsg(who, "Dano de tatics: " + tatics);
-		debugMsg(who, "Dano de força: " + ((str-50)/10));
-		debugMsg(who, "Dano de bêncãos: " + blessbonus);
-		debugMsg(who, "Dano de inimigo predileto: " + inimigo_predileto);
-		debugMsg(who, "Redução de dano: " + (-1 * reducao_dano));
-		debugMsg(who, "Arma Afiada: " + sharpened_weapon);
-	endif
+	var DEBUGTYPE := "damage";
+	debugMsg(who, DEBUGTYPE, "Dano base: " + Cint(dmg));
+	debugMsg(who, DEBUGTYPE, "Rolagem de dano da arma: " + weapon_dice);
+	debugMsg(who, DEBUGTYPE, "Dano de habilidades: " + (other - sharpened_weapon));
+	debugMsg(who, DEBUGTYPE, "Dano de tatics: " + tatics);
+	debugMsg(who, DEBUGTYPE, "Dano de força: " + ((str-50)/10));
+	debugMsg(who, DEBUGTYPE, "Dano de bêncãos: " + blessbonus);
+	debugMsg(who, DEBUGTYPE, "Dano de inimigo predileto: " + inimigo_predileto);
+	debugMsg(who, DEBUGTYPE, "Redução de dano: " + (-1 * reducao_dano));
+	debugMsg(who, DEBUGTYPE, "Arma Afiada: " + sharpened_weapon);
 
 	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
 	if (dmg < 1)

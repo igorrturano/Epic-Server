@@ -413,8 +413,6 @@ function getMoonPhase()
         fase := fase - moonphases;
     endwhile
     fase++;
-
-    print("DEBUG: FASE: " +fase);
     
     case (fase)
         1: return MOON_PHASES[1];
