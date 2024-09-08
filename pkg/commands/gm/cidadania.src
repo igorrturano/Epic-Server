@@ -17,7 +17,7 @@ program command_cidadania(who, text)
         return 0;
     endif
 
-    if (!targ.isA(POLCLASS_MOBILE))
+    if (!targ.acctname)
         SendSysMessage(who, "Você deve selecionar um jogador.");
         return 0;
     endif
@@ -56,7 +56,7 @@ program command_cidadania(who, text)
     // Adicionar mensagem em vermelho
     GFTextMid(gump, 10, 380, 280, 232, "Não é possível ");
     GFTextMid(gump, 10, 400, 295, 232, "remover um título de cidadania,");
-	GFTextMid(gump, 10, 420, 292, 232, "apenas trocar o status de cidadania.");
+    GFTextMid(gump, 10, 420, 292, 232, "apenas trocar o status de cidadania.");
     var input := GFSendGump(who, gump);
     
     if (input[0] > 0)
@@ -64,7 +64,7 @@ program command_cidadania(who, text)
         var old_title := chardata.citizenship_title;
         chardata.citizenship_title := new_title;
         SetObjProperty(targ, "chardata", chardata);
-        SendSysMessage(who, "Título de cidadania de " + targ.name + " alterado de '" + old_title + "' para '" + new_title + "'.");
+        SendSysMessage(who, "Título de cidadania de " + targ.acctname + " alterado de '" + old_title + "' para '" + new_title + "'.");
         SendSysMessage(targ, "Seu título de cidadania foi alterado de '" + old_title + "' para '" + new_title + "'.");
     else
         SendSysMessage(who, "Operação cancelada.");

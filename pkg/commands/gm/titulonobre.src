@@ -17,7 +17,7 @@ program command_titulonobre(who, text)
         return 0;
     endif
 
-    if (!targ.isA(POLCLASS_MOBILE))
+    if (!targ.acctname)
         SendSysMessage(who, "Você deve selecionar um jogador.");
         return 0;
     endif
@@ -70,7 +70,7 @@ program command_titulonobre(who, text)
             var old_title := chardata.current_nobility_title;
             chardata.current_nobility_title := new_title;
             SetObjProperty(targ, "chardata", chardata);
-            SendSysMessage(who, "Título de nobreza de " + targ.name + " alterado de '" + old_title + "' para '" + new_title + "'.");
+            SendSysMessage(who, "Título de nobreza de " + targ.acctname + " alterado de '" + old_title + "' para '" + new_title + "'.");
             SendSysMessage(targ, "Seu título de nobreza foi alterado de '" + old_title + "' para '" + new_title + "'.");
         else
             var old_title := chardata.current_nobility_title;
@@ -78,10 +78,10 @@ program command_titulonobre(who, text)
             chardata.current_nobility_title := "";
             chardata.current_professional_position := "";
             SetObjProperty(targ, "chardata", chardata);
-            SendSysMessage(who, "Título de nobreza '" + old_title + "' de " + targ.name + " removido.");
+            SendSysMessage(who, "Título de nobreza '" + old_title + "' de " + targ.acctname + " removido.");
             SendSysMessage(targ, "Seu título de nobreza '" + old_title + "' foi removido.");
             if (old_position && old_position != "")
-                SendSysMessage(who, "Cargo '" + old_position + "' de " + targ.name + " também foi removido devido à perda do título de nobreza.");
+                SendSysMessage(who, "Cargo '" + old_position + "' de " + targ.acctname + " também foi removido devido à perda do título de nobreza.");
                 SendSysMessage(targ, "Seu cargo '" + old_position + "' também foi removido devido à perda do seu título de nobreza.");
             endif
         endif

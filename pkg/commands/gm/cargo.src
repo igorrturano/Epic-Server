@@ -17,7 +17,7 @@ program command_cargo(who, text)
         return 0;
     endif
 
-    if (!targ.isA(POLCLASS_MOBILE))
+    if (!targ.acctname)
         SendSysMessage(who, "Você deve selecionar um jogador.");
         return 0;
     endif
@@ -72,18 +72,18 @@ program command_cargo(who, text)
             SetObjProperty(targ, "chardata", chardata);
             
             if (!old_position || old_position == "")
-                SendSysMessage(who, "Cargo profissional de " + targ.name + " definido para: " + new_position);
+                SendSysMessage(who, "Cargo profissional de " + targ.acctname + " definido para: " + new_position);
                 SendSysMessage(targ, "Você acabou de ganhar seu primeiro cargo no reino: " + new_position);
                 SendSysMessage(targ, "Honre seu rei e o povo!");
             else
-                SendSysMessage(who, "Cargo profissional de " + targ.name + " alterado de '" + old_position + "' para '" + new_position + "'.");
+                SendSysMessage(who, "Cargo profissional de " + targ.acctname + " alterado de '" + old_position + "' para '" + new_position + "'.");
                 SendSysMessage(targ, "Seu cargo profissional foi alterado de '" + old_position + "' para '" + new_position + "'.");
             endif
         else
             var old_position := chardata.current_professional_position;
             chardata.current_professional_position := "";
             SetObjProperty(targ, "chardata", chardata);
-            SendSysMessage(who, "Cargo profissional '" + old_position + "' de " + targ.name + " removido.");
+            SendSysMessage(who, "Cargo profissional '" + old_position + "' de " + targ.acctname + " removido.");
             SendSysMessage(targ, "Seu cargo profissional '" + old_position + "' foi removido.");
         endif
     else
