@@ -3,7 +3,6 @@ use os;
 use cfgfile;
 use vitals;
 
-
 include "include/client";
 include "include/say";
 include ":gumps:gumps";
@@ -16,18 +15,17 @@ include ":charactercreation:resists";
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-
-
-
-
+include ":charactercreation:RPTraits";
 
 const BOTAO_NOBREZA := 1;
 const BOTAO_FICHARP := 2;
 const BOTAO_AVALIAR := 3;
+const BOTAO_TRACOS := 4;
 
 const MENU_NOBREZA := 1;
 const MENU_FICHARP := 2;
 const MENU_AVALIAR := 3;
+const MENU_TRACOS := 4;
 
 // Novas constantes para o tamanho do gump
 const GUMP_WIDTH := 520;
@@ -37,7 +35,7 @@ const INTERNAL_BACKGROUND := 9350;
 const INTERNAL_WIDTH := 435;
 const VERTICAL_SPACING := 20;
 
-var button_states := array{1, 0, 0};
+var button_states := array{1, 0, 0, 0};
 
 
 program textcmd_abrirnobreza(who, params)
@@ -62,14 +60,14 @@ program textcmd_abrirnobreza(who, params)
     ShowNobilityGump(who, targ);
 endprogram
 
+
 function ShowNobilityGump(who, targ)
     var gump := GFCreateGump();
     GFClosable(gump, 1);
     GFDisposable(gump, 0);
     
-    GFGumpPicTiled(gump, 10, 10, 495, 565, 39929); //fundo preto / cinza escuro
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
     AdicionarMoldura(gump);
-  //  GFResizePic(gump, 15, 15, 9200, 485, 585);
     
     var base_text := "Informações de ";
     var text_width := GFTextWidth(base_text);
@@ -89,64 +87,101 @@ function ShowNobilityGump(who, targ)
     var y_pos := 60;
     
     // Seção 1: Informações Básicas
-    GFTextMid(gump, 25, y_pos + 30, GUMP_WIDTH - 50, 53, "Básico");
+    GFTextMid(gump, 23, y_pos + 33, GUMP_WIDTH - 50, 53, "Básico");
     y_pos += 50;
-    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, INTERNAL_WIDTH, 180);
+    GFResizePic(gump, 45, y_pos + 10, INTERNAL_BACKGROUND, 465, 230);
     y_pos += 20;
-    AddInfoLine(gump, y_pos, "Nome", targ.name);
+    
+    var nome_real := GetObjProperty(targ, "nome_inicial");
+    if (!nome_real)
+        nome_real := targ.name;
+    endif
+    AddInfoLine(gump, y_pos, "Nome", nome_real);
+    
     AddInfoLine(gump, y_pos, "Raca", targ.title_race);
     AddInfoLine(gump, y_pos, "Sexo", GetGenderString(targ.gender));
     AddInfoLine(gump, y_pos, "Classe", GetCharDataValue(chardata, "classe"));
     AddInfoLine(gump, y_pos, "Background", GetCharDataValue(chardata, "background"));
     AddInfoLine(gump, y_pos, "Caracteristica", GetCharDataValue(chardata, "trait"));
+    
+    var birthdate := GetCharDataValue(chardata, "birthdate");
+    var birth_string := "Não definida";
+    if (birthdate != "Nenhum" && TypeOf(birthdate) == "Struct" && birthdate.day && birthdate.month && birthdate.year)
+        birth_string := birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.";
+    endif
+    AddInfoLine(gump, y_pos, "Data de Nascimento", birth_string);
 
-   // Seção 2: Informações de Jogo
-    y_pos += 20;
-    GFTextMid(gump, 29, y_pos, GUMP_WIDTH - 50, 53, "Jogo");
+    var age_string := "Não definida";
+    if (chardata.current_age)
+        age_string := CStr(chardata.current_age) + " anos";
+    else
+        var current_year := CINT(GetGlobalProperty("current_year"));
+        if (chardata.birthdate && current_year)
+            var age := current_year - chardata.birthdate.year;
+            age_string := CStr(age) + " anos";
+        endif
+    endif
+    AddInfoLine(gump, y_pos, "Idade", age_string);
+
+    var signo := GetCharDataValue(chardata, "sign", "Não definido");
+    AddInfoLine(gump, y_pos, "Signo", signo);
+
+    y_pos += 10;
+
+     // Seção 2: Informações de Jogo
+    y_pos -= 10; // Subindo 10 pixels
+    GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Jogo");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, INTERNAL_WIDTH, 60);
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, 465, 55);
     y_pos += 10;
     AddInfoLine(gump, y_pos, "Modo de Jogo", GetCharDataValue(chardata, "game_mode"));
-   AddInfoLine(gump, y_pos, "DPs Restantes", GetDPsDescription(targ));
+    AddInfoLine(gump, y_pos, "DPs Restantes", GetDPsDescription(targ));
 
     // Seção 3: Informações de Nobreza
-    y_pos += 20;
-    GFTextMid(gump, 42, y_pos, GUMP_WIDTH - 50, 53, "Sistema de Nobreza");
+    y_pos += 10; // Adicionando 10 pixels para mover para baixo
+    GFTextMid(gump, 38, y_pos, GUMP_WIDTH - 50, 53, "Sistema de Nobreza");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, INTERNAL_WIDTH, 90);
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, 465, 80);
     y_pos += 10;
     AddInfoLine(gump, y_pos, "Status de Cidadania", GetCharDataValue(chardata, "citizenship_title"));
     AddInfoLine(gump, y_pos, "Titulo de Nobreza", GetCharDataValue(chardata, "current_nobility_title"));
     AddInfoLine(gump, y_pos, "Cargo Ocupado", GetCharDataValue(chardata, "current_professional_position"));
 
     var input := GFSendGump(who, gump);
+    return HandleGumpInput(who, targ, input);
+endfunction
+
+function AddInfoLine(byref gump, byref y_pos, title, value)
+    GFTextLine(gump, 50, y_pos, 53, title + ":");
+    GFTextLine(gump, 310, y_pos, 230, value);
+    y_pos := y_pos + 25;
+endfunction
+
+function HandleGumpInput(who, targ, input)
     if (input[0] != 0)
         var new_menu := AtualizarEstadoMenu(input[0]);
         case (new_menu)
-            MENU_NOBREZA: ShowNobilityGump(who, targ);
-            MENU_FICHARP: ShowFichaRPGump(who, targ);
-            MENU_AVALIAR: AvaliarFichaRP(who, targ);
+            MENU_NOBREZA: return ShowNobilityGump(who, targ);
+            MENU_FICHARP: return ShowFichaRPGump(who, targ);
+            MENU_AVALIAR: return AvaliarFichaRP(who, targ);
+            MENU_TRACOS: return ShowTracosRaciaisGump(who, targ);
         endcase
     endif
+    return input;
 endfunction
 
-
-
-
 function AdicionarBotoesNavegacao(byref gump)
-    var textos := array{"Informações Básicas", "Ficha RP", "Avaliar"};
-    var x_positions := array{80, 245, 350};
-    var botoes := array{BOTAO_NOBREZA, BOTAO_FICHARP, BOTAO_AVALIAR};
+    var textos := array{"Informações Básicas", "Ficha RP", "Avaliar", "Traços"};
+    var x_positions := array{60, 220, 340, 440};
+    var botoes := array{BOTAO_NOBREZA, BOTAO_FICHARP, BOTAO_AVALIAR, BOTAO_TRACOS};
     
     // Adicionar o retângulo de fundo
-    var start_x := x_positions[1] - 35; // Posição do primeiro botão
-    var end_x := x_positions[3] + GFTextWidth(textos[3]) + 80; // Final da palavra "Avaliar" + 15px extra
-
+    var start_x := 25;
+    var end_x := GUMP_WIDTH - 25;
     var width := end_x - start_x;
-    GFResizePic(gump, start_x, 42, 9350, width, 35); // Altura aumentada para 40px, y ajustado para 35
-
+    GFResizePic(gump, start_x, 42, 9350, width, 35);
     
-    for i := 1 to 3
+    for i := 1 to 4
         var gump_button := 2151;
         var text_color := 53;
         
@@ -155,7 +190,7 @@ function AdicionarBotoesNavegacao(byref gump)
             text_color := 230;
         endif
         
-        GFTextLine(gump, x_positions[i], 47, text_color, textos[i]);
+        GFTextLine(gump, x_positions[i], 50, text_color, textos[i]);
         GFAddButton(gump, x_positions[i] - 35, 45, gump_button, gump_button, 1, botoes[i]);
     endfor
 endfunction
@@ -163,19 +198,86 @@ endfunction
 function AtualizarEstadoMenu(input)
     case (input)
         BOTAO_NOBREZA:
-            button_states := array{1, 0, 0};
+            button_states := array{1, 0, 0, 0};
             return MENU_NOBREZA;
         BOTAO_FICHARP:
-            button_states := array{0, 1, 0};
+            button_states := array{0, 1, 0, 0};
             return MENU_FICHARP;
         BOTAO_AVALIAR:
-            button_states := array{0, 0, 1};
+            button_states := array{0, 0, 1, 0};
             return MENU_AVALIAR;
+        BOTAO_TRACOS:
+            button_states := array{0, 0, 0, 1};
+            return MENU_TRACOS;
         default:
             return MENU_NOBREZA;
     endcase
 endfunction
 
+function ShowTracosRaciaisGump(who, targ)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+
+    var base_text := "Traços Raciais de ";
+    var text_width := GFTextWidth(base_text);
+    var space_width := GFTextWidth(" ");
+
+    GFTextLine(gump, 25, 22, 53, "Traços Raciais");
+    GFTextLine(gump, 25 + GFTextWidth("Traços Raciais") + space_width - 20, 22, 53, "de");
+    GFTextLine(gump, 25 + text_width + space_width - 30, 22, 230, targ.name);
+
+    AdicionarBotoesNavegacao(gump);
+
+    var chardata := GetObjProperty(targ, "chardata");
+    if (!chardata)
+        GFTextMid(gump, 238, 280, 400, 2100, "Nenhum dado de personagem encontrado.");
+        return GFSendGump(who, gump);
+    endif
+
+    var y_pos := 90;
+    var racial_traits := GetRacialTraits(chardata.raca);
+    
+    if (!racial_traits)
+        GFTextMid(gump, 238, 280, 400, 2100, "Nenhum traço racial encontrado para esta raça.");
+        return GFSendGump(who, gump);
+    endif
+
+    var CaracteristicasCategories := array{
+        "Altura",
+        "Peso",
+        "Olhos",
+        "Idade Aparente",
+        "Voz"
+    };
+
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, INTERNAL_WIDTH, 460);
+    y_pos += 10;
+
+    foreach category in CaracteristicasCategories
+        if (racial_traits.exists(category))
+            var value := "Não selecionado";
+            if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) && chardata.caracteristicas_rp[category] != 0)
+                value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+            endif
+            
+            var category_name := racial_traits[category].nome;
+            AddInfoLineTracos(gump, y_pos, category_name, value);
+        endif
+    endforeach
+
+   var input := GFSendGump(who, gump);
+    return HandleGumpInput(who, targ, input);
+endfunction
+
+function AddInfoLineTracos(byref gump, byref y_pos, title, value)
+    GFTextLine(gump, 50, y_pos, 53, title + ":");
+    GFTextLine(gump, 260, y_pos, 230, value);
+    y_pos := y_pos + 25;
+endfunction
 
 function ShowNobilityInfo(byref gump, targ)
     //GFResizePic(gump, 38, 60, 40267, 720, 502);
@@ -233,9 +335,9 @@ function ShowFichaRPGump(who, targ)
     var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
     
     if (!ficharp_elem)
-        GFTextMid(gump, 238, 280, 400, 2100, "Nenhuma ficha RP encontrada para este personagem.");
-        GFSendGump(who, gump);
-        return;
+        GFTextMid(gump, 100, 280, 400, 2100, "Nenhuma ficha RP encontrada para este personagem.");
+        var input := GFSendGump(who, gump);
+        return HandleGumpInput(who, targ, input);
     endif
     
     var comportamento := ficharp_elem.GetProp("Comportamento");
@@ -274,16 +376,10 @@ function ShowFichaRPGump(who, targ)
     GFResizePic(gump, 45, y_pos, 9350, 425, 130);
     GFHTMLArea(gump, 50, y_pos + 5, 415, 120, FormatarConteudo(anotacoes), 1, 1);
 
-    var input := GFSendGump(who, gump);
-    if (input[0] != 0)
-        var new_menu := AtualizarEstadoMenu(input[0]);
-        case (new_menu)
-            MENU_NOBREZA: ShowNobilityGump(who, targ);
-            MENU_FICHARP: ShowFichaRPGump(who, targ);
-            MENU_AVALIAR: AvaliarFichaRP(who, targ);
-        endcase
-    endif
+     var input := GFSendGump(who, gump);
+    return HandleGumpInput(who, targ, input);
 endfunction
+
 
 function FormatarConteudo(array_conteudo)
     var conteudo_html := "";
@@ -347,21 +443,13 @@ function AvaliarFichaRP(who, targ)
             SendSysMessage(who, "Avaliação adicionada com sucesso.");
             SendSysMessage(targ, "Você recebeu uma nova avaliação em sua Ficha RP.");
 
-            AvaliarFichaRP(who, targ);
-            return;
+            return AvaliarFichaRP(who, targ);
         else
             SendSysMessage(who, "Nenhuma avaliação foi adicionada.");
         endif
     endif
 
-    if (input[0] != 0)
-        var new_menu := AtualizarEstadoMenu(input[0]);
-        case (new_menu)
-            MENU_NOBREZA: ShowNobilityGump(who, targ);
-            MENU_FICHARP: ShowFichaRPGump(who, targ);
-            MENU_AVALIAR: AvaliarFichaRP(who, targ);
-        endcase
-    endif
+    return HandleGumpInput(who, targ, input);
 endfunction
 
 function FormatarConteudoAvaliacoes(anotacoes)
@@ -396,11 +484,6 @@ function AdicionarMoldura(byref gump)
 endfunction
 
 
-function AddInfoLine(byref gump, byref y_pos, title, value)
-    GFTextLine(gump, 50, y_pos, 53, title + ":");
-    GFTextLine(gump, 370, y_pos, 230, value);
-    y_pos := y_pos + 30;
-endfunction
 
 
 function GetCharDataValue(chardata, key, default_value := "Nenhum")
