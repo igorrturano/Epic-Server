@@ -16,7 +16,9 @@ var MONTHS := array{
     struct{ "name" := "Demiurgus", "days" := 33 },
     struct{ "name" := "Crassus", "days" := 32 },
     struct{ "name" := "Lleuadae", "days" := 31 },
-    struct{ "name" := "Phrugum", "days" := 31 }
+    struct{ "name" := "Phrugum", "days" := 31 },
+    struct{ "name" := "Igorsmonth", "days" := 31 },
+    struct{ "name" := "Enzosmonth", "days" := 31 }
 };
 
 var WEEKDAYS := array{
@@ -436,11 +438,25 @@ function getCurrentDate()
     var moonPhase := getMoonPhase();
 
     return struct{
-        "day" := day,
         "month" := month,
-        "year" := year,
+        "day" := day,
         "weekday" := weekday,
-        "dayYear" := dayYear,
         "moonPhase" := moonPhase
     };
+endfunction
+
+function updateCharacterAge(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata || !chardata.birthdate)
+        return;
+    endif
+
+    var current_year := CINT(GetGlobalProperty("current_year"));
+    var years_passed := current_year - chardata.birthdate.year;
+    var new_age := chardata.initial_age + years_passed;
+
+    if (new_age != chardata.current_age)
+        chardata.current_age := new_age;
+        SetObjProperty(who, "chardata", chardata);
+    endif
 endfunction
