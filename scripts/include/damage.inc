@@ -553,15 +553,15 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 	endif
 
 	var DEBUGTYPE := "damage";
-	debugMsg(who, DEBUGTYPE, "Dano base: " + Cint(dmg));
-	debugMsg(who, DEBUGTYPE, "Rolagem de dano da arma: " + weapon_dice);
-	debugMsg(who, DEBUGTYPE, "Dano de habilidades: " + (other - sharpened_weapon));
-	debugMsg(who, DEBUGTYPE, "Dano de tatics: " + tatics);
-	debugMsg(who, DEBUGTYPE, "Dano de força: " + ((str-50)/10));
-	debugMsg(who, DEBUGTYPE, "Dano de bêncãos: " + blessbonus);
-	debugMsg(who, DEBUGTYPE, "Dano de inimigo predileto: " + inimigo_predileto);
-	debugMsg(who, DEBUGTYPE, "Redução de dano: " + (-1 * reducao_dano));
-	debugMsg(who, DEBUGTYPE, "Arma Afiada: " + sharpened_weapon);
+	DebugMsg(who, DEBUGTYPE, "Dano base: " + Cint(dmg));
+	DebugMsg(who, DEBUGTYPE, "Rolagem de dano da arma: " + weapon_dice);
+	DebugMsg(who, DEBUGTYPE, "Dano de habilidades: " + (other - sharpened_weapon));
+	DebugMsg(who, DEBUGTYPE, "Dano de tatics: " + tatics);
+	DebugMsg(who, DEBUGTYPE, "Dano de força: " + ((str-50)/10));
+	DebugMsg(who, DEBUGTYPE, "Dano de bêncãos: " + blessbonus);
+	DebugMsg(who, DEBUGTYPE, "Dano de inimigo predileto: " + inimigo_predileto);
+	DebugMsg(who, DEBUGTYPE, "Redução de dano: " + (-1 * reducao_dano));
+	DebugMsg(who, DEBUGTYPE, "Arma Afiada: " + sharpened_weapon);
 
 	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
 	if (dmg < 1)
