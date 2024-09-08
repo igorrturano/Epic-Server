@@ -1,16 +1,6 @@
-/* $Id: skillwin.src 402 2005-10-04 09:33:15Z panosl $
- *
- * Purpose
- * This script is called when a player clicks the skill button in his paperdoll.
- *
- * Parameters
- * who:     Reference to the character who clicked the skill button
- *
- * Return value: Ignored
- *
- */
+
 use uo;
-use basic;
+use os;
 use cfgfile;
 
 include ":tn:characters";
@@ -23,127 +13,266 @@ include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 395;  // Mantido o mesmo
+const GUMP_HEIGHT := 565; // Aumentado em 100 pixels
+
 var skillList := array{"Alchemy", "Magic_Lore", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering", "Dual_Wield"};
 
 program core_skillWin(who)
-    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-	if (who.dead)
-		SendSysMessage(who, "Você está morto e não pode fazer isto.");
-		return;
-	endif
+    if (who.dead)
+        SendSysMessage(who, "Você está morto e não pode fazer isto.");
+        return;
+    endif
 
-	var charGump := GFCreateGump();
-	var input; 
-
-	GFResizePic(charGump, 0, 25, 3600, 355, 380);
-	GFResizePic(charGump, 15, 40, 0x13BE, 325, 350);
-	GFTextMid(charGump, 15, 45, 300, 55, "Menu de Perícias");
-	GFTextLine(charGump, 40, 60, 300, "Perícias em Treinamento");
-	GFAddButton(charGump, 20, 64, 2103, 2104, 1, 900 );
-
-	//PRIMÁRIAS - START
-	var primarias := getPrimarias(who);
-	var pri := primarias[1];
-	var cappri := Cdbl(limiteportempo(who)) + Cdbl(valorinicial(who, pri));
-	var capprimax := 100;
-
-	//SECUNDÁRIAS - START
-	var secundarias := getSecundarias(who);
-	var capsec := cappri - 20;
-	var capsecmax := capprimax - 30;
-
-	//TERCIÁRIAS - START
-	var terciarias := getTerciarias(who);
-	var capter := capsec - 20;
-	var captermax;
-	if (GetObjProperty(who, "chardata").vantagemracial == "Sabedoria dos Antigos")
-		captermax := 50;
-	else
-		captermax := 40;
-	endif
-
-	if(capsec > capsecmax)
-		capsec := capsecmax;
-	endif
-
-	if(capter > captermax)
-		capter := captermax;
-	endif
-
-	GFTextMid(charGump, 190, 345, 0, 300, "Cap/MaxCap:");
-	///GFTextMid(charGump, 200, 350, 0, 300, "Pri.: " +cappri+ "/" +capprimax+ " Sec.: " +capsec+ "/" +capsecmax+ " Ter.: " +capter+ "/" +captermax);
-	GFTextLine(charGump, 25, 365, 300, "Pri.:");
-	GFTextLine(charGump, 55, 365, 300, cappri+ "/" +capprimax);
-	GFTextLine(charGump, 135, 365, 300, "Sec.:");
-	GFTextLine(charGump, 165, 365, 300, capsec+ "/" +capsecmax);
-	GFTextLine(charGump, 245, 365, 300, "Ter.:");
-	GFTextLine(charGump, 275, 365, 300, capter+ "/" +captermax);
-
-	var habs := GetObjProperty(who, "buyhab");
-	if (!habs)
-		habs := dictionary;
-		var i := 0;
-		for(i := 1; i <= 20; i := i + 1)
-			habs[i] := 0;
-		endfor
-		SetObjProperty(who, "buyhab", habs);
-	endif
-	GfTextLine(charGump, 40, 75, 300, "Habilidades");
-	GFAddButton(charGump, 20, 79, 2103, 2104, 1, 901);
-
-	var x := 40;
-	var y := 90;
-	var i;
-
-	GFPage(charGump, 1);
-	var chardata := GetObjProperty(who, "chardata");
-	var trainingSkills := GetObjProperty(who, "trainingSkills");
-	var valor_mod := "";
-	foreach skill in (chardata.Skills.keys())
-		if(AP_GetSkillMod(who, skill) > 0)
-			valor_mod := " (+" + CStr(AP_GetSkillMod(who, skill)) + ")";
-		elseif (AP_GetSkillMod(who, skill) < 0)
-			valor_mod := " (" + CStr(AP_GetSkillMod(who, skill)) + ")";
-		else
-			valor_mod := "";
-		endif
-
-		GFTextLine(charGump, x, y , 1153, StrReplace(skill, "_", " ") + " [" + GetSkillDescValue(chardata.Skills[skill]) +"]" );
-		GFTextLine(charGump, x+145, y , GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetLevelTitle(AP_GetSKill(who, skill))) + valor_mod);
-		GFTextRight(charGump, x+279, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetTrueSkill(who, skill)));
-
-
-		if (AP_GetSkillScript(skill) != error)
-			var elem := AP_GetAttributeCfgElem(skill);
-			var id := elem.SkillId;
-			GFAddButton(charGump, x - 20, y+4, 2103, 2104, 1, id );
-		endif
-		if (cstr(skill) in trainingSkills)
-			GFGumpPic(charGump, x + 281, y+4, 2436);
-		else
-			if (trainingSkills)
-				GFGumpPic(charGump, x + 280, y+4, 2437);
-			else
-				GFGumpPic(charGump, x + 281, y+4, 2436);
-			endif
-		endif
-		y := y + 15;
-
-	endforeach
-
-	input := GFSendGump(who, charGump);
-	input := input[0];
-
-	if ( (input >= 0) && (input <=60) )
-		Start_Script( AP_GetSkillScript( GetSkillNameByID( input ) ) , who);
-	elseif (input == 900)
-		SelecttrainingSkills(who);
-	elseif (input == 901)
-		Habilidades(who);
-	endif
-	return;
+    var gump := CreateBaseGump();
+    var page := 1; // Começamos na página de Skills
+    
+    while (1)
+        case (page)
+            1: 
+                ShowSkillsPage(gump, who);
+                AddNavigationBar(gump, 1);
+            2: 
+                ShowHabilidadesPage(gump, who);
+                AddNavigationBar(gump, 2);
+        endcase
+        
+        var input := GFSendGump(who, gump);
+        if (input[0] == 0)
+            break;
+        endif
+        
+        if (input[0] >= 1 && input[0] <= 2)
+            page := input[0];
+        elseif (input[0] >= 0 && input[0] <= 60)
+            Start_Script(AP_GetSkillScript(GetSkillNameByID(input[0])), who);
+        elseif (input[0] == 901)
+            Habilidades(who);
+        elseif (input[0] >= 1001 && input[0] <= 1021)
+            comprarHabilidade(who, 0, CInt((input[0] - 1001)/2));
+        endif
+    endwhile
 endprogram
+
+function CreateBaseGump()
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
+    AddMoldura(gump);
+    
+    return gump;
+endfunction
+
+function AddMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function AddNavigationBar(byref gump, current_page)
+    var buttons := array{"Skills", "Habilidades"};
+    
+    GFResizePic(gump, 15, 42, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, 35);
+    
+    GFTextMid(gump, 60, 20, 300, 53, "Menu de Perícias");
+    
+    for i := 1 to 2
+        var x_offset := (i-1)*150 + 25;
+        
+        if (i == current_page)
+            GFAddButton(gump, x_offset, 45, 2154, 2154, GF_CLOSE_BTN, i);
+        else
+            GFAddButton(gump, x_offset, 45, 2151, 2154, GF_CLOSE_BTN, i);
+        endif
+        GFTextLine(gump, x_offset + 35, 50, 2100, buttons[i]);
+    endfor
+endfunction
+
+function ShowSkillsPage(byref gump, who)
+    GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
+    
+    var chardata := GetObjProperty(who, "chardata");
+    
+    var x := 40;
+    var y := 90;
+    
+    foreach skill in (chardata.Skills.keys())
+        var valor_mod := "";
+        if(AP_GetSkillMod(who, skill) > 0)
+            valor_mod := " (+" + CStr(AP_GetSkillMod(who, skill)) + ")";
+        elseif (AP_GetSkillMod(who, skill) < 0)
+            valor_mod := " (" + CStr(AP_GetSkillMod(who, skill)) + ")";
+        endif
+
+        GFTextLine(gump, x, y, 1153, StrReplace(skill, "_", " ") + " [" + GetSkillDescValue(chardata.Skills[skill]) +"]" );
+        GFTextLine(gump, x+145, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetLevelTitle(AP_GetSKill(who, skill))) + valor_mod);
+        GFTextRight(gump, x+279, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetTrueSkill(who, skill)));
+
+        if (AP_GetSkillScript(skill) != error)
+            var elem := AP_GetAttributeCfgElem(skill);
+            var id := elem.SkillId;
+            GFAddButton(gump, x - 20, y+4, 2103, 2104, 1, id);
+        endif
+        
+        y := y + 15;
+    endforeach
+
+    ShowCapInfo(gump, who);
+endfunction
+
+function ShowHabilidadesPage(byref gump, who)
+    GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
+    
+    var habs := GetObjProperty(who, "buyhab");
+    if (!habs)
+        habs := dictionary;
+        var i := 0;
+        for(i := 1; i <= 20; i := i + 1)
+            habs[i] := 0;
+        endfor
+        SetObjProperty(who, "buyhab", habs);
+    endif
+    
+    var y := 100;
+    var myhabs := GetObjProperty(who, "myhabs");
+    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var i;
+    
+    for(i := 0; i <= 20; i := i + 1)
+        if (Cint(habs[i]) == 1)
+            GFTextLine(gump, 30, y, 1150, "Nivel " + i + " : ");
+            if (i%2 == 1)
+                GFTextLine(gump, 90, y, 300, "Comprar Status");
+                GFAddButton(gump, 10, y+5, 2103, 2104, 1, i+1001);
+            else
+                if(i == 0)
+                    GFTextLine(gump, 90, y, 300, "Escolha a Habilidade");
+                    GFAddButton(gump, 10, y+5, 2103, 2104, 1, i+1001);
+                else
+                    GFTextLine(gump, 90, y, 300, "Procure o Pergaminho");
+                endif
+            endif
+        elseif (cint(habs[i]) == 2)
+            GFTextLine(gump, 30, y, 1150, "Nivel " + i + " : ");
+            if (i%2 == 1)
+                GFTextLine(gump, 90, y, 300, "Status Comprado");
+            else
+                if (habcfg[myhabs[i]].uso == "Ativa")
+                    var texto := myhabs[i] + " ["+habcfg[myhabs[i]].uso + "] " + "["+habcfg[myhabs[i]].duracao + "] " + "["+habcfg[myhabs[i]].delay + " s] ";
+                    if (habcfg[myhabs[i]].stam != error)
+                        texto := texto + "["+habcfg[myhabs[i]].stam + " stam] ";
+                    else
+                        texto := texto + "["+habcfg[myhabs[i]].mana + " mana] ";
+                    endif
+                    GFTextLine(gump, 90, y, 300, texto);
+                else
+                    GFTextLine(gump, 90, y, 300, myhabs[i] + " ["+habcfg[myhabs[i]].uso + "]");
+                endif
+            endif
+        endif
+        y := y + 20;
+    endfor
+endfunction
+
+function ShowEmTreinamentoPage(byref gump, who)
+    GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
+    
+    GFTextLine(gump, 30, 90, 300, "Perícias em Treinamento");
+    
+    var trainingSkills := GetObjProperty(who, "trainingSkills");
+    if (trainingSkills == error)
+        trainingSkills := array;
+    endif
+    
+    var x := 60;
+    var y := 120;
+    var i;
+    var selectedCount := 0;
+
+    for (i := 1; i <= skillList.size(); i := i + 1)
+        var skillAux := skillList[i];
+        var elem := AP_GetAttributeCfgElem(skillAux);
+        var displayName := FormatSkillName(skillAux);
+        
+        GFTextLine(gump, x, y, 1153, displayName);
+        var check := 0;
+        if (skillAux in trainingSkills)
+            check := 1;
+            selectedCount := selectedCount + 1;
+        endif
+        if (selectedCount < 3 || check)
+            GFCheckBox(gump, x-20, y+3, 2360, 2361, check, i);
+        else
+            GFGumpPic(gump, x-20, y+3, 2360);
+        endif
+        y := y + 15;
+        sleepms(2);
+    endfor
+
+    GFAddButton(gump, 300, 480, 4502, 4502, 1, 900);
+    GFHTMLArea(gump, 240, 495, 100, 20, "<BASEFONT SIZE=5>Atualizar</BASEFONT>", 0, 0);
+endfunction
+
+function FormatSkillName(skillName)
+    case (skillName)
+        "Magic_Lore":     return "Magic Lore";
+        "Handle_Animal":  return "Handle Animal";
+        "Domestic_Work":  return "Domestic Work";
+        "Wood_Working":   return "Wood Working";
+        "Metal_Working":  return "Metal Working";
+        "Two_Handed":     return "Two Handed";
+        "One_Handed":     return "One Handed";
+        "Dual_Wield":     return "Dual Wield";
+        default: return StrReplace(skillName, "_", " ");
+    endcase
+endfunction
+
+function ShowCapInfo(byref gump, who)
+    var chardata := GetObjProperty(who, "chardata");
+    var primarias := getPrimarias(who);
+    var pri := primarias[1];
+    var cappri := Cdbl(limiteportempo(who)) + Cdbl(valorinicial(who, pri));
+    var capprimax := 100;
+
+    var secundarias := getSecundarias(who);
+    var capsec := cappri - 20;
+    var capsecmax := capprimax - 30;
+
+    var terciarias := getTerciarias(who);
+    var capter := capsec - 20;
+    var captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
+
+    if(capsec > capsecmax)
+        capsec := capsecmax;
+    endif
+
+    if(capter > captermax)
+        capter := captermax;
+    endif
+
+    var y_pos := GUMP_HEIGHT - 60;
+    GFTextMid(gump, 55, y_pos, 300, 53, "Cap/MaxCap:");
+    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + cappri + "/" + capprimax);
+    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + capsec + "/" + capsecmax);
+    GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + capter + "/" + captermax);
+endfunction
 
 function Habilidades(who)
 	if (GetObjProperty(who, "#gumphab") != error)
@@ -292,21 +421,22 @@ function Habilidades(who)
 endfunction
 
 function GetSkillColor(skill)
-	var temp := cint(skill/10);
-	skill := Cint(skill - temp*10);
-	case (skill)
-		0: return 338;
-		1: return 343;
-		2: return 348;
-		3: return 353;
-		4: return 358;
-		5: return 363;
-		6: return 368;
-		7: return 378;
-		8: return 393;
-		9: return 398;
-	endcase
+    var temp := cint(skill/10);
+    skill := Cint(skill - temp*10);
+    case (skill)
+        0: return 338;
+        1: return 343;
+        2: return 348;
+        3: return 353;
+        4: return 358;
+        5: return 363;
+        6: return 368;
+        7: return 378;
+        8: return 393;
+        9: return 398;
+    endcase
 endfunction
+
 
 function SelecttrainingSkills(who)
     var charGump := GFCreateGump();
@@ -381,6 +511,7 @@ function SelecttrainingSkills(who)
     endif
     SendSysMessageEx(who, "Suas pericias em treinamento foram atualizadas com sucesso.", SSM_INFO);
 endfunction
+
 
 function SkillEraser(who)
     SendSysMessageEx(who, "Para interromper a descida de uma pericia escolhida anteriormente, selecione e coloque 0.", SSM_INFO);
@@ -476,3 +607,6 @@ function SkillEraser(who)
     SendSysMessageEx(who, "Suas pericias selecionadas serao esquecidas com o tempo.", SSM_INFO);
 
 endfunction
+
+
+// Adicione aqui outras funções auxiliares necessárias
