@@ -5,19 +5,19 @@
 /
 / Forma de uso:
 / Dar include ":commands:debugsystem" no script que for usar
-/ e adicionar a função debugMsg(who, debugType, msg) dentro do script
+/ e adicionar a função DebugMsg(who, debugType, msg) dentro do script
 / Exemplo de uso:
 / 
 / include ":commands:debugsystem";
 /
 / var debugType := "clima";
-/ debugMsg(who, debugType, "Está chovendo bastante!");
+/ DebugMsg(who, debugType, "Está chovendo bastante!");
 /
-/ Para scripts que não tenha who (Ref de Char) usar debugMsgEvent(debugType, msg);
+/ Para scripts que não tenha who (Ref de Char) usar DebugMsgEvent(debugType, msg);
 / Exemplo de uso:
 /
 / var debugType := "clima";
-/ debugMsg(debugType, "Está chovendo bastante!");
+/ DebugMsg(debugType, "Está chovendo bastante!");
 /
 / É preciso certificar que o nome do debug esteja na var listDebugs deste arquivo aqui
 / o valor precisa ser um struct com name e level (cmdlevel) [ver uso abaixo]

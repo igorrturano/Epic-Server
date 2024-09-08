@@ -2,7 +2,7 @@ use uo;
 
 const PROPTAG := "#debug_";
 
-function checkDebug(who, debugName)
+function CheckDebug(who, debugName)
     var prop := getDebugProp(who, debugName);
 
     if (!prop)
@@ -16,15 +16,15 @@ function getDebugProp(who, debugName)
     return GetObjProperty(who, PROPTAG + debugName);
 endfunction
 
-function debugMsg(who, debugName, msg)
+function DebugMsg(who, debugName, msg)
     if (checkDebug(who, debugName) || checkDebug(who, "all"))
         msg := "DEBUG "+debugName+": "+msg;
 
-        SendSysMessageEx(who, msg, SSM_INFO);
+        SendSysMessageEX(who, msg, SSM_INFO);
     endif
 endfunction
 
-function debugMsgEvent(debugName, msg) 
+function DebugMsgEvent(debugName, msg) 
     foreach who in EnumerateOnlineCharacters()
         if (checkDebug(who, debugName) || checkDebug(who, "all"))
             msg := "DEBUG "+debugName+": "+msg;
