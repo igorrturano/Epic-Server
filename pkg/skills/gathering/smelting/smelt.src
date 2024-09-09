@@ -1,3 +1,7 @@
+//TODO: [BUG] Ao usar o mesmo minério, não está somando
+    //TODO: Verificar se o item já está na panela. Caso esteja, somar ao amt.
+    //TODO: Fazer Mithril ser derretido apenas na forja Soul Forge.
+
 use uo;
 use os;
 
@@ -8,40 +12,39 @@ include ":itemutils:objtype";
 include ":gathering:mining";
 
 program smelt_that_ore (who, item)
-  EraseObjProperty(who, "IsMeditating");
-  EraseObjProperty(who, "HealTimer");
+    EraseObjProperty(who, "IsMeditating");
+    EraseObjProperty(who, "HealTimer");
 
-  if(!Accessible(who, item))
-    return;
-  endif
+    if(!Accessible(who, item))
+        return;
+    endif
 
-  SendSysMessage(who, "O que voce deseja fazer com isto?");
-  var use_on := Target(who, TGTOPT_CHECK_LOS);
-  if(!use_on)
-    SendSysMessage(who, "Cancelado.");
+    SendSysMessage(who, "O que voce deseja fazer com isto?");
+    var use_on := Target(who, TGTOPT_CHECK_LOS);
+    if(!use_on)
+        SendSysMessage(who, "Cancelado.");
     return;
-  endif
-  if(!Accessible(who, use_on))
-    SendSysMessage(who, "Voce nao pode usar isto.");
+    endif
+    if(!Accessible(who, use_on))
+        SendSysMessage(who, "Voce nao pode usar isto.");
     return;
-  endif
-  if(!Accessible(who, use_on) || !ReserveItem( use_on ))
-    SendSysMessage(who, "Voce nao pode usar isto.");
+    endif
+    if(!Accessible(who, use_on) || !ReserveItem( use_on ))
+        SendSysMessage(who, "Voce nao pode usar isto.");
     return;
-  endif
-  if(!CheckForForge(who))
-     SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
-     return;
-  endif
+    endif
+    if(!CheckForForge(who))
+        SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
+    return;
+    endif
 
-  if ( (use_on.graphic == 0x19B9) || (use_on.graphic == 0x1bf2) || (use_on.graphic == 0x1bf5) || (use_on.objtype == 0x6075)  || (use_on.graphic == 0x1bdd)  || (use_on.objtype == 0x1bde) || (use_on.objtype == 0x6309) || (use_on.objtype == 0x6995))
-     SmeltOre(who, item, use_on);
-  //elseif ((use_on.isa(POLCLASS_WEAPON)) || (use_on.isa(POLCLASS_ARMOR) || (use_on.objtype == 0x5101)))
-   //  SmeltItem(who, item, use_on);
-  else
-     SendSysMessage(who,"Voce nao pode derreter isto.");
-  endif
-
+    if ( (use_on.graphic == 0x19B9) || (use_on.graphic == 0x1bf2) || (use_on.graphic == 0x1bf5) || (use_on.objtype == 0x6075)  || (use_on.graphic == 0x1bdd)  || (use_on.objtype == 0x1bde) || (use_on.objtype == 0x6309) || (use_on.objtype == 0x6995))
+        SmeltOre(who, item, use_on);
+        //elseif ((use_on.isa(POLCLASS_WEAPON)) || (use_on.isa(POLCLASS_ARMOR) || (use_on.objtype == 0x5101)))
+        //  SmeltItem(who, item, use_on);
+    else
+        SendSysMessage(who,"Voce nao pode derreter isto.");
+    endif
 endprogram
 
 /*function SmeltItem(who, item, ore)
@@ -135,102 +138,99 @@ endfunction*/
 
 function SmeltOre(who, item, ore)
 
-  if(!ReserveItem(ore))
-    return;
-  endif
-  if(!Accessible(who, ore))
-    SendSysMessage(who,"Voce nao alcanca isto.", FONT_NORMAL, 40);
-    return;
-  endif
-
-  var dif := DetermineMiningDifficulty(ore.objtype);
-  var ingot := "";
-  case (ore.objtype) //de acordo com ore no pot indica o ingot certo
-    0x1bdd: dif := 5; ingot := 0x1bde; //carvao
-    0xee36: dif := 5; ingot := 0x1bde; //carvao
-    0xee37: dif := 5; ingot := 0x1bde; //carvao
-    0xee38: dif := 5; ingot := 0x1bde; //carvao
-    0xee39: dif := 5; ingot := 0x1bde; //carvao
-    0xee3a: dif := 5; ingot := 0x1bde; //carvao
-    0xee3b: dif := 5; ingot := 0x1bde; //carvao
-    0xee3c: dif := 5; ingot := 0x1bde; //carvao
-    0xee3d: dif := 5; ingot := 0x1bde; //carvao
-    0xee3e: dif := 5; ingot := 0x1bde; //carvao
-    0xee3f: dif := 5; ingot := 0x1bde; //carvao
-
-    0x6075:  dif := 5; ingot := 0x1be3; //vidro
-    0x6450:  ingot := 0x6465; //copper
-    0x6990:  ingot := 0x6991; //estanho
-    0x6300:  ingot := 0x62ff; //ferro -> ferro impuro
-    0x6992:  ingot := 0x6993; //prata
-    0x6305:  ingot := 0x630e; //ouro
-    0x6309:  ingot := 0x6309; //aco
-    0x6995:  ingot := 0x6995; //ligas elementais
-    0x6301:  ingot := 0x630a; //litan
-    0x6314:  ingot := 0x6315; // illyra
-    0x6307:  ingot := 0x6310; //galvorn
-    0x6308:  ingot := 0x6311; //mithril
-    0x6303:  ingot := 0x630c; //venetium
-    0x6451:  ingot := 0x6460; //frigutium
-    0x6304:  ingot := 0x630d; //ignium
-    0x6302:  ingot := 0x630b; //fulmetium
-
-    //esses ultimos nao estao sendo usados.
-    0x6312:  ingot := 0x6313; //ario
-    0x6452:  ingot := 0x6460; //gomril
-    0x6306:  ingot := 0x630f; //durang
-
-    0x1bde:  ingot := 0x1bde;
-
-    default: SendSysMessage(who,"Voce nao pode derreter isto.", FONT_NORMAL, 40); return 1;
-  endcase
-
-
-  if (GetObjProperty(item, "numMetal"))
-     var num := CINT(GetObjProperty(item, "amt1"));
-     var nummetal := Cint(GetObjProperty(item, "numMetal"));
-     if (num != ore.amount)
-        SendSysMessage(who, "Voce precisa colocar " + num + " minerios aqui.", FONT_NORMAL, 40);
+    if(!ReserveItem(ore))
         return;
-     endif
-     if(SkillCheck(who, GATHERING, dif, 0) > 0)
-        SendSysMessage(who, "Voce fez a fusao entre os metais.", FONT_NORMAL, 90);
-        PlaySoundEffect(who, 0x22);
-        sleep(4);
-        SetObjProperty(item, "numMetal", nummetal+1);
-        SetObjProperty(item, "amt"+(nummetal+1), ore.amount);
-        SetObjProperty(item, "oreObj"+(nummetal+1), ingot);
-        DestroyItem(ore);
-     else
-          var perdamt := RandomInt(3)+1;
-          if (perdamt > ore.amount)
-            perdamt := ore.amount;
-          endif
-          SubtractAmount(ore, perdamt);
-	        SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
-          return;
     endif
-  else
-     if(SkillCheck(who, GATHERING, dif, ((dif / 2) + 10)) > 0)
-        SendSysMessage(who, "Voce derreteu o minerio e retirou as impurezas.", FONT_NORMAL, 90);
-        PlaySoundEffect(who, 0x22);
-        sleep(4);
-        item.color := 0x486;
-        SetObjProperty(item, "numMetal", 1);
-        SetObjProperty(item, "oreObj1", ingot);
-        SetObjProperty(item, "amt1", ore.amount);
-        DestroyItem(ore);
-     else
-          var perdamt := RandomInt(3)+1;
-          if (perdamt > ore.amount)
-            perdamt := ore.amount;
-          endif
-          SubtractAmount(ore, perdamt);
-	        SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
-          return;
+    if(!Accessible(who, ore))
+        SendSysMessage(who,"Voce nao alcanca isto.", FONT_NORMAL, 40);
+    return;
     endif
 
-  endif
+    var dif := DetermineMiningDifficulty(ore.objtype);
+    var ingot := "";
+    case (ore.objtype) //de acordo com ore no pot indica o ingot certo
+        0x1bdd: dif := 5; ingot := 0x1bde; //carvao
+        0xee36: dif := 5; ingot := 0x1bde; //carvao
+        0xee37: dif := 5; ingot := 0x1bde; //carvao
+        0xee38: dif := 5; ingot := 0x1bde; //carvao
+        0xee39: dif := 5; ingot := 0x1bde; //carvao
+        0xee3a: dif := 5; ingot := 0x1bde; //carvao
+        0xee3b: dif := 5; ingot := 0x1bde; //carvao
+        0xee3c: dif := 5; ingot := 0x1bde; //carvao
+        0xee3d: dif := 5; ingot := 0x1bde; //carvao
+        0xee3e: dif := 5; ingot := 0x1bde; //carvao
+        0xee3f: dif := 5; ingot := 0x1bde; //carvao
+
+        0x6075:  dif := 5; ingot := 0x1be3; //vidro
+        0x6450:  ingot := 0x6465; //copper
+        0x6990:  ingot := 0x6991; //estanho
+        0x6300:  ingot := 0x62ff; //ferro -> ferro impuro
+        0x6992:  ingot := 0x6993; //prata
+        0x6305:  ingot := 0x630e; //ouro
+        0x6309:  ingot := 0x6309; //aco
+        0x6995:  ingot := 0x6995; //ligas elementais
+        0x6301:  ingot := 0x630a; //litan
+        0x6314:  ingot := 0x6315; // illyra
+        0x6307:  ingot := 0x6310; //galvorn
+        0x6308:  ingot := 0x6311; //mithril
+        0x6303:  ingot := 0x630c; //venetium
+        0x6451:  ingot := 0x6460; //frigutium
+        0x6304:  ingot := 0x630d; //ignium
+        0x6302:  ingot := 0x630b; //fulmetium
+
+        //esses ultimos nao estao sendo usados.
+        0x6312:  ingot := 0x6313; //ario
+        0x6452:  ingot := 0x6460; //gomril
+        0x6306:  ingot := 0x630f; //durang
+
+        0x1bde:  ingot := 0x1bde;
+
+        default: SendSysMessage(who,"Voce nao pode derreter isto.", FONT_NORMAL, 40); return 1;
+    endcase
 
 
+    if (GetObjProperty(item, "numMetal"))
+        var num := CINT(GetObjProperty(item, "amt1"));
+        var nummetal := Cint(GetObjProperty(item, "numMetal"));
+        if (num != ore.amount)
+            SendSysMessage(who, "Voce precisa colocar " + num + " minerios aqui.", FONT_NORMAL, 40);
+        return;
+        endif
+        if(SkillCheck(who, GATHERING, dif, 0) > 0)
+            SendSysMessage(who, "Voce fez a fusao entre os metais.", FONT_NORMAL, 90);
+            PlaySoundEffect(who, 0x22);
+            sleep(4);
+            SetObjProperty(item, "numMetal", nummetal+1);
+            SetObjProperty(item, "amt"+(nummetal+1), ore.amount);
+            SetObjProperty(item, "oreObj"+(nummetal+1), ingot);
+            DestroyItem(ore);
+        else
+            var perdamt := RandomInt(3)+1;
+        if (perdamt > ore.amount)
+            perdamt := ore.amount;
+        endif
+        SubtractAmount(ore, perdamt);
+        SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
+        return;
+    endif
+    else
+        if(SkillCheck(who, GATHERING, dif, ((dif / 2) + 10)) > 0)
+            SendSysMessage(who, "Voce derreteu o minerio e retirou as impurezas.", FONT_NORMAL, 90);
+            PlaySoundEffect(who, 0x22);
+            sleep(4);
+            item.color := 0x486;
+            SetObjProperty(item, "numMetal", 1);
+            SetObjProperty(item, "oreObj1", ingot);
+            SetObjProperty(item, "amt1", ore.amount);
+            DestroyItem(ore);
+        else
+            var perdamt := RandomInt(3)+1;
+            if (perdamt > ore.amount)
+                perdamt := ore.amount;
+            endif
+            SubtractAmount(ore, perdamt);
+            SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
+            return;
+        endif
+    endif
 endfunction
