@@ -120,7 +120,7 @@ function CanFight(me, mobile, align)
       
       if ( propallies != error )
       	foreach key in (propallies.keys())
-          if ( GetObjProperty(mobile, key) == propallies[key] ) //eh meu chapa, entao nao ataco.
+          if ( GetObjProperty(mobile, key) == propallies[key] )
             return 0;
           endif
         endforeach

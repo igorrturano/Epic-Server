@@ -23,7 +23,8 @@ program SpellScript(params)
 
 	var amt;
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	if (!CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+	var bonus := epicWisdomPathBonus(who);
+	if (!CheckResist(targ, VONTADE, diff, -bonus))
 		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
 	else
 		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.25);
@@ -35,7 +36,7 @@ program SpellScript(params)
 		endif
 	endif
 
-	TS_StartTimer(targ, "weaken", cint(AP_GetSkill(who, MAGICLORE)), amt, who, 1); //20 min
+	TS_StartTimer(targ, "weaken", cint(AP_GetSkill(who, MAGICLORE)), amt, who, 1);
 	PrintTextAbovePrivate(targ, "-"+amt + " Str", who, 3, 38); // vermelho
 
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);

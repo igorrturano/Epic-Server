@@ -31,8 +31,8 @@ program manobra(mobile)
 
 	Corromper(mobile, 9, targ);
 	var diff := handleSpellResistDiffForSpecialists(mobile, KAIJIN);
-
-	if (CheckResist(mobile, VONTADE, diff, -CInt(AP_GetSkill(mobile, MAGICLORE)/2.5)))
+	var bonus := epicWisdomPathBonus(mobile);
+	if (CheckResist(mobile, VONTADE, diff, -bonus))
 		SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 		mobile.frozen := 0;

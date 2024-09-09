@@ -15,6 +15,9 @@ include "include/say";
 include "include/creationUtils";
 include "include/sounds";
 include "include/epicConstants";
+include ":charactercreation:include/RPTraits";
+include ":nature:nature";
+
 
 program epicCreationGump(who)
     resetCharacter(who);
@@ -31,6 +34,9 @@ program epicCreationGump(who)
     pathOfWisdom(who, culture_pic);
     languageSelection(who, culture_pic);
     itemInheritance(who);
+    signSelection(who);  // Nova linha adicionada aqui
+    birthDaySelection(who);  // Nova linha adicionada aqui
+    RPcharacteristicsSelection(who, culture_pic);  // Nova linha adicionada aqui TRACOSRP
     looksSelection(who);
 
     SetObjProperty(who, "nome_inicial", who.name);
@@ -42,6 +48,65 @@ program epicCreationGump(who)
 	var tempo_agora := polcore().systime;
     SetObjProperty(who, "createdate", tempo_agora);
 
+// Definir informações de cidadania, nobreza e cargos profissionais no chardata KINGDOM
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        chardata := struct{};
+    endif
+
+    chardata.+citizenship_title := "Plebeu";
+    chardata.+available_citizenship_titles := array{
+        "Banido",
+        "Indigente",
+        "Plebeu",
+        "Cidadão",
+        "Nobre"
+    };
+
+    // Definir títulos de nobreza baseados no gênero do personagem
+    if (who.gender == 0) // Masculino
+        chardata.+nobility_titles := array{
+            "Rei",
+            "Príncipe",
+            "Duque",
+            "Marquês",
+            "Conde",
+            "Visconde",
+            "Barão",
+            "Cavaleiro",
+            "Lorde",
+            "Escudeiro"
+        };
+    else // Feminino
+        chardata.+nobility_titles := array{
+            "Rainha",
+            "Princesa",
+            "Duquesa",
+            "Marquesa",
+            "Condessa",
+            "Viscondessa",
+            "Baronesa",
+            "Dama",
+            "Lady",
+            "Escudeira"
+        };
+    endif
+
+    chardata.+current_nobility_title := "Nenhum"; // Inicialmente sem título de nobreza
+
+    // Definir cargos profissionais disponíveis
+    chardata.+available_professional_positions := array{
+        "Imperador",
+        "Mão do Rei",
+        "Conselheiro Nobre",
+        "Arcebispo",
+        "Senador",
+        "Serviçal"
+    };
+
+    chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
+
+    SetObjProperty(who, "chardata", chardata);
     // Prólogo
 
     startAdventure(who);
@@ -81,6 +146,13 @@ endfunction
 function racialSelection(who, culture_pic)
     var btn_value;
     var chardata := GetObjProperty(who, "chardata");
+    var CaracteristicasCategories := array{
+    "Altura",
+    "Peso",
+    "Olhos",
+    "Idade Aparente",
+    "Voz"
+};
     while (1)
         var input := EpicRaceGump(who, culture_pic);
         foreach key in (input.keys)
@@ -88,11 +160,9 @@ function racialSelection(who, culture_pic)
         endforeach
         if (btn_value == 201)
             chardata.raca := ANAO;
-            chardata.+vantagemracial := "Constituicao Ana";
             break;
         elseif (btn_value == 202) 
             chardata.raca := DROW;
-            chardata.+vantagemracial := "Toxina natural";
             break;
         elseif (btn_value == 203) 
             chardata.raca := ELFO;
@@ -102,7 +172,6 @@ function racialSelection(who, culture_pic)
             break;
         elseif (btn_value == 205)
             chardata.raca := ORC;
-            chardata.+vantagemracial := "Resistencia implacavel";
             break;
         elseif (btn_value == 206) 
             chardata.raca := POLSKI;
@@ -114,6 +183,8 @@ function racialSelection(who, culture_pic)
             break;
         endif
     endwhile
+
+  SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
 
     if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
         who.graphic := 1830;
@@ -130,11 +201,57 @@ function racialSelection(who, culture_pic)
     endif
 
     who.title_race := chardata.raca;
-	who.race := chardata.raca;
+    who.race := chardata.raca;
 
-    SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
+   chardata.+caracteristicas_rp := struct {};
+    foreach category in CaracteristicasCategories
+        chardata.caracteristicas_rp[category] := 0; // Inicializa com 0 (nenhuma opção selecionada)
+    endforeach
+
     SetObjProperty(who, "chardata", chardata);
 endfunction
+
+
+function RPcharacteristicsSelection(who, culture_pic)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata.caracteristicas_rp)
+        chardata.caracteristicas_rp := struct{};
+    endif
+
+    var racial_traits := GetRacialTraits(chardata.raca, chardata);
+    var categories := GetPageCategories(1);
+
+    var input;
+    var all_categories_selected := 0;
+
+    while (all_categories_selected < 5)
+        input := CaracteristicasRPGump(who, chardata, culture_pic);
+        
+        if (input[0] == 222)  // 222 é o botão de finalizar
+            all_categories_selected := CountSelectedCategories(chardata.caracteristicas_rp);
+            if (all_categories_selected < 5)
+                SendSysMessageEX(who, "Você precisa selecionar uma opção para cada uma das 5 categorias antes de continuar.", SSM_FAIL);
+            endif
+        else
+            ProcessSelection(chardata, input[0], 1);
+        endif
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+    SendSysMessageEX(who, "Características raciais selecionadas com sucesso.", SSM_INFO);
+
+endfunction
+
+function CountSelectedCategories(caracteristicas_rp)
+    var count := 0;
+    foreach category in (caracteristicas_rp.keys())
+        if (caracteristicas_rp[category] != 0)
+            count += 1;
+        endif
+    endforeach
+    return count;
+endfunction
+
 
 function classSelection(who, culture_pic)
     var btn_value;
@@ -532,9 +649,6 @@ function pathOfWisdom(who, culture_pic)
             if (chardata.culture == HAROLOTH)
                 CreateItemInBackpack(who, 0x166E, 1);
             endif
-            CreateItemInBackpack(who, "runaarmasagrada");
-            CreateItemInBackpack(who, "runacuraleve");
-            CreateItemInBackpack(who, "runadescanso");
             chardata.+wisdom_path := "Clérigo";
             break;
         elseif (btn_value == 204) 
@@ -549,19 +663,28 @@ function pathOfWisdom(who, culture_pic)
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
 endfunction
 
+
+
 function startAdventure(who)
+    var birthdate := calculateBirthdate(who);
+    if (birthdate)
+        SendSysMessageEX(who, "Data de Nascimento: " + birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.", SSM_INFO);
+    else
+        SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
+    endif
+    
     MoveObjectToLocation(who, 3479, 1190, 3, "britannia", MOVEOBJECT_FORCELOCATION);
 
-	PlaySoundEffectPrivate(who, 0x306, who);
+    PlaySoundEffectPrivate(who, 0x306, who);
     PlayStationaryEffect(3480, 1189, 5, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
     PlayStationaryEffect(3477, 1189, 4, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
     PlayStationaryEffect(3477, 1190, 2, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
-	PlaySoundEffectPrivate(who, 0x2F4, who);
+    PlaySoundEffectPrivate(who, 0x2F4, who);
 
-	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
+    PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
     sleep(1);
     startAdventureGump(who);
 endfunction
@@ -570,7 +693,7 @@ function languageSelection(who, culture_pic)
     var linguasOpt := array{"Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk", "Grumnak", "Björ", "Idrith'har", "Comum"};
     var known_languages := array;
     var btn_value;
-
+SetObjProperty(who, "#LastSpeechTime", ReadGameClock());
     while (1)
         var total_amount := 1;
         known_languages.append(parseLanguageByCulture(who, linguasOpt));
@@ -601,4 +724,69 @@ function languageSelection(who, culture_pic)
     SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
     SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
+endfunction
+
+
+function calculateBirthdate(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        chardata := struct{};
+    endif
+    if (!chardata.birthdate)
+        chardata.birthdate := struct{};
+    endif
+
+    var current_year := CINT(GetGlobalProperty("current_year"));
+    if (!current_year || current_year < 456)
+        current_year := 456;
+    endif
+
+    var chosen_age_index := chardata.caracteristicas_rp["Idade Aparente"];
+    var age_value := ExtractAgeValue(chardata.raca, chosen_age_index);
+
+    if (age_value == error)
+        SendSysMessageEX(who, "Erro ao calcular a idade.", SSM_FAIL);
+        return;
+    endif
+
+    var birth_year := current_year - age_value;
+
+    // Determinar o mês de nascimento com base no signo
+    var birth_month := "";
+    case (chardata.sign)
+        "Constelação do Cuidador": birth_month := "Alorae";
+        "Constelação do Governador": birth_month := "Duwus";
+        "Constelação do Herói": birth_month := "Galgrumirius";
+        "Constelação do Bobo": birth_month := "Kaius";
+        "Constelação do Amante": birth_month := "Idrithae";
+        "Constelação da Pessoa Comum": birth_month := "Adarae";
+        "Constelação do Criador": birth_month := "Demiurgus";
+        "Constelação do Mago": birth_month := "Crassus";
+        "Constelação do Explorador": birth_month := "Lleuadae";
+        "Constelação do Fora da Lei": birth_month := "Phrugum";
+        "Constelação do Inocente": birth_month := "Igorsmonth";
+        "Constelação do Sábio": birth_month := "Enzosmonth";
+        default: birth_month := "Duwus"; // Mês padrão caso algo dê errado
+    endcase
+
+    // Determinar o dia do mês (pode ser aleatório ou fixo, dependendo da sua preferência)
+   var birth_day := chardata.birthdate.day;
+    if (!birth_day)
+        birth_day := RandomInt(28) + 1;
+    endif
+    
+    chardata.birthdate := struct{
+        "year" := birth_year,
+        "month" := birth_month,
+        "day" := birth_day
+    };
+
+
+
+    // Adicionar a idade inicial e a idade atual
+    chardata.+initial_age := age_value;
+    chardata.+current_age := age_value;
+
+    SetObjProperty(who, "chardata", chardata);
+    return chardata.birthdate;
 endfunction
