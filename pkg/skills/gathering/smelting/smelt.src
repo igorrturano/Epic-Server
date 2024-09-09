@@ -17,6 +17,8 @@ include ":fls_core:fls_crafting";
 include ":attributes:attributes";
 include ":itemutils:objtype";
 include ":gathering:mining";
+include ":commands:debugsystem";
+const DEBUG_NAME := "smelting";
 
 program smelt_that_ore (who, item)
 	EraseObjProperty(who, "IsMeditating");
@@ -40,9 +42,20 @@ program smelt_that_ore (who, item)
 		SendSysMessage(who, "Voce nao pode usar isto.");
 	return;
 	endif
-	if(!CheckForForge(who))
-		SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
-	return;
+
+	if (use_on.objtype == 0x6308)
+		DebugMsg(who, DEBUG_NAME, "É Mithril!");
+		if(!CheckForSoulForge(who))
+			SendSysMessage(who, "Voce precisa estar perto da Forja das Almas para usar este item.");
+			DebugMsg(who, DEBUG_NAME, "Tem SOULFORGE perto!");
+			return;
+		endif
+	else
+		DebugMsg(who, DEBUG_NAME, "Não é Mithril!");
+		if(!CheckForForge(who))
+			SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
+			return;
+		endif
 	endif
 
 	if ( (use_on.graphic == 0x19B9) || (use_on.graphic == 0x1bf2) || (use_on.graphic == 0x1bf5) || (use_on.objtype == 0x6075)  || (use_on.graphic == 0x1bdd)  || (use_on.objtype == 0x1bde) || (use_on.objtype == 0x6309) || (use_on.objtype == 0x6995))
@@ -150,7 +163,7 @@ function SmeltOre(who, item, ore)
 	endif
 	if(!Accessible(who, ore))
 		SendSysMessage(who,"Voce nao alcanca isto.", FONT_NORMAL, 40);
-	return;
+		return;
 	endif
 
 	var dif := DetermineMiningDifficulty(ore.objtype);
