@@ -44,6 +44,9 @@ function InitializeEpicNPC(mobile)
     GenerateRecipeLoot(mobile);
     SetupAmmo(mobile, npccfgfile);
 
+    SetObjProperty(npc, "linguas_conhecidas", {"Comum"});
+    SetObjProperty(npc, "lingua_escolhida", "Comum");
+    
     SetObjProperty(mobile, "started", 1);
 endfunction
 
