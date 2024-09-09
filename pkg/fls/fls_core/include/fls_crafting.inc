@@ -148,7 +148,6 @@ function CheckForNails(who)
 endfunction
 
 function ConsumeNails(who, pregonec)
-
 	var qte := 0;
 	foreach item in EnumerateItemsInContainer (who.backpack)
 		if (pregonec > 0)
@@ -176,12 +175,10 @@ function ConsumeNails(who, pregonec)
 	else
 		return 1;
 	endif
-
 endfunction
 
 
 function CheckForAnvil(who)
-
 	foreach itm in ListItemsNearLocation(who.x, who.y, who.z, 1, who.realm);
 		if(itm.objtype == UOBJ_ANVIL1 or itm.objtype == UOBJ_ANVIL2)
 			return 1;
@@ -191,15 +188,29 @@ function CheckForAnvil(who)
 endfunction
 
 function CheckForForge(who)
+	return SearchForge(who, NORMAL);
+endfunction
 
+function CheckForSoulForge(who)
+	return SearchForge(who, SOULFORGE);
+endfunction
+
+function SearchForge(who, type)
 	foreach itm in ListItemsNearLocation(who.x, who.y, who.z, 2, who.realm);
-		if((itm.objtype == UOBJ_SMALL_FORGE) or (itm.objtype >= UOBJ_FORGE_START and itm.objtype <= UOBJ_FORGE_END))
-                    //if (GetObjProperty(itm, "status"))
-        return 1;
-                    //endif
+		if (type == NORMAL)
+			if((itm.objtype == UOBJ_SMALL_FORGE) or (itm.objtype >= UOBJ_FORGE_START and itm.objtype <= UOBJ_FORGE_END))
+				return 1;
+			endif
+		elseif (type == SOULFORGE)
+			if((itm.objtype >= UOBJ_SOULFORGE_START and itm.objtype <= UOBJ_SOULFORGE_END))
+				return 1;
+			endif
 		endif
 	endforeach
+
 	return 0;
 endfunction
 
-
+enum FORGES
+	NORMAL, SOULFORGE
+endenum
