@@ -51,9 +51,9 @@ endprogram
 
 function checkLv(who, level)
     if (who.cmdlevel >= level)
-        return true;
+        return 1;
     endif
-    return false;
+    return 0;
 endfunction
 
 function setDebug(who, debugName)
@@ -61,7 +61,7 @@ function setDebug(who, debugName)
     var prop := getDebugProp(who, debugName);
 
     if (!prop)
-        SetObjProperty(who, propName, true);
+        SetObjProperty(who, propName, 1);
         SendSysMessageEx(who, "DEBUG " + debugName + ": ativado!");
     else
         EraseObjProperty(who, propName);
