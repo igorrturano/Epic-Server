@@ -1,6 +1,8 @@
-//TODO: [BUG] Ao usar o mesmo minério, não está somando
-    //TODO: Verificar se o item já está na panela. Caso esteja, somar ao amt.
-    //TODO: Fazer Mithril ser derretido apenas na forja Soul Forge.
+//TODO: [IMPLEMENTS] Ao clicar 2x na panela, abrir um gump parar derreter os minérios
+	//TODO: Planejar como fazer o design desse gump
+	//TODO: Iterar pelo metal escolhido e procurar a quantidade que o player digitou
+	//TODO: Imagem de cada Ore e ao lado um box para digitar a quantidade
+	//TODO: Iterar a quantidade digitada em cada box pra ver se forma a liga (se não formar, perde a quantidade digitada)
 
 // GRAPHICS:
 	// Elven Forge: 0x2DD8
