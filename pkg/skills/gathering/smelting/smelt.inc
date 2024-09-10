@@ -1,4 +1,4 @@
-function getOreIngot(ore)
+function ConvertOreToIngot(ore)
 	case (ore) //de acordo com ore no pot indica o ingot certo
 		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 0x1bde; //carvao
 
