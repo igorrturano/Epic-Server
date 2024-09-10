@@ -431,11 +431,11 @@ function DetermineOreType(who, where)
 endfunction
 
 //dificuldade de PEGAR o minerio
-function DetermineMiningDifficulty(oretype)
+function DetermineMiningDifficulty(oretype) 
 
 	case (oretype)
-
-		0xBD11: return 0;  //pedra pequena
+		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 5; // Carvão
+		0xBD11: return 0;  //pedra pequena 
 		//0xBD12: return 0;  //pedra media
 		//0xBD13: return 0;  //pedra grande
 		0xee99: return 0;  //calcario
@@ -455,7 +455,7 @@ function DetermineMiningDifficulty(oretype)
 		0x6992: return 50; //prata
  		0x6990: return 30; //estanho
 
-		0x6075:  return 5; //areia
+		0x6075: return 5; //areia
 
 		0x6666: return 0; //id falso de pedra
 		0x8850: return 40; //marmore
