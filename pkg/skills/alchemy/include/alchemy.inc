@@ -347,6 +347,7 @@ function VicioSTR (who, potion)
   If(dmg < 0)
     dmg := 0;
   endif
+  dmg := TesteVicio(who, tier, dmg);
   vicio := vicio-dmg;
   if (vicio < 0)
     vicio := 0;
@@ -354,7 +355,7 @@ function VicioSTR (who, potion)
   
   AP_SetVital(who,"viciostr", vicio);
  	
-  var ultimouso := polcore().systime;
+  var ultimouso := readgameclock();
 	SetObjProperty(who, "ultimastr", ultimouso);
 endfunction
 
@@ -371,6 +372,7 @@ function VicioDEX (who, potion)
   If(dmg < 0)
     dmg := 0;
   endif
+  dmg := TesteVicio(who, tier, dmg);
   vicio := vicio-dmg;
   if (vicio < 0)
     vicio := 0;
@@ -378,7 +380,7 @@ function VicioDEX (who, potion)
   
   AP_SetVital(who,"viciodex", vicio);
  	
-  var ultimouso := polcore().systime;
+  var ultimouso := readgameclock();
 	SetObjProperty(who, "ultimadex", ultimouso);
 endfunction
 
@@ -395,6 +397,7 @@ function VicioINT (who, potion)
   If(dmg < 0)
     dmg := 0;
   endif
+  dmg := TesteVicio(who, tier, dmg);
   vicio := vicio-dmg;
   if (vicio < 0)
     vicio := 0;
@@ -402,6 +405,27 @@ function VicioINT (who, potion)
   
   AP_SetVital(who,"vicioint", vicio);
  	
-  var ultimouso := polcore().systime;
+  var ultimouso := readgameclock();
 	SetObjProperty(who, "ultimaint", ultimouso);
+endfunction
+
+function TesteVicio(who, tier, dmg)
+  if (tier == 1)
+    if (CheckResist(who, FORTITUDE, RESIST_EASY))
+      dmg := 0;
+    endif
+  elseif (tier == 2)
+    if (CheckResist(who, FORTITUDE, RESIST_MEDIUM))
+      dmg := 0;
+    endif
+  elseif (tier == 3)
+    if (CheckResist(who, FORTITUDE, RESIST_VERY_HARD))
+      dmg := 0;
+    endif
+  elseif (tier == 4)
+    if (CheckResist(who, FORTITUDE, RESIST_ALMOST_IMPOSSIBLE))
+      dmg := 0;
+    endif
+  endif
+  return dmg;
 endfunction

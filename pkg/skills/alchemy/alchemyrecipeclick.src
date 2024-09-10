@@ -13,7 +13,7 @@ program usaPergaminho(who, scroll)
 	GFClosable(gump, 1);
 	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
 
-	 GFTextLine(gump, 50, 10, 0, spellinfo.name);
+	 GFTextLine(gump, 50, 10, 0, spellinfo.type);
 	GFHTMLArea( gump, 30, 40, 180, 120, spellinfo.description, 0, 1);
 
 
