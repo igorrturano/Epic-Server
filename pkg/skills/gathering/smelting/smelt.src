@@ -169,7 +169,7 @@ function SmeltOre(who, item, ore)
 	endif
 
 	var dif := DetermineMiningDifficulty(ore.objtype);
-	var ingot := getOreIngot(ore.objtype);
+	var ingot := ConvertOreToIngot(ore.objtype);
 
 	if (!ingot)
 		SendSysMessageEx(who,"Voce nao pode derreter isto.", FONT_NORMAL, 40);
@@ -180,7 +180,7 @@ function SmeltOre(who, item, ore)
 		var num := CINT(GetObjProperty(item, "amt1"));
 		var nummetal := Cint(GetObjProperty(item, "numMetal"));
 
-		if (GetObjProperty(item, "oreObj1") == getOreIngot(ore.objtype))
+		if (GetObjProperty(item, "oreObj1") == ConvertOreToIngot(ore.objtype))
 			if (!GetObjProperty(item, "oreObj2"))
 				SendSysMessageEx(who, "Você adicionou mais do mesmo minério.", FONT_NORMAL, 90);
 				PlaySoundEffect(who, 0x22);
