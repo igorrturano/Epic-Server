@@ -28,7 +28,7 @@ use uo;
 include ":commands:debugsystem";
 include "include/say";
 
-var listDebugs := array{
+var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com o cmdlevel
     struct { name := "all", "level" := 2 },
     struct { name := "clima", "level" := 1 }, 
     struct { name := "damage", "level" := 1 }

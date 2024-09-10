@@ -2,6 +2,12 @@ use uo;
 
 const PROPTAG := "#debug_";
 
+// Adicionar novos debugs aqui, no mesmo modelo. O valor da String deve coincidir com o var name do listDebugs no debug.src (conferir lá).
+const DEBUG_NAME_ALL := "all";
+const DEBUG_NAME_CLIMA := "clima";
+const DEBUG_NAME_DAMAGE := "damage";
+const DEBUG_NAME_SMELTING := "smelting";
+
 function CheckDebug(who, debugName)
     var prop := getDebugProp(who, debugName);
 
@@ -20,7 +26,7 @@ function DebugMsg(who, debugName, msg)
     if (checkDebug(who, debugName) || checkDebug(who, "all"))
         msg := "DEBUG "+debugName+": "+msg;
 
-        SendSysMessageEX(who, msg, SSM_INFO);
+        SendSysMessageEx(who, msg, SSM_INFO);
     endif
 endfunction
 
