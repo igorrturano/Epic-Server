@@ -198,11 +198,11 @@ endfunction
 function SearchForge(who, type)
 	foreach itm in ListItemsNearLocation(who.x, who.y, who.z, 2, who.realm);
 		if (type == NORMAL)
-			if((itm.objtype == UOBJ_SMALL_FORGE) or (itm.objtype >= UOBJ_FORGE_START and itm.objtype <= UOBJ_FORGE_END))
+			if((itm.objtype == UOBJ_SMALL_FORGE) || (itm.objtype >= UOBJ_FORGE_START && itm.objtype <= UOBJ_FORGE_END) || (SearchForge(who, SOULFORGE)))
 				return 1;
 			endif
 		elseif (type == SOULFORGE)
-			if((itm.objtype >= UOBJ_SOULFORGE_START and itm.objtype <= UOBJ_SOULFORGE_END))
+			if((itm.objtype >= UOBJ_SOULFORGE_START && itm.objtype <= UOBJ_SOULFORGE_END))
 				return 1;
 			endif
 		endif
