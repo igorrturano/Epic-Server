@@ -28,7 +28,7 @@ program drink_blue (who, potion)
 		return 1;
 	endif
 
-	var vicio := cint ((AP_getvital(who, "Viciodex")));
+	var vicio := (AP_getvital(who, "Viciodex"));
 	if (vicio <30)
 		vicio:= 30;
 	endif

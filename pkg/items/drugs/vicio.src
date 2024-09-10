@@ -2,124 +2,89 @@ use uo;
 use os;
 use util;
 
+include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/say";
 
 program Hunger(chr)
-	if( chr.cmdlevel >= 2 )
-		return 0;
-	endif
-	
-	if ( GetObjProperty(chr, "#vicioMod") )
-		// Condition is met if the mobile logs out and back in.
-		// Prevents mod from being applied twice.
-		return 0;
-	endif
-
-	var vicio;
-	while( chr )
-		vicio := CInt(AP_GetVital(chr, "Vicio") / 17280);
-
-		if (vicio <= 1)
-			if((GetObjProperty(chr, "ultimouso") + 3000000) < polcore().systime)
-				SendSysMessageEx(chr, "Voce sente os efeitos da abstinencia.",  SSM_INFO);
-				var penalidadevicio := GetObjProperty(chr, "penalidadevicio");
-				SetObjProperty(chr, "penalidadevicio", penalidadevicio - 10);
-				var viciomod := GetObjProperty(chr, "#viciomod");
-				SetObjProperty(chr, "#viciomod", viciomod + 1);
-				AP_ModifyStatMod(chr, STRENGTH, penalidadevicio);
-				AP_ModifyStatMod(chr, DEXTERITY, penalidadevicio);
-			endif
-		elseif (vicio < 5 )
-			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substancias",  SSM_INFO);
-			var penalidadevicio := SetObjProperty(chr, "penalidadevicio", 0);
-			AP_ModifyStatMod(chr, STRENGTH, penalidadevicio);
-			AP_ModifyStatMod(chr, DEXTERITY, penalidadevicio);
-			EraseObjProperty(chr, "#viciomod");
-		endif
-
-		RecalcVitals(chr);
-
-		Sleep(60 * 600); //10 horas
-		EraseObjProperty(chr, "#viciomod");
-	endwhile
-
+	//vicio de força
 	var viciostr;
+	var abs_str := AP_GetTrueStat(chr, STRENGTH)/4;
 	while( chr )
-		viciostr := CInt(AP_GetVital(chr, "viciostr"));
+		viciostr := AP_GetVital(chr, "Viciostr");
 
-		if (viciostr <= 50)
-			if((GetObjProperty(chr, "ultimastr") + 7200) < polcore().systime)
-				SendSysMessageEx(chr, "Voce sente os efeitos da abstinência.",  SSM_INFO);
-				var abstinenciastr := GetObjProperty(chr, "abstinenciastr");
-				SetObjProperty(chr, "abstinenciastr", abstinenciastr - 10);
-				var viciomod := GetObjProperty(chr, "#viciomodstr");
-				SetObjProperty(chr, "#viciomodstr", viciomod + 1);
-				AP_ModifyStatMod(chr, STRENGTH, abstinenciastr);
+		if (viciostr <= 40)
+			if (cint(GetObjProperty(chr, "ultimastr")) + 3600 < readgameclock())
+				if (!TS_GetTimerInfo(chr, "abstinencia_str"))
+					SendSysMessageEx(chr, "Voce sente os efeitos da abstinência.",  SSM_INFO);
+					TS_StartTimer(chr, "abstinencia_str", 1, abs_str);
+				endif
+			else
+				if(TS_GetTimerInfo(chr, "abstinencia_str"))
+					SendSysMessageEx(chr, "Voce saciou sua abstinência.",  SSM_INFO);
+					TS_LowerDuration(chr, "abstinencia_str", 1);
+				endif
 			endif
-		elseif (viciostr < 80 )
+		elseif (viciostr > 40 && TS_GetTimerInfo(chr, "abstinencia_str"))
 			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substâncias",  SSM_INFO);
-			var abstinenciastr := SetObjProperty(chr, "abstinenciastr", 0);
-			AP_ModifyStatMod(chr, STRENGTH, abstinenciastr);
-			EraseObjProperty(chr, "#viciomodstr");
+			TS_LowerDuration(chr, "abstinencia_str", 1);
 		endif
 
 		RecalcVitals(chr);
-
-		Sleep(60 * 300); //5 horas
-		EraseObjProperty(chr, "#viciomodstr");
+		sleep(5);
 	endwhile
 
-		var viciodex;
+	//vicio de destreza
+	var viciodex;
+	var abs_dex := AP_GetTrueStat(chr, DEXTERITY)/4;
 	while( chr )
-		viciodex := CInt(AP_GetVital(chr, "viciodex"));
+		viciodex := AP_GetVital(chr, "Viciodex");
 
-		if (viciodex <= 50)
-			if((GetObjProperty(chr, "ultimadex") + 7200) < polcore().systime)
-				SendSysMessageEx(chr, "Voce sente os efeitos da abstinência.",  SSM_INFO);
-				var abstinenciadex := GetObjProperty(chr, "abstinenciadex");
-				SetObjProperty(chr, "abstinenciadex", abstinenciadex - 10);
-				var viciomod := GetObjProperty(chr, "#viciomoddex");
-				SetObjProperty(chr, "#viciomoddex", viciomod + 1);
-				AP_ModifyStatMod(chr, DEXTERITY, abstinenciadex);
+		if (viciodex <= 40)
+			if (cint(GetObjProperty(chr, "ultimadex")) + 3600 < readgameclock())
+				if (!TS_GetTimerInfo(chr, "abstinencia_dex"))
+					SendSysMessageEx(chr, "Voce sente os efeitos da abstinência.",  SSM_INFO);
+					TS_StartTimer(chr, "abstinencia_dex", 1, abs_dex);
+				endif
+			else
+				if(TS_GetTimerInfo(chr, "abstinencia_dex"))
+					SendSysMessageEx(chr, "Voce saciou sua abstinência.",  SSM_INFO);
+					TS_LowerDuration(chr, "abstinencia_dex", 1);
+				endif
 			endif
-		elseif (viciodex < 80 )
+		elseif (viciodex > 40 && TS_GetTimerInfo(chr, "abstinencia_dex"))
 			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substâncias",  SSM_INFO);
-			var abstinenciadex := SetObjProperty(chr, "abstinenciadex", 0);
-			AP_ModifyStatMod(chr, DEXTERITY, abstinenciadex);
-			EraseObjProperty(chr, "#viciomoddex");
+			TS_LowerDuration(chr, "abstinencia_dex", 1);
 		endif
 
 		RecalcVitals(chr);
-
-		Sleep(60 * 300); //5 horas
-		EraseObjProperty(chr, "#viciomoddex");
+		sleep(5);
 	endwhile
 
-
+	//vicio de inteligencia
 	var vicioint;
+	var abs_int := AP_GetTrueStat(chr, INTELLIGENCE)/4;
 	while( chr )
-		vicioint := CInt(AP_GetVital(chr, "vicioint"));
+		vicioint := AP_GetVital(chr, "Vicioint");
 
-		if (vicioint <= 50)
-			if((GetObjProperty(chr, "ultimaint") + 7200) < polcore().systime)
-				SendSysMessageEx(chr, "Voce sente os efeitos da abstinência.",  SSM_INFO);
-				var abstinenciaint := GetObjProperty(chr, "abstinenciaint");
-				SetObjProperty(chr, "abstinenciaint", abstinenciaint - 10);
-				var viciomod := GetObjProperty(chr, "#viciomodint");
-				SetObjProperty(chr, "#viciomodint", viciomod + 1);
-				AP_ModifyStatMod(chr, INTELLIGENCE, abstinenciaint);
+		if (vicioint <= 40)
+			if (cint(GetObjProperty(chr, "ultimaint")) + 3600 < readgameclock())
+				if (!TS_GetTimerInfo(chr, "abstinencia_int"))
+					SendSysMessageEx(chr, "Voce sente os efeitos da abstinência.",  SSM_INFO);
+					TS_StartTimer(chr, "abstinencia_int", 1, abs_int);
+				endif
+			else
+				if(TS_GetTimerInfo(chr, "abstinencia_int"))
+					SendSysMessageEx(chr, "Voce saciou sua abstinência.",  SSM_INFO);
+					TS_LowerDuration(chr, "abstinencia_int", 1);
+				endif
 			endif
-		elseif (vicioint < 80 )
+		elseif (vicioint > 40 && TS_GetTimerInfo(chr, "abstinencia_int"))
 			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substâncias",  SSM_INFO);
-			var abstinenciaint := SetObjProperty(chr, "abstinenciaint", 0);
-			AP_ModifyStatMod(chr, INTELLIGENCE, abstinenciaint);
-			EraseObjProperty(chr, "#viciomodint");
+			TS_LowerDuration(chr, "abstinencia_int", 1);
 		endif
 
 		RecalcVitals(chr);
-
-		Sleep(60 * 300); //5 horas
-		EraseObjProperty(chr, "#viciomodint");
+		sleep(5);
 	endwhile
 endprogram
