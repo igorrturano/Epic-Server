@@ -974,3 +974,45 @@ function GetCfgConst(elem_name, prop_name)
 
     return value;
 endfunction
+
+
+// Adicionado para o Epic! Shard:
+function GFECreateGump(byref gump, title)
+	GFCreateGump(gump);
+	GFEAddMoldura(gump);
+	GFESetTitle(gump, title);
+	return gump;
+endfunction
+function GFEAddMoldura(byref gump, gumpWidth, gumpHeight)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := gumpWidth - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := gumpWidth - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := gumpHeight - 25, width := gumpWidth - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := gumpHeight - 50, gump := 39928 },
+        struct{ x := gumpWidth -25, y := 25, width := 35, height := gumpHeight - 50, gump := 39930 },
+        struct{ x := gumpWidth - 25, y := gumpHeight - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := gumpHeight - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+function GFESetTitle(byref gump, title)
+	//TODO: Função para setar título centralizado
+endfunction
+/* 
+ * Parameters
+ * gump: Gump para adicionar as linhas
+ * arrTextos: Array de frases para adicionar
+ * incrY: Valor a ser incrementado em y a cada linha
+ * color: Cor do texto
+ */
+function GFEAddMultipleText(byref gump, arrTextos, x, y, incrY := 40, color := 0)
+	foreach linha in arrTextos
+		GFTextLine(gump, x, y, color, linha);
+		y += incrY;
+	endforeach
+	return gump;
+endfunction
