@@ -12,10 +12,10 @@ function CheckDebug(who, debugName)
     var prop := getDebugProp(who, debugName);
 
     if (!prop)
-        return false;
+        return 0;
     endif
 
-    return true;
+    return 1;
 endfunction
 
 function getDebugProp(who, debugName)

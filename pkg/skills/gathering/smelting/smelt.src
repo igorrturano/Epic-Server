@@ -1,236 +1,240 @@
+//TODO: [IMPLEMENTS] Ao clicar 2x na panela, abrir um gump parar derreter os minérios
+	//TODO: Planejar como fazer o design desse gump
+	//TODO: Iterar pelo metal escolhido e procurar a quantidade que o player digitou
+	//TODO: Imagem de cada Ore e ao lado um box para digitar a quantidade
+	//TODO: Iterar a quantidade digitada em cada box pra ver se forma a liga (se não formar, perde a quantidade digitada)
+
+// GRAPHICS:
+	// Elven Forge: 0x2DD8
+	// Elven Anvil: 0x2DD5 - 0x2DD6
+	// Soulforge Anvil: 0x4254 - 0x4257
+	// Forge: 0xB203 - 0xB20A
+	// Forge (com tampa): 0xB4F1 - 0xB502
+
 use uo;
 use os;
 
 include "include/client";
+include ":gathering:smelting/smelt";
 include ":fls_core:fls_crafting";
 include ":attributes:attributes";
 include ":itemutils:objtype";
 include ":gathering:mining";
+include ":commands:debugsystem";
 
 program smelt_that_ore (who, item)
-  EraseObjProperty(who, "IsMeditating");
-  EraseObjProperty(who, "HealTimer");
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
 
-  if(!Accessible(who, item))
-    return;
-  endif
+	if(!Accessible(who, item))
+		return;
+	endif
 
-  SendSysMessage(who, "O que voce deseja fazer com isto?");
-  var use_on := Target(who, TGTOPT_CHECK_LOS);
-  if(!use_on)
-    SendSysMessage(who, "Cancelado.");
-    return;
-  endif
-  if(!Accessible(who, use_on))
-    SendSysMessage(who, "Voce nao pode usar isto.");
-    return;
-  endif
-  if(!Accessible(who, use_on) || !ReserveItem( use_on ))
-    SendSysMessage(who, "Voce nao pode usar isto.");
-    return;
-  endif
-  if(!CheckForForge(who))
-     SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
-     return;
-  endif
+	SendSysMessage(who, "O que voce deseja fazer com isto?");
+	var use_on := Target(who, TGTOPT_CHECK_LOS);
+	if(!use_on)
+		SendSysMessage(who, "Cancelado.");
+	return;
+	endif
+	if(!Accessible(who, use_on))
+		SendSysMessage(who, "Voce nao pode usar isto.");
+	return;
+	endif
+	if(!Accessible(who, use_on) || !ReserveItem( use_on ))
+		SendSysMessage(who, "Voce nao pode usar isto.");
+	return;
+	endif
 
-  if ( (use_on.graphic == 0x19B9) || (use_on.graphic == 0x1bf2) || (use_on.graphic == 0x1bf5) || (use_on.objtype == 0x6075)  || (use_on.graphic == 0x1bdd)  || (use_on.objtype == 0x1bde) || (use_on.objtype == 0x6309) || (use_on.objtype == 0x6995))
-     SmeltOre(who, item, use_on);
-  //elseif ((use_on.isa(POLCLASS_WEAPON)) || (use_on.isa(POLCLASS_ARMOR) || (use_on.objtype == 0x5101)))
-   //  SmeltItem(who, item, use_on);
-  else
-     SendSysMessage(who,"Voce nao pode derreter isto.");
-  endif
+	if (use_on.objtype == 0x6308)
+		DebugMsg(who, DEBUG_NAME_SMELTING, "É Mithril!");
+		if(!CheckForSoulForge(who))
+			SendSysMessage(who, "Voce precisa estar perto da Forja das Almas para usar este item.");
+			DebugMsg(who, DEBUG_NAME_SMELTING, "Tem SOULFORGE perto!");
+			return;
+		endif
+	else
+		DebugMsg(who, DEBUG_NAME_SMELTING, "Não é Mithril!");
+		if(!CheckForForge(who))
+			SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
+			return;
+		endif
+	endif
 
+	if ( (use_on.graphic == 0x19B9) || (use_on.graphic == 0x1bf2) || (use_on.graphic == 0x1bf5) || (use_on.objtype == 0x6075)  || (use_on.graphic == 0x1bdd)  || (use_on.objtype == 0x1bde) || (use_on.objtype == 0x6309) || (use_on.objtype == 0x6995))
+		SmeltOre(who, item, use_on);
+		//elseif ((use_on.isa(POLCLASS_WEAPON)) || (use_on.isa(POLCLASS_ARMOR) || (use_on.objtype == 0x5101)))
+		//  SmeltItem(who, item, use_on);
+	else
+		SendSysMessage(who,"Voce nao pode derreter isto.");
+	endif
 endprogram
 
 /*function SmeltItem(who, item, ore)
 
-    if (GetObjProperty(item, "numMetal"))
-       SendSysMessage(who, "O pote de fusao esta cheio!");
-       return;
-    endif
+	if (GetObjProperty(item, "numMetal"))
+		SendSysMessage(who, "O pote de fusao esta cheio!");
+		return;
+	endif
 
-    if(!ReserveItem(ore))
-     return;
-    endif
-    if(!Accessible(who, ore))
-      SendSysMessage(who,"Voce nao alcanca isto.");
-      return;
-    endif
+	if(!ReserveItem(ore))
+		return;
+	endif
+	if(!Accessible(who, ore))
+		SendSysMessage(who,"Voce nao alcanca isto.");
+		return;
+	endif
 
-    var amt;
-    if(!ReserveItem(ore))
-      return;
-    endif
-    if(!Accessible(who, ore))
-      SendSysMessage(who,"Voce nao alcanca isto.");
-      return;
-    endif
+	var amt;
+	if(!ReserveItem(ore))
+		return;
+	endif
+	if(!Accessible(who, ore))
+		SendSysMessage(who,"Voce nao alcanca isto.");
+		return;
+	endif
 
-    if (!GetObjProperty(ore, "ingType"))
-      SendSysMessage(who,"Voce nao pode derreter isto.");
-      return;
-    endif
+	if (!GetObjProperty(ore, "ingType"))
+		SendSysMessage(who,"Voce nao pode derreter isto.");
+		return;
+	endif
 
-    if (ore.objtype == 0x5101) //se for uma liga, transgorma ela e ingot
-      PlaySoundEffect(who, 0x2c);
-      sleep(2);
-      PlaySoundEffect(who, 0x22);
-      sleep(4);
-      var ingot := GetObjProperty(ore, "ingType");
-      var amt := GetObjProperty(ore, "size");
-      if(DestroyItem(ore))
-         if(SkillCheck(who, GATHERING, 20, 0))
-           SendSysMessage(who, "Voce conseguiu derreter e aproveitar parte do material.", FONT_NORMAL, 90 );
-           SetObjProperty(item, "numMetal", 1);
-           SetObjProperty(item, "oreObj1",ingot);
-           SetObjProperty(item, "amt1", amt);
-           item.color := 0x486;
-         else
-           SendSysMessage(who, "Voce falhou e destruiu o item!", FONT_NORMAL, 40);
-         endif
-         return;
-       endif
-    else
-      var thing, skill;
-      foreach thing in itemlist
-        thing := itemcfg[thing];
-        if (thing.objtype == ore.objtype)
-           skill := CINT(thing.skillv);
-           amt := CINT(thing.size);
-           break;
-        endif
-      endforeach
-            if((!skill) || (!amt))
-        SendSysMessage(who, "Voce nao pode derreter isto.", FONT_NORMAL, 40);
-        return;
-      endif
-      amt := CInt((amt * GetEffectiveSkill(who,SKILLID_MINING) * 75 ) / 10000);
-      if(amt < 1)
-        amt := 1;
-      endif
-      PlaySoundEffect(who, 0x2c);
-      sleep(2);
-      PlaySoundEffect(who, 0x22);
-      sleep(4);
-      var ingot := GetObjProperty(ore, "ingType");
-      if(DestroyItem(ore))
-         if(CheckSkill(who, SKILLID_BLACKSMITHY, skill, 10))
-           SendSysMessage(who, "Voce conseguiu derreter e aproveitar parte do material.", FONT_NORMAL, 90 );
-           SetObjProperty(item, "numMetal", 1);
-           SetObjProperty(item, "oreObj1",ingot);
-           SetObjProperty(item, "amt1", amt);
-           item.color := 0x486;
-         else
-           SendSysMessage(who, "Voce falhou e destruiu o item!", FONT_NORMAL, 40);
-         endif
-         return;
-       endif
+	if (ore.objtype == 0x5101) //se for uma liga, transgorma ela e ingot
+		PlaySoundEffect(who, 0x2c);
+		sleep(2);
+		PlaySoundEffect(who, 0x22);
+		sleep(4);
+		var ingot := GetObjProperty(ore, "ingType");
+		var amt := GetObjProperty(ore, "size");
+		if(DestroyItem(ore))
+			if(SkillCheck(who, GATHERING, 20, 0))
+			SendSysMessage(who, "Voce conseguiu derreter e aproveitar parte do material.", FONT_NORMAL, 90 );
+			SetObjProperty(item, "numMetal", 1);
+			SetObjProperty(item, "oreObj1",ingot);
+			SetObjProperty(item, "amt1", amt);
+			item.color := 0x486;
+			else
+			SendSysMessage(who, "Voce falhou e destruiu o item!", FONT_NORMAL, 40);
+			endif
+			return;
+		endif
+	else
+		var thing, skill;
+		foreach thing in itemlist
+		thing := itemcfg[thing];
+		if (thing.objtype == ore.objtype)
+			skill := CINT(thing.skillv);
+			amt := CINT(thing.size);
+			break;
+		endif
+		endforeach
+			if((!skill) || (!amt))
+		SendSysMessage(who, "Voce nao pode derreter isto.", FONT_NORMAL, 40);
+		return;
+		endif
+		amt := CInt((amt * GetEffectiveSkill(who,SKILLID_MINING) * 75 ) / 10000);
+		if(amt < 1)
+		amt := 1;
+		endif
+		PlaySoundEffect(who, 0x2c);
+		sleep(2);
+		PlaySoundEffect(who, 0x22);
+		sleep(4);
+		var ingot := GetObjProperty(ore, "ingType");
+		if(DestroyItem(ore))
+			if(CheckSkill(who, SKILLID_BLACKSMITHY, skill, 10))
+			SendSysMessage(who, "Voce conseguiu derreter e aproveitar parte do material.", FONT_NORMAL, 90 );
+			SetObjProperty(item, "numMetal", 1);
+			SetObjProperty(item, "oreObj1",ingot);
+			SetObjProperty(item, "amt1", amt);
+			item.color := 0x486;
+			else
+			SendSysMessage(who, "Voce falhou e destruiu o item!", FONT_NORMAL, 40);
+			endif
+			return;
+		endif
 
-    endif
+	endif
 
 
 endfunction*/
 
 function SmeltOre(who, item, ore)
 
-  if(!ReserveItem(ore))
-    return;
-  endif
-  if(!Accessible(who, ore))
-    SendSysMessage(who,"Voce nao alcanca isto.", FONT_NORMAL, 40);
-    return;
-  endif
+	if(!ReserveItem(ore))
+		return;
+	endif
+	if(!Accessible(who, ore))
+		SendSysMessage(who,"Voce nao alcanca isto.", FONT_NORMAL, 40);
+		return;
+	endif
 
-  var dif := DetermineMiningDifficulty(ore.objtype);
-  var ingot := "";
-  case (ore.objtype) //de acordo com ore no pot indica o ingot certo
-    0x1bdd: dif := 5; ingot := 0x1bde; //carvao
-    0xee36: dif := 5; ingot := 0x1bde; //carvao
-    0xee37: dif := 5; ingot := 0x1bde; //carvao
-    0xee38: dif := 5; ingot := 0x1bde; //carvao
-    0xee39: dif := 5; ingot := 0x1bde; //carvao
-    0xee3a: dif := 5; ingot := 0x1bde; //carvao
-    0xee3b: dif := 5; ingot := 0x1bde; //carvao
-    0xee3c: dif := 5; ingot := 0x1bde; //carvao
-    0xee3d: dif := 5; ingot := 0x1bde; //carvao
-    0xee3e: dif := 5; ingot := 0x1bde; //carvao
-    0xee3f: dif := 5; ingot := 0x1bde; //carvao
+	var dif := DetermineMiningDifficulty(ore.objtype);
+	var ingot := ConvertOreToIngot(ore.objtype);
 
-    0x6075:  dif := 5; ingot := 0x1be3; //vidro
-    0x6450:  ingot := 0x6465; //copper
-    0x6990:  ingot := 0x6991; //estanho
-    0x6300:  ingot := 0x62ff; //ferro -> ferro impuro
-    0x6992:  ingot := 0x6993; //prata
-    0x6305:  ingot := 0x630e; //ouro
-    0x6309:  ingot := 0x6309; //aco
-    0x6995:  ingot := 0x6995; //ligas elementais
-    0x6301:  ingot := 0x630a; //litan
-    0x6314:  ingot := 0x6315; // illyra
-    0x6307:  ingot := 0x6310; //galvorn
-    0x6308:  ingot := 0x6311; //mithril
-    0x6303:  ingot := 0x630c; //venetium
-    0x6451:  ingot := 0x6460; //frigutium
-    0x6304:  ingot := 0x630d; //ignium
-    0x6302:  ingot := 0x630b; //fulmetium
+	if (!ingot)
+		SendSysMessageEx(who,"Voce nao pode derreter isto.", FONT_NORMAL, 40);
+		return 1;
+	endif
 
-    //esses ultimos nao estao sendo usados.
-    0x6312:  ingot := 0x6313; //ario
-    0x6452:  ingot := 0x6460; //gomril
-    0x6306:  ingot := 0x630f; //durang
+	if (GetObjProperty(item, "numMetal"))
+		var num := CINT(GetObjProperty(item, "amt1"));
+		var nummetal := Cint(GetObjProperty(item, "numMetal"));
 
-    0x1bde:  ingot := 0x1bde;
-
-    default: SendSysMessage(who,"Voce nao pode derreter isto.", FONT_NORMAL, 40); return 1;
-  endcase
-
-
-  if (GetObjProperty(item, "numMetal"))
-     var num := CINT(GetObjProperty(item, "amt1"));
-     var nummetal := Cint(GetObjProperty(item, "numMetal"));
-     if (num != ore.amount)
-        SendSysMessage(who, "Voce precisa colocar " + num + " minerios aqui.", FONT_NORMAL, 40);
-        return;
-     endif
-     if(SkillCheck(who, GATHERING, dif, 0) > 0)
-        SendSysMessage(who, "Voce fez a fusao entre os metais.", FONT_NORMAL, 90);
-        PlaySoundEffect(who, 0x22);
-        sleep(4);
-        SetObjProperty(item, "numMetal", nummetal+1);
-        SetObjProperty(item, "amt"+(nummetal+1), ore.amount);
-        SetObjProperty(item, "oreObj"+(nummetal+1), ingot);
-        DestroyItem(ore);
-     else
-          var perdamt := RandomInt(3)+1;
-          if (perdamt > ore.amount)
-            perdamt := ore.amount;
-          endif
-          SubtractAmount(ore, perdamt);
-	        SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
-          return;
-    endif
-  else
-     if(SkillCheck(who, GATHERING, dif, ((dif / 2) + 10)) > 0)
-        SendSysMessage(who, "Voce derreteu o minerio e retirou as impurezas.", FONT_NORMAL, 90);
-        PlaySoundEffect(who, 0x22);
-        sleep(4);
-        item.color := 0x486;
-        SetObjProperty(item, "numMetal", 1);
-        SetObjProperty(item, "oreObj1", ingot);
-        SetObjProperty(item, "amt1", ore.amount);
-        DestroyItem(ore);
-     else
-          var perdamt := RandomInt(3)+1;
-          if (perdamt > ore.amount)
-            perdamt := ore.amount;
-          endif
-          SubtractAmount(ore, perdamt);
-	        SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
-          return;
-    endif
-
-  endif
-
-
+		if (GetObjProperty(item, "oreObj1") == ConvertOreToIngot(ore.objtype))
+			if (!GetObjProperty(item, "oreObj2"))
+				SendSysMessageEx(who, "Você adicionou mais do mesmo minério.", FONT_NORMAL, 90);
+				PlaySoundEffect(who, 0x22);
+				Sleep(4);
+				var amt := CInt(GetObjProperty(item, "amt1"));
+				amt += ore.amount;
+				SetObjProperty(item, "amt1", amt);
+				DebugMsg(who, DEBUG_NAME_SMELTING, "Agora tem " + amt);
+				DestroyItem(ore);
+			else
+				SendSysMessageEx(who, "Resfrie a liga atual antes de tentar fazer uma nova com essa combinação.", FONT_NORMAL, 40);
+				return;
+			endif
+		else
+			if (num != ore.amount)
+				SendSysMessageEx(who, "Voce precisa colocar " + num + " minerios aqui.", FONT_NORMAL, 40);
+				return;
+			endif
+			if(SkillCheck(who, GATHERING, dif, 0) > 0)
+				SendSysMessageEx(who, "Voce fez a fusao entre os metais.", FONT_NORMAL, 90);
+				PlaySoundEffect(who, 0x22);
+				Sleep(4);
+				SetObjProperty(item, "numMetal", nummetal+1);
+				SetObjProperty(item, "amt"+(nummetal+1), ore.amount);
+				SetObjProperty(item, "oreObj"+(nummetal+1), ingot);
+				DestroyItem(ore);
+			else
+				var perdamt := RandomInt(3)+1;
+				if (perdamt > ore.amount)
+					perdamt := ore.amount;
+				endif
+				SubtractAmount(ore, perdamt);
+				SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
+				return;
+			endif
+		endif
+	else
+		if(SkillCheck(who, GATHERING, dif, ((dif / 2) + 10)) > 0)
+			SendSysMessage(who, "Voce derreteu o minerio e retirou as impurezas.", FONT_NORMAL, 90);
+			PlaySoundEffect(who, 0x22);
+			sleep(4);
+			item.color := 0x486;
+			SetObjProperty(item, "numMetal", 1);
+			SetObjProperty(item, "oreObj1", ingot);
+			SetObjProperty(item, "amt1", ore.amount);
+			DestroyItem(ore);
+		else
+			var perdamt := RandomInt(3)+1;
+			if (perdamt > ore.amount)
+				perdamt := ore.amount;
+			endif
+			SubtractAmount(ore, perdamt);
+			SendSysMessage(who, "Voce perdeu parte dos minerios.", FONT_NORMAL, 40);
+			return;
+		endif
+	endif
 endfunction

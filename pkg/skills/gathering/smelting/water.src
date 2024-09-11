@@ -61,7 +61,6 @@ function EsfriarLiga(user, item)
         CreateItemInBackpack(user, ingot, amt);
         SendSysMessage(user, ""+TemHabilidade(user, "Tesouro do Lixo"));
         if (TemHabilidade(user, "Tesouro do Lixo"))
-          SendSysMessage(user, "DEBUG: ENTROU!");
           smeltaImpurezasRaras(user, amt);
         endif
       endif

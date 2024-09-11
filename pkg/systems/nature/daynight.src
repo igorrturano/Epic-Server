@@ -17,7 +17,7 @@ program daynightsystem()
 	var transspeed := cint(config.transspeed);
 	
 	var i;
-	while(true)
+	while(1)
 		var daylength := CInt(config.daylength) * 60;
 		var fullDay := daylength*2;
 		var nightlength;

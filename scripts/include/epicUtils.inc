@@ -49,3 +49,17 @@ function isFemale(who)
 
     return 0;
 endfunction
+
+function join( a_array, delimiter )
+  var result := "";
+  var size := a_array.size();
+
+  for i := 0 to size - 1
+    result += a_array[i];
+    if ( i < size - 1 )
+      result += delimiter;
+    endif
+  endfor
+
+  return result;
+endfunction
