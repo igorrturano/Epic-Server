@@ -557,3 +557,61 @@ function CheckLoop(who, tool, my_x, my_y, my_facing)
 		return 1;
 	endif
 endfunction
+
+function ConvertOreToIngot(ore)
+	case (ore) //de acordo com ore no pot indica o ingot certo
+		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 0x1bde; //carvao
+
+		0x6075: return 0x1be3; //vidro
+		0x6450: return 0x6465; //copper
+		0x6990: return 0x6991; //estanho
+		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x6992: return 0x6993; //prata
+		0x6305: return 0x630e; //ouro
+		0x6309: return 0x6309; //aco
+		0x6995: return 0x6995; //ligas elementais
+		0x6301: return 0x630a; //litan
+		0x6314: return 0x6315; //illyra
+		0x6307: return 0x6310; //galvorn
+		0x6308: return 0x6311; //mithril
+		0x6303: return 0x630c; //venetium
+		0x6451: return 0x6460; //frigutium
+		0x6304: return 0x630d; //ignium
+		0x6302: return 0x630b; //fulmetium
+
+		//esses ultimos nao estao sendo usados.
+		0x6312: return 0x6313; //ario
+		0x6452: return 0x6460; //gomril
+		0x6306: return 0x630f; //durang
+
+		0x1bde: return 0x1bde;
+
+		default: return 0;
+	endcase
+endfunction
+
+/*
+ * Retorna um array de struct com o valor de todos os minérios do shard
+ * Ex.: var ores := getAllOres();
+ */
+function getAllOres()
+	return array{
+		toStruct("Minério de Ferro", "Ingot de Ferro", 0x6300),
+		toStruct("Minério de Prata", "Ingot de Prata", 0x6992),
+		toStruct("Minério de Ouro", "Ingot de Ouro", 0x6305),
+		toStruct("Minério de Aço", "Ingot de Aço", 0x6309),
+		toStruct("Minério de Litan", "Ingot de Litan", 0x6301),
+		toStruct("Minério de Illyra", "Ingot de Illyra", 0x6314),
+		toStruct("Minério de Galvorn", "Ingot de Galvorn", 0x6307),
+		toStruct("Minério de Mithril", "Ingot de Mithril", 0x6308)
+	};
+endfunction
+
+function toStruct(oreName, ingotName, objType)
+	return struct{
+		"oreName" := oreName, 
+		"ingotName" := ingotName,
+		"oreObjType" := objType,
+		"ingotObjType" := ConvertOreToIngot(objType)
+	};
+endfunction
