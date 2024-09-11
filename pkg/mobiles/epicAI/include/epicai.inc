@@ -16,38 +16,83 @@ function InitializeEpicNPC(mobile)
     var elem := FindConfigElem(npccfgfile, mytemplate);
     var sounds := GetConfigStringArray(elem, "IdleSound");
 
-    var throwinfo := struct;
-    if (npc_elem.throwItem != error)
-        npcThrower(mobile, throwinfo, npc_elem);
-    endif
-
-    setupAnchorNPC(mobile);
-    setupChampspawnNPC(mobile);
-    var has_colors := npc_elem.colors;
-    if(has_colors)
-        setupNPCColor(mobile, has_colors);
-    endif
-    setupNPCBackPack(mobile);
-    SetupNPCEquip(mobile, npc_elem);
-    setupNPCGender(mobile);
-
     var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
     if ((isDarknessCreature) && !InDarkness(mobile))
         ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
     endif
 
+    setupAnchorNPC(mobile);
+    setupChampspawnNPC(mobile);
+    setupNPCBackPack(mobile);
+    GenerateRecipeLoot(mobile);
+    SetupAmmo(mobile, npccfgfile);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
         Loot_Generate(mobile.backpack, loot);
     endif
 
-    GenerateRecipeLoot(mobile);
-    SetupAmmo(mobile, npccfgfile);
+    var throwinfo := struct;
+    if (npc_elem.throwItem != error)
+        npcThrower(throwinfo, npc_elem);
+    endif
 
-    SetObjProperty(npc, "linguas_conhecidas", {"Comum"});
-    SetObjProperty(npc, "lingua_escolhida", "Comum");
-    
+    // Type-specific initialization
+    case (brain_type)
+        "monster":  InitializeMonsterNPC(mobile, npc_elem, elem, sounds);
+        "animal":   InitializeAnimalNPC(mobile, npc_elem, elem, sounds);
+        "humanoid": InitializeHumanoidNPC(mobile, npc_elem, elem, sounds);
+        default:    InitializeGenericNPC(mobile, npc_elem, elem, sounds);
+    endcase
+
     SetObjProperty(mobile, "started", 1);
+endfunction
+
+function InitializeMonsterNPC(mobile, npc_elem, elem, sounds)
+    var has_colors := npc_elem.colors;
+    if (has_colors)
+        setupNPCColor(mobile, has_colors);
+    endif
+
+    // Monstros falam uma língua específica
+    var known_languages := SplitWords(npc_elem.Languages);
+    var chosen_language := known_languages[RandomInt(Len(known_languages)) + 1];
+    SetObjProperty(mobile, "linguas_conhecidas", known_languages);
+    SetObjProperty(mobile, "lingua_escolhida", chosen_language);
+
+    // Add any other monster-specific setup here
+endfunction
+
+function InitializeAnimalNPC(mobile, npc_elem, elem, sounds)
+    var has_colors := npc_elem.colors;
+    if (has_colors)
+        setupNPCColor(mobile, has_colors);
+    endif
+
+    SetupAnimalGender(mobile, npc_elem);
+    SetupAnimalCriticalHit(mobile, npc_elem);
+
+    // Animal-specific initialization
+endfunction
+
+function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
+    var has_colors := npc_elem.colors;
+    if (has_colors)
+        setupNPCColor(mobile, has_colors);
+    endif
+
+    setupNPCGender(mobile);
+    SetupNPCEquip(mobile, npc_elem);
+
+    // Humanoid-specific initialization
+    SetObjProperty(mobile, "linguas_conhecidas", {"Comum"});
+    SetObjProperty(mobile, "lingua_escolhida", "Comum");
+
+    // Add any other humanoid-specific setup here
+endfunction
+
+function InitializeGenericNPC(mobile, npc_elem, elem, sounds)
+   // Chamar o initializeNPC do ghaia para fazer uma migração não destrutiva, mesmo que
+   // eu deva só adicionar mobs que eu tenha criado
 endfunction
 
 function SetupAmmo(mobile, npccfgfile)
@@ -231,7 +276,7 @@ function setupChampspawnNPC(mobile)
     endif
 endfunction
 
-function npcThrower(mob, throwinfo, npc_elem)
+function npcThrower(throwinfo, npc_elem)
     var shouldCreateItemInFloor := npc_elem.createItemInFloor;
     throwinfo.+canthrow := 1;
     throwinfo.+misssound := CInt(npc_elem.throwMiss);
@@ -247,61 +292,6 @@ function npcThrower(mob, throwinfo, npc_elem)
     else
         throwinfo.+createItemInFloor := 1;
     endif
-endfunction
-
-function customizeNpc(mob)
-	var npc_elem := NPC_GetNPCConfig(mob);
-
-	var Hits := npc_elem.HITS;
-	var classe := npc_elem.Classe;
-	var tier := npc_elem.Tier;
-    var npc_wrestling := npc_elem.WRESTLING;
-    var npc_tactics := npc_elem.TACTICS;
-
-    var calculate_level_hp := Cint(npc_wrestling + npc_tactics - 80);
-
-	var hp := 25;
-	if (classe == SABIO)
-		hp := 15;
-	elseif (classe == LADINO)
-		hp := 20;
-	endif
-
-	var hitsmod := GetObjProperty(mob, "hitsmod");
-	if (!hitsmod)
-		hitsmod := 0;
-	endif
-    if ((calculate_level_hp / 6) >= 1 )
-        var new_hp := 0;
-        var multiplier := Cint((calculate_level_hp / 6));
-        if (classe == GUERREIRO)
-            new_hp := 10 * multiplier;
-        elseif (classe == LADINO)
-            new_hp := 8 * multiplier;
-        else
-            new_hp := 6 * multiplier;
-        endif
-        hp += Cint(new_hp);
-    endif
-
-	SetObjProperty(mob, "hitsmod", hitsmod + hp);
-
-	RecalcVitals(mob);
-    HealDamage(mob, hitsmod + hp);
-
-	var mob_skill := 0;
-	if (tier == 1)
-		mob_skill += RandomIntMinMax(20, 40);
-	elseif (tier == 2)
-		mob_skill += RandomIntMinMax(40, 60);
-	elseif (tier == 3)
-		mob_skill += RandomIntMinMax(60, 80);
-	endif
-    var tactics := RandomIntMinMax(tier * 20, tier * 30);
-
-	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
-	AP_SetTrueSkill(mob, TACTICS, tactics);
-
 endfunction
 
 function ParseTemplateName(template_name)

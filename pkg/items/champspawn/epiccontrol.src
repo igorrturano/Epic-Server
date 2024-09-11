@@ -7,6 +7,7 @@ const RESPAWN_DELAY := 120 * 3600; // 2 horas
 
 include "champaltar";
 include ":tn:boss";
+include "include/epicNPCUtils";
 
 program control(altar)
     while (GetObjProperty(altar, "config") == error)
