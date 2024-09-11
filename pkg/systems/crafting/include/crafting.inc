@@ -1,3 +1,6 @@
+//TODO: [IMPLEMENTS] Ao craftar item excepcional, fazer com que precise de têmpera
+	//TODO: Permitir criar item com o Ferro Impuro, com 50% de efetividade (pensar se faz isso com os demais)
+
 use polsys;
 use datafile;
 
