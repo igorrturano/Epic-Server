@@ -27,7 +27,7 @@ function LogPlayerSpeech( who, text )
 
   // Formato do diretório baseado na data atual
   var today := StrFormatTime("%d-%m-%Y", POLCore().systime);
-  var log_dir := "data/log/players/{}".format( today );
+  var log_dir := "::data/log/players/{}".format( today );
 
   if ( !FileExists( log_dir ) )
     var dir := CreateDirectory( log_dir );
