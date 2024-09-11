@@ -15,12 +15,18 @@ use uo;
 use os;
 
 include "include/client";
-include ":gathering:smelting/smelt";
 include ":fls_core:fls_crafting";
 include ":attributes:attributes";
 include ":itemutils:objtype";
 include ":gathering:mining";
 include ":commands:debugsystem";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 395;
+const GUMP_HEIGHT := 565;
 
 program smelt_that_ore (who, item)
 	EraseObjProperty(who, "IsMeditating");
@@ -30,7 +36,10 @@ program smelt_that_ore (who, item)
 		return;
 	endif
 
-	SendSysMessage(who, "O que voce deseja fazer com isto?");
+	OpenSmeltGump(who);
+
+
+	/* SendSysMessage(who, "O que voce deseja fazer com isto?");
 	var use_on := Target(who, TGTOPT_CHECK_LOS);
 	if(!use_on)
 		SendSysMessage(who, "Cancelado.");
@@ -66,7 +75,7 @@ program smelt_that_ore (who, item)
 		//  SmeltItem(who, item, use_on);
 	else
 		SendSysMessage(who,"Voce nao pode derreter isto.");
-	endif
+	endif */
 endprogram
 
 /*function SmeltItem(who, item, ore)
@@ -237,4 +246,35 @@ function SmeltOre(who, item, ore)
 			return;
 		endif
 	endif
+endfunction
+
+
+function OpenSmeltGump(who)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+	GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
+	GFResizePic(gump, 15, 42, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
+	GFAddMoldura(gump, GUMP_WIDTH, GUMP_HEIGHT);
+
+	GFTextMid(gump, 60, 20, 300, 53, "Menu de Smelting");
+	var ores := getAllOres();
+	var x := 20;
+	var x2 := x + 30;
+	var x3 := x2 + 60;
+	var y := 60;
+	foreach ore in ores
+		GFAddButton(gump, x, y, 2151, 2154, GF_DUMMY_BTN, 1);
+		GFTilePic(gump, x2, y - 5, 0x19B9);
+		GFTextLine(gump, x3, y + 5, 300, ore.oreName);
+		y += 50;
+	endforeach
+
+	while (1)
+		var input := GFSendGump(who, gump);
+		if (input[0] == 0)
+			break;
+		endif
+	endwhile
+
 endfunction
