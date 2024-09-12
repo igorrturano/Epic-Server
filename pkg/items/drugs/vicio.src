@@ -2,45 +2,84 @@ use uo;
 use os;
 use util;
 
+include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/say";
 
-program Hunger(chr)
-	if( chr.cmdlevel >= 2 )
-		return 0;
-	endif
-	
-	if ( GetObjProperty(chr, "#vicioMod") )
-		// Condition is met if the mobile logs out and back in.
-		// Prevents mod from being applied twice.
-		return 0;
-	endif
+program Hunger(who)
 
-	var vicio;
-	while( chr )
-		vicio := CInt(AP_GetVital(chr, "Vicio") / 17280);
+	var vicio_str := AP_GetVital(who, "Viciostr");
+	var debuff_abstinencia_str := AP_GetTrueStat(who, STRENGTH)/4;
+	while( who )
 
-		if (vicio <= 1)
-			if((GetObjProperty(chr, "ultimouso") + 3000000) < polcore().systime)
-				SendSysMessageEx(chr, "Voce sente os efeitos da abstinencia.",  SSM_INFO);
-				var penalidadevicio := GetObjProperty(chr, "penalidadevicio");
-				SetObjProperty(chr, "penalidadevicio", penalidadevicio - 10);
-				var viciomod := GetObjProperty(chr, "#viciomod");
-				SetObjProperty(chr, "#viciomod", viciomod + 1);
-				AP_ModifyStatMod(chr, STRENGTH, penalidadevicio);
-				AP_ModifyStatMod(chr, DEXTERITY, penalidadevicio);
+		if (vicio_str <= 40)
+			if (cint(GetObjProperty(who, "ultimastr")) + 3600 < readgameclock())
+				if (!TS_GetTimerInfo(who, "abstinencia_str"))
+					SendSysMessageEx(who, "Você sente os efeitos da abstinência.",  SSM_INFO);
+					TS_StartTimer(who, "abstinencia_str", 1, debuff_abstinencia_str);
+				endif
+			else
+				if(TS_GetTimerInfo(who, "abstinencia_str"))
+					SendSysMessageEx(who, "Você saciou sua abstinência.",  SSM_INFO);
+					TS_LowerDuration(who, "abstinencia_str", 1);
+				endif
 			endif
-		elseif (vicio < 5 )
-			SendSysMessageEx(chr, "Seu corpo esta razoavelmente limpo de substancias",  SSM_INFO);
-			var penalidadevicio := SetObjProperty(chr, "penalidadevicio", 0);
-			AP_ModifyStatMod(chr, STRENGTH, penalidadevicio);
-			AP_ModifyStatMod(chr, DEXTERITY, penalidadevicio);
-			EraseObjProperty(chr, "#viciomod");
+		elseif (vicio_str > 40 && TS_GetTimerInfo(who, "abstinencia_str"))
+			SendSysMessageEx(who, "Você não sente mais os efeitos da abstinência.",  SSM_INFO);
+			TS_LowerDuration(who, "abstinencia_str", 1);
 		endif
 
-		RecalcVitals(chr);
+		RecalcVitals(who);
+		sleep(5);
+	endwhile
 
-		Sleep(60 * 600); //10 horas
-		EraseObjProperty(chr, "#viciomod");
+	var vicio_dex := AP_GetVital(who, "Viciodex");
+	var debuff_abstinencia_dex := AP_GetTrueStat(who, DEXTERITY)/4;
+	while( who )
+
+		if (vicio_dex <= 40)
+			if (cint(GetObjProperty(who, "ultimadex")) + 3600 < readgameclock())
+				if (!TS_GetTimerInfo(who, "abstinencia_dex"))
+					SendSysMessageEx(who, "Você sente os efeitos da abstinência.",  SSM_INFO);
+					TS_StartTimer(who, "abstinencia_dex", 1, debuff_abstinencia_dex);
+				endif
+			else
+				if(TS_GetTimerInfo(who, "abstinencia_dex"))
+					SendSysMessageEx(who, "Você saciou sua abstinência.",  SSM_INFO);
+					TS_LowerDuration(who, "abstinencia_dex", 1);
+				endif
+			endif
+		elseif (vicio_dex > 40 && TS_GetTimerInfo(who, "abstinencia_dex"))
+			SendSysMessageEx(who, "Você não sente mais os efeitos da abstinência.",  SSM_INFO);
+			TS_LowerDuration(who, "abstinencia_dex", 1);
+		endif
+
+		RecalcVitals(who);
+		sleep(5);
+	endwhile
+
+	var vicio_int := AP_GetVital(who, "Vicioint");
+	var debuff_abstinencia_int := AP_GetTrueStat(who, INTELLIGENCE)/4;
+	while( who )
+		
+		if (vicio_int <= 40)
+			if (cint(GetObjProperty(who, "ultimaint")) + 3600 < readgameclock())
+				if (!TS_GetTimerInfo(who, "abstinencia_int"))
+					SendSysMessageEx(who, "Você sente os efeitos da abstinência.",  SSM_INFO);
+					TS_StartTimer(who, "abstinencia_int", 1, debuff_abstinencia_int);
+				endif
+			else
+				if(TS_GetTimerInfo(who, "abstinencia_int"))
+					SendSysMessageEx(who, "Você saciou sua abstinência.",  SSM_INFO);
+					TS_LowerDuration(who, "abstinencia_int", 1);
+				endif
+			endif
+		elseif (vicio_int > 40 && TS_GetTimerInfo(who, "abstinencia_int"))
+			SendSysMessageEx(who, "Você não sente mais os efeitos da abstinência.",  SSM_INFO);
+			TS_LowerDuration(who, "abstinencia_int", 1);
+		endif
+
+		RecalcVitals(who);
+		sleep(5);
 	endwhile
 endprogram
