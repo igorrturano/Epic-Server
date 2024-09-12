@@ -51,7 +51,6 @@ function InDarkness(who)
     var diaounoite := GetGlobalProperty("dia");
 
     if ((diaounoite == "dia" && !InDungeon(who)))
-        SendSysMessage(who, "Voce nao esta na escuridao");
         return 0;
     endif
 
