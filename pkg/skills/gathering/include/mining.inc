@@ -597,21 +597,21 @@ endfunction
 function getAllOres()
 	return array{
 		toStruct("Minério de Ferro", "Ingot de Ferro", 0x6300),
-		toStruct("Minério de Prata", "Ingot de Prata", 0x6992),
-		toStruct("Minério de Ouro", "Ingot de Ouro", 0x6305),
-		toStruct("Minério de Aço", "Ingot de Aço", 0x6309),
-		toStruct("Minério de Litan", "Ingot de Litan", 0x6301),
-		toStruct("Minério de Illyra", "Ingot de Illyra", 0x6314),
-		toStruct("Minério de Galvorn", "Ingot de Galvorn", 0x6307),
-		toStruct("Minério de Mithril", "Ingot de Mithril", 0x6308)
+		toStruct("Minério de Prata", "Ingot de Prata", 0x6992, 2326),
+		toStruct("Minério de Ouro", "Ingot de Ouro", 0x6305, 2598),
+		toStruct("Minério de Aço", "Ingot de Aço", 0x6309, 2599),
+		toStruct("Minério de Litan", "Ingot de Litan", 0x6301, 1801),
+		toStruct("Minério de Illyra", "Ingot de Illyra", 0x6314, 2278),
+		toStruct("Minério de Mithril", "Ingot de Mithril", 0x6308, 2448)
 	};
 endfunction
 
-function toStruct(oreName, ingotName, objType)
+function toStruct(oreName, ingotName, objType, color := 0)
 	return struct{
 		"oreName" := oreName, 
 		"ingotName" := ingotName,
 		"oreObjType" := objType,
-		"ingotObjType" := ConvertOreToIngot(objType)
+		"ingotObjType" := ConvertOreToIngot(objType),
+		"color" := color
 	};
 endfunction
