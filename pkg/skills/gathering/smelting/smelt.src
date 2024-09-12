@@ -23,11 +23,6 @@ include ":commands:debugsystem";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 
-const GUMP_BACKGROUND := 39929;
-const INTERNAL_BACKGROUND := 9350;
-const GUMP_WIDTH := 395;
-const GUMP_HEIGHT := 565;
-
 program smelt_that_ore (who, item)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
@@ -250,24 +245,39 @@ endfunction
 
 
 function OpenSmeltGump(who)
-	var gump := GFCreateGump();
-	GFClosable(gump, 1);
-    GFDisposable(gump, 0);
-	GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
-	GFResizePic(gump, 15, 42, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
-	GFAddMoldura(gump, GUMP_WIDTH, GUMP_HEIGHT);
+	var GUMP_WIDTH := 395;
+	var GUMP_HEIGHT := 565;
+	var GUMP_BACKGROUND := 39929;
+	var INTERNAL_BACKGROUND := 9350;
+	var gump := GFECreateGump(400, 565, GUMP_BACKGROUND, "Menu de Smelting");
 
-	GFTextMid(gump, 60, 20, 300, 53, "Menu de Smelting");
 	var ores := getAllOres();
+	//TODO: Varrer a bag do player checando se tem cada material do ores e a quantidade. Setando os valores já na box do material
+		//TODO: Se tiver só Ferro, aparece o Ferro Impuro
+		//TODO: Se tiver Ferro e Carvão aparece o Ferro Temperado
+	
+	var bag := EnumerateItemsInContainer(who.backpack);
+	var oresInBag := array{};
+	foreach item in bag
+		foreach ore in ores
+			if (item.objtype in oresInBag)
+			elseif (item.objtype == ore.oreObjType)
+				oresInBag.append(ore);
+			endif
+		endforeach
+	endforeach
+
 	var x := 20;
 	var x2 := x + 30;
 	var x3 := x2 + 60;
-	var y := 60;
-	foreach ore in ores
-		GFAddButton(gump, x, y, 2151, 2154, GF_DUMMY_BTN, 1);
-		GFTilePic(gump, x2, y - 5, 0x19B9);
+	var y := 120;
+	var y_space := 50;
+
+	foreach ore in oresInBag
+		GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, 1);
+		GFTilePic(gump, x2, y - 5, 0x19B9, ore.color);
 		GFTextLine(gump, x3, y + 5, 300, ore.oreName);
-		y += 50;
+		y += y_space;
 	endforeach
 
 	while (1)
