@@ -258,16 +258,15 @@ function OpenSmeltGump(who)
 	
 	var bag := EnumerateItemsInContainer(who.backpack);
 	var oresInBag := array{};
-	foreach item in bag
-		foreach ore in ores
-			if (item.objtype in oresInBag)
-			elseif (item.objtype == ore.oreObjType)
+	foreach ore in ores
+		foreach item in bag
+			if (item.objtype == ore.oreObjType && !(item.objtype in bag))
 				oresInBag.append(ore);
 			endif
 		endforeach
 	endforeach
 
-	var x := 20;
+	var x := 30;
 	var x2 := x + 30;
 	var x3 := x2 + 60;
 	var y := 120;
