@@ -19,7 +19,11 @@ program drink_blue (who, potion)
 	if(!checkifcandrink(who, "blue"))
 		return;
 	endif
-
+	var vicio := (AP_getvital(who, "Viciodex"));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
 	var bonus := GetObjProperty (potion, "bonus");
 	var tier := getObjProperty(potion, "tier");
 	var stat := AP_GetTrueStat(who, DEXTERITY);
@@ -27,8 +31,10 @@ program drink_blue (who, potion)
 		tier := (tier + 2);
 	endif
 	var buff := 0.05 * tier;
-		buff := stat*buff+bonus;
+		buff := (stat*buff+bonus)*vicio;
 
 	TS_StartTimer(who, "agility", (180*tier), buff);
 	empty_bottle(who, potion);
+
+	VicioDex(who,potion);
 endprogram
