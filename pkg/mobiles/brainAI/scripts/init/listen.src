@@ -1,0 +1,211 @@
+use uo;
+use os;
+use util;
+
+//listen -- Todos os NPCs com "AIScript	Listen :brainAI:scripts/init/listen" atribuido, vão "ouvir"
+
+include ":brainAI:eventid";
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":containers:storageAreas";
+include ":containers:containers";
+include ":fls_core:tax";
+include "include/sysEvent";
+include ":brainAI:eventid";
+
+// Inicializar ou obter a variável global gossip_storage
+var gossip_storage := GetGlobalProperty("gossip_storage");
+if (!gossip_storage)
+    gossip_storage := array{};
+    SetGlobalProperty("gossip_storage", gossip_storage);
+endif
+
+function OpenAICompletion(systemMessage, questions)
+	print("systemMessage");
+	print(systemMessage);
+
+	var formatedQuestions := array{ struct{
+		"role" := "system",
+		"content" := systemMessage
+	} };
+
+	foreach question in questions
+		if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
+			return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
+		endif
+
+		if (question.exists("assistant"))
+			formatedQuestions.append(struct{
+				"role" := "assistant",
+				"content" := question["assistant"]
+			});
+		endif
+
+		if (question.exists("user"))
+			formatedQuestions.append(struct{
+				"role" := "user",
+				"content" := question["user"]
+			});
+		endif
+	endforeach
+
+	var apiURL := "https://api.openai.com/v1/chat/completions";
+	var method := "POST";
+	var jsonData := PackJSON(struct{
+		"model" := "gpt-4o-mini",
+		"messages" := formatedQuestions
+	});
+
+	var apiResponse := HTTPRequest(
+			apiURL,
+			method,
+			struct{
+				data := jsonData,
+				headers := struct{
+				"Content-Type" := "application/json",
+				"Authorization" := "Bearer {1}".format(GetEnvironmentVariable("OPENAI_KEY"))
+				}
+			}
+		);
+	var unpackedJSON := UnpackJSON(apiResponse);
+	return unpackedJSON["choices"][1]["message"]["content"];
+endfunction
+
+program BrainNerve(params)
+	
+	var npc		:= params[1];
+	//var nerve_name:= params[2];
+	var event	:= params[3];
+	//var settings	:= params[4];
+	//var scripts	:= params[5];
+	params := 0; // Not needed anymore.
+
+	while ( npc )
+		if ( event )
+			case ( event.type )
+				SYSEVENT_SPEECH:
+					SpeechEvent(npc, event);
+					break;
+				default:
+					break;
+			endcase
+
+			event := 0;
+		endif
+
+		sleepms(5);
+		event := wait_for_event(100000);
+	endwhile
+endprogram
+
+// Função para adicionar fofocas ao armazenamento global
+function add_gossip(gossip)
+    if (gossip != "")
+        // Obtém o array de fofocas globalmente armazenado
+        gossip_storage := GetGlobalProperty("gossip_storage");
+        gossip_storage.append(gossip);  // Adiciona fofoca ao array global
+
+        // Atualiza o array global após a modificação
+        SetGlobalProperty("gossip_storage", gossip_storage);
+        print("Fofoca adicionada: " + gossip);
+    else
+        print("Fofoca vazia, nada adicionado.");
+    endif
+endfunction
+
+// Função para obter uma fofoca aleatória
+// Função para obter uma fofoca aleatória
+function get_random_gossip()
+    // Obtém o array de fofocas globalmente armazenado
+    gossip_storage := GetGlobalProperty("gossip_storage");
+    
+    print("gossip_storage");
+    print(gossip_storage);  // Verifique se as fofocas foram armazenadas
+
+    if (gossip_storage.size() == 0)
+        return "Ainda não ouvi nenhuma fofoca...";
+    endif
+    
+    var random_index := RandomInt(gossip_storage.size()) + 1; // RandomInt vai de 1 até o tamanho da lista
+    return gossip_storage[random_index];  // Subtrai 1 para obter o índice correto (baseado em 0)
+endfunction
+
+function SpeechEvent(npc, byref event)
+	var text := Lower(event.text);
+	var source := event.source;
+
+	if ( source.IsA(POLCLASS_NPC) )
+		// Remember - NPCs can send speech events now.
+		return 0;
+	elseif ( !CheckLineOfSight(npc, event.source) )
+		// No line of sight - ignore speech.
+		return 0;
+	endif
+
+
+	if ( text != ". . .")
+		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
+		var sourceDescription := GetObjProperty(event.source, "descricao");
+		print(npc.npctemplate);
+		if (npc.npctemplate == ":merchants:rumorAI")
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao consigo te ouvir");
+				return 0;
+			endif
+
+			AI_Turn(npc, source, NETURN_TOWARD);
+			var systemMessage := "Você é um fofoqueiro de taverna medieval de um jogo de RPG. Você receberá uma informação de uma notícia ou fofoca. Você reproduz a fofoca na taverna como deseja. Máximo de 50 caracteres.";	
+			var questions := array{ struct{ "user" := text } };
+
+			var responseText := OpenAICompletion(systemMessage, questions);
+			
+			add_gossip(responseText);
+			
+			AI_Speak(npc, responseText); // usa a responsa do modelo
+
+		elseif (npc.npctemplate == ":merchants:rumorAIRepro")
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao consigo te ouvir");
+				return 0;
+			endif
+
+			var randomGossip := get_random_gossip();  // Obtém uma fofoca aleatória
+			AI_Turn(npc, source, NETURN_TOWARD);
+			var systemMessage := "Você é um fofoqueiro de taverna medieval de um jogo de RPG. Essas são as fofocas que você conhece: " + randomGossip  + " . Você reproduz uma fofoca na taverna como deseja. Máximo de 50 caracteres.";	
+			var questions := array{ struct{ "user" := text } };
+			
+			var responseText := OpenAICompletion(systemMessage, questions);
+			
+			AI_Speak(npc, responseText); // usa a responsa do modelo
+			
+			print("randomGossip");
+			print(randomGossip);
+
+		elseif (npc.npctemplate == ":brainai:guardafaccaoAI")
+			
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao te ouço tão longe, aproxime-se, cidadão");
+				return 0;
+			endif
+
+			AI_Turn(npc, source, NETURN_TOWARD);
+
+			var lore := "Região dos povos Aiglanos: Gentilíco: aiglanos ou povo áquilo em referência a sua capital famosa no auge do Império, Aquileia. Bandeira: Uma águia dourada num fundo  vermelho. Antes uma águia de 3 cabeças,  com a ascenção de Crassus virou uma águia segurando uma coroa de louros, que significa “Aigla seleciona os capazes”. Os aiglanos são um povo astuto, carecem de preconceitos em relação aos outros povos e raças. São bastante inclusivistas, por conta dessa assunção com os forasteiros, são possivelmente o povo mais mestiço de Eora. Seu tom de pele pode variar do negro até o branco, seus cabelos podem ser crespos ou lisos, sua altura também é variada, entre 1,60m até os 1,80 para os homens mais altos. Gostam de registrar tudo o que fazem, pois acreditam no poder da história. Um outro hábito curioso sobre eles é que fazem do exercício físico, um hábito. Dificilmente alguém não admira a disciplina de um aiglano; Origem/Passado: Um povo que possivelmente sempre flertou com a própria sorte. Numa região onde muitos fracassaram, os homens do império prosperaram. Cercados por inimigos de todos os lados, sempre foram assaltados e saqueados, sofrendo muitas baixas. Antes deles, todos desistiram e deixaram o local que era bastante vulnerável. Porém, eles aprenderam com suas fraquezas e se remodelaram, muitas vezes copiando táticas e costumes dos inimigos. Começaram como um pequeno vilarejo, sofriam bastante agressões, então construíram muros e aprenderam muitas táticas defensivas de batalha. Conforme o tempo passava, os costumes e tradições foram se moldando. Os cidadãos já cresciam com o intuito de servir seu povo e era praticamente mandatório um aiglano ter treinamento militar. Eram um pequeno reinado, mas esse sistema político era muito fechado para um povo cheio de ideiais e vitórias. Seu último rei, Blasius, foi assassinado para que desse vez a uma nova era, a República de Aigla. A cor roxa deu lugar ao vermelho e, criaram um sacerdócio que utilizaria a cor antiga com a simbologia de que as tradições e rituais deveriam ser mantidos, assim a plebe não sentiria o cheiro de golpe. Senadores ascenderam, homens e mulheres das mais alta sociedade, instruídos o suficiente para votar e decidir as novas diretrizes da República. Os senadores indicavam 2 cônsules para regerem a república e o sacerdócio indicava um líder religioso, chamado pontífice para que pudesse ser um mediador em discordâncias extenuantes. A república durou séculos, até a sua dissolução pelo primeiro Imperador Crassus. Curiosamente é com a queda da república que os aiglanos adquirem um período de maior bonança, muito em conta das habilidades militares e de governo de Crassus, que aliada a sua ausência de piedade fizeram com que o Império Aiglano se tornasse um poderio continental. A legião foi reestruturada para que em vez de somente homens de Aigla pudessem servir, qualquer um poderia ingressar, aumentando bastante suas fileiras. Também estruturou as legiões para que pudessem carregar cerca de 40kg cada um, com pás, suprimentos e engenhocas que seriam utilizadas para montar acampamentos, tornando suas legiões ainda mais rápidas já que não precisariam enviar engenheiros desprotegidos à frente. Em suas reformas ainda criou uma espécie de salários aos legionários que antes lutavam apenas por glória e espólios. Homens pobres agora tinham uma chance de ascenderem e os que viviam o suficiente para se aposentarem ainda eram presenteados com terras, reduzindo drasticamente as chances de rebelião.";
+			var systemMessage := "Você é um guarda medieval de RPG. O aventureiro que fala com você é um " + sourceRaca + " com descrição " + sourceDescription + ". Lore do ambiente é: " + lore + ". Responda com um máximo de 80 caracteres.";
+			
+			var questions := array{ struct{ "user" := text } };
+
+			var responseText := OpenAICompletion(systemMessage, questions);
+			AI_Speak(npc, responseText); // usa a responsa do modelo
+
+		endif
+		
+		//passando a fofoca
+
+
+	endif
+	return 1;
+endfunction
