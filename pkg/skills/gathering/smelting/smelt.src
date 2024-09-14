@@ -20,6 +20,7 @@ include ":attributes:attributes";
 include ":itemutils:objtype";
 include ":gathering:mining";
 include ":gathering:smelting/water";
+include ":gathering:smelting/smelt";
 include ":commands:debugsystem";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
@@ -32,7 +33,7 @@ program smelt_that_ore (who, item)
 		return;
 	endif
 
-	OpenSmeltGump(who);
+	OpenSmeltGump(who, item);
 
 
 	/* SendSysMessage(who, "O que voce deseja fazer com isto?");
@@ -244,8 +245,7 @@ function SmeltOre(who, item, ore)
 	endif
 endfunction
 
-
-function OpenSmeltGump(who)
+function OpenSmeltGump(who, item)
 	var GUMP_WIDTH := 395;
 	var GUMP_HEIGHT := 565;
 	var GUMP_BACKGROUND := 39929;
@@ -253,76 +253,79 @@ function OpenSmeltGump(who)
 	var gump := GFECreateGump(400, 565, GUMP_BACKGROUND, "Menu de Smelting");
 
 	var ores := getAllOres();
-	var oresInBag := array{};
+	//var ableToSmelt := array{};
+	var ableToSmelt := Dictionary{};
 	var bag := EnumerateItemsInContainer(who.backpack);
 	foreach ore in ores
 		foreach item in bag
 			if (item.objtype == ore.oreObjType && item.objtype in ore.neededToCraft)
-				oresInBag.append(struct{"item" := item, "ore" := ore});
+				ableToSmelt[ore.oreType] := struct{"item" := item, "ore" := ore};
 			endif
 		endforeach
 	endforeach
 
-	//TODO: Varrer a bag do player checando se tem cada material do ores e a quantidade. Setando os valores já na box do material
 		//TODO: Se tiver só Ferro, aparece o Ferro Impuro
 		//TODO: Se tiver Ferro e Carvão aparece o Ferro Temperado
 		//TODO: Verificar se o player tem a skill necessária (adicionar no getAllOres())
 		//TODO: Verificar se a liga completa está na bag
-		//TODO: Pegar a menor quantidade do minério e jogar na textbox (editável)
 	var x := 30;
 	var y := 120;
 	var y_space := 50;
-	var btnInput := 100;
-	var tBoxInput := 1000;
-	foreach ore in oresInBag
-		GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnInput);
+	var btnID := 100;
+	var tBoxAmt := Dictionary{};
+	var options := array{};
+	foreach ore in ableToSmelt
+		GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
 		GFTilePic(gump, x + 30, y, 0x1BF4, ore.ore.color);
-		GFTextLine(gump, x + 90, y + 5, 300, ore.ore.oreName);
-		GFEAddTextBox(gump, x + 200, y, 30, 15, COLOR_YELLOW, ore.item.amount, tBoxInput, 4);
+		GFTextLine(gump, x + 90, y + 5, 300, ore.ore.ingotName);
+		tBoxAmt[ore.ore.oreType] := GFEAddTextBox(gump, x + 200, y, 30, 15, COLOR_YELLOW, ore.item.amount, 0, 4);
+		options.append(struct{
+			"btnID" := btnID,
+			"oreType" := ore.ore.oreType
+			});
 		y += y_space;
-		btnInput++;
-		tBoxInput++;
+		btnID++;
 	endforeach
 
-	//TODO: Ao clicar pra craftar, pegar a quantidade da textbox e tentar fazer a liga
+	var input, amt, choice, toSmelt;
 	while (1)
-		var input := GFSendGump(who, gump);
+		input := GFSendGump(who, gump);
 		if (input[0] == 1)
 			return;
-		elseif (input[0] == 100)
-			//TODO: Chamar função de derreter
-			print("derrete 1");
-			break;
-		elseif (input[0] == 101)
-			//TODO: Chamar função de derreter
-			print("derrete 2");
-			break;
-		elseif (input[0] == 102)
-			//TODO: Chamar função de derreter
-			print("derrete 3");
+		else
+			foreach option in options
+				if (input[0] == option.btnID)
+					amt := GFExtractData(input, tBoxAmt[option.oreType]);
+					choice := option.oreType;
+					toSmelt := ableToSmelt[option.oreType].item;
+					DebugMsg(who, DEBUG_NAME_SMELTING, "Derrete: " + option.oreType);
+					DebugMsg(who, DEBUG_NAME_SMELTING, "Quantidade: " + amt);
+				endif
+			endforeach
 			break;
 		endif
 	endwhile
 
 	if (CheckForWater(who))
-		//TODO: Se for Mithril verificar SoulForge
-		//if (escolha == ores.oreObjtType)
+		if (choice == ORE_MITHRIL) //Se for Mithril verificar SoulForge
 			if (CheckForSoulForge(who))
-				//DERRETER
+				SmeltOre(who, item, toSmelt); //TODO: Passar a quantidade específica pra craftar
+				SleepMS(500);
+				EsfriarLiga(who, item);
 			else
-				SendSysMessage(who, "Voce precisa estar perto da Forja das Almas para usar este item.");
-				DebugMsg(who, DEBUG_NAME_SMELTING, "Tem SOULFORGE perto!");
+				SendSysMessageEx(who, "Você precisa estar perto da Forja das Almas para usar este item.", SSM_FAIL);
 				return;
 			endif
-		//TODO: Qualquer outro, pode ser qualquer forja
-		//else
+		else //Qualquer outro, pode ser qualquer forja
 			if(CheckForForge(who))
-				//DERRETER
+				SmeltOre(who, item, toSmelt);
+				SleepMS(500);
+				EsfriarLiga(who, item);
 			else
-				SendSysMessage(who, "Voce precisa estar perto da forja para usar este item.");
+				SendSysMessageEx(who, "Você precisa estar perto da forja para usar este item.", SSM_FAIL);
 				return;
 			endif
-		//endif
+		endif
 	else
 		SendSysMessageEx(who, "Nenhuma fonte de água próxima encontrada.", SSM_FAIL);
 	endif

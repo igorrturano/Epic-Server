@@ -595,14 +595,14 @@ endfunction
  */
 function getAllOres()
 	return array{
-		toStruct("Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
-		toStruct("Minério de Ferro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x6300}),
-		toStruct("Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
-		toStruct("Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598),
-		toStruct("Minério de Aço", "Ingot de Aço", 0x6309, {}, 2599),
-		toStruct("Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
-		toStruct("Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
-		toStruct("Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448)
+		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
+		toStruct(ORE_IRON_TEMP, "Minério de Ferro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
+		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
+		toStruct(ORE_GOLD, "Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598),
+		toStruct(ORE_STEEL, "Minério de Aço", "Ingot de Aço", 0x6309, {}, 2599),
+		toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
+		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
+		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448)
 	};
 endfunction
 
@@ -615,7 +615,7 @@ endfunction
  * neededToCraft: Array com os objType dos demais minérios necessários pra fazer o ingot (em caso de liga)
  * color: Cor do metal
  */
-function toStruct(oreName, ingotName, objType, othersOresNeeded := "", color := 0)
+function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", color := 0)
 	var neededToCraft := array{};
 	neededToCraft.append(objType);
 
@@ -626,6 +626,7 @@ function toStruct(oreName, ingotName, objType, othersOresNeeded := "", color := 
 	endif
 
 	return struct{
+		"oreType" := oreType,
 		"oreName" := oreName, 
 		"ingotName" := ingotName,
 		"oreObjType" := objType,
@@ -634,3 +635,14 @@ function toStruct(oreName, ingotName, objType, othersOresNeeded := "", color := 
 		"color" := color
 	};
 endfunction
+
+enum ORE
+	ORE_IRON := "ORE_IRON",
+	ORE_IRON_TEMP := "ORE_IRON_TEMP",
+	ORE_SILVER := "ORE_SILVER",
+	ORE_GOLD := "ORE_GOLD",
+	ORE_STEEL := "ORE_STEEL",
+	ORE_LITAN := "ORE_LITAN",
+	ORE_ILLYRA := "ORE_ILLYRA",
+	ORE_MITHRIL := "ORE_MITHRIL"
+endenum
