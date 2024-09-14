@@ -537,7 +537,6 @@ function SetResource(resource_type, byref elem, amount)
 	elem.setprop( resource_type, CStr(amount) );
 endfunction
 
-
 function CheckLoop(who, tool, my_x, my_y, my_facing)
 	if ( who.hidden )
 		SendSysMessage(who, "Voce parou de minerar para ficar escondido.");
@@ -596,22 +595,42 @@ endfunction
  */
 function getAllOres()
 	return array{
-		toStruct("Minério de Ferro", "Ingot de Ferro", 0x6300),
-		toStruct("Minério de Prata", "Ingot de Prata", 0x6992, 2326),
-		toStruct("Minério de Ouro", "Ingot de Ouro", 0x6305, 2598),
-		toStruct("Minério de Aço", "Ingot de Aço", 0x6309, 2599),
-		toStruct("Minério de Litan", "Ingot de Litan", 0x6301, 1801),
-		toStruct("Minério de Illyra", "Ingot de Illyra", 0x6314, 2278),
-		toStruct("Minério de Mithril", "Ingot de Mithril", 0x6308, 2448)
+		toStruct("Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
+		toStruct("Minério de Ferro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x6300}),
+		toStruct("Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
+		toStruct("Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598),
+		toStruct("Minério de Aço", "Ingot de Aço", 0x6309, {}, 2599),
+		toStruct("Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
+		toStruct("Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
+		toStruct("Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448)
 	};
 endfunction
 
-function toStruct(oreName, ingotName, objType, color := 0)
+/* 
+ * Parameters
+ *
+ * oreName: Nome do minério bruto
+ * ingotName: Nome da barra do minério
+ * objType: ObjType do minério
+ * neededToCraft: Array com os objType dos demais minérios necessários pra fazer o ingot (em caso de liga)
+ * color: Cor do metal
+ */
+function toStruct(oreName, ingotName, objType, othersOresNeeded := "", color := 0)
+	var neededToCraft := array{};
+	neededToCraft.append(objType);
+
+	if (Len(othersOresNeeded) > 0)
+		foreach ore in othersOresNeeded
+			neededToCraft.append(ore);
+		endforeach
+	endif
+
 	return struct{
 		"oreName" := oreName, 
 		"ingotName" := ingotName,
 		"oreObjType" := objType,
 		"ingotObjType" := ConvertOreToIngot(objType),
+		"neededToCraft" := neededToCraft,
 		"color" := color
 	};
 endfunction
