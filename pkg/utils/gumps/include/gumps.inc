@@ -1040,5 +1040,6 @@ endfunction
 
 function GFEAddTextBox(byref gump, x, y, width, height, text_color, default_text := 0, id := 0, maxlenght := 0)
 	GFResizePic(gump, x, y, GFGetCfgConst("BackGrounds", "GOLDTRIM"), width + 10, height + 15);
-	GFTextEntry(gump, x + 6, y + 6, width, height, text_color, default_text, id, maxlenght);
+	var val := GFTextEntry(gump, x + 6, y + 6, width, height, text_color, default_text, id, maxlenght);
+	return val;
 endfunction
