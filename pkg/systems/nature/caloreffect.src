@@ -73,6 +73,10 @@ program calor(params)
                 dif := dif - 2;
             endif
 
+            if ( TemHabilidade(who, "Kani no Sutairu"))
+                dif := dif - 2;
+            endif
+
             var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/20);
             dif := dif - survivalBonus;
 
