@@ -565,6 +565,7 @@ function ConvertOreToIngot(ore)
 		0x6450: return 0x6465; //copper
 		0x6990: return 0x6991; //estanho
 		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x62ff: return 0x6996; //ferro impuro -> ferro temperado
 		0x6992: return 0x6993; //prata
 		0x6305: return 0x630e; //ouro
 		0x6309: return 0x6309; //aco
@@ -602,7 +603,8 @@ function getAllOres()
 		toStruct(ORE_STEEL, "Minério de Aço", "Ingot de Aço", 0x6309, {}, 2599),
 		toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
 		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
-		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448)
+		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0x1bdd)
 	};
 endfunction
 
@@ -624,6 +626,7 @@ function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", 
 			neededToCraft.append(ore);
 		endforeach
 	endif
+	print("needed: "+neededToCraft);
 
 	return struct{
 		"oreType" := oreType,
@@ -637,6 +640,7 @@ function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", 
 endfunction
 
 enum ORE
+	ORE_CHARCOAL := "ORE_CHARCOAL",
 	ORE_IRON := "ORE_IRON",
 	ORE_IRON_TEMP := "ORE_IRON_TEMP",
 	ORE_SILVER := "ORE_SILVER",
