@@ -1,0 +1,908 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+include "include/arrays";
+include "include/packets";
+include ":fls_core:fls_chargumps_ex";
+include "include/math";
+//include ":fls_core:config/skincolors";
+
+// No início do arquivo, adicione esta constante:
+const OK_BUTTON := 999;
+
+
+program command_cabelobarba(who, text)
+    print("Iniciando command_cabelobarba para: " + who.name);
+    if (!who.IsA(POLCLASS_MOBILE))
+        print("Erro: not a valid mobile");
+        return 0;
+    endif
+    
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        chardata := struct{};
+        print("Novo chardata criado");
+    endif
+    if (!chardata.raca)
+        chardata.raca := GetObjProperty(who, "raca");
+        if (!chardata.raca)
+            chardata.raca := "humano"; // Valor padrão
+            print("Raça não encontrada, definindo como humano");
+        endif
+    endif
+    print("Raça do personagem: " + chardata.raca);
+    
+    looksGump(who, chardata);
+    return 1;
+endprogram
+
+function looksGump(who, chardata)
+    var updateCounter := 0;
+    print("Iniciando looksGump para: " + who.name);
+
+    var aparencia := struct{
+        "barba" := GetObjProperty(who, "beardstyle"),
+        "cabelo" := 0, // Inicialize como 0 (careca)
+        "corcabelo" := 0,
+        "corbarba" := GetObjProperty(who, "beardcolor"),
+    "corpele" := who.color
+    };
+    
+    // Detecte o cabelo atual
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    if (hair)
+        aparencia.cabelo := hair.objtype;
+        aparencia.corcabelo := hair.color;
+    else
+        // Se não houver cabelo equipado, tente obter das propriedades do personagem
+        aparencia.cabelo := GetObjProperty(who, "hairstyle");
+        aparencia.corcabelo := GetObjProperty(who, "haircolor");
+    endif
+
+     if (!aparencia.cabelo || aparencia.cabelo == error)
+        aparencia.cabelo := 0; // Mantenha como careca se não encontrar
+    endif
+
+    if (!aparencia.corcabelo || aparencia.corcabelo == error)
+        aparencia.corcabelo := 1153; // Cor padrão se não encontrar
+    endif
+
+    if (!aparencia.corbarba || aparencia.corbarba == error)
+        aparencia.corbarba := 1001; // Valor padrão
+    endif
+
+    print("Aparência inicial: " + aparencia);
+
+    if (!aparencia.corbarba || aparencia.corbarba == error)
+        aparencia.corbarba := 1001; // Valor padrão
+        print("Cor da barba não encontrada, definindo valor padrão");
+    endif
+
+    print("Aparência inicial: " + aparencia);
+
+    // Tratamento específico para o cabelo
+    if (!aparencia.cabelo || aparencia.cabelo == error)
+        // Tente obter o cabelo do equipamento
+        var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+        if (hair)
+            aparencia.cabelo := hair.objtype;
+            aparencia.corcabelo := hair.color;
+        else
+            aparencia.cabelo := 0; // Careca como padrão
+            aparencia.corcabelo := 1153; // Cor padrão
+        endif
+        print("Cabelo inicial definido como: " + aparencia.cabelo);
+    endif
+
+    if (!aparencia.corcabelo || aparencia.corcabelo == error)
+        aparencia.corcabelo := 1153; // Cor padrão
+        print("Cor do cabelo não encontrada, definindo valor padrão");
+    endif
+
+
+var config := ReadConfigFile(":fls_core:config/hairtypes");
+var hairConfig := (chardata.raca == "anao" || chardata.raca == "hobbit") ? config["headdwarf"] : config["head"];
+var hairStyles := GetConfigStringArray(hairConfig, "style");
+var currentHairIndex := 0;
+
+    // Encontre o índice do cabelo atual
+    for i := 1 to hairStyles.size()
+        var style := SplitWords(hairStyles[i]);
+        if (CInt(style[2]) == aparencia.cabelo)
+            currentHairIndex := i;
+            break;
+        endif
+    endfor
+
+// Se não encontrou o cabelo atual na lista, defina como o primeiro estilo (após "Escolha seu Cabelo")
+    if (currentHairIndex == 0)
+        currentHairIndex := 1;
+        var firstStyle := SplitWords(hairStyles[1]);
+        aparencia.cabelo := CInt(firstStyle[2]);
+    endif
+
+    var beard := (chardata.raca == "anao") ? config["facialhairdwarf"] : config["facialhair"];
+    var beardStyles := GetConfigStringArray(beard, "style");
+    var currentBeardIndex := 0;
+
+    // Find initial indices based on current appearance
+    for i := 1 to hairStyles.size()
+        var style := SplitWords(hairStyles[i]);
+        if (CInt(style[2]) == aparencia.cabelo)
+            currentHairIndex := i;
+            break;
+        endif
+    endfor
+
+    for i := 1 to beardStyles.size()
+        var style := SplitWords(beardStyles[i]);
+        if (CInt(style[2]) == aparencia.barba)
+            currentBeardIndex := i;
+            break;
+        endif
+    endfor
+
+
+var done := 0;
+    var currentHairStyle, currentBeardStyle;
+    while (!done)
+        var gump := GFCreateGump();
+        GFPage(gump, 0);
+        
+        // Background 1 (Area 3)
+        GFResizePic(gump, 525, 21, 9200, 261, 515);
+        
+        // Image 1 (Body)
+        GFGumpPic(gump, 564, 71, 12, aparencia.corpele);
+        
+        // Image 2 (Hair) - Só renderiza se não for careca
+ // Image 2 (Hair)
+if (aparencia.cabelo != 0)
+    currentHairStyle := SplitWords(hairStyles[currentHairIndex]);
+    var hairGumpGraphic := CInt(currentHairStyle[3]);
+    GFGumpPic(gump, 564, 70, hairGumpGraphic, aparencia.corcabelo);
+else
+    currentHairStyle := array{"escolha seu cabelo", "0", "0"};
+endif
+
+// Image 3 (Beard) - Só renderiza se tiver barba e for homem
+if (aparencia.barba != 0 && who.gender == 0)
+    currentBeardStyle := SplitWords(beardStyles[currentBeardIndex]);
+    var beardGumpGraphic := CInt(currentBeardStyle[3]);
+    GFGumpPic(gump, 565, 71, beardGumpGraphic, aparencia.corbarba);
+else
+    currentBeardStyle := array{"escolha sua barba", "0", "0"};
+endif
+        
+        // Background 2 (Area 1)
+        GFResizePic(gump, 12, 272, 9200, 247, 262);
+        
+        // Background for Area 2 (adjusted to be smaller)
+        GFResizePic(gump, 270, 21, 9200, 248, 515);
+        
+        // Text Entries and Buttons for Area 1
+        GFTextEntry(gump, 83, 390, 91, 20, aparencia.corcabelo, currentHairStyle[1], 1);
+        GFTextEntry(gump, 78, 457, 91, 20, aparencia.corbarba, who.gender == 0 ? currentBeardStyle[1] : "N/A", 2);
+        GFTextEntry(gump, 78, 492, 91, 20, aparencia.corpele, "cor de pele", 3);
+        GFTextEntry(gump, 80, 417, 91, 20, aparencia.corcabelo, "cor do cabelo", 4);
+        
+       // GFAddButton(gump, 58, 390, 5603, 5607, GF_CLOSE_BTN, 1);  // Previous Hair
+        GFAddButton(gump, 182, 390, 5601, 5601, GF_CLOSE_BTN, 2);  // Next Hair
+       // GFAddButton(gump, 55, 457, 5603, 5607, GF_CLOSE_BTN, 3);  // Previous Beard
+        GFAddButton(gump, 172, 458, 5601, 5601, GF_CLOSE_BTN, 4);  // Next Beard
+       // GFAddButton(gump, 59, 420, 5603, 5607, GF_CLOSE_BTN, 5);  // Previous Hair Color
+        GFAddButton(gump, 183, 421, 5601, 5601, GF_CLOSE_BTN, 6);  // Next Hair Color
+        //GFAddButton(gump, 57, 493, 5603, 5607, GF_CLOSE_BTN, 7);  // Previous Skin Color
+        GFAddButton(gump, 176, 495, 5601, 5601, GF_CLOSE_BTN, 8);  // Next Skin Color
+        
+        // Avatar area in Area 1
+        GFResizePic(gump, 13, 21, 9200, 250, 235);
+        GFTextEntry(gump, 115, 25, 55, 20, 2100, "Avatar", 5);
+        GFTextEntry(gump, 32, 281, 200, 22, 2100, "Se você tiver uma figura do seu ", 6);
+        GFTextEntry(gump, 34, 303, 213, 20, 2100, "avatar 200x200, escreva ", 7);
+        GFTextEntry(gump, 34, 323, 200, 20, 2100, "abaixo o endereço web", 8);
+        GFHTMLArea(gump, 28, 348, 218, 21, "HtmlElement", 1, 1);
+        
+        // Confirm Button
+        GFAddButton(gump, 717, 495, 2128, 248, GF_CLOSE_BTN, 999);
+
+       var input := GFSendGump(who, gump);
+        print("Input recebido: " + input[0]);
+
+       case (input[0])
+            2: // Hair Style
+                currentHairIndex := RenderHairStylesInArea2(who, gump, hairStyles, currentHairIndex);
+                if (currentHairIndex != 1) // Não é "Escolha seu Cabelo"
+                    aparencia.cabelo := CInt(SplitWords(hairStyles[currentHairIndex])[2]);
+                endif
+            4: // Beard Style (male only)
+                if (who.gender == 0)
+                    currentBeardIndex := RenderBeardStylesInArea2(who, gump, beardStyles, currentBeardIndex);
+                    if (currentBeardIndex != 1) // Não é "Escolha sua Barba"
+                        aparencia.barba := CInt(SplitWords(beardStyles[currentBeardIndex])[2]);
+                    else
+                        aparencia.barba := 0; // Sem barba
+                    endif
+                endif
+            6: // Hair Color
+                aparencia.corcabelo := RenderHairColorsInArea2(who, gump, chardata.raca, aparencia.corcabelo);
+            8: // Skin Color
+                aparencia.corpele := RenderSkinColorsInArea2(who, gump, chardata.raca, aparencia.corpele);
+            OK_BUTTON: // Confirm
+                print("Botão Confirmar pressionado");
+                done := 1;
+            default:
+                // Process text entries if needed
+        endcase
+        
+        SendPaperdollUpdate(who, aparencia);
+    endwhile
+
+    print("Saindo do loop de customização");
+    print("Aparência final antes de aplicar: " + aparencia);
+    ApplyFinalAppearance(who, aparencia);
+    
+    chardata.cabelo := aparencia.cabelo;
+    chardata.corcabelo := aparencia.corcabelo;
+    chardata.barba := aparencia.barba;
+    chardata.corbarba := aparencia.corbarba;
+    chardata.corpele := aparencia.corpele;
+    
+    SetObjProperty(who, "chardata", chardata);
+    print("Chardata atualizado: " + chardata);
+    return 1;
+endfunction
+
+function RenderBeardStylesInArea2(who, byref gump, beardStyles, currentIndex)
+    const BEARDS_PER_PAGE := 6;
+    const BEARDS_PER_ROW := 2;
+    
+    // Adicione a opção "Escolha sua Barba" no início da lista
+    beardStyles.insert(1, "Escolha sua Barba 0 0");
+    
+    var pages := Ceil(beardStyles.size() / BEARDS_PER_PAGE);
+    var currentPage := 1;
+
+    while (1)
+        GFResizePic(gump, 270, 21, 9200, 248, 516);
+        GFTextMid(gump, 270, 30, 248, 1153, "Estilos de Barba");
+
+        var start := (currentPage - 1) * BEARDS_PER_PAGE + 1;
+        var end := Min(start + BEARDS_PER_PAGE - 1, beardStyles.size());
+
+        var row := 0;
+        var col := 0;
+        for i := start to end
+            var style := SplitWords(beardStyles[i]);
+            var beardname := style[1];
+            var beardgraphic := CInt(style[2]);
+            var gumppic := CInt(style[3]);
+            
+            var x_pos := 284 + (col * 119);
+            var y_pos := 44 + (row * 141);
+            
+            GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+            GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, beardname, i);
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, 100 + i);
+            
+            if (i != 1) // Não renderize a imagem para a opção "Escolha sua Barba"
+                GFGumpPic(gump, x_pos - 43, y_pos - 25, gumppic, 1153);
+            endif
+            
+            col += 1;
+            if (col >= BEARDS_PER_ROW)
+                col := 0;
+                row += 1;
+            endif
+        endfor
+
+        // Adicionar botões de navegação
+        if (pages > 1)
+            if (currentPage > 1)
+                GFAddButton(gump, 280, 480, 4014, 4016, GF_PAGE_BTN, 1); // Page Up
+            endif
+            if (currentPage < pages)
+                GFAddButton(gump, 450, 480, 4005, 4007, GF_PAGE_BTN, 2); // Page Down
+            endif
+            GFTextMid(gump, 270, 485, 248, 1153, "Página " + currentPage + " de " + pages);
+        endif
+
+        var input := GFSendGump(who, gump);
+        
+        if (input[0] >= 100 && input[0] <= 100 + beardStyles.size())
+            currentIndex := input[0] - 100;
+            // Não feche o gump, apenas atualize o índice
+        elseif (input[0] == 1 && currentPage > 1)
+            currentPage -= 1;
+        elseif (input[0] == 2 && currentPage < pages)
+            currentPage += 1;
+        else
+            break; // Saia do loop apenas se o usuário fechar o gump
+        endif
+    endwhile
+
+    return currentIndex;
+endfunction
+
+function RenderHairStylesInArea2(who, byref gump, hairStyles, currentIndex)
+    const HAIRS_PER_PAGE := 6;
+    const HAIRS_PER_ROW := 2;
+    
+    if (hairStyles[1] != "Escolha seu Cabelo 0 0")
+        hairStyles.insert(1, "Escolha seu Cabelo 0 0");
+    endif
+    
+    var pages := Ceil(hairStyles.size() / HAIRS_PER_PAGE);
+    var currentPage := 1;
+    var errorCount := 0;
+    const MAX_ERRORS := 5;
+
+    // Clear the existing content in Area 2
+    GFResizePic(gump, 270, 21, 9200, 248, 516);
+    GFTextMid(gump, 270, 30, 248, 1153, "Estilos de Cabelo");
+
+    while (errorCount < MAX_ERRORS)
+        var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
+        var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
+
+        var row := 0;
+        var col := 0;
+        for i := start to end
+            var style := SplitWords(hairStyles[i]);
+            var hairname := style[1];
+            var hairgraphic := CInt(style[2]);
+            var gumppic := CInt(style[3]);
+            
+            var x_pos := 284 + (col * 119);
+            var y_pos := 44 + (row * 141);
+            
+            GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+            GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname, i);
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, 100 + i);
+            
+            if (i != 1) // Don't render image for "Choose your Hair" option
+                GFGumpPic(gump, x_pos - 43, y_pos - 25, gumppic, 1153);
+            endif
+            
+            col += 1;
+            if (col >= HAIRS_PER_ROW)
+                col := 0;
+                row += 1;
+            endif
+        endfor
+
+        // Add navigation buttons
+        if (pages > 1)
+            if (currentPage > 1)
+                GFAddButton(gump, 280, 480, 4014, 4016, GF_CLOSE_BTN, 1000); // Page Up
+            endif
+            if (currentPage < pages)
+                GFAddButton(gump, 450, 480, 4005, 4007, GF_CLOSE_BTN, 2000); // Page Down
+            endif
+            GFTextMid(gump, 270, 485, 248, 1153, "Página " + currentPage + " de " + pages);
+        endif
+
+        // Add "Back" button to return to the main gump
+        GFAddButton(gump, 280, 510, 4014, 4016, GF_CLOSE_BTN, 3000); // Back button
+        GFTextLine(gump, 310, 510, 1153, "Voltar");
+
+        var input := GFSendGump(who, gump);
+        
+        if (input == error)
+            print("Erro ao enviar gump: " + input);
+            errorCount += 1;
+            sleep(1);
+            continue;
+        endif
+
+        errorCount := 0; // Reset error count on successful gump send
+
+    if (input[0] >= 100 && input[0] <= 100 + hairStyles.size())
+            currentIndex := input[0] - 100;
+            var selectedStyle := SplitWords(hairStyles[currentIndex]);
+            var newHairID := CInt(selectedStyle[2]);
+            var newHairGumpic := CInt(selectedStyle[3]);
+            
+            // Atualizar a aparência temporária
+            var tempAparencia := struct{
+                "cabelo" := newHairID,
+                "corcabelo" := 1153, // Use a cor atual do cabelo se disponível
+                "barba" := 0, // Mantenha a barba atual se disponível
+                "corbarba" := 0,
+                "corpele" := who.color
+            };
+            
+            // Atualizar o paperdoll fake
+            UpdateFakePaperdoll(gump, who, tempAparencia);
+            
+            // Atualizar o gráfico do cabelo na área principal
+            GFGumpPic(gump, 564, 70, newHairGumpic, tempAparencia.corcabelo);
+        elseif (input[0] == 1000 && currentPage > 1)
+            currentPage -= 1;
+        elseif (input[0] == 2000 && currentPage < pages)
+            currentPage += 1;
+        elseif (input[0] == 3000 || !input[0])
+            break;
+        endif
+
+
+  
+
+        // Clear and redraw the hair selection area for the next iteration
+        GFResizePic(gump, 270, 21, 9200, 248, 516);
+        GFTextMid(gump, 270, 30, 248, 1153, "Estilos de Cabelo");
+    endwhile
+
+    if (errorCount >= MAX_ERRORS)
+        print("Número máximo de erros atingido. Saindo da função.");
+        return currentIndex;
+    endif
+
+    return currentIndex;
+endfunction
+
+function RenderHairColorsInArea2(who, byref gump, raca, currentColor)
+    GFResizePic(gump, 270, 21, 9200, 248, 515);
+    GFTextMid(gump, 270, 30, 248, 1153, "Cores de Cabelo");
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/racas");
+    skin_cfg := skin_cfg[CStr(raca)];
+
+    var y_pos := 60;
+    var x_pos := 280;
+    var buttons := array{};
+    
+    var colors := GetConfigStringArray(skin_cfg, "HairColor");
+    for i := 1 to colors.size()
+        var color := CInt(colors[i]);
+        
+        GFAddButton(gump, x_pos, y_pos, 210, 211, GF_CLOSE_BTN, 300 + i);
+        GFTilePic(gump, x_pos + 20, y_pos, 0x2051, color); // 0x2051 é um tile de cabelo
+        GFTextLine(gump, x_pos + 50, y_pos, color, "Cor " + i);
+        
+        y_pos += 30;
+        if (y_pos > 500)
+            y_pos := 60;
+            x_pos += 100;
+        endif
+        
+        buttons.append(300 + i);
+    endfor
+
+    var input := GFSendGump(who, gump);
+    var selected := input[0] - 300;
+    if (selected > 0 && selected <= colors.size())
+        return CInt(colors[selected]);
+    endif
+    
+    return currentColor;
+endfunction
+function RenderSkinColorsInArea2(who, byref gump, raca, currentColor)
+    GFResizePic(gump, 270, 21, 9200, 248, 515);
+    GFTextMid(gump, 270, 30, 248, 1153, "Cores de Pele");
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not open :fls_core:config/skincolors.cfg -> "+skin_cfg.errortext);
+        return currentColor;
+    endif
+    
+    var cfg_elem;
+    if (raca == "Elfo")
+        cfg_elem := skin_cfg["elfo"];
+    elseif (raca == "Orc")
+        cfg_elem := skin_cfg["orc"];
+    elseif (raca == "Drow")
+        cfg_elem := skin_cfg["drow"];
+    else
+        cfg_elem := skin_cfg["list"];
+    endif
+
+    var y_pos := 60;
+    var x_pos := 280;
+    var col := 0;
+    var row := 0;
+    var page_num := 1;
+    GFPage(gump, page_num);
+    
+    var colors := GetConfigStringArray(cfg_elem, "color");
+    print("Cores de pele para " + raca + ": " + colors);
+
+    for i := 1 to colors.size()
+        var color := CInt(colors[i]);
+        
+        x_pos := 280 + (col * 120);
+        y_pos := 60 + (row * 30);
+        
+        GFRadioButton(gump, x_pos, y_pos, 210, 211, (color == currentColor), color);
+        GFTilePic(gump, x_pos + 20, y_pos, 0x2051, color);
+        GFTextLine(gump, x_pos + 45, y_pos, color, "Cor " + i);
+        
+        col += 1;
+        if (col >= 2)
+            col := 0;
+            row += 1;
+            if (row >= 15)
+                row := 0;
+                if (i < colors.size())
+                    GFAddButton(gump, 485, 480, 0x15E1, 0x15E5, GF_PAGE_BTN, page_num+1);
+                    page_num += 1;
+                    GFPage(gump, page_num);
+                    GFAddButton(gump, 285, 480, 0x15E3, 0x15E7, GF_PAGE_BTN, page_num-1);
+                endif
+            endif
+        endif
+    endfor
+
+    GFAddButton(gump, 280, 510, 4005, 4007, GF_CLOSE_BTN, 1);
+
+    var input := GFSendGump(who, gump);
+    var newColor := currentColor;
+    if (input[0] == 1)
+        foreach key in (input.keys)
+            if (key != 1 && key > 0)
+                newColor := CInt(key);
+                break;
+            endif
+        endforeach
+    endif
+    
+    // Atualizar o fakepaperdoll imediatamente
+    var tempAparencia := struct{
+        "corpele" := newColor,
+        "cabelo" := GetEquipmentByLayer(who, LAYER_HAIR).objtype,
+        "corcabelo" := GetEquipmentByLayer(who, LAYER_HAIR).color,
+        "barba" := GetEquipmentByLayer(who, LAYER_BEARD).objtype,
+        "corbarba" := GetEquipmentByLayer(who, LAYER_BEARD).color
+    };
+    UpdateFakePaperdoll(gump, who, tempAparencia);
+    
+    return newColor;
+endfunction
+
+function GetHairGraphic(hairID)
+    case (hairID)
+        0: return 0;  // Careca
+        50700: return 50700;  // Cabelo curto padrão
+        // Adicione mais casos conforme necessário
+        default: return 50700;  // Retorna o cabelo curto padrão se não encontrar correspondência
+    endcase
+endfunction
+
+function GetBeardGraphic(beardID)
+    case (beardID)
+        0: return 0;  // Sem barba
+        50801: return 50801;  // Barba longa padrão
+        // Adicione mais casos conforme necessário
+        default: return 50801;  // Retorna a barba longa padrão se não encontrar correspondência
+    endcase
+endfunction
+
+function SendPaperdollUpdate(who, aparencia)
+    var packet := CreatePacket(0x22, 8);
+    packet.SetInt8(1, aparencia.cabelo & 0xFF);
+    packet.SetInt8(2, aparencia.barba & 0xFF);
+    packet.SetInt16(3, aparencia.corcabelo);
+    packet.SetInt16(5, aparencia.corbarba);
+    packet.SetInt8(7, aparencia.corpele & 0xFF);
+    SendPacket(who, packet);
+endfunction
+
+function UpdateFakePaperdoll(byref gump, who, aparencia)
+    print("Atualizando paperdoll fake");
+    print("Aparência atual: " + aparencia);
+    
+    // Limpe a área do paperdoll antes de desenhar
+    GFResizePic(gump, 525, 21, 9200, 261, 515);
+    
+    // Desenhe o corpo
+    GFGumpPic(gump, 564, 71, 12, aparencia.corpele);
+    
+    // Desenhe o cabelo apenas se não for careca
+    if (aparencia.cabelo != 0)
+        var hairGumpGraphic := GetHairGumpGraphic(aparencia.cabelo);
+        GFGumpPic(gump, 564, 70, hairGumpGraphic, aparencia.corcabelo);
+    endif
+    
+    // Desenhe a barba apenas se houver barba e for homem
+    if (aparencia.barba != 0 && who.gender == 0)
+        var beardGumpGraphic := GetBeardGumpGraphic(aparencia.barba);
+        GFGumpPic(gump, 565, 71, beardGumpGraphic, aparencia.corbarba);
+    endif
+    
+    print("Paperdoll fake atualizado");
+
+endfunction
+
+function GetHairGumpGraphic(hairID)
+    case (hairID)
+        0: return 0; // Careca
+        8252: return 50701; // Long_Hair
+        8265: return 50902; // Braids
+        8253: return 50702; // Pony_Tail
+        8263: return 50900; // Afro
+        8261: return 50710; // Pageboy
+        8262: return 50712; // Buns
+        8251: return 50700; // Short_Hair
+        8266: return 50903; // Top_Knot
+        8264: return 50901; // Receeding
+        8260: return 50703; // Mohawk
+        12223: return 50916; // Mid_Long
+        12224: return 50917; // Long_Feather
+        12225: return 50918; // Short
+        12226: return 50919; // Mullet
+        12236: return 50890; // Flower
+        12238: return 50892; // Big_Knob
+        12239: return 50893; // Big_Braid
+        12240: return 50894; // Big_Bun
+        12241: return 50895; // Spiked
+        41380: return 51447; // Bedhead
+        41381: return 50900; // Afro (duplicado, usando o mesmo gráfico)
+        41382: return 51449; // Monge
+        41383: return 51450; // Topete
+        41388: return 51455; // LongBraid
+        41389: return 51456; // Dread
+        41390: return 51457; // Pigtail
+        41391: return 51458; // Leia
+        41392: return 51459; // Franja
+        41393: return 51460; // Spikes
+        41394: return 51461; // Longo2
+        41395: return 51462; // Longo3
+        41396: return 51463; // Side
+        41397: return 51464; // Wavy
+        41398: return 51465; // Braids2
+        41399: return 51466; // NeckWrap
+        51629: return 52175; // MoicanoDeLado
+        51630: return 52176; // MoicanoAlto
+        51631: return 52177; // MoicanoLongo
+        51632: return 52178; // TopknotForte
+        51633: return 52179; // cabeloplantalongo
+        51634: return 52180; // cabeloplantacurto
+        51635: return 52181; // cabeloplantagalho
+        51636: return 52182; // calvaocrialongo
+        51637: return 52183; // calvaocriacurto
+        51638: return 52184; // cabeloplantachifverd
+        51639: return 52185; // CoqueLongo
+        51640: return 52186; // CoqueCurto
+        51641: return 52187; // CoqueLivre
+        51642: return 52188; // CoqueTrabalhado
+        51643: return 52189; // CoqueLateral1
+        51644: return 52190; // CoqueLateral2
+        51645: return 52191; // CoqueSamurai1
+        51646: return 52192; // CoqueSamurai2
+        51647: return 52193; // CoqueSamurai3
+        51648: return 52194; // CoqueSamurai4
+        51649: return 52195; // coque1
+        51650: return 52196; // coque2
+        51651: return 52197; // coque3
+        51652: return 52198; // coque4
+        51653: return 52199; // coque5
+        51654: return 52200; // coque6
+        51655: return 52201; // coque7
+        51656: return 52202; // coque8
+        51657: return 52203; // coque9
+        51658: return 52204; // coque10
+        51659: return 52205; // coque11
+        51660: return 52206; // CoqueLongo2
+        51661: return 52207; // CoqueLongo3
+        51662: return 52208; // Coquelongo4
+        51663: return 52209; // CoqueLongo5
+        51664: return 52210; // CoqueLongo6
+        51665: return 52211; // CoqueLongo7
+        51666: return 52212; // CoqueLongo8
+        51667: return 52213; // CoqueLongo9
+        default: return 50700; // Gráfico padrão (Short_Hair)
+    endcase
+endfunction
+
+function GetBeardGumpGraphic(beardID)
+    // Atualize esta função com os valores corretos para o seu jogo
+    case (beardID)
+        0: return 0; // Sem barba
+        8254: return 3500; // Substitua 3500 pelo valor correto para este estilo
+        8255: return 3501; // Substitua 3501 pelo valor correto para este estilo
+        // Adicione mais casos conforme necessário
+        default: return 3500; // Gráfico padrão
+    endcase
+endfunction
+
+
+function GetHairOffset(graphic)
+    return struct{ "x" := 0, "y" := 0 };  // Valores ajustados para teste
+endfunction
+
+function GetBeardOffset(graphic)
+    return struct{ "x" := 0, "y" := 0 };  // Valores ajustados para teste
+endfunction
+
+function ApplyFinalAppearance(who, aparencia)
+    print("Aplicando aparência final para: " + who.name);
+    print("Aparência final: " + aparencia);
+    
+who.color := aparencia.corpele;
+who.truecolor := aparencia.corpele;
+
+    var mybarba := GetEquipmentByLayer(who, LAYER_BEARD);
+    if (mybarba)
+        print("Removendo barba existente");
+        DestroyItem(mybarba);
+    endif
+    if (aparencia.barba != 0)
+        print("Criando nova barba: " + aparencia.barba);
+        var newbarba := CreateItemAtLocation(who.x, who.y, who.z, aparencia.barba, 1, who.realm);
+        newbarba.color := aparencia.corbarba;
+        EquipItem(who, newbarba);
+    endif
+
+    var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
+    if (myhair)
+        print("Removendo cabelo existente");
+        DestroyItem(myhair);
+    endif
+    if (aparencia.cabelo != 0)
+        print("Criando novo cabelo: " + aparencia.cabelo);
+        var newhair := CreateItemAtLocation(who.x, who.y, who.z, aparencia.cabelo, 1, who.realm);
+        newhair.color := aparencia.corcabelo;
+        EquipItem(who, newhair);
+    endif
+
+    SetObjProperty(who, "beardstyle", aparencia.barba);
+    SetObjProperty(who, "beardcolor", aparencia.corbarba);
+    SetObjProperty(who, "haircolor", aparencia.cabelo | aparencia.corcabelo);
+    print("Propriedades do personagem atualizadas");
+    SendPaperdollUpdate(who, aparencia);
+endfunction
+
+function escolheCorCabelo(who, byref aparencia, cor_inicial, raca, tipo)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 3600, 300, 420);
+    GFResizePic(gump, 15, 15, 0x13BE, 270, 390);
+
+    GFTextMid(gump, 15, 25, 270, 1890, "Escolha a Cor do Cabelo");
+    GFAddButton(gump, 220, 370, 2128, 2129, 1, 999);  // OK button
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/racas");
+    skin_cfg := skin_cfg[CStr(raca)];
+
+    var y_pos := 60;
+    var x_pos := 20;
+    var place := 1;
+    foreach color in GetConfigStringArray(skin_cfg, "HairColor")
+        color := CInt(color);
+        GFRadioButton(gump, x_pos, y_pos, 9727, 9730, (color == aparencia.corcabelo), color);
+        GFTextline(gump, x_pos+35, y_pos+5, color-1, "Hair");
+
+        if (place < 3)
+            x_pos += 80;
+            place += 1;
+        else
+            place := 1;
+            x_pos := 20;
+            y_pos += 30;
+        endif
+    endforeach
+
+    var input := GFSendGump(who, gump);
+    if (input[0] == 999)  // OK button
+        foreach key in (input.keys)
+            if (key != 999 && key > 0)
+                aparencia.corcabelo := key;
+                return key;
+            endif
+        endforeach
+    endif
+    return aparencia.corcabelo;
+endfunction
+
+function escolherBarba(who, byref aparencia, direction := 0)
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := (GetObjProperty(who, "raca") == "anao") ? config["facialhairdwarf"] : config["facialhair"];
+    var styles := GetConfigStringArray(hair, "style");
+    
+    var currentIndex := 1;
+    for i := 1 to styles.size()
+        if (CInt(SplitWords(styles[i])[2]) == aparencia.barba)
+            currentIndex := i;
+            break;
+        endif
+    endfor
+    
+    if (direction < 0)
+        currentIndex := (currentIndex > 1) ? currentIndex - 1 : styles.size();
+    elseif (direction > 0)
+        currentIndex := (currentIndex < styles.size()) ? currentIndex + 1 : 1;
+    endif
+    
+    return CInt(SplitWords(styles[currentIndex])[2]);
+endfunction
+
+function CustomSkinGump(who, byref aparencia, raca, tipo)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 3600, 300, 420);
+    GFResizePic(gump, 15, 15, 0x13BE, 270, 390);
+
+    GFTextMid(gump, 15, 25, 270, 1890, "Escolha a Cor de Pele");
+    GFAddButton(gump, 220, 370, 2128, 2129, 1, 999);  // OK button
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/racas");
+    skin_cfg := skin_cfg[CStr(raca)];
+
+    var y_pos := 60;
+    var x_pos := 20;
+    var place := 1;
+    foreach color in GetConfigStringArray(skin_cfg, "SkinColor")
+        color := CInt(color);
+        GFRadioButton(gump, x_pos, y_pos, 9727, 9730, (color == aparencia.corpele), color);
+        GFTextline(gump, x_pos+35, y_pos+5, color-1, "Skin");
+
+        if (place < 3)
+            x_pos += 80;
+            place += 1;
+        else
+            place := 1;
+            x_pos := 20;
+            y_pos += 30;
+        endif
+    endforeach
+
+    var input := GFSendGump(who, gump);
+    if (input[0] == 999)  // OK button
+        foreach key in (input.keys)
+            if (key != 999 && key > 0)
+                aparencia.corpele := key;
+                return key;
+            endif
+        endforeach
+    endif
+    return aparencia.corpele;
+endfunction
+
+function GetPaperdollBackground(graphic)
+    print("GetPaperdollBackground chamado com graphic: " + graphic);
+    var result := 0x0E10; // Valor padrão
+    case (graphic)
+        400:  result := 0x0E10; // Male
+        401:  result := 0x0E10; // Female
+        1828: result := 0x0E10; // Anão F
+        1829: result := 0x0E10; // Anão M
+        1830: result := 0x0E10; // Elfo M
+        1831: result := 0x0E10; // Elfo F
+        1832: result := 0x0E10; // Orc M
+        1833: result := 0x0E10; // Orc F
+    endcase
+    print("GetPaperdollBackground retornando: " + result);
+    return result;
+endfunction
+
+function GetBodyGump(graphic)
+    print("GetBodyGump chamado com graphic: " + graphic);
+    var result := 12; // Valor padrão para masculino humano
+    case (graphic)
+        400:  result := 12;    // Male
+        401:  result := 13;    // Female
+        1828: result := 12;    // Anão F
+        1829: result := 13;    // Anão M
+        1830: result := 54539; // Elfo M
+        1831: result := 54540; // Elfo F
+        1832: result := 54535; // Orc M
+        1833: result := 54536; // Orc F
+    endcase
+    print("GetBodyGump retornando: " + result);
+    return result;
+endfunction
+
+function GetEquipmentPosition(item)
+    case (item.layer)
+        LAYER_SHIRT:    return struct{"x" := 10, "y" := 50};
+        LAYER_PANTS:    return struct{"x" := 10, "y" := 100};
+        LAYER_SHOES:    return struct{"x" := 10, "y" := 150};
+        // Add more layers and positions as needed
+        default: return struct{"x" := 0, "y" := 0};
+    endcase
+endfunction
