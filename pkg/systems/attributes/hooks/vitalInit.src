@@ -8,6 +8,7 @@ include ":timedscripts:timedScripts";
 include ":food:include/hunger";
 include ":attributes:skills";
 
+
 program Install()
 	print("INSTALLING: Exported Vital - RegenRate and MaxValue functions ...");
 	return 1;
@@ -267,18 +268,13 @@ exported function GetSkillCapMaximumValue(mobile)
     return 100*100;
 endfunction
 
-exported function GetVicioRegenRate(mobile)
-	var base_regen := CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 100;
+exported function GetVicioPotRegenRate(mobile)
+	var base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 14) + (cint(mobile.lower_reagent_cost_mod));
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "vicio");
-
-	if ((GetObjProperty(mobile, "#ultimouso") + 3000000 > polcore().systime) && (!mobile.npctemplate)  ) // Nao regenera se tiver usado no ultimo dia
-		return 0;
-	endif
 
 	return regen;
 endfunction
 
-exported function GetVicioMaximumValue(mobile)
-	return 86400*100;
+exported function GetViciopotMaximumValue(mobile)
+	return 100*100;
 endfunction
-

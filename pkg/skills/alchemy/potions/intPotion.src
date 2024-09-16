@@ -20,6 +20,11 @@ program drink_blue (who, potion)
 		return;
 	endif
 
+	var vicio := (AP_getvital(who, "Vicioint"));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
 	var bonus := GetObjProperty (potion, "bonus");
 	var tier := getObjProperty(potion, "tier");
 	var stat := AP_GetTrueStat(who, INTELLIGENCE);
@@ -27,8 +32,9 @@ program drink_blue (who, potion)
 	tier := (tier + 2);
 	endif
 	var buff := 0.05 * tier;
-	buff := stat*buff+bonus;
+	buff := (stat*buff+bonus)*vicio;
 
 	TS_StartTimer(who, "intelligence", (180*tier), buff);
 	empty_bottle(who, potion);
+	VicioInt(who,potion);
 endprogram

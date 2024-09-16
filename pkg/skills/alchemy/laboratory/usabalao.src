@@ -2,6 +2,8 @@ use uo;
 use os;
 use util;
 
+include ":alchemy:alchemy";
+
 const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
 
 program usabalao(who, item)
@@ -26,12 +28,8 @@ program usabalao(who, item)
   var extrato := GetObjProperty(alvo, "extrato");
   SendSysMessage(who, "Voce colocou o liquido no balao.");
   SetObjProperty(item, "extrato", extrato);
-  SetObjProperty(item, "strength", cint(GetObjProperty(alvo, "strength")));
-  SetObjProperty(item, "bonus", cint(GetObjProperty(alvo, "bonus")));
-  SetObjProperty(item, "tier", cint(GetObjProperty(alvo, "tier")));
-  SetObjProperty(item, "crafterskill", cint(GetObjProperty(alvo,"crafterskill")));
-  SetObjProperty(item, "science", cint(GetObjProperty(alvo,"science")));
- DestroyItem(alvo);   
+  AlchLabTransfer(item, alvo);
+  DestroyItem(alvo);   
   CreateIteminBackpack(who, 0x0f0e, 1);
   
 endprogram

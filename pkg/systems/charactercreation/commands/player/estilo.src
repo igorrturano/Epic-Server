@@ -11,7 +11,7 @@ program postura(who, text)
         return 0;
     endif
 
-    if (!TemHabilidade(who, "Artista Marcial"))
+    if (!TemHabilidade(who, "Budōka"))
         SendSysMessageEx(who, "Somente monges conseguem se beneficiar desse comando");
         return 0;
     endif
