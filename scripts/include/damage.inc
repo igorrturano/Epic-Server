@@ -182,7 +182,7 @@ function CalculateDamage(defender, type, dmg)
 	endif
 */
 	if (type == DMG_PHYSICAL)
-        if (TemHabilidade(defender, "Corpo Diamante"))
+        if (TemHabilidade(defender, "Kani no Sutairu"))
             resist := CDbl(AP_GetSkill(defender, TACTICS) / 200); // Ganha até 50% de bonus
         endif
 		if (TemHabilidade(defender, "Exoesqueleto"))
@@ -506,10 +506,10 @@ function CalculateTotalDamageBonus(dmg, who, defender)
     var itemdesc := ReadConfigFile("::itemdesc");
 
     if (TemHabilidade(who, "Brigador de Taverna") && (who.weapon.objtype == 0x1F020) && (dmg != 0))
-        dmg += Cint(AP_GetSkill(who, TACTICS) / 20);
+        dmg += 2;
     endif
 
-    if (TemHabilidade(who, "Artista Marcial") )
+    if (TemHabilidade(who, "Budōka") )
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var isArmor := array{"ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve"};
     	if ( who.weapon.objtype in monk_weapons)
