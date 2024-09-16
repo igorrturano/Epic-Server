@@ -596,6 +596,7 @@ endfunction
  */
 function getAllOres()
 	return array{
+		//TODO: Adicionar restante
 		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
 		toStruct(ORE_IRON_TEMP, "Minério de Ferro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
 		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
@@ -626,7 +627,6 @@ function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", 
 			neededToCraft.append(ore);
 		endforeach
 	endif
-	print("needed: "+neededToCraft);
 
 	return struct{
 		"oreType" := oreType,
@@ -635,6 +635,7 @@ function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", 
 		"oreObjType" := objType,
 		"ingotObjType" := ConvertOreToIngot(objType),
 		"neededToCraft" := neededToCraft,
+		"difficulty" := DetermineMiningDifficulty(objType),
 		"color" := color
 	};
 endfunction
