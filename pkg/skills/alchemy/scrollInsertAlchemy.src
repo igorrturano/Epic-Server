@@ -21,7 +21,7 @@ program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
 		MoveItemToContainer(item, who.backpack);
 		SendSysMessage(who, "O livro esta em uso.");
 		return 0;
-	elseif(item.objtype != pergaminhos)
+	elseif(!(item.objtype in pergaminhos))
 		SendSysMessage(who, "Voce nao pode colocar isto no livro.");
 		MoveITemToContainer(item, who.backpack);
 		return 0;
