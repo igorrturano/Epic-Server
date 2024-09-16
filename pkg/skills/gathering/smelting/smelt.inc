@@ -36,11 +36,10 @@ function EsfriarLiga(user, item)
       var metal;
       var i := 1;
       while ( i<=num) //pega a lista de metais que tem no pot
-      metal := GetObjProperty(item, "oreObj"+i);
-      metals.append(metal);
-      i := i +1;
+		metal := GetObjProperty(item, "oreObj"+i);
+		metals.append(metal);
+		i := i +1;
       endwhile
-      //printtextabove(item, " " + metals);
       PlaySoundEffect(user, 0x23f);
       sleepms(1500);
       var amt := CINT(GetObjProperty(item, "amt1"));
