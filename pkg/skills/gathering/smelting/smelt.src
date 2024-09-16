@@ -182,7 +182,6 @@ endfunction
 
 function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
 	if (CheckSmeltDifficulty(who, mainOre))
-		PrintTextAbove(who, "*derretendo minérios*");
 		if (Len(itemsToSmelt) > 1)
 			SendSysMessageEx(who, "Você fez a fusão entre os metais.", FONT_NORMAL, 90);
 		else
@@ -197,7 +196,7 @@ function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
 
 		foreach item in itemsToSmelt
 			SmeltSuccess(who, pot, item, amt);
-			Sleep(1);
+			SleepMS(500);
 		endforeach
 
 		CoolPot(who, pot);
@@ -215,6 +214,7 @@ function CoolPot(who, pot)
 endfunction
 
 function SmeltSuccess(who, pot, item, amt)
+	PrintTextAbove(who, "*derretendo minerios*");
 	SubtractAmount(item, CInt(amt));
 	PlayEffectSmelt(who, pot);
 endfunction
