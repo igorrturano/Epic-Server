@@ -1434,7 +1434,7 @@ function disarmOpponent(attacker, defender)
     var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);
 	TS_StartTimer(defender, "desarmar", tactics_bonus, 0, attacker);
 	var defweapon := defender.weapon;
-    if ((defweapon.objtype == 0x1F020 || defender.npctemplate) && TemHabilidade(attacker, "Artista Marcial"))
+    if ((defweapon.objtype == 0x1F020 || defender.npctemplate) && TemHabilidade(attacker, "Budōka"))
         TS_StartTimer(defender, "dmgreduction", tactics_bonus, 4, attacker);
 	elseif ((defender.isA(POLCLASS_NPC) || defender.npctemplate) && defweapon.objtype != 0x1F020)
 		TS_StartTimer(defender, "dmgreduction", 20, 2, attacker);

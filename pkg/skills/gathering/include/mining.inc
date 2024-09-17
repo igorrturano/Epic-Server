@@ -431,11 +431,11 @@ function DetermineOreType(who, where)
 endfunction
 
 //dificuldade de PEGAR o minerio
-function DetermineMiningDifficulty(oretype)
+function DetermineMiningDifficulty(oretype) 
 
 	case (oretype)
-
-		0xBD11: return 0;  //pedra pequena
+		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 5; // Carvão
+		0xBD11: return 0;  //pedra pequena 
 		//0xBD12: return 0;  //pedra media
 		//0xBD13: return 0;  //pedra grande
 		0xee99: return 0;  //calcario
@@ -455,7 +455,7 @@ function DetermineMiningDifficulty(oretype)
 		0x6992: return 50; //prata
  		0x6990: return 30; //estanho
 
-		0x6075:  return 5; //areia
+		0x6075: return 5; //areia
 
 		0x6666: return 0; //id falso de pedra
 		0x8850: return 40; //marmore
@@ -537,7 +537,6 @@ function SetResource(resource_type, byref elem, amount)
 	elem.setprop( resource_type, CStr(amount) );
 endfunction
 
-
 function CheckLoop(who, tool, my_x, my_y, my_facing)
 	if ( who.hidden )
 		SendSysMessage(who, "Voce parou de minerar para ficar escondido.");
@@ -557,3 +556,98 @@ function CheckLoop(who, tool, my_x, my_y, my_facing)
 		return 1;
 	endif
 endfunction
+
+function ConvertOreToIngot(ore)
+	case (ore) //de acordo com ore no pot indica o ingot certo
+		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 0x1bde; //carvao
+
+		0x6075: return 0x1be3; //vidro
+		0x6450: return 0x6465; //copper
+		0x6990: return 0x6991; //estanho
+		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x62ff: return 0x6996; //ferro impuro -> ferro temperado
+		0x6992: return 0x6993; //prata
+		0x6305: return 0x630e; //ouro
+		0x6309: return 0x6309; //aco
+		0x6995: return 0x6995; //ligas elementais
+		0x6301: return 0x630a; //litan
+		0x6314: return 0x6315; //illyra
+		0x6307: return 0x6310; //galvorn
+		0x6308: return 0x6311; //mithril
+		0x6303: return 0x630c; //venetium
+		0x6451: return 0x6460; //frigutium
+		0x6304: return 0x630d; //ignium
+		0x6302: return 0x630b; //fulmetium
+
+		//esses ultimos nao estao sendo usados.
+		0x6312: return 0x6313; //ario
+		0x6452: return 0x6460; //gomril
+		0x6306: return 0x630f; //durang
+
+		0x1bde: return 0x1bde;
+
+		default: return 0;
+	endcase
+endfunction
+
+/*
+ * Retorna um array de struct com o valor de todos os minérios do shard
+ * Ex.: var ores := getAllOres();
+ */
+function getAllOres()
+	return array{
+		//TODO: Adicionar restante
+		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
+		toStruct(ORE_IRON_TEMP, "Minério de Ferro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
+		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
+		toStruct(ORE_GOLD, "Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598),
+		toStruct(ORE_STEEL, "Minério de Aço", "Ingot de Aço", 0x6309, {}, 2599),
+		toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
+		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
+		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0x1bdd)
+	};
+endfunction
+
+/* 
+ * Parameters
+ *
+ * oreName: Nome do minério bruto
+ * ingotName: Nome da barra do minério
+ * objType: ObjType do minério
+ * neededToCraft: Array com os objType dos demais minérios necessários pra fazer o ingot (em caso de liga)
+ * color: Cor do metal
+ */
+function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", color := 0)
+	var neededToCraft := array{};
+	neededToCraft.append(objType);
+
+	if (Len(othersOresNeeded) > 0)
+		foreach ore in othersOresNeeded
+			neededToCraft.append(ore);
+		endforeach
+	endif
+
+	return struct{
+		"oreType" := oreType,
+		"oreName" := oreName, 
+		"ingotName" := ingotName,
+		"oreObjType" := objType,
+		"ingotObjType" := ConvertOreToIngot(objType),
+		"neededToCraft" := neededToCraft,
+		"difficulty" := DetermineMiningDifficulty(objType),
+		"color" := color
+	};
+endfunction
+
+enum ORE
+	ORE_CHARCOAL := "ORE_CHARCOAL",
+	ORE_IRON := "ORE_IRON",
+	ORE_IRON_TEMP := "ORE_IRON_TEMP",
+	ORE_SILVER := "ORE_SILVER",
+	ORE_GOLD := "ORE_GOLD",
+	ORE_STEEL := "ORE_STEEL",
+	ORE_LITAN := "ORE_LITAN",
+	ORE_ILLYRA := "ORE_ILLYRA",
+	ORE_MITHRIL := "ORE_MITHRIL"
+endenum

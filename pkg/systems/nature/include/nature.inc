@@ -29,7 +29,7 @@ var MOON_PHASES := array{
     "Kalendae", "Nonae", "Idus", "Decrescens"
 };
 
-var daysInYear := calcDaysInYear();
+var daysInYear := CalcDaysInYear();
 
 // Season Id based on UO packet
 const SUMMER := 1;
@@ -41,7 +41,7 @@ function getSeason()
     return CInt(GetGlobalProperty("season"));
 endfunction
 
-function calcDaysInYear()
+function CalcDaysInYear()
     var totalDays := 0;
     foreach month in MONTHS
         totalDays += month.days;
