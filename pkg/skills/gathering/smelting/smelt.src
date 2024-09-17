@@ -91,7 +91,7 @@ function OpenGump(who, pot)
 	endforeach
 
 	var x := 30;
-	var y := 120;
+	var y := 80;
 	var y_space := 50;
 	var btnID := 100;
 	var tBoxAmt := Dictionary{};
@@ -107,7 +107,7 @@ function OpenGump(who, pot)
 			GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
 			GFTilePic(gump, x + 30, y, graphic, ableToSmelt_ore[oreObjType].color);
 			GFTextLine(gump, x + 90, y + 5, ableToSmelt_ore[oreObjType].color, ableToSmelt_ore[oreObjType].ingotName);
-			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x + 200, y, 30, 15, COLOR_YELLOW, ableToSmelt_amt[oreObjType], 0, 4);
+			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x + 250, y, 30, 15, COLOR_YELLOW, ableToSmelt_amt[oreObjType], 0, 4);
 			options.append(struct{
 				"btnID" := btnID,
 				"oreObjType" := oreObjType
