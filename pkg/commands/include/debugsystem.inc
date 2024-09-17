@@ -2,21 +2,27 @@ use uo;
 
 const PROPTAG := "#debug_";
 
-function checkDebug(who, debugName)
+// Adicionar novos debugs aqui, no mesmo modelo. O valor da String deve coincidir com o var name do listDebugs no debug.src (conferir lá).
+const DEBUG_NAME_ALL := "all";
+const DEBUG_NAME_CLIMA := "clima";
+const DEBUG_NAME_DAMAGE := "damage";
+const DEBUG_NAME_SMELTING := "smelting";
+
+function CheckDebug(who, debugName)
     var prop := getDebugProp(who, debugName);
 
     if (!prop)
-        return false;
+        return 0;
     endif
 
-    return true;
+    return 1;
 endfunction
 
 function getDebugProp(who, debugName)
     return GetObjProperty(who, PROPTAG + debugName);
 endfunction
 
-function debugMsg(who, debugName, msg)
+function DebugMsg(who, debugName, msg)
     if (checkDebug(who, debugName) || checkDebug(who, "all"))
         msg := "DEBUG "+debugName+": "+msg;
 
@@ -24,7 +30,7 @@ function debugMsg(who, debugName, msg)
     endif
 endfunction
 
-function debugMsgEvent(debugName, msg) 
+function DebugMsgEvent(debugName, msg) 
     foreach who in EnumerateOnlineCharacters()
         if (checkDebug(who, debugName) || checkDebug(who, "all"))
             msg := "DEBUG "+debugName+": "+msg;
