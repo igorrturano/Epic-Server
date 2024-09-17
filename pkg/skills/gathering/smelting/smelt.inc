@@ -7,6 +7,8 @@ include "include/client";
 include ":charactercreation:habilidades";
 const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
 
+//TODO: Ver se futuramente precisa remover essa função, talvez tenha virado Dead Code
+	//Analisando bem, talvez o arquivo inteiro tenha virado (conferir melhor)
 function EsfriarLiga(user, item)
   var hasestanho, hascobre;
   var num := CINT(GetObjProperty(item, "numMetal"));
