@@ -23,7 +23,7 @@ include ":gathering:smelting/water";
 include ":gathering:smelting/smelt";
 include ":commands:debugsystem";
 include ":gumps:gumps";
-include ":gumps:gumps_ex";
+//include ":gumps:gumps_ex";
 
 const PROP_NAME := "Smelting";
 const COLOR_FULL := 0x486;
@@ -43,52 +43,16 @@ program smelt_that_ore(who, item)
 endprogram
 
 function OpenGump(who, pot)
-	var GUMP_WIDTH := 395;
-	var GUMP_HEIGHT := 565;
-	var GUMP_BACKGROUND := 39929;
-	var INTERNAL_BACKGROUND := 9350;
-	var gump := GFECreateGump(400, 565, GUMP_BACKGROUND, "Menu de Smelting");
+	var gump := GFECreateGump(340, 600, 39929, "Menu de Smelting");
 
 	var ores := getAllOres();
 	var ableToSmelt_amt := dictionary{};
-	var ableToSmelt_item := dictionary{};
 	var ableToSmelt_ore := dictionary{};
+	var ableToSmelt_item := dictionary{};
 	var indexAbleToSmelt := array{};
 	var bag := EnumerateItemsInContainer(who.backpack);
-	var oresInBag := array{}; //Pra reduzir as buscas lá na frente, já que é recorrente
-	foreach ore in ores
-		foreach ore2 in bag
-			if (ore.oreObjType == ore2.objtype)
-				oresInBag.append(ore2);
-			endif
-		endforeach
-	endforeach
-
-	foreach ore in ores //Feito assim pra manter a ordem da lista de ores, apesar de diminuir um pouco o desempenho
-		foreach item1 in oresInBag
-			if (item1.objtype == ore.oreObjType)
-				var amt := item1.amount;
-				var size := Len(ore.neededToCraft);
-
-				var i := 0;
-				foreach item2 in bag
-					if (item2.objType in ore.neededToCraft)
-						if (item2.amount < amt)
-							amt := item2.amount;
-						endif
-						i++;
-					endif
-				endforeach
-				
-				if (i == size)
-					indexAbleToSmelt.append(ore.oreObjType);
-					ableToSmelt_amt[ore.oreObjType] := amt;
-					ableToSmelt_item[ore.oreObjType] := item1;
-					ableToSmelt_ore[ore.oreObjType] := ore;
-				endif
-			endif
-		endforeach
-	endforeach
+	var oresInBag := getOresInBag(who, ores, bag); //Pra reduzir as buscas lá na frente, já que é recorrente
+	getOresAbleToSmelt(who, ores, oresInBag, bag, ableToSmelt_amt, ableToSmelt_ore, ableToSmelt_item, indexAbleToSmelt);
 
 	var x := 30;
 	var y := 80;
@@ -104,10 +68,11 @@ function OpenGump(who, pot)
 		endif
 
 		if (CDbl(AP_GetSkill(who, GATHERING)) >= ableToSmelt_ore[oreObjType].difficulty)
+			var x2 := x;
 			GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
-			GFTilePic(gump, x + 30, y, graphic, ableToSmelt_ore[oreObjType].color);
-			GFTextLine(gump, x + 90, y + 5, ableToSmelt_ore[oreObjType].color, ableToSmelt_ore[oreObjType].ingotName);
-			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x + 250, y, 30, 15, COLOR_YELLOW, ableToSmelt_amt[oreObjType], 0, 4);
+			x2 += 35; GFTilePic(gump, x2, y, graphic, ableToSmelt_ore[oreObjType].color);
+			x2 += 50; GFTextLine(gump, x2, y + 5, ableToSmelt_ore[oreObjType].color, ableToSmelt_ore[oreObjType].ingotName);
+			x2 += 160; tBoxAmt[oreObjType] := GFEAddTextBox(gump, x2, y, 30, 15, COLOR_YELLOW, ableToSmelt_amt[oreObjType], 0, 4);
 			options.append(struct{
 				"btnID" := btnID,
 				"oreObjType" := oreObjType
@@ -179,7 +144,53 @@ function CheckSmelt(who, mainOre, itemsToSmelt)
 		endif
 	endif
 
+	if (!mainOre.ingotObjType)
+		SendSysMessageEx(who, "ERROR666: Não foi possível derreter esta liga, favor informar à staff.", SSM_FAIL);
+		return 0;
+	endif
+
 	return 1;
+endfunction
+
+function getOresInBag(who, ores, bag)
+	var oresInBag := array{};
+	foreach ore in ores
+		foreach ore2 in bag
+			if (ore.oreObjType == ore2.objtype)
+				oresInBag.append(ore2);
+			endif
+		endforeach
+	endforeach
+
+	return oresInBag;
+endfunction
+
+function getOresAbleToSmelt(who, oresList, oresInBag, bag, byref ableToSmelt_amt, byref ableToSmelt_ore, byref ableToSmelt_item, byref indexToReturn)
+	foreach ore in oresList //Feito assim pra manter a ordem da lista de ores, apesar de diminuir um pouco o desempenho
+		foreach item1 in oresInBag
+			if (item1.objtype == ore.oreObjType)
+				var amt := item1.amount;
+				var size := Len(ore.neededToCraft);
+
+				var i := 0;
+				foreach item2 in bag
+					if (item2.objType in ore.neededToCraft)
+						if (item2.amount < amt)
+							amt := item2.amount;
+						endif
+						i++;
+					endif
+				endforeach
+				
+				if (i == size)
+					indexToReturn.append(ore.oreObjType);
+					ableToSmelt_amt[ore.oreObjType] := amt;
+					ableToSmelt_item[ore.oreObjType] := item1;
+					ableToSmelt_ore[ore.oreObjType] := ore;
+				endif
+			endif
+		endforeach
+	endforeach
 endfunction
 
 function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
