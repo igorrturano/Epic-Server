@@ -5,82 +5,37 @@ include "include/client";
 include "include/say";
 include ":charactercreation:createchar";
 
-const RACA_ANAO := "ANAO";
-const RACA_DROW := "DROW";
-const RACA_ELFO := "ELFO";
-const RACA_ORC := "ORC";
-const RACA_HUMANO := "HUMANO";
-const RACA_POLSKI := "POLSKI";
+function GetRacialTraits(culture)
 
-
-function GetCharacteristicasRP(race)
-    var caracteristicas := dictionary{
-        "AIGLANOS" := GetAiglanosCaracteristicas(),
-        "BADURAN" := GetBaduranCaracteristicas(),
-        "BJORSKA" := GetBjorskeCaracteristicas(),
-        "HAROLOTH" := GetHarolothCaracteristicas(),
-        "ALURIEL" := GetAlurielCaracteristicas(),
-        "GULTHRAK" := GetGulthrakCaracteristicas(),
-        "POLKINEA" := GetPolkineaCaracteristicas(),
-        "POVOS_DO_LESTE" := GetPovoDoLesteCaracteristicas()
-    };
-    return caracteristicas[race];
-endfunction
-
-function GetRacialTraits(race, chardata := 0)
-
-    case (race)
-        ANAO: return GetBaduranCaracteristicas();
-        DROW: return GetHarolothCaracteristicas();
-        ELFO: return GetAlurielCaracteristicas();
-        ORC: return GetGulthrakCaracteristicas();
-        HUMANO: 
-            if (chardata && chardata.culture == AIGLANA)
-                return GetAiglanosCaracteristicas();
-            elseif (chardata && chardata.culture == LESTE)
-                return GetPovoDoLesteCaracteristicas();
-            elseif (chardata && chardata.culture == BJORSKA)
-                return GetBjorskeCaracteristicas();
-            else
-                return GetAiglanosCaracteristicas(); // Default para humanos
-            endif
+    case (culture)
+        BADURAN: return GetBaduranCaracteristicas();
+        HAROLOTH: return GetHarolothCaracteristicas();
+        ALURIEL: return GetAlurielCaracteristicas();
+        GULTHRAK: return GetGulthrakCaracteristicas();
+        BJORSKA: return GetBjorskeCaracteristicas();
         POLSKI: return GetPolkineaCaracteristicas();
-        default: 
+        AIGLANA: return GetAiglanosCaracteristicas();
+        LESTE: return GetPovoDoLesteCaracteristicas();
 
-            return error; // Retorna error em vez de struct vazio
+        default: return error; // Retorna error em vez de struct vazio
     endcase
 endfunction
 
-function RacaToString(raca)
-    case (raca)
-        ANAO: return "anão";
-        DROW: return "drow";
-        ELFO: return "elfo";
-        ORC: return "orc";
-        HUMANO: return "humano";
-        POLSKI: return "polski";
-        default: return "Desconhecido";
-    endcase
-endfunction
+function TranslateRacialTrait(category, value, chardata := 0)
+    var racial_traits := GetRacialTraits(chardata.culture);
 
-function TranslateRacialTrait(race, category, value, chardata := 0)
+    if (racial_traits == error)
 
+        return 0;
+    endif
 
-var racial_traits := GetRacialTraits(chardata.raca, chardata);
-
-
-if (racial_traits == error)
-
-    return 0;
-endif
-
-var CaracteristicasCategories := array{
-    "Altura",
-    "Peso",
-    "Olhos",
-    "Idade Aparente",
-    "Voz"
-};
+    var CaracteristicasCategories := array{
+        "Altura",
+        "Peso",
+        "Olhos",
+        "Idade Aparente",
+        "Voz"
+    };
 endfunction
 
 function GetAiglanosCaracteristicas()
@@ -88,49 +43,49 @@ function GetAiglanosCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "baixo (1,60m-1,65m)",
-                "médio-baixo (1,66m-1,70m)",
-                "médio (1,71m-1,75m)",
-                "médio-alto (1,76m-1,80m)",
-                "alto (1,81m-1,85m)"
+                "Baixo (1,60m-1,65m)",
+                "Médio-baixo (1,66m-1,70m)",
+                "Médio (1,71m-1,75m)",
+                "Médio-alto (1,76m-1,80m)",
+                "Alto (1,81m-1,85m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "esbelto (55kg-65kg)",
-                "médio (66kg-75kg)",
-                "atlético (76kg-85kg)",
-                "robusto (86kg-95kg)",
-                "corpulento (96kg-105kg)"
+                "Esbelto (55kg-65kg)",
+                "Médio (66kg-75kg)",
+                "Atlético (76kg-85kg)",
+                "Robusto (86kg-95kg)",
+                "Corpulento (96kg-105kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Caracteristica dos Olhos",
             "opcoes" := array{
-                "castanhos amendoados",
-                "verdes arredondados",
-                "azuis penetrantes",
-                "cinzentos estreitos",
-                "âmbar expressivos"
+                "Castanhos amendoados",
+                "Verdes arredondados",
+                "Azuis penetrantes",
+                "Cinzentos estreitos",
+                "Âmbar expressivos"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (20 anos)",
-                "adulto (30 anos)",
-                "meia-idade (40 anos)",
-                "maduro (50 anos)",
-                "idoso (60 anos)"
+                "Jovem (20 anos)",
+                "Adulto (30 anos)",
+                "Meia-idade (40 anos)",
+                "Maduro (50 anos)",
+                "Idoso (60 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-                "aguda",
+                "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -141,49 +96,49 @@ function GetBaduranCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "muito baixo (1,20m-1,25m)",
-                "baixo (1,26m-1,30m)",
-                "médio (1,31m-1,35m)",
-                "alto (1,36m-1,40m)",
-                "muito alto (1,41m-1,48m)"
+                "Muito baixo (1,20m-1,25m)",
+                "Baixo (1,26m-1,30m)",
+                "Médio (1,31m-1,35m)",
+                "Alto (1,36m-1,40m)",
+                "Muito alto (1,41m-1,48m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "leve (50kg-60kg)",
-                "médio (61kg-70kg)",
-                "pesado (71kg-80kg)",
-                "muito pesado (81kg-90kg)",
-                "pesado (91kg-100kg)"
+                "Leve (50kg-60kg)",
+                "Médio (61kg-70kg)",
+                "Pesado (71kg-80kg)",
+                "Muito pesado (81kg-90kg)",
+                "Gordo (91kg-100kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "castanhos profundos",
-                "azuis brilhantes",
-                "verdes intensos",
-                "cinza metálico",
-                "âmbar dourado"
+                "Castanhos profundos",
+                "Azuis brilhantes",
+                "Verdes intensos",
+                "Cinza metálico",
+                "Âmbar dourado"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (75 anos)",
-                "adulto (120 anos)",
-                "meia-idade (170 anos)",
-                "maduro (230 anos)",
-                "idoso (250 anos)"
+                "Jovem (75 anos)",
+                "Adulto (120 anos)",
+                "Meia-idade (170 anos)",
+                "Maduro (230 anos)",
+                "Idoso (250 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-               "aguda",
+               "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -195,49 +150,49 @@ function GetBjorskeCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "baixo (1,65m-1,70m)",
-                "médio-baixo (1,71m-1,75m)",
-                "médio (1,76m-1,80m)",
-                "médio-alto (1,81m-1,85m)",
-                "alto (1,86m-1,90m)"
+                "Baixo (1,65m-1,70m)",
+                "Médio-baixo (1,71m-1,75m)",
+                "Médio (1,76m-1,80m)",
+                "Médio-alto (1,81m-1,85m)",
+                "Alto (1,86m-1,90m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "esbelto (70kg-80kg)",
-                "médio (81kg-90kg)",
-                "atlético (91kg-100kg)",
-                "robusto (101kg-110kg)",
-                "corpulento (111kg-120kg)"
+                "Esbelto (70kg-80kg)",
+                "Médio (81kg-90kg)",
+                "Atlético (91kg-100kg)",
+                "Robusto (101kg-110kg)",
+                "Corpulento (111kg-120kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "azuis",
-                "verdes",
-                "cinzentos",
-                "castanhos",
-                "um olho de cada cor"
+                "Azuis",
+                "Verdes",
+                "Cinzentos",
+                "Castanhos",
+                "Heterocromia"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (20 anos)",
-                "adulto (30 anos)",
-                "meia-idade (40 anos)",
+                "Jovem (20 anos)",
+                "Adulto (30 anos)",
+                "Meia-idade (40 anos)",
                 "veterano (50 anos)",
-                "ancião (60 anos)"
+                "Ancião (60 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-               "aguda",
+               "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -248,49 +203,49 @@ function GetHarolothCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "baixo (1,50m-1,55m)",
-                "médio-baixo (1,56m-1,60m)",
-                "médio (1,61m-1,65m)",
-                "médio-alto (1,66m-1,70m)",
-                "alto (1,71m-1,75m)"
+                "Baixo (1,50m-1,55m)",
+                "Médio-baixo (1,56m-1,60m)",
+                "Médio (1,61m-1,65m)",
+                "Médio-alto (1,66m-1,70m)",
+                "Alto (1,71m-1,75m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "esbelto (45kg-50kg)",
-                "médio (51kg-55kg)",
-                "atlético (56kg-60kg)",
-                "robusto (61kg-65kg)",
+                "Esbelto (45kg-50kg)",
+                "Médio (51kg-55kg)",
+                "Atlético (56kg-60kg)",
+                "Robusto (61kg-65kg)",
                 "musculoso (66kg-70kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "vermelhos brilhantes",
+                "Vermelhos brilhantes",
                 "Violeta profundo",
-                "âmbar dourado",
-                "verde fluorescente",
-                "azul elétrico"
+                "Âmbar dourado",
+                "Verde fluorescente",
+                "Azul elétrico"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (75 anos)",
-                "adulto (150 anos)",
-                "meia-idade (250 anos)",
-                "maduro (350 anos)",
-                "ancião (400 anos)"
+                "Jovem (75 anos)",
+                "Adulto (150 anos)",
+                "Meia-idade (250 anos)",
+                "Maduro (350 anos)",
+                "Ancião (400 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-               "aguda",
+               "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -302,49 +257,49 @@ function GetAlurielCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "baixo (1,60m-1,65m)",
-                "médio-baixo (1,66m-1,70m)",
-                "médio (1,71m-1,75m)",
-                "médio-alto (1,76m-1,80m)",
-                "alto (1,81m-1,85m)"
+                "Baixo (1,60m-1,65m)",
+                "Médio-baixo (1,66m-1,70m)",
+                "Médio (1,71m-1,75m)",
+                "Médio-alto (1,76m-1,80m)",
+                "Alto (1,81m-1,85m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "leve (45kg-50kg)",
-                "médio-leve (51kg-55kg)",
-                "médio (56kg-60kg)",
-                "médio-pesado (61kg-65kg)",
-                "pesado (66kg-70kg)"
+                "Leve (45kg-50kg)",
+                "Médio-leve (51kg-55kg)",
+                "Médio (56kg-60kg)",
+                "Médio-pesado (61kg-65kg)",
+                "Pesado (66kg-70kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "azul celeste brilhante",
-                "verde esmeralda profundo",
-                "âmbar dourado cintilante",
-                "violeta suave",
-                "prateado luminoso"
+                "Azul celeste brilhante",
+                "Verde esmeralda profundo",
+                "Âmbar dourado cintilante",
+                "Violeta suave",
+                "Prateado luminoso"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem (75 anos)",
-                "adulto (150 anos)",
-                "meia-idade (350 anos)",
-                "maduro (600 anos)",
-                "ancião (700 anos)"
+                "Jovem (75 anos)",
+                "Adulto (150 anos)",
+                "Meia-idade (350 anos)",
+                "Maduro (600 anos)",
+                "Ancião (700 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-               "aguda",
+               "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -356,49 +311,49 @@ function GetGulthrakCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "baixo (1,70m-1,75m)",
-                "médio-baixo (1,76m-1,80m)",
-                "médio (1,81m-1,85m)",
-                "médio-alto (1,86m-1,90m)",
-                "alto (1,91m-1,95m)"
+                "Baixo (1,70m-1,75m)",
+                "Médio-baixo (1,76m-1,80m)",
+                "Médio (1,81m-1,85m)",
+                "Médio-alto (1,86m-1,90m)",
+                "Alto (1,91m-1,95m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
                 "magro (80kg-90kg)",
-                "médio (91kg-100kg)",
+                "Médio (91kg-100kg)",
                 "musculoso (101kg-110kg)",
-                "robusto (111kg-120kg)",
-                "corpulento (121kg-130kg)"
+                "Robusto (111kg-120kg)",
+                "Corpulento (121kg-130kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "vermelho brilhante",
-                "âmbar profundo",
-                "verde fluorescente",
-                "preto como carvão",
-                "branco leitoso"
+                "Vermelho escuro",
+                "Âmbar profundo",
+                "Verde escuro",
+                "Preto como carvão",
+                "Castanho escuro"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem adulto (15 anos)",
-                "adulto (25 anos)",
-                "meia-idade (35 anos)",
+                "Jovem adulto (15 anos)",
+                "Adulto (25 anos)",
+                "Meia-idade (35 anos)",
                 "veterano (45 anos)",
-                "ancião (50 anos)"
+                "Ancião (50 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-               "aguda",
+               "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -410,49 +365,49 @@ function GetPolkineaCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "muito baixo (80cm-85cm)",
-                "baixo (86cm-90cm)",
-                "médio (91cm-95cm)",
-                "alto (96cm-100cm)",
-                "muito alto (101cm-110cm)"
+                "Muito baixo (80cm-85cm)",
+                "Baixo (86cm-90cm)",
+                "Médio (91cm-95cm)",
+                "Alto (96cm-100cm)",
+                "Muito alto (101cm-110cm)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "leve (20kg-25kg)",
-                "médio-leve (26kg-30kg)",
-                "médio (31kg-35kg)",
-                "médio-pesado (36kg-40kg)",
-                "pesado (41kg-45kg)"
+                "Leve (20kg-25kg)",
+                "Médio-leve (26kg-30kg)",
+                "Médio (31kg-35kg)",
+                "Médio-pesado (36kg-40kg)",
+                "Pesado (41kg-45kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "castanho amendoado",
-                "verde brilhante",
-                "azul profundo",
-                "cinza prateado",
-                "âmbar dourado"
+                "Castanho amendoado",
+                "Verde brilhante",
+                "Azul profundo",
+                "Cinza prateado",
+                "Âmbar dourado"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem adulto (25 anos)",
-                "adulto (40 anos)",
-                "meia-idade (55 anos)",
-                "maduro (70 anos)",
-                "ancião (90+ anos)"
+                "Jovem adulto (25 anos)",
+                "Adulto (40 anos)",
+                "Meia-idade (55 anos)",
+                "Maduro (70 anos)",
+                "Ancião (90+ anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-                "aguda",
+                "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
@@ -464,57 +419,57 @@ function GetPovoDoLesteCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "baixo (1,55m-1,60m)",
-                "médio-baixo (1,61m-1,65m)",
-                "médio (1,66m-1,70m)",
-                "médio-alto (1,71m-1,75m)",
-                "alto (1,76m-1,80m)"
+                "Baixo (1,55m-1,60m)",
+                "Médio-baixo (1,61m-1,65m)",
+                "Médio (1,66m-1,70m)",
+                "Médio-alto (1,71m-1,75m)",
+                "Alto (1,76m-1,80m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "esbelto (50kg-55kg)",
-                "médio-leve (56kg-60kg)",
-                "médio (61kg-65kg)",
-                "médio-pesado (66kg-70kg)",
-                "robusto (71kg-75kg)"
+                "Esbelto (50kg-55kg)",
+                "Médio-leve (56kg-60kg)",
+                "Médio (61kg-65kg)",
+                "Médio-pesado (66kg-70kg)",
+                "Robusto (71kg-75kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "castanho escuro amendoado",
-                "preto ônix brilhante",
-                "castanho claro estreito",
-                "cinza chumbo oblíquo",
-                "âmbar dourado rasgado"
+                "Castanho escuro amendoado",
+                "Preto ônix brilhante",
+                "Castanho claro estreito",
+                "Cinza chumbo oblíquo",
+                "Âmbar dourado rasgado"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "jovem adulto (25 anos)",
-                "adulto (35 anos)",
-                "meia-idade (50 anos)",
-                "maduro (65 anos)",
-                "ancião (75 anos)"
+                "Jovem adulto (25 anos)",
+                "Adulto (35 anos)",
+                "Meia-idade (50 anos)",
+                "Maduro (65 anos)",
+                "Ancião (75 anos)"
             }
         },
         "Voz" := struct{
-            "nome" := "Tipo de Voz",
+            "nome" := "Timbre de Voz",
             "opcoes" := array{
-                "aguda",
+                "Aguda",
                 "de notas médias",
-                "grave"
+                "Grave"
             }
         }
     };
     return caracteristicas;
 endfunction
 
-function ExtractAgeValue(race, chosen_age_index)
-    var racial_traits := GetRacialTraits(race);
+function ExtractAgeValue(culture, chosen_age_index)
+    var racial_traits := GetRacialTraits(culture);
     if (racial_traits == error)
         return error;
     endif
