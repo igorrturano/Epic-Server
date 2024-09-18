@@ -76,6 +76,7 @@ function getWeaponDamage(tier)
 	var dmg;
 
 	case (tier)
+		// ONE HANDED
 		ONEHANDED_LOW:
 			dmg := "1d4";
 			break;
@@ -88,6 +89,7 @@ function getWeaponDamage(tier)
 			dmg := "1d8";
 			break;
 
+		// DUAL WIELD
 		DUALWIELD_LOW:
 			dmg := "2d4";
 			break;
@@ -100,6 +102,7 @@ function getWeaponDamage(tier)
 			dmg := "2d8";
 			break;
 
+		// TWO HANDED
 		TWOHANDED_LOW:
 			dmg := "1d8";
 			break;
@@ -116,52 +119,28 @@ function getWeaponDamage(tier)
 	return dmg;
 endfunction
 
-function getWeaponCritical(tier)
-	var chance, mod;
+function getWeaponCriticalChance(tier)
+	var min, max;
 
 	case(tier)
 		CRITICALCHANCE_NOCHANCE:
-			chance := CRITICALCHANCE_NOCHANCE;
-			mod := 0;
+			min := 0;
+			max := 0;
 
 		CRITICALCHANCE_LOW:
-			chance := CRITICALCHANCE_LOW;
-			mod := 2;
+			min := 1;
+			max := 2;
 
-		CRITICALCHANCE_LOWMID:
-			chance := CRITICALCHANCE_LOWMID;
-			mod := 2;
+		CRITICALCHANCE_MID:
+			min := 3;
+			max := 4;
 
-		CRITICALCHANCE_LOWHIGH:
-			chance := CRITICALCHANCE_LOWHIGH;
-			mod := 2;
-
-		CRITICALCHANCE_MIDLOW:
-			chance := CRITICALCHANCE_MIDLOW;
-			mod := 2;
-
-		CRITICALCHANCE_MIDMID:
-			chance := CRITICALCHANCE_MIDMID;
-			mod := 2;
-
-		CRITICALCHANCE_MIDHIGH:
-			chance := CRITICALCHANCE_MIDHIGH;
-			mod := 2;
-
-		CRITICALCHANCE_HIGHLOW:
-			chance := CRITICALCHANCE_HIGHLOW;
-			mod := 2;
-
-		CRITICALCHANCE_HIGHMID:
-			chance := CRITICALCHANCE_HIGHMID;
-			mod := 2;
-
-		CRITICALCHANCE_HIGHHIGH:
-			chance := CRITICALCHANCE_HIGHHIGH;
-			mod := 2;
+		CRITICALCHANCE_HIGH:
+			min := 5;
+			max := 6;
 	endcase
 
-	return struct{"chance" := chance, "mod" := mod};
+	return struct{"min" := min, "max" := max};
 endfunction
 
 
