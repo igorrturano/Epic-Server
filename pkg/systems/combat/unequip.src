@@ -4,7 +4,7 @@ use cfgfile;
 
 include ":attributes:attributes";
 include ":tn:equipment";
-include ":itemsys:propitens";
+include ":equipsys:propitens";
 
 program unequipweapon(who, item)
 	var descmod_item:=GetObjProperty(item,"descmod");

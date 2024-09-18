@@ -2,7 +2,7 @@ use cfgfile;
 
 include "include/damage";
 include ":tn:tngumps";
-include ":itemsys:propitens";
+include ":equipsys:propitens";
 
 const  EXCEP := 1;
 const  NORMAL := 2;

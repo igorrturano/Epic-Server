@@ -6,7 +6,7 @@ include ":tn:equipment";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
-include ":itemsys:propitens";
+include ":equipsys:propitens";
 
 program equipweapon(who, item)
 
