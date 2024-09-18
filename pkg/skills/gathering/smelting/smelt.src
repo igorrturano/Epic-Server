@@ -43,7 +43,7 @@ program smelt_that_ore(who, item)
 endprogram
 
 function OpenGump(who, pot)
-	var gump := GFECreateGump(340, 600, 39929, "Menu de Smelting");
+	var gump := GFECreateGump("Menu de Smelting", 340, 600, 39929);
 
 	var ores := getAllOres();
 	var ableToSmelt_amt := dictionary{};
@@ -51,14 +51,14 @@ function OpenGump(who, pot)
 	var ableToSmelt_item := dictionary{};
 	var indexAbleToSmelt := array{};
 	var bag := EnumerateItemsInContainer(who.backpack);
-	var oresInBag := getOresInBag(who, ores, bag); //Pra reduzir as buscas lá na frente, já que é recorrente
-	getOresAbleToSmelt(who, ores, oresInBag, bag, ableToSmelt_amt, ableToSmelt_ore, ableToSmelt_item, indexAbleToSmelt);
+	var oresInBag := getOresInBag(ores, bag); //Pra reduzir as buscas lá na frente, já que é recorrente
+	getOresAbleToSmelt(ores, oresInBag, bag, ableToSmelt_amt, ableToSmelt_ore, ableToSmelt_item, indexAbleToSmelt);
 
 	var x := 30;
 	var y := 80;
 	var y_space := 50;
 	var btnID := 100;
-	var tBoxAmt := Dictionary{};
+	var tBoxAmt := dictionary{};
 	var options := array{};
 	foreach oreObjType in indexAbleToSmelt
 		var graphic := 0x1BF4; //TODO: MELHORAR ESSE GET
@@ -70,9 +70,12 @@ function OpenGump(who, pot)
 		if (CDbl(AP_GetSkill(who, GATHERING)) >= ableToSmelt_ore[oreObjType].difficulty)
 			var x2 := x;
 			GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
-			x2 += 35; GFTilePic(gump, x2, y, graphic, ableToSmelt_ore[oreObjType].color);
-			x2 += 50; GFTextLine(gump, x2, y + 5, ableToSmelt_ore[oreObjType].color, ableToSmelt_ore[oreObjType].ingotName);
-			x2 += 160; tBoxAmt[oreObjType] := GFEAddTextBox(gump, x2, y, 30, 15, COLOR_YELLOW, ableToSmelt_amt[oreObjType], 0, 4);
+			x2 += 35;
+			GFTilePic(gump, x2, y, graphic, ableToSmelt_ore[oreObjType].color);
+			x2 += 50;
+			GFTextLine(gump, x2, y + 5, ableToSmelt_ore[oreObjType].color, ableToSmelt_ore[oreObjType].ingotName);
+			x2 += 160;
+			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x2, y, 30, 16, COLOR_YELLOW, ableToSmelt_amt[oreObjType], 0, 4);
 			options.append(struct{
 				"btnID" := btnID,
 				"oreObjType" := oreObjType
@@ -82,30 +85,27 @@ function OpenGump(who, pot)
 		endif
 	endforeach
 
-	var input;
 	var toSmeltItems := array{};
 	var toSmeltOre;
 	var toSmeltAmount;
 	var choice := dictionary{};
-	while (1)
-		input := GFSendGump(who, gump);
-		if (input[0] == 1)
-			return;
-		else
-			foreach option in options
-				if (input[0] == option.btnID)
-					var neededOresToSmelt := ableToSmelt_ore[option.oreObjType].neededToCraft;
-					toSmeltAmount := GFExtractData(input, tBoxAmt[option.oreObjType]);
-					toSmeltOre := ableToSmelt_ore[option.oreObjType];
-					toSmeltItems := getItemsInBag(neededOresToSmelt, bag);
-					
-					DebugMsg(who, DEBUG_NAME_SMELTING, "Item: " + toSmeltItems);
-					DebugMsg(who, DEBUG_NAME_SMELTING, "Quantidade: " + toSmeltAmount);
-				endif
-			endforeach
-			break;
-		endif
-	endwhile
+	var input := GFSendGump(who, gump);
+	if (input[0] == 1)
+		return;
+	else
+		foreach option in options
+			if (input[0] == option.btnID)
+				var neededOresToSmelt := ableToSmelt_ore[option.oreObjType].neededToCraft;
+				toSmeltAmount := GFExtractData(input, tBoxAmt[option.oreObjType]);
+				toSmeltOre := ableToSmelt_ore[option.oreObjType];
+				toSmeltItems := getItemsInBag(neededOresToSmelt, bag);
+				
+				DebugMsg(who, DEBUG_NAME_SMELTING, "Item: " + toSmeltItems);
+				DebugMsg(who, DEBUG_NAME_SMELTING, "Quantidade: " + toSmeltAmount);
+				break;
+			endif
+		endforeach
+	endif
 
 	if(!CheckSmelt(who, toSmeltOre, toSmeltItems))
 		return;
@@ -152,7 +152,7 @@ function CheckSmelt(who, mainOre, itemsToSmelt)
 	return 1;
 endfunction
 
-function getOresInBag(who, ores, bag)
+function getOresInBag(ores, bag)
 	var oresInBag := array{};
 	foreach ore in ores
 		foreach ore2 in bag
@@ -165,7 +165,7 @@ function getOresInBag(who, ores, bag)
 	return oresInBag;
 endfunction
 
-function getOresAbleToSmelt(who, oresList, oresInBag, bag, byref ableToSmelt_amt, byref ableToSmelt_ore, byref ableToSmelt_item, byref indexToReturn)
+function getOresAbleToSmelt(oresList, oresInBag, bag, byref ableToSmelt_amt, byref ableToSmelt_ore, byref ableToSmelt_item, byref indexToReturn)
 	foreach ore in oresList //Feito assim pra manter a ordem da lista de ores, apesar de diminuir um pouco o desempenho
 		foreach item1 in oresInBag
 			if (item1.objtype == ore.oreObjType)
