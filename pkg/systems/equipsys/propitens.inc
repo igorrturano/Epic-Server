@@ -1,4 +1,4 @@
-include ":equipsys:tabelas";
+include ":equipsys:equipstats";
 /*
 TODO:
 ADICIONAR A ATUALIZAÇÃO NO SCRIPT QUE CRIA A PROP CREATEDBY EM TODOS OS ITENS
