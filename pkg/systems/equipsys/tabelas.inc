@@ -11,42 +11,60 @@
  */
 
 enum SPEED
-	SPEED_LOW, SPEED_MID, SPEED_HIGH
+	MELEE_LOW, MELEE_MID, MELEE_HIGH,
+	RANGED_LOW, RANGED_MID, RANGED_HIGH
 endenum
 enum DAMAGE
-	DAMAGE_LOWLOW, DAMAGE_LOWMID, DAMAGE_LOWHIGH,
-	DAMAGE_MIDLOW, DAMAGE_MIDMID, DAMAGE_MIDHIGH,
-	DAMAGE_HIGHLOW, DAMAGE_HIGHMID, DAMAGE_HIGHHIGH
+	ONEHANDED_LOW, ONEHANDED_MID, ONEHANDED_HIGH,
+	DUALWIELD_LOW, DUALWIELD_MID, DUALWIELD_HIGH,
+	TWOHANDED_LOW, TWOHANDED_MID, TWOHANDED_HIGH,
+	BOW_LOW, BOW_MID, BOW_HIGH,
+	CROSSBOW_LOW, CROSSBOW_MID, CROSSBOW_HIGH
 endenum
 enum CRITICAL
 	CRITICALCHANCE_NOCHANCE,
-	CRITICALCHANCE_LOWLOW, CRITICALCHANCE_LOWMID, CRITICALCHANCE_LOWHIGH,
-	CRITICALCHANCE_MIDLOW, CRITICALCHANCE_MIDMID, CRITICALCHANCE_MIDHIGH,
-	CRITICALCHANCE_HIGHLOW, CRITICALCHANCE_HIGHMID, CRITICALCHANCE_HIGHHIGH
+	CRITICALCHANCE_LOW,
+	CRITICALCHANCE_MID,
+	CRITICALCHANCE_HIGH
 endenum
 
-function getWeaponStats(tier, damage, speed, criticalchance)
+function getWeaponStats(tier, damage_tier, speed_tier, critical_tier)
 	return struct{
-		"Speed" := SPEED,
-		"Damage" := DAMAGE,
-		"CriticalChance" := CRITICALCHANCE
+		"Damage" := getWeaponDamage(damage_tier),
+		"Speed" := getWeaponSpeed(speed_tier),
+		"CriticalChance" := getWeaponCritical(critical_tier)
 	};
 endfunction
 function getWeaponSpeed(tier)
 	var min, max;
 
 	case (tier)
-		SPEED_LOW:
+		MELEE_LOW:
 			min := 25;
 			max := 29;
 			break;
 		
-		SPEED_MID:
+		MELEE_MID:
 			min := 33;
 			max := 37;
 			break;
 
-		SPEED_HIGH:
+		MELEE_HIGH:
+			min := 39;
+			max := 45;
+			break;
+
+		RANGED_LOW:
+			min := 25;
+			max := 29;
+			break;
+		
+		RANGED_MID:
+			min := 33;
+			max := 37;
+			break;
+
+		RANGED_HIGH:
 			min := 39;
 			max := 45;
 			break;
@@ -58,39 +76,39 @@ function getWeaponDamage(tier)
 	var dmg;
 
 	case (tier)
-		DAMAGE_LOWLOW:
+		ONEHANDED_LOW:
 			dmg := "1d4";
 			break;
 
-		DAMAGE_LOWMID:
+		ONEHANDED_MID:
 			dmg := "1d6";
 			break;
 
-		DAMAGE_LOWHIGH:
+		ONEHANDED_HIGH:
 			dmg := "1d8";
 			break;
 
-		DAMAGE_MIDLOW:
+		DUALWIELD_LOW:
 			dmg := "2d4";
 			break;
 
-		DAMAGE_MIDMID:
+		DUALWIELD_MID:
 			dmg := "2d6";
 			break;
 
-		DAMAGE_MIDHIGH:
+		DUALWIELD_HIGH:
 			dmg := "2d8";
 			break;
 
-		DAMAGE_HIGHLOW:
+		TWOHANDED_LOW:
 			dmg := "1d8";
 			break;
 
-		DAMAGE_HIGHMID:
+		TWOHANDED_MID:
 			dmg := "1d10";
 			break;
 
-		DAMAGE_HIGHHIGH:
+		TWOHANDED_HIGH:
 			dmg := "1d12";
 			break;
 	endcase
@@ -106,8 +124,8 @@ function getWeaponCritical(tier)
 			chance := CRITICALCHANCE_NOCHANCE;
 			mod := 0;
 
-		CRITICALCHANCE_LOWLOW:
-			chance := CRITICALCHANCE_LOWLOW;
+		CRITICALCHANCE_LOW:
+			chance := CRITICALCHANCE_LOW;
 			mod := 2;
 
 		CRITICALCHANCE_LOWMID:
