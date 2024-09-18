@@ -1,8 +1,164 @@
-///////////////////////////////
-///// NOVO ".CFG" - START /////
-///////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///// Criado para substituir algumas funções do .cfg, que são limitadoras /////
+///////////////////////////////////////////////////////////////////////////////
 
-// Função para ler o arquivo resourceList.cfg e extrair os modificadores
+//TODO: Refazer muitas das funções que usam array usando dictionary/struct
+	//TODO: Tem muita coisa cagada que na época eu fiz de forma porca (AHUahuAHUa)
+
+/* 
+ * Purpose
+ * Ler o .cfg e extrair os modificadores
+ */
+
+enum SPEED
+	SPEED_LOW, SPEED_MID, SPEED_HIGH
+endenum
+enum DAMAGE
+	DAMAGE_LOWLOW, DAMAGE_LOWMID, DAMAGE_LOWHIGH,
+	DAMAGE_MIDLOW, DAMAGE_MIDMID, DAMAGE_MIDHIGH,
+	DAMAGE_HIGHLOW, DAMAGE_HIGHMID, DAMAGE_HIGHHIGH
+endenum
+enum CRITICAL
+	CRITICALCHANCE_NOCHANCE,
+	CRITICALCHANCE_LOWLOW, CRITICALCHANCE_LOWMID, CRITICALCHANCE_LOWHIGH,
+	CRITICALCHANCE_MIDLOW, CRITICALCHANCE_MIDMID, CRITICALCHANCE_MIDHIGH,
+	CRITICALCHANCE_HIGHLOW, CRITICALCHANCE_HIGHMID, CRITICALCHANCE_HIGHHIGH
+endenum
+
+function getWeaponStats(tier, damage, speed, criticalchance)
+	return struct{
+		"Speed" := SPEED,
+		"Damage" := DAMAGE,
+		"CriticalChance" := CRITICALCHANCE
+	};
+endfunction
+function getWeaponSpeed(tier)
+	var min, max;
+
+	case (tier)
+		SPEED_LOW:
+			min := 25;
+			max := 29;
+			break;
+		
+		SPEED_MID:
+			min := 33;
+			max := 37;
+			break;
+
+		SPEED_HIGH:
+			min := 39;
+			max := 45;
+			break;
+	endcase
+
+	return struct{"min" := min, "max" := max};
+endfunction
+function getWeaponDamage(tier)
+	var dmg;
+
+	case (tier)
+		DAMAGE_LOWLOW:
+			dmg := "1d4";
+			break;
+
+		DAMAGE_LOWMID:
+			dmg := "1d6";
+			break;
+
+		DAMAGE_LOWHIGH:
+			dmg := "1d8";
+			break;
+
+		DAMAGE_MIDLOW:
+			dmg := "2d4";
+			break;
+
+		DAMAGE_MIDMID:
+			dmg := "2d6";
+			break;
+
+		DAMAGE_MIDHIGH:
+			dmg := "2d8";
+			break;
+
+		DAMAGE_HIGHLOW:
+			dmg := "1d8";
+			break;
+
+		DAMAGE_HIGHMID:
+			dmg := "1d10";
+			break;
+
+		DAMAGE_HIGHHIGH:
+			dmg := "1d12";
+			break;
+	endcase
+
+	return dmg;
+endfunction
+
+function getWeaponCritical(tier)
+	var chance, mod;
+
+	case(tier)
+		CRITICALCHANCE_NOCHANCE:
+			chance := CRITICALCHANCE_NOCHANCE;
+			mod := 0;
+
+		CRITICALCHANCE_LOWLOW:
+			chance := CRITICALCHANCE_LOWLOW;
+			mod := 2;
+
+		CRITICALCHANCE_LOWMID:
+			chance := CRITICALCHANCE_LOWMID;
+			mod := 2;
+
+		CRITICALCHANCE_LOWHIGH:
+			chance := CRITICALCHANCE_LOWHIGH;
+			mod := 2;
+
+		CRITICALCHANCE_MIDLOW:
+			chance := CRITICALCHANCE_MIDLOW;
+			mod := 2;
+
+		CRITICALCHANCE_MIDMID:
+			chance := CRITICALCHANCE_MIDMID;
+			mod := 2;
+
+		CRITICALCHANCE_MIDHIGH:
+			chance := CRITICALCHANCE_MIDHIGH;
+			mod := 2;
+
+		CRITICALCHANCE_HIGHLOW:
+			chance := CRITICALCHANCE_HIGHLOW;
+			mod := 2;
+
+		CRITICALCHANCE_HIGHMID:
+			chance := CRITICALCHANCE_HIGHMID;
+			mod := 2;
+
+		CRITICALCHANCE_HIGHHIGH:
+			chance := CRITICALCHANCE_HIGHHIGH;
+			mod := 2;
+	endcase
+
+	return struct{"chance" := chance, "mod" := mod};
+endfunction
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function ReadResourceModifiers(mod)
     var cfg_file := ReadConfigFile(":crafting:config/resourceList");
     if (cfg_file.errortext)
