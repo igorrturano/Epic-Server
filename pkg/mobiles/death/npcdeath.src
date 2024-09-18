@@ -65,6 +65,11 @@ program core_npcDeath(params)
         //        break;
         //    endif
         //endforeach
+		var colored_lanterns := {0x40FE, 0x40FF, 0x4100, 0x4101};
+		if (item.objtype in colored_lanterns)
+			DestroyItem(item);
+		endif
+
         if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
             if (!GetObjProperty(item, "itemunico"))
                 item.hp -= Cint(item.hp * 0.8);
