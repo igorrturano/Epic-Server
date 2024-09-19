@@ -113,6 +113,8 @@ exported function Attack(attacker, defender)
 	//	return 1;
 	endif
 
+	var result := start_script(":combat:hooks/opportunityAttack", {attacker, defender});
+
 	var hit_chance := CalculateHitChance(attacker, defender);
 
 	if (GetObjProperty(attacker, "#attackfail") == 1)
