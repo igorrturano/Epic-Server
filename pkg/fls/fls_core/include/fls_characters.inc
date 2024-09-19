@@ -121,10 +121,10 @@ function ReverseLight(player)
 	var darkness := cint(config.darkness);
 
 	var light := cint(getglobalproperty("lightlevel"));
-	if (player.realm == "britannia")
-		player.setlightlevel(0, 9000); // Is in a dungeon
+	if (player.realm == "britannia" && !GetCooldown(player, "lightvision"))
+		player.setlightlevel(20, 9000); // Is in a dungeon
 	elseif(player.x >= 4390 && player.y >= 0 && player.x <= 6100 && player.y <= 4095)
-		player.setlightlevel(0, 9000); // Is in a dungeon
+		player.setlightlevel(20, 9000); // Is in a dungeon
 	else
 		var newlight := abs(darkness - light);
 		player.setlightlevel(newlight, 9000);
