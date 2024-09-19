@@ -73,6 +73,10 @@ program calor(params)
                 dif := dif - 2;
             endif
 
+            if ( TemHabilidade(who, "Kani no Sutairu"))
+                dif := dif - 2;
+            endif
+
             var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/20);
             dif := dif - survivalBonus;
 
@@ -98,6 +102,21 @@ program calor(params)
                     break;
                 endif
                 sleepms(20);
+            endforeach
+
+            // Modificador de dificuldade baseado em regions
+            var cfg := ReadConfigFile("::regions/regions");
+	        var elems := GetconfigStringKeys(cfg);
+            foreach elem in elems
+                var region := FindConfigElem(cfg, elem);
+                var rect := GetConfigString(region, "Range");
+                if ( InRect(who, who.x, who.y, rect) )
+                    var tempmod := cint(GetConfigString(region, "TempMod"));
+                    if (tempmod > 0)
+                        dif := dif + tempmod;
+                    endif
+                    break;
+                endif
             endforeach
 
             var resistcheck;
@@ -174,4 +193,15 @@ function ApplyHeatMod(who, mod)
         DamageFLS(who, dmg);
 		RecalcVitals(who);
 	endif
+endfunction
+
+function InRect(who, x_pos, y_pos, rect)
+
+	rect := SplitWords(rect);
+	var x1 := CInt(rect[1]);
+	var y1 := CInt(rect[2]);
+	var x2 := CInt(rect[3]);
+	var y2 := CInt(rect[4]);
+
+	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
 endfunction

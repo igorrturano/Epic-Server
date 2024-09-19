@@ -1,7 +1,6 @@
 use uo;
 
 include "include/say";
-include ":tn:cooldown";
 
 program doubleattack(who)
 	if (who.shield)

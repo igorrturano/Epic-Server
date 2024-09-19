@@ -707,7 +707,7 @@ function CalculateHitChance(attacker, defender)
 		hit_chance := hit_chance + 100.0;
 	endif
 
-	if (TemHabilidade(defender, "Artista Marcial"))
+	if (TemHabilidade(defender, "Budōka"))
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var tactics_bonus := CInt(AP_GetSkill(defender, TACTICS) / 5);
 		if ( defender.weapon.objtype in monk_weapons )

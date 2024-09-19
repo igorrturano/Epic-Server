@@ -57,8 +57,8 @@ program neve(params)
                 dif := dif - 2;
             endif
 
-            if ( TemHabilidade(who, "Corpo Diamante"))
-                dif := dif - 5;
+            if ( TemHabilidade(who, "Kani no Sutairu"))
+                dif := dif - 2;
             endif
             
             if (GetObjProperty(who, "chardata").culture == BJORSKA)
