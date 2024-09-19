@@ -7,6 +7,7 @@ include ":attributes:attributes";
 include ":fls_core:fls_chargumps_ex";
 include "include/dungeons";
 include "include/epicConstants";
+include ":tn:cooldown";
 function EquipRaceSkin(who)
 
 	var myrace := GetObjProperty(who, "raca");
