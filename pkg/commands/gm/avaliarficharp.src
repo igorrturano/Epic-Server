@@ -239,7 +239,7 @@ function ShowTracosRaciaisGump(who, targ)
     endif
 
     var y_pos := 90;
-    var racial_traits := GetRacialTraits(chardata.culture);
+    var racial_traits := GetRacialTraits(chardata.raca);
     
     if (!racial_traits)
         GFTextMid(gump, 238, 280, 400, 2100, "Nenhum traço racial encontrado para esta raça.");
