@@ -59,11 +59,11 @@ function GetBaduranCaracteristicas()
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "Castanhos profundos",
-                "Azuis brilhantes",
-                "Verdes intensos",
-                "Cinza metálico",
-                "Âmbar dourado"
+                "Castanhos",
+                "Azuis",
+                "Verdes",
+                "Preto",
+                "Âmbar"
             }
         },
         "Idade Aparente" := struct{
@@ -160,7 +160,7 @@ function GetHarolothCaracteristicas()
                 "Médio (51kg-55kg)",
                 "Atlético (56kg-60kg)",
                 "Robusto (61kg-65kg)",
-                "musculoso (66kg-75kg)"
+                "Musculoso (66kg-75kg)"
             }
         },
         "Olhos" := struct{
