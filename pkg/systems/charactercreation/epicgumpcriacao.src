@@ -157,7 +157,7 @@ function RPcharacteristicsSelection(who, culture_pic)
         chardata.caracteristicas_rp := struct{};
     endif
 
-    var racial_traits := GetRacialTraits(chardata.culture);
+    var racial_traits := GetRacialTraits(chardata.raca);
     var categories := GetPageCategories(1);
 
     var input;
