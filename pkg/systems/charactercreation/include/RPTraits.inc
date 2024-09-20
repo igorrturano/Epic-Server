@@ -3,18 +3,21 @@ use os;
 
 include "include/client";
 include "include/say";
-include ":charactercreation:createchar";
+//include ":charactercreation:createchar";
 
 function GetRacialTraits(raca)
+    var result;
     case (raca)
-        ANAO: return GetBaduranCaracteristicas();
-        DROW: return GetHarolothCaracteristicas();
-        ELFO: return GetAlurielCaracteristicas();
-        ORC: return GetGulthrakCaracteristicas();
-        HUMANO: return GetBjorskeCaracteristicas();
-        POLSKI: return GetPolkineaCaracteristicas();
-        default: return error; // Retorna error em vez de struct vazio
+        ANAO: result := GetBaduranCaracteristicas();
+        DROW: result := GetHarolothCaracteristicas();
+        ELFO: result := GetAlurielCaracteristicas();
+        ORC: result := GetGulthrakCaracteristicas();
+        HUMANO: result := GetBjorskeCaracteristicas();
+        POLSKI: result := GetPolkineaCaracteristicas();
+     default:
+    return "Erro";
     endcase
+    return result;
 endfunction
 
 function TranslateRacialTrait(category, value, chardata := 0)
@@ -380,4 +383,112 @@ function ExtractAgeValue(raca, chosen_age_index)
     endif
 
     return age_value;
+endfunction
+
+
+function ConvertAge(race, age)
+    age := CInt(age);
+    var age_category := "";
+
+    case (race)
+        ANAO:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 30)
+                age_category := "Jovem";
+            elseif (age <= 70)
+                age_category := "Adulto";
+            elseif (age <= 90)
+                age_category := "Meia-idade";
+            elseif (age <= 150)
+                age_category := "Idoso";
+            else
+                return array{"Idoso", 150};
+            endif
+
+        HUMANO:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 30)
+                age_category := "Jovem";
+            elseif (age <= 40)
+                age_category := "Adulto";
+            elseif (age <= 50)
+                age_category := "Meia-idade";
+            elseif (age <= 75)
+                age_category := "Veterano";
+            else
+                return array{"Veterano", 75};
+            endif
+
+        DROW:
+          if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 80)
+                age_category := "Jovem";
+            elseif (age <= 120)
+                age_category := "Adulto";
+            elseif (age <= 170)
+                age_category := "Meia-idade";
+            elseif (age <= 225)
+                age_category := "Maduro";
+            else
+                return array{"Maduro", 225};
+            endif
+        ELFO:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 80)
+                age_category := "Jovem";
+            elseif (age <= 120)
+                age_category := "Adulto";
+            elseif (age <= 170)
+                age_category := "Meia-idade";
+            elseif (age <= 225)
+                age_category := "Maduro";
+            else
+                return array{"Maduro", 225};
+            endif
+
+        ORC:
+            if (age < 15)
+                return array{"Jovem", 15};
+            elseif (age <= 25)
+                age_category := "Jovem";
+            elseif (age <= 35)
+                age_category := "Adulto";
+            elseif (age <= 45)
+                age_category := "Meia-idade";
+            elseif (age <= 50)
+                age_category := "Veterano";
+            elseif (age <= 75)
+                age_category := "Ancião";
+            else
+                return array{"Ancião", 75};
+            endif
+
+        POLSKI:
+            if (age < 25)
+                return array{"Jovem", 25};
+            elseif (age <= 65)
+                age_category := "Jovem";
+            elseif (age <= 85)
+                age_category := "Adulto";
+            elseif (age <= 105)
+                age_category := "Meia-idade";
+            elseif (age <= 125)
+                age_category := "Veterano";
+            elseif (age <= 150)
+                age_category := "Ancião";
+            else
+                return array{"Ancião", 150};
+            endif
+
+   
+
+    default:
+            return array{"Erro", age};
+    endcase
+
+    return array{age_category, age};
 endfunction
