@@ -1,26 +1,26 @@
-use uo;
-use os;
-use basic;
-use cfgfile;
+// use uo;
+// use os;
+// use basic;
+// use cfgfile;
 
 include ":attributes:attributes";
-include ":brainai:npcUtil";
-include ":blood:blood";
+// include ":brainai:npcUtil";
+// include ":blood:blood";
 include ":combat:settings";
-include ":timedscripts:timedScripts";
-include "include/client";
-include "include/facings";
-include ":combat:damage";
-include ":tn:combat";
-include ":tn:cooldown";
-include ":fls_core:packets";
-include "include/say";
-include ":charactercreation:habilidades";
-include "include/client";
-include "include/sounds";
-include ":spells:swordmage";
-include ":taming:taming";
-include ":charactercreation:resists";
+// include ":timedscripts:timedScripts";
+// include "include/client";
+// include "include/facings";
+// include ":combat:damage";
+// include ":combat:damage";
+// include ":tn:cooldown";
+// include ":fls_core:packets";
+// include "include/say";
+// include ":charactercreation:habilidades";
+// include "include/client";
+// include "include/sounds";
+// include ":spells:swordmage";
+// include ":taming:taming";
+// include ":charactercreation:resists";
 
 function SkillChecks(attacker, defender, weapon, rawdamage)
 	var skillUsedForCritical := TACTICS;

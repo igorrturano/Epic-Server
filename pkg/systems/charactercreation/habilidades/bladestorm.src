@@ -5,7 +5,7 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:damage";
 include ":combat:combat";
-include ":tn:combat";
+include ":combat:damage";
 
 
 
