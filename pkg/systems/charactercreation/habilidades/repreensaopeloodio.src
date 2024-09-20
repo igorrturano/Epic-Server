@@ -9,7 +9,7 @@ use os;
 include ":attributes:attributes";
 include ":combat:combat";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":tn:combat";
 
 program aura_of_hate(params)

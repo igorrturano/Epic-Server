@@ -5,7 +5,7 @@ use util;
 include ":moongates:moongate";
 include "include/say";
 include ":attributes:attributes";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:resists";
 include ":taming:taming";
 

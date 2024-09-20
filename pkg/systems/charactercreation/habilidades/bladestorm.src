@@ -3,7 +3,7 @@
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":combat:combat";
 include ":tn:combat";
 

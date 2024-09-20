@@ -20,7 +20,8 @@ include ":charactercreation:habilidades";
 include "include/say";
 include ":blood:blood";
 include ":fls_core:packets";
-include "epicCombatUtils";
+include "include/epicCombatUtils";
+include "include/facings";
 include ":commands:debugsystem";
 
 
@@ -152,25 +153,39 @@ function CalculateDamage(defender, type, dmg)
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 
 		case(type)
-			DMG_FIRE: resist := cdbl( cfg[npctemplate.template].FireResist/100.0) + cdbl( defender.resist_fire_mod/100.0);
-			DMG_COLD: resist := cdbl( cfg[npctemplate.template].ColdResist/100.0 ) + cdbl( defender.resist_cold_mod/100.0);
-			DMG_ENERGY: resist := cdbl( cfg[npctemplate.template].EnergyResist/100.0 ) + cdbl( defender.resist_energy_mod/100.0);
-			DMG_PHYSICAL: resist := cdbl( cfg[npctemplate.template].PhysicalResist /100.0 ) + cdbl( defender.resist_physical_mod/100.0);
-			DMG_POISON: resist := cdbl( cfg[npctemplate.template].PoisonResist/100.0 ) + cdbl( defender.resist_poison_mod/100.0);
+			DMG_FIRE: resist := CDbl(cfg[npctemplate.template].FireResist/100.0) + CDbl(defender.resist_fire_mod/100.0); break;
+			DMG_COLD: resist := CDbl(cfg[npctemplate.template].ColdResist/100.0 ) + CDbl(defender.resist_cold_mod/100.0); break;
+			DMG_ENERGY: resist := CDbl(cfg[npctemplate.template].EnergyResist/100.0 ) + CDbl(defender.resist_energy_mod/100.0); break;
+			DMG_PHYSICAL: resist := CDbl(cfg[npctemplate.template].PhysicalResist /100.0 ) + CDbl(defender.resist_physical_mod/100.0); break;
+			DMG_POISON: resist := CDbl(cfg[npctemplate.template].PoisonResist/100.0 ) + CDbl(defender.resist_poison_mod/100.0); break;
 		endcase
 	else
 		//printtextabove( defender, "player " + type);
 		case(type)
-			DMG_FIRE: resist := cdbl( defender.resist_fire/100.0);
-				  resistMod := cdbl( defender.resist_fire_mod/100.0);
-			DMG_COLD: resist := cdbl( defender.resist_cold/100.0 );
-				  resistMod := cdbl( defender.resist_cold_mod/100.0);
-			DMG_ENERGY: resist := cdbl( defender.resist_energy/100.0 );
-				    resistMod := cdbl( defender.resist_energy_mod/100.0);
-			DMG_PHYSICAL: resist := cdbl( defender.resist_physical /100.0 );
-				      resistMod := cdbl( defender.resist_physical_mod/100.0);
-			DMG_POISON: resist := cdbl( defender.resist_poison/100.0 );
-				    resistMod := cdbl( defender.resist_poison_mod/100.0);
+			DMG_FIRE:
+				resist := CDbl(defender.resist_fire/100.0);
+				resistMod := CDbl(defender.resist_fire_mod/100.0);
+				break;
+
+			DMG_COLD:
+				resist := CDbl(defender.resist_cold/100.0);
+				resistMod := CDbl(defender.resist_cold_mod/100.0);
+				break;
+
+			DMG_ENERGY:
+				resist := CDbl(defender.resist_energy/100.0);
+				resistMod := CDbl(defender.resist_energy_mod/100.0);
+				break;
+
+			DMG_PHYSICAL:
+				resist := CDbl(defender.resist_physical /100.0);
+				resistMod := CDbl(defender.resist_physical_mod/100.0);
+				break;
+
+			DMG_POISON:
+				resist := CDbl(defender.resist_poison/100.0);
+				resistMod := CDbl(defender.resist_poison_mod/100.0);
+				break;
 		endcase
 	endif
 
@@ -605,7 +620,23 @@ function CalcDamageHabs(attacker, defender)
 		if (TemHabilidade(attacker, "Destruidor"))
 			damagemod := damagemod * 2;
 		endif
+		damage += damagemod;
 		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia]: " + damagemod);
+	endif
+
+	if(TemHabilidade(attacker, "Flanquear"))
+		if(IsBehind(defender, attacker.x, attacker.y))
+			var damagemod := RandomDiceRoll("1d4");
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Flanquear]: " + damagemod);
+		endif
+	endif
+
+	if (CInt(GetObjProperty(attacker, "#mataroumorrer")) > 0 )
+		// var damagemod := damage*3;
+		var damagemod := RandomDiceRoll("1d4");
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Matar ou Morrer]: " + damagemod);
 	endif
 
 	return damage;
@@ -632,8 +663,14 @@ function CalcDamageSpecial(attacker, defender)
 	if (backStab)
 		var damagemod := 1;
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Backstab]: " + damagemod);
 		EraseObjProperty(attacker, "#backstab");
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Backstab]: " + damagemod);
+	endif
+
+	if(GetObjProperty(defender, "apodrecer"))
+		var damagemod := RandomDiceRoll("1d4");
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Apodrecer]: " + damagemod);
 	endif
 endfunction
 
@@ -654,7 +691,6 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 		totaldmg := CInt(dmg);
 	else
 		totaldmg := CInt(CalculateDamage(defender, type, dmg ));
-		//printtextabove(defender, "raw dmg " + dmg + " type " + type + " final " + totaldmg);
 	endif
 
 	if (GetObjProperty(defender, "#martir"))
