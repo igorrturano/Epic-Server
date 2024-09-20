@@ -391,8 +391,8 @@ function CalcDamageWeapon(attacker)
 	endif
 
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma: " + weapondice);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma (sem mods): " + damageweapon);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma (com mods): " + damage);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolou dado: " + damageweapon);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano: " + damage);
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Arma Afiada: " + sharpened_weapon);
 
 	return damage;
