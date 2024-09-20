@@ -1549,7 +1549,7 @@ function getSignByPictureId(sign_pic)
     endcase
 endfunction
 
-function getMonthBySignd(sign_pic)
+function getMonthBySign(sign_pic)
     case(sign_pic)
         CUIDADOR_ID: return 1;
         GOVERNADOR_ID: return 2;
