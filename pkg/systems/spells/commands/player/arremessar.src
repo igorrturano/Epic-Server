@@ -13,7 +13,7 @@ include "include/sounds";
 include "include/facings";
 include ":combat:damage";
 include ":combat:combat";
-include ":tn:combat";
+include ":combat:damage";
 include ":charactercreation:resists";
 
 program arremesso(params)

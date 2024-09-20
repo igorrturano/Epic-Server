@@ -8,7 +8,7 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/facings";
 include ":combat:damage";
-include ":tn:combat";
+include ":combat:damage";
 include ":combat:armorZones";
 include ":combat:combat";
 
