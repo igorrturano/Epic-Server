@@ -978,7 +978,7 @@ endfunction
 ///////////////////////////////////
 // Adicionado para o Epic! Shard //
 ///////////////////////////////////
-function GFECreateGump(width, height, background, title)
+function GFECreateGump(title, width, height, background := 39929)
 	var gump := GFCreateGump(0, 0, width, height);
 	var x, y;
 	GFClosable(gump, 1);
@@ -1038,7 +1038,7 @@ function GFESetBackground(byref gump, width, height, imgID)
 	GFGumpPicTiled(gump, 10, 10, width, height, imgID);
 endfunction
 
-function GFEAddTextBox(byref gump, x, y, width, height, text_color, default_text := 0, id := 0, maxlenght := 0)
+function GFEAddTextBox(byref gump, x, y, width, height := 16, text_color := COLOR_YELLOW, default_text := 0, id := 0, maxlenght := 0)
 	GFResizePic(gump, x, y, GFGetCfgConst("BackGrounds", "GOLDTRIM"), width + 10, height + 15);
 	var val := GFTextEntry(gump, x + 6, y + 6, width, height, text_color, default_text, id, maxlenght);
 	return val;
