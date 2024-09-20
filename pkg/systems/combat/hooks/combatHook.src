@@ -31,7 +31,7 @@ include ":combat:combat";
 include "include/packets";
 include "include/facings";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:habilidades";
 include ":tn:cooldown";
 include ":tn:combat";
@@ -57,8 +57,6 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-
-
 	if ( attacker == defender )
 		ApplyRawDamage(attacker, 5000);
 		return 1;
@@ -69,15 +67,14 @@ exported function Attack(attacker, defender)
 	if (attacker.acctname)
 		if (!attacker.warmode)
 			if(GetObjProperty(attacker, "attackmsg") <= polcore().systime)
-				SendSysMessageEx(attacker, "Voce precisa estar em modo de combate para ameacar alguem.", SSM_FAIL);
+				SendSysMessageEx(attacker, "Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL);
 				SetObjProperty(attacker, "attackmsg", polcore().systime+15);
 			endif
 			return 1;
 		endif
 	endif
 
-//Weapon Anims
-
+	//Weapon Anims
 	wpn_a := attacker.weapon;
 	wpn_d := defender.weapon;
 
@@ -85,10 +82,10 @@ exported function Attack(attacker, defender)
 	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
 
 	var anim := wpn_a_elem.Anim;
-
-	if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835  )
-       	anim := 0x0c;
-    endif
+	// if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
+	if (!attacker.acctname)
+		anim := 0x0c;
+	endif
 
 	if ( (attacker.paralyzed) || (attacker.frozen) )
 		SendSysMessage(attacker, "Voce nao consegue atacar.");

@@ -21,7 +21,7 @@ include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":tn:npcutil";
 include ":taming:taming";
 include "include/epicCombatUtils";

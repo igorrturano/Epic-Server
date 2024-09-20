@@ -5,7 +5,7 @@ include "include/say";
 include ":tn:cooldown";
 include "include/sysEvent";
 include "include/client";
-include "include/damage";
+include ":combat:damage";
 
 program manobra(attacker)
 	//SendSysMessageEx(attacker, "Use seu vigor como sua vida.", SSM_INFO);

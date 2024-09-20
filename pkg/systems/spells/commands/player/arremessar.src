@@ -11,7 +11,7 @@ include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 include ":combat:combat";
 include ":tn:combat";
 include ":charactercreation:resists";

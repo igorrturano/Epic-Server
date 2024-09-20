@@ -8,7 +8,7 @@ include "include/sounds";
 include ":attributes:attributes";
 include ":attributes:vitals";
 include "include/client";
-include "include/damage";
+include ":combat:damage";
 
 program catapulta(who,item)
 

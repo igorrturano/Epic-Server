@@ -3,7 +3,7 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include "include/damage";
+include ":combat:damage";
 
 program neve(who, regioname)
 	start_script(":nature:coldeffect", {who} );

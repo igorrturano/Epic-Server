@@ -8,7 +8,7 @@ use guilds;
 include ":merchants:merchant";
 include "include/string";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include ":merchants:crafthelp";
 include ":ghaia:ghaiaUtil";
 include ":gumps:gumps";

@@ -11,7 +11,7 @@ use os;
 use cfgfile;
 use util;
 
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 include ":blood:blood";
 include ":charactercreation:habilidades";

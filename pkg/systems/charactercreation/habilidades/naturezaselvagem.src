@@ -14,7 +14,7 @@ include "include/sounds";
 include "include/say";
 include ":tn:cooldown";
 include ":taming:taming";
-include "include/damage";
+include ":combat:damage";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
