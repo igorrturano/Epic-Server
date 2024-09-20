@@ -7,7 +7,7 @@ use util;
 include ":death:death";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 
 program DeathScript(params)
 	var corpse := params[1];
