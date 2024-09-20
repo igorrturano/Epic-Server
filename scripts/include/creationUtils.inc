@@ -292,7 +292,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
     GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
 
-    var racial_traits := GetRacialTraits(chardata.raca);
+    var racial_traits := GetRacialTraits(chardata.culture);
     var categories := GetPageCategories(1);
 
     var y_start := 160;
@@ -1549,7 +1549,23 @@ function getSignByPictureId(sign_pic)
     endcase
 endfunction
 
-
+function getMonthBySign(sign_pic)
+    case(sign_pic)
+        CUIDADOR_ID: return 1;
+        GOVERNADOR_ID: return 2;
+        HEROI_ID: return 3;
+        BOBO_ID: return 4;
+        AMANTE_ID: return 5;
+        COMUM_ID: return 6;
+        CRIADOR_ID: return 7;
+        MAGO_ID: return 8;
+        EXPLORADOR_ID: return 9;
+        FORADALEI_ID: return 10;
+        INOCENTE_ID: return 11;
+        SABIO_ID: return 12;
+        default: return 0;
+    endcase
+endfunction
 
 function getSignDescriptionByPictureId(sign_pic)
     case(sign_pic)
@@ -1647,7 +1663,7 @@ function BirthDayGump(who, selected_day := 0)
     var x, y;
     for i := 0 to 3
         for j := 0 to 6
-            if (day <= 28)
+            if (day <= 28) // pegar os dias do month do nature.inc TODO
                 x := 94 + (j * 24);
                 y := 207 + (i * 28);
                 var background := (day == selected_day) ? 7762 : 7761;

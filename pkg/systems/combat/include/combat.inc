@@ -14,10 +14,8 @@ function DistanceChecks(attacker, defender)
 	endif
 	
 	if ( cur_range > weapon_max_range )
-		CombatDbgMsg(attacker, "Oponente esta muito longe.");
 		return 0;
 	elseif ( cur_range < weapon_min_range )
-		CombatDbgMsg(attacker, "Oponente esta muito perto.");
 		return 0;
 	else
 		return 1;

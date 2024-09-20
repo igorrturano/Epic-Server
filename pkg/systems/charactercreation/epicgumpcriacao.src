@@ -34,11 +34,11 @@ program epicCreationGump(who)
     pathOfWisdom(who, culture_pic);
     languageSelection(who, culture_pic);
     itemInheritance(who);
-    signSelection(who);  // Nova linha adicionada aqui
-    birthDaySelection(who);  // Nova linha adicionada aqui
-    RPcharacteristicsSelection(who, culture_pic);  // Nova linha adicionada aqui TRACOSRP
+    signSelection(who);
+    birthDaySelection(who);
+    RPcharacteristicsSelection(who, culture_pic);
     looksSelection(who);
-
+    setCitizenship(who);
     SetObjProperty(who, "nome_inicial", who.name);
     who.name := who.title_race;
 
@@ -48,69 +48,8 @@ program epicCreationGump(who)
 	var tempo_agora := polcore().systime;
     SetObjProperty(who, "createdate", tempo_agora);
 
-// Definir informações de cidadania, nobreza e cargos profissionais no chardata KINGDOM
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
-        chardata := struct{};
-    endif
-
-    chardata.+citizenship_title := "Plebeu";
-    chardata.+available_citizenship_titles := array{
-        "Banido",
-        "Indigente",
-        "Plebeu",
-        "Cidadão",
-        "Nobre"
-    };
-
-    // Definir títulos de nobreza baseados no gênero do personagem
-    if (who.gender == 0) // Masculino
-        chardata.+nobility_titles := array{
-            "Rei",
-            "Príncipe",
-            "Duque",
-            "Marquês",
-            "Conde",
-            "Visconde",
-            "Barão",
-            "Cavaleiro",
-            "Lorde",
-            "Escudeiro"
-        };
-    else // Feminino
-        chardata.+nobility_titles := array{
-            "Rainha",
-            "Princesa",
-            "Duquesa",
-            "Marquesa",
-            "Condessa",
-            "Viscondessa",
-            "Baronesa",
-            "Dama",
-            "Lady",
-            "Escudeira"
-        };
-    endif
-
-    chardata.+current_nobility_title := "Nenhum"; // Inicialmente sem título de nobreza
-
-    // Definir cargos profissionais disponíveis
-    chardata.+available_professional_positions := array{
-        "Imperador",
-        "Mão do Rei",
-        "Conselheiro Nobre",
-        "Arcebispo",
-        "Senador",
-        "Serviçal"
-    };
-
-    chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
-
-    SetObjProperty(who, "chardata", chardata);
-    // Prólogo
-
+    // Open Beta 28/09
     startAdventure(who);
-
 endprogram
 
 function culturalSelection(who)
@@ -218,7 +157,7 @@ function RPcharacteristicsSelection(who, culture_pic)
         chardata.caracteristicas_rp := struct{};
     endif
 
-    var racial_traits := GetRacialTraits(chardata.raca, chardata);
+    var racial_traits := GetRacialTraits(chardata.raca);
     var categories := GetPageCategories(1);
 
     var input;
@@ -673,14 +612,14 @@ function startAdventure(who)
         SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
     endif
     
-    MoveObjectToLocation(who, 3479, 1190, 3, "britannia", MOVEOBJECT_FORCELOCATION);
+    MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
 
     PlaySoundEffectPrivate(who, 0x306, who);
-    PlayStationaryEffect(3480, 1189, 5, GFX_SMOKE, 10, 20, 0, who.realm);
+    PlayStationaryEffect(who.x+1, who.y+1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
-    PlayStationaryEffect(3477, 1189, 4, GFX_SMOKE, 10, 20, 0, who.realm);
+    PlayStationaryEffect(who.x-2, who.y+1, 4, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
-    PlayStationaryEffect(3477, 1190, 2, GFX_SMOKE, 10, 20, 0, who.realm);
+    PlayStationaryEffect(who.x-2, who.y, 2, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
     PlaySoundEffectPrivate(who, 0x2F4, who);
 
@@ -724,8 +663,8 @@ SetObjProperty(who, "#LastSpeechTime", ReadGameClock());
     SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
     SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
+   
 endfunction
-
 
 function calculateBirthdate(who)
     var chardata := GetObjProperty(who, "chardata");
@@ -781,12 +720,71 @@ function calculateBirthdate(who)
         "day" := birth_day
     };
 
-
-
     // Adicionar a idade inicial e a idade atual
     chardata.+initial_age := age_value;
     chardata.+current_age := age_value;
 
     SetObjProperty(who, "chardata", chardata);
     return chardata.birthdate;
+endfunction
+
+function setCitizenship(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        chardata := struct{};
+    endif
+
+    chardata.+citizenship_title := "Plebeu";
+    chardata.+available_citizenship_titles := array{
+        "Banido",
+        "Indigente",
+        "Plebeu",
+        "Cidadão",
+        "Nobre"
+    };
+
+    // Definir títulos de nobreza baseados no gênero do personagem
+    if (who.gender == 0) // Masculino
+        chardata.+nobility_titles := array{
+            "Rei",
+            "Príncipe",
+            "Duque",
+            "Marquês",
+            "Conde",
+            "Visconde",
+            "Barão",
+            "Cavaleiro",
+            "Lorde",
+            "Escudeiro"
+        };
+    else // Feminino
+        chardata.+nobility_titles := array{
+            "Rainha",
+            "Princesa",
+            "Duquesa",
+            "Marquesa",
+            "Condessa",
+            "Viscondessa",
+            "Baronesa",
+            "Dama",
+            "Lady",
+            "Escudeira"
+        };
+    endif
+
+    chardata.+current_nobility_title := "Nenhum"; // Inicialmente sem título de nobreza
+
+    // Definir cargos profissionais disponíveis
+    chardata.+available_professional_positions := array{
+        "Imperador",
+        "Mão do Rei",
+        "Conselheiro Nobre",
+        "Arcebispo",
+        "Senador",
+        "Serviçal"
+    };
+
+    chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
+
+    SetObjProperty(who, "chardata", chardata);
 endfunction
