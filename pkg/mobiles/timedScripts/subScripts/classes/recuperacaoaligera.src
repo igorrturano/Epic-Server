@@ -16,7 +16,7 @@ program default_poison(params)
     var i := 0;
 
     var parry_bonus := CInt(AP_GetSkill(who, PARRY) / 10);
-    if (TemHabilidade(who, "Artista Marcial"))
+    if (TemHabilidade(who, "Budōka"))
         while (1 < time)
             if (who.dead)
                 break;
