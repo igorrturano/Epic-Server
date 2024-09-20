@@ -6,16 +6,14 @@ include "include/say";
 //include ":charactercreation:createchar";
 
 function GetRacialTraits(raca)
-    var result;
     case (raca)
-        ANAO: result := GetBaduranCaracteristicas();
-        DROW: result := GetHarolothCaracteristicas();
-        ELFO: result := GetAlurielCaracteristicas();
-        ORC: result := GetGulthrakCaracteristicas();
-        HUMANO: result := GetBjorskeCaracteristicas();
-        POLSKI: result := GetPolkineaCaracteristicas();
-     default:
-    return "Erro";
+        ANAO: return GetBaduranCaracteristicas();
+        DROW: return GetHarolothCaracteristicas();
+        ELFO: return GetAlurielCaracteristicas();
+        ORC: return GetGulthrakCaracteristicas();
+        HUMANO: return GetBjorskeCaracteristicas();
+        POLSKI: return GetPolkineaCaracteristicas();
+        default: return error;
     endcase
     return result;
 endfunction

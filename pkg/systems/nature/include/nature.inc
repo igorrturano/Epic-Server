@@ -7,8 +7,6 @@ include "include/damage";
 
 // Calendar constants
 var MONTHS := array{
-
-
     struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
     struct{ "name" := "Alorae", "days" := 30 }, // Mês dedicado à magia, Alora, elfos.
     struct{ "name" := "Galgrumirius", "days" := 30 }, // Mês dedicado aos anões e a forja
@@ -21,7 +19,6 @@ var MONTHS := array{
     struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
     struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
     struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
-
 };
 
 var WEEKDAYS := array{
