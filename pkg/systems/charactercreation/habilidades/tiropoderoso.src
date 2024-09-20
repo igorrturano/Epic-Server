@@ -7,7 +7,7 @@ include ":gumps:yesNo";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 include ":tn:combat";
 
 program tirodesfocado(who)

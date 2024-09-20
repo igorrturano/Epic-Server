@@ -4,7 +4,7 @@ use cfgfile;
 include ":spells:tnmagery";
 include ":attributes:attributes";
 include ":brainai:npcUtil";
-include "include/damage";
+include ":combat:damage";
 include ":tn:combat";
 include ":tn:cooldown";
 include "include/say";
