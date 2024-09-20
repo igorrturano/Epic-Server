@@ -301,53 +301,114 @@ function GetLastDamageInfo(mobile)
 	return GetObjProperty(mobile, "LastDamage");
 endfunction
 
+function CalculateTotalDamageBonus(damage, attacker, defender)
+	damage += CalcDamageStats(attacker);
+	damage += CalcDamageWeapon(attacker);
+	damage += CalcDamageSpecial(attacker, defender);
+	damage += CalcDamageHabs(attacker, defender);
 
-function CalculateTotalDamageBonus(dmg, who, defender)
-	var tatics;
-	var skillCriticalBonus;
-	var categoriaDefender := NPC_GetNPCConfig(defender.npctemplate).Category;
+	damage := CalcDamageReductor(attacker, damage);
+	damage := CalcDamageFinal(attacker, damage);
 
-	SkillCheck(who, TACTICS, -1);
-	tatics := Cint(AP_GetSkill(who, TACTICS)/10);
+	if (damage < 1)
+		damage := 1;
+	endif
 
-	//Bonus STR
-	var cfg:=ReadConfigFile(":combat:itemdesc");
-	var elem := FindConfigElem(cfg, who.weapon.objtype);
+	return damage;
+endfunction
 
-	var	stat := STRENGTH;
+function CalcDamageFinal(attacker, damage)
+	var polida := GetObjProperty(attacker.weapon, "polida");
+	if (!polida)
+		damage := Cint(damage * 0.8);
+	else
+		polida -= 1;
+		if (polida < 1)
+			EraseObjProperty(attacker.weapon, "polida");
+			SendSysMessageEX(attacker, "Sua arma perdeu a polidez.", SSM_INFO);
+		else
+			SetObjProperty(attacker.weapon, "polida", polida);
+		endif
+	endif
+
+	if (GetObjProperty(attacker, "chardata").trait == "Defensor Anão")
+        damage := Cint(damage * 0.7);
+    endif
+
+	return damage;
+endfunction
+
+function CalcDamageStats(attacker)
+	var stat;
+	var damage := 0;
+	var damagemod := 0;
+
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var elem := FindConfigElem(cfg, attacker.weapon.objtype);
+
+	SkillCheck(attacker, TACTICS, -1);
+	damagemod += Cint(AP_GetSkill(attacker, TACTICS)/20);
+
+	stat := STRENGTH;
 	if (elem.Attribute == "Ranged")
 		stat := DEXTERITY;
 	endif
 
-	var str;
 	if (elem.Throwable)
-		str := Cint(AP_GetStat(who, DEXTERITY)) + Cint(AP_GetStat(who, STRENGTH) / 2);
+		damage := Cint(AP_GetStat(attacker, DEXTERITY)) + Cint(AP_GetStat(attacker, STRENGTH) / 2);
 	else
-		str := Cint(AP_GetStat(who, stat));
-	endif
-	//Bonus de prop da arma
-	var weapon_bonus_dmg := Cint(GetObjProperty(who.weapon, "dmgbonus")) + Cint(GetObjProperty(who.weapon, "#dmgbonus"));
-
-	//Bonus de prop do mobile
-	var other := Cint(GetObjProperty(who, "dmgbonus")) + Cint(GetObjProperty(who, "#dmgbonus"));
-
-	//Bonus de Spells
-	var reducao_dano := CDbl(GetObjProperty(who, "dmgreduction"));
-
-	var blessbonus := 0.0;
-	if (GetCooldown(who.weapon, "blessweapon"))
-		var cursed_creatures := {"undead", "demon"};
-		if (defender.npctemplate)
-			if (lower(categoriaDefender) in cursed_creatures )
-				blessbonus := Cint(GetObjProperty(who.weapon, "blessedbonus"));
-				if (!blessbonus)
-					blessbonus := 0;
-				endif
-			endif
-		endif
+		damage := Cint(AP_GetStat(attacker, stat));
 	endif
 
-	if (getCooldown(who, "faroporsangue"))
+	damage := (damage-50) / 10;
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de "+stat+": " + damage);
+
+	return damage;
+endfunction
+
+function CalcDamageWeapon(attacker)
+	var weaponcfg := ReadConfigFile(":*:itemdesc");
+	var weaponelem := FindConfigElem(weaponcfg, attacker.weapon.objtype);
+	var damage := 0;
+	
+	var weapondice := CStr(weaponelem.Damage);
+	var damageweapon;
+	if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
+		weapondice := "1d10";
+	endif
+	damageweapon := RandomDiceRoll(weapondice);
+	damage += damageweapon;
+
+	damage += Cint(GetObjProperty(attacker.weapon, "dmgbonus")) + Cint(GetObjProperty(attacker.weapon, "#dmgbonus"));
+
+	if (GetObjProperty(attacker, "armapredileta") == attacker.weapon.objtype)
+		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25); 
+	endif
+
+	var sharpened_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"];
+	if(sharpened_weapon)
+		damage += sharpened_weapon;
+	endif
+
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma: " + weapondice);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolou dado: " + damageweapon);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano: " + damage);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Arma Afiada: " + sharpened_weapon);
+
+	return damage;
+endfunction
+
+function CalcDamageHabs(attacker, defender)
+	var damage := 0;
+	
+	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == 0x1F020)
+        var damagemod := 2;
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + damagemod);
+    endif
+
+	if (getCooldown(attacker, "faroporsangue"))
+		var damagemod;
 		var bonus := AP_GetVital(defender, HITS) / AP_GetVitalMaximumValue(defender, HITS);
         if (bonus <= 0.25)
 			bonus := "1d12";
@@ -356,132 +417,56 @@ function CalculateTotalDamageBonus(dmg, who, defender)
         elseif (bonus <= 0.75)
             bonus := "1d8";
 		endif
-		var bonus_dice := RandomDiceRoll(bonus);
-		other := other + bonus_dice;
+		damagemod := RandomDiceRoll(bonus);
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + damagemod);
 	endif
 
-	//Bonus de Habilidades especiais
-
-    if (TemHabilidade(who, "Taticas Arcanas"))
-		var manamoment 	:= AP_GetVital(who, "MANA");
-		var manatotal	:= AP_GetVitalMaximumValue(who, "MANA");
-		if 	(manamoment >= manatotal / 2)
-			other := other + Cint(manamoment / 20);
+	if (TemHabilidade(attacker, "Taticas Arcanas"))
+		var manaatual := AP_GetVital(attacker, "MANA");
+		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
+		if (manaatual >= manatotal / 2)
+			var damagemod := Cint(manaatual / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + damagemod);
 		endif
 	endif
 
-	if (GetCooldown(who, "lobosolitario"))
-		var inimigos := ListHostiles(who, 3, LH_FLAG_LOS);
-		if (inimigos > 2)
-			other := other + Cint(AP_GetSkill(who, SURVIVAL) / 10); 
+	if (GetCooldown(attacker, "lobosolitario"))
+		if (ListHostiles(attacker, 3, LH_FLAG_LOS) > 2)
+			var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Lobo Solitário]: " + damagemod);
 		endif
 	endif
 
-	if (TemHabilidade(who, "Precisao Cirurgica"))
-		other := other + Cint(AP_GetSkill(who, ALCHEMY) / 10);
+	if (TemHabilidade(attacker, "Precisao Cirurgica"))
+		var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + damagemod);
 	endif
 
-    if (TemHabilidade(who, "Arsenal Sombrio"))
-        var sneak_dmg := Cint(AP_GetSkill(who, SNEAK) / 20);
-        if (isAssassinWeapon(who))
-            other += sneak_dmg;
+    if (TemHabilidade(attacker, "Arsenal Sombrio"))
+        var damagemod := Cint(AP_GetSkill(attacker, SNEAK) / 20);
+        if (isAssassinWeapon(attacker))
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + damagemod);
         endif
     endif
 
-	var witcher := Cint(AP_GetSkill(who, ALCHEMY) / 10);
-	var inimigo_predileto := 0;
-	var inimigo_dmg := Cint(AP_GetSkill(who, SURVIVAL) / 10);
-	if (TemHabilidade(who, "Inimigo Predileto"))
-		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
-		var inimigo := GetObjProperty(who, "InimigoPredileto");
-		if (cfg[npctemplate.template].Category == inimigo)
-			inimigo_predileto := inimigo_predileto + inimigo_dmg; //dobra o dano se for inimigo predileto
-		endif
-    elseif (TemHabilidade(who, "Exitium Maleficorum"))
-        var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
-		if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
-			inimigo_predileto := inimigo_predileto + inimigo_dmg; //dobra o dano se for inimigo predileto
-		endif
-	elseif (TemHabilidade(who, "Oleo do Cacador"))
-		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
-		var inimigo := GetObjProperty(who, "Óleo");
-		if (cfg[npctemplate.template].Category == inimigo)
-			inimigo_predileto := witcher + 1.0; //dobra o dano se for inimigo predileto
-		endif
-	endif
-	
-
-	if (GetCooldown(defender, "prey"))
-		inimigo_predileto := inimigo_predileto + inimigo_dmg;
-	endif
-
-	if (TemHabilidade(who, "Estilo Mao Livre"))
-		if (who.weapon.attribute == "One_Handed" && !who.shield)
-			other := other + Cint(AP_GetSkill(who, TACTICS) / 25);
+	if (TemHabilidade(attacker, "Estilo Mao Livre"))
+		if (attacker.weapon.attribute == "One_Handed" && !attacker.shield)
+			var damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 25);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Estilo Mao Livre]: " + damagemod);
 		endif
 	endif
 
-	if (isBloodied(defender))
-		if (temHabilidade(who, "Burz"))
-			other := other + Cint(AP_GetSkill(who, TACTICS) / 10);
-		endif
-	endif
-
-	var rage_bonus := Cint(AP_GetSkill(who, TACTICS) / 10);
-	if (GetCooldown(who, "furia"))
-		other := other + rage_bonus;
-		if (TemHabilidade(who, "Destruidor"))
-			other := other + rage_bonus * 2;
-		endif
-	endif
-
-	if (temHabilidade(who, "Instinto de Sobreviência") && AP_GetVital(who, HITS) <= (AP_GetSkill(who, MAGICLORE) / 2))
-		if (GetObjProperty(who, "metamorfose") != error)
-			other := other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
-			PrintText(who, "*enfurecido*");
-		endif
-	endif
-
-	if ( IsRaging(who))
-		if (temHabilidade(who, "Nazg Khalug") || GetObjProperty(who, "NpcFuria"))
-			other:= other + Cint(AP_GetSkill(who, TACTICS) / 10);
-			PrintText(who, "*enfurecido*");
-		endif
-		if (temHabilidade(who, "Furia Primitiva"))
-			if (GetObjProperty(who, "metamorfose") != error)
-				other:= other + Cint(AP_GetSkill(who, MAGICLORE) / 10);
-			endif
-		endif
-		if (GetCooldown(who, "FuriaPrimordial"))
-			var inimigos := ListHostiles(who, 3, LH_FLAG_LOS);
-			inimigos := inimigos.size();
-			other := other + Cint(inimigos.size()); //15% de bonus - balanceamento depois da mudanca de calculo do dano
-		endif
-		if (GetCooldown(who, "furiamortal"))
-			var bonus := Cint((AP_GetVitalMaximumValue(who, HITS) - AP_GetVital(who, HITS)) / 10);
-			other := other + bonus;
-		endif
-	endif
-	var backStab := CDbl(GetObjProperty(who, "#backstab"));
-	if (backStab)
-		other := other + 2;
-		EraseObjProperty(who, "#backstab");
-	endif
-
-
-
-	if ( GetObjProperty(who, "armapredileta") == who.weapon.objtype )
-		other := other + Cint(AP_GetSkill(who, TACTICS) / 25); 
-	endif
-
-	//#shooting_effects
-	if (TemHabilidade(who, "Ainalaith"))
-		var arrow_effects := GetObjProperty(who, "#shooting_effects");
+	if (TemHabilidade(attacker, "Ainalaith"))
+		var damagemod := 0;
+		var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
 		if (!arrow_effects)
-			return 0; // No effects recorded, exit early
+			// return 0; // No effects recorded, exit early
 		endif
 
 		var arrow_types := array{"fire_arrow", "cold_arrow", "energy_arrow"};
@@ -490,102 +475,177 @@ function CalculateTotalDamageBonus(dmg, who, defender)
 				case (arrow_type)
 					"fire_arrow":
 						TS_StartTimer(defender, "queimar", 10);
+						break;
+
 					"cold_arrow":
 						TS_StartTimer(defender, "lentidao", 10);
+						break;
+
 					"energy_arrow":
-						other := other + Cint(AP_GetSkill(who, MAGICLORE) / 20); 
+						damagemod += Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+						break;
 				endcase
 
-				// Reset the counter for this arrow type
 				arrow_effects[arrow_type] := 0;
-				SetObjProperty(who, "#shooting_effects", arrow_effects);
+				SetObjProperty(attacker, "#shooting_effects", arrow_effects);
 			endif
 		endforeach
+
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Ainalaith]: " + damagemod);
 	endif
 
-    var itemdesc := ReadConfigFile("::itemdesc");
+	if (TemHabilidade(attacker, "Inimigo Predileto"))
+		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var inimigo := GetObjProperty(attacker, "InimigoPredileto");
 
-    if (TemHabilidade(who, "Brigador de Taverna") && (who.weapon.objtype == 0x1F020) && (dmg != 0))
-        dmg += 2;
-    endif
+		if (cfg[npctemplate.template].Category == inimigo)
+			var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + damagemod);
+		endif
+    elseif (TemHabilidade(attacker, "Exitium Maleficorum"))
+        var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var inimigo := array{"Undead", "Demons"};
 
-    if (TemHabilidade(who, "Budōka") )
+		if (cfg[npctemplate.template].Category in inimigo)
+			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			damage := damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + damagemod);
+		endif
+	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
+		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var inimigo := GetObjProperty(attacker, "Óleo");
+		if (cfg[npctemplate.template].Category == inimigo)
+			var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);
+			damage := damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + damagemod);
+		endif
+	endif
+
+	if (GetCooldown(defender, "prey"))
+		var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Presa]: " + damagemod);
+	endif
+
+	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, MAGICLORE) / 2))
+		if (GetObjProperty(attacker, "metamorfose") != error)
+			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + damagemod);
+			PrintText(attacker, "*enfurecido*");
+		endif
+	endif
+
+	if (IsRaging(attacker))
+		var damagemod;
+		if (temHabilidade(attacker, "Nazg Khalug") || GetObjProperty(attacker, "NpcFuria"))
+			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + damagemod);
+			PrintText(attacker, "*enfurecido*");
+		endif
+		if (temHabilidade(attacker, "Furia Primitiva"))
+			if (GetObjProperty(attacker, "metamorfose") != error)
+				damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+				damage += damagemod;
+				DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia Primitiva]: " + damagemod);
+			endif
+		endif
+		if (GetCooldown(attacker, "FuriaPrimordial"))
+			var inimigos := ListHostiles(attacker, 3, LH_FLAG_LOS);
+			inimigos := inimigos.size();
+			var damagemod := Cint(inimigos.size());
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia Primordial]: " + damagemod);
+		endif
+		if (GetCooldown(attacker, "furiamortal"))
+			var damagemod := Cint((AP_GetVitalMaximumValue(attacker, HITS) - AP_GetVital(attacker, HITS)) / 10);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia Mortal]: " + damagemod);
+		endif
+	endif
+
+	if (TemHabilidade(attacker, "Budōka"))
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var isArmor := array{"ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve"};
-    	if ( who.weapon.objtype in monk_weapons)
-			other := other + Cint(AP_GetSkill(who, TACTICS) / 10);
-		endif
+		var damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
         var i_config := ReadConfigFile(":*:itemdesc");
-		var this_item := "";
-        foreach item in ListEquippedItems(who)
-            this_item := i_config[item.objtype];
+        foreach item in ListEquippedItems(attacker)
+            var this_item := i_config[item.objtype];
             if (this_item.TipoProtecao in isArmor)
-                SendSysMessageEx(who, "Voce perde mobilidade por estar de armadura e consequentemente, dano.", SSM_INFO);
-                other := 0;
+                SendSysMessageEx(attacker, "Voce perde mobilidade por estar de armadura e consequentemente, dano.", SSM_INFO);
+                damagemod := 0;
                 break;
             endif
         endforeach
-	endif
-
-	var weaponcfg := ReadConfigFile(":*:itemdesc");
-	var weaponelem := FindConfigElem(weaponcfg, who.weapon.objtype);
-	var weapon_dice := RandomDiceRoll(cstr(weaponelem.Damage));
-	if (who.npctemplate)
-		weapon_dice := 0; // Tava dando dano duas vzs
- 	endif
-
-	if (dmg == 0) // Check de Parry que tava atravessando por conta do novo calculo de dano
-		dmg := 1;
-		return dmg;
-	endif
-
-	if (IsTwoHandedWeapon(who.weapon))
-		other := other + Cint(dmg * 1.5);
-	endif
-
-	if (who.weapon.objtype == 0x13b9 && !who.shield) // Usando espada bastarda com as duas mãos
-		other := other + Cint(dmg * 1.5);
-        weapon_dice := RandomDiceRoll("1d10");
-    endif
-	var sharpened_weapon := GetObjProperty(who.weapon, "Aprimoramentos")["Arma Afiada"];
-	if(sharpened_weapon)
-		other += sharpened_weapon;
-	endif
-
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Dano base: " + Cint(dmg));
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Rolagem de dano da arma: " + weapon_dice);
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Dano de habilidades: " + (other - sharpened_weapon));
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Dano de tatics: " + tatics);
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Dano de força: " + ((str-50)/10));
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Dano de bêncãos: " + blessbonus);
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Dano de inimigo predileto: " + inimigo_predileto);
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Redução de dano: " + (-1 * reducao_dano));
-	DebugMsg(who, DEBUG_NAME_DAMAGE, "Arma Afiada: " + sharpened_weapon);
-
-	dmg := CInt( (dmg + (((str-50)/10)+tatics+weapon_dice+blessbonus+weapon_bonus_dmg+other)+inimigo_predileto) * (1-reducao_dano) );
-	if (dmg < 1)
-		dmg := 1;
-	endif
-
-	if (GetObjProperty(who, "chardata").trait == "Defensor Anão")
-        dmg := Cint(dmg * 0.7);
-    endif
-
-	var polida := GetObjProperty(who.weapon, "polida");
-	if (!polida)
-		dmg := Cint(dmg * 0.8);
-	else
-		polida := polida - 1;
-		if (polida < 1)
-			EraseObjProperty(who.weapon, "polida");
-			SendSysMessageEX(who, "Sua arma perdeu a polidez.", SSM_INFO);
-		else
-			SetObjProperty(who.weapon, "polida", polida);
+    	
+		if (damagemod)
+			if (attacker.weapon.objtype in monk_weapons)
+				damage += damagemod;
+				DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Budoka]: " + damagemod);
+			endif
 		endif
 	endif
-	
-	return dmg;
 
+	if (isBloodied(defender))
+		if (temHabilidade(attacker, "Burz"))
+			var damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Burz]: " + damagemod);
+		endif
+	endif
+
+	if (GetCooldown(attacker, "furia"))
+		var damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
+		if (TemHabilidade(attacker, "Destruidor"))
+			damagemod := damagemod * 2;
+		endif
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia]: " + damagemod);
+	endif
+
+	return damage;
+endfunction
+
+function CalcDamageSpecial(attacker, defender)
+	var damage;
+	
+	if (GetCooldown(attacker.weapon, "blessweapon"))
+		var categoriaDefender := NPC_GetNPCConfig(defender.npctemplate).Category;
+		var cursed_creatures := {"undead", "demon"};
+		if (defender.npctemplate)
+			if (lower(categoriaDefender) in cursed_creatures)
+				var damagemod := Cint(GetObjProperty(attacker.weapon, "blessedbonus"));
+				/* if (!damagemod)
+					damagemod := 0;
+				endif */
+				DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Bless Weapon]: " + damagemod);
+			endif
+		endif
+	endif
+
+	var backStab := CDbl(GetObjProperty(attacker, "#backstab"));
+	if (backStab)
+		var damagemod := 1;
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Backstab]: " + damagemod);
+		EraseObjProperty(attacker, "#backstab");
+	endif
+endfunction
+
+function CalcDamageReductor(attacker, damage)
+	var damagemod := Cint(GetObjProperty(attacker, "dmgbonus")) + Cint(GetObjProperty(attacker, "#dmgbonus"));
+
+	damagemod += CDbl(GetObjProperty(attacker, "dmgreduction"));
+	damagemod := 1 - damagemod;
+	damage := damage*damagemod;
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Redutor de Dano: " + CDbl(1-damagemod));
+
+	return damage;
 endfunction
 
 function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
@@ -684,7 +744,7 @@ function CanDestroyCraft(who)
 endfunction
 //TODO: adicionar influencia do .dmg_mod das armas
 
-function IsTwoHandedWeapon (byref item)
+function IsTwoHandedWeapon(item)
 	if (!item.isa (POLCLASS_WEAPON))
 		return 0;
 	endif
@@ -698,7 +758,7 @@ function IsTwoHandedWeapon (byref item)
 	return 0;
 endfunction
 
-function IsThrowingWeapon (byref item)
+function IsThrowingWeapon(item)
 	if (!item.isa (POLCLASS_WEAPON))
 		return 0;
 	endif
@@ -708,6 +768,13 @@ function IsThrowingWeapon (byref item)
 		if (weapon_elem.Throwing)
 			return 1;
 		endif
+	endif
+	return 0;
+endfunction
+
+function CheckBastardSword(who)
+	if (who.weapon.objtype == 0x13b9 && !who.shield)
+		return 1;
 	endif
 	return 0;
 endfunction
