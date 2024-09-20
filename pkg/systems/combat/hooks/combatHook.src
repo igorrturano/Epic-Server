@@ -25,21 +25,21 @@ use uo;
 use cfgfile;
 
 include ":attributes:attributes";
-include "include/client";
+// include "include/client";
 include ":combat:armorZones";
 include ":combat:combat";
 include "include/packets";
 include "include/facings";
-include "include/say";
+// include "include/say";
 include ":combat:damage";
-include ":charactercreation:habilidades";
-include ":tn:cooldown";
-include ":tn:combat";
+// include ":charactercreation:habilidades";
+// include ":tn:cooldown";
+// include ":combat:damage";
 include ":timedscripts:timedScripts";
-include ":fls_core:packets";
-include ":faccao:faccao";
+// include ":fls_core:packets";
+// include ":faccao:faccao";
 include ":combat:include/mainHitScript";
-include "include/dungeons";
+// include "include/dungeons";
 include "include/epicConstants";
 include ":commands:debugsystem";
 
@@ -58,13 +58,68 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	if ( attacker == defender )
-		ApplyRawDamage(attacker, 5000);
-		return 1;
-	elseif ( !CheckLineOfSight(attacker, defender) )
+	if (!CanAttack(attacker, defender))
 		return 1;
 	endif
 
+	wpn_a := attacker.weapon;
+	wpn_d := defender.weapon;
+	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
+	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
+
+
+	var anim := wpn_a_elem.Anim;
+	// if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
+	if (!attacker.acctname)
+		anim := 0x0c;
+	endif
+
+	PlayAttackAnimation(attacker);
+
+	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
+
+	var hitchance := CalculateHitChance(attacker, defender);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto: "+hitchance);
+	var rolldice := RandomDiceRoll("1d100");
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto: "+rolldice);
+	if ( rolldice < hitchance ) // ACERTOU O ATAQUE
+        if (defender.frozen)
+            defender.frozen := 0;
+        endif
+
+		if(CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice))
+			EpicApplyDamage(attacker, defender);
+		endif
+
+		if(CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice))
+		endif
+
+	else //ERROU O ATAQUE
+		PlayMissSound(attacker);
+
+		if(CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice))
+			// Vazio para adicionar possíves ações futuramente
+		endif
+
+		if(CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice))
+			// Vazio para adicionar possíves ações futuramente
+		endif
+		
+	endif
+
+	playSoundAndEffectForThroiwingWeapons(attacker, defender);
+	return 1;
+
+endfunction
+
+function CanAttack(attacker, defender)
+	if (attacker == defender)
+		ApplyRawDamage(attacker, 5000);
+		return 1;
+	elseif (!CheckLineOfSight(attacker, defender))
+		return 1;
+	endif
+	
 	if (attacker.acctname)
 		if (!attacker.warmode)
 			if(GetObjProperty(attacker, "attackmsg") <= polcore().systime)
@@ -75,366 +130,8 @@ exported function Attack(attacker, defender)
 		endif
 	endif
 
-	//Weapon Anims
-	wpn_a := attacker.weapon;
-	wpn_d := defender.weapon;
-
-	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
-	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
-
-	var anim := wpn_a_elem.Anim;
-	// if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
-	if (!attacker.acctname)
-		anim := 0x0c;
-	endif
-
-	if (!CanAttack(attacker, defender))
-		return 1;
-	endif
-
-	var result := start_script(":combat:hooks/opportunityAttack", {attacker, defender});
-
-	var hit_chance := CalculateHitChance(attacker, defender);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto: "+hit_chance);
-
-
-	PlayAttackAnimation(attacker);
-
-	
-	
-
-	var random := RandomInt(100);
-	var dmg := 1;
-	
-	if ( random < hit_chance ) // ACERTOU O ATAQUE
-        if (defender.frozen)
-            defender.frozen := 0;
-        endif
-
-		// Armadura Arcana
-		var dist := Distance(attacker, defender);
-		if (GetCooldown(defender, "freeze_enemy") && dist == 1)
-			PlaySoundEffect(attacker, 0x65b);
-		    PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
-			TS_Starttimer(attacker, "congelamento", 5);
-		elseif(GetCooldown(defender, "incinerate_enemy") && dist == 1)
-			PlaySoundEffect(attacker, 0x5D0);
-		    PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
-			TS_Starttimer(attacker, "queimar", 5, 1 , defender);
-		elseif(GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
-			PlaySoundEffect(attacker, 0x5CF);
-			PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
-			TS_StartTimer(defender, "velocidade", 5);
-		endif
-
-        var trickster_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 20);
-        if (getCooldown(attacker, "disparomistico"))
-            PrintTextAbovePrivate(attacker, "*passo nebuloso*", attacker);
-            SetCooldown(attacker, "disparomisticoHit", trickster_bonus);
-        endif
-
-        if (getCooldown(attacker, "deathdance") > 0)
-            if (!IsBehind(attacker, defender.x, defender.y) && IsFacing(defender, attacker.x, attacker.y))
-                var behindX := defender.x + (defender.x - attacker.x);
-                var behindY := defender.y + (defender.y - attacker.y);
-
-                if (defender.x == attacker.x && defender.y == attacker.y)
-                    SendSysMessageEx(attacker, "VocÊ esta muito proximo do oponente!", SSM_FAIL);
-                    return 0;
-                else
-                    PlayObjectCenteredEffect(attacker, 0x5433, 7, 16);
-                    PlaySoundEffect(attacker, 0x526);
-                    MoveObjectToLocation(attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
-                    if (!IsFacing(attacker, defender.x, defender.y))
-                        TurnObjectToward(attacker, defender.x, defender.y);
-                    endif
-                endif
-	        endif
-        endif
-
-	    //testa possiveis esquivas
-	    if (getObjProperty(defender, "#desviarprojetil"))
-     		 if ( (item_cfg[attacker.weapon.objtype]).Projectile )
-       			PrintText(defender, "*esquiva-se*");
-        		SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
-        		SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
-        		EraseObjProperty(defender, "#desviarprojetil");
-        		return 1;
-      		endif
-	     endif
-
-        if (getCooldown(defender, "desviardisparos") > 0)
-            if ( (item_cfg[attacker.weapon.objtype]).Projectile )
-                PrintText(defender, "*desvia o disparo*");
-                SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
-                SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
-                return 1;
-            endif
-        endif
-
-		if (Cint(GetObjProperty(defender, "evasao")))
-  			PrintText(defender, "*esquiva-se*");
-  			EraseObjProperty(defender, "evasao");
-  			if (TemHabilidade(defender, "Esquiva Oportunista"))
-    			if (GetObjProperty(defender, "#atacandooportunidade") == error)
-					SetObjProperty(defender, "#atacandooportunidade", 1);
-					printtext(defender, "*ataque de oportunidade*");
-					//defender.attack_once(attacker);
-					var new_hit_chance := CalculateHitChance(defender, attacker);
-					var new_random := RandomInt(100)+1;
-					PlayAttackAnimation(defender);
-					if ( new_random < new_hit_chance )
-						var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-						armor := armor[ RandomInt( len( armor ) ) + 1];
-						PlayHitSounds(defender, attacker);
-						var time := ReadGameClock();
-						var dmg := CalculateRawDamage(defender, defender.weapon);
-						var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-						SkillChecks(attacker, defender, wpn_a, dmg);
-					endif
-
-				EraseObjProperty(defender, "#atacandooportunidade");
-				endif
-  			endif
-  			return 1;
-		elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((random-hit_chance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
-			printtext(defender, "*esquiva com jogo de pés*");
-			if (TemHabilidade(defender, "Esquiva Oportunista"))
-				if (GetObjProperty(defender, "#atacandooportunidade") == error)
-					SetObjProperty(defender, "#atacandooportunidade", 1);
-					printtext(defender, "*ataque de oportunidade*");
-					//defender.attack_once(attacker);
-					var new_hit_chance := CalculateHitChance(defender, attacker);
-					var new_random := RandomInt(100)+1;
-					PlayAttackAnimation(defender);
-					if ( new_random < new_hit_chance )
-						var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-						armor := armor[ RandomInt( len( armor ) ) + 1];
-						PlayHitSounds(defender, attacker);
-						var time := ReadGameClock();
-						var dmg := CalculateRawDamage(defender, defender.weapon);
-						var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-						SkillChecks(attacker, defender, wpn_a, dmg);
-					endif
-					EraseObjProperty(defender, "#atacandooportunidade");
-				endif
-			endif
-		endif
-
-		/*if (Cint(GetObjProperty(defender, "esquivadesconcertante")))
-  			PrintText(defender, "*esquiva-se*");
-  			EraseObjProperty(defender, "esquivadesconcertante");
-  			SetCooldown(attacker, "esquivadesconcertante", 40);
-  			return 1;
-		endif*/
-
-		if (GetObjProperty(defender, "maolivre") == 1)
-			EraseObjPRoperty(defender, "maolivre");
-			SetObjProperty(defender, "evasao", 1);
-		endif
-
-		if (TemHabilidade(attacker, "Conhecimento Sobre o Inimigo"))
-			SetObjProperty(defender, "#attackbonus", -20);
-		endif
-
-		if (GetObjProperty(defender, "#contraataquepoderoso"))
-			EraseObjProperty(defender, "#contraataquepoderoso");
-		endif
-
-		if (TemHabilidade(attacker, "Tirothan"))
-			var mlore_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
-			hit_chance := hit_chance + mlore_bonus;
-		endif
-
-		if (TemHabilidade(attacker, "Ainalaith"))
-			var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
-			if (!arrow_effects)
-				arrow_effects := struct{
-					"fire_arrow" := 0,
-					"cold_arrow" := 0,
-					"energy_arrow" := 0
-				};
-			endif
-
-			var arrow_type := "";
-			if (GetObjProperty(attacker.weapon, "fire_arrow"))
-				arrow_type := "fire_arrow";
-			elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
-				arrow_type := "cold_arrow";
-			elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
-				arrow_type := "energy_arrow";
-			endif
-
-			if (arrow_type != "")
-				var current_count := arrow_effects[arrow_type];
-				current_count += 1;
-				arrow_effects[arrow_type] := current_count;
-
-				SetObjProperty(attacker, "#shooting_effects", arrow_effects);
-			endif
-		endif
-
-		if (GetCooldown(defender, "FerocidadeEnsanguentada"))
-			// if (IsRaging(defender))
-                if (GetObjProperty(defender, "#contraatacando") == error)
-                    SetObjProperty(defender, "#contraatacando", 1);
-                    printtext(defender, "*contra ataque*");
-                    //defender.attack_once(attacker);
-                    var new_hit_chance := CalculateHitChance(defender, attacker);
-                    var new_random := RandomInt(100)+1;
-                    PlayAttackAnimation(defender);
-                    if ( new_random < new_hit_chance )
-                        var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-                        armor := armor[ RandomInt( len( armor ) ) + 1];
-                        PlayHitSounds(defender, attacker);
-                        var time := ReadGameClock();
-                        // var dmg := CalculateRawDamage(defender, defender.weapon);
-                        var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-                    endif
-                    EraseObjProperty(defender, "#contraatacando");
-                endif
-			// endif
-		endif
-
-		if (GetCooldown(defender, "contraataque") > 0)
-			if (GetObjProperty(defender, "#contraatacando") == error)
-				SetObjProperty(defender, "#contraatacando", 1);
-				printtext(defender, "*contra ataque*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, wpn_a, dmg);
-				endif
-				EraseObjProperty(defender, "#contraatacando");
-			endif
-		endif
-
-
-		var armor :=  CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
-		armor := armor[ RandomInt( len( armor ) ) + 1];
-		PlayHitSounds(attacker, defender);
-		var dmg := CalculateRawDamage(attacker, attacker.weapon);
-		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
-		SkillChecks(attacker, defender, wpn_a, dmg);
-
-	else //ERROU O ATAQUE
-		SkillChecks(attacker, defender, wpn_a, dmg);
-		if (GetObjProperty(defender, "#contraataquepoderoso"))
-			SetObjProperty(defender, "#contraataquepoderoso", (GetObjProperty(defender, "#contraataquepoderoso")+1) );
-		endif
-
-		EraseObjProperty(attacker, "#shooting_effects");
-
-		if (TemHabilidade(attacker, "Insistencia"))
-			SetObjProperty(attacker, "insistencia", 1);
-		endif
-		if (TemHabilidade(defender, "Esquiva Acrobatica"))
-			SetObjProperty(defender, "#esquivaacrobatica", 1);
-		endif
-
-		if (GetObjProperty(defender, "maolivre") == 1)
-			EraseObjPRoperty(defender, "maolivre");
-			oportunidade := 1;
-		endif
-
-		if ( (GetCooldown(defender, "ataqueoportunidade") > 0) || oportunidade == 1)
-			if (Distance(attacker,defender)<=1 && defender.weapon.attributte != "Ranged")
-				if (GetObjProperty(defender, "#atacandooportunidade") == error)
-					SetObjProperty(defender, "#atacandooportunidade", 1);
-					printtext(defender, "*ataque de oportunidade*");
-					//defender.attack_once(attacker);
-					var new_hit_chance := CalculateHitChance(defender, attacker);
-					var new_random := RandomInt(100)+1;
-					PlayAttackAnimation(defender);
-					if ( new_random < new_hit_chance )
-						var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-						armor := armor[ RandomInt( len( armor ) ) + 1];
-						PlayHitSounds(defender, attacker);
-						var time := ReadGameClock();
-						var dmg := CalculateRawDamage(defender, defender.weapon);
-						var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-						SkillChecks(attacker, defender, wpn_a, dmg);
-						oportunidade := 0;
-					endif
-
-					EraseObjProperty(defender, "#atacandooportunidade");
-				endif
-
-			elseif(Distance(attacker,defender)>1 && defender.weapon.attributte == "Ranged")
-				if (GetObjProperty(defender, "#atacandooportunidade") == error)
-					SetObjProperty(defender, "#atacandooportunidade", 1);
-					printtext(defender, "*ataque de oportunidade*");
-					//defender.attack_once(attacker);
-					var new_hit_chance := CalculateHitChance(defender, attacker);
-					var new_random := RandomInt(100)+1;
-					PlayAttackAnimation(defender);
-					if ( new_random < new_hit_chance )
-						var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-						armor := armor[ RandomInt( len( armor ) ) + 1];
-						PlayHitSounds(defender, attacker);
-						var time := ReadGameClock();
-						var dmg := CalculateRawDamage(defender, defender.weapon);
-						var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-						SkillChecks(attacker, defender, wpn_a, dmg);
-					endif
-
-					EraseObjProperty(defender, "#atacandooportunidade");
-				endif
-			endif
-		endif
-
-		if (GetCooldown(defender, "RespostaDesesperada") > 0)
-			PlayHitSounds(attacker, defender);
-			DamageFLS(attacker, 5, DMG_FORCED, defender);
-			SkillChecks(attacker, defender, wpn_a, dmg);
-		endif
-
-		if (GetCooldown(attacker, "ataqueinfalivel") > 0)
-			printtext(attacker, "*ataque infalivel*");
-			var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-			armor := armor[ RandomInt( len( armor ) ) + 1];
-			PlayHitSounds(defender, attacker);
-			var dmg := CalculateRawDamage(attacker, attacker.weapon);
-			dmg := dmg*0.33;
-			var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
-			SkillChecks(attacker, defender, wpn_a, dmg);
-		endif
-
-        if (GetCooldown(attacker, "mestreduelista") > 0)
-			printtext(attacker, "*mestre duelista*");
-			var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-			armor := armor[ RandomInt( len( armor ) ) + 1];
-			PlayHitSounds(defender, attacker);
-			var dmg := CalculateRawDamage(attacker, attacker.weapon);
-			dmg := dmg;
-			var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
-			SkillChecks(attacker, defender, wpn_a, dmg);
-		endif
-
-		if ( wpn_a_elem.ProjectileType )
-			if(!attacker.npctemplate)
-				ArrowRecovery(attacker, defender, wpn_a);
-			endif
-		endif
-		EraseObjProperty(attacker, "movement");
-		PlayMissSound(attacker);
-	endif
-	playSoundAndEffectForThroiwingWeapons(attacker, defender);
-	return 1;
-
-endfunction
-
-function CanAttack(attacker, defender)
 	if ((attacker.paralyzed) || (attacker.frozen))
-		SendSysMessage(attacker, "Voce nao consegue atacar.");
+		SendSysMessageEx(attacker, "Você não consegue atacar.");
 		return 0;
 	elseif ((attacker.concealed) && (attacker.cmdlevel == 0))
 		attacker.concealed := 0;
@@ -664,10 +361,6 @@ function CalculateHitChance(attacker, defender)
 		hit_chance := hit_chance + witcher_bonus;
 	endif
 
-	if (hit_chance < 5.0)
-		hit_chance := 5.0;
-	endif
-
     var attacker_weapon := attacker.weapon.objtype;
     var ranged_weapons := array{ 0x13B2, 0xe137, 0x26CC, 0xe139, 0x2d2b, 0x2d2a, 0x27A5, 0x0f4f, 0x13fd };
 
@@ -703,11 +396,7 @@ function CalculateHitChance(attacker, defender)
 	if (!attacker.npctemplate)
 		DarknessHitModifier(attacker, defender, hit_chance);
 	endif
-	if (cint(GetObjProperty(attacker, "#finalizar")) == 2)
-		hit_chance := hit_chance + 100;
-		EraseObjProperty(attacker, "#finalizar");
-	endif
-
+	
 	if ( cint( GetObjProperty(attacker, "#ataqueinesperado") ) == 1 )
 		if ( GetObjProperty(defender, "lastHit") != error)
 			var def := GetObjProperty(defender, "lastHit");
@@ -734,20 +423,6 @@ function CalculateHitChance(attacker, defender)
 		EraseObjProperty(attacker, "#bomcomeco");
 	endif
 
-	var oportunidade := 0;
-	if (TemHabilidade(defender, "Ma Ideia, Amigo"))
-		if ( !GetCooldown(attacker, "maideia"))
-			Setcooldown(attacker, "maideia", 60);
-			hit_chance := hit_chance - 30;
-			oportunidade := 1;
-		endif
-	endif
-
-	/* if ( cint(GetObjProperty(defender, "#mataroumorrer")) > 0)
-		hit_chance := hit_chance + 100;
-		SetObjProperty(defender, "#mataroumorrer", cint(GetObjProperty(defender, "#mataroumorrer"))-1 );
-	endif */
-
 	if (GetObjProperty(defender, "#mobilidade") == 1)
 		hit_chance -= 15.0;
 		AP_ConsumeVital(defender, STAMINA, 3);
@@ -758,11 +433,336 @@ function CalculateHitChance(attacker, defender)
 
 	EraseObjProperty(attacker, "insistencia");
 
+	if (TemHabilidade(attacker, "Tirothan"))
+		var mlore_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
+		hit_chance += mlore_bonus;
+	endif
+
+	if (hit_chance < 5.0)
+		hit_chance := 5.0;
+	elseif (hit_chance > 100.0)
+		hit_chance := 100.0;
+	endif
+
 	return hit_chance;
 endfunction
 
-// Arqueiros
+function CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
+	SkillChecks(attacker, defender, wpn_a, 1);
+	// Armadura Arcana
+	var dist := Distance(attacker, defender);
+	if (GetCooldown(defender, "freeze_enemy") && dist == 1)
+		PlaySoundEffect(attacker, 0x65b);
+		PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
+		TS_Starttimer(attacker, "congelamento", 5);
+	elseif(GetCooldown(defender, "incinerate_enemy") && dist == 1)
+		PlaySoundEffect(attacker, 0x5D0);
+		PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
+		TS_Starttimer(attacker, "queimar", 5, 1 , defender);
+	elseif(GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
+		PlaySoundEffect(attacker, 0x5CF);
+		PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
+		TS_StartTimer(defender, "velocidade", 5);
+	endif
 
+	var trickster_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 20);
+	if (getCooldown(attacker, "disparomistico"))
+		PrintTextAbovePrivate(attacker, "*passo nebuloso*", attacker);
+		SetCooldown(attacker, "disparomisticoHit", trickster_bonus);
+	endif
+
+	if (getCooldown(attacker, "deathdance") > 0)
+		if (!IsBehind(attacker, defender.x, defender.y) && IsFacing(defender, attacker.x, attacker.y))
+			var behindX := defender.x + (defender.x - attacker.x);
+			var behindY := defender.y + (defender.y - attacker.y);
+
+			if (defender.x == attacker.x && defender.y == attacker.y)
+				SendSysMessageEx(attacker, "Você esta muito proximo do oponente!", SSM_FAIL);
+				return 0;
+			else
+				PlayObjectCenteredEffect(attacker, 0x5433, 7, 16);
+				PlaySoundEffect(attacker, 0x526);
+				MoveObjectToLocation(attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+				if (!IsFacing(attacker, defender.x, defender.y))
+					TurnObjectToward(attacker, defender.x, defender.y);
+				endif
+			endif
+		endif
+	endif
+
+	if (TemHabilidade(attacker, "Ainalaith"))
+		var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
+		if (!arrow_effects)
+			arrow_effects := struct;
+			arrow_effects.+fire_arrow := 0;
+			arrow_effects.+cold_arrow := 0;
+			arrow_effects.+energy_arrow := 0;
+		endif
+
+		var arrow_type := "";
+		if (GetObjProperty(attacker.weapon, "fire_arrow"))
+			arrow_type := "fire_arrow";
+		elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
+			arrow_type := "cold_arrow";
+		elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
+			arrow_type := "energy_arrow";
+		endif
+
+		if (arrow_type != "")
+			var current_count := arrow_effects[arrow_type];
+			current_count += 1;
+			arrow_effects[arrow_type] := current_count;
+
+			SetObjProperty(attacker, "#shooting_effects", arrow_effects);
+		endif
+	endif
+
+	if (TemHabilidade(attacker, "Conhecimento Sobre o Inimigo"))
+		SetObjProperty(defender, "#attackbonus", -20);
+	endif
+
+	return 1;
+endfunction
+
+function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
+	if (getObjProperty(defender, "#desviarprojetil"))
+			if ( (item_cfg[attacker.weapon.objtype]).Projectile )
+			PrintText(defender, "*esquiva-se*");
+			SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
+			SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
+			EraseObjProperty(defender, "#desviarprojetil");
+			return 0;
+		endif
+	endif
+
+	if (getCooldown(defender, "desviardisparos") > 0)
+		if ( (item_cfg[attacker.weapon.objtype]).Projectile )
+			PrintText(defender, "*desvia o disparo*");
+			SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
+			SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (Cint(GetObjProperty(defender, "evasao")))
+		PrintText(defender, "*esquiva-se*");
+		EraseObjProperty(defender, "evasao");
+		if (TemHabilidade(defender, "Esquiva Oportunista"))
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100);
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, wpn_a, dmg);
+				endif
+
+			EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+		endif
+
+		return 0;
+	elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((rolldice-hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
+		printtext(defender, "*esquiva com jogo de pés*");
+		if (TemHabilidade(defender, "Esquiva Oportunista"))
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100);
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, wpn_a, dmg);
+				endif
+				EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+		endif
+	endif
+
+	if (GetObjProperty(defender, "maolivre") == 1)
+		EraseObjPRoperty(defender, "maolivre");
+		SetObjProperty(defender, "evasao", 1);
+	endif
+
+	if (GetObjProperty(defender, "#contraataquepoderoso"))
+		EraseObjProperty(defender, "#contraataquepoderoso");
+	endif
+
+	if (GetCooldown(defender, "FerocidadeEnsanguentada"))
+		// if (IsRaging(defender))
+			if (GetObjProperty(defender, "#contraatacando") == error)
+				SetObjProperty(defender, "#contraatacando", 1);
+				PrintText(defender, "*contra ataque*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100);
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor := CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+				endif
+				EraseObjProperty(defender, "#contraatacando");
+			endif
+		// endif
+	endif
+
+	if (GetCooldown(defender, "contraataque") > 0)
+		if (GetObjProperty(defender, "#contraatacando") == error)
+			SetObjProperty(defender, "#contraatacando", 1);
+			printtext(defender, "*contra ataque*");
+			//defender.attack_once(attacker);
+			var new_hit_chance := CalculateHitChance(defender, attacker);
+			var new_random := RandomInt(100);
+			PlayAttackAnimation(defender);
+			if ( new_random < new_hit_chance )
+				var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+				armor := armor[ RandomInt( len( armor ) ) + 1];
+				PlayHitSounds(defender, attacker);
+				var time := ReadGameClock();
+				var dmg := CalculateRawDamage(defender, defender.weapon);
+				var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+				SkillChecks(attacker, defender, wpn_a, dmg);
+			endif
+			EraseObjProperty(defender, "#contraatacando");
+		endif
+	endif
+
+	return 1;
+endfunction
+
+function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
+	SkillChecks(attacker, defender, wpn_a, 1);
+	EraseObjProperty(attacker, "#shooting_effects");
+
+	if (TemHabilidade(attacker, "Insistencia"))
+		SetObjProperty(attacker, "insistencia", 1);
+	endif
+
+	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
+		printtext(attacker, "*ataque infalivel*");
+		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+		armor := armor[ RandomInt( len( armor ) ) + 1];
+		PlayHitSounds(defender, attacker);
+		var dmg := CalculateRawDamage(attacker, attacker.weapon);
+		dmg := dmg*0.33;
+		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+		SkillChecks(attacker, defender, wpn_a, dmg);
+	endif
+
+	if (GetCooldown(attacker, "mestreduelista") > 0)
+		printtext(attacker, "*mestre duelista*");
+		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+		armor := armor[ RandomInt( len( armor ) ) + 1];
+		PlayHitSounds(defender, attacker);
+		var dmg := CalculateRawDamage(attacker, attacker.weapon);
+		dmg := dmg;
+		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+		SkillChecks(attacker, defender, wpn_a, dmg);
+	endif
+
+	if ( wpn_a_elem.ProjectileType )
+		if(!attacker.npctemplate)
+			ArrowRecovery(attacker, defender, wpn_a);
+		endif
+	endif
+	EraseObjProperty(attacker, "movement");
+
+	return 1;
+endfunction
+
+function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
+	var oportunidade := 0;
+	if (GetObjProperty(defender, "#contraataquepoderoso"))
+		SetObjProperty(defender, "#contraataquepoderoso", (GetObjProperty(defender, "#contraataquepoderoso")+1) );
+	endif
+
+	if (TemHabilidade(defender, "Esquiva Acrobatica"))
+		SetObjProperty(defender, "#esquivaacrobatica", 1);
+	endif
+
+	if (GetObjProperty(defender, "maolivre") == 1)
+		EraseObjPRoperty(defender, "maolivre");
+		oportunidade := 1;
+	endif
+
+	if ( (GetCooldown(defender, "ataqueoportunidade") > 0) || oportunidade == 1)
+		if (Distance(attacker,defender)<=1 && defender.weapon.attributte != "Ranged")
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100)+1;
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, wpn_a, dmg);
+					oportunidade := 0;
+				endif
+
+				EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+
+		elseif(Distance(attacker,defender)>1 && defender.weapon.attributte == "Ranged")
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100)+1;
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, wpn_a, dmg);
+				endif
+
+				EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+		endif
+	endif
+
+
+	return 1;
+endfunction
+
+function EpicApplyDamage(attacker, defender)
+	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
+	armor := armor[ RandomInt( len( armor ) ) + 1];
+	PlayHitSounds(attacker, defender);
+	var dmg := CalculateRawDamage(attacker, attacker.weapon);
+	var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+endfunction
+
+// Arqueiros
 function AmmoCheckCombatHook(attacker, defender)
     var arcane_bows := array{0xFA6D, 0XF997};
 	if ( !wpn_a_elem.ProjectileType  )

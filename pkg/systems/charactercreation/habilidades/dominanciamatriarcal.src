@@ -7,7 +7,7 @@ include ":combat:damage";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/dungeons";
-include ":tn:combat";
+include ":combat:damage";
 
 program vacuodemana(params)
 	var attacker	:= params[1];
