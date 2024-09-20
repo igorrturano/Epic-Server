@@ -37,7 +37,10 @@ program epicCreationGump(who)
     signSelection(who);
     birthDaySelection(who);
     RPcharacteristicsSelection(who, culture_pic);
+<<<<<<< HEAD
     setBirthdate(who);
+=======
+>>>>>>> bc7955d (Develop (#103))
     looksSelection(who);
     setCitizenship(who);
     SetObjProperty(who, "nome_inicial", who.name);
@@ -151,6 +154,7 @@ function RPcharacteristicsSelection(who, culture_pic)
         "Voz"
     };
 
+<<<<<<< HEAD
     chardata.+caracteristicas_rp := struct {};
     foreach category in CaracteristicasCategories
         chardata.caracteristicas_rp[category] := 0;
@@ -159,6 +163,10 @@ function RPcharacteristicsSelection(who, culture_pic)
     var racial_traits := GetRacialTraits(chardata.raca);
     var categories := GetPageCategories();
     var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
+=======
+    var racial_traits := GetRacialTraits(chardata.raca);
+    var categories := GetPageCategories(1);
+>>>>>>> bc7955d (Develop (#103))
 
     var input;
     var all_requirements_met := 0;
@@ -616,7 +624,20 @@ function pathOfWisdom(who, culture_pic)
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
 endfunction
 
+<<<<<<< HEAD
 function startAdventure(who)   
+=======
+
+
+function startAdventure(who)
+    var birthdate := calculateBirthdate(who);
+    if (birthdate)
+        SendSysMessageEX(who, "Data de Nascimento: " + birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.", SSM_INFO);
+    else
+        SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
+    endif
+    
+>>>>>>> bc7955d (Develop (#103))
     MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
 
     PlaySoundEffectPrivate(who, 0x306, who);
@@ -668,6 +689,7 @@ function languageSelection(who, culture_pic)
     SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
     SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
+   
 endfunction
 
 function calculateBirthdate(who)
@@ -762,6 +784,7 @@ function setCitizenship(who)
     chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
 
     SetObjProperty(who, "chardata", chardata);
+<<<<<<< HEAD
 endfunction
 
 function setBirthdate(who)
@@ -771,4 +794,6 @@ function setBirthdate(who)
     else
         SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
     endif
+=======
+>>>>>>> bc7955d (Develop (#103))
 endfunction
