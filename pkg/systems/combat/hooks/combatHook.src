@@ -41,6 +41,7 @@ include ":faccao:faccao";
 include ":combat:include/mainHitScript";
 include "include/dungeons";
 include "include/epicConstants";
+include ":commands:debugsystem";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -87,120 +88,25 @@ exported function Attack(attacker, defender)
 		anim := 0x0c;
 	endif
 
-	if ( (attacker.paralyzed) || (attacker.frozen) )
-		SendSysMessage(attacker, "Voce nao consegue atacar.");
+	if (!CanAttack(attacker, defender))
 		return 1;
-	elseif ( (attacker.concealed) && (attacker.cmdlevel == 0) )
-		attacker.concealed := 0;
-	elseif ( !DistanceChecks(attacker, defender) )
-		return 1;
-	elseif ( !FacingChecks(attacker, defender) )
-		return 1;
-	elseif ( !AmmoCheckCombatHook(attacker, defender) )
-		return 1;
-	elseif ( GetCooldown(attacker, "defesatotal") > 0 )
-		return 1;
-	elseif(!arcane_shooting(attacker, defender))
-		return 1;
-	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
-		return 1;
-	// elseif ( !throwCheckCombatHook(attacker, defender) )
-	// 	return 1;
-	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
-	//	return 1;
 	endif
 
 	var result := start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
 	var hit_chance := CalculateHitChance(attacker, defender);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto: "+hit_chance);
 
-	if (GetObjProperty(attacker, "#attackfail") == 1)
-		EraseObjProperty(attacker, "#attackfail");
-		hit_chance := 0;
-	endif
-
-	if (GetObjProperty(defender, "#defensefail") == 1)
-		EraseObjProperty(defender, "#defensefail");
-		hit_chance := 100;
-	endif
-
-	if (GetCooldown(attacker, "ataquetotal"))
-		hit_chance := 100;
-	endif
-	if (GetCooldown(defender, "ataquetotal"))
-		hit_chance := 100;
-	endif
-
-	// Verifica acerto na escuridão
-	if (!attacker.npctemplate)
-		DarknessHitModifier(attacker, defender, hit_chance);
-	endif
-	if (cint(GetObjProperty(attacker, "#finalizar")) == 2)
-		hit_chance := hit_chance + 100;
-		EraseObjProperty(attacker, "#finalizar");
-	endif
-
-	if ( cint( GetObjProperty(attacker, "#ataqueinesperado") ) == 1 )
-		if ( GetObjProperty(defender, "lastHit") != error)
-			var def := GetObjProperty(defender, "lastHit");
-			def := def.serial;
-			if (def.serial != attacker.serial)// se o defensor nao acertou o atacante
-				hit_chance := hit_chance + 50;
-				printtext(attacker, "*ataque inesperado*");
-			endif
-		endif
-		EraseObjPRoperty(attacker, "#ataqueinesperado");
-	endif
-
-	if ( cint(GetObjProperty(attacker, "#bomcomeco")) == 1)
-		var attackers := GetObjProperty(defender, "#bomcomecoserials");
-		if (attackers == error)
-			attackers := array;
-		endif
-		if ( !(attacker.serial in attackers))
-			SendSysMessageEx(attacker, "Voce comecou bem.", SSM_INFO);
-			hit_chance := hit_chance + 50;
-			attackers.append(attacker.serial);
-			SetObjProperty(defender,  "#bomcomecoserials", attackers);
-		endif
-		EraseObjProperty(attacker, "#bomcomeco");
-	endif
-
-	var oportunidade := 0;
-	if (TemHabilidade(defender, "Ma Ideia, Amigo"))
-		if ( !GetCooldown(attacker, "maideia"))
-			Setcooldown(attacker, "maideia", 60);
-			hit_chance := hit_chance - 30;
-			oportunidade := 1;
-		endif
-	endif
-
-	if ( cint(GetObjProperty(defender, "#mataroumorrer")) > 0)
-		hit_chance := hit_chance + 100;
-		SetObjProperty(defender, "#mataroumorrer", cint(GetObjProperty(defender, "#mataroumorrer"))-1 );
-	endif
-
-	var random := RandomInt(100)+1;
 
 	PlayAttackAnimation(attacker);
 
-	EraseObjProperty(attacker, "insistencia");
+	
+	
 
-	if (GetObjProperty(attacker, "debug") == 1)
-		printtextabove(attacker, "hit chance "+ hit_chance);
-	endif
-
-	if (GetObjProperty(defender, "#mobilidade") == 1)
-		hit_chance := hit_chance - 15.0;
-		AP_ConsumeVital(defender, STAMINA, 3);
-	endif
-	if ( GetObjProperty(attacker, "#mobilidade") == 1)
-		hit_chance := hit_chance - 15.0;
-	endif
-
-	//ACERTOU
+	var random := RandomInt(100);
 	var dmg := 1;
-	if ( random < hit_chance )
+	
+	if ( random < hit_chance ) // ACERTOU O ATAQUE
         if (defender.frozen)
             defender.frozen := 0;
         endif
@@ -227,13 +133,13 @@ exported function Attack(attacker, defender)
             SetCooldown(attacker, "disparomisticoHit", trickster_bonus);
         endif
 
-        if (getcooldown(attacker, "deathdance") > 0)
+        if (getCooldown(attacker, "deathdance") > 0)
             if (!IsBehind(attacker, defender.x, defender.y) && IsFacing(defender, attacker.x, attacker.y))
                 var behindX := defender.x + (defender.x - attacker.x);
                 var behindY := defender.y + (defender.y - attacker.y);
 
                 if (defender.x == attacker.x && defender.y == attacker.y)
-                    SendSysMessageEx(attacker, "Voce esta muito proximo do oponente!", SSM_FAIL);
+                    SendSysMessageEx(attacker, "VocÊ esta muito proximo do oponente!", SSM_FAIL);
                     return 0;
                 else
                     PlayObjectCenteredEffect(attacker, 0x5433, 7, 16);
@@ -382,7 +288,7 @@ exported function Attack(attacker, defender)
                         armor := armor[ RandomInt( len( armor ) ) + 1];
                         PlayHitSounds(defender, attacker);
                         var time := ReadGameClock();
-                        var dmg := CalculateRawDamage(defender, defender.weapon);
+                        // var dmg := CalculateRawDamage(defender, defender.weapon);
                         var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
                     endif
                     EraseObjProperty(defender, "#contraatacando");
@@ -396,7 +302,7 @@ exported function Attack(attacker, defender)
 				printtext(defender, "*contra ataque*");
 				//defender.attack_once(attacker);
 				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100)+1;
+				var new_random := RandomInt(100);
 				PlayAttackAnimation(defender);
 				if ( new_random < new_hit_chance )
 					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
@@ -526,8 +432,34 @@ exported function Attack(attacker, defender)
 
 endfunction
 
-function CalculateHitChance(attacker, defender)
+function CanAttack(attacker, defender)
+	if ((attacker.paralyzed) || (attacker.frozen))
+		SendSysMessage(attacker, "Voce nao consegue atacar.");
+		return 0;
+	elseif ((attacker.concealed) && (attacker.cmdlevel == 0))
+		attacker.concealed := 0;
+	elseif (!DistanceChecks(attacker, defender))
+		return 0;
+	elseif (!FacingChecks(attacker, defender))
+		return 0;
+	elseif (!AmmoCheckCombatHook(attacker, defender))
+		return 0;
+	elseif (GetCooldown(attacker, "defesatotal") > 0 )
+		return 0;
+	elseif(!arcane_shooting(attacker, defender))
+		return 0;
+	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
+		return 0;
+	// elseif ( !throwCheckCombatHook(attacker, defender) )
+	// 	return 0;
+	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
+	//	return 0;
+	endif
+	
+	return 1;
+endfunction
 
+function CalculateHitChance(attacker, defender)
 	var skill_a;
 	var skill_d;
 	if ( !attacker.npctemplate )
@@ -575,66 +507,63 @@ function CalculateHitChance(attacker, defender)
 	endif
 
 	if ( GetObjProperty(defender, "metamorfose") != error)
-		skill_d := cint(GetObjProperty(defender, "skill_d"));
+		skill_d := CInt(GetObjProperty(defender, "skill_d"));
 	endif
 
 	// Piloto de Golem
 	if ( GetObjProperty(defender, "pilotando") != error)
-		skill_d := cint(GetObjProperty(defender, "skill_d"));
+		skill_d := CInt(GetObjProperty(defender, "skill_d"));
 	endif
 
 	var hit_chance := 50.0 + ((skill_a - skill_d) / 1.5);
 
-	hit_chance := hit_chance + CDbl( GetObjProperty(attacker, "hitbonus") ) + attacker.hitchance_mod - defender.evasionchance_mod;
-	hit_chance := hit_chance + cint( GetObjProperty(attacker, "#attackbonus" ));
+	hit_chance += CDbl( GetObjProperty(attacker, "hitbonus") ) + attacker.hitchance_mod - defender.evasionchance_mod;
+	hit_chance += CInt( GetObjProperty(attacker, "#attackbonus" ));
 
 
 	if (getcooldown(defender, "evasion_chance"))
-		hit_chance := hit_chance - 10;
+		hit_chance -= 10;
 	endif
 
     if (getcooldown(attacker, "blinded") > 0)
-		hit_chance := hit_chance - 20;
+		hit_chance -= 20;
 	endif
 
 	if (TemHabilidade(attacker, "Postura Ofensiva"))
-		hit_chance := hit_chance + 10;
+		hit_chance += 10;
 	endif
 	if (TemHabilidade(defender, "Postura Ofensiva"))
-		hit_chance := hit_chance + 10;
+		hit_chance += 10;
 	endif
 	if (TemHabilidade(attacker, "Postura Defensiva"))
-		hit_chance := hit_chance - 10;
+		hit_chance -= 10;
 	endif
 	if (TemHabilidade(defender, "Postura Defensiva"))
-		hit_chance := hit_chance - 10;
+		hit_chance -= 10;
 	endif
 	if (TemHabilidade(defender, "Preservar Orgaos"))
-		hit_chance := hit_chance - 10;
+		hit_chance -= 10;
 	endif
 	if (GetCooldown(attacker, "posturadecombate") > 0)
-		hit_chance := hit_chance + 10;
+		hit_chance += 10;
 	endif
 
 	if (TemHabilidade(attacker, "Poder da Alianca"))
-		hit_chance := hit_chance + attacker.party.members.size() * 2;
+		hit_chance += attacker.party.members.size() * 2;
 	endif
 
 	if ( GetObjProperty(attacker, "armapreferida") == attacker.weapon.objtype )
-		hit_chance := hit_chance + 5;
-	endif
-	var balanced_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"];
-	if (balanced_weapon)
-		hit_chance := hit_chance + balanced_weapon;
+		hit_chance += 5;
 	endif
 
-    // if ( GetObjProperty(attacker, "#aterrorizar") )
-	// 	hit_chance := hit_chance + 20;
-	// endif
+	var balanced_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"];
+	if (balanced_weapon)
+		hit_chance += balanced_weapon;
+	endif
 
 	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
 		if (!TemHabilidade(defender, "Fortitudo Impia"))
-			hit_chance := hit_chance + 10;
+			hit_chance += 10;
 		endif
 	endif
 
@@ -644,37 +573,36 @@ function CalculateHitChance(attacker, defender)
 
 	if ( IsRaging(attacker) )
 		if (TemHabilidade(defender, "Iludir o Fraco") )
-			hit_chance := hit_chance - 10;
+			hit_chance -= 10;
 		endif
 		if (GetCooldown(attacker, "Ataques Enlouquecidos") > 0 )
-			hit_chance := hit_chance + 100;
+			hit_chance += 100;
 		endif
 	endif
     
 	if ( IsRaging(defender) )
 		if (TemHabilidade(defender, "Esquiva Instintiva") )
-			hit_chance := hit_chance - 10;
+			hit_chance -= 10;
 		endif
 		if (GetCooldown(defender, "Ataques Enlouquecidos") > 0 )
-			hit_chance := hit_chance + 100;
+			hit_chance += 100;
 		endif
 	endif
 
     var swash_debuff := cint(AP_GetSkill(defender, TACTICS)/5);
 	if (GetCooldown(attacker, "desafioheroico") > 0 )
-        hit_chance := hit_chance - swash_debuff;
+        hit_chance -= swash_debuff;
 	endif
 
-    var sem_dor_bonus := 0;
-    var parry_bonus_sem_dor := 0;
+    
 	if (GetCooldown(attacker, "defesapersistente") > 0) //penaliza ataque
-        parry_bonus_sem_dor := Cint(Ap_GetSkill(attacker, PARRY) / 5);
-		hit_chance := hit_chance - parry_bonus_sem_dor;
+        var parry_bonus_sem_dor := Cint(Ap_GetSkill(attacker, PARRY) / 5);
+		hit_chance -= parry_bonus_sem_dor;
 	endif
 
 	if (GetCooldown(defender, "defesapersistente") > 0) //beneficia defesa
-        parry_bonus_sem_dor := Cint(Ap_GetSkill(defender, PARRY) / 5);
-		hit_chance := hit_chance - parry_bonus_sem_dor;
+        var parry_bonus_sem_dor := Cint(Ap_GetSkill(defender, PARRY) / 5);
+		hit_chance -= parry_bonus_sem_dor;
 	endif
 
 	if (GetCooldown(defender, "resistenciaheroica") > 0)
@@ -754,8 +682,83 @@ function CalculateHitChance(attacker, defender)
 		endif
 	endif
 
-	return hit_chance;
+	if (GetObjProperty(attacker, "#attackfail") == 1)
+		EraseObjProperty(attacker, "#attackfail");
+		hit_chance := 0;
+	endif
 
+	if (GetObjProperty(defender, "#defensefail") == 1)
+		EraseObjProperty(defender, "#defensefail");
+		hit_chance := 100;
+	endif
+
+	if (GetCooldown(attacker, "ataquetotal"))
+		hit_chance := 100;
+	endif
+	if (GetCooldown(defender, "ataquetotal"))
+		hit_chance := 100;
+	endif
+
+	// Verifica acerto na escuridão
+	if (!attacker.npctemplate)
+		DarknessHitModifier(attacker, defender, hit_chance);
+	endif
+	if (cint(GetObjProperty(attacker, "#finalizar")) == 2)
+		hit_chance := hit_chance + 100;
+		EraseObjProperty(attacker, "#finalizar");
+	endif
+
+	if ( cint( GetObjProperty(attacker, "#ataqueinesperado") ) == 1 )
+		if ( GetObjProperty(defender, "lastHit") != error)
+			var def := GetObjProperty(defender, "lastHit");
+			def := def.serial;
+			if (def.serial != attacker.serial)// se o defensor nao acertou o atacante
+				hit_chance := hit_chance + 50;
+				printtext(attacker, "*ataque inesperado*");
+			endif
+		endif
+		EraseObjPRoperty(attacker, "#ataqueinesperado");
+	endif
+
+	if ( cint(GetObjProperty(attacker, "#bomcomeco")) == 1)
+		var attackers := GetObjProperty(defender, "#bomcomecoserials");
+		if (attackers == error)
+			attackers := array;
+		endif
+		if ( !(attacker.serial in attackers))
+			SendSysMessageEx(attacker, "Voce comecou bem.", SSM_INFO);
+			hit_chance := hit_chance + 50;
+			attackers.append(attacker.serial);
+			SetObjProperty(defender,  "#bomcomecoserials", attackers);
+		endif
+		EraseObjProperty(attacker, "#bomcomeco");
+	endif
+
+	var oportunidade := 0;
+	if (TemHabilidade(defender, "Ma Ideia, Amigo"))
+		if ( !GetCooldown(attacker, "maideia"))
+			Setcooldown(attacker, "maideia", 60);
+			hit_chance := hit_chance - 30;
+			oportunidade := 1;
+		endif
+	endif
+
+	/* if ( cint(GetObjProperty(defender, "#mataroumorrer")) > 0)
+		hit_chance := hit_chance + 100;
+		SetObjProperty(defender, "#mataroumorrer", cint(GetObjProperty(defender, "#mataroumorrer"))-1 );
+	endif */
+
+	if (GetObjProperty(defender, "#mobilidade") == 1)
+		hit_chance -= 15.0;
+		AP_ConsumeVital(defender, STAMINA, 3);
+	endif
+	if ( GetObjProperty(attacker, "#mobilidade") == 1)
+		hit_chance -= 15.0;
+	endif
+
+	EraseObjProperty(attacker, "insistencia");
+
+	return hit_chance;
 endfunction
 
 // Arqueiros
