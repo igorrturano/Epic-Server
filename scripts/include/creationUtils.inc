@@ -1549,7 +1549,23 @@ function getSignByPictureId(sign_pic)
     endcase
 endfunction
 
-
+function getMonthBySign(sign_pic)
+    case(sign_pic)
+        CUIDADOR_ID: return 1;
+        GOVERNADOR_ID: return 2;
+        HEROI_ID: return 3;
+        BOBO_ID: return 4;
+        AMANTE_ID: return 5;
+        COMUM_ID: return 6;
+        CRIADOR_ID: return 7;
+        MAGO_ID: return 8;
+        EXPLORADOR_ID: return 9;
+        FORADALEI_ID: return 10;
+        INOCENTE_ID: return 11;
+        SABIO_ID: return 12;
+        default: return 0;
+    endcase
+endfunction
 
 function getSignDescriptionByPictureId(sign_pic)
     case(sign_pic)
