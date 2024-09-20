@@ -14,7 +14,7 @@ include ":combat:settings";
 include ":timedscripts:timedScripts";
 include "include/client";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 include ":tn:combat";
 include ":tn:cooldown";
 include ":fls_core:packets";
@@ -46,25 +46,76 @@ program MainHitScript( params )
 		rawdamage := 1;
 	endif
 
-	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
-		SendSysMessageEx(attacker, "Voce nao pode atacar o alvo.", SSM_FAIL);
+	// Checa se o atacante pode atacar o defensor
+	if (!CanAttack(attacker, defender)) 
 		return 0;
 	endif
 
 	//Define attacker como o originador do ataque
 	SetScriptController(attacker);
 
-	//Aplica percentual de penalidade por dex e modificador da Hab Fintar
-	rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender); //penalidade da dex
+	//Aplica penalidade por dex e modificador da Hab Fintar
+	rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender);
 
-	//Impede de atacar-se
-	if (attacker == defender)
-		SendSysMessage(attacker, "attacker é igual ao defender");
+	// Checa se o atacante está olhando pro alvo e se está por trás dele
+	FacingChecks(attacker, defender); 
+
+	//Toca do som do alvo sofrendo ataque
+	PlayHitSounds(attacker, defender);
+
+	//Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+		//Calcula o bloqueio e os danos no escudo do defensor
+		ParryCheck(attacker, defender, rawdamage, weapon);
+	endif
+
+	//Calcula a chance do projétil não quebrar
+	ArrowRecovery(attacker, defender, weapon);
+
+	//Calcula os danos
+	basedamage := CalculateTotalDamageBonus(rawdamage, attacker, defender);
+
+	// Calcula os danos na arma do atacante
+	WearDownWeapon(attacker, weapon);
+
+	// Calcula os danos na armadura do defensor
+	WearDownArmor(defender, armor, rawdamage, weapon);
+
+	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
+	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
+
+	PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage);
+
+	// Se tiver feito um movimento, executa ele e retorna (nao causa o dano normal)
+	DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage);
+
+	// Checa as habilidades e aplica os efeitos (o dano delas habs é calculado no damage.inc)
+	CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
+	
+	// Aplica o o dano
+	// ApplyDamage();
+	if (GetObjProperty(attacker, "#tiropenetrante"))
+		EraseObjProperty(attacker, "#tiropenetrante");
+		DamageFLS(defender, cint(basedamage-rawdamage*2), DMG_FORCED, attacker); //Não entendi bem o que faz
+	endif
+
+	return 1;
+endprogram
+
+function CanAttack(attacker, defender)
+	if (GetObjProperty(defender, "#PrisaoGelida") == 1)
+		SendSysMessageEx(attacker, "Você não pode atacar o alvo.", SSM_FAIL);
 		return 0;
 	endif
 
-	//Impede de atacar gente escondida
-	if (defender.hidden)
+	// Impede de atacar-se
+	if (attacker == defender) 
+		SendSysMessageEx(attacker, "attacker é igual ao defender");
+		return 0;
+	endif
+
+	// Impede de atacar gente escondida
+	if (defender.hidden) 
 		return 0;
 
 	//Calcula se o atacante escondido revela ou não
@@ -84,70 +135,29 @@ program MainHitScript( params )
 		return 0;
 	endif
 
-	//Controla de o atacante está olhando pro alvo e se está por trás dele
-	FacingChecks(attacker, defender);
+	return 1;
+endfunction
 
-	//Toca do som do alvo sofrendo ataque
-	PlayHitSounds(attacker, defender);
-
-	//Processa o aumento ou não de skill de combate
-	//SkillChecks(attacker, defender, weapon, rawdamage); //jogado pro combatHook.src para upar até quando errar o golpe
-
-	//Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
-	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
-		//Calcula o bloqueio e os danos no escudo do defensor
-		ParryCheck(attacker, defender, rawdamage, weapon);
-	endif
-
-	//Calcula a chance do projétil não quebrar
-	ArrowRecovery(attacker, defender, weapon);
-
-	//Calcula os danos
-	basedamage := CalculateTotalDamageBonus(rawdamage, attacker, defender);
-	if (cint(GetObjProperty(attacker, "#mataroumorrer")) > 0 )
-		basedamage := basedamage*3;
-	endif
-	if(TemHabilidade(attacker, "Flanquear"))
-		if(IsBehind(defender,attacker.x, attacker.y))
-			basedamage := basedamage + basedamage * 0.4;
-		endif
-	endif
-
-
-	//Calcula os danos na arma do atacante
-	WearDownWeapon(attacker, weapon);
-
-	//Calcula os danos na armadura do defensor
-	WearDownArmor(defender, armor, rawdamage, weapon);
-
-	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
-	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
-
-	PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage);
-
-	//se tiver feito um movimento, executa ele e retorna (nao causa o dano normal)
+function DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var move := GetObjProperty(attacker, "movement");
-	var movtime := cint(GetObjProperty(attacker, "#movtime"));
+	var movtime := CInt(GetObjProperty(attacker, "#movtime"));
 	if (move != error)
 		if (ReadGameClock() < movtime + 30 )
-			var e := start_script(cstr(move), array{attacker, defender, weapon, armor, basedamage, basedamage});
-//			printtextabove(attacker, " e  " + e + " move " + move);
+			var e := start_script(CStr(move), array{attacker, defender, weapon, armor, basedamage, rawdamage});
 			EraseObjProperty(attacker, "movement");
 			return 1;
 		else
-			SendSysMessageEx(attacker, "Voce perdeu seu ataque especial.", SSM_INFO);
+			SendSysMessageEx(attacker, "Você perdeu seu ataque especial.", SSM_INFO);
 			EraseObjProperty(attacker, "movement");
 		endif
 	endif
+endfunction
 
-	//printtextabove(attacker, "raw " + rawdamage);
-
+function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var total;
 	if ( basedamage > 0 )
-		//seta info
-		//printtextabove(attacker, "raw maior que 0");
 		var lastHitInfo := struct;
-		lastHitInfo.+amount := total;
+		lastHitInfo.+amount := basedamage;
 		lastHitInfo.+attacker := attacker.serial;
 		var weapon_scripts := GetObjProperty(weapon, "HitScripts");
 		if (weapon_scripts != error)
@@ -158,7 +168,7 @@ program MainHitScript( params )
 			lastHitInfo.+hitscript :=  weapon_scripts;
 		endif
 		SetObjProperty(defender, "lastHit", lastHitInfo);
-		if ( (GetObjProperty(defender, "NeverRelease") == 1) )
+		if ((GetObjProperty(defender, "NeverRelease") == 1))
 			var teste := AP_GetVital(defender, "DP");
 			SetObjPRoperty(defender, "LastDP", teste);
 		endif
@@ -168,14 +178,10 @@ program MainHitScript( params )
 			endif
 		endif
 
-		if(getobjproperty(defender, "apodrecer"))
-			basedamage := CInt(basedamage * 1.2);
-		endif
-
-		if (getObjProperty(defender, "#alvomovel") == 1)
+		if (GetObjProperty(defender, "#alvomovel") == 1)
 			EraseObjProperty(defender, "#alvomovel");
 			var hostiles := ListHostiles(defender, 2);
-			var targ := hostiles[RandomInt(hostiles.size())+1 ];
+			var targ := hostiles[RandomInt(hostiles.size())];
 			defender := hostiles[targ];
 		endif
 
@@ -190,28 +196,23 @@ program MainHitScript( params )
 			var encantada := GetObjProperty(attacker.weapon, "#elementalweapon");
 			var modphy := dmgList["Physical"];
 			dmgList["Physical"] := 0;
-			dmgList[encantada.type] := dmgList[encantada.type] + modphy ;
+			dmgList[encantada.type] := dmgList[encantada.type] + modphy;
 		endif
 
-		//var menor :=  cint(getobjproperty(defender, "#chainofpain")) < readgameclock();
-		//printtextabove(attacker, " " +  getobjproperty(defender, "#chainofpain") + " "+ readgameclock() + "  " + menor );
-		if( getobjproperty(defender, "#chainofpain") != error )
-			//printtextabove(attacker, "tem chain");
-			if ( cint(getobjproperty(defender, "#chainofpain")) > readgameclock())
-				//printtextabove(attacker, "ta no delay");
-				//var copnumber := Cint(getobjproperty(defender, "copnumber"));
-				var copmobs := getobjproperty(defender, "#chainserials");
+		if( GetObjProperty(defender, "#chainofpain") != error )
+			if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
+				var copmobs := GetObjProperty(defender, "#chainserials");
 				var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
 				var copdefenders := array;
 				var lvl := cdbl(AP_GetSkill(mage, MAGICLORE)/200);
+
 				foreach serial in copmobs
 					copdefenders.append(SystemFindObjectBySerial(serial));
 				endforeach
-				//basedamage := Cint(basedamage / copnumber);
+
 				foreach targ in copdefenders
 					defender := targ;
 					total := CalculateTotalDamage(defender, basedamage * lvl, attacker, dmgList);
-					//total := ApplyDamageWra(defender, basedamage, dmgList, attacker);
 					if (total < 1)
 						total := 1;
 					endif
@@ -221,10 +222,7 @@ program MainHitScript( params )
 			endif
 		endif
 
-		if (GetObjProperty(attacker, "#tiropenetrante"))
-			EraseObjProperty(attacker, "#tiropenetrante");
-			DamageFLS(defender, cint(basedamage-rawdamage*2), DMG_FORCED, attacker); //Não entendi bem o que faz
-		endif
+		
 
 		total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);
         var shaman_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
@@ -252,7 +250,7 @@ program MainHitScript( params )
 
 		CriticalHitScripts(attacker, defender, weapon, armor, basedamage, total);
 
-		if ( temHabilidade(attacker, "Golpes Amplos"))
+		if (temHabilidade(attacker, "Golpes Amplos"))
 			var pt := attacker.party.members;
 			if (!pt)
 				var inimigosx := ListHostiles(attacker, 1, LH_FLAG_LOS);
@@ -284,7 +282,7 @@ program MainHitScript( params )
 		endif
 
 
-		if ( AP_GetVital(defender, HITS) < total )
+		if (AP_GetVital(defender, HITS) < total)
 			if ( temhabilidade(attacker, "Trespassar") )
 				Trespassar(attacker, defender);
 			elseif ( isBloodied(attacker) && temhabilidade(attacker, "Trespassar Critico") )
@@ -300,36 +298,10 @@ program MainHitScript( params )
 				defender.attack_once(attacker);
 				//EraseObjProperty(defender, "#CriticalChance");
 			endif
-			/*if ( temHabilidade(attacker, "Golpes Amplos"))
-				var pt := attacker.party.members;
-				if (!pt)
-				print("NÃO PODE");
-					var inimigosx := ListHostiles(attacker, 1, LH_FLAG_LOS);
-					foreach inimigox in inimigosx
-						DamageFLS(inimigox, cint(total/3), DMG_PHYSICAL, attacker);
-					endforeach
-				else
-					var pets := ListPetsNear(attacker, 5);
-					var petspt := struct;
-					foreach member in pt
-						petspt.append(ListPetsNear(member, 4));
-					endforeach
-					var inimigos2x := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm);
-					foreach inimigox in inimigos2x
-						if( !(inimigox in petspt) && !(inimigox in pets) && !(inimigox in attacker.party.members))
-							DamageFLS(inimigox, cint(total/3), DMG_PHYSICAL, attacker);
-						endif
-					endforeach
-				endif
-			endif*/
 		endif
-
-		//	if ( temHabilidade(attacker, "Assassinato Horrorizante") )
-		//		SetCooldown(attacker, "evasion_chance", 20);
-		//	endif
 	endif
 
-	if ( GetCooldown(attacker, "aleijar") > 0)
+	if (GetCooldown(attacker, "aleijar") > 0)
 		AP_ConsumeVital(defender, STAMINA, total);
 	endif
 
@@ -338,7 +310,7 @@ program MainHitScript( params )
         PrintText(defender, "*Golpeia com o escudo*");
         PlaySoundEffect(defender, 0x3b4);
         TS_StartTimer(attacker, "paralysis", 5);
-        sleep(2);
+        Sleep(2);
         defender.attack_once(attacker);
 
         SetCooldown(defender, "defesasgloriosas", 0);
@@ -418,10 +390,7 @@ program MainHitScript( params )
 		endif
 	endif
 	EraseObjProperty(attacker, "backstab");
-
-
-	return 1;
-endprogram
+endfunction
 
 function ParseScriptString(crit)
 	var str := "";
@@ -445,7 +414,7 @@ function FacingChecks(attacker, defender)
 	endif
 
 	if ( IsBehind(defender, attacker.x, attacker.y)  )
-		SetObjProperty(attacker, "#backstab", 2); //Cada 1 na propriedade adiciona 10% de dano
+		SetObjProperty(attacker, "#backstab", 2);
 	endif
 	return 1;
 endfunction
@@ -751,8 +720,8 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 	foreach hitscript in weapon_scripts
 		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage, hitopt});
 		if ( !script || script.errortext )
-			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
-			SendSysMessage(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessageEx(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessageEx(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
 		endif
 		sleepms(2);
 	endforeach
@@ -964,7 +933,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	endif
 
 	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0)
-		SendSysMessageEx(defender, "Voce nao leva o critico");
+		SendSysMessageEx(defender, "Você não leva o critico");
 		return;
 	endif
 
