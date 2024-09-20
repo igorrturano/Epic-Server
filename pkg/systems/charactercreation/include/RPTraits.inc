@@ -3,7 +3,6 @@ use os;
 
 include "include/client";
 include "include/say";
-//include ":charactercreation:createchar";
 
 function GetRacialTraits(raca)
     case (raca)
@@ -15,7 +14,6 @@ function GetRacialTraits(raca)
         POLSKI: return GetPolkineaCaracteristicas();
         default: return error;
     endcase
-    return result;
 endfunction
 
 function TranslateRacialTrait(category, value, chardata := 0)
