@@ -5,6 +5,8 @@ include ":disguise:disguise";
 include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
+//include ":nature:nature";
+//include ":charactercreation:include/RPTraits";
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -247,6 +249,25 @@ function EpicRaceGump(who, culture_pic)
     return GFSendGump(who, gump);
 endfunction
 
+function getMonthBySign(sign)
+    case(sign)
+        "Constelação do Cuidador": return 1; // Duwus
+        "Constelação do Governador": return 2; // Alorae
+        "Constelação do Herói": return 3; // Galgrumirius
+        "Constelação do Bobo": return 4; // Kaius
+        "Constelação do Amante": return 5; // Idrithae
+        "Constelação da Pessoa Comum": return 6; // Lleuadae
+        "Constelação do Criador": return 9; // Demiurgus (33 dias)
+        "Constelação do Mago": return 8; // Crassus
+        "Constelação do Explorador": return 7; // Adarae
+        "Constelação do Fora da Lei": return 10; // Phrugum
+        "Constelação do Inocente": return 11; // Praetorus
+        "Constelação do Sábio": return 12; // Aeternum
+        default: return 1;
+    endcase
+endfunction
+
+
 function getRaceByCulturalId(culture_pic)
     var races;
     case (culture_pic)
@@ -270,6 +291,7 @@ endfunction
 
 
 function CaracteristicasRPGump(who, byref chardata, culture_pic)
+    var racial_traits := GetRacialTraits(chardata.raca);
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     
@@ -292,9 +314,8 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
     GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
 
-    var racial_traits := GetRacialTraits(chardata.culture);
-    var categories := GetPageCategories(1);
-
+     var categories := GetPageCategories(1);
+    var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
     var y_start := 160;
     var category_iter := 0;
     var x := x_left;
@@ -318,24 +339,63 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             is_selected := (chardata.caracteristicas_rp[category] == i);
             GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
             
-            if (is_selected)
-                GFAddButton(gump, x+200, option_y, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, button_id);
-            else
-                GFAddButton(gump, x+200, option_y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, button_id);
+            if (category != "Idade Aparente")
+                if (is_selected)
+                    GFAddButton(gump, x+200, option_y, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, button_id);
+                else
+                    GFAddButton(gump, x+200, option_y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, button_id);
+                endif
             endif
         endfor
         current_y := current_y + 140;
         category_iter := category_iter + 1;
     endforeach
 
+    // Adicionar caixa de texto para idade escolhida
+     current_y += 20;
+    GFTextLine(gump, x, current_y, 1153, "Escreva a sua idade:");
+    current_y += 20;
+    var age_textbox := GFEAddTextBox(gump, x, current_y, 100, 20, COLOR_YELLOW, "", 1000);
+
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 222);
 
-    return GFSendGump(who, gump);
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 222)
+        var age_input := GFExtractData(input, age_textbox);
+        var all_required_selected := true;
+        
+        foreach category in required_categories
+            if (!chardata.caracteristicas_rp[category])
+                all_required_selected := false;
+                break;
+            endif
+        endforeach
+
+        if (!all_required_selected)
+            SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        elseif (age_input == "")
+            SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        else
+            chardata.idade_escolhida := CInt(age_input);
+            var age_category, final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
+            chardata.idade_aparente := age_category;
+            chardata.idade_real := final_age;
+            SendSysMessageEx(who, "Sua idade aparente é " + age_category + " (" + final_age + " anos).", SSM_INFO);
+            return input;
+        endif
+    endif
+
+    return input;
 endfunction
+
+
 
 function GetPageCategories(page)
     case (page)
-        1: return array{"Altura", "Peso", "Olhos", "Idade Aparente", "Voz"};
+        1: return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
         default: return array{};
     endcase
 endfunction
@@ -1549,23 +1609,7 @@ function getSignByPictureId(sign_pic)
     endcase
 endfunction
 
-function getMonthBySign(sign_pic)
-    case(sign_pic)
-        CUIDADOR_ID: return 1;
-        GOVERNADOR_ID: return 2;
-        HEROI_ID: return 3;
-        BOBO_ID: return 4;
-        AMANTE_ID: return 5;
-        COMUM_ID: return 6;
-        CRIADOR_ID: return 7;
-        MAGO_ID: return 8;
-        EXPLORADOR_ID: return 9;
-        FORADALEI_ID: return 10;
-        INOCENTE_ID: return 11;
-        SABIO_ID: return 12;
-        default: return 0;
-    endcase
-endfunction
+
 
 function getSignDescriptionByPictureId(sign_pic)
     case(sign_pic)
@@ -1609,99 +1653,8 @@ function SignGump(who, sign_pic)
     return GFSendGump(who, gump);
 endfunction
 
-function birthDaySelection(who)
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata.birthdate)
-        chardata.birthdate := struct{};
-    endif
-    var selected_day := 0;
-    var btn_value;
-    while (1)
-        var input := BirthDayGump(who, selected_day);
-        btn_value := input[0]; 
-        if (btn_value == 201 || btn_value == 210)
-            continue;
-        elseif (btn_value == 666 && selected_day != 0)
-            break;
-        elseif (btn_value >= 1 && btn_value <= 28)
-            selected_day := btn_value;
-        endif
-    endwhile
-    if (selected_day > 0)
-        chardata.birthdate.day := selected_day;
-        SetObjProperty(who, "chardata", chardata);
-        SendSysMessageEX(who, "Seu dia de nascimento será " + selected_day, SSM_INFO);
-    else
-        SendSysMessageEX(who, "Nenhum dia selecionado.", SSM_FAIL);
-    endif
-    return selected_day;
-endfunction
-
-function BirthDayGump(who, selected_day := 0)
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
-    
-    // Fundo principal
-    GFGumpPic(gump, 17, 31, 0x9E6);
-    
-    // Fundo do calendário
-    GFResizePic(gump, 65, 163, 83, 223, 173);
-    
-    // Título
-    GFHTMLArea(gump, 315, 55, 400, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu Dia de Nascimento", 0, 0);
-    
-    // Título "Calendário Imperial"
-    GFTextLine(gump, 115, 179, 53, "Calendário Imperial");
-    
-    // Adicionar a imagem do signo escolhido
-    var chardata := GetObjProperty(who, "chardata");
-    var sign_pic := GetSignPicture(chardata.sign);
-    GFGumpPic(gump, 298, 100, sign_pic);
-    
-    // Adicionar os dias do mês
-    var day := 1;
-    var x, y;
-    for i := 0 to 3
-        for j := 0 to 6
-            if (day <= 28) // pegar os dias do month do nature.inc TODO
-                x := 94 + (j * 24);
-                y := 207 + (i * 28);
-                var background := (day == selected_day) ? 7762 : 7761;
-                GFAddButton(gump, x, y, background, background, GF_CLOSE_BTN, day);
-                
-                // Ajuste fino para números específicos
-                var text_x := x + 8;
-                if (day <= 9)
-                    text_x -= 2; // Move apenas os números 1 a 9 2 pixels para a esquerda
-                elseif (day >= 10 && day <= 19)
-                    text_x -= 3;
-                elseif (day >= 20 && day != 21)
-                    text_x -= 6;
-                elseif (day == 21)
-                    text_x -= 3;
-                endif
-                
-                GFTextLine(gump, text_x, y + 2, 2100, CStr(day));
-                day += 1;
-            endif
-        endfor
-    endfor
-
-    GFHTMLArea(gump, 60, 550, 650, 120, "Escolha o dia do seu nascimento no calendário acima.", 1, 1);
-    
-    // Só adiciona o botão de próxima página se um dia foi selecionado
-    if (selected_day != 0)
-        GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
-    else
-        // Adiciona um botão desabilitado se nenhum dia foi selecionado
-        GFGumpPic(gump, 653, 680, 4005);
-    endif
-
-    return GFSendGump(who, gump);
-endfunction
-
-function getDayFromPictureId(day_pic)
-    return (day_pic - 0x1000) + 1;
+function GetMonths()
+    return MONTHS;
 endfunction
 
 function GetSignPicture(sign)
@@ -1721,3 +1674,100 @@ function GetSignPicture(sign)
         default: return CUIDADOR_ID; // Imagem padrão caso algo dê errado
     endcase
 endfunction
+
+
+function birthDaySelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata.birthdate)
+        chardata.birthdate := struct{};
+    endif
+    var selected_day := 0;
+    var month_index := getMonthBySign(chardata.sign);
+    var btn_value;
+    while (1)
+        var input := BirthDayGump(who, selected_day);
+        btn_value := input[0]; 
+        if (btn_value == 666 && selected_day != 0)
+            break;
+        elseif (btn_value >= 1 && btn_value <= MONTHS[month_index].days)
+            selected_day := btn_value;
+        endif
+    endwhile
+    if (selected_day > 0)
+        chardata.birthdate.day := selected_day;
+        chardata.birthdate.month := month_index;
+        SetObjProperty(who, "chardata", chardata);
+        SendSysMessageEx(who, "Seu dia de nascimento será " + selected_day + " de " + MONTHS[month_index].name, SSM_INFO);
+    else
+        SendSysMessageEx(who, "Nenhum dia selecionado.", SSM_FAIL);
+    endif
+    return selected_day;
+endfunction
+
+function BirthDayGump(who, selected_day := 0)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    var chardata := GetObjProperty(who, "chardata");
+    var month_index := getMonthBySign(chardata.sign);
+    var month := MONTHS[month_index];
+    
+    // Fundo principal
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    
+    // Fundo do calendário
+    GFResizePic(gump, 65, 163, 83, 223, 201);
+    
+    // Título
+    GFHTMLArea(gump, 315, 55, 400, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu Dia de Nascimento", 0, 0);
+    
+    // Nome do mês
+    GFTextLine(gump, 115, 179, 53, month.name);
+    
+    // Adicionar a imagem do signo escolhido
+    var sign_pic := GetSignPicture(chardata.sign);
+    GFGumpPic(gump, 298, 100, sign_pic);
+    
+    // Adicionar os dias do mês
+    var day := 1;
+    var x, y;
+    for i := 0 to 5 // Aumentado para 6 linhas para acomodar 33 dias
+        for j := 0 to 6
+            if (day <= month.days)
+                x := 94 + (j * 24);
+                y := 207 + (i * 28);
+                var background := (day == selected_day) ? 7762 : 7761;
+                GFAddButton(gump, x, y, background, background, GF_CLOSE_BTN, day);
+                
+                var text_x := x + 8;
+                if (day <= 9)
+                    text_x -= 2;
+                elseif (day >= 10 && day <= 19)
+                    text_x -= 3;
+                elseif (day >= 20 && day != 21 && day != 31)
+                    text_x -= 6;
+                elseif (day == 21 || day == 31)
+                    text_x -= 3;
+                endif
+                
+                GFTextLine(gump, text_x, y + 2, 2100, CStr(day));
+                day += 1;
+            endif
+        endfor
+    endfor
+
+    GFHTMLArea(gump, 60, 550, 650, 120, "Escolha o dia do seu nascimento no calendário acima.", 1, 1);
+    
+    if (selected_day != 0)
+        GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
+    else
+        GFGumpPic(gump, 653, 680, 4005);
+    endif
+
+    return GFSendGump(who, gump);
+endfunction
+
+function getDayFromPictureId(day_pic)
+    return (day_pic - 0x1000) + 1;
+endfunction
+

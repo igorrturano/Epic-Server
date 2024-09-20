@@ -7,24 +7,8 @@ include "include/damage";
 
 // Calendar constants
 var MONTHS := array{
-<<<<<<< HEAD
-    struct{ "name" := "Duwus", "days" := 31 },
-    struct{ "name" := "Alorae", "days" := 30 },
-    struct{ "name" := "Galgrumirius", "days" := 30 },
-    struct{ "name" := "Kaius", "days" := 30 },
-    struct{ "name" := "Idrithae", "days" := 30 },
-    struct{ "name" := "Adarae", "days" := 30 },
-    struct{ "name" := "Demiurgus", "days" := 33 },
-    struct{ "name" := "Crassus", "days" := 32 },
-    struct{ "name" := "Lleuadae", "days" := 31 },
-<<<<<<< HEAD
-    struct{ "name" := "Phrugum", "days" := 31 },
-    struct{ "name" := "Igorsmonth", "days" := 31 },
-    struct{ "name" := "Enzosmonth", "days" := 31 }
-=======
-    struct{ "name" := "Phrugum", "days" := 31 }
->>>>>>> d91512403bc60a16b53047ff2e59d449b3f5bec4
-=======
+
+
     struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
     struct{ "name" := "Alorae", "days" := 30 }, // Mês dedicado à magia, Alora, elfos.
     struct{ "name" := "Galgrumirius", "days" := 30 }, // Mês dedicado aos anões e a forja
@@ -37,7 +21,7 @@ var MONTHS := array{
     struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
     struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
     struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
->>>>>>> 2f1bd95f4838fb916ad78dbe862498d96f28bd1c
+
 };
 
 var WEEKDAYS := array{
@@ -486,8 +470,4 @@ function updateCharacterAge(who)
         chardata.current_age := new_age;
         SetObjProperty(who, "chardata", chardata);
     endif
-<<<<<<< HEAD
 endfunction
-=======
-endfunction
->>>>>>> 2f1bd95f4838fb916ad78dbe862498d96f28bd1c
