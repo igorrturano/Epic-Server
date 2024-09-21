@@ -257,7 +257,7 @@ function getMonthBySign(sign)
         "Constelação do Bobo": return 4; // Kaius
         "Constelação do Amante": return 5; // Idrithae
         "Constelação da Pessoa Comum": return 6; // Lleuadae
-        "Constelação do Criador": return 9; // Demiurgus (33 dias)
+        "Constelação do Criador": return 9; // Demiurgus
         "Constelação do Mago": return 8; // Crassus
         "Constelação do Explorador": return 7; // Adarae
         "Constelação do Fora da Lei": return 10; // Phrugum
@@ -266,7 +266,6 @@ function getMonthBySign(sign)
         default: return 1;
     endcase
 endfunction
-
 
 function getRaceByCulturalId(culture_pic)
     var races;
@@ -288,7 +287,6 @@ function getRaceByCulturalId(culture_pic)
     endcase
     return races;
 endfunction
-
 
 function CaracteristicasRPGump(who, byref chardata, culture_pic)
     var racial_traits := GetRacialTraits(chardata.raca);
@@ -314,7 +312,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
     GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
 
-     var categories := GetPageCategories(1);
+    var categories := GetPageCategories();
     var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
     var y_start := 160;
     var category_iter := 0;
@@ -380,10 +378,9 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             return CaracteristicasRPGump(who, chardata, culture_pic);
         else
             chardata.idade_escolhida := CInt(age_input);
-            var age_category, final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
-            chardata.idade_aparente := age_category;
-            chardata.idade_real := final_age;
-            SendSysMessageEx(who, "Sua idade aparente é " + age_category + " (" + final_age + " anos).", SSM_INFO);
+            var final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
+            chardata.idade_aparente := final_age[1];
+            chardata.idade_real := final_age[2];
             return input;
         endif
     endif
@@ -391,18 +388,12 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     return input;
 endfunction
 
-
-
-function GetPageCategories(page)
-    case (page)
-        1: return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
-        default: return array{};
-    endcase
+function GetPageCategories()
+        return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
 endfunction
 
-function ProcessSelection(byref chardata, input, page)
-    if (page == 1)
-        var categories := GetPageCategories(page);
+function ProcessSelection(byref chardata, input)
+        var categories := GetPageCategories();
         var category_index := (input - 100) / 5;
         var option := (input - 100) % 5 + 1;
         
@@ -410,7 +401,6 @@ function ProcessSelection(byref chardata, input, page)
             var category := categories[category_index + 1];
             chardata.caracteristicas_rp[category] := option;
         endif
-    endif
 endfunction
 
 function ClassGump(who, culture_pic)
@@ -933,7 +923,6 @@ function genericItems(who)
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
 endfunction
-
 
 function weaponsByClassAndCulture(who)
     var chardata := GetObjProperty(who, "chardata");
