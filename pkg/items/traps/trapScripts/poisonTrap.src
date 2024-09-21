@@ -8,7 +8,7 @@ use math;
 
 include "include/client";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";

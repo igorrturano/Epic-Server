@@ -7,7 +7,7 @@ include "include/say";
 include ":attributes:attributes";
 include ":attributes:skills";
 include ":timedscripts:timedScripts";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:resists";
 
 program HitScript(params)

@@ -10,7 +10,7 @@ include ":combat:settings";
 include ":timedscripts:timedScripts";
 include "include/client";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 include ":tn:combat";
 include ":tn:cooldown";
 include ":fls_core:packets";

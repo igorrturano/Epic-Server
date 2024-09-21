@@ -3,7 +3,7 @@ use uo;
 use util;
 use cfgfile;
 
-include "include/damage";
+include ":combat:damage";
 
 // Calendar constants
 var MONTHS := array{
