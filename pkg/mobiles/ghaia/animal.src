@@ -10,6 +10,7 @@ include "include/dungeons";
 include ":faccao:faccao";
 include ":ghaia:combatevents";
 include ":timedScripts:timedScripts";
+include "include/epicNPCUtils";
 
 var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
 var me := self();
@@ -40,14 +41,8 @@ program KillPlayers()
 	//printtextabove(me, "done");
 
     while (1)    
-        var hasPlayerNearMe := 0;
-        var nearby := ListMobilesNearLocationEx( me.x, me.y, LIST_IGNORE_Z, 30 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+        var hasPlayerNearMe := hasPlayerNear(me);
 
-        foreach player in nearby
-            if (player.acctname)
-                hasPlayerNearMe++;
-            endif
-        endforeach
         if (hasPlayerNearMe >= 1)
             animalBrain();
         endif
