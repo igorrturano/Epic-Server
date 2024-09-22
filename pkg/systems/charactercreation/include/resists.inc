@@ -99,6 +99,10 @@ function GetResist(who, resist)
 		valor := valor + 2;
     endif
 
+	if (TemHabilidade(who, "Shintai to Kokoro"))
+		valor := valor + 5;
+	endif
+
 	if (who.acctname)
 		if(resist == FORTITUDE)
 			var fortitude_mod := Cint(who.lower_reagent_cost_mod) + valor;

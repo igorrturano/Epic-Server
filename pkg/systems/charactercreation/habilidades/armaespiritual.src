@@ -3,7 +3,7 @@ use cfgfile;
 include ":spells:swordmage";
 include "include/say";
 include ":tn:tngumps";
-include "include/damage";
+include ":combat:damage";
 include "include/epicConstants";
 
 program swordmage(who)

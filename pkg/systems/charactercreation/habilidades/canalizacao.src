@@ -1,6 +1,6 @@
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 
 program doubleattack(who)

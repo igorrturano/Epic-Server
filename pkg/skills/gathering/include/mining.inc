@@ -537,7 +537,6 @@ function SetResource(resource_type, byref elem, amount)
 	elem.setprop( resource_type, CStr(amount) );
 endfunction
 
-
 function CheckLoop(who, tool, my_x, my_y, my_facing)
 	if ( who.hidden )
 		SendSysMessage(who, "Voce parou de minerar para ficar escondido.");
@@ -557,3 +556,187 @@ function CheckLoop(who, tool, my_x, my_y, my_facing)
 		return 1;
 	endif
 endfunction
+
+function ConvertOreToIngot(ore)
+	case (ore) //de acordo com ore no pot indica o ingot certo
+		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 0x1bde; //carvao
+
+		0x6075: return 0x1be3; //vidro
+		0x6450: return 0x6465; //copper
+		0x6990: return 0x6991; //estanho
+		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x62ff: return 0x6996; //ferro impuro -> ferro temperado
+		0x6992: return 0x6993; //prata
+		0x6305: return 0x630e; //ouro
+		0x6309: return 0x6309; //aco
+		0x6995: return 0x6995; //ligas elementais
+		0x6301: return 0x630a; //litan
+		0x6314: return 0x6315; //illyra
+		0x6307: return 0x6310; //galvorn
+		0x6308: return 0x6311; //mithril
+		0x6303: return 0x630c; //venetium
+		0x6451: return 0x6460; //frigutium
+		0x6304: return 0x630d; //ignium
+		0x6302: return 0x630b; //fulmetium
+
+		//esses ultimos nao estao sendo usados.
+		0x6312: return 0x6313; //ario
+		0x6452: return 0x6460; //gomril
+		0x6306: return 0x630f; //durang
+
+		0x1bde: return 0x1bde;
+
+		default: return 0;
+	endcase
+endfunction
+
+function getOreByOreName(param)
+	var ores := getAllOres();
+
+	foreach ore in ores
+		if (ore.oreName == param)
+			return ore;
+		endif
+	endforeach
+endfunction
+function getOreByOreObjType(param)
+	var ores := getAllOres();
+
+	foreach ore in ores
+		if (ore.oreObjType == param)
+			return ore;
+		endif
+	endforeach
+endfunction
+function getOreByIngotName(param)
+	var ores := getAllOres();
+
+	foreach ore in ores
+		if (ore.ingotName == param)
+			return ore;
+		endif
+	endforeach
+endfunction
+function getOreByIngotObjType(param)
+	var ores := getAllOres();
+
+	foreach ore in ores
+		if (ore.ingotObjType == param)
+			return ore;
+		endif
+	endforeach
+endfunction
+
+/*
+ * getAllOres()
+ *
+ * Purpose
+ * Cataloga todos as matérias primas e suas composições do shard.
+ * Deve estar na ordem em que aparecerá nos gumps.
+ * 
+ * Parameters
+ * Não possui parâmetros.
+ * Verificar a construção do toStruct(params) para saber a ordem correta de criação.
+ * Em caso de precisar passar os valores opcionais da função, lembrar de passar um array vazio({}) na posição othersOresNeeded. 
+ *
+ * Retorna value
+ * Um array de struct com o valor de todos os minérios do shard
+ */
+function getAllOres()
+	return array{
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0x1bdd, {}, 2323),
+		toStruct(ORE_SAND, "Areia", "Vidro", 0x6075),
+		
+		/* Metais primários */
+		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
+		toStruct(ORE_COPPER, "Minério de Cobre", "Ingot de Cobre", 0x6450),
+
+		/* Ligas Metálicas */
+		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
+		toStruct(ORE_BRONZE, "Barra de Cobre", "Ingot de Bronze", 0x6465, {0x1BDE}, 2599),
+		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6996, {0x1BDE}, 2599),
+
+		/* Ligas Elementais */
+		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Ingot de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
+		toStruct(ORE_VENETITA, "Minério de Venetita", "Ingot de Venetium", 0x6303, {/* Colocar LIGA aqui */}, 1428),
+		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Ingot de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
+		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Ingot de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
+
+
+		// toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
+		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
+		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448),
+
+		/* Metais preciosos */
+		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
+		toStruct(ORE_GOLD, "Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598)
+	};
+endfunction
+
+/* 
+ * Parameters
+ *
+ * oreType: Enum (fim deste documento) com o tipo do ore
+ * oreName: Nome do minério bruto
+ * ingotName: Nome da barra do minério
+ * objType: ObjType do minério
+ * othersOresNeeded: Array com os objType dos demais minérios necessários pra fazer o ingot (em caso de liga)
+ * color: Cor do metal
+ *
+ * Return value
+ * Um struct contendo os dados do material:
+ * oreType, oreName, ingotName, oreObjType, ingotObjType, neededToCraft, color.
+ */
+function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", color := 0)
+	var neededToCraft := array{};
+	neededToCraft.append(objType);
+
+	if (Len(othersOresNeeded) > 0)
+		foreach ore in othersOresNeeded
+			neededToCraft.append(ore);
+		endforeach
+	endif
+
+	return struct{
+		"oreType" := oreType,
+		"oreName" := oreName, 
+		"ingotName" := ingotName,
+		"oreObjType" := objType,
+		"ingotObjType" := ConvertOreToIngot(objType),
+		"neededToCraft" := neededToCraft,
+		"difficulty" := DetermineMiningDifficulty(objType),
+		"color" := color
+	};
+endfunction
+
+enum ORE
+	ORE_CHARCOAL := "ORE_CHARCOAL",
+	ORE_SAND := "ORE_SAND",
+	ORE_IRON := "ORE_IRON",
+	ORE_COPPER := "ORE_COPPER",
+	
+	ORE_IRON_TEMP := "ORE_IRON_TEMP",
+	ORE_BRONZE := "ORE_BRONZE",
+	ORE_STEEL := "ORE_STEEL",
+	
+	ORE_IGNIUM := "ORE_IGNIUM",
+	ORE_IGNITITA := "ORE_IGNITITA",
+	ORE_VENETIUM := "ORE_VENETIUM",
+	ORE_VENETITA := "ORE_VENETITA",
+	ORE_FRIGUTIUM := "ORE_FRIGUTIUM",
+	ORE_FRIGUTITA := "ORE_FRIGUTITA",
+	ORE_FULMETIUM := "ORE_FULMETIUM",
+	ORE_FULMETITA := "ORE_FULMETITA",
+	
+	ORE_LITAN := "ORE_LITAN",
+	
+	ORE_ILLYRA := "ORE_ILLYRA",
+	ORE_MITHRIL := "ORE_MITHRIL",
+
+	ORE_SILVER := "ORE_SILVER",
+	ORE_GOLD := "ORE_GOLD"
+endenum
+
+enum INGOT
+	INGOT_CHARCOAL := "INGOT_CHARCOAL"
+endenum
