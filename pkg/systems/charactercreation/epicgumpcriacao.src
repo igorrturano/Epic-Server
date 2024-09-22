@@ -668,6 +668,7 @@ function languageSelection(who, culture_pic)
     SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
     SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
+   
 endfunction
 
 function calculateBirthdate(who)
