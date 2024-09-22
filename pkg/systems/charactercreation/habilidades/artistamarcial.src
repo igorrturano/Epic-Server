@@ -1,0 +1,20 @@
+use uo;
+use os;
+
+include "include/say";
+include ":attributes:attributes";
+
+program doubleattack(who)
+    var list := ListHostiles(who, 1, LH_FLAG_LOS);
+    if (!list)
+        SendSysMessageEx(who, "Não há inimigos próximos.", SSM_FAIL);
+        return;
+    endif
+
+    var attacks := Cint(AP_GetSkill(who, TACTICS) / 30);
+    SendSysMessageEx(who, "Você desferirá " + attacks + " novos golpes.", SSM_INFO);
+    for i := 0 to attacks
+        who.attack_once();
+        sleep(1);
+    endfor
+endprogram

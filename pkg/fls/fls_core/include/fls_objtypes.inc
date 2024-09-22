@@ -225,3 +225,10 @@ Const UOBJ_OAK_LOG	      := 0xee37;
 Const UOBJ_PINE_LOG	      := 0xee36;
 
 const FLS_SFX_SKILL_LUMBERJACK          :=  0x013f;
+
+
+///////////////////
+// Metal Working //
+///////////////////
+const UOBJ_SOULFORGE_START := 0xB203;
+const UOBJ_SOULFORGE_END := 0xB20A;

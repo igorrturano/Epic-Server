@@ -2,7 +2,7 @@
 use uo;
 use vitals;
 
-include "include/damage";
+include ":combat:damage";
 include "include/client";
 include "include/sounds";
 include ":timedScripts:timedScripts";

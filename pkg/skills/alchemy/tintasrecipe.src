@@ -9,30 +9,49 @@ program cria(item)
 	endif
 
 	var spellinfo := struct;
+	var level1:={};
+	var level2:={};
+	var level3:={};
+	var level4:={};
+	var level5:={};
 	var cfg := readconfigfile(":alchemy:config/recipestintas");
-	var keys := getconfigintkeys(cfg);
-
-	var possiveis := array;
-	foreach elem in keys
-		var entry :=  FindConfigElem(cfg, elem);
-		var magic := GetconfigInt(entry, "magic");
-		if (magic)
-			//printtextabove(item, " " + magic + " " + GetconfigString(entry, "name"));
-			possiveis.append(elem);
-		endif
+	foreach key in (getconfigintkeys(cfg));
+		var level := FindConfigElem(cfg, key);
+		var level_achar := level."level";
+		case(level_achar)
+			1:
+				level1.append(key);
+			2:
+				level2.append(key);
+			3:
+				level3.append(key);
+			4:	
+				level4.append(key);
+			5:
+				level5.append(key);
+		endcase
 	endforeach
-
-	var chosen := RandomInt(possiveis.size()) + 1;
-	//printtextabove(item, "chosen " + chosen);
-	var elem := FindConfigelem(cfg, possiveis[chosen]);
+	
+	var sorteado;
+		if (item.objtype == 0xef2b)
+			sorteado := level1[RandomIntMinMax(1, level1.size()+1)];
+		elseif (item.objtype == 0xef2c)
+			sorteado := level2[RandomIntMinMax(1, level2.size()+1)];
+		elseif (item.objtype == 0xef2d)
+			sorteado := level3[RandomIntMinMax(1, level3.size()+1)];
+		elseif (item.objtype == 0xef2e)
+			sorteado := level4[RandomIntMinMax(1, level4.size()+1)];
+		elseif (item.objtype == 0xef2f)
+			sorteado := level5[RandomIntMinMax(1, level5.size()+1)];
+		endif;
+	var elem := FindConfigelem(cfg, sorteado);
 
 	if (elem)
+		spellinfo.+type := GetconfigString(elem, "type");
 		spellinfo.+name := GetConfigString(elem, "name");
 		spellinfo.+id := GetConfigInt(elem, "id");
 		spellinfo.+description := GetConfigString(elem, "desc");
 	endif
-
-
 	SetObjProperty(item, "spellinfo", spellinfo);
 
 endprogram

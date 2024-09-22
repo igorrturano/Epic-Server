@@ -22,6 +22,7 @@ include ":combat:armorZones";
 include ":combat:include/combat";
 include ":charactercreation:resists";
 include "include/epicConstants";
+include "include/dungeons";
 
 // estados do npc, todos comecam no INIT, depois podem ir pro WANDER, apos algum tempo no wander se nao for interrompido eles vao pro SLEEP. do WANDER e do SLEEP podem ir pro FIGHT e desse pro VICTORY
 enum STATES
@@ -344,7 +345,6 @@ function InitializeNpc(mobile)
 	endif
   endif
 
-
   if (GetObjPRoperty(mobile, "championspawn") == 2)
     SetObjProperty(mobile, "#championspawn", 1);
     ApplyDamage( mobile, 20000);
@@ -390,7 +390,7 @@ function InitializeNpc(mobile)
   SetupColor(mobile);
   SetupName(mobile);
   SetupEquip(mobile);
-  if ((GetObjProperty(mobile, "Mobnoturno") == 1) && (GetGlobalProperty( "dia") != "noite"))
+  if ((GetObjProperty(mobile, "Mobnoturno") == 1) && (!InDarkness(mobile)))
     ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
   endif
   var loot := npccfgfile[mytemplate].Loot;

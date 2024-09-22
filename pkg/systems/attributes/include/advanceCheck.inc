@@ -160,7 +160,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
 		g_skill_debug := (GetObjProperty(mobile, "SkillDebug") != error);
 	endif
 
-    if(TemHabilidade(mobile, "Artista Marcial") && skill_name == "Wrestling")
+    if(TemHabilidade(mobile, "Budōka") && skill_name == "Wrestling")
     	var chardata := GetObjProperty(mobile, "chardata");
         var skillsmap := chardata.Skills;
         var skillsArray := skillsmap.keys();
@@ -249,7 +249,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
 
 	if ( true_skill < CDbl(settings.FreeGainUntil) )
 		SkillDbgMsg(mobile, "Free Gain.");
-	elseif ( DifficultyTooEasy(true_skill, award_diff)  && !(TemHabilidade(mobile, "Artista Marcial")))
+	elseif ( DifficultyTooEasy(true_skill, award_diff)  && !(TemHabilidade(mobile, "Budōka")))
 		SkillDbgMsg(mobile, "Too Easy.");
 		return 0;
 	elseif ( adv_check > pass_chance )

@@ -20,14 +20,19 @@ program drink_blue (who, potion)
 		return;
 	endif
 
+	var vicio := (AP_getvital(who, "Vicioint"));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
 	var bonus := GetObjProperty (potion, "bonus");
 	bonus := PotionSpecialistBonus (who, bonus, BUFF);
-
 	
 	case(potion.objtype)
-		48905:	sleep(6); TS_StartTimer(who, "invis", (360+bonus*10), 1); 
-		48906: 	sleep(3); TS_StartTimer(who, "invis", (600+bonus*10), 1); 
+		48905:	sleep(6); TS_StartTimer(who, "invis", (360+bonus*10)*vicio, 1); 
+		48906: 	sleep(3); TS_StartTimer(who, "invis", (600+bonus*10)*vicio, 1); 
 		48907: 	sleep(1); who.hidden := 1;
 	endcase
 	empty_bottle(who, potion);
+	VicioINT(who,potion);
 endprogram
