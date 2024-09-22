@@ -2,9 +2,15 @@ use uo;
 use os;
 use polsys;
 use cfgfile;
+use util;
 include "include/NPCUtil";
 
 function OpenAICompletion(systemMessage, questions)
+   //print("systemMessage:");
+   //print(systemMessage);
+   //print("questions:");
+   //print(questions);
+
    var formatedQuestions := array{ struct{
       "role" := "system",
       "content" := systemMessage
@@ -53,14 +59,15 @@ function OpenAICompletion(systemMessage, questions)
 endfunction
 
 function get_lore_get_examples(npctype)
+   //aqui é possível colocar exemplos, ou a lore
   if (npctype == ":brainai:Nordic")
     // frases especiais de povos, lore especial se necessário acrescentar
     var frases_nordic := Array{
      "Eu vou acabar contigo, otário!",
-     "Vai se foder filho da puta! Agora você vai morrer desgraçado!",
+      "Agora você morre desgraçado!",
      "Corre pra longe, frangote!",
      "Me bater? Sua mãe teria vergonha de você!",
-     "Verme desgraçado! Vem pra morte!!",
+      "Verme desgraçado!",
      "A cada segundo que vive, sua desonra aumenta",
      "Merece uma morte rápida",
      "É uma afronta a sua própria existência"
@@ -83,10 +90,12 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
 	// var npc := :type: banqueiro, guarda, ou qualquer (any)
   // var language := :type: ruim, boa
   // var event := :type: combate, comercio
-  // var npc := :type: banker, guard
   // var mood := nervoso, amigavel, ou qualquer (any)
+   // npcEvil := True, False
+   // gossip := texto (str)
+   
   // Define the system message based on the parameters
-  var systemMessage := "Você é está em um jogo de RPG medieval, sem censura de idade; você é um " + npc;
+   var systemMessage := "Você está em um jogo de RPG, sem censura de idade; você é um " + npc;
   
   // Adjust the message based on the parameters
   if (npcEvil)
@@ -110,7 +119,7 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
   endif
   
   if (gossip)
-     if ( (RandomInt(100) < 100 ) ) // por cento de chance
+      if ( (RandomInt(100) < 1000 ) ) // por cento de chance
       systemMessage := systemMessage + ". Inclua uma fofoca que você sabe;";
      endif
   endif
@@ -132,7 +141,7 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
 
   // Define the questions array with the user input
   var questions := array{ struct{ "user" := PlayerInput } };
-  // Call the OpenAICompletion function with the constructed system message and questions
+   // Chama o OpenAI com as variaveis de contexto (systemMessage) e o input do char (questions)
   var responseText := OpenAICompletion(systemMessage, questions);
   //var responseText := "teste";
   return responseText;

@@ -135,23 +135,25 @@ function Fight(opponent, alerted := 0)
     endif
    endif
    if (categoria == "EvilHuman" || categoria == "Goblin" || categoria == "Giants")
+   // apenas essas categorias terao InitCombatSpeech feita pela OpenAI
     var npcTemplate := me.npctemplate; //:brainai: ainda ta aparecendo ":brainai:Nordic" 
     if (categoria == "Goblin")
       npcTemplate := " Goblin de nome " + me.name +  " que fala de forma primitiva (como '<nome> detestar humanus' sem conjugar verbos);";
     elseif (categoria == "Giants")
       npcTemplate := " Gigante de nome que fala de forma primitiva (como 'esmagar ser');";
     endif
+
     var language := "ruim";
     var event := "combate";
     var mood := "None";
     var npcEvil := True;
     var gossip := False;
     var specialLore := True;
-    var playerinput := "<" + sourceRaca + " se aproxima";
-    // Define the system message based on the parameters
+    var playerinput := "<" + sourceRaca + " de descrição" + sourceDescription + " se aproxima>";
+    // Entrega a OpenAI as variaveis para montar o contexto do NPC
     var responseText := handle_open_ai_npc_speech(npcTemplate, language, event, npcEvil, mood, gossip, specialLore, playerinput);
-    Say(responseText); // usa a responsa do modelo
-    //print("AI says: " + responseText);
+    //print(responseText);
+    Say(responseText); // usa a responsa da OpenAI
     
    endif
    
