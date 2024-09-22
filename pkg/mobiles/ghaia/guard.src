@@ -21,6 +21,7 @@ include ":faccao:faccao";
 include "include/dungeons";
 include "include/ghaia";
 include "include/utils";
+include "include/epicNPCUtils";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
