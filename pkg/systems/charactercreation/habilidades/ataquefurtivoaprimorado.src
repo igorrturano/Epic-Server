@@ -12,7 +12,7 @@
 //include ":combat:damage";
 //include ":fls_core:fls_characters";
 //include ":fls_core:packets";
-//include ":tn:combat";
+//include ":combat:damage";
 //include "include/packets";
 
 

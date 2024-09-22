@@ -11,7 +11,7 @@ include "include/utils";
 include ":combat:damage";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":tn:combat";
+include ":combat:damage";
 include ":taming:taming";
 
 program animateSword(params)

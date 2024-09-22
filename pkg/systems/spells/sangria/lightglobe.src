@@ -5,7 +5,7 @@ include ":spells:tnmagery";
 include ":attributes:attributes";
 include ":brainai:npcUtil";
 include ":combat:damage";
-include ":tn:combat";
+include ":combat:damage";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
