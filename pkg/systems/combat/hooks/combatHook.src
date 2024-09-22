@@ -67,7 +67,6 @@ exported function Attack(attacker, defender)
 	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
 	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
 
-
 	var anim := wpn_a_elem.Anim;
 	// if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
 	if (!attacker.acctname)
@@ -78,7 +77,7 @@ exported function Attack(attacker, defender)
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
-	var hitchance := CalculateHitChance(attacker, defender);
+	var hitchance := CInt(CalculateHitChance(attacker, defender));
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto: "+hitchance);
 	var rolldice := RandomDiceRoll("1d100");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto: "+rolldice);
@@ -87,24 +86,19 @@ exported function Attack(attacker, defender)
             defender.frozen := 0;
         endif
 
-		if(CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice))
-			EpicApplyDamage(attacker, defender);
-		endif
+		// Checa habilidades do atacante e do defensor
+		CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
+		CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
-		if(CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice))
-		endif
+		// Calcula e aplica o dano
+		EpicApplyDamage(attacker, defender);
 
-	else //ERROU O ATAQUE
+	else // ERROU O ATAQUE
 		PlayMissSound(attacker);
 
-		if(CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice))
-			// Vazio para adicionar possíves ações futuramente
-		endif
-
-		if(CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice))
-			// Vazio para adicionar possíves ações futuramente
-		endif
-		
+		// Checa habilidades do atacante e do defensor
+		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
+		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
 
 	playSoundAndEffectForThroiwingWeapons(attacker, defender);
@@ -755,11 +749,11 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 endfunction
 
 function EpicApplyDamage(attacker, defender)
-	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
-	armor := armor[ RandomInt( len( armor ) ) + 1];
 	PlayHitSounds(attacker, defender);
+	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
+	armor := armor[RandomIntMinMax(1, Len(armor))];
 	var dmg := CalculateRawDamage(attacker, attacker.weapon);
-	var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+	dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
 endfunction
 
 // Arqueiros
