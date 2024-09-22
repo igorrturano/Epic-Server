@@ -8,7 +8,7 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/facings";
 include ":combat:damage";
-include ":tn:combat";
+include ":combat:damage";
 
 program tirodesfocado(who)
 	SendSysMessageEx(who, "Escolha a direcao que ira disparar a flecha", SSM_INFO);
