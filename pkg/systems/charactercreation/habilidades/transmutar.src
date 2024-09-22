@@ -5,7 +5,7 @@ include ":timedScripts:timedScripts";
 include "include/client";
 include "include/say";
 include ":tn:tngumps";
-include "include/damage";
+include ":combat:damage";
 include ":gumps:yesNo";
 
 program resinaelemental(who)

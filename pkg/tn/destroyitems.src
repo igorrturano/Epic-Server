@@ -10,7 +10,7 @@ include ":combat:combat";
 include ":attributes:attributes";
 include ":fls_core:packets";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include "include/tileEffects";
 include ":fls_core:fls_objtypes";
 include "include/sysEvent";

@@ -7,8 +7,8 @@ include ":gumps:yesNo";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/facings";
-include "include/damage";
-include ":tn:combat";
+include ":combat:damage";
+include ":combat:damage";
 include ":combat:armorZones";
 include ":combat:combat";
 
