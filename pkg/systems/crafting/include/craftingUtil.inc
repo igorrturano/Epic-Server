@@ -1,6 +1,6 @@
 use cfgfile;
 
-include "include/damage";
+include ":combat:damage";
 include ":tn:tngumps";
 include ":equipsys:propitens";
 

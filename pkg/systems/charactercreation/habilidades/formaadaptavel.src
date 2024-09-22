@@ -4,7 +4,7 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:tngumps";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:resists";
 
 program manobra(who)

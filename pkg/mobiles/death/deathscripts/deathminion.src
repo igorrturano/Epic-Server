@@ -11,7 +11,7 @@ include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
 include ":ghaia:include/ghaia";
-include "include/damage";
+include ":combat:damage";
 include ":attributes:vitals";
 
 program DeathScript(params)
