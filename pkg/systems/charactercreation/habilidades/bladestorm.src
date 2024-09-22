@@ -34,7 +34,7 @@ program manobra(attacker)
 
 	foreach mobile in (ListMobilesNearLocation(x1, y1, attacker.z, 1, attacker.realm ))
 		if (! (mobile.serial in mobs))
-			var basedamage := CalculateTotalDamageBonus(rawdamage, attacker, mobile);
+			var basedamage := CalculateTotalBaseDamage(attacker, mobile, rawdamage);
 			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 			ApplyRawDamage(mobile, total);
 			MostraDano(attacker, mobile, total);
@@ -46,7 +46,7 @@ program manobra(attacker)
 
 	foreach mobile in (ListMobilesNearLocation(x2, y2, attacker.z, 1, attacker.realm ))
 		if (! (mobile.serial in mobs))
-			var basedamage := CalculateTotalDamageBonus(rawdamage, attacker, mobile);
+			var basedamage := CalculateTotalBaseDamage(attacker, mobile, rawdamage);
 			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 			ApplyRawDamage(mobile, total);
 			MostraDano(attacker, mobile, total);
@@ -58,7 +58,7 @@ program manobra(attacker)
 
 	foreach mobile in (ListMobilesNearLocation(x3, y3, attacker.z, 1, attacker.realm ))
 		if (! (mobile.serial in mobs))
-			var basedamage := CalculateTotalDamageBonus(rawdamage, attacker, mobile);
+			var basedamage := CalculateTotalBaseDamage(attacker, mobile, rawdamage);
 			var total := CalculateTotalDamage(mobile, basedamage, attacker, dmgList);
 			ApplyRawDamage(mobile, total);
 			MostraDano(attacker, mobile, total);
