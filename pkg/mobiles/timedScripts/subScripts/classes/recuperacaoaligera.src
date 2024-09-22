@@ -4,7 +4,7 @@ use os;
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":timedscripts:poisonUtil";
-include "include/damage";
+include ":combat:damage";
 
 program default_poison(params)
 	var who := params[1];

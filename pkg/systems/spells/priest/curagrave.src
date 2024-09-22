@@ -9,7 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include "include/damage";
+include ":combat:damage";
 include ":brainai:npcUtil";
 
 program SpellScript(params)
