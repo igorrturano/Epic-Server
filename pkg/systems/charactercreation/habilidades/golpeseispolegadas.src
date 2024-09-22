@@ -2,11 +2,11 @@ use uo;
 use vitals;
 use util;
 
-include "include/damage";
+include ":combat:damage";
 include "include/client";
 include "include/sounds";
 include ":taming:taming";
-include ":tn:combat";
+include ":combat:damage";
 
 function golpeseispolegadas(who, dist, delay, attacker)
 
@@ -97,10 +97,9 @@ program HitScript(params)
 	var defender	:= params[2];
 	params := 0; // Not needed anymore.
 
-
-    var dist := CInt(AP_GetSkill(attacker, TACTICS) / 12 );
+    var dist := CInt(AP_GetSkill(attacker, TACTICS) / 20 );
+	start_script(":charactercreation:habilidades/desarmar", array{attacker, defender});
     golpeseispolegadas(defender, dist, 300, attacker);
-	
 	return 1;
 endprogram
 

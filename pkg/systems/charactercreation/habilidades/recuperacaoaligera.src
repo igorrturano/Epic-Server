@@ -3,10 +3,10 @@
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 
 program manobra(attacker)
-	if (IsRaging(attacker) || TemHabilidade(attacker, "Artista Marcial") || GetCooldown(attacker, "furia") > 0)
+	if (IsRaging(attacker) || TemHabilidade(attacker, "Budōka") || GetCooldown(attacker, "furia") > 0)
     	SendSysMessageEx(attacker, "Voce sente seus sangramentos diminuirem.", SSM_INFO);
 		TS_StartTimer(attacker, "recuperacaoaligera", 60);
 	else
