@@ -3,26 +3,21 @@ use os;
 
 include "include/client";
 include "include/say";
-include ":charactercreation:createchar";
 
-function GetRacialTraits(culture)
-
-    case (culture)
-        BADURAN: return GetBaduranCaracteristicas();
-        HAROLOTH: return GetHarolothCaracteristicas();
-        ALURIEL: return GetAlurielCaracteristicas();
-        GULTHRAK: return GetGulthrakCaracteristicas();
-        BJORSKA: return GetBjorskeCaracteristicas();
+function GetRacialTraits(raca)
+    case (raca)
+        ANAO: return GetBaduranCaracteristicas();
+        DROW: return GetHarolothCaracteristicas();
+        ELFO: return GetAlurielCaracteristicas();
+        ORC: return GetGulthrakCaracteristicas();
+        HUMANO: return GetBjorskeCaracteristicas();
         POLSKI: return GetPolkineaCaracteristicas();
-        AIGLANA: return GetAiglanosCaracteristicas();
-        LESTE: return GetPovoDoLesteCaracteristicas();
-
-        default: return error; // Retorna error em vez de struct vazio
+        default: return error;
     endcase
 endfunction
 
 function TranslateRacialTrait(category, value, chardata := 0)
-    var racial_traits := GetRacialTraits(chardata.culture);
+    var racial_traits := GetRacialTraits(chardata.raca);
 
     if (racial_traits == error)
 
@@ -38,59 +33,6 @@ function TranslateRacialTrait(category, value, chardata := 0)
     };
 endfunction
 
-function GetAiglanosCaracteristicas()
-    var caracteristicas := struct{
-        "Altura" := struct{
-            "nome" := "Altura",
-            "opcoes" := array{
-                "Baixo (1,60m-1,65m)",
-                "Médio-baixo (1,66m-1,70m)",
-                "Médio (1,71m-1,75m)",
-                "Médio-alto (1,76m-1,80m)",
-                "Alto (1,81m-1,85m)"
-            }
-        },
-        "Peso" := struct{
-            "nome" := "Peso",
-            "opcoes" := array{
-                "Esbelto (55kg-65kg)",
-                "Médio (66kg-75kg)",
-                "Atlético (76kg-85kg)",
-                "Robusto (86kg-95kg)",
-                "Corpulento (96kg-105kg)"
-            }
-        },
-        "Olhos" := struct{
-            "nome" := "Caracteristica dos Olhos",
-            "opcoes" := array{
-                "Castanhos amendoados",
-                "Verdes arredondados",
-                "Azuis penetrantes",
-                "Cinzentos estreitos",
-                "Âmbar expressivos"
-            }
-        },
-        "Idade Aparente" := struct{
-            "nome" := "Longevidade",
-            "opcoes" := array{
-                "Jovem (20 anos)",
-                "Adulto (30 anos)",
-                "Meia-idade (40 anos)",
-                "Maduro (50 anos)",
-                "Idoso (60 anos)"
-            }
-        },
-        "Voz" := struct{
-            "nome" := "Timbre de Voz",
-            "opcoes" := array{
-                "Aguda",
-                "de notas médias",
-                "Grave"
-            }
-        }
-    };
-    return caracteristicas;
-endfunction
 function GetBaduranCaracteristicas()
     var caracteristicas := struct{
         "Altura" := struct{
@@ -116,28 +58,28 @@ function GetBaduranCaracteristicas()
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "Castanhos profundos",
-                "Azuis brilhantes",
-                "Verdes intensos",
-                "Cinza metálico",
-                "Âmbar dourado"
+                "Castanhos",
+                "Azuis",
+                "Verdes",
+                "Preto",
+                "Âmbar"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "Jovem (75 anos)",
-                "Adulto (120 anos)",
-                "Meia-idade (170 anos)",
-                "Maduro (230 anos)",
-                "Idoso (250 anos)"
+                "Jovem (30 anos)",
+                "Adulto (50 anos)",
+                "Meia-idade (70 anos)",
+                "Maduro (90 anos)",
+                "Idoso (120+ anos)"
             }
         },
         "Voz" := struct{
             "nome" := "Timbre de Voz",
             "opcoes" := array{
                "Aguda",
-                "de notas médias",
+                "De notas médias",
                 "Grave"
             }
         }
@@ -183,7 +125,7 @@ function GetBjorskeCaracteristicas()
                 "Jovem (20 anos)",
                 "Adulto (30 anos)",
                 "Meia-idade (40 anos)",
-                "veterano (50 anos)",
+                "Veterano (50 anos)",
                 "Ancião (60 anos)"
             }
         },
@@ -191,7 +133,7 @@ function GetBjorskeCaracteristicas()
             "nome" := "Timbre de Voz",
             "opcoes" := array{
                "Aguda",
-                "de notas médias",
+                "De notas médias",
                 "Grave"
             }
         }
@@ -217,34 +159,34 @@ function GetHarolothCaracteristicas()
                 "Médio (51kg-55kg)",
                 "Atlético (56kg-60kg)",
                 "Robusto (61kg-65kg)",
-                "musculoso (66kg-70kg)"
+                "Musculoso (66kg-75kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "Vermelhos brilhantes",
-                "Violeta profundo",
-                "Âmbar dourado",
-                "Verde fluorescente",
-                "Azul elétrico"
+                "Vermelhos",
+                "Violeta",
+                "Dourado",
+                "Verde",
+                "Azul"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "Jovem (75 anos)",
-                "Adulto (150 anos)",
-                "Meia-idade (250 anos)",
-                "Maduro (350 anos)",
-                "Ancião (400 anos)"
+                "Jovem (40 anos)",
+                "Adulto (80 anos)",
+                "Meia-idade (120 anos)",
+                "Maduro (170 anos)",
+                "Ancião (200+ anos)"
             }
         },
         "Voz" := struct{
             "nome" := "Timbre de Voz",
             "opcoes" := array{
                "Aguda",
-                "de notas médias",
+                "De notas médias",
                 "Grave"
             }
         }
@@ -257,11 +199,11 @@ function GetAlurielCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "Baixo (1,60m-1,65m)",
-                "Médio-baixo (1,66m-1,70m)",
-                "Médio (1,71m-1,75m)",
-                "Médio-alto (1,76m-1,80m)",
-                "Alto (1,81m-1,85m)"
+                "Baixo (1,50m-1,55m)",
+                "Médio-baixo (1,56m-1,60m)",
+                "Médio (1,61m-1,65m)",
+                "Médio-alto (1,66m-1,70m)",
+                "Alto (1,71m-1,75m)"
             }
         },
         "Peso" := struct{
@@ -271,34 +213,34 @@ function GetAlurielCaracteristicas()
                 "Médio-leve (51kg-55kg)",
                 "Médio (56kg-60kg)",
                 "Médio-pesado (61kg-65kg)",
-                "Pesado (66kg-70kg)"
+                "Pesado (66kg-75kg)"
             }
         },
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "Azul celeste brilhante",
-                "Verde esmeralda profundo",
-                "Âmbar dourado cintilante",
-                "Violeta suave",
-                "Prateado luminoso"
+                "Azul",
+                "Verde",
+                "Castanho",
+                "Preto",
+                "Prateado"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "Jovem (75 anos)",
-                "Adulto (150 anos)",
-                "Meia-idade (350 anos)",
-                "Maduro (600 anos)",
-                "Ancião (700 anos)"
+                "Jovem (40 anos)",
+                "Adulto (80 anos)",
+                "Meia-idade (120 anos)",
+                "Maduro (170 anos)",
+                "Ancião (200+ anos)"
             }
         },
         "Voz" := struct{
             "nome" := "Timbre de Voz",
             "opcoes" := array{
                "Aguda",
-                "de notas médias",
+                "De notas médias",
                 "Grave"
             }
         }
@@ -311,19 +253,19 @@ function GetGulthrakCaracteristicas()
         "Altura" := struct{
             "nome" := "Altura",
             "opcoes" := array{
-                "Baixo (1,70m-1,75m)",
-                "Médio-baixo (1,76m-1,80m)",
-                "Médio (1,81m-1,85m)",
-                "Médio-alto (1,86m-1,90m)",
-                "Alto (1,91m-1,95m)"
+                "Baixo (1,80m-1,85m)",
+                "Médio-baixo (1,86m-1,90m)",
+                "Médio (1,91m-2m)",
+                "Médio-alto (2,01m-2,15m)",
+                "Alto (2,16m-2,30m)"
             }
         },
         "Peso" := struct{
             "nome" := "Peso",
             "opcoes" := array{
-                "magro (80kg-90kg)",
+                "Magro (80kg-90kg)",
                 "Médio (91kg-100kg)",
-                "musculoso (101kg-110kg)",
+                "Musculoso (101kg-110kg)",
                 "Robusto (111kg-120kg)",
                 "Corpulento (121kg-130kg)"
             }
@@ -331,28 +273,28 @@ function GetGulthrakCaracteristicas()
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "Vermelho escuro",
-                "Âmbar profundo",
-                "Verde escuro",
-                "Preto como carvão",
-                "Castanho escuro"
+                "Vermelho",
+                "Amarelo",
+                "Verde",
+                "Preto",
+                "Castanho"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "Jovem adulto (15 anos)",
+                "Jovem adulto (18 anos)",
                 "Adulto (25 anos)",
                 "Meia-idade (35 anos)",
-                "veterano (45 anos)",
-                "Ancião (50 anos)"
+                "Veterano (45 anos)",
+                "Ancião (50+ anos)"
             }
         },
         "Voz" := struct{
             "nome" := "Timbre de Voz",
             "opcoes" := array{
                "Aguda",
-                "de notas médias",
+                "De notas médias",
                 "Grave"
             }
         }
@@ -385,28 +327,28 @@ function GetPolkineaCaracteristicas()
         "Olhos" := struct{
             "nome" := "Características dos Olhos",
             "opcoes" := array{
-                "Castanho amendoado",
-                "Verde brilhante",
-                "Azul profundo",
-                "Cinza prateado",
-                "Âmbar dourado"
+                "Castanho",
+                "Verde",
+                "Azul",
+                "Preto",
+                "Mel"
             }
         },
         "Idade Aparente" := struct{
             "nome" := "Longevidade",
             "opcoes" := array{
-                "Jovem adulto (25 anos)",
-                "Adulto (40 anos)",
-                "Meia-idade (55 anos)",
-                "Maduro (70 anos)",
-                "Ancião (90+ anos)"
+                "Jovem adulto (45 anos)",
+                "Adulto (65 anos)",
+                "Meia-idade (85 anos)",
+                "Maduro (105 anos)",
+                "Ancião (125+ anos)"
             }
         },
         "Voz" := struct{
             "nome" := "Timbre de Voz",
             "opcoes" := array{
                 "Aguda",
-                "de notas médias",
+                "De notas médias",
                 "Grave"
             }
         }
@@ -414,80 +356,102 @@ function GetPolkineaCaracteristicas()
     return caracteristicas;
 endfunction
 
-function GetPovoDoLesteCaracteristicas()
-    var caracteristicas := struct{
-        "Altura" := struct{
-            "nome" := "Altura",
-            "opcoes" := array{
-                "Baixo (1,55m-1,60m)",
-                "Médio-baixo (1,61m-1,65m)",
-                "Médio (1,66m-1,70m)",
-                "Médio-alto (1,71m-1,75m)",
-                "Alto (1,76m-1,80m)"
-            }
-        },
-        "Peso" := struct{
-            "nome" := "Peso",
-            "opcoes" := array{
-                "Esbelto (50kg-55kg)",
-                "Médio-leve (56kg-60kg)",
-                "Médio (61kg-65kg)",
-                "Médio-pesado (66kg-70kg)",
-                "Robusto (71kg-75kg)"
-            }
-        },
-        "Olhos" := struct{
-            "nome" := "Características dos Olhos",
-            "opcoes" := array{
-                "Castanho escuro amendoado",
-                "Preto ônix brilhante",
-                "Castanho claro estreito",
-                "Cinza chumbo oblíquo",
-                "Âmbar dourado rasgado"
-            }
-        },
-        "Idade Aparente" := struct{
-            "nome" := "Longevidade",
-            "opcoes" := array{
-                "Jovem adulto (25 anos)",
-                "Adulto (35 anos)",
-                "Meia-idade (50 anos)",
-                "Maduro (65 anos)",
-                "Ancião (75 anos)"
-            }
-        },
-        "Voz" := struct{
-            "nome" := "Timbre de Voz",
-            "opcoes" := array{
-                "Aguda",
-                "de notas médias",
-                "Grave"
-            }
-        }
-    };
-    return caracteristicas;
-endfunction
+function ConvertAge(race, age)
+    age := CInt(age);
+    var age_category := "";
 
-function ExtractAgeValue(culture, chosen_age_index)
-    var racial_traits := GetRacialTraits(culture);
-    if (racial_traits == error)
-        return error;
-    endif
+    case (race)
+        ANAO:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 30)
+                age_category := "Jovem";
+            elseif (age <= 70)
+                age_category := "Adulto";
+            elseif (age <= 90)
+                age_category := "Meia-idade";
+            elseif (age < 120)
+                age_category := "Idoso";
+            else
+                return array{"Idoso", 120};
+            endif
+        HUMANO:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 30)
+                age_category := "Jovem";
+            elseif (age <= 40)
+                age_category := "Adulto";
+            elseif (age <= 50)
+                age_category := "Meia-idade";
+            elseif (age < 60)
+                age_category := "Veterano";
+            else
+                return array{"Ancião", 60};
+            endif
+        DROW:
+          if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 80)
+                age_category := "Jovem";
+            elseif (age <= 120)
+                age_category := "Adulto";
+            elseif (age <= 170)
+                age_category := "Meia-idade";
+            elseif (age < 200)
+                age_category := "Maduro";
+            else
+                return array{"Ancião", 200};
+            endif
+        ELFO:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 80)
+                age_category := "Jovem";
+            elseif (age <= 120)
+                age_category := "Adulto";
+            elseif (age <= 170)
+                age_category := "Meia-idade";
+            elseif (age < 200)
+                age_category := "Maduro";
+            else
+                return array{"Ancião", 200};
+            endif
+        ORC:
+            if (age < 18)
+                return array{"Jovem adulto", 18};
+            elseif (age <= 25)
+                age_category := "Jovem adulto";
+            elseif (age <= 35)
+                age_category := "Adulto";
+            elseif (age <= 45)
+                age_category := "Meia-idade";
+            elseif (age <= 50)
+                age_category := "Veterano";
+            elseif (age <= 75)
+                age_category := "Ancião";
+            else
+                return array{"Ancião", 75};
+            endif
+        POLSKI:
+            if (age < 18)
+                return array{"Jovem", 18};
+            elseif (age <= 65)
+                age_category := "Jovem";
+            elseif (age <= 85)
+                age_category := "Adulto";
+            elseif (age <= 105)
+                age_category := "Meia-idade";
+            elseif (age <= 125)
+                age_category := "Maduro";
+            elseif (age >= 125)
+                age_category := "Ancião";
+            else
+                return array{"Ancião", 125};
+            endif
+    default:
+            return array{"Erro", age};
+    endcase
 
-    var age_options := racial_traits["Idade Aparente"].opcoes;
-    if (chosen_age_index < 1 || chosen_age_index > age_options.size())
-        return error;
-    endif
-
-    var chosen_age_string := age_options[chosen_age_index];
-    var age_value := 0;
-
-    // Extrai o número entre parênteses
-    var start := chosen_age_string.find("(");
-    var end := chosen_age_string.find(" anos)");
-    if (start != error && end != error)
-        age_value := CInt(chosen_age_string[start+1, end-start-1]);
-    endif
-
-    return age_value;
+    return array{age_category, age};
 endfunction
