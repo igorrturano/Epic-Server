@@ -308,10 +308,124 @@ Function epicPotionDamageRoll(tier, bonus)
       dice := cstr("2d6");
     elseif (tier == 3)
       dice := cstr("3d8");
+    elseif (tier == 4)
+      dice := cstr("4d10");
+
     endif
 
   var dmg := RandomDiceRoll(dice);
   dmg := Cint(dmg + bonus);
 
+  return dmg;
+endfunction
+
+Function AlchLabTransfer (item, alvo)
+  SetObjProperty(item, "strength", cint(GetObjProperty(alvo, "strength")));
+  SetObjProperty(item, "bonus", cint(GetObjProperty(alvo, "bonus")));
+  SetObjProperty(item, "tier", cint(GetObjProperty(alvo, "tier")));
+  SetObjProperty(item, "crafterskill", cint(GetObjProperty(alvo,"crafterskill")));
+  SetObjProperty(item, "science", cint(GetObjProperty(alvo,"science")));
+  
+  EraseObjProperty(alvo, "extrato");
+  EraseObjProperty(alvo, "strength");
+  EraseObjProperty(alvo, "bonus");
+  EraseObjProperty(alvo, "tier");
+  EraseObjProperty(alvo, "crafterskill");
+  EraseObjProperty(alvo, "science");
+endfunction
+
+function VicioSTR (who, potion)
+  var tier := getobjProperty(potion,"tier");
+  var vicio := AP_GetVital(who, "viciostr");
+  var bonus := 0;
+  
+  if (temhabilidade(who, "Impulso Metabolico"))
+      bonus := (getobjProperty(potion, "bonus")*-1);
+  endif
+  
+  var dmg := epicPotionDamageRoll (tier, bonus);
+  If(dmg < 0)
+    dmg := 0;
+  endif
+  dmg := TesteVicio(who, tier, dmg);
+  vicio := vicio-dmg;
+  if (vicio < 0)
+    vicio := 0;
+  endif
+  
+  AP_SetVital(who,"viciostr", vicio);
+ 	
+  var ultimouso := readgameclock();
+	SetObjProperty(who, "ultimastr", ultimouso);
+endfunction
+
+function VicioDEX (who, potion)
+  var tier := getobjProperty(potion,"tier");
+  var vicio := AP_GetVital(who, "viciodex");
+  var bonus := 0;
+  
+  if (temhabilidade(who, "Impulso Metabolico"))
+      bonus := (getobjProperty(potion, "bonus")*-1);
+  endif
+  
+  var dmg := epicPotionDamageRoll (tier, bonus);
+  If(dmg < 0)
+    dmg := 0;
+  endif
+  dmg := TesteVicio(who, tier, dmg);
+  vicio := vicio-dmg;
+  if (vicio < 0)
+    vicio := 0;
+  endif
+  
+  AP_SetVital(who,"viciodex", vicio);
+ 	
+  var ultimouso := readgameclock();
+	SetObjProperty(who, "ultimadex", ultimouso);
+endfunction
+
+function VicioINT (who, potion)
+  var tier := getobjProperty(potion,"tier");
+  var vicio := AP_GetVital(who, "vicioint");
+  var bonus := 0;
+  
+  if (temhabilidade(who, "Impulso Metabolico"))
+      bonus := (getobjProperty(potion, "bonus")*-1);
+  endif
+  
+  var dmg := epicPotionDamageRoll (tier, bonus);
+  If(dmg < 0)
+    dmg := 0;
+  endif
+  dmg := TesteVicio(who, tier, dmg);
+  vicio := vicio-dmg;
+  if (vicio < 0)
+    vicio := 0;
+  endif
+  
+  AP_SetVital(who,"vicioint", vicio);
+ 	
+  var ultimouso := readgameclock();
+	SetObjProperty(who, "ultimaint", ultimouso);
+endfunction
+
+function TesteVicio(who, tier, dmg)
+  if (tier == 1)
+    if (CheckResist(who, FORTITUDE, RESIST_EASY))
+      dmg := 0;
+    endif
+  elseif (tier == 2)
+    if (CheckResist(who, FORTITUDE, RESIST_MEDIUM))
+      dmg := 0;
+    endif
+  elseif (tier == 3)
+    if (CheckResist(who, FORTITUDE, RESIST_VERY_HARD))
+      dmg := 0;
+    endif
+  elseif (tier == 4)
+    if (CheckResist(who, FORTITUDE, RESIST_ALMOST_IMPOSSIBLE))
+      dmg := 0;
+    endif
+  endif
   return dmg;
 endfunction

@@ -3,30 +3,38 @@ use uo;
 use util;
 use cfgfile;
 
-include "include/damage";
+include ":combat:damage";
 
 // Calendar constants
 var MONTHS := array{
-    struct{ "name" := "Duwus", "days" := 31 },
-    struct{ "name" := "Alorae", "days" := 30 },
-    struct{ "name" := "Galgrumirius", "days" := 30 },
-    struct{ "name" := "Kaius", "days" := 30 },
-    struct{ "name" := "Idrithae", "days" := 30 },
-    struct{ "name" := "Adarae", "days" := 30 },
-    struct{ "name" := "Demiurgus", "days" := 33 },
-    struct{ "name" := "Crassus", "days" := 32 },
-    struct{ "name" := "Lleuadae", "days" := 31 },
-    struct{ "name" := "Phrugum", "days" := 31 },
-    struct{ "name" := "Igorsmonth", "days" := 31 },
-    struct{ "name" := "Enzosmonth", "days" := 31 }
+    struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
+    struct{ "name" := "Alorae", "days" := 30 }, // Mês dedicado à magia, Alora, elfos.
+    struct{ "name" := "Galgrumirius", "days" := 30 }, // Mês dedicado aos anões e a forja
+    struct{ "name" := "Kaius", "days" := 30 }, // Mês dedicado ao Deus Dragão oriental
+    struct{ "name" := "Idrithae", "days" := 30 }, // Deus dos drows, mês com noites mais longas e dias mais curtos
+    struct{ "name" := "Lleuadae", "days" := 30 }, // Mês dedicado à Deusa Lua - Björska
+    struct{ "name" := "Adarae", "days" := 30}, // Mês dedicado à Adar Kor Doom, Gulthrak, orcs
+    struct{ "name" := "Crassus", "days" := 31 }, // Mês dedicado ao primeiro imperador, Crassus
+    struct{ "name" := "Demiurgus", "days" := 33 }, // Mês dedicado ao Deus da Criação aiglano, Demiurgus. O Mês com mais dias
+    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
+    struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
+    struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
 };
 
 var WEEKDAYS := array{
-    "Solaris", "Madredis", "Bellonis", "Magicae", "Fabricae", "Mercatus", "Lunaris"
+    "Solaris", // Agricultura, masculinidade e descanso
+    "Bellumis",  // Guerra, força e honra
+    "Artisium",  // Criação, habilidade e arte
+    "Aetheria", // Magia, conhecimento e sabedoria
+    "Mercatus",  // Comércio, riqueza e prosperidade
+    "Lunaris" // Vigília, feminilidade e espiritualidade
 };
 
 var MOON_PHASES := array{
-    "Kalendae", "Nonae", "Idus", "Decrescens"
+    "Kalendae", // Lua nova
+    "Nonae", // Crescente
+    "Idus", // Cheia
+    "Decrescens" // Minguante
 };
 
 var daysInYear := CalcDaysInYear();

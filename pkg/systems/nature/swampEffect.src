@@ -1,0 +1,43 @@
+use os;
+use util;
+
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":fls_core:packets";
+
+program spiderWebEffect(who)
+    var sounds := { 560, 561, 562};
+
+    SetObjProperty(who, "swampArea", 1);
+    while (GetObjProperty(who, "swampArea"))
+        var area := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+        var is_on_swamp := 0;
+  
+        foreach swamp in area
+            if (Cint(swamp.objtype) >= 5850 && Cint(swamp.objtype) <= 5871)
+                is_on_swamp := 1;
+                break;
+            endif
+        endforeach
+
+
+        foreach mushroom in area
+            if (Cint(mushroom.objtype) >= 4432 && Cint(mushroom.objtype) <= 4437)
+                PlaysoundEffect(who, sounds[RandomInt(sounds.size())+1] );
+                PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0x54f7, 10, 30, 2283);
+
+                TS_StartTimer(who, "defaultPoison", 120, RandomInt(4)+1);
+                break;
+            endif
+        endforeach
+
+        if (is_on_swamp)
+            PlayerSpeedSlower(who, 1);
+        else
+            PlayerSpeedSlower(who, 0);
+        endif
+
+        sleepms(200);
+    endwhile
+endprogram

@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include "include/epicMageryUtils";

@@ -1,7 +1,7 @@
 use uo;
 include ":tn:tngumps";
 include ":gumps:requestGump";
-include "include/damage";
+include ":combat:damage";
 
 program danosetup(who, rune)
 	if (who.cmdlevel < 2)

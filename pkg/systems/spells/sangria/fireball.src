@@ -2,7 +2,7 @@ use uo;
 include "include/tileEffects";
 include ":attributes:attributes";
 include ":fls_magery:spells";
-include "include/damage";
+include ":combat:damage";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";

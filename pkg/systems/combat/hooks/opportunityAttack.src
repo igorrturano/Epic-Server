@@ -1,0 +1,74 @@
+use os;
+include "include/say";
+include ":tn:cooldown";
+include ":combat:combat";
+
+program attackOfOpportunity(params)
+    var attacker := params[1];
+    var defender := params[2];
+
+    var attacker_x := attacker.x;
+    var attacker_y := attacker.y;
+    var defender_x := defender.x;
+    var defender_y := defender.y;
+   
+    if(!canUseOpportunityHit(attacker, defender))
+        return 0;
+    endif
+
+    while (!attacker.dead || !defender.dead)
+        SetObjProperty(attacker, "already_fighting", 1);
+        SetObjProperty(defender, "already_fighting", 1);
+        if ((attacker.x != attacker_x || attacker.y != attacker_y))
+            waitUntilNextAttack(defender);
+            defender.attack_once(attacker);
+            disengage(attacker, defender);
+            PrintTextAbove(defender, "*Ataque de Oportunidade*");
+            break;
+        elseif ((defender.x != defender_x || defender.y != defender_y))
+            waitUntilNextAttack(attacker);
+            attacker.attack_once(defender);
+            disengage(attacker, defender);
+            PrintTextAbove(attacker, "*Ataque de Oportunidade*");
+            break;
+        endif
+        sleepms(200);
+    endwhile
+    disengage(attacker, defender);
+
+    return 1;
+endprogram
+
+function disengage(attacker, defender)
+    EraseObjProperty(defender, "already_fighting");
+    EraseObjProperty(attacker, "already_fighting");
+endfunction
+
+function waitUntilNextAttack(who)
+    SetCooldown(who, "attack_cooldown", 5);
+endfunction
+
+function canUseOpportunityHit(attacker, defender)
+    if ( attacker.weapon.attribute == "Ranged" || defender.weapon.attribute == "Ranged")
+        return 0;
+    endif
+
+    if (GetObjProperty(attacker, "already_fighting") || GetObjPRoperty(defender, "already_fighting"));
+        return 0;
+    endif
+
+    if (!DistanceChecks(attacker, defender))
+        return 0;
+    endif
+
+    if (GetCooldown(defender, "attack_cooldown") || GetCooldown(attacker, "attack_cooldown"))
+        return 0;
+    endif
+
+    if (attacker.hidden || attacker.concealed || defender.hidden || defender.concealed)
+        return 0;
+    endif
+
+    return 1;
+endfunction
+

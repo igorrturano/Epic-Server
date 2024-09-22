@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 
 program cast_lightningbolt(params)
     var caster := params[1];
