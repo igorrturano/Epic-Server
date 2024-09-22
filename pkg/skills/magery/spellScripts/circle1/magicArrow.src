@@ -11,7 +11,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 
 program SpellScript(params)
 	var who := params[1];
