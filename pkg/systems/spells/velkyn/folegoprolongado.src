@@ -2,7 +2,7 @@ use uo;
 
 include "include/say";
 include ":tn:cooldown";
-include "include/damage";
+include ":combat:damage";
 include ":spells:tnmagery";
 
 program SpellScript(params)

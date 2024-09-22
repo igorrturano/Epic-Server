@@ -1,7 +1,7 @@
 use npc;
 include "include/sysEvent";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include "include/facings";
 
 var me := Self();

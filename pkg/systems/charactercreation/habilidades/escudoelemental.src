@@ -1,6 +1,6 @@
  use uo;
 
-include "include/damage";
+include ":combat:damage";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";

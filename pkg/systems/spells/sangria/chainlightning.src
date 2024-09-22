@@ -8,7 +8,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include "include/tileEffects";
 include ":taming:taming";
 include "include/epicMageryUtils";

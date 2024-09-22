@@ -5,7 +5,7 @@ use cfgfile;
 
 include "include/say";
 include ":timedScripts:timedScripts";
-include "include/damage";
+include ":combat:damage";
 include ":attributes:attributes";
 include ":mounts:mounts";
 include "include/shapes";

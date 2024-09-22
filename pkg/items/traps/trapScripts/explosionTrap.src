@@ -7,7 +7,7 @@ use util;
 
 include "include/client";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicConstants";

@@ -294,14 +294,14 @@ function CreateRunebookGump(book, who)
 		//WritespellInfo(who, rune_entry);
 		rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description) ;
 		if( TypeOf(rune_entry) == "Struct" )
-			if( rune_entry.name )
+			if( rune_entry.type )
 				// This puts the rune in page 1's list.
 				GFPage(book_gump, 1);
-				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.name);
+				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.type);
 				GFPage(book_gump, i);
 
-				//GFHTMLArea(book_gump, 160, 15, 100, 18, rune_entry.name);
-				GFTextCrop(book_gump, 160,  15, 100, 18, 995, rune_entry.name);
+				//GFHTMLArea(book_gump, 160, 15, 100, 18, rune_entry.type);
+				GFTextCrop(book_gump, 160,  15, 100, 18, 995, rune_entry.type);
 				GFHTMLArea(book_gump, 140, 60, 120,  130, cstr(rune_entry.description), 0, 1);
 
 			endif
@@ -320,14 +320,14 @@ function CreateRunebookGump(book, who)
 		 rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description);
 
 		if( TypeOf(rune_entry) == "Struct" )
-			if( rune_entry.name )
+			if( rune_entry.type )
 				// This puts the rune in page 1's list.
 				GFPage(book_gump, 1);
-				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.name);
+				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.type);
 				GFPage(book_gump, i);
 
-				//GFHTMLArea(book_gump, 300, 15, 100, 18, rune_entry.name);
-				GFTextCrop(book_gump, 300,  15, 115, 17, 995, rune_entry.name);
+				//GFHTMLArea(book_gump, 300, 15, 100, 18, rune_entry.type);
+				GFTextCrop(book_gump, 300,  15, 115, 17, 995, rune_entry.type);
 				GFHTMLArea(book_gump, 300, 60, 120,  130, cstr(rune_entry.description), 0, 1);
 
 			endif

@@ -5,7 +5,7 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":charactercreation:resists";
