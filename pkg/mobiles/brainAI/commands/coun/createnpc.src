@@ -36,10 +36,13 @@ program textcmdcreateNPC(who, template)
 	var npc := CreateNPCFromTemplate(":brainai:"+template, targ.x, targ.y, targ.z, 0, who.realm);
 	npc.facing := who.facing;
 	if ( npc.errortext )
-		CreateNpcFromTemplate( ":merchants:"+template, targ.x, targ.y, targ.z, 0, who.realm );
+		CreateNpcFromTemplate( ":epicai:"+template, targ.x, targ.y, targ.z, 0, who.realm );
 		if ( npc.errortext )
-			SendSysMessage(who, "Error creating NPC ["+template+"] -> "+npc.errortext);
-			return 0;	
+			CreateNpcFromTemplate( ":merchants:"+template, targ.x, targ.y, targ.z, 0, who.realm );
+			if ( npc.errortext )
+				SendSysMessage(who, "Error creating NPC ["+template+"] -> "+npc.errortext);
+				return 0;	
+			endif
 		endif
 	endif
 	
