@@ -55,20 +55,20 @@ function getNewDamageList(attacker)
 	if (attacker.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
-		list[DMG_PHYSICAL] := cfg[npctemplate.template].PhysicalDamage/10;
-		list[DMG_FIRE] := cfg[npctemplate.template].FireDamage/10;
-		list[DMG_COLD] := cfg[npctemplate.template].ColdDamage/10;
-		list[DMG_POISON] := cfg[npctemplate.template].PoisonDamage/10;
-		list[DMG_ENERGY] := cfg[npctemplate.template].EnergyDamage/10;
+		list[DMG_PHYSICAL] := cfg[npctemplate.template].PhysicalDamage;
+		list[DMG_FIRE] := cfg[npctemplate.template].FireDamage;
+		list[DMG_COLD] := cfg[npctemplate.template].ColdDamage;
+		list[DMG_POISON] := cfg[npctemplate.template].PoisonDamage;
+		list[DMG_ENERGY] := cfg[npctemplate.template].EnergyDamage;
 
 		return list;
 	else
 
-		list[DMG_PHYSICAL] := attacker.damage_physical/10;
-		list[DMG_FIRE] := attacker.damage_fire/10;
-		list[DMG_COLD] := attacker.damage_cold/10;
-		list[DMG_POISON] := attacker.damage_poison/10;
-		list[DMG_ENERGY] := attacker.damage_energy/10;
+		list[DMG_PHYSICAL] := attacker.damage_physical;
+		list[DMG_FIRE] := attacker.damage_fire;
+		list[DMG_COLD] := attacker.damage_cold;
+		list[DMG_POISON] := attacker.damage_poison;
+		list[DMG_ENERGY] := attacker.damage_energy;
 
 		var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
 		if (elemental != error)
