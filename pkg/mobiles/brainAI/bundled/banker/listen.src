@@ -113,10 +113,7 @@ function SpeechEvent(npc, byref event)
 		AI_Turn(npc, source, NETURN_TOWARD);
 		var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_NOCREATE);
 		if ( !bank_box ) 
-			//var systemMessage := "Você é um banqueiro medieval. Provavelmente o aventureiro está perguntando do seu dia. Seja amigável. Responda como tal. Máximo de 25 caracteres.";
-			//var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é maléfico, conhecido na cidade como bandido. Máximo de 30 caracteres.";
-			//var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é defensor renomado na cidade, conhecido na cidade como braço direito do rei. Máximo de 40 caracteres.";
-			var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é um " + sourceRaca + " com descrição " + sourceDescription + ". Máximo de 50 caracteres.";
+			var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O personagem que fala com você é um " + sourceRaca + " com descrição " + sourceDescription + ". O personagem não tem uma conta no banco. Pergunte se ele deseja se registrar. Máximo de 50 caracteres.";
 			var questions := array{ struct{ "user" := text } };
 			var responseText := OpenAICompletion(systemMessage, questions);
             AI_Speak(npc, responseText); // usa a responsa do modelo

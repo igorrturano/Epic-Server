@@ -94,6 +94,29 @@ function CloseIn(me, lx, ly, mode := 0 )
   endcase
 endfunction
 
+function NPC_GetTrueName(mobile)
+    var npc_elem := NPC_GetNPCConfig(mobile);
+    var name_elem := npc_elem.NameTemplate;
+
+    var npc_names := ReadConfigFile(":brainAI:config/names");
+    if ( !npc_names[name_elem] )
+        return error{"errortext" := "There is no elem ["+name_elem+"] in NAMES.CFG"};
+    endif
+
+    var name_list := GetConfigStringArray(npc_names[name_elem], "Name");
+    if ( name_list.Size() < 1 )
+        return error{"errortext":="No names were found in the ["+name_elem+"] elem for names.cfg"};
+    endif
+
+    var my_name := npc_elem.TrueName;
+    while ( my_name["<random>"] )
+        var replacement := name_list[RandomInt(name_list.Size())+1];
+        my_name["<random>"] := replacement;
+        sleepms(2);
+    endwhile
+    return my_name;
+endfunction
+
 function Fight(opponent, alerted := 0)
 
 
@@ -137,8 +160,10 @@ function Fight(opponent, alerted := 0)
    if (categoria == "EvilHuman" || categoria == "Goblin" || categoria == "Giants")
    // apenas essas categorias terao InitCombatSpeech feita pela OpenAI
     var npcTemplate := me.npctemplate; //:brainai: ainda ta aparecendo ":brainai:Nordic" 
+    var name_mob := NPC_GetTrueName(me);
     if (categoria == "Goblin")
-      npcTemplate := " Goblin de nome " + me.name +  " que fala de forma primitiva (como '<nome> detestar humanus' sem conjugar verbos);";
+      npcTemplate := " Goblin de nome " + name_mob + " que fala de forma primitiva em terceira pessoa como (" + name_mob + " detestar <raça do personagem oponente>) sem conjugar verbos;";
+      //print(npcTemplate);
     elseif (categoria == "Giants")
       npcTemplate := " Gigante de nome que fala de forma primitiva (como 'esmagar ser');";
     endif
