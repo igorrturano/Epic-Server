@@ -10,7 +10,7 @@ include ":attributes:attributes";
 include ":combat:combat";
 include "include/say";
 include ":combat:damage";
-include ":tn:combat";
+include ":combat:damage";
 
 program aura_of_hate(params)
 	var attacker	:= params[1];
