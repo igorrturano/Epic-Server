@@ -18,6 +18,7 @@ const DEFAULT_CATEGORY	:= "None";
 var g_datafile := DFOpenDataFile(":brainAI:createnpc", DF_CREATE);
 
 program textcmdcreateNPC(who, template)
+	print("coun");
 	if ( !template )
 		template := SelectTemplateFromGump(who);
 		if ( !template )
@@ -33,10 +34,10 @@ program textcmdcreateNPC(who, template)
 
 	//Sendsysmessage(who, " " + template.length() + " " + template.size());
 
-	var npc := CreateNPCFromTemplate(":brainai:"+template, targ.x, targ.y, targ.z, 0, who.realm);
+	var npc := CreateNPCFromTemplate(":epicAI:"+template, targ.x, targ.y, targ.z, 0, who.realm);
 	npc.facing := who.facing;
 	if ( npc.errortext )
-		CreateNpcFromTemplate( ":epicai:"+template, targ.x, targ.y, targ.z, 0, who.realm );
+		CreateNpcFromTemplate(":brainAI:"+template, targ.x, targ.y, targ.z, 0, who.realm );
 		if ( npc.errortext )
 			CreateNpcFromTemplate( ":merchants:"+template, targ.x, targ.y, targ.z, 0, who.realm );
 			if ( npc.errortext )
