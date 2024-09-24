@@ -3,17 +3,16 @@
 //use os;
 
 //include ":fls_core:packets";
-//include ":fls_core:fls_util";
 //include ":attributes:attributeConstants";
 //include ":attributes:attributes";
 //include ":attributes:skillCheck";
 //include ":attributes:stats";
 //include ":fls_core:fls_combat";
 //include ":blood:blood";
-//include "include/damage";
+//include ":combat:damage";
 //include ":fls_core:fls_characters";
 //include ":fls_core:packets";
-//include ":tn:combat";
+//include ":combat:damage";
 //include "include/packets";
 
 

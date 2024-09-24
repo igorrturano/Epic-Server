@@ -3,31 +3,41 @@ use uo;
 use util;
 use cfgfile;
 
-include "include/damage";
+include ":combat:damage";
 
 // Calendar constants
 var MONTHS := array{
-    struct{ "name" := "Duwus", "days" := 31 },
-    struct{ "name" := "Alorae", "days" := 30 },
-    struct{ "name" := "Galgrumirius", "days" := 30 },
-    struct{ "name" := "Kaius", "days" := 30 },
-    struct{ "name" := "Idrithae", "days" := 30 },
-    struct{ "name" := "Adarae", "days" := 30 },
-    struct{ "name" := "Demiurgus", "days" := 33 },
-    struct{ "name" := "Crassus", "days" := 32 },
-    struct{ "name" := "Lleuadae", "days" := 31 },
-    struct{ "name" := "Phrugum", "days" := 31 }
+    struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
+    struct{ "name" := "Alorae", "days" := 30 }, // Mês dedicado à magia, Alora, elfos.
+    struct{ "name" := "Galgrumirius", "days" := 30 }, // Mês dedicado aos anões e a forja
+    struct{ "name" := "Kaius", "days" := 30 }, // Mês dedicado ao Deus Dragão oriental
+    struct{ "name" := "Idrithae", "days" := 30 }, // Deus dos drows, mês com noites mais longas e dias mais curtos
+    struct{ "name" := "Lleuadae", "days" := 30 }, // Mês dedicado à Deusa Lua - Björska
+    struct{ "name" := "Adarae", "days" := 30}, // Mês dedicado à Adar Kor Doom, Gulthrak, orcs
+    struct{ "name" := "Crassus", "days" := 31 }, // Mês dedicado ao primeiro imperador, Crassus
+    struct{ "name" := "Demiurgus", "days" := 33 }, // Mês dedicado ao Deus da Criação aiglano, Demiurgus. O Mês com mais dias
+    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
+    struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
+    struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
 };
 
 var WEEKDAYS := array{
-    "Solaris", "Madredis", "Bellonis", "Magicae", "Fabricae", "Mercatus", "Lunaris"
+    "Solaris", // Agricultura, masculinidade e descanso
+    "Bellumis",  // Guerra, força e honra
+    "Artisium",  // Criação, habilidade e arte
+    "Aetheria", // Magia, conhecimento e sabedoria
+    "Mercatus",  // Comércio, riqueza e prosperidade
+    "Lunaris" // Vigília, feminilidade e espiritualidade
 };
 
 var MOON_PHASES := array{
-    "Kalendae", "Nonae", "Idus", "Decrescens"
+    "Kalendae", // Lua nova
+    "Nonae", // Crescente
+    "Idus", // Cheia
+    "Decrescens" // Minguante
 };
 
-var daysInYear := calcDaysInYear();
+var daysInYear := CalcDaysInYear();
 
 // Season Id based on UO packet
 const SUMMER := 1;
@@ -39,16 +49,7 @@ function getSeason()
     return CInt(GetGlobalProperty("season"));
 endfunction
 
-function GetSeasonId()
-    return struct{
-        "SUMMER" := 1,
-        "AUTUMN" := 2,
-        "WINTER" := 3,
-        "SPRING" := 4
-    };
-endfunction
-
-function calcDaysInYear()
+function CalcDaysInYear()
     var totalDays := 0;
     foreach month in MONTHS
         totalDays += month.days;
@@ -324,7 +325,7 @@ endfunction
 function output(msgtext)
 	foreach player in enumerateonlinecharacters()
 		if (player.cmdlevel)
-			SendSysMessage(player, "Weather debug:" + msgtext, 3, 87);
+			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
 		endif
 	endforeach
 	print("Weather debug:" + msgtext);
@@ -422,8 +423,6 @@ function getMoonPhase()
         fase := fase - moonphases;
     endwhile
     fase++;
-
-    print("DEBUG: FASE: " +fase);
     
     case (fase)
         1: return MOON_PHASES[1];
@@ -447,11 +446,25 @@ function getCurrentDate()
     var moonPhase := getMoonPhase();
 
     return struct{
-        "day" := day,
         "month" := month,
-        "year" := year,
+        "day" := day,
         "weekday" := weekday,
-        "dayYear" := dayYear,
         "moonPhase" := moonPhase
     };
+endfunction
+
+function updateCharacterAge(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata || !chardata.birthdate)
+        return;
+    endif
+
+    var current_year := CINT(GetGlobalProperty("current_year"));
+    var years_passed := current_year - chardata.birthdate.year;
+    var new_age := chardata.initial_age + years_passed;
+
+    if (new_age != chardata.current_age)
+        chardata.current_age := new_age;
+        SetObjProperty(who, "chardata", chardata);
+    endif
 endfunction

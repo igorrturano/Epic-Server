@@ -1,0 +1,447 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":faccao:faccao";
+include ":datafile:datafile";
+include "include/say";
+
+const BKGND_BLUESLAB := 9200;
+const BKGND_STONESLAB := 3500;
+
+const BOTAO_REINO := 1;
+const BOTAO_LEIS := 2;
+const BOTAO_FACCOES := 3;
+const BOTAO_DOACOES := 4;
+const BOTAO_CONSTRUCOES := 5;
+const BOTAO_GUERRA := 6;
+
+const MENU_INTRO := 0;
+const MENU_REINO := 1;
+const MENU_LEIS := 2;
+const MENU_FACCOES := 3;
+const MENU_DOACOES := 4;
+const MENU_CONSTRUCOES := 5;
+const MENU_GUERRA := 6;
+var button_states := array{0, 0, 0, 0, 0, 0};
+
+program use_kingdomManagement(who, item)
+    if (!who || !item)
+        SendSysMessage(who, "Erro: who ou item é nulo");
+        return 0;
+    endif
+
+    if (!CanOpenChest(who))
+        SendSysMessage(who, "Você não tem permissão para abrir o baú");
+        return 0;
+    endif
+
+    var choice := 0;
+    repeat
+        choice := ShowSelectionGump(who);
+
+        case (choice)
+            1: // Abrir o Baú
+                OpenChestAndGump(who, item);
+            2: // Acessar Relatório de Doações
+                SendSysMessage(who, "Acessando relatório de doações");
+                if (CanAccessFullReport(who))
+                    ShowKingdomManagementGump(who, item);
+                else
+                    ShowDoacoesGump(who, item);
+                endif
+            3: // Fechar o Baú
+                SendSysMessage(who, "");
+                break;
+        endcase
+    until (choice == 3);
+
+    return 1;
+endprogram
+
+
+function OpenChestAndGump(who, item)
+    var message := GetOpeningMessage(who);
+    SendSysMessage(who, message);
+    PrintText(who, "*Abriu "+item.desc+"*");
+    SendViewContainer(who, item);
+endfunction
+
+function GetOpeningMessage(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return "Você tem permissão para abrir o baú.";
+    endif
+
+    if (who.cmdlevel >= 3)
+        return "Como GM, você tem acesso total ao baú.";
+    endif
+
+    case (chardata.current_nobility_title)
+        "Rei":
+            return "Meu Rei, o tesouro é de Vossa Majestade.";
+        "Rainha":
+            return "Minha Rainha, o tesouro é de Vossa Majestade.";
+        default:
+            if (chardata.current_professional_position == "Mão do Rei")
+                return " Mão do Rei, você tem acesso ao baú real.";
+            elseif (chardata.current_professional_position == "Imperador")
+                return "Vossa Majestade Imperial, o tesouro está à sua disposição.";
+            endif
+    endcase
+
+    return "Você tem permissão para abrir o baú.";
+endfunction
+
+/*function CreateDonationGump(container)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 400);
+    GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 270, 370);
+    GFTextMid(gump, 10, 20, 280, 2100, "Baú de Doações do Reino");
+    
+    var recursos := ContarItensDoadosNoBau(container);
+    var y := 60;
+    foreach recurso in (recursos.Keys())
+        GFTextLine(gump, 30, y, 2103, recurso + ":");
+        GFTextRight(gump, 270, y, 2103, recursos[recurso]);
+        y += 30;
+    endforeach
+    
+    return gump;
+endfunction
+*/
+
+function ShowDoacoesGump(who, item)
+    var gump := CreateKingdomManagementGump(who, MENU_DOACOES, item);
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] != 0)
+        AtualizarEstadoMenu(input[0]);
+    endif
+endfunction
+
+
+function ShowSelectionGump(who)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 350);
+    GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 370, 320);
+
+    GFTextMid(gump, 10, 30, 380, 2100, "Acesso às Doações do Reino");
+    GFTextMid(gump, 10, 60, 380, 2100, "Escolha uma das opções:");
+
+    GFAddButton(gump, 100, 100, 2151, 2154, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 140, 100, 2103, "Abrir o Baú");
+
+    GFAddButton(gump, 100, 150, 2151, 2154, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 140, 150, 2103, "Acessar Relatório de Doações");
+
+    GFAddButton(gump, 100, 200, 2151, 2154, GF_CLOSE_BTN, 3);
+    GFTextLine(gump, 140, 200, 2103, "Fechar o Baú");
+
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)  // Se o gump foi fechado com o botão direito
+        return 3;  // Retorna a opção de fechar o baú
+    else
+        return input[0];
+    endif
+endfunction
+
+function CanOpenChest(who)
+    if (who.cmdlevel >= 3)
+        return 1;
+    endif
+
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0;
+    endif
+
+    return chardata.current_nobility_title in {"Rei", "Rainha"} ||
+           chardata.current_professional_position in {"Mão do Rei", "Imperador"};
+endfunction
+
+function CanAccessFullReport(who)
+    return CanOpenChest(who);
+endfunction
+
+function ShowKingdomManagementGump(who, item)
+    var cur_menu := MENU_DOACOES;
+    var input;
+
+    repeat
+        var gump := CreateKingdomManagementGump(who, cur_menu, item);
+        input := GFSendGump(who, gump);
+        
+        if (input[0] != 0)
+            cur_menu := AtualizarEstadoMenu(input[0]);
+        endif
+    until (input[0] == 0);
+endfunction
+
+
+
+
+
+
+
+function CreateKingdomManagementGump(who, cur_menu, item)
+    var gump := CriarLayoutBase();
+    
+    case (cur_menu)
+        MENU_REINO:
+            ReinoGump(gump);
+        MENU_LEIS:
+            LeisGump(gump);
+        MENU_FACCOES:
+            FaccoesGump(gump);
+        MENU_DOACOES:
+            DoacoesGump(gump, item);
+        MENU_CONSTRUCOES:
+            ConstrucoesGump(gump);
+        MENU_GUERRA:
+            GuerraGump(gump);
+        default:
+            DoacoesGump(gump, item);
+    endcase
+
+    return gump;
+endfunction
+
+function CriarLayoutBase()
+    var gump := GFCreateGump();
+    
+    GFGumpPicTiled(gump, 19, 19, 759, 550, 39929);
+    AdicionarMoldura(gump);
+    GFGumpPicTiled(gump, 32, 24, 733, 29, 9354);
+    AdicionarBotoesNavegacao(gump);
+    
+    return gump;
+endfunction
+
+function AdicionarMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 5, width := 35, height := 36, gump := 39925 },
+        struct{ x := 33, y := 5, width := 729, height := 21, gump := 39926 },
+        struct{ x := 0, y := 41, width := 21, height := 539, gump := 39928 },
+        struct{ x := 759, y := 5, width := 35, height := 36, gump := 39927 },
+        struct{ x := 759, y := 36, width := 37, height := 534, gump := 39930 },
+        struct{ x := 0, y := 561, width := 37, height := 33, gump := 39931 },
+        struct{ x := 33, y := 561, width := 730, height := 33, gump := 39932 },
+        struct{ x := 759, y := 561, width := 36, height := 33, gump := 39933 },
+        struct{ x := 444, y := 60, width := 8, height := 502, gump := 39928 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function AdicionarBotoesNavegacao(byref gump)
+    var textos := array{"Reino", "Leis", "Facções", "Doações", "Construções", "Guerra"};
+    var x_positions := array{85, 185, 285, 395, 505, 635};
+    var botoes := array{BOTAO_REINO, BOTAO_LEIS, BOTAO_FACCOES, BOTAO_DOACOES, BOTAO_CONSTRUCOES, BOTAO_GUERRA};
+    
+    for i := 1 to 6
+        var gump_button := 2151;
+        var text_color := 53;
+        
+        if (button_states[i])
+            gump_button := 2153;
+            text_color := 230;
+        endif
+        
+        GFTextLine(gump, x_positions[i], 27, text_color, textos[i]);
+        GFAddButton(gump, x_positions[i] - 35, 23, gump_button, gump_button, GF_CLOSE_BTN, botoes[i]);
+    endfor
+endfunction
+
+function AtualizarEstadoMenu(input)
+    case (input)
+        BOTAO_REINO:
+            button_states := array{1, 0, 0, 0, 0, 0};
+            return MENU_REINO;
+        BOTAO_LEIS:
+            button_states := array{0, 1, 0, 0, 0, 0};
+            return MENU_LEIS;
+        BOTAO_FACCOES:
+            button_states := array{0, 0, 1, 0, 0, 0};
+            return MENU_FACCOES;
+        BOTAO_DOACOES:
+            button_states := array{0, 0, 0, 1, 0, 0};
+            return MENU_DOACOES;
+        BOTAO_CONSTRUCOES:
+            button_states := array{0, 0, 0, 0, 1, 0};
+            return MENU_CONSTRUCOES;
+        BOTAO_GUERRA:
+            button_states := array{0, 0, 0, 0, 0, 1};
+            return MENU_GUERRA;
+        default:
+            return MENU_DOACOES;
+    endcase
+endfunction
+
+function ReinoGump(byref gump)
+    GFResizePic(gump, 38, 60, 40267, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Gestão do Reino");
+    // TODO: Adicionar conteúdo específico da gestão do reino
+endfunction
+
+function LeisGump(byref gump)
+    GFResizePic(gump, 38, 60, 40266, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Sistema de Leis");
+    // TODO: Adicionar conteúdo relacionado às leis do reino
+endfunction
+
+function FaccoesGump(byref gump)
+    GFResizePic(gump, 38, 60, 40264, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Facções");
+    // TODO: Adicionar conteúdo relacionado às facções
+endfunction
+
+function DoacoesGump(byref gump, item)
+    GFResizePic(gump, 38, 60, 40260, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Recursos do Reino");
+    
+    var recursos := ContarItensDoadosNoBau(item);
+    CriarLayoutDoacoes(gump, recursos);
+endfunction
+
+function ConstrucoesGump(byref gump)
+    GFResizePic(gump, 38, 60, 40263, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Construções");
+    // TODO: Adicionar conteúdo relacionado às construções do reino
+endfunction
+
+function GuerraGump(byref gump)
+    GFResizePic(gump, 38, 60, 40265, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Sistema de Guerra");
+    // TODO: Adicionar conteúdo relacionado ao sistema de guerra
+endfunction
+
+function CriarLayoutDoacoes(byref gump, recursos)
+    if (!gump)
+        return 0;
+    endif
+
+    GFGumpPicTiled(gump, 466, 60, 263, 21, 9354);
+    AdicionarQuadradosRecursos(gump);
+    AdicionarIconesItens(gump);
+    GFTextLine(gump, 541, 60, 53, "Recursos do Reino");
+    AdicionarTextosTiposDoacao(gump);
+    AdicionarValoresRecursos(gump, recursos);
+
+    return 1;
+endfunction
+
+function AdicionarQuadradosRecursos(byref gump)
+    var quadrados := array{
+        struct{ "x" := 466, "y" := 98 },
+        struct{ "x" := 630, "y" := 97 },
+        struct{ "x" := 467, "y" := 220 },
+        struct{ "x" := 630, "y" := 217 },
+        struct{ "x" := 466, "y" := 338 },
+        struct{ "x" := 630, "y" := 335 },
+        struct{ "x" := 466, "y" := 456 },
+        struct{ "x" := 630, "y" := 456 }
+    };
+
+    foreach quadrado in quadrados
+        GFGumpPicTiled(gump, quadrado.x, quadrado.y, 98, 78, 9354);
+        GFGumpPicTiled(gump, quadrado.x, quadrado.y + 85, 98, 21, 9394);
+    endforeach
+endfunction
+function AdicionarIconesItens(byref gump)
+    var itens := array{
+        struct{ "x" := 490, "y" := 124, "grafico" := 29807 },
+        struct{ "x" := 655, "y" := 132, "grafico" := 3823 },
+        struct{ "x" := 492, "y" := 247, "grafico" := 4225 },
+        struct{ "x" := 659, "y" := 242, "grafico" := 29421 },
+        struct{ "x" := 493, "y" := 361, "grafico" := 7135 },
+        struct{ "x" := 660, "y" := 364, "grafico" := 5991 },
+        struct{ "x" := 495, "y" := 485, "grafico" := 4963 },
+        struct{ "x" := 652, "y" := 493, "grafico" := 41779 }
+    };
+
+    foreach item in itens
+        GFTilePic(gump, item.x, item.y, item.grafico);
+    endforeach
+endfunction
+
+function AdicionarTextosTiposDoacao(byref gump)
+    var tipos := array{
+        struct{ "x" := 498, "y" := 99, "texto" := "Comida" },
+        struct{ "x" := 660, "y" := 101, "texto" := "Moedas" },
+        struct{ "x" := 498, "y" := 219, "texto" := "Couro" },
+        struct{ "x" := 660, "y" := 220, "texto" := "Metais" },
+        struct{ "x" := 492, "y" := 338, "texto" := "Madeira" },
+        struct{ "x" := 660, "y" := 340, "texto" := "Tecidos" },
+        struct{ "x" := 498, "y" := 456, "texto" := "Pedras" },
+        struct{ "x" := 660, "y" := 459, "texto" := "Joias" }
+    };
+
+    foreach tipo in tipos
+        GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
+    endforeach
+endfunction
+
+function AdicionarValoresRecursos(byref gump, recursos)
+    if (!gump || !recursos)
+        return 0;
+    endif
+
+    var posicoes := array{
+        struct{ "x" := 503, "y" := 184, "valor" := recursos.comida },
+        struct{ "x" := 667, "y" := 184, "valor" := recursos.moedas },
+        struct{ "x" := 503, "y" := 304, "valor" := recursos.couro },
+        struct{ "x" := 667, "y" := 304, "valor" := recursos.metal },
+        struct{ "x" := 503, "y" := 424, "valor" := recursos.madeira },
+        struct{ "x" := 667, "y" := 424, "valor" := recursos.pano },
+        struct{ "x" := 503, "y" := 541, "valor" := recursos.pedras },
+        struct{ "x" := 667, "y" := 541, "valor" := recursos.joias }
+    };
+
+    foreach pos in posicoes
+        GFTextLine(gump, pos.x, pos.y, 53, CStr(pos.valor));
+    endforeach
+
+    return 1;
+endfunction
+
+function ContarItensDoadosNoBau(bau)
+    var recursos := struct{
+        comida := 0,
+        moedas := 0,
+        couro := 0,
+        metal := 0,
+        madeira := 0,
+        pano := 0,
+        pedras := 0,
+        joias := 0
+    };
+    foreach item in EnumerateItemsInContainer(bau)
+        if (GetObjProperty(item, "IsKingdomDonationComida"))
+            recursos.comida += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationMoedas"))
+            recursos.moedas += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationCouro"))
+            recursos.couro += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationMetal"))
+            recursos.metal += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationMadeira"))
+            recursos.madeira += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationPano"))
+            recursos.pano += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationPedra"))
+            recursos.pedras += item.amount;
+        elseif (GetObjProperty(item, "IsKingdomDonationJoias"))
+            recursos.joias += item.amount;
+        endif
+    endforeach
+
+    return recursos;
+endfunction
