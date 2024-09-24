@@ -22,9 +22,10 @@ function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 		damage := 1;
 	endif
 
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Base: " + CInt(damage));
+	damage := CInt(damage);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Base: " + damage);
 
-	return CInt(damage);
+	return damage;
 endfunction
 
 function CalcDamageStats(attacker, damage)
