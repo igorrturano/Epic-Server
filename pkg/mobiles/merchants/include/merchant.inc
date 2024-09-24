@@ -392,9 +392,15 @@ function AI_Speak_Openai(npcType, DescricaoItem, cost_amt)
 	var npcEvil := False;
 	
 	var specialLore := False;
-	var gossip := False;
-	var mood := " se o personagem gasta poucas moedas (para sua avaliação, 10 moedas é um ótimo valor), você fica nervoso, mesquinho ou sarcástico;";
-	
+	var gossip_storage := GetGlobalProperty("gossip_storage");
+	var gossip := True;
+	if (gossip_storage == array{})
+		gossip := False;
+	endif
+	var mood := "None";
+	if ( (RandomInt(100) < 50 ) ) // por cento de chance
+		mood := " se o personagem gasta poucas moedas (para sua avaliação, 10 moedas é um ótimo valor), você fica nervoso, mesquinho ou sarcástico;";
+	endif
 	var playerinput := "<o personagem compra o item " + DescricaoItem + " por " + cost_amt + " moedas>";
 	
 	var responseText := handle_open_ai_npc_speech(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
