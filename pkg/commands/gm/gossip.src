@@ -1,0 +1,17 @@
+use uo;
+//.gossip <insira sua fofoca>
+program criar_fofoca(who, nova_fofoca)
+
+    if (!nova_fofoca)
+        sendsysmessage(who, "Voce pode usar o comando com uma nova fofoca");
+        return;
+    endif
+
+    if (nova_fofoca)
+        sendsysmessage(who, "Nova fofoca: " + nova_fofoca);
+    endif
+    var gossip_storage := GetGlobalProperty("gossip_storage");
+    gossip_storage.append(nova_fofoca);
+    SetGlobalProperty("gossip_storage", gossip_storage);
+   
+endprogram
