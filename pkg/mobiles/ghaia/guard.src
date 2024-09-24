@@ -21,6 +21,7 @@ include ":faccao:faccao";
 include "include/dungeons";
 include "include/ghaia";
 include "include/utils";
+include "include/epicNPCUtils";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
@@ -302,7 +303,7 @@ program NPCMonitor()
          endif
 
          if (!GetCooldown(me, "try_reset"))
-            if (!HasPlayerNear(me.x, me.y, me.realm))
+            if (!HasPlayerNear(me))
                if (SendToStartPosition())
                   wait_time := 2000;
                endif
@@ -866,7 +867,7 @@ function SendToStartPosition()
 
    if (fix_location)
       if (CoordinateDistance(fix_location.x, fix_location.y, me.x, me.y) > 20)
-         if (HasPlayerNear(fix_location.x, fix_location.y, me.realm))
+         if (HasPlayerNearLocation(fix_location.x, fix_location.y, me.realm))
             return 0;
          endif
       endif
@@ -877,7 +878,7 @@ function SendToStartPosition()
 
    if (patrolling)
       if (CoordinateDistance(patrolling.x, patrolling.y, me.x, me.y) > 20)
-         if (HasPlayerNear(patrolling[1].x, patrolling[1].y, me.realm))
+         if (HasPlayerNearLocation(patrolling[1].x, patrolling[1].y, me.realm))
             return 0;
          endif
 
@@ -891,7 +892,6 @@ function SendToStartPosition()
 
    return 1;
 endfunction
-
 
 function FightADV(opponent := 0)
    if (opponent)
