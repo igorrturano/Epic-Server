@@ -143,7 +143,7 @@ function SpeechEvent(npc, byref event)
 	endif
 
 
-	if ( text != ". . .")
+	if ( text != " . . . ")
 		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
 		var sourceDescription := GetObjProperty(event.source, "descricao");
 		print(npc.npctemplate);
