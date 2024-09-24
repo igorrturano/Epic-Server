@@ -25,7 +25,6 @@ include ":ghaia:ghaia";
 include "include/epicConstants";
 
 program	text_command_createnpc(who, template)
-	print("seer");
 	var	mercscripts := {"appraiser", "barber", "banker", "bucsBanker", "bucsTownHealer",
 						"healer", "merchant", "stablemaster", "townguard", "townHealer"};
 	var	guardscripts := {"townGuard", "instakillGuard"};
@@ -33,7 +32,6 @@ program	text_command_createnpc(who, template)
 	var node :="none";
 	var	NPC_entry;
 	var	ai_script;
-	print("template: " + template);
 	if (!template)
 		template := DisplayNPCSelectionMenu(who);
 		if (!template)

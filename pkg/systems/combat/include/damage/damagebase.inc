@@ -288,7 +288,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 	endif
 
-	if (isBloodied(defender))
+	if (isRaging(defender))
 		if (temHabilidade(attacker, "Burz"))
 			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
@@ -386,10 +386,6 @@ function CalcDamageReducer(attacker, damage)
 
 	return damage;
 endfunction
-
-
-
-
 
 function CheckBastardSword(who)
 	if (who.weapon.objtype == 0x13b9 && !who.shield)
