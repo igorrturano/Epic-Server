@@ -19,5 +19,8 @@ program criar_fofoca(who, nova_fofoca)
     var gossip_storage := GetGlobalProperty("gossip_storage");
     gossip_storage.append(nova_fofoca);
     SetGlobalProperty("gossip_storage", gossip_storage);
+
+    sendsysmessage(who, "Essas são as fofocas atuais:");
+    sendsysmessage(who, Cstr(gossip_storage));
    
 endprogram
