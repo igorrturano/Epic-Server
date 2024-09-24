@@ -1,0 +1,143 @@
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include "include/say";
+include "include/creationUtils";
+program cabelo(who)
+    looksGump2(who, GetObjProperty(who, "chardata"));
+endprogram
+
+function looksGump2(who, chardata)
+	var disfarce := struct;
+    disfarce.+barba := "";
+    disfarce.+cabelo := "";
+    disfarce.+corcabelo := -1;
+    disfarce.+corbarba := -1;
+    disfarce.+corpele := -1;
+
+    escolherCabeloNovo(who, disfarce, chardata.raca);
+    // escolheCorCabelo(who, disfarce, 0, chardata.raca, 1);
+    // if (chardata.raca != ELFO && chardata.raca != DROW)
+    //     escolherBarba(who, disfarce);
+    // endif
+
+    // SkinGump(who, disfarce, chardata.raca, 1);
+
+    // who.color := disfarce.corpele;
+    // who.truecolor := disfarce.corpele;
+
+    // var mybarba := GetEquipmentByLayer(who, LAYER_BEARD);
+    // var newbarba := CreateItemAtLocation(who.x, who.y, who.z, disfarce.barba, 1, who.realm);
+
+    // newbarba.color := 1109;
+
+    // newbarba.color := disfarce.corcabelo;
+    // if (mybarba)
+    //     DestroyItem(mybarba);
+    // endif
+    // var result := EquipItem(who, newbarba);
+
+    // var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
+    // var newhair := CreateItemAtLocation(who.x, who.y, who.z, disfarce.cabelo, 1, who.realm);
+
+    // newhair.color := 1109;
+
+    // newhair.color := disfarce.corcabelo;
+    // var result2 := DestroyItem(myhair);
+    // result := EquipItem(who, newhair);
+
+	if (YesNo(who, "Deseja manter esta aparência?" , "Sim.", "Não."))
+		return 1;
+	else
+		looksGump2(who, chardata);
+	endif
+endfunction
+
+function escolherCabeloNovo(who, byref disfarce, raca := 0)
+	UnloadConfigFile(":fls_core:config/hairtypes");
+	var config := ReadConfigFile(":fls_core:config/hairtypes");
+	var hair;
+    var x := 63;
+    var y := 100;
+
+	hair := config["todos"];
+
+	var hairgumps := config["hairgump"];
+
+	var gump := GfCreateGump();
+	GFClosable(gump, 0);
+	GFTextMid(gump, 35, 50, 770, 1153, "Escolha o cabelo");
+
+	GFGumpPic(gump, 17, 31, 0x9E6);
+	GFResizePic(gump, 288, 80, 2620, 250, 400);
+	GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+
+	GFSetRadioGroup(gump, 1);
+	var y_pos := 65;
+	var x_pos := 20;
+	var numColumn := 0;
+	var hairnames := array;
+	foreach style in GetConfigStringArray(hair, "style")
+		style := splitwords(style);
+		var hairname := style[1];
+		var hairgraphic := cint(style[2]);
+		while (hairname["_"])
+			hairname["_"] := " ";
+		endwhile
+		numColumn ++;
+		if (numColumn > 19)
+			x_pos := 320;
+			if(numColumn == 20)
+				y_pos := 65;
+			endif
+		endif
+		if (hairgraphic == disfarce.barba)
+			GFRadioButton(gump, x_pos, y_pos, 2151, 2154, 1, hairgraphic);
+		else
+			GFRadioButton(gump, x_pos, y_pos, 2151, 2154, 0, hairgraphic);
+		endif
+		hairnames.append(hairname);
+		GFTextline(gump, x_pos + 55, y_pos+5, 1153, hairname);
+		var gumppic := GetConfigString(hairgumps, style[1]);
+		GFGumpPic(gump, x_pos+135, y_pos-45, gumppic);
+		y_pos := y_pos + 30;
+	endforeach
+
+	if (!disfarce.barba || disfarce.barba == -1)
+		GFRadioButton(gump, x_pos, y_pos, 2151, 2154, 1, 1);
+	else
+		GFRadioButton(gump, x_pos, y_pos, 2151, 2154, 0, 1);
+	endif
+	GFTextline(gump, x_pos+55, y_pos+5, 1153, "Bald");
+
+	GfTextLine(gump, x_pos+45, y_pos+45, 1153, "Pronto");
+	GfAddButton(gump, x_pos+25, y_pos+47, 2117, 2118, 1, 10);
+	var input := GFSendGump(who, gump);
+	if (input[0] == 10)
+		SendSysMessageEx(who, "Voce escolheu o cabelo. ", SSM_INFO);
+		foreach key in (input.keys)
+			if (key != 10)
+				disfarce.cabelo := key;
+			endif
+		endforeach
+	else
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+endfunction
+
+function GetPaperdollBackground(graphic)
+    print("GetPaperdollBackground chamado com graphic: " + graphic);
+    var result := 0x0E10; // Valor padrão
+    case (graphic)
+        400:  result := 0xC; // Male
+        401:  result := 0xD; // Female
+        1828: result := 0x0E10; // Anão F
+        1829: result := 0x0E10; // Anão M
+        1830: result := 0xE; // Elfo M
+        1831: result := 0xF; // Elfo F
+        1832: result := 0x0E10; // Orc M
+        1833: result := 0x0E10; // Orc F
+    endcase
+    print("GetPaperdollBackground retornando: " + result);
+    return result;
+endfunction
