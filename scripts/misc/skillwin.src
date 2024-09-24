@@ -13,10 +13,8 @@ include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 
-const GUMP_BACKGROUND := 39929;
-const INTERNAL_BACKGROUND := 9350;
-const GUMP_WIDTH := 395;  // Mantido o mesmo
-const GUMP_HEIGHT := 565; // Aumentado em 100 pixels
+const GUMP_WIDTH := 440;
+const GUMP_HEIGHT := 565;
 
 var skillList := array{"Alchemy", "Magic_Lore", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering", "Dual_Wield"};
 
@@ -28,15 +26,17 @@ program core_skillWin(who)
         return;
     endif
 
-    var gump := CreateBaseGump();
-    var page := 1; // Começamos na página de Skills
+    var gump;
+    var page := 1;
     
     while (1)
         case (page)
             1: 
+				gump := GFECreateGump("Menu de Perícias", GUMP_WIDTH, GUMP_HEIGHT);
                 ShowSkillsPage(gump, who);
                 AddNavigationBar(gump, 1);
             2: 
+				gump := GFECreateGump("Menu de Perícias", GUMP_WIDTH, GUMP_HEIGHT);
                 ShowHabilidadesPage(gump, who);
                 AddNavigationBar(gump, 2);
         endcase
@@ -49,69 +49,46 @@ program core_skillWin(who)
         if (input[0] >= 1 && input[0] <= 2)
             page := input[0];
         elseif (input[0] >= 0 && input[0] <= 60)
-            Start_Script(AP_GetSkillScript(GetSkillNameByID(input[0])), who);
-        elseif (input[0] == 901)
-            Habilidades(who);
+            Run_Script_To_Completion(AP_GetSkillScript(GetSkillNameByID(input[0])), who);
+        // elseif (input[0] == 901)
+        //     Habilidades(who);
         elseif (input[0] >= 1001 && input[0] <= 1021)
-            comprarHabilidade(who, 0, CInt((input[0] - 1001)/2));
+            var nivel := CInt((input[0] - 1001));
+			if (nivel%2 == 0)
+				comprarHabilidade(who, 0, nivel/2);
+			else
+				Habilidades(who);
+			endif
         endif
     endwhile
 endprogram
 
-function CreateBaseGump()
-    var gump := GFCreateGump();
-    GFClosable(gump, 1);
-    GFDisposable(gump, 0);
-    
-    GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
-    AddMoldura(gump);
-    
-    return gump;
-endfunction
-
-function AddMoldura(byref gump)
-    var molduras := array{
-        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
-        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
-        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
-        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
-        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
-        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
-        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
-        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
-    };
-
-    foreach moldura in molduras
-        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
-    endforeach
-endfunction
-
 function AddNavigationBar(byref gump, current_page)
     var buttons := array{"Skills", "Habilidades"};
     
-    GFResizePic(gump, 15, 42, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, 35);
+    // GFResizePic(gump, 15, 42, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, 35);
     
-    GFTextMid(gump, 60, 20, 300, 53, "Menu de Perícias");
+    // GFTextMid(gump, 60, 20, 300, 53, "Menu de Perícias");
     
     for i := 1 to 2
         var x_offset := (i-1)*150 + 25;
         
         if (i == current_page)
-            GFAddButton(gump, x_offset, 45, 2154, 2154, GF_CLOSE_BTN, i);
+            GFAddButton(gump, x_offset, 75, 2154, 2154, GF_CLOSE_BTN, i);
         else
-            GFAddButton(gump, x_offset, 45, 2151, 2154, GF_CLOSE_BTN, i);
+            GFAddButton(gump, x_offset, 75, 2151, 2154, GF_CLOSE_BTN, i);
         endif
-        GFTextLine(gump, x_offset + 35, 50, 2100, buttons[i]);
+        GFTextLine(gump, x_offset + 35, 80, 2100, buttons[i]);
     endfor
 endfunction
 
 function ShowSkillsPage(byref gump, who)
-    GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
+    // GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
     
     var chardata := GetObjProperty(who, "chardata");
     
-    var x := 40;
-    var y := 90;
+    var x := 50;
+    var y := 120;
     
     foreach skill in (chardata.Skills.keys())
         var valor_mod := "";
@@ -138,7 +115,7 @@ function ShowSkillsPage(byref gump, who)
 endfunction
 
 function ShowHabilidadesPage(byref gump, who)
-    GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
+    // GFResizePic(gump, 15, 80, INTERNAL_BACKGROUND, GUMP_WIDTH - 30, GUMP_HEIGHT - 100);
     
     var habs := GetObjProperty(who, "buyhab");
     if (!habs)
@@ -150,29 +127,30 @@ function ShowHabilidadesPage(byref gump, who)
         SetObjProperty(who, "buyhab", habs);
     endif
     
-    var y := 100;
     var myhabs := GetObjProperty(who, "myhabs");
     var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+
+	var x := 30;
+	var y := 120;
     var i;
-    
     for(i := 0; i <= 20; i := i + 1)
         if (Cint(habs[i]) == 1)
-            GFTextLine(gump, 30, y, 1150, "Nivel " + i + " : ");
+            GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
             if (i%2 == 1)
-                GFTextLine(gump, 90, y, 300, "Comprar Status");
-                GFAddButton(gump, 10, y+5, 2103, 2104, 1, i+1001);
+                GFTextLine(gump, x + 90, y, 300, "Comprar Status");
+                GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
             else
                 if(i == 0)
-                    GFTextLine(gump, 90, y, 300, "Escolha a Habilidade");
-                    GFAddButton(gump, 10, y+5, 2103, 2104, 1, i+1001);
+                    GFTextLine(gump, x + 90, y, 300, "Escolha a Habilidade");
+                    GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
                 else
-                    GFTextLine(gump, 90, y, 300, "Procure o Pergaminho");
+                    GFTextLine(gump, x + 90, y, 300, "Procure o Pergaminho");
                 endif
             endif
         elseif (cint(habs[i]) == 2)
-            GFTextLine(gump, 30, y, 1150, "Nivel " + i + " : ");
+            GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
             if (i%2 == 1)
-                GFTextLine(gump, 90, y, 300, "Status Comprado");
+                GFTextLine(gump, x + 90, y, 300, "Status Comprado");
             else
                 if (habcfg[myhabs[i]].uso == "Ativa")
                     var texto := myhabs[i] + " ["+habcfg[myhabs[i]].uso + "] " + "["+habcfg[myhabs[i]].duracao + "] " + "["+habcfg[myhabs[i]].delay + " s] ";
@@ -181,13 +159,13 @@ function ShowHabilidadesPage(byref gump, who)
                     else
                         texto := texto + "["+habcfg[myhabs[i]].mana + " mana] ";
                     endif
-                    GFTextLine(gump, 90, y, 300, texto);
+                    GFTextLine(gump, x + 90, y, 300, texto);
                 else
-                    GFTextLine(gump, 90, y, 300, myhabs[i] + " ["+habcfg[myhabs[i]].uso + "]");
+                    GFTextLine(gump, x + 90, y, 300, myhabs[i] + " ["+habcfg[myhabs[i]].uso + "]");
                 endif
             endif
         endif
-        y := y + 20;
+        y += 20;
     endfor
 endfunction
 
@@ -291,7 +269,7 @@ function Habilidades(who)
 	endif
 
 	var chardata := GetObjProperty(who, "chardata");
-	var primSum := 0;
+	/* var primSum := 0;
 	var primarias := 0;
 	foreach skill in (chardata.Skills.keys())
 		if (chardata.Skills[skill]  == 3)
@@ -309,9 +287,9 @@ function Habilidades(who)
 			habs[i] := 1;
 		endif
 	endfor
-	SetObjProperty(who, "buyhab", habs);
+	SetObjProperty(who, "buyhab", habs); */
 
-	var charGump := GFCreateGump();
+	/* var charGump := GFCreateGump();
 	var input;
 
 	GFResizePic(charGump, 0, 25, 3600, 400, 470);
@@ -350,74 +328,62 @@ function Habilidades(who)
 			endif
 		endif
 		y := y + 20;
-	endfor
+	endfor*/
 
-	input := GFSendGump(who, charGump);
+	var gump := GFECreateGump("Comprar Status", 150, 160);
+	var x := 30;
+	var y := 80;
+	GFTextLine(gump, x+20, y, 1153, "+2 Str");
+	GFTextLine(gump, x+20, y+20, 1153, "+2 Dex");
+	GFTextLine(gump, x+20, y+40, 1153, "+2 Int");
 
-	if (input[0] > 0)
-		input := input[0]-1;
-		//SendSysMessage(who,"Tentando comprar Hab Level "+input);
-		if ( input % 2 == 1 )
-			SendSysMessageEx(who,  "Voce pode comprar +2 em algum status.", SSM_INFO);
-            var gump2 := GFCreateGump();
-            GFDisposable(gump2, 0);
-            GFResizePic(gump2, 0, 25, 3600, 170, 130);
-            GFResizePic(gump2, 15, 40, 0x13BE, 140, 100);
-            GFTextLine(gump2, 35, 50, 1153, "Escolha o Status");
+	GFAddButton(gump, x, y+3, 2117, 2118, GF_CLOSE_BTN, 10);
+	GFAddButton(gump, x, y+23, 2117, 2118, GF_CLOSE_BTN, 20);
+	GFAddButton(gump, x, y+43, 2117, 2118, GF_CLOSE_BTN, 30);
+	var input := GFSendGump(who, gump);
+	if ( input % 2 == 1 )
+		habs := GetObjProperty(who, "buyhab");
+		if (habs[input] == 1)
+			if (input == 10)
+				habs[input] := 2;
+				SetObjProperty(who, "buyhab", habs);
+				AP_SetTrueStat(who, STRENGTH, AP_GetTrueStat(who, STRENGTH)+2);
 
-            GFTextLine(gump2, 70, 70, 1153, "+2 Str");
-            GFTextLine(gump2, 70, 90, 1153, "+2 Dex");
-            GFTextLine(gump2, 70, 110, 1153, "+2 Int");
-
-            GfAddButton(gump2, 50, 73, 2117, 2118, GF_CLOSE_BTN,  10);
-            GfAddButton(gump2, 50, 94 , 2117, 2118, GF_CLOSE_BTN,  20);
-            GfAddButton(gump2, 50, 113 , 2117, 2118, GF_CLOSE_BTN,  30);
-
-            var input2 := GFSendGump(who, gump2);
-            input2 := input2[0];
-
-            habs := GetObjProperty(who, "buyhab");
-            if (habs[input] == 1) //se pode mesmo comprar
-                if (input2 == 10)
-                    habs[input] := 2;
-                    SetObjProperty(who, "buyhab", habs);
-                    AP_SetTrueStat(who, STRENGTH, AP_GetTrueStat(who, STRENGTH)+2);
-	
-                elseif (input2 == 20)
-                    habs[input] := 2;
-                    SetObjProperty(who, "buyhab", habs);
-                    AP_SetTrueStat(who, DEXTERITY, AP_GetTrueStat(who, DEXTERITY)+2);
-                elseif (input2 == 30)
-                    habs[input] := 2;
-                    SetObjProperty(who, "buyhab", habs);
-                    AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
-                endif
-				
-				var hp_up := 0;
-				if (chardata.classe == GUERREIRO)
-					hp_up := 10;
-				elseif (chardata.classe == LADINO)
-					hp_up := 8;
-				elseif (chardata.classe == SABIO)
-					hp_up := 6;
-				endif
-				var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
-				hitsmod := hitsmod + hp_up;
-				SetObjProperty(who, "hitsmod",  hitsmod);
-				recalcvitals(who);
-				HealDamage(who, hp_up);
-            else
-                SendSysMessage(who, "Voce nao pode comprar esse status.");
-            endif
-        else
-        	//SendSysMessage(who,"Tentando comprar Hab Level "+input);
-        	comprarHabilidade(who, 0, CInt(input/2));
+			elseif (input == 20)
+				habs[input] := 2;
+				SetObjProperty(who, "buyhab", habs);
+				AP_SetTrueStat(who, DEXTERITY, AP_GetTrueStat(who, DEXTERITY)+2);
+			elseif (input == 30)
+				habs[input] := 2;
+				SetObjProperty(who, "buyhab", habs);
+				AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
+			endif
+			
+			var hp_up := 0;
+			if (chardata.classe == GUERREIRO)
+				hp_up := 10;
+			elseif (chardata.classe == LADINO)
+				hp_up := 8;
+			elseif (chardata.classe == SABIO)
+				hp_up := 6;
+			endif
+			var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
+			hitsmod := hitsmod + hp_up;
+			SetObjProperty(who, "hitsmod",  hitsmod);
+			recalcvitals(who);
+			HealDamage(who, hp_up);
+		else
+			SendSysMessageEx(who, "Voce nao pode comprar esse status.");
 		endif
-
-		EraseObjProperty(who, "#gumphab");
-		return 1;
-
+	else
+		//SendSysMessage(who,"Tentando comprar Hab Level "+input);
+		// comprarHabilidade(who, 0, CInt(input/2));
 	endif
+
+	EraseObjProperty(who, "#gumphab");
+	return 1;
+
+	// endif
 endfunction
 
 function GetSkillColor(skill)
