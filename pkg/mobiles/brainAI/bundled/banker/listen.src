@@ -8,6 +8,55 @@ include ":containers:storageAreas";
 include ":containers:containers";
 include ":fls_core:tax";
 
+function OpenAICompletion(systemMessage, questions)
+
+   var formatedQuestions := array{ struct{
+      "role" := "system",
+      "content" := systemMessage
+   } };
+
+   foreach question in questions
+      if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
+         return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
+      endif
+
+      if (question.exists("assistant"))
+         formatedQuestions.append(struct{
+            "role" := "assistant",
+            "content" := question["assistant"]
+         });
+      endif
+
+      if (question.exists("user"))
+         formatedQuestions.append(struct{
+            "role" := "user",
+            "content" := question["user"]
+         });
+      endif
+   endforeach
+
+   var apiURL := "https://api.openai.com/v1/chat/completions";
+   var method := "POST";
+   var jsonData := PackJSON(struct{
+      "model" := "gpt-4o-mini",
+      "messages" := formatedQuestions
+   });
+
+   var apiResponse := HTTPRequest(
+         apiURL,
+         method,
+         struct{
+            data := jsonData,
+            headers := struct{
+               "Content-Type" := "application/json",
+               "Authorization" := "Bearer {1}".format(GetEnvironmentVariable("OPENAI_KEY"))
+            }
+         }
+      );
+   var unpackedJSON := UnpackJSON(apiResponse);
+   return unpackedJSON["choices"][1]["message"]["content"];
+endfunction
+
 program BrainNerve(params)
 	var npc		:= params[1];
 	//var nerve_name:= params[2];
@@ -54,17 +103,87 @@ function SpeechEvent(npc, byref event)
 	endif
 
 
-	if ( text["banco"] || text["cofre"] )
+	// Inicializar ou obter a variável global last_char_description
+	var last_char_description := GetGlobalProperty("last_char_description");
+	if (!last_char_description)
+		last_char_description := "";
+		SetGlobalProperty("last_char_description", last_char_description);
+	endif
+
+	// Inicializar ou obter a variável global conversation_history
+	var conversation_history := GetGlobalProperty("conversation_history");
+	if (!conversation_history)
+		conversation_history := array{};
+		SetGlobalProperty("conversation_history", conversation_history);
+	endif
+
+	// Verifica se a descrição do personagem mudou
+	var sourceDescription := GetObjProperty(event.source, "descricao");
+	if (sourceDescription != last_char_description)
+		// Novo personagem, reinicia o histórico de conversas
+		conversation_history := array{};
+		last_char_description := sourceDescription;  // Atualiza para a nova descrição
+		SetGlobalProperty("last_char_description", last_char_description);
+		SetGlobalProperty("conversation_history", conversation_history); // Save updated history
+	endif
+
+	
+	if ( text != " . . . " && Distance(npc, event.source) < 4 && text != "abandonar" && text != "registrar" && text != "filiar" )
+
+		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
+		
 		if (Distance(npc, event.source) > 2)
 			AI_Speak(npc, "Se aproxime para mexer no seu cofre.");
 			return 0;
 		endif
 		AI_Turn(npc, source, NETURN_TOWARD);
 		var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_NOCREATE);
-		if ( !bank_box ) 
-			AI_Speak(npc, "Voce nao possui conta nesse banco, se desejar pode se *registrar* a cidade para ter uma.");
-			AI_Speak(npc, "Se voce for cidadao registrado passa a pagar impostos, mas recebe todos os beneficios da cidade.");
-			AI_Speak(npc, "Voce so pode se *registrar* em uma cidade ou perdera suas coisas no banco das outras cidades.");
+
+		if (!bank_box)
+			var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O personagem que fala com você é um " + sourceRaca + " com descrição " + sourceDescription + ". O personagem não tem uma conta no banco. Pergunte se ele deseja se registrar. Retorne sua frase com um separador &, da forma - (<sua frase> & True/False); só retorne True quando ele explicitar que deseja, sim, se registrar. Máximo de 50 caracteres.";
+
+			// Adiciona a mensagem do jogador (user) ao histórico
+			var player_message := struct{ "user" := text };
+
+			conversation_history.append(player_message);
+			
+			// Faz a chamada ao Chat Completion com o contexto e as perguntas
+			var responseText := OpenAICompletion(systemMessage, conversation_history);
+			
+			// Separando a resposta e o booleano com base no separador "&"
+        	var responseParts := SplitWords(responseText, "&");
+
+			var assistant_response := responseParts[1];   // Primeira parte: frase do NPC
+        	var should_register := responseParts[2];  // Segunda parte: True/False
+
+			// Adiciona a resposta do NPC (assistant) ao histórico
+			var npc_message := struct{ "assistant" := assistant_response };
+			conversation_history.append(npc_message);
+			SetGlobalProperty("conversation_history", conversation_history);
+
+			// NPC responde ao jogador
+			AI_Speak(npc, assistant_response);
+
+			// Se o jogador quer criar a conta, entra na condição de Registro
+			if (should_register == "true" || should_register == "True" || should_register == " True")
+				
+				if (!hasAccount(source.serial, bank_region))
+					AI_Speak(npc, "*registra seu cofre*");
+					var oldcity := GetPlayerCity(source.serial);
+					if (oldcity != error )
+						RemovePlayer(source.serial, oldcity);
+					endif
+					var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_CREATE);	
+					SetupPlayerAccount(source.serial, bank_region);
+					//var taxes := GetCityTaxes(bank_region);
+					//AddTaxToPlayer(source.serial, taxes); 
+				else
+					AI_Speak(npc, "Voce ja possui uma conta aqui.");
+					AI_Speak(npc, "Se quiser pode *abandonar* do banco.");
+				endif
+			endif
+		
+			
 		else 
 			bank_box := CP_GetStorageContainerForMobile(source, bank_region);
 			PayTaxes(source.serial, bank_region, bank_box);
@@ -85,10 +204,31 @@ function SpeechEvent(npc, byref event)
 				endif
 			else
 				
-				AI_Speak(npc, "Aqui esta seu cofre.") ;
+				var systemMessage := "Você é um banqueiro medieval de RPG. Responda como tal. O aventureiro que fala com você é um " + sourceRaca + " com descrição " + sourceDescription + ". Máximo de 50 caracteres.";
+				var questions := array{ struct{ "user" := text } };
+
+				var player_message := struct{ "user" := text };
+				conversation_history.append(player_message);
+
+				//entregando a OpenAI o contexto (systemMessage) e o input do char (questions)
+				var responseText := OpenAICompletion(systemMessage, conversation_history);
+				var npc_message := struct{ "assistant" := responseText };
+				conversation_history.append(npc_message);
+				SetGlobalProperty("conversation_history", conversation_history);
+				AI_Speak(npc, responseText); // usa a responsa do modelo
+				//AI_Speak(npc, "Aqui esta seu cofre.") ;
 				SendOpenSpecialContainer(source, bank_box);
+
 			endif
 		endif
+	
+	elseif ( text["abandonar"] )
+		if (hasAccount(source.serial, bank_region))
+			AI_Speak(npc, "Vou remover sua conta dessa cidade.");
+			RemovePlayer(event.serial, bank_region);
+		endif
+	
+
 	elseif ( text["registrar"] || text["filiar"] )
 		if (!hasAccount(source.serial, bank_region))
 			AI_Speak(npc, "Vou criar sua conta e seu registro aqui na cidade.");
@@ -104,14 +244,11 @@ function SpeechEvent(npc, byref event)
 			AI_Speak(npc, "Voce ja possui uma conta aqui.");
 			AI_Speak(npc, "Se quiser pode *abandonar* do banco.");
 		endif
-	elseif ( text["abandonar"] )
-		if (hasAccount(source.serial, bank_region))
-			AI_Speak(npc, "Vou remover sua conta dessa cidade.");
-			RemovePlayer(event.serial, bank_region);
-		endif
+	
 	elseif ( text["bom dia"] || text["boa noite"] || text["boa tarde"] )
 		AI_Speak(npc, "Ola, em que posso ajuda-lo? Neste *banco* eu cuido do *cofre*.");
 	endif
+
 
 	return 1;
 endfunction
