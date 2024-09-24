@@ -23,9 +23,8 @@ include "include/epicCombatUtils";
 include "include/facings";
 include ":timedScripts:timedScripts";
 include "damage/damagebase";
-include "damage/damageelemental";
 include ":commands:debugsystem";
-
+include ":combat:armorZones";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -397,11 +396,18 @@ endfunction
 ///////////////////////////////////////////////////////
 function DamageFLSCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
-	var totaldamage := CInt(CalculateDamageCombat(defender, armor, damage, type));
+	var totaldamage := CalculateDamageCombat(attacker, defender, armor, damage, type);
 
 	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
+
+	var regiao := CS_GetArmorZone(armor);
+	if (regiao == error)
+		regiao := "Corpo";
+	endif
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {damage-totaldamage}");
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {totaldamage}({damage} - {totaldamage})");
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {totaldamage}({damage} - {damage-totaldamage})");
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage);
@@ -416,7 +422,7 @@ endfunction
 
 ////////////////////////////////////////////////////////
 //
-// CalculateDamageCombat(defender, armor, damage, type)
+// CalculateDamageCombat(attacker, defender, armor, damage, type)
 //
 // Purpose
 // Criado para modificar o cálculo de dano do combate sem influenciar nos demais cálculos de dano do shard.
@@ -424,6 +430,7 @@ endfunction
 // Ver o doc das demais funções abaixo para entender melhor.
 // 
 // Parameters
+// attacker: Ref do atacante.
 // defender: Ref do alvo atingido no dano.
 // armor: itemRef da peça atingida.
 // damage: Valor total do dano a ser abatido.
@@ -432,21 +439,21 @@ endfunction
 // Return value
 //
 ///////////////////////////////////////////////////////
-function CalculateDamageCombat(defender, armor, damage, type)
+function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	var resistMod := 0;
 	var resist := 0;
 
 	if (defender.npctemplate)
-		resist := getResistNPCByType(defender, type);
+		resist := getResistNPCByType(defender, type, armor);
 	else
-		resist := getResistArmorByType(armor, type);
+		resist := getResistArmorByType(armor, type, attacker, defender);
 	endif
 
 	if (damage < 1)
 		damage := 1;
 	endif
 
-	return (damage-resist);
+	return CInt(damage-resist);
 endfunction
 
 ////////////////////////////////////////////////////////
@@ -461,22 +468,27 @@ endfunction
 // Parameters
 // npc: Ref do NPC
 // type: Tipo do elemento do dano
+// armor: itemRef da armadura pega no combatHook();
 // 
 // Return value
 //
 ///////////////////////////////////////////////////////
-function getResistNPCByType(npc, type)
+function getResistNPCByType(npc, type, armor := 0)
 	var resist;
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
 
-	case(type)
-		DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
-		DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(npc.resist_fire_mod); break;
-		DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(npc.resist_cold_mod); break;
-		DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(npc.resist_energy_mod); break;
-		DMG_POISON: resist := CInt(cfg[npctemplate.template].PoisonResist) + CInt(npc.resist_poison_mod); break;
-	endcase
+	if (!armor || armor == error)
+		case(type)
+			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
+			DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(npc.resist_fire_mod); break;
+			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(npc.resist_cold_mod); break;
+			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(npc.resist_energy_mod); break;
+			DMG_POISON: resist := CInt(cfg[npctemplate.template].PoisonResist) + CInt(npc.resist_poison_mod); break;
+		endcase
+	else
+		resist := getResistArmorByType(armor, type);
+	endif
 
 	return CInt(resist);
 endfunction
@@ -497,7 +509,7 @@ endfunction
 // Return value
 //
 ///////////////////////////////////////////////////////
-function getResistArmorByType(armor, type)
+function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
 
 	case(type)
@@ -507,6 +519,7 @@ function getResistArmorByType(armor, type)
 		DMG_ENERGY: resist := CInt(armor.EnergyResist) + CInt(armor.resist_energy_mod); break;
 		DMG_POISON: resist := CInt(armor.PoisonResist) + CInt(armor.resist_poison_mod); break;
 	endcase
+
 
 	return CInt(resist);
 endfunction
