@@ -397,9 +397,7 @@ endfunction
 ///////////////////////////////////////////////////////
 function DamageFLSCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
-	print("damage: "+damage);
-	var totaldamage := CInt(CalculateDamageCombat(defender, armor, type, damage));
-	print("totaldamage: "+totaldamage);
+	var totaldamage := CInt(CalculateDamageCombat(defender, armor, damage, type));
 
 	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {damage-totaldamage}");
