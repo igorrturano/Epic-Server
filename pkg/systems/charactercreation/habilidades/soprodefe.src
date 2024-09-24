@@ -6,7 +6,7 @@ include "include/client";
 include "include/sounds";
 include "include/tileEffects";
 include ":timedScripts:timedScripts";
-include "include/damage";
+include ":combat:damage";
 include ":attributes:attributes";
 include "include/say";
 include ":attributes:attributeConstants";

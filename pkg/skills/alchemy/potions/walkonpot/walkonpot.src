@@ -4,7 +4,7 @@ use cfgfile;
 use util;
 
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 
 program potionWalkOn(mobile, potion)
 	if ( mobile.dead )

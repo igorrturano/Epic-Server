@@ -27,7 +27,7 @@ program SpellScript(params)
         duration := Cint(duration * 1.2);
     endif
 
-	who.setlightlevel(15, duration);
+	who.setlightlevel(24, duration); // TODO: Voltar pra 15 pro def
 	if (GetObjProperty(who, "chardata").raca != DROW)
     	SetCooldown(who, "nightvision", duration);
 	else

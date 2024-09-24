@@ -1,0 +1,6 @@
+use uo;
+
+program OnRemove(who, container, item, item_amount, movetype)
+    // Não fazemos nada, apenas retornamos 1 para permitir a remoção
+    return 1;
+endprogram
