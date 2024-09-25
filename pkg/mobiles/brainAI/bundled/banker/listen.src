@@ -9,52 +9,51 @@ include ":containers:containers";
 include ":fls_core:tax";
 
 function OpenAICompletion(systemMessage, questions)
+	var formatedQuestions := array{ struct{
+		"role" := "system",
+		"content" := systemMessage
+	} };
 
-   var formatedQuestions := array{ struct{
-      "role" := "system",
-      "content" := systemMessage
-   } };
+	foreach question in questions
+		if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
+			return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
+		endif
 
-   foreach question in questions
-      if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
-         return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
-      endif
+		if (question.exists("assistant"))
+			formatedQuestions.append(struct{
+				"role" := "assistant",
+				"content" := question["assistant"]
+			});
+		endif
 
-      if (question.exists("assistant"))
-         formatedQuestions.append(struct{
-            "role" := "assistant",
-            "content" := question["assistant"]
-         });
-      endif
+		if (question.exists("user"))
+			formatedQuestions.append(struct{
+				"role" := "user",
+				"content" := question["user"]
+			});
+		endif
+	endforeach
 
-      if (question.exists("user"))
-         formatedQuestions.append(struct{
-            "role" := "user",
-            "content" := question["user"]
-         });
-      endif
-   endforeach
+	var apiURL := "https://api.openai.com/v1/chat/completions";
+	var method := "POST";
+	var jsonData := PackJSON(struct{
+		"model" := "gpt-4o-mini",
+		"messages" := formatedQuestions
+	});
 
-   var apiURL := "https://api.openai.com/v1/chat/completions";
-   var method := "POST";
-   var jsonData := PackJSON(struct{
-      "model" := "gpt-4o-mini",
-      "messages" := formatedQuestions
-   });
-
-   var apiResponse := HTTPRequest(
-         apiURL,
-         method,
-         struct{
-            data := jsonData,
-            headers := struct{
-               "Content-Type" := "application/json",
-               "Authorization" := "Bearer {1}".format(GetEnvironmentVariable("OPENAI_KEY"))
-            }
-         }
-      );
-   var unpackedJSON := UnpackJSON(apiResponse);
-   return unpackedJSON["choices"][1]["message"]["content"];
+	var apiResponse := HTTPRequest(
+			apiURL,
+			method,
+			struct{
+				data := jsonData,
+				headers := struct{
+				"Content-Type" := "application/json",
+				"Authorization" := "Bearer {1}".format(GetEnvironmentVariable("OPENAI_KEY"))
+				}
+			}
+		);
+	var unpackedJSON := UnpackJSON(apiResponse);
+	return unpackedJSON["choices"][1]["message"]["content"];
 endfunction
 
 program BrainNerve(params)
@@ -249,7 +248,7 @@ function SpeechEvent(npc, byref event)
 		AI_Speak(npc, "Ola, em que posso ajuda-lo? Neste *banco* eu cuido do *cofre*.");
 	endif
 
-
+	
 	return 1;
 endfunction
 
