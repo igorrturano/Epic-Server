@@ -1762,3 +1762,45 @@ function getDayFromPictureId(day_pic)
     return (day_pic - 0x1000) + 1;
 endfunction
 
+function looksSelectionGump(who, byref chardata)
+	var gump := GfCreateGump();
+
+	GFGumpPic(gump, 17, 31, 0x9E6);
+	GFResizePic(gump, 298, 100, 2620, 250, 400);
+	GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+
+	var appearances := array{"Cabelo", "Cor do Cabelo", "Cor da Pele"};
+	if (chardata.raca != ELFO && chardata.raca != DROW)
+		appearances.append("Barba");
+	endif
+    var x := 63;
+    var y := 100;
+	var i := 1;
+	foreach appearance in appearances
+        var color := "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, appearance), 1, 0);
+        if (appearances.size() > 1)
+            GFRadioButton(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
+        endif
+        sleepms(2);
+        y += 26;
+        i++;
+    endforeach
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetPaperdollBackground(graphic)
+    var result := 0x0E10; // Valor padrão
+    case (graphic)
+        400:  result := 0xC; // Male
+        401:  result := 0xD; // Female
+        1828: result := 0x0E10; // Anão F
+        1829: result := 0x0E10; // Anão M
+        1830: result := 0xE; // Elfo M
+        1831: result := 0xF; // Elfo F
+        1832: result := 0x0E10; // Orc M
+        1833: result := 0x0E10; // Orc F
+    endcase
+    return result;
+endfunction

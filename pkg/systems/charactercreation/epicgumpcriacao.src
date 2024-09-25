@@ -24,20 +24,20 @@ program epicCreationGump(who)
 
     var culture_pic := culturalSelection(who);
     racialSelection(who, culture_pic);
-    classSelection(who, culture_pic);
-    backgroundSelection(who, culture_pic);
-    traitSelection(who, culture_pic);
-    skillSelection(who, culture_pic);
-    attributeSelection(who, culture_pic);
-    religionSelection(who);
-    gameModeSelection(who);
-    pathOfWisdom(who, culture_pic);
-    languageSelection(who, culture_pic);
-    itemInheritance(who);
-    signSelection(who);
-    birthDaySelection(who);
-    RPcharacteristicsSelection(who, culture_pic);
-    setBirthdate(who);
+    // classSelection(who, culture_pic);
+    // backgroundSelection(who, culture_pic);
+    // traitSelection(who, culture_pic);
+    // skillSelection(who, culture_pic);
+    // attributeSelection(who, culture_pic);
+    // religionSelection(who);
+    // gameModeSelection(who);
+    // pathOfWisdom(who, culture_pic);
+    // languageSelection(who, culture_pic);
+    // itemInheritance(who);
+    // signSelection(who);
+    // birthDaySelection(who);
+    // RPcharacteristicsSelection(who, culture_pic);
+    // setBirthdate(who);
     looksSelection(who);
     setCitizenship(who);
     SetObjProperty(who, "nome_inicial", who.name);
@@ -555,7 +555,7 @@ endfunction
 
 function looksSelection(who)
     var chardata := GetObjProperty(who, "chardata");
-    looksGump(who, chardata);
+    var input := looksSelectionGump(who, chardata);
 endfunction
 
 function pathOfWisdom(who, culture_pic)
