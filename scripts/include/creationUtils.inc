@@ -1762,31 +1762,41 @@ function getDayFromPictureId(day_pic)
     return (day_pic - 0x1000) + 1;
 endfunction
 
-function looksSelectionGump(who, byref chardata)
+function hairSelectionGump(who, byref chardata)
 	var gump := GfCreateGump();
+    var x := 63;
+    var y := 100;
+    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu cabelo", 0, 0); //shadow
+    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu cabelo", 0, 0);
 
 	GFGumpPic(gump, 17, 31, 0x9E6);
 	GFResizePic(gump, 298, 100, 2620, 250, 400);
 	GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
 
-	var appearances := array{"Cabelo", "Cor do Cabelo", "Cor da Pele"};
-	if (chardata.raca != ELFO && chardata.raca != DROW)
-		appearances.append("Barba");
-	endif
-    var x := 63;
-    var y := 100;
 	var i := 1;
-	foreach appearance in appearances
+    // UnloadConfigFile(":fls_core:config/hairtypes");
+	var config := ReadConfigFile(":fls_core:config/hairtypes");
+	var hair := config["todos"];
+	// 	GFGumpPic(gump, x_pos+135, y_pos-45, gumppic);
+	foreach style in GetConfigStringArray(hair, "Style")
+        hair := splitwords(style);
+		var hairname := hair[1];
+        print("hairname: " + hairname);
+		var hairgraphic := cint(hair[2]);
+        print("hairgraphic: " + hairgraphic);
+        var hair_pic := cint(hair[3]);
+        print("gumppic"+cint(hair[3]));
         var color := "#000000";
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, appearance), 1, 0);
-        if (appearances.size() > 1)
-            GFRadioButton(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
-        endif
+        // GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, hairgraphic), 1, 0);
+        // GFGumpPic(gump, x, y, hair_pic);
+        GFAddImageTileButton(gump, x+201, y, 0x9C4E, 0x9C4F, GF_PAGE_BTN, 200+i, hair_pic, 0, 40, 40 );
+        // GFAddButton(gump, x+201, y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, 200+i);
         sleepms(2);
         y += 26;
         i++;
     endforeach
 
+    // GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
     return GFSendGump(who, gump);
 endfunction
 

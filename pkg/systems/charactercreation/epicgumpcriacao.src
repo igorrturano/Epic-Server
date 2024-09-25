@@ -555,7 +555,24 @@ endfunction
 
 function looksSelection(who)
     var chardata := GetObjProperty(who, "chardata");
-    var input := looksSelectionGump(who, chardata);
+    var input := hairSelectionGump(who, chardata);
+    var btn_value;
+    foreach key in (input.keys)
+        btn_value := key;
+    endforeach
+
+    if (btn_value == 201)  
+        chardata.+hair := "Cabelo 1";
+    elseif (btn_value == 202) 
+        chardata.+hair := "Cabelo 2";
+    elseif (btn_value == 203)
+        chardata.+hair := "Cabelo 3";
+    endif
+	// if (chardata.raca != ELFO && chardata.raca != DROW)
+	// 	appearances.append("Barba");
+	// endif
+
+    SetObjProperty(who, "chardata", chardata);
 endfunction
 
 function pathOfWisdom(who, culture_pic)
