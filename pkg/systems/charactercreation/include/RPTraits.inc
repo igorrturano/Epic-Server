@@ -3,17 +3,21 @@ use os;
 
 include "include/client";
 include "include/say";
+//include ":charactercreation:createchar";
 
 function GetRacialTraits(raca)
+    var result;
     case (raca)
-        ANAO: return GetBaduranCaracteristicas();
-        DROW: return GetHarolothCaracteristicas();
-        ELFO: return GetAlurielCaracteristicas();
-        ORC: return GetGulthrakCaracteristicas();
-        HUMANO: return GetBjorskeCaracteristicas();
-        POLSKI: return GetPolkineaCaracteristicas();
-        default: return error;
+        ANAO: result := GetBaduranCaracteristicas();
+        DROW: result := GetHarolothCaracteristicas();
+        ELFO: result := GetAlurielCaracteristicas();
+        ORC: result := GetGulthrakCaracteristicas();
+        HUMANO: result := GetBjorskeCaracteristicas();
+        POLSKI: result := GetPolkineaCaracteristicas();
+     default:
+    return "Erro";
     endcase
+    return result;
 endfunction
 
 function TranslateRacialTrait(category, value, chardata := 0)
@@ -356,6 +360,32 @@ function GetPolkineaCaracteristicas()
     return caracteristicas;
 endfunction
 
+
+function ExtractAgeValue(raca, chosen_age_index)
+    var racial_traits := GetRacialTraits(raca);
+    if (racial_traits == error)
+        return error;
+    endif
+
+    var age_options := racial_traits["Idade Aparente"].opcoes;
+    if (chosen_age_index < 1 || chosen_age_index > age_options.size())
+        return error;
+    endif
+
+    var chosen_age_string := age_options[chosen_age_index];
+    var age_value := 0;
+
+    // Extrai o número entre parênteses
+    var start := chosen_age_string.find("(");
+    var end := chosen_age_string.find(" anos)");
+    if (start != error && end != error)
+        age_value := CInt(chosen_age_string[start+1, end-start-1]);
+    endif
+
+    return age_value;
+endfunction
+
+
 function ConvertAge(race, age)
     age := CInt(age);
     var age_category := "";
@@ -370,11 +400,12 @@ function ConvertAge(race, age)
                 age_category := "Adulto";
             elseif (age <= 90)
                 age_category := "Meia-idade";
-            elseif (age < 120)
+            elseif (age <= 150)
                 age_category := "Idoso";
             else
-                return array{"Idoso", 120};
+                return array{"Idoso", 150};
             endif
+
         HUMANO:
             if (age < 18)
                 return array{"Jovem", 18};
@@ -384,11 +415,12 @@ function ConvertAge(race, age)
                 age_category := "Adulto";
             elseif (age <= 50)
                 age_category := "Meia-idade";
-            elseif (age < 60)
+            elseif (age <= 75)
                 age_category := "Veterano";
             else
-                return array{"Ancião", 60};
+                return array{"Veterano", 75};
             endif
+
         DROW:
           if (age < 18)
                 return array{"Jovem", 18};
@@ -398,10 +430,10 @@ function ConvertAge(race, age)
                 age_category := "Adulto";
             elseif (age <= 170)
                 age_category := "Meia-idade";
-            elseif (age < 200)
+            elseif (age <= 225)
                 age_category := "Maduro";
             else
-                return array{"Ancião", 200};
+                return array{"Maduro", 225};
             endif
         ELFO:
             if (age < 18)
@@ -412,16 +444,17 @@ function ConvertAge(race, age)
                 age_category := "Adulto";
             elseif (age <= 170)
                 age_category := "Meia-idade";
-            elseif (age < 200)
+            elseif (age <= 225)
                 age_category := "Maduro";
             else
-                return array{"Ancião", 200};
+                return array{"Maduro", 225};
             endif
+
         ORC:
-            if (age < 18)
-                return array{"Jovem adulto", 18};
+            if (age < 15)
+                return array{"Jovem", 15};
             elseif (age <= 25)
-                age_category := "Jovem adulto";
+                age_category := "Jovem";
             elseif (age <= 35)
                 age_category := "Adulto";
             elseif (age <= 45)
@@ -433,9 +466,10 @@ function ConvertAge(race, age)
             else
                 return array{"Ancião", 75};
             endif
+
         POLSKI:
-            if (age < 18)
-                return array{"Jovem", 18};
+            if (age < 25)
+                return array{"Jovem", 25};
             elseif (age <= 65)
                 age_category := "Jovem";
             elseif (age <= 85)
@@ -443,12 +477,15 @@ function ConvertAge(race, age)
             elseif (age <= 105)
                 age_category := "Meia-idade";
             elseif (age <= 125)
-                age_category := "Maduro";
-            elseif (age >= 125)
+                age_category := "Veterano";
+            elseif (age <= 150)
                 age_category := "Ancião";
             else
-                return array{"Ancião", 125};
+                return array{"Ancião", 150};
             endif
+
+   
+
     default:
             return array{"Erro", age};
     endcase

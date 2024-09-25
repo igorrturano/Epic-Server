@@ -7,6 +7,8 @@ include ":combat:damage";
 
 // Calendar constants
 var MONTHS := array{
+
+
     struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
     struct{ "name" := "Alorae", "days" := 30 }, // Mês dedicado à magia, Alora, elfos.
     struct{ "name" := "Galgrumirius", "days" := 30 }, // Mês dedicado aos anões e a forja

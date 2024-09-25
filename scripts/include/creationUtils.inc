@@ -7,6 +7,8 @@ include ":tn:tngumps";
 include "include/epicConstants";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
+//include ":nature:nature";
+//include ":charactercreation:include/RPTraits";
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -259,7 +261,7 @@ function getMonthBySign(sign)
         "Constelação do Bobo": return 4; // Kaius
         "Constelação do Amante": return 5; // Idrithae
         "Constelação da Pessoa Comum": return 6; // Lleuadae
-        "Constelação do Criador": return 9; // Demiurgus
+        "Constelação do Criador": return 9; // Demiurgus (33 dias)
         "Constelação do Mago": return 8; // Crassus
         "Constelação do Explorador": return 7; // Adarae
         "Constelação do Fora da Lei": return 10; // Phrugum
@@ -314,7 +316,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
     GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
 
-    var categories := GetPageCategories();
+     var categories := GetPageCategories(1);
     var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
     var y_start := 160;
     var category_iter := 0;
@@ -380,9 +382,10 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             return CaracteristicasRPGump(who, chardata, culture_pic);
         else
             chardata.idade_escolhida := CInt(age_input);
-            var final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
-            chardata.idade_aparente := final_age[1];
-            chardata.idade_real := final_age[2];
+            var age_category, final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
+            chardata.idade_aparente := age_category;
+            chardata.idade_real := final_age;
+            SendSysMessageEx(who, "Sua idade aparente é " + age_category + " (" + final_age + " anos).", SSM_INFO);
             return input;
         endif
     endif
@@ -390,8 +393,13 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     return input;
 endfunction
 
-function GetPageCategories()
-        return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
+
+
+function GetPageCategories(page)
+    case (page)
+        1: return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
+        default: return array{};
+    endcase
 endfunction
 
 function ProcessSelection(byref chardata, input)

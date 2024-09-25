@@ -99,7 +99,12 @@ function racialSelection(who, culture_pic)
             chardata.raca := DROW;
             break;
         elseif (btn_value == 203) 
-            chardata.raca := ELFO;
+              chardata.raca := ELFO;
+    print("Raça selecionada: " + chardata.raca);
+    SetObjProperty(who, "chardata", chardata);
+    
+    var stored_chardata := GetObjProperty(who, "chardata");
+    print("Dados armazenados: " + stored_chardata);
             break;
         elseif (btn_value == 204) 
             chardata.raca := HUMANO;
@@ -150,13 +155,8 @@ function RPcharacteristicsSelection(who, culture_pic)
         "Voz"
     };
 
-    chardata.+caracteristicas_rp := struct {};
-    foreach category in CaracteristicasCategories
-        chardata.caracteristicas_rp[category] := 0;
-    endforeach
-
     var racial_traits := GetRacialTraits(chardata.raca);
-    var categories := GetPageCategories();
+    var categories := GetPageCategories(1);
     var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
 
     var input;
@@ -172,6 +172,7 @@ function RPcharacteristicsSelection(who, culture_pic)
             if (selected_count == 4 && age_filled)
                 all_requirements_met := 1;
                 
+                // Processar a idade aqui
                 var age_info := ConvertAge(chardata.raca, CInt(chardata.idade_escolhida));
                 chardata.idade_aparente := age_info[1];
                 chardata.idade_real := age_info[2];
@@ -191,6 +192,7 @@ function RPcharacteristicsSelection(who, culture_pic)
     endwhile
 
     SetObjProperty(who, "chardata", chardata);
+    SendSysMessageEX(who, "Características raciais e idade selecionadas com sucesso.", SSM_INFO);
 endfunction
 
 function CountSelectedCategories(caracteristicas_rp, required_categories)
