@@ -1,0 +1,87 @@
+use uo;
+program faz_itenslore(who, quantos)
+    var itenslore := array{
+        0xE340, // Marca Gado de Duw
+        0xE341, // Dados de 6 lados
+        0xE342, // Crânio Humano
+        0xE343, // Pergaminho Oriental
+        0xE344, // Trompa de Chifre
+        0xE345, // Rede de Borboletas
+        0xE346, // Maça Estrela Quebrada
+        0xE347, // Martelo de Guerra Quebrado
+        0xE348, // Garfo de Guerra Quebrado
+        0xE349, // Espada Quebrada
+        0xE34A, // Espada Longa Quebrada
+        0xE34B, // Maça Quebrada
+        0xE34C, // Cimitarra Quebrada
+        0xE34D, // Katana Quebrada
+        0xE34E, // Lança Quebrada
+        0xE34F, // Machado Duplo Quebrado
+        0xE350, // Machado do Executor Quebrado
+        0xE351, // Boneca Infantil Branca
+        0xE352, // Colar de Pérolas Antigo
+        0xE353, // Lorica Segmentata
+        0xE354, // Gálea
+        0xE355, // Estátua de um Antigo Filósofo Estoico Aiglano
+        0xE356, // Máscara Mortuária de Ouro
+        0xE357, // Chapéu de Pluma de um Corvo Negro
+        0xE358, // Máscara de Aranha Negra
+        0xE359, // Máscara Feita com Crânio de Cervo
+        0xE35A, // Ferradura de Ouro
+        0xE35B, // Taça de Vitória da Olimpíada Feita de Ouro
+        0xE35C, // Pequena Estátua de Aranha Negra
+        0xE35D, // Busto de uma Patrícia Aiglana Feito de Mármore
+        0xE35E, // Busto de um Senador Aiglano Feito de Mármore
+        0xE35F, // Conjunto de Tochas Usadas do Aventureiro
+        0xE360, // Conjunto de Documentos
+        0xE361, // Trombeta
+        0xE362, // Quadro Pequeno com uma Imagem de uma Mulher
+        0xE363, // Sign Post de uma Taverna com a Imagem de uma Árvore Branca e uma Caneca no Centro
+        0xE364, // O Louco
+        0xE365, // O Mago
+        0xE366, // A Sacerdotisa
+        0xE367, // A Imperatriz
+        0xE368, // O Imperador
+        0xE369, // O Sacerdote
+        0xE36A, // Os Enamorados
+        0xE36B, // A Carruagem
+        0xE36C, // A Força
+        0xE36D, // O Sábio
+        0xE36E, // A Roda da Fortuna
+        0xE36F, // A Justiça
+        0xE370, // O Enforcado
+        0xE371, // O Renascimento
+        0xE372, // A Tranquilidade
+        0xE373, // A Cobra
+        0xE374, // A Torre
+        0xE375, // A Estrela
+        0xE376, // A Lua
+        0xE377, // O Sol
+        0xE378, // O Julgamento
+        0xE379, // O Mundo
+        0xE37A, // Globo de Gelo de Colhesol
+        0xE37B, // Globo de Gelo de Aldorathrim Ennorathel
+        0xE37C, // Globo de Gelo de Gulshur
+        0xE37D, // Globo de Gelo de Kaijing
+        0xE37E, // Globo de Gelo de Aigla
+        0xE37F, // Globo de Gelo de Khron Kaz'ad
+        0xE380, // Globo de Gelo de Börfjell
+        0xE381, // Globo de Gelo de Nygurath
+        0xE382, // Crâneo de Ouro de um Monstro
+        0xE383, // Crâneo de um Demônio Chifrudo
+        0xE384,  // Poste de Lâmpada de Óleo
+		0xE385,  // Trevo de Quatro Folhas
+		0xE386    //Quadro Grande do Lich
+    };
+    var bolsa := CreateItemInBackpack(who, "bag", 1);
+    bolsa.color := 1154;
+    bolsa.name := "Bolsa de itenslore";
+    if (!quantos)
+        quantos := 1;
+        sendsysmessage(who, "Você pode usar o comando com número para definir quantos itens quer criar.");
+        sendsysmessage(who, "Sem especificação, vou criar 1 item de cada para você.");
+    endif
+    foreach coisa in itenslore
+        CreateItemInContainer(bolsa, coisa, amount := quantos);
+    endforeach
+endprogram
