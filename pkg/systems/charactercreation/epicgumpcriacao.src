@@ -158,8 +158,6 @@ function RPcharacteristicsSelection(who, culture_pic)
     var racial_traits := GetRacialTraits(chardata.raca);
     var categories := GetPageCategories();
     var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
-    var racial_traits := GetRacialTraits(chardata.raca);
-    var categories := GetPageCategories(1);
 
     var input;
     var all_requirements_met := 0;
