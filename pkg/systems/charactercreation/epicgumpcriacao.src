@@ -37,14 +37,7 @@ program epicCreationGump(who)
     signSelection(who);
     birthDaySelection(who);
     RPcharacteristicsSelection(who, culture_pic);
-<<<<<<< HEAD
-<<<<<<< HEAD
     setBirthdate(who);
-=======
->>>>>>> bc7955d (Develop (#103))
-=======
-    setBirthdate(who);
->>>>>>> 599df54 (Develop (#112))
     looksSelection(who);
     setCitizenship(who);
     SetObjProperty(who, "nome_inicial", who.name);
@@ -144,14 +137,7 @@ function racialSelection(who, culture_pic)
     who.title_race := chardata.raca;
     who.race := chardata.raca;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 599df54 (Develop (#112))
-
->>>>>>> e4a11c5a0f6075d3c03e73fcc7350902c8c19ceb
-    SetObjProperty(who, "chardata", chardata);
+SetObjProperty(who, "chardata", chardata);
 endfunction
 
 function RPcharacteristicsSelection(who, culture_pic)
@@ -164,10 +150,6 @@ function RPcharacteristicsSelection(who, culture_pic)
         "Voz"
     };
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 599df54 (Develop (#112))
     chardata.+caracteristicas_rp := struct {};
     foreach category in CaracteristicasCategories
         chardata.caracteristicas_rp[category] := 0;
@@ -176,13 +158,8 @@ function RPcharacteristicsSelection(who, culture_pic)
     var racial_traits := GetRacialTraits(chardata.raca);
     var categories := GetPageCategories();
     var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
-<<<<<<< HEAD
-=======
     var racial_traits := GetRacialTraits(chardata.raca);
     var categories := GetPageCategories(1);
->>>>>>> bc7955d (Develop (#103))
-=======
->>>>>>> 599df54 (Develop (#112))
 
     var input;
     var all_requirements_met := 0;
@@ -197,10 +174,7 @@ function RPcharacteristicsSelection(who, culture_pic)
             if (selected_count == 4 && age_filled)
                 all_requirements_met := 1;
                 
-<<<<<<< HEAD
-=======
                 // Processar a idade aqui
->>>>>>> 599df54 (Develop (#112))
                 var age_info := ConvertAge(chardata.raca, CInt(chardata.idade_escolhida));
                 chardata.idade_aparente := age_info[1];
                 chardata.idade_real := age_info[2];
@@ -220,10 +194,7 @@ function RPcharacteristicsSelection(who, culture_pic)
     endwhile
 
     SetObjProperty(who, "chardata", chardata);
-<<<<<<< HEAD
-=======
     SendSysMessageEX(who, "Características raciais e idade selecionadas com sucesso.", SSM_INFO);
->>>>>>> 599df54 (Develop (#112))
 endfunction
 
 function CountSelectedCategories(caracteristicas_rp, required_categories)
@@ -647,15 +618,7 @@ function pathOfWisdom(who, culture_pic)
 endfunction
 
 function startAdventure(who)
-    var birthdate := calculateBirthdate(who);
-    if (birthdate)
-        SendSysMessageEX(who, "Data de Nascimento: " + birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.", SSM_INFO);
-    else
-        SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
-    endif
-    
     MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
-
     PlaySoundEffectPrivate(who, 0x306, who);
     PlayStationaryEffect(who.x+1, who.y+1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
@@ -799,10 +762,6 @@ function setCitizenship(who)
     chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
 
     SetObjProperty(who, "chardata", chardata);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 599df54 (Develop (#112))
 endfunction
 
 function setBirthdate(who)
@@ -812,9 +771,4 @@ function setBirthdate(who)
     else
         SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
     endif
-<<<<<<< HEAD
-=======
->>>>>>> bc7955d (Develop (#103))
-=======
->>>>>>> 599df54 (Develop (#112))
 endfunction

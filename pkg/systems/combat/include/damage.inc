@@ -22,8 +22,14 @@ include ":fls_core:packets";
 include "include/epicCombatUtils";
 include "include/facings";
 include ":timedScripts:timedScripts";
+<<<<<<< HEAD
 include ":commands:debugsystem";
 
+=======
+include "damage/damagebase";
+include ":commands:debugsystem";
+include ":combat:armorZones";
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -55,20 +61,36 @@ function getNewDamageList(attacker)
 	if (attacker.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
 		var cfg := ReadConfigFile(":brainai:npcdesc");
+<<<<<<< HEAD
 		list[DMG_PHYSICAL] := cfg[npctemplate.template].PhysicalDamage/10;
 		list[DMG_FIRE] := cfg[npctemplate.template].FireDamage/10;
 		list[DMG_COLD] := cfg[npctemplate.template].ColdDamage/10;
 		list[DMG_POISON] := cfg[npctemplate.template].PoisonDamage/10;
 		list[DMG_ENERGY] := cfg[npctemplate.template].EnergyDamage/10;
+=======
+		list[DMG_PHYSICAL] := cfg[npctemplate.template].PhysicalDamage;
+		list[DMG_FIRE] := cfg[npctemplate.template].FireDamage;
+		list[DMG_COLD] := cfg[npctemplate.template].ColdDamage;
+		list[DMG_POISON] := cfg[npctemplate.template].PoisonDamage;
+		list[DMG_ENERGY] := cfg[npctemplate.template].EnergyDamage;
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 
 		return list;
 	else
 
+<<<<<<< HEAD
 		list[DMG_PHYSICAL] := attacker.damage_physical/10;
 		list[DMG_FIRE] := attacker.damage_fire/10;
 		list[DMG_COLD] := attacker.damage_cold/10;
 		list[DMG_POISON] := attacker.damage_poison/10;
 		list[DMG_ENERGY] := attacker.damage_energy/10;
+=======
+		list[DMG_PHYSICAL] := attacker.damage_physical;
+		list[DMG_FIRE] := attacker.damage_fire;
+		list[DMG_COLD] := attacker.damage_cold;
+		list[DMG_POISON] := attacker.damage_poison;
+		list[DMG_ENERGY] := attacker.damage_energy;
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 
 		var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
 		if (elemental != error)
@@ -117,6 +139,7 @@ function CalculateDamage(defender, type, dmg)
 
 	if (defender.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+<<<<<<< HEAD
 		var cfg := ReadConfigFile(":brainai:npcdesc");
 
 		case(type)
@@ -125,10 +148,21 @@ function CalculateDamage(defender, type, dmg)
 			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist/10.0 ) + CInt(defender.resist_cold_mod/10.0); print("RESIST NPC [Cold]: "+resist); break;
 			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist/10.0 ) + CInt(defender.resist_energy_mod/10.0); print("RESIST NPC [Energy]: "+resist); break;
 			DMG_POISON: resist := CInt(cfg[npctemplate.template].PoisonResist/10.0 ) + CInt(defender.resist_poison_mod/10.0); print("RESIST NPC [Poison]: "+resist); break;
+=======
+		var cfg := ReadConfigFile(":*:npcdesc");
+
+		case(type)
+			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(defender.resist_physical_mod); break;
+			DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(defender.resist_fire_mod); break;
+			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(defender.resist_cold_mod); break;
+			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(defender.resist_energy_mod); break;
+			DMG_POISON: resist := CInt(cfg[npctemplate.template].PoisonResist) + CInt(defender.resist_poison_mod); break;
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 		endcase
 	else
 		case(type)
 			DMG_PHYSICAL:
+<<<<<<< HEAD
 				resist := CInt(defender.resist_physical/10);
 				resistMod := CInt(defender.resist_physical_mod/10);
 				DebugMsg(defender, DEBUG_NAME_DAMAGE, "Defesa Física (Mod): {}({})".format(resist, resistMod));
@@ -156,6 +190,35 @@ function CalculateDamage(defender, type, dmg)
 				resist := CInt(defender.resist_poison/10);
 				resistMod := CInt(defender.resist_poison_mod/10);
 				DebugMsg(defender, DEBUG_NAME_DAMAGE, "Defesa Poison (Mod): {}({})".format(resist, resistMod));
+=======
+				resist := CInt(defender.resist_physical);
+				resistMod := CInt(defender.resist_physical_mod);
+				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Física (Mod): {resist}({resistMod})");
+				break;
+
+			DMG_FIRE:
+				resist := CInt(defender.resist_fire);
+				resistMod := CInt(defender.resist_fire_mod);
+				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Fire (Mod): {resist}({resistMod})");
+				break;
+
+			DMG_COLD:
+				resist := CInt(defender.resist_cold);
+				resistMod := CInt(defender.resist_cold_mod);
+				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Cold (Mod): {resist}({resistMod})");
+				break;
+
+			DMG_ENERGY:
+				resist := CInt(defender.resist_energy);
+				resistMod := CInt(defender.resist_energy_mod);
+				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Energy (Mod): {resist}({resistMod})");
+				break;
+
+			DMG_POISON:
+				resist := CInt(defender.resist_poison);
+				resistMod := CInt(defender.resist_poison_mod);
+				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Poison (Mod): {resist}({resistMod})");
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 				break;
 		endcase
 	endif
@@ -315,6 +378,7 @@ function GetLastDamageInfo(mobile)
 	return GetObjProperty(mobile, "LastDamage");
 endfunction
 
+<<<<<<< HEAD
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	var damage := 0;
 
@@ -695,6 +759,8 @@ function CalcDamageReducer(attacker, damage)
 	return damage;
 endfunction
 
+=======
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	var totaldmg;
 
@@ -755,6 +821,227 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	return totaldmg;
 endfunction
 
+<<<<<<< HEAD
+=======
+////////////////////////////////////////////////////////
+//
+// DamageFLSCombat(attacker, defender, armor, damage, type)
+//
+// Purpose
+// Criado para modificar a aplicação de dano do combate sem influenciar nas demais aplicações de dano do shard.
+// Ver o doc das demais funções abaixo para entender melhor.
+// 
+// Parameters
+// attacker: Ref do atacante aplicando o dano.
+// defender: Ref do alvo atingido no dano.
+// armor: itemRef da peça atingida.
+// damage: Valor total do dano a ser abatido.
+// type: Tipo do elemento do dano.
+// 
+// Return value
+//
+///////////////////////////////////////////////////////
+function DamageFLSCombat(attacker, defender, armor, damage, type)
+	SetScriptController(attacker);
+	var totaldamage := CalculateDamageCombat(attacker, defender, armor, damage, type);
+
+	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
+
+	var regiao := CS_GetArmorZone(armor);
+	if (regiao == error)
+		regiao := "Corpo";
+	endif
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {damage-totaldamage}");
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {totaldamage}({damage} - {damage-totaldamage})");
+	DisplayDamage(defender, totaldamage, attacker);
+	ApplyRawDamage(defender, totaldamage);
+	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage);
+	SetLastDamageInfo(defender, totaldamage, type, attacker);
+
+	if (defender.frozen)
+		defender.frozen := 0;
+	endif
+
+	return totaldamage;
+endfunction
+
+////////////////////////////////////////////////////////
+//
+// CalculateDamageCombat(attacker, defender, armor, damage, type)
+//
+// Purpose
+// Criado para modificar o cálculo de dano do combate sem influenciar nos demais cálculos de dano do shard.
+// Agora o cálculo de dano é baseado na região atingida.
+// Ver o doc das demais funções abaixo para entender melhor.
+// 
+// Parameters
+// attacker: Ref do atacante.
+// defender: Ref do alvo atingido no dano.
+// armor: itemRef da peça atingida.
+// damage: Valor total do dano a ser abatido.
+// type: Tipo do elemento do dano.
+// 
+// Return value
+//
+///////////////////////////////////////////////////////
+function CalculateDamageCombat(attacker, defender, armor, damage, type)
+	var resistMod := 0;
+	var resist := 0;
+
+	if (defender.npctemplate)
+		resist := getResistNPCByType(defender, type, armor);
+	else
+		resist := getResistArmorByType(armor, type, attacker, defender);
+	endif
+
+	if (damage < 1)
+		damage := 1;
+	endif
+
+	return CInt(damage-resist);
+endfunction
+
+////////////////////////////////////////////////////////
+//
+// getResistPlayerByType(npc, type)
+//
+// Purpose
+// Pegar os valores da resistência da armadura do NPC.
+// Segue a mesma lógica do getResistPlayerByType(), porém o NPC não tem variação na armadura,
+// é como se todas as peças possuíssem o mesmo resist.
+// 
+// Parameters
+// npc: Ref do NPC
+// type: Tipo do elemento do dano
+// armor: itemRef da armadura pega no combatHook();
+// 
+// Return value
+//
+///////////////////////////////////////////////////////
+function getResistNPCByType(npc, type, armor := 0)
+	var resist;
+	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
+	var cfg := ReadConfigFile(":*:npcdesc");
+
+	if (!armor || armor == error)
+		case(type)
+			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
+			DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(npc.resist_fire_mod); break;
+			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(npc.resist_cold_mod); break;
+			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(npc.resist_energy_mod); break;
+			DMG_POISON: resist := CInt(cfg[npctemplate.template].PoisonResist) + CInt(npc.resist_poison_mod); break;
+		endcase
+	else
+		resist := getResistArmorByType(armor, type);
+	endif
+
+	return CInt(resist);
+endfunction
+
+////////////////////////////////////////////////////////
+//
+// getResistPlayerByType(player, type, armor)
+//
+// Purpose
+// Pegar os valores da resistência da armadura do player.
+// Agora o dano é abatido pelo valor da região da armadura, não mais pela soma de todos eles.
+// Ex.: Se DANO = 12 e o dano acertar o peitoral. Se resist de CHEST = 7. Dano final = 5.
+// 
+// Parameters
+// armor: itemRef da armadura atingida na função de região (ver combatHook)
+// type: Tipo do elemento do dano
+// 
+// Return value
+//
+///////////////////////////////////////////////////////
+function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
+	var resist;
+
+	case(type)
+		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
+		DMG_FIRE: resist := CInt(armor.FireResist) + CInt(armor.resist_fire_mod); break;
+		DMG_COLD: resist := CInt(armor.ColdResist) + CInt(armor.resist_cold_mod); break;
+		DMG_ENERGY: resist := CInt(armor.EnergyResist) + CInt(armor.resist_energy_mod); break;
+		DMG_POISON: resist := CInt(armor.PoisonResist) + CInt(armor.resist_poison_mod); break;
+	endcase
+
+
+	return CInt(resist);
+endfunction
+
+////////////////////////////////////////////////////////
+//
+// CheckDefenderHabsBeforeDamage(byref defender, byref damage)
+//
+// Purpose
+// Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+// Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+// 
+// Parameters
+// attacker: Ref do atacante.
+// defender: Ref do alvo que recebe o dano.
+// damage: Valor (em int) do dano.
+// 
+// Return void
+//
+///////////////////////////////////////////////////////
+function CheckDefenderHabsBeforeDamage(attacker, byref defender, byref damage)
+	if (GetObjProperty(defender, "#martir"))
+		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
+		if (martir && !martir.dead)
+			defender := martir;
+		endif
+	endif
+	
+	if (GetObjProperty(defender, "#mantorothen"))
+		var healed := cint(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
+		damage := damage - healed;
+		var party := defender.party;
+		var amthealed := cint(healed/party.members.size());
+		if (amthealed < 1)
+			amthealed := 1;
+		endif
+		foreach member in (party.members)
+			HealDamage(member, amthealed);
+		endforeach
+	endif
+endfunction
+
+////////////////////////////////////////////////////////
+//
+// CheckDefenderHabsAfterDamage(byref defender, byref damage)
+//
+// Purpose
+// Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+// Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+// 
+// Parameters
+// attacker: Ref do atacante.
+// defender: Ref do alvo que recebe o dano.
+// damage: Valor (em int) do dano.
+// 
+// Return void
+//
+///////////////////////////////////////////////////////
+function CheckDefenderHabsAfterDamage(attacker, defender, damage)
+	if (isBloodied(defender))
+		RecalcVitals(defender);
+		MakeBleed(defender);
+		if (getObjProperty(defender, "#recuperacaosalvadora"))
+			EraseObjProperty(defender, "#recuperacaosalvadora");
+			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
+			HealDamage(defender, CInt(GetPH(defender)/2));
+		endif
+	endif
+
+	if (GetObjProperty(defender, "#vinganca"))
+		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
+	endif
+endfunction
+
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
 function destroycraft(potion, who)
     if (!CanDestroyCraft(who))
         SendSysMessageEx(who, "Voce nao pode destruir nada sem um GM online", SSM_FAIL);
@@ -815,9 +1102,12 @@ function IsThrowingWeapon(item)
 	return 0;
 endfunction
 
+<<<<<<< HEAD
 function CheckBastardSword(who)
 	if (who.weapon.objtype == 0x13b9 && !who.shield)
 		return 1;
 	endif
 	return 0;
 endfunction
+=======
+>>>>>>> be4da8e9ccfbdf9181c864bd18ad7b849b668c99
