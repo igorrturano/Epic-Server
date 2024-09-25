@@ -264,26 +264,19 @@ function Habilidades(who, nivel)
 	GFAddButton(gumpstatus, x, y+43, 2117, 2118, GF_CLOSE_BTN, 30);
 	var inputstatus := GFSendGump(who, gumpstatus);
 	if (habs[nivel] == 1)
-		Print("nivel: "+nivel);
-		print($"habs[{nivel}]: {habs[nivel]}");
 		if (inputstatus[0] == 10)
 			habs[nivel] := 2;
 			SetObjProperty(who, "buyhab", habs);
 			AP_SetTrueStat(who, STRENGTH, AP_GetTrueStat(who, STRENGTH)+2);
-			Print("comprou: STR");
 		elseif (inputstatus[0] == 20)
 			habs[nivel] := 2;
 			SetObjProperty(who, "buyhab", habs);
 			AP_SetTrueStat(who, DEXTERITY, AP_GetTrueStat(who, DEXTERITY)+2);
-			Print("comprou: DEX");
 		elseif (inputstatus[0] == 30)
 			habs[nivel] := 2;
 			SetObjProperty(who, "buyhab", habs);
 			AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
-			Print("comprou: INT");
 		endif
-		Print("myhabs: "+myhabs);
-		Print("habs: "+habs);
 		
 		if (habs[nivel] == 2)
 			var hp_up := 0;
