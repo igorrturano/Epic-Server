@@ -1,0 +1,149 @@
+use uo;
+use os;
+use cfgfile;
+use attributes;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":fls_core:packets";
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+
+program useimage(who, self)
+    var title := GetObjProperty(self, "title");
+    var url := GetObjProperty(self, "url");
+    
+    if(who.serial != GetObjProperty(self, "crafterserial"))
+        var soundAndEmote := GetSoundAndEmote(who.graphic);
+        
+        PrintTextAbove(who, "*Observando detalhadamente*");
+        Sleep(2);
+        PlaySoundEffect(who, soundAndEmote[1]);
+        PrintTextAbove(who, soundAndEmote[2]);
+        
+        ShowImageGump(who, title, url);
+    else
+        ShowEditGump(who, self);
+    endif
+endprogram
+
+function ShowImageGump(who, title, url)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 0, 0, 850, 900, GUMP_BACKGROUND);
+    AdicionarMoldura(gump, 850, 900);
+
+    // Adicionando um fundo para o título
+    GFResizePic(gump, 30, 845, INTERNAL_BACKGROUND, 800, 30);
+    
+    // Usando o título corretamente
+    GFTextMid(gump, 20, 852, 800, 53, title);
+
+    // Usando a URL corretamente
+    GFHTMLArea(gump, 30, 30, 800, 800, "<img src=\"" + url + "\" width=\"800\" height=\"800\" x=\"0\" y=\"0\">");
+
+    GFSendGump(who, gump);
+endfunction
+
+function ShowEditGump(who, self)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    var gump_width := 435;  // Aumentado de 400 para 415
+    var gump_height := 300;
+    var content_width := 415;  // Aumentado de 380 para 395
+    
+    GFGumpPicTiled(gump, 0, 0, gump_width, gump_height, GUMP_BACKGROUND);
+    AdicionarMoldura(gump, gump_width, gump_height);
+
+    GFResizePic(gump, 15, 10, INTERNAL_BACKGROUND, content_width, 280);
+    GFTextMid(gump, 10, 20, content_width, 53, "GUMP de edição do GM");
+
+    GFTextLine(gump, 20, 60, 53, "Título:");
+    var txt1 := GFTextEntry(gump, 20, 80, content_width - 40, 20, 0x00, GetObjProperty(self, "title"));
+
+    GFTextLine(gump, 20, 110, 53, "URL:");
+    var txt2 := GFTextEntry(gump, 20, 130, content_width - 40, 20, 0x00, GetObjProperty(self, "url"));
+
+    GFTextLine(gump, 20, 170, 2100, "Tamanho máximo da imagem: 800x800 pixels");
+
+    GFAddButton(gump, (gump_width / 2) - 15, 260, 247, 248, GF_CLOSE_BTN, 1);
+
+    var input := GFSendGump(who, gump);
+
+    if(input[1])
+        var new_title := GFExtractData(input, txt1);
+        var new_url := GFExtractData(input, txt2);
+        SetObjProperty(self, "title", new_title);
+        SetObjProperty(self, "url", new_url);
+
+        SendSysMessage(who, "Imagem atualizada com sucesso.");
+        ShowImageGump(who, new_title, new_url);
+    endif
+endfunction
+
+function AdicionarMoldura(byref gump, width, height)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := width - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := width - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := height - 25, width := width - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := height - 50, gump := 39928 },
+        struct{ x := width - 25, y := 25, width := 35, height := height - 50, gump := 39930 },
+        struct{ x := width - 25, y := height - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := height - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+
+function GetSoundAndEmote(graphic)
+    var resultado := array{0, ""};
+    
+    case(graphic)
+        401:
+            resultado[1] := 0x32C;
+            resultado[2] := "*Oooh*";
+        400:
+            resultado[1] := 0x43E;
+            resultado[2] := "*Oooh*";
+        1828:
+            resultado[1] := 0x43E;
+            resultado[2] := "*Oooh*";
+        1829:
+            resultado[1] := 0x32C;
+            resultado[2] := "*Oooh*";
+        1830:
+            resultado[1] := 0x43E;
+            resultado[2] := "*Oooh*";
+        1831:
+            resultado[1] := 0x32C;
+            resultado[2] := "*Oooh*";
+        1832:
+            resultado[1] := 0x43E;
+            resultado[2] := "*Oooh*";
+        1833:
+            resultado[1] := 0x32C;
+            resultado[2] := "*Oooh*";
+        1834:
+            resultado[1] := 0x43E;
+            resultado[2] := "*Oooh*";
+        1835:
+            resultado[1] := 0x32C;
+            resultado[2] := "*Oooh*";
+        default:
+            resultado[1] := 0x32C;
+            resultado[2] := "*Oooh*";
+    endcase
+    
+    return resultado;
+endfunction
