@@ -118,7 +118,8 @@ function SpeechEvent(npc, byref event)
 
 	// Verifica se a descrição do personagem mudou
 	var sourceDescription := GetObjProperty(event.source, "descricao");
-	if (sourceDescription != last_char_description)
+	
+	if (sourceDescription != last_char_description || sourceDescription == "error{ errortext = 'Subscript out of range'")
 		// Novo personagem, reinicia o histórico de conversas
 		conversation_history := array{};
 		last_char_description := sourceDescription;  // Atualiza para a nova descrição
