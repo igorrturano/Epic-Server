@@ -44,6 +44,9 @@ const ALIGN_NEUTRAL := "neutral";
 
 //const EVID_ALERT_ALLIES := 0x00000013;
 
+
+
+
 //essa funcao determina se o npc vai enfrentar o alvo ou nao
 function CanFight(me, mobile, align)
 

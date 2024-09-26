@@ -7,7 +7,7 @@ include ":crafting:include/craftingSkill";
 include ":crafting:include/craftingUtil";
 include ":gumps:include/gumps";
 include ":gumps:include/gumps_ex";
-include "include/damage";
+include ":combat:damage";
 include ":PacketConfig:settings";
 include "include/say";
 include ":tn:recipes";
@@ -305,6 +305,22 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 			setobjproperty(theitem, "serialid", who.serial);
 			setobjproperty(theitem, "marked",who.name + " - " + who.acctname);
 			Print("Depois:"+objtype);
+			endif
+
+			if(craft_skill=="Alchemy")
+					var recipes := ReadConfigFile(":alchemy:config/recipes");
+					var strength := cint(recipes[objtype].strength);
+					var science := (recipes[objtype].science);
+					var tier := (recipes[objtype].tier);
+					var crafterskill := AP_GetSkill(who, ALCHEMY);
+					var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
+					var bonus := (((crafterInt-50)/10)+(crafterskill/10));
+
+					SetObjProperty(theitem, "strength", strength);
+					SetObjProperty(theitem, "bonus", bonus);
+					SetObjProperty(theitem, "tier", tier);
+					SetObjProperty(theitem, "crafterskill", crafterskill);
+					SetObjProperty(theitem, "science", science);
 			endif
 
 			if(!theitem)

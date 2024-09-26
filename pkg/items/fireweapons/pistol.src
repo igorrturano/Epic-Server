@@ -5,7 +5,7 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include "include/facings";
 
 program fireweapon(who, item)

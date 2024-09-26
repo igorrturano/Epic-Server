@@ -5,7 +5,7 @@ use npc;
 
 include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
-include "include/damage";
+include ":combat:damage";
 
 program loko(params)
 
