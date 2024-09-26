@@ -6,7 +6,7 @@ use vitals;
 include ":timedScripts:timedScripts";
 include "include/client";
 include ":ghaia:ghaia";
-include "include/damage";
+include ":combat:damage";
 
 /* magias que os npcs podem castar:
 

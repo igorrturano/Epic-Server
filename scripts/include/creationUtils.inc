@@ -5,6 +5,8 @@ include ":disguise:disguise";
 include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
+//include ":nature:nature";
+//include ":charactercreation:include/RPTraits";
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -75,6 +77,8 @@ E assim, os orcs caçam as temíveis Aklats, não apenas como uma questão de so
 Nos períodos de chuva, quando o deserto se transforma em um oásis temporário, os orcs celebram com rituais de êxtase e indulgência. Longe das batalhas e caçadas, eles se entregam ao prazer e à comunhão, honrando a dádiva da água que sustenta sua existência.
 Porém, mesmo em meio à brutalidade de sua fé, os orcs têm seus guardiões espirituais. Os Xamãs, sábios e misteriosos, são os intérpretes dos desígnios de Adar Kor Doom. Eles conduzem seus seguidores através dos caminhos áridos do deserto, guiando-os na busca pela força e sabedoria necessárias para enfrentar os desafios do Grunntam.
 Neste mundo implacável e repleto de perigos, a fé dos orcs é uma luz que brilha no horizonte, uma âncora em meio à tempestade de areia. E enquanto as dunas se movem e os ventos uivam, os filhos do Deserto da Perdição permanecem firmes em sua devoção ao Grunntam, prontos para enfrentar qualquer desafio que o destino lhes reserve.";
+const ceticosText := "A visão cética sobre a influência dos deuses propõe que, se existirem, eles estão imersos em suas próprias questões, distantes das preocupações humanas. Para os céticos, muitos fenômenos naturais são explicações racionais para eventos aleatórios, e a adoração a divindades é vista como um mecanismo de enfrentamento em tempos de crise. 
+Essa perspectiva sugere que a religião é uma construção cultural que reflete os medos e aspirações humanas, oferecendo conforto e um senso de comunidade. Apesar da descrença, a liberdade de crença é essencial, promovendo o respeito às diferentes convicções e abrindo espaço para diálogos enriquecedores sobre a experiência humana.";
 
 const storyModeText := "No modo estória, o personagem não pode ser morto e nem matar outros jogadore, ou seja, cortar a cabeça.
 - Ao tentar furtar outro jogador, caso tenha sucesso, receberá moedas aleatórias baseado no PP. As falhas continuam normal.
@@ -109,6 +113,19 @@ const KAI_ID := 0x9F2;
 const LORE_ID := 0x9F3;
 const USHKRAR_ID := 0x9F4;
 const VENERATIO_ID := 0x9F5;
+
+const CUIDADOR_ID := 0x152;
+const GOVERNADOR_ID := 0x153;
+const HEROI_ID := 0x154;
+const BOBO_ID := 0x155;
+const AMANTE_ID := 0x156;
+const COMUM_ID := 0x157;
+const CRIADOR_ID := 0x158;
+const MAGO_ID := 0x159;
+const EXPLORADOR_ID := 0x15A;
+const FORADALEI_ID := 0x15B;
+const INOCENTE_ID := 0x15C;
+const SABIO_ID := 0x15D;
 
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
 var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
@@ -234,6 +251,24 @@ function EpicRaceGump(who, culture_pic)
     return GFSendGump(who, gump);
 endfunction
 
+function getMonthBySign(sign)
+    case(sign)
+        "Constelação do Cuidador": return 1; // Duwus
+        "Constelação do Governador": return 2; // Alorae
+        "Constelação do Herói": return 3; // Galgrumirius
+        "Constelação do Bobo": return 4; // Kaius
+        "Constelação do Amante": return 5; // Idrithae
+        "Constelação da Pessoa Comum": return 6; // Lleuadae
+        "Constelação do Criador": return 9; // Demiurgus
+        "Constelação do Mago": return 8; // Crassus
+        "Constelação do Explorador": return 7; // Adarae
+        "Constelação do Fora da Lei": return 10; // Phrugum
+        "Constelação do Inocente": return 11; // Praetorus
+        "Constelação do Sábio": return 12; // Aeternum
+        default: return 1;
+    endcase
+endfunction
+
 function getRaceByCulturalId(culture_pic)
     var races;
     case (culture_pic)
@@ -253,6 +288,121 @@ function getRaceByCulturalId(culture_pic)
             races := array{ANAO, DROW, ELFO, HUMANO, ORC, POLSKI};
     endcase
     return races;
+endfunction
+
+function CaracteristicasRPGump(who, byref chardata, culture_pic)
+    var racial_traits := GetRacialTraits(chardata.raca);
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    var x_left := 63;
+    var x_right := x_left + 500;
+    var y := 60;
+
+    // Exibir informações da raça/cultura
+    GFHTMLArea(gump, 149, 76, 192, 40, "<BASEFONT Size=55 Color=#999999>Raça", 0, 0);
+    GFHTMLArea(gump, 148, 75, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Raça", 0, 0);
+    
+    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(chardata.raca), 1, 0);
+
+    // Exibir imagem da cultura
+    GFGumpPic(gump, 298, 100, culture_pic);
+
+    // Título "Características Físicas e Pessoais" 
+    GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
+    GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
+
+    var categories := GetPageCategories();
+    var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
+    var y_start := 160;
+    var category_iter := 0;
+    var x := x_left;
+    var current_y := y_start;
+    var i, option_y, button_id, is_selected;
+
+    foreach category in categories
+        if (category_iter == 3)
+            x := x_right;
+            current_y := y_start;
+        endif
+
+        GFHTMLArea(gump, x+1, current_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999>" + racial_traits[category].nome, 0, 0);
+        GFHTMLArea(gump, x, current_y, 192, 40, "<BASEFONT Size=55 Color=#ffffff>" + racial_traits[category].nome, 0, 0);
+        
+        var options := racial_traits[category].opcoes;
+        current_y := current_y + 30;
+        for (i := 1; i <= options.size(); i := i + 1)
+            option_y := current_y + ((i-1) * 25);
+            button_id := 100 + (category_iter * 5) + (i - 1);
+            is_selected := (chardata.caracteristicas_rp[category] == i);
+            GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
+            
+            if (category != "Idade Aparente")
+                if (is_selected)
+                    GFAddButton(gump, x+200, option_y, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, button_id);
+                else
+                    GFAddButton(gump, x+200, option_y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, button_id);
+                endif
+            endif
+        endfor
+        current_y := current_y + 140;
+        category_iter := category_iter + 1;
+    endforeach
+
+    // Adicionar caixa de texto para idade escolhida
+     current_y += 20;
+    GFTextLine(gump, x, current_y, 1153, "Escreva a sua idade:");
+    current_y += 20;
+    var age_textbox := GFEAddTextBox(gump, x, current_y, 100, 20, COLOR_YELLOW, "", 1000);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 222);
+
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 222)
+        var age_input := GFExtractData(input, age_textbox);
+        var all_required_selected := true;
+        
+        foreach category in required_categories
+            if (!chardata.caracteristicas_rp[category])
+                all_required_selected := false;
+                break;
+            endif
+        endforeach
+
+        if (!all_required_selected)
+            SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        elseif (age_input == "")
+            SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        else
+            chardata.idade_escolhida := CInt(age_input);
+            var final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
+            chardata.idade_aparente := final_age[1];
+            chardata.idade_real := final_age[2];
+            return input;
+        endif
+    endif
+
+    return input;
+endfunction
+
+function GetPageCategories()
+        return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
+endfunction
+
+function ProcessSelection(byref chardata, input)
+        var categories := GetPageCategories();
+        var category_index := (input - 100) / 5;
+        var option := (input - 100) % 5 + 1;
+        
+        if (category_index < categories.size())
+            var category := categories[category_index + 1];
+            chardata.caracteristicas_rp[category] := option;
+        endif
 endfunction
 
 function ClassGump(who, culture_pic)
@@ -751,6 +901,8 @@ function getReligionDescriptionByPictureId(culture_id)
             return eluithorthText;
         USHKRAR_ID:
             return ushkrarText;
+        default:
+            return ceticosText;
     endcase
 endfunction
 
@@ -775,7 +927,6 @@ function genericItems(who)
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
 endfunction
-
 
 function weaponsByClassAndCulture(who)
     var chardata := GetObjProperty(who, "chardata");
@@ -1374,3 +1525,240 @@ function parseLanguageByCulture(who, linguasOpt)
             return linguasOpt[8];
         endif
 endfunction
+
+// Adicione estes textos para cada signo
+
+const cuidadorText := "Constelação do Cuidador<br><br>Altruísta e generoso, busca proteger e cuidar dos outros. Preocupa-se com o bem-estar alheio, colocando as necessidades dos outros acima das suas.";
+
+const governadorText := "Constelação do Governador<br><br>Figura autoritária que busca controle, ordem e estabilidade. O Governador acredita que uma liderança firme é essencial para manter a harmonia e a organização.";
+
+const heroiText := "Constelação do Herói<br><br>Determinado e corajoso, busca enfrentar desafios e superar adversidades para proteger os outros. O Herói valoriza a força, a coragem e a superação.";
+
+const boboText := "Constelação do Bobo<br><br>Alegre, irreverente e brincalhão, busca trazer leveza, humor e questionar o status quo. Tem uma atitude despreocupada e divertida diante da vida.";
+
+const amanteText := "Constelação do Amante<br><br>Movido pela paixão e pelo desejo de conexões emocionais profundas. O Amante busca experiências de beleza, amor e prazer em seus relacionamentos e na vida.";
+
+const comumText := "Constelação da Pessoa Comum<br><br>Relaciona-se com todos, representando a igualdade e a simplicidade. Valoriza o pertencimento e a autenticidade, buscando se conectar com os outros de forma genuína.";
+
+const criadorText := "Constelação do Criador<br><br>Focado na inovação, imaginação e criação de algo novo. O Criador é movido pela necessidade de expressar sua visão e trazer algo original ao mundo.";
+
+const magoText := "Constelação do Mago<br><br>Representa o poder de transformação, o conhecimento e o mistério. O Mago é capaz de transformar a realidade ao seu redor, usando sabedoria e intuição.";
+
+const exploradorText := "Constelação do Explorador<br><br>Aventureiro e curioso, busca descobrir o novo e expandir os limites do que é conhecido. Valoriza a liberdade, a autoexpressão e a jornada para descobrir quem realmente é.";
+
+const foradaleiText := "Constelação do Fora da Lei<br><br>Desafiador, quer quebrar regras e sistemas para trazer mudança. Sente-se atraído pela revolução, pela quebra de paradigmas e pela luta contra injustiças.";
+
+const inocenteText := "Constelação do Inocente<br><br>Otimista e sonhador, acredita na bondade inerente das pessoas e da vida. O Inocente busca a felicidade, simplicidade e um mundo sem malícia.";
+
+const sabioText := "Constelação do Sábio<br><br>Motivado pelo desejo de conhecimento e verdade, o Sábio busca entender o mundo profundamente. Valorizado por sua sabedoria, reflexão e discernimento.";
+
+// Adicione esta função para selecionar o signo
+
+
+function signSelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    var sign_pic := CUIDADOR_ID;
+    var btn_value;
+    while (1)
+        var input := SignGump(who, sign_pic);
+        btn_value := input[0]; 
+
+        if (btn_value == 201)
+            sign_pic++;
+        elseif (btn_value == 210) 
+            sign_pic--;
+        elseif (btn_value == 666)
+            break;
+        endif
+
+        if (sign_pic < CUIDADOR_ID)
+            sign_pic := SABIO_ID;
+        elseif (sign_pic > SABIO_ID)
+            sign_pic := CUIDADOR_ID;
+        endif
+    endwhile
+    chardata.+sign := getSignByPictureId(sign_pic);
+    SetObjProperty(who, "chardata", chardata);
+
+    SendSysMessageEX(who, "Seu signo será "+chardata.sign, SSM_INFO);
+    return sign_pic;
+endfunction
+
+function getSignByPictureId(sign_pic)
+    case(sign_pic)
+        CUIDADOR_ID: return "Constelação do Cuidador";
+        GOVERNADOR_ID: return "Constelação do Governador";
+        HEROI_ID: return "Constelação do Herói";
+        BOBO_ID: return "Constelação do Bobo";
+        AMANTE_ID: return "Constelação do Amante";
+        COMUM_ID: return "Constelação da Pessoa Comum";
+        CRIADOR_ID: return "Constelação do Criador";
+        MAGO_ID: return "Constelação do Mago";
+        EXPLORADOR_ID: return "Constelação do Explorador";
+        FORADALEI_ID: return "Constelação do Fora da Lei";
+        INOCENTE_ID: return "Constelação do Inocente";
+        SABIO_ID: return "Constelação do Sábio";
+        default: return "Desconhecido";
+    endcase
+endfunction
+
+function getSignDescriptionByPictureId(sign_pic)
+    case(sign_pic)
+        CUIDADOR_ID: return cuidadorText;
+        GOVERNADOR_ID: return governadorText;
+        HEROI_ID: return heroiText;
+        BOBO_ID: return boboText;
+        AMANTE_ID: return amanteText;
+        COMUM_ID: return comumText;
+        CRIADOR_ID: return criadorText;
+        MAGO_ID: return magoText;
+        EXPLORADOR_ID: return exploradorText;
+        FORADALEI_ID: return foradaleiText;
+        INOCENTE_ID: return inocenteText;
+        SABIO_ID: return sabioText;
+        default: return "Descrição não disponível.";
+    endcase
+endfunction
+
+function SignGump(who, sign_pic)
+    var next_btn := array{"9903", "9904"};
+    var prev_btn := array{"9909", "9910"};
+
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, 346, 56, 192, 40, "<BASEFONT Size=55 Color=#999999 >Escolha seu Signo", 0, 0); //shadow
+    GFHTMLArea(gump, 345, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu Signo", 0, 0);
+    var x := 63;
+    var y := 100;
+    var i := 0;
+
+    GFHTMLArea(gump, 100, 550, 650, 120, getSignDescriptionByPictureId(sign_pic), 1, 1);
+    GFAddButton(gump, 543, 300, next_btn[1], next_btn[2], GF_CLOSE_BTN, 201);
+    GFAddButton(gump, 273, 300, prev_btn[1], prev_btn[2], GF_CLOSE_BTN, 210);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
+
+    GFGumpPic(gump, 298, 100, sign_pic);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetMonths()
+    return MONTHS;
+endfunction
+
+function GetSignPicture(sign)
+    case (sign)
+        "Constelação do Cuidador": return CUIDADOR_ID;
+        "Constelação do Governador": return GOVERNADOR_ID;
+        "Constelação do Herói": return HEROI_ID;
+        "Constelação do Bobo": return BOBO_ID;
+        "Constelação do Amante": return AMANTE_ID;
+        "Constelação da Pessoa Comum": return COMUM_ID;
+        "Constelação do Criador": return CRIADOR_ID;
+        "Constelação do Mago": return MAGO_ID;
+        "Constelação do Explorador": return EXPLORADOR_ID;
+        "Constelação do Fora da Lei": return FORADALEI_ID;
+        "Constelação do Inocente": return INOCENTE_ID;
+        "Constelação do Sábio": return SABIO_ID;
+        default: return CUIDADOR_ID; // Imagem padrão caso algo dê errado
+    endcase
+endfunction
+
+
+function birthDaySelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata.birthdate)
+        chardata.birthdate := struct{};
+    endif
+    var selected_day := 0;
+    var month_index := getMonthBySign(chardata.sign);
+    var btn_value;
+    while (1)
+        var input := BirthDayGump(who, selected_day);
+        btn_value := input[0]; 
+        if (btn_value == 666 && selected_day != 0)
+            break;
+        elseif (btn_value >= 1 && btn_value <= MONTHS[month_index].days)
+            selected_day := btn_value;
+        endif
+    endwhile
+    if (selected_day > 0)
+        chardata.birthdate.day := selected_day;
+        chardata.birthdate.month := month_index;
+        SetObjProperty(who, "chardata", chardata);
+        SendSysMessageEx(who, "Seu dia de nascimento será " + selected_day + " de " + MONTHS[month_index].name, SSM_INFO);
+    else
+        SendSysMessageEx(who, "Nenhum dia selecionado.", SSM_FAIL);
+    endif
+    return selected_day;
+endfunction
+
+function BirthDayGump(who, selected_day := 0)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    var chardata := GetObjProperty(who, "chardata");
+    var month_index := getMonthBySign(chardata.sign);
+    var month := MONTHS[month_index];
+    
+    // Fundo principal
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    
+    // Fundo do calendário
+    GFResizePic(gump, 65, 163, 83, 223, 201);
+    
+    // Título
+    GFHTMLArea(gump, 315, 55, 400, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu Dia de Nascimento", 0, 0);
+    
+    // Nome do mês
+    GFTextLine(gump, 115, 179, 53, month.name);
+    
+    // Adicionar a imagem do signo escolhido
+    var sign_pic := GetSignPicture(chardata.sign);
+    GFGumpPic(gump, 298, 100, sign_pic);
+    
+    // Adicionar os dias do mês
+    var day := 1;
+    var x, y;
+    for i := 0 to 5 // Aumentado para 6 linhas para acomodar 33 dias
+        for j := 0 to 6
+            if (day <= month.days)
+                x := 94 + (j * 24);
+                y := 207 + (i * 28);
+                var background := (day == selected_day) ? 7762 : 7761;
+                GFAddButton(gump, x, y, background, background, GF_CLOSE_BTN, day);
+                
+                var text_x := x + 8;
+                if (day <= 9)
+                    text_x -= 2;
+                elseif (day >= 10 && day <= 19)
+                    text_x -= 3;
+                elseif (day >= 20 && day != 21 && day != 31)
+                    text_x -= 6;
+                elseif (day == 21 || day == 31)
+                    text_x -= 3;
+                endif
+                
+                GFTextLine(gump, text_x, y + 2, 2100, CStr(day));
+                day += 1;
+            endif
+        endfor
+    endfor
+
+    GFHTMLArea(gump, 60, 550, 650, 120, "Escolha o dia do seu nascimento no calendário acima.", 1, 1);
+    
+    if (selected_day != 0)
+        GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
+    else
+        GFGumpPic(gump, 653, 680, 4005);
+    endif
+
+    return GFSendGump(who, gump);
+endfunction
+
+function getDayFromPictureId(day_pic)
+    return (day_pic - 0x1000) + 1;
+endfunction
+

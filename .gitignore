@@ -28,7 +28,9 @@ poltool
 uoconvert
 uoconvert.txt
 uotool
+ecompile.cfg
 scripts/ecompile
+scripts/ecompile.cfg
 scripts/ecompile.cfg.example
 scripts/modules
 scripts/runecl

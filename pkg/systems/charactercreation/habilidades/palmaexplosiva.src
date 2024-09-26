@@ -4,7 +4,7 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 
 program doubleattack(params)
 	var attacker	:= params[1];
@@ -21,6 +21,8 @@ program doubleattack(params)
 		return 1;
 	endif
 
+	start_script(":charactercreation:habilidades/desviardisparos", attacker);
+
 	attacker.frozen := 1;
     PrintText(attacker, "*meditando*");
 	sleep(2);
@@ -36,4 +38,6 @@ program doubleattack(params)
 	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
     start_script(":combat:weaponHitScripts/FireHit", {attacker, defender, attacker.weapon, armor, basedamage, rawdamage*3});
 	DamageFLS(defender, total*4, DMG_FORCED, attacker);
+
+
 endprogram
