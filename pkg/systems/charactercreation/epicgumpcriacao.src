@@ -24,20 +24,20 @@ program epicCreationGump(who)
 
     var culture_pic := culturalSelection(who);
     racialSelection(who, culture_pic);
-    // classSelection(who, culture_pic);
-    // backgroundSelection(who, culture_pic);
-    // traitSelection(who, culture_pic);
-    // skillSelection(who, culture_pic);
-    // attributeSelection(who, culture_pic);
-    // religionSelection(who);
-    // gameModeSelection(who);
-    // pathOfWisdom(who, culture_pic);
-    // languageSelection(who, culture_pic);
-    // itemInheritance(who);
-    // signSelection(who);
-    // birthDaySelection(who);
-    // RPcharacteristicsSelection(who, culture_pic);
-    // setBirthdate(who);
+    classSelection(who, culture_pic);
+    backgroundSelection(who, culture_pic);
+    traitSelection(who, culture_pic);
+    skillSelection(who, culture_pic);
+    attributeSelection(who, culture_pic);
+    religionSelection(who);
+    gameModeSelection(who);
+    pathOfWisdom(who, culture_pic);
+    languageSelection(who, culture_pic);
+    itemInheritance(who);
+    signSelection(who);
+    birthDaySelection(who);
+    RPcharacteristicsSelection(who, culture_pic);
+    setBirthdate(who);
     looksSelection(who);
     setCitizenship(who);
     SetObjProperty(who, "nome_inicial", who.name);
@@ -588,6 +588,7 @@ function looksSelection(who)
     endif
     
     colorSelection(who, chardata);
+    skinColorSelection(who, chardata);
 endfunction
 
 function colorSelection(who, byref chardata)
@@ -611,6 +612,31 @@ function colorSelection(who, byref chardata)
                     endif
                     // Atualizar o cabelo e a barba do personagem imediatamente
                     UpdateCharacterHair(who, chardata);
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function skinColorSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := skinColorSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1: currentPage += 1; // Next page
+            2: currentPage -= 1; // Previous page
+            500: 
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.skin_color := CInt(btn_value);
+                    // Atualizar a cor da pele do personagem imediatamente
+                    UpdateCharacterSkin(who, chardata);
                 endif
         endcase
     endwhile

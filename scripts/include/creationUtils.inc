@@ -1839,14 +1839,14 @@ function beardSelectionGump(who, byref chardata, currentPage := 1)
     var config := ReadConfigFile(":fls_core:config/hairtypes");
     var beardConfig := (chardata.raca == ANAO) ? config["dwarwen_beard"] : config["beard"];
     var beardStyles := GetConfigStringArray(beardConfig, "Style");
-    
-    RenderBeardStyles(gump, beardStyles, chardata, currentPage);
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    RenderBeardStyles(gump, beardStyles, chardata, currentPage, hair);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
     return GFSendGump(who, gump);
 endfunction
 
-function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage)
+function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
     const BEARDS_PER_PAGE := 6;
     const BEARDS_PER_ROW := 2;
     
@@ -1873,6 +1873,10 @@ function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage)
 
     if (chardata.beard != "")
         GFGumpPic(gump, 63+265, 120, chardata.beard); // Ajustado para ficar um pouco abaixo do cabelo
+    endif
+
+    if (chardata.hair != "")
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
     endif
 
     // Add navigation buttons
@@ -1916,7 +1920,6 @@ function GetBeardGumpGraphic(beardID)
         default: return 50800; // Gráfico padrão (Goatee)
     endcase
 endfunction
-
 
 function GetPaperdollBackground(graphic)
     var result := 0x0E10; // Valor padrão
@@ -2129,4 +2132,72 @@ function UpdateCharacterHair(who, chardata)
             EquipItem(who, new_beard);
         endif
     endif
+endfunction
+
+function skinColorSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+
+    // Monta o papperdoll
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic), chardata.skin_color);
+    GFTextMid(gump, 15, 20, 770, 1153, "Selecione a Cor da Pele");
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not open :fls_core:config/skincolors.cfg -> "+skin_cfg.errortext);
+        return 0;
+    endif
+
+    var raca := chardata.raca;
+    if (raca == ELFO)
+        skin_cfg := skin_cfg["elfo"];
+    elseif (raca == DROW)
+        skin_cfg := skin_cfg["drow"];
+    elseif (raca == ORC)
+        skin_cfg := skin_cfg["orc"];
+    else
+        skin_cfg := skin_cfg["list"];
+    endif
+
+    var allColors := GetConfigStringArray(skin_cfg, "color");
+
+    var totalColors := allColors.size();
+    var totalPages := Ceil(totalColors / COLORS_PER_PAGE);
+
+    var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
+    var end := Min(start + COLORS_PER_PAGE, totalColors);
+
+    var y_pos := 50;
+    for i := start to end
+        var color := CInt(allColors[i]);
+
+        GFAddButton(gump, 154, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        GFHTMLArea(gump, 33, y_pos + 2, 122, 20, "", 1, 0);
+        GFTextLine(gump, 40, y_pos + 4, color, "Cor " + (i - start + 1));
+        y_pos += 20;
+    endfor
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 135, 480, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 75, 480, 0x15E3, 0x15E7, GF_CLOSE_BTN, 2); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    // Adicionar botão de fechar
+    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function UpdateCharacterSkin(who, chardata)
+    who.color := chardata.skin_color;
+    who.truecolor := chardata.skin_color;
 endfunction
