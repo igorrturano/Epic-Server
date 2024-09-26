@@ -18,7 +18,7 @@ include ":spells:tnmagery";
 include "include/client";
 include ":itemutils:itemdesc";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 include ":fls_core:fls_combat";
 include ":blood:blood";
 include ":combat:settings";

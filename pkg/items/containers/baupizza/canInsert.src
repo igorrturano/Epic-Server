@@ -1,0 +1,64 @@
+use uo;
+use cfgfile;
+include "include/say";
+
+
+program CanInsert(mobile, container, movetype, insert_type, adding_item, existing_stack, amt_to_add)
+    amt_to_add := amt_to_add;
+    existing_stack := existing_stack;
+    insert_type := insert_type;
+    movetype := movetype;
+    container := container;
+
+    // Verificar se o usuário tem permissão para inserir itens
+    if (!CanInsertItems(mobile))
+        SendSysMessage(mobile, "Você não tem permissão para inserir itens neste baú.");
+        return 0;
+    endif
+
+
+    SendSysMessage(mobile, "Tentando inserir item no container.");
+
+    var donation_types := array{
+        "IsKingdomDonationComida",
+        "IsKingdomDonationMoedas",
+        "IsKingdomDonationCouro",
+        "IsKingdomDonationMetal",
+        "IsKingdomDonationMadeira",
+        "IsKingdomDonationPano",
+        "IsKingdomDonationPedra",
+        "IsKingdomDonationJoias"
+    };
+
+    foreach donation_type in donation_types
+        if (GetObjProperty(adding_item, donation_type))
+            var resource_type := Lower(donation_type[18, len(donation_type)]);
+            var amount := adding_item.amount;
+            
+            if (resource_type == "moedas")
+                if (adding_item.objtype == 0xBA64 || adding_item.objtype == 0xBA65)
+                    SendSysMessageEx(mobile, "Por favor visite um cambista e troque suas moedas, aceitamos apenas moedas de cobre.", SSM_FAIL);
+                    return 0; // Impede a inserção do item
+                endif
+            endif
+            
+            SendSysMessage(mobile, "Doação de " + resource_type + " aceita. Quantidade: " + amount);
+            return 1;
+        endif
+    endforeach
+
+    SendSysMessage(mobile, "Isso não é uma doação válida para o reino.");
+    return 0;
+endprogram
+
+
+
+function CanInsertItems(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0;
+    endif
+
+    // Todos os jogadores podem inserir itens
+    return 1;
+endfunction

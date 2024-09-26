@@ -7,7 +7,7 @@ include ":crafting:include/craftingSkill";
 include ":crafting:include/craftingUtil";
 include ":gumps:include/gumps";
 include ":gumps:include/gumps_ex";
-include "include/damage";
+include ":combat:damage";
 include ":PacketConfig:settings";
 include "include/say";
 include ":tn:recipes";
