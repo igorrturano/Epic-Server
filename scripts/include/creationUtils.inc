@@ -1773,26 +1773,21 @@ function hairSelectionGump(who, byref chardata, currentPage := 1)
     UnloadConfigFile(":fls_core:config/hairtypes");
     var config := ReadConfigFile(":fls_core:config/hairtypes");
     var hair := config["todos"];
-    RenderHairStyles(who, gump, GetConfigStringArray(hair, "Style"), chardata, currentPage);
+    var hairStyles := GetConfigStringArray(hair, "Style");
+    
+    RenderHairStyles(gump, hairStyles, chardata, currentPage);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
     return GFSendGump(who, gump);
 endfunction
 
-function RenderHairStyles(who, byref gump, hairStyles, chardata, currentPage := 1)
+function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
     const HAIRS_PER_PAGE := 6;
     const HAIRS_PER_ROW := 2;
     
-    var pages := Ceil(hairStyles.size() / HAIRS_PER_PAGE);
-
-    GFPage(gump, 1);
-    
+    var totalPages := Ceil(hairStyles.size() / HAIRS_PER_PAGE);
     var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
     var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
-    var row := 0;
-    var col := 0;
-
-    GFPage(gump, currentPage);
 
     for i := start to end
         var style := SplitWords(hairStyles[i]);
@@ -1800,19 +1795,15 @@ function RenderHairStyles(who, byref gump, hairStyles, chardata, currentPage := 
         var hairgraphic := CInt(style[2]);
         var gumppic := CInt(style[3]);
         
+        var col := (i - start) % HAIRS_PER_ROW;
+        var row := (i - start) / HAIRS_PER_ROW;
         var x_pos := 63 + (col * 119);
         var y_pos := 60 + (row * 141);
         
         GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
         GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname);
         GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
-        GFGumpPic(gump, x_pos-40, y_pos-25, gumppic);
-
-        col += 1;
-        if (col >= HAIRS_PER_ROW)
-            col := 0;
-            row += 1;
-        endif
+        GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
     endfor
 
     if (chardata.hair != "")
@@ -1820,18 +1811,17 @@ function RenderHairStyles(who, byref gump, hairStyles, chardata, currentPage := 
     endif
 
     // Add navigation buttons
-    if (pages > 1)
-        if (currentPage < pages)
-            GFAddButton(gump, 185, 480, next_btn[1], next_btn[2], GF_PAGE_BTN, currentPage + 1); // Next page
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 185, 480, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
         endif
-        GFPage(gump, currentPage);
         if (currentPage > 1)
-            GFAddButton(gump, 125, 480, prev_btn[1], prev_btn[2], GF_PAGE_BTN, currentPage - 1); // Previous page
+            GFAddButton(gump, 125, 480, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
         endif
-        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + pages);
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
     endif
 
-    return currentPage;
+    return totalPages;
 endfunction
 
 function GetPaperdollBackground(graphic)

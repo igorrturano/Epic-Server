@@ -557,35 +557,26 @@ function looksSelection(who)
     var chardata := GetObjProperty(who, "chardata");
     var btn_value;
     var currentPage := 1;
-    var totalPages;
     chardata.+hair := "";
 
-    UnloadConfigFile(":fls_core:config/hairtypes");
-    var config := ReadConfigFile(":fls_core:config/hairtypes");
-    var hair := config["todos"];
-    var hairStyles :=  GetConfigStringArray(hair, "Style");
-
     while (1)
-        var input := hairSelectionGump(who, chardata, hairStyles, currentPage);
+        var input := hairSelectionGump(who, chardata, currentPage);
         btn_value := input[0];
-        print("btn_value: " + btn_value);
-
-        if (btn_value == 1001)  // Next page
-            currentPage := Min(currentPage + 1, totalPages);
-        elseif (btn_value == 1002)  // Previous page
-            currentPage := Max(currentPage - 1, 1);
-        elseif (btn_value != 500)
-            chardata.hair := GetHairGumpGraphic(btn_value);
-        else 
-            break;
-        endif
+        
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: break; // Close
+            default: 
+                if (btn_value)
+                    chardata.hair := GetHairGumpGraphic(btn_value);
+                endif
+        endcase
     endwhile
 
-	// if (chardata.raca != ELFO && chardata.raca != DROW)
-	// 	appearances.append("Barba");
-	// endif
     SetObjProperty(who, "chardata", chardata);
 endfunction
+
 
 function pathOfWisdom(who, culture_pic)
     var chardata := GetObjProperty(who, "chardata");
