@@ -1889,8 +1889,6 @@ function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage)
     return totalPages;
 endfunction
 
-
-
 function GetBeardGumpGraphic(beardID)
     case (beardID)
         0: return 0; // Sem barba
@@ -2018,4 +2016,117 @@ function GetHairGumpGraphic(hairID)
     endcase
 endfunction
 
+function colorSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
 
+    var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+
+    // Monta o papperdoll
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    if (beard)
+        GFGumpPic(gump, 63+265, 120, chardata.beard, beard.color-1);
+    endif
+    if (hair)
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+    GFTextMid(gump, 15, 20, 770, 1153, "Selecione a Cor do Cabelo");
+
+    var color_cfg := ReadConfigFile(":hair:config/hairColors");
+    var index_elem := GetColorIndexElem(color_cfg, chardata);
+    var categories := GetConfigStringArray(index_elem, "Category");
+
+    const COLORS_PER_PAGE := 15;
+    var totalColors := 0;
+    var allColors := array{};
+
+    foreach category in categories
+        var category_elem := color_cfg[category];
+        var colors := GetConfigStringArray(category_elem, "Color");
+        foreach color in colors
+            allColors.append(struct{ "color" := color, "category" := category });
+        endforeach
+    endforeach
+
+    totalColors := allColors.size();
+    var totalPages := Ceil(totalColors / COLORS_PER_PAGE);
+
+    var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
+    var end := Min(start + COLORS_PER_PAGE - 1, totalColors);
+
+    var y_pos := 50;
+    for i := start to end
+        var colorData := allColors[i];
+        var color := CInt(colorData.color);
+        var category := colorData.category;
+
+        GFAddButton(gump, 154, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        GFHTMLArea(gump, 33, y_pos + 2, 122, 20, "", 1, 0);
+        GFTextLine(gump, 40, y_pos + 4, color, category);
+        y_pos += 20;
+    endfor
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 135, 480, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 75, 480, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    // Adicionar botão de fechar
+    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetColorIndexElem(color_cfg, chardata)
+    var cultura := chardata.culture;
+    var raca := chardata.raca;
+
+    if (cultura == "Björska")
+        return color_cfg["Bjorska"];
+    elseif (raca == "Orc")
+        return color_cfg["Orc"];
+    elseif (raca == "Drow")
+        return color_cfg["Drow"];
+    elseif (raca == "Elfo")
+        return color_cfg["Elfo"];
+    elseif (raca == "Anão")
+        return color_cfg["Anao"];
+    elseif (raca == "Qualquer")
+        return color_cfg["Index"];
+    else
+        return color_cfg["Imperial"];
+    endif
+endfunction
+
+function UpdateCharacterHair(who, chardata)
+    if (chardata.hair_item)
+        var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+        if (hair)
+            hair.color := chardata.hair_color;
+        else
+            var new_hair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
+            new_hair.color := chardata.hair_color;
+            EquipItem(who, new_hair);
+        endif
+    endif
+
+    if (chardata.beard_item)
+        var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+        if (beard)
+            beard.color := chardata.beard_color;
+        else
+            var new_beard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
+            new_beard.color := chardata.beard_color;
+            EquipItem(who, new_beard);
+        endif
+    endif
+endfunction
