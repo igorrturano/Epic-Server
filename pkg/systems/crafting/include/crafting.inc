@@ -304,6 +304,7 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 			theitem.newbie := 1;
 			setobjproperty(theitem, "serialid", who.serial);
 			setobjproperty(theitem, "marked",who.name + " - " + who.acctname);
+			setobjproperty(theitem, "material", chosenPrincipalMaterial); // adicionando a prop de material ao obj criado
 			Print("Depois:"+objtype);
 			endif
 
@@ -404,13 +405,20 @@ function CreateItem(who, objtype, material, more:=0)
 	var elem := FindConfigElem(cfg, "stacks");
 	var stackingitens:=ListConfigElemProps( elem );
 	if(cstr(objtype) in stackingitens)
-		var stacknow := FindObjtypeInContainer( who.backpack, objtype );
-		if (objtype == 0x1bd4 || objtype == 0x9087) //Pontas e shafts
+		if (objtype == 0x1bd4 || objtype == 0x9087) //Pontas e shafts fazem de 10 em 10
 			more := more + 9;
 		endif
-		if ( stacknow )
-			AddAmount (stacknow, 1+more);
-			theitem := stacknow;
+		var itemfound := FindObjtypeInContainer( who.backpack, objtype ); // procurou na bp e achou o mesmo objeto lá dentro
+		if ( itemfound )
+			if(GetObjProperty(itemfound, "material")) // se existir a prop material
+				var itemfoundmaterial := GetObjProperty(itemfound, "material"); // pega o material do item
+				if (material == itemfoundmaterial) //se o material do objeto sendo criado for o mesmo do objeto encontrado na bp
+					AddAmount (itemfound, 1+more);
+					theitem := itemfound;
+				else
+					theitem := CreateItemInBackpack(who, objtype, 1+more); // cria sem fazer stack
+			else
+				theitem := CreateItemInBackpack(who, objtype, 1+more); // cria sem fazer stack
 		else
 			theitem := CreateItemInBackpack(who, objtype, 1+more);
 		endif
