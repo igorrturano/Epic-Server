@@ -404,26 +404,31 @@ function CreateItem(who, objtype, material, more:=0)
 	var cfg:=ReadConfigFile(":crafting:stackingitens");
 	var elem := FindConfigElem(cfg, "stacks");
 	var stackingitens:=ListConfigElemProps( elem );
+	var stacknow := 0; //usado se a gente encontrar um item com mesmo material pra dar o stack
+
 	if(cstr(objtype) in stackingitens)
 		if (objtype == 0x1bd4 || objtype == 0x9087) //Pontas e shafts fazem de 10 em 10
 			more := more + 9;
 		endif
-		var itemfound := FindObjtypeInContainer( who.backpack, objtype ); // procurou na bp e achou o mesmo objeto lá dentro
-		if ( itemfound )
-			if(GetObjProperty(itemfound, "material")) // se existir a prop material
-				var itemfoundmaterial := GetObjProperty(itemfound, "material"); // pega o material do item
-				if (material == itemfoundmaterial) //se o material do objeto sendo criado for o mesmo do objeto encontrado na bp
-					AddAmount (itemfound, 1+more);
-					theitem := itemfound;
-				else
-					theitem := CreateItemInBackpack(who, objtype, 1+more); // cria sem fazer stack
-			else
-				theitem := CreateItemInBackpack(who, objtype, 1+more); // cria sem fazer stack
+
+		// Encontrar todos os itens do mesmo tipo na mochila
+        var potential_stacks := EnumerateItemsInContainer(who.backpack, objtype);
+
+		foreach iteminbackpack in (potential_stacks)
+            // Verificar se o material é o mesmo
+            if(GetObjProperty(iteminbackpack, "material") == material)
+                stacknow := iteminbackpack;
+                break;
+            endif
+        endforeach
+		if ( stacknow )
+			AddAmount(stacknow, 1+more); // cria o item fazendo stack pro mesmo material
+			theitem := stacknow;
 		else
-			theitem := CreateItemInBackpack(who, objtype, 1+more);
+			theitem := CreateItemInBackpack(who, objtype, 1+more); // cria o item sem fazer stack
 		endif
 	else
-		theitem := CreateItemInBackpack(who, objtype, 1+more);
+		theitem := CreateItemInBackpack(who, objtype, 1+more); // cria o item sem fazer stack
 	endif
 	return theitem;
 endfunction
