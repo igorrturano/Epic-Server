@@ -1824,17 +1824,115 @@ function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
     return totalPages;
 endfunction
 
+function beardSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GfCreateGump();
+    var x := 63;
+    var y := 115; // Deslocado um pouco para baixo em relação ao cabelo
+    GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua barba", 0, 0); //shadow
+    GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha sua barba", 0, 0);
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var beardConfig := (chardata.raca == ANAO) ? config["dwarwen_beard"] : config["beard"];
+    var beardStyles := GetConfigStringArray(beardConfig, "Style");
+    
+    RenderBeardStyles(gump, beardStyles, chardata, currentPage);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
+    return GFSendGump(who, gump);
+endfunction
+
+function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage)
+    const BEARDS_PER_PAGE := 6;
+    const BEARDS_PER_ROW := 2;
+    
+    var totalPages := Ceil(beardStyles.size() / BEARDS_PER_PAGE);
+    var start := (currentPage - 1) * BEARDS_PER_PAGE + 1;
+    var end := Min(start + BEARDS_PER_PAGE - 1, beardStyles.size());
+
+    for i := start to end
+        var style := SplitWords(beardStyles[i]);
+        var beardname := style[1];
+        var beardgraphic := CInt(style[2]);
+        var gumppic := CInt(style[3]);
+        
+        var col := (i - start) % BEARDS_PER_ROW;
+        var row := (i - start) / BEARDS_PER_ROW;
+        var x_pos := 63 + (col * 119);
+        var y_pos := 75 + (row * 141); // Ajustado para ficar um pouco abaixo do cabelo
+        
+        GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+        GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, beardname);
+        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+        GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
+    endfor
+
+    if (chardata.beard != "")
+        GFGumpPic(gump, 63+265, 120, chardata.beard); // Ajustado para ficar um pouco abaixo do cabelo
+    endif
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 185, 480, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 125, 480, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    return totalPages;
+endfunction
+
+
+
+function GetBeardGumpGraphic(beardID)
+    case (beardID)
+        0: return 0; // Sem barba
+        8268: return 50905; // Long_Beard_&_Must.
+        8254: return 50801; // Long_Beard
+        8267: return 50904; // Short_Beard_&_Must.
+        8255: return 50802; // Short_Beard
+        8269: return 50906; // Vandyke
+        8256: return 50800; // Goatee
+        8257: return 50803; // Mustache
+        41384: return 51451; // Lumberjack
+        41385: return 51452; // Handlebar
+        41386: return 51453; // Braids
+        41387: return 51454; // Costeletas
+        51583: return 52129; // BarbaLongaMalFeita
+        51584: return 52130; // BarbaMuitoLongaEmaranhada
+        51585: return 52131; // BarbaLongaEncaracolada
+        51586: return 52132; // BarbaMuitoLonga
+        51587: return 52133; // BarbaLongaPontuda
+        51588: return 52134; // BarbaRabodeCavalo
+        51589: return 52135; // BarbaLongaGrandeTranca
+        51627: return 52174; // BigodeLongo
+        51628: return 52174; // BigodeCurto
+        // Adicione aqui os casos para as barbas anãs
+        default: return 50800; // Gráfico padrão (Goatee)
+    endcase
+endfunction
+
+
 function GetPaperdollBackground(graphic)
     var result := 0x0E10; // Valor padrão
     case (graphic)
         400:  result := 0xC; // Male
         401:  result := 0xD; // Female
-        1828: result := 0x0E10; // Anão F
-        1829: result := 0x0E10; // Anão M
+        1828: result := 54563; // Anão F
+        1829: result := 54562; // Anão M
         1830: result := 0xE; // Elfo M
         1831: result := 0xF; // Elfo F
-        1832: result := 0x0E10; // Orc M
-        1833: result := 0x0E10; // Orc F
+        1832: result := 54596; // Orc M
+        1833: result := 54595; // Orc F
+        1834: result := 54534; // Polski M
+        1835: result := 54533; // Polski F
     endcase
     return result;
 endfunction
