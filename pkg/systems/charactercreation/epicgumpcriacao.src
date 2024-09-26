@@ -555,23 +555,35 @@ endfunction
 
 function looksSelection(who)
     var chardata := GetObjProperty(who, "chardata");
-    var input := hairSelectionGump(who, chardata);
     var btn_value;
-    foreach key in (input.keys)
-        btn_value := key;
-    endforeach
+    var currentPage := 1;
+    var totalPages;
+    chardata.+hair := "";
 
-    if (btn_value == 201)  
-        chardata.+hair := "Cabelo 1";
-    elseif (btn_value == 202) 
-        chardata.+hair := "Cabelo 2";
-    elseif (btn_value == 203)
-        chardata.+hair := "Cabelo 3";
-    endif
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := config["todos"];
+    var hairStyles :=  GetConfigStringArray(hair, "Style");
+
+    while (1)
+        var input := hairSelectionGump(who, chardata, hairStyles, currentPage);
+        btn_value := input[0];
+        print("btn_value: " + btn_value);
+
+        if (btn_value == 1001)  // Next page
+            currentPage := Min(currentPage + 1, totalPages);
+        elseif (btn_value == 1002)  // Previous page
+            currentPage := Max(currentPage - 1, 1);
+        elseif (btn_value != 500)
+            chardata.hair := GetHairGumpGraphic(btn_value);
+        else 
+            break;
+        endif
+    endwhile
+
 	// if (chardata.raca != ELFO && chardata.raca != DROW)
 	// 	appearances.append("Barba");
 	// endif
-
     SetObjProperty(who, "chardata", chardata);
 endfunction
 

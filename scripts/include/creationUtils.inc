@@ -171,11 +171,9 @@ function getCraftCultureByPictureId(culture_id)
             return "Leste";
     endcase
 endfunction
-
+var next_btn := array{"9903", "9904"};
+var prev_btn := array{"9909", "9910"};
 function CultureGump(who, culture_pic)
-    var next_btn := array{"9903", "9904"};
-    var prev_btn := array{"9909", "9910"};
-
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     GFGumpPic(gump, 17, 31, 0x9E6);
@@ -1666,7 +1664,6 @@ function GetSignPicture(sign)
     endcase
 endfunction
 
-
 function birthDaySelection(who)
     var chardata := GetObjProperty(who, "chardata");
     if (!chardata.birthdate)
@@ -1762,42 +1759,79 @@ function getDayFromPictureId(day_pic)
     return (day_pic - 0x1000) + 1;
 endfunction
 
-function hairSelectionGump(who, byref chardata)
-	var gump := GfCreateGump();
+function hairSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GfCreateGump();
     var x := 63;
     var y := 100;
     GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu cabelo", 0, 0); //shadow
     GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu cabelo", 0, 0);
 
-	GFGumpPic(gump, 17, 31, 0x9E6);
-	GFResizePic(gump, 298, 100, 2620, 250, 400);
-	GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
 
-	var i := 1;
-    // UnloadConfigFile(":fls_core:config/hairtypes");
-	var config := ReadConfigFile(":fls_core:config/hairtypes");
-	var hair := config["todos"];
-	// 	GFGumpPic(gump, x_pos+135, y_pos-45, gumppic);
-	foreach style in GetConfigStringArray(hair, "Style")
-        hair := splitwords(style);
-		var hairname := hair[1];
-        print("hairname: " + hairname);
-		var hairgraphic := cint(hair[2]);
-        print("hairgraphic: " + hairgraphic);
-        var hair_pic := cint(hair[3]);
-        print("gumppic"+cint(hair[3]));
-        var color := "#000000";
-        // GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, hairgraphic), 1, 0);
-        // GFGumpPic(gump, x, y, hair_pic);
-        GFAddImageTileButton(gump, x+201, y, 0x9C4E, 0x9C4F, GF_PAGE_BTN, 200+i, hair_pic, 0, 40, 40 );
-        // GFAddButton(gump, x+201, y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, 200+i);
-        sleepms(2);
-        y += 26;
-        i++;
-    endforeach
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := config["todos"];
+    RenderHairStyles(who, gump, GetConfigStringArray(hair, "Style"), chardata, currentPage);
 
-    // GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
     return GFSendGump(who, gump);
+endfunction
+
+function RenderHairStyles(who, byref gump, hairStyles, chardata, currentPage := 1)
+    const HAIRS_PER_PAGE := 6;
+    const HAIRS_PER_ROW := 2;
+    
+    var pages := Ceil(hairStyles.size() / HAIRS_PER_PAGE);
+
+    GFPage(gump, 1);
+    
+    var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
+    var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
+    var row := 0;
+    var col := 0;
+
+    GFPage(gump, currentPage);
+
+    for i := start to end
+        var style := SplitWords(hairStyles[i]);
+        var hairname := style[1];
+        var hairgraphic := CInt(style[2]);
+        var gumppic := CInt(style[3]);
+        
+        var x_pos := 63 + (col * 119);
+        var y_pos := 60 + (row * 141);
+        
+        GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+        GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname);
+        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        GFGumpPic(gump, x_pos-40, y_pos-25, gumppic);
+
+        col += 1;
+        if (col >= HAIRS_PER_ROW)
+            col := 0;
+            row += 1;
+        endif
+    endfor
+
+    if (chardata.hair != "")
+        GFGumpPic(gump, 63+265, 120, chardata.hair);
+    endif
+
+    // Add navigation buttons
+    if (pages > 1)
+        if (currentPage < pages)
+            GFAddButton(gump, 185, 480, next_btn[1], next_btn[2], GF_PAGE_BTN, currentPage + 1); // Next page
+        endif
+        GFPage(gump, currentPage);
+        if (currentPage > 1)
+            GFAddButton(gump, 125, 480, prev_btn[1], prev_btn[2], GF_PAGE_BTN, currentPage - 1); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + pages);
+    endif
+
+    return currentPage;
 endfunction
 
 function GetPaperdollBackground(graphic)
@@ -1814,3 +1848,86 @@ function GetPaperdollBackground(graphic)
     endcase
     return result;
 endfunction
+
+function GetHairGumpGraphic(hairID)
+    case (hairID)
+        0: return 0; // Careca
+        8252: return 50701; // Long_Hair
+        8265: return 50902; // Braids
+        8253: return 50702; // Pony_Tail
+        8263: return 50900; // Afro
+        8261: return 50710; // Pageboy
+        8262: return 50712; // Buns
+        8251: return 50700; // Short_Hair
+        8266: return 50903; // Top_Knot
+        8264: return 50901; // Receeding
+        8260: return 50703; // Mohawk
+        12223: return 50916; // Mid_Long
+        12224: return 50917; // Long_Feather
+        12225: return 50918; // Short
+        12226: return 50919; // Mullet
+        12236: return 50890; // Flower
+        12238: return 50892; // Big_Knob
+        12239: return 50893; // Big_Braid
+        12240: return 50894; // Big_Bun
+        12241: return 50895; // Spiked
+        41380: return 51447; // Bedhead
+        41381: return 50900; // Afro (duplicado, usando o mesmo gráfico)
+        41382: return 51449; // Monge
+        41383: return 51450; // Topete
+        41388: return 51455; // LongBraid
+        41389: return 51456; // Dread
+        41390: return 51457; // Pigtail
+        41391: return 51458; // Leia
+        41392: return 51459; // Franja
+        41393: return 51460; // Spikes
+        41394: return 51461; // Longo2
+        41395: return 51462; // Longo3
+        41396: return 51463; // Side
+        41397: return 51464; // Wavy
+        41398: return 51465; // Braids2
+        41399: return 51466; // NeckWrap
+        51629: return 52175; // MoicanoDeLado
+        51630: return 52176; // MoicanoAlto
+        51631: return 52177; // MoicanoLongo
+        51632: return 52178; // TopknotForte
+        51633: return 52179; // cabeloplantalongo
+        51634: return 52180; // cabeloplantacurto
+        51635: return 52181; // cabeloplantagalho
+        51636: return 52182; // calvaocrialongo
+        51637: return 52183; // calvaocriacurto
+        51638: return 52184; // cabeloplantachifverd
+        51639: return 52185; // CoqueLongo
+        51640: return 52186; // CoqueCurto
+        51641: return 52187; // CoqueLivre
+        51642: return 52188; // CoqueTrabalhado
+        51643: return 52189; // CoqueLateral1
+        51644: return 52190; // CoqueLateral2
+        51645: return 52191; // CoqueSamurai1
+        51646: return 52192; // CoqueSamurai2
+        51647: return 52193; // CoqueSamurai3
+        51648: return 52194; // CoqueSamurai4
+        51649: return 52195; // coque1
+        51650: return 52196; // coque2
+        51651: return 52197; // coque3
+        51652: return 52198; // coque4
+        51653: return 52199; // coque5
+        51654: return 52200; // coque6
+        51655: return 52201; // coque7
+        51656: return 52202; // coque8
+        51657: return 52203; // coque9
+        51658: return 52204; // coque10
+        51659: return 52205; // coque11
+        51660: return 52206; // CoqueLongo2
+        51661: return 52207; // CoqueLongo3
+        51662: return 52208; // Coquelongo4
+        51663: return 52209; // CoqueLongo5
+        51664: return 52210; // CoqueLongo6
+        51665: return 52211; // CoqueLongo7
+        51666: return 52212; // CoqueLongo8
+        51667: return 52213; // CoqueLongo9
+        default: return 50700; // Gráfico padrão (Short_Hair)
+    endcase
+endfunction
+
+
