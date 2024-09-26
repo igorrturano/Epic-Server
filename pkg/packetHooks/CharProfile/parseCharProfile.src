@@ -31,44 +31,50 @@ CONST OFFSET_CMDTYPE := 8;
 CONST OFFSET_NEW_PROFILE_TEXTLEN := 10;
 CONST OFFSET_NEW_PROFILE := 12;
 
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 395;
+const GUMP_HEIGHT := 340;
+const TEXT_ENTRY_BACKGROUND := 2620;
+
 program runScript_CharProfileRequest( params )
 	var who := params[1];
 	var packet := params[2];
-	var mode := packet.GetInt8(OFFSET_MODE); //mode 0 for request, 1 for update
-	var id := packet.GetInt32(OFFSET_SERIAL_IN);  //serial of requested profile
+	var mode := packet.GetInt8(OFFSET_MODE);
+	var id := packet.GetInt32(OFFSET_SERIAL_IN);
 	var chr := SystemFindObjectBySerial(id);
 
-	if(chr.serial == who.serial) //Verifica se o jogador clicou no profile dele ou de outro jogador.
+	if(chr.serial == who.serial)
 		if(who.name == "Desconhecido" || who.name == "Incognito")
 			SendSysMessage(who, "Voce esta incognito");
 			return;
 		endif
 
-		var gump := GFCreateGump(0, 0, 640, 480);
+		var gump := GFCreateGump(0, 0, GUMP_WIDTH, GUMP_HEIGHT);
 		GFDisposable(gump, 0);
-		GFResizePic(gump, 0, 0, 9200, 342, 319);
+		GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
+		AddMoldura(gump);
 
-		GFTextLine(gump, 8, 11, 500, "Profile URL:");
-		GFResizePic(gump, 11, 34, 9270, 308, 55);
+		GFTextMid(gump, 60, 20, 300, 53, "Editar Perfil: " + who.name);
 
+		GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 200x200):");
+		GFResizePic(gump, 40, 80, TEXT_ENTRY_BACKGROUND, 320, 25);
 		var url_txt :=  GetObjProperty(who, "url");
-		if( url_txt == error || url_txt == "") //Se não tiver a url ou descrição, deixa em branco
+		if( url_txt == error || url_txt == "")
 			url_txt := "";
 		endif
-		var txt_1 := GFTextEntry(gump, 10, 36, 311, 53, 500, url_txt, 0);
+		var txt_1 := GFTextEntry(gump, 45, 82, 310, 20, 2100, url_txt, 0);
 
-		GFTextLine(gump, 9, 98, 500, "Descrição:");
-		GFResizePic(gump, 10, 123, 9270, 308, 141);
-
+		GFTextLine(gump, 40, 115, 1153, "Descrição:");
+		GFResizePic(gump, 40, 135, TEXT_ENTRY_BACKGROUND, 320, 120);
 		var descricao_txt := GetObjProperty(who, "descricao");
 		if( !descricao_txt)
 			descricao_txt := "";
 		endif
-		var txt_2 := 	GFTextEntry(gump, 13, 123, 302, 143,500, descricao_txt, 0);
+		var txt_2 := GFTextEntry(gump, 45, 137, 310, 115, 2100, descricao_txt, 0);
 
-		var okay_btn := GFAddButton(gump, 260, 283, 247, 248, GF_CLOSE_BTN);
-		CONST CANCEL_BTN := 0x5000;
-		GFAddButton(gump, 190, 283, 241, 243, GF_CLOSE_BTN, CANCEL_BTN);
+		var okay_btn := GFAddButton(gump, (GUMP_WIDTH / 2) - 30, GUMP_HEIGHT - 40, 2128, 2129, GF_CLOSE_BTN);
+
 
 		var input := GFSendGump(who, gump);
 		if ( input[0] <= 1 )
@@ -81,7 +87,7 @@ program runScript_CharProfileRequest( params )
 			var descricao := GFExtractData(input, txt_2);
 
 			SendSysMessage(who, url + " " + descricao);
-			If(url == error || url == "")//Default profile picture
+			If(url == error || url == "")
 				url := "https://media.discordapp.net/attachments/621351501511524353/1186245051953725450/image.png";
 			endif
 			SetObjProperty( who, "url", url);
@@ -90,13 +96,12 @@ program runScript_CharProfileRequest( params )
 			var Object_Name;
 			var conhecidos := dictionary;
 			if(GetObjProperty(who, "conhecidos"))
-
-				var ID := Cstr(chr.serial); //Salva o serial do personagem
+				var ID := Cstr(chr.serial);
 				if(GetObjProperty(chr, "disfarce"))
-					ID := Cstr(GetObjProperty(chr, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+					ID := Cstr(GetObjProperty(chr, "FakeID"));
 				endif
 
-				conhecidos := GetObjProperty(who, "conhecidos"); //Lista de pessoas conhecidadas
+				conhecidos := GetObjProperty(who, "conhecidos");
 				if(conhecidos.Exists(ID))
 					Object_Name := conhecidos[ID];
 				else
@@ -106,29 +111,29 @@ program runScript_CharProfileRequest( params )
 				Object_Name := chr.name;
 			endif
 
-			//Cria o Gump de Profile
 			var gump := GFCreateGump();
-
-			//Gump
 			GFPage(gump, 0);
-			
-			//Background
 			GFResizePic(gump, 4, 3, 9270, 267, 383);
-			
-			//Profile Picture
 			GFHTMLArea(gump, 37, 41, 200, 200,"<img src=\"" + url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			
-			//Description
 			GFHTMLArea(gump, 20, 273, 236, 100, descricao, 1, 1);
-			
-			//Name
 			GFHTMLArea(gump, 16, 14, 239, 24, Object_Name, 1, 0);
 			
-			//Race
-			GFHTMLArea(gump, 19, 245, 239, 24, GetObjProperty(who, "raca"), 1, 0);
+			var raca := GetObjProperty(who, "raca");
+			if (raca == error)
+				raca := "Desconhecida";
+			else
+				case (raca)
+					"humano": raca := "Humano";
+					"elfo":   raca := "Elfo";
+					"hobbit": raca := "Hobbit";
+					"anao":   raca := "Anão";
+					"drow":   raca := "Drow";
+					default:  raca := "Desconhecida";
+				endcase
+			endif
+			GFHTMLArea(gump, 19, 245, 239, 24, raca, 1, 0);
 
 			GFSendGump(who, gump);
-
 		endif
 	elseif (chr.serial != who.serial)
 		var isIncognito := GetObjProperty(chr, "Incognito");
@@ -137,40 +142,24 @@ program runScript_CharProfileRequest( params )
 			var incognito_descricao := "A fisionomia desse indvíduo é difícil de discernir.";
 			
 			var gump2 := GFCreateGump();
-
-			//Gump
 			GFPage(gump2, 0);
-			
-			//Background
 			GFResizePic(gump2, 4, 3, 9270, 267, 383);
-			
-			//Profile Picture
 			GFHTMLArea(gump2, 37, 41, 200, 200,"<img src=\"" + incognito_url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			
-			//Description
 			GFHTMLArea(gump2, 20, 273, 236, 100, incognito_descricao, 1, 1);
-			
-			//Name
 			GFHTMLArea(gump2, 16, 14, 239, 24, "Incognito", 1, 0);
-			
-			//Race
 			GFHTMLArea(gump2, 19, 245, 239, 24, "Desconhecido", 1, 0);
 
 			GFSendGump(who, gump2);
 		else
-			//who - personagem clicando
-			//chr - personagem clicado
-
 			var Object_Name;
 			var conhecidos := dictionary;
 			if(GetObjProperty(who, "conhecidos"))
-
-				var ID := Cstr(chr.serial); //Salva o serial do personagem
+				var ID := Cstr(chr.serial);
 				if(GetObjProperty(chr, "disfarce"))
-					ID := Cstr(GetObjProperty(chr, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
+					ID := Cstr(GetObjProperty(chr, "FakeID"));
 				endif
 
-				conhecidos := GetObjProperty(who, "conhecidos"); //Lista de pessoas conhecidadas
+				conhecidos := GetObjProperty(who, "conhecidos");
 				if(conhecidos.Exists(ID))
 					Object_Name := conhecidos[ID];
 				else
@@ -181,35 +170,31 @@ program runScript_CharProfileRequest( params )
 			endif
 			
 			var gump2 := GFCreateGump();
-
-			//Gump
 			GFPage(gump2, 0);
-			
-			//Background
 			GFResizePic(gump2, 4, 3, 9270, 267, 383);
-			
-			//Profile Picture
 			GFHTMLArea(gump2, 37, 41, 200, 200,"<img src=\"" + GetObjProperty(chr, "url") + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			
-			//Description
 			GFHTMLArea(gump2, 20, 273, 236, 100, GetObjProperty(chr, "descricao"), 1, 1);
-			
-			//Name
 			GFHTMLArea(gump2, 16, 14, 239, 24, Object_Name, 1, 0);
 			
-			//Race
-			GFHTMLArea(gump2, 19, 245, 239, 24, GetObjProperty(chr, "raca"), 1, 0);
+			var raca := GetObjProperty(chr, "raca");
+			if (raca == error)
+				raca := "Desconhecida";
+			endif
+			GFHTMLArea(gump2, 19, 245, 239, 24, raca, 1, 0);
 
 			GFSendGump(who, gump2);
 
-
-			if(who.hidden || who.concealed)//Determina se está hidden e mostra a mensagem de estar sendo observado
+			if(who.hidden || who.concealed)
 				return;
 			else
 				PrintTextAbovePrivate(who, "*" + who.name + " esta observando voce*", chr, 3, 568);
 			endif
 		endif
 	endif
+	
+
+
+
 
 // <img src="https://cdn.discordapp.com/attachments/811749265143234617/813042478696366100/2Q.png"  width:200 height:200 align:right> Hannah Black <br><br> Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
 
@@ -284,3 +269,20 @@ program runScript_CharProfileRequest( params )
 	return 1;
 
 endprogram
+
+function AddMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction

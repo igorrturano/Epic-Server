@@ -1,0 +1,96 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 395;
+const GUMP_HEIGHT := 340;  // Aumentado ligeiramente para acomodar a área de descrição maior
+const TEXT_ENTRY_BACKGROUND := 2620;
+
+program GMSetNPCProfile(who)
+    if (who.cmdlevel < 3)
+        SendSysMessage(who, "Voce nao tem permissao para usar este comando.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o NPC para editar o perfil.");
+    var targ := Target(who);
+    if (!targ || !targ.IsA(POLCLASS_NPC))
+        SendSysMessage(who, "Você deve selecionar um NPC válido.");
+        return 0;
+    endif
+
+    var gump := CreateBaseGump();
+    
+    GFTextMid(gump, 60, 20, 300, 53, "Editar Perfil de NPC: " + targ.name);
+    
+    // URL da Imagem
+    GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 200x200):");
+    GFResizePic(gump, 40, 80, TEXT_ENTRY_BACKGROUND, 320, 25);
+    var url_txt := GFTextEntry(gump, 45, 82, 310, 20, 2100, GetObjProperty(targ, "url"));
+
+// Descrição (inicializada vazia)
+    var descricao := "";
+    GFTextLine(gump, 40, 115, 1153, "Descrição:");
+    GFResizePic(gump, 40, 135, TEXT_ENTRY_BACKGROUND, 320, 120);
+    var desc_txt := GFTextEntry(gump, 45, 137, 310, 115, 2100, descricao);
+
+    // Botão Salvar no meio
+    GFAddButton(gump, (GUMP_WIDTH / 2) - 30, GUMP_HEIGHT - 40, 2128, 2129, GF_CLOSE_BTN, 1);
+
+
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 1) // Se o botão Salvar foi pressionado
+        var url := GFExtractData(input, url_txt);
+        var descricao := GFExtractData(input, desc_txt);
+
+        if (url == error || url == "")
+            url := "https://media.discordapp.net/attachments/621351501511524353/1186245051953725450/image.png";
+        endif
+        
+        SetObjProperty(targ, "url", url);
+        SetObjProperty(targ, "descricao", descricao);
+
+        SendSysMessage(who, "Perfil do NPC " + targ.name + " atualizado com sucesso.");
+    else
+        SendSysMessage(who, "Edição de perfil cancelada.");
+    endif
+
+    return 1;
+endprogram
+
+function CreateBaseGump()
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
+    AddMoldura(gump);
+    
+    return gump;
+endfunction
+
+function AddMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
