@@ -33,14 +33,22 @@ include ":combat:armorZones";
  * and remove existing ones more easily.
  */
 enum DAMAGE_TYPES
-	DMG_FORCED	:= -1, // Ignores resistance
+	DMG_FORCED		:= -1, // Ignores resistance
 	DMG_PHYSICAL	:= "Physical",
-	DMG_FIRE	:= "Fire",
-	DMG_COLD	:= "Cold",
-	DMG_POISON	:= "Poison",
-	DMG_ENERGY	:= "Energy"
+	
+	DMG_SLASH		:= "Slash",
+	DMG_PIERCING	:= "Piercing",
+	DMG_BLUNT		:= "Blunt",
+
+	DMG_FIRE		:= "Fire",
+	DMG_COLD		:= "Cold",
+	DMG_POISON		:= "Poison",
+	DMG_ENERGY		:= "Energy"
 endenum
 
+enum DAMAGE_HAND
+	DAMAGE_MAINHAND, DAMAGE_OFFHAND
+endenum
 
 function HealFLS(targ, amt)
 	if (!GEtObjProperty(targ, "nocure"))
@@ -223,7 +231,7 @@ function CalculateTotalDamage(defender, basedamage, attacker, dmglist := 0)
 	return CInt(damage);
 endfunction
 
-function CalculateRawDamage(attacker, weapon)
+function CalculateRawDamage(attacker, weapon, weaponhand := DAMAGE_MAINHAND)
 	var dmg;
 
 	if (attacker.npctemplate)
@@ -236,8 +244,10 @@ function CalculateRawDamage(attacker, weapon)
 		var weaponelem := FindConfigElem(weaponcfg, weapon.objtype);
 		if (GetObjProperty(attacker, "metamorfose") != error)
       		dmg := RandomDiceRoll(GetObjProperty(attacker, "dicedmg"));
-		elseif(GetObjProperty(attacker, "pilotando") != error)
+		elseif (GetObjProperty(attacker, "pilotando") != error)
 			dmg := RandomDiceRoll(GetObjProperty(attacker, "dicedmg"));
+		elseif (weaponhand == DAMAGE_OFFHAND)
+			dmg := RandomDiceRoll(CStr(weaponelem.OffHandDamage));
 		else
     		dmg := RandomDiceRoll(CStr(weaponelem.Damage));
     	endif
@@ -349,8 +359,7 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 		endforeach
 	endif
 
-	DebugMsg(source, DEBUG_NAME_DAMAGE, "Dano Final: {}({} - {})".format(totaldmg, dmg, (dmg-totaldmg)));
-  	DisplayDamage(defender, totaldmg, source);
+	DisplayDamage(defender, totaldmg, source);
 	ApplyRawDamage(defender, totaldmg);
 
 	if (isBloodied(defender))
@@ -377,7 +386,7 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 endfunction
 
 /**
- * DamageFLSCombat(attacker, defender, armor, damage, type)
+ * DamageEpicCombat(attacker, defender, armor, damage, type)
  *
  * Purpose
  * Criado para modificar a aplicação de dano do combate sem influenciar nas demais aplicações de dano do shard.
@@ -393,11 +402,10 @@ endfunction
  * Return value
  *
  */
-function DamageFLSCombat(attacker, defender, armor, damage, type)
+function DamageEpicCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
 	var totaldamage := CalculateDamageCombat(attacker, defender, armor, damage, type);
 
-	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
 
 	var regiao := CS_GetArmorZone(armor);
 	if (regiao == error)
@@ -407,6 +415,8 @@ function DamageFLSCombat(attacker, defender, armor, damage, type)
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {damage-totaldamage}");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {totaldamage}({damage} - {damage-totaldamage})");
+
+	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage);
