@@ -81,21 +81,25 @@ function OpenAICompletion(systemMessage, questions)
 	} };
 
 	foreach question in questions
-		if (typeof(question) != "Struct" || (!question.exists("assistant") && !question.exists("user")))
-			return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
+		if (typeof(question) != "Struct")
+			return struct{ "error" := "This must be an Struct" };
+		else
+			if (!question.assistant && !question.user)
+				return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
+			endif
 		endif
 
-		if (question.exists("assistant"))
+		if (question.assistant)
 			formatedQuestions.append(struct{
 				"role" := "assistant",
-				"content" := question["assistant"]
+				"content" := question.assistant
 			});
 		endif
 
-		if (question.exists("user"))
+		if (question.user)
 			formatedQuestions.append(struct{
 				"role" := "user",
-				"content" := question["user"]
+				"content" := question.user
 			});
 		endif
 	endforeach
