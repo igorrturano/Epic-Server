@@ -7,276 +7,271 @@ include "include/arrays";
 include ":fls_core:fls_characters";
 
 function FLHairDye(who, byref new_look)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    GFGumpPic(gump, 17, 31, 0x9E6);
 
-	var skingump := GFCreateGump();
-	GFResizePic(skingump, 0, 0, 3600, 300, 420);
-	GFResizePic(skingump, 15, 15, 0x13BE, 270, 390);
+    GFHTMLArea(gump, 346, 56, 192, 40, "<BASEFONT Size=55 Color=#999999>Escolha a Cor do Cabelo", 0, 0);
+    GFHTMLArea(gump, 345, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Escolha a Cor do Cabelo", 0, 0);
 
-	GFTextMid(skingump, 15, 25, 270, 1890, "Escolha a Cor do Cabelo");
-	GFAddButton(skingump, 220, 370, 2128, 2129, 1, OK_BUTTON);
+    var skin_cfg := ReadConfigFile(":fls_core:config/racas");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not open :fls_core:config/racas.cfg -> "+skin_cfg.errortext);
+        return;
+    endif
+    skin_cfg := skin_cfg[cstr(GetObjProperty(who, "raca"))];
 
-	var skin_cfg := ReadConfigFile(":fls_core:config/racas");
-	if ( !skin_cfg )
-		SendSysMessage(who, "Error: Could not open :fls_core:config/racas.cfg -> "+skin_cfg.errortext);
-	endif
-	skin_cfg := skin_cfg[cstr(GetObjProperty(who, "raca"))];
+    // Adicionar uma imagem central representativa (se disponível)
+    GFGumpPic(gump, 298, 100, 0x2050); // Substitua 0x2050 pelo ID da imagem apropriada
 
-	GFPage(skingump, 1);
+    var y_pos := 200;
+    var x_pos := 100;
+    var place := 1;
+    var page_num := 1;
+    GFPage(gump, page_num);
 
-	var y_pos := 60;
-	var x_pos := 20;
-	var place := 1;
-	var page_num := 1;
-	var line := 1;
-	foreach color in GetConfigStringArray(skin_cfg, "HairColor");
-		color := CInt(color);
-		if (color == new_look.SkinColor)
-			GFRadioButton(skingump, x_pos, y_pos, 9727, 9730, 1, color);
-		else
-			GFRadioButton(skingump, x_pos, y_pos, 9727, 9730, 0, color);
-		endif
+    foreach color in GetConfigStringArray(skin_cfg, "HairColor")
+        color := CInt(color);
+        if (color == new_look.HairColor)
+            GFRadioButton(gump, x_pos, y_pos, 0x9C4F, 0x9C4E, 1, color);
+        else
+            GFRadioButton(gump, x_pos, y_pos, 0x9C4E, 0x9C4F, 0, color);
+        endif
 
-		GFTextline(skingump, x_pos+35, y_pos+5, color-1, "Hair");
+        GFTextline(gump, x_pos+35, y_pos, color-1, "Hair");
 
-		if (place < 3)
-			x_pos := x_pos+80;
-			place := place+1;
-		else
-			place := 1;
-			x_pos := 20;
-			y_pos := y_pos+30;
+        if (place % 2 == 0)
+            x_pos := 100;
+            y_pos += 30;
+        else
+            x_pos += 300;
+        endif
+        place += 1;
 
-			line := line+1;
+        if (place > 12 && place % 2 == 1)
+            GFAddButton(gump, 543, 300, 0x9903, 0x9904, GF_PAGE_BTN, page_num+1);
+            page_num += 1;
+            GFPage(gump, page_num);
+            GFAddButton(gump, 273, 300, 0x9909, 0x9910, GF_PAGE_BTN, page_num-1);
+            y_pos := 200;
+            x_pos := 100;
+            place := 1;
+        endif
+    endforeach
 
-			if (line > 10)
-				GFAddButton(skingump, 265, 340, 2648, 2649, GF_PAGE_BTN, page_num+1);
-				page_num := page_num+1;
-				GFPage(skingump, page_num);
-				GFAddButton(skingump, 265, 60, 2650, 2651, GF_PAGE_BTN, page_num-1);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1);
 
-				line := 1;
-				y_pos := 60;
-			endif
-		endif
-	endforeach
+    var input := GFSendGump(who, gump);
 
-	var input := GFSendGump(who, skingump);
-
-	if (input[0] == OK_BUTTON)
-		foreach key in (input.keys)
-			if ( (key != OK_BUTTON) && (key > 0))
-				new_look.HairColor := key;
-				break;
-			endif
-		endforeach
-	endif
-
+    if (input[0] == 1)
+        foreach key in (input.keys)
+            if (key != 1 && key > 0)
+                new_look.HairColor := key;
+                break;
+            endif
+        endforeach
+    endif
 endfunction
 
 function FLSkinGump(who, byref new_look)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    GFGumpPic(gump, 17, 31, 0x9E6);
 
-	var skingump := GFCreateGump();
-	GFResizePic(skingump, 0, 0, 3600, 300, 420);
-	GFResizePic(skingump, 15, 15, 0x13BE, 270, 390);
+    GFHTMLArea(gump, 346, 56, 192, 40, "<BASEFONT Size=55 Color=#999999>Escolha a Cor de Pele", 0, 0);
+    GFHTMLArea(gump, 345, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Escolha a Cor de Pele", 0, 0);
 
-	GFTextMid(skingump, 15, 25, 270, 1890, "Escolha a Cor de Pele");
-	GFAddButton(skingump, 220, 370, 2128, 2129, 1, OK_BUTTON);
+    var skin_cfg := ReadConfigFile(":fls_core:config/racas");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not open :fls_core:config/racas.cfg -> "+skin_cfg.errortext);
+        return;
+    endif
+    skin_cfg := skin_cfg[cstr(GetObjProperty(who, "raca"))];
 
-	var skin_cfg := ReadConfigFile(":fls_core:config/racas");
-	if ( !skin_cfg )
-		SendSysMessage(who, "Error: Could not open :fls_core:config/racas.cfg -> "+skin_cfg.errortext);
-	endif
-	skin_cfg := skin_cfg[cstr(GetObjProperty(who, "raca"))];
+    // Adicionar uma imagem central representativa (se disponível)
+    GFGumpPic(gump, 298, 100, 0x2051); // Substitua 0x2051 pelo ID da imagem apropriada
 
-	GFPage(skingump, 1);
+    var y_pos := 200;
+    var x_pos := 100;
+    var place := 1;
+    var page_num := 1;
+    GFPage(gump, page_num);
 
-	var y_pos := 60;
-	var x_pos := 20;
-	var place := 1;
-	var page_num := 1;
-	var line := 1;
-	foreach color in GetConfigStringArray(skin_cfg, "SkinColor");
-		color := CInt(color);
-		if (color == new_look.SkinColor)
-			GFRadioButton(skingump, x_pos, y_pos, 9727, 9730, 1, color);
-		else
-			GFRadioButton(skingump, x_pos, y_pos, 9727, 9730, 0, color);
-		endif
+    foreach color in GetConfigStringArray(skin_cfg, "SkinColor")
+        color := CInt(color);
+        if (color == new_look.SkinColor)
+            GFRadioButton(gump, x_pos, y_pos, 0x9C4F, 0x9C4E, 1, color);
+        else
+            GFRadioButton(gump, x_pos, y_pos, 0x9C4E, 0x9C4F, 0, color);
+        endif
 
-		GFTextline(skingump, x_pos+35, y_pos+5, color-1, "Skin");
+        GFTextline(gump, x_pos+35, y_pos, color-1, "Skin");
 
-		if (place < 3)
-			x_pos := x_pos+80;
-			place := place+1;
-		else
-			place := 1;
-			x_pos := 20;
-			y_pos := y_pos+30;
+        if (place % 2 == 0)
+            x_pos := 100;
+            y_pos += 30;
+        else
+            x_pos += 300;
+        endif
+        place += 1;
 
-			line := line+1;
+        if (place > 12 && place % 2 == 1)
+            GFAddButton(gump, 543, 300, 0x9903, 0x9904, GF_PAGE_BTN, page_num+1);
+            page_num += 1;
+            GFPage(gump, page_num);
+            GFAddButton(gump, 273, 300, 0x9909, 0x9910, GF_PAGE_BTN, page_num-1);
+            y_pos := 200;
+            x_pos := 100;
+            place := 1;
+        endif
+    endforeach
 
-			if (line > 10)
-				GFAddButton(skingump, 265, 340, 2648, 2649, GF_PAGE_BTN, page_num+1);
-				page_num := page_num+1;
-				GFPage(skingump, page_num);
-				GFAddButton(skingump, 265, 60, 2650, 2651, GF_PAGE_BTN, page_num-1);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1);
 
-				line := 1;
-				y_pos := 60;
-			endif
-		endif
-	endforeach
+    var input := GFSendGump(who, gump);
 
-	var input := GFSendGump(who, skingump);
-
-	if (input[0] == OK_BUTTON)
-		foreach key in (input.keys)
-			if ( (key != OK_BUTTON) && (key > 0))
-				new_look.SkinColor := key;
-				break;
-			endif
-		endforeach
-	endif
-
+    if (input[0] == 1)
+        foreach key in (input.keys)
+            if (key != 1 && key > 0)
+                new_look.SkinColor := key;
+                break;
+            endif
+        endforeach
+    endif
 endfunction
 
 function FLHairGump(who, byref new_look)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    GFGumpPic(gump, 17, 31, 0x9E6);
 
-	var hairgump := GFCreateGump();
+    GFHTMLArea(gump, 346, 56, 192, 40, "<BASEFONT Size=55 Color=#999999>Escolha seu Cabelo", 0, 0);
+    GFHTMLArea(gump, 345, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Escolha seu Cabelo", 0, 0);
 
-	GFResizePic(hairgump, 0, 0, 3600, 300, 420);
-	GFResizePic(hairgump, 15, 15, 0x13BE, 270, 390);
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := (GetObjProperty(who, "raca") == "anao" || GetObjProperty(who, "raca") == "hobbit") ? config["headdwarf"] : config["head"];
+    var hairgumps := config["hairgump"];
+    GFSetRadioGroup(gump, 1);
 
-	GFTextMid(hairgump, 15, 25, 270, 1890, "Escolha seu Cabelo");
-	GFAddButton(hairgump, 220, 370, 2128, 2129, 1, OK_BUTTON);
+    var y_pos := 200;
+    var page_num := 1;
+    GFPage(gump, page_num);
 
-	GFResizePic(hairgump, 220, 55, 2620, 50, 310);
+    foreach style in GetConfigStringArray(hair, "style")
+        style := splitwords(style);
+        var hairname := style[1];
+        var hairgraphic := cint(style[2]);
+        hairname["_"] := " ";
 
-	var config := ReadConfigFile(":fls_core:config/hairtypes");
-	var hair;
-	if ( (GetObjProperty(who, "raca") == "anao") || (GetObjProperty(who, "raca") == "hobbit"))
-		hair := config["headdwarf"];
-	else
-		hair := config["head"];
-	endif
-	var hairgumps := config["hairgump"];
-	GFSetRadioGroup(hairgump, 1);
+        if (hairgraphic == new_look.HairStyle)
+            GFRadioButton(gump, 100, y_pos, 0x9C4F, 0x9C4E, 1, hairgraphic);
+        else
+            GFRadioButton(gump, 100, y_pos, 0x9C4E, 0x9C4F, 0, hairgraphic);
+        endif
 
-	var y_pos := 65;
-	foreach style in GetConfigStringArray(hair, "style")
-		style := splitwords(style);
-		var hairname := style[1];
-		var hairgraphic := cint(style[2]);
-		while (hairname["_"])
-			hairname["_"] := " ";
-		endwhile
+        GFTextline(gump, 135, y_pos, 1890, hairname);
 
-		if (hairgraphic == new_look.HairStyle)
-			GFRadioButton(hairgump, 20, y_pos, 2151, 2154, 1, hairgraphic);
-		else
-			GFRadioButton(hairgump, 20, y_pos, 2151, 2154, 0, hairgraphic);
-		endif
+        var gumppic := GetConfigStringArray(hairgumps, style[1]);
+        gumppic := splitwords(gumppic);
+        GFGumpPic(gump, 298, 100, gumppic[new_look.Gender+2]);
 
-		GFTextline(hairgump, 55, y_pos+5, 1890, hairname);
+        y_pos += 40;
 
-		var gumppic := GetConfigStringArray(hairgumps, style[1]);
-		gumppic := splitwords(gumppic);
-		GFGumpPic(hairgump, 155, y_pos-50, gumppic[new_look.Gender+2]);
+        if (y_pos > 500)
+            GFAddButton(gump, 543, 300, 0x9903, 0x9904, GF_PAGE_BTN, page_num+1);
+            page_num += 1;
+            GFPage(gump, page_num);
+            GFAddButton(gump, 273, 300, 0x9909, 0x9910, GF_PAGE_BTN, page_num-1);
+            y_pos := 200;
+        endif
+    endforeach
 
-		y_pos := y_pos + 30;
-	endforeach
+    if (!new_look.HairStyle || new_look.HairStyle == 1)
+        GFRadioButton(gump, 100, y_pos, 0x9C4F, 0x9C4E, 1, 1);
+    else
+        GFRadioButton(gump, 100, y_pos, 0x9C4E, 0x9C4F, 0, 1);
+    endif
+    GFTextline(gump, 135, y_pos, 1890, "Bald");
 
-	if ( !new_look.HairStyle || new_look.HairStyle == 1 )
-		GFRadioButton(hairgump, 20, y_pos, 2151, 2154, 1, 1);
-	else
-		GFRadioButton(hairgump, 20, y_pos, 2151, 2154, 0, 1);
-	endif
-	GFTextline(hairgump, 55, y_pos+5, 1890, "Bald");
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1);
 
-	var input := GFSendGump(who, hairgump);
+    var input := GFSendGump(who, gump);
 
-
-	if (input[0] == OK_BUTTON)
-		foreach key in (input.keys)
-			if ( (key != OK_BUTTON) && (key > 0))
-				sendsysmessage(who, " "+ key);
-				new_look.HairStyle := key;
-				break;
-			endif
-		endforeach
-	endif
-
+    if (input[0] == 1)
+        foreach key in (input.keys)
+            if (key != 1 && key > 0)
+                new_look.HairStyle := key;
+                break;
+            endif
+        endforeach
+    endif
 endfunction
 
 function FLBeardGump(who, byref new_look)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    GFGumpPic(gump, 17, 31, 0x9E6);
 
-	var beardgump := GFCreateGump();
-	GFResizePic(beardgump, 0, 0, 3600, 300, 420);
-	GFResizePic(beardgump, 15, 15, 0x13BE, 270, 390);
+    GFHTMLArea(gump, 346, 56, 192, 40, "<BASEFONT Size=55 Color=#999999>Escolha sua Barba", 0, 0);
+    GFHTMLArea(gump, 345, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Escolha sua Barba", 0, 0);
 
-	GFTextMid(beardgump, 15, 25, 270, 1890, "Escolha sua barba");
-	GFAddButton(beardgump, 220, 370, 2128, 2129, 1, OK_BUTTON);
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := (GetObjProperty(who, "raca") == "anao") ? config["facialhairdwarf"] : config["facialhair"];
+    var hairgumps := config["hairgump"];
+    GFSetRadioGroup(gump, 1);
 
-	GFResizePic(beardgump, 220, 55, 2620, 50, 280);
+    var y_pos := 200;
+    var page_num := 1;
+    GFPage(gump, page_num);
 
-	var config := ReadConfigFile(":fls_core:config/hairtypes");
-	var hair;
-	if (GetObjProperty(who, "raca") == "anao")
-		if (who.cmdlevel)
-			SendSysMessage(who, "lendo barbas de anoes");
-		endif
-		hair := config["facialhairdwarf"];
-	else
-		hair := config["facialhair"];
-	endif
-	var hairgumps := config["hairgump"];
-	GFSetRadioGroup(beardgump, 1);
+    foreach style in GetConfigStringArray(hair, "style")
+        style := splitwords(style);
+        var hairname := style[1];
+        var hairgraphic := cint(style[2]);
+        hairname["_"] := " ";
 
-	var y_pos := 65;
-	foreach style in GetConfigStringArray(hair, "style")
-		style := splitwords(style);
-		var hairname := style[1];
-		var hairgraphic := cint(style[2]);
-		while (hairname["_"])
-			hairname["_"] := " ";
-		endwhile
+        if (hairgraphic == new_look.BeardStyle)
+            GFRadioButton(gump, 100, y_pos, 0x9C4F, 0x9C4E, 1, hairgraphic);
+        else
+            GFRadioButton(gump, 100, y_pos, 0x9C4E, 0x9C4F, 0, hairgraphic);
+        endif
 
-		if (hairgraphic == new_look.BeardStyle)
-			GFRadioButton(beardgump, 20, y_pos, 2151, 2154, 1, hairgraphic);
-		else
-			GFRadioButton(beardgump, 20, y_pos, 2151, 2154, 0, hairgraphic);
-		endif
+        GFTextline(gump, 135, y_pos, 1890, hairname);
 
-		GFTextline(beardgump, 55, y_pos+5, 1890, hairname);
+        var gumppic := GetConfigString(hairgumps, style[1]);
+        GFGumpPic(gump, 298, 100, gumppic);
 
-		var gumppic := GetConfigString(hairgumps, style[1]);
-		GFGumpPic(beardgump, 155, y_pos-65, gumppic);
-		if (who.cmdlevel)
-			SendSysMessage(who, "nome do estilo: " + style + " gump: " + gumppic + " id " + hairgraphic);
-		endif
-		y_pos := y_pos + 30;
-	endforeach
+        y_pos += 40;
 
-	if (!new_look.BeardStyle || new_look.BeardStyle == 1)
-		GFRadioButton(beardgump, 20, y_pos, 2151, 2154, 1, 1);
-	else
-		GFRadioButton(beardgump, 20, y_pos, 2151, 2154, 0, 1);
-	endif
-	GFTextline(beardgump, 55, y_pos+5, 1890, "Bald");
+        if (y_pos > 500)
+            GFAddButton(gump, 543, 300, 0x9903, 0x9904, GF_PAGE_BTN, page_num+1);
+            page_num += 1;
+            GFPage(gump, page_num);
+            GFAddButton(gump, 273, 300, 0x9909, 0x9910, GF_PAGE_BTN, page_num-1);
+            y_pos := 200;
+        endif
+    endforeach
 
-	var input := GFSendGump(who, beardgump);
+    if (!new_look.BeardStyle || new_look.BeardStyle == 1)
+        GFRadioButton(gump, 100, y_pos, 0x9C4F, 0x9C4E, 1, 1);
+    else
+        GFRadioButton(gump, 100, y_pos, 0x9C4E, 0x9C4F, 0, 1);
+    endif
+    GFTextline(gump, 135, y_pos, 1890, "Bald");
 
-	if (input[0] == OK_BUTTON)
-		foreach key in (input.keys)
-			if ( (key != OK_BUTTON) && (key > 0))
-				new_look.BeardStyle := key;
-				break;
-			endif
-		endforeach
-	endif
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1);
 
+    var input := GFSendGump(who, gump);
+
+    if (input[0] == 1)
+        foreach key in (input.keys)
+            if (key != 1 && key > 0)
+                new_look.BeardStyle := key;
+                break;
+            endif
+        endforeach
+    endif
 endfunction
-
 
 function FL_GetSkillID(skillname)
 
