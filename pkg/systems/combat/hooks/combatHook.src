@@ -64,8 +64,6 @@ exported function Attack(attacker, defender)
 		anim := 0x0c;
 	endif
 
-	PlayAttackAnimation(attacker);
-
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
 	var hitchance := CInt(CalculateHitChance(attacker, defender));
@@ -759,6 +757,7 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 endfunction
 
 function EpicApplyDamage(attacker, defender, weaponHand)
+	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
