@@ -20,9 +20,60 @@ if (!gossip_storage)
     SetGlobalProperty("gossip_storage", gossip_storage);
 endif
 
+// Inicializar ou obter a variável global last_char_description
+var last_char_description_carpinteiro := GetGlobalProperty("last_char_description_carpinteiro");
+if (!last_char_description_carpinteiro)
+	last_char_description_carpinteiro := "";
+	SetGlobalProperty("last_char_description_carpinteiro", last_char_description_carpinteiro);
+endif
+
+// Inicializar ou obter a variável global conversation_history
+var conversation_history_carpinteiro := GetGlobalProperty("conversation_history_carpinteiro");
+if (!conversation_history_carpinteiro)
+	conversation_history_carpinteiro := array{};
+	SetGlobalProperty("conversation_history_carpinteiro", conversation_history_carpinteiro);
+endif
+
+function isPromptSafe(prompt)
+	var apiURL := "https://api.openai.com/v1/moderations";
+	var method := "POST";
+	var jsonData := PackJSON(struct{
+		"input" := prompt
+	});
+
+	var apiResponse := HTTPRequest(
+		apiURL,
+		method,
+		struct{
+			data := jsonData,
+			headers := struct{
+				"Content-Type" := "application/json",
+				"Authorization" := "Bearer {1}".format(GetEnvironmentVariable("OPENAI_KEY"))
+			}
+		}
+	);
+
+	var unpackedJSON := UnpackJSON(apiResponse);
+	
+	if (unpackedJSON["error"])
+		return struct{ "error" := unpackedJSON["error"]["message"] };
+	endif
+	
+	return unpackedJSON["results"][0]["flagged"];
+endfunction
+
 function OpenAICompletion(systemMessage, questions)
-	print("systemMessage");
-	print(systemMessage);
+	var prompt := "";
+    foreach question in questions
+        if (question.user == "user")
+            prompt += question.user;
+        endif
+    endforeach
+
+	print(isPromptSafe((systemMessage) + (prompt)));
+	if (!isPromptSafe(prompt))
+		return "";
+	endif
 
 	var formatedQuestions := array{ struct{
 		"role" := "system",
@@ -143,6 +194,7 @@ function SpeechEvent(npc, byref event)
 	endif
 
 
+
 	if ( text != " . . . ")
 		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
 		var sourceDescription := GetObjProperty(event.source, "descricao");
@@ -201,9 +253,86 @@ function SpeechEvent(npc, byref event)
 			var responseText := OpenAICompletion(systemMessage, questions);
 			AI_Speak(npc, responseText); // usa a responsa do modelo
 
+		elseif (npc.npctemplate == ":brainai:mestrecarpinteiro")
+			// Verifica se a descrição do personagem mudou
+			
+			if (sourceDescription != last_char_description_carpinteiro || sourceDescription == "error{ errortext = 'Subscript out of range'")
+				// Novo personagem, reinicia o histórico de conversas
+				conversation_history_carpinteiro := array{};
+				last_char_description_carpinteiro := sourceDescription;  // Atualiza para a nova descrição
+				SetGlobalProperty("last_char_description_carpinteiro", last_char_description_carpinteiro);
+				SetGlobalProperty("conversation_history_carpinteiro", conversation_history_carpinteiro); // Save updated history
+			endif
+			// Inicializar ou obter a variável global last_char_description
+
+			var last_char_description_carpinteiro := GetGlobalProperty("last_char_description_carpinteiro");
+			if (!last_char_description_carpinteiro)
+				last_char_description_carpinteiro := "";
+				SetGlobalProperty("last_char_description_carpinteiro", last_char_description_carpinteiro);
+			endif
+
+			// Inicializar ou obter a variável global conversation_history
+			var conversation_history_carpinteiro := GetGlobalProperty("conversation_history_carpinteiro");
+			if (!conversation_history_carpinteiro)
+				conversation_history_carpinteiro := array{};
+				SetGlobalProperty("conversation_history_carpinteiro", conversation_history_carpinteiro);
+			endif
+
+			// Verifica se a descrição do personagem mudou
+			var sourceDescription := GetObjProperty(event.source, "descricao");
+			if (sourceDescription != last_char_description_carpinteiro)
+				// Novo personagem, reinicia o histórico de conversas
+				conversation_history_carpinteiro := array{};
+				last_char_description_carpinteiro := sourceDescription;  // Atualiza para a nova descrição
+				SetGlobalProperty("last_char_description_carpinteiro", last_char_description_carpinteiro);
+				SetGlobalProperty("conversation_history_carpinteiro", conversation_history_carpinteiro); // Save updated history
+			endif
+
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao te ouço tão longe, aproxime-se, cidadão");
+				return 0;
+			endif
+
+			AI_Turn(npc, source, NETURN_TOWARD);
+			var aprendiz_type := "aprendiz de carpintaria";
+			var lore := "
+				# Carpintaria
+				É a perícia para trabalho em madeira, geralmente usada para criar itens decorativos para as moradias, 
+				como mesas, cadeiras, baús, camas, etc. Também é utilizada para fazer arcos, que além de madeira que também precisam da corda,
+				feita com tripas de animais, para serem úteis.
+
+				# Fazendo Flechas/Virotes
+
+				## Passo 1 - Preparando a Madeira
+				Depois de uma boa colheita de toras, o primeiro trabalho de qualquer artesão dedicado é transformar essa madeira bruta em algo útil. Aproxime-se da velha serra de chão, aquela que sempre fica ao lado da oficina. É aqui que a magia começa. Com paciência e cuidado, vá transformando cada tora em tábuas, pois sem elas, nada mais pode ser feito. A madeira cortada deve ser limpa e bem trabalhada — cada tábua será a base de suas futuras criações.
+
+				## Passo 2 - Criando os Eixos de Flechas
+				Agora, com as tábuas prontas, é hora de se equipar com um kit de arquearia, uma ferramenta essencial para qualquer que aspire a ser um artesão de flechas. Este kit guarda os segredos da fabricação de projéteis. Quando estiver com ele em mãos, escolha quantos eixos deseja produzir. Lembre-se de que a madeira é sua aliada, e cada tábua será moldada para dar forma aos eixos de suas flechas. Cuide para que cada corte seja reto e preciso.
+
+				## Passo 3 - Finalizando as Flechas e Virotes
+				Com os eixos de flechas feitos, mantenha-os por perto, junto às penas que irá usar para equilibrar seus projéteis. A sabedoria diz que um bom artesão sempre mantém seus materiais organizados. Agora, é hora de usar novamente o kit de arquearia. Ali, com paciência, você unirá os eixos às penas, criando flechas perfeitas para seu arco — ou virotes, se o destino o levou a dominar a arte da besta. Lembre-se, tanto as flechas quanto os virotes requerem equilíbrio e precisão, portanto, sempre mantenha a quantidade exata de materiais à mão.
+
+				## Passo 4 - O Processo do Artesão
+				Agora que os materiais estão prontos e sua mente está focada, o último passo é o trabalho contínuo. Um bom artesão sabe que sua obra exige concentração e serenidade. Fique imóvel e deixe o ritmo da oficina guiar suas mãos. A cada acerto, a produção ganhará forma, e logo verá o fruto de sua dedicação. Não se apresse — a perfeição é um processo paciente, e logo suas flechas e virotes estarão prontos, armazenados em segurança para sua próxima aventura.
+			";
+
+			var systemMessage := "Você é um mestre carpinteiro de um jogo de RPG. O aventureiro que fala com você é um " + aprendiz_type + ", com descrição " + sourceDescription + ". O manual de carpintaria é: " + lore + ". Responda com um máximo de 50 caracteres.";
+			
+			var player_message := struct{ "user" := text };
+
+			conversation_history_carpinteiro.append(player_message);
+
+			var master_response := OpenAICompletion(systemMessage, conversation_history_carpinteiro);
+
+			// Adiciona a resposta do NPC (assistant) ao histórico
+			var npc_message := struct{ "assistant" := master_response };
+			conversation_history_carpinteiro.append(npc_message);
+			SetGlobalProperty("conversation_history_carpinteiro", conversation_history_carpinteiro);
+
+			AI_Speak(npc, master_response); // usa a responsa do modelo
+
 		endif
-		
-		//passando a fofoca
 
 
 	endif
