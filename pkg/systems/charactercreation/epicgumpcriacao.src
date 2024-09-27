@@ -137,7 +137,7 @@ function racialSelection(who, culture_pic)
     who.title_race := chardata.raca;
     who.race := chardata.raca;
 
-SetObjProperty(who, "chardata", chardata);
+    SetObjProperty(who, "chardata", chardata);
 endfunction
 
 function RPcharacteristicsSelection(who, culture_pic)
@@ -172,7 +172,6 @@ function RPcharacteristicsSelection(who, culture_pic)
             if (selected_count == 4 && age_filled)
                 all_requirements_met := 1;
                 
-                // Processar a idade aqui
                 var age_info := ConvertAge(chardata.raca, CInt(chardata.idade_escolhida));
                 chardata.idade_aparente := age_info[1];
                 chardata.idade_real := age_info[2];
@@ -192,7 +191,6 @@ function RPcharacteristicsSelection(who, culture_pic)
     endwhile
 
     SetObjProperty(who, "chardata", chardata);
-    SendSysMessageEX(who, "Características raciais e idade selecionadas com sucesso.", SSM_INFO);
 endfunction
 
 function CountSelectedCategories(caracteristicas_rp, required_categories)
