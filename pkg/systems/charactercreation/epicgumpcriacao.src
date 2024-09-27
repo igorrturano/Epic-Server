@@ -553,7 +553,122 @@ endfunction
 
 function looksSelection(who)
     var chardata := GetObjProperty(who, "chardata");
-    looksGump(who, chardata);
+    var btn_value;
+    var currentPage := 1;
+    chardata.+hair := "";
+    chardata.+hair_item := 0;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := hairSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: 
+                DestroyItem(GetEquipmentByLayer(who, LAYER_HAIR));
+                var myHair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
+                EquipItem(who, myHair);
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.hair := GetHairGumpGraphic(btn_value);
+                    chardata.hair_item := btn_value;
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+
+    // Adicionar seleção de barba se for homem
+    if (who.gender == 0 && chardata.raca != "ELFO" && chardata.raca != "DROW")
+        beardSelection(who, chardata);
+    endif
+    
+    colorSelection(who, chardata);
+    skinColorSelection(who, chardata);
+endfunction
+
+function colorSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := colorSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: 
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.hair_color := btn_value;
+                    if (chardata.beard_item)
+                        chardata.beard_color := btn_value;
+                    endif
+                    // Atualizar o cabelo e a barba do personagem imediatamente
+                    UpdateCharacterHair(who, chardata);
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function skinColorSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := skinColorSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1: currentPage += 1; // Next page
+            2: currentPage -= 1; // Previous page
+            500: 
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.skin_color := CInt(btn_value);
+                    // Atualizar a cor da pele do personagem imediatamente
+                    UpdateCharacterSkin(who, chardata);
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function beardSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    chardata.+beard := "";
+    chardata.+beard_item := 0;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := beardSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: 
+                DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+                var myBeard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
+                EquipItem(who, myBeard);
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.beard := GetBeardGumpGraphic(btn_value);
+                    chardata.beard_item := btn_value;
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
 endfunction
 
 function pathOfWisdom(who, culture_pic)
@@ -613,9 +728,8 @@ function pathOfWisdom(who, culture_pic)
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
 endfunction
 
-function startAdventure(who)   
+function startAdventure(who)
     MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
-
     PlaySoundEffectPrivate(who, 0x306, who);
     PlayStationaryEffect(who.x+1, who.y+1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
