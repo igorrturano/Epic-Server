@@ -1043,3 +1043,7 @@ function GFEAddTextBox(byref gump, x, y, width, height := 16, text_color := COLO
 	var val := GFTextEntry(gump, x + 6, y + 6, width, height, text_color, default_text, id, maxlenght);
 	return val;
 endfunction
+
+function GFEAdd(byref gump)
+
+endfunction
