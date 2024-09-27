@@ -405,8 +405,7 @@ endfunction
  */
 function DamageEpicCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
-	var totaldamage := CalculateDamageCombat(attacker, defender, armor, damage, type);
-
+	var totaldamage := CInt(CalculateDamageCombat(attacker, defender, armor, damage, type));
 
 	var regiao := CS_GetArmorZone(armor);
 	if (regiao == error)
@@ -459,11 +458,13 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 		resist := getResistArmorByType(armor, type, attacker, defender);
 	endif
 
+	damage := damage-resist;
+
 	if (damage < 1)
 		damage := 1;
 	endif
 
-	return CInt(damage-resist);
+	return CInt(damage);
 endfunction
 
 function getWeaponDamageType(attacker, weapon)
