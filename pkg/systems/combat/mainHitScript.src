@@ -91,7 +91,7 @@ program MainHitScript(params)
 	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
 	// Aplica o dano físico da arma
-	DamageFLSCombat(attacker, defender, armor, basedamage, DMG_PHYSICAL);
+	DamageEpicCombat(attacker, defender, armor, basedamage, DMG_PHYSICAL);
 
 	return 1;
 endprogram
