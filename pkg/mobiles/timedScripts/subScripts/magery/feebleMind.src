@@ -12,19 +12,24 @@ include "include/epicMageryUtils";
 program TimedScript_FeebleMind(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	var level := params[3];
+	var level := (-1) * params[3];
+	var teste := GetObjProperty(mobile, "#FeebleMindMod");
+	if(teste) //verifica se ja esta sob efeito similar
+		if(level < teste) //se o novo efeito é maior, aplica a diferença
+			Set_Critical(1);
+			SetObjProperty(mobile, "#FeebleMindMod", level);
+			AP_ModifyStatMod(mobile, INTELLIGENCE, (level-teste));
+			Set_Critical(0);
+			return 1;
+		else
+			return 0;
+		endif
+	else
 	
-	if ( GetObjProperty(mobile, "#FeebleMindMod") )
-		// Condition is met if the mobile logs out and back in.
-		// Prevents mod from being applied twice.
-		return 0;
-	endif
-	
-	var points := level * -1;
-	
-	SetObjProperty(mobile, "#FeebleMindMod", points);
-	AP_ModifyStatMod(mobile, INTELLIGENCE, points);
+	SetObjProperty(mobile, "#FeebleMindMod", level);
+	AP_ModifyStatMod(mobile, INTELLIGENCE, level);
 	
 	return 1;
+	endif
 endprogram
 

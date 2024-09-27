@@ -679,4 +679,3 @@ function IsThrowingWeapon(item)
 	endif
 	return 0;
 endfunction
-
