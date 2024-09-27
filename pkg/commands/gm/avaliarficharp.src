@@ -434,12 +434,10 @@ function AvaliarFichaRP(who, targ)
 
     var input := GFSendGump(who, gump);
 
-    if (input[0] == 100)
+      if (input[0] == 100)
         var nova_avaliacao := GFExtractData(input, txt_avaliacao);
         if (nova_avaliacao != error && nova_avaliacao != "")
-            nova_avaliacao := nova_avaliacao + " [por " + who.name + "]";
-            anotacoes.append(nova_avaliacao);
-            ficharp_elem.SetProp("Anotacoes", anotacoes);
+            AdicionarAvaliacaoFichaRP(targ, who.acctname, nova_avaliacao);
             SendSysMessage(who, "Avaliação adicionada com sucesso.");
             SendSysMessage(targ, "Você recebeu uma nova avaliação em sua Ficha RP.");
 
@@ -450,6 +448,41 @@ function AvaliarFichaRP(who, targ)
     endif
 
     return HandleGumpInput(who, targ, input);
+endfunction
+
+function AdicionarAvaliacaoFichaRP(targ, avaliador, texto)
+    var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+    var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_CREATE);
+    
+    // Adicionar à lista de avaliações
+    var avaliacoes := ficharp_elem.GetProp("Avaliacoes");
+    if (!avaliacoes)
+        avaliacoes := array{};
+    endif
+    
+    avaliacoes.append(struct{
+        "avaliador" := avaliador,
+        "texto" := texto,
+        "data" := POLCore().systime
+    });
+    
+    ficharp_elem.SetProp("Avaliacoes", avaliacoes);
+    
+    // Adicionar às anotações
+    var anotacoes := ficharp_elem.GetProp("Anotacoes");
+    if (!anotacoes)
+        anotacoes := array{};
+    endif
+    
+    var nova_anotacao := "[Avaliação] " + texto + " - Por: " + avaliador + " em " + FormatarData(POLCore().systime);
+    anotacoes.append(nova_anotacao);
+    
+    ficharp_elem.SetProp("Anotacoes", anotacoes);
+endfunction
+
+function FormatarData(timestamp)
+    var time := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
+    return time;
 endfunction
 
 function FormatarConteudoAvaliacoes(anotacoes)

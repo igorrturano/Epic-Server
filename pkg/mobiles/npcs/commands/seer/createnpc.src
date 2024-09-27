@@ -25,15 +25,13 @@ include ":ghaia:ghaia";
 include "include/epicConstants";
 
 program	text_command_createnpc(who, template)
-
 	var	mercscripts := {"appraiser", "barber", "banker", "bucsBanker", "bucsTownHealer",
 						"healer", "merchant", "stablemaster", "townguard", "townHealer"};
 	var	guardscripts := {"townGuard", "instakillGuard"};
-	var	npc_config := ReadConfigFile("::npcdesc");
+	var	npc_config := ReadConfigFile(":*:npcdesc");
 	var node :="none";
 	var	NPC_entry;
 	var	ai_script;
-
 	if (!template)
 		template := DisplayNPCSelectionMenu(who);
 		if (!template)
@@ -43,8 +41,8 @@ program	text_command_createnpc(who, template)
 //		node := "none";
 	endif
 
-	NPC_entry := FindConfigElem( npc_config, ":brainai:"+template );
-	ai_script := GetConfigString( NPC_entry, "Script" );
+	NPC_entry := FindConfigElem(npc_config, template);
+	ai_script := GetConfigString(NPC_entry, "Script");
 
 	if(ai_script in mercscripts)
 		node := "merc";
@@ -85,14 +83,19 @@ function createthenpc(who, template)
 	endif
 	var props := struct;
 	props.+facing := who.facing;
-	var result := CreateNpcFromTemplate( ":brainai:"+template, loc.x, loc.y, loc.z, props, loc.realm );
-	customizeNpc(result);
+
+	var result := CreateNpcFromTemplate(":epicAI:"+template, loc.x, loc.y, loc.z, props, loc.realm );
 	if (!result)
-		result := CreateNpcFromTemplate( ":merchants:"+template, loc.x, loc.y, loc.z, props, loc.realm );
+		result := CreateNpcFromTemplate(":brainAI:"+template, loc.x, loc.y, loc.z, props, loc.realm );
 		if(!result)
-			SendSysMessage( who, "NPC Creation Failed: " + result.errortext );
+			result := CreateNpcFromTemplate(":merchants:"+template, loc.x, loc.y, loc.z, props, loc.realm );
+			if(!result)
+				SendSysMessage( who, "NPC Creation Failed: " + result.errortext );
+			endif
 		endif
 	endif
+
+	customizeNpc(result);
 endfunction
 
 function createmerc(who)

@@ -77,6 +77,8 @@ E assim, os orcs caçam as temíveis Aklats, não apenas como uma questão de so
 Nos períodos de chuva, quando o deserto se transforma em um oásis temporário, os orcs celebram com rituais de êxtase e indulgência. Longe das batalhas e caçadas, eles se entregam ao prazer e à comunhão, honrando a dádiva da água que sustenta sua existência.
 Porém, mesmo em meio à brutalidade de sua fé, os orcs têm seus guardiões espirituais. Os Xamãs, sábios e misteriosos, são os intérpretes dos desígnios de Adar Kor Doom. Eles conduzem seus seguidores através dos caminhos áridos do deserto, guiando-os na busca pela força e sabedoria necessárias para enfrentar os desafios do Grunntam.
 Neste mundo implacável e repleto de perigos, a fé dos orcs é uma luz que brilha no horizonte, uma âncora em meio à tempestade de areia. E enquanto as dunas se movem e os ventos uivam, os filhos do Deserto da Perdição permanecem firmes em sua devoção ao Grunntam, prontos para enfrentar qualquer desafio que o destino lhes reserve.";
+const ceticosText := "A visão cética sobre a influência dos deuses propõe que, se existirem, eles estão imersos em suas próprias questões, distantes das preocupações humanas. Para os céticos, muitos fenômenos naturais são explicações racionais para eventos aleatórios, e a adoração a divindades é vista como um mecanismo de enfrentamento em tempos de crise. 
+Essa perspectiva sugere que a religião é uma construção cultural que reflete os medos e aspirações humanas, oferecendo conforto e um senso de comunidade. Apesar da descrença, a liberdade de crença é essencial, promovendo o respeito às diferentes convicções e abrindo espaço para diálogos enriquecedores sobre a experiência humana.";
 
 const storyModeText := "No modo estória, o personagem não pode ser morto e nem matar outros jogadore, ou seja, cortar a cabeça.
 - Ao tentar furtar outro jogador, caso tenha sucesso, receberá moedas aleatórias baseado no PP. As falhas continuam normal.
@@ -169,11 +171,9 @@ function getCraftCultureByPictureId(culture_id)
             return "Leste";
     endcase
 endfunction
-
+var next_btn := array{"9903", "9904"};
+var prev_btn := array{"9909", "9910"};
 function CultureGump(who, culture_pic)
-    var next_btn := array{"9903", "9904"};
-    var prev_btn := array{"9909", "9910"};
-
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     GFGumpPic(gump, 17, 31, 0x9E6);
@@ -899,6 +899,8 @@ function getReligionDescriptionByPictureId(culture_id)
             return eluithorthText;
         USHKRAR_ID:
             return ushkrarText;
+        default:
+            return ceticosText;
     endcase
 endfunction
 
@@ -1662,7 +1664,6 @@ function GetSignPicture(sign)
     endcase
 endfunction
 
-
 function birthDaySelection(who)
     var chardata := GetObjProperty(who, "chardata");
     if (!chardata.birthdate)
@@ -1758,3 +1759,456 @@ function getDayFromPictureId(day_pic)
     return (day_pic - 0x1000) + 1;
 endfunction
 
+function hairSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GfCreateGump();
+    // var x := 63;
+    // var y := 100;
+    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu cabelo", 0, 0); //shadow
+    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu cabelo", 0, 0);
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione o Cabelo");
+
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := config["todos"];
+    var hairStyles := GetConfigStringArray(hair, "Style");
+    
+    RenderHairStyles(gump, hairStyles, chardata, currentPage);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
+    return GFSendGump(who, gump);
+endfunction
+
+function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
+    const HAIRS_PER_PAGE := 6;
+    const HAIRS_PER_ROW := 2;
+    
+    var totalPages := Ceil(hairStyles.size() / HAIRS_PER_PAGE);
+    var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
+    var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
+
+    for i := start to end
+        var style := SplitWords(hairStyles[i]);
+        var hairname := style[1];
+        var hairgraphic := CInt(style[2]);
+        var gumppic := CInt(style[3]);
+        
+        var col := (i - start) % HAIRS_PER_ROW;
+        var row := (i - start) / HAIRS_PER_ROW;
+        var x_pos := 63 + (col * 119);
+        var y_pos := 100 + (row * 141);
+        
+        GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+        GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname);
+        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
+    endfor
+
+    if (chardata.hair != "")
+        GFGumpPic(gump, 63+265, 120, chardata.hair);
+    endif
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 185, 520, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 125, 520, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    return totalPages;
+endfunction
+
+function beardSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GfCreateGump();
+    // var x := 63;
+    // var y := 115; // Deslocado um pouco para baixo em relação ao cabelo
+    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua barba", 0, 0); //shadow
+    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha sua barba", 0, 0);
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione a Barba");
+
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var beardConfig := (chardata.raca == ANAO) ? config["dwarwen_beard"] : config["beard"];
+    var beardStyles := GetConfigStringArray(beardConfig, "Style");
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    RenderBeardStyles(gump, beardStyles, chardata, currentPage, hair);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
+    return GFSendGump(who, gump);
+endfunction
+
+function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
+    const BEARDS_PER_PAGE := 6;
+    const BEARDS_PER_ROW := 2;
+    
+    var totalPages := Ceil(beardStyles.size() / BEARDS_PER_PAGE);
+    var start := (currentPage - 1) * BEARDS_PER_PAGE + 1;
+    var end := Min(start + BEARDS_PER_PAGE - 1, beardStyles.size());
+
+    for i := start to end
+        var style := SplitWords(beardStyles[i]);
+        var beardname := style[1];
+        var beardgraphic := CInt(style[2]);
+        var gumppic := CInt(style[3]);
+        
+        var col := (i - start) % BEARDS_PER_ROW;
+        var row := (i - start) / BEARDS_PER_ROW;
+        var x_pos := 63 + (col * 119);
+        var y_pos := 100 + (row * 141); // Ajustado para ficar um pouco abaixo do cabelo
+        
+        GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+        GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, beardname);
+        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+        GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
+    endfor
+
+    if (chardata.beard != "")
+        GFGumpPic(gump, 63+265, 120, chardata.beard); // Ajustado para ficar um pouco abaixo do cabelo
+    endif
+
+    if (chardata.hair != "")
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 185, 520, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 125, 520, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    return totalPages;
+endfunction
+
+function GetBeardGumpGraphic(beardID)
+    case (beardID)
+        0: return 0; // Sem barba
+        8268: return 50905; // Long_Beard_&_Must.
+        8254: return 50801; // Long_Beard
+        8267: return 50904; // Short_Beard_&_Must.
+        8255: return 50802; // Short_Beard
+        8269: return 50906; // Vandyke
+        8256: return 50800; // Goatee
+        8257: return 50803; // Mustache
+        41384: return 51451; // Lumberjack
+        41385: return 51452; // Handlebar
+        41386: return 51453; // Braids
+        41387: return 51454; // Costeletas
+        51583: return 52129; // BarbaLongaMalFeita
+        51584: return 52130; // BarbaMuitoLongaEmaranhada
+        51585: return 52131; // BarbaLongaEncaracolada
+        51586: return 52132; // BarbaMuitoLonga
+        51587: return 52133; // BarbaLongaPontuda
+        51588: return 52134; // BarbaRabodeCavalo
+        51589: return 52135; // BarbaLongaGrandeTranca
+        51627: return 52174; // BigodeLongo
+        51628: return 52174; // BigodeCurto
+        // Adicione aqui os casos para as barbas anãs
+        default: return 50800; // Gráfico padrão (Goatee)
+    endcase
+endfunction
+
+function GetPaperdollBackground(graphic)
+    var result := 0x0E10; // Valor padrão
+    case (graphic)
+        400:  result := 0xC; // Male
+        401:  result := 0xD; // Female
+        1828: result := 54562; // Anão F
+        1829: result := 54563; // Anão M
+        1830: result := 0xE; // Elfo M
+        1831: result := 0xF; // Elfo F
+        1832: result := 54596; // Orc M
+        1833: result := 54595; // Orc F
+        1834: result := 54534; // Polski M
+        1835: result := 54533; // Polski F
+    endcase
+    return result;
+endfunction
+
+function GetHairGumpGraphic(hairID)
+    case (hairID)
+        0: return 0; // Careca
+        8252: return 50701; // Long_Hair
+        8265: return 50902; // Braids
+        8253: return 50702; // Pony_Tail
+        8263: return 50900; // Afro
+        8261: return 50710; // Pageboy
+        8262: return 50712; // Buns
+        8251: return 50700; // Short_Hair
+        8266: return 50903; // Top_Knot
+        8264: return 50901; // Receeding
+        8260: return 50703; // Mohawk
+        12223: return 50916; // Mid_Long
+        12224: return 50917; // Long_Feather
+        12225: return 50918; // Short
+        12226: return 50919; // Mullet
+        12236: return 50890; // Flower
+        12238: return 50892; // Big_Knob
+        12239: return 50893; // Big_Braid
+        12240: return 50894; // Big_Bun
+        12241: return 50895; // Spiked
+        41380: return 51447; // Bedhead
+        41381: return 50900; // Afro (duplicado, usando o mesmo gráfico)
+        41382: return 51449; // Monge
+        41383: return 51450; // Topete
+        41388: return 51455; // LongBraid
+        41389: return 51456; // Dread
+        41390: return 51457; // Pigtail
+        41391: return 51458; // Leia
+        41392: return 51459; // Franja
+        41393: return 51460; // Spikes
+        41394: return 51461; // Longo2
+        41395: return 51462; // Longo3
+        41396: return 51463; // Side
+        41397: return 51464; // Wavy
+        41398: return 51465; // Braids2
+        41399: return 51466; // NeckWrap
+        51629: return 52175; // MoicanoDeLado
+        51630: return 52176; // MoicanoAlto
+        51631: return 52177; // MoicanoLongo
+        51632: return 52178; // TopknotForte
+        51633: return 52179; // cabeloplantalongo
+        51634: return 52180; // cabeloplantacurto
+        51635: return 52181; // cabeloplantagalho
+        51636: return 52182; // calvaocrialongo
+        51637: return 52183; // calvaocriacurto
+        51638: return 52184; // cabeloplantachifverd
+        51639: return 52185; // CoqueLongo
+        51640: return 52186; // CoqueCurto
+        51641: return 52187; // CoqueLivre
+        51642: return 52188; // CoqueTrabalhado
+        51643: return 52189; // CoqueLateral1
+        51644: return 52190; // CoqueLateral2
+        51645: return 52191; // CoqueSamurai1
+        51646: return 52192; // CoqueSamurai2
+        51647: return 52193; // CoqueSamurai3
+        51648: return 52194; // CoqueSamurai4
+        51649: return 52195; // coque1
+        51650: return 52196; // coque2
+        51651: return 52197; // coque3
+        51652: return 52198; // coque4
+        51653: return 52199; // coque5
+        51654: return 52200; // coque6
+        51655: return 52201; // coque7
+        51656: return 52202; // coque8
+        51657: return 52203; // coque9
+        51658: return 52204; // coque10
+        51659: return 52205; // coque11
+        51660: return 52206; // CoqueLongo2
+        51661: return 52207; // CoqueLongo3
+        51662: return 52208; // Coquelongo4
+        51663: return 52209; // CoqueLongo5
+        51664: return 52210; // CoqueLongo6
+        51665: return 52211; // CoqueLongo7
+        51666: return 52212; // CoqueLongo8
+        51667: return 52213; // CoqueLongo9
+        default: return 50700; // Gráfico padrão (Short_Hair)
+    endcase
+endfunction
+
+function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+
+    var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+
+    // Monta o paperdoll
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    if (beard)
+        GFGumpPic(gump, 63+265, 120, chardata.beard, beard.color-1);
+    endif
+    if (hair)
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione a Cor do Cabelo e Barba");
+
+    var color_cfg := ReadConfigFile(":hair:config/hairColors");
+    var index_elem := GetColorIndexElem(color_cfg, chardata);
+    var categories := GetConfigStringArray(index_elem, "Category");
+
+    const COLORS_PER_PAGE := 15;
+    var totalColors := 0;
+    var allColors := array{};
+
+    foreach category in categories
+        var category_elem := color_cfg[category];
+        var colors := GetConfigStringArray(category_elem, "Color");
+        foreach color in colors
+            allColors.append(struct{ "color" := color, "category" := category });
+        endforeach
+    endforeach
+
+    totalColors := allColors.size();
+    var totalPages := Ceil(totalColors / COLORS_PER_PAGE);
+
+    var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
+    var end := Min(start + COLORS_PER_PAGE - 1, totalColors);
+
+    var y_pos := 100;
+    for i := start to end
+        var colorData := allColors[i];
+        var color := CInt(colorData.color);
+        var category := colorData.category;
+
+        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
+        GFTextLine(gump, 142, y_pos + 4, color, category);
+        y_pos += 20;
+    endfor
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 226, 410, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 135, 410, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    // Adicionar botão de fechar
+    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetColorIndexElem(color_cfg, chardata)
+    var cultura := chardata.culture;
+    var raca := chardata.raca;
+
+    if (cultura == "Björska")
+        return color_cfg["Bjorska"];
+    elseif (raca == "Orc")
+        return color_cfg["Orc"];
+    elseif (raca == "Drow")
+        return color_cfg["Drow"];
+    elseif (raca == "Elfo")
+        return color_cfg["Elfo"];
+    elseif (raca == "Anão")
+        return color_cfg["Anao"];
+    elseif (raca == "Qualquer")
+        return color_cfg["Index"];
+    else
+        return color_cfg["Imperial"];
+    endif
+endfunction
+
+function UpdateCharacterHair(who, chardata)
+    if (chardata.hair_item)
+        var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+        if (hair)
+            hair.color := chardata.hair_color;
+        else
+            var new_hair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
+            new_hair.color := chardata.hair_color;
+            EquipItem(who, new_hair);
+        endif
+    endif
+
+    if (chardata.beard_item)
+        var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+        if (beard)
+            beard.color := chardata.beard_color;
+        else
+            var new_beard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
+            new_beard.color := chardata.beard_color;
+            EquipItem(who, new_beard);
+        endif
+    endif
+endfunction
+
+function skinColorSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+
+    var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+
+    // Monta o paperdoll
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic), chardata.skin_color);
+    if (beard)
+        GFGumpPic(gump, 63+265, 120, chardata.beard, beard.color-1);
+    endif
+    if (hair)
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione a Cor da Pele");
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not open :fls_core:config/skincolors.cfg -> "+skin_cfg.errortext);
+        return 0;
+    endif
+
+    var raca := chardata.raca;
+    if (raca == ELFO)
+        skin_cfg := skin_cfg["elfo"];
+    elseif (raca == DROW)
+        skin_cfg := skin_cfg["drow"];
+    elseif (raca == ORC)
+        skin_cfg := skin_cfg["orc"];
+    else
+        skin_cfg := skin_cfg["list"];
+    endif
+
+    var allColors := GetConfigStringArray(skin_cfg, "color");
+
+    var totalColors := allColors.size();
+    var totalPages := Ceil(totalColors / COLORS_PER_PAGE);
+
+    var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
+    var end := Min(start + COLORS_PER_PAGE, totalColors);
+
+    var y_pos := 100;
+    for i := start to end
+        var color := CInt(allColors[i]);
+
+        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
+        GFTextLine(gump, 142, y_pos + 4, color, "Cor " + (i - start + 1));
+        y_pos += 20;
+    endfor
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 226, 440, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 135, 440, 0x15E3, 0x15E7, GF_CLOSE_BTN, 2); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    // Adicionar botão de fechar
+    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function UpdateCharacterSkin(who, chardata)
+    who.color := chardata.skin_color;
+    who.truecolor := chardata.skin_color;
+endfunction
