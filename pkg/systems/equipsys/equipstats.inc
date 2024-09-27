@@ -10,13 +10,17 @@
  * Ler o .cfg e extrair os modificadores
  */
 
+use os;
+use cfgfile;
+
+include "propitens";
+
 enum SPEED
 	MELEE_LOW, MELEE_MID, MELEE_HIGH,
 	RANGED_LOW, RANGED_MID, RANGED_HIGH
 endenum
 enum DAMAGE
 	ONEHANDED_LOW, ONEHANDED_MID, ONEHANDED_HIGH,
-	DUALWIELD_LOW, DUALWIELD_MID, DUALWIELD_HIGH,
 	TWOHANDED_LOW, TWOHANDED_MID, TWOHANDED_HIGH,
 	BOW_LOW, BOW_MID, BOW_HIGH,
 	CROSSBOW_LOW, CROSSBOW_MID, CROSSBOW_HIGH
@@ -28,119 +32,117 @@ enum CRITICAL
 	CRITICALCHANCE_HIGH
 endenum
 
-function getWeaponStats(tier, damage_tier, speed_tier, critical_tier)
+/**
+ * getWeaponStats(tier, damageTier, speedTier, criticalTier)
+ *
+ * Purpose
+ * Passar todos os valores da arma em um único struct.
+ *
+ * Parameters
+ * tier: O Tier geral da arma (o Tier no .cfg)
+ * damageTier: O Damage Tier da arma (o Damage no .cfg)
+ * speedTier: O Speed Tier da arma (o Speed no .cfg)
+ * criticalTier: O Critical Tier da arma (o CriticalChance no .cfg)
+ *
+ * Return struct
+ *
+ */
+function getWeaponStats(tier, damageTier, speedTier, criticalTier)
+	// TODO: Sistema de tier para somar os ganhos pra cada tier
+
 	return struct{
-		"Damage" := getWeaponDamage(damage_tier),
-		"Speed" := getWeaponSpeed(speed_tier),
-		"CriticalChance" := getWeaponCritical(critical_tier)
+		"Damage" := getWeaponDamage(damageTier),
+		"Speed" := getWeaponSpeed(speedTier),
+		"CriticalChance" := getWeaponCriticalChance(criticalTier)
 	};
 endfunction
+
+/**
+ * getWeaponSpeed(tier)
+ *
+ * Purpose
+ * Passar os valores máximos da arma baseado em seu Grupo de Velocidade.
+ *
+ * Parameters
+ * tier: Grupo de Velocidade da arma (o Speed no .cfg)
+ *
+ * Return struct
+ *
+ */
 function getWeaponSpeed(tier)
-	var min, max;
-
 	case (tier)
-		MELEE_LOW:
-			min := 25;
-			max := 29;
-			break;
+		MELEE_LOW: return struct{"min" := 25, "max" := 29};
+		MELEE_MID: return struct{"min" := 33, "max" := 37};
+		MELEE_HIGH: return struct{"min" := 39, "max" := 45};
+
+		RANGED_LOW: return struct{"min" := 25, "max" := 29};
+		RANGED_MID: return struct{"min" := 33, "max" := 37};
+		RANGED_HIGH: return struct{"min" := 39, "max" := 45};
 		
-		MELEE_MID:
-			min := 33;
-			max := 37;
-			break;
-
-		MELEE_HIGH:
-			min := 39;
-			max := 45;
-			break;
-
-		RANGED_LOW:
-			min := 25;
-			max := 29;
-			break;
-		
-		RANGED_MID:
-			min := 33;
-			max := 37;
-			break;
-
-		RANGED_HIGH:
-			min := 39;
-			max := 45;
-			break;
+		default: return error{ "errortext" := "Damage value not found for this Weapon Speed Tier!"};
 	endcase
-
-	return struct{"min" := min, "max" := max};
 endfunction
-function getWeaponDamage(tier)
-	var dmg;
 
+/**
+ * getWeaponDamage(tier)
+ *
+ * Purpose
+ * Verificar o valor do dado do dano da arma baseado no seu Grupo de Dano.
+ *
+ * Parameters
+ * tier: Grupo de dano da arma (o Damage no .cfg)
+ *
+ * Return dado
+ *
+ */
+function getWeaponDamage(tier)
 	case (tier)
 		// ONE HANDED
-		ONEHANDED_LOW:
-			dmg := "1d4";
-			break;
-
-		ONEHANDED_MID:
-			dmg := "1d6";
-			break;
-
-		ONEHANDED_HIGH:
-			dmg := "1d8";
-			break;
-
-		// DUAL WIELD
-		DUALWIELD_LOW:
-			dmg := "2d4";
-			break;
-
-		DUALWIELD_MID:
-			dmg := "2d6";
-			break;
-
-		DUALWIELD_HIGH:
-			dmg := "2d8";
-			break;
-
+		ONEHANDED_LOW: return "1d4";
+		ONEHANDED_MID: return "1d6";
+		ONEHANDED_HIGH: return "1d8";
+			
 		// TWO HANDED
-		TWOHANDED_LOW:
-			dmg := "1d8";
-			break;
+		TWOHANDED_LOW: return "1d8";
+		TWOHANDED_MID: return "1d10";
+		TWOHANDED_HIGH: return "1d12";
 
-		TWOHANDED_MID:
-			dmg := "1d10";
-			break;
+		// BOW
+		BOW_LOW: return "";
+		BOW_MID: return "";
+		BOW_HIGH: return "";
 
-		TWOHANDED_HIGH:
-			dmg := "1d12";
-			break;
+		// CROSSBOW
+		CROSSBOW_LOW: return "";
+		CROSSBOW_MID: return "";
+		CROSSBOW_HIGH: return "";
+			
+		default: return error{ "errortext" := "Damage value not found for this Weapon Damage Tier!"};
 	endcase
-
-	return dmg;
 endfunction
 
+/**
+ * getWeaponCriticalChance(tier)
+ *
+ * Purpose
+ *
+ * Parameters
+ * tier:
+ *
+ * Return struct
+ *
+ */
 function getWeaponCriticalChance(tier)
 	var min, max;
 
 	case(tier)
-		CRITICALCHANCE_NOCHANCE:
-			min := 0;
-			max := 0;
-
-		CRITICALCHANCE_LOW:
-			min := 1;
-			max := 2;
-
-		CRITICALCHANCE_MID:
-			min := 3;
-			max := 4;
-
-		CRITICALCHANCE_HIGH:
-			min := 5;
-			max := 6;
+		CRITICALCHANCE_NOCHANCE: struct{"min" := 0, "max" := 0};
+		CRITICALCHANCE_LOW: struct{"min" := 1, "max" := 2};
+		CRITICALCHANCE_MID: struct{"min" := 3, "max" := 4};
+		CRITICALCHANCE_HIGH: struct{"min" := 5, "max" := 6};
+		
+		default: return error{ "errortext" := "Damage value not found for this Weapon Critical Chance Tier!"};
 	endcase
-
-	return struct{"min" := min, "max" := max};
 endfunction
 
 
@@ -217,6 +219,7 @@ function TabelaMaterialDamageMod(item) //objtype do material: return {FISICO, FI
 endfunction
 
 function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD, POISON, ENERGY}
+	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
     var material := Lower(Hex(item.GetProp("material")));
     case(material)
         //////////METAL
@@ -344,6 +347,8 @@ function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, CO
 endfunction
 
 function TabelaDanos(item)
+	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
+		// TODO: Usar um struct ou dictionary, ao invés de array...
     var cfg := ReadConfigFile(":combat:itemdesc");
     var elem := FindConfigElem(cfg, item.objtype);
     var dano := Array;
@@ -356,7 +361,10 @@ function TabelaDanos(item)
 
     return dano;
 endfunction
+
 function TabelaTipoProtecaoMod(item) // TipoProtecao -=> return {RESIST, DEXPENALTY, PARRYBONUS, PARRYDELAY}
+	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
+		// TODO: Usar um struct ou dictionary, ao invés de array...
     var tipo := Lower(PegarTipo(item));
     case(tipo)
         //TIER 1
@@ -397,7 +405,10 @@ function TabelaTipoProtecaoMod(item) // TipoProtecao -=> return {RESIST, DEXPENA
         "escudo de corpo forte": return {11,0,0,0};
     endcase
 endfunction
+
 function TabelaSlot(item)
+	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
+		// TODO: Usar um struct ou dictionary, ao invés de array...
     var slot := Lower(PegarSlot(item));
 
     case(slot) //[1] = ResistBase; [2] = DexPenalty
@@ -410,6 +421,3 @@ function TabelaSlot(item)
         "shield": return {2,-1};
     endcase
 endfunction
-///////////////////////////
-///// NOVO .CFG - END /////
-///////////////////////////
