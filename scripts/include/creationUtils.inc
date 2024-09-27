@@ -174,6 +174,9 @@ endfunction
 var next_btn := array{"9903", "9904"};
 var prev_btn := array{"9909", "9910"};
 function CultureGump(who, culture_pic)
+var next_btn := array{"9903", "9904"};
+var prev_btn := array{"9909", "9910"};
+function CultureGump(who, culture_pic)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     GFGumpPic(gump, 17, 31, 0x9E6);

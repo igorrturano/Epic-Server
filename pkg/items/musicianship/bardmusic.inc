@@ -1623,26 +1623,22 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 	var range := 0;
 	var duration := tempo;
 	var sound_duration := tempo/1000;
-	var resistencia_mod := - CInt(Magic_Lore/2.0);  //Redutor nos testes de resistência inimigos
+	var resistencia_mod := - CInt(Magic_Lore/10.0);  //Redutor nos testes de resistência inimigos
 	var HarmoniaPerfeita, Vituperio;
 
 	//Calcula o modificador base da intensidade dos efeitos
 	if(Magic_Lore < 40)
-		modifier := 5 + CInt(Magic_Lore/10); //limite 5-9
+		modifier := 2 + CInt(Magic_Lore/10); //limite 2-6
 		range := 2 + CInt(Magic_Lore/10); //limite 2-6
 		duration  := (tempo * (1.0 + (Magic_Lore/400)))/1000; //limite 1.0-1.1 vezes o tempo base
 	elseif (Magic_Lore < 70)
-		modifier := 5 + CInt(Magic_Lore/5); //limite 13-19
+		modifier := 5 + CInt(Magic_Lore/10); //limite 9-12
 		range := 5 + CInt(Magic_Lore/10); //limite 9-12
 		duration  := (tempo * (1.0 + (Magic_Lore/200)))/1000; //limite 1.2-1.35 vezes o tempo base
-	elseif (Magic_Lore < 100)
-		modifier := 5 + CInt(Magic_Lore/4); //limite 22-30
+	elseif (Magic_Lore >= 70)
+		modifier := 5 + CInt(Magic_Lore/5); //limite 19-25
 		range := CInt(Magic_Lore/5); //limite 14-20
 		duration  := (tempo * (1.0 + (Magic_Lore/100)))/1000; //limite 1.7-2.0 vezes o tempo base
-	elseif (Magic_Lore >= 100) //Lendário
-		modifier := 5 + CInt(Magic_Lore/2); //limite 55-60
-		range := CInt(Magic_Lore/5); //limite 14-20
-		duration  := (tempo * (1.0 + (Magic_Lore/50)))/1000; //limite 3.0-3.2 vezes o tempo base
 	else ///caso de Magic_Lore negativo
 		modifier := 1; //limite 1
 		range := 1; //limite 1
@@ -1658,23 +1654,23 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 		range := range + 5; //aumenta a area de efeito das cancoes
 	endif
 
-	BuffModifier := modifier;  //porder base dos Buffs
+	BuffModifier := modifier;  //poder base dos Buffs
 	DebuffModifier := modifier; //poder base do Debuffs
 
 	//Habilita eficacia extra nos buffs e debuffs
 	if (TemHabilidade(who, "Musica Contagiante"))
-		BuffModifier := modifier * 1.2;  //aumenta o porder dos Buffs
+		BuffModifier := BuffModifier + (modifier * 0.2);  //aumenta o porder dos Buffs
 	endif
 
 	if (TemHabilidade(who, "Musica da Alma"))
-		DebuffModifier := modifier * 1.2;  //aumenta o porder dos Debuffs
-		resistencia_mod := resistencia_mod - 20; //torna os Debuffs mais dificies de resistir
+		DebuffModifier := DebuffModifier + (modifier * 0.2);  //aumenta o porder dos Debuffs
+		resistencia_mod := resistencia_mod - 5; //torna os Debuffs mais dificies de resistir
 	endif
 
 	if (TemHabilidade(who, "Mestre do Improviso"))
-		BuffModifier := modifier * 1.2;
-		DebuffModifier := modifier * 1.2;  //aumenta o porder dos Debuffs
-		resistencia_mod := resistencia_mod - 40; //torna os Debuffs muito mais dificies de resistir
+		BuffModifier := BuffModifier + (modifier * 0.2);
+		DebuffModifier := DebuffModifier + (modifier * 0.2);  //aumenta o porder dos Debuffs
+		resistencia_mod := resistencia_mod - 5; //torna os Debuffs muito mais dificies de resistir
 	endif
 
 	//Habilita efeitos extras nos buffs OU debuffs, nunca os dois
@@ -1775,9 +1771,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier*1.0),range,alvos.Buffs,"*bem mais forte*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier*1.0),range,alvos.Buffs,"*bem mais forte*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier*0.5),range,alvos.Buffs,"*um pouco mais forte*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier*0.5),range,alvos.Buffs,"*um pouco mais forte*",resistencia_mod);
 			endif
 			break;
 		BARD_CALMA:
@@ -1785,9 +1781,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_int_up",duration,CInt(BuffModifier*1.0),range,alvos.Buffs,"*bem mais esperto*",resistencia_mod);
+				AplicaEfeito(who,"intelligence",duration,CInt(BuffModifier*1.0),range,alvos.Buffs,"*bem mais esperto*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_int_up",duration,CInt(BuffModifier*0.5),range,alvos.Buffs,"*um pouco mais esperto*",resistencia_mod);
+				AplicaEfeito(who,"intelligence",duration,CInt(BuffModifier*0.5),range,alvos.Buffs,"*um pouco mais esperto*",resistencia_mod);
 			endif
 			break;
 		BARD_TRISTE:
@@ -1795,9 +1791,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*1.0),range,alvos.Debuffs,"*bem mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*1.0),range,alvos.Debuffs,"*bem mais fraco*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais fraco*",resistencia_mod);
 			endif
 			break;
 		BARD_ACAO:
@@ -1805,9 +1801,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 1, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier*1.0),range,alvos.Buffs,"*bem mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier*1.0),range,alvos.Buffs,"*bem mais ágil*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier*0.5),range,alvos.Buffs,"*um pouco mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier*0.5),range,alvos.Buffs,"*um pouco mais ágil*",resistencia_mod);
 			endif
 			break;
 		BARD_STR_UP:
@@ -1815,9 +1811,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier*1.2),range,alvos.Buffs,"*muito mais forte*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier*1.2),range,alvos.Buffs,"*muito mais forte*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais forte*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais forte*",resistencia_mod);
 			endif
 			break;
 		BARD_STR_DOWN:
@@ -1825,9 +1821,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*1.2),range,alvos.Debuffs,"*muito mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*1.2),range,alvos.Debuffs,"*muito mais fraco*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais fraco*",resistencia_mod);
 			endif
 			break;
 		BARD_DEX_UP:
@@ -1835,9 +1831,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier*1.2),range,alvos.Buffs,"*muito mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier*1.2),range,alvos.Buffs,"*muito mais ágil*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais ágil*",resistencia_mod);
 			endif
 			break;
 		BARD_DEX_DOWN:
@@ -1845,9 +1841,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier*1.2),range,alvos.Debuffs,"*muito mais lento*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier*1.2),range,alvos.Debuffs,"*muito mais lento*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais lento*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais lento*",resistencia_mod);
 			endif
 			break;
 		BARD_INT_UP:
@@ -1855,9 +1851,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_int_up",duration,CInt(BuffModifier*1.2),range,alvos.Buffs,"*muito mais esperto*",resistencia_mod);
+				AplicaEfeito(who,"intelligence",duration,CInt(BuffModifier*1.2),range,alvos.Buffs,"*muito mais esperto*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_int_up",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais esperto*",resistencia_mod);
+				AplicaEfeito(who,"intelligence",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais esperto*",resistencia_mod);
 			endif
 			break;
 		BARD_INT_DOWN:
@@ -1865,9 +1861,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 2, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
-				AplicaEfeito(who,"bard_int_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*muito mais tapado*",resistencia_mod);
+				AplicaEfeito(who,"feeblemind",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*muito mais tapado*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_int_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais tapado*",resistencia_mod);
+				AplicaEfeito(who,"feeblemind",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais tapado*",resistencia_mod);
 			endif
 			break;
 		BARD_STR_DEX_UP:
@@ -1875,11 +1871,11 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 3, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais forte*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais forte*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier),range,alvos.Buffs,"*bem mais ágil*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais forte*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais forte*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais ágil*",resistencia_mod);
 			endif
 			break;
 		BARD_STR_DEX_DOWN:
@@ -1887,11 +1883,11 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 3, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais fraco*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais lento*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais lento*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*mais fraco*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*mais lento*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*mais lento*",resistencia_mod);
 			endif
 			break;
 		BARD_STR_DEX_INT_UP:
@@ -1899,13 +1895,13 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 4, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(HarmoniaPerfeita)
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais forte*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais ágil*",resistencia_mod);
-				AplicaEfeito(who,"bard_int_up",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais esperto*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais forte*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"intelligence",duration,CInt(BuffModifier*0.9),range,alvos.Buffs,"*mais esperto*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_up",duration,CInt(BuffModifier*0.8),range,alvos.Buffs,"*um tanto mais forte*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_up",duration,CInt(BuffModifier*0.8),range,alvos.Buffs,"*um tanto mais ágil*",resistencia_mod);
-				AplicaEfeito(who,"bard_int_up",duration,CInt(BuffModifier*0.8),range,alvos.Buffs,"*um tanto mais esperto*",resistencia_mod);
+				AplicaEfeito(who,"strength",duration,CInt(BuffModifier*0.8),range,alvos.Buffs,"*um tanto mais forte*",resistencia_mod);
+				AplicaEfeito(who,"agility",duration,CInt(BuffModifier*0.8),range,alvos.Buffs,"*um tanto mais ágil*",resistencia_mod);
+				AplicaEfeito(who,"intelligence",duration,CInt(BuffModifier*0.8),range,alvos.Buffs,"*um tanto mais esperto*",resistencia_mod);
 			endif
 			break;
 		BARD_STR_DEX_INT_DOWN:
@@ -1913,13 +1909,13 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_tocando", sound_duration, 4, who, 0);
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*um tanto mais fraco*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*um tanto mais lento*",resistencia_mod);
-				AplicaEfeito(who,"bard_int_down",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*um tanto mais tapado*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*um tanto mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*um tanto mais lento*",resistencia_mod);
+				AplicaEfeito(who,"feeblemind",duration,CInt(DebuffModifier*0.9),range,alvos.Debuffs,"*um tanto mais tapado*",resistencia_mod);
 			else
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*0.8),range,alvos.Debuffs,"*um tanto mais fraco*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier*0.8),range,alvos.Debuffs,"*um tanto mais lento*",resistencia_mod);
-				AplicaEfeito(who,"bard_int_down",duration,CInt(DebuffModifier*0.8),range,alvos.Debuffs,"*um tanto mais tapado*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*0.8),range,alvos.Debuffs,"*um tanto mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier*0.8),range,alvos.Debuffs,"*um tanto mais lento*",resistencia_mod);
+				AplicaEfeito(who,"feeblemind",duration,CInt(DebuffModifier*0.8),range,alvos.Debuffs,"*um tanto mais tapado*",resistencia_mod);
 			endif
 			break;
 		BARD_INSPIRAR_COMPETENCIA: //concede buffs em pericias não combativas nem magicas a UM aliado escolhido
@@ -1970,9 +1966,9 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
 				AplicaEfeito(who,"bard_alucinacao",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*Alucinado*",resistencia_mod);
-				AplicaEfeito(who,"bard_str_down",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais fraco*",resistencia_mod);
-				AplicaEfeito(who,"bard_dex_down",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais lento*",resistencia_mod);
-				AplicaEfeito(who,"bard_int_down",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais tapado*",resistencia_mod);
+				AplicaEfeito(who,"weaken",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais fraco*",resistencia_mod);
+				AplicaEfeito(who,"clumsy",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais lento*",resistencia_mod);
+				AplicaEfeito(who,"feeblemind",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*um pouco mais tapado*",resistencia_mod);
 			else
 				AplicaEfeito(who,"bard_alucinacao",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*Alucinado*",resistencia_mod);
 			endif
@@ -2036,11 +2032,11 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 				z := who.z;
 			endif
 
-			if (modifier < 10) //terciario
+			if (modifier < 6) //terciario
 				laminaAnimada := createnpcfromtemplate(":brainAI:espada_animada1", x, y, z, 0, who.realm);
-			elseif (modifier < 20) //secundario
+			elseif (modifier < 12) //secundario
 				laminaAnimada := createnpcfromtemplate(":brainAI:espada_animada2", x, y, z, 0, who.realm);
-			elseif (modifier < 40) //primario
+			elseif (modifier < 25) //primario
 				laminaAnimada := createnpcfromtemplate(":brainAI:espada_animada3", x, y, z, 0, who.realm);
 			else //lendario
 				laminaAnimada := createnpcfromtemplate(":brainAI:espada_animada4", x, y, z, 0, who.realm);
@@ -2227,7 +2223,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			if(Vituperio)
 				AplicaEfeito(who,"bard_emudecer",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*Mudo(a)*",resistencia_mod);
-				AplicaEfeito(who,"bard_int_down",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais tapado*",resistencia_mod);
+				AplicaEfeito(who,"feeblemind",duration,CInt(DebuffModifier),range,alvos.Debuffs,"*bem mais tapado*",resistencia_mod);
 			else
 				AplicaEfeito(who,"bard_emudecer",duration,CInt(DebuffModifier*0.5),range,alvos.Debuffs,"*Mudo(a)*",resistencia_mod);
 			endif
