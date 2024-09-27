@@ -1,3 +1,3 @@
 #!/bin/bash
-
-./scripts/ecompile -Af
+cd scripts
+./ecompile -Af
