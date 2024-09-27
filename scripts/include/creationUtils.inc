@@ -2212,3 +2212,69 @@ function UpdateCharacterSkin(who, chardata)
     who.color := chardata.skin_color;
     who.truecolor := chardata.skin_color;
 endfunction
+
+function spellChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
+    
+    var spellcfg := ReadConfigFile( ":spells:config/spellcaster" );
+    var keys := GetConfigIntKeys( spellcfg );
+    var spells := array;
+    foreach key in keys
+        var elem := FindConfigElem( spellcfg, key );
+        var spelllvl := GetConfigInt( elem, "Circle" );
+        var spelltype := GetConfigString( elem, "Type" );
+        if ( spelltype == "spellcaster" && spelllvl == 1 )
+            print(spelllvl + " entrei");
+            var spell := dictionary{ 
+                "id" -> key,
+                "circle" -> spelllvl,
+                "name" -> GetConfigString( elem, "Name" ),
+                "desc" -> GetConfigString( elem, "Desc" )
+            };
+            spells.append( spell );
+        endif
+    endforeach
+    print("spells: "+ spells);
+
+    var selected := array;
+    while (1)
+        GFPage(gump, 1);
+        y := 100;
+        foreach spell in spells
+            var color := (spell.id in selected) ? "#00FF00" : "#000000";
+            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+            GFAddButton(gump, x+201, y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, 200+_spell_iter);
+            GFTooltipText(gump, spell.Desc);
+            y += 26;
+        endforeach
+
+        GFTextMid(gump, 0, 400, 500, 2100, "Selecione exatamente 2 magias.");
+        if (selected.size() == 2)
+            GFAddButton(gump, 200, 430, 0x81C, 0x81B, GF_CLOSE_BTN, 666);
+            GFTextMid(gump, 0, 435, 500, 2100, "Confirmar");
+        endif
+
+        var input := GFSendGump(who, gump);
+        if (input[0] == 0)
+            continue;
+        elseif (input[0] == 666 && selected.size() == 2)
+            return selected;
+        else
+            var index := input[0] - 200;
+            if (index > 0 && index <= spells.size())
+                if (spells[index].id in selected)
+                    selected.Erase(Find(selected, spells[index].id, 1));
+                elseif (selected.size() < 2)
+                    selected.append(spells[index].id);
+                endif
+            endif
+        endif
+    endwhile
+endfunction
