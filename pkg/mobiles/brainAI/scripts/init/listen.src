@@ -65,7 +65,7 @@ endfunction
 function OpenAICompletion(systemMessage, questions)
 	var prompt := "";
     foreach question in questions
-        if (question.user == "user")
+        if (question.user)
             prompt += question.user;
         endif
     endforeach
@@ -83,10 +83,9 @@ function OpenAICompletion(systemMessage, questions)
 	foreach question in questions
 		if (typeof(question) != "Struct")
 			return struct{ "error" := "This must be an Struct" };
-		else
-			if (!question.assistant && !question.user)
-				return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
-			endif
+		endif
+		if (!question.assistant && !question.user)
+			return struct{ "error" := "Each question must be a struct containing the keys 'assistant' and 'user'" };
 		endif
 
 		if (question.assistant)
