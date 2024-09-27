@@ -16,7 +16,7 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	if (TemHabilidade(who, "Dominatio Animae"))
+	if (TemHabilidade(who, "Dominatio Animae") || TemHabilidade(who, "Visao verdadeira") || TemHabilidade(who, "Campeao das Montanhas"))
         SendSysMessageEx(who, "Você não sabe usar essa magia.", SSM_INFO);
         return 1;
     endif
