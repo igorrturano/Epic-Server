@@ -80,7 +80,7 @@ exported function Attack(attacker, defender)
 		CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
-		EpicApplyDamage(attacker, defender);
+		EpicApplyDamage(attacker, defender, DAMAGE_MAINHAND);
 
 	else
 		PlayMissSound(attacker);
@@ -88,7 +88,8 @@ exported function Attack(attacker, defender)
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
-	if (wpn_a_elem.OffDamage) // Se é DualWield ataca novamente com a penalidade de acerto
+
+	if (wpn_a_elem.OffHandDamage) // Se é DualWield ataca novamente com a penalidade de acerto
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
 		if (penalty < 10)
 			penalty := 10;
@@ -97,15 +98,15 @@ exported function Attack(attacker, defender)
 		hitchance -= penalty;
 		rolldice := RandomDiceRoll("1d100");
 		if ( rolldice < hitchance )
-			CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
+			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
-			EpicApplyDamage(attacker, defender);
+			EpicApplyDamage(attacker, defender, DAMAGE_OFFHAND);
 
 		else
 			PlayMissSound(attacker);
 
-			CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
+			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 		endif
 	endif
@@ -757,11 +758,11 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 	return 1;
 endfunction
 
-function EpicApplyDamage(attacker, defender)
+function EpicApplyDamage(attacker, defender, weaponHand)
 	PlayHitSounds(attacker, defender);
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
-	var dmg := CalculateRawDamage(attacker, attacker.weapon);
+	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
 	dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
 endfunction
 
