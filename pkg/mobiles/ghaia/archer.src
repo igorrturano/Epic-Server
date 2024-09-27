@@ -5,6 +5,7 @@ use cfgfile;
 include ":ghaia:genericspecial";
 include ":ghaia:ghaiaspecial";
 include ":ghaia:ghaiaspecial";
+include "include/epicNPCUtils";
 
 var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
 var me := self();
@@ -23,14 +24,8 @@ program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
 	
     while (1)    
-        var hasPlayerNearMe := 0;
-        var nearby := ListMobilesNearLocationEx( me.x, me.y, LIST_IGNORE_Z, 40 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+        var hasPlayerNearMe := hasPlayerNear(me);
 
-        foreach player in nearby
-            if (player.acctname)
-                hasPlayerNearMe++;
-            endif
-        endforeach
         if (hasPlayerNearMe >= 1)
             archercBrain();
         endif

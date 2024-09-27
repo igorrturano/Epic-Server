@@ -27,8 +27,6 @@ include ":charactercreation:resists";
 include ":combat:combat";
 include "include/epicUtils";
 
-//include ":combat:include/mainHitScript";
-
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
 
@@ -39,6 +37,7 @@ program MainHitScript(params)
 	var armor := params[4];
 	var basedamage := params[5];
 	var rawdamage := params[6];
+	var elementaldamage;
 
 	// Garante dano mínimo de 1
 	if (rawdamage < 1)
@@ -74,7 +73,7 @@ program MainHitScript(params)
 	// Calcula os danos
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
 
-	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos
+	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos (por enquanto calcula só o físico)
 
 	// Calcula desgaste nos equipamentos
 	WearDownWeapon(attacker, weapon);
@@ -92,7 +91,7 @@ program MainHitScript(params)
 	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
 	// Aplica o dano físico da arma
-	DamageFLS(defender, basedamage, DMG_PHYSICAL, attacker);
+	DamageFLSCombat(attacker, defender, armor, basedamage, DMG_PHYSICAL);
 
 	return 1;
 endprogram
@@ -434,11 +433,11 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 	var bonus;
 	//Amplia o dano na armadura se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
-		bonus := RandomInt(3)+1;
+		bonus := RandomDiceRoll("1d4");
 	endif
 
 	if (!GetObjProperty(armor, "encerada"))
-		bonus := RandomInt(3)+1;
+		bonus := RandomDiceRoll("1d4");
 	endif
 
 	if (armor)

@@ -5,6 +5,7 @@ use cfgfile;
 
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
+include ":brainAI:npcUtil";
 
 program DblClickNerve(params)
 	var npc		:= params[1];
@@ -24,7 +25,25 @@ program DblClickNerve(params)
 				if (GetObjProperty(npc, "startbuy"))
 					AI_Speak(npc, ""+GetObjProperty(npc, "startbuy"));
 				else
-					AI_Speak(npc, "Ola, no que posso ajuda-lo?");
+					var npcType := npc.npctemplate;
+					if ( npcType == ":merchants:taverneiro")
+						npcType := "taverneiro engraçado"; // Get a propriedade "npc_type"
+					else
+						npcType := "vendedor";
+					endif
+					var language := "None";
+					var event := "comercio";
+					var mood := "None";
+					var npcEvil := False;
+					var gossip := False;
+					var specialLore := False;
+
+					var sourceDescription := GetObjProperty(player, "descricao");
+					var playerinput := "<o personagem de descrição " + sourceDescription + " se aproxima do seu comércio>";
+					
+					var responseText := handle_open_ai_npc_speech(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+					AI_Speak(npc, responseText);
+					//AI_Speak(npc, "Ola, no que posso ajuda-lo?");
 				endif
 				busy := Start_Script(":merchants:pcconversation/conversation", {npc, player});
 				if ( busy.errortext )

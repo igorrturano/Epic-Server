@@ -113,19 +113,19 @@ program runScript_CharProfileRequest( params )
 			GFPage(gump, 0);
 			
 			//Background
-			GFResizePic(gump, 4, 3, 9270, 267, 383);
+			GFResizePic(gump, 4, 3, 9270, 467, 583);
 			
 			//Profile Picture
-			GFHTMLArea(gump, 37, 41, 200, 200,"<img src=\"" + url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
+			GFHTMLArea(gump, 37, 41, 400, 400,"<img src=\"" + url + "\" width=\"400\" height=\"400\" x=\"0\" y=\"0\">");
 			
 			//Description
-			GFHTMLArea(gump, 20, 273, 236, 100, descricao, 1, 1);
+			GFHTMLArea(gump, 20, 473, 436, 100, descricao, 1, 1);
 			
 			//Name
-			GFHTMLArea(gump, 16, 14, 239, 24, Object_Name, 1, 0);
+			GFHTMLArea(gump, 16, 14, 445, 24, Object_Name, 1, 0);
 			
 			//Race
-			GFHTMLArea(gump, 19, 245, 239, 24, GetObjProperty(who, "raca"), 1, 0);
+			GFHTMLArea(gump, 19, 445, 439, 24, GetObjProperty(who, "chardata").raca, 1, 0);
 
 			GFSendGump(who, gump);
 
@@ -133,7 +133,7 @@ program runScript_CharProfileRequest( params )
 	elseif (chr.serial != who.serial)
 		var isIncognito := GetObjProperty(chr, "Incognito");
 		if (isIncognito)
-			var incognito_url := "https://th.bing.com/th/id/OIG.0XmfkJZCmPd.wGE6C9x_?pid=ImgGn&w=1024&h=1024&rs=1";
+			var incognito_url := "https://i.imgur.com/9uIhQiy.png";
 			var incognito_descricao := "A fisionomia desse indvíduo é difícil de discernir.";
 			
 			var gump2 := GFCreateGump();
