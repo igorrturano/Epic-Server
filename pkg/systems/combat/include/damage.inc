@@ -376,24 +376,23 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	return totaldmg;
 endfunction
 
-////////////////////////////////////////////////////////
-//
-// DamageFLSCombat(attacker, defender, armor, damage, type)
-//
-// Purpose
-// Criado para modificar a aplicação de dano do combate sem influenciar nas demais aplicações de dano do shard.
-// Ver o doc das demais funções abaixo para entender melhor.
-// 
-// Parameters
-// attacker: Ref do atacante aplicando o dano.
-// defender: Ref do alvo atingido no dano.
-// armor: itemRef da peça atingida.
-// damage: Valor total do dano a ser abatido.
-// type: Tipo do elemento do dano.
-// 
-// Return value
-//
-///////////////////////////////////////////////////////
+/**
+ * DamageFLSCombat(attacker, defender, armor, damage, type)
+ *
+ * Purpose
+ * Criado para modificar a aplicação de dano do combate sem influenciar nas demais aplicações de dano do shard.
+ * Ver o doc das demais funções abaixo para entender melhor.
+ * 
+ * Parameters
+ * attacker: Ref do atacante aplicando o dano.
+ * defender: Ref do alvo atingido no dano.
+ * armor: itemRef da peça atingida.
+ * damage: Valor total do dano a ser abatido.
+ * type: Tipo do elemento do dano.
+ * 
+ * Return value
+ *
+ */
 function DamageFLSCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
 	var totaldamage := CalculateDamageCombat(attacker, defender, armor, damage, type);
@@ -420,25 +419,24 @@ function DamageFLSCombat(attacker, defender, armor, damage, type)
 	return totaldamage;
 endfunction
 
-////////////////////////////////////////////////////////
-//
-// CalculateDamageCombat(attacker, defender, armor, damage, type)
-//
-// Purpose
-// Criado para modificar o cálculo de dano do combate sem influenciar nos demais cálculos de dano do shard.
-// Agora o cálculo de dano é baseado na região atingida.
-// Ver o doc das demais funções abaixo para entender melhor.
-// 
-// Parameters
-// attacker: Ref do atacante.
-// defender: Ref do alvo atingido no dano.
-// armor: itemRef da peça atingida.
-// damage: Valor total do dano a ser abatido.
-// type: Tipo do elemento do dano.
-// 
-// Return value
-//
-///////////////////////////////////////////////////////
+/**
+ * CalculateDamageCombat(attacker, defender, armor, damage, type)
+ *
+ * Purpose
+ * Criado para modificar o cálculo de dano do combate sem influenciar nos demais cálculos de dano do shard.
+ * Agora o cálculo de dano é baseado na região atingida.
+ * Ver o doc das demais funções abaixo para entender melhor.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo atingido no dano.
+ * armor: itemRef da peça atingida.
+ * damage: Valor total do dano a ser abatido.
+ * type: Tipo do elemento do dano.
+ * 
+ * Return value
+ *
+ */
 function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	var resistMod := 0;
 	var resist := 0;
@@ -456,23 +454,22 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	return CInt(damage-resist);
 endfunction
 
-////////////////////////////////////////////////////////
-//
-// getResistPlayerByType(npc, type)
-//
-// Purpose
-// Pegar os valores da resistência da armadura do NPC.
-// Segue a mesma lógica do getResistPlayerByType(), porém o NPC não tem variação na armadura,
-// é como se todas as peças possuíssem o mesmo resist.
-// 
-// Parameters
-// npc: Ref do NPC
-// type: Tipo do elemento do dano
-// armor: itemRef da armadura pega no combatHook();
-// 
-// Return value
-//
-///////////////////////////////////////////////////////
+/**
+ * getResistPlayerByType(npc, type)
+ *
+ * Purpose
+ * Pegar os valores da resistência da armadura do NPC.
+ * Segue a mesma lógica do getResistPlayerByType(), porém o NPC não tem variação na armadura,
+ * é como se todas as peças possuíssem o mesmo resist.
+ * 
+ * Parameters
+ * npc: Ref do NPC
+ * type: Tipo do elemento do dano
+ * armor: itemRef da armadura pega no combatHook();
+ * 
+ * Return value
+ *
+ */
 function getResistNPCByType(npc, type, armor := 0)
 	var resist;
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
@@ -493,22 +490,22 @@ function getResistNPCByType(npc, type, armor := 0)
 	return CInt(resist);
 endfunction
 
-////////////////////////////////////////////////////////
-//
-// getResistPlayerByType(player, type, armor)
-//
-// Purpose
-// Pegar os valores da resistência da armadura do player.
-// Agora o dano é abatido pelo valor da região da armadura, não mais pela soma de todos eles.
-// Ex.: Se DANO = 12 e o dano acertar o peitoral. Se resist de CHEST = 7. Dano final = 5.
-// 
-// Parameters
-// armor: itemRef da armadura atingida na função de região (ver combatHook)
-// type: Tipo do elemento do dano
-// 
-// Return value
-//
-///////////////////////////////////////////////////////
+/**
+ *
+ * getResistPlayerByType(player, type, armor)
+ *
+ * Purpose
+ * Pegar os valores da resistência da armadura do player.
+ * Agora o dano é abatido pelo valor da região da armadura, não mais pela soma de todos eles.
+ * Ex.: Se DANO = 12 e o dano acertar o peitoral. Se resist de CHEST = 7. Dano final = 5.
+ * 
+ * Parameters
+ * armor: itemRef da armadura atingida na função de região (ver combatHook)
+ * type: Tipo do elemento do dano
+ * 
+ * Return value
+ *
+ */
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
 
@@ -524,22 +521,21 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	return CInt(resist);
 endfunction
 
-////////////////////////////////////////////////////////
-//
-// CheckDefenderHabsBeforeDamage(byref defender, byref damage)
-//
-// Purpose
-// Checar as habilidades que são ativadas antes de o defensor tomar o dano;
-// Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
-// 
-// Parameters
-// attacker: Ref do atacante.
-// defender: Ref do alvo que recebe o dano.
-// damage: Valor (em int) do dano.
-// 
-// Return void
-//
-///////////////////////////////////////////////////////
+/**
+ * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+ * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * damage: Valor (em int) do dano.
+ * 
+ * Return void
+ *
+ */
 function CheckDefenderHabsBeforeDamage(attacker, byref defender, byref damage)
 	if (GetObjProperty(defender, "#martir"))
 		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
@@ -562,22 +558,21 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, byref damage)
 	endif
 endfunction
 
-////////////////////////////////////////////////////////
-//
-// CheckDefenderHabsAfterDamage(byref defender, byref damage)
-//
-// Purpose
-// Checar as habilidades que são ativadas antes de o defensor tomar o dano;
-// Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
-// 
-// Parameters
-// attacker: Ref do atacante.
-// defender: Ref do alvo que recebe o dano.
-// damage: Valor (em int) do dano.
-// 
-// Return void
-//
-///////////////////////////////////////////////////////
+/**
+ * CheckDefenderHabsAfterDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+ * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * damage: Valor (em int) do dano.
+ * 
+ * Return void
+ *
+ */
 function CheckDefenderHabsAfterDamage(attacker, defender, damage)
 	if (isBloodied(defender))
 		RecalcVitals(defender);
