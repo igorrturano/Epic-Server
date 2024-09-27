@@ -1,0 +1,12 @@
+use uo;
+//.gossip <insira sua fofoca>
+program apagar_fofoca(who, nova_fofoca)
+
+    if (!nova_fofoca)
+        sendsysmessage(who, "Voce esta apagando fofocas");
+        var gossip_storage := array{};
+        SetGlobalProperty("gossip_storage", gossip_storage);
+        
+        return;
+    endif
+endprogram
