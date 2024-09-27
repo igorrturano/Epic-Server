@@ -7,7 +7,7 @@ use util;
 
 include ":brainAI:npcUtil";
 include "include/packets";
-include "include/damage";
+include ":combat:damage";
 
 /*
  * SpitAced(spitter, spit_on)

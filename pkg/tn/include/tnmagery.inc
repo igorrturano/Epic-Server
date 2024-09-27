@@ -4,7 +4,7 @@ use math;
 include "include/client";
 include "include/sounds";
 include ":attributes:attributes";
-include "include/damage";
+include ":combat:damage";
 include ":timedScripts:timedScripts";
 include "spellSounds";
 

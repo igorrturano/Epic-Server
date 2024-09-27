@@ -1,4 +1,4 @@
-use uo;
+/* use uo;
 use os;
 use cfgfile;
 
@@ -27,4 +27,4 @@ function CalculateRawDamage(attacker, weapon)
 		return (  dmg + weapon.dmg_mod );
 	endif
 
-endfunction
+endfunction */

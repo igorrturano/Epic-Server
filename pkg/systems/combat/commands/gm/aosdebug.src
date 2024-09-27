@@ -5,7 +5,7 @@ use os;
 use math;
 use file;
 
-include "include/damage";
+include ":combat:damage";
 
 program command_showmyresists(who)
 

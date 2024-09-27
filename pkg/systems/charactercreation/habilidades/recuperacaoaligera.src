@@ -3,7 +3,7 @@
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 
 program manobra(attacker)
 	if (IsRaging(attacker) || TemHabilidade(attacker, "Budōka") || GetCooldown(attacker, "furia") > 0)

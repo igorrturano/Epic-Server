@@ -4,7 +4,7 @@ use util;
 
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
-include "include/damage";
+include ":combat:damage";
 
 program cogumelo(who, item)
 

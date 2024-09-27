@@ -1,0 +1,50 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/lore_items";
+include ":attributes:attributes";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program use_LoreItem(who, item)
+    var item_info := GetLoreItemInfo(item.objtype);
+    if (!item_info)
+        SendSysMessage(who, "Este item não possui informações de lore.");
+        return 0;
+    endif
+
+    ShowLoreItemInfo(who, item, item_info);
+endprogram
+
+function ShowLoreItemInfo(who, item, item_info)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    GFResizePic(gump, 0, 0, 9200, 640, 480);
+
+    // Adicionar bordas decorativas
+    GFAddAlphaRegion(gump, 10, 10, 620, 460);
+
+    // Imagem do item
+    GFTilePic(gump, 30, 30, item_info.image, item.color);
+
+    // Imagem de flavor
+    GFAddButton(gump, 20, 20, item_info.flavor_image, item_info.flavor_image, GF_CLOSE_BTN, 0);
+
+    // Título e texto principal
+    GFHTMLArea(gump, 210, 30, 400, 200, "<BASEFONT COLOR=#6B4423><H3>" + item_info.name + "</H3>" + item_info.main_text, 0, 1);
+
+    // Texto da profissão (se aplicável)
+    if (GetObjProperty(who, "Profession") == item_info.required_profession)
+        GFHTMLArea(gump, 210, 240, 400, 100, "<BASEFONT COLOR=#008000>" + item_info.profession_text, 0, 1);
+    endif
+
+    // Texto de arqueologia (se aplicável)
+    if (AP_GetSkill(who, "Archaeology") >= item_info.required_skill_value)
+        GFHTMLArea(gump, 210, 350, 400, 100, "<BASEFONT COLOR=#0000FF>" + item_info.archaeology_text, 0, 1);
+    endif
+
+    GFSendGump(who, gump);
+endfunction

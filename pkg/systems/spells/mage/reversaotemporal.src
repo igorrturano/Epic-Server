@@ -8,7 +8,7 @@ include ":fls_magery:spells";
 include ":fls_magery:spellSounds";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include "include/tileEffects";
 include "include/say";
 include "include/facings";

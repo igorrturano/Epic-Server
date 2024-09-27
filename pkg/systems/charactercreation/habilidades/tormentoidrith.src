@@ -7,7 +7,7 @@ include "include/say";
 include "include/dungeons";
 include ":tn:cooldown";
 include ":taming:taming";
-include "include/damage";
+include ":combat:damage";
 include "include/epicMageryUtils";
 
 program truesight(who)

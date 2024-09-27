@@ -1,0 +1,42 @@
+use npc;
+
+include "include/epicai";
+include "include/monsterBrain";
+include "include/animalBrain";
+include "include/humanoidBrain";
+include "include/epicNPCUtils";
+
+var brain_type;
+
+program KillPlayers()
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+    set_critical(1);
+    InitializeEpicNPC(me);
+    DetermineBrainType();
+    set_critical(0);
+
+    SetWarMode(0);
+
+    while (1)
+        var hasPlayerNearMe := HasPlayerNear(me);
+        if (hasPlayerNearMe)
+            case (brain_type)
+                "monster": MonsterBrain();
+                "animal":  AnimalBrain();
+                "humanoid": HumanoidBrain();
+                // default: GenericBrain(); // chamar o ghaia:generic
+            endcase
+        endif
+        sleep(20);
+    endwhile
+endprogram
+
+function DetermineBrainType()
+    var npc_config := NPC_GetNPCConfig(me);
+    brain_type := lower(npc_config.BrainType);
+    if (!brain_type)
+        brain_type := "generic";
+    endif
+endfunction
+

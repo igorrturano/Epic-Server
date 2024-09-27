@@ -9,7 +9,7 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include "include/damage";
+include ":combat:damage";
 include "include/epicMageryUtils";
 
 program SpellScript(params)

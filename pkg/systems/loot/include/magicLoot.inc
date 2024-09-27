@@ -12,7 +12,7 @@ use util;
 use cfgfile;
 use os;
 
-include "include/damage";
+include ":combat:damage";
 include ":tn:equipment";
 include ":spells:tnmagery";
 

@@ -3,10 +3,10 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 include ":timedscripts:timedScripts";
-include ":tn:combat";
+include ":combat:damage";
 include "include/epicCombatUtils";
 include "include/client";
 

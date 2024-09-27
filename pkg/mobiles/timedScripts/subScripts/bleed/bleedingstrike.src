@@ -5,7 +5,7 @@ use os;
 include ":attributes:attributes";
 include ":attributes:skills";
 include ":timedscripts:timedScripts";
-include "include/damage";
+include ":combat:damage";
 include ":blood:blood";
 
 program default_poison(params)

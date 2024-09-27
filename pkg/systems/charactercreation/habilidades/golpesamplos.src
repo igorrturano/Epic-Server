@@ -9,7 +9,7 @@
 //include "include/say";
 //include ":timedscripts:timedScripts";
 //include ":tn:cooldown";
-//include "include/damage";
+//include ":combat:damage";
 
 //program SpellScript(params)
 //	var who := params[1];

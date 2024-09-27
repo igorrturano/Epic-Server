@@ -1,4 +1,4 @@
-include "include/damage";
+include ":combat:damage";
 use uo;
 
 program split(who, item)

@@ -1,5 +1,5 @@
 use uo;
-include "include/damage";
+include ":combat:damage";
 
 program jogar( who, dano )
 

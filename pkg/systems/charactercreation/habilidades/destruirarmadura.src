@@ -4,7 +4,7 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include ":timedScripts:timedScripts";
 
 program doubleattack(params)
@@ -19,7 +19,9 @@ program doubleattack(params)
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 	
-	PrintTextAbove(attacker, "*destroi a armadura*");
+	PrintTextAbove(attacker, "*destroi a armadura*");
+
+
 	if (armor)
 		var x := defender.x + RandomInt(2)+1;
 		var y := defender.y + RandomInt(2)+1;

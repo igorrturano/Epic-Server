@@ -29,7 +29,7 @@ include ":taming:taming";
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include "include/client";
-include "include/damage";
+include ":combat:damage";
 
 program sendStats()
 	Print( "INSTALLING: Outgoing Paperdoll PH..." );

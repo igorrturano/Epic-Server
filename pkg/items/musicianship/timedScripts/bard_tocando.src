@@ -3,7 +3,7 @@ use os;
 
 include ":attributes:attributes";
 include ":musicianship:bardmusic";
-include "include/damage";
+include ":combat:damage";
 
 program TimedScript_Bard_tocando(params)
 	var alvo := params[1];

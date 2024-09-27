@@ -5,7 +5,7 @@ include "include/client";
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/dungeons";

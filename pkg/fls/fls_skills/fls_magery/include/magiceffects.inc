@@ -6,7 +6,7 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 
 function PlayLightningSoundEffect(mobile)
 

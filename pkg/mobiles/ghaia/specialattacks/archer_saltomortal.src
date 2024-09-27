@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include "include/facings";
 include "include/utils";
-include "include/damage";
+include ":combat:damage";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 
