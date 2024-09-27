@@ -38,13 +38,10 @@ function ShowImageGump(who, title, url)
     GFGumpPicTiled(gump, 0, 0, 850, 900, GUMP_BACKGROUND);
     AdicionarMoldura(gump, 850, 900);
 
-    // Adicionando um fundo para o título
     GFResizePic(gump, 30, 845, INTERNAL_BACKGROUND, 800, 30);
     
-    // Usando o título corretamente
     GFTextMid(gump, 20, 852, 800, 53, title);
 
-    // Usando a URL corretamente
     GFHTMLArea(gump, 30, 30, 800, 800, "<img src=\"" + url + "\" width=\"800\" height=\"800\" x=\"0\" y=\"0\">");
 
     GFSendGump(who, gump);
@@ -55,9 +52,9 @@ function ShowEditGump(who, self)
     GFClosable(gump, 1);
     GFDisposable(gump, 0);
     
-    var gump_width := 435;  // Aumentado de 400 para 415
+    var gump_width := 435;
     var gump_height := 300;
-    var content_width := 415;  // Aumentado de 380 para 395
+    var content_width := 415;
     
     GFGumpPicTiled(gump, 0, 0, gump_width, gump_height, GUMP_BACKGROUND);
     AdicionarMoldura(gump, gump_width, gump_height);
@@ -105,45 +102,18 @@ function AdicionarMoldura(byref gump, width, height)
     endforeach
 endfunction
 
-
 function GetSoundAndEmote(graphic)
-    var resultado := array{0, ""};
-    
-    case(graphic)
-        401:
-            resultado[1] := 0x32C;
-            resultado[2] := "*Oooh*";
-        400:
+    var resultado := array{};
+    if (graphic == 0x190 || graphic == 0x191)  // Humanos
+        if (graphic == 0x190)  // Masculino
             resultado[1] := 0x43E;
-            resultado[2] := "*Oooh*";
-        1828:
-            resultado[1] := 0x43E;
-            resultado[2] := "*Oooh*";
-        1829:
+        else  // Feminino
             resultado[1] := 0x32C;
-            resultado[2] := "*Oooh*";
-        1830:
-            resultado[1] := 0x43E;
-            resultado[2] := "*Oooh*";
-        1831:
-            resultado[1] := 0x32C;
-            resultado[2] := "*Oooh*";
-        1832:
-            resultado[1] := 0x43E;
-            resultado[2] := "*Oooh*";
-        1833:
-            resultado[1] := 0x32C;
-            resultado[2] := "*Oooh*";
-        1834:
-            resultado[1] := 0x43E;
-            resultado[2] := "*Oooh*";
-        1835:
-            resultado[1] := 0x32C;
-            resultado[2] := "*Oooh*";
-        default:
-            resultado[1] := 0x32C;
-            resultado[2] := "*Oooh*";
-    endcase
-    
+        endif
+        resultado[2] := "Oooh";
+    else  // Para outros tipos de corpos, você pode adicionar mais condições aqui
+        resultado[1] := 0x43E;  // Som padrão
+        resultado[2] := "Hmm";  // Emote padrão
+    endif
     return resultado;
 endfunction
