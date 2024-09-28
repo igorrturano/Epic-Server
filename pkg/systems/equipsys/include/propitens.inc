@@ -5,16 +5,7 @@ include "equipstats";
 include "include/say";
 include "include/client";
 
-// TODO: ADICIONAR A ATUALIZAÇÃO NO SCRIPT QUE CRIA A PROP CREATEDBY EM TODOS OS ITENS
-	// TODO: VER A QUESTÃO DOS ITENS MÁGICOS
-	// TODO: VER ITENS COM RECIPE
-
-//TOGGLES PARA SEGURANÇA NA FASE DE IMPLEMENTAÇÃO
-//COLOCAR O NIVEL DO CMDLEVEL MÍNIMO NO TOGGLE PARA LIMITAR O USO EM FASE DE TESTES - PLAYER -> cmdlevel = 1; GM -> cmdlevel = 4; ADMIN -> cmdlevel = 5
-const TOGGLELVL_CRAFT := 0;
-const TOGGLELVL_EQUIP := 0;
-
-function NovoSistemaDeItens(who, item, TOGGLE, PROCEDIMENTO);
+/* function NovoSistemaDeItens(who, item, TOGGLE, PROCEDIMENTO);
     if (who.cmdlevel < TOGGLE) return; endif
 
     if (PROCEDIMENTO == 1)
@@ -443,4 +434,4 @@ function AtualizarItemAntigo(who, item)
         // SendSysMessageEx(who, "----------");
         // SendSysMessageEx(who, "Item {} atualizado para novo modelo de base de dados com SUCESSO !!!".Format(Hex(item.objtype)), SSM_INFO);
     endif
-endfunction
+endfunction */
