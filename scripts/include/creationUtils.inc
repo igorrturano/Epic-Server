@@ -1191,30 +1191,58 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x1830, 1); // beker
         CreateItemInBackpack(who, 0x1849, 1); // aparato
         CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
-    endif
+        var book1 := createiteminbackpack(who, "alchemybook");
+            book1.newbie := 1;
+		    setobjproperty(book1, "serialid", who.serial);
+		    setobjproperty(book1, "marked",who.name + " - " + who.acctname);
+        var dyebook := createiteminbackpack(who, "dyebook");
+            setobjproperty(dyebook, "serialid", who.serial);
+		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
+        var recipe := struct;
+        var chosenRecipes := AlchChoices(who);
+        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.+id := chosenRecipes[1];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.id := chosenRecipes[2];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.id := chosenRecipes[3];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.id := chosenRecipes[4];
+        SetObjProperty(r1, "recipe", recipe);
+        var i := 0;
+        while(i != (skills[ALCHEMY])*2)
+            var tinta := randomint(1);
+            if(tinta == 0)
+                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
+            else
+                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
+            endif
+            i := ++i;
+        endwhile
 
-    if (skills[ALCHEMY] == 2)
-		var book := createiteminbackpack(who, "alchemybook");
-        book.newbie := 1;
-		setobjproperty(book, "serialid", who.serial);
-		setobjproperty(book, "marked",who.name + " - " + who.acctname);
+        if (skills[ALCHEMY] >= 2)
+		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+            recipe.id := chosenRecipes[5];
+            SetObjProperty(r1, "recipe", recipe);
+            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+            recipe.id := chosenRecipes[6];
+            SetObjProperty(r1, "recipe", recipe);
 
-        var recipes := array;
-		recipes := CreateVeryBasicRecipes();
-		var basic_book := createiteminbackpack(who, "alchemybook");
-		setobjproperty(basic_book, "recipes", recipes);
-	elseif (skills[ALCHEMY] == 3)
-		var book1:= CreateItemInBackpack(who, "alchemybook");
-		setobjproperty(book1, "serialid", who.serial);
-		setobjproperty(book1, "marked",who.name + " - " + who.acctname);
-        book1.newbie := 1;
-        var recipes := array;
-		recipes := CreateBasicRecipes();
-		var book2 := createiteminbackpack(who, "alchemybook");
-        book2.newbie := 1;
-		setobjproperty(book2, "recipes", recipes);
-		setobjproperty(book2, "serialid",who.serial);
-		setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+	        if (skills[ALCHEMY] == 3)
+		        var book2:= CreateItemInBackpack(who, "alchemybook");
+        		setobjproperty(book2, "serialid",who.serial);
+		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                recipe.id := chosenRecipes[7];
+                SetObjProperty(r1, "recipe", recipe);
+                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                recipe.id := chosenRecipes[8];
+                SetObjProperty(r1, "recipe", recipe);
+            endif
+        endif
 	endif
 endfunction
 
@@ -2236,7 +2264,7 @@ function spellChoices(who)
     var selected_spells := array;
     var btn_value;
     while (1)
-        var input := spellSelectionGump(who, gump, spells, selected_spells, x, y);
+        var input := spellSelectionGump(who, gump, spells, selected_spells, 2, x, y);
         
         foreach key in (input.keys)
             btn_value := key;
@@ -2263,7 +2291,9 @@ function spellChoices(who)
     return selected_spells;
 endfunction
 
-function spellSelectionGump(who, gump, spells, selected_spells, x, y)
+
+function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
+
     GFPage(gump, 1);
     y := 100;
     foreach spell in spells
@@ -2274,9 +2304,71 @@ function spellSelectionGump(who, gump, spells, selected_spells, x, y)
         y += 26;
     endforeach
 
-    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha 2 magias", 0, 0);
-    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha 2 magias", 0, 0); //shadow
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
     return GFSendGump(who, gump);
 endfunction
+
+function AlchChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas receitas", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas receitas", 0, 0);
+
+    var recipecfg := ReadConfigFile(":alchemy:config/recipes");
+    var keys := GetConfigIntKeys(recipecfg);
+    var recipes := array;
+    var skill := getobjproperty(who, "chardata").skills[ALCHEMY];
+    foreach key in keys
+        var elem := FindConfigElem(recipecfg, key);
+        var recipelvl := GetConfigInt(elem, "init");
+            if (!recipelvl || recipelvl == error);
+                recipelvl := 4;
+            endif
+        if (recipelvl <= skill)
+            var recipe := dictionary{ 
+                "id" -> key,
+                "name" -> GetConfigString(elem, "Type"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            recipes.append(recipe);
+        endif
+    endforeach
+
+    var selected_recipes := array;
+    var btn_value;
+    while (1)
+        var qtd := (skill*2)+2;
+        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + recipes.size())
+                var recipe_index := btn_value - 200;
+                var recipe_id := recipes[recipe_index].id;
+                if (recipe_id in selected_recipes)
+                    selected_recipes.Erase(Find(selected_recipes, recipe_id, 1));
+                else
+                    selected_recipes.append(recipe_id);
+                endif
+            endif
+        endforeach
+        if (selected_recipes.size() != qtd)
+            selected_recipes := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente " + cstr(qtd) + " receitas.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+
+    SendSysMessageEX(who, "Você escolheu as receitas: " + CStr(selected_recipes), SSM_INFO);
+    return selected_recipes;
+endfunction
+
