@@ -137,10 +137,6 @@ function racialSelection(who, culture_pic)
     who.title_race := chardata.raca;
     who.race := chardata.raca;
 
-<<<<<<< HEAD
-=======
-
->>>>>>> e4a11c5a0f6075d3c03e73fcc7350902c8c19ceb
     SetObjProperty(who, "chardata", chardata);
 endfunction
 

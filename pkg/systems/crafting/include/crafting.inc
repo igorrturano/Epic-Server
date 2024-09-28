@@ -304,7 +304,24 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 			theitem.newbie := 1;
 			setobjproperty(theitem, "serialid", who.serial);
 			setobjproperty(theitem, "marked",who.name + " - " + who.acctname);
+			setobjproperty(theitem, "material", chosenPrincipalMaterial); // adicionando a prop de material ao obj criado
 			Print("Depois:"+objtype);
+			endif
+
+			if(craft_skill=="Alchemy")
+					var recipes := ReadConfigFile(":alchemy:config/recipes");
+					var strength := cint(recipes[objtype].strength);
+					var science := (recipes[objtype].science);
+					var tier := (recipes[objtype].tier);
+					var crafterskill := AP_GetSkill(who, ALCHEMY);
+					var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
+					var bonus := (((crafterInt-50)/10)+(crafterskill/10));
+
+					SetObjProperty(theitem, "strength", strength);
+					SetObjProperty(theitem, "bonus", bonus);
+					SetObjProperty(theitem, "tier", tier);
+					SetObjProperty(theitem, "crafterskill", crafterskill);
+					SetObjProperty(theitem, "science", science);
 			endif
 
 			if(!theitem)
@@ -387,19 +404,31 @@ function CreateItem(who, objtype, material, more:=0)
 	var cfg:=ReadConfigFile(":crafting:stackingitens");
 	var elem := FindConfigElem(cfg, "stacks");
 	var stackingitens:=ListConfigElemProps( elem );
+	var stacknow := 0; //usado se a gente encontrar um item com mesmo material pra dar o stack
+
 	if(cstr(objtype) in stackingitens)
-		var stacknow := FindObjtypeInContainer( who.backpack, objtype );
-		if (objtype == 0x1bd4 || objtype == 0x9087) //Pontas e shafts
+		if (objtype == 0x1bd4 || objtype == 0x9087) //Pontas e shafts fazem de 10 em 10
 			more := more + 9;
 		endif
+
+		// Encontrar todos os itens do mesmo tipo na mochila
+        var potential_stacks := EnumerateItemsInContainer(who.backpack, objtype);
+
+		foreach iteminbackpack in (potential_stacks)
+            // Verificar se o material é o mesmo
+            if(GetObjProperty(iteminbackpack, "material") == material)
+                stacknow := iteminbackpack;
+                break;
+            endif
+        endforeach
 		if ( stacknow )
-			AddAmount (stacknow, 1+more);
+			AddAmount(stacknow, 1+more); // cria o item fazendo stack pro mesmo material
 			theitem := stacknow;
 		else
-			theitem := CreateItemInBackpack(who, objtype, 1+more);
+			theitem := CreateItemInBackpack(who, objtype, 1+more); // cria o item sem fazer stack
 		endif
 	else
-		theitem := CreateItemInBackpack(who, objtype, 1+more);
+		theitem := CreateItemInBackpack(who, objtype, 1+more); // cria o item sem fazer stack
 	endif
 	return theitem;
 endfunction
