@@ -471,6 +471,19 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	return CInt(damage);
 endfunction
 
+/**
+ * getWeaponDamageType(attacker, weapon)
+ *
+ * Purpose
+ * Verificar o dano da arma do atacante é Cortante, Perfurante ou Contundente.
+ *
+ * Parameters
+ * attacker: mobRef do atacante
+ * weapon: itemRef da arma do atacante
+ *
+ * Return value
+ *
+ */
 function getWeaponDamageType(attacker, weapon)
 	var elem := GetWpnCfgInfo(attacker, weapon);
 	case (elem.TipoAtaque.Upper())
