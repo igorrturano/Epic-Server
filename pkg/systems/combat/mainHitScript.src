@@ -70,6 +70,9 @@ program MainHitScript(params)
 	// Calcula a chance do projétil não quebrar
 	ArrowRecovery(attacker, defender, weapon);
 
+	// Calcula o tipo de dano da arma
+	var dmgType := getWeaponDamageType(attacker, weapon);
+
 	// Calcula os danos
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
 
@@ -91,7 +94,7 @@ program MainHitScript(params)
 	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
 	// Aplica o dano físico da arma
-	DamageFLSCombat(attacker, defender, armor, basedamage, DMG_PHYSICAL);
+	DamageEpicCombat(attacker, defender, armor, basedamage, dmgType);
 
 	return 1;
 endprogram
