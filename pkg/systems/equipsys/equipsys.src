@@ -6,7 +6,7 @@ program EquipSys(params)
 	var item := params[2];
 
 	if (item.IsA(POLCLASS_ARMOR))
-		setPropArmor(item, 1);
+		setPropArmor(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		setPropWeapon(item);
 	endif

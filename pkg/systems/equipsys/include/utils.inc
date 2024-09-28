@@ -61,11 +61,11 @@ endfunction
 function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
     var elem := getItemCfgElem(item);
     var slot := elem.Coverage;
-    if (IsEscudo(item)) slot := "Shield"; endif
+    if (IsShield(item)) slot := "Shield"; endif
     return slot;
 endfunction
 
-function IsEscudo(item)
+function IsShield(item)
     var tipoequip := getType(item);
     var escudo := SplitWords(tipoequip); escudo := escudo[1];
 	escudo.Lower();
