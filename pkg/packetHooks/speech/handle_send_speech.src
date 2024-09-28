@@ -60,9 +60,7 @@ exported function handleUCOutgoing( character, byref packet )
 	endif
 
     //Loga tudo que é falado pelo personagem e aqueles que podem ouvir o personagem
-    if(message_txt != "...")
-        LogPlayerSpeech(source, message_txt);
-    endif
+    LogPlayerSpeech(source, message_txt);
 
 	//SendSysMessage(source,"cmd "+ packet.GetInt8(0));
 	//SendSysMessage(source,"length "+ packet.GetInt16(1));
