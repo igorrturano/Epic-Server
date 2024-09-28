@@ -25,6 +25,7 @@ include ":timedScripts:timedScripts";
 include "damage/damagebase";
 include ":commands:debugsystem";
 include ":combat:armorZones";
+include ":combat:combat";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
