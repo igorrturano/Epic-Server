@@ -69,6 +69,7 @@ function PlayHitSounds(attacker, defender)
 endfunction
 
 function PlayMissSound(attacker)
+	var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
 	if ( wpn_a_elem.MissSound )
 		PlaySoundEffect(attacker, wpn_a_elem.MissSound);
 	else
