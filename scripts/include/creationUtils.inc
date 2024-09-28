@@ -1761,10 +1761,6 @@ endfunction
 
 function hairSelectionGump(who, byref chardata, currentPage := 1)
     var gump := GfCreateGump();
-    // var x := 63;
-    // var y := 100;
-    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu cabelo", 0, 0); //shadow
-    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu cabelo", 0, 0);
 
     GFGumpPic(gump, 17, 31, 0x9E6);
     GFResizePic(gump, 298, 100, 2620, 250, 400);
@@ -1827,10 +1823,6 @@ endfunction
 
 function beardSelectionGump(who, byref chardata, currentPage := 1)
     var gump := GfCreateGump();
-    // var x := 63;
-    // var y := 115; // Deslocado um pouco para baixo em relação ao cabelo
-    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua barba", 0, 0); //shadow
-    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha sua barba", 0, 0);
 
     GFGumpPic(gump, 17, 31, 0x9E6);
     GFResizePic(gump, 298, 100, 2620, 250, 400);
@@ -2211,4 +2203,80 @@ endfunction
 function UpdateCharacterSkin(who, chardata)
     who.color := chardata.skin_color;
     who.truecolor := chardata.skin_color;
+endfunction
+
+function spellChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
+    
+    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
+    var keys := GetConfigIntKeys(spellcfg);
+    var spells := array;
+    foreach key in keys
+        var elem := FindConfigElem(spellcfg, key);
+        var spelllvl := GetConfigInt(elem, "Circle");
+        var spelltype := GetConfigString(elem, "Type");
+        if (spelltype == "spellcaster" && spelllvl == 1)
+            var spell := dictionary{ 
+                "id" -> key,
+                "circle" -> spelllvl,
+                "name" -> GetConfigString(elem, "Name"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            spells.append(spell);
+        endif
+    endforeach
+
+    var selected_spells := array;
+    var btn_value;
+    while (1)
+        var input := spellSelectionGump(who, gump, spells, selected_spells, x, y);
+        
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + spells.size())
+                var spell_index := btn_value - 200;
+                var spell_id := spells[spell_index].id;
+                if (spell_id in selected_spells)
+                    selected_spells.Erase(Find(selected_spells, spell_id, 1));
+                else
+                    selected_spells.append(spell_id);
+                endif
+            endif
+        endforeach
+
+        if (selected_spells.size() != 2)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente 2 magias.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+
+    SendSysMessageEX(who, "Você escolheu as magias: " + CStr(selected_spells), SSM_INFO);
+    return selected_spells;
+endfunction
+
+function spellSelectionGump(who, gump, spells, selected_spells, x, y)
+    GFPage(gump, 1);
+    y := 100;
+    foreach spell in spells
+        var color := (spell.id in selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+        GFTooltipText(gump, spell.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
+        y += 26;
+    endforeach
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha 2 magias", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha 2 magias", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    return GFSendGump(who, gump);
 endfunction
