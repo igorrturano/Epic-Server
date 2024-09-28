@@ -8,11 +8,9 @@ program usaPergaminho(who, scroll)
 
 
 	var recipe := GetObjProperty(scroll, "recipe");
-	if(scroll.objtype == 0xef2b||0xef3c||0xef3d||0xef3e||0xef3f)
-		WriteDyeInfo(recipe);
-	else
+	
 		WriteAlchInfo(recipe);
-	endif
+
 
 	var gump := GFCreateGump(140, 100);
 	GFClosable(gump, 1);
