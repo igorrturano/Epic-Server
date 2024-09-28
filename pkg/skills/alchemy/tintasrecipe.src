@@ -35,13 +35,13 @@ program cria(item)
 	var sorteado;
 		if (item.objtype == 0xef2b)
 			sorteado := level1[RandomIntMinMax(1, level1.size()+1)];
-		elseif (item.objtype == 0xef2c)
+		elseif (item.objtype == 0xef3c)
 			sorteado := level2[RandomIntMinMax(1, level2.size()+1)];
-		elseif (item.objtype == 0xef2d)
+		elseif (item.objtype == 0xef3d)
 			sorteado := level3[RandomIntMinMax(1, level3.size()+1)];
-		elseif (item.objtype == 0xef2e)
+		elseif (item.objtype == 0xef3e)
 			sorteado := level4[RandomIntMinMax(1, level4.size()+1)];
-		elseif (item.objtype == 0xef2f)
+		elseif (item.objtype == 0xef3f)
 			sorteado := level5[RandomIntMinMax(1, level5.size()+1)];
 		endif;
 	var elem := FindConfigelem(cfg, sorteado);
