@@ -440,3 +440,29 @@ function TesteVicio(who, tier, dmg)
   endif
   return dmg;
 endfunction
+
+function WriteAlchInfo(byref recipe)
+	var cfg := ReadConfigFile(":alchemy:config/recipes");
+	var elem := FindConfigElem(cfg, recipe.recipe);
+
+  recipe.+id := GetConfigInt(elem, "id");
+	recipe.+name := GetConfigString( elem, "Name" );
+  recipe.+tier := GetConfigint( elem, "tier" );
+	recipe.+type := GetConfigString( elem, "Type" );
+	recipe.+difficulty := GetConfigInt( elem, "skill" );
+	recipe.+description := GetConfigString( elem, "desc" );
+	recipe.+science := GetConfigString(elem, "science");
+	recipe.+level := GetConfigInt( elem, "level" );
+endfunction
+
+function WriteDyeInfo(byref recipe)
+	var cfg := ReadConfigFile(":alchemy:config/recipestintas");
+	var elem := FindConfigElem(cfg, recipe.recipe);
+
+  recipe.+id := GetConfigInt(elem, "id");
+	recipe.+name := GetConfigString( elem, "Name" );
+	recipe.+type := GetConfigString( elem, "Type" );
+	recipe.+difficulty := GetConfigInt( elem, "skill" );
+	recipe.+description := GetConfigString( elem, "desc" );
+	recipe.+level := GetConfigInt( elem, "level" );
+endfunction
