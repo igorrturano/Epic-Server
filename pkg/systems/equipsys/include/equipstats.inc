@@ -14,7 +14,12 @@ use os;
 use cfgfile;
 
 include "propitens";
+include "utils";
 include ":combat:combat";
+
+enum TIERS
+	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5
+endenum
 
 enum SPEED
 	MELEE_LOW := "MELEE_LOW", MELEE_MID := "MELEE_MID", MELEE_HIGH := "MELEE_HIGH",
@@ -42,9 +47,10 @@ enum PROTECTIONTYPE
 	ARMOR_LOWLOW := "ARMADURA LEVE FRACA", ARMOR_LOWMID := "ARMADURA LEVE MEDIA", ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
 	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA", ARMOR_MIDMID := "ARMADURA MEDIA MEDIA", ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
 	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA", ARMOR_HIGHMID := "ARMADURA PESADA MEDIA", ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
-	SHIELD_LOWLOW := "ESCUDO LEVE FRACA", SHIELD_LOWMID := "ESCUDO LEVE MEDIA", SHIELD_LOWHIGH := "ESCUDO LEVE FORTE",
-	SHIELD_MIDLOW := "ESCUDO MEDIA FRACA", SHIELD_MIDMID := "ESCUDO MEDIA MEDIA", SHIELD_MIDHIGH := "ESCUDO MEDIA FORTE",
-	SHIELD_HIGHLOW := "ESCUDO PESADA FRACA", SHIELD_HIGHMID := "ESCUDO PESADA MEDIA", SHIELD_HIGHHIGH := "ESCUDO PESADA FORTE",
+	SHIELD_LOWLOW := "ESCUDO LEVE FRACO", SHIELD_LOWMID := "ESCUDO LEVE MEDIO", SHIELD_LOWHIGH := "ESCUDO LEVE FORTE",
+	SHIELD_MIDLOW := "ESCUDO MEDIO FRACO", SHIELD_MIDMID := "ESCUDO MEDIO MEDIO", SHIELD_MIDHIGH := "ESCUDO MEDIO FORTE",
+	SHIELD_HIGHLOW := "ESCUDO PESADO FRACA", SHIELD_HIGHMID := "ESCUDO PESADO MEDIO", SHIELD_HIGHHIGH := "ESCUDO PESADO FORTE",
+	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
 endenum
 
 /**
@@ -64,8 +70,7 @@ endenum
  */
 function getWeaponStats(weapon)
 	// TODO: Sistema de tier para somar os ganhos pra cada tier
-	var cfg := ReadConfigFile(":combat:itemdesc");
-	var elem := cfg[weapon.objtype];
+	var elem := getItemCfgElem(weapon);
 	var stats := struct;
 
 	case (elem.TipoAtaque)
@@ -201,15 +206,15 @@ function ReadResourceModifiers(mod)
                 aos_resist_mod := GetConfigStringArray(elem, "AoSDamageMod");
             endif
 
-            var hp_mod := CInt(GetConfigString(elem, "hpmod"));
+            var hp_mod := CInt(GetConfigString(elem, "hpmod")); // TODO: Remover daqui e substituir por uam função que calcule no item, baseado em um fórmula matemática envolvendo tier, peso, etc.
             if (aos_resist_mod.size() >= 5)
-                resource_modifiers[Lower(resource_id)] := array{
-                    CInt(aos_resist_mod[1] * 100),
-                    CInt(aos_resist_mod[2] * 100),
-                    CInt(aos_resist_mod[3] * 100),
-                    CInt(aos_resist_mod[4] * 100),
-                    CInt(aos_resist_mod[5] * 100),
-                    hp_mod
+                resource_modifiers[Lower(resource_id)] := struct{
+                    "Physical" := CInt(aos_resist_mod[1] * 100),
+                    "Fire" := CInt(aos_resist_mod[2] * 100),
+                    "Cold" := CInt(aos_resist_mod[3] * 100),
+                    "Poison" := CInt(aos_resist_mod[4] * 100),
+                    "Energy" := CInt(aos_resist_mod[5] * 100),
+                    "HP" := hp_mod
                 };
             endif
         endif
@@ -243,119 +248,118 @@ function TabelaMaterialDamageMod(item) //objtype do material: return {FISICO, FI
     return array{0, 0, 0, 0, 0, 0};
 endfunction
 
-function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD, POISON, ENERGY}
-	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
-    var material := Lower(Hex(item.GetProp("material")));
+function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD, POISON, ENERGY}
+    var material := Hex(item.GetProp("material"));
     case(material)
         //////////METAL
         //TIER 1
-        "0x6309": //FERRO
-        "0x6993": //PRATA LUNAR
-        "0x6991": //ESTANHO
-        "0x6465": //COBRE
-        "0x6995": //AÇO
-        "0x6994": //BRONZE
-        "0x630e": //OURO
+        0x6309: //FERRO
+        0x6993: //PRATA LUNAR
+        0x6991: //ESTANHO
+        0x6465: //COBRE
+        0x6995: //AÇO
+        0x6994: //BRONZE
+        0x630e: //OURO
 
         //TIER 2
-        "0x630a": //LITAN
-        "0x6315": // ILLYRA
-        "0x630d": //FIGIN
-        "0x6460": //frigutium
-        "0x630c": //SINQUE
-        "0x630b": //HELCE
-        "0x6602": //ACIELITH
-        "0x6603": //CRISTALITH
-        "0x6601": //STALITH
+        0x630a: //LITAN
+        0x6315: //ILLYRA
+        0x630d: //FIGIN
+        0x6460: //FRIGUTIUM
+        0x630c: //SINQUE
+        0x630b: //HELCE
+        0x6602: //ACIELITH
+        0x6603: //CRISTALITH
+        0x6601: //STALITH
 
         //TIER 3
-        "0x6310": //GALVORN
-        "0x6605": //IGNARILITH
-        "0x6606": //GLACIALITH
-        "0x6607": //VENERILITH
-        "0x6608": //ENERLITH
-        "0x6604": //PLATINUM
-        "0x6609": //LUNIUM
-        "0x6610": //CELERIUM
+        0x6310: //GALVORN
+        0x6605: //IGNARILITH
+        0x6606: //GLACIALITH
+        0x6607: //VENERILITH
+        0x6608: //ENERLITH
+        0x6604: //PLATINUM
+        0x6609: //LUNIUM
+        0x6610: //CELERIUM
         
         //TIER 4
-        "0x6997": //SOLIUM
-        "0x699a": //ICELUM
-        "0x6999": //HISSIUM
-        "0x6998": //TESLIUM
-        "0x6311": //MITHRIL
+        0x6997: //SOLIUM
+        0x699a: //ICELUM
+        0x6999: //HISSIUM
+        0x6998: //TESLIUM
+        0x6311: //MITHRIL
 
         //TIER 5
-        "0x699b": //ORICALCUM
+        0x699b: //ORICALCUM
             return {0,0,0,0,0}; //MOD METAIS
 
         //////////COURO
         //TIER 1
-        "0xee45": //CURTIDO
-        "0xef24": //PELUDO
+        0xee45: //CURTIDO
+        0xef24: //PELUDO
 
         //TIER 2
-        "0xef21": //ESPESSO
-        "0xef26": //POLAR
-        "0xef20": //ESCAMOSO
-        "0xef22": //ANFIBIO
+        0xef21: //ESPESSO
+        0xef26: //POLAR
+        0xef20: //ESCAMOSO
+        0xef22: //ANFIBIO
 
         //TIER 3
-        "0xc601": //courorobusto
-        "0xc602": //MARINHO
-        "0xc603": //couroescamosoduro
-        "0xc604": //LAMELAR
+        0xc601: //courorobusto
+        0xc602: //MARINHO
+        0xc603: //couroescamosoduro
+        0xc604: //LAMELAR
 
         //TIER 4
-        "0xed29": //DRACONIANO
-        "0xef25": //courocinzento
-        "0xef28": //courorijo
-        "0xef27": //GIGANTE
+        0xed29: //DRACONIANO
+        0xef25: //courocinzento
+        0xef28: //courorijo
+        0xef27: //GIGANTE
 
         //TIER 5
-        "0xef23": //ASPERO
-        "0xc605": //NEGRO
+        0xef23: //ASPERO
+        0xc605: //NEGRO
             return {0,0,0,0,0}; //MOD COUROS
 
         //////////OSSO
         //TIER 1
-        "0xf7e": //OSSO
-        "0xef32": //CINZA
+        0xf7e: //OSSO
+        0xef32: //CINZA
 
         //TIER 2
-        "0xef30": //VERMELHO
-        "0xef31": //PRETO
+        0xef30: //VERMELHO
+        0xef31: //PRETO
 
         //TIER 3
-        "0xef38": //LICH
-        "0xef39": //REPTILIANO
+        0xef38: //LICH
+        0xef39: //REPTILIANO
 
         //TIER 4
-        "0xef3a": //GIGANTE
-        "0xef3b": //TERATHAN
+        0xef3a: //GIGANTE
+        0xef3b: //TERATHAN
 
         //TIER 5
-        "0xef29": //DEMONÍACO
+        0xef29: //DEMONÍACO
             return {0,0,0,0,0}; //MOD OSSOS
 
         //////////TECIDO
         //TIER 1
-        "0x1765": //LÃ
-        "0x1764": //ALGODÃO
+        0x1765: //LÃ
+        0x1764: //ALGODÃO
 
         //TIER 2
-        "0xf92": //SEDA
-        "0xf9f": //LINHO
+        0xf92: //SEDA
+        0xf9f: //LINHO
 
         //TIER 3
-        "0xfa2": //MALVA
-        "0xfad": //SISAL
-        "0xfaf": //DENIM
-        "0xfb2": //RAMI
+        0xfa2: //MALVA
+        0xfad: //SISAL
+        0xfaf: //DENIM
+        0xfb2: //RAMI
 
         //TIER 4
-        "0xfb7": //FLAMEL
-        "0xfbd": //RAJAL
+        0xfb7: //FLAMEL
+        0xfbd: //RAJAL
             return {0,0,0,0,0}; //MOD TECIDOS
 
         //////////TECIDO
@@ -371,21 +375,37 @@ function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, CO
     endcase
 endfunction
 
-function getArmorStats(armor)
-	var cfg := ReadConfigFile(":combat:itemdesc");
-	var elem := cfg[armor.objtype];
+function getArmorStats(armor, tier)
+	var elem := getItemCfgElem(armor);
 	var stats := struct;
 
 	// TODO: Pegar todos os atributos da armadura e retornar no stats
+	var resists := getResistByProtection(elem.TipoProtecao);
+	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus.
+	resists := calcResistByTier(resists, tier);
 
 	return stats;
 endfunction
 
-function getResistModByTier(item)
-	var physical := array; // {SlashResist, PiercingResist, BluntResist};
-    var tipo := PegarTipo(item).upper();
+function calcResistByTier(resists, tier)
+	if (!resists.?SlashResist)
+		return error{"errortext" := "Must be a armor or shield"};
+	endif
+	tier--;
+	
+	// TODO: Somar Tier-1 em cada resist físico
+	resists.PhysicalResist += tier;
+	resists.SlashResist += tier;
+	resists.PiercingResist += tier;
+	resists.BluntResist += tier;
 
-    case(tipo)
+	return resists;
+endfunction
+
+function getResistByProtection(protectionType)
+	var physical := array; // {SlashResist, PiercingResist, BluntResist};
+
+    case(protectionType) // Armaduras
         //TIER 1
         ARMOR_LOWLOW: physical := {0,0,0};
         ARMOR_LOWMID: physical := {1,1,1};
@@ -402,26 +422,27 @@ function getResistModByTier(item)
         ARMOR_HIGHHIGH: physical := {8,8,8};
     endcase
 
-    case(tipo)
+    case(protectionType) // Escudos
+		// TODO: Repensar os valores e balancear
         //TIER 1
-        SHIELD_LOWLOW: return {0,0,0};
-        SHIELD_LOWMID: return {0,0,0};
-        SHIELD_LOWHIGH: return {0,0,0};
+        SHIELD_LOWLOW: physical := {11,1,6};
+        SHIELD_LOWMID: physical := {12,2,7};
+        SHIELD_LOWHIGH: physical := {13,3,8};
 
         //TIER 2
-        SHIELD_MIDLOW: return {0,0,0};
-        SHIELD_MIDMID: return {0,0,0};
-        SHIELD_MIDHIGH: return {0,0,0};
+        SHIELD_MIDLOW: physical := {14,4,9};
+        SHIELD_MIDMID: physical := {15,5,10};
+        SHIELD_MIDHIGH: physical := {20,6,11};
 
         //TIER 3
-        SHIELD_HIGHLOW: return {0,0,0};
-        SHIELD_HIGHMID: return {0,0,0};
-        SHIELD_HIGHHIGH: return {0,0,0};
+        SHIELD_HIGHLOW: physical := {25,7,12};
+        SHIELD_HIGHMID: physical := {30,8,15};
+        SHIELD_HIGHHIGH: physical := {35,9,17};
 
         //TIER 4
-        "escudo de corpo fraco": return {0,0,0};
-        "escudo de corpo medio": return {0,0,0};
-        "escudo de corpo forte": return {0,0,0};
+        SHIELD_BODYLOW: physical := {40,10,20};
+        SHIELD_BODYMID: physical := {45,11,23};
+        SHIELD_BODYHIGH: physical := {50,12,25};
     endcase
 
 	var resists := struct;
@@ -429,6 +450,7 @@ function getResistModByTier(item)
 	resists.+SlashResist := physical[1];
 	resists.+PiercingResist := physical[2];
 	resists.+BluntResist := physical[3];
+	// TODO: PEGAR OS ELEMENTAIS BASEADOS NAS PROPS QUE O ITEM VAI TER QUANDO O MAGO ENCANTAR (ver onde ficam esses valores)
 	resists.+FireResist := 0;
 	resists.+ColdResist := 0;
 	resists.+PoisonResist := 0;
@@ -436,29 +458,45 @@ function getResistModByTier(item)
 	return resists;
 endfunction
 
-function getSlotMod(item)
+function getResistModBySlot(item)
 	var stats := array;
-	var slot := PegarSlot(item).upper;
+	var slot := getSlot(item).upper;
 
     case(slot) // {SlashResist, PiercingResist, BluntResist, DexPenalty}
-        HEAD: stats := {1,1,1,-1};
-        NECK: stats := {1,1,1,-1};
-        BODY: stats := {4,4,4,-3};
-        ARMS: stats := {2,2,2,-2};
-        HANDS: stats := {1,1,1,-1};
-        LEGS: stats := {3,3,3,-2};
-        SHIELD: stats := {0,0,0,-1};
+        HEAD: stats := {2,2,2}; break;
+        NECK: stats := {1,1,1}; break;
+        BODY: stats := {4,4,4}; break;
+        ARMS: stats := {2,2,2}; break;
+        HANDS: stats := {1,1,1}; break;
+        LEGS: stats := {3,3,3}; break;
+        SHIELD: stats := {4,4,4}; break;
     endcase
 
     var resists := struct;
-	resists.+PhysicalResist := stats[1];
-	resists.+SlashResist := stats[1];
-	resists.+PiercingResist := stats[2];
-	resists.+BluntResist := stats[3];
-	resists.+FireResist := 0;
-	resists.+ColdResist := 0;
-	resists.+PoisonResist := 0;
-	resists.+EnergyResist := 0;
-	resists.+DexPenalty := stats[4];
+	resists.+PhysicalResistMod := stats[1];
+	resists.+SlashResistMod := stats[1];
+	resists.+PiercingResistMod := stats[2];
+	resists.+BluntResistMod := stats[3];
+	resists.+FireResistMod := 0;
+	resists.+ColdResistMod := 0;
+	resists.+PoisonResistMod := 0;
+	resists.+EnergyResistMod := 0;
 	return resists;
+endfunction
+
+function getDexPenModBySlot(item)
+	var slot := getSlot(item).upper();
+	var dexPen;
+
+	case(slot) // {SlashResist, PiercingResist, BluntResist, DexPenalty}
+        HEAD: dexPen := 1; break;
+        NECK: dexPen := 1; break;
+        BODY: dexPen := 3; break;
+        ARMS: dexPen := 2; break;
+        HANDS: dexPen := 1; break;
+        LEGS: dexPen := 2; break;
+        SHIELD: dexPen := 1; break;
+    endcase
+
+	return dexPen;
 endfunction

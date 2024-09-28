@@ -205,12 +205,7 @@ endfunction
 
 
 //FUNCTIONS DE BUSCA
-function BuscarValoresCfg(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
-    var cfg := ReadConfigFile(":combat:itemdesc");
-    var elem := FindConfigElem(cfg, item.objtype);
 
-    return elem;
-endfunction
 
 function BuscarValorMaterial(item)
     var valor := 0;
@@ -270,50 +265,10 @@ function BuscarDebuffMod(item)
     return valores;
 endfunction
 
-function IsEscudo(item)
-    var tipoequip := PegarTipo(item);
-    var escudo := SplitWords(Lower(tipoequip)); escudo := escudo[1];
-
-    if (escudo == "escudo") return 1;
-    else return;
-    endif
-endfunction
 
 
 
-//FUNCTIONS PARA MANIPULAR PROPS
-function PegarTipo(item) //PEGA A PROP DO TIPO DO EQUIPAMENTO
-    var tipo := PegarProp(item);
-    tipo := tipo."TipoEquip";
-    return tipo;
-endfunction
 
-function PegarSlot(item) //PEGA O SLOT DO ITEM NO .CFG
-    var elem := BuscarValoresCfg(item);
-    var slot := Lower(elem.Coverage);
-    if (IsEscudo(item)) slot := "Shield"; endif
-    return slot;
-endfunction
-
-function PegarProp(item) //PEGA A PROP DE MODIFICADORES BASE
-    var prop := item.GetProp("atributos");
-    if (!prop) prop := Dictionary{}; endif
-    return prop;
-endfunction
-
-function PegarPropExcep(item) //PEGA A PROP DE MODIFICADORES EXCEPCIONAL
-    var prop := item.GetProp("atributos_excp");
-    if (!prop) prop := Dictionary{}; endif
-    return prop;
-endfunction
-
-function SetarProp(item, prop) //SETA A PROP DE MODIFICADORES BASE
-    if (prop.Size() != 0) item.SetProp("atributos", prop); endif
-endfunction
-
-function SetarPropExcep(item, prop) //SETA A PROP DE MODIFICADORES EXCEPCIONAL
-    if (prop.Size() != 0) item.SetProp("atributos_excp", prop); endif
-endfunction
 
 
 
