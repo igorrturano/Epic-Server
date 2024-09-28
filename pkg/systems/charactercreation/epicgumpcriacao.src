@@ -729,8 +729,9 @@ function pathOfWisdom(who, culture_pic)
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
 endfunction
 
-function startAdventure(who)
+function startAdventure(who)   
     MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
+
     PlaySoundEffectPrivate(who, 0x306, who);
     PlayStationaryEffect(who.x+1, who.y+1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);

@@ -4,11 +4,11 @@ use util;
 
 program cria(item)
 
-	if (GetObjProperty(item, "spellinfo") != error)
+	if (GetObjProperty(item, "recipe") != error)
 		return 1;
 	endif
 
-	var spellinfo := struct;
+	var recipe := struct;
 	var level1:={};
 	var level2:={};
 	var level3:={};
@@ -35,24 +35,18 @@ program cria(item)
 	var sorteado;
 		if (item.objtype == 0xef2b)
 			sorteado := level1[RandomIntMinMax(1, level1.size()+1)];
-		elseif (item.objtype == 0xef2c)
+		elseif (item.objtype == 0xef3c)
 			sorteado := level2[RandomIntMinMax(1, level2.size()+1)];
-		elseif (item.objtype == 0xef2d)
+		elseif (item.objtype == 0xef3d)
 			sorteado := level3[RandomIntMinMax(1, level3.size()+1)];
-		elseif (item.objtype == 0xef2e)
+		elseif (item.objtype == 0xef3e)
 			sorteado := level4[RandomIntMinMax(1, level4.size()+1)];
-		elseif (item.objtype == 0xef2f)
+		elseif (item.objtype == 0xef3f)
 			sorteado := level5[RandomIntMinMax(1, level5.size()+1)];
 		endif;
-	var elem := FindConfigelem(cfg, sorteado);
+	recipe.+recipe := cint(cfg[sorteado]."recipe");
 
-	if (elem)
-		spellinfo.+type := GetconfigString(elem, "type");
-		spellinfo.+name := GetConfigString(elem, "name");
-		spellinfo.+id := GetConfigInt(elem, "id");
-		spellinfo.+description := GetConfigString(elem, "desc");
-	endif
-	SetObjProperty(item, "spellinfo", spellinfo);
+	SetObjProperty(item, "recipe", recipe);
 
 endprogram
 
