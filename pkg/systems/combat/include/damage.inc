@@ -25,6 +25,10 @@ include ":timedScripts:timedScripts";
 include "damage/damagebase";
 include ":commands:debugsystem";
 include ":combat:armorZones";
+<<<<<<< HEAD
+include ":combat:combat";
+=======
+>>>>>>> 7c81598716e5d073474a6582ad28b40d201ae40b
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -404,17 +408,8 @@ endfunction
  */
 function DamageEpicCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
-	var totaldamage := CalculateDamageCombat(attacker, defender, armor, damage, type);
+	var totaldamage := CInt(CalculateDamageCombat(attacker, defender, armor, damage, type));
 
-
-	var regiao := CS_GetArmorZone(armor);
-	if (regiao == error)
-		regiao := "Corpo";
-	endif
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {damage-totaldamage}");
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {totaldamage}({damage} - {damage-totaldamage})");
 
 	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
 	DisplayDamage(defender, totaldamage, attacker);
@@ -450,6 +445,7 @@ endfunction
 function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	var resistMod := 0;
 	var resist := 0;
+	var totaldamage := damage;
 
 	if (defender.npctemplate)
 		resist := getResistNPCByType(defender, type, armor);
@@ -457,11 +453,36 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 		resist := getResistArmorByType(armor, type, attacker, defender);
 	endif
 
+	var regiao := CS_GetArmorZone(armor);
+	if (regiao == error)
+		regiao := "Corpo";
+	endif
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
+
+	damage := damage-resist;
+
 	if (damage < 1)
 		damage := 1;
 	endif
 
-	return CInt(damage-resist);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
+
+	return CInt(damage);
+endfunction
+
+function getWeaponDamageType(attacker, weapon)
+	var elem := GetWpnCfgInfo(attacker, weapon);
+	case (elem.TipoAtaque.Upper())
+		"CORTANTE":	return DMG_SLASH;
+		"PERFURANTE": return DMG_PIERCING;
+		"CONTUSIVO": return DMG_BLUNT;
+
+		default: return DMG_PHYSICAL;
+	endcase
 endfunction
 
 /**
@@ -488,6 +509,30 @@ function getResistNPCByType(npc, type, armor := 0)
 	if (!armor || armor == error)
 		case(type)
 			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
+			DMG_SLASH:
+				if (npc.SlashResist)
+					resist := CInt(cfg[npctemplate.template].SlashResist) + CInt(npc.resist_slash_mod);
+				else
+					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
+				endif
+				break;
+
+			DMG_PIERCING:
+				if (npc.PiercingResist)
+					resist := CInt(cfg[npctemplate.template].PiercingResist) + CInt(npc.resist_piercing_mod);
+				else
+					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
+				endif
+				break;
+
+			DMG_BLUNT:
+				if (npc.BluntResist)
+					resist := CInt(cfg[npctemplate.template].BluntResist) + CInt(npc.resist_blunt_mod);
+				else
+					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
+				endif
+				break;
+
 			DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(npc.resist_fire_mod); break;
 			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(npc.resist_cold_mod); break;
 			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(npc.resist_energy_mod); break;
@@ -521,12 +566,35 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 	case(type)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
+		DMG_SLASH:
+			if (armor.SlashResist)
+				resist := CInt(armor.SlashResist) + CInt(armor.resist_slash_mod);
+			else
+				return getResistArmorByType(armor, DMG_PHYSICAL);
+			endif
+			break;
+
+		DMG_PIERCING:
+			if (armor.PiercingResist)
+				resist := CInt(armor.PiercingResist) + CInt(armor.resist_piercing_mod);
+			else
+				return getResistArmorByType(armor, DMG_PHYSICAL);
+			endif
+			break;
+
+		DMG_BLUNT:
+			if (armor.BluntResist)
+				resist := CInt(armor.BluntResist) + CInt(armor.resist_blunt_mod);
+			else
+				return getResistArmorByType(armor, DMG_PHYSICAL);
+			endif
+			break;
+
 		DMG_FIRE: resist := CInt(armor.FireResist) + CInt(armor.resist_fire_mod); break;
 		DMG_COLD: resist := CInt(armor.ColdResist) + CInt(armor.resist_cold_mod); break;
 		DMG_ENERGY: resist := CInt(armor.EnergyResist) + CInt(armor.resist_energy_mod); break;
 		DMG_POISON: resist := CInt(armor.PoisonResist) + CInt(armor.resist_poison_mod); break;
 	endcase
-
 
 	return CInt(resist);
 endfunction

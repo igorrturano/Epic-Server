@@ -597,7 +597,7 @@ function colorSelection(who, byref chardata)
     var continue_loop := 1;
 
     while (continue_loop)
-        var input := colorSelectionGump(who, chardata, currentPage);
+        var input := hairAndBeardColorSelectionGump(who, chardata, currentPage);
         btn_value := input[0];
         case (btn_value)
             1001: currentPage += 1; // Next page
@@ -696,11 +696,12 @@ function pathOfWisdom(who, culture_pic)
             grimorio.graphic := 0x0EFA;
             var spellinfo := struct;
             spellinfo.+magic_path := "spellcaster";
+            var chosenSpells := spellChoices(who);
             var p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
-            spellinfo.+id := 6;
+            spellinfo.+id := chosenSpells[1];
             SetObjProperty(p1, "spellinfo", spellinfo);
             p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
-            spellinfo.id := 7;
+            spellinfo.id := chosenSpells[2];
             SetObjProperty(p1, "spellinfo", spellinfo);
             break;
         elseif (btn_value == 202) 
