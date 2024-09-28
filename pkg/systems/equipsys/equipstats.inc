@@ -14,22 +14,37 @@ use os;
 use cfgfile;
 
 include "propitens";
+include ":combat:combat";
 
 enum SPEED
-	MELEE_LOW, MELEE_MID, MELEE_HIGH,
-	RANGED_LOW, RANGED_MID, RANGED_HIGH
+	MELEE_LOW := "MELEE_LOW", MELEE_MID := "MELEE_MID", MELEE_HIGH := "MELEE_HIGH",
+	RANGED_LOW := "RANGED_LOW", RANGED_MID := "RANGED_MID", RANGED_HIGH := "RANGED_HIGH"
 endenum
 enum DAMAGE
-	ONEHANDED_LOW, ONEHANDED_MID, ONEHANDED_HIGH,
-	TWOHANDED_LOW, TWOHANDED_MID, TWOHANDED_HIGH,
-	BOW_LOW, BOW_MID, BOW_HIGH,
-	CROSSBOW_LOW, CROSSBOW_MID, CROSSBOW_HIGH
+	ONEHANDED_LOW := "ONEHANDED_LOW", ONEHANDED_MID := "ONEHANDED_MID", ONEHANDED_HIGH := "ONEHANDED_HIGH",
+	TWOHANDED_LOW := "TWOHANDED_LOW", TWOHANDED_MID := "TWOHANDED_MID", TWOHANDED_HIGH := "TWOHANDED_HIGH",
+	BOW_LOW := "BOW_LOW", BOW_MID := "BOW_MID", BOW_HIGH := "BOW_HIGH",
+	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH"
+endenum
+enum DAMAGETYPE
+	SLASHDAMAGE := "CORTANTE", PIERCINGDAMAGE := "PERFURANTE", BLUNTDAMAGE := "CONTUSIVO"
 endenum
 enum CRITICAL
-	CRITICALCHANCE_NOCHANCE,
-	CRITICALCHANCE_LOW,
-	CRITICALCHANCE_MID,
-	CRITICALCHANCE_HIGH
+	CRITICALCHANCE_NOCHANCE := "NOCHANCE",
+	CRITICALCHANCE_LOW := "LOW",
+	CRITICALCHANCE_MID := "MID",
+	CRITICALCHANCE_HIGH := "HIGH"
+endenum
+enum ARMORSLOT
+	HEAD := "HEAD", NECK := "NECK", BODY := "BODY", ARMS := "ARMS", HANDS := "HANDS", LEGS := "LEGS/FEET", SHIELD := "SHIELD"
+endenum
+enum PROTECTIONTYPE
+	ARMOR_LOWLOW := "ARMADURA LEVE FRACA", ARMOR_LOWMID := "ARMADURA LEVE MEDIA", ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
+	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA", ARMOR_MIDMID := "ARMADURA MEDIA MEDIA", ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
+	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA", ARMOR_HIGHMID := "ARMADURA PESADA MEDIA", ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
+	SHIELD_LOWLOW := "ESCUDO LEVE FRACA", SHIELD_LOWMID := "ESCUDO LEVE MEDIA", SHIELD_LOWHIGH := "ESCUDO LEVE FORTE",
+	SHIELD_MIDLOW := "ESCUDO MEDIA FRACA", SHIELD_MIDMID := "ESCUDO MEDIA MEDIA", SHIELD_MIDHIGH := "ESCUDO MEDIA FORTE",
+	SHIELD_HIGHLOW := "ESCUDO PESADA FRACA", SHIELD_HIGHMID := "ESCUDO PESADA MEDIA", SHIELD_HIGHHIGH := "ESCUDO PESADA FORTE",
 endenum
 
 /**
@@ -47,14 +62,24 @@ endenum
  * Return struct
  *
  */
-function getWeaponStats(tier, damageTier, speedTier, criticalTier)
+function getWeaponStats(weapon)
 	// TODO: Sistema de tier para somar os ganhos pra cada tier
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var elem := cfg[weapon.objtype];
+	var stats := struct;
 
-	return struct{
-		"Damage" := getWeaponDamage(damageTier),
-		"Speed" := getWeaponSpeed(speedTier),
-		"CriticalChance" := getWeaponCriticalChance(criticalTier)
-	};
+	case (elem.TipoAtaque)
+		// TODO: Ver se o const não vai atrapalhar o + do struct
+		// TODO: Pensar se todas as armas terão todos os atributos com penaliade em alguns, ou se só 1 stats.Damage passado aqui
+		SLASHDAMAGE: stats.+SlashDamage := getDamageByTier(elem.Damage); break;
+		PIERCINGDAMAGE: stats.+PiercingDamage := getDamageByTier(elem.Damage); break;
+		BLUNTDAMAGE: stats.+BluntDamage := getDamageByTier(elem.Damage); break;
+	endcase
+	stats.+AttackType := elem.TipoAtaque;
+	stats.+AttackSpeed := getSpeedByTier(elem.Speed);
+	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
+
+	return stats;
 endfunction
 
 /**
@@ -69,7 +94,7 @@ endfunction
  * Return struct
  *
  */
-function getWeaponSpeed(tier)
+function getSpeedByTier(tier)
 	case (tier)
 		MELEE_LOW: return struct{"min" := 25, "max" := 29};
 		MELEE_MID: return struct{"min" := 33, "max" := 37};
@@ -95,7 +120,7 @@ endfunction
  * Return dado
  *
  */
-function getWeaponDamage(tier)
+function getDamageByTier(tier)
 	case (tier)
 		// ONE HANDED
 		ONEHANDED_LOW: return "1d4";
@@ -132,14 +157,14 @@ endfunction
  * Return struct
  *
  */
-function getWeaponCriticalChance(tier)
+function getCriticalChanceByTier(tier)
 	var min, max;
 
 	case(tier)
-		CRITICALCHANCE_NOCHANCE: struct{"min" := 0, "max" := 0};
-		CRITICALCHANCE_LOW: struct{"min" := 1, "max" := 2};
-		CRITICALCHANCE_MID: struct{"min" := 3, "max" := 4};
-		CRITICALCHANCE_HIGH: struct{"min" := 5, "max" := 6};
+		CRITICALCHANCE_NOCHANCE: return struct{"min" := 0, "max" := 0};
+		CRITICALCHANCE_LOW: return struct{"min" := 1, "max" := 2};
+		CRITICALCHANCE_MID: return struct{"min" := 3, "max" := 4};
+		CRITICALCHANCE_HIGH: return struct{"min" := 5, "max" := 6};
 		
 		default: return error{ "errortext" := "Damage value not found for this Weapon Critical Chance Tier!"};
 	endcase
@@ -346,78 +371,94 @@ function TabelaMaterialMod(item) //objtype do material: return {FISICO, FIRE, CO
     endcase
 endfunction
 
-function TabelaDanos(item)
-	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
-		// TODO: Usar um struct ou dictionary, ao invés de array...
-    var cfg := ReadConfigFile(":combat:itemdesc");
-    var elem := FindConfigElem(cfg, item.objtype);
-    var dano := Array;
-    dano.append(elem.Damage);
-    dano.append(elem.PhysicalDamage);
-    dano.append(elem.FireDamage);
-    dano.append(elem.ColdDamage);
-    dano.append(elem.PoisonDamage);
-    dano.append(elem.EnergyDamage);
+function getArmorStats(armor)
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var elem := cfg[armor.objtype];
+	var stats := struct;
 
-    return dano;
+	// TODO: Pegar todos os atributos da armadura e retornar no stats
+
+	return stats;
 endfunction
 
-function TabelaTipoProtecaoMod(item) // TipoProtecao -=> return {RESIST, DEXPENALTY, PARRYBONUS, PARRYDELAY}
-	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
-		// TODO: Usar um struct ou dictionary, ao invés de array...
-    var tipo := Lower(PegarTipo(item));
+function getResistModByTier(item)
+	var physical := array; // {SlashResist, PiercingResist, BluntResist};
+    var tipo := PegarTipo(item).upper();
+
     case(tipo)
         //TIER 1
-        "armadura leve fraca": return {0,0,0,0};
-        "armadura leve media": return {1,0,0,0};
-        "armadura leve forte": return {2,0,0,0};
+        ARMOR_LOWLOW: physical := {0,0,0};
+        ARMOR_LOWMID: physical := {1,1,1};
+        ARMOR_LOWHIGH: physical := {2,2,2};
 
         //TIER 2
-        "armadura media fraca": return {3,0,0,0};
-        "armadura media media": return {4,0,0,0};
-        "armadura media forte": return {5,0,0,0};
+        ARMOR_MIDLOW: physical := {3,3,3};
+        ARMOR_MIDMID: physical := {4,4,4};
+        ARMOR_MIDHIGH: physical := {5,5,5};
 
         //TIER 3
-        "armadura pesada fraca": return {6,0,0,0};
-        "armadura pesada media": return {7,0,0,0};
-        "armadura pesada forte": return {8,0,0,0};
+        ARMOR_HIGHLOW: physical := {6,6,6};
+        ARMOR_HIGHMID: physical := {7,7,7};
+        ARMOR_HIGHHIGH: physical := {8,8,8};
     endcase
 
     case(tipo)
         //TIER 1
-        "escudo leve fraco": return {0,0,0,0};
-        "escudo leve medio": return {1,0,0,0};
-        "escudo leve forte": return {2,0,0,0};
+        SHIELD_LOWLOW: return {0,0,0};
+        SHIELD_LOWMID: return {0,0,0};
+        SHIELD_LOWHIGH: return {0,0,0};
 
         //TIER 2
-        "escudo medio fraco": return {2,0,0,0};
-        "escudo medio medio": return {3,0,0,0};
-        "escudo medio forte": return {5,0,0,0};
+        SHIELD_MIDLOW: return {0,0,0};
+        SHIELD_MIDMID: return {0,0,0};
+        SHIELD_MIDHIGH: return {0,0,0};
 
         //TIER 3
-        "escudo pesado fraco": return {6,0,0,0};
-        "escudo pesado medio": return {7,0,0,0};
-        "escudo pesado forte": return {8,0,0,0};
+        SHIELD_HIGHLOW: return {0,0,0};
+        SHIELD_HIGHMID: return {0,0,0};
+        SHIELD_HIGHHIGH: return {0,0,0};
 
         //TIER 4
-        "escudo de corpo fraco": return {9,0,0,0};
-        "escudo de corpo medio": return {10,0,0,0};
-        "escudo de corpo forte": return {11,0,0,0};
+        "escudo de corpo fraco": return {0,0,0};
+        "escudo de corpo medio": return {0,0,0};
+        "escudo de corpo forte": return {0,0,0};
     endcase
+
+	var resists := struct;
+	resists.+PhysicalResist := physical[1];
+	resists.+SlashResist := physical[1];
+	resists.+PiercingResist := physical[2];
+	resists.+BluntResist := physical[3];
+	resists.+FireResist := 0;
+	resists.+ColdResist := 0;
+	resists.+PoisonResist := 0;
+	resists.+EnergyResist := 0;
+	return resists;
 endfunction
 
-function TabelaSlot(item)
-	// TODO: Refazer essa porqueira direito.... Como que porra eu fiz isso desse jeito na época?! PUTA MERDA, HEIN.....
-		// TODO: Usar um struct ou dictionary, ao invés de array...
-    var slot := Lower(PegarSlot(item));
+function getSlotMod(item)
+	var stats := array;
+	var slot := PegarSlot(item).upper;
 
-    case(slot) //[1] = ResistBase; [2] = DexPenalty
-        "head": return {1,-1};
-        "neck": return {1,-1};
-        "body": return {4,-3};
-        "arms": return {2,-2};
-        "hands": return {1,-1};
-        "legs/feet": return {3,-2};
-        "shield": return {2,-1};
+    case(slot) // {SlashResist, PiercingResist, BluntResist, DexPenalty}
+        HEAD: stats := {1,1,1,-1};
+        NECK: stats := {1,1,1,-1};
+        BODY: stats := {4,4,4,-3};
+        ARMS: stats := {2,2,2,-2};
+        HANDS: stats := {1,1,1,-1};
+        LEGS: stats := {3,3,3,-2};
+        SHIELD: stats := {0,0,0,-1};
     endcase
+
+    var resists := struct;
+	resists.+PhysicalResist := stats[1];
+	resists.+SlashResist := stats[1];
+	resists.+PiercingResist := stats[2];
+	resists.+BluntResist := stats[3];
+	resists.+FireResist := 0;
+	resists.+ColdResist := 0;
+	resists.+PoisonResist := 0;
+	resists.+EnergyResist := 0;
+	resists.+DexPenalty := stats[4];
+	return resists;
 endfunction
