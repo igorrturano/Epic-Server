@@ -1,0 +1,26 @@
+include "include/client";
+include "include/say";
+include ":equipsys:utils";
+
+
+program cmd_golpe(who)
+	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
+		SendSysMessageEx(who, "Você precisa ter uma arma empunhada para mudar seu tipo de golpe!", SSM_FAIL);
+		return 0;
+	endif
+
+	var weapon := who.weapon;
+	var weaponProp := getPropBase(weapon);
+	var weaponElem := getItemCfgElem(weapon);
+	case(Upper(weaponProp.AttackType))
+		SLASHDAMAGE: weaponProp.AttackType := "Perfurante"; break;
+		PIERCINGDAMAGE: weaponProp.AttackType := "Contundente"; break;
+		BLUNTDAMAGE:  weaponProp.AttackType := "Cortante"; break;
+		default: weaponProp.AttackType := weaponElem.TipoAtaque; break;
+	endcase
+
+	PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
+	SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}*", SSM_INFO);
+
+	setPropBase(weapon, weaponProp);
+endprogram

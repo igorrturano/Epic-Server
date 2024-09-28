@@ -1,8 +1,48 @@
 use uo;
 use cfgfile;
 
+enum TIERS
+	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5
+endenum
+
+enum SPEED
+	MELEE_LOW := "MELEE_LOW", MELEE_MID := "MELEE_MID", MELEE_HIGH := "MELEE_HIGH",
+	RANGED_LOW := "RANGED_LOW", RANGED_MID := "RANGED_MID", RANGED_HIGH := "RANGED_HIGH"
+endenum
+enum DAMAGE
+	DAMAGE_NONE := "DAMAGE_NONE",
+	ONEHANDED_LOW := "ONEHANDED_LOW", ONEHANDED_MID := "ONEHANDED_MID", ONEHANDED_HIGH := "ONEHANDED_HIGH",
+	TWOHANDED_LOW := "TWOHANDED_LOW", TWOHANDED_MID := "TWOHANDED_MID", TWOHANDED_HIGH := "TWOHANDED_HIGH",
+	BOW_LOW := "BOW_LOW", BOW_MID := "BOW_MID", BOW_HIGH := "BOW_HIGH",
+	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH"
+endenum
+enum DAMAGETYPE
+	SLASHDAMAGE := "CORTANTE", PIERCINGDAMAGE := "PERFURANTE", BLUNTDAMAGE := "CONTUSIVO"
+endenum
+enum CRITICAL
+	CRITICALCHANCE_NOCHANCE := "NOCHANCE",
+	CRITICALCHANCE_LOW := "LOW",
+	CRITICALCHANCE_MID := "MID",
+	CRITICALCHANCE_HIGH := "HIGH"
+endenum
+enum ARMORSLOT
+	HEAD := "HEAD", NECK := "NECK", BODY := "BODY", ARMS := "ARMS", HANDS := "HANDS", LEGS := "LEGS/FEET", SHIELD := "SHIELD"
+endenum
+enum PROTECTIONTYPE
+	ARMOR_LOWLOW := "ARMADURA LEVE FRACA", ARMOR_LOWMID := "ARMADURA LEVE MEDIA", ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
+	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA", ARMOR_MIDMID := "ARMADURA MEDIA MEDIA", ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
+	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA", ARMOR_HIGHMID := "ARMADURA PESADA MEDIA", ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
+	SHIELD_LOWLOW := "ESCUDO LEVE FRACO", SHIELD_LOWMID := "ESCUDO LEVE MEDIO", SHIELD_LOWHIGH := "ESCUDO LEVE FORTE",
+	SHIELD_MIDLOW := "ESCUDO MEDIO FRACO", SHIELD_MIDMID := "ESCUDO MEDIO MEDIO", SHIELD_MIDHIGH := "ESCUDO MEDIO FORTE",
+	SHIELD_HIGHLOW := "ESCUDO PESADO FRACA", SHIELD_HIGHMID := "ESCUDO PESADO MEDIO", SHIELD_HIGHHIGH := "ESCUDO PESADO FORTE",
+	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
+endenum
+
+
+
+
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
-    return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
+	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
 endfunction
 
 function getType(item)
@@ -39,18 +79,18 @@ endfunction
 
 function getPropBase(item) //PEGA A PROP DE MODIFICADORES BASE
     var prop := item.GetProp("atributos");
-    if (!prop) prop := Dictionary; endif
+    if (!prop) prop := struct; endif
     return prop;
 endfunction
 
 function getPropExcep(item) //PEGA A PROP DE MODIFICADORES EXCEPCIONAL
     var prop := item.GetProp("atributos_excp");
-    if (!prop) prop := Dictionary; endif
+    if (!prop) prop := struct; endif
     return prop;
 endfunction
 
 function setPropBase(item, prop) //SETA A PROP DE MODIFICADORES BASE
-    if (prop.Size() > 0) item.SetProp("atributos_base", prop); endif
+    if (prop.Size() > 0) item.SetProp("atributos", prop); endif
 endfunction
 
 function setPropExcep(item, prop) //SETA A PROP DE MODIFICADORES EXCEPCIONAL

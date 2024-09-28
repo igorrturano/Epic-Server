@@ -2,56 +2,11 @@
 ///// Criado para substituir algumas funções do .cfg, que são limitadoras /////
 ///////////////////////////////////////////////////////////////////////////////
 
-//TODO: Refazer muitas das funções que usam array usando dictionary/struct
-	//TODO: Tem muita coisa cagada que na época eu fiz de forma porca (AHUahuAHUa)
-
-/* 
- * Purpose
- * Ler o .cfg e extrair os modificadores
- */
-
 use os;
 use cfgfile;
 
-include "propitens";
 include "utils";
 include ":combat:combat";
-
-enum TIERS
-	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5
-endenum
-
-enum SPEED
-	MELEE_LOW := "MELEE_LOW", MELEE_MID := "MELEE_MID", MELEE_HIGH := "MELEE_HIGH",
-	RANGED_LOW := "RANGED_LOW", RANGED_MID := "RANGED_MID", RANGED_HIGH := "RANGED_HIGH"
-endenum
-enum DAMAGE
-	ONEHANDED_LOW := "ONEHANDED_LOW", ONEHANDED_MID := "ONEHANDED_MID", ONEHANDED_HIGH := "ONEHANDED_HIGH",
-	TWOHANDED_LOW := "TWOHANDED_LOW", TWOHANDED_MID := "TWOHANDED_MID", TWOHANDED_HIGH := "TWOHANDED_HIGH",
-	BOW_LOW := "BOW_LOW", BOW_MID := "BOW_MID", BOW_HIGH := "BOW_HIGH",
-	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH"
-endenum
-enum DAMAGETYPE
-	SLASHDAMAGE := "CORTANTE", PIERCINGDAMAGE := "PERFURANTE", BLUNTDAMAGE := "CONTUSIVO"
-endenum
-enum CRITICAL
-	CRITICALCHANCE_NOCHANCE := "NOCHANCE",
-	CRITICALCHANCE_LOW := "LOW",
-	CRITICALCHANCE_MID := "MID",
-	CRITICALCHANCE_HIGH := "HIGH"
-endenum
-enum ARMORSLOT
-	HEAD := "HEAD", NECK := "NECK", BODY := "BODY", ARMS := "ARMS", HANDS := "HANDS", LEGS := "LEGS/FEET", SHIELD := "SHIELD"
-endenum
-enum PROTECTIONTYPE
-	ARMOR_LOWLOW := "ARMADURA LEVE FRACA", ARMOR_LOWMID := "ARMADURA LEVE MEDIA", ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
-	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA", ARMOR_MIDMID := "ARMADURA MEDIA MEDIA", ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
-	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA", ARMOR_HIGHMID := "ARMADURA PESADA MEDIA", ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
-	SHIELD_LOWLOW := "ESCUDO LEVE FRACO", SHIELD_LOWMID := "ESCUDO LEVE MEDIO", SHIELD_LOWHIGH := "ESCUDO LEVE FORTE",
-	SHIELD_MIDLOW := "ESCUDO MEDIO FRACO", SHIELD_MIDMID := "ESCUDO MEDIO MEDIO", SHIELD_MIDHIGH := "ESCUDO MEDIO FORTE",
-	SHIELD_HIGHLOW := "ESCUDO PESADO FRACA", SHIELD_HIGHMID := "ESCUDO PESADO MEDIO", SHIELD_HIGHHIGH := "ESCUDO PESADO FORTE",
-	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
-endenum
 
 /**
  * getWeaponStats(tier, damageTier, speedTier, criticalTier)
@@ -70,18 +25,22 @@ endenum
  */
 function getWeaponStats(weapon)
 	// TODO: Sistema de tier para somar os ganhos pra cada tier
+	// TODO: Como agora há um range de Speed e CriticalChance, setar na arma apenas o roll e somar com os valores bases aqui
 	var elem := getItemCfgElem(weapon);
 	var stats := struct;
 
-	case (elem.TipoAtaque)
+	/*ca se (elem.TipoAtaque.upper())
 		// TODO: Ver se o const não vai atrapalhar o + do struct
 		// TODO: Pensar se todas as armas terão todos os atributos com penaliade em alguns, ou se só 1 stats.Damage passado aqui
-		SLASHDAMAGE: stats.+SlashDamage := getDamageByTier(elem.Damage); break;
-		PIERCINGDAMAGE: stats.+PiercingDamage := getDamageByTier(elem.Damage); break;
-		BLUNTDAMAGE: stats.+BluntDamage := getDamageByTier(elem.Damage); break;
-	endcase
+		SLASHDAMAGE: stats.+SlashDamage := getDamageByTier(elem.SlashDamage);
+		PIERCINGDAMAGE: stats.+PiercingDamage := getDamageByTier(elem.PiercingDamage);
+		BLUNTDAMAGE: stats.+BluntDamage := getDamageByTier(elem.BluntDamage);
+	endcase */
+	stats.+SlashDamage := getDamageByTier(elem.SlashDamage);
+	stats.+PiercingDamage := getDamageByTier(elem.PiercingDamage);
+	stats.+BluntDamage := getDamageByTier(elem.BluntDamage);
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.Speed);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
 	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
@@ -100,7 +59,7 @@ endfunction
  *
  */
 function getSpeedByTier(tier)
-	case (tier)
+	case (tier.upper())
 		MELEE_LOW: return struct{"min" := 25, "max" := 29};
 		MELEE_MID: return struct{"min" := 33, "max" := 37};
 		MELEE_HIGH: return struct{"min" := 39, "max" := 45};
@@ -127,6 +86,8 @@ endfunction
  */
 function getDamageByTier(tier)
 	case (tier)
+		DAMAGE_NONE: return 0;
+
 		// ONE HANDED
 		ONEHANDED_LOW: return "1d4";
 		ONEHANDED_MID: return "1d6";
@@ -165,7 +126,7 @@ endfunction
 function getCriticalChanceByTier(tier)
 	var min, max;
 
-	case(tier)
+	case(tier.upper())
 		CRITICALCHANCE_NOCHANCE: return struct{"min" := 0, "max" := 0};
 		CRITICALCHANCE_LOW: return struct{"min" := 1, "max" := 2};
 		CRITICALCHANCE_MID: return struct{"min" := 3, "max" := 4};
@@ -372,6 +333,8 @@ function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD,
         //"MADEIRA": //MADEIRA - BUSCAR OBJTYPE
             return {0,0,0,0,0};
         */
+
+		default: return {0,0,0,0,0};
     endcase
 endfunction
 
@@ -381,6 +344,7 @@ function getArmorStats(armor, tier)
 
 	// TODO: Pegar todos os atributos da armadura e retornar no stats
 	var resists := getResistByProtection(elem.TipoProtecao);
+	// TODO: Soma dos materiais.
 	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus.
 	resists := calcResistByTier(resists, tier);
 
@@ -393,7 +357,6 @@ function calcResistByTier(resists, tier)
 	endif
 	tier--;
 	
-	// TODO: Somar Tier-1 em cada resist físico
 	resists.PhysicalResist += tier;
 	resists.SlashResist += tier;
 	resists.PiercingResist += tier;
