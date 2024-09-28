@@ -12,6 +12,7 @@ program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
 	movetype       := movetype;
 	inserttype     := inserttype;
 //SendSysmessage(who,"oi");
+
 	var pergaminhos := {0xef2b, 0xef3c, 0xef3d, 0xef3e, 0xef3f};
 
 	if( book.movable == 0 )
