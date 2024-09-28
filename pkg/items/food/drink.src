@@ -38,8 +38,22 @@ program drink ( character, drink )
 		else //se ainda tiver atualiza na arma
 			SetObjProperty(drink, "poisonInfo", poisonInfo);
 			if (!IsPoisonImune(character, poisonInfo.name) )
-				PrintTextAbovePrivate(character, "Algo comeca a queimar no seu pescoco", character);
-				TS_StartTimer(character, poisonInfo.name, poisonInfo.time, poisonInfo.level, character);
+				if (TS_GetTimerInfo(character, "defaultPoison"))
+        			var defaultpoison := cint(TS_GetTimerLevel(character, "defaultPoison"));
+       				setobjproperty(character, "#poisontier", defaultpoison);
+      			endif
+      			if (getobjProperty(character, "#poisontier"))
+        			var poison := ts_gettimernames(character, type:="P");
+       				var teste := cint(getobjProperty(character, "#poisontier"));
+        			if (teste <= poisonInfo.tier);
+          				TS_LowerDuration(character, poison, -1);
+          				TS_StartTimer(character, poisonInfo.Name, poisonInfo.time, poisonInfo.level, character);
+        			endif
+      			else
+      				setobjproperty(character, "#poisontier", poisonInfo.tier);
+      				setobjproperty(character, "#poisonbonus", poisonInfo.difficulty_mod);
+      				TS_StartTimer(character, poisonInfo.name, poisonInfo.time, poisonInfo.level, character);
+      			endif
 			endif
 		endif
 	endif

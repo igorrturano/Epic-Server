@@ -995,10 +995,25 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 				poisonInfo.time := duration;
 			endif
 
-			if (CheckResist(defender, FORTITUDE, RESIST_EASY,-2*poisonInfo.level))
+			if (CheckResist(defender, FORTITUDE, poisonInfo.difficulty,-poisonInfo.difficulty_mod))
 				SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
 			else
+				if (TS_GetTimerInfo(defender, "defaultPoison")) //confere se está sob default poison para estabelecer o mais forte
+        			var defaultpoison := cint(TS_GetTimerLevel(defender, "defaultPoison"));
+        			setobjproperty(defender, "#poisontier", defaultpoison);
+      			endif
+      			if (getobjProperty(defender, "#poisontier"))
+        			var poison := ts_gettimernames(defender, type:="P");
+        			var teste := cint(getobjProperty(defender, "#poisontier"));
+        			if (teste <= poisoninfo.tier); // compara o poison atual com o novo, substituindo caso o novo seja maior
+          				TS_LowerDuration(defender, poison, -1);
+          				TS_StartTimer(defender, poisonInfo.Name, poisonInfo.time, poisonInfo.level, attacker);
+        			endif
+      			else
+				setobjproperty(defender, "#poisontier", poisonInfo.tier);
+				setobjproperty(defender, "#poisonbonus", poisonInfo.difficulty_mod);
 				TS_StartTimer(defender, poisonInfo.name, poisonInfo.time, poisonInfo.level, attacker);
+				endif
 			endif
 		endif
 	else //se for npc checa a skill
