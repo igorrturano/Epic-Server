@@ -1761,10 +1761,6 @@ endfunction
 
 function hairSelectionGump(who, byref chardata, currentPage := 1)
     var gump := GfCreateGump();
-    // var x := 63;
-    // var y := 100;
-    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu cabelo", 0, 0); //shadow
-    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu cabelo", 0, 0);
 
     GFGumpPic(gump, 17, 31, 0x9E6);
     GFResizePic(gump, 298, 100, 2620, 250, 400);
@@ -1827,10 +1823,6 @@ endfunction
 
 function beardSelectionGump(who, byref chardata, currentPage := 1)
     var gump := GfCreateGump();
-    // var x := 63;
-    // var y := 115; // Deslocado um pouco para baixo em relação ao cabelo
-    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua barba", 0, 0); //shadow
-    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha sua barba", 0, 0);
 
     GFGumpPic(gump, 17, 31, 0x9E6);
     GFResizePic(gump, 298, 100, 2620, 250, 400);
