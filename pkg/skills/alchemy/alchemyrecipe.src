@@ -4,11 +4,11 @@ use util;
 
 program cria(item)
 
-	if (GetObjProperty(item, "spellinfo") != error)
+	if (GetObjProperty(item, "recipe") != error)
 		return 1;
 	endif
 
-	var spellinfo := struct;
+	var recipe := struct;
 	var level1:={};
 	var level2:={};
 	var level3:={};
@@ -44,15 +44,9 @@ program cria(item)
 		elseif (item.objtype == 0xef2f)
 			sorteado := level5[RandomIntMinMax(1, level5.size()+1)];
 		endif;
-	var elem := FindConfigelem(cfg, sorteado);
+	recipe.+recipe := cint(cfg[sorteado]."recipe");
 
-	if (elem)
-		spellinfo.+type := GetconfigString(elem, "type");
-		spellinfo.+name := GetConfigString(elem, "name");
-		spellinfo.+id := GetConfigInt(elem, "id");
-		spellinfo.+description := GetConfigString(elem, "desc");
-	endif
-	SetObjProperty(item, "spellinfo", spellinfo);
+	SetObjProperty(item, "recipe", recipe);
 
 endprogram
 
