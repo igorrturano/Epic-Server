@@ -5,9 +5,9 @@ include "equipstats";
 include "include/say";
 include "include/client";
 
-function setPropArmor(item, tier)
-	var resists := getArmorStats(item, tier);
-	setPropBase(item, resists);
+function setPropArmor(item)
+	var stats := getArmorStats(item);
+	setPropBase(item, stats);
 endfunction
 
 function setPropWeapon(item)
