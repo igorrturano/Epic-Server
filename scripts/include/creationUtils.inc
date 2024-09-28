@@ -1488,7 +1488,7 @@ function startAdventureGump(who)
     GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
 
     // Adventure main image
-    GFGumpPic(gump, 50, 100, 0xFFFE);
+    GFGumpPic(gump, 50, 100, 0xFFFD);
 
     // Adventure Description
     GFHTMLArea(gump, 100, 550, 650, 120, adventureStartText, 1, 1);
@@ -2106,7 +2106,7 @@ function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
     endif
 
     // Adicionar botão de fechar
-    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
 
     return GFSendGump(who, gump);
 endfunction
@@ -2223,7 +2223,7 @@ function skinColorSelectionGump(who, byref chardata, currentPage := 1)
     endif
 
     // Adicionar botão de fechar
-    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
 
     return GFSendGump(who, gump);
 endfunction
@@ -2291,7 +2291,9 @@ function spellChoices(who)
     return selected_spells;
 endfunction
 
+
 function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
+
     GFPage(gump, 1);
     y := 100;
     foreach spell in spells
@@ -2301,6 +2303,7 @@ function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
         GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
         y += 26;
     endforeach
+
 
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
@@ -2368,3 +2371,4 @@ function AlchChoices(who)
     SendSysMessageEX(who, "Você escolheu as receitas: " + CStr(selected_recipes), SSM_INFO);
     return selected_recipes;
 endfunction
+
