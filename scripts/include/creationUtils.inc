@@ -1230,7 +1230,7 @@ function workingItems(who)
             r1 := CreateItemInBackpack(who, "alchemyrecipe1");
             recipe.recipe := chosenRecipes[6];
             SetObjProperty(r1, "recipe", recipe);
-
+            
 	        if (skills[ALCHEMY] == 3)
 		        var book2:= CreateItemInBackpack(who, "alchemybook");
         		setobjproperty(book2, "serialid",who.serial);

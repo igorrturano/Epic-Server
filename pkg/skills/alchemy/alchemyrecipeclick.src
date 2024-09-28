@@ -11,7 +11,6 @@ program usaPergaminho(who, scroll)
 	
 		WriteAlchInfo(recipe);
 
-
 	var gump := GFCreateGump(140, 100);
 	GFClosable(gump, 1);
 	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
