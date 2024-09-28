@@ -2223,58 +2223,68 @@ function spellChoices(who)
     GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
     GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
     
-    var spellcfg := ReadConfigFile( ":spells:config/spellcaster" );
-    var keys := GetConfigIntKeys( spellcfg );
+    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
+    var keys := GetConfigIntKeys(spellcfg);
     var spells := array;
     foreach key in keys
-        var elem := FindConfigElem( spellcfg, key );
-        var spelllvl := GetConfigInt( elem, "Circle" );
-        var spelltype := GetConfigString( elem, "Type" );
-        if ( spelltype == "spellcaster" && spelllvl == 1 )
-            print(spelllvl + " entrei");
+        var elem := FindConfigElem(spellcfg, key);
+        var spelllvl := GetConfigInt(elem, "Circle");
+        var spelltype := GetConfigString(elem, "Type");
+        if (spelltype == "spellcaster" && spelllvl == 1)
             var spell := dictionary{ 
                 "id" -> key,
                 "circle" -> spelllvl,
-                "name" -> GetConfigString( elem, "Name" ),
-                "desc" -> GetConfigString( elem, "Desc" )
+                "name" -> GetConfigString(elem, "Name"),
+                "desc" -> GetConfigString(elem, "Desc")
             };
-            spells.append( spell );
+            spells.append(spell);
         endif
     endforeach
-    print("spells: "+ spells);
 
-    var selected := array;
+    var selected_spells := array;
+    var btn_value;
     while (1)
-        GFPage(gump, 1);
-        y := 100;
-        foreach spell in spells
-            var color := (spell.id in selected) ? "#00FF00" : "#000000";
-            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
-            GFAddButton(gump, x+201, y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, 200+_spell_iter);
-            GFTooltipText(gump, spell.Desc);
-            y += 26;
-        endforeach
-
-        GFTextMid(gump, 0, 400, 500, 2100, "Selecione exatamente 2 magias.");
-        if (selected.size() == 2)
-            GFAddButton(gump, 200, 430, 0x81C, 0x81B, GF_CLOSE_BTN, 666);
-            GFTextMid(gump, 0, 435, 500, 2100, "Confirmar");
-        endif
-
-        var input := GFSendGump(who, gump);
-        if (input[0] == 0)
-            continue;
-        elseif (input[0] == 666 && selected.size() == 2)
-            return selected;
-        else
-            var index := input[0] - 200;
-            if (index > 0 && index <= spells.size())
-                if (spells[index].id in selected)
-                    selected.Erase(Find(selected, spells[index].id, 1));
-                elseif (selected.size() < 2)
-                    selected.append(spells[index].id);
+        var input := spellSelectionGump(who, gump, spells, selected_spells, x, y);
+        
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + spells.size())
+                var spell_index := btn_value - 200;
+                var spell_id := spells[spell_index].id;
+                if (spell_id in selected_spells)
+                    selected_spells.Erase(Find(selected_spells, spell_id, 1));
+                else
+                    selected_spells.append(spell_id);
                 endif
             endif
+        endforeach
+
+        if (selected_spells.size() != 2)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente 2 magias.", SSM_FAIL);
+        else
+            break;
         endif
     endwhile
+
+    SendSysMessageEX(who, "Você escolheu as magias: " + CStr(selected_spells), SSM_INFO);
+    return selected_spells;
+endfunction
+
+function spellSelectionGump(who, gump, spells, selected_spells, x, y)
+    GFPage(gump, 1);
+    y := 100;
+    foreach spell in spells
+        var color := (spell.id in selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+        GFTooltipText(gump, spell.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
+        y += 26;
+    endforeach
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha 2 magias", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha 2 magias", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    return GFSendGump(who, gump);
 endfunction
