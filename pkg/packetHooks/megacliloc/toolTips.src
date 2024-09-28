@@ -1,6 +1,7 @@
 /* $Id: toolTips.src 104 2006-05-25 22:14:15Z montuz $
  *	Description: AOS Tooltips. Starter script.
  *	This packet takes awhile to get used to.
+ 2
  */
 
 use uo;
