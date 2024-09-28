@@ -1460,7 +1460,7 @@ function startAdventureGump(who)
     GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
 
     // Adventure main image
-    GFGumpPic(gump, 50, 100, 0xFFFE);
+    GFGumpPic(gump, 50, 100, 0xFFFD);
 
     // Adventure Description
     GFHTMLArea(gump, 100, 550, 650, 120, adventureStartText, 1, 1);
