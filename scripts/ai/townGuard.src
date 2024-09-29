@@ -16,7 +16,7 @@ include ":npcs:garment";
 var currentopponent := 0;
 
 var flee_point := 0;
-var npccfg := ReadConfigFile("::npcdesc");
+var npccfg := ReadConfigFile(":*:npcdesc");
 const UACTION_LOOK_AROUND   := 0x05;
 const UACTION_SALUTE        := 0x21;
 

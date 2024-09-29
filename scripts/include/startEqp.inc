@@ -17,7 +17,7 @@ var making_starting_equipment := 0;
 var thecritter;
 
 function MakeLoot(corpse, lootgroup)
-  var npcdesc := ReadConfigFile("::npcdesc");
+  var npcdesc := ReadConfigFile(":*:npcdesc");
   var elem := FindConfigElem(npcdesc, corpse.npctemplate);
   var mybow := corpse.npctemplate.missileweapon;
   var mprop, madj, has_backpack;

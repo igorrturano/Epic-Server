@@ -325,7 +325,7 @@ function canclaim(player, pettemplate)
     "llama":
     return 1;
   endcase
-  var conf := ReadConfigFile("::npcdesc");
+  var conf := ReadConfigFile(":*:npcdesc");
   var elem;
   elem := FindConfigElem(conf, pettemplate);
   if (!elem)

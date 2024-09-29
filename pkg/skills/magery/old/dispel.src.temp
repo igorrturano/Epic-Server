@@ -14,7 +14,7 @@ program dispel( parms )
   var spellid := parms.spellid;
   var spellcfg := ReadConfigFile(":*:spells");
   var circle := spellcfg[spellid].circle;
-  var npccfg := ReadConfigFile("::npcdesc");
+  var npccfg := ReadConfigFile(":*:npcdesc");
 
   var summoned := GetObjProperty( castOn, "summoned");
   if(summoned == 1)
