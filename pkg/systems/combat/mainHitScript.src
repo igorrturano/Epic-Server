@@ -61,12 +61,6 @@ program MainHitScript(params)
 	// Toca do som do alvo sofrendo ataque
 	PlayHitSounds(attacker, defender);
 
-	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
-	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
-		// Calcula o bloqueio e os danos no escudo do defensor
-		ParryCheck(attacker, defender, rawdamage, weapon);
-	endif
-
 	// Calcula a chance do projétil não quebrar
 	ArrowRecovery(attacker, defender, weapon);
 
@@ -75,6 +69,14 @@ program MainHitScript(params)
 
 	// Calcula os danos
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
+
+	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+		// Calcula o bloqueio e os danos no escudo do defensor
+		if(ParryCheck(attacker, defender, rawdamage, weapon))
+			basedamage := 0;
+		endif
+	endif
 
 	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos (por enquanto calcula só o físico)
 
