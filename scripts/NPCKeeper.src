@@ -8,7 +8,7 @@ include ":npcs:garment";
 include ":npcs:randName";
 include "include/client";
 
-var pncfg := ReadConfigFile("::npcdesc");
+var pncfg := ReadConfigFile(":*:npcdesc");
 var equipt;
 
 program npckeep(who)
@@ -98,7 +98,7 @@ program npckeep(who)
     SetObjProperty(who, "Graphic", cint(who.graphic));
     SetName(who, RandomName(who));
     SetName(who, who.name + ttitle);
-    pncfg := ReadConfigFile("::npcdesc");
+    pncfg := ReadConfigFile(":*:npcdesc");
     if(equipt)
       Habille(who, equipt);
       EraseObjProperty(who, "Equipt");
@@ -108,7 +108,7 @@ program npckeep(who)
       endif
     endif
   else
-    pncfg := ReadConfigFile("::npcdesc");
+    pncfg := ReadConfigFile(":*:npcdesc");
     equipt := GetObjProperty(who, "Equipt");
     if( equipt )
       if( who.graphic == 0x190 && !GetObjProperty( who, "MerchantNode" ) )
