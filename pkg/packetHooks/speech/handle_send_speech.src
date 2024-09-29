@@ -60,9 +60,7 @@ exported function handleUCOutgoing( character, byref packet )
 	endif
 
     //Loga tudo que é falado pelo personagem e aqueles que podem ouvir o personagem
-    if(message_txt != "...")
-        LogPlayerSpeech(source, message_txt);
-    endif
+    LogPlayerSpeech(source, message_txt);
 
 	//SendSysMessage(source,"cmd "+ packet.GetInt8(0));
 	//SendSysMessage(source,"length "+ packet.GetInt16(1));
@@ -199,7 +197,7 @@ exported function handleUCOutgoing( character, byref packet )
 		endif
 
 		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) || message_txt == "*Incompreensível*" || character.cmdlevel >= 1 )
-			if (message_txt != "..." && message_txt != "")
+			if (message_txt != "..." && message_txt != "" && chosen_language)
 				var full_message := "[" + chosen_language + "] " + message_txt;
 				packet.SetUnicodeString(48, full_message, 1);
 			endif

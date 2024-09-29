@@ -8,6 +8,7 @@ include ":tn:tngumps";
 include ":spells:tnmagery";
 include "include/say";
 include ":containers:containers";
+include ":alchemy:alchemy";
 
 program book(who, book)
 
@@ -29,7 +30,7 @@ program book(who, book)
 	var spells := GetObjProperty(book, "recipes");
 
 	if (spells[spell])
-			Makedye ( spells[spell].id,  who);
+			Makedye ( spells[spell].recipe,  who);
 			//Start_Script("cast_spell", {who, spells[spell], 0});
 	endif
 
@@ -254,7 +255,7 @@ function CreateRunebookGump(book, who)
 		endif
 
 		var rune_entry := rune_list[rune_pos];
-		//WritespellInfo(who, rune_entry);
+		WriteDyeInfo(rune_entry);
 		rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description) ;
 		if( TypeOf(rune_entry) == "Struct" )
 			if( rune_entry.type )
@@ -279,7 +280,7 @@ function CreateRunebookGump(book, who)
 		endif
 
 		rune_entry := rune_list[rune_pos];
-		//WritespellInfo(who, rune_entry);
+		WriteDyeInfo(rune_entry);
 		 rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description);
 
 		if( TypeOf(rune_entry) == "Struct" )

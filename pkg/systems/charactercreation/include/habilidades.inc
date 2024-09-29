@@ -330,7 +330,7 @@ function ComprarHabGump(who, habs, habsfac)
 endfunction
 
 function comprarHabilidade(who, item, nv:=-1)
-	//SendSysMessage(who,"[Interno] Tentando comprar Hab Level "+nv);
+	SendSysMessage(who,"[Interno] Tentando comprar Hab Level "+nv);
 	var itemdesc := ReadConfigFile("::itemdesc");
 	var nivel;
 

@@ -25,27 +25,19 @@ use uo;
 use cfgfile;
 
 include ":attributes:attributes";
-// include "include/client";
 include ":combat:armorZones";
 include ":combat:combat";
 include "include/packets";
 include "include/facings";
-// include "include/say";
 include ":combat:damage";
-// include ":charactercreation:habilidades";
-// include ":tn:cooldown";
-// include ":combat:damage";
 include ":timedscripts:timedScripts";
-// include ":fls_core:packets";
-// include ":faccao:faccao";
 include ":combat:include/mainHitScript";
-// include "include/dungeons";
 include "include/epicConstants";
 include ":commands:debugsystem";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
-var npc_cfg	:= ReadConfigFile("::npcdesc");
+var npc_cfg	:= ReadConfigFile(":*:npcdesc");
 
 //Global because they're important, and it keeps the function
 //prototypes shorter and easier to read.
@@ -58,22 +50,21 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	if (!CanAttack(attacker, defender))
-		return 1;
-	endif
 
 	wpn_a := attacker.weapon;
 	wpn_d := defender.weapon;
 	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
 	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
 
+	if (!CanAttack(attacker, defender))
+		return 1;
+	endif
+
 	var anim := wpn_a_elem.Anim;
-	// if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
+
 	if (!attacker.acctname)
 		anim := 0x0c;
 	endif
-
-	PlayAttackAnimation(attacker);
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
@@ -81,24 +72,44 @@ exported function Attack(attacker, defender)
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto: "+hitchance);
 	var rolldice := RandomDiceRoll("1d100");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto: "+rolldice);
-	if ( rolldice < hitchance ) // ACERTOU O ATAQUE
+	if ( rolldice < hitchance )
         if (defender.frozen)
             defender.frozen := 0;
         endif
 
-		// Checa habilidades do atacante e do defensor
 		CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
-		// Calcula e aplica o dano
-		EpicApplyDamage(attacker, defender);
+		EpicApplyDamage(attacker, defender, DAMAGE_MAINHAND);
 
-	else // ERROU O ATAQUE
+	else
 		PlayMissSound(attacker);
-
-		// Checa habilidades do atacante e do defensor
+		PlayAttackAnimation(attacker);
+		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
+	endif
+
+	if (wpn_a_elem.OffHandDamage) // Se é DualWield ataca novamente com a penalidade de acerto
+		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
+		if (penalty < 10)
+			penalty := 10;
+		endif
+
+		hitchance -= penalty;
+		rolldice := RandomDiceRoll("1d100");
+		if ( rolldice < hitchance )
+			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
+			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
+
+			EpicApplyDamage(attacker, defender, DAMAGE_OFFHAND);
+
+		else
+			PlayMissSound(attacker);
+
+			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
+			CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
+		endif
 	endif
 
 	playSoundAndEffectForThroiwingWeapons(attacker, defender);
@@ -109,9 +120,9 @@ endfunction
 function CanAttack(attacker, defender)
 	if (attacker == defender)
 		ApplyRawDamage(attacker, 5000);
-		return 1;
+		return 0;
 	elseif (!CheckLineOfSight(attacker, defender))
-		return 1;
+		return 0;
 	endif
 	
 	if (attacker.acctname)
@@ -120,7 +131,7 @@ function CanAttack(attacker, defender)
 				SendSysMessageEx(attacker, "Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL);
 				SetObjProperty(attacker, "attackmsg", polcore().systime+15);
 			endif
-			return 1;
+			return 0;
 		endif
 	endif
 
@@ -748,11 +759,12 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 	return 1;
 endfunction
 
-function EpicApplyDamage(attacker, defender)
+function EpicApplyDamage(attacker, defender, weaponHand)
+	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
-	var dmg := CalculateRawDamage(attacker, attacker.weapon);
+	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
 	dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
 endfunction
 

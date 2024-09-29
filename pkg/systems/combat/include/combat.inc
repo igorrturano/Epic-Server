@@ -24,7 +24,7 @@ endfunction
 
 function GetWpnCfgInfo(mobile, weapon)
 
-	var npc_cfg2	:= ReadConfigFile("::npcdesc");
+	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 	var item_cfg2	:= ReadConfigFile(":*:itemdesc");
 
 	if ( mobile.IsA(POLCLASS_NPC) && weapon.objtype == 0x1F020 )
@@ -69,6 +69,7 @@ function PlayHitSounds(attacker, defender)
 endfunction
 
 function PlayMissSound(attacker)
+	var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
 	if ( wpn_a_elem.MissSound )
 		PlaySoundEffect(attacker, wpn_a_elem.MissSound);
 	else
@@ -88,6 +89,7 @@ function PlayAttackAnimation(attacker)
 			attack_anim := anim_list[1];
 		endif
 	endif
+	
 	if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
 		attack_anim := 0x0c;
 	endif

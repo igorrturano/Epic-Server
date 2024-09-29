@@ -61,17 +61,22 @@ program MainHitScript(params)
 	// Toca do som do alvo sofrendo ataque
 	PlayHitSounds(attacker, defender);
 
-	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
-	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
-		// Calcula o bloqueio e os danos no escudo do defensor
-		ParryCheck(attacker, defender, rawdamage, weapon);
-	endif
-
 	// Calcula a chance do projétil não quebrar
 	ArrowRecovery(attacker, defender, weapon);
 
+	// Calcula o tipo de dano da arma
+	var dmgType := getWeaponDamageType(attacker, weapon);
+
 	// Calcula os danos
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
+
+	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+		// Calcula o bloqueio e os danos no escudo do defensor
+		if(ParryCheck(attacker, defender, rawdamage, weapon))
+			basedamage := 0;
+		endif
+	endif
 
 	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos (por enquanto calcula só o físico)
 
@@ -91,7 +96,7 @@ program MainHitScript(params)
 	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
 	// Aplica o dano físico da arma
-	DamageFLSCombat(attacker, defender, armor, basedamage, DMG_PHYSICAL);
+	DamageEpicCombat(attacker, defender, armor, basedamage, dmgType);
 
 	return 1;
 endprogram
@@ -988,10 +993,25 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 				poisonInfo.time := duration;
 			endif
 
-			if (CheckResist(defender, FORTITUDE, RESIST_EASY,-2*poisonInfo.level))
+			if (CheckResist(defender, FORTITUDE, poisonInfo.difficulty,-poisonInfo.difficulty_mod))
 				SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
 			else
+				if (TS_GetTimerInfo(defender, "defaultPoison")) //confere se está sob default poison para estabelecer o mais forte
+        			var defaultpoison := cint(TS_GetTimerLevel(defender, "defaultPoison"));
+        			setobjproperty(defender, "#poisontier", defaultpoison);
+      			endif
+      			if (getobjProperty(defender, "#poisontier"))
+        			var poison := ts_gettimernames(defender, type:="P");
+        			var teste := cint(getobjProperty(defender, "#poisontier"));
+        			if (teste <= poisoninfo.tier); // compara o poison atual com o novo, substituindo caso o novo seja maior
+          				TS_LowerDuration(defender, poison, -1);
+          				TS_StartTimer(defender, poisonInfo.Name, poisonInfo.time, poisonInfo.level, attacker);
+        			endif
+      			else
+				setobjproperty(defender, "#poisontier", poisonInfo.tier);
+				setobjproperty(defender, "#poisonbonus", poisonInfo.difficulty_mod);
 				TS_StartTimer(defender, poisonInfo.name, poisonInfo.time, poisonInfo.level, attacker);
+				endif
 			endif
 		endif
 	else //se for npc checa a skill
