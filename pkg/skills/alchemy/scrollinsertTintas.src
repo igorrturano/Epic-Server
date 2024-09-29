@@ -3,6 +3,7 @@
  */
 use uo;
 use os;
+include ":alchemy:alchemy";
 
 
 program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
@@ -49,9 +50,10 @@ function addScroll(who, book, rune)
 	endif
 
 	var newSpell := GetObjProperty(rune, "recipe");
+		WriteDyeInfo(newspell);
 
 	foreach spell in rune_list
-		if (newspell.id == spell.id)
+		if (newspell.recipe == spell.recipe)
 			SendSysMessage(who, "Este livro ja contem esta receita.");
 			MoveItemTocontainer(rune, who.backpack);
 			return 0;
