@@ -19,7 +19,7 @@ include ":damage:damage";
 include "include/speech";
 
 var flee_point := 0;
-var npccfg := ReadConfigFile("::npcdesc");
+var npccfg := ReadConfigFile(":*:npcdesc");
 
 const HALT_THRESHOLD := 10;
 var me := Self();
