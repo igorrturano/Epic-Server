@@ -35,6 +35,7 @@ program DblClickNerve(params)
 						npcType := "taverneiro"; // Get a propriedade "npc_type"
 						responseAI := handle_doubleclick(npcType, playerinput);
 					elseif ( npcType == ":merchants:vendedor" || npcType == ":brainai:vendedor" || npcType == "vendedor" )
+						npcType := "vendedor";
 						responseAI := handle_doubleclick(npcType, playerinput);
 					endif
 
