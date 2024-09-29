@@ -5,7 +5,7 @@ use cfgfile;
 
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
-include ":brainAI:npcUtil";
+include ":npcs:thor/handling/thorai";
 
 program DblClickNerve(params)
 	var npc		:= params[1];
@@ -25,23 +25,25 @@ program DblClickNerve(params)
 					AI_Speak(npc, ""+GetObjProperty(npc, "startbuy"));
 				else
 					var npcType := npc.npctemplate;
-					if ( npcType == ":merchants:taverneiro")
-						npcType := "taverneiro engraçado"; // Get a propriedade "npc_type"
-					else
-						npcType := "vendedor";
-					endif
-					var language := "None";
-					var event := "comercio";
-					var mood := "amigavel";
-					var npcEvil := False;
-					var gossip := False;
-					var specialLore := False;
-					var sourceRaca := GetObjProperty(player, "chardata").raca;
-
-					var playerinput := "<o personagem " + sourceRaca + " se aproxima do seu comércio>";
+					var playerRaca := GetObjProperty(player, "chardata").raca;
+					var sourceDescription := GetObjProperty(player, "descricao");
+					var playerinput := "*"+ playerRaca + " " + sourceDescription + " se aproxima*";
 					
-					var responseText := handle_open_ai_npc_speech(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
-					AI_Speak(npc, responseText);
+					var responseAI := "";
+
+					if ( npcType == ":merchants:taverneiro" || npcType == ":brainai:taverneiro" || npcType == "taverneiro" )
+						npcType := "taverneiro"; // Get a propriedade "npc_type"
+						responseAI := handle_doubleclick(npcType, playerinput);
+					elseif ( npcType == ":merchants:vendedor" || npcType == ":brainai:vendedor" || npcType == "vendedor" )
+						responseAI := handle_doubleclick(npcType, playerinput);
+					endif
+
+					if (responseAI == "<uninitialized object>")
+						responseAI := "Que procura? *funga forte o nariz, debruçando no balcão*";
+					endif
+					
+					AI_Speak(npc, responseAI);
+					
 					//AI_Speak(npc, "Ola, no que posso ajuda-lo?");
 				endif
 				busy := Start_Script(":merchants:pcmerchant/merchant_menu", {npc, player});
