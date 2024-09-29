@@ -5,8 +5,10 @@ include ":charactercreation:habilidades";
 
 
 program camuflar(who)
-if(TemHabilidade(who, "Camuflagem"))
-   start_script(":sneak:sneak", who);
-endif
+   if(TemHabilidade(who, "Camuflagem"))
+      start_script(":sneak:sneak", who);
+   else
+      sendSysMessageEX(who, "Voce nao tem a habilidade Camuflagem.", SSM_FAIL);
+   endif
 endprogram
 
