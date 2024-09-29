@@ -21,7 +21,6 @@ program DblClickNerve(params)
 			if ( busy.pid )
 				AI_Speak(npc, "Desculpe, mas estou conversando com outra pessoa.");
 			else
-				print("teste!!!");
 				serving := player;
 				if (GetObjProperty(npc, "startbuy"))
 					AI_Speak(npc, ""+GetObjProperty(npc, "startbuy"));
