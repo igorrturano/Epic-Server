@@ -71,11 +71,11 @@ function ShowCriarGump(who)
     AdicionarBotoesNavegacao(gump);
 
     var y_pos := 95; // Abaixado em 35 pixels
-    
+
     GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Características Comportamentais");
     y_pos += 25;
     GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 205); // Altura reduzida
-    
+
     var txt_comportamentos := array{};
     for i := 1 to 6
         txt_comportamentos.append(GFTextEntry(gump, 50, y_pos + 5 + (i-1)*30, BACKGROUND_WIDTH - 10, 25, 0, "- ")); // Já está em preto (0)
@@ -86,7 +86,7 @@ function ShowCriarGump(who)
     y_pos += 25;
     GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 120);
     
-   var txt_objetivos := array{};
+    var txt_objetivos := array{};
     for i := 1 to 3
         txt_objetivos.append(GFTextEntry(gump, 50, y_pos + 5 + (i-1)*35, BACKGROUND_WIDTH - 10, 30, 0, "- ")); // Mudado para preto (0)
     endfor
@@ -94,12 +94,12 @@ function ShowCriarGump(who)
     y_pos += 130;
     GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Aviso: Existe um limite de caracteres para cada campo.");
 
-     GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
-    GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 0);  // Cancelar
+    GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
+    GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 1);  // Cancelar (changed return code to 1)
 
     var input := GFSendGump(who, gump);
     
-    if (input[0] == 0)  // Botão direito ou Cancelar
+    if (input[0] == 0)  // Right-click close
         return 0;
     elseif (input[0] == 100)
         var comportamentos := array{};
@@ -115,14 +115,16 @@ function ShowCriarGump(who)
         
         SalvarFichaRP(who, comportamentos, objetivos);
         SendSysMessage(who, "Ficha RP criada com sucesso!");
+    elseif (input[0] == 1)  // Cancel button
+        return 0;
     endif
 
     return input[0];
 endfunction
 
-function ShowEditarGump(who)
+function ShowEditarGump(who) 
     var gump := GFCreateGump();
-    GFClosable(gump, 1);  // Permite fechar com o botão direito
+    GFClosable(gump, 1);  // Allows closing with right-click
     GFDisposable(gump, 0);
     
     GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
@@ -132,37 +134,37 @@ function ShowEditarGump(who)
 
     AdicionarBotoesNavegacao(gump);
 
-    var y_pos := 95; // Abaixado em 35 pixels
+    var y_pos := 95; // Lowered by 35 pixels
     
     var ficha := CarregarFichaRP(who);
     
     GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Características Comportamentais");
     y_pos += 25;
-    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 205); // Altura reduzida
+    GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 205); // Reduced height
     
     var txt_comportamentos := array{};
     for i := 1 to 6
-        txt_comportamentos.append(GFTextEntry(gump, 50, y_pos + 5 + (i-1)*30, BACKGROUND_WIDTH - 10, 25, 0, ficha.comportamentos[i])); // Já está em preto (0)
+        txt_comportamentos.append(GFTextEntry(gump, 50, y_pos + 5 + (i-1)*30, BACKGROUND_WIDTH - 10, 25, 0, ficha.comportamentos[i]));
     endfor
 
-    y_pos += 215; // Ajustado para manter a distância
+    y_pos += 215; // Adjusted to maintain distance
     GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Objetivos Atuais");
     y_pos += 25;
     GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 120);
     
     var txt_objetivos := array{};
     for i := 1 to 3
-        txt_objetivos.append(GFTextEntry(gump, 50, y_pos + 5 + (i-1)*35, BACKGROUND_WIDTH - 10, 30, 0, ficha.objetivos[i])); // Mudado para preto (0)
+        txt_objetivos.append(GFTextEntry(gump, 50, y_pos + 5 + (i-1)*35, BACKGROUND_WIDTH - 10, 30, 0, ficha.objetivos[i]));
     endfor
 
-   GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
-    GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 0);  // Cancelar
+    GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
+    GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 1);   // Cancelar (changed return code to 1)
 
     var input := GFSendGump(who, gump);
     
-    if (input[0] == 0)  // Botão direito ou Cancelar
+    if (input[0] == 0)  // Right-click close
         return 0;
-    elseif (input[0] == 100)
+    elseif (input[0] == 100)  // Confirm button
         var comportamentos := array{};
         var objetivos := array{};
         
@@ -176,9 +178,11 @@ function ShowEditarGump(who)
         
         SalvarFichaRP(who, comportamentos, objetivos);
         SendSysMessage(who, "Ficha RP atualizada com sucesso!");
+    elseif (input[0] == 1)  // Cancel button
+        return 0;
     endif
 
-  return input[0];
+    return input[0];
 endfunction
 
 
