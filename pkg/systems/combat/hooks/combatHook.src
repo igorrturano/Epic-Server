@@ -37,7 +37,7 @@ include ":commands:debugsystem";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
-var npc_cfg	:= ReadConfigFile("::npcdesc");
+var npc_cfg	:= ReadConfigFile(":*:npcdesc");
 
 //Global because they're important, and it keeps the function
 //prototypes shorter and easier to read.

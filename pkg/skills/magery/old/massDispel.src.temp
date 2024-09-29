@@ -16,7 +16,7 @@ program spell_massDispel(parms)
   var spellcfg := ReadConfigFile(":*:spells");
   var circle := spellcfg[spellid].circle;
 
-  var npccfg := ReadConfigFile("::npcdesc");
+  var npccfg := ReadConfigFile(":*:npcdesc");
   var magery := AP_GetSkill(caster, MAGERY);
   var range := CInt(magery / 20);
   var targets := ListMobilesNearLocation( castOn.x, castOn.y, castOn.z, range, caster.realm );
