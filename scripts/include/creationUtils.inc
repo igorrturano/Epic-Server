@@ -1071,16 +1071,9 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        if (chardata.culture == ALURIEL)
-            CreateItemInBackpack(who, 0x26CC, 1); // longbow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        elseif (chardata.culture == BADURAN)
-            CreateItemInBackpack(who, 0x0f4f, 1); // crossbow
-            CreateItemInBackpack(who, 0x1bfb, ammo_amount); // bolts
-        else
-            CreateItemInBackpack(who, 0x13B2, 1); // bow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        endif
+        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
+
         CreateItemInBackpack(who, 0x2fb7, 1); // aljava
     endif
 endfunction
@@ -1201,16 +1194,16 @@ function workingItems(who)
         var recipe := struct;
         var chosenRecipes := AlchChoices(who);
         var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.+id := chosenRecipes[1];
+        recipe.+recipe := chosenRecipes[1];
         SetObjProperty(r1, "recipe", recipe);
         r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.id := chosenRecipes[2];
+        recipe.recipe := chosenRecipes[2];
         SetObjProperty(r1, "recipe", recipe);
         r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.id := chosenRecipes[3];
+        recipe.recipe := chosenRecipes[3];
         SetObjProperty(r1, "recipe", recipe);
         r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.id := chosenRecipes[4];
+        recipe.recipe := chosenRecipes[4];
         SetObjProperty(r1, "recipe", recipe);
         var i := 0;
         while(i != (skills[ALCHEMY])*2)
@@ -1225,21 +1218,21 @@ function workingItems(who)
 
         if (skills[ALCHEMY] >= 2)
 		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.id := chosenRecipes[5];
+            recipe.recipe := chosenRecipes[5];
             SetObjProperty(r1, "recipe", recipe);
             r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.id := chosenRecipes[6];
+            recipe.recipe := chosenRecipes[6];
             SetObjProperty(r1, "recipe", recipe);
-
+            
 	        if (skills[ALCHEMY] == 3)
 		        var book2:= CreateItemInBackpack(who, "alchemybook");
         		setobjproperty(book2, "serialid",who.serial);
 		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
                 r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.id := chosenRecipes[7];
+                recipe.recipe := chosenRecipes[7];
                 SetObjProperty(r1, "recipe", recipe);
                 r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.id := chosenRecipes[8];
+                recipe.recipe := chosenRecipes[8];
                 SetObjProperty(r1, "recipe", recipe);
             endif
         endif

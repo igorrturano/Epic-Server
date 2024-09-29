@@ -37,7 +37,7 @@ include ":commands:debugsystem";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
-var npc_cfg	:= ReadConfigFile("::npcdesc");
+var npc_cfg	:= ReadConfigFile(":*:npcdesc");
 
 //Global because they're important, and it keeps the function
 //prototypes shorter and easier to read.
@@ -50,6 +50,7 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
+
 	wpn_a := attacker.weapon;
 	wpn_d := defender.weapon;
 	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
@@ -60,6 +61,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	var anim := wpn_a_elem.Anim;
+
 	if (!attacker.acctname)
 		anim := 0x0c;
 	endif
@@ -82,7 +84,8 @@ exported function Attack(attacker, defender)
 
 	else
 		PlayMissSound(attacker);
-
+		PlayAttackAnimation(attacker);
+		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
@@ -117,9 +120,9 @@ endfunction
 function CanAttack(attacker, defender)
 	if (attacker == defender)
 		ApplyRawDamage(attacker, 5000);
-		return 1;
+		return 0;
 	elseif (!CheckLineOfSight(attacker, defender))
-		return 1;
+		return 0;
 	endif
 	
 	if (attacker.acctname)
@@ -128,7 +131,7 @@ function CanAttack(attacker, defender)
 				SendSysMessageEx(attacker, "Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL);
 				SetObjProperty(attacker, "attackmsg", polcore().systime+15);
 			endif
-			return 1;
+			return 0;
 		endif
 	endif
 
