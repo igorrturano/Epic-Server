@@ -36,10 +36,6 @@ program fichaRP(who, text)
     var input := ShowCriarGump(who);
 
     while (input != 0)
-        if (input == 0)
-            break;
-        endif
-
         var new_menu := AtualizarEstadoMenu(input[0]);
         case (new_menu)
             MENU_CRIAR: 
@@ -57,6 +53,7 @@ program fichaRP(who, text)
 
     return 1;
 endprogram
+
 
 function ShowCriarGump(who)
     var gump := GFCreateGump();
@@ -115,6 +112,9 @@ function ShowCriarGump(who)
         
         SalvarFichaRP(who, comportamentos, objetivos);
         SendSysMessage(who, "Ficha RP criada com sucesso!");
+
+        return 0; // retorna zero como sucesso
+
     elseif (input[0] == 1)  // Cancel button
         return 0;
     endif
@@ -178,6 +178,9 @@ function ShowEditarGump(who)
         
         SalvarFichaRP(who, comportamentos, objetivos);
         SendSysMessage(who, "Ficha RP atualizada com sucesso!");
+
+        return 0; // retorna zero como sucesso
+
     elseif (input[0] == 1)  // Cancel button
         return 0;
     endif
