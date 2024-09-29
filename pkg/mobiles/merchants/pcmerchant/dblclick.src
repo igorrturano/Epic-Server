@@ -6,7 +6,6 @@ use cfgfile;
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
 include ":npcs:thor/handling/thorai";
-include ":npcs:thor/handling/thorai";
 
 program DblClickNerve(params)
 	var npc		:= params[1];
@@ -45,11 +44,6 @@ program DblClickNerve(params)
 					endif
 					
 					AI_Speak(npc, responseAI);
-					
-					
-					AI_Speak(npc, responseAI);
-					
-					//AI_Speak(npc, "Ola, no que posso ajuda-lo?");
 				endif
 				busy := Start_Script(":merchants:pcmerchant/merchant_menu", {npc, player});
 				if ( busy.errortext )
