@@ -498,3 +498,12 @@ function TS_Death(mobile)
 	var process := TS_GetControllerProcess(mobile);
 	return process.SendEvent(event);
 endfunction
+
+function TS_GetTimerLevel(mobile, timer_name)
+	var timer := TS_GetTimerInfo(mobile, timer_name);
+	if ( !timer )
+		return timer;
+	endif
+
+	return (timer.Level);
+endfunction
