@@ -22,12 +22,14 @@ program attackOfOpportunity(params)
         if ((attacker.x != attacker_x || attacker.y != attacker_y))
             waitUntilNextAttack(defender);
             defender.attack_once(attacker);
+            PlayAttackAnimation(defender);
             disengage(attacker, defender);
             PrintTextAbove(defender, "*Ataque de Oportunidade*");
             break;
         elseif ((defender.x != defender_x || defender.y != defender_y))
             waitUntilNextAttack(attacker);
             attacker.attack_once(defender);
+            PlayAttackAnimation(attacker);
             disengage(attacker, defender);
             PrintTextAbove(attacker, "*Ataque de Oportunidade*");
             break;

@@ -6,6 +6,7 @@ include "include/sysEvent";
 include ":attributes:attributes";
 include ":tn:boss";
 include ":ghaia:ghaia";
+include ":brainAI:npcCommands";
 
 
 function hasSpecial(me)
@@ -178,7 +179,7 @@ function Fight(opponent, alerted := 0)
     // Entrega a OpenAI as variaveis para montar o contexto do NPC
     var responseText := handle_open_ai_npc_speech(npcTemplate, language, event, npcEvil, mood, gossip, specialLore, playerinput);
     //print(responseText);
-    Say(responseText); // usa a responsa da OpenAI
+    AI_Speak(me, responseText); // usa a responsa da OpenAI
     
    endif
    
