@@ -14,7 +14,7 @@ include ":combat:combat";
 
 var item_cfg	:= ReadConfigFile(":*:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
-var npc_cfg	:= ReadConfigFile("::npcdesc");
+var npc_cfg	:= ReadConfigFile(":*:npcdesc");
 
 program tirocarregado(who)
 	SendSysMessageEx(who, "Escolha o alvo da sua flecha", SSM_INFO);

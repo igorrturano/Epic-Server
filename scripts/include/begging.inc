@@ -4,7 +4,7 @@ function begpurse(me)
   if(!amt)
     amt := 50;
   endif
-  var cnfg := ReadConfigFile("::npcdesc");
+  var cnfg := ReadConfigFile(":*:npcdesc");
   var wealth := cnfg[me.npctemplate].wealth;
   var cap := 50;
   case(wealth)

@@ -68,8 +68,8 @@ function SelectTemplateFromGump(who)
 	
 		UnloadConfigFile(":*:npcdesc");
 		SendSysMessage(who, "Unloading :*:npcdesc");
-		UnloadConfigFile("::npcdesc");
-		SendSysMessage(who, "Unloading ::npcdesc");
+		UnloadConfigFile(":*:npcdesc");
+		SendSysMessage(who, "Unloading :*:npcdesc");
 	
 		foreach package in (Packages())
 			if ( package.npcdesc )

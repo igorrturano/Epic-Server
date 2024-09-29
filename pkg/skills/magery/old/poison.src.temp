@@ -14,7 +14,7 @@ const EVID_DISCHARGE := 0x123457;
 program poison(parms)
   var caster := parms.caster;
   var castOn := parms.castOn;
-  var npccfg := ReadConfigFile("::npcdesc");
+  var npccfg := ReadConfigFile(":*:npcdesc");
   if(spell_reflect(castOn))
     castOn := caster;
   endif
