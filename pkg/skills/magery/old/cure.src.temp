@@ -12,7 +12,7 @@ include ":timedscripts:poisonUtil";
 program cure( parms )
   var caster := parms.caster;
   var castOn := parms.castOn;
-  var npccfg := ReadConfigFile("::npcdesc");
+  var npccfg := ReadConfigFile(":*:npcdesc");
   PlaySoundEffect(caster, SFX_SPELL_CURE);
   PlayObjectCenteredEffect( castOn, FX_BLESS_EFFECT, 10,10);
   var potency := CInt(AP_GetSkill(caster, MAGERY) / 33) +1;

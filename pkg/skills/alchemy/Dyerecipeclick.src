@@ -8,8 +8,9 @@ program usaPergaminho(who, scroll)
 
 
 	var recipe := GetObjProperty(scroll, "recipe");
+		
+		WriteDyeInfo(recipe);
 	
-		WriteAlchInfo(recipe);
 
 	var gump := GFCreateGump(140, 100);
 	GFClosable(gump, 1);
