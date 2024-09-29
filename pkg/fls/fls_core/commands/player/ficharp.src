@@ -112,6 +112,7 @@ function ShowCriarGump(who)
         
         SalvarFichaRP(who, comportamentos, objetivos);
         SendSysMessage(who, "Ficha RP criada com sucesso!");
+        SetObjProperty(who, "fichaRP", 1);
 
         return 0; // retorna zero como sucesso
 
