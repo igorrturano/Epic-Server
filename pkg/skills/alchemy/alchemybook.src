@@ -32,7 +32,7 @@ program book(who, book)
 	var spells := GetObjProperty(book, "recipes");
 
 	if (spells[spell])
-			MakePotion ( spells[spell].id,  who);
+			MakePotion ( spells[spell].recipe,  who);
 			//Start_Script("cast_spell", {who, spells[spell], 0});
 	endif
 
