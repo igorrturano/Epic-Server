@@ -71,6 +71,10 @@ function canUseOpportunityHit(attacker, defender)
         return 0;
     endif
 
+    if (attacker.dead || defender.dead)
+        return 0;
+    endif
+    
     return 1;
 endfunction
 
