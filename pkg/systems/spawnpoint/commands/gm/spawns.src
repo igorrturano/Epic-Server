@@ -68,7 +68,7 @@ function createSpawngump(who, type,  oldspawns := 0, start := 0, end := 0)
 			foreach spawn in (df.keys())
 				var spawnpoint := SystemFindObjectBySerial(spawn);
 				var template := ParseTemplateName(GetObjProperty(spawnpoint, "Spawn")).template;
-				var cfg := ReadConfigFile("::npcdesc");
+				var cfg := ReadConfigFile(":*:npcdesc");
 				if (cfg)
 					var elem := FindConfigElem(cfg, template);
 					if ( GetConfigString(elem, "Category") == npctype)

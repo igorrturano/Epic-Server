@@ -13,7 +13,7 @@ include "include/magic";
 program spell_resurrect(parms)
   var caster := parms.caster;
   var castOn := parms.castOn;
-  var npccfg := ReadConfigFile("::npcdesc");
+  var npccfg := ReadConfigFile(":*:npcdesc");
   var spellid := parms.spellid;
   var spellcfg := ReadConfigFile(":*:spells");
   var circle := spellcfg[spellid].circle;
