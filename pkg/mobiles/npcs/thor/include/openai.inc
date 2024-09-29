@@ -26,7 +26,7 @@ function isPromptSafe(prompt)
 	if (unpackedJSON["error"])
 		return struct{ "error" := unpackedJSON["error"]["message"] };
 	endif
-	print(unpackedJSON["results"][1]["flagged"]);
+	
 	return unpackedJSON["results"][1]["flagged"];
 endfunction
 
