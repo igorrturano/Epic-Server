@@ -919,7 +919,13 @@ function genericItems(who)
     
     var robe := CreateItemInBackpack(who, 0x1F03, 1); // Roupa
     EquipItem(who, robe);
-	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
+    var moedas := "1d4";
+    if (chardata.classe == GUERREIRO)
+        moedas := "1d8";
+    elseif (chardata.classe == LADINO)
+        moedas := "1d12";
+    endif
+	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
     CreateItemInBackpack(who, 0x170D, 1); // Sandals
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
