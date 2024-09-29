@@ -741,6 +741,11 @@ function startAdventure(who)
     sleep(1);
     PlaySoundEffectPrivate(who, 0x2F4, who);
 
+    // Cria lanternas para os exploradores
+    CreateItemInBackpack(who, 0xC61F, 1);
+    CreateItemInBackpack(who, 0xC627, 1);
+    CreateItemInBackpack(who, 0x6161, 1);
+
     PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
     sleep(1);
     startAdventureGump(who);

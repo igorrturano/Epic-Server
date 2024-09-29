@@ -1071,16 +1071,9 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        if (chardata.culture == ALURIEL)
-            CreateItemInBackpack(who, 0x26CC, 1); // longbow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        elseif (chardata.culture == BADURAN)
-            CreateItemInBackpack(who, 0x0f4f, 1); // crossbow
-            CreateItemInBackpack(who, 0x1bfb, ammo_amount); // bolts
-        else
-            CreateItemInBackpack(who, 0x13B2, 1); // bow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        endif
+        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
+
         CreateItemInBackpack(who, 0x2fb7, 1); // aljava
     endif
 endfunction
