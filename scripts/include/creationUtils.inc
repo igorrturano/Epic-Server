@@ -1173,7 +1173,7 @@ function workingItems(who)
     endif
 
     if (skills[MECHANICS] >= 1)
-        CreateItemInBackpack(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
+        CreateItemInBackpack(who, 0x1035, (skills[MECHANICS] * 8)); // lockpick
     endif
 
     if (skills[Domestic_Work] >= 1)

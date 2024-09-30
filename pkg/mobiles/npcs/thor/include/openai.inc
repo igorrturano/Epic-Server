@@ -30,7 +30,7 @@ function isPromptSafe(prompt)
 	return unpackedJSON["results"][1]["flagged"];
 endfunction
 
-function OpenAICompletion(systemMessage, questions)
+function OpenAICompletion_Thor(systemMessage, questions)
 	var prompt := "";
     foreach question in questions
         if (question.user)
@@ -90,5 +90,6 @@ function OpenAICompletion(systemMessage, questions)
 			}
 		);
 	var unpackedJSON := UnpackJSON(apiResponse);
+	
 	return unpackedJSON["choices"][1]["message"]["content"];
 endfunction
