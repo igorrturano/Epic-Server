@@ -9,12 +9,19 @@ enum SPEED
 	MELEE_LOW := "MELEE_LOW", MELEE_MID := "MELEE_MID", MELEE_HIGH := "MELEE_HIGH",
 	RANGED_LOW := "RANGED_LOW", RANGED_MID := "RANGED_MID", RANGED_HIGH := "RANGED_HIGH"
 endenum
-enum DAMAGE
+enum DAMAGETAG
 	DAMAGE_NONE := "DAMAGE_NONE",
 	ONEHANDED_LOW := "ONEHANDED_LOW", ONEHANDED_MID := "ONEHANDED_MID", ONEHANDED_HIGH := "ONEHANDED_HIGH",
 	TWOHANDED_LOW := "TWOHANDED_LOW", TWOHANDED_MID := "TWOHANDED_MID", TWOHANDED_HIGH := "TWOHANDED_HIGH",
 	BOW_LOW := "BOW_LOW", BOW_MID := "BOW_MID", BOW_HIGH := "BOW_HIGH",
 	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH"
+endenum
+enum DAMAGEDICE
+	DAMAGE_NONE_DAMAGE := 0,
+	ONEHANDED_LOW_DAMAGE := "1d4", ONEHANDED_MID_DAMAGE := "1d6", ONEHANDED_HIGH_DAMAGE := "1d8",
+	TWOHANDED_LOW_DAMAGE := "1d8", TWOHANDED_MID_DAMAGE := "1d10", TWOHANDED_HIGH_DAMAGE := "1d12",
+	BOW_LOW_DAMAGE := "", BOW_MID_DAMAGE := "", BOW_HIGH_DAMAGE := "",
+	CROSSBOW_LOW_DAMAGE := "", CROSSBOW_MID_DAMAGE := "", CROSSBOW_HIGH_DAMAGE := ""
 endenum
 enum DAMAGETYPE
 	SLASHDAMAGE := "CORTANTE", PIERCINGDAMAGE := "PERFURANTE", BLUNTDAMAGE := "CONTUSIVO"
@@ -77,22 +84,3 @@ function IsShield(item)
     endif
 endfunction
 
-function getPropBase(item) //PEGA A PROP DE MODIFICADORES BASE
-    var prop := item.GetProp("atributos");
-    if (!prop) prop := struct; endif
-    return prop;
-endfunction
-
-function getPropExcep(item) //PEGA A PROP DE MODIFICADORES EXCEPCIONAL
-    var prop := item.GetProp("atributos_excp");
-    if (!prop) prop := struct; endif
-    return prop;
-endfunction
-
-function setPropBase(item, prop) //SETA A PROP DE MODIFICADORES BASE
-    if (prop.Size() > 0) item.SetProp("atributos", prop); endif
-endfunction
-
-function setPropExcep(item, prop) //SETA A PROP DE MODIFICADORES EXCEPCIONAL
-    if (prop.Size() > 0) item.SetProp("atributos_excp", prop); endif
-endfunction

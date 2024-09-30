@@ -1,6 +1,7 @@
 use cfgfile;
 
 include ":commands:debugsystem";
+include ":equipsys:utils";
 include ":attributes:attributes";
 include "include/epicCombatUtils";
 include "include/facings";
@@ -60,10 +61,11 @@ function CalcDamageWeapon(attacker, damage)
 	var weaponcfg := ReadConfigFile(":*:itemdesc");
 	var weaponelem := FindConfigElem(weaponcfg, attacker.weapon.objtype);
 	
-	var weapondice := CStr(weaponelem.Damage);
+	// var weapondice := CStr(weaponelem.Damage);
+	
 	var damageweapon;
 	if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
-		weapondice := "1d10";
+		weapondice := TWOHANDED_MID_DAMAGE;
 	endif
 	damageweapon := RandomDiceRoll(weapondice);
 	damage += damageweapon;
