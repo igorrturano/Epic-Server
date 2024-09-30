@@ -97,7 +97,8 @@ function ShowSkillsPage(byref gump, who)
         if (AP_GetSkillScript(skill) != error)
             var elem := AP_GetAttributeCfgElem(skill);
             var id := elem.SkillId;
-            GFAddButton(gump, x - 20, y+4, 2103, 2104, 1, id);
+            //TODO Desativado para investigação do bug de usar skill a partir do GUMP
+            //GFAddButton(gump, x - 20, y+4, 2103, 2104, 1, id);
         endif
         
         y := y + 15;
