@@ -568,6 +568,8 @@ function ConvertOreToIngot(ore)
 		0x6450: return 0x6465; //copper
 		0x6990: return 0x6991; //estanho
 		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x699c: return 0x699d; //bronze impuro
+		0x699d: return 0x6994; //bronze temperado
 		0x62ff: return 0x6996; //ferro impuro -> ferro temperado
 		0x6992: return 0x6993; //prata
 		0x6305: return 0x630e; //ouro
@@ -652,10 +654,11 @@ function getAllOres()
 
 		/* Metais primários */
 		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
+		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze Impuro", 0x699c),
 
 		/* Ligas Metálicas */
 		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
-		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze", 0x699c, {0x1BDE}, 2599),
+		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze", 0x699c, ConvertOreToIngot(0x699c), {0x1BDE}),
 		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6996, {0x1BDE}, 2599),
 
 		/* Ligas Elementais */
