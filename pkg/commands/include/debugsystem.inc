@@ -1,3 +1,7 @@
+/* 
+ * Documentado em: debug.src
+ */
+
 use uo;
 
 const PROPTAG := "#debug_";
