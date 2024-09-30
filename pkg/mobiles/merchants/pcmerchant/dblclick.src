@@ -45,8 +45,6 @@ program DblClickNerve(params)
 					endif
 					
 					AI_Speak(npc, responseAI);
-					
-					//AI_Speak(npc, "Ola, no que posso ajuda-lo?");
 				endif
 				busy := Start_Script(":merchants:pcmerchant/merchant_menu", {npc, player});
 				if ( busy.errortext )
