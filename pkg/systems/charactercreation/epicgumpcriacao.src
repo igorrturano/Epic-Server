@@ -658,7 +658,6 @@ function beardSelection(who, byref chardata)
 
     while (continue_loop)
         var input := beardSelectionGump(who, chardata, currentPage);
-        SendSysMessage(who, "input " + input);
         btn_value := input[0];
         case (btn_value)
             1001: currentPage += 1; // Next page

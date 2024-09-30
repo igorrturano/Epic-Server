@@ -350,7 +350,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     endforeach
 
     // Adicionar caixa de texto para idade escolhida
-     current_y += 20;
+    current_y += 20;
     GFTextLine(gump, x, current_y, 1153, "Escreva a sua idade:");
     current_y += 20;
     var age_textbox := GFEAddTextBox(gump, x, current_y, 100, 20, COLOR_YELLOW, "", 1000);
@@ -370,11 +370,16 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             endif
         endforeach
 
+        var idade_maxima := GetRaceMaximumAge(chardata.raca);
+
         if (!all_required_selected)
             SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
             return CaracteristicasRPGump(who, chardata, culture_pic);
-        elseif (age_input == "")
+        elseif (age_input == "" || typeof(age_input) == "Error")
             SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        elseif (CInt(age_input) > idade_maxima)
+            SendSysMessageEX(who, "A idade limite permitida pra sua raça é " + CStr(idade_maxima) + ".", SSM_FAIL);
             return CaracteristicasRPGump(who, chardata, culture_pic);
         else
             chardata.idade_escolhida := CInt(age_input);
@@ -386,6 +391,27 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     endif
 
     return input;
+endfunction
+
+function GetRaceMaximumAge(race)
+    var idade_maxima := 0;
+    case (race)
+        ANAO:
+            idade_maxima := 150;
+        POLSKI:
+            idade_maxima := 150;
+        ELFO:
+            idade_maxima := 225;
+        DROW:
+            idade_maxima := 225;
+        HUMANO:
+            idade_maxima := 75;
+        ORC:
+            idade_maxima := 75;
+        default:
+            idade_maxima := 0;
+        endcase
+    return idade_maxima;
 endfunction
 
 function GetPageCategories()
