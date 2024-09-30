@@ -21,7 +21,6 @@ program DblClickNerve(params)
 			if ( busy.pid )
 				AI_Speak(npc, "Desculpe, mas estou conversando com outra pessoa.");
 			else
-				print("teste!!!");
 				serving := player;
 				if (GetObjProperty(npc, "startbuy"))
 					AI_Speak(npc, ""+GetObjProperty(npc, "startbuy"));
@@ -31,12 +30,13 @@ program DblClickNerve(params)
 					var sourceDescription := GetObjProperty(player, "descricao");
 					var playerinput := "*"+ playerRaca + " " + sourceDescription + " se aproxima*";
 					
-					var responseAI := "";
-
+					var responseAI := "A gente tem isso aqui... *aponta pra uma estante aos pedaços*";
+					
 					if ( npcType == ":merchants:taverneiro" || npcType == ":brainai:taverneiro" || npcType == "taverneiro" )
 						npcType := "taverneiro"; // Get a propriedade "npc_type"
 						responseAI := handle_doubleclick(npcType, playerinput);
 					elseif ( npcType == ":merchants:vendedor" || npcType == ":brainai:vendedor" || npcType == "vendedor" )
+						npcType := "vendedor";
 						responseAI := handle_doubleclick(npcType, playerinput);
 					endif
 
@@ -45,6 +45,7 @@ program DblClickNerve(params)
 					endif
 					
 					AI_Speak(npc, responseAI);
+					
 				endif
 				busy := Start_Script(":merchants:pcconversation/conversation", {npc, player});
 				if ( busy.errortext )
