@@ -919,7 +919,13 @@ function genericItems(who)
     
     var robe := CreateItemInBackpack(who, 0x1F03, 1); // Roupa
     EquipItem(who, robe);
-	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
+    var moedas := "1d4";
+    if (chardata.classe == GUERREIRO)
+        moedas := "1d8";
+    elseif (chardata.classe == LADINO)
+        moedas := "1d12";
+    endif
+	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
     CreateItemInBackpack(who, 0x170D, 1); // Sandals
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
@@ -1071,16 +1077,9 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        if (chardata.culture == ALURIEL)
-            CreateItemInBackpack(who, 0x26CC, 1); // longbow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        elseif (chardata.culture == BADURAN)
-            CreateItemInBackpack(who, 0x0f4f, 1); // crossbow
-            CreateItemInBackpack(who, 0x1bfb, ammo_amount); // bolts
-        else
-            CreateItemInBackpack(who, 0x13B2, 1); // bow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        endif
+        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
+
         CreateItemInBackpack(who, 0x2fb7, 1); // aljava
     endif
 endfunction
@@ -1174,7 +1173,7 @@ function workingItems(who)
     endif
 
     if (skills[MECHANICS] >= 1)
-        CreateItemInBackpack(who, 0x1035, (skills[MECHANICS] * 8)); // lockpick
+        CreateItemInBackpack(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
 
     if (skills[Domestic_Work] >= 1)

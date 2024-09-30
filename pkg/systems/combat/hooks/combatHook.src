@@ -50,16 +50,18 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	if (!CanAttack(attacker, defender))
-		return 1;
-	endif
 
 	wpn_a := attacker.weapon;
 	wpn_d := defender.weapon;
 	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
 	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
 
+	if (!CanAttack(attacker, defender))
+		return 1;
+	endif
+
 	var anim := wpn_a_elem.Anim;
+
 	if (!attacker.acctname)
 		anim := 0x0c;
 	endif
