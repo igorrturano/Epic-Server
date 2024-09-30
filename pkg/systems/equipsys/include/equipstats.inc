@@ -36,9 +36,15 @@ function getWeaponStats(weapon)
 		PIERCINGDAMAGE: stats.+PiercingDamage := getDamageByTier(elem.PiercingDamage);
 		BLUNTDAMAGE: stats.+BluntDamage := getDamageByTier(elem.BluntDamage);
 	endcase */
-	stats.+SlashDamage := getDamageByTier(elem.SlashDamage);
-	stats.+PiercingDamage := getDamageByTier(elem.PiercingDamage);
-	stats.+BluntDamage := getDamageByTier(elem.BluntDamage);
+	stats.+SlashDamage := !getDamageByTier(elem.SlashDamage).errortext ? getDamageByTier(elem.SlashDamage) : 0;
+	stats.+PiercingDamage := !getDamageByTier(elem.PiercingDamage).errortext ? getDamageByTier(elem.PiercingDamage) : 0;
+	stats.+BluntDamage := !getDamageByTier(elem.BluntDamage).errortext ? getDamageByTier(elem.BluntDamage) : 0;
+	if (Upper(elem.Attribute) == "DUAL_WIELD")
+		stats.+DualWield := 1;
+		stats.+SlashOffDamage := !getDamageByTier(elem.SlashOffDamage).errortext ? getDamageByTier(elem.SlashOffDamage) : 0;
+		stats.+PiercingOffDamage := !getDamageByTier(elem.PiercingOffDamage).errortext ? getDamageByTier(elem.PiercingOffDamage) : 0;
+		stats.+BluntOffDamage := !getDamageByTier(elem.BluntOffDamage).errortext ? getDamageByTier(elem.BluntOffDamage) : 0;
+	endif
 	stats.+AttackType := elem.TipoAtaque;
 	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
 	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
@@ -59,7 +65,7 @@ endfunction
  *
  */
 function getSpeedByTier(tier)
-	case (tier.upper())
+	case (tier.Upper())
 		MELEE_LOW: return struct{"min" := 25, "max" := 29};
 		MELEE_MID: return struct{"min" := 33, "max" := 37};
 		MELEE_HIGH: return struct{"min" := 39, "max" := 45};
@@ -85,9 +91,7 @@ endfunction
  *
  */
 function getDamageByTier(tier)
-	case (tier)
-		DAMAGE_NONE: return 0;
-
+	case (tier.Upper())
 		// ONE HANDED
 		ONEHANDED_LOW: return "1d4";
 		ONEHANDED_MID: return "1d6";
@@ -136,21 +140,6 @@ function getCriticalChanceByTier(tier)
 	endcase
 endfunction
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function getArmorStats(armor)
 	var elem := getItemCfgElem(armor);
 	var stats := struct;
@@ -181,7 +170,7 @@ endfunction
 function getResistByProtection(protectionType)
 	var physical := array; // {SlashResist, PiercingResist, BluntResist};
 
-	case(protectionType) // Armaduras
+	case(Upper(protectionType))
         //TIER 1
         ARMOR_LOWLOW: physical := {0,0,0};
         ARMOR_LOWMID: physical := {1,1,1};
@@ -199,7 +188,6 @@ function getResistByProtection(protectionType)
     endcase
 
 	var resists := struct;
-	resists.+PhysicalResist := physical[1];
 	resists.+SlashResist := physical[1];
 	resists.+PiercingResist := physical[2];
 	resists.+BluntResist := physical[3];

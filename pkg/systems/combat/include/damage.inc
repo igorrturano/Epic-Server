@@ -26,6 +26,7 @@ include "damage/damagebase";
 include ":commands:debugsystem";
 include ":combat:armorZones";
 include ":combat:combat";
+include ":equipsys:utils";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -45,10 +46,6 @@ enum DAMAGE_TYPES
 	DMG_COLD		:= "Cold",
 	DMG_POISON		:= "Poison",
 	DMG_ENERGY		:= "Energy"
-endenum
-
-enum DAMAGE_HAND
-	DAMAGE_MAINHAND, DAMAGE_OFFHAND
 endenum
 
 function HealFLS(targ, amt)
@@ -232,12 +229,12 @@ function CalculateTotalDamage(defender, basedamage, attacker, dmglist := 0)
 	return CInt(damage);
 endfunction
 
-function CalculateRawDamage(attacker, weapon, weaponhand := DAMAGE_MAINHAND)
+function CalculateRawDamage(attacker, weapon, offDamage := 0)
 	var dmg;
 
 	if (attacker.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		dmg := cfg[npctemplate.template].AttackDamage;
 		dmg := RandomDiceRoll(dmg);
 	else
@@ -247,13 +244,23 @@ function CalculateRawDamage(attacker, weapon, weaponhand := DAMAGE_MAINHAND)
       		dmg := RandomDiceRoll(GetObjProperty(attacker, "dicedmg"));
 		elseif (GetObjProperty(attacker, "pilotando") != error)
 			dmg := RandomDiceRoll(GetObjProperty(attacker, "dicedmg"));
-		elseif (weaponhand == DAMAGE_OFFHAND)
-			dmg := RandomDiceRoll(CStr(weaponelem.OffHandDamage));
+		elseif (offDamage)
+			var prop := getPropBase(weapon);
+			case (Upper(prop.AttackType))
+				SLASHDAMAGE: dmg := RandomDiceRoll(CStr(prop.SlashOffDamage)); break;
+				PIERCINGDAMAGE: dmg := RandomDiceRoll(CStr(prop.PiercingOffDamage)); break;
+				BLUNTDAMAGE: dmg := RandomDiceRoll(CStr(prop.BluntOffDamage)); break;
+			endcase
 		else
-    		dmg := RandomDiceRoll(CStr(weaponelem.Damage));
+			var prop := getPropBase(weapon);
+			case (Upper(prop.AttackType))
+				SLASHDAMAGE: dmg := RandomDiceRoll(CStr(prop.SlashDamage)); break;
+				PIERCINGDAMAGE: dmg := RandomDiceRoll(CStr(prop.PiercingDamage)); break;
+				BLUNTDAMAGE: dmg := RandomDiceRoll(CStr(prop.BluntDamage)); break;
+			endcase
     	endif
 
-		dmg += weapon.dmg_mod;
+		// dmg += weapon.dmg_mod;
 	endif
 
 	return dmg;
@@ -721,5 +728,15 @@ function IsThrowingWeapon(item)
 			return 1;
 		endif
 	endif
+	return 0;
+endfunction
+
+function IsDualWield(item)
+	var prop := getPropBase(item);
+
+	if (prop.DualWield)
+		return 1;
+	endif
+
 	return 0;
 endfunction
