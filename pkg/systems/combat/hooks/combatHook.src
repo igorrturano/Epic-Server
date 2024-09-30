@@ -44,6 +44,10 @@ var npc_cfg	:= ReadConfigFile("::npcdesc");
 var wpn_a, wpn_d;
 var wpn_a_elem, wpn_d_elem;
 
+enum DAMAGEHAND
+	DAMAGE_MAINHAND, DAMAGE_OFFHAND
+endenum
+
 program Install()
 	print("INSTALLING: AttackHook ... OK!");
 	print("");
@@ -87,7 +91,7 @@ exported function Attack(attacker, defender)
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
 
-	if (wpn_a_elem.OffHandDamage) // Se é DualWield ataca novamente com a penalidade de acerto
+	if (IsDualWield(attacker.weapon)) // Se é DualWield ataca novamente com a penalidade de acerto
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
 		if (penalty < 10)
 			penalty := 10;
