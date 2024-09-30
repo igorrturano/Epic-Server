@@ -1,6 +1,11 @@
 use uo;
 use datafile;
 use util;
+use uo;
+use os;
+use polsys;
+use cfgfile;
+use util;
 
 
 include ":thor:openai";
@@ -38,13 +43,34 @@ function handle_doubleclick(npctype, playerinput)
       ";
 
       var questions := array{ struct{ "user" := playerinput } };
-      var result := OpenAICompletion(sysMsg, questions);
-   
+      var result := OpenAICompletion_Thor(sysMsg, questions);
+      return result;
+
+   else
+      var jsonData := PackJSON(struct{
+         "npcs" := array{ // Use array para múltiplos NPCs
+            struct{
+                  "text_size" := "Máximo de 30 caracteres", // Corrigido para :=
+                  "environment" := "assentamento improvisado", // Corrigido para :=
+                  "tone" := "tense", // Corrigido para :=
+                  "instruction" := "Greet the character, mention his race, use '...' instead of commas", // Corrigido para :=
+                  "words" := "use 'ei' ao inves de 'olá'" // Corrigido para :=
+            }
+         }
+      });
+
+      var unpackedJSON := UnpackJSON(jsonData);
+      var context := unpackedJSON["npcs"][1];
+      context := Cstr(context);
+
+      var questions := array{ struct{ "user" := playerinput } };
+      var result := OpenAICompletion_Thor(context, questions);
+      return result;
+
    endif
-   return result;
 endfunction
 
-function get_lore_get_examples(npctype)
+function get_lore_get_examples_thor(npctype)
    //aqui é possível colocar exemplos, ou a lore
    if (npctype == ":brainai:Nordic")
       // frases especiais de povos, lore especial se necessário acrescentar
@@ -71,7 +97,89 @@ function get_lore_get_examples(npctype)
    endif
 endfunction
 
-function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, specialLore, PlayerInput)
+function handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt)
+   var playerinput := "*compra*";
+
+   var gossip_storage := GetGlobalProperty("gossip_storage");
+
+   var jsonData := PackJSON(struct{
+      "npcs" := struct{
+         "fofoqueiro" := struct{
+               "name" := "NPC " + npcType + " Fofoqueiro Medieval RPG",
+               "gossip" := CStr(gossip_storage),
+               "item" := DescricaoItem,
+               "text_size" := "Máximo de 30 caracteres",
+               "instruction" := "Mention the item the user buys and bring up a gossip, smoothly.",
+               "response_example" := "Esse martelo é dos bons... ouvi dizer que a Rainha ta fazendo uns negócios sujos..."
+         },
+         "sarcástico" := struct{
+               "name" := "NPC " + npcType + " Sarcástico Medieval RPG",
+               "text_size" := "Máximo de 30 caracteres",
+               "item_price" := cost_amt,
+               "item" := DescricaoItem,
+               "instruction" := "faça um comentário sarcástico sobre o preço vendido"
+         },
+         "mesquinho" := struct{
+               "name" := "NPC " + npcType + " Mesquinho Medieval RPG",
+               "text_size" := "Máximo de 30 caracteres",
+               "item_price" := cost_amt,
+               "item" := DescricaoItem,
+               "instruction" := "faça um comentário mesquinho sobre o preço vendido"
+         },
+         "normal" := struct{
+               "name" := "NPC " + npcType + " Medieval RPG",
+               "text_size" := "Máximo de 30 caracteres",
+               "instruction" := "Make a comment about the purchase",
+               "item" := DescricaoItem
+         }
+      }
+   });
+
+   var unpackedJSON := UnpackJSON(jsonData);
+   var context := unpackedJSON["npcs"]["normal"]; //padrao é o taverneiro normal
+   context := Cstr(context);
+   var chance := RandomInt(100);
+
+   chance := 10;
+
+   if ( chance < 30 ) 
+
+      if (gossip_storage == {}) //se nao houver fofocas, vai pro NPC Normal
+         var taverneiro_normal := unpackedJSON["npcs"]["normal"];
+         context := taverneiro_normal;
+      else
+         var taverneiro_fofoqueiro := unpackedJSON["npcs"]["fofoqueiro"];
+         context := taverneiro_fofoqueiro;
+      endif
+      
+	elseif ( chance > 30 && chance < 70)
+
+      var dividir_mesquinho_sarcastico := RandomInt(100);
+
+      if (dividir_mesquinho_sarcastico < 50)
+         var taverneiro_sarcastico := unpackedJSON["npcs"]["sarcástico"];
+         context := taverneiro_sarcastico;
+
+      else
+         var taverneiro_mesquinho := unpackedJSON["npcs"]["mesquinho"];
+         context := taverneiro_mesquinho;
+
+      endif
+
+   elseif ( chance > 70 )
+      var taverneiro_normal := unpackedJSON["npcs"]["normal"];
+      context := taverneiro_normal;
+   endif
+
+   context := Cstr(context);
+
+   var responseAI := OpenAICompletion_Thor(context, playerinput);
+   responseAI := StrReplace(responseAI, "\"", " "); // Substitui aspas por espaço
+   
+   return responseAI;
+endfunction
+
+function handle_open_ai_npc_speech_thor(npc, language, event, npcEvil, mood, gossip, specialLore, PlayerInput)
   
    // var npc := :type: banqueiro, guarda, ou qualquer (any)
    // var language := :type: ruim, boa
@@ -120,7 +228,7 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
    endif
 
    if (specialLore)
-      var appendLore := get_lore_get_examples(npc);
+      var appendLore := get_lore_get_examples_thor(npc);
       if (appendLore != 0)
          systemMessage := systemMessage + " use o contexto: " + appendLore;
       endif
@@ -131,8 +239,8 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
    // Define the questions array with the user input
    var questions := array{ struct{ "user" := PlayerInput } };
    // Chama o OpenAI com as variaveis de contexto (systemMessage) e o input do char (questions)
-   print(systemMessage);
-   var responseText := OpenAICompletion(systemMessage, questions);
+   
+   var responseText := OpenAICompletion_Thor(systemMessage, questions);
    //var responseText := "teste";
    return responseText;
 endfunction

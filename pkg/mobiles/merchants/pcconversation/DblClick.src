@@ -31,7 +31,7 @@ program DblClickNerve(params)
 					var playerinput := "*"+ playerRaca + " " + sourceDescription + " se aproxima*";
 					
 					var responseAI := "A gente tem isso aqui... *aponta pra uma estante aos pedaços*";
-
+					
 					if ( npcType == ":merchants:taverneiro" || npcType == ":brainai:taverneiro" || npcType == "taverneiro" )
 						npcType := "taverneiro"; // Get a propriedade "npc_type"
 						responseAI := handle_doubleclick(npcType, playerinput);
@@ -45,6 +45,7 @@ program DblClickNerve(params)
 					endif
 					
 					AI_Speak(npc, responseAI);
+					
 				endif
 				busy := Start_Script(":merchants:pcconversation/conversation", {npc, player});
 				if ( busy.errortext )
