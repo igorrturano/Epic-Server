@@ -29,10 +29,10 @@ include ":commands:debugsystem";
 include "include/say";
 
 var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com o cmdlevel
-    struct { name := "all", "level" := 2 },
-    struct { name := "clima", "level" := 1 }, 
-    struct { name := "damage", "level" := 1 },
-	struct { name := "smelting", "level" := 1 }
+    struct { name := "all", "level" := 1 },
+    struct { name := "clima", "level" := 0 }, 
+    struct { name := "damage", "level" := 0 },
+	struct { name := "smelting", "level" := 0 }
 };
 
 program CMD_debug(who, debugName)
