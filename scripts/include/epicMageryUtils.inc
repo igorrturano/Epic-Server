@@ -173,6 +173,7 @@ endfunction
 function handleSilentMagic(who, targ := 0, sound := 0)
     if (!GetObjProperty(who, "#magiasilenciosa") && sound != 0 && targ != 0)
         PlaySoundEffect(targ, sound);
+        return 0;
     endif
 
     SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
