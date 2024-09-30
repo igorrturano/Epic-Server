@@ -711,7 +711,6 @@ function pathOfWisdom(who, culture_pic)
             break;
         elseif (btn_value == 203 && chardata.culture != GULTHRAK)
             chardata.magia := "Sacerdote";
-            var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
             if (chardata.culture == HAROLOTH)
                 CreateItemInBackpack(who, 0x166E, 1);
             endif
