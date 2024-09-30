@@ -1813,6 +1813,8 @@ function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
     var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
     var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
 
+    var selectedHair := chardata.hair;
+
     for i := start to end
         var style := SplitWords(hairStyles[i]);
         var hairname := style[1];
@@ -1826,7 +1828,15 @@ function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
         
         GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
         GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname);
-        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        
+        //se houver um cabelo selecionado, verifica se é o mesmo cabelo da iteração e se for, usa o botão de checked ao inves de unchecked
+        //ou se este for o primeiro item da iteração e não houver cabelo selecionado, então vai marcar o primeiro item de todos que é o sem barba
+        if (selectedHair == gumppic || (i == 1 && selectedHair == ""))
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2153, 2151, GF_CLOSE_BTN, hairgraphic);
+        else
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        endif
+        
         GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
     endfor
 
@@ -1875,6 +1885,8 @@ function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
     var start := (currentPage - 1) * BEARDS_PER_PAGE + 1;
     var end := Min(start + BEARDS_PER_PAGE - 1, beardStyles.size());
 
+    var selectedBeard := chardata.beard;
+
     for i := start to end
         var style := SplitWords(beardStyles[i]);
         var beardname := style[1];
@@ -1888,7 +1900,15 @@ function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
         
         GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
         GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, beardname);
-        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+
+        //se houver uma barba selecionada, verifica se é a mesma barba da iteração e se for, usa o botão de checked ao inves de unchecked
+        //ou se este for o primeiro item da iteração e não houver barba selecionada, então vai marcar o primeiro item de todos que é o sem barba
+        if (selectedBeard == gumppic || (i == 1 && selectedBeard == ""))
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2153, 2151, GF_CLOSE_BTN, beardgraphic);
+        else
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+        endif
+
         GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
     endfor
 
@@ -1938,6 +1958,40 @@ function GetBeardGumpGraphic(beardID)
         51627: return 52174; // BigodeLongo
         51628: return 52174; // BigodeCurto
         // Adicione aqui os casos para as barbas anãs
+        51590: return 52136; // BarbaMultiplasTrancasEnfeitadas
+        51591: return 52137; // BarbaTrancadaBipartida
+        51592: return 52138; // BarbaMuitoComprida
+        51593: return 52139; // BarbaTrancadaTripartida
+        51594: return 52140; // BarbaVolumosa
+        51595: return 52141; // BarbaCompridaBaguncada
+        51596: return 52142; // BarbaCompridaAtada
+        51597: return 52143; // BarbaMultiplasTrancas
+        51598: return 52144; // BarbaVolumosaBipartida
+        51599: return 52145; // BarbaLongaCheia
+        51600: return 52146; // BarbaLongaFrizada
+        51601: return 52147; // BarbaLongaPontuda
+        51602: return 52148; // BarbaEnfeitadaRevoltosa
+        51603: return 52149; // BarbaVolumosaComTrancas
+        51604: return 52150; // BarbaComPontasEnfeitadas
+        51605: return 52151; // BarbaCompridaAparada
+        51606: return 52152; // BarbaMediaAparada
+        51607: return 52153; // BarbaArticulada
+        51608: return 52154; // BarbichaTrancada
+        51609: return 52155; // BarbichaDupla
+        51610: return 52156; // BigodeCurvado
+        51611: return 52157; // BarbaMediaAparada
+        51612: return 52158; // BarbaMediaSemBigode
+        51613: return 52159; // BarbaBigodeRevoltoso
+        51614: return 52160; // BarbaTrancadaBipartidaSobrancelhas
+        51615: return 52161; // BarbaMediaSobrancelhas
+        51616: return 52162; // BarbichaTrancaLongaEnfeitada
+        51617: return 52163; // BarbichaBipartidaEnfeitada
+        51618: return 52164; // BarbaMediaSemBigode
+        51619: return 52165; // BarbaBigodeRevoltoso
+        51620: return 52166; // BarbaTrancadaBipartidaSobrancelhas
+        51621: return 52167; // BarbaMediaSobrancelhas
+        51622: return 52168; // BarbichaTrancaLongaEnfeitada
+        51623: return 52169; // BarbichaBipartidaEnfeitada
         default: return 50800; // Gráfico padrão (Goatee)
     endcase
 endfunction
