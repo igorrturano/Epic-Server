@@ -658,7 +658,7 @@ function getAllOres()
 
 		/* Ligas Metálicas */
 		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
-		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze", 0x699c, ConvertOreToIngot(0x699c), {0x1BDE}),
+		toStruct(ORE_BRONZE_TEMP, "Ingot de Bronze Impuro", "Ingot de Bronze Temperado", ConvertOreToIngot(0x699c), {0x1BDE}),
 		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6996, {0x1BDE}, 2599),
 
 		/* Ligas Elementais */
@@ -717,11 +717,11 @@ endfunction
 enum ORE
 	ORE_CHARCOAL := "ORE_CHARCOAL",
 	ORE_SAND := "ORE_SAND",
-	ORE_IRON := "ORE_IRON",
-	ORE_COPPER := "ORE_COPPER",
-	
-	ORE_IRON_TEMP := "ORE_IRON_TEMP",
 	ORE_BRONZE := "ORE_BRONZE",
+	ORE_IRON := "ORE_IRON",
+
+	ORE_IRON_TEMP := "ORE_IRON_TEMP",
+	ORE_BRONZE_TEMP := "ORE_BRONZE_TEMP",
 	ORE_STEEL := "ORE_STEEL",
 	
 	ORE_IGNIUM := "ORE_IGNIUM",
@@ -738,6 +738,7 @@ enum ORE
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
+	ORE_COPPER := "ORE_COPPER",
 	ORE_SILVER := "ORE_SILVER",
 	ORE_GOLD := "ORE_GOLD"
 endenum
