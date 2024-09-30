@@ -3,6 +3,7 @@ include ":datafile:include/datafile";
 include ":merchants:item_template";
 include ":spells:swordmage";
 include ":brainAI:npcUtil";
+include ":npcs:thor/handling/thorai";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -403,7 +404,7 @@ function AI_Speak_Openai(npcType, DescricaoItem, cost_amt)
 	endif
 	var playerinput := "<o personagem compra o item " + DescricaoItem + " por " + cost_amt + " moedas>";
 	
-	var responseText := handle_open_ai_npc_speech(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+	var responseText := handle_open_ai_npc_speech_utils(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
 
 	return responseText;
 endfunction
@@ -482,12 +483,12 @@ function DoPurchase(npc, player, input)
 
 							var npcType := npc.npctemplate;
 							if ( npcType == ":merchants:taverneiro")
-								npcType := "taverneiro engraçado"; // Get a propriedade "npc_type"
+								npcType := "taverneiro"; // Get a propriedade "npc_type"
 							else
 								npcType := "vendedor";
 							endif
 							
-							var responseAI := AI_Speak_Openai(npcType, DescricaoItem, cost_amt);
+							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
 							AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
@@ -513,11 +514,11 @@ function DoPurchase(npc, player, input)
 
 							var npcType := npc.npctemplate;
 							if ( npcType == ":merchants:taverneiro")
-								npcType := "taverneiro engraçado"; // Get a propriedade "npc_type"
+								npcType := "taverneiro"; // Get a propriedade "npc_type"
 							else
 								npcType := "vendedor";
 							endif
-							var responseAI := AI_Speak_Openai(npcType, DescricaoItem, cost_amt);
+							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
 							AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
@@ -546,11 +547,11 @@ function DoPurchase(npc, player, input)
 							
 							var npcType := npc.npctemplate;
 							if ( npcType == ":merchants:taverneiro")
-								npcType := "taverneiro engraçado"; // Get a propriedade "npc_type"
+								npcType := "taverneiro"; // Get a propriedade "npc_type"
 							else
 								npcType := "vendedor";
 							endif
-							var responseAI := AI_Speak_Openai(npcType, DescricaoItem, cost_amt);
+							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
 							AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
@@ -573,11 +574,11 @@ function DoPurchase(npc, player, input)
 
 						var npcType := npc.npctemplate;
 						if ( npcType == ":merchants:taverneiro")
-							npcType := "taverneiro engraçado"; // Get a propriedade "npc_type"
+							npcType := "taverneiro"; // Get a propriedade "npc_type"
 						else
 							npcType := "vendedor";
 						endif
-						var responseAI := AI_Speak_Openai(npcType, DescricaoItem, cost_amt);
+						var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
 						AI_Speak(npc, responseAI);
 
 						//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
