@@ -140,8 +140,6 @@ function handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt)
    context := Cstr(context);
    var chance := RandomInt(100);
 
-   chance := 10;
-
    if ( chance < 30 ) 
 
       if (gossip_storage == {}) //se nao houver fofocas, vai pro NPC Normal
