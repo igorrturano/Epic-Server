@@ -45,7 +45,8 @@ function isPromptSafe(prompt)
 	return flaggedFound;
 endfunction
 
-function OpenAICompletion_Thor(systemMessage, questions)
+function OpenAICompletion_Thor(systemMessage, questions, temperatura:=1.0, top_p:=1)
+	// print("temperatura: "+temperatura);
 	var prompt := "";
     foreach question in questions
         if (question.user)
@@ -61,7 +62,9 @@ function OpenAICompletion_Thor(systemMessage, questions)
 
 	var formatedQuestions := array{ struct{
 		"role" := "system",
-		"content" := systemMessage
+		"content" := systemMessage,
+		"temperature" := temperatura,
+		"top_p" := top_p
 	} };
 
 	foreach question in questions
