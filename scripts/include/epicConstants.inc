@@ -50,8 +50,25 @@ enum ARCANE_SCHOOLS
     KAIJIN := "Kaijin"
 endenum
 
+enum ALCHEMICAL_SCIENCES
+    BOMBA := "Bomba",
+    VENENO := "Veneno",
+    BUFF := "Buff",
+endenum
+
 enum CAMINHOS
     GUERREIRO := "Guerreiro",
     LADINO := "Ladino",
     SABIO := "Sabio"
+endenum
+
+const FIST := 0x1F020;
+
+enum RESIST_DIFF
+	RESIST_EASY := 8,
+	RESIST_MEDIUM := 15,
+	RESIST_HARD := 20,
+	RESIST_VERY_HARD := 25,
+	RESIST_EXTREMELY_HARD := 30,
+	RESIST_ALMOST_IMPOSSIBLE := 35
 endenum

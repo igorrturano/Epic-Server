@@ -9,9 +9,6 @@ include "include/client";
 include "include/say";
 include ":survival:fishingFunctions";
 
-
-
-
 program clima(who)
 
 var estacao := cint(getglobalproperty("season"));
@@ -33,7 +30,7 @@ var climamodtemp;
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var daylength := cint(config.daylength) * 60;
-	var horanascer := cint(getGlobalProperty("halfdaytime"));	
+	var horanascer := cint(getGlobalProperty("halfdaytime"));
 	if ((ReadGameClock() - horanascer) < (daylength / 5)) solpos := "Parece ter nascido a pouco"; 
 	elseif ((ReadGameClock() - horanascer) < ((2 * daylength) / 5)) solpos := "Caminhando ao topo do ceu";
 	elseif ((ReadGameClock() - horanascer) < ((3 * daylength) / 5)) solpos := "A Pino";

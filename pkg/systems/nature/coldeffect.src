@@ -3,8 +3,9 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include "include/damage";
+include ":combat:damage";
 include ":attributes:attributes";
+include "include/epicConstants";
 
 var leatherArmors := { 0x13C7, 0x13CD, 0x13C6, 0x1DB9, 0x13CB, 0x13CC, 0x13D3, 0x13D6, 0x13D5, 0x13D4, 0x13DA, 0x13DB, 0x170B, 0x1711};
 
@@ -30,97 +31,97 @@ program neve(params)
                 return;
             endif
 
-            var dif := 105; //Quase Impossível
+            var dif := RESIST_ALMOST_IMPOSSIBLE;
 
             if (GetGlobalProperty("dia") == "noite")
-                dif := dif + 15;
+                dif := dif + 1;
             endif
 
             if ( cint( GetGlobalProperty("season")) == 1) // if verão
-                dif := dif -15;
+                dif := dif - 1;
             endif
 
             if ( cint( GetGlobalProperty("season")) == 3) //inverno
-                dif := dif + 15;
+                dif := dif + 1;
             endif
 
             if ( GetGlobalProperty("weater") != error) //ta chovendo ou nevando
-                dif := dif + 15;
+                dif := dif + 1;
             endif
 
-            if ( GetObjProperty(who, "chardata").trait == "Nomade do Deserto")
-                dif := dif + 30; // Quatro níveis mais difícil
+            if ( GetObjProperty(who, "chardata").trait == "Cria do Deserto")
+                dif := dif + 4;
             endif
 
             if ( GetObjProperty(who, "chardata").trait == "Adaptável")
-                dif := dif - 30;
+                dif := dif - 2;
             endif
 
-            if ( TemHabilidade(who, "Corpo Diamante"))
-                dif := dif - 60;
+            if ( TemHabilidade(who, "Kani no Sutairu"))
+                dif := dif - 2;
             endif
             
             if (GetObjProperty(who, "chardata").culture == BJORSKA)
-                dif := dif - 60;
+                dif := dif - 5;
             endif
 
             if (GetObjProperty(who, "chardata").culture == LESTE)
-                dif := dif - 30;
+                dif := dif - 2;
             endif
 
             if ( GetObjProperty(who, "chardata").culture == GULTHRAK)
-                dif := dif + 30;
+                dif := dif + 2;
             endif
 
-            var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/2);
+            var survivalBonus := cint(AP_GetSkill(who, SURVIVAL)/20);
             dif := dif - survivalBonus;
 
             foreach item in (ListEquippedITems(who))
 
                 // Se o item for de couro polar ajuda mais contra o frio
                 if ( (GetObjProperty(item, "material") == 0xee58) || (GetObjProperty(item, "material") == 0xef26) )
-                    dif := dif - 8;
+                    dif := dif - 2;
 
                 // Se o item for de outro couro ajuda um pouco contra o frio
                 elseif (item in leatherArmors)
-                    dif := dif - 2;
+                    dif := dif - 1;
                 endif
             endforeach
 
             // Fontes de calor ajudam contra o frio
             foreach item in ( ListItemsNearLocation( who.x, who.y, who.z, 4, who.realm ) )
                 if ((item.objtype >= 0x0461) && (item.objtype <= 0x046f))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif ((item.objtype >= 0x092b) & (item.objtype <= 0x0934))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif((item.objtype >= 0x08cf) && (item.objtype <= 0x08df))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif((item.objtype >= 0x092b) && (item.objtype <= 0x096c))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif((item.objtype >= 0x45d) && (item.objtype <= 0x48e))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif((item.objtype >= 0x0de3) && (item.objtype <= 0x0de9))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif((item.objtype >= 0x0e31) && (item.objtype <= 0x0e33))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                     elseif((item.objtype >= 0x1849) && (item.objtype <= 0x1850))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 elseif((item.objtype >= 0x197a) && (item.objtype <= 0x19a9))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                     elseif((item.objtype >= 0x0de3) && (item.objtype <= 0x0de9))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                     elseif((item.objtype == 0x19bb) || (item.objtype == 0x0fb1))
-                    dif := dif - 15;
+                    dif := dif - 1;
                     break;
                 endif
                 sleepms(20);
@@ -131,7 +132,7 @@ program neve(params)
             foreach mobile in ( ListMobilesNearLocation( who.x, who.y, who.z, 10, who.realm ) )
                 if (mobile.npctemplate == ":brainai:protetordeclima")
                     SendSysMessageEX(who, "O Protetor de Fogo lhe protege do frio.", SSM_INFO);
-                    dif := dif - 60;
+                    dif := dif - 4;
                 endif
                 if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party && (who.party.leader == mobile.party.leader))
                     resistchecked := mobile;

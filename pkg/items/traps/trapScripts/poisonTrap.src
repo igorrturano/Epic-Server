@@ -8,7 +8,7 @@ use math;
 
 include "include/client";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
@@ -35,14 +35,14 @@ program trapScript(params)
 
 	foreach mobile in mobiles
 		if (!mobile.npctemplate)
-			if (CheckResist(mobile, REFLEXOS, 30,-20*poisonLvl))
+			if (CheckResist(mobile, REFLEXOS, RESIST_MEDIUM,-2*poisonLvl))
 				if (temHabilidade(mobile, "Desbravador Nato"))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha venenosa.", SSM_INFO);
 					mobile.hidden := 0;
 					continue;
 				else
 					SendSysMessageEx(mobile, "Voce se expos parcialmente ao veneno da armadilha.", SSM_INFO);
-					if (CheckResist(mobile, FORTITUDE, 15,-20*poisonLvl)) // Um pouco mais de chance de resistir ao veneno, mas não muita
+					if (CheckResist(mobile, FORTITUDE, RESIST_EASY,-2*poisonLvl)) // Um pouco mais de chance de resistir ao veneno, mas não muita
 						SendSysMessageEx(mobile, "Voce resistiu ao veneno.", SSM_INFO);
 						continue;
 					else
@@ -52,14 +52,14 @@ program trapScript(params)
 			else
 				if (temHabilidade(mobile, "Evasao Aprimorada"))
 					SendSysMessageEx(mobile, "Por instinto voce se expos menos ao veneno da armadilha.", SSM_INFO);
-					if (CheckResist(mobile, FORTITUDE, 15,-20*poisonLvl)) // Um pouco mais de chance de resistir ao veneno, mas não muita
+					if (CheckResist(mobile, FORTITUDE, RESIST_EASY,-2*poisonLvl)) // Um pouco mais de chance de resistir ao veneno, mas não muita
 						SendSysMessageEx(mobile, "Voce resistiu ao veneno.", SSM_INFO);
 						continue;
 					else
 						TS_StartTimer(mobile, "defaultPoison", 120, max(1,poisonLvl-1)); // O Veneno afeta um pouco menos
 					endif
 				endif
-				if (CheckResist(mobile, FORTITUDE, 30,-20*poisonLvl))
+				if (CheckResist(mobile, FORTITUDE, RESIST_MEDIUM,-2*poisonLvl))
 					SendSysMessageEx(mobile, "Voce resistiu ao veneno.", SSM_INFO);
 					continue;
 				else

@@ -12,19 +12,27 @@ include ":tn:characters";
 include ":tn:tngumps";
 include ":attributes:attributes";
 include ":tn:cooldown";
+include "include/epicConstants";
 
 program meditar(who, text)
     var full_mana := AP_GetVitalMaximumValue(who, MANA);
     var current_mana := AP_GetVital(who, MANA);
     var start_hp := AP_GetVital(who, "Hits");
-    
+    var arcane_bows := array{0xFA6D, 0XF997};
+    var amt := Cint(AP_GetSkill(who, MAGICLORE)/20);
+    var delay := 300;
+    if (GetObjPRoperty(who, "chardata").raca == ELFO)
+        amt *=2;
+        delay := 240;
+    endif
+
 	var oldx := who.x;
 	var oldy := who.y;
     if (GetCooldown(who, "meditation"))
         SendSysMessage(who, "Voce precisa aguardar antes de meditar novamente");
         return 0;
     endif
-    setCooldown(who, "meditation", 300);
+    setCooldown(who, "meditation", delay);
 
     while (current_mana < full_mana)
         if (oldx != who.x || oldy != who.y)
@@ -44,7 +52,7 @@ program meditar(who, text)
             EraseObjProperty(who, "#Casting");
 			return 0;
         endif
-        if (!EquipmentCheck(who))
+        if (!EquipmentCheck(who) && !(who.weapon.objtype in arcane_bows))
             SendSysMessage(who, "Suas maos precisam estar livres");
 			return 0;
         endif

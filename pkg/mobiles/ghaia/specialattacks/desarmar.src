@@ -4,7 +4,7 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include ":timedScripts:timedScripts";
 include "include/say";
 
@@ -30,7 +30,7 @@ var dist := distance(attacker, defender);
 	endif
 
 	if (TemHabilidade(defender, "Vínculo Elemental"))
-		if (GetObjProperty(defender.weapon, "swordmage") ==  defender.serial)//seta com a arma
+		if (GetObjProperty(defender.weapon, "#elementalweapon"))//seta com a arma
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;
 		endif

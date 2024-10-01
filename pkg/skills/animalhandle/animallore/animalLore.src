@@ -6,7 +6,7 @@ include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":gumps:include/gumps";
 include ":brainAI:npcUtil";
-include "include/damage";
+include ":combat:damage";
 include ":tn:npcutil";
 include ":tn:cooldown";
 include ":ghaia:ghaia";

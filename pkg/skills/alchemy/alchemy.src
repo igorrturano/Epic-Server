@@ -6,8 +6,9 @@ include ":attributes:attributes";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":loot:magicLoot";
-//include "include/damage";
+//include ":combat:damage";
 include ":charactercreation:habilidades";
+include "include/epicConstants";
 
 program skill_alchemy(who)
 

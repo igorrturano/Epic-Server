@@ -31,3 +31,35 @@ endfunction
 function updateToolTip(obj_reference)
    IncRevision(obj_reference);
 endfunction
+
+function isMale(who)
+	var male_graphics := {400, 1830, 1832, 1828};
+	if (who.graphic in male_graphics)
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function isFemale(who)
+    var female_graphics := {401, 1831, 1833, 1829};
+    if (who.graphic in female_graphics)
+        return 1;   
+    endif
+
+    return 0;
+endfunction
+
+function join( a_array, delimiter )
+  var result := "";
+  var size := a_array.size();
+
+  for i := 0 to size - 1
+    result += a_array[i];
+    if ( i < size - 1 )
+      result += delimiter;
+    endif
+  endfor
+
+  return result;
+endfunction

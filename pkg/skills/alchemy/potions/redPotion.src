@@ -28,12 +28,17 @@ program drink_blue (who, potion)
 		return 1;
 	endif
 
+	var vicio := (AP_getvital(who, "Viciodex"));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
 	var healed := 0;
 	healed := AP_GetVitalMaximumValue(who, STAMINA);
 	if(potion.objtype == 0xdc0f)
-		healed := cint(healed*0.7);
+		healed := cint(healed*0.7*vicio);
 	else
-		healed := cint(healed*0.3);
+		healed := cint(healed*0.3*vicio);
 	endif
 	empty_bottle(who, potion);
 	TS_StartCooldown(who, "staminapot", cint(healed*0.5)+1);
@@ -51,4 +56,5 @@ program drink_blue (who, potion)
 	endwhile
 	EraseObjProperty(who, "#staminapotion");
 	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);	
+	VicioDEX(who, potion);
 endprogram

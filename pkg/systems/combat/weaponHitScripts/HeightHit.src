@@ -2,10 +2,10 @@ use uo;
 use vitals;
 use util;
 
-include "include/damage";
+include ":combat:damage";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 
 program HitScript(params)
 

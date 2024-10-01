@@ -16,6 +16,12 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata.wisdom_path != "Mago" && !TemHabilidade(who, "Aura Mortis") && !TemHabilidade(who, "Sensibilidade Arcana"))
+        SendSysMessageEx(who, "Você não sabe usar essa magia.", SSM_INFO);
+        return 1;
+    endif
+
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;

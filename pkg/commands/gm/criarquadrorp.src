@@ -1,0 +1,149 @@
+//1
+use uo;
+use os;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+
+const GUMP_WIDTH := 520;
+const GUMP_HEIGHT := 380;
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const INTERNAL_WIDTH := 435;
+const VERTICAL_SPACING := 20;
+const BACKGROUND_WIDTH := 465;
+const BACKGROUND_HEIGHT := 280;
+
+program criarquadrorp(who, text)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Esse comando é apenas para GMs.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o item ao qual deseja adicionar uma imagem.");
+    var alvo := Target(who, TGTOPT_CHECK_LOS);
+    if (!alvo)
+        SendSysMessage(who, "Cancelado");
+        return 0;
+    endif
+
+    if (!alvo.IsA(POLCLASS_ITEM))
+        SendSysMessage(who, "Você só pode selecionar itens.");
+        return 0;
+    endif
+
+    if (alvo.IsA(POLCLASS_CONTAINER))
+        SendSysMessage(who, "Você não pode adicionar uma imagem a um container.");
+        return 0;
+    endif
+
+    if (ItemHasSpecialProperties(alvo))
+        SendSysMessage(who, "Este item já possui propriedades especiais e não pode receber uma imagem.");
+        return 0;
+    endif
+
+    var gump_data := CreateConfigurationGump();
+    var input := GFSendGump(who, gump_data.gump);
+
+    if (input[0] == 1) // OK button
+        var title := GFExtractData(input, gump_data.txt1);
+        var url := GFExtractData(input, gump_data.txt2);
+
+        SetObjProperty(alvo, "ImageItem", 1);
+        SetObjProperty(alvo, "title", title);
+        SetObjProperty(alvo, "url", url);
+        SetObjProperty(alvo, "crafterserial", who.serial);
+        
+        alvo.usescript := ":custompizza:criarquadrorp/useimage";
+
+        SendSysMessage(who, "O item foi configurado com sucesso para exibir uma imagem.");
+    else
+        SendSysMessage(who, "Cancelado");
+    endif
+endprogram
+
+function ItemHasSpecialProperties(item)
+    var itemdesc := ReadConfigFile(":*:itemdesc");
+    var elem := FindConfigElem(itemdesc, item.objtype);
+    
+    if (elem)
+        if (elem.ControlScript || 
+            elem.CreateScript || 
+            elem.DestroyScript || 
+            elem.Script || 
+            elem.DoubleclickRange || 
+            elem.MethodScript || 
+            elem.CanInsertScript || 
+            elem.OnInsertScript || 
+            elem.CanRemoveScript || 
+            elem.OnRemoveScript)
+            return 1;
+        endif
+    endif
+
+    if (item.usescript)
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+
+function CreateConfigurationGump()
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    var gump_width := 500;  // Diminuído de 520 para 500
+    var gump_height := 380;
+    var content_width := 475;  // Ajustado de acordo com a nova largura do gump
+    
+    GFGumpPicTiled(gump, 0, 0, gump_width, gump_height, GUMP_BACKGROUND);
+    AdicionarMoldura(gump, gump_width, gump_height);
+
+    GFTextMid(gump, 25, 22, gump_width - 50, 53, "Configuração da Imagem");
+
+    var y_pos := 60;
+    GFResizePic(gump, 15, y_pos, INTERNAL_BACKGROUND, content_width, BACKGROUND_HEIGHT);
+    y_pos += 20;
+
+    GFTextLine(gump, 30, y_pos, 53, "Título:");
+    var txt1 := GFTextEntry(gump, 30, y_pos + 20, content_width - 10, 20, 0, "");
+    y_pos += 50;
+
+    GFTextLine(gump, 30, y_pos, 53, "URL:");
+    var txt2 := GFTextEntry(gump, 30, y_pos + 20, content_width - 10, 20, 0, "");
+    y_pos += 50;
+
+    GFTextLine(gump, 30, y_pos, 2100, "Tamanho máximo da imagem: 800x800 pixels");
+    y_pos += 40;
+
+    GFAddButton(gump, (gump_width / 2) - 15, y_pos, 247, 248, GF_CLOSE_BTN, 1);
+
+    var gump_data := struct{
+        "gump" := gump,
+        "txt1" := txt1,
+        "txt2" := txt2
+    };
+    
+    return gump_data;
+endfunction
+
+function AdicionarMoldura(byref gump, width, height)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := width - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := width - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := height - 25, width := width - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := height - 50, gump := 39928 },
+        struct{ x := width - 25, y := 25, width := 35, height := height - 50, gump := 39930 },
+        struct{ x := width - 25, y := height - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := height - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction

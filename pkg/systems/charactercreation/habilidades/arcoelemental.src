@@ -4,7 +4,7 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 include ":fls_magery:basicMagery";
 include "include/client";
@@ -48,8 +48,12 @@ program doubleattack(who)
     PlaySoundEffect(who, 0x245);
     sleep(2);
     who.frozen := 0;
-
-    var arcane_bow := CreateItemInBackpack(who, 0xF997, 1);
+    var the_bow := 0xFA6D;
+    if (TemHabilidade(who, "Tirothan"))
+        the_bow := 0xF997;
+    endif
+    
+    var arcane_bow := CreateItemInBackpack(who, the_bow, 1);
     EquipItem(who, arcane_bow);
     var duration := Cint(Ap_GetSkill(who, MAGICLORE)/10 * 60 * 3);
     SetCooldown(who, "arcane_bow", duration);

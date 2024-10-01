@@ -21,6 +21,8 @@ include ":tn:boss";
 include ":combat:armorZones";
 include ":combat:include/combat";
 include ":charactercreation:resists";
+include "include/epicConstants";
+include "include/dungeons";
 
 // estados do npc, todos comecam no INIT, depois podem ir pro WANDER, apos algum tempo no wander se nao for interrompido eles vao pro SLEEP. do WANDER e do SLEEP podem ir pro FIGHT e desse pro VICTORY
 enum STATES
@@ -41,6 +43,9 @@ const ALIGN_NEUTRAL := "neutral";
 //novos eventos
 
 //const EVID_ALERT_ALLIES := 0x00000013;
+
+
+
 
 //essa funcao determina se o npc vai enfrentar o alvo ou nao
 function CanFight(me, mobile, align)
@@ -124,13 +129,11 @@ function CanFight(me, mobile, align)
         endif
       elseif ( (mycategory == "undead") && (GetObjProperty(mobile, "aparenciacadaverica") == 1) )
           return 0;
-
       elseif (GetObjProperty(mobile, "unattack"))
         return 0;
-
       elseif ( propallies != error )
         foreach key in (propallies.keys())
-          if ( GetObjProperty(mobile, key) == propallies[key] ) //eh meu chapa, entao nao ataco.
+          if ( Lower(GetObjPRoperty(mobile, "chardata").raca) == Lower(propallies[key]) ) //Único allyprop até agora é Drow, aqui é para não ser atacado por aranhas
             return 0;
           endif
         endforeach
@@ -345,7 +348,6 @@ function InitializeNpc(mobile)
 	endif
   endif
 
-
   if (GetObjPRoperty(mobile, "championspawn") == 2)
     SetObjProperty(mobile, "#championspawn", 1);
     ApplyDamage( mobile, 20000);
@@ -391,7 +393,7 @@ function InitializeNpc(mobile)
   SetupColor(mobile);
   SetupName(mobile);
   SetupEquip(mobile);
-  if ((GetObjProperty(mobile, "Mobnoturno") == 1) && (GetGlobalProperty( "dia") != "noite"))
+  if ((GetObjProperty(mobile, "Mobnoturno") == 1) && (!InDarkness(mobile)))
     ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
   endif
   var loot := npccfgfile[mytemplate].Loot;
@@ -501,10 +503,16 @@ function hasSpecialCombat(me)
   return 1;
 endfunction
 
-
 function doCombatSpecialNotBoss(me, opponent)
-
-  var diff_aleatorio := RandomInt(100);
+  var diffs := {	
+    RESIST_EASY,
+    RESIST_MEDIUM,
+    RESIST_HARD,
+    RESIST_VERY_HARD,
+    RESIST_EXTREMELY_HARD,
+    RESIST_ALMOST_IMPOSSIBLE
+  };
+  var diff_aleatorio := diffs.RandomInt(diffs.size());
   var script := GetConfigString(npccfgfile[mytemplate],  "SpecialAttack");
   var delay := GetConfigInt(npccfgfile[mytemplate],  "SpecialAttackDelay");
     if (!delay)
@@ -554,8 +562,17 @@ if (throwinfo.notcreateitemfloor != 1)
   item.movable := 1;
 endif
 
-var chance := RandomInt(100);
-if (CheckResist(opponent, REFLEXOS, chance)) // Errou!
+  var diffs := {	
+    RESIST_EASY,
+    RESIST_MEDIUM,
+    RESIST_HARD,
+    RESIST_VERY_HARD,
+    RESIST_EXTREMELY_HARD,
+    RESIST_ALMOST_IMPOSSIBLE
+  };
+
+  var diff_aleatorio := diffs.RandomInt(diffs.size());
+if (CheckResist(opponent, REFLEXOS, diff_aleatorio)) // Errou!
 	PrintTextAbove(npc, "*Errou!*", _DEFAULT_TEXT_FONT, 38);
     if (throwinfo.misssound)
       PlaySoundEffect(npc, throwinfo.misssound);

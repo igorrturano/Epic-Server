@@ -5,6 +5,8 @@ include ":disguise:disguise";
 include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
+//include ":nature:nature";
+//include ":charactercreation:include/RPTraits";
 
 const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
 Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
@@ -75,6 +77,8 @@ E assim, os orcs caçam as temíveis Aklats, não apenas como uma questão de so
 Nos períodos de chuva, quando o deserto se transforma em um oásis temporário, os orcs celebram com rituais de êxtase e indulgência. Longe das batalhas e caçadas, eles se entregam ao prazer e à comunhão, honrando a dádiva da água que sustenta sua existência.
 Porém, mesmo em meio à brutalidade de sua fé, os orcs têm seus guardiões espirituais. Os Xamãs, sábios e misteriosos, são os intérpretes dos desígnios de Adar Kor Doom. Eles conduzem seus seguidores através dos caminhos áridos do deserto, guiando-os na busca pela força e sabedoria necessárias para enfrentar os desafios do Grunntam.
 Neste mundo implacável e repleto de perigos, a fé dos orcs é uma luz que brilha no horizonte, uma âncora em meio à tempestade de areia. E enquanto as dunas se movem e os ventos uivam, os filhos do Deserto da Perdição permanecem firmes em sua devoção ao Grunntam, prontos para enfrentar qualquer desafio que o destino lhes reserve.";
+const ceticosText := "A visão cética sobre a influência dos deuses propõe que, se existirem, eles estão imersos em suas próprias questões, distantes das preocupações humanas. Para os céticos, muitos fenômenos naturais são explicações racionais para eventos aleatórios, e a adoração a divindades é vista como um mecanismo de enfrentamento em tempos de crise. 
+Essa perspectiva sugere que a religião é uma construção cultural que reflete os medos e aspirações humanas, oferecendo conforto e um senso de comunidade. Apesar da descrença, a liberdade de crença é essencial, promovendo o respeito às diferentes convicções e abrindo espaço para diálogos enriquecedores sobre a experiência humana.";
 
 const storyModeText := "No modo estória, o personagem não pode ser morto e nem matar outros jogadore, ou seja, cortar a cabeça.
 - Ao tentar furtar outro jogador, caso tenha sucesso, receberá moedas aleatórias baseado no PP. As falhas continuam normal.
@@ -110,11 +114,21 @@ const LORE_ID := 0x9F3;
 const USHKRAR_ID := 0x9F4;
 const VENERATIO_ID := 0x9F5;
 
-// var CULTURA := struct{AIGLANA := "Aiglana", HAROLOTH := "Har'oloth", LESTE := "Povos do Leste", BJORSKA := "Björska", ALURIEL := "Alüriel", BADURAN := "Badûran", GULTHRAK := "Gulthrak", POLKINEA := "Polkinea"};
-// var RACA := struct{ANAO := "Anão", DROW := "Drow", ELFO := "Elfo", ORC := "Orc", HUMANO :="Humano", POLSKI := "Polski"};
+const CUIDADOR_ID := 0x152;
+const GOVERNADOR_ID := 0x153;
+const HEROI_ID := 0x154;
+const BOBO_ID := 0x155;
+const AMANTE_ID := 0x156;
+const COMUM_ID := 0x157;
+const CRIADOR_ID := 0x158;
+const MAGO_ID := 0x159;
+const EXPLORADOR_ID := 0x15A;
+const FORADALEI_ID := 0x15B;
+const INOCENTE_ID := 0x15C;
+const SABIO_ID := 0x15D;
+
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
 var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
-// var RELIGIAO := struct{VENERATIO := "Veneratio", ELUITHORTH := "Eluith'orth", KAI := "Kai", HALLEUAD := "Halleuad", LORE := "Lórё", BOKK_BHARAZ := "Bokk Bharaz", USHKRAR := "Ushkr'ar"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -157,11 +171,9 @@ function getCraftCultureByPictureId(culture_id)
             return "Leste";
     endcase
 endfunction
-
+var next_btn := array{"9903", "9904"};
+var prev_btn := array{"9909", "9910"};
 function CultureGump(who, culture_pic)
-    var next_btn := array{"9903", "9904"};
-    var prev_btn := array{"9909", "9910"};
-
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     GFGumpPic(gump, 17, 31, 0x9E6);
@@ -237,6 +249,24 @@ function EpicRaceGump(who, culture_pic)
     return GFSendGump(who, gump);
 endfunction
 
+function getMonthBySign(sign)
+    case(sign)
+        "Constelação do Cuidador": return 1; // Duwus
+        "Constelação do Governador": return 2; // Alorae
+        "Constelação do Herói": return 3; // Galgrumirius
+        "Constelação do Bobo": return 4; // Kaius
+        "Constelação do Amante": return 5; // Idrithae
+        "Constelação da Pessoa Comum": return 6; // Lleuadae
+        "Constelação do Criador": return 9; // Demiurgus
+        "Constelação do Mago": return 8; // Crassus
+        "Constelação do Explorador": return 7; // Adarae
+        "Constelação do Fora da Lei": return 10; // Phrugum
+        "Constelação do Inocente": return 11; // Praetorus
+        "Constelação do Sábio": return 12; // Aeternum
+        default: return 1;
+    endcase
+endfunction
+
 function getRaceByCulturalId(culture_pic)
     var races;
     case (culture_pic)
@@ -256,6 +286,147 @@ function getRaceByCulturalId(culture_pic)
             races := array{ANAO, DROW, ELFO, HUMANO, ORC, POLSKI};
     endcase
     return races;
+endfunction
+
+function CaracteristicasRPGump(who, byref chardata, culture_pic)
+    var racial_traits := GetRacialTraits(chardata.raca);
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    var x_left := 63;
+    var x_right := x_left + 500;
+    var y := 60;
+
+    // Exibir informações da raça/cultura
+    GFHTMLArea(gump, 149, 76, 192, 40, "<BASEFONT Size=55 Color=#999999>Raça", 0, 0);
+    GFHTMLArea(gump, 148, 75, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Raça", 0, 0);
+    
+    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(chardata.raca), 1, 0);
+
+    // Exibir imagem da cultura
+    GFGumpPic(gump, 298, 100, culture_pic);
+
+    // Título "Características Físicas e Pessoais" 
+    GFHTMLArea(gump, 340, 66, 192, 40, "<BASEFONT Size=55 Color=#999999>Minhas Características", 0, 0);
+    GFHTMLArea(gump, 339, 65, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Minhas Características", 0, 0);
+
+    var categories := GetPageCategories();
+    var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
+    var y_start := 160;
+    var category_iter := 0;
+    var x := x_left;
+    var current_y := y_start;
+    var i, option_y, button_id, is_selected;
+
+    foreach category in categories
+        if (category_iter == 3)
+            x := x_right;
+            current_y := y_start;
+        endif
+
+        GFHTMLArea(gump, x+1, current_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999>" + racial_traits[category].nome, 0, 0);
+        GFHTMLArea(gump, x, current_y, 192, 40, "<BASEFONT Size=55 Color=#ffffff>" + racial_traits[category].nome, 0, 0);
+        
+        var options := racial_traits[category].opcoes;
+        current_y := current_y + 30;
+        for (i := 1; i <= options.size(); i := i + 1)
+            option_y := current_y + ((i-1) * 25);
+            button_id := 100 + (category_iter * 5) + (i - 1);
+            is_selected := (chardata.caracteristicas_rp[category] == i);
+            GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
+            
+            if (category != "Idade Aparente")
+                if (is_selected)
+                    GFAddButton(gump, x+200, option_y, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, button_id);
+                else
+                    GFAddButton(gump, x+200, option_y, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, button_id);
+                endif
+            endif
+        endfor
+        current_y := current_y + 140;
+        category_iter := category_iter + 1;
+    endforeach
+
+    // Adicionar caixa de texto para idade escolhida
+    current_y += 20;
+    GFTextLine(gump, x, current_y, 1153, "Escreva a sua idade:");
+    current_y += 20;
+    var age_textbox := GFEAddTextBox(gump, x, current_y, 100, 20, COLOR_YELLOW, "", 1000);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 222);
+
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 222)
+        var age_input := GFExtractData(input, age_textbox);
+        var all_required_selected := true;
+        
+        foreach category in required_categories
+            if (!chardata.caracteristicas_rp[category])
+                all_required_selected := false;
+                break;
+            endif
+        endforeach
+
+        var idade_maxima := GetRaceMaximumAge(chardata.raca);
+
+        if (!all_required_selected)
+            SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        elseif (age_input == "" || typeof(age_input) == "Error")
+            SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        elseif (CInt(age_input) > idade_maxima)
+            SendSysMessageEX(who, "A idade limite permitida pra sua raça é " + CStr(idade_maxima) + ".", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        else
+            chardata.idade_escolhida := CInt(age_input);
+            var final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
+            chardata.idade_aparente := final_age[1];
+            chardata.idade_real := final_age[2];
+            return input;
+        endif
+    endif
+
+    return input;
+endfunction
+
+function GetRaceMaximumAge(race)
+    var idade_maxima := 0;
+    case (race)
+        ANAO:
+            idade_maxima := 150;
+        POLSKI:
+            idade_maxima := 150;
+        ELFO:
+            idade_maxima := 225;
+        DROW:
+            idade_maxima := 225;
+        HUMANO:
+            idade_maxima := 75;
+        ORC:
+            idade_maxima := 75;
+        default:
+            idade_maxima := 0;
+        endcase
+    return idade_maxima;
+endfunction
+
+function GetPageCategories()
+        return array{"Altura", "Peso", "Olhos", "Voz", "Idade Aparente"};
+endfunction
+
+function ProcessSelection(byref chardata, input)
+        var categories := GetPageCategories();
+        var category_index := (input - 100) / 5;
+        var option := (input - 100) % 5 + 1;
+        
+        if (category_index < categories.size())
+            var category := categories[category_index + 1];
+            chardata.caracteristicas_rp[category] := option;
+        endif
 endfunction
 
 function ClassGump(who, culture_pic)
@@ -754,6 +925,8 @@ function getReligionDescriptionByPictureId(culture_id)
             return eluithorthText;
         USHKRAR_ID:
             return ushkrarText;
+        default:
+            return ceticosText;
     endcase
 endfunction
 
@@ -772,13 +945,18 @@ function genericItems(who)
     
     var robe := CreateItemInBackpack(who, 0x1F03, 1); // Roupa
     EquipItem(who, robe);
-	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
+    var moedas := "1d4";
+    if (chardata.classe == GUERREIRO)
+        moedas := "1d8";
+    elseif (chardata.classe == LADINO)
+        moedas := "1d12";
+    endif
+	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
     CreateItemInBackpack(who, 0x170D, 1); // Sandals
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
 endfunction
-
 
 function weaponsByClassAndCulture(who)
     var chardata := GetObjProperty(who, "chardata");
@@ -925,16 +1103,9 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        if (chardata.culture == ALURIEL)
-            CreateItemInBackpack(who, 0x26CC, 1); // longbow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        elseif (chardata.culture == BADURAN)
-            CreateItemInBackpack(who, 0x0f4f, 1); // crossbow
-            CreateItemInBackpack(who, 0x1bfb, ammo_amount); // bolts
-        else
-            CreateItemInBackpack(who, 0x13B2, 1); // bow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        endif
+        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
+
         CreateItemInBackpack(who, 0x2fb7, 1); // aljava
     endif
 endfunction
@@ -1013,6 +1184,7 @@ function workingItems(who)
     if (skills[METALWORKING] >= 1)
         CreateItemInBackpack(who, 0x13E3, 1); // smithhammer
         CreateItemInBackpack(who, 0x5107, 1); // smelting pot
+        CreateItemInBackpack(who, 0x1ebc, 1); // Tinker Tools
     endif
     if (skills[GATHERING] >= 1)
         CreateItemInBackpack(who, 0x0f43, 1); // hatchet
@@ -1028,7 +1200,7 @@ function workingItems(who)
     endif
 
     if (skills[MECHANICS] >= 1)
-        CreateItemInBackpack(who, 0x1035, (skills[MECHANICS] * 8)); // lockpick
+        CreateItemInBackpack(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
 
     if (skills[Domestic_Work] >= 1)
@@ -1045,30 +1217,58 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x1830, 1); // beker
         CreateItemInBackpack(who, 0x1849, 1); // aparato
         CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
-    endif
+        var book1 := createiteminbackpack(who, "alchemybook");
+            book1.newbie := 1;
+		    setobjproperty(book1, "serialid", who.serial);
+		    setobjproperty(book1, "marked",who.name + " - " + who.acctname);
+        var dyebook := createiteminbackpack(who, "dyebook");
+            setobjproperty(dyebook, "serialid", who.serial);
+		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
+        var recipe := struct;
+        var chosenRecipes := AlchChoices(who);
+        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.+recipe := chosenRecipes[1];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.recipe := chosenRecipes[2];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.recipe := chosenRecipes[3];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.recipe := chosenRecipes[4];
+        SetObjProperty(r1, "recipe", recipe);
+        var i := 0;
+        while(i != (skills[ALCHEMY])*2)
+            var tinta := randomint(1);
+            if(tinta == 0)
+                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
+            else
+                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
+            endif
+            i := ++i;
+        endwhile
 
-    if (skills[ALCHEMY] == 2)
-		var book := createiteminbackpack(who, "alchemybook");
-        book.newbie := 1;
-		setobjproperty(book, "serialid", who.serial);
-		setobjproperty(book, "marked",who.name + " - " + who.acctname);
-
-        var recipes := array;
-		recipes := CreateVeryBasicRecipes();
-		var basic_book := createiteminbackpack(who, "alchemybook");
-		setobjproperty(basic_book, "recipes", recipes);
-	elseif (skills[ALCHEMY] == 3)
-		var book1:= CreateItemInBackpack(who, "alchemybook");
-		setobjproperty(book1, "serialid", who.serial);
-		setobjproperty(book1, "marked",who.name + " - " + who.acctname);
-        book1.newbie := 1;
-        var recipes := array;
-		recipes := CreateBasicRecipes();
-		var book2 := createiteminbackpack(who, "alchemybook");
-        book2.newbie := 1;
-		setobjproperty(book2, "recipes", recipes);
-		setobjproperty(book2, "serialid",who.serial);
-		setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+        if (skills[ALCHEMY] >= 2)
+		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+            recipe.recipe := chosenRecipes[5];
+            SetObjProperty(r1, "recipe", recipe);
+            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+            recipe.recipe := chosenRecipes[6];
+            SetObjProperty(r1, "recipe", recipe);
+            
+	        if (skills[ALCHEMY] == 3)
+		        var book2:= CreateItemInBackpack(who, "alchemybook");
+        		setobjproperty(book2, "serialid",who.serial);
+		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                recipe.recipe := chosenRecipes[7];
+                SetObjProperty(r1, "recipe", recipe);
+                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                recipe.recipe := chosenRecipes[8];
+                SetObjProperty(r1, "recipe", recipe);
+            endif
+        endif
 	endif
 endfunction
 
@@ -1080,42 +1280,36 @@ function attributeBonusByRaceAndTraits(who)
     var final_dex := chardata.dex;
     var final_int := chardata.int;
 
-    if (raca == "Anão")
+    if (raca == ANAO)
         final_str += 10;
-    elseif (raca == "Elfo")
+    elseif (raca == ELFO)
         final_int += 10;
-    elseif (raca == "Drow")
+    elseif (raca == DROW)
         final_dex += 5;
         final_int +=5;
-    elseif (raca == "Orc")
+    elseif (raca == ORC)
         final_str += 5;
         final_int +=5;
-    elseif (raca == "Polski")
+    elseif (raca == POLSKI)
         final_dex += 10;
     endif
 
     if (chardata.trait == "Corpulento")
         final_int -= 5;
         final_dex -= 5;
-        final_str += 20;
+        final_str += 10;
 	elseif (chardata.trait == "Genio")
         final_str -= 5;
         final_dex -= 5;
-        final_int += 20;
+        final_int += 10;
 	elseif (chardata.trait == "Agil")
         final_str -= 5;
         final_int -= 5;
-        final_dex += 20;
-    elseif (chardata.trait == "Afogado em Mana")
-        final_str -= 10;
-        final_dex -= 10;
+        final_dex += 10;
 	elseif (chardata.trait == "Robusto")
-        final_str += 25;
+        final_str += 15;
         final_int -= 5;
-	elseif (chardata.trait == "Velho") // Parece que foi removido por alguem
-        final_str -= 10;
-        final_dex -= 10;
-        final_int += 40;
+        final_dex -= 5;
 	endif
 
     AP_SetTrueStat(who, STRENGTH, final_str);
@@ -1163,6 +1357,9 @@ function resetCharacter(who)
 
     EraseObjProperty(who, "linguas_conhecidas");
     EraseObjProperty(who, "lingua_escolhida");
+
+    AP_SetVital(who, "Hunger", 0);
+	RecalcVitals(who);
 endfunction
 
 function resetGender(who)
@@ -1317,7 +1514,7 @@ function startAdventureGump(who)
     GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
 
     // Adventure main image
-    GFGumpPic(gump, 50, 100, 0xFFFE);
+    GFGumpPic(gump, 50, 100, 0xFFFD);
 
     // Adventure Description
     GFHTMLArea(gump, 100, 550, 650, 120, adventureStartText, 1, 1);
@@ -1380,3 +1577,878 @@ function parseLanguageByCulture(who, linguasOpt)
             return linguasOpt[8];
         endif
 endfunction
+
+// Adicione estes textos para cada signo
+
+const cuidadorText := "Constelação do Cuidador<br><br>Altruísta e generoso, busca proteger e cuidar dos outros. Preocupa-se com o bem-estar alheio, colocando as necessidades dos outros acima das suas.";
+
+const governadorText := "Constelação do Governador<br><br>Figura autoritária que busca controle, ordem e estabilidade. O Governador acredita que uma liderança firme é essencial para manter a harmonia e a organização.";
+
+const heroiText := "Constelação do Herói<br><br>Determinado e corajoso, busca enfrentar desafios e superar adversidades para proteger os outros. O Herói valoriza a força, a coragem e a superação.";
+
+const boboText := "Constelação do Bobo<br><br>Alegre, irreverente e brincalhão, busca trazer leveza, humor e questionar o status quo. Tem uma atitude despreocupada e divertida diante da vida.";
+
+const amanteText := "Constelação do Amante<br><br>Movido pela paixão e pelo desejo de conexões emocionais profundas. O Amante busca experiências de beleza, amor e prazer em seus relacionamentos e na vida.";
+
+const comumText := "Constelação da Pessoa Comum<br><br>Relaciona-se com todos, representando a igualdade e a simplicidade. Valoriza o pertencimento e a autenticidade, buscando se conectar com os outros de forma genuína.";
+
+const criadorText := "Constelação do Criador<br><br>Focado na inovação, imaginação e criação de algo novo. O Criador é movido pela necessidade de expressar sua visão e trazer algo original ao mundo.";
+
+const magoText := "Constelação do Mago<br><br>Representa o poder de transformação, o conhecimento e o mistério. O Mago é capaz de transformar a realidade ao seu redor, usando sabedoria e intuição.";
+
+const exploradorText := "Constelação do Explorador<br><br>Aventureiro e curioso, busca descobrir o novo e expandir os limites do que é conhecido. Valoriza a liberdade, a autoexpressão e a jornada para descobrir quem realmente é.";
+
+const foradaleiText := "Constelação do Fora da Lei<br><br>Desafiador, quer quebrar regras e sistemas para trazer mudança. Sente-se atraído pela revolução, pela quebra de paradigmas e pela luta contra injustiças.";
+
+const inocenteText := "Constelação do Inocente<br><br>Otimista e sonhador, acredita na bondade inerente das pessoas e da vida. O Inocente busca a felicidade, simplicidade e um mundo sem malícia.";
+
+const sabioText := "Constelação do Sábio<br><br>Motivado pelo desejo de conhecimento e verdade, o Sábio busca entender o mundo profundamente. Valorizado por sua sabedoria, reflexão e discernimento.";
+
+// Adicione esta função para selecionar o signo
+
+
+function signSelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    var sign_pic := CUIDADOR_ID;
+    var btn_value;
+    while (1)
+        var input := SignGump(who, sign_pic);
+        btn_value := input[0]; 
+
+        if (btn_value == 201)
+            sign_pic++;
+        elseif (btn_value == 210) 
+            sign_pic--;
+        elseif (btn_value == 666)
+            break;
+        endif
+
+        if (sign_pic < CUIDADOR_ID)
+            sign_pic := SABIO_ID;
+        elseif (sign_pic > SABIO_ID)
+            sign_pic := CUIDADOR_ID;
+        endif
+    endwhile
+    chardata.+sign := getSignByPictureId(sign_pic);
+    SetObjProperty(who, "chardata", chardata);
+
+    SendSysMessageEX(who, "Seu signo será "+chardata.sign, SSM_INFO);
+    return sign_pic;
+endfunction
+
+function getSignByPictureId(sign_pic)
+    case(sign_pic)
+        CUIDADOR_ID: return "Constelação do Cuidador";
+        GOVERNADOR_ID: return "Constelação do Governador";
+        HEROI_ID: return "Constelação do Herói";
+        BOBO_ID: return "Constelação do Bobo";
+        AMANTE_ID: return "Constelação do Amante";
+        COMUM_ID: return "Constelação da Pessoa Comum";
+        CRIADOR_ID: return "Constelação do Criador";
+        MAGO_ID: return "Constelação do Mago";
+        EXPLORADOR_ID: return "Constelação do Explorador";
+        FORADALEI_ID: return "Constelação do Fora da Lei";
+        INOCENTE_ID: return "Constelação do Inocente";
+        SABIO_ID: return "Constelação do Sábio";
+        default: return "Desconhecido";
+    endcase
+endfunction
+
+function getSignDescriptionByPictureId(sign_pic)
+    case(sign_pic)
+        CUIDADOR_ID: return cuidadorText;
+        GOVERNADOR_ID: return governadorText;
+        HEROI_ID: return heroiText;
+        BOBO_ID: return boboText;
+        AMANTE_ID: return amanteText;
+        COMUM_ID: return comumText;
+        CRIADOR_ID: return criadorText;
+        MAGO_ID: return magoText;
+        EXPLORADOR_ID: return exploradorText;
+        FORADALEI_ID: return foradaleiText;
+        INOCENTE_ID: return inocenteText;
+        SABIO_ID: return sabioText;
+        default: return "Descrição não disponível.";
+    endcase
+endfunction
+
+function SignGump(who, sign_pic)
+    var next_btn := array{"9903", "9904"};
+    var prev_btn := array{"9909", "9910"};
+
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, 346, 56, 192, 40, "<BASEFONT Size=55 Color=#999999 >Escolha seu Signo", 0, 0); //shadow
+    GFHTMLArea(gump, 345, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu Signo", 0, 0);
+    var x := 63;
+    var y := 100;
+    var i := 0;
+
+    GFHTMLArea(gump, 100, 550, 650, 120, getSignDescriptionByPictureId(sign_pic), 1, 1);
+    GFAddButton(gump, 543, 300, next_btn[1], next_btn[2], GF_CLOSE_BTN, 201);
+    GFAddButton(gump, 273, 300, prev_btn[1], prev_btn[2], GF_CLOSE_BTN, 210);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
+
+    GFGumpPic(gump, 298, 100, sign_pic);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetMonths()
+    return MONTHS;
+endfunction
+
+function GetSignPicture(sign)
+    case (sign)
+        "Constelação do Cuidador": return CUIDADOR_ID;
+        "Constelação do Governador": return GOVERNADOR_ID;
+        "Constelação do Herói": return HEROI_ID;
+        "Constelação do Bobo": return BOBO_ID;
+        "Constelação do Amante": return AMANTE_ID;
+        "Constelação da Pessoa Comum": return COMUM_ID;
+        "Constelação do Criador": return CRIADOR_ID;
+        "Constelação do Mago": return MAGO_ID;
+        "Constelação do Explorador": return EXPLORADOR_ID;
+        "Constelação do Fora da Lei": return FORADALEI_ID;
+        "Constelação do Inocente": return INOCENTE_ID;
+        "Constelação do Sábio": return SABIO_ID;
+        default: return CUIDADOR_ID; // Imagem padrão caso algo dê errado
+    endcase
+endfunction
+
+function birthDaySelection(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata.birthdate)
+        chardata.birthdate := struct{};
+    endif
+    var selected_day := 0;
+    var month_index := getMonthBySign(chardata.sign);
+    var btn_value;
+    while (1)
+        var input := BirthDayGump(who, selected_day);
+        btn_value := input[0]; 
+        if (btn_value == 666 && selected_day != 0)
+            break;
+        elseif (btn_value >= 1 && btn_value <= MONTHS[month_index].days)
+            selected_day := btn_value;
+        endif
+    endwhile
+    if (selected_day > 0)
+        chardata.birthdate.day := selected_day;
+        chardata.birthdate.month := month_index;
+        SetObjProperty(who, "chardata", chardata);
+        SendSysMessageEx(who, "Seu dia de nascimento será " + selected_day + " de " + MONTHS[month_index].name, SSM_INFO);
+    else
+        SendSysMessageEx(who, "Nenhum dia selecionado.", SSM_FAIL);
+    endif
+    return selected_day;
+endfunction
+
+function BirthDayGump(who, selected_day := 0)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    var chardata := GetObjProperty(who, "chardata");
+    var month_index := getMonthBySign(chardata.sign);
+    var month := MONTHS[month_index];
+    
+    // Fundo principal
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    
+    // Fundo do calendário
+    GFResizePic(gump, 65, 163, 83, 223, 201);
+    
+    // Título
+    GFHTMLArea(gump, 315, 55, 400, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu Dia de Nascimento", 0, 0);
+    
+    // Nome do mês
+    GFTextLine(gump, 115, 179, 53, month.name);
+    
+    // Adicionar a imagem do signo escolhido
+    var sign_pic := GetSignPicture(chardata.sign);
+    GFGumpPic(gump, 298, 100, sign_pic);
+    
+    // Adicionar os dias do mês
+    var day := 1;
+    var x, y;
+    for i := 0 to 5 // Aumentado para 6 linhas para acomodar 33 dias
+        for j := 0 to 6
+            if (day <= month.days)
+                x := 94 + (j * 24);
+                y := 207 + (i * 28);
+                var background := (day == selected_day) ? 7762 : 7761;
+                GFAddButton(gump, x, y, background, background, GF_CLOSE_BTN, day);
+                
+                var text_x := x + 8;
+                if (day <= 9)
+                    text_x -= 2;
+                elseif (day >= 10 && day <= 19)
+                    text_x -= 3;
+                elseif (day >= 20 && day != 21 && day != 31)
+                    text_x -= 6;
+                elseif (day == 21 || day == 31)
+                    text_x -= 3;
+                endif
+                
+                GFTextLine(gump, text_x, y + 2, 2100, CStr(day));
+                day += 1;
+            endif
+        endfor
+    endfor
+
+    GFHTMLArea(gump, 60, 550, 650, 120, "Escolha o dia do seu nascimento no calendário acima.", 1, 1);
+    
+    if (selected_day != 0)
+        GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
+    else
+        GFGumpPic(gump, 653, 680, 4005);
+    endif
+
+    return GFSendGump(who, gump);
+endfunction
+
+function getDayFromPictureId(day_pic)
+    return (day_pic - 0x1000) + 1;
+endfunction
+
+function hairSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GfCreateGump();
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione o Cabelo");
+
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var hair := config["todos"];
+    var hairStyles := GetConfigStringArray(hair, "Style");
+    
+    RenderHairStyles(gump, hairStyles, chardata, currentPage);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
+    return GFSendGump(who, gump);
+endfunction
+
+function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
+    const HAIRS_PER_PAGE := 6;
+    const HAIRS_PER_ROW := 2;
+    
+    var totalPages := Ceil(hairStyles.size() / HAIRS_PER_PAGE);
+    var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
+    var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
+
+    var selectedHair := chardata.hair;
+
+    for i := start to end
+        var style := SplitWords(hairStyles[i]);
+        var hairname := style[1];
+        var hairgraphic := CInt(style[2]);
+        var gumppic := CInt(style[3]);
+        
+        var col := (i - start) % HAIRS_PER_ROW;
+        var row := (i - start) / HAIRS_PER_ROW;
+        var x_pos := 63 + (col * 119);
+        var y_pos := 100 + (row * 141);
+        
+        GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+        GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname);
+        
+        //se houver um cabelo selecionado, verifica se é o mesmo cabelo da iteração e se for, usa o botão de checked ao inves de unchecked
+        //ou se este for o primeiro item da iteração e não houver cabelo selecionado, então vai marcar o primeiro item de todos que é o sem barba
+        if (selectedHair == gumppic || (i == 1 && selectedHair == ""))
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2153, 2151, GF_CLOSE_BTN, hairgraphic);
+        else
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        endif
+        
+        GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
+    endfor
+
+    if (chardata.hair != "")
+        GFGumpPic(gump, 63+265, 120, chardata.hair);
+    endif
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 185, 520, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 125, 520, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    return totalPages;
+endfunction
+
+function beardSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GfCreateGump();
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione a Barba");
+
+    UnloadConfigFile(":fls_core:config/hairtypes");
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    var beardConfig := (chardata.raca == ANAO) ? config["dwarwen_beard"] : config["beard"];
+    var beardStyles := GetConfigStringArray(beardConfig, "Style");
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    RenderBeardStyles(gump, beardStyles, chardata, currentPage, hair);
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Close button
+    return GFSendGump(who, gump);
+endfunction
+
+function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
+    const BEARDS_PER_PAGE := 6;
+    const BEARDS_PER_ROW := 2;
+    
+    var totalPages := Ceil(beardStyles.size() / BEARDS_PER_PAGE);
+    var start := (currentPage - 1) * BEARDS_PER_PAGE + 1;
+    var end := Min(start + BEARDS_PER_PAGE - 1, beardStyles.size());
+
+    var selectedBeard := chardata.beard;
+
+    for i := start to end
+        var style := SplitWords(beardStyles[i]);
+        var beardname := style[1];
+        var beardgraphic := CInt(style[2]);
+        var gumppic := CInt(style[3]);
+        
+        var col := (i - start) % BEARDS_PER_ROW;
+        var row := (i - start) / BEARDS_PER_ROW;
+        var x_pos := 63 + (col * 119);
+        var y_pos := 100 + (row * 141); // Ajustado para ficar um pouco abaixo do cabelo
+        
+        GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
+        GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, beardname);
+
+        //se houver uma barba selecionada, verifica se é a mesma barba da iteração e se for, usa o botão de checked ao inves de unchecked
+        //ou se este for o primeiro item da iteração e não houver barba selecionada, então vai marcar o primeiro item de todos que é o sem barba
+        if (selectedBeard == gumppic || (i == 1 && selectedBeard == ""))
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2153, 2151, GF_CLOSE_BTN, beardgraphic);
+        else
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+        endif
+
+        GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
+    endfor
+
+    if (chardata.beard != "")
+        GFGumpPic(gump, 63+265, 120, chardata.beard); // Ajustado para ficar um pouco abaixo do cabelo
+    endif
+
+    if (chardata.hair != "")
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 185, 520, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 125, 520, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    return totalPages;
+endfunction
+
+function GetBeardGumpGraphic(beardID)
+    case (beardID)
+        0: return 0; // Sem barba
+        8268: return 50905; // Long_Beard_&_Must.
+        8254: return 50801; // Long_Beard
+        8267: return 50904; // Short_Beard_&_Must.
+        8255: return 50802; // Short_Beard
+        8269: return 50906; // Vandyke
+        8256: return 50800; // Goatee
+        8257: return 50803; // Mustache
+        41384: return 51451; // Lumberjack
+        41385: return 51452; // Handlebar
+        41386: return 51453; // Braids
+        41387: return 51454; // Costeletas
+        51583: return 52129; // BarbaLongaMalFeita
+        51584: return 52130; // BarbaMuitoLongaEmaranhada
+        51585: return 52131; // BarbaLongaEncaracolada
+        51586: return 52132; // BarbaMuitoLonga
+        51587: return 52133; // BarbaLongaPontuda
+        51588: return 52134; // BarbaRabodeCavalo
+        51589: return 52135; // BarbaLongaGrandeTranca
+        51627: return 52174; // BigodeLongo
+        51628: return 52174; // BigodeCurto
+        // Adicione aqui os casos para as barbas anãs
+        51590: return 52136; // BarbaMultiplasTrancasEnfeitadas
+        51591: return 52137; // BarbaTrancadaBipartida
+        51592: return 52138; // BarbaMuitoComprida
+        51593: return 52139; // BarbaTrancadaTripartida
+        51594: return 52140; // BarbaVolumosa
+        51595: return 52141; // BarbaCompridaBaguncada
+        51596: return 52142; // BarbaCompridaAtada
+        51597: return 52143; // BarbaMultiplasTrancas
+        51598: return 52144; // BarbaVolumosaBipartida
+        51599: return 52145; // BarbaLongaCheia
+        51600: return 52146; // BarbaLongaFrizada
+        51601: return 52147; // BarbaLongaPontuda
+        51602: return 52148; // BarbaEnfeitadaRevoltosa
+        51603: return 52149; // BarbaVolumosaComTrancas
+        51604: return 52150; // BarbaComPontasEnfeitadas
+        51605: return 52151; // BarbaCompridaAparada
+        51606: return 52152; // BarbaMediaAparada
+        51607: return 52153; // BarbaArticulada
+        51608: return 52154; // BarbichaTrancada
+        51609: return 52155; // BarbichaDupla
+        51610: return 52156; // BigodeCurvado
+        51611: return 52157; // BarbaMediaAparada
+        51612: return 52158; // BarbaMediaSemBigode
+        51613: return 52159; // BarbaBigodeRevoltoso
+        51614: return 52160; // BarbaTrancadaBipartidaSobrancelhas
+        51615: return 52161; // BarbaMediaSobrancelhas
+        51616: return 52162; // BarbichaTrancaLongaEnfeitada
+        51617: return 52163; // BarbichaBipartidaEnfeitada
+        51618: return 52164; // BarbaMediaSemBigode
+        51619: return 52165; // BarbaBigodeRevoltoso
+        51620: return 52166; // BarbaTrancadaBipartidaSobrancelhas
+        51621: return 52167; // BarbaMediaSobrancelhas
+        51622: return 52168; // BarbichaTrancaLongaEnfeitada
+        51623: return 52169; // BarbichaBipartidaEnfeitada
+        default: return 50800; // Gráfico padrão (Goatee)
+    endcase
+endfunction
+
+function GetPaperdollBackground(graphic)
+    var result := 0x0E10; // Valor padrão
+    case (graphic)
+        400:  result := 0xC; // Male
+        401:  result := 0xD; // Female
+        1828: result := 54562; // Anão F
+        1829: result := 54563; // Anão M
+        1830: result := 0xE; // Elfo M
+        1831: result := 0xF; // Elfo F
+        1832: result := 54596; // Orc M
+        1833: result := 54595; // Orc F
+        1834: result := 54534; // Polski M
+        1835: result := 54533; // Polski F
+    endcase
+    return result;
+endfunction
+
+function GetHairGumpGraphic(hairID)
+    case (hairID)
+        0: return 0; // Careca
+        8252: return 50701; // Long_Hair
+        8265: return 50902; // Braids
+        8253: return 50702; // Pony_Tail
+        8263: return 50900; // Afro
+        8261: return 50710; // Pageboy
+        8262: return 50712; // Buns
+        8251: return 50700; // Short_Hair
+        8266: return 50903; // Top_Knot
+        8264: return 50901; // Receeding
+        8260: return 50703; // Mohawk
+        12223: return 50916; // Mid_Long
+        12224: return 50917; // Long_Feather
+        12225: return 50918; // Short
+        12226: return 50919; // Mullet
+        12236: return 50890; // Flower
+        12238: return 50892; // Big_Knob
+        12239: return 50893; // Big_Braid
+        12240: return 50894; // Big_Bun
+        12241: return 50895; // Spiked
+        41380: return 51447; // Bedhead
+        41381: return 50900; // Afro (duplicado, usando o mesmo gráfico)
+        41382: return 51449; // Monge
+        41383: return 51450; // Topete
+        41388: return 51455; // LongBraid
+        41389: return 51456; // Dread
+        41390: return 51457; // Pigtail
+        41391: return 51458; // Leia
+        41392: return 51459; // Franja
+        41393: return 51460; // Spikes
+        41394: return 51461; // Longo2
+        41395: return 51462; // Longo3
+        41396: return 51463; // Side
+        41397: return 51464; // Wavy
+        41398: return 51465; // Braids2
+        41399: return 51466; // NeckWrap
+        51629: return 52175; // MoicanoDeLado
+        51630: return 52176; // MoicanoAlto
+        51631: return 52177; // MoicanoLongo
+        51632: return 52178; // TopknotForte
+        51633: return 52179; // cabeloplantalongo
+        51634: return 52180; // cabeloplantacurto
+        51635: return 52181; // cabeloplantagalho
+        51636: return 52182; // calvaocrialongo
+        51637: return 52183; // calvaocriacurto
+        51638: return 52184; // cabeloplantachifverd
+        51639: return 52185; // CoqueLongo
+        51640: return 52186; // CoqueCurto
+        51641: return 52187; // CoqueLivre
+        51642: return 52188; // CoqueTrabalhado
+        51643: return 52189; // CoqueLateral1
+        51644: return 52190; // CoqueLateral2
+        51645: return 52191; // CoqueSamurai1
+        51646: return 52192; // CoqueSamurai2
+        51647: return 52193; // CoqueSamurai3
+        51648: return 52194; // CoqueSamurai4
+        51649: return 52195; // coque1
+        51650: return 52196; // coque2
+        51651: return 52197; // coque3
+        51652: return 52198; // coque4
+        51653: return 52199; // coque5
+        51654: return 52200; // coque6
+        51655: return 52201; // coque7
+        51656: return 52202; // coque8
+        51657: return 52203; // coque9
+        51658: return 52204; // coque10
+        51659: return 52205; // coque11
+        51660: return 52206; // CoqueLongo2
+        51661: return 52207; // CoqueLongo3
+        51662: return 52208; // Coquelongo4
+        51663: return 52209; // CoqueLongo5
+        51664: return 52210; // CoqueLongo6
+        51665: return 52211; // CoqueLongo7
+        51666: return 52212; // CoqueLongo8
+        51667: return 52213; // CoqueLongo9
+        default: return 50700; // Gráfico padrão (Short_Hair)
+    endcase
+endfunction
+
+function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+
+    var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+
+    // Monta o paperdoll
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic));
+    if (beard)
+        GFGumpPic(gump, 63+265, 120, chardata.beard, beard.color-1);
+    endif
+    if (hair)
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione a Cor do Cabelo e Barba");
+
+    var color_cfg := ReadConfigFile(":hair:config/hairColors");
+    var index_elem := GetColorIndexElem(color_cfg, chardata);
+    var categories := GetConfigStringArray(index_elem, "Category");
+
+    const COLORS_PER_PAGE := 15;
+    var totalColors := 0;
+    var allColors := array{};
+
+    foreach category in categories
+        var category_elem := color_cfg[category];
+        var colors := GetConfigStringArray(category_elem, "Color");
+        foreach color in colors
+            allColors.append(struct{ "color" := color, "category" := category });
+        endforeach
+    endforeach
+
+    totalColors := allColors.size();
+    var totalPages := Ceil(totalColors / COLORS_PER_PAGE);
+
+    var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
+    var end := Min(start + COLORS_PER_PAGE - 1, totalColors);
+
+    var y_pos := 100;
+    for i := start to end
+        var colorData := allColors[i];
+        var color := CInt(colorData.color);
+        var category := colorData.category;
+
+        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
+        GFTextLine(gump, 142, y_pos + 4, color, category);
+        y_pos += 20;
+    endfor
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 226, 410, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 135, 410, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1002); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    // Adicionar botão de fechar
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function GetColorIndexElem(color_cfg, chardata)
+    var cultura := chardata.culture;
+    var raca := chardata.raca;
+
+    if (cultura == "Björska")
+        return color_cfg["Bjorska"];
+    elseif (raca == "Orc")
+        return color_cfg["Orc"];
+    elseif (raca == "Drow")
+        return color_cfg["Drow"];
+    elseif (raca == "Elfo")
+        return color_cfg["Elfo"];
+    elseif (raca == "Anão")
+        return color_cfg["Anao"];
+    elseif (raca == "Qualquer")
+        return color_cfg["Index"];
+    else
+        return color_cfg["Imperial"];
+    endif
+endfunction
+
+function UpdateCharacterHair(who, chardata)
+    if (chardata.hair_item)
+        var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+        if (hair)
+            hair.color := chardata.hair_color;
+        else
+            var new_hair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
+            new_hair.color := chardata.hair_color;
+            EquipItem(who, new_hair);
+        endif
+    endif
+
+    if (chardata.beard_item)
+        var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+        if (beard)
+            beard.color := chardata.beard_color;
+        else
+            var new_beard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
+            new_beard.color := chardata.beard_color;
+            EquipItem(who, new_beard);
+        endif
+    endif
+endfunction
+
+function skinColorSelectionGump(who, byref chardata, currentPage := 1)
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+
+    var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+    var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    GFResizePic(gump, 298, 100, 2620, 250, 400);
+
+    // Monta o paperdoll
+    GFGumpPic(gump, 328, 120, GetPaperdollBackground(who.graphic), chardata.skin_color);
+    if (beard)
+        GFGumpPic(gump, 63+265, 120, chardata.beard, beard.color-1);
+    endif
+    if (hair)
+        GFGumpPic(gump, 63+265, 120, chardata.hair, hair.color-1);
+    endif
+    GFTextMid(gump, 15, 60, 770, 1153, "Selecione a Cor da Pele");
+
+    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not open :fls_core:config/skincolors.cfg -> "+skin_cfg.errortext);
+        return 0;
+    endif
+
+    var raca := chardata.raca;
+    if (raca == ELFO)
+        skin_cfg := skin_cfg["elfo"];
+    elseif (raca == DROW)
+        skin_cfg := skin_cfg["drow"];
+    elseif (raca == ORC)
+        skin_cfg := skin_cfg["orc"];
+    else
+        skin_cfg := skin_cfg["list"];
+    endif
+
+    var allColors := GetConfigStringArray(skin_cfg, "color");
+
+    var totalColors := allColors.size();
+    var totalPages := Ceil(totalColors / COLORS_PER_PAGE);
+
+    var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
+    var end := Min(start + COLORS_PER_PAGE, totalColors);
+
+    var y_pos := 100;
+    for i := start to end
+        var color := CInt(allColors[i]);
+
+        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
+        GFTextLine(gump, 142, y_pos + 4, color, "Cor " + (i - start + 1));
+        y_pos += 20;
+    endfor
+
+    // Add navigation buttons
+    if (totalPages > 1)
+        if (currentPage < totalPages)
+            GFAddButton(gump, 226, 440, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1); // Next page
+        endif
+        if (currentPage > 1)
+            GFAddButton(gump, 135, 440, 0x15E3, 0x15E7, GF_CLOSE_BTN, 2); // Previous page
+        endif
+        GFTextMid(gump, 400, 536, 248, 1153, "Página " + currentPage + " de " + totalPages);
+    endif
+
+    // Adicionar botão de fechar
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function UpdateCharacterSkin(who, chardata)
+    who.color := chardata.skin_color;
+    who.truecolor := chardata.skin_color;
+endfunction
+
+function spellChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
+    
+    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
+    var keys := GetConfigIntKeys(spellcfg);
+    var spells := array;
+    foreach key in keys
+        var elem := FindConfigElem(spellcfg, key);
+        var spelllvl := GetConfigInt(elem, "Circle");
+        var spelltype := GetConfigString(elem, "Type");
+        if (spelltype == "spellcaster" && spelllvl == 1)
+            var spell := dictionary{ 
+                "id" -> key,
+                "circle" -> spelllvl,
+                "name" -> GetConfigString(elem, "Name"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            spells.append(spell);
+        endif
+    endforeach
+
+    var selected_spells := array;
+    var btn_value;
+    while (1)
+        var input := spellSelectionGump(who, gump, spells, selected_spells, 2, x, y);
+        
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + spells.size())
+                var spell_index := btn_value - 200;
+                var spell_id := spells[spell_index].id;
+                if (spell_id in selected_spells)
+                    selected_spells.Erase(Find(selected_spells, spell_id, 1));
+                else
+                    selected_spells.append(spell_id);
+                endif
+            endif
+        endforeach
+
+        if (selected_spells.size() != 2)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente 2 magias.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+
+    SendSysMessageEX(who, "Você escolheu as magias: " + CStr(selected_spells), SSM_INFO);
+    return selected_spells;
+endfunction
+
+
+function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
+
+    GFPage(gump, 1);
+    y := 100;
+    foreach spell in spells
+        var color := (spell.id in selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+        GFTooltipText(gump, spell.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
+        y += 26;
+    endforeach
+
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    return GFSendGump(who, gump);
+endfunction
+
+function AlchChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas receitas", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas receitas", 0, 0);
+
+    var recipecfg := ReadConfigFile(":alchemy:config/recipes");
+    var keys := GetConfigIntKeys(recipecfg);
+    var recipes := array;
+    var skill := getobjproperty(who, "chardata").skills[ALCHEMY];
+    foreach key in keys
+        var elem := FindConfigElem(recipecfg, key);
+        var recipelvl := GetConfigInt(elem, "init");
+            if (!recipelvl || recipelvl == error);
+                recipelvl := 4;
+            endif
+        if (recipelvl <= skill)
+            var recipe := dictionary{ 
+                "id" -> key,
+                "name" -> GetConfigString(elem, "Type"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            recipes.append(recipe);
+        endif
+    endforeach
+
+    var selected_recipes := array;
+    var btn_value;
+    while (1)
+        var qtd := (skill*2)+2;
+        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + recipes.size())
+                var recipe_index := btn_value - 200;
+                var recipe_id := recipes[recipe_index].id;
+                if (recipe_id in selected_recipes)
+                    selected_recipes.Erase(Find(selected_recipes, recipe_id, 1));
+                else
+                    selected_recipes.append(recipe_id);
+                endif
+            endif
+        endforeach
+        if (selected_recipes.size() != qtd)
+            selected_recipes := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente " + cstr(qtd) + " receitas.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+
+    SendSysMessageEX(who, "Você escolheu as receitas: " + CStr(selected_recipes), SSM_INFO);
+    return selected_recipes;
+endfunction
+

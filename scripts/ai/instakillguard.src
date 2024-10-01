@@ -14,7 +14,7 @@ include ":npcs:garment";
 var me := Self();
 // replykey(me);// From spawn net inc
 
-var configfile := ReadConfigFile("::npcdesc");
+var configfile := ReadConfigFile(":*:npcdesc");
 var idlesnd1 := CInt(configfile[me.npctemplate].idlesound1);
 var idlesnd2 := CInt(configfile[me.npctemplate].idlesound2);
 var wpncfg := ReadConfigFile(":combat:itemdesc");

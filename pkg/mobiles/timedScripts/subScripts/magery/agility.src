@@ -8,26 +8,23 @@ program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
 	var level := params[3];
-	params := 0; // Not needed anymore.
+	var teste := GetObjProperty(mobile, "#AgilityMod");
+	if(teste) //verifica se ja esta sob efeito similar
+		if(level > teste) //se o novo efeito é maior, aplica a diferença
+			Set_Critical(1);
+			SetObjProperty(mobile, "#AgilityMod", level);
+			AP_ModifyStatMod(mobile, DEXTERITY, (level-teste));
+			Set_Critical(0);
+			return 1;
+		else
+			return 0;
+		endif
+	else	
 
-	params := 0; // Not needed anymore.
-	
-	if ( GetObjProperty(mobile, "#AgilityMod") )
-		// Condition is met if the mobile logs out and back in.
-		// Prevents mod from being applied twice.
-		return 0;
-	endif
 
-	var cast_points := level;
-	if (cast_points < 10)
-		cast_points := 10;
-	endif
-	var stat := AP_GetStat(mobile, DEXTERITY);
-	stat := Cint((stat*cast_points)/100);
-	var points := CInt(stat);
-
-	SetObjProperty(mobile, "#AgilityMod", points);
-	AP_ModifyStatMod(mobile, DEXTERITY, points);
+	SetObjProperty(mobile, "#AgilityMod", level);
+	AP_ModifyStatMod(mobile, DEXTERITY, level);
 	
 	return 1;
+	endif
 endprogram

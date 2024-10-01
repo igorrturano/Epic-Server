@@ -3,6 +3,8 @@ use uo;
 use os;
 use cfgfile;
 
+include ":alchemy:alchemy";
+
 program change(who, item )
   var cfg := ReadConfigFile(":*:itemdesc");
   var elem := FindConfigElem(cfg, item.objtype);
@@ -50,10 +52,8 @@ function Destilar(balao, beker, who, item)
    
    var extrato := CINT(GetObjProperty(balao, "extrato"));
    SetObjProperty(beker, "pocao", extrato);
-   SetObjProperty(beker, "strength",  cint(GetObjProperty(balao, "strength")));
+   AlchLabTransfer(beker, balao);
 
-   EraseObjProperty(balao, "extrato");
-   EraseObjProperty(balao, "strength");
    item.movable := 1;
    balao.movable := 1;
    beker.movable := 1;

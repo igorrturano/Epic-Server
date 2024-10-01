@@ -1,8 +1,9 @@
+use cfgfile;
+
 include "include/attributes";
 include ":poisonwatcher:poisons";
 include "include/statMod";
-include "include/d20system";
-use cfgfile;
+include "include/epicConstants";
 
 const POISON_SOUND := 0x247;
 const DRINK_SOUND := 0x32;
@@ -96,27 +97,26 @@ function do_poison(who, potion)
     level := RandomDiceRoll("1d5");
   endif
   //se for uma poçao que nao a default a formula eh essa:
-  difficulty := 15*level + 10;
+  difficulty := RESIST_EASY*level + 2;
   points := difficulty;
   case(the_poison.objtype)
-    0xbf00: level := 1; difficulty := 40; points := 50; poisonType := "defaultPoison";
-      0xbf01: poisonType :="strPoison"; difficulty := 60; points := 70;
-    0xbf07: poisonType :="dexPoison"; difficulty := 60; points := 70;
-    0xbf06: poisonType :="intPoison"; difficulty := 60; points := 70;
-    0xbf02: poisonType:="staminaPoison"; difficulty := 60; points := 70;
-    0xbf03: poisonType:="paralyzePoison"; difficulty := 80; points := 100;
-    0xef54: poisonType :="manaPoison"; difficulty := 40; points := 70;
-    0xbf04: level := 3; difficulty := 80; points := 60; poisonType := "defaultPoison";
-    0xdc04: level := 2; difficulty := 60; points := 40; poisonType := "defaultPoison";
-    0xbf05: level := 4; difficulty := 100; points := 100; poisonType := "defaultPoison";
+    0xbf00: level := 1; difficulty := RESIST_HARD; points := 50; poisonType := "defaultPoison";
+      0xbf01: poisonType :="strPoison"; difficulty := RESIST_VERY_HARD; points := 70;
+    0xbf20: poisonType :="dexPoison"; difficulty := RESIST_VERY_HARD; points := 70;
+    0xef54: poisonType :="intPoison"; difficulty := RESIST_VERY_HARD; points := 70;
+    0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_VERY_HARD; points := 70;
+    0xbf03: poisonType:="paralyzePoison"; difficulty := RESIST_EXTREMELY_HARD; points := 100;
+    0xbf06: poisonType :="manaPoison"; difficulty := RESIST_HARD; points := 70;
+    0xbf04: level := 3; difficulty := RESIST_EXTREMELY_HARD; points := 60; poisonType := "defaultPoison";
+    0xdc04: level := 2; difficulty := RESIST_VERY_HARD; points := 40; poisonType := "defaultPoison";
+    0xbf05: level := 4; difficulty := RESIST_ALMOST_IMPOSSIBLE; points := 100; poisonType := "defaultPoison";
     default: difficulty := 0; points := 0; poisonType := "invalid";
   endcase
 
-  if(!CheckResist(critter, FORTITUDE, difficulty, 0))
+  if(!CheckResist(critter, FORTITUDE, difficulty))
  		SendSysMessage(who, "Voce foi envenenado", 3, 40);
     TS_StartTimer(critter, "defaultPoison", 30, lvl, who);
   else
     SendSysMessage(who, "Voce resistiu ao veneno", 3, 90);
   endif
 endfunction
-

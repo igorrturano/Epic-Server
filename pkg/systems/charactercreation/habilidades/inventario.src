@@ -7,7 +7,7 @@ use cfgfile;
  
 include "include/say";
 include ":tn:tngumps";
-include "include/damage";
+include ":combat:damage";
 include ":crafting:include/craftingUtil";
 include "include/arrays";
 

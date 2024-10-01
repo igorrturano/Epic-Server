@@ -1,0 +1,210 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":attributes:attributes";
+
+const IMPROVEMENT_BTN := 200;
+const GUMPID_IMPROVEMENT := 0x00001C;
+
+program select(player, tool)
+    var targ := Target(player);
+    if (!targ)
+        return;
+    endif
+    SendSysMessageEX(player, "O que deseja aprimorar?", SSM_REQUEST);
+
+    if (GetObjProperty(targ, "Aprimoramentos"))
+        SendSysMessageEX(player, "Este item já foi aprimorado.", SSM_FAIL);
+        return;
+    endif
+
+    var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
+    var elem     := craft_config[targ.objtype];
+    
+    if (elem.principalMaterial != "metal")
+        SendSysMessageEx(player, "Isto não pode ser aprimorado.", SSM_FAIL);
+        return;
+    endif
+
+    var improvements;
+    if (targ.isA(POLCLASS_WEAPON))
+        improvements := GetWeaponImprovements();
+    elseif (targ.isA(POLCLASS_ARMOR))
+        improvements := GetArmorImprovements();
+    else
+        SendSysMessageEX(player, "Você só pode aprimorar armas ou armaduras.", SSM_FAIL);
+        return;
+    endif
+
+    var metalworking := CInt(AP_GetSkill(player, METALWORKING));
+    var max_improvements := metalworking / 30;
+    
+    var selected_improvements := array{};
+
+    while (1)
+        var input := create_improvement_gump(player, targ, improvements, selected_improvements, max_improvements);
+        selected_improvements := array{};
+        foreach key in (input.keys)
+            var btn_value := CInt(key);
+            if (btn_value > 200)
+                if (improvements[btn_value-200])
+                    selected_improvements.append(improvements[btn_value-200]);
+                endif
+            endif
+        endforeach
+
+        if (selected_improvements.size() < max_improvements || selected_improvements.size() > max_improvements)
+            selected_improvements := array{};
+            SendSysMessageEx(player, "Você não escolheu a quantidade correta de melhorias.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+    player.frozen := 1;
+
+    foreach improvement in selected_improvements
+        ApplyImprovement(targ, improvement, player);
+        SendSysMessageEX(player, "Aprimoramento aplicado: " + improvement, SSM_INFO);
+    endforeach
+
+    playMachineAnimations(player, tool, 3);
+
+    sleep(3);
+
+    player.frozen := 0;
+    return 1;
+endprogram
+
+function GetWeaponImprovements()
+    return array{
+        "Arma Elaborada",
+        "Arma Afiada",
+        "Arma Leve",
+        "Arma Balanceada",
+        "Arma Reforçada"
+    };
+endfunction
+
+function GetArmorImprovements()
+    return array{
+        "Armadura Leve",
+        "Armadura Reforçada",
+        "Proteção Aprimorada",
+        "Design Flexível"
+    };
+endfunction
+
+function getTooltip(text)
+    case (text)
+        "Arma Elaborada":
+            return "Sua arma e capaz de causar critico";
+        "Arma Afiada":
+            return "Aumenta o dano da arma em 2";
+        "Arma Leve":
+            return "Reduz o peso da arma em 20%";
+        "Arma Balanceada":
+            return "Aumenta a chance de acerto da arma";
+        "Arma Reforçada":
+            return "Aumenta o HP maximo da arma em 10% da pericia";
+        "Armadura Leve":
+            return "Reduz o peso da armadura em 20%";
+        "Armadura Reforçada":
+            return "Aumenta o HP maximo da armadura em 30% da pericia";
+        "Proteção Aprimorada":
+            return "Aumenta a resistencia fisica da armadura em 1";
+        "Design Flexível":
+            return "Reduz a penalidade de destreza da armadura em 1";
+    endcase
+endfunction
+
+function create_improvement_gump(player, item, improvements, selected_improvements, max_improvements)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 17, 31, 9390, 359, 125 + improvements.size() * 26);
+    GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff>Aprimoramentos", 0, 0);
+    GFGumpPic(gump, 63, 91, 1469);
+    GFTextLine(gump, 63, 100, 0, "Escolha " + max_improvements + " melhorias:");
+    GFGumpPic(gump, 38, 103, 9773, 0);
+    var y := 121;
+    for i := 1 to improvements.size()
+        var improvement := improvements[i];
+        GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#000000>" + improvement, 1, 0);
+        GFToolTipText(gump, getTooltip(improvement));
+        if (improvement in selected_improvements)
+            GFCheckBox(gump, 274, y, 0x9C4F, 0x9C4E, 1, IMPROVEMENT_BTN + i);
+        else
+            GFCheckBox(gump, 274, y, 0x9C4E, 0x9C4F, 0, IMPROVEMENT_BTN + i);
+        endif
+        y += 26;
+    endfor
+
+    GFAddButton(gump, 274, y+10, 4005, 4007, GF_CLOSE_BTN, 200); // Botao de fechar
+
+    return GFSendGump(player, gump);
+endfunction
+
+function ApplyImprovement(byref item, improvement, player)
+    var aprimoramentos := GetObjProperty(item, "Aprimoramentos");
+    if (!aprimoramentos)
+        aprimoramentos := struct{};
+    endif
+    var bs_bonus := CInt(AP_GetSkill(player, METALWORKING));
+    case (improvement)
+        "Arma Elaborada":
+            aprimoramentos["Arma Elaborada"] := 1;
+        "Arma Afiada":
+            aprimoramentos["Arma Afiada"] := 2;
+        "Arma Leve":
+            aprimoramentos["Arma Leve"] := 1;
+            item.weight_multiplier_mod := 0.8;
+        "Arma Balanceada":
+            aprimoramentos["Arma Balanceada"] := CInt(bs_bonus/20);
+        "Arma Reforçada":
+			item.maxhp_mod := CInt(item.maxhp_mod + CInt(bs_bonus * 0.1));
+            aprimoramentos["Arma Reforçada"] := 1;
+        "Armadura Leve":
+            aprimoramentos["Armadura Leve"] := 1;
+            item.weight_multiplier_mod := 0.8;
+        "Armadura Reforçada":
+            aprimoramentos["Armadura Reforçada"] := 1;
+            item.maxhp_mod := CInt(item.maxhp_mod + CInt(bs_bonus * 0.2));
+        "Proteção Aprimorada":
+            aprimoramentos["Proteção Aprimorada"] := 1;
+            item.resist_physical_mod := Cint(item.resist_physical_mod + 1);
+        "Design Flexível":
+            aprimoramentos["Design Flexível"] := 1;
+            var total_penalty := Cint(GetObjProperty(item, "penaltybonus") + 1);
+
+            SetObjProperty(item, "penaltybonus", total_penalty);
+    endcase
+    SetObjProperty(item, "Aprimoramentos", aprimoramentos);
+endfunction
+
+function playMachineAnimations(who, item, delay)
+   PrintTextAbove(who, "*Aprimorando item*");
+
+    if (item.objtype == 0x9A88)
+        item.graphic := 0x9A81;
+    elseif (item.objtype == 0x9A90)
+        item.graphic := 0x9A89;
+    endif
+   
+    for i := 0 to delay
+        PlaySoundEffect(who, 0x145);
+        PlaySoundEffect(who, 0x5CB);
+        sleepms(1800);
+    endfor
+
+    if (item.graphic == 0x9A81)
+        item.graphic := 0x9A88;
+    elseif (item.graphic == 0x9A89)
+        item.graphic := 0x9A90;
+    endif
+
+    PlaySoundEffect(who, 0x145);
+    PrintTextAbove(who, "*Item aprimorado*");
+endfunction

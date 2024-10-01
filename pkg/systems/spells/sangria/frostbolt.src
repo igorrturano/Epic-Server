@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -51,7 +51,8 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 
     DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
-	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(caster, MAGICLORE)/2.5)))
+	var bonus := epicWisdomPathBonus(caster);
+	if (CheckResist(targ, VONTADE, diff, -bonus))
 		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 

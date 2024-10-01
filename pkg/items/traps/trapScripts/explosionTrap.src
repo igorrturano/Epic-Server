@@ -7,10 +7,10 @@ use util;
 
 include "include/client";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
-
+include "include/epicConstants";
 program trapScript(params)
 	var mobile := params[1];
 	var object := params[2];
@@ -38,7 +38,7 @@ program trapScript(params)
 			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha explosiva.", SSM_FAIL);
 			PlayObjectCenteredEffect(mobile, GFX_EXPLODE_3, 10, 10);
 
-			if (CheckResist(mobile, REFLEXOS, 30,-15*dmg))
+			if (CheckResist(mobile, REFLEXOS, RESIST_MEDIUM,-2*dmg))
 				if (temHabilidade(mobile, "Desbravador Nato"))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha explosiva.", SSM_INFO);
 					mobile.hidden := 0;

@@ -1,0 +1,31 @@
+Tier 1 ->
+leather -> no sneak penalty
+
+Tier 2 ->
+Studded leather
+Fibra de couro
+Armadura de Aquil -> couro  ## Removi por bug no sprite
+Valsharess Armor -> Female Only
+couro ebonsilk -> no sneak penalty
+Armadura de Ossos
+
+Tier 3 ->
+Tunica do cacador(recipe)
+Lorica Musculata -> Recipe
+Ringmail
+Gibao
+Fibra de malha
+chain mail 
+Lorica Squamata
+
+Tier 4 ->
+elven chain
+Ebonsilk cota de malha (Drow Chain)
+Chainmail tunic longa(recipe)
+Lorica Segmentata
+
+Tier 5 ->
+Armadura Gotica -> Unica placa do jogo
+Armadura de Dragao
+Fibra de Metal
+Lorica Plumata(recipe)

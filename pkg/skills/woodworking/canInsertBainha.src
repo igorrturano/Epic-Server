@@ -21,7 +21,7 @@ program on_insert(who, bainha, movetype, inserttype, item, existing_stack, amt);
     // muda o grafico caso tenha algum item inserido
     // só poder ter 1 item por vez
 	if (bainha.objtype == 0xa40e) // bainha de adaga
-        var adagas := Array{0x0ec4, 0x0ec2, 0x13f6, 0x27af, 0x0f51, 11566, 0x1401, 0x27ab, 11565};
+        var adagas := Array{0x0ec4, 0x0ec2, 0x13f6, 0x27af, 0x0f51, 11566, 0x1401, 0x27ab, 11565, 0xf99f};
         if (item.objtype in adagas)
             if (bainha.item_count > 2)
                 SendSysMessageEx(who, "Ja existe uma adaga nesta bainha.", SSM_FAIL);
