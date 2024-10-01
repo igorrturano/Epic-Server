@@ -2088,35 +2088,35 @@ function GetHairGumpGraphic(hairID)
         51636: return 52182; // calvaocrialongo
         51637: return 52183; // calvaocriacurto
         51638: return 52184; // cabeloplantachifverd
-        51639: return 52185; // CoqueLongo
+        51639: return 54274; // CoqueLongo
         51640: return 52186; // CoqueCurto
-        51641: return 52187; // CoqueLivre
-        51642: return 52188; // CoqueTrabalhado
-        51643: return 52189; // CoqueLateral1
-        51644: return 52190; // CoqueLateral2
-        51645: return 52191; // CoqueSamurai1
-        51646: return 52192; // CoqueSamurai2
-        51647: return 52193; // CoqueSamurai3
-        51648: return 52194; // CoqueSamurai4
-        51649: return 52195; // coque1
-        51650: return 52196; // coque2
-        51651: return 52197; // coque3
-        51652: return 52198; // coque4
-        51653: return 52199; // coque5
-        51654: return 52200; // coque6
-        51655: return 52201; // coque7
-        51656: return 52202; // coque8
-        51657: return 52203; // coque9
-        51658: return 52204; // coque10
-        51659: return 52205; // coque11
-        51660: return 52206; // CoqueLongo2
-        51661: return 52207; // CoqueLongo3
-        51662: return 52208; // Coquelongo4
-        51663: return 52209; // CoqueLongo5
-        51664: return 52210; // CoqueLongo6
-        51665: return 52211; // CoqueLongo7
-        51666: return 52212; // CoqueLongo8
-        51667: return 52213; // CoqueLongo9
+        51641: return 54275; // CoqueLivre
+        51642: return 54276; // CoqueTrabalhado
+        51643: return 54277; // CoqueLateral1
+        51644: return 54278; // CoqueLateral2
+        51645: return 54279; // CoqueSamurai1
+        51646: return 54280; // CoqueSamurai2
+        51647: return 54281; // CoqueSamurai3
+        51648: return 54282; // CoqueSamurai4
+        51649: return 54283; // coque1
+        51650: return 54284; // coque2
+        51651: return 54285; // coque3
+        51652: return 54286; // coque4
+        51653: return 54287; // coque5
+        51654: return 54288; // coque6
+        51655: return 54289; // coque7
+        51656: return 54290; // coque8
+        51657: return 54291; // coque9
+        51658: return 54292; // coque10
+        51659: return 54293; // coque11
+        51660: return 54294; // CoqueLongo2
+        51661: return 54295; // CoqueLongo3
+        51662: return 54296; // Coquelongo4
+        51663: return 54297; // CoqueLongo5
+        51664: return 54298; // CoqueLongo6
+        51665: return 54299; // CoqueLongo7
+        51666: return 54300; // CoqueLongo8
+        51667: return 54301; // CoqueLongo9
         default: return 50700; // Gráfico padrão (Short_Hair)
     endcase
 endfunction
