@@ -16,8 +16,7 @@ function GetResist(who, resist)
 	var kit := chardata.trait;
 	var raca := chardata.raca;
 	var valor := 0;
-
-	Recalcvitals(who);
+	EraseResist(who, resist);
     if (resist == VONTADE && (TemHabilidade(who, "Ladrao de Magias")))
 		resist := REFLEXOS;
 	endif
@@ -172,4 +171,21 @@ function GetSecondChanceMessage(defender, resist_type)
         return "Um polski sempre pode contar com a própria sorte";
     endif
     return "";
+endfunction
+
+function EraseResist(who, resist)
+	if (!who.npcdesc)
+		if(resist == FORTITUDE)
+			who.lower_reagent_cost_mod := 0;
+			who.lower_reagent_cost := 0;
+		elseif(resist == VONTADE)
+			who.spell_damage_increase_mod := 0;
+			who.spell_damage_increase := 0;
+		else
+			who.faster_casting_mod := 0;
+			who.faster_casting := 0;
+		endif
+	endif
+
+	Recalcvitals(who);
 endfunction
