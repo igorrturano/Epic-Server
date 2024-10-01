@@ -22,10 +22,10 @@ program SpellScript(params)
 	endif
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-
-	if (!CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+	var bonus := -epicWisdomPathBonus(who);
+	if (!CheckResist(targ, VONTADE, diff, bonus))
 		var duration := AP_GetSkill(who, MAGICLORE);
-		TS_StartTimer(targ, "apodrecer", duration, targ.color, who, 0); //20 min
+		TS_StartTimer(targ, "apodrecer", duration, targ.color, who, 0);
 		Corromper(who, 11, targ);
 
 		handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);

@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+        return;
+    endif
+
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+        return;
+    endif
+
+	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
+	handleSilentMagic(who, targ, SFX_BLESS);
+
+	SendSysMessageEx(targ, "Voce passa a enxergar melhor", SSM_INFO);
+
+	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
+    var duration := CInt(magiclore_skill * 5);
+
+	who.setlightlevel(18, duration); // TODO: Voltar pra 15 pro def
+	if (GetObjProperty(targ, "chardata").raca != DROW)
+    	SetCooldown(targ, "nightvision", duration);
+	else
+		SetCooldown(targ, "lightvision", duration);
+	endif
+
+	return 1;
+endprogram

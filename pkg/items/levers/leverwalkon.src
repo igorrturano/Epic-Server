@@ -9,7 +9,7 @@ include ":attributes:attributes";
 include ":gumps:requestGump";
 include ":levers:lever";
 include ":traps:traps";
-include "include/damage";
+include ":combat:damage";
 
 program loko(who, item)
 	if (who.npctemplate)

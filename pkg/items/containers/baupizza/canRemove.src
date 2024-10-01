@@ -1,0 +1,34 @@
+use uo;
+include "include/say";
+
+program CanRemove(mobile, container, item, move_type)
+
+    if (!CanRemoveItems(mobile))
+        SendSysMessage(mobile, "Você não tem permissão para remover itens deste baú.");
+        return 0;
+    endif
+
+    return 1;
+endprogram
+
+function CanRemoveItems(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0;
+    endif
+
+    // Verificar se o personagem é GM, Rei, Rainha ou Mão do Rei
+    if (who.cmdlevel >= 3)
+        return 1;
+    endif
+
+    if (chardata.current_nobility_title == "Rei" || chardata.current_nobility_title == "Rainha")
+        return 1;
+    endif
+
+    if (chardata.current_professional_position == "Mão do Rei")
+        return 1;
+    endif
+
+    return 0;
+endfunction

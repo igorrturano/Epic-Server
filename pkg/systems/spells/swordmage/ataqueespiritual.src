@@ -9,7 +9,8 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include "include/damage";
+include ":combat:damage";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -33,10 +34,9 @@ program SpellScript(params)
 			return 1;
 		endif
 
-		if ( GetCooldown(targ, "blessweapon") > 0 )
-			SendSysMessageEx(who, "Esta arma ja esta com um encantamento.", SSM_FAIL);
-			return 1;
-		endif
+		if(checkForElementalWeapons(who, targ))
+	        return 0;
+        endif
 
 		SendSysMessageEx(who, "A gema neutra foi ativada.", SSM_INFO);
 		SetCooldown(targ, "habelemental", 20);

@@ -2,7 +2,7 @@ use uo;
 use vitals;
 use os;
 include ":attributes:vitals";
-include "include/damage";
+include ":combat:damage";
 
 program danoarea(rune)
 	var i := 0;

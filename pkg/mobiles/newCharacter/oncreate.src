@@ -17,8 +17,13 @@ program OnCreate(params)
 	var who := params[1];
 	var selected_skills := params[2];
 	params := 0; // No longer needed.
+	AP_SetTrueStat(who, STRENGTH, 40);
+    AP_SetTrueStat(who, DEXTERITY, 40);
+    AP_SetTrueStat(who, INTELLIGENCE, 40);
+	AP_RefreshVitals(who);
 
 	if (who.cmdlevel <= 1)
+	
 		var acc := who.acct;
 		var count := ACCT_GetNumCharacters(acc);
 		if (count > 1)

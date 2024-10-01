@@ -10,6 +10,7 @@ include ":tn:tngumps";
 include ":spells:tnmagery";
 include "include/say";
 include ":containers:containers";
+include ":alchemy:alchemy";
 
 program book(who, book)
 
@@ -31,7 +32,7 @@ program book(who, book)
 	var spells := GetObjProperty(book, "recipes");
 
 	if (spells[spell])
-			MakePotion ( spells[spell].id,  who);
+			MakePotion ( spells[spell].recipe,  who);
 			//Start_Script("cast_spell", {who, spells[spell], 0});
 	endif
 
@@ -47,6 +48,9 @@ function MakePotion ( pot, who)
 	var difficulty := recipes[pot].skill;
 	var magic := cint(recipes[pot].magic);
 	var strength := cint(recipes[pot].strength);
+	var science := recipes[pot].science;
+	var tier := recipes[pot].tier;
+	var id := recipes[pot].id;
 
 	//sendsysmessage(who, "magic  " + magic + " skill " + difficulty) ;
 
@@ -87,7 +91,7 @@ function MakePotion ( pot, who)
 
 	foreach reag in (reagent_costs.keys())
 		amount := CInt( reagent_costs[reag] );
-		if (temHabilidade(who, "Formacao Academica") && (amount >1))
+		if (temHabilidade(who, "Alquimista Experiente") && (amount >1))
 			amount := CInt(amount/2);
 		endif
 		if (!amount)
@@ -123,24 +127,40 @@ function MakePotion ( pot, who)
 
 		if(hasbottle)
 			var thing;
+			var crafterskill := AP_GetSkill (who, ALCHEMY);
+			var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
+			var bonus := (((crafterInt-50)/10)+(crafterskill/10));
 			if (!magic)//se nao tiver o flag magic como as tintas, cria o item
-				thing := CreateItemInBackpack(who, pot, 1);
+				thing := CreateItemInBackpack(who, id, 1);
 			else //se nao cria so o extrato
 				thing := CreateItemInBackpack(who, 0xcfff, 1);
-				SetObjProperty(thing, "extrato", pot);
+				if (temhabilidade (who, "Bombardeiro Eficiente") && science == BOMBA);
+					thing := CreateItemInBackpack(who, 0xcfff, 1);
+				endif
+				SetObjProperty(thing, "extrato", id);
+				SetObjProperty(thing, "bonus", bonus);
+				SetObjProperty(thing, "tier", tier);
+				SetObjProperty(thing, "crafterskill", crafterskill);
+				SetObjProperty(thing, "science", science);
 				if (strength)
 					SetObjProperty(thing, "strength", strength);
 				endif
 				if (GetObjProperty(who, "extratoinstantaneo"))
 					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
 					var pocao := GetObjProperty(thing, "extrato");
-       					var pot := CreateItemInBackpack(who, pocao, 1);
-					SetObjProperty(pot, "strength", cint(GetObjProperty(thing, "strength")));
+       				var pot := CreateItemInBackpack(who, pocao, 1);
+					if (temhabilidade (who, "Bombardeiro Eficiente") && science == BOMBA);
+						pot := CreateItemInBackpack(who, pocao, 1);
+					endif
+					SetObjProperty(pot, "strength", strength);
+					SetObjProperty(pot, "bonus", bonus);
+					SetObjProperty(pot, "tier", tier);
+					SetObjProperty(pot, "crafterskill", crafterskill);
+					SetObjProperty(pot, "science", science);
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");
 				endif
 			endif
-			SetObjProperty(thing, "crafterskill", AP_GetSkill(who, ALCHEMY) );
 			PlaySoundEffect(who, SOUND_EFFECT_POUR);
 			SendSysMessageEx(who, "Voce fez a pocao e a guardou na sua mochila.", SSM_INFO);
 			return;
@@ -273,17 +293,17 @@ function CreateRunebookGump(book, who)
 		endif
 
 		var rune_entry := rune_list[rune_pos];
-		//WritespellInfo(who, rune_entry);
+		WriteAlchInfo(rune_entry);
 		rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description) ;
 		if( TypeOf(rune_entry) == "Struct" )
-			if( rune_entry.name )
+			if( rune_entry.type )
 				// This puts the rune in page 1's list.
 				GFPage(book_gump, 1);
-				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.name);
+				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.type);
 				GFPage(book_gump, i);
 
-				//GFHTMLArea(book_gump, 160, 15, 100, 18, rune_entry.name);
-				GFTextCrop(book_gump, 160,  15, 100, 18, 995, rune_entry.name);
+				//GFHTMLArea(book_gump, 160, 15, 100, 18, rune_entry.type);
+				GFTextCrop(book_gump, 160,  15, 100, 18, 995, rune_entry.type);
 				GFHTMLArea(book_gump, 140, 60, 120,  130, cstr(rune_entry.description), 0, 1);
 
 			endif
@@ -298,18 +318,18 @@ function CreateRunebookGump(book, who)
 		endif
 
 		rune_entry := rune_list[rune_pos];
-		//WritespellInfo(who, rune_entry);
+		WriteAlchInfo(rune_entry);
 		 rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description);
 
 		if( TypeOf(rune_entry) == "Struct" )
-			if( rune_entry.name )
+			if( rune_entry.type )
 				// This puts the rune in page 1's list.
 				GFPage(book_gump, 1);
-				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.name);
+				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.type);
 				GFPage(book_gump, i);
 
-				//GFHTMLArea(book_gump, 300, 15, 100, 18, rune_entry.name);
-				GFTextCrop(book_gump, 300,  15, 115, 17, 995, rune_entry.name);
+				//GFHTMLArea(book_gump, 300, 15, 100, 18, rune_entry.type);
+				GFTextCrop(book_gump, 300,  15, 115, 17, 995, rune_entry.type);
 				GFHTMLArea(book_gump, 300, 60, 120,  130, cstr(rune_entry.description), 0, 1);
 
 			endif

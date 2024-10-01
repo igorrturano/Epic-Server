@@ -11,20 +11,22 @@ include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include "include/damage";
+include ":combat:damage";
 include ":combat:combat";
-include ":tn:combat";
+include ":combat:damage";
 include ":charactercreation:resists";
 
 program arremesso(params)
 	var who := params[1];
-	//var targ := params[2];
 	params := 0; // No longer needed
 	if (who.hidden && !TemHabilidade(who, "Espionagem"))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;
-	elseif (GetEquipmentByLayer(who, 0x19) && GetObjProperty(who, "chardata").trait != "Cavalaria de Escaramuça") // Por que não poderia? For Rohan!
+	elseif (GetEquipmentByLayer(who, 0x19) && GetObjProperty(who, "chardata").trait != "Cavalaria de Escaramuça")
 		SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
+		return 0;
+	elseif (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
+		SendSysMessageEx(who, "Voce nao pode arremessar enquanto pilota um golem ou esta metamorfoseado.", SSM_FAIL);
 		return 0;
 	endif
 
@@ -35,30 +37,40 @@ program arremesso(params)
 	
 	SendSysMessageEx(who, "Escolha o que deseja arremessar", SSM_REQUEST);
 	var targ := Target(who);
-    var thrower_str := AP_GetStat(who, STRENGTH);
-    var targ_str := AP_GetStat(targ, STRENGTH);
+    var arcane_bows := array{0xFA6D, 0XF997};
 
 	if ( !targ )
 		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
 		return 0;
-	elseif ( targ.IsA(POLCLASS_MOBILE) && !TemHabilidade(who, "Brigador de Taverna") && !(thrower_str >= targ_str))
-		SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
-		return 0;
+	elseif ( targ.IsA(POLCLASS_MOBILE) )
+		if ( !TemHabilidade(who, "Brigador de Taverna") )
+			SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
+			return 0;
+		elseif ( AP_GetStat(who, STRENGTH) <= AP_GetStat(targ, STRENGTH) )
+			SendSysMessageEx(who, "Voce nao e forte o suficiente para arremessar essa pessoa.", SSM_FAIL);
+			return 0;
+		endif
 	elseif ( targ.npctemplate && !TemHabilidade(who, "Brigador de Taverna"))
 		SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
 		return 0;
 	elseif ( Distance(who, targ) > 1 )
 		SendSysMessageEx(who, "Muito longe.", SSM_FAIL);
 		return 0;
-	//elseif (((!targ.movable) || !ReserveItem(targ)))
-	//	SendSysMessageEx(who, "Voce nao pode arremessar isto.", SSM_FAIL);
-	//	return 0;	
 	elseif ( targ.isa(POLCLASS_CORPSE) )
 		SendSysMessageEx(who, "Voce nao pode arremessar corpos.", SSM_FAIL);
 		return 0;
     elseif (targ.serial == who.serial)
         SendSysMessageEx(who, "Voce nao pode se arremessar.", SSM_FAIL);
         return 0;
+	elseif (targ == who.backpack)
+		SendSysMessageEx(who, "Voce nao pode arremessar sua própria bolsa.", SSM_FAIL);
+		return 0;
+	elseif(targ.movable)
+		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
+		return 0;
+	elseif (targ.objtype in arcane_bows)
+		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
+		return 0;
 	endif
 
 	SendSysMessageEx(who, "Aonde vai arremessar?", SSM_REQUEST);
@@ -66,6 +78,11 @@ program arremesso(params)
 	
 	if (alvo == who)
 		SendSysMessageEx(who, "Seu instinto de sobrevivencia nao permite.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (targ == alvo)
+		SendSysMessageEx(who, "Essa é uma tarefa impossível.", SSM_FAIL);
 		return 0;
 	endif
 
@@ -101,21 +118,24 @@ program arremesso(params)
         to_miss_chance := GetResist(alvo, REFLEXOS);
     endif
 
-    var dmg := 1;
-    if (targ.isA(POLCLASS_MOBILE))
-        dmg := AP_GetStat(targ, STRENGTH) * 0.2; // 20% de dano em força da pessoa arremessada
+    var dmg := RandomDiceRoll("1d6");
+    if (targ.isA(POLCLASS_MOBILE) && !targ.npctemplate)
+        dmg += Cint(AP_GetStat(targ, STRENGTH) / 10);
     elseif(targ.isA(POLCLASS_WEAPON))
-        dmg := CalculateRawDamage(who, targ);
+        dmg += CalculateRawDamage(who, targ);
     endif
-
 
     var ranged_bonus := Cint(AP_GetSkill(who, RANGED));
     var str_bonus := AP_GetStat(who, STRENGTH);
     var dex_bonus := AP_GetStat(who, DEXTERITY);
-	var dmg_bonus := Cint((str_bonus + dex_bonus) / 2);
+	var dmg_bonus := 0;
+	if (TemHabilidade(who, "Brigador de Taverna"))
+		dmg_bonus := Cint((str_bonus + dex_bonus) / 20);
+	endif
 	dmg += dmg_bonus;
     var random := Cint(RandomInt(80));
     var to_hit_chance := random + ((str_bonus + dex_bonus + ranged_bonus) / 10);
+
 	if (targ.isA(POLCLASS_WEAPON))
 		var parry_chance := Cint(AP_GetSkill(alvo, PARRY) / 3);
 		if (alvo)
@@ -133,20 +153,25 @@ program arremesso(params)
 	 		return 0;
 		else
             var poisonInfo := GetObjProperty(targ, "poisonInfo");
-            var poison_amt := poisonInfo.dosage;
-            var poisonLvl := poisonInfo.level;
-            // Sempre que for mexer nesse timer, mexer também  no hitscript ou criar funcao e chamar em ambos
-            var poisonDuration := Cint(AP_GetSkill(who, ALCHEMY) / 20);
-            if (poisonDuration < 2)
-                poisonDuration := 2;
-            endif
-            if (temHabilidade(who, "Veneno Puro"))
-                poisonDuration := poisonDuration * 2;
-            endif
             if (poisonInfo)
-                poison_amt--;
-                if (!CheckResist(alvo, FORTITUDE, 15,-20*poisonLvl))
-                    TS_StartTimer(alvo, poisonInfo.name, poisonDuration, poisonInfo.level, targ);
+                poisonInfo.dosage--;
+                if (!CheckResist(alvo, FORTITUDE, poisoninfo.difficulty,-poisoninfo.difficulty_mod))
+                    if (TS_GetTimerInfo(alvo, "defaultPoison"))
+        				var defaultpoison := cint(TS_GetTimerLevel(alvo, "defaultPoison"));
+       					setobjproperty(alvo, "#poisontier", defaultpoison);
+      				endif
+      				if (getobjProperty(alvo, "#poisontier"))
+        				var poison := ts_gettimernames(alvo, type:="P");
+       					var teste := cint(getobjProperty(alvo, "#poisontier"));
+        				if (teste <= poisoninfo.tier);
+          					TS_LowerDuration(alvo, poison, -1);
+          					TS_StartTimer(alvo, poisonInfo.Name, poisonInfo.time, poisonInfo.level, who);
+        				endif
+      				else
+      					setobjproperty(alvo, "#poisontier", poisoninfo.tier);
+      					setobjproperty(alvo, "#poisonbonus", poisoninfo.difficulty_mod);
+      					TS_StartTimer(alvo, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
+      				endif
                 else
                     SendSysMessage(alvo, "Voce resistiu ao veneno", SSM_INFO);
                     SendSysMessage(who, "O alvo resistiu ao veneno", SSM_INFO);
@@ -161,7 +186,6 @@ program arremesso(params)
     		return 1;
 		endif
 	else
-		//SendSysMessageEx(who, "No que deseja arremessar?", SSM_REQUEST);
 		if (alvo)
 			MoveObjectToLocation(targ, alvo.x, alvo.y, alvo.z, alvo.realm, MOVEOBJECT_FORCELOCATION);
 			PrintText(who, "*Arremessa " + targ.name + " em " + alvo.name +"*");

@@ -2,6 +2,8 @@
 include ":datafile:include/datafile";
 include ":merchants:item_template";
 include ":spells:swordmage";
+include ":brainAI:npcUtil";
+include ":npcs:thor/handling/thorai";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -382,11 +384,36 @@ function GetItemsSoldList(merchant)
 	return prop_list;
 endfunction
 
+// AI Speak Open AI Start
+function AI_Speak_Openai(npcType, DescricaoItem, cost_amt)
+
+	var language := "None";
+	var event := "comercio";
+	
+	var npcEvil := False;
+	
+	var specialLore := False;
+	var gossip_storage := GetGlobalProperty("gossip_storage");
+	var gossip := True;
+	if (gossip_storage == array{})
+		gossip := False;
+	endif
+	var mood := "None";
+	if ( (RandomInt(100) < 50 ) ) // por cento de chance
+		mood := " se o personagem gasta poucas moedas (para sua avaliação, 10 moedas é um ótimo valor), você fica nervoso, mesquinho ou sarcástico;";
+	endif
+	var playerinput := "<o personagem compra o item " + DescricaoItem + " por " + cost_amt + " moedas>";
+	
+	var responseText := handle_open_ai_npc_speech_utils(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+
+	return responseText;
+endfunction
 
 function DoPurchase(npc, player, input)
 	var info := GetItemsForSaleInfo(npc, input);
 	var cost := info[1];
 	var selling := info[2];
+	var DescricaoItem := selling.Name;
 	var confiscar := 0;
 
 //	foreach i in selling
@@ -453,7 +480,17 @@ function DoPurchase(npc, player, input)
 							totalPago += faltaPagar;
 							SubtractAmount(moeda, faltaPagar);
 							faltaPagar := 0;
-							AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
+
+							var npcType := npc.npctemplate;
+							if ( npcType == ":merchants:taverneiro")
+								npcType := "taverneiro"; // Get a propriedade "npc_type"
+							else
+								npcType := "vendedor";
+							endif
+							
+							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							AI_Speak(npc, responseAI);
+							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
 					endforeach
@@ -474,7 +511,16 @@ function DoPurchase(npc, player, input)
 							DarTroco(player, npc, troco);
 
 							faltaPagar := 0;
-							AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
+
+							var npcType := npc.npctemplate;
+							if ( npcType == ":merchants:taverneiro")
+								npcType := "taverneiro"; // Get a propriedade "npc_type"
+							else
+								npcType := "vendedor";
+							endif
+							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							AI_Speak(npc, responseAI);
+							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
 					endforeach
@@ -498,7 +544,16 @@ function DoPurchase(npc, player, input)
 							totalPago += faltaPagar;
 							DarTroco(player, npc, troco);
 							faltaPagar := 0;
-							AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
+							
+							var npcType := npc.npctemplate;
+							if ( npcType == ":merchants:taverneiro")
+								npcType := "taverneiro"; // Get a propriedade "npc_type"
+							else
+								npcType := "vendedor";
+							endif
+							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							AI_Speak(npc, responseAI);
+							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
 					endforeach
@@ -516,7 +571,17 @@ function DoPurchase(npc, player, input)
 						totalPago += faltaPagar;
 						SubtractAmount(item, faltaPagar);
 						faltaPagar := 0;
-						AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
+
+						var npcType := npc.npctemplate;
+						if ( npcType == ":merchants:taverneiro")
+							npcType := "taverneiro"; // Get a propriedade "npc_type"
+						else
+							npcType := "vendedor";
+						endif
+						var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+						AI_Speak(npc, responseAI);
+
+						//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 						break;
 					endif
 				endforeach

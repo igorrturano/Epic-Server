@@ -1,0 +1,52 @@
+use uo;
+use cfgfile;
+use util;
+
+program cria(item)
+
+	if (GetObjProperty(item, "recipe") != error)
+		return 1;
+	endif
+
+	var recipe := struct;
+	var level1:={};
+	var level2:={};
+	var level3:={};
+	var level4:={};
+	var level5:={};
+	var cfg := readconfigfile(":alchemy:config/recipestintas");
+	foreach key in (getconfigintkeys(cfg));
+		var level := FindConfigElem(cfg, key);
+		var level_achar := level."level";
+		case(level_achar)
+			1:
+				level1.append(key);
+			2:
+				level2.append(key);
+			3:
+				level3.append(key);
+			4:	
+				level4.append(key);
+			5:
+				level5.append(key);
+		endcase
+	endforeach
+	
+	var sorteado;
+		if (item.objtype == 0xef2b)
+			sorteado := level1[RandomIntMinMax(1, level1.size()+1)];
+		elseif (item.objtype == 0xef3c)
+			sorteado := level2[RandomIntMinMax(1, level2.size()+1)];
+		elseif (item.objtype == 0xef3d)
+			sorteado := level3[RandomIntMinMax(1, level3.size()+1)];
+		elseif (item.objtype == 0xef3e)
+			sorteado := level4[RandomIntMinMax(1, level4.size()+1)];
+		elseif (item.objtype == 0xef3f)
+			sorteado := level5[RandomIntMinMax(1, level5.size()+1)];
+		endif;
+	recipe.+recipe := cint(cfg[sorteado]."recipe");
+
+	SetObjProperty(item, "recipe", recipe);
+
+endprogram
+

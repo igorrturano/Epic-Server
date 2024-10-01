@@ -11,7 +11,7 @@ use os;
 use cfgfile;
 use util;
 
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 include ":blood:blood";
 include ":charactercreation:habilidades";
@@ -42,7 +42,7 @@ program TrapWalkOn(mobile, trap)
 				var tempo := 15;
 				var dmg := CInt(RandomDiceRoll("1d10"))+20;
 				SendSysMessageEx(mobile, "Voce pisou em uma armadilha de urso!", SSM_FAIL);
-				if (CheckResist(mobile, REFLEXOS, 100))
+				if (CheckResist(mobile, REFLEXOS, RESIST_ALMOST_IMPOSSIBLE))
 					if (temHabilidade(mobile, "Desbravador Nato"))
 						SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 						sleep(10);
@@ -105,7 +105,7 @@ program TrapWalkOn(mobile, trap)
             var level := GetObjProperty(trap, "traplevel");
             var dmg := CInt(RandomDiceRoll("1d10"))+15;
             dmg := dmg*level;
-            if (CheckResist(mobile, REFLEXOS, 100))
+            if (CheckResist(mobile, REFLEXOS, RESIST_ALMOST_IMPOSSIBLE))
                 if (temHabilidade(mobile, "Desbravador Nato"))
                     SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
                     sleep(10);
@@ -173,7 +173,7 @@ program TrapWalkOn(mobile, trap)
 
             var dmg := CInt(RandomDiceRoll("1d10"))+8;
             dmg := dmg*level;
-            if (CheckResist(mobile, REFLEXOS, 100))
+            if (CheckResist(mobile, REFLEXOS, RESIST_ALMOST_IMPOSSIBLE))
                 if (temHabilidade(mobile, "Desbravador Nato"))
                     SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
                     sleep(10);
@@ -248,7 +248,7 @@ program TrapWalkOn(mobile, trap)
 
         foreach mob in hostiles
 
-            if (CheckResist(mob, FORTITUDE, CInt(25+25*level)))
+            if (CheckResist(mob, FORTITUDE, CInt(RESIST_HARD+2*level)))
 				SendSysMessageEx(mob, "Voce resistiu ao veneno.", SSM_INFO);
 				continue;
 			else

@@ -8,6 +8,7 @@ include ":timedscripts:timedScripts";
 include ":food:include/hunger";
 include ":attributes:skills";
 
+
 program Install()
 	print("INSTALLING: Exported Vital - RegenRate and MaxValue functions ...");
 	return 1;
@@ -90,8 +91,6 @@ exported function GetManaMaximumValue(mobile)
 		vital_points := CInt(AP_GetTrueStat(mobile, "Intelligence")) * 100;
 		if (GetObjProperty(mobile, "chardata").trait == "Conexão com Alora")
 			vital_points := vital_points + 1000;
-		elseif (GetObjProperty(mobile, "chardata").trait == "Afogado em Mana")
-			vital_points := vital_points + 4000;
 		endif
 	endif
 
@@ -100,12 +99,6 @@ exported function GetManaMaximumValue(mobile)
 		if (hunger >= FomeGetLimiar())
 			vital_points := vital_points - (FomeCalcDebuff(hunger)*50);
 		endif
-
-		/*if (hunger == 5)
-			vital_points := vital_points - 2000;
-		elseif (hunger == 4)
-			vital_points := vital_points - 1000;
-		endif*/
 	endif
 
 	vital_points := vital_points + ((Cint( GetObjProperty(mobile, "manamod") ) + Cint( GetObjProperty(mobile, "#manamod")))*100);
@@ -275,18 +268,13 @@ exported function GetSkillCapMaximumValue(mobile)
     return 100*100;
 endfunction
 
-exported function GetVicioRegenRate(mobile)
-	var base_regen := CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 100;
+exported function GetVicioPotRegenRate(mobile)
+	var base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 14) + (cint(mobile.lower_reagent_cost_mod));
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "vicio");
-
-	if ((GetObjProperty(mobile, "#ultimouso") + 3000000 > polcore().systime) && (!mobile.npctemplate)  ) // Nao regenera se tiver usado no ultimo dia
-		return 0;
-	endif
 
 	return regen;
 endfunction
 
-exported function GetVicioMaximumValue(mobile)
-	return 86400*100;
+exported function GetViciopotMaximumValue(mobile)
+	return 100*100;
 endfunction
-

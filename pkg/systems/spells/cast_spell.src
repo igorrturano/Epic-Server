@@ -213,7 +213,6 @@ function performSpellVocalization(mobile, spellinfo)
     if (spellinfo.powerwords && GetObjProperty(mobile, "#magiasilenciosa") == error)
         PrintText(mobile, spellinfo.powerwords);
     endif
-
     if (spellinfo.prayer[1] && GetObjProperty(mobile, "#magiasilenciosa") == error)
         if (RandomInt(100) < 15)
             var prayer := spellinfo.prayer[RandomInt(spellinfo.prayer.size()) + 1];

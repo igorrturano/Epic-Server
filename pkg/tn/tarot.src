@@ -1,0 +1,111 @@
+use uo;
+use os;
+use basic;
+
+include ":gumps:gumps";
+include "include/say";
+
+var tarotDeck := array{
+    // Arcanos Maiores
+    "O Louco", "O Mago", "A Sacerdotisa", "A Imperatriz", "O Imperador",
+    "O Sacerdote", "Os Enamorados", "A Carruagem", "A Força", "O Eremita",
+    "A Roda da Fortuna", "A Justiça", "O Enforcado", "O Renascimento",
+    "A Temperança", "A Serpente", "A Torre", "A Estrela", "A Lua",
+    "O Sol", "O Julgamento", "O Mundo",
+    
+    // Arcanos Menores
+    "Ás de Ouro", "Dois de Ouro", "Três de Ouro", "Quatro de Ouro", "Cinco de Ouro",
+    "Seis de Ouro", "Sete de Ouro", "Oito de Ouro", "Nove de Ouro", "Dez de Ouro",
+    "Pajem de Ouro", "Cavaleiro de Ouro", "Rainha de Ouro", "Rei de Ouro",
+    
+    "Ás de Copas", "Dois de Copas", "Três de Copas", "Quatro de Copas", "Cinco de Copas",
+    "Seis de Copas", "Sete de Copas", "Oito de Copas", "Nove de Copas", "Dez de Copas",
+    "Pajem de Copas", "Cavaleiro de Copas", "Rainha de Copas", "Rei de Copas",
+    
+    "Ás de Espadas", "Dois de Espadas", "Três de Espadas", "Quatro de Espadas", "Cinco de Espadas",
+    "Seis de Espadas", "Sete de Espadas", "Oito de Espadas", "Nove de Espadas", "Dez de Espadas",
+    "Pajem de Espadas", "Cavaleiro de Espadas", "Rainha de Espadas", "Rei de Espadas",
+    
+    "Ás de Paus", "Dois de Paus", "Três de Paus", "Quatro de Paus", "Cinco de Paus",
+    "Seis de Paus", "Sete de Paus", "Oito de Paus", "Nove de Paus", "Dez de Paus",
+    "Pajem de Paus", "Cavaleiro de Paus", "Rainha de Paus", "Rei de Paus"
+};
+
+program TarotUO(who, item)
+    if (item.objtype == 0x12AC)
+        LeituraTaro(who, item, 0x12AA, 0x12A6, 0x12A7);
+    elseif (item.objtype == 0x12AB)
+        LeituraTaro(who, item, 0x12A9, 0x12A5, 0x12A8);
+    endif
+endprogram
+
+function LeituraTaro(who, item, grafico1, grafico2, grafico3)
+    var cartasEmbaralhadas := EmbaralharCartas();
+    
+    PrintTextAbove(item, "*Embaralhando*");
+    PlaySoundEffect(who, 0x248);
+    Sleep(2);
+    item.graphic := grafico1;
+    Sleep(2);
+    PrintTextAbove(item, "*Dando as cartas*");
+    PlaySoundEffect(who, 0x248);
+    Sleep(2);
+    item.graphic := grafico2;
+    Sleep(1);
+    item.graphic := grafico3;
+    
+    foreach carta in cartasEmbaralhadas
+        SendSysMessageEx(who, "Sua carta é " + tarotDeck[carta], SSM_INFO);
+        
+        if (!YesNoTarot(who, "Deseja passar para a próxima carta?"))
+            break;
+        endif
+    endforeach
+    
+    FecharBaralho(item, grafico3, grafico2, grafico1);
+endfunction
+
+function EmbaralharCartas()
+    var totalCartas := tarotDeck.size();
+    var cartas := array{};
+    
+    for i := 1 to totalCartas
+        cartas.append(i);
+    endfor
+    
+    var cartasEmbaralhadas := {};
+    
+    while (cartas.size() > 0)
+        var indice := RandomInt(cartas.size()) + 1;
+        cartasEmbaralhadas.append(cartas[indice]);
+        cartas.erase(indice);
+    endwhile
+    
+    return cartasEmbaralhadas;
+endfunction
+
+function FecharBaralho(item, grafico3, grafico2, grafico1)
+    PrintTextAbove(item, "*Recolhendo as cartas*");
+    PlaySoundEffect(item, 0x248);
+    Sleep(2);
+    item.graphic := grafico3;
+    Sleep(1);
+    item.graphic := grafico2;
+    Sleep(1);
+    item.graphic := grafico1;
+    Sleep(1);
+    item.graphic := item.objtype;
+    SendSysMessage(item, "*Leitura concluída*");
+endfunction
+
+function YesNoTarot(who, message)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 3600, 300, 100);
+    GFTextMid(gump, 10, 10, 280, 1153, message);
+    GFAddButton(gump, 50, 55, 4005, 4006, 1, 1);
+    GFAddButton(gump, 200, 55, 4005, 4006, 1, 0);
+    GFTextMid(gump, 65, 55, 60, 1153, "Sim");
+    GFTextMid(gump, 215, 55, 60, 1153, "Não");
+    var input := GFSendGump(who, gump);
+    return input[0] == 1;
+endfunction

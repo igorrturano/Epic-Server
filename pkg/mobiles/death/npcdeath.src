@@ -21,7 +21,7 @@ include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
-include "include/damage";
+include ":combat:damage";
 include ":tn:npcutil";
 include ":taming:taming";
 include "include/epicCombatUtils";
@@ -65,6 +65,11 @@ program core_npcDeath(params)
         //        break;
         //    endif
         //endforeach
+		var colored_lanterns := {0x40FE, 0x40FF, 0x4100, 0x4101};
+		if (item.objtype in colored_lanterns)
+			DestroyItem(item);
+		endif
+
         if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
             if (!GetObjProperty(item, "itemunico"))
                 item.hp -= Cint(item.hp * 0.8);
@@ -112,23 +117,6 @@ program core_npcDeath(params)
 		SetObjProperty(master, "oldbodymorto", 1);
 		EraseObjProperty(master, "oldbodyserial");
 	endif
-
-		
-	//nao existe mais		
-	/*if (getobjProperty(corpse, "devoraralma"))
-		var necroserial := getobjProperty(corpse, "devoraralma");
-		var necro := SystemFindObjectBySerial(necroserial);
-		var maxhp := Cint(getobjProperty(corpse, "maxhp"));
-		var souls := Cint(getobjProperty(necro, "souls"));
-		souls := souls + 1;
-		SetobjProperty(necro, "souls", souls);
-		var hprecupera := maxhp / 10;
-		var hpnow := AP_GetVital(necro, "hits");
-		var amount := hpnow + hprecupera;
-		AP_SetVital(necro, "hits", amount);
-		PlayMovingEffect( corpse, necro, 14202, 5, 0,  0 );
-		PlaySoundEffect(necro, 383);
-	endif*/
 
 	var pilot := GetObjProperty(corpse, "golem_maker");
 	if (pilot)

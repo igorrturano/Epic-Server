@@ -9,8 +9,8 @@ use os;
 include ":attributes:attributes";
 include ":combat:combat";
 include "include/say";
-include "include/damage";
-include ":tn:combat";
+include ":combat:damage";
+include ":combat:damage";
 
 program aura_of_hate(params)
 	var attacker	:= params[1];

@@ -10,6 +10,7 @@ include "include/dungeons";
 include ":faccao:faccao";
 include ":ghaia:combatevents";
 include ":timedScripts:timedScripts";
+include "include/epicNPCUtils";
 
 var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
 var me := self();
@@ -28,24 +29,16 @@ var following := 0;
 const FOLLOW_CMD	:= 0xA001;
 
 program KillPlayers()
-    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+   Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
 	propallies := dictionary;
 	set_critical(1);
-	//printtextabove(me, "vai inicializr");
 	InitializeNPC(me);
 	set_critical(0);
-	//printtextabove(me, "done");
 	SetWarMode( 0 );
 
-    while (1)    
-        var hasPlayerNearMe := 0;
-        var nearby := ListMobilesNearLocationEx( me.x, me.y, LIST_IGNORE_Z, 30 ,LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+    while (1)
+        var hasPlayerNearMe := hasPlayerNear(me);
 
-        foreach player in nearby
-            if (player.acctname)
-                hasPlayerNearMe++;
-            endif
-        endforeach
         if (hasPlayerNearMe >= 1)
             genericBrain();
         endif

@@ -19,12 +19,22 @@ program drink_blue (who, potion)
 	if(!checkifcandrink(who, "blue"))
 		return;
 	endif
+	var vicio := (AP_getvital(who, "Viciodex"));
+	if (vicio <30)
+		vicio:= 30;
+	endif
+	vicio := vicio/100;
+	var bonus := GetObjProperty (potion, "bonus");
+	var tier := getObjProperty(potion, "tier");
+	var stat := AP_GetTrueStat(who, DEXTERITY);
+	if (temHabilidade(who, "Impulso Metabolico"));
+		tier := (tier + 2);
+	endif
+	var buff := 0.05 * tier;
+		buff := (stat*buff+bonus)*vicio;
 
-	var bonus := cint(GetObjProperty(potion, "crafterskill")/10);
-
-	case(potion.objtype)
-		56332:	TS_StartTimer(who, "agility", (360+bonus*10), 20); 
-		56333: TS_StartTimer(who, "agility", (600+bonus*10), 40); 
-	endcase
+	TS_StartTimer(who, "agility", (180*tier), buff);
 	empty_bottle(who, potion);
+
+	VicioDex(who,potion);
 endprogram

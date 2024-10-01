@@ -4,7 +4,7 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include ":timedScripts:timedScripts";
 include "include/say";
 
@@ -17,8 +17,9 @@ program doubleattack(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
+
 	if (TemHabilidade(defender, "Vínculo Elemental"))
-		if (GetObjProperty(defender.weapon, "swordmage") ==  defender.serial)//seta com a arma
+		if (GetObjProperty(defender.weapon, "#elementalweapon"))
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;
 		endif
@@ -31,7 +32,7 @@ program doubleattack(params)
     var tactics_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 1.5);
 	TS_StartTimer(defender, "desarmar", tactics_bonus, 0, attacker);
 	var defweapon := defender.weapon;
-    if ((defweapon.objtype == 0x1F020 || defender.npctemplate) && TemHabilidade(attacker, "Artista Marcial"))
+    if ((defweapon.objtype == 0x1F020 || defender.npctemplate) && TemHabilidade(attacker, "Budōka"))
         TS_StartTimer(defender, "dmgreduction", tactics_bonus, 4, attacker);
 	elseif ((defender.isA(POLCLASS_NPC) || defender.npctemplate) && defweapon.objtype != 0x1F020)
 		TS_StartTimer(defender, "dmgreduction", 20, 2, attacker);

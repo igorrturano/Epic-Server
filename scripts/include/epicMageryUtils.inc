@@ -163,9 +163,9 @@ function epicSpellDamageRoll(who, spell_circle)
    endif
 
    var dmg := RandomDiceRoll(dice);
-   var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
-   var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 10); 
-   dmg := Cint(dmg + int_bonus + mlore);
+
+   var bonus := epicWisdomPathBonus(who);
+   dmg := Cint(dmg + bonus);
 
    return dmg;
 endfunction
@@ -173,6 +173,7 @@ endfunction
 function handleSilentMagic(who, targ := 0, sound := 0)
     if (!GetObjProperty(who, "#magiasilenciosa") && sound != 0 && targ != 0)
         PlaySoundEffect(targ, sound);
+        return 0;
     endif
 
     SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
@@ -181,13 +182,13 @@ function handleSilentMagic(who, targ := 0, sound := 0)
 endfunction
 
 function handleSpellResistDiffForSpecialists(who, school)
-   var diff := 30;
+   var diff := RESIST_EASY;
    if (TemHabilidade(who, "Evocator") && school == EVOCATIUM)
-      diff := 70;
+      diff := RESIST_MEDIUM;
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
-      diff := 70;
+      diff := RESIST_MEDIUM;
    elseif (TemHabilidade(who, "Cetro da Morte") && school == KAIJIN)
-		diff := 70;
+		diff := RESIST_MEDIUM;
    endif
  
    return diff;
@@ -205,4 +206,33 @@ function bonusSpellDurationForSpecialists(who, duration, school)
    endif
 
    return duration;
+endfunction
+
+function checkForElementalWeapons(who, targ)
+		var encantada := GetObjProperty(targ, "#elementalweapon");
+		if (encantada != error)
+			if (readgameclock() < encantada.endtime )
+				SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+				return 1;
+			endif
+		endif
+
+		if ( GetCooldown(targ, "blessweapon") > 0 )
+			SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+			return 1;
+		endif
+
+      if (targ.objtype == FIST)
+         SendSysMessageEx(who, "Você não pode encantar suas mãos.", SSM_FAIL);
+         return 1;
+      endif
+
+      return 0;
+endfunction
+
+function epicWisdomPathBonus(who)
+   var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
+   var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 10); 
+
+   return (int_bonus + mlore);
 endfunction

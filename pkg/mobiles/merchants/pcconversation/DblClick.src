@@ -5,6 +5,7 @@ use cfgfile;
 
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
+include ":npcs:thor/handling/thorai";
 
 program DblClickNerve(params)
 	var npc		:= params[1];
@@ -24,7 +25,27 @@ program DblClickNerve(params)
 				if (GetObjProperty(npc, "startbuy"))
 					AI_Speak(npc, ""+GetObjProperty(npc, "startbuy"));
 				else
-					AI_Speak(npc, "Ola, no que posso ajuda-lo?");
+					var npcType := npc.npctemplate;
+					var playerRaca := GetObjProperty(player, "chardata").raca;
+					var sourceDescription := GetObjProperty(player, "descricao");
+					var playerinput := "*"+ playerRaca + " " + sourceDescription + " se aproxima*";
+					
+					var responseAI := "A gente tem isso aqui... *aponta pra uma estante aos pedaços*";
+					
+					if ( npcType == ":merchants:taverneiro" || npcType == ":brainai:taverneiro" || npcType == "taverneiro" )
+						npcType := "taverneiro"; // Get a propriedade "npc_type"
+						responseAI := handle_doubleclick(npcType, playerinput);
+					elseif ( npcType == ":merchants:vendedor" || npcType == ":brainai:vendedor" || npcType == "vendedor" )
+						npcType := "vendedor";
+						responseAI := handle_doubleclick(npcType, playerinput);
+					endif
+
+					if (responseAI == "<uninitialized object>")
+						responseAI := "Que procura? *funga forte o nariz, debruçando no balcão*";
+					endif
+					
+					AI_Speak(npc, responseAI);
+					
 				endif
 				busy := Start_Script(":merchants:pcconversation/conversation", {npc, player});
 				if ( busy.errortext )

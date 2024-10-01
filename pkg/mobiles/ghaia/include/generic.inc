@@ -6,6 +6,7 @@ include "include/sysEvent";
 include ":attributes:attributes";
 include ":tn:boss";
 include ":ghaia:ghaia";
+include ":brainAI:npcCommands";
 
 
 function hasSpecial(me)
@@ -94,6 +95,29 @@ function CloseIn(me, lx, ly, mode := 0 )
   endcase
 endfunction
 
+function NPC_GetTrueName(mobile)
+    var npc_elem := NPC_GetNPCConfig(mobile);
+    var name_elem := npc_elem.NameTemplate;
+
+    var npc_names := ReadConfigFile(":brainAI:config/names");
+    if ( !npc_names[name_elem] )
+        return error{"errortext" := "There is no elem ["+name_elem+"] in NAMES.CFG"};
+    endif
+
+    var name_list := GetConfigStringArray(npc_names[name_elem], "Name");
+    if ( name_list.Size() < 1 )
+        return error{"errortext":="No names were found in the ["+name_elem+"] elem for names.cfg"};
+    endif
+
+    var my_name := npc_elem.TrueName;
+    while ( my_name["<random>"] )
+        var replacement := name_list[RandomInt(name_list.Size())+1];
+        my_name["<random>"] := replacement;
+        sleepms(2);
+    endwhile
+    return my_name;
+endfunction
+
 function Fight(opponent, alerted := 0)
 
 
@@ -122,13 +146,43 @@ function Fight(opponent, alerted := 0)
  // else
 //	printtextabove(me, "fui alertado, nao vou alertar");
   endif
-
-   var speech := GetConfigStringArray( npccfgfile[mytemplate], "InitCombatSpeech" );
-   if (speech.size() > 0)
-	if (RandomInt(100)  < 50) //sempre 50% de chance de falar
-		Say(speech[RandomInt(speech.size()+1)]);
-	endif
+   var sourceRaca := GetObjProperty(opponent, "chardata").raca;
+	 var sourceDescription := GetObjProperty(opponent, "descricao");
+   var categoria := GetConfigString(npccfgfile[mytemplate], "Category");
+   var npcTemp := me.npctemplate;
+   
+   // Fazendo split na string para obter apenas a raça
+   if (npcTemp.Contains(":"))
+    var npcTempParts := SplitWords(npcTemp, ":", -1); // Dividir a string em partes
+    if (npcTempParts.Length() > 1)
+        npcTemp := npcTempParts[npcTempParts.Length() - 1]; // Pegar a última parte (Nordic, por exemplo)
+    endif
    endif
+   if (categoria == "EvilHuman" || categoria == "Goblin" || categoria == "Giants")
+   // apenas essas categorias terao InitCombatSpeech feita pela OpenAI
+    var npcTemplate := me.npctemplate; //:brainai: ainda ta aparecendo ":brainai:Nordic" 
+    var name_mob := NPC_GetTrueName(me);
+    if (categoria == "Goblin")
+      npcTemplate := " Goblin de nome " + name_mob + " que fala de forma primitiva em terceira pessoa como (" + name_mob + " detestar <raça do personagem oponente>) sem conjugar verbos;";
+      //print(npcTemplate);
+    elseif (categoria == "Giants")
+      npcTemplate := " Gigante de nome que fala de forma primitiva (como 'esmagar ser');";
+    endif
+
+    var language := "ruim";
+    var event := "combate";
+    var mood := "None";
+    var npcEvil := True;
+    var gossip := False;
+    var specialLore := True;
+    var playerinput := "<" + sourceRaca + " de descrição" + sourceDescription + " se aproxima>";
+    // Entrega a OpenAI as variaveis para montar o contexto do NPC
+    var responseText := handle_open_ai_npc_speech(npcTemplate, language, event, npcEvil, mood, gossip, specialLore, playerinput);
+    //print(responseText);
+    AI_Speak(me, responseText); // usa a responsa da OpenAI
+    
+   endif
+   
 
 
   var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);

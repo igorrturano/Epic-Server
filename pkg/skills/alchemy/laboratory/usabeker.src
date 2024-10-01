@@ -2,10 +2,12 @@ use uo;
 use os;
 use util;
 
+include ":alchemy:alchemy";
+
 const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
 
 program usabalao(who, item)
-
+  
   if (GetObjProperty(item, "pocao"))
      SendSysMessage(who, "Escolha onde quer colocar o liquido do beker.");
      var alvo := target(who);
@@ -14,10 +16,9 @@ program usabalao(who, item)
 	
 	//sleep(3);
         var pocao := GetObjProperty(item, "pocao");
-        CreateItemInBackpack(who, pocao, 1);
-	SetObjProperty(pocao, "strength", cint(GetObjProperty(item, "strength")));
+                var pot := CreateItemInBackpack(who, pocao, 1);
+        AlchLabTransfer(pot, item);        
         EraseObjProperty(item, "pocao");
-	EraseObjProperty(item, "strength");
 	SubtractAmount(alvo, 1);     
      else
        SendSysMessage(who, "Coloque esse liquido em um frasco vazio!");

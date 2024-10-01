@@ -37,24 +37,24 @@ function Hallucinate(who)
 	endif
 	var graphicarray;
 	var chardata := GetObjProperty(who, "chardata");
-	var povo := chardata.povo;
+	var povo := chardata.raca;
 	case (povo)
-		"Asanita":
+		DROW:
 			graphicarray := array {102,306,311,174}; //DEMONIO, IMPALADOR, CAVALEIRO SOMBRIO, SUCUBBUS.
 			break;
-		"Thuriao":
+		ANAO:
 			graphicarray := array {1,2,49,55}; //OGRO, ETTIN, DRAGÃO WYRM, TROLL DO GELO.
 			break;
-		"Zharkiano":
+		HUMANO:
 			graphicarray := array {3,7,17,26}; //ZUMBI, GOBLIN CAPITÃO, ORC, GHOUL.
 			break;
-		"Aquilrano":
+		ORC:
 			graphicarray := array {59,281,788,787}; //DRAGÃO, MINOTAURO, ESFINGE, LEÃO FORMIGA.
 			break;
-		"Numajene":
+		ELFO:
 			graphicarray := array {72,87,250,271}; //TERATHAN, OPHIDIAN, LOBISOMEM DE 3 CABEÇAS, SATIRO.
 			break;
-		"Vanirio":
+		POLSKI:
 			graphicarray := array {38,69,76,77}; //DEMONIO DA SANGRIA, GAZER, TITAN, KRAKEN.
 			break;
 		default:

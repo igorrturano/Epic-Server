@@ -3,12 +3,11 @@ use uo;
 include ":fls_core:packets";
 include ":combat:combat";
 include ":blood:blood";
-include "include/damage";
+include ":combat:damage";
 include "include/say";
 
 program doubleattack(who)
-
 	SendSysMessageEx(who, "Voce achou um ponto fraco!", SSM_INFO);
+	SetObjProperty(who, "#attackbonus", 100);
 	SetObjProperty(who, "#tiropenetrante", 1);
-	
 endprogram

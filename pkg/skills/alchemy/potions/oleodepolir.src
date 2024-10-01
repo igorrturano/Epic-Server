@@ -1,0 +1,38 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+
+program drink_blue (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if(!Accessible(who, potion))
+		return;
+	endif
+	if(potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+
+    var targ;
+	SendSysMessageEx(who, "Escolha sua armadura:", SSM_REQUEST);
+    targ := Target(who);
+
+    if (!targ)
+        SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+        return;
+    endif
+
+    if (!targ.isA(POLCLASS_ARMOR))
+        SendSysMessageEx(who, "Isto não pode ser encerado.", SSM_FAIL);
+        return; 
+    endif
+
+	empty_bottle(who, potion, 0, 0);
+ 
+    SendSysMessageEx(who, "Você encerou a armadura", SSM_INFO);
+
+	SetObjProperty(targ, "encerada", 1);
+    return 1;
+endprogram

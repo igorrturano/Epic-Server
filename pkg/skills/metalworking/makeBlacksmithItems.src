@@ -69,7 +69,7 @@ function makeBlacksmithItems(who, what, amt, tool )
 	var anvil_near := 0;
 	var anvil;
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 3, who.realm)
-		if((item.objtype == 0x0faf) || (item.objtype == 0x0fb0))
+		if((item.objtype == 0xe1b) || (item.objtype == 0x0fb0))
 			anvil_near := 1;
 			anvil := item;
 			break;

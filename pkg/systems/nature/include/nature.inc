@@ -3,7 +3,59 @@ use uo;
 use util;
 use cfgfile;
 
-include "include/damage";
+include ":combat:damage";
+
+// Calendar constants
+var MONTHS := array{
+    struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
+    struct{ "name" := "Alorae", "days" := 30 }, // Mês dedicado à magia, Alora, elfos.
+    struct{ "name" := "Galgrumirius", "days" := 30 }, // Mês dedicado aos anões e a forja
+    struct{ "name" := "Kaius", "days" := 30 }, // Mês dedicado ao Deus Dragão oriental
+    struct{ "name" := "Idrithae", "days" := 30 }, // Deus dos drows, mês com noites mais longas e dias mais curtos
+    struct{ "name" := "Lleuadae", "days" := 30 }, // Mês dedicado à Deusa Lua - Björska
+    struct{ "name" := "Adarae", "days" := 30}, // Mês dedicado à Adar Kor Doom, Gulthrak, orcs
+    struct{ "name" := "Crassus", "days" := 31 }, // Mês dedicado ao primeiro imperador, Crassus
+    struct{ "name" := "Demiurgus", "days" := 33 }, // Mês dedicado ao Deus da Criação aiglano, Demiurgus. O Mês com mais dias
+    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
+    struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
+    struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
+};
+
+var WEEKDAYS := array{
+    "Solaris", // Agricultura, masculinidade e descanso
+    "Bellumis",  // Guerra, força e honra
+    "Artisium",  // Criação, habilidade e arte
+    "Aetheria", // Magia, conhecimento e sabedoria
+    "Mercatus",  // Comércio, riqueza e prosperidade
+    "Lunaris" // Vigília, feminilidade e espiritualidade
+};
+
+var MOON_PHASES := array{
+    "Kalendae", // Lua nova
+    "Nonae", // Crescente
+    "Idus", // Cheia
+    "Decrescens" // Minguante
+};
+
+var daysInYear := CalcDaysInYear();
+
+// Season Id based on UO packet
+const SUMMER := 1;
+const AUTUMN := 2;
+const WINTER := 3;
+const SPRING := 4;
+
+function getSeason()
+    return CInt(GetGlobalProperty("season"));
+endfunction
+
+function CalcDaysInYear()
+    var totalDays := 0;
+    foreach month in MONTHS
+        totalDays += month.days;
+    endforeach
+    return totalDays;
+endfunction
 
 function playweathersound(type, person)
 	var wind := {21, 22, 23};
@@ -21,32 +73,29 @@ function playweathersound(type, person)
 endfunction
 
 function DoBolt(who)
-
-  if (who.multi)
-    return;
-  endif
-	var lightning := {41, 42, 519};
-  var xpos := who.x;
-  var ypos := who.y;
-  var xrand := RandomInt(20);
-  var yrand := RandomInt(20);
-  xpos := ((xpos - xrand) + 10);
-  ypos := ((ypos - yrand) + 10);
-  var zpos := GetMapInfo( xpos, ypos ).z;
-  var mob := CreateNpcFromTemplate( ":brainai:rabbit", xpos, ypos, zpos);
-  mob.cmdlevel := 2;
-  mob.concealed := 1;
-  setobjproperty(mob, "guardkill", 1);
-  PlayLightningBoltEffect( mob );
-  playsoundeffect(mob, lightning[randomint(3)+1]);
-  MoveObjectToLocation(mob,10,10,10, mob.realm, MOVEOBJECT_FORCELOCATION);
-  mob.kill();
-
+    if (who.multi)
+        return;
+    endif
+    var lightning := {41, 42, 519};
+    var xpos := who.x;
+    var ypos := who.y;
+    var xrand := RandomInt(20);
+    var yrand := RandomInt(20);
+    xpos := ((xpos - xrand) + 10);
+    ypos := ((ypos - yrand) + 10);
+    var zpos := GetMapInfo( xpos, ypos ).z;
+    var mob := CreateNpcFromTemplate( ":brainai:rabbit", xpos, ypos, zpos);
+    mob.cmdlevel := 2;
+    mob.concealed := 1;
+    setobjproperty(mob, "guardkill", 1);
+    PlayLightningBoltEffect( mob );
+    playsoundeffect(mob, lightning[randomint(3)+1]);
+    MoveObjectToLocation(mob,10,10,10, mob.realm, MOVEOBJECT_FORCELOCATION);
+    mob.kill();
 endfunction
 
 
 function DruidWeather(who, type, duration, radius, som, bolt := 0, ventoForte := 0 )
-
 	var originalx, originaly;
 	originalx := who.x;
 	originaly := who.y;
@@ -155,93 +204,63 @@ function endweather()
 	output("Stopping weather effects.");
 endfunction
 
-
-function SeasonRotate()
-	var season := cint(getglobalproperty("season"));
-	var daynumber := cint(getglobalproperty("daynumber"));
-        var current_year := CINT(GetGlobalProperty("current_year"));
-        
-	if (!season)
-		Season := 1;
-		SetGlobalProperty("season", Season);
-	endif
- 
-	if (!daynumber)
-		daynumber := 1;
-	endif
-	
-        if (!current_year)
-           current_year := 230;
+function WhatSeason()
+    var daynumber := getDay();
+    if (daynumber > daysInYear*0)
+        if (daynumber > daysInYear*0.25)
+            if (daynumber > daysInYear*0.50)
+                if (daynumber > daysInYear*0.75)
+                    return SPRING;
+                endif
+                return WINTER;
+            endif
+            return AUTUMN;
         endif
- 
-	daynumber := daynumber+1;
-	if (daynumber > 360)
-		daynumber := 1;
-                current_year := current_year + 1;
-	endif
-	
-	setglobalproperty("daynumber", daynumber);
-        SetGlobalProperty("current_year", current_year);
-	
-	if (daynumber == 1)
-		Broadcast("E verao.");
-		setglobalproperty("season", 1);
-		//start_script("seasonaleffects");
-	elseif (daynumber == 91)
-		Broadcast("As folhas das arvores comecam a cair.");
-		setglobalproperty("season", 2);
-		//start_script("seasonaleffects");
-	elseif (daynumber == 180)
-		Broadcast("O vento sopra gelado e a neve comeca a cair..");
-		setglobalproperty("season", 3);
-		//start_script("seasonaleffects");
-	elseif (daynumber == 272)
-		Broadcast("Os passaros cantam felizes e a vida selvagem e ambudante.");
-		setglobalproperty("season", 5);
-		//start_script("seasonaleffects");
-	endif
+        return SUMMER;
+    endif
 endfunction
 
-function moonfase()
+function SeasonRotate()
+    getCurrentDate(); // Usado aqui para checar se as props estão corretas e setar padrão caso não tenha.
 
-  var fase := GetGlobalProperty("moonfase");
-  var moon_period := GetGlobalProperty("moon_period");
-  
-  if (!moon_period)
-    moon_period := 1;
-  endif
-  
-  if (!fase)
-     SetGlobalProperty("moonfase", "nova");
-  endif
+    case (WhatSeason())
+        
+        SUMMER:
+            Broadcast("O sol é mais forte que o comum...");
+            SetGlobalProperty("season", SUMMER);
+            break;
 
-  moon_period := moon_period + 1;
+        AUTUMN:
+            Broadcast("As folhas das arvores começam a cair...");
+            SetGlobalProperty("season", AUTUMN);
+            break;
 
-  if (moon_period > 10)
-    moon_period := 1;
-    case (fase)
-       "nova":      SetGlobalProperty("moonfase", "crescente");
-       "crescente": SetGlobalProperty("moonfase", "cheia");
-       "cheia":     SetGlobalProperty("moonfase", "minguante");
-       "minguante": SetGlobalProperty("moonfase", "nova");
+        WINTER:
+            Broadcast("O vento sopra gelado e a neve comeca a cair...");
+            SetGlobalProperty("season", WINTER);
+            break;
+
+        SPRING:
+            Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante...");
+            SetGlobalProperty("season", SPRING);
+            break;
     endcase
-  endif
-  
-  SetGlobalProperty("moon_period", moon_period);
-  
+endfunction
+
+function MoonFase()
+    var currentDate := getCurrentDate();
+    SetGlobalProperty("moonfase", currentDate.moonPhase);
 endfunction
 
 function GetMoonLightMod()
-
- var fase := GetGlobalProperty("moonfase");
+    var fase := GetGlobalProperty("moonfase");
 
     case (fase)
-       "nova":      return 28;
-       "crescente": return 25;
-       "cheia":     return 20;
-       "minguante": return 25;
+       "Kalendae":    return 24;
+       "Nonae":       return 21;
+       "Idus":        return 16;
+       "Decrescens":  return 21;
     endcase
-
 endfunction
 
 function temperatura()
@@ -306,8 +325,146 @@ endfunction
 function output(msgtext)
 	foreach player in enumerateonlinecharacters()
 		if (player.cmdlevel)
-			SendSysMessage(player, "Weather debug:" + msgtext, 3, 87);
+			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
 		endif
 	endforeach
 	print("Weather debug:" + msgtext);
+endfunction
+
+function getDay()
+    var day := GetGlobalProperty("daynumber");
+
+    if (!day)
+        resetCalendar();
+        day := GetGlobalProperty("daynumber");
+    endif
+
+    return CInt(day);
+endfunction
+
+function setDay(day)
+    SetGlobalProperty("daynumber", day);
+endfunction
+
+function getDayOfMonth()
+    var day := getDay();
+
+    var dayCount := 0;
+    foreach month in MONTHS
+        if (day <= (dayCount + month.days))
+            return (day - dayCount);
+        endif
+        dayCount += month.days;
+    endforeach
+
+    return "Error: Day out of range";
+endfunction
+
+function getMonth()
+    var day := getDay();
+
+    var dayCount := 0;
+    foreach month in MONTHS
+        dayCount += month.days;
+        if (day <= dayCount)
+            return month.name;
+        endif
+    endforeach
+
+    return "Error: Day out of range";
+endfunction
+
+function getYear()
+    var current_year := GetGlobalProperty("current_year");
+
+    if (!current_year)
+        resetCalendar();
+        current_year := GetGlobalProperty("current_year");
+    endif
+
+    return CInt(current_year);
+endfunction
+
+function setYear(year)
+    SetGlobalProperty("current_year", year);
+endfunction
+
+function advanceDay()
+    var day := getDay();
+    var year := getYear();
+
+    day++;
+    if (day > daysInYear)
+        day := 1;
+        year++;
+    endif
+
+    SetGlobalProperty("daynumber", day);
+    SetGlobalProperty("current_year", year);
+endfunction
+
+function getWeekday()
+    var day := getDay();
+    if (!day)
+        resetCalendar();
+        day := getDay();
+    endif
+
+    return WEEKDAYS[(day - 1) % 7 + 1];
+endfunction
+
+function getMoonPhase()
+    var day := getDay();
+    var weeklength := WEEKDAYS.Size();
+    var moonphases := MOON_PHASES.Size();
+
+    var fase := day / weeklength;
+    while (fase >= moonphases)
+        fase := fase - moonphases;
+    endwhile
+    fase++;
+    
+    case (fase)
+        1: return MOON_PHASES[1];
+        2: return MOON_PHASES[2];
+        3: return MOON_PHASES[3];
+        4: return MOON_PHASES[4];
+    endcase
+endfunction
+
+function resetCalendar()
+    SetGlobalProperty("daynumber", 1);
+    SetGlobalProperty("current_year", 456); // E.A. year - Dois anos antes da fase começar
+endfunction
+
+function getCurrentDate()
+    var dayYear := getDay();
+    var day := getDayOfMonth();
+    var month := getMonth();
+    var year := getYear();
+    var weekday := getWeekday();
+    var moonPhase := getMoonPhase();
+
+    return struct{
+        "month" := month,
+        "day" := day,
+        "weekday" := weekday,
+        "moonPhase" := moonPhase
+    };
+endfunction
+
+function updateCharacterAge(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata || !chardata.birthdate)
+        return;
+    endif
+
+    var current_year := CINT(GetGlobalProperty("current_year"));
+    var years_passed := current_year - chardata.birthdate.year;
+    var new_age := chardata.initial_age + years_passed;
+
+    if (new_age != chardata.current_age)
+        chardata.current_age := new_age;
+        SetObjProperty(who, "chardata", chardata);
+    endif
 endfunction

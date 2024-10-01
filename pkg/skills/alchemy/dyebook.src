@@ -1,0 +1,335 @@
+use uo;
+
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":spells:tnmagery";
+include "include/say";
+include ":containers:containers";
+include ":alchemy:alchemy";
+
+program book(who, book)
+
+	var donoGrimorio := GetObjProperty(book, "serialDono");
+	if (donoGrimorio)
+		if (donoGrimorio != who.serial)
+			SendSysMessageEx(who, "Você não entende esse livro.", SSM_FAIL);
+			return 0;
+		endif
+	else
+		SetObjProperty(book, "serialDono", who.serial);
+	endif
+
+	var book_gump := CreateRunebookGump(book, who);
+	var result := GFSendGump(who, book_gump);
+
+	var spell := result[0] - 100;
+
+	var spells := GetObjProperty(book, "recipes");
+
+	if (spells[spell])
+			Makedye ( spells[spell].recipe,  who);
+			//Start_Script("cast_spell", {who, spells[spell], 0});
+	endif
+
+endprogram
+
+const SOUND_EFFECT_GRIND := 0x243;
+const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
+const SOUND_EFFECT_POUR := 0x241;
+
+function MakeDye (pot, who)
+
+	var recipes := ReadConfigFile(":alchemy:config/recipestintas");
+	var difficulty := recipes[pot].skill;
+	var magic := cint(recipes[pot].magic);
+	var strength := cint(recipes[pot].strength);
+	var science := recipes[pot].science;
+	var tier := recipes[pot].tier;
+	var id := recipes[pot].id;
+
+	//sendsysmessage(who, "magic  " + magic + " skill " + difficulty) ;
+
+	var mortar := 0;
+	foreach item in (EnumerateItemsInContainer( who.backpack))
+		if (item.graphic == 3739)
+			if (ReserveItem(item))
+				mortar := 1;
+				break;
+			endif
+		endif
+	endforeach
+	if (!mortar)
+		SendsysMessageEx(who, "Você precisa de um almofariz.", SSM_FAIL);
+		return;
+	endif
+
+	var reagent_costs := GetConfigStringDictionary( recipes[pot], "Reg" );
+//	sendsysmessage(who, " " + reagent_costs);
+	var amount;
+	foreach reag in (reagent_costs.keys())
+
+		amount := CInt( reagent_costs[reag] );
+		if (!amount)
+			amount := 1;
+		endif
+		var objtype := cint(reag);
+		var dictToAmount := dictionary; //variavel pra ser usada na funcao abaixo
+		dictToAmount["objtype"] := objtype;
+		var amountinpack := AmountInContainer(who.backpack, dictToAmount);
+		//sendsysmessage(who, "reag " + reag + " objtype " + objtype + " pack " + amountinpack);
+		if (amountinpack  < amount )
+			SendSysMessage(who, "Você não possui todos os materiais.");
+			return 0;
+		endif
+		sleepms(2);
+	endforeach
+
+	foreach reag in (reagent_costs.keys())
+		amount := CInt( reagent_costs[reag] );
+		if (temHabilidade(who, "Alquimista Experiente") && (amount >1))
+			amount := CInt(amount/2);
+		endif
+		if (!amount)
+			amount := 1;
+		endif
+		ConsumeSubstance(who.backpack, reag, amount);
+		sleepms(2);
+	endforeach
+
+
+	var loop := 0;
+
+	while(loop < 3)
+		PlaySoundEffect(who, SOUND_EFFECT_GRIND);
+		PrintText(who, "*preparando uma tinta*");
+		sleep(1);
+		loop := loop + 1;
+	endwhile
+
+
+	if(SkillCheck(who, ALCHEMY, difficulty) > 0)
+		var hasbottle:= 0;
+		set_critical(1);
+		foreach item in EnumerateItemsInContainer(who.backpack)
+			if((item.objtype == UOBJECT_EMPTY_BOTTLE) && (item.container.objtype != 0x1940))
+				if(SubtractAmount(item, 1))
+					hasbottle := 1;
+					break;
+				endif
+			endif
+		endforeach
+		set_critical(0);
+
+		if(hasbottle)
+			var thing := CreateItemInBackpack(who, id, 1);
+			PlaySoundEffect(who, SOUND_EFFECT_POUR);
+			SendSysMessageEx(who, "Você fez a tinta e a guardou na sua mochila.", SSM_INFO);
+			return;
+		else
+			SendSysMessageEx(who, "Você não tem frascos.", SSM_FAIL);
+			return;
+		endif
+
+	else
+		PlaySoundEffect(who, SOUND_EFFECT_POUR);
+		SendSysMessageEx(who, "Você não conseguiu fazer nada com isso.", SSM_FAIL);
+		return;
+	endif
+endfunction
+
+
+function CreateRunebookGump(book, who)
+	var rune_list := GetObjProperty(book, "recipes");
+	if( TypeOf(rune_list) != "Array" )
+		rune_list := array{};
+		SetObjProperty(book, "recipes", rune_list);
+	endif
+
+	var book_gump := GFCreateGump();
+// Begin Page 0 Setup
+	GFGumpPic(book_gump, 100, 10, 2200);
+	GFGumpPic(book_gump, 125, 50, 57);
+	GFGumpPic(book_gump, 145, 50, 58);
+	GFGumpPic(book_gump, 160, 50, 58);
+	GFGumpPic(book_gump, 175, 50, 58);
+	GFGumpPic(book_gump, 190, 50, 58);
+	GFGumpPic(book_gump, 205, 50, 58);
+	GFGumpPic(book_gump, 220, 50, 58);
+	GFGumpPic(book_gump, 230, 50, 59);
+	GFGumpPic(book_gump, 290, 50, 57);
+	GFGumpPic(book_gump, 310, 50, 58);
+	GFGumpPic(book_gump, 325, 50, 58);
+	GFGumpPic(book_gump, 340, 50, 58);
+	GFGumpPic(book_gump, 355, 50, 58);
+	GFGumpPic(book_gump, 370, 50, 58);
+	GFGumpPic(book_gump, 385, 50, 58);
+	GFGumpPic(book_gump, 395, 50, 59);
+
+	/*GFAddButton(book_gump, 130, 187, 2225, 2225, GF_PAGE_BTN, 2);
+	GFAddButton(book_gump, 165, 187, 2226, 2226, GF_PAGE_BTN, 3);
+	GFAddButton(book_gump, 200, 187, 2227, 2227, GF_PAGE_BTN, 4);
+	GFAddButton(book_gump, 235, 187, 2228, 2228, GF_PAGE_BTN, 5);
+	GFAddButton(book_gump, 300, 187, 2229, 2229, GF_PAGE_BTN, 6);
+	GFAddButton(book_gump, 335, 187, 2230, 2230, GF_PAGE_BTN, 7);
+	GFAddButton(book_gump, 370, 187, 2231, 2231, GF_PAGE_BTN, 8);
+	GFAddButton(book_gump, 405, 187, 2232, 2232, GF_PAGE_BTN, 9);*/
+//	GFHTMLArea(book_gump,  140, 40, 80, 18, "Charges:");
+//	GFHTMLArea(book_gump,  300, 40, 100, 18, "Max Charges:");
+//	GFHTMLArea(book_gump,  220, 40, 80, 18, charges);
+//	GFHTMLArea(book_gump,  400, 40, 100, 18, max_charges);
+// End Page 0 Setup
+
+// Begin Page 1 Setup
+	GFPage(book_gump, 1);
+	//GFAddButton(book_gump, 125, 15, 2472, 2473, GF_CLOSE_BTN, 50);
+	GFHTMLArea(book_gump, 135, 22, 100, 18, "Livro de Tintas");
+	GFAddButton(book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, 2);
+
+	if (rune_list[1])
+		GFAddButton(book_gump, 130, 65,  2103, 2104, GF_CLOSE_BTN, 101);
+	endif
+	if (rune_list[2])
+		GFAddButton(book_gump, 130, 80,  2103, 2104, GF_CLOSE_BTN, 102);
+	endif
+	if (rune_list[3])
+		GFAddButton(book_gump, 130, 95,  2103, 2104, GF_CLOSE_BTN, 103);
+	endif
+	if (rune_list[4])
+		GFAddButton(book_gump, 130, 110, 2103, 2104, GF_CLOSE_BTN, 104);
+	endif
+	if (rune_list[5])
+		GFAddButton(book_gump, 130, 125, 2103, 2104, GF_CLOSE_BTN, 105);
+	endif
+	if (rune_list[6])
+		GFAddButton(book_gump, 130, 140, 2103, 2104, GF_CLOSE_BTN, 106);
+	endif
+	if (rune_list[7])
+		GFAddButton(book_gump, 130, 155, 2103, 2104, GF_CLOSE_BTN, 107);
+	endif
+	if (rune_list[8])
+		GFAddButton(book_gump, 130, 170, 2103, 2104, GF_CLOSE_BTN, 108);
+	endif
+
+	if (rune_list[9])
+		GFAddButton(book_gump, 290, 65,  2103, 2104, GF_CLOSE_BTN, 109);
+	endif
+	if (rune_list[10])
+		GFAddButton(book_gump, 290, 80,  2103, 2104, GF_CLOSE_BTN, 110);
+	endif
+	if (rune_list[11])
+		GFAddButton(book_gump, 290, 95,  2103, 2104, GF_CLOSE_BTN, 111);
+	endif
+	if (rune_list[12])
+		GFAddButton(book_gump, 290, 110, 2103, 2104, GF_CLOSE_BTN, 112);
+	endif
+	if (rune_list[13])
+		GFAddButton(book_gump, 290, 125, 2103, 2104, GF_CLOSE_BTN, 113);
+	endif
+	if (rune_list[14])
+		GFAddButton(book_gump, 290, 140, 2103, 2104, GF_CLOSE_BTN, 114);
+	endif
+	if (rune_list[15])
+		GFAddButton(book_gump, 290, 155, 2103, 2104, GF_CLOSE_BTN, 115);
+	endif
+	if (rune_list[16])
+		GFAddButton(book_gump, 290, 170, 2103, 2104, GF_CLOSE_BTN, 116);
+	endif
+// End Page 1 Setup
+
+// Below you will notice in the loop, there are entries put BACK into page
+// 1. Do not worry, we run an Optimize function on the gump to put all
+// of those BACK into the initial Page 1 section we just made to keep our
+// gump's arrays looking nice and clean.
+
+	var pOX := 145;
+	var pOY := 60;
+	var rune_pos         := 1;
+
+	for i := 2 to 9
+		GFPage(book_gump, i);
+		GFAddButton(book_gump, 125, 14, 2205, 2205, GF_PAGE_BTN, (i-1));
+		if(i != 9)
+			GFAddButton(book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, (i+1));
+		endif
+
+		var rune_entry := rune_list[rune_pos];
+		WriteDyeInfo(rune_entry);
+		rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description) ;
+		if( TypeOf(rune_entry) == "Struct" )
+			if( rune_entry.type )
+				// This puts the rune in page 1's list.
+				GFPage(book_gump, 1);
+				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.type);
+				GFPage(book_gump, i);
+
+				//GFHTMLArea(book_gump, 160, 15, 100, 18, rune_entry.type);
+				GFTextCrop(book_gump, 160,  15, 100, 18, 995, rune_entry.type);
+				GFHTMLArea(book_gump, 140, 60, 120,  130, cstr(rune_entry.description), 0, 1);
+
+			endif
+		else
+			GenerateEmptySide(book_gump, 1, pOX, pOY, i);
+		endif
+                rune_pos := rune_pos + 1;
+		pOY := pOY + 15;
+		if( pOY > 165 )
+			pOY := 60;
+			pOX := 305;
+		endif
+
+		rune_entry := rune_list[rune_pos];
+		WriteDyeInfo(rune_entry);
+		 rune_entry.description := "<BASEFONT COLOR=#000066>" +  cstr(rune_entry.description);
+
+		if( TypeOf(rune_entry) == "Struct" )
+			if( rune_entry.type )
+				// This puts the rune in page 1's list.
+				GFPage(book_gump, 1);
+				GFTextCrop(book_gump, pOX,  pOY, 115, 17, 995, rune_entry.type);
+				GFPage(book_gump, i);
+
+				//GFHTMLArea(book_gump, 300, 15, 100, 18, rune_entry.type);
+				GFTextCrop(book_gump, 300,  15, 115, 17, 995, rune_entry.type);
+				GFHTMLArea(book_gump, 300, 60, 120,  130, cstr(rune_entry.description), 0, 1);
+
+			endif
+		else
+			GenerateEmptySide(book_gump, 2, pOX, pOY, i);
+		endif
+
+                rune_pos := rune_pos + 1;
+		pOY := pOY + 15;
+		if( pOY > 165 )
+			pOY := 60;
+			pOX := 305;
+		endif
+
+		SleepMS(2);
+	endfor
+
+//	GFOptimizeGump(book_gump);
+
+	return book_gump;
+endfunction
+
+
+function GenerateEmptySide(byref book_gump, side, pOX, pOY, page_num)
+
+	if( side == 1)
+		// This puts the rune in page 1's list.
+		GFPage(book_gump, 1);
+		GFTextCrop(book_gump, pOX,  pOY, 115, 17, 10, "");
+		GFPage(book_gump, page_num);
+		GFTextCrop(book_gump, 145, 60, 115, 17, 10, "");
+	else
+		// This puts the rune in page 1's list.
+		GFPage(book_gump, 1);
+		GFTextCrop(book_gump, pOX,  pOY, 115, 17, 10, "");
+		GFPage(book_gump, page_num);
+		GFTextCrop(book_gump, 305, 60, 115, 17, 10, "");
+	endif
+
+endfunction

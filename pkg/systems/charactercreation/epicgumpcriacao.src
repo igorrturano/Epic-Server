@@ -15,6 +15,9 @@ include "include/say";
 include "include/creationUtils";
 include "include/sounds";
 include "include/epicConstants";
+include ":charactercreation:include/RPTraits";
+include ":nature:nature";
+
 
 program epicCreationGump(who)
     resetCharacter(who);
@@ -31,8 +34,12 @@ program epicCreationGump(who)
     pathOfWisdom(who, culture_pic);
     languageSelection(who, culture_pic);
     itemInheritance(who);
+    signSelection(who);
+    birthDaySelection(who);
+    RPcharacteristicsSelection(who, culture_pic);
+    setBirthdate(who);
     looksSelection(who);
-
+    setCitizenship(who);
     SetObjProperty(who, "nome_inicial", who.name);
     who.name := who.title_race;
 
@@ -42,10 +49,8 @@ program epicCreationGump(who)
 	var tempo_agora := polcore().systime;
     SetObjProperty(who, "createdate", tempo_agora);
 
-    // Prólogo
-
+    // Open Beta 28/09
     startAdventure(who);
-
 endprogram
 
 function culturalSelection(who)
@@ -81,6 +86,7 @@ endfunction
 function racialSelection(who, culture_pic)
     var btn_value;
     var chardata := GetObjProperty(who, "chardata");
+
     while (1)
         var input := EpicRaceGump(who, culture_pic);
         foreach key in (input.keys)
@@ -88,11 +94,9 @@ function racialSelection(who, culture_pic)
         endforeach
         if (btn_value == 201)
             chardata.raca := ANAO;
-            chardata.+vantagemracial := "Constituicao Ana";
             break;
         elseif (btn_value == 202) 
             chardata.raca := DROW;
-            chardata.+vantagemracial := "Toxina natural";
             break;
         elseif (btn_value == 203) 
             chardata.raca := ELFO;
@@ -102,7 +106,6 @@ function racialSelection(who, culture_pic)
             break;
         elseif (btn_value == 205)
             chardata.raca := ORC;
-            chardata.+vantagemracial := "Resistencia implacavel";
             break;
         elseif (btn_value == 206) 
             chardata.raca := POLSKI;
@@ -114,6 +117,8 @@ function racialSelection(who, culture_pic)
             break;
         endif
     endwhile
+
+  SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
 
     if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
         who.graphic := 1830;
@@ -130,10 +135,72 @@ function racialSelection(who, culture_pic)
     endif
 
     who.title_race := chardata.raca;
-	who.race := chardata.raca;
+    who.race := chardata.raca;
 
-    SendSysMessageEX(who, "Voce será um "+chardata.raca, SSM_INFO);
     SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function RPcharacteristicsSelection(who, culture_pic)
+    var chardata := GetObjProperty(who, "chardata");
+    var CaracteristicasCategories := array{
+        "Altura",
+        "Peso",
+        "Olhos",
+        "Idade Aparente",
+        "Voz"
+    };
+
+    chardata.+caracteristicas_rp := struct {};
+    foreach category in CaracteristicasCategories
+        chardata.caracteristicas_rp[category] := 0;
+    endforeach
+
+    var racial_traits := GetRacialTraits(chardata.raca);
+    var categories := GetPageCategories();
+    var required_categories := array{"Altura", "Peso", "Olhos", "Voz"};
+
+    var input;
+    var all_requirements_met := 0;
+
+    while (!all_requirements_met)
+        input := CaracteristicasRPGump(who, chardata, culture_pic);
+        
+        if (input[0] == 222)  // 222 é o botão de finalizar
+            var selected_count := CountSelectedCategories(chardata.caracteristicas_rp, required_categories);
+            var age_filled := (chardata.idade_escolhida != error && chardata.idade_escolhida != "");
+
+            if (selected_count == 4 && age_filled)
+                all_requirements_met := 1;
+                
+                var age_info := ConvertAge(chardata.raca, CInt(chardata.idade_escolhida));
+                chardata.idade_aparente := age_info[1];
+                chardata.idade_real := age_info[2];
+                
+                SendSysMessageEx(who, "Sua idade aparente é " + chardata.idade_aparente + " (" + chardata.idade_real + " anos).", SSM_INFO);
+            else
+                if (selected_count < 4)
+                    SendSysMessageEX(who, "Você precisa selecionar uma opção para Altura, Peso, Olhos e Voz antes de continuar.", SSM_FAIL);
+                endif
+                if (!age_filled)
+                    SendSysMessageEX(who, "Você precisa preencher sua idade antes de continuar.", SSM_FAIL);
+                endif
+            endif
+        else
+            ProcessSelection(chardata, input[0]);
+        endif
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function CountSelectedCategories(caracteristicas_rp, required_categories)
+    var count := 0;
+    foreach category in required_categories
+        if (caracteristicas_rp[category] != 0)
+            count += 1;
+        endif
+    endforeach
+    return count;
 endfunction
 
 function classSelection(who, culture_pic)
@@ -486,7 +553,132 @@ endfunction
 
 function looksSelection(who)
     var chardata := GetObjProperty(who, "chardata");
-    looksGump(who, chardata);
+    var btn_value;
+    var currentPage := 1;
+    chardata.+hair := "";
+    chardata.+hair_item := 0;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := hairSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: 
+                DestroyItem(GetEquipmentByLayer(who, LAYER_HAIR));
+                var myHair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
+                EquipItem(who, myHair);
+                continue_loop := 0; // This will break the loop
+            82: //opção no gump que é sem cabelo
+                chardata.hair := "";
+                chardata.hair_item := "";
+            default: 
+                if (btn_value)
+                    chardata.hair := GetHairGumpGraphic(btn_value);
+                    chardata.hair_item := btn_value;
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+
+    // Adicionar seleção de barba se for homem e/ou que não seja elfo ou drow
+    if (who.gender == 0 && chardata.raca != "Elfo" && chardata.raca != "Drow")
+        beardSelection(who, chardata);
+    endif
+    
+    //caso cabelo e barba não tenham sido selecionados, pular opcao de cor
+    if (chardata.hair != "" || chardata.beard != "") 
+        colorSelection(who, chardata);
+    endif
+
+    skinColorSelection(who, chardata);
+endfunction
+
+function colorSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := hairAndBeardColorSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: 
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.hair_color := btn_value;
+                    if (chardata.beard_item)
+                        chardata.beard_color := btn_value;
+                    endif
+                    // Atualizar o cabelo e a barba do personagem imediatamente
+                    UpdateCharacterHair(who, chardata);
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function skinColorSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := skinColorSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1: currentPage += 1; // Next page
+            2: currentPage -= 1; // Previous page
+            500: 
+                continue_loop := 0; // This will break the loop
+            default: 
+                if (btn_value)
+                    chardata.skin_color := CInt(btn_value);
+                    // Atualizar a cor da pele do personagem imediatamente
+                    UpdateCharacterSkin(who, chardata);
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function beardSelection(who, byref chardata)
+    var btn_value;
+    var currentPage := 1;
+    chardata.+beard := "";
+    chardata.+beard_item := 0;
+    var continue_loop := 1;
+
+    while (continue_loop)
+        var input := beardSelectionGump(who, chardata, currentPage);
+        btn_value := input[0];
+        case (btn_value)
+            1001: currentPage += 1; // Next page
+            1002: currentPage -= 1; // Previous page
+            500: 
+                DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+                var myBeard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
+                EquipItem(who, myBeard);
+                continue_loop := 0; // This will break the loop
+            82: // opcao no gump que é sem barba
+                chardata.beard := "";
+                chardata.beard_item := "";
+            default: 
+                if (btn_value)
+                    chardata.beard := GetBeardGumpGraphic(btn_value);
+                    chardata.beard_item := btn_value;
+                endif
+        endcase
+    endwhile
+
+    SetObjProperty(who, "chardata", chardata);
 endfunction
 
 function pathOfWisdom(who, culture_pic)
@@ -512,11 +704,12 @@ function pathOfWisdom(who, culture_pic)
             grimorio.graphic := 0x0EFA;
             var spellinfo := struct;
             spellinfo.+magic_path := "spellcaster";
+            var chosenSpells := spellChoices(who);
             var p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
-            spellinfo.+id := 6;
+            spellinfo.+id := chosenSpells[1];
             SetObjProperty(p1, "spellinfo", spellinfo);
             p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
-            spellinfo.id := 7;
+            spellinfo.id := chosenSpells[2];
             SetObjProperty(p1, "spellinfo", spellinfo);
             break;
         elseif (btn_value == 202) 
@@ -528,13 +721,9 @@ function pathOfWisdom(who, culture_pic)
             break;
         elseif (btn_value == 203 && chardata.culture != GULTHRAK)
             chardata.magia := "Sacerdote";
-            var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
             if (chardata.culture == HAROLOTH)
                 CreateItemInBackpack(who, 0x166E, 1);
             endif
-            CreateItemInBackpack(who, "runaarmasagrada");
-            CreateItemInBackpack(who, "runacuraleve");
-            CreateItemInBackpack(who, "runadescanso");
             chardata.+wisdom_path := "Clérigo";
             break;
         elseif (btn_value == 204) 
@@ -549,19 +738,24 @@ function pathOfWisdom(who, culture_pic)
     SendSysMessageEX(who, "Seu caminho da sabedoria é "+chardata.wisdom_path, SSM_INFO);
 endfunction
 
-function startAdventure(who)
-    MoveObjectToLocation(who, 3479, 1190, 3, "britannia", MOVEOBJECT_FORCELOCATION);
+function startAdventure(who)   
+    MoveObjectToLocation(who, 2173, 481, 1, "britannia", MOVEOBJECT_FORCELOCATION);
 
-	PlaySoundEffectPrivate(who, 0x306, who);
-    PlayStationaryEffect(3480, 1189, 5, GFX_SMOKE, 10, 20, 0, who.realm);
+    PlaySoundEffectPrivate(who, 0x306, who);
+    PlayStationaryEffect(who.x+1, who.y+1, 5, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
-    PlayStationaryEffect(3477, 1189, 4, GFX_SMOKE, 10, 20, 0, who.realm);
+    PlayStationaryEffect(who.x-2, who.y+1, 4, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
-    PlayStationaryEffect(3477, 1190, 2, GFX_SMOKE, 10, 20, 0, who.realm);
+    PlayStationaryEffect(who.x-2, who.y, 2, GFX_SMOKE, 10, 20, 0, who.realm);
     sleep(1);
-	PlaySoundEffectPrivate(who, 0x2F4, who);
+    PlaySoundEffectPrivate(who, 0x2F4, who);
 
-	PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
+    // Cria lanternas para os exploradores
+    CreateItemInBackpack(who, 0xC61F, 1);
+    CreateItemInBackpack(who, 0xC627, 1);
+    CreateItemInBackpack(who, 0x6161, 1);
+
+    PlayObjectCenteredEffect(who, GFX_SMOKE, 0, 5);
     sleep(1);
     startAdventureGump(who);
 endfunction
@@ -570,7 +764,7 @@ function languageSelection(who, culture_pic)
     var linguasOpt := array{"Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk", "Grumnak", "Björ", "Idrith'har", "Comum"};
     var known_languages := array;
     var btn_value;
-
+    SetObjProperty(who, "#LastSpeechTime", ReadGameClock());
     while (1)
         var total_amount := 1;
         known_languages.append(parseLanguageByCulture(who, linguasOpt));
@@ -601,4 +795,107 @@ function languageSelection(who, culture_pic)
     SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
     SetObjProperty(who, "linguas_conhecidas", known_languages);
     SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
+endfunction
+
+function calculateBirthdate(who)
+    var chardata := GetObjProperty(who, "chardata");
+
+    if (!chardata.birthdate)
+        chardata.+birthdate := struct{};
+    endif
+
+    var current_year := getYear();
+
+    var chosen_age_index := chardata.caracteristicas_rp["Idade Aparente"];
+    var age_value := chardata.idade_real;
+    if (age_value == error)
+        SendSysMessageEX(who, "Erro ao calcular a idade.", SSM_FAIL);
+        return;
+    endif
+    var birth_year := current_year - age_value;
+    var birth_month := MONTHS[getMonthBySign(chardata.sign)].name;
+    var birth_day := chardata.birthdate.day;
+    
+    chardata.birthdate := struct{
+        "year" := birth_year,
+        "month" := birth_month,
+        "day" := birth_day
+    };
+
+    // Adicionar a idade inicial e a idade atual
+    chardata.+initial_age := age_value;
+    chardata.+current_age := age_value;
+
+    SetObjProperty(who, "chardata", chardata);
+    return chardata.birthdate;
+endfunction
+
+function setCitizenship(who)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        chardata := struct{};
+    endif
+
+    chardata.+citizenship_title := "Plebeu";
+    chardata.+available_citizenship_titles := array{
+        "Banido",
+        "Indigente",
+        "Plebeu",
+        "Cidadão",
+        "Nobre"
+    };
+
+    // Definir títulos de nobreza baseados no gênero do personagem
+    if (who.gender == 0) // Masculino
+        chardata.+nobility_titles := array{
+            "Rei",
+            "Príncipe",
+            "Duque",
+            "Marquês",
+            "Conde",
+            "Visconde",
+            "Barão",
+            "Cavaleiro",
+            "Lorde",
+            "Escudeiro"
+        };
+    else // Feminino
+        chardata.+nobility_titles := array{
+            "Rainha",
+            "Princesa",
+            "Duquesa",
+            "Marquesa",
+            "Condessa",
+            "Viscondessa",
+            "Baronesa",
+            "Dama",
+            "Lady",
+            "Escudeira"
+        };
+    endif
+
+    chardata.+current_nobility_title := "Nenhum"; // Inicialmente sem título de nobreza
+
+    // Definir cargos profissionais disponíveis
+    chardata.+available_professional_positions := array{
+        "Imperador",
+        "Mão do Rei",
+        "Conselheiro Nobre",
+        "Arcebispo",
+        "Senador",
+        "Serviçal"
+    };
+
+    chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
+
+    SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function setBirthdate(who)
+    var birthdate := calculateBirthdate(who);
+    if (birthdate)
+        SendSysMessageEX(who, "Data de Nascimento: " + birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year, SSM_INFO);
+    else
+        SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
+    endif
 endfunction
