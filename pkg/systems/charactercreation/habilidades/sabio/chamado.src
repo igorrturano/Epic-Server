@@ -1,0 +1,49 @@
+use uo;
+use util;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":taming:taming";
+include "include/client";
+include "include/sysEvent";
+include "include/eventID";
+include "include/say";
+
+program chamado(who)
+
+	var tamable := ListTamablePetsNearLocation(who.x, who.y, who.z, 50, who.realm);
+
+	if (tamable.size() > 0)
+		SendSysMessageEx(who, "Voce convocou " + tamable.size() + " bestas.", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Nao existem animais selvagens nessa regiao.", SSM_FAIL);
+	endif
+
+	PerformAction(who, ANIM_CAST_AREA);
+	Playsoundeffect(who, 1482);
+
+	//sendsysmessage(who, "tamaveis " +tamable);
+
+	foreach mob in tamable
+		var holder := {};
+		var mod1 := RandomInt(4);
+		var mod2 := RandomInt(4);
+		if (RandomInt(2) == 1)
+			mod1 := mod1 * (-1);
+		endif
+		if (RandomInt(2) == 1)
+			mod2 := mod2 * (-1);
+		endif
+                holder.append(who.x + mod1);
+                holder.append(who.y + mod2);
+		holder.append(1); //vai correndo
+		holder.append(1); // print text
+		holder.append(1); //animal toca som
+                var ev := struct;
+		ev.+source := who;
+                ev.+type := EVID_HERDING;
+                ev.+data := holder;
+                SendEvent(mob, ev);
+	endforeach
+
+endprogram
