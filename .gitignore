@@ -53,5 +53,11 @@ realm/
 objtypes.txt
 pcs.txt
 
+# Ignore .dll files in fiddler and plugins directories
+fiddler/**/*.dll
+plugins/**/*.dll
+
 # Others
 *.dll
+
+
