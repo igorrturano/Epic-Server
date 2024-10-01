@@ -50,3 +50,5 @@ realm/
 objtypes.txt
 pcs.txt
 
+# fiddler/fiddler/plugins/
+*.dll
