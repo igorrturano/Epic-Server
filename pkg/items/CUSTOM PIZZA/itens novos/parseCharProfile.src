@@ -125,7 +125,7 @@ program runScript_CharProfileRequest( params )
 				case (raca)
 					"humano": raca := "Humano";
 					"elfo":   raca := "Elfo";
-					"hobbit": raca := "Hobbit";
+					"polski": raca := "Polski";
 					"anao":   raca := "Anão";
 					"drow":   raca := "Drow";
 					default:  raca := "Desconhecida";
