@@ -121,15 +121,6 @@ program runScript_CharProfileRequest( params )
 			var raca := GetObjProperty(who, "raca");
 			if (raca == error)
 				raca := "Desconhecida";
-			else
-				case (raca)
-					"humano": raca := "Humano";
-					"elfo":   raca := "Elfo";
-					"polski": raca := "Polski";
-					"anao":   raca := "Anão";
-					"drow":   raca := "Drow";
-					default:  raca := "Desconhecida";
-				endcase
 			endif
 			GFHTMLArea(gump, 19, 245, 239, 24, raca, 1, 0);
 
