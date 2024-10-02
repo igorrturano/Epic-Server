@@ -1,49 +1,79 @@
 use uo;
 use vitals;
 use os;
-include ":attributes:vitals";
+include ":attributes:attributes";
 
-program setupsound(rune)
-	var i := 0;
-	while ( 1 )
-		var range := GetObjProperty(rune, "range");
-		if (!range)
-			range := 6;
-		endif
+program regenarea(rune)
+    var i := 0;
+    var last_message_time := 0;
+    while (1)
+        var range := CInt(GetObjProperty(rune, "range"));
+        if (!range)
+            range := 6;
+        endif
+        var interval := CInt(GetObjProperty(rune, "interval"));
+        if (!interval)
+            interval := 4;
+        endif
+        var message_interval := CInt(GetObjProperty(rune, "message_interval"));
+        if (!message_interval)
+            message_interval := 60;
+        endif
 
-		var nearbypeople := ListMobilesNearLocation( rune.x, rune.y, rune.z, range, rune.realm);
-		foreach people in nearbypeople
-			var name := splitwords(people.name);
-			name := name[1];
-			if (GetObjProperty(rune, "hits"))
-				healDamage(people, GetObjProperty(rune, "hits"));
-			endif
+        var nearbypeople := ListMobilesNearLocation(rune.x, rune.y, rune.z, range, rune.realm);
 
-			if (GetObjProperty(rune, "stam"))
-				var regen:= AP_GetVital(people, "stamina")+GetObjProperty(rune, "stam");
-				var vital:= AP_SetVital(people, "Stamina", regen);
-			endif
+        foreach people in nearbypeople
+            var healed := 0;
+            
+            if (GetObjProperty(rune, "hits"))
+                var hits_amount := CInt(GetObjProperty(rune, "hits"));
+                HealDamage(people, hits_amount);
+                healed += hits_amount;
+            endif
 
-			if (GetObjProperty(rune, "mana"))
-				var regen:= AP_GetVital(people, "mana")+GetObjProperty(rune, "mana");
-				var vital:= AP_SetVital(people, "Mana", regen);
-			endif
+            if (GetObjProperty(rune, "stam"))
+                var stam_amount := CInt(GetObjProperty(rune, "stam"));
+                var current_stam := AP_GetVital(people, "Stamina");
+                AP_SetVital(people, "Stamina", current_stam + stam_amount);
+                healed += stam_amount;
+            endif
 
-			//regen de DP
-			if(i == 0)
-                var DP:= AP_GetVital(people, "DP");
-				AP_SetVital(people, "DP", DP+0.01);
-			endif
+            if (GetObjProperty(rune, "mana"))
+                var mana_amount := CInt(GetObjProperty(rune, "mana"));
+                var current_mana := AP_GetVital(people, "Mana");
+                AP_SetVital(people, "Mana", current_mana + mana_amount);
+                healed += mana_amount;
+            endif
 
-		endforeach
+            if (i == 0)
+                var dp_regen := CDbl(GetObjProperty(rune, "dp"));
+                if (!dp_regen)
+                    dp_regen := 0.01;
+                endif
+                var current_dp := AP_GetVital(people, "DP");
+                AP_SetVital(people, "DP", current_dp + dp_regen);
+                healed += dp_regen;
+            endif
 
-		sleep(4);
+            if (healed > 0)
+                var current_time := ReadGameClock();
+                if (current_time - last_message_time >= message_interval)
+                    var message := GetObjProperty(rune, "message");
+                    if (!message)
+                        message := "Você se sente revigorado.";
+                    endif
+                    SendSysMessage(people, message, 3, 53);
+                    last_message_time := current_time;
+                endif
+            endif
+        endforeach
+        
+        sleep(interval);
 
-		if(i >= 9)
-			i:=0;
-		else
-			i := i +1;
-		endif
-
-	endwhile
+        if (i >= 9)
+            i := 0;
+        else
+            i := i + 1;
+        endif
+    endwhile
 endprogram
