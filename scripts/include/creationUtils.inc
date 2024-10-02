@@ -1180,6 +1180,7 @@ function workingItems(who)
 
     if (skills[WOODWORKING] >= 1)
         CreateItemInBackpack(who, 0x1035, 1); // saw
+        CreateItemInBackPack(who, 0x1022, 1);
     endif
     if (skills[METALWORKING] >= 1)
         CreateItemInBackpack(who, 0x13E3, 1); // smithhammer
