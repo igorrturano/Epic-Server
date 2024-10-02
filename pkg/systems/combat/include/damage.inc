@@ -758,6 +758,10 @@ endfunction
 
 
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
+	if (attacker.npctemplate) // NPC não precisar passar por esse cálculo
+		return rawdamage;
+	endif
+	
 	var damage := rawdamage;
 
 	// Aplica bonus de dano
