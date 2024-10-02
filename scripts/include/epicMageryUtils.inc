@@ -255,23 +255,17 @@ endfunction
 
 function DefineElementalWeaponDice(who)
 
-  var faixaMLore := Floor( AP_GetSkill( who, MAGICLORE ) / 20 ); 
+  var faixaMLore := AP_GetSkill( who, MAGICLORE ); 
   var dmgdice := "0";
 
-  if ( faixaMLore == 0 )
+  if ( faixaMLore < 40 )
     dmgdice := cstr( "1d2" );
-  elseif ( faixaMLore == 1 )
+  elseif ( faixaMLore >= 40 && faixaMLore < 70 )
     dmgdice := cstr( "1d4" );
-  elseif ( faixaMLore == 2 )
+  elseif ( faixaMLore >= 70 && faixaMLore < 90 )
     dmgdice := cstr( "1d6" );
-  elseif ( faixaMLore == 3 )
+  elseif (faixaMLore >= 90 )
     dmgdice := cstr( "1d8" );
-  elseif ( faixaMLore == 4 )
-    dmgdice := cstr( "1d10" );
-  elseif ( faixaMLore == 5 )
-    dmgdice := cstr( "1d12" );
-   elseif ( faixaMLore == 6 )//para o caso de ser possivel chegar 120 no futuro.
-    dmgdice := cstr( "1d20" );
   endif
 
   return dmgdice;
