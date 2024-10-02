@@ -1,0 +1,169 @@
+use uo;
+use os;
+use polsys;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 435;
+const GUMP_HEIGHT := 565;
+const MAX_Y_POS := GUMP_HEIGHT - 80; // Ajustado para dar mais espaço para a numeração de página
+
+program gossip_gump(who)
+    var gossip_storage := GetGlobalProperty("gossip_storage");
+    if (gossip_storage == error)
+        gossip_storage := array{};
+    endif
+
+    var page := 1;
+    var max_pages := CalculateMaxPages(gossip_storage);
+    
+    while (1)
+        var gump := CreateGump(gossip_storage, page, max_pages);
+        var input := GFSendGump(who, gump);
+        
+        if (input[0] == 0)
+            break;
+        endif
+        
+        if (input[0] >= 100 && input[0] < 1000) // Remover fofoca
+            var index := input[0] - 100;
+            gossip_storage.Erase(index);
+            SetGlobalProperty("gossip_storage", gossip_storage);
+            SendSysMessage(who, "Fofoca removida com sucesso!");
+            max_pages := CalculateMaxPages(gossip_storage);
+            if (page > max_pages)
+                page := max_pages;
+            endif
+        elseif (input[0] == 1000) // Scroll Left (Up)
+            page := page - 1;
+            if (page < 1)
+                page := 1;
+            endif
+        elseif (input[0] == 1001) // Scroll Right (Down)
+            page := page + 1;
+            if (page > max_pages)
+                page := max_pages;
+            endif
+        endif
+    endwhile
+endprogram
+
+function CreateGump(gossip_storage, page, max_pages)
+    var gump := GFCreateGump(0, 0);
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 0, 10, GUMP_WIDTH, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
+    AddMoldura(gump);
+    
+    GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80);
+    
+    GFTextMid(gump, 20, 20, 420, 53, "Sistema de Fofocas");
+
+    
+    var y := 90;
+    var fofocas_na_pagina := 0;
+    var total_fofocas := gossip_storage.Size();
+    var start_index := (page - 1) * 8 + 1;
+    
+    for i := start_index to total_fofocas
+        if (fofocas_na_pagina >= 8)
+            break;
+        endif
+        
+        var fofoca := gossip_storage[i];
+        var lines := WrapText(fofoca, 62);
+        var fofoca_height := 25 + (lines.Size() * 20);
+        
+        // Verifica se há espaço suficiente para a fofoca inteira
+        if (y + fofoca_height > MAX_Y_POS)
+            break;
+        endif
+        
+        GFTextLine(gump, 20, y, 53, "Fofoca " + i + ":");
+        GFAddButton(gump, 350, y, 0x159a, 0x159c, GF_CLOSE_BTN, 100 + i); // Novo botão de delete
+        y += 20;
+        foreach line in lines
+            GFTextLine(gump, 20, y, 2100, line);
+            y += 20;
+        endforeach
+        y += 5;
+        
+        fofocas_na_pagina += 1;
+    endfor
+
+    // Adiciona botões de scroll e numeração de página
+    GFAddButton(gump, 20, GUMP_HEIGHT - 40, 0x15E3, 0x15E7, GF_CLOSE_BTN, 1000); // Seta esquerda
+    GFAddButton(gump, GUMP_WIDTH - 40, GUMP_HEIGHT - 40, 0x15E1, 0x15E5, GF_CLOSE_BTN, 1001); // Seta direita
+    
+    // Adiciona numeração de página
+    GFTextMid(gump, 0, GUMP_HEIGHT - 35, GUMP_WIDTH, 2100, page + "/" + max_pages);
+    
+    return gump;
+endfunction
+
+function CalculateMaxPages(gossip_storage)
+    var pages := 1;
+    var y := 90;
+    var fofocas_na_pagina := 0;
+    
+    foreach fofoca in gossip_storage
+        var lines := WrapText(fofoca, 62);
+        var fofoca_height := 25 + (lines.Size() * 20);
+        
+        if (y + fofoca_height > MAX_Y_POS || fofocas_na_pagina >= 8)
+            pages += 1;
+            y := 90;
+            fofocas_na_pagina := 0;
+        endif
+        
+        y += fofoca_height + 5;
+        fofocas_na_pagina += 1;
+    endforeach
+    
+    return pages;
+endfunction
+
+function AddMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function WrapText(text, line_length)
+    var words := SplitWords(text);
+    var lines := array{};
+    var current_line := "";
+
+    foreach word in words
+        if (Len(current_line + " " + word) > line_length)
+            lines.Append(current_line);
+            current_line := word;
+        else
+            if (current_line != "")
+                current_line += " ";
+            endif
+            current_line += word;
+        endif
+    endforeach
+
+    if (current_line != "")
+        lines.Append(current_line);
+    endif
+
+    return lines;
+endfunction
