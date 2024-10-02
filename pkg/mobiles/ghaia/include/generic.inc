@@ -7,6 +7,7 @@ include ":attributes:attributes";
 include ":tn:boss";
 include ":ghaia:ghaia";
 include ":brainAI:npcCommands";
+include ":npcs:thor/handling/thorai";
 
 
 function hasSpecial(me)
@@ -146,40 +147,26 @@ function Fight(opponent, alerted := 0)
  // else
 //	printtextabove(me, "fui alertado, nao vou alertar");
   endif
-   var sourceRaca := GetObjProperty(opponent, "chardata").raca;
+   var PlayerRaca := GetObjProperty(opponent, "chardata").raca;
 	 var sourceDescription := GetObjProperty(opponent, "descricao");
    var categoria := GetConfigString(npccfgfile[mytemplate], "Category");
    var npcTemp := me.npctemplate;
    
-   // Fazendo split na string para obter apenas a raça
-   if (npcTemp.Contains(":"))
+   
     var npcTempParts := SplitWords(npcTemp, ":", -1); // Dividir a string em partes
-    if (npcTempParts.Length() > 1)
-        npcTemp := npcTempParts[npcTempParts.Length() - 1]; // Pegar a última parte (Nordic, por exemplo)
-    endif
-   endif
-   if (categoria == "EvilHuman" || categoria == "Goblin" || categoria == "Giants")
-   // apenas essas categorias terao InitCombatSpeech feita pela OpenAI
-    var npcTemplate := me.npctemplate; //:brainai: ainda ta aparecendo ":brainai:Nordic" 
-    var name_mob := NPC_GetTrueName(me);
-    if (categoria == "Goblin")
-      npcTemplate := " Goblin de nome " + name_mob + " que fala de forma primitiva em terceira pessoa como (" + name_mob + " detestar <raça do personagem oponente>) sem conjugar verbos;";
-      //print(npcTemplate);
-    elseif (categoria == "Giants")
-      npcTemplate := " Gigante de nome que fala de forma primitiva (como 'esmagar ser');";
-    endif
+    npcTemp := npcTempParts[3];
+    
+   
+   if (categoria == "EvilHuman" || categoria == "Goblin" || categoria == "Giants" || categoria == "Kobold")
+    //var name_mob := NPC_GetTrueName(me); // nao ta funcionando
+    var name_mob := GetConfigString(npccfgfile[mytemplate], "Name");
+    var playerinput := "*raça " + PlayerRaca + " ataca*";
 
-    var language := "ruim";
-    var event := "combate";
-    var mood := "None";
-    var npcEvil := True;
-    var gossip := False;
-    var specialLore := True;
-    var playerinput := "<" + sourceRaca + " de descrição" + sourceDescription + " se aproxima>";
-    // Entrega a OpenAI as variaveis para montar o contexto do NPC
-    var responseText := handle_open_ai_npc_speech(npcTemplate, language, event, npcEvil, mood, gossip, specialLore, playerinput);
-    //print(responseText);
-    AI_Speak(me, responseText); // usa a responsa da OpenAI
+    // Entrega a OpenAI as variaveis para montar a fala do NPC
+    var responseAI := handle_combat_ai(categoria, name_mob, playerinput, playerRaca);
+    
+    //AI_Speak(me, responseAI); // usa a responsa da OpenAI
+    Say(responseAI); //esse funciona
     
    endif
    
