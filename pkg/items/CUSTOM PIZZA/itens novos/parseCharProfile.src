@@ -11,6 +11,7 @@ include ":datafile:datafile";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:htmlGump";
+include ":fls_core:fls_characters";
 
 CONST PROFILE_MSGTYPE := 0xB8;
 CONST PROFILE_TITLE := "Profile for ";
@@ -118,10 +119,8 @@ program runScript_CharProfileRequest( params )
 			GFHTMLArea(gump, 20, 273, 236, 100, descricao, 1, 1);
 			GFHTMLArea(gump, 16, 14, 239, 24, Object_Name, 1, 0);
 			
-			var raca := GetObjProperty(who, "raca");
-			if (raca == error)
-				raca := "Desconhecida";
-			endif
+			var raca := GetRace(who);
+
 			GFHTMLArea(gump, 19, 245, 239, 24, raca, 1, 0);
 
 			GFSendGump(who, gump);
