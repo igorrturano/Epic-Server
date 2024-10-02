@@ -54,7 +54,7 @@ program GMSetNPCProfile(who)
         var descricao := GFExtractData(input, desc_txt);
 
         if (url == error || url == "")
-            url := "https://media.discordapp.net/attachments/621351501511524353/1186245051953725450/image.png";
+            url := "";
         endif
         
         SetObjProperty(targ, "url", url);
