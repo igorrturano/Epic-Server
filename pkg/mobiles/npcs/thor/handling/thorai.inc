@@ -13,6 +13,83 @@ include ":thor:openai";
 function handle_banker(playerinput)
 endfunction
 
+function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
+   // print("Categoria Mob: "+CategoriaMob);
+   var jsonData := PackJSON(struct{
+      "npcs" := struct{
+         "EvilHuman" := struct{
+               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "text_size" := "Máximo de 20 caracteres",
+               "context" := "você está atacando o personagem",
+               "tone" := "aggressive",
+               "enemy" := playerRaca,
+               "exemple_response" := "Entrou no covil errado, " + playerRaca + " otário!"
+         },
+         "EvilHuman_backup" := struct{
+               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "text_size" := "Máximo de 20 caracteres",
+               "context" := "você está atacando o personagem",
+               "tone" := "aggressive",
+               "exemple_response" := "Entrou no covil errado, otário!"
+         },
+         "EvilHuman_against_humano" := struct{
+               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "text_size" := "Máximo de 20 caracteres",
+               "context" := "você está atacando o personagem",
+               "tone" := "aggressive",
+               "exemple_response" := "Aposto que bate igual uma garotinha..."
+         },
+         "Kobold" := struct{
+               "Kobold" := "Você é um personagem de RPG sem censura de idade, muito violento; um " + playerRaca + " vem te atacar, e você atacará de volta. Você é um Kobold que fala de forma primitiva em terceira pessoa como ('Aaah sangue <raça do user>...', 'Saaai!', 'Comer carne de <raça do user>... ') sem conjugar verbos. Máximo de 20 caracteres."
+         },
+         "Giants" := struct{
+               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "text_size" := "Máximo de 20 caracteres",
+               "context" := "você está atacando o personagem",
+               "tone" := "aggressive",
+               "enemy" := playerRaca,
+               "exemple_response" := "Esmaagaa " + playerRaca + "..."
+         },
+         "Goblin" := struct{
+               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "text_size" := "Máximo de 20 caracteres",
+               "context" := "você está atacando o personagem",
+               "exemple_response" := name_mob + "detestar drow... sai daqui!!"
+         }
+      }
+   });
+   var unpackedJSON := UnpackJSON(jsonData);
+   var context := unpackedJSON["npcs"]["EvilHuman"]; //padrao é o EvilHuman normal
+   context := Cstr(context);
+
+   if (CategoriaMob == "EvilHuman")
+      if (playerRaca == "Humano")
+         unpackedJSON := UnpackJSON(jsonData);
+         context := unpackedJSON["npcs"]["EvilHuman_against_humano"];
+      else
+         unpackedJSON := UnpackJSON(jsonData);
+         context := unpackedJSON["npcs"]["EvilHuman"];
+      endif
+   elseif (CategoriaMob == "Kobold")
+      unpackedJSON := UnpackJSON(jsonData);
+      context := unpackedJSON["npcs"]["Kobold"];
+   elseif (CategoriaMob == "Giants")
+      unpackedJSON := UnpackJSON(jsonData);
+      context := unpackedJSON["npcs"]["Giants"];
+   elseif (CategoriaMob == "Goblin")
+      unpackedJSON := UnpackJSON(jsonData);
+      context := unpackedJSON["npcs"]["Goblin"];
+   endif
+
+   context := Cstr(context);
+   // print("context: "+ context);
+
+   var responseAI := OpenAICompletion_Thor(context, playerinput);
+   responseAI := StrReplace(responseAI, "\"", " "); // Substitui aspas por espaço
+   // print("responseAI: "+responseAI);
+   return responseAI;
+endfunction
+
 function handle_doubleclick(npctype, playerinput)
    if (npctype == "taverneiro")
    

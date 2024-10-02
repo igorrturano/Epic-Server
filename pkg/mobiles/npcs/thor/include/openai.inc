@@ -27,22 +27,8 @@ function isPromptSafe(prompt)
 		return struct{ "error" := unpackedJSON["error"]["message"] };
 	endif
 
-	// Supondo que o JSON foi desembrulhado em 'unpackedJSON'
-
 	var results := unpackedJSON["results"]; // Acessa a lista de resultados
-
-	var flaggedFound := false; // Variável para armazenar se o 'flagged' foi encontrado
-
-	// Loop para varrer os resultados e verificar o campo 'flagged'
-	foreach result in results
-		if (result["flagged"] == "false" || result["flagged"] == "true") // Verifica se o campo 'flagged' existe
-			flaggedFound := result["flagged"];
-			break; // Para o loop assim que encontrar o 'flagged'
-		endif
-	endforeach
-	//print("Flagged status: " + CStr(flaggedFound));
-	
-	return flaggedFound;
+	return results[1]["flagged"];
 endfunction
 
 function OpenAICompletion_Thor(systemMessage, questions, temperatura:=1.0, top_p:=1)
@@ -109,6 +95,8 @@ function OpenAICompletion_Thor(systemMessage, questions, temperatura:=1.0, top_p
 			}
 		);
 	var unpackedJSON := UnpackJSON(apiResponse);
+	// print("openai inc:");
+	// print(unpackedJSON);
 	
 	return unpackedJSON["choices"][1]["message"]["content"];
 endfunction
