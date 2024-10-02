@@ -559,6 +559,9 @@ function looksSelection(who)
     chardata.+hair_item := 0;
     var continue_loop := 1;
 
+    //reseta cabelo e barba antes de iniciar as opções
+    resetHairAndBeard(who, chardata);
+
     while (continue_loop)
         var input := hairSelectionGump(who, chardata, currentPage);
         btn_value := input[0];
@@ -596,6 +599,20 @@ function looksSelection(who)
     skinColorSelection(who, chardata);
 endfunction
 
+function resetHairAndBeard(who, byref chardata)
+    if (chardata)
+        chardata.beard := "";
+        chardata.beard_item := "";
+        chardata.beard_color := "";
+        DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+
+        chardata.hair := "";
+        chardata.hair_item := "";
+        chardata.hair_color := "";
+        DestroyItem(GetEquipmentByLayer(who, LAYER_HAIR));
+    endif
+endfunction
+
 function hairAndBeardColorSelection(who, byref chardata)
     var btn_value;
     var currentPage := 1;
@@ -607,7 +624,7 @@ function hairAndBeardColorSelection(who, byref chardata)
         case (btn_value)
             1001: currentPage += 1; // Next page
             1002: currentPage -= 1; // Previous page
-            500: 
+            1003: 
                 continue_loop := 0; // This will break the loop
             default: 
                 if (btn_value)

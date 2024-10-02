@@ -2194,7 +2194,7 @@ function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
     endif
 
     // Adicionar botão de fechar
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1003);
 
     return GFSendGump(who, gump);
 endfunction
