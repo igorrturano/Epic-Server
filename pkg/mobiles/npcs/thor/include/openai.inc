@@ -26,11 +26,13 @@ function isPromptSafe(prompt)
 	if (unpackedJSON["error"])
 		return struct{ "error" := unpackedJSON["error"]["message"] };
 	endif
-	
-	return unpackedJSON["results"][1]["flagged"];
+
+	var results := unpackedJSON["results"]; // Acessa a lista de resultados
+	return results[1]["flagged"];
 endfunction
 
-function OpenAICompletion(systemMessage, questions)
+function OpenAICompletion_Thor(systemMessage, questions, temperatura:=1.0, top_p:=1)
+	// print("temperatura: "+temperatura);
 	var prompt := "";
     foreach question in questions
         if (question.user)
@@ -40,12 +42,15 @@ function OpenAICompletion(systemMessage, questions)
 	prompt += systemMessage;
 
 	if (isPromptSafe(prompt)) // terminando o processo, pois foi flaggado como Harmful/Unsafe
+		//print("prompt not safe");
 		return "";
 	endif
 
 	var formatedQuestions := array{ struct{
 		"role" := "system",
-		"content" := systemMessage
+		"content" := systemMessage,
+		"temperature" := temperatura,
+		"top_p" := top_p
 	} };
 
 	foreach question in questions
@@ -90,5 +95,8 @@ function OpenAICompletion(systemMessage, questions)
 			}
 		);
 	var unpackedJSON := UnpackJSON(apiResponse);
+	// print("openai inc:");
+	// print(unpackedJSON);
+	
 	return unpackedJSON["choices"][1]["message"]["content"];
 endfunction

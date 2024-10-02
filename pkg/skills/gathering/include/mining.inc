@@ -334,6 +334,8 @@ function GetResourceId(oreToSearch)
 
 		"cobre": return 0x6450;
 
+		"bronze": return 0x699c;
+
 		"argila": return 0x6074;
 
 		"ferro": return 0x6300; //TN USED
@@ -441,6 +443,8 @@ function DetermineMiningDifficulty(oretype)
 		0xee99: return 0;  //calcario
 
 		0x6300: return 0;  //iron ore
+		0x62ff: return 40;  //ferro impuro
+		0x6996: return 50; //iron temperado
 		0x6301: return 70; //litan
         0x6314: return 82; //illyra
 		0x6302: return 72; //fulmetita
@@ -450,7 +454,10 @@ function DetermineMiningDifficulty(oretype)
 		0x6307: return 90; //galvorn
 		0x6308: return 90; //mithril
 		0x6450: return 20; //cobre
-		0x6309: return 60; //barra de ferro pra aco
+		0x699c: return 10; //bronze
+		0x699d: return 20; // Bronze temperado
+		0x6994: return 20; // bronze
+		0x6995: return 60; //aco
 
 		0x6992: return 50; //prata
  		0x6990: return 30; //estanho
@@ -565,10 +572,13 @@ function ConvertOreToIngot(ore)
 		0x6450: return 0x6465; //copper
 		0x6990: return 0x6991; //estanho
 		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x699c: return 0x699d; //bronze impuro
+		0x699d: return 0x6994; //bronze temperado
 		0x62ff: return 0x6996; //ferro impuro -> ferro temperado
 		0x6992: return 0x6993; //prata
 		0x6305: return 0x630e; //ouro
-		0x6309: return 0x6309; //aco
+		0x6309: return 0x6309; //aco -> acho q esse aqui chorou
+		0x6996: return 0x6995; // aco a partir de ferro temperado
 		0x6995: return 0x6995; //ligas elementais
 		0x6301: return 0x630a; //litan
 		0x6314: return 0x6315; //illyra
@@ -646,15 +656,15 @@ function getAllOres()
 	return array{
 		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0x1bdd, {}, 2323),
 		toStruct(ORE_SAND, "Areia", "Vidro", 0x6075),
-		
+
 		/* Metais primários */
 		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
-		toStruct(ORE_COPPER, "Minério de Cobre", "Ingot de Cobre", 0x6450),
+		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze Impuro", 0x699c),
 
 		/* Ligas Metálicas */
 		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
-		toStruct(ORE_BRONZE, "Barra de Cobre", "Ingot de Bronze", 0x6465, {0x1BDE}, 2599),
-		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6996, {0x1BDE}, 2599),
+		toStruct(ORE_BRONZE_TEMP, "Ingot de Bronze Impuro", "Ingot de Bronze Temperado", ConvertOreToIngot(0x699c), {0x1BDE}),
+		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6996, {0x1BDE, 0x6990}, 2599),
 
 		/* Ligas Elementais */
 		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Ingot de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
@@ -662,12 +672,12 @@ function getAllOres()
 		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Ingot de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
 		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Ingot de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
 
-
 		// toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
 		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
 		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448),
 
 		/* Metais preciosos */
+		toStruct(ORE_COPPER, "Minério de Cobre", "Ingot de Cobre", 0x6450),
 		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
 		toStruct(ORE_GOLD, "Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598)
 	};
@@ -712,11 +722,11 @@ endfunction
 enum ORE
 	ORE_CHARCOAL := "ORE_CHARCOAL",
 	ORE_SAND := "ORE_SAND",
-	ORE_IRON := "ORE_IRON",
-	ORE_COPPER := "ORE_COPPER",
-	
-	ORE_IRON_TEMP := "ORE_IRON_TEMP",
 	ORE_BRONZE := "ORE_BRONZE",
+	ORE_IRON := "ORE_IRON",
+
+	ORE_IRON_TEMP := "ORE_IRON_TEMP",
+	ORE_BRONZE_TEMP := "ORE_BRONZE_TEMP",
 	ORE_STEEL := "ORE_STEEL",
 	
 	ORE_IGNIUM := "ORE_IGNIUM",
@@ -733,6 +743,7 @@ enum ORE
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
+	ORE_COPPER := "ORE_COPPER",
 	ORE_SILVER := "ORE_SILVER",
 	ORE_GOLD := "ORE_GOLD"
 endenum

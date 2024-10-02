@@ -570,6 +570,9 @@ function looksSelection(who)
                 var myHair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
                 EquipItem(who, myHair);
                 continue_loop := 0; // This will break the loop
+            82: //opção no gump que é sem cabelo
+                chardata.hair := "";
+                chardata.hair_item := "";
             default: 
                 if (btn_value)
                     chardata.hair := GetHairGumpGraphic(btn_value);
@@ -580,12 +583,16 @@ function looksSelection(who)
 
     SetObjProperty(who, "chardata", chardata);
 
-    // Adicionar seleção de barba se for homem
-    if (who.gender == 0 && chardata.raca != "ELFO" && chardata.raca != "DROW")
+    // Adicionar seleção de barba se for homem e/ou que não seja elfo ou drow
+    if (who.gender == 0 && chardata.raca != "Elfo" && chardata.raca != "Drow")
         beardSelection(who, chardata);
     endif
     
-    colorSelection(who, chardata);
+    //caso cabelo e barba não tenham sido selecionados, pular opcao de cor
+    if (chardata.hair != "" || chardata.beard != "") 
+        colorSelection(who, chardata);
+    endif
+
     skinColorSelection(who, chardata);
 endfunction
 
@@ -660,6 +667,9 @@ function beardSelection(who, byref chardata)
                 var myBeard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
                 EquipItem(who, myBeard);
                 continue_loop := 0; // This will break the loop
+            82: // opcao no gump que é sem barba
+                chardata.beard := "";
+                chardata.beard_item := "";
             default: 
                 if (btn_value)
                     chardata.beard := GetBeardGumpGraphic(btn_value);
@@ -711,7 +721,6 @@ function pathOfWisdom(who, culture_pic)
             break;
         elseif (btn_value == 203 && chardata.culture != GULTHRAK)
             chardata.magia := "Sacerdote";
-            var malhoecinzel := CreateItemInBackpack(who, 0xf40, 1);
             if (chardata.culture == HAROLOTH)
                 CreateItemInBackpack(who, 0x166E, 1);
             endif
