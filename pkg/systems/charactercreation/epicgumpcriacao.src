@@ -588,15 +588,15 @@ function looksSelection(who)
         beardSelection(who, chardata);
     endif
     
-    //caso cabelo e barba não tenham sido selecionados, pular opcao de cor
-    if (chardata.hair != "" || chardata.beard != "") 
-        colorSelection(who, chardata);
+    //caso cabelo e barba não tenham sido selecionados, pular opcao de cor de cabelo e barba
+    if ((chardata.hair && chardata.hair != "") || (chardata.beard && chardata.beard != ""))
+        hairAndBeardColorSelection(who, chardata);
     endif
 
     skinColorSelection(who, chardata);
 endfunction
 
-function colorSelection(who, byref chardata)
+function hairAndBeardColorSelection(who, byref chardata)
     var btn_value;
     var currentPage := 1;
     var continue_loop := 1;
@@ -611,7 +611,9 @@ function colorSelection(who, byref chardata)
                 continue_loop := 0; // This will break the loop
             default: 
                 if (btn_value)
-                    chardata.hair_color := btn_value;
+                    if (chardata.hair_item)
+                        chardata.hair_color := btn_value;
+                    endif
                     if (chardata.beard_item)
                         chardata.beard_color := btn_value;
                     endif
