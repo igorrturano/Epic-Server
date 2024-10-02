@@ -1,6 +1,7 @@
 include "include/client";
 include "include/say";
 include ":equipsys:utils";
+include ":equipsys:props";
 
 
 program cmd_golpe(who)
