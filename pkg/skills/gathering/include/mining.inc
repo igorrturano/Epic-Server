@@ -443,6 +443,8 @@ function DetermineMiningDifficulty(oretype)
 		0xee99: return 0;  //calcario
 
 		0x6300: return 0;  //iron ore
+		0x62ff: return 40;  //ferro impuro
+		0x6996: return 50; //iron temperado
 		0x6301: return 70; //litan
         0x6314: return 82; //illyra
 		0x6302: return 72; //fulmetita
