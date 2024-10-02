@@ -53,7 +53,7 @@ program MainHitScript(params)
 	SetScriptController(attacker);
 
 	// Aplica penalidade por dex e modificador da Hab Fintar
-	rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender);
+	// rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender);
 
 	// Checa se o atacante está olhando pro alvo e se está por trás dele
 	FacingChecks(attacker, defender);
@@ -73,7 +73,7 @@ program MainHitScript(params)
 	// Calcula o tipo de dano da arma
 	var dmgType := getWeaponDamageType(attacker, weapon);
 
-	// Calcula os danos
+	// Calcula os modificadores de dano do atacante
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
 
 	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary/struct com os elementos (por enquanto calcula só o físico)
@@ -93,7 +93,7 @@ program MainHitScript(params)
 	// Checa as habilidades e aplica seus efeitos e danos
 	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
-	// Aplica o dano físico da arma
+	// Aplica o dano físico da arma abatendo a defesa do defensor
 	DamageEpicCombat(attacker, defender, armor, basedamage, dmgType);
 
 	return 1;
