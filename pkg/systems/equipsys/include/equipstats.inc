@@ -6,44 +6,39 @@ use os;
 use cfgfile;
 
 include "utils";
+include "props";
 include ":combat:combat";
 
 /**
- * getWeaponStats(tier, damageTier, speedTier, criticalTier)
+ * getWeaponStats(weapon)
  *
  * Purpose
  * Passar todos os valores da arma em um único struct.
  *
  * Parameters
- * tier: O Tier geral da arma (o Tier no .cfg)
- * damageTier: O Damage Tier da arma (o Damage no .cfg)
- * speedTier: O Speed Tier da arma (o Speed no .cfg)
- * criticalTier: O Critical Tier da arma (o CriticalChance no .cfg)
+ * weapon: ItemRef da arma.
  *
  * Return struct
+ * Retorna um struct com todos os valores base da arma.
  *
  */
 function getWeaponStats(weapon)
 	// TODO: Sistema de tier para somar os ganhos pra cada tier
-	// TODO: Como agora há um range de Speed e CriticalChance, setar na arma apenas o roll e somar com os valores bases aqui
+	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
 	var elem := getItemCfgElem(weapon);
 	var stats := struct;
+	var statsMod := struct;
+	var elemMainDamage := SplitWords(elem.EpicMainDamage);
+	var elemOffDamage := SplitWords(elem.EpicOffDamage);
 
-	/*ca se (elem.TipoAtaque.upper())
-		// TODO: Ver se o const não vai atrapalhar o + do struct
-		// TODO: Pensar se todas as armas terão todos os atributos com penaliade em alguns, ou se só 1 stats.Damage passado aqui
-		SLASHDAMAGE: stats.+SlashDamage := getDamageByTier(elem.SlashDamage);
-		PIERCINGDAMAGE: stats.+PiercingDamage := getDamageByTier(elem.PiercingDamage);
-		BLUNTDAMAGE: stats.+BluntDamage := getDamageByTier(elem.BluntDamage);
-	endcase */
-	stats.+SlashDamage := !getDamageByTier(elem.SlashDamage).errortext ? getDamageByTier(elem.SlashDamage) : 0;
-	stats.+PiercingDamage := !getDamageByTier(elem.PiercingDamage).errortext ? getDamageByTier(elem.PiercingDamage) : 0;
-	stats.+BluntDamage := !getDamageByTier(elem.BluntDamage).errortext ? getDamageByTier(elem.BluntDamage) : 0;
+	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]) : 0;
+	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]) : 0;
+	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]) : 0;
 	if (Upper(elem.Attribute) == "DUAL_WIELD")
 		stats.+DualWield := 1;
-		stats.+SlashOffDamage := !getDamageByTier(elem.SlashOffDamage).errortext ? getDamageByTier(elem.SlashOffDamage) : 0;
-		stats.+PiercingOffDamage := !getDamageByTier(elem.PiercingOffDamage).errortext ? getDamageByTier(elem.PiercingOffDamage) : 0;
-		stats.+BluntOffDamage := !getDamageByTier(elem.BluntOffDamage).errortext ? getDamageByTier(elem.BluntOffDamage) : 0;
+		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]) : 0;
+		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
+		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
 	stats.+AttackType := elem.TipoAtaque;
 	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
@@ -66,13 +61,13 @@ endfunction
  */
 function getSpeedByTier(tier)
 	case (tier.Upper())
-		MELEE_LOW: return struct{"min" := 25, "max" := 29};
-		MELEE_MID: return struct{"min" := 33, "max" := 37};
-		MELEE_HIGH: return struct{"min" := 39, "max" := 45};
+		MELEE_LOW: return 24; // min = 24 + 3 random
+		MELEE_MID: return 30; // min = 30 + 3 random
+		MELEE_HIGH: return 36; // min = 36 + 3 random
 
-		RANGED_LOW: return struct{"min" := 25, "max" := 29};
-		RANGED_MID: return struct{"min" := 33, "max" := 37};
-		RANGED_HIGH: return struct{"min" := 39, "max" := 45};
+		RANGED_LOW: return 24; // min = 24 + 3 random
+		RANGED_MID: return 30; // min = 30 + 3 random
+		RANGED_HIGH: return 36; // min = 36 + 3 random
 		
 		default: return error{ "errortext" := "Damage value not found for this Weapon Speed Tier!"};
 	endcase
@@ -131,10 +126,10 @@ function getCriticalChanceByTier(tier)
 	var min, max;
 
 	case(tier.upper())
-		CRITICALCHANCE_NOCHANCE: return struct{"min" := 0, "max" := 0};
-		CRITICALCHANCE_LOW: return struct{"min" := 1, "max" := 2};
-		CRITICALCHANCE_MID: return struct{"min" := 3, "max" := 4};
-		CRITICALCHANCE_HIGH: return struct{"min" := 5, "max" := 6};
+		CRITICALCHANCE_NOCHANCE: return 0;
+		CRITICALCHANCE_LOW: return 1;
+		CRITICALCHANCE_MID: return 3;
+		CRITICALCHANCE_HIGH: return 5;
 		
 		default: return error{ "errortext" := "Damage value not found for this Weapon Critical Chance Tier!"};
 	endcase
@@ -240,4 +235,26 @@ function getDexPenModBySlot(item)
     endcase
 
 	return dexPen;
+endfunction
+
+function getWeaponMainDamage(weapon)
+	var prop := getPropBase(weapon);
+	var damage;
+	case (Upper(prop.AttackType))
+		SLASHDAMAGE: damage := prop.atributos.SlashMainDamage; break;
+		PIERCINGDAMAGE: damage := prop.atributos.PiercingMainDamage; break;
+		BLUNTDAMAGE: damage := prop.atributos.BluntMainDamage; break;
+	endcase
+	return damage;
+endfunction
+
+function getWeaponOffDamage(weapon)
+	var prop := getPropBase(weapon);
+	var damage;
+	case (Upper(prop.AttackType))
+		SLASHDAMAGE: damage := prop.atributos.SlashOffDamage; break;
+		PIERCINGDAMAGE: damage := prop.atributos.PiercingOffDamage; break;
+		BLUNTDAMAGE: damage := prop.atributos.BluntOffDamage; break;
+	endcase
+	return damage;
 endfunction

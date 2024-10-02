@@ -45,9 +45,6 @@ enum PROTECTIONTYPE
 	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
 endenum
 
-
-
-
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
 	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
 endfunction

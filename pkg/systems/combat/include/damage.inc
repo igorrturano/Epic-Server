@@ -245,19 +245,24 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0)
 		elseif (GetObjProperty(attacker, "pilotando") != error)
 			dmg := RandomDiceRoll(GetObjProperty(attacker, "dicedmg"));
 		elseif (offDamage)
-			var prop := getPropBase(weapon);
-			case (Upper(prop.AttackType))
-				SLASHDAMAGE: dmg := RandomDiceRoll(CStr(prop.SlashOffDamage)); break;
-				PIERCINGDAMAGE: dmg := RandomDiceRoll(CStr(prop.PiercingOffDamage)); break;
-				BLUNTDAMAGE: dmg := RandomDiceRoll(CStr(prop.BluntOffDamage)); break;
-			endcase
+			// var prop := getPropBase(weapon);
+			// case (Upper(prop.AttackType))
+			// 	SLASHDAMAGE: dmg := RandomDiceRoll(CStr(prop.SlashOffDamage)); break;
+			// 	PIERCINGDAMAGE: dmg := RandomDiceRoll(CStr(prop.PiercingOffDamage)); break;
+			// 	BLUNTDAMAGE: dmg := RandomDiceRoll(CStr(prop.BluntOffDamage)); break;
+			// endcase
+			dmg := getWeaponMainDamage(weapon);
+			print("ATAQUE MAINHAND -> "+dmg);
+			
 		else
-			var prop := getPropBase(weapon);
-			case (Upper(prop.AttackType))
-				SLASHDAMAGE: dmg := RandomDiceRoll(CStr(prop.SlashDamage)); break;
-				PIERCINGDAMAGE: dmg := RandomDiceRoll(CStr(prop.PiercingDamage)); break;
-				BLUNTDAMAGE: dmg := RandomDiceRoll(CStr(prop.BluntDamage)); break;
-			endcase
+			// var prop := getPropBase(weapon);
+			// case (Upper(prop.AttackType))
+			// 	SLASHDAMAGE: dmg := RandomDiceRoll(CStr(prop.SlashDamage)); break;
+			// 	PIERCINGDAMAGE: dmg := RandomDiceRoll(CStr(prop.PiercingDamage)); break;
+			// 	BLUNTDAMAGE: dmg := RandomDiceRoll(CStr(prop.BluntDamage)); break;
+			// endcase
+			dmg := getWeaponOffDamage(weapon);
+			print("ATAQUE OFFHAND -> "+dmg);
     	endif
 
 		// dmg += weapon.dmg_mod;
