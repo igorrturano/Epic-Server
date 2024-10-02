@@ -1,0 +1,15 @@
+enum TIERS
+	TIER1 := "TIER1",
+	TIER2 := "TIER2",
+	TIER3 := "TIER3",
+	TIER4 := "TIER4",
+	TIER5 := "TIER5",
+endenum
+
+enum RESISTS
+	RESIST_TIER1 := 1,
+	RESIST_TIER2 := 3,
+	RESIST_TIER3 := 6,
+	RESIST_TIER4 := 12,
+	RESIST_TIER5 := 16,
+endenum
