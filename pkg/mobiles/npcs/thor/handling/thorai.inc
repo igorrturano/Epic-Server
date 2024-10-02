@@ -70,6 +70,21 @@ function handle_doubleclick(npctype, playerinput)
    endif
 endfunction
 
+function handle_npc_talker_openai(frase, temperatura:=1.0, top_p:=1)
+   var contexto := "Você é um fofoqueiro de RPG, o personagem que fala contigo traz algo. Faça a frase de maneira totalmente diferente, mudando palavras e ordens das palavras, seja criativo";
+   var frase_struct := array{ struct{ "user" := frase } };
+   var result := OpenAICompletion_Thor(contexto, frase_struct, temperatura, top_p);
+   
+   return result;
+endfunction
+
+function handle_npc_listen_openai(contexto, frase, temperatura:=0.7)
+   var frase_struct := array{ struct{ "user" := frase } };
+   var result := OpenAICompletion_Thor(contexto, frase_struct, temperatura);
+   
+   return result;
+endfunction
+
 function get_lore_get_examples_thor(npctype)
    //aqui é possível colocar exemplos, ou a lore
    if (npctype == ":brainai:Nordic")

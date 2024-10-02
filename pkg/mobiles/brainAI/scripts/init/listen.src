@@ -12,6 +12,7 @@ include ":containers:containers";
 include ":fls_core:tax";
 include "include/sysEvent";
 include ":brainAI:eventid";
+include ":thor:handling/thorai";
 
 // Inicializar ou obter a variável global gossip_storage
 var gossip_storage := GetGlobalProperty("gossip_storage");
@@ -21,8 +22,8 @@ if (!gossip_storage)
 endif
 
 function OpenAICompletion(systemMessage, questions)
-	print("systemMessage");
-	print(systemMessage);
+	// print("systemMessage");
+	// print(systemMessage);
 
 	var formatedQuestions := array{ struct{
 		"role" := "system",
@@ -72,7 +73,7 @@ function OpenAICompletion(systemMessage, questions)
 endfunction
 
 program BrainNerve(params)
-	
+
 	var npc		:= params[1];
 	//var nerve_name:= params[2];
 	var event	:= params[3];
@@ -107,7 +108,7 @@ function add_gossip(gossip)
 
         // Atualiza o array global após a modificação
         SetGlobalProperty("gossip_storage", gossip_storage);
-        print("Fofoca adicionada: " + gossip);
+        // print("Fofoca adicionada: " + gossip);
     else
         print("Fofoca vazia, nada adicionado.");
     endif
@@ -119,8 +120,8 @@ function get_random_gossip()
     // Obtém o array de fofocas globalmente armazenado
     gossip_storage := GetGlobalProperty("gossip_storage");
     
-    print("gossip_storage");
-    print(gossip_storage);  // Verifique se as fofocas foram armazenadas
+    // print("gossip_storage");
+    // print(gossip_storage);  // Verifique se as fofocas foram armazenadas
 
     if (gossip_storage.size() == 0)
         return "Ainda não ouvi nenhuma fofoca...";
@@ -134,10 +135,10 @@ function SpeechEvent(npc, byref event)
 	var text := Lower(event.text);
 	var source := event.source;
 
-	if ( source.IsA(POLCLASS_NPC) )
-		// Remember - NPCs can send speech events now.
-		return 0;
-	elseif ( !CheckLineOfSight(npc, event.source) )
+	// if ( source.IsA(POLCLASS_NPC) )
+	// 	// Remember - NPCs can send speech events now. - AIERA
+	// 	return 0;
+	if ( !CheckLineOfSight(npc, event.source) )
 		// No line of sight - ignore speech.
 		return 0;
 	endif
@@ -146,7 +147,6 @@ function SpeechEvent(npc, byref event)
 	if ( text != " . . . ")
 		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
 		var sourceDescription := GetObjProperty(event.source, "descricao");
-		print(npc.npctemplate);
 		if (npc.npctemplate == ":merchants:rumorAI")
 			if (Distance(npc, event.source) > 2)
 				AI_Turn(npc, source, NETURN_TOWARD);
@@ -164,6 +164,17 @@ function SpeechEvent(npc, byref event)
 			
 			AI_Speak(npc, responseText); // usa a responsa do modelo
 
+		elseif (npc.npctemplate == ":brainai:talker_reply" && source.IsA(POLCLASS_NPC)) // aqui só entra se a conversa é com npcs, ou seja, POLCALLS_NPC
+			var contexto := "Você é um fofoqueiro de taverna medieval de um jogo de RPG. Você conversa com outro fofoqueiro. Máximo de 50 caracteres.";	
+			
+			var responseAI := handle_npc_listen_openai(contexto, text, temperatura:=1.5);
+
+			if (responseAI == "<uninitialized object>")
+				responseAI := "";
+			endif
+			
+			AI_Speak(npc, responseAI); // usa a responsa do modelo
+
 		elseif (npc.npctemplate == ":merchants:rumorAIRepro")
 			if (Distance(npc, event.source) > 2)
 				AI_Turn(npc, source, NETURN_TOWARD);
@@ -180,8 +191,8 @@ function SpeechEvent(npc, byref event)
 			
 			AI_Speak(npc, responseText); // usa a responsa do modelo
 			
-			print("randomGossip");
-			print(randomGossip);
+			// print("randomGossip");
+			// print(randomGossip);
 
 		elseif (npc.npctemplate == ":brainai:guardafaccaoAI")
 			
