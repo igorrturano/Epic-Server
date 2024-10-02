@@ -169,38 +169,34 @@ function CalculateDamage(defender, type, dmg)
 		endcase
 	endif
 
-	if (type == DMG_PHYSICAL)
-        if (TemHabilidade(defender, "Kani no Sutairu"))
-            resist += RandomDiceRoll("1d4");
-			// resist := CDbl(AP_GetSkill(defender, TACTICS) / 200); // Ganha até 50% de bonus
-        endif
-		if (TemHabilidade(defender, "Exoesqueleto"))
-			resist += 2;
-		endif
-		if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR) ) // Se tiver a hab e usar escudo
-			resist += RandomDiceRoll("1d4");
-			// resist := resist + (AP_GetTrueSkill(defender,PARRY)/1000); // Ganha até +10% de bonus
-		endif
-		if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
-			//TODO: Pensar no valor aqui (coloquei só pra não esquecer)
-			resist += RandomDiceRoll("1d4");
-        elseif (TemHabilidade(defender, "Resiliência Bárbara"))
-			//TODO: Pensar no valor aqui (coloquei só pra não esquecer)
-			resist += RandomDiceRoll("1d4");
+	// if (type == DMG_PHYSICAL)
+    //     if (TemHabilidade(defender, "Kani no Sutairu"))
+    //         resist += RandomDiceRoll("1d4");
+    //     endif
+	// 	if (TemHabilidade(defender, "Exoesqueleto"))
+	// 		resist += 2;
+	// 	endif
+	// 	if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
+	// 		resist += RandomDiceRoll("1d4");
+	// 	endif
+	// 	if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
+	// 		resist += RandomDiceRoll("1d4");
+    //     elseif (TemHabilidade(defender, "Resiliência Bárbara"))
+	// 		resist += RandomDiceRoll("1d4");
 			
-		//TODO: Pensar nesse cálculo aqui
-		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.4;
-			if (GetCooldown(defender, "armor_drain") > 0)
-				arcane_armor += AP_GetSkill(defender, MAGICLORE) / 100 * 0.3;
-				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
-			endif
-			if (resist < arcane_armor)
-				resist := arcane_armor;
-				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
-			endif
-		endif
-	endif
+	// 	//TODO: Pensar nesse cálculo aqui
+	// 	elseif (TemHabilidade(defender, "Vínculo Elemental"))
+	// 		var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.4;
+	// 		if (GetCooldown(defender, "armor_drain") > 0)
+	// 			arcane_armor += AP_GetSkill(defender, MAGICLORE) / 100 * 0.3;
+	// 			PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
+	// 		endif
+	// 		if (resist < arcane_armor)
+	// 			resist := arcane_armor;
+	// 			PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
+	// 		endif
+	// 	endif
+	// endif
 
 	dmg -= resist;
 
@@ -209,7 +205,6 @@ function CalculateDamage(defender, type, dmg)
 	endif
 
 	return dmg;
-	// return (dmg - (dmg*resist));
 endfunction
 
 function CalculateTotalDamage(defender, basedamage, attacker, dmglist := 0)
@@ -228,7 +223,7 @@ function CalculateTotalDamage(defender, basedamage, attacker, dmglist := 0)
 		damage := 1;
 	endif
 
-	return CInt(damage);
+	return damage;
 endfunction
 
 function CalculateRawDamage(attacker, weapon, offDamage := 0)
@@ -236,18 +231,12 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0)
 	var weapondice;
 
 	if (attacker.npctemplate)
-		// var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
-		// var cfg := ReadConfigFile(":*:npcdesc");
-		// dmg := cfg[npctemplate.template].AttackDamage;
-		// dmg := RandomDiceRoll(dmg);
 		var damages := getNPCDamages(attacker);
 		// TODO: Implementar uma mini AI para fazer o NPC modificar o dano baseado na postura de ataque possível (assim como é possível com os players)
 			// TODO: Por enquanto vai usar só o maior dano base.
 
-		dmg := damages.SlashDamage;
+		dmg := RandomDiceRoll(damages.SlashDamage);
 	else
-		// var weaponcfg := ReadConfigFile(":*:itemdesc");
-		// var weaponelem := FindConfigElem(weaponcfg, weapon.objtype);
 		var weaponelem := getItemCfgElem(weapon);
 
 		if (GetObjProperty(attacker, "metamorfose") != error)
@@ -259,23 +248,19 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0)
 		elseif (offDamage)
 			weapondice := getWeaponOffDamage(weapon);
 			dmg := RandomDiceRoll(weapondice);
-			print("ATAQUE OFFHAND (Dice) -> "+weapondice);
-			print("ATAQUE OFFHAND -> "+dmg);
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
 				weapondice := TWOHANDED_MID_DAMAGE;
 				dmg := RandomDiceRoll(weapondice);
-				print("ATAQUE OFFHAND (Dice) -> "+TWOHANDED_MID_DAMAGE);
 			else
 				weapondice := getWeaponMainDamage(weapon);
 				dmg := RandomDiceRoll(weapondice);
-				print("ATAQUE OFFHAND (Dice) -> "+weapondice);
 			endif
-			print("ATAQUE MAINHAND -> "+dmg);
     	endif
 	endif
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma: " + weapondice);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolou dado: " + dmg);
+
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma: "+weapondice);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolou dano: "+dmg);
 
 	return dmg;
 endfunction
@@ -428,11 +413,10 @@ function DamageEpicCombat(attacker, defender, armor, damage, type)
 	SetScriptController(attacker);
 	var totaldamage := CInt(CalculateDamageCombat(attacker, defender, armor, damage, type));
 
-
-	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage);
+	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
-	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage);
+	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage, type);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
 
 	if (defender.frozen)
@@ -493,8 +477,7 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 endfunction
 
 function getWeaponDamageType(attacker, weapon)
-	var elem := GetWpnCfgInfo(attacker, weapon);
-	case (elem.TipoAtaque.Upper())
+	case (getPropBase(weapon).AttackType.Upper())
 		"CORTANTE":	return DMG_SLASH;
 		"PERFURANTE": return DMG_PIERCING;
 		"CONTUSIVO": return DMG_BLUNT;
@@ -523,34 +506,39 @@ function getResistNPCByType(npc, type, armor := 0)
 	var resist;
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
+	var npcResists := getNPCResists(npc);
 
 	if (!armor || armor == error)
 		case(type)
 			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
 			DMG_SLASH:
-				if (npc.SlashResist)
-					resist := CInt(cfg[npctemplate.template].SlashResist) + CInt(npc.resist_slash_mod);
+				if (npcResists.SlashResist)
+					// resist := CInt(cfg[npctemplate.template].SlashResist) + CInt(npc.resist_slash_mod);
+					resist := CInt(npcResists.SlashResist) + CInt(npc.resist_slash_mod);
 				else
 					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
 				endif
 				break;
 
 			DMG_PIERCING:
-				if (npc.PiercingResist)
-					resist := CInt(cfg[npctemplate.template].PiercingResist) + CInt(npc.resist_piercing_mod);
+				if (npcResists.PiercingResist)
+					// resist := CInt(cfg[npctemplate.template].PiercingResist) + CInt(npc.resist_piercing_mod);
+					resist := CInt(npcResists.PiercingResist) + CInt(npc.resist_slash_mod);
 				else
 					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
 				endif
 				break;
 
 			DMG_BLUNT:
-				if (npc.BluntResist)
-					resist := CInt(cfg[npctemplate.template].BluntResist) + CInt(npc.resist_blunt_mod);
+				if (npcResists.BluntResist)
+					// resist := CInt(cfg[npctemplate.template].BluntResist) + CInt(npc.resist_blunt_mod);
+					resist := CInt(npcResists.BluntResist) + CInt(npc.resist_slash_mod);
 				else
 					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
 				endif
 				break;
 
+			// TODO: Colocar as resistências elementais no mesmo modelo.
 			DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(npc.resist_fire_mod); break;
 			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(npc.resist_cold_mod); break;
 			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(npc.resist_energy_mod); break;
@@ -581,33 +569,35 @@ endfunction
  */
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
+	var armorResists := getPropBase(armor);
 
 	case(type)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
 		DMG_SLASH:
-			if (armor.SlashResist)
-				resist := CInt(armor.SlashResist) + CInt(armor.resist_slash_mod);
+			if (armorResists.SlashResist)
+				resist := CInt(armorResists.SlashResist);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
 			break;
 
 		DMG_PIERCING:
-			if (armor.PiercingResist)
-				resist := CInt(armor.PiercingResist) + CInt(armor.resist_piercing_mod);
+			if (armorResists.PiercingResist)
+				resist := CInt(armorResists.PiercingResist);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
 			break;
 
 		DMG_BLUNT:
-			if (armor.BluntResist)
-				resist := CInt(armor.BluntResist) + CInt(armor.resist_blunt_mod);
+			if (armorResists.BluntResist)
+				resist := CInt(armorResists.BluntResist);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
 			break;
 
+		// TODO: Colocar as resistências elementais no mesmo modelo do físico.
 		DMG_FIRE: resist := CInt(armor.FireResist) + CInt(armor.resist_fire_mod); break;
 		DMG_COLD: resist := CInt(armor.ColdResist) + CInt(armor.resist_cold_mod); break;
 		DMG_ENERGY: resist := CInt(armor.EnergyResist) + CInt(armor.resist_energy_mod); break;
@@ -632,7 +622,9 @@ endfunction
  * Return void
  *
  */
-function CheckDefenderHabsBeforeDamage(attacker, byref defender, byref damage)
+function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
+	var resist;
+	
 	if (GetObjProperty(defender, "#martir"))
 		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
 		if (martir && !martir.dead)
@@ -641,10 +633,10 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, byref damage)
 	endif
 	
 	if (GetObjProperty(defender, "#mantorothen"))
-		var healed := cint(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
+		var healed := CInt(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
 		damage := damage - healed;
 		var party := defender.party;
-		var amthealed := cint(healed/party.members.size());
+		var amthealed := CInt(healed/party.members.size());
 		if (amthealed < 1)
 			amthealed := 1;
 		endif
@@ -652,6 +644,35 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, byref damage)
 			HealDamage(member, amthealed);
 		endforeach
 	endif
+
+	if (type == DMG_PHYSICAL || type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT)
+        if (TemHabilidade(defender, "Kani no Sutairu"))
+            resist += RandomDiceRoll("1d4");
+        endif
+		if (TemHabilidade(defender, "Exoesqueleto"))
+			resist += 2;
+		endif
+		if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
+			resist += RandomDiceRoll("1d4");
+		endif
+		if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
+			resist += RandomDiceRoll("1d4");
+        elseif (TemHabilidade(defender, "Resiliência Bárbara"))
+			resist += RandomDiceRoll("1d4");
+		elseif (TemHabilidade(defender, "Vínculo Elemental"))
+			var arcane_armor := AP_GetSkill(defender, MAGICLORE)/20;
+			if (GetCooldown(defender, "armor_drain") > 0)
+				arcane_armor += AP_GetSkill(defender, MAGICLORE)/30;
+				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
+			endif
+			if (resist < arcane_armor)
+				resist := arcane_armor;
+				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
+			endif
+		endif
+	endif
+
+	return CInt(damage-resist);
 endfunction
 
 /**
@@ -669,7 +690,7 @@ endfunction
  * Return void
  *
  */
-function CheckDefenderHabsAfterDamage(attacker, defender, damage)
+function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, type)
 	if (isBloodied(defender))
 		RecalcVitals(defender);
 		MakeBleed(defender);
@@ -806,17 +827,19 @@ function CalcDamageStats(attacker, damage)
 		statmod := CInt(AP_GetStat(attacker, stat));
 	endif
 
-	damage += (statmod-50) / 10;
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano de {stat}: {damage}");
+	statmod := (statmod-50) / 10;
+	damage += statmod;
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Bônus de {stat}: {statmod}");
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Bônus de Tactics: {tacticsmod}");
 
 	return damage;
 endfunction
 
 function CalcDamageWeapon(attacker, damage)
-	var weaponcfg := ReadConfigFile(":*:itemdesc");
-	var weaponelem := FindConfigElem(weaponcfg, attacker.weapon.objtype);
+	// var weaponcfg := ReadConfigFile(":*:itemdesc");
+	// var weaponelem := FindConfigElem(weaponcfg, attacker.weapon.objtype);
 	
-	var weapondice := CStr(weaponelem.Damage);
+	// var weapondice := CStr(weaponelem.Damage);
 
 	// var damageweapon;
 	// if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
@@ -1113,7 +1136,7 @@ function CalcDamageReducer(attacker, damage)
 	var damagemod := CDbl(GetObjProperty(attacker, "dmgreduction"));
 	if (damagemod > 0)
 		damage := damage*damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Redutor de Dano: {}%".format(CDbl((1-damagemod)*100)));
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Redutor de Dano: {CDbl((1-damagemod)*100)}%");
 	endif
 
 	var polida := GetObjProperty(attacker.weapon, "polida");
@@ -1121,7 +1144,7 @@ function CalcDamageReducer(attacker, damage)
 		var penalty := 0.8;
 		var damagemod := damage * (1-penalty);
 		damage -= damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Penalidade polidez (20%): {}".format(damagemod));
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Penalidade polidez (20%): {damagemod}");
 	else
 		polida -= 1;
 		if (polida < 1)
@@ -1136,7 +1159,7 @@ function CalcDamageReducer(attacker, damage)
 		var penalty := 0.7;
 		var damagemod := damage * (1-penalty);
 		damage -= damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Penalidade Defensor Anão (30%): {}".format(damagemod));
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Penalidade Defensor Anão (30%): {damagemod}");
 	endif
 
 	return damage;

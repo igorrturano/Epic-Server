@@ -1,6 +1,7 @@
 use cfgfile;
 
 include "npcStats";
+include "include/NPCUtil";
 
 /**
  * getNpcCfgElem(npc)
@@ -13,7 +14,9 @@ include "npcStats";
  *
  */
 function getNpcCfgElem(npc)
-	return FindConfigElem(ReadConfigFile(":*:npcdesc"), npc.npctemplate);
+	var cfg := ReadConfigFile(":*:npcdesc");
+	var template := NPC_ParseTemplateName(npc.npctemplate).template;
+	return FindConfigElem(cfg, template);
 endfunction
 
 /**
@@ -31,7 +34,8 @@ endfunction
  */
 function getNPCDamages(npc)
 	var elem := getNpcCfgElem(npc);
-	var elemDamages := GetConfigStringArray(elem, "AttackDamage");
+	var elemDamages := GetConfigString(elem, "EpicAttackDamage");
+	elemDamages := SplitWords(elemDamages);
 	var damages := struct;
 
 	damages.+SlashDamage := elemDamages[1];
@@ -56,30 +60,43 @@ endfunction
  */
 function getNPCResists(npc)
 	var elem := getNpcCfgElem(npc);
-	var elemFiscResists := GetConfigStringArray(elem, "EpicFisResists");
-	var elemElemResists := GetConfigStringArray(elem, "EpicElemResists");
+	var elemFiscResists := GetConfigString(elem, "EpicFisResists");
+	elemFiscResists := SplitWords(elemFiscResists);
+	var elemElemResists := GetConfigString(elem, "EpicElemResists");
+	elemElemResists := SplitWords(elemElemResists);
 	var stats := struct;
 
-	foreach resist in elemFiscResists
-		case (resist)
-			TIER1: resist := RESIST_TIER1; break;
-			TIER2: resist := RESIST_TIER2; break;
-			TIER3: resist := RESIST_TIER3; break;
-			TIER4: resist := RESIST_TIER4; break;
-			TIER5: resist := RESIST_TIER5; break;
-			default: resist := 0; break;
+	for i:=1 to Len(elemFiscResists);
+		if (elemFiscResists[i] == TIER0)
+			elemFiscResists[i] := RESIST_TIER0;
+		elseif (elemFiscResists[i] == TIER1)
+			elemFiscResists[i] := RESIST_TIER1;
+		elseif (elemFiscResists[i] == TIER2)
+			elemFiscResists[i] := RESIST_TIER2;
+		endif
+		// case (elemFiscResists[i])
+		// 	TIER0: elemFiscResists[i] := RESIST_TIER0; break;
+		// 	TIER1: elemFiscResists[i] := RESIST_TIER1; break;
+		// 	TIER2: elemFiscResists[i] := RESIST_TIER2; break;
+		// 	TIER3: elemFiscResists[i] := RESIST_TIER3; break;
+		// 	TIER4: elemFiscResists[i] := RESIST_TIER4; break;
+		// 	TIER5: elemFiscResists[i] := RESIST_TIER5; break;
+		// 	default: elemFiscResists[i] := 0; break;
+		// endcase
+		print("resist -> "+elemFiscResists[i]);
+	endfor
+	for i:=1 to Len(elemElemResists);
+		case (elemElemResists[i])
+			TIER0: elemElemResists[i] := RESIST_TIER0; break;
+			TIER1: elemElemResists[i] := RESIST_TIER1; break;
+			TIER2: elemElemResists[i] := RESIST_TIER2; break;
+			TIER3: elemElemResists[i] := RESIST_TIER3; break;
+			TIER4: elemElemResists[i] := RESIST_TIER4; break;
+			TIER5: elemElemResists[i] := RESIST_TIER5; break;
+			default: elemElemResists[i] := 0; break;
 		endcase
-	endforeach
-	foreach resist in elemElemResists
-		case (resist)
-			TIER1: resist := RESIST_TIER1; break;
-			TIER2: resist := RESIST_TIER2; break;
-			TIER3: resist := RESIST_TIER3; break;
-			TIER4: resist := RESIST_TIER4; break;
-			TIER5: resist := RESIST_TIER5; break;
-			default: resist := 0; break;
-		endcase
-	endforeach
+		print("resist -> "+elemElemResists[i]);
+	endfor
 
 	stats.+SlashResist := elemFiscResists[1];
 	stats.+PiercingResist := elemFiscResists[2];
@@ -89,6 +106,10 @@ function getNPCResists(npc)
 	stats.+ColdResist := elemElemResists[2];
 	stats.+PoisonResist := elemElemResists[3];
 	stats.+EnergyResist := elemElemResists[4];
+
+	print("elemFiscResists2 -> "+elemFiscResists);
+	print("elemElemResists2 -> "+elemElemResists);
+	print("stats -> "+stats);
 
 	return stats;
 endfunction

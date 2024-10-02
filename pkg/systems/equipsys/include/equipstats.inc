@@ -241,9 +241,10 @@ function getWeaponMainDamage(weapon)
 	var prop := getPropBase(weapon);
 	var damage;
 	case (Upper(prop.AttackType))
-		SLASHDAMAGE: damage := prop.atributos.SlashMainDamage; break;
-		PIERCINGDAMAGE: damage := prop.atributos.PiercingMainDamage; break;
-		BLUNTDAMAGE: damage := prop.atributos.BluntMainDamage; break;
+		SLASHDAMAGE: damage := prop.SlashMainDamage; break;
+		PIERCINGDAMAGE: damage := prop.PiercingMainDamage; break;
+		BLUNTDAMAGE: damage := prop.BluntMainDamage; break;
+		default: damage := "1d0";
 	endcase
 	return damage;
 endfunction
@@ -252,9 +253,10 @@ function getWeaponOffDamage(weapon)
 	var prop := getPropBase(weapon);
 	var damage;
 	case (Upper(prop.AttackType))
-		SLASHDAMAGE: damage := prop.atributos.SlashOffDamage; break;
-		PIERCINGDAMAGE: damage := prop.atributos.PiercingOffDamage; break;
-		BLUNTDAMAGE: damage := prop.atributos.BluntOffDamage; break;
+		SLASHDAMAGE: damage := prop.SlashOffDamage; break;
+		PIERCINGDAMAGE: damage := prop.PiercingOffDamage; break;
+		BLUNTDAMAGE: damage := prop.BluntOffDamage; break;
+		default: damage := "1d0";
 	endcase
 	return damage;
 endfunction
