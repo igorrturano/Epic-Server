@@ -23,6 +23,7 @@ include ":gumps:gumpPrompt";
 include ":attributes:attributes";
 include ":ghaia:ghaia";
 include "include/epicConstants";
+include "include/epicNPCUtils";
 
 program	text_command_createnpc(who, template)
 	var	mercscripts := {"appraiser", "barber", "banker", "bucsBanker", "bucsTownHealer",
@@ -143,58 +144,5 @@ function DisplayNPCSelectionMenu(who)
 		exit;
 	endif
 	return NPC_Selection;
-
-endfunction
-
-function customizeNpc(mob)
-	var npc_elem := NPC_GetNPCConfig(mob);
-
-	var Hits := npc_elem.HITS;
-	var classe := npc_elem.Classe;
-	var tier := npc_elem.Tier;
-    var npc_wrestling := npc_elem.WRESTLING;
-    var npc_tactics := npc_elem.TACTICS;
-
-    var calculate_level_hp := Cint(npc_wrestling + npc_tactics - 80);
-
-	var hp := 15;
-	if (classe == GUERREIRO)
-		hp := 25;
-	elseif (classe == LADINO)
-		hp := 20;
-	endif
-	
-	var hitsmod := GetObjProperty(mob, "hitsmod");
-	if (!hitsmod)
-		hitsmod := 0;
-	endif
-    if ((calculate_level_hp / 6) >= 1 )
-        var new_hp := 0;
-        var multiplier := Cint((calculate_level_hp / 6));
-        if (classe == GUERREIRO)
-            new_hp := 10 * multiplier;
-        elseif (classe == LADINO)
-            new_hp := 8 * multiplier;
-        else
-            new_hp := 6 * multiplier;
-        endif
-        hp += Cint(new_hp);
-    endif
-
-	SetObjProperty(mob, "hitsmod", hitsmod + hp);
-
-	RecalcVitals(mob);
-    HealDamage(mob, hitsmod + hp);
-
-	var mob_skill := 0;
-	if (tier == 1)
-		mob_skill += RandomIntMinMax(20, 40);
-	elseif (tier == 2)
-		mob_skill += RandomIntMinMax(40, 60);
-	elseif (tier == 3)
-		mob_skill += RandomIntMinMax(60, 80);
-	endif
-
-	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
 
 endfunction
