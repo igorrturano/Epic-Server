@@ -97,7 +97,7 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 			return 0;
 		endif
 
-			PerformAction(who, 0x0b);
+		PerformAction(who, 0x0b);
 		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
 		sleepms(1200);
 	endfor

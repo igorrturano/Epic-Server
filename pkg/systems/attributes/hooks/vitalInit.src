@@ -20,9 +20,9 @@ endprogram
 exported function GetHitsRegenRate(mobile)
 	var base_regen;
 	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Hits) * 100) + (CInt(AP_GetTrueStat(mobile, "Strength"))*10); //base + 1 a cada 10 de atributo
+		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Hits)) + (CInt(AP_GetTrueStat(mobile, "Strength"))*10); //base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Hits) * 100;
+		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Hits);
 	endif
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "hits");
 
@@ -68,9 +68,9 @@ endfunction
 exported function GetManaRegenRate(mobile)
 	var base_regen;
 	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Mana) * 100) + (CInt(AP_GetTrueStat(mobile, "Intelligence"))*10); //base + 1 a cada 10 de atributo
+		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Mana)) + (CInt(AP_GetTrueStat(mobile, "Intelligence"))*10); //base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Mana) * 100;
+		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Mana);
 	endif
 
 	if (TemHabilidade(mobile, "Mente Tranquila"))
@@ -111,9 +111,9 @@ endfunction
 exported function GetStaminaRegenRate(mobile)
 	var base_regen;
 	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Stamina) * 100) + (CInt(AP_GetTrueStat(mobile, "Dexterity"))*10); //base + 1 a cada 10 de atributo
+		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Stamina)) + (CInt(AP_GetTrueStat(mobile, "Dexterity"))*10); //base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Stamina) * 100;
+		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Stamina);
 	endif
 
 	if (GetObjProperty(mobile, "chardata").culture == AIGLANA)

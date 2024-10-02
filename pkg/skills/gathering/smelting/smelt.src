@@ -223,7 +223,12 @@ function CoolPot(who, pot)
 	PlayEffectCooling(who, pot);
 	pot.color := COLOR_EMPTY;
 	EraseObjProperty(pot, PROP_NAME);
-	CreateItemInBackpack(who, inPot.ingot, CInt(inPot.amount));
+
+	if (inPot.ingot == 7134) // Se for carvão, multiplicar por 12
+		CreateItemInBackpack(who, inPot.ingot, Cint(inPot.amount) * 12);
+	else
+		CreateItemInBackpack(who, inPot.ingot, CInt(inPot.amount));
+	endif
 endfunction
 
 function SmeltSuccess(who, pot, item, amt)

@@ -1,20 +1,49 @@
-
 function customizeNpc(mob)
 	var npc_elem := NPC_GetNPCConfig(mob);
 
-	var Hits := npc_elem.HITS;
 	var classe := npc_elem.Classe;
 	var tier := npc_elem.Tier;
-    var npc_wrestling := npc_elem.WRESTLING;
-    var npc_tactics := npc_elem.TACTICS;
+	var tactics := RandomIntMinMax(tier * 20, tier * 30);
+	var skill_combat;
+	var skill_support;
+	
+	var mob_skill := 0;
+	if (tier == 1)
+		mob_skill += RandomIntMinMax(20, 40);
+	elseif (tier == 2)
+		mob_skill += RandomIntMinMax(40, 60);
+	elseif (tier == 3)
+		mob_skill += RandomIntMinMax(60, 80);
+	elseif (tier == 4)
+		mob_skill += RandomIntMinMax(80, 100);
+	elseif (tier == 5)
+		mob_skill += RandomIntMinMax(100, 120);
+	else
+		mob_skill += RandomIntMinMax(0, 20);
+	endif
 
-    var calculate_level_hp := Cint(npc_wrestling + npc_tactics - 80);
+	if (classe == SABIO)
+		AP_SetTrueSkill(mob, MAGERY, mob_skill);
+		AP_SetTrueSkill(mob, MAGICLORE, mob_skill);
+		skill_combat := MAGERY;
+		skill_support := MAGICLORE;
+	else
+		skill_combat := WRESTLING;
+		skill_support := TACTICS;
+	endif
 
-	var hp := 25;
+	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
+	AP_SetTrueSkill(mob, TACTICS, tactics);
+
+    var calculate_level_hp := Cint(AP_GetSkill(mob, skill_combat) + AP_GetSkill(mob, skill_support)) - 80;
+
+	var hp := 0;
 	if (classe == SABIO)
 		hp := 15;
 	elseif (classe == LADINO)
 		hp := 20;
+	elseif (classe == GUERREIRO)
+		hp := 25;
 	endif
 
 	var hitsmod := GetObjProperty(mob, "hitsmod");
@@ -28,8 +57,10 @@ function customizeNpc(mob)
             new_hp := 10 * multiplier;
         elseif (classe == LADINO)
             new_hp := 8 * multiplier;
-        else
+        elseif (classe == SABIO)
             new_hp := 6 * multiplier;
+		else
+			new_hp := 0;
         endif
         hp += Cint(new_hp);
     endif
@@ -38,20 +69,6 @@ function customizeNpc(mob)
 
 	RecalcVitals(mob);
     HealDamage(mob, hitsmod + hp);
-
-	var mob_skill := 0;
-	if (tier == 1)
-		mob_skill += RandomIntMinMax(20, 40);
-	elseif (tier == 2)
-		mob_skill += RandomIntMinMax(40, 60);
-	elseif (tier == 3)
-		mob_skill += RandomIntMinMax(60, 80);
-	endif
-    var tactics := RandomIntMinMax(tier * 20, tier * 30);
-
-	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
-	AP_SetTrueSkill(mob, TACTICS, tactics);
-
 endfunction
 
 function HasPlayerNear(me)
