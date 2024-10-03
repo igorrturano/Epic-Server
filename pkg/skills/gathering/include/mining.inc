@@ -443,6 +443,8 @@ function DetermineMiningDifficulty(oretype)
 		0xee99: return 0;  //calcario
 
 		0x6300: return 0;  //iron ore
+		0x62ff: return 40;  //ferro impuro
+		0x6309: return 50; //iron temperado
 		0x6301: return 70; //litan
         0x6314: return 82; //illyra
 		0x6302: return 72; //fulmetita
@@ -454,8 +456,8 @@ function DetermineMiningDifficulty(oretype)
 		0x6450: return 20; //cobre
 		0x699c: return 10; //bronze
 		0x699d: return 20; // Bronze temperado
-		0x6994: return 20; //aco temperado
-		0x6309: return 60; //barra de ferro pra aco
+		0x6994: return 20; // bronze
+		0x6995: return 60; //aco
 
 		0x6992: return 50; //prata
  		0x6990: return 30; //estanho
@@ -572,10 +574,11 @@ function ConvertOreToIngot(ore)
 		0x6300: return 0x62ff; //ferro -> ferro impuro
 		0x699c: return 0x699d; //bronze impuro
 		0x699d: return 0x6994; //bronze temperado
-		0x62ff: return 0x6996; //ferro impuro -> ferro temperado
+		0x62ff: return 0x6309; //ferro impuro -> ferro temperado
 		0x6992: return 0x6993; //prata
 		0x6305: return 0x630e; //ouro
-		0x6309: return 0x6309; //aco
+		//0x6309: return 0x6309; //aco -> acho q esse aqui chorou
+		0x6309: return 0x6995; // aco a partir de ferro temperado
 		0x6995: return 0x6995; //ligas elementais
 		0x6301: return 0x630a; //litan
 		0x6314: return 0x6315; //illyra
@@ -661,7 +664,7 @@ function getAllOres()
 		/* Ligas Metálicas */
 		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
 		toStruct(ORE_BRONZE_TEMP, "Ingot de Bronze Impuro", "Ingot de Bronze Temperado", ConvertOreToIngot(0x699c), {0x1BDE}),
-		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6996, {0x1BDE}, 2599),
+		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6309, {0x1BDE, 0x6990}, 2599),
 
 		/* Ligas Elementais */
 		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Ingot de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),

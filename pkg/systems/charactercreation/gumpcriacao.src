@@ -1236,9 +1236,9 @@
 //     AP_SetTrueStat(who, DEXTERITY, final_dex);
 //     SetObjProperty(who, "dpmod", final_dpmod);
 // 	if (chardata.classe == "Sabio")
-// 		if (chardata.povo == "Asanita") //asanita eh sempre mesum
+// 		if (chardata.povo == "Asanita") //asanita eh sempre necromancer
 // 				if (ganheispell == 0)
-// 				    chardata.magia := "Mesum";
+// 				    chardata.magia := "Necromancer";
 // 					var grimorio := createiteminbackpack(who, "grimorio", 1);
 // 					CreateItemInBackpack(who, "gravedust", 10);
 // 					CreateItemInBackpack(who, "BlackMoor", 10);

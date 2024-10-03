@@ -79,7 +79,7 @@ program MultiPortal(multiportal)
                         var color;
                         var chardata := GetObjProperty(event.source, "chardata");
 
-                        if (chardata.magia == "Mesum")
+                        if (chardata.magia == "Necromancer")
                             color := 2850;
                         elseif (chardata.magia == "Kitah")
                             color := 1100;
