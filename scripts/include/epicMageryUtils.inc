@@ -397,7 +397,7 @@ function ConsumeItemArcaneCharges( item, quantidade, consumeAll := false )
 		item.color := typeColor - 3;
 	  elseif ( faixaCor > 50 && faixaCor <= 75 )
 		item.color := typeColor - 2;
-	  elseif ( faixaCor > 75 && faixaCor <= 100 )
+	  elseif ( faixaCor > 75 && faixaCor <= 90 )
 		item.color := typeColor - 1;
 	  endif
 	  SetObjProperty( item, "#elementalweapon", elementalWeapon );
