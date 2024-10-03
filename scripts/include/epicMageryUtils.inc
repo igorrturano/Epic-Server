@@ -236,3 +236,37 @@ function epicWisdomPathBonus(who)
 
    return (int_bonus + mlore);
 endfunction
+
+//Função para aplicar o efeito de arma elemental do swordmage 
+function ApplyElementalWeaponProperties( who, targ, elemento, duracao )
+
+  var dmgdice := DefineElementalWeaponDice(who);
+
+  var dmg := struct;
+  dmg.+type := elemento;
+  dmg.+serial := who.serial;
+  dmg.+endtime := readgameclock() + duracao;
+  dmg.+bonus := dmgdice;
+
+  SetObjProperty( targ, "#elementalweapon", dmg );
+  start_script( ":spells:elementalweapon", { targ, duracao, elemento, who } );
+
+endfunction
+
+function DefineElementalWeaponDice(who)
+
+  var faixaMLore := AP_GetSkill( who, MAGICLORE ); 
+  var dmgdice := "0";
+
+  if ( faixaMLore < 40 )
+    dmgdice := cstr( "1d2" );
+  elseif ( faixaMLore >= 40 && faixaMLore < 70 )
+    dmgdice := cstr( "1d4" );
+  elseif ( faixaMLore >= 70 && faixaMLore < 90 )
+    dmgdice := cstr( "1d6" );
+  elseif (faixaMLore >= 90 )
+    dmgdice := cstr( "1d8" );
+  endif
+
+  return dmgdice;
+endfunction
