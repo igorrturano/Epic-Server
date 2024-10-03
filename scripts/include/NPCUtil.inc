@@ -212,11 +212,16 @@ endfunction
  * Retorna um struct com todos as resistências do NPC.
  *
  */
-function getNPCAllResists(npc)
+function getNPCResists(npc)
 	var elem := NPC_GetNPCConfig(npc);
 	var elemFiscResists := GetConfigString(elem, "EpicFisResists");
-	elemFiscResists := SplitWords(elemFiscResists);
 	var elemElemResists := GetConfigString(elem, "EpicElemResists");
+
+	if (elemFiscResists == error || elemElemResists == error)
+		return error{"errortext" := "NPC doesnt have the new resists defined!"};
+	endif
+
+	elemFiscResists := SplitWords(elemFiscResists);
 	elemElemResists := SplitWords(elemElemResists);
 	var stats := struct;
 
