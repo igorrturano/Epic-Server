@@ -14,11 +14,12 @@ function handle_banker(playerinput)
 endfunction
 
 function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
+   var temperatura := 1.5;
    // print("Categoria Mob: "+CategoriaMob);
    var jsonData := PackJSON(struct{
       "npcs" := struct{
          "EvilHuman" := struct{
-               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "name" := "" + CategoriaMob + " Medieval RPG",
                "text_size" := "Máximo de 20 caracteres",
                "context" := "você está atacando o personagem",
                "tone" := "aggressive",
@@ -26,41 +27,43 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
                "exemple_response" := "Entrou no covil errado, " + playerRaca + " otário!"
          },
          "EvilHuman_backup" := struct{
-               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "name" := "" + CategoriaMob + " Medieval RPG",
                "text_size" := "Máximo de 20 caracteres",
                "context" := "você está atacando o personagem",
                "tone" := "aggressive",
                "exemple_response" := "Entrou no covil errado, otário!"
          },
          "EvilHuman_against_humano" := struct{
-               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "name" := "" + CategoriaMob + " Medieval RPG",
                "text_size" := "Máximo de 20 caracteres",
                "context" := "você está atacando o personagem",
                "tone" := "aggressive",
-               "exemple_response" := "Aposto que bate igual uma garotinha..."
+               "exemple_response" := "Entrou no covil errado, otário!"
          },
-         "Kobold" := struct{
-               "Kobold" := "Você é um personagem de RPG sem censura de idade, muito violento; um " + playerRaca + " vem te atacar, e você atacará de volta. Você é um Kobold que fala de forma primitiva em terceira pessoa como ('Aaah sangue <raça do user>...', 'Saaai!', 'Comer carne de <raça do user>... ') sem conjugar verbos. Máximo de 20 caracteres."
+         "Goblin" := struct{
+               "name" := "Você é um " + CategoriaMob + " de RPG",
+               "context" := "um " + playerRaca + " vem te atacar, e você atacará de volta",
+               "exemple_response" := "Aaah sanguee... sangue de drow...",
+               "text" := "Máximo de 20 caracteres."
          },
          "Giants" := struct{
-               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+               "name" := "" + CategoriaMob + " RPG",
                "text_size" := "Máximo de 20 caracteres",
                "context" := "você está atacando o personagem",
                "tone" := "aggressive",
                "enemy" := playerRaca,
                "exemple_response" := "Esmaagaa " + playerRaca + "..."
          },
-         "Goblin" := struct{
-               "name" := "NPC " + CategoriaMob + " Medieval RPG",
+         "Kobold" := struct{
+               "name" := "" + CategoriaMob + " RPG",
                "text_size" := "Máximo de 20 caracteres",
                "context" := "você está atacando o personagem",
-               "exemple_response" := name_mob + "detestar drow... sai daqui!!"
+               "exemple_response" := "comer carne de drow... sai daqui!!"
          }
       }
    });
    var unpackedJSON := UnpackJSON(jsonData);
-   var context := unpackedJSON["npcs"]["EvilHuman"]; //padrao é o EvilHuman normal
-   context := Cstr(context);
+   var context := ""; 
 
    if (CategoriaMob == "EvilHuman")
       if (playerRaca == "Humano")
@@ -82,9 +85,10 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
    endif
 
    context := Cstr(context);
-   // print("context: "+ context);
+   print("CategoriaMob: "+CategoriaMob);
+   print("context: "+ context);
 
-   var responseAI := OpenAICompletion_Thor(context, playerinput);
+   var responseAI := OpenAICompletion_Thor(context, playerinput, temperatura);
    responseAI := StrReplace(responseAI, "\"", " "); // Substitui aspas por espaço
    // print("responseAI: "+responseAI);
    return responseAI;
@@ -95,11 +99,11 @@ function handle_doubleclick(npctype, playerinput)
    
       var sysMsg := "
          # Você
-         Você é um taverneiro de RPG parecido com Diablo e Word of Warcraft.
+         Você é um taverneiro de RPG como Diablo.
 
          # Contexto 
-         Oo mundo desse RPG é amedrontador, o assentamento onde você se encontra é um ambiente tenebroso, cheio de incertezas e medo. 
-         Tudo foi feito às pressas e tudo está de forma improvisada. O estado atual das coisas é de ânimos aflitos. 
+         O mundo desse RPG é amedrontador, o assentamento onde você se encontra é um ambiente tenebroso, cheio de incertezas e medo. 
+         Tudo foi feito às pressas e tudo está de forma improvisada.
          O personagem que vem até você provavelmente vem para comprar algo da sua taverna improvisada.
 
          # Povos - elfos, drows, bjorske, orcs, polski e aiglanos.
@@ -109,6 +113,7 @@ function handle_doubleclick(npctype, playerinput)
          ## Polski são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
          ## Aiglanos é o povo que voce pertence. Estamos todos em apuros.
          ## Anões - Tente vender uma bebida empoeirada para seus trabalhos
+         ## Leste - Pergunte sarcasticamente se veio a procura de algum dragão
 
          # Sua resposta
          Sua resposta deve conter, no máximo, 60 caracteres. Preencha, depois da fala, a representação da sua ação com asteriscos, em terceira pessoa. 
@@ -123,6 +128,39 @@ function handle_doubleclick(npctype, playerinput)
       var result := OpenAICompletion_Thor(sysMsg, questions);
       return result;
 
+   elseif (npctype == "vendedor")
+
+      var sysMsg := "
+         # Você
+         Você é um vendedor de RPG como Diablo.
+
+         # Contexto 
+         O mundo desse RPG é amedrontador, o assentamento onde você se encontra é um ambiente tenebroso, cheio de incertezas e medo. 
+         Tudo foi feito às pressas e tudo está de forma improvisada.
+         O personagem que vem até você provavelmente vem para comprar algo do seu comércio improvisado.
+
+         # Povos - elfos, drows, bjorske, orcs, polski, leste e aiglanos.
+         ## Drows - trate eles com certo receio.
+         ## Orcs - trate eles com esperança de ajuda, mas também preconceito pela aparência bestial.
+         ## Bjorske são inspirados nos vikings. Pergunte ou mencione o Norte.
+         ## Polski são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
+         ## Aiglanos é o povo que voce pertence. Estamos todos em apuros.
+         ## Anões - Tente vender uma bebida empoeirada para seus trabalhos
+         ## Leste - Pergunte sarcasticamente se veio a procura de algum dragão
+
+         # Sua resposta
+         Sua resposta deve conter, no máximo, 60 caracteres. Preencha, depois da fala, a representação da sua ação com asteriscos, em terceira pessoa. 
+         Lembre de não falar de forma rebuscada, pelo contrário: troque virgulas por reticências, use maneirismos linguísticos de erros de sintaxe, evite 'oi', 'olá', procure algo como 'ei', 'hmm', 'e então'; não pergunte 'o que', pergunte 'que', 'qual', ou 'é o que?'. 
+         Pode incluir na ação traços do seu estado ou estado do ambiente.
+
+         # Exemplo
+         Guerreiro... que vai querer? *arruma umas armaduras na mesa aos trapos*
+      ";
+
+      var questions := array{ struct{ "user" := playerinput } };
+      var result := OpenAICompletion_Thor(sysMsg, questions);
+      return result;
+
    else
       var jsonData := PackJSON(struct{
          "npcs" := array{ // Use array para múltiplos NPCs
@@ -130,7 +168,7 @@ function handle_doubleclick(npctype, playerinput)
                   "text_size" := "Máximo de 30 caracteres", // Corrigido para :=
                   "environment" := "assentamento improvisado", // Corrigido para :=
                   "tone" := "tense", // Corrigido para :=
-                  "instruction" := "Greet the character, mention his race, use '...' instead of commas", // Corrigido para :=
+                  "instruction" := "Greet the character, use '...' instead of commas", // Corrigido para :=
                   "words" := "use 'ei' ao inves de 'olá'" // Corrigido para :=
             }
          }
