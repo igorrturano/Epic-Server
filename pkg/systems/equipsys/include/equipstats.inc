@@ -123,8 +123,6 @@ endfunction
  *
  */
 function getCriticalChanceByTier(tier)
-	var min, max;
-
 	case(tier.upper())
 		CRITICALCHANCE_NOCHANCE: return 0;
 		CRITICALCHANCE_LOW: return 1;
@@ -237,26 +235,26 @@ function getDexPenModBySlot(item)
 	return dexPen;
 endfunction
 
-function getWeaponMainDamage(weapon)
+function getWeaponMainDamageDice(weapon)
 	var prop := getPropBase(weapon);
-	var damage;
+	var dice;
 	case (Upper(prop.AttackType))
-		SLASHDAMAGE: damage := prop.SlashMainDamage; break;
-		PIERCINGDAMAGE: damage := prop.PiercingMainDamage; break;
-		BLUNTDAMAGE: damage := prop.BluntMainDamage; break;
-		default: damage := "1d0";
+		SLASHDAMAGE: dice := prop.SlashMainDamage; break;
+		PIERCINGDAMAGE: dice := prop.PiercingMainDamage; break;
+		BLUNTDAMAGE: dice := prop.BluntMainDamage; break;
+		default: dice := error{"errortext" := "No dice damage!"};
 	endcase
-	return damage;
+	return dice;
 endfunction
 
-function getWeaponOffDamage(weapon)
+function getWeaponOffDamageDice(weapon)
 	var prop := getPropBase(weapon);
-	var damage;
+	var dice;
 	case (Upper(prop.AttackType))
-		SLASHDAMAGE: damage := prop.SlashOffDamage; break;
-		PIERCINGDAMAGE: damage := prop.PiercingOffDamage; break;
-		BLUNTDAMAGE: damage := prop.BluntOffDamage; break;
-		default: damage := "1d0";
+		SLASHDAMAGE: dice := prop.SlashOffDamage; break;
+		PIERCINGDAMAGE: dice := prop.PiercingOffDamage; break;
+		BLUNTDAMAGE: dice := prop.BluntOffDamage; break;
+		default: dice := error{"errortext" := "No dice damage!"};
 	endcase
-	return damage;
+	return dice;
 endfunction

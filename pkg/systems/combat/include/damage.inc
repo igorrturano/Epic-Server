@@ -27,6 +27,7 @@ include ":combat:armorZones";
 include ":combat:combat";
 include ":equipsys:utils";
 include ":equipsys:props";
+include ":epicai:npcUtils";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -167,35 +168,6 @@ function CalculateDamage(defender, type, dmg)
 		endcase
 	endif
 
-	// if (type == DMG_PHYSICAL)
-    //     if (TemHabilidade(defender, "Kani no Sutairu"))
-    //         resist += RandomDiceRoll("1d4");
-    //     endif
-	// 	if (TemHabilidade(defender, "Exoesqueleto"))
-	// 		resist += 2;
-	// 	endif
-	// 	if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
-	// 		resist += RandomDiceRoll("1d4");
-	// 	endif
-	// 	if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
-	// 		resist += RandomDiceRoll("1d4");
-    //     elseif (TemHabilidade(defender, "Resiliência Bárbara"))
-	// 		resist += RandomDiceRoll("1d4");
-			
-	// 	//TODO: Pensar nesse cálculo aqui
-	// 	elseif (TemHabilidade(defender, "Vínculo Elemental"))
-	// 		var arcane_armor := AP_GetSkill(defender, MAGICLORE) / 100 * 0.4;
-	// 		if (GetCooldown(defender, "armor_drain") > 0)
-	// 			arcane_armor += AP_GetSkill(defender, MAGICLORE) / 100 * 0.3;
-	// 			PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
-	// 		endif
-	// 		if (resist < arcane_armor)
-	// 			resist := arcane_armor;
-	// 			PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
-	// 		endif
-	// 	endif
-	// endif
-
 	dmg -= resist;
 
 	if (dmg < 1)
@@ -214,7 +186,6 @@ function CalculateTotalDamage(defender, basedamage, attacker, dmglist := 0)
 
 	foreach key in (dmgList.keys())
 		damage += CalculateDamage(defender, key, basedamage-dmglist[key]);
-		// dmg += CalculateDamage(defender, key, basedamage*dmglist[key]);
 	endforeach
 
 	if (damage < 1)
@@ -224,36 +195,36 @@ function CalculateTotalDamage(defender, basedamage, attacker, dmglist := 0)
 	return damage;
 endfunction
 
-function CalculateRawDamage(attacker, weapon, offDamage := 0)
+function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUNTDAMAGE)
 	var dmg;
 	var weapondice;
 
 	if (attacker.npctemplate)
-		var damages := getNPCDamages(attacker);
 		// TODO: Implementar uma mini AI para fazer o NPC modificar o dano baseado na postura de ataque possível (assim como é possível com os players)
 			// TODO: Por enquanto vai usar só o maior dano base.
-
-		dmg := RandomDiceRoll(damages.SlashDamage);
+		var damage := getNPCMainDamage(attacker, attackType);
+		print(damage);
+		weapondice := damage.dice;
 	else
-		// var weaponelem := getItemCfgElem(weapon);
-
 		if (GetObjProperty(attacker, "metamorfose") != error)
 			weapondice := GetObjProperty(attacker, "dicedmg");
-      		dmg := RandomDiceRoll(weapondice);
 		elseif (GetObjProperty(attacker, "pilotando") != error)
 			weapondice := GetObjProperty(attacker, "dicedmg");
-			dmg := RandomDiceRoll(weapondice);
 		elseif (offDamage)
-			weapondice := getWeaponOffDamage(weapon);
-			dmg := RandomDiceRoll(weapondice);
+			weapondice := getWeaponOffDamageDice(weapon);
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
 				weapondice := TWOHANDED_MID_DAMAGE;
 			else
-				weapondice := getWeaponMainDamage(weapon);
+				weapondice := getWeaponMainDamageDice(weapon);
 			endif
-			dmg := RandomDiceRoll(weapondice);
     	endif
+	endif
+
+	if (!weapondice || weapondice == error)
+		dmg := 0;
+	else
+		dmg := RandomDiceRoll(weapondice);
 	endif
 
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma: "+weapondice);
@@ -447,7 +418,8 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	var totaldamage := damage;
 
 	if (defender.npctemplate)
-		resist := getResistNPCByType(defender, type, armor);
+		resist := getResistNPCByType(defender, type, armor, attacker.weapon);
+		print("resist -> "+resist);
 	else
 		resist := getResistArmorByType(armor, type, attacker, defender);
 	endif
@@ -474,7 +446,17 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 endfunction
 
 function getWeaponDamageType(attacker, weapon)
-	case (getPropBase(weapon).AttackType.Upper())
+	var attackType;
+	if (attacker.npctemplate)
+		// TODO: NPC, pegar a função que faz ele girar o tipo, caso encontre um mais forte.
+		// var npcDamages := getNPCDamages(attacker);
+		// NPCRotateAttackType(attacker);
+		attackType := "CONTUSIVO";
+	else
+		attackType := getPropBase(weapon).AttackType.Upper();
+	endif
+	
+	case (Upper(attackType))
 		"CORTANTE":	return DMG_SLASH;
 		"PERFURANTE": return DMG_PIERCING;
 		"CONTUSIVO": return DMG_BLUNT;
@@ -499,7 +481,7 @@ endfunction
  * Return value
  *
  */
-function getResistNPCByType(npc, type, armor := 0)
+function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 	var resist;
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
@@ -507,7 +489,8 @@ function getResistNPCByType(npc, type, armor := 0)
 
 	if (!armor || armor == error)
 		if (npcResists == error)
-			print(npc.npctemplate +" -> "+npcResists);
+			print(npc.npctemplate +" -> "+npcResists+", pegando antiga...");
+			resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
 		endif
 		case(type)
 			// DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
@@ -521,6 +504,7 @@ function getResistNPCByType(npc, type, armor := 0)
 			DMG_ENERGY: resist := CInt(npcResists.EnergyResist); break;
 		endcase
 	else
+		setPropArmor(armor);
 		resist := getResistArmorByType(armor, type);
 	endif
 
