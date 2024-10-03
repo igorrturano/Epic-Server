@@ -6,7 +6,7 @@ include ":equipsys:props";
 
 program cmd_golpe(who)
 	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
-		SendSysMessageEx(who, "Você precisa ter uma arma empunhada para mudar seu tipo de golpe!", SSM_FAIL);
+		SendSysMessageEx(who, "Você precisa ter uma arma empunhada para mudar sua postura de ataque!", SSM_FAIL);
 		return 0;
 	endif
 
@@ -20,8 +20,8 @@ program cmd_golpe(who)
 		default: weaponProp.AttackType := weaponElem.TipoAtaque; break;
 	endcase
 
-	PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
-	SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}*", SSM_INFO);
+	PrintTextAbove(who, $"*muda postura de ataque para golpe {Lower(weaponProp.AttackType)}*");
+	SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {Lower(weaponProp.AttackType)}*", SSM_INFO);
 
 	setPropBase(weapon, weaponProp);
 endprogram
