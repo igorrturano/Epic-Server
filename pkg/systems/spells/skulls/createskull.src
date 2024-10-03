@@ -21,7 +21,7 @@ program cria(item)
 	foreach key in keys
 		var spelllvl := GetConfigInt( FindconfigElem(spellcfg, key), "Circle" );
 		var spelltype := GetConfigString( FindconfigElem(spellcfg, key), "Type" );
-		if ( (spelllvl == lvl) && ( spelltype == "Mesum")) //so mesum tem scroll
+		if ( (spelllvl == lvl) && ( spelltype == "Necromancer")) //so necromancer tem scroll
 			randomspells.append(key);
 		endif
 	endforeach
