@@ -43,7 +43,7 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
          "Goblin" := struct{
                "name" := "Você é um " + CategoriaMob + " de RPG",
                "context" := "um " + playerRaca + " vem te atacar, e você atacará de volta",
-               "exemple_response" := "Aaah sanguee... sangue de drow...",
+               "exemple_response" := "sai... odeia " + playerRaca + " ... sai daqui",
                "text" := "Máximo de 20 caracteres."
          },
          "Giants" := struct{
@@ -106,14 +106,14 @@ function handle_doubleclick(npctype, playerinput)
          Tudo foi feito às pressas e tudo está de forma improvisada.
          O personagem que vem até você provavelmente vem para comprar algo da sua taverna improvisada.
 
-         # Povos - elfos, drows, bjorske, orcs, polski e aiglanos.
+         # Povos
          ## Drows - trate eles com certo receio.
          ## Orcs - trate eles com esperança de ajuda, mas também preconceito pela aparência bestial.
-         ## Bjorske são inspirados nos vikings. Pergunte ou mencione o Norte.
+         ## Bjorske - povos do norte - Pergunte ou mencione o Norte.
          ## Polski são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
          ## Aiglanos é o povo que voce pertence. Estamos todos em apuros.
          ## Anões - Tente vender uma bebida empoeirada para seus trabalhos
-         ## Leste - Pergunte sarcasticamente se veio a procura de algum dragão
+         ## Povos do Leste - Pergunte sarcasticamente se veio a procura de algum dragão
 
          # Sua resposta
          Sua resposta deve conter, no máximo, 60 caracteres. Preencha, depois da fala, a representação da sua ação com asteriscos, em terceira pessoa. 
@@ -139,14 +139,14 @@ function handle_doubleclick(npctype, playerinput)
          Tudo foi feito às pressas e tudo está de forma improvisada.
          O personagem que vem até você provavelmente vem para comprar algo do seu comércio improvisado.
 
-         # Povos - elfos, drows, bjorske, orcs, polski, leste e aiglanos.
+         # Povos
          ## Drows - trate eles com certo receio.
          ## Orcs - trate eles com esperança de ajuda, mas também preconceito pela aparência bestial.
-         ## Bjorske são inspirados nos vikings. Pergunte ou mencione o Norte.
+         ## Bjorske - povos do norte - Pergunte ou mencione o Norte.
          ## Polski são inspirados nos Hobbits. Trate-os com desprezo pelo tamanho ou força.
          ## Aiglanos é o povo que voce pertence. Estamos todos em apuros.
          ## Anões - Tente vender uma bebida empoeirada para seus trabalhos
-         ## Leste - Pergunte sarcasticamente se veio a procura de algum dragão
+         ## Povos do Leste - Pergunte sarcasticamente se veio a procura de algum dragã
 
          # Sua resposta
          Sua resposta deve conter, no máximo, 60 caracteres. Preencha, depois da fala, a representação da sua ação com asteriscos, em terceira pessoa. 
