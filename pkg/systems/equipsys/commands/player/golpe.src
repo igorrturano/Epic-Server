@@ -14,9 +14,9 @@ program cmd_golpe(who)
 	var weaponProp := getPropBase(weapon);
 	var weaponElem := getItemCfgElem(weapon);
 	case(Upper(weaponProp.AttackType))
-		SLASHDAMAGE: weaponProp.AttackType := "Perfurante"; break;
-		PIERCINGDAMAGE: weaponProp.AttackType := "Contundente"; break;
-		BLUNTDAMAGE:  weaponProp.AttackType := "Cortante"; break;
+		SLASHDAMAGE: weaponProp.AttackType := PIERCINGDAMAGE; break;
+		PIERCINGDAMAGE: weaponProp.AttackType := BLUNTDAMAGE; break;
+		BLUNTDAMAGE:  weaponProp.AttackType := SLASHDAMAGE; break;
 		default: weaponProp.AttackType := weaponElem.TipoAtaque; break;
 	endcase
 
