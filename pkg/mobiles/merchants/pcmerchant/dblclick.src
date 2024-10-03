@@ -28,6 +28,14 @@ program DblClickNerve(params)
 					var npcType := npc.npctemplate;
 					var playerRaca := GetObjProperty(player, "chardata").raca;
 					var sourceDescription := GetObjProperty(player, "descricao");
+					var PlayerPovo := GetObjProperty(player, "chardata").povo;
+					if (PlayerRaca == "Humano")
+						if (PlayerPovo == "Thuriao")
+							PlayerPovo := "Bjorsk";
+						endif
+						// print("PlayerPovo: "+PlayerPovo);
+						PlayerRaca := PlayerPovo;
+					endif
 					var playerinput := "*"+ playerRaca + " " + sourceDescription + " se aproxima*";
 					
 					var responseAI := "A gente tem isso aqui... *aponta pra uma estante aos pedaços*";
