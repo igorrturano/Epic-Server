@@ -452,81 +452,93 @@ function CalculateHitChance(attacker, defender)
 	return hit_chance;
 endfunction
 
-function CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
-	SkillChecks(attacker, defender, wpn_a, 1);
-	// Armadura Arcana
-	var dist := Distance(attacker, defender);
-	if (GetCooldown(defender, "freeze_enemy") && dist == 1)
-		PlaySoundEffect(attacker, 0x65b);
-		PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
-		TS_Starttimer(attacker, "congelamento", 5);
-	elseif(GetCooldown(defender, "incinerate_enemy") && dist == 1)
-		PlaySoundEffect(attacker, 0x5D0);
-		PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
-		TS_Starttimer(attacker, "queimar", 5, 1 , defender);
-	elseif(GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
-		PlaySoundEffect(attacker, 0x5CF);
-		PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
-		TS_StartTimer(defender, "velocidade", 5);
-	endif
+function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
+  SkillChecks( attacker, defender, wpn_a, 1 );
+  // Armadura Arcana
+  var dist := Distance( attacker, defender );
+  if ( GetCooldown( defender, "freeze_enemy" ) && dist == 1 )
+	PlaySoundEffect( attacker, 0x65b );
+	PlayObjectCenteredEffectHuefx( attacker, 0x54f7, 30, 60, GELO, 0 );
+	TS_Starttimer( attacker, "congelamento", 5 );
+  elseif ( GetCooldown( defender, "incinerate_enemy" ) && dist == 1 )
+	PlaySoundEffect( attacker, 0x5D0 );
+	PlayObjectCenteredEffect( attacker, 0x6d77, 7, 60 );
+	TS_Starttimer( attacker, "queimar", 5, 1, defender );
+  elseif ( GetCooldown( defender, "move_speed" ) ) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
+	PlaySoundEffect( attacker, 0x5CF );
+	PlayObjectCenteredEffect( defender, 0xcdaf, 7, 30 );
+	TS_StartTimer( defender, "velocidade", 5 );
+  endif
 
-	var trickster_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 20);
-	if (getCooldown(attacker, "disparomistico"))
-		PrintTextAbovePrivate(attacker, "*passo nebuloso*", attacker);
-		SetCooldown(attacker, "disparomisticoHit", trickster_bonus);
-	endif
+  var trickster_bonus := CInt( AP_GetSkill( attacker, MAGICLORE ) / 20 );
+  if ( getCooldown( attacker, "disparomistico" ) )
+	PrintTextAbovePrivate( attacker, "*passo nebuloso*", attacker );
+	SetCooldown( attacker, "disparomisticoHit", trickster_bonus );
+  endif
 
-	if (getCooldown(attacker, "deathdance") > 0)
-		if (!IsBehind(attacker, defender.x, defender.y) && IsFacing(defender, attacker.x, attacker.y))
-			var behindX := defender.x + (defender.x - attacker.x);
-			var behindY := defender.y + (defender.y - attacker.y);
+  if ( getCooldown( attacker, "deathdance" ) > 0 )
+	if ( !IsBehind( attacker, defender.x, defender.y ) && IsFacing( defender, attacker.x,
+	  attacker.y ) )
+	  var behindX := defender.x + ( defender.x - attacker.x );
+	  var behindY := defender.y + ( defender.y - attacker.y );
 
-			if (defender.x == attacker.x && defender.y == attacker.y)
-				SendSysMessageEx(attacker, "Você esta muito proximo do oponente!", SSM_FAIL);
-				return 0;
-			else
-				PlayObjectCenteredEffect(attacker, 0x5433, 7, 16);
-				PlaySoundEffect(attacker, 0x526);
-				MoveObjectToLocation(attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
-				if (!IsFacing(attacker, defender.x, defender.y))
-					TurnObjectToward(attacker, defender.x, defender.y);
-				endif
-			endif
+	  if ( defender.x == attacker.x && defender.y == attacker.y )
+		SendSysMessageEx( attacker, "Você esta muito proximo do oponente!", SSM_FAIL );
+		return 0;
+	  else
+		PlayObjectCenteredEffect( attacker, 0x5433, 7, 16 );
+		PlaySoundEffect( attacker, 0x526 );
+		MoveObjectToLocation( attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION );
+		if ( !IsFacing( attacker, defender.x, defender.y ) )
+		  TurnObjectToward( attacker, defender.x, defender.y );
 		endif
+	  endif
+	endif
+  endif
+
+  if ( TemHabilidade( attacker, "Ainalaith" ) )
+	var arrow_effects := GetObjProperty( attacker, "#shooting_effects" );
+	if ( !arrow_effects )
+	  arrow_effects := struct;
+	  arrow_effects.+fire_arrow := 0;
+	  arrow_effects.+cold_arrow := 0;
+	  arrow_effects.+energy_arrow := 0;
 	endif
 
-	if (TemHabilidade(attacker, "Ainalaith"))
-		var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
-		if (!arrow_effects)
-			arrow_effects := struct;
-			arrow_effects.+fire_arrow := 0;
-			arrow_effects.+cold_arrow := 0;
-			arrow_effects.+energy_arrow := 0;
-		endif
-
-		var arrow_type := "";
-		if (GetObjProperty(attacker.weapon, "fire_arrow"))
-			arrow_type := "fire_arrow";
-		elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
-			arrow_type := "cold_arrow";
-		elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
-			arrow_type := "energy_arrow";
-		endif
-
-		if (arrow_type != "")
-			var current_count := arrow_effects[arrow_type];
-			current_count += 1;
-			arrow_effects[arrow_type] := current_count;
-
-			SetObjProperty(attacker, "#shooting_effects", arrow_effects);
-		endif
+	var arrow_type := "";
+	if ( GetObjProperty( attacker.weapon, "fire_arrow" ) )
+	  arrow_type := "fire_arrow";
+	elseif ( GetObjProperty( attacker.weapon, "cold_arrow" ) )
+	  arrow_type := "cold_arrow";
+	elseif ( GetObjProperty( attacker.weapon, "energy_arrow" ) )
+	  arrow_type := "energy_arrow";
 	endif
 
-	if (TemHabilidade(attacker, "Conhecimento Sobre o Inimigo"))
-		SetObjProperty(defender, "#attackbonus", -20);
-	endif
+	if ( arrow_type != "" )
+	  var current_count := arrow_effects[arrow_type];
+	  current_count += 1;
+	  arrow_effects[arrow_type] := current_count;
 
-	return 1;
+	  SetObjProperty( attacker, "#shooting_effects", arrow_effects );
+	endif
+  endif
+
+  var elemental := GetObjProperty( wpn_a, "#elementalweapon" );
+  if ( elemental != error )
+
+	var elemResist := 0;
+	var dmgBonus := RandomDiceRoll( elemental.bonus );
+	var totalDamage := CalculateDamage( defender, elemental.type, dmgBonus );
+	ApplyRawDamage( defender, totalDamage );
+	DisplayDamage( defender, dmgBonus, attacker );
+
+  endif
+
+  if ( TemHabilidade( attacker, "Conhecimento Sobre o Inimigo" ) )
+	SetObjProperty( defender, "#attackbonus", -20 );
+  endif
+
+  return 1;
 endfunction
 
 function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
@@ -841,7 +853,7 @@ function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
     PlayAttackAnimation(attacker); // 0x9
     // PlayHitSounds(attacker, defender);
 
-	MoveObjectToLocation(wpn_a, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(attacker.weapon, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 
 endfunction
 
