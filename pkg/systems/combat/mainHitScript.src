@@ -70,7 +70,7 @@ program MainHitScript(params)
 	// Calcula a chance do projétil não quebrar
 	ArrowRecovery(attacker, defender, weapon);
 
-	// Calcula o tipo de dano da arma
+	// Verifica o tipo de dano da arma
 	var dmgType := getWeaponDamageType(attacker, weapon);
 
 	// Calcula os modificadores de dano do atacante

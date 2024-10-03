@@ -1,4 +1,6 @@
 use cfgfile;
+include ":equipsys:equipstats";
+include ":equipsys:props";
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -212,6 +214,62 @@ function getNPCDamages(npc)
 endfunction
 
 /**
+ * getNPCMainDamage(npc)
+ *
+ * Purpose
+ * Passar o valor do dado da arma usada pelo NPC. Se NPC não for sprite que usa arma, passar dado genérico do dano.
+ *
+ * Parameters
+ * npc: MobRef do NPC.
+ *
+ * Return struct
+ * Retorna o valor do dado do dano e o tipo do dano.
+ *
+ */
+function getNPCMainDamage(npc, type := 0)
+	var damage := struct;
+
+	if (!npc.weapon || npc.weapon == error)
+		// var damages;
+		// damages := getNPCDamages(npc);
+
+		// if (damages.SlashDamage > damages.PiercingDamage)
+		// 	damage.+dice := damages.SlashDamage;
+		// 	damage.+AttackType := SLASHDAMAGE;
+		// elseif (damages.PiercingDamage > damages.BluntDamage)
+		// 	damage.+dice := damages.PiercingDamage;
+		// 	damage.+AttackType := PIERCINGDAMAGE;
+		// else
+		// 	damage.+dice := damages.BluntDamage;
+		// 	damage.+AttackType := BLUNTDAMAGE;
+		// endif
+
+		// TODO: Buscar o type dentro do npcTemplate.
+	else
+		setPropWeapon(npc.weapon);
+		damage.+dice := getWeaponMainDamageDice(npc.weapon);
+		case (Upper(type))
+			SLASHDAMAGE:
+				damage.+AttackType := SLASHDAMAGE;
+				break;
+			
+			PIERCINGDAMAGE:
+				damage.+AttackType := PIERCINGDAMAGE;
+				break;
+			
+			BLUNTDAMAGE:
+				damage.+AttackType := BLUNTDAMAGE;
+				break;
+			
+			default:
+				damage.+AttackType := error{"errortext" := "No attack type!"};
+		endcase
+	endif
+
+	return damage;
+endfunction
+
+/**
  * getNPCResists(npc)
  *
  * Purpose
@@ -270,4 +328,27 @@ function getNPCResists(npc)
 	stats.+EnergyResist := elemElemResists[4];
 
 	return stats;
+endfunction
+
+
+
+function getPropNPCAttackType(npc)
+	var prop := npc.GetProp("atributos");
+	if (!prop) prop := struct; endif
+    return prop;
+endfunction
+
+function setPropNPCAttackType(npc, type)
+	var prop := npc.GetProp("atributos");
+	if (prop == error)
+		prop := struct;
+		prop.+AttackType := type;
+	else
+		if (!prop.?AttackType)
+			prop.+AttackType := type;
+		else
+			prop.AttackType := type;
+		endif
+	endif
+	npc.SetProp("atributos", prop);
 endfunction

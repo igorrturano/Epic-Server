@@ -3,7 +3,7 @@ use cfgfile;
 include ":loot:include/lootParser";
 include ":tn:recipes";
 include ":mounts:mounts";
-include "npcStats";
+include "npcUtils";
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
