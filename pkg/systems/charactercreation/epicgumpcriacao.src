@@ -559,6 +559,9 @@ function looksSelection(who)
     chardata.+hair_item := 0;
     var continue_loop := 1;
 
+    //reseta cabelo e barba antes de iniciar as opções
+    resetHairAndBeard(who, chardata);
+
     while (continue_loop)
         var input := hairSelectionGump(who, chardata, currentPage);
         btn_value := input[0];
@@ -588,15 +591,29 @@ function looksSelection(who)
         beardSelection(who, chardata);
     endif
     
-    //caso cabelo e barba não tenham sido selecionados, pular opcao de cor
-    if (chardata.hair != "" || chardata.beard != "") 
-        colorSelection(who, chardata);
+    //caso cabelo e barba não tenham sido selecionados, pular opcao de cor de cabelo e barba
+    if ((chardata.hair && chardata.hair != "") || (chardata.beard && chardata.beard != ""))
+        hairAndBeardColorSelection(who, chardata);
     endif
 
     skinColorSelection(who, chardata);
 endfunction
 
-function colorSelection(who, byref chardata)
+function resetHairAndBeard(who, byref chardata)
+    if (chardata)
+        chardata.beard := "";
+        chardata.beard_item := "";
+        chardata.beard_color := "";
+        DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+
+        chardata.hair := "";
+        chardata.hair_item := "";
+        chardata.hair_color := "";
+        DestroyItem(GetEquipmentByLayer(who, LAYER_HAIR));
+    endif
+endfunction
+
+function hairAndBeardColorSelection(who, byref chardata)
     var btn_value;
     var currentPage := 1;
     var continue_loop := 1;
@@ -607,11 +624,13 @@ function colorSelection(who, byref chardata)
         case (btn_value)
             1001: currentPage += 1; // Next page
             1002: currentPage -= 1; // Previous page
-            500: 
+            1003: 
                 continue_loop := 0; // This will break the loop
             default: 
                 if (btn_value)
-                    chardata.hair_color := btn_value;
+                    if (chardata.hair_item)
+                        chardata.hair_color := btn_value;
+                    endif
                     if (chardata.beard_item)
                         chardata.beard_color := btn_value;
                     endif

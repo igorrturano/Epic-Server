@@ -1,48 +1,74 @@
 use uo;
 use vitals;
 use os;
-include ":attributes:vitals";
+include ":attributes:attributes";
 include ":combat:damage";
 
 program danoarea(rune)
-	var i := 0;
-	while ( 1 )
-		var range := GetObjProperty(rune, "range");
-		if (!range)
-			range := 6;
-		endif
-		var intervalo := GetObjProperty(rune, "intervalo");
-		if (!intervalo)
-			intervalo := 4;
-		endif
+    while (1)
+        var range := CInt(GetObjProperty(rune, "range"));
+        if (!range)
+            range := 6;
+        endif
+        var intervalo := CInt(GetObjProperty(rune, "intervalo"));
+        if (!intervalo)
+            intervalo := 4;
+        endif
 
-		var nearbypeople := ListMobilesNearLocation( rune.x, rune.y, rune.z, range, rune.realm);
-		if (!nearbypeople)
-			sleep(10);
-		else
-			foreach people in nearbypeople
-				if((!people.npctemplate || people.master) && !(people.cmdlevel))
-					if (GetObjProperty(rune, "hits"))
-						DamageFLS(people, CInt(GetObjProperty(rune, "hits")),  GetObjProperty(rune, "tipodano"));
-					endif
-
-					if (GetObjProperty(rune, "stam"))
-						var dano:= AP_GetVital(people, "stamina") - GetObjProperty(rune, "stam");
-						var vital:= AP_SetVital(people, "Stamina", dano);
-					endif
-
-					if (GetObjProperty(rune, "mana"))
-						var dano:= AP_GetVital(people, "mana") - GetObjProperty(rune, "mana");
-						var vital:= AP_SetVital(people, "Mana", dano);
-					endif
-					var mensagem := GetObjProperty(rune, "mensagem");
-					if (!mensagem)
-						mensagem :="O ambiente afeta seu corpo.";
-					endif
-					SendSysMessage(people, mensagem);
-				endif
-			endforeach
-			sleep(intervalo);
-		endif
-	endwhile
+        var nearbypeople := ListMobilesNearLocation(rune.x, rune.y, rune.z, range, rune.realm);
+        if (nearbypeople.size() > 0)
+            foreach people in nearbypeople
+                if ((!people.npctemplate || people.master) && !(people.cmdlevel))
+                    ApplyAreaDamage(people, rune);
+                endif
+            endforeach
+        endif
+        sleep(intervalo);
+    endwhile
 endprogram
+
+function ApplyAreaDamage(mobile, rune)
+    var damage_dealt := struct{
+        "hits" := 0,
+        "mana" := 0,
+        "stam" := 0
+    };
+
+    if (GetObjProperty(rune, "hits"))
+        damage_dealt.hits := CInt(GetObjProperty(rune, "hits"));
+        DamageFLS(mobile, damage_dealt.hits, GetObjProperty(rune, "tipodano"));
+    endif
+    
+    if (GetObjProperty(rune, "mana"))
+        damage_dealt.mana := CInt(GetObjProperty(rune, "mana"));
+        var current_mana := AP_GetVital(mobile, "Mana");
+        AP_SetVital(mobile, "Mana", current_mana - damage_dealt.mana);
+    endif
+    
+    if (GetObjProperty(rune, "stam"))
+        damage_dealt.stam := CInt(GetObjProperty(rune, "stam"));
+        var current_stam := AP_GetVital(mobile, "Stamina");
+        AP_SetVital(mobile, "Stamina", current_stam - damage_dealt.stam);
+    endif
+
+    var damage_message := "";
+    if (damage_dealt.hits > 0)
+        damage_message += "Dano: -" + damage_dealt.hits + " HP ";
+    endif
+    if (damage_dealt.mana > 0)
+        damage_message += "-" + damage_dealt.mana + " Mana ";
+    endif
+    if (damage_dealt.stam > 0)
+        damage_message += "-" + damage_dealt.stam + " Stamina";
+    endif
+
+    if (damage_message != "")
+        PrintTextAbove(mobile, damage_message, 3, 38);
+    endif
+
+    var mensagem := GetObjProperty(rune, "mensagem");
+    if (!mensagem)
+        mensagem := "O ambiente afeta seu corpo.";
+    endif
+    SendSysMessage(mobile, mensagem);
+endfunction

@@ -11,7 +11,6 @@ program voltar(params)
 
     var who := params[1];
 
-
 	if(GetObjProperty(who, "metamorfose") == error)
 		SendSysMessageEx(who, "Voce nao esta metamorfoseado.", SSM_FAIL);
 		return;
@@ -22,7 +21,7 @@ program voltar(params)
 		return;
 	endif
 	
-    TS_StartCoolDown(who, "voltarcd", 300);
+    TS_StartCoolDown(who, "voltarcd", 30);
 	
 	SendSysMessageEx(who, "Voce volta ao normal.", SSM_FAIL);
 
