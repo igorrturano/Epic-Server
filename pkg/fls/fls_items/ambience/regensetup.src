@@ -1,54 +1,201 @@
 use uo;
-include ":tn:tngumps";
-include ":gumps:requestGump";
+use os;
 
-program setupsound(who, rune)
-	if (who.cmdlevel < 2)
-		return;
-	endif
+include ":attributes:attributes";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
-	var range := RequestInput(who, who.backpack, "Distancia maxima que os jogadores devem ficar para serem curados.");
-	if (!range)
-		range :=1;
-	endif
-	SetObjProperty(rune, "range", CInt(range));
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 520;
+const GUMP_HEIGHT := 570;
+const INTERNAL_WIDTH := 435;
+const BACKGROUND_WIDTH := 465;
 
+const MAX_RANGE := 30;
+const MIN_INTERVAL := 10;
+const MAX_INTERVAL := 1000;
 
-	var opt := array;
-	if ( GetObjProperty(rune, "hits"))
-		opt.append(1);
-	else
-		opt.append(0);
-	endif
-	if ( GetObjProperty(rune, "mana"))
-		opt.append(1);
-	else
-		opt.append(0);
-	endif
-	if ( GetObjProperty(rune, "stam"))
-		opt.append(1);
-	else
-		opt.append(0);
-	endif
-	SendSysMessage(who, "Atributos que devem ser regenerados.");
-	var result := CheckBoxGump(who, 150, 200, "Opcoes de Regen", {"Hitpoints","Manapoints","Staminapoints"}, opt);
+program regensetup(who, rune)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Você não tem permissão para usar isso.");
+        return;
+    endif
 
-	EraseObjProperty(rune, "hits");
-	EraseObjProperty(rune, "mana");
-	EraseObjProperty(rune, "stam");
+    var gump := CreateGump(rune);
+    var input := GFSendGump(who, gump);
 
-	foreach r in result
-		if (r == "Hitpoints")
-			var value := cint(RequestGump(who, "Quantos Hitpoints quer regenerar?"));
-			SetObjProperty(rune, "hits", value);
-		elseif (r ==  "Manapoints")
-			var value := cint(RequestGump(who, "Quantos Manapoints quer regenerar?"));
-			SetObjProperty(rune, "mana", value);
-		elseif (r == "Staminapoints")
-			var value := cint(RequestGump(who, "Quantos Staminapoints quer regenerar?"));
-			SetObjProperty(rune, "stam", value);
-		endif
-	endforeach
-
-	SendSysMessage(who, "Pronto");
+    if (input[0] == 100)
+        SaveConfigurations(who, rune, input);
+    else
+        SendSysMessage(who, "Configuração cancelada.");
+    endif
 endprogram
+
+function CreateGump(rune)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+    
+    GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80);
+    
+    GFTextMid(gump, 20, 20, 420, 53, "Configuração de Área de Regeneração");
+
+    var y_pos := 90;
+
+    var range := CInt(GetObjProperty(rune, "range"));
+    if (!range)
+        range := 6;
+    endif
+
+    var interval := CInt(GetObjProperty(rune, "interval"));
+    if (!interval)
+        interval := 10;
+    endif
+
+    var hits := CInt(GetObjProperty(rune, "hits"));
+    var mana := CInt(GetObjProperty(rune, "mana"));
+    var stam := CInt(GetObjProperty(rune, "stam"));
+    var dp := CDbl(GetObjProperty(rune, "dp"));
+    if (!dp)
+        dp := 0.01;
+    endif
+
+    var message_interval := CInt(GetObjProperty(rune, "message_interval"));
+    if (!message_interval)
+        message_interval := 60;
+    endif
+
+    var message := GetObjProperty(rune, "message");
+    if (!message)
+        message := "Você se sente revigorado.";
+    endif
+
+    // Raio da área
+    GFTextLine(gump, 20, y_pos, 53, "Raio da área de regeneração (1-" + MAX_RANGE + "):");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(range), 1);
+    y_pos += 30;
+
+    // Intervalo entre regenerações
+    GFTextLine(gump, 20, y_pos, 53, "Intervalo entre as regenerações (" + MIN_INTERVAL + "-" + MAX_INTERVAL + " seg):");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(interval), 2);
+    y_pos += 40;
+
+    // Atributos para regenerar
+    GFTextLine(gump, 20, y_pos, 53, "Atributos para regenerar (selecione):");
+    y_pos += 25;
+    GFCheckBox(gump, 20, y_pos, 0x9CE, 0x9CF, hits ? 1 : 0, 10);
+    GFTextLine(gump, 45, y_pos, 2100, "Hitpoints");
+    GFTextLine(gump, 200, y_pos, 2100, "Qtd. Hits:");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(hits), 3);
+    y_pos += 25;
+    GFCheckBox(gump, 20, y_pos, 0x9CE, 0x9CF, mana ? 1 : 0, 11);
+    GFTextLine(gump, 45, y_pos, 2100, "Manapoints");
+    GFTextLine(gump, 200, y_pos, 2100, "Qtd. Mana:");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(mana), 4);
+    y_pos += 25;
+    GFCheckBox(gump, 20, y_pos, 0x9CE, 0x9CF, stam ? 1 : 0, 12);
+    GFTextLine(gump, 45, y_pos, 2100, "Staminapoints");
+    GFTextLine(gump, 200, y_pos, 2100, "Qtd. Stam:");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(stam), 5);
+    y_pos += 40;
+
+    // DP regeneration
+    GFTextLine(gump, 20, y_pos, 53, "Regeneração de DP:");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(dp), 6);
+    y_pos += 40;
+
+    // Intervalo da mensagem
+    GFTextLine(gump, 20, y_pos, 53, "Intervalo da mensagem (segundos):");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(message_interval), 8);
+    y_pos += 40;
+
+    // Mensagem para o jogador
+    GFTextLine(gump, 20, y_pos, 53, "Mensagem para o jogador:");
+    y_pos += 25;
+    GFResizePic(gump, 20, y_pos, INTERNAL_BACKGROUND, 350, 60);
+    GFTextEntry(gump, 25, y_pos+5, 340, 50, 2100, message, 7);
+
+    GFAddButton(gump, GUMP_WIDTH - 60, GUMP_HEIGHT - 50, 0x81C, 0x81B, GF_CLOSE_BTN, 100);
+
+    return gump;
+endfunction
+
+function AdicionarMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function SaveConfigurations(who, rune, input)
+    var range := CInt(GFExtractData(input, 1));
+    if (range < 1 || range > MAX_RANGE)
+        SendSysMessage(who, "Raio inválido. Usando valor padrão de 6.");
+        range := 6;
+    endif
+    SetObjProperty(rune, "range", range);
+
+    var interval := CInt(GFExtractData(input, 2));
+    if (interval < MIN_INTERVAL || interval > MAX_INTERVAL)
+        SendSysMessage(who, "Intervalo inválido. Usando valor padrão de 4 segundos.");
+        interval := 10;
+    endif
+    SetObjProperty(rune, "interval", interval);
+    
+    if (input[10])
+        SetObjProperty(rune, "hits", CInt(GFExtractData(input, 3)));
+    else
+        EraseObjProperty(rune, "hits");
+    endif
+    
+    if (input[11])
+        SetObjProperty(rune, "mana", CInt(GFExtractData(input, 4)));
+    else
+        EraseObjProperty(rune, "mana");
+    endif
+    
+    if (input[12])
+        SetObjProperty(rune, "stam", CInt(GFExtractData(input, 5)));
+    else
+        EraseObjProperty(rune, "stam");
+    endif
+    
+    SetObjProperty(rune, "dp", CDbl(GFExtractData(input, 6)));
+    
+    var message_interval := CInt(GFExtractData(input, 8));
+    if (message_interval < 1)
+        SendSysMessage(who, "Intervalo da mensagem inválido. Usando valor padrão de 60 segundos.");
+        message_interval := 60;
+    endif
+    SetObjProperty(rune, "message_interval", message_interval);
+    
+    var message := GFExtractData(input, 7);
+    if (!message || message == "")
+        message := "Você se sente revigorado.";
+    endif
+    SetObjProperty(rune, "message", message);
+
+    SendSysMessage(who, "Configurações salvas com sucesso!");
+    SendSysMessage(who, "Mensagem configurada: " + GetObjProperty(rune, "message"));
+endfunction
