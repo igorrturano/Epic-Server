@@ -27,8 +27,6 @@ include ":combat:armorZones";
 include ":combat:combat";
 include ":equipsys:utils";
 include ":equipsys:props";
-include ":epicai:utils";
-
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -506,7 +504,7 @@ function getResistNPCByType(npc, type, armor := 0)
 	var resist;
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
-	var npcResists := getNPCResists(npc);
+	var npcResists := getNPCAllResists(npc);
 
 	if (!armor || armor == error)
 		case(type)
@@ -573,7 +571,6 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		// TODO: Colocar as resistências elementais no mesmo modelo do físico.
 		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod); break;
 		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod); break;
 		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod); break;
@@ -782,9 +779,6 @@ endfunction
 
 function CalcDamageStats(attacker, damage)
 	var stat;
-
-	// var cfg := ReadConfigFile(":combat:itemdesc");
-	// var elem := FindConfigElem(cfg, attacker.weapon.objtype);
 	var elem := getItemCfgElem(attacker.weapon);
 
 	SkillCheck(attacker, TACTICS, -1);
