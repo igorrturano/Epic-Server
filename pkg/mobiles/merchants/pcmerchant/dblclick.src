@@ -27,11 +27,12 @@ program DblClickNerve(params)
 				else
 					var npcType := npc.npctemplate;
 					var playerRaca := GetObjProperty(player, "chardata").raca;
+					playerRaca := playerRaca.Lower();
 					var sourceDescription := GetObjProperty(player, "descricao");
 					var PlayerCultura := GetObjProperty(player, "chardata").culture;
 					// print("PlayerCultura: "+PlayerCultura);
 
-					if (playerRaca == "Humano") // para Povos do Leste, Bjorske e Aiglanos serem diferenciados pelos NPCs
+					if (playerRaca == "humano") // para Povos do Leste, Bjorske e Aiglanos serem diferenciados pelos NPCs
 						playerRaca := PlayerCultura;
 					endif
 

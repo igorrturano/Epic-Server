@@ -66,7 +66,7 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
    var context := ""; 
 
    if (CategoriaMob == "EvilHuman")
-      if (playerRaca == "Humano")
+      if (playerRaca == "humano")
          unpackedJSON := UnpackJSON(jsonData);
          context := unpackedJSON["npcs"]["EvilHuman_against_humano"];
       else
