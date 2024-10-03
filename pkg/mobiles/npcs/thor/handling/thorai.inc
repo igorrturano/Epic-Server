@@ -58,7 +58,7 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
                "name" := "" + CategoriaMob + " RPG",
                "text_size" := "Máximo de 20 caracteres",
                "context" := "você está atacando o personagem",
-               "exemple_response" := "comer carne de drow... sai daqui!!"
+               "exemple_response" := "kobold detesta drow... sai daqui!!"
          }
       }
    });
