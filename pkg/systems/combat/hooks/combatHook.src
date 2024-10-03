@@ -91,7 +91,7 @@ exported function Attack(attacker, defender)
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
 
-	if (IsDualWield(attacker.weapon)) // Se é DualWield ataca novamente com a penalidade de acerto
+	if (IsDualWield(attacker.weapon) && AP_GetVital(defender, "Hits") > 0) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
 		if (penalty < 10)
 			penalty := 10;

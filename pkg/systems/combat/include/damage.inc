@@ -511,38 +511,14 @@ function getResistNPCByType(npc, type, armor := 0)
 	if (!armor || armor == error)
 		case(type)
 			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
-			DMG_SLASH:
-				if (npcResists.SlashResist)
-					// resist := CInt(cfg[npctemplate.template].SlashResist) + CInt(npc.resist_slash_mod);
-					resist := CInt(npcResists.SlashResist) + CInt(npc.resist_slash_mod);
-				else
-					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
-				endif
-				break;
+			DMG_SLASH: resist := CInt(npcResists.SlashResist); break;
+			DMG_PIERCING: resist := CInt(npcResists.PiercingResist); break;
+			DMG_BLUNT: resist := CInt(npcResists.BluntResist); break;
 
-			DMG_PIERCING:
-				if (npcResists.PiercingResist)
-					// resist := CInt(cfg[npctemplate.template].PiercingResist) + CInt(npc.resist_piercing_mod);
-					resist := CInt(npcResists.PiercingResist) + CInt(npc.resist_slash_mod);
-				else
-					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
-				endif
-				break;
-
-			DMG_BLUNT:
-				if (npcResists.BluntResist)
-					// resist := CInt(cfg[npctemplate.template].BluntResist) + CInt(npc.resist_blunt_mod);
-					resist := CInt(npcResists.BluntResist) + CInt(npc.resist_slash_mod);
-				else
-					resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
-				endif
-				break;
-
-			// TODO: Colocar as resistências elementais no mesmo modelo.
-			DMG_FIRE: resist := CInt(cfg[npctemplate.template].FireResist) + CInt(npc.resist_fire_mod); break;
-			DMG_COLD: resist := CInt(cfg[npctemplate.template].ColdResist) + CInt(npc.resist_cold_mod); break;
-			DMG_ENERGY: resist := CInt(cfg[npctemplate.template].EnergyResist) + CInt(npc.resist_energy_mod); break;
-			DMG_POISON: resist := CInt(cfg[npctemplate.template].PoisonResist) + CInt(npc.resist_poison_mod); break;
+			DMG_FIRE: resist := CInt(npcResists.FireResist); break;
+			DMG_COLD: resist := CInt(npcResists.ColdResist); break;
+			DMG_POISON: resist := CInt(npcResists.PoisonResist); break;
+			DMG_ENERGY: resist := CInt(npcResists.EnergyResist); break;
 		endcase
 	else
 		resist := getResistArmorByType(armor, type);
