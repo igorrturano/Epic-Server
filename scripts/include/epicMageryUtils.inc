@@ -1,4 +1,6 @@
 include "include/epicConstants";
+include ":combat:damage";
+
 
 function playAltarAnimations(who, item)
    var altar := altarByObjtype(who, item);
@@ -209,25 +211,18 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 endfunction
 
 function checkForElementalWeapons(who, targ)
-		var encantada := GetObjProperty(targ, "#elementalweapon");
-		if (encantada != error)
-			if (readgameclock() < encantada.endtime )
-				SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
-				return 1;
-			endif
-		endif
 
-		if ( GetCooldown(targ, "blessweapon") > 0 )
-			SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
-			return 1;
-		endif
+	if ( GetCooldown(targ, "blessweapon") > 0 )
+		SendSysMessageEx(who, "Essa arma já está com um encantamento.", SSM_FAIL);
+		return 1;
+	endif
 
-      if (targ.objtype == FIST)
-         SendSysMessageEx(who, "Você não pode encantar suas mãos.", SSM_FAIL);
-         return 1;
-      endif
+	if (targ.objtype == FIST)
+		SendSysMessageEx(who, "Você não pode encantar suas mãos.", SSM_FAIL);
+		return 1;
+	endif
 
-      return 0;
+	return 0;
 endfunction
 
 function epicWisdomPathBonus(who)
@@ -237,36 +232,196 @@ function epicWisdomPathBonus(who)
    return (int_bonus + mlore);
 endfunction
 
-//Função para aplicar o efeito de arma elemental do swordmage 
-function ApplyElementalWeaponProperties( who, targ, elemento, duracao )
+/*
+ * Purpose -
+ * Função para aplicar o efeito de arma elemental do swordmage 
+ *
+ * Parameters -
+ * who:	A creatura que terá sua arma encantada.
+ * elemento: Que elemento será aplicado.
+ *
+ * Return value -
+ *  0  caso a creatura não esteja equipada.
+ */
+function ApplyElementalWeaponProperties( who, elemento )
 
-  var dmgdice := DefineElementalWeaponDice(who);
+  var weapon := who.weapon;
+  if ( weapon == error )
+	return 0;
+  endif
 
-  var dmg := struct;
-  dmg.+type := elemento;
-  dmg.+serial := who.serial;
-  dmg.+endtime := readgameclock() + duracao;
-  dmg.+bonus := dmgdice;
+  var elementalProp := GetObjProperty( weapon, "#elementalweapon" );
+  var jaEncantada := elementalProp != error;
 
-  SetObjProperty( targ, "#elementalweapon", dmg );
-  start_script( ":spells:elementalweapon", { targ, duracao, elemento, who } );
+  var dmgdice := DefineElementalWeaponDice( who );
+  var cargas := Floor( AP_GetSkill( who, MAGICLORE ) / 4 );
+  cargas := cargas <= 0 ? 1 : cargas; // no minimo uma carga.
+
+  var elementalWeapon := struct;
+  elementalWeapon.+type := elemento;
+  elementalWeapon.+serial := who.serial;
+  elementalWeapon.+bonus := dmgdice;
+  elementalWeapon.+cargas := cargas;
+  elementalWeapon.+cargaMaxima := cargas;
+  elementalWeapon.+endtime := ReadGameClock() + 1200;
+  if ( !jaEncantada )
+	elementalWeapon.+originalColor := weapon.color;
+  else
+	elementalWeapon.+originalColor := elementalProp.originalColor;
+	elementalProp.decayTimer.kill();
+	
+  endif
+  elementalWeapon.+decayTimer := start_script( ":spells:elementalweapon", { weapon,
+																		    false,
+																		    elementalWeapon.endtime }
+											   );
+
+  if ( elemento == DMG_FIRE )
+	weapon.color := FOGO;
+  elseif ( elemento == DMG_COLD )
+	weapon.color := GELO;
+  elseif ( elemento == DMG_ENERGY )
+	weapon.color := RAIO;
+  endif
+
+  IncRevision( weapon );
+  SetObjProperty( weapon, "#elementalweapon", elementalWeapon );
 
 endfunction
 
-function DefineElementalWeaponDice(who)
+/*
+ * Purpose -
+ * Resposável por definir o dado de dano de uma aram encantada
+ *
+ * Parameters -
+ * who:	A creatura que será avaliada.
+ *
+ * Return value -
+ *  uma string especificando qual dado de dano serrá utilizado
+*/
+function DefineElementalWeaponDice( who )
 
-  var faixaMLore := AP_GetSkill( who, MAGICLORE ); 
+  var faixaMLore := AP_GetSkill( who, MAGICLORE );
   var dmgdice := "0";
 
   if ( faixaMLore < 40 )
-    dmgdice := cstr( "1d2" );
+	dmgdice := cstr( "1d2" );
   elseif ( faixaMLore >= 40 && faixaMLore < 70 )
-    dmgdice := cstr( "1d4" );
+	dmgdice := cstr( "1d4" );
   elseif ( faixaMLore >= 70 && faixaMLore < 90 )
-    dmgdice := cstr( "1d6" );
-  elseif (faixaMLore >= 90 )
-    dmgdice := cstr( "1d8" );
+	dmgdice := cstr( "1d6" );
+  elseif ( faixaMLore >= 90 )
+	dmgdice := cstr( "1d8" );
   endif
 
   return dmgdice;
+endfunction
+
+/*
+ * Purpose -
+ * Resposável por consumir as cargas arcanas de uma arma equipada.
+ *
+ * Parameters -
+ * who:	A creatura que terá cargas removidas da arma.
+ * quantidade:	quantas cargas serão removidas.
+ *
+ * Return value -
+ * [struct].divisor: Será o divisor de eficiência, pois consumimos mais do que tinhamos.
+ * [struct].isSucesso: retorna true se reduzimos ou false caso a arma não esteja encantada.
+*/
+function ConsumeArcaneCharges( who, quantidade )
+
+  var elementalWeapon := GetObjProperty( who.weapon, "#elementalweapon" );
+  var retorno := ConsumeItemArcaneCharges( who.weapon, quantidade );
+
+  if ( elementalWeapon != error && retorno.isSucesso )
+	if ( elementalWeapon.serial != who.serial && !TemHabilidade( who, "Vínculo Elemental" ))
+	  ApplyDamageHabElementalWeapon( 0, who, elementalWeapon.bonus, elementalWeapon.type,
+								  retorno.divisor );
+		SendSysMessageEx(who,"O controle das energias arcanas da arma se torna caótico e acaba ferindo você.", SSM_INFO);
+	endif
+  endif
+  return retorno;
+endfunction
+
+/*
+ * Purpose -
+ * Resposável por consumir as cargas arcanas de um item.
+ *
+ * Parameters -
+ * item:	item que terá cargas removidas.
+ * quantidade:	quantas cargas serão removidas.
+ * consumeAll: se deve ignorar a quantidade e consumir todas.
+ *
+ * Return value -
+ * [struct].divisor: Será o divisor de eficiência, pois consumimos mais do que tinhamos.
+ * [struct].isSucesso: retorna true se reduzimos ou false caso a arma não esteja encantada.
+*/
+function ConsumeItemArcaneCharges( item, quantidade, consumeAll := false )
+
+  var elementalWeapon := GetObjProperty( item, "#elementalweapon" );
+  var retorno := struct;
+  retorno.+divisor := 1;
+  retorno.+isSucesso := true;
+
+  if ( elementalWeapon != error )
+	var typeColor;
+	if ( elementalWeapon.type == DMG_FIRE )
+	  typeColor := FOGO;
+	elseif ( elementalWeapon.type == DMG_COLD )
+	  typeColor := GELO;
+	elseif ( elementalWeapon.type == DMG_ENERGY )
+	  typeColor := RAIO;
+	endif
+
+	var cargasAtualizada := 0;
+	if ( !consumeAll )
+	  cargasAtualizada := elementalWeapon.cargas - quantidade;
+	endif
+
+	if ( cargasAtualizada <= 0 ) // remove as propiedades do encantamento
+	  retorno.divisor := cargasAtualizada == 0 ? 1 : cargasAtualizada * -1;
+	  EraseObjProperty(item,"#elementalweapon");
+	  item.color := elementalWeapon.originalColor;
+	  if ( item.character_owner != error )
+		PlaySoundEffect(item.character_owner, SFX_SPELL_SUMMON_CREATURE);
+		SendSysMessageEx( item.character_owner, "Sua arma nao esta mais encantada.",SSM_INFO );
+	  endif
+	else
+
+	  elementalWeapon.cargas := cargasAtualizada; // Atualiza as cargas
+
+	  var faixaCor := elementalWeapon.cargas * 100 / elementalWeapon.cargaMaxima; // decide a faixa de cor
+	  if ( faixaCor <= 25 ) // Aplica a nova cor.
+		item.color := typeColor - 4;
+	  elseif ( faixaCor > 25 && faixaCor <= 50 )
+		item.color := typeColor - 3;
+	  elseif ( faixaCor > 50 && faixaCor <= 75 )
+		item.color := typeColor - 2;
+	  elseif ( faixaCor > 75 && faixaCor <= 100 )
+		item.color := typeColor - 1;
+	  endif
+	  SetObjProperty( item, "#elementalweapon", elementalWeapon );
+	endif
+	IncRevision( item );
+	return retorno;
+  else
+	retorno.isSucesso := false;
+	return retorno;
+  endif
+endfunction
+
+function LogOffElementalWeapon(who)
+	foreach item in (EnumerateItemsInContainer(who))
+		var elementalWeapon := GetObjProperty( item, "#elementalweapon" );
+		if (elementalWeapon != error)
+			ConsumeItemArcaneCharges(item,0,true);
+        endif
+    endforeach
+endfunction
+
+function ApplyChargesCalculation( weapon, dmg, chargesAmount )
+  var cargasRetorno := ConsumeItemArcaneCharges( weapon, chargesAmount );
+  var damage := Floor( dmg / cargasRetorno.divisor );
+  return damage;
 endfunction

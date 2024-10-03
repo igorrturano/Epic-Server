@@ -45,6 +45,7 @@ program SpellScript(params)
 			if (who.attack_once(alvo))
         			PlaySoundEffect(alvo, 0x228);
 				PlayLightningBoltEffect( alvo );
+				ApplyChargesCalculation(targ, 1, 3);
 			endif
 		endif
 	

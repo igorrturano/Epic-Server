@@ -16,6 +16,7 @@ include ":tn:boss";
 include "include/client";
 include "include/say";
 include "include/epicCombatUtils";
+include ":combat:damage";
 
 
 const OFFSET_OBJECT_SERIAL   := 0x05;
@@ -502,6 +503,17 @@ exported function MegaCliloc( who, byref packet )
 					foreach gem in (gems.keys())
 						xDesc := xDesc + white + gem + " - "+ getSwordSpellName(gems[gem].id) + "<br>";
 					endforeach
+				endif
+
+				if ( getObjProperty(item,"#elementalweapon").serial == who.serial)
+					var elWpn := getObjProperty(item, "#elementalweapon");
+					if (elWpn.type == DMG_COLD)
+						xDesc := xDesc + blueice + "Cargas Arcanas: "+elWpn.cargas+"<br>";
+					elseif ( elWpn.type == DMG_FIRE)
+						xDesc := xDesc + redfire + "Cargas Arcanas: "+elWpn.cargas +"<br>";
+					elseif (elWpn.type == DMG_ENERGY)
+						xDesc := xDesc + roxo + "Cargas Arcanas "+elWpn.cargas+"<br>";
+					endif
 				endif
 				if (item.dmg_mod > 0 )
 					xDesc := xDesc + roxo + "Bônus Dano "+item.dmg_mod+ " <br>";

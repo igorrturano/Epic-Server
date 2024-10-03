@@ -34,6 +34,8 @@ include ":timedscripts:timedScripts";
 include ":combat:include/mainHitScript";
 include "include/epicConstants";
 include ":commands:debugsystem";
+include "include/epicMageryUtils";
+include ":fls_magery:spellSounds";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -525,13 +527,10 @@ function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
 
   var elemental := GetObjProperty( wpn_a, "#elementalweapon" );
   if ( elemental != error )
-
-	var elemResist := 0;
-	var dmgBonus := RandomDiceRoll( elemental.bonus );
-	var totalDamage := CalculateDamage( defender, elemental.type, dmgBonus );
-	ApplyRawDamage( defender, totalDamage );
-	DisplayDamage( defender, dmgBonus, attacker );
-
+	If(elemental.cargas >= 1)
+		var retorno := ConsumeArcaneCharges(attacker,1);
+		ApplyDamageHabElementalWeapon( attacker, defender, elemental.bonus, elemental.type , retorno.divisor);
+	endif
   endif
 
   if ( TemHabilidade( attacker, "Conhecimento Sobre o Inimigo" ) )
