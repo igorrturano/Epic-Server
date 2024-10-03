@@ -852,7 +852,7 @@ function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
     PlayAttackAnimation(attacker); // 0x9
     // PlayHitSounds(attacker, defender);
 
-	MoveObjectToLocation(wpn_a, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(attacker.weapon, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 
 endfunction
 

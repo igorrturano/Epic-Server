@@ -55,6 +55,18 @@ function GetDmgStringDesc(elem, item)
 
 endfunction
 
+function GetOffHandDmgStringDesc(elem, item)
+	var dmg_mod := CInt(item.dmg_mod);
+	var resultado := CSTR(elem.OffHandDamage);
+	if (dmg_mod>0)
+		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
+	elseif (dmg_mod<0)
+		resultado := resultado + " (" + CSTR(dmg_mod) +")";
+	endif
+	return resultado;
+endfunction
+
+
 function GetDmgStringSpecialDmg(elem, item)
 	var dmg_mod := CInt(item.dmg_mod);
 	var minmod := elem.MinDam + dmg_mod;
@@ -470,6 +482,9 @@ exported function MegaCliloc( who, byref packet )
 			if (item.isA(POLCLASS_WEAPON))
 				xDesc := xDesc + "Força exigida: " + elem.strrequired + "<br>";
 				xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item) + "<br>";
+				if (elem.OffHandDamage)
+					xDesc := xDesc + "OffDano: " + GetOffHandDmgStringDesc(elem,  item) + "<br>";
+				endif
 				xDesc := xDesc + "Velocidade: " + GetVelStringDesc(elem, item) + "<br>";
 				xDesc := xDesc + GetTipoStringDesc(elem, item) + "<br>";
 				var crits := GetCriticalInfo(elem);
