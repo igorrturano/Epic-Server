@@ -188,13 +188,25 @@ endenum
  */
 function getNPCDamages(npc)
 	var elem := NPC_GetNPCConfig(npc);
-	var elemDamages := GetConfigString(elem, "EpicAttackDamage");
-	elemDamages := SplitWords(elemDamages);
+	var elemFisDamages := GetConfigString(elem, "EpicAttackDamage");
+	var elemElemDamages := GetConfigString(elem, "EpicElemDamage");
+
+	if (elemFisDamages == error || elemElemDamages == error)
+		return error{"errortext" := "NPC doesnt have the new attacks defined!"};
+	endif
+
+	elemFisDamages := SplitWords(elemFisDamages);
+	elemElemDamages := SplitWords(elemElemDamages);
 	var damages := struct;
 
-	damages.+SlashDamage := elemDamages[1];
-	damages.+PiercingDamage := elemDamages[2];
-	damages.+BluntDamage := elemDamages[3];
+	damages.+SlashDamage := elemFisDamages[1];
+	damages.+PiercingDamage := elemFisDamages[2];
+	damages.+BluntDamage := elemFisDamages[3];
+
+	damages.+FireDamage := elemElemDamages[1];
+	damages.+ColdDamage := elemElemDamages[2];
+	damages.+PoisonDamage := elemElemDamages[3];
+	damages.+EnergyDamage := elemElemDamages[4];
 
 	return damages;
 endfunction
