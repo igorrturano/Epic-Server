@@ -56,3 +56,10 @@ function CS_GetAverageDamage(weapon)
 	
 	return CInt(average);
 endfunction
+
+function CheckBastardSword(who)
+	if (who.weapon.objtype == 0x13b9 && !who.shield)
+		return 1;
+	endif
+	return 0;
+endfunction

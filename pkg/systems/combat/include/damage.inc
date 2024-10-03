@@ -235,7 +235,7 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0)
 
 		dmg := RandomDiceRoll(damages.SlashDamage);
 	else
-		var weaponelem := getItemCfgElem(weapon);
+		// var weaponelem := getItemCfgElem(weapon);
 
 		if (GetObjProperty(attacker, "metamorfose") != error)
 			weapondice := GetObjProperty(attacker, "dicedmg");
@@ -249,11 +249,10 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0)
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
 				weapondice := TWOHANDED_MID_DAMAGE;
-				dmg := RandomDiceRoll(weapondice);
 			else
 				weapondice := getWeaponMainDamage(weapon);
-				dmg := RandomDiceRoll(weapondice);
 			endif
+			dmg := RandomDiceRoll(weapondice);
     	endif
 	endif
 
@@ -504,11 +503,14 @@ function getResistNPCByType(npc, type, armor := 0)
 	var resist;
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
-	var npcResists := getNPCAllResists(npc);
+	var npcResists := getNPCResists(npc);
 
 	if (!armor || armor == error)
+		if (npcResists == error)
+			print(npc.npctemplate +" -> "+npcResists);
+		endif
 		case(type)
-			DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
+			// DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
 			DMG_SLASH: resist := CInt(npcResists.SlashResist); break;
 			DMG_PIERCING: resist := CInt(npcResists.PiercingResist); break;
 			DMG_BLUNT: resist := CInt(npcResists.BluntResist); break;
@@ -1133,11 +1135,4 @@ function CalcDamageReducer(attacker, damage)
 	endif
 
 	return damage;
-endfunction
-
-function CheckBastardSword(who)
-	if (who.weapon.objtype == 0x13b9 && !who.shield)
-		return 1;
-	endif
-	return 0;
 endfunction
