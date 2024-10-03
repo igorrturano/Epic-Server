@@ -14,10 +14,8 @@ include "include/epicMageryUtils";
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	params := 0; // No longer needed
 
-	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
-	var targ := who.weapon; //Spell_Target(who, TGTOPT_CHECK_LOS);
+	var targ := who.weapon;
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
@@ -31,18 +29,7 @@ program SpellScript(params)
 	        return 0;
         endif        
 
-		var dmg := struct;
-		dmg.+type := DMG_COLD;
-		dmg.+serial := who.serial;
-		dmg.+endtime := readgameclock() + time;
-		dmg.+bonus := AP_GetSkill(who, MAGICLORE)/400;
-		if  (dmg.bonus <= 0.1)
-			dmg.bonus := 0.1;
-		endif
-
-		SetObjProperty(targ, "#elementalweapon", dmg);
-
-		start_script( ":spells:elementalweapon", {targ, time, DMG_COLD, who} );
+		ApplyElementalWeaponProperties(who,targ,DMG_COLD,readgameclock() + time);
         PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "Uma fina camada de gelo cobre a arma.", SSM_INFO);
 
