@@ -68,7 +68,7 @@ endfunction
 exported function GetManaRegenRate(mobile)
 	var base_regen;
 	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Mana)) + (CInt(AP_GetTrueStat(mobile, "Intelligence"))*10); //base + 1 a cada 10 de atributo
+		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Mana) * 100) + (CInt(AP_GetTrueStat(mobile, "Intelligence"))*10); //base + 1 a cada 10 de atributo
 	else
 		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Mana);
 	endif
@@ -111,7 +111,7 @@ endfunction
 exported function GetStaminaRegenRate(mobile)
 	var base_regen;
 	if (!mobile.npctemplate) //calculo diferenciado pra player
-		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Stamina)) + (CInt(AP_GetTrueStat(mobile, "Dexterity"))*10); //base + 1 a cada 10 de atributo
+		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Mana) * 100)  + (CInt(AP_GetTrueStat(mobile, "Dexterity"))*10); //base + 1 a cada 10 de atributo
 	else
 		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Stamina);
 	endif
