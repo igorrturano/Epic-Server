@@ -28,14 +28,13 @@ program DblClickNerve(params)
 					var npcType := npc.npctemplate;
 					var playerRaca := GetObjProperty(player, "chardata").raca;
 					var sourceDescription := GetObjProperty(player, "descricao");
-					var PlayerPovo := GetObjProperty(player, "chardata").povo;
-					if (PlayerRaca == "Humano")
-						if (PlayerPovo == "Thuriao")
-							PlayerPovo := "Bjorsk";
-						endif
-						// print("PlayerPovo: "+PlayerPovo);
-						PlayerRaca := PlayerPovo;
+					var PlayerCultura := GetObjProperty(player, "chardata").culture;
+					// print("PlayerCultura: "+PlayerCultura);
+
+					if (playerRaca == "Humano") // para Povos do Leste, Bjorske e Aiglanos serem diferenciados pelos NPCs
+						playerRaca := PlayerCultura;
 					endif
+
 					var playerinput := "*"+ playerRaca + " " + sourceDescription + " se aproxima*";
 					
 					var responseAI := "A gente tem isso aqui... *aponta pra uma estante aos pedaços*";
