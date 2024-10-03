@@ -551,7 +551,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
-				resist := CInt(armorResists.SlashResist);
+				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -559,7 +559,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 		DMG_PIERCING:
 			if (armorResists.PiercingResist)
-				resist := CInt(armorResists.PiercingResist);
+				resist := CInt(armorResists.PiercingResist) + CInt(armorResists.PiercingResistMod);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
@@ -567,17 +567,17 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 
 		DMG_BLUNT:
 			if (armorResists.BluntResist)
-				resist := CInt(armorResists.BluntResist);
+				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
 			break;
 
 		// TODO: Colocar as resistências elementais no mesmo modelo do físico.
-		DMG_FIRE: resist := CInt(armor.FireResist) + CInt(armor.resist_fire_mod); break;
-		DMG_COLD: resist := CInt(armor.ColdResist) + CInt(armor.resist_cold_mod); break;
-		DMG_ENERGY: resist := CInt(armor.EnergyResist) + CInt(armor.resist_energy_mod); break;
-		DMG_POISON: resist := CInt(armor.PoisonResist) + CInt(armor.resist_poison_mod); break;
+		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod); break;
+		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod); break;
+		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod); break;
+		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod); break;
 	endcase
 
 	return CInt(resist);
