@@ -1,32 +1,471 @@
 use uo;
+include ":tn:tngumps";
+include ":gumps:requestGump";
 
+const GUMP_WIDTH := 500;
+const GUMP_HEIGHT := 600;
+const SOUNDS_PER_PAGE := 15;
 
 program setupsound(who, rune)
-	if (who.cmdlevel < 2)
-		return;
-	endif
-	
-	var range := RequestInput(who, who.backpack, "Distancia maxima que o som pode ser ouvido:");
-	if (!range)
-		range :=1;
-	endif
-	SetObjProperty(rune, "range", CInt(range));
-	
-	var delay := RequestInput(who, who.backpack, "Tempo entre os sons: ");
-	if (!delay)
-		delay := 1;
-	endif
-	SetObjProperty(rune, "delay", CInt(delay));
-	
-	SendSysMessage(who, "Entre com a lista de sons.");
-	var soundlist := array;
-	var sound;
-	repeat
-		sound := CInt(RequestInput(who, who.backpack, "ID do som- ESC pra terminar."));
-		if ( sound )
-			soundlist.append(sound);
-			PlaySoundEffect(who, sound);
-		endif
-	until( !sound );
-	SetObjProperty(rune, "soundlist", soundlist);
+    if (who.cmdlevel < 2)
+        return;
+    endif
+    
+    StopCurrentSound(who);
+    
+   var sound := MainMenu(who, rune);
+    if (sound == 0)
+        SendSysMessage(who, "Configuração de som cancelada.");
+        return;
+    elseif (sound > 0)
+        SetObjProperty(rune, "soundlist", array{AdjustSoundCode(sound)});
+        SendSysMessage(who, "Som configurado com sucesso.");
+    else
+        SendSysMessage(who, "Nenhum som selecionado.");
+    endif
 endprogram
+
+function AdjustSoundCode(sound_code)
+    if (sound_code == 0x000)
+        return 0x003;
+    endif
+    
+    return sound_code + 1;
+endfunction
+
+function PlayAdjustedSoundEffect(who, sound_id)
+    var adjusted_sound_id := AdjustSoundCode(sound_id);
+    PerformAction(who, 0x21);
+    PlaySoundEffectPrivate(who, adjusted_sound_id, who);
+endfunction
+
+function StopCurrentSound(who)
+    PlaySoundEffect(who, 0x0000);
+    sleepms(50);
+endfunction
+
+function MainMenu(who, rune)
+    var gump, input;
+    var current_range, current_delay, new_range, new_delay;
+    var result := 0;
+
+    repeat
+        gump := GFCreateGump();
+        GFDisposable(gump, 0);
+        GFResizePic(gump, 0, 0, 9260, GUMP_WIDTH, GUMP_HEIGHT);
+        GFResizePic(gump, 15, 15, 3000, GUMP_WIDTH-30, GUMP_HEIGHT-30);
+        
+        GFTextMid(gump, 10, 20, GUMP_WIDTH-20, 53, "Configuração de Som Ambiente");
+        
+        current_range := CInt(GetObjProperty(rune, "range")) ? CInt(GetObjProperty(rune, "range")) : 1;
+        current_delay := CInt(GetObjProperty(rune, "delay")) ? CInt(GetObjProperty(rune, "delay")) : 1;
+        
+        GFTextLine(gump, 30, 100, 53, "Distância máxima do som:");
+        GFResizePic(gump, 230, 95, 9350, 100, 28);
+        GFTextEntry(gump, 235, 100, 90, 20, 1153, CStr(current_range), 1001);
+        
+        GFTextLine(gump, 30, 130, 53, "Tempo entre os sons (segundos):");
+        GFResizePic(gump, 230, 125, 9350, 100, 28);
+        GFTextEntry(gump, 235, 130, 90, 20, 1153, CStr(current_delay), 1002);
+        
+        GFTextLine(gump, 30, 200, 1153, "Escolha uma opção:");
+        
+        GFAddButton(gump, 50, 230, 4005, 4006, 1, 1);
+        GFTextLine(gump, 85, 230, 53, "Sons Ambientais");
+        
+        GFAddButton(gump, 50, 260, 4005, 4006, 1, 2);
+        GFTextLine(gump, 85, 260, 53, "Sons de Animais");
+        
+        GFTextLine(gump, 30, 320, 1153, "Ou insira o hex do som manualmente:");
+        GFResizePic(gump, 30, 345, 9350, 150, 28);
+        GFTextEntry(gump, 35, 350, 140, 20, 1153, "", 1003);
+        GFAddButton(gump, 190, 345, 4005, 4006, 1, 3);
+        GFTextLine(gump, 225, 350, 53, "OK");
+        
+        GFAddButton(gump, 30, GUMP_HEIGHT - 60, 4017, 4018, 1, 999);
+        GFTextLine(gump, 65, GUMP_HEIGHT - 60, 53, "Fechar");
+
+        input := GFSendGump(who, gump);
+        
+        if (input[0] == 999)
+            return 0;
+        endif
+        
+        new_range := CInt(GFExtractData(input, 1001));
+        new_delay := CInt(GFExtractData(input, 1002));
+        
+        if (new_range > 0)
+            SetObjProperty(rune, "range", new_range);
+        else
+            SendSysMessage(who, "Valor inválido para distância. Usando o valor padrão.");
+            SetObjProperty(rune, "range", 1);
+        endif
+        
+        if (new_delay > 0)
+            SetObjProperty(rune, "delay", new_delay);
+        else
+            SendSysMessage(who, "Valor inválido para tempo. Usando o valor padrão.");
+            SetObjProperty(rune, "delay", 1);
+        endif
+        
+          case (input[0])
+            1: 
+                result := SelectSounds(who, GetAmbientSounds(), "Sons Ambientais");
+                if (result == 0)
+                    return 0; // Fecha o gump se SelectSounds retornar 0
+                endif
+            2: 
+                result := SelectSounds(who, GetAnimalSounds(), "Sons de Animais");
+                if (result == 0)
+                    return 0; // Fecha o gump se SelectSounds retornar 0
+                endif
+            3: 
+                var custom_hex := GFExtractData(input, 1003);
+                if (custom_hex)
+                    custom_hex := Lower(custom_hex);
+                    if (custom_hex[1, 2] != "0x")
+                        custom_hex := "0x" + custom_hex;
+                    endif
+                    var custom_sound := CInt(custom_hex);
+                    if (custom_sound)
+                        result := custom_sound;
+                        SendSysMessage(who, "Som personalizado configurado com sucesso.");
+                    else
+                        SendSysMessage(who, "Hex inválido. Por favor, tente novamente.");
+                    endif
+                else
+                    SendSysMessage(who, "Nenhum hex inserido. Retornando ao menu principal.");
+                endif
+            default: continue;
+        endcase
+
+
+        if (result > 0)
+            return result;
+        endif
+    until (0);
+endfunction
+
+function SelectSounds(who, sound_list, title)
+    var gump, input;
+    var page := 1;
+    var total_pages := Cint((sound_list.size() - 1) / SOUNDS_PER_PAGE) + 1;
+    
+    repeat
+        gump := GFCreateGump();
+        GFDisposable(gump, 0);
+        GFResizePic(gump, 0, 0, 9260, GUMP_WIDTH, GUMP_HEIGHT);
+        GFResizePic(gump, 15, 15, 3000, GUMP_WIDTH-30, GUMP_HEIGHT-30);
+        
+        GFTextMid(gump, 10, 20, GUMP_WIDTH-20, 53, title);
+        
+        GFAddButton(gump, 25, 20, 4014, 4015, 1, 998);
+        GFTextLine(gump, 70, 20, 53, "Voltar");
+
+        GFAddButton(gump, 30, GUMP_HEIGHT - 60, 4017, 4018, 1, 999);
+        GFTextLine(gump, 65, GUMP_HEIGHT - 60, 53, "Fechar");
+        
+        GFTextLine(gump, 30, 50, 53, "Escutar");
+        GFTextLine(gump, 95, 50, 53, "Hex");
+        GFTextLine(gump, 145, 50, 53, "Explicacao do som");
+        GFTextLine(gump, 400, 50, 53, "Selecionar");
+        
+        var start_index := (page - 1) * SOUNDS_PER_PAGE + 1;
+        var end_index := start_index + SOUNDS_PER_PAGE - 1;
+        end_index := (end_index > sound_list.size()) ? sound_list.size() : end_index;
+        
+        var y_pos := 80;
+        for i := start_index to end_index
+            var sound := sound_list[i];
+            GFAddButton(gump, 30, y_pos, 2117, 2118, 1, 2000+sound);
+            GFTextLine(gump, 95, y_pos, 1153, Hex(sound));
+            GFTextLine(gump, 145, y_pos, 1153, GetSoundName(sound));
+            GFAddButton(gump, 400, y_pos, 4005, 4006, 1, sound);
+            y_pos += 30;
+        endfor
+        
+        GFTextMid(gump, 0, GUMP_HEIGHT-60, GUMP_WIDTH, 53, "Pagina " + page + " de " + total_pages);
+        
+        if (page > 1)
+            GFAddButton(gump, 350, GUMP_HEIGHT-60, 4014, 4015, 1, 1001);
+        endif
+        if (page < total_pages)
+            GFAddButton(gump, 400, GUMP_HEIGHT-60, 4005, 4006, 1, 1002);
+            GFTextLine(gump, 435, GUMP_HEIGHT-60, 53, "Proxima");
+        endif
+        
+        input := GFSendGump(who, gump);
+        
+        case (input[0])
+            999:
+                return 0;
+            998:
+                return -1;
+            1001:
+                page := Max(1, page - 1);
+            1002:
+                page := Min(total_pages, page + 1);
+            default:
+                if (input[0] >= 2000)
+                    var original_sound := input[0] - 2000;
+                    StopCurrentSound(who);
+                    PlayAdjustedSoundEffect(who, original_sound);
+                elseif (input[0] >= 1 && input[0] <= 997)
+                    return input[0];
+                endif
+        endcase
+    until (0);
+endfunction
+
+
+function GetAmbientSounds()
+    return array{
+        0x000, 0x001, 0x002, 0x003, 0x004, 0x005, 0x006, 0x007, 0x008, 0x009, 
+        0x00A, 0x00B, 0x00C, 0x00D, 0x00E, 0x00F, 0x010, 0x011, 0x012, 0x013, 
+        0x014, 0x015, 0x016, 0x020, 0x021, 0x022, 0x023, 0x024, 0x025, 0x026, 
+        0x027, 0x028, 0x029, 0x02A, 0x02B, 0x339, 0x33A, 0x33B, 0x33C, 0x33D, 
+        0x33E, 0x33F, 0x340, 0x341, 0x342, 0x343, 0x344, 0x2D7, 0x2D8, 0x2D9, 
+        0x2DB, 0x2DC, 0x2DD, 0x2DE, 0x2DF, 0x2E0, 0x2DA, 0x2E7, 0x2E8, 0x2E9, 
+        0x2EA, 0x2EB, 0x2EC, 0x2ED, 0x2F3, 0x2F4, 0x356, 0x357, 0x358, 0x359, 
+        0x365, 0x366, 0x367, 0x368, 0x369, 0x36A, 0x4D1, 0x569, 0x56A
+    };
+endfunction
+
+function GetAnimalSounds()
+    return array{
+        0x017, 0x018, 0x019, 0x01A, 0x01B, 0x01C, 0x01D, 0x01E, 0x01F, 0x0A4, 
+        0x0A5, 0x0A6, 0x0A7, 0x0A8, 0x0A9, 0x0AA, 0x0AB, 0x0AC, 0x0AD, 0x0AE, 
+        0x0AF, 0x0B0, 0x0B1, 0x0BF, 0x0C0, 0x0C1, 0x0C2, 0x0C3, 0x0C4, 0x0C5, 
+        0x0C6, 0x0C7, 0x0C8, 0x0D1, 0x0D2, 0x0D3, 0x0D4, 0x0D5, 0x0D6, 0x0D7, 
+        0x0D8, 0x0D9, 0x0DA, 0x0DB, 0x0DC, 0x0DD, 0x0DE, 0x0DF, 0x0E0, 0x0E1, 
+        0x0E2, 0x0E3, 0x0E4, 0x0E5, 0x0E6, 0x0E7, 0x0E8, 0x0E9, 0x11F, 0x120, 
+        0x266, 0x267, 0x268, 0x269, 0x26A, 0x26B, 0x26C, 0x26D, 0x26E, 0x26F, 
+        0x270, 0x271, 0x272, 0x273, 0x274, 0x275, 0x276, 0x277, 0x278, 0x279, 
+        0x27A, 0x294, 0x295, 0x296, 0x297, 0x298, 0x29A, 0x29B, 0x29C, 0x29D, 
+        0x29E, 0x29F, 0x2A0, 0x2A2, 0x2A3, 0x2A4, 0x2A5, 0x2A6, 0x2D5, 0x2EE, 
+        0x2EF, 0x2F0, 0x2F1, 0x2F2, 0x345, 0x346, 0x347, 0x348, 0x349, 0x34A, 
+        0x35A, 0x35B, 0x35C, 0x35D, 0x35E, 0x35F, 0x360, 0x361, 0x362, 0x363, 
+        0x66A, 0x66B, 0x66C, 0x670, 0x671, 0x672, 0x673, 0x674, 0x675, 0x676, 
+        0x67F, 0x680
+    };
+endfunction
+
+
+
+function GetSoundName(sound_id)
+    case (sound_id)
+        0x000: return "Som ambiente de floresta diurna 1";
+        0x001: return "Som ambiente de floresta diurna 2";
+        0x002: return "Som ambiente de floresta diurna 3";
+        0x003: return "Som ambiente de selva diurna 1";
+        0x004: return "Som ambiente de selva diurna 2";
+        0x005: return "Som ambiente de selva diurna 3";
+        0x006: return "Som ambiente de pântano diurno 1";
+        0x007: return "Som ambiente de pântano diurno 2";
+        0x008: return "Som ambiente de floresta noturna 1";
+        0x009: return "Som ambiente de floresta noturna 2";
+        0x00A: return "Som ambiente genérico noturno 1";
+        0x00B: return "Som ambiente genérico noturno 2";
+        0x00C: return "Som ambiente de selva noturna 1";
+        0x00D: return "Som ambiente de selva noturna 2";
+        0x00E: return "Som ambiente de pântano noturno 1";
+        0x00F: return "Som ambiente de pântano noturno 2";
+        0x010: return "Som de água corrente 1";
+        0x011: return "Som de água corrente 2";
+        0x012: return "Som de ondas quebrando 1";
+        0x013: return "Som de ondas quebrando 2";
+        0x014: return "Som de vento suave 1";
+        0x015: return "Som de vento suave 2";
+        0x016: return "Som de vento";
+        0x020: return "Som de bolhas na água 1";
+        0x021: return "Som de bolhas na água 2";
+        0x022: return "Som de gotas de água pingando 1";
+        0x023: return "Som de gotas de água pingando 2";
+        0x024: return "Som de gotas de água pingando 3";
+        0x025: return "Som de respingo na água 1";
+        0x026: return "Som de respingo na água 2";
+        0x027: return "Som de respingo na água 3";
+        0x028: return "Som de trovão distante";
+        0x029: return "Som de trovão próximo";
+        0x02A: return "Som de marteladas em uma bigorna";
+        0x02B: return "Som de foles de uma forja";
+		0x339: return "Som de passos na grama 1";
+        0x33A: return "Som de passos na grama 2";
+        0x33B: return "Som de passos em cascalho 1";
+        0x33C: return "Som de passos em cascalho 2";
+        0x33D: return "Som de passos em pavimento 1";
+        0x33E: return "Som de passos em pavimento 2";
+        0x33F: return "Som de passos na areia 1";
+        0x340: return "Som de passos na areia 2";
+        0x341: return "Som de passos na neve 1";
+        0x342: return "Som de passos na neve 2";
+        0x343: return "Som de passos em madeira 1";
+        0x344: return "Som de passos em madeira 2";
+        0x2D7: return "Som de gota pingando 1";
+        0x2D8: return "Som de gota pingando 2";
+        0x2D9: return "Som de gota pingando 3";
+        0x2DB: return "Som de gota pingando 4";
+        0x2DC: return "Som de gota pingando 5";
+        0x2DD: return "Som de gota pingando 6";
+        0x2DE: return "Som de gota pingando 7";
+        0x2DF: return "Som de gota pingando 8";
+        0x2E0: return "Som de gota pingando 9";
+		0x2DA: return "Som de gota pingando 10";
+        0x2E7: return "Som de tambor de batalha";
+        0x2E8: return "Som de tambor dramático";
+        0x2E9: return "Som de tambor ocioso";
+        0x2EA: return "Som de tambor 1";
+        0x2EB: return "Som de tambor 2";
+        0x2EC: return "Som de tambor 2";
+        0x2ED: return "Som de tambor 3";
+        0x2F3: return "Som de terremoto";
+        0x2F4: return "Som elétrico";
+        0x356: return "Som de chama 1";
+        0x357: return "Som de chama 3";
+        0x358: return "Som de chama (2)";
+        0x359: return "Som de chama 5";
+        0x365: return "Som de galope na grama";
+        0x366: return "Som de galope em cascalho";
+        0x367: return "Som de galope em pavimento";
+        0x368: return "Som de galope na areia";
+        0x369: return "Som de galope na neve";
+        0x36A: return "Som de galope em madeira";
+        0x4D1: return "Som de respingo de peixe";
+        0x569: return "Som de uivo";
+        0x56A: return "Som de canalização";
+
+        0x017: return "Som de pássaro 1";
+        0x018: return "Som de pássaro 2";
+        0x019: return "Som de pássaro 3";
+        0x01A: return "Som de pássaro 4";
+        0x01B: return "Som de pássaro 5";
+        0x01C: return "Som de pássaro 6";
+        0x01D: return "Som de pássaro 7";
+        0x01E: return "Som de pássaro 8";
+        0x01F: return "Som de pássaro 9";
+        0x0A4: return "Som de urso grizzly 2";
+        0x0A5: return "Som de urso grizzly 3";
+        0x0A6: return "Som de urso grizzly 4";
+        0x0A7: return "Som de urso grizzly 5";
+        0x0A8: return "Som de cavalo 1";
+        0x0A9: return "Som de cavalo 2";
+        0x0AA: return "Som de cavalo 3";
+        0x0AB: return "Som de cavalo 4";
+        0x0AC: return "Som de cavalo 5";
+        0x0AD: return "Som de pássaro da selva 1";
+        0x0AE: return "Som de pássaro da selva 2";
+        0x0AF: return "Som de pássaro da selva 3";
+        0x0B0: return "Som de pássaro da selva 4";
+        0x0B1: return "Som de pássaro da selva 5";
+        0x0BF: return "Som de papagaio 1";
+        0x0C0: return "Som de papagaio 2";
+        0x0C1: return "Som de papagaio 3";
+        0x0C2: return "Som de papagaio 4";
+        0x0C3: return "Som de papagaio 5";
+        0x0C4: return "Som de porco 1";
+        0x0C5: return "Som de porco 2";
+        0x0C6: return "Som de porco 3";
+        0x0C7: return "Som de porco 4";
+        0x0C8: return "Som de porco 5";
+        0x0D1: return "Som de corvo 1";
+        0x0D2: return "Som de corvo 2";
+        0x0D3: return "Som de corvo 3";
+        0x0D4: return "Som de corvo 4";
+        0x0D5: return "Som de corvo 5";
+        0x0D6: return "Som de ovelha 1";
+        0x0D7: return "Som de ovelha 2";
+        0x0D8: return "Som de ovelha 3";
+        0x0D9: return "Som de ovelha 4";
+        0x0DA: return "Som de ovelha 5";
+        0x0DB: return "Som de cobra 1";
+        0x0DC: return "Som de cobra 2";
+        0x0DD: return "Som de cobra 3";
+        0x0DE: return "Som de cobra 4";
+        0x0DF: return "Som de cobra 5";
+        0x0E0: return "Som de morsa 1";
+        0x0E1: return "Som de morsa 2";
+        0x0E2: return "Som de morsa 3";
+        0x0E3: return "Som de morsa 4";
+        0x0E4: return "Som de morsa 5";
+        0x0E5: return "Som de lobo 1";
+        0x0E6: return "Som de lobo 2";
+        0x0E7: return "Som de lobo 3";
+        0x0E8: return "Som de lobo 4";
+        0x0E9: return "Som de lobo 5";
+        0x11F: return "Som de Pé Grande 1";
+        0x120: return "Som de Pé Grande 2";
+        0x266: return "Som de sapo grande 1";
+        0x267: return "Som de sapo grande 2";
+        0x268: return "Som de sapo grande 3";
+        0x269: return "Som de sapo grande 4";
+        0x26A: return "Som de sapo grande 5";
+        0x26B: return "Som de sapo pequeno 1";
+        0x26C: return "Som de sapo pequeno 2";
+        0x26D: return "Som de sapo pequeno 3";
+        0x26E: return "Som de sapo pequeno 4";
+        0x26F: return "Som de sapo pequeno 5";
+        0x270: return "Som de pássaro do deserto 1";
+        0x271: return "Som de pássaro do deserto 2";
+        0x272: return "Som de pássaro do deserto 3";
+        0x273: return "Som de pássaro do deserto 4";
+        0x274: return "Som de pássaro do deserto 5";
+        0x275: return "Som de pássaro do deserto 6";
+        0x276: return "Som de pássaro do deserto 7";
+        0x277: return "Som de pássaro do deserto 8";
+        0x278: return "Som de pássaro do deserto 9";
+        0x279: return "Som de pássaro do deserto 10";
+        0x27A: return "Som de guerreiro serpente 1";
+        0x294: return "Som de jacaré 1";
+        0x295: return "Som de jacaré 2";
+        0x296: return "Som de jacaré 3";
+        0x297: return "Som de jacaré 4";
+        0x298: return "Som de jacaré 5";
+        0x29A: return "Som de urso";
+        0x29B: return "Som de pássaro 1";
+        0x29C: return "Som de pássaro 2";
+        0x29D: return "Som de pássaro 3";
+        0x29E: return "Som de pássaro 4";
+        0x29F: return "Som de pássaro 5";
+        0x2A0: return "Som de pássaro 6";
+        0x2A2: return "Som de gato 1";
+        0x2A3: return "Som de gato 2";
+        0x2A4: return "Som de gato 3";
+        0x2A5: return "Som de gato 4";
+        0x2A6: return "Som de gato 5";
+        0x2D5: return "Som de dragão caminhando";
+        0x2EE: return "Som de águia 1";
+        0x2EF: return "Som de águia 2";
+        0x2F0: return "Som de águia 3";
+        0x2F1: return "Som de águia 4";
+        0x2F2: return "Som de águia 5";
+        0x345: return "Som de fogo 1";
+        0x346: return "Som de fogo 2";
+        0x347: return "Som de fogo 3";
+		0x348: return "Som de fogo 4";
+        0x349: return "Som de fogo 5";
+        0x34A: return "Som de fogo 6";
+        0x35A: return "Som de sapo 1";
+        0x35B: return "Som de sapo 2";
+        0x35C: return "Som de sapo 3";
+        0x35D: return "Som de sapo 4";
+        0x35E: return "Som de sapo 5";
+        0x35F: return "Som de sapo 6";
+        0x360: return "Som de sapo 7";
+        0x361: return "Som de sapo 8";
+        0x362: return "Som de sapo 9";
+        0x363: return "Som de sapo 10";
+        0x66A: return "Som de peru 1";
+        0x66B: return "Som de peru 2";
+        0x66C: return "Som de sino";
+        0x670: return "Rugido de tigre com raiva";
+        0x671: return "Rugido de ataque de tigre";
+        0x672: return "Rugido de tigre ao ser atingido";
+        0x673: return "Ronronar de tigre ocioso";
+        0x674: return "Ronco de filhote 1";
+        0x675: return "Ronco de filhote 2";
+        0x676: return "Ronco de gatinho";
+        0x67F: return "Som de pomba";
+        0x680: return "Som de coruja";
+        default: return "Som desconhecido";
+    endcase
+endfunction
