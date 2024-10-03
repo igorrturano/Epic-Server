@@ -276,11 +276,11 @@ function ApplyElementalWeaponProperties( who, elemento )
  
 
   if ( elemento == DMG_FIRE )
-	weapon.color := FOGO;
+	weapon.color := FOGO_LIGHT;
   elseif ( elemento == DMG_COLD )
-	weapon.color := GELO;
+	weapon.color := GELO_LIGHT;
   elseif ( elemento == DMG_ENERGY )
-	weapon.color := RAIO;
+	weapon.color := RAIO_LIGHT;
   endif
 
   IncRevision( weapon );
@@ -366,11 +366,11 @@ function ConsumeItemArcaneCharges( item, quantidade, consumeAll := false )
   if ( elementalWeapon != error )
 	var typeColor;
 	if ( elementalWeapon.type == DMG_FIRE )
-	  typeColor := FOGO;
+	  typeColor := FOGO_LIGHT;
 	elseif ( elementalWeapon.type == DMG_COLD )
-	  typeColor := GELO;
+	  typeColor := GELO_LIGHT;
 	elseif ( elementalWeapon.type == DMG_ENERGY )
-	  typeColor := RAIO;
+	  typeColor := RAIO_LIGHT;
 	endif
 
 	var cargasAtualizada := 0;
