@@ -735,6 +735,8 @@ exported function MegaCliloc( who, byref packet )
             endif
 
             var hitsscripts := GetObjProperty(item, "HitScripts");
+            var cfg := ReadConfigFile(":*:itemdesc");
+            var elem := FindConfigElem(cfg, item.objtype);
             if (hitsscripts != error)
                 foreach hits in hitsscripts
                     var dano_esp := GetDmgStringSpecialDmg(elem, item);
@@ -751,7 +753,7 @@ exported function MegaCliloc( who, byref packet )
             if (GetObjProperty(item, "swordmage") != error)
                 xDesc := xDesc + white + GetObjProperty(item, "swordmage") + "<br>";
             endif
-        elseif (item.isA(POLCLASS_ARMOR))
+        if (item.isA(POLCLASS_ARMOR))
             if (cint(elem.strrequired) > 0)
                 xDesc := xDesc + "Min Str: " + elem.strrequired + "<br>";
             endif
@@ -779,7 +781,6 @@ exported function MegaCliloc( who, byref packet )
                 xDesc := xDesc  + softgreen + "Veneno " + (item.resist_poison ) + "<br>";
             endif
         endif
-    endif
 
     var pplmage := GetObjProperty(item, "magicwho"); //magic lore
     if ( pplmage != error)
