@@ -70,6 +70,7 @@ exported function Attack(attacker, defender)
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
+	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "=================");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "ATAQUE INICIADO!");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "=================");
@@ -98,6 +99,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	if (IsDualWield(attacker.weapon) && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
+		Start_Script("weaponHitScripts/AttackAnimation", {attacker, 500});
 		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Mão -> OffHand");
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
 		if (penalty < 10)

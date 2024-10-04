@@ -63,7 +63,6 @@ program MainHitScript(params)
 		SleepMS(waitAnim);
 	endif
 
-	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
 	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
