@@ -338,7 +338,9 @@ function selectSpellTarget(mobile, spellinfo, targ)
             return 0;
         endif
 
-        TurnObjectToward(mobile, targ.x, targ.y);
+		if(targ != mobile)
+        	TurnObjectToward(mobile, targ.x, targ.y);
+		endif
     endif
 
     if (!checkTargetValidity(mobile, targ, spellinfo))

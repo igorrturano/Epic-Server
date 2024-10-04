@@ -10,9 +10,11 @@ use uo;
 use os;
 use polsys;
 include ":taming:taming";
+include "include/epicMageryUtils";
 
 program LogOff(who)
 	logoutpets(who);
+	LogOffElementalWeapon(who);
 	IsGm(who);
 	return 1;
 endprogram
