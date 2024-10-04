@@ -304,13 +304,13 @@ function DefineElementalWeaponDice( who )
   var dmgdice := "0";
 
   if ( faixaMLore < 40 )
-    dmgdice := cstr( "1d2" );
+    dmgdice := "1d2";
     elseif ( faixaMLore >= 40 && faixaMLore < 70 )
-    dmgdice := cstr( "1d4" );
+    dmgdice := "1d4";
     elseif ( faixaMLore >= 70 && faixaMLore < 90 )
-    dmgdice := cstr( "1d6" );
+    dmgdice := "1d6";
     elseif ( faixaMLore >= 90 )
-    dmgdice := cstr( "1d8" )
+    dmgdice := "1d8";
   endif
 
   return dmgdice;
