@@ -21,15 +21,11 @@ program SpellScript(params)
 		return;
 	endif
 
-	var time := AP_GetSkill(who, MAGICLORE)*10 + 180;
-
 	if (targ.isA(POLCLASS_WEAPON))
-
 		if(checkForElementalWeapons(who, targ))
-	        return 0;
-        endif        
-
-		ApplyElementalWeaponProperties(who,targ,DMG_ENERGY,readgameclock() + time);
+			return 0;
+		endif     
+		ApplyElementalWeaponProperties(who,DMG_ENERGY);
         PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "A arma esta eletrificada.", SSM_INFO);
 

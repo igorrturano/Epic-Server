@@ -13,6 +13,7 @@ include ":tn:cooldown";
 include ":combat:damage";
 include "include/shapes";
 include ":spells:swordmage";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -50,6 +51,7 @@ program SpellScript(params)
 		eraseobjproperty(targ, "gems");
 		SetName(targ, targ.desc+" [danificado]");
 		MoveItemToContainer(targ, who.backpack);
+		var cargasRetorno := ConsumeItemArcaneCharges( targ, 5 );
 
 		//DestroyItem(targ);
 
@@ -102,6 +104,7 @@ program SpellScript(params)
       					PlayObjectCenteredEffect(defender, 0x36cb, 7, 0x10);
       					PlaySoundEffect(defender, 0x228);
 					var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
+					dmg := Floor( dmg / cargasRetorno.divisor);
 					DamageFLS(defender, cint(dmg), DMG_FIRE, who);
       					//ApplyDamageEX(defender, cint(dmg), DMG_FIRE);
 				endif
