@@ -99,7 +99,9 @@ exported function Attack(attacker, defender)
 		endif
 
 		hitchance -= penalty;
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto off-hand: "+hitchance);
 		rolldice := RandomDiceRoll("1d100");
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto off-hand: "+rolldice);
 		if ( rolldice < hitchance )
 			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
