@@ -37,6 +37,7 @@ program MainHitScript(params)
 	var armor := params[4];
 	var basedamage := params[5];
 	var rawdamage := params[6];
+	var waitAnim := params[7];
 	var elementaldamage;
 
 	// Garante dano mínimo de 1
@@ -57,8 +58,12 @@ program MainHitScript(params)
 
 	// Checa se o atacante está olhando pro alvo e se está por trás dele
 	FacingChecks(attacker, defender);
-
-	// Toca do som do alvo sofrendo ataque
+	
+	if (waitAnim)
+		Sleep(waitAnim);
+	endif
+	
+	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 
 	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
