@@ -104,25 +104,23 @@ function SetupEquip(who)
   var categ := GetConfigString(npcelem, "Equip");
   categ := categ;
 
+  // TODO: Criar um struct contendo as características de cada raça (cor, todos os cabelos, etc)
   if(who.graphic == 0x190)
-        //case(randomint(2))
-          //0:
-              who.graphic := 0x190;
-             who.gender := 0;
-             categ := categ + "M";
+    var male_graphics := {400, 1830, 1832, 1828, 1835};
+
+    who.graphic := RandomInt(male_graphics.size()) + 1;
+    who.gender := 0;
+    categ := categ + "M";
   elseif (who.graphic == 0x191)
-          //1: who.graphic := 0x191;
-           //  who.gender := 1;
-             categ := categ + "F";
-        //endcase
-   endif
+    var female_graphics := {401, 1831, 1833, 1829, 1834};
+    who.graphic := RandomInt(female_graphics.size()) +1;
+    categ := categ + "F";
+  endif
   couleurs := ReadConfigFile(":ghaia:config/colors");
   vetements := ReadConfigFile(":ghaia:config/cloths");
   templt := ReadConfigFile(":ghaia:config/equip2");
-  //printtextabove(me, " " + couleurs + " " + vetements + " " + templt);
   if(couleurs && vetements && templt)
     group := FindConfigElem(templt, categ);
-    //printtextabove(who, " " +templt + " " + categ + " " + group);
     if(group)
       var str;
       var lastc := 0;
@@ -133,7 +131,6 @@ function SetupEquip(who)
         lastc := EquipItemString(who, str, lastc );
       endforeach
       foreach str in GetConfigStringArray(group, "Weapon")
-        //printtextabove(who, " " + str);
         lastc := EquipItemString(who, str, lastc);
       endforeach
     endif
@@ -142,10 +139,8 @@ function SetupEquip(who)
   if (!montaria)
   else
 	var graphic := MP_GetMountGraphic(montaria);
-	print("graphic eh" +graphic);
 	var item := CreateItemAtLocation(who.x, who.y, who.z, MOUNT_OBJTYPE, 1);
 	item.graphic := graphic;
-	print("item eh "+item.graphic);
 	Equipitem (who, item);
   endif
 
