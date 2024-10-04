@@ -766,12 +766,16 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 endfunction
 
 function EpicApplyDamage(attacker, defender, weaponHand)
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
-	dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+	
+
+	if (!weaponHand)
+		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+	else
+		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, 1});
+	endif
 endfunction
 
 // Arqueiros
