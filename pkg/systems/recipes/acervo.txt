@@ -907,9 +907,9 @@ Recipes capuz
 
 Recipes luvasdosmagos
 {
-    name Luva dos Acolitos da Sangria
+    name Luva dos Acolitos da Magia
     level 2
-    text (DW)Trata-se de uma luva com adornamentos estranhos e palavras pouco conhecidas por pessoas comuns. Os Acolitos da Sangria sempre mantiveram costumes pouco conhecidos e, em casos, ate pouco aceitos.
+    text (DW)Trata-se de uma luva com adornamentos estranhos e palavras pouco conhecidas por pessoas comuns. Os Acolitos da Magia sempre mantiveram costumes pouco conhecidos e, em casos, ate pouco aceitos.
 }
 
 

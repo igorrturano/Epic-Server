@@ -12,7 +12,7 @@ program cria( item )
   var spellinfo := struct;
 
   // pega o level do scroll
-  var scrollcfg := ReadConfigFile( ":spells:itemdesc" );
+  var scrollcfg := ReadConfigFile( ":spells:item:itemdesc" );
   var lvl := scrollcfg[item.objtype].Circle;
   var spelltype_item := scrollcfg[item.objtype].SpellType;
   if ( !lvl )

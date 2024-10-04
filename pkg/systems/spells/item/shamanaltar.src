@@ -7,7 +7,8 @@ include "include/sysEvent";
 include ":tn:tngumps";
 include "include/say";
 include ":attributes:attributes";
-include "include/tnmagery";
+//include ":spells:tnmagery";
+include ":spells:include/tnmagery";
 include ":timeUtils:time";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -15,53 +16,59 @@ include "include/epicMageryUtils";
 const SPELL_BTN := 200;
 
 program orderSpells(who, item)
-   var chardata := GetObjProperty(who, "chardata");
-   var magia := chardata.magia;
-   var religiao := chardata.religion;
-   var altar := altarByObjtype(who, item);
-   var cultura := chardata.culture;
-   var classe := chardata.classe;
-
-   if (altar == LORE && cultura == ALURIEL && !TemHabilidade(who, "Gwaenedh") && classe == SABIO)
-      if (ArcaneArcherDevotion(who))
-         playAltarAnimations(who, item);
-         return;
-      endif
-   endif
-
-   if (magia != "Sacerdote")
-      if (religiao == altar && !GetCooldown(who, "religion_bless"))
+   var magia := GetObjProperty(who, "chardata").magia;
+   var religiao := GetObjProperty(who, "chardata").religion;
+   if (magia != "Shaman")
+      if (religiao == USHKRAR && !GetCooldown(who, "religion_bless"))
          SetCooldown(who, "protecaomorte", 180);
          SetCooldown(who, "religion_bless", 60 * 60 * 2); // duas horas
          playAltarAnimations(who, item);
-         SendSysMessageEx(who, "Você sente uma aura de proteção envolta de sua alma.", SSM_INFO);
+         
+         SendSysMessageEx(who, "O Deserto te prepara para as adversidades da guerra.", SSM_INFO);
          return;
       endif
-      SendSysMessageEx(who, "O altar parece imponente.", SSM_INFO);
+      SendSysMessageEx(who, "O altar parece te observar de volta", SSM_INFO);
       return;
    endif
-
    var mlore := cint(AP_GetSkill(who, MAGICLORE));
-   var cfg          := ReadConfigFile(":spells:config/priestspells");
-   var priest_slots := Cint(mlore / 5);
+   var cfg          := ReadConfigFile(":spells:config/shamanspells");
+   var cleric_slots := Cint(mlore / 5);
 
-   var priest_list  := GetObjProperty(who, "priest_list");
-   if (!priest_list)
-      priest_list := array{};
+   var shaman_list  := GetObjProperty(who, "shaman_list");
+   if (!shaman_list)
+      shaman_list := array{};
    endif
 
    var spell_list := array{};
    var slots_used := 0;
+
+   // Adiciona cantrips
+    if (!GetObjProperty(who, "cantrips"))
+        var cantrips := array{};
+        foreach spell in (GetConfigIntKeys(cfg))
+            spell := FindConfigElem(cfg, spell);
+            var new_spell := struct{};
+            WriteSpellInfo(spell, ":spells:config/shamanspells");
+            sleepms(2);
+            if (spell.circle == 0) 
+                new_spell.+id := spell.SpellId;
+                new_spell.+name := spell.name;
+                new_spell.+powerwords := spell.powerwords;
+                cantrips.Append(new_spell);
+            endif
+        endforeach
+        SetObjProperty(who, "cantrips", cantrips);
+    endif
     
    foreach spell in (GetConfigIntKeys(cfg))
       spell := FindConfigElem(cfg, spell);
       sleepms(2);
-      WriteSpellInfo(spell, ":spells:config/priestspells");
-      var spell_found := FindAllElemInArray(priest_list, struct{ id := spell.SpellId }, 1);
+      WriteSpellInfo(spell, ":spells:config/shamanspells");
+      var spell_found := FindAllElemInArray(shaman_list, struct{ id := spell.SpellId }, 1);
       if (spell_found)
          slots_used += cint(spell.circle * spell_found.size());
          foreach i in spell_found
-            priest_list[spell_found].circle := spell.circle;
+            shaman_list[spell_found].circle := spell.circle;
             sleepms(2);
          endforeach
       endif
@@ -74,10 +81,10 @@ program orderSpells(who, item)
       sleepms(2);
    endforeach
 
-   var available_slots := priest_slots - slots_used;
+   var available_slots := cleric_slots - slots_used;
    var canceled := 0;
    while (!canceled)
-      RemoveUsedSpells(who, priest_list, available_slots);
+      RemoveUsedSpells(who, shaman_list, available_slots);
       var input := CreateClericGump(who, spell_list, available_slots);
 
       if (input[0] >= 200)
@@ -85,9 +92,9 @@ program orderSpells(who, item)
             return SendSysMessageEx(who, "Voce deve aguardar um pouco antes de pedir por bencaos novamente.", SSM_FAIL);
          endif
          var spell := spell_list[input[0]-200];
-         var ret := StoreSpell(who, spell, priest_list, available_slots);
+         var ret := StoreSpell(who, spell, shaman_list, available_slots);
          if (ret)
-            playAltarAnimations(who, altar);
+            playAltarAnimations(who, item);
          endif
       elseif (!input[0])
          canceled := 1;
@@ -99,18 +106,18 @@ function CreateClericGump(who, spell_list, available_slots)
    var gump := GFCreateGump();
    var size := spell_list.Size();
    if (size >= 1)
-      size := size * 40 - (8 * 40); // Cantrips
+      size := size * 26 - (8 * 26); // Cantrips
    else
       size := 0;
    endif
 	GFResizePic(gump, 17, 31, 9390, 359, 125+size);
 	// GFHtmlShadowed(gump, 115, 70, 192, 20, "#feb98e ", "<BASEFONT Size=5>Lista de Bençãos");
-	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
-	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Augur", 0, 0); //shadow
-	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Augur", 0, 0);
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Ukshar", 0, 0); //shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Ukshar", 0, 0); //shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Ukshar", 0, 0);
 	GFGumpPic(gump, 63, 91, 1469);
 	GFGumpPic(gump, 80, 91, 1469);
-	GFTextLine(gump, 63, 100, 0, "Rituais Augures");
+	GFTextLine(gump, 63, 100, 0, "Rituais Xamânicos");
 	GFTextLine(gump, 259, 100, 0, "Slots");
 	GFTextLine(gump, 304, 100, 0, "Receber");
 	GFGumpPic(gump, 38, 103, 9773, 0);
@@ -136,9 +143,9 @@ function CreateClericGump(who, spell_list, available_slots)
    return GFSendGump(who, gump);
 endfunction
 
-function StoreSpell(who, spellinfo, byref priest_list, byref available_slots)
+function StoreSpell(who, spellinfo, byref shaman_list, byref available_slots)
    if (available_slots-spellinfo.circle < 0)
-      SendSysMessageEx(who, "Sem slots suficientes para memorizar.", SSM_FAIL);
+      SendSysMessageEx(who, "Sem slots suficientes para memorizar..", SSM_FAIL);
       return 0;
    elseif (!AP_ConsumeVital(who, MANA, 5*spellinfo.circle))
       SendSysMessageEx(who, "Voce nao consegue se concentrar em sua oracao.", SSM_FAIL);
@@ -157,33 +164,21 @@ function StoreSpell(who, spellinfo, byref priest_list, byref available_slots)
    };
 
    available_slots -= spellinfo.circle;
-   priest_list.append(new_spell);
-   SetObjProperty(who, "priest_list", priest_list);
-   SendSysMessageEx(who, "Obteve a benção dos Deuses.", SSM_INFO);
+   shaman_list.append(new_spell);
+   SetObjProperty(who, "shaman_list", shaman_list);
+   SendSysMessageEx(who, "Obteve a bencao de Grunntam.", SSM_INFO);
    return 1;
 endfunction
 
-function RemoveUsedSpells(who, byref priest_list, byref available_slots)
-   foreach spell in priest_list
+function RemoveUsedSpells(who, byref shaman_list, byref available_slots)
+   foreach spell in shaman_list
       if (spell.used && polcore().systime > spell.time)
-         var index := FindInArray(priest_list, spell);
-         priest_list.Erase(index);
+         var index := FindInArray(shaman_list, spell);
+         shaman_list.Erase(index);
          available_slots += spell.circle;
       endif
       sleepms(2);
    endforeach
 
-   SetObjProperty(who, "priest_list", priest_list);
-endfunction
-
-function ArcaneArcherDevotion(who)
-   var chardata := GetObjProperty(who, "chardata");
-   var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
-   if (yes)
-      chardata.magia := "Arqueiro Arcano";
-      SetObjProperty(who, "chardata", chardata);
-      SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
-      return 1;
-   endif
-   return 0;
+   SetObjProperty(who, "shaman_list", shaman_list);
 endfunction

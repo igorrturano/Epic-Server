@@ -21,7 +21,7 @@ include "include/say";
 include ":charactercreation:habilidades";
 include "include/client";
 include "include/sounds";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":taming:taming";
 include ":charactercreation:resists";
 include ":combat:combat";

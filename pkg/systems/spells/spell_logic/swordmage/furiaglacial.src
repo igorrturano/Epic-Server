@@ -13,7 +13,7 @@ include ":tn:cooldown";
 include ":combat:damage";
 include "include/shapes";
 include ":nature:nature";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 
 program SpellScript(params)
 	var who := params[1];

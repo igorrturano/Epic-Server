@@ -17,7 +17,7 @@ include ":fls_magery:basicMagery";
 include ":fls_magery:spells";
 include "include/sounds";
 include ":charactercreation:habilidades";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include "include/facings";
 include ":tn:cooldown";
 
@@ -92,7 +92,7 @@ function copyrecipe( who, recipe )
 
 	  var item;
 
-	  if ( recipe.magic_path == "Sangria" )
+	  if ( recipe.magic_path == "Magia" )
 		item := createiteminbackpack( who, OBJ_RECIPE_SLIP_SANGRIA, 1 );
 	  elseif ( recipe.magic_path == "spellcaster" )
 		item := createiteminbackpack( who, OBJ_RECIPE_SLIP_SPELLCASTER, 1 );
@@ -163,7 +163,7 @@ function CreateBookGump( book, who )
   if ( GetObjProperty( book, "NecroBook" ) )
 	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro de Necromancer" );
   elseif ( GetObjProperty( book, "SangriaBook" ) )
-	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Sangria" );
+	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
   else
 	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
   endif

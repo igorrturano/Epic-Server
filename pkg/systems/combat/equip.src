@@ -140,7 +140,7 @@ program equipweapon(who, item)
 			var script := GetProcess(pid);
 			script.kill();
 		endif
-		start_script (":spells:swordmage", {who, item});
+		start_script (":spells:spell_logic:swordmage", {who, item});
 	endif
 
 	//AtualizarItemAntigo(who, item); //SUBSTITUINDO POR NovoSistemaDeItens();

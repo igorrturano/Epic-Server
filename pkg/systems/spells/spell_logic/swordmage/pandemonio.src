@@ -12,7 +12,7 @@ include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include ":combat:damage";
 include "include/shapes";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 
 program SpellScript(params)
 	var who := params[1];
