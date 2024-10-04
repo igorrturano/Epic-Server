@@ -60,9 +60,9 @@ program MainHitScript(params)
 	FacingChecks(attacker, defender);
 	
 	if (waitAnim)
-		Sleep(waitAnim);
+		SleepMS(waitAnim);
 	endif
-	
+
 	PlayAttackAnimation(attacker);
 	PlayHitSounds(attacker, defender);
 

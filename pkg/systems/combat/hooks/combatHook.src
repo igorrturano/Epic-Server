@@ -774,7 +774,7 @@ function EpicApplyDamage(attacker, defender, weaponHand)
 	if (!weaponHand)
 		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
 	else
-		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, 1});
+		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, 500});
 	endif
 endfunction
 
