@@ -74,7 +74,11 @@ function canUseOpportunityHit(attacker, defender)
     if (attacker.dead || defender.dead)
         return 0;
     endif
-    
+
+    if ((!attacker.warmode && attacker.acctname) || (!defender.warmode && defender.acctname))
+        return 0;
+    endif
+
     return 1;
 endfunction
 
