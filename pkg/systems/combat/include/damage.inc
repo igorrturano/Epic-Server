@@ -491,18 +491,19 @@ function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 		if (npcResists == error)
 			print(npc.npctemplate +" -> "+npcResists+", pegando antiga...");
 			resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
-		endif
-		case(type)
-			// DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
-			DMG_SLASH: resist := CInt(npcResists.SlashResist); break;
-			DMG_PIERCING: resist := CInt(npcResists.PiercingResist); break;
-			DMG_BLUNT: resist := CInt(npcResists.BluntResist); break;
+		else
+			case(type)
+				// DMG_PHYSICAL: resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod); break;
+				DMG_SLASH: resist := CInt(npcResists.SlashResist); break;
+				DMG_PIERCING: resist := CInt(npcResists.PiercingResist); break;
+				DMG_BLUNT: resist := CInt(npcResists.BluntResist); break;
 
-			DMG_FIRE: resist := CInt(npcResists.FireResist); break;
-			DMG_COLD: resist := CInt(npcResists.ColdResist); break;
-			DMG_POISON: resist := CInt(npcResists.PoisonResist); break;
-			DMG_ENERGY: resist := CInt(npcResists.EnergyResist); break;
-		endcase
+				DMG_FIRE: resist := CInt(npcResists.FireResist); break;
+				DMG_COLD: resist := CInt(npcResists.ColdResist); break;
+				DMG_POISON: resist := CInt(npcResists.PoisonResist); break;
+				DMG_ENERGY: resist := CInt(npcResists.EnergyResist); break;
+			endcase
+		endif
 	else
 		setPropArmor(armor);
 		resist := getResistArmorByType(armor, type);
@@ -530,6 +531,8 @@ endfunction
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
 	var armorResists := getPropBase(armor);
+	print("armor ->"+armor.name);
+	print("armorResists ->"+armorResists);
 
 	case(type)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
