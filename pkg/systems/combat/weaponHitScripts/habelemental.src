@@ -8,6 +8,7 @@ include ":acid:acid";
 include ":fls_core:packets";
 include ":timedScripts:timedScripts";
 include ":spells:puremage";
+include "include/epicMageryUtils";
 
 program HitScript(params)
 	var attacker	:= params[1];
@@ -31,17 +32,20 @@ program HitScript(params)
 
 	//gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
 	if (GetCooldown(weapon, "romperencantamento") )
+		ApplyChargesCalculation(weapon, 1, 4);
 		dispel(defender);
 		EraseObjProperty(weapon, "#romperencantamento");
 	endif
 	if (GetCooldown(weapon, "ataqueespiritual")  )
 		EraseObjProperty(weapon, "#ataqueespiritual");
 		var manadmg := cint(AP_GetSkill(attacker, MAGICLORE)/3);
+		manadmg := ApplyChargesCalculation(weapon, manadmg, 3);
 		AP_ConsumeVital(defender, MANA, manadmg);
 	endif
 	if (GetCooldown(weapon, "ataquefadiga")  )
 		EraseObjProperty(weapon, "#ataquefadiga");
 		var stamdmg := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+		stamdmg := ApplyChargesCalculation(weapon, stamdmg, 3);
 		AP_ConsumeVital(defender, STAMINA, stamdmg);
 	endif
 
@@ -51,20 +55,25 @@ program HitScript(params)
 		if (GetObjProperty(weapon, "prisaogelida") == 1)
 			EraseObjProperty(weapon, "prisaogelida");
 			var time := cint(AP_GetSkill(attacker, MAGICLORE)/2);
+			time := ApplyChargesCalculation(weapon, time, 4);
 			TS_StartTimer(defender, "prisaogelida", time);
 		else
 			PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
 			PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
-			TS_StartTimer(defender, "paralysis", 6);
+			var time := ApplyChargesCalculation(weapon, 6, 4);
+			TS_StartTimer(defender, "paralysis", time);
 		endif
 
 	elseif (dmgtype == DMG_FIRE)
 
 		PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
 		PlaySoundEffect(defender, SFX_EXPLOSION_11);
-		TS_StartTimer(defender, "chamasperpetuas", 20);
+		var time := ApplyChargesCalculation(weapon, 20, 4);
+		TS_StartTimer(defender, "chamasperpetuas", time);
 	endif
 	return 1;
 endprogram
+
+
  
  

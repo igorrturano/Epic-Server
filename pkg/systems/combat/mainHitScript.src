@@ -26,6 +26,7 @@ include ":taming:taming";
 include ":charactercreation:resists";
 include ":combat:combat";
 include "include/epicUtils";
+include "include/epicMageryUtils";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
@@ -646,6 +647,8 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		EraseObjProperty(weapon, "#ataqueelemental");
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		dmg := ApplyChargesCalculation(weapon, dmg, 1);
+
 		if (elemental != error)
 			if (elemental.type == DMG_FIRE)
 				start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
@@ -699,6 +702,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
 			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			dmg := ApplyChargesCalculation(weapon, dmg, 2);
 			if(dmg < 3)
 				dmg := 3;
 			endif

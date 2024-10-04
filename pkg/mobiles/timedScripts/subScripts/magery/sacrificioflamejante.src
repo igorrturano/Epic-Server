@@ -8,6 +8,7 @@ use os;
 
 include ":attributes:attributes";
 include "include/say";
+include "include/epicMageryUtils";
 
 program TimedScript_sacrificio(params)
 	var who := params[1];
@@ -16,6 +17,7 @@ program TimedScript_sacrificio(params)
 	
 	var i := 1;
 	var targ := who.weapon;
+	var cargasRetorno := ConsumeItemArcaneCharges( targ, 5 );
 			while( who.weapon == targ )
 	
 			if (who.dead)
@@ -23,6 +25,8 @@ program TimedScript_sacrificio(params)
 			endif
 			var dano := RandomIntMinMax(5,15);
 			var dmgbonus := Cint(GetObjProperty(who, "#dmgbonus"));
+			dano := Floor( dano / cargasRetorno.divisor);
+			
 			ApplyRawDamage(who, dano);
 			
 			SetObjProperty(who, "#dmgbonus", dmgbonus + Cint(AP_GetSkill(who, MAGICLORE)/ 20));
