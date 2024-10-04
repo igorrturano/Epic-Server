@@ -1,0 +1,76 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+
+program setLingua(who)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Você não tem permissão para usar este comando.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o item para definir a língua.");
+    var targ := Target(who);
+    if (!targ)
+        SendSysMessage(who, "Cancelado.");
+        return 0;
+    endif
+
+    var linguas := array{
+        "Imperialis",
+        "Aglâb",
+        "Ahruwën",
+        "Haiei",
+        "Phalk",
+        "Grumnak",
+        "Björ",
+        "Idrith'har",
+        "Antiga -> apenas para arqueólogos"
+    };
+
+    var gump := GFECreateGump("Definir Língua e Texto", 400, 500);
+    
+    GFPage(gump, 0);
+    
+    var y := 90; 
+
+    GFTextLine(gump, 20, y - 20, 53, "Escreva o texto:");
+    GFResizePic(gump, 35, y, 9350, 330, 70);
+    var textEntry := GFTextEntry(gump, 40, y + 5, 320, 60, 2100, "");
+    y += 100;
+
+
+    GFTextLine(gump, 20, y, 53, "Selecione a língua:");
+    y += 30;
+    
+    for i := 1 to linguas.size()
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, i);
+        GFTextLine(gump, 60, y, 2100, linguas[i]);
+        y += 30;
+    endfor
+
+    var input := GFSendGump(who, gump);
+    
+    var selected_language := input[0];
+    if (selected_language >= 1 && selected_language <= linguas.size())
+        var lingua_escolhida := linguas[selected_language];
+        SetObjProperty(targ, "lingua", lingua_escolhida);
+        
+        var description := GFExtractData(input, textEntry);
+        if (description != "")
+            SetObjProperty(targ, "description", description);
+            SendSysMessage(who, "Língua '" + lingua_escolhida + "' e nova descrição definidas para o item.");
+        else
+            EraseObjProperty(targ, "description");
+            SendSysMessage(who, "Língua '" + lingua_escolhida + "' definida. Nenhuma descrição fornecida.");
+        endif
+
+        var check_lingua := GetObjProperty(targ, "lingua");
+        var check_description := GetObjProperty(targ, "description");
+        SendSysMessage(who, "Verificação final - Língua: " + check_lingua + ", Descrição: " + check_description);
+    else
+        SendSysMessage(who, "Nenhuma língua selecionada ou seleção inválida. Operação cancelada.");
+    endif
+endprogram
