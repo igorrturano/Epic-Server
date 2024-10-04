@@ -22,7 +22,7 @@ exported function GetHitsRegenRate(mobile)
 	if (!mobile.npctemplate) //calculo diferenciado pra player
 		base_regen:= (CInt(AP_GetSettingsCfgElem("Regen").Hits)) + (CInt(AP_GetTrueStat(mobile, "Strength"))*10); //base + 1 a cada 10 de atributo
 	else
-		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Hits);
+		base_regen:= CInt(AP_GetSettingsCfgElem("Regen").Hits * 500);
 	endif
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "hits");
 
