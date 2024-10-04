@@ -16,6 +16,7 @@ include ":tn:boss";
 include "include/client";
 include "include/say";
 include "include/epicCombatUtils";
+include ":combat:damage";
 
 
 const OFFSET_OBJECT_SERIAL   := 0x05;
@@ -53,6 +54,18 @@ function GetDmgStringDesc(elem, item)
 	*/
 
 endfunction
+
+function GetOffHandDmgStringDesc(elem, item)
+	var dmg_mod := CInt(item.dmg_mod);
+	var resultado := CSTR(elem.OffHandDamage);
+	if (dmg_mod>0)
+		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
+	elseif (dmg_mod<0)
+		resultado := resultado + " (" + CSTR(dmg_mod) +")";
+	endif
+	return resultado;
+endfunction
+
 
 function GetDmgStringSpecialDmg(elem, item)
 	var dmg_mod := CInt(item.dmg_mod);
@@ -469,6 +482,9 @@ exported function MegaCliloc( who, byref packet )
 			if (item.isA(POLCLASS_WEAPON))
 				xDesc := xDesc + "Força exigida: " + elem.strrequired + "<br>";
 				xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item) + "<br>";
+				if (elem.OffHandDamage)
+					xDesc := xDesc + "OffDano: " + GetOffHandDmgStringDesc(elem,  item) + "<br>";
+				endif
 				xDesc := xDesc + "Velocidade: " + GetVelStringDesc(elem, item) + "<br>";
 				xDesc := xDesc + GetTipoStringDesc(elem, item) + "<br>";
 				var crits := GetCriticalInfo(elem);
@@ -502,6 +518,17 @@ exported function MegaCliloc( who, byref packet )
 					foreach gem in (gems.keys())
 						xDesc := xDesc + white + gem + " - "+ getSwordSpellName(gems[gem].id) + "<br>";
 					endforeach
+				endif
+
+				if ( getObjProperty(item,"#elementalweapon").serial == who.serial)
+					var elWpn := getObjProperty(item, "#elementalweapon");
+					if (elWpn.type == DMG_COLD)
+						xDesc := xDesc + blueice + "Cargas Arcanas: "+elWpn.cargas+"<br>";
+					elseif ( elWpn.type == DMG_FIRE)
+						xDesc := xDesc + redfire + "Cargas Arcanas: "+elWpn.cargas +"<br>";
+					elseif (elWpn.type == DMG_ENERGY)
+						xDesc := xDesc + roxo + "Cargas Arcanas "+elWpn.cargas+"<br>";
+					endif
 				endif
 				if (item.dmg_mod > 0 )
 					xDesc := xDesc + roxo + "Bônus Dano "+item.dmg_mod+ " <br>";

@@ -983,7 +983,7 @@ function weaponsByClassAndCulture(who)
         CreateItemInBackpack(who, 0xF99F, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
-            CreateItemInBackpack(who, 0x0f63, 1); // espada curta
+            CreateItemInBackpack(who, 0x0f63, 1); // Hasta
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
@@ -1129,11 +1129,11 @@ function armorsByCulture(who)
     endif
 
     if (chardata.culture == AIGLANA)
-        CreateItemInBackpack(who, 0xc684, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc680, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc681, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc683, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc682, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc684, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc680, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc681, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc683, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc682, 1); // Lorica Squamata
     endif
 
     if (chardata.culture == HAROLOTH)
@@ -2163,15 +2163,22 @@ function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
     var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
     var end := Min(start + COLORS_PER_PAGE - 1, totalColors);
 
+    var selectedColor := (chardata.hair_item) ? chardata.hair_color : chardata.beard_color;
+
     var y_pos := 100;
     for i := start to end
         var colorData := allColors[i];
         var color := CInt(colorData.color);
         var category := colorData.category;
-
-        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        
+        //se houver uma cor selecionada, então dá check o botão correto na iteração
+        if (selectedColor == color)
+            GFAddButton(gump, 257, y_pos, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, color);
+        else
+            GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        endif
         GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
-        GFTextLine(gump, 142, y_pos + 4, color, category);
+        GFTextLine(gump, 142, y_pos + 4, color-1, category); //hue de cor tem que ter -1
         y_pos += 20;
     endfor
 
@@ -2187,7 +2194,7 @@ function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
     endif
 
     // Adicionar botão de fechar
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1003);
 
     return GFSendGump(who, gump);
 endfunction
@@ -2281,14 +2288,20 @@ function skinColorSelectionGump(who, byref chardata, currentPage := 1)
 
     var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
     var end := Min(start + COLORS_PER_PAGE, totalColors);
-
+    var skinColor := chardata.skin_color;
+    
     var y_pos := 100;
     for i := start to end
         var color := CInt(allColors[i]);
 
-        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        //se houver uma cor selecionada, então dá check o botão correto na iteração
+        if (skinColor == color)
+            GFAddButton(gump, 257, y_pos, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, color);
+        else
+            GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        endif
         GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
-        GFTextLine(gump, 142, y_pos + 4, color, "Cor " + (i - start + 1));
+        GFTextLine(gump, 142, y_pos + 4, color - 1, "Cor " + i); //hue de cor tem que ter -1
         y_pos += 20;
     endfor
 
