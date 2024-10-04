@@ -983,7 +983,7 @@ function weaponsByClassAndCulture(who)
         CreateItemInBackpack(who, 0xF99F, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
-            CreateItemInBackpack(who, 0x0f63, 1); // espada curta
+            CreateItemInBackpack(who, 0x0f63, 1); // Hasta
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
@@ -1129,11 +1129,11 @@ function armorsByCulture(who)
     endif
 
     if (chardata.culture == AIGLANA)
-        CreateItemInBackpack(who, 0xc684, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc680, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc681, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc683, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc682, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc684, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc680, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc681, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc683, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc682, 1); // Lorica Squamata
     endif
 
     if (chardata.culture == HAROLOTH)

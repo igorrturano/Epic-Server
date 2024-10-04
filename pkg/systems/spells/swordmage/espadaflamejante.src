@@ -28,8 +28,7 @@ program SpellScript( params )
 	if ( checkForElementalWeapons( who, targ ) )
 	  return 0;
 	endif
-
-	ApplyElementalWeaponProperties( who, targ, DMG_FIRE, readgameclock() + time );
+	ApplyElementalWeaponProperties( who, DMG_FIRE );
 	PlaySoundEffect( targ, SFX_BLESS );
 	SendSysMessageEx( who, "Sua arma ficou coberta de chamas.", SSM_INFO );
 
