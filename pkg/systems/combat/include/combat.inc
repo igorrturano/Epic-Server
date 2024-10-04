@@ -84,7 +84,7 @@ function PlayAttackAnimation(attacker)
 	if ( wpn_a_elem2.Anim )
 		var anim_list := GetConfigStringArray(wpn_a_elem2, "Anim");
 		if (anim_list.size() > 1)
-			attack_anim := anim_list[RandomIntMinMax(1, anim_list.size())+1];
+			attack_anim := anim_list[RandomIntMinMax(1, anim_list.size())];
 		else
 			attack_anim := anim_list[1];
 		endif
