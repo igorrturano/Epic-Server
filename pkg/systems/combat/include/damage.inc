@@ -744,10 +744,6 @@ endfunction
 
 
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
-	if (attacker.npctemplate) // NPC não precisar passar por esse cálculo
-		return rawdamage;
-	endif
-	
 	var damage := rawdamage;
 
 	// Aplica bonus de dano
@@ -798,18 +794,6 @@ function CalcDamageStats(attacker, damage)
 endfunction
 
 function CalcDamageWeapon(attacker, damage)
-	// var weaponcfg := ReadConfigFile(":*:itemdesc");
-	// var weaponelem := FindConfigElem(weaponcfg, attacker.weapon.objtype);
-	
-	// var weapondice := CStr(weaponelem.Damage);
-
-	// var damageweapon;
-	// if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
-	// 	weapondice := TWOHANDED_MID_DAMAGE;
-	// endif
-	// damageweapon := RandomDiceRoll(weapondice);
-	// damage += damageweapon;
-
 	damage += Cint(GetObjProperty(attacker.weapon, "dmgbonus")) + Cint(GetObjProperty(attacker.weapon, "#dmgbonus"));
 
 	if (GetObjProperty(attacker, "armapredileta") == attacker.weapon.objtype)

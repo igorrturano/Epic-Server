@@ -23,8 +23,8 @@ program cmd_postura(who)
 		weaponProp.AttackType := weaponElem.TipoAtaque;
 	endif
 	
-	PrintTextAbove(who, $"*muda postura de ataque para golpe {Lower(weaponProp.AttackType)}*");
-	SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {Lower(weaponProp.AttackType)}*", SSM_INFO);
+	PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
+	SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
 
 	setPropBase(weapon, weaponProp);
 endprogram
