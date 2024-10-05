@@ -147,7 +147,7 @@ endfunction
  */
 function NPC_GetAllTemplateNames()
 	var elem_names := array{};
-	elem_names := elem_names + GetConfigStringKeys(ReadConfigFile("::npcdesc"));
+	elem_names := elem_names + GetConfigStringKeys(ReadConfigFile(":*:npcdesc"));
 	foreach package in (Packages())
 		if ( package.npcdesc )
 			var pkg_name := ":"+package.name+":";

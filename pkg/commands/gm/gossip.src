@@ -1,26 +1,27 @@
 use uo;
-//.gossip <insira sua fofoca> -> insere uma fofoca global
-//.gossip -> vê todas as fofocas
+use polsys;
+
 program criar_fofoca(who, nova_fofoca)
+    var gossip_storage := GetGlobalProperty("gossip_storage");
+    if (gossip_storage == error)
+        gossip_storage := array{};
+    endif
 
     if (!nova_fofoca)
-        sendsysmessage(who, "Voce pode usar o comando com uma nova fofoca");
-
-        sendsysmessage(who, "Essas são as fofocas atuais:");
-        var gossip_storage := GetGlobalProperty("gossip_storage");
-        
-        sendsysmessage(who, Cstr(gossip_storage));
+        SendSysMessage(who, "Voce pode usar o comando com uma nova fofoca");
+        SendSysMessage(who, "Essas sao as fofocas atuais:");
+        foreach fofoca in gossip_storage
+            SendSysMessage(who, fofoca);
+        endforeach
         return;
     endif
 
-    if (nova_fofoca)
-        sendsysmessage(who, "Nova fofoca: " + nova_fofoca);
-    endif
-    var gossip_storage := GetGlobalProperty("gossip_storage");
     gossip_storage.append(nova_fofoca);
     SetGlobalProperty("gossip_storage", gossip_storage);
 
-    sendsysmessage(who, "Essas são as fofocas atuais:");
-    sendsysmessage(who, Cstr(gossip_storage));
-   
+    SendSysMessage(who, "Nova fofoca adicionada: " + nova_fofoca);
+    SendSysMessage(who, "Essas sao as fofocas atuais:");
+    foreach fofoca in gossip_storage
+        SendSysMessage(who, fofoca);
+    endforeach
 endprogram

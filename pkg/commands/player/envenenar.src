@@ -51,30 +51,26 @@ program do_poisoning(who)
 	var acfgfile := ReadConfigFile(":*:itemdesc");
 	var theitem := acfgfile[the_item.objtype];
 	var level, difficulty, points, poisonType;
+	var skill := Cint(GetObjProperty(the_poison, "crafterskill"));
 	var bonus := Cint(GetObjProperty(the_poison, "bonus"));
 	bonus := PotionSpecialistBonus(who, bonus, VENENO);
-	level := Cint(GetObjProperty(the_poison, "level"));
-	if (!level)
-		level := (bonus/5);
-	endif
-	if (level < 1)
-		level := 1;
-	endif
+	level := skill;
+	var tier := getobjProperty (the_poison, "tier");
+
 	//se for uma poçao que nao a default a formula eh essa:
-	difficulty := 15*level + 10;
-	points := difficulty;
+	var difficulty_mod := bonus;
+  	points := difficulty;
 	case(the_poison.objtype)
-		0xbf00: level := 1; difficulty := 40; points := 50; poisonType := "defaultPoison";
-    	0xbf01: poisonType :="strPoison"; difficulty := 60; points := 70;
-		0xbf20: poisonType :="dexPoison"; difficulty := 60; points := 70;
-		0xef54: poisonType :="intPoison"; difficulty := 60; points := 70;
-		0xbf02: poisonType :="staminaPoison"; difficulty := 60; points := 70;
-		0xbf03: poisonType :="paralyzePoison"; difficulty := 80; points := 100;
-		0xbf06: level := 3; difficulty := 60; points := 70; poisonType := "manaPoison";
-		0xbf04: level := 4; difficulty := 80; points := 60; poisonType := "defaultPoison";
-        0x6072: level := 3; difficulty := 70; points := 50; poisonType := "defaultPoison";
-		0xdc04: level := 2; difficulty := 60; points := 40; poisonType := "defaultPoison";
-		0xbf05: level := 5; difficulty := 100; points := 100; poisonType := "defaultPoison";
+		0xdc04: difficulty := RESIST_EASY; points := 50; poisonType := "alchPoison";
+    	0xbf01: poisonType :="strPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    	0xbf20: poisonType :="dexPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    	0xef54: poisonType :="intPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    	0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    	0xbf03: poisonType:="paralyzePoison"; difficulty := RESIST_HARD; points := 100;
+    	0xbf06: difficulty := RESIST_HARD; points := 70; poisonType :="manaPoison";
+    	0xbf04: difficulty := RESIST_HARD; points := 60; poisonType := "alchPoison";
+    	0x6072: difficulty := RESIST_MEDIUM; points := 40; poisonType := "alchPoison";
+    	0xbf05: difficulty := RESIST_VERY_HARD; points := 100; poisonType := "alchPoison";
 		default: difficulty := 0; points := 0; poisonType := "invalid";
 	endcase
 
@@ -129,9 +125,12 @@ program do_poisoning(who)
 		var poisonInfo := struct;
 		poisonInfo.+name := poisonType;
 		poisonInfo.+level := level;
-		poisonInfo.+dosage := 20 - (level*2);
+		poisonInfo.+dosage := 20 - (tier*2);
 		poisonInfo.+acc := who.acctname;
-		poisonInfo.+time := 40 + level*10;
+		poisonInfo.+time := 40 + tier*10;
+		poisonInfo.+difficulty := difficulty;
+		poisonInfo.+difficulty_mod := difficulty_mod;
+		poisonInfo.+tier := tier;
 		if (temHabilidade(who, "Veneno Puro"))
 			poisonInfo.dosage := CInt(poisonInfo.dosage * 1.5);
 			poisonInfo.time := CInt(poisonInfo.time * 1.25);
@@ -163,6 +162,7 @@ program do_poisoning(who)
 		endif
 	else
 		SendSysMessageEx(who, "Voce falhou e envenenou a si mesmo!", SSM_FAIL);
+		Setobjproperty(who, "#poisontier", tier);
 		TS_StartTimer(who, poisonType, 60, level, who);
 	endif
 

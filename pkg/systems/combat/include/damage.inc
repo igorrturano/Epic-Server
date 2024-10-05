@@ -450,6 +450,19 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	return CInt(damage);
 endfunction
 
+/**
+ * getWeaponDamageType(attacker, weapon)
+ *
+ * Purpose
+ * Verificar o dano da arma do atacante é Cortante, Perfurante ou Contundente.
+ *
+ * Parameters
+ * attacker: mobRef do atacante
+ * weapon: itemRef da arma do atacante
+ *
+ * Return value
+ *
+ */
 function getWeaponDamageType(attacker, weapon)
 	var attackType;
 	if (attacker.npctemplate)
@@ -730,6 +743,7 @@ function IsThrowingWeapon(item)
 	endif
 	return 0;
 endfunction
+
 
 function IsDualWield(item)
 	var prop := getPropBase(item);
@@ -1109,4 +1123,26 @@ function CalcDamageReducer(attacker, damage)
 	endif
 
 	return damage;
+endfunction
+
+/**
+ * CheckDefenderHabsAfterDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Calcular e aplicar o dano elemental de habilidade
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * damageDice: string com o dado de dano
+ * elementalType: O tipo de dano elemental
+ * Return void
+ *
+ */
+function ApplyDamageHabElementalWeapon( attacker, defender, damageDice, elementalType , divisor)
+  var dmgBonus := RandomDiceRoll( damageDice);
+  var totalDamage := CalculateDamage( defender, elementalType, dmgBonus );
+  totalDamage := cint( Floor( totalDamage / divisor ) ); // Não tinha cargas suficiente, entao diminui a eficência do dano.
+  DisplayDamage( defender, totalDamage, attacker );
+  ApplyRawDamage( defender, totalDamage );
 endfunction

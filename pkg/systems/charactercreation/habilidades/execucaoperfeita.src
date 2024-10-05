@@ -20,7 +20,7 @@ program doubleattack(who)
     SetObjProperty(who, "#CriticalChance", 100);
 	
 	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.religion == KAI && isMale(who))
+	if (chardata.religion == KAI && isMaleGraphic(who))
 		PlaySoundEffect(who, 0x569);
 	endif
 endprogram

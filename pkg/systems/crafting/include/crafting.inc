@@ -301,11 +301,11 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 			theitem := CreateItem(who, objtype, chosenPrincipalMaterial, more);
 			// check if it is an alchemy book - if it is add player id
 			if (objtype==0xec29)
-			theitem.newbie := 1;
-			setobjproperty(theitem, "serialid", who.serial);
-			setobjproperty(theitem, "marked",who.name + " - " + who.acctname);
-			setobjproperty(theitem, "material", chosenPrincipalMaterial); // adicionando a prop de material ao obj criado
-			Print("Depois:"+objtype);
+				theitem.newbie := 1;
+				setobjproperty(theitem, "serialid", who.serial);
+				setobjproperty(theitem, "marked",who.name + " - " + who.acctname);
+				setobjproperty(theitem, "material", chosenPrincipalMaterial); // adicionando a prop de material ao obj criado
+				Print("Depois:"+objtype);
 			endif
 
 			if(craft_skill=="Alchemy")
@@ -413,15 +413,28 @@ function CreateItem(who, objtype, material, more:=0)
 
 		// Encontrar todos os itens do mesmo tipo na mochila
         var potential_stacks := EnumerateItemsInContainer(who.backpack, objtype);
-
+		
 		foreach iteminbackpack in (potential_stacks)
-            // Verificar se o material é o mesmo
-            if(GetObjProperty(iteminbackpack, "material") == material)
-                stacknow := iteminbackpack;
-                break;
-            endif
+			//se o item encontrado não for o mesmo que eu tenho, pega o próximo
+			if (iteminbackpack.objtype != objtype) 
+				continue; 
+			endif
+			
+			var materialDoItemNaBP := GetObjProperty(iteminbackpack, "material");
+			// primeiro olhamos se o obj que temos tem um material
+			if (material && material != 0) // 0 é um default que tá vindo
+				//se o item na bp tem material e é o mesmo que o meu, podemos encerrar por aqui
+				if (materialDoItemNaBP && materialDoItemNaBP == material)
+					stacknow := iteminbackpack;
+					break;
+				endif
+			elseif (!materialDoItemNaBP) //agora, se o meu obj não tem material e o que tá na bp tbm não tem material, então é match
+				stacknow := iteminbackpack;
+				break;
+			endif
         endforeach
-		if ( stacknow )
+
+		if (stacknow)
 			AddAmount(stacknow, 1+more); // cria o item fazendo stack pro mesmo material
 			theitem := stacknow;
 		else

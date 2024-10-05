@@ -111,18 +111,8 @@ program equipweapon(who, item)
 	var elementalWeapon := GetObjProperty(item, "#elementalweapon");
 	if ( elementalWeapon != error)
 		if (ReadGameClock() > elementalWeapon.endtime)
+			item.color := cint(elementalWeapon.originalColor);
 			EraseObjProperty(item, "#elementalweapon");
-			item.color := cint(GetObjProperty(item, "elementalWeaponOriginalColor"));
-			EraseObjProperty(item, "elementalWeaponOriginalColor");
-		endif
-		if (who.serial != elementalWeapon.serial)
-			set_critical(1);
-			SendSysMessageEx(who, "Voce nao consegue manter a magia na arma.", SSM_FAIL);
-			EraseObjProperty(item, "#elementalweapon");
-			item.color := cint(GetObjProperty(item, "elementalWeaponOriginalColor"));
-			var p := GetProcess( cint(GetObjProperty(item, "pid") ) );
-			p.kill();
-			set_critical(0);
 		endif
 	endif
 

@@ -153,19 +153,25 @@ program arremesso(params)
 	 		return 0;
 		else
             var poisonInfo := GetObjProperty(targ, "poisonInfo");
-            var poison_amt := poisonInfo.dosage;
-            var poisonLvl := poisonInfo.level;
-            var poisonDuration := Cint(AP_GetSkill(who, ALCHEMY) / 20);
-            if (poisonDuration < 2)
-                poisonDuration := 2;
-            endif
-            if (temHabilidade(who, "Veneno Puro"))
-                poisonDuration := poisonDuration * 2;
-            endif
             if (poisonInfo)
-                poison_amt--;
-                if (!CheckResist(alvo, FORTITUDE, RESIST_EASY,-2*poisonLvl))
-                    TS_StartTimer(alvo, poisonInfo.name, poisonDuration, poisonInfo.level, targ);
+                poisonInfo.dosage--;
+                if (!CheckResist(alvo, FORTITUDE, poisoninfo.difficulty,-poisoninfo.difficulty_mod))
+                    if (TS_GetTimerInfo(alvo, "defaultPoison"))
+        				var defaultpoison := cint(TS_GetTimerLevel(alvo, "defaultPoison"));
+       					setobjproperty(alvo, "#poisontier", defaultpoison);
+      				endif
+      				if (getobjProperty(alvo, "#poisontier"))
+        				var poison := ts_gettimernames(alvo, type:="P");
+       					var teste := cint(getobjProperty(alvo, "#poisontier"));
+        				if (teste <= poisoninfo.tier);
+          					TS_LowerDuration(alvo, poison, -1);
+          					TS_StartTimer(alvo, poisonInfo.Name, poisonInfo.time, poisonInfo.level, who);
+        				endif
+      				else
+      					setobjproperty(alvo, "#poisontier", poisoninfo.tier);
+      					setobjproperty(alvo, "#poisonbonus", poisoninfo.difficulty_mod);
+      					TS_StartTimer(alvo, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
+      				endif
                 else
                     SendSysMessage(alvo, "Voce resistiu ao veneno", SSM_INFO);
                     SendSysMessage(who, "O alvo resistiu ao veneno", SSM_INFO);

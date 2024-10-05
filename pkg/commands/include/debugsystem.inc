@@ -1,3 +1,7 @@
+/* 
+ * Documentado em: debug.src
+ */
+
 use uo;
 
 include "include/say";

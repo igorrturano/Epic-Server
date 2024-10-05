@@ -26,6 +26,7 @@ include ":taming:taming";
 include ":charactercreation:resists";
 include ":combat:combat";
 include "include/epicUtils";
+include "include/epicMageryUtils";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
@@ -65,12 +66,6 @@ program MainHitScript(params)
 
 	PlayHitSounds(attacker, defender);
 
-	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
-	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
-		// Calcula o bloqueio e os danos no escudo do defensor
-		ParryCheck(attacker, defender, rawdamage, weapon);
-	endif
-
 	// Calcula a chance do projétil não quebrar
 	ArrowRecovery(attacker, defender, weapon);
 
@@ -80,7 +75,15 @@ program MainHitScript(params)
 	// Calcula os modificadores de dano do atacante
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
 
-	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary/struct com os elementos (por enquanto calcula só o físico)
+	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+		// Calcula o bloqueio e os danos no escudo do defensor
+		if(ParryCheck(attacker, defender, rawdamage, weapon))
+			basedamage := 0;
+		endif
+	endif
+
+	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos (por enquanto calcula só o físico)
 
 	// Calcula desgaste nos equipamentos
 	WearDownWeapon(attacker, weapon);
@@ -648,6 +651,8 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		EraseObjProperty(weapon, "#ataqueelemental");
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		dmg := ApplyChargesCalculation(weapon, dmg, 1);
+
 		if (elemental != error)
 			if (elemental.type == DMG_FIRE)
 				start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
@@ -701,6 +706,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
 			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			dmg := ApplyChargesCalculation(weapon, dmg, 2);
 			if(dmg < 3)
 				dmg := 3;
 			endif
@@ -995,10 +1001,25 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 				poisonInfo.time := duration;
 			endif
 
-			if (CheckResist(defender, FORTITUDE, RESIST_EASY,-2*poisonInfo.level))
+			if (CheckResist(defender, FORTITUDE, poisonInfo.difficulty,-poisonInfo.difficulty_mod))
 				SendSysMessageEx(defender, "Voce resistiu ao veneno.", SSM_INFO);
 			else
+				if (TS_GetTimerInfo(defender, "defaultPoison")) //confere se está sob default poison para estabelecer o mais forte
+        			var defaultpoison := cint(TS_GetTimerLevel(defender, "defaultPoison"));
+        			setobjproperty(defender, "#poisontier", defaultpoison);
+      			endif
+      			if (getobjProperty(defender, "#poisontier"))
+        			var poison := ts_gettimernames(defender, type:="P");
+        			var teste := cint(getobjProperty(defender, "#poisontier"));
+        			if (teste <= poisoninfo.tier); // compara o poison atual com o novo, substituindo caso o novo seja maior
+          				TS_LowerDuration(defender, poison, -1);
+          				TS_StartTimer(defender, poisonInfo.Name, poisonInfo.time, poisonInfo.level, attacker);
+        			endif
+      			else
+				setobjproperty(defender, "#poisontier", poisonInfo.tier);
+				setobjproperty(defender, "#poisonbonus", poisonInfo.difficulty_mod);
 				TS_StartTimer(defender, poisonInfo.name, poisonInfo.time, poisonInfo.level, attacker);
+				endif
 			endif
 		endif
 	else //se for npc checa a skill

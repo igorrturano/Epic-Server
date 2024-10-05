@@ -3,6 +3,7 @@
  */
 use uo;
 use os;
+include ":alchemy:alchemy";
 
 
 program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
@@ -26,7 +27,7 @@ program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
 		MoveITemToContainer(item, who.backpack);
 		return 0;
 	else
-		if( GetObjProperty(item, "spellinfo") )
+		if( GetObjProperty(item, "recipe") )
 			return addScroll(who, book, item);
 		else
 			SendSysMessage(who, "Voce nao pode por isto no livro.");
@@ -46,10 +47,11 @@ function addScroll(who, book, rune)
 		rune_list := array;
 	endif
 
-	var newSpell := GetObjProperty(rune, "spellinfo");
+	var newSpell := GetObjProperty(rune, "recipe");
+	WriteAlchInfo(newSpell);
 
 	foreach spell in rune_list
-		if (newspell.id == spell.id)
+		if (newspell.recipe == spell.recipe)
 			SendSysMessage(who, "Este livro ja contem esta receita.");
 			MoveItemTocontainer(rune, who.backpack);
 			return 0;
@@ -84,7 +86,7 @@ function addScroll(who, book, rune)
 	Set_Critical(1);
 
 	//Aprende no livro
-	rune_list.Append(GetObjProperty(rune, "spellinfo"));
+	rune_list.Append(GetObjProperty(rune, "recipe"));
 	SetObjProperty(book, "recipes", rune_list);
 	ReleaseItem(rune);
 
