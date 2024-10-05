@@ -15,9 +15,9 @@ program cmd_golpe(who)
 	
 	if (weaponProp.AttackType.Upper() == SLASHDAMAGE.Upper())
 		weaponProp.AttackType := PIERCINGDAMAGE;
-	if (weaponProp.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+	elseif (weaponProp.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 		weaponProp.AttackType := BLUNTDAMAGE;
-	if (weaponProp.AttackType.Upper() == BLUNTDAMAGE.Upper())
+	elseif (weaponProp.AttackType.Upper() == BLUNTDAMAGE.Upper())
 		weaponProp.AttackType := SLASHDAMAGE;
 	else
 		weaponProp.AttackType := weaponElem.TipoAtaque;
