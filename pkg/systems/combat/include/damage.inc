@@ -425,11 +425,13 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	endif
 
 	var regiao := CS_GetArmorZone(armor);
-	if (regiao == error)
-		regiao := "Corpo";
-	endif
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Região atingida: {regiao}");
+	// if (regiao == error)
+	// 	regiao := "Corpo";
+	// endif
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao != error ? regiao : "Corpo");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao != error ? regiao : "Corpo");
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + armor != error ? armor.desc : "Corpo");
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + armor != error ? armor.desc : "Corpo");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
 
