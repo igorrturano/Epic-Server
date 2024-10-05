@@ -32,7 +32,7 @@ program book(who, book)
 	var spells := GetObjProperty(book, "recipes");
 
 	if (spells[spell])
-			MakePotion ( spells[spell].id,  who);
+			MakePotion ( spells[spell].recipe,  who);
 			//Start_Script("cast_spell", {who, spells[spell], 0});
 	endif
 
@@ -50,6 +50,7 @@ function MakePotion ( pot, who)
 	var strength := cint(recipes[pot].strength);
 	var science := recipes[pot].science;
 	var tier := recipes[pot].tier;
+	var id := recipes[pot].id;
 
 	//sendsysmessage(who, "magic  " + magic + " skill " + difficulty) ;
 
@@ -130,13 +131,13 @@ function MakePotion ( pot, who)
 			var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
 			var bonus := (((crafterInt-50)/10)+(crafterskill/10));
 			if (!magic)//se nao tiver o flag magic como as tintas, cria o item
-				thing := CreateItemInBackpack(who, pot, 1);
+				thing := CreateItemInBackpack(who, id, 1);
 			else //se nao cria so o extrato
 				thing := CreateItemInBackpack(who, 0xcfff, 1);
 				if (temhabilidade (who, "Bombardeiro Eficiente") && science == BOMBA);
 					thing := CreateItemInBackpack(who, 0xcfff, 1);
 				endif
-				SetObjProperty(thing, "extrato", pot);
+				SetObjProperty(thing, "extrato", id);
 				SetObjProperty(thing, "bonus", bonus);
 				SetObjProperty(thing, "tier", tier);
 				SetObjProperty(thing, "crafterskill", crafterskill);

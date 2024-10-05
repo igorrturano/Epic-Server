@@ -1,0 +1,285 @@
+//3
+use uo;
+use os;
+use cfgfile;
+use util;
+use basic;
+use attributes;
+
+include "include/lore_items";
+include ":attributes:attributes";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":charactercreation:habilidades";
+
+program use_LoreItem(who, item)
+    var item_info := GetLoreItemInfo(item.objtype);
+    if (!item_info)
+        SendSysMessage(who, "Este item não possui informações de lore.");
+        return 0;
+    endif
+
+    ShowLoreItemInfo(who, item, item_info);
+endprogram
+
+
+function ShowLoreItemInfo(who, item, item_info)
+    // Verifica se o item já foi avaliado
+    var evaluated_skill := GetObjProperty(item, "evaluated_skill");
+    var evaluated_archaeology := GetObjProperty(item, "evaluated_archaeology");
+
+    // Verifica se o jogador atual pode avaliar o item
+    var player_skill := AP_GetSkill(who, item_info.required_skill);
+    var can_evaluate_skill := (player_skill >= item_info.required_skill_value);
+    var can_evaluate_archaeology := temHabilidade(who, "Arqueologo");
+
+    var show_skill_info := 0;
+    var show_archaeology_info := 0;
+
+    while (1)
+        var gump := GFCreateGump();
+        GFClosable(gump, 1);
+        GFDisposable(gump, 0);
+
+        GFPage(gump, 0);
+
+        // Imagem de fundo em mosaico
+        GFGumpPicTiled(gump, 13, 18, 753, 515, 39929);
+        
+        // Fundo para o item
+        GFResizePic(gump, 393, 36, 83, 100, 82);
+        
+        // Imagem central (usando a imagem de flavor do item_info)
+        GFGumpPic(gump, 25, 28, item_info.flavor_image, 0);
+        
+        // Imagens em mosaico para a borda
+        GFGumpPicTiled(gump, 0, 5, 35, 36, 39925);
+        GFGumpPicTiled(gump, 0, 40, 21, 490, 39928);
+        GFGumpPicTiled(gump, 762, 5, 34, 36, 39927);
+        GFGumpPicTiled(gump, 761, 36, 40, 492, 39930);
+        GFGumpPicTiled(gump, 0, 522, 37, 33, 39931);
+        GFGumpPicTiled(gump, 359, 7, 21, 544, 39928);
+        GFGumpPicTiled(gump, 761, 522, 36, 33, 39933);
+        GFGumpPicTiled(gump, 35, 5, 727, 21, 39926);
+        GFGumpPicTiled(gump, 33, 522, 728, 34, 39932);
+        
+        // Nome do item (dourado)
+        GFTextLine(gump, 510, 41, 53, item_info.name);
+        
+        // Barra decorativa sob o nome
+        GFGumpPicTiled(gump, 513, 68, 180, 21, 39926);
+        
+        // Imagem do item (RP)
+        GFTilePic(gump, 421, 55, item_info.image, item.color);
+        
+        // Texto "Item Lendário:" (dourado)
+        GFTextLine(gump, 510, 79, 53, "Item Lendário:");
+        
+        // Nome da cultura (variável) (dourado)
+        GFTextLine(gump, 600, 79, 53, item_info.culture_name);
+        
+        // Texto principal (até 120 palavras) (branco)
+        var main_text := FormatLongText(item_info.main_text, 120);
+        GFHTMLArea(gump, 372, 126, 380, 180, "<BASEFONT COLOR=#FFFFFF>" + main_text, 0, 0);
+        
+// Botões para avaliação ou informação
+        if (!evaluated_skill)
+            if (can_evaluate_skill)
+                GFAddButton(gump, 545, 328, 8364, 8365, GF_CLOSE_BTN, 1);
+                GFTextLine(gump, 381, 329, 53, "Avaliar (Profissão)");
+            endif
+        else
+            GFAddButton(gump, 545, 328, 8368, 8368, GF_CLOSE_BTN, 3);
+            GFTextLine(gump, 381, 329, 53, "Informação da Profissão");
+        endif
+
+        if (!evaluated_archaeology)
+            if (can_evaluate_archaeology)
+                GFAddButton(gump, 545, 464, 8366, 8367, GF_CLOSE_BTN, 2);  // Ajustado para alinhar com o botão de profissão
+                GFTextLine(gump, 381, 465, 53, "Avaliar (Arqueologia)");  // Ajustado para manter a mesma distância do botão
+            endif
+        else
+            GFAddButton(gump, 545, 464, 8369, 8369, GF_CLOSE_BTN, 4);  // Ajustado para alinhar com o botão de profissão
+            GFTextLine(gump, 381, 465, 53, "Informação de Arqueologia");  // Ajustado para manter a mesma distância do botão
+        endif
+
+        // Exibe informações com base nas avaliações
+        if (show_skill_info && evaluated_skill)
+            GFHTMLArea(gump, 372, 354, 380, 100, "<BASEFONT COLOR=#FFFFFF>" + item_info.skill_text, 0, 0);  // Ajustado para manter a mesma distância do botão
+        elseif (evaluated_skill)
+            GFTextLine(gump, 381, 354, 53, "Este item foi avaliado por um especialista.");  // Ajustado
+        else
+            GFTextLine(gump, 381, 354, 53, "Este item ainda não foi avaliado por um especialista.");  // Ajustado
+        endif
+
+        if (show_archaeology_info && evaluated_archaeology)
+            GFHTMLArea(gump, 372, 490, 380, 100, "<BASEFONT COLOR=#FFFFFF>" + item_info.archaeology_text, 0, 0);  // Mantido na mesma posição relativa
+        elseif (evaluated_archaeology)
+            GFTextLine(gump, 381, 490, 53, "Este item foi avaliado por um arqueólogo.");  // Mantido na mesma posição relativa
+        else
+            GFTextLine(gump, 381, 490, 53, "Este item ainda não foi avaliado por um arqueólogo.");  // Mantido na mesma posição relativa
+        endif
+
+        var input := GFSendGump(who, gump);
+
+        if (input[0] == 0)  // Se o gump for fechado
+            return 0;
+        elseif (input[1] && !evaluated_skill && can_evaluate_skill)
+            evaluated_skill := EvaluateItem(who, item, "skill");
+            SetObjProperty(item, "evaluated_skill", evaluated_skill);
+            show_skill_info := 1;
+        elseif (input[2] && !evaluated_archaeology && can_evaluate_archaeology)
+            evaluated_archaeology := EvaluateItem(who, item, "archaeology");
+            SetObjProperty(item, "evaluated_archaeology", evaluated_archaeology);
+            show_archaeology_info := 1;
+        elseif (input[3])
+            show_skill_info := !show_skill_info;
+        elseif (input[4])
+            show_archaeology_info := !show_archaeology_info;
+        endif
+    endwhile
+endfunction
+
+
+function PrintEmoteAbove(mobile, text)
+    PerformAction(mobile, ANIM_CAST_AREA);
+    PrintTextAbove(mobile, "*" + text + "*", 3, 66);
+endfunction
+
+function EvaluateItem(who, item, eval_type)
+    var text;
+    var sound;
+
+    if (eval_type == "skill")
+        var item_info := GetLoreItemInfo(item.objtype);
+        var profession := item_info.required_skill;
+
+        case (profession)
+            "Metal_Working":
+                text := "analisando o tipo e a qualidade do metal";
+                sound := 0x3BB; // Som de metal
+            "Alchemy":
+                text := "misturando reagentes para analise";
+                sound := 0x242; // Som de mexer em reagente
+            "Magery":
+                text := "lançando um feitiço de identificação";
+                sound := 0x3BD; // Som de magia
+            "Survival":
+                text := "examinando as marcas e materiais";
+                sound := 0x5A9; // Som de raspar
+            "Medicine":
+                text := "realizando testes medicinais";
+                sound := 0x04F; // Som de cortar
+            "Domestic_Work":
+                text := "limpando o item e inspecionando cuidadosamente";
+                sound := 0x048; // Som de varrer
+            "Mechanics":
+                text := "desmontando e analisando os mecanismos";
+                sound := 0x241; // Som de engrenagens
+            "Wood_Working":
+                text := "medindo e avaliando a qualidade da madeira";
+                sound := 0x23D; // Som de serrar madeira
+            "Gathering":
+                text := "analisando a amostra do material";
+                sound := 0x249; // Som de colher
+            "Handle_Animal":
+                text := "examinando as características animais";
+                sound := 0x04F; // Som de animal (latido)
+            default:
+                text := "utilizando ferramentas para identificar melhor o objeto";
+                sound := 0x0; // Sem som
+        endcase
+
+        for i := 1 to 5
+            PrintEmoteAbove(who, text);
+            PlaySoundEffect(who, sound);
+            Sleep(4);
+        endfor
+
+        // Som de conclusão para profissões
+        PlaySoundEffect(who, 0x41A);
+        
+        // Emote final para profissões
+        Sleep(1);
+        PrintEmoteAbove(who, "Esse item foi avaliado completamente");
+    else
+        // Textos e sons específicos para o arqueólogo
+        var archaeologist_texts := array{
+            "analisa cuidadosamente o artefato",
+            "examina as inscrições no objeto",
+            "limpa delicadamente a poeira do item",
+            "observa as marcas de desgaste do item",
+            "busca informações sobre o item em um velho livro"
+        };
+
+      
+        var archaeologist_sounds := array{
+            0x4d3,
+            0x4d3,
+            0x050,
+            0x050,
+            0x056
+        };
+
+        for i := 1 to 5
+            PrintEmoteAbove(who, archaeologist_texts[i]);
+            PlaySoundEffect(who, archaeologist_sounds[i]);
+            
+            // Se for o último som (0x056), repete mais duas vezes
+            if (i == 5)
+                Sleep(1);
+                PlaySoundEffect(who, 0x056);
+                Sleep(1);
+                PlaySoundEffect(who, 0x056);
+            endif
+            
+            Sleep(4);
+        endfor
+
+        // Som de conclusão para arqueólogo
+        PlaySoundEffect(who, 0x41B);
+        
+        // Emote final para arqueólogo
+        Sleep(1);
+        PrintEmoteAbove(who, "Esse item foi examinado completamente");
+    endif
+
+    return 1;
+endfunction
+
+function ShowSkillInfo(who, item_info)
+    var player_skill := AP_GetSkill(who, item_info.required_skill);
+    if (player_skill >= item_info.required_skill_value)
+        var skill_gump := GFCreateGump();
+        GFClosable(skill_gump, 1);
+        GFDisposable(skill_gump, 0);
+
+        GFResizePic(skill_gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 300);
+        GFResizePic(skill_gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 370, 270);
+
+        GFTextMid(skill_gump, 10, 20, 380, 53, item_info.name);
+        GFHTMLArea(skill_gump, 20, 50, 360, 130, "<BASEFONT COLOR=#FFD700>" + item_info.skill_text, 0, 1);
+
+        GFAddButton(skill_gump, 150, 260, 2128, 2129, GF_CLOSE_BTN, 0);
+
+        GFSendGump(who, skill_gump);
+    else
+        SendSysMessage(who, "Você não tem conhecimento suficiente em " + item_info.required_skill + " para entender isso completamente.");
+    endif
+endfunction
+
+function FormatLongText(text, word_limit)
+    var words := SplitWords(text);
+    var formatted_text := "";
+    var word_count := 0;
+    
+    foreach word in words
+        formatted_text += word + " ";
+        word_count += 1;
+        if (word_count >= word_limit)
+            break;
+        endif
+    endforeach
+    
+    return formatted_text;
+endfunction

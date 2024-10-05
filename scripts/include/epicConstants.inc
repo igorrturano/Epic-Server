@@ -33,8 +33,11 @@ endenum
 
 enum CORES_ELEMENTAIS
     FOGO := 2480,
+	FOGO_LIGHT := 246,
     GELO := 2891,
-    RAIO := 2342
+	GELO_LIGHT := 196,
+    RAIO := 2342,
+	RAIO_LIGHT := 211
 endenum
 
 enum GAME_MODE

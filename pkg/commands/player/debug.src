@@ -1,37 +1,38 @@
-/**
-/ O comando checa (e cria/remove) uma CProp temporária com o nome passado no debugName
-/ Modelo da CProp: #debug_<string>
-/ Exemplo da CProp: #debug_clima
-/
-/ Forma de uso:
-/ Dar include ":commands:debugsystem" no script que for usar
-/ e adicionar a função DebugMsg(who, debugType, msg) dentro do script
-/ Exemplo de uso:
-/ 
-/ include ":commands:debugsystem";
-/
-/ var debugType := "clima";
-/ DebugMsg(who, debugType, "Está chovendo bastante!");
-/
-/ Para scripts que não tenha who (Ref de Char) usar DebugMsgEvent(debugType, msg);
-/ Exemplo de uso:
-/
-/ var debugType := "clima";
-/ DebugMsg(debugType, "Está chovendo bastante!");
-/
-/ É preciso certificar que o nome do debug esteja na var listDebugs deste arquivo aqui
-/ o valor precisa ser um struct com name e level (cmdlevel) [ver uso abaixo]
-/ Não fiz com ENUM pra evitar alguns conflitos de varredura.
-**/
+/*
+ * O comando checa (e cria/remove) uma CProp temporária com o nome passado no debugName
+ * Modelo da CProp: #debug_<string>
+ * Exemplo da CProp: #debug_clima
+ *
+ * Forma de uso:
+ * Dar include ":commands:debugsystem" no script que for usar
+ * e adicionar a função DebugMsg(who, debugType, msg) dentro do script
+ * Exemplo de uso:
+ * 
+ * include ":commands:debugsystem";
+ *
+ * var debugType := "clima";
+ * DebugMsg(who, debugType, "Está chovendo bastante!");
+ *
+ * Para scripts que não tenha who (Ref de Char) usar DebugMsgEvent(debugType, msg);
+ * Exemplo de uso:
+ *
+ * var debugType := "clima";
+ * DebugMsgEvent(debugType, "Está chovendo bastante!");
+ *
+ * É preciso certificar que o nome do debug esteja na var listDebugs deste arquivo aqui
+ * o valor precisa ser um struct com name e level (cmdlevel) [ver uso abaixo]
+ * Não fiz com ENUM pra evitar alguns conflitos de varredura.
+ */
 use uo;
 
 include ":commands:debugsystem";
 include "include/say";
 
 var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com o cmdlevel
-    struct { name := "all", "level" := 2 },
-    struct { name := "clima", "level" := 1 }, 
-    struct { name := "damage", "level" := 1 }
+    struct { name := "all", "level" := 1 },
+    struct { name := "clima", "level" := 0 }, 
+    struct { name := "damage", "level" := 0 },
+	struct { name := "smelting", "level" := 0 }
 };
 
 program CMD_debug(who, debugName)

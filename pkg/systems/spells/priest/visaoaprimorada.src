@@ -31,7 +31,7 @@ program SpellScript(params)
 	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
     var duration := CInt(magiclore_skill * 5);
 
-	who.setlightlevel(18, duration); // TODO: Voltar pra 15 pro def
+	targ.setlightlevel(18, duration); // TODO: Voltar pra 15 pro def
 	if (GetObjProperty(targ, "chardata").raca != DROW)
     	SetCooldown(targ, "nightvision", duration);
 	else

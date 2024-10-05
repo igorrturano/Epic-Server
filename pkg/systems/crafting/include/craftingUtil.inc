@@ -2,7 +2,7 @@ use cfgfile;
 
 include ":combat:damage";
 include ":tn:tngumps";
-include ":itemsys:propitens";
+// include ":equipsys:propitens";
 
 const  EXCEP := 1;
 const  NORMAL := 2;
@@ -86,38 +86,38 @@ function AddQualityDamageMod(who, craft_skill, byref theitem, quality )
 		var elem := FindConfigElem(cfg, theitem.objtype);
 //		var qtd := 5;
 
-		var attr := PegarProp(theitem);
-		var attr_excp := PegarPropExcep(theitem);
+		// var attr := PegarProp(theitem);
+		// var attr_excp := PegarPropExcep(theitem);
 		var physicalmod, firemod, coldmod, poisonmod, energymod;
 
-		attr_excp["dmgmod"] := 0;
-		attr_excp["speedmod"] := 0;
-		attr_excp["physicalmod"] := 0;
-		attr_excp["firemod"] := 0;
-		attr_excp["coldmod"] := 0;
-		attr_excp["poisonmod"] := 0;
-		attr_excp["energymod"] := 0;
+		// attr_excp["dmgmod"] := 0;
+		// attr_excp["speedmod"] := 0;
+		// attr_excp["physicalmod"] := 0;
+		// attr_excp["firemod"] := 0;
+		// attr_excp["coldmod"] := 0;
+		// attr_excp["poisonmod"] := 0;
+		// attr_excp["energymod"] := 0;
 
 //ADD BORS - Novo Bônus EXP
 		if (theitem.damage_physical_mod>0);
 		theitem.damage_physical_mod := theitem.damage_physical_mod + maxBonus;
-		attr_excp["physicalmod"] := maxBonus;
+		// attr_excp["physicalmod"] := maxBonus;
 		endif
 		if (theitem.damage_fire_mod>0);
 		theitem.damage_fire_mod := theitem.damage_fire_mod + maxBonus;
-		attr_excp["firemod"] := maxBonus;
+		// attr_excp["firemod"] := maxBonus;
 		endif
 		if (theitem.damage_cold_mod>0);
 		theitem.damage_cold_mod := theitem.damage_cold_mod + maxBonus;
-		attr_excp["coldmod"] := maxBonus;
+		// attr_excp["coldmod"] := maxBonus;
 		endif
 		if (theitem.damage_poison_mod>0);
 		theitem.damage_poison_mod := theitem.damage_poison_mod + maxBonus;
-		attr_excp["energymod"] := maxBonus;
+		// attr_excp["energymod"] := maxBonus;
 		endif
 		if (theitem.damage_energy_mod>0);
 		theitem.damage_energy_mod := theitem.damage_energy_mod + maxBonus;
-		attr_excp["poisonmod"] := maxBonus;
+		// attr_excp["poisonmod"] := maxBonus;
 		endif
 
 
@@ -126,36 +126,36 @@ function AddQualityDamageMod(who, craft_skill, byref theitem, quality )
 		if(craft_skill == "Metal_Working")
 			if(TemHabilidade(who,"Armas Velozes"))
 				//SendSysMessage(who,"bonus velocidade" + (quality-1)/2 + "qualidade: "+ quality);
-				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed * modadc) + attr."hab_speedmod"); //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
-				attr_excp["speedmod"] := CInt(elem.Speed * modadc) + attr."hab_speedmod"; //REVER PARA USAR APENAS ESTA PROP NOS OUTROS LOCAIS
+				// SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed * modadc) + attr."hab_speedmod"); //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
+				// attr_excp["speedmod"] := CInt(elem.Speed * modadc) + attr."hab_speedmod"; //REVER PARA USAR APENAS ESTA PROP NOS OUTROS LOCAIS
 				//theitem.speed_mod := CInt(elem.Speed * (0.1 + (quality-1)/4));
 			endif
 			//Acplica dano extra pra arma
 			if(TemHabilidade(who,"Armas Letais") && (elem.TipoAtaque == "Cortante"))
 				//SendSysMessage(who,"bonus dano" + theitem.quality-1);
-				theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
-				attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
+				// theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
+				// attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
 			endif
 			if(TemHabilidade(who,"Armas Letais") && (elem.TipoAtaque == "Perfurante"))
-				theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
-				attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
+				// theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
+				// attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
 			endif
 			if(TemHabilidade(who,"Armas Letais") && (elem.TipoAtaque == "Contusivo"))
-				theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
-				attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
+				// theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
+				// attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
 			endif
 		elseif(craft_skill == "Wood_Working")
 			if(TemHabilidade(who,"Entalhe para Combate"))
-				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed * modadc)+ attr["hab_speedmod"]); //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
-				attr_excp["speedmod"] := CInt(elem.Speed * modadc) + attr["hab_speedmod"];
+				// SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed * modadc)+ attr["hab_speedmod"]); //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
+				// attr_excp["speedmod"] := CInt(elem.Speed * modadc) + attr["hab_speedmod"];
 				//theitem.speed_mod := CInt(elem.Speed * modadc); //BUGADO
 			endif
 			if(TemHabilidade(who,"Flexao da Madeira")) //&& (Cint(elem.maxrange) > 2))
-				theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
-				attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
+				// theitem.dmg_mod := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod"; //VAI FICAR OBSOLETA DEPOIS DA IMPLEMENTAÇÃO DO propitens.inc
+				// attr_excp["dmgmod"] := CInt(elem.MaxDam * modadc) + attr."hab_dmgmod";
 			endif
 		endif
-		SetarPropExcep(theitem, attr_excp); //ATIVAR
+		// SetarPropExcep(theitem, attr_excp); //ATIVAR
 	endif
 	return;
 endfunction
@@ -164,7 +164,7 @@ function AddQualityResistMod(who, craft_skill, byref theitem, quality)
 	if (quality >= 1.2)
 		var randomDmg;
 		var maxBonus := CInt(quality);
-		var attr_excp := PegarPropExcep(theitem);
+		// var attr_excp := PegarPropExcep(theitem);
 		//SendSysMessage(who,"Adicionando resistencia do excepcional");
 
 		var bonusphy := 0; var bonusfire := 0; var bonuscold := 0; var bonuspoison := 0; var bonusenergy := 0;
@@ -192,12 +192,12 @@ function AddQualityResistMod(who, craft_skill, byref theitem, quality)
 				bonuspoison := bonuspoison+1;
 			endif
 		endfor
-		attr_excp["physicalmod"] := CInt(bonusphy);
-		attr_excp["firemod"] := CInt(bonusfire);
-		attr_excp["coldmod"] := CInt(bonuscold);
-		attr_excp["poisonmod"] := CInt(bonuspoison);
-		attr_excp["energymod"] := CInt(bonusenergy);
-		SetarPropExcep(theitem, attr_excp); //ATIVAR
+		// attr_excp["physicalmod"] := CInt(bonusphy);
+		// attr_excp["firemod"] := CInt(bonusfire);
+		// attr_excp["coldmod"] := CInt(bonuscold);
+		// attr_excp["poisonmod"] := CInt(bonuspoison);
+		// attr_excp["energymod"] := CInt(bonusenergy);
+		// SetarPropExcep(theitem, attr_excp); //ATIVAR
 	else
 		return;
 	endif

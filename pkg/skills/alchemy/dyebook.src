@@ -30,7 +30,7 @@ program book(who, book)
 	var spells := GetObjProperty(book, "recipes");
 
 	if (spells[spell])
-			Makedye ( spells[spell].id,  who);
+			Makedye ( spells[spell].recipe,  who);
 			//Start_Script("cast_spell", {who, spells[spell], 0});
 	endif
 
@@ -48,6 +48,7 @@ function MakeDye (pot, who)
 	var strength := cint(recipes[pot].strength);
 	var science := recipes[pot].science;
 	var tier := recipes[pot].tier;
+	var id := recipes[pot].id;
 
 	//sendsysmessage(who, "magic  " + magic + " skill " + difficulty) ;
 
@@ -123,7 +124,7 @@ function MakeDye (pot, who)
 		set_critical(0);
 
 		if(hasbottle)
-			var thing := CreateItemInBackpack(who, pot, 1);
+			var thing := CreateItemInBackpack(who, id, 1);
 			PlaySoundEffect(who, SOUND_EFFECT_POUR);
 			SendSysMessageEx(who, "Você fez a tinta e a guardou na sua mochila.", SSM_INFO);
 			return;
