@@ -22,7 +22,7 @@ include ":gathering:mining";
 include ":gathering:smelting/water";
 include ":gathering:smelting/smelt";
 include ":commands:debugsystem";
-include ":gumps:gumps";
+include ":gumps:epicGumps";
 //include ":gumps:gumps_ex";
 
 const PROP_NAME := "Smelting";

@@ -29,9 +29,9 @@ program skill_alchemy(who)
 			var cfg := ReadConfigFile(":*:itemdesc");
 			var entry := cfg[item.objtype];
 			if (entry.Name == "extrato")
-				var objtype := GetObjProperty(item, "extrato")
-				var pot := cfg[objtype]
-				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: Extrato de " + pot.Type), SSM_INFO);
+				var objtype := GetObjProperty(item, "extrato");
+				var pot := cfg[objtype];
+				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: Extrato de " + pot.Type, SSM_INFO);
 			else
 				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: " + entry.Type, SSM_INFO);
 			endif
@@ -41,9 +41,9 @@ program skill_alchemy(who)
 			var entry := cfg[item.objtype];
 			if (entry)
 				if (entry.Name == "extrato")
-					var objtype := GetObjProperty(item, "extrato")
-					var pot := cfg[objtype]
-					SendSysMessageEx(who, "Voce identificou o liquido do frasco: Extrato de " + pot.Type), SSM_INFO);
+					var objtype := GetObjProperty(item, "extrato");
+					var pot := cfg[objtype];
+					SendSysMessageEx(who, "Voce identificou o liquido do frasco: Extrato de " + pot.Type, SSM_INFO);
 				else
 					SetObjProperty(item, "pocaoname", entry.Type);
 					SendSysMessageEx(who, "Voce identificou o liquido do frasco: " + entry.Type, SSM_INFO);
