@@ -203,7 +203,6 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 		// TODO: Implementar uma mini AI para fazer o NPC modificar o dano baseado na postura de ataque possível (assim como é possível com os players)
 			// TODO: Por enquanto vai usar só o maior dano base.
 		var damage := getNPCMainDamage(attacker, attackType);
-		print(damage);
 		weapondice := damage.dice;
 	else
 		if (GetObjProperty(attacker, "metamorfose") != error)
