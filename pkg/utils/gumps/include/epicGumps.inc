@@ -10,10 +10,10 @@ include "include/client";
 include "gumps";
 include "gumps_ex";
 
-
 enum GUMP_PARAMS
-	HIDE_BACKGROUND := "HIDE_BACKGROUND",
-	HIDE_TITLE := "HIDE_TITLE"
+	HIDE_TITLE, HIDE_PAGE, HIDE_BORDER,
+	BORDER_GOLDEN, BORDER_BLUE, BORDER_MARBLE,
+	NO_CLOSABLE
 endenum
 /**
  * Purpose 
@@ -29,27 +29,41 @@ endenum
  * Return gump
  * 
  */
-function GFECreateGump(title, width, height, background := 39929, params := array{})
+function GFECreateGump(title, width, height, params := array{})
 	var gump := GFCreateGump(0, 0, width, height);
 	var x, y;
-	GFClosable(gump, 1);
-    GFDisposable(gump, 0);
-
-	if (!(HIDE_BACKGROUND in params))
-		GFESetBackground(gump, width - 20, height - 20, background);
+	
+	if (NO_CLOSABLE in params)
+		GFClosable(gump, 0);
+	else
+		GFClosable(gump, 1);
 	endif
-	GFEAddMoldura(gump, width, height);
+    GFDisposable(gump, 1);
+
+	if (!(HIDE_BORDER in params))
+		var border;
+		if (BORDER_BLUE in params)
+			border := BORDER_BLUE;
+		elseif (BORDER_MARBLE in params)
+			border := BORDER_MARBLE;
+		else 
+			border := BORDER_GOLDEN;
+		endif
+		GFEAddMoldura(gump, width, height, border);
+	endif
 
 	x := 20;
-	y := 30;
-	GFResizePic(gump, x, y, 9350, width - 27, 35);
-
+	y := 27;
 	if (!(HIDE_TITLE in params))
+		GFResizePic(gump, x, y, 9350, width - 27, 35);
 		GFESetTitle(gump, width/2, title, 53);
+		y += 40;
 	endif
-	
-	y += 40;
-	GFResizePic(gump, x, y, 9350, width - 27, height - y - 8);
+
+	if (!(HIDE_PAGE in params))
+		GFResizePic(gump, x, y, 9350, width - 27, height - y - 8);
+	endif
+
 	return gump;
 endfunction
 
@@ -62,25 +76,69 @@ endfunction
  * width: Largura
  * height: Altura
  */
-function GFEAddMoldura(byref gump, width, height)
-    var molduras := array{
-        struct{ x := 0, y := 0, width := 25, height := 25, img := 39925 },
-        struct{ x := width - 25, y := 0, width := 35, height := 25, img := 39927 },
-        struct{ x := 25, y := 0, width := width - 41, height := 25, img := 39926 },
-        struct{ x := 25, y := height - 25, width := width - 25, height := 35, img := 39932 },
-        struct{ x := 0, y := 25, width := 10, height := height - 50, img := 39928 },
-        struct{ x := width - 25, y := 25, width := 35, height := height - 50, img := 39930 },
-        struct{ x := width - 25, y := height - 25, width := 35, height := 35, img := 39933 },
-        struct{ x := 0, y := height - 25, width := 35, height := 35, img := 39931 }
-    };
+function GFEAddMoldura(byref gump, width, height, border)
+	var background, molduras;
+	if (border == BORDER_GOLDEN)
+		background := 39929;
+		molduras := array{
+			// SIDES
+			struct{ x := 0, y := 15, width := 35, height := height - 15, img := 39928 }, // LEFT
+			struct{ x := width - 25, y := 15, width := 35, height := height - 15, img := 39930 }, // RIGHT
 
+			// TOP
+			struct{ x := 25, y := 0, width := width - 41, height := 35, img := 39926 }, // TOPMIDDLE
+			struct{ x := 0, y := 0, width := 35, height := 35, img := 39925 }, // TOPLEFT
+			struct{ x := width - 25, y := 0, width := 35, height := 35, img := 39927 }, // TOPRIGHT
+
+			// BOTTOM
+			struct{ x := 25, y := height - 25, width := width - 25, height := 35, img := 39932 }, // BOTTOMMIDDLE
+			struct{ x := 0, y := height - 25, width := 35, height := 35, img := 39931 }, // BOTTOMLEFT
+			struct{ x := width - 25, y := height - 25, width := 35, height := 35, img := 39933 } // BOTTOMRIGHT
+		};
+	elseif (border == BORDER_BLUE)
+		background := 40004;
+		molduras := array{
+			// SIDES
+			struct{ x := 0, y := 15, width := 35, height := height - 15, img := 40003 }, // LEFT
+			struct{ x := width - 25, y := 15, width := 35, height := height - 15, img := 40005 }, // RIGHT
+
+			// TOP
+			struct{ x := 25, y := 0, width := width - 41, height := 15, img := 40001 }, // TOPMIDDLE
+			struct{ x := 0, y := 0, width := 35, height := 15, img := 40000 }, // TOPLEFT
+			struct{ x := width - 25, y := 0, width := 35, height := 15, img := 40002 }, // TOPRIGHT
+
+			// BOTTOM
+			struct{ x := 25, y := height - 25, width := width - 25, height := 35, img := 40007 }, // BOTTOMMIDDLE
+			struct{ x := 0, y := height - 25, width := 35, height := 35, img := 40006 }, // BOTTOMLEFT
+			struct{ x := width - 25, y := height - 25, width := 35, height := 35, img := 40008 } // BOTTOMRIGHT
+		};
+	elseif (border == BORDER_MARBLE)
+		background := 3504;
+		molduras := array{
+			// SIDES
+			struct{ x := 0, y := 15, width := 35, height := height - 15, img := 3503 }, // LEFT
+			struct{ x := width - 25, y := 15, width := 35, height := height - 15, img := 3505 }, // RIGHT
+
+			// TOP
+			struct{ x := 25, y := 0, width := width - 41, height := 15, img := 3501 }, // TOPMIDDLE
+			struct{ x := 0, y := 0, width := 35, height := 15, img := 3500 }, // TOPLEFT
+			struct{ x := width - 25, y := 0, width := 35, height := 15, img := 3502 }, // TOPRIGHT
+
+			// BOTTOM
+			struct{ x := 25, y := height - 25, width := width - 25, height := 35, img := 3507 }, // BOTTOMMIDDLE
+			struct{ x := 0, y := height - 25, width := 35, height := 35, img := 3506 }, // BOTTOMLEFT
+			struct{ x := width - 25, y := height - 25, width := 35, height := 35, img := 3508 } // BOTTOMRIGHT
+		};
+	endif
+
+	GFESetBackground(gump, width - 20, height - 20, background);
     foreach moldura in molduras
         GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.img);
     endforeach
 endfunction
 
 function GFESetTitle(byref gump, x, title, color := 0)
-	GFTextMid(gump, x, 40, Len(title)*2, color, title);
+	GFTextMid(gump, x, 35, Len(title)*2, color, title);
 endfunction
 
 /**

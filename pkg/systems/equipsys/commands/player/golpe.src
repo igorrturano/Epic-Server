@@ -2,6 +2,7 @@ include "include/client";
 include "include/say";
 include ":equipsys:utils";
 include ":equipsys:props";
+include ":gumps:epicGumps";
 
 program cmd_golpe(who)
 	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
@@ -9,22 +10,59 @@ program cmd_golpe(who)
 		return 0;
 	endif
 
+	OpenGump(who);
+endprogram
+
+function OpenGump(who)
 	var weapon := who.weapon;
 	var weaponProp := getPropBase(weapon);
 	var weaponElem := getItemCfgElem(weapon);
 	
-	if (weaponProp.AttackType.Upper() == SLASHDAMAGE.Upper())
-		weaponProp.AttackType := PIERCINGDAMAGE;
-	elseif (weaponProp.AttackType.Upper() == PIERCINGDAMAGE.Upper())
-		weaponProp.AttackType := BLUNTDAMAGE;
-	elseif (weaponProp.AttackType.Upper() == BLUNTDAMAGE.Upper())
-		weaponProp.AttackType := SLASHDAMAGE;
-	else
-		weaponProp.AttackType := weaponElem.TipoAtaque;
-	endif
-	
-	PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
-	SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
+	while (1)
+		var gump := CreateGump();
+		var x := 15;
+		var y := 15;
 
-	setPropBase(weapon, weaponProp);
-endprogram
+		if (weaponProp.AttackType.Upper() == SLASHDAMAGE.Upper())
+			GFAddButton(gump, x, y, 1004, 1008, GF_CLOSE_BTN, 10);
+		elseif (weaponProp.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+			GFAddButton(gump, x, y, 1008, 1009, GF_CLOSE_BTN, 11);
+		elseif (weaponProp.AttackType.Upper() == BLUNTDAMAGE.Upper())
+			GFAddButton(gump, x, y, 1009, 1004, GF_CLOSE_BTN, 12);
+		endif
+
+		var input := GFSendGump(who, gump);
+		if (input[0] == 0)
+			return;
+		elseif (input[0] == 10)
+			weaponProp.AttackType := PIERCINGDAMAGE;
+			PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
+			SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
+
+			gump := CreateGump();
+			GFAddButton(gump, x, y, 1008, 1009, GF_CLOSE_BTN, 11);
+			setPropBase(weapon, weaponProp);
+		elseif (input[0] == 11)
+			weaponProp.AttackType := BLUNTDAMAGE;
+			PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
+			SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
+
+			gump := CreateGump();
+			GFAddButton(gump, x, y, 1009, 1004, GF_CLOSE_BTN, 12);
+			setPropBase(weapon, weaponProp);
+		elseif (input[0] == 12)
+			weaponProp.AttackType := SLASHDAMAGE;
+			PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
+			SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
+
+			gump := CreateGump();
+			GFAddButton(gump, x, y, 1004, 1008, GF_CLOSE_BTN, 10);
+			setPropBase(weapon, weaponProp);
+		endif
+	endwhile
+endfunction
+
+function CreateGump()
+	var gump := GFECreateGump("Postura de Combate", 85, 85, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
+	return gump;
+endfunction
