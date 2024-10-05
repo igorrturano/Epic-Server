@@ -196,13 +196,14 @@ function getResistModBySlot(item)
 	var stats := array;
 	var slot := getSlot(item).upper;
 
-    case(slot) // {SlashResist, PiercingResist, BluntResist, DexPenalty}
+    case(slot) // {SlashResist, PiercingResist, BluntResist}
         HEAD: stats := {2,2,2}; break;
         NECK: stats := {1,1,1}; break;
         BODY: stats := {4,4,4}; break;
         ARMS: stats := {2,2,2}; break;
         HANDS: stats := {1,1,1}; break;
         LEGS: stats := {3,3,3}; break;
+		FEET: stats := {2,2,2}; break;
         SHIELD: stats := {4,4,4}; break;
     endcase
 
@@ -211,6 +212,7 @@ function getResistModBySlot(item)
 	resists.+SlashResistMod := stats[1];
 	resists.+PiercingResistMod := stats[2];
 	resists.+BluntResistMod := stats[3];
+	
 	resists.+FireResistMod := 0;
 	resists.+ColdResistMod := 0;
 	resists.+PoisonResistMod := 0;
