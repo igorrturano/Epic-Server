@@ -418,15 +418,11 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 
 	if (defender.npctemplate)
 		resist := getResistNPCByType(defender, type, armor, attacker.weapon);
-		print("resist -> "+resist);
 	else
 		resist := getResistArmorByType(armor, type, attacker, defender);
 	endif
 
 	var regiao := CS_GetArmorZone(armor);
-	// if (regiao == error)
-	// 	regiao := "Corpo";
-	// endif
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao != error ? regiao : "Corpo");
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao != error ? regiao : "Corpo");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + armor != error ? armor.desc : "Corpo");
@@ -490,7 +486,7 @@ function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 
 	if (!armor || armor == error)
 		if (npcResists == error)
-			print(npc.npctemplate +" -> "+npcResists+", pegando antiga...");
+			SysLog(npc.npctemplate +" -> "+npcResists);
 			resist := CInt(cfg[npctemplate.template].PhysicalResist) + CInt(npc.resist_physical_mod);
 		else
 			case(type)
