@@ -80,7 +80,7 @@ exported function Attack(attacker, defender)
 	var rolldice := RandomDiceRoll("1d100");
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto: "+rolldice);
 	if ( rolldice < hitchance )
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "SUCESSO!");
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "***SUCESSO!***");
         if (defender.frozen)
             defender.frozen := 0;
         endif
@@ -91,7 +91,7 @@ exported function Attack(attacker, defender)
 		EpicApplyDamage(attacker, defender, DAMAGE_MAINHAND);
 
 	else
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "FALHA!");
+		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "***FALHA!***");
 		PlayMissSound(attacker);
 
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -112,14 +112,14 @@ exported function Attack(attacker, defender)
 		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto: "+rolldice);
 
 		if ( rolldice < hitchance )
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "SUCESSO!");
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "***SUCESSO!***");
 			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
 			EpicApplyDamage(attacker, defender, DAMAGE_OFFHAND);
 
 		else
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "FALHA!");
+			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "***FALHA!***");
 			PlayMissSound(attacker);
 
 			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);

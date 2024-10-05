@@ -3,7 +3,7 @@ include "include/say";
 include ":equipsys:utils";
 include ":equipsys:props";
 
-program cmd_golpe(who)
+program cmd_postura(who)
 	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
 		SendSysMessageEx(who, "Você precisa ter uma arma empunhada para mudar sua postura de ataque!", SSM_FAIL);
 		return 0;
