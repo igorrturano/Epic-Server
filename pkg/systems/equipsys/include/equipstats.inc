@@ -238,23 +238,33 @@ endfunction
 function getWeaponMainDamageDice(weapon)
 	var prop := getPropBase(weapon);
 	var dice;
-	case (Upper(prop.AttackType))
-		SLASHDAMAGE: dice := prop.SlashMainDamage; break;
-		PIERCINGDAMAGE: dice := prop.PiercingMainDamage; break;
-		BLUNTDAMAGE: dice := prop.BluntMainDamage; break;
-		default: dice := error{"errortext" := "No dice damage!"};
-	endcase
+
+	if (prop.Upper() == SLASHDAMAGE.Upper())
+		dice := prop.SlashMainDamage;
+	elseif (prop.Upper() == PIERCINGDAMAGE.Upper())
+		dice := prop.PiercingMainDamage;
+	elseif (prop.Upper() == BLUNTDAMAGE.Upper())
+		dice := prop.BluntMainDamage;
+	else
+		dice := error{"errortext" := "No dice damage!"};
+	endif
+	
 	return dice;
 endfunction
 
 function getWeaponOffDamageDice(weapon)
 	var prop := getPropBase(weapon);
 	var dice;
-	case (Upper(prop.AttackType))
-		SLASHDAMAGE: dice := prop.SlashOffDamage; break;
-		PIERCINGDAMAGE: dice := prop.PiercingOffDamage; break;
-		BLUNTDAMAGE: dice := prop.BluntOffDamage; break;
-		default: dice := error{"errortext" := "No dice damage!"};
-	endcase
+	
+	if (prop.Upper() == SLASHDAMAGE.Upper())
+		dice := prop.SlashOffDamage;
+	elseif (prop.Upper() == PIERCINGDAMAGE.Upper())
+		dice := prop.PiercingOffDamage;
+	elseif (prop.Upper() == BLUNTDAMAGE.Upper())
+		dice := prop.BluntOffDamage;
+	else
+		dice := error{"errortext" := "No dice damage!"};
+	endif
+	
 	return dice;
 endfunction
