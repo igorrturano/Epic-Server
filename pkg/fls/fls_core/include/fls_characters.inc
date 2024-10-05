@@ -102,6 +102,8 @@ function HaveReverseVision(who)
 		return 1;
 	elseif (cint(GetObjProperty(who, "reversevision")) == 1)
 		return 1;
+	elseif (GetObjProperty(who, "metamorfose")) // TODO: Ajuste paliativo pro Open Beta
+		return 1;
 	else
 		return 0;
 	endif

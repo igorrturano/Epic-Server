@@ -997,6 +997,11 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
     var attacker_race := GetObjProperty(attacker, "chardata").raca;
     var in_darkness := InDarkness(attacker);
 	var darkness_intensity := "muita";
+	var metamorfose := GetObjProperty(attacker, "metamorfose");
+	if (metamorfose)
+		return;
+	endif
+
     if (in_darkness && attacker_race != DROW)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)
