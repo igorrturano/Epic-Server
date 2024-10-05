@@ -194,7 +194,7 @@ function getNPCDamages(npc)
 	var elemElemDamages := GetConfigString(elem, "EpicElemDamage");
 
 	if (elemFisDamages == error || elemElemDamages == error)
-		return error{"errortext" := "NPC doesnt have the new attacks defined!"};
+		return error{"errortext" := "NPC doesnt have the new attacks!"};
 	endif
 
 	elemFisDamages := SplitWords(elemFisDamages);
@@ -226,44 +226,38 @@ endfunction
  * Retorna o valor do dado do dano e o tipo do dano.
  *
  */
-function getNPCMainDamage(npc, type := 0)
+function getNPCMainDamage(npc, type)
 	var damage := struct;
 
+	if (type.Upper() == SLASHDAMAGE.Upper())
+		damage.+AttackType := SLASHDAMAGE;
+	elseif (type.Upper() == PIERCINGDAMAGE.Upper())
+		damage.+AttackType := PIERCINGDAMAGE;
+	elseif (type.Upper() == BLUNTDAMAGE.Upper())
+		damage.+AttackType := BLUNTDAMAGE;
+	else
+		damage.+AttackType := error{"errortext" := "No attack type!"};
+	endif
+
 	if (!npc.weapon || npc.weapon == error)
-		// var damages;
-		// damages := getNPCDamages(npc);
-
-		// if (damages.SlashDamage > damages.PiercingDamage)
-		// 	damage.+dice := damages.SlashDamage;
-		// 	damage.+AttackType := SLASHDAMAGE;
-		// elseif (damages.PiercingDamage > damages.BluntDamage)
-		// 	damage.+dice := damages.PiercingDamage;
-		// 	damage.+AttackType := PIERCINGDAMAGE;
-		// else
-		// 	damage.+dice := damages.BluntDamage;
-		// 	damage.+AttackType := BLUNTDAMAGE;
-		// endif
-
 		// TODO: Buscar o type dentro do npcTemplate.
+		var npcDamages := getNPCDamages(npc);
+		var damageTier;
+
+		if (type.Upper() == SLASHDAMAGE.Upper())
+			damageTier := npcDamages.SlashDamage;
+		elseif (type.Upper() == PIERCINGDAMAGE.Upper())
+			damageTier := npcDamages.PiercingDamage;
+		elseif (type.Upper() == BLUNTDAMAGE.Upper())
+			damageTier := npcDamages.BluntDamage;
+		else
+			damageTier := error{"errortext" := "No damage tier!"};
+		endif
+
+		damage.+dice := getDamageByTier(damageTier);
 	else
 		setPropWeapon(npc.weapon);
 		damage.+dice := getWeaponMainDamageDice(npc.weapon);
-		case (Upper(type))
-			SLASHDAMAGE:
-				damage.+AttackType := SLASHDAMAGE;
-				break;
-			
-			PIERCINGDAMAGE:
-				damage.+AttackType := PIERCINGDAMAGE;
-				break;
-			
-			BLUNTDAMAGE:
-				damage.+AttackType := BLUNTDAMAGE;
-				break;
-			
-			default:
-				damage.+AttackType := error{"errortext" := "No attack type!"};
-		endcase
 	endif
 
 	return damage;
@@ -329,8 +323,6 @@ function getNPCResists(npc)
 
 	return stats;
 endfunction
-
-
 
 function getPropNPCAttackType(npc)
 	var prop := npc.GetProp("atributos");
