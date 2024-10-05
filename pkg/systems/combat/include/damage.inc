@@ -27,7 +27,7 @@ include ":combat:armorZones";
 include ":combat:combat";
 include ":equipsys:utils";
 include ":equipsys:props";
-include ":epicai:npcUtils";
+include "include/epicNPCUtils";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
