@@ -422,11 +422,19 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 		resist := getResistArmorByType(armor, type, attacker, defender);
 	endif
 
-	var regiao := CS_GetArmorZone(armor);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao != error ? regiao : "Corpo");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao != error ? regiao : "Corpo");
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + armor != error ? armor.desc : "Corpo");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + armor != error ? armor.desc : "Corpo");
+	var regiao := struct;
+	regiao.+zone := CS_GetArmorZone(armor);
+	if (regiao.zone == error)
+		regiao.zone := "Corpo";
+	endif
+	regiao.equip := armor.desc;
+	if (regiao.equip == error)
+		regiao.equip := "Corpo";
+	endif
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao.zone);
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao.zone);
+	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + regiao.equip);
+	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + regiao.equip);
 	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
 	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
 
@@ -528,8 +536,6 @@ endfunction
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
 	var armorResists := getPropBase(armor);
-	print("armor ->"+armor.name);
-	print("armorResists ->"+armorResists);
 
 	case(type)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;

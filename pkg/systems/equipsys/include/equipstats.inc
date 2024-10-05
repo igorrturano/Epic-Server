@@ -212,7 +212,7 @@ function getResistModBySlot(item)
 	resists.+SlashResistMod := stats[1];
 	resists.+PiercingResistMod := stats[2];
 	resists.+BluntResistMod := stats[3];
-	
+
 	resists.+FireResistMod := 0;
 	resists.+ColdResistMod := 0;
 	resists.+PoisonResistMod := 0;
@@ -241,11 +241,11 @@ function getWeaponMainDamageDice(weapon)
 	var prop := getPropBase(weapon);
 	var dice;
 
-	if (prop.Upper() == SLASHDAMAGE.Upper())
+	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
 		dice := prop.SlashMainDamage;
-	elseif (prop.Upper() == PIERCINGDAMAGE.Upper())
+	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
 		dice := prop.PiercingMainDamage;
-	elseif (prop.Upper() == BLUNTDAMAGE.Upper())
+	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
 		dice := prop.BluntMainDamage;
 	else
 		dice := error{"errortext" := "No dice damage!"};
@@ -258,11 +258,11 @@ function getWeaponOffDamageDice(weapon)
 	var prop := getPropBase(weapon);
 	var dice;
 	
-	if (prop.Upper() == SLASHDAMAGE.Upper())
+	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		dice := prop.SlashOffDamage;
-	elseif (prop.Upper() == PIERCINGDAMAGE.Upper())
+	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 		dice := prop.PiercingOffDamage;
-	elseif (prop.Upper() == BLUNTDAMAGE.Upper())
+	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
 		dice := prop.BluntOffDamage;
 	else
 		dice := error{"errortext" := "No dice damage!"};
