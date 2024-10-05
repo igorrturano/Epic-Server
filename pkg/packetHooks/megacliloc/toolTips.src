@@ -465,19 +465,47 @@ exported function MegaCliloc( who, byref packet )
         desc := desc[1, 85];
     endif
 
-    //VERIFICA PROPRIEDADES DE IDIOMAS
-    if (desc!=error)
-        var linguagem := GetObjProperty(item, "lingua");
-        if (linguagem!=error)
-            var linguas := GetObjProperty(who, "linguas_conhecidas");
-            if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
-                xDesc := xDesc + white + "" + desc + "<br>";
+ 
+
+
+ //VERIFICA PROPRIEDADES DE IDIOMAS
+    var description := GetObjProperty(item, "description");
+    var linguagem := GetObjProperty(item, "lingua");
+    
+    if (linguagem != error)
+        xDesc := xDesc + "<BASEFONT COLOR=#FFD700>[Artefato Arqueológico]<br>";
+        
+        if (description != error && description != "")
+            var linguas_conhecidas := GetObjProperty(who, "linguas_conhecidas");
+            if (!linguas_conhecidas)
+                linguas_conhecidas := array{};
+            endif
+            
+            var pode_ler := 0;
+            var tooltip := "";
+            
+            if (linguagem in linguas_conhecidas)
+                pode_ler := 1;
+                tooltip := "<BASEFONT COLOR=#C0C0C0>Você sabe ler essa língua<br>";
+            elseif (linguagem == "Antiga" && temHabilidade(who, "Arqueologo"))
+                pode_ler := 1;
+                tooltip := "<BASEFONT COLOR=#C0C0C0>A arqueologia permitiu decifrar essa língua morta<br>";
+            elseif (temHabilidade(who, "Arqueologo"))
+                pode_ler := 1;
+                tooltip := "<BASEFONT COLOR=#C0C0C0>Seu conhecimento de arqueologia decifrou a escrita<br>";
+            endif
+            
+            if (pode_ler)
+                xDesc := xDesc + tooltip + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
             else
-                xDesc :=  xDesc + "*Inscrições em Língua Desconhecida*<br>";
+                xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Inscrições em Língua Desconhecida*<br>";
+                xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Não foi decifrado*<br>";
             endif
         else
-            xDesc := xDesc + white + "" + desc + "<br>";
+            xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Sem inscrições visíveis*<br>";
         endif
+    elseif (description != error && description != "")
+        xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
     endif
 
     //ADICIONA DESCRIÇÕES DAS PROPRIEDADES COMUNS DE ARMAS E ARMADURAS
