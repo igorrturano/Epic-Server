@@ -1,0 +1,10 @@
+include ":combat:combat";
+
+program AttackAnimation(params)
+	// Criado apenas para a animção poder ser async.
+	var who := params[1];
+	var delay := CInt(params[2]);
+	
+	SleepMS(delay);
+	PlayAttackAnimation(who);
+endprogram
