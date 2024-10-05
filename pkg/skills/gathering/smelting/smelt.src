@@ -43,7 +43,7 @@ program smelt_that_ore(who, item)
 endprogram
 
 function OpenGump(who, pot)
-	var gump := GFECreateGump("Menu de Smelting", 340, 600, 39929);
+	var gump := GFECreateGump("Menu de Smelting", 340, 600);
 
 	var ores := getAllOres();
 	var ableToSmelt_amt := dictionary{};
