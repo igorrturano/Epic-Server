@@ -1,5 +1,7 @@
 use uo;
 
+include "include/say";
+
 const PROPTAG := "#debug_";
 
 // Adicionar novos debugs aqui, no mesmo modelo. O valor da String deve coincidir com o var name do listDebugs no debug.src (conferir lá).
@@ -24,18 +26,14 @@ endfunction
 
 function DebugMsg(who, debugName, msg)
     if (checkDebug(who, debugName) || checkDebug(who, "all"))
-        msg := "DEBUG "+debugName+": "+msg;
-
-        SendSysMessageEx(who, msg, SSM_INFO);
+        SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
     endif
 endfunction
 
 function DebugMsgEvent(debugName, msg) 
     foreach who in EnumerateOnlineCharacters()
         if (checkDebug(who, debugName) || checkDebug(who, "all"))
-            msg := "DEBUG "+debugName+": "+msg;
-
-            SendSysMessageEx(who, msg, SSM_INFO);
+            SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
         endif
     endforeach
 endfunction
