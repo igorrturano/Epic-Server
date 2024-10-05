@@ -135,9 +135,9 @@ endfunction
 function CanAttack(attacker, defender)
 	if (attacker == defender)
 		ApplyRawDamage(attacker, 5000);
-		return 1;
+		return 0;
 	elseif (!CheckLineOfSight(attacker, defender))
-		return 1;
+		return 0;
 	endif
 	
 	if (attacker.acctname)
@@ -146,7 +146,7 @@ function CanAttack(attacker, defender)
 				SendSysMessageEx(attacker, "Você precisa estar em modo de combate para ameaçar alguem.", SSM_FAIL);
 				SetObjProperty(attacker, "attackmsg", polcore().systime+15);
 			endif
-			return 1;
+			return 0;
 		endif
 	endif
 
@@ -167,10 +167,6 @@ function CanAttack(attacker, defender)
 		return 0;
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
-	// elseif ( !throwCheckCombatHook(attacker, defender) )
-	// 	return 0;
-	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
-	//	return 0;
 	endif
 	
 	return 1;
