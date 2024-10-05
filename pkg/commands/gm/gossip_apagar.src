@@ -1,12 +1,5 @@
-use uo;
-//.gossip <insira sua fofoca>
-program apagar_fofoca(who, nova_fofoca)
+use os;
 
-    if (!nova_fofoca)
-        sendsysmessage(who, "Voce esta apagando fofocas");
-        var gossip_storage := array{};
-        SetGlobalProperty("gossip_storage", gossip_storage);
-        
-        return;
-    endif
+program textcmd_gossipgump( who )
+    start_script( ":gossipgump:gossip_gump", who );
 endprogram

@@ -319,6 +319,17 @@ function AI_Speak(npc, text, text_type:=SPEAK_TEXTTYPE_DEFAULT, do_event:=SPEAK_
 	return SendEvent(npc, ev);
 endfunction
 
+function AI_Speak_to_Each_Other(npc, text, text_type:=SPEAK_TEXTTYPE_DEFAULT, do_event:=SPEAK_DOEVENT_ENABLE, no_wake:=WAKEUP)
+	var ev		:= struct;
+	ev.+type	:= NPCEVENT_SPEAK;
+	ev.+text	:= text;
+	ev.+texttype	:= text_type;
+	ev.+doevent	:= SPEAK_DOEVENT_ENABLE;
+	ev.+WakeUp	:= no_wake;
+	ev.+process	:= GetProcess(GetPid());
+
+	return SendEvent(npc, ev);
+endfunction
 /*
  * AI_StartNerve(npc, nerve_name, script_name, data, no_wake)
  *

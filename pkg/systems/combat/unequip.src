@@ -4,7 +4,6 @@ use cfgfile;
 
 include ":attributes:attributes";
 include ":tn:equipment";
-include ":itemsys:propitens";
 
 program unequipweapon(who, item)
 	var descmod_item:=GetObjProperty(item,"descmod");
@@ -53,8 +52,7 @@ program unequipweapon(who, item)
 
 	RemoveEquipmentMods(who, item);
 
-	//VER SE VALE A PENA ATIVAR O [4] PARA 2 AO DESEQUIPAR
-	NovoSistemaDeItens(who, item, TOGGLELVL_EQUIP, 0); //[3] E [4] SÃO TOGGLES NO propitens.inc PARA LIMITAR O USO EM FASE DE TESTES 
+	Run_Script_To_Completion(":equipsys:equipsys", {who, item});
 
 	set_critical(0);
 endprogram

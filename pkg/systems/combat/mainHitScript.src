@@ -26,6 +26,7 @@ include ":taming:taming";
 include ":charactercreation:resists";
 include ":combat:combat";
 include "include/epicUtils";
+include "include/epicMageryUtils";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
@@ -37,6 +38,7 @@ program MainHitScript(params)
 	var armor := params[4];
 	var basedamage := params[5];
 	var rawdamage := params[6];
+	var waitAnim := params[7];
 	var elementaldamage;
 
 	// Garante dano mínimo de 1
@@ -53,28 +55,33 @@ program MainHitScript(params)
 	SetScriptController(attacker);
 
 	// Aplica penalidade por dex e modificador da Hab Fintar
-	rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender);
+	// rawdamage := DmgPenaltyByArmor(rawdamage, attacker, weapon, defender);
 
 	// Checa se o atacante está olhando pro alvo e se está por trás dele
 	FacingChecks(attacker, defender);
-
-	// Toca do som do alvo sofrendo ataque
-	PlayHitSounds(attacker, defender);
-
-	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
-	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
-		// Calcula o bloqueio e os danos no escudo do defensor
-		ParryCheck(attacker, defender, rawdamage, weapon);
+	
+	if (waitAnim)
+		SleepMS(waitAnim);
 	endif
+
+	PlayHitSounds(attacker, defender);
 
 	// Calcula a chance do projétil não quebrar
 	ArrowRecovery(attacker, defender, weapon);
 
-	// Calcula o tipo de dano da arma
+	// Verifica o tipo de dano da arma
 	var dmgType := getWeaponDamageType(attacker, weapon);
 
-	// Calcula os danos
+	// Calcula os modificadores de dano do atacante
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
+
+	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+		// Calcula o bloqueio e os danos no escudo do defensor
+		if(ParryCheck(attacker, defender, rawdamage, weapon))
+			basedamage := 0;
+		endif
+	endif
 
 	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos (por enquanto calcula só o físico)
 
@@ -93,7 +100,7 @@ program MainHitScript(params)
 	// Checa as habilidades e aplica seus efeitos e danos
 	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
-	// Aplica o dano físico da arma
+	// Aplica o dano físico da arma abatendo a defesa do defensor
 	DamageEpicCombat(attacker, defender, armor, basedamage, dmgType);
 
 	return 1;
@@ -644,6 +651,8 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		EraseObjProperty(weapon, "#ataqueelemental");
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		dmg := ApplyChargesCalculation(weapon, dmg, 1);
+
 		if (elemental != error)
 			if (elemental.type == DMG_FIRE)
 				start_script(":combat:weaponHitScripts/FireHit", array{attacker, defender, weapon, armor, basedamage, dmg*2});
@@ -697,6 +706,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
 			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			dmg := ApplyChargesCalculation(weapon, dmg, 2);
 			if(dmg < 3)
 				dmg := 3;
 			endif

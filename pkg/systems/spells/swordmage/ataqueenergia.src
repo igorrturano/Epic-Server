@@ -29,10 +29,6 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_ENERGY)
-			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina Eletrica.", SSM_FAIL);
-			return 1;
-		endif
 
 		if(checkForElementalWeapons(who, targ))
 	        return 0;

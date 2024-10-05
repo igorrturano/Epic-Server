@@ -20,7 +20,7 @@ program SpellScript(params)
 	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
 
 	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
-    var duration := CInt(magiclore_skill * 5);
+    var duration := CInt( 120 + (magiclore_skill * 5));
 
     //Bonus de especialização
     if(Temhabilidade(who, "Treinamento Druídico"))

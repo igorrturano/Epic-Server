@@ -1,4 +1,10 @@
+/* 
+ * Documentado em: debug.src
+ */
+
 use uo;
+
+include "include/say";
 
 const PROPTAG := "#debug_";
 
@@ -24,18 +30,14 @@ endfunction
 
 function DebugMsg(who, debugName, msg)
     if (checkDebug(who, debugName) || checkDebug(who, "all"))
-        msg := "DEBUG "+debugName+": "+msg;
-
-        SendSysMessageEx(who, msg, SSM_INFO);
+        SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
     endif
 endfunction
 
 function DebugMsgEvent(debugName, msg) 
     foreach who in EnumerateOnlineCharacters()
         if (checkDebug(who, debugName) || checkDebug(who, "all"))
-            msg := "DEBUG "+debugName+": "+msg;
-
-            SendSysMessageEx(who, msg, SSM_INFO);
+            SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
         endif
     endforeach
 endfunction

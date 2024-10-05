@@ -32,8 +32,8 @@ function updateToolTip(obj_reference)
    IncRevision(obj_reference);
 endfunction
 
-function isMale(who)
-	var male_graphics := {400, 1830, 1832, 1828};
+function isMaleGraphic(who)
+	var male_graphics := {400, 1830, 1832, 1828, 1835};
 	if (who.graphic in male_graphics)
 		return 1;
 	endif
@@ -41,8 +41,8 @@ function isMale(who)
 	return 0;
 endfunction
 
-function isFemale(who)
-    var female_graphics := {401, 1831, 1833, 1829};
+function isFemaleGraphic(who)
+    var female_graphics := {401, 1831, 1833, 1829, 1834};
     if (who.graphic in female_graphics)
         return 1;   
     endif

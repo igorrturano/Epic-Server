@@ -5,7 +5,7 @@ use cfgfile;
 use util;
 include "include/NPCUtil";
 
-function OpenAICompletion(systemMessage, questions)
+function OpenAICompletion_util(systemMessage, questions)
    //print("systemMessage:");
    //print(systemMessage);
    //print("questions:");
@@ -142,7 +142,7 @@ function handle_open_ai_npc_speech(npc, language, event, npcEvil, mood, gossip, 
   // Define the questions array with the user input
   var questions := array{ struct{ "user" := PlayerInput } };
    // Chama o OpenAI com as variaveis de contexto (systemMessage) e o input do char (questions)
-  var responseText := OpenAICompletion(systemMessage, questions);
+  var responseText := OpenAICompletion_util(systemMessage, questions);
   //var responseText := "teste";
   return responseText;
 endfunction

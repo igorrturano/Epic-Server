@@ -14,6 +14,7 @@ include ":combat:damage";
 include "include/shapes";
 include ":nature:nature";
 include ":spells:swordmage";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -50,6 +51,7 @@ program SpellScript(params)
 		eraseobjproperty(targ, "gems");
 		SetName(targ, targ.desc+" [danificado]");
 		MoveItemToContainer(targ, who.backpack);
+		ApplyChargesCalculation(targ, 1, 5);
 
 
 		windsound( who);

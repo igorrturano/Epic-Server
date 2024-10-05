@@ -493,7 +493,7 @@ function CastSpellNPC(opponent, spell_list)
 	if (retribuicao)
 		if (enemies.size() >= 1)
 			if (GetCooldown(me, "retribuicao") == 0)
-				start_script(":spells:mesum/retribuicao", array{me, me});
+				start_script(":spells:necromancer/retribuicao", array{me, me});
 				SetCooldown(me, "npcspell", 5);
 				SetCooldown(me, "retribuicao", cint(AP_GetSkill(me, MAGICLORE))*2);
 			endif
@@ -508,14 +508,14 @@ function CastSpellNPC(opponent, spell_list)
 					loc.x := me.x;
 					loc.y := me.y;
 					loc.z := me.z;
-					start_script(":spells:mesum/correntedor", array{me, loc});
+					start_script(":spells:necromancer/correntedor", array{me, loc});
 					SetCooldown(me, "correntes", cint(AP_GetSkill(me, MAGICLORE))+5);
 					SetCooldown(me, "npcspell", 5);
 				endif
 
 				if (GetCooldown(me, "sonho") == 0)
 					SetCooldown(me, "sonho", cint(AP_GetSkill(me, MAGICLORE))+5);
-					start_script(":spells:mesum/sonhomacabro", array{me, enemies[RandomInt(enemies.size())+1]}); //escolher: melee maior dano
+					start_script(":spells:necromancer/sonhomacabro", array{me, enemies[RandomInt(enemies.size())+1]}); //escolher: melee maior dano
 					SetCooldown(me, "npcspell", 5);
 				endif
 
@@ -525,14 +525,14 @@ function CastSpellNPC(opponent, spell_list)
 					loc.x := me.x;
 					loc.y := me.y;
 					loc.z := me.z;
-					start_script(":spells:mesum/correntedor", array{me, loc});
+					start_script(":spells:necromancer/correntedor", array{me, loc});
 					SetCooldown(me, "correntes", cint(AP_GetSkill(me, MAGICLORE))+5);
 					SetCooldown(me, "npcspell", 5);
 				endif
 			elseif (sonho)
 				if (GetCooldown(me, "sonho") == 0)
 					SetCooldown(me, "sonho", cint(AP_GetSkill(me, MAGICLORE))+5);
-					start_script(":spells:mesum/sonhomacabro", array{me, enemies[RandomInt(enemies.size())+1]}); //escolher: melee maior dano
+					start_script(":spells:necromancer/sonhomacabro", array{me, enemies[RandomInt(enemies.size())+1]}); //escolher: melee maior dano
 					SetCooldown(me, "npcspell", 5);
 				endif
 			endif
@@ -542,7 +542,7 @@ function CastSpellNPC(opponent, spell_list)
 	if (sonho && GetCooldown(me, "sonho") < 10)
 		foreach mob in enemies
 			if ( cint(GetObjProperty(mob, "#sleep")) )
-				start_script(":spells:mesum/pesadelo", array{me, mob });
+				start_script(":spells:necromancer/pesadelo", array{me, mob });
 				SetCooldown(me, "npcspell", 5);
 				break;
 			endif
@@ -554,7 +554,7 @@ function CastSpellNPC(opponent, spell_list)
     endif
 	if ( (AP_GetVital(me, HITS)/ AP_GetVitalMaximumValue(me, HITS) < 0.3) )
 		if (drenarvida)
-			start_script(":spells:mesum/drenarvida", array{me, me.opponent}); //escolher: melee mais perto do life maximo sugado
+			start_script(":spells:necromancer/drenarvida", array{me, me.opponent}); //escolher: melee mais perto do life maximo sugado
 			SetCooldown(me, "npcspell", 5);
 		endif
 	endif
@@ -564,7 +564,7 @@ function CastSpellNPC(opponent, spell_list)
 		if (randomint(2) == 0) //ataca oponente
 			if (vinganca)
 				if ( GetObjPRoperty(me.opponent, "#vinganca") != error ) //se o alvo nao ta sob o efeito ainda
-					start_script(":spells:mesum/vinganca", array{me, me.opponent});
+					start_script(":spells:necromancer/vinganca", array{me, me.opponent});
 					setCooldown(me, "npcspell", 5);
 				endif
 			endif
@@ -572,14 +572,14 @@ function CastSpellNPC(opponent, spell_list)
 			if (envenenar)
 				var timers :=  TS_GetTimerNames(me.opponent);
 				if ( !("defaultPoison" in timers)  ) //se o alvo nao ta envenenado
-					start_script(":spells:mesum/envenenar", array{me, me.opponent});
+					start_script(":spells:necromancer/envenenar", array{me, me.opponent});
 					setCooldown(me, "npcspell", 5);
 				endif
 			endif
 
 			if ( ampliardor)
 				if ( GetObjProperty(me.opponent, "apodrecer") == error )
-					start_script(":spells:mesum/ampliardor", array{me, me.opponent});
+					start_script(":spells:necromancer/ampliardor", array{me, me.opponent});
 					setCooldown(me, "npcspell", 5);
 				endif
 			endif
@@ -596,7 +596,7 @@ function CastSpellNPC(opponent, spell_list)
 						possiveis.append(m);
 					endif
 				endforeach
-				start_script(":spells:mesum/medo", array{me, possiveis[RandomInt(possiveis.size()+1)]});
+				start_script(":spells:necromancer/medo", array{me, possiveis[RandomInt(possiveis.size()+1)]});
 				setCooldown(me, "npcspell", 5);
 			endif
 
@@ -607,7 +607,7 @@ function CastSpellNPC(opponent, spell_list)
 						possiveis.append(m);
 					endif
 				endforeach
-				start_script(":spells:mesum/enfraquecer", array{me, possiveis[RandomInt(possiveis.size()+1)]});
+				start_script(":spells:necromancer/enfraquecer", array{me, possiveis[RandomInt(possiveis.size()+1)]});
 				setCooldown(me, "npcspell", 5);
 
 			endif
@@ -620,7 +620,7 @@ function CastSpellNPC(opponent, spell_list)
 		foreach mob in enemies
 			if ( GetObjProperty(mob, "classe") == "Sabio" )
 				if ( AP_GetVital(mob, MANA)/AP_GetVitalMaximumValue(mob, MANA) > 0.5 ) //pode acabar usando 2x no mesmo target
-					start_script(":spells:mesum/envenenarespirito", array{me, mob});
+					start_script(":spells:necromancer/envenenarespirito", array{me, mob});
 					setCooldown(me, "npcspell", 5);
 					break;
 				endif
@@ -631,7 +631,7 @@ function CastSpellNPC(opponent, spell_list)
 	if (banimento)
 		foreach mob in enemies
 			if (GetObjProperty(mob, "summoned") == 1)
-				start_script(":spells:mesum/banimentoarcano", array{me, mob});
+				start_script(":spells:necromancer/banimentoarcano", array{me, mob});
 				setCooldown(me, "npcspell", 5);
 				break;
 			endif

@@ -3,6 +3,7 @@ use cfgfile;
 include ":loot:include/lootParser";
 include ":tn:recipes";
 include ":mounts:mounts";
+include "npcUtils";
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -121,7 +122,7 @@ endfunction
 function SetupNPCEquip(who, npc_elem)
     var categ := GetConfigString(npc_elem, "Equip");
     categ := categ;
-    if(isMale(who))
+    if(isMaleGraphic(who))
         categ := categ + "M";
     elseif (who.graphic == 0x191)
         categ := categ + "F";
