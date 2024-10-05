@@ -1,33 +1,126 @@
 use uo;
-include ":tn:tngumps";
-include ":gumps:requestGump";
+use os;
 
-program setupalerta(who, rune)
-	if (who.cmdlevel < 2)
-		return;
-	endif
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 520;
+const GUMP_HEIGHT := 400;
+const INTERNAL_WIDTH := 435;
+const BACKGROUND_WIDTH := 465;
 
-	var mensagem := CStr(RequestInput(who, who.backpack, "Qual o texto do alerta?"));
-	if (!mensagem)
-		mensagem :="Escuta algo estranho.";
-	endif
-	SetObjProperty(rune, "mensagem", mensagem);
+const MAX_RANGE := 50;
+const MIN_INTERVAL := 10;
+const MAX_INTERVAL := 600;
 
-	var range := CInt(RequestInput(who, who.backpack, "Qual o alcance do alerta?"));
-	if (!range)
-		range :=10;
-	endif
-	SetObjProperty(rune, "range", range);
+program alertasetup(who, rune)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Você não tem permissão para usar isso.");
+        return;
+    endif
 
-	var intervalo := CInt(RequestInput(who, who.backpack, "A cada quantos segundos?"));
-	if (!intervalo)
-		intervalo := 10;
-	elseif(intervalo < 10)
-		intervalo := 10;
-	elseif(intervalo > 600)
-		intervalo := 600;
-	endif
-	SetObjProperty(rune, "intervalo", intervalo);
-	SendSysMessage(who, "Alerta configurado!");
+    var gump := CreateGump(rune);
+    var input := GFSendGump(who, gump);
+
+    if (input[0] == 100)
+        SaveConfigurations(who, rune, input);
+    else
+        SendSysMessage(who, "Configuração cancelada.");
+    endif
 endprogram
+
+function CreateGump(rune)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 495, 395, GUMP_BACKGROUND);
+    AdicionarMoldura(gump);
+    
+    GFResizePic(gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80);
+    
+    GFTextMid(gump, 20, 20, 420, 53, "Configuração de Alerta de Área");
+
+    var y_pos := 90;
+
+    var range := CInt(GetObjProperty(rune, "range"));
+    if (!range)
+        range := 10;
+    endif
+
+    var intervalo := CInt(GetObjProperty(rune, "intervalo"));
+    if (!intervalo)
+        intervalo := 10;
+    endif
+
+    var mensagem := GetObjProperty(rune, "mensagem");
+    if (!mensagem)
+        mensagem := "Escuta algo estranho.";
+    endif
+
+    // Raio da área
+    GFTextLine(gump, 20, y_pos, 53, "Raio da área de alerta (1-" + MAX_RANGE + "):");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(range), 1);
+    y_pos += 40;
+
+    // Intervalo entre alertas
+    GFTextLine(gump, 20, y_pos, 53, "Intervalo entre os alertas (" + MIN_INTERVAL + "-" + MAX_INTERVAL + " seg):");
+    GFResizePic(gump, 305, y_pos-5, INTERNAL_BACKGROUND, 60, 30);
+    GFTextEntry(gump, 320, y_pos, 50, 25, 2100, CStr(intervalo), 2);
+    y_pos += 40;
+
+    // Mensagem para o jogador
+    GFTextLine(gump, 20, y_pos, 53, "Mensagem para o jogador:");
+    y_pos += 25;
+    GFResizePic(gump, 20, y_pos, INTERNAL_BACKGROUND, 350, 60);
+    GFTextEntry(gump, 25, y_pos+5, 340, 50, 2100, mensagem, 3);
+
+    GFAddButton(gump, GUMP_WIDTH - 60, GUMP_HEIGHT - 50, 0x81C, 0x81B, GF_CLOSE_BTN, 100);
+
+    return gump;
+endfunction
+
+function AdicionarMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+        struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+        struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+        struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+        struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+        struct{ x := GUMP_WIDTH -25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+        struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+        struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function SaveConfigurations(who, rune, input)
+    var range := CInt(GFExtractData(input, 1));
+    if (range < 1 || range > MAX_RANGE)
+        SendSysMessage(who, "Raio inválido. Usando valor padrão de 10.");
+        range := 10;
+    endif
+    SetObjProperty(rune, "range", range);
+
+    var intervalo := CInt(GFExtractData(input, 2));
+    if (intervalo < MIN_INTERVAL || intervalo > MAX_INTERVAL)
+        SendSysMessage(who, "Intervalo inválido. Usando valor padrão de 10 segundos.");
+        intervalo := 10;
+    endif
+    SetObjProperty(rune, "intervalo", intervalo);
+    
+    var mensagem := GFExtractData(input, 3);
+    if (!mensagem || mensagem == "")
+        mensagem := "Escuta algo estranho.";
+    endif
+    SetObjProperty(rune, "mensagem", mensagem);
+
+    SendSysMessage(who, "Configurações salvas com sucesso!");
+    SendSysMessage(who, "Mensagem configurada: " + GetObjProperty(rune, "mensagem"));
+endfunction

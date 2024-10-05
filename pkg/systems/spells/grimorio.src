@@ -161,7 +161,7 @@ function CreateBookGump( book, who )
   GFPage( book_gump, 1 );
   // GFAddButton(book_gump, 125, 15, 2472, 2473, GF_CLOSE_BTN, 50);
   if ( GetObjProperty( book, "NecroBook" ) )
-	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro de Mesum" );
+	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro de Necromancer" );
   elseif ( GetObjProperty( book, "SangriaBook" ) )
 	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Sangria" );
   else

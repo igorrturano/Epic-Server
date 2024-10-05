@@ -8,7 +8,7 @@ include ":magery:spellAttack";
 include ":damage:damage";
 
 program field_control( item )
-  var npccfg1 := ReadConfigFile("::npcdesc");
+  var npccfg1 := ReadConfigFile(":*:npcdesc");
   npccfg1 := npccfg1;
 
   var creater := CInt(GetObjProperty(item, "creater"));

@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include ":gumps:yesNo";
+include ":alchemy:alchemy";
+
+program usaPergaminho(who, scroll)
+
+
+	var recipe := GetObjProperty(scroll, "recipe");
+		
+		WriteDyeInfo(recipe);
+	
+
+	var gump := GFCreateGump(140, 100);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 0, 0, 0x9D8, 240, 200);
+
+	 GFTextLine(gump, 50, 10, 0, recipe.type);
+	GFHTMLArea( gump, 30, 40, 180, 120, recipe.description, 0, 1);
+
+
+	var input := GFSendGump(who, gump);
+
+	//SendSysMessage(who, "O velho pergaminho se desfez em cinzas.");
+	//DestroyItem(scroll);
+
+
+endprogram

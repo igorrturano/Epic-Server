@@ -3,6 +3,7 @@
  */
 use uo;
 use os;
+include ":alchemy:alchemy";
 
 
 program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
@@ -12,6 +13,9 @@ program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
 	movetype       := movetype;
 	inserttype     := inserttype;
 //SendSysmessage(who,"oi");
+
+	var pergaminhos := {0xef2b, 0xef3c, 0xef3d, 0xef3e, 0xef3f};
+
 	if( book.movable == 0 )
 		SendSysMessage(who, "Cancelado.");
 		MoveItemToContainer(item, who.backpack);
@@ -20,12 +24,12 @@ program on_insert(who, book, movetype, inserttype, item, existing_stack, amt);
 		MoveItemToContainer(item, who.backpack);
 		SendSysMessage(who, "O livro esta em uso.");
 		return 0;
-	elseif(!item.objtype == 0xef2b)
+	elseif(!item.objtype in pergaminhos)
 		SendSysMessage(who, "Voce nao pode colocar isto no livro.");
 		MoveITemToContainer(item, who.backpack);
 		return 0;
 	else
-		if( GetObjProperty(item, "spellinfo") )
+		if( GetObjProperty(item, "recipe") )
 			return addScroll(who, book, item);
 		else
 			SendSysMessage(who, "Voce nao pode por isto no livro.");
@@ -45,10 +49,11 @@ function addScroll(who, book, rune)
 		rune_list := array;
 	endif
 
-	var newSpell := GetObjProperty(rune, "spellinfo");
+	var newSpell := GetObjProperty(rune, "recipe");
+		WriteDyeInfo(newspell);
 
 	foreach spell in rune_list
-		if (newspell.id == spell.id)
+		if (newspell.recipe == spell.recipe)
 			SendSysMessage(who, "Este livro ja contem esta receita.");
 			MoveItemTocontainer(rune, who.backpack);
 			return 0;
@@ -83,7 +88,7 @@ function addScroll(who, book, rune)
 	Set_Critical(1);
 
 	//Aprende no livro
-	rune_list.Append(GetObjProperty(rune, "spellinfo"));
+	rune_list.Append(GetObjProperty(rune, "recipe"));
 	SetObjProperty(book, "recipes", rune_list);
 	ReleaseItem(rune);
 

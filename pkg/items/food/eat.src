@@ -151,7 +151,22 @@ program eat_food(who, food)
 			if (IsPoisonImune(who, poisonInfo.name) )
 				return 0;
 			endif
-			TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
-		endif
+			if (TS_GetTimerInfo(who, "defaultPoison"))
+        		var defaultpoison := cint(TS_GetTimerLevel(who, "defaultPoison"));
+       			setobjproperty(who, "#poisontier", defaultpoison);
+      		endif
+      		if (getobjProperty(who, "#poisontier"))
+        		var poison := ts_gettimernames(who, type:="P");
+       			var teste := cint(getobjProperty(who, "#poisontier"));
+        		if (teste <= poisoninfo.tier);
+          			TS_LowerDuration(who, poison, -1);
+          			TS_StartTimer(who, poisonInfo.Name, poisonInfo.time, poisonInfo.level, who);
+        		endif
+      		else
+      			setobjproperty(who, "#poisontier", poisoninfo.tier);
+      			setobjproperty(who, "#poisonbonus", poisoninfo.difficulty_mod);
+      			TS_StartTimer(who, poisonInfo.name, poisonInfo.time, poisonInfo.level, who);
+      		endif
+    	endif
 	endif
 endprogram

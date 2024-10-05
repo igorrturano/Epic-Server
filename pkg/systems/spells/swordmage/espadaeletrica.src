@@ -14,35 +14,18 @@ include "include/epicMageryUtils";
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	params := 0; // No longer needed
 
-	//SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
-	var targ := who.weapon; //Spell_Target(who, TGTOPT_CHECK_LOS);
+	var targ := who.weapon;
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
 	endif
 
-	var time := AP_GetSkill(who, MAGICLORE)*10 + 180;
-
 	if (targ.isA(POLCLASS_WEAPON))
-
 		if(checkForElementalWeapons(who, targ))
-	        return 0;
-        endif        
-
-		var dmg := struct;
-		dmg.+type := DMG_ENERGY;
-		dmg.+serial := who.serial;
-		dmg.+endtime := readgameclock() + time;
-		dmg.+bonus := AP_GetSkill(who, MAGICLORE)/400;
-		if  (dmg.bonus <= 0.1)
-			dmg.bonus := 0.1;
-		endif
-
-		SetObjProperty(targ, "#elementalweapon", dmg);
-
-		start_script( ":spells:elementalweapon", {targ, time, DMG_ENERGY, who} );
+			return 0;
+		endif     
+		ApplyElementalWeaponProperties(who,DMG_ENERGY);
         PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "A arma esta eletrificada.", SSM_INFO);
 

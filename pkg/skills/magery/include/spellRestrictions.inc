@@ -10,7 +10,7 @@ include "include/objtype";
 include ":magery:spellAttack";
 
 var caster;
-var npccfg := ReadConfigFile("::npcdesc");
+var npccfg := ReadConfigFile(":*:npcdesc");
 const EVID_DISCHARGE_DUP := 0x123457;
 
 function maincast(parms, delivery, circle, noto, id);

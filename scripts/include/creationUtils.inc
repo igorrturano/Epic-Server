@@ -350,7 +350,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     endforeach
 
     // Adicionar caixa de texto para idade escolhida
-     current_y += 20;
+    current_y += 20;
     GFTextLine(gump, x, current_y, 1153, "Escreva a sua idade:");
     current_y += 20;
     var age_textbox := GFEAddTextBox(gump, x, current_y, 100, 20, COLOR_YELLOW, "", 1000);
@@ -370,11 +370,16 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             endif
         endforeach
 
+        var idade_maxima := GetRaceMaximumAge(chardata.raca);
+
         if (!all_required_selected)
             SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
             return CaracteristicasRPGump(who, chardata, culture_pic);
-        elseif (age_input == "")
+        elseif (age_input == "" || typeof(age_input) == "Error")
             SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
+            return CaracteristicasRPGump(who, chardata, culture_pic);
+        elseif (CInt(age_input) > idade_maxima)
+            SendSysMessageEX(who, "A idade limite permitida pra sua raça é " + CStr(idade_maxima) + ".", SSM_FAIL);
             return CaracteristicasRPGump(who, chardata, culture_pic);
         else
             chardata.idade_escolhida := CInt(age_input);
@@ -386,6 +391,27 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     endif
 
     return input;
+endfunction
+
+function GetRaceMaximumAge(race)
+    var idade_maxima := 0;
+    case (race)
+        ANAO:
+            idade_maxima := 150;
+        POLSKI:
+            idade_maxima := 150;
+        ELFO:
+            idade_maxima := 225;
+        DROW:
+            idade_maxima := 225;
+        HUMANO:
+            idade_maxima := 75;
+        ORC:
+            idade_maxima := 75;
+        default:
+            idade_maxima := 0;
+        endcase
+    return idade_maxima;
 endfunction
 
 function GetPageCategories()
@@ -919,7 +945,13 @@ function genericItems(who)
     
     var robe := CreateItemInBackpack(who, 0x1F03, 1); // Roupa
     EquipItem(who, robe);
-	CreateItemInBackpack(who, 0xba63, 100); //moedas de cobre
+    var moedas := "1d4";
+    if (chardata.classe == GUERREIRO)
+        moedas := "1d8";
+    elseif (chardata.classe == LADINO)
+        moedas := "1d12";
+    endif
+	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
     CreateItemInBackpack(who, 0x170D, 1); // Sandals
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
@@ -951,7 +983,7 @@ function weaponsByClassAndCulture(who)
         CreateItemInBackpack(who, 0xF99F, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
-            CreateItemInBackpack(who, 0x0f63, 1); // espada curta
+            CreateItemInBackpack(who, 0x0f63, 1); // Hasta
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
@@ -1071,16 +1103,9 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        if (chardata.culture == ALURIEL)
-            CreateItemInBackpack(who, 0x26CC, 1); // longbow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        elseif (chardata.culture == BADURAN)
-            CreateItemInBackpack(who, 0x0f4f, 1); // crossbow
-            CreateItemInBackpack(who, 0x1bfb, ammo_amount); // bolts
-        else
-            CreateItemInBackpack(who, 0x13B2, 1); // bow
-            CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
-        endif
+        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
+
         CreateItemInBackpack(who, 0x2fb7, 1); // aljava
     endif
 endfunction
@@ -1104,11 +1129,11 @@ function armorsByCulture(who)
     endif
 
     if (chardata.culture == AIGLANA)
-        CreateItemInBackpack(who, 0xc684, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc680, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc681, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc683, 1); // Lorica Segmentata
-        CreateItemInBackpack(who, 0xc682, 1); // Lorica Segmentata
+        CreateItemInBackpack(who, 0xc684, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc680, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc681, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc683, 1); // Lorica Squamata
+        CreateItemInBackpack(who, 0xc682, 1); // Lorica Squamata
     endif
 
     if (chardata.culture == HAROLOTH)
@@ -1155,10 +1180,12 @@ function workingItems(who)
 
     if (skills[WOODWORKING] >= 1)
         CreateItemInBackpack(who, 0x1035, 1); // saw
+        CreateItemInBackPack(who, 0x1022, 1);
     endif
     if (skills[METALWORKING] >= 1)
         CreateItemInBackpack(who, 0x13E3, 1); // smithhammer
         CreateItemInBackpack(who, 0x5107, 1); // smelting pot
+        CreateItemInBackpack(who, 0x1ebc, 1); // Tinker Tools
     endif
     if (skills[GATHERING] >= 1)
         CreateItemInBackpack(who, 0x0f43, 1); // hatchet
@@ -1174,7 +1201,7 @@ function workingItems(who)
     endif
 
     if (skills[MECHANICS] >= 1)
-        CreateItemInBackpack(who, 0x1035, (skills[MECHANICS] * 8)); // lockpick
+        CreateItemInBackpack(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
 
     if (skills[Domestic_Work] >= 1)
@@ -1191,30 +1218,58 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x1830, 1); // beker
         CreateItemInBackpack(who, 0x1849, 1); // aparato
         CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
-    endif
+        var book1 := createiteminbackpack(who, "alchemybook");
+            book1.newbie := 1;
+		    setobjproperty(book1, "serialid", who.serial);
+		    setobjproperty(book1, "marked",who.name + " - " + who.acctname);
+        var dyebook := createiteminbackpack(who, "dyebook");
+            setobjproperty(dyebook, "serialid", who.serial);
+		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
+        var recipe := struct;
+        var chosenRecipes := AlchChoices(who);
+        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.+recipe := chosenRecipes[1];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.recipe := chosenRecipes[2];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.recipe := chosenRecipes[3];
+        SetObjProperty(r1, "recipe", recipe);
+        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+        recipe.recipe := chosenRecipes[4];
+        SetObjProperty(r1, "recipe", recipe);
+        var i := 0;
+        while(i != (skills[ALCHEMY])*2)
+            var tinta := randomint(1);
+            if(tinta == 0)
+                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
+            else
+                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
+            endif
+            i := ++i;
+        endwhile
 
-    if (skills[ALCHEMY] == 2)
-		var book := createiteminbackpack(who, "alchemybook");
-        book.newbie := 1;
-		setobjproperty(book, "serialid", who.serial);
-		setobjproperty(book, "marked",who.name + " - " + who.acctname);
-
-        var recipes := array;
-		recipes := CreateVeryBasicRecipes();
-		var basic_book := createiteminbackpack(who, "alchemybook");
-		setobjproperty(basic_book, "recipes", recipes);
-	elseif (skills[ALCHEMY] == 3)
-		var book1:= CreateItemInBackpack(who, "alchemybook");
-		setobjproperty(book1, "serialid", who.serial);
-		setobjproperty(book1, "marked",who.name + " - " + who.acctname);
-        book1.newbie := 1;
-        var recipes := array;
-		recipes := CreateBasicRecipes();
-		var book2 := createiteminbackpack(who, "alchemybook");
-        book2.newbie := 1;
-		setobjproperty(book2, "recipes", recipes);
-		setobjproperty(book2, "serialid",who.serial);
-		setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+        if (skills[ALCHEMY] >= 2)
+		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+            recipe.recipe := chosenRecipes[5];
+            SetObjProperty(r1, "recipe", recipe);
+            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+            recipe.recipe := chosenRecipes[6];
+            SetObjProperty(r1, "recipe", recipe);
+            
+	        if (skills[ALCHEMY] == 3)
+		        var book2:= CreateItemInBackpack(who, "alchemybook");
+        		setobjproperty(book2, "serialid",who.serial);
+		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
+                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                recipe.recipe := chosenRecipes[7];
+                SetObjProperty(r1, "recipe", recipe);
+                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                recipe.recipe := chosenRecipes[8];
+                SetObjProperty(r1, "recipe", recipe);
+            endif
+        endif
 	endif
 endfunction
 
@@ -1460,7 +1515,7 @@ function startAdventureGump(who)
     GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
 
     // Adventure main image
-    GFGumpPic(gump, 50, 100, 0xFFFE);
+    GFGumpPic(gump, 50, 100, 0xFFFD);
 
     // Adventure Description
     GFHTMLArea(gump, 100, 550, 650, 120, adventureStartText, 1, 1);
@@ -1761,10 +1816,6 @@ endfunction
 
 function hairSelectionGump(who, byref chardata, currentPage := 1)
     var gump := GfCreateGump();
-    // var x := 63;
-    // var y := 100;
-    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu cabelo", 0, 0); //shadow
-    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha seu cabelo", 0, 0);
 
     GFGumpPic(gump, 17, 31, 0x9E6);
     GFResizePic(gump, 298, 100, 2620, 250, 400);
@@ -1790,6 +1841,8 @@ function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
     var start := (currentPage - 1) * HAIRS_PER_PAGE + 1;
     var end := Min(start + HAIRS_PER_PAGE - 1, hairStyles.size());
 
+    var selectedHair := chardata.hair;
+
     for i := start to end
         var style := SplitWords(hairStyles[i]);
         var hairname := style[1];
@@ -1803,7 +1856,15 @@ function RenderHairStyles(byref gump, hairStyles, chardata, currentPage)
         
         GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
         GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, hairname);
-        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        
+        //se houver um cabelo selecionado, verifica se é o mesmo cabelo da iteração e se for, usa o botão de checked ao inves de unchecked
+        //ou se este for o primeiro item da iteração e não houver cabelo selecionado, então vai marcar o primeiro item de todos que é o sem barba
+        if (selectedHair == gumppic || (i == 1 && selectedHair == ""))
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2153, 2151, GF_CLOSE_BTN, hairgraphic);
+        else
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, hairgraphic);
+        endif
+        
         GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
     endfor
 
@@ -1827,10 +1888,6 @@ endfunction
 
 function beardSelectionGump(who, byref chardata, currentPage := 1)
     var gump := GfCreateGump();
-    // var x := 63;
-    // var y := 115; // Deslocado um pouco para baixo em relação ao cabelo
-    // GFHTMLArea(gump, x+1, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua barba", 0, 0); //shadow
-    // GFHTMLArea(gump, x, y-25, 192, 400, "<BASEFONT Size=55 Color=#ffffff > Escolha sua barba", 0, 0);
 
     GFGumpPic(gump, 17, 31, 0x9E6);
     GFResizePic(gump, 298, 100, 2620, 250, 400);
@@ -1856,6 +1913,8 @@ function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
     var start := (currentPage - 1) * BEARDS_PER_PAGE + 1;
     var end := Min(start + BEARDS_PER_PAGE - 1, beardStyles.size());
 
+    var selectedBeard := chardata.beard;
+
     for i := start to end
         var style := SplitWords(beardStyles[i]);
         var beardname := style[1];
@@ -1869,7 +1928,15 @@ function RenderBeardStyles(byref gump, beardStyles, chardata, currentPage, hair)
         
         GFResizePic(gump, x_pos, y_pos, 83, 100, 100);
         GFTextEntry(gump, x_pos + 10, y_pos + 12, 85, 20, 1153, beardname);
-        GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+
+        //se houver uma barba selecionada, verifica se é a mesma barba da iteração e se for, usa o botão de checked ao inves de unchecked
+        //ou se este for o primeiro item da iteração e não houver barba selecionada, então vai marcar o primeiro item de todos que é o sem barba
+        if (selectedBeard == gumppic || (i == 1 && selectedBeard == ""))
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2153, 2151, GF_CLOSE_BTN, beardgraphic);
+        else
+            GFAddButton(gump, x_pos + 34, y_pos + 101, 2151, 2153, GF_CLOSE_BTN, beardgraphic);
+        endif
+
         GFGumpPic(gump, x_pos-40, y_pos-10, gumppic);
     endfor
 
@@ -1919,6 +1986,40 @@ function GetBeardGumpGraphic(beardID)
         51627: return 52174; // BigodeLongo
         51628: return 52174; // BigodeCurto
         // Adicione aqui os casos para as barbas anãs
+        51590: return 52136; // BarbaMultiplasTrancasEnfeitadas
+        51591: return 52137; // BarbaTrancadaBipartida
+        51592: return 52138; // BarbaMuitoComprida
+        51593: return 52139; // BarbaTrancadaTripartida
+        51594: return 52140; // BarbaVolumosa
+        51595: return 52141; // BarbaCompridaBaguncada
+        51596: return 52142; // BarbaCompridaAtada
+        51597: return 52143; // BarbaMultiplasTrancas
+        51598: return 52144; // BarbaVolumosaBipartida
+        51599: return 52145; // BarbaLongaCheia
+        51600: return 52146; // BarbaLongaFrizada
+        51601: return 52147; // BarbaLongaPontuda
+        51602: return 52148; // BarbaEnfeitadaRevoltosa
+        51603: return 52149; // BarbaVolumosaComTrancas
+        51604: return 52150; // BarbaComPontasEnfeitadas
+        51605: return 52151; // BarbaCompridaAparada
+        51606: return 52152; // BarbaMediaAparada
+        51607: return 52153; // BarbaArticulada
+        51608: return 52154; // BarbichaTrancada
+        51609: return 52155; // BarbichaDupla
+        51610: return 52156; // BigodeCurvado
+        51611: return 52157; // BarbaMediaAparada
+        51612: return 52158; // BarbaMediaSemBigode
+        51613: return 52159; // BarbaBigodeRevoltoso
+        51614: return 52160; // BarbaTrancadaBipartidaSobrancelhas
+        51615: return 52161; // BarbaMediaSobrancelhas
+        51616: return 52162; // BarbichaTrancaLongaEnfeitada
+        51617: return 52163; // BarbichaBipartidaEnfeitada
+        51618: return 52164; // BarbaMediaSemBigode
+        51619: return 52165; // BarbaBigodeRevoltoso
+        51620: return 52166; // BarbaTrancadaBipartidaSobrancelhas
+        51621: return 52167; // BarbaMediaSobrancelhas
+        51622: return 52168; // BarbichaTrancaLongaEnfeitada
+        51623: return 52169; // BarbichaBipartidaEnfeitada
         default: return 50800; // Gráfico padrão (Goatee)
     endcase
 endfunction
@@ -1988,35 +2089,35 @@ function GetHairGumpGraphic(hairID)
         51636: return 52182; // calvaocrialongo
         51637: return 52183; // calvaocriacurto
         51638: return 52184; // cabeloplantachifverd
-        51639: return 52185; // CoqueLongo
+        51639: return 54274; // CoqueLongo
         51640: return 52186; // CoqueCurto
-        51641: return 52187; // CoqueLivre
-        51642: return 52188; // CoqueTrabalhado
-        51643: return 52189; // CoqueLateral1
-        51644: return 52190; // CoqueLateral2
-        51645: return 52191; // CoqueSamurai1
-        51646: return 52192; // CoqueSamurai2
-        51647: return 52193; // CoqueSamurai3
-        51648: return 52194; // CoqueSamurai4
-        51649: return 52195; // coque1
-        51650: return 52196; // coque2
-        51651: return 52197; // coque3
-        51652: return 52198; // coque4
-        51653: return 52199; // coque5
-        51654: return 52200; // coque6
-        51655: return 52201; // coque7
-        51656: return 52202; // coque8
-        51657: return 52203; // coque9
-        51658: return 52204; // coque10
-        51659: return 52205; // coque11
-        51660: return 52206; // CoqueLongo2
-        51661: return 52207; // CoqueLongo3
-        51662: return 52208; // Coquelongo4
-        51663: return 52209; // CoqueLongo5
-        51664: return 52210; // CoqueLongo6
-        51665: return 52211; // CoqueLongo7
-        51666: return 52212; // CoqueLongo8
-        51667: return 52213; // CoqueLongo9
+        51641: return 54275; // CoqueLivre
+        51642: return 54276; // CoqueTrabalhado
+        51643: return 54277; // CoqueLateral1
+        51644: return 54278; // CoqueLateral2
+        51645: return 54279; // CoqueSamurai1
+        51646: return 54280; // CoqueSamurai2
+        51647: return 54281; // CoqueSamurai3
+        51648: return 54282; // CoqueSamurai4
+        51649: return 54283; // coque1
+        51650: return 54284; // coque2
+        51651: return 54285; // coque3
+        51652: return 54286; // coque4
+        51653: return 54287; // coque5
+        51654: return 54288; // coque6
+        51655: return 54289; // coque7
+        51656: return 54290; // coque8
+        51657: return 54291; // coque9
+        51658: return 54292; // coque10
+        51659: return 54293; // coque11
+        51660: return 54294; // CoqueLongo2
+        51661: return 54295; // CoqueLongo3
+        51662: return 54296; // Coquelongo4
+        51663: return 54297; // CoqueLongo5
+        51664: return 54298; // CoqueLongo6
+        51665: return 54299; // CoqueLongo7
+        51666: return 54300; // CoqueLongo8
+        51667: return 54301; // CoqueLongo9
         default: return 50700; // Gráfico padrão (Short_Hair)
     endcase
 endfunction
@@ -2062,15 +2163,22 @@ function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
     var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
     var end := Min(start + COLORS_PER_PAGE - 1, totalColors);
 
+    var selectedColor := (chardata.hair_item) ? chardata.hair_color : chardata.beard_color;
+
     var y_pos := 100;
     for i := start to end
         var colorData := allColors[i];
         var color := CInt(colorData.color);
         var category := colorData.category;
-
-        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        
+        //se houver uma cor selecionada, então dá check o botão correto na iteração
+        if (selectedColor == color)
+            GFAddButton(gump, 257, y_pos, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, color);
+        else
+            GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        endif
         GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
-        GFTextLine(gump, 142, y_pos + 4, color, category);
+        GFTextLine(gump, 142, y_pos + 4, color-1, category); //hue de cor tem que ter -1
         y_pos += 20;
     endfor
 
@@ -2086,7 +2194,7 @@ function hairAndBeardColorSelectionGump(who, byref chardata, currentPage := 1)
     endif
 
     // Adicionar botão de fechar
-    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 1003);
 
     return GFSendGump(who, gump);
 endfunction
@@ -2180,14 +2288,20 @@ function skinColorSelectionGump(who, byref chardata, currentPage := 1)
 
     var start := (currentPage - 1) * COLORS_PER_PAGE + 1;
     var end := Min(start + COLORS_PER_PAGE, totalColors);
-
+    var skinColor := chardata.skin_color;
+    
     var y_pos := 100;
     for i := start to end
         var color := CInt(allColors[i]);
 
-        GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        //se houver uma cor selecionada, então dá check o botão correto na iteração
+        if (skinColor == color)
+            GFAddButton(gump, 257, y_pos, 0x9C4F, 0x9C4E, GF_CLOSE_BTN, color);
+        else
+            GFAddButton(gump, 257, y_pos, 0x9C4E, 0x9C4F, GF_CLOSE_BTN, color);
+        endif
         GFHTMLArea(gump, 135, y_pos + 2, 122, 20, "", 1, 0);
-        GFTextLine(gump, 142, y_pos + 4, color, "Cor " + (i - start + 1));
+        GFTextLine(gump, 142, y_pos + 4, color - 1, "Cor " + i); //hue de cor tem que ter -1
         y_pos += 20;
     endfor
 
@@ -2203,7 +2317,7 @@ function skinColorSelectionGump(who, byref chardata, currentPage := 1)
     endif
 
     // Adicionar botão de fechar
-    GFAddButton(gump, 730, 540, 4005, 4007, GF_CLOSE_BTN, 500);
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500);
 
     return GFSendGump(who, gump);
 endfunction
@@ -2212,3 +2326,143 @@ function UpdateCharacterSkin(who, chardata)
     who.color := chardata.skin_color;
     who.truecolor := chardata.skin_color;
 endfunction
+
+function spellChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
+    
+    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
+    var keys := GetConfigIntKeys(spellcfg);
+    var spells := array;
+    foreach key in keys
+        var elem := FindConfigElem(spellcfg, key);
+        var spelllvl := GetConfigInt(elem, "Circle");
+        var spelltype := GetConfigString(elem, "Type");
+        if (spelltype == "spellcaster" && spelllvl == 1)
+            var spell := dictionary{ 
+                "id" -> key,
+                "circle" -> spelllvl,
+                "name" -> GetConfigString(elem, "Name"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            spells.append(spell);
+        endif
+    endforeach
+
+    var selected_spells := array;
+    var btn_value;
+    while (1)
+        var input := spellSelectionGump(who, gump, spells, selected_spells, 2, x, y);
+        
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + spells.size())
+                var spell_index := btn_value - 200;
+                var spell_id := spells[spell_index].id;
+                if (spell_id in selected_spells)
+                    selected_spells.Erase(Find(selected_spells, spell_id, 1));
+                else
+                    selected_spells.append(spell_id);
+                endif
+            endif
+        endforeach
+
+        if (selected_spells.size() != 2)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente 2 magias.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+
+    SendSysMessageEX(who, "Você escolheu as magias: " + CStr(selected_spells), SSM_INFO);
+    return selected_spells;
+endfunction
+
+
+function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
+
+    GFPage(gump, 1);
+    y := 100;
+    foreach spell in spells
+        var color := (spell.id in selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+        GFTooltipText(gump, spell.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
+        y += 26;
+    endforeach
+
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    return GFSendGump(who, gump);
+endfunction
+
+function AlchChoices(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    var x := 63;
+    var y := 100;
+    GFGumpPic(gump, 17, 31, 0x9E6);
+
+    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas receitas", 0, 0); //shadow
+    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas receitas", 0, 0);
+
+    var recipecfg := ReadConfigFile(":alchemy:config/recipes");
+    var keys := GetConfigIntKeys(recipecfg);
+    var recipes := array;
+    var skill := getobjproperty(who, "chardata").skills[ALCHEMY];
+    foreach key in keys
+        var elem := FindConfigElem(recipecfg, key);
+        var recipelvl := GetConfigInt(elem, "init");
+            if (!recipelvl || recipelvl == error);
+                recipelvl := 4;
+            endif
+        if (recipelvl <= skill)
+            var recipe := dictionary{ 
+                "id" -> key,
+                "name" -> GetConfigString(elem, "Type"),
+                "desc" -> GetConfigString(elem, "Desc")
+            };
+            recipes.append(recipe);
+        endif
+    endforeach
+
+    var selected_recipes := array;
+    var btn_value;
+    while (1)
+        var qtd := (skill*2)+2;
+        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+
+        foreach key in (input.keys)
+            btn_value := key;
+            if (btn_value > 200 && btn_value <= 200 + recipes.size())
+                var recipe_index := btn_value - 200;
+                var recipe_id := recipes[recipe_index].id;
+                if (recipe_id in selected_recipes)
+                    selected_recipes.Erase(Find(selected_recipes, recipe_id, 1));
+                else
+                    selected_recipes.append(recipe_id);
+                endif
+            endif
+        endforeach
+        if (selected_recipes.size() != qtd)
+            selected_recipes := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente " + cstr(qtd) + " receitas.", SSM_FAIL);
+        else
+            break;
+        endif
+    endwhile
+
+    SendSysMessageEX(who, "Você escolheu as receitas: " + CStr(selected_recipes), SSM_INFO);
+    return selected_recipes;
+endfunction
+

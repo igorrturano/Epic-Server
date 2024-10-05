@@ -21,7 +21,7 @@ program manobra(who)
 	DamageFLS(targ, level*22, DMG_FORCED, who);
 	
 	if(!targ.npctemplate)
-	SendSysMessageEx(targ, "Voce sente a vida se esvair pelo toque do mesumbeiro", SSM_INFO);
+	SendSysMessageEx(targ, "Voce sente a vida se esvair pelo toque do necromante", SSM_INFO);
 	endif
 		
 
