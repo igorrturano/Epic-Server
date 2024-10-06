@@ -100,8 +100,8 @@ function OpenGump(who, pot)
 				toSmeltOre := ableToSmelt_ore[option.oreObjType];
 				toSmeltItems := getItemsInBag(neededOresToSmelt, bag);
 				
-				DebugMsg(who, DEBUG_NAME_SMELTING, "Item: " + toSmeltItems);
-				DebugMsg(who, DEBUG_NAME_SMELTING, "Quantidade: " + toSmeltAmount);
+				DebugMsg(who, DEBUG_SMELTING, "Item: " + toSmeltItems);
+				DebugMsg(who, DEBUG_SMELTING, "Quantidade: " + toSmeltAmount);
 				break;
 			endif
 		endforeach
