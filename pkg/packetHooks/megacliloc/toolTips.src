@@ -16,6 +16,7 @@ include ":tn:boss";
 include "include/client";
 include "include/say";
 include "include/epicCombatUtils";
+include ":custompizza:itemrp/include/lore_items";
 include ":combat:damage";
 
 
@@ -295,7 +296,7 @@ exported function MegaCliloc( who, byref packet )
 
 	var Object_Name;
 
-	var xDesc; //Será utilizado para juntar as informações do tooltip do item
+	var xDesc := ""; //Será utilizado para juntar as informações do tooltip do item
 	var desc; //Salva o campo de descrição do item ou personagem
 
 	//Encontra o objeto que terá o tooltip preenchido
@@ -370,6 +371,41 @@ exported function MegaCliloc( who, byref packet )
 			else
 				Object_Name := item.desc;
 			endif
+
+                // Verifica se é um item de lore
+                        var is_lore_item := GetObjProperty(item, "IsLoreItem");
+                        if (!is_lore_item)
+                            var cfg := ReadConfigFile(":*:itemdesc");
+                            var elem := FindConfigElem(cfg, item.objtype);
+                            if (elem)
+                                is_lore_item := GetConfigInt(elem, "IsLoreItem");
+                            endif
+                        endif
+
+                        // Se for um item de lore, adiciona todas as informações relevantes
+                        if (is_lore_item)
+                            var item_info := GetLoreItemInfo(item.objtype);
+                            if (item_info)
+                                Object_Name := Object_Name + "<br><BASEFONT COLOR=#FFD700>Item Lendário";
+                                Object_Name := Object_Name + "<br><BASEFONT COLOR=#FFFFFF>Povo: " + item_info.culture_name;
+
+                                // Verifica se o item já foi avaliado por um especialista
+                                var evaluated_skill := GetObjProperty(item, "evaluated_skill");
+                                if (evaluated_skill)
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#d98cd9>Esse item foi avaliado por um " + TraduzirProfissao(item_info.required_skill);
+                                else
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#d98cd9>" + GetConsultaEspecialistaTexto(item_info.required_skill);
+                                endif
+
+                                // Verifica se o item já foi examinado por um arqueólogo
+                                var evaluated_archaeology := GetObjProperty(item, "evaluated_archaeology");
+                                if (evaluated_archaeology)
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#a1eca7>Esse item foi avaliado por um Arqueólogo";
+                                else
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#a1eca7>Consulte um Arqueólogo";
+                                endif
+                            endif
+                        endif
 		else
 			Object_Name := item.name;
 		endif
@@ -675,4 +711,37 @@ exported function MegaCliloc( who, byref packet )
 
 	return 0;
 
+endfunction
+
+function TraduzirProfissao(profissao)
+    case (profissao)
+        "Metal_Working": return "Ferreiro";
+        "Alchemy": return "Alquimista";
+        "Magery": return "Mago";
+        "Survival": return "Sobrevivencialista";
+        "Medicine": return "Médico";
+        "Domestic_Work": return "Trabalhador Doméstico";
+        "Mechanics": return "Mecânico";
+        "Wood_Working": return "Carpinteiro";
+        "Gathering": return "Coletor";
+        "Handle_Animal": return "Adestrador de Animais";
+        default: return profissao;
+    endcase
+endfunction
+
+function GetConsultaEspecialistaTexto(profissao)
+    var profissao_traduzida := TraduzirProfissao(profissao);
+    case (profissao_traduzida)
+        "Ferreiro": return "Consulte um Ferreiro";
+        "Alquimista": return "Consulte um Alquimista";
+        "Mago": return "Consulte um Mago";
+        "Sobrevivencialista": return "Consulte um Sobrevivencialista";
+        "Médico": return "Consulte um Médico";
+        "Trabalhador Doméstico": return "Consulte um Trabalhador Doméstico";
+        "Mecânico": return "Consulte um Mecânico";
+        "Carpinteiro": return "Consulte um Carpinteiro";
+        "Coletor": return "Consulte um Coletor";
+        "Adestrador de Animais": return "Consulte um Adestrador de Animais";
+        default: return "Consulte um especialista em " + profissao_traduzida;
+    endcase
 endfunction
