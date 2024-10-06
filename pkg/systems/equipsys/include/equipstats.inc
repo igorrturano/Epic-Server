@@ -7,7 +7,6 @@ use cfgfile;
 
 include "utils";
 include "props";
-include ":combat:combat";
 
 /**
  * getWeaponStats(weapon)
