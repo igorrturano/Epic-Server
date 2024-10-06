@@ -88,7 +88,7 @@ print("Inicio");
 		var resethab := cint(GetObjProperty(who, "resethab"));
 		resethab := resethab + 1;
 		var lvlhab := cint(NivelHabilidade(remover[1], classe));
-		var custo := (1000 + lvlhab * 100) * resethab; 
+		var custo := 1/* (1000 + lvlhab * 100) * resethab */; 
 		
 		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para desaprender esta habilidade.", SSM_REQUEST);
 		var targ := Target(who);
