@@ -98,7 +98,6 @@ function ContaCapital(who, moedasDict := dictionary)
 	return totalMoedaMenorValor;
 endfunction
 
-
 function EfetuaDebito( who, debito, tipoMoeda:= MOEDA_MENOR_VALOR)
 
 	var tiposMoedas := array {AUREUS,DENARIUS,SESTERTIUS};
