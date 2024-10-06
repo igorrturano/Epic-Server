@@ -19,7 +19,7 @@ function OpenGump(who)
 	var weaponElem := getItemCfgElem(weapon);
 	
 	while (1)
-		var gump := CreateGump();
+		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
 		var x := 15;
 		var y := 40;
 
@@ -61,9 +61,4 @@ function OpenGump(who)
 		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
 		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
 	endwhile
-endfunction
-
-function CreateGump()
-	var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
-	return gump;
 endfunction
