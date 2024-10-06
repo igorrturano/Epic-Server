@@ -40,7 +40,7 @@ program magia(who, spellname)
 
 				var runaId := GetObjProperty(item, "runatype");
 				if (runaId == id)
-					var script := start_script( ":spells:item:priestrune_m", {who, item});
+					var script := start_script( ":spells:priestrune_m", {who, item});
 					if ( script.errortext )
 						SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
 						return 0;
@@ -54,7 +54,7 @@ program magia(who, spellname)
 			
 				var runaId := GetObjProperty(item, "runatype");
 				if (runaId == id)
-					var script := start_script( ":spells:item:priestrune_m", {who, item});
+					var script := start_script( ":spells:priestrune_m", {who, item});
 					if ( script.errortext )
 						SendSysMessage(who, "Error - Could not start spell starter ->"+script.errortext);
 						return 0;

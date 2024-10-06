@@ -14,7 +14,7 @@ endfunction
 function CanInsertScroll(book, scroll)
 
 	var booktype := GetBookType(book);
-	var cfg := ReadConfigFile(":spells:item:itemdesc");
+	var cfg := ReadConfigFile(":spells:itemdesc");
 	var scrolltype := cfg[scroll.objtype].SpellType;
 
 	//printtextabove(book, " " + bookcfg[booktype].spelltype + " " + scrolltype);

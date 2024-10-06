@@ -17,7 +17,7 @@ include ":fls_magery:basicMagery";
 include ":fls_magery:spells";
 include "include/sounds";
 include ":charactercreation:habilidades";
-include ":spells:include/swordmage";
+include ":spells:swordmage";
 include "include/facings";
 include ":tn:cooldown";
 

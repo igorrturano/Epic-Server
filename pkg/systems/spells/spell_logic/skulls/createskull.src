@@ -7,7 +7,7 @@ program cria(item)
 	var spellinfo := struct;
 
 	//pega o level do scroll
-	var scrollcfg := ReadConfigFile(":spells:item:itemdesc");
+	var scrollcfg := ReadConfigFile(":spells:itemdesc");
 	var lvl :=  GetConfigInt(FindconfigElem(scrollcfg, item.objtype), "Circle" );
 
 	if (!lvl)
