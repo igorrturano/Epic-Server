@@ -43,10 +43,5 @@ function PlayAttackAnimation(who)
 endfunction
 
 function getAnim(anims)
-	print("SIZE -> "+Len(anims));
-	var roll := RandomInt(Len(anims)+1);
-	print("ROLL ->"+roll);
-	var anim := anims[roll];
-	print("ANIM -> "+hex(anim));
-	return anim;
+	return anims[RandomInt(anims.Size())+1];
 endfunction
