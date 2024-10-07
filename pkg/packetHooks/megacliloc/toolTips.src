@@ -19,7 +19,6 @@ include "include/epicCombatUtils";
 include ":custompizza:itemrp/include/lore_items";
 include ":combat:damage";
 
-
 const OFFSET_OBJECT_SERIAL   := 0x05;
 const OFFSET_CLILOC_ID       := 0x0F;
 const OFFSET_LENGTH_ID       := 0x13;
