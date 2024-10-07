@@ -105,7 +105,7 @@ function ApplyDamageEX(mobile, amount, type:=DMG_FORCED, source:=0)
 			SetLastDamageInfo(mobile, amount, type, source);
 			SetScriptController(source);
 		endif
-    // Added for necro wraith form
+    // Added for necromancer wraith form
     if(source and GetObjProperty(source, "wraith"))
 		DoManaSuck(mobile, source, amount);
     endif
@@ -148,7 +148,7 @@ function ApplyRawDamageEX(mobile, amount, type:=DMG_FORCED, source:=0)
 			SetScriptController(source);
 		endif
 
-		// Added for necro wraith form
+		// Added for necromancer wraith form
 		if(source and GetObjProperty(source, "wraith"))
 			DoManaSuck(mobile, source, amount);
 		endif
@@ -215,7 +215,7 @@ function ApplySpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circle 
 		endif
 	ApplyDamage(mobile, amount);
 	endif
-	// Added for necro wraith form
+	// Added for necromancer wraith form
 	if(source and GetObjProperty(source, "wraith"))
 		DoManaSuck(mobile, source, amount);
 	endif
@@ -269,7 +269,7 @@ function ApplyRawSpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circ
 		endif
 		ApplyRawDamage(mobile, amount);
 	endif
-	// Added for necro wraith form
+	// Added for necromancer wraith form
 	if(source and GetObjProperty(source, "wraith"))
 		DoManaSuck(mobile, source, amount);
 	endif
@@ -682,7 +682,7 @@ endfunction
 
 function DoManaSuck(defender, attacker, amount)
 
-  // Added for necro wraith form
+  // Added for necromancer wraith form
   // Get Spirit Speak skill level from the attacker and divide it by 5.
   // Then convert to percent (div by 100) and determine the mana amount to suck from defender.
     var sspeak := GetAttribute(attacker, MAGICLORE);

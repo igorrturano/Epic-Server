@@ -91,7 +91,7 @@ program core_npcDeath(params)
 		var masterserial := getObjProperty(corpse, "owner");
 		var master := SystemFindObjectBySerial(masterserial);
 		var summon := GetObjProperty(corpse, "summoned");
-		if(summon == 1) // se for summon de totemista para retirar da barra de buff e liberar o slot
+		if(summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot
 			var masterseriali := getObjProperty(corpse, "owneri");
 			var masteri := SystemFindObjectBySerial(masterseriali);
 			var timer_num := GetObjProperty(corpse, "slot");
@@ -137,7 +137,7 @@ program core_npcDeath(params)
 			i++;
 		endwhile
 		AP_SetTrueSkill(corpse, MAGICLORE, 100);
-		Run_Script(":spells:sangria/fireball", {corpse, corpse});
+		Run_Script(":spells:spell_logic:mage:fireball", {corpse, corpse});
     endif
 
     if (GetObjProperty(corpse, "soulharvest"))

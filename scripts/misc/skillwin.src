@@ -12,6 +12,7 @@ include "include/say";
 include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
+include ":gumps:epicGumps";
 
 const GUMP_WIDTH := 440;
 const GUMP_HEIGHT := 565;

@@ -65,7 +65,7 @@ program arremesso(params)
 	elseif (targ == who.backpack)
 		SendSysMessageEx(who, "Voce nao pode arremessar sua própria bolsa.", SSM_FAIL);
 		return 0;
-	elseif(targ.movable)
+	elseif(!targ.movable)
 		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
 		return 0;
 	elseif (targ.objtype in arcane_bows)
