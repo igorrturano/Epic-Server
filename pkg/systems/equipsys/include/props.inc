@@ -1,9 +1,4 @@
-use uo;
-use cfgfile;
-
 include "equipstats";
-include "include/say";
-include "include/client";
 
 function setPropArmor(item)
 	var stats := getArmorStats(item);

@@ -1,6 +1,8 @@
 use uo;
 use cfgfile;
 
+include "props";
+
 enum TIERS
 	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5
 endenum
@@ -71,6 +73,16 @@ function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
     var slot := elem.Coverage;
     if (IsShield(item)) slot := "Shield"; endif
     return slot;
+endfunction
+
+function IsDualWield(item)
+	var prop := getPropBase(item);
+
+	if (prop.DualWield)
+		return 1;
+	endif
+
+	return 0;
 endfunction
 
 function IsShield(item)
