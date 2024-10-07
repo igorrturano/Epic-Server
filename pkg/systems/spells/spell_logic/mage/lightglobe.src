@@ -27,7 +27,7 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Voce nao esta sendo atacado.", SSM_FAIL);
 		return 0;
 	else
-        var cfg  := ReadConfigFile(":spells:config/sangriaspells");
+        var cfg  := ReadConfigFile(":spells:config/magespells");
         var elem := FindConfigElem(cfg, spellid);
         var template := getConfigString(elem, "npcTemplate");
 

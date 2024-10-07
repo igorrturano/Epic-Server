@@ -13,7 +13,7 @@ include ":tn:cooldown";
 include ":combat:damage";
 include "include/shapes";
 include ":nature:nature";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
@@ -32,8 +32,8 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_ENERGY)
-			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina Eletrificada.", SSM_FAIL);
+		if (elemental.type != DMG_COLD)
+			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina de Gelo.", SSM_FAIL);
 			return 1;
 		endif
 
@@ -51,31 +51,58 @@ program SpellScript(params)
 		eraseobjproperty(targ, "gems");
 		SetName(targ, targ.desc+" [danificado]");
 		MoveItemToContainer(targ, who.backpack);
-		ApplyChargesCalculation(targ, 1, 5);
+		var cargasRetorno := ConsumeItemArcaneCharges( targ, 5 );
 
 
 		windsound( who);
 
-		var k := 0;
-		var bolts := 20;
-		while( k < bolts)
-			//if (RandomInt(100) < 15 )
-				DoBolt(who);
-			//endif
-			k := k + 1;
-			sleepms(10);
-		endwhile
+		var mobs := array;
 
 		foreach defender in (ListMobilesNearLocation( who.x, who.y, who.z, 12, who.realm ))
 			if ( !(defender in who.party.members ) )
 				if (defender.serial != who.serial)
-      					PlaySoundEffect(defender, 0x228);
-					var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
-      					PlayLightningBoltEffect( defender );
-					DamageFLS(defender, cint(dmg), DMG_COLD, who);
+					mobs.append(defender);
+					mobs.frozen := 1;	
 				endif
 			endif
     		endforeach
+
+		var pedras := array;
+		foreach mob in mobs
+			var z := getWorldHeight(mob.x, mob.y, mob.realm);
+			var s1 := CreateItemAtLocation(mob.x, mob.y, z-20, 2272, 1, who.realm);
+			s1.color := 1151;
+			pedras.append(s1);
+		endforeach
+
+		var i := 0;
+		while ( i <= 21 )
+			foreach part in pedras			
+				MoveObjectToLocation( part, part.x, part.y, part.z+1, part.realm, MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE );
+			endforeach
+
+			i := i +1;
+			sleepms(100);
+		endwhile
+
+		foreach defender in mobs
+			var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
+			dmg := Floor( dmg / cargasRetorno.divisor);
+			DamageFLS(defender, cint(dmg), DMG_COLD, who);
+			defender.frozen := 0;
+		endforeach
+
+		PlaySoundEffect(who, 756);
+
+		i := 0;
+		while ( i <= 21 )
+			foreach part in pedras			
+				MoveObjectToLocation( part, part.x, part.y, part.z-1, part.realm, MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE );
+			endforeach
+
+			i := i +1;
+			sleepms(100);
+		endwhile		
 	
 		return 1;
 	endif
@@ -89,4 +116,4 @@ function windsound( person)
 	if (randomdiceroll("1d4") == 2)
 		playsoundeffect(person, wind[randomint(3)+1]);
 	endif
-endfunction
+endfunction 

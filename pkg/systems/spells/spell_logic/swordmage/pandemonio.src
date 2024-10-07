@@ -12,7 +12,7 @@ include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include ":combat:damage";
 include "include/shapes";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include "include/epicMageryUtils";
 
 program SpellScript(params)

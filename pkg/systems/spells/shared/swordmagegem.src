@@ -4,7 +4,7 @@ use cfgfile;
 include "include/say";
 include ":gumps:requestGump";
 include ":charactercreation:habilidades";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":attributes:attributes";
 
 program swordmagegem(who, item)
