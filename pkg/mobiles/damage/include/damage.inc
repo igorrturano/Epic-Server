@@ -900,4 +900,3 @@ function CalcLumberjackingDamageMod( byref attacker )
 	return 0.0;
 
 endfunction
-
