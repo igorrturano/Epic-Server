@@ -1,4 +1,5 @@
 use uo;
+use cfgfile;
 
 include ":spells:tnmagery";
 include ":charactercreation:habilidades";
@@ -7,7 +8,6 @@ include ":attributes:include/attributes";
 include ":gumps:include/gumps";
 include ":brainAI:npcUtil";
 include ":combat:damage";
-include ":tn:npcutil";
 include ":tn:cooldown";
 include ":ghaia:ghaia";
 include "include/sysEvent";
@@ -25,31 +25,16 @@ program skill_animal_lore( who )
                 SendSysMessage(who, "O raciocinio por tras da sua analise esta incorreto.");
                 return 0;
         endif
-
-        if( creature.serial == who.serial )
-                SendSysMessage(who, "Esse nao pode ser um alvo valido.");
+	
+	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var template := ParseTemplateName(creature.npctemplate).template;
+	var taxonomy := npccfgfile[template].Taxonomy;	
+	
+        if( !taxonomy )
+                SendSysMessage(who, "Esse não pode ser um alvo válido.");
                 return 0;
         endif
-
-        if( !creature.isA(POLCLASS_NPC) )
-                SendSysMessage(who, "Esse nao pode ser um alvo valido.");
-                return 0;
-        endif
-
-        if( (creature.graphic == 0x190) || (creature.graphic == 0x191) || (creature.graphic == 309) || (creature.graphic == 307) || (creature.graphic == 14) )
-                SendSysMessage(who, "Esse nao pode ser um alvo valido.");
-                return 0;
-        endif
-
-    var category := lower(getnpccategory( ParseTemplateName(creature.npctemplate).template ));
-
-    if ( (category == "animal") || ( category == "evilanimal") || ( category == "giantanimal") || ( category == "mount") || ( category == "snow") )
-    else
-        SendSysMessage(who, "Esse nao pode ser um alvo valido.");
-        return 0;
-    endif
-
-
+	unloadConfigFile(":brainai:npcdesc");
     var advance_flags;
     if(creature.script == ":ghaia:tamed")
         advance_flags := ADV_DISABLE;
