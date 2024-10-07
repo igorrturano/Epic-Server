@@ -47,8 +47,8 @@ endprogram
 function LaunchProjectile(caster, targ, spell_circle, spell_school)
     PlaySoundEffect(caster, SFX_AQUARIUM_USE);
     PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
-    var dmg := epicSpellDamageRoll(caster, spell_circle);
-    dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+    var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle); */
+    // dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
     DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
 endfunction
