@@ -1,0 +1,38 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":blood:blood";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+
+
+	MakeBleed(who);
+
+	
+//	ApplyRawDamage( who, 10, 0, DAMAGE_SHOW );
+	ApplyRawDamage( who, 10);
+	var mana := AP_GetVital(who, MANA);
+	var maxmana := AP_GetVitalMaximumValue(who, MANA);
+
+	var bonus := 10 + 10 * AP_GetSkill(who, MAGICLORE)/100; //da de +10 a +20 de mana
+	mana := mana+bonus;
+
+	if(mana > maxmana)
+		mana := maxmana;
+	endif
+	AP_SetVital(who, MANA, mana);
+	
+	handleSilentMagic(who, who, 385);
+	SendSysMessageEx(who, "Voce converteu sua energia vital em mana", SSM_INFO);
+	
+	return 1;
+endprogram 

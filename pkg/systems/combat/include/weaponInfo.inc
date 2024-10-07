@@ -5,6 +5,8 @@
 
 use cfgfile;
 
+include ":equipsys:props";
+
 /*
  * CS_GetWeaponInfo(weapon, prop_name)
  *
@@ -55,4 +57,31 @@ function CS_GetAverageDamage(weapon)
 	var average := (X*((1+Y)/2))+Z;
 	
 	return CInt(average);
+endfunction
+
+function getMaxDamages(weapon)
+	var prop := getPropBase(weapon);
+	var dices := struct;
+	dices.+SlashDamage := prop.SlashDamage;
+	dices.+PiercingDamage := prop.PiercingDamage;
+	dices.+BluntDamage := prop.BluntDamage;
+
+	dices.SlashDamage := SplitWords(dices.SlashDamage, "d");
+	dices.PiercingDamage := SplitWords(dices.PiercingDamage, "d");
+	dices.BluntDamage := SplitWords(dices.BluntDamage, "d");
+
+	dices.SlashDamage := SlashDamage[1]*SlashDamage[2];
+	dices.PiercingDamage := PiercingDamage[1]*PiercingDamage[2];
+	dices.BluntDamage := BluntDamage[1]*BluntDamage[2];
+
+	// TODO: Adicionar soma do dado.
+
+	return dices;
+endfunction
+
+function CheckBastardSword(who)
+	if (who.weapon.objtype == 0x13b9 && !who.shield)
+		return 1;
+	endif
+	return 0;
 endfunction

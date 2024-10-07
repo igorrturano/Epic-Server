@@ -1,0 +1,13 @@
+include "include/props";
+
+program EquipSys(params)
+	Detach();
+	var who := params[1];
+	var item := params[2];
+
+	if (item.IsA(POLCLASS_ARMOR))
+		setPropArmor(item);
+	elseif (item.IsA(POLCLASS_WEAPON))
+		setPropWeapon(item);
+	endif
+endprogram

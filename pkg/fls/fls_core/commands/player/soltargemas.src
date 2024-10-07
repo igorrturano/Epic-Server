@@ -1,5 +1,5 @@
 use uo;
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include "include/say";
 include ":attributes:attributes";
 include "include/client";

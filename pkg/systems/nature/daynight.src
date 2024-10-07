@@ -30,32 +30,32 @@ program daynightsystem()
 		var durationDayMod := 1;
 		var date := getCurrentDate();
 
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Dia do ano: " + date.dayYear);
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Dia: " + date.day);
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Mes: " + date.month);
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Ano: " + date.year);
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Lua: " + date.moonPhase);
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Estacao: " + season);
+		DebugMsgEvent(DEBUG_CLIMA, "Dia do ano: " + date.dayYear);
+		DebugMsgEvent(DEBUG_CLIMA, "Dia: " + date.day);
+		DebugMsgEvent(DEBUG_CLIMA, "Mes: " + date.month);
+		DebugMsgEvent(DEBUG_CLIMA, "Ano: " + date.year);
+		DebugMsgEvent(DEBUG_CLIMA, "Lua: " + date.moonPhase);
+		DebugMsgEvent(DEBUG_CLIMA, "Estacao: " + season);
 
 		if (date.month == "Idrithae")
 			durationDayMod -= 0.3;
 		endif
 
 		if (season == SUMMER) //Checa se é solstício de verão ou inverno
-			DebugMsgEvent(DEBUG_NAME_CLIMA, "Estacao: SUMMER");
-			DebugMsgEvent(DEBUG_NAME_CLIMA, "Eh Solsticio de: SUMMER");
+			DebugMsgEvent(DEBUG_CLIMA, "Estacao: SUMMER");
+			DebugMsgEvent(DEBUG_CLIMA, "Eh Solsticio de: SUMMER");
 			durationDayMod += 0.2;
 		elseif (season == WINTER)
-			DebugMsgEvent(DEBUG_NAME_CLIMA, "Estacao: WINTER");
-			DebugMsgEvent(DEBUG_NAME_CLIMA, "Eh Solsticio de: WINTER");
+			DebugMsgEvent(DEBUG_CLIMA, "Estacao: WINTER");
+			DebugMsgEvent(DEBUG_CLIMA, "Eh Solsticio de: WINTER");
 			durationDayMod -= 0.2;
 		endif
 
 		daylength := daylength*durationDayMod;
 		nightlength := fullDay-daylength;
 
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Duracao do dia: " + daylength / 60 + "min");
-		DebugMsgEvent(DEBUG_NAME_CLIMA, "Duracao da noite: " + nightlength / 60 + "min");
+		DebugMsgEvent(DEBUG_CLIMA, "Duracao do dia: " + daylength / 60 + "min");
+		DebugMsgEvent(DEBUG_CLIMA, "Duracao da noite: " + nightlength / 60 + "min");
 
 		Broadcast("O sol esta nascendo.");
 		SetGlobalProperty("dia", "dia");
