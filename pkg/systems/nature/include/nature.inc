@@ -4,6 +4,7 @@ use util;
 use cfgfile;
 
 include ":combat:damage";
+include ":commands:debugsystem";
 
 // Calendar constants
 var MONTHS := array{
@@ -201,7 +202,7 @@ function endweather()
 			moveobjecttolocation(player, player.x, player.y, player.z, player.realm);
 		endif
 	endforeach
-	output("Stopping weather effects.");
+	DebugMsgEvent(DEBUG_CLIMA, "Stopping weather effects.");
 endfunction
 
 function WhatSeason()
@@ -226,7 +227,7 @@ function SeasonRotate()
     case (WhatSeason())
         
         SUMMER:
-            Broadcast("O sol é mais forte que o comum...");
+            Broadcast("O sol é mais forte nesta época do ano...");
             SetGlobalProperty("season", SUMMER);
             break;
 
@@ -322,14 +323,14 @@ function temperatura()
 
 endfunction
 
-function output(msgtext)
-	foreach player in enumerateonlinecharacters()
-		if (player.cmdlevel)
-			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
-		endif
-	endforeach
-	print("Weather debug:" + msgtext);
-endfunction
+// function output(msgtext)
+// 	foreach player in enumerateonlinecharacters()
+// 		if (player.cmdlevel)
+// 			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
+// 		endif
+// 	endforeach
+// 	print("Weather debug:" + msgtext);
+// endfunction
 
 function getDay()
     var day := GetGlobalProperty("daynumber");

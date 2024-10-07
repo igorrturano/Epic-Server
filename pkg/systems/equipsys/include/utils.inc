@@ -1,6 +1,8 @@
 use uo;
 use cfgfile;
 
+include "props";
+
 enum TIERS
 	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5
 endenum
@@ -45,6 +47,10 @@ enum PROTECTIONTYPE
 	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
 endenum
 
+var SLASHANIM := array{0xb, 0xd};
+var PIERCINGANIM := array{0x0a};
+var BLUNTANIM := array{0xd};
+
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
 	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
 endfunction
@@ -67,6 +73,16 @@ function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
     var slot := elem.Coverage;
     if (IsShield(item)) slot := "Shield"; endif
     return slot;
+endfunction
+
+function IsDualWield(item)
+	var prop := getPropBase(item);
+
+	if (prop.DualWield)
+		return 1;
+	endif
+
+	return 0;
 endfunction
 
 function IsShield(item)

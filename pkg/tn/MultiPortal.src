@@ -83,7 +83,7 @@ program MultiPortal(multiportal)
                             color := 2850;
                         elseif (chardata.magia == "Kitah")
                             color := 1100;
-                        elseif (chardata.magia == "Totemista")
+                        elseif (chardata.magia == "Druida")
                             color := 2920;
                         else
                             color := 1200;

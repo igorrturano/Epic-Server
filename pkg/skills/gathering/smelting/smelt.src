@@ -22,7 +22,7 @@ include ":gathering:mining";
 include ":gathering:smelting/water";
 include ":gathering:smelting/smelt";
 include ":commands:debugsystem";
-include ":gumps:gumps";
+include ":gumps:epicGumps";
 //include ":gumps:gumps_ex";
 
 const PROP_NAME := "Smelting";
@@ -43,7 +43,7 @@ program smelt_that_ore(who, item)
 endprogram
 
 function OpenGump(who, pot)
-	var gump := GFECreateGump("Menu de Smelting", 340, 600, 39929);
+	var gump := GFECreateGump("Menu de Smelting", 340, 600);
 
 	var ores := getAllOres();
 	var ableToSmelt_amt := dictionary{};
@@ -100,8 +100,8 @@ function OpenGump(who, pot)
 				toSmeltOre := ableToSmelt_ore[option.oreObjType];
 				toSmeltItems := getItemsInBag(neededOresToSmelt, bag);
 				
-				DebugMsg(who, DEBUG_NAME_SMELTING, "Item: " + toSmeltItems);
-				DebugMsg(who, DEBUG_NAME_SMELTING, "Quantidade: " + toSmeltAmount);
+				DebugMsg(who, DEBUG_SMELTING, "Item: " + toSmeltItems);
+				DebugMsg(who, DEBUG_SMELTING, "Quantidade: " + toSmeltAmount);
 				break;
 			endif
 		endforeach

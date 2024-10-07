@@ -129,7 +129,7 @@ program equipweapon(who, item)
 			var script := GetProcess(pid);
 			script.kill();
 		endif
-		start_script (":spells:swordmage", {who, item});
+		start_script (":spells:spell_logic:swordmage", {who, item});
 	endif
 
 	set_critical(1);

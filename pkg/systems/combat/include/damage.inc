@@ -5,18 +5,8 @@
  *
  */
 
-// use uo;
-// use os;
-// use math;
-// use cfgfile;
-// use util;
-
 include ":tn:cooldown";
-// include ":brainAI:npcUtil";
-// include ":attributes:attributeConstants";
 include ":attributes:attributes";
-// include ":charactercreation:habilidades";
-// include "include/say";
 include ":blood:blood";
 include ":fls_core:packets";
 include "include/epicCombatUtils";
@@ -139,31 +129,31 @@ function CalculateDamage(defender, type, dmg)
 			DMG_PHYSICAL:
 				resist := CInt(defender.resist_physical);
 				resistMod := CInt(defender.resist_physical_mod);
-				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Física (Mod): {resist}({resistMod})");
+				DebugMsg(defender, DEBUG_DAMAGE, $"Defesa Física (Mod): {resist}({resistMod})");
 				break;
 
 			DMG_FIRE:
 				resist := CInt(defender.resist_fire);
 				resistMod := CInt(defender.resist_fire_mod);
-				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Fire (Mod): {resist}({resistMod})");
+				DebugMsg(defender, DEBUG_DAMAGE, $"Defesa Fire (Mod): {resist}({resistMod})");
 				break;
 
 			DMG_COLD:
 				resist := CInt(defender.resist_cold);
 				resistMod := CInt(defender.resist_cold_mod);
-				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Cold (Mod): {resist}({resistMod})");
+				DebugMsg(defender, DEBUG_DAMAGE, $"Defesa Cold (Mod): {resist}({resistMod})");
 				break;
 
 			DMG_ENERGY:
 				resist := CInt(defender.resist_energy);
 				resistMod := CInt(defender.resist_energy_mod);
-				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Energy (Mod): {resist}({resistMod})");
+				DebugMsg(defender, DEBUG_DAMAGE, $"Defesa Energy (Mod): {resist}({resistMod})");
 				break;
 
 			DMG_POISON:
 				resist := CInt(defender.resist_poison);
 				resistMod := CInt(defender.resist_poison_mod);
-				DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa Poison (Mod): {resist}({resistMod})");
+				DebugMsg(defender, DEBUG_DAMAGE, $"Defesa Poison (Mod): {resist}({resistMod})");
 				break;
 		endcase
 	endif
@@ -226,8 +216,8 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 		dmg := RandomDiceRoll(weapondice);
 	endif
 
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano da arma: "+weapondice);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolou dano: "+dmg);
+	DebugMsg(attacker, DEBUG_DAMAGE, "Dano da arma: "+weapondice);
+	DebugMsg(attacker, DEBUG_DAMAGE, "Rolou dano: "+dmg);
 
 	return dmg;
 endfunction
@@ -431,12 +421,12 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	if (regiao.equip == error)
 		regiao.equip := "Corpo";
 	endif
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao.zone);
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Região atingida: " + regiao.zone);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + regiao.equip);
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, "Equipamento atingido: " + regiao.equip);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Defesa {type}: {resist}");
+	DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
+	DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
+	DebugMsg(attacker, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
+	DebugMsg(defender, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
+	DebugMsg(defender, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
 
 	damage := damage-resist;
 
@@ -444,8 +434,8 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 		damage := 1;
 	endif
 
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
-	DebugMsg(defender, DEBUG_NAME_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
+	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
 
 	return CInt(damage);
 endfunction
@@ -744,19 +734,6 @@ function IsThrowingWeapon(item)
 	return 0;
 endfunction
 
-
-function IsDualWield(item)
-	var prop := getPropBase(item);
-
-	if (prop.DualWield)
-		return 1;
-	endif
-
-	return 0;
-endfunction
-
-
-
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	var damage := rawdamage;
 
@@ -774,7 +751,7 @@ function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	endif
 
 	damage := CInt(damage);
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Base: " + damage);
+	DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
 
 	return damage;
 endfunction
@@ -801,8 +778,8 @@ function CalcDamageStats(attacker, damage)
 
 	statmod := (statmod-50) / 10;
 	damage += statmod;
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Bônus de {stat}: {statmod}");
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Bônus de Tactics: {tacticsmod}");
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de {stat}: {statmod}");
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de Tactics: {tacticsmod}");
 
 	return damage;
 endfunction
@@ -819,8 +796,8 @@ function CalcDamageWeapon(attacker, damage)
 		damage += sharpened_weapon;
 	endif
 
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano: " + CInt(damage));
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Arma Afiada: " + CInt(sharpened_weapon));
+	DebugMsg(attacker, DEBUG_DAMAGE, "Dano: " + CInt(damage));
+	DebugMsg(attacker, DEBUG_DAMAGE, "Arma Afiada: " + CInt(sharpened_weapon));
 
 	return damage;
 endfunction
@@ -831,13 +808,13 @@ function CalcDamageHabs(attacker, defender, damage)
         var damagemod := RandomDiceRoll("1d4");
 		damage += damagemod;
 		// DamageFLS(defender, cint(damage-rawdamage*2), DMG_FORCED, attacker);
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Tiro Penetrante]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Tiro Penetrante]: " + CInt(damagemod));
 	endif
 
 	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == 0x1F020)
         var damagemod := 2;
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
     endif
 
 	if (getCooldown(attacker, "faroporsangue"))
@@ -853,7 +830,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 		var damagemod := RandomDiceRoll(bonus);
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
 	endif
 
 	if (TemHabilidade(attacker, "Taticas Arcanas"))
@@ -862,7 +839,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -870,21 +847,21 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (ListHostiles(attacker, 3, LH_FLAG_LOS) > 2)
 			var damagemod := CInt(AP_GetSkill(attacker, SURVIVAL) / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Lobo Solitário]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Lobo Solitário]: " + CInt(damagemod));
 		endif
 	endif
 
 	if (TemHabilidade(attacker, "Precisao Cirurgica"))
 		var damagemod := CInt(AP_GetSkill(attacker, ALCHEMY) / 20);
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
 
     if (TemHabilidade(attacker, "Arsenal Sombrio"))
         var damagemod := CInt(AP_GetSkill(attacker, SNEAK) / 20);
         if (isAssassinWeapon(attacker))
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
         endif
     endif
 
@@ -892,7 +869,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (attacker.weapon.attribute == "One_Handed" && !attacker.shield)
 			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 25);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Estilo Mao Livre]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Estilo Mao Livre]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -926,7 +903,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endforeach
 
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Ainalaith]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Ainalaith]: " + CInt(damagemod));
 	endif
 
 	if (TemHabilidade(attacker, "Inimigo Predileto"))
@@ -937,7 +914,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (cfg[npctemplate.template].Category == inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + CInt(damagemod));
 		endif
     elseif (TemHabilidade(attacker, "Exitium Maleficorum"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
@@ -947,7 +924,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (cfg[npctemplate.template].Category in inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
 			damage := damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + CInt(damagemod));
 		endif
 	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
@@ -956,21 +933,21 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (cfg[npctemplate.template].Category == inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);
 			damage := damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + CInt(damagemod));
 		endif
 	endif
 
 	if (GetCooldown(defender, "prey"))
 		var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
 	endif
 
 	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, MAGICLORE) / 2))
 		if (GetObjProperty(attacker, "metamorfose") != error)
 			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
 		endif
 	endif
@@ -980,14 +957,14 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (temHabilidade(attacker, "Nazg Khalug") || GetObjProperty(attacker, "NpcFuria"))
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
 		endif
 		if (temHabilidade(attacker, "Furia Primitiva"))
 			if (GetObjProperty(attacker, "metamorfose") != error)
 				damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
 				damage += damagemod;
-				DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia Primitiva]: " + CInt(damagemod));
+				DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia Primitiva]: " + CInt(damagemod));
 			endif
 		endif
 		if (GetCooldown(attacker, "FuriaPrimordial"))
@@ -995,12 +972,12 @@ function CalcDamageHabs(attacker, defender, damage)
 			inimigos := inimigos.size();
 			var damagemod := Cint(inimigos.size());
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia Primordial]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia Primordial]: " + CInt(damagemod));
 		endif
 		if (GetCooldown(attacker, "furiamortal"))
 			var damagemod := Cint((AP_GetVitalMaximumValue(attacker, HITS) - AP_GetVital(attacker, HITS)) / 10);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia Mortal]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia Mortal]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -1021,7 +998,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (damagemod)
 			if (attacker.weapon.objtype in monk_weapons)
 				damage += damagemod;
-				DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Budoka]: " + CInt(damagemod));
+				DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Budoka]: " + CInt(damagemod));
 			endif
 		endif
 	endif
@@ -1030,7 +1007,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (temHabilidade(attacker, "Burz"))
 			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Burz]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Burz]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -1040,21 +1017,21 @@ function CalcDamageHabs(attacker, defender, damage)
 			damagemod := damagemod * 2;
 		endif
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Furia]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia]: " + CInt(damagemod));
 	endif
 
 	if(TemHabilidade(attacker, "Flanquear"))
 		if(IsBehind(defender, attacker.x, attacker.y))
 			var damagemod := RandomDiceRoll("1d4");
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Flanquear]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Flanquear]: " + CInt(damagemod));
 		endif
 	endif
 
 	if (CInt(GetObjProperty(attacker, "#mataroumorrer")) > 0)
 		var damagemod := RandomDiceRoll("1d4");
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano de Habilidade[Matar ou Morrer]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Matar ou Morrer]: " + CInt(damagemod));
 	endif
 
 	return damage;
@@ -1068,7 +1045,7 @@ function CalcDamageSpecial(attacker, defender, damage)
 			if (lower(categoriaDefender) in cursed_creatures)
 				var damagemod := CInt(GetObjProperty(attacker.weapon, "blessedbonus"));
 				damage += damagemod;
-				DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Bless Weapon]: " + CInt(damagemod));
+				DebugMsg(attacker, DEBUG_DAMAGE, "Dano Especial[Bless Weapon]: " + CInt(damagemod));
 			endif
 		endif
 	endif
@@ -1078,13 +1055,13 @@ function CalcDamageSpecial(attacker, defender, damage)
 		var damagemod := 1;
 		damage += damagemod;
 		EraseObjProperty(attacker, "#backstab");
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Backstab]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano Especial[Backstab]: " + CInt(damagemod));
 	endif
 
 	if(GetObjProperty(defender, "apodrecer"))
 		var damagemod := RandomDiceRoll("1d4");
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Dano Especial[Apodrecer]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano Especial[Apodrecer]: " + CInt(damagemod));
 	endif
 
 	return damage;
@@ -1096,7 +1073,7 @@ function CalcDamageReducer(attacker, damage)
 	var damagemod := CDbl(GetObjProperty(attacker, "dmgreduction"));
 	if (damagemod > 0)
 		damage := damage*damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Redutor de Dano: {CDbl((1-damagemod)*100)}%");
+		DebugMsg(attacker, DEBUG_DAMAGE, $"Redutor de Dano: {CDbl((1-damagemod)*100)}%");
 	endif
 
 	var polida := GetObjProperty(attacker.weapon, "polida");
@@ -1104,7 +1081,7 @@ function CalcDamageReducer(attacker, damage)
 		var penalty := 0.8;
 		var damagemod := damage * (1-penalty);
 		damage -= damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Penalidade polidez (20%): {damagemod}");
+		DebugMsg(attacker, DEBUG_DAMAGE, $"Penalidade polidez (20%): {damagemod}");
 	else
 		polida -= 1;
 		if (polida < 1)
@@ -1119,7 +1096,7 @@ function CalcDamageReducer(attacker, damage)
 		var penalty := 0.7;
 		var damagemod := damage * (1-penalty);
 		damage -= damagemod;
-		DebugMsg(attacker, DEBUG_NAME_DAMAGE, $"Penalidade Defensor Anão (30%): {damagemod}");
+		DebugMsg(attacker, DEBUG_DAMAGE, $"Penalidade Defensor Anão (30%): {damagemod}");
 	endif
 
 	return damage;
