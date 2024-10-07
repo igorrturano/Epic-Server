@@ -5,18 +5,8 @@
  *
  */
 
-// use uo;
-// use os;
-// use math;
-// use cfgfile;
-// use util;
-
 include ":tn:cooldown";
-// include ":brainAI:npcUtil";
-// include ":attributes:attributeConstants";
 include ":attributes:attributes";
-// include ":charactercreation:habilidades";
-// include "include/say";
 include ":blood:blood";
 include ":fls_core:packets";
 include "include/epicCombatUtils";
@@ -743,19 +733,6 @@ function IsThrowingWeapon(item)
 	endif
 	return 0;
 endfunction
-
-
-function IsDualWield(item)
-	var prop := getPropBase(item);
-
-	if (prop.DualWield)
-		return 1;
-	endif
-
-	return 0;
-endfunction
-
-
 
 function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	var damage := rawdamage;
