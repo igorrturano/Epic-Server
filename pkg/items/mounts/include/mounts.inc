@@ -174,7 +174,7 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-	//check de polymorph totemista
+	//check de polymorph druid
 	if ( Cint(GetObjProperty(mobile, "metamorfosedruida")) == 1)
 		SendSysMessage(mobile, "Voce nao pode montar nessa forma.");
 		return 0;

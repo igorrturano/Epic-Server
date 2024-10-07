@@ -15,7 +15,7 @@ include ":spells:tnmagery";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":spells:spellbooks";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include "include/facings";
 include ":tn:cooldown";
 

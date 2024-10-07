@@ -9,7 +9,7 @@ use cfgfile;
 
 use os;
 
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":tn:boss";

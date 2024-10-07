@@ -555,7 +555,7 @@ function TNCheckReagents(who, byref spellinfo, scroll)
 		//if (scroll == "mage")
 		//	cfg := ReadConfigFile(":spells:config/tnspells");
 		//elseif (scroll == "necro")
-		//	cfg := ReadConfigFile(":spells:config/necrospells");
+		//	cfg := ReadConfigFile(":spells:config/necromancerspells");
 		//elseif (scroll == "swordmage")
 		//	cfg := ReadConfigFile(":spells:config/swordmagespells");
 		//endif
@@ -619,7 +619,7 @@ endfunction
 //	//scrolls mesmo
 //	if (scroll.isa(POLCLASS_ITEM))
 //		if (scroll.objtype == 0x6117)
-//			cfg := ReadConfigFile(":spells:config/necrospells");
+//			cfg := ReadConfigFile(":spells:config/necromancerspells");
 //			spellinfo.+type := "necro";
 //		elseif (scroll.objtype == 0x6116)
 //			cfg := ReadConfigFile(":spells:config/tnspells");
@@ -631,7 +631,7 @@ endfunction
 //			cfg := ReadConfigFile(":spells:config/tnspells");
 //			spellinfo.+type := "mage";
 //		elseif (scroll.objtype == 24833)
-//			cfg := ReadConfigFile(":spells:config/necrospells");
+//			cfg := ReadConfigFile(":spells:config/necromancerspells");
 //			spellinfo.+type := "necro";
 //		endif
 //	else

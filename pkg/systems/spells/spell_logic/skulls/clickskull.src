@@ -33,7 +33,7 @@ program usavarinha(who, wand)
 	var delay := 30;
 
 	 var script := Start_Script(":spells:cast_spell", {who, spellinfo, 999});
-	 var script2 := Start_Script(":spells:skulls/toggleSkull", {wand, delay});
+	 var script2 := Start_Script(":spells:spell_logic:skulls:toggleSkull", {wand, delay});
 	 wand.color := 982;
 	 setCoolDown(wand, "delay", delay);
          if ( script.errortext )

@@ -18,10 +18,10 @@ program SpellScript(params)
 	
 	if (targ.isA(POLCLASS_WEAPON))
 		SetCooldown(targ, "blessweapon", time);
-		start_script( ":spells:armasagrada", {targ, time} );
+		start_script( ":spells:shared/armasagrada", {targ, time} );
 	else
 		SetCooldown(targ.weapon, "blessweapon", time);
-		start_script( ":spells:armasagrada", {targ.weapon, time} );
+		start_script( ":spells:shared/armasagrada", {targ.weapon, time} );
 	endif
 
         PlaySoundEffect(targ, SFX_BLESS);

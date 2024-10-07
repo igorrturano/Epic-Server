@@ -562,7 +562,7 @@ function TNCheckReagents(who, byref spellinfo, scroll)
 		//if (scroll == "mage")
 		//	cfg := ReadConfigFile(":spells:config/tnspells");
 		//elseif (scroll == "necro")
-		//	cfg := ReadConfigFile(":spells:config/necrospells");
+		//	cfg := ReadConfigFile(":spells:config/necromancerspells");
 		//elseif (scroll == "swordmage")
 		//	cfg := ReadConfigFile(":spells:config/swordmagespells");
 		//endif
@@ -763,7 +763,7 @@ function MantainSpell(byref info)
 
 
 	if (info.mage.connected)
-		start_script( ":spells:mantainSpell", { info.mage, info.mobserial, info.name, info.duration, info.level  }  );
+		start_script( ":spells:shared/mantainSpell", { info.mage, info.mobserial, info.name, info.duration, info.level  }  );
 	endif
 
 endfunction
