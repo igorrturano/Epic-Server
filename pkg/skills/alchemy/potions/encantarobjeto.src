@@ -3,7 +3,7 @@ use uo;
 use util;
 use cfgfile;
 include ":alchemy:alchemy";
-include ":itemsys:propitens";
+include ":equipsys:propitens";
 
 program drink_blue( who, potion )
   EraseObjProperty( who, "IsMeditating" );

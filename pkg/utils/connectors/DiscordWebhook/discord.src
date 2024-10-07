@@ -1,56 +1,58 @@
-Use uo;
+use uo;
 use os;
 use cfgfile;
 use file;
-
 
 include ":DiscordWebhook:outbound";
 include ":DiscordWebhook:report";
 include "include/arrays";
 
-program textcmd_testdiscordbot(params)
-	var tipo := params[1]; // Id # of the spell
-	var name := params[2]; // Caster
-	var acct_name := params[3];
-	var boss_name := params[4]; // Scroll object being used
-	var region := params[5]; // Scroll object being used
-	var coords := params[6];
-	var item := params[7];
-	//var targ := params[4]; // NPC target
-	//var presetType := RequestInput(who, who.backpack, "Qual campo vc quer usar(temos apenas BUG e SUGESTAO por enqto):" );
+program textcmd_testdiscordbot( params )
+  var tipo := params[1]; // Id # of the spell
+  var name := params[2]; // Caster
+  var acct_name := params[3];
+  var boss_name := params[4]; // Scroll object being used
+  var region := params[5]; // Scroll object being used
+  var coords := params[6];
+  var item := params[7];
+  // var targ := params[4]; // NPC target
+  // var presetType := RequestInput(who, who.backpack, "Qual campo vc quer usar(temos apenas BUG e SUGESTAO por enqto):" );
 
-//COLOCAR CMD.LEVEL E TIRAR
-if (tipo == "boss")
-	var message := "**BOSS** -> *"+name+"* matou "+boss_name+" com a conta ["+acct_name+"] na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-elseif (tipo == "furto")
-	var message := "**FURTO** -> *"+name+"* conta ["+acct_name+"] furtou "+item+" do char "+boss_name+" na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-	//print("CADE"+name+acct_name+region+coords);
-elseif (tipo == "unico")
-	var message := "**ITEM UNICO** -> *"+name+"* conta ["+acct_name+"] achou "+item+" no "+boss_name+" na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-elseif (tipo == "pvp")
-	var message := "**PVP** -> *"+name+"* conta ["+acct_name+"] derrubou "+boss_name+" conta ["+item+"] na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-elseif (tipo == "thuriao")
-	var message := "**THURIAO** -> *"+name+"* conta ["+acct_name+"] peidou para "+boss_name+" na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-elseif (tipo == "morreu")
-	var message := "**MORREU** -> *"+name+"* conta ["+acct_name+"] morreu em combate com "+boss_name+" na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-elseif (tipo == "pk")
-	var message := "**PK** -> *"+name+"* conta ["+acct_name+"] decepou a cabeça de "+boss_name+" conta ["+item+"] na regiao "+region+", coordenadas: "+coords ;
-	var outbound := PresetDiscordMessage( message);
-endif
-	//if(outbound == error)
-		//SendsysMessage( who, outbound.errortext );
-	//elseif (presetType == "bug")
-		//MG_ReportText(who.acctname+ " sob o char " +who.name+ " escreveu o seguinte BUG: " +message, MG_REPORT_SYSLOG);
-	//elseif (presetType == "sugestao")
-		//MG_ReportText(who.acctname+ " sob o char " +who.name+ " escreveu a seguinte SUGESTAO: " +message, MG_REPORT_SYSLOG);
-	//endif
+  // COLOCAR CMD.LEVEL E TIRAR
+  if ( tipo == "boss" )
+	var message := "**BOSS** -> *" + name + "* matou " + boss_name + " com a conta [" + acct_name + "] na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == "furto" )
+	var message := "**FURTO** -> *" + name + "* conta [" + acct_name + "] furtou " + item + " do char " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  // print("CADE"+name+acct_name+region+coords);
+  elseif ( tipo == "unico" )
+	var message := "**ITEM UNICO** -> *" + name + "* conta [" + acct_name + "] achou " + item + " no " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == "pvp" )
+	var message := "**PVP** -> *" + name + "* conta [" + acct_name + "] derrubou " + boss_name + " conta [" + item + "] na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == "thuriao" )
+	var message := "**THURIAO** -> *" + name + "* conta [" + acct_name + "] peidou para " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == "morreu" )
+	var message := "**MORREU** -> *" + name + "* conta [" + acct_name + "] morreu em combate com " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == "pk" )
+	var message := "**PK** -> *" + name + "* conta [" + acct_name + "] decepou a cabeça de " + boss_name + " conta [" + item + "] na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == "itemlore" )
+	var message := "**ITEM DE LORE** -> *" + name + "* conta [" + acct_name + "] achou " + item + " no " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  endif
+// if(outbound == error)
+
+// SendsysMessage( who, outbound.errortext );
+// elseif (presetType == "bug")
+// MG_ReportText(who.acctname+ " sob o char " +who.name+ " escreveu o seguinte BUG: " +message, MG_REPORT_SYSLOG);
+// elseif (presetType == "sugestao")
+// MG_ReportText(who.acctname+ " sob o char " +who.name+ " escreveu a seguinte SUGESTAO: " +message, MG_REPORT_SYSLOG);
+// endif
 //	LogToFile("log/discordbot.log", who.name+" ("+who.acctname+") editou "+outbound+" ("+who.acctname+") <br>", LOG_DATETIME);
-	
 
 endprogram

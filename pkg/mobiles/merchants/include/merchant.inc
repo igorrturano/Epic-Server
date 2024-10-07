@@ -1,7 +1,7 @@
 //include "include/bank";
 include ":datafile:include/datafile";
 include ":merchants:item_template";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
 

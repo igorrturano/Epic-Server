@@ -1,0 +1,93 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+	params := 0; // No longer needed
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
+
+	var time := 0;
+	var oldx := who.x;
+	var oldy := who.y;
+
+	//who.frozen := 1;
+
+	var amt := 10;
+
+	if (temHabilidade(who, "Sacrificio da Carne"))
+		if (isBloodied(who))
+			amt := Cint(amt*1.5);
+		endif
+	endif
+
+	Corromper(who, 10, targ);
+
+    var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+    if (CheckResist(targ, VONTADE, diff, -bonus))
+        SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+        SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+        return;
+    endif
+
+	SetObjProperty(who, "#Casting",1);
+
+	while  (time < 10)
+
+		if ( (who.x != oldx) || (who.y != oldy))
+			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
+			break;
+		endif
+
+		if (Distance(who, targ) >= 16)
+			SendSysMessageEx(who, "O alvo se distanciou muito.", SSM_FAIL);
+			break;
+		endif
+
+		if(targ.dead)
+			break;
+		endif
+
+		var targmana := AP_GetVital(targ, STAMINA);
+		if (targmana < amt)
+			break;
+		endif
+
+		AP_SetVital(targ, STAMINA, (targmana-amt));
+		PrintTextAbovePrivate(targ, "-"+amt + " Stamina", who, 3, 38); // vermelho
+
+		var mymana := AP_GetVital(who, STAMINA) + amt;
+		var maxmana := AP_GetVitalMaximumValue(who, STAMINA);
+
+		if (mymana > maxmana)
+			mymana := maxmana;
+		endif
+
+		AP_SetVital(who, STAMINA, mymana);
+		PrintTextAbovePrivate(who, "+"+amt + " Stamina", who, 3, 568); // verde
+
+		PlayMovingEffect(targ, who, 3982, 255, 1);
+		time := time + 1;
+		PerformAction(who, ANIM_CAST_AREA);
+		sleep(1);
+	endwhile
+
+	EraseObjProperty(who, "#Casting");
+	return 1;
+endprogram

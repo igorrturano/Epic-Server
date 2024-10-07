@@ -11,7 +11,7 @@ include ":timedscripts:timedScripts";
 include ":fls_core:fls_characters";
 include "include/say";
 include ":charactercreation:habilidades";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 
 program do_empty(who)
 	EraseObjProperty(who, "IsMeditating");
