@@ -1,0 +1,64 @@
+include "include/client";
+include "include/say";
+include ":equipsys:utils";
+include ":equipsys:props";
+include ":gumps:epicGumps";
+
+program cmd_golpe(who)
+	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
+		SendSysMessageEx(who, "Você precisa ter uma arma empunhada para mudar sua postura de ataque!", SSM_FAIL);
+		return 0;
+	endif
+
+	OpenGump(who);
+endprogram
+
+function OpenGump(who)
+	var weapon := who.weapon;
+	var weaponProp := getPropBase(weapon);
+	var weaponElem := getItemCfgElem(weapon);
+	
+	while (1)
+		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
+		var x := 15;
+		var y := 40;
+
+		if (weaponProp.AttackType.Upper() == SLASHDAMAGE.Upper())
+			GFGumpPic(gump, x-13, y-23, 30062);
+			GFGumpPic(gump, x, y, 1004, COLOR_RED);
+			x += 70;
+			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
+			x += 70;
+			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
+		elseif (weaponProp.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
+			x += 70;
+			GFGumpPic(gump, x-13, y-23, 30062);
+			GFGumpPic(gump, x, y, 1008, COLOR_RED);
+			x += 70;
+			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
+		elseif (weaponProp.AttackType.Upper() == BLUNTDAMAGE.Upper())
+			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
+			x += 70;
+			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
+			x += 70;
+			GFGumpPic(gump, x-13, y-23, 30062);
+			GFGumpPic(gump, x, y, 1009, COLOR_RED);
+		endif
+
+		var input := GFSendGump(who, gump);
+		if (input[0] == 0)
+			return;
+		elseif (input[0] == 10)
+			weaponProp.AttackType := SLASHDAMAGE;
+		elseif (input[0] == 11)
+			weaponProp.AttackType := PIERCINGDAMAGE;
+		elseif (input[0] == 12)
+			weaponProp.AttackType := BLUNTDAMAGE;
+		endif
+
+		setPropBase(weapon, weaponProp);
+		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
+		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
+	endwhile
+endfunction

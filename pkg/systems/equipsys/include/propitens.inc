@@ -1,17 +1,11 @@
-include ":itemsys:tabelas";
-/*
-TODO:
-ADICIONAR A ATUALIZAÇÃO NO SCRIPT QUE CRIA A PROP CREATEDBY EM TODOS OS ITENS
-VER A QUESTÃO DOS ITENS MÁGICOS
-VER ITENS COM RECIPE
-*/
+use uo;
+use cfgfile;
 
-//TOGGLES PARA SEGURANÇA NA FASE DE IMPLEMENTAÇÃO
-//COLOCAR O NIVEL DO CMDLEVEL MÍNIMO NO TOGGLE PARA LIMITAR O USO EM FASE DE TESTES - PLAYER -> cmdlevel = 1; GM -> cmdlevel = 4; ADMIN -> cmdlevel = 5
-const TOGGLELVL_CRAFT := 0;
-const TOGGLELVL_EQUIP := 0;
+include "equipstats";
+include "include/say";
+include "include/client";
 
-function NovoSistemaDeItens(who, item, TOGGLE, PROCEDIMENTO);
+/* function NovoSistemaDeItens(who, item, TOGGLE, PROCEDIMENTO);
     if (who.cmdlevel < TOGGLE) return; endif
 
     if (PROCEDIMENTO == 1)
@@ -202,12 +196,7 @@ endfunction
 
 
 //FUNCTIONS DE BUSCA
-function BuscarValoresCfg(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
-    var cfg := ReadConfigFile(":combat:itemdesc");
-    var elem := FindConfigElem(cfg, item.objtype);
 
-    return elem;
-endfunction
 
 function BuscarValorMaterial(item)
     var valor := 0;
@@ -267,50 +256,10 @@ function BuscarDebuffMod(item)
     return valores;
 endfunction
 
-function IsEscudo(item)
-    var tipoequip := PegarTipo(item);
-    var escudo := SplitWords(Lower(tipoequip)); escudo := escudo[1];
-
-    if (escudo == "escudo") return 1;
-    else return;
-    endif
-endfunction
 
 
 
-//FUNCTIONS PARA MANIPULAR PROPS
-function PegarTipo(item) //PEGA A PROP DO TIPO DO EQUIPAMENTO
-    var tipo := PegarProp(item);
-    tipo := tipo."TipoEquip";
-    return tipo;
-endfunction
 
-function PegarSlot(item) //PEGA O SLOT DO ITEM NO .CFG
-    var elem := BuscarValoresCfg(item);
-    var slot := Lower(elem.Coverage);
-    if (IsEscudo(item)) slot := "Shield"; endif
-    return slot;
-endfunction
-
-function PegarProp(item) //PEGA A PROP DE MODIFICADORES BASE
-    var prop := item.GetProp("atributos");
-    if (!prop) prop := Dictionary{}; endif
-    return prop;
-endfunction
-
-function PegarPropExcep(item) //PEGA A PROP DE MODIFICADORES EXCEPCIONAL
-    var prop := item.GetProp("atributos_excp");
-    if (!prop) prop := Dictionary{}; endif
-    return prop;
-endfunction
-
-function SetarProp(item, prop) //SETA A PROP DE MODIFICADORES BASE
-    if (prop.Size() != 0) item.SetProp("atributos", prop); endif
-endfunction
-
-function SetarPropExcep(item, prop) //SETA A PROP DE MODIFICADORES EXCEPCIONAL
-    if (prop.Size() != 0) item.SetProp("atributos_excp", prop); endif
-endfunction
 
 
 
@@ -485,4 +434,4 @@ function AtualizarItemAntigo(who, item)
         // SendSysMessageEx(who, "----------");
         // SendSysMessageEx(who, "Item {} atualizado para novo modelo de base de dados com SUCESSO !!!".Format(Hex(item.objtype)), SSM_INFO);
     endif
-endfunction
+endfunction */
