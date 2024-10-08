@@ -1,0 +1,41 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":charactercreation:resists";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+	params := 0; // No longer needed
+
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, VONTADE, diff, -bonus))
+		SendSysMessageEx(who, "O Alvo resistiu a magia.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+		handleSilentMagic(who, who, 385);
+
+		return 0;
+	endif
+
+	var e := TS_StartTimer(targ, "fugademana", cint(AP_GetSkill(who, MAGICLORE)/2), cint(AP_GetSkill(who, MAGICLORE)), who, 0);
+	if (e == error)
+		printtextabove(who, "sonho " + e);
+	endif
+
+	handleSilentMagic(who, who, 385);
+
+	SendSysMessageEx(who, "A mana do alvo foge.", SSM_INFO);
+	Corromper(who, 18, targ);
+
+	return 1;
+endprogram

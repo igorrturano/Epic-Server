@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":combat:damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":fls_magery:spellSounds";
+
+program armasagrada(param)
+	var arma := param[1];
+	var time := param[2];
+
+	var sleeptime := 10;
+	var elemental := GetObjProperty(arma, "#elementalweapon");
+
+	while ( true)
+		elemental := GetObjProperty(arma, "#elementalweapon");
+		var stopOrder := Wait_For_Event(sleeptime);
+
+		if (elemental == error || stopOrder)
+			break;
+		endif
+		
+		if (ReadGameClock() > elemental.endtime)
+			var retorno := ConsumeItemArcaneCharges(arma,0,true);
+			break;
+		endif
+	endwhile
+
+	return 1;
+endprogram

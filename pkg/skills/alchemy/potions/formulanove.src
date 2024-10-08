@@ -10,21 +10,16 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
 include ":alchemy:alchemy";
 
 program formula90(who, pocao)
 
-    if (!temhabilidade(who, "Transmutar"))
-        SendSysMessageEx(who, "Voce nao faz a menor ideia de como fazer isso", SSM_FAIL);
-		return 0;
-	endif
-
-    var cfg := ReadConfigFile(":systems:combat/itemdesc");
+    var cfg := ReadConfigFile(":combat:itemdesc");
+    var cfg2 := ReadConfigFile(":metalworking:blacksmithy");
 
 	SendSysMessageEx(who, "Qual item deseja transmutar?", SSM_REQUEST);
 	var targ := Target(who);
-	
+    var elem := FindConfigElem(cfg2, targ.objtype);
 
 	if (!targ)
 		SendSysMessage(who, "Cancelado");
@@ -38,20 +33,17 @@ program formula90(who, pocao)
 
     if (targ.isA(POLCLASS_WEAPON) || targ.isA(POLCLASS_ARMOR))
 
-        var skill := AP_GetSkill( who, ALCHEMY );
+        var skill := (getobjProperty(pocao, "crafterskill" )*0.6);
 	    var item := Getobjproperty(targ, "material");
-
-        if( skill >= 100 )
-            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 10, targ.realm);
-        elseif( skill >= 80 )
-            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 8, targ.realm);
-        elseif( skill >= 60 )
-            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 6, targ.realm);
-        elseif( skill >= 40 )
-            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 4, targ.realm);
-        elseif( skill >= 20 )
-            CreateItemAtLocation(targ.x, targ.y, targ.z, item, 2, targ.realm);
+        if (!getobjproperty(targ,"material"));
+            item := 0x6309;
         endif
+        var materials := GetConfigStringDictionary(elem, "materials");
+        var metal := cdbl(materials.metal);
+        var amt := cint(metal*skill/100);
+
+        CreateItemAtLocation(targ.x, targ.y, targ.z, item, amt, targ.realm);
+
         
         Destroyitem(pocao);
         var book := createiteminbackpack(who, "emptybottle");

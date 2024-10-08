@@ -15,7 +15,7 @@ include ":spells:tnmagery";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":spells:spellbooks";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include "include/facings";
 include ":tn:cooldown";
 
@@ -98,7 +98,7 @@ endfunction
 function performPreCastingChecks(mobile, byref spellinfo)
     spellinfo.mana += CInt(spellinfo.mana * GetObjProperty(mobile, "#manapenalty") / 100);
 
-    var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth");
+    var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
     var battlemageHabs := {"Concentracao Macabra", "Aura Mortis", "Dominatio Animae", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
     var tem_hab := 0;
     foreach hab in battlemageHabs

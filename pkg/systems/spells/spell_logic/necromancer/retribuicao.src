@@ -1,0 +1,43 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:regen";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata.wisdom_path != "Mago" && !TemHabilidade(who, "Aura Mortis") && !TemHabilidade(who, "Sensibilidade Arcana"))
+        SendSysMessageEx(who, "Você não sabe usar essa magia.", SSM_INFO);
+        return 1;
+    endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var lvl := cdbl(AP_GetSkill(who, MAGICLORE) * 0.6 / 100);
+
+    if (TemHabilidade(targ, "Aura Mortis"))
+    	SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
+        lvl *= 1.34;
+    endif
+
+	var time := cint(AP_GetSkill(who, MAGICLORE))*2;
+	Corromper(who, 28, targ);
+	SendSysMessageEx(targ, "Olho por olho...", SSM_INFO);
+	TS_StartTimer(targ, "dmgreturn", time, lvl, who, 1);
+
+	return 1;
+endprogram

@@ -1282,7 +1282,7 @@
 //                 CreateItemInBackpack(who, "Deadwood", 10);
 //                 CreateItemInBackpack(who, "FertileDirt", 10);
 // 		        ganheispell:=1;
-// 		        chardata.+magia := "Totemista";
+// 		        chardata.+magia := "Druida";
 //             endif
 //         elseif (chardata.povo == "Orc")
 //             if (ganheispell == 0)
@@ -1354,12 +1354,12 @@
 
 // 					var grimorio := createiteminbackpack(who, "grimoriorunas", 1);
 // 					SetObjProperty(grimorio, "SangriaBook", 1);
-// 					SetObjProperty(grimorio, "Booktype", "Sangria");
+// 					SetObjProperty(grimorio, "Booktype", "Magia");
 // 					SetObjProperty(grimorio, "serialid", who.serial);
 // 					SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
 //                     grimorio.newbie := 1;
 // 					var spellinfo := struct;
-// 					spellinfo.+magic_path := "Sangria";
+// 					spellinfo.+magic_path := "Magia";
 // 					var p1 := createiteminbackpack(who, "pergaminhosangria1");
 // 					spellinfo.+id := 9;
 // 					SetObjProperty(p1, "spellinfo", spellinfo);
