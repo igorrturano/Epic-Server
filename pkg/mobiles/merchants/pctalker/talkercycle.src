@@ -34,15 +34,39 @@ program BrainNerve(params)
 		if (cycles.size() >= 1)
 			var random := RandomIntMinMax(1,cyclesize+1);
 			var text := cycles[random];
+
+			var max_speech_with_same_player := 3; // o máximo de falas (por AI ou normal) é de 3 para o MESMO player
+			var speech_iteracao := GetGlobalProperty("speech_iteracao"); //pegando a variavel global, caso exista
+			if (speech_iteracao == error) //nao existe a variavel global, seta dentro da condicao
+				SetGlobalProperty("speech_iteracao", 1);
+				speech_iteracao := GetGlobalProperty("speech_iteracao");
+			endif
+			
+			var near_player := ReturnCharDataPlayerNear(npc); //pegando o nome da acc do jogador
+			var near_player_saved := GetGlobalProperty("near_player_saved"); //acessando a variavel global, caso exista
+
+			if (near_player_saved == error) //nao existe a variavel global, seta o valor dentro da condicao
+				SetGlobalProperty("near_player_saved", near_player);
+				near_player_saved := GetGlobalProperty("near_player_saved");
+			endif
+
+			if (Cstr(near_player) != Cstr(near_player_saved)) //checando para ver se é um novo jogador perto do NPC
+				speech_iteracao := 1; //é um novo jogador, entao seta a iteracao de volta pra 1
+				SetGlobalProperty("near_player_saved", near_player); //salva o jogador na variavel global
+			endif
 			if (text.say)
-				if (HasPlayerNear(npc))
-					var temperatura := 2.0;
-					var top_p := 1.0;
-					var new_ai_textfrase := handle_npc_talker_openai("" + text.frase, temperatura, top_p); // fazendo a frase ser trabalhada pela IA
-					AI_Speak_to_Each_Other(npc, "" + new_ai_textfrase);
-				else
-					AI_Speak(npc, "" + text.frase);
-				endif
+				if (HasPlayerNear(npc)) // so fala com IA ou sem se houver jogador perto, e na terceira iteracao, fala sem IA
+					if (speech_iteracao <= max_speech_with_same_player)
+						var temperatura := 2.0;
+						var top_p := 1.0;
+						var new_ai_textfrase := handle_npc_talker_openai("" + text.frase, temperatura, top_p); // fazendo a frase ser trabalhada pela IA
+						AI_Speak_to_Each_Other(npc, "" + new_ai_textfrase);
+
+						SetGlobalProperty("speech_iteracao", (speech_iteracao + 1));
+					
+					else
+						AI_Speak(npc, "" + text.frase);
+					endif
 			else
 				AI_Speak(npc, "" + text.frase, SPEAK_TEXTTYPE_YELL);
 				
@@ -72,6 +96,6 @@ program BrainNerve(params)
 		else
 			SetObjProperty(npc, "cyclewait", 900);
 		endif
-		Sleep(tempo);
+		Sleep(10);
 	endwhile
 endprogram
