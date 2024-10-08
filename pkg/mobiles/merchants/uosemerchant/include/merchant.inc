@@ -244,6 +244,7 @@ function RemoveItemForSale(merchant, item_num, amount := 0, confiscar := 0)
    elseif (amount == 0 || selling_info[2].amount <= amount)
       return data_elem.EraseProp(CStr(item_num));
    endif
+   
    selling_info[2].desc := StrReplace(selling_info[2].desc, "{}".format(selling_info[2].amount), "{}".format(selling_info[2].amount - amount));
    selling_info[2].amount -= amount;
    data_elem.SetProp(Cstr(item_num), selling_info);
