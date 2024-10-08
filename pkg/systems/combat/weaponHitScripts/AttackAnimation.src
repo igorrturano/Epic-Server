@@ -1,4 +1,10 @@
-include ":combat:combat";
+// include ":combat:combat";
+use uo;
+use os;
+use util;
+
+include ":equipsys:props";
+include ":equipsys:utils";
 
 program AttackAnimation(params)
 	// Criado apenas para a animção poder ser async.
@@ -8,3 +14,34 @@ program AttackAnimation(params)
 	SleepMS(delay);
 	PlayAttackAnimation(who);
 endprogram
+
+function PlayAttackAnimation(who)
+	var attackType;
+	
+	if (who.acctname)
+		var prop := getPropBase(who.weapon);
+		attackType := prop.AttackType;
+	else
+		// TODO: Buscar animação nas props de postura do NPC, depois de implementar.
+		// attackType := prop.AttackType;
+	endif
+
+	var attackAnim;
+	if (Lower(attackType) == Lower(SLASHDAMAGE))
+		attackAnim := getAnim(SLASHANIM);
+	elseif (Lower(attackType) == Lower(PIERCINGDAMAGE))
+		attackAnim := getAnim(PIERCINGANIM);
+	elseif (Lower(attackType) == Lower(BLUNTDAMAGE))
+		attackAnim := getAnim(BLUNTANIM);
+	endif
+
+	if (!who.acctname) // TODO: Remover depois que implementar lá em cima. Está aqui apenas para não bugar antes disso.
+		attackAnim := 0x0c;
+	endif
+
+	PerformAction(who, CInt(attackAnim));
+endfunction
+
+function getAnim(anims)
+	return anims[RandomInt(anims.Size())+1];
+endfunction

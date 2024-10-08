@@ -1,0 +1,40 @@
+
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include ":combat:damage";
+include "include/epicMageryUtils";
+
+program SpellScript( params )
+  var who := params[1];
+  var info := params[2];
+
+  var targ := who.weapon;
+  if ( !targ )
+	SendSysMessageEx( who, "Cancelado", SSM_FAIL );
+	return;
+  endif
+
+  var time := AP_GetSkill( who, MAGICLORE ) * 10 + 180;
+
+  if ( targ.isA( POLCLASS_WEAPON ) )
+
+	if ( checkForElementalWeapons( who, targ ) )
+	  return 0;
+	endif
+	ApplyElementalWeaponProperties( who, DMG_COLD );
+	PlaySoundEffect( targ, SFX_BLESS );
+	SendSysMessageEx( who, "Uma fina camada de gelo cobre a arma.", SSM_INFO );
+
+	return 1;
+  endif
+
+  SendSysMessageEx( who, "Alvo invalido.", SSM_INFO );
+
+endprogram

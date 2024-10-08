@@ -1,0 +1,24 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	TS_StartTimer(who, "atrasarmagias", cint(AP_GetSkill(who, MAGICLORE)) / 2, AP_GetSkill(who, MAGICLORE)*20, who, 0); //20 min
+    handleSilentMagic(who, who, 385);
+
+    SendSysMessageEx(targ, "Voce se sente mais fraco.", SSM_INFO);
+	Corromper(who, 17, targ);
+	
+	return 1;
+endprogram 
