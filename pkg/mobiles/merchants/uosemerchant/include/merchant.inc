@@ -165,8 +165,6 @@ endfunction
 //
 function AddItemForSale(merchant, seller, item, cost_type, cost_name, cost_amt, desc, cost_lote, infiniteAmount := 0, specialProp := 0, commission:=0)
 	var data_elem := GetMerchantDataElem(Hex(merchant.serial)+"-ItemsSelling");
-//	var new_num := GetMerchantDataFile().keys().size();
-//	new_num := GetMerchantDataFile().keys().size()+1;
 	var new_num := FindAvailableNumber(data_elem);
 	if ( new_num == error )
 		var temp := error;

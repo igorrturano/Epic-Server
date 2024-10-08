@@ -21,9 +21,12 @@ include ":tn:cooldown";
 include ":merchants:/include/cambio";
 
 const GF_STDCOLOR_UOSE := 1890;
-const MOEDAS := 0xBA63;
+const MOEDAS := SESTERTIUS;
 const FILTRO_TEXTO := "texto";
 const FILTRO_CATEGORIA := "categoria";
+const MAXIMO_ITEM_PESSOA := 12;
+const MAXIMO_ITEMS := 80;
+const MAXIMO_VALOR_ITEM := 10000;
 
 var item_cfg := ReadConfigFile( ":*:itemdesc" );
 var npc;
@@ -91,7 +94,7 @@ endfunction
 
 function HandleItemGiven( npc, player, item )
   var items_inside := GetSellerAccount( npc, player.serial );
-  if ( items_inside.size() >= 5 && !player.cmdlevel )
+  if ( items_inside.size() >= MAXIMO_ITEM_PESSOA && !player.cmdlevel )
 	PrintText( npc, "Desculpe, mas já estou vendendo muitas mercadorias sua." );
 	return;
   endif
@@ -110,7 +113,7 @@ function HandleItemGiven( npc, player, item )
   elseif ( !item.IsA( POLCLASS_ITEM ) )
 	SendSysMessageEX( player, "Cancelado.", SSM_FAIL );
 	return;
-  elseif ( ( item.objtype == 0xeed || item.objtype == 0xba64 || item.objtype == 0xba65 )
+  elseif ( ( item.objtype == AUREUS || item.objtype == DENARIUS || item.objtype == SESTERTIUS )
 		   && player.cmdlevel < 3 )
 	SendSysMessageEX( player, "Você não pode vender moedas", SSM_FAIL );
 	return;
@@ -151,7 +154,10 @@ function DoPurchaseCmd( npc, player )
 	elseif ( input[0] == 4 ) //	Reservado Caixa De Texto
 	elseif ( input[0] == 5 ) //	limpar Filtro
 		filtros.tipo := "";
-	elseif ( input[0] == 6 ) //	aberto
+	elseif ( input[0] == 6 ) //	Log
+		var historico := GetMerchantLog(npc);
+		historico := "<br> - {}".format("<br> -".join(historico));
+		SendHTMLGump(player, "Historico de Vendas", historico);
 	elseif ( input[0] > 6 &&  input[0] <= 6 + item_types.size() ) // filtra por categoria.
 		
 		filtros.tipo := FILTRO_CATEGORIA;
@@ -164,6 +170,7 @@ function DoPurchaseCmd( npc, player )
 	  DoPurchase( npc, player, input[0] );
 	  break;
 	endif
+	
   endwhile
 endfunction
 
@@ -238,66 +245,13 @@ function SetupMerchant( npc, player )
   SetObjProperty( npc, "norace", output[4] );
 endfunction
 
-function SendItemView( npc, player, filtros := struct )
-  var gump := GetGumpView( npc, player ,filtros);
-
-  //gump := SetAboveLayer( npc, player, gump );
-
-  return GFSendGump( player, gump);
-endfunction
-
-function GetGumpView( npc, player, filtros )
+function SendItemView( npc, player, filtros )
   var gump := GetMerchantGump( npc );
-  if ( !gump )
+  if ( !gump || filtros.tipoFiltro != "")
 	gump := PreparaLojaGump( npc, player, filtros );
   endif
 
-  return gump;
-endfunction
-
-function SetAboveLayer( npc, player, gump )
-  var items_sold := GetItemsSoldList( npc );
-  var x := 48;
-
-  if ( player.cmdlevel >= 3 || above_merchant )
-	GFHtmlShadowed( gump, 500, 34, 150, 20, "#FFFFFF", "Regras de Negócio", 4 );
-	GFAddButton( gump, 500 - 20, 34 + 4, 2103, 2103, GF_CLOSE_BTN, 3 );
-  endif
-
-  GFPage( gump, 1 );
-  var i := 1;
-  foreach serial in items_sold
-	var cost_info := GetItemSoldInfo( npc, serial );
-	var item := cost_info[2];
-	cost_info := cost_info[1];
-
-	var pos := Floor( i / 5.1 );
-	if ( _serial_iter % 5 == 1 )
-	  x := 48;
-	endif
-	var y := 66 + ( pos * 170 );
-
-	if ( player.cmdlevel >= 3 || above_merchant )
-	  var vendor_name := GetPlayerNameBySerial( cost_info.seller );
-	  GFHTMLArea( gump, x + 10, y + 35, 110, 20, "<BASEFONT size=4 color=#FFFFFF><center>{}".format(
-			   vendor_name ) );
-	endif
-
-	if ( ( cost_info.seller == player.serial || above_merchant ) )
-	  GFAddButton( gump, x + 96, y + 116, 0x9C4F, 0x9C4F, GF_CLOSE_BTN, 90000 + cint(
-				serial ) );
-	endif
-
-	i += 1;
-	if ( i % 16 == 0 )
-	  i := 1;
-	  GFPage( gump, gump.cur_page + 1 );
-	endif
-	x += 140;
-	sleepms( 2 );
-  endforeach
-
-  return gump;
+  return GFSendGump(player,gump);
 endfunction
 
 function PreparaLojaGump(npc,player, filtros := struct)
@@ -310,9 +264,8 @@ function PreparaLojaGump(npc,player, filtros := struct)
 	params.+tiposItemVendedor := GetObjProperty( npc, "item_type" );
 	params.+catalogoTipoItems := item_types;
 	params.+nomeVendedor := npc.name;
-	params.+isVendorAdm := player.cmdlevel >= 3 || above_merchant;
+	params.+isAdministrador := player.cmdlevel >= 3 || above_merchant;
 	
-
 	var soldItemsData := GetItemsSoldList( npc );
 
 	foreach dadosItem in soldItemsData
@@ -339,14 +292,14 @@ function PreparaLojaGump(npc,player, filtros := struct)
 		infoItem.+serial := dadosItem;
 		infoItem.+item := conjuntoDados[2];
 		infoItem.+infoCusto := conjuntoDados[1];
-		infoItem.+descVenda := GetDetails( infoItem.item, player );
+		infoItem.+descVenda := GetDetails( infoItem.item, player,infoItem.infoCusto.desc );
 		infoItem.+nomeVendedor := GetPlayerNameBySerial(infoItem.infoCusto.seller);
 		infoItem.infoCusto.cost_name := "Sestertius";
-
+		infoItem.infoCusto.cost_name := "Sestertius";
 		
 		var donoDoItem := SystemFindObjectBySerial( infoItem.infoCusto.seller, SYSFIND_SEARCH_OFFLINE_MOBILES );
 
-		if ( !donoDoItem && infoItem.conjuntoDados.infinite != 1 )
+		if ( !donoDoItem && infoItem.infoCusto.infinite != 1 )
 			RemoveItemForSale( npc, dadosItem );
 			continue;
 		endif	
@@ -360,120 +313,10 @@ function PreparaLojaGump(npc,player, filtros := struct)
 	endforeach
 
 	var gump := MontaLojaGump(params);
-	//SetMerchantGump( npc, gump );
+	SetMerchantGump( npc, gump );
 
 	return gump;
 endfunction
-
-/*
-function PreparaGumpView( npc, player )
-  var npc_type :=
-  if ( !npc_type )
-	npc_type := "Vendedor";
-  endif
-
-  var items_sold := GetItemsSoldList( npc );
-  var gump := GFCreateGump();
-
-  GFPage( gump, 0 );
-  GFGumpPic( gump, 11, 29, 40009, 0 ); // borders
-  GFGumpPicTiled( gump, 42, 59, 700, 513, 30540 ); // background
-  GFHtmlShadowed( gump, 42, 34, 700, 20, "#FFFFFF", "<center>" + npc_type, 4 );
-  var i := 1;
-  var x := 48;
-
-  GFPage( gump, 1 );
-  GFTextLine( gump, 300 + 50, 576, 1153, "Página {}".format( gump.cur_page ) );
-  foreach serial in items_sold
-	var cost_info := GetItemSoldInfo( npc, serial );
-	var item := cost_info[2];
-	cost_info := cost_info[1];
-	var donoDoItem := SystemFindObjectBySerial( cost_info.seller, SYSFIND_SEARCH_OFFLINE_MOBILES );
-
-	// print("removendo item do vendor de char deletado.");
-	if ( !donoDoItem && cost_info.infinite != 1 )
-	  RemoveItemForSale( npc, serial );
-	  continue;
-	endif
-
-	var color := GF_STDCOLOR_UOSE;
-	if ( item.color )
-	  color := item.color - 1;
-	endif
-
-	var cost_name;
-	if ( cost_info.objtype == MOEDAS )
-	  cost_name := "moedas de cobre";
-	else
-	  if ( cost_info.cost_name )
-		cost_name := cost_info.cost_name;
-	  else
-		cost_name := GetName( cost_info.cost_type );
-	  endif
-	endif
-
-	var pos := Floor( i / 5.1 );
-	if ( i % 5 == 1 )
-	  x := 48;
-	endif
-	var y := 66 + ( pos * 170 );
-
-	GFGumpPic( gump, x, y, 40010, 0 );
-	GFGumpPic( gump, x + 4, y + 118, 40032, 0 );
-	GFAddButton( gump, x + 1, y + 132, 40023, 40023, GF_CLOSE_BTN, serial );
-	GFTooltipText( gump, "Comprar" );
-
-	GFHTMLArea( gump, x + 20, y + 1, 90, 20, "<BASEFONT size=4 color=#FFFFFF><center>{}".format(
-			 item.desc ) );
-	GFTooltipText( gump, "{}".format( item.cost_amnt ) );
-	GFTilePic( gump, x + 42, y + 75, item.graphic, cint( item.color ) ); // objtype
-	var item_desc := GetDetails( item, player );
-	if ( cost_info.desc )
-	  item_desc := "{}{}".format( item_desc, cost_info.desc );
-	endif
-	if ( item_desc != "" )
-	  GFTooltipText( gump, "{}".format( item_desc ) );
-	endif
-
-	GFTextLine( gump, x + 24, y + 120, 1051, "Unidade" );
-	GFResizePic( gump, x + 25, y + 138, 30546, 96, 19 );
-	GFGumpPic( gump, x + 27, y + 140, 40022, 0 );
-	var lote := cost_info.lote;
-	if ( lote <= 1 )
-	  lote := "";
-	else
-	  lote := "{}x".format( lote );
-	endif
-	GFTextLine( gump, x + 50, y + 138, 1153, "{}{} mo".format( lote, cost_info.cost_amt )
-			 );
-	if ( lote )
-	  GFTooltipText( gump, "{} unidades por {} moedas de ouro".format( cost_info.lote,
-				  cost_info.cost_amt ) );
-	endif
-
-	x += 140;
-	i += 1;
-	if ( i % 16 == 0 )
-	  i := 1;
-
-	  GFAddButton( gump, 410, 579, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
-	  GFPage( gump, gump.cur_page + 1 );
-	  GFTextLine( gump, 300 + 50, 576, 1153, "Página {}".format( gump.cur_page ) );
-	  GFAddButton( gump, 320, 579, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
-	endif
-	// GFTextLine(gump, 195, y_pos, color, item.desc + " -> " + cost_info.cost_amt + " " + cost_name );
-	sleepms( 2 );
-  endforeach
-  if ( items_sold.size() < 1 )
-	GFTextLine( gump, 305, 300, 1051, "Nenhum item a venda!" ); // desc
-  endif
-
-  GFPage( gump, 0 );
-  SetMerchantGump( npc, gump );
-
-  return gump;
-endfunction
-*/
 
 function removeItemMerchant( npc, player, input )
   var info := GetItemSoldInfo( npc, input );
@@ -506,7 +349,6 @@ function removeItemMerchant( npc, player, input )
 
   RemoveItemForSale( npc, input, 0, confiscar );
   var purchase := CreateItemInBackpackFromTemplate( player, selling );
-  // purchase.desc := GetName(selling.objtype, CInt( (owed-1)/(owed-1) ));
   if ( purchase == error )
 	purchase := CreateItemAtLocation( player.x, player.y, player.z, selling, selling.amount );
 	if ( purchase == error )
@@ -573,32 +415,18 @@ function DoPurchase( npc, player, input )
 endfunction
 
 function ChooseAmt( player, amount, lote )
-  var gump := GFCreateGump();
-  var x := 450;
-  var y := 250;
-  GFPage( gump, 0 );
-  GFResizePic( gump, 14 + x, 22 + y, 9270, 176, 149 );
-  GFResizePic( gump, 27 + x, 32 + y, 9350, 150, 126 );
-
-  GFAddButton( gump, 42 + x, 123 + y, 0x818, 0x819, GF_CLOSE_BTN, 1 );
-  GFAddButton( gump, 114 + x, 123 + y, 0x81A, 0x81C, GF_CLOSE_BTN, 2 );
-  GFHtmlShadowed( gump, 80 + x, 37 + y, 80, 20, "#FFFFFF", "Comprar", 5 );
-  GFTextLine( gump, 39 + x, 69 + y, 1891, "Quantidade? Max: {}".format( amount )
-			  );
-  GFResizePic( gump, 49 + x, 89 + y, 30546, 100, 26 );
-  var cost := GFTextEntry( gump, 62 + x, 92 + y, 89, 20, 1153, "{}".format( amount )
-						   );
+  var gump := GumpEscolhaQuantidade(amount);
   var input := GFSendGump( player, gump );
   if ( input[0] != 2 )
 	return 0;
   endif
-  var cost_amt := cint( GFExtractData( input, cost ) );
+  var cost_amt := cint( GFExtractData( input, 3 ) );
   return cost_amt;
 endfunction
 
 function AddItemToSell( npc, player, item )
   var items_sold := GetItemsSoldList( npc );
-  if ( items_sold.size() >= 80 )
+  if ( items_sold.size() >= MAXIMO_ITEMS )
 	PrintText( npc, "Desculpe, não posso vender mais coisas no momento. Venha outra hora." );
 	return 0;
   endif
@@ -665,53 +493,23 @@ function AddItemToSell( npc, player, item )
 	PrintText( npc, "Desculpe, fui proibido(a) de comercializar com sua raça" );
 	return 0;
   endif
-
-  var gump := GFCreateGump();
-  var infinite;
-  GFPage( gump, 0 );
-  var x := 400;
-  var y := 250;
-  var lote_cmd := ( item.amount > 1 );
-  GFResizePic( gump, 14 + x, 22 + y, 9270, 176, 149 + ( lote_cmd * 50 ) );
-  GFResizePic( gump, 27 + x, 32 + y, 9350, 150, 126 + ( lote_cmd * 50 ) );
-
-  GFAddButton( gump, 42 + x, 123 + y + ( lote_cmd * 50 ), 0x818, 0x819, GF_CLOSE_BTN,
-			   0 );
-  GFAddButton( gump, 114 + x, 123 + y + ( lote_cmd * 50 ), 0x81A, 0x81C, GF_CLOSE_BTN,
-			   1 );
-  GFHtmlShadowed( gump, 80 + x, 37 + y, 80, 20, "#FFFFFF", "Vender", 5 );
-  GFTextLine( gump, 39 + x, 69 + y, 1891, "Moedas por Unidade" );
-  GFResizePic( gump, 39 + x, 89 + y, 30546, 126, 26 );
-  GFGumpPic( gump, 43 + x, 94 + y, 40022, 0 );
-  var cost := GFTextEntry( gump, 62 + x, 92 + y, 89, 20, 1153, "" );
-
-  var qty_by;
-  if ( lote_cmd )
-	GFTextLine( gump, 48 + x, 69 + y + 48, 1891, "Itens por lote" );
-	GFResizePic( gump, 75 + x, 89 + y + 50, 30546, 40, 26 );
-	qty_by := GFTextEntry( gump, 68 + 20 + x, 92 + y + 50, 30, 20, 1153, "{}".format(
-						item.amount ) );
-	GFTooltipText( gump, "Número de items que são vendidos por unidade. Exemplo: 4 ferros por 1 unidade" );
-  endif
-
-  if ( player.cmdlevel >= 3 )
-	GFResizePic( gump, 191 + x, 21 + y, 9270, 138, 149 );
-	GFResizePic( gump, 204 + x, 35 + y, 9350, 112, 126 );
-	GFHTMLArea( gump, 219 + x, 40 + y, 100, 20, "<BASEFONT size=5 color=#FFFFFF>[GM] Troca" );
-	GFAddButton( gump, 223 + x, 73 + y, 239, 248, GF_CLOSE_BTN, 2 );
-	GFHTMLArea( gump, 215 + x, 93 + y, 100, 20, "<BASEFONT size=5 color=#FFFFFF>Options" );
-	infinite := GFCheckBox( gump, 210 + x, 113 + y, 0x9C4E, 0x9C4F );
-	GFTextLine( gump, 240 + x, 112 + y, 1153, "Infinito" );
-  endif
-
-  var input := GFSendGump( player, gump );
-
+  
+  var params := struct;
+  params.+item := item;
+  params.+isLotCMD :=  ( item.amount > 1 );
+  params.+papelJogador := player.cmdlevel; 
+  
+  var vendaGump := MontaVenderItemGump(params);
+  var input := GFSendGump( player, vendaGump );
+  
   if ( input[0] != 1 )
 	return;
   endif
 
-  var cost_amt := cint( GFExtractData( input, cost ) );
-  var cost_lote := cint( GFExtractData( input, qty_by ) );
+  var infinite := GFExtractData( input, 5 );
+  var cost_amt := cint( GFExtractData( input, 2 ) );
+  var cost_lote := cint( GFExtractData( input, 3 ) );
+
   if ( !cost_lote )
 	cost_lote := 1;
   endif
@@ -719,22 +517,25 @@ function AddItemToSell( npc, player, item )
 
   var total_imposto := CInt( cdbl( cost_amt * ( item.amount / cost_lote ) ) * cdbl(
 							 imposto ) );
-  // var specialProp := struct;
 
   if ( !cost_amt || cost_amt == 0 )
 	SendSysMessageEx( player, "Cancelado", SSM_FAIL );
 	return;
-  elseif ( cost_amt > 10000 )
+  elseif ( cost_amt > MAXIMO_VALOR_ITEM )
 	SendSysMessageEx( player, "Você ultrapassou o limite maximo de {} moedas.".format(
 				   "10000" ), SSM_FAIL );
 	return;
-  elseif ( player.cmdlevel < 3 && AmountInPack( player, MOEDAS ) < total_imposto )
+  elseif ( cost_amt <= 0 )
+	SendSysMessageEx( player, "O preço minimo de produto é 1." , SSM_FAIL );
+	return;
+  elseif ( item.amount % cost_lote != 0 )
+	SendSysMessageEx( player, "Com essa quantidade de items por lote, alguns ficarão incompletos e issõ não é permitido.", SSM_FAIL );
+	return;
+  elseif ( player.cmdlevel < 3 && ContaCapital( player) < total_imposto )
 	SendSysMessageEx( player, "Você não tem moedas suficiente para pagar o vendedor pelo seu servico.",
 				   SSM_FAIL );
 	return 0;
   endif
-
-  infinite := GFExtractData( input, infinite );
 
   if ( total_imposto < 1 )
 	total_imposto := 1;
@@ -762,33 +563,6 @@ function AddItemToSell( npc, player, item )
 	  SendSysMessageEx( player, "Você pagou {} moedas de imposto.".format( total_imposto ),
 					 SSM_INFO );
 	endif
-  // var pay := 0;
-  // do
-  // SendSysMessageEx(player, "O imposto total � de: {} moedas".format(total_imposto), SSM_INFO);
-  // SendSysMessageEx(player, "Escolha o montante de moedas para que seu item seja colocado a venda. (Pressione ESC para cancelar).", SSM_REQUEST);
-  // var targ := Target(player);
-  // if ( !targ )
-  // SendSysMessageEx(player, "Cancelado.");
-  // return;
-  // elseif ( !(targ in EnumerateItemsInContainer(player.backpack)) )
-  // SendSysMessageEx(player, "n�o esta na sua bolsa.", SSM_FAIL);
-  // elseif ( GetObjProperty(targ, "stealed") )
-  // SendSysMessageEx(player, "Objeto foi roubado!", SSM_FAIL);
-  // elseif ( targ.objtype == MOEDAS )
-  // if ( !ReserveItem(targ) )
-  // SendSysMessageEx(player, "Voc� n�o pode pagar com isto.", SSM_FAIL);
-  // else
-  // if (total_imposto > 0 && !SubtractAmount(targ, total_imposto))
-  // SendSysMessageEx(player, "Voc� n�o pode pagar com isto.", SSM_FAIL);
-  // else
-  // pay := 1;
-  // SendSysMessageEx(player, "Pagamento efetuado com sucesso!", SSM_FAIL);
-  // endif
-  // endif
-  // else
-  // SendSysMessageEx(player, "Voc� deve indicar moedas de cobre.", SSM_FAIL);
-  // endif
-  // dowhile ( !pay );
   endif
 
   SetObjProperty(item,FILTRO_CATEGORIA,itemcategory);
@@ -840,33 +614,8 @@ function DoWithdraw( npc, player )
   data_elem.EraseProp( Hex( player.serial ) );
 endfunction
 
-function GetDetails( item, who )
-  var ret := "";
-
-  var membros := item.keys();
-	Print(membros);
-  foreach membro in membros
-	ret += "{}: {}<br>".format( membro, membros.membro);
-  endforeach
-  /*
-  if ( item.ObjClass == "Armor" || item.ObjClass == "Weapon" )
-	ret += "Qualidade: {}<br>".format( "Normal" );
-
-	if ( item.ObjClass == "Armor" )
-	  ret += "Classe: {}".format( "Guerreiro" );
-	elseif ( item.ObjClass == "Weapon" )
-	  ret += "Dano: {}".format( "50" );
-	endif
-  endif
-
-  if ( item.Cprops.lang )
-	ret += "Idioma: {}<br>".format( "Comum" );
-  endif
-
-  if ( item.Cprops.already_used )
-	ret += "Usado<br>";
-  endif
-  */
-  return ret;
+function GetDetails( item, who,desc )
+	//TODO implementar quando tiverem terminado a mudança nas armas e armadurass, incluindo as mudanças nos tooltips 
+  return "{}".format(desc);
 endfunction
 
