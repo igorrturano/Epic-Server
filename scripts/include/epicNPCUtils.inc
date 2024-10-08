@@ -2,8 +2,6 @@ use util;
 
 include ":equipsys:equipstats";
 include ":equipsys:props";
-include "include/NPCUtil";
-include ":attributes:skills";
 
 function customizeNpc(mob)
 	var npc_elem := NPC_GetNPCConfig(mob);
