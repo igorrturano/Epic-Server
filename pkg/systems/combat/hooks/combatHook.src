@@ -883,7 +883,7 @@ function arcane_shooting(attacker, defender)
 		return 1;
 	endif
 
-	if (!DamageMANA(attacker, 5))
+	if (!DamageMANA(attacker, 4))
 		SendSysMessage(attacker, "Você está sem mana!");
 		return 0;
 	endif
