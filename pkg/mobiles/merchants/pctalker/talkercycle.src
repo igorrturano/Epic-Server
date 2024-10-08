@@ -67,6 +67,7 @@ program BrainNerve(params)
 					else
 						AI_Speak(npc, "" + text.frase);
 					endif
+				endif
 			else
 				AI_Speak(npc, "" + text.frase, SPEAK_TEXTTYPE_YELL);
 				
@@ -96,6 +97,6 @@ program BrainNerve(params)
 		else
 			SetObjProperty(npc, "cyclewait", 900);
 		endif
-		Sleep(10);
+		Sleep(tempo);
 	endwhile
 endprogram
