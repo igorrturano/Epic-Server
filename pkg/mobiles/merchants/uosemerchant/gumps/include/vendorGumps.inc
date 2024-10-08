@@ -25,34 +25,41 @@ CONST PAINELBOTOES_FUNDO_WIDTH := 205;
 function MontaLojaGump(params)
 	
 	var gump := GFECreateGump("teste",GUMP_MONTALOJA_WIDTH,GUMP_MONTALOJA_HEIGHT, {BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
+	var indiceItem := 1;
 	
 	GFPage( gump, 0 );
 
-	GFHTMLArea( gump, PAINELPRODUTO_POS_CENTRO_X - 100 , 25 ,200, 40,"<BASEFONT size=12 color=#cad7ed><center>Loja de {}".format(params.vendorName) ); 
+	PainelBotoes(gump, params.tiposItemVendedor,params.catalogoTipoItems, params.isVendorAdm,params.nomeVendedor);
+	PainelProduto(gump,
+				params.itensVendidos,
+				indiceItem ,
+				PAINELPRODUTO_INIPOS_X,
+				PAINELPRODUTO_INIPOS_Y,
+				9,
+				params.isVendorAdm
+				);
+	
+	return gump;
+endfunction
+
+function PainelBotoes(byref gump,tiposItemVendedor, catalogoTipoItems,isVendorAdm, nomeVendedor)
+
+	var y := 90;
+	var x := 40;
+	var indice := 1;
+
+	GFHTMLArea( gump, PAINELPRODUTO_POS_CENTRO_X - 100 , 25 ,200, 40,"<BASEFONT size=12 color=#cad7ed><center>Loja de {}".format(nomeVendedor) ); 
 	GFResizePic(gump, 20, 20, 39925, PAINELBOTOES_FUNDO_WIDTH, 570); // fundo Botoes
 	GFTextLine( gump, PAINELBOTOES_FUNDO_WIDTH / 2 , 40 , 1051, "Filtros" ); 
-	GFAddButton(gump, 60 ,35,22124,22125,GF_CLOSE_BTN, 3); // Botão regra de negócio
-	GFTooltipText( gump, "Regras de Negócio");
+	if(isVendorAdm)
+		GFAddButton(gump, 60 ,35,22124,22125,GF_CLOSE_BTN, 3); // Botão regra de negócio
+		GFTooltipText( gump, "Regras de Negócio");
+	endif
 	GFTextEntry(gump,105,82,90,30,1051,"",4, 50); // Caixa de pesquisa
 	GFAddButton(gump, 70,80,4011,4013,GF_CLOSE_BTN,2);
 	GFTooltipText( gump, "Pesquisar por texto");
 	GFAddButton(gump, 40,80,4020,4022,GF_CLOSE_BTN,5); 
 	GFTooltipText( gump, "Limpar todos os filtros");
-
-	PainelBotoes(gump, params.tiposItemVendedor,params.catalogoTipoItems);
-
-	var indiceItem := 1;
-
-	PainelProduto(gump,params.itensVendidos,indiceItem ,PAINELPRODUTO_INIPOS_X,PAINELPRODUTO_INIPOS_Y,9);
-	
-	return gump;
-endfunction
-
-function PainelBotoes(byref gump,tiposItemVendedor, catalogoTipoItems)
-
-	var y := 90;
-	var x := 40;
-	var indice := 1;
 
 	foreach tipo in tiposItemVendedor
 		GFAddButton(gump, x ,y  +  PAINELBOTOES_TAMANHO_LINHA * indice,9720,9724,GF_CLOSE_BTN, catalogoTipoItems[tipo]);
@@ -63,7 +70,7 @@ function PainelBotoes(byref gump,tiposItemVendedor, catalogoTipoItems)
 
 endfunction
 
-function PainelProduto(byref gump,itemsVendidos ,indiceItem ,x,y,maxItemPagina)
+function PainelProduto(byref gump,itemsVendidos ,indiceItem ,x,y,maxItemPagina,isJogadorAdm)
 	
 	var linha := 0;
 	var paginaAtual := 1;
@@ -92,6 +99,10 @@ function PainelProduto(byref gump,itemsVendidos ,indiceItem ,x,y,maxItemPagina)
 
 		GFResizePic(gump, x + 20, y + 20, 5054, 260, 160); //brackgroud iteminfo  5054 | 3500
 		GFResizePic(gump, x + 30, y + 30, 9250, 100, 110); //foto 9250 | 94
+		if(isJogadorAdm)
+			GFHTMLArea( gump, x + 45, y + 42, 80, 20, "<BASEFONT size=4 color=#FFFFFF><center>{}".format(infoItem.nomeVendedor));
+			GFTooltipText( gump, "Nome do vendedor deste prouto");
+		endif
 		GFGumpPic(gump,x + 152,y + 149,40022); // moeda de ouro
 		GFGumpPic(gump,x + 139,y + 148,95);//detalhe esquerdo gold
 		GFGumpPic(gump,x + 260,y + 148,97);//detalhe direito gold
@@ -107,13 +118,17 @@ function PainelProduto(byref gump,itemsVendidos ,indiceItem ,x,y,maxItemPagina)
 		GFTextLine( gump, x + 149, y + 115, 1051, "A Venda" );
 		GFTextLine( gump, x + 220, y + 115, 1153, "{}".format( infoItem.item.amount / infoItem.infoCusto.lote));
 		GFTextLine( gump, x + 172, y + 148, 1153, "{}".format( infoItem.infoCusto.cost_amt));
-		GFTooltipText( gump, "{} unidades por {} moedas de ouro".format( infoItem.infoCusto.lote,infoItem.infoCusto.cost_amt ) );
+		GFTooltipText( gump, "{} unidades por {} moedas de {}".format( infoItem.infoCusto.lote,
+																		infoItem.infoCusto.cost_amt,
+																		infoItem.infoCusto.cost_name ) );
 		GFTilePic( gump, x + 58, y + 75, infoItem.item.graphic, cint( infoItem.item.color) );
-		GFItemProperty(gump, infoItem.itemSerial);
+		GFTooltip(gump, infoItem.descVenda);
 
 		GFAddButton(gump, x + 26,y + 141,4037,4036,GF_CLOSE_BTN, infoItem.serial);//comprar
 		GFTooltipText( gump, "Comprar" );
-		GFAddButton(gump, x + 66,y + 147,2639,2637, 90000 + cint( infoItem.serial));//deletar
+		if(isJogadorAdm || infoItem.isVendaJogador)
+			GFAddButton(gump, x + 66,y + 147,2639,2637, 90000 + cint( infoItem.serial));//deletar
+		endif
 
 		x += PAINELPRODUTO_COLUNA_X;
 		indiceItem += 1;
@@ -125,14 +140,20 @@ endfunction
 function ControlarPagina(byref gump,indiceItem,maxItemPagina,maxItems)
 
 	GFPage( gump, gump.cur_page + 1 );
-	GFTextLine( gump, PAINELPRODUTO_POS_CENTRO_X - 50, 571, 1153, "Página {} de {}".format( gump.cur_page, Floor(maxItems / maxItemPagina) ) );
+	var dePaginas := maxItems / maxItemPagina;
+	var resto := maxItems % maxItemPagina;
+
+	dePaginas := dePaginas <= 0 ? 1 : dePaginas;
+	dePaginas := resto >= 0? dePaginas + 1 : dePaginas;
+
+	GFTextLine( gump, PAINELPRODUTO_POS_CENTRO_X - 50, 568, 1153, "Página {} de {}".format( gump.cur_page,  dePaginas));
 	
 	if ( maxItems > maxItemPagina && indiceItem < (maxItems - maxItemPagina))
-		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X + 30, 574, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
+		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X + 40, 571, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
 	endif
 
 	if(indiceItem > maxItemPagina)
-		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X - 130, 574, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
+		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X - 75, 571, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
 	endif
 
 endfunction

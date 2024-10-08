@@ -309,7 +309,9 @@ function PreparaLojaGump(npc,player, filtros := struct)
 	params.+itensVendidos := array;
 	params.+tiposItemVendedor := GetObjProperty( npc, "item_type" );
 	params.+catalogoTipoItems := item_types;
-	params.+vendorName := npc.name;
+	params.+nomeVendedor := npc.name;
+	params.+isVendorAdm := player.cmdlevel >= 3 || above_merchant;
+	
 
 	var soldItemsData := GetItemsSoldList( npc );
 
@@ -337,14 +339,21 @@ function PreparaLojaGump(npc,player, filtros := struct)
 		infoItem.+serial := dadosItem;
 		infoItem.+item := conjuntoDados[2];
 		infoItem.+infoCusto := conjuntoDados[1];
-		infoItem.+descVenda := GetDetails( dadosItem, player );
+		infoItem.+descVenda := GetDetails( infoItem.item, player );
+		infoItem.+nomeVendedor := GetPlayerNameBySerial(infoItem.infoCusto.seller);
+		infoItem.infoCusto.cost_name := "Sestertius";
 
-		var donoDoItem := SystemFindObjectBySerial( conjuntoDados[1].seller, SYSFIND_SEARCH_OFFLINE_MOBILES );
+		
+		var donoDoItem := SystemFindObjectBySerial( infoItem.infoCusto.seller, SYSFIND_SEARCH_OFFLINE_MOBILES );
 
 		if ( !donoDoItem && infoItem.conjuntoDados.infinite != 1 )
 			RemoveItemForSale( npc, dadosItem );
 			continue;
 		endif	
+
+		if(infoItem.infoCusto.seller == player.serial || above_merchant)
+			infoItem.+isVendaJogador := true;
+		endif
 
 		params.itensVendidos.append(infoItem);
 		indiceItem := indiceItem + 1;
@@ -833,6 +842,13 @@ endfunction
 
 function GetDetails( item, who )
   var ret := "";
+
+  var membros := item.keys();
+	Print(membros);
+  foreach membro in membros
+	ret += "{}: {}<br>".format( membro, membros.membro);
+  endforeach
+  /*
   if ( item.ObjClass == "Armor" || item.ObjClass == "Weapon" )
 	ret += "Qualidade: {}<br>".format( "Normal" );
 
@@ -850,6 +866,7 @@ function GetDetails( item, who )
   if ( item.Cprops.already_used )
 	ret += "Usado<br>";
   endif
+  */
   return ret;
 endfunction
 
