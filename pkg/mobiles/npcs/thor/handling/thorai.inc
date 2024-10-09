@@ -85,8 +85,6 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
    endif
 
    context := Cstr(context);
-   print("CategoriaMob: "+CategoriaMob);
-   print("context: "+ context);
 
    var responseAI := OpenAICompletion_Thor(context, playerinput, temperatura);
    responseAI := StrReplace(responseAI, "\"", " "); // Substitui aspas por espaço
