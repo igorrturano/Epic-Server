@@ -7,24 +7,24 @@ function customizeNpc(mob)
 	var npc_elem := NPC_GetNPCConfig(mob);
 
 	var classe := npc_elem.Classe;
-	var tier := npc_elem.Tier;
+	var tier := CInt(npc_elem.Tier);
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
 	
 	var mob_skill := 0;
 	if (tier == 1)
-		mob_skill += RandomIntMinMax(20, 40);
+		mob_skill += RandomIntMinMax(20, 40+1);
 	elseif (tier == 2)
-		mob_skill += RandomIntMinMax(40, 60);
+		mob_skill += RandomIntMinMax(40, 60+1);
 	elseif (tier == 3)
-		mob_skill += RandomIntMinMax(60, 80);
+		mob_skill += RandomIntMinMax(60, 80+1);
 	elseif (tier == 4)
-		mob_skill += RandomIntMinMax(80, 100);
+		mob_skill += RandomIntMinMax(80, 100+1);
 	elseif (tier == 5)
-		mob_skill += RandomIntMinMax(100, 120);
+		mob_skill += RandomIntMinMax(100, 120+1);
 	else
-		mob_skill += RandomIntMinMax(0, 20);
+		mob_skill += RandomIntMinMax(0, 20+1);
 	endif
 
 	if (classe == SABIO)
