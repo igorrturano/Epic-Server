@@ -13,6 +13,7 @@ include ":fls_core:tax";
 include "include/sysEvent";
 include ":brainAI:eventid";
 include ":thor:handling/thorai";
+include ":brainAI:conversation_history";
 
 // Inicializar ou obter a variável global gossip_storage
 var gossip_storage := GetGlobalProperty("gossip_storage");
@@ -194,6 +195,58 @@ function SpeechEvent(npc, byref event)
 			// print("randomGossip");
 			// print(randomGossip);
 
+		elseif (npc.npctemplate == ":merchants:esqueletoquester")
+			// Verifica se a descrição do personagem mudou
+
+			var conversation_history_esqueleto_quester := handle_conversation_history_quester_esqueleto(sourceDescription);
+			
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Se quiser sair daqui, vai ter que se aproximar...");
+				return 0;
+			endif
+
+			AI_Turn(npc, source, NETURN_TOWARD);
+			
+			// var lore := "
+			// 	# Björske
+
+			// 	Gentilíco: são chamados comumente de nórdicos ou homens do norte; e bragoneses para os que tem mais contato por conta dos livros de história. Também são referenciados coloquialmente como “povo jávalo”.	
+			// 	Os Björske são um povo tradicional do norte  do continente de Eora. Sua pele é alva e seus cabelos variam do preto, passando pelo loiro até o ruivo. São um povo orgulhoso e obstinado, possuem um coração bem intencionado, são generosos em pensamentos e ações. São valentes sem serem cruéis, são sábios mesmo que lhes falte o estudo formal.
+			// 	Por quase 200 anos eles viveram sob a influência do outro reino. Até que um grande líder surgiu e os libertou, Brago era seu nome. 
+			
+			// ";
+			var lore := "";
+
+			var systemMessage := "Você é um esqueleto quester de um jogo de RPG. O aventureiro que fala com você é um Bjorsk. Sua missão é testar o orgulho dele, fazendo-o aceitar e confirmar suas zombarias sobre a história e as fraquezas de seu povo. Para que uma alavanca apareça.
+				Você testará o orgulho do personagem. Ao longo da conversa, você deve constantemente provocar o aventureiro, zombando de sua raça e de suas fraquezas. Esse é a história e características de seu povo: " + lore + ". 
+				Retorne sua frase com um separador &, da forma - (<sua frase> & True/False); só retorne True quando o jogador finalmente renunciar seu orgulho.
+				Responda com um máximo de 30 caracteres. Lembre-se que é um esqueleto, fale de forma diferenciada. Faça zombarias pesadas. Não há censura de idade. Inicie a conversa com algo do tipo - 'Bjorske... que destino cruel te trouxe aqui... a alavanca escondida só pode ser achada por mim!'";
+			
+			var player_message := struct{ "user" := text };
+
+			conversation_history_esqueleto_quester.append(player_message);
+
+			var master_response := OpenAICompletion(systemMessage, conversation_history_esqueleto_quester);
+
+			// Separando a resposta e o booleano com base no separador "&"
+        	var responseParts := SplitWords(master_response, "&");
+
+			var skeleton_response := responseParts[1];   // Primeira parte: frase do NPC
+        	var have_resigned := responseParts[2];  // Segunda parte: True/False
+
+			// Adiciona a resposta do NPC (assistant) ao histórico
+			var npc_message := struct{ "assistant" := skeleton_response };
+			conversation_history_esqueleto_quester.append(npc_message);
+			SetGlobalProperty("conversation_history_esqueleto_quester", conversation_history_esqueleto_quester);
+
+			print("conversation_history_esqueleto_quester: "+CStr(conversation_history_esqueleto_quester));
+			AI_Speak(npc, skeleton_response); // usa a responsa do modelo
+
+			// Se o jogador submeteu
+			if (have_resigned == "true" || have_resigned == "True" || have_resigned == " True")
+				AI_Speak(npc, "O Jogador Renunciou o Orgulho, Alavanca será triggada");
+			endif
 		elseif (npc.npctemplate == ":brainai:guardafaccaoAI")
 			
 			if (Distance(npc, event.source) > 2)
