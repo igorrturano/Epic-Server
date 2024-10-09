@@ -25,3 +25,4 @@ jobs:
             git checkout develop
             git pull
             ./compilar.sh
+            systemctl restart pol-dev
