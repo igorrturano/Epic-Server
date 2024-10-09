@@ -13,7 +13,7 @@ include "include/say";
 include ":tn:recipes";
 include ":gumps:yesNo";
 include ":gumps:requestGump";
-
+include ":equipsys:resources";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 
@@ -313,14 +313,14 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 					var strength := cint(recipes[objtype].strength);
 					var science := (recipes[objtype].science);
 					var tier := (recipes[objtype].tier);
-					var crafterskill := AP_GetSkill(who, ALCHEMY);
+					var crafterskill := Cint((AP_GetSkill(who, ALCHEMY))/10);
 					var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
-					var bonus := (((crafterInt-50)/10)+(crafterskill/10));
+					var bonus := (((crafterInt-50)/10)+(crafterskill));
 
 					SetObjProperty(theitem, "strength", strength);
 					SetObjProperty(theitem, "bonus", bonus);
 					SetObjProperty(theitem, "tier", tier);
-					SetObjProperty(theitem, "crafterskill", crafterskill);
+					SetObjProperty(theitem, "crafterskill", crafterskill*10);
 					SetObjProperty(theitem, "science", science);
 			endif
 
@@ -333,7 +333,7 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 
 			//passando a cor pra materiais coloridos que nao tem Id proprio (como madeira)
 			AddMaterialMod(who, craft_skill, theitem, chosenPrincipalMaterial, materialColor);
-			NovoSistemaDeItens(who, theitem, TOGGLELVL_CRAFT, 2); //[3] E [4] SÃO TOGGLES NO propitens.inc PARA LIMITAR O USO EM FASE DE TESTES
+			// NovoSistemaDeItens(who, theitem, TOGGLELVL_CRAFT, 2); //[3] E [4] SÃO TOGGLES NO propitens.inc PARA LIMITAR O USO EM FASE DE TESTES
 			CraftExceptional(who, theitem, craft_skill, skillreq);
 			CraftLockable(who, theitem);
 
@@ -479,7 +479,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 	elseif (theitem.IsA(POLCLASS_ARMOR)) var hpmod := ResistMods[6];
 	endif
 
-	var attr := PegarProp(theitem);
+	// var attr := PegarProp(theitem);
 
 	if(theitem.isA(POLCLASS_WEAPON))
         var cfg:=ReadConfigFile(":combat:itemdesc");
@@ -496,31 +496,31 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 			//Aplica velocidade extra em armas de metal
 			if(TemHabilidade(who,"Armas Velozes"))
 				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed*0.1)); //Bors sugestão - Bonus habs de 10%
-				attr["hab_speedmod"] := CInt(elem.Speed*0.1);
+				// attr["hab_speedmod"] := CInt(elem.Speed*0.1);
 				//theitem.speed_mod := CInt(elem.Speed*0.1);
 			endif
 
 			if(TemHabilidade(who,"Armas Letais") && (elem.TipoAtaque == "Cortante"))
 				theitem.dmg_mod := theitem.dmg_mod + CInt(elem.MaxDam * 0.1); //Bors sugestão - Bonus habs de 10%
-				attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
+				// attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
 			endif
 			if(TemHabilidade(who,"Armas Letais") && (elem.TipoAtaque == "Perfurante"))
 				theitem.dmg_mod := theitem.dmg_mod + CInt(elem.MaxDam * 0.1); //Bors sugestão - Bonus habs de 10%
-				attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
+				// attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
 			endif
 			if(TemHabilidade(who,"Armas Letais") && (elem.TipoAtaque == "Contusivo"))
 				theitem.dmg_mod := theitem.dmg_mod + CInt(elem.MaxDam * 0.1); //Bors sugestão - Bonus habs de 10%
-				attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
+				// attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
 			endif
 		elseif(craft_skill == "Wood_Working")
 			if(TemHabilidade(who,"Entalhe para Combate"))
 				SetObjProperty(theitem,"attackspeedbonus", CInt(elem.Speed*0.1)); //Bors sugestão - Bonus habs de 10%
-				attr["hab_speedmod"] := CInt(elem.Speed*0.1);
+				// attr["hab_speedmod"] := CInt(elem.Speed*0.1);
 				//theitem.speed_mod := CInt(elem.Speed*0.1);
 			endif
 			if(TemHabilidade(who,"Flexao da Madeira") && (Cint(elem.maxrange) > 2))
 				theitem.dmg_mod := theitem.dmg_mod + CInt(elem.MaxDam * 0.1); //Bors sugestão - Bonus habs de 10%
-				attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
+				// attr["hab_dmgmod"] := CInt(elem.MaxDam * 0.1);
 			endif
 		endif
 	elseif(theitem.isA(POLCLASS_ARMOR))
@@ -535,10 +535,10 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 	        theitem.resist_energy_mod := theitem.resist_energy_mod + 2 * Cint(ResistMods[5]);
 
 			//attr["hab_physicalmod"] := CInt(ResistMods[1]);
-			attr["hab_firemod"] := CInt(ResistMods[2]);
-			attr["hab_coldmod"] := CInt(ResistMods[3]);
-			attr["hab_poisonmod"] := CInt(ResistMods[4]);
-			attr["hab_energymod"] := CInt(ResistMods[5]);
+			// attr["hab_firemod"] := CInt(ResistMods[2]);
+			// attr["hab_coldmod"] := CInt(ResistMods[3]);
+			// attr["hab_poisonmod"] := CInt(ResistMods[4]);
+			// attr["hab_energymod"] := CInt(ResistMods[5]);
 	    else
 	    	theitem.resist_physical_mod := theitem.resist_physical_mod + Cint(ResistMods[1]);
 	        theitem.resist_fire_mod := theitem.resist_fire_mod + Cint(ResistMods[2]);
@@ -577,7 +577,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 							DexPenBonus := CInt(DexPenBonus)+1; // Bors verificar se funciona - Bônus da hab -1 de penalidade sempre.
 		    		endcase
 		    		SetObjProperty(theitem, "penaltybonus", DexPenBonus);
-					attr["hab_dexpenmod"] := DexPenBonus;
+					// attr["hab_dexpenmod"] := DexPenBonus;
 		    	endif
 			endif
 
@@ -585,23 +585,23 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 				//SendSysMessage(who, "Faz Armaduras sem Brechas: ");
 				if(theitem.resist_fire != 0)
 					theitem.resist_fire_mod := theitem.resist_fire_mod + 1;
-					attr["hab_firemod"] := 1;
+					// attr["hab_firemod"] := 1;
 				endif
 				if(theitem.resist_cold != 0)
 		        	theitem.resist_cold_mod := theitem.resist_cold_mod + 1;
-					attr["hab_coldmod"] := 1;
+					// attr["hab_coldmod"] := 1;
 		        endif
 		        if(theitem.resist_poison != 0)
 		        	theitem.resist_poison_mod := theitem.resist_poison_mod + 1;
-					attr["hab_poisonmod"] := 1;
+					// attr["hab_poisonmod"] := 1;
 		    	endif
 		        if(theitem.resist_energy != 0)
 		        	theitem.resist_energy_mod := theitem.resist_energy_mod + 1;
-					attr["hab_energymod"] := 1;
+					// attr["hab_energymod"] := 1;
 		        endif
 		        if(theitem.resist_physical != 0)
 		        	theitem.resist_physical_mod := theitem.resist_physical_mod + 1;
-					attr["hab_physicalmod"] := 1;
+					// attr["hab_physicalmod"] := 1;
 				endif
 			endif
 
@@ -614,7 +614,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 						parrybonus := CInt(parrybonus*1.1) + 2; //Bors sugestão muda de *1.5 +5, para *1.1 +2
 		    		endif
 		    		SetObjProperty(theitem, "parrybonus", parrybonus);
-					attr["hab_parrymod"] := parrybonus;
+					// attr["hab_parrymod"] := parrybonus;
 				endif
 				if(TemHabilidade(who,"Escudos Dissipadores"))
 					var parrydelay_mod := Cint(elem.parrydelay);
@@ -635,7 +635,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 		    					parrydelay_mod := CInt(parrydelay_mod-1); // Bors verificar se funciona - Bônus da hab -1 de penalidade sempre.
 			    		endcase
 			    		SetObjProperty(theitem, "parrydelay_mod", parrydelay_mod);
-						attr["hab_parrydelaymod"] := parrydelay_mod;
+						// attr["hab_parrydelaymod"] := parrydelay_mod;
 			    	endif
 				endif
 			endif
@@ -658,7 +658,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 							DexPenBonus := CInt(DexPenBonus)+1; // Bors verificar se funciona - Bônus da hab -1 de penalidade sempre.
 		    		endcase
 		    		SetObjProperty(theitem, "penaltybonus", DexPenBonus);
-					attr["hab_dexpenmod"] := DexPenBonus;
+					// attr["hab_dexpenmod"] := DexPenBonus;
 		    	endif
 		    	if((CInt(elem.parrybonus) != 0) || CInt(elem.parrydelay) != 0) //Verifica se é escudo
 					var parrybonus := Cint(elem.parrybonus);
@@ -668,7 +668,7 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 		    			parrybonus := CInt(parrybonus*1.1) + 2; //Bors sugestão muda de *1.5 +5, para *1.1 +2
 		    		endif
 		    		SetObjProperty(theitem, "parrybonus", parrybonus);
-					attr["hab_parrymod"] := parrybonus;
+					// attr["hab_parrymod"] := parrybonus;
 				endif
 			endif
 		elseif(craft_skill == "Domestic_Work")
@@ -684,8 +684,8 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 						endcase
 						ct := ct + 1;
 					endwhile
-					attr["hab_firemod"] := bonusfire;
-					attr["hab_coldmod"] := bonuscold;
+					// attr["hab_firemod"] := bonusfire;
+					// attr["hab_coldmod"] := bonuscold;
 				endif
 			else
 				if(TemHabilidade(who,"Tratar Tecido e Couro"))
@@ -699,8 +699,8 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 						endcase
 						ct := ct + 1;
 					endwhile
-					attr["hab_energymod"] := bonusenergy;
-					attr["hab_poisonmod"] := bonuspoison;
+					// attr["hab_energymod"] := bonusenergy;
+					// attr["hab_poisonmod"] := bonuspoison;
 				endif
 
 			endif
@@ -714,14 +714,14 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 
 	//Adiciona modificador do material
 	theitem.maxhp_mod := theitem.maxhp_mod + hpmod;
-	attr["base_hpmod"] := theitem.maxhp_mod;
+	// attr["base_hpmod"] := theitem.maxhp_mod;
 
 	if(craft_skill == "Metal_Working")
 		//Adiciona modificador de Habilidade de nível
 		if(TemHabilidade(who,"Preparo do Metal"))
 			//(HP total x 1.5) x (HP total - HP inicial)
 			var temp := (theitem.maxhp * 1.5) - (theitem.maxhp-theitem.maxhp_mod);
-			attr["hab_hpmod"] := CInt(temp);
+			// attr["hab_hpmod"] := CInt(temp);
 			theitem.maxhp_mod := CInt(temp);
 		endif
 	elseif(craft_skill == "Wood_Working")
@@ -729,19 +729,19 @@ function AddMaterialMod(who, craft_skill, theitem, principalMaterial, materialCo
 			//(HP total x 1.5) x (HP total - HP inicial)
 			var temp := (theitem.maxhp * 1.5) - (theitem.maxhp-theitem.maxhp_mod);
 			theitem.maxhp_mod := CInt(temp);
-			attr["hab_hpmod"] := CInt(temp);
+			// attr["hab_hpmod"] := CInt(temp);
 		endif
 	elseif(craft_skill == "Domestic_Work")
 		if(TemHabilidade(who,"Alta Costura"))
 			//(HP total x 1.5) x (HP total - HP inicial)
 			var temp := (theitem.maxhp * 1.5) - (theitem.maxhp-theitem.maxhp_mod);
 			theitem.maxhp_mod := CInt(temp);
-			attr["hab_hpmod"] := CInt(temp);
+			// attr["hab_hpmod"] := CInt(temp);
 		endif
 
 	endif
 
-	SetarProp(theitem, attr); //ATIVAR
+	// SetarProp(theitem, attr); //ATIVAR
 
 	//Atualiza o HP
 	theitem.hp := theitem.maxhp;
@@ -751,12 +751,12 @@ function CraftExceptional(who, byref theitem, craft_skill, skillreq)
 	var cfg := ReadConfigFile(":*:itemdesc");
 	var elem := FindConfigElem(cfg, theitem.objtype);
 	if(craft_config[theitem.objtype].Exceptional == 1)
-		var attr := PegarProp(theitem);
+		// var attr := PegarProp(theitem);
 		//var attr_excp := PegarPropExcep(theitem);
 		var qualidade := ExceptionalCraft(who, craft_skill, theitem, AP_GetSkill(who, craft_skill), skillreq);
 		theitem.quality := qualidade;
-		attr["Quality"] := qualidade;
-		SetarProp(theitem, attr); //ATIVAR
+		// attr["Quality"] := qualidade;
+		// SetarProp(theitem, attr); //ATIVAR
 
 
 		if(qualidade >= 1.2)

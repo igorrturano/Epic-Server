@@ -5,6 +5,7 @@ include ":disguise:disguise";
 include ":charactercreation:createchar";
 include ":tn:tngumps";
 include "include/epicConstants";
+include ":gumps:epicGumps";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 

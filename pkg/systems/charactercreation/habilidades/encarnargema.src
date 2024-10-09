@@ -5,7 +5,7 @@ include ":combat:damage";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":spells:summon";
 
 program manobra(who)

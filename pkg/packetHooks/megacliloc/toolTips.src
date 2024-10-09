@@ -9,15 +9,15 @@ use cfgfile;
 
 use os;
 
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":tn:boss";
 include "include/client";
 include "include/say";
 include "include/epicCombatUtils";
+include ":custompizza:itemrp/include/lore_items";
 include ":combat:damage";
-
 
 const OFFSET_OBJECT_SERIAL   := 0x05;
 const OFFSET_CLILOC_ID       := 0x0F;
@@ -100,7 +100,7 @@ endfunction
 
 function getCondition(item) //Durabilidade dos itens
 	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
-	
+
 	var c := cdbl(item.hp) / cdbl(item.maxhp);
 
 	if (c > 0.9)
@@ -112,7 +112,7 @@ function getCondition(item) //Durabilidade dos itens
 	else
 		return "Quebradiça";
 	endif
-	
+
 endfunction
 
 function TranslateCritical(crit)
@@ -295,7 +295,7 @@ exported function MegaCliloc( who, byref packet )
 
 	var Object_Name;
 
-	var xDesc; //Será utilizado para juntar as informações do tooltip do item
+	var xDesc := ""; //Será utilizado para juntar as informações do tooltip do item
 	var desc; //Salva o campo de descrição do item ou personagem
 
 	//Encontra o objeto que terá o tooltip preenchido
@@ -352,6 +352,7 @@ exported function MegaCliloc( who, byref packet )
 						if(conhecidos.Exists(ID))
 							Object_Name := conhecidos[ID];
 						else
+
 							Object_Name := item.name;
 						endif
 					else
@@ -369,6 +370,41 @@ exported function MegaCliloc( who, byref packet )
 			else
 				Object_Name := item.desc;
 			endif
+
+                // Verifica se é um item de lore
+                        var is_lore_item := GetObjProperty(item, "IsLoreItem");
+                        if (!is_lore_item)
+                            var cfg := ReadConfigFile(":*:itemdesc");
+                            var elem := FindConfigElem(cfg, item.objtype);
+                            if (elem)
+                                is_lore_item := GetConfigInt(elem, "IsLoreItem");
+                            endif
+                        endif
+
+                        // Se for um item de lore, adiciona todas as informações relevantes
+                        if (is_lore_item)
+                            var item_info := GetLoreItemInfo(item.objtype);
+                            if (item_info)
+                                Object_Name := Object_Name + "<br><BASEFONT COLOR=#FFD700>Item Lendário";
+                                Object_Name := Object_Name + "<br><BASEFONT COLOR=#FFFFFF>Povo: " + item_info.culture_name;
+
+                                // Verifica se o item já foi avaliado por um especialista
+                                var evaluated_skill := GetObjProperty(item, "evaluated_skill");
+                                if (evaluated_skill)
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#d98cd9>Esse item foi avaliado por um " + TraduzirProfissao(item_info.required_skill);
+                                else
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#d98cd9>" + GetConsultaEspecialistaTexto(item_info.required_skill);
+                                endif
+
+                                // Verifica se o item já foi examinado por um arqueólogo
+                                var evaluated_archaeology := GetObjProperty(item, "evaluated_archaeology");
+                                if (evaluated_archaeology)
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#a1eca7>Esse item foi avaliado por um Arqueólogo";
+                                else
+                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#a1eca7>Consulte um Arqueólogo";
+                                endif
+                            endif
+                        endif
 		else
 			Object_Name := item.name;
 		endif
@@ -454,19 +490,44 @@ exported function MegaCliloc( who, byref packet )
 		endif
 
 		//VERIFICA PROPRIEDADES DE IDIOMAS
-		if (desc!=error)
-			var linguagem := GetObjProperty(item, "lingua");
-			if (linguagem!=error)
-				var linguas := GetObjProperty(who, "linguas_conhecidas");
-				if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
-					xDesc := xDesc + white + "" + desc + "<br>";
-				else
-					xDesc :=  xDesc + "*Inscrições em Língua Desconhecida*<br>";
-				endif
-			else
-				xDesc := xDesc + white + "" + desc + "<br>";
-			endif
-		endif
+            var description := GetObjProperty(item, "description");
+            var linguagem := GetObjProperty(item, "lingua");
+
+            if (linguagem != error)
+                xDesc := xDesc + "<BASEFONT COLOR=#FFD700>[Artefato Arqueológico]<br>";
+
+                if (description != error && description != "")
+                    var linguas_conhecidas := GetObjProperty(who, "linguas_conhecidas");
+                    if (!linguas_conhecidas)
+                        linguas_conhecidas := array{};
+                    endif
+
+                    var pode_ler := 0;
+                    var tooltip := "";
+
+                    if (linguagem in linguas_conhecidas)
+                        pode_ler := 1;
+                        tooltip := "<BASEFONT COLOR=#C0C0C0>Você sabe ler essa língua<br>";
+                    elseif (linguagem == "Antiga" && temHabilidade(who, "Arqueologo"))
+                        pode_ler := 1;
+                        tooltip := "<BASEFONT COLOR=#C0C0C0>A arqueologia permitiu decifrar essa língua morta<br>";
+                    elseif (temHabilidade(who, "Arqueologo"))
+                        pode_ler := 1;
+                        tooltip := "<BASEFONT COLOR=#C0C0C0>Seu conhecimento de arqueologia decifrou a escrita<br>";
+                    endif
+
+                    if (pode_ler)
+                        xDesc := xDesc + tooltip + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
+                    else
+                        xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Inscrições em Língua Desconhecida*<br>";
+                        xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Não foi decifrado*<br>";
+                    endif
+                else
+                    xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Sem inscrições visíveis*<br>";
+                endif
+            elseif (description != error && description != "")
+                xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
+            endif
 
 		//ADICIONA DESCRIÇÕES DAS PROPRIEDADES COMUNDS DE ARMAS E ARMADURAS
 		if (item.isA(POLCLASS_WEAPON) || item.isA(POLCLASS_ARMOR))
@@ -588,7 +649,23 @@ exported function MegaCliloc( who, byref packet )
 		if ( pplmage != error)
 			if (who.serial in pplmage)
 				if (GetObjProperty(item, "pocaoname"))
-					xDesc := xDesc + white + GetObjProperty(item, "pocaoname");
+					xDesc := xDesc + white + GetObjProperty(item, "pocaoname") + "<br>";
+					var potencia := getobjProperty(item, "crafterskill");
+					case(potencia)
+						0: potencia := "Inábil";
+						10: potencia := "Incompetente";
+						20: potencia := "Inexperiente";
+						30: potencia := "Iniciante";
+						40: potencia := "Aprendiz";
+						50: potencia := "Habilidoso";
+						60: potencia := "Treinado";
+						70: potencia := "Competente";
+						80: potencia := "Experiente";
+						90: potencia := "Mestre";
+						100: potencia := "Grão Mestre";
+						110: potencia := "Lendário";
+					endcase
+					xDesc := xDesc + roxo + potencia + "<br>";
 				endif
 				var mods := GetObjProperty(item, "equip");
 				if (mods != error)
@@ -627,6 +704,10 @@ exported function MegaCliloc( who, byref packet )
 			endif
 		endif
 
+		if (getobjproperty(item, "goles"))
+			xDesc := xDesc + blueice + GetObjProperty(item, "goles") + " doses";
+		endif
+
 		//MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DAS DESCRIÇÕES
 		xDesc := CAscZ(xDesc);
 
@@ -649,4 +730,37 @@ exported function MegaCliloc( who, byref packet )
 
 	return 0;
 
+endfunction
+
+function TraduzirProfissao(profissao)
+    case (profissao)
+        "Metal_Working": return "Ferreiro";
+        "Alchemy": return "Alquimista";
+        "Magery": return "Mago";
+        "Survival": return "Sobrevivencialista";
+        "Medicine": return "Médico";
+        "Domestic_Work": return "Trabalhador Doméstico";
+        "Mechanics": return "Mecânico";
+        "Wood_Working": return "Carpinteiro";
+        "Gathering": return "Coletor";
+        "Handle_Animal": return "Adestrador de Animais";
+        default: return profissao;
+    endcase
+endfunction
+
+function GetConsultaEspecialistaTexto(profissao)
+    var profissao_traduzida := TraduzirProfissao(profissao);
+    case (profissao_traduzida)
+        "Ferreiro": return "Consulte um Ferreiro";
+        "Alquimista": return "Consulte um Alquimista";
+        "Mago": return "Consulte um Mago";
+        "Sobrevivencialista": return "Consulte um Sobrevivencialista";
+        "Médico": return "Consulte um Médico";
+        "Trabalhador Doméstico": return "Consulte um Trabalhador Doméstico";
+        "Mecânico": return "Consulte um Mecânico";
+        "Carpinteiro": return "Consulte um Carpinteiro";
+        "Coletor": return "Consulte um Coletor";
+        "Adestrador de Animais": return "Consulte um Adestrador de Animais";
+        default: return "Consulte um especialista em " + profissao_traduzida;
+    endcase
 endfunction

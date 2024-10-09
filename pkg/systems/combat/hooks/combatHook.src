@@ -46,6 +46,10 @@ var npc_cfg	:= ReadConfigFile(":*:npcdesc");
 var wpn_a, wpn_d;
 var wpn_a_elem, wpn_d_elem;
 
+enum DAMAGEHAND
+	DAMAGE_MAINHAND, DAMAGE_OFFHAND
+endenum
+
 program Install()
 	print("INSTALLING: AttackHook ... OK!");
 	print("");
@@ -70,11 +74,17 @@ exported function Attack(attacker, defender)
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
+	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
+	DebugMsg(attacker, DEBUG_DAMAGE, "=================");
+	DebugMsg(attacker, DEBUG_DAMAGE, "ATAQUE INICIADO!");
+	DebugMsg(attacker, DEBUG_DAMAGE, "=================");
+	DebugMsg(attacker, DEBUG_DAMAGE, "Mão -> MainHand");
 	var hitchance := CInt(CalculateHitChance(attacker, defender));
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Chance de acerto: "+hitchance);
+	DebugMsg(attacker, DEBUG_DAMAGE, "Chance de acerto: "+hitchance);
 	var rolldice := RandomDiceRoll("1d100");
-	DebugMsg(attacker, DEBUG_NAME_DAMAGE, "Rolagem de acerto: "+rolldice);
+	DebugMsg(attacker, DEBUG_DAMAGE, "Rolagem de acerto: "+rolldice);
 	if ( rolldice < hitchance )
+		DebugMsg(attacker, DEBUG_DAMAGE, "***SUCESSO!***");
         if (defender.frozen)
             defender.frozen := 0;
         endif
@@ -85,6 +95,7 @@ exported function Attack(attacker, defender)
 		EpicApplyDamage(attacker, defender, DAMAGE_MAINHAND);
 
 	else
+		DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
 		PlayMissSound(attacker);
 		PlayAttackAnimation(attacker);
 		
@@ -92,21 +103,27 @@ exported function Attack(attacker, defender)
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
 
-	if (wpn_a_elem.OffHandDamage) // Se é DualWield ataca novamente com a penalidade de acerto
+	if (IsDualWield(attacker.weapon) && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
+		Start_Script("weaponHitScripts/AttackAnimation", {attacker, 500});
+		DebugMsg(attacker, DEBUG_DAMAGE, "Mão -> OffHand");
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
 		if (penalty < 10)
 			penalty := 10;
 		endif
 
 		hitchance -= penalty;
+		DebugMsg(attacker, DEBUG_DAMAGE, "Chance de acerto: "+hitchance);
 		rolldice := RandomDiceRoll("1d100");
+		DebugMsg(attacker, DEBUG_DAMAGE, "Rolagem de acerto: "+rolldice);
 		if ( rolldice < hitchance )
+			DebugMsg(attacker, DEBUG_DAMAGE, "***SUCESSO!***");
 			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
 			EpicApplyDamage(attacker, defender, DAMAGE_OFFHAND);
 
 		else
+			DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
 			PlayMissSound(attacker);
 
 			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -154,10 +171,6 @@ function CanAttack(attacker, defender)
 		return 0;
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
-	// elseif ( !throwCheckCombatHook(attacker, defender) )
-	// 	return 0;
-	//elseif ( GetCooldown(attacker, "deathtime") > 0 )
-	//	return 0;
 	endif
 	
 	return 1;
@@ -771,12 +784,15 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 endfunction
 
 function EpicApplyDamage(attacker, defender, weaponHand)
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
-	dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+
+	if (!weaponHand)
+		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+	else
+		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, 500});
+	endif
 endfunction
 
 // Arqueiros
@@ -867,7 +883,7 @@ function arcane_shooting(attacker, defender)
 		return 1;
 	endif
 
-	if (!DamageMANA(attacker, 5))
+	if (!DamageMANA(attacker, 4))
 		SendSysMessage(attacker, "Você está sem mana!");
 		return 0;
 	endif
@@ -981,6 +997,11 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
     var attacker_race := GetObjProperty(attacker, "chardata").raca;
     var in_darkness := InDarkness(attacker);
 	var darkness_intensity := "muita";
+	var metamorfose := GetObjProperty(attacker, "metamorfose");
+	if (metamorfose)
+		return;
+	endif
+
     if (in_darkness && attacker_race != DROW)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)

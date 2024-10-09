@@ -1,0 +1,49 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":combat:damage";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":charactercreation:resists";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+	var spell_circle := spell.Circle;
+	params := 0; // No longer needed
+
+	if (!GetObjProperty(targ, "#sleep"))
+		SendSysMessageEx(who, "O alvo precisa estar dormindo antes.");
+		return 1;
+	endif
+
+	var dmg := epicSpellDamageRoll(who, spell_circle);
+	dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, VONTADE, diff, -bonus))
+		dmg := dmg/2;
+	endif
+
+	if (temHabilidade(who, "Sacrificio da Carne"))
+		if (isBloodied(who))
+			dmg := CInt(dmg*1.5);
+		endif
+	endif
+	DamageFLS(targ, dmg, DMG_FORCED, who);
+	PrintTextAbovePrivate(targ, "-"+dmg + " Vida", who, 3, 38); // vermelho
+
+	handleSilentMagic(who, who, 385);
+
+	SendSysMessageEx(who, "O alvo esta tendo sonhos terriveis.", SSM_INFO);
+	Corromper(who, 31, targ);
+
+	return 1;
+endprogram

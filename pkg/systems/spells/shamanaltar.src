@@ -8,7 +8,7 @@ include ":tn:tngumps";
 include "include/say";
 include ":attributes:attributes";
 //include ":spells:tnmagery";
-include "include/tnmagery";
+include ":spells:include/tnmagery";
 include ":timeUtils:time";
 include "include/epicConstants";
 include "include/epicMageryUtils";

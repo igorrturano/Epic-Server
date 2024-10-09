@@ -1,0 +1,77 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+
+    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var dist := Distance(who, targ);
+    var dist_allowed := distanceAllowedForSpells(who, mlore, VELKYN);
+
+    if (dist > dist_allowed)
+        SendSysMessage(who, "O alvo esta muito distante");
+        return 0;
+    endif
+
+	params := 0; // No longer needed
+	var skill := Cint(AP_GetSkill(who, "Magery"));
+	var nuvemarray := array;
+	Set_Critical(1);
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y, targ.z , 14624, 1 , targ.realm));
+	if (skill > 55)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 60)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 70)
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 80)
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y - 1, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y, targ.z , 14624, 1 , targ.realm));
+	endif
+	if (skill > 90)
+	nuvemarray.append(CreateItemAtLocation(targ.x - 1, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 1, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	nuvemarray.append(CreateItemAtLocation(targ.x + 2, targ.y + 2, targ.z , 14624, 1 , targ.realm));
+	endif
+	Corromper(who, 21, 0);
+	var duration := cint(AP_GetSkill(who, MAGICLORE)/20);
+
+	if (TemHabilidade(who, "Valdruk"))
+		duration := Cint(duration * 1.2);
+	endif
+
+	foreach item in nuvemarray
+		item.graphic := 14120;
+		item.name := "Nuvem Nefasta";
+		item.color := 563;
+		item.setDuration( duration );
+		var lvl :=  cint(AP_GetSkill(who, MAGICLORE)/20);
+		if (lvl < 1 )
+			lvl := 1;
+		endif
+		SetObjProperty(item, "PoisonLevel", lvl);
+	endforeach
+	Set_Critical(0);
+
+	return 1;
+endprogram
