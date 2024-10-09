@@ -96,7 +96,7 @@ function IsRaging(mobile)
 	//Bonus da habilidde baixo limiar de furia -> Nazg Khalug
 	var bonus_limiar_furia_hp := 0;
 	if (TemHabilidade(mobile, "Nazg Khalug"))
-		bonus_limiar_furia_hp := bonus_limiar_furia_hp + 100;
+		bonus_limiar_furia_hp := bonus_limiar_furia_hp + 25;
 	endif
 
 	if (!mobile.npctemplate && AP_GetVital(mobile, HITS) <= (GetHP(mobile) + bonus_limiar_furia_hp))
