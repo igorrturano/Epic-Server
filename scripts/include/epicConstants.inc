@@ -75,3 +75,9 @@ enum RESIST_DIFF
 	RESIST_EXTREMELY_HARD := 30,
 	RESIST_ALMOST_IMPOSSIBLE := 35
 endenum
+
+enum MOEDAS
+	SESTERTIUS := 0xBA63, // cobre
+	DENARIUS := 0xBA64, // prata
+	AUREUS := 0xBA65 // ouro
+endenum
