@@ -50,7 +50,8 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
   endif
   PrintText(character, "*usa uma pocao*");
   var goles;
-
+  var objtype := GetObjType(potion);
+  
 	if (!GetObjProperty(potion, "goles"))
 		goles := cint(GetObjProperty(potion, "crafterskill") / 20);
 		SetObjProperty(potion, "goles", goles);
@@ -64,8 +65,15 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
 
 	if (goles > 1)
 		goles := goles - 1;
-		SetObjProperty(potion, "goles", goles);
-	else
+    var props := getobjpropertynames(potion);
+    var pot2 := SubtractAmount( potion, 1 );
+    var pot := CreateItemInBackpack(character, objtype, 1);
+    foreach key in props
+      var prop_value := getobjproperty(potion, key);
+      SetObjProperty(pot, key, prop_value);
+  	endforeach
+    SetObjProperty(pot, "goles", goles);
+    else
 		SetObjProperty(potion, "acabou", 1);
 		SetObjProperty(potion, "goles", 0);
 	endif
