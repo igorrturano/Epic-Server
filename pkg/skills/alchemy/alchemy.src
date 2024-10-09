@@ -43,6 +43,7 @@ program skill_alchemy(who)
 				if (entry.Name == "extrato")
 					var objtype := GetObjProperty(item, "extrato");
 					var pot := cfg[objtype];
+					SetObjProperty(item, "pocaoname", "Extrato de " + pot.Type);
 					SendSysMessageEx(who, "Voce identificou o liquido do frasco: Extrato de " + pot.Type, SSM_INFO);
 				else
 					SetObjProperty(item, "pocaoname", entry.Type);
