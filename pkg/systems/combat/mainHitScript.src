@@ -98,7 +98,7 @@ program MainHitScript(params)
 	DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage);
 
 	// Checa as habilidades e aplica seus efeitos e danos
-	// CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
+	CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage);
 	
 	// Aplica o dano físico da arma abatendo a defesa do defensor
 	DamageEpicCombat(attacker, defender, armor, basedamage, dmgType);
