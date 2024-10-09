@@ -1,0 +1,14 @@
+
+use os;
+use uo;
+
+include ":merchants:include/cambio";
+
+program Install()
+    return 1;
+endprogram
+
+exported function spendgold( who , quantidade)
+	return EfetuaDebito(who, quantidade);
+endfunction
+
