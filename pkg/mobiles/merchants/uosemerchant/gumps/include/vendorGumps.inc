@@ -210,9 +210,8 @@ function ControlarPagina(byref gump,indiceItem,maxItemPagina,maxItems)
 	GFPage( gump, gump.cur_page + 1 );
 	var dePaginas := maxItems / maxItemPagina;
 	var resto := maxItems % maxItemPagina;
-
 	dePaginas := dePaginas <= 0 ? 1 : dePaginas;
-	dePaginas := resto >= 0? dePaginas + 1 : dePaginas;
+	dePaginas := (resto > 0) && (maxItems > maxItemPagina) ? dePaginas + 1 : dePaginas;
 
 	GFTextLine( gump, PAINELPRODUTO_POS_CENTRO_X - 50, 568, 1153, "Página {} de {}".format( gump.cur_page,  dePaginas));
 	

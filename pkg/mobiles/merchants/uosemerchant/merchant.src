@@ -295,7 +295,6 @@ function PreparaLojaGump(npc,player, filtros := struct)
 		infoItem.+descVenda := GetDetails( infoItem.item, player,infoItem.infoCusto.desc );
 		infoItem.+nomeVendedor := GetPlayerNameBySerial(infoItem.infoCusto.seller);
 		infoItem.infoCusto.cost_name := "Sestertius";
-		infoItem.infoCusto.cost_name := "Sestertius";
 		
 		var donoDoItem := SystemFindObjectBySerial( infoItem.infoCusto.seller, SYSFIND_SEARCH_OFFLINE_MOBILES );
 
