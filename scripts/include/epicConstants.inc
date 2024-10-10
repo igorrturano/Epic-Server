@@ -76,6 +76,12 @@ enum RESIST_DIFF
 	RESIST_ALMOST_IMPOSSIBLE := 35
 endenum
 
+enum MOEDAS
+	SESTERTIUS := 0xBA63, // cobre
+	DENARIUS := 0xBA64, // prata
+	AUREUS := 0xBA65 // ouro
+endenum
+
 enum HTML_TEXT_COLOR
     WHITE := "<BASEFONT COLOR=#FFFFFF>",
 	AMARELO_CLARO := "<BASEFONT COLOR=#f5d189>",

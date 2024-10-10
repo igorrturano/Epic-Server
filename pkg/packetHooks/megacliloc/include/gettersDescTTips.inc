@@ -220,7 +220,23 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 		if ( pplmage != error)
 			if (who.serial in pplmage)
 				if (PegaPropObjItemOrTemplate(objeto, "pocaoname"))
-					xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "pocaoname");
+					xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "pocaoname") + "<br>";
+					var potencia := PegaPropObjItemOrTemplate(objeto, "crafterskill");
+					case(potencia)
+						0: potencia := "Inábil";
+						10: potencia := "Incompetente";
+						20: potencia := "Inexperiente";
+						30: potencia := "Iniciante";
+						40: potencia := "Aprendiz";
+						50: potencia := "Habilidoso";
+						60: potencia := "Treinado";
+						70: potencia := "Competente";
+						80: potencia := "Experiente";
+						90: potencia := "Mestre";
+						100: potencia := "Grão Mestre";
+						110: potencia := "Lendário";
+					endcase
+					xDesc := xDesc + ROXO + potencia + "<br>";
 				endif
 				var mods := PegaPropObjItemOrTemplate(objeto, "equip");
 				if (mods != error)
@@ -259,4 +275,11 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 			endif
 		endif
 	return xDesc;
+endfunction
+
+function PegaDescGoles(objeto, xDesc)
+		if (getobjproperty(objeto, "goles"))
+			xDesc := xDesc + BLUE_ICE + GetObjProperty(objeto, "goles") + " doses";
+		endif
+		return xDesc;
 endfunction
