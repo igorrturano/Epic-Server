@@ -35,7 +35,8 @@ endfunction
 function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 
 	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
-	
+	  nomeObjeto :=  objeto.name;
+
 	var desc_npc := GetObjProperty(objeto, "descmodboss");
 
 	if (desc_npc) //Adicionado para mostrar descrição do boss
@@ -49,6 +50,8 @@ function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 		var sk1 := AP_GetSkill(quem, ONEHANDED);
 		var sk2 := AP_GetSkill(quem, TWOHANDED);
 		var sk3 := AP_GetSkill(quem, RANGED);
+		var sk4 := AP_GetSkill(quem, DUALWIELD);
+
 		var maxsk := sk1;
 		if (sk2 > maxsk)
 			maxsk := sk2;
@@ -56,10 +59,14 @@ function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 		if (sk3 > maxsk)
 			maxsk := sk3;
 		endif
+		if (sk4 > maxsk)
+			maxsk := sk4;
+		endif
 		if (AP_GetSkill(objeto, WRESTLING)+10 > maxsk)
 			nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
 		endif
 	endif
+	
 	return nomeObjeto;
 endfunction
 
