@@ -46,6 +46,11 @@ function OpenGump(who)
 			GFGumpPic(gump, x, y, 1009, COLOR_RED);
 		endif
 
+		if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
+			SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
+			return;
+		endif
+
 		var input := GFSendGump(who, gump);
 		if (input[0] == 0)
 			return;

@@ -9,7 +9,7 @@ use cfgfile;
 
 use os;
 
-include ":spells:swordmage";
+include ":spells:include/swordmage";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":tn:boss";
@@ -18,7 +18,6 @@ include "include/say";
 include "include/epicCombatUtils";
 include ":custompizza:itemrp/include/lore_items";
 include ":combat:damage";
-
 
 const OFFSET_OBJECT_SERIAL   := 0x05;
 const OFFSET_CLILOC_ID       := 0x0F;
@@ -650,7 +649,23 @@ exported function MegaCliloc( who, byref packet )
 		if ( pplmage != error)
 			if (who.serial in pplmage)
 				if (GetObjProperty(item, "pocaoname"))
-					xDesc := xDesc + white + GetObjProperty(item, "pocaoname");
+					xDesc := xDesc + white + GetObjProperty(item, "pocaoname") + "<br>";
+					var potencia := getobjProperty(item, "crafterskill");
+					case(potencia)
+						0: potencia := "Inábil";
+						10: potencia := "Incompetente";
+						20: potencia := "Inexperiente";
+						30: potencia := "Iniciante";
+						40: potencia := "Aprendiz";
+						50: potencia := "Habilidoso";
+						60: potencia := "Treinado";
+						70: potencia := "Competente";
+						80: potencia := "Experiente";
+						90: potencia := "Mestre";
+						100: potencia := "Grão Mestre";
+						110: potencia := "Lendário";
+					endcase
+					xDesc := xDesc + roxo + potencia + "<br>";
 				endif
 				var mods := GetObjProperty(item, "equip");
 				if (mods != error)
@@ -687,6 +702,10 @@ exported function MegaCliloc( who, byref packet )
 					endforeach
 				endif
 			endif
+		endif
+
+		if (getobjproperty(item, "goles"))
+			xDesc := xDesc + blueice + GetObjProperty(item, "goles") + " doses";
 		endif
 
 		//MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DAS DESCRIÇÕES

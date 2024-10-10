@@ -19,7 +19,7 @@ program loko(params)
 			TS_StartCooldown(who, cdname, cdtime);
 			PrintTextAbove(who, "*corta a palma da mao com a espada*", _DEFAULT_TEXT_FONT, 1361);
 			sleep(1);
-			PrintTextAbove(who, "Espiritos da sangria, eu vos invoco", _DEFAULT_TEXT_FONT, 1361);
+			PrintTextAbove(who, "Espiritos da magia, eu vos invoco", _DEFAULT_TEXT_FONT, 1361);
 			sleep(2);
 
 			detach();

@@ -47,11 +47,11 @@ program meditar(who)
     PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, ammo_color);   
 
     if (isFireArrow)
-        Run_Script(":spells:sangria/meteorswarm", {who, targ});
+        Run_Script(":spells:spell_logic:mage:meteorswarm", {who, targ});
     elseif(isColdArrow)
-        Run_Script(":spells:sangria/icestorm", {who, targ});
+        Run_Script(":spells:spell_logic:mage:icestorm", {who, targ});
     elseif(isEnergyArrow)
-        Run_Script(":spells:sangria/chainlightning", {who, targ});
+        Run_Script(":spells:spell_logic:mage:chainlightning", {who, targ});
     endif
 
 endprogram

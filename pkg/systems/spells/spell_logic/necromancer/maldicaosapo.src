@@ -1,0 +1,86 @@
+    use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+
+	params := 0; // No longer needed
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var graphic := targ.graphic;
+
+	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
+
+	PrintText(targ, "*transformando-se*");
+
+	targ.graphic := 81;
+	sleepms(400);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+	targ.graphic := 81;
+	sleepms(200);
+	targ.graphic := graphic;
+	sleepms(200);
+
+	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
+	var time := Cint(AP_GetSkill(who, MAGICLORE)/10) + 10;
+
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+		time := time/2;
+	endif
+
+	TS_StartTimer(targ, "weaken", time, amt, who, 0);
+	TS_StartTimer(targ, "desarmar", time, 0, who);
+	TS_StartTimer(targ, "dmgreduction", time, 4, who);
+	TS_StartTimer(Targ, "desmontar", time, 0, who);
+	TS_StartTimer(targ, "polymorph", time, 81, who);
+
+	foreach equip in ListEquippedItems( targ )
+		if ( (equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) && (equip.layer != LAYER_MOUNT) )
+				MoveObjectToLocation( equip, targ.x, targ.y, targ.z, targ.realm );
+		endif
+	endforeach
+
+	PlaySoundEffect(targ, 616); // som de sapo
+	
+	SendSysMessageEx(targ, "Voce esta com a maldicao do sapo!", SSM_FAIL);
+	Corromper(who, 4, targ);
+
+	return 1;
+endprogram
