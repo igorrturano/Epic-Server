@@ -34,17 +34,6 @@ endfunction
 
 function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
 
-  if(GetObjProperty(potion, "acabou") == 1)
-	var pot2 := SubtractAmount( potion, 1 );
-	var stacknow := GetAmount(0x0F0E);
-		if (stacknow > 0)
-			Addamount(0x0F0E, 1);
-		else
-			var pot := CreateItemInBackpack(character, 0x0F0E, 1);
-		endif
-	return 1;
-	endif
-
   if (drinkSound)
     PlaySoundEffect(character, DRINK_SOUND);
   endif
@@ -63,7 +52,7 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
 		goles := 0;
 	endif
 
-	if (goles > 1)
+  if (goles > 1)
 		goles := goles - 1;
     var props := getobjpropertynames(potion);
     var pot2 := SubtractAmount( potion, 1 );
@@ -73,9 +62,15 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
       SetObjProperty(pot, key, prop_value);
   	endforeach
     SetObjProperty(pot, "goles", goles);
-    else
-		SetObjProperty(potion, "acabou", 1);
-		SetObjProperty(potion, "goles", 0);
+  else
+    var pot2 := SubtractAmount( potion, 1 );
+	  var stacknow := GetAmount(0x0F0E);
+		if (stacknow > 0)
+			Addamount(0x0F0E, 1);
+		else
+			var pot := CreateItemInBackpack(character, 0x0F0E, 1);
+		endif
+	return 1;
 	endif
 
 endfunction

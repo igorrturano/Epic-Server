@@ -83,7 +83,7 @@ endfunction
 
 function IsBloodied(mobile)
 	if (mobile.npctemplate)
-		if (AP_GetVital(mobile, HITS) < CInt(AP_GetVitalMaximumValue(mobile, HITS)/2))
+		if (AP_GetVital(mobile, HITS) < CInt(AP_GetVitalMaximumValue(mobile, HITS)/4))
 			return 1;
 		endif
 	elseif (AP_GetVital(mobile, HITS) < GetHP(mobile))
@@ -95,9 +95,9 @@ endfunction
 function IsRaging(mobile)
 	//Bonus da habilidde baixo limiar de furia -> Nazg Khalug
 	var bonus_limiar_furia_hp := 0;
-	if (TemHabilidade(mobile, "Nazg Khalug"))
-		bonus_limiar_furia_hp := bonus_limiar_furia_hp + 25;
-	endif
+	// if (TemHabilidade(mobile, "Nazg Khalug"))
+	// 	bonus_limiar_furia_hp := bonus_limiar_furia_hp + 25;
+	// endif
 
 	if (!mobile.npctemplate && AP_GetVital(mobile, HITS) <= (GetHP(mobile) + bonus_limiar_furia_hp))
 		return 1;
