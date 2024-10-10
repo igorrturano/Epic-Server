@@ -50,7 +50,7 @@ function leaveGolem(who)
 
     var hitsmod := cint(getObjProperty(who, "golemhitsmod"));
 	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
-	var resist := cint(GetObjProperty(who, "resitmod"));
+	var resist := cint(GetObjProperty(who, "resistmod"));
 
 	who.resist_physical_mod := who.resist_physical_mod - resist;
 	who.resist_fire_mod := who.resist_fire_mod - resist;
