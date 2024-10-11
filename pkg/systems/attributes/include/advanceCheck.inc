@@ -116,11 +116,14 @@ endfunction
  * Returns 1
  */
 function CheckStatAdvancement(mobile, stat_name, stat_mult)
-    // Check if the stat cap is reached
-    if (AP_CheckStatCap(mobile, stat_name))
-        DebugMsg(mobile, DEBUG_UP, "You have reached the cap for " + stat_name + ".");
-        return 0;
-    endif
+    if ( AP_CheckStatCap(mobile, stat_name) )
+        DebugMsg(mobile, DEBUG_UP, "Voce atingiu o cap maximo para " + stat_name + ".");
+		SkillDbgMsg(mobile, "Stat cap for stat '"+stat_name+"' reached. No advance." );
+		return 0;
+	elseif ( AP_CheckStatCap(mobile) )
+        DebugMsg(mobile, DEBUG_UP, "Voce atingiu o cap maximo.");
+		return 0;
+	endif
 
     // Retrieve stat values and calculate chance of advancement
     var stat_cap := AP_GetStatCap(stat_name);
