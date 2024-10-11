@@ -39,7 +39,7 @@ endfunction
 
 function PlayHitSounds(attacker, defender)
 	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-	var npc_cfg2	:= ReadConfigFile("::npcdesc");
+	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
 	if ( wpn_a_elem2.HitSound )
 		PlaySoundEffect(attacker, wpn_a_elem2.HitSound);
