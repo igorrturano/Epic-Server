@@ -63,7 +63,7 @@ function enterGolem(who)
 	who.resist_poison_mod := resistmod;
 	who.resist_energy_mod := 0;
     
-	SetObjProperty(who, "resitmod", resistmod);
+	SetObjProperty(who, "resistmod", resistmod);
 	SetObjProperty(who, "hitsmod", hitsmod);
 
 	recalcvitals(who);
