@@ -58,6 +58,7 @@ use os;
 use util;
 
 include ":tn:characters";
+include ":commands:debugsystem";
 
 /*
  * CheckStatsForSkill(mobile, skill_name)
@@ -117,7 +118,7 @@ endfunction
 function CheckStatAdvancement(mobile, stat_name, stat_mult)
     // Check if the stat cap is reached
     if (AP_CheckStatCap(mobile, stat_name))
-        SendSysMessage(mobile, "You have reached the cap for " + stat_name + ".");
+        DebugMsg(mobile, DEBUG_UP, "You have reached the cap for " + stat_name + ".");
         return 0;
     endif
 
@@ -168,7 +169,7 @@ function CheckStatAdvancement(mobile, stat_name, stat_mult)
         SkillDbgMsg(mobile, "Passed. Advance " + stat_name + ": " + CStr(advance));
         AP_SetTrueStat(mobile, stat_name, temp);
         SetObjProperty(mobile, "#LastStatGain", ReadGameClock());
-        SendSysMessage(mobile, "Your " + stat_name + " has increased by " + CStr(advance) + "!");
+        DebugMsg(mobile, DEBUG_UP, "Your " + stat_name + " has increased by " + CStr(advance) + "!");
 
         // Handle pets: Save the skill in 'myskills' if the mobile is a pet
         if (GetObjProperty(mobile, "owner"))
@@ -181,7 +182,7 @@ function CheckStatAdvancement(mobile, stat_name, stat_mult)
             // Notify the owner if it's a pet
             var owner := GetObjProperty(mobile, "owner");
             if (owner)
-                SendSysMessage(owner, "Your pet's " + stat_name + " has increased by " + CStr(advance) + "!");
+                DebugMsg(owner, DEBUG_UP, "Your pet's " + stat_name + " has increased by " + CStr(advance) + "!");
             endif
         endif
 
@@ -228,7 +229,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         var chardata := GetObjProperty(mobile, "chardata");
         if (chardata != error) 
             SkillDbgMsg(mobile, "Nenhuma ficha Role-Play detectada.");
-            SendSysMessage(mobile, "A evolução de skills do seu personagem está bloqueada até você preencher sua ficha de Role-Play!");
+            DebugMsg(mobile, DEBUG_UP, "A evolução de skills do seu personagem está bloqueada até você preencher sua ficha de Role-Play!");
             return 0;
         endif
     endif
@@ -236,7 +237,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     // Verifica se o ganho de habilidade está desabilitado
     if (GetObjProperty(mobile, "NoGains")) 
         SkillDbgMsg(mobile, "O ganho de skill está desabilitado.");
-        SendSysMessage(mobile, "O ganho de skill está desabilitado!");
+        DebugMsg(mobile, DEBUG_UP, "O ganho de skill está desabilitado!");
         return 0;
     endif
 
@@ -244,7 +245,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     var maximo := AP_CheckClassSkillCap(mobile, skill_name);
     if (true_skill >= maximo)  
         SkillDbgMsg(mobile, "Atingiu o limite máximo da skill");
-        SendSysMessage(mobile, "Você atingiu o nível máximo da skill!");
+        DebugMsg(mobile, DEBUG_UP, "Você atingiu o nível máximo da skill!");
         return 0;
     endif
 
@@ -252,7 +253,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
 
     // Verifica o tempo de espera entre ganhos de habilidade
     if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
-        SendSysMessage(mobile, "Você precisa esperar um pouco mais antes de aumentar sua habilidade.");
+        DebugMsg(mobile, DEBUG_UP, "Você precisa esperar um pouco mais antes de aumentar sua habilidade.");
         return 0;
     endif
 
@@ -262,7 +263,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     // Verifica se o avanço da habilidade ocorre (rolagem de dados)
     if (!PerformAdvancementCheck(pass_chance)) 
         SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
-        SendSysMessage(mobile, "Você falhou em aprimorar a skill " + skill_name + ".");
+        DebugMsg(mobile, DEBUG_UP, "Você falhou em aprimorar a skill " + skill_name + ".");
         return 0;
     endif
 
@@ -271,7 +272,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         SkillDbgMsg(mobile, "Free Gain.");
     elseif (DifficultyTooEasy(true_skill, award_diff) && !(TemHabilidade(mobile, "Budōka"))) 
         // Skill too easy to increase, no advancement
-        SendSysMessage(mobile, "Esta ação está muito fácil para você aprimorar a habilidade " + skill_name + ".");
+        DebugMsg(mobile, DEBUG_UP, "Esta ação está muito fácil para você aprimorar a habilidade " + skill_name + ".");
         SkillDbgMsg(mobile, "Skill too easy to advance.");
         return 0;
     endif
@@ -299,10 +300,10 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             endif
             petskills[skill_name] := temp;
             setObjProperty(mobile, "petskills", petskills);
-            SendSysMessage(owner, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(temp) + "!");
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(temp) + "!");
         endif
     else
-        SendSysMessage(mobile, "Sua habilidade " + skill_name + " aumentou para " + CStr(temp) + "!");
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + CStr(temp) + "!");
     endif
 
     return 1;
