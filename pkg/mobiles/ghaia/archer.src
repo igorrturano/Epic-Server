@@ -4,11 +4,11 @@ use cfgfile;
 
 include ":ghaia:genericspecial";
 include ":ghaia:ghaiaspecial";
-include ":ghaia:ghaiaspecial";
 include "include/epicNPCUtils";
 
 var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
 var me := self();
+var max_z := 18;
 var idlesnd1;
 var idlesnd2;
 var areasize;
@@ -19,132 +19,135 @@ var align;
 var mytemplate;
 var throwinfo;
 var propallies;
+var wanders;
 
 program KillPlayers()
-    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
-	
-    while (1)    
-        var hasPlayerNearMe := hasPlayerNear(me);
+  Set_Script_Option( SCRIPTOPT_NO_RUNAWAY, 1 ); // Adicionado para diminuir a quantidade de logs no arquivo script.log
 
-        if (hasPlayerNearMe >= 1)
-            archercBrain();
-        endif
-        sleep(20);
-    endwhile
-
+  while ( 1 )
+    var hasPlayerNearMe := hasPlayerNear( me );
+    if ( hasPlayerNearMe >= 1 )
+      archercBrain();
+    endif
+    sleep( 20 );
+  endwhile
 endprogram
 
 function archercBrain()
-	var ev;
-	var wanders;
-	propallies := dictionary;
+  var ev;
+  InitializeNPC( me );
+  SetWarMode( 0 );
+  wanders := 60;
+  EnableMainEvents();
 
-	InitializeNPC(me);
-	SetWarMode( 0 );
-	ev := os::wait_for_event(0);
-	wanders := 60;
-	EnableMainEvents();
+  while ( me )
+    GrantPrivilege( me, "firewhilemoving" );
+    me.enable( "firewhilemoving" );
 
-    	while(me)
+    look_around();
+    wander();
+    PlayIdleSound();
 
-		GrantPrivilege(me, "firewhilemoving");
-		me.enable("firewhilemoving");
+    wanders += 1;
+    if ( wanders >= 30 )
+      wanders := 0;
+      look_around();
+      sleepmode();
+    else
+      ev := os::wait_for_event( 10 );
+      HandleEvent( ev );
+    endif
+    sleepms( 100 );
+  endwhile
+endfunction
 
-		look_around();
-		wander();
-		PlayIdleSound();
+function HandleEvent( ev )
+  if ( ev )
+    var source_valid := ev.source && abs( me.z - ev.source.z ) <= max_z;
 
-		wanders := wanders +1;
-		if(wanders >=30)
-			wanders := 0;
-			//mystate := SLEEPING;
-			look_around();
-			ev := sleepmode();
-		else
-			ev := os::wait_for_event(10);
-		endif
+    case ( ev.type )
+      SYSEVENT_ENTEREDAREA:
+        if ( source_valid && CheckLineOfSight( me, ev.source ) && CanFight( me, ev.source,
+             align ) )
+             wanders := 0;
+          Fight( ev.source );
+        endif
+      SYSEVENT_ENGAGED:
+        wanders := 0;
+        if ( source_valid )
+          Fight( ev.source );
+        endif
+      SYSEVENT_DAMAGED:
+        wanders := 0;
+        if ( source_valid )
+          Fight( ev.source );
+        endif
+      EVID_ALERT_ALLIES:
+        wanders := 0;
+        if ( source_valid )
+          Fight( ev.opponent, 1 );
+        endif
+      EVID_HERDING:
+        herd( ev );
+      EVID_TAUNT:
+        wanders := 0;
+        if ( source_valid )
+          Fight( ev.opponent );
+        endif
+      EVID_FLEE:
+        if ( ev.source )
+          flee( ev.source );
+        endif
+    endcase
+  endif
+endfunction
 
-		if(ev)
-			case(ev.type)
-				SYSEVENT_ENTEREDAREA:
-					if (CheckLineOfSight( me, ev.source ))
-						if(CanFight(me, ev.source, align)) //verifica se eh inimigo
-							wanders := 0;
-							Fight(ev.source);
-						endif
-					endif
-				SYSEVENT_ENGAGED:	wanders := 0; Fight(ev.source);
-				SYSEVENT_DAMAGED:	wanders := 0; Fight(ev.source);
-				EVID_ALERT_ALLIES:	wanders := 0; Fight(ev.opponent, 1);
-				EVID_HERDING:		herd(ev);
-				EVID_TAUNT:
-						if(ev.source)
-							wanders := 0; Fight(ev.opponent);
-						endif
-				EVID_FLEE:
-						if (ev.source)
-							flee(ev.source);
-						endif
+function CloseDistance( opponent )
 
-			endcase
-		endif
-		sleepms(100);
-	endwhile
+  var sleepdelay := 275 - me.run_speed;
+
+  if ( sleepdelay < 0 )
+	sleepdelay := 50;
+  endif
+
+  var dist := CoordinateDistance( me.x, me.y, opponent.x, opponent.y );
+  var z_diff := abs( me.z - opponent.z );
+
+  if ( z_diff > max_z )
+    RestartScript( me ); //O opponent está muito distante? Então vai reiniciar o npc
+    return 0;
+  endif
+
+  if ( dist < 4 )
+	RunAwayFrom( opponent );
+	sleepms( sleepdelay );
+  elseif ( dist > 10 )
+	RunToward( opponent );
+	sleepms( sleepdelay );
+  else
+	return 1;
+  endif
+
+  return 0;
 
 endfunction
 
-function CloseDistance(opponent)
+function ChooseAnotherOpponent( me )
 
-	var sleepdelay := 275 - me.run_speed;
-
-	if (sleepdelay < 0)
-		sleepdelay := 50;
-	endif
-
-	var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
-
-	if (me.z > opponent.z +18) //checa se esta em cima de alguma torre
-		if (!CheckLineofSight(me, opponent)) //IA para torres: Verifica se tem visão do oponente
-			if (RandomInt(4) == 0 ) //se não tiver visão, tem 25% de mudar de alvo
-				ChooseAnotherOpponent(me);
-			endif
-		endif
-		return 0; //se estiver em cima de torres, não se move do lugar
-	endif
-
-	if (dist < 4 )
-		RunAwayFrom(opponent);
-		sleepms(sleepdelay);
-	elseif (dist > 10)
-		RunToward( opponent );
-		sleepms(sleepdelay);
-	else
-		return 1;
-	endif
-
-	return 0;
-
-endfunction
-
-function ChooseAnotherOpponent(me)
-
-	var otherTarget := ListMobilesNearLocationEx( me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm );
-	if  (otherTarget.size() > 0)
-		foreach mob in otherTarget
-			if(CanFight(me, mob, align)) //verifica se eh inimigo
-				Fight(mob);
-			endif
-		endforeach
-	else
-	endif
-
+  var otherTarget := ListMobilesNearLocationEx( me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL,
+                                                me.realm );
+  foreach mob in otherTarget
+    if ( CanFight( me, mob, align ) && abs( me.z - mob.z ) <= max_z )
+      Fight( mob );
+    endif
+  endforeach
 endfunction
 
 function look_around()
-  foreach npc in ListMobilesInLineOfSight(me, areasize)
-    if( CanFight(me, npc, align) )
-         Fight(npc);
+  foreach npc in ListMobilesInLineOfSight( me, areasize )
+    if ( CanFight( me, npc, align ) && abs( me.z - npc.z ) <= max_z )
+      Fight( npc );
     endif
-    sleepms(2);
+    sleepms( 2 );
   endforeach
 endfunction
