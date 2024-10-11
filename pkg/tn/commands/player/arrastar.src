@@ -23,9 +23,7 @@ program Test(who)
 		targ := Target( who );
 	endif
 
-
 	var type;
-
 
 	if (targ.isa(POLCLASS_CORPSE))
 		type := "corpo"; // corpse
@@ -43,7 +41,6 @@ program Test(who)
 		SendSysMessage( who, "O "+type+" esta muito longe." );
 		return;
 	endif
-
 
 	targ.movable := 1;
 
@@ -75,8 +72,11 @@ program Test(who)
 			SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
 			break;
 		endif
-		if(who.warmode == 1)
+		if(who.warmode == 1 || who.frozen == 1)
 			SendSysMessage(who, "Voce solta o corpo");
+			break;
+		endif
+		if(who.dead == 1)
 			break;
 		endif
 		MoveObjectToLocation(targ, who.x, who.y, who.z, who.realm);
