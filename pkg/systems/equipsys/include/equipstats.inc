@@ -107,25 +107,28 @@ endfunction
  */
 function getDamageByTier(tier)
 	case (tier.Upper())
+		// NO DAMAGE
+		DAMAGE_NONE: return 0;
+		
 		// ONE HANDED
-		ONEHANDED_LOW: return ONEHANDED_LOW_DAMAGE;
-		ONEHANDED_MID: return ONEHANDED_MID_DAMAGE;
-		ONEHANDED_HIGH: return ONEHANDED_HIGH_DAMAGE;
+		ONEHANDED_LOW: return "1d4";
+		ONEHANDED_MID: return "1d6";
+		ONEHANDED_HIGH: return "1d8";
 			
 		// TWO HANDED
-		TWOHANDED_LOW: return TWOHANDED_LOW_DAMAGE;
-		TWOHANDED_MID: return TWOHANDED_MID_DAMAGE;
-		TWOHANDED_HIGH: return TWOHANDED_HIGH_DAMAGE;
+		TWOHANDED_LOW: return "1d8";
+		TWOHANDED_MID: return "1d10";
+		TWOHANDED_HIGH: return "1d12";
 
 		// BOW
-		BOW_LOW: return BOW_LOW_DAMAGE;
-		BOW_MID: return BOW_MID_DAMAGE;
-		BOW_HIGH: return BOW_HIGH_DAMAGE;
+		BOW_LOW: return "1d4";
+		BOW_MID: return "1d6";
+		BOW_HIGH: return "1d8";
 
 		// CROSSBOW
-		CROSSBOW_LOW: return CROSSBOW_LOW_DAMAGE;
-		CROSSBOW_MID: return CROSSBOW_MID_DAMAGE;
-		CROSSBOW_HIGH: return CROSSBOW_HIGH_DAMAGE;
+		CROSSBOW_LOW: return "1d6";
+		CROSSBOW_MID: return "1d8";
+		CROSSBOW_HIGH: return "1d10";
 			
 		default: return error{ "errortext" := "Damage value not found for this Weapon Damage Tier!"};
 	endcase
