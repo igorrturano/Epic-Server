@@ -1,15 +1,58 @@
-// $Id: advanceCheck.inc 386 2005-10-03 00:22:39Z muaddiblsd $
-
-/*===============================================================
-* Current Version
-* ADVANCECHECK.INC - v1.0
-* Updated 9/28/2005 8:29PM
-*
-* -- Revision v1.0 --
-* Austin:
-*  Created include file
-===============================================================*/
-
+// ================================================================
+// Explanation and Purpose
+// ================================================================
+//
+// This file manages the **skill and stat advancement system** for 
+// the POL server. It controls how players increase their **skills** 
+// (such as Swordsmanship or Magic) and **stats** (such as Strength 
+// or Intelligence) through gameplay.
+//
+// The main steps handled in this file are:
+// 
+// 1. **Checking Eligibility**: 
+//    - Before stats or skills can increase, the system checks if 
+//      the player is eligible for a gain. This includes verifying:
+//      * Has enough time passed since the last gain (cooldown)?
+//      * Has the player reached the cap for that stat or skill?
+//
+// 2. **Rolling for Gain**: 
+//    - If the player is eligible, the system performs a random roll 
+//      to determine whether they successfully gain a point in a stat 
+//      or skill.
+//
+// 3. **Applying Gains**: 
+//    - If the roll is successful, the stat or skill increases by a 
+//      small amount (usually 0.1). 
+//    - The new value is saved, and the player is notified with a 
+//      feedback message.
+//
+// 4. **Displaying Progress**: 
+//    - Whether the player succeeds or fails, they are given clear 
+//      feedback in the following forms:
+//      * **Progress**: The player is shown how close they are to the 
+//        next stat/skill increase.
+//      * **Cap Reached**: Players are notified when they reach the 
+//        maximum possible level for a stat or skill.
+//      * **Cooldown**: When players need to wait before gaining more 
+//        stats or skills, they are informed.
+//
+// ================================================================
+// Quick Explanation of Key Functions:
+// ================================================================
+//
+// 1. **CheckStatsForSkill(mobile, skill_name)**:
+//    - This function checks if the player's **stats** (such as 
+//      strength or intelligence) should increase when they use a 
+//      particular skill.
+//
+// 2. **CheckStatAdvancement(mobile, stat_name, stat_mult)**:
+//    - This function handles increasing the stat value.
+//
+// 3. **CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)**:
+//    - This function checks if the player's **skills** (such as 
+//      Swordsmanship or Magic) should increase after using the skill.
+//
+// ================================================================
 use uo;
 use os;
 use util;
@@ -61,8 +104,6 @@ endfunction
 
 /*
  * CheckStatAdvancement(mobile, stat_name, stat_mult)
- *
- * Purpose
  * Does an advancement check on a stat.
  *
  * Parameters
@@ -70,240 +111,286 @@ endfunction
  * stat_name:	Name of the stat to do the advancement check on.
  * stat_mult:	Multiplier to effect the chance of a gain.
  *		(rolled dice from an attributes.cfg StatCheck entry)
- *
  * Return value
  * Returns 1
- *
  */
 function CheckStatAdvancement(mobile, stat_name, stat_mult)
-	if ( AP_CheckStatCap(mobile, stat_name) )
-		SkillDbgMsg(mobile, "Stat cap for stat '"+stat_name+"' reached. No advance." );
-		return 0;
-	elseif ( AP_CheckStatCap(mobile) )
-		SkillDbgMsg(mobile, "Total stat cap reached. No advance." );
-		return 0;
-	endif
-	var settings := AP_GetSettingsCfgElem("Stats");
-	var stat_cap := AP_GetStatCap(stat_name);
-	var stat_value := AP_GetTrueStat(mobile, stat_name);
-	var stat_left := stat_cap - stat_value; // Points until it is capped
-	stat_mult := stat_mult * CDbl(settings.GainSpeed);
+    // Check if the stat cap is reached
+    if (AP_CheckStatCap(mobile, stat_name))
+        SendSysMessage(mobile, "You have reached the cap for " + stat_name + ".");
+        return 0;
+    endif
 
-	SkillDbgMsg(mobile, "Stat Cap: "+stat_cap);
-	SkillDbgMsg(mobile, "Stat Current: "+stat_value);
-	SkillDbgMsg(mobile, "Left to cap: "+stat_left+" ->"+stat_cap+"-"+stat_value);
+    // Retrieve stat values and calculate chance of advancement
+    var stat_cap := AP_GetStatCap(stat_name);
+    var stat_value := AP_GetTrueStat(mobile, stat_name);
+    var stat_left := stat_cap - stat_value; // Points until it is capped
+    var settings := AP_GetSettingsCfgElem("Stats");
+    stat_mult := stat_mult * CDbl(settings.GainSpeed);
 
-	var chance := ((stat_left * stat_mult) / (stat_cap / 2));
-	if ( chance < 1.0 )
-		chance := 1.0;
-	endif
-	SkillDbgMsg(mobile, "Chance Stat: "+chance);
-	SkillDbgMsg(mobile, "---");
-	var random := RandomFloat(100.0);
-	SkillDbgMsg(mobile, "Check %age: "+random);
+    // Debugging output to trace the process
+    SkillDbgMsg(mobile, "Stat Cap: " + stat_cap);
+    SkillDbgMsg(mobile, "Stat Current: " + stat_value);
+    SkillDbgMsg(mobile, "Left to cap: " + stat_left + " ->" + stat_cap + "-" + stat_value);
 
-	if ( random < chance )
-		var advance := CDbl(0.1 + (0.1 * CDbl(CInt(chance / 12.5))));
-		if ( advance > stat_left )
-			advance := stat_left;
-		elseif ( advance < 0.1 )
-			advance := 0.1;
-		endif
+    // Calculate chance to advance the stat
+    var chance := ((stat_left * stat_mult) / (stat_cap / 2));
+    if (chance < 1.0)
+        chance := 1.0; // Minimum chance to advance
+    endif
 
-		var temp := stat_value+advance;
-		while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(mobile, stat_name)) )
+    var random := RandomFloat(100.0); // Roll for advancement
+
+    // Debugging output for the chance and random roll
+    SkillDbgMsg(mobile, "Chance to advance: " + chance + "%");
+    SkillDbgMsg(mobile, "Random Roll: " + random);
+
+    if (random < chance)
+        // Determine the stat increase amount (minimum 0.1)
+        var advance := CDbl(0.1 + (0.1 * CDbl(CInt(chance / 12.5))));
+        if (advance > stat_left) 
+            advance := stat_left; // Do not exceed the stat cap
+        elseif (advance < 0.1) 
+            advance := 0.1; // Ensure at least 0.1 increase
+        endif
+
+        // Handle precision bug: Ensure the stat actually increases by 0.1
+        var temp := stat_value + advance;
+		while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)) )
 			// Kludge for an old core precision bug.
 			// Makes sure it always goes up atleast 0.1.
 			temp := temp+0.1;
 			sleepms(10);
 		endwhile
 
-		SkillDbgMsg(mobile, "Passed. Advance "+stat_name+": " + CStr(advance));
-		AP_SetTrueStat(mobile, stat_name, temp);
-		SetObjProperty(mobile, "#LastStatGain", ReadGameClock());
 
-		if (GetObjProperty(mobile, "owner")) //se for um pet salva a skill
-			var myskills := GetObjProperty(npc, "myskills");
-			if (!myskills)
-				myskills := dictionary;
-			endif
-			myskills[stat_name] := temp;
-			SetObjProperty(mobile, "myskills", myskills);
-		endif
+        // Save the new stat value and update last stat gain time
+        SkillDbgMsg(mobile, "Passed. Advance " + stat_name + ": " + CStr(advance));
+        AP_SetTrueStat(mobile, stat_name, temp);
+        SetObjProperty(mobile, "#LastStatGain", ReadGameClock());
+        SendSysMessage(mobile, "Your " + stat_name + " has increased by " + CStr(advance) + "!");
 
-		return 1;
-	endif
+        // Handle pets: Save the skill in 'myskills' if the mobile is a pet
+        if (GetObjProperty(mobile, "owner"))
+            var myskills := GetObjProperty(mobile, "myskills");
+            if (!myskills)
+                myskills := dictionary;
+            endif
+            myskills[stat_name] := temp;
+            SetObjProperty(mobile, "myskills", myskills);
+            // Notify the owner if it's a pet
+            var owner := GetObjProperty(mobile, "owner");
+            if (owner)
+                SendSysMessage(owner, "Your pet's " + stat_name + " has increased by " + CStr(advance) + "!");
+            endif
+        endif
 
-	SkillDbgMsg(mobile, "Failed. No advance.");
-	return 0;
+        return 1; // Stat advancement successful
+    endif
+    // Debugging output FAIL, return 0
+    SkillDbgMsg(mobile, "Failed. No advance.");
+    return 0;
 endfunction
 
+
 /*
- * CheckSkillAdvance(mobile, stat_name, stat_mult)
+ * CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
  *
  * Purpose
- * Does an advancement check on a stat.
+ * Does an advancement check on a skill.
  *
  * Parameters
- * mobile:	Mobile to do the skill advancement check on.
- * skill_name:	Name of the skill to check.
- * award_diff:	Difficulty to use for advancement award.
- * pass_chance:	Chance of getting a gain check.
- *
+ * mobile:        Mobile to do the skill advancement check on.
+ * skill_name:    Name of the skill to check.
+ * award_diff:    Difficulty to use for advancement award.
+ * pass_chance:   Chance of getting a gain check.
  *
  * Return value
- * Returns 1
- *
+ * Returns 1 if skill advancement occurs, otherwise 0.
  */
 function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
-	if (!g_skill_debug)
-		g_skill_debug := (GetObjProperty(mobile, "SkillDebug") != error);
-	endif
+    // Enable skill debugging if not already set
+    if (!g_skill_debug)
+        g_skill_debug := (GetObjProperty(mobile, "SkillDebug") != error);
+    endif
 
-    if(TemHabilidade(mobile, "Budōka") && skill_name == "Wrestling")
-    	var chardata := GetObjProperty(mobile, "chardata");
+    // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
+    skill_name := HandleBudokaSkillTransform(mobile, skill_name);
+
+    // Check for valid training skills (if training skills are enforced)
+    if (!ValidTrainingSkill(mobile, skill_name)) 
+        SkillDbgMsg(mobile, "Not part of training skills.");
+        return 0;
+    endif
+
+    // Ensure the player has filled the Role-Play profile
+    if (!GetObjProperty(mobile, "fichaRP")) 
+        var chardata := GetObjProperty(mobile, "chardata");
+        if (chardata != error) 
+            SkillDbgMsg(mobile, "Nenhuma ficha Role-Play detectada.");
+            SendSysMessage(mobile, "A evolução de skills do seu personagem está bloqueada até você preencher sua ficha de Role-Play!");
+            return 0;
+        endif
+    endif
+
+    // Verifica se o ganho de habilidade está desabilitado
+    if (GetObjProperty(mobile, "NoGains")) 
+        SkillDbgMsg(mobile, "O ganho de skill está desabilitado.");
+        SendSysMessage(mobile, "O ganho de skill está desabilitado!");
+        return 0;
+    endif
+
+    var true_skill := AP_GetTrueSkill(mobile, skill_name);
+    var maximo := AP_CheckClassSkillCap(mobile, skill_name);
+    if (true_skill >= maximo)  
+        SkillDbgMsg(mobile, "Atingiu o limite máximo da skill");
+        SendSysMessage(mobile, "Você atingiu o nível máximo da skill!");
+        return 0;
+    endif
+
+    var settings := AP_GetSettingsCfgElem("Skills");
+
+    // Verifica o tempo de espera entre ganhos de habilidade
+    if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
+        SendSysMessage(mobile, "Você precisa esperar um pouco mais antes de aumentar sua habilidade.");
+        return 0;
+    endif
+
+    // Calcula a chance final ajustada com base na inteligência do personagem
+    pass_chance := AdjustPassChance(pass_chance, settings, mobile);
+
+    // Verifica se o avanço da habilidade ocorre (rolagem de dados)
+    if (!PerformAdvancementCheck(pass_chance)) 
+        SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
+        SendSysMessage(mobile, "Você falhou em aprimorar a skill " + skill_name + ".");
+        return 0;
+    endif
+
+    // Free gain for skills below a certain threshold
+    if (true_skill < CDbl(settings.FreeGainUntil)) 
+        SkillDbgMsg(mobile, "Free Gain.");
+    elseif (DifficultyTooEasy(true_skill, award_diff) && !(TemHabilidade(mobile, "Budōka"))) 
+        // Skill too easy to increase, no advancement
+        SendSysMessage(mobile, "Esta ação está muito fácil para você aprimorar a habilidade " + skill_name + ".");
+        SkillDbgMsg(mobile, "Skill too easy to advance.");
+        return 0;
+    endif
+
+    // Skill advancement success
+    var temp := true_skill + 0.1;
+
+    // Handle precision issue
+    while (CInt(temp * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
+        temp := temp + 0.1;
+        sleepms(10);
+    endwhile
+
+    // Save new skill value and notify player
+    AP_SetTrueSkill(mobile, skill_name, temp);
+    SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
+
+    // If it's a pet, notify the owner
+    if (mobile.npctemplate) 
+        var owner := GetObjProperty(mobile, "owner");
+        if (owner != error) 
+            var petskills := GetObjProperty(mobile, "petskills");
+            if (TypeOf(petskills) != "Dictionary") 
+                petskills := dictionary;
+            endif
+            petskills[skill_name] := temp;
+            setObjProperty(mobile, "petskills", petskills);
+            SendSysMessage(owner, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(temp) + "!");
+        endif
+    else
+        SendSysMessage(mobile, "Sua habilidade " + skill_name + " aumentou para " + CStr(temp) + "!");
+    endif
+
+    return 1;
+endfunction
+
+
+/*
+ * HandleBudokaSkillTransform(mobile, skill_name)
+ * 
+ * Transforms Wrestling skill into One-Handed or Two-Handed 
+ * if the character has the "Budōka" (Monk) ability.
+ */
+function HandleBudokaSkillTransform(mobile, skill_name)
+    if (TemHabilidade(mobile, "Budōka") && skill_name == "Wrestling")
+        var chardata := GetObjProperty(mobile, "chardata");
         var skillsmap := chardata.Skills;
         var skillsArray := skillsmap.keys();
+        
         foreach skill in skillsArray
             if (skill == "One_Handed")
-                skill_name := "One_Handed";
-                break;
+                return "One_Handed";
             elseif (skill == "Two_Handed")
-                skill_name := "Two_Handed";
-                break;
+                return "Two_Handed";
             endif
         endforeach
     endif
-
-	var trainingSkills := getObjProperty(mobile, "trainingSkills"); //se nao tiver skill pra subir
-	if (trainingSkills != error)
-		if (trainingSkills.size() > 0 )
-			if (!(skill_name in trainingSkills))
-				SkillDbgMsg(mobile,"nao ta no training skills");
-
-				return;
-			endif
-		endif
-	endif
-
-    if (!GetObjProperty(mobile, "fichaRP"))
-		var chardata := GetObjProperty(mobile, "chardata");
-			if (chardata != error)
-				SkillDbgMsg(mobile,"nao tem ficharp!");
-				SendSysMessage(mobile, "FACA sua ficharp para poder upar!");
-				return;
-			endif
-	endif
-
-	if ( GetObjProperty(mobile, "NoGains") ) //se tiver sem upar skill
-		SkillDbgMsg(mobile, "Flag NoGains setada.");
-		return 0;
-	endif
-
-
-	var true_skill := AP_GetTrueSkill(mobile, skill_name);
-	var maximo := AP_CheckClassSkillCap(mobile, skill_name);
-	if ( true_skill >= maximo ) //verifica quanto pode subir com base na classe
-		//printtextabove(mobile, "to no maximo da skill");
-		SkillDbgMsg(mobile, "Chegou no maximo da classe: " + maximo);
-		return 0;
-	endif
-/*
-	var bonus_tempo := 0;
-	if(GetObjProperty(mobile, "bonus_tempo"))
-		bonus_tempo := bonus_tempo + 20;
-	endif
-
-	SendSysMessage(mobile, "TL: "+ limiteportempo(mobile)+ " VI " + valorinicial(mobile, skill_name) + "TS" + true_skill);
-*/
- 	if ( (limiteportempo(mobile) + valorinicial(mobile, skill_name))  <= true_skill )
-  		SkillDbgMsg(mobile, "Chegou no maximo do limite por tempo: " + limiteportempo(mobile) + " idade do char  " + idadeChar( mobile) + " valor inicial "  + valorinicial(mobile, skill_name) + " da skill " + skill_name);
-		return 0;
-  	endif
-
-	var settings := AP_GetSettingsCfgElem("Skills");
-	//verifica se ja nao subiu skills em XX segundos
-	var next_check := CInt(GetObjProperty(mobile, "#LastSkillGain"))+GetConfigInt(settings, "GainWait");
-	if (skill_name == "Tactics" || skill_name == "Anatomy")
-		SkillDbgMsg(mobile, "Ignore Timer.");
-	elseif ( next_check > ReadGameClock() )
-		SkillDbgMsg(mobile, "Nao pode subir skill ainda. Next: " + next_check + " Current: " + ReadGameClock()  );
-		return 0;
-	endif
-
-	//calcula a chance de passar
-
-	if ( pass_chance <= settings.MinChance )
-		pass_chance := CInt(settings.MinChance);
-	else
-		//aumenta chance com base na inteligencia
-		pass_chance := CInt(pass_chance * (1.0 + (AP_GetTrueStat(mobile, INTELLIGENCE)/100.0)));
-	endif
-	if ( pass_chance > settings.MaxChance )
-		pass_chance := CInt(settings.MaxChance);
-	endif
-
-	var adv_check := RandomInt(100)+1;
-
-	SkillDbgMsg(mobile, "Chance: "+pass_chance+"%");
-
-	if ( true_skill < CDbl(settings.FreeGainUntil) )
-		SkillDbgMsg(mobile, "Free Gain.");
-	elseif ( DifficultyTooEasy(true_skill, award_diff)  && !(TemHabilidade(mobile, "Budōka")))
-		SkillDbgMsg(mobile, "Too Easy.");
-		return 0;
-	elseif ( adv_check > pass_chance )
-		SkillDbgMsg(mobile, "Nao passou.");
-		return 0;
-	endif
-
-
-	//ESSA PARADA É A BATERIA DE CAP
-/*
-	if ( !CheckVitalSkillCap(mobile, true_skill) ) //verifica se tem cap pro temmpo ainda
-	//	printtextabove(mobile, "to sem cap");
-		SkillDbgMsg(mobile, "SkillCap insuficiente.");
-		return 0;
-	endif
-*/
-
-	//printtextabove(mobile, "oi, minha skill subiu");
-
-	//if (!PointsToIncrease(AP_GetTrueSkill(mobile, skill_name)))
-	//	SkillDbgMsg(mobile, "Nao passou.");
-	//	return 0;
-	//endif
-
-	//sobe a skill
-	SkillDbgMsg(mobile, "Passou.");
-	var temp := true_skill+0.1;
-	//SendSysMessage(mobile, true_skill + "-> "+ temp);
-	while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)) )
-		// Kludge for an old core precision bug.
-		// Makes sure it always goes up atleast 0.1.
-		temp := temp+0.1;
-		sleepms(10);
-	endwhile
-
-	//guarda as skills dos npcs tamados
-	if (mobile.npctemplate)
-		if ( GetObjProperty(mobile, "owner") != error)
-			var petskills := GetObjProperty(mobile, "petskills");
-			if ( TypeOf(petskills) != "Dictionary")
-				petskills := dictionary;
-			endif
-			petskills[skill_name] := temp;
-			setObjProperty(mobile, "petskills", petskills);
-		endif
-	endif
-
-	SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
-	AP_SetTrueSkill(mobile, skill_name, temp);
-
-	return 1;
-
+    return skill_name;
 endfunction
 
+/*
+ * ValidTrainingSkill(mobile, skill_name)
+ * 
+ * Ensures the skill is part of the character's valid training skills.
+ */
+function ValidTrainingSkill(mobile, skill_name)
+    var trainingSkills := getObjProperty(mobile, "trainingSkills");
+    if (trainingSkills != error && trainingSkills.size() > 0)
+        return (skill_name in trainingSkills);
+    endif
+    return true;
+endfunction
+
+/*
+ * SkillGainCooldownPassed(mobile, skill_name, settings)
+ * 
+ * Ensures enough time has passed since the last skill gain.
+ */
+function SkillGainCooldownPassed(mobile, skill_name, settings)
+    var next_check := CInt(GetObjProperty(mobile, "#LastSkillGain")) + GetConfigInt(settings, "GainWait");
+    
+    if (skill_name == "Tactics" || skill_name == "Anatomy") 
+        SkillDbgMsg(mobile, "Ignoring skill gain timer for Tactics or Anatomy.");
+        return true;
+    elseif (next_check > ReadGameClock()) 
+        SkillDbgMsg(mobile, "Skill gain cooldown active.");
+        return false;
+    endif
+    
+    return true;
+endfunction
+
+/*
+ * AdjustPassChance(pass_chance, settings, mobile)
+ * 
+ * Adjusts the pass chance for skill advancement based on intelligence
+ * and ensures it falls within valid minimum and maximum ranges.
+ */
+function AdjustPassChance(pass_chance, settings, mobile)
+    if (pass_chance <= settings.MinChance) 
+        return CInt(settings.MinChance);
+    else
+        pass_chance := CInt(pass_chance * (1.0 + (AP_GetTrueStat(mobile, INTELLIGENCE) / 100.0)));
+        if (pass_chance > settings.MaxChance) 
+            pass_chance := CInt(settings.MaxChance);
+        endif
+    endif
+    return pass_chance;
+endfunction
+
+/*
+ * PerformAdvancementCheck(pass_chance)
+ * 
+ * Performs the dice roll to determine if the skill advancement occurs.
+ */
+function PerformAdvancementCheck(pass_chance)
+    var adv_check := RandomInt(100) + 1; 
+    return (adv_check <= pass_chance);
+endfunction
 
 //retorna quanto o cara comecou com aquela skill
 function valorInicial(mobile, skill_name)
@@ -417,7 +504,6 @@ function AwardPoints(who, skill, points)
 
 endfunction
 
-
 function PointsToIncrease(basevalue)
 
 	if(basevalue < 100)
@@ -454,7 +540,6 @@ function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
     return dias;
 endfunction
 
-// Calculo total do cap
 function limiteportempo(who)
     if (who.npctemplate)
         return 100;
@@ -479,25 +564,3 @@ function limiteportempo(who)
 
     return Min(lim, 100);
 endfunction
-/*
-   var lim := 6; // Valor inicial
-
-   if (dias >= 5)
-      if (dias > 75)
-         if (dias > 125)
-            lim := 50.0 + ((dias - 125) * 0.1);
-         else
-            lim := 40.0 + ((dias - 75) * 0.2);
-         endif
-      else
-         lim := 6.0 + ((dias - 5) * 0.5);
-      endif
-   endif
-
-   lim := lim + CDbl(FindAccount(who.acctname).getprop("nota"))*2.5; // Influencia de -10 -5 0 +5 +10 dependendo da nota RP
-
-
-   if (lim < 2.5)
-      lim := 2.5; // Valor minimo de 2.5
-   endif
-*/
