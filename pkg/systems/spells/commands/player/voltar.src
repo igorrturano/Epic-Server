@@ -1,73 +1,36 @@
 use os;
 use cfgfile;
+use uo;
+use util;
 
 include ":timedScripts:timedScripts";
 include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
+include "include/client";
+include ":attributes:attributes";
+include ":tn:cooldown";
 
 program voltar(params)
 
     var who := params[1];
 
-	if(GetObjProperty(who, "metamorfose") == error)
-		SendSysMessageEx(who, "Voce nao esta metamorfoseado.", SSM_FAIL);
-		return;
-	endif
+    if (GetObjProperty(who, "metamorfose") == error)
+        SendSysMessageEx(who, "Você não está metamorfoseado.", SSM_FAIL);
+        return;
+    endif
 
-	if(TS_GetCooldown(who, "voltarcd") > 0)
-		SendSysMessageEx(who, "Voce deve aguardar.", SSM_FAIL);
-		return;
-	endif
-	
+    // Check for cooldown to prevent spam
+    if (TS_GetCooldown(who, "voltarcd") > 0)
+        SendSysMessageEx(who, "Você deve aguardar.", SSM_FAIL);
+        return;
+    endif
+    
+    // Start cooldown timer for the voltar command
     TS_StartCoolDown(who, "voltarcd", 30);
-	
-	SendSysMessageEx(who, "Voce volta ao normal.", SSM_FAIL);
+    SendSysMessageEx(who, "Você volta ao normal.", SSM_INFO);
 
-	Destransforma(who);
-
-	TS_LowerDuration(who, "metamorfosedruida", -1, 1);
-	
+    // Lower the duration of the transformation to ensure it ends
+    TS_LowerDuration(who, "metamorfosedruida", -1);
 endprogram
-
-function Destransforma(who)
-	var metamorfose := GetObjProperty(who, "metamorfose");
-	who.color := metamorfose.originalcolor;
-	who.graphic := metamorfose.originalgraphic;
-	who.truegraphic := metamorfose.originalgraphic;
-	//who.squelch(0);
-
-	var namechar:=GetObjProperty(who,"charname");
-
-	EraseObjProperty(who, "skill_a");
-	EraseObjProperty(who, "skill_d");
-	EraseObjProperty(who, "dicedmg");
-
-	//Alterado por Edmond
-	SetName(who,namechar);
-
-	var hitsmod := cint(getObjProperty(who, "polymorphhitsmod"));
-	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
-	var resist := cint(GetObjProperty(who, "resitmod"));
-
-	var bonus := GetObjProperty(who, "polymorphbonus_moon");
-
-	if(bonus)
-		AP_SetSkillMod(who, TACTICS, AP_GetSkillMod(who, TACTICS) - bonus);
-	endif
-
-	who.resist_physical_mod := who.resist_physical_mod - resist;
-	who.resist_fire_mod := who.resist_fire_mod - resist;
-	who.resist_cold_mod := who.resist_cold_mod - resist;
-	who.resist_poison_mod := who.resist_poison_mod - resist;
-	who.resist_energy_mod := who.resist_energy_mod - resist;
-
-	EraseObjProperty(who, "polymorphbonus");
-	EraseObjProperty(who, "metamorfose");
-	EraseObjProperty(who, "polymorphhitsmod");
-	EraseObjProperty(who,"namechar");
-
-	SetObjProperty(who, "voltou", 1);
-endfunction
-	
