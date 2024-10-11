@@ -106,7 +106,10 @@ endfunction
 // Function to store the transformation in an ordered list, with a max based on skill (Magery/10)
 function StoreTransformation(who, targ)
     // Calculate max transformations based on Magery/10
-    var max_transformations := CInt(AP_GetSkill(who, MAGERY) / 10);
+    var max_transformations := CInt(AP_GetSkill(who, MAGERY) / 20);
+    if (TemHabilidade(who, "Treinamento Druídico"))
+        max_transformations := max_transformations * 2;
+    endif
     // Use AP_GetStat to fetch strength, dexterity, intelligence from the NPC
     var targ_strength := AP_GetStat(targ, "Strength");
     var targ_dexterity := AP_GetStat(targ, "Dexterity");
