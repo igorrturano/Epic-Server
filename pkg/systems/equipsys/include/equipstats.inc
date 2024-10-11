@@ -47,6 +47,27 @@ function getWeaponStats(weapon)
 endfunction
 
 /**
+ * getWeaponStats(weapon)
+ *
+ * Purpose
+ * Passar todos os valores da arma em um único struct.
+ *
+ * Parameters
+ * weapon: ItemRef da arma.
+ *
+ * Return struct
+ * Retorna um struct com todos os valores base da arma.
+ *
+ */
+function setWeaponStats(weapon)
+	// TODO: Rever a lógica e fazer um refator adequado. Só está assim pela urgência pra evitar bug.
+	var stats := getWeaponStats(weapon);
+
+	setPropWeapon(weapon);
+	weapon.speed_mod := stats.AttackSpeed - 24;
+endfunction
+
+/**
  * getWeaponSpeed(tier)
  *
  * Purpose

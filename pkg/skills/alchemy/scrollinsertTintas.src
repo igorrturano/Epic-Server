@@ -80,7 +80,8 @@ function addScroll(who, book, rune)
 
 	var recipe := newspell.name;
 	if (recipe in list)
-		SendSysMessage(who, "Voce ja conhece como fazer este item.");
+		MoveItemToContainer(rune, who.backpack);
+		SendSysMessage(who, "Voce ja conhece como fazer este item, procure uma mesa de alquimia.");
 		return 1;
 	endif
 
