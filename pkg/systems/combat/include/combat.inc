@@ -48,6 +48,11 @@ function PlayHitSounds(attacker, defender)
 		PlaySoundEffect(attacker, wpn_a_elem2.AttackHitSound);
 	endif
 
+	// TODO: Gambiarra pra urgência (remover)
+	if (attacker.acctname)
+		PlaySoundEffect(attacker, 0x23C);
+	endif
+
 	var damaged_sound;
 	if ( defender.npctemplate )
 		var npctemplate := defender.npctemplate;
@@ -69,13 +74,14 @@ function PlayHitSounds(attacker, defender)
 endfunction
 
 function PlayMissSound(attacker)
-	var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
-	if ( wpn_a_elem.MissSound )
-		PlaySoundEffect(attacker, wpn_a_elem.MissSound);
-	else
-		//NPC intrinsic weapon
-		PlaySoundEffect(attacker, wpn_a_elem.AttackMissSound);
-	endif
+	// var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
+	// if ( wpn_a_elem.MissSound )
+	// 	PlaySoundEffect(attacker, wpn_a_elem.MissSound);
+	// else
+	// 	//NPC intrinsic weapon
+	// 	PlaySoundEffect(attacker, wpn_a_elem.AttackMissSound);
+	// endif
+	PlaySoundEffect(attacker, 0x23A);
 endfunction
 
 function PlayAttackAnimation(attacker)

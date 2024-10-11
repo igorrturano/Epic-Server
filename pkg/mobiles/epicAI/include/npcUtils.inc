@@ -1,4 +1,5 @@
 include ":equipsys:props";
+include "include/epicNPCUtils";
 
 function NPCRotateAttackType(npc)
 	var npcDamages := getNPCDamages(npc);
