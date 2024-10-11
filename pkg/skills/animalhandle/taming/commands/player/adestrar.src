@@ -66,7 +66,7 @@ function taming(who)
 		//endif
 		return 0;
 	elseif ( (GetNumPets(who) + GetPetCost(targ)) > GetMaxPets(who) )
-		SendSysMessageEx(who, "Voce nao pode ter mais animais domados.", SSM_FAIL);
+		SendSysMessageEx(who, "Este animal excede a sua capacidade atual de animais domesticados.", SSM_FAIL);
 		return 0;
 	else
 		if(TemHabilidade(who, "Rei do Gado") && (GetPetCost(targ) > 1))
