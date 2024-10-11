@@ -76,6 +76,16 @@ function customizeNpc(mob)
     HealDamage(mob, hitsmod + hp);
 endfunction
 
+function ReturnCharDataPlayerNear(me)
+    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+    foreach mobile in nearby
+        if (mobile.acctname)
+			return mobile.acctname;
+        endif
+    endforeach
+    return 0;
+endfunction
+
 function HasPlayerNear(me)
     var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
     foreach mobile in nearby
