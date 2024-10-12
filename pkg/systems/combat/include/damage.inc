@@ -203,7 +203,7 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 			weapondice := getWeaponOffDamageDice(weapon);
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
-				weapondice := TWOHANDED_MID_DAMAGE;
+				weapondice := "1d10";
 			else
 				weapondice := getWeaponMainDamageDice(weapon);
 			endif
