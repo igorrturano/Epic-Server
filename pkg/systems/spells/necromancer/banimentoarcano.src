@@ -1,0 +1,54 @@
+    use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":fls_magery:spells";
+include ":fls_magery:spellSounds";
+include "include/client";
+include "include/sounds";
+include ":combat:damage";
+include "include/tileEffects";
+include "include/say";
+include ":spells:tnmagery";
+include "include/epicMageryUtils";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+	params := 0; // No longer needed
+
+	if ( getObjProperty(targ, "summoned") != 1 )
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+	if (!CheckLineOfSight(targ, who))
+		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
+		return;
+	endif
+
+	handleSilentMagic(who, who, SFX_SPELL_TELEKINESIS);
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);	
+	if (CheckResist(targ, VONTADE, diff, bonus))
+		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+		return;
+	endif
+
+	var location := {targ.x, targ.y, targ.z};
+
+	PlayMovingEffectXYZEx( targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+	Corromper(who, 27, targ);
+
+	MoveObjectToLocation(targ, 10, 10, 10, targ.realm,  MOVEOBJECT_FORCELOCATION );
+	sleep(120);
+	MoveObjectToLocation(targ, location[1], location[2], location[3], targ.realm,  MOVEOBJECT_FORCELOCATION );
+
+	return 1;
+endprogram     

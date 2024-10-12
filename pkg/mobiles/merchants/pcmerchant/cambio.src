@@ -3,6 +3,8 @@ use cfgfile;
 
 include ":gumps:gumps";
 include "include/say";
+include ":merchants:/include/cambio";
+include "include/epicConstants";
 
 program troca(params)
 
@@ -14,7 +16,7 @@ program troca(params)
 	SendSysMessage(who,"Selecione as moedas que deseja trocar");
 	var moedas:=Target( who, options := TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
 
-if ((moedas.objtype == 0xba63) || (moedas.objtype == 0xba64) || (moedas.objtype == 0xba65))
+if ((moedas.objtype == SESTERTIUS) || (moedas.objtype == DENARIUS) || (moedas.objtype == AUREUS))
 
 	var gump := GFCreateGump();
         GFDisposable(gump, 0);
@@ -38,69 +40,31 @@ if ((moedas.objtype == 0xba63) || (moedas.objtype == 0xba64) || (moedas.objtype 
 	var escolha:=GFSendGump(who,gump);
 	if (1 in escolha.keys) //prata
 
-		if (moedas.objtype == 0xba63) //cobre
-			if (moedas.amount >= 10)
-				calculo:=moedas.amount / 10;
-				resto:=moedas.amount % 10;
-				DestroyItem(moedas);
-				CreateItemInBackpack( who, 0xba64, amount := calculo);
-				CreateItemInBackpack( who, 0xba63, amount := resto);
-			else
-				SendSysMessage(who,"Quantidade insuficiente para troca.");
-			endif
-		elseif (moedas.objtype == 0xba64) //prata
-			SendSysMessage(who,"Nao foi possivel realizar a troca");
-		elseif (moedas.objtype == 0xba65) //ouro
-			calculo:= moedas.amount * 10;
-			DestroyItem(moedas);
-			CreateItemInBackpack( who, 0xba64, amount := calculo);
+		var retorno := ConverterMoeda(moedas.amount,moedas.objtype,DENARIUS);
+		if(retorno != error)
+			CriarMoedas(who,DENARIUS, retorno.valorConvertido,{moedas});
+			CriarMoedas(who,moedas.objtype, retorno.resto);
 		else
-			return 0;
+			SendSysMessage(who,"Quantidade insuficiente para troca.");
 		endif
 
 	elseif (2 in escolha.keys) //Ouro
-		if (moedas.objtype == 0xba63) //cobre
-			if(moedas.amount >= 100)
-				calculo:=moedas.amount / 100;
-				resto:=moedas.amount % 100;
-				DestroyItem(moedas);
-				CreateItemInBackpack( who, 0xba65, amount := calculo);
-				CreateItemInBackpack( who, 0xba63, amount := resto);
-			else
-				SendSysMessage(who,"Quantidade insuficiente para troca.");
-			endif
-
-		elseif (moedas.objtype == 0xba64) //prata
-			if(moedas.amount >= 10)
-				calculo:= moedas.amount / 10;
-				resto:=moedas.amount % 10;
-				DestroyItem(moedas);
-				CreateItemInBackpack( who, 0xba65, amount := calculo);
-				CreateItemInBackpack( who, 0xba64, amount := resto);
-			else
-				SendSysMessage(who,"Quantidade insuficiente para troca.");
-			endif
-		elseif (moedas.objtype == 0xba65) // Ouro
-			SendSysMessage(who,"Nao foi possivel realizar a troca");
+		var retorno := ConverterMoeda(moedas.amount,moedas.objtype,AUREUS);
+		if(retorno != error)
+			CriarMoedas(who,AUREUS, retorno.valorConvertido,{moedas});
+			CriarMoedas(who,moedas.objtype, retorno.resto);
 		else
-			return 0;
+			SendSysMessage(who,"Quantidade insuficiente para troca.");
 		endif
 
     elseif (3 in escolha.keys)//cobre
-		if (moedas.objtype == 0xba63) // cobre
-			SendSysMessage(who,"Nao foi possivel realizar a troca");
-		elseif (moedas.objtype == 0xba64) // prata
-			calculo:=moedas.amount * 10;
-			DestroyItem(moedas);
-			CreateItemInBackpack( who, 0xba63, amount := calculo);
-		elseif (moedas.objtype == 0xba65) // ouro
-			calculo:=moedas.amount * 100;
-			DestroyItem(moedas);
-			CreateItemInBackpack( who, 0xba63, amount := calculo);
+		var retorno := ConverterMoeda(moedas.amount,moedas.objtype,SESTERTIUS);
+		if(retorno != error)
+			CriarMoedas(who,SESTERTIUS, retorno.valorConvertido,{moedas});
+			CriarMoedas(who,moedas.objtype, retorno.resto);
 		else
-			return 0;
+			SendSysMessage(who,"Quantidade insuficiente para troca.");
 		endif
-
    endif
 
 else

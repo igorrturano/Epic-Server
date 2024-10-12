@@ -313,14 +313,14 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 					var strength := cint(recipes[objtype].strength);
 					var science := (recipes[objtype].science);
 					var tier := (recipes[objtype].tier);
-					var crafterskill := AP_GetSkill(who, ALCHEMY);
+					var crafterskill := Cint((AP_GetSkill(who, ALCHEMY))/10);
 					var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
-					var bonus := (((crafterInt-50)/10)+(crafterskill/10));
+					var bonus := (((crafterInt-50)/10)+(crafterskill));
 
 					SetObjProperty(theitem, "strength", strength);
 					SetObjProperty(theitem, "bonus", bonus);
 					SetObjProperty(theitem, "tier", tier);
-					SetObjProperty(theitem, "crafterskill", crafterskill);
+					SetObjProperty(theitem, "crafterskill", crafterskill*10);
 					SetObjProperty(theitem, "science", science);
 			endif
 
