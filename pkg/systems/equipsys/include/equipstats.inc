@@ -40,8 +40,8 @@ function getWeaponStats(weapon)
 		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
-	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
 endfunction
@@ -64,7 +64,7 @@ function setWeaponStats(weapon)
 	var stats := getWeaponStats(weapon);
 
 	setPropWeapon(weapon);
-	weapon.speed_mod := stats.AttackSpeed - 24;
+	weapon.speed_mod := CInt(stats.AttackSpeed - 24);
 endfunction
 
 /**
