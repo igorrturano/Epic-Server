@@ -54,6 +54,7 @@ endprogram
 function animalBrain()
 	var ev;
 	var wanders;
+   
 	SetWarMode( 0 );
 	ev := os::wait_for_event(0);
 	wanders := 0;
@@ -73,7 +74,6 @@ function animalBrain()
                 MoveAround();
             endif
         endif
-            
 		if (!("encantar" in timedes)) //Quando não está seguindo o pastor, feito pq a ação demorava quando wanders ativo
             wanders := wanders +1;
             if(wanders >= 30)
@@ -84,7 +84,6 @@ function animalBrain()
                 ev := os::wait_for_event(10);
             endif
 		endif
-
 		if(ev)
 			case(ev.type)
 				SYSEVENT_ENTEREDAREA:
@@ -109,6 +108,8 @@ function animalBrain()
 				FOLLOW_CMD:
 					following := ev.source;
 					PetFollow(ev.targ);
+            SYSEVENT_DOUBLECLICKED:
+               EstimulaAbdomen(me,ev);
             break;
 			endcase
 		endif
@@ -323,6 +324,23 @@ function ChooseAnotherOpponent(me)
 endfunction
 
 */
+
+function EstimulaAbdomen(npc, byref event)
+   if(npc.graphic == 28 && !npc.warmode)
+      if(getCooldown(npc, "#fiapoSeda") == 0)
+         PrintTextAbove(npc,"*Você estimula o abdomen da aranha e consegue extrair alguns fiapos de teia.*");
+         var idleSound := PlayIdleSound();
+         CreateItemInBackpack(event.source, 0xe07, 10); // fiapos de teia
+         setCooldown(npc,"#fiapoSeda",30);
+      else
+         PrintTextAbove(npc,"*Você tenta extrair algo, mas só consegue causar desconforto no aracnídeo que se distância imediatamente.*");
+         WalkAwayFrom(event.source);
+      endif
+      sleep(1);
+      return 1;
+   endif
+endfunction
+
 
 function look_around()
   foreach npc in ListMobilesInLineOfSight(me, areasize)
