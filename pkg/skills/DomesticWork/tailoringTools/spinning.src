@@ -81,6 +81,10 @@ function FazFio(who, item)
     //algodao
       prod_type := 0xf94; //fioalgodao
       break;
+    0xe07:
+    //fiapos de teia
+      prod_type := 0x1a9d; //fiohumilis.
+      break;
     0xf125:
     //lã
       prod_type := 0x1a93; //fiola
