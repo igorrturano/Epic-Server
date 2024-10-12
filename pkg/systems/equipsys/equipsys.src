@@ -8,7 +8,7 @@ program EquipSys(params)
 
 	if (item.IsA(POLCLASS_ARMOR))
 		setPropArmor(item);
-		// TODO: setWeaponStats(item);
+		// TODO: setArmorStats(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		// setPropWeapon(item);
 		setWeaponStats(item);
