@@ -39,6 +39,9 @@ function getWeaponStats(weapon)
 		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
 		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
+	if (Upper(elem.Attribute) == "RANGED")
+		stats.+Ranged := 1;
+	endif
 	stats.+AttackType := elem.TipoAtaque;
 	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
 	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
