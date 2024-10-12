@@ -18,262 +18,15 @@ include "include/say";
 include "include/epicCombatUtils";
 include ":custompizza:itemrp/include/lore_items";
 include ":combat:damage";
-
+include ":megacliloc:/include/gettersTTipUtils";
+include ":megacliloc:/include/nomeObjetoTTip";
+include ":megacliloc:/include/descricaoObjetoTTip";
+include "include/epicConstants";
 
 const OFFSET_OBJECT_SERIAL   := 0x05;
 const OFFSET_CLILOC_ID       := 0x0F;
 const OFFSET_LENGTH_ID       := 0x13;
 const OFFSET_UNICODE_TEXT    := 0x14;
-
-function GetDmgStringDesc(elem, item)
-	var dmg_mod := CInt(item.dmg_mod);
-	var resultado := CSTR(elem.Damage);
-	if (dmg_mod>0)
-		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
-	elseif (dmg_mod<0)
-		resultado := resultado + " (" + CSTR(dmg_mod) +")";
-	endif
-	return resultado;
-	/*
-	var avgdmg := cint(elem.MinDam + elem.MaxDam)/2;
-
-	if(avgdmg >= 20)
-		return "Letal";
-	elseif(avgdmg >= 18)
-		return "Muito";
-	elseif(avgdmg >= 16)
-		return "Bom";
-	elseif(avgdmg >= 14)
-		return "Mediano";
-	elseif(avgdmg >= 12)
-		return "Pouco";
-	elseif(avgdmg >= 10)
-		return "Pouquissimo ";
-	else
-		return "Inofensivo";
-	endif
-	*/
-
-endfunction
-
-function GetOffHandDmgStringDesc(elem, item)
-	var dmg_mod := CInt(item.dmg_mod);
-	var resultado := CSTR(elem.OffHandDamage);
-	if (dmg_mod>0)
-		resultado := resultado + " (+" + CSTR(dmg_mod) +")";
-	elseif (dmg_mod<0)
-		resultado := resultado + " (" + CSTR(dmg_mod) +")";
-	endif
-	return resultado;
-endfunction
-
-
-function GetDmgStringSpecialDmg(elem, item)
-	var dmg_mod := CInt(item.dmg_mod);
-	var minmod := elem.MinDam + dmg_mod;
-	var maxmod := elem.MaxDam + dmg_mod;
-	var mindmg := minmod*0.5 + 1;
-	var maxdmg := maxmod*0.5 +1;
-	var resultado := (CInt(mindmg) + "-" + Cint(maxdmg));
-	if (dmg_mod>0)
-		resultado := resultado;
-	elseif (dmg_mod<0)
-		resultado := resultado;
-	endif
-	return resultado;
-endfunction
-
-function getQuality(num)
-	var rank;
-	if(num>2.8)
-		rank := "Lendária";
-	elseif(num>2.5)
-		rank := "Épica";
-	elseif(num>2.2)
-		rank := "Rara";
-	elseif(num>1.9)
-		rank := "Excepcional";
-	else
-		rank := "Aprimorada";
-	endif
-	return rank;
-endfunction
-
-function getCondition(item) //Durabilidade dos itens
-	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
-
-	var c := cdbl(item.hp) / cdbl(item.maxhp);
-
-	if (c > 0.9)
-		return "Boa";
-	elseif (c > 0.6)
-		return "Pouco Danificada";
-	elseif (c > 0.3)
-		return "Bastante Danificada";
-	else
-		return "Quebradiça";
-	endif
-
-endfunction
-
-function TranslateCritical(crit)
-	if (crit == "damage3")
-		return "Dano Triplo";
-	elseif (crit == "damage2")
-		return "Dano Duplo";
-	elseif (crit == "armorignore")
-		return "Ignorar Armadura";
-	elseif ( crit == "stun")
-		return "Ataque Atordoante";
-	elseif (Crit == "bleed")
-		return "Alvejar Ponto Vital";
-	endif
-
-endfunction
-
-
-function GetCriticalInfo(entry)
-
-	var criticals := GetconfigStringArray(entry, "CriticalHitScripts");
-
-	var critstr := "";
-
-	var str;
-	foreach crit in criticals
-		str := ParseScriptString(crit);
-		critstr := critstr + TranslateCritical(lower(str)) + "<br>";
-	endforeach
-
-	return critstr;
-
-endfunction
-
-function TranslateHit(crit)
-	if (crit == "antimountedhit")
-		return "Anti-montaria";
-	elseif (crit == "chargehit")
-		return "Carga";
-	elseif (crit == "concussionhit")
-		return "Concussão";
-	elseif ( crit == "freearmorhit")
-		return "Movimento Livre";
-	elseif (crit == "heighthit")
-		return "Diferença de Altura";
-	elseif ( crit == "QueimaRoupa")
-		return "Tiro a Queima Roupa";
-	elseif ( crit == "pushback")
-		return "Golpe Esmagador";
-	elseif ( crit == "passivedisarm")
-		return "Disarme Passivo";
-	endif
-endfunction
-
-function GetHitsInfo(entry)
-
-	var criticals := GetconfigStringArray(entry, "HitScripts");
-
-	var critstr := "";
-
-	var str;
-	foreach crit in criticals
-		str := ParseScriptString(crit);
-		critstr := critstr + TranslateHit(lower(str)) + "<br>";
-	endforeach
-
-	return critstr;
-
-endfunction
-
-function getTipoStringDesc(elem, item) //Exibe o tipo de arma
-	if (item.isa(POLCLASS_WEAPON))
-		return CStr(elem.TipoAtaque) + "<br>" + CSTR(StrReplace(elem.Attribute, "_", " "));
-	elseif (item.isa(POLCLASS_ARMOR))
-		return CStr(elem.TipoProtecao) + "<br>";
-	endif
-endfunction
-
-
-function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
-	var speedI := GetObjProperty(item,"attackspeedbonus");
-	var speedE := Cint(elem.Speed);
-	var speedDesc := "";
-	if (speedE >= 41)
-		speedDesc := "Muito Rápida";
-	elseif (speedE >= 37)
-		speedDesc := "Rápida";
-	elseif (speedE >= 33)
-		speedDesc := "Normal";
-	elseif (speedE >= 29)
-		speedDesc := "Lenta";
-	else
-		speedDesc := "Muito Lenta";
-	endif
-
-	if (speedI != error && speedI > 0)
-		return speedDesc + " (+" + CSTR(speedI) + ")";
-	elseif (speedI != error && speedI < 0)
-		return speedDesc + " (" + CSTR(speedI) + ")";
-	else
-		return speedDesc;
-	endif
-endfunction
-
-function getParryBonus(elem, item)
-	var parrybonusI := Cint(GetObjProperty(item, "parrybonus"));
-	var parrybonusE := Cint(elem.parrybonus);
-	if (parrybonusI > 0)
-		return CSTR(parrybonusE) + " (+" + CSTR(parrybonusI) + ")";
-	elseif (parrybonusI < 0)
-		return CSTR(parrybonusE) + " (" + CSTR(parrybonusI) + ")";
-	else
-		return CSTR(parrybonusE);
-	endif
-endfunction
-
-function getParryDelay(elem, item)
-	var parrydelayI := Cint(GetObjProperty(item, "parrydelay_mod"));
-	var parrydelayE := Cint(elem.parrydelay);
-
-	if (parrydelayI > 0)
-		return CSTR(parrydelayE) + " (-" + CSTR(parrydelayI) + ")";
-	elseif (parrydelayI < 0)
-		return CSTR(parrydelayE) + " (+" + CSTR(-parrydelayI) + ")";
-	else
-		return CSTR(parrydelayE);
-	endif
-endfunction
-
-function getDexPenalty(elem, item)
-	var DexPenaltyI := Cint(GetObjProperty(item, "penaltybonus"));
-	var DexPenaltyE := Cint(elem.DexPenalty);
-
-	if (DexPenaltyI > 0)
-		return CSTR(DexPenaltyE) + " (-" + CSTR(DexPenaltyI) + ")";
-	elseif (DexPenaltyI < 0)
-		return CSTR(DexPenaltyE) + " (+" + CSTR(-DexPenaltyI) + ")";
-	else
-		return CSTR(DexPenaltyE);
-	endif
-endfunction
-
-function ParseScriptString(crit)
-
-	var str := "";
-	var i := 1;
-
-	while(crit[i] != "/")
-		i := i + 1;
-	endwhile
-	i := i +1;
-	while (crit[i])
-		str := str + crit[i];
-		i := i + 1;
-	endwhile
-
-	return str;
-
-endfunction
-
 
 program Install()
 
@@ -283,16 +36,6 @@ program Install()
 endprogram
 
 exported function MegaCliloc( who, byref packet )
-	var white := "<BASEFONT COLOR=#FFFFFF>";
-	var amareloclaro := "<BASEFONT COLOR=#f5d189>";
-	var laranja :=  "<BASEFONT COLOR=#FFA500>";
-	var roxo := "<BASEFONT COLOR=#d98cd9>";
-	var softgreen := "<BASEFONT COLOR=#a1eca7>";
-	var blueice := "<BASEFONT COLOR=#00BFFF>";
-	var redfire := "<BASEFONT COLOR=#e95c4b>";
-	var lilas := "<BASEFONT COLOR=#d998a0>";
-	var fisico := "<BASEFONT COLOR=#FFFFFF>";
-
 
 	var Object_Name;
 
@@ -305,110 +48,7 @@ exported function MegaCliloc( who, byref packet )
 	if(item)
 		packet.SetSize(15); //primeira parte do packet eh tamanho 15
 
-		if (item.IsA(POLCLASS_MOBILE))
-			//PREENCHE NOME DO MOBILE
-			Object_Name := item.name;
-
-			//Cor do nome dos NPC conforme skill de combate
-			if (item.npctemplate)
-				var desc_npc := GetObjProperty(item, "descmodboss");
-				if (desc_npc) //Adicionado para mostrar descrição do boss
-					Object_Name := item.name +"<br>"+"<BASEFONT COLOR=#FFFFFF>"+desc_npc;
-				endif
-				if (who.weapon.attribute != WRESTLING)
-					if ( (AP_GetSkill(item, WRESTLING) + 10) > AP_GetSkill(who, who.weapon.attribute))
-						Object_Name :=  "<BASEFONT COLOR=#f5d189>" + Object_Name;
-					endif
-				else
-					var sk1 := AP_GetSkill(who, ONEHANDED);
-					var sk2 := AP_GetSkill(who, TWOHANDED);
-					var sk3 := AP_GetSkill(who, RANGED);
-					var maxsk := sk1;
-					if (sk2 > maxsk)
-						maxsk := sk2;
-					endif
-					if (sk3 > maxsk)
-						maxsk := sk3;
-					endif
-					if (AP_GetSkill(item, WRESTLING)+10 > maxsk)
-						Object_Name :=  "<BASEFONT COLOR=#f5d189>" + Object_Name;
-					endif
-				endif
-			else
-				//Caso em que tá desconhecido
-				if(GetObjProperty(item, "realname"))
-					Object_Name := amareloclaro + "Incognito";
-				else
-
-					//Verifica se o char já foi reconhecido por who
-					var conhecidos := dictionary;
-					if(GetObjProperty(who, "conhecidos"))
-
-						var ID := Cstr(item.serial); //Salva o serial do personagem
-						if(GetObjProperty(item, "disfarce"))
-							ID := Cstr(GetObjProperty(item, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
-						endif
-
-						conhecidos := GetObjProperty(who, "conhecidos"); //Lista de pessoas conhecidadas
-						if(conhecidos.Exists(ID))
-							Object_Name := conhecidos[ID];
-						else
-
-							Object_Name := item.name;
-						endif
-					else
-						Object_Name := item.name;
-					endif
-				endif
-				if (who.cmdlevel > 1) //Staff consegue ver o nome e raça
-					Object_Name := Object_Name + " [" + item.acctname + "]";
-				endif
-			endif
-		elseif ( item.IsA(POLCLASS_ITEM) )
-			var resource_config := ReadConfigFile(":crafting:config/resourceList");
-			if(GetObjProperty(item, "material"))
-				Object_Name := item.desc + " [" + resource_config[GetObjProperty(item, "material")].name + "]";
-			else
-				Object_Name := item.desc;
-			endif
-
-                // Verifica se é um item de lore
-                        var is_lore_item := GetObjProperty(item, "IsLoreItem");
-                        if (!is_lore_item)
-                            var cfg := ReadConfigFile(":*:itemdesc");
-                            var elem := FindConfigElem(cfg, item.objtype);
-                            if (elem)
-                                is_lore_item := GetConfigInt(elem, "IsLoreItem");
-                            endif
-                        endif
-
-                        // Se for um item de lore, adiciona todas as informações relevantes
-                        if (is_lore_item)
-                            var item_info := GetLoreItemInfo(item.objtype);
-                            if (item_info)
-                                Object_Name := Object_Name + "<br><BASEFONT COLOR=#FFD700>Item Lendário";
-                                Object_Name := Object_Name + "<br><BASEFONT COLOR=#FFFFFF>Povo: " + item_info.culture_name;
-
-                                // Verifica se o item já foi avaliado por um especialista
-                                var evaluated_skill := GetObjProperty(item, "evaluated_skill");
-                                if (evaluated_skill)
-                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#d98cd9>Esse item foi avaliado por um " + TraduzirProfissao(item_info.required_skill);
-                                else
-                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#d98cd9>" + GetConsultaEspecialistaTexto(item_info.required_skill);
-                                endif
-
-                                // Verifica se o item já foi examinado por um arqueólogo
-                                var evaluated_archaeology := GetObjProperty(item, "evaluated_archaeology");
-                                if (evaluated_archaeology)
-                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#a1eca7>Esse item foi avaliado por um Arqueólogo";
-                                else
-                                    Object_Name := Object_Name + "<br><BASEFONT COLOR=#a1eca7>Consulte um Arqueólogo";
-                                endif
-                            endif
-                        endif
-		else
-			Object_Name := item.name;
-		endif
+		Object_Name := PreencheNome(item,who);
 
 		//MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DO NOME DO ITEM
 		Object_Name := CAscZ(Object_Name);
@@ -422,53 +62,16 @@ exported function MegaCliloc( who, byref packet )
 		//PREENCHE A DESCRIÇÃO COMUM A QUALQUER ITEM OU MOBILE
 		xDesc := "";
 
-		if (!item.npctemplate)
-			if (who.cmdlevel > 1) //Staff consegue ver o nome e raça
-				if(GetObjProperty(item, "disfarce"))
-					xDesc := xDesc + white + " [disfarce] [" + item.acctname + "]" + "<br>";
-				endif
-				var culture;
-				if (GetObjProperty(item, "chardata"))
-					culture := GetObjProperty(item, "chardata").culture;
-				endif
-				if (culture)
-					xDesc := xDesc + white + culture + "<br>";
-				endif
-			endif
-		endif
+		xDesc := MontaDescPersonagem(item,who,xDesc);
 
+		/* Comentei porque a variavel desc não estava sendo usada pra nada - Luteros
 		desc := GetObjProperty(item, "description");
 		if(desc == error)
 			 desc := "";
 		endif
 
-		//EXIBE SE TEM PROPRIEDADE MAGICA
-		if (GetObjProperty(item,"magic_excep"))
-			xDesc := xDesc + roxo + "Magico Excepcional<br>";
-		elseif (GetObjProperty(item,"magic"))
-			xDesc := xDesc + roxo + "Magico<br>";
-		endif
-
-		//EXIBE SE TEM DOSES DE VENENO
-		if (GetObjProperty(item,"poisonInfo") != error )
-			//xDesc := xDesc + softgreen + "Envenenado<br>";
-			if (item.graphic == 0x0F01)
-				xDesc := xDesc + softgreen + "Doses de Veneno: " + GetObjProperty(item,"poisonInfo").dosage +  "<br>";
-			endif
-		endif
-
-		var descmods := GetObjProperty(item, "descmod");
-
-		if (isFireWeapon(item))
-			if (!GetObjProperty(item, "balas"))
-				xDesc := xDesc + white + "Sem Munição<br>";
-			else
-				xDesc := xDesc + white + "Munição: " + GetObjProperty(item, "balas") + "<br>";
-			endif
-		endif
-
 		//JUNTA AS DESCRIÇÕES DO DOS PROPS DO PERSONAGEM
-
+		var descmods := GetObjProperty(item, "descmod");
 		if(descmods != error)
 			if(item.IsA(POLCLASS_MOBILE))
 				foreach descmod in descmods
@@ -483,211 +86,15 @@ exported function MegaCliloc( who, byref packet )
             if (item.npctemplate)
                 desc := showHurtDescription(item);
             endif
-		endif
+		endif 
 
 		//LIMITA O TAMANHO DAS DESCRIÇÕES
 		if (len(desc) > 85)
 			desc := desc[1, 85];
 		endif
+		*/
 
-		//VERIFICA PROPRIEDADES DE IDIOMAS
-            var description := GetObjProperty(item, "description");
-            var linguagem := GetObjProperty(item, "lingua");
-
-            if (linguagem != error)
-                xDesc := xDesc + "<BASEFONT COLOR=#FFD700>[Artefato Arqueológico]<br>";
-
-                if (description != error && description != "")
-                    var linguas_conhecidas := GetObjProperty(who, "linguas_conhecidas");
-                    if (!linguas_conhecidas)
-                        linguas_conhecidas := array{};
-                    endif
-
-                    var pode_ler := 0;
-                    var tooltip := "";
-
-                    if (linguagem in linguas_conhecidas)
-                        pode_ler := 1;
-                        tooltip := "<BASEFONT COLOR=#C0C0C0>Você sabe ler essa língua<br>";
-                    elseif (linguagem == "Antiga" && temHabilidade(who, "Arqueologo"))
-                        pode_ler := 1;
-                        tooltip := "<BASEFONT COLOR=#C0C0C0>A arqueologia permitiu decifrar essa língua morta<br>";
-                    elseif (temHabilidade(who, "Arqueologo"))
-                        pode_ler := 1;
-                        tooltip := "<BASEFONT COLOR=#C0C0C0>Seu conhecimento de arqueologia decifrou a escrita<br>";
-                    endif
-
-                    if (pode_ler)
-                        xDesc := xDesc + tooltip + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
-                    else
-                        xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Inscrições em Língua Desconhecida*<br>";
-                        xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Não foi decifrado*<br>";
-                    endif
-                else
-                    xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Sem inscrições visíveis*<br>";
-                endif
-            elseif (description != error && description != "")
-                xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
-            endif
-
-		//ADICIONA DESCRIÇÕES DAS PROPRIEDADES COMUNDS DE ARMAS E ARMADURAS
-		if (item.isA(POLCLASS_WEAPON) || item.isA(POLCLASS_ARMOR))
-			var cfg := ReadConfigFile(":*:itemdesc");
-			var elem := FindConfigElem(cfg, item.objtype);
-			if (item.quality >= 1.1)
-				xDesc := xDesc + white + getQuality(item.quality) + "<br>"; //exibe apenas dois digitos
-			endif
-
-			var cond := GetCondition(item);
-			xDesc := xDesc + "Condição: " + GetCondition(item) + "<br>";
-
-			if (item.isA(POLCLASS_WEAPON))
-				xDesc := xDesc + "Força exigida: " + elem.strrequired + "<br>";
-				xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item) + "<br>";
-				if (elem.OffHandDamage)
-					xDesc := xDesc + "OffDano: " + GetOffHandDmgStringDesc(elem,  item) + "<br>";
-				endif
-				xDesc := xDesc + "Velocidade: " + GetVelStringDesc(elem, item) + "<br>";
-				xDesc := xDesc + GetTipoStringDesc(elem, item) + "<br>";
-				var crits := GetCriticalInfo(elem);
-				if (crits != "")
-					xDesc := xDesc + laranja + crits;
-				endif
-
-				var hits :=  GetHitsInfo(elem);
-				if (hits != "")
-					xDesc := xDesc + amareloclaro + hits;
-				endif
-
-				xDesc := xDesc + white + "Fisico " + (item.damage_physical ) + "<br>";
-
-				if ( (item.damage_cold + item.damage_cold_mod != 0))
-				xDesc := xDesc  + blueice + "Frio " + (item.damage_cold ) + "<br>";
-				endif
-				if ( (item.damage_fire + item.damage_fire_mod != 0))
-					xDesc := xDesc + redfire + "Fogo " + (item.damage_fire ) + "<br>";
-				endif
-				if ( (item.damage_energy + item.damage_mod != 0))
-					xDesc := xDesc  + lilas + "Energia " + (item.damage_energy ) + "<br>";
-				endif
-				if ( (item.damage_poison + item.damage_poison_mod != 0))
-					xDesc := xDesc  + softgreen + "Veneno " + (item.damage_poison ) + "<br>";
-				endif
-
-				//EXIBE AS GEMAS QUE TEM NA ARMA
-				if ( getObjProperty(item, "swordmage") == who.serial)
-					var gems := getobjproperty(item, "gems");
-					foreach gem in (gems.keys())
-						xDesc := xDesc + white + gem + " - "+ getSwordSpellName(gems[gem].id) + "<br>";
-					endforeach
-				endif
-
-				if ( getObjProperty(item,"#elementalweapon").serial == who.serial)
-					var elWpn := getObjProperty(item, "#elementalweapon");
-					if (elWpn.type == DMG_COLD)
-						xDesc := xDesc + blueice + "Cargas Arcanas: "+elWpn.cargas+"<br>";
-					elseif ( elWpn.type == DMG_FIRE)
-						xDesc := xDesc + redfire + "Cargas Arcanas: "+elWpn.cargas +"<br>";
-					elseif (elWpn.type == DMG_ENERGY)
-						xDesc := xDesc + roxo + "Cargas Arcanas "+elWpn.cargas+"<br>";
-					endif
-				endif
-				if (item.dmg_mod > 0 )
-					xDesc := xDesc + roxo + "Bônus Dano "+item.dmg_mod+ " <br>";
-				endif
-				if (item.hp_mod > 0)
-					xDesc := xDesc + roxo + "Bônus Item PVs "+item.hp_mod;
-				endif
-
-				var hitsscripts := GetObjProperty(item, "HitScripts");
-				if (hitsscripts != error)
-					foreach hits in hitsscripts
-					var dano_esp := GetDmgStringSpecialDmg(elem, item);
-						if (hits == ":combat:weaponHitScripts/FireHit")
-							xDesc := xDesc + roxo + "Dano de Fogo "+dano_esp+"<br>";
-						elseif ( hits == ":combat:weaponHitScripts/IceHit")
-							xDesc := xDesc + roxo + "Dano de Gelo "+dano_esp +"<br>";
-						elseif ( hits == ":combat:weaponHitScripts/LightningHit")
-							xDesc := xDesc + roxo + "Dano de Energia "+dano_esp+"<br>";
-						endif
-					endforeach
-				endif
-
-				if (GetObjProperty(item, "swordmage") != error)
-					xDesc := xDesc + white + GetObjProperty(item, "swordmage") + "<br>";
-				endif
-			elseif (item.isA(POLCLASS_ARMOR))
-				if (cint(elem.strrequired) > 0)
-					xDesc := xDesc + "Min Str: " + elem.strrequired + "<br>";
-				endif
-				if (elem.DexPenalty || GetObjProperty(item, "penaltybonus"))
-					xDesc := xDesc + "Redutor Dex : " + getDexPenalty(elem, item) + "<br>";
-				endif
-				if (elem.parrybonus || GetObjProperty(item, "parrybonus"))
-					xDesc := xDesc + "Block Bonus: " + getParryBonus(elem, item) + "<br>";
-				endif
-				if (elem.parrydelay || GetObjProperty(item, "parrydelay_mod"))
-					xDesc := xDesc + "Delay Bonus: " + getParryDelay(elem, item) + "<br>";
-				endif
-				xDesc := xDesc + fisico + "Fisico " + (item.resist_physical ) + "<br>";
-
-				if ( CInt(item.resist_cold) != 0)
-					xDesc := xDesc  + blueice + "Frio " + (item.resist_cold ) + "<br>";
-				endif
-				if ( CInt(item.resist_fire) != 0)
-					xDesc := xDesc + redfire + "Fogo " + (item.resist_fire ) + "<br>";
-				endif
-				if ( CInt(item.resist_energy) != 0)
-					xDesc := xDesc  + lilas + "Energia " + (item.resist_energy ) + "<br>";
-				endif
-				if ( CInt(item.resist_poison) != 0)
-					xDesc := xDesc  + softgreen + "Veneno " + (item.resist_poison ) + "<br>";
-				endif
-			endif
-		endif
-
-		var pplmage := GetObjProperty(item, "magicwho"); //magic lore
-		if ( pplmage != error)
-			if (who.serial in pplmage)
-				if (GetObjProperty(item, "pocaoname"))
-					xDesc := xDesc + white + GetObjProperty(item, "pocaoname");
-				endif
-				var mods := GetObjProperty(item, "equip");
-				if (mods != error)
-					foreach mod in (mods.keys())
-						if (mod == "strmod")
-							xDesc := xDesc + roxo + "Bônus For "+mods[mod]+"<br>";
-						elseif (mod == "dexmod")
-							xDesc := xDesc + roxo + "Bônus Des "+mods[mod]+"<br>";
-						elseif (mod == "intmod")
-							xDesc := xDesc + roxo + "Bônus Int "+mods[mod]+"<br>";
-						elseif (mod == "hitsmod")
-							xDesc := xDesc + roxo + "Bônus PVs "+mods[mod]+"<br>";
-						elseif (mod == "manamod")
-							xDesc := xDesc + roxo + "Bônus Mana "+mods[mod]+"<br>";
-						elseif (mod == "stammod")
-							xDesc := xDesc + roxo + "Bônus Stam "+mods[mod]+"<br>";
-						elseif (mod == "chancetocritic")
-							xDesc := xDesc + roxo + "Chande de Crítico +"+mods[mod]+"%<br>";
-						elseif (mod == "PhysicalResistMod")
-							xDesc := xDesc + roxo + "Resistência Física +"+mods[mod]+"<br>";
-						elseif (mod == "ColdResistMod")
-							xDesc := xDesc + roxo  + "Resistência Frio +"+mods[mod]+"<br>";
-						elseif (mod == "FireResistMod")
-							xDesc := xDesc + roxo + "Resistência Fogo +"+mods[mod]+"<br>";
-						elseif (mod == "EnergyResistMod")
-							xDesc := xDesc + roxo  + "Resistência Energia +"+mods[mod]+"<br>";
-						elseif (mod == "PoisonResistMod")
-							xDesc := xDesc + roxo  + "Resistência Veneno +"+mods[mod]+"<br>";
-						else
-							if ((mod != "dmg_mod") && (mod != "hitscript"))
-							xDesc := xDesc + roxo + "Bonus " + mod + "<br>";
-							endif
-						endif
-					endforeach
-				endif
-			endif
-		endif
+		xDesc := MontaDescricaoItem(item,who,xDesc);
 
 		//MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DAS DESCRIÇÕES
 		xDesc := CAscZ(xDesc);
@@ -713,35 +120,6 @@ exported function MegaCliloc( who, byref packet )
 
 endfunction
 
-function TraduzirProfissao(profissao)
-    case (profissao)
-        "Metal_Working": return "Ferreiro";
-        "Alchemy": return "Alquimista";
-        "Magery": return "Mago";
-        "Survival": return "Sobrevivencialista";
-        "Medicine": return "Médico";
-        "Domestic_Work": return "Trabalhador Doméstico";
-        "Mechanics": return "Mecânico";
-        "Wood_Working": return "Carpinteiro";
-        "Gathering": return "Coletor";
-        "Handle_Animal": return "Adestrador de Animais";
-        default: return profissao;
-    endcase
-endfunction
 
-function GetConsultaEspecialistaTexto(profissao)
-    var profissao_traduzida := TraduzirProfissao(profissao);
-    case (profissao_traduzida)
-        "Ferreiro": return "Consulte um Ferreiro";
-        "Alquimista": return "Consulte um Alquimista";
-        "Mago": return "Consulte um Mago";
-        "Sobrevivencialista": return "Consulte um Sobrevivencialista";
-        "Médico": return "Consulte um Médico";
-        "Trabalhador Doméstico": return "Consulte um Trabalhador Doméstico";
-        "Mecânico": return "Consulte um Mecânico";
-        "Carpinteiro": return "Consulte um Carpinteiro";
-        "Coletor": return "Consulte um Coletor";
-        "Adestrador de Animais": return "Consulte um Adestrador de Animais";
-        default: return "Consulte um especialista em " + profissao_traduzida;
-    endcase
-endfunction
+
+

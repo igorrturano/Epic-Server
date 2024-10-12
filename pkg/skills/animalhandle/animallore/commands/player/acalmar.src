@@ -1,4 +1,5 @@
 use uo;
+use cfgfile;
 
 include ":spells:tnmagery";
 include ":charactercreation:habilidades";
@@ -34,20 +35,15 @@ program textcmd_acalmar(who)
 		return 0;
 	endif
 
-	if( creature.serial == who.serial )
-		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
-		return 0;
-	endif
-
-	if( !creature.isA(POLCLASS_NPC) || isBoss(creature) )
-		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
-		return 0;
-	endif
-
-	if( (creature.graphic == 0x190) || (creature.graphic == 0x191) || (creature.graphic == 309) || (creature.graphic == 307) || (creature.graphic == 14) )
-		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
-		return 0;
-	endif
+	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var template := ParseTemplateName(creature.npctemplate).template;
+	var taxonomy := npccfgfile[template].Taxonomy;	
+	
+        if( !taxonomy )
+                SendSysMessage(who, "Esse não pode ser um alvo válido.");
+                return 0;
+        endif
+	unloadConfigFile(":brainai:npcdesc");
 
 	var dist := Distance(who, creature);
 	if (dist > 8)

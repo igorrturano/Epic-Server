@@ -7,6 +7,7 @@ include ":survival:fishingFunctions";
 include ":gumps:requestGump";
 include ":attributes:attributes";
 include ":fls_core:packets";
+include ":commands:/include/r";
 
 program reconhecer(who, param)
 	var conhecidos := dictionary;
@@ -21,10 +22,7 @@ program reconhecer(who, param)
 		return 0;
 	endif
 
-	var ID := cstr(targ.serial); //Salva o serial do personagem
-	if(GetObjProperty(targ, "disfarce"))
-		ID := cstr(GetObjProperty(targ, "FakeID")); //Substitui o serial pelo falso quando o personagem observado está disfarçado
-	endif
+	var ID := VerificaDisfarce(targ);
 
 	if(targ.IsA(POLCLASS_MOBILE))
 		if(targ.npctemplate)
