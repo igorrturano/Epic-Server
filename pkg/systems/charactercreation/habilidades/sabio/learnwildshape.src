@@ -1,0 +1,192 @@
+use uo;
+use util;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":taming:taming";
+include "include/client";
+include "include/sysEvent";
+include "include/eventID";
+include "include/say";
+include ":datafile:datafile";  
+include ":attributes:attributes";
+include ":tn:boss";
+include ":tn:npcutil";
+include ":timedscripts:timedScripts";
+
+const MAX_TRANSFORMATIONS := 10;  // Maximum number of wildshape_forms to store
+
+program wildshape(who)
+
+    // Send message prompting player to target an animal for study
+    SendSysMessageEx(who, "Qual criatura selvagem voce deseja estudar para aprender sua forma?", SSM_REQUEST);
+    var targ := target(who);  // Target the animal
+
+    // Check validity of the target
+    if (!IsValidTamingTarget(who, targ)) 
+        return;  // Exit if target is invalid
+    endif
+
+    // Read the NPC configuration to find TameDifficulty (like in adestrar.src)
+    var cfg := ReadConfigFile(":brainai:npcdesc");
+    var npctemplate := targ.npctemplate;
+    npctemplate := npctemplate[10, len(npctemplate)-9];
+    cfg := cfg[npctemplate];
+
+    // Ensure the NPC has a valid TameDifficulty value
+    if (!cfg.TameDifficulty)
+        SendSysMessageEx(who, "Voce nao pode estudar a forma de " + targ.name + ".", SSM_FAIL);
+        return;
+    endif
+
+    // Get player's MAGERY skill
+    var skill := AP_GetSkill(who, MAGERY);
+
+    // Use the TameDifficulty as the study difficulty
+    var info := struct;
+    info.+x := who.x;
+    info.+y := who.y;
+    info.+facing := who.facing;
+    info.+difficulty := cfg.TameDifficulty;
+
+    // Check if the player's skill is high enough to study the creature
+    if (info.difficulty > (skill*1.2 + 15))
+        SendSysMessageEx(who, "A criatura " + targ.name + " e complexa demais para voce estudar no momento.", SSM_FAIL);
+        return 0;
+    endif
+
+    // Set a cooldown property to prevent spamming attempts
+    SetObjProperty(who, "#studywait", ReadGameClock() + 5);
+
+    // Begin the study attempt loop
+    while (StudyLoop(who, targ, info))
+        SetObjProperty(who, "#studywait", ReadGameClock() + 5);
+        sleep(3);
+
+        // Check if the study attempt is successful based on the player's skill
+        if (SkillCheck(who, MAGERY, CInt(info.difficulty*1.2)) > 0)
+            SendSysMessageEx(who, "Voce estudou cuidadosamente a forma de " + targ.name + ".", SSM_INFO);
+
+            // Store the transformation in the ordered list (maximum based on skill)
+            StoreTransformation(who, targ);
+
+            break;  // Exit the loop after successful study
+        else
+            SendSysMessageEx(who, "Voce falhou em entender completamente a forma de " + targ.name + ".", SSM_FAIL);
+            return 0;
+        endif
+    endwhile
+endprogram
+
+// Check if the target is valid for studying (based on taming logic)
+function IsValidTamingTarget(who, targ)
+    if (!targ.IsA(POLCLASS_NPC))  // Ensure target is an NPC
+        SendSysMessageEx(who, "Essa nao e uma criatura valida para estudo.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (targ.script[":ghaia:tamed"])  // Ensure the target is not already tamed
+        SendSysMessageEx(who, "Voce so pode estudar criaturas selvagens.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!CheckLineOfSight(who, targ))  // Ensure line of sight
+        SendSysMessageEx(who, "Voce nao pode ver claramente a criatura!", SSM_FAIL);
+        return 0;
+    endif
+
+    if (isBoss(targ))  // Bosses cannot be studied
+        SendSysMessageEx(who, "Essa criatura poderosa nao pode ser estudada.", SSM_FAIL);
+        return 0;
+    endif
+
+    return 1;  // Target is valid for study
+endfunction
+
+// Function to store the transformation in an ordered list, with a max based on skill (Magery/10)
+function StoreTransformation(who, targ)
+    // Calculate max transformations based on Magery/10
+    var max_transformations := CInt(AP_GetSkill(who, MAGERY) / 20);
+    if (TemHabilidade(who, "Treinamento Druídico"))
+        max_transformations := max_transformations * 2;
+    endif
+    // Use AP_GetStat to fetch strength, dexterity, intelligence from the NPC
+    var targ_strength := AP_GetStat(targ, "Strength");
+    var targ_dexterity := AP_GetStat(targ, "Dexterity");
+    var targ_intelligence := AP_GetStat(targ, "Intelligence");
+    //ADJUST HERE REMOVE ALWAYS TRANSFORMATION
+
+    // Print stats to verify they exist
+    SendSysMessageEx(who, "Força: " + CStr(targ_strength), SSM_INFO);
+    SendSysMessageEx(who, "Destreza: " + CStr(targ_dexterity), SSM_INFO);
+    SendSysMessageEx(who, "Inteligência: " + CStr(targ_intelligence), SSM_INFO);
+
+    // Create a new struct to store the appearance details of the transformation
+    var transformation := struct;
+    transformation.+name := targ.name;
+    transformation.+graphic := targ.graphic;
+    transformation.+color := targ.color;
+    transformation.+gender := targ.gender;
+    transformation.+strength := targ_strength;
+    transformation.+dexterity := targ_dexterity;
+    transformation.+intelligence := targ_intelligence;
+
+    // Check if the player already has a list of wildshape_forms
+    var transformation_list := GetObjProperty(who, "wildshape_forms");
+
+    // If no list exists yet, initialize a new empty array
+    if (transformation_list == error)
+        transformation_list := array;
+    endif
+
+    // Check if a transformation with the same name already exists in the list
+    foreach old_transformation in transformation_list
+        if (old_transformation.name == targ.name)
+            SendSysMessageEx(who, "Voce ja conhece a forma de " + targ.name + ". Atualizando com a nova forma estudada.", SSM_INFO);
+            transformation_list.remove(old_transformation);  
+            break;
+        endif
+    endforeach
+
+    // Remove the oldest entry if the list exceeds the max transformations allowed
+    if (transformation_list.size() >= max_transformations)
+        var old_transformation := transformation_list[0];
+        SendSysMessageEx(who, "Ao aprender a nova forma " + targ.name + ", voce se esquece da forma " + old_transformation.name + ".", SSM_FAIL);
+        transformation_list.remove(0);  // Remove the first (oldest) transformation
+    endif
+
+    // Clear the entire transformation list for
+    transformation_list.clear();
+
+    // Add the new transformation to the end of the list
+    transformation_list.append(transformation);
+
+    SetObjProperty(who, "wildshape_forms", transformation_list);
+
+    // DEBUG: Optional: Output the current list of wildshape_forms to the player
+    //OutputTransformationList(who, transformation_list);
+endfunction
+
+// Function to check studying conditions (based on taming conditions)
+function StudyLoop(who, targ, byref info)
+    var my_hostiles := ListHostiles(who, 15);
+    var targ_hostiles := ListHostiles(targ, 15);
+
+    if (targ.master)  
+        SendSysMessageEx(who, "Voce so pode estudar criaturas selvagens.", SSM_FAIL);
+        return 0;
+    elseif (targ_hostiles.size() > 0)  
+        SendSysMessageEx(who, "O animal " + targ.name + " esta sob ataque e nao pode ser estudado agora.", SSM_FAIL);
+        return 0;
+    elseif (my_hostiles.size() > 0)  
+        SendSysMessageEx(who, "Voce nao pode estudar " + targ.name + " enquanto esta sendo atacado.", SSM_FAIL);
+        return 0;
+    elseif (Distance(who, targ) > 2)  
+        SendSysMessageEx(who, "Voce esta muito longe da criatura para estuda-la.", SSM_FAIL);
+        return 0;
+    endif
+
+    PrintText(who, "*observando atentamente " + targ.name + "*");
+
+    return 1;  // Continue studying
+endfunction

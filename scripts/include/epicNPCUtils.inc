@@ -76,6 +76,16 @@ function customizeNpc(mob)
     HealDamage(mob, hitsmod + hp);
 endfunction
 
+function ReturnCharDataPlayerNear(me)
+    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+    foreach mobile in nearby
+        if (mobile.acctname)
+			return mobile.acctname;
+        endif
+    endforeach
+    return 0;
+endfunction
+
 function HasPlayerNear(me)
     var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
     foreach mobile in nearby
@@ -98,13 +108,22 @@ function HasPlayerNearLocation(x, y, realm := 0)
 	return 0;
 endfunction
 
-enum RESISTS
+enum RESISTS_TIERS
 	RESIST_TIER0 := 0,
 	RESIST_TIER1 := 1,
 	RESIST_TIER2 := 3,
 	RESIST_TIER3 := 6,
 	RESIST_TIER4 := 12,
 	RESIST_TIER5 := 16,
+endenum
+
+enum TIERS
+	T0 := "T0",
+	T1 := "T1",
+	T2 := "T2",
+	T3 := "T3",
+	T4 := "T4",
+	T5 := "T5",
 endenum
 
 /**
@@ -222,24 +241,24 @@ function getNPCResists(npc)
 	var stats := struct;
 
 	foreach resist in elemFiscResists
-	case (resist)
-			"T0": resist := RESIST_TIER0; break;
-			"T1": resist := RESIST_TIER1; break;
-			"T2": resist := RESIST_TIER2; break;
-			"T3": resist := RESIST_TIER3; break;
-			"T4": resist := RESIST_TIER4; break;
-			"T5": resist := RESIST_TIER5; break;
+	case (resist.Upper())
+			T0: resist := RESIST_TIER0; break;
+			T1: resist := RESIST_TIER1; break;
+			T2: resist := RESIST_TIER2; break;
+			T3: resist := RESIST_TIER3; break;
+			T4: resist := RESIST_TIER4; break;
+			T5: resist := RESIST_TIER5; break;
 			default: resist := 0; break;
 		endcase
 	endforeach
 	foreach resist in elemElemResists
-	case (resist)
-			"T0": resist := RESIST_TIER0; break;
-			"T1": resist := RESIST_TIER1; break;
-			"T2": resist := RESIST_TIER2; break;
-			"T3": resist := RESIST_TIER3; break;
-			"T4": resist := RESIST_TIER4; break;
-			"T5": resist := RESIST_TIER5; break;
+	case (resist.Upper())
+			T0: resist := RESIST_TIER0; break;
+			T1: resist := RESIST_TIER1; break;
+			T2: resist := RESIST_TIER2; break;
+			T3: resist := RESIST_TIER3; break;
+			T4: resist := RESIST_TIER4; break;
+			T5: resist := RESIST_TIER5; break;
 			default: resist := 0; break;
 		endcase
 	endforeach

@@ -1,4 +1,5 @@
 include "include/props";
+include "include/equipstats";
 
 program EquipSys(params)
 	Detach();
@@ -7,7 +8,9 @@ program EquipSys(params)
 
 	if (item.IsA(POLCLASS_ARMOR))
 		setPropArmor(item);
+		// TODO: setArmorStats(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
-		setPropWeapon(item);
+		// setPropWeapon(item);
+		setWeaponStats(item);
 	endif
 endprogram

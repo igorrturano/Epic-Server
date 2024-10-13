@@ -40,10 +40,31 @@ function getWeaponStats(weapon)
 		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
-	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
+endfunction
+
+/**
+ * getWeaponStats(weapon)
+ *
+ * Purpose
+ * Passar todos os valores da arma em um único struct.
+ *
+ * Parameters
+ * weapon: ItemRef da arma.
+ *
+ * Return struct
+ * Retorna um struct com todos os valores base da arma.
+ *
+ */
+function setWeaponStats(weapon)
+	// TODO: Rever a lógica e fazer um refator adequado. Só está assim pela urgência pra evitar bug.
+	var stats := getWeaponStats(weapon);
+
+	setPropWeapon(weapon);
+	weapon.speed_mod := CInt(stats.AttackSpeed - 24);
 endfunction
 
 /**
