@@ -101,6 +101,7 @@ program skinning(parms)
 		var qtd;
 		PrintText(who, "*escalpelando "+cadaver.desc+"*");
 		SetObjProperty(cadaver, "morto",1);
+		/* Não entendi o motivo desse trecho, portanto comentei *Deiro*
 		if(c_type == 223)
 			qtd := 2;
 			if(TemHabilidade(who, "Sem Desperdicio"))
@@ -111,7 +112,7 @@ program skinning(parms)
 			MakeBleed(cadaver);
 			return;
 		endif
-
+		*/
 		var conf := ReadConfigFile(":brainAi:npcdesc");
 		var tmplate := GetObjProperty(cadaver, "npctemplate");
 		//var tmplate := cadaver.NPCTemplate();
