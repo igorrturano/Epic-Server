@@ -70,7 +70,7 @@ program giverp(who, params)
 			SendSysMessageEX(who, "Os pontos precisam ser um numero inteiro!", SSM_FAIL);
 			return;
 		endif
-		SendSysMessageEx(who, "Selecione o jogador que vai receber nota.", SSM_INFO);
+		SendSysMessageEx(who, "Selecione o jogador que vai receber os pontos.", SSM_INFO);
 		var player := Target(who);
 		if (!player)
 			return;
@@ -79,7 +79,7 @@ program giverp(who, params)
 		incGrade(player.acctname, nota);
 		LogAccount(player.acctname, who, nota);
 		LogRPpoints(who, player.name, nota);
-		SendSysMessageEx(who, "A Nota do player "+player.acctname+" aumentou de "+oldnota+" para "+getGrade(player.acctname), SSM_INFO);
+		SendSysMessageEx(who, "Os pontos do player "+player.acctname+" aumentou de "+oldnota+" para "+getGrade(player.acctname), SSM_INFO);
 	else
 		if (!findAccount(conta) || findAccount(conta) == error)
 			SendSysMessageEX(who, "A Conta "+conta+" nao existe!", SSM_FAIL);
@@ -89,12 +89,12 @@ program giverp(who, params)
 			SendSysMessageEX(who, "Os pontos precisam ser um numero inteiro!", SSM_FAIL);
 			return;
 		endif
-		SendSysMessage(who, "nota: "+nota);
+		SendSysMessage(who, "pontos: "+nota);
 		var oldnota := getGrade(conta);
 		incGrade(conta, nota);
 		LogAccount(conta, who, nota);
 		LogRPpoints(who, findAccount(conta).GetCharacter(1).name, nota);
-		SendSysMessageEx(who, "A Nota do player "+conta+" aumentou de "+oldnota+" para "+getGrade(conta), SSM_INFO);
+		SendSysMessageEx(who, "Os pontos do player "+conta+" aumentou de "+oldnota+" para "+getGrade(conta), SSM_INFO);
 	endif
 endprogram
 
