@@ -108,12 +108,12 @@ function SetupEquip(who)
   if(who.graphic == 0x190)
     var male_graphics := {400, 1830, 1832, 1828, 1835};
 
-    who.graphic := RandomInt(male_graphics.size()) + 1;
+    who.graphic := male_graphics[RandomInt(male_graphics.size()) + 1];
     who.gender := 0;
     categ := categ + "M";
   elseif (who.graphic == 0x191)
     var female_graphics := {401, 1831, 1833, 1829, 1834};
-    who.graphic := RandomInt(female_graphics.size()) +1;
+    who.graphic := female_graphics[RandomInt(female_graphics.size()) +1];
     categ := categ + "F";
   endif
   couleurs := ReadConfigFile(":ghaia:config/colors");
