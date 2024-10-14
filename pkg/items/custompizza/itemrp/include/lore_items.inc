@@ -28,8 +28,6 @@ function GetLoreItemInfo(item_id)
         info.+archaeology_text := elem.archaeology_text;
         info.+required_skill := elem.required_skill;
         info.+required_skill_value := elem.required_skill_value;
-        info.+required_habilidade := elem.required_habilidade;
-        Print(item_id + " - " + elem + " - " + info);
     else
         return error{"errortext":="item de lore não encontrado"};
     endif
