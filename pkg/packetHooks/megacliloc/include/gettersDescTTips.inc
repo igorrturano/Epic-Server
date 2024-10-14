@@ -86,11 +86,12 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 	var xDesc := cfg.desc;
-
-
+	
 	xDesc := xDesc + "Força exigida: " + cfg.elem.strrequired + "<br>";
+	//xDesc := xDesc + "Perícia: " + getPericia(cfg.elem) + "<br>";
+	xDesc := xDesc + "Perícia: " + cfg.elem.Attribute + "<br>";
 	xDesc := xDesc + "Dano: <br>";
-	xDesc := PegaDescDanoArma(objeto,xDesc);
+	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
@@ -106,7 +107,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
 	endif
 		
-	XDesc := PegaDescDanoModArma(objeto,xDesc);
+	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
 	XDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
 
 	if (PegaPropObjItemOrTemplate(objeto, "swordmage") != error)
@@ -129,12 +130,23 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	return xDesc;
 endfunction
 
-function PegaDescDanoArma(objeto,xDesc := "")
+function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	
 	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
 	var bluntMD,slashMD,pircMD :=0;
 	var bluntOD,slashOD,pircOD := "";
 	
+	if(!atrib)
+		var elemMainDamage := SplitWords(cfg.elem.EpicMainDamage);
+		var elemOffDamage := SplitWords(cfg.elem.EpicOffDamage);
+		atrib.+SlashMainDamage := getDamageByTier(elemMainDamage[1]);
+		atrib.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]);
+		atrib.+BluntMainDamage := getDamageByTier(elemMainDamage[3]);
+
+		atrib.+SlashOffDamage :=getDamageByTier(elemOffDamage[1]);
+		atrib.+PiercingOffDamage :=getDamageByTier(elemOffDamage[2]);
+		atrib.+BluntOffDamage :=getDamageByTier(elemOffDamage[3]);
+	endif
 	/*
 	Se usa esse metodo o arquivo não compila mais (??) [2-byte off]
 	if(!atrib)
@@ -166,24 +178,7 @@ function PegaDescDanoArma(objeto,xDesc := "")
 endfunction
 
 function PegaDescDanoModArma(objeto,xDesc := "")
-	xDesc := xDesc + WHITE + "Fisico " + (objeto.damage_physical ) + "<br>";
-
-	if ( (objeto.damage_cold + objeto.damage_cold_mod != 0))
-		xDesc := xDesc  + BLUE_ICE + "Frio " + (objeto.damage_cold ) + "<br>";
-	endif
-	if ( (objeto.damage_fire + objeto.damage_fire_mod != 0))
-		xDesc := xDesc + RED_FIRE + "Fogo " + (objeto.damage_fire ) + "<br>";
-	endif
-	if ( (objeto.damage_energy + objeto.damage_mod != 0))
-		xDesc := xDesc  + LILAS + "Energia " + (objeto.damage_energy ) + "<br>";
-	endif
-	if ( (objeto.damage_poison + objeto.damage_poison_mod != 0))
-		xDesc := xDesc  + SOFT_GREEN + "Veneno " + (objeto.damage_poison ) + "<br>";
-	endif
-
-	if (objeto.dmg_mod > 0 )
-		xDesc := xDesc + ROXO + "Bônus Dano "+objeto.dmg_mod+ " <br>";
-	endif
+	//TODO alterar uma vez que o sistema de combate estiver terminado.
 
 	return xDesc;
 endfunction
@@ -233,7 +228,7 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 
 	var bluntRes,slashRes,pircRes :=0;
 	if(!atrib)
-		atrib := getResistByProtection(cfg);
+		atrib := getResistByProtection(cfg.elem.TipoProtecao);
 	endif
 	slashRes := atrib.SlashResist;
 	pircRes := atrib.PiercingResist;
@@ -252,21 +247,6 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	if((bluntRes + pircRes + slashRes) > 0)
 		xDesc := xDesc + "<br>";
 	endif
-		//xDesc := xDesc + FISICO + "Fisico " + (objeto.resist_physical ) + "<br>";
-
-	if ( CInt(objeto.resist_cold) != 0)
-		xDesc := xDesc  + BLUE_ICE + "Frio " + (objeto.resist_cold ) + "<br>";
-	endif
-	if ( CInt(objeto.resist_fire) != 0)
-		xDesc := xDesc + RED_FIRE + "Fogo " + (objeto.resist_fire ) + "<br>";
-	endif
-	if ( CInt(objeto.resist_energy) != 0)
-		xDesc := xDesc  + LILAS + "Energia " + (objeto.resist_energy ) + "<br>";
-	endif
-	if ( CInt(objeto.resist_poison) != 0)
-		xDesc := xDesc  + SOFT_GREEN + "Veneno " + (objeto.resist_poison ) + "<br>";
-	endif
-
 	return xDesc;
 endfunction
 
@@ -338,3 +318,24 @@ function PegaDescGoles(objeto, xDesc)
 		endif
 		return xDesc;
 endfunction
+
+
+function getPericia(elem)
+	
+	var attribute := Cint(elem.Attribute);
+
+	case(attribute)
+		"One_Handed":
+			return "Uma mão";
+		"Two_Handed":
+			return "Duas mãos";
+		"Wrestling":
+			return "Mãos Livres";
+		"Dual_Wield":
+			return "Empunhadura dupla";
+		"Ranged":
+			return "Longo Alcance";
+		"Throwing":
+			return "Lançamento";
+	endcase
+endfunction	
