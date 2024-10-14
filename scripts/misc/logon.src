@@ -255,18 +255,28 @@ endfunction
 
 // The function to enforce skill cap
 function EnforceSkillCap(who)
-    var skills := GetObjProperty(who, "chardata").Skills;
-    if (!skills)
-        return 0; 
+    if (who.cmdlevel >= 1)
+        return 0;
+    endif
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0; // No character data found
     endif
 
-    foreach skill in (skills.keys())
-        var true_skill := AP_GetTrueSkill(who, skill); 
-        var skill_cap := AP_CheckClassSkillCap(who, skill); 
+    var skillsmap := chardata.Skills;  
+    if (!skillsmap)
+        return 0; // No skills found
+    endif
+
+    var skillsArray := skillsmap.keys(); 
+
+    foreach skill in skillsArray
+        var true_skill := AP_GetTrueSkill(who, skill);  
+        var skill_cap := AP_CheckSkillCap(who, skill);  
         // If the current skill is higher than the cap, revert it to the cap
         if (true_skill > skill_cap)
             AP_SetTrueSkill(who, skill, skill_cap); 
-			SendSysMessage(who, "Sua habilidade em " + skill + " foi ajustada para o limite máximo de " + skill_cap);
+            SendSysMessage(who, "Sua habilidade em " + skill + " foi ajustada para o limite máximo de " + skill_cap);
         endif
     endforeach
 endfunction
