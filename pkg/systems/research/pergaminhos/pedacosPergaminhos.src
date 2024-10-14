@@ -9,19 +9,16 @@ include ":attributes:attributes";
 include ":recipes:recipes";
 include ":gumps:epicGumps";
 
-// Definições dos pedaços de pergaminho
 const PERGAMINHO_FABRICACAO := 0xFD3B;
 const PERGAMINHO_ALQUIMIA := 0xFD3C;
 const PERGAMINHO_TINTA := 0xFD3D;
 const PERGAMINHO_MAGIA := 0xFD3E;
 
-// Gráficos dos pedaços de pergaminho
 const GRAFICO_PERGAMINHO_FABRICACAO := 0xE9E8;
 const GRAFICO_PERGAMINHO_ALQUIMIA := 0xE9EC;
 const GRAFICO_PERGAMINHO_TINTA := 0x6BDC;
 const GRAFICO_PERGAMINHO_MAGIA := 0xE9E5;
 
-// Definir os tipos de pergaminhos
 enum TIPO_PERGAMINHO
     TIPO_PERGAMINHO_FABRICACAO := 1,
     TIPO_PERGAMINHO_ALQUIMIA := 2,
@@ -29,15 +26,12 @@ enum TIPO_PERGAMINHO
     TIPO_PERGAMINHO_MAGIA := 4
 endenum
 
-// Definir as quantidades necessárias para cada nível
 var QUANTIDADES := array{3, 5, 8, 10, 12};
 
 program use_pergaminho_pedaco(who, item)
-    DEBUG("Programa iniciado para: " + who.name + " usando item: " + item.desc);  // Adicione o ponto e vírgula aqui
     
     var tipo := DeterminarTipoPorObjtype(item.objtype);
-    DEBUG("Tipo determinado: " + tipo);  // Adicione o ponto e vírgula aqui
-    
+       
     if (!tipo)
         SendSysMessage(who, "Este item não é um pedaço de pergaminho válido.");
         return;
@@ -45,16 +39,15 @@ program use_pergaminho_pedaco(who, item)
     
     var gump := CreatePergaminhoGump(who, tipo);
     var input := GFSendGump(who, gump);
-    DEBUG("Input do gump: " + input[0]);
 
-    if (input[0] == 1) // Botão "Criar" pressionado
+    if (input[0] == 1) 
         CriarPergaminho(who, tipo);
     endif
 endprogram
 
+
 function CreatePergaminhoGump(who, tipo)
-    DEBUG("Criando gump para tipo: " + GetTipoNome(tipo));
-    var gump := GFECreateGump("Folhas Soltas de " + GetTipoNome(tipo), 505, 460); // Aumentado em 50 pixels no eixo Y
+    var gump := GFECreateGump("Folhas Soltas de " + GetTipoNome(tipo), 505, 460); 
     
     var pedacos := CountPedacos(who, tipo);
     var x, y;
@@ -62,7 +55,6 @@ function CreatePergaminhoGump(who, tipo)
         x := 35 + ((j-1) % 6) * 75;
         y := 80 + (Cint((j-1) / 6) * 118);
         
-        // Caixa de fundo para cada pedaço
         GFPicTiled(gump, x, y, 60, 55, 87);
         GFPicTiled(gump, x+1, y+67, 60, 16, 87);
         GFPicTiled(gump, x+1, y+47, 59, 13, 90);
@@ -70,23 +62,19 @@ function CreatePergaminhoGump(who, tipo)
         GFPicTiled(gump, x+48, y+2, 13, 53, 88);
         GFPicTiled(gump, x-4, y+2, 13, 53, 86);
 
-        // Número da caixa
         GFTextMid(gump, x, y+66, 60, 53, CStr(j));
 
-        // Imagem do pedaço de pergaminho
-        if (j <= pedacos)
+       if (j <= pedacos)
             GFTilePic(gump, x+5, y+10, GetGraficoPorTipo(tipo));
         endif
     endfor
 
     var nivel := DeterminarNivel(pedacos);
-    GFTextLine(gump, 35, 355, 53, "Quantidade: " + pedacos); // Movido 35 pixels para baixo
-    GFTextLine(gump, 35, 375, 53, "Nível do Pergaminho: " + (nivel > 0 ? CStr(nivel) : "Insuficiente")); // Movido 35 pixels para baixo
+    GFTextLine(gump, 35, 355, 53, "Quantidade: " + pedacos); 
+    GFTextLine(gump, 35, 375, 53, "Nível do Pergaminho: " + (nivel > 0 ? CStr(nivel) : "Insuficiente")); // Removed trailing slash
 
-    // Adicionando o quadrado frame extra sem moldura
-    GFPicTiled(gump, 250, 315, 230, 120, 87); // Movido 35 pixels para baixo e usando GFPicTiled
+    GFPicTiled(gump, 250, 315, 230, 120, 87); 
 
-    // Adicionando o texto explicativo
     GFTextLine(gump, 260, 325, 53, "3 folhas soltas = pergaminho lvl 1");
     GFTextLine(gump, 260, 345, 53, "5 folhas soltas = pergaminho lvl 2");
     GFTextLine(gump, 260, 365, 53, "8 folhas soltas = pergaminho lvl 3");
@@ -94,24 +82,25 @@ function CreatePergaminhoGump(who, tipo)
     GFTextLine(gump, 260, 405, 53, "12 folhas soltas = pergaminho lvl 5");
 
     if (nivel > 0)
-        GFAddButton(gump, 35, 395, 2130, 2129, GF_CLOSE_BTN, 1); // Movido 35 pixels para baixo
+        GFAddButton(gump, 35, 395, 2130, 2129, GF_CLOSE_BTN, 1); 
     endif
 
     return gump;
 endfunction
 
-function ConfirmarCriacaoPergaminho(who, tipo, nivel)
-    var gump := GFECreateGump("", 340, 220); // Removemos o título aqui
-    
-    // Adicionamos o título manualmente, movido 30 pixels para a esquerda
-    GFTextMid(gump, 30, 35, 280, 53, "Confirmação da Criação"); // 170 - 30 = 140
 
-    // Ajustando a posição dos textos
+function ConfirmarCriacaoPergaminho(who, tipo, nivel)
+    var gump := GFECreateGump("", 340, 220); 
+    
+    
+    GFTextMid(gump, 30, 35, 280, 53, "Confirmação da Criação"); 
+
+    
     GFTextLine(gump, 30, 80, 53, "Tipo: " + GetTipoNome(tipo));
     GFTextLine(gump, 30, 105, 53, "Nível: " + nivel);
     GFTextLine(gump, 30, 140, 53, "Deseja criar este pergaminho?");
     
-    // Ajustando a posição dos botões
+    
     GFAddButton(gump, 90, 170, 2130, 2129, GF_CLOSE_BTN, 1);
 
     
@@ -121,12 +110,6 @@ function ConfirmarCriacaoPergaminho(who, tipo, nivel)
     var input := GFSendGump(who, gump);
     return (input[0] == 1);
 endfunction
-
-function DEBUG(text)
-    Print("DEBUG: " + text);
-    SysLog("DEBUG: " + text);
-endfunction
-
 
 function CountAllPedacos(who)
     var pedacos := struct{
@@ -173,11 +156,8 @@ endfunction
 
 
 function CriarPergaminho(who, tipo)
-    DEBUG("Tentando criar pergaminho do tipo: " + GetTipoNome(tipo));  // Adicione o ponto e vírgula aqui
     var pedacos := CountPedacos(who, tipo);
-    DEBUG("Número de pedaços encontrados: " + pedacos);  // Adicione o ponto e vírgula aqui
     var nivel := DeterminarNivel(pedacos);
-    DEBUG("Nível determinado: " + nivel);  // Adicione o ponto e vírgula aqui
 
     if (nivel == 0)
         SendSysMessage(who, "Você não tem pedaços suficientes para criar um pergaminho.");
@@ -185,12 +165,25 @@ function CriarPergaminho(who, tipo)
     endif
 
     if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
-    var pergaminho := CreatePergaminhoItem(who, tipo, nivel);;
+        PrintText(who, "*Juntando as folhas*");
+        PlaySoundEffect(who, 0x24A);
+        Sleep(3);
+        PrintText(who, "*Organizando o material*");
+        PlaySoundEffect(who, 0x24A);
+        Sleep(3);
+        PrintText(who, "*Ordenando o texto*");
+        PlaySoundEffect(who, 0x24A);
+        Sleep(4);
+
+        var soundID := (who.gender == 0) ? 0x41B : 0x30C;
+        PlaySoundEffect(who, soundID);
+
+        var pergaminho := CreatePergaminhoItem(who, tipo, nivel);
         if (pergaminho)
             ConsumirPedacos(who, tipo, QUANTIDADES[nivel]);
             SendSysMessage(who, "Você criou um novo pergaminho de " + GetTipoNome(tipo) + "!");
         else
-            DEBUG("Falha ao criar o pergaminho");
+            SendSysMessage(who, "Houve um erro ao criar o pergaminho.");
         endif
     endif
 endfunction
@@ -203,7 +196,6 @@ function CountPedacos(who, tipo)
             count += 1;
         endif
     endforeach
-    DEBUG("CountPedacos: Encontrados " + count + " pedaços do tipo " + GetTipoNome(tipo));
     return count;
 endfunction
 
@@ -350,8 +342,6 @@ function ConsumirPedacos(who, tipo, quantidade)
 endfunction
 
 
-
-
 function SelectRandomAlchemyRecipe(nivel)
     var cfg := ReadConfigFile(":alchemy:recipes");
     if (cfg.errortext)
@@ -375,7 +365,7 @@ function SelectRandomAlchemyRecipe(nivel)
 endfunction
 
 function SelectRandomInkRecipe(nivel)
-    var cfg := ReadConfigFile(":dyeing:recipes"); // Alterado para usar o pacote "dyeing"
+    var cfg := ReadConfigFile(":dyeing:recipes"); 
     if (cfg.errortext)
         Print("ERROR: Não foi possível ler o arquivo de configuração de receitas de tinta: " + cfg.errortext);
         return 0;
