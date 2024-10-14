@@ -426,73 +426,10 @@ function HealNpcCorpse(mobile, targ, aux_skill)
 
 	if (  !GetObjProperty(targ,"morto") )
 		if ( SkillCheck(mobile, MEDICINE, diff) > 0 )
-			SendSysMessage(mobile, "Voce estabilizou o paciente.");
-			var npc := CreateNpcFromTemplate( GetObjProperty(targ, "npctemplate"), targ.x, targ.y, targ.z, 0, targ.realm);
-			CopyProps(targ, npc);
-			var targ_parsed := targ.name[10, len(targ.name)-9];
-			npc.script := ":ghaia:tamed";
-			RestartScript(npc);
-			npc.name := GetObjProperty(npc, "name");
-			Setname(npc, targ_parsed);
-			recalcvitals(npc);
 			var ownerserial := GetObjProperty(targ, "owner");
-			var owner := SystemFindObjectBySerial(ownerserial);
-			if (!owner)
-				destama(npc.serial);
-			else
-				if ( (GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner) )
-					SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
-					destama(npc.serial);
-				else
-					AddPet(owner, npc.serial);
-				endif
-			endif
-			DestroyItem(targ);
-			SetCooldown(npc, "resurrect", 120);
-			var skills := GetObjProperty(npc, "petskills");
-			foreach skill in (skills.keys())
-				AP_SetTrueSkill(npc, skill, skills[skill]);
-			endforeach
-
-
-			var happy := GetObjProperty(npc,"happiness"); //happiness do pet
-			var fiel := GetObjProperty(npc, "NeverRelease"); // se é animal fiel
-			if (happy)
-				SetObjProperty(npc,"happiness", happy -20);
-				if(happy < 10 )
-					if (!fiel) //destama se happiness menor que 10
-						SendSysMessage(owner, "*Seu pet "+npc.name+" decidiu que eh melhor ficar sozinho*");
-						destama(npc.serial);
-//					else // se é fiel só perde fidelidade
-//						SendSysMessage(owner, "*Seu pet "+npc.name+" nao sente mais tanta confian em voce**");
-//						EraseObjProperty(npc, "NeverRelease");
-//						EraseObjProperty(npc, "bond");
-					endif
-				endif
-			endif
-		
-			//Para repor as habs do despertar natureza do pet
-			var instincts := GetObjProperty(npc,"instincts");
-			var ferocidade := instincts["Ferocidade"].ins_name;
-			var fortaleza := instincts["Fortaleza"].ins_name;
-			var flexibilidade := instincts["Flexibilidade"].ins_name;
-			if (!instincts)
-			else
-				if (ferocidade == "Ferocidade")
-					AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
-				endif
-				if (fortaleza == "Fortaleza")
-					var hits := CInt(AP_GetVitalMaximumValue(npc, "Hits"));
-					var variavel := Cint(hits / 3);
-					var variavel2 := Cint(variavel /2); //não sei pq ele duplica por isso a divisão pela metade
-					setObjProperty(npc, "hitsmod", variavel2);
-				endif
-				if (flexibilidade == "Flexibilidade")
-					AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
-				endif
-			RecalcVitals(npc);
-			endif
-
+			var master := SystemFindObjectBySerial(ownerserial);
+			SendSysMessage(mobile, "Voce estabilizou o paciente.");
+			RessuscitarPet(targ, master, 1);
 		else
 			SendSysMessage(mobile, "Voce nao conseguiu estabilizar "+name+".");
 		endif
@@ -507,14 +444,6 @@ function GetHealingAmt(heal_skill, aux_skill)
 	var amt := Ceil(heal_skill + (aux_skill/2.0));
 	return amt;
 endfunction
-
-function CopyProps(origin, destiny)
-	var propnames := GetObjPropertyNames(origin);
-	foreach prop in propnames
-		SetObjPRoperty(destiny, prop, GetObjProperty(origin, prop));
-	endforeach
-endfunction
-
 
 function WaitCura(who, segundos)
 	var seconds := segundos;

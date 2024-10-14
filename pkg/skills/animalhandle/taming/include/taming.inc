@@ -389,3 +389,103 @@ function ErasePetMods(pet)
 	endif
 
 endfunction
+
+function RessuscitarPet(corpse, owner, is_bandage := 0)
+    var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
+    CopyProps(corpse, npc);
+    var corpse_parsed := corpse.name[13, len(corpse.name)-12];
+    npc.script := ":ghaia:tamed";
+    RestartScript(npc);
+    SetName(npc, corpse_parsed);
+    RecalcVitals(npc);
+
+    // Lógica de contagem de animais fidelizados
+    var pets := GetObjProperty(owner, "TamedPets");
+    var habs := TemHabilidade(owner, "Espreita Selvagem");
+    var limite_animais := habs ? 2 : 1;
+    var animais_fidelizados := 0;
+    foreach serial in pets
+        var pet := SystemFindObjectBySerial(serial);
+        if (GetObjProperty(pet, "bond") == "fiel")
+            animais_fidelizados := animais_fidelizados + 1;
+            if (animais_fidelizados > 2)
+                break;
+            endif
+        endif
+    endforeach
+
+	//Checagem de limite de slots de animais
+    if (!owner)
+        destama(npc.serial);
+    else
+        if ((GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner))
+            SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
+            destama(npc.serial);
+        elseif ( GetObjProperty(npc, "bond") == "fiel" && animais_fidelizados >= limite_animais)
+            SendSysMessageEx(owner, "O animal sente-se traído por você ter atingido o limite de animais fieis.", SSM_FAIL);
+            destama(npc.serial);
+        else
+            AddPet(owner, npc.serial);
+        endif
+    endif
+
+    DestroyItem(corpse);
+    SetCooldown(npc, "resurrect", is_bandage ? 120 : 180);
+    var skills := GetObjProperty(npc, "petskills");
+    foreach skill in (skills.keys())
+        AP_SetTrueSkill(npc, skill, skills[skill]);
+    endforeach
+
+    // Desconta o DP dos fieis
+    if (GetObjProperty(npc, "bond") == "fiel")
+        var DP := AP_GetVital(npc, "DP");
+        AP_SetVital(npc, "DP", DP - 10);
+        if (DP < 0)
+            AP_SetVital(npc, "DP", 0);
+        endif
+    endif
+
+    // Repõe as habilidades do despertar natureza do pet
+    var instincts := GetObjProperty(npc, "instincts");
+    if (instincts)
+        if (instincts["Ferocidade"].ins_name == "Ferocidade")
+            AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
+        endif
+        if (instincts["Fortaleza"].ins_name == "Fortaleza")
+            var hits := CInt(AP_GetVitalMaximumValue(npc, "Hits"));
+            var variavel := CInt(hits / 3);
+            var variavel2 := CInt(variavel / 2);
+            SetObjProperty(npc, "hitsmod", variavel2);
+        endif
+        if (instincts["Flexibilidade"].ins_name == "Flexibilidade")
+            AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
+        endif
+        RecalcVitals(npc);
+    endif
+	
+	//Checar a felicidade do animal quando ressuscita
+			var happy := GetObjProperty(npc,"happiness"); //happiness do pet
+			var fiel := GetObjProperty(npc, "NeverRelease"); // se é animal fiel
+			if (happy)
+				SetObjProperty(npc,"happiness", happy -20);
+				if(happy < 10 )
+					if (!fiel) //destama se happiness menor que 10
+						SendSysMessage(owner, "*Seu pet "+npc.name+" decidiu que eh melhor ficar sozinho*");
+						destama(npc.serial);
+//					else // se é fiel só perde fidelidade
+//						SendSysMessage(owner, "*Seu pet "+npc.name+" nao sente mais tanta confiança em você**");
+//						EraseObjProperty(npc, "NeverRelease");
+//						EraseObjProperty(npc, "bond");
+					endif
+				endif
+			endif
+
+    return npc;
+endfunction
+
+function CopyProps(origin, destiny)
+    var propnames := GetObjPropertyNames(origin);
+    foreach prop in propnames
+        SetObjProperty(destiny, prop, GetObjProperty(origin, prop));
+    endforeach
+endfunction
