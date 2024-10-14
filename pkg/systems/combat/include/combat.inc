@@ -3,6 +3,7 @@ use uo;
 include ":brainai:npcUtil";
 include ":combat:weaponInfo";
 include ":faccao:faccao";
+include ":equipsys:props";
 
 function DistanceChecks(attacker, defender)
 	var cur_range := Distance(attacker, defender);
@@ -41,17 +42,34 @@ function PlayHitSounds(attacker, defender)
 	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
+	var attack_sound;
 	if ( wpn_a_elem2.HitSound )
-		PlaySoundEffect(attacker, wpn_a_elem2.HitSound);
+		attack_sound := wpn_a_elem2.HitSound;
 	else
 		//NPC intrinsic weapon
-		PlaySoundEffect(attacker, wpn_a_elem2.AttackHitSound);
+		attack_sound := wpn_a_elem2.AttackHitSound;
 	endif
 
-	// TODO: Gambiarra pra urgência (remover)
-	if (attacker.acctname)
-		PlaySoundEffect(attacker, 0x23C);
+	if (attacker.weapon)
+		var prop := getPropBase(attacker.weapon);
+		
+		if (prop.weaponType.type == BOW)
+			attack_sound := getSound(BOW_FX.SFX);
+		elseif (prop.weaponType.type == CROSSBOW)
+			attack_sound := getSound(CROSSBOW_FX.SFX);
+		else
+			// TODO: Checar se é 1H ou 2H
+			if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				attack_sound := getSound(SLASH_1H_FX.SFX);
+			elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				attack_sound := getSound(PIERCING_1H_FX.SFX);
+			elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				attack_sound := getSound(BLUNT_1H_FX.SFX);
+			endif
+		endif
 	endif
+
+	PlaySoundEffect(attacker, attack_sound);
 
 	var damaged_sound;
 	if ( defender.npctemplate )
