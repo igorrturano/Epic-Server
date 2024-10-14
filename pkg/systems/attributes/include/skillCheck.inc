@@ -137,9 +137,11 @@ function CalcSuccessPercent(mobile, attrib_name, difficulty, effective_skill)
 	SkillDbgMsg(mobile, "Final Skill: "+effective_skill+"%");
 
     var base_chance := 0;
+	var max_skill := 0;
+	var neg1chance := 0;
 	if ( difficulty == -1 )
-		var max_skill := AP_GetSkillCap(mobile, attrib_name);
-		var neg1chance := CDbl(settings.MaxNeg1Chance);
+		max_skill := AP_GetSkillCap(mobile, attrib_name);
+		neg1chance := CDbl(settings.MaxNeg1Chance);
 		base_chance := CInt(neg1chance * effective_skill / max_skill);
 	elseif ( DifficultyTooHard(effective_skill, difficulty) )
 		base_chance := 0;
@@ -167,22 +169,19 @@ function DifficultyTooHard(effective_skill, difficulty)
 endfunction
 
 function AdjustForIntelligence(pass_chance, mobile)
-{
     var intelligence := AP_GetTrueStat(mobile, INTELLIGENCE);
     // Apply intelligence adjustment, increasing pass chance
     return CInt(pass_chance * (1.0 + intelligence / 100.0));
-}
+endfunction
 
 function ClampPassChance(pass_chance, settings)
-{
     if (pass_chance < settings.MinChance)
         return CInt(settings.MinChance); //0
     elseif (pass_chance > settings.MaxChance)
         return CInt(settings.MaxChance); //100
 	endif
     return pass_chance;
-}
-
+endfunction
 /*
  * SkillDbgMsg(mobile, message)
  *
@@ -201,6 +200,5 @@ function SkillDbgMsg(mobile, message)
 	if ( g_skill_debug )
 		SendSysMessage(mobile, "Debug: "+message);
 	endif
-
 	return 1;
 endfunction
