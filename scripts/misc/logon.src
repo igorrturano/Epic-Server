@@ -41,17 +41,6 @@ program Logon(who)
 	SetObjProperty(who, "ConnectTime", polcore().systime);
 
 	var createdat :=  getobjproperty(who, "createdate");
-	//var obitodat := FindAccount(who.acctname).getprop("mortelog");
-
-	//if (!obitodat)
-	//	if (createdat == error)
-	//	    SetObjProperty(who, "createdate", polcore().systime);
-	//	endif
-	//else
-	//	if (createdat == error)
-	//	    SetObjProperty(who, "createdate", (polcore().systime));
-	//	endif
-	//endif
 
 	if (HaveReverseVision(who))
 		ReverseLight(who);
@@ -83,7 +72,6 @@ program Logon(who)
 		endif
 	endif
 
-	//TestClientInfo(who); Removido porque nun faz nada q preste
 	IsGm(who);
 
 	if  (cint(acc.getprop("novasenha")) != 1)
@@ -94,6 +82,9 @@ program Logon(who)
 	GetResist(who, FORTITUDE);
 	GetResist(who, VONTADE);
 	GetResist(who, REFLEXOS);
+
+	// Enforce skill cap when the player logs in
+    EnforceSkillCap(who);
 
 	//checa se vai subir skill passiva
 	if (CInt(FindAccount(who.acctname).getprop("nota")) == 4)
@@ -110,7 +101,6 @@ program Logon(who)
 		var deltaTime := polcore().systime - lastPrize;
 		var ticks := cint(deltaTime/intervalo);
 
-		//print(who.acctname + " ticks " + ticks);
 		SendSysMessage(who, "NotaRP 4: Calculando UP passivo...");
 		if ( ticks >= 1 ) //da +0.1 a cada 5h
 			var time := ticks * intervalo; // soma apenas o tempo que foi usado pra subir a skill
@@ -143,19 +133,9 @@ program Logon(who)
 				endif
 
 				chosen := possiveis[ RandomInt(possiveis.size())+1 ];
-				//LogToFile(":tn:passiva.log", who.name + " " + who.acctname + " ganhou 0.1 em " + chosen);
-				//SendSysMessage(who, who.name + " (" + who.acctname + ") ganhou 0.1 em " + chosen +" passivamente.");
 				SetObjProperty(who, "skillpassiva", cint(GetObjProperty(who, "skillpassiva"))+1); //conta quantos ups teve
-				//AP_SetTrueSkill(who, chosen,   (AP_GetTrueSkill(who, chosen)+0.1));
 
-				//print("Chosen: "+AP_GetTrueSkill(who, chosen));
 				temp := (AP_GetTrueSkill(who, chosen)+0.1);
-				//print("Chosen+0.1: "+temp);
-
-				///while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(who, chosen)) )
-				//	temp := temp+0.1;
-				//	sleepms(10);
-				//endwhile
 
 				AP_SetTrueSkill(who, chosen, temp);
 				sleep(200);
@@ -271,4 +251,22 @@ function CanPassiveIncreaseSkill(who, skill)
 	else
 		return 0;
 	endif
+endfunction
+
+// The function to enforce skill cap
+function EnforceSkillCap(who)
+    var skills := GetObjProperty(who, "chardata").Skills;
+    if (!skills)
+        return 0; 
+    endif
+
+    foreach skill in (skills.keys())
+        var true_skill := AP_GetTrueSkill(who, skill); 
+        var skill_cap := AP_CheckClassSkillCap(who, skill); 
+        // If the current skill is higher than the cap, revert it to the cap
+        if (true_skill > skill_cap)
+            AP_SetTrueSkill(who, skill, skill_cap); 
+			SendSysMessage(who, "Sua habilidade em " + skill + " foi ajustada para o limite máximo de " + skill_cap);
+        endif
+    endforeach
 endfunction

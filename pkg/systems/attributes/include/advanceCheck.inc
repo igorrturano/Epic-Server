@@ -218,16 +218,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         g_skill_debug := (GetObjProperty(mobile, "SkillDebug") != error);
     endif
 
-    // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
-    skill_name := HandleBudokaSkillTransform(mobile, skill_name);
-
-    // Check for valid training skills (if training skills are enforced)
-    if (!ValidTrainingSkill(mobile, skill_name)) 
-        SkillDbgMsg(mobile, "Not part of training skills.");
-        return 0;
-    endif
-
-    // Ensure the player has filled the Role-Play profile
     if (!GetObjProperty(mobile, "fichaRP")) 
         var chardata := GetObjProperty(mobile, "chardata");
         if (chardata != error) 
@@ -237,10 +227,27 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         endif
     endif
 
-    // Verifica se o ganho de habilidade está desabilitado
     if (GetObjProperty(mobile, "NoGains")) 
         SkillDbgMsg(mobile, "O ganho de skill está desabilitado.");
         DebugMsg(mobile, DEBUG_UP, "O ganho de skill está desabilitado!");
+        return 0;
+    endif
+
+    if (AP_CheckSkillCap(mobile, skill_name))
+        DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo para " + skill_name + ".");
+        SkillDbgMsg(mobile, "Skill cap for '" + skill_name + "' reached. No advance.");
+        return 0;
+    elseif (AP_CheckSkillCap(mobile))
+        DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo.");
+        return 0;
+    endif
+
+    // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
+    skill_name := HandleBudokaSkillTransform(mobile, skill_name);
+
+    // Check for valid training skills (if training skills are enforced)
+    if (!ValidTrainingSkill(mobile, skill_name)) 
+        SkillDbgMsg(mobile, "Not part of training skills.");
         return 0;
     endif
 
@@ -252,16 +259,12 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         return 0;
     endif
 
-    var settings := AP_GetSettingsCfgElem("Skills");
-
     // Verifica o tempo de espera entre ganhos de habilidade
+    var settings := AP_GetSettingsCfgElem("Skills");
     if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
         DebugMsg(mobile, DEBUG_UP, "Você precisa esperar um pouco mais antes de aumentar sua habilidade.");
         return 0;
     endif
-
-    // Calcula a chance final ajustada com base na inteligência do personagem
-    pass_chance := AdjustPassChance(pass_chance, settings, mobile);
 
     // Verifica se o avanço da habilidade ocorre (rolagem de dados)
     if (!PerformAdvancementCheck(pass_chance)) 
@@ -273,8 +276,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     // Free gain for skills below a certain threshold
     if (true_skill < CDbl(settings.FreeGainUntil)) 
         SkillDbgMsg(mobile, "Free Gain.");
-    elseif (DifficultyTooEasy(true_skill, award_diff) && !(TemHabilidade(mobile, "Budōka"))) 
-        // Skill too easy to increase, no advancement
+    elseif (DifficultyTooEasy(true_skill, award_diff)) 
         DebugMsg(mobile, DEBUG_UP, "Esta ação está muito fácil para você aprimorar a habilidade " + skill_name + ".");
         SkillDbgMsg(mobile, "Skill too easy to advance.");
         return 0;
@@ -312,7 +314,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     return 1;
 endfunction
 
-
 /*
  * HandleBudokaSkillTransform(mobile, skill_name)
  * 
@@ -324,12 +325,14 @@ function HandleBudokaSkillTransform(mobile, skill_name)
         var chardata := GetObjProperty(mobile, "chardata");
         var skillsmap := chardata.Skills;
         var skillsArray := skillsmap.keys();
-        
+        //add dual wield
         foreach skill in skillsArray
             if (skill == "One_Handed")
                 return "One_Handed";
             elseif (skill == "Two_Handed")
                 return "Two_Handed";
+            elseif (skill == "Dual_Wield")
+                return "Dual_Wield";
             endif
         endforeach
     endif
@@ -357,33 +360,12 @@ endfunction
 function SkillGainCooldownPassed(mobile, skill_name, settings)
     var next_check := CInt(GetObjProperty(mobile, "#LastSkillGain")) + GetConfigInt(settings, "GainWait");
     
-    if (skill_name == "Tactics" || skill_name == "Anatomy") 
-        SkillDbgMsg(mobile, "Ignoring skill gain timer for Tactics or Anatomy.");
-        return true;
-    elseif (next_check > ReadGameClock()) 
+    if (next_check > ReadGameClock()) 
         SkillDbgMsg(mobile, "Skill gain cooldown active.");
         return false;
     endif
     
     return true;
-endfunction
-
-/*
- * AdjustPassChance(pass_chance, settings, mobile)
- * 
- * Adjusts the pass chance for skill advancement based on intelligence
- * and ensures it falls within valid minimum and maximum ranges.
- */
-function AdjustPassChance(pass_chance, settings, mobile)
-    if (pass_chance <= settings.MinChance) 
-        return CInt(settings.MinChance);
-    else
-        pass_chance := CInt(pass_chance * (1.0 + (AP_GetTrueStat(mobile, INTELLIGENCE) / 100.0)));
-        if (pass_chance > settings.MaxChance) 
-            pass_chance := CInt(settings.MaxChance);
-        endif
-    endif
-    return pass_chance;
 endfunction
 
 /*
@@ -440,90 +422,11 @@ function AP_CheckClassSkillCap(mobile, skill_name)
 	if ( myskills[skill_name] == error)
 		return 0;
 	elseif (myskills[skill_name] == 1)
-		if (chardata.vantagemracial == "Sabedoria dos Antigos")
-			return 50.0;
-		else
-			return 40.0;
-		endif
+        return 40.0;
 	elseif (myskills[skill_name] == 2)
 		return 70.0;
 	elseif ( myskills[skill_name] == 3)
 		return 100.0;
-	endif
-
-endfunction
-
-function GetIncreaseCapFactor(skill)
-
-	if (skill < 20 )
-		return 1;
-	elseif (skill < 40 )
-		return 2;
-	elseif (skill < 60 )
-		return 4;
-	elseif (skill < 80)
-		return 8;
-	elseif (skill < 90)
-		return 16;
-	elseif (skill < 100)
-		return 25;
-	endif
-
-endfunction
-
-function CheckVitalSkillCap(mobile, skill)
-	var qtd := costSkill(skill);
-	if (qtd > 0)
-		if (CInt(AP_GetVital(mobile, "SkillCap")) >= qtd )
-			AP_ConsumeVital(mobile, "SkillCap", qtd);
-		else
-			return 0;
-		endif
-	endif
-
-	return 1;
-endfunction
-
-function costSkill(value)
-		return 1;
-endfunction
-
-function AwardPoints(who, skill, points)
-
-	var skills := GetObjProperty(who, "skills");
-	if (!skills)
-		skills := dictionary;
-	endif
-
-	skills[skill] := skills[skill] + points;
-
-	if ( skills[skill] >= GetNeededPoints(skill) )
-		skills[skill] := 0;
-		SetObjProperty(who, "skills", skills);
-		return 1;
-	endif
-
-	SetObjProperty(who, "skills", skills);
-	return 0;
-
-endfunction
-
-function PointsToIncrease(basevalue)
-
-	if(basevalue < 100)
-		return 10.0;
-	elseif ( basevalue < 30 )
-		return 100.0;
-	elseif ( basevalue < 600 )
-		return  500.0;
-	elseif ( basevalue < 700 )
-		return 1000;
-	elseif ( basevalue < 800 )
-		return 4000;
-	elseif ( basevalue < 900 )
-		return 16000;
-	else
-		return 32000;
 	endif
 
 endfunction

@@ -1,15 +1,12 @@
-// $Id: skillCheck.inc 311 2005-09-29 22:09:23Z austin $
-
-/*===============================================================
-* Current Version
-* SKILLCHECK.INC - v1.0
-* Updated 9/24/2005 6:52PM
-*
-* -- Revision v1.0 --
-* Austin:
-*  Created include file
-===============================================================*/
-
+// Purpose:
+// This script handles skill checks for a player (mobile), including:
+// - Checking if the player is allowed to use skills.
+// - Calculating success chances based on skill levels and difficulty.
+// - Handling skill and stat advancement if applicable.
+//
+// check results:
+// - > 0:  skill action succeeded
+// - <= 0: skill action failed
 use uo;
 use os;
 use util;
@@ -30,25 +27,21 @@ var g_skill_debug	:= 0;
  * <= 0 means the skill check failed > 0 means it was successful.
  *
  * Parameters
- * mobile:		Mobile reference to do the skill check for.
- * attribute_name:	Name of the attribute to perform the check on.
- * award_diff:		Advanced as if the difficulty were this value - defaults to difficulty.
- * advance_flags:	Controls the turning on/off of stat and skill advancements for the check.
+ * - mobile:       The player or NPC using the skill.
+ * - attrib_name:  Name of the skill or attribute to check.
+ * - difficulty:   Difficulty level for the skill check.
+ * - award_diff:   Optional. If specified, awards advancement as if difficulty is this value.
+ * - advance_flags: Controls whether to advance skills, stats, or both (default: skill only).
  *
- * Return value
  * Returns > 0 if the skill check was successful
- *
  */
 function SkillCheck(mobile, attrib_name, difficulty, award_diff:=0, advance_flags:=ADV_SKILL)
-	if ( mobile.dead )
-		SendSysMessage(mobile, "Voce nao pode usar skills nesse estado.");
-		return -100;
-	elseif ( GetObjProperty(mobile, "DisableSkills") )
-		SendSysMessage(mobile, "Suas skills estao desabilitadas.");
-		return -100;
-	elseif ( GetObjProperty(mobile, "NoGains") )
-		advance_flags := ADV_DISABLE;
-	endif
+	var validation_result := ValidateSkillUsage(mobile);
+	if (validation_result == -100)
+        return -100;  // Player can't use skills
+    elseif (validation_result == ADV_DISABLE)
+        advance_flags := ADV_DISABLE;  // Disable advancements if gains are blocked
+    endif
     
 	// Global skill-debug ( for SkillDbgMsg() )
 	if (!g_skill_debug)
@@ -56,51 +49,74 @@ function SkillCheck(mobile, attrib_name, difficulty, award_diff:=0, advance_flag
 	endif
 
 	var effective_skill := AP_GetTrueSkill(mobile, attrib_name);
+	effective_skill := ApplySkillModifiers(mobile, attrib_name, effective_skill); //Modificadores de habilidade
+
+    if (difficulty == -1)
+        difficulty := effective_skill;
+        SkillDbgMsg(mobile, "Difficulty set to effective skill level: " + difficulty);
+    endif
+    if (!award_diff)
+        award_diff := difficulty;
+        SkillDbgMsg(mobile, "Award difficulty set to " + award_diff);
+    endif
+
+	var success_chance := CalcSuccessPercent(mobile, attrib_name, difficulty, effective_skill);
+	var advancement_chance := CInt((100 - success_chance) / 3);
+
+	if ( !(advance_flags & ADV_SKILL) )
+		SkillDbgMsg(mobile, "Skill advance disabled.");
+	else
+		if (advancement_chance > 50)
+			advancement_chance := 50;
+		elseif (advancement_chance < 5)
+			advancement_chance := 5;
+		endif
+		CheckSkillAdvance(mobile, attrib_name, award_diff, advancement_chance);
+	endif
+
+	var random_roll := RandomFloat(100);
+	var success_margin := (success_chance - random_roll);
+	return success_margin ;
+endfunction
+
+/*
+ * ValidateSkillUsage(mobile)
+ *
+ * Purpose:
+ * Checks if the player (mobile) is allowed to use skills.
+ */
+function ValidateSkillUsage(mobile)
+    if (mobile.dead)
+        SendSysMessage(mobile, "You cannot use skills while dead.");
+        return -100;  // Player is dead, can't use skills
+    elseif (GetObjProperty(mobile, "DisableSkills"))
+        SendSysMessage(mobile, "Your skills are currently disabled.");
+        return -100;  // Skills are disabled for the player
+    elseif (GetObjProperty(mobile, "NoGains"))
+        return ADV_DISABLE;  // Gains are blocked, disable advancements
+    endif
+
+    return 0;  // Player is allowed to use skills
+endfunction
+
+/*
+ * ApplySkillModifiers(mobile, attrib_name, base_skill)
+ *
+ * Purpose:
+ * Apply specific modifiers to the player's skill level based on their traits or abilities.
+ *
+ */
+function ApplySkillModifiers(mobile, attrib_name, base_skill)
     if (TemHabilidade(mobile, "Visao Verdadeira") && attrib_name == AWARENESS)
-        effective_skill += AP_GetSkill(mobile, MAGICLORE) / 3;
+        base_skill += AP_GetSkill(mobile, MAGICLORE) / 3;  
     endif
 
     var chardata := GetObjProperty(mobile, "chardata");
     if (chardata.trait == "Oito olhos" && attrib_name == AWARENESS)
-        effective_skill += 10;
+        base_skill += 10;  
     endif
 
-	SkillDbgMsg(mobile, attrib_name+": "+effective_skill+"% (+"+AP_GetSkillMod(mobile, attrib_name)+")");
-
-	// Difficulty checks
-	if ( difficulty == -1 )
-		// -1 = Check skill against its self.
-		SkillDbgMsg(mobile, "Skill based check. Difficulty -1");
-	else
-		difficulty := CDbl(difficulty);
-		SkillDbgMsg(mobile, "Difficulty: "+difficulty);
-	endif
-
-	var pass_chance := CalcSuccessPercent(mobile, attrib_name, difficulty, effective_skill);
-	var check_roll := RandomFloat(100);
-	var pass_success := (pass_chance - check_roll);
-	SkillDbgMsg(mobile, "Chance: "+pass_chance+"%");
-	SkillDbgMsg(mobile, "Roll: "+check_roll+"%");
-	if ( difficulty == -1 )
-		difficulty := effective_skill;
-	endif
-	if (!award_diff)
-		award_diff := difficulty;
-	endif
-
-	var chanceUp := CInt((100 - pass_chance) / 3);
-	if ( !(advance_flags & ADV_SKILL) )
-		SkillDbgMsg(mobile, "Skill advance disabled.");
-	else
-		if (chanceUp > 50)
-			chanceUp := 50;
-		elseif (chanceUp < 5)
-			chanceUp := 5;
-		endif
-		CheckSkillAdvance(mobile, attrib_name, award_diff, chanceUp);
-	endif
-
-	return pass_success;
+    return base_skill + AP_GetSkillMod(mobile, attrib_name);  
 endfunction
 
 /*
@@ -120,26 +136,23 @@ function CalcSuccessPercent(mobile, attrib_name, difficulty, effective_skill)
 	effective_skill += AP_GetSkillMod(mobile, attrib_name);
 	SkillDbgMsg(mobile, "Final Skill: "+effective_skill+"%");
 
-	var percent := 0;
+    var base_chance := 0;
 	if ( difficulty == -1 )
 		var max_skill := AP_GetSkillCap(mobile, attrib_name);
 		var neg1chance := CDbl(settings.MaxNeg1Chance);
-		percent := CInt(neg1chance * effective_skill / max_skill);
+		base_chance := CInt(neg1chance * effective_skill / max_skill);
 	elseif ( DifficultyTooHard(effective_skill, difficulty) )
-		percent := 0;
+		base_chance := 0;
 	elseif ( DifficultyTooEasy(effective_skill, difficulty) )
-		percent := 100;
+		base_chance := 100;
 	else
-		percent := CInt(50.0 + ((effective_skill - difficulty) * 2.5));
+		base_chance := CInt(50.0 + ((effective_skill - difficulty) * 2.5));
 	endif
 
-	if ( percent < settings.MinChance )
-		percent := CInt(settings.MinChance);
-	elseif ( percent > settings.MaxChance )
-		percent := CInt(settings.MaxChance);
-	endif
+	var pass_chance := AdjustForIntelligence(base_chance, mobile);
+	pass_chance := ClampPassChance(pass_chance, settings);
 
-	return percent;
+	return pass_chance;
 
 endfunction
 
@@ -152,6 +165,23 @@ function DifficultyTooHard(effective_skill, difficulty)
 	var settings := AP_GetSettingsCfgElem("Skills");
 	return ( (effective_skill + CDbl(settings.TooHard)) < difficulty );
 endfunction
+
+function AdjustForIntelligence(pass_chance, mobile)
+{
+    var intelligence := AP_GetTrueStat(mobile, INTELLIGENCE);
+    // Apply intelligence adjustment, increasing pass chance
+    return CInt(pass_chance * (1.0 + intelligence / 100.0));
+}
+
+function ClampPassChance(pass_chance, settings)
+{
+    if (pass_chance < settings.MinChance)
+        return CInt(settings.MinChance); //0
+    elseif (pass_chance > settings.MaxChance)
+        return CInt(settings.MaxChance); //100
+	endif
+    return pass_chance;
+}
 
 /*
  * SkillDbgMsg(mobile, message)
