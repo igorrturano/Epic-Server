@@ -50,6 +50,10 @@ function MakeCloth(character, yarn)
       //algodao
       prod_type := 0x1a89; //roloalgodao
       break;
+    0x1a9d:
+      //humilis (seda empobrecida)
+      prod_type := 0x1a88; //rolohumilis
+      break;
     0x1a93:
       //lã
       prod_type := 0x1a92; //rolola
