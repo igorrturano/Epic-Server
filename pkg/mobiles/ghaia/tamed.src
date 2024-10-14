@@ -56,7 +56,6 @@ program TamedAI()
 	parms[1] := me;
 	parms[2] := time;
 	start_script(":taming:happyCounter", parms);
-			Print("estou aqui mesmo??");
 	while ( me )
 		if ( wait_time < 1 )
 			sleepms(10);
