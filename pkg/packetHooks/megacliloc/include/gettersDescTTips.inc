@@ -5,8 +5,7 @@ include ":charactercreation:habilidades";
 include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
-include ":combat:damage";
-
+include ":equipsys:include/equipstats";
 
 function PegaDescMagica(objeto,xDesc := "")
 	if (PegaPropObjItemOrTemplate(objeto,"magic_excep"))
@@ -90,12 +89,9 @@ function PegaDescArmas(objeto,who,cfg := struct)
 
 
 	xDesc := xDesc + "Força exigida: " + cfg.elem.strrequired + "<br>";
-	xDesc := xDesc + "Dano: " + GetDmgStringDesc(cfg.elem,  objeto) + "<br>";
-	if (cfg.elem.OffHandDamage)
-		xDesc := xDesc + "OffDano: " + GetOffHandDmgStringDesc(cfg.elem,  objeto) + "<br>";
-	endif
+	xDesc := xDesc + "Dano: <br>";
+	xDesc := PegaDescDanoArma(objeto,xDesc);
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
-	xDesc := xDesc + GetTipoStringDesc(cfg.elem, objeto) + "<br>";
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
 		xDesc := xDesc + LARANJA + crits;
@@ -110,7 +106,6 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
 	endif
 		
-
 	XDesc := PegaDescDanoModArma(objeto,xDesc);
 	XDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
 
@@ -130,6 +125,42 @@ function PegaDescArmas(objeto,who,cfg := struct)
 				xDesc := xDesc + ROXO + "Dano de Energia "+dano_esp+"<br>";
 			endif
 		endforeach
+	endif
+	return xDesc;
+endfunction
+
+function PegaDescDanoArma(objeto,xDesc := "")
+	
+	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
+	var bluntMD,slashMD,pircMD :=0;
+	var bluntOD,slashOD,pircOD := "";
+	
+	/*
+	Se usa esse metodo o arquivo não compila mais (??) [2-byte off]
+	if(!atrib)
+		atrib := getWeaponStats(objeto);
+	endif
+	*/
+	slashMD := atrib.SlashMainDamage;
+	pircMD := atrib.PiercingMainDamage;
+	bluntMD := atrib.BluntMainDamage;
+
+	slashOD := atrib.SlashOffDamage? SOFT_GREEN + " " + atrib.SlashOffDamage:"";
+	pircOD := atrib.PiercingOffDamage? SOFT_GREEN + " " + atrib.PiercingOffDamage:"";
+	bluntOD := atrib.BluntOffDamage? SOFT_GREEN + " " + atrib.BluntOffDamage:"";
+
+	if(slashMD !=  0)
+		xDesc := xDesc  + FISICO + " Cor: " + (slashMD) + slashOD;
+	endif
+	if(pircMD !=  0)
+		xDesc := xDesc  + FISICO + " Perf: " + (pircMD) + pircOD;
+	endif
+	if(bluntMD !=  0)
+		xDesc := xDesc  + FISICO + " Cont: " + (bluntMD) + bluntOD;
+	endif
+
+	if((slashMD + pircMD + bluntMD) !=  0)
+		xDesc := xDesc + "<br>";
 	endif
 	return xDesc;
 endfunction
@@ -160,11 +191,11 @@ endfunction
 function PegaDescCargasArmElemental(objeto, who, XDesc := "")
 	if ( PegaPropObjItemOrTemplate(objeto,"#elementalweapon").serial == who.serial)	
 		var elWpn := PegaPropObjItemOrTemplate(objeto, "#elementalweapon");
-		if (elWpn.type == DMG_COLD)
+		if (elWpn.type == "Cold")
 			xDesc := xDesc + BLUE_ICE + "Cargas Arcanas: "+elWpn.cargas+"<br>";
-		elseif ( elWpn.type == DMG_FIRE)
+		elseif ( elWpn.type == "Fire")
 			xDesc := xDesc + RED_FIRE + "Cargas Arcanas: "+elWpn.cargas +"<br>";
-		elseif (elWpn.type == DMG_ENERGY)
+		elseif (elWpn.type == "Energy")
 			xDesc := xDesc + ROXO + "Cargas Arcanas "+elWpn.cargas+"<br>";
 		endif
 	endif
@@ -191,13 +222,37 @@ function PegaDescArmaduras(objeto,cfg := struct)
 		xDesc := xDesc + "Delay Bonus: " + getParryDelay(cfg.elem, objeto) + "<br>";
 	endif
 
-	xDesc := PegaDescResistArmadura(objeto,xDesc);
+	xDesc := PegaDescResistArmadura(objeto,cfg,xDesc);
 
 	return xDesc;
 endfunction
 
-function PegaDescResistArmadura(objeto, xDesc := "")
-		xDesc := xDesc + FISICO + "Fisico " + (objeto.resist_physical ) + "<br>";
+function PegaDescResistArmadura(objeto,cfg, xDesc := "")
+	
+	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
+
+	var bluntRes,slashRes,pircRes :=0;
+	if(!atrib)
+		atrib := getResistByProtection(cfg);
+	endif
+	slashRes := atrib.SlashResist;
+	pircRes := atrib.PiercingResist;
+	bluntRes := atrib.BluntResist;
+
+	xDesc := xDesc  + FISICO + "Defesas: <br>";
+	if(slashRes> 0)
+		xDesc := xDesc  + FISICO + " Cor: " + (slashRes);
+	endif
+	if(pircRes> 0)
+		xDesc := xDesc  + FISICO + " Perf: " + (pircRes);
+	endif
+	if(bluntRes> 0)
+		xDesc := xDesc  + FISICO + " Cont: " + (bluntRes);
+	endif
+	if((bluntRes + pircRes + slashRes) > 0)
+		xDesc := xDesc + "<br>";
+	endif
+		//xDesc := xDesc + FISICO + "Fisico " + (objeto.resist_physical ) + "<br>";
 
 	if ( CInt(objeto.resist_cold) != 0)
 		xDesc := xDesc  + BLUE_ICE + "Frio " + (objeto.resist_cold ) + "<br>";
