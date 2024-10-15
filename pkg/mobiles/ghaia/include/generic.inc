@@ -73,11 +73,11 @@ endfunction
 //incluir algum criterio de escolha?
 function EnableMainEvents()
   DisableEvents(/*SYSEVENT_SPEECH +*/ SYSEVENT_LEFTAREA + SYSEVENT_DISENGAGED /*+ SYSEVENT_OPPONENT_MOVED*/);
-  EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, areasize);
+  EnableEvents(SYSEVENT_DOUBLECLICKED + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, areasize);
 endfunction
 
 function DisableMainEvents()
-  DisableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA);
+  DisableEvents(SYSEVENT_DOUBLECLICKED + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA);
 endfunction
 
 
@@ -548,6 +548,9 @@ function sleepmode()
 	EVID_FLEE:
 			EnableMainEvents();
 			return ev;
+    EVID_DOUBLECLICKED:
+    EnableMainEvents();
+    return ev;
 
     endcase
     until(!(ev := os::wait_for_event(30)));

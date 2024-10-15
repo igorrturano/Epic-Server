@@ -6,6 +6,8 @@ use os;
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include "include/sounds";
+include ":attributes:vitals";
+
 function ManterMagia(magia, mage, mobile)
 
 	var mana;
@@ -126,16 +128,33 @@ function CheckReagents(who, byref spell_elem, scroll)
 	return 1;
 endfunction
 
-function FailSpell(who)
+function FailSpell(who, spellinfo := struct)
 	// Simple function for handling effects when a caster
 	// fails the casting.
 	who.frozen := 0;
+	if(spellinfo.size() == 0)
+		if (!GetObjProperty(who, "#magiasilenciosa"));
+			PlaySoundEffect(who, SFX_SPELL_FAIL);
+			PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+		endif
+	else
+		var detArcana := GetObjProperty(who,"#CustoDeterminacaoArcana");
+		var mana_cost := 0;
+		var stam_cost := 0;
+		if(detArcana) // se consumiu menos por derterminação Arcana, restitui o equivalente.
+			mana_cost := detArcana[1];
+			stam_cost := detArcana[2];
+		else
+			mana_cost := spellinfo.mana;
+		endif
+		
+		HealMana(who,CInt(mana_cost));
+		HealStamina(who,CInt(stam_cost));
+
+	endif
 	EraseObjProperty(who, "#medding");
 	EraseObjProperty(who, "#Casting");
-	if (!GetObjProperty(who, "#magiasilenciosa"));
-		PlaySoundEffect(who, SFX_SPELL_FAIL);
-		PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
-	endif
+	EraseObjProperty(who, "#CustoDeterminacaoArcana");
 	return 1;
 endfunction
 

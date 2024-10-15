@@ -11,6 +11,7 @@ include ":faccao:faccao";
 include ":ghaia:combatevents";
 include ":timedScripts:timedScripts";
 include "include/epicNPCUtils";
+include "include/produzTeia";
 
 var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
 var me := self();
@@ -54,6 +55,7 @@ endprogram
 function animalBrain()
 	var ev;
 	var wanders;
+   
 	SetWarMode( 0 );
 	ev := os::wait_for_event(0);
 	wanders := 0;
@@ -73,7 +75,6 @@ function animalBrain()
                 MoveAround();
             endif
         endif
-            
 		if (!("encantar" in timedes)) //Quando não está seguindo o pastor, feito pq a ação demorava quando wanders ativo
             wanders := wanders +1;
             if(wanders >= 30)
@@ -84,7 +85,6 @@ function animalBrain()
                 ev := os::wait_for_event(10);
             endif
 		endif
-
 		if(ev)
 			case(ev.type)
 				SYSEVENT_ENTEREDAREA:
@@ -109,6 +109,8 @@ function animalBrain()
 				FOLLOW_CMD:
 					following := ev.source;
 					PetFollow(ev.targ);
+            SYSEVENT_DOUBLECLICKED:
+               EstimulaAbdomen(me,ev);
             break;
 			endcase
 		endif
@@ -323,6 +325,8 @@ function ChooseAnotherOpponent(me)
 endfunction
 
 */
+
+
 
 function look_around()
   foreach npc in ListMobilesInLineOfSight(me, areasize)
