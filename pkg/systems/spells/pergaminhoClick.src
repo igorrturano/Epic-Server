@@ -13,7 +13,7 @@ program usaPergaminho(who, scroll)
 	WritespellInfo(who, spellinfo);
 
 	// Check if spellinfo contains valid data
-    if (spellinfo.name == "Erro" || spellinfo.description == "Você não pode ler magia")
+    if (spellinfo.name == error || spellinfo.description == error)
         // Display error message in gump if spell cannot be read
         var error_gump := GFCreateGump(140, 100);
         GFClosable(error_gump, 1);
