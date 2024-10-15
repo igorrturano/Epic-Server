@@ -150,8 +150,10 @@ function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
     var cap_val;
     
     // Check if skill_name is valid 
+    var initial_skill_value := 0;
     if (skill_name)
         cap_val := GetConfigReal(cfg_elem, skill_name);
+        initial_skill_value := valorInicial(mobile, skill_name);
     endif
 
     // If no specific cap is found or skill_name is not provided, use the general cap
@@ -164,11 +166,13 @@ function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
         cap_val := limiteportempo(mobile);
     endif
 
-    // Calculate the age-based cap limit regardless of cap_val being set
+    // Calculate thecap limit
     var age_limit := limiteportempo(mobile);
+    var skill_cap := Min(cap_val, age_limit);
+    var total_skill_cap := CInt(initial_skill_value + skill_cap);
 
     // Return the lower value between the config-based cap and the age-based cap
-    return Min(cap_val, age_limit);
+    return total_skill_cap;
 endfunction
 
 /*
@@ -394,4 +398,32 @@ function idadeChar(character)
     var tempoDevida := tempoAgora - criadoEm;  // Calculate the total time lived in seconds
     var dias := cint(tempoDevida / 86400);  // Convert the time lived into days (86400 seconds in a day)
     return dias;
+endfunction
+
+//retorna quanto o valor inicial da skill ao iniciar o personagem
+function valorInicial(mobile, skill_name)
+	var skill_inicial := 0.0;
+
+	if (mobile.npctemplate)
+		return 100;
+	endif
+
+	var chardata := GetObjProperty(mobile, "chardata");
+	if (chardata == error)
+		return 0;
+	endif
+
+	var myskills := chardata.Skills;
+
+	if ( myskills[skill_name] == error)
+		return 0.0;
+	elseif (myskills[skill_name] == 1)
+		skill_inicial := skill_inicial + 0.0;
+	elseif (myskills[skill_name] == 2)
+		skill_inicial := skill_inicial + 20.0;
+	elseif ( myskills[skill_name] == 3)
+		skill_inicial := skill_inicial + 40.0;
+	endif
+
+	return skill_inicial;
 endfunction

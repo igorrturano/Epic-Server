@@ -482,31 +482,3 @@ function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
     var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
     return dias;
 endfunction
-
-//retorna quanto o cara comecou com aquela skill
-function valorInicial(mobile, skill_name)
-	var skill_inicial := 0.0;
-
-	if (mobile.npctemplate)
-		return 100;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var myskills := chardata.Skills;
-
-	if ( myskills[skill_name] == error)
-		return 0.0;
-	elseif (myskills[skill_name] == 1)
-		skill_inicial := skill_inicial + 0.0;
-	elseif (myskills[skill_name] == 2)
-		skill_inicial := skill_inicial + 20.0;
-	elseif ( myskills[skill_name] == 3)
-		skill_inicial := skill_inicial + 40.0;
-	endif
-
-	return skill_inicial;
-endfunction
