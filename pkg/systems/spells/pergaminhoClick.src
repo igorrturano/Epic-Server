@@ -17,11 +17,12 @@ program usaPergaminho(who, scroll)
         // Display error message in gump if spell cannot be read
         var error_gump := GFCreateGump(140, 100);
         GFClosable(error_gump, 1);
-        GFResizePic(error_gump, 0, 0, 0x9D8, 240, 120);
+        GFResizePic(error_gump, 0, 0, 0x9D8, 240, 200);
 
-        GFTextLine(error_gump, 50, 10, 0, "Você não pode ler magia");
-        GFHTMLArea(error_gump, 30, 40, 180, 120, "Este pergaminho não pode ser usado.", 0, 1);
-        
+        GFTextLine(error_gump, 50, 10, 0, "☉ ☉ ☉ ☉ ☉");
+ 		GFHTMLArea(error_gump, 30, 40, 180, 120, 
+        "O pergaminho emite uma aura estranha. As palavras parecem escritas em uma língua antiga que você não consegue decifrar.", 0, 1);
+
         GFSendGump(who, error_gump);
         return 0;
     endif
