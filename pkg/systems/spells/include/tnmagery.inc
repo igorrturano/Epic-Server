@@ -11,7 +11,6 @@ include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 
 function spelllearn(who)
-
 	var spell := GetObjProperty(who, "spellcraft");
 
 	if (spell == error)
@@ -39,12 +38,9 @@ function spelllearn(who)
 			return;
 		endif
 	endif
-
-
 endfunction
 
 function CopyToSpellbook(who)
-
 	var targ := Target(who);
 
 	if (!targ)
@@ -74,7 +70,6 @@ function CopyToSpellbook(who)
 endfunction
 
 function spellcraft(who)
-
 	var aprendendo := GetObjProperty(who, "spellcraft");
 	if (aprendendo != error)
 		var cancelar := YesNo(who, "Voce ainda esta pesquisando um encantamento. Deseja cancelar e pesquisar outro?", "Sim", "Nao");
@@ -191,7 +186,6 @@ function spellcraft(who)
 endfunction
 
 function CalculateResearchTime(byref spellinfo)
-
 	var basictime := 0;
 
 	if (spellinfo.targtype == "Animados")
@@ -314,12 +308,7 @@ function CastSpell(mobile, spellinfo, targ)
 	elseif (spellinfo.type == "Enfraquecer")
 		EncantoEnfraquecer(mobile, alvos, spellinfo);
        elseif (spellinfo.type == "Outro")
-         //if (spellinfo.name == "Teia")
-         //  EncantoTeia(mobile, alvos, spellinfo);
-         //endif
       endif
-
-
 endfunction
 
 function EncantoCurar(mobile, alvos, spellinfo)
@@ -469,7 +458,6 @@ function EncantoFortalecer(mobile, byref alvos, byref spellinfo)
 endfunction
 
 function EncantoEnfraquecer(mobile, byref alvos, byref spellinfo)
-
 	foreach mob in alvos
 		foreach att in (spellinfo.atributo)
 			if (att == "Forca")
@@ -501,7 +489,6 @@ function EncantoEnfraquecer(mobile, byref alvos, byref spellinfo)
 endfunction
 
 function CalculateSpellDamage(mobile, power)
-
 	var magery := CINT(AP_GetSkill(mobile, MAGERY));
 	magery := magery/3;
 
@@ -524,7 +511,6 @@ function CalculateSpellDamage(mobile, power)
 endfunction
 
 function TNCheckReagents(who, byref spellinfo, scroll)
-
 	//sendsysmessage(who, " " + scroll + spellinfo.type);
 	if ( who.npctemplate )
 		return 1;
@@ -559,15 +545,6 @@ function TNCheckReagents(who, byref spellinfo, scroll)
 	elseif ( spellinfo.type == "Outro")
 		var cfg;
 		cfg :=  ReadConfigFile(":spells:config/allspells"); //ReadConfigFile(GetBookScripts(scroll));
-		//if (scroll == "mage")
-		//	cfg := ReadConfigFile(":spells:config/tnspells");
-		//elseif (scroll == "necro")
-		//	cfg := ReadConfigFile(":spells:config/necromancerspells");
-		//elseif (scroll == "swordmage")
-		//	cfg := ReadConfigFile(":spells:config/swordmagespells");
-		//endif
-
-
 		if (!cfg)
 			SendSysMessageEx(who, "spell.cfg nao encontrado", SSM_FAIL);
 			return 0;
@@ -615,9 +592,7 @@ function TNCheckReagents(who, byref spellinfo, scroll)
 endfunction
 
 function GetSpellDuration(skill)
-
 	return cint(skill/10)*60 + 300;
-
 endfunction
 
 function WriteCantripSpellInfo(who, byref spellinfo)
@@ -758,21 +733,14 @@ function Spell_Target(who, opts)
 endfunction
 
 function MantainSpell(byref info)
-
 	//sendsysmessage(info.mage, " " + info);
-
-
 	if (info.mage.connected)
 		start_script( ":spells:shared/mantainSpell", { info.mage, info.mobserial, info.name, info.duration, info.level  }  );
 	endif
-
 endfunction
 
 //////////////////////////////////////////////////////////////
 //////// Corromper(jogador, alvo, mana, circulo) - By Duttones
-////////
-////////
-////////
 //////////////////////////////////////////////////////////////
 function Corromper(who, spell, targ)
 	if (GetObjProperty(who, "corruption") == 20000) //se o jogador tiver atingido o maximo de corrupcao, ele nem inicia o script
@@ -861,49 +829,14 @@ function Corromper(who, spell, targ)
 			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'razoavel' para 'alta'.", SSM_FAIL);
 			SetObjProperty(who, "corruption_penalty", 15);
 			SetObjProperty(who, "corruptionalert", 3);
-/*
-			var originalcorruptionbody := struct;
-			var mybeard := GetEquipmentByLayer(who, LAYER_BEARD);
-			var myhair := GetEquipmentByLayer(who, LAYER_HAIR);
-			originalcorruptionbody.+corcabelo := myhair.color;
-			originalcorruptionbody.+corbarba := mybeard.color;
-			originalcorruptionbody.+corpele := who.color;
-			SetObjProperty(who, "originalcorruptionbody", originalcorruptionbody);
-
-			case ( RandomIntMinMax(1,3) )
-				1:
-					who.color := 1873;
-					SendSysMessageEx(who, "Sua pele ficou mais palida!!", SSM_FAIL);
-				2:
-					mybeard.color := 0;
-					myhair.color := 0;
-					SendSysMessageEx(who, "Seus cabelos perderam a cor!!", SSM_FAIL);
-			endcase
-*/
 		endif
 	elseif (corrupcao >= 20000)
 		if (GetObjProperty(who, "corruptionalert") < 4)
 			SendSysMessageEx(who, "Sua corrupcao agora aumentou de 'alta' para 'muito alta'.", SSM_FAIL);
 			SetObjProperty(who, "corruption_penalty", 20);
 			SetObjProperty(who, "corruptionalert", 4);
-/*
-			case ( RandomIntMinMax(1,3) )
-				1:
-					SetObjProperty(who, "BloodColor", 72);
-					SendSysMessageEx(who, "Seu sangue agora é verde!!", SSM_FAIL);
-				2:
-					var str := "Veias visiveis sob a pele";
-					if (GetObjProperty(who, "description"))
-						str := GetObjProperty(who, "description") + " <br> " + str;
-					endif
-					SetObjProperty(who, "description", str);
-					SendSysMessageEx(who, "As veias por baixo de sua pele parece estar mais escuras!!", SSM_FAIL);
-			endcase
-*/
 		endif
 	endif
-	//fim da checagem
-
 endfunction
 
 
