@@ -251,3 +251,13 @@ function GetItemFix(fix_cfg, objtype)
 
    return struct{ x:= 0, y := 0};
 endfunction
+
+//Encontra uma chave de um dicionáro pelo seu valor.
+function EncontraChavePorValor(valor, dict)
+	var keys := dict.keys();
+	foreach key in keys
+		if(valor == dict[key])
+			return key;
+		endif
+	endforeach
+endfunction;
