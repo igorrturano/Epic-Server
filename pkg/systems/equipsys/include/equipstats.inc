@@ -39,11 +39,35 @@ function getWeaponStats(weapon)
 		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
 		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
+	if (Upper(elem.Attribute) == "RANGED")
+		stats.+Ranged := 1;
+	endif
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
-	stats.+CriticalChange := getCriticalChanceByTier(elem.CriticalChance);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
+endfunction
+
+/**
+ * getWeaponStats(weapon)
+ *
+ * Purpose
+ * Passar todos os valores da arma em um único struct.
+ *
+ * Parameters
+ * weapon: ItemRef da arma.
+ *
+ * Return struct
+ * Retorna um struct com todos os valores base da arma.
+ *
+ */
+function setWeaponStats(weapon)
+	// TODO: Rever a lógica e fazer um refator adequado. Só está assim pela urgência pra evitar bug.
+	var stats := getWeaponStats(weapon);
+
+	setPropWeapon(weapon);
+	weapon.speed_mod := CInt(stats.AttackSpeed - 24);
 endfunction
 
 /**
@@ -86,25 +110,28 @@ endfunction
  */
 function getDamageByTier(tier)
 	case (tier.Upper())
+		// NO DAMAGE
+		DAMAGE_NONE: return 0;
+		
 		// ONE HANDED
-		ONEHANDED_LOW: return ONEHANDED_LOW_DAMAGE;
-		ONEHANDED_MID: return ONEHANDED_MID_DAMAGE;
-		ONEHANDED_HIGH: return ONEHANDED_HIGH_DAMAGE;
+		ONEHANDED_LOW: return "1d4";
+		ONEHANDED_MID: return "1d6";
+		ONEHANDED_HIGH: return "1d8";
 			
 		// TWO HANDED
-		TWOHANDED_LOW: return TWOHANDED_LOW_DAMAGE;
-		TWOHANDED_MID: return TWOHANDED_MID_DAMAGE;
-		TWOHANDED_HIGH: return TWOHANDED_HIGH_DAMAGE;
+		TWOHANDED_LOW: return "1d8";
+		TWOHANDED_MID: return "1d10";
+		TWOHANDED_HIGH: return "1d12";
 
 		// BOW
-		BOW_LOW: return BOW_LOW_DAMAGE;
-		BOW_MID: return BOW_MID_DAMAGE;
-		BOW_HIGH: return BOW_HIGH_DAMAGE;
+		BOW_LOW: return "1d4";
+		BOW_MID: return "1d6";
+		BOW_HIGH: return "1d8";
 
 		// CROSSBOW
-		CROSSBOW_LOW: return CROSSBOW_LOW_DAMAGE;
-		CROSSBOW_MID: return CROSSBOW_MID_DAMAGE;
-		CROSSBOW_HIGH: return CROSSBOW_HIGH_DAMAGE;
+		CROSSBOW_LOW: return "1d6";
+		CROSSBOW_MID: return "1d8";
+		CROSSBOW_HIGH: return "1d10";
 			
 		default: return error{ "errortext" := "Damage value not found for this Weapon Damage Tier!"};
 	endcase

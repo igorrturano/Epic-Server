@@ -6,7 +6,6 @@ use cfgfile;
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
 include ":npcs:thor/handling/thorai";
-include ":npcs:thor/handling/thorai";
 
 program DblClickNerve(params)
 	var npc		:= params[1];
