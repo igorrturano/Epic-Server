@@ -8,7 +8,7 @@ Este diretório contém arquivos essenciais para o gerenciamento de habilidades 
 - **`settings.inc`** centraliza as configurações usadas em todos os outros arquivos para controlar limites de ganho e chances de sucesso.
 
 ### Futuro:
-No futuro, o arquivo `advanceCheck.inc` será dividido entre **skills** e **stats**, para facilitar o gerenciamento.
+No futuro, o arquivo `advanceCheck.inc` será dividido entre **skills** e **stats**, para facilitar o gerenciamento. O arquivo `skillCheck.inc`  deverá ser incorporado dentro de `skills.inc`. 
 
 ## Estrutura dos Arquivos:
 
