@@ -196,7 +196,6 @@ function CheckStatAdvancement(mobile, stat_name, stat_mult)
     return 0;
 endfunction
 
-
 /*
  * CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
  *
@@ -252,8 +251,8 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     endif
 
     var true_skill := AP_GetTrueSkill(mobile, skill_name);
-    var maximo := AP_CheckClassSkillCap(mobile, skill_name);
-    if (true_skill >= maximo)  
+    var max_skillcap_class := AP_CheckClassSkillCap(mobile, skill_name);
+    if (true_skill >= max_skillcap_class)  
         SkillDbgMsg(mobile, "Atingiu o limite máximo da skill");
         DebugMsg(mobile, DEBUG_UP, "Você atingiu o nível máximo da skill!");
         return 0;
@@ -266,10 +265,18 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         return 0;
     endif
 
-    // Verifica se o avanço da habilidade ocorre (rolagem de dados)
-    if (!PerformAdvancementCheck(pass_chance)) 
+    var fail_count_skill := "#FailCount_" + skill_name;
+    var fail_count := GetObjProperty(mobile, fail_count_skill);
+    if (fail_count == error)
+        fail_count := 0;
+        SetObjProperty(mobile, fail_count_skill, fail_count); 
+    endif
+
+    if (!PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)) 
+        fail_count := fail_count + 1;
+        SetObjProperty(mobile, fail_count_skill, fail_count);
         SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
-        DebugMsg(mobile, DEBUG_UP, "Você falhou em aprimorar a skill " + skill_name + ".");
+        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + skill_name + ", mas ainda não aprimorou. Tentativas: " + CStr(fail_count) + ")");
         return 0;
     endif
 
@@ -282,17 +289,9 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         return 0;
     endif
 
-    // Skill advancement success
-    var temp := true_skill + 0.1;
-
-    // Handle precision issue
-    while (CInt(temp * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
-        temp := temp + 0.1;
-        sleepms(10);
-    endwhile
-
     // Save new skill value and notify player
-    AP_SetTrueSkill(mobile, skill_name, temp);
+    var skill_gain := ApplySkillGainModifiers(mobile, skill_name, true_skill);
+    AP_SetTrueSkill(mobile, skill_name, skill_gain);
     SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
 
     // If it's a pet, notify the owner
@@ -303,12 +302,14 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             if (TypeOf(petskills) != "Dictionary") 
                 petskills := dictionary;
             endif
-            petskills[skill_name] := temp;
+            petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(temp) + "!");
+            SetObjProperty(mobile, fail_count_skill, 0);
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(skill_gain) + "!");
         endif
     else
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + CStr(temp) + "!");
+        SetObjProperty(mobile, fail_count_skill, 0);
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + CStr(skill_gain) + "!");
     endif
 
     return 1;
@@ -369,13 +370,117 @@ function SkillGainCooldownPassed(mobile, skill_name, settings)
 endfunction
 
 /*
- * PerformAdvancementCheck(pass_chance)
+ * PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)
  * 
  * Performs the dice roll to determine if the skill advancement occurs.
  */
-function PerformAdvancementCheck(pass_chance)
-    var adv_check := RandomInt(100) + 1; 
-    return (adv_check <= pass_chance);
+function PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)
+    if (CInt(pass_chance < 5))
+        pass_chance := 5;
+    endif
+    var adjusted_pass_chance := ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class);
+    var adv_check := CInt(RandomInt(100) + 1); 
+    return (CInt(adv_check <= adjusted_pass_chance));
+endfunction
+
+/*
+ * ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
+ * 
+ * Purpose:
+ * Adjusts pass chances based on a progression model. 
+ * - 0% to 50% true_skill: pass_chance increases progressively.
+ * - 50% to 80% true_skill: pass_chance decreases to 15%.
+ * - 80% to 85% true_skill: pass_chance decreases to 10%.
+ * - 85% to 90% true_skill: pass_chance decreases to 5%.
+ * - After 90% true_skill: pass_chance locks at 5%.
+*/
+function ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
+    var skill_ratio := CInt((true_skill * 100) / max_skillcap_class);
+    if (skill_ratio <= 50)
+        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / 50); // Progressive increase
+    elseif (skill_ratio > 50 && skill_ratio <= 80)
+        pass_chance := CInt(pass_chance - ((skill_ratio - 50) * (pass_chance - 15)) / 30); // Decrease to 15% at 80%
+    elseif (skill_ratio > 80 && skill_ratio <= 85)
+        pass_chance := CInt(pass_chance - ((skill_ratio - 80) * (pass_chance - 10)) / 5); // Decrease to 10% at 85%
+    elseif (skill_ratio > 85 && skill_ratio <= 90)
+        pass_chance := CInt(pass_chance - ((skill_ratio - 85) * (pass_chance - 5)) / 5); // Decrease to 5% at 90%
+    else
+        pass_chance := 5;
+    endif
+
+    pass_chance := ClampValue(pass_chance, 0, 100);
+    return pass_chance;
+endfunction
+
+function ClampValue(value, min_value, max_value)
+    if (value < min_value)
+        return min_value;
+    elseif (value > max_value)
+        return max_value;
+    endif
+    return value;
+endfunction
+
+/*
+ * ApplySkillGainModifiers(mobile, skill_name, true_skill)
+ * 
+ * Purpose:
+ * This function calculates the amount of skill gain based on various factors, such as the player's current skill level,
+ * predefined gain values, and potential future conditions (like being in a dangerous zone or specific skill restrictions).
+ * 
+ * Key Features:
+ * - Default Skill Gain (`base_gain`): 0.1
+ * - High Skill Gain (`high_skill_gain`): 0.3, which can be applied in special scenarios
+ * - No Skill Gain (`no_skill_gain`): 0, this can be used in cases where skill advancement should not occur due
+ *   to certain restrictions 
+ * - Precision Handling: The function ensures that the skill gain is accurately applied, even when floating-point precision
+ *   issues arise.
+ * 
+ * Parameters:
+ * - `mobile`: The player or character object whose skill is being modified.
+ * - `skill_name`: The name of the skill that is being advanced.
+ * - `true_skill`: The current level of the skill that is being updated.
+ * 
+ * Returns:
+ * - The final new skill value after applying the calculated skill gain and ensuring precision.
+ * 
+ * Future Modifications:
+ * - This function is designed to be extended with additional conditions (e.g., special scenarios like sneaking in dangerous
+ *   zones or preventing skill gains with certain conditions like animal handling restrictions).
+ */
+function ApplySkillGainModifiers(mobile, skill_name, true_skill)
+    // Fixed values for skill gain
+    var base_gain := 0.1;       
+    var high_skill_gain := 0.3;
+    var no_skill_gain := 0;   
+
+    // Default to base skill gain for now (can be modified based on future conditions)
+    var skill_gain := base_gain;
+
+    // TODO: Add special case for sneaking in dangerous zones to apply high_skill_gain
+    // TODO: Add special case for handle animal to potentially set no_skill_gain
+
+    // If no skill gain is applied, return the current skill value immediately
+    if (skill_gain == no_skill_gain)
+        return true_skill;  
+    endif
+
+    var new_skill_value := true_skill + skill_gain;  
+    // Handle precision issue
+    while (CInt(new_skill_value * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
+        new_skill_value := new_skill_value + 0.1;  
+        sleepms(10);  
+    endwhile
+
+    return new_skill_value;
+endfunction
+
+function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
+    var criadoEm := cint(days);
+    var tempoAgora := polcore().systime;// segundos
+    var tempoDevida:= tempoAgora - criadoEm;
+    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
+    return dias;
 endfunction
 
 //retorna quanto o cara comecou com aquela skill
@@ -404,70 +509,4 @@ function valorInicial(mobile, skill_name)
 	endif
 
 	return skill_inicial;
-endfunction
-
-function AP_CheckClassSkillCap(mobile, skill_name)
-
-	if (mobile.npctemplate)
-		return 100;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var myskills := chardata.Skills;
-
-	if ( myskills[skill_name] == error)
-		return 0;
-	elseif (myskills[skill_name] == 1)
-        return 40.0;
-	elseif (myskills[skill_name] == 2)
-		return 70.0;
-	elseif ( myskills[skill_name] == 3)
-		return 100.0;
-	endif
-
-endfunction
-
-function idadeChar( character)// para 10000 deu 292 segundos 300
-    var criadoEm := cint(GetObjProperty(character, "createdate"));
-    var tempoAgora := polcore().systime;// segundos
-    var tempoDevida := tempoAgora - criadoEm;
-    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
-    return dias;
-endfunction
-
-function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
-    var criadoEm := cint(days);
-    var tempoAgora := polcore().systime;// segundos
-    var tempoDevida:= tempoAgora - criadoEm;
-    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
-    return dias;
-endfunction
-
-function limiteportempo(who)
-    if (who.npctemplate)
-        return 100;
-    endif
-
-    var dias := CInt(idadeChar(who));
-    var lim := 12;
-
-    if (dias <= 10)
-        // Dias 1-10: Travado em 12
-        lim := 12;
-    elseif (dias <= 30)
-        // Dias 11-30: Aumento rápido (2 por dia)
-        lim := 12 + (dias - 10) * 2;
-    elseif (dias <= 60)
-        // Dias 31-60: Aumento médio (1 por dia)
-        lim := 52 + (dias - 30);
-    else
-        // Dias 61+: Aumento lento (0.5 por dia)
-        lim := 82 + (dias - 60) * 0.5;
-    endif
-
-    return Min(lim, 100);
 endfunction

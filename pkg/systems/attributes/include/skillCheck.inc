@@ -61,22 +61,16 @@ function SkillCheck(mobile, attrib_name, difficulty, award_diff:=0, advance_flag
     endif
 
 	var success_chance := CalcSuccessPercent(mobile, attrib_name, difficulty, effective_skill);
-	var advancement_chance := CInt((100 - success_chance) / 3);
-
 	if ( !(advance_flags & ADV_SKILL) )
 		SkillDbgMsg(mobile, "Skill advance disabled.");
 	else
-		if (advancement_chance > 50)
-			advancement_chance := 50;
-		elseif (advancement_chance < 5)
-			advancement_chance := 5;
-		endif
-		CheckSkillAdvance(mobile, attrib_name, award_diff, advancement_chance);
+		CheckSkillAdvance(mobile, attrib_name, award_diff, success_chance);
 	endif
 
 	var random_roll := RandomFloat(100);
-	var success_margin := (success_chance - random_roll);
-	return success_margin ;
+	//if this is higher than 0, it means it passed
+	var success_result := (success_chance - random_roll);
+	return success_result ;
 endfunction
 
 /*
@@ -143,19 +137,17 @@ function CalcSuccessPercent(mobile, attrib_name, difficulty, effective_skill)
 		max_skill := AP_GetSkillCap(mobile, attrib_name);
 		neg1chance := CDbl(settings.MaxNeg1Chance);
 		base_chance := CInt(neg1chance * effective_skill / max_skill);
-	elseif ( DifficultyTooHard(effective_skill, difficulty) )
+	elseif ( DifficultyTooHard(effective_skill, difficulty) ) //skill + 10 < difficulty
 		base_chance := 0;
-	elseif ( DifficultyTooEasy(effective_skill, difficulty) )
+	elseif ( DifficultyTooEasy(effective_skill, difficulty) ) //skill - 20 > difficulty
 		base_chance := 100;
 	else
-		base_chance := CInt(50.0 + ((effective_skill - difficulty) * 2.5));
+		base_chance := CInt(50.0 + ((effective_skill - difficulty) * 2.5)); //base_chance = min = 25% max = 100%
 	endif
 
-	var pass_chance := AdjustForIntelligence(base_chance, mobile);
-	pass_chance := ClampPassChance(pass_chance, settings);
+	var pass_chance := ClampPassChance(base_chance, settings); //0-100 range
 
 	return pass_chance;
-
 endfunction
 
 function DifficultyTooEasy(effective_skill, difficulty)
@@ -166,12 +158,6 @@ endfunction
 function DifficultyTooHard(effective_skill, difficulty)
 	var settings := AP_GetSettingsCfgElem("Skills");
 	return ( (effective_skill + CDbl(settings.TooHard)) < difficulty );
-endfunction
-
-function AdjustForIntelligence(pass_chance, mobile)
-    var intelligence := AP_GetTrueStat(mobile, INTELLIGENCE);
-    // Apply intelligence adjustment, increasing pass chance
-    return CInt(pass_chance * (1.0 + intelligence / 100.0));
 endfunction
 
 function ClampPassChance(pass_chance, settings)

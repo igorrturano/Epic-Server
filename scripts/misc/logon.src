@@ -1,8 +1,3 @@
-/*
- * $Id: logon.src 937 2005-11-07 01:20:20Z austin $
- *
- */
-
 use uo;
 use os;
 use polsys;
@@ -14,6 +9,7 @@ include ":gumps:gumpPrompt";
 include ":gumps:gumpPrompt";
 include ":charactercreation:resists";
 include ":attributes:advanceCheck";
+include ":attributes:skills";
 
 program Logon(who)
 
@@ -239,11 +235,9 @@ function CanPassiveIncreaseSkill(who, skill)
 		bonus_tempo := bonus_tempo + 20;
 	endif
 	//verifica se ainda não alcancou o cap máximo permitido para aquela skill e se não atingiu o cap permitido por tempo de criação do personagem
-	if( (limiteportempo(who) + valorinicial(who, skill))  > true_skill)
+	if( (AP_GetSkillCap(who) + valorinicial(who, skill))  > true_skill)
 		var maximo := AP_CheckClassSkillCap(who, skill);
 		if ( true_skill >= maximo ) //verifica quanto pode subir com base na classe
-			//printtextabove(mobile, "to no maximo da skill");
-			//SkillDbgMsg(mobile, "Chegou no maximo da classe: " + maximo);
 			return 0;
 		else
 			return 1;
