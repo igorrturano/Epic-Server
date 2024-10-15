@@ -338,7 +338,7 @@ Function AlchLabTransfer (item, alvo)
   SetObjProperty(item, "bonus", cint(GetObjProperty(alvo, "bonus")));
   SetObjProperty(item, "tier", cint(GetObjProperty(alvo, "tier")));
   SetObjProperty(item, "crafterskill", cint(GetObjProperty(alvo,"crafterskill")));
-  SetObjProperty(item, "science", cint(GetObjProperty(alvo,"science")));
+  SetObjProperty(item, "science", (GetObjProperty(alvo,"science")));
   
   EraseObjProperty(alvo, "extrato");
   EraseObjProperty(alvo, "strength");
