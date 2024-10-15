@@ -58,6 +58,9 @@ function getWeaponStats(weapon)
 			};
 		endif
 	endif
+	if (Upper(elem.Attribute) == "RANGED")
+		stats.+Ranged := 1;
+	endif
 	stats.+AttackType := elem.TipoAtaque;
 	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
 	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
