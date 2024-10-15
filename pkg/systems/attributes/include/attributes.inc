@@ -220,7 +220,7 @@ function maolivre(who, qtd, checkmount := 1)
 endfunction
 
 function GetHP(who)
-	var hp := CInt(AP_GetTrueStat(who, "Strength"))/2;
+	var hp := CInt(AP_GetTrueStat(who, "Strength"))/4;
 
 	if (TemHabilidade(who, "Nazg Gûl"))
 		hp := hp + 25;
