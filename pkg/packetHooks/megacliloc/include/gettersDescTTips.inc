@@ -89,8 +89,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	if(cfg.elem.strrequired > 0)
 		xDesc := xDesc + "Força exigida: " + cfg.elem.strrequired + "<br>";
 	endif
-	//xDesc := xDesc + "Perícia: " + getPericia(cfg.elem) + "<br>";
-	xDesc := xDesc + "Perícia: " + cfg.elem.Attribute + "<br>";
+	xDesc := xDesc + "Perícia: " + StrReplace(cfg.elem.Attribute,"_"," ") + "<br>";
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
@@ -136,24 +135,11 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
 	var bluntMD,slashMD,pircMD :=0;
 	var bluntOD,slashOD,pircOD := "";
-	
-	if(!atrib)
-		var elemMainDamage := SplitWords(cfg.elem.EpicMainDamage);
-		var elemOffDamage := SplitWords(cfg.elem.EpicOffDamage);
-		atrib.+SlashMainDamage := getDamageByTier(elemMainDamage[1]);
-		atrib.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]);
-		atrib.+BluntMainDamage := getDamageByTier(elemMainDamage[3]);
 
-		atrib.+SlashOffDamage :=getDamageByTier(elemOffDamage[1]);
-		atrib.+PiercingOffDamage :=getDamageByTier(elemOffDamage[2]);
-		atrib.+BluntOffDamage :=getDamageByTier(elemOffDamage[3]);
-	endif
-	/*
-	Se usa esse metodo o arquivo não compila mais (??) [2-byte off]
 	if(!atrib)
 		atrib := getWeaponStats(objeto);
 	endif
-	*/
+
 	slashMD := atrib.SlashMainDamage;
 	pircMD := atrib.PiercingMainDamage;
 	bluntMD := atrib.BluntMainDamage;
@@ -321,24 +307,3 @@ function PegaDescGoles(objeto, xDesc)
 		endif
 		return xDesc;
 endfunction
-
-
-function getPericia(elem)
-	
-	var attribute := Cint(elem.Attribute);
-
-	case(attribute)
-		"One_Handed":
-			return "Uma mão";
-		"Two_Handed":
-			return "Duas mãos";
-		"Wrestling":
-			return "Mãos Livres";
-		"Dual_Wield":
-			return "Empunhadura dupla";
-		"Ranged":
-			return "Longo Alcance";
-		"Throwing":
-			return "Lançamento";
-	endcase
-endfunction	
