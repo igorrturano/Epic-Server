@@ -51,19 +51,24 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
 	if(potiontype == 1)  //eh uma poção de 1 so gole
 		goles := 0;
 	endif
-
+  
   if (goles > 1)
 		goles := goles - 1;
-    var props := getobjpropertynames(potion);
-    var pot2 := SubtractAmount( potion, 1 );
-    var pot := CreateItemInBackpack(character, objtype, 1);
-    foreach key in props
-      var prop_value := getobjproperty(potion, key);
-      SetObjProperty(pot, key, prop_value);
-  	endforeach
-    SetObjProperty(pot, "goles", goles);
+    if (potion.amount > 1)
+      var props := getobjpropertynames(potion);
+      var pot := CreateItemInBackpack(character, objtype, 1);
+      foreach key in props
+        var prop_value := getobjproperty(potion, key);
+        SetObjProperty(pot, key, prop_value);
+  	  endforeach
+      SetObjProperty(pot, "goles", goles);
+      sleepms(100);
+      subtractamount(potion, 1);
+    else
+      setobjproperty(potion, "goles", goles);
+    endif
   else
-    var pot2 := SubtractAmount( potion, 1 );
+    SubtractAmount( potion, 1 );
 	  var stacknow := GetAmount(0x0F0E);
 		if (stacknow > 0)
 			Addamount(0x0F0E, 1);
@@ -258,9 +263,9 @@ function do_poison(who, potion)
     0xbf01: poisonType :="strPoison"; difficulty := RESIST_MEDIUM; points := 70;
     0xbf20: poisonType :="dexPoison"; difficulty := RESIST_MEDIUM; points := 70;
     0xef54: poisonType :="intPoison"; difficulty := RESIST_MEDIUM; points := 70;
-    0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_MEDIUM; points := 70; level := level/20;
     0xbf03: poisonType:="paralyzePoison"; difficulty := RESIST_HARD; points := 100;
-    0xbf06: difficulty := RESIST_HARD; points := 70; poisonType :="manaPoison";
+    0xbf06: difficulty := RESIST_HARD; points := 70; poisonType :="manaPoison"; level := level/20;
     0xbf04: difficulty := RESIST_HARD; points := 60; poisonType := "alchPoison";
     0x6072: difficulty := RESIST_MEDIUM; points := 40; poisonType := "alchPoison";
     0xbf05: difficulty := RESIST_VERY_HARD; points := 100; poisonType := "alchPoison";
