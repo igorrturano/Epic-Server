@@ -409,16 +409,21 @@ function SelectRandomRecipe(power)
 endfunction
 
 function SelectRandomSpell(power)
-    var cfg := ReadConfigFile(":spells:spellcaster");
+   var cfg := ReadConfigFile(":spells:spellcaster");
+    if (!cfg)
+        return 0;
+    endif
     var spells := array{};
     foreach entry in (GetConfigStringKeys(cfg))
         var elem := FindConfigElem(cfg, entry);
-        if (GetConfigInt(elem, "Circle") == power)
+        var circle := GetConfigInt(elem, "Circle");
+        if (circle == power)
             spells.append(GetConfigInt(elem, "SpellId"));
         endif
     endforeach
     if (spells.size() > 0)
-        return spells[RandomInt(spells.size()) + 1];
+        var selectedSpell := spells[RandomInt(spells.size()) + 1];
+        return selectedSpell;
     endif
     return 0;
 endfunction
