@@ -270,8 +270,6 @@ function EnforceSkillCap(who)
         skill_cap := AP_GetSkillCap(who, skill);  
         // If the current skill is higher than the cap, revert it to the cap
         if (CInt(true_skill > skill_cap))
-		    DebugMsg(who, DEBUG_UP, "trueskill " + true_skill + ".");
-			DebugMsg(who, DEBUG_UP, "skill_cap " + skill_cap + ".");
             AP_SetTrueSkill(who, skill, CInt(skill_cap)); 
             SendSysMessage(who, "Sua habilidade em " + skill + " foi ajustada para o limite máximo de " + skill_cap);
         endif

@@ -273,7 +273,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         fail_count := fail_count + 1;
         SetObjProperty(mobile, fail_count_skill, fail_count);
         SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
-        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + skill_name + ", mas ainda não aprimorou. Tentativas: " + CStr(fail_count) + ")");
+        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + skill_name + ", mas ainda não aprimorou. Tentativas: (" + CStr(fail_count) + ")");
         return 0;
     endif
 
@@ -287,7 +287,12 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     endif
 
     // Save new skill value and notify player
-    var skill_gain := ApplySkillGainModifiers(mobile, skill_name, true_skill);
+    var skill_gain := ApplySkillGainModifiers(mobile, skill_name, true_skill);    
+    // Handle precision issue
+    while (CInt(skill_gain * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
+        skill_gain := skill_gain + 0.1;  
+        sleepms(10);  
+    endwhile
     AP_SetTrueSkill(mobile, skill_name, skill_gain);
     SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
 
@@ -302,11 +307,11 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
             SetObjProperty(mobile, fail_count_skill, 0);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + FormatRealToString(skill_gain, 1) + "!");
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + FormatRealToString(skill_gain, 4) + "!");
         endif
     else
         SetObjProperty(mobile, fail_count_skill, 0);
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + FormatRealToString(skill_gain, 1) + "!");
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + FormatRealToString(skill_gain, 4) + "!");
     endif
 
     return 1;
@@ -472,12 +477,6 @@ function ApplySkillGainModifiers(mobile, skill_name, true_skill)
     endif
 
     var new_skill_value := true_skill + skill_gain;  
-    // Handle precision issue
-    while (CInt(new_skill_value * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
-        new_skill_value := new_skill_value + 0.1;  
-        sleepms(10);  
-    endwhile
-
     return new_skill_value;
 endfunction
 
