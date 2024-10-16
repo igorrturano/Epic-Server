@@ -1,6 +1,12 @@
 use uo;
 use cfgfile;
-
+enum TT_CLASSE_PARAM
+	DESCONHECIDO := 1,
+	ITEM_ARMA := 2,
+	TEMPLATE_ARMA := 3,
+	ITEM_ARMADURA := 4,
+	TEMPLATE_ARMADURA := 5
+endenum
 function ParseScriptString(crit)
 
 	var str := "";
@@ -25,7 +31,7 @@ function PegaPropObjItemOrTemplate(item, propriedade)
 		return GetObjProperty(item, propriedade);
 	else
 		if(item.?Cprops)
-			var prop := item.Cprops.propriedade;
+			var prop := item.Cprops[propriedade];
 			if(prop != error)
 				return prop;
 			endif
@@ -41,4 +47,18 @@ function MontaObjCfgArmaArmadura(objeto,xDesc := "")
 	retorno.+elem := FindConfigElem(retorno.cfg, objeto.objtype);
 	retorno.+desc := xDesc;
 	return retorno;
+endfunction
+
+function ClassificaParametro(objeto)
+	if(objeto.isA(POLCLASS_WEAPON))
+		return ITEM_ARMA;
+	elseif(objeto.isA(POLCLASS_ARMOR))
+		return ITEM_ARMADURA;
+	elseif(objeto.TipoAtaque)
+		return TEMPLATE_ARMA;
+	elseif(objeto.TipoProtecao)
+		return TEMPLATE_ARMADURA;
+	else
+		return DESCONHECIDO;
+	endif
 endfunction

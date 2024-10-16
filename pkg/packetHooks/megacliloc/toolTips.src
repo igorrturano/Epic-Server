@@ -9,15 +9,8 @@ use cfgfile;
 
 use os;
 
-include ":spells:include/swordmage";
 include ":attributes:attributes";
-include ":charactercreation:habilidades";
-include ":tn:boss";
 include "include/client";
-include "include/say";
-include "include/epicCombatUtils";
-include ":custompizza:itemrp/include/lore_items";
-include ":combat:damage";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":megacliloc:/include/nomeObjetoTTip";
 include ":megacliloc:/include/descricaoObjetoTTip";
