@@ -157,7 +157,7 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	slashOD := atrib.SlashOffDamage? FISICO_OFF + " " + atrib.SlashOffDamage + FECHA_BASEFONT_TAG:"";
 	pircOD := atrib.PiercingOffDamage? FISICO_OFF + " " + atrib.PiercingOffDamage + FECHA_BASEFONT_TAG:"";
 	bluntOD := atrib.BluntOffDamage? FISICO_OFF + " " + atrib.BluntOffDamage + FECHA_BASEFONT_TAG:"";
-	Print(elemMainDamage[1]);
+	
 	if(slashMD !=  0)
 		xDesc := xDesc  + " Cort: " + ClassificaDanoCor(elemMainDamage[1])  + (slashMD) + FECHA_BASEFONT_TAG + slashOD;
 	endif
@@ -230,7 +230,7 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	slashRes := atrib.SlashResist;
 	pircRes := atrib.PiercingResist;
 	bluntRes := atrib.BluntResist;
-	Print(cfg.elem.TipoProtecao);
+	
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
