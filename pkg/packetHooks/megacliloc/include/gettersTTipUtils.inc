@@ -129,12 +129,16 @@ function GetHitsInfo(entry)
 
 endfunction
 
-function getTipoStringDesc(elem, item) //Exibe o tipo de arma
-	if (item.isa(POLCLASS_WEAPON))
-		return CStr(elem.TipoAtaque) + "<br>" + CSTR(StrReplace(elem.Attribute, "_", " "));
-	elseif (item.isa(POLCLASS_ARMOR))
-		return CStr(elem.TipoProtecao) + "<br>";
-	endif
+function getTipoStringDesc(elem) //Exibe o tipo de arma
+	var tipo := ClassificaParametro(elem); 
+	case(tipo)
+		ITEM_ARMA:
+		TEMPLATE_ARMA:
+			return CStr(elem.TipoAtaque) + "<br>" + CSTR(StrReplace(elem.Attribute, "_", " "));
+		ITEM_ARMADURA:
+		TEMPLATE_ARMADURA:
+			return CStr(elem.TipoProtecao) + "<br>";
+	endcase
 endfunction
 
 

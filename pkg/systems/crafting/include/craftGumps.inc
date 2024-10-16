@@ -1,6 +1,7 @@
 // //$Id: craftGumps.inc 740 2005-10-31 06:28:43Z muaddiblsd $
 
 include ":crafting:craftingUtil";
+include ":megacliloc:/include/descricaoObjetoTTip";
 
 var craft_gumps := DFOpenDataFile(":crafting:CraftGumps", DF_CREATE);
 var menu_config := ReadConfigFile( ":crafting:config/craftConfig" );
@@ -276,7 +277,7 @@ endfunction
 // the Crafting gump, or create the item immediately from this page.
 function GFCraftInfoPage(who, objtype, skill_config)
 
-  	var i_config, thisitem, elem, graphic, itemdesc, tooltip, skillreq, diff, skillreqb, aid_skill, matname, material, color;
+  	var i_config, thisitem, elem, graphic, itemdesc, tooltip, skillreq, diff, skillreqb, aid_skill, matname, material, color, tooltipGraphic,tipoItem;
   	color := 0;
   	if (objtype > 0)
 		i_config := ReadConfigFile(":*:itemdesc");
@@ -289,6 +290,21 @@ function GFCraftInfoPage(who, objtype, skill_config)
 		color	 := CInt(thisitem.color);
 		itemdesc := TruncatePlural(objtype);
 		itemdesc := lower(itemdesc);
+
+		tipoItem := ClassificaParametro(thisitem);
+		var cfgStruct := struct; //monta o struct para enviar para a function da tooltip
+		cfgStruct.+cfg := i_config;
+		cfgStruct.+elem := thisitem;
+		cfgStruct.+desc := "";
+
+		case(tipoItem)
+			TEMPLATE_ARMA:
+				tooltipGraphic := PegaDescArmas(thisitem,who,cfgStruct);
+			TEMPLATE_ARMADURA:
+				tooltipGraphic := PegaDescArmaduras(thisitem,cfgStruct);
+			default:
+			tooltipGraphic := "";
+		endcase
 
 		if(!graphic || TypeOf(graphic) == "Struct")
   			graphic := CInt(objtype);
@@ -430,6 +446,7 @@ function GFCraftInfoPage(who, objtype, skill_config)
 	GFAddButton(gump, 270, 435, 4005, 4006, GF_CLOSE_BTN, CInt(objtype) );
 	GFHTMLArea(gump, 305, 438, 150, 18, "<basefont color=#ffffff>FAZER");
 	GFTilePic(gump, 20, 50, CInt(graphic), color);
+	GFTooltipText(gump,tooltipGraphic);
 	//GFHTMLArea(gump, 430, 132, 150, 18, ("<basefont color=#ffffff>" + skillreq));
 
 	// Tooltip info from itemdesc.cfg appended in.
