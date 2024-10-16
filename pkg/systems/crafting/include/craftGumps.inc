@@ -23,7 +23,6 @@ function sendCraftGump(who, skill_name)
 	var skill_config := ReadConfigFile(menu_file);
 	craft_skill      := menu_config[skill_name].Attribute;
 	recipe_skill := craft_skill;
-	var fixed_skill_name := StrReplace(craft_skill,"_","");
 	display_skill    := menu_config[skill_name].Name;
 	// Craft Cprop is a dictionary storing the information for each crafting skill
 	craft_settings := GetObjProperty(who, "Craft");
@@ -34,7 +33,7 @@ function sendCraftGump(who, skill_name)
 
 	while( 1 )
 
-		craftL := craft_settings[fixed_skill_name].last;
+		craftL := craft_settings[craft_skill].last;
 		var craft_gump := Craft_IndexGump(who, skill_name);
 		if( !craft_gump )
 			exit;
@@ -69,7 +68,7 @@ function sendCraftGump(who, skill_name)
 			endcase
 		endif
 
-		craft_settings[fixed_skill_name].last := the_objtype;
+		craft_settings[craft_skill].last := the_objtype;
 		SetObjProperty(who, "Craft", craft_settings);
 
 		// Sets the amount you had entered into an array to return to crafting
@@ -80,7 +79,7 @@ function sendCraftGump(who, skill_name)
 			SendSysMessage(who, "Voce so pode fazer algo entre 1 e " + menu_config["Setup"].MaxAmount + " itens.");
 			return 0;
 		endif
-		craft_settings[fixed_skill_name].amount := atc;
+		craft_settings[craft_skill].amount := atc;
 		SetObjProperty(who, "Craft", craft_settings);
 
 		// Build the return array and give it to crafting.
