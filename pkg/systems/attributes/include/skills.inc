@@ -189,14 +189,18 @@ function AP_CheckSkillCap(mobile, skill_name := "")
     // If a specific skill name is provided, check its individual skill cap
     if (skill_name != "")
         var cap_val := AP_GetSkillCap(mobile, skill_name);
-
-        // Return false (0) if there's an error
+        var true_skill := AP_GetTrueSkill(mobile, skill_name);
+        // Return false (0) if there's an error in retrieving the cap
         if (cap_val == error)
             return 0;
         endif
 
-        // Return true (1) if the player's has cap
-        return (AP_GetTrueSkill(mobile, skill_name) >= cap_val);
+        // Return false (0) if the player's skill is >= the cap, else return true (1)
+        if (cap_val > AP_GetTrueSkill(mobile, skill_name))
+            return 0;  // Cap reached or exceeded
+        else
+            return 1;  // Skill is below the cap
+        endif
     else
         // If no skill_name is provided, check the total skill cap
         var total_skills := 0.0;
@@ -205,8 +209,8 @@ function AP_CheckSkillCap(mobile, skill_name := "")
             sleepms(2);  // Sleep to avoid overloading the system
         endforeach
 
-        // Total skills with the total cap from the configuration
-        return (total_skills >= GetConfigReal(cfg_elem, "TotalSkillCap"));
+        // Return true (1) if the total skills are below the cap, false (0) otherwise
+        return (total_skills < GetConfigReal(cfg_elem, "TotalSkillCap"));
     endif
 endfunction
 

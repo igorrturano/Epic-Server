@@ -263,13 +263,16 @@ function EnforceSkillCap(who)
     endif
 
     var skillsArray := skillsmap.keys(); 
-
+	var true_skill := 0;
+	var skill_cap := 0;
     foreach skill in skillsArray
-        var true_skill := AP_GetTrueSkill(who, skill);  
-        var skill_cap := AP_CheckSkillCap(who, skill);  
+        true_skill := AP_GetTrueSkill(who, skill);  
+        skill_cap := AP_GetSkillCap(who, skill);  
         // If the current skill is higher than the cap, revert it to the cap
-        if (true_skill > skill_cap)
-            AP_SetTrueSkill(who, skill, skill_cap); 
+        if (CInt(true_skill > skill_cap))
+		    DebugMsg(who, DEBUG_UP, "trueskill " + true_skill + ".");
+			DebugMsg(who, DEBUG_UP, "skill_cap " + skill_cap + ".");
+            AP_SetTrueSkill(who, skill, CInt(skill_cap)); 
             SendSysMessage(who, "Sua habilidade em " + skill + " foi ajustada para o limite máximo de " + skill_cap);
         endif
     endforeach

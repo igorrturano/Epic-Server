@@ -236,9 +236,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo para " + skill_name + ".");
         SkillDbgMsg(mobile, "Skill cap for '" + skill_name + "' reached. No advance.");
         return 0;
-    elseif (AP_CheckSkillCap(mobile))
-        DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo.");
-        return 0;
     endif
 
     // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
@@ -388,22 +385,31 @@ endfunction
  * 
  * Purpose:
  * Adjusts pass chances based on a progression model. 
- * - 0% to 50% true_skill: pass_chance increases progressively.
- * - 50% to 80% true_skill: pass_chance decreases to 15%.
- * - 80% to 85% true_skill: pass_chance decreases to 10%.
- * - 85% to 90% true_skill: pass_chance decreases to 5%.
- * - After 90% true_skill: pass_chance locks at 5%.
 */
 function ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
     var skill_ratio := CInt((true_skill * 100) / max_skillcap_class);
-    if (skill_ratio <= 50)
-        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / 50); // Progressive increase
-    elseif (skill_ratio > 50 && skill_ratio <= 80)
-        pass_chance := CInt(pass_chance - ((skill_ratio - 50) * (pass_chance - 15)) / 30); // Decrease to 15% at 80%
-    elseif (skill_ratio > 80 && skill_ratio <= 85)
-        pass_chance := CInt(pass_chance - ((skill_ratio - 80) * (pass_chance - 10)) / 5); // Decrease to 10% at 85%
-    elseif (skill_ratio > 85 && skill_ratio <= 90)
-        pass_chance := CInt(pass_chance - ((skill_ratio - 85) * (pass_chance - 5)) / 5); // Decrease to 5% at 90%
+    var skill_decrease_point := 50;
+    if (skill_ratio <= skill_decrease_point)
+        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / skill_decrease_point); // Progressive increase
+    elseif (skill_ratio > 50 && skill_ratio <= 65)
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 50)) / 40); 
+    elseif (skill_ratio > 65 && skill_ratio <= 70)
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 30);  
+    elseif (skill_ratio > 70 && skill_ratio <= 75) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 15);
+    elseif (skill_ratio > 75 && skill_ratio <= 80) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 10);
+    elseif (skill_ratio > 80 && skill_ratio <= 85) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 5);
+    elseif (skill_ratio > 85 && skill_ratio <= 90) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 3);
+    elseif (skill_ratio > 90) 
+        pass_chance := 1; //max 1
     else
         pass_chance := 5;
     endif
