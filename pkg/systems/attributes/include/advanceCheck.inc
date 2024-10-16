@@ -302,11 +302,11 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
             SetObjProperty(mobile, fail_count_skill, 0);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(skill_gain) + "!");
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + FormatRealToString(skill_gain, 1) + "!");
         endif
     else
         SetObjProperty(mobile, fail_count_skill, 0);
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + CStr(skill_gain) + "!");
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + FormatRealToString(skill_gain, 1) + "!");
     endif
 
     return 1;
