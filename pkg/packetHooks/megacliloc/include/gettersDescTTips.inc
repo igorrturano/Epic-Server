@@ -86,8 +86,9 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 	var xDesc := cfg.desc;
-	
-	xDesc := xDesc + "Força exigida: " + cfg.elem.strrequired + "<br>";
+	if(cfg.elem.strrequired > 0)
+		xDesc := xDesc + "Força exigida: " + cfg.elem.strrequired + "<br>";
+	endif
 	//xDesc := xDesc + "Perícia: " + getPericia(cfg.elem) + "<br>";
 	xDesc := xDesc + "Perícia: " + cfg.elem.Attribute + "<br>";
 	xDesc := xDesc + "Dano: <br>";
@@ -162,7 +163,7 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	bluntOD := atrib.BluntOffDamage? SOFT_GREEN + " " + atrib.BluntOffDamage:"";
 
 	if(slashMD !=  0)
-		xDesc := xDesc  + FISICO + " Cor: " + (slashMD) + slashOD;
+		xDesc := xDesc  + FISICO + " Cort: " + (slashMD) + slashOD;
 	endif
 	if(pircMD !=  0)
 		xDesc := xDesc  + FISICO + " Perf: " + (pircMD) + pircOD;
@@ -234,18 +235,20 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	pircRes := atrib.PiercingResist;
 	bluntRes := atrib.BluntResist;
 
-	xDesc := xDesc  + FISICO + "Defesas: <br>";
-	if(slashRes> 0)
-		xDesc := xDesc  + FISICO + " Cor: " + (slashRes);
-	endif
-	if(pircRes> 0)
-		xDesc := xDesc  + FISICO + " Perf: " + (pircRes);
-	endif
-	if(bluntRes> 0)
-		xDesc := xDesc  + FISICO + " Cont: " + (bluntRes);
-	endif
-	if((bluntRes + pircRes + slashRes) > 0)
-		xDesc := xDesc + "<br>";
+	if((slashRes + pircRes + bluntRes) + 0)
+		xDesc := xDesc + "Defesas: <br>";
+		if(slashRes> 0)
+			xDesc := xDesc  + FISICO + " Cor: " + (slashRes);
+		endif
+		if(pircRes> 0)
+			xDesc := xDesc  + FISICO + " Perf: " + (pircRes);
+		endif
+		if(bluntRes> 0)
+			xDesc := xDesc  + FISICO + " Cont: " + (bluntRes);
+		endif
+		if((bluntRes + pircRes + slashRes) > 0)
+			xDesc := xDesc + "<br>";
+		endif
 	endif
 	return xDesc;
 endfunction
