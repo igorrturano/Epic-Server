@@ -1,6 +1,3 @@
-
-
-
 use uo;
 use os;
 
@@ -26,49 +23,74 @@ program meditar(who, text)
         delay := 240;
     endif
 
+    // Track initial player position
 	var oldx := who.x;
 	var oldy := who.y;
+
     if (GetCooldown(who, "meditation"))
-        SendSysMessage(who, "Voce precisa aguardar antes de meditar novamente");
+        SendSysMessage(who, "Voce precisa aguardar antes de meditar novamente", SSM_INFO);
         return 0;
     endif
+
+    if (!InitialMeditationCheck(who))
+        return 0;  // Fail without applying cooldown
+    endif
+
     setCooldown(who, "meditation", delay);
 
     while (current_mana < full_mana)
-        if (oldx != who.x || oldy != who.y)
-            SendSysMessage(who, "Voce se movimentou e cancelou sua meditacao");
-			return 0;
-		endif
-        if (current_mana == full_mana)
-            SendSysMessage(who, "Voce completou sua meditacao");
-			return 0;
+        if (!MeditationConditionsCheck(who, oldx, oldy, start_hp))
+            return 0;  // Meditation canceled due to mid-process condition failure
         endif
-        if (start_hp > AP_GetVital(who, "Hits"))
-            SendSysMessage(who, "Voce perdeu sua concentracao");
-			return 0;
-        endif
-        if (GetObjProperty(who, "#Casting"))
-            SendSysMessage(who, "Voce perdeu sua concentracao");
-            EraseObjProperty(who, "#Casting");
-			return 0;
-        endif
-        if (!EquipmentCheck(who) && !(who.weapon.objtype in arcane_bows))
-            SendSysMessage(who, "Suas maos precisam estar livres");
-			return 0;
-        endif
-        if (who.hidden || who.concealed)
-            SendSysMessage(who, "Voce nao pode fazer isso escondido");
-			return 0;
-        endif
-
         PlaySoundEffect(who, 0x20C);
         HealMana(who, Cint(AP_GetSkill(who, MAGICLORE)/20));
         PlayObjectCenteredEffect(who, 0x375a, 10, 80);
         sleep(5);
     endwhile
 
+    if (current_mana == full_mana)
+        SendSysMessage(who, "Voce completou sua meditacao", SSM_INFO);
+    endif
+
     return 1;
 endprogram
+
+function InitialMeditationCheck(who)
+    if (!EquipmentCheck(who))  
+        SendSysMessage(who, "Suas maos precisam estar livres", SSM_FAIL);
+        return 0;
+    endif
+    if (who.hidden || who.concealed)  // Check if player is hidden
+        SendSysMessage(who, "Voce nao pode fazer isso escondido", SSM_FAIL);
+        return 0;
+    endif
+    return 1;  
+endfunction
+
+function MeditationConditionsCheck(who, oldx, oldy, start_hp)
+    if (oldx != who.x || oldy != who.y)  // Player moved
+        SendSysMessage(who, "Voce se movimentou e cancelou sua meditacao", SSM_FAIL);
+        return 0;
+    endif
+    if (start_hp > AP_GetVital(who, "Hits"))  // Player lost health
+        SendSysMessage(who, "Voce perdeu sua concentracao", SSM_FAIL);
+        return 0;
+    endif
+    if (GetObjProperty(who, "#Casting"))  // Player started casting
+        EraseObjProperty(who, "#Casting");
+        SendSysMessage(who, "Voce perdeu sua concentracao", SSM_FAIL);
+        return 0;
+    endif
+    if (!EquipmentCheck(who))  // Check if hands became occupied during meditation
+        SendSysMessage(who, "Suas maos precisam estar livres", SSM_FAIL);
+        return 0;
+    endif
+    if (who.hidden || who.concealed)  // Player is hidden
+        SendSysMessage(who, "Voce nao pode fazer isso escondido", SSM_FAIL);
+        return 0;
+    endif
+    return 1;  
+endfunction
 
 function EquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
