@@ -1,6 +1,8 @@
 use uo;
+use util;
 use cfgfile;
 
+include "include/client";
 include "props";
 
 enum TIERS
@@ -17,6 +19,9 @@ enum DAMAGETAG
 	TWOHANDED_LOW := "TWOHANDED_LOW", TWOHANDED_MID := "TWOHANDED_MID", TWOHANDED_HIGH := "TWOHANDED_HIGH",
 	BOW_LOW := "BOW_LOW", BOW_MID := "BOW_MID", BOW_HIGH := "BOW_HIGH",
 	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH"
+endenum
+enum WEAPONTYPE
+	BOW := "Bow", CROSSBOW := "Crossbow"
 endenum
 // enum DAMAGEDICE
 // 	DAMAGE_NONE_DAMAGE := 0,
@@ -47,11 +52,44 @@ enum PROTECTIONTYPE
 	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
 endenum
 
-var BOWANIM := array{0x12};
-var CROSSBOWANIM := array{0x13};
-var SLASHANIM := array{0xb, 0xd};
-var PIERCINGANIM := array{0x0a};
-var BLUNTANIM := array{0xd};
+// var BOWANIM := array{ANIM_ATTACK_BOW};
+// var CROSSBOWANIM := array{ANIM_ATTACK_XBOW};
+// var SLASHANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE};
+// var PIERCINGANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB};
+// var BLUNTANIM := array{ANIM_ATTACK_2HAND_DOWN};
+
+var BOW_FX := struct {
+	ANIM := array{ANIM_ATTACK_BOW},
+	SFX := array{0x235}
+};
+var CROSSBOW_FX := struct {
+	ANIM := array{ANIM_ATTACK_XBOW},
+	SFX := array{0x235}
+};
+var SLASH_1H_FX := struct {
+	ANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE},
+	SFX := array{0x23D}
+};
+var SLASH_2H_FX := struct {
+	ANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE},
+	SFX := array{0x23D}
+};
+var PIERCING_1H_FX := struct {
+	ANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB},
+	SFX := array{0x23D}
+};
+var PIERCING_2H_FX := struct {
+	ANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB},
+	SFX := array{0x23D}
+};
+var BLUNT_1H_FX := struct {
+	ANIM := array{ANIM_ATTACK_2HAND_DOWN},
+	SFX := array{0x234}
+};
+var BLUNT_2H_FX := struct {
+	ANIM := array{ANIM_ATTACK_2HAND_DOWN},
+	SFX := array{0x234}
+};
 
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
 	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
@@ -99,3 +137,9 @@ function IsShield(item)
     endif
 endfunction
 
+function getAnim(anims)
+	return anims[RandomInt(anims.Size())+1];
+endfunction
+function getSound(anims)
+	return anims[RandomInt(anims.Size())+1];
+endfunction
