@@ -1,0 +1,440 @@
+use uo;
+use os;
+use cfgfile;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+include ":recipes:recipes";
+include ":gumps:epicGumps";
+
+const PERGAMINHO_FABRICACAO := 0xFD3B;
+const PERGAMINHO_ALQUIMIA := 0xFD3C;
+const PERGAMINHO_TINTA := 0xFD3D;
+const PERGAMINHO_MAGIA := 0xFD3E;
+
+const GRAFICO_PERGAMINHO_FABRICACAO := 0xE9E8;
+const GRAFICO_PERGAMINHO_ALQUIMIA := 0xE9EC;
+const GRAFICO_PERGAMINHO_TINTA := 0x6BDC;
+const GRAFICO_PERGAMINHO_MAGIA := 0xE9E5;
+
+enum TIPO_PERGAMINHO
+    TIPO_PERGAMINHO_FABRICACAO := 1,
+    TIPO_PERGAMINHO_ALQUIMIA := 2,
+    TIPO_PERGAMINHO_TINTA := 3,
+    TIPO_PERGAMINHO_MAGIA := 4
+endenum
+
+var QUANTIDADES := array{3, 5, 8, 10, 12};
+
+program use_pergaminho_pedaco(who, item)
+    
+    var tipo := DeterminarTipoPorObjtype(item.objtype);
+       
+    if (!tipo)
+        SendSysMessage(who, "Este item não é um pedaço de pergaminho válido.");
+        return;
+    endif
+    
+    var gump := CreatePergaminhoGump(who, tipo);
+    var input := GFSendGump(who, gump);
+
+    if (input[0] == 1) 
+        CriarPergaminho(who, tipo);
+    endif
+endprogram
+
+
+function CreatePergaminhoGump(who, tipo)
+    var gump := GFECreateGump("Folhas Soltas de " + GetTipoNome(tipo), 505, 460); 
+    
+    var pedacos := CountPedacos(who, tipo);
+    var x, y;
+    for j := 1 to 12
+        x := 35 + ((j-1) % 6) * 75;
+        y := 80 + (Cint((j-1) / 6) * 118);
+        
+        GFPicTiled(gump, x, y, 60, 55, 87);
+        GFPicTiled(gump, x+1, y+67, 60, 16, 87);
+        GFPicTiled(gump, x+1, y+47, 59, 13, 90);
+        GFPicTiled(gump, x+1, y-7, 59, 21, 84);
+        GFPicTiled(gump, x+48, y+2, 13, 53, 88);
+        GFPicTiled(gump, x-4, y+2, 13, 53, 86);
+
+        GFTextMid(gump, x, y+66, 60, 53, CStr(j));
+
+       if (j <= pedacos)
+            GFTilePic(gump, x+5, y+10, GetGraficoPorTipo(tipo));
+        endif
+    endfor
+
+    var nivel := DeterminarNivel(pedacos);
+    GFTextLine(gump, 35, 355, 53, "Quantidade: " + pedacos); 
+    GFTextLine(gump, 35, 375, 53, "Nível do Pergaminho: " + (nivel > 0 ? CStr(nivel) : "Insuficiente")); // Removed trailing slash
+
+    GFPicTiled(gump, 250, 315, 230, 120, 87); 
+
+    GFTextLine(gump, 260, 325, 53, "3 folhas soltas = pergaminho lvl 1");
+    GFTextLine(gump, 260, 345, 53, "5 folhas soltas = pergaminho lvl 2");
+    GFTextLine(gump, 260, 365, 53, "8 folhas soltas = pergaminho lvl 3");
+    GFTextLine(gump, 260, 385, 53, "10 folhas soltas = pergaminho lvl 4");
+    GFTextLine(gump, 260, 405, 53, "12 folhas soltas = pergaminho lvl 5");
+
+    if (nivel > 0)
+        GFAddButton(gump, 35, 395, 2130, 2129, GF_CLOSE_BTN, 1); 
+    endif
+
+    return gump;
+endfunction
+
+
+function ConfirmarCriacaoPergaminho(who, tipo, nivel)
+    var gump := GFECreateGump("", 340, 220); 
+    
+    
+    GFTextMid(gump, 30, 35, 280, 53, "Confirmação da Criação"); 
+
+    
+    GFTextLine(gump, 30, 80, 53, "Tipo: " + GetTipoNome(tipo));
+    GFTextLine(gump, 30, 105, 53, "Nível: " + nivel);
+    GFTextLine(gump, 30, 140, 53, "Deseja criar este pergaminho?");
+    
+    
+    GFAddButton(gump, 90, 170, 2130, 2129, GF_CLOSE_BTN, 1);
+
+    
+    GFAddButton(gump, 190, 170, 2119, 2120, GF_CLOSE_BTN, 0);
+
+
+    var input := GFSendGump(who, gump);
+    return (input[0] == 1);
+endfunction
+
+function CountAllPedacos(who)
+    var pedacos := struct{
+        "FABRICACAO" := 0,
+        "ALQUIMIA" := 0,
+        "TINTA" := 0,
+        "MAGIA" := 0
+    };
+
+    foreach item in EnumerateItemsInContainer(who.backpack)
+        var tipo := DeterminarTipoPorObjtype(item.objtype);
+        if (tipo)
+            case (tipo)
+                PERGAMINHO_FABRICACAO: pedacos.FABRICACAO += 1;
+                PERGAMINHO_ALQUIMIA: pedacos.ALQUIMIA += 1;
+                PERGAMINHO_TINTA: pedacos.TINTA += 1;
+                PERGAMINHO_MAGIA: pedacos.MAGIA += 1;
+            endcase
+        endif
+    endforeach
+
+    return pedacos;
+endfunction
+
+function GetMaiorTipo(pedacos)
+    var maiorTipo := PERGAMINHO_FABRICACAO;
+    var maiorQuantidade := pedacos.FABRICACAO;
+
+    if (pedacos.ALQUIMIA > maiorQuantidade)
+        maiorTipo := PERGAMINHO_ALQUIMIA;
+        maiorQuantidade := pedacos.ALQUIMIA;
+    endif
+    if (pedacos.TINTA > maiorQuantidade)
+        maiorTipo := PERGAMINHO_TINTA;
+        maiorQuantidade := pedacos.TINTA;
+    endif
+    if (pedacos.MAGIA > maiorQuantidade)
+        maiorTipo := PERGAMINHO_MAGIA;
+        maiorQuantidade := pedacos.MAGIA;
+    endif
+
+    return maiorTipo;
+endfunction
+
+
+function CriarPergaminho(who, tipo)
+    var pedacos := CountPedacos(who, tipo);
+    var nivel := DeterminarNivel(pedacos);
+
+    if (nivel == 0)
+        SendSysMessage(who, "Você não tem pedaços suficientes para criar um pergaminho.");
+        return;
+    endif
+
+    if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
+        PrintText(who, "*Juntando as folhas*");
+        PlaySoundEffect(who, 0x24A);
+        Sleep(3);
+        PrintText(who, "*Organizando o material*");
+        PlaySoundEffect(who, 0x24A);
+        Sleep(3);
+        PrintText(who, "*Ordenando o texto*");
+        PlaySoundEffect(who, 0x24A);
+        Sleep(4);
+
+        var soundID := (who.gender == 0) ? 0x41B : 0x30C;
+        PlaySoundEffect(who, soundID);
+
+        var pergaminho := CreatePergaminhoItem(who, tipo, nivel);
+        if (pergaminho)
+            ConsumirPedacos(who, tipo, QUANTIDADES[nivel]);
+            SendSysMessage(who, "Você criou um novo pergaminho de " + GetTipoNome(tipo) + "!");
+        else
+            SendSysMessage(who, "Houve um erro ao criar o pergaminho.");
+        endif
+    endif
+endfunction
+
+function CountPedacos(who, tipo)
+    var count := 0;
+    var objtype := GetObjtypePorTipo(tipo);
+    foreach item in EnumerateItemsInContainer(who.backpack)
+        if (item.objtype == objtype)
+            count += 1;
+        endif
+    endforeach
+    return count;
+endfunction
+
+function GetObjtypePorTipo(tipo)
+    case (tipo)
+        TIPO_PERGAMINHO_FABRICACAO: return PERGAMINHO_FABRICACAO;
+        TIPO_PERGAMINHO_ALQUIMIA: return PERGAMINHO_ALQUIMIA;
+        TIPO_PERGAMINHO_TINTA: return PERGAMINHO_TINTA;
+        TIPO_PERGAMINHO_MAGIA: return PERGAMINHO_MAGIA;
+        default: return 0;
+    endcase
+endfunction
+function DeterminarNivel(quantidade)
+    if (quantidade >= QUANTIDADES[5])
+        return 5;
+    elseif (quantidade >= QUANTIDADES[4])
+        return 4;
+    elseif (quantidade >= QUANTIDADES[3])
+        return 3;
+    elseif (quantidade >= QUANTIDADES[2])
+        return 2;
+    elseif (quantidade >= QUANTIDADES[1])
+        return 1;
+    else
+        return 0;
+    endif
+endfunction
+
+function DeterminarTipoPorObjtype(objtype)
+    case (objtype)
+        PERGAMINHO_FABRICACAO: return TIPO_PERGAMINHO_FABRICACAO;
+        PERGAMINHO_ALQUIMIA: return TIPO_PERGAMINHO_ALQUIMIA;
+        PERGAMINHO_TINTA: return TIPO_PERGAMINHO_TINTA;
+        PERGAMINHO_MAGIA: return TIPO_PERGAMINHO_MAGIA;
+        default: return 0;
+    endcase
+endfunction
+
+
+function GetTipoNome(tipo)
+    case (tipo)
+        TIPO_PERGAMINHO_FABRICACAO: return "Fabricação";
+        TIPO_PERGAMINHO_ALQUIMIA: return "Alquimia";
+        TIPO_PERGAMINHO_TINTA: return "Tinta";
+        TIPO_PERGAMINHO_MAGIA: return "Magia";
+        default: return "Desconhecido";
+    endcase
+endfunction
+
+function CreatePergaminhoItem(who, tipo, nivel)
+    var itemID;
+    var recipe := struct;
+    recipe.+type := GetTipoNome(tipo);
+    recipe.+power := nivel;
+
+    case (tipo)
+        TIPO_PERGAMINHO_ALQUIMIA: 
+            case (nivel)
+                1: itemID := 0xef1f;
+                2: itemID := 0xef2c;
+                3: itemID := 0xef2d;
+                4: itemID := 0xef2e;
+                5: itemID := 0xef2f;
+                default: itemID := 0xef1f;
+            endcase
+        TIPO_PERGAMINHO_FABRICACAO:
+            case (nivel)
+                1: itemID := 0xff990;
+                2: itemID := 0xfe995;
+                3: itemID := 0xfe996;
+                4: itemID := 0xfe997;
+                5: itemID := 0xfe998;
+                default: itemID := 0xff990;
+            endcase
+        TIPO_PERGAMINHO_TINTA:
+            case (nivel)
+                1: itemID := 0xef2b;
+                2: itemID := 0xef3c;
+                3: itemID := 0xef3d;
+                4: itemID := 0xef3e;
+                5: itemID := 0xef3f;
+                default: itemID := 0xef2b;
+            endcase
+        TIPO_PERGAMINHO_MAGIA:
+            case (nivel)
+                1: itemID := 0x2060;
+                2: itemID := 0x2064;
+                3: itemID := 0x2066;
+                4: itemID := 0x2063;
+                5: itemID := 0x2065;
+                default: itemID := 0x2060;
+            endcase
+        default: 
+            return 0;
+    endcase
+
+    var pergaminho := CreateItemInBackpack(who, itemID, 1);
+    if (pergaminho)
+        SetObjProperty(pergaminho, "Tipo", tipo);
+        SetObjProperty(pergaminho, "Nivel", nivel);
+
+        case (tipo)
+            TIPO_PERGAMINHO_ALQUIMIA:
+                var receitaAlquimica := SelectRandomAlchemyRecipe(nivel);
+                if (receitaAlquimica)
+                    SetObjProperty(pergaminho, "AlchemyRecipe", receitaAlquimica);
+                endif
+            TIPO_PERGAMINHO_FABRICACAO:
+                var recipeKey := SelectRandomRecipe(nivel);
+                if (recipeKey)
+                    SetObjProperty(pergaminho, "recipe", recipeKey);
+                endif
+            TIPO_PERGAMINHO_TINTA:
+                var tintaRecipe := SelectRandomInkRecipe(nivel);
+                if (tintaRecipe)
+                    SetObjProperty(pergaminho, "InkRecipe", tintaRecipe);
+                endif
+            TIPO_PERGAMINHO_MAGIA:
+                var spellId := SelectRandomSpell(nivel);
+                if (spellId)
+                    SetObjProperty(pergaminho, "SpellId", spellId);
+                endif
+        endcase
+
+        return pergaminho;
+    endif
+
+    SendSysMessage(who, "Erro ao criar o item da pesquisa.");
+    return 0;
+endfunction
+
+function ConsumirPedacos(who, tipo, quantidade)
+    var consumidos := 0;
+    var objtype := GetObjtypePorTipo(tipo);
+    foreach item in EnumerateItemsInContainer(who.backpack)
+        if (item.objtype == objtype)
+            DestroyItem(item);
+            consumidos += 1;
+            if (consumidos >= quantidade)
+                break;
+            endif
+        endif
+    endforeach
+endfunction
+
+
+function SelectRandomAlchemyRecipe(nivel)
+    var cfg := ReadConfigFile(":alchemy:recipes");
+    if (cfg.errortext)
+        Print("ERROR: Não foi possível ler o arquivo de configuração de receitas de alquimia: " + cfg.errortext);
+        return 0;
+    endif
+
+    var levelRecipes := array{};
+    foreach key in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (elem && GetConfigInt(elem, "level") == nivel)
+            levelRecipes.append(key);
+        endif
+    endforeach
+
+    if (levelRecipes.size() > 0)
+        return levelRecipes[RandomInt(levelRecipes.size()) + 1];
+    endif
+
+    return 0;
+endfunction
+
+function SelectRandomInkRecipe(nivel)
+    var cfg := ReadConfigFile(":dyeing:recipes"); 
+    if (cfg.errortext)
+        Print("ERROR: Não foi possível ler o arquivo de configuração de receitas de tinta: " + cfg.errortext);
+        return 0;
+    endif
+
+    var levelRecipes := array{};
+    foreach key in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (elem && GetConfigInt(elem, "level") == nivel)
+            levelRecipes.append(key);
+        endif
+    endforeach
+
+    if (levelRecipes.size() > 0)
+        return levelRecipes[RandomInt(levelRecipes.size()) + 1];
+    endif
+
+    return 0;
+endfunction
+
+function SelectRandomRecipe(power)
+    var cfg := ReadConfigFile(":recipes:recipes");
+    if (cfg.errortext)
+        Print("ERROR: Não foi possível ler o arquivo de configuração de receitas: " + cfg.errortext);
+        return 0;
+    endif
+
+    var levelRecipes := array{};
+    foreach key in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (elem && GetConfigInt(elem, "level") == power)
+            levelRecipes.append(key);
+        endif
+    endforeach
+
+    if (levelRecipes.size() > 0)
+        return levelRecipes[RandomInt(levelRecipes.size()) + 1];
+    endif
+
+    return 0;
+endfunction
+
+function SelectRandomSpell(power)
+   var cfg := ReadConfigFile(":spells:spellcaster");
+    if (!cfg)
+        return 0;
+    endif
+    var spells := array{};
+    foreach entry in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, entry);
+        var circle := GetConfigInt(elem, "Circle");
+        if (circle == power)
+            spells.append(GetConfigInt(elem, "SpellId"));
+        endif
+    endforeach
+    if (spells.size() > 0)
+        var selectedSpell := spells[RandomInt(spells.size()) + 1];
+        return selectedSpell;
+    endif
+    return 0;
+endfunction
+
+
+function GetGraficoPorTipo(tipo)
+    case (tipo)
+        TIPO_PERGAMINHO_FABRICACAO: return GRAFICO_PERGAMINHO_FABRICACAO;
+        TIPO_PERGAMINHO_ALQUIMIA: return GRAFICO_PERGAMINHO_ALQUIMIA;
+        TIPO_PERGAMINHO_TINTA: return GRAFICO_PERGAMINHO_TINTA;
+        TIPO_PERGAMINHO_MAGIA: return GRAFICO_PERGAMINHO_MAGIA;
+        default: return 0;
+    endcase
+endfunction
