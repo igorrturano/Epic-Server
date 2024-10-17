@@ -7,6 +7,7 @@ include ":itemutils:objtype";
 //include "include/OLD/sound";
 include ":itemutils:canAccess";
 include ":attributes:attributeConstants";
+include ":attributes:skills";
 include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";

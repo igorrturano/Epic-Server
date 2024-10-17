@@ -11,6 +11,8 @@ include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
 include ":ghaia:ghaia";
+include "include/produzTeia";
+include ":tn:include/cooldown";
 
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
@@ -54,7 +56,6 @@ program TamedAI()
 	parms[1] := me;
 	parms[2] := time;
 	start_script(":taming:happyCounter", parms);
-
 	while ( me )
 		if ( wait_time < 1 )
 			sleepms(10);
@@ -743,6 +744,9 @@ endfunction
 
 function ProcessDoubleClick(ev)
 
+	if(getCooldown(me, "produzTeia") == 0)
+		EstimulaAbdomen(me,ev);
+	endif
 	var targ := TargetCoordinates(owner);
 	if (targ)
 		if (targ.mobile == me)
