@@ -8,6 +8,7 @@ include ":tn:tngumps";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":attributes:titles";
+include ":attributes:skills";
 include "include/say";
 include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
@@ -218,7 +219,7 @@ function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
     var primarias := getPrimarias(who);
     var pri := primarias[1];
-    var cappri := Cdbl(limiteportempo(who)) + Cdbl(valorinicial(who, pri));
+    var cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
     var capprimax := 100;
 
     var secundarias := getSecundarias(who);

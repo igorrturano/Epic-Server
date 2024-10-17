@@ -1,15 +1,3 @@
-//$Id: skills.inc 848 2005-11-02 20:54:39Z austin $
-
-/*===============================================================
-* Current Version
-* SKILLS.INC - v1.0
-* Updated 9/24/2005 6:52PM
-*
-* -- Revision v1.0 --
-* Austin:
-*  Created include file
-===============================================================*/
-
 include ":fls_core:fls_characters";
 include ":charactercreation:habilidades";
 include ":attributes:attributes_ex";
@@ -18,17 +6,11 @@ use uo;
 
 /*
  * AP_GetSkill(mobile, skill_name)
- *
- * Purpose
- * Retrieves the base value of the skill plus its mod value.
- *
+ * Purpose: Retrieves the base value of the skill plus its mod value.
  * Parameters
  * mobile:	Mobile reference to retrieve the points from.
  * skill_name:	Name of the skill to retrieve the points for.
- *
- * Return value
- * Returns an integer.
- *
+ * Return: an integer.
  */
 function AP_GetSkill(who, skill_name)
 	var bonus_corrucao := 0;
@@ -49,17 +31,11 @@ endfunction
 
 /*
  * AP_GetTrueSkill(mobile, skill_name)
- *
- * Purpose
- * Retrieves the base value of the skill and turns it into a usable number.
- *
+ * Purpose: Retrieves the base value of the skill and turns it into a usable number.
  * Parameters
  * mobile:	Mobile reference to retrieve the points from.
  * skill_name:	Name of the skill to retrieve the points for.
- *
- * Return value
- * Returns a double.
- *
+ * Return: a double.
  */
 function AP_GetTrueSkill(who, skill_name)
 	return CDbl(GetAttributeBaseValue(who, skill_name)) / 10.0;
@@ -67,17 +43,11 @@ endfunction
 
 /*
  * AP_GetSkillMod(mobile, skill_name)
- *
- * Purpose
- * Retrieves the base value of the skill mod and turns it into a usable number.
- *
+ * Purpose: Retrieves the base value of the skill mod and turns it into a usable number.
  * Parameters
  * mobile:	Mobile reference to retrieve the points from.
  * skill_name:	Name of the skill to retrieve the modifier points for.
- *
- * Return value
- * Returns a double.
- *
+ * Return: a double.
  */
 function AP_GetSkillMod(who, skill_name)
 	return CDbl(GetAttributeTemporaryMod(who, skill_name)) / 10.0;
@@ -85,19 +55,13 @@ endfunction
 
 /*
  * AP_SetTrueSkill(mobile, skill_name, points)
- *
- * Purpose
- * Sets the value of the skill.
+ * Purpose: Sets the value of the skill.
  * Example: AP_SetTrueSkill(mobile, "strength", 44.5)
- *
  * Parameters
- * mobile:	Mobile reference to set the points on.
- * skill_name:	Name of the skill to set the points on.
- * points:	Number of points to set the skill at.
- *
- * Return value
- * Returns a double.
- *
+ * 	mobile:	Mobile reference to set the points on.
+ * 	skill_name:	Name of the skill to set the points on.
+ * 	points:	Number of points to set the skill at.
+ * Return: a double.
  */
 function AP_SetTrueSkill(mobile, skill_name, points)
 	SetAttributeBaseValue(mobile, skill_name, CInt(CDbl(points) * 10.0));
@@ -106,19 +70,13 @@ endfunction
 
 /*
  * AP_SetSkillMod(mobile, skill_name, points)
- *
- * Purpose
- * Sets the modifier value for the skill.
+ * Purpose: Sets the modifier value for the skill.
  * Example: AP_SetSkillMod(mobile, "strength", -15.3)
- *
  * Parameters
- * mobile:	Mobile reference to set the modifier points on.
- * skill_name:	Name of the skill to set the modifier points on.
- * points:	Number of points to set the modifier skill at.
- *
- * Return value
- * Returns a double.
- *
+ * 	mobile:	Mobile reference to set the modifier points on.
+ * 	skill_name:	Name of the skill to set the modifier points on.
+ * 	points:	Number of points to set the modifier skill at.
+ * Returns: a double.
  */
 function AP_SetSkillMod(mobile, skill_name, points)
 	var e := SetAttributeTemporaryMod(mobile, skill_name, CInt(CDbl(points) * 10.0));
@@ -130,19 +88,14 @@ endfunction
 
 /*
  * AP_ModifySkillMod(mobile, skill_name, points)
- *
  * Purpose
  * Modifies the modifier value for the skill.
  * Example: 	AP_SetStatMod(mobile, "alchemy", -15.3)
- *
  * Parameters
- * mobile:	Mobile reference to adjust the modifier points on.
- * stat_name:	Name of the skill to adjust the modifier points on.
- * points:	Number of points to adjust the modifier by.
- *
- * Return value
- * Returns the previous value
- *
+ * 	mobile:	Mobile reference to adjust the modifier points on.
+ * 	stat_name:	Name of the skill to adjust the modifier points on.
+ * 	points:	Number of points to adjust the modifier by.
+ * Return: the previous value
  */
 function AP_ModifySkillMod(mobile, stat_name, points)
 	var orig_mod := AP_GetStatMod(mobile, stat_name);
@@ -154,19 +107,11 @@ function AP_ModifySkillMod(mobile, stat_name, points)
 	return orig_mod;
 endfunction
 
-
 /*
  * AP_SetSkillScript(attribute_name)
- *
- * Purpose
- * Gets the script that a skill uses.
- *
- * Parameters
- * attribute_name:	Name of the attribute to get the script for.
- *
- * Return value
- * Returns a string.
- *
+ * Purpose: Gets the script that a skill uses.
+ * Parameters: attribute_name:	Name of the attribute to get the script for.
+ * Return: string.
  */
 function AP_GetSkillScript(attribute_name)
 	var cfg := AP_GetAttributeCfgElem(attribute_name);
@@ -175,18 +120,12 @@ endfunction
 
 /*
  * AP_GetSkillStats(attribute_name)
- *
  * Purpose
  * Retrieves a dictionary from the attribute's config elem
  * Key is the stat name, inside is an array containing the settings for it.
  * dict["StatName"] => array{gain chance, award points dice}
- *
- * Parameters
- * attribute_name:	Name of the skill to retrieve stat settings for.
- *
- * Return value
- * Returns a dictionary.
- *
+ * Parameters: attribute_name:	Name of the skill to retrieve stat settings for.
+ * Return: dictionary.
  */
 function AP_GetSkillStats(attribute_name)
 	var cfg_elem := AP_GetAttributeCfgElem(attribute_name);
@@ -199,79 +138,87 @@ function AP_GetSkillStats(attribute_name)
 	return stat_entries;
 endfunction
 
+const NO_SKILL_NAME		:= 0x0;
 /*
  * AP_GetSkillCap(skill_name)
- *
- * Purpose
- * Gets the number a skill caps at.
- *
- * Parameters
- * skill_name: Name of the skill to check
- *
- * Return value
- * Returns a number or error
- *
+ * Purpose: Gets the number a skill caps at.
+ * Parameters: skill_name: Name of the skill to check
+ * Return: a number or error
  */
-function AP_GetSkillCap(mobile, skill_name)
-	var cfg_elem := AP_GetSettingsCfgElem("Skills");
+function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
+    var cfg_elem := AP_GetSettingsCfgElem("Skills");
+    var cap_val;
+    
+    // Check if skill_name is valid 
+    var initial_skill_value := 0;
+    if (skill_name)
+        cap_val := GetConfigReal(cfg_elem, skill_name);
+        initial_skill_value := valorInicial(mobile, skill_name);
+    endif
 
-	// Check if there is a cap for that particular skill.
-	var cap_val := GetConfigReal(cfg_elem, skill_name);
+    // If no specific cap is found or skill_name is not provided, use the general cap
+    if (!cap_val)  
+        cap_val := GetConfigReal(cfg_elem, "SkillCap");
+    endif
 
-	if ( !cap_val )
-		// No skill specific cap so get the general one.
-		cap_val := GetConfigReal(cfg_elem, "SkillCap");
-	endif
+    // If no specific or general cap is found, use limiteportempo as the fallback
+    if (!cap_val) 
+        cap_val := limiteportempo(mobile);
+    endif
 
-	return cap_val;
+    // Calculate thecap limit
+    var age_limit := limiteportempo(mobile);
+    var skill_cap := Min(cap_val, age_limit);
+    var total_skill_cap := CInt(initial_skill_value + skill_cap);
 
-	//useless code above, this is the FLS one:
-	//return GetSkillCap(mobile, skill_name);
-
+    // Return the lower value between the config-based cap and the age-based cap
+    return total_skill_cap;
 endfunction
 
 /*
  * AP_CheckSkillCap(mobile, skill_name)
- *
- * Purpose
- * Checks if a skill is greater than or equal to its maximum value in settings.cfg
- * If no skill_name is passed, it will check the totals.
- *
+ * Purpose: Checks if a skill is greater than or equal to its maximum value in settings.cfg. If no skill_name is passed, it will check the totals.
  * Parameters
- * mobile:	Mobile to check the skills on
- * stat_name:	Optional parameter - name of the skill to check.
- *
- * Return value
- * Returns 1 if skill(s) >= to the cap
- *
+ * 	mobile:	Mobile to check the skills on
+ * 	stat_name:	Optional parameter - name of the skill to check.
+ * Return: 1 if skill(s) >= to the cap
  */
-function AP_CheckSkillCap(mobile, skill_name:="")
-	var cfg_elem := AP_GetSettingsCfgElem("Skills");
+function AP_CheckSkillCap(mobile, skill_name := "")
+    var cfg_elem := AP_GetSettingsCfgElem("Skills");
 
-	if ( skill_name )
-		var cap_val := AP_GetSkillCap(mobile, skill_name);
+    // If a specific skill name is provided, check its individual skill cap
+    if (skill_name != "")
+        var cap_val := AP_GetSkillCap(mobile, skill_name);
+        var true_skill := AP_GetTrueSkill(mobile, skill_name);
+        // Return false (0) if there's an error in retrieving the cap
+        if (cap_val == error)
+            return 0;
+        endif
 
-		if ( cap_val != error )
-			return ( AP_GetTrueSkill(mobile, skill_name) >= cap_val );
-		endif
-	endif
+        // Return false (0) if the player's skill is >= the cap, else return true (1)
+        if (cap_val > AP_GetTrueSkill(mobile, skill_name))
+            return 0;  // Cap reached or exceeded
+        else
+            return 1;  // Skill is below the cap
+        endif
+    else
+        // If no skill_name is provided, check the total skill cap
+        var total_skills := 0.0;
+        foreach skill in AP_ListAttributesByType("Skill")
+            total_skills := total_skills + AP_GetTrueSkill(mobile, skill);
+            sleepms(2);  // Sleep to avoid overloading the system
+        endforeach
 
-	return 0;
+        // Return true (1) if the total skills are below the cap, false (0) otherwise
+        return (total_skills < GetConfigReal(cfg_elem, "TotalSkillCap"));
+    endif
 endfunction
-
 
 /*
  * AP_CheckSkillTotal(mobile)
- *
- * Purpose
- * Checks the total sum of all skills a mobile has.
- *
- * Parameters
- * mobile:	Mobile to check the skills on
- *
- * Return value
- * Returns Integer of the sum total of skill points
- *
+ * Purpose: Checks the total sum of all skills a mobile has.
+ * Parameters: mobile - Mobile to check the skills on
+ * Returns: Integer of the sum total of skill points
  */
 function AP_CheckSkillsTotal(mobile)
 
@@ -285,19 +232,11 @@ function AP_CheckSkillsTotal(mobile)
 
 endfunction
 
-
 //////////////////////////////////////////////////////////////////////////////////////////
-//
 //	AP_GetPlayerTotalSkillPoints( player )
-//
 //	Purpose:	Totals all of the attribute (skill) points for a player.
-//
 //	Parameter:	mobileref::player
-//
 //	Returns:	The aggregate of a player's skill points.
-//
-//	Created:	2022-10-08 18:44:06 by Yukiko
-//
 //////////////////////////////////////////////////////////////////////////////////////////
 function AP_GetPlayerTotalSkillPoints( player )
 
@@ -310,12 +249,35 @@ function AP_GetPlayerTotalSkillPoints( player )
 
 endfunction
 
+
+function AP_CheckClassSkillCap(mobile, skill_name)
+	if (mobile.npctemplate)
+		return 100;
+	endif
+
+	var chardata := GetObjProperty(mobile, "chardata");
+	if (chardata == error)
+		return 0;
+	endif
+
+	var myskills := chardata.Skills;
+
+	if ( myskills[skill_name] == error)
+		return 0;
+	elseif (myskills[skill_name] == 1)
+        return 40.0;
+	elseif (myskills[skill_name] == 2)
+		return 70.0;
+	elseif ( myskills[skill_name] == 3)
+		return 100.0;
+	endif
+
+endfunction
+
 // The following function will replace SetBaseSkill
 function SetBaseAttribute(who, skillid, skill)
   return SetBaseAttributeBaseValue(who, skillid, Cint(skill*10));
 endfunction
-
-
 
 //////////////////////////////////////////////////////
 //
@@ -332,16 +294,12 @@ const CORE_SETTINGS_MIN_ATTRIBUTE  := 0;
 const CORE_SETTINGS_MAX_ATTRIBUTE  := 60000;
 const CORE_SETTINGS_MIN_VITAL      := 100;
 const CORE_SETTINGS_MAX_VITAL      := 10000000;
-
-
-
 /////////////////////////////////////////////////////////
 //
 // Function returns an array of the skill numbers
 // from uoskills.cfg
 //
 /////////////////////////////////////////////////////////
-
 function GetSkillIDs()
 
 var uoskillsfile := ReadConfigFile(":attributes:uoskills");
@@ -403,4 +361,73 @@ endfunction
 
 function ModifyAttributeTemporaryModBaseValue(who, attributeid, moda)
   return SetAttributeTemporaryMod(who, attributeid, Cint(GetAttributeTemporaryMod(who, attributeid)+ moda));
+endfunction
+
+/*
+ * limiteportempo(who)
+ * Purpose: Calculates skill cap based on character age
+ * Parameters: who: character reference
+ * Return: skill cap (minimum 12, max 100)
+ */
+function limiteportempo(who)
+    if (who.npctemplate)
+        return 100;  // NPCs always have a skill cap of 100
+    endif
+
+    var dias := idadeChar(who);  // Use the idadeChar function to get the character age in days
+    var lim := 12;  // Initial skill cap
+
+    if (dias <= 10)
+        lim := 12;  // Days 1-10: cap is locked at 12
+    elseif (dias <= 30)
+        lim := 12 + (dias - 10) * 2;  // Days 11-30: cap increases by 2 per day
+    elseif (dias <= 60)
+        lim := 52 + (dias - 30);  // Days 31-60: cap increases by 1 per day
+    else
+        lim := 82 + (dias - 60) * 0.5;  // Days 61+: cap increases by 0.5 per day
+    endif
+
+    return Min(lim, 100);  // Cap out at 100
+endfunction
+
+/*
+ * idadeChar(character)
+ * Purpose: Calculates the age of the character in days based on the creation date.
+ * Parameters: character: the character to calculate the age for
+ * Return: number of days since the character was created
+ */
+function idadeChar(character)
+    var criadoEm := cint(GetObjProperty(character, "createdate"));  // Retrieve the 'createdate' property in seconds
+    var tempoAgora := polcore().systime;  // Get the current system time in seconds
+    var tempoDevida := tempoAgora - criadoEm;  // Calculate the total time lived in seconds
+    var dias := cint(tempoDevida / 86400);  // Convert the time lived into days (86400 seconds in a day)
+    return dias;
+endfunction
+
+//retorna quanto o valor inicial da skill ao iniciar o personagem
+function valorInicial(mobile, skill_name)
+	var skill_inicial := 0.0;
+
+	if (mobile.npctemplate)
+		return 100;
+	endif
+
+	var chardata := GetObjProperty(mobile, "chardata");
+	if (chardata == error)
+		return 0;
+	endif
+
+	var myskills := chardata.Skills;
+
+	if ( myskills[skill_name] == error)
+		return 0.0;
+	elseif (myskills[skill_name] == 1)
+		skill_inicial := skill_inicial + 0.0;
+	elseif (myskills[skill_name] == 2)
+		skill_inicial := skill_inicial + 20.0;
+	elseif ( myskills[skill_name] == 3)
+		skill_inicial := skill_inicial + 40.0;
+	endif
+
+	return skill_inicial;
 endfunction
