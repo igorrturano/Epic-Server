@@ -374,20 +374,16 @@ function limiteportempo(who)
         return 100;  // NPCs always have a skill cap of 100
     endif
 
-    var dias := idadeChar(who);  // Use the idadeChar function to get the character age in days
-    var lim := 12;  // Initial skill cap
+    var dias := idadeChar(who);  
+    var lim := 10;  
 
-    if (dias <= 10)
-        lim := 12;  // Days 1-10: cap is locked at 12
-    elseif (dias <= 30)
-        lim := 12 + (dias - 10) * 2;  // Days 11-30: cap increases by 2 per day
-    elseif (dias <= 60)
-        lim := 52 + (dias - 30);  // Days 31-60: cap increases by 1 per day
+    if (dias <= 15)
+        lim := lim + dias*2;  
     else
-        lim := 82 + (dias - 60) * 0.5;  // Days 61+: cap increases by 0.5 per day
+        lim := 30 + dias*0.3;  
     endif
 
-    return Min(lim, 100);  // Cap out at 100
+    return Min(lim, 60);  
 endfunction
 
 /*
