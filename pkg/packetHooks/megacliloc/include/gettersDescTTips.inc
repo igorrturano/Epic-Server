@@ -159,18 +159,15 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	bluntOD := atrib.BluntOffDamage? FISICO_OFF + " " + atrib.BluntOffDamage + FECHA_BASEFONT_TAG:"";
 	
 	if(slashMD !=  0)
-		xDesc := xDesc  + " Cort: " + ClassificaDanoCor(elemMainDamage[1])  + (slashMD) + FECHA_BASEFONT_TAG + slashOD;
+		xDesc := xDesc  + " Cort: " + ClassificaDanoCor(elemMainDamage[1])  + (slashMD) + FECHA_BASEFONT_TAG + slashOD + "<br>";
 	endif
 	if(pircMD !=  0)
-		xDesc := xDesc  + " Perf: " + ClassificaDanoCor(elemMainDamage[2]) + (pircMD) + FECHA_BASEFONT_TAG + pircOD;
+		xDesc := xDesc  + " Perf: " + ClassificaDanoCor(elemMainDamage[2]) + (pircMD) + FECHA_BASEFONT_TAG + pircOD + "<br>";
 	endif
 	if(bluntMD !=  0)
-		xDesc := xDesc  + " Cont: " + ClassificaDanoCor(elemMainDamage[3]) + (bluntMD) + FECHA_BASEFONT_TAG + bluntOD;
+		xDesc := xDesc  + " Cont: " + ClassificaDanoCor(elemMainDamage[3]) + (bluntMD) + FECHA_BASEFONT_TAG + bluntOD + "<br>";
 	endif
 
-	if((slashMD + pircMD + bluntMD) !=  0)
-		xDesc := xDesc + "<br>";
-	endif
 	return xDesc;
 endfunction
 
@@ -234,16 +231,13 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
-			xDesc := xDesc  + " Cort:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (slashRes) + FECHA_BASEFONT_TAG;
+			xDesc := xDesc  + " Cort:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(pircRes> 0)
-			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (pircRes) + FECHA_BASEFONT_TAG;
+			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(bluntRes> 0)
-			xDesc := xDesc  + " Cont:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (bluntRes) + FECHA_BASEFONT_TAG;
-		endif
-		if((bluntRes + pircRes + slashRes) > 0)
-			xDesc := xDesc + "<br>";
+			xDesc := xDesc  + " Cont:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
 		endif
 	endif
 	return xDesc;
