@@ -392,7 +392,7 @@ endfunction
 
 function RessuscitarPet(corpse, owner, is_bandage := 0)
     var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
-    CopyProps(corpse, npc);
+    CopyPropsPet(corpse, npc);
     var corpse_parsed := corpse.name[13, len(corpse.name)-12];
     npc.script := ":ghaia:tamed";
     RestartScript(npc);
@@ -483,7 +483,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
     return npc;
 endfunction
 
-function CopyProps(origin, destiny)
+function CopyPropsPet(origin, destiny)
     var propnames := GetObjPropertyNames(origin);
     foreach prop in propnames
         SetObjProperty(destiny, prop, GetObjProperty(origin, prop));
