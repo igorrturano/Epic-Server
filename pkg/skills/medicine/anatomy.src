@@ -5,6 +5,7 @@ use uo;
 
 include ":charactercreation:resists";
 include ":attributes:attributeConstants";
+include ":attributes:skills";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
 include "include/say";
