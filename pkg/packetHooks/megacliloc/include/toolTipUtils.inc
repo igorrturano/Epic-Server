@@ -59,7 +59,11 @@ function ClassificaParametro(objeto)
 		return ITEM_ARMADURA;
 	elseif(objeto.TipoAtaque)
 		return TEMPLATE_ARMA;
+	elseif(objeto.ObjClass == "Weapon")
+		return TEMPLATE_ARMA;
 	elseif(objeto.TipoProtecao)
+		return TEMPLATE_ARMADURA;
+	elseif(objeto.ObjClass == "Armor")
 		return TEMPLATE_ARMADURA;
 	else
 		return DESCONHECIDO;

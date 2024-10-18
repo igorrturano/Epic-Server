@@ -19,6 +19,7 @@ include ":uose:/gumps/include/gump_prompts";
 include ":uose:/gumps/include/vendorGumps";
 include ":tn:cooldown";
 include ":merchants:/include/cambio";
+include ":megacliloc:/include/descricaoObjetoTTip";
 
 const GF_STDCOLOR_UOSE := 1890;
 const MOEDAS := SESTERTIUS;
@@ -614,7 +615,10 @@ function DoWithdraw( npc, player )
 endfunction
 
 function GetDetails( item, who,desc )
-	//TODO implementar quando tiverem terminado a mudança nas armas e armadurass, incluindo as mudanças nos tooltips 
-  return "{}".format(desc);
+	if(desc != "")
+		desc :=  "<BASEFONT COLOR=#e59866> Mensagem do Vendedor: </BASEFONT><br>" + desc + "<br><br>";
+	endif
+	desc := MontaDescricaoItem(item,who,desc);
+  return desc;
 endfunction
 

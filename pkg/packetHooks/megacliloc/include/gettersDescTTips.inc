@@ -306,8 +306,8 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 endfunction
 
 function PegaDescGoles(objeto, xDesc)
-		if (getobjproperty(objeto, "goles"))
-			xDesc := xDesc + BLUE_ICE + GetObjProperty(objeto, "goles") + " doses";
+		if (PegaPropObjItemOrTemplate(objeto, "goles"))
+			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "goles") + " doses";
 		endif
 		return xDesc;
 endfunction
