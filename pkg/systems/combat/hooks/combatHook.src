@@ -97,7 +97,6 @@ exported function Attack(attacker, defender)
 	else
 		DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
 		PlayMissSound(attacker);
-		PlayAttackAnimation(attacker);
 		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);

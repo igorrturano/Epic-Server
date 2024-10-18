@@ -469,7 +469,7 @@ function getWeaponDamageType(attacker, weapon)
 		"PERFURANTE": return DMG_PIERCING;
 		"CONTUSIVO": return DMG_BLUNT;
 
-		default: return DMG_PHYSICAL;
+		default: return DMG_BLUNT;
 	endcase
 endfunction
 
