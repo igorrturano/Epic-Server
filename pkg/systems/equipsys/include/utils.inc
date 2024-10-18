@@ -52,31 +52,29 @@ enum PROTECTIONTYPE
 	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
 endenum
 
-// var BOWANIM := array{ANIM_ATTACK_BOW};
-// var CROSSBOWANIM := array{ANIM_ATTACK_XBOW};
-// var SLASHANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE};
-// var PIERCINGANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB};
-// var BLUNTANIM := array{ANIM_ATTACK_2HAND_DOWN};
 
+var MISS_FX := struct {
+	SFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}
+};
 var BOW_FX := struct {
 	ANIM := array{ANIM_ATTACK_BOW},
-	SFX := array{0x235}
+	SFX := array{0x235, 0x4C9, 0x4CA}
 };
 var CROSSBOW_FX := struct {
 	ANIM := array{ANIM_ATTACK_XBOW},
-	SFX := array{0x235}
+	SFX := array{0x235, 0x4C9, 0x4CA}
 };
 var SLASH_1H_FX := struct {
 	ANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE},
-	SFX := array{0x23D}
+	SFX := array{0x23C,0x23D}
 };
 var SLASH_2H_FX := struct {
 	ANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE},
-	SFX := array{0x23D}
+	SFX := array{0x23C,0x23D}
 };
 var PIERCING_1H_FX := struct {
 	ANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB},
-	SFX := array{0x23D}
+	SFX := array{0x23C,0x23D}
 };
 var PIERCING_2H_FX := struct {
 	ANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB},
@@ -84,11 +82,11 @@ var PIERCING_2H_FX := struct {
 };
 var BLUNT_1H_FX := struct {
 	ANIM := array{ANIM_ATTACK_2HAND_DOWN},
-	SFX := array{0x234}
+	SFX := array{0x3AC}
 };
 var BLUNT_2H_FX := struct {
 	ANIM := array{ANIM_ATTACK_2HAND_DOWN},
-	SFX := array{0x234}
+	SFX := array{0x3AE}
 };
 
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
