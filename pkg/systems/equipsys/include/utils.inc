@@ -23,13 +23,6 @@ endenum
 enum WEAPONTYPE
 	BOW := "Bow", CROSSBOW := "Crossbow"
 endenum
-// enum DAMAGEDICE
-// 	DAMAGE_NONE_DAMAGE := 0,
-// 	ONEHANDED_LOW_DAMAGE := "1d4", ONEHANDED_MID_DAMAGE := "1d6", ONEHANDED_HIGH_DAMAGE := "1d8",
-// 	TWOHANDED_LOW_DAMAGE := "1d8", TWOHANDED_MID_DAMAGE := "1d10", TWOHANDED_HIGH_DAMAGE := "1d12",
-// 	BOW_LOW_DAMAGE := "1d4", BOW_MID_DAMAGE := "1d6", BOW_HIGH_DAMAGE := "1d8",
-// 	CROSSBOW_LOW_DAMAGE := "1d6", CROSSBOW_MID_DAMAGE := "1d8", CROSSBOW_HIGH_DAMAGE := "1d10"
-// endenum
 enum DAMAGETYPE
 	SLASHDAMAGE := "Cortante", PIERCINGDAMAGE := "Perfurante", BLUNTDAMAGE := "Contusivo"
 endenum
@@ -51,7 +44,9 @@ enum PROTECTIONTYPE
 	SHIELD_HIGHLOW := "ESCUDO PESADO FRACA", SHIELD_HIGHMID := "ESCUDO PESADO MEDIO", SHIELD_HIGHHIGH := "ESCUDO PESADO FORTE",
 	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
 endenum
-
+enum WEAPONFX
+	WEAPON_FX_SOUND, WEAPON_FX_ANIM
+endenum
 
 var MISS_FX := struct {
 	SFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}
@@ -114,9 +109,9 @@ function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
 endfunction
 
 function IsDualWield(item)
-	var prop := getPropBase(item);
+	var elem := getItemCfgElem(item);
 
-	if (prop.DualWield)
+	if (elem.Attribute.Upper() == DUALWIELD.Upper())
 		return 1;
 	endif
 
@@ -135,9 +130,77 @@ function IsShield(item)
     endif
 endfunction
 
-function getAnim(anims)
-	return anims[RandomInt(anims.Size())+1];
+function getWeaponFX(FX, weapon)
+	var attackFX;
+	var elem := getItemCfgElem(weapon);
+	var prop := getPropBase(weapon);
+
+	if (elem.Attribute.Upper() == RANGED.Upper())
+		var isBow := elem.ProjectileType == 0xf3f ? 1 : 0;
+		if (isBow)
+			if (FX == WEAPON_FX_ANIM)
+				attackFX := getAnim(BOW_FX);
+			else
+				attackFX := getSound(BOW_FX);
+			endif
+		else
+			if (FX == WEAPON_FX_ANIM)
+				attackFX := getAnim(CROSSBOW_FX);
+			else
+				attackFX := getSound(CROSSBOW_FX);
+			endif
+		endif
+	else
+		if (elem.Attribute.Upper() == TWOHANDED.Upper())
+			if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (FX == WEAPON_FX_ANIM)
+					attackFX := getAnim(SLASH_2H_FX);
+				else
+					attackFX := getSound(SLASH_2H_FX);
+				endif
+			elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				if (FX == WEAPON_FX_ANIM)
+					attackFX := getAnim(PIERCING_2H_FX);
+				else
+					attackFX := getSound(PIERCING_2H_FX);
+				endif
+			elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				if (FX == WEAPON_FX_ANIM)
+					attackFX := getAnim(BLUNT_2H_FX);
+				else
+					attackFX := getSound(BLUNT_2H_FX);
+				endif
+			endif
+		else
+			if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (FX == WEAPON_FX_ANIM)
+					attackFX := getAnim(SLASH_1H_FX);
+				else
+					attackFX := getSound(SLASH_1H_FX);
+				endif
+			elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				if (FX == WEAPON_FX_ANIM)
+					attackFX := getAnim(PIERCING_1H_FX);
+				else
+					attackFX := getSound(PIERCING_1H_FX);
+				endif
+			elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				if (FX == WEAPON_FX_ANIM)
+					attackFX := getAnim(BLUNT_1H_FX);
+				else
+					attackFX := getSound(BLUNT_1H_FX);
+				endif
+			endif
+		endif
+	endif
+
+	return attackFX;
 endfunction
-function getSound(anims)
-	return anims[RandomInt(anims.Size())+1];
+
+function getAnim(fxs)
+	return fxs.ANIM[RandomInt(fxs.ANIM.Size())+1];
+endfunction
+
+function getSound(fxs)
+	return fxs.SFX[RandomInt(fxs.SFX.Size())+1];
 endfunction
