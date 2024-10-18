@@ -7,6 +7,8 @@ include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:include/equipstats";
 
+Const FECHA_BASEFONT_TAG := "</BASEFONT>";
+
 function PegaDescMagica(objeto,xDesc := "")
 	if (PegaPropObjItemOrTemplate(objeto,"magic_excep"))
 		xDesc := xDesc + ROXO + "Magico Excepcional<br>";
@@ -135,32 +137,37 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
 	var bluntMD,slashMD,pircMD :=0;
 	var bluntOD,slashOD,pircOD := "";
-
+	var elemMainDamage := SplitWords(cfg.elem.EpicMainDamage);
+	
 	if(!atrib)
-		atrib := getWeaponStats(objeto);
+		var elemOffDamage := SplitWords(cfg.elem.EpicOffDamage);
+		atrib.+SlashMainDamage := getDamageByTier(elemMainDamage[1]);
+		atrib.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]);
+		atrib.+BluntMainDamage := getDamageByTier(elemMainDamage[3]);
+
+		atrib.+SlashOffDamage :=getDamageByTier(elemOffDamage[1]);
+		atrib.+PiercingOffDamage :=getDamageByTier(elemOffDamage[2]);
+		atrib.+BluntOffDamage :=getDamageByTier(elemOffDamage[3]);
 	endif
 
 	slashMD := atrib.SlashMainDamage;
 	pircMD := atrib.PiercingMainDamage;
 	bluntMD := atrib.BluntMainDamage;
 
-	slashOD := atrib.SlashOffDamage? SOFT_GREEN + " " + atrib.SlashOffDamage:"";
-	pircOD := atrib.PiercingOffDamage? SOFT_GREEN + " " + atrib.PiercingOffDamage:"";
-	bluntOD := atrib.BluntOffDamage? SOFT_GREEN + " " + atrib.BluntOffDamage:"";
-
+	slashOD := atrib.SlashOffDamage? FISICO_OFF + " " + atrib.SlashOffDamage + FECHA_BASEFONT_TAG:"";
+	pircOD := atrib.PiercingOffDamage? FISICO_OFF + " " + atrib.PiercingOffDamage + FECHA_BASEFONT_TAG:"";
+	bluntOD := atrib.BluntOffDamage? FISICO_OFF + " " + atrib.BluntOffDamage + FECHA_BASEFONT_TAG:"";
+	
 	if(slashMD !=  0)
-		xDesc := xDesc  + FISICO + " Cort: " + (slashMD) + slashOD;
+		xDesc := xDesc  + " Cort: " + ClassificaDanoCor(elemMainDamage[1])  + (slashMD) + FECHA_BASEFONT_TAG + slashOD + "<br>";
 	endif
 	if(pircMD !=  0)
-		xDesc := xDesc  + FISICO + " Perf: " + (pircMD) + pircOD;
+		xDesc := xDesc  + " Perf: " + ClassificaDanoCor(elemMainDamage[2]) + (pircMD) + FECHA_BASEFONT_TAG + pircOD + "<br>";
 	endif
 	if(bluntMD !=  0)
-		xDesc := xDesc  + FISICO + " Cont: " + (bluntMD) + bluntOD;
+		xDesc := xDesc  + " Cont: " + ClassificaDanoCor(elemMainDamage[3]) + (bluntMD) + FECHA_BASEFONT_TAG + bluntOD + "<br>";
 	endif
 
-	if((slashMD + pircMD + bluntMD) !=  0)
-		xDesc := xDesc + "<br>";
-	endif
 	return xDesc;
 endfunction
 
@@ -220,20 +227,17 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	slashRes := atrib.SlashResist;
 	pircRes := atrib.PiercingResist;
 	bluntRes := atrib.BluntResist;
-
+	
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
-			xDesc := xDesc  + FISICO + " Cor: " + (slashRes);
+			xDesc := xDesc  + " Cort:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(pircRes> 0)
-			xDesc := xDesc  + FISICO + " Perf: " + (pircRes);
+			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(bluntRes> 0)
-			xDesc := xDesc  + FISICO + " Cont: " + (bluntRes);
-		endif
-		if((bluntRes + pircRes + slashRes) > 0)
-			xDesc := xDesc + "<br>";
+			xDesc := xDesc  + " Cont:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
 		endif
 	endif
 	return xDesc;
