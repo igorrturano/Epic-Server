@@ -60,23 +60,23 @@ var CROSSBOW_FX := struct {
 	SFX := array{0x235, 0x4C9, 0x4CA}
 };
 var SLASH_1H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE},
+	ANIM := array{ANIM_ATTACK_1HAND_WIDE},
 	SFX := array{0x23C,0x23D}
 };
 var SLASH_2H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_WIDE, ANIM_ATTACK_2HAND_WIDE},
-	SFX := array{0x23C,0x23D}
+	ANIM := array{ANIM_ATTACK_2HAND_WIDE},
+	SFX := array{0x237,0x238}
 };
 var PIERCING_1H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB},
+	ANIM := array{ANIM_ATTACK_1HAND_JAB},
 	SFX := array{0x23C,0x23D}
 };
 var PIERCING_2H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_JAB, ANIM_ATTACK_2HAND_JAB},
-	SFX := array{0x23D}
+	ANIM := array{ANIM_ATTACK_2HAND_JAB},
+	SFX := array{0x23D, 0x23D}
 };
 var BLUNT_1H_FX := struct {
-	ANIM := array{ANIM_ATTACK_2HAND_DOWN},
+	ANIM := array{ANIM_ATTACK_1HAND_DOWN},
 	SFX := array{0x3AC}
 };
 var BLUNT_2H_FX := struct {
