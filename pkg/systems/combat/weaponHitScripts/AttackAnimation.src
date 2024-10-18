@@ -16,7 +16,6 @@ program AttackAnimation(params)
 endprogram
 
 function PlayAttackAnimation(who)
-	var attackType;
 	var attackAnim;
 
 	if (who.weapon)
