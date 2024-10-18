@@ -14,11 +14,15 @@ program cmd_golpe(who)
 endprogram
 
 function OpenGump(who)
-	var weapon := who.weapon;
-	var weaponProp := getPropBase(weapon);
-	var weaponElem := getItemCfgElem(weapon);
-	
 	while (1)
+		var weapon := who.weapon;
+		var weaponProp := getPropBase(weapon);
+
+		if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
+			SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
+			return;
+		endif
+
 		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
 		var x := 15;
 		var y := 40;
@@ -46,12 +50,18 @@ function OpenGump(who)
 			GFGumpPic(gump, x, y, 1009, COLOR_RED);
 		endif
 
-		if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
+		var input := GFSendGump(who, gump);
+
+		if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
 			SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
 			return;
 		endif
 
-		var input := GFSendGump(who, gump);
+		if (weapon != who.weapon) // Atualiza caso tenha trocado de arma com o gump aberto
+			weapon := who.weapon;
+			weaponProp := getPropBase(weapon);
+		endif
+
 		if (input[0] == 0)
 			return;
 		elseif (input[0] == 10)
