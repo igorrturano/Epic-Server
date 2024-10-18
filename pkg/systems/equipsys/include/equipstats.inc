@@ -65,7 +65,7 @@ function setWeaponStats(weapon)
 	var stats := getWeaponStats(weapon);
 
 	setPropWeapon(weapon);
-	weapon.speed_mod := CInt(stats.AttackSpeed) - 24;
+	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 
 /**
