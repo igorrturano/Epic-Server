@@ -48,7 +48,7 @@ program use_Alchemy(who, tool)
 	var amt         := rinfo[2];
 
 	if (amt>0)
-		if (the_objtype==0xec29) //checa se item feito é o alchemybook
+		if (the_objtype==0xec29||0xec2a) //checa se item feito é um livro
 		makeAlchemyBook(who, the_objtype, amt, tool);
 		else
 		makeAlchemyItems(who, the_objtype, amt, tool);
@@ -113,7 +113,7 @@ function makeAlchemyBook(who, what, amt, tool )
 endfunction
 
 function FalhaCritica(who, item)
-	if (TemHabilidade(who, "Alquimista Precavido"))
+	if (TemHabilidade(who, "Alquimista Experiente"))
 		return 1;
 	endif
 	var whoemote, whosound;
@@ -148,13 +148,13 @@ function FalhaCritica(who, item)
 
 		PlayStationaryEffect( who.x, who.y, who.z, 0x36b0, 7, 10, 1);
 		PlaySoundEffect(who, 0x208);
-		ApplyRawDamage(who, cint(30+ randomInt(100) ) );
+		ApplyRawDamage(who, cint(15+ randomInt(30) ) );
 		sleep(2);
 
 		alchEmoteSound(who, "Arfar");
 	else
 		SendSysMessageEX(who,"Voce esta envenenado!!", SSM_FAIL);
-		TS_StartTimer(who, "defaultPoison", 120, 5);
+		TS_StartTimer(who, "defaultPoison", 120, 2);
 		alchEmoteSound(who, "Tossir1");
 		sleep(1);
 		

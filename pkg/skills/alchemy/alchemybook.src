@@ -47,7 +47,6 @@ function MakePotion ( pot, who)
 	var recipes := ReadConfigFile(":alchemy:config/recipes");
 	var difficulty := recipes[pot].skill;
 	var magic := cint(recipes[pot].magic);
-	var strength := cint(recipes[pot].strength);
 	var science := recipes[pot].science;
 	var tier := recipes[pot].tier;
 	var id := recipes[pot].id;
@@ -142,9 +141,6 @@ function MakePotion ( pot, who)
 				SetObjProperty(thing, "tier", tier);
 				SetObjProperty(thing, "crafterskill", crafterskill*10);
 				SetObjProperty(thing, "science", science);
-				if (strength)
-					SetObjProperty(thing, "strength", strength);
-				endif
 				if (GetObjProperty(who, "extratoinstantaneo"))
 					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
 					var pocao := GetObjProperty(thing, "extrato");
@@ -156,9 +152,6 @@ function MakePotion ( pot, who)
 					SetObjProperty(pot, "tier", tier);
 					SetObjProperty(pot, "crafterskill", crafterskill*10);
 					SetObjProperty(pot, "science", science);
-					if (strength)
-						SetObjProperty(pot, "strength", strength);
-					endif
 					DestroyItem(thing);
 					EraseObjProperty(who, "extratoinstantaneo");
 				endif

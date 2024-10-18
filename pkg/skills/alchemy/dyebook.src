@@ -45,7 +45,6 @@ function MakeDye (pot, who)
 	var recipes := ReadConfigFile(":alchemy:config/recipestintas");
 	var difficulty := recipes[pot].skill;
 	var magic := cint(recipes[pot].magic);
-	var strength := cint(recipes[pot].strength);
 	var science := recipes[pot].science;
 	var tier := recipes[pot].tier;
 	var id := recipes[pot].id;

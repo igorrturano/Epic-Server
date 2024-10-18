@@ -6,19 +6,29 @@ include ":attributes:attributes";
 program poisonScript(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	var level := params[3];
-	params := 0;
-	
-	if ( GetObjProperty(mobile, "#StrPoisonMod") )
-		return 0;
+	var level := (-1) * params[3];
+	if (temHabilidade(attacker, "Veneno Puro"))
+		level := level*0.4;
+	else
+		level := level*0.3;
 	endif
+	var teste := GetObjProperty(mobile, "#StrPoisonMod");
+	if(teste) //verifica se ja esta sob efeito similar
+		if(level < teste) //se o novo efeito é maior, aplica a diferença
+			Set_Critical(1);
+			SetObjProperty(mobile, "#StrPoisonMod", level);
+			AP_ModifyStatMod(mobile, STRENGTH, (level-teste));
+			Set_Critical(0);
+			return 1;
+		else
+			return 0;
+		endif
+	else
 	
-	var points := level*5;
-	points := 0 - points;
-	
-	SetObjProperty(mobile, "#StrPoisonMod", points);
-	AP_ModifyStatMod(mobile, STRENGTH, points);
+	SetObjProperty(mobile, "#StrPoisonMod", level);
+	AP_ModifyStatMod(mobile, STRENGTH, level);
 	
 	return 1;
+	endif
 endprogram
 

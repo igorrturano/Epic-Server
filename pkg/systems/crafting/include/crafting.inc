@@ -309,15 +309,13 @@ function CraftItem(who, craft_skill, tool, objtype, amt, canFix, anvil, more := 
 			endif
 
 			if(craft_skill=="Alchemy")
-					var recipes := ReadConfigFile(":alchemy:config/recipes");
-					var strength := cint(recipes[objtype].strength);
+					var recipes := ReadConfigFile(":alchemy:itemdesc");
 					var science := (recipes[objtype].science);
 					var tier := (recipes[objtype].tier);
 					var crafterskill := Cint((AP_GetSkill(who, ALCHEMY))/10);
 					var crafterInt := AP_GetTrueStat (who, INTELLIGENCE);
 					var bonus := (((crafterInt-50)/10)+(crafterskill));
 
-					SetObjProperty(theitem, "strength", strength);
 					SetObjProperty(theitem, "bonus", bonus);
 					SetObjProperty(theitem, "tier", tier);
 					SetObjProperty(theitem, "crafterskill", crafterskill*10);

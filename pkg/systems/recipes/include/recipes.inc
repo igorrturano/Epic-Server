@@ -1,20 +1,41 @@
 use cfgfile;
 
 function CreateItemFromRecipe(who, index)
+    var cfg := ReadConfigFile(":recipes:recipes");
 
-	var cfg := ReadConfigFile(":recipes:recipes");
+    var elem := FindConfigElem(cfg, index);
+    if (!elem)
+        print("Elemento não encontrado para o índice: " + index);
+        return error{"errortext":="Receita não encontrada"};
+    endif
 
-	var elem := FindConfigElem(cfg, index);
-	if (!elem)
-		return 0;
-	endif
+    var level := GetConfigInt(elem, "level");
+    var objtype;
 
-	var objtype := GetConfigInt(elem, "objtype");
-	var item := CreateItemInBackpack(who, objtype, 1);
-	if (item == error)
-		SendSysMessage(who, "error " + error);
-		return item;
-	endif
+	if (level)
+        case (level)
+            1: objtype := 0xff990;
+            2: objtype := 0xfe995;
+            3: objtype := 0xfe996;
+            4: objtype := 0xfe997;
+            5: objtype := 0xfe998;
+            default: objtype := 0xff990;
+        endcase
+    else
+        objtype := GetConfigInt(elem, "objtype");
+    endif
+
+    if (!objtype)
+        print("Erro: objtype não encontrado para a receita " + index);
+        return error{"errortext":="Tipo de objeto não definido para a receita"};
+    endif
+
+    var item := CreateItemInBackpack(who, objtype, 1);
+    if (item == error)
+        print("Erro ao criar o item: " + item.errortext);
+        return error{"errortext":="Não foi possível criar o item: " + item.errortext};
+    endif
+
 
 	var name := GetConfigString(elem, "name");
 	if (name != error)
@@ -47,8 +68,20 @@ function CreateItemFromRecipe(who, index)
 
 	var hp_mod := GetConfigInt(elem, "hp_mod");
 	item.hp_mod := hp_mod;
-
+	print("Criando item para receita: " + index + ", level: " + level + ", objtype: " + Hex(objtype));
 	return item;
+
+	var item := CreateItemInBackpack(who, objtype, 1);
+if (item == error)
+    print("Erro ao criar o item: " + item.errortext);
+    return error{"errortext":="Não foi possível criar o item: " + item.errortext};
+endif
+print("Item criado com sucesso: " + item.serial);
+
+if (level < 1 || level > 5)
+    print("Erro: Nível inválido para a receita " + index);
+    return error{"errortext":="Nível inválido para a receita"};
+endif
 
 endfunction
 

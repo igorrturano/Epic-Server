@@ -49,7 +49,6 @@ function CraftCheckSkill(who, craft_skill, difficulty, points, report:=0)
     points := 0;
   endif
   if(points > 0)
-//	CheckSkillAdvance(who, craft_skill, points, chance);
 	SkillCheck(who, craft_skill, difficulty, points);
   //SendSysMessage(who, "DEBUG CHANCEUP: "+SkillCheck(who, craft_skill, difficulty, points));  
   endif

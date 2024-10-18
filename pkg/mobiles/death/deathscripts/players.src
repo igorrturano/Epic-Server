@@ -9,6 +9,7 @@ include ":death:death";
 include ":mounts:mounts";
 include ":death:settings";
 include ":attributes:attributes";
+include ":attributes:skills";
 include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";

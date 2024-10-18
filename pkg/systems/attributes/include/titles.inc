@@ -1,8 +1,3 @@
-/*
- * $Id: titles.inc 891 2005-11-04 06:29:43Z muaddiblsd $
- *
- */
-
 use uo;
 use os;
 use cfgfile;
@@ -11,20 +6,12 @@ include ":attributes:attributes";
 
 /*
  * AP_GetLevelTitle(skill_level)
- *
- * Purpose
- * Gets the title for a particlar skill level.
- *
+ * Purpose: Gets the title for a particlar skill level.
  * Parameters
- * skill_level:	Skill level of a skill. (e.g. 80% = 80)
- *
- * Return value
- * Returns a string on success.
- * Returns an error on failure.
- *
+ * 	skill_level:	Skill level of a skill. (e.g. 80% = 80)
+ * Return: a string on success.
  */
 function AP_GetLevelTitle(skill_level)
-    //return skill_level;
 	if (skill_level >= 110)
 		return "Lendário";
 	elseif (skill_level >= 100)
@@ -52,36 +39,6 @@ function AP_GetLevelTitle(skill_level)
 	else
 		return "Inábil";
 	endif
-/*
-	skill_level := Cdbl(skill_level);
-
-	if ( skill_level < 0.0 )
-		return "U SUK";
-	elseif ( skill_level >= 150.0 )
-		return "God Style";
-	endif
-
-	var title_cfg := ReadConfigFile(":attributes:titles");
-	if ( !title_cfg )
-		return title_cfg;
-	endif
-
-	var title_elem := title_cfg["LevelTitles"];
-	if ( !title_elem )
-		return title_elem;
-	endif
-
-	var levels_list := GetConfigStringDictionary(title_elem, "Level");
-
-	foreach entry in ( levels_list )
-		if ( skill_level < CDbl(entry) )
-			return _entry_iter;
-		endif
-		sleepms(2);
-	endforeach
-
-	return error{"errortext":="Could not find skill title for that level."};
-*/
 endfunction
 
 /*

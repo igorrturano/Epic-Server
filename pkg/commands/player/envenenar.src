@@ -65,9 +65,9 @@ program do_poisoning(who)
     	0xbf01: poisonType :="strPoison"; difficulty := RESIST_MEDIUM; points := 70;
     	0xbf20: poisonType :="dexPoison"; difficulty := RESIST_MEDIUM; points := 70;
     	0xef54: poisonType :="intPoison"; difficulty := RESIST_MEDIUM; points := 70;
-    	0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    	0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_MEDIUM; points := 70; level := level/20;
     	0xbf03: poisonType:="paralyzePoison"; difficulty := RESIST_HARD; points := 100;
-    	0xbf06: difficulty := RESIST_HARD; points := 70; poisonType :="manaPoison";
+    	0xbf06: difficulty := RESIST_HARD; points := 70; poisonType :="manaPoison"; level := level/20;
     	0xbf04: difficulty := RESIST_HARD; points := 60; poisonType := "alchPoison";
     	0x6072: difficulty := RESIST_MEDIUM; points := 40; poisonType := "alchPoison";
     	0xbf05: difficulty := RESIST_VERY_HARD; points := 100; poisonType := "alchPoison";
@@ -116,7 +116,7 @@ program do_poisoning(who)
 		SendSysMessageEx(who, "Voce aplicou o liquido mas ele nao parece com veneno.", SSM_FAIL);
 		return;
 	endif
-	if(TemHabilidade(who, "Mestre dos Venenos") || level == 1 || who.cmdlevel > 1)
+	if(TemHabilidade(who, "Mestre dos Venenos") || tier == 1 || who.cmdlevel > 1)
 		//if (GetObjProperty(who, "classe") == "ladino")
 		//	SkillCheck(who, BEGGING, -1);
 		//endif
