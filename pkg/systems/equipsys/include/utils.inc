@@ -51,36 +51,40 @@ endenum
 var MISS_FX := struct {
 	SFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}
 };
+var UNARMED_FX := struct {
+	ANIM := array{0x9, 0xA},
+	SFX := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B}
+};
 var BOW_FX := struct {
-	ANIM := array{ANIM_ATTACK_BOW},
+	ANIM := array{0x12},
 	SFX := array{0x235, 0x4C9, 0x4CA}
 };
 var CROSSBOW_FX := struct {
-	ANIM := array{ANIM_ATTACK_XBOW},
+	ANIM := array{0x13},
 	SFX := array{0x235, 0x4C9, 0x4CA}
 };
 var SLASH_1H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_WIDE},
+	ANIM := array{0xD},
 	SFX := array{0x23C,0x23D}
 };
 var SLASH_2H_FX := struct {
-	ANIM := array{ANIM_ATTACK_2HAND_WIDE},
+	ANIM := array{0xC},
 	SFX := array{0x237,0x238}
 };
 var PIERCING_1H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_JAB},
+	ANIM := array{0xA},
 	SFX := array{0x23C,0x23D}
 };
 var PIERCING_2H_FX := struct {
-	ANIM := array{ANIM_ATTACK_2HAND_JAB},
+	ANIM := array{0xE},
 	SFX := array{0x23D, 0x23D}
 };
 var BLUNT_1H_FX := struct {
-	ANIM := array{ANIM_ATTACK_1HAND_DOWN},
+	ANIM := array{0xB},
 	SFX := array{0x3AC}
 };
 var BLUNT_2H_FX := struct {
-	ANIM := array{ANIM_ATTACK_2HAND_DOWN},
+	ANIM := array{0xB},
 	SFX := array{0x3AE}
 };
 
@@ -135,60 +139,68 @@ function getWeaponFX(FX, weapon)
 	var elem := getItemCfgElem(weapon);
 	var prop := getPropBase(weapon);
 
-	if (elem.Attribute.Upper() == RANGED.Upper())
-		var isBow := elem.ProjectileType == 0xf3f ? 1 : 0;
-		if (isBow)
-			if (FX == WEAPON_FX_ANIM)
-				attackFX := getAnim(BOW_FX);
-			else
-				attackFX := getSound(BOW_FX);
-			endif
+	if (!elem)
+		if (FX == WEAPON_FX_ANIM)
+			attackFX := getAnim(UNARMED_FX);
 		else
-			if (FX == WEAPON_FX_ANIM)
-				attackFX := getAnim(CROSSBOW_FX);
-			else
-				attackFX := getSound(CROSSBOW_FX);
-			endif
+			attackFX := getSound(UNARMED_FX);
 		endif
 	else
-		if (elem.Attribute.Upper() == TWOHANDED.Upper())
-			if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+		if (elem.Attribute.Upper() == RANGED.Upper())
+			var isBow := elem.ProjectileType == 0xf3f ? 1 : 0;
+			if (isBow)
 				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(SLASH_2H_FX);
+					attackFX := getAnim(BOW_FX);
 				else
-					attackFX := getSound(SLASH_2H_FX);
+					attackFX := getSound(BOW_FX);
 				endif
-			elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+			else
 				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(PIERCING_2H_FX);
+					attackFX := getAnim(CROSSBOW_FX);
 				else
-					attackFX := getSound(PIERCING_2H_FX);
-				endif
-			elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
-				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(BLUNT_2H_FX);
-				else
-					attackFX := getSound(BLUNT_2H_FX);
+					attackFX := getSound(CROSSBOW_FX);
 				endif
 			endif
 		else
-			if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
-				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(SLASH_1H_FX);
-				else
-					attackFX := getSound(SLASH_1H_FX);
+			if (elem.Attribute.Upper() == TWOHANDED.Upper())
+				if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+					if (FX == WEAPON_FX_ANIM)
+						attackFX := getAnim(SLASH_2H_FX);
+					else
+						attackFX := getSound(SLASH_2H_FX);
+					endif
+				elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+					if (FX == WEAPON_FX_ANIM)
+						attackFX := getAnim(PIERCING_2H_FX);
+					else
+						attackFX := getSound(PIERCING_2H_FX);
+					endif
+				elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+					if (FX == WEAPON_FX_ANIM)
+						attackFX := getAnim(BLUNT_2H_FX);
+					else
+						attackFX := getSound(BLUNT_2H_FX);
+					endif
 				endif
-			elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
-				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(PIERCING_1H_FX);
-				else
-					attackFX := getSound(PIERCING_1H_FX);
-				endif
-			elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
-				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(BLUNT_1H_FX);
-				else
-					attackFX := getSound(BLUNT_1H_FX);
+			else
+				if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+					if (FX == WEAPON_FX_ANIM)
+						attackFX := getAnim(SLASH_1H_FX);
+					else
+						attackFX := getSound(SLASH_1H_FX);
+					endif
+				elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+					if (FX == WEAPON_FX_ANIM)
+						attackFX := getAnim(PIERCING_1H_FX);
+					else
+						attackFX := getSound(PIERCING_1H_FX);
+					endif
+				elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+					if (FX == WEAPON_FX_ANIM)
+						attackFX := getAnim(BLUNT_1H_FX);
+					else
+						attackFX := getSound(BLUNT_1H_FX);
+					endif
 				endif
 			endif
 		endif
