@@ -62,7 +62,6 @@ endfunction
  *
  */
 function setWeaponStats(weapon)
-	// TODO: Rever a lógica e fazer um refator adequado. Só está assim pela urgência pra evitar bug.
 	var stats := getWeaponStats(weapon);
 
 	setPropWeapon(weapon);
