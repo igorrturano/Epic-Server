@@ -3,6 +3,8 @@ use cfgfile;
 
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/toolTipUtils";
+include ":equipsys:props";
+
 
 
 function GetDmgStringDesc(elem, item)
@@ -144,7 +146,8 @@ endfunction
 
 function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
 	var speedI := GetObjProperty(item,"attackspeedbonus");
-	var speedE := Cint(elem.Speed);
+	var itemProp := getPropBase(item);
+	var speedE := CInt(itemProp.AttackSpeed);
 	var speedDesc := "";
 	if (speedE >= 41)
 		speedDesc := "Muito Rápida";
