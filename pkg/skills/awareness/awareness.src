@@ -25,7 +25,7 @@ program skill_Alertness(who)
 	var isEncontrado := 0;
 	var ignore := GetObjProperty(who, "IgnoreHidden");
 	SendSysMessageEx(who, "Selecione um alvo. Cancelar o alvo procurará algo em volta.", SSM_INFO);
-	SendSysMessageEx(who, "Selecionar a si mesmo Ativa ou Desativa a procura passiva. [Atual: {}]".format(ignore? "Ativado.": "Desativado."), SSM_INFO);
+	SendSysMessageEx(who, "Selecionar a si mesmo Ativa ou Desativa a procura passiva. [Atual: {}]".format(!ignore? "Ativado.": "Desativado."), SSM_INFO);
 	var targ := Target(who,TGTOPT_NOCHECK_LOS);
 
 	if (targ.isA(POLCLASS_MOBILE))
@@ -54,4 +54,5 @@ program skill_Alertness(who)
 	if(deveCheckarLOS && !isLOS)
 		SendSysMessageEx(who, "Você não enxerga o alvo.", SSM_FAIL);
 	endif
+	return;
 endprogram
