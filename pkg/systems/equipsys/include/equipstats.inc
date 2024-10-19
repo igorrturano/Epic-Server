@@ -7,6 +7,7 @@ use cfgfile;
 
 include "utils";
 include "props";
+include ":attributes:attributeConstants";
 
 /**
  * getWeaponStats(weapon)
@@ -33,8 +34,8 @@ function getWeaponStats(weapon)
 	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]) : 0;
 	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]) : 0;
 	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]) : 0;
-	if (Upper(elem.Attribute) == "DUAL_WIELD")
-		stats.+DualWield := 1;
+	
+	if (Upper(elem.Attribute) == DUALWIELD.Upper())
 		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]) : 0;
 		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
 		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
@@ -63,11 +64,10 @@ endfunction
  *
  */
 function setWeaponStats(weapon)
-	// TODO: Rever a lógica e fazer um refator adequado. Só está assim pela urgência pra evitar bug.
 	var stats := getWeaponStats(weapon);
 
 	setPropWeapon(weapon);
-	weapon.speed_mod := CInt(stats.AttackSpeed - 24);
+	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 
 /**
@@ -92,7 +92,7 @@ function getSpeedByTier(tier)
 		RANGED_MID: return 30; // min = 30 + 3 random
 		RANGED_HIGH: return 36; // min = 36 + 3 random
 		
-		default: return error{ "errortext" := "Damage value not found for this Weapon Speed Tier!"};
+		default: return error{ "errortext" := "Value not found for this Weapon Speed Tier!"};
 	endcase
 endfunction
 
@@ -133,7 +133,7 @@ function getDamageByTier(tier)
 		CROSSBOW_MID: return "1d8";
 		CROSSBOW_HIGH: return "1d10";
 			
-		default: return error{ "errortext" := "Damage value not found for this Weapon Damage Tier!"};
+		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
 endfunction
 
@@ -155,7 +155,7 @@ function getCriticalChanceByTier(tier)
 		CRITICALCHANCE_MID: return 3;
 		CRITICALCHANCE_HIGH: return 5;
 		
-		default: return error{ "errortext" := "Damage value not found for this Weapon Critical Chance Tier!"};
+		default: return error{ "errortext" := "Value not found for this Weapon Critical Chance Tier!"};
 	endcase
 endfunction
 

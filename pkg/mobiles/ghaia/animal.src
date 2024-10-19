@@ -11,6 +11,7 @@ include ":faccao:faccao";
 include ":ghaia:combatevents";
 include ":timedScripts:timedScripts";
 include "include/epicNPCUtils";
+include "include/produzTeia";
 
 var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
 var me := self();
@@ -325,21 +326,6 @@ endfunction
 
 */
 
-function EstimulaAbdomen(npc, byref event)
-   if(npc.graphic == 28 && !npc.warmode)
-      if(getCooldown(npc, "#fiapoSeda") == 0)
-         PrintTextAbove(npc,"*Você estimula o abdomen da aranha e consegue extrair alguns fiapos de teia.*");
-         var idleSound := PlayIdleSound();
-         CreateItemInBackpack(event.source, 0xe07, 10); // fiapos de teia
-         setCooldown(npc,"#fiapoSeda",30);
-      else
-         PrintTextAbove(npc,"*Você tenta extrair algo, mas só consegue causar desconforto no aracnídeo que se distância imediatamente.*");
-         WalkAwayFrom(event.source);
-      endif
-      sleep(1);
-      return 1;
-   endif
-endfunction
 
 
 function look_around()

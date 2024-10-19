@@ -16,37 +16,14 @@ program AttackAnimation(params)
 endprogram
 
 function PlayAttackAnimation(who)
-	var attackType;
-	var prop;
-	
-	if (who.acctname)
-		prop := getPropBase(who.weapon);
+	var attackAnim;
+
+	if (who.weapon)
+		attackAnim := getWeaponFX(WEAPON_FX_ANIM, who.weapon);
 	else
 		// TODO: Buscar animação nas props de postura do NPC, depois de implementar.
-		// attackType := prop.AttackType;
-	endif
-
-	var attackAnim;
-	if (prop.Ranged)
-		// TODO: Adicionar uma verificação pra caso ser crossbow.
-		attackAnim := getAnim(BOWANIM);
-	else
-		if (Lower(prop.AttackType) == Lower(SLASHDAMAGE))
-			attackAnim := getAnim(SLASHANIM);
-		elseif (Lower(prop.AttackType) == Lower(PIERCINGDAMAGE))
-			attackAnim := getAnim(PIERCINGANIM);
-		elseif (Lower(prop.AttackType) == Lower(BLUNTDAMAGE))
-			attackAnim := getAnim(BLUNTANIM);
-		endif
-	endif
-
-	if (!who.acctname) // TODO: Remover depois que implementar lá em cima. Está aqui apenas para não bugar antes disso.
 		attackAnim := 0x0c;
 	endif
 
-	PerformAction(who, CInt(attackAnim));
-endfunction
-
-function getAnim(anims)
-	return anims[RandomInt(anims.Size())+1];
+	PerformAction(who, attackAnim);
 endfunction

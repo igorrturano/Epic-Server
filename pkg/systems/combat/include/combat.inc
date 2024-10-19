@@ -3,6 +3,7 @@ use uo;
 include ":brainai:npcUtil";
 include ":combat:weaponInfo";
 include ":faccao:faccao";
+include ":equipsys:props";
 
 function DistanceChecks(attacker, defender)
 	var cur_range := Distance(attacker, defender);
@@ -41,17 +42,19 @@ function PlayHitSounds(attacker, defender)
 	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 
+	var attack_sound;
 	if ( wpn_a_elem2.HitSound )
-		PlaySoundEffect(attacker, wpn_a_elem2.HitSound);
+		attack_sound := wpn_a_elem2.HitSound;
 	else
 		//NPC intrinsic weapon
-		PlaySoundEffect(attacker, wpn_a_elem2.AttackHitSound);
+		attack_sound := wpn_a_elem2.AttackHitSound;
 	endif
 
-	// TODO: Gambiarra pra urgência (remover)
-	if (attacker.acctname)
-		PlaySoundEffect(attacker, 0x23C);
+	if (attacker.weapon)
+		attack_sound := getWeaponFX(WEAPON_FX_SOUND, attacker.weapon);
 	endif
+
+	PlaySoundEffect(attacker, attack_sound);
 
 	var damaged_sound;
 	if ( defender.npctemplate )
@@ -74,14 +77,7 @@ function PlayHitSounds(attacker, defender)
 endfunction
 
 function PlayMissSound(attacker)
-	// var wpn_a_elem := GetWpnCfgInfo(attacker, attacker.weapon);
-	// if ( wpn_a_elem.MissSound )
-	// 	PlaySoundEffect(attacker, wpn_a_elem.MissSound);
-	// else
-	// 	//NPC intrinsic weapon
-	// 	PlaySoundEffect(attacker, wpn_a_elem.AttackMissSound);
-	// endif
-	PlaySoundEffect(attacker, 0x23A);
+	PlaySoundEffect(attacker, getSound(MISS_FX));
 endfunction
 
 function PlayAttackAnimation(attacker)

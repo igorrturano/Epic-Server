@@ -8,6 +8,7 @@ include ":tn:tngumps";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":attributes:titles";
+include ":attributes:skills";
 include "include/say";
 include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
@@ -132,12 +133,12 @@ function ShowHabilidadesPage(byref gump, who)
                 GFTextLine(gump, x + 90, y, 300, "Comprar Status");
                 GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
             else
-                if(i == 0)
+                // if(i == 0)
                     GFTextLine(gump, x + 90, y, 300, "Escolha a Habilidade");
                     GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
-                else
-                    GFTextLine(gump, x + 90, y, 300, "Procure o Pergaminho");
-                endif
+                // else
+                    // GFTextLine(gump, x + 90, y, 300, "Procure o Pergaminho");
+                // endif
             endif
         elseif (cint(habs[i]) == 2)
             GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
@@ -218,7 +219,7 @@ function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
     var primarias := getPrimarias(who);
     var pri := primarias[1];
-    var cappri := Cdbl(limiteportempo(who)) + Cdbl(valorinicial(who, pri));
+    var cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
     var capprimax := 100;
 
     var secundarias := getSecundarias(who);

@@ -196,7 +196,6 @@ function CheckStatAdvancement(mobile, stat_name, stat_mult)
     return 0;
 endfunction
 
-
 /*
  * CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
  *
@@ -218,16 +217,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         g_skill_debug := (GetObjProperty(mobile, "SkillDebug") != error);
     endif
 
-    // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
-    skill_name := HandleBudokaSkillTransform(mobile, skill_name);
-
-    // Check for valid training skills (if training skills are enforced)
-    if (!ValidTrainingSkill(mobile, skill_name)) 
-        SkillDbgMsg(mobile, "Not part of training skills.");
-        return 0;
-    endif
-
-    // Ensure the player has filled the Role-Play profile
     if (!GetObjProperty(mobile, "fichaRP")) 
         var chardata := GetObjProperty(mobile, "chardata");
         if (chardata != error) 
@@ -237,60 +226,70 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         endif
     endif
 
-    // Verifica se o ganho de habilidade está desabilitado
     if (GetObjProperty(mobile, "NoGains")) 
         SkillDbgMsg(mobile, "O ganho de skill está desabilitado.");
         DebugMsg(mobile, DEBUG_UP, "O ganho de skill está desabilitado!");
         return 0;
     endif
 
+    if (AP_CheckSkillCap(mobile, skill_name))
+        DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo para " + skill_name + ".");
+        SkillDbgMsg(mobile, "Skill cap for '" + skill_name + "' reached. No advance.");
+        return 0;
+    endif
+
+    // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
+    skill_name := HandleBudokaSkillTransform(mobile, skill_name);
+
+    // Check for valid training skills (if training skills are enforced)
+    if (!ValidTrainingSkill(mobile, skill_name)) 
+        SkillDbgMsg(mobile, "Not part of training skills.");
+        return 0;
+    endif
+
     var true_skill := AP_GetTrueSkill(mobile, skill_name);
-    var maximo := AP_CheckClassSkillCap(mobile, skill_name);
-    if (true_skill >= maximo)  
+    var max_skillcap_class := AP_CheckClassSkillCap(mobile, skill_name);
+    if (true_skill >= max_skillcap_class)  
         SkillDbgMsg(mobile, "Atingiu o limite máximo da skill");
         DebugMsg(mobile, DEBUG_UP, "Você atingiu o nível máximo da skill!");
         return 0;
     endif
 
-    var settings := AP_GetSettingsCfgElem("Skills");
-
     // Verifica o tempo de espera entre ganhos de habilidade
+    var settings := AP_GetSettingsCfgElem("Skills");
     if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
         DebugMsg(mobile, DEBUG_UP, "Você precisa esperar um pouco mais antes de aumentar sua habilidade.");
         return 0;
     endif
 
-    // Calcula a chance final ajustada com base na inteligência do personagem
-    pass_chance := AdjustPassChance(pass_chance, settings, mobile);
+    var fail_count_skill := "#FailCount_" + skill_name;
+    var fail_count := GetObjProperty(mobile, fail_count_skill);
+    if (fail_count == error)
+        fail_count := 0;
+        SetObjProperty(mobile, fail_count_skill, fail_count); 
+    endif
 
-    // Verifica se o avanço da habilidade ocorre (rolagem de dados)
-    if (!PerformAdvancementCheck(pass_chance)) 
+    if (!PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)) 
+        fail_count := fail_count + 1;
+        SetObjProperty(mobile, fail_count_skill, fail_count);
         SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
-        DebugMsg(mobile, DEBUG_UP, "Você falhou em aprimorar a skill " + skill_name + ".");
+        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + skill_name + ", mas ainda não aprimorou. Tentativas: (" + CStr(fail_count) + ")");
         return 0;
     endif
 
     // Free gain for skills below a certain threshold
     if (true_skill < CDbl(settings.FreeGainUntil)) 
         SkillDbgMsg(mobile, "Free Gain.");
-    elseif (DifficultyTooEasy(true_skill, award_diff) && !(TemHabilidade(mobile, "Budōka"))) 
-        // Skill too easy to increase, no advancement
+    elseif (DifficultyTooEasy(true_skill, award_diff)) 
         DebugMsg(mobile, DEBUG_UP, "Esta ação está muito fácil para você aprimorar a habilidade " + skill_name + ".");
         SkillDbgMsg(mobile, "Skill too easy to advance.");
         return 0;
     endif
 
-    // Skill advancement success
-    var temp := true_skill + 0.1;
-
-    // Handle precision issue
-    while (CInt(temp * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
-        temp := temp + 0.1;
-        sleepms(10);
-    endwhile
-
     // Save new skill value and notify player
-    AP_SetTrueSkill(mobile, skill_name, temp);
+    var skill_gain := ApplySkillGainModifiers(mobile, skill_name, true_skill);    
+
+    AP_SetTrueSkill(mobile, skill_name, skill_gain);
     SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
 
     // If it's a pet, notify the owner
@@ -301,17 +300,18 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             if (TypeOf(petskills) != "Dictionary") 
                 petskills := dictionary;
             endif
-            petskills[skill_name] := temp;
+            petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + CStr(temp) + "!");
+            SetObjProperty(mobile, fail_count_skill, 0);
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
         endif
     else
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + CStr(temp) + "!");
+        SetObjProperty(mobile, fail_count_skill, 0);
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
     endif
 
     return 1;
 endfunction
-
 
 /*
  * HandleBudokaSkillTransform(mobile, skill_name)
@@ -324,12 +324,14 @@ function HandleBudokaSkillTransform(mobile, skill_name)
         var chardata := GetObjProperty(mobile, "chardata");
         var skillsmap := chardata.Skills;
         var skillsArray := skillsmap.keys();
-        
+        //add dual wield
         foreach skill in skillsArray
             if (skill == "One_Handed")
                 return "One_Handed";
             elseif (skill == "Two_Handed")
                 return "Two_Handed";
+            elseif (skill == "Dual_Wield")
+                return "Dual_Wield";
             endif
         endforeach
     endif
@@ -357,10 +359,7 @@ endfunction
 function SkillGainCooldownPassed(mobile, skill_name, settings)
     var next_check := CInt(GetObjProperty(mobile, "#LastSkillGain")) + GetConfigInt(settings, "GainWait");
     
-    if (skill_name == "Tactics" || skill_name == "Anatomy") 
-        SkillDbgMsg(mobile, "Ignoring skill gain timer for Tactics or Anatomy.");
-        return true;
-    elseif (next_check > ReadGameClock()) 
+    if (next_check > ReadGameClock()) 
         SkillDbgMsg(mobile, "Skill gain cooldown active.");
         return false;
     endif
@@ -369,171 +368,112 @@ function SkillGainCooldownPassed(mobile, skill_name, settings)
 endfunction
 
 /*
- * AdjustPassChance(pass_chance, settings, mobile)
- * 
- * Adjusts the pass chance for skill advancement based on intelligence
- * and ensures it falls within valid minimum and maximum ranges.
- */
-function AdjustPassChance(pass_chance, settings, mobile)
-    if (pass_chance <= settings.MinChance) 
-        return CInt(settings.MinChance);
-    else
-        pass_chance := CInt(pass_chance * (1.0 + (AP_GetTrueStat(mobile, INTELLIGENCE) / 100.0)));
-        if (pass_chance > settings.MaxChance) 
-            pass_chance := CInt(settings.MaxChance);
-        endif
-    endif
-    return pass_chance;
-endfunction
-
-/*
- * PerformAdvancementCheck(pass_chance)
+ * PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)
  * 
  * Performs the dice roll to determine if the skill advancement occurs.
  */
-function PerformAdvancementCheck(pass_chance)
-    var adv_check := RandomInt(100) + 1; 
-    return (adv_check <= pass_chance);
+function PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)
+    if (CInt(pass_chance < 5))
+        pass_chance := 5;
+    endif
+    var adjusted_pass_chance := ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class);
+    var adv_check := CInt(RandomInt(100) + 1); 
+    return (CInt(adv_check <= adjusted_pass_chance));
 endfunction
 
-//retorna quanto o cara comecou com aquela skill
-function valorInicial(mobile, skill_name)
-	var skill_inicial := 0.0;
+/*
+ * ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
+ * 
+ * Purpose:
+ * Adjusts pass chances based on a progression model. 
+*/
+function ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
+    var skill_ratio := CInt((true_skill * 100) / max_skillcap_class);
+    var skill_decrease_point := 50;
+    if (skill_ratio <= skill_decrease_point)
+        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / skill_decrease_point); // Progressive increase
+    elseif (skill_ratio > 50 && skill_ratio <= 65)
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 50)) / 40); 
+    elseif (skill_ratio > 65 && skill_ratio <= 70)
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 30);  
+    elseif (skill_ratio > 70 && skill_ratio <= 75) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 15);
+    elseif (skill_ratio > 75 && skill_ratio <= 80) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 10);
+    elseif (skill_ratio > 80 && skill_ratio <= 85) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 5);
+    elseif (skill_ratio > 85 && skill_ratio <= 90) 
+        pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 15)) / 40); 
+        pass_chance := Min(pass_chance, 3);
+    elseif (skill_ratio > 90) 
+        pass_chance := 1; //max 1
+    else
+        pass_chance := 5;
+    endif
 
-	if (mobile.npctemplate)
-		return 100;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var myskills := chardata.Skills;
-
-	if ( myskills[skill_name] == error)
-		return 0.0;
-	elseif (myskills[skill_name] == 1)
-		skill_inicial := skill_inicial + 0.0;
-	elseif (myskills[skill_name] == 2)
-		skill_inicial := skill_inicial + 20.0;
-	elseif ( myskills[skill_name] == 3)
-		skill_inicial := skill_inicial + 40.0;
-	endif
-
-	return skill_inicial;
+    pass_chance := ClampValue(pass_chance, 0, 100);
+    return pass_chance;
 endfunction
 
-function AP_CheckClassSkillCap(mobile, skill_name)
-
-	if (mobile.npctemplate)
-		return 100;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var myskills := chardata.Skills;
-
-	if ( myskills[skill_name] == error)
-		return 0;
-	elseif (myskills[skill_name] == 1)
-		if (chardata.vantagemracial == "Sabedoria dos Antigos")
-			return 50.0;
-		else
-			return 40.0;
-		endif
-	elseif (myskills[skill_name] == 2)
-		return 70.0;
-	elseif ( myskills[skill_name] == 3)
-		return 100.0;
-	endif
-
+function ClampValue(value, min_value, max_value)
+    if (value < min_value)
+        return min_value;
+    elseif (value > max_value)
+        return max_value;
+    endif
+    return value;
 endfunction
 
-function GetIncreaseCapFactor(skill)
+/*
+ * ApplySkillGainModifiers(mobile, skill_name, true_skill)
+ * 
+ * Purpose:
+ * This function calculates the amount of skill gain based on various factors, such as the player's current skill level,
+ * predefined gain values, and potential future conditions (like being in a dangerous zone or specific skill restrictions).
+ * 
+ * Key Features:
+ * - Default Skill Gain (`base_gain`): 0.1
+ * - High Skill Gain (`high_skill_gain`): 0.3, which can be applied in special scenarios
+ * - No Skill Gain (`no_skill_gain`): 0, this can be used in cases where skill advancement should not occur due
+ *   to certain restrictions 
+ * - Precision Handling: The function ensures that the skill gain is accurately applied, even when floating-point precision
+ *   issues arise.
+ * 
+ * Parameters:
+ * - `mobile`: The player or character object whose skill is being modified.
+ * - `skill_name`: The name of the skill that is being advanced.
+ * - `true_skill`: The current level of the skill that is being updated.
+ * 
+ * Returns:
+ * - The final new skill value after applying the calculated skill gain and ensuring precision.
+ * 
+ * Future Modifications:
+ * - This function is designed to be extended with additional conditions (e.g., special scenarios like sneaking in dangerous
+ *   zones or preventing skill gains with certain conditions like animal handling restrictions).
+ */
+function ApplySkillGainModifiers(mobile, skill_name, true_skill)
+    // Fixed values for skill gain
+    var base_gain := 0.1;       
+    var high_skill_gain := 0.3;
+    var no_skill_gain := 0;   
 
-	if (skill < 20 )
-		return 1;
-	elseif (skill < 40 )
-		return 2;
-	elseif (skill < 60 )
-		return 4;
-	elseif (skill < 80)
-		return 8;
-	elseif (skill < 90)
-		return 16;
-	elseif (skill < 100)
-		return 25;
-	endif
+    // Default to base skill gain for now (can be modified based on future conditions)
+    var skill_gain := base_gain;
 
-endfunction
+    // TODO: Add special case for sneaking in dangerous zones to apply high_skill_gain
+    // TODO: Add special case for handle animal to potentially set no_skill_gain
 
-function CheckVitalSkillCap(mobile, skill)
-	var qtd := costSkill(skill);
-	if (qtd > 0)
-		if (CInt(AP_GetVital(mobile, "SkillCap")) >= qtd )
-			AP_ConsumeVital(mobile, "SkillCap", qtd);
-		else
-			return 0;
-		endif
-	endif
+    // If no skill gain is applied, return the current skill value immediately
+    if (skill_gain == no_skill_gain)
+        return true_skill;  
+    endif
 
-	return 1;
-endfunction
-
-function costSkill(value)
-		return 1;
-endfunction
-
-function AwardPoints(who, skill, points)
-
-	var skills := GetObjProperty(who, "skills");
-	if (!skills)
-		skills := dictionary;
-	endif
-
-	skills[skill] := skills[skill] + points;
-
-	if ( skills[skill] >= GetNeededPoints(skill) )
-		skills[skill] := 0;
-		SetObjProperty(who, "skills", skills);
-		return 1;
-	endif
-
-	SetObjProperty(who, "skills", skills);
-	return 0;
-
-endfunction
-
-function PointsToIncrease(basevalue)
-
-	if(basevalue < 100)
-		return 10.0;
-	elseif ( basevalue < 30 )
-		return 100.0;
-	elseif ( basevalue < 600 )
-		return  500.0;
-	elseif ( basevalue < 700 )
-		return 1000;
-	elseif ( basevalue < 800 )
-		return 4000;
-	elseif ( basevalue < 900 )
-		return 16000;
-	else
-		return 32000;
-	endif
-
-endfunction
-
-function idadeChar( character)// para 10000 deu 292 segundos 300
-    var criadoEm := cint(GetObjProperty(character, "createdate"));
-    var tempoAgora := polcore().systime;// segundos
-    var tempoDevida := tempoAgora - criadoEm;
-    var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
-    return dias;
+    var new_skill_value := true_skill + skill_gain;  
+    return new_skill_value;
 endfunction
 
 function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
@@ -544,27 +484,7 @@ function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
     return dias;
 endfunction
 
-function limiteportempo(who)
-    if (who.npctemplate)
-        return 100;
-    endif
-
-    var dias := CInt(idadeChar(who));
-    var lim := 12;
-
-    if (dias <= 10)
-        // Dias 1-10: Travado em 12
-        lim := 12;
-    elseif (dias <= 30)
-        // Dias 11-30: Aumento rápido (2 por dia)
-        lim := 12 + (dias - 10) * 2;
-    elseif (dias <= 60)
-        // Dias 31-60: Aumento médio (1 por dia)
-        lim := 52 + (dias - 30);
-    else
-        // Dias 61+: Aumento lento (0.5 por dia)
-        lim := 82 + (dias - 60) * 0.5;
-    endif
-
-    return Min(lim, 100);
+function RoundValueToOneDecimal(value)
+    var rounded := Floor(value * 10 + 0.5) / 10;  // Manually round to one decimal
+    return CStr(rounded);  // Convert the number to string without scientific notation
 endfunction

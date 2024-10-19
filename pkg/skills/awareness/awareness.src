@@ -20,60 +20,39 @@ program skill_Alertness(who)
 	EraseObjProperty(who, "#IsMeditating");
 	EraseObjProperty(who, "#IsWaiting");
 
-	var menu := choose(who);
-	if (menu == 1)
-		if (!examinarAlvo(who))
-			SendSysMessageEx(who, "Voce nao encontrou nada de diferente.", SSM_INFO);
-			return 1;
+	var deveCheckarLOS := 0;
+	var isLOS := 0;
+	var isEncontrado := 0;
+	var ignore := GetObjProperty(who, "IgnoreHidden");
+	SendSysMessageEx(who, "Selecione um alvo. selecionar o chão procurará algo em volta.", SSM_INFO);
+	SendSysMessageEx(who, "Selecionar a si mesmo Ativa ou Desativa a procura passiva. [Atual: {}]".format(!ignore? "Ativado.": "Desativado."), SSM_INFO);
+	var targ := TargetCoordinates(who);
+
+	if (targ.mobile.isA(POLCLASS_MOBILE))
+		deveCheckarLOS := true;
+		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
+		if(isLOS)
+			if(targ.mobile == who)
+				AtivaDesativaPassivo(who);
+				isEncontrado := 1;
+			else
+				isEncontrado := ExaminarMobile(who,targ.mobile);
+			endif
 		endif
-	elseif (menu == 2)
-		if(who.hidden)
-			SendSysMessageEx(who, "Procurando algo", SSM_INFO);
-		else
-			PrintTextAbove(who, "*Procurando algo*");
+	elseif(targ.item.isA(POLCLASS_CONTAINER) || targ.item.isA(POLCLASS_DOOR))
+		deveCheckarLOS := true;
+		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
+		if(isLOS)
+			isEncontrado := ExaminarObjeto(who,targ.item);
 		endif
-		if ( !examinarArea(who) )
-			SendSysMessageEx(who, "Voce nao encontrou nada de diferente.", SSM_INFO);
-			return 1;
-		endif
+	elseif(targ == 0)
+		SendSysMessageEx(who, "Alvo Cancelado.", SSM_FAIL);
 	else
-		var ignore := GetObjProperty(who, "IgnoreHidden");
-		if (ignore)
-			SendSysMessageEx(who, "Modo Passivo Ligado. Procure e revela passivamente!", SSM_INFO);
-			EraseObjProperty(who, "IgnoreHidden");
-		else
-			SendSysMessageEx(who, "Modo Passivo Desligado. Percebe, mas não revela passivamente!", SSM_FAIL);
-			SetObjProperty(who, "IgnoreHidden", 1);
-		endif
+		isEncontrado := ExaminarArea(who);
 	endif
+
+	if(deveCheckarLOS && !isLOS)
+		SendSysMessageEx(who, "Você não enxerga o alvo.", SSM_FAIL);
+	endif
+	return;
 endprogram
-
-function Choose(mobile)
-	var yn_gump := GFCreateGump(140, 100);
-
-	GFClosable(yn_gump, 0);
-	GFResizePic(yn_gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 180); //205);
-	GFResizePic(yn_gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 370, 150); //175);
-
-	var y_pos := 20;
-	GFTextLine(yn_gump, 20, y_pos, 1153, "Escolha uma opção.");
-	y_pos := y_pos+40;
-	GFAddButton(yn_gump, 20, (y_pos+3), 2117, 2118, GF_CLOSE_BTN, 1);
-	GFTextLine(yn_gump, 40, y_pos, 1153, "Examinar algo específico.");
-	y_pos := y_pos+40;
-	GFAddButton(yn_gump, 20, (y_pos+3), 2117, 2118, GF_CLOSE_BTN, 2);
-	GFTextLine(yn_gump, 40, y_pos, 1153, "Examinar a área que estou.");
-	y_pos := y_pos+40;
-	GFAddButton(yn_gump, 20, (y_pos+3), 2117, 2118, GF_CLOSE_BTN, 3);
-	var ignore := GetObjProperty(mobile, "IgnoreHidden");
-	var onoff := "Desligar";
-	if (ignore)
-		onoff := "Ligar";
-	endif
-
-	GFTextLine(yn_gump, 40, y_pos, 1153, onoff+" Passividade");
-
-	var input := GFSendGump(mobile, yn_gump);
-	input := input[0];
-	return input;
-endfunction
