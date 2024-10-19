@@ -2,15 +2,12 @@ include "include/props";
 include "include/equipstats";
 
 program EquipSys(params)
-	Detach();
 	var who := params[1];
 	var item := params[2];
 
 	if (item.IsA(POLCLASS_ARMOR))
-		setPropArmor(item);
-		// TODO: setArmorStats(item);
+		setArmorStats(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
-		// setPropWeapon(item);
 		setWeaponStats(item);
 	endif
 endprogram
