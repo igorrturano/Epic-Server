@@ -27,8 +27,7 @@ program skill_Alertness(who)
 	SendSysMessageEx(who, "Selecione um alvo. selecionar o chão procurará algo em volta.", SSM_INFO);
 	SendSysMessageEx(who, "Selecionar a si mesmo Ativa ou Desativa a procura passiva. [Atual: {}]".format(!ignore? "Ativado.": "Desativado."), SSM_INFO);
 	var targ := TargetCoordinates(who);
-	
-	Print(targ.item);
+
 	if (targ.mobile.isA(POLCLASS_MOBILE))
 		deveCheckarLOS := true;
 		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
