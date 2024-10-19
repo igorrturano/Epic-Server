@@ -10,6 +10,7 @@ include "include/say";
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
+include ":attributes:skills";
 include ":blood:blood";
 include ":survival:skinning";
 include ":brainAi:npcUtil";
