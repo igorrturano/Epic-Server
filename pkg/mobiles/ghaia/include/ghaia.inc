@@ -41,11 +41,7 @@ const ALIGN_GOOD := "good";
 const ALIGN_NEUTRAL := "neutral";
 
 //novos eventos
-
 //const EVID_ALERT_ALLIES := 0x00000013;
-
-
-
 
 //essa funcao determina se o npc vai enfrentar o alvo ou nao
 function CanFight(me, mobile, align)
@@ -186,50 +182,6 @@ function CanFight(me, mobile, align)
 endfunction
 
 function AlertAllies(me, opponent)
-/*
-  var my_spot := GetObjProperty(me, "spawnpoint");
-   var allies_near := GetAlliesNear(me);
-   var myallies := array{};
-   foreach mob in allies_near
-      if (CheckLineOfSight(me, mob))
-         myallies.append(mob);
-      endif
-      sleepms(2);
-   endforeach
-
-   if (myallies.size())
-      var enmies := GetEnemiesNear(me);
-      foreach mob in myallies
-         var ev := struct;
-         ev.type := EVID_ALERT_ALLIES;
-         ev.source := me;
-         ev.opponent := enmies.randomentry();
-         SendEvent(mob, ev);
-         sleepms(2);
-      endforeach
-   endif
-*/
-  /*var ev := struct;
-  ev.type := EVID_ALERT_ALLIES;
-  ev.source := me;
-  ev.opponent := opponent;
-  */
-  /*var allies := GetConfigStringArray( npccfgfile[mytemplate], "allie" );
-
- // printtextabove(me, " " + allies);
-
-  foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
-    if (mobile.npctemplate)
-        if ( ParseTemplateName(mobile.npctemplate).template in allies)
-    if (mobile.opponent == error)
-    //  printtextabove(mobile, "fui alertado");
-            SendEvent(mobile, ev);
-    endif
-  endif
-    endif
-  endforeach*/
-
-
   var spawnpointserial := GetObjProperty(me, "spawnpoint");
   var spawnpoint := SystemFindObjectBySerial(spawnpointserial);
   var spawns := GetObjProperty(spawnpoint, "Children");
