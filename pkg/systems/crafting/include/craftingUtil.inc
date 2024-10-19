@@ -33,11 +33,11 @@ function CraftLockable(who, theitem)
 				if (targ)
 					if (targ.objtype == 4001)
 						if (!theitem.isDoor())
-							var lvl := Cint(GetObjProperty(targ, "level"));
+							var lvl := Cint(GetObjProperty(targ, "levelPlayerLock"));
 							if (!lvl)
 								lvl := 1;
 							endif
-							SetObjProperty(theitem, "level", lvl);
+							SetObjProperty(theitem, "levelPlayerLock", lvl);
 						endif
 						var lockid := CInt(GetObjProperty(targ, "LockId"));
 						SetObjProperty(theitem, "LockId", lockid);

@@ -78,34 +78,45 @@ function GetNumPets(who)
 endfunction
 
 function GetNumSummons(who)
-	var num_tamed := 0;
-	var tamed := GetObjProperty(who, "SummonedPets");
-	if ( !tamed )
-		return 0;
-	endif
+    var num_summoned := 0;
+    var summoned_pets := GetObjProperty(who, "SummonedPets");
 
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( pet.master == who && GetObjProperty(pet, "summoned")) //se é summon
-			var cfg := ReadConfigFile(":brainAI:npcdesc");
-			var npctemplate := pet.npctemplate;
-			npctemplate := npctemplate[10, len(npctemplate)-9];
-			cfg := cfg[npctemplate];
-			if (!Cint(cfg.petslot))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(cfg.petslot);
-			endif
-		else
-			tamed.erase(_serial_iter);
-		endif
-		sleepms(2);
-	endforeach
-	if(!tamed)
-		tamed := array;
-	endif
-	SetObjProperty(who, "SummonedPets", tamed);
-	return num_tamed;
+    if (!summoned_pets)  // If no summoned pets, return 0
+        return 0;
+    endif
+
+    foreach serial in summoned_pets
+        var pet := SystemFindObjectBySerial(serial);
+
+        // Check if the pet is still a valid summon
+        if (pet && pet.master == who && GetObjProperty(pet, "summoned"))
+            // Read the npcdesc configuration file
+            var cfg := ReadConfigFile(":brainAI:npcdesc");
+            var npctemplate := pet.npctemplate[10, len(pet.npctemplate)-9];  // Trim the template name
+            var pet_config := cfg[npctemplate];  // Retrieve pet config for the template
+
+            // Check if there is a petslot configuration
+            var pet_slot := CInt(pet_config.petslot);
+            if (!pet_slot)
+                pet_slot := 1;  // Default to 1 if no pet slot is set
+            endif
+
+            // Accumulate the number of summoned pets
+            num_summoned := num_summoned + pet_slot;
+        else
+            summoned_pets.erase(_serial_iter);  // Remove invalid pets from the list
+        endif
+
+        sleepms(2);  // Prevent performance issues with large lists
+    endforeach
+
+    if (!summoned_pets)  // Ensure the array is still initialized properly
+        summoned_pets := array;
+    endif
+
+    SetObjProperty(who, "SummonedPets", summoned_pets);  // Update the property with valid pets
+
+    return num_summoned;
 endfunction
 
 //deleta o serial da lista de seriais do char (quando o npc morre ou eh transferido)
@@ -175,12 +186,6 @@ function GetMaxPets(who)
 	//Influência de Habs na quantidade
 	if(TemHabilidade(who, "Espreita Selvagem"))
 		maxpets := maxpets + 1;
-	endif
-	if(TemHabilidade(who, "Boiadeiro"))
-		maxpets := maxpets + 2;
-	endif
-	if(TemHabilidade(who, "Rei do Gado"))
-		maxpets := maxpets * 2;
 	endif
 
 	maxpets := maxpets + cint( GetObjProperty(who, "extrapets") );
