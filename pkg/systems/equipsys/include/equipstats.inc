@@ -26,48 +26,61 @@ function getWeaponStats(weapon)
 	// TODO: Sistema de tier para somar os ganhos pra cada tier
 	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
 	var elem := getItemCfgElem(weapon);
+	var prop := getPropBase(weapon);
 	var stats := struct;
-	var statsMod := struct;
 	var elemMainDamage := SplitWords(elem.EpicMainDamage);
 	var elemOffDamage := SplitWords(elem.EpicOffDamage);
 
-	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]) : 0;
-	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]) : 0;
-	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]) : 0;
+	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]): 0;
+	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]): 0;
+	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]): 0;
 	
 	if (Upper(elem.Attribute) == DUALWIELD.Upper())
-		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]) : 0;
-		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
-		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
+		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]): 0;
+		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]): 0;
+		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]): 0;
 	endif
-	if (Upper(elem.Attribute) == "RANGED")
-		stats.+Ranged := 1;
-	endif
+
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
-	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier) + CInt(prop.AttackSpeedMod);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance) + CInt(prop.CriticalChanceMod);
 
 	return stats;
 endfunction
 
 /**
- * getWeaponStats(weapon)
+ * setWeaponStats(weapon)
  *
  * Purpose
- * Passar todos os valores da arma em um único struct.
+ * Define os valores na arma, setando as devidas props e os atributos no item.
  *
  * Parameters
  * weapon: ItemRef da arma.
  *
- * Return struct
- * Retorna um struct com todos os valores base da arma.
- *
  */
 function setWeaponStats(weapon)
 	var stats := getWeaponStats(weapon);
-
 	setPropWeapon(weapon);
+
+	// TODO: Setar na arma o que não vai em Prop
 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
+endfunction
+
+/**
+ * setArmorStats(armor)
+ *
+ * Purpose
+ * Define os valores na armadura, setando as devidas props e os atributos no item.
+ *
+ * Parameters
+ * weapon: ItemRef da armadura.
+ *
+ */
+function setArmorStats(armor)
+	var stats := getArmorStats(armor);
+	setPropArmor(armor);
+
+	// TODO: Setar na armadura o que não vai em CProp
 endfunction
 
 /**
