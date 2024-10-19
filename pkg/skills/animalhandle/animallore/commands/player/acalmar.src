@@ -1,12 +1,11 @@
 use uo;
 use cfgfile;
+use os;
 
-include ":spells:tnmagery";
 include ":charactercreation:habilidades";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":brainAI:npcUtil";
-include ":combat:damage";
 include ":tn:npcutil";
 include ":tn:cooldown";
 include ":ghaia:ghaia";
@@ -14,6 +13,15 @@ include "include/sysEvent";
 include "include/eventID";
 
 program textcmd_acalmar(who)
+	var delay := GetObjProperty(who, "delayskill");
+	if(delay)
+		if(delay > ReadGameClock())
+			SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+			return;
+		endif
+	endif
+	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+	
 	if (who.hidden)
 		SendSysMessageEx(who, "Você precisa ser visto para acalmar criaturas.", SSM_FAIL);
 		return;
@@ -22,28 +30,11 @@ program textcmd_acalmar(who)
 	SendSysMessageEx(who, "Selecione a criatura que você deseja acalmar.", SSM_REQUEST);
 	var creature := Target(who, TGTOPT_CHECK_LOS);
 
-	var delay := GetObjProperty(who, "delayskill");
-	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
-	if(delay)
-		if(delay > ReadGameClock())
-			SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
-			return;
-		endif
-	endif
+
 	if( GetObjProperty(creature, "Blocked") || creature.frozen )
 		SendSysMessage(who, "O raciocinio por tras da sua analise esta incorreto.");
 		return 0;
 	endif
-
-	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
-	var template := ParseTemplateName(creature.npctemplate).template;
-	var taxonomy := npccfgfile[template].Taxonomy;	
-	
-        if( !taxonomy )
-                SendSysMessage(who, "Esse não pode ser um alvo válido.");
-                return 0;
-        endif
-	unloadConfigFile(":brainai:npcdesc");
 
 	var dist := Distance(who, creature);
 	if (dist > 8)
@@ -51,32 +42,31 @@ program textcmd_acalmar(who)
 		return 0;
 	endif
 
-	var category := lower(getnpccategory( ParseTemplateName(creature.npctemplate).template ));
+	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var creature_template := ParseTemplateName(creature.npctemplate).template;
+	var taxonomy := npccfgfile[creature_template].Taxonomy;	
+	var tameDifficulty := npccfgfile[creature_template].TameDifficulty;	
 
-	if ( (category == "animal") || ( category == "evilanimal") || ( category == "giantanimal") || ( category == "mount") || ( category == "snow") )
-	else
+	if( !taxonomy || tameDifficulty)
+			SendSysMessage(who, "Esse não pode ser um alvo válido.");
+			return 0;
+	endif
+
+	unloadConfigFile(":brainai:npcdesc");
+
+	var category := lower(getnpccategory( creature_template ));
+	var valid_categories := { "animal", "evilanimal", "giantanimal", "mount", "snow", "desert", "underdark" };
+	var index := valid_categories.findIndex(category);
+	if ( index == 0 )
 		SendSysMessage(who, "Esse nao pode ser um alvo valido.");
 		return 0;
 	endif
-	//verifica a skill de combate do NPC
 
-	var advance_flags;
-	if(creature.script == ":ghaia:tamed")
-		advance_flags := ADV_DISABLE;
-	else
-		advance_flags := ADV_SKILL;
-	endif
-
-	var npcDificuldade := CInt(AP_GetSkill(creature, "Wrestling"));
 	PrintTextAbove(who,"*Tenta acalmar "+ creature.name + "*");
 	Sleep(1);
-	if( SkillCheck(who, HANDLEANIMAL, npcDificuldade, npcDificuldade-10, advance_flags) > 0)
-		var ev := struct;
-		ev.+type;
-		ev.type := EVID_PEACEMADE; // ajetra isso
-		ev.+source;
-		ev.source := who;
-		sendEvent( creature, ev);
+	if( SkillCheck(who, HANDLEANIMAL, tameDifficulty, tameDifficulty-15) > 0)
+		var eventStruct := struct { type := EVID_PEACEMADE, source := who };
+		sendEvent( creature, eventStruct);
 		SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, HANDLEANIMAL)));
 		PrintTextAbovePrivate(creature, "A criatura foi acalmada.", who);
 		return 1;
