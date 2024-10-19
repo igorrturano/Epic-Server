@@ -145,7 +145,7 @@ function getNPCDamages(npc)
 	var elemElemDamages := GetConfigString(elem, "EpicElemDamage");
 
 	if (elemFisDamages == error || elemElemDamages == error)
-		return error{"errortext" := "NPC doesnt have the new attacks!"};
+		return error{"errortext" := "NPC doesnt have the new attack model!"};
 	endif
 
 	elemFisDamages := SplitWords(elemFisDamages);
@@ -187,7 +187,7 @@ function getNPCMainDamage(npc, type)
 	elseif (type.Upper() == BLUNTDAMAGE.Upper())
 		damage.+AttackType := BLUNTDAMAGE;
 	else
-		damage.+AttackType := error{"errortext" := "No attack type!"};
+		damage.+AttackType := error{"errortext" := "No valid attack type!"};
 	endif
 
 	if (!npc.weapon || npc.weapon == error)
@@ -202,7 +202,7 @@ function getNPCMainDamage(npc, type)
 		elseif (type.Upper() == BLUNTDAMAGE.Upper())
 			damageTier := npcDamages.BluntDamage;
 		else
-			damageTier := error{"errortext" := "No damage tier!"};
+			damageTier := error{"errortext" := "No valid damage tier!"};
 		endif
 
 		damage.+dice := getDamageByTier(damageTier);
