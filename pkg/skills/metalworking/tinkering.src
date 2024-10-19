@@ -121,14 +121,14 @@ function makeTinkeringItems(who, what, amt, tool)
 
 		elseif (theitem.objtype == 4001) // Fechadura
 			var key := CreateItemInBackpack(who, "ironkey", 1);
-			var lvl := CInt(AP_GetSkill(who, METALWORKING)/20);
+			var lvl := CInt(AP_GetSkill(who, METALWORKING));
 			var lockid := AllocLockId();
 			if (lvl < 1)
 				lvl := 1;
 			endif
 			SetObjProperty(theitem, "LockId", lockid);
 			SetObjProperty(key, "LockId", lockid);
-			SetObjProperty(theitem, "level", lvl);
+			SetObjProperty(theitem, "levelPlayerLock", lvl);
 			SendSysMessageEx(who, "Voce fez a fechadura e a chave.", SSM_INFO);
 	/*	elseif ( theitem.objtype == 0x367a)
 			SendSysMessageEx(who, "Escolha a pocao do gas venenoso.", SSM_REQUEST);
