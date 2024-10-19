@@ -1,5 +1,6 @@
 # IDE files
 .idea/
+.vscode/launch.json
 
 # Logs
 log
@@ -9,6 +10,7 @@ log
 # Ecompiled Scripts
 *.ecl
 *.dep
+*.dbg
 
 # Data Except pol.txt
 data
@@ -59,5 +61,3 @@ plugins/**/*.dll
 
 # Others
 *.dll
-
-

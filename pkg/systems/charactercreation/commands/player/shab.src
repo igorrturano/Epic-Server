@@ -28,6 +28,7 @@ include ":fls_core:packets";
 include ":attributes:skillCheck";
 include "include/sysEvent";
 //include ":cooldown:cooldown";
+include "include/epicUtils";
 
 program habilidade(who, text)
 
@@ -55,17 +56,28 @@ program habilidade(who, text)
 endprogram
 
 
-function ProccessHab(who, hab)
-	hab := lower(hab);
+function ProccessHab(who, txt)
 	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-	var habelem := FindConfigElem(habcfg, hab);
+	var found := 0;
+    var habelem;
 
-	if (!habelem)
-		SendSysMessageEx(who, "Habilidade nao encontrada.", SSM_FAIL);
-		return;
-	endif
+    // Itera sobre as habilidades no arquivo de configuração para encontrar uma correspondência
+    foreach elem in GetConfigStringKeys(habcfg)
+        var normalized_hab := NormalizeString(elem); // Normaliza o nome da habilidade no arquivo de configuração
+        if (NormalizeString(txt) == normalized_hab)
+            habelem := FindConfigElem(habcfg, elem); // Usa o nome da habilidade original
+            found := 1;
+            break;
+        endif
+    endforeach
+
+    if (!found)
+        SendSysMessageEx(who, "Habilidade não encontrada.", SSM_FAIL);
+        return;
+    endif
 
 	var uso := GetConfigString(habelem, "uso");
+	var hab := GetConfigString(habelem, "nome");
 
 	if (uso != "Ativa")
 		SendSysMessageEx(who, "Esta habilidade nao pode ser ativada.");

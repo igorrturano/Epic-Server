@@ -97,7 +97,6 @@ exported function Attack(attacker, defender)
 	else
 		DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
 		PlayMissSound(attacker);
-		PlayAttackAnimation(attacker);
 		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -866,7 +865,7 @@ function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
 	PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, wpn_a_elem.color);
 
     PlayAttackAnimation(attacker); // 0x9
-    // PlayHitSounds(attacker, defender);
+    // PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
 
 	MoveObjectToLocation(attacker.weapon, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 

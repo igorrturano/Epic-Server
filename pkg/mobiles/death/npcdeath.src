@@ -100,10 +100,15 @@ program core_npcDeath(params)
 		elseif(!getobjproperty(corpse, "Necro"))
 			GetNumPets(master);
 			var teste := GetObjProperty(corpse, "LastDP");
-			if ( GetObjProperty(corpse, "NeverRelease") && (GetObjProperty(corpse, "LastDP") >= 20 ) )
-				sleep(180);
-				res_pet(corpse);
-				return;
+			if ( GetObjProperty(corpse, "NeverRelease")) //&& 
+				//if (GetObjProperty(corpse, "LastDP") >= 10 ) ) // PARA TESTAR VOLTAR DPS
+					SendSysMessageEx(master, "Seu pet fiel irá acordar em 3 minutos", SSM_INFO);
+					sleep(180);
+					RessuscitarPet(corpse, master);
+					return;
+				//else
+					//SendSysMessageEx(master, "Seu pet fiel precisa ser reanimado!", SSM_FAIL);
+				//endif
 			endif
 		else
 			var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
@@ -379,73 +384,6 @@ function NoCorpseCheck(corpse, npc_cfg)
 	DestroyItem(corpse);
 	
 	return 1;
-endfunction
-
-function res_pet(corpse)
-	var npc := CreateNpcFromTemplate( GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
-	CopyProps(corpse, npc);
-	var corpse_parsed := corpse.name[13, len(corpse.name)-12];
-	npc.script := ":ghaia:tamed";
-	RestartScript(npc);
-	Setname(npc, corpse_parsed);
-	recalcvitals(npc);
-	var ownerserial := GetObjProperty(corpse, "owner");
-	var owner := SystemFindObjectBySerial(ownerserial);
-		if (!owner)
-			destama(npc.serial);
-		else
-			if ( (GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner) )
-				SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
-				destama(npc.serial);
-			else
-				AddPet(owner, npc.serial);
-			endif
-		endif
-
-	DestroyItem(corpse);
-	SetCooldown(npc, "resurrect", 180);
-	var skills := GetObjProperty(npc, "petskills");
-    foreach skill in (skills.keys())
-        AP_SetTrueSkill(npc, skill, skills[skill]);
-    endforeach
-
-//Desconta o DP dos fieis
-if ( (Getobjproperty(npc, "bond") == "fiel") )
-	var DP := AP_GetVital(npc, "DP");
-	AP_SetVital(npc, "DP", DP -10);
-    if (DP < 0)
-        AP_SetVital(npc, "DP", 0);
-    endif
-endif
-
-//Para repor as habs do despertar natureza do pet
-var instincts := GetObjProperty(npc,"instincts");
-var ferocidade := instincts["Ferocidade"].ins_name;
-var fortaleza := instincts["Fortaleza"].ins_name;
-var flexibilidade := instincts["Flexibilidade"].ins_name;
-if (!instincts)
-else
-	if (ferocidade == "Ferocidade")
-		AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
-	endif
-	if (fortaleza == "Fortaleza")
-		var hits := CInt(AP_GetVitalMaximumValue(npc, "Hits"));
-		var variavel := Cint(hits / 3);
-		var variavel2 := Cint(variavel /2); //não sei pq ele duplica por isso a divisão pela metade
-		setObjProperty(npc, "hitsmod", variavel2);
-	endif
-	if (flexibilidade == "Flexibilidade")
-		AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
-	endif
-	RecalcVitals(npc);
-endif
-endfunction
-
-function CopyProps(origin, destiny)
-	var propnames := GetObjPropertyNames(origin);
-	foreach prop in propnames
-		SetObjPRoperty(destiny, prop, GetObjProperty(origin, prop));
-	endforeach
 endfunction
 
 function PushBackEX(who, dist, delay, invert := 0)

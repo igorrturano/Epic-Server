@@ -7,6 +7,7 @@ include ":itemutils:objtype";
 //include "include/OLD/sound";
 include ":itemutils:canAccess";
 include ":attributes:attributeConstants";
+include ":attributes:skills";
 include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";
@@ -53,7 +54,7 @@ program skill_lockpicking( me, lockpick )
 		return 0;
 	endif
 
-	if (GetObjProperty(chest,"level"))
+	if (GetObjProperty(chest,"level") || GetObjProperty(chest, "levelPlayerLock"))
 		if(valorInicial(me, AWARENESS) >= 40)
 			if(me.hidden)
 				SendSysMessageEx(me, "Tenta arrombar a fechadura. [silencioso]", SSM_INFO);
@@ -99,17 +100,21 @@ function PickTreasureChest(me, lockpick, chest)
 	endif
 	sleep(1);
 
+	var playerLock := Cint(GetObjProperty(chest, "levelPlayerLock"));
 	var diff;
-	case (lvl)
-		1: diff := 15;
-		2: diff := 40;
-		3: diff := 60;
-		4: diff := 86;
-		5: diff := 90;
-		6: diff := 110;
-		default: diff := 40;
-	endcase
-
+	if(!playerLock)
+		case (lvl)
+			1: diff := 15;
+			2: diff := 40;
+			3: diff := 60;
+			4: diff := 86;
+			5: diff := 90;
+			6: diff := 110;
+			default: diff := 40;
+		endcase
+	else
+		diff := playerLock;
+	endif
 	var diffmod := Cint(GetObjProperty(me, "conhecimentosobrefechaduras"))*5;
 	diff := diff - diffmod;
 	if (diff <= 0)
