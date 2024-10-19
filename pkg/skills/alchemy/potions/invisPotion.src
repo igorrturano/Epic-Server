@@ -30,10 +30,11 @@ program drink_blue (who, potion)
 	var skill := GetObjProperty(potion, "crafterskill");
 	
 	case(potion.objtype)
-		48905: TS_StartTimer(who, "invis", (120+bonus*10)*vicio, skill*0.8*vicio); 
+		48905: TS_StartTimer(who, "invis", (120+bonus*10)*vicio, skill*0.5*vicio); 
 		48906: TS_StartTimer(who, "invis", (360+bonus*10)*vicio, skill*vicio);
 		48907: TS_StartTimer(who, "invis", (600+bonus*10)*vicio, (skill+bonus)*vicio);
 	endcase
+		who.hidden := 1;
 	empty_bottle(who, potion);
 	VicioINT(who,potion);
 endprogram

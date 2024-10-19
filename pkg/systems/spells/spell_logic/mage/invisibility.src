@@ -31,6 +31,7 @@ program SpellScript(params)
 	if (!who.dead)
 		SendSysMessageEx(who, "Voce esta escondido.", SSM_INFO);
 		TS_StartTimer(who, "invis", MagicLore*3, MagicLore);
+		who.hidden := 1;
 	endif
 	
 	return 1;
