@@ -35,28 +35,10 @@ function getWeaponStats(weapon)
 	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]) : 0;
 	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]) : 0;
 	
-	if (Upper(elem.Attribute) == ONEHANDED.Upper())
-		stats.+weaponType := struct{
-			skill := ONEHANDED
-		};
-	elseif (Upper(elem.Attribute) == TWOHANDED.Upper())
-		stats.+weaponType := struct{
-			skill := TWOHANDED
-		};
-	elseif (Upper(elem.Attribute) == DUALWIELD.Upper())
-		stats.+weaponType := struct{
-			skill := DUALWIELD
-		};
+	if (Upper(elem.Attribute) == DUALWIELD.Upper())
 		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]) : 0;
 		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
 		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
-	elseif (Upper(elem.Attribute) == RANGED.Upper())
-		if (elem.ProjectileType)
-			stats.+weaponType := struct{
-				skill := RANGED,
-				type := elem.ProjectileType == 0xf3f ? "Bow" : "Crossbow"
-			};
-		endif
 	endif
 	if (Upper(elem.Attribute) == "RANGED")
 		stats.+Ranged := 1;
@@ -82,11 +64,10 @@ endfunction
  *
  */
 function setWeaponStats(weapon)
-	// TODO: Rever a lógica e fazer um refator adequado. Só está assim pela urgência pra evitar bug.
 	var stats := getWeaponStats(weapon);
 
 	setPropWeapon(weapon);
-	weapon.speed_mod := CInt(stats.AttackSpeed) - 24;
+	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 
 /**
