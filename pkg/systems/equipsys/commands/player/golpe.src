@@ -5,8 +5,7 @@ include ":equipsys:props";
 include ":gumps:epicGumps";
 
 program cmd_golpe(who)
-	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
-		SendSysMessageEx(who, "Você precisa ter uma arma empunhada para mudar sua postura de ataque!", SSM_FAIL);
+	if (!canChangePostura(who, who.weapon))
 		return 0;
 	endif
 
@@ -17,11 +16,6 @@ function OpenGump(who)
 	while (1)
 		var weapon := who.weapon;
 		var weaponProp := getPropBase(weapon);
-
-		if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2))
-			SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
-			return;
-		endif
 
 		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
 		var x := 15;
@@ -52,16 +46,15 @@ function OpenGump(who)
 
 		var input := GFSendGump(who, gump);
 
-		if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
-			SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
-			return;
-		endif
-
 		if (weapon != who.weapon) // Atualiza caso tenha trocado de arma com o gump aberto
 			weapon := who.weapon;
 			weaponProp := getPropBase(weapon);
 		endif
 
+		if (!canChangePostura(who, weapon)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
+			return 0;
+		endif
+		
 		if (input[0] == 0)
 			return;
 		elseif (input[0] == 10)
@@ -76,4 +69,20 @@ function OpenGump(who)
 		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
 		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
 	endwhile
+endfunction
+
+function canChangePostura(who, weapon)
+	var elem := getItemCfgElem(weapon);
+	
+	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
+		SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (elem.Attribute.Upper() == RANGED.Upper())
+		SendSysMessageEx(who, "Não é possível alterar postura de arma à distância.", SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
 endfunction
