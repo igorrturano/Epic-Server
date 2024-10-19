@@ -24,11 +24,11 @@ program SpellScript(params)
 	var hostiles:= ListHostiles( who, range := 20, flags := 0 );
 
 	if(Len(hostiles)==0)
-		SendSysMessageEx(who, "Voce nao esta sendo atacado.", SSM_FAIL);
+		SendSysMessageEx(who, "Você não está sendo atacado.", SSM_FAIL);
 		return 0;
 	else
-        var cfg  := ReadConfigFile(":spells:config/magespells");
-        var elem := FindConfigElem(cfg, spellid);
+        var cfg  := ReadConfigFile(":spells:config/cantripspells");
+        var elem := FindConfigElem(cfg, spellid.id);
         var template := getConfigString(elem, "npcTemplate");
 
         if (template == error)
@@ -53,7 +53,7 @@ program SpellScript(params)
 
         PlaySoundEffect(who, SFX_SPELL_STRENGTH);
         PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
-        SendSysMessageEx(targ, "A luz ofuscou a visao dos seus inimigos.", SSM_INFO);
+        SendSysMessageEx(targ, "A luz ofuscou a visão dos seus inimigos.", SSM_INFO);
         var level := CInt(magiclore_skill/5)+5;
 
         //Bonus de especialização
