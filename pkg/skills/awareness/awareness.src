@@ -24,31 +24,31 @@ program skill_Alertness(who)
 	var isLOS := 0;
 	var isEncontrado := 0;
 	var ignore := GetObjProperty(who, "IgnoreHidden");
-	SendSysMessageEx(who, "Selecione um alvo. Cancelar o alvo procurará algo em volta.", SSM_INFO);
+	SendSysMessageEx(who, "Selecione um alvo. selecionar o chão procurará algo em volta.", SSM_INFO);
 	SendSysMessageEx(who, "Selecionar a si mesmo Ativa ou Desativa a procura passiva. [Atual: {}]".format(!ignore? "Ativado.": "Desativado."), SSM_INFO);
-	var targ := Target(who,TGTOPT_NOCHECK_LOS);
+	var targ := TargetCoordinates(who);
 
-	if (targ.isA(POLCLASS_MOBILE))
+	if (targ.mobile.isA(POLCLASS_MOBILE))
 		deveCheckarLOS := true;
 		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
 		if(isLOS)
-			if(targ == who)
+			if(targ.mobile == who)
 				AtivaDesativaPassivo(who);
 				isEncontrado := 1;
 			else
-				isEncontrado := ExaminarMobile(who,targ);
+				isEncontrado := ExaminarMobile(who,targ.mobile);
 			endif
 		endif
-	elseif(targ.isA(POLCLASS_CONTAINER) || targ.isA(POLCLASS_DOOR))
+	elseif(targ.item.isA(POLCLASS_CONTAINER) || targ.item.isA(POLCLASS_DOOR))
 		deveCheckarLOS := true;
 		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
 		if(isLOS)
-			isEncontrado := ExaminarObjeto(who,targ);
+			isEncontrado := ExaminarObjeto(who,targ.item);
 		endif
 	elseif(targ == 0)
-		isEncontrado := ExaminarArea(who);
+		SendSysMessageEx(who, "Alvo Cancelado.", SSM_FAIL);
 	else
-		SendSysMessageEx(who, "Alvo inválido.", SSM_FAIL);
+		isEncontrado := ExaminarArea(who);
 	endif
 
 	if(deveCheckarLOS && !isLOS)
