@@ -4,6 +4,7 @@ include ":combat:damage";
 include "include/say";
 
 program camuflagem(who)
+    start_script(":sneak:sneak", who);
     if (!who.hidden)
         SendSysMessageEx(who, "Você não está escondido.", SSM_FAIL);
         return;
