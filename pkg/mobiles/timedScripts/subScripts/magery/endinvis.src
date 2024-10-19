@@ -5,8 +5,11 @@ include ":attributes:attributes";
 
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
-
-	mobile.hidden := 0;
+	var bonus := (-1) * GetObjProperty(mobile, "#InvisMod");
+	Set_Critical(1);
+	AP_ModifySkillMod(mobile, SNEAK, bonus);
+	EraseObjProperty(mobile, "#InvisMod");
+	Set_Critical(0);
 
 	return 1;
 endprogram
