@@ -22,6 +22,14 @@ function setBonus(who, item, bonus)
 				item.damage_energy_mod := bonus;
 				break;
 
+			0x6315: // Illyra
+				bonus := bonus * 0.6;
+				item.damage_fire_mod := bonus;
+				item.damage_cold_mod := bonus;
+				item.damage_poison_mod := bonus;
+				item.damage_energy_mod := bonus;
+				break;
+
 			0x6311: // Mithril
 				item.damage_fire_mod := bonus;
 				item.damage_cold_mod := bonus;
