@@ -639,8 +639,9 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 			endif
 		endif
 	endif
-
-	return CInt(damage-resist);
+	
+	var totaldamage := CInt(damage-resist); 
+	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
 endfunction
 
 /**
