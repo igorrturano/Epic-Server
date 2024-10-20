@@ -288,11 +288,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
 
     // Save new skill value and notify player
     var skill_gain := ApplySkillGainModifiers(mobile, skill_name, true_skill);    
-    // Handle precision issue
-    while (CInt(skill_gain * 10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)))
-        skill_gain := skill_gain + 0.1;  
-        sleepms(10);  
-    endwhile
+
     AP_SetTrueSkill(mobile, skill_name, skill_gain);
     SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
 
@@ -307,11 +303,11 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
             SetObjProperty(mobile, fail_count_skill, 0);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + FormatRealToString(skill_gain, 4) + "!");
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
         endif
     else
         SetObjProperty(mobile, fail_count_skill, 0);
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + FormatRealToString(skill_gain, 4) + "!");
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
     endif
 
     return 1;
@@ -486,4 +482,9 @@ function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
     var tempoDevida:= tempoAgora - criadoEm;
     var dias := cint(tempoDevida/(86400));//24horas*60minutos*60segundos = 86400 segundos
     return dias;
+endfunction
+
+function RoundValueToOneDecimal(value)
+    var rounded := Floor(value * 10 + 0.5) / 10;  // Manually round to one decimal
+    return CStr(rounded);  // Convert the number to string without scientific notation
 endfunction

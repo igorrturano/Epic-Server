@@ -46,7 +46,7 @@ function SetEquipmentMods(who, item)
 	endif
 
 	if (item.isa(POLCLASS_WEAPON))
-		item.speed_mod := CInt(GetObjProperty(item,"attackspeedbonus"));
+		// item.speed_mod := CInt(GetObjProperty(item,"attackspeedbonus"));
 	endif
     var chardata := GetObjProperty(who, "chardata");
 	var penalty  := CInt(itemdesc[item.objtype].DexPenalty);
