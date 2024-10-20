@@ -353,6 +353,7 @@ endfunction
 
 function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
 	var totaldamage;
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Base {type}: {damage}");
 
 	if (type == DMG_FORCED)
 		totaldamage := CInt(damage);
@@ -422,19 +423,21 @@ endfunction
 function EpicApplyDamageElemental(attacker, defender, weapon, armor, damages)
 	SetScriptController(attacker);
 
+	print(damages);
+
 	if (damages.FireDamage)
 		WearDownArmor(defender, armor, damages.FireDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.FireDamage, DMG_FIRE);
 	endif
-	if (damages.ColdDamage)
+	if (damages.ColdDamage > 0)
 		WearDownArmor(defender, armor, damages.ColdDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.ColdDamage, DMG_COLD);
 	endif
-	if (damages.PoisonDamage)
+	if (damages.PoisonDamage > 0)
 		WearDownArmor(defender, armor, damages.PoisonDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.PoisonDamage, DMG_POISON);
 	endif
-	if (damages.EnergyDamage)
+	if (damages.EnergyDamage > 0)
 		WearDownArmor(defender, armor, damages.EnergyDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.EnergyDamage, DMG_ENERGY);
 	endif
@@ -478,6 +481,7 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
 	if (regiao.equip == error)
 		regiao.equip := "Corpo";
 	endif
+
 	DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
 	DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
 	DebugMsg(attacker, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
@@ -491,8 +495,8 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
 		damage := 1;
 	endif
 
-	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
-	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
+	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
 
 	return CInt(damage);
 endfunction
@@ -802,31 +806,30 @@ function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	
 	// Aplica redutores e penalidades de dano
 	damage := CalcDamageReducer(attacker, damage);
+	damage := CInt(damage);
 
 	if (damage < 1)
 		damage := 1;
 	endif
 
-	damage := CInt(damage);
-	DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
+	// DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
 
 	return damage;
 endfunction
 
 function CalculateDamageElemental(attacker, defender, weapon, armor)
-	var weaponProp := getPropBase(weapon);
 	var damages := struct;
 
-	if (weaponProp.FireDamage)
+	if (weapon.damage_fire_mod)
 		damages.+FireDamage := weapon.damage_fire_mod;
 	endif
-	if (weaponProp.ColdDamage)
+	if (weapon.damage_cold_mod)
 		damages.+ColdDamage := weapon.damage_cold_mod;
 	endif
-	if (weaponProp.PoisonDamage)
+	if (weapon.damage_poison_mod)
 		damages.+PoisonDamage := weapon.damage_poison_mod;
 	endif
-	if (weaponProp.EnergyDamage)
+	if (weapon.damage_energy_mod)
 		damages.+EnergyDamage := weapon.damage_energy_mod;
 	endif
 
