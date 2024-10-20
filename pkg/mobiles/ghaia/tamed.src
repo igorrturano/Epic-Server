@@ -428,38 +428,44 @@ endif
 			PrintTextAbovePrivate(me,"O animal já está satisfeito", ev.source);
 			return;
 		endif
-		//checkbond para ver se já tem animal fidelizado
-		var check_bond := 0;
-		var pets := GetObjProperty(owner, "TamedPets");
-		var habs := TemHabilidade(owner, "Espreita Selvagem") || TemHabilidade(owner, "Rei do Gado");
-			foreach serial in pets
-				var pet := SystemFindObjectBySerial(serial);
-			if (GetObjProperty(pet, "bond") == "fiel")
-				if (!habs )
-					check_bond := 1;
-				else
-					check_bond := 2;
-				endif
-			endif
-			endforeach
-		if ((happy >= 20) && (ev.source == owner)) //checa a felicidade e se o dono que está dando comida
-			if (Cint(startbond)) //checa o bond para fidelizar
+//checkbond para ver se já tem animal fidelizado e quantos pode ter
+var pets := GetObjProperty(owner, "TamedPets");
+var habs := TemHabilidade(owner, "Espreita Selvagem");
+var limite_animais := habs ? 2 : 1;
+var animais_fidelizados := 0;
 
-				if ( (adestramento >= 1) && (tempo_fiel <= timebond) ) // Pelo menos 1 de skill e o tempo que demoraria para fidelizar tem q ser menor que o tempo de agora
-					SetObjProperty(me, "bond", "fiel");
-					SetobjProperty(me, "NeverRelease", 1);
-					PrintTextAbovePrivate(me, "*O animal se esfrega em voce*", owner);
-					PlaySoundEffect(me, npccfg[me.npctemplate].idlesound);
-					SendSysMessage(owner, +me.name+ " criou um vinculo de fidelidade com voce!", 0, 61);
-					SetObjProperty(me, "dpmod", -20);
-					RecalcVitals(me);
-				endif
-			elseif ((startbond == "fiel") || (check_bond == 1) || (fidelizar == "nao") ) //se já é fiel/se já tem animal fidelizado/marcado como nao fidelizar só vai comer
-			else //para iniciar o bond
-				SetObjProperty(me, "bond", timebond);
-				SendSysMessageEX(owner, "Voce comeca a construir uma fidelidade com seu animal.", SSM_INFO);
-			endif
-		endif
+foreach serial in pets
+    var pet := SystemFindObjectBySerial(serial);
+    if (GetObjProperty(pet, "bond") == "fiel")
+        animais_fidelizados := animais_fidelizados + 1;
+        if (animais_fidelizados > 2)
+            break; // Não precisamos contar além de 2
+        endif
+    endif
+endforeach
+
+if ((happy >= 20) && (ev.source == owner)) //checa a felicidade e se o dono que está dando comida
+    if (Cint(startbond)) //checa o bond para fidelizar
+        if ((adestramento >= 1) && (tempo_fiel <= timebond)) // Pelo menos 1 de skill e o tempo que demoraria para fidelizar tem q ser menor que o tempo de agora
+            if (animais_fidelizados < limite_animais && animais_fidelizados < 2)
+                SetObjProperty(me, "bond", "fiel");
+                SetobjProperty(me, "NeverRelease", 1);
+                PrintTextAbovePrivate(me, "*O animal se esfrega em voce*", owner);
+                PlaySoundEffect(me, npccfg[me.npctemplate].idlesound);
+                SendSysMessage(owner, +me.name+ " criou um vinculo de fidelidade com voce!", 0, 61);
+                SetObjProperty(me, "dpmod", -20);
+                RecalcVitals(me);
+            else
+                SendSysMessageEX(owner, "Voce ja atingiu o limite de animais fidelizados.", SSM_INFO);
+            endif
+        endif
+    elseif ((startbond == "fiel") || (animais_fidelizados >= limite_animais) || (fidelizar == "nao")) //se já é fiel/se já atingiu o limite de animais fidelizados/marcado como nao fidelizar só vai comer
+        // Nada acontece, o animal só come
+    else //para iniciar o bond
+        SetObjProperty(me, "bond", timebond);
+        SendSysMessageEX(owner, "Voce comeca a construir uma fidelidade com seu animal.", SSM_INFO);
+    endif
+endif
 		PlaySoundEffect(me, CInt(0x3b)+ RandomInt(3));
 		if (ev.item.amount >1)
 			SubtractAmount(ev.item, 1);

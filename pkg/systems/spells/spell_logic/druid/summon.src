@@ -24,87 +24,55 @@ program summontotem(params)
 	params := 0; // No longer needed
 
 	//Efeito da magia
-	PlaySoundEffect(targ, SFX_SPELL_HEAL);
-
+	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
+	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 0, 5);
 	var cfg  :=  ReadConfigFile(":spells:spellcaster");
 	var elem := FindConfigElem(cfg, spellid);
+
 	var template := getConfigString(elem, "npcTemplate");
-	var cfg2 := ReadConfigFile(":brainAI:npcdesc");
 	var npctemplate := template;
+	if (template == error)
+		SendSysMessage(who, "erro ao ler o template" + template);
+		return;
+	endif
 	npctemplate := npctemplate[10, len(npctemplate)-9];
+
+	var cfg2 := ReadConfigFile(":brainAI:npcdesc");
 	cfg2 := cfg2[npctemplate];
-	var petcost := 0;
-	if (!Cint(cfg2.petslot))
-		petcost := 1;
-	else
+
+	var petcost := 1; // Default pet cost
+	if (cfg2 && Cint(cfg2.petslot)) 
 		petcost := Cint(cfg2.petslot);
 	endif
 
-	//sendsysmessage(who, " " + GetNumPets(who) );
 	if (GetMaxSummons(who) < GetNumSummons(who) + petcost )
 		SendSysMessageEx(who, "Voce tem " + GetNumSummons(who) + " invocacoes sob seu comando e o maximo sao : " + GetMaxSummons(who)  + "  . "  , SSM_FAIL);
 		return;
 	endif
 
-	if (template == error)
-		SendSysMessage(who, "erro ao ler o template" + template);
-		return;
-	endif
-
 	var espirito := summon(template, targ, who);
-		var slot;
-	if (espirito) //Para adicionar em qual slot o animal vai se encaixar, necessário para exibir na barra de buff
-		var numsum := Getobjproperty(who, "Summon_num");
-		var slot1 := Getobjproperty(who, "slot1");
-		var slot2 := Getobjproperty(who, "slot2");
-		var slot3 := Getobjproperty(who, "slot3");
-		var slot4 := Getobjproperty(who, "slot4");
-			if (!numsum)
-				SetObjProperty(who, "Summon_num", 1);
-				numsum := Getobjproperty(who, "Summon_num");
-				SetObjProperty(who, "slot1", 1);
-				espirito.name := ""+espirito.name+""+1;
-				slot := 1;
-			else
-				Setobjproperty(who, "Summon_num", numsum + 1);
-				if (!slot1)
-					SetObjProperty(who, "slot1", 1);
-					espirito.name := ""+espirito.name+""+1;
-					slot := 1;
-					
-				elseif (!slot2)
-					SetObjProperty(who, "slot2", 1);
-					espirito.name := ""+espirito.name+""+2;
-					slot := 2;
-				
-				elseif (!slot3)
-					SetObjProperty(who, "slot3", 1);
-					espirito.name := ""+espirito.name+""+3;
-					slot := 3;
-
-				elseif (!slot4)
-					SetObjProperty(who, "slot4", 1);
-					espirito.name := ""+espirito.name+""+4;
-					slot := 4;
-
-				endif
-			endif
-		SendSysMessageEx(who, "Voce teve sucesso em invocar a criatura.", SSM_INFO);
-		//AddPet(who, espirito.serial);
-	else
-		SendSysMessageEx(who, "Voce falhou em invocar a criatura.", SSM_FAIL);
-		return;
-	endif
-
-	var fator := (AP_GetSkill(who, MAGICLORE)-20.0)/4; //skill 0 -> -5 // Skill 20 -> 0 // Skill 40 -> +5 // Skill 100 -> +20
-
-	//Bonus de especialização
-    if(Temhabilidade(who, "Treinamento Druídico"))
-        fator := fator * 1.2;
+	if (!espirito)
+        SendSysMessageEx(who, "Você falhou em invocar a criatura.", SSM_FAIL);
+        return;
     endif
 
-	AP_SetTrueSkill(espirito, WRESTLING, AP_GetTrueSkill(espirito, WRESTLING) + fator);
-	AP_SetTrueSkill(espirito, TACTICS, AP_GetTrueSkill(espirito, WRESTLING) + fator);
+	var slot;
+	var slot1 := Getobjproperty(who, "slot1");
+	var slot2 := Getobjproperty(who, "slot2");
+	var slot3 := Getobjproperty(who, "slot3");
+	var slot4 := Getobjproperty(who, "slot4");
+	var i := 1;
+	while (i <= 4)
+		var slot := GetObjProperty(who, "slot" + CStr(i));
+		if (!slot)
+			SetObjProperty(who, "slot" + CStr(i), 1);
+			espirito.name := espirito.name + CStr(i);
+			slot := i;
+			break;  // Exit the loop once the slot is assigned
+		endif
+		i := i + 1;
+	endwhile
+	SendSysMessageEx(who, "Voce teve sucesso em invocar a criatura.", SSM_INFO);
 
 	if (temHabilidade(who, "Guardião do Bosque"))
 		espirito.resist_physical_mod  := 25;
@@ -118,8 +86,8 @@ program summontotem(params)
 	endif
 
 	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+	var fator := (AP_GetSkill(who, MAGICLORE)-20.0)/4; //skill 0 -> -5 // Skill 20 -> 0 // Skill 40 -> +5 // Skill 100 -> +20
 
-	//Bonus de especialização
     if(Temhabilidade(who, "Treinamento Druídico"))
         espirito.resist_physical_mod  := 25 * 1.2;
         espirito.resist_cold_mod  := 25 * 1.2;
@@ -129,16 +97,19 @@ program summontotem(params)
         SetObjProperty(espirito, "#ReflexosMod", 25 * 1.2);
         SetObjProperty(espirito, "#FortitudeMod", 25 * 1.2);
         SetObjProperty(espirito, "#VontadeMod", 25 * 1.2);
-        duracao := duracao * 1.2;
+		fator := fator * 1.2;
+        duracao := duracao * 1.2 * 2;
     endif
 
-	if (temHabilidade(who, "Treinamento Druídico"))
-		duracao := duracao * 2; //skill 0 -> 50s // Skill 20 -> 72s // Skill 40 -> 98s // Skill 100 -> 170s
-	endif
-
+	AP_SetTrueSkill(espirito, WRESTLING, AP_GetTrueSkill(espirito, WRESTLING) + fator);
+	AP_SetTrueSkill(espirito, TACTICS, AP_GetTrueSkill(espirito, WRESTLING) + fator);
 
     var summon_number := GetNumSummons(who) + 1;
 	TS_StartTimer(espirito, "summon", duracao ); //inicio do timedScripts no summon
+
+	//TODO: UTILIZAR ISSO AQUI PARA DAR O FIX DE RESET + INFINITE SUMMON
+	SetObjProperty(espirito, "summon_duration", duracao);
+	SetObjProperty(espirito, "summon_start_time", ReadGameClock());  
 	TS_StartTimer(who, "summon_"+slot, duracao ); //inicio do timedScripts no char
     SetObjProperty(espirito, "slot", slot); //seta o slot que o summon vai usar (se 1, 2, 3 ou 4)
 	return 1;
