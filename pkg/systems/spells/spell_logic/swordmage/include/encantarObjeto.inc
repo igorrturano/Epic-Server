@@ -12,13 +12,13 @@ function setBonus(who, item, bonus)
 			0x630d: // Ignium
 				item.damage_fire_mod := bonus;
 				break;
-			1428: // Venetita
+			0x6303: // Venetita
 				item.damage_poison_mod := bonus;
 				break;
-			2360: // Frigutium
+			0x6460: // Frigutium
 				item.damage_cold_mod := bonus;
 				break;
-			2726: // Fulmium
+			0x630b: // Fulmium
 				item.damage_energy_mod := bonus;
 				break;
 
@@ -35,25 +35,25 @@ function setBonus(who, item, bonus)
 			0x630d: // Ignium
 				item.resist_fire_mod := bonus;
 				break;
-			1428: // Venetita
+			0x6303: // Venetita
 				item.resist_poison_mod := bonus;
 				break;
-			2360: // Frigutium
+			0x6460: // Frigutium
 				item.resist_cold_mod := bonus;
 				break;
-			2726: // Fulmium
+			0x630b: // Fulmium
 				item.resist_energy_mod := bonus;
 				break;
-			2976: // Escamoso
+			0xef20: // Escamoso
 				item.resist_poison_mod := bonus;
 				break;
-			1218: // Draconiano
+			0xed29: // Draconiano
 				item.resist_fire_mod := bonus;
 				break;
-			2687: //Gigante
+			0xef27: //Gigante
 				item.resist_energy_mod := bonus;
 				break;
-			1150: //Polar
+			0xef26: //Polar
 				item.resist_cold_mod := bonus;
 				break;
 		endcase
