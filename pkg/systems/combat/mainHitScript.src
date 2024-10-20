@@ -66,7 +66,6 @@ program MainHitScript(params)
 
 	// Calcula os modificadores de dano do atacante
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
-	// TODO: Criar uma função para calcular danos mágicos retornando um dictionary com os elementos (por enquanto calcula só o físico)
 	elementalDamages := CalculateDamageElemental(attacker, defender, weapon, armor);
 
 	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
