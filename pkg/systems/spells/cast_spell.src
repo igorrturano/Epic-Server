@@ -142,6 +142,9 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
                 endif
             else
                 var remaining_cost := mana_cost - current_mana;
+                var refundProp := array {current_mana,remaining_cost};
+                SetObjProperty(mobile,"#CustoDeterminacaoArcana",refundProp);//prop para retornar os recursos caso cancele a magia.
+
                 if (current_mana > 0)
                     AP_ConsumeVital(mobile, MANA, current_mana);
                 endif
@@ -334,11 +337,11 @@ function selectSpellTarget(mobile, spellinfo, targ)
 
         if (!targ)
             SendSysMessageEx(mobile, "Voce cancelou a magia.", SSM_FAIL);
-            FailSpell(mobile);
+            FailSpell(mobile,spellinfo);
             return 0;
         endif
 
-		if(targ != mobile)
+		if(spellinfo.alvo != "Self")
         	TurnObjectToward(mobile, targ.x, targ.y);
 		endif
     endif
@@ -366,13 +369,13 @@ function checkTargetValidity(mobile, targ, spellinfo)
     if (spellinfo.alvo != "Area")
         if (!CheckLineOfSight(mobile, targ))
             SendSysMessageEx(mobile, "Voce nao ve o alvo.", SSM_FAIL);
-            FailSpell(mobile);
+            FailSpell(mobile,spellinfo);
             return 0;
         endif
     else
         if (!CheckLOSAt(mobile, targ.x, targ.y, targ.z))
             SendSysMessageEx(mobile, "O ponto que voce selecionou esta fora da sua linha de visao.", SSM_FAIL);
-            FailSpell(mobile);
+            FailSpell(mobile,spellinfo);
             return 0;
         endif
     endif
@@ -401,6 +404,7 @@ function finalizeCasting(mobile, spellinfo, targ, scroll)
     endif
 
     EraseObjProperty(mobile, "#Casting");
+    EraseObjProperty(mobile, "#CustoDeterminacaoArcana");
     return 1;
 endfunction
 
