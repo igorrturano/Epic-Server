@@ -24,8 +24,8 @@ program summontotem(params)
 	params := 0; // No longer needed
 
 	//Efeito da magia
-	PlaySoundEffect(targ, SFX_SPELL_HEAL);
-
+	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
+	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 0, 5);
 	var cfg  :=  ReadConfigFile(":spells:spellcaster");
 	var elem := FindConfigElem(cfg, spellid);
 
