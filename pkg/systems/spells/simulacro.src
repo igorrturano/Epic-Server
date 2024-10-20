@@ -14,7 +14,7 @@ include ":ghaia:ghaia";
 include ":spells:summon";
 include ":taming:taming";
 
-program summontotem(params)
+program SummonMagicCreature(params)
 
 	var who := params[1];
 	var targ := params[2];
