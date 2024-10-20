@@ -49,7 +49,7 @@ function TabelaMaterialResistMod(item)
     return array{0, 0, 0, 0, 0, 0};
 endfunction
 
-function TabelaMaterialDamageMod(item) //objtype do material: return {FISICO, FIRE, COLD, POISON, ENERGY, HP}
+function TabelaMaterialDamageMod(item)
     var material := Lower(Hex(item.GetProp("material")));
     var resource_modifiers := ReadResourceModifiers("damage");
 
@@ -61,8 +61,21 @@ function TabelaMaterialDamageMod(item) //objtype do material: return {FISICO, FI
     return array{0, 0, 0, 0, 0, 0};
 endfunction
 
-function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD, POISON, ENERGY}
-    var material := Hex(item.GetProp("material"));
+/**
+ * getMaterialMod(item)
+ *
+ * Purpose
+ * Buscar os valores dos modificadores baseado no minério/material passado.
+ *
+ * Parameters
+ * item: itemRef do item
+ *
+ * Return value
+ *
+ */
+function getMaterialMod(item)
+    var mods := array{};
+	var material := Hex(item.GetProp("material"));
     case(material)
         //////////METAL
         //TIER 1
@@ -104,7 +117,7 @@ function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD,
 
         //TIER 5
         0x699b: //ORICALCUM
-            return {0,0,0,0,0}; //MOD METAIS
+            mods := {0,0,0,0,0}; //MOD METAIS
 
         //////////COURO
         //TIER 1
@@ -132,7 +145,7 @@ function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD,
         //TIER 5
         0xef23: //ASPERO
         0xc605: //NEGRO
-            return {0,0,0,0,0}; //MOD COUROS
+            mods := {0,0,0,0,0}; //MOD COUROS
 
         //////////OSSO
         //TIER 1
@@ -153,7 +166,7 @@ function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD,
 
         //TIER 5
         0xef29: //DEMONÍACO
-            return {0,0,0,0,0}; //MOD OSSOS
+            mods := {0,0,0,0,0}; //MOD OSSOS
 
         //////////TECIDO
         //TIER 1
@@ -173,7 +186,7 @@ function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD,
         //TIER 4
         0xfb7: //FLAMEL
         0xfbd: //RAJAL
-            return {0,0,0,0,0}; //MOD TECIDOS
+            mods := {0,0,0,0,0}; //MOD TECIDOS
 
         //////////TECIDO
         //TIER 1
@@ -186,6 +199,15 @@ function getMaterialMod(item) //objtype do material: return {FISICO, FIRE, COLD,
             return {0,0,0,0,0};
         */
 
-		default: return {0,0,0,0,0};
+		default: mods := {0,0,0,0,0};
     endcase
+
+	return struct {
+		"PhysicalResist" := mods[1],
+
+		"FireResist" := mods[1],
+		"ColdResist" := mods[1],
+		"PoisonResist" := mods[1],
+		"EnergyResist" := mods[1]
+	};
 endfunction

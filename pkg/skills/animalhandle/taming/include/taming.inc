@@ -78,34 +78,45 @@ function GetNumPets(who)
 endfunction
 
 function GetNumSummons(who)
-	var num_tamed := 0;
-	var tamed := GetObjProperty(who, "SummonedPets");
-	if ( !tamed )
-		return 0;
-	endif
+    var num_summoned := 0;
+    var summoned_pets := GetObjProperty(who, "SummonedPets");
 
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( pet.master == who && GetObjProperty(pet, "summoned")) //se é summon
-			var cfg := ReadConfigFile(":brainAI:npcdesc");
-			var npctemplate := pet.npctemplate;
-			npctemplate := npctemplate[10, len(npctemplate)-9];
-			cfg := cfg[npctemplate];
-			if (!Cint(cfg.petslot))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(cfg.petslot);
-			endif
-		else
-			tamed.erase(_serial_iter);
-		endif
-		sleepms(2);
-	endforeach
-	if(!tamed)
-		tamed := array;
-	endif
-	SetObjProperty(who, "SummonedPets", tamed);
-	return num_tamed;
+    if (!summoned_pets)  // If no summoned pets, return 0
+        return 0;
+    endif
+
+    foreach serial in summoned_pets
+        var pet := SystemFindObjectBySerial(serial);
+
+        // Check if the pet is still a valid summon
+        if (pet && pet.master == who && GetObjProperty(pet, "summoned"))
+            // Read the npcdesc configuration file
+            var cfg := ReadConfigFile(":brainAI:npcdesc");
+            var npctemplate := pet.npctemplate[10, len(pet.npctemplate)-9];  // Trim the template name
+            var pet_config := cfg[npctemplate];  // Retrieve pet config for the template
+
+            // Check if there is a petslot configuration
+            var pet_slot := CInt(pet_config.petslot);
+            if (!pet_slot)
+                pet_slot := 1;  // Default to 1 if no pet slot is set
+            endif
+
+            // Accumulate the number of summoned pets
+            num_summoned := num_summoned + pet_slot;
+        else
+            summoned_pets.erase(_serial_iter);  // Remove invalid pets from the list
+        endif
+
+        sleepms(2);  // Prevent performance issues with large lists
+    endforeach
+
+    if (!summoned_pets)  // Ensure the array is still initialized properly
+        summoned_pets := array;
+    endif
+
+    SetObjProperty(who, "SummonedPets", summoned_pets);  // Update the property with valid pets
+
+    return num_summoned;
 endfunction
 
 //deleta o serial da lista de seriais do char (quando o npc morre ou eh transferido)
@@ -175,12 +186,6 @@ function GetMaxPets(who)
 	//Influência de Habs na quantidade
 	if(TemHabilidade(who, "Espreita Selvagem"))
 		maxpets := maxpets + 1;
-	endif
-	if(TemHabilidade(who, "Boiadeiro"))
-		maxpets := maxpets + 2;
-	endif
-	if(TemHabilidade(who, "Rei do Gado"))
-		maxpets := maxpets * 2;
 	endif
 
 	maxpets := maxpets + cint( GetObjProperty(who, "extrapets") );
@@ -388,4 +393,104 @@ function ErasePetMods(pet)
 		pet.resist_physical_mod := pet.resist_physical_mod - phys;
 	endif
 
+endfunction
+
+function RessuscitarPet(corpse, owner, is_bandage := 0)
+    var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
+    CopyPropsPet(corpse, npc);
+    var corpse_parsed := corpse.name[13, len(corpse.name)-12];
+    npc.script := ":ghaia:tamed";
+    RestartScript(npc);
+    SetName(npc, corpse_parsed);
+    RecalcVitals(npc);
+
+    // Lógica de contagem de animais fidelizados
+    var pets := GetObjProperty(owner, "TamedPets");
+    var habs := TemHabilidade(owner, "Espreita Selvagem");
+    var limite_animais := habs ? 2 : 1;
+    var animais_fidelizados := 0;
+    foreach serial in pets
+        var pet := SystemFindObjectBySerial(serial);
+        if (GetObjProperty(pet, "bond") == "fiel")
+            animais_fidelizados := animais_fidelizados + 1;
+            if (animais_fidelizados > 2)
+                break;
+            endif
+        endif
+    endforeach
+
+	//Checagem de limite de slots de animais
+    if (!owner)
+        destama(npc.serial);
+    else
+        if ((GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner))
+            SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
+            destama(npc.serial);
+        elseif ( GetObjProperty(npc, "bond") == "fiel" && animais_fidelizados >= limite_animais)
+            SendSysMessageEx(owner, "O animal sente-se traído por você ter atingido o limite de animais fieis.", SSM_FAIL);
+            destama(npc.serial);
+        else
+            AddPet(owner, npc.serial);
+        endif
+    endif
+
+    DestroyItem(corpse);
+    SetCooldown(npc, "resurrect", is_bandage ? 120 : 180);
+    var skills := GetObjProperty(npc, "petskills");
+    foreach skill in (skills.keys())
+        AP_SetTrueSkill(npc, skill, skills[skill]);
+    endforeach
+
+    // Desconta o DP dos fieis
+    if (GetObjProperty(npc, "bond") == "fiel")
+        var DP := AP_GetVital(npc, "DP");
+        AP_SetVital(npc, "DP", DP - 10);
+        if (DP < 0)
+            AP_SetVital(npc, "DP", 0);
+        endif
+    endif
+
+    // Repõe as habilidades do despertar natureza do pet
+    var instincts := GetObjProperty(npc, "instincts");
+    if (instincts)
+        if (instincts["Ferocidade"].ins_name == "Ferocidade")
+            AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
+        endif
+        if (instincts["Fortaleza"].ins_name == "Fortaleza")
+            var hits := CInt(AP_GetVitalMaximumValue(npc, "Hits"));
+            var variavel := CInt(hits / 3);
+            var variavel2 := CInt(variavel / 2);
+            SetObjProperty(npc, "hitsmod", variavel2);
+        endif
+        if (instincts["Flexibilidade"].ins_name == "Flexibilidade")
+            AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
+        endif
+        RecalcVitals(npc);
+    endif
+	
+	//Checar a felicidade do animal quando ressuscita
+			var happy := GetObjProperty(npc,"happiness"); //happiness do pet
+			var fiel := GetObjProperty(npc, "NeverRelease"); // se é animal fiel
+			if (happy)
+				SetObjProperty(npc,"happiness", happy -20);
+				if(happy < 10 )
+					if (!fiel) //destama se happiness menor que 10
+						SendSysMessage(owner, "*Seu pet "+npc.name+" decidiu que eh melhor ficar sozinho*");
+						destama(npc.serial);
+//					else // se é fiel só perde fidelidade
+//						SendSysMessage(owner, "*Seu pet "+npc.name+" nao sente mais tanta confiança em você**");
+//						EraseObjProperty(npc, "NeverRelease");
+//						EraseObjProperty(npc, "bond");
+					endif
+				endif
+			endif
+
+    return npc;
+endfunction
+
+function CopyPropsPet(origin, destiny)
+    var propnames := GetObjPropertyNames(origin);
+    foreach prop in propnames
+        SetObjProperty(destiny, prop, GetObjProperty(origin, prop));
+    endforeach
 endfunction
