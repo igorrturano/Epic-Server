@@ -7,7 +7,6 @@ function setBonus(who, item, bonus)
 	var material := item.getMaterial();
 	bonus := CInt(bonus); // POL BUGADO DO CARALHO!!!!!!!!!!
 	
-	// TODO: Já existe uma prop que determina o material do item, fazer pela cor só vai aumentar a chance de bug, caso mude as cores do item
 	if (item.isA(POLCLASS_WEAPON))
 		case (material)
 			0x630d: // Ignium
@@ -20,6 +19,13 @@ function setBonus(who, item, bonus)
 				item.damage_cold_mod := bonus;
 				break;
 			2726: // Fulmium
+				item.damage_energy_mod := bonus;
+				break;
+
+			0x6311: // Mithril
+				item.damage_fire_mod := bonus;
+				item.damage_cold_mod := bonus;
+				item.damage_poison_mod := bonus;
 				item.damage_energy_mod := bonus;
 				break;
 		endcase
