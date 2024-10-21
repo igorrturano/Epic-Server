@@ -6,49 +6,41 @@ include ":traps:traps";
 include ":charactercreation:habilidades";
 
 
-function examinarAlvo(who)
-	SendSysMessageEx(who, "Selecione um alvo.", SSM_REQUEST);
-	var targ := Target(who);
-	if( !targ )
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return 0;
-	elseif ( !targ.isA(POLCLASS_MOBILE) && !targ.isA(POLCLASS_CONTAINER) && !targ.isA(POLCLASS_DOOR) )
-		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
-		return 0;
+function ExaminarMobile(who,targ)
+	if (GetObjProperty(targ, "disfarce") )
+		if (SkillCheck(who, AWARENESS, AP_GetSkill(who, SNEAK)))
+			var char := GetObjProperty(targ, "chardata");
+			var name := char.FirstName;
+			var last_name := char.LastName;
+			if (last_name)
+				name := name+" "+last_name;
+			endif
+			sleep(1);
+			SendSysMessageEx(who, "Você descobriu disfarce de "+name+" em "+targ.name+".", SSM_INFO);
+			SendSysMessageEx(who, "ATENCAO: Se você não conhece esse personagem, ignore o fato de saber o nome dele.", SSM_INFO);
+			return 1;
+		endif
 	endif
+	SendSysMessageEx(who, "Você não encontrou nada de diferente.", SSM_FAIL);
+	return 0;
+endfunction
+
+function ExaminarObjeto(who,targ)
 
 	var armadilhaRevelada := 0;
 	var acharamArmadilha := array;
-	var found := 0;
-	if(targ.isA(POLCLASS_MOBILE))
-		if (GetObjProperty(targ, "disfarce") )
-			if (SkillCheck(who, AWARENESS, AP_GetSkill(who, SNEAK)))
-				found:=1;
-				var char := GetObjProperty(targ, "chardata");
-				var name := char.FirstName;
-				var last_name := char.LastName;
-				if (last_name)
-					name := name+" "+last_name;
-				endif
-				sleep(1);
-				SendSysMessageEx(who, "Voce descobriu disfarce de "+name+" em "+targ.name+".", SSM_INFO);
-				SendSysMessageEx(who, "ATENCAO: Se voce nao conhece esse personagem, ignore o fato de saber o nome dele.", SSM_INFO);
-				return 1;
-			endif
-			return 0;
-		endif
-	elseif ( GetObjProperty(targ, "TrapList") )
+	if ( GetObjProperty(targ, "TrapList") )
 		sleep(1);
 		if(!ReserveItem(targ)) //Apenas um personagem examina o bau por vez.
-			SendSysMessageEx(who, "Alguem ja esta examinando "+targ.name+".", SSM_FAIL);
-	  		return 0;
-	  	else
-	  		if(who.hidden)
-	  			SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
+			SendSysMessageEx(who, "Alguém já esta examinando "+targ.name+".", SSM_FAIL);
+			return 0;
+		else
+			if(who.hidden)
+				SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
 			else
 				PrintTextAbove(who, "*Examinando "+targ.name+"*");
 			endif
-	  		sleep(1);
+			sleep(1);
 		endif
 		if(GetObjProperty(targ, "trapSpoted"))
 			armadilhaRevelada := GetObjProperty(targ, "trapSpoted"); //CPROP que diz quem revelou a trap pra todos
@@ -57,8 +49,8 @@ function examinarAlvo(who)
 			acharamArmadilha := GetObjProperty(targ, "acharamArmadilha"); //Lista de pessoas que revelaram a armadilha só para si
 		endif
 		if ((!armadilhaRevelada) && (who.serial in acharamArmadilha)) //Quando você achou ela mas não revelou pra todos
-			SendSysMessageEx(who, "Armadilha ja foi encontrada e esta obvia para voce.", SSM_INFO);
-			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Nao, deixa so pra mim."))
+			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
+			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
 				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
 				PrintTextAbove(targ, "*!*");
@@ -66,7 +58,7 @@ function examinarAlvo(who)
 			endif
 			return 1;
 		elseif(armadilhaRevelada)
-			SendSysMessageEx(who, "Armadilha ja foi encontrada e esta obvia para todos.", SSM_INFO);
+			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para todos.", SSM_INFO);
 			return 1;
 		else
 			var diff;
@@ -85,7 +77,7 @@ function examinarAlvo(who)
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
 				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
-				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Nao, deixa so pra mim."))
+				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
 					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
 					PrintTextAbove(targ, "*!*");
@@ -93,15 +85,11 @@ function examinarAlvo(who)
 				endif
 				return 1;
 			else
-				SendSysMessageEx(who, "Voce nao encontrou nada de diferente.", SSM_FAIL);
+				SendSysMessageEx(who, "Você nao encontrou nada de diferente.", SSM_FAIL);
 				return 0;
 			endif
 		endif
-	else
-		SendSysMessageEx(who, "Voce nao encontrou nada de diferente.", SSM_INFO);
-		return 0;
 	endif
-	return 0;
 endfunction
 
 function CalculateDHDiff(who, mobile)
@@ -143,7 +131,13 @@ function CalculateDHDiff(who, mobile)
 
 endfunction
 
-function examinarArea(who)
+function ExaminarArea(who)
+	if(who.hidden)
+		SendSysMessageEx(who, "Procurando algo", SSM_INFO);
+	else
+		PrintTextAbove(who, "*Procurando algo*");
+	endif
+
 	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
 
 	if ( TemHabilidade(who, "Sempre Alerta") )
@@ -184,7 +178,7 @@ function examinarArea(who)
 					found := found+1;
 					mobile.hidden := 0;
 					PrintText(mobile, "*Revelado por "+who.name+"*");
-					SendSysMessageEx(who, "Voce encontrou "+mobile.name+".", SSM_INFO);
+					SendSysMessageEx(who, "Você encontrou "+mobile.name+".", SSM_INFO);
 					SendSysMessageEx(mobile, who.name+" te encontrou!", SSM_FAIL);
 				endif
 			endif
@@ -252,6 +246,17 @@ function ConvertIntToHex(astring, alength)
         astring := "0" + astring;
     endwhile
     return astring;
+endfunction
+
+function AtivaDesativaPassivo(who)
+	var ignore := GetObjProperty(who, "IgnoreHidden");
+	if (ignore)
+		SendSysMessageEx(who, "Modo Passivo Ligado. Procura e revela passivamente!", SSM_INFO);
+		EraseObjProperty(who, "IgnoreHidden");
+	else
+		SendSysMessageEx(who, "Modo Passivo Desligado. Percebe, mas não revela passivamente!", SSM_FAIL);
+		SetObjProperty(who, "IgnoreHidden", 1);
+	endif
 endfunction
 
 function DrawObject(ktowhom, kobj, kgraphic, kcolor)

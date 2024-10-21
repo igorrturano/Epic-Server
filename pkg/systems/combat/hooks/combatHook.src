@@ -92,12 +92,11 @@ exported function Attack(attacker, defender)
 		CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
-		EpicApplyDamage(attacker, defender, DAMAGE_MAINHAND);
+		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
 
 	else
 		DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
 		PlayMissSound(attacker);
-		PlayAttackAnimation(attacker);
 		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -120,7 +119,7 @@ exported function Attack(attacker, defender)
 			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
-			EpicApplyDamage(attacker, defender, DAMAGE_OFFHAND);
+			EpicAttack(attacker, defender, DAMAGE_OFFHAND);
 
 		else
 			DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
@@ -783,7 +782,7 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 	return 1;
 endfunction
 
-function EpicApplyDamage(attacker, defender, weaponHand)
+function EpicAttack(attacker, defender, weaponHand)
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
@@ -866,7 +865,7 @@ function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
 	PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, wpn_a_elem.color);
 
     PlayAttackAnimation(attacker); // 0x9
-    // PlayHitSounds(attacker, defender);
+    // PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
 
 	MoveObjectToLocation(attacker.weapon, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 

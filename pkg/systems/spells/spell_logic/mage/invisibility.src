@@ -10,6 +10,7 @@ include ":timedscripts:timedScripts";
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var MagicLore := AP_GetSkill(who, MAGICLORE);
 	params := 0; // No longer needed
 
 	PlaySoundEffect(who, SFX_SPELL_HEAL);
@@ -18,6 +19,7 @@ program SpellScript(params)
 	var y := who.y;
 	var delay := 2;
 	if(TemHabilidade(who, "Valdruk"))
+		Magiclore := MagicLore*1.2;
 		delay := 1;
 	endif
 	sleep(delay);
@@ -28,6 +30,7 @@ program SpellScript(params)
 	
 	if (!who.dead)
 		SendSysMessageEx(who, "Voce esta escondido.", SSM_INFO);
+		TS_StartTimer(who, "invis", MagicLore*3, MagicLore);
 		who.hidden := 1;
 	endif
 	
