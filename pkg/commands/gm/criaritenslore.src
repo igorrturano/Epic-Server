@@ -1,4 +1,4 @@
-//2
+//3
 use uo;
 program faz_itenslore(who, quantos)
     var itenslore := array{
