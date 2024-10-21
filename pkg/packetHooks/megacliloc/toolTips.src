@@ -54,7 +54,7 @@ exported function MegaCliloc( who, byref packet )
 
 		//PREENCHE A DESCRIÇÃO COMUM A QUALQUER ITEM OU MOBILE
 		xDesc := "";
-
+		xDesc := AddSpecialBookshelfDescription(item, xDesc);  // Adicione esta linha
 		xDesc := MontaDescPersonagem(item,who,xDesc);
 
 		/* Comentei porque a variavel desc não estava sendo usada pra nada - Luteros
@@ -112,7 +112,5 @@ exported function MegaCliloc( who, byref packet )
 	return 0;
 
 endfunction
-
-
 
 

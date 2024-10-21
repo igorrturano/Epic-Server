@@ -1,0 +1,1363 @@
+use uo;
+use math;
+use cfgfile;
+use vitals;
+use os;
+
+include "include/client";
+include "include/sounds";
+include ":attributes:attributes";
+include ":combat:damage";
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":tn:tngumps";
+include ":fls_core:fls_crafting";
+include ":recipes:recipes";
+
+
+const PERGAMINHO_OBJTYPE := 0xE34;
+const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
+const PERGAMINHO_AMOUNT_RAPIDA := 5;
+const MIN_SKILL := 40;
+const MIN_MANA := 40;
+const RESEARCH_DURATION_MINUTES := 2; // 3 minutos para testes, 10080 para 7 dias
+const BARRA_BACKGROUND := 83;
+const BARRA_FOREGROUND := 50;
+
+var STUDY_ACTIONS;
+var BOOK_OBJTYPES;
+
+
+function InitializeGlobals()
+    STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"};
+    BOOK_OBJTYPES := array{0xA9D, 0xA9E};  
+endfunction
+
+program use_research_book(params)
+    var who, book;
+    if (TypeOf(params) == "Array")
+        who := params[1];
+        book := params[2];
+    elseif (TypeOf(params) == "Struct")
+        who := SystemFindObjectBySerial(params.playerSerial);
+        book := SystemFindObjectBySerial(params.bookSerial);
+    else
+        who := params;
+        book := 0; 
+    endif
+    InitializeGlobals();
+    
+    if (!IsValidPlayer(who))
+        return 0;
+    endif
+    
+    if (book && (book == error || TypeOf(book) != "ItemRef"))
+        return 0;
+    endif
+    
+    var activeResearch := GetActiveResearch(who);
+    if (activeResearch && GetObjProperty(book, "ShowOngoing"))
+        EraseObjProperty(book, "ShowOngoing");
+        if (!ShowOngoingResearchGump(who))
+            return 0;
+        endif
+    else
+        if (!ShowMainResearchGump(who))
+            return 0;
+        endif
+    endif
+    return 1;
+endprogram
+
+function IsValidPlayer(who)
+    return (who && who != error && TypeOf(who) == "MobileRef" && who.connected);
+endfunction
+
+function ShowMainResearchGump(who)
+    if (!who || who == error || who.connected == 0)
+        return 0;
+    endif
+    
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+    GFGumpPic(gump, 0, 0, 114, 0); 
+    
+    var left_margin := 40;
+    var right_margin := 640;
+    var top_margin := 40;
+    var bottom_margin := 460; 
+    
+    GFTextMid(gump, left_margin - 50, top_margin, right_margin - left_margin - 200, 2439, "Livro de Pesquisa");
+
+    GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha uma opção:");
+    
+    var y_pos := top_margin + 70;
+   
+    GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa Rápida");
+    
+    y_pos += 40;
+    GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa Extensiva");
+    
+    y_pos += 40;
+    GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 3);
+    GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa em Desenvolvimento");
+
+    GFResizePic(gump, 461, 70, 83, 80, 78);
+    GFResizePic(gump, 388, 162, 83, 73, 74);
+    GFResizePic(gump, 440, 248, 83, 129, 113);
+    GFResizePic(gump, 540, 162, 83, 73, 74);
+
+    GFTilePic(gump, 461 + 10, 70 + 10, 0xE9C1);  
+    GFTilePic(gump, 388 + 15, 162 + 25, 0xE34); 
+    GFTilePic(gump, 540 + 20, 162 + 25, 0xFBF);  
+    GFTilePic(gump, 440 + 48, 248 + 15, 0x0A99);  
+
+    GFTextLine(gump, 492, 191, 2103, "+");
+
+    GFTextLine(gump, 372, 371, 2505, "Para pesquisar é necessário:");
+    GFTextLine(gump, 372, 394, 2517, "- Minimo de mana: 40");
+    GFTextLine(gump, 372, 415, 2517, "- Minimo de skill: 40");
+    GFTextLine(gump, 372, 433, 2517, "- Minimo de inteligência: 40");
+
+    var activeResearch := GetActiveResearch(who);
+    if (activeResearch)
+        y_pos := bottom_margin - 100; 
+        GFTextLine(gump, left_margin, y_pos, 2505, "Pesquisa em andamento:");
+        y_pos += 20;
+        GFTextLine(gump, left_margin, y_pos, 2517, activeResearch.type);
+        y_pos += 20;
+        
+        var nivelTexto := "Nível " + activeResearch.power;
+        GFTextLine(gump, left_margin, y_pos, 2517, nivelTexto);
+        y_pos += 20;
+        
+        GFTextLine(gump, left_margin, y_pos, 2517, "Progresso: " + CustomFormatRealToString(CalculateProgress(activeResearch), 2) + "%");
+    endif
+
+    var input := GFSendGump(who, gump);
+    if (input[0] == error)
+        return 1;
+    endif
+
+    case (input[0])
+        1: 
+            ShowQuickResearchGump(who);
+        2: 
+            var result := StartExtensiveResearch(who);
+            if (result == 1)
+            elseif (result == 0)
+            else
+                SendSysMessageEx(who, "Não foi possível iniciar a pesquisa extensiva. Tente novamente.", SSM_FAIL);
+            endif
+        3: 
+            ShowOngoingResearchGump(who);
+        default: 
+    endcase
+
+    return 1;
+endfunction
+
+function ShowQuickResearchGump(who)
+    if (!who || who == error || who.connected == 0)
+        return 0;
+    endif
+    
+    var gump := GFCreateGump();
+    var skills := GetResearchSkills(who);
+    var types := GetAvailableRapidResearchTypes(skills);
+    var selectedType := "";
+    var selectedPower := 0;
+    
+    while (1)
+        GFPage(gump, 0);
+        GFGumpPic(gump, 0, 0, 114, 0);
+        
+        var left_margin := 40;
+        var right_margin := 640; 
+        var top_margin := 40;
+        var bottom_margin := 460; 
+        
+        GFTextMid(gump, left_margin - 160, top_margin, right_margin - left_margin, 2439, "Pesquisa Rápida");
+        GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha o tipo de Pesquisa Rápida:");
+        
+        var y_pos := top_margin + 70;
+           
+        foreach type in types
+            GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 100 + _type_iter);
+            GFTextLine(gump, left_margin + 35, y_pos, 2517, type);
+            y_pos += 40; 
+        endforeach
+
+        if (selectedType != "")
+        GFTextMid(gump, right_margin / 2 + 30, top_margin, right_margin / 2, 2517, "Complexidade da " + selectedType + "");
+            
+            var maxPower := 5;
+            case (selectedType)
+                "Receita Alquimica":
+                "Tinta":
+                    maxPower := Min(GetMaxPowerForInk(skills.alquimista), 5);
+                "Instrução de Fabricação":
+                    maxPower := Min(GetMaxPowerForCrafting(skills), 5);
+                "Magia":
+                    maxPower := Min(GetMaxPowerForMagic(skills.mago), 5);
+                default:
+                    maxPower := 2;
+            endcase
+
+            y_pos := top_margin + 70;
+            for i := 1 to maxPower
+            GFAddButton(gump, right_margin / 2 + 50, y_pos, 4005, 4006, GF_CLOSE_BTN, i);
+            GFTextLine(gump, right_margin / 2 + 85, y_pos, 2517, "Nível " + i);
+            y_pos += 40;
+            endfor
+        else
+            GFResizePic(gump, 570, 69, 83, 67, 70);
+            GFTextLine(gump, 363, 97, 2517, "Consome 5 pergaminhos em branco");
+            GFTextLine(gump, 363, 180, 2517, "Consome 20 de mana");
+            GFTextLine(gump, 448, 143, 2517, "+");
+            GFTextLine(gump, 360, 220, 2517, "* Pode produzir instrucções de MetalWorking,");
+            GFTextLine(gump, 360, 240, 2517, "WoodWorking e DomesticWork");
+            GFResizePic(gump, 365, 290, 83, 124, 131);
+            GFResizePic(gump, 522, 290, 83, 124, 131);
+            GFTextLine(gump, 395, 424, 2505, "Pergaminhos");
+            GFTextLine(gump, 390, 444, 2505, "Level 1, 2, 3 ");
+            GFTextLine(gump, 553, 424, 2505, "Pergaminhos");
+            GFTextLine(gump, 550, 444, 2505, "Level 4 e 5");
+
+            GFTilePic(gump, 560 + 20, 70 + 25, 0xE34);  
+            GFTilePic(gump, 365 + 48, 290 + 15, 0x0A99);  
+            GFTilePic(gump, 522 + 48, 290 + 15, 0x0C15); 
+        endif
+
+        AddBackButton(gump, left_margin, bottom_margin);
+
+        var input := GFSendGump(who, gump);
+        
+        if (input[0] == 0)
+            ShowMainResearchGump(who);
+            return 0;
+        elseif (input[0] >= 101 && input[0] <= 100 + types.size())
+            selectedType := types[input[0] - 100];
+            selectedPower := 0; 
+        elseif (input[0] >= 1 && input[0] <= 5 && selectedType != "")
+            selectedPower := input[0];
+            break; 
+        endif
+    endwhile
+
+    if (selectedType != "" && selectedPower > 0)
+        var recipe := struct{"type" := selectedType, "power" := selectedPower};
+        return PerformQuickResearch(who, recipe);
+    endif
+    
+    return 0;
+endfunction
+
+function PerformQuickResearch(who, recipe)
+    if (!CheckResearchRequirements(who, 1, recipe.power))
+        return 0;
+    endif
+
+    var result := PerformRapidResearch(who, recipe);
+
+    ShowMainResearchGump(who);
+    
+    return result;
+endfunction
+
+
+function ShowExtensiveResearchGump(who)
+    if (!who || who == error || who.connected == 0)
+        return 0;
+    endif
+    
+    var gump := GFCreateGump();
+    var skills := GetResearchSkills(who);
+    var types := GetAvailableResearchTypes(skills);
+    var selectedType := "";
+    var selectedPower := 0;
+    
+    while (1)
+        GFPage(gump, 0);
+        GFGumpPic(gump, 0, 0, 114, 0);
+        
+        var left_margin := 40;
+        var right_margin := 640;
+        var top_margin := 40;
+        var bottom_margin := 460;
+        
+        GFTextMid(gump, left_margin - 150, top_margin, right_margin - left_margin, 2439, "Pesquisa Extensiva");
+        GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha o tipo de Pesquisa:");
+        
+        var y_pos := top_margin + 140;
+        
+        foreach type in types
+            GFAddButton(gump, left_margin, y_pos - 70, 4005, 4006, GF_CLOSE_BTN, 100 + _type_iter);
+            GFTextLine(gump, left_margin + 35, y_pos - 70, 2517, type);
+            y_pos += 40;
+        endforeach
+
+        if (selectedType != "")
+            GFTextMid(gump, right_margin / 2 + 30, top_margin, right_margin / 2, 2517, "Complexidade da " + selectedType + ":");
+            
+            var maxPower := 5;
+            case (selectedType)
+                "Receita Alquimica":
+                "Tinta":
+                    maxPower := Min(GetMaxPowerForInk(skills.alquimista), 5);
+                "Instrução de Fabricação":
+                    maxPower := Min(GetMaxPowerForCrafting(skills), 5);
+                "Magia":
+                    maxPower := Min(GetMaxPowerForMagic(skills.mago), 5);
+                default:
+                    maxPower := 2;
+            endcase
+
+            y_pos := top_margin + 70;
+            for i := 1 to maxPower
+                GFAddButton(gump, right_margin / 2 + 50, y_pos, 4005, 4006, GF_CLOSE_BTN, i);
+                GFTextLine(gump, right_margin / 2 + 85, y_pos, 2517, "Nível " + i);
+                y_pos += 40;
+            endfor
+
+            if (selectedPower > 0)
+                var researchTimeSeconds := RESEARCH_DURATION_MINUTES * 60;
+                var formattedTime := FormatResearchTime(researchTimeSeconds);
+
+                GFPicTiled(gump, right_margin / 2 + 50, y_pos + 20, 280, 5, 96);
+                GFTextLine(gump, right_margin / 2 + 50, y_pos + 40, 2517, "Você deseja iniciar essa pesquisa?");
+                GFTextLine(gump, right_margin / 2 + 50, y_pos + 60, 2517, "Ela vai requerer " + formattedTime + " de estudo");
+                GFAddButton(gump, right_margin / 2 + 50, y_pos + 100, 4005, 4006, GF_CLOSE_BTN, 1001);
+                GFAddButton(gump, right_margin / 2 + 225, y_pos + 100, 4005, 4006, GF_CLOSE_BTN, 1002);
+                GFTextLine(gump, right_margin / 2 + 89, y_pos + 102, 2517, "Sim");
+                GFTextLine(gump, right_margin / 2 + 265, y_pos + 102, 2517, "Não");
+            endif
+        else
+
+            GFResizePic(gump, 580, 69, 83, 67, 70);
+            GFTextLine(gump, 363, 97, 2517, "Consome 20 pergaminhos em branco");
+            GFTextLine(gump, 448, 133, 2517, "+");
+            GFTextLine(gump, 363, 160, 2517, "Consome 40 de mana");
+            GFTextLine(gump, 448, 187, 2517, "+");
+            GFTextLine(gump, 360, 214, 2517, "Duração de 7 dias ou 168 horas");    
+            GFTextLine(gump, 360, 250, 2517, "* Pode produzir instruções de MetalWorking,");
+            GFTextLine(gump, 360, 270, 2517, "WoodWorking e DomesticWork");
+            GFResizePic(gump, 365, 290, 83, 124, 131);
+            GFResizePic(gump, 522, 290, 83, 124, 131);
+            GFTextLine(gump, 395, 424, 2505, "Pergaminhos");
+            GFTextLine(gump, 390, 444, 2505, "Level 1, 2, 3 ");
+            GFTextLine(gump, 553, 424, 2505, "Pergaminhos");
+            GFTextLine(gump, 550, 444, 2505, "Level 4 e 5");
+
+
+            GFTilePic(gump, 570 + 20, 70 + 25, 0xE34);  
+            GFTilePic(gump, 365 + 48, 290 + 15, 0x0A99);  
+            GFTilePic(gump, 522 + 48, 290 + 15, 0x0C15);   
+        endif
+
+        GFAddButton(gump, left_margin, bottom_margin - 40, 4005, 4006, GF_CLOSE_BTN, 0);
+        GFTextLine(gump, left_margin + 35, bottom_margin - 40, 2517, "Cancelar");
+        AddBackButton(gump, left_margin, bottom_margin);
+
+        var input := GFSendGump(who, gump);
+        
+        if (input[0] == 0)
+            ShowMainResearchGump(who);
+            return 0;
+        elseif (input[0] >= 101 && input[0] <= 100 + types.size())
+            selectedType := types[input[0] - 100];
+            selectedPower := 0;
+        elseif (input[0] >= 1 && input[0] <= 5 && selectedType != "")
+            selectedPower := input[0];
+        elseif (input[0] == 1001)
+            var recipe := struct{"type" := selectedType, "power" := selectedPower, "extensiveResearch" := 1};
+
+            if (!CheckforBooks(who, selectedPower))
+                SendSysMessageEx(who, "Você não tem um livro apropriado para este nível de pesquisa nas proximidades.", SSM_FAIL);
+                continue;
+            endif
+            
+            if (ValidateResearchParameters(who, recipe) && ConsumeResearchResources(who, recipe))
+                if (InitiateResearch(who, recipe))
+                    SendSysMessageEx(who, "Pesquisa extensiva iniciada com sucesso!", SSM_INFO);
+                    return 1;
+                else
+                    SendSysMessageEx(who, "Falha ao iniciar a pesquisa. Tente novamente.", SSM_FAIL);
+                endif
+            else
+                SendSysMessageEx(who, "Não foi possível iniciar a pesquisa. Verifique os requisitos.", SSM_FAIL);
+            endif
+            selectedType := "";
+            selectedPower := 0;
+        elseif (input[0] == 1002)
+            selectedPower := 0;
+        endif
+    endwhile
+
+    return 0;
+endfunction
+
+function ValidateResearchParameters(who, recipe)
+    if (recipe.power < 1 || recipe.power > 5)
+        SendSysMessageEx(who, "Nível de poder inválido para a pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+
+    var availableTypes := GetAvailableResearchTypes(GetResearchSkills(who));
+    if (!(recipe.type in availableTypes))
+        SendSysMessageEx(who, "Tipo de pesquisa inválido selecionado.", SSM_FAIL);
+        return 0;
+    endif
+
+    return 1;
+endfunction
+
+function ConsumeResearchResources(who, recipe)
+    var pergaminho_amount := recipe.extensiveResearch ? PERGAMINHO_AMOUNT_EXTENSIVA : PERGAMINHO_AMOUNT_RAPIDA;
+
+    if (!ConsumeSubstance(who.backpack, PERGAMINHO_OBJTYPE, pergaminho_amount))
+        SendSysMessageEx(who, "Você precisa de no mínimo " + pergaminho_amount + " pergaminhos em branco para iniciar esta pesquisa", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!AP_ConsumeVital(who, "Mana", 40))
+        SendSysMessageEx(who, "Você não tem mana suficiente para iniciar esta pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+
+    return 1;
+endfunction
+
+function InitiateResearch(who, recipe)
+    recipe.start := ReadGameClock();
+    recipe.end := recipe.start + (RESEARCH_DURATION_MINUTES * 60);
+    
+    var startResult := StartResearch(who, recipe);
+
+    if (startResult)
+        if (who.gender == 1)
+            PlaySoundEffect(who, 0x32C); 
+        else
+            PlaySoundEffect(who, 0x43e); 
+        endif
+        
+        PrintText(who, "*inicia a pesquisa com determinação*");
+        
+        NotifyResearchResult(who, 1);
+        return 1;
+    else
+        NotifyResearchResult(who, 0);
+        return 0;
+    endif
+endfunction
+
+function StartResearch(who, recipe, remainingTime := 0)
+    if (!who || who == error)
+        return 0;
+    endif
+
+    if (remainingTime)
+        recipe.start := ReadGameClock() - (RESEARCH_DURATION_MINUTES * 60 - remainingTime);
+    else
+        recipe.start := ReadGameClock();
+    endif
+
+    if (recipe.type == "Magia")
+        var spellId := SelectRandomSpell(recipe.power);
+        if (spellId)
+            recipe.spellId := spellId;
+        else
+            return 0;
+        endif
+    endif
+
+    SetObjProperty(who, "aprenderrecipe", recipe);
+
+    var research_actions := array{
+        "*estudando profundamente*",
+        "*fazendo anotações detalhadas*",
+        "*analisando cuidadosamente*",
+        "*colocando alguns livros na mochila*",
+        "*consultando referências*",
+        "*realizando experimentos*"
+    };
+
+    for i := 1 to 5
+        if (!CheckStudyConditions(who, who.x, who.y, who.facing))
+            SendSysMessageEx(who, "Condições de estudo não atendidas.", SSM_FAIL);
+            return 0;
+        endif
+        
+        PrintText(who, research_actions[RandomInt(research_actions.size()) + 1]);
+        PlaySoundEffect(who, 0x24a);  // Som de estudo
+
+        sleep(3);
+    endfor
+
+    var duration := remainingTime ? remainingTime : (RESEARCH_DURATION_MINUTES * 60);
+    var timerName := "CompleteResearch";
+    var level := 0;
+    var timerInfo := struct{
+        "type" := "CompleteResearch",
+        "playerSerial" := who.serial,
+        "recipeType" := recipe.type,
+        "recipePower" := recipe.power,
+        "startTime" := recipe.start,
+        "spellId" := recipe.spellId
+    };
+
+    var result := TS_StartTimer(who, timerName, duration, level, timerInfo);
+
+    if (result != 1)
+        EraseObjProperty(who, "aprenderrecipe");
+        return 0;
+    endif
+
+    StartResearchCheck(who);
+
+    return 1;
+endfunction
+
+function StartExtensiveResearch(who)
+    if (!who || who == error)
+        return -1;
+    endif
+    
+    var handleResult := HandleExistingResearch(who);
+    if (handleResult != 1)
+        return 0;
+    endif
+
+    var result := ShowExtensiveResearchGump(who);
+    if (result == 0)
+        return 0;
+    endif
+
+    return 1;
+endfunction
+
+function NotifyResearchResult(who, success, message := "")
+    if (success)
+        if (message == "")
+        endif
+        SendSysMessageEx(who, message, SSM_INFO);
+    else
+        if (message == "")
+            message := "Falha ao iniciar a pesquisa. Tente novamente.";
+        endif
+        SendSysMessageEx(who, message, SSM_FAIL);
+    endif
+endfunction
+
+
+function ShowOngoingResearchGump(who)
+    if (!who || who == error || TypeOf(who) != "MobileRef")
+        return;
+    endif
+    var activeResearch := GetActiveResearch(who);
+    if (!activeResearch)
+        SendSysMessageEx(who, "Você não tem nenhuma pesquisa em andamento.", SSM_FAIL);
+        ShowMainResearchGump(who);
+        return;
+    endif
+    
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+    GFGumpPic(gump, 0, 0, 114, 0);
+    
+    var left_margin := 40;
+    var right_margin := 640;
+    var top_margin := 40;
+    var bottom_margin := 460;
+    
+    GFTextMid(gump, left_margin, top_margin, right_margin - left_margin, 2439, "Pesquisa em Andamento");
+    
+    var y_pos := top_margin + 40;
+    GFTextLine(gump, left_margin, y_pos, 2505, "Tipo: " + activeResearch.type);
+    y_pos += 40;
+    GFTextLine(gump, left_margin, y_pos, 2505, "Complexidade: " + activeResearch.power);
+    y_pos += 40;
+    
+    var progresso := CalculateProgress(activeResearch);
+    
+    // Barra de progresso
+    var progressoInt := CInt(progresso);
+    var barraTotal := right_margin - left_margin - 40;
+    var barraAltura := 36;
+    GFBuildBarCustom(gump, left_margin + 20, y_pos, barraTotal, barraAltura, progressoInt, 100);
+    GFTextMid(gump, left_margin + 20, y_pos + 10, barraTotal, 2517, progressoInt + "%");
+    y_pos += barraAltura + 20;
+
+    var tempoRestante := CalculateRemainingTime(activeResearch);
+    var totalSeconds := tempoRestante.horas * 3600 + tempoRestante.minutos * 60 + tempoRestante.segundos;
+    var formattedTime := FormatResearchTime(totalSeconds);
+    GFTextLine(gump, left_margin, y_pos, 2505, "Tempo restante: " + formattedTime);
+    
+    if (progresso >= 100)
+        GFAddButton(gump, left_margin, bottom_margin - 40, 4005, 4006, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, left_margin + 35, bottom_margin - 40, 2517, "Receber o Pergaminho");
+    else
+        GFTextLine(gump, left_margin, bottom_margin - 40, 2517, "Pesquisa em andamento...");
+    endif
+
+    AddBackButton(gump, left_margin, bottom_margin);
+
+    var result := GFSendGump(who, gump);
+    if (result[0] == 0)
+        ShowMainResearchGump(who);
+        return;
+    endif
+    if (result == error)
+        return;
+    endif
+    if (result[0] == 1 && progresso >= 100)
+        CheckResearchCompletion(who);
+        ShowMainResearchGump(who); 
+    endif
+endfunction
+
+function GFBuildBarCustom(byref gump, x, y, width, height, curValue := 0, maxValue := 100)
+   // Barra de fundo
+   GFResizePic(gump, x, y, BARRA_BACKGROUND, width, height);
+
+   // Calcular a largura da barra de progresso
+   var barWidth := CInt((CDbl(curValue) / CDbl(maxValue)) * (width - 24));  
+
+   // Garantir que a barra não ultrapasse a largura total
+   barWidth := Max(Min(barWidth, width - 24), 0);  // Prevenir valores negativos
+
+   // Barra de progresso
+   if (barWidth > 0)
+   // Usar GFGumpPicTiled para uma aparência mais consistente
+      GFGumpPicTiled(gump, x + 12, y + 12, barWidth, height - 24, BARRA_FOREGROUND);
+   endif
+
+   return 1;
+endfunction
+
+function CheckResearchRequirements(who, isQuickResearch := 0, power := 0)
+    var requiredPergaminhos := isQuickResearch ? PERGAMINHO_AMOUNT_RAPIDA : PERGAMINHO_AMOUNT_EXTENSIVA;
+    
+    if (GetEquipmentByLayer(who, LAYER_MOUNT))
+        SendSysMessageEx(who, "Você não pode pesquisar montado.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!CheckforBooks(who, power))
+        SendSysMessageEx(who, "Você está distante demais de um local de estudo apropriado para este nível de pesquisa", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!CheckForPen(who.backpack, 0))
+        SendSysMessageEx(who, "Você precisa de uma pena e tinteiro para iniciar a pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+    
+    if (!CountPergaminhosInBackpack(who.backpack, requiredPergaminhos))
+        SendSysMessageEx(who, "Você precisa de " + requiredPergaminhos + " pergaminhos em branco para iniciar esta pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+    
+    var requiredMana := isQuickResearch ? 15 : MIN_MANA;
+    if (AP_GetVital(who, "Mana") < requiredMana)
+        SendSysMessageEx(who, "Você não tem mana suficiente para iniciar esta pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+    
+    return 1;
+endfunction
+
+function CountPergaminhosInBackpack(backpack, requiredAmount)
+    var count := 0;
+    foreach item in EnumerateItemsInContainer(backpack)
+        if (item.objtype == PERGAMINHO_OBJTYPE)
+            count += item.amount;
+            if (count >= requiredAmount)
+                return 1;
+            endif
+        endif
+    endforeach
+    return 0;
+endfunction
+
+function GetActiveResearch(who)
+    if (!who || who == error || TypeOf(who) != "MobileRef")
+        return error;
+    endif
+    
+    var activeResearch := GetObjProperty(who, "aprenderrecipe");
+    if (activeResearch == error)
+    else
+        foreach key in (activeResearch.keys())
+        endforeach
+    endif
+    return activeResearch;
+endfunction
+
+function CheckforBooks(who, power := 0)
+    var items := ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
+
+    var specialBooks4 := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0};
+    var specialBooks5 := {0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x0C15, 0x0C14};
+
+    foreach item in items
+        if (power == 4 && item.objtype in specialBooks4)
+            return 1;
+        elseif (power == 5 && item.objtype in specialBooks5)
+            return 1;
+        elseif (power < 4)
+            if (item.objtype in BOOK_OBJTYPES)
+                return 1;
+            endif
+            if (item.desc.toLower().find("book") != -1 || item.desc.toLower().find("shelf") != -1)
+                return 1;
+            endif
+        endif
+    endforeach
+    return 0;
+endfunction
+
+function GetResearchSkills(who)
+    return struct{
+        "ferreiro" := AP_GetSkill(who, METALWORKING),
+        "costureiro" := AP_GetSkill(who, Domestic_Work),
+        "alquimista" := AP_GetSkill(who, ALCHEMY),
+        "mago" := AP_GetSkill(who, MAGERY),
+        "carpenter" := AP_GetSkill(who, WOODWORKING)
+    };
+endfunction
+
+function CheckResearchCompletion(who)
+    var activeResearch := GetActiveResearch(who);
+    if (activeResearch)
+        var progress := CalculateProgress(activeResearch);
+        if (progress >= 100)
+            CompleteResearch(who, activeResearch);
+        endif
+    endif
+endfunction
+
+function CustomYesNoGump(who, prompt, yes_text := "Sim", no_text := "Não")
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+    GFGumpPic(gump, 0, 0, 114, 0); 
+    
+    var left_margin := 40;
+    var right_margin := 640; 
+    var top_margin := 40;
+    var bottom_margin := 460; 
+    
+    GFTextMid(gump, left_margin, top_margin, right_margin - left_margin, 2439, "Confirmação");
+    
+    var y_pos := top_margin + 80;
+    GFTextMid(gump, left_margin, y_pos, right_margin - left_margin, 2505, prompt);
+    
+    y_pos += 80;
+    
+    GFAddButton(gump, left_margin + 100, y_pos, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, left_margin + 135, y_pos, 2517, yes_text);
+    
+    GFAddButton(gump, right_margin - 200, y_pos, 4005, 4006, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, right_margin - 165, y_pos, 2517, no_text);
+    
+    AddBackButton(gump, left_margin, bottom_margin);
+
+    var input := GFSendGump(who, gump);
+    if (input[0] == 0)
+        ShowMainResearchGump(who);
+        return -1;
+    endif
+    return (input[0] == 1);
+endfunction
+
+function HandleExistingResearch(who)
+    if (!who || who == error)
+        return 0;
+    endif
+    var aprendendo := GetObjProperty(who, "aprenderrecipe");
+    if (aprendendo != error)
+        var result := CustomYesNoGump(who, "Você ainda está fazendo uma pesquisa. Deseja cancelar e começar outra?");
+        if (result == -1) 
+            ShowMainResearchGump(who);
+            return -1;
+        elseif (!result)
+            SendSysMessageEx(who, "Pesquisa atual mantida.", SSM_INFO);
+            ShowMainResearchGump(who);
+            return 0;
+        endif
+        EraseObjProperty(who, "aprenderrecipe");
+    endif
+    return 1;
+endfunction
+
+
+function AddBackButton(gump, left_margin, bottom_margin)
+    GFAddButton(gump, left_margin, bottom_margin - 40, 4014, 4015, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, left_margin + 35, bottom_margin - 40, 2517, "Voltar");
+endfunction
+
+
+
+function CompleteResearchTimer(params)
+    if (!params)
+        return;
+    endif
+
+    var who := SystemFindObjectBySerial(params.playerSerial);
+    if (!who || who == error || TypeOf(who) != "MobileRef")
+        return;
+    endif
+    
+    var activeResearch := GetActiveResearch(who);
+    if (!activeResearch || activeResearch.type != params.recipeType || activeResearch.power != params.recipePower)
+        return;
+    endif
+
+    if (params.spellId)
+        activeResearch.spellId := params.spellId;
+    endif
+    
+    CompleteResearch(who, activeResearch);
+endfunction
+
+function DetermineResearchItem(recipe)
+    case (recipe.type)
+        "Instrução de Fabricação":
+            case (recipe.power)
+                1: return 0xff990;
+                2: return 0xfe995;
+                3: return 0xfe996;
+                4: return 0xfe997;
+                5: return 0xfe998;
+                default: return 0xff990;
+            endcase
+        "Receita Alquimica":
+            case (recipe.power)
+                1: return 0xef1f;
+                2: return 0xef2c;
+                3: return 0xef2d;
+                4: return 0xef2e;
+                5: return 0xef2f;
+                default: return 0xef1f;
+            endcase
+        "Tinta":
+            case (recipe.power)
+                1: return 0xef2b;
+                2: return 0xef3c;
+                3: return 0xef3d;
+                4: return 0xef3e;
+                5: return 0xef3f;
+                default: return 0xef2b;
+            endcase
+        "Magia":
+            case (recipe.power)
+                1: return 0x2060;
+                2: return 0x2064;
+                3: return 0x2066;
+                4: return 0x2063;
+                5: return 0x2065;
+                default: return 0x2060;
+            endcase
+    endcase
+    return 0;
+endfunction
+
+function ResearchTimer(event)
+    var params := struct{
+        "playerSerial" := event.player,
+        "bookSerial" := event.bookSerial
+    };
+    use_research_book(params);
+    var who := SystemFindObjectBySerial(event.player);
+    if (!who || who == error || TypeOf(who) != "MobileRef")
+        return;
+    endif
+
+    var activeResearch := GetActiveResearch(who);
+    if (activeResearch)
+        var progress := CalculateProgress(activeResearch);
+        
+        if (progress < 100)
+            StartResearchCheck(who);
+        else
+            CheckResearchCompletion(who);
+        endif
+    else
+        TS_LowerDuration(who, "ResearchCheck", -1);
+    endif
+endfunction
+
+function StartResearchCheck(who)
+    if (!who || who == error)
+        return;
+    endif
+
+    var activeResearch := GetActiveResearch(who);
+    if (!activeResearch)
+        return;
+    endif
+
+    var checkInterval := 60; // Verifica a cada 1 minuto
+    var timerName := "ResearchCheck";
+    
+    // Remover timer existente, se houver
+    if (TS_GetTimerInfo(who, timerName))
+        TS_LowerDuration(who, timerName, -1);
+    endif
+
+    var params := struct{
+        "type" := "ResearchCheck",
+        "playerSerial" := who.serial
+    };
+
+    var result := TS_StartTimer(who, timerName, checkInterval, 0, params);
+    
+    if (result != 1)
+    else
+    endif
+
+endfunction
+
+function NotifyResearchCompletion(who, recipe)
+    PlaySoundEffect(who, 0x1F3);
+endfunction
+
+function FinishQuickResearch(who, recipe)
+    var itemID;
+    var cfg := ReadConfigFile(":recipes:recipes");
+    var recipeKey;
+
+    case (recipe.type)
+        "Instrução de Fabricação":
+            case (recipe.power)
+                1: itemID := 0xff990;
+                2: itemID := 0xfe995;
+                3: itemID := 0xfe996;
+                4: itemID := 0xfe997;
+                5: itemID := 0xfe998;
+                default: itemID := 0xff990;
+            endcase
+           
+            var levelRecipes := array{};
+            foreach key in (GetConfigStringKeys(cfg))
+                var elem := FindConfigElem(cfg, key);
+                if (elem && GetConfigInt(elem, "level") == recipe.power)
+                    levelRecipes.append(key);
+                endif
+            endforeach
+            if (levelRecipes.size() > 0)
+                recipeKey := levelRecipes[RandomInt(levelRecipes.size()) + 1];
+            endif
+        "Receita Alquimica":
+            case (recipe.power)
+                1: itemID := 0xef1f;
+                2: itemID := 0xef2c;
+                3: itemID := 0xef2d;
+                4: itemID := 0xef2e;
+                5: itemID := 0xef2f;
+                default: itemID := 0xef1f;
+            endcase
+        "Tinta":
+            case (recipe.power)
+                1: itemID := 0xef2b;
+                2: itemID := 0xef3c;
+                3: itemID := 0xef3d;
+                4: itemID := 0xef3e;
+                5: itemID := 0xef3f;
+                default: itemID := 0xef2b;
+            endcase
+        "Magia":
+            case (recipe.power)
+                1: itemID := 0x2060;
+                2: itemID := 0x2064;
+                3: itemID := 0x2066;
+                4: itemID := 0x2063;
+                5: itemID := 0x2065;
+                default: itemID := 0x2060;
+            endcase
+        default:
+            SendSysMessageEx(who, "Erro ao determinar o tipo de pesquisa.", SSM_FAIL);
+            return 0;
+    endcase
+
+     if (itemID)
+        var item := CreateItemInBackpack(who, itemID, 1);
+        if (item)
+            if (recipe.type == "Instrução de Fabricação" && recipeKey)
+                SetObjProperty(item, "recipe", recipeKey);
+                SendSysMessageEx(who, "Voce criou uma nova instrucao de fabricacao: " + recipeKey, SSM_INFO);
+            elseif (recipe.type == "Magia")
+                SetObjProperty(item, "SpellId", recipe.spellId);
+                SendSysMessageEx(who, "Voce criou um novo pergaminho de magia!", SSM_INFO);
+            else
+                SendSysMessageEx(who, "Voce concluiu sua pesquisa rapida com sucesso!", SSM_INFO);
+            endif
+
+       return 1; 
+        else
+            SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
+            return 0; 
+        endif
+    else
+        SendSysMessageEx(who, "Erro ao determinar o item da pesquisa. Contate um GM.", SSM_FAIL);
+        return 0; 
+    endif
+endfunction
+
+
+function GetAvailableResearchTypes(skills)
+    var types := array{};
+    if (skills.ferreiro >= MIN_SKILL || skills.costureiro >= MIN_SKILL || skills.carpenter >= MIN_SKILL)
+        types.append("Instrução de Fabricação");
+    endif
+    if (skills.alquimista >= MIN_SKILL)
+        types.append("Receita Alquimica");
+        types.append("Tinta");
+    endif
+    if (skills.mago >= MIN_SKILL)
+        types.append("Magia");
+    endif
+    return types;
+endfunction
+
+function GetAvailableRapidResearchTypes(skills)
+    var types := array{};
+    if (skills.ferreiro >= MIN_SKILL || skills.costureiro >= MIN_SKILL || skills.carpenter >= MIN_SKILL)
+        types.append("Instrução de Fabricação");
+    endif
+    if (skills.alquimista >= MIN_SKILL)
+        types.append("Receita Alquimica");
+        types.append("Tinta");
+    endif
+    if (skills.mago >= MIN_SKILL)
+        types.append("Magia");
+    endif
+    return types;
+endfunction
+
+function GetMaxPowerForCrafting(skills)
+    var maxSkill := Max(skills.ferreiro, Max(skills.costureiro, skills.carpenter));
+    return GetMaxPowerForSkill(maxSkill);
+endfunction
+
+function GetMaxPowerForInk(skill)
+    if (skill >= 100)
+        return 5;
+    elseif (skill >= 90)
+        return 4;
+    elseif (skill >= 80)
+        return 3;
+    elseif (skill >= 70)
+        return 2;
+    else
+        return 1;
+    endif
+endfunction
+
+function GetMaxPowerForMagic(skill)
+    if (skill >= 100)
+        return 5;
+    elseif (skill >= 90)
+        return 4;
+    elseif (skill >= 80)
+        return 3;
+    elseif (skill >= 70)
+        return 2;
+    else
+        return 1;
+    endif
+endfunction
+
+function PerformRapidResearch(who, recipe)
+    var my_x := who.x;
+    var my_y := who.y;
+    var my_facing := who.facing;
+
+    SendSysMessageEx(who, "Pesquisa rápida iniciada com sucesso!", SSM_INFO);
+
+    if (!ConsumeSubstance(who.backpack, PERGAMINHO_OBJTYPE, PERGAMINHO_AMOUNT_RAPIDA))
+        SendSysMessageEx(who, "Você não tem pergaminhos suficientes para realizar a pesquisa.", SSM_FAIL);
+        return 0; 
+    endif
+
+    if (!AP_ConsumeVital(who, "Mana", 15))
+        SendSysMessageEx(who, "Você não tem mana suficiente para realizar a pesquisa.", SSM_FAIL);
+        return 0;  
+    endif
+
+    var success := 0;
+    var skillname;
+    case (recipe.type)
+        "Instrução de Fabricação":
+            var craftSkills := struct{
+                "woodworking" := AP_GetSkill(who, WOODWORKING),
+                "metalworking" := AP_GetSkill(who, METALWORKING),
+                "domesticwork" := AP_GetSkill(who, Domestic_Work)
+            };
+            var highestSkill := Max(craftSkills.woodworking, Max(craftSkills.metalworking, craftSkills.domesticwork));
+            if (highestSkill == craftSkills.woodworking)
+                skillname := WOODWORKING;
+            elseif (highestSkill == craftSkills.metalworking)
+                skillname := METALWORKING;
+            else
+                skillname := Domestic_Work;
+            endif
+        "Receita Alquimica": skillname := ALCHEMY;
+        "Tinta": skillname := ALCHEMY;
+        "Magia": 
+            skillname := MAGERY;
+            var spellId := SelectRandomSpell(recipe.power);
+            recipe.spellId := spellId;
+        default: skillname := ALCHEMY;  
+    endcase
+
+    var powerBonus := 0;
+    case (CInt(recipe.power))
+        1: powerBonus := 1;
+        2: powerBonus := 0.7;
+        3: powerBonus := 0.5;
+        4: powerBonus := 0.2;
+        5: powerBonus := 0;
+    endcase
+
+for i := 1 to 5
+    if (!CheckStudyConditions(who, my_x, my_y, my_facing))
+        SendSysMessageEx(who, "Condições de estudo não atendidas.", SSM_FAIL);
+        break;
+    endif
+    
+    PrintText(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
+    PlaySoundEffect(who, 0x24a);
+
+    sleep(5); 
+
+    if (i == 3) // Na última iteração, faça a verificação de sucesso
+        var scaledChance := 0.04; // 4% de chance
+        var rollResult := RandomInt(10000);
+        var chanceThreshold := CInt(scaledChance * 10000);
+
+        //SendSysMessageEx(who, "Tentativa final: Resultado " + rollResult + " / Limite " + chanceThreshold, SSM_INFO);
+
+        if (rollResult <= chanceThreshold)
+            success := 1;
+            SendSysMessageEx(who, "Pesquisa bem-sucedida!", SSM_INFO);
+        endif
+    endif
+endfor
+
+    if (success)
+        if (who.gender == 1) 
+            PlaySoundEffect(who, 0x30c);
+        else
+            PlaySoundEffect(who, 0x41b); 
+        endif
+        return FinishQuickResearch(who, recipe); 
+    else
+        SendSysMessageEx(who, "Sua pesquisa rápida não teve sucesso.", SSM_FAIL);
+        return 0;  
+    endif
+endfunction
+
+function CustomFormatRealToString(value, decimal_places := 2)
+    var integer_part := Floor(value);
+    var fractional_part := value - integer_part;
+    var fractional_string := "";
+
+    if (fractional_part > 0)
+        fractional_string := "." + CStr(Floor(fractional_part * CDbl(10^decimal_places)));
+        while (len(fractional_string) <= decimal_places)
+            fractional_string := fractional_string + "0";
+        endwhile
+    endif
+
+    return CStr(integer_part) + fractional_string;
+endfunction
+
+function SelectRandomSpell(power)
+    var cfg := ReadConfigFile(":spells:spellcaster");
+    if (!cfg)
+        return 0;
+    endif
+    var spells := array{};
+    foreach entry in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, entry);
+        var circle := GetConfigInt(elem, "Circle");
+        if (circle == power)
+            spells.append(GetConfigInt(elem, "SpellId"));
+        endif
+    endforeach
+    if (spells.size() > 0)
+        var selectedSpell := spells[RandomInt(spells.size()) + 1];
+        return selectedSpell;
+    endif
+    return 0;
+endfunction
+
+function CheckStudyConditions(who, my_x, my_y, my_facing)
+    if (who.hidden || who.x != my_x || who.y != my_y || who.facing != my_facing || GetEquipmentByLayer(who, LAYER_MOUNT))
+        SendSysMessageEx(who, "Você interrompeu sua pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+    if (AP_GetVital(who, "Mana") < 3)
+        SendSysMessageEx(who, "Você está muito cansado para continuar.", SSM_FAIL);
+        return 0;
+    endif
+    return 1;
+endfunction
+
+function GetMaxPowerForSkill(skill)
+    if (skill >= 100)
+        return 5;
+    elseif (skill >= 90)
+        return 4;
+    elseif (skill >= 80)
+        return 3;
+    elseif (skill >= 70)
+        return 2;
+    else
+        return 1;
+    endif
+endfunction
+
+function CalculateProgress(recipe)
+    if (!recipe || !recipe.start)
+        return 0;
+    endif
+
+    var current_timestamp := ReadGameClock();
+    var segundosPassados := Max(0, current_timestamp - recipe.start);
+    
+    var duracaoTotal := RESEARCH_DURATION_MINUTES * 60;
+    
+    var progresso := Min((CDbl(segundosPassados) / duracaoTotal) * 100, 100);
+    
+    return progresso;
+endfunction
+
+function CalculateRemainingTime(recipe)
+    var current_timestamp := ReadGameClock();
+    var segundosPassados := Max(0, current_timestamp - recipe.start);
+    var segundosTotal := RESEARCH_DURATION_MINUTES * 60;
+    var segundosRestantes := Max(0, segundosTotal - segundosPassados);
+    var progresso := (CDbl(segundosPassados) / segundosTotal) * 100;
+    
+    var horasRestantes := CInt(segundosRestantes / 3600);
+    var minutosRestantes := CInt((segundosRestantes % 3600) / 60);
+    var segundosRestantesFinal := segundosRestantes % 60;
+
+    return struct{
+        "horas" := horasRestantes,
+        "minutos" := minutosRestantes,
+        "segundos" := segundosRestantesFinal,
+        "progresso" := progresso
+    };
+endfunction
+
+function FormatResearchTime(totalSeconds)
+    var hours := Floor(totalSeconds / 3600);
+    var minutes := Floor((totalSeconds % 3600) / 60);
+    var seconds := totalSeconds % 60;
+    
+    var result := "";
+    if (hours > 0)
+        result += $"{hours} hora" + (hours != 1 ? "s" : "") + " ";
+    endif
+    if (minutes > 0 || (hours > 0 && seconds > 0))
+        result += $"{minutes} minuto" + (minutes != 1 ? "s" : "") + " ";
+    endif
+    if (seconds > 0 || (hours == 0 && minutes == 0))
+        result += $"{seconds} segundo" + (seconds != 1 ? "s" : "");
+    endif
+    
+    return TrimRight(result);
+endfunction
+
+function TrimRight(text)
+    while (text[text.length()] == " ")
+        text := text[1, text.length() - 1];
+    endwhile
+    return text;
+endfunction
+
+function CompleteResearch(who, recipe)
+    if (!who || who == error || TypeOf(who) != "MobileRef")
+        return;
+    endif
+
+    var itemID := DetermineResearchItem(recipe);
+    if (itemID == 0)
+        SendSysMessageEx(who, "Erro ao determinar o item da pesquisa. Contate um GM.", SSM_FAIL);
+        return 0;
+    endif
+
+    var item := CreateItemInBackpack(who, itemID, 1);
+    if (item)
+        var success := 0;
+        case (recipe.type)
+            "Instrução de Fabricação":
+                var recipeKey := SelectRandomRecipe(recipe.power);
+                if (recipeKey)
+                    SetObjProperty(item, "recipe", recipeKey);
+                    SendSysMessageEx(who, "Você criou uma nova instrução de fabricação: " + recipeKey, SSM_INFO);
+                    success := 1;
+                else
+                    SendSysMessageEx(who, "Erro ao selecionar a receita. Contate um GM.", SSM_FAIL);
+                endif
+            "Magia":
+                if (recipe.spellId)
+                    SetObjProperty(item, "SpellId", recipe.spellId);
+                    SendSysMessageEx(who, "Você criou um novo pergaminho de magia!", SSM_INFO);
+                    success := 1;
+                else
+                    SendSysMessageEx(who, "Erro ao definir a magia. Contate um GM.", SSM_FAIL);
+                endif
+            default:
+                SendSysMessageEx(who, "Você concluiu sua pesquisa com sucesso!", SSM_INFO);
+                success := 1;
+        endcase
+
+        if (!success)
+            DestroyItem(item);
+            return 0;
+        endif
+
+        if (who.gender == 1)
+            PlaySoundEffect(who, 0x30c); 
+        else
+            PlaySoundEffect(who, 0x41b); 
+        endif
+
+        NotifyResearchCompletion(who, recipe);
+        EraseObjProperty(who, "aprenderrecipe");
+        return 1;
+    else
+        SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
+        return 0;
+    endif
+    ShowMainResearchGump(who);
+endfunction
+
+function SelectRandomRecipe(power)
+    var cfg := ReadConfigFile(":recipes:recipes");
+    if (cfg.errortext)
+        return 0;
+    endif
+
+    var levelRecipes := array{};
+    foreach key in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (elem && GetConfigInt(elem, "level") == power)
+            levelRecipes.append(key);
+        endif
+    endforeach
+
+    if (levelRecipes.size() > 0)
+        return levelRecipes[RandomInt(levelRecipes.size()) + 1];
+    endif
+
+    return 0;
+endfunction

@@ -1,0 +1,73 @@
+Documentação do Sistema de Pesquisa
+Visão Geral
+Este script implementa um sistema de pesquisa complexo para um jogo online, permitindo que os jogadores realizem pesquisas rápidas e extensivas para criar vários tipos de itens, como instruções de fabricação, receitas alquímicas, tintas e magias.
+Principais Componentes
+1. Inicialização
+
+InitializeGlobals(): Inicializa variáveis globais como ações de estudo e tipos de livros.
+program use_research_book(params): Ponto de entrada principal do script.
+
+2. Gumps (Interfaces Gráficas)
+
+ShowMainResearchGump(who): Exibe o gump principal com opções de pesquisa.
+ShowQuickResearchGump(who): Interface para pesquisa rápida.
+ShowExtensiveResearchGump(who): Interface para pesquisa extensiva.
+ShowOngoingResearchGump(who): Exibe o progresso de uma pesquisa em andamento.
+
+3. Mecânicas de Pesquisa
+
+PerformQuickResearch(who, recipe): Realiza uma pesquisa rápida.
+StartExtensiveResearch(who): Inicia uma pesquisa extensiva.
+InitiateResearch(who, recipe): Inicia o processo de pesquisa.
+StartResearch(who, recipe, remainingTime := 0): Configura e inicia uma nova pesquisa.
+
+4. Verificações e Cálculos
+
+CheckResearchRequirements(who, isQuickResearch := 0, power := 0): Verifica se o jogador atende aos requisitos para pesquisa.
+CalculateProgress(recipe): Calcula o progresso atual de uma pesquisa.
+CalculateRemainingTime(recipe): Calcula o tempo restante de uma pesquisa.
+
+5. Finalização de Pesquisa
+
+CompleteResearch(who, recipe): Finaliza uma pesquisa e cria o item resultante.
+FinishQuickResearch(who, recipe): Finaliza uma pesquisa rápida.
+
+6. Funções Auxiliares
+
+GetResearchSkills(who): Obtém as habilidades relevantes do jogador.
+GetAvailableResearchTypes(skills): Determina os tipos de pesquisa disponíveis com base nas habilidades.
+SelectRandomSpell(power): Seleciona uma magia aleatória para pesquisas mágicas.
+FormatResearchTime(totalSeconds): Formata o tempo de pesquisa para exibição.
+
+Fluxo de Funcionamento
+
+O jogador inicia o sistema através de um livro de pesquisa.
+O gump principal é exibido com opções de pesquisa.
+O jogador escolhe entre pesquisa rápida ou extensiva.
+O sistema verifica os requisitos (habilidades, itens necessários).
+A pesquisa é iniciada, com um temporizador para pesquisas extensivas.
+O progresso é monitorado e exibido periodicamente.
+Ao completar, o item resultante é criado e adicionado ao inventário do jogador.
+
+Principais Funcionalidades
+
+Pesquisa Rápida: Processo mais curto com chance de sucesso imediato.
+Pesquisa Extensiva: Processo mais longo (7 dias) com garantia de sucesso.
+Múltiplos Tipos de Pesquisa: Instruções de fabricação, receitas alquímicas, tintas e magias.
+Sistema de Progresso: Monitoramento visual do progresso da pesquisa.
+Requisitos de Habilidade: Diferentes níveis de pesquisa baseados nas habilidades do jogador.
+Consumo de Recursos: Requer pergaminhos e mana para iniciar pesquisas.
+
+Considerações Técnicas
+
+Utiliza sistema de temporizadores para pesquisas de longa duração.
+Implementa verificações de segurança para evitar exploits.
+Integra-se com outros sistemas do jogo (habilidades, inventário, criação de itens).
+Usa configurações externas para definir tipos de pesquisa e resultados possíveis.
+
+Possíveis Melhorias Futuras
+
+Implementar um sistema de pesquisa colaborativa.
+Adicionar eventos aleatórios durante pesquisas extensivas.
+Expandir os tipos de pesquisa disponíveis.
+Implementar um sistema de reputação ou nível de pesquisador.

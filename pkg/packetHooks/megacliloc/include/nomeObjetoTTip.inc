@@ -157,3 +157,31 @@ function AdicionaLore(objeto,nomeObjeto)
 	endif
 	return nomeObjeto;
 endfunction
+
+
+function AddSpecialBookshelfDescription(item, xDesc)
+    case (item.objtype)
+        0xA9D:
+        0xA9E:
+            xDesc += "<BASEFONT COLOR=#FFFFFF>Estante de Pesquisa com Livros Comuns<BR>";
+            break;
+        0xEA08:
+        0xEA07:
+        0x2DEF:
+        0x2DF0:
+            xDesc += "<BASEFONT COLOR=#FFD700>Estante de Pesquisa com Livros Raros<BR>";
+            break;
+        0x6A94:
+        0x6A95:
+        0x6A96:
+        0x6A97:
+        0x0C15:
+        0x0C14:
+            xDesc += "<BASEFONT COLOR=#C56252>Estante de Pesquisa com Livros Ancestrais<BR>";
+            break;
+        default:
+            return xDesc;
+    endcase
+
+    return xDesc;
+endfunction
