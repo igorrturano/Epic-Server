@@ -62,7 +62,7 @@ program usekeg(who, item)
 					endif
 					bebida.agua := bebida.agua + 1;
 					DestroyItem(agua);
-					CreateItemInBackpack(who, 0x1f81, 1);
+					CreateItemInBackpack(who, 0x09a7, 1);
 					PlaySoundEffect(who,  0x241);
 					SetObjProperty(item, "bebida", bebida);
 				else
@@ -240,12 +240,16 @@ function addDrink(who, item)
 	//if (!dosesMod)
 		dosesMod := 1; //deixa sempre 1
 	//endif
+
 	if (targ.objtype == 0xcfff)// não aceita extratos
-		SendSysMessageEx(who, "Voce nao pode por extratos no barril");
+		SendSysMessageEx(who, "Voce nao pode por extratos no barril.");
 	return;
 	endif
 
-	if (bebida == error || bebida.doses <= 0)
+	if (bebida.doses == 50)
+		SendSysMessageEx(who, "este barril ja esta cheio.");
+		return;
+	elseif (bebida == error || bebida.doses <= 0)
 		bebida := struct;
 		bebida.+objtype := targ.objtype;
 		bebida.+doses := targ.amount*dosesMod;
@@ -279,7 +283,13 @@ function addDrink(who, item)
 					pot.insert("crafterskill", skill*10);
 					setobjproperty(item, "pocao", pot);
 			endif
-			bebida.doses := bebida.doses + targ.amount*dosesMod;
+			
+			if(bebida.doses + targ.amount*dosesMod > 50)
+				SendSysMessageEx(who, "o barril so comporta 50 doses.");
+				return;
+			else
+				bebida.doses := bebida.doses + targ.amount*dosesMod;
+			endif
 		endif
 	endif
 
@@ -300,6 +310,10 @@ function addDrink(who, item)
 	var  name := item.desc;
 	SetObjProperty(item, "description", bebida.doses + " doses");
 	SetName(item, name);
+
+	if(bebida != error)
+		item.weight_multiplier_mod := 1 + (bebida.doses * 0.05);
+	endif
 
 endfunction
 
@@ -355,8 +369,10 @@ function subDrink(who, item)
 			SendSysMessageEx(who, "O barril secou.", SSM_FAIL);
 			EraseObjProperty(item, "bebida");
 			EraseObjProperty(item, "pocao");
+			item.weight_multiplier_mod := 1;
 		else
-		SetObjProperty(item, "bebida", bebida);
+			SetObjProperty(item, "bebida", bebida);
+			item.weight_multiplier_mod := 1 + (bebida.doses * 0.05);
 		endif
 		var  name := item.desc;
 		SetObjProperty(item, "description", bebida.doses + " doses");
