@@ -18,6 +18,7 @@ include ":combat:combat";
 include ":equipsys:utils";
 include ":equipsys:props";
 include "include/epicNPCUtils";
+include "weardown";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -187,28 +188,30 @@ endfunction
 
 function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUNTDAMAGE)
 	var dmg;
-	var weapondice;
+	var weaponDice, weaponModDice;
 
 	if (attacker.npctemplate)
 		// TODO: Implementar uma mini AI para fazer o NPC modificar o dano baseado na postura de ataque possível (assim como é possível com os players)
 			// TODO: Por enquanto vai usar só o maior dano base.
 		var damage := getNPCMainDamage(attacker, attackType);
-		weapondice := damage.dice;
+		weaponDice := damage.dice;
 	else
 		if (GetObjProperty(attacker, "metamorfose") != error)
-			weapondice := GetObjProperty(attacker, "dicedmg");
+			weaponDice := GetObjProperty(attacker, "dicedmg");
 		elseif (GetObjProperty(attacker, "pilotando") != error)
-			weapondice := GetObjProperty(attacker, "dicedmg");
+			weaponDice := GetObjProperty(attacker, "dicedmg");
 		elseif (offDamage)
-			weapondice := getWeaponOffDamageDice(weapon);
+			weaponDice := getWeaponOffDamageDice(weapon);
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
-				weapondice := "1d10";
+				weaponDice := "1d10";
 			else
-				weapondice := getWeaponMainDamageDice(weapon);
+				weaponDice := getWeaponMainDamageDice(weapon);
 			endif
     	endif
 	endif
+
+	DebugMsg(attacker, DEBUG_DAMAGE, "Dano da arma: "+weapondice);
 
 	if (!weapondice || weapondice == error)
 		dmg := 0;
@@ -216,7 +219,6 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 		dmg := RandomDiceRoll(weapondice);
 	endif
 
-	DebugMsg(attacker, DEBUG_DAMAGE, "Dano da arma: "+weapondice);
 	DebugMsg(attacker, DEBUG_DAMAGE, "Rolou dano: "+dmg);
 
 	return dmg;
@@ -290,7 +292,7 @@ function GetLastDamageInfo(mobile)
 	return GetObjProperty(mobile, "LastDamage");
 endfunction
 
-function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
+function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") // Mantido, apesar de criar o CombatDamageEPIC(), para não dar conflito com os demais danos do shard após criar o novo sistema de danos por região
 	var totaldmg;
 
 	if (type == DMG_FORCED)
@@ -349,8 +351,33 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	return totaldmg;
 endfunction
 
+function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
+	var totaldamage;
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Base {type}: {damage}");
+
+	if (type == DMG_FORCED)
+		totaldamage := CInt(damage);
+	else
+		totaldamage := CInt(EpicCalculateDamage(attacker, defender, armor, damage, type));
+	endif
+
+	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
+
+	DisplayDamage(defender, totaldamage, attacker);
+	ApplyRawDamage(defender, totaldamage);
+	SetLastDamageInfo(defender, totaldamage, type, attacker);
+
+	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage, type);
+
+	if (defender.frozen)
+		defender.frozen := 0;
+	endif
+
+	return totaldamage;
+endfunction
+
 /**
- * DamageEpicCombat(attacker, defender, armor, damage, type)
+ * EpicApplyDamageBase(attacker, defender, armor, damage, type)
  *
  * Purpose
  * Criado para modificar a aplicação de dano do combate sem influenciar nas demais aplicações de dano do shard.
@@ -366,25 +393,58 @@ endfunction
  * Return value
  *
  */
-function DamageEpicCombat(attacker, defender, armor, damage, type)
+function EpicApplyDamageBase(attacker, defender, weapon, armor, damage, type)
 	SetScriptController(attacker);
-	var totaldamage := CInt(CalculateDamageCombat(attacker, defender, armor, damage, type));
 
-	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
-	DisplayDamage(defender, totaldamage, attacker);
-	ApplyRawDamage(defender, totaldamage);
-	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage, type);
-	SetLastDamageInfo(defender, totaldamage, type, attacker);
+	// Calcula desgaste nos equipamentos
+	WearDownWeapon(attacker, weapon);
+	WearDownArmor(defender, armor, damage, weapon);
 
-	if (defender.frozen)
-		defender.frozen := 0;
-	endif
-
-	return totaldamage;
+	DamageEPIC(attacker, defender, weapon, armor, damage, type);
 endfunction
 
 /**
- * CalculateDamageCombat(attacker, defender, armor, damage, type)
+ * EpicApplyDamageElemental(attacker, defender, weapon, armor)
+ *
+ * Purpose
+ * Criado para modificar a aplicação de dano do combate sem influenciar nas demais aplicações de dano do shard.
+ * Ver o doc das demais funções abaixo para entender melhor.
+ * 
+ * Parameters
+ * attacker: Ref do atacante aplicando o dano.
+ * defender: Ref do alvo atingido no dano.
+ * armor: itemRef da peça atingida.
+ * damage: Valor total do dano a ser abatido.
+ * type: Tipo do elemento do dano.
+ * 
+ * Return value
+ *
+ */
+function EpicApplyDamageElemental(attacker, defender, weapon, armor, damages)
+	SetScriptController(attacker);
+
+	print(damages);
+
+	if (damages.FireDamage)
+		WearDownArmor(defender, armor, damages.FireDamage, weapon);
+		DamageEPIC(attacker, defender, weapon, armor, damages.FireDamage, DMG_FIRE);
+	endif
+	if (damages.ColdDamage > 0)
+		WearDownArmor(defender, armor, damages.ColdDamage, weapon);
+		DamageEPIC(attacker, defender, weapon, armor, damages.ColdDamage, DMG_COLD);
+	endif
+	if (damages.PoisonDamage > 0)
+		WearDownArmor(defender, armor, damages.PoisonDamage, weapon);
+		DamageEPIC(attacker, defender, weapon, armor, damages.PoisonDamage, DMG_POISON);
+	endif
+	if (damages.EnergyDamage > 0)
+		WearDownArmor(defender, armor, damages.EnergyDamage, weapon);
+		DamageEPIC(attacker, defender, weapon, armor, damages.EnergyDamage, DMG_ENERGY);
+	endif
+endfunction
+
+/**
+ * EpicCalculateDamage(attacker, defender, armor, damage, type)
  *
  * Purpose
  * Criado para modificar o cálculo de dano do combate sem influenciar nos demais cálculos de dano do shard.
@@ -401,7 +461,7 @@ endfunction
  * Return value
  *
  */
-function CalculateDamageCombat(attacker, defender, armor, damage, type)
+function EpicCalculateDamage(attacker, defender, armor, damage, type)
 	var resistMod := 0;
 	var resist := 0;
 	var totaldamage := damage;
@@ -421,6 +481,7 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 	if (regiao.equip == error)
 		regiao.equip := "Corpo";
 	endif
+
 	DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
 	DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
 	DebugMsg(attacker, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
@@ -434,8 +495,8 @@ function CalculateDamageCombat(attacker, defender, armor, damage, type)
 		damage := 1;
 	endif
 
-	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
-	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final: {damage}({totaldamage} - {resist})");
+	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
+	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
 
 	return CInt(damage);
 endfunction
@@ -639,8 +700,9 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 			endif
 		endif
 	endif
-
-	return CInt(damage-resist);
+	
+	var totaldamage := CInt(damage-resist); 
+	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
 endfunction
 
 /**
@@ -745,15 +807,34 @@ function CalculateTotalBaseDamage(attacker, defender, rawdamage)
 	
 	// Aplica redutores e penalidades de dano
 	damage := CalcDamageReducer(attacker, damage);
+	damage := CInt(damage);
 
 	if (damage < 1)
 		damage := 1;
 	endif
 
-	damage := CInt(damage);
-	DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
+	// DebugMsg(attacker, DEBUG_DAMAGE, "Dano Base: " + damage);
 
 	return damage;
+endfunction
+
+function CalculateDamageElemental(attacker, defender, weapon, armor)
+	var damages := struct;
+
+	if (weapon.damage_fire_mod)
+		damages.+FireDamage := weapon.damage_fire_mod;
+	endif
+	if (weapon.damage_cold_mod)
+		damages.+ColdDamage := weapon.damage_cold_mod;
+	endif
+	if (weapon.damage_poison_mod)
+		damages.+PoisonDamage := weapon.damage_poison_mod;
+	endif
+	if (weapon.damage_energy_mod)
+		damages.+EnergyDamage := weapon.damage_energy_mod;
+	endif
+
+	return damages;
 endfunction
 
 function CalcDamageStats(attacker, damage)
