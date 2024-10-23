@@ -35,7 +35,7 @@ program drink_blue( who, potion )
   var bonus := Cint( GetObjProperty(potion, "crafterskill" ) );
 	bonus := bonus * 0.05;
 
-  DestroyItem(potion);
+  empty_bottle(who, potion, 1, 0);
 
   SendSysMessageEx( who, "Você encantou o objeto.", SSM_INFO );
   PlayStationaryEffect( who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2 );

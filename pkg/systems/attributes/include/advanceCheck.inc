@@ -59,6 +59,7 @@ use util;
 
 include ":tn:characters";
 include ":commands:debugsystem";
+include ":attributes:skills";
 
 /*
  * CheckStatsForSkill(mobile, skill_name)
@@ -233,8 +234,8 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     endif
 
     if (AP_CheckSkillCap(mobile, skill_name))
-        DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo para " + skill_name + ".");
-        SkillDbgMsg(mobile, "Skill cap for '" + skill_name + "' reached. No advance.");
+        DebugMsg(mobile, DEBUG_UP, "Você atingiu o cap máximo para " + FormatSkillName(skill_name) + ".");
+        SkillDbgMsg(mobile, "Skill cap for '" + FormatSkillName(skill_name) + "' reached. No advance.");
         return 0;
     endif
 
@@ -258,7 +259,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     // Verifica o tempo de espera entre ganhos de habilidade
     var settings := AP_GetSettingsCfgElem("Skills");
     if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
-        DebugMsg(mobile, DEBUG_UP, "Você precisa esperar um pouco mais antes de aumentar sua habilidade.");
         return 0;
     endif
 
@@ -273,7 +273,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         fail_count := fail_count + 1;
         SetObjProperty(mobile, fail_count_skill, fail_count);
         SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
-        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + skill_name + ", mas ainda não aprimorou. Tentativas: (" + CStr(fail_count) + ")");
+        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + FormatSkillName(skill_name) + ", mas ainda não aprimorou. Tentativas: (" + CStr(fail_count) + ")");
         return 0;
     endif
 
@@ -281,7 +281,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     if (true_skill < CDbl(settings.FreeGainUntil)) 
         SkillDbgMsg(mobile, "Free Gain.");
     elseif (DifficultyTooEasy(true_skill, award_diff)) 
-        DebugMsg(mobile, DEBUG_UP, "Esta ação está muito fácil para você aprimorar a habilidade " + skill_name + ".");
+        DebugMsg(mobile, DEBUG_UP, "Esta ação está muito fácil para você aprimorar a habilidade " + FormatSkillName(skill_name) + ".");
         SkillDbgMsg(mobile, "Skill too easy to advance.");
         return 0;
     endif
@@ -303,11 +303,11 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
             SetObjProperty(mobile, fail_count_skill, 0);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + skill_name + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
+            DebugMsg(owner, DEBUG_UP, "A habilidade " + FormatSkillName(skill_name) + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
         endif
     else
         SetObjProperty(mobile, fail_count_skill, 0);
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + skill_name + " aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
+        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + FormatSkillName(skill_name) + " aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
     endif
 
     return 1;
@@ -358,9 +358,10 @@ endfunction
  */
 function SkillGainCooldownPassed(mobile, skill_name, settings)
     var next_check := CInt(GetObjProperty(mobile, "#LastSkillGain")) + GetConfigInt(settings, "GainWait");
-    
-    if (next_check > ReadGameClock()) 
-        SkillDbgMsg(mobile, "Skill gain cooldown active.");
+    var game_clock := ReadGameClock();
+    var diff := CInt(next_check - game_clock);
+    if (next_check > game_clock) 
+        DebugMsg(mobile, DEBUG_UP, "Você precisa esperar um pouco mais antes de aumentar sua habilidade (" + CStr(diff) + "s).");
         return false;
     endif
     
@@ -485,6 +486,6 @@ function CalculateDaysInReal(days)// para 10000 deu 292 segundos 300
 endfunction
 
 function RoundValueToOneDecimal(value)
-    var rounded := Floor(value * 10 + 0.5) / 10;  // Manually round to one decimal
+    var rounded := Floor(value * 10 + 0.1) / 10;  // Manually round to one decimal
     return CStr(rounded);  // Convert the number to string without scientific notation
 endfunction
