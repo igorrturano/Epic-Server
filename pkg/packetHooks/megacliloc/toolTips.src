@@ -54,7 +54,7 @@ exported function MegaCliloc( who, byref packet )
 
 		//PREENCHE A DESCRIÇÃO COMUM A QUALQUER ITEM OU MOBILE
 		xDesc := "";
-
+		xDesc := AddSpecialBookshelfDescription(item, xDesc);  // Adicione esta linha
 		xDesc := MontaDescPersonagem(item,who,xDesc);
 		xDesc := AdicionaDescricaoQuebravel(item, xDesc);
 		
@@ -113,7 +113,5 @@ exported function MegaCliloc( who, byref packet )
 	return 0;
 
 endfunction
-
-
 
 
