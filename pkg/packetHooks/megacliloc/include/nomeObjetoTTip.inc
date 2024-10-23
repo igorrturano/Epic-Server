@@ -161,6 +161,7 @@ function AdicionaLore(objeto,nomeObjeto)
 	return nomeObjeto;
 endfunction
 
+
 function AdicionaDescricaoQuebravel(item, xDesc, apenasNome := 0)
     var quebravel := GetObjProperty(item, "quebravel");
     if (!quebravel)
