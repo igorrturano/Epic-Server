@@ -427,3 +427,17 @@ function valorInicial(mobile, skill_name)
 
 	return skill_inicial;
 endfunction
+
+function FormatSkillName(skillName)
+    case (skillName)
+        "Magic_Lore":     return "Magic Lore";
+        "Handle_Animal":  return "Handle Animal";
+        "Domestic_Work":  return "Domestic Work";
+        "Wood_Working":   return "Wood Working";
+        "Metal_Working":  return "Metal Working";
+        "Two_Handed":     return "Two Handed";
+        "One_Handed":     return "One Handed";
+        "Dual_Wield":     return "Dual Wield";
+        default: return StrReplace(skillName, "_", " ");
+    endcase
+endfunction

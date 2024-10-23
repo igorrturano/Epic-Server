@@ -56,7 +56,8 @@ exported function MegaCliloc( who, byref packet )
 		xDesc := "";
 		xDesc := AddSpecialBookshelfDescription(item, xDesc);  // Adicione esta linha
 		xDesc := MontaDescPersonagem(item,who,xDesc);
-
+		xDesc := AdicionaDescricaoQuebravel(item, xDesc);
+		
 		/* Comentei porque a variavel desc não estava sendo usada pra nada - Luteros
 		desc := GetObjProperty(item, "description");
 		if(desc == error)

@@ -79,7 +79,7 @@ function canChangePostura(who, weapon)
 		return 0;
 	endif
 
-	if (elem.Attribute.Upper() == RANGED.Upper())
+	if (elem.Attribute == RANGED)
 		SendSysMessageEx(who, "Não é possível alterar postura de arma à distância.", SSM_FAIL);
 		return 0;
 	endif
