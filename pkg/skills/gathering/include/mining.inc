@@ -454,6 +454,8 @@ function DetermineMiningDifficulty(oretype)
 		0x6307: return 90; //galvorn
 		0x6308: return 90; //mithril
 		0x6450: return 20; //cobre
+		0x6465: return 20; //cobre -> bronze
+		
 		0x699c: return 10; //bronze
 		0x699d: return 20; // Bronze temperado
 		0x6994: return 20; // bronze
