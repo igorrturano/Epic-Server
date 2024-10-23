@@ -30,7 +30,7 @@ program controlScript(field)
 			PlaySoundEffect(field, 0x1DE);
 		endif
 
-		var event := Wait_For_Event(1);
+		var event := Wait_For_Event(0);
 		if ( event )
 			//Someone just walked onto the tile.
 			BurnMobile(event, dmg_dice, creator);
@@ -40,6 +40,7 @@ program controlScript(field)
 			DestroyItem(field);
 			return 1;
 		endif
+		sleepms(250);
 	endwhile
 endprogram
 
