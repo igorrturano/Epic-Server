@@ -157,7 +157,11 @@ function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
     endif
     AddInfoLine(gump, y_pos, "Nome", nome_real);
     
-    AddInfoLine(gump, y_pos, "Raca", targ.title_race);
+var display_text := targ.title_race;
+if (chardata.culture)
+    display_text += ", " + chardata.culture;
+endif
+AddInfoLine(gump, y_pos, "Raca e Cultura", display_text);
     AddInfoLine(gump, y_pos, "Sexo", GetGenderString(targ.gender));
     AddInfoLine(gump, y_pos, "Classe", GetCharDataValue(chardata, "classe"));
     AddInfoLine(gump, y_pos, "Background", GetCharDataValue(chardata, "background"));

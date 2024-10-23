@@ -83,8 +83,10 @@ function OpenGump(who, pot)
 				toSmeltOre := ableToSmelt[option.oreObjType].ore;
 				toSmeltItems := ableToSmelt[option.oreObjType].items.toSmelt;
 				
-				DebugMsg(who, DEBUG_SMELTING, "Item: " + toSmeltItems);
-				DebugMsg(who, DEBUG_SMELTING, "Quantidade: " + toSmeltAmount);
+				foreach item in toSmeltItems
+					DebugMsg(who, DEBUG_SMELTING, "Item: " + item.desc);
+					DebugMsg(who, DEBUG_SMELTING, "Quantidade: " + toSmeltAmount);
+				endforeach
 				break;
 			endif
 		endforeach
@@ -167,12 +169,13 @@ function getOresAbleToSmelt(bag, ableToSmelt, byref index)
 				
 				// Checa se tem todos os materiais pra poder smeltar
 				var otherMaterialsFound := array{};
+				var otherObjTypesFound := array{};
 				if (otherMaterialsNeeded.Size() > 0) // Caso seja liga
-					
 					foreach objtypeNeeded in otherMaterialsNeeded
 						foreach item in bag
-							if (item.objtype == objtypeNeeded && !(item.objtype in otherMaterialsFound))
+							if (item.objtype == objtypeNeeded && !(item.objtype in otherObjTypesFound))
 								otherMaterialsFound.append(item);
+								otherObjTypesFound.append(item.objtype);
 							endif
 						endforeach
 					endforeach
@@ -247,10 +250,7 @@ function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
 
 		CoolPot(who, pot);
 	else
-		foreach item in itemsToSmelt
-			SmeltFail(who, item, amt);
-			SleepMS(500);
-		endforeach
+		SmeltFail(who, itemsToSmelt, amt);
 	endif
 
 	return 1;
@@ -275,13 +275,28 @@ function SmeltSuccess(who, pot, item, amt)
 	PlayEffectSmelt(who, pot);
 endfunction
 
-function SmeltFail(who, ore, amt)
-	var amtLost := RandomInt(3)+1;
+function SmeltFail(who, ores, amt)
+	amt := CInt(amt); // POL BUGADO DO CARALHO!!!
+
+	var roll := RandomInt(6);
+	var lostBySkill := CInt(((AP_GetSkill(who, GATHERING)-100) * -1) / 10);
+	var amtLost := roll + lostBySkill;
+
 	if (amtLost > amt)
 		amtLost := amt;
 	endif
-	SubtractAmount(ore, CInt(amtLost));
-	SendSysMessageEx(who, "Você perdeu "+amtLost+" "+ore.name, FONT_NORMAL, SSM_FAIL);
+
+	DebugMsg(who, DEBUG_SMELTING, "***ERROU***");
+	DebugMsg(who, DEBUG_SMELTING, $"Rolagem de erro (0-5): {roll}");
+	DebugMsg(who, DEBUG_SMELTING, $"Fator de perda pelo {GATHERING}: {lostBySkill}");
+	DebugMsg(who, DEBUG_SMELTING, $"Perdeu: {amtLost}");
+
+	SendSysMessageEx(who, "Você errou o processo e perdeu parte dos minérios.", FONT_NORMAL, SSM_FAIL);
+	foreach ore in ores
+		SubtractAmount(ore, CInt(amtLost));
+		SendSysMessageEx(who, "Você perdeu "+amtLost+" "+ore.desc, FONT_NORMAL, SSM_FAIL);
+		SleepMS(50);
+	endforeach
 endfunction
 
 function CheckSmeltDifficulty(who, ore)
