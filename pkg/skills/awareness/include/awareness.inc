@@ -132,11 +132,6 @@ function CalculateDHDiff(who, mobile)
 endfunction
 
 function ExaminarArea(who)
-	if(who.hidden)
-		SendSysMessageEx(who, "Procurando algo", SSM_INFO);
-	else
-		PrintTextAbove(who, "*Procurando algo*");
-	endif
 
 	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
 
