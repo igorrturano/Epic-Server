@@ -454,6 +454,8 @@ function DetermineMiningDifficulty(oretype)
 		0x6307: return 90; //galvorn
 		0x6308: return 90; //mithril
 		0x6450: return 20; //cobre
+		0x6465: return 20; //cobre -> bronze
+		
 		0x699c: return 10; //bronze
 		0x699d: return 20; // Bronze temperado
 		0x6994: return 20; // bronze
@@ -572,6 +574,7 @@ function ConvertOreToIngot(ore)
 		0x6450: return 0x6465; //copper
 		0x6990: return 0x6991; //estanho
 		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x6465: return 0x699d; //copper -> bronze impuro
 		0x699c: return 0x699d; //bronze impuro
 		0x699d: return 0x6994; //bronze temperado
 		0x62ff: return 0x6309; //ferro impuro -> ferro temperado
@@ -654,32 +657,46 @@ endfunction
  */
 function getAllOres()
 	return array{
+		/* Carvão */
 		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0x1bdd, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee36, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee37, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee38, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee39, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3a, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3b, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3c, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3d, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3e, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3f, {}, 2323),
+
 		toStruct(ORE_SAND, "Areia", "Vidro", 0x6075),
 
 		/* Metais primários */
-		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
-		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze Impuro", 0x699c),
+		toStruct(ORE_COPPER, "Minério de Cobre", "Barra de Cobre", 0x6450),
+		toStruct(ORE_IRON, "Minério de Ferro", "Barra de Ferro", 0x6300),
+		toStruct(ORE_TIN, "Minério de Estanho", "Barra de Estanho", 0x6990),
+		// toStruct(ORE_BRONZE, "Minério de Bronze", "Barra de Bronze", 0x699c),
 
 		/* Ligas Metálicas */
-		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
-		toStruct(ORE_BRONZE_TEMP, "Ingot de Bronze Impuro", "Ingot de Bronze Temperado", ConvertOreToIngot(0x699c), {0x1BDE}),
-		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6309, {0x1BDE, 0x6990}, 2599),
+		toStruct(ORE_BRONZE, "Barra de Cobre", "Barra de Bronze", 0x6465, {0x6991}),
+		toStruct(ORE_IRON_TEMP, "Barra de Ferro", "Barra de Ferro Temperado", 0x62ff, {0x1BDE}),
+		toStruct(ORE_BRONZE_TEMP, "Barra de Bronze Impuro", "Barra de Bronze Temperado", 0x699d, {0x1BDE}),
+		toStruct(ORE_STEEL, "Barra de Ferro Temperado", "Barra de Aço", 0x6309, {0x1BDE, 0x6990}, 2599),
 
 		/* Ligas Elementais */
-		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Ingot de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
-		toStruct(ORE_VENETITA, "Minério de Venetita", "Ingot de Venetium", 0x6303, {/* Colocar LIGA aqui */}, 1428),
-		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Ingot de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
-		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Ingot de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
+		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Barra de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
+		toStruct(ORE_VENETITA, "Minério de Venetita", "Barra de Venetium", 0x6303, {/* Colocar LIGA aqui */}, 1428),
+		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Barra de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
+		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
 
-		// toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
-		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
-		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448),
+		// toStruct(ORE_LITAN, "Minério de Litan", "Barra de Litan", 0x6301, {}, 1801),
+		toStruct(ORE_ILLYRA, "Minério de Illyra", "Barra de Illyra", 0x6314, {}, 2278),
+		toStruct(ORE_MITHRIL, "Minério de Mithril", "Barra de Mithril", 0x6308, {}, 2448),
 
 		/* Metais preciosos */
-		toStruct(ORE_COPPER, "Minério de Cobre", "Ingot de Cobre", 0x6450),
-		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
-		toStruct(ORE_GOLD, "Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598)
+		toStruct(ORE_SILVER, "Minério de Prata", "Barra de Prata", 0x6992, {}, 2326),
+		toStruct(ORE_GOLD, "Minério de Ouro", "Barra de Ouro", 0x6305, {}, 2598)
 	};
 endfunction
 
@@ -697,23 +714,14 @@ endfunction
  * Um struct contendo os dados do material:
  * oreType, oreName, ingotName, oreObjType, ingotObjType, neededToCraft, color.
  */
-function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", color := 0)
-	var neededToCraft := array{};
-	neededToCraft.append(objType);
-
-	if (Len(othersOresNeeded) > 0)
-		foreach ore in othersOresNeeded
-			neededToCraft.append(ore);
-		endforeach
-	endif
-
+function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := array{}, color := 0)
 	return struct{
 		"oreType" := oreType,
 		"oreName" := oreName, 
 		"ingotName" := ingotName,
 		"oreObjType" := objType,
 		"ingotObjType" := ConvertOreToIngot(objType),
-		"neededToCraft" := neededToCraft,
+		"neededToCraft" := othersOresNeeded,
 		"difficulty" := DetermineMiningDifficulty(objType),
 		"color" := color
 	};
@@ -722,6 +730,9 @@ endfunction
 enum ORE
 	ORE_CHARCOAL := "ORE_CHARCOAL",
 	ORE_SAND := "ORE_SAND",
+
+	ORE_TIN := "ORE_TIN",
+	ORE_COPPER := "ORE_COPPER",
 	ORE_BRONZE := "ORE_BRONZE",
 	ORE_IRON := "ORE_IRON",
 
@@ -743,7 +754,6 @@ enum ORE
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
-	ORE_COPPER := "ORE_COPPER",
 	ORE_SILVER := "ORE_SILVER",
 	ORE_GOLD := "ORE_GOLD"
 endenum
