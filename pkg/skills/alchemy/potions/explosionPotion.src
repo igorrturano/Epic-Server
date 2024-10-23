@@ -18,13 +18,24 @@ program use_explosion(who, potion)
 	if(potion.movable == 0)
 		SendSysMessage(who, "Voce nao pode usar isto.");
 		return;
-	endif
+	endif 
 	if(!Accessible( who, potion))
 		SendSysMessage(who,"Voce nao pode pegar isto!");
 		return;
 	endif
 	who.hidden := 0;
 	SendSysMessage(who, "Escolha o alvo " );
+	if (potion.amount > 1)
+		var objtype := GetObjType(potion);
+		var props := getobjpropertynames(potion);
+		var pot := CreateItemInBackpack(who, objtype, 1);
+		foreach key in props
+			var prop_value := getobjproperty(potion, key);
+			SetObjProperty(pot, key, prop_value);
+		endforeach
+		subtractamount(potion, 1);
+		potion := pot;
+	endif	
 	if( !Cint(GetObjProperty(potion, "#bomb")))
 		var parms := {};
 		parms[1] := potion;
