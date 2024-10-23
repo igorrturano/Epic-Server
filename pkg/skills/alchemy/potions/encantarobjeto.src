@@ -2,7 +2,9 @@ use os;
 use uo;
 use util;
 use cfgfile;
+
 include ":alchemy:alchemy";
+include ":spells:spell_logic/swordmage/include/encantarObjeto";
 
 program drink_blue( who, potion )
   EraseObjProperty( who, "IsMeditating" );
@@ -31,71 +33,12 @@ program drink_blue( who, potion )
   endif
 
   var bonus := Cint( GetObjProperty(potion, "crafterskill" ) );
-  var cfg := ReadConfigFile(":*:itemdesc");
-  var elem := FindConfigElem(cfg, use_on.objtype);
+	bonus := bonus * 0.05;
 
-  if ( use_on.isA( POLCLASS_WEAPON ) )
-      bonus := Cint(bonus * 0.4);
-  elseif(use_on.isA( POLCLASS_ARMOR ))
-      bonus := bonus / 100;
-      bonus := Cint(elem.PhysicalResist * (bonus * 0.8)); // 80% do alchemy na proteção física da arma em proteção elemental
-  endif
-
-  DestroyItem(potion);
+  empty_bottle(who, potion, 1, 0);
 
   SendSysMessageEx( who, "Você encantou o objeto.", SSM_INFO );
   PlayStationaryEffect( who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2 );
   PlaySoundEffect( who, SFX_SPELL_HEAL );
   setBonus( who, use_on, bonus );
 endprogram
-
-function setBonus( who, item, bonus )
-  var reducePhysicalForElementalBonus := bonus * -1;
-  if ( item.isA( POLCLASS_WEAPON ) )
-    case ( item.color )
-      2501: // Ignium
-        item.damage_fire_mod := bonus;
-        item.damage_physical_mod := reducePhysicalForElementalBonus;
-        break;
-      1428: // Venetita
-        item.damage_poison_mod := bonus;
-        item.damage_physical_mod := reducePhysicalForElementalBonus;
-        break;
-      2360: // Frigutium
-        item.damage_cold_mod := bonus;
-        item.damage_physical_mod := reducePhysicalForElementalBonus;
-        break;
-      2726: // Fulmium
-        item.damage_energy_mod := bonus;
-        item.damage_physical_mod := reducePhysicalForElementalBonus;
-        break;
-    endcase
-  elseif ( item.isA( POLCLASS_ARMOR ) )
-    case ( item.color )
-      2501: // Ignium
-        item.resist_fire_mod := bonus;
-        break;
-      1428: // Venetita
-        item.resist_poison_mod := bonus;
-        break;
-      2360: // Frigutium
-        item.resist_cold_mod := bonus;
-        break;
-      2726: // Fulmium
-        item.resist_energy_mod := bonus;
-        break;
-      2976: // Escamoso
-        item.resist_poison_mod := bonus;
-        break;
-      1218: // Draconiano
-        item.resist_fire_mod := bonus;
-        break;
-      2687: //Gigante
-        item.resist_energy_mod := bonus;
-        break;
-      1150: //Polar
-          item.resist_cold_mod := bonus;
-          break;
-    endcase
-  endif
-endfunction

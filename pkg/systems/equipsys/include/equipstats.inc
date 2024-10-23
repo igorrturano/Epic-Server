@@ -66,6 +66,55 @@ function setWeaponStats(weapon)
 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 
+function setWeaponMagicStats(weapon, structDamages)
+	var stats := getPropBase(weapon);
+
+	if (structDamages.?FireDamage)
+		stats.+FireDamage := structDamages.FireDamage;
+	endif
+	if (structDamages.?ColdDamage)
+		stats.+ColdDamage := structDamages.ColdDamage;
+	endif
+	if (structDamages.?PoisonDamage)
+		stats.+PoisonDamage := structDamages.PoisonDamage;
+	endif
+	if (structDamages.?EnergyDamage)
+		stats.+EnergyDamage := structDamages.EnergyDamage;
+	endif
+
+	setPropBase(weapon, stats);
+endfunction
+
+function getArmorStats(armor)
+	var elem := getItemCfgElem(armor);
+	var stats := struct;
+
+	// TODO: Pegar todos os atributos da armadura e retornar no stats
+	stats := getResistByProtection(elem.TipoProtecao);
+	// TODO: Soma dos materiais.
+	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus.
+	// stats := calcResistByTier(stats, tier);
+
+	return stats;
+endfunction
+
+/**
+ * setArmorStats(armor)
+ *
+ * Purpose
+ * Define os valores na armadura, setando as devidas props e os atributos no item.
+ *
+ * Parameters
+ * weapon: ItemRef da armadura.
+ *
+ */
+function setArmorStats(armor)
+	var stats := getArmorStats(armor);
+	setPropArmor(armor);
+
+	// TODO: Setar na armadura o que não vai em CProp
+endfunction
+
 /**
  * setArmorStats(armor)
  *
@@ -170,19 +219,6 @@ function getCriticalChanceByTier(tier)
 		
 		default: return error{ "errortext" := "Value not found for this Weapon Critical Chance Tier!"};
 	endcase
-endfunction
-
-function getArmorStats(armor)
-	var elem := getItemCfgElem(armor);
-	var stats := struct;
-
-	// TODO: Pegar todos os atributos da armadura e retornar no stats
-	stats := getResistByProtection(elem.TipoProtecao);
-	// TODO: Soma dos materiais.
-	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus.
-	// stats := calcResistByTier(stats, tier);
-
-	return stats;
 endfunction
 
 function calcResistByTier(resists, tier)

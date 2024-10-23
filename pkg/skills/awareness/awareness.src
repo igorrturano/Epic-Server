@@ -11,7 +11,7 @@ include ":awareness:awareness";
 
 program skill_Alertness(who)
 	if ( CInt(GetobjProperty(who, "#Alertness")) > ReadGameClock() )
-		SendSysMessageEx(who, "Voce precisa esperar para usar essa pericia novamente.", SSM_INFO);
+		SendSysMessageEx(who, "Você precisa esperar para usar essa perícia novamente.", SSM_INFO);
 		return;
 	else
 		SetObjProperty(who, "#Alertness", ReadGameClock()+1);
@@ -48,6 +48,11 @@ program skill_Alertness(who)
 	elseif(targ == 0)
 		SendSysMessageEx(who, "Alvo Cancelado.", SSM_FAIL);
 	else
+		if(who.hidden)
+			SendSysMessageEx(who, "Procurando algo", SSM_INFO);
+		else
+			PrintTextAbove(who, "*Procurando algo*");
+		endif
 		isEncontrado := ExaminarArea(who);
 	endif
 

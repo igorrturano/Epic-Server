@@ -2,7 +2,6 @@ use cfgfile;
 
 include ":combat:damage";
 include ":tn:tngumps";
-// include ":equipsys:propitens";
 
 const  EXCEP := 1;
 const  NORMAL := 2;

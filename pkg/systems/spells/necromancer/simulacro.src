@@ -15,7 +15,7 @@ include ":spells:summon";
 include ":taming:taming";
 include "include/epicMageryUtils";
 
-program summontotem(params)
+program SummonMagicCreature(params)
 
 	var who := params[1];
 	var targ := params[2];

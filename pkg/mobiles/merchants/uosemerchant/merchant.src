@@ -29,6 +29,7 @@ const MAXIMO_ITEM_PESSOA := 12;
 const MAXIMO_ITEMS := 80;
 const MAXIMO_VALOR_ITEM := 10000;
 
+
 var item_cfg := ReadConfigFile( ":*:itemdesc" );
 var npc;
 var guild, above_merchant, is_guild_member;
@@ -36,15 +37,23 @@ var imposto := 0.1;
 var item_types := dictionary { "Armaduras" -> 7,
 						 "Roupas" -> 8,
 						 "Armas" -> 9,
-						 "Arcos" -> 10,
+						 "Carpintaria" -> 10,
 						 "Materia-Prima" -> 11,
 						 "Joias" -> 12,
-						 "Varinhas" -> 13,
+						 "Receitas" -> 13,
 						 "Alimentos" -> 14,
 						 "Artigos" -> 15,
-						 "Livros/Receitas" -> 16,
+						 "Pergaminhos" -> 16,
 						 "Containers" -> 17,
 						 "Elmos/Mascaras" -> 18};
+
+var pergaminhos := array {
+	0xE34, 0x6116, 0xff990, 0xff991, 0xff992, 0xff994, 0xff995,0xfe996,0xfe997,0xfe998, // pergaminhos Alquimia
+	0x2050, 0x2051, 0x2052, 0x2053, 0x2054, 0x2060, 0x2064, 0x2066, 0x2063, 0x2065,// pergaminhos magia
+	0xef2b,0xef3c,0xef3d,0xef3e,0xef3f,0xef2b, // pergaminhos tinta
+	0xef1f,0xef2c,0xef2d,0xef2e,0xef2f,//Pergaminhos alquimicos.
+	0x6100, 0x6103, 0xec29, // grimório
+	0x6161,0x6157,0x6158,0x6159,0x6160,0x6162,0x6163,0x6164,0x6165,0x6166,0x6167}; // pergaminhos radiantes
 
 program HandleMerchant( params )
 
@@ -131,7 +140,6 @@ function DoPurchaseCmd( npc, player )
   filtros.+tipo := "";
   filtros.+valor := "";
 
-  while ( !canceled )
 	if ( !player.concealed )
 	  PrintText( player, "O que tem a venda?", SSM_FAIL );
 	  PrintText( npc, array{ "Olhe só este produto...",
@@ -139,6 +147,7 @@ function DoPurchaseCmd( npc, player )
 					   	  "Está procurando algo específico?" }.randomentry(),
 		   	  SSM_INFO );
 	endif
+  while ( !canceled )
 	var input := SendItemView( npc, player,filtros);
 	if ( !input[0] )
 	  break;
@@ -438,42 +447,33 @@ function AddItemToSell( npc, player, item )
 
   if ( item_types )
 	itemcategory := GetItemType( item );
-	itemcategory["Containers"] := "Artigos";
 	if ( !itemcategory )
+
 	  var food := ReadConfigFile( ":food:itemdesc" );
 	  var cook := ReadConfigFile( ":cooking:itemdesc" );
-
-	  var ores := ReadConfigFile( ":gathering:itemdesc" );
+	  var woodworking := ReadConfigFile( ":woodworking:carpentry" );
+	  var research := ReadConfigFile( ":research:itemdesc" );
+	  var gathering := ReadConfigFile( ":gathering:itemdesc" );
 	  var survival := ReadConfigFile( ":survival:itemdesc" );
+	  var receitas := ReadConfigFile( ":recipes:itemdesc" );
 
 	  var objtype := item.objtype;
-	  if ( objtype in array{ 0xF80,
-					   	  0x6116,
-					   	  0x6100,
-					   	  0x989A,
-					   	  0x989B,
-					   	  0x989C,
-					   	  0x989D,
-					   	  0x5726,
-					   	  0x5745 }
-	 	  )
-		itemcategory := "Varinhas";
-	  elseif ( food[objtype] || cook[objtype] )
+	  if ( food[objtype] || cook[objtype] )
 		itemcategory := "Alimentos";
-	  elseif ( ores[objtype] || survival[objtype] )
+	  elseif ( gathering[objtype] || survival[objtype] )
 		itemcategory := "Materia-Prima";
-	  elseif ( item.objtype == 0xf3f || item.objtype == 0x1bfb )
-		itemcategory := "Armas";
+	  elseif ( woodworking[objtype])
+		itemcategory := "Carpintaria";
+	  elseif ( research[objtype] || objtype in pergaminhos)
+		itemcategory := "Pergaminhos";
+	  elseif ( receitas[objtype])
+		itemcategory := "Receitas";
 	  else
 		itemcategory := "Artigos";
 	  endif
-	elseif ( itemcategory["Armas"] && item.isMagicWeapon() )
-	  itemcategory := "Varinhas";
-	elseif ( item.objtype == 0xf3f || item.objtype == 0x1bfb )
-	  itemcategory := "Armas";
 	elseif ( itemcategory["Armadura"] )
-	  var womens := ReadConfigFile( ":womenswork:itemdesc" );
-	  if ( womens[item.objtype] )
+	  var domesticwork := ReadConfigFile( ":domesticwork:itemdesc" );
+	  if ( domesticwork[item.objtype] )
 		itemcategory := "Roupas";
 	  endif
 	endif
