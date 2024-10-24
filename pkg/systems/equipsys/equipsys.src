@@ -11,3 +11,38 @@ program EquipSys(params)
 		setWeaponStats(item);
 	endif
 endprogram
+
+/**
+ * setWeaponStats(weapon)
+ *
+ * Purpose
+ * Define os valores na arma, setando as devidas props e os atributos no item.
+ *
+ * Parameters
+ * weapon: ItemRef da arma.
+ *
+ */
+function setWeaponStats(weapon)
+	var stats := getWeaponStats(weapon);
+	setPropWeapon(weapon);
+
+	// TODO: Setar na arma o que não vai em Prop
+	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
+endfunction
+
+/**
+ * setArmorStats(armor)
+ *
+ * Purpose
+ * Define os valores na armadura, setando as devidas props e os atributos no item.
+ *
+ * Parameters
+ * weapon: ItemRef da armadura.
+ *
+ */
+function setArmorStats(armor)
+	var stats := getArmorStats(armor);
+	setPropArmor(armor);
+
+	// TODO: Setar na armadura o que não vai em CProp
+endfunction
