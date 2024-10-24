@@ -27,7 +27,7 @@ function getWeaponStats(weapon)
 	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
 	var elem := getItemCfgElem(weapon);
 	var prop := getPropBase(weapon);
-	var stats := struct;
+	var stats := struct{};
 	var elemMainDamage := SplitWords(elem.EpicMainDamage);
 	var elemOffDamage := SplitWords(elem.EpicOffDamage);
 
@@ -46,24 +46,6 @@ function getWeaponStats(weapon)
 	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance) + CInt(prop.CriticalChanceMod);
 
 	return stats;
-endfunction
-
-/**
- * setWeaponStats(weapon)
- *
- * Purpose
- * Define os valores na arma, setando as devidas props e os atributos no item.
- *
- * Parameters
- * weapon: ItemRef da arma.
- *
- */
-function setWeaponStats(weapon)
-	var stats := getWeaponStats(weapon);
-	setPropWeapon(weapon);
-
-	// TODO: Setar na arma o que não vai em Prop
-	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 
 function setWeaponMagicStats(weapon, structDamages)
@@ -86,50 +68,23 @@ function setWeaponMagicStats(weapon, structDamages)
 endfunction
 
 function getArmorStats(armor)
-	var elem := getItemCfgElem(armor);
-	var stats := struct;
+	var stats := struct{
+		// TODO: Ir deletando a medida que coloca nas funções
+		"DexPen" := 0,
+		"SneakPen" := 0,
+		"MAPen" := 0,
+		"MageryPen" := 0
+	};
 
-	// TODO: Pegar todos os atributos da armadura e retornar no stats
-	stats := getResistByProtection(elem.TipoProtecao);
-	// TODO: Soma dos materiais.
-	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus.
-	// stats := calcResistByTier(stats, tier);
+	stats := addResistsPhysical(stats, armor);
+	stats := addResistsElemental(stats, armor);
+	stats := addPenalties(stats, armor);
+	if (IsShield(armor))
+		stats := addShieldBonuses(stats, armor);
+	endif
+	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus, dexpenalty, magerypenalty, mechanicalpenalty, sneakpenalty.
 
 	return stats;
-endfunction
-
-/**
- * setArmorStats(armor)
- *
- * Purpose
- * Define os valores na armadura, setando as devidas props e os atributos no item.
- *
- * Parameters
- * weapon: ItemRef da armadura.
- *
- */
-function setArmorStats(armor)
-	var stats := getArmorStats(armor);
-	setPropArmor(armor);
-
-	// TODO: Setar na armadura o que não vai em CProp
-endfunction
-
-/**
- * setArmorStats(armor)
- *
- * Purpose
- * Define os valores na armadura, setando as devidas props e os atributos no item.
- *
- * Parameters
- * weapon: ItemRef da armadura.
- *
- */
-function setArmorStats(armor)
-	var stats := getArmorStats(armor);
-	setPropArmor(armor);
-
-	// TODO: Setar na armadura o que não vai em CProp
 endfunction
 
 /**
@@ -235,81 +190,134 @@ function calcResistByTier(resists, tier)
 	return resists;
 endfunction
 
-function getResistByProtection(protectionType)
-	var physical := array; // {SlashResist, PiercingResist, BluntResist};
+function addResistsPhysical(stats, armor)
+	var protection := getType(armor);
+	var physical := array{}; // {SlashResist, PiercingResist, BluntResist};
 
-	case(Upper(protectionType))
-        //TIER 1
-        ARMOR_LOWLOW: physical := {0,0,0};
-        ARMOR_LOWMID: physical := {1,1,1};
-        ARMOR_LOWHIGH: physical := {2,2,2};
+	case(Upper(protection))
+		//TIER 1
+		ARMOR_LOWLOW:
+			physical := {0,0,0};
+			break;
+		ARMOR_LOWMID:
+			physical := {1,1,1};
+			break;
+		ARMOR_LOWHIGH:
+			physical := {2,2,2};
+			break;
 
-        //TIER 2
-        ARMOR_MIDLOW: physical := {3,3,3};
-        ARMOR_MIDMID: physical := {4,4,4};
-        ARMOR_MIDHIGH: physical := {5,5,5};
+		//TIER 2
+		ARMOR_MIDLOW:
+			physical := {3,3,3};
+			break;
+		ARMOR_MIDMID:
+			physical := {4,4,4};
+			break;
+		ARMOR_MIDHIGH:
+			physical := {5,5,5};
+			break;
 
-        //TIER 3
-        ARMOR_HIGHLOW: physical := {6,6,6};
-        ARMOR_HIGHMID: physical := {7,7,7};
-        ARMOR_HIGHHIGH: physical := {8,8,8};
-    endcase
+		//TIER 3
+		ARMOR_HIGHLOW:
+			physical := {6,6,6};
+			break;
+		ARMOR_HIGHMID:
+			physical := {7,7,7};
+			break;
+		ARMOR_HIGHHIGH:
+			physical := {8,8,8};
+			break;
+	endcase
 
-	var resists := struct;
-	resists.+SlashResist := physical[1];
-	resists.+PiercingResist := physical[2];
-	resists.+BluntResist := physical[3];
-	// TODO: PEGAR OS ELEMENTAIS BASEADOS NAS PROPS QUE O ITEM VAI TER QUANDO O MAGO ENCANTAR (ver onde ficam esses valores)
-	resists.+FireResist := 0;
-	resists.+ColdResist := 0;
-	resists.+PoisonResist := 0;
-	resists.+EnergyResist := 0;
-	return resists;
+	stats.+SlashResist := physical[1];
+	stats.+PiercingResist := physical[2];
+	stats.+BluntResist := physical[3];
+
+	stats := addResistBySlot(stats, armor);
+
+	return stats;
 endfunction
 
-function getResistModBySlot(item)
-	var stats := array;
-	var slot := getSlot(item).upper;
+function addResistBySlot(stats, armor)
+	var resists := array{}; // {SlashResist, PiercingResist, BluntResist}
+	var slot := getSlot(armor);
 
-    case(slot) // {SlashResist, PiercingResist, BluntResist}
-        HEAD: stats := {2,2,2}; break;
-        NECK: stats := {1,1,1}; break;
-        BODY: stats := {4,4,4}; break;
-        ARMS: stats := {2,2,2}; break;
-        HANDS: stats := {1,1,1}; break;
-        LEGS: stats := {3,3,3}; break;
-		FEET: stats := {2,2,2}; break;
-        SHIELD: stats := {4,4,4}; break;
-    endcase
+	case(Upper(slot))
+		HEAD: resists := {2,2,2}; break;
+		NECK: resists := {1,1,1}; break;
+		BODY: resists := {4,4,4}; break;
+		ARMS: resists := {2,2,2}; break;
+		HANDS: resists := {1,1,1}; break;
+		LEGS: resists := {3,3,3}; break;
+		FEET: resists := {2,2,2}; break;
+		SHIELD: resists := {0,0,0}; break;
+	endcase
 
-    var resists := struct;
-	resists.+PhysicalResistMod := stats[1];
-	resists.+SlashResistMod := stats[1];
-	resists.+PiercingResistMod := stats[2];
-	resists.+BluntResistMod := stats[3];
+	stats.SlashResistMod += stats[1];
+	stats.PiercingResistMod += stats[2];
+	stats.BluntResistMod += stats[3];
+	
+	return stats;
+endfunction
 
-	resists.+FireResistMod := 0;
-	resists.+ColdResistMod := 0;
-	resists.+PoisonResistMod := 0;
-	resists.+EnergyResistMod := 0;
-	return resists;
+function addResistsElemental(stats, armor)
+	var prop := getPropBase(armor);
+
+	if (prop.FireResist)
+		stats.+FireResist := CInt(prop.FireResist);
+	endif
+	if (prop.ColdResist)
+		stats.+ColdResist := CInt(prop.ColdResist);
+	endif
+	if (prop.PoisonResist)
+		stats.+PoisonResist := CInt(prop.PoisonResist);
+	endif
+	if (prop.EnergyResist)
+		stats.+EnergyResist := CInt(prop.EnergyResist);
+	endif
+
+	return stats;
+endfunction
+
+function addPenalties(stats, armor)
+	var slot := getSlot(armor);
+	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen}
+	
+	case(Upper(slot))
+		HEAD: penalties := {0,0,0,0}; break;
+		NECK: penalties := {0,0,0,0}; break;
+		BODY: penalties := {0,0,0,0}; break;
+		ARMS: penalties := {0,0,0,0}; break;
+		HANDS: penalties := {0,0,0,0}; break;
+		LEGS: penalties := {0,0,0,0}; break;
+		FEET: penalties := {0,0,0,0}; break;
+		SHIELD: penalties := {0,0,0,0}; break;
+	endcase
+	
+	stats.+DexPen := penalties[1];
+	stats.+SneakPen := penalties[2];
+	stats.+MAPen := penalties[3];
+	stats.+MageryPen := penalties[4];
+
+	return stats;
+endfunction
+
+function addShieldBonuses(stats, armor)
 endfunction
 
 function getDexPenModBySlot(item)
-	var slot := getSlot(item).upper();
+	var slot := getSlot(item);
 	var dexPen;
 
-	case(slot) // {SlashResist, PiercingResist, BluntResist, DexPenalty}
-        HEAD: dexPen := 1; break;
-        NECK: dexPen := 1; break;
-        BODY: dexPen := 3; break;
-        ARMS: dexPen := 2; break;
-        HANDS: dexPen := 1; break;
-        LEGS: dexPen := 2; break;
-        SHIELD: dexPen := 1; break;
+	case(Upper(slot))
+        HEAD: return  1;
+        NECK: return 1;
+        BODY: return 3;
+        ARMS: return 2;
+        HANDS: return 1;
+        LEGS: return 2;
+        SHIELD: return 1;
     endcase
-
-	return dexPen;
 endfunction
 
 function getWeaponMainDamageDice(weapon)
