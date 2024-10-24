@@ -19,28 +19,40 @@ program UseWood( who, wood )
 		return 0;
 	endif
 	if( wood.movable == 0 )
-		SendSysMessageEx(who, "Voce nao pode acender isso.", SSM_FAIL);
+		SendSysMessageEx(who, "Você não pode acender isso.", SSM_FAIL);
 		return 0;
 	endif
 	var camptimer := 0;//GetObjProperty(who, "CampTimer");
 	if( camptimer )
 		if( camptimer > ReadGameClock() )
-			SendSysMessageEX(who, "Voce deve esperar alguns segundos para fazer isto novamente.", SSM_FAIL);
+			SendSysMessageEX(who, "Você deve esperar alguns segundos para fazer isto novamente.", SSM_FAIL);
 			return 0;
 		endif
 	endif
 	SetObjProperty(who, "CampTimer", ReadGameClock() + 3);
 	if( !Accessible(who, wood) )
-		SendSysMessageEx( who, "Voce nao alcanca isto!", SSM_FAIL );
+		SendSysMessageEx( who, "Você nao alcanca isto!", SSM_FAIL );
 		return 0;
 	endif
 	if( wood.container )
-		SendSysMessageEx( who, "Coloque no chao primeiro!", SSM_FAIL );
+		SendSysMessageEx( who, "Coloque no chão primeiro!", SSM_FAIL );
 		return 0;
 	endif
 
 	PrintText(who, "*tenta acender uma fogueira*");
 	var TesteSkill;
+	var x := wood.x;
+	var y := wood.y;
+	var z := wood.z;
+	var itemnearby := ListItemsNearLocation( x, y, z, 8 );
+
+	foreach item in itemnearby
+		if ( (item.graphic == 3555) )
+			SendSysMessageEx(who, "Já existe outro acampamento pronto por perto.", SSM_FAIL );
+			return;
+		endif
+	endforeach  
+
 	if (GetEquipmentByLayer(who, 0x02).objtype == 2578)
 		TesteSkill := SkillCheck(who, SURVIVAL, 8);
 	else
@@ -48,17 +60,6 @@ program UseWood( who, wood )
 	endif
 
 	if( TesteSkill > 0 )
-		var x := wood.x;
-		var y := wood.y;
-		var z := wood.z;
-                var itemnearby := ListItemsNearLocation( x, y, z, 8 );
-		foreach item in itemnearby
-			if ( (item.graphic == 3555) )
-				SendSysMessageEx(who, "Já existe outro acampamento pronto por perto.", SSM_FAIL );
-				return;
-			endif
-		endforeach  
-
 		Detach();
                 PrintTextAbove( who, "*acendendo uma fogueira*");
                 sleep (5);
@@ -114,7 +115,7 @@ program UseWood( who, wood )
 	else
                 PrintText( who, "*acendendo uma fogueira*");
                 sleep(3);
-		SendSysMessageEx( who, "Voce nao conseguiu acender o fogo", SSM_FAIL );
+		SendSysMessageEx( who, "Você não conseguiu acender o fogo", SSM_FAIL );
 	endif
 
 endprogram
