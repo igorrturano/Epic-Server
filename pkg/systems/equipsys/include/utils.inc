@@ -107,8 +107,13 @@ endfunction
 
 function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
     var elem := getItemCfgElem(item);
-    var slot := elem.Coverage;
-    if (IsShield(item)) slot := "Shield"; endif
+    // var slot := elem.Coverage;
+	var slot := IsShield(item) ? "Shield" : elem.Coverage;
+    
+	// if (IsShield(item))
+	// 	slot := "Shield";
+	// endif
+
     return slot;
 endfunction
 
