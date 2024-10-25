@@ -59,7 +59,13 @@ program OreMining(who, tool)
 
 		var my_x := who.x;
 		var my_y := who.y;
-		var my_facing := who.facing;
+		var my_facing := GetFacing(who.x,who.y,targ.x,targ.y);
+		if(my_facing)
+			who.facing := my_facing;
+		else
+			my_facing := who.facing;
+		endif
+		
 
 		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
 			SendsysMessage(who, "Voce parou de minerar.");

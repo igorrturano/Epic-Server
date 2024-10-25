@@ -442,27 +442,29 @@ function DetermineMiningDifficulty(oretype)
 		//0xBD13: return 0;  //pedra grande
 		0xee99: return 0;  //calcario
 
-		0x6300: return 0;  //iron ore
-		0x62ff: return 40;  //ferro impuro
-		0x6309: return 50; //iron temperado
+		//minérios
+		0x6450: return 14; //cobre
+ 		0x6990: return 35; //estanho
+		0x699c: return 45; //bronze
+		0x6300: return 55;  //iron ore
+		0x6992: return 70; //prata
 		0x6301: return 70; //litan
-        0x6314: return 82; //illyra
-		0x6302: return 72; //fulmetita
-		0x6303: return 72; //venetita
-		0x6304: return 72; //ignitita
-		0x6451: return 72; //frigutita
-		0x6307: return 90; //galvorn
-		0x6308: return 90; //mithril
-		0x6450: return 20; //cobre
-		0x6465: return 20; //cobre -> bronze
-		
-		0x699c: return 10; //bronze
-		0x699d: return 20; // Bronze temperado
-		0x6994: return 20; // bronze
-		0x6995: return 60; //aco
+		0x6302: return 91; //fulmetita
+		0x6303: return 91; //venetita
+		0x6304: return 91; //ignitita
+		0x6451: return 91; //frigutita
+        0x6314: return 100; //illyra
+		0x6308: return 107; //mithril
 
-		0x6992: return 50; //prata
- 		0x6990: return 30; //estanho
+		0x6995: return 75; //aco
+		0x6307: return 90; //galvorn
+		0x62ff: return 50;  //ferro impuro
+		0x6309: return 60; //iron temperado
+		0x6465: return 25; //cobre -> bronze
+		
+		0x699d: return 25; // Bronze temperado
+		0x6994: return 20; // bronze
+
 
 		0x6075: return 5; //areia
 
