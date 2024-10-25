@@ -57,7 +57,7 @@ endfunction
 
 function BurnMobile(mobile, dmg_dice, field_owner)
 	var dmg := RandomDiceRoll(dmg_dice); // - resistance ?
-	ApplyDamageEX(mobile, dmg, DMG_FIRE);
+	DamageFLS(mobile, dmg, DMG_FIRE);
 	SetObjProperty(mobile, "affected_by_spell", field_owner.serial);
 	return 1;
 endfunction
