@@ -43,13 +43,13 @@ program exploder(parms)
 			0xbf0f: PoisonEffect(who, potion, 1);
 			0xbf10: PoisonEffect(who, potion, 2);
 			0xbf11: PoisonEffect(who, potion, 3);
-			0xbf13: FlameEffect(who, potion, 1);
-			0xbf14: FlameEffect(who, potion, 2);
-			0xbf15: FlameEffect(who, potion, 3);
+			0xbf13: FlameEffect(who, potion, tier, bonus);
+			0xbf14: FlameEffect(who, potion, tier, bonus);
+			0xbf15: FlameEffect(who, potion, tier, bonus);
 			0xbf16: HalluEffect(who, potion, 3);
 			0xbf1c: Acideffetct(who, potion);
 			0xbf1d: Sleepeffect(who, potion, bonus);
-			0xbf1e: FlameEffect(who, potion, 3);
+			0xbf1e: FlameEffect(who, potion, tier, bonus);
 			0xdc08: Minaterrestre(who, potion, dmg);
 			0xdc09: MudBomb(who, potion, bonus);
 		endcase
@@ -60,23 +60,25 @@ program exploder(parms)
 
 endprogram
 
-function FlameEffect(who, potion, lvl)
+function FlameEffect(who, potion, lvl, bonus)
 	PlayStationaryEffect( potion.x, potion.y, potion.z, 0x36b0, 7, 10, 1, who.realm);
 	PlaySoundEffect(potion, 0x208);
 	potion.graphic := 1;
 
-	var coords := GetCoordsInSquare(potion.x, potion.y, 1+lvl);
+	var dice := Cstr("2d"+lvl*2+"+"+bonus/2);
+	var coords := GetCoordsInSquare(potion.x, potion.y, lvl);
 	foreach coord in coords;
 		var field := CreateItemAtLocation(coord.x, coord.y, potion.z, "FireField_NS", 1, who.realm);
 		if (checklineofsight(field, potion))
 			field.SetDuration(10);
+			SetObjProperty(field, "DamageDice", dice);
 		else
 			DestroyItem(field);
 		endif
 		sleepms(5);
 	endforeach
 
-	foreach critter in (ListMobilesNearLocation( potion.x, potion.y, potion.z, 1+lvl, potion.realm ));
+	foreach critter in (ListMobilesNearLocation( potion.x, potion.y, potion.z, lvl, potion.realm ));
 		if (CheckLineOfSight(potion, critter))
 			if ( critter.hidden  )
 				critter.hidden := 0;
@@ -85,19 +87,18 @@ function FlameEffect(who, potion, lvl)
 			PlayObjectCenteredEffect( critter, 0x36b0, 7, 0x10 );
 			PlaySoundEffect( critter, 0x208);
 			//ApplyDamageEX(critter, lvl*15, DMG_FIRE);
-			DamageFLS(critter, lvl*15, DMG_FIRE);
-
-			if (lvl == 1)
+			
+			if (lvl == 2)
 				TS_StartTimer(critter, "chamasperpetuas", 4);
-			elseif (lvl == 2)
-				TS_StartTimer(critter, "chamasperpetuas", 8);
 			elseif (lvl == 3)
+				TS_StartTimer(critter, "chamasperpetuas", 8);
+			elseif (lvl == 4)
 				TS_StartTimer(critter, "chamasperpetuas", 12);
 			endif
 		endif
 	endforeach
 
-	efeitocascata(potion, who);
+	//efeitocascata(potion, who);
 	destroycraft(potion, who);
 
 
@@ -262,7 +263,7 @@ function ExplosionEffect(who, potion, dmg)
 		endif
 	endforeach
 
-	efeitocascata(potion, who);
+	//efeitocascata(potion, who);
 	destroycraft(potion, who);
 
 endfunction
