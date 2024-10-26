@@ -25,46 +25,60 @@ include ":attributes:attributeConstants";
 function getWeaponStats(weapon)
 	// TODO: Sistema de tier para somar os ganhos pra cada tier
 	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
-	var elem := getItemCfgElem(weapon);
-	var prop := getPropBase(weapon);
 	var stats := struct{};
-	var elemMainDamage := SplitWords(elem.EpicMainDamage);
-	var elemOffDamage := SplitWords(elem.EpicOffDamage);
 
-	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]): 0;
-	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]): 0;
-	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]): 0;
-	
-	if (Upper(elem.Attribute) == DUALWIELD.Upper())
-		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]): 0;
-		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]): 0;
-		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]): 0;
-	endif
+	stats := addDamagePhysical(stats, weapon);
+	stats := addDamageElemental(stats, weapon);
 
-	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier) + CInt(prop.AttackSpeedMod);
-	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance) + CInt(prop.CriticalChanceMod);
+	// TODO: Organizar melhor essa função e buscar os mods de dano elementais pra setar na arma
 
 	return stats;
 endfunction
 
-function setWeaponMagicStats(weapon, structDamages)
-	var stats := getPropBase(weapon);
+function addDamagePhysical(stats, weapon)
+	var elem := getItemCfgElem(weapon);
+	var elemMainDamage := SplitWords(elem.EpicMainDamage);
+	var elemOffDamage := SplitWords(elem.EpicOffDamage);
+	var prop := getPropBase(weapon);
 
-	if (structDamages.?FireDamage)
-		stats.+FireDamage := structDamages.FireDamage;
-	endif
-	if (structDamages.?ColdDamage)
-		stats.+ColdDamage := structDamages.ColdDamage;
-	endif
-	if (structDamages.?PoisonDamage)
-		stats.+PoisonDamage := structDamages.PoisonDamage;
-	endif
-	if (structDamages.?EnergyDamage)
-		stats.+EnergyDamage := structDamages.EnergyDamage;
+	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]) : 0;
+	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]) : 0;
+	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]) : 0;
+
+	if (Upper(elem.Attribute) == DUALWIELD.Upper())
+		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]) : 0;
+		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
+		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
 
-	setPropBase(weapon, stats);
+	stats.+AttackType := elem.TipoAtaque;
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
+
+	return stats;
+endfunction
+
+function addDamageElemental(stats, weapon)
+	// Danos físicos são dados, danos elementais são puros
+	stats.+FireDamage := 0;
+	stats.+ColdDamage := 0;
+	stats.+PoisonDamage := 0;
+	stats.+EnergyDamage := 0;
+
+	stats := addDamageElementalByWeapon(stats, weapon);
+
+	return stats;
+endfunction
+
+function addDamageElementalByWeapon(stats, weapon)
+	var prop := getPropBase(weapon);
+
+	stats.FireDamage += CInt(prop.FireDamage);
+	stats.ColdDamage += CInt(prop.ColdDamage);
+	stats.PoisonDamage += CInt(prop.PoisonDamage);
+	stats.EnergyDamage += CInt(prop.EnergyDamage);
+
+	return stats;
 endfunction
 
 function getArmorStats(armor)
@@ -170,20 +184,6 @@ function getCriticalChanceByTier(tier)
 	endcase
 endfunction
 
-function calcResistByTier(resists, tier)
-	if (!resists.?SlashResist)
-		return error{"errortext" := "Must be a armor or shield"};
-	endif
-	tier--;
-	
-	resists.PhysicalResist += tier;
-	resists.SlashResist += tier;
-	resists.PiercingResist += tier;
-	resists.BluntResist += tier;
-
-	return resists;
-endfunction
-
 function addResistsPhysical(stats, armor)
 	stats.+SlashResist := 0;
 	stats.+PiercingResist := 0;
@@ -191,6 +191,7 @@ function addResistsPhysical(stats, armor)
 	
 	stats := addResistPhysicalByProtection(stats, armor);
 	stats := addResistPhysicalBySlot(stats, armor);
+	stats := addResistPhysicalByMaterial(stats, armor);
 
 	return stats;
 endfunction
@@ -242,6 +243,8 @@ function addResistPhysicalByProtection(stats, armor)
 	stats.SlashResist += physical[1];
 	stats.PiercingResist += physical[2];
 	stats.BluntResist += physical[3];
+
+	return stats;
 endfunction
 
 function addResistPhysicalBySlot(stats, armor)
@@ -256,7 +259,8 @@ function addResistPhysicalBySlot(stats, armor)
 		HANDS: resists := {1,1,1}; break;
 		LEGS: resists := {3,3,3}; break;
 		FEET: resists := {2,2,2}; break;
-		SHIELD: resists := {0,0,0}; break;
+		
+		default: resists := {0,0,0}; break;
 	endcase
 
 	stats.SlashResist += resists[1];
@@ -267,20 +271,23 @@ function addResistPhysicalBySlot(stats, armor)
 endfunction
 
 function addResistsElemental(stats, armor)
+	stats.+FireResist := 0;
+	stats.+ColdResist := 0;
+	stats.+PoisonResist := 0;
+	stats.+EnergyResist := 0;
+
+	stats := addResistElementalByArmor(stats, armor);
+
+	return stats;
+endfunction
+
+function addResistElementalByArmor(stats, armor)
 	var prop := getPropBase(armor);
 
-	if (prop.FireResist)
-		stats.+FireResist := CInt(prop.FireResist);
-	endif
-	if (prop.ColdResist)
-		stats.+ColdResist := CInt(prop.ColdResist);
-	endif
-	if (prop.PoisonResist)
-		stats.+PoisonResist := CInt(prop.PoisonResist);
-	endif
-	if (prop.EnergyResist)
-		stats.+EnergyResist := CInt(prop.EnergyResist);
-	endif
+	stats.FireResist += CInt(prop.FireResist);
+	stats.ColdResist += CInt(prop.ColdResist);
+	stats.PoisonResist += CInt(prop.PoisonResist);
+	stats.EnergyResist += CInt(prop.EnergyResist);
 
 	return stats;
 endfunction
@@ -292,13 +299,13 @@ function addPenalties(stats, armor)
 	stats.+MageryPen := 0;
 	stats.+AwarenessPen := 0;
 	
-	stats := addPenaltiesBySlot(stats, armor);
+	// stats := addPenaltiesBySlot(stats, armor);
 	stats := addPenaltiesByProtection(stats, armor);
 
 	return stats;
 endfunction
 
-function addPenaltiesBySlot(stats, armor)
+function addPenaltyBySlot(stats, armor)
 	var slot := getSlot(armor);
 	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 
@@ -343,7 +350,7 @@ function addPenaltiesByProtection(stats, armor)
 			penalties := {0,0,0,0,0};
 			break;
 		ARMOR_MIDMID:
-			penalties := {0,0,0,0,0};
+			penalties := {0,0,0,4,0};
 			break;
 		ARMOR_MIDHIGH:
 			penalties := {0,0,0,0,0};
@@ -351,13 +358,13 @@ function addPenaltiesByProtection(stats, armor)
 
 		//TIER 3
 		ARMOR_HIGHLOW:
-			penalties := {0,0,0,0,0};
+			penalties := {0,0,0,6,0};
 			break;
 		ARMOR_HIGHMID:
-			penalties := {0,0,0,0,0};
+			penalties := {0,0,0,12,0};
 			break;
 		ARMOR_HIGHHIGH:
-			penalties := {0,0,0,0,0};
+			penalties := {0,0,0,24,0};
 			break;
 
 
@@ -366,16 +373,16 @@ function addPenaltiesByProtection(stats, armor)
 			penalties := {0,0,0,0,0};
 			break;
 		SHIELD_SMALL:
-			penalties := {0,0,0,0,0};
+			penalties := {4,0,0,0,0};
 			break;
 		SHIELD_MEDIUM:
-			penalties := {0,0,0,0,0};
+			penalties := {8,0,0,6,0};
 			break;
 		SHIELD_LARGE:
-			penalties := {0,0,0,0,0};
+			penalties := {12,0,0,12,0};
 			break;
 		SHIELD_TOWER:
-			penalties := {0,0,0,0,0};
+			penalties := {16,0,0,24,0};
 			break;
 
 		default: 
