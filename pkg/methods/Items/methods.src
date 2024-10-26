@@ -3,6 +3,6 @@ program Install()
 	return 1;
 endprogram
 
-exported function getMaterial(item)
+exported function getMaterialID(item)
 	return item.getProp("material");
 endfunction
