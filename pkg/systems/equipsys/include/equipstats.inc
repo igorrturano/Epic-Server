@@ -76,7 +76,7 @@ function getArmorStats(armor)
 	if (IsShield(armor))
 		stats := addShieldMods(stats, armor);
 	endif
-	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus, dexpenalty, magerypenalty, mechanicalpenalty, sneakpenalty.
+	// TODO: Calcular HP, durabilidade, Str required.
 
 	return stats;
 endfunction
@@ -188,6 +188,7 @@ function addResistsPhysical(stats, armor)
 	var protection := getType(armor);
 	var physical := array{}; // {SlashResist, PiercingResist, BluntResist};
 
+	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
 	case(Upper(protection))
 		//TIER 1
 		ARMOR_LOWLOW:
@@ -222,7 +223,7 @@ function addResistsPhysical(stats, armor)
 			physical := {8,8,8};
 			break;
 
-		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui
+		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
 		default: 
 			physical := {0,0,0};
 	endcase
@@ -297,6 +298,71 @@ function addPenalties(stats, armor)
 	stats.+MAPen := penalties[3];
 	stats.+MageryPen := penalties[4];
 	stats.+AwarenessPen := penalties[5];
+
+	stats := addPenaltiesByProtection(stats, armor);
+
+	return stats;
+endfunction
+
+function addPenaltiesByProtection(stats, armor)
+	var protection := getType(armor);
+	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
+
+	case(Upper(protection))
+		//TIER 1
+		ARMOR_LOWLOW:
+			penalties := {0,0,0,0,0};
+			break;
+		ARMOR_LOWMID:
+			penalties := {0,0,0,0,0};
+			break;
+		ARMOR_LOWHIGH:
+			penalties := {0,0,0,0,0};
+			break;
+
+		//TIER 2
+		ARMOR_MIDLOW:
+			penalties := {0,0,0,0,0};
+			break;
+		ARMOR_MIDMID:
+			penalties := {0,0,0,0,0};
+			break;
+		ARMOR_MIDHIGH:
+			penalties := {0,0,0,0,0};
+			break;
+
+		//TIER 3
+		ARMOR_HIGHLOW:
+			penalties := {0,0,0,0,0};
+			break;
+		ARMOR_HIGHMID:
+			penalties := {0,0,0,0,0};
+			break;
+		ARMOR_HIGHHIGH:
+			penalties := {0,0,0,0,0};
+			break;
+
+
+		// ESCUDOS
+		SHIELD_BUCKLER:
+			penalties := {0,0,0,0,0};
+			break;
+		SHIELD_SMALL:
+			penalties := {0,0,0,0,0};
+			break;
+		SHIELD_MEDIUM:
+			penalties := {0,0,0,0,0};
+			break;
+		SHIELD_LARGE:
+			penalties := {0,0,0,0,0};
+			break;
+		SHIELD_TOWER:
+			penalties := {0,0,0,0,0};
+			break;
+
+		default: 
+			penalties := {0,0,0,0,0};
+	endcase
 
 	return stats;
 endfunction
