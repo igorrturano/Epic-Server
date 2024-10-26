@@ -1,3 +1,5 @@
+use cfgfile;
+
 program Install()
 	print("INSTALLING: Methods for Items, Weapons & Armor");
 	return 1;
@@ -5,4 +7,8 @@ endprogram
 
 exported function getMaterialID(item)
 	return item.getProp("material");
+endfunction
+
+exported function getMaterialName(item)
+	return FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name;
 endfunction
