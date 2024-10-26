@@ -279,9 +279,16 @@ function addResistsElemental(stats, armor)
 endfunction
 
 function addPenalties(stats, armor)
+	stats := addPenaltiesBySlot(stats, armor);
+	stats := addPenaltiesByProtection(stats, armor);
+
+	return stats;
+endfunction
+
+function addPenaltiesBySlot(stats, armor)
 	var slot := getSlot(armor);
 	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-	
+
 	case(Upper(slot))
 		HEAD: penalties := {0,0,0,1,0}; break;
 		NECK: penalties := {0,0,0,1,0}; break;
@@ -298,8 +305,6 @@ function addPenalties(stats, armor)
 	stats.+MAPen := penalties[3];
 	stats.+MageryPen := penalties[4];
 	stats.+AwarenessPen := penalties[5];
-
-	stats := addPenaltiesByProtection(stats, armor);
 
 	return stats;
 endfunction
@@ -363,6 +368,12 @@ function addPenaltiesByProtection(stats, armor)
 		default: 
 			penalties := {0,0,0,0,0};
 	endcase
+
+	stats.DexPen += penalties[1];
+	stats.SneakPen += penalties[2];
+	stats.MAPen += penalties[3];
+	stats.MageryPen += penalties[4];
+	stats.AwarenessPen += penalties[5];
 
 	return stats;
 endfunction
