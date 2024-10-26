@@ -18,22 +18,15 @@ var craft_config    := ReadConfigFile(":metalworking:tinker");
 
 program use_TinkerTool(who, tool)
 
-	if(!can_access(who, tool))
-		return 0;
-	endif
-	if((!tool.movable) or !ReserveItem(tool))
-		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
-		return 0;
-	endif
-	if(!tool in ListEquippedItems(who))
-		if( !(tool in EnumerateItemsInContainer(who.backpack)) )
-			SendSysMessageEx(who, "A ferramenta nao esta na sua mochila.", SSM_FAIL);
-			return 0;
-		endif
+	if (!Accessible (who, tool) )
+		SendSysMessage (who, "Voce nao alcanca aquilo!");
+		return;
 	endif
 
-	EraseObjProperty(who, "IsMeditating");
-	EraseObjProperty(who, "HealTimer");
+	if (!ReserveItem (tool) )
+		SendSysMessage (who, "voce nao pode usar isso agora.");
+		return;
+	endif
 
 	var rinfo := sendCraftGump(who, "Tinkering");
 
