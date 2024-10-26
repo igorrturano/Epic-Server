@@ -185,6 +185,17 @@ function calcResistByTier(resists, tier)
 endfunction
 
 function addResistsPhysical(stats, armor)
+	stats.+SlashResist := 0;
+	stats.+PiercingResist := 0;
+	stats.+BluntResist := 0;
+	
+	stats := addResistPhysicalByProtection(stats, armor);
+	stats := addResistPhysicalBySlot(stats, armor);
+
+	return stats;
+endfunction
+
+function addResistPhysicalByProtection(stats, armor)
 	var protection := getType(armor);
 	var physical := array{}; // {SlashResist, PiercingResist, BluntResist};
 
@@ -228,16 +239,12 @@ function addResistsPhysical(stats, armor)
 			physical := {0,0,0};
 	endcase
 
-	stats.+SlashResist := physical[1];
-	stats.+PiercingResist := physical[2];
-	stats.+BluntResist := physical[3];
-
-	stats := addResistBySlot(stats, armor);
-
-	return stats;
+	stats.SlashResist += physical[1];
+	stats.PiercingResist += physical[2];
+	stats.BluntResist += physical[3];
 endfunction
 
-function addResistBySlot(stats, armor)
+function addResistPhysicalBySlot(stats, armor)
 	var resists := array{}; // {SlashResist, PiercingResist, BluntResist}
 	var slot := getSlot(armor);
 
@@ -279,6 +286,12 @@ function addResistsElemental(stats, armor)
 endfunction
 
 function addPenalties(stats, armor)
+	stats.+DexPen := 0;
+	stats.+SneakPen := 0;
+	stats.+MAPen := 0;
+	stats.+MageryPen := 0;
+	stats.+AwarenessPen := 0;
+	
 	stats := addPenaltiesBySlot(stats, armor);
 	stats := addPenaltiesByProtection(stats, armor);
 
@@ -300,11 +313,11 @@ function addPenaltiesBySlot(stats, armor)
 		SHIELD: penalties := {0,1,10,5,0}; break;
 	endcase
 	
-	stats.+DexPen := penalties[1];
-	stats.+SneakPen := penalties[2];
-	stats.+MAPen := penalties[3];
-	stats.+MageryPen := penalties[4];
-	stats.+AwarenessPen := penalties[5];
+	stats.DexPen += penalties[1];
+	stats.SneakPen += penalties[2];
+	stats.MAPen += penalties[3];
+	stats.MageryPen += penalties[4];
+	stats.AwarenessPen += penalties[5];
 
 	return stats;
 endfunction
