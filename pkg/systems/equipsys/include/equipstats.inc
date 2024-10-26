@@ -68,19 +68,13 @@ function setWeaponMagicStats(weapon, structDamages)
 endfunction
 
 function getArmorStats(armor)
-	var stats := struct{
-		// TODO: Ir deletando a medida que coloca nas funções
-		"DexPen" := 0,
-		"SneakPen" := 0,
-		"MAPen" := 0,
-		"MageryPen" := 0
-	};
+	var stats := struct{};
 
 	stats := addResistsPhysical(stats, armor);
 	stats := addResistsElemental(stats, armor);
 	stats := addPenalties(stats, armor);
 	if (IsShield(armor))
-		stats := addShieldBonuses(stats, armor);
+		stats := addShieldMods(stats, armor);
 	endif
 	// TODO: Calcular HP, durabilidade, Str required, parry delay, parry bonus, dexpenalty, magerypenalty, mechanicalpenalty, sneakpenalty.
 
@@ -227,6 +221,10 @@ function addResistsPhysical(stats, armor)
 		ARMOR_HIGHHIGH:
 			physical := {8,8,8};
 			break;
+
+		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui
+		default: 
+			physical := {0,0,0};
 	endcase
 
 	stats.+SlashResist := physical[1];
@@ -253,9 +251,9 @@ function addResistBySlot(stats, armor)
 		SHIELD: resists := {0,0,0}; break;
 	endcase
 
-	stats.SlashResistMod += stats[1];
-	stats.PiercingResistMod += stats[2];
-	stats.BluntResistMod += stats[3];
+	stats.SlashResist += resists[1];
+	stats.PiercingResist += resists[2];
+	stats.BluntResist += resists[3];
 	
 	return stats;
 endfunction
@@ -281,43 +279,45 @@ endfunction
 
 function addPenalties(stats, armor)
 	var slot := getSlot(armor);
-	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen}
+	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 	
 	case(Upper(slot))
-		HEAD: penalties := {0,0,0,0}; break;
-		NECK: penalties := {0,0,0,0}; break;
-		BODY: penalties := {0,0,0,0}; break;
-		ARMS: penalties := {0,0,0,0}; break;
-		HANDS: penalties := {0,0,0,0}; break;
-		LEGS: penalties := {0,0,0,0}; break;
-		FEET: penalties := {0,0,0,0}; break;
-		SHIELD: penalties := {0,0,0,0}; break;
+		HEAD: penalties := {0,0,0,1,0}; break;
+		NECK: penalties := {0,0,0,1,0}; break;
+		BODY: penalties := {0,0,0,12,0}; break;
+		ARMS: penalties := {0,0,2,6,0}; break;
+		HANDS: penalties := {0,0,4,3,0}; break;
+		LEGS: penalties := {0,0,0,6,0}; break;
+		FEET: penalties := {0,0,0,0,0}; break;
+		SHIELD: penalties := {0,1,10,5,0}; break;
 	endcase
 	
 	stats.+DexPen := penalties[1];
 	stats.+SneakPen := penalties[2];
 	stats.+MAPen := penalties[3];
 	stats.+MageryPen := penalties[4];
+	stats.+AwarenessPen := penalties[5];
 
 	return stats;
 endfunction
 
-function addShieldBonuses(stats, armor)
-endfunction
+function addShieldMods(stats, shield)
+	var protection := getType(shield);
+	var mods := array{}; // {ParryDelay, ParryBonus}
 
-function getDexPenModBySlot(item)
-	var slot := getSlot(item);
-	var dexPen;
+	// TODO: Rever esses valores com o Igor, comparando com o .cfg (tá muito irregular lá)
+	case(Upper(protection))
+		SHIELD_BUCKLER: mods := {-1,0}; break;
+		SHIELD_SMALL: mods := {4,8}; break;
+		SHIELD_MEDIUM: mods := {5,10}; break;
+		SHIELD_LARGE: mods := {6,12}; break;
+		SHIELD_TOWER: mods := {7,14}; break;
+	endcase
 
-	case(Upper(slot))
-        HEAD: return  1;
-        NECK: return 1;
-        BODY: return 3;
-        ARMS: return 2;
-        HANDS: return 1;
-        LEGS: return 2;
-        SHIELD: return 1;
-    endcase
+	stats.+ParryDelay := mods[1];
+	stats.+BonusDelay := mods[2];
+
+	return stats;
 endfunction
 
 function getWeaponMainDamageDice(weapon)
