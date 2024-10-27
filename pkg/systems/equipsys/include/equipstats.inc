@@ -7,6 +7,7 @@ use cfgfile;
 
 include "utils";
 include "props";
+include "resources";
 include ":attributes:attributeConstants";
 
 /**
@@ -270,6 +271,17 @@ function addResistPhysicalBySlot(stats, armor)
 	return stats;
 endfunction
 
+function addResistPhysicalByMaterial(stats, armor)
+	var material := armor.getMaterialName();
+	var resist := getResistPhysicalMaterialMod(material);
+
+	stats.SlashResist += CInt(resist);
+	stats.PiercingResist += CInt(resist);
+	stats.BluntResist += CInt(resist);
+
+	return stats;
+endfunction
+
 function addResistsElemental(stats, armor)
 	stats.+FireResist := 0;
 	stats.+ColdResist := 0;
@@ -449,4 +461,44 @@ function getWeaponOffDamageDice(weapon)
 	endif
 	
 	return dice;
+endfunction
+
+function getResistPhysicalMaterialMod(materialName)
+	var mod;
+
+	case (Upper(materialName))
+		"COBRE":
+			mod := 0;
+			break;
+
+		"BRONZE":
+			mod := 1;
+			break;
+
+		"FERRO":
+			mod := 1;
+			break;
+
+		"FERROTEMPERADO":
+			mod := 2;
+			break;
+
+		"ACO":
+		"FULMETIUM":
+		"VENETIUM":
+		"IGNIUM":
+		"FRIGUTIUM":
+			mod := 3;
+			break;
+
+		"ILLYRA":
+			mod := 4;
+			break;
+
+		"MITHRIL":
+			mod := 5;
+			break;
+	endcase
+    
+	return mod;
 endfunction
