@@ -7,7 +7,6 @@ use cfgfile;
 
 include "utils";
 include "props";
-include "resources";
 include ":attributes:attributeConstants";
 
 /**
@@ -282,6 +281,46 @@ function addResistPhysicalByMaterial(stats, armor)
 	return stats;
 endfunction
 
+function getResistPhysicalMaterialMod(materialName)
+	var mod;
+
+	case (Upper(materialName))
+		"COBRE":
+			mod := 0;
+			break;
+
+		"BRONZE":
+			mod := 1;
+			break;
+
+		"FERRO":
+			mod := 1;
+			break;
+
+		"FERROTEMPERADO":
+			mod := 2;
+			break;
+
+		"ACO":
+		"FULMETIUM":
+		"VENETIUM":
+		"IGNIUM":
+		"FRIGUTIUM":
+			mod := 3;
+			break;
+
+		"ILLYRA":
+			mod := 4;
+			break;
+
+		"MITHRIL":
+			mod := 5;
+			break;
+	endcase
+    
+	return mod;
+endfunction
+
 function addResistsElemental(stats, armor)
 	stats.+FireResist := 0;
 	stats.+ColdResist := 0;
@@ -311,13 +350,13 @@ function addPenalties(stats, armor)
 	stats.+MageryPen := 0;
 	stats.+AwarenessPen := 0;
 	
-	// stats := addPenaltiesBySlot(stats, armor);
+	stats := addPenaltiesBySlot(stats, armor);
 	stats := addPenaltiesByProtection(stats, armor);
 
 	return stats;
 endfunction
 
-function addPenaltyBySlot(stats, armor)
+function addPenaltiesBySlot(stats, armor)
 	var slot := getSlot(armor);
 	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 
@@ -461,44 +500,4 @@ function getWeaponOffDamageDice(weapon)
 	endif
 	
 	return dice;
-endfunction
-
-function getResistPhysicalMaterialMod(materialName)
-	var mod;
-
-	case (Upper(materialName))
-		"COBRE":
-			mod := 0;
-			break;
-
-		"BRONZE":
-			mod := 1;
-			break;
-
-		"FERRO":
-			mod := 1;
-			break;
-
-		"FERROTEMPERADO":
-			mod := 2;
-			break;
-
-		"ACO":
-		"FULMETIUM":
-		"VENETIUM":
-		"IGNIUM":
-		"FRIGUTIUM":
-			mod := 3;
-			break;
-
-		"ILLYRA":
-			mod := 4;
-			break;
-
-		"MITHRIL":
-			mod := 5;
-			break;
-	endcase
-    
-	return mod;
 endfunction
