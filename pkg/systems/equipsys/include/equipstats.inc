@@ -227,35 +227,29 @@ function addResistsPhysical(stats, armor)
 	stats.+PiercingResist := 0;
 	stats.+BluntResist := 0;
 	
-	stats := addResistPhysicalByProtection(stats, armor);
-	stats := addResistPhysicalBySlot(stats, armor);
-	stats := addResistPhysicalByMaterial(stats, armor);
+	stats := addResistPhysicalBy("MATERIAL", stats, armor);
+	stats := addResistPhysicalBy("SLOT", stats, armor);
+	stats := addResistPhysicalBy("PROTECTION", stats, armor);
 
 	return stats;
 endfunction
 
-function addResistPhysicalByProtection(stats, armor)
-	var resists := getResistPhysicalByProtection(getType(armor)); // {SlashResist, PiercingResist, BluntResist};
-
-	stats.SlashResist += resists[1];
-	stats.PiercingResist += resists[2];
-	stats.BluntResist += resists[3];
-
-	return stats;
-endfunction
-
-function addResistPhysicalBySlot(stats, armor)
-	var resists := getResistPhysicalBySlot(getSlot(armor)); // {SlashResist, PiercingResist, BluntResist}
-
-	stats.SlashResist += resists[1];
-	stats.PiercingResist += resists[2];
-	stats.BluntResist += resists[3];
+function addResistPhysicalBy(type, stats, armor)
+	var resists := array{};
 	
-	return stats;
-endfunction
+	case(Upper(type))
+		"MATERIAL":
+			resists := getResistPhysicalByMaterial(armor.getMaterialName());
+			break;
 
-function addResistPhysicalByMaterial(stats, armor)
-	var resists := getResistPhysicalMaterialMod(armor.getMaterialName());
+		"SLOT":
+			resists := getResistPhysicalBySlot(armor.getSlot());
+			break;
+
+		"PROTECTION":
+			resists := getResistPhysicalByProtection(armor.getType());
+			break;
+	endcase
 
 	stats.SlashResist += resists[1];
 	stats.PiercingResist += resists[2];
@@ -263,6 +257,36 @@ function addResistPhysicalByMaterial(stats, armor)
 
 	return stats;
 endfunction
+
+// function addResistPhysicalByProtection(stats, armor)
+// 	var resists := getResistPhysicalByProtection(getType(armor)); // {SlashResist, PiercingResist, BluntResist};
+
+// 	stats.SlashResist += resists[1];
+// 	stats.PiercingResist += resists[2];
+// 	stats.BluntResist += resists[3];
+
+// 	return stats;
+// endfunction
+
+// function addResistPhysicalBySlot(stats, armor)
+// 	var resists := getResistPhysicalBySlot(getSlot(armor)); // {SlashResist, PiercingResist, BluntResist}
+
+// 	stats.SlashResist += resists[1];
+// 	stats.PiercingResist += resists[2];
+// 	stats.BluntResist += resists[3];
+	
+// 	return stats;
+// endfunction
+
+// function addResistPhysicalByMaterial(stats, armor)
+// 	var resists := getResistPhysicalByMaterial(armor.getMaterialName());
+
+// 	stats.SlashResist += resists[1];
+// 	stats.PiercingResist += resists[2];
+// 	stats.BluntResist += resists[3];
+
+// 	return stats;
+// endfunction
 
 
 function getResistPhysicalByProtection(protectionType)
@@ -302,7 +326,7 @@ function getResistPhysicalBySlot(slot)
 	endcase
 endfunction
 
-function getResistPhysicalMaterialMod(materialName)
+function getResistPhysicalByMaterial(materialName)
 	case (Upper(materialName))
 		"COBRE": return {0,0,0};
 
@@ -353,7 +377,7 @@ function addPenalties(stats, armor)
 endfunction
 
 function addPenaltiesBySlot(stats, armor)
-	var slot := getSlot(armor);
+	var slot := armor.getSlot();
 	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 
 	case(Upper(slot))
@@ -377,7 +401,7 @@ function addPenaltiesBySlot(stats, armor)
 endfunction
 
 function addPenaltiesByProtection(stats, armor)
-	var protection := getType(armor);
+	var protection := armor.getType();
 	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 
 	case(Upper(protection))
@@ -446,7 +470,7 @@ function addPenaltiesByProtection(stats, armor)
 endfunction
 
 function addShieldMods(stats, shield)
-	var protection := getType(shield);
+	var protection := shield.getType();
 	var mods := array{}; // {ParryDelay, ParryBonus}
 
 	// TODO: Rever esses valores com o Igor, comparando com o .cfg (tá muito irregular lá)
@@ -463,4 +487,3 @@ function addShieldMods(stats, shield)
 
 	return stats;
 endfunction
-

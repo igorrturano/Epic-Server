@@ -85,18 +85,21 @@ function debugArmor(who, armor)
 	DebugMsg(who, DEBUG_EQUIP, $"Arma: {armor.desc}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] {SLASHDAMAGE}: {prop.SlashResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] {PIERCINGDAMAGE}: {prop.PiercingResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] {BLUNTDAMAGE}: {prop.BluntResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] Slot: {prop.BluntResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] Tier: {addRe}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] Material: {armor.getMaterialName()}({getResistPhysicalMaterialMod(armor.getMaterialName())})");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {SLASHDAMAGE}: {prop.SlashResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {PIERCINGDAMAGE}: {prop.PiercingResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {BLUNTDAMAGE}: {prop.BluntResist}");
+	DebugMsg(who, DEBUG_EQUIP,
+		$"[RESIST. FÍSICA] Material: {armor.getMaterialName()}" +
+		"(" +
+		$"{getResistPhysicalByMaterial(armor.getMaterialName())[1]}" +
+		")"
+	);
 
 
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Fogo: {prop.FireResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Gelo: {prop.ColdResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Veneno: {prop.PoisonResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Energia: {prop.EnergyResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Fogo: {prop.FireResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Gelo: {prop.ColdResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Veneno: {prop.PoisonResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Energia: {prop.EnergyResist}");
 
 	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.Coverage}");
 

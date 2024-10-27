@@ -89,30 +89,24 @@ function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIV
 	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
 endfunction
 
-function getType(item)
-    var elem := getItemCfgElem(item);
-	var tipo;
+// function getType(item)
+//     var elem := getItemCfgElem(item);
+// 	var tipo;
 
-	if (item.IsA(POLCLASS_WEAPON))
-		tipo := elem.TipoAtaque;
-	elseif (item.IsA(POLCLASS_ARMOR))
-		tipo := elem.TipoProtecao;
-	endif
+// 	if (item.IsA(POLCLASS_WEAPON))
+// 		tipo := elem.TipoAtaque;
+// 	elseif (item.IsA(POLCLASS_ARMOR))
+// 		tipo := elem.TipoProtecao;
+// 	endif
 
-    return tipo;
-endfunction
+//     return tipo;
+// endfunction
 
-function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
-    var elem := getItemCfgElem(item);
-    // var slot := elem.Coverage;
-	var slot := IsShield(item) ? "Shield" : elem.Coverage;
+// function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
+//     var elem := getItemCfgElem(item);
     
-	// if (IsShield(item))
-	// 	slot := "Shield";
-	// endif
-
-    return slot;
-endfunction
+//     return IsShield(item) ? "Shield" : elem.Coverage;
+// endfunction
 
 function IsDualWield(item)
 	var elem := getItemCfgElem(item);
@@ -125,7 +119,7 @@ function IsDualWield(item)
 endfunction
 
 function IsShield(item)
-    var tipoequip := getType(item);
+    var tipoequip := item.getType();
     var escudo := SplitWords(tipoequip); escudo := escudo[1];
 	escudo.Lower();
 
