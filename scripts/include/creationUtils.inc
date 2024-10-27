@@ -1186,7 +1186,6 @@ function workingItems(who)
     if (skills[METALWORKING] >= 1)
         CreateItemInBackpack(who, 0x13E3, 1); // smithhammer
         CreateItemInBackpack(who, 0x5107, 1); // smelting pot
-        CreateItemInBackpack(who, 0x1ebc, 1); // Tinker Tools
     endif
     if (skills[GATHERING] >= 1)
         CreateItemInBackpack(who, 0x0f43, 1); // hatchet
