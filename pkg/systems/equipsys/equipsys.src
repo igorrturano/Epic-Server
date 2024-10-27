@@ -1,5 +1,6 @@
 include "include/props";
 include "include/equipstats";
+include ":commands:debugsystem";
 
 program EquipSys(params)
 	var who := params[1];
@@ -7,8 +8,10 @@ program EquipSys(params)
 
 	if (item.IsA(POLCLASS_ARMOR))
 		setArmorStats(item);
+		debugArmor(who, item);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		setWeaponStats(item);
+		debugWeapon(who, item);
 	endif
 endprogram
 
@@ -45,4 +48,10 @@ function setArmorStats(armor)
 	setPropArmor(armor);
 
 	// TODO: Setar na armadura o que não vai em CProp
+endfunction
+
+function debugWeapon(who, weapon)
+endfunction
+
+function debugArmor(who, armor)
 endfunction
