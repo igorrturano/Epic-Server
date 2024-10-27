@@ -1,7 +1,7 @@
 use cfgfile;
 
 program Install()
-	print("INSTALLING: Methods for Items, Weapons & Armor");
+	print("INSTALLING: Methods for Items...");
 	return 1;
 endprogram
 

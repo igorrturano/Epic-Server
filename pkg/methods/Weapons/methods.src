@@ -1,0 +1,13 @@
+use cfgfile;
+
+include ":equipsys:utils";
+
+program Install()
+	print("INSTALLING: Methods for Weapons...");
+	return 1;
+endprogram
+
+exported function getType(item)
+	var elem := getItemCfgElem(item);
+	return elem.TipoAtaque;
+endfunction
