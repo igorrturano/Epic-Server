@@ -9,6 +9,9 @@ include "utils";
 include "props";
 include ":attributes:attributeConstants";
 
+/////////////
+// WEAPONS //
+/////////////
 /**
  * getWeaponStats(weapon)
  *
@@ -23,14 +26,10 @@ include ":attributes:attributeConstants";
  *
  */
 function getWeaponStats(weapon)
-	// TODO: Sistema de tier para somar os ganhos pra cada tier
-	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
 	var stats := struct{};
 
 	stats := addDamagePhysical(stats, weapon);
 	stats := addDamageElemental(stats, weapon);
-
-	// TODO: Organizar melhor essa função e buscar os mods de dano elementais pra setar na arma
 
 	return stats;
 endfunction
@@ -81,18 +80,38 @@ function addDamageElementalByWeapon(stats, weapon)
 	return stats;
 endfunction
 
-function getArmorStats(armor)
-	var stats := struct{};
+function getWeaponMainDamageDice(weapon)
+	var prop := getPropBase(weapon);
+	var dice;
 
-	stats := addResistsPhysical(stats, armor);
-	stats := addResistsElemental(stats, armor);
-	stats := addPenalties(stats, armor);
-	if (IsShield(armor))
-		stats := addShieldMods(stats, armor);
+	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
+		dice := prop.SlashMainDamage;
+	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
+		dice := prop.PiercingMainDamage;
+	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
+		dice := prop.BluntMainDamage;
+	else
+		dice := error{"errortext" := "No dice damage!"};
 	endif
-	// TODO: Calcular HP, durabilidade, Str required.
+	
+	return dice;
+endfunction
 
-	return stats;
+function getWeaponOffDamageDice(weapon)
+	var prop := getPropBase(weapon);
+	var dice;
+	
+	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+		dice := prop.SlashOffDamage;
+	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+		dice := prop.PiercingOffDamage;
+	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+		dice := prop.BluntOffDamage;
+	else
+		dice := error{"errortext" := "No dice damage!"};
+	endif
+	
+	return dice;
 endfunction
 
 /**
@@ -184,6 +203,25 @@ function getCriticalChanceByTier(tier)
 	endcase
 endfunction
 
+
+
+///////////
+// ARMOR //
+///////////
+function getArmorStats(armor)
+	var stats := struct{};
+
+	stats := addResistsPhysical(stats, armor);
+	stats := addResistsElemental(stats, armor);
+	stats := addPenalties(stats, armor);
+	if (IsShield(armor))
+		stats := addShieldMods(stats, armor);
+	endif
+	// TODO: Calcular HP, durabilidade, Str required.
+
+	return stats;
+endfunction
+
 function addResistsPhysical(stats, armor)
 	stats.+SlashResist := 0;
 	stats.+PiercingResist := 0;
@@ -197,71 +235,17 @@ function addResistsPhysical(stats, armor)
 endfunction
 
 function addResistPhysicalByProtection(stats, armor)
-	var protection := getType(armor);
-	var physical := array{}; // {SlashResist, PiercingResist, BluntResist};
+	var resists := getResistPhysicalByProtection(getType(armor)); // {SlashResist, PiercingResist, BluntResist};
 
-	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
-	case(Upper(protection))
-		//TIER 1
-		ARMOR_LOWLOW:
-			physical := {0,0,0};
-			break;
-		ARMOR_LOWMID:
-			physical := {1,1,1};
-			break;
-		ARMOR_LOWHIGH:
-			physical := {2,2,2};
-			break;
-
-		//TIER 2
-		ARMOR_MIDLOW:
-			physical := {3,3,3};
-			break;
-		ARMOR_MIDMID:
-			physical := {4,4,4};
-			break;
-		ARMOR_MIDHIGH:
-			physical := {5,5,5};
-			break;
-
-		//TIER 3
-		ARMOR_HIGHLOW:
-			physical := {6,6,6};
-			break;
-		ARMOR_HIGHMID:
-			physical := {7,7,7};
-			break;
-		ARMOR_HIGHHIGH:
-			physical := {8,8,8};
-			break;
-
-		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
-		default: 
-			physical := {0,0,0};
-	endcase
-
-	stats.SlashResist += physical[1];
-	stats.PiercingResist += physical[2];
-	stats.BluntResist += physical[3];
+	stats.SlashResist += resists[1];
+	stats.PiercingResist += resists[2];
+	stats.BluntResist += resists[3];
 
 	return stats;
 endfunction
 
 function addResistPhysicalBySlot(stats, armor)
-	var resists := array{}; // {SlashResist, PiercingResist, BluntResist}
-	var slot := getSlot(armor);
-
-	case(Upper(slot))
-		HEAD: resists := {2,2,2}; break;
-		NECK: resists := {1,1,1}; break;
-		BODY: resists := {4,4,4}; break;
-		ARMS: resists := {2,2,2}; break;
-		HANDS: resists := {1,1,1}; break;
-		LEGS: resists := {3,3,3}; break;
-		FEET: resists := {2,2,2}; break;
-		
-		default: resists := {0,0,0}; break;
-	endcase
+	var resists := getResistPhysicalBySlot(getSlot(armor)); // {SlashResist, PiercingResist, BluntResist}
 
 	stats.SlashResist += resists[1];
 	stats.PiercingResist += resists[2];
@@ -271,54 +255,66 @@ function addResistPhysicalBySlot(stats, armor)
 endfunction
 
 function addResistPhysicalByMaterial(stats, armor)
-	var material := armor.getMaterialName();
-	var resist := getResistPhysicalMaterialMod(material);
+	var resists := getResistPhysicalMaterialMod(armor.getMaterialName());
 
-	stats.SlashResist += CInt(resist);
-	stats.PiercingResist += CInt(resist);
-	stats.BluntResist += CInt(resist);
+	stats.SlashResist += resists[1];
+	stats.PiercingResist += resists[2];
+	stats.BluntResist += resists[3];
 
 	return stats;
 endfunction
 
-function getResistPhysicalMaterialMod(materialName)
-	var mod;
 
-	case (Upper(materialName))
-		"COBRE":
-			mod := 0;
-			break;
+function getResistPhysicalByProtection(protectionType)
+	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
+	case(Upper(protectionType))
+		//TIER 1
+		ARMOR_LOWLOW: return {0,0,0};
+		ARMOR_LOWMID: return {1,1,1};
+		ARMOR_LOWHIGH: return {2,2,2};
 
-		"BRONZE":
-			mod := 1;
-			break;
+		//TIER 2
+		ARMOR_MIDLOW: return {3,3,3};
+		ARMOR_MIDMID: return {4,4,4};
+		ARMOR_MIDHIGH: return {5,5,5};
 
-		"FERRO":
-			mod := 1;
-			break;
+		//TIER 3
+		ARMOR_HIGHLOW: return {6,6,6};
+		ARMOR_HIGHMID: return {7,7,7};
+		ARMOR_HIGHHIGH: return {8,8,8};
 
-		"FERROTEMPERADO":
-			mod := 2;
-			break;
-
-		"ACO":
-		"FULMETIUM":
-		"VENETIUM":
-		"IGNIUM":
-		"FRIGUTIUM":
-			mod := 3;
-			break;
-
-		"ILLYRA":
-			mod := 4;
-			break;
-
-		"MITHRIL":
-			mod := 5;
-			break;
+		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
+		default: return {0,0,0};
 	endcase
-    
-	return mod;
+endfunction
+
+function getResistPhysicalBySlot(slot)
+	case(Upper(slot))
+		HEAD: return {2,2,2};
+		NECK: return {1,1,1};
+		BODY: return {4,4,4};
+		ARMS: return {2,2,2};
+		HANDS: return {1,1,1};
+		LEGS: return {3,3,3};
+		FEET: return {2,2,2};
+		
+		default: return {0,0,0};
+	endcase
+endfunction
+
+function getResistPhysicalMaterialMod(materialName)
+	case (Upper(materialName))
+		"COBRE": return {0,0,0};
+
+		"BRONZE": return {1,1,1};
+		"FERRO": return {1,1,1};
+		"FERROTEMPERADO": return {2,2,2};
+
+		"ACO": "FULMETIUM": "VENETIUM": "IGNIUM": "FRIGUTIUM": return {3,3,3};
+		
+		"ILLYRA": return {4,4,4};
+		"MITHRIL": return {5,5,5};
+	endcase
 endfunction
 
 function addResistsElemental(stats, armor)
@@ -468,36 +464,3 @@ function addShieldMods(stats, shield)
 	return stats;
 endfunction
 
-function getWeaponMainDamageDice(weapon)
-	var prop := getPropBase(weapon);
-	var dice;
-
-	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
-		dice := prop.SlashMainDamage;
-	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
-		dice := prop.PiercingMainDamage;
-	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
-		dice := prop.BluntMainDamage;
-	else
-		dice := error{"errortext" := "No dice damage!"};
-	endif
-	
-	return dice;
-endfunction
-
-function getWeaponOffDamageDice(weapon)
-	var prop := getPropBase(weapon);
-	var dice;
-	
-	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
-		dice := prop.SlashOffDamage;
-	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
-		dice := prop.PiercingOffDamage;
-	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
-		dice := prop.BluntOffDamage;
-	else
-		dice := error{"errortext" := "No dice damage!"};
-	endif
-	
-	return dice;
-endfunction
