@@ -1,5 +1,6 @@
 include "include/props";
 include "include/equipstats";
+include "include/utils";
 include ":commands:debugsystem";
 
 program EquipSys(params)
@@ -29,6 +30,7 @@ function setWeaponStats(weapon)
 	var stats := getWeaponStats(weapon);
 	setPropWeapon(weapon);
 
+	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
 	// TODO: Setar na arma o que não vai em Prop
 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
@@ -51,7 +53,52 @@ function setArmorStats(armor)
 endfunction
 
 function debugWeapon(who, weapon)
+	var prop := getPropBase(weapon);
+
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+	DebugMsg(who, DEBUG_EQUIP, $"Arma: {weapon.desc}");
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {SLASHDAMAGE}: {prop.SlashMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {prop.PiercingMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {prop.BluntMainDamage}");
+
+	if(IsDualWield(weapon))
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {prop.SlashOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {prop.PiercingOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {prop.BluntOffDamage}");
+	endif
+
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Fogo: {prop.FireDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Gelo: {prop.ColdDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Veneno: {prop.PoisonDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Energia: {prop.EnergyDamage}");
+
+	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {prop.AttackType}");
+	DebugMsg(who, DEBUG_EQUIP, $"Velocidade: {prop.AttackSpeed}");
+	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {prop.CriticalChance}%");
 endfunction
 
 function debugArmor(who, armor)
+	var prop := getPropBase(armor);
+
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+	DebugMsg(who, DEBUG_EQUIP, $"Arma: {armor.desc}");
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] {SLASHDAMAGE}: {prop.SlashResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] {PIERCINGDAMAGE}: {prop.PiercingResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] {BLUNTDAMAGE}: {prop.BluntResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] Slot: {prop.BluntResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] Tier: {addRe}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA FÍSICA] Material: {armor.getMaterialName()}({getResistPhysicalMaterialMod(armor.getMaterialName())})");
+
+
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Fogo: {prop.FireResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Gelo: {prop.ColdResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Veneno: {prop.PoisonResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"[RESISTÊNCIA ELEMENTAL] Energia: {prop.EnergyResist}");
+
+	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.Coverage}");
+
+	// TODO: PENALIDADES
 endfunction
