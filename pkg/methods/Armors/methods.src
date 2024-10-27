@@ -1,0 +1,18 @@
+use cfgfile;
+
+include ":equipsys:utils";
+
+program Install()
+	print("INSTALLING: Methods for Armors...");
+	return 1;
+endprogram
+
+exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
+	var elem := getItemCfgElem(item);
+	return IsShield(item) ? "Shield" : elem.Coverage;
+endfunction
+
+exported function getType(item)
+	var elem := getItemCfgElem(item);
+	return elem.TipoProtecao;
+endfunction
