@@ -73,6 +73,7 @@ function debugWeapon(who, weapon)
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Veneno: {prop.PoisonDamage}");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Energia: {prop.EnergyDamage}");
 
+	DebugMsg(who, DEBUG_EQUIP, $"Material: {weapon.getMaterialName()}");
 	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {prop.AttackType}");
 	DebugMsg(who, DEBUG_EQUIP, $"Velocidade: {prop.AttackSpeed}");
 	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {prop.CriticalChance}%");
@@ -82,18 +83,14 @@ function debugArmor(who, armor)
 	var prop := getPropBase(armor);
 
 	DebugMsg(who, DEBUG_EQUIP, "====================");
-	DebugMsg(who, DEBUG_EQUIP, $"Arma: {armor.desc}");
+	DebugMsg(who, DEBUG_EQUIP, $"Equipamento: {armor.desc}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 
 	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {SLASHDAMAGE}: {prop.SlashResist}");
 	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {PIERCINGDAMAGE}: {prop.PiercingResist}");
 	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {BLUNTDAMAGE}: {prop.BluntResist}");
-	DebugMsg(who, DEBUG_EQUIP,
-		$"[RESIST. FÍSICA] Material: {armor.getMaterialName()}" +
-		"(" +
-		$"{getResistPhysicalByMaterial(armor.getMaterialName())[1]}" +
-		")"
-	);
+	var materialResists := getResistPhysicalByMaterial(armor);
+	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] Material Cort./Perf./Cont.: {materialResists[1]}/{materialResists[2]}/{materialResists[3]}");
 
 
 	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Fogo: {prop.FireResist}");
@@ -101,7 +98,9 @@ function debugArmor(who, armor)
 	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Veneno: {prop.PoisonResist}");
 	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Energia: {prop.EnergyResist}");
 
-	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.Coverage}");
+	
+	DebugMsg(who, DEBUG_EQUIP, $"Material: {armor.getMaterialName()}");
+	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.getSlot()}");
 
 	// TODO: PENALIDADES
 endfunction
