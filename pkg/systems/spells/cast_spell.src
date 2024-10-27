@@ -18,6 +18,7 @@ include ":spells:spellbooks";
 include ":spells:include/swordmage";
 include "include/facings";
 include ":tn:cooldown";
+include "include/meusProcessos";
 
 program SpellStarter(params)
     var mobile := params[1]; // Caster
@@ -183,6 +184,7 @@ endfunction
 function performCastingProcess(mobile, spellinfo)
     mobile.hidden := 0;
     SetObjProperty(mobile, "#Casting", 1);
+    DistribuiEvento(mobile,EV_SPELLCAST);
 
     if (!mobile.npctemplate)
         performSpellVocalization(mobile, spellinfo);

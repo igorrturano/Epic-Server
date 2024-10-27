@@ -15,7 +15,7 @@ function Garimpeiro(who)
 		EncontraGema(who);
 	elseif(TemHabilidade(who, "Minerador Talentoso") && rand < 10)
 		EncontraGema(who);
-		SendSysMessageEx(who, "So um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
+		SendSysMessageEx(who, "Só um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
 	endif
 	return 1;
 endfunction
@@ -27,7 +27,7 @@ function EncontraGema(who)
 	while (!gema)
 		gema := keys[RandomInt(keys.size())];
 	endwhile
-	SendSysMessageEx(who, "Voce achou uma pedra preciosa!", SSM_INFO);
+	SendSysMessageEx(who, "Você achou uma pedra preciosa!", SSM_INFO);
 	CreateItemInBackPack(who, gema, 1);
 	PrintTextAbove(who, "*encontra algo reluzente*");
 	SkillCheck(who, GATHERING, -1);
@@ -82,12 +82,12 @@ function DigForMap(who, targ, map)
 var chestz := who.z;
 
 	if((!chestx) || (!chesty))
-		SendSysMessage( who, "Este nao parece ser um mapa de tesouro.", SSM_FAIL );
+		SendSysMessage( who, "Este não parece ser um mapa de tesouro.", SSM_FAIL );
 		return;
 	endif
 
 	if(!CheckLosAt( who, targ.x, targ.y, targ.z ) );
-		SendSysMessageEx( who, "Voce nao ve o alvo.", SSM_FAIL );
+		SendSysMessageEx( who, "Você não ve o alvo.", SSM_FAIL );
 		return;
 	endif
 
@@ -100,20 +100,20 @@ var chestz := who.z;
 	var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 0, who.realm);
 
 	if(distn > maxrange)
-		SendSysMessageEx(who,"Voce parece muito distante.", SSM_INFO);
+		SendSysMessageEx(who,"Você parece muito distante.", SSM_INFO);
 		return;
 
 	elseif((distn > range) && (distn <= maxrange))
-		SendSysMessage(who,"Voce cavou e cavou mas nao encontrou nenhum tesouro.", SSM_INFO);
+		SendSysMessage(who,"Você cavou e cavou mas não encontrou nenhum tesouro.", SSM_INFO);
 		return;
 
 	elseif((distn < range) && (len(mobiles) > 0))
-		SendSysMessageEx(who,"voce parou de cavar porque algo esta sobre o tesouro.");
+		SendSysMessageEx(who,"você parou de cavar porque algo esta sobre o tesouro.");
 		return;
 	else
 		who.frozen := 1;
-		PrintTextAbove(who, "*Comeca a cavar o tesouro*");
-		SendSysMessageEx(who, "NAO DESLOGUE, A ANIM DEMORA UM POUCO, aguarde o boneco terminar de cavar!", SSM_INFO);
+		PrintTextAbove(who, "*Começa a cavar o tesouro*");
+		SendSysMessageEx(who, "NÃO DESLOGUE, A ANIM DEMORA UM POUCO, aguarde o boneco terminar de cavar!", SSM_INFO);
 		var i := 1;
 		var mex := who.x;
 		var mey := who.y;
@@ -190,7 +190,7 @@ var chestz := who.z;
           			endforeach
         		endif
 			if((who.x != mex) || (who.y != mey))
-				SendSysMessageEx(who,"Voce deve ficar parado enquanto cava.", SSM_FAIL);
+				SendSysMessageEx(who,"Você deve ficar parado enquanto cava.", SSM_FAIL);
 				DestroyItem(chest);
 		        	return;
 		      	endif
@@ -267,7 +267,7 @@ endfunction
 function ChestDestroy( chest )
 sleep(600);
 DestroyItem(chest);
-print("o chest foi destruido");
+print("o chest foi destruído");
 endfunction
 
 function GetRange( who );
@@ -413,7 +413,7 @@ function DetermineOreType(who, where)
 	endforeach
 
 	if (!achou)
-		SendSysMessage(who, "Nao tem o minerio que voce procura aqui.");
+		SendSysMessage(who, "Não tem o minério que você procura aqui.");
 		return 0;
 	endif
 
@@ -425,7 +425,7 @@ function DetermineOreType(who, where)
 		endif
 		return oreid;
 	else
-		SendSysMessage(who, "Voce nao conseguiu achar o minerio que procura.");
+		SendSysMessage(who, "Você não conseguiu achar o minério que procura.");
 		return 999;
 	endif
 
@@ -442,25 +442,29 @@ function DetermineMiningDifficulty(oretype)
 		//0xBD13: return 0;  //pedra grande
 		0xee99: return 0;  //calcario
 
-		0x6300: return 0;  //iron ore
-		0x62ff: return 40;  //ferro impuro
-		0x6309: return 50; //iron temperado
+		//minérios
+		0x6450: return 14; //cobre
+ 		0x6990: return 35; //estanho
+		0x699c: return 45; //bronze
+		0x6300: return 55;  //iron ore
+		0x6992: return 70; //prata
 		0x6301: return 70; //litan
-        0x6314: return 82; //illyra
-		0x6302: return 72; //fulmetita
-		0x6303: return 72; //venetita
-		0x6304: return 72; //ignitita
-		0x6451: return 72; //frigutita
-		0x6307: return 90; //galvorn
-		0x6308: return 90; //mithril
-		0x6450: return 20; //cobre
-		0x699c: return 10; //bronze
-		0x699d: return 20; // Bronze temperado
-		0x6994: return 20; // bronze
-		0x6995: return 60; //aco
+		0x6302: return 91; //fulmetita
+		0x6303: return 91; //venetita
+		0x6304: return 91; //ignitita
+		0x6451: return 91; //frigutita
+        0x6314: return 100; //illyra
+		0x6308: return 107; //mithril
 
-		0x6992: return 50; //prata
- 		0x6990: return 30; //estanho
+		0x6995: return 75; //aco
+		0x6307: return 90; //galvorn
+		0x62ff: return 50;  //ferro impuro
+		0x6309: return 60; //iron temperado
+		0x6465: return 25; //cobre -> bronze
+		
+		0x699d: return 25; // Bronze temperado
+		0x6994: return 20; // bronze
+
 
 		0x6075: return 5; //areia
 
@@ -546,16 +550,16 @@ endfunction
 
 function CheckLoop(who, tool, my_x, my_y, my_facing)
 	if ( who.hidden )
-		SendSysMessage(who, "Voce parou de minerar para ficar escondido.");
+		SendSysMessage(who, "Você parou de minerar para ficar escondido.");
 		return 0;
 	elseif ( (who.x != my_x) || (who.y != My_y) )
-		SendSysMessage(who, "Voce saiu de onde estava.");
+		SendSysMessage(who, "Você saiu de onde estava.");
 		return 0;
 	elseif ( who.facing != my_facing )
-		SendSysMessage(who, "Voce virou sua atencao para outra coisa.");
+		SendSysMessage(who, "Você virou sua atenção para outra coisa.");
 		return 0;
 	elseif ( GetEquipmentByLayer(who, LAYER_MOUNT) )
-		SendSysMessage(who, "Voce nao pode minerar montado.");
+		SendSysMessage(who, "Você não pode minerar montado.");
 		return 0;
 	elseif (!tool)
 		return 0;
@@ -572,6 +576,7 @@ function ConvertOreToIngot(ore)
 		0x6450: return 0x6465; //copper
 		0x6990: return 0x6991; //estanho
 		0x6300: return 0x62ff; //ferro -> ferro impuro
+		0x6465: return 0x699d; //copper -> bronze impuro
 		0x699c: return 0x699d; //bronze impuro
 		0x699d: return 0x6994; //bronze temperado
 		0x62ff: return 0x6309; //ferro impuro -> ferro temperado
@@ -654,32 +659,46 @@ endfunction
  */
 function getAllOres()
 	return array{
+		/* Carvão */
 		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0x1bdd, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee36, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee37, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee38, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee39, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3a, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3b, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3c, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3d, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3e, {}, 2323),
+		toStruct(ORE_CHARCOAL, "Madeira", "Carvão", 0xee3f, {}, 2323),
+
 		toStruct(ORE_SAND, "Areia", "Vidro", 0x6075),
 
 		/* Metais primários */
-		toStruct(ORE_IRON, "Minério de Ferro", "Ingot de Ferro Impuro", 0x6300),
-		toStruct(ORE_BRONZE, "Minério de Bronze", "Ingot de Bronze Impuro", 0x699c),
+		toStruct(ORE_COPPER, "Minério de Cobre", "Barra de Cobre", 0x6450),
+		toStruct(ORE_IRON, "Minério de Ferro", "Barra de Ferro", 0x6300),
+		toStruct(ORE_TIN, "Minério de Estanho", "Barra de Estanho", 0x6990),
+		// toStruct(ORE_BRONZE, "Minério de Bronze", "Barra de Bronze", 0x699c),
 
 		/* Ligas Metálicas */
-		toStruct(ORE_IRON_TEMP, "Ingot de Ferro Impuro", "Ingot de Ferro Temperado", ConvertOreToIngot(0x6300), {0x1BDE}),
-		toStruct(ORE_BRONZE_TEMP, "Ingot de Bronze Impuro", "Ingot de Bronze Temperado", ConvertOreToIngot(0x699c), {0x1BDE}),
-		toStruct(ORE_STEEL, "Ingot de Ferro Temperado", "Ingot de Aço", 0x6309, {0x1BDE, 0x6990}, 2599),
+		toStruct(ORE_BRONZE, "Barra de Cobre", "Barra de Bronze", 0x6465, {0x6991}),
+		toStruct(ORE_IRON_TEMP, "Barra de Ferro", "Barra de Ferro Temperado", 0x62ff, {0x1BDE}),
+		toStruct(ORE_BRONZE_TEMP, "Barra de Bronze Impuro", "Barra de Bronze Temperado", 0x699d, {0x1BDE}),
+		toStruct(ORE_STEEL, "Barra de Ferro Temperado", "Barra de Aço", 0x6309, {0x1BDE, 0x6990}, 2599),
 
 		/* Ligas Elementais */
-		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Ingot de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
-		toStruct(ORE_VENETITA, "Minério de Venetita", "Ingot de Venetium", 0x6303, {/* Colocar LIGA aqui */}, 1428),
-		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Ingot de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
-		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Ingot de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
+		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Barra de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
+		toStruct(ORE_VENETITA, "Minério de Venetita", "Barra de Venetium", 0x6303, {/* Colocar LIGA aqui */}, 1428),
+		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Barra de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
+		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
 
-		// toStruct(ORE_LITAN, "Minério de Litan", "Ingot de Litan", 0x6301, {}, 1801),
-		toStruct(ORE_ILLYRA, "Minério de Illyra", "Ingot de Illyra", 0x6314, {}, 2278),
-		toStruct(ORE_MITHRIL, "Minério de Mithril", "Ingot de Mithril", 0x6308, {}, 2448),
+		// toStruct(ORE_LITAN, "Minério de Litan", "Barra de Litan", 0x6301, {}, 1801),
+		toStruct(ORE_ILLYRA, "Minério de Illyra", "Barra de Illyra", 0x6314, {}, 2278),
+		toStruct(ORE_MITHRIL, "Minério de Mithril", "Barra de Mithril", 0x6308, {}, 2448),
 
 		/* Metais preciosos */
-		toStruct(ORE_COPPER, "Minério de Cobre", "Ingot de Cobre", 0x6450),
-		toStruct(ORE_SILVER, "Minério de Prata", "Ingot de Prata", 0x6992, {}, 2326),
-		toStruct(ORE_GOLD, "Minério de Ouro", "Ingot de Ouro", 0x6305, {}, 2598)
+		toStruct(ORE_SILVER, "Minério de Prata", "Barra de Prata", 0x6992, {}, 2326),
+		toStruct(ORE_GOLD, "Minério de Ouro", "Barra de Ouro", 0x6305, {}, 2598)
 	};
 endfunction
 
@@ -697,23 +716,14 @@ endfunction
  * Um struct contendo os dados do material:
  * oreType, oreName, ingotName, oreObjType, ingotObjType, neededToCraft, color.
  */
-function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := "", color := 0)
-	var neededToCraft := array{};
-	neededToCraft.append(objType);
-
-	if (Len(othersOresNeeded) > 0)
-		foreach ore in othersOresNeeded
-			neededToCraft.append(ore);
-		endforeach
-	endif
-
+function toStruct(oreType, oreName, ingotName, objType, othersOresNeeded := array{}, color := 0)
 	return struct{
 		"oreType" := oreType,
 		"oreName" := oreName, 
 		"ingotName" := ingotName,
 		"oreObjType" := objType,
 		"ingotObjType" := ConvertOreToIngot(objType),
-		"neededToCraft" := neededToCraft,
+		"neededToCraft" := othersOresNeeded,
 		"difficulty" := DetermineMiningDifficulty(objType),
 		"color" := color
 	};
@@ -722,6 +732,9 @@ endfunction
 enum ORE
 	ORE_CHARCOAL := "ORE_CHARCOAL",
 	ORE_SAND := "ORE_SAND",
+
+	ORE_TIN := "ORE_TIN",
+	ORE_COPPER := "ORE_COPPER",
 	ORE_BRONZE := "ORE_BRONZE",
 	ORE_IRON := "ORE_IRON",
 
@@ -743,7 +756,6 @@ enum ORE
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
-	ORE_COPPER := "ORE_COPPER",
 	ORE_SILVER := "ORE_SILVER",
 	ORE_GOLD := "ORE_GOLD"
 endenum
