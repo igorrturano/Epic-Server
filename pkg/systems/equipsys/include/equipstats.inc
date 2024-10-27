@@ -239,15 +239,15 @@ function addResistPhysicalBy(type, stats, armor)
 	
 	case(Upper(type))
 		"MATERIAL":
-			resists := getResistPhysicalByMaterial(armor.getMaterialName());
+			resists := getResistPhysicalByMaterial(armor);
 			break;
 
 		"SLOT":
-			resists := getResistPhysicalBySlot(armor.getSlot());
+			resists := getResistPhysicalBySlot(armor);
 			break;
 
 		"PROTECTION":
-			resists := getResistPhysicalByProtection(armor.getType());
+			resists := getResistPhysicalByProtection(armor);
 			break;
 	endcase
 
@@ -258,40 +258,9 @@ function addResistPhysicalBy(type, stats, armor)
 	return stats;
 endfunction
 
-// function addResistPhysicalByProtection(stats, armor)
-// 	var resists := getResistPhysicalByProtection(getType(armor)); // {SlashResist, PiercingResist, BluntResist};
-
-// 	stats.SlashResist += resists[1];
-// 	stats.PiercingResist += resists[2];
-// 	stats.BluntResist += resists[3];
-
-// 	return stats;
-// endfunction
-
-// function addResistPhysicalBySlot(stats, armor)
-// 	var resists := getResistPhysicalBySlot(getSlot(armor)); // {SlashResist, PiercingResist, BluntResist}
-
-// 	stats.SlashResist += resists[1];
-// 	stats.PiercingResist += resists[2];
-// 	stats.BluntResist += resists[3];
-	
-// 	return stats;
-// endfunction
-
-// function addResistPhysicalByMaterial(stats, armor)
-// 	var resists := getResistPhysicalByMaterial(armor.getMaterialName());
-
-// 	stats.SlashResist += resists[1];
-// 	stats.PiercingResist += resists[2];
-// 	stats.BluntResist += resists[3];
-
-// 	return stats;
-// endfunction
-
-
-function getResistPhysicalByProtection(protectionType)
+function getResistPhysicalByProtection(armor)
 	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
-	case(Upper(protectionType))
+	case(Upper(armor.getType())) // {SlashResist, PiercingResist, BluntResist}
 		//TIER 1
 		ARMOR_LOWLOW: return {0,0,0};
 		ARMOR_LOWMID: return {1,1,1};
@@ -312,8 +281,8 @@ function getResistPhysicalByProtection(protectionType)
 	endcase
 endfunction
 
-function getResistPhysicalBySlot(slot)
-	case(Upper(slot))
+function getResistPhysicalBySlot(armor)
+	case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
 		HEAD: return {2,2,2};
 		NECK: return {1,1,1};
 		BODY: return {4,4,4};
@@ -326,8 +295,8 @@ function getResistPhysicalBySlot(slot)
 	endcase
 endfunction
 
-function getResistPhysicalByMaterial(materialName)
-	case (Upper(materialName))
+function getResistPhysicalByMaterial(armor)
+	case (Upper(armor.getMaterialName())) // {SlashResist, PiercingResist, BluntResist}
 		"COBRE": return {0,0,0};
 
 		"BRONZE": return {1,1,1};
@@ -370,27 +339,24 @@ function addPenalties(stats, armor)
 	stats.+MageryPen := 0;
 	stats.+AwarenessPen := 0;
 	
-	stats := addPenaltiesBySlot(stats, armor);
-	stats := addPenaltiesByProtection(stats, armor);
+	stats := addPenaltiesBy("SLOT", stats, armor);
+	stats := addPenaltiesBy("PROTECTION", stats, armor);
 
 	return stats;
 endfunction
 
-function addPenaltiesBySlot(stats, armor)
-	var slot := armor.getSlot();
-	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-
-	case(Upper(slot))
-		HEAD: penalties := {0,0,0,1,0}; break;
-		NECK: penalties := {0,0,0,1,0}; break;
-		BODY: penalties := {0,0,0,12,0}; break;
-		ARMS: penalties := {0,0,2,6,0}; break;
-		HANDS: penalties := {0,0,4,3,0}; break;
-		LEGS: penalties := {0,0,0,6,0}; break;
-		FEET: penalties := {0,0,0,0,0}; break;
-		SHIELD: penalties := {0,1,10,5,0}; break;
-	endcase
+function addPenaltiesBy(type, stats, armor)
+	var penalties := array{};
 	
+	case(Upper(type))
+		"SLOT":
+			penalties := getPenaltiesBySlot(armor);
+			break;
+		"PROTECTION":
+			penalties := getPenaltiesByProtection(armor);
+			break;
+	endcase
+
 	stats.DexPen += penalties[1];
 	stats.SneakPen += penalties[2];
 	stats.MAPen += penalties[3];
@@ -400,73 +366,45 @@ function addPenaltiesBySlot(stats, armor)
 	return stats;
 endfunction
 
-function addPenaltiesByProtection(stats, armor)
-	var protection := armor.getType();
-	var penalties := array{}; // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
+function getPenaltiesBySlot(armor)
+	case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
+		HEAD: return {0,0,0,1,0};
+		NECK: return {0,0,0,1,0};
+		BODY: return {0,0,0,12,0};
+		ARMS: return {0,0,2,6,0};
+		HANDS: return {0,0,4,3,0};
+		LEGS: return {0,0,0,6,0};
+		FEET: return {0,0,0,0,0};
+		SHIELD: return {0,1,10,5,0};
+	endcase
+endfunction
 
-	case(Upper(protection))
+function getPenaltiesByProtection(armor)
+	case(Upper(armor.getType())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 		//TIER 1
-		ARMOR_LOWLOW:
-			penalties := {0,0,0,0,0};
-			break;
-		ARMOR_LOWMID:
-			penalties := {0,0,0,0,0};
-			break;
-		ARMOR_LOWHIGH:
-			penalties := {0,0,0,0,0};
-			break;
+		ARMOR_LOWLOW: return {0,0,0,0,0};
+		ARMOR_LOWMID: return {0,0,0,0,0};
+		ARMOR_LOWHIGH: return {0,0,0,0,0};
 
 		//TIER 2
-		ARMOR_MIDLOW:
-			penalties := {0,0,0,0,0};
-			break;
-		ARMOR_MIDMID:
-			penalties := {0,0,0,4,0};
-			break;
-		ARMOR_MIDHIGH:
-			penalties := {0,0,0,0,0};
-			break;
+		ARMOR_MIDLOW: return {0,0,0,0,0};
+		ARMOR_MIDMID: return {0,0,0,4,0};
+		ARMOR_MIDHIGH: return {0,0,0,0,0};
 
 		//TIER 3
-		ARMOR_HIGHLOW:
-			penalties := {0,0,0,6,0};
-			break;
-		ARMOR_HIGHMID:
-			penalties := {0,0,0,12,0};
-			break;
-		ARMOR_HIGHHIGH:
-			penalties := {0,0,0,24,0};
-			break;
-
+		ARMOR_HIGHLOW: return {0,0,0,6,0};
+		ARMOR_HIGHMID: return {0,0,0,12,0};
+		ARMOR_HIGHHIGH: return {0,0,0,24,0};
 
 		// ESCUDOS
-		SHIELD_BUCKLER:
-			penalties := {0,0,0,0,0};
-			break;
-		SHIELD_SMALL:
-			penalties := {4,0,0,0,0};
-			break;
-		SHIELD_MEDIUM:
-			penalties := {8,0,0,6,0};
-			break;
-		SHIELD_LARGE:
-			penalties := {12,0,0,12,0};
-			break;
-		SHIELD_TOWER:
-			penalties := {16,0,0,24,0};
-			break;
+		SHIELD_BUCKLER: return {0,0,0,0,0};
+		SHIELD_SMALL: return {4,0,0,0,0};
+		SHIELD_MEDIUM: return {8,0,0,6,0};
+		SHIELD_LARGE: return {12,0,0,12,0};
+		SHIELD_TOWER: return {16,0,0,24,0};
 
-		default: 
-			penalties := {0,0,0,0,0};
+		default: return {0,0,0,0,0};
 	endcase
-
-	stats.DexPen += penalties[1];
-	stats.SneakPen += penalties[2];
-	stats.MAPen += penalties[3];
-	stats.MageryPen += penalties[4];
-	stats.AwarenessPen += penalties[5];
-
-	return stats;
 endfunction
 
 function addShieldMods(stats, shield)
