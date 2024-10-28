@@ -239,6 +239,12 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         return 0;
     endif
 
+    // Verifica o tempo de espera entre ganhos de habilidade
+    var settings := AP_GetSettingsCfgElem("Skills");
+    if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
+        return 0;
+    endif
+
     // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
     skill_name := HandleBudokaSkillTransform(mobile, skill_name);
 
@@ -248,17 +254,10 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         return 0;
     endif
 
-    var true_skill := AP_GetTrueSkill(mobile, skill_name);
-    var max_skillcap_class := AP_CheckClassSkillCap(mobile, skill_name);
+    var true_skill := CDbl(AP_GetTrueSkill(mobile, skill_name));
+    var max_skillcap_class := CDbl(AP_CheckClassSkillCap(mobile, skill_name));
     if (true_skill >= max_skillcap_class)  
-        SkillDbgMsg(mobile, "Atingiu o limite máximo da skill");
         DebugMsg(mobile, DEBUG_UP, "Você atingiu o nível máximo da skill!");
-        return 0;
-    endif
-
-    // Verifica o tempo de espera entre ganhos de habilidade
-    var settings := AP_GetSettingsCfgElem("Skills");
-    if (!SkillGainCooldownPassed(mobile, skill_name, settings)) 
         return 0;
     endif
 
@@ -269,11 +268,13 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         SetObjProperty(mobile, fail_count_skill, fail_count); 
     endif
 
-    if (!PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)) 
+    var has_passed_advancement_check := PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class);
+
+    if (!has_passed_advancement_check) 
         fail_count := fail_count + 1;
         SetObjProperty(mobile, fail_count_skill, fail_count);
         SkillDbgMsg(mobile, "A verificação de avanço de habilidade falhou.");
-        DebugMsg(mobile, DEBUG_UP, "Você aplicou mais esforço em " + FormatSkillName(skill_name) + ", mas ainda não aprimorou. Tentativas: (" + CStr(fail_count) + ")");
+        DebugMsg(mobile, DEBUG_UP, FormatSkillName(skill_name) + " ainda não aprimorou. Tentativas: (" + CStr(fail_count) + ")");
         return 0;
     endif
 
@@ -287,10 +288,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     endif
 
     // Save new skill value and notify player
-    var skill_gain := ApplySkillGainModifiers(mobile, skill_name, true_skill);    
-
-    AP_SetTrueSkill(mobile, skill_name, skill_gain);
-    SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
+    var skill_gain := CDbl(ApplySkillGain(mobile, skill_name)); 
 
     // If it's a pet, notify the owner
     if (mobile.npctemplate) 
@@ -303,11 +301,11 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
             petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
             SetObjProperty(mobile, fail_count_skill, 0);
-            DebugMsg(owner, DEBUG_UP, "A habilidade " + FormatSkillName(skill_name) + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
+            DebugMsg(owner, DEBUG_UP, FormatSkillName(skill_name) + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
         endif
     else
         SetObjProperty(mobile, fail_count_skill, 0);
-        DebugMsg(mobile, DEBUG_UP, "Sua habilidade " + FormatSkillName(skill_name) + " aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
+        DebugMsg(mobile, DEBUG_UP, FormatSkillName(skill_name) + " aumentou para " + RoundValueToOneDecimal(skill_gain) + "!");
     endif
 
     return 1;
@@ -379,7 +377,11 @@ function PerformAdvancementCheck(pass_chance, true_skill, max_skillcap_class)
     endif
     var adjusted_pass_chance := ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class);
     var adv_check := CInt(RandomInt(100) + 1); 
-    return (CInt(adv_check <= adjusted_pass_chance));
+    if (CInt(adv_check <= adjusted_pass_chance))
+        return 1;
+    else
+        return 0;
+    endif
 endfunction
 
 /*
@@ -415,7 +417,6 @@ function ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
     else
         pass_chance := 5;
     endif
-
     pass_chance := ClampValue(pass_chance, 0, 100);
     return pass_chance;
 endfunction
@@ -430,7 +431,7 @@ function ClampValue(value, min_value, max_value)
 endfunction
 
 /*
- * ApplySkillGainModifiers(mobile, skill_name, true_skill)
+ * ApplySkillGain(mobile, skill_name)
  * 
  * Purpose:
  * This function calculates the amount of skill gain based on various factors, such as the player's current skill level,
@@ -447,7 +448,6 @@ endfunction
  * Parameters:
  * - `mobile`: The player or character object whose skill is being modified.
  * - `skill_name`: The name of the skill that is being advanced.
- * - `true_skill`: The current level of the skill that is being updated.
  * 
  * Returns:
  * - The final new skill value after applying the calculated skill gain and ensuring precision.
@@ -456,24 +456,28 @@ endfunction
  * - This function is designed to be extended with additional conditions (e.g., special scenarios like sneaking in dangerous
  *   zones or preventing skill gains with certain conditions like animal handling restrictions).
  */
-function ApplySkillGainModifiers(mobile, skill_name, true_skill)
-    // Fixed values for skill gain
-    var base_gain := 0.1;       
-    var high_skill_gain := 0.3;
-    var no_skill_gain := 0;   
+function ApplySkillGain(mobile, skill_name)
+    var true_skill := CDbl(GetAttributeBaseValue(mobile, skill_name)) / 10.0;
 
-    // Default to base skill gain for now (can be modified based on future conditions)
+    // Define skill gain values
+    var base_gain := CDbl(0.1);
+    var adv_gain := CDbl(0.3);
+    var no_skill_gain := CDbl(0);
     var skill_gain := base_gain;
 
-    // TODO: Add special case for sneaking in dangerous zones to apply high_skill_gain
-    // TODO: Add special case for handle animal to potentially set no_skill_gain
 
-    // If no skill gain is applied, return the current skill value immediately
-    if (skill_gain == no_skill_gain)
-        return true_skill;  
-    endif
+    var new_skill_value := true_skill + skill_gain;
+    // If you remove this funky part you are going to have a BAD time!
+    var temp := new_skill_value;
+    while ( CInt(temp*10.0) == CInt(GetAttributeBaseValue(mobile, skill_name)) )
+        temp := temp+0.1;
+        DebugMsg(mobile, DEBUG_UP, "temp: " + temp);
+        sleepms(10);
+    endwhile
+    AP_SetTrueSkill(mobile, skill_name, temp);
+    // Record the last skill gain time
+    SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
 
-    var new_skill_value := true_skill + skill_gain;  
     return new_skill_value;
 endfunction
 
