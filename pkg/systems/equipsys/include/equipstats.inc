@@ -387,12 +387,12 @@ function getPenaltiesByProtection(armor)
 		ARMOR_LOWHIGH: return {0,0,0,0,0};
 
 		//TIER 2
-		ARMOR_MIDLOW: return {0,0,0,0,0};
+		ARMOR_MIDLOW: return {0,0,0,2,0};
 		ARMOR_MIDMID: return {0,0,0,4,0};
-		ARMOR_MIDHIGH: return {0,0,0,0,0};
+		ARMOR_MIDHIGH: return {0,0,0,5,0};
 
 		//TIER 3
-		ARMOR_HIGHLOW: return {0,0,0,6,0};
+		ARMOR_HIGHLOW: return {0,0,0,8,0};
 		ARMOR_HIGHMID: return {0,0,0,12,0};
 		ARMOR_HIGHHIGH: return {0,0,0,24,0};
 
