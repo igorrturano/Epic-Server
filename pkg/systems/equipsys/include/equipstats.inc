@@ -307,6 +307,8 @@ function getResistPhysicalByMaterial(armor)
 		
 		"ILLYRA": return {4,4,4};
 		"MITHRIL": return {5,5,5};
+
+		default: return {0,0,0};
 	endcase
 endfunction
 
@@ -368,14 +370,16 @@ endfunction
 
 function getPenaltiesBySlot(armor)
 	case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-		HEAD: return {0,0,0,1,0};
-		NECK: return {0,0,0,1,0};
-		BODY: return {0,0,0,12,0};
-		ARMS: return {0,0,2,6,0};
-		HANDS: return {0,0,4,3,0};
-		LEGS: return {0,0,0,6,0};
-		FEET: return {0,0,0,0,0};
+		HEAD: return {1,0,0,1,0};
+		NECK: return {1,0,0,1,0};
+		BODY: return {4,0,0,12,0};
+		ARMS: return {2,0,2,6,0};
+		HANDS: return {1,0,4,3,0};
+		LEGS: return {2,0,0,6,0};
+		FEET: return {2,0,0,0,0};
 		SHIELD: return {0,1,10,5,0};
+
+		default: return {0,0,0,0,0};
 	endcase
 endfunction
 
@@ -388,13 +392,13 @@ function getPenaltiesByProtection(armor)
 
 		//TIER 2
 		ARMOR_MIDLOW: return {0,0,0,2,0};
-		ARMOR_MIDMID: return {0,0,0,4,0};
-		ARMOR_MIDHIGH: return {0,0,0,5,0};
+		ARMOR_MIDMID: return {1,0,0,4,0};
+		ARMOR_MIDHIGH: return {2,0,0,5,0};
 
 		//TIER 3
-		ARMOR_HIGHLOW: return {0,0,0,8,0};
-		ARMOR_HIGHMID: return {0,0,0,12,0};
-		ARMOR_HIGHHIGH: return {0,0,0,24,0};
+		ARMOR_HIGHLOW: return {3,0,0,8,0};
+		ARMOR_HIGHMID: return {4,0,0,12,0};
+		ARMOR_HIGHHIGH: return {5,0,0,24,0};
 
 		// ESCUDOS
 		SHIELD_BUCKLER: return {0,0,0,0,0};
