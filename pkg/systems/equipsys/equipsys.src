@@ -86,21 +86,31 @@ function debugArmor(who, armor)
 	DebugMsg(who, DEBUG_EQUIP, $"Equipamento: {armor.desc}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {SLASHDAMAGE}: {prop.SlashResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {PIERCINGDAMAGE}: {prop.PiercingResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] {BLUNTDAMAGE}: {prop.BluntResist}");
-	var materialResists := getResistPhysicalByMaterial(armor);
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. FÍSICA] Material Cort./Perf./Cont.: {materialResists[1]}/{materialResists[2]}/{materialResists[3]}");
+	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA FÍSICA]");
+	DebugMsg(who, DEBUG_EQUIP, $"{SLASHDAMAGE}: {prop.SlashResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{PIERCINGDAMAGE}: {prop.PiercingResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{BLUNTDAMAGE}: {prop.BluntResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Material ({armor.getMaterialName()}): {getResistPhysicalByMaterial(armor)}");
+	DebugMsg(who, DEBUG_EQUIP, $"Slot ({armor.getSlot()}): {getResistPhysicalBySlot(armor)}");
+	DebugMsg(who, DEBUG_EQUIP, $"Tipo de Proteção ({armor.getType()}): {getResistPhysicalByProtection(armor)}
+	");
 
-
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Fogo: {prop.FireResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Gelo: {prop.ColdResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Veneno: {prop.PoisonResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"[RESIST. ELEMENTAL] Energia: {prop.EnergyResist}");
-
+	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA ELEMENTAL]");
+	DebugMsg(who, DEBUG_EQUIP, $"Fogo: {prop.FireResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Gelo: {prop.ColdResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Veneno: {prop.PoisonResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Energia: {prop.EnergyResist}
+	");
 	
 	DebugMsg(who, DEBUG_EQUIP, $"Material: {armor.getMaterialName()}");
-	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.getSlot()}");
+	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.getSlot()}
+	");
 
 	// TODO: PENALIDADES
+	DebugMsg(who, DEBUG_EQUIP, "[PENALIDADES]");
+	DebugMsg(who, DEBUG_EQUIP, $"Dexterity: {prop.DexPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Sneak: {prop.SneakPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Mechanics: {prop.MAPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Magery: {prop.MageryPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Awareness: {prop.AwarenessPen}");
 endfunction
