@@ -1,4 +1,3 @@
-
 use uo;
 use os;
 include "include/say";
@@ -9,9 +8,9 @@ include ":combat:damage";
 include "include/facings";
 
 program fireweapons(who, item)
-    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-	var wet := GetObjProperty(who, "molhado");
+    var wet := GetObjProperty(who, "molhado");
     var pistol := Array{0xC5FD, 0xC5FE};
     var handcannon := 0xC5FF;
     var carabine := 0xC600;
@@ -37,113 +36,141 @@ program fireweapons(who, item)
     var weapon1 := GetEquipmentByLayer(who, LAYER_HAND1);
     var weapon2 := GetEquipmentByLayer(who, LAYER_HAND2);
 
-    if (item.objtype != weapon1.objtype && item.objtype != weapon2.objtype) //novo check de mão
+    if (item.objtype != weapon1.objtype && item.objtype != weapon2.objtype)
         SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
         return;
     endif
 
-
     // Verifica se a arma está municiada
-	var balas := cint(GetObjProperty(item, "balas"));
-	if (balas <= 0)
-		SendSysMessageEx(who, "A arma esta descarregada, escolha uma municao para carrega-la.", SSM_FAIL);
-		var ammo := Target(who);
-		if (!ammo)
-			SendSysMessageEx(who, "Cancelado.");
-			return;
-		endif
-		var valid := 0;
-		if (ammo.objtype == 0x9090)
-            valid := 1;
-       endif
-        //Se não estiver, municia. Se estiver chovendo, não consegue.
-		if (ammo.movable && Accessible(who, ammo) && valid)
-            var current_x := who.x;
-            var current_y := who.y;
-            var powder_amt := 1;
-            if (is_handcannon)
-                powder_amt := 5;
-            elseif (is_musket)
-                powder_amt := 3;
-            elseif (is_carabine)
-                powder_amt := 2;
-            endif
+    var balas := cint(GetObjProperty(item, "balas"));
+    if (balas <= 0)
+        // Primeiro vamos coletar todos os componentes necessários antes de consumir qualquer um
+        SendSysMessageEx(who, "A arma esta descarregada, escolha uma municao para carrega-la.", SSM_FAIL);
+        var ammo := Target(who);
+        if (!ammo)
+            SendSysMessageEx(who, "Cancelado.");
+            return;
+        endif
+        
+        if (!ammo.movable || !Accessible(who, ammo) || ammo.objtype != 0x9090)
+            SendSysMessageEx(who, "Item invalido.", SSM_FAIL);
+            return;
+        endif
 
-            if (TemHabilidade(who, "Municiador Experiente") && powder_amt > 2)
-                powder_amt := 2;
-            endif
-            while (who.x == current_x && who.y == current_y)
-                if (wet == 1)
-                    SendSysMessageEx(who, "Voce nao consegue recarregar com o clima umido.", SSM_FAIL);
-                    return;
-                endif
-                if (subtractamount(ammo, 1))
-                    SendSysMessageEx(who, "Escolha a polvora.");
-                    var powder := Target(who);
-                    if (powder.objtype != 0x9092)
-                        SendSysMessageEx(who, "Voce precisa selecionar polvora.");
-                        return;
-                    else 
-                        SendSysMessageEx(who, "Selecione o socador de polvora.");
-                        var powder_fixer := Target(who);
-                        if (powder_fixer.objtype != 0xC611)
-                            SendSysMessageEx(who, "Esse nao eh um socador de polvora valido.", SSM_FAIL);
-                            return;
-                        endif
-                        printtext(who, "*Coloca polvora na arma*");
-                        if (!subtractamount(powder, powder_amt))
-                            SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
-                        endif
-                    endif   
-                    printtext(who, "*Socando a polvora*");
-                    // Tempo de recarga baseado na arma
-                    var i := 0;
-                    var reload_time := 6;
-                    if (is_handcannon)
-                        reload_time := 12;
-                    elseif (is_pistol)
-                        reload_time := 4;
-                    elseif (is_musket)
-                        reload_time := 8;
-                    endif
-                    if (TemHabilidade(who, "Municiador Experiente"))
-                        reload_time /= 2;
-                    endif
-                    // Toca os sons de recarregar
-                    while (i < reload_time)
-                        if (who.x != current_x || who.y != current_y)
-                            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
-                            return;
-                        endif
-                        PlaySoundEffect(who, SFX_HIT_19);
-                        sleep(1);
-                        i++;
-                    endwhile
-                    printtext(who, "*Municiando o equipamento*");
-                    for (i := 0; i < 2; i++)
-                        if (who.x != current_x || who.y != current_y)
-                            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
-                            return;
-                        endif
-                        PlaySoundEffect(who, SFX_FARMING);
-                        sleep(2);
-                    endfor
-                    PlaySoundEffect(who, SFX_HIT_11);
-                    SetObjProperty(item, "balas", 1);
-                    printtext(who, "*Arma recarregada*");
-                    updateToolTip(item);
-                    return;
-                endif
-            endwhile
-            if (!GetObjProperty(item, "balas") && (who.x != current_x || who.y != current_y))
-                SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
+        SendSysMessageEx(who, "Escolha a polvora.");
+        var powder := Target(who);
+        if (!powder || powder.objtype != 0x9092)
+            SendSysMessageEx(who, "Voce precisa selecionar polvora.");
+            return;
+        endif
+
+        SendSysMessageEx(who, "Selecione o socador de polvora.");
+        var powder_fixer := Target(who);
+        if (!powder_fixer || powder_fixer.objtype != 0xC611)
+            SendSysMessageEx(who, "Esse nao eh um socador de polvora valido.", SSM_FAIL);
+            return;
+        endif
+
+        // Calcula quantidade de pólvora necessária
+        var powder_amt := 1;
+        if (is_handcannon)
+            powder_amt := 5;
+        elseif (is_musket)
+            powder_amt := 3;
+        elseif (is_carabine)
+            powder_amt := 2;
+        endif
+
+        if (TemHabilidade(who, "Municiador Experiente") && powder_amt > 2)
+            powder_amt := 2;
+        endif
+
+        // Verifica se tem pólvora suficiente
+        if (powder.amount < powder_amt)
+            SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
+            return;
+        endif
+
+        // Agora que validamos tudo, podemos começar o processo de recarga
+        var current_x := who.x;
+        var current_y := who.y;
+
+        while (who.x == current_x && who.y == current_y)
+            if (wet == 1)
+                SendSysMessageEx(who, "Voce nao consegue recarregar com o clima umido.", SSM_FAIL);
                 return;
             endif
-		else
-			SendSysMessageEx(who, "Item invalido.", SSM_FAIL);
-			return;
-		endif		
-	endif
+
+            // Consome os recursos apenas depois de todas as validações
+            if (!subtractamount(ammo, 1))
+                SendSysMessageEx(who, "Erro ao consumir municao.", SSM_FAIL);
+                return;
+            endif
+            
+            if (!subtractamount(powder, powder_amt))
+                // Devolve a munição se falhar ao consumir pólvora
+                CreateItemInBackpack(who, 0x9090, 1);
+                SendSysMessageEx(who, "Erro ao consumir polvora.", SSM_FAIL);
+                return;
+            endif
+
+            printtext(who, "*Coloca polvora na arma*");
+            printtext(who, "*Socando a polvora*");
+
+            // Tempo de recarga baseado na arma
+            var i := 0;
+            var reload_time := 6;
+            if (is_handcannon)
+                reload_time := 12;
+            elseif (is_pistol)
+                reload_time := 4;
+            elseif (is_musket)
+                reload_time := 8;
+            endif
+            
+            if (TemHabilidade(who, "Municiador Experiente"))
+                reload_time /= 2;
+            endif
+
+            // Toca os sons de recarregar
+            while (i < reload_time)
+                if (who.x != current_x || who.y != current_y)
+                    // Devolve os recursos se o jogador se mover
+                    CreateItemInBackpack(who, 0x9090, 1);
+                    CreateItemInBackpack(who, 0x9092, powder_amt);
+                    SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
+                    return;
+                endif
+                PlaySoundEffect(who, SFX_HIT_19);
+                sleep(1);
+                i++;
+            endwhile
+
+            printtext(who, "*Municiando o equipamento*");
+            for (i := 0; i < 2; i++)
+                if (who.x != current_x || who.y != current_y)
+                    // Devolve os recursos se o jogador se mover
+                    CreateItemInBackpack(who, 0x9090, 1);
+                    CreateItemInBackpack(who, 0x9092, powder_amt);
+                    SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
+                    return;
+                endif
+                PlaySoundEffect(who, SFX_FARMING);
+                sleep(2);
+            endfor
+
+            PlaySoundEffect(who, SFX_HIT_11);
+            SetObjProperty(item, "balas", 1);
+            printtext(who, "*Arma recarregada*");
+            updateToolTip(item);
+            return;
+        endwhile
+
+        if (!GetObjProperty(item, "balas") && (who.x != current_x || who.y != current_y))
+            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
+            return;
+        endif
+    endif
 
 	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
 	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
