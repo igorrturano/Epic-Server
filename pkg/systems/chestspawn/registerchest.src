@@ -1,16 +1,45 @@
 use uo;
 use datafile;
+use os;
 
 program registerspawn(item)
+    print("==============================================");
+    print("DEBUG::RegisterChest - Iniciando registro do spawner");
+    print("  Serial: " + item.serial);
+    print("  Location: " + item.x + "," + item.y + "," + item.z);
 
-	var df := OpenDataFile( ":tn:chestspawns" );
-	if (!df)
-		df := CreateDataFile( ":tn:chestspawns", DF_KEYTYPE_INTEGER );
-	endif
-	
-	var elem := df.FindElement(item.serial);
-	if (!elem)
-		elem := df.CreateElement( item.serial ) ;
-	endif
+    if (!item)
+        print("DEBUG::RegisterChest - Item invalido");
+        return 0;
+    endif
 
+    var df := OpenDataFile(":tn:chestspawns");
+    if (!df)
+        print("DEBUG::RegisterChest - Criando novo datafile");
+        df := CreateDataFile(":tn:chestspawns", DF_KEYTYPE_INTEGER);
+        if (!df)
+            print("DEBUG::RegisterChest - ERRO: Falha ao criar datafile");
+            return 0;
+        endif
+    endif
+    
+    var elem := df.FindElement(item.serial);
+    if (!elem)
+        print("DEBUG::RegisterChest - Criando novo elemento para spawner");
+        elem := df.CreateElement(item.serial);
+        if (!elem)
+            print("DEBUG::RegisterChest - ERRO: Falha ao criar elemento");
+            return 0;
+        endif
+        
+        // Registra informações iniciais
+        SetObjProperty(item, "CreatedOn", ReadGameClock());
+        SetObjProperty(item, "IsChestSpawner", 1);
+    else
+        print("DEBUG::RegisterChest - Spawner ja registrado, atualizando");
+    endif
+    
+    print("DEBUG::RegisterChest - Registro concluido com sucesso");
+    print("==============================================");
+    return 1;
 endprogram

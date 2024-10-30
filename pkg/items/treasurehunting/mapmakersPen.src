@@ -13,9 +13,10 @@ include ":itemutils:canAccess";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":tn:tngumps";
+include ":treasurehunting:treasuremaps";
 
-var item_config     := ReadConfigFile(":cartography:itemdesc");
-var craft_config    := ReadConfigFile(":cartography:cartography");
+var item_config     := ReadConfigFile(":treasurehunting:itemdesc");
+var craft_config    := ReadConfigFile(":treasurehunting:cartography");
 
 
 program use_MapmakersPen(who, tool)
