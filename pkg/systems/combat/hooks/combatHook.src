@@ -418,8 +418,8 @@ function CalculateHitChance(attacker, defender)
 	endif
 	
 	if ( cint( GetObjProperty(attacker, "#ataqueinesperado") ) == 1 )
-		if ( GetObjProperty(defender, "lastHit") != error)
-			var def := GetObjProperty(defender, "lastHit");
+		if ( GetObjProperty(defender, "LastHit") != error)
+			var def := GetObjProperty(defender, "LastHit");
 			def := def.serial;
 			if (def.serial != attacker.serial)// se o defensor nao acertou o atacante
 				hit_chance := hit_chance + 50;

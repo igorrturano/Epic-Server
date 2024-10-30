@@ -346,6 +346,19 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 		defender.frozen := 0;
 	endif
 
+	var LastHitInfo := struct;
+	LastHitInfo.+amount := totaldmg;
+	LastHitInfo.+attacker := source.serial;
+	var weapon_scripts := GetObjProperty(source.weapon, "HitScripts");
+	if (weapon_scripts != error)
+		LastHitInfo.+hitscript :=  weapon_scripts;
+	endif
+	weapon_scripts := GetObjProperty(source, "HitScripts"); //nos nps eh neles e nao na arma
+	if (weapon_scripts != error)
+		LastHitInfo.+hitscript :=  weapon_scripts;
+	endif
+	SetObjProperty(defender, "LastHit", LastHitInfo);
+
 	return totaldmg;
 endfunction
 

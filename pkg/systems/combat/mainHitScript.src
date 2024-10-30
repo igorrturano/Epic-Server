@@ -160,18 +160,6 @@ endfunction
 function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var total;
 	// if ( basedamage > 0 )
-	var lastHitInfo := struct;
-	lastHitInfo.+amount := basedamage;
-	lastHitInfo.+attacker := attacker.serial;
-	var weapon_scripts := GetObjProperty(weapon, "HitScripts");
-	if (weapon_scripts != error)
-		lastHitInfo.+hitscript :=  weapon_scripts;
-	endif
-	weapon_scripts := GetObjProperty(attacker, "HitScripts"); //nos nps eh neles e nao na arma
-	if (weapon_scripts != error)
-		lastHitInfo.+hitscript :=  weapon_scripts;
-	endif
-	SetObjProperty(defender, "lastHit", lastHitInfo);
 	if ((GetObjProperty(defender, "NeverRelease") == 1))
 		var teste := AP_GetVital(defender, "DP");
 		SetObjPRoperty(defender, "LastDP", teste);

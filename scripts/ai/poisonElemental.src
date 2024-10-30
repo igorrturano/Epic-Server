@@ -115,7 +115,6 @@ function DoPoison(you)
       var passparms := { you, me, "poison elemental", 5 };
       Detach();
       start_script(":spells:poisonDamage", passparms);
-	  SetObjProperty(you, "LastHit", {me.name, me.serial, "poisoncloud"});
     endif
   endif
 endfunction

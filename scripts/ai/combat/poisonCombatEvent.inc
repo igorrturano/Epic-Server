@@ -48,7 +48,6 @@ function DoPoison(you)
 	endif
 	Detach();
 	set_critical(0);
-    SetObjProperty(you, "LastHit", {me.name, me.serial, "poison spell"});
 	var passparms := {you, me, "snake venom"};
     SetObjProperty(you, "PoisonStamp", ReadGameClock());
 	start_script(":spells:poisonDamage", passparms);

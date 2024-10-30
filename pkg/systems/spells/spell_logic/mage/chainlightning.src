@@ -37,7 +37,6 @@ program chainLightning( params )
 
     var casterThenNextMobile := caster;
     foreach mobile in allMobiles
-        SetObjProperty(mobile, "LastHit", {caster.name, caster.serial, "chain lightning"});
         //PlayLightningBoltEffect( mobile );
         PlayMovingEffect(casterThenNextMobile, mobile , 0x379f, 0, 20 );
         //ChainEffect(casterThenNextMobile, mobile);

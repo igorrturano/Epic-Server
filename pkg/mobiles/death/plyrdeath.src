@@ -35,9 +35,9 @@ program core_chrDeath(params)
 		endif
 	endif
 
-	var lastHit := GetObjProperty(corpse, "lastHit");
-	if (":combat:weaponHitScripts/generic" in lastHit.hitscript)
-		var attacker := SystemFindObjectBySerial(lastHit.attacker);
+	var LastHit := GetObjProperty(corpse, "LastHit");
+	if (":combat:weaponHitScripts/generic" in LastHit.hitscript)
+		var attacker := SystemFindObjectBySerial(LastHit.attacker);
 		if (attacker != error)
 			execonkill(attacker, corpse);
 		endif

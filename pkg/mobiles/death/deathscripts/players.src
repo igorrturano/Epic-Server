@@ -35,9 +35,9 @@ program death(params)
 		TS_LowerDuration(ghost, "defaultPoison", -1);
 	endif
 
-	var lastHit := GetObjProperty(ghost, "lastHit");
-	var killer := SystemFindObjectBySerial(lastHit.attacker);
-	var dmg := lastHit.amount;
+	var LastHit := GetObjProperty(ghost, "LastHit");
+	var killer := SystemFindObjectBySerial(LastHit.attacker);
+	var dmg := LastHit.amount;
 
 	if (killer.npctemplate || killer.connected) // Assassino existente
 		if ( temhabilidade(ghost, "Ultimo Suspiro") && Distance(killer, corpse) <= 2)
@@ -93,7 +93,7 @@ program death(params)
 	endif
 	if (protecao) // Proteção Contra Morte
 		SendSysMessageEx(ghost, "Sua alma esta protegida");
-	elseif (!killer.acctname || ghost.cmdlevel) // Foi morto por NPC ou é GM
+	elseif (!killer.acctname || ghost.cmdlevel || !killer.master.acctname) // Foi morto por NPC ou é GM ou foi morto por um pet de NPC
 		if (!protecao)
 			//if (getCoolDown(ghost, "deathtime") == 0 )
 			if (killer.npctemplate && killer.script  == ":ghaia:tamed")  //se for tamed nao tira dp
