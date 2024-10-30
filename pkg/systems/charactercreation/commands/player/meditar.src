@@ -18,45 +18,60 @@ program meditar(who, text)
     var arcane_bows := array{0xFA6D, 0XF997};
     var amt := Cint(AP_GetSkill(who, MAGICLORE)/20);
     var delay := 300;
+
     if (GetObjPRoperty(who, "chardata").raca == ELFO)
         amt *=2;
         delay := 240;
     endif
-
+    
     // Track initial player position
-	var oldx := who.x;
-	var oldy := who.y;
-
+    var oldx := who.x;
+    var oldy := who.y;
+    
     if (GetCooldown(who, "meditation"))
         SendSysMessage(who, "Voce precisa aguardar antes de meditar novamente", SSM_INFO);
         return 0;
     endif
-
+    
     if (!InitialMeditationCheck(who))
         return 0;  // Fail without applying cooldown
     endif
-
+    
     setCooldown(who, "meditation", delay);
-
+    
+    // Define que está meditando
+    SetObjProperty(who, "IsMeditating", 1);
+    
     while (current_mana < full_mana)
         if (!MeditationConditionsCheck(who, oldx, oldy, start_hp))
+            EraseObjProperty(who, "IsMeditating"); // Remove se falhar
             return 0;  // Meditation canceled due to mid-process condition failure
         endif
-        PlaySoundEffect(who, 0x20C);
+        
+        PlaySoundEffect(who, 0x0FA);
         HealMana(who, Cint(AP_GetSkill(who, MAGICLORE)/20));
         PlayObjectCenteredEffect(who, 0x375a, 10, 80);
         sleep(5);
     endwhile
-
+    
+    // Remove a propriedade ao terminar
+    EraseObjProperty(who, "IsMeditating");
+    
     if (current_mana == full_mana)
         SendSysMessage(who, "Voce completou sua meditacao", SSM_INFO);
     endif
-
+    
     return 1;
 endprogram
 
 function InitialMeditationCheck(who)
-    if (!EquipmentCheck(who))  
+    // Verifica se está pesquisando
+    if (GetObjProperty(who, "#QuickResearching"))
+        SendSysMessage(who, "Voce nao pode meditar enquanto realiza uma pesquisa rápida", SSM_FAIL);
+        return 0;
+    endif
+    
+    if (!EquipmentCheck(who))   
         SendSysMessage(who, "Suas maos precisam estar livres", SSM_FAIL);
         return 0;
     endif
@@ -81,6 +96,12 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
         SendSysMessage(who, "Voce perdeu sua concentracao", SSM_FAIL);
         return 0;
     endif
+        // Adicionar verificação para pesquisa rápida
+    if (GetObjProperty(who, "#QuickResearching"))
+        SendSysMessage(who, "Voce iniciou uma pesquisa e interrompeu sua meditacao", SSM_FAIL);
+        return 0;
+    endif
+
     if (!EquipmentCheck(who))  // Check if hands became occupied during meditation
         SendSysMessage(who, "Suas maos precisam estar livres", SSM_FAIL);
         return 0;
@@ -89,12 +110,18 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
         SendSysMessage(who, "Voce nao pode fazer isso escondido", SSM_FAIL);
         return 0;
     endif
+
+    // Nova verificação para PrintText
+    if (who.PrintText)
+        SendSysMessage(who, "Voce falou e perdeu sua concentracao", SSM_FAIL);
+        return 0;
+    endif
+    
     return 1;  
 endfunction
 
 function EquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
-
 	if ( hand_1 )
 		if ( (cint(GetObjProperty(hand_1, "cancast")) != 1) )
 			return 0;

@@ -27,12 +27,11 @@ const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
 var STUDY_ACTIONS;
-var BOOK_OBJTYPES;
+
 
 
 function InitializeGlobals()
-    STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"};
-    BOOK_OBJTYPES := array{0xA9D, 0xA9E};  
+    STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"}; 
 endfunction
 
 program use_research_book(params)
@@ -56,31 +55,40 @@ program use_research_book(params)
     if (book && (book == error || TypeOf(book) != "ItemRef"))
         return 0;
     endif
+    var gump := GFCreateGump(); 
     
     var activeResearch := GetActiveResearch(who);
     if (activeResearch && GetObjProperty(book, "ShowOngoing"))
         EraseObjProperty(book, "ShowOngoing");
-        if (!ShowOngoingResearchGump(who))
+        if (!ShowOngoingResearchGump(who, gump))  
             return 0;
         endif
     else
-        if (!ShowMainResearchGump(who))
+        if (!ShowMainResearchGump(who, gump))   
             return 0;
         endif
     endif
     return 1;
 endprogram
 
+function GFInitGump(byref gump)
+    gump.layout := array{};
+    gump.data := array{};
+    gump.data_id := 1;
+    gump.cur_page := 0;
+endfunction
+
+
 function IsValidPlayer(who)
     return (who && who != error && TypeOf(who) == "MobileRef" && who.connected);
 endfunction
 
-function ShowMainResearchGump(who)
+function ShowMainResearchGump(who, byref gump)
     if (!who || who == error || who.connected == 0)
         return 0;
     endif
     
-    var gump := GFCreateGump();
+    GFInitGump(gump);
     GFPage(gump, 0);
     GFGumpPic(gump, 0, 0, 114, 0); 
     
@@ -88,23 +96,43 @@ function ShowMainResearchGump(who)
     var right_margin := 640;
     var top_margin := 40;
     var bottom_margin := 460; 
+    var y_pos := top_margin + 70;
     
     GFTextMid(gump, left_margin - 50, top_margin, right_margin - left_margin - 200, 2439, "Livro de Pesquisa");
 
-    GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha uma opção:");
-    
-    var y_pos := top_margin + 70;
-   
-    GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa Rápida");
-    
-    y_pos += 40;
-    GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 2);
-    GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa Extensiva");
-    
-    y_pos += 40;
-    GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 3);
-    GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa em Desenvolvimento");
+    // Verificar se o jogador tem alguma skill válida
+    var skills := GetResearchSkills(who);
+    var hasValidSkill := (skills.ferreiro >= MIN_SKILL || 
+                         skills.costureiro >= MIN_SKILL || 
+                         skills.carpenter >= MIN_SKILL || 
+                         skills.alquimista >= MIN_SKILL || 
+                         skills.mago >= MIN_SKILL);
+
+    if (!hasValidSkill)
+        // Calcular posição central para a mensagem
+        var centerY := (bottom_margin - top_margin) / 2 + top_margin - 50;
+        
+        // Adicionar um fundo decorativo para a mensagem
+        GFResizePic(gump, left_margin, centerY - 20, 83, 270, 100);
+        
+        // Adicionar as mensagens centralizadas
+        GFTextMid(gump, left_margin, centerY, 300, 2517, "Você não possui nenhuma");
+        GFTextMid(gump, left_margin, centerY + 20, 300, 2517, "skill necessária para");
+        GFTextMid(gump, left_margin, centerY + 40, 300, 2517, "realizar pesquisas.");
+    else
+        GFTextLine(gump, left_margin, top_margin + 30, 2505, "Escolha uma opção:");
+        
+        GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa Rápida");
+        
+        y_pos += 40;
+        GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa Extensiva");
+        
+        y_pos += 40;
+        GFAddButton(gump, left_margin, y_pos, 4005, 4006, GF_CLOSE_BTN, 3);
+        GFTextLine(gump, left_margin + 35, y_pos, 2517, "Pesquisa em Desenvolvimento");
+    endif
 
     GFResizePic(gump, 461, 70, 83, 80, 78);
     GFResizePic(gump, 388, 162, 83, 73, 74);
@@ -118,10 +146,10 @@ function ShowMainResearchGump(who)
 
     GFTextLine(gump, 492, 191, 2103, "+");
 
-    GFTextLine(gump, 372, 371, 2505, "Para pesquisar é necessário:");
-    GFTextLine(gump, 372, 394, 2517, "- Minimo de mana: 40");
+    GFTextLine(gump, 372, 371, 2505, "Para pesquisar é necessário");
+    GFTextLine(gump, 372, 394, 2517, "- Minimo de mana: 20 rápida / 40 extensiva");
     GFTextLine(gump, 372, 415, 2517, "- Minimo de skill: 40");
-    GFTextLine(gump, 372, 433, 2517, "- Minimo de inteligência: 40");
+    GFTextLine(gump, 372, 433, 2517, "- Minimo de INT: 45 rápida / 55 extensiva");
 
     var activeResearch := GetActiveResearch(who);
     if (activeResearch)
@@ -143,36 +171,40 @@ function ShowMainResearchGump(who)
         return 1;
     endif
 
+    if (!hasValidSkill)
+        return 1;
+    endif
+
     case (input[0])
-        1: 
-            ShowQuickResearchGump(who);
+        1: ShowQuickResearchGump(who, gump);
         2: 
-            var result := StartExtensiveResearch(who);
+            var result := StartExtensiveResearch(who, gump);
             if (result == 1)
             elseif (result == 0)
             else
                 SendSysMessageEx(who, "Não foi possível iniciar a pesquisa extensiva. Tente novamente.", SSM_FAIL);
             endif
-        3: 
-            ShowOngoingResearchGump(who);
+        3: ShowOngoingResearchGump(who, gump);
         default: 
     endcase
 
     return 1;
 endfunction
 
-function ShowQuickResearchGump(who)
+function ShowQuickResearchGump(who, byref gump)
     if (!who || who == error || who.connected == 0)
         return 0;
     endif
     
-    var gump := GFCreateGump();
+     
+ 
     var skills := GetResearchSkills(who);
     var types := GetAvailableRapidResearchTypes(skills);
     var selectedType := "";
     var selectedPower := 0;
     
     while (1)
+        GFInitGump(gump);  
         GFPage(gump, 0);
         GFGumpPic(gump, 0, 0, 114, 0);
         
@@ -193,7 +225,7 @@ function ShowQuickResearchGump(who)
         endforeach
 
         if (selectedType != "")
-        GFTextMid(gump, right_margin / 2 + 30, top_margin, right_margin / 2, 2517, "Complexidade da " + selectedType + "");
+            GFTextMid(gump, right_margin / 2 + 30, top_margin, right_margin / 2, 2517, "Complexidade da " + selectedType + "");
             
             var maxPower := 5;
             case (selectedType)
@@ -210,9 +242,9 @@ function ShowQuickResearchGump(who)
 
             y_pos := top_margin + 70;
             for i := 1 to maxPower
-            GFAddButton(gump, right_margin / 2 + 50, y_pos, 4005, 4006, GF_CLOSE_BTN, i);
-            GFTextLine(gump, right_margin / 2 + 85, y_pos, 2517, "Nível " + i);
-            y_pos += 40;
+                GFAddButton(gump, right_margin / 2 + 50, y_pos, 4005, 4006, GF_CLOSE_BTN, i);
+                GFTextLine(gump, right_margin / 2 + 85, y_pos, 2517, "Nível " + i);
+                y_pos += 40;
             endfor
         else
             GFResizePic(gump, 570, 69, 83, 67, 70);
@@ -238,7 +270,7 @@ function ShowQuickResearchGump(who)
         var input := GFSendGump(who, gump);
         
         if (input[0] == 0)
-            ShowMainResearchGump(who);
+            ShowMainResearchGump(who, gump);  
             return 0;
         elseif (input[0] >= 101 && input[0] <= 100 + types.size())
             selectedType := types[input[0] - 100];
@@ -249,39 +281,39 @@ function ShowQuickResearchGump(who)
         endif
     endwhile
 
-    if (selectedType != "" && selectedPower > 0)
-        var recipe := struct{"type" := selectedType, "power" := selectedPower};
-        return PerformQuickResearch(who, recipe);
-    endif
+if (selectedType != "" && selectedPower > 0)
+    var recipe := struct{"type" := selectedType, "power" := selectedPower};
+    return PerformQuickResearch(who, recipe, gump);
+endif
     
     return 0;
 endfunction
 
-function PerformQuickResearch(who, recipe)
-    if (!CheckResearchRequirements(who, 1, recipe.power))
+function PerformQuickResearch(who, recipe, byref gump)
+    if (!CheckResearchRequirements(who, 1, recipe.power, recipe))
         return 0;
     endif
 
-    var result := PerformRapidResearch(who, recipe);
-
-    ShowMainResearchGump(who);
+    var result := PerformRapidResearch(who, recipe, gump);
+    ShowMainResearchGump(who, gump);  
     
     return result;
 endfunction
 
-
-function ShowExtensiveResearchGump(who)
+function ShowExtensiveResearchGump(who, byref gump)
     if (!who || who == error || who.connected == 0)
         return 0;
     endif
     
-    var gump := GFCreateGump();
+     
+ 
     var skills := GetResearchSkills(who);
     var types := GetAvailableResearchTypes(skills);
     var selectedType := "";
     var selectedPower := 0;
     
     while (1)
+        GFInitGump(gump);  
         GFPage(gump, 0);
         GFGumpPic(gump, 0, 0, 114, 0);
         
@@ -363,10 +395,10 @@ function ShowExtensiveResearchGump(who)
         GFTextLine(gump, left_margin + 35, bottom_margin - 40, 2517, "Cancelar");
         AddBackButton(gump, left_margin, bottom_margin);
 
-        var input := GFSendGump(who, gump);
+   var input := GFSendGump(who, gump);
         
         if (input[0] == 0)
-            ShowMainResearchGump(who);
+            ShowMainResearchGump(who, gump);  
             return 0;
         elseif (input[0] >= 101 && input[0] <= 100 + types.size())
             selectedType := types[input[0] - 100];
@@ -377,7 +409,7 @@ function ShowExtensiveResearchGump(who)
             var recipe := struct{"type" := selectedType, "power" := selectedPower, "extensiveResearch" := 1};
 
             if (!CheckforBooks(who, selectedPower))
-                SendSysMessageEx(who, "Você não tem um livro apropriado para este nível de pesquisa nas proximidades.", SSM_FAIL);
+                SendSysMessageEx(who, "Você não está em uma biblioteca apropriada para este nível de pesquisa.", SSM_FAIL);
                 continue;
             endif
             
@@ -385,8 +417,6 @@ function ShowExtensiveResearchGump(who)
                 if (InitiateResearch(who, recipe))
                     SendSysMessageEx(who, "Pesquisa extensiva iniciada com sucesso!", SSM_INFO);
                     return 1;
-                else
-                    SendSysMessageEx(who, "Falha ao iniciar a pesquisa. Tente novamente.", SSM_FAIL);
                 endif
             else
                 SendSysMessageEx(who, "Não foi possível iniciar a pesquisa. Verifique os requisitos.", SSM_FAIL);
@@ -424,11 +454,7 @@ function ConsumeResearchResources(who, recipe)
         return 0;
     endif
 
-    if (!AP_ConsumeVital(who, "Mana", 40))
-        SendSysMessageEx(who, "Você não tem mana suficiente para iniciar esta pesquisa.", SSM_FAIL);
-        return 0;
-    endif
-
+    
     return 1;
 endfunction
 
@@ -445,7 +471,7 @@ function InitiateResearch(who, recipe)
             PlaySoundEffect(who, 0x43e); 
         endif
         
-        PrintText(who, "*inicia a pesquisa com determinação*");
+        PrintTextAbove(who, "*inicia a pesquisa com determinação*");
         
         NotifyResearchResult(who, 1);
         return 1;
@@ -492,8 +518,8 @@ function StartResearch(who, recipe, remainingTime := 0)
             return 0;
         endif
         
-        PrintText(who, research_actions[RandomInt(research_actions.size()) + 1]);
-        PlaySoundEffect(who, 0x24a);  // Som de estudo
+        PrintTextAbove(who, research_actions[RandomInt(research_actions.size()) + 1]);
+        PlaySoundEffect(who, 0x24a);   
 
         sleep(3);
     endfor
@@ -522,17 +548,17 @@ function StartResearch(who, recipe, remainingTime := 0)
     return 1;
 endfunction
 
-function StartExtensiveResearch(who)
+function StartExtensiveResearch(who, byref gump)
     if (!who || who == error)
         return -1;
     endif
     
-    var handleResult := HandleExistingResearch(who);
+    var handleResult := HandleExistingResearch(who, gump);
     if (handleResult != 1)
         return 0;
     endif
 
-    var result := ShowExtensiveResearchGump(who);
+    var result := ShowExtensiveResearchGump(who, gump);
     if (result == 0)
         return 0;
     endif
@@ -553,19 +579,20 @@ function NotifyResearchResult(who, success, message := "")
     endif
 endfunction
 
-
-function ShowOngoingResearchGump(who)
+function ShowOngoingResearchGump(who, byref gump)
     if (!who || who == error || TypeOf(who) != "MobileRef")
         return;
     endif
+    
     var activeResearch := GetActiveResearch(who);
     if (!activeResearch)
         SendSysMessageEx(who, "Você não tem nenhuma pesquisa em andamento.", SSM_FAIL);
-        ShowMainResearchGump(who);
+        ShowMainResearchGump(who, gump);  
         return;
     endif
     
-    var gump := GFCreateGump();
+
+    GFInitGump(gump);
     GFPage(gump, 0);
     GFGumpPic(gump, 0, 0, 114, 0);
     
@@ -608,16 +635,16 @@ function ShowOngoingResearchGump(who)
 
     var result := GFSendGump(who, gump);
     if (result[0] == 0)
-        ShowMainResearchGump(who);
+        ShowMainResearchGump(who, gump);  
         return;
     endif
     if (result == error)
         return;
     endif
-    if (result[0] == 1 && progresso >= 100)
-        CheckResearchCompletion(who);
-        ShowMainResearchGump(who); 
-    endif
+if (result[0] == 1 && progresso >= 100)
+    CheckResearchCompletion(who, gump);  
+    ShowMainResearchGump(who, gump);
+endif
 endfunction
 
 function GFBuildBarCustom(byref gump, x, y, width, height, curValue := 0, maxValue := 100)
@@ -639,32 +666,93 @@ function GFBuildBarCustom(byref gump, x, y, width, height, curValue := 0, maxVal
    return 1;
 endfunction
 
-function CheckResearchRequirements(who, isQuickResearch := 0, power := 0)
-    var requiredPergaminhos := isQuickResearch ? PERGAMINHO_AMOUNT_RAPIDA : PERGAMINHO_AMOUNT_EXTENSIVA;
-    
+function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe := 0)
+    // Verificar Inteligência
+    var minInt;
+    case (power)
+        1: minInt := 45;
+        2: minInt := 55;
+        3: minInt := 65;
+        4: minInt := 75;
+        5: minInt := 85;
+        default: minInt := 45;
+    endcase
+
+    if (AP_GetStat(who, "Intelligence") < minInt)
+        SendSysMessageEx(who, "Você precisa ter no mínimo " + minInt + " de Inteligência para pesquisa nível " + power + ".", SSM_FAIL);
+        return 0;
+    endif
+
+    // Verificar Mana
+    var minMana;
+    case (power)
+        1: minMana := 20;
+        2: minMana := 25;
+        3: minMana := 30;
+        4: minMana := 35;
+        5: minMana := 40;
+        default: minMana := 20;
+    endcase
+
+    var currentMana := AP_GetVital(who, "Mana");
+    if (currentMana < minMana)
+        SendSysMessageEx(who, "Você precisa ter no mínimo " + minMana + " de mana para esta pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+
+    // Verificar Skill
+    var minSkill;
+    case (power)
+        1: minSkill := 40;
+        2: minSkill := 50;
+        3: minSkill := 60;
+        4: minSkill := 70;
+        5: minSkill := 80;
+        default: minSkill := 40;
+    endcase
+
+    var skillLevel := 0;
+    if (recipe)
+        case (recipe.type)
+            "Instrução de Fabricação":
+                skillLevel := Max(AP_GetSkill(who, METALWORKING), 
+                                Max(AP_GetSkill(who, WOODWORKING), 
+                                    AP_GetSkill(who, Domestic_Work)));
+            "Receita Alquimica":
+            "Tinta":
+                skillLevel := AP_GetSkill(who, ALCHEMY);
+            "Magia":
+                skillLevel := AP_GetSkill(who, MAGERY);
+        endcase
+
+        if (skillLevel < minSkill)
+            SendSysMessageEx(who, "Você precisa ter no mínimo " + minSkill + " de skill para esta pesquisa.", SSM_FAIL);
+            return 0;
+        endif
+    endif
+
+    // Verificar Montaria
     if (GetEquipmentByLayer(who, LAYER_MOUNT))
         SendSysMessageEx(who, "Você não pode pesquisar montado.", SSM_FAIL);
         return 0;
     endif
 
+    // Verificar Local de Estudo
     if (!CheckforBooks(who, power))
         SendSysMessageEx(who, "Você está distante demais de um local de estudo apropriado para este nível de pesquisa", SSM_FAIL);
         return 0;
     endif
 
+    // Verificar Pena
     if (!CheckForPen(who.backpack, 0))
         SendSysMessageEx(who, "Você precisa de uma pena e tinteiro para iniciar a pesquisa.", SSM_FAIL);
         return 0;
     endif
     
+    // Verificar Pergaminhos
+    var requiredPergaminhos := isQuickResearch ? PERGAMINHO_AMOUNT_RAPIDA : PERGAMINHO_AMOUNT_EXTENSIVA;
     if (!CountPergaminhosInBackpack(who.backpack, requiredPergaminhos))
         SendSysMessageEx(who, "Você precisa de " + requiredPergaminhos + " pergaminhos em branco para iniciar esta pesquisa.", SSM_FAIL);
-        return 0;
-    endif
-    
-    var requiredMana := isQuickResearch ? 15 : MIN_MANA;
-    if (AP_GetVital(who, "Mana") < requiredMana)
-        SendSysMessageEx(who, "Você não tem mana suficiente para iniciar esta pesquisa.", SSM_FAIL);
         return 0;
     endif
     
@@ -701,23 +789,33 @@ endfunction
 function CheckforBooks(who, power := 0)
     var items := ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
 
-    var specialBooks4 := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0};
-    var specialBooks5 := {0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x0C15, 0x0C14};
+    var basicBooks := {0x6F97, 0x6F98};  // power 1-2
+    var specialBooks3 := {0x63FE, 0x63FD, 0x63FF, 0x6400, 0x6A9E, 0x6A9F, 0x6AA0, 0x6AA1};  // power 3
+    var specialBooks4 := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0};  // power 4
+    var specialBooks5 := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0, 0x6A94, 0x6A95, 0x6A96, 0x6A97,0x0C14, 0x0C15};  // power 5
 
     foreach item in items
-        if (power == 4 && item.objtype in specialBooks4)
+        // Primeiro verifica estantes de poder 5 - podem fazer tudo
+        if (item.objtype in specialBooks5)
             return 1;
-        elseif (power == 5 && item.objtype in specialBooks5)
+        endif
+
+        // Depois estantes de poder 4 - podem fazer até nível 4
+        if (item.objtype in specialBooks4 && power <= 4)
             return 1;
-        elseif (power < 4)
-            if (item.objtype in BOOK_OBJTYPES)
-                return 1;
-            endif
-            if (item.desc.toLower().find("book") != -1 || item.desc.toLower().find("shelf") != -1)
-                return 1;
-            endif
+        endif
+
+        // Depois estantes de poder 3 - podem fazer até nível 3
+        if (item.objtype in specialBooks3 && power <= 3)
+            return 1;
+        endif
+
+        // Por fim, estantes básicas - só podem fazer níveis 1 e 2
+        if (item.objtype in basicBooks && power <= 2)
+            return 1;
         endif
     endforeach
+    
     return 0;
 endfunction
 
@@ -731,62 +829,64 @@ function GetResearchSkills(who)
     };
 endfunction
 
-function CheckResearchCompletion(who)
+function CheckResearchCompletion(who, byref gump)   
     var activeResearch := GetActiveResearch(who);
     if (activeResearch)
         var progress := CalculateProgress(activeResearch);
         if (progress >= 100)
-            CompleteResearch(who, activeResearch);
+            CompleteResearch(who, activeResearch, gump);
         endif
     endif
 endfunction
 
-function CustomYesNoGump(who, prompt, yes_text := "Sim", no_text := "Não")
-    var gump := GFCreateGump();
-    GFPage(gump, 0);
-    GFGumpPic(gump, 0, 0, 114, 0); 
+function CustomYesNoGump(who, prompt, byref gump, yes_text := "Sim", no_text := "Não")
     
-    var left_margin := 40;
-    var right_margin := 640; 
-    var top_margin := 40;
-    var bottom_margin := 460; 
-    
-    GFTextMid(gump, left_margin, top_margin, right_margin - left_margin, 2439, "Confirmação");
-    
-    var y_pos := top_margin + 80;
-    GFTextMid(gump, left_margin, y_pos, right_margin - left_margin, 2505, prompt);
-    
-    y_pos += 80;
-    
-    GFAddButton(gump, left_margin + 100, y_pos, 4005, 4006, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, left_margin + 135, y_pos, 2517, yes_text);
-    
-    GFAddButton(gump, right_margin - 200, y_pos, 4005, 4006, GF_CLOSE_BTN, 0);
-    GFTextLine(gump, right_margin - 165, y_pos, 2517, no_text);
-    
-    AddBackButton(gump, left_margin, bottom_margin);
+   
+   GFInitGump(gump); 
+   GFPage(gump, 0);
+   GFGumpPic(gump, 0, 0, 114, 0); 
+   
+   var left_margin := 40;
+   var right_margin := 640; 
+   var top_margin := 40;
+   var bottom_margin := 460; 
+   
+   GFTextMid(gump, left_margin, top_margin, right_margin - left_margin, 2439, "Confirmação");
+   
+   var y_pos := top_margin + 80;
+   GFTextMid(gump, left_margin, y_pos, right_margin - left_margin, 2505, prompt);
+   
+   y_pos += 80;
+   
+   GFAddButton(gump, left_margin + 100, y_pos, 4005, 4006, GF_CLOSE_BTN, 1);
+   GFTextLine(gump, left_margin + 135, y_pos, 2517, yes_text);
+   
+   GFAddButton(gump, right_margin - 200, y_pos, 4005, 4006, GF_CLOSE_BTN, 0);
+   GFTextLine(gump, right_margin - 165, y_pos, 2517, no_text);
+   
+   AddBackButton(gump, left_margin, bottom_margin);
 
-    var input := GFSendGump(who, gump);
-    if (input[0] == 0)
-        ShowMainResearchGump(who);
-        return -1;
-    endif
-    return (input[0] == 1);
+   var input := GFSendGump(who, gump);
+   if (input[0] == 0)
+       ShowMainResearchGump(who, gump);  
+       return -1;
+   endif
+   return (input[0] == 1);
 endfunction
 
-function HandleExistingResearch(who)
+function HandleExistingResearch(who, byref gump)
     if (!who || who == error)
         return 0;
     endif
     var aprendendo := GetObjProperty(who, "aprenderrecipe");
     if (aprendendo != error)
-        var result := CustomYesNoGump(who, "Você ainda está fazendo uma pesquisa. Deseja cancelar e começar outra?");
+        var result := CustomYesNoGump(who, "Você ainda está fazendo uma pesquisa. Deseja cancelar e começar outra?", gump);
         if (result == -1) 
-            ShowMainResearchGump(who);
+            ShowMainResearchGump(who, gump);
             return -1;
         elseif (!result)
             SendSysMessageEx(who, "Pesquisa atual mantida.", SSM_INFO);
-            ShowMainResearchGump(who);
+            ShowMainResearchGump(who, gump);
             return 0;
         endif
         EraseObjProperty(who, "aprenderrecipe");
@@ -802,7 +902,7 @@ endfunction
 
 
 
-function CompleteResearchTimer(params)
+function CompleteResearchTimer(params, byref gump)   
     if (!params)
         return;
     endif
@@ -821,7 +921,8 @@ function CompleteResearchTimer(params)
         activeResearch.spellId := params.spellId;
     endif
     
-    CompleteResearch(who, activeResearch);
+    
+    CompleteResearch(who, activeResearch, gump);
 endfunction
 
 function DetermineResearchItem(recipe)
@@ -871,7 +972,7 @@ function ResearchTimer(event)
         "playerSerial" := event.player,
         "bookSerial" := event.bookSerial
     };
-    use_research_book(params);
+    
     var who := SystemFindObjectBySerial(event.player);
     if (!who || who == error || TypeOf(who) != "MobileRef")
         return;
@@ -884,7 +985,7 @@ function ResearchTimer(event)
         if (progress < 100)
             StartResearchCheck(who);
         else
-            CheckResearchCompletion(who);
+            use_research_book(params);  
         endif
     else
         TS_LowerDuration(who, "ResearchCheck", -1);
@@ -1044,17 +1145,19 @@ function GetMaxPowerForCrafting(skills)
     return GetMaxPowerForSkill(maxSkill);
 endfunction
 
-function GetMaxPowerForInk(skill)
-    if (skill >= 100)
+function GetMaxPowerForSkill(skill)
+    if (skill >= 80)
         return 5;
-    elseif (skill >= 90)
-        return 4;
-    elseif (skill >= 80)
-        return 3;
     elseif (skill >= 70)
+        return 4;
+    elseif (skill >= 60)
+        return 3;
+    elseif (skill >= 50)
         return 2;
-    else
+    elseif (skill >= 40)
         return 1;
+    else
+        return 0;
     endif
 endfunction
 
@@ -1072,21 +1175,24 @@ function GetMaxPowerForMagic(skill)
     endif
 endfunction
 
-function PerformRapidResearch(who, recipe)
+function PerformRapidResearch(who, recipe, byref gump)
+    if (!CheckforBooks(who, recipe.power))
+        SendSysMessageEx(who, "Você está distante demais de um local de estudo apropriado para este nível de pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+
+    // Adicionar verificação e consumo de mana aqui
+    if (!CheckAndConsumeMana(who, 1, recipe.power))
+        return 0; // Retorna se não tiver mana suficiente ou falhar no consumo
+    endif
+
     var my_x := who.x;
     var my_y := who.y;
     var my_facing := who.facing;
 
-    SendSysMessageEx(who, "Pesquisa rápida iniciada com sucesso!", SSM_INFO);
-
     if (!ConsumeSubstance(who.backpack, PERGAMINHO_OBJTYPE, PERGAMINHO_AMOUNT_RAPIDA))
         SendSysMessageEx(who, "Você não tem pergaminhos suficientes para realizar a pesquisa.", SSM_FAIL);
         return 0; 
-    endif
-
-    if (!AP_ConsumeVital(who, "Mana", 15))
-        SendSysMessageEx(who, "Você não tem mana suficiente para realizar a pesquisa.", SSM_FAIL);
-        return 0;  
     endif
 
     var success := 0;
@@ -1124,30 +1230,40 @@ function PerformRapidResearch(who, recipe)
         5: powerBonus := 0;
     endcase
 
-for i := 1 to 5
-    if (!CheckStudyConditions(who, my_x, my_y, my_facing))
-        SendSysMessageEx(who, "Condições de estudo não atendidas.", SSM_FAIL);
-        break;
-    endif
+    ResetFailuresIfDifferentResearch(who, recipe);
     
-    PrintText(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
-    PlaySoundEffect(who, 0x24a);
-
-    sleep(5); 
-
-    if (i == 3) // Na última iteração, faça a verificação de sucesso
-        var scaledChance := 0.04; // 4% de chance
-        var rollResult := RandomInt(10000);
-        var chanceThreshold := CInt(scaledChance * 10000);
-
-        //SendSysMessageEx(who, "Tentativa final: Resultado " + rollResult + " / Limite " + chanceThreshold, SSM_INFO);
-
-        if (rollResult <= chanceThreshold)
-            success := 1;
-            SendSysMessageEx(who, "Pesquisa bem-sucedida!", SSM_INFO);
+    SetObjProperty(who, "#QuickResearching", 1);
+    for i := 1 to 5
+        if (!CheckStudyConditions(who, my_x, my_y, my_facing))
+            SendSysMessageEx(who, "Condições de estudo não atendidas.", SSM_FAIL);
+            break;
         endif
-    endif
-endfor
+        
+        SetObjProperty(who, "#QuickResearching", 1);
+        
+        PrintTextAbove(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
+        PlaySoundEffect(who, 0x24a);
+
+        sleep(5); 
+
+        EraseObjProperty(who, "#QuickResearching");
+
+        if (i == 3) // Na última iteração, faça a verificação de sucesso
+            var chance := CalculateResearchChance(who, recipe);
+            var rollResult := RandomInt(10000);
+            var chanceThreshold := CInt(chance * 100);
+
+            Print("DEBUG: Roll: " + rollResult + " precisa <= " + chanceThreshold);
+            
+            if (rollResult <= chanceThreshold)
+                success := 1;
+                SendSysMessageEx(who, "Pesquisa bem-sucedida!", SSM_INFO);
+                EraseObjProperty(who, "#ResearchFailures");
+            else
+                UpdateFailureCount(who);
+            endif
+        endif
+    endfor
 
     if (success)
         if (who.gender == 1) 
@@ -1157,7 +1273,6 @@ endfor
         endif
         return FinishQuickResearch(who, recipe); 
     else
-        SendSysMessageEx(who, "Sua pesquisa rápida não teve sucesso.", SSM_FAIL);
         return 0;  
     endif
 endfunction
@@ -1202,26 +1317,16 @@ function CheckStudyConditions(who, my_x, my_y, my_facing)
         SendSysMessageEx(who, "Você interrompeu sua pesquisa.", SSM_FAIL);
         return 0;
     endif
-    if (AP_GetVital(who, "Mana") < 3)
-        SendSysMessageEx(who, "Você está muito cansado para continuar.", SSM_FAIL);
-        return 0;
-    endif
+    
+    // Manter essa verificação pois é específica para o estudo contínuo
+if (AP_GetVital(who, "Mana") < 3)
+    SendSysMessageEx(who, "Você está muito cansado para continuar.", SSM_FAIL);
+    return 0;
+endif
     return 1;
 endfunction
 
-function GetMaxPowerForSkill(skill)
-    if (skill >= 100)
-        return 5;
-    elseif (skill >= 90)
-        return 4;
-    elseif (skill >= 80)
-        return 3;
-    elseif (skill >= 70)
-        return 2;
-    else
-        return 1;
-    endif
-endfunction
+
 
 function CalculateProgress(recipe)
     if (!recipe || !recipe.start)
@@ -1283,7 +1388,7 @@ function TrimRight(text)
     return text;
 endfunction
 
-function CompleteResearch(who, recipe)
+function CompleteResearch(who, recipe, byref gump)  
     if (!who || who == error || TypeOf(who) != "MobileRef")
         return;
     endif
@@ -1337,8 +1442,11 @@ function CompleteResearch(who, recipe)
     else
         SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
         return 0;
+
+    ShowMainResearchGump(who, gump);
+        return 1;
     endif
-    ShowMainResearchGump(who);
+    return 0;
 endfunction
 
 function SelectRandomRecipe(power)
@@ -1360,4 +1468,128 @@ function SelectRandomRecipe(power)
     endif
 
     return 0;
+endfunction
+
+function CheckAndConsumeMana(who, isQuickResearch := 0, power := 0)
+    // Define o requisito de mana baseado no power
+    var requiredMana;
+    case (power)
+        1: requiredMana := 20;
+        2: requiredMana := 25;
+        3: requiredMana := 30;
+        4: requiredMana := 35;
+        5: requiredMana := 40;
+        default: requiredMana := 20;
+    endcase
+
+    var currentMana := AP_GetVital(who, "Mana");
+    var maxMana := AP_GetVitalMaximumValue(who, "Mana");
+    
+    // Para pesquisa rápida, precisa estar com a mana cheia
+    if (isQuickResearch)
+        if (currentMana < requiredMana)
+            SendSysMessageEx(who, "Você precisa ter no mínimo " + requiredMana + " de mana para esta pesquisa.", SSM_FAIL);
+            return 0;
+        endif
+        
+        // Consome a mana baseada no power
+        return AP_ConsumeVital(who, "Mana", requiredMana);
+    else
+        // Para pesquisa extensiva
+        if (currentMana < requiredMana)
+            SendSysMessageEx(who, "Você precisa ter no mínimo " + requiredMana + " de mana para esta pesquisa.", SSM_FAIL);
+            return 0;
+        endif
+        return AP_ConsumeVital(who, "Mana", requiredMana);
+    endif
+endfunction
+
+
+
+
+function CalculateResearchChance(who, recipe)
+    var baseInt := AP_GetTrueStat(who, "Intelligence");
+    Print("DEBUG: Base INT: " + baseInt);
+    
+    var intBonus := 0.0;
+    if (baseInt > 40)
+        intBonus := Min(10.0, ((baseInt - 40) * 10.0) / 100.0);
+    endif
+    Print("DEBUG: INT Bonus: " + intBonus + "%");
+    
+    // Corrigindo a sintaxe do case
+    var levelBonus := 0.0;
+    case (CInt(recipe.power))
+        1: levelBonus := 8.0; 
+        2: levelBonus := 6.0;
+        3: levelBonus := 4.0;
+        4: levelBonus := 2.0;
+        default: levelBonus := 0.0;
+    endcase
+    
+    Print("DEBUG: Level Bonus: " + levelBonus + "%");
+    
+    var failureAttempts := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
+    var maxFailureBonus := 30.0 - (4.0 + intBonus + levelBonus);
+    var failureBonus := Min(failureAttempts, Floor(maxFailureBonus));
+    Print("DEBUG: Failure Bonus (" + failureAttempts + " falhas): " + failureBonus + "%");
+    
+    var totalChance := 4.0 + intBonus + levelBonus + failureBonus;
+    Print("DEBUG: Total Chance: " + totalChance + "%");
+    
+    return totalChance;
+endfunction
+
+function UpdateFailureCount(who)
+    var currentFailures := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
+    SetObjProperty(who, "#ResearchFailures", currentFailures + 1);
+    SendSysMessageEx(who, "Você não encontrou a resposta que buscava, mas entendeu um pouco mais da lógica da sua pesquisa", SSM_INFO);
+    Print("DEBUG: Falhas acumuladas: " + (currentFailures + 1));
+endfunction
+
+function ResetFailuresIfDifferentResearch(who, newRecipe)
+    var lastRecipe := GetObjProperty(who, "#LastResearchType");
+    if (lastRecipe)
+        if (lastRecipe.type != newRecipe.type || lastRecipe.power != newRecipe.power)
+            EraseObjProperty(who, "#ResearchFailures");
+            Print("DEBUG: Resetando falhas - Novo tipo de pesquisa");
+        endif
+    endif
+    SetObjProperty(who, "#LastResearchType", newRecipe);
+endfunction
+
+function CheckIntelligenceForLevel(who, power)
+    var minInt;
+    case (power)
+        1: minInt := 45;
+        2: minInt := 55;
+        3: minInt := 65;
+        4: minInt := 75;
+        5: minInt := 85;
+        default: minInt := 45;
+    endcase
+
+    var playerInt := AP_GetStat(who, "Intelligence");
+    if (playerInt < minInt)
+        SendSysMessageEx(who, "Você precisa ter no mínimo " + minInt + " de Inteligência para pesquisa nível " + power + ".", SSM_FAIL);
+        return 0;
+    endif
+
+    return 1;
+endfunction
+
+function GetMaxPowerForInk(skill)
+    if (skill >= 80)
+        return 5;
+    elseif (skill >= 70)
+        return 4;
+    elseif (skill >= 60)
+        return 3;
+    elseif (skill >= 50)
+        return 2;
+    elseif (skill >= 40)
+        return 1;
+    else
+        return 0;
+    endif
 endfunction

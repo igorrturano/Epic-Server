@@ -260,9 +260,19 @@ endfunction
 
 function AddSpecialBookshelfDescription(item, xDesc)
     case (item.objtype)
-        0xA9D:
-        0xA9E:
+        0x6F97:
+        0x6F98:
             xDesc += "<BASEFONT COLOR=#FFFFFF>Estante de Pesquisa com Livros Comuns<BR>";
+            break;
+        0x63FE:
+        0x63FD:
+        0x63FF:
+        0x6400:
+        0x6A9E:
+        0x6A9F:
+        0x6AA0:
+        0x6AA1:
+            xDesc += "<BASEFONT COLOR=#87CEEB>Estante de Pesquisa com Manuscritos Antigos<BR>";
             break;
         0xEA08:
         0xEA07:

@@ -1,5 +1,3 @@
-//$Id: use.src 128 2006-05-27 17:36:42Z austinheilman $
-
 use uo;
 use os;
 use cfgfile;
@@ -7,43 +5,63 @@ use cfgfile;
 include ":keys:key";
 include ":traps:traps";
 include "include/say";
+include "include/client";
+include ":attributes:attributes";
 
 program useContainer(mobile, container)
-	var item_cfg := ReadConfigFile(":*:itemdesc");
-	item_cfg := item_cfg[container.graphic];
+    // Configuração inicial
+    var item_cfg := ReadConfigFile(":*:itemdesc");
+    item_cfg := item_cfg[container.graphic];
 
-	if ( mobile.cmdlevel )
-		SendSysMessage(mobile, "Command level is present - container is skipping locks, traps, etc.");
-		SendViewContainer(mobile, container);
-	elseif ( ContainerIsLocked(mobile, container) )
-		return 0;
-	elseif ( GetObjProperty(container, "TrapList") != error )
-		RunTraps(container, mobile);
-		return 0;
-	endif
+    // Verificação de baú de tesouro
+    if (GetObjProperty(container, "level") != error)
+        if (!maolivre(mobile, 2, 0)) // 2 mãos, não verifica montaria
+            SendSysMessageEx(mobile, "Voce precisa estar com as maos livres para abrir este bau.", SSM_FAIL);
+            return 0;
+        endif
+    endif
 
-	PrintText(mobile, "*Abriu "+container.desc+"*");
-	SendViewContainer(mobile, container);
+    // Verificações de administrador
+    if (mobile.cmdlevel)
+        SendSysMessage(mobile, "Command level is present - container is skipping locks, traps, etc.");
+        SendViewContainer(mobile, container);
+        return 1;
+    endif
 
-	if ( (item_cfg.OpenGraphic) && (item_cfg.CloseGraphic) )
-		container.graphic := item_cfg.OpenGraphic;
-		Sleep(2);
-		container.graphic := item_cfg.CloseGraphic;
-	endif
+    // Verificações de segurança
+    if (ContainerIsLocked(mobile, container))
+        return 0;
+    endif
+
+    if (GetObjProperty(container, "TrapList") != error)
+        RunTraps(container, mobile);
+        return 0;
+    endif
+
+    // Abrir o container
+    PrintText(mobile, "*Abriu "+container.desc+"*");
+    SendViewContainer(mobile, container);
+
+    // Animação do container (se configurada)
+    if (item_cfg.OpenGraphic && item_cfg.CloseGraphic)
+        container.graphic := item_cfg.OpenGraphic;
+        Sleep(2);
+        container.graphic := item_cfg.CloseGraphic;
+    endif
+
+    return 1;
 endprogram
 
 function ContainerIsLocked(mobile, container)
-	if ( !container.locked )
-		// Nothing to worry about.
-		// PrintText(mobile, "*Abriu "+container.desc+"*");
-		return 0;
-	elseif ( KP_HasKeyForLock(mobile, container) )
-		// SendSysMessage(mobile, "Voce abre o container com a chave.");
-		PrintText(mobile, "*Usou uma chave em " +container.desc+"*");
-		return 0;
-	else
-		// PrintTextAbovePrivate(container, "Isto esta trancado.", mobile);
-		PrintText(mobile, "Tentou abrir " +container.desc+ " mas estava trancado*");
-		return 1;
-	endif
+    if (!container.locked)
+        return 0;
+    endif
+    
+    if (KP_HasKeyForLock(mobile, container))
+        PrintText(mobile, "*Usou uma chave em " + container.desc + "*");
+        return 0;
+    endif
+    
+    PrintText(mobile, "*Tentou abrir " + container.desc + " mas estava trancado*");
+    return 1;
 endfunction
