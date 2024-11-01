@@ -21,14 +21,14 @@ program HitScript(who)
     var mlore := Cint(AP_GetSkill(who, MAGICLORE));
 
     if(!CheckLosAt(who, targ.x, targ.y, targ.z))
-		SendSysMessage(who, "Voce nao consegue ver o alvo.");
+		SendSysMessage(who, "Você não consegue ver o alvo.");
         who.concealed := 0;
         who.frozen := 0;
 		return 0;
 	endif
 
     if (dist > (mlore/ 5))
-        SendSysMessage(who, "O alvo esta muito distante");
+        SendSysMessage(who, "O alvo está muito distante");
         who.concealed := 0;
         who.frozen := 0;
         return 0;
@@ -36,21 +36,21 @@ program HitScript(who)
    
 	var locinfo:= GetMapInfo( targ.x, targ.y, who.realm );
 	if(IsWater(targ, locinfo))
-        SendSysMessage(who, "Voce nao pode clicar na agua");
+        SendSysMessage(who, "Você não pode clicar na agua");
         who.concealed := 0;
         who.frozen := 0;
         return 0;
     endif
 
 	if ( !targ )
-		SendSysMessage(who, "Cancelled.");
+		SendSysMessage(who, "Alvo Cancelado.");
         who.concealed := 0;
         who.frozen := 0;
 		return 0;
 	endif
     
 	if(!CheckLosAt( who, targ.x, targ.y, targ.z ) );
-		SendSysMessageEx( who, "Voce nao ve o alvo.", SSM_FAIL );
+		SendSysMessageEx( who, "Você não vê o alvo.", SSM_FAIL );
 		return 0;
 	endif
 
