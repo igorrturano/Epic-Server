@@ -56,7 +56,7 @@ program HitScript(who)
 
     if (CanWalk("L", who.x, who.y, who.z, targ.x, targ.y, who.realm) == error)
         SendSysMessage(who, "Local Inacessível");
-        targ.concealed := 0;
+        who.concealed := 0;
         who.frozen := 0;
         return 0;
     else
