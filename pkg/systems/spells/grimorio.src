@@ -116,16 +116,37 @@ function copyrecipe( who, recipe )
   endif
 endfunction
 
-function CreateBookGump( book, who )
-  var rune_list := GetObjProperty( book, "spells" );
-  if ( TypeOf( rune_list ) != "Array" )
-	rune_list := array{};
-	SetObjProperty( book, "spells", rune_list );
-  endif
 
-  var book_gump := GFCreateGump();
-  // Begin Page 0 Setup
-  GFGumpPic( book_gump, 100, 10, 2200 );
+function GetNextThreshold(current_skill)
+    if (current_skill < 45)
+        return 45;
+    elseif (current_skill < 50)
+        return 50;
+    elseif (current_skill < 55)
+        return 55;
+    elseif (current_skill < 60)
+        return 60;
+    elseif (current_skill < 70)
+        return 70;
+    elseif (current_skill < 80)
+        return 80;
+    elseif (current_skill < 90)
+        return 90;
+    else
+        return 100;
+    endif
+endfunction
+
+
+function CreateBookGump( book, who )
+    var rune_list := GetObjProperty( book, "spells" );
+    if ( TypeOf( rune_list ) != "Array" )
+        rune_list := array{};
+        SetObjProperty( book, "spells", rune_list );
+    endif
+
+    var book_gump := GFCreateGump();
+GFGumpPic( book_gump, 100, 10, 2200 );
   GFGumpPic( book_gump, 125, 50, 57 );
   GFGumpPic( book_gump, 145, 50, 58 );
   GFGumpPic( book_gump, 160, 50, 58 );
@@ -143,31 +164,71 @@ function CreateBookGump( book, who )
   GFGumpPic( book_gump, 385, 50, 58 );
   GFGumpPic( book_gump, 395, 50, 59 );
 
-  /* GFAddButton(book_gump, 130, 187, 2225, 2225, GF_PAGE_BTN, 2);
-	GFAddButton(book_gump, 165, 187, 2226, 2226, GF_PAGE_BTN, 3);
-	GFAddButton(book_gump, 200, 187, 2227, 2227, GF_PAGE_BTN, 4);
-	GFAddButton(book_gump, 235, 187, 2228, 2228, GF_PAGE_BTN, 5);
-	GFAddButton(book_gump, 300, 187, 2229, 2229, GF_PAGE_BTN, 6);
-	GFAddButton(book_gump, 335, 187, 2230, 2230, GF_PAGE_BTN, 7);
-	GFAddButton(book_gump, 370, 187, 2231, 2231, GF_PAGE_BTN, 8);
-	GFAddButton(book_gump, 405, 187, 2232, 2232, GF_PAGE_BTN, 9); */
-  // GFHTMLArea(book_gump,  140, 40, 80, 18, "Charges:");
-  // GFHTMLArea(book_gump,  300, 40, 100, 18, "Max Charges:");
-  // GFHTMLArea(book_gump,  220, 40, 80, 18, charges);
-  // GFHTMLArea(book_gump,  400, 40, 100, 18, max_charges);
-  // End Page 0 Setup
+    GFGumpPic( book_gump, 100, 10, 2200 );
 
-  // Begin Page 1 Setup
-  GFPage( book_gump, 1 );
-  // GFAddButton(book_gump, 125, 15, 2472, 2473, GF_CLOSE_BTN, 50);
-  if ( GetObjProperty( book, "NecroBook" ) )
-	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro de Necromancer" );
-  elseif ( GetObjProperty( book, "SangriaBook" ) )
-	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
-  else
-	GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
-  endif
+    // Begin Page 1 Setup
+    GFPage( book_gump, 1 );
+	// Barra decorativa inicial
+GFGumpPic( book_gump, 125, 50, 57 );
+GFGumpPic( book_gump, 145, 50, 58 );
+GFGumpPic( book_gump, 160, 50, 58 );
+GFGumpPic( book_gump, 175, 50, 58 );
+GFGumpPic( book_gump, 190, 50, 58 );
+GFGumpPic( book_gump, 205, 50, 58 );
+GFGumpPic( book_gump, 220, 50, 58 );
+GFGumpPic( book_gump, 230, 50, 59 );
+GFGumpPic( book_gump, 290, 50, 57 );
+GFGumpPic( book_gump, 310, 50, 58 );
+GFGumpPic( book_gump, 325, 50, 58 );
+GFGumpPic( book_gump, 340, 50, 58 );
+GFGumpPic( book_gump, 355, 50, 58 );
+GFGumpPic( book_gump, 370, 50, 58 );
+GFGumpPic( book_gump, 385, 50, 58 );
+GFGumpPic( book_gump, 395, 50, 59 );
+    if ( GetObjProperty( book, "NecroBook" ) )
+        GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro de Necromancer" );
+    elseif ( GetObjProperty( book, "SangriaBook" ) )
+        GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
+    else
+        GFHTMLArea( book_gump, 135, 22, 100, 18, "Livro da Magia" );
+    endif
 
+    // Adiciona informação de limite de pergaminhos
+    var chardata := GetObjProperty(who, "chardata");
+    var mlore := CInt(AP_GetSkill(who, MAGICLORE));
+    var max_text;
+
+    if (chardata.magia == "spellcaster")
+    // Calcula o máximo de pergaminhos baseado na skill
+    var max_scrolls := 8;
+    if (mlore >= 100)
+        max_scrolls := 16;
+    elseif (mlore >= 90)
+        max_scrolls := 15;
+    elseif (mlore >= 80)
+        max_scrolls := 14;
+    elseif (mlore >= 70)
+        max_scrolls := 13;
+    elseif (mlore >= 60)
+        max_scrolls := 12;
+    elseif (mlore >= 55)
+        max_scrolls := 11;
+    elseif (mlore >= 50)
+        max_scrolls := 10;
+    elseif (mlore >= 45)
+        max_scrolls := 9;
+    endif
+    
+    var current_scrolls := rune_list.Size();
+    max_text := "Perg = " + current_scrolls + "/" + max_scrolls;
+    max_text += "<br>Máx = 16";
+else
+    var current_scrolls := rune_list.Size();
+    max_text := "Pergaminhos = " + current_scrolls + "/8";
+    max_text += "<br>Máx = 8";
+endif
+
+GFHTMLArea(book_gump, 290, 22, 150, 40, max_text);
   GFAddButton( book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, 2 );
 
   if ( rune_list[1] )
@@ -231,14 +292,32 @@ function CreateBookGump( book, who )
   var rune_pos := 1;
 
   for i := 2 to 9
-	GFPage( book_gump, i );
-	GFAddButton( book_gump, 125, 14, 2205, 2205, GF_PAGE_BTN, ( i - 1 ) );
-	if ( i != 9 )
-	  GFAddButton( book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, ( i + 1 ) );
-	endif
+    GFPage( book_gump, i );
+    GFAddButton( book_gump, 125, 14, 2205, 2205, GF_PAGE_BTN, ( i - 1 ) );
+    if ( i != 9 )
+        GFAddButton( book_gump, 393, 14, 2206, 2206, GF_PAGE_BTN, ( i + 1 ) );
+    endif
 
-	var rune_entry := rune_list[rune_pos];
-	WritespellInfo( who, rune_entry );
+    // Adiciona barras decorativas na página interna
+    GFGumpPic( book_gump, 125, 50, 57 );
+    GFGumpPic( book_gump, 145, 50, 58 );
+    GFGumpPic( book_gump, 160, 50, 58 );
+    GFGumpPic( book_gump, 175, 50, 58 );
+    GFGumpPic( book_gump, 190, 50, 58 );
+    GFGumpPic( book_gump, 205, 50, 58 );
+    GFGumpPic( book_gump, 220, 50, 58 );
+    GFGumpPic( book_gump, 230, 50, 59 );
+    GFGumpPic( book_gump, 290, 50, 57 );
+    GFGumpPic( book_gump, 310, 50, 58 );
+    GFGumpPic( book_gump, 325, 50, 58 );
+    GFGumpPic( book_gump, 340, 50, 58 );
+    GFGumpPic( book_gump, 355, 50, 58 );
+    GFGumpPic( book_gump, 370, 50, 58 );
+    GFGumpPic( book_gump, 385, 50, 58 );
+    GFGumpPic( book_gump, 395, 50, 59 );
+
+    var rune_entry := rune_list[rune_pos];
+    WritespellInfo( who, rune_entry );
 	rune_entry.description := "<BASEFONT COLOR=#000066>" + cstr( rune_entry.description )
 															  + "<br>" + cstr( rune_entry.flavortext ) + "<br> <BASEFONT COLOR=#330000> Componentes Materiais: <br> ";
 	var regkeys := rune_entry.reagents.keys();
