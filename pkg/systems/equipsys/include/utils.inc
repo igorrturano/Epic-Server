@@ -86,7 +86,7 @@ var BLUNT_2H_FX := struct {
 };
 
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
-	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
+	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
 endfunction
 
 function IsDualWield(item)
