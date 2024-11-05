@@ -15,7 +15,7 @@ function Garimpeiro(who)
 		EncontraGema(who);
 	elseif(TemHabilidade(who, "Minerador Talentoso") && rand < 10)
 		EncontraGema(who);
-		SendSysMessageEx(who, "So um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
+		SendSysMessageEx(who, "Só um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
 	endif
 	return 1;
 endfunction
@@ -27,7 +27,7 @@ function EncontraGema(who)
 	while (!gema)
 		gema := keys[RandomInt(keys.size())];
 	endwhile
-	SendSysMessageEx(who, "Voce achou uma pedra preciosa!", SSM_INFO);
+	SendSysMessageEx(who, "Você achou uma pedra preciosa!", SSM_INFO);
 	CreateItemInBackPack(who, gema, 1);
 	PrintTextAbove(who, "*encontra algo reluzente*");
 	SkillCheck(who, GATHERING, -1);
@@ -82,12 +82,12 @@ function DigForMap(who, targ, map)
 var chestz := who.z;
 
 	if((!chestx) || (!chesty))
-		SendSysMessage( who, "Este nao parece ser um mapa de tesouro.", SSM_FAIL );
+		SendSysMessage( who, "Este não parece ser um mapa de tesouro.", SSM_FAIL );
 		return;
 	endif
 
 	if(!CheckLosAt( who, targ.x, targ.y, targ.z ) );
-		SendSysMessageEx( who, "Voce nao ve o alvo.", SSM_FAIL );
+		SendSysMessageEx( who, "Você não ve o alvo.", SSM_FAIL );
 		return;
 	endif
 
@@ -100,20 +100,20 @@ var chestz := who.z;
 	var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 0, who.realm);
 
 	if(distn > maxrange)
-		SendSysMessageEx(who,"Voce parece muito distante.", SSM_INFO);
+		SendSysMessageEx(who,"Você parece muito distante.", SSM_INFO);
 		return;
 
 	elseif((distn > range) && (distn <= maxrange))
-		SendSysMessage(who,"Voce cavou e cavou mas nao encontrou nenhum tesouro.", SSM_INFO);
+		SendSysMessage(who,"Você cavou e cavou mas não encontrou nenhum tesouro.", SSM_INFO);
 		return;
 
 	elseif((distn < range) && (len(mobiles) > 0))
-		SendSysMessageEx(who,"voce parou de cavar porque algo esta sobre o tesouro.");
+		SendSysMessageEx(who,"você parou de cavar porque algo esta sobre o tesouro.");
 		return;
 	else
 		who.frozen := 1;
-		PrintTextAbove(who, "*Comeca a cavar o tesouro*");
-		SendSysMessageEx(who, "NAO DESLOGUE, A ANIM DEMORA UM POUCO, aguarde o boneco terminar de cavar!", SSM_INFO);
+		PrintTextAbove(who, "*Começa a cavar o tesouro*");
+		SendSysMessageEx(who, "NÃO DESLOGUE, A ANIM DEMORA UM POUCO, aguarde o boneco terminar de cavar!", SSM_INFO);
 		var i := 1;
 		var mex := who.x;
 		var mey := who.y;
@@ -190,7 +190,7 @@ var chestz := who.z;
           			endforeach
         		endif
 			if((who.x != mex) || (who.y != mey))
-				SendSysMessageEx(who,"Voce deve ficar parado enquanto cava.", SSM_FAIL);
+				SendSysMessageEx(who,"Você deve ficar parado enquanto cava.", SSM_FAIL);
 				DestroyItem(chest);
 		        	return;
 		      	endif
@@ -267,7 +267,7 @@ endfunction
 function ChestDestroy( chest )
 sleep(600);
 DestroyItem(chest);
-print("o chest foi destruido");
+print("o chest foi destruído");
 endfunction
 
 function GetRange( who );
@@ -413,7 +413,7 @@ function DetermineOreType(who, where)
 	endforeach
 
 	if (!achou)
-		SendSysMessage(who, "Nao tem o minerio que voce procura aqui.");
+		SendSysMessage(who, "Não tem o minério que você procura aqui.");
 		return 0;
 	endif
 
@@ -425,7 +425,7 @@ function DetermineOreType(who, where)
 		endif
 		return oreid;
 	else
-		SendSysMessage(who, "Voce nao conseguiu achar o minerio que procura.");
+		SendSysMessage(who, "Você não conseguiu achar o minério que procura.");
 		return 999;
 	endif
 
@@ -442,27 +442,29 @@ function DetermineMiningDifficulty(oretype)
 		//0xBD13: return 0;  //pedra grande
 		0xee99: return 0;  //calcario
 
-		0x6300: return 0;  //iron ore
-		0x62ff: return 40;  //ferro impuro
-		0x6309: return 50; //iron temperado
+		//minérios
+		0x6450: return 14; //cobre
+ 		0x6990: return 35; //estanho
+		0x699c: return 45; //bronze
+		0x6300: return 55;  //iron ore
+		0x6992: return 70; //prata
 		0x6301: return 70; //litan
-        0x6314: return 82; //illyra
-		0x6302: return 72; //fulmetita
-		0x6303: return 72; //venetita
-		0x6304: return 72; //ignitita
-		0x6451: return 72; //frigutita
-		0x6307: return 90; //galvorn
-		0x6308: return 90; //mithril
-		0x6450: return 20; //cobre
-		0x6465: return 20; //cobre -> bronze
-		
-		0x699c: return 10; //bronze
-		0x699d: return 20; // Bronze temperado
-		0x6994: return 20; // bronze
-		0x6995: return 60; //aco
+		0x6302: return 91; //fulmetita
+		0x6303: return 91; //venetita
+		0x6304: return 91; //ignitita
+		0x6451: return 91; //frigutita
+        0x6314: return 100; //illyra
+		0x6308: return 107; //mithril
 
-		0x6992: return 50; //prata
- 		0x6990: return 30; //estanho
+		0x6995: return 75; //aco
+		0x6307: return 90; //galvorn
+		0x62ff: return 50;  //ferro impuro
+		0x6309: return 60; //iron temperado
+		0x6465: return 25; //cobre -> bronze
+		
+		0x699d: return 25; // Bronze temperado
+		0x6994: return 20; // bronze
+
 
 		0x6075: return 5; //areia
 
@@ -548,16 +550,16 @@ endfunction
 
 function CheckLoop(who, tool, my_x, my_y, my_facing)
 	if ( who.hidden )
-		SendSysMessage(who, "Voce parou de minerar para ficar escondido.");
+		SendSysMessage(who, "Você parou de minerar para ficar escondido.");
 		return 0;
 	elseif ( (who.x != my_x) || (who.y != My_y) )
-		SendSysMessage(who, "Voce saiu de onde estava.");
+		SendSysMessage(who, "Você saiu de onde estava.");
 		return 0;
 	elseif ( who.facing != my_facing )
-		SendSysMessage(who, "Voce virou sua atencao para outra coisa.");
+		SendSysMessage(who, "Você virou sua atenção para outra coisa.");
 		return 0;
 	elseif ( GetEquipmentByLayer(who, LAYER_MOUNT) )
-		SendSysMessage(who, "Voce nao pode minerar montado.");
+		SendSysMessage(who, "Você não pode minerar montado.");
 		return 0;
 	elseif (!tool)
 		return 0;
