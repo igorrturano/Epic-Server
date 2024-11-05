@@ -282,17 +282,21 @@ function getResistPhysicalByProtection(armor)
 endfunction
 
 function getResistPhysicalBySlot(armor)
-	case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
-		HEAD: return {2,2,2};
-		NECK: return {1,1,1};
-		BODY: return {4,4,4};
-		ARMS: return {2,2,2};
-		HANDS: return {1,1,1};
-		LEGS: return {3,3,3};
-		FEET: return {2,2,2};
-		
-		default: return {0,0,0};
-	endcase
+	if (Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+		case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
+			HEAD: return {2,2,2};
+			NECK: return {1,1,1};
+			BODY: return {4,4,4};
+			ARMS: return {2,2,2};
+			HANDS: return {1,1,1};
+			LEGS: return {3,3,3};
+			FEET: return {2,2,2};
+			
+			default: return {0,0,0};
+		endcase
+	endif
+
+	return {0,0,0};
 endfunction
 
 function getResistPhysicalByMaterial(armor)
@@ -341,10 +345,8 @@ function addPenalties(stats, armor)
 	stats.+MageryPen := 0;
 	stats.+AwarenessPen := 0;
 	
+	stats := addPenaltiesBy("SLOT", stats, armor);
 	stats := addPenaltiesBy("PROTECTION", stats, armor);
-	if (armor.getType() != ARMOR_LOWLOW)
-		stats := addPenaltiesBy("SLOT", stats, armor);
-	endif
 
 	return stats;
 endfunction
@@ -371,18 +373,22 @@ function addPenaltiesBy(type, stats, armor)
 endfunction
 
 function getPenaltiesBySlot(armor)
-	case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-		HEAD: return {1,0,0,1,0};
-		NECK: return {1,0,0,1,0};
-		BODY: return {4,0,0,12,0};
-		ARMS: return {2,0,2,6,0};
-		HANDS: return {1,0,4,3,0};
-		LEGS: return {2,0,0,6,0};
-		FEET: return {2,0,0,0,0};
-		SHIELD: return {0,1,10,5,0};
+	if (Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+		case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
+			HEAD: return {1,0,0,1,0};
+			NECK: return {1,0,0,1,0};
+			BODY: return {4,0,0,12,0};
+			ARMS: return {2,0,2,6,0};
+			HANDS: return {1,0,4,3,0};
+			LEGS: return {2,0,0,6,0};
+			FEET: return {2,0,0,0,0};
+			SHIELD: return {0,1,10,5,0};
 
-		default: return {0,0,0,0,0};
-	endcase
+			default: return {0,0,0,0,0};
+		endcase
+	endif
+
+	return {0,0,0,0,0};
 endfunction
 
 function getPenaltiesByProtection(armor)
