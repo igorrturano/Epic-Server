@@ -341,8 +341,10 @@ function addPenalties(stats, armor)
 	stats.+MageryPen := 0;
 	stats.+AwarenessPen := 0;
 	
-	stats := addPenaltiesBy("SLOT", stats, armor);
 	stats := addPenaltiesBy("PROTECTION", stats, armor);
+	if (armor.getType() != ARMOR_LOWLOW)
+		stats := addPenaltiesBy("SLOT", stats, armor);
+	endif
 
 	return stats;
 endfunction
