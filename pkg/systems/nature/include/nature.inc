@@ -155,42 +155,47 @@ endfunction
 //   254 - Unknown effect...
 
 function weathereffects(type, duration, severity := 5)
+    var i;
+    for(i := 0; i <= duration*30; i := i+1)
+        var weatherid := CStr(type);
+        var id_len := len(weatherid);
 
-	var i;
-	for(i := 0; i <= duration*30; i := i+1)
-		
-		var weatherid := CStr(type);
-		var id_len := len(weatherid);
-
-		if( id_len == 0 )
-			weatherid := "00";
-		elseif( id_len == 1)
- 			weatherid := "0" + weatherid;
- 		endif 
-	 	
-	 	var packet := "65"+weatherid+"7000";
-	 
+        if( id_len == 0 )
+            weatherid := "00";
+        elseif( id_len == 1)
+            weatherid := "0" + weatherid;
+        endif 
+        
+        var packet := "65"+weatherid+"7000";
+    
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
-		foreach person in EnumerateOnlineCharacters()
+        foreach person in EnumerateOnlineCharacters()
             if (!GetObjProperty(person, "molhado"))
                 SetObjProperty(person, "molhado", 1);
             endif
             var itemsinbag := EnumerateItemsInContainer(person.backpack);
             foreach item in itemsinbag
-                if (item.objtype in fire_weapons)
-                    SetObjProperty(item, "balas", 0);
-                    SendSysMessageEx(person, "A polvora da sua arma molhou!", SSM_INFO);
+                var container := item.container;
+                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
+                    if (item.objtype in fire_weapons)
+                        SetObjProperty(item, "balas", 0);
+                        SendSysMessageEx(person, "A polvora da sua arma molhou!", SSM_INFO);
+                    else
+                        SetObjProperty(item, "molhado", 1);
+                    endif
                 endif
             endforeach
-			if (person.x < 4174)
-				playweathersound(type, person);
-				SendPacket(person, packet);
-			endif
-		endforeach
-		
-		sleep(5);
-	endfor
-	foreach person in EnumerateOnlineCharacters()
+            
+            if (person.x < 4174)
+                playweathersound(type, person);
+                SendPacket(person, packet);
+            endif
+        endforeach
+        
+        sleep(5);
+    endfor
+    
+    foreach person in EnumerateOnlineCharacters()
         EraseObjProperty(person, "molhado");
     endforeach
 endfunction
