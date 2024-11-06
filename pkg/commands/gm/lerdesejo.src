@@ -1,0 +1,62 @@
+//lerdesejos.src
+use uo;
+use os;
+use datafile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":datafile:datafile";
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+
+program lerdesejos(who)
+    if (who.cmdlevel < 3) // Verifica se é GM
+        SendSysMessage(who, "Voce nao tem permissao para usar este comando.");
+        return 0;
+    endif
+    
+    ShowDesejosGump(who);
+    return 1;
+endprogram
+
+function ShowDesejosGump(who)
+    var desejos_data := DFOpenDataFile(":fontedosdesejos:data/wishes", DF_CREATE);
+    var desejos_elem := DFFindElement(desejos_data, "ListaDesejos", DF_CREATE);
+    var lista_desejos := desejos_elem.GetProp("desejos");
+    
+    if (!lista_desejos || lista_desejos.size() == 0)
+        SendSysMessage(who, "Nao ha desejos registrados.");
+        return 0;
+    endif
+    
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 500, 600, GUMP_BACKGROUND);
+    GFResizePic(gump, 45, 45, INTERNAL_BACKGROUND, 430, 520);
+    
+    GFTextMid(gump, 25, 55, 450, 53, "Lista de Desejos");
+    
+    var y_pos := 85;
+    var html_text := "";
+    
+    foreach desejo in lista_desejos
+        var data_str := FormatTime(desejo.data);
+        html_text += "<BASEFONT COLOR=#000000>";
+        html_text += "Personagem: " + desejo.personagem + "<BR>";
+        html_text += "Account: " + desejo.account + "<BR>";
+        html_text += "Data: " + data_str + "<BR>";
+        html_text += "Desejo: " + desejo.desejo + "<BR>";
+        html_text += "----------------------------------------<BR><BR>";
+    endforeach
+    
+    GFHTMLArea(gump, 50, y_pos, 420, 470, html_text, 0, 1);
+    
+    GFSendGump(who, gump);
+endfunction
+
+function FormatTime(timestamp)
+    return StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
+endfunction
