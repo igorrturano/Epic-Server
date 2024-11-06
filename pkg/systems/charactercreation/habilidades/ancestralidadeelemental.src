@@ -76,20 +76,26 @@ program controleclima(who)
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
 		SetWeatherForPlayer(who, type, 50 );
 		foreach mob in enemies
-           SetObjProperty(mob, "molhado", 1);
-           var itemsinbag := EnumerateItemsInContainer(mob.backpack);
-            foreach item in itemsinbag
-                if (item.objtype in fire_weapons)
-                    SetObjProperty(item, "balas", 0);
-                    SendSysMessageEx(mob, "A polvora da sua arma molhou!", SSM_INFO);
-                endif
-            endforeach
-            foreach mob in mobs
-                if (mob in enemies)
-                else
-                    HealFLS(mob, Cint(mlore/5));
-                endif
-            endforeach
+    SetObjProperty(mob, "molhado", 1);
+    var itemsinbag := EnumerateItemsInContainer(mob.backpack);
+    foreach item in itemsinbag
+        var container := item.container;
+        if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
+            if (item.objtype in fire_weapons)
+                SetObjProperty(item, "balas", 0);
+                SendSysMessageEx(mob, "A polvora da sua arma molhou!", SSM_INFO);
+            else
+                SetObjProperty(item, "molhado", 1);
+            endif
+        endif
+    endforeach
+
+    foreach mob in mobs
+        if (mob in enemies)
+        else
+            HealFLS(mob, Cint(mlore/5));
+        endif
+    endforeach
 			SetWeatherForPlayer(mob, type, 50 );
 			if ( !(mob in who.party.members))
 				if (distance(mob, who) < 20)

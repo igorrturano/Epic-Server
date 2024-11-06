@@ -102,13 +102,18 @@ endif
 			break;
 		endif
            SetObjProperty(char, "molhado", 1);
-           var itemsinbag := EnumerateItemsInContainer(char.backpack);
-            foreach item in itemsinbag
-                if (item.objtype in fire_weapons)
-                    SetObjProperty(item, "balas", 0);
-                    SendSysMessageEx(char, "A polvora da sua arma molhou!", SSM_INFO);
-                endif
-            endforeach
+var itemsinbag := EnumerateItemsInContainer(char.backpack);
+foreach item in itemsinbag
+    var container := item.container;
+    if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
+        if (item.objtype in fire_weapons)
+            SetObjProperty(item, "balas", 0);
+            SendSysMessageEx(char, "A polvora da sua arma molhou!", SSM_INFO);
+        else
+            SetObjProperty(item, "molhado", 1);
+        endif
+    endif
+endforeach
 			SetWeatherForPlayer(char, type, 50 );
 			
 				if (distance(char, item) < 20)
