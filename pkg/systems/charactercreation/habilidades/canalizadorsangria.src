@@ -90,10 +90,11 @@ endfunction
 
 function open_portal(player, portal_number)
     var portals := GetObjProperty(player, "portals");
-
-    var tile := CreateItemAtLocation(player.x, player.y+1, player.z, "telepad", 1, player.realm);
     var portalName := "portal" + cstr(portal_number);
 
+    // Cria o telepad exatamente onde o jogador está (removido o y+1)
+    var tile := CreateItemAtLocation(player.x, player.y, player.z, "telepad", 1, player.realm);
+    
     var dest := struct{"realm", "x", "y", "z"};
     dest.realm := portals[portalName].r;
     dest.x := portals[portalName].x;
@@ -101,14 +102,16 @@ function open_portal(player, portal_number)
     dest.z := portals[portalName].z;
     SetDestination(tile, dest.x, dest.y, dest.z, dest.realm);
 
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255,0, player.realm);
-    PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255,0, dest.realm);
+    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, player.realm);
+    PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255, 0, dest.realm);
     PlaySoundEffect(player, 0x1f2);
 
     sleep(10);
 
-    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255,0, player.realm);
-    PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255,0, dest.realm);
+    PlayStationaryEffect(tile.x, tile.y, tile.z, 0x0DDA, 0, 255, 0, player.realm);
+    PlayStationaryEffect(dest.x, dest.y, dest.z, 0x0DDA, 0, 255, 0, dest.realm);
+
+    sleep(10);
 
     sleep(10);
 
