@@ -1,0 +1,91 @@
+// echoarea.src
+use uo;
+use os;
+
+include ":tn:actions_sounds_tools";
+
+program echoarea(rune)
+    var range := CInt(GetObjProperty(rune, "range"));
+    if (!range)
+        range := 10;
+    endif
+
+    RegisterForSpeechEvents(rune, range);
+    Print("Echo area ativada - Range: " + range);
+    
+    while (1)
+        var ev := Wait_For_Event(1);
+        if (ev)
+            if (ev.source && ev.text)
+                // Ignora textos específicos e sussurros
+                if (ev.text == "..." || ev.text == ". . ." || ev.text == " . . . " || ev.texttype == "whisper")
+                    continue;
+                endif
+                
+                var mobile := ev.source;
+                if (!mobile.npctemplate)  // Ignora NPCs
+                    if (!GetObjProperty(mobile, "#LastEcho") || 
+                        GetObjProperty(mobile, "#LastEcho") < ReadGameClock())
+                        
+                        CreateEcho(ev, rune, range);
+                        SetObjProperty(mobile, "#LastEcho", ReadGameClock() + 3);
+                    endif
+                endif
+            endif
+        endif
+        
+        Sleep(1);
+    endwhile
+endprogram
+
+function CreateEcho(ev, rune, range)
+    var text := ev.text;
+    var mobile := ev.source;
+    
+    var echo_anchor := CreateItemAtLocation(rune.x, rune.y, rune.z, 0x00C3, 1);
+    echo_anchor.movable := 0;
+    echo_anchor.invisible := 0;
+
+    // Se for um emote, verifica se é do .sounds
+    if (text[1] == "*" && text[len(text)] == "*")
+        var sound_result := GetSound(mobile, text);
+        if (sound_result[1])  // Se encontrou um som válido
+            for i := 1 to 3
+                PlaySoundEffectXYZ(rune.x, rune.y, rune.z, sound_result[1]);
+                PrintTextAbove(rune, text + " ...", 33 + i);
+                Sleep(2);
+            endfor
+            DestroyItem(echo_anchor);
+            return;
+        endif
+        DestroyItem(echo_anchor);
+        return; // Se for emote sem som registrado, apenas retorna
+    endif
+
+    // Se não for emote, processa como texto normal
+    var speaker_language := GetObjProperty(mobile, "lingua_escolhida");
+    var nearby_players := ListMobilesNearLocationEx(rune.x, rune.y, rune.z, range, LISTEX_FLAG_NORMAL);
+    
+    for i := 1 to 3
+        foreach player in nearby_players
+            if (!player.npctemplate)
+                var known_languages := GetObjProperty(player, "linguas_conhecidas");
+                
+                if (!known_languages || !(speaker_language in known_languages))
+                    PrintTextAbovePrivate(echo_anchor, "*o eco é incompreensível*", player, 33 + i);
+                else
+                    var echo_text := text;
+                    case(i)
+                        1: echo_text := text + " ...";
+                        2: echo_text := Lower(text) + "  ...  ...";
+                        3: echo_text := Lower(text) + "   ...   ...   ...";
+                    endcase
+                    PrintTextAbovePrivate(echo_anchor, echo_text, player, 33 + i);
+                endif
+            endif
+        endforeach
+        Sleep(2);
+    endfor
+    
+    DestroyItem(echo_anchor);
+endfunction
