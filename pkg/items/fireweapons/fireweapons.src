@@ -1,4 +1,3 @@
-
 use uo;
 use os;
 include "include/say";
@@ -44,59 +43,71 @@ program fireweapons(who, item)
 
 
     // Verifica se a arma está municiada
-	var balas := cint(GetObjProperty(item, "balas"));
-	if (balas <= 0)
-		SendSysMessageEx(who, "A arma esta descarregada, escolha uma municao para carrega-la.", SSM_FAIL);
-		var ammo := Target(who);
-		if (!ammo)
-			SendSysMessageEx(who, "Cancelado.");
-			return;
-		endif
-		var valid := 0;
-		if (ammo.objtype == 0x9090)
-            valid := 1;
-       endif
-        //Se não estiver, municia. Se estiver chovendo, não consegue.
-		if (ammo.movable && Accessible(who, ammo) && valid)
-            var current_x := who.x;
-            var current_y := who.y;
-            var powder_amt := 1;
-            if (is_handcannon)
-                powder_amt := 5;
-            elseif (is_musket)
-                powder_amt := 3;
-            elseif (is_carabine)
-                powder_amt := 2;
-            endif
+var balas := cint(GetObjProperty(item, "balas"));
+if (balas <= 0)
+    SendSysMessageEx(who, "A arma esta descarregada, escolha uma municao para carrega-la.", SSM_FAIL);
+    var ammo := Target(who);
+    if (!ammo)
+        SendSysMessageEx(who, "Cancelado.");
+        return;
+    endif
+    var valid := 0;
+    if (ammo.objtype == 0x9090)
+        valid := 1;
+    endif
 
-            if (TemHabilidade(who, "Municiador Experiente") && powder_amt > 2)
-                powder_amt := 2;
+    // Verifica pólvora antes de começar
+    SendSysMessageEx(who, "Escolha a polvora.");
+    var powder := Target(who);
+    if (!powder || powder.objtype != 0x9092)
+        SendSysMessageEx(who, "Voce precisa selecionar polvora.");
+        return;
+    endif
+
+    //Se não estiver, municia. Se estiver chovendo, não consegue.
+    if (ammo.movable && Accessible(who, ammo) && valid)
+        var current_x := who.x;
+        var current_y := who.y;
+        var powder_amt := 1;
+        if (is_handcannon)
+            powder_amt := 5;
+        elseif (is_musket)
+            powder_amt := 3;
+        elseif (is_carabine)
+            powder_amt := 2;
+        endif
+
+        // Verifica quantidade de pólvora antes
+        if (powder.amount < powder_amt)
+            SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
+            return;
+        endif
+
+        if (TemHabilidade(who, "Municiador Experiente") && powder_amt > 2)
+            powder_amt := 2;
+        endif
+
+        while (who.x == current_x && who.y == current_y)
+            if (wet == 1)
+                SendSysMessageEx(who, "Voce nao consegue recarregar com o clima umido.", SSM_FAIL);
+                return;
             endif
-            while (who.x == current_x && who.y == current_y)
-                if (wet == 1)
-                    SendSysMessageEx(who, "Voce nao consegue recarregar com o clima umido.", SSM_FAIL);
+            if (subtractamount(ammo, 1))
+                printtext(who, "*Coloca polvora na arma*");
+                if (!subtractamount(powder, powder_amt))
+                    // Se falhar ao consumir pólvora, devolve a munição
+                    CreateItemInBackpack(who, 0x9090, 1);
+                    SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
                     return;
                 endif
-                if (subtractamount(ammo, 1))
-                    SendSysMessageEx(who, "Escolha a polvora.");
-                    var powder := Target(who);
-                    if (powder.objtype != 0x9092)
-                        SendSysMessageEx(who, "Voce precisa selecionar polvora.");
-                        return;
-                    else 
-                        SendSysMessageEx(who, "Selecione o socador de polvora.");
-                        var powder_fixer := Target(who);
-                        if (powder_fixer.objtype != 0xC611)
-                            SendSysMessageEx(who, "Esse nao eh um socador de polvora valido.", SSM_FAIL);
-                            return;
-                        endif
-                        printtext(who, "*Coloca polvora na arma*");
-                        if (!subtractamount(powder, powder_amt))
-                            SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
-                        endif
-                    endif   
-                    printtext(who, "*Socando a polvora*");
-                    // Tempo de recarga baseado na arma
+                SendSysMessageEx(who, "Selecione o socador de polvora.");
+                var powder_fixer := Target(who);
+                if (powder_fixer.objtype != 0xC611)
+                    SendSysMessageEx(who, "Esse nao eh um socador de polvora valido.", SSM_FAIL);
+                    return;
+                endif
+                printtext(who, "*Socando a polvora*");
+                      // Tempo de recarga baseado na arma
                     var i := 0;
                     var reload_time := 6;
                     if (is_handcannon)
