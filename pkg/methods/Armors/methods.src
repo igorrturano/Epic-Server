@@ -9,10 +9,15 @@ endprogram
 
 exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
 	var elem := getItemCfgElem(item);
+
+	if (!elem.Coverage)
+		return error{"errortext" := "The item have no Coverage!"};
+	endif
+
 	return IsShield(item) ? "Shield" : elem.Coverage;
 endfunction
 
 exported function getType(item)
 	var elem := getItemCfgElem(item);
-	return elem.TipoProtecao;
+	return elem.TipoProtecao ? elem.TipoProtecao : error{"errortext" := "The item have no Protection Type!"};
 endfunction
