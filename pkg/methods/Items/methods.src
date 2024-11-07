@@ -6,9 +6,9 @@ program Install()
 endprogram
 
 exported function getMaterialID(item)
-	return item.getProp("material");
+	return item.getProp("material") ? item.getProp("material") : error{"errortext" := "The item have no Material!"};
 endfunction
 
 exported function getMaterialName(item)
-	return FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name;
+	return getMaterialID(item) ? FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name : getMaterialID(item);
 endfunction

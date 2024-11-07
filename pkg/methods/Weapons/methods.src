@@ -9,5 +9,5 @@ endprogram
 
 exported function getType(item)
 	var elem := getItemCfgElem(item);
-	return elem.TipoAtaque;
+	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
 endfunction
