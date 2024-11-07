@@ -251,9 +251,9 @@ function addResistPhysicalBy(type, stats, armor)
 			break;
 	endcase
 
-	stats.SlashResist += resists[1];
-	stats.PiercingResist += resists[2];
-	stats.BluntResist += resists[3];
+	stats.SlashResist += CInt(resists[1]);
+	stats.PiercingResist += CInt(resists[2]);
+	stats.BluntResist += CInt(resists[3]);
 
 	return stats;
 endfunction
@@ -282,7 +282,7 @@ function getResistPhysicalByProtection(armor)
 endfunction
 
 function getResistPhysicalBySlot(armor)
-	if (Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
 		case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
 			HEAD: return {2,2,2};
 			NECK: return {1,1,1};
@@ -363,17 +363,17 @@ function addPenaltiesBy(type, stats, armor)
 			break;
 	endcase
 
-	stats.DexPen += penalties[1];
-	stats.SneakPen += penalties[2];
-	stats.MAPen += penalties[3];
-	stats.MageryPen += penalties[4];
-	stats.AwarenessPen += penalties[5];
+	stats.DexPen += CInt(penalties[1]);
+	stats.SneakPen += CInt(penalties[2]);
+	stats.MAPen += CInt(penalties[3]);
+	stats.MageryPen += CInt(penalties[4]);
+	stats.AwarenessPen += CInt(penalties[5]);
 
 	return stats;
 endfunction
 
 function getPenaltiesBySlot(armor)
-	if (Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
+	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
 		case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 			HEAD: return {1,0,0,1,0};
 			NECK: return {1,0,0,1,0};
