@@ -1,0 +1,55 @@
+// echosetup.src
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+
+program echosetup(who, rune)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Você não tem permissão para usar isso.");
+        return;
+    endif
+
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    // Cria o fundo com moldura
+    GFGumpPicTiled(gump, 10, 10, 300, 200, GUMP_BACKGROUND);
+    GFResizePic(gump, 45, 45, INTERNAL_BACKGROUND, 230, 130);
+    
+    // Título centralizado
+    GFTextMid(gump, 25, 55, 270, 53, "Raio do Eco");
+    
+    // Range atual
+    var range := CInt(GetObjProperty(rune, "range"));
+    if (!range)
+        range := 10;
+    endif
+
+    // Caixa de entrada centralizada
+    GFResizePic(gump, 120, 85, INTERNAL_BACKGROUND, 80, 30);
+    GFTextEntry(gump, 130, 90, 60, 20, 2100, CStr(range), 1);
+    
+    // Texto informativo
+    GFTextMid(gump, 25, 120, 270, 53, "*raio máximo = 50");
+    
+    // Botão OK centralizado
+    GFAddButton(gump, 120, 140, 247, 248, 1, 100);
+
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 100)
+        range := CInt(GFExtractData(input, 1));
+        if (range < 1 || range > 50)
+            SendSysMessage(who, "Raio inválido. Usando valor padrão de 10.");
+            range := 10;
+        endif
+        SetObjProperty(rune, "range", range);
+        SendSysMessage(who, "Configurações salvas com sucesso!");
+    endif
+endprogram

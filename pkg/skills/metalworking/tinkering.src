@@ -18,22 +18,15 @@ var craft_config    := ReadConfigFile(":metalworking:tinker");
 
 program use_TinkerTool(who, tool)
 
-	if(!can_access(who, tool))
-		return 0;
-	endif
-	if((!tool.movable) or !ReserveItem(tool))
-		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
-		return 0;
-	endif
-	if(!tool in ListEquippedItems(who))
-		if( !(tool in EnumerateItemsInContainer(who.backpack)) )
-			SendSysMessageEx(who, "A ferramenta nao esta na sua mochila.", SSM_FAIL);
-			return 0;
-		endif
+	if (!Accessible (who, tool) )
+		SendSysMessage (who, "Você não alcança aquilo!");
+		return;
 	endif
 
-	EraseObjProperty(who, "IsMeditating");
-	EraseObjProperty(who, "HealTimer");
+	if (!ReserveItem (tool) )
+		SendSysMessage (who, "você não pode usar isso agora.");
+		return;
+	endif
 
 	var rinfo := sendCraftGump(who, "Tinkering");
 
@@ -89,7 +82,7 @@ function makeTinkeringItems(who, what, amt, tool)
 			var gems := dictionary;
 			var gemprop;
 			while(1)
-				if (YesNo(who, "Voce deseja incrustar alguma gema na joia?") )
+				if (YesNo(who, "Você deseja incrustar alguma gema na joia?") )
 					SendSysMessageEx(who, "Escolha a pedra preciosa.", SSM_REQUEST);
 					var gemtarg := target(who);
 					if (gemtarg.isGem())
@@ -113,7 +106,7 @@ function makeTinkeringItems(who, what, amt, tool)
 			if (gem)
 				SetupGemName(theitem, gems);
 				//sendsysmessage(who, " " + gems);
-				if (YesNo(who, "Voce deseja adicionar uma descricao na joia?") )
+				if (YesNo(who, "Você deseja adicionar uma descrição na joia?") )
 					AddItemDescription(who, theitem);
 				endif
 				increvision(theitem);
@@ -129,7 +122,7 @@ function makeTinkeringItems(who, what, amt, tool)
 			SetObjProperty(theitem, "LockId", lockid);
 			SetObjProperty(key, "LockId", lockid);
 			SetObjProperty(theitem, "levelPlayerLock", lvl);
-			SendSysMessageEx(who, "Voce fez a fechadura e a chave.", SSM_INFO);
+			SendSysMessageEx(who, "Você fez a fechadura e a chave.", SSM_INFO);
 	/*	elseif ( theitem.objtype == 0x367a)
 			SendSysMessageEx(who, "Escolha a pocao do gas venenoso.", SSM_REQUEST);
 			var pot := Target(who);
