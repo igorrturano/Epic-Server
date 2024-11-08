@@ -30,8 +30,8 @@ function setWeaponStats(weapon)
 	var stats := getWeaponStats(weapon);
 	setPropWeapon(weapon);
 
-	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range.
-	// TODO: Setar na arma o que não vai em Prop
+	// Setar a partir daqui, direto no item, o que não vai em CProp
+	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range. (similar ao AttackSpeed)
 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 
@@ -49,7 +49,7 @@ function setArmorStats(armor)
 	var stats := getArmorStats(armor);
 	setPropArmor(armor);
 
-	// TODO: Setar na armadura o que não vai em CProp
+	// Setar a partir daqui, direto no item, o que não vai em CProp
 endfunction
 
 function debugWeapon(who, weapon)
@@ -106,7 +106,6 @@ function debugArmor(who, armor)
 	DebugMsg(who, DEBUG_EQUIP, $"Slot: {armor.getSlot()}
 	");
 
-	// TODO: PENALIDADES
 	DebugMsg(who, DEBUG_EQUIP, "[PENALIDADES]");
 	DebugMsg(who, DEBUG_EQUIP, $"Dexterity: {prop.DexPen}");
 	DebugMsg(who, DEBUG_EQUIP, $"Sneak: {prop.SneakPen}");
