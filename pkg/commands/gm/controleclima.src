@@ -1,4 +1,3 @@
-
 use uo;
 
 include ":gumps:gumps";
@@ -12,159 +11,138 @@ include ":timedScripts:timedScripts";
 
 program controleclima(who)
 
-	var options := CheckBoxGump(who, 240, 300, "Controle do Clima", { "Chuva", "Neve", "Vento", "Vento Forte", "Tempestade", "Tempestade de Raios"  });
+    var options := CheckBoxGump(who, 240, 300, "Controle do Clima", { "Chuva", "Neve", "Vento", "Vento Forte", "Tempestade", "Tempestade de Raios" });
 
-	sendsysmessage(who, "op " + options);
+    sendsysmessage(who, "op " + options);
 
-	var type;
-	var duration := 20;
-	var som := 0;
-	var bolt := 0;
-	var ventoForte := 0;
-	if ( "Chuva" in options)
-		type := 0;
-	endif
-	if ( "Neve" in options)
-		type := 2;
-	endif
-	if ( "Tempestade" in options )
-		type := 1;
-	endif
-	if ("Tempestade de Raios" in options)
-		type := 1;
-		duration := 10;
-		som := 1;
-		bolt := 1;
-	endif
-	if ("Vento" in options)
-		som := 2;
-	endif
-	if ("Vento Forte" in options)
-		som := 2;
-		ventoForte := 1;
-	endif
+    var type;
+    var duration := 20;
+    var som := 0;
+    var bolt := 0;
+    var ventoForte := 0;
+    if ("Chuva" in options)
+        type := 0;
+    endif
+    if ("Neve" in options)
+        type := 2;
+    endif
+    if ("Tempestade" in options)
+        type := 1;
+    endif
+    if ("Tempestade de Raios" in options)
+        type := 1;
+        duration := 10;
+        som := 1;
+        bolt := 1;
+    endif
+    if ("Vento" in options)
+        som := 2;
+    endif
+    if ("Vento Forte" in options)
+        som := 2;
+        ventoForte := 1;
+    endif
 
-	var origx := who.x;
-	var origy := who.y;
+    var origx := who.x;
+    var origy := who.y;
 
-	var i := 0;
-	var mobs := (ListMobilesNearLocation( who.x, who.y, who.z, 20, who.realm ));
-	var enemies := array;
+    var i := 0;
+    var mobs := (ListMobilesNearLocation(who.x, who.y, who.z, 20, who.realm));
+    var enemies := array;
 
-	SendSysMessageEx(who, "Voce deve permanecer parado enquanto quiser controlar o clima.", SSM_INFO);
+    SendSysMessageEx(who, "Voce deve permanecer parado enquanto quiser controlar o clima.", SSM_INFO);
 
-	foreach mob in mobs
-		if (mob.master == who)
-		elseif (mob.serial == who.serial)
-		else
-			enemies.append(mob);
-		endif
-	endforeach
-
-
-	while (i < duration )
-
-		PerformAction(who, ANIM_CAST_AREA);
-
-		if( (origx != who.x) || (origy != who.y))
-			SendSysMEssage(who, "Voce parou de controlar o clima.", SSM_FAIL);
-			break;
-		endif
-		
-		if (som)
-			windsound(who);
-		endif
-
-		var bolts := RandomInt(5);
-        var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
-		SetWeatherForPlayer(who, type, 50 );
-foreach mob in enemies
-	if(hasCoverOverHead(who))
-		SendSysMessageEx(mob, "Você está protegido da chuva", SSM_INFO);
-	else
-    	SetObjProperty(mob, "molhado", 1);
-		SendSysMessageEx(mob, "A chuva te molhou!", SSM_FAIL);
-	endif
-
-    var itemsinbag := EnumerateItemsInContainer(mob.backpack);
-    foreach item in itemsinbag
-        var container := item.container;
-        if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-            if (item.objtype in fire_weapons)
-                SetObjProperty(item, "balas", 0);
-                SendSysMessageEx(mob, "A polvora da sua arma molhou!", SSM_INFO);
-            else
-                SetObjProperty(item, "molhado", 1);
-            endif
+    foreach mob in mobs
+        if (mob.master == who)
+        elseif (mob.serial == who.serial)
+        else
+            enemies.append(mob);
         endif
     endforeach
-    SetWeatherForPlayer(mob, type, 50);
-			if ( !(mob in who.party.members))
-				if (distance(mob, who) < 20)
-					SetWeatherForPlayer(mob, type, 50 );
-					if (bolt)
-						if (RandomInt(100) < 5)
-							PlayLightningBoltEffect( mob );
-							ApplyDamageEX(mob, RandomDiceRoll("1d10")+40, DMG_ENERGY);
-							SendSysMessageEx(mob, "Voce foi atingido por um raio!", SSM_INFO);
+
+    while (i < duration)
+
+        PerformAction(who, ANIM_CAST_AREA);
+
+        if ((origx != who.x) || (origy != who.y))
+            SendSysMessage(who, "Voce parou de controlar o clima.", SSM_FAIL);
+            break;
+        endif
+
+        if (som)
+            windsound(who);
+        endif
+
+        var bolts := RandomInt(5);
+        var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+        SetWeatherForPlayer(who, type, 50);
+        foreach mob in enemies
+			if (!mob.isUnderRoof())
+				SetObjProperty(mob, "molhado", 1);
+				SendSysMessageEx(mob, "Você está molhado!", SSM_INFO);
+			endif
+				var itemsinbag := EnumerateItemsInContainer(mob.backpack);
+				foreach item in itemsinbag
+					var container := item.container;
+					if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
+						if (item.objtype in fire_weapons)
+							SetObjProperty(item, "balas", 0);
+							SendSysMessageEx(mob, "A polvora da sua arma molhou!", SSM_INFO);
+						else
+							SetObjProperty(item, "molhado", 1);
 						endif
 					endif
-
-					if (ventoForte)
-						if (RandomInt(100) < 5)
-							SendSysMessageEx(mob, "O vento forte impede seus movimentos!", SSM_INFO);
-							TS_StartTimer(mob, "paralysis", 5);
-						endif	
-					endif
-				endif
+				endforeach
+            	SetWeatherForPlayer(mob, type, 50);
 			endif
-		endforeach
+            if (!(mob in who.party.members))
+                if (distance(mob, who) < 20)
+                    SetWeatherForPlayer(mob, type, 50);
+                    if (bolt)
+                        if (RandomInt(100) < 5)
+                            PlayLightningBoltEffect(mob);
+                            ApplyDamageEX(mob, RandomDiceRoll("1d10") + 40, DMG_ENERGY);
+                            SendSysMessageEx(mob, "Voce foi atingido por um raio!", SSM_INFO);
+                        endif
+                    endif
 
-		if (bolt)
-			var k := 0;
-			while( k < bolts)
-				if (RandomInt(100) < 15 )
-					DoBolt(who);
-				endif
-				k := k + 1;
-			endwhile
-		endif
+                    if (ventoForte)
+                        if (RandomInt(100) < 5)
+                            SendSysMessageEx(mob, "O vento forte impede seus movimentos!", SSM_INFO);
+                            TS_StartTimer(mob, "paralysis", 5);
+                        endif
+                    endif
+                endif
+            endif
+        endforeach
 
-		sleep(5);
-		i:= i + 1;
-	endwhile
-	
-	foreach mob in enemies
-        EraseObjProperty(mob, "molhado");
-		SetWeatherForPlayer(mob, 0xFF, 1 );
-		moveobjecttolocation(mob, mob.x, mob.y, mob.z, mob.realm);
-		SetWeatherForPlayer(mob, 0xFF, 1 );
-		moveobjecttolocation(mob, mob.x, mob.y, mob.z, mob.realm);
-	endforeach
-
-endprogram 
-
-function windsound( person)
-	var wind := {21, 22, 23};
-	if (randomdiceroll("1d4") == 2)
-		playsoundeffect(person, wind[randomint(3)+1]);
-	endif
-endfunction
-
-
-function hasCoverOverHead(who)
-    print("entrei");
-    var hasRoof := ListStaticsNearLocationWithFlag( who.x, who.y, LIST_IGNORE_Z, 1, TILEDATA_FLAG_ROOF, who.realm);
-	print("hasRoof: "+hasRoof);
-    if (hasRoof != {}) return 1; endif
-
-    var hasSomethingOverHead := ListStaticsAtLocation( who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
-	print("Something: "+ hasSomethingOverHead);
-    foreach static in hasSomethingOverHead
-        if (static.z >= who.z + 15) 
-            return 1; 
+        if (bolt)
+            var k := 0;
+            while (k < bolts)
+                if (RandomInt(100) < 15)
+                    DoBolt(who);
+                endif
+                k := k + 1;
+            endwhile
         endif
+
+        sleep(5);
+        i := i + 1;
+    endwhile
+
+    foreach mob in enemies
+        EraseObjProperty(mob, "molhado");
+        SetWeatherForPlayer(mob, 0xFF, 1);
+        moveobjecttolocation(mob, mob.x, mob.y, mob.z, mob.realm);
+        SetWeatherForPlayer(mob, 0xFF, 1);
+        moveobjecttolocation(mob, mob.x, mob.y, mob.z, mob.realm);
     endforeach
 
-    return 0;
+endprogram
+
+function windsound(person)
+    var wind := {21, 22, 23};
+    if (randomdiceroll("1d4") == 2)
+        playsoundeffect(person, wind[randomint(3) + 1]);
+    endif
 endfunction
