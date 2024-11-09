@@ -79,7 +79,13 @@ program controleclima(who)
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
 		SetWeatherForPlayer(who, type, 50 );
 foreach mob in enemies
-    SetObjProperty(mob, "molhado", 1);
+	if(hasCoverOverHead(who))
+		SendSysMessageEx(mob, "Você está protegido da chuva", SSM_INFO);
+	else
+    	SetObjProperty(mob, "molhado", 1);
+		SendSysMessageEx(mob, "A chuva te molhou!", SSM_FAIL);
+	endif
+
     var itemsinbag := EnumerateItemsInContainer(mob.backpack);
     foreach item in itemsinbag
         var container := item.container;
@@ -143,4 +149,22 @@ function windsound( person)
 	if (randomdiceroll("1d4") == 2)
 		playsoundeffect(person, wind[randomint(3)+1]);
 	endif
+endfunction
+
+
+function hasCoverOverHead(who)
+    print("entrei");
+    var hasRoof := ListStaticsNearLocationWithFlag( who.x, who.y, LIST_IGNORE_Z, 1, TILEDATA_FLAG_ROOF, who.realm);
+	print("hasRoof: "+hasRoof);
+    if (hasRoof != {}) return 1; endif
+
+    var hasSomethingOverHead := ListStaticsAtLocation( who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+	print("Something: "+ hasSomethingOverHead);
+    foreach static in hasSomethingOverHead
+        if (static.z >= who.z + 15) 
+            return 1; 
+        endif
+    endforeach
+
+    return 0;
 endfunction
