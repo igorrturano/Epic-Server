@@ -1,8 +1,40 @@
+use cfgfile;
+
 program Install()
-	print("INSTALLING: Methods for Items, Weapons & Armor");
+	print("INSTALLING: Methods for Items...");
 	return 1;
 endprogram
 
-exported function getMaterial(item)
-	return item.getProp("material");
+/**
+ * getMaterialID(item)
+ *
+ * Purpose
+ * Buscar o ID do material do item craftado pelo player
+ *
+ * Parameters
+ * item: itemRef
+ *
+ * Return value
+ * ID do material
+ *
+ */
+exported function getMaterialID(item)
+	return item.getProp("material") ? item.getProp("material") : error{"errortext" := "The item have no Material!"};
+endfunction
+
+/**
+ * getMaterialName(item)
+ *
+ * Purpose
+ * Buscar o nome do material do item craftado pelo player baseado no ID cadastrado na prop dele
+ *
+ * Parameters
+ * item: itemRef
+ *
+ * Return value
+ * Nome do material
+ *
+ */
+exported function getMaterialName(item)
+	return getMaterialID(item) ? FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name : getMaterialID(item);
 endfunction

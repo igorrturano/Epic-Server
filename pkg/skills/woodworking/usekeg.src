@@ -15,7 +15,7 @@ program usekeg(who, item)
 				return 1;
 			else
 				SubtractAmount(levedura, 1);
-				bebida.type := "vinho fermantando";
+				bebida.type := "vinho fermentando";
 				bebida.+endtime := polcore().systime + 7200;
 				SetObjProperty(item, "bebida", bebida);
 				SendSysMessageEx(who, "Aguarde um dia ate o vinho fermentar.", SSM_INFO);
@@ -24,7 +24,7 @@ program usekeg(who, item)
 				SetName(item, name);
 				return 1;
 			endif
-		elseif (bebida.type == "vinho fermantando")//escrevi errado :/
+		elseif (bebida.type == "vinho fermentando")
 			if ( polcore().systime > bebida.endtime)
 				bebida.+objtype := 0xC878;
 				SendSysMessageEx(who, "O vinho  ja esta pronto.", SSM_INFO);
@@ -62,7 +62,7 @@ program usekeg(who, item)
 					endif
 					bebida.agua := bebida.agua + 1;
 					DestroyItem(agua);
-					CreateItemInBackpack(who, 0x1f81, 1);
+					CreateItemInBackpack(who, 0x09a7, 1);
 					PlaySoundEffect(who,  0x241);
 					SetObjProperty(item, "bebida", bebida);
 				else
@@ -190,8 +190,11 @@ function addDrink(who, item)
 
 	//so pode por garrafas ou potions no keg
 	if ( (targ.graphic == 3849) || (targ.graphic == 0xC878) || (targ.graphic == 0xC876) || (targ.graphic == 0xC877) || (targ.graphic == 0xC879) || (targ.graphic == 0xC960)  ||
-	(targ.graphic == 0xC961) || (targ.graphic == 0xC962) || (targ.graphic == 0xC964) )
+	(targ.graphic == 0xC961) || (targ.graphic == 0xC962) || (targ.graphic == 0xC964) || (targ.graphic == 0x1f9e))
 		if (getobjproperty(targ, "fullness") != error)
+			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
+			return 1;
+		elseif (getobjproperty(targ, "goles") != error && (getobjproperty(targ, "goles") != getobjproperty(targ, "crafterskill")/20))
 			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
 			return 1;
 		endif
@@ -222,9 +225,10 @@ function addDrink(who, item)
 		SubtractAmount(targ, 10);
 		SendSysMessageEx(who, "Voce precisa colocar 10 jarras de agua e levedura.", SSM_INFO);
 		return 1;
-	else 
+	else
 		SendSysMEssageEx(who, "Alvo invalido.", SSM_FAIL);
 		return;
+
 	endif
 	
 	var bebida := GetObjProperty(item, "bebida");
@@ -232,25 +236,65 @@ function addDrink(who, item)
 	var cfg := ReadConfigFile("::itemdesc");
 	var elem := FindConfigElem(cfg, targ.objtype);
 	var dosesMod := cint(GetConfigInt(elem, "doses"));
+	var pot := getobjproperty(item, "pocao");//verifica se o conteúdo do barril é uma poção
 	//if (!dosesMod)
 		dosesMod := 1; //deixa sempre 1
 	//endif
 
-	if (bebida == error || bebida.doses <= 0)
+	if (targ.objtype == 0xcfff)// não aceita extratos
+		SendSysMessageEx(who, "Voce nao pode por extratos no barril.");
+	return;
+	endif
+
+	if (bebida.doses == 50)
+		SendSysMessageEx(who, "este barril ja esta cheio.");
+		return;
+	elseif (bebida == error || bebida.doses <= 0)
 		bebida := struct;
 		bebida.+objtype := targ.objtype;
 		bebida.+doses := targ.amount*dosesMod;
+		if (targ.graphic == 3849 && targ.objtype != 0xcfff) //não aceita extratos
+			if (pot == error) //coleta as props da poção
+				var pot := dictionary{ "bonus" -> 0, "crafterskill" -> 0, "tier" -> 0, "science" -> "x" };
+				var props := pot.keys();
+				foreach key in props
+				    var prop_value := getobjproperty(targ, key);
+    		   	 	pot[key] := prop_value;
+					setobjproperty(item, "pocao", pot);
+				endforeach
+			endif
+		endif
 	else
-		if ( bebida.objtype != targ.objtype)
+		if ( bebida.objtype != targ.objtype && pot == error)
 			SendSysMessageEx(who, "Voce nao pode misturar essas bebidas.", SSM_FAIL);
 			return;
+		elseif (bebida.objtype != targ.objtype && pot != error && targ.objtype != 0x1f9e)
+				SendSysMessageEx(who, "Voce nao pode misturar essas bebidas.", SSM_FAIL);
+				return;
 		else
-			bebida.doses := bebida.doses + targ.amount*dosesMod;
+			if (pot != error) //faz a média da força das poções no barril com as novas
+				var bonus := pot["bonus"];
+				var skill := pot["crafterskill"]/10;
+				var bonuspot := getobjproperty(targ, "bonus");
+				var skillpot := getobjproperty(targ, "crafterskill")/10;
+					bonus := cint((bonus*bebida.doses + bonuspot*targ.amount) / (bebida.doses+targ.amount));
+					skill := cint((skill*bebida.doses + skillpot*targ.amount) / (bebida.doses+targ.amount));
+					pot.insert("bonus", bonus);
+					pot.insert("crafterskill", skill*10);
+					setobjproperty(item, "pocao", pot);
+			endif
+			
+			if(bebida.doses + targ.amount*dosesMod > 50)
+				SendSysMessageEx(who, "o barril so comporta 50 doses.");
+				return;
+			else
+				bebida.doses := bebida.doses + targ.amount*dosesMod;
+			endif
 		endif
 	endif
 
 	SetObjProperty(item, "bebida", bebida);
-	
+
 	if (elem)
 		var leftover := GetConfigInt(elem, "return_type");
 		if (leftover)
@@ -266,6 +310,10 @@ function addDrink(who, item)
 	var  name := item.desc;
 	SetObjProperty(item, "description", bebida.doses + " doses");
 	SetName(item, name);
+
+	if(bebida != error)
+		item.weight_multiplier_mod := 1 + (bebida.doses * 0.05);
+	endif
 
 endfunction
 
@@ -306,14 +354,26 @@ function subDrink(who, item)
 		endif
 		SubtractAmount(bottle, 1);
 		PlaySoundEffect(who,  0x241);
-		CreateItemInBackpack(who, bebida.objtype, 1);
+		var drink := CreateItemInBackpack(who, bebida.objtype, 1);
+		var pot := getobjproperty(item, "pocao");
+
+		if(pot != error)
+			var props := pot.keys();
+			foreach key in props
+				SetObjProperty(drink, key, pot[key]);
+			endforeach
+		endif
 		
 		bebida.doses := bebida.doses - dosesMod;
 		if (bebida.doses == 0 )
 			SendSysMessageEx(who, "O barril secou.", SSM_FAIL);
 			EraseObjProperty(item, "bebida");
+			EraseObjProperty(item, "pocao");
+			item.weight_multiplier_mod := 1;
+		else
+			SetObjProperty(item, "bebida", bebida);
+			item.weight_multiplier_mod := 1 + (bebida.doses * 0.05);
 		endif
-		SetObjProperty(item, "bebida", bebida);
 		var  name := item.desc;
 		SetObjProperty(item, "description", bebida.doses + " doses");
 		SetName(item, name);

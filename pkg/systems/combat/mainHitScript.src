@@ -68,8 +68,8 @@ program MainHitScript(params)
 	basedamage := CalculateTotalBaseDamage(attacker, defender, rawdamage);
 	elementalDamages := CalculateDamageElemental(attacker, defender, weapon, armor);
 
-	// Verifica se o ataque foi realizado de uma posição onde bloquear é possível e, sendo, processa o teste de bloaqueio
-	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y))
+	// Verifica se o defesor está em modo guerra, se o ataque foi realizado de uma posição onde bloquear é possível  e, sendo, processa o teste de bloaqueio
+	if ( (!Cint(GetObjProperty(attacker, "backstab"))) && !IsBehind(defender, attacker.x, attacker.y) && defender.warmode)
 		// Calcula o bloqueio e os danos no escudo do defensor
 		if(ParryCheck(attacker, defender, rawdamage, weapon))
 			basedamage := 0;
@@ -584,8 +584,14 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20);
 	
 	//critico base da arma, critico extra da CProp da da arma, critico extra do CProp do personagem, critico extra da skill do personagem, critico extra de Habilidade especial do personagem
-	var chance := Cint( Cint(GetObjProperty(weapon, "CriticalChance")) + Cint(GetObjProperty(attacker, "CriticalChance")) + Cint((item_cfg[weapon.objtype]).CriticalChance )) + skillCriticalBonus + Cint(GetObjProperty(attacker, "#CriticalChance"));	//Limpa a CProp de bonus critico para o próximo ataque
-	EraseObjProperty(attacker, "#CriticalChance");
+	// TODO: Alterar esse crítico pro novo padrão.
+	var chance := Cint(
+		Cint(GetObjProperty(weapon, "CriticalChance"))
+		+ Cint(GetObjProperty(attacker, "CriticalChance"))
+		+ Cint((item_cfg[weapon.objtype]).CriticalChance ))
+		+ skillCriticalBonus + Cint(GetObjProperty(attacker, "#CriticalChance")
+	);
+	EraseObjProperty(attacker, "#CriticalChance"); //Limpa a CProp de bonus critico para o próximo ataque
 
 	if (!chance)
 		return 1;
