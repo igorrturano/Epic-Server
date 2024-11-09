@@ -93,7 +93,10 @@ function EfeitosClima(item, options, duration, range)
                 fuga := 1;
                 break;
             endif
-            SetObjProperty(char, "molhado", 1);
+			if (!char.isUnderRoof())
+            	SetObjProperty(char, "molhado", 1);
+				SendSysMessageEx(char, "Você está molhado!", SSM_INFO);
+			endif
             var itemsinbag := EnumerateItemsInContainer(char.backpack);
             foreach item in itemsinbag
                 var container := item.container;

@@ -69,5 +69,3 @@ program weathercontrol()
     sleep(5*60);
  endwhile
 endprogram
-
-

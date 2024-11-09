@@ -1,5 +1,7 @@
+use uo;
+
 program Install()
-	print("INSTALLING: Methods for Mobiles...");
+	print("INSTALLING: Methods for Characters...");
 	return 1;
 endprogram
 
