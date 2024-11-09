@@ -170,8 +170,9 @@ function weathereffects(type, duration, severity := 5)
     
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
-            if (!GetObjProperty(person, "molhado"))
+            if (!GetObjProperty(person, "molhado") && !person.isUnderRoof())
                 SetObjProperty(person, "molhado", 1);
+                SendSysMessageEx(person, "Você está molhado!", SSM_INFO);
             endif
             var itemsinbag := EnumerateItemsInContainer(person.backpack);
             foreach item in itemsinbag
