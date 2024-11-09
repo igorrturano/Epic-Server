@@ -39,10 +39,7 @@ enum PROTECTIONTYPE
 	ARMOR_LOWLOW := "ARMADURA LEVE FRACA", ARMOR_LOWMID := "ARMADURA LEVE MEDIA", ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",
 	ARMOR_MIDLOW := "ARMADURA MEDIA FRACA", ARMOR_MIDMID := "ARMADURA MEDIA MEDIA", ARMOR_MIDHIGH := "ARMADURA MEDIA FORTE",
 	ARMOR_HIGHLOW := "ARMADURA PESADA FRACA", ARMOR_HIGHMID := "ARMADURA PESADA MEDIA", ARMOR_HIGHHIGH := "ARMADURA PESADA FORTE",
-	SHIELD_LOWLOW := "ESCUDO LEVE FRACO", SHIELD_LOWMID := "ESCUDO LEVE MEDIO", SHIELD_LOWHIGH := "ESCUDO LEVE FORTE",
-	SHIELD_MIDLOW := "ESCUDO MEDIO FRACO", SHIELD_MIDMID := "ESCUDO MEDIO MEDIO", SHIELD_MIDHIGH := "ESCUDO MEDIO FORTE",
-	SHIELD_HIGHLOW := "ESCUDO PESADO FRACA", SHIELD_HIGHMID := "ESCUDO PESADO MEDIO", SHIELD_HIGHHIGH := "ESCUDO PESADO FORTE",
-	SHIELD_BODYLOW := "ESCUDO DE CORPO FRACA", SHIELD_BODYMID := "ESCUDO DE CORPO MEDIO", SHIELD_BODYHIGH := "ESCUDO DE CORPO FORTE",
+	SHIELD_BUCKLER := "ESCUDO BROQUEL", SHIELD_SMALL := "ESCUDO PEQUENO", SHIELD_MEDIUM := "ESCUDO MEDIO", SHIELD_LARGE := "ESCUDO GRANDE", SHIELD_TOWER := "ESCUDO TORRE"
 endenum
 enum WEAPONFX
 	WEAPON_FX_SOUND, WEAPON_FX_ANIM
@@ -89,27 +86,7 @@ var BLUNT_2H_FX := struct {
 };
 
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
-	return FindConfigElem(ReadConfigFile(":combat:itemdesc"), item.objtype);
-endfunction
-
-function getType(item)
-    var elem := getItemCfgElem(item);
-	var tipo;
-
-	if (item.IsA(POLCLASS_WEAPON))
-		tipo := elem.TipoAtaque;
-	elseif (item.IsA(POLCLASS_ARMOR))
-		tipo := elem.TipoProtecao;
-	endif
-
-    return tipo;
-endfunction
-
-function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
-    var elem := getItemCfgElem(item);
-    var slot := elem.Coverage;
-    if (IsShield(item)) slot := "Shield"; endif
-    return slot;
+	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
 endfunction
 
 function IsDualWield(item)
@@ -123,7 +100,7 @@ function IsDualWield(item)
 endfunction
 
 function IsShield(item)
-    var tipoequip := getType(item);
+    var tipoequip := item.getType();
     var escudo := SplitWords(tipoequip); escudo := escudo[1];
 	escudo.Lower();
 
