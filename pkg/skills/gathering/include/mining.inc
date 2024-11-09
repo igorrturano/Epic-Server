@@ -449,6 +449,7 @@ function DetermineMiningDifficulty(oretype)
 		0x6300: return 55;  //iron ore
 		0x6992: return 70; //prata
 		0x6301: return 70; //litan
+<<<<<<< HEAD
 		0x6302: return 91; //fulmetita
 		0x6303: return 91; //venetita
 		0x6304: return 91; //ignitita
@@ -464,6 +465,22 @@ function DetermineMiningDifficulty(oretype)
 		
 		0x699d: return 25; // Bronze temperado
 		0x6994: return 20; // bronze
+=======
+        0x6314: return 82; //illyra
+		0x6302: return 72; //fulmetita
+		0x6303: return 72; //venetita
+		0x6304: return 72; //ignitita
+		0x6451: return 72; //frigutita
+		0x6307: return 90; //galvorn
+		0x6308: return 90; //mithril
+		0x6450: return 20; //cobre
+		0x6465: return 20; //cobre -> bronze
+		
+		0x699c: return 10; //bronze
+		0x699d: return 20; // Bronze temperado
+		0x6994: return 20; // bronze
+		0x6995: return 60; //aco
+>>>>>>> b6d63412950e4c0c2df9f3c1f9e4b5ab636d690e
 
 
 		0x6075: return 5; //areia
