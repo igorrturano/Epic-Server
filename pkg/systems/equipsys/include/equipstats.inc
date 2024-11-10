@@ -263,22 +263,22 @@ function getResistPhysicalByProtection(armor)
 	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
 	case(Upper(armor.getType())) // {SlashResist, PiercingResist, BluntResist}
 		//TIER 1
-		ARMOR_LOWLOW: resists := {0,0,0};
-		ARMOR_LOWMID: resists := {1,1,1};
-		ARMOR_LOWHIGH: resists := {2,2,2};
+		ARMOR_LOWLOW: resists := {0,0,0}; break;
+		ARMOR_LOWMID: resists := {1,1,1}; break;
+		ARMOR_LOWHIGH: resists := {2,2,2}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: resists := {3,3,3};
-		ARMOR_MIDMID: resists := {4,4,4};
-		ARMOR_MIDHIGH: resists := {5,5,5};
+		ARMOR_MIDLOW: resists := {3,3,3}; break;
+		ARMOR_MIDMID: resists := {4,4,4}; break;
+		ARMOR_MIDHIGH: resists := {5,5,5}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: resists := {6,6,6};
-		ARMOR_HIGHMID: resists := {7,7,7};
-		ARMOR_HIGHHIGH: resists := {8,8,8};
+		ARMOR_HIGHLOW: resists := {6,6,6}; break;
+		ARMOR_HIGHMID: resists := {7,7,7}; break;
+		ARMOR_HIGHHIGH: resists := {8,8,8}; break;
 
 		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
-		default: resists := {0,0,0};
+		default: resists := {0,0,0}; break;
 	endcase
 
 	return dictionary{
@@ -292,15 +292,15 @@ function getResistPhysicalBySlot(armor)
 	var resists := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
 		case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
-			HEAD: resists := {2,2,2};
-			NECK: resists := {1,1,1};
-			BODY: resists := {4,4,4};
-			ARMS: resists := {2,2,2};
-			HANDS: resists := {1,1,1};
-			LEGS: resists := {3,3,3};
-			FEET: resists := {2,2,2};
+			HEAD: resists := {2,2,2}; break;
+			NECK: resists := {1,1,1}; break;
+			BODY: resists := {4,4,4}; break;
+			ARMS: resists := {2,2,2}; break;
+			HANDS: resists := {1,1,1}; break;
+			LEGS: resists := {3,3,3}; break;
+			FEET: resists := {2,2,2}; break;
 			
-			default: resists := {0,0,0};
+			default: resists := {0,0,0}; break;
 		endcase
 	endif
 
@@ -313,19 +313,61 @@ endfunction
 
 function getResistPhysicalByMaterial(armor)
 	var resists := array{};
+	// Feito com 3 valores também, pra caso, no futuro, resolva criar materiais com resistência melhor em determinada situação
+	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
 	case (Upper(armor.getMaterialName())) // {SlashResist, PiercingResist, BluntResist}
-		"COBRE": resists := {0,0,0};
+		// TECIDOS
+		"LA":
+		"ALGODAO":
+		"SEDA":
+		"LINHO":
+		"MALVA":
+		"SISAL":
+		"DENIM":
+		"RAMI":
+		"FLAMEL":
+		"RAJAR":
 
-		"BRONZE": resists := {1,1,1};
-		"FERRO": resists := {1,1,1};
-		"FERROTEMPERADO": resists := {2,2,2};
+		// PELES
+		"PELE CINZA":
+		"PELE BEGE":
+		"PELE MARROM":
+		"PELE POLAR":
 
-		"ACO": "FULMETIUM": "VENETIUM": "IGNIUM": "FRIGUTIUM": resists := {3,3,3};
+		// COUROS
+		"COURO CURTIDO":
+		"COURO PELUDO":
+		"COURO EFERVECIDO":
+		"COURO POLAR":
+		"COURO ESCAMOSO":
+		"COURO DRACONIANO":
+		"COURO DE GIGANTE":
+		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break;
+
+		// METAIS
+		"COBRE": resists := {0,0,0}; break;
+
+		"BRONZE": resists := {1,1,1}; break;
+		"FERRO": resists := {1,1,1}; break;
+		"FERROTEMPERADO": resists := {2,2,2}; break;
+
+		"ACO": "FULMETIUM": "VENETIUM": "IGNIUM": "FRIGUTIUM": resists := {3,3,3}; break;
 		
-		"ILLYRA": resists := {4,4,4};
-		"MITHRIL": resists := {5,5,5};
+		"ILLYRA": resists := {4,4,4}; break;
+		"MITHRIL": resists := {5,5,5}; break;
 
-		default: resists := {0,0,0};
+		// OSSOS
+		"OSSO":
+		"OSSO CINZA":
+		"OSSO VERMELHO":
+		"OSSO PRETO":
+		"OSSO DE LICH":
+		"OSSO REPITILIANO":
+		"OSSO DE GIGANTE":
+		"OSSO DE TERATHAN":
+		"OSSO DEMONIACO":
+
+		default: resists := {0,0,0}; break;
 	endcase
 
 	return dictionary{
@@ -395,16 +437,16 @@ function getPenaltiesBySlot(armor)
 	var penalties := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
 		case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-			HEAD: penalties := {1,0,0,1,0};
-			NECK: penalties := {1,0,0,1,0};
-			BODY: penalties := {4,0,0,12,0};
-			ARMS: penalties := {2,0,2,6,0};
-			HANDS: penalties := {1,0,4,3,0};
-			LEGS: penalties := {2,0,0,6,0};
-			FEET: penalties := {2,0,0,0,0};
-			SHIELD: penalties := {0,1,10,5,0};
+			HEAD: penalties := {1,0,0,1,0}; break;
+			NECK: penalties := {1,0,0,1,0}; break;
+			BODY: penalties := {4,0,0,12,0}; break;
+			ARMS: penalties := {2,0,2,6,0}; break;
+			HANDS: penalties := {1,0,4,3,0}; break;
+			LEGS: penalties := {2,0,0,6,0}; break;
+			FEET: penalties := {2,0,0,0,0}; break;
+			SHIELD: penalties := {0,1,10,5,0}; break;
 
-			default: penalties := {0,0,0,0,0};
+			default: penalties := {0,0,0,0,0}; break;
 		endcase
 	endif
 
@@ -421,28 +463,28 @@ function getPenaltiesByProtection(armor)
 	var penalties := array{};
 	case(Upper(armor.getType())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 		//TIER 1
-		ARMOR_LOWLOW: penalties := {0,0,0,0,0};
-		ARMOR_LOWMID: penalties := {0,0,0,0,0};
-		ARMOR_LOWHIGH: penalties := {0,0,0,0,0};
+		ARMOR_LOWLOW: penalties := {0,0,0,0,0}; break;
+		ARMOR_LOWMID: penalties := {0,0,0,0,0}; break;
+		ARMOR_LOWHIGH: penalties := {0,0,0,0,0}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: penalties := {0,0,0,2,0};
-		ARMOR_MIDMID: penalties := {1,0,0,4,0};
-		ARMOR_MIDHIGH: penalties := {2,0,0,5,0};
+		ARMOR_MIDLOW: penalties := {0,0,0,2,0}; break;
+		ARMOR_MIDMID: penalties := {1,0,0,4,0}; break;
+		ARMOR_MIDHIGH: penalties := {2,0,0,5,0}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: penalties := {3,0,0,8,0};
-		ARMOR_HIGHMID: penalties := {4,0,0,12,0};
-		ARMOR_HIGHHIGH: penalties := {5,0,0,24,0};
+		ARMOR_HIGHLOW: penalties := {3,0,0,8,0}; break;
+		ARMOR_HIGHMID: penalties := {4,0,0,12,0}; break;
+		ARMOR_HIGHHIGH: penalties := {5,0,0,24,0}; break;
 
 		// ESCUDOS
-		SHIELD_BUCKLER: penalties := {0,0,0,0,0};
-		SHIELD_SMALL: penalties := {4,0,0,0,0};
-		SHIELD_MEDIUM: penalties := {8,0,0,6,0};
-		SHIELD_LARGE: penalties := {12,0,0,12,0};
-		SHIELD_TOWER: penalties := {16,0,0,24,0};
+		SHIELD_BUCKLER: penalties := {0,0,0,0,0}; break;
+		SHIELD_SMALL: penalties := {4,0,0,0,0}; break;
+		SHIELD_MEDIUM: penalties := {8,0,0,6,0}; break;
+		SHIELD_LARGE: penalties := {12,0,0,12,0}; break;
+		SHIELD_TOWER: penalties := {16,0,0,24,0}; break;
 
-		default: penalties := {0,0,0,0,0};
+		default: penalties := {0,0,0,0,0}; break;
 	endcase
 
 	return dictionary{
