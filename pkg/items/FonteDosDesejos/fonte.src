@@ -1,0 +1,156 @@
+//fonte.src
+use uo;
+use os;
+use datafile;
+
+include "include/client";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":datafile:datafile";
+include ":gumps:epicGumps";
+include ":DiscordWebhook:outbound";
+
+const SOUND_COIN := 0x36;
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const MOEDACOBRE_OBJTYPE := 0xBA63;
+const DELAY_HOURS := 24;
+
+program fonte(who, fountain)
+    var last_wish := CInt(GetObjProperty(who, "#LastWish"));
+    if (last_wish)
+        var time_remaining := (last_wish + (DELAY_HOURS * 1080)) - POLCore().systime;
+        if (time_remaining > 0)
+            SendSysMessage(who, "Melhor não abusar da sorte! Espere até a próxima para um novo desejo.");
+            return 0;
+        endif
+    endif
+
+    // Verifica se o jogador tem moedas
+    var moeda;
+    var quantidade := 0;
+    
+    foreach item in (EnumerateItemsInContainer(who.backpack))
+        if (item.objtype == MOEDACOBRE_OBJTYPE)
+            moeda := item;
+            quantidade := item.amount;
+            break;
+        endif
+    endforeach
+
+    if (!quantidade)
+        SendSysMessage(who, "Voce precisa de moedas de cobre para fazer um desejo!");
+        return 0;
+    endif
+    
+    // Pergunta quantas moedas quer usar
+    var qtd_escolhida := MostrarGumpMoedas(who, quantidade);
+    if (!qtd_escolhida)
+        return 0;
+    endif
+    
+    // Som da moeda e remove as moedas escolhidas
+    PlaySoundEffect(who, SOUND_COIN);
+    if (moeda.amount > qtd_escolhida)
+        SubtractAmount(moeda, qtd_escolhida);
+    else
+        DestroyItem(moeda);
+    endif
+
+    PrintTextAbove(fountain, "*" + who.name + " joga " + qtd_escolhida + " moedas na fonte*");
+    
+    // Abre o gump para fazer o desejo
+    var desejo := ShowDesejoGump(who);
+    if (desejo)
+        SalvarDesejo(who, desejo);
+        SetObjProperty(who, "#LastWish", POLCore().systime);
+        SendSysMessage(who, "Seu desejo foi feito. Que ele se realize!");
+        
+        // Envia mensagem para o Discord
+        var coords := CStr(who.x) + "," + CStr(who.y) + "," + CStr(who.z);
+        var message := "**DESEJO** -> *" + who.name + "* conta [" + who.acctname + "] fez um desejo na fonte usando " + qtd_escolhida + " moedas: ```" + desejo + "``` Coordenadas: " + coords;
+        PresetDiscordMessage(message);
+    endif
+    
+    return 1;
+endprogram
+
+function MostrarGumpMoedas(who, max_moedas)
+    var gump := GFECreateGump("Fonte dos Desejos", 300, 200);
+    
+    GFTextMid(gump, 35, 70, 260, 53, "Quantas moedas você jogará na fonte?");
+    
+    // Moldura decorativa em volta do campo de texto
+    GFResizePic(gump, 110, 110, 9350, 80, 30);  // Fundo branco padrão
+    var txt_quantidade := GFTextEntry(gump, 116, 116, 70, 20, 2103, "1");
+    
+    GFTextMid(gump, 40, 145, 260, 53, "(Máximo: " + max_moedas + " moedas)");
+ 
+    // Botões
+    GFAddButton(gump, 90, 170, 2128, 2129, 1, 100); // Ok
+    GFAddButton(gump, 180, 170, 2119, 2120, 1, 0);  // Cancel
+    
+var input := GFSendGump(who, gump);
+    if (input[0] == 100)
+        var texto := GFExtractData(input, txt_quantidade);
+        if (texto == error)
+            SendSysMessage(who, "Por favor, digite um número válido!");
+            return 0;
+        endif
+        
+        var quantidade := CInt(texto);
+        if (quantidade < 1)
+            SendSysMessage(who, "Você precisa jogar pelo menos 1 moeda!");
+            return 0;
+        elseif (quantidade > max_moedas)
+            SendSysMessage(who, "Você não tem tantas moedas!");
+            return 0;
+        else
+            return quantidade;
+        endif
+    endif
+    
+    return 0;
+endfunction
+
+function ShowDesejoGump(who)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+    
+    GFGumpPicTiled(gump, 10, 10, 400, 300, GUMP_BACKGROUND);
+    GFResizePic(gump, 45, 45, INTERNAL_BACKGROUND, 330, 230);
+    
+    GFTextMid(gump, 25, 55, 350, 53, "Faça um Desejo");
+    
+    var txt_desejo := GFTextEntry(gump, 50, 85, 320, 150, 0, "");
+    
+    GFAddButton(gump, 150, 245, 2128, 2129, 1, 100); // Confirmar
+    GFAddButton(gump, 250, 245, 2119, 2120, 1, 0);  // Cancelar
+    
+    var input := GFSendGump(who, gump);
+    if (input[0] == 100)
+        return GFExtractData(input, txt_desejo);
+    endif
+    
+    return 0;
+endfunction
+
+function SalvarDesejo(who, desejo)
+    var desejos_data := DFOpenDataFile(":fontedosdesejos:data/wishes", DF_CREATE);
+    var desejos_elem := DFFindElement(desejos_data, "ListaDesejos", DF_CREATE);
+    
+    var lista_desejos := desejos_elem.GetProp("desejos");
+    if (!lista_desejos)
+        lista_desejos := array{};
+    endif
+    
+    lista_desejos.append(struct{
+        "personagem" := who.name,
+        "account" := who.acctname,
+        "desejo" := desejo,
+        "data" := POLCore().systime
+    });
+    
+    desejos_elem.SetProp("desejos", lista_desejos);
+endfunction
