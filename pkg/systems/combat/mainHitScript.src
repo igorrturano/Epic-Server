@@ -587,7 +587,8 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 	var chance := CInt(
 		// Weapon
 		CInt(weaponProp.CriticalChance) + // Crítico base da arma
-		CInt(GetObjProperty(weapon, "CriticalChance")) + // Crítico extra da arma
+		CInt(weaponProp.CriticalChanceMod) + // Crítico extra da arma
+		// CInt(GetObjProperty(weapon, "CriticalChance")) + // Crítico extra da arma
 
 		// Char
 		CInt(GetObjProperty(attacker, "CriticalChance")) + // Crítico extra do Char

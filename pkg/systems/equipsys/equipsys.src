@@ -31,7 +31,6 @@ function setWeaponStats(weapon)
 	setPropWeapon(weapon);
 
 	// Setar a partir daqui, direto no item, o que não vai em CProp
-	// TODO: Como agora há um range de Speed e CriticalChance, setar o valor mínimo e um mod baseado no range. (similar ao AttackSpeed)
 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
 endfunction
 

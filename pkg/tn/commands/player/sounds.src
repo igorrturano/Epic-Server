@@ -9,8 +9,35 @@ include ":tn:actions_sounds_tools";
 program sound(who, text)
   var resultado := GetSound(who, text);
 
-  PlaySoundEffect( who, resultado[1] );
+  // Primeiro, vamos encontrar todas as áreas de eco próximas
+  var echo_items := ListItemsNearLocation(who.x, who.y, who.z, 20);
+  var echo_areas := array{};
+  foreach item in echo_items
+    if (item.objtype == 0xFE77) // ID do nosso item de eco
+      echo_areas.append(item);
+    endif
+  endforeach
+
+  // Reproduz o som normalmente
+  PlaySoundEffect(who, resultado[1]);
   if (resultado[2])
-    PrintTextAbove(who, resultado[2] );
+    PrintTextAbove(who, resultado[2]);
+
+    // Para cada área de eco encontrada, reproduz o eco
+    foreach echo_area in echo_areas
+      // Cria âncora para o eco
+      var echo_anchor := CreateItemAtLocation(echo_area.x, echo_area.y, echo_area.z, 0x00C3, 1);
+      echo_anchor.movable := 0;
+      echo_anchor.invisible := 0;
+      
+      // Reproduz o eco 3 vezes
+      for i := 1 to 3
+        PlaySoundEffectXYZ(echo_area.x, echo_area.y, echo_area.z, resultado[1]);
+        PrintTextAbove(echo_anchor, resultado[2] + " ...", 33 + i);
+        Sleep(2);
+      endfor
+      
+      DestroyItem(echo_anchor);
+    endforeach
   endif
 endprogram
