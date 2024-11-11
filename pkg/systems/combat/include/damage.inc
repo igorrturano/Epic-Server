@@ -472,13 +472,9 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
 
 	var regiao := struct;
 	regiao.+zone := CS_GetArmorZone(armor);
-	if (regiao.zone == error)
-		regiao.zone := "Corpo";
-	endif
+	if (!regiao.zone) regiao.zone := "Corpo"; endif
 	regiao.equip := armor.desc;
-	if (regiao.equip == error)
-		regiao.equip := "Corpo";
-	endif
+	if (!regiao.equip) regiao.equip := "Corpo";	endif
 
 	DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
 	DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
@@ -488,10 +484,7 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
 	DebugMsg(defender, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
 
 	damage := damage-resist;
-
-	if (damage < 1)
-		damage := 1;
-	endif
+	damage := damage < 1 ? 1 : damage;
 
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
 	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
@@ -707,7 +700,7 @@ endfunction
  * CheckDefenderHabsAfterDamage(byref defender, byref damage)
  *
  * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+ * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
  * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
  * 
  * Parameters
