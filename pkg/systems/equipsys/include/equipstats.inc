@@ -180,7 +180,7 @@ function getArmorStats(armor)
 	stats := addResistsPhysical(stats, armor);
 	stats := addResistsElemental(stats, armor);
 	stats := addPenalties(stats, armor);
-	if (IsShield(armor))
+	if (armor.isShield())
 		stats := addShieldMods(stats, armor);
 	endif
 	// TODO: Calcular HP, durabilidade, Str required.

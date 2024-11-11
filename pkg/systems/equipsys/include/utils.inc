@@ -89,18 +89,6 @@ function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIV
 	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
 endfunction
 
-function IsShield(item)
-    var tipoequip := item.getType();
-    var escudo := SplitWords(tipoequip); escudo := escudo[1];
-	escudo.Lower();
-
-    if (escudo == "escudo")
-		return 1;
-    else
-		return 0;
-    endif
-endfunction
-
 function getWeaponFX(FX, weapon)
 	var attackFX;
 	var elem := getItemCfgElem(weapon);
