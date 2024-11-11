@@ -7,8 +7,20 @@ program Install()
 	return 1;
 endprogram
 
-exported function getMainDamageDice(weapon)
-	var prop := getPropBase(weapon);
+/**
+ * getMainDamageDice(item)
+ *
+ * Purpose
+ * Buscar o dado do maindamage favorito da arma.
+ *
+ * Parameters
+ * item: itemRef a ser verificado.
+ *
+ * Return value
+ *
+ */
+exported function getMainDamageDice(item)
+	var prop := getPropBase(item);
 
 	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
 		return prop.SlashMainDamage;
@@ -21,8 +33,20 @@ exported function getMainDamageDice(weapon)
 	endif
 endfunction
 
-exported function getOffDamageDice(weapon)
-	var prop := getPropBase(weapon);
+/**
+ * getOffDamageDice(item)
+ *
+ * Purpose
+ * Buscar o dado do offdamage favorito da arma.
+ *
+ * Parameters
+ * item: itemRef a ser verificado.
+ *
+ * Return value
+ *
+ */
+exported function getOffDamageDice(item)
+	var prop := getPropBase(item);
 	
 	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		return prop.SlashOffDamage;
