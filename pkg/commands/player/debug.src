@@ -28,21 +28,28 @@ use uo;
 include ":commands:debugsystem";
 include "include/say";
 
-
-
 program CMD_debug(who, debugName)
-    foreach debug in listDebugs
+    if (!debugName || Lower(debugName) == "list")
+		SendSysMessage(who, "Lista de debugs disponíveis: ");
+		foreach debug in listDebugs
+			SendSysMessage(who, $"Tag: {debug.name} - PLevel: {debug.level}");
+		endforeach
+		return;
+	endif
+	
+	foreach debug in listDebugs
         if (Lower(debugName) == Lower(debug.name))
             if (checkLv(who, debug.level))
                 setDebug(who, debugName);
                 return;
             else
-                SendSysMessageEx(who, "DEBUG " + debugName + ": Nível insuficiente.");
+                SendSysMessageEx(who, $"DEBUG {debugName}:  Nível insuficiente.");
             endif
         endif
     endforeach
 
-    SendSysMessageEx(who, "DEBUG " + debugName + ": inexistente. Confira se a tag está correta.");
+    SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.");
+	SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list");
 endprogram
 
 function checkLv(who, level)
@@ -58,9 +65,9 @@ function setDebug(who, debugName)
 
     if (!prop)
         SetObjProperty(who, propName, 1);
-        SendSysMessageEx(who, "DEBUG " + debugName + ": ativado!");
+        SendSysMessageEx(who, $"DEBUG {debugName}: ativado!");
     else
         EraseObjProperty(who, propName);
-        SendSysMessageEx(who, "DEBUG " + debugName + ": desativado!");
+        SendSysMessageEx(who, $"DEBUG {debugName}: desativado!");
     endif
 endfunction
