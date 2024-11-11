@@ -89,16 +89,6 @@ function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIV
 	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
 endfunction
 
-function IsDualWield(item)
-	var elem := getItemCfgElem(item);
-
-	if (elem.Attribute.Upper() == DUALWIELD.Upper())
-		return 1;
-	endif
-
-	return 0;
-endfunction
-
 function IsShield(item)
     var tipoequip := item.getType();
     var escudo := SplitWords(tipoequip); escudo := escudo[1];
@@ -123,9 +113,9 @@ function getWeaponFX(FX, weapon)
 			attackFX := getSound(UNARMED_FX);
 		endif
 	else
-		if (elem.Attribute.Upper() == RANGED.Upper())
-			var isBow := elem.ProjectileType == 0xf3f ? 1 : 0;
-			if (isBow)
+		if (weapon.isRanged())
+			// var isBow := elem.ProjectileType == 0xf3f ? 1 : 0; // Virou Method (deletar depois)
+			if (weapon.isBow())
 				if (FX == WEAPON_FX_ANIM)
 					attackFX := getAnim(BOW_FX);
 				else

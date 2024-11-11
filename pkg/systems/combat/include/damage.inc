@@ -423,8 +423,6 @@ endfunction
 function EpicApplyDamageElemental(attacker, defender, weapon, armor, damages)
 	SetScriptController(attacker);
 
-	print(damages);
-
 	if (damages.FireDamage)
 		WearDownArmor(defender, armor, damages.FireDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.FireDamage, DMG_FIRE);
@@ -846,7 +844,7 @@ function CalcDamageStats(attacker, damage)
 	damage += tacticsmod;
 
 	stat := STRENGTH;
-	if (elem.Attribute == "Ranged")
+	if (attacker.weapon.isRanged())
 		stat := DEXTERITY;
 	endif
 
