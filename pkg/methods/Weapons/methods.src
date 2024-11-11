@@ -7,6 +7,34 @@ program Install()
 	return 1;
 endprogram
 
+exported function getMainDamageDice(weapon)
+	var prop := getPropBase(weapon);
+
+	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
+		return prop.SlashMainDamage;
+	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
+		return prop.PiercingMainDamage;
+	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
+		return prop.BluntMainDamage;
+	else
+		return error{"errortext" := "No dice damage found!"};
+	endif
+endfunction
+
+exported function getOffDamageDice(weapon)
+	var prop := getPropBase(weapon);
+	
+	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+		return prop.SlashOffDamage;
+	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+		return prop.PiercingOffDamage;
+	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+		return prop.BluntOffDamage;
+	else
+		return error{"errortext" := "No dice damage found!"};
+	endif
+endfunction
+
 /**
  * getType(item)
  *

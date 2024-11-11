@@ -201,12 +201,12 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 		elseif (GetObjProperty(attacker, "pilotando") != error)
 			weaponDice := GetObjProperty(attacker, "dicedmg");
 		elseif (offDamage)
-			weaponDice := getWeaponOffDamageDice(weapon);
+			weaponDice := weapon.getOffDamageDice();
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
 				weaponDice := "1d10";
 			else
-				weaponDice := getWeaponMainDamageDice(weapon);
+				weaponDice := weapon.getMainDamageDice();
 			endif
     	endif
 	endif
