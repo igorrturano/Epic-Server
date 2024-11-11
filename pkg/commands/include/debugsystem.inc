@@ -39,15 +39,17 @@ enum DEBUGNAMES
 	DEBUG_CLIMA := "clima",
 	DEBUG_DAMAGE := "damage",
 	DEBUG_SMELTING := "smelting",
-    DEBUG_UP := "up"
+    DEBUG_UP := "up",
+	DEBUG_EQUIP := "equip"
 endenum
 
-var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com o cmdlevel
-    struct { name := DEBUG_ALL, "level" := 1 },
+var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com a tag e o cmdlevel
+    struct { name := DEBUG_ALL, "level" := 0 },
     struct { name := DEBUG_CLIMA, "level" := 0 }, 
     struct { name := DEBUG_DAMAGE, "level" := 0 },
 	struct { name := DEBUG_SMELTING, "level" := 0 },
-	struct { name := DEBUG_UP, "level" := 0 }
+	struct { name := DEBUG_UP, "level" := 0 },
+	struct { name := DEBUG_EQUIP, "level" := 0 }
 };
 
 function CheckDebug(who, debugName)

@@ -583,9 +583,19 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 
 	skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20);
 	
-	//critico base da arma, critico extra da CProp da da arma, critico extra do CProp do personagem, critico extra da skill do personagem, critico extra de Habilidade especial do personagem
-	var chance := Cint( Cint(GetObjProperty(weapon, "CriticalChance")) + Cint(GetObjProperty(attacker, "CriticalChance")) + Cint((item_cfg[weapon.objtype]).CriticalChance )) + skillCriticalBonus + Cint(GetObjProperty(attacker, "#CriticalChance"));	//Limpa a CProp de bonus critico para o próximo ataque
-	EraseObjProperty(attacker, "#CriticalChance");
+	var weaponProp := getPropBase(weapon);
+	var chance := CInt(
+		// Weapon
+		CInt(weaponProp.CriticalChance) + // Crítico base da arma
+		CInt(weaponProp.CriticalChanceMod) + // Crítico extra da arma
+		// CInt(GetObjProperty(weapon, "CriticalChance")) + // Crítico extra da arma
+
+		// Char
+		CInt(GetObjProperty(attacker, "CriticalChance")) + // Crítico extra do Char
+		skillCriticalBonus + // Crítico extra da Skill
+		CInt(GetObjProperty(attacker, "#CriticalChance")) // Crítico extra de Habilidade especial do personagem
+	);
+	EraseObjProperty(attacker, "#CriticalChance"); //Limpa a CProp de bonus critico para o próximo ataque
 
 	if (!chance)
 		return 1;
