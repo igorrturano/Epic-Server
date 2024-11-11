@@ -80,7 +80,7 @@ program controleclima(who)
 			if (!mob.isUnderRoof())
 				SetObjProperty(mob, "molhado", 1);
 				SendSysMessageEx(mob, "Você está molhado!", SSM_INFO);
-			endif
+			else
 				var itemsinbag := EnumerateItemsInContainer(mob.backpack);
 				foreach item in itemsinbag
 					var container := item.container;
