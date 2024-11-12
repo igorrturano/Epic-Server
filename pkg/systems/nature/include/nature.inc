@@ -170,29 +170,39 @@ function weathereffects(type, duration, severity := 5)
     
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
-            if (!GetObjProperty(person, "molhado") && !person.isUnderRoof())
-                SetObjProperty(person, "molhado", 1);
-                SendSysMessageEx(person, "Você está molhado!", SSM_INFO);
-            endif
-            var itemsinbag := EnumerateItemsInContainer(person.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
+			if (!person.isUnderRoof())
+				SetObjProperty(person, "molhado", 1);
+				SendSysMessageEx(person, "Você está molhado!", SSM_INFO);
+
+                var itemsinbag := EnumerateItemsInContainer(person.backpack);
+                foreach item in itemsinbag
+                    var container := item.container;
+                    if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+                        SendSysMessageEx(person, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+                        SubtractAmount(item, RandomInt(5) + 1);
+                    endif
                     if (item.objtype in fire_weapons)
                         SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(person, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
+                        SendSysMessageEx(person, "A pólvora da sua arma molhou!", SSM_FAIL);
                     endif
-                endif
-            endforeach
+                endforeach
+
+                var items := ListItemsNearLocation(person.x, person.y, person.z, 20, person.realm);
+                foreach item in items
+                    if (item.objtype == 0x9092)
+                        PrintTextAbove(item, "*Molhada*");
+                        SubtractAmount(item, RandomInt(5) + 1);
+                    endif
+                endforeach
+            	SetWeatherForPlayer(person, type, 50);
+			endif
             
             if (person.x < 4174)
                 playweathersound(type, person);
                 SendPacket(person, packet);
             endif
         endforeach
-        
+
         sleep(5);
     endfor
     

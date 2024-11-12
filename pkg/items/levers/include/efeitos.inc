@@ -80,6 +80,15 @@ function EfeitosClima(item, options, duration, range)
         chars := (ListmobilesNearLocation(item.x - origx, item.y - origy, item.z - origz, range, item.realm));
     endif
     while (i < duration)
+        // se tiver polvora, destruir
+        var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+        foreach item in items
+            if (item.objtype == 0x9092)
+                PrintTextAbove(item, "*Molhada*");
+                SubtractAmount(item, RandomInt(5) + 1);
+            endif
+        endforeach
+        
         if (som)
             windsound(item);
         endif
@@ -94,23 +103,25 @@ function EfeitosClima(item, options, duration, range)
                 break;
             endif
 			if (!char.isUnderRoof())
-            	SetObjProperty(char, "molhado", 1);
+				SetObjProperty(char, "molhado", 1);
 				SendSysMessageEx(char, "Você está molhado!", SSM_INFO);
-			endif
-            var itemsinbag := EnumerateItemsInContainer(char.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
+
+                var itemsinbag := EnumerateItemsInContainer(char.backpack);
+                foreach item in itemsinbag
+                    var container := item.container;
+                    if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+                        SendSysMessageEx(char, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+                        SubtractAmount(item, RandomInt(5) + 1);
+                    endif
                     if (item.objtype in fire_weapons)
                         SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(char, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
+                        SendSysMessageEx(char, "A pólvora da sua arma molhou!", SSM_FAIL);
                     endif
-                endif
-            endforeach
-            SetWeatherForPlayer(char, type, 50);
+                endforeach
+            	SetWeatherForPlayer(char, type, 50);
+			endif
 
+            SetWeatherForPlayer(char, type, 50);
             if (distance(char, item) < 20)
                 SetWeatherForPlayer(char, type, 50);
                 if (bolt)

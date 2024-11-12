@@ -48,6 +48,8 @@ program controleclima(who)
 
     var i := 0;
     var mobs := (ListMobilesNearLocation(who.x, who.y, who.z, 20, who.realm));
+    var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+
     var enemies := array;
 
     SendSysMessageEx(who, "Voce deve permanecer parado enquanto quiser controlar o clima.", SSM_INFO);
@@ -63,7 +65,14 @@ program controleclima(who)
     while (i < duration)
 
         PerformAction(who, ANIM_CAST_AREA);
-
+        // se tiver polvora, destruir
+        foreach item in items
+            if (item.objtype == 0x9092)
+                PrintTextAbove(item, "*Molhada*");
+                SubtractAmount(item, RandomInt(5) + 1);
+            endif
+        endforeach
+        
         if ((origx != who.x) || (origy != who.y))
             SendSysMessage(who, "Voce parou de controlar o clima.", SSM_FAIL);
             break;
@@ -80,19 +89,19 @@ program controleclima(who)
 			if (!mob.isUnderRoof())
 				SetObjProperty(mob, "molhado", 1);
 				SendSysMessageEx(mob, "Você está molhado!", SSM_INFO);
-			else
-				var itemsinbag := EnumerateItemsInContainer(mob.backpack);
-				foreach item in itemsinbag
-					var container := item.container;
-					if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-						if (item.objtype in fire_weapons)
-							SetObjProperty(item, "balas", 0);
-							SendSysMessageEx(mob, "A polvora da sua arma molhou!", SSM_INFO);
-						else
-							SetObjProperty(item, "molhado", 1);
-						endif
-					endif
-				endforeach
+
+                var itemsinbag := EnumerateItemsInContainer(mob.backpack);
+                foreach item in itemsinbag
+                    var container := item.container;
+                    if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+                        SendSysMessageEx(mob, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+                        SubtractAmount(item, RandomInt(5) + 1);
+                    endif
+                    if (item.objtype in fire_weapons)
+                        SetObjProperty(item, "balas", 0);
+                        SendSysMessageEx(mob, "A pólvora da sua arma molhou!", SSM_FAIL);
+                    endif
+                endforeach
             	SetWeatherForPlayer(mob, type, 50);
 			endif
             if (!(mob in who.party.members))
