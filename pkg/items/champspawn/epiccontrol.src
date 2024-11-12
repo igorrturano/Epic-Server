@@ -123,7 +123,6 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
 
         mobsBySerial[level] := currentMobs;
         SetObjProperty(altar, "mobsBySerial", mobsBySerial);
-        return;
     endforeach
 endfunction
 
