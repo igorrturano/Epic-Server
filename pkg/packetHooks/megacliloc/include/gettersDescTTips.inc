@@ -221,9 +221,9 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
 
 	var bluntRes,slashRes,pircRes :=0;
-	if(!atrib)
-		atrib := getResistByProtection(cfg.elem.TipoProtecao);
-	endif
+	// if(!atrib)
+	// 	atrib := getResistByProtection(cfg.elem.TipoProtecao);
+	// endif
 	slashRes := atrib.SlashResist;
 	pircRes := atrib.PiercingResist;
 	bluntRes := atrib.BluntResist;
