@@ -102,7 +102,7 @@ exported function Attack(attacker, defender)
 		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
 	endif
 
-	if (IsDualWield(attacker.weapon) && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
+	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
 		Start_Script("weaponHitScripts/AttackAnimation", {attacker, 500});
 		DebugMsg(attacker, DEBUG_DAMAGE, "Mão -> OffHand");
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;

@@ -1,0 +1,35 @@
+use cfgfile;
+
+include ":equipsys:utils";
+
+program Install()
+	print("INSTALLING: Methods for Armors...");
+	return 1;
+endprogram
+
+exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
+	var elem := getItemCfgElem(item);
+
+	if (!elem.Coverage)
+		return error{"errortext" := "The item have no Coverage!"};
+	endif
+
+	return isShield(item) ? "Shield" : elem.Coverage;
+endfunction
+
+exported function isShield(item)
+    var tipoequip := item.getType();
+    var escudo := SplitWords(tipoequip); escudo := escudo[1];
+	escudo.Lower();
+
+    if (escudo == "escudo")
+		return 1;
+    else
+		return 0;
+    endif
+endfunction
+
+exported function getType(item)
+	var elem := getItemCfgElem(item);
+	return elem.TipoProtecao ? elem.TipoProtecao : error{"errortext" := "The item have no Protection Type!"};
+endfunction
