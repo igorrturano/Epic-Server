@@ -208,7 +208,7 @@ function getNPCMainDamage(npc, type)
 		damage.+dice := getDamageByTier(damageTier);
 	else
 		setPropWeapon(npc.weapon);
-		damage.+dice := getWeaponMainDamageDice(npc.weapon);
+		damage.+dice := npc.weapon.getMainDamageDice();
 	endif
 
 	return damage;

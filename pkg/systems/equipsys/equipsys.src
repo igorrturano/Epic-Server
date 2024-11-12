@@ -61,7 +61,7 @@ function debugWeapon(who, weapon)
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {prop.PiercingMainDamage}");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {prop.BluntMainDamage}");
 
-	if(IsDualWield(weapon))
+	if(weapon.isDualWield())
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {prop.SlashOffDamage}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {prop.PiercingOffDamage}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {prop.BluntOffDamage}");
