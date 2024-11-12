@@ -1,0 +1,39 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+
+program on_insert(who, bag, movetype, inserttype, item, existing_stack, amt)
+    amt            := amt;
+    existing_stack := existing_stack;
+    movetype      := movetype;
+    inserttype    := inserttype;
+    
+    var powder := 0x9092;
+    
+    if (bag.objtype == 0xDE31) // Corrigido para o novo objtype da Bolsa de Pólvora
+        if (item.objtype == powder)
+            // É pólvora, pode inserir
+        else
+            SendSysMessageEx(who, "Voce nao pode guardar isto na bolsa de polvora.", SSM_FAIL);
+            MoveItemToContainer(item, who.backpack);
+            return 0;
+        endif
+    endif
+
+    if (bag.movable == 0)
+        SendSysMessage(who, "Cancelado.");
+        MoveItemToContainer(item, who.backpack);
+        return 0;
+    elseif (!ReserveItem(bag) || !ReserveItem(item))
+        MoveItemToContainer(item, who.backpack);
+        SendSysMessage(who, "A bolsa esta em uso.");
+        return 0;
+    else
+        EraseObjProperty(item, "molhado");
+        return 1;
+    endif
+
+    return 1;
+endprogram
