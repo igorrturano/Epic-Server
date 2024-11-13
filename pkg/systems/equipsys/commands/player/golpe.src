@@ -65,21 +65,19 @@ function OpenGump(who)
 			weaponProp.AttackType := BLUNTDAMAGE;
 		endif
 
-		setPropBase(weapon, weaponProp);
+		weapon.setAttrBase(weaponProp);
 		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
 		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
 	endwhile
 endfunction
 
 function canChangePostura(who, weapon)
-	var elem := getItemCfgElem(weapon);
-	
-	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
+	if ((!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) || (!GetEquipmentByLayer(who, LAYER_HAND1) && GetEquipmentByLayer(who, LAYER_HAND2).isShield()))
 		SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
 		return 0;
 	endif
 
-	if (elem.Attribute == RANGED)
+	if (weapon.isRanged())
 		SendSysMessageEx(who, "Não é possível alterar postura de arma à distância.", SSM_FAIL);
 		return 0;
 	endif

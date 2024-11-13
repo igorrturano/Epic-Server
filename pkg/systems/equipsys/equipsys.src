@@ -28,7 +28,7 @@ endprogram
  */
 function setWeaponStats(weapon)
 	var stats := getWeaponStats(weapon);
-	setPropWeapon(weapon);
+	weapon.setAttrBase(stats);
 
 	// Setar a partir daqui, direto no item, o que não vai em CProp
 	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
@@ -46,7 +46,7 @@ endfunction
  */
 function setArmorStats(armor)
 	var stats := getArmorStats(armor);
-	setPropArmor(armor);
+	armor.setAttrBase(stats);
 
 	// Setar a partir daqui, direto no item, o que não vai em CProp
 endfunction

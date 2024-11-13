@@ -3,7 +3,7 @@ use util;
 use cfgfile;
 
 include "include/client";
-include "props";
+include ":attributes:attributeConstants";
 
 enum TIERS
 	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5

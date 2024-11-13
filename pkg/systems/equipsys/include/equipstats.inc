@@ -38,7 +38,7 @@ function addDamagePhysical(stats, weapon)
 	var elem := getItemCfgElem(weapon);
 	var elemMainDamage := SplitWords(elem.EpicMainDamage);
 	var elemOffDamage := SplitWords(elem.EpicOffDamage);
-	var prop := getPropBase(weapon);
+	var prop := weapon.getAttrBase();
 
 	stats.+SlashMainDamage := getDamageByTier(elemMainDamage[1]) ? getDamageByTier(elemMainDamage[1]) : 0;
 	stats.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]) ? getDamageByTier(elemMainDamage[2]) : 0;
@@ -70,7 +70,7 @@ function addDamageElemental(stats, weapon)
 endfunction
 
 function addDamageElementalByWeapon(stats, weapon)
-	var prop := getPropBase(weapon);
+	var prop := weapon.getAttrBase();
 
 	stats.FireDamage += CInt(prop.FireDamage);
 	stats.ColdDamage += CInt(prop.ColdDamage);
@@ -355,7 +355,7 @@ function addResistsElemental(stats, armor)
 endfunction
 
 function addResistElementalByArmor(stats, armor)
-	var prop := getPropBase(armor);
+	var prop := armor.getAttrBase();
 
 	stats.FireResist += CInt(prop.FireResist);
 	stats.ColdResist += CInt(prop.ColdResist);

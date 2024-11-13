@@ -1,9 +1,71 @@
 include ":equipsys:props";
 
+program Install()
+	print("INSTALLING: Methods for Equipments... OK!");
+	return 1;
+endprogram
+
+
+/**
+ * Function(params)
+ *
+ * Purpose
+ *
+ * Parameters
+ * params:
+ *
+ * Return value
+ *
+ */
 exported function getAttrBase(item)
-	return getPropBase(item);
+	var prop := item.GetProp("atributos");
+    if (!prop) prop := struct; endif
+    return prop;
 endfunction
 
-exported function getAttrExcp(item)
-	return getPropExcep(item);
+/**
+ * Function(params)
+ *
+ * Purpose
+ *
+ * Parameters
+ * params:
+ *
+ * Return value
+ *
+ */
+exported function getAttrExcp(item) 
+	var prop := item.GetProp("atributos_excp");
+    if (!prop) prop := struct; endif
+    return prop;
+endfunction
+
+/**
+ * Function(params)
+ *
+ * Purpose
+ *
+ * Parameters
+ * params:
+ *
+ * Return value
+ *
+ */
+exported function setAttrBase(item, prop) // SETA A PROP DE MODIFICADORES BASE
+    if (prop.Size() > 0) item.SetProp("atributos", prop); endif
+endfunction
+
+/**
+ * Function(params)
+ *
+ * Purpose
+ *
+ * Parameters
+ * params:
+ *
+ * Return value
+ *
+ */
+exported function setAttrExcep(item, prop) // SETA A PROP DE MODIFICADORES EXCEPCIONAL
+    if (prop.Size() > 0) item.SetProp("atributos_excp", prop); endif
 endfunction

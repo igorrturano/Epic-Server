@@ -3,7 +3,7 @@ use cfgfile;
 include ":equipsys:utils";
 
 program Install()
-	print("INSTALLING: Methods for Weapons...");
+	print("INSTALLING: Methods for Weapons... OK!");
 	return 1;
 endprogram
 
