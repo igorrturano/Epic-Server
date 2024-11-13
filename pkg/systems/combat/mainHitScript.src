@@ -143,30 +143,65 @@ function DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage)
 	endif
 endfunction
 
+function SetLastHitInfo(mobile, damage, type, source)
+	// TODO: [REFACTOR] Conferir se está tudo correto mesmo
+
+	var weapon_scripts;
+	var lastHitInfo := struct{};
+	lastHitInfo.+amount := damage;
+	lastHitInfo.+attacker := source.serial;
+
+	if (source.npctemplate)
+		weapon_scripts := source.getProp("HitScripts");
+		if (weapon_scripts)
+			lastHitInfo.+hitscript := weapon_scripts;
+		endif
+	else
+		weapon_scripts := source.weapon.getProp("HitScripts");
+		if (weapon_scripts)
+			lastHitInfo.+hitscript := weapon_scripts;
+		endif
+	endif
+
+	mobile.setProp("lastHit", lastHitInfo);
+	if (mobile.getProp("NeverRelease") == 1)
+		var teste := AP_GetVital(mobile, "DP");
+		mobile.setProp("LastDP", teste);
+	endif
+
+	if (!mobile.npctemplate)
+		if (source.npctemplate)
+			mobile.setProp("lastNpcDmg", source.npctemplate);
+		endif
+	endif
+endfunction
+
 function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var total;
 	// if ( basedamage > 0 )
-	var lastHitInfo := struct;
-	lastHitInfo.+amount := basedamage;
-	lastHitInfo.+attacker := attacker.serial;
-	var weapon_scripts := GetObjProperty(weapon, "HitScripts");
-	if (weapon_scripts != error)
-		lastHitInfo.+hitscript :=  weapon_scripts;
-	endif
-	weapon_scripts := GetObjProperty(attacker, "HitScripts"); //nos nps eh neles e nao na arma
-	if (weapon_scripts != error)
-		lastHitInfo.+hitscript :=  weapon_scripts;
-	endif
-	SetObjProperty(defender, "lastHit", lastHitInfo);
-	if ((GetObjProperty(defender, "NeverRelease") == 1))
-		var teste := AP_GetVital(defender, "DP");
-		SetObjPRoperty(defender, "LastDP", teste);
-	endif
-	if (!defender.npctemplate)
-		if (attacker.npctemplate)
-			SetObjProperty(defender, "lastNpcDmg", attacker.npctemplate);
-		endif
-	endif
+
+	// MOVIDO PRA FUNÇÃO SetLastHitInfo()
+	// var lastHitInfo := struct;
+	// lastHitInfo.+amount := basedamage;
+	// lastHitInfo.+attacker := attacker.serial;
+	// var weapon_scripts := GetObjProperty(weapon, "HitScripts");
+	// if (weapon_scripts != error)
+	// 	lastHitInfo.+hitscript :=  weapon_scripts;
+	// endif
+	// weapon_scripts := GetObjProperty(attacker, "HitScripts"); //nos nps eh neles e nao na arma
+	// if (weapon_scripts != error)
+	// 	lastHitInfo.+hitscript :=  weapon_scripts;
+	// endif
+	// SetObjProperty(defender, "lastHit", lastHitInfo);
+	// if ((GetObjProperty(defender, "NeverRelease") == 1))
+	// 	var teste := AP_GetVital(defender, "DP");
+	// 	SetObjPRoperty(defender, "LastDP", teste);
+	// endif
+	// if (!defender.npctemplate)
+	// 	if (attacker.npctemplate)
+	// 		SetObjProperty(defender, "lastNpcDmg", attacker.npctemplate);
+	// 	endif
+	// endif
 
 	if (GetObjProperty(defender, "#alvomovel") == 1)
 		EraseObjProperty(defender, "#alvomovel");
