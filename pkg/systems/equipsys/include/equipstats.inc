@@ -80,40 +80,6 @@ function addDamageElementalByWeapon(stats, weapon)
 	return stats;
 endfunction
 
-function getWeaponMainDamageDice(weapon)
-	var prop := getPropBase(weapon);
-	var dice;
-
-	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
-		dice := prop.SlashMainDamage;
-	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
-		dice := prop.PiercingMainDamage;
-	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
-		dice := prop.BluntMainDamage;
-	else
-		dice := error{"errortext" := "No dice damage!"};
-	endif
-	
-	return dice;
-endfunction
-
-function getWeaponOffDamageDice(weapon)
-	var prop := getPropBase(weapon);
-	var dice;
-	
-	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
-		dice := prop.SlashOffDamage;
-	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
-		dice := prop.PiercingOffDamage;
-	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
-		dice := prop.BluntOffDamage;
-	else
-		dice := error{"errortext" := "No dice damage!"};
-	endif
-	
-	return dice;
-endfunction
-
 /**
  * getWeaponSpeed(tier)
  *
@@ -214,7 +180,7 @@ function getArmorStats(armor)
 	stats := addResistsPhysical(stats, armor);
 	stats := addResistsElemental(stats, armor);
 	stats := addPenalties(stats, armor);
-	if (IsShield(armor))
+	if (armor.isShield())
 		stats := addShieldMods(stats, armor);
 	endif
 	// TODO: Calcular HP, durabilidade, Str required.

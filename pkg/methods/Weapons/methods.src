@@ -7,6 +7,70 @@ program Install()
 	return 1;
 endprogram
 
+/**
+ * getMainDamageDice(item)
+ *
+ * Purpose
+ * Buscar o dado do maindamage favorito da arma.
+ *
+ * Parameters
+ * item: itemRef a ser verificado.
+ *
+ * Return value
+ *
+ */
+exported function getMainDamageDice(item)
+	var prop := getPropBase(item);
+
+	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
+		return prop.SlashMainDamage;
+	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
+		return prop.PiercingMainDamage;
+	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
+		return prop.BluntMainDamage;
+	else
+		return error{"errortext" := "No dice damage found!"};
+	endif
+endfunction
+
+/**
+ * getOffDamageDice(item)
+ *
+ * Purpose
+ * Buscar o dado do offdamage favorito da arma.
+ *
+ * Parameters
+ * item: itemRef a ser verificado.
+ *
+ * Return value
+ *
+ */
+exported function getOffDamageDice(item)
+	var prop := getPropBase(item);
+	
+	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+		return prop.SlashOffDamage;
+	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+		return prop.PiercingOffDamage;
+	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+		return prop.BluntOffDamage;
+	else
+		return error{"errortext" := "No dice damage found!"};
+	endif
+endfunction
+
+/**
+ * getType(item)
+ *
+ * Purpose
+ * Buscar o Tipo de Ataque (Postura) favorito da arma.
+ *
+ * Parameters
+ * item: itemRef a ser verificado.
+ *
+ * Return value
+ *
+ */
 exported function getType(item)
 	var elem := getItemCfgElem(item);
 	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
