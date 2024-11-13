@@ -14,7 +14,27 @@ exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
 		return error{"errortext" := "The item have no Coverage!"};
 	endif
 
-	return IsShield(item) ? "Shield" : elem.Coverage;
+	return isShield(item) ? "Shield" : elem.Coverage;
+endfunction
+
+exported function getAttrBase(item)
+	return getPropBase(item);
+endfunction
+
+exported function getAttrExcp(item)
+	return getPropExcep(item);
+endfunction
+
+exported function isShield(item)
+    var tipoequip := item.getType();
+    var escudo := SplitWords(tipoequip); escudo := escudo[1];
+	escudo.Lower();
+
+    if (escudo == "escudo")
+		return 1;
+    else
+		return 0;
+    endif
 endfunction
 
 exported function getType(item)

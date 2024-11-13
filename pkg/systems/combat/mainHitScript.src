@@ -4,18 +4,18 @@
  */
 use uo;
 use os;
-use basic;
+// use basic;
 use cfgfile;
 
 include ":attributes:attributes";
-include ":brainai:npcUtil";
-include ":blood:blood";
+// include ":brainai:npcUtil";
+// include ":blood:blood";
 include ":combat:settings";
 include ":timedscripts:timedScripts";
-include "include/client";
+// include "include/client";
 include "include/facings";
 include ":combat:damage";
-include ":charactercreation:habilidades";
+// include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
 include "include/equipment";
@@ -911,6 +911,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	var usingWeapon := 0;
 	var parryBonus := 0;
 	var shield := defender.shield;
+	var shieldAttr := shield.getAttrBase();
 
 	var blocker;
 	//Verifica se o defensor está sob efeito da a hab esudo do martir
@@ -945,7 +946,12 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		parryBonus := 0;
 	endif
 	//Calcula o Bonus basico de parry do escudo, Bonus de parry específico da CProp do escudo, Bonus de parry especifico da CProp do personagem
-	parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
+	// parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
+	parryBonus := CInt(
+		CInt(shieldAttr.ParryBonus) + // Parry Bônus Básico do escudo
+		CInt(GetObjProperty(shield, "parrybonus")) + // Parry Bônus Extra do escudo
+		CInt(GetObjProperty(defender, "parrybonus")) // Parry Bônus Extra do defensor
+	);
 
 	//Calcula o Bonus temporário de parry, se houver
 	var tempParryBonus := CInt(getObjProperty(defender, "#tempparrybonus"));
@@ -961,7 +967,13 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
     endif
 
 	//Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
-	var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
+	// var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
+	var parryDelay := CInt(
+		-(CInt(shieldAttr.ParryDelay) + // Parry Delay Básico do escudo
+		CInt(GetObjProperty(shield, "parrydelay_mod")) + // Parry Delay Extra do escudo
+		CInt(skill/20)) + // Parry Delay Bônus de acordo com a skill
+		8 // Fator de balanceamento
+	);
 
 	//Faz com que os bloqueios garantidos por cauda de habilidade resetem o delay de bloqueio
 	if (tempParryBonus == 100)
@@ -1049,7 +1061,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	endif
 
 	//Exibe o efeito visual do bloqueio
-	Performaction(defender,ANIM_TWIST_DODGE);
+	PerformAction(defender,ANIM_TWIST_DODGE);
 
 	if (blocker)
 		PerformAction(defender, 13);
