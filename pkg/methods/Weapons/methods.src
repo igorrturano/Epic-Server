@@ -93,11 +93,7 @@ endfunction
 exported function isDualWield(item)
 	var elem := getItemCfgElem(item);
 
-	if (Upper(elem.Attribute) == Upper(DUALWIELD))
-		return 1;
-	endif
-
-	return 0;
+	return Upper(elem.Attribute) == Upper(DUALWIELD);
 endfunction
 
 /**
@@ -115,11 +111,7 @@ endfunction
 exported function isRanged(item)
 	var elem := getItemCfgElem(item);
 
-	if (Upper(elem.Attribute) == Upper(RANGED))
-		return 1;
-	endif
-
-	return 0;
+	return Upper(elem.Attribute) == Upper(RANGED);
 endfunction
 
 /**

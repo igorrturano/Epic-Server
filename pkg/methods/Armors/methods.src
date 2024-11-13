@@ -22,11 +22,7 @@ exported function isShield(item)
     var escudo := SplitWords(tipoequip); escudo := escudo[1];
 	escudo.Lower();
 
-    if (escudo == "escudo")
-		return 1;
-    else
-		return 0;
-    endif
+	return escudo == "escudo";
 endfunction
 
 exported function getType(item)
