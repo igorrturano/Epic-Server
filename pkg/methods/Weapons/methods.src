@@ -76,13 +76,6 @@ exported function getType(item)
 	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
 endfunction
 
-exported function getAttrBase(item)
-	return getPropBase(item);
-endfunction
-
-exported function getAttrExcp(item)
-	return getPropExcep(item);
-endfunction
 
 
 /**

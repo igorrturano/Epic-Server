@@ -17,14 +17,6 @@ exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
 	return isShield(item) ? "Shield" : elem.Coverage;
 endfunction
 
-exported function getAttrBase(item)
-	return getPropBase(item);
-endfunction
-
-exported function getAttrExcp(item)
-	return getPropExcep(item);
-endfunction
-
 exported function isShield(item)
     var tipoequip := item.getType();
     var escudo := SplitWords(tipoequip); escudo := escudo[1];

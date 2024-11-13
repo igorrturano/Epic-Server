@@ -1,0 +1,9 @@
+include ":equipsys:props";
+
+exported function getAttrBase(item)
+	return getPropBase(item);
+endfunction
+
+exported function getAttrExcp(item)
+	return getPropExcep(item);
+endfunction
