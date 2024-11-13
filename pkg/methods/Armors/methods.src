@@ -10,11 +10,11 @@ endprogram
 exported function getSlot(item) //PEGA O SLOT DO ITEM NO .CFG
 	var elem := getItemCfgElem(item);
 
-	if (!elem.Coverage)
-		return error{"errortext" := "The item have no Coverage!"};
+	if (isShield(item))
+		return "Shield";
 	endif
 
-	return isShield(item) ? "Shield" : elem.Coverage;
+	return elem.Coverage ? elem.Coverage : error{"errortext" := "The item have no Coverage!"};
 endfunction
 
 exported function isShield(item)
