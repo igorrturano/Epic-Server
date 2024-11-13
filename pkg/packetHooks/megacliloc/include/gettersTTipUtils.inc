@@ -146,8 +146,8 @@ endfunction
 
 function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
 	var speedI := GetObjProperty(item,"attackspeedbonus");
-	var itemProp := item.getAttrBase();
-	var speedE := CInt(itemProp.AttackSpeed);
+	var itemAttr := item.getAttrBase();
+	var speedE := CInt(itemAttr.AttackSpeed);
 	var speedDesc := "";
 	if (speedE >= 41)
 		speedDesc := "Muito Rápida";

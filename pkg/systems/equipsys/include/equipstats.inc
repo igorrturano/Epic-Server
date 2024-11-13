@@ -6,7 +6,7 @@ use os;
 use cfgfile;
 
 include "utils";
-include "props";
+// include "props";
 include ":attributes:attributeConstants";
 
 /////////////
@@ -30,6 +30,7 @@ function getWeaponStats(weapon)
 
 	stats := addDamagePhysical(stats, weapon);
 	stats := addDamageElemental(stats, weapon);
+	stats := addOthersAttributes(stats, weapon);
 
 	return stats;
 endfunction
@@ -38,7 +39,6 @@ function addDamagePhysical(stats, weapon)
 	var elem := getItemCfgElem(weapon);
 	var elemMainDamage := SplitWords(elem.EpicMainDamage);
 	var elemOffDamage := SplitWords(elem.EpicOffDamage);
-	var prop := weapon.getAttrBase();
 
 	stats.+SlashMainDamage := getDamageByTier(elemMainDamage[1]) ? getDamageByTier(elemMainDamage[1]) : 0;
 	stats.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]) ? getDamageByTier(elemMainDamage[2]) : 0;
@@ -49,10 +49,6 @@ function addDamagePhysical(stats, weapon)
 		stats.+PiercingOffDamage := getDamageByTier(elemOffDamage[2]) ? getDamageByTier(elemOffDamage[2]) : 0;
 		stats.+BluntOffDamage := getDamageByTier(elemOffDamage[3]) ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
-
-	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
-	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
 endfunction
@@ -70,12 +66,22 @@ function addDamageElemental(stats, weapon)
 endfunction
 
 function addDamageElementalByWeapon(stats, weapon)
-	var prop := weapon.getAttrBase();
+	var attr := weapon.getAttrBase();
 
-	stats.FireDamage += CInt(prop.FireDamage);
-	stats.ColdDamage += CInt(prop.ColdDamage);
-	stats.PoisonDamage += CInt(prop.PoisonDamage);
-	stats.EnergyDamage += CInt(prop.EnergyDamage);
+	stats.FireDamage += CInt(attr.FireDamage);
+	stats.ColdDamage += CInt(attr.ColdDamage);
+	stats.PoisonDamage += CInt(attr.PoisonDamage);
+	stats.EnergyDamage += CInt(attr.EnergyDamage);
+
+	return stats;
+endfunction
+
+function addOthersAttributes(stats, weapon)
+	var elem := getItemCfgElem(weapon);
+
+	stats.+AttackType := elem.TipoAtaque;
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
 endfunction
@@ -355,12 +361,12 @@ function addResistsElemental(stats, armor)
 endfunction
 
 function addResistElementalByArmor(stats, armor)
-	var prop := armor.getAttrBase();
+	var attr := armor.getAttrBase();
 
-	stats.FireResist += CInt(prop.FireResist);
-	stats.ColdResist += CInt(prop.ColdResist);
-	stats.PoisonResist += CInt(prop.PoisonResist);
-	stats.EnergyResist += CInt(prop.EnergyResist);
+	stats.FireResist += CInt(attr.FireResist);
+	stats.ColdResist += CInt(attr.ColdResist);
+	stats.PoisonResist += CInt(attr.PoisonResist);
+	stats.EnergyResist += CInt(attr.EnergyResist);
 
 	return stats;
 endfunction

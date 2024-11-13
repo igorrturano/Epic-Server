@@ -110,7 +110,7 @@ endfunction
 function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	var attackFX;
 	var elem := getItemCfgElem(weapon);
-	var prop := weapon.getAttrBase();
+	var weaponAttr := weapon.getAttrBase();
 
 	if (!elem)
 		if (FX == WEAPON_FX_ANIM)
@@ -135,19 +135,19 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 			endif
 		else
 			if (elem.Attribute.Upper() == TWOHANDED.Upper())
-				if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(SLASH_2H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(SLASH_2H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(PIERCING_2H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(PIERCING_2H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(BLUNT_2H_FX, isCriticalAttack);
 					else
@@ -155,19 +155,19 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 					endif
 				endif
 			else
-				if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(SLASH_1H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(SLASH_1H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(PIERCING_1H_FX, isCriticalAttack);
 					else
 						attackFX := getSound(PIERCING_1H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
 						attackFX := getAnim(BLUNT_1H_FX, isCriticalAttack);
 					else

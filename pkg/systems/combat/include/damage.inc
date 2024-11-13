@@ -565,7 +565,7 @@ function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 			endcase
 		endif
 	else
-		setPropArmor(armor);
+		armor.setAttrBase(0);
 		resist := getResistArmorByType(armor, type);
 	endif
 

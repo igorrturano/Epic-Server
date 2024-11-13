@@ -52,36 +52,36 @@ function setArmorStats(armor)
 endfunction
 
 function debugWeapon(who, weapon)
-	var prop := weapon.getAttrBase();
+	var itemAttr := weapon.getAttrBase();
 
 	var materialName := weapon.getMaterialName() ? weapon.getMaterialName() : "Nenhum";
 
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 	DebugMsg(who, DEBUG_EQUIP, $"Arma: {weapon.desc}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {SLASHDAMAGE}: {prop.SlashMainDamage}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {prop.PiercingMainDamage}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {prop.BluntMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {SLASHDAMAGE}: {itemAttr.SlashMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {itemAttr.PiercingMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {itemAttr.BluntMainDamage}");
 
 	if(weapon.isDualWield())
-		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {prop.SlashOffDamage}");
-		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {prop.PiercingOffDamage}");
-		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {prop.BluntOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {itemAttr.SlashOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {itemAttr.PiercingOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {itemAttr.BluntOffDamage}");
 	endif
 
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Fogo: {prop.FireDamage}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Gelo: {prop.ColdDamage}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Veneno: {prop.PoisonDamage}");
-	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Energia: {prop.EnergyDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Fogo: {itemAttr.FireDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Gelo: {itemAttr.ColdDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Veneno: {itemAttr.PoisonDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Energia: {itemAttr.EnergyDamage}");
 
 	DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
-	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {prop.AttackType}");
-	DebugMsg(who, DEBUG_EQUIP, $"Velocidade: {prop.AttackSpeed}");
-	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {prop.CriticalChance}%");
+	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {itemAttr.AttackType}");
+	DebugMsg(who, DEBUG_EQUIP, $"Velocidade: {itemAttr.AttackSpeed}");
+	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {itemAttr.CriticalChance}%");
 endfunction
 
 function debugArmor(who, armor)
-	var prop := armor.getAttrBase();
+	var itemAttr := armor.getAttrBase();
 
 	var materialName := armor.getMaterialName() ? armor.getMaterialName() : "Nenhum";
 	var slot := armor.getSlot();
@@ -96,19 +96,19 @@ function debugArmor(who, armor)
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 
 	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA FÍSICA]");
-	DebugMsg(who, DEBUG_EQUIP, $"{SLASHDAMAGE}: {prop.SlashResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"{PIERCINGDAMAGE}: {prop.PiercingResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"{BLUNTDAMAGE}: {prop.BluntResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{SLASHDAMAGE}: {itemAttr.SlashResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{PIERCINGDAMAGE}: {itemAttr.PiercingResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{BLUNTDAMAGE}: {itemAttr.BluntResist}");
 	DebugMsg(who, DEBUG_EQUIP, $"Material ({materialName}): {resistByMaterial["SlashResist"]}/{resistByMaterial["PiercingResist"]}/{resistByMaterial["BluntResist"]}");
 	DebugMsg(who, DEBUG_EQUIP, $"Slot ({slot}): {resistBySlot["SlashResist"]}/{resistBySlot["PiercingResist"]}/{resistBySlot["BluntResist"]}");
 	DebugMsg(who, DEBUG_EQUIP, $"Tipo de Proteção ({type}): {resistByProtection["SlashResist"]}/{resistByProtection["PiercingResist"]}/{resistByProtection["BluntResist"]}
 	");
 
 	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA ELEMENTAL]");
-	DebugMsg(who, DEBUG_EQUIP, $"Fogo: {prop.FireResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"Gelo: {prop.ColdResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"Veneno: {prop.PoisonResist}");
-	DebugMsg(who, DEBUG_EQUIP, $"Energia: {prop.EnergyResist}
+	DebugMsg(who, DEBUG_EQUIP, $"Fogo: {itemAttr.FireResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Gelo: {itemAttr.ColdResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Veneno: {itemAttr.PoisonResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Energia: {itemAttr.EnergyResist}
 	");
 	
 	DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
@@ -116,9 +116,9 @@ function debugArmor(who, armor)
 	");
 
 	DebugMsg(who, DEBUG_EQUIP, "[PENALIDADES]");
-	DebugMsg(who, DEBUG_EQUIP, $"Dexterity: {prop.DexPen}");
-	DebugMsg(who, DEBUG_EQUIP, $"Sneak: {prop.SneakPen}");
-	DebugMsg(who, DEBUG_EQUIP, $"Mechanics: {prop.MAPen}");
-	DebugMsg(who, DEBUG_EQUIP, $"Magery: {prop.MageryPen}");
-	DebugMsg(who, DEBUG_EQUIP, $"Awareness: {prop.AwarenessPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Dexterity: {itemAttr.DexPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Sneak: {itemAttr.SneakPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Mechanics: {itemAttr.MAPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Magery: {itemAttr.MageryPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Awareness: {itemAttr.AwarenessPen}");
 endfunction
