@@ -92,7 +92,7 @@ endfunction
 function getWeaponFX(FX, weapon)
 	var attackFX;
 	var elem := getItemCfgElem(weapon);
-	var prop := getPropBase(weapon);
+	var prop := weapon.getAttrBase();
 
 	if (!elem)
 		if (FX == WEAPON_FX_ANIM)

@@ -583,7 +583,7 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 
 	skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20);
 	
-	var weaponProp := getPropBase(weapon);
+	var weaponProp := weapon.getAttrBase();
 	var chance := CInt(
 		// Weapon
 		CInt(weaponProp.CriticalChance) + // Crítico base da arma
@@ -969,9 +969,9 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	//Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
 	// var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
 	var parryDelay := CInt(
-		-(CInt(shieldAttr.ParryDelay) + // Parry Delay Básico do escudo
-		CInt(GetObjProperty(shield, "parrydelay_mod")) + // Parry Delay Extra do escudo
-		CInt(skill/20)) + // Parry Delay Bônus de acordo com a skill
+		-(CInt(shieldAttr.ParryDelay)) + // Parry Delay Básico do escudo
+		-(CInt(GetObjProperty(shield, "parrydelay_mod"))) + // Parry Delay Extra do escudo
+		-(CInt(skill/20)) + // Parry Delay Bônus de acordo com a skill
 		8 // Fator de balanceamento
 	);
 

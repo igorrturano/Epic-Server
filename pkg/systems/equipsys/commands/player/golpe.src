@@ -15,7 +15,7 @@ endprogram
 function OpenGump(who)
 	while (1)
 		var weapon := who.weapon;
-		var weaponProp := getPropBase(weapon);
+		var weaponProp := weapon.getAttrBase();
 
 		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
 		var x := 15;
@@ -48,7 +48,7 @@ function OpenGump(who)
 
 		if (weapon != who.weapon) // Atualiza caso tenha trocado de arma com o gump aberto
 			weapon := who.weapon;
-			weaponProp := getPropBase(weapon);
+			weaponProp := weapon.getAttrBase();
 		endif
 
 		if (!canChangePostura(who, weapon)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON

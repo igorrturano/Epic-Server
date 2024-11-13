@@ -20,7 +20,7 @@ endprogram
  *
  */
 exported function getMainDamageDice(item)
-	var prop := getPropBase(item);
+	var prop := item.getAttrBase();
 
 	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
 		return prop.SlashMainDamage;
@@ -46,7 +46,7 @@ endfunction
  *
  */
 exported function getOffDamageDice(item)
-	var prop := getPropBase(item);
+	var prop := item.getAttrBase();
 	
 	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		return prop.SlashOffDamage;

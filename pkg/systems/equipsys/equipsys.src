@@ -52,7 +52,7 @@ function setArmorStats(armor)
 endfunction
 
 function debugWeapon(who, weapon)
-	var prop := getPropBase(weapon);
+	var prop := weapon.getAttrBase();
 
 	var materialName := weapon.getMaterialName() ? weapon.getMaterialName() : "Nenhum";
 
@@ -81,7 +81,7 @@ function debugWeapon(who, weapon)
 endfunction
 
 function debugArmor(who, armor)
-	var prop := getPropBase(armor);
+	var prop := armor.getAttrBase();
 
 	var materialName := armor.getMaterialName() ? armor.getMaterialName() : "Nenhum";
 	var slot := armor.getSlot();
