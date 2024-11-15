@@ -207,7 +207,7 @@ function getNPCMainDamage(npc, type)
 
 		damage.+dice := getDamageByTier(damageTier);
 	else
-		setPropWeapon(npc.weapon);
+		if (!npc.weapon.getAttrBase()) npc.weapon.setAttrBase(0); endif
 		damage.+dice := npc.weapon.getMainDamageDice();
 	endif
 

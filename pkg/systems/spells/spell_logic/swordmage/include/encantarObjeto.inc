@@ -5,7 +5,7 @@ include "include/client";
 include "include/say";
 
 function setBonus(who, item, bonus)
-	var prop := getPropBase(item);
+	var prop := item.getAttrBase();
 	var material := item.getMaterialID();
 	bonus := CInt(bonus); // POL BUGADO DO CARALHO!!!!!!!!!!
 	
