@@ -167,32 +167,20 @@ function weathereffects(type, duration, severity := 5)
         endif 
         
         var packet := "65"+weatherid+"7000";
-    
+        
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
-            if (!GetObjProperty(person, "molhado") && !person.isUnderRoof())
-                SetObjProperty(person, "molhado", 1);
-                SendSysMessageEx(person, "Você está molhado!", SSM_INFO);
-            endif
-            var itemsinbag := EnumerateItemsInContainer(person.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-                    if (item.objtype in fire_weapons)
-                        SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(person, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
-                    endif
-                endif
-            endforeach
+			if (!person.isUnderRoof())
+				wetPowder(person);
+            	SetWeatherForPlayer(person, type, 50);
+			endif
             
             if (person.x < 4174)
                 playweathersound(type, person);
                 SendPacket(person, packet);
             endif
         endforeach
-        
+
         sleep(5);
     endfor
     
@@ -474,4 +462,31 @@ function updateCharacterAge(who)
         chardata.current_age := new_age;
         SetObjProperty(who, "chardata", chardata);
     endif
+endfunction
+
+function wetPowder(who)
+    SetObjProperty(who, "molhado", 1);
+    SendSysMessageEx(who, "Você está molhado!", SSM_INFO);
+    var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+
+    var itemsinbag := EnumerateItemsInContainer(who.backpack);
+    foreach item in itemsinbag
+        var container := item.container;
+        if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+            SendSysMessageEx(who, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+        if (item.objtype in fire_weapons)
+            SetObjProperty(item, "balas", 0);
+            SendSysMessageEx(who, "A pólvora da sua arma molhou!", SSM_FAIL);
+        endif
+    endforeach
+
+    var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+    foreach item in items
+        if (item.objtype == 0x9092)
+            PrintTextAbove(item, "*Molhada*");
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+    endforeach
 endfunction
