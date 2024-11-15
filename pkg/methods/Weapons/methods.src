@@ -3,7 +3,7 @@ use cfgfile;
 include ":equipsys:utils";
 
 program Install()
-	print("INSTALLING: Methods for Weapons...");
+	print("INSTALLING: Methods for Weapons... OK!");
 	return 1;
 endprogram
 
@@ -20,7 +20,7 @@ endprogram
  *
  */
 exported function getMainDamageDice(item)
-	var prop := getPropBase(item);
+	var prop := item.getAttrBase();
 
 	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
 		return prop.SlashMainDamage;
@@ -46,7 +46,7 @@ endfunction
  *
  */
 exported function getOffDamageDice(item)
-	var prop := getPropBase(item);
+	var prop := item.getAttrBase();
 	
 	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
 		return prop.SlashOffDamage;
@@ -76,6 +76,8 @@ exported function getType(item)
 	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
 endfunction
 
+
+
 /**
  * isDualWield(item)
  *
@@ -91,11 +93,7 @@ endfunction
 exported function isDualWield(item)
 	var elem := getItemCfgElem(item);
 
-	if (Upper(elem.Attribute) == Upper(DUALWIELD))
-		return 1;
-	endif
-
-	return 0;
+	return Upper(elem.Attribute) == Upper(DUALWIELD);
 endfunction
 
 /**
@@ -113,11 +111,7 @@ endfunction
 exported function isRanged(item)
 	var elem := getItemCfgElem(item);
 
-	if (Upper(elem.Attribute) == Upper(RANGED))
-		return 1;
-	endif
-
-	return 0;
+	return Upper(elem.Attribute) == Upper(RANGED);
 endfunction
 
 /**

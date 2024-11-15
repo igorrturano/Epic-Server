@@ -513,7 +513,7 @@ function getWeaponDamageType(attacker, weapon)
 		// NPCRotateAttackType(attacker);
 		attackType := "CONTUSIVO";
 	else
-		attackType := getPropBase(weapon).AttackType.Upper();
+		attackType := weapon.getAttrBase().AttackType.Upper();
 	endif
 	
 	case (Upper(attackType))
@@ -565,7 +565,7 @@ function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 			endcase
 		endif
 	else
-		setPropArmor(armor);
+		armor.setAttrBase(0);
 		resist := getResistArmorByType(armor, type);
 	endif
 
@@ -590,7 +590,7 @@ endfunction
  */
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
-	var armorResists := getPropBase(armor);
+	var armorResists := armor.getAttrBase();
 
 	case(type)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;

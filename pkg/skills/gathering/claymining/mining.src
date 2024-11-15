@@ -13,6 +13,8 @@ include ":tn:tngumps";
 include ":gumps:yesNo";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":treasurehunting:treasuremaps";  // Adiciona esta linha
+
 
 CONST CLAY_BALL := 0x6074;
 const MINING_ANIMATION := 0x0E;

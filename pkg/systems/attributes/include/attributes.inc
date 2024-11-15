@@ -204,19 +204,24 @@ function Wait(who, segundos)
 endfunction
 
 function maolivre(who, qtd, checkmount := 1)
-	var rightHand := GetEquipmentByLayer(who, 0x01);
-	var leftHand := GetEquipmentByLayer(who, 0x02);
+    var rightHand := GetEquipmentByLayer(who, 0x01);
+    var leftHand := GetEquipmentByLayer(who, 0x02);
 
-	if (checkmount)
-		var mounted := GetEquipmentByLayer(who, 0x19);
+    // Verifica montaria se necessário
+    if (checkmount)
+        var mounted := GetEquipmentByLayer(who, 0x19);
+        if (mounted)
+            SendSysMessage(who, "Voce nao pode fazer isto montado.");
+            return 0;
+        endif
+    endif
 
-		if (mounted)
-			SendSysMessage(who, "Voce nao pode fazer isto montado.");
-			return 0;
-		endif
-	endif
+    // Verifica se há itens nas mãos
+    if (rightHand || leftHand)
+        return 0;
+    endif
 
-	return 1;
+    return 1;
 endfunction
 
 function GetHP(who)
