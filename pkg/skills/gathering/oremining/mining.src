@@ -14,6 +14,9 @@ include ":gathering:mining";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":tn:tngumps";
+include ":treasurehunting:treasuremaps";  // Adiciona esta linha
+include ":treasurehunting:treasuredigging";
+
 
 const MINING_ANIMATION	:= 0xB;
 const MINING_SOUND	:= 0x126;
@@ -25,79 +28,103 @@ program OreMining(who, tool)
 		return;
 	endif
 
-	SendSysMessageEx(who, "Onde você deseja minerar?", SSM_REQUEST);
-	var targ := TargetCoordinates(who);
-	var quebravel := GetObjProperty(targ.item, "quebrável");
+    SendSysMessageEx(who, "Onde você deseja minerar?", SSM_REQUEST);
+    var targ := TargetCoordinates(who);
+    var quebravel := GetObjProperty(targ.item, "quebrável");
 
-	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
-		SendSysMessage(who, "Muito longe.");
-		return;
-	elseif (targ.item)
-		if (quebravel)
-			Quebraitem(who, tool, targ.item);
-			return 0;
-		endif
-	elseif ( !CanMine(targ, "Stone") )
-		var maps := GetMapsInBackpack(who);
-		//sendsysmessage(who, " " + maps);
-		if (maps.size() > 0)
-			var map := maps[1];
-			if (maps.size() > 1)
-				SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
-				map := target(who);
-				if (!(isTreasureMap(map)))
-					return;
-				endif
-			endif
-				DigForMap(who, targ, map);
-			return;
-		else
-			SendSysMessageEx(who, "Você não pode minerar aqui.", SSM_FAIL);
-			return;
-		endif
-	endif
+    if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
+        SendSysMessage(who, "Muito longe.");
+        return;
+    elseif (targ.item)
+        if (quebravel)
+            Quebraitem(who, tool, targ.item);
+            return 0;
+        endif
+    elseif ( !CanMine(targ, "Stone") )
+        var maps := GetMapsInBackpack(who);
+        SendSysMessage(who, "DEBUG: Mapas encontrados: " + maps.size());
+        
+        if (maps.size() > 0)
+            var map := maps[1];
+            if (maps.size() > 1)
+                SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
+                map := target(who);
+                if (!(IsTreasureMap(map)))
+                    SendSysMessage(who, "DEBUG: Mapa inválido selecionado");
+                    return;
+                endif
+            endif
 
-		var my_x := who.x;
-		var my_y := who.y;
-		var my_facing := GetFacing(who.x,who.y,targ.x,targ.y);
-		if(my_facing)
-			who.facing := my_facing;
-		else
-			my_facing := who.facing;
-		endif
-		
+            // Verificações adicionais de debug
+            SendSysMessage(who, "DEBUG: Verificando mapa...");
+            if (!IsTreasureMap(map))
+                SendSysMessageEx(who, "Este mapa não parece ser um mapa do tesouro válido.", SSM_FAIL);
+                return;
+            endif
+
+            if (IsMapSolved(map))
+                SendSysMessageEx(who, "Este mapa já foi resolvido.", SSM_FAIL);
+                return;
+            endif
+
+            if (!CanDecodeMap(who, map))
+                SendSysMessageEx(who, "Você não consegue entender este mapa.", SSM_FAIL);
+                return;
+            endif
+
+            var coords := GetMapCoordinates(map);
+            SendSysMessage(who, "DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: " + coords.y + " Z: " + coords.z);
+
+            // Tenta iniciar a escavação
+            if (!DigForMap(who, targ, map))
+                SendSysMessageEx(who, "Falha ao iniciar escavação.", SSM_FAIL);
+                return;
+            endif
+            
+            return;
+        else
+            SendSysMessageEx(who, "Voce nao pode minerar aqui.", SSM_FAIL);
+            return;
+        endif
+    endif
+
+    var my_x := who.x;
+    var my_y := who.y;
+    var my_facing := who.facing;
 
 		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
 			SendsysMessage(who, "Você parou de minerar.");
 			return;
 		endif
 
-		while(MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
-			CheckToolWear(who, tool, GATHERING);
+    while(MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
+        CheckToolWear(who, tool, GATHERING);
 
-			if(TemHabilidade(who, "Vigor do Extrator"))
-				if (!CheckLoop(who, tool, my_x, my_y, my_facing))
-					break;
-				elseif (AP_GetVital(who, "Stamina") < 3)
-					SendSysMessage(who, "Você está muito cansado para minerar.");
-					break;
-				endif
-				AP_ConsumeVital(who, "Stamina", 3);
-			else
-				if (!CheckLoop(who, tool, my_x, my_y, my_facing))
-					break;
-				elseif (AP_GetVital(who, "Stamina") < 5)
-					SendSysMessage(who, "Você está muito cansado para minerar.");
-					break;
-				endif
-				AP_ConsumeVital(who, "Stamina", 5);
-			endif
-			sleep(3);
-		endwhile
+        if(TemHabilidade(who, "Vigor do Extrator"))
+            if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+                break;
+            elseif (AP_GetVital(who, "Stamina") < 3)
+                SendSysMessage(who, "Voce esta muito cansado para minerar.");
+                break;
+            endif
+            AP_ConsumeVital(who, "Stamina", 3);
+        else
+            if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+                break;
+            elseif (AP_GetVital(who, "Stamina") < 5)
+                SendSysMessage(who, "Voce esta muito cansado para minerar.");
+                break;
+            endif
+            AP_ConsumeVital(who, "Stamina", 5);
+        endif
+        sleep(3);
+    endwhile
 
 		SendSysMessage(who, "Você parou de minerar.");
 
 endprogram
+
+
 
 function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 	var i;

@@ -29,6 +29,8 @@ include ":commands:debugsystem";
 include "include/say";
 
 program CMD_debug(who, debugName)
+	debugName.Lower();
+	
     if (!debugName || Lower(debugName) == "list")
 		SendSysMessage(who, "Lista de debugs disponíveis: ");
 		foreach debug in listDebugs

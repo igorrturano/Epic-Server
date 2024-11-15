@@ -71,7 +71,7 @@ function customizeNpc(mob)
     endif
 
 	SetObjProperty(mob, "hitsmod", hitsmod + hp);
-
+	SetObjProperty(mob, "anchor", array{ mob.x, mob.y, mob.z+2 });
 	RecalcVitals(mob);
     HealDamage(mob, hitsmod + hp);
 endfunction
@@ -207,7 +207,7 @@ function getNPCMainDamage(npc, type)
 
 		damage.+dice := getDamageByTier(damageTier);
 	else
-		setPropWeapon(npc.weapon);
+		if (!npc.weapon.getAttrBase()) npc.weapon.setAttrBase(0); endif
 		damage.+dice := npc.weapon.getMainDamageDice();
 	endif
 

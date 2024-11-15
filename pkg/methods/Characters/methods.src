@@ -1,7 +1,7 @@
 use uo;
 
 program Install()
-	print("INSTALLING: Methods for Characters...");
+	print("INSTALLING: Methods for Characters... OK!");
 	return 1;
 endprogram
 
