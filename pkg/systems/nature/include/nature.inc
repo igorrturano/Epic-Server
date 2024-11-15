@@ -180,7 +180,6 @@ function weathereffects(type, duration, severity := 5)
                 SendPacket(person, packet);
             endif
         endforeach
-
         sleep(5);
     endfor
     

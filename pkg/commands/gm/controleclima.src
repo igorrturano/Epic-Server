@@ -48,8 +48,6 @@ program controleclima(who)
 
     var i := 0;
     var mobs := (ListMobilesNearLocation(who.x, who.y, who.z, 20, who.realm));
-    var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
-
     var enemies := array;
 
     SendSysMessageEx(who, "Voce deve permanecer parado enquanto quiser controlar o clima.", SSM_INFO);
@@ -65,14 +63,6 @@ program controleclima(who)
     while (i < duration)
 
         PerformAction(who, ANIM_CAST_AREA);
-        // se tiver polvora, destruir
-        foreach item in items
-            if (item.objtype == 0x9092)
-                PrintTextAbove(item, "*Molhada*");
-                SubtractAmount(item, RandomInt(5) + 1);
-            endif
-        endforeach
-        
         if ((origx != who.x) || (origy != who.y))
             SendSysMessage(who, "Voce parou de controlar o clima.", SSM_FAIL);
             break;
