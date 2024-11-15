@@ -69,7 +69,7 @@ function setBonus(who, item, bonus)
 		endcase
 	endif
 
-	setPropBase(item, prop);
+	item.setAttrBase(prop);
 	SendSysMessageEx(who, "Você encantou o objeto.", SSM_INFO);
 	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(who, SFX_SPELL_HEAL);
