@@ -1,0 +1,38 @@
+// methods.src
+use uo;
+use os;
+
+include ":treasurehunting:treasuremaps";
+
+program Install()
+    return 1;
+endprogram
+
+// Funções exportadas para o MethodScript com nomes diferentes
+exported function CheckMapValidity(item)
+    return IsTreasureMap(item);
+endfunction
+
+exported function CheckMapSolved(map)
+    return IsMapSolved(map);
+endfunction
+
+exported function RetrieveMapLevel(map)  // Renomeado de GetMapLevel
+    return GetMapLevel(map);
+endfunction
+
+exported function RetrieveMapCoords(map)  // Renomeado de GetMapCoordinates
+    return GetMapCoordinates(map);
+endfunction
+
+exported function CanDecode(who, map)
+    return CanDecodeMap(who, map);
+endfunction
+
+exported function CheckMapDistance(who, targ, map)
+    return ValidateMapDistance(who, targ, map);
+endfunction
+
+exported function MarkComplete(map, who)
+    return MarkMapComplete(map, who);
+endfunction

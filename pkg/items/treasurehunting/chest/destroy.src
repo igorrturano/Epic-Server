@@ -1,0 +1,80 @@
+use uo;
+use os;
+
+include ":treasurehunting:diggingEffects";
+
+program destroy_chest(chest)
+    if (!chest)
+        return;
+    endif
+    
+    // Initialize destruction time
+    var destroy_at := GetObjProperty(chest, "DestroyAt");
+    if (!destroy_at)
+        destroy_at := ReadGameClock() + 120;
+        SetObjProperty(chest, "DestroyAt", destroy_at);
+        SetObjProperty(chest, "CreatedOn", ReadGameClock());
+    endif
+
+    // Single wait loop until destruction time
+    while (chest && chest.graphic)
+        if (!CheckChestStatus(chest))
+            return;
+        endif
+        
+        var time_left := destroy_at - ReadGameClock();
+        if (time_left <= 0)
+            break;
+        endif
+        
+        Sleep(5);
+    endwhile
+    
+    if (chest)
+        DestroyTreasureChest(chest);
+    endif
+endprogram
+
+function CheckChestStatus(chest)
+    if (!chest || !chest.serial || !chest.graphic)
+        return 0;
+    endif
+    
+    return (GetObjProperty(chest, "CreatedOn") && GetObjProperty(chest, "DestroyAt"));
+endfunction
+
+function DestroyTreasureChest(chest)
+    if (!CheckChestStatus(chest))
+        return;
+    endif
+    
+    var cleaned_items := CleanupChestDirt(chest);
+    var items_count := EnumerateItemsInContainer(chest).size();
+    
+    var level := GetObjProperty(chest, "level") ? GetObjProperty(chest, "level") : GetObjProperty(chest, "MapLevel");
+    var found_by := GetObjProperty(chest, "FoundBy");
+    if (found_by)
+        var finder := SystemFindObjectBySerial(found_by, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        found_by := finder ? finder.name : "Desconhecido";
+    else
+        found_by := "Desconhecido";
+    endif
+
+    var info := struct{
+        "serial" := chest.serial,
+        "location" := struct{
+            "x" := chest.x,
+            "y" := chest.y,
+            "z" := chest.z,
+            "realm" := chest.realm
+        },
+        "created_on" := GetObjProperty(chest, "CreatedOn"),
+        "destroyed_on" := ReadGameClock(),
+        "map_level" := level ? level : "Desconhecido",
+        "found_by" := found_by,
+        "items_destroyed" := items_count,
+        "dirt_items_cleaned" := cleaned_items
+    };
+    
+    DestroyItem(chest);
+endfunction

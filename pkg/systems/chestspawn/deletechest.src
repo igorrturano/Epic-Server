@@ -1,13 +1,60 @@
 use uo;
 use datafile;
+use os;
 
 program deletespawn(item)
+    print("==============================================");
+    print("DEBUG::DeleteChest - Iniciando remocao do spawner");
+    print("  Serial: " + item.serial);
+    print("  Location: " + item.x + "," + item.y + "," + item.z);
 
-	var df := OpenDataFile( ":tn:chestspawns" );
-	if (!df)
-		df := CreateDataFile( ":tn:chestspawns", DF_KEYTYPE_INTEGER );
-	endif
-	
-	var elem := df.DeleteElement(item.serial);
+    if (!item)
+        print("DEBUG::DeleteChest - Item invalido");
+        return 0;
+    endif
 
+    // Limpa baús existentes antes de remover spawner
+    CleanupExistingChests(item);
+
+    var df := OpenDataFile(":tn:chestspawns");
+    if (!df)
+        print("DEBUG::DeleteChest - ERRO: Datafile nao encontrado");
+        return 0;
+    endif
+    
+    print("DEBUG::DeleteChest - Removendo elemento do datafile");
+    var elem := df.DeleteElement(item.serial);
+    if (!elem)
+        print("DEBUG::DeleteChest - AVISO: Elemento nao encontrado no datafile");
+    endif
+
+    // Limpa propriedades do spawner
+    EraseObjProperty(item, "chests");
+    EraseObjProperty(item, "CreatedOn");
+    EraseObjProperty(item, "IsChestSpawner");
+    
+    print("DEBUG::DeleteChest - Remocao concluida");
+    print("==============================================");
+    return 1;
 endprogram
+
+function CleanupExistingChests(item)
+    print("DEBUG::CleanupExistingChests - Iniciando limpeza");
+    
+    var chests := GetObjProperty(item, "chests");
+    if (chests)
+        print("  Encontrados " + chests.size() + " baus para remover");
+        foreach chestserial in chests
+            var chest := SystemFindObjectBySerial(chestserial);
+            if (chest)
+                print("  Removendo bau " + chest.serial);
+                DestroyItem(chest);
+            endif
+            sleepms(2);
+        endforeach
+    else
+        print("  Nenhum bau encontrado para limpar");
+    endif
+    
+    print("DEBUG::CleanupExistingChests - Limpeza concluida");
+endfunction
