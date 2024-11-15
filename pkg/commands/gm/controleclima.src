@@ -83,25 +83,10 @@ program controleclima(who)
         endif
 
         var bolts := RandomInt(5);
-        var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         SetWeatherForPlayer(who, type, 50);
         foreach mob in enemies
 			if (!mob.isUnderRoof())
-				SetObjProperty(mob, "molhado", 1);
-				SendSysMessageEx(mob, "Você está molhado!", SSM_INFO);
-
-                var itemsinbag := EnumerateItemsInContainer(mob.backpack);
-                foreach item in itemsinbag
-                    var container := item.container;
-                    if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
-                        SendSysMessageEx(mob, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
-                        SubtractAmount(item, RandomInt(5) + 1);
-                    endif
-                    if (item.objtype in fire_weapons)
-                        SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(mob, "A pólvora da sua arma molhou!", SSM_FAIL);
-                    endif
-                endforeach
+				wetPowder(mob);
             	SetWeatherForPlayer(mob, type, 50);
 			endif
             if (!(mob in who.party.members))
