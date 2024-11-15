@@ -80,12 +80,20 @@ function EfeitosClima(item, options, duration, range)
         chars := (ListmobilesNearLocation(item.x - origx, item.y - origy, item.z - origz, range, item.realm));
     endif
     while (i < duration)
+        // se tiver polvora, destruir
+        var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+        foreach item in items
+            if (item.objtype == 0x9092)
+                PrintTextAbove(item, "*Molhada*");
+                SubtractAmount(item, RandomInt(5) + 1);
+            endif
+        endforeach
+        
         if (som)
             windsound(item);
         endif
         var fuga;
         var bolts := RandomInt(5);
-        var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         SetWeatherForPlayer(chars, type, 50);
         foreach char in chars
             if (distance(char, item) > range + 10)
@@ -94,23 +102,11 @@ function EfeitosClima(item, options, duration, range)
                 break;
             endif
 			if (!char.isUnderRoof())
-            	SetObjProperty(char, "molhado", 1);
-				SendSysMessageEx(char, "Você está molhado!", SSM_INFO);
+				wetPowder(char);
+            	SetWeatherForPlayer(char, type, 50);
 			endif
-            var itemsinbag := EnumerateItemsInContainer(char.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-                    if (item.objtype in fire_weapons)
-                        SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(char, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
-                    endif
-                endif
-            endforeach
-            SetWeatherForPlayer(char, type, 50);
 
+            SetWeatherForPlayer(char, type, 50);
             if (distance(char, item) < 20)
                 SetWeatherForPlayer(char, type, 50);
                 if (bolt)

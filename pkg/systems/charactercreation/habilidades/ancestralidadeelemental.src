@@ -64,27 +64,22 @@ program controleclima(who)
         endif
 
         var bolts := shaman_souls;
-        var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         SetWeatherForPlayer(who, type, 50);
+        
+        // se tiver polvora, destruir
+        var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+        foreach item in items
+            if (item.objtype == 0x9092)
+                PrintTextAbove(item, "*Molhada*");
+                SubtractAmount(item, RandomInt(5) + 1);
+            endif
+        endforeach
 
         foreach mob in enemies
 			if (!mob.isUnderRoof())
-            	SetObjProperty(mob, "molhado", 1);
-				SendSysMessageEx(mob, "Você está molhado!", SSM_INFO);
+				wetPowder(mob);
+            	SetWeatherForPlayer(mob, type, 50);
 			endif
-
-            var itemsinbag := EnumerateItemsInContainer(mob.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-                    if (item.objtype in fire_weapons)
-                        SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(mob, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
-                    endif
-                endif
-            endforeach
 
             foreach mob in mobs
                 if (!(mob in enemies))
