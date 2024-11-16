@@ -44,7 +44,7 @@ function addDamagePhysical(stats, weapon)
 	stats.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]) ? getDamageByTier(elemMainDamage[2]) : 0;
 	stats.+BluntMainDamage := getDamageByTier(elemMainDamage[3]) ? getDamageByTier(elemMainDamage[3]) : 0;
 
-	if (Upper(elem.Attribute) == DUALWIELD.Upper())
+	if (weapon.isDualWield())
 		stats.+SlashOffDamage := getDamageByTier(elemOffDamage[1]) ? getDamageByTier(elemOffDamage[1]) : 0;
 		stats.+PiercingOffDamage := getDamageByTier(elemOffDamage[2]) ? getDamageByTier(elemOffDamage[2]) : 0;
 		stats.+BluntOffDamage := getDamageByTier(elemOffDamage[3]) ? getDamageByTier(elemOffDamage[3]) : 0;
