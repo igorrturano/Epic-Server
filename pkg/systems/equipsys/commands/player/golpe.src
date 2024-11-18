@@ -15,27 +15,27 @@ endprogram
 function OpenGump(who)
 	while (1)
 		var weapon := who.weapon;
-		var weaponProp := getPropBase(weapon);
+		var weaponAttr := weapon.getAttrBase();
 
 		var gump := GFECreateGump("Postura de Combate", 225, 115, {HIDE_TITLE, HIDE_PAGE, BORDER_BLUE});
 		var x := 15;
 		var y := 40;
 
-		if (weaponProp.AttackType.Upper() == SLASHDAMAGE.Upper())
+		if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
 			GFGumpPic(gump, x-13, y-23, 30062);
 			GFGumpPic(gump, x, y, 1004, COLOR_RED);
 			x += 70;
 			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
 			x += 70;
 			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
-		elseif (weaponProp.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+		elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
 			x += 70;
 			GFGumpPic(gump, x-13, y-23, 30062);
 			GFGumpPic(gump, x, y, 1008, COLOR_RED);
 			x += 70;
 			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
-		elseif (weaponProp.AttackType.Upper() == BLUNTDAMAGE.Upper())
+		elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
 			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
 			x += 70;
 			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
@@ -48,7 +48,7 @@ function OpenGump(who)
 
 		if (weapon != who.weapon) // Atualiza caso tenha trocado de arma com o gump aberto
 			weapon := who.weapon;
-			weaponProp := getPropBase(weapon);
+			weaponAttr := weapon.getAttrBase();
 		endif
 
 		if (!canChangePostura(who, weapon)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
@@ -58,28 +58,26 @@ function OpenGump(who)
 		if (input[0] == 0)
 			return;
 		elseif (input[0] == 10)
-			weaponProp.AttackType := SLASHDAMAGE;
+			weaponAttr.AttackType := SLASHDAMAGE;
 		elseif (input[0] == 11)
-			weaponProp.AttackType := PIERCINGDAMAGE;
+			weaponAttr.AttackType := PIERCINGDAMAGE;
 		elseif (input[0] == 12)
-			weaponProp.AttackType := BLUNTDAMAGE;
+			weaponAttr.AttackType := BLUNTDAMAGE;
 		endif
 
-		setPropBase(weapon, weaponProp);
-		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponProp.AttackType}*");
-		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponProp.AttackType}", SSM_INFO);
+		weapon.setAttrBase(weaponAttr);
+		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
+		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponAttr.AttackType}", SSM_INFO);
 	endwhile
 endfunction
 
 function canChangePostura(who, weapon)
-	var elem := getItemCfgElem(weapon);
-	
-	if (!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
+	if ((!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) || (!GetEquipmentByLayer(who, LAYER_HAND1) && GetEquipmentByLayer(who, LAYER_HAND2).isShield()))
 		SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
 		return 0;
 	endif
 
-	if (elem.Attribute.Upper() == RANGED.Upper())
+	if (weapon.isRanged())
 		SendSysMessageEx(who, "Não é possível alterar postura de arma à distância.", SSM_FAIL);
 		return 0;
 	endif

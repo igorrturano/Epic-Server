@@ -1,0 +1,76 @@
+//3
+use uo;
+program faz_itenslore(who, quantos)
+    var itenslore := array{
+0xE37D, // Globo de Gelo de Kaijing
+0xE37E, // Globo de Gelo de Aigla
+0xE37F, // Globo de Gelo de Khron Kaz'ad
+0xE380, // Globo de Gelo de Börfjell
+0xE381, // Globo de Gelo de Nygurath
+0xE382, // Crâneo de Ouro de um Monstro
+0xE383, // Crâneo de um Demônio Chifrudo
+0xE384, // Poste de Lâmpada de Óleo
+0xE385, // Trevo de Quatro Folhas
+0xE386, // Quadro Grande de um Lich
+0xE387, // Mapa Náutico
+0xE388, // Barco Dentro de uma Garrafa
+0xE389, // Grande Colar de Ouro do Prefeito
+0xE38A, // Vaso Aiglano Largo
+0xE38B, // Grande Livro de Magia
+0xE38C, // Grande Adaga Cerimonial
+0xE38D, // Pequeno Frasco de Veneno
+0xE38E, // Pequena Escala de Pesagem Alquímica
+0xE38F, // Boleadera (Bolas)
+0xE390, // Capacete de Guerra Samurai
+0xE391, // Katana no Display em Pé
+0xE392, // Bonsai
+0xE393, // Duas Katanas no Display Horizontal
+0xE394, // Chapéu do Capitão Pirata
+0xE395, // Escala de Pesagem Anã
+0xE396, // Escudo Romano Triangular
+0xE397, // Capacete de Crânio de Orc
+0xE398, // Abajur de Chão Oriental Antigo Rústico de Pedra de Três Andares
+0xE399, // Estandarte Romano
+0xE39A, // Estandarte Drow
+0xE39B, // Display de Armadura de Couro Batido
+0xE39C, // Display de Armadura de Cota de Malha
+0xE39D, // Miniatura de Navio Romano
+0xE39E, // Capacete com Asas de Anjo
+0xE39F, // Martelo de Guerra Badûran
+0xE3A0, // Espadas Duplas
+0xE3A1, // Estandarte de Orcs com Caveira de Sangue
+0xE3A2, // Estandarte de Elfos Azul e Branco
+0xE3A3, // Cimitarra Ensanguentada
+0xE3A4, // Espada Longa Ensanguentada
+0xE3A5, // Escudo Redondo de Bronze Ensanguentado
+0xE3A6, // Estandarte dos Elfos da Floresta com uma Árvore no Meio
+0xE3A7, // Escudo Élfico Azul com Brasão de Unicórnio Branco
+0xE3A8, // Livro de Necromancia de Capa de Couro e Caveira na Capa
+0xE3A9, // Livro de Leis do Senado de Capa Cinza
+0xE3AA, // Livro de Capa Cinza e Marca Página Verde
+0xE3AB, // Display de Peitoral de Fullplate
+0xE3AC, // Pitchfork Ensanguentada
+0xE3AD, // Espelho de Corpo
+0xE3AE, // Cabeça Empalhada de Ciclope
+0xE3AF, // Lanterna Furta Fogo
+0xE3B0, // Rifle de Caça Badûran
+0xE3B1, // Handcannon Badûran
+0xE3B2, // Lança de Cavalaria de Justa
+0xE3B3, // Sais Duplos
+0xE3B4, // Mão Ressecada de um Demônio
+0xE3B5, // Miniatura de um Cavaleiro Bjorske
+0xE3B6 // Estátua de Pedra de um Badûran com Machado
+
+};
+    var bolsa := CreateItemInBackpack(who, "bag", 1);
+    bolsa.color := 1110;
+    bolsa.name := "Bolsa de itenslore";
+    if (!quantos)
+        quantos := 1;
+        sendsysmessage(who, "Você pode usar o comando com número para definir quantos itens quer criar.");
+        sendsysmessage(who, "Sem especificação, vou criar 1 item de cada para você.");
+    endif
+    foreach coisa in itenslore
+        CreateItemInContainer(bolsa, coisa, amount := quantos);
+    endforeach
+endprogram

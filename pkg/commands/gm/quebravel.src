@@ -1,3 +1,5 @@
+// comentei domestic work por que estava bugada
+
 use uo;
 use os;
 
@@ -6,72 +8,90 @@ include ":unicos:item_template";
 include ":gumps:gumps";
 include ":gumps:yesNo";
 include ":gumps:requestGump";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+
+// Adicionar estas constantes
+const GATHERING_ANIMATION := 0x0b;  // Animação de atacar2
+const SURVIVAL_ANIMATION := 0x0d;   // Animação de atacar3
+const BREAKING_SOUND := 0x538;      // Som para quebrar/cortar
 
 var itensnobarril;
 
 program quebrar(who)
-
-	var gump := GFCreateGump(220, 70);
-	GFGumpPic(gump, 0, 0, 0x254E);
-	GFResizePic(gump, 0, 0, 0x254E, 200, 100);	
-	GFTextLine(gump, 30, 15, 2100, "Quebrar com Gathering");
-	GFTextLine(gump, 30, 35, 2100, "Quebrar com Domestic");
-	GFTextLine(gump, 30, 55, 2100, "Quebrar com Survival");
-	GFAddButton(gump, 15, 17, 2117, 2118, 1, 10);
-	GFAddButton(gump, 15, 37, 2117, 2118, 1, 20);
-	GFAddButton(gump, 15, 57, 2117, 2118, 1, 30);
-	var input := GFSendGump(who, gump);
-	input  := input[0];
-	if (input == 10)
-		tornarquebravel(who, "gathering");
-		//quebragathering(who);
-	elseif (input == 20)
-		tornarquebravel(who, "domesticwork");
-		//quebradomestic(who);
-	elseif (input ==  30)
-		tornarquebravel(who, "survival");
-		//quebrasurvival(who);
-	endif
+    var gump := GFECreateGump("Escolha a skill", 300, 200);
     
+    GFAddButton(gump, 40, 90, 2117, 2118, 1, 10);
+    GFTextLine(gump, 70, 88, 2100, "Quebrar com Gathering");
+
+    // Comentando a parte de Domestic
+    /*
+    GFAddButton(gump, 40, 120, 2117, 2118, 1, 20);
+    GFTextLine(gump, 70, 118, 2100, "Quebrar com Domestic");
+    */
+
+    GFAddButton(gump, 40, 150, 2117, 2118, 1, 30);
+    GFTextLine(gump, 70, 148, 2100, "Quebrar com Survival");
+    
+    var input := GFSendGump(who, gump);
+    input := input[0];
+    
+    if (input == 10)
+        tornarquebravel(who, "gathering");
+    // Comentando a parte de Domestic
+    /*
+    elseif (input == 20)
+        tornarquebravel(who, "domesticwork");
+    */
+    elseif (input == 30)
+        tornarquebravel(who, "survival");
+    endif
 endprogram
 
 function tornarquebravel(who, skill)
-	SendSysMessageEx(who, "O que deseja tornar quebravel?", SSM_REQUEST);
+    SendSysMessageEx(who, "O que deseja tornar quebravel?", SSM_REQUEST);
     var alvo := Target(who);
 
-    if (alvo == who)
-		SendSysMessageEx(who, "Voce nao pode tornar isto quebravel!", SSM_FAIL);
-		return 0;
-	endif
-
-	if (alvo in EnumerateItemsInContainer(who.backpack)) 
-		SendSysMessageEx(who, "Voce nao pode tornar algo na sua bolsa quebravel!", SSM_FAIL);
-		return 0;
-	endif
-
-    if (!alvo.movable == 0)
-        SendSysMessageEx(who, "Voce nao pode tornar algo movel quebravel!", SSM_FAIL);
-		return 0;
-    endif
-
-	if (!alvo)
+    if (!alvo)
         SendSysMessageEx(who, "Cancelado!", SSM_FAIL);
-		return 0;
+        return 0;
     endif
 
-	var durabilidade;
-	var hits;
-	hits := RequestGump(who, "Qual a quantidade de vida que o item tera?");
-	SendSysMessageEx(who,"O HP do item sera consumido igual ao valor da skill do player",SSM_INFO);
-	hits := CInt(hits);
-	if ( !hits || hits <= 0 )
-		SendSysMessage(who, "Cancelado");
-		return;
-	endif
 
-	SetObjProperty(alvo, "quebravel", CStr(skill));
-	SetObjProperty(alvo, "durabilidade", hits);
+    var gump := GFECreateGump("Definir Durabilidade do item", 350, 250);
 
+    GFTextLine(gump, 50, 80, 2100, "Quantidade de vida do item:");
+
+    GFResizePic(gump, 48, 103, 9350, 254, 24); // 9350 é um ID de gump para um fundo cinza
+    var textEntryID := GFTextEntry(gump, 50, 105, 250, 20, 2100, "");
+
+    GFTextMid(gump, 10, 140, 330, 2100, "O HP do item sera consumido igual");
+    GFTextMid(gump, 10, 160, 330, 2100, "ao valor da skill do player");
+
+    GFAddButton(gump, 100, 200, 2128, 2129, 1, 1);
+
+    GFAddButton(gump, 220, 200, 2119, 2120, 1, 0);
+
+    var input := GFSendGump(who, gump);
+
+    if (input[0] == 0)
+        SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+        return 0;
+    endif
+
+var hits := CInt(GFExtractData(input, textEntryID));
+
+    if (!hits || hits <= 0)
+        SendSysMessageEx(who, "Valor de durabilidade inválido", SSM_FAIL);
+        return 0;
+    endif
+
+    SetObjProperty(alvo, "quebravel", CStr(skill));
+    SetObjProperty(alvo, "durabilidade", CInt(hits));
+    SetObjProperty(alvo, "durabilidade_maxima", CInt(hits));  // Adicionando esta linha
+
+    SendSysMessageEx(who, "Item tornado quebrável com sucesso!", SSM_INFO);
+    return 1;
 endfunction
 
 

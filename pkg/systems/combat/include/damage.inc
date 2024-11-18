@@ -201,12 +201,12 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 		elseif (GetObjProperty(attacker, "pilotando") != error)
 			weaponDice := GetObjProperty(attacker, "dicedmg");
 		elseif (offDamage)
-			weaponDice := getWeaponOffDamageDice(weapon);
+			weaponDice := weapon.getOffDamageDice();
 		else
 			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
 				weaponDice := "1d10";
 			else
-				weaponDice := getWeaponMainDamageDice(weapon);
+				weaponDice := weapon.getMainDamageDice();
 			endif
     	endif
 	endif
@@ -423,8 +423,6 @@ endfunction
 function EpicApplyDamageElemental(attacker, defender, weapon, armor, damages)
 	SetScriptController(attacker);
 
-	print(damages);
-
 	if (damages.FireDamage)
 		WearDownArmor(defender, armor, damages.FireDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.FireDamage, DMG_FIRE);
@@ -474,13 +472,9 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
 
 	var regiao := struct;
 	regiao.+zone := CS_GetArmorZone(armor);
-	if (regiao.zone == error)
-		regiao.zone := "Corpo";
-	endif
+	if (!regiao.zone) regiao.zone := "Corpo"; endif
 	regiao.equip := armor.desc;
-	if (regiao.equip == error)
-		regiao.equip := "Corpo";
-	endif
+	if (!regiao.equip) regiao.equip := "Corpo";	endif
 
 	DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
 	DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
@@ -490,10 +484,7 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
 	DebugMsg(defender, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
 
 	damage := damage-resist;
-
-	if (damage < 1)
-		damage := 1;
-	endif
+	damage := damage < 1 ? 1 : damage;
 
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
 	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
@@ -522,7 +513,7 @@ function getWeaponDamageType(attacker, weapon)
 		// NPCRotateAttackType(attacker);
 		attackType := "CONTUSIVO";
 	else
-		attackType := getPropBase(weapon).AttackType.Upper();
+		attackType := weapon.getAttrBase().AttackType.Upper();
 	endif
 	
 	case (Upper(attackType))
@@ -574,7 +565,7 @@ function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 			endcase
 		endif
 	else
-		setPropArmor(armor);
+		armor.setAttrBase(0);
 		resist := getResistArmorByType(armor, type);
 	endif
 
@@ -599,7 +590,7 @@ endfunction
  */
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var resist;
-	var armorResists := getPropBase(armor);
+	var armorResists := armor.getAttrBase();
 
 	case(type)
 		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
@@ -709,7 +700,7 @@ endfunction
  * CheckDefenderHabsAfterDamage(byref defender, byref damage)
  *
  * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+ * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
  * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
  * 
  * Parameters
@@ -846,7 +837,7 @@ function CalcDamageStats(attacker, damage)
 	damage += tacticsmod;
 
 	stat := STRENGTH;
-	if (elem.Attribute == "Ranged")
+	if (attacker.weapon.isRanged())
 		stat := DEXTERITY;
 	endif
 

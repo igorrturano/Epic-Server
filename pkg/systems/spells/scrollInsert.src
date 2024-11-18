@@ -48,40 +48,91 @@ endprogram
 
 
 function addScroll(who, book, rune)
-	var rune_list := GetObjProperty(book, "spells");
-	var mlore := cint( AP_GetSkill( who, MAGICLORE ) );
-	var spell_caster_slots := Cint( mlore / 5 );
+    var rune_list := GetObjProperty(book, "spells");
+    var mlore := cint( AP_GetSkill(who, MAGICLORE) );
+    var max_scrolls;
 
-	if (rune_list == error)
-		rune_list := array;
-	endif
+    // Determina o número máximo de pergaminhos baseado no tipo de personagem
+    if (GetObjProperty(who, "chardata").magia == "spellcaster")
+        // Base de 8 pergaminhos
+        max_scrolls := 8;
+        
+        // Adiciona slots extras baseado na skill
+        if (mlore >= 45)  // Começa em 45 agora
+            if (mlore >= 100)
+                max_scrolls := 16;
+            elseif (mlore >= 90)
+                max_scrolls := 15;
+            elseif (mlore >= 80)
+                max_scrolls := 14;
+            elseif (mlore >= 70)
+                max_scrolls := 13;
+            elseif (mlore >= 60)
+                max_scrolls := 12;
+            elseif (mlore >= 55)
+                max_scrolls := 11;
+            elseif (mlore >= 50)
+                max_scrolls := 10;
+            elseif (mlore >= 45)
+                max_scrolls := 9;
+            endif
+        endif
+    else
+        // Não-spellcasters têm limite fixo de 8
+        max_scrolls := 8;
+    endif
 
-	if( GetObjProperty(who, "chardata").magia == "spellcaster" && rune_list.Size() > spell_caster_slots )
-		SendSysMessage(who,"este livro ja esta cheio.");
-		MoveItemToContainer(rune, who.backpack);
-		return 0;
-	elseif( rune_list.Size() > 15 )
-		SendSysMessage(who,"este livro ja esta cheio.");
-		MoveItemToContainer(rune, who.backpack);
-		return 0;
-	endif
+    if (rune_list == error)
+        rune_list := array;
+    endif
 
-	if( !ReserveItem(rune) )
-		SendSysMessage(who,"Cancelado");
-		MoveItemToContainer(rune, who.backpack);
-		return 0;
-	endif
+    // Verificação de duplicatas
+    var new_spell := GetObjProperty(rune, "spellinfo");
+    var booktype := GetBookType(book);
 
-	Set_Critical(1);
+    foreach spell in rune_list
+        // Para livros spellcaster
+        if (booktype == "spellcaster" || spell.magic_path == "spellcaster")
+            if (spell.id == new_spell.id && spell.School == new_spell.School)
+                SendSysMessageEx(who, "Este feitico ja existe no livro!", SSM_FAIL);
+                MoveItemToContainer(rune, who.backpack);
+                return 0;
+            endif
+        // Para outros tipos de livros
+        else
+            if (spell.id == new_spell.id && spell.magic_path == new_spell.magic_path)
+                SendSysMessageEx(who, "Este feitico ja existe no livro!", SSM_FAIL);
+                MoveItemToContainer(rune, who.backpack);
+                return 0;
+            endif
+        endif
+        sleepms(2);
+    endforeach
 
-	rune_list.Append(GetObjProperty(rune, "spellinfo"));
+    // Verificação do limite de pergaminhos
+    if (rune_list.Size() >= max_scrolls)
+        SendSysMessageEx(who, "Este livro ja esta cheio.", SSM_FAIL);
+        MoveItemToContainer(rune, who.backpack);
+        return 0;
+    endif
 
-	SetObjProperty(book, "spells", rune_list);
+    if (!ReserveItem(rune))
+        SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+        MoveItemToContainer(rune, who.backpack);
+        return 0;
+    endif
 
-	SendSysMessage(who, "Voce adicionou o pergaminho no livro.");
-	var e2 := ReleaseItem(rune);
-	var e := DestroyItem(rune);
-	Set_Critical(0);
+    Set_Critical(1);
+    rune_list.Append(new_spell);
+    SetObjProperty(book, "spells", rune_list);
+    
+    // Informa ao jogador quantos slots ainda estão disponíveis
+    var slots_remaining := max_scrolls - rune_list.Size();
+    SendSysMessageEx(who, "Voce adicionou o pergaminho no livro. Slots restantes: " + slots_remaining, SSM_INFO);
+    
+    ReleaseItem(rune);
+    DestroyItem(rune);
+    Set_Critical(0);
 
-	return 1;
+    return 1;
 endfunction

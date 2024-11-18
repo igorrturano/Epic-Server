@@ -60,7 +60,7 @@ function CS_GetAverageDamage(weapon)
 endfunction
 
 function getMaxDamages(weapon)
-	var prop := getPropBase(weapon);
+	var prop := weapon.getAttrBase();
 	var dices := struct;
 	dices.+SlashDamage := prop.SlashDamage;
 	dices.+PiercingDamage := prop.PiercingDamage;

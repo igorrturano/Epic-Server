@@ -155,42 +155,35 @@ endfunction
 //   254 - Unknown effect...
 
 function weathereffects(type, duration, severity := 5)
+    var i;
+    for(i := 0; i <= duration*30; i := i+1)
+        var weatherid := CStr(type);
+        var id_len := len(weatherid);
 
-	var i;
-	for(i := 0; i <= duration*30; i := i+1)
-		
-		var weatherid := CStr(type);
-		var id_len := len(weatherid);
-
-		if( id_len == 0 )
-			weatherid := "00";
-		elseif( id_len == 1)
- 			weatherid := "0" + weatherid;
- 		endif 
-	 	
-	 	var packet := "65"+weatherid+"7000";
-	 
+        if( id_len == 0 )
+            weatherid := "00";
+        elseif( id_len == 1)
+            weatherid := "0" + weatherid;
+        endif 
+        
+        var packet := "65"+weatherid+"7000";
+        
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
-		foreach person in EnumerateOnlineCharacters()
-            if (!GetObjProperty(person, "molhado"))
-                SetObjProperty(person, "molhado", 1);
-            endif
-            var itemsinbag := EnumerateItemsInContainer(person.backpack);
-            foreach item in itemsinbag
-                if (item.objtype in fire_weapons)
-                    SetObjProperty(item, "balas", 0);
-                    SendSysMessageEx(person, "A polvora da sua arma molhou!", SSM_INFO);
-                endif
-            endforeach
-			if (person.x < 4174)
-				playweathersound(type, person);
-				SendPacket(person, packet);
+        foreach person in EnumerateOnlineCharacters()
+			if (!person.isUnderRoof())
+				wetPowder(person);
+            	SetWeatherForPlayer(person, type, 50);
 			endif
-		endforeach
-		
-		sleep(5);
-	endfor
-	foreach person in EnumerateOnlineCharacters()
+            
+            if (person.x < 4174)
+                playweathersound(type, person);
+                SendPacket(person, packet);
+            endif
+        endforeach
+        sleep(5);
+    endfor
+    
+    foreach person in EnumerateOnlineCharacters()
         EraseObjProperty(person, "molhado");
     endforeach
 endfunction
@@ -468,4 +461,31 @@ function updateCharacterAge(who)
         chardata.current_age := new_age;
         SetObjProperty(who, "chardata", chardata);
     endif
+endfunction
+
+function wetPowder(who)
+    SetObjProperty(who, "molhado", 1);
+    SendSysMessageEx(who, "Você está molhado!", SSM_INFO);
+    var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+
+    var itemsinbag := EnumerateItemsInContainer(who.backpack);
+    foreach item in itemsinbag
+        var container := item.container;
+        if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+            SendSysMessageEx(who, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+        if (item.objtype in fire_weapons)
+            SetObjProperty(item, "balas", 0);
+            SendSysMessageEx(who, "A pólvora da sua arma molhou!", SSM_FAIL);
+        endif
+    endforeach
+
+    var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+    foreach item in items
+        if (item.objtype == 0x9092)
+            PrintTextAbove(item, "*Molhada*");
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+    endforeach
 endfunction
