@@ -610,16 +610,11 @@ function getWeightByType(item)
 
 	if(item.isA(POLCLASS_WEAPON))
 		var maxMainDamage := item.getMainDamageMax();
-		print("maxMainDamage ->"+maxMainDamage);
 		maxMainDamage := Max(array{maxMainDamage.SlashDamage, maxMainDamage.PiercingDamage, maxMainDamage.BluntDamage});
-		print("maxMainDamage ->"+maxMainDamage);
 		var maxOffDamage := item.getOffDamageMax();
-		print("maxOffDamage ->"+maxOffDamage);
 		maxOffDamage := Max(array{maxOffDamage.SlashDamage, maxOffDamage.PiercingDamage, maxOffDamage.BluntDamage});
-		print("maxOffDamage ->"+maxOffDamage);
 
 		weight := CInt(maxMainDamage + maxOffDamage);
-		print("weight ->"+weight);
 	elseif (item.isA(POLCLASS_ARMOR))
 		if (item.isShield())
 			weight := item.getAttrBase().DexPen;
