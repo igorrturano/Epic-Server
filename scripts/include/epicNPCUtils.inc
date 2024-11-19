@@ -1,17 +1,17 @@
 use util;
 
+include ":attributes:attributes";
 include ":equipsys:equipstats";
 include ":equipsys:props";
 
-function customizeNpc(mob)
+function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
-
 	var classe := npc_elem.Classe;
-	var tier := CInt(npc_elem.Tier);
+	var tier := set_tier == "0" ? CInt(npc_elem.Tier) : CInt(set_tier);
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
-	
+	 
 	var mob_skill := 0;
 	if (tier == 1)
 		mob_skill += RandomIntMinMax(20, 40+1);
