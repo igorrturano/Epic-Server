@@ -549,7 +549,8 @@ function addDurability(stats, item)
 	if (item.isA(POLCLASS_ARMOR))
 		stats.MaxHP += getDurabilityBySlot(item);
 	endif
-	//stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
+
+	stats.MaxHP := stats.MaxHP * (1-getDurabilityModByMaterial(item)); // Multiplica pelo MOD do material
 
 	return stats;
 endfunction
@@ -589,12 +590,49 @@ function getDurabilityBySlot(item)
 endfunction
 
 function getDurabilityModByMaterial(item)
+	var maxhp := 0;
+
+	return CInt(1-maxhp);
 endfunction
 
 function addWeight(stats, item)
 	stats.+Weight := 0;
 
+	stats.Weight += getWeightByType(item);
+
+	// stats.Weight := stats.Weight * getWeightByMaterial(item);
+
 	return stats;
+endfunction
+
+function getWeightByType(item)
+	var weight;
+
+	if(item.isA(POLCLASS_WEAPON))
+		var maxMainDamage := item.getMainDamageMax();
+		print("maxMainDamage ->"+maxMainDamage);
+		maxMainDamage := Max(array{maxMainDamage.SlashDamage, maxMainDamage.PiercingDamage, maxMainDamage.BluntDamage});
+		print("maxMainDamage ->"+maxMainDamage);
+		var maxOffDamage := item.getOffDamageMax();
+		print("maxOffDamage ->"+maxOffDamage);
+		maxOffDamage := Max(array{maxOffDamage.SlashDamage, maxOffDamage.PiercingDamage, maxOffDamage.BluntDamage});
+		print("maxOffDamage ->"+maxOffDamage);
+
+		weight := CInt(maxMainDamage + maxOffDamage);
+		print("weight ->"+weight);
+	elseif (item.isA(POLCLASS_ARMOR))
+		if (item.isShield())
+			weight := item.getAttrBase().DexPen;
+		else
+			// Poderia ter sido feito direto no weight. Deixar assim pra caso precise de algum MOD futuramente.
+			var armorAttr := item.getAttrBase();
+			var maxResist := Max(array{armorAttr.SlashResist, armorAttr.PiercingResist, armorAttr.BluntResist});
+
+			weight := maxResist;
+		endif
+	endif
+
+	return weight;
 endfunction
 
 function addSTRRequired(stats, item)
