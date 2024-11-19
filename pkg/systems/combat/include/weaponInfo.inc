@@ -60,21 +60,19 @@ function CS_GetAverageDamage(weapon)
 endfunction
 
 function getMaxDamages(weapon)
-	var prop := weapon.getAttrBase();
+	var weaponAttr := weapon.getAttrBase();
 	var dices := struct;
-	dices.+SlashDamage := prop.SlashDamage;
-	dices.+PiercingDamage := prop.PiercingDamage;
-	dices.+BluntDamage := prop.BluntDamage;
+	dices.+SlashDamage := weaponAttr.SlashDamage;
+	dices.+PiercingDamage := weaponAttr.PiercingDamage;
+	dices.+BluntDamage := weaponAttr.BluntDamage;
 
 	dices.SlashDamage := SplitWords(dices.SlashDamage, "d");
 	dices.PiercingDamage := SplitWords(dices.PiercingDamage, "d");
 	dices.BluntDamage := SplitWords(dices.BluntDamage, "d");
 
-	dices.SlashDamage := SlashDamage[1]*SlashDamage[2];
-	dices.PiercingDamage := PiercingDamage[1]*PiercingDamage[2];
-	dices.BluntDamage := BluntDamage[1]*BluntDamage[2];
-
-	// TODO: Adicionar soma do dado.
+	dices.SlashDamage := dices.SlashDamage[1]*dices.SlashDamage[2];
+	dices.PiercingDamage := dices.PiercingDamage[1]*dices.PiercingDamage[2];
+	dices.BluntDamage := dices.BluntDamage[1]*dices.BluntDamage[2];
 
 	return dices;
 endfunction
