@@ -33,6 +33,24 @@ exported function getMainDamageDice(item)
 	endif
 endfunction
 
+exported function getMainDamageMax(weapon)
+	var weaponAttr := weapon.getAttrBase();
+	var dices := struct;
+	dices.+SlashDamage := weaponAttr.SlashMainDamage;
+	dices.+PiercingDamage := weaponAttr.PiercingMainDamage;
+	dices.+BluntDamage := weaponAttr.BluntMainDamage;
+
+	dices.SlashDamage := SplitWords(dices.SlashDamage, "d");
+	dices.PiercingDamage := SplitWords(dices.PiercingDamage, "d");
+	dices.BluntDamage := SplitWords(dices.BluntDamage, "d");
+
+	dices.SlashDamage := CInt(dices.SlashDamage[1])*CInt(dices.SlashDamage[2]);
+	dices.PiercingDamage := CInt(dices.PiercingDamage[1])*CInt(dices.PiercingDamage[2]);
+	dices.BluntDamage := CInt(dices.BluntDamage[1])*CInt(dices.BluntDamage[2]);
+
+	return dices;
+endfunction
+
 /**
  * getOffDamageDice(item)
  *
@@ -57,6 +75,24 @@ exported function getOffDamageDice(item)
 	else
 		return error{"errortext" := "No dice damage found!"};
 	endif
+endfunction
+
+exported function getOffDamageMax(weapon)
+	var weaponAttr := weapon.getAttrBase();
+	var dices := struct;
+	dices.+SlashDamage := weaponAttr.SlashOffDamage;
+	dices.+PiercingDamage := weaponAttr.PiercingOffDamage;
+	dices.+BluntDamage := weaponAttr.BluntOffDamage;
+
+	dices.SlashDamage := SplitWords(dices.SlashDamage, "d");
+	dices.PiercingDamage := SplitWords(dices.PiercingDamage, "d");
+	dices.BluntDamage := SplitWords(dices.BluntDamage, "d");
+
+	dices.SlashDamage := CInt(dices.SlashDamage[1])*CInt(dices.SlashDamage[2]);
+	dices.PiercingDamage := CInt(dices.PiercingDamage[1])*CInt(dices.PiercingDamage[2]);
+	dices.BluntDamage := CInt(dices.BluntDamage[1])*CInt(dices.BluntDamage[2]);
+
+	return dices;
 endfunction
 
 /**
@@ -162,3 +198,4 @@ exported function isThrowable(item)
 	var elem := getItemCfgElem(item);
 	return elem.Throwable != error;
 endfunction
+
