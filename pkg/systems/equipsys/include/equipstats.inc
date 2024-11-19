@@ -6,7 +6,6 @@ use os;
 use cfgfile;
 
 include "utils";
-// include "props";
 include ":attributes:attributeConstants";
 
 /////////////
@@ -30,7 +29,15 @@ function getWeaponStats(weapon)
 
 	stats := addDamagePhysical(stats, weapon);
 	stats := addDamageElemental(stats, weapon);
-	stats := addOthersAttributes(stats, weapon);
+	stats := addCombatAttributes(stats, weapon);
+
+	stats := addDurability(stats, weapon);
+	stats := addWeight(stats, weapon);
+	stats := addSTRRequired(stats, weapon);
+
+	// TODO: Função para setar HP na prop
+	// TODO: Função para setar PESO na prop
+	// TODO: Função para setar STRRequired na prop
 
 	return stats;
 endfunction
@@ -55,33 +62,39 @@ endfunction
 
 function addDamageElemental(stats, weapon)
 	// Danos físicos são dados, danos elementais são puros
-	stats.+FireDamage := 0;
-	stats.+ColdDamage := 0;
-	stats.+PoisonDamage := 0;
-	stats.+EnergyDamage := 0;
-
-	stats := addDamageElementalByWeapon(stats, weapon);
+	stats.+FireDamage := getDamageElemental("FIRE", weapon);
+	stats.+ColdDamage := getDamageElemental("COLD", weapon);
+	stats.+PoisonDamage := getDamageElemental("POISON", weapon);
+	stats.+EnergyDamage := getDamageElemental("ENERGY", weapon);
 
 	return stats;
 endfunction
 
-function addDamageElementalByWeapon(stats, weapon)
-	var attr := weapon.getAttrBase();
+function getDamageElemental(DMGTYPE, weapon)
+	case(DMGTYPE)
+		"FIRE":
+			return CInt(weapon.getAttrBase().FireDamage);
 
-	stats.FireDamage += CInt(attr.FireDamage);
-	stats.ColdDamage += CInt(attr.ColdDamage);
-	stats.PoisonDamage += CInt(attr.PoisonDamage);
-	stats.EnergyDamage += CInt(attr.EnergyDamage);
+		"COLD":
+			return CInt(weapon.getAttrBase().ColdDamage);
 
-	return stats;
+		"POISON":
+			return CInt(weapon.getAttrBase().PoisonDamage);
+
+		"ENERGY":
+			return CInt(weapon.getAttrBase().EnergyDamage);
+
+		default:
+			return 0;	
+	endcase
 endfunction
 
-function addOthersAttributes(stats, weapon)
+function addCombatAttributes(stats, weapon)
 	var elem := getItemCfgElem(weapon);
 
 	stats.+AttackType := elem.TipoAtaque;
 	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
-	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.EpicCriticalChance);
 
 	return stats;
 endfunction
@@ -189,7 +202,10 @@ function getArmorStats(armor)
 	if (armor.isShield())
 		stats := addShieldMods(stats, armor);
 	endif
-	// TODO: Calcular HP, durabilidade, Str required.
+
+	// TODO: Função para setar HP na prop
+	// TODO: Função para setar PESO na prop
+	// TODO: Função para setar STRRequired na prop
 
 	return stats;
 endfunction
@@ -284,6 +300,7 @@ function getResistPhysicalBySlot(armor)
 endfunction
 
 function getResistPhysicalByMaterial(armor)
+	// TODO: Fazer com ObjType mesmo, pra caso algum material mude de nome...
 	var resists := array{};
 	// Feito com 3 valores também, pra caso, no futuro, resolva criar materiais com resistência melhor em determinada situação
 	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
@@ -510,4 +527,22 @@ function getShieldModsByProtection(shield)
 		"ParryDelay" -> mods[1],
 		"ParryBonus" -> mods[2]
 	};
+endfunction
+
+function addDurability(stats, item)
+	stats.+MaxHP := 0;
+
+	return stats;
+endfunction
+
+function addWeight(stats, item)
+	stats.+Weight := 0;
+
+	return stats;
+endfunction
+
+function addSTRRequired(stats, item)
+	stats.+STRRequired := 0;
+
+	return stats;
 endfunction

@@ -76,8 +76,6 @@ exported function getType(item)
 	return elem.TipoAtaque ? elem.TipoAtaque : error{"errortext" := "The item have no Attack Type!"};
 endfunction
 
-
-
 /**
  * isDualWield(item)
  *
