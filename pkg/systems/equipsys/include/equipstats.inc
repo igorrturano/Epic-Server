@@ -4,6 +4,7 @@
 
 use os;
 use cfgfile;
+use math;
 
 include "utils";
 include ":attributes:attributeConstants";
@@ -207,6 +208,10 @@ function getArmorStats(armor)
 	// TODO: Função para setar PESO na prop
 	// TODO: Função para setar STRRequired na prop
 
+	stats := addDurability(stats, armor);
+	stats := addWeight(stats, armor);
+	stats := addSTRRequired(stats, armor);
+
 	return stats;
 endfunction
 
@@ -304,46 +309,54 @@ function getResistPhysicalByMaterial(armor)
 	var resists := array{};
 	// Feito com 3 valores também, pra caso, no futuro, resolva criar materiais com resistência melhor em determinada situação
 	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
-	case (Upper(armor.getMaterialName())) // {SlashResist, PiercingResist, BluntResist}
+	case (Upper(armor.getMaterialID())) // {SlashResist, PiercingResist, BluntResist}
 		// TECIDOS
-		"LA":
-		"ALGODAO":
-		"SEDA":
-		"LINHO":
-		"MALVA":
-		"SISAL":
-		"DENIM":
-		"RAMI":
-		"FLAMEL":
-		"RAJAR":
+		0xf125: // Lã
+		0xdf9: // Algodão
+		0x1a94: // Seda
+		0x1a9C: // Linho
+		0xdfa: // Malva
+		0xdfb: // Sisal
+		0xdfc: // Denim
+		0xdfd: // Rami
+		0xdf6: // Flamel
+		0xdf7: // Rajal
 
 		// PELES
-		"PELE CINZA":
-		"PELE BEGE":
-		"PELE MARROM":
-		"PELE POLAR":
+		0xee55: // Cinza
+		0xee56: // Marrom
+		0xee57: // Bege
+		0xee58: // Polar
 
 		// COUROS
-		"COURO CURTIDO":
-		"COURO PELUDO":
-		"COURO EFERVECIDO":
-		"COURO POLAR":
-		"COURO ESCAMOSO":
-		"COURO DRACONIANO":
-		"COURO DE GIGANTE":
-		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break;
+		0xee45: // Curtido
+		0xef24: // Peludo
+		"COURO EFERVECIDO": // Efervecido
+		0xef26: // Polar
+		0xef20: // Escamoso 
+		0xed29: // Draconiano
+		0xef27: // Gigante
+		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break; // Profundezas
 
 		// METAIS
-		"COBRE": resists := {0,0,0}; break;
+		"COBRE": resists := {0,0,0}; break; // Cobre
 
-		"BRONZE": resists := {1,1,1}; break;
-		"FERRO": resists := {1,1,1}; break;
-		"FERROTEMPERADO": resists := {2,2,2}; break;
+		"BRONZE": resists := {1,1,1}; break; // Bronze
+		"FERRO": resists := {1,1,1}; break; // Ferro
+		"FERROTEMPERADO": resists := {2,2,2}; break; // Ferro Temperado
 
-		"ACO": "FULMETIUM": "VENETIUM": "IGNIUM": "FRIGUTIUM": resists := {3,3,3}; break;
+		"ACO": // Aço
+		"FULMETIUM": // Fulmetium
+		"VENETIUM": // Venetium
+		"IGNIUM": // Ignium
+		"FRIGUTIUM": // Frigutium
+			resists := {3,3,3}; break;
 		
-		"ILLYRA": resists := {4,4,4}; break;
-		"MITHRIL": resists := {5,5,5}; break;
+		"ILLYRA": // Illyra
+			resists := {4,4,4}; break;
+
+		"MITHRIL": // Mithril
+			resists := {5,5,5}; break;
 
 		// OSSOS
 		"OSSO":
@@ -532,7 +545,50 @@ endfunction
 function addDurability(stats, item)
 	stats.+MaxHP := 0;
 
+	stats.MaxHP += getDurabilityByType(item);
+	if (item.isA(POLCLASS_ARMOR))
+		stats.MaxHP += getDurabilityBySlot(item);
+	endif
+	//stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
+
 	return stats;
+endfunction
+
+function getDurabilityByType(item)
+	var maxhp := 0;
+	
+	if(item.isA(POLCLASS_WEAPON))
+		case (item.getType())
+			SLASHDAMAGE: maxhp := 45; break;
+			PIERCINGDAMAGE: maxhp := 60; break;
+			BLUNTDAMAGE: maxhp := 75; break;
+
+			default: maxhp := 0; break;
+		endcase
+	elseif (item.isA(POLCLASS_ARMOR))
+		if (item.isShield())
+			case (item.getType().Upper())
+				SHIELD_BUCKLER: maxhp := 40; break;
+				SHIELD_SMALL: maxhp := 60; break;
+				SHIELD_MEDIUM: maxhp := 80; break;
+				SHIELD_LARGE: maxhp := 100; break;
+				SHIELD_TOWER: maxhp := 120; break;
+
+				default: maxhp := 0; break;
+			endcase
+		else
+			maxhp := Max(getResistPhysicalByProtection(item));
+		endif
+	endif
+
+	return maxhp;
+endfunction
+
+function getDurabilityBySlot(item)
+	return Max(getResistPhysicalBySlot(item));
+endfunction
+
+function getDurabilityModByMaterial(item)
 endfunction
 
 function addWeight(stats, item)
