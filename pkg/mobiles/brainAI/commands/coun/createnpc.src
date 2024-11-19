@@ -10,6 +10,7 @@ include ":brainAI:npcUtil";
 include ":datafile:datafile";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include "include/epicNPCUtils";
 
 const UNCACHE_BTN	:= 0xFFFE;
 const UNLOADCFG_BTN	:= 0xFFFF;
@@ -17,7 +18,10 @@ const DEFAULT_CATEGORY	:= "None";
 
 var g_datafile := DFOpenDataFile(":brainAI:createnpc", DF_CREATE);
 
-program textcmdcreateNPC(who, template)
+program textcmdcreateNPC(who, text)
+	text := SplitWords(text);
+	var template := text[1];
+	var tier := text[2] ? text[2] : "0";
 	if ( !template )
 		template := SelectTemplateFromGump(who);
 		if ( !template )
@@ -45,7 +49,7 @@ program textcmdcreateNPC(who, template)
 			endif
 		endif
 	endif
-	
+		customizeNpc(npc, tier);
 	return 1;
 endprogram
 
