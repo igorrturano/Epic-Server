@@ -59,24 +59,6 @@ function CS_GetAverageDamage(weapon)
 	return CInt(average);
 endfunction
 
-function getMaxDamages(weapon)
-	var weaponAttr := weapon.getAttrBase();
-	var dices := struct;
-	dices.+SlashDamage := weaponAttr.SlashDamage;
-	dices.+PiercingDamage := weaponAttr.PiercingDamage;
-	dices.+BluntDamage := weaponAttr.BluntDamage;
-
-	dices.SlashDamage := SplitWords(dices.SlashDamage, "d");
-	dices.PiercingDamage := SplitWords(dices.PiercingDamage, "d");
-	dices.BluntDamage := SplitWords(dices.BluntDamage, "d");
-
-	dices.SlashDamage := dices.SlashDamage[1]*dices.SlashDamage[2];
-	dices.PiercingDamage := dices.PiercingDamage[1]*dices.PiercingDamage[2];
-	dices.BluntDamage := dices.BluntDamage[1]*dices.BluntDamage[2];
-
-	return dices;
-endfunction
-
 function CheckBastardSword(who)
 	if (who.weapon.objtype == 0x13b9 && !who.shield)
 		return 1;
