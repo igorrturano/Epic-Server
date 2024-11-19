@@ -5,6 +5,7 @@ use vitals;
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 include ":combat:damage";
+include ":nature:nature";
 
 function EfeitosTremor(item, danobase, danoale, dif, range)
     //  if( who.cmdlevel > 0)
@@ -81,7 +82,7 @@ function EfeitosClima(item, options, duration, range)
     endif
     while (i < duration)
         // se tiver polvora, destruir
-        var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+        var items := ListItemsNearLocation(item.x, item.y, item.z, 20, item.realm);
         foreach item in items
             if (item.objtype == 0x9092)
                 PrintTextAbove(item, "*Molhada*");
@@ -157,26 +158,4 @@ function windsound(person)
     if (randomdiceroll("1d4") == 2)
         playsoundeffect(person, wind[randomint(3) + 1]);
     endif
-endfunction
-
-function DoBolt(who)
-    if (who.multi)
-        return;
-    endif
-    var lightning := {41, 42, 519};
-    var xpos := who.x;
-    var ypos := who.y;
-    var xrand := RandomInt(20);
-    var yrand := RandomInt(20);
-    xpos := ((xpos - xrand) + 10);
-    ypos := ((ypos - yrand) + 10);
-    var zpos := GetMapInfo(xpos, ypos).z;
-    var mob := CreateNpcFromTemplate(":brainai:rabbit", xpos, ypos, zpos);
-    mob.cmdlevel := 2;
-    mob.concealed := 1;
-    setobjproperty(mob, "guardkill", 1);
-    PlayLightningBoltEffect(mob);
-    playsoundeffect(mob, lightning[randomint(3) + 1]);
-    MoveObjectToLocation(mob, 10, 10, 10, mob.realm, MOVEOBJECT_FORCELOCATION);
-    mob.kill();
 endfunction
