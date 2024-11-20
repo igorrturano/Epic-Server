@@ -94,7 +94,7 @@ function addCombatAttributes(stats, weapon)
 	var elem := getItemCfgElem(weapon);
 
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
 	stats.+CriticalChance := getCriticalChanceByTier(elem.EpicCriticalChance);
 
 	return stats;
@@ -219,6 +219,8 @@ function addResistsPhysical(stats, armor)
 	stats.+SlashResist := 0;
 	stats.+PiercingResist := 0;
 	stats.+BluntResist := 0;
+
+	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 	
 	stats := addResistPhysicalBy("MATERIAL", stats, armor);
 	stats := addResistPhysicalBy("SLOT", stats, armor);
@@ -305,11 +307,10 @@ function getResistPhysicalBySlot(armor)
 endfunction
 
 function getResistPhysicalByMaterial(armor)
-	// TODO: Fazer com ObjType mesmo, pra caso algum material mude de nome...
+	// TODO: Pensar em transformar isso daqui em uma função que retorne TODAS as infos do material em um struct: Danos (Físicos e Elementais), Resists (Físicos e Elementais), mod de peso, mod de HP, etc.
 	var resists := array{};
-	// Feito com 3 valores também, pra caso, no futuro, resolva criar materiais com resistência melhor em determinada situação
 	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
-	case (Upper(armor.getMaterialID())) // {SlashResist, PiercingResist, BluntResist}
+	case (armor.getMaterialID()) // {SlashResist, PiercingResist, BluntResist}
 		// TECIDOS
 		0xf125: // Lã
 		0xdf9: // Algodão
@@ -339,23 +340,24 @@ function getResistPhysicalByMaterial(armor)
 		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break; // Profundezas
 
 		// METAIS
-		"COBRE": resists := {0,0,0}; break; // Cobre
+		0x6991: resists := {-2,-3,-4}; break;// Estanho
+		0x6465: resists := {0,0,0}; break; // Cobre
 
-		"BRONZE": resists := {1,1,1}; break; // Bronze
-		"FERRO": resists := {1,1,1}; break; // Ferro
-		"FERROTEMPERADO": resists := {2,2,2}; break; // Ferro Temperado
+		0x6994: resists := {1,1,1}; break; // Bronze
+		0x62ff: resists := {1,1,1}; break; // Ferro
+		0x6309: resists := {2,2,2}; break; // Ferro Temperado
 
-		"ACO": // Aço
-		"FULMETIUM": // Fulmetium
-		"VENETIUM": // Venetium
-		"IGNIUM": // Ignium
-		"FRIGUTIUM": // Frigutium
+		0x6995: // Aço
+		0x630b: // Fulmetium
+		0x630c: // Venetium
+		0x630d: // Ignium
+		0x6460: // Frigutium
 			resists := {3,3,3}; break;
 		
-		"ILLYRA": // Illyra
+		0x6315: // Illyra
 			resists := {4,4,4}; break;
 
-		"MITHRIL": // Mithril
+		0x6311: // Mithril
 			resists := {5,5,5}; break;
 
 		// OSSOS
@@ -384,6 +386,8 @@ function addResistsElemental(stats, armor)
 	stats.+ColdResist := 0;
 	stats.+PoisonResist := 0;
 	stats.+EnergyResist := 0;
+
+	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 
 	stats := addResistElementalByArmor(stats, armor);
 
@@ -550,7 +554,7 @@ function addDurability(stats, item)
 		stats.MaxHP += getDurabilityBySlot(item);
 	endif
 
-	stats.MaxHP := stats.MaxHP * (1-getDurabilityModByMaterial(item)); // Multiplica pelo MOD do material
+	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
 
 	return stats;
 endfunction
@@ -578,7 +582,8 @@ function getDurabilityByType(item)
 				default: maxhp := 0; break;
 			endcase
 		else
-			maxhp := Max(getResistPhysicalByProtection(item));
+			var resists := getResistPhysicalByProtection(item);
+			maxhp := Max(array{resists["SlashResist"], resists["PiercingResist"], resists["BluntResist"]});
 		endif
 	endif
 
@@ -590,9 +595,15 @@ function getDurabilityBySlot(item)
 endfunction
 
 function getDurabilityModByMaterial(item)
-	var maxhp := 0;
+	var modifier := 0;
 
-	return CInt(1-maxhp);
+	case (item.getMaterialID())
+		0x6309: modifier := 1; break; // Ferro
+
+		default: modifier := 0.5;
+	endcase
+
+	return CDbl(modifier);
 endfunction
 
 function addWeight(stats, item)
@@ -600,9 +611,21 @@ function addWeight(stats, item)
 
 	stats.Weight += getWeightByType(item);
 
-	// stats.Weight := stats.Weight * getWeightByMaterial(item);
+	stats.Weight := CInt(stats.Weight * getWeightModByMaterial(item));
 
 	return stats;
+endfunction
+
+function getWeightModByMaterial(item)
+var modifier := 0;
+
+	case (item.getMaterialID())
+		0x6309: modifier := 1.2; break; // Ferro
+
+		default: modifier := 1;
+	endcase
+
+	return CDbl(modifier);
 endfunction
 
 function getWeightByType(item)
@@ -632,6 +655,8 @@ endfunction
 
 function addSTRRequired(stats, item)
 	stats.+STRRequired := 0;
+
+	// stats.STRRequired += getSTRRequiredByType(item);
 
 	return stats;
 endfunction
