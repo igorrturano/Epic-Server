@@ -43,7 +43,7 @@ program skill_Stealth( who )
 		skill := skill - 20;
 	endif
 
-	if (temHabilidade(who, "Valm Oloth") && InDarkness(who))
+	if (GetCooldown(who, "Invisibilidade Aprimorada") && InDarkness(who))
 		skill := AP_GetSkill(who, MAGICLORE);
 		if (skill < 50)
 			SendSysMessageEx(who, "Voce nao consegue se mover furtivamente!", SSM_FAIL);
@@ -121,7 +121,7 @@ program skill_Stealth( who )
 				endif
 				return 0;
 			endif
-	elseif (temHabilidade(who, "Valm Oloth") && InDarkness(who))
+	elseif (GetCooldown(who, "Invisibilidade Aprimorada") && InDarkness(who))
 		var check := SkillCheck(who, MAGICLORE, diff);
 		if( check > 0 )
 		who.stealthsteps := baseSteps;
