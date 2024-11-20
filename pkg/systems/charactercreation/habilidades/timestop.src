@@ -14,6 +14,10 @@ program SpellScript(params)
         SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
         return 0;
     endif
+	var time := 10;
+	if (TemHabilidade(who, "Valdruk"))
+		time := 20;
+	endif
     
     var targets := array;
 	foreach mobile in (ListMobilesNearLocation( who.x, who.y, who.z, 12, who.realm))
@@ -26,7 +30,7 @@ program SpellScript(params)
 
 	foreach mobile in targets
 			if (mobile != who)
-				TS_StartTimer(mobile, "paralysis", 20);
+				TS_StartTimer(mobile, "paralysis", time);
 				SendSysMessageEx(mobile, "Voce esta completamente paralisado.", SSM_INFO);
 				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+15, mobile.realm,  6161, 200, 200);
 			endif
