@@ -125,7 +125,21 @@ program skill_armslore(who)
 		SetName(item, item.desc);
 		AddAmount(item, backup-1);
 	else
-		SendSysMessageEx(who, "Este item não possui propriedades mágicas a serem ativadas.", SSM_INFO);
+		var whos := GetObjProperty(item, "magicwho");
+		if (whos == error)
+			whos := array;
+		endif
+		if ( !(who.serial in whos))
+			if (SkillCheck(who, MAGICLORE, -1) > 0)
+				whos.append(who.serial);	
+				SetObjProperty(item, "magicwho", whos);
+				SendSysMessageEx(who, "Este item não possui propriedades mágicas a serem ativadas.", SSM_INFO);
+			else
+				SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
+			endif
+		else
+			SendSysMEssageEx(who, "Você já identificou este item", SSM_INFO);
+		endif
 	endif
 
 			
