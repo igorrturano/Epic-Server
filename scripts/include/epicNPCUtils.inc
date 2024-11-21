@@ -1,17 +1,17 @@
 use util;
 
+include ":attributes:attributes";
 include ":equipsys:equipstats";
 include ":equipsys:props";
 
-function customizeNpc(mob)
+function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
-
 	var classe := npc_elem.Classe;
-	var tier := CInt(npc_elem.Tier);
+	var tier := set_tier == "0" ? CInt(npc_elem.Tier) : CInt(set_tier);
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
-	
+	 
 	var mob_skill := 0;
 	if (tier == 1)
 		mob_skill += RandomIntMinMax(20, 40+1);
@@ -71,7 +71,7 @@ function customizeNpc(mob)
     endif
 
 	SetObjProperty(mob, "hitsmod", hitsmod + hp);
-
+	SetObjProperty(mob, "anchor", array{ mob.x, mob.y, mob.z+2 });
 	RecalcVitals(mob);
     HealDamage(mob, hitsmod + hp);
 endfunction
@@ -207,8 +207,8 @@ function getNPCMainDamage(npc, type)
 
 		damage.+dice := getDamageByTier(damageTier);
 	else
-		setPropWeapon(npc.weapon);
-		damage.+dice := getWeaponMainDamageDice(npc.weapon);
+		if (!npc.weapon.getAttrBase()) npc.weapon.setAttrBase(0); endif
+		damage.+dice := npc.weapon.getMainDamageDice();
 	endif
 
 	return damage;

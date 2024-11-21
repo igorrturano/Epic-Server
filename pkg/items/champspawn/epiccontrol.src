@@ -29,10 +29,11 @@ program control(altar)
         mobsBySerial[3] := summonLevelMobs(altar, 3, mobsBySerial, totalMobs[3]);
 
         SetObjProperty(altar, "spawned", 1);
+        SetObjProperty(altar, "mobsBySerial", mobsBySerial);
     endif
-    SetObjProperty(altar, "mobsBySerial", mobsBySerial);
+
     while (altar)
-            var mobs := GetObjProperty(altar, "mobsBySerial");
+        var mobs := GetObjProperty(altar, "mobsBySerial");
 
         validateAndResummonMobs(altar, mobs, totalMobs);
         sleep(RESPAWN_DELAY);
@@ -122,7 +123,6 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
 
         mobsBySerial[level] := currentMobs;
         SetObjProperty(altar, "mobsBySerial", mobsBySerial);
-        return;
     endforeach
 endfunction
 
