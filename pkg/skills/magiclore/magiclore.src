@@ -101,6 +101,7 @@ program skill_armslore(who)
 			whos := array;
 		endif
 		if ( !(who.serial in whos))
+			PrintText(who, "*analisando um item*");
 			if (SkillCheck(who, MAGICLORE, -1) > 0)
 				whos.append(who.serial);	
 				SetObjProperty(item, "magicwho", whos);
@@ -130,6 +131,7 @@ program skill_armslore(who)
 			whos := array;
 		endif
 		if ( !(who.serial in whos))
+			PrintText(who, "*analisando um item*");
 			if (SkillCheck(who, MAGICLORE, -1) > 0)
 				whos.append(who.serial);	
 				SetObjProperty(item, "magicwho", whos);
