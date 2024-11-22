@@ -10,10 +10,13 @@ include ":attributes:attributes";
 program spell_MirrorImage(params)
 	var who := params[1];
 	var info := params[2];
-    // Spell parameters
-    var numCopies := CInt(AP_GetSkill(who, MAGICLORE) / 30);
+    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+
+    var numCopies := Cint(mlore / 30);
+    var copyDuration := Cint(mlore / 5);
     if (TemHabilidade(who, "Valdruk"))
         numCopies := numCopies * 2;
+        copyDuration := copyDuration * 2;
     endif
     if(numCopies < 1)
         numCopies := 1;
@@ -21,7 +24,7 @@ program spell_MirrorImage(params)
 
     // Array to store all copies
     var copies := array{};
-    
+    who.hidden := 1;
     // Create copies
     for i := 1 to numCopies
         var copy := CreateCopy(who, GetRandomPosition(who));
@@ -43,6 +46,16 @@ program spell_MirrorImage(params)
             AssignTargets(copies, hostiles);
         endif
     endif
+
+    sleep(1);
+    foreach copy in copies
+        copy.hidden := 0;
+        copy.frozen := 0;
+    endforeach
+    who.hidden := 0;
+
+    sleep(copyDuration);
+    DestroyCopies(copies);
 
     return 1;
 endprogram
@@ -76,6 +89,8 @@ function CreateCopy(original, position)
     endif
 
     var copy := CreateNPCFromTemplate(template, position.x, position.y, position.z, 0, original.realm);
+    copy.frozen := 1;
+    copy.hidden := 1;
     copy.alignment := 2;
     if(!copy)
         return 0;
@@ -121,6 +136,8 @@ function CreateCopy(original, position)
         AP_SetTrueSkill(copy, attrib_name, valor);
         sleepms(10);
     endforeach
+
+    // Para deixar o nome azul e confundir jogadores
     copy.setMaster(original);
     return copy;
 endfunction
@@ -169,4 +186,15 @@ function SwapPositions(char1, char2)
     
     MoveObjectToLocation(char1, char2.x, char2.y, char2.z, char1.realm, MOVEOBJECT_FORCELOCATION);
     MoveObjectToLocation(char2, tempX, tempY, tempZ, char2.realm, MOVEOBJECT_FORCELOCATION);
+    char1.facing := char2.facing;
+endfunction
+
+function DestroyCopies(copies)
+    foreach copy in copies
+        if (copy)
+            SetObjProperty(copy, "guardkill", 1);
+            ApplyDamage(copy, 9999);
+        endif
+        sleepms(2);
+    endforeach
 endfunction
