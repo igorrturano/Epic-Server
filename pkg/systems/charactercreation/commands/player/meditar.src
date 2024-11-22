@@ -12,7 +12,7 @@ include ":tn:cooldown";
 include "include/epicConstants";
 
 program meditar(who, text)
-    var full_mana := AP_GetVitalMaximumValue(who, MANA);
+   var full_mana := AP_GetVitalMaximumValue(who, MANA);
     var current_mana := AP_GetVital(who, MANA);
     var start_hp := AP_GetVital(who, "Hits");
     var arcane_bows := array{0xFA6D, 0XF997};
@@ -75,10 +75,12 @@ function InitialMeditationCheck(who)
         SendSysMessage(who, "Suas maos precisam estar livres", SSM_FAIL);
         return 0;
     endif
+    
     if (who.hidden || who.concealed)  // Check if player is hidden
         SendSysMessage(who, "Voce nao pode fazer isso escondido", SSM_FAIL);
         return 0;
     endif
+    
     return 1;  
 endfunction
 
@@ -96,7 +98,7 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
         SendSysMessage(who, "Voce perdeu sua concentracao", SSM_FAIL);
         return 0;
     endif
-        // Adicionar verificação para pesquisa rápida
+    // Adicionar verificação para pesquisa rápida
     if (GetObjProperty(who, "#QuickResearching"))
         SendSysMessage(who, "Voce iniciou uma pesquisa e interrompeu sua meditacao", SSM_FAIL);
         return 0;
@@ -121,19 +123,19 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
 endfunction
 
 function EquipmentCheck(who)
-	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
-	if ( hand_1 )
-		if ( (cint(GetObjProperty(hand_1, "cancast")) != 1) )
-			return 0;
-		endif
-	endif
+    var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
+    if ( hand_1 )
+        if ( (cint(GetObjProperty(hand_1, "cancast")) != 1) )
+            return 0;
+        endif
+    endif
 
-	var hand_2 := GetEquipmentByLayer(who, LAYER_HAND2);
-	if ( hand_2 )
-		if ( (cint(GetObjProperty(hand_2, "cancast")) != 1)  )
-			return 0;
-		endif
-	endif
+    var hand_2 := GetEquipmentByLayer(who, LAYER_HAND2);
+    if ( hand_2 )
+        if ( (cint(GetObjProperty(hand_2, "cancast")) != 1)  )
+            return 0;
+        endif
+    endif
 
-	return 1;
+    return 1;
 endfunction

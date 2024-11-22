@@ -27,11 +27,11 @@ const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
 var STUDY_ACTIONS;
-
-
+var BOOK_OBJTYPES;
 
 function InitializeGlobals()
-    STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"}; 
+    STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"};
+    BOOK_OBJTYPES := array{0xA9D, 0xA9E};  
 endfunction
 
 program use_research_book(params)
@@ -60,11 +60,11 @@ program use_research_book(params)
     var activeResearch := GetActiveResearch(who);
     if (activeResearch && GetObjProperty(book, "ShowOngoing"))
         EraseObjProperty(book, "ShowOngoing");
-        if (!ShowOngoingResearchGump(who, gump))  
+        if (!ShowOngoingResearchGump(who, gump))
             return 0;
         endif
     else
-        if (!ShowMainResearchGump(who, gump))   
+        if (!ShowMainResearchGump(who, gump))
             return 0;
         endif
     endif
@@ -1253,7 +1253,6 @@ function PerformRapidResearch(who, recipe, byref gump)
             var rollResult := RandomInt(10000);
             var chanceThreshold := CInt(chance * 100);
 
-            Print("DEBUG: Roll: " + rollResult + " precisa <= " + chanceThreshold);
             
             if (rollResult <= chanceThreshold)
                 success := 1;
@@ -1509,13 +1508,11 @@ endfunction
 
 function CalculateResearchChance(who, recipe)
     var baseInt := AP_GetTrueStat(who, "Intelligence");
-    Print("DEBUG: Base INT: " + baseInt);
     
     var intBonus := 0.0;
     if (baseInt > 40)
         intBonus := Min(10.0, ((baseInt - 40) * 10.0) / 100.0);
     endif
-    Print("DEBUG: INT Bonus: " + intBonus + "%");
     
     // Corrigindo a sintaxe do case
     var levelBonus := 0.0;
@@ -1527,15 +1524,12 @@ function CalculateResearchChance(who, recipe)
         default: levelBonus := 0.0;
     endcase
     
-    Print("DEBUG: Level Bonus: " + levelBonus + "%");
     
     var failureAttempts := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
     var maxFailureBonus := 30.0 - (4.0 + intBonus + levelBonus);
     var failureBonus := Min(failureAttempts, Floor(maxFailureBonus));
-    Print("DEBUG: Failure Bonus (" + failureAttempts + " falhas): " + failureBonus + "%");
     
     var totalChance := 4.0 + intBonus + levelBonus + failureBonus;
-    Print("DEBUG: Total Chance: " + totalChance + "%");
     
     return totalChance;
 endfunction
@@ -1544,7 +1538,6 @@ function UpdateFailureCount(who)
     var currentFailures := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
     SetObjProperty(who, "#ResearchFailures", currentFailures + 1);
     SendSysMessageEx(who, "Você não encontrou a resposta que buscava, mas entendeu um pouco mais da lógica da sua pesquisa", SSM_INFO);
-    Print("DEBUG: Falhas acumuladas: " + (currentFailures + 1));
 endfunction
 
 function ResetFailuresIfDifferentResearch(who, newRecipe)
@@ -1552,7 +1545,6 @@ function ResetFailuresIfDifferentResearch(who, newRecipe)
     if (lastRecipe)
         if (lastRecipe.type != newRecipe.type || lastRecipe.power != newRecipe.power)
             EraseObjProperty(who, "#ResearchFailures");
-            Print("DEBUG: Resetando falhas - Novo tipo de pesquisa");
         endif
     endif
     SetObjProperty(who, "#LastResearchType", newRecipe);
