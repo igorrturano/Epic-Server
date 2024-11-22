@@ -29,7 +29,12 @@ program HitScript(who)
 		return 0;
 	endif
 
-    if (dist > (mlore/ 5))
+    var allowedDistance := mlore/10;
+    if (TemHabilidade(who, "Valdruk"))
+        allowedDistance := mlore/5;
+    endif
+
+    if (dist > Cint(allowedDistance))
         SendSysMessage(who, "O alvo esta muito distante");
         who.concealed := 0;
         who.frozen := 0;
