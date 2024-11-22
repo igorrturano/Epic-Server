@@ -1,11 +1,8 @@
 use cfgfile;
 use uo;
- include ":attributes:attributes";
+include ":attributes:attributes";
 include "include/say";
-include ":timedscripts:timedScripts";
 include ":loot:magicLoot";
-//include ":combat:damage";
-include ":charactercreation:habilidades";
 
 program skill_armslore(who)
 
@@ -26,124 +23,39 @@ program skill_armslore(who)
 		SendSysMessageEx(who, "Este não é um alvo valido.", SSM_FAIL);
 		return;
 	endif
-	//	PrintText(who, "*analisando " + item.name + " *");
-	//	var timers := GetMagicTimersSpellName(item);
-	//	if ( SkillCheck(who, MAGICLORE, -1) )
-	//		if (timers.size() > 0)
-	//			SendSysMessageEx(who,  "O alvo esta sob efeito dos encantamentos: ", SSM_INFO);
-	//			foreach time in (timers)
-	//				SendSysMessageEx(who, " " + time.nome, SSM_INFO);
-	//			endforeach
-	//			return;
-	//		else
-	//			SendSysMessageEx(who, "O alvo nao esta sob efeito de encantamentos.", SSM_INFO);
-	//			return;
-	//		endif
-	//	else
-	//		SendSysMessageEx(who, "Voce nao identifica nada.", SSM_FAIL);	
-	//		return;
-	//	endif
-	//endif
 
-
-	//	var swordgem := cint(GetObjProperty(item, "gemtype"));
-	//	if (swordgem)
-	//		var cfg := ReadConfigFile(":spells:config/allspells");
-	//		var elem := FindConfigElem(cfg, swordgem);
-	//		var name := GetConfigString(elem, "Name");
-	//		SendSysMessageEx(who, "Esta gema magica possui energia para: " + name, SSM_INFO);
-	//		SetObjProperty(item, "swordmage", name);
-	//		var whos := GetObjProperty(item, "magicwho");
-	//		if (whos == error)
-	//			whos := array;
-	//		endif
-	//		if ( !(who.serial in whos))
-	//			whos.append(who.serial) ;
-	//			SetObjProperty(item, "magicwho", whos);
-	//		endif
-	//		SetName(item, item.desc);
-	//		return 1;
-	//	endif
-
-	var priestrune := cint(GetObjProperty(item, "runatype"));
-	if (priestrune)
-		var cfg := ReadConfigFile(":spells:config/allspells");
-		var elem := FindConfigElem(cfg, priestrune);
-		var name := GetConfigString(elem, "Name");
-		var desc := GetConfigString(elem, "Desc");
-		var whos := GetObjProperty(item, "magicwho");
-		if (whos == error)
-			whos := array;
-		endif
-		if ( !(who.serial in whos))
-			PrintText(who, "*analisando uma runa*");
-			if (SkillCheck(who, MAGICLORE, -1) > 0)
-				whos.append(who.serial) ;
-				SetObjProperty(item, "magicwho", whos);
-				SendSysMessageEx(who, "Esta runa magica possui energia para: " + name, SSM_INFO);
-				SendSysMessageEx(who, "Descricao: " + desc, SSM_INFO);
-				SetObjProperty(item, "swordmage", name);
-				SetName(item, item.desc);
-			else
-				SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
-			endif
-		else
-			SendSysMEssageEx(who, "Você já identificou esta runa: " + name, SSM_INFO);
-			SendSysMessageEx(who, "Descricao: " + desc, SSM_INFO);
-		endif
-
-		return 1;
+	var whos := GetObjProperty(item, "magicwho");
+	if (whos == error)
+		whos := array;
 	endif
-
-	if (GetObjProperty(item, "magic"))
-		var whos := GetObjProperty(item, "magicwho");
-		if (whos == error)
-			whos := array;
-		endif
-		if ( !(who.serial in whos))
-			PrintText(who, "*analisando um item*");
-			if (SkillCheck(who, MAGICLORE, -1) > 0)
-				whos.append(who.serial);	
-				SetObjProperty(item, "magicwho", whos);
+	if ( !(who.serial in whos))
+		PrintText(who, "*analisando um item*");
+		if (SkillCheck(who, MAGICLORE, -1) > 0)
+			whos.append(who.serial);	
+			SetObjProperty(item, "magicwho", whos);
+			if (GetObjProperty(item, "magic"))
 				if (GetObjProperty(item, "equip"))
-					ActivateMagicItem(item);
-				endif	
+				ActivateMagicItem(item);
+				endif
 				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
+				var cfg := ReadConfigFile(":spells:config/allspells");
+				var elem := FindConfigElem(cfg, whos[1]);
+				var name := GetConfigString(elem, "Name");
+				if (name)
+					SetObjProperty(item, "swordmage", name);
+				endif
+				var backup := GetAmount(item);
+				SubtractAmount(item, backup-1);
+				SetName(item, item.desc);
+				AddAmount(item, backup-1);
 			else
-				SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
-			endif
-		else
-			SendSysMEssageEx(who, "Você já identificou este item", SSM_INFO);
-		endif
-		var cfg := ReadConfigFile(":spells:config/allspells");
-		var elem := FindConfigElem(cfg, whos[1]);
-		var name := GetConfigString(elem, "Name");
-		if (name)
-			SetObjProperty(item, "swordmage", name);
-		endif
-		var backup := GetAmount(item);
-		SubtractAmount(item, backup-1);
-		SetName(item, item.desc);
-		AddAmount(item, backup-1);
-	else
-		var whos := GetObjProperty(item, "magicwho");
-		if (whos == error)
-			whos := array;
-		endif
-		if ( !(who.serial in whos))
-			PrintText(who, "*analisando um item*");
-			if (SkillCheck(who, MAGICLORE, -1) > 0)
-				whos.append(who.serial);	
-				SetObjProperty(item, "magicwho", whos);
 				SendSysMessageEx(who, "Este item não possui propriedades mágicas a serem ativadas.", SSM_INFO);
-			else
-				SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
 			endif
 		else
-			SendSysMEssageEx(who, "Você já identificou este item", SSM_INFO);
+			SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
 		endif
-	endif
-
-			
+	else
+		SendSysMEssageEx(who, "Você já identificou este item", SSM_INFO);
+	endif			
 
 endprogram 
