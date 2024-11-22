@@ -43,15 +43,6 @@ program skill_Stealth( who )
 		skill := skill - 20;
 	endif
 
-	if (GetCooldown(who, "Invisibilidade Aprimorada") && InDarkness(who))
-		skill := AP_GetSkill(who, MAGICLORE);
-		if (skill < 50)
-			SendSysMessageEx(who, "Voce nao consegue se mover furtivamente!", SSM_FAIL);
-			return 0;
-		endif
-		skill := skill - 20;
-	endif
-
 	var baseSteps := qtdSteps(who, skill);
     if (GetObjProperty(who, "chardata").trait == "Desapercebido")
         baseSteps := Cint(baseSteps * 1.5);
@@ -121,44 +112,6 @@ program skill_Stealth( who )
 				endif
 				return 0;
 			endif
-	elseif (GetCooldown(who, "Invisibilidade Aprimorada") && InDarkness(who))
-		var check := SkillCheck(who, MAGICLORE, diff);
-		if( check > 0 )
-		who.stealthsteps := baseSteps;
-		SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
-
-		if (who.hidden == 1)
-			while (who.stealthsteps >= 1)
-				SendSysMessage(who, "Voce consegue dar aproximadamente "+who.stealthsteps+" passos escondido.");
-				sleep(3);
-				while (who.stealthsteps == 1)
-					SendSysMessage(who, "Seu proximo passo ira te revelar");
-					sleep(3);
-				endwhile
-			endwhile
-		endif
-		SetObjProperty(who, "#steathsteps", atualStep + 2);
-		return 1;
-		elseif (check >= -15)
-			SendSysMessageEx(who, "Voce falhou mas se manteve escondido.", SSM_FAIL);
-			return 0;
-		else
-			if (who.hidden)
-				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
-				who.hidden := 0;
-				PrintText(who, "*aparece*");
-				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
-				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_NPC_ONLY)
-					if (GetObjProperty(monster, "guild"))
-						SendEvent(monster, struct{ "type" := 0x78460, source := who, "last_loc" := last_loc});
-					endif
-					sleepms(2);
-				endforeach
-			else
-				SendSysMessageEx(who, "Voce falhou.", SSM_FAIL);
-			endif
-			return 0;
-		endif
 	else
 		var check := SkillCheck(who, skillTested, diff);
 	if( check > 0 )
