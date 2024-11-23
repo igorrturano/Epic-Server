@@ -1,0 +1,200 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+use util;
+include ":datafile:datafile";
+include "include/sysEvent";
+include ":attributes:attributes";
+
+program spell_MirrorImage(params)
+	var who := params[1];
+	var info := params[2];
+    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+
+    var numCopies := Cint(mlore / 30);
+    var copyDuration := Cint(mlore / 5);
+    if (TemHabilidade(who, "Valdruk"))
+        numCopies := numCopies * 2;
+        copyDuration := copyDuration * 2;
+    endif
+    if(numCopies < 1)
+        numCopies := 1;
+    endif
+
+    // Array to store all copies
+    var copies := array{};
+    who.hidden := 1;
+    // Create copies
+    for i := 1 to numCopies
+        var copy := CreateCopy(who, GetRandomPosition(who));
+        if(copy)
+            copies.append(copy);
+        endif
+    endfor
+
+    // Randomly swap position with one copy
+    if(len(copies) > 0)
+        var randomCopy := copies[RandomInt(len(copies))+1];
+        SwapPositions(who, randomCopy);
+        
+        // Get list of hostile targets
+        var hostiles := ListHostiles(who, 8);
+        
+        // If there are hostiles, assign targets to copies
+        if(len(hostiles) > 0 && len(copies) > 0)
+            AssignTargets(copies, hostiles);
+        endif
+    endif
+
+    sleep(1);
+    foreach copy in copies
+        copy.hidden := 0;
+        copy.frozen := 0;
+    endforeach
+    who.hidden := 0;
+
+    sleep(copyDuration);
+    DestroyCopies(copies);
+
+    return 1;
+endprogram
+
+function AssignTargets(copies, hostiles)
+    Set_Critical(1);
+    foreach copy in copies
+        var targ;
+        if(len(hostiles) > 0)
+            // Get random index
+            var targetIndex := Cint(RandomInt(len(hostiles))+1);
+            targ := hostiles[targetIndex];
+            
+            var event := struct{"type":=SYSEVENT_ENGAGED, "source":=targ};
+            SendEvent(copy, event);  
+
+            // Make hostile engage with copy
+            event := struct{"type":=SYSEVENT_ENGAGED, "source":=copy};
+            SendEvent(targ, event);
+            
+            sleepms(20);
+        endif
+    endforeach
+    Set_Critical(0);
+endfunction
+
+function CreateCopy(original, position)
+    var template := ":brainai:humanmale";
+    if (original.gender == 1)
+        template := ":brainai:humanfemale";
+    endif
+
+    var copy := CreateNPCFromTemplate(template, position.x, position.y, position.z, 0, original.realm);
+    copy.frozen := 1;
+    copy.hidden := 1;
+    copy.alignment := 2;
+    if(!copy)
+        return 0;
+    endif
+    
+    // Set vital stats - but override HP for mirror image
+    SetVital(copy, "hits", 1);
+    SetVital(copy, "stamina", CInt(GetVitalMaximumValue(copy, "stamina")));
+    SetVital(copy, "mana", CInt(GetVital(original, "mana")));
+    
+    // Copy appearance
+    CopyAppearance(original, copy);
+    // Copy equipment
+    CopyEquipment(original, copy);
+
+    // Set special properties for the copy
+    SetObjProperty(copy, "NoCorpse", 1);
+    SetObjProperty(copy, "MirrorImage", 1);
+    SetObjProperty(copy, "Creator", original.serial);
+    
+    // Copy special properties if they exist
+    if ((GetObjProperty(original, "classe")) != error)
+        SetObjProperty(copy, "classe", GetObjProperty(original, "classe"));
+    endif
+    
+    if ((GetObjProperty(original, "kit")) != error)
+        SetObjProperty(copy, "kit", GetObjProperty(original, "kit"));
+    endif
+    
+    if ((GetObjProperty(original, "myhabs")) != error)
+        SetObjProperty(copy, "myhabs", GetObjProperty(original, "myhabs"));
+    endif
+    
+    if ((GetObjProperty(original, "buyhab")) != error)
+        SetObjProperty(copy, "buyhab", GetObjProperty(original, "buyhab"));
+    endif
+    
+    // Copy attributes and skills
+    foreach attrib_name in AP_ListAttributesByType()
+        var valor := GetAttribute(original, attrib_name);
+        var mod := AP_GetStatMod(original, attrib_name) * -1;
+        valor := valor + mod;
+        AP_SetTrueSkill(copy, attrib_name, valor);
+        sleepms(10);
+    endforeach
+
+    // Para deixar o nome azul e confundir jogadores
+    copy.setMaster(original);
+    return copy;
+endfunction
+
+
+function GetRandomPosition(who)
+    var pos := struct{
+        "x" := Cint(who.x + (RandomInt(8) - 2)),
+        "y" := Cint(who.y + (RandomInt(8) - 2)),
+        "z" := Cint(who.z)
+    };
+    return pos;
+endfunction
+
+function CopyAppearance(source, dest)
+    dest.gender := source.gender;
+    dest.graphic := source.graphic;
+    dest.color := source.color;
+    dest.name := source.name;
+    dest.title_race := source.title_race;
+    dest.title_suffix := source.title_suffix;
+    dest.title_prefix := source.title_prefix;
+    dest.TrueColor := source.TrueColor;
+    dest.trueobjtype := source.trueobjtype;
+endfunction
+
+function CopyEquipment(source, dest)
+    var mypack := CreateItemAtLocation(20, 20, 0, 0xe75, 1, dest.realm);
+    
+    foreach item in ListEquippedItems(source)
+        var newItem := CreateItemCopyAtLocation(20, 20, 0, item);
+        if(newItem)
+            newItem.color := item.color;
+            newItem.name := item.name;
+            EquipItem(dest, newItem);
+        endif
+    endforeach
+    
+    EquipItem(dest, mypack);
+endfunction
+
+function SwapPositions(char1, char2)
+    var tempX := char1.x;
+    var tempY := char1.y;
+    var tempZ := char1.z;
+    
+    MoveObjectToLocation(char1, char2.x, char2.y, char2.z, char1.realm, MOVEOBJECT_FORCELOCATION);
+    MoveObjectToLocation(char2, tempX, tempY, tempZ, char2.realm, MOVEOBJECT_FORCELOCATION);
+    char1.facing := char2.facing;
+endfunction
+
+function DestroyCopies(copies)
+    foreach copy in copies
+        if (copy)
+            SetObjProperty(copy, "guardkill", 1);
+            ApplyDamage(copy, 9999);
+        endif
+        sleepms(2);
+    endforeach
+endfunction

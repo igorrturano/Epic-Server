@@ -1,0 +1,19 @@
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/dungeons";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+    var targ := params[2];
+
+    var duration := cint(AP_GetSkill(who, MAGICLORE)/10);
+    if (TemHabilidade(who, "Valdruk"))
+        duration := Cint(duration * 2);
+    endif
+
+    handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
+    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, duration * 3, 2, 2740);
+    SetCooldown(targ, "silence", duration);
+endprogram
