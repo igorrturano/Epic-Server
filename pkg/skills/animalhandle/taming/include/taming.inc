@@ -1,6 +1,7 @@
 use uo;
 
 include ":timedScripts:timedScripts";
+include ":mounts:mounts";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 

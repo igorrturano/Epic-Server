@@ -3,6 +3,7 @@ use util;
 include ":attributes:attributes";
 include ":equipsys:equipstats";
 include ":equipsys:props";
+include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
@@ -294,4 +295,55 @@ function setPropNPCAttackType(npc, type)
 		endif
 	endif
 	npc.SetProp("atributos", prop);
+endfunction
+
+function controlNPC(who)
+	var targ := target(who);
+	
+	if ( targ.IsA(POLCLASS_NPC) )
+		targ.SetMaster(who);
+				
+		SetObjProperty(targ, "owner", who.serial);
+		SetObjProperty(targ, "name", targ.name);
+		
+		if ( !GetObjProperty(targ, "script") )
+			SetObjproperty(targ, "script", targ.script);
+		endif
+			
+		targ.script := ":ghaia:tamed";
+		RestartScript(targ);
+		
+		Run_Script_To_Completion(":death:npcdeath", {targ});
+	endif
+endfunction
+
+function endControlNPC()
+	ErasePet(me.master, me.serial);
+	me.SetMaster(0);
+
+	var orig_script := GetObjProperty(me, "script");
+
+	if ( !orig_script )
+
+		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
+		SysLog(me.name+" doesnt have an original script to use now that taming is done?!");
+		orig_script := ":brainai:brain";
+
+	elseif ( orig_script["tamed"] )
+
+		PrintTextAbove(me, "*my original script was tamed.src ?!*");
+		SysLog(me.name+" my original script was tamed.src ?!");
+		orig_script := ":brainai:brain";
+
+	endif
+
+	me.script := orig_script;
+	SetName(me, GetObjProperty(me, "name"));
+	EraseObjProperty(me, "owner");
+	EraseObjProperty(me, "name");
+	EraseObjproperty(me, "script");
+	EraseObjProperty(me, "happiness");
+	RestartScript(me);
+
+	ErasePetMods(me);
 endfunction

@@ -170,6 +170,8 @@ function CanAttack(attacker, defender)
 		return 0;
 	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
 		return 0;
+	elseif(GetCooldown(attacker, "charmed"))
+		return 0;
 	endif
 	
 	return 1;
