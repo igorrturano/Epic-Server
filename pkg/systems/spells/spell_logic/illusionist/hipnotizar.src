@@ -1,13 +1,9 @@
-use npc;
-
 include "include/say";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include "include/epicNPCUtils";
 include ":charactercreation:resists";
 include ":tn:boss";
-
-var me := self();
 
 program SpellScript(params)
 	var who := params[1];
@@ -35,10 +31,11 @@ program SpellScript(params)
 
     SetObjProperty(targ, "charmed_by", who.serial);
     SetCooldown(targ, "charmed", duration);
+    
     SendSysMessageEx(targ, "Você foi hipnotizado por " + who.name + ".", SSM_INFO);
     SendSysMessageEx(who, "Você hipnotizou " + targ.name + ".", SSM_INFO);
-    sleep(duration);
 
+    sleep(duration);
     EraseObjProperty(targ, "charmed_by");
-    endControlNPC();
+    endControlNPC(targ);
 endprogram

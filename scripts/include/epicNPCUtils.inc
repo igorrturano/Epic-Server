@@ -77,8 +77,8 @@ function customizeNpc(mob, set_tier := "0")
     HealDamage(mob, hitsmod + hp);
 endfunction
 
-function ReturnCharDataPlayerNear(me)
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+function ReturnCharDataPlayerNear(who)
+    var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
     foreach mobile in nearby
         if (mobile.acctname)
 			return mobile.acctname;
@@ -87,8 +87,8 @@ function ReturnCharDataPlayerNear(me)
     return 0;
 endfunction
 
-function HasPlayerNear(me)
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+function HasPlayerNear(who)
+    var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
     foreach mobile in nearby
         if (mobile.acctname)
             return 1;
@@ -317,33 +317,33 @@ function controlNPC(who)
 	endif
 endfunction
 
-function endControlNPC()
-	ErasePet(me.master, me.serial);
-	me.SetMaster(0);
+function endControlNPC(who)
+	ErasePet(who.master, who.serial);
+	who.SetMaster(0);
 
-	var orig_script := GetObjProperty(me, "script");
+	var orig_script := GetObjProperty(who, "script");
 
 	if ( !orig_script )
 
-		PrintTextAbove(me, "*doesnt have an original script to use now that taming is done?!*");
-		SysLog(me.name+" doesnt have an original script to use now that taming is done?!");
+		PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
+		SysLog(who.name+" doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif ( orig_script["tamed"] )
 
-		PrintTextAbove(me, "*my original script was tamed.src ?!*");
-		SysLog(me.name+" my original script was tamed.src ?!");
+		PrintTextAbove(who, "*my original script was tamed.src ?!*");
+		SysLog(who.name+" my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 
 	endif
 
-	me.script := orig_script;
-	SetName(me, GetObjProperty(me, "name"));
-	EraseObjProperty(me, "owner");
-	EraseObjProperty(me, "name");
-	EraseObjproperty(me, "script");
-	EraseObjProperty(me, "happiness");
-	RestartScript(me);
+	who.script := orig_script;
+	SetName(who, GetObjProperty(who, "name"));
+	EraseObjProperty(who, "owner");
+	EraseObjProperty(who, "name");
+	EraseObjproperty(who, "script");
+	EraseObjProperty(who, "happiness");
+	RestartScript(who);
 
-	ErasePetMods(me);
+	ErasePetMods(who);
 endfunction
