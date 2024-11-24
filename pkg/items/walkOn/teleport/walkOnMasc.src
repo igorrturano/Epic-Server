@@ -14,36 +14,36 @@ program walkOn(mobile, tile)
 		return 0;
 	endif
 	if (GetObjProperty(mobile, "faccao") == "Mascaras Cinzentas")
-	var pets := ListPetsNear(mobile, 4);
-	var hostiles := ListHostiles(mobile, 4);
+		var pets := ListPetsNear(mobile, 4);
+		var hostiles := ListHostiles(mobile, 4);
 
-	SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
-	var result := tile.SendToDestination(mobile);
-	if ( result.errortext )
-		SendSysMessage(mobile, "Error teleporting ->"+result.errortext);
-	endif
-
-	foreach pet in pets
-		SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
-		tile.SendToDestination(pet);
-	endforeach
-
-/*	if (hostiles[1])
-		foreach x in hostiles
-			if (!x.acctname)
-				SetObjProperty(x, "#Teleported", ReadMillisecondClock());
-				tile.SendToDestination(x);
-			endif
-			sleepms(10);
-		endforeach
-	endif*/
-
-	if (HaveReverseVision(mobile))
-		if (mobile.cmdlevel > 1)
-			SendsysMessage(mobile, "GM: Ajustando infravisao.");
+		SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
+		var result := tile.SendToDestination(mobile);
+		if ( result.errortext )
+			SendSysMessage(mobile, "Error teleporting ->"+result.errortext);
 		endif
-		ReverseLight(mobile);
-	endif
+
+		foreach pet in pets
+			SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
+			tile.SendToDestination(pet);
+		endforeach
+
+	/*	if (hostiles[1])
+			foreach x in hostiles
+				if (!x.acctname)
+					SetObjProperty(x, "#Teleported", ReadMillisecondClock());
+					tile.SendToDestination(x);
+				endif
+				sleepms(10);
+			endforeach
+		endif*/
+
+		if (HaveReverseVision(mobile))
+			if (mobile.cmdlevel > 1)
+				SendsysMessage(mobile, "GM: Ajustando infravisao.");
+			endif
+			ReverseLight(mobile);
+		endif
 	endif
 	destroyIllyraOutsideDungeons(mobile);
 	return 1;

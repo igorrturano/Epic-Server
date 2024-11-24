@@ -39,6 +39,7 @@ program controlScript(tile)
 	dest.+x := CInt(GetObjProperty(tile, "DestX"));
 	dest.+y := CInt(GetObjProperty(tile, "DestY"));
 	dest.+z := CInt(GetObjProperty(tile, "DestZ"));
+	dest.+race := "all";
 	
 	SetObjProperty(tile, "Destination", dest);
 	EraseObjProperty(tile, "DestX");
