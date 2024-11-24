@@ -14,3 +14,7 @@ exported function isUnderRoof(who)
 
     return 0;
 endfunction
+
+exported function getRace(who)
+    return GetObjProperty(who, "chardata").raca;
+endfunction
