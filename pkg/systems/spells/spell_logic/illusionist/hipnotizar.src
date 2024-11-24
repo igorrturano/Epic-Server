@@ -4,6 +4,7 @@ include "include/epicMageryUtils";
 include "include/epicNPCUtils";
 include ":charactercreation:resists";
 include ":tn:boss";
+include "include/sysEvent";
 
 program SpellScript(params)
 	var who := params[1];
@@ -23,11 +24,11 @@ program SpellScript(params)
     var duration := cint(AP_GetSkill(who, MAGICLORE)/5);
     if (TemHabilidade(who, "Valdruk"))
         duration := Cint(duration * 2);
-        controlNPC(targ);
+        controlNPC(who, targ);
     endif
 
     handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
-    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, duration * 3, 2, 2740);
+    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, duration * 2, 2, 2740);
 
     SetObjProperty(targ, "charmed_by", who.serial);
     SetCooldown(targ, "charmed", duration);
@@ -37,5 +38,11 @@ program SpellScript(params)
 
     sleep(duration);
     EraseObjProperty(targ, "charmed_by");
-    endControlNPC(targ);
+
+    if (TemHabilidade(who, "Valdruk"))
+        endControlNPC(targ);
+        var event := struct{"type":=SYSEVENT_ENGAGED, "source":=who};
+        SendEvent(targ, event);  
+    endif
+        
 endprogram

@@ -297,19 +297,16 @@ function setPropNPCAttackType(npc, type)
 	npc.SetProp("atributos", prop);
 endfunction
 
-function controlNPC(who)
-	var targ := target(who);
-	
+function controlNPC(who, targ)
 	if ( targ.IsA(POLCLASS_NPC) )
 		targ.SetMaster(who);
 				
 		SetObjProperty(targ, "owner", who.serial);
 		SetObjProperty(targ, "name", targ.name);
-		
+
 		if ( !GetObjProperty(targ, "script") )
-			SetObjproperty(targ, "script", targ.script);
+			SetObjproperty(targ, "script", targ.Script);
 		endif
-			
 		targ.script := ":ghaia:tamed";
 		RestartScript(targ);
 		
