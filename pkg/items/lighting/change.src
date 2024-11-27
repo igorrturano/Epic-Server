@@ -11,11 +11,16 @@
 use uo;
 use os;
 use cfgfile;
-
+include ":tn:cooldown";
+include "include/say";
 program change(who, item )
   var cfg := ReadConfigFile(":*:itemdesc");
   var elem := FindConfigElem(cfg, item.objtype);
   if(elem.staff > who.cmdlevel)
+    return;
+  endif
+  if (GetCooldown(who, "darkness") > 0)
+    SendSysMessage(who, "Você está envolto em sombras!", SSM_FAIL);
     return;
   endif
   if(item.graphic == item.objtype)
