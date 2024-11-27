@@ -47,6 +47,11 @@ program SpellScript(params)
         endif
     endforeach
 
+    var duration := cint(AP_GetSkill(who, MAGICLORE)/2);
+    if (TemHabilidade(who, "Valdruk"))
+        duration := Cint(duration * 2);
+    endif
+
     if (targ.acctname)
      	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	    var bonus := epicWisdomPathBonus(who);
@@ -56,7 +61,8 @@ program SpellScript(params)
             return;
         endif
         targ.setlightlevel( 30, 6000 );
-        SetCooldown(targ, "nightvision", 1);
+        SetCooldown(targ, "nightvision", 0);
+        SetCooldown(targ, "darkness", duration);
         SendSysMessageEx(targ, "Sua visão noturna cessou!", SSM_FAIL);
     endif
 
