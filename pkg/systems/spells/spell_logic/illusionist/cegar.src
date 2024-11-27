@@ -1,0 +1,42 @@
+include "include/say";
+include "include/dungeons";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include ":awareness:awareness";
+include ":charactercreation:resists";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    var spell := params[3];
+    var spell_school := spell.School;
+
+ 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, VONTADE, diff, -bonus))
+		SendSysMessageEx(who, "Você nota que o alvo nao foi afetado.", SSM_FAIL);
+        handleSilentMagic(who);
+		return;
+	endif
+
+    var duration := CInt(AP_GetSkill(who, MAGICLORE)/8);
+    if (TemHabilidade(who, "Valdruk"))
+        duration := CInt(duration * 2);
+    endif
+    
+    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, duration * 3, 2, 2740);
+    SetCooldown(targ, "blinded", duration);
+    PrintTextAbove(targ, "*cegueira*");
+
+    var mobiles := ListMobilesNearLocation(targ.x, targ.y, targ.z, 16);
+    foreach mobile in mobiles
+        DeleteObject(targ, mobile);
+        sleepms(20);
+    endforeach
+    
+    sleep(duration);
+    foreach mobile in mobiles
+    	DrawObject(targ, mobile, mobile.graphic, mobile.color);
+        sleepms(20);
+    endforeach
+endprogram
