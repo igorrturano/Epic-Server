@@ -1,5 +1,7 @@
 use uo;
 
+include ":merchants:include/cambio";
+
 program Install()
 	print("INSTALLING: Methods for Characters... OK!");
 	return 1;
@@ -17,4 +19,8 @@ endfunction
 
 exported function getRace(who)
     return GetObjProperty(who, "chardata").raca;
+endfunction
+
+exported function spendgold( who , quantidade)
+	return EfetuaDebito(who, quantidade);
 endfunction
