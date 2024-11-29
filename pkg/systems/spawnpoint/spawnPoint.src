@@ -29,14 +29,14 @@ program use_spawnpoint( who, spawnpoint )
   GFTextMid( gump, 80, 35, 420, 53, "Spawn Point" );
 
   // Load properties
-	var range := GetObjProperty(spawnpoint, "Range");
-	var mindelay := GetObjProperty(spawnpoint, "MinDelay");
-	var maxdelay := GetObjProperty(spawnpoint, "MaxDelay");
-  var los_checked := GetObjProperty(spawnpoint, "IgnoreLOS") ? 1 : 0;
-  var boss_checked := GetObjProperty(spawnpoint, "uniquestat") ? 1 : 0;
+  var range := GetObjProperty( spawnpoint, "Range" );
+  var mindelay := GetObjProperty( spawnpoint, "MinDelay" );
+  var maxdelay := GetObjProperty( spawnpoint, "MaxDelay" );
+  var los_checked := GetObjProperty( spawnpoint, "IgnoreLOS" ) ? 1 : 0;
+  var boss_checked := GetObjProperty( spawnpoint, "uniquestat" ) ? 1 : 0;
 
   // Add labels, load saved templates and input fields for templates
-  var x_label := 30, x_field := 100, y := 80, spacing := 40, i;
+  var x_label := 30, x_field := 100, y := 80, spacing := 40, i, spawn_count := 0;
   for ( i := 1; i <= 3; i += 1 )
     var template := GetObjProperty(spawnpoint, Cstr("Template" + i)) ? GetObjProperty(spawnpoint, Cstr("Template" + i)) : "";
     var amount := GetObjProperty(spawnpoint, Cstr("Amount" + i)) ? GetObjProperty(spawnpoint, Cstr("Amount" + i)) : "";
@@ -83,8 +83,31 @@ program use_spawnpoint( who, spawnpoint )
   GFAddButton( gump, 260, y, 0x81C, 0x81B, GF_CLOSE_BTN, 100 );
 
   // Display the GUMP
-  GFSendGump( who, gump );
+  var inputs := GFSendGump( who, gump );
+
+  InputsHandler( inputs, who, spawnpoint );
+  spawnpoint.invisible := 1;
 endprogram
+
+function InputsHandler( inputs, who, spawnpoint )
+  if ( inputs[100] == 100 ) // Is OK button?
+    var i;
+    for ( i := 1; i <= 3; i += 1 )
+      SetObjProperty( spawnpoint, "Name" + i, inputs[i] );
+      SetObjProperty( spawnpoint, "Amount" + i, inputs[i + 3] );
+      SetObjProperty( spawnpoint, "Tier" + i, inputs[i + 6] );
+      SetObjProperty( spawnpoint, "Template" + i, inputs[i + 9] );
+    endfor
+
+    SetObjProperty( spawnpoint, "Range", inputs[13] );
+    SetObjProperty( spawnpoint, "MinDelay", inputs[14] );
+    SetObjProperty( spawnpoint, "MaxDelay", inputs[15] );
+    SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] );
+    SetObjProperty( spawnpoint, "uniquestat", inputs[17] );
+
+    SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
+  endif
+endfunction
 
 function AdicionarMoldura( byref gump )
   var molduras := array{ struct{ x := 0,
