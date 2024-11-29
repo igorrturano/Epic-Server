@@ -29,33 +29,27 @@ program use_spawnpoint( who, spawnpoint )
   GFTextMid( gump, 80, 35, 420, 53, "Spawn Point" );
 
   // Load properties
-  var spawn_count := Cint(GetObjProperty(spawnpoint, "SpawnCount"));
-  var spawn := GetObjProperty(spawnpoint, "Spawn");
-	var amount := GetObjProperty(spawnpoint, "Amount");
-  var tier := Cint(GetObjProperty(spawnpoint, "Tier"));
 	var range := GetObjProperty(spawnpoint, "Range");
 	var mindelay := GetObjProperty(spawnpoint, "MinDelay");
 	var maxdelay := GetObjProperty(spawnpoint, "MaxDelay");
   var los_checked := GetObjProperty(spawnpoint, "IgnoreLOS") ? 1 : 0;
   var boss_checked := GetObjProperty(spawnpoint, "uniquestat") ? 1 : 0;
 
-  if(spawn_count != "NONE" && spawn_count > 0)
-    var i; 
-    for ( i := 1; i <= spawn_count; i += 1 )
-    endfor
-	endif
-
-  // Add labels and input fields for templates
+  // Add labels, load saved templates and input fields for templates
   var x_label := 30, x_field := 100, y := 80, spacing := 40, i;
   for ( i := 1; i <= 3; i += 1 )
+    var template := GetObjProperty(spawnpoint, Cstr("Template" + i)) ? GetObjProperty(spawnpoint, Cstr("Template" + i)) : "";
+    var amount := GetObjProperty(spawnpoint, Cstr("Amount" + i)) ? GetObjProperty(spawnpoint, Cstr("Amount" + i)) : "";
+    var tier := GetObjProperty(spawnpoint, Cstr("Tier" + i)) ? GetObjProperty(spawnpoint, Cstr("Tier" + i)) : "";
+
     GFTextLine( gump, x_label, y, 2100, "Template:" );
-    GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, "", i );
+    GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, template, i );
 
     GFTextLine( gump, x_field + 160, y, 2100, "Quantidade:" );
-    GFEAddTextBox( gump, x_field + 250, y, 50, 20, COLOR_YELLOW, "1", i + 3 );
+    GFEAddTextBox( gump, x_field + 250, y, 50, 20, COLOR_YELLOW, amount, i + 3 );
 
     GFTextLine( gump, x_field + 310, y, 2100, "Tier:" );
-    GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, "1", i + 6 );
+    GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, tier, i + 6 );
 
     // GFTextLine( gump, x_field, y, 2100, "Template:" );
     // GFEAddTextBox( gump, x_field + 100, y, 50, 20, COLOR_YELLOW, i, i + 9 );
