@@ -12,7 +12,7 @@ include ":tn:boss";
 const GUMP_BACKGROUND := 39929;
 const INTERNAL_BACKGROUND := 9350;
 const GUMP_WIDTH := 540;
-const GUMP_HEIGHT := 450;
+const GUMP_HEIGHT := 550;
 const INTERNAL_WIDTH := 435;
 const BACKGROUND_WIDTH := 465;
 
@@ -43,8 +43,8 @@ program use_spawnpoint( who, spawnpoint )
     var tier := GetObjProperty(spawnpoint, Cstr("Tier" + i)) ? GetObjProperty(spawnpoint, Cstr("Tier" + i)) : "";
     var name := GetObjProperty(spawnpoint, Cstr("Name" + i)) ? GetObjProperty(spawnpoint, Cstr("Name" + i)) : "";
 
-    GFTextLine( gump, x_label, y, 2100, "Template:" );
-    GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, template, i );
+    GFTextLine( gump, x_label, y, 2100, "Nome:" );
+    GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, i );
 
     GFTextLine( gump, x_field + 160, y, 2100, "Quantidade:" );
     GFEAddTextBox( gump, x_field + 250, y, 50, 20, COLOR_YELLOW, amount, i + 3 );
@@ -52,9 +52,9 @@ program use_spawnpoint( who, spawnpoint )
     GFTextLine( gump, x_field + 310, y, 2100, "Tier:" );
     GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, tier, i + 6 );
 
-    // GFTextLine( gump, x_field, y, 2100, "Nome:" );
-    // GFEAddTextBox( gump, x_field + 100, y, 50, 20, COLOR_YELLOW, name, i + 9 );
-    y += spacing;
+    GFTextLine( gump, x_label, y + 40, 2100, "Template:" );
+    GFEAddTextBox( gump, x_field, y + 40, 400, 20, COLOR_YELLOW, template, i + 9 );
+    y += spacing + 40;
   endfor
 
   // Add range label and input field
