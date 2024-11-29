@@ -8,6 +8,7 @@ include ":gumps:requestGump";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
 include ":tn:boss";
+include ":combat:hitscripts";
 
 const GUMP_BACKGROUND := 39929;
 const INTERNAL_BACKGROUND := 9350;
@@ -33,7 +34,12 @@ program use_spawnpoint( who, spawnpoint )
   var mindelay := GetObjProperty( spawnpoint, "MinDelay" );
   var maxdelay := GetObjProperty( spawnpoint, "MaxDelay" );
   var los_checked := GetObjProperty( spawnpoint, "IgnoreLOS" ) ? 1 : 0;
-  var boss_checked := GetObjProperty( spawnpoint, "uniquestat" ) ? 1 : 0;
+  var boss_checked := GetObjProperty( spawnpoint, "unique" ) ? 1 : 0;
+  var unique := GetObjProperty( spawnpoint, "uniquestat" );
+
+  if (!unique)
+		unique := struct;
+	endif
 
   // Add labels, load saved templates and input fields for templates
   var x_label := 30, x_field := 100, y := 80, spacing := 40, i, spawn_count := 0;
@@ -85,25 +91,46 @@ program use_spawnpoint( who, spawnpoint )
   // Display the GUMP
   var inputs := GFSendGump( who, gump );
 
-  InputsHandler( inputs, who, spawnpoint );
+  InputsHandler( inputs, who, spawnpoint, unique );
   spawnpoint.invisible := 1;
 endprogram
 
-function InputsHandler( inputs, who, spawnpoint )
+function CreateNpcFromSpawnPoint(who, spawnpoint, i)
+  var template := GetObjProperty(spawnpoint, Cstr("Template" + i));
+  var npc := CreateNpcFromTemplate(template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
+  SetObjProperty(spawnpoint, "Spawn" + i, template);
+
+	if(!npc)
+		SendSysMessage(who, "Erro ao criar o npc.");
+    SendSysMessage(who, "Error: " + npc.errortext);
+	else
+		SendSysMessage(who, "Sucesso ao criar o npc com base no template.");
+	endif
+endfunction
+
+function InputsHandler( inputs, who, spawnpoint, unique )
   if ( inputs[100] == 100 ) // Is OK button?
     var i;
+
+    if(inputs[17] == 1) //Is boss?
+      SetObjProperty( spawnpoint, "uniquestat", unique );
+      CreateBossStructGump(who, unique);
+    endif
+
     for ( i := 1; i <= 3; i += 1 )
       SetObjProperty( spawnpoint, "Name" + i, inputs[i] );
       SetObjProperty( spawnpoint, "Amount" + i, inputs[i + 3] );
       SetObjProperty( spawnpoint, "Tier" + i, inputs[i + 6] );
       SetObjProperty( spawnpoint, "Template" + i, inputs[i + 9] );
+      CreateNpcFromSpawnPoint(who, spawnpoint, i);
     endfor
 
     SetObjProperty( spawnpoint, "Range", inputs[13] );
     SetObjProperty( spawnpoint, "MinDelay", inputs[14] );
     SetObjProperty( spawnpoint, "MaxDelay", inputs[15] );
     SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] );
-    SetObjProperty( spawnpoint, "uniquestat", inputs[17] );
+    SetObjProperty( spawnpoint, "unique", inputs[17] );
+    SetObjProperty(spawnpoint, "ResetMe",  1);
 
     SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
   endif
