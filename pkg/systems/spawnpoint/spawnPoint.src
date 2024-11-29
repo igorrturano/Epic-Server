@@ -41,6 +41,7 @@ program use_spawnpoint( who, spawnpoint )
     var template := GetObjProperty(spawnpoint, Cstr("Template" + i)) ? GetObjProperty(spawnpoint, Cstr("Template" + i)) : "";
     var amount := GetObjProperty(spawnpoint, Cstr("Amount" + i)) ? GetObjProperty(spawnpoint, Cstr("Amount" + i)) : "";
     var tier := GetObjProperty(spawnpoint, Cstr("Tier" + i)) ? GetObjProperty(spawnpoint, Cstr("Tier" + i)) : "";
+    var name := GetObjProperty(spawnpoint, Cstr("Name" + i)) ? GetObjProperty(spawnpoint, Cstr("Name" + i)) : "";
 
     GFTextLine( gump, x_label, y, 2100, "Template:" );
     GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, template, i );
@@ -51,8 +52,8 @@ program use_spawnpoint( who, spawnpoint )
     GFTextLine( gump, x_field + 310, y, 2100, "Tier:" );
     GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, tier, i + 6 );
 
-    // GFTextLine( gump, x_field, y, 2100, "Template:" );
-    // GFEAddTextBox( gump, x_field + 100, y, 50, 20, COLOR_YELLOW, i, i + 9 );
+    // GFTextLine( gump, x_field, y, 2100, "Nome:" );
+    // GFEAddTextBox( gump, x_field + 100, y, 50, 20, COLOR_YELLOW, name, i + 9 );
     y += spacing;
   endfor
 
