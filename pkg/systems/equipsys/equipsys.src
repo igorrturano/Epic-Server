@@ -51,19 +51,19 @@ function setArmorStats(armor)
 	// Setar a partir daqui, direto no item, o que não vai em CProp
 endfunction
 
-function debugWeapon(who, weapon)
-	var itemAttr := weapon.getAttrBase();
+function debugWeapon(who, item)
+	var itemAttr := item.getAttrBase();
 
-	var materialName := weapon.getMaterialName() ? weapon.getMaterialName() : "Nenhum";
+	var materialName := item.getMaterialName() ? item.getMaterialName() : "Nenhum";
 
 	DebugMsg(who, DEBUG_EQUIP, "====================");
-	DebugMsg(who, DEBUG_EQUIP, $"Arma: {weapon.desc}");
+	DebugMsg(who, DEBUG_EQUIP, $"Arma: {item.desc}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {SLASHDAMAGE}: {itemAttr.SlashMainDamage}");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {itemAttr.PiercingMainDamage}");
 	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {itemAttr.BluntMainDamage}");
 
-	if(weapon.isDualWield())
+	if(item.isDualWield())
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {itemAttr.SlashOffDamage}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {itemAttr.PiercingOffDamage}");
 		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {itemAttr.BluntOffDamage}");
@@ -80,19 +80,20 @@ function debugWeapon(who, weapon)
 	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {itemAttr.CriticalChance}%");
 endfunction
 
-function debugArmor(who, armor)
-	var itemAttr := armor.getAttrBase();
+function debugArmor(who, item)
+	var itemAttr := item.getAttrBase();
 
-	var materialName := armor.getMaterialName() ? armor.getMaterialName() : "Nenhum";
-	var slot := armor.getSlot();
-	var type := armor.getType();
+	var materialName := item.getMaterialName() ? item.getMaterialName() : "Nenhum";
+	var slot := item.getSlot();
+	var type := item.getType();
 	
-	var resistByMaterial := getResistPhysicalByMaterial(armor);
-	var resistBySlot := getResistPhysicalBySlot(armor);
-	var resistByProtection := getResistPhysicalByProtection(armor);
+	var resistByMaterial := getResistPhysicalByMaterial(item);
+	var resistBySlot := getResistPhysicalBySlot(item);
+	var resistByProtection := getResistPhysicalByProtection(item);
+	
 
 	DebugMsg(who, DEBUG_EQUIP, "====================");
-	DebugMsg(who, DEBUG_EQUIP, $"Equipamento: {armor.desc}");
+	DebugMsg(who, DEBUG_EQUIP, $"Equipamento: {item.desc}");
 	DebugMsg(who, DEBUG_EQUIP, "====================");
 
 	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA FÍSICA]");
@@ -120,5 +121,11 @@ function debugArmor(who, armor)
 	DebugMsg(who, DEBUG_EQUIP, $"Sneak: {itemAttr.SneakPen}");
 	DebugMsg(who, DEBUG_EQUIP, $"Mechanics: {itemAttr.MAPen}");
 	DebugMsg(who, DEBUG_EQUIP, $"Magery: {itemAttr.MageryPen}");
-	DebugMsg(who, DEBUG_EQUIP, $"Awareness: {itemAttr.AwarenessPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Awareness: {itemAttr.AwarenessPen}
+	");
+
+	DebugMsg(who, DEBUG_EQUIP, "[MODIFICADORES]");
+	DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+	DebugMsg(who, DEBUG_EQUIP, $"Durabilidade: {itemAttr.MaxHP} ({getDurabilityByType(item)} + {CInt((getDurabilityByType(item)*getDurabilityModByMaterial(item))-getDurabilityByType(item))}) (Mod: {getDurabilityModByMaterial(item)})");
+	DebugMsg(who, DEBUG_EQUIP, $"Peso: {itemAttr.Weight} ({getWeightByType(item)} + {CInt((getWeightByType(item)*getWeightModByMaterial(item))-getWeightByType(item))}) (Mod: {getWeightModByMaterial(item)})");
 endfunction
