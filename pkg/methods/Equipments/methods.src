@@ -50,7 +50,6 @@ endfunction
  *
  */
 exported function setAttrBase(item, prop) // SETA A PROP DE MODIFICADORES BASE
-	print("entrou!");
 	if (item.isA(POLCLASS_WEAPON)) 
 		if (!prop) prop := getWeaponStats(item); endif
 		// var oldProp := item.getAttrBase();
