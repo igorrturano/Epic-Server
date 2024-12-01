@@ -1,201 +1,185 @@
 use uo;
 use os;
 include ":attributes:attributes";
-include ":gumps:requestGump";
+include "include/say";
+include ":gumps:gumps";
 include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
 include ":tn:boss";
 include ":combat:hitscripts";
 
-var spawneditlayout :=
-array{
-    "page 0",
-    "gumppic    30   0  101",
-    "button    118  90 2130 2129  1   0 100",
-    "text       80 120   33    0",
-    "text       85 135    0    1",
-    "text       85 150    0    2",
-    "text       85 165   33    3",
-    "text      100 180    0    4",
-    "text      100 195    0    5",
-    "text       95 210   33    13",
-    "text       95 230   33   12",
-    "group       1",
-    "radio     180 230 210 211 0 99",
-    "group       2",
-    "radio     180 210 210 211 0 98",
-    "textentry 160 135  40  15 50 1  7",
-    "textentry 160 150  40  15 50 2  8",
-    "textentry 155 180  30  15 50 3  9",
-    "textentry 155 195  30  15 50 4 10",
-    "textentry  65 268 160  15 50 5 11",
-    "text       95 250   33   6"
-};
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 540;
+const GUMP_HEIGHT := 550;
+const INTERNAL_WIDTH := 435;
+const BACKGROUND_WIDTH := 465;
 
-var spawneditdata :=
-array{
-	"Spawn Point Data",
-	"Amount: ",
-	"Range: ",
-	"Delay (Minutes)",
-	"Min: ",
-	"Max: ",
-	"Monster Type",
-	"0",
-	"0",
-	"0",
-	"0",
-	"NONE",
-    "Ignore LOS", //12
-    "BOSS" //13
-};
+program use_spawnpoint( who, spawnpoint )
+  if ( who.cmdlevel < 2 )
+    SendSysMessage( who, "Você não tem permissão para usar isso." );
+    return;
+  endif
 
-program use_spawnpoint(who, spawnpoint)
-	EraseObjProperty(spawnpoint, "IgnoreLOS");
-	if(who.cmdlevel < 1)
-		return;
-	endif
-	var spawn := GetObjProperty(spawnpoint, "Spawn");
-	var amount := GetObjProperty(spawnpoint, "Amount");
-	var mindelay := GetObjProperty(spawnpoint, "MinDelay");
-	var maxdelay := GetObjProperty(spawnpoint, "MaxDelay");
-	var range := GetObjProperty(spawnpoint, "Range");
+  var gump := GFECreateGump( "", GUMP_WIDTH, GUMP_HEIGHT, array{ HIDE_BORDER } );
+  // GFGumpPicTiled( gump, 10, 10, 495, 565, GUMP_BACKGROUND );
+  AdicionarMoldura( gump );
+  GFResizePic( gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80 );
+  GFTextMid( gump, 80, 35, 420, 53, "Spawn Point" );
 
-		var i, x;
-	if(spawn == "NONE")
-		SendSysMessage(who, "Initializing new spawnpoint...");
-	else
-		spawneditdata[8] := CStr(amount);
-		spawneditdata[9] := CStr(range);
-		spawneditdata[10] := CStr(mindelay);
-		spawneditdata[11] := CStr(maxdelay);
-		spawneditdata[12] := CStr(spawn);
+  // Load properties
+  var range := GetObjProperty( spawnpoint, "Range" );
+  var mindelay := GetObjProperty( spawnpoint, "MinDelay" );
+  var maxdelay := GetObjProperty( spawnpoint, "MaxDelay" );
+  var los_checked := GetObjProperty( spawnpoint, "IgnoreLOS" ) ? 1 : 0;
+  var boss_checked := GetObjProperty( spawnpoint, "unique" ) ? 1 : 0;
+  var unique := GetObjProperty( spawnpoint, "uniquestat" );
 
-
-	endif
-
-	var unique := GetObjProperty(spawnpoint, "uniquestat");
-	if (unique)
-		spawneditlayout.append("group       2");
- 		spawneditlayout.append("radio     180 210 210 211 1 98");
-	else
+  if (!unique)
 		unique := struct;
-		spawneditlayout.append("group       2");
- 		spawneditlayout.append("radio     180 210 210 211 0 98");
 	endif
 
-	var res := SendDialogGump(who, spawneditlayout, spawneditdata);
-	if(res[0] != 100)
-		SendSysMessage(who, "Aborted.");
-		return;
-	endif
-		for(i:=1; i<=5; i:=i+1);
-			if(!res[i])
-				SendSysMessage(who, "Error: spawn data incomplete.  Aborting.");
-				return;
-			endif
-		endfor
-	x := len(res[1]);
-	i := res[1];
-	i := i[4, (x-3)];
-	amount := CInt(i);
-	x := len(res[2]);
-	i := res[2];
-	i := i[4, (x-3)];
-	range := CInt(i);
-	x := len(res[3]);
-	i := res[3];
-	i := i[4, (x-3)];
-	mindelay := CInt(i);
-	x := len(res[4]);
-	i := res[4];
-	i := i[4, (x-3)];
-	maxdelay := CInt(i);
+  // Add labels, load saved templates and input fields for templates
+  var x_label := 30, x_field := 100, y := 80, spacing := 40, i, spawn_count := 0;
+  for ( i := 1; i <= 3; i += 1 )
+    var template := GetObjProperty(spawnpoint, Cstr("Template" + i)) ? GetObjProperty(spawnpoint, Cstr("Template" + i)) : "";
+    var amount := GetObjProperty(spawnpoint, Cstr("Amount" + i)) ? GetObjProperty(spawnpoint, Cstr("Amount" + i)) : "";
+    var tier := GetObjProperty(spawnpoint, Cstr("Tier" + i)) ? GetObjProperty(spawnpoint, Cstr("Tier" + i)) : "";
+    var name := GetObjProperty(spawnpoint, Cstr("Name" + i)) ? GetObjProperty(spawnpoint, Cstr("Name" + i)) : "";
 
-	if((amount < 1) || (amount > 32))
-		SendSysMessage(who, "Amount must be between 1 and 32.  Setting to 1.");
-		amount := 1;
-	endif
+    GFTextLine( gump, x_label, y, 2100, "Nome:" );
+    GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, i );
 
-	if((range < 1) || (range > 32))
-		SendSysMessage(who, "Range must be between 1 and 32.  Setting to 1.");
-		range := 1;
-	endif
+    GFTextLine( gump, x_field + 160, y, 2100, "Quantidade:" );
+    GFEAddTextBox( gump, x_field + 250, y, 50, 20, COLOR_YELLOW, amount, i + 3 );
 
-	if((mindelay < 0) || (mindelay > 1440))
-		SendSysMessage(who, "MinDelay must be between 0 and 1440.  Setting to 1.");
-		mindelay := 1;
-	  endif
-	  if((maxdelay < 0) || (maxdelay > 1440))
-		SendSysMessage(who, "MaxDelay must be between 0 and 1440.  Setting to 1.");
-		maxdelay := 1;
-	  endif
-	  if(maxdelay < mindelay)
-		SendSysMessage(who, "MaxDelay cannot be less than MinDelay.   Setting equal.");
-		maxdelay := mindelay;
-	  endif
-	x := len(res[5]);
-	i := res[5];
-	i := i[4, (x-3)];
-	spawn := i;
-	foreach thing in (res.keys)
-		if(thing == 99)
-			SetObjProperty(spawnpoint, "IgnoreLOS", 1);
-			break;
-		endif
-		if (thing == 98)
-			SetObjProperty(spawnpoint, "unique", 1);
-			//var boss := struct;
-			CreateBossStructGump(who, unique);
-			SetObjProperty(spawnpoint, "uniquestat", unique);
-		endif
-	endforeach
-	if (i[1] == ":")
-	else
-		i := Cstr(":brainai:"+i);
-	endif
+    GFTextLine( gump, x_field + 310, y, 2100, "Tier:" );
+    GFEAddTextBox( gump, x_field + 350, y, 50, 20, COLOR_YELLOW, tier, i + 6 );
 
-	SendSysMessage(who, i);
-	var thecritter := CreateNpcFromTemplate(i, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
-	if(!thecritter )
-		SendSysMessage(who, "Invalid creature type.");
-		spawn := "NONE";
-	else
-		SetObjProperty(thecritter, "summoned", 1);
-		ApplyRawDamage(thecritter, GetVital(thecritter, HITS)+3);
-	endif
+    GFTextLine( gump, x_label, y + 40, 2100, "Template:" );
+    GFEAddTextBox( gump, x_field, y + 40, 400, 20, COLOR_YELLOW, template, i + 9 );
+    y += spacing + 40;
+  endfor
 
-	SetObjProperty(spawnpoint, "Amount",   amount);
-	SetObjProperty(spawnpoint, "Range",    range);
-	SetObjProperty(spawnpoint, "MinDelay", mindelay);
-	SetObjProperty(spawnpoint, "MaxDelay", maxdelay);
-	SetObjProperty(spawnpoint, "ResetMe",  1);
-	SetObjProperty(spawnpoint, "Spawn", i);
-	SendSysMessage(who, "Spawnpoint initialized.  Resetting spawn.  This may take a minute...");
-	spawnpoint.invisible := 1;
+  // Add range label and input field
+  y += 10;
+  GFTextLine( gump, x_label, y, 2100, "Alcance:" );
+  GFEAddTextBox( gump, x_field, y, 100, 20, COLOR_YELLOW, range, 13 );
+
+  // Add respawn labels and input fields
+  y += spacing;
+  GFTextLine( gump, x_label, y, 2100, "Respawn (em minutos):" );
+  y += 20;
+  GFTextLine( gump, x_label, y, 2100, "Mínimo:" );
+  GFEAddTextBox( gump, x_field, y, 100, 20, COLOR_YELLOW, mindelay, 14 );
+  GFTextLine( gump, x_field + 120, y, 2100, "Máximo:" );
+  GFEAddTextBox( gump, x_field + 200, y, 100, 20, COLOR_YELLOW, maxdelay, 15 );
+
+  // Add LOS and BOSS checkboxes
+  y += spacing;
+  GFTextLine( gump, x_label, y + 10, 2100, "Ignorar LOS:" );
+  GFCheckBox( gump, x_field + 20, y + 10, 2362, 2360, los_checked, 16 );
+  GFTextLine( gump, x_field + 150, y + 10, 2100, "BOSS:" );
+  GFCheckBox( gump, x_field + 200, y + 10, 2362, 2360, boss_checked, 17 );
+
+  // Add OK button
+  y += 70;
+  GFAddButton( gump, 260, y, 0x81C, 0x81B, GF_CLOSE_BTN, 100 );
+
+  // Display the GUMP
+  var inputs := GFSendGump( who, gump );
+
+  InputsHandler( inputs, who, spawnpoint, unique );
+  spawnpoint.invisible := 1;
 endprogram
 
-function GetCritter(type)
-  if(type == "vermin")
-    return "grat";
-  elseif(type == "orcs")
-     return "orc1";
-  elseif(type == "orchorde")
-    return "orclord";
-  elseif(type == "ratmen")
-    return "ratman1";
-  elseif(type == "lizardmen")
-    return "lizardman1";
-  elseif(type == "dracos")
-    return "dragon1";
-  elseif(type == "trolls")
-    return "troll1";
-  elseif(type == "undead")
-    return "shade";
-  elseif(type == "lesserundead")
-    return "zombie";
-  elseif(type == "ettins")
-    return "ettin";
-  else
-    return type;
+function CreateNpcFromSpawnPoint(who, spawnpoint, i)
+  var template := GetObjProperty(spawnpoint, Cstr("Template" + i));
+  var npc := CreateNpcFromTemplate(template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
+  SetObjProperty(spawnpoint, "Spawn" + i, template);
+
+	if(!npc)
+		SendSysMessage(who, "Erro ao criar o npc.");
+    SendSysMessage(who, "Error: " + npc.errortext);
+	else
+		SendSysMessage(who, "Sucesso ao criar o npc com base no template.");
+	endif
+endfunction
+
+function InputsHandler( inputs, who, spawnpoint, unique )
+  if ( inputs[100] == 100 ) // Is OK button?
+    var i;
+
+    if(inputs[17] == 1) //Is boss?
+      SetObjProperty( spawnpoint, "uniquestat", unique );
+      CreateBossStructGump(who, unique);
+    endif
+
+    for ( i := 1; i <= 3; i += 1 )
+      SetObjProperty( spawnpoint, "Name" + i, inputs[i] );
+      SetObjProperty( spawnpoint, "Amount" + i, inputs[i + 3] );
+      SetObjProperty( spawnpoint, "Tier" + i, inputs[i + 6] );
+      SetObjProperty( spawnpoint, "Template" + i, inputs[i + 9] );
+      CreateNpcFromSpawnPoint(who, spawnpoint, i);
+    endfor
+
+    SetObjProperty( spawnpoint, "Range", inputs[13] );
+    SetObjProperty( spawnpoint, "MinDelay", inputs[14] );
+    SetObjProperty( spawnpoint, "MaxDelay", inputs[15] );
+    SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] );
+    SetObjProperty( spawnpoint, "unique", inputs[17] );
+    SetObjProperty(spawnpoint, "ResetMe",  1);
+
+    SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
   endif
+endfunction
+
+function AdicionarMoldura( byref gump )
+  var molduras := array{ struct{ x := 0,
+                                 y := 0,
+                                 width := 25,
+                                 height := 25,
+                                 gump := 39925 },
+                         struct{ x := GUMP_WIDTH - 25,
+                                 y := 0,
+                                 width := 35,
+                                 height := 25,
+                                 gump := 39927 },
+                         struct{ x := 25,
+                                 y := 0,
+                                 width := GUMP_WIDTH - 41,
+                                 height := 25,
+                                 gump := 39926 },
+                         struct{ x := 25,
+                                 y := GUMP_HEIGHT - 25,
+                                 width := GUMP_WIDTH - 25,
+                                 height := 35,
+                                 gump := 39932 },
+                         struct{ x := 0,
+                                 y := 25,
+                                 width := 10,
+                                 height := GUMP_HEIGHT - 50,
+                                 gump := 39928 },
+                         struct{ x := GUMP_WIDTH - 25,
+                                 y := 25,
+                                 width := 35,
+                                 height := GUMP_HEIGHT - 50,
+                                 gump := 39930 },
+                         struct{ x := GUMP_WIDTH - 25,
+                                 y := GUMP_HEIGHT - 25,
+                                 width := 35,
+                                 height := 35,
+                                 gump := 39933 },
+                         struct{ x := 0,
+                                 y := GUMP_HEIGHT - 25,
+                                 width := 35,
+                                 height := 35,
+                                 gump := 39931 }
+                         };
+
+  foreach moldura in molduras
+    GFGumpPicTiled( gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump );
+  endforeach
 endfunction
