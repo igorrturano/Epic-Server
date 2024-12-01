@@ -4,9 +4,9 @@
 
 use os;
 use cfgfile;
+use math;
 
 include "utils";
-// include "props";
 include ":attributes:attributeConstants";
 
 /////////////
@@ -30,7 +30,15 @@ function getWeaponStats(weapon)
 
 	stats := addDamagePhysical(stats, weapon);
 	stats := addDamageElemental(stats, weapon);
-	stats := addOthersAttributes(stats, weapon);
+	stats := addCombatAttributes(stats, weapon);
+
+	stats := addDurability(stats, weapon);
+	stats := addWeight(stats, weapon);
+	stats := addSTRRequired(stats, weapon);
+
+	// TODO: Função para setar HP na prop
+	// TODO: Função para setar PESO na prop
+	// TODO: Função para setar STRRequired na prop
 
 	return stats;
 endfunction
@@ -55,33 +63,39 @@ endfunction
 
 function addDamageElemental(stats, weapon)
 	// Danos físicos são dados, danos elementais são puros
-	stats.+FireDamage := 0;
-	stats.+ColdDamage := 0;
-	stats.+PoisonDamage := 0;
-	stats.+EnergyDamage := 0;
-
-	stats := addDamageElementalByWeapon(stats, weapon);
+	stats.+FireDamage := getDamageElemental("FIRE", weapon);
+	stats.+ColdDamage := getDamageElemental("COLD", weapon);
+	stats.+PoisonDamage := getDamageElemental("POISON", weapon);
+	stats.+EnergyDamage := getDamageElemental("ENERGY", weapon);
 
 	return stats;
 endfunction
 
-function addDamageElementalByWeapon(stats, weapon)
-	var attr := weapon.getAttrBase();
+function getDamageElemental(DMGTYPE, weapon)
+	case(DMGTYPE)
+		"FIRE":
+			return CInt(weapon.getAttrBase().FireDamage);
 
-	stats.FireDamage += CInt(attr.FireDamage);
-	stats.ColdDamage += CInt(attr.ColdDamage);
-	stats.PoisonDamage += CInt(attr.PoisonDamage);
-	stats.EnergyDamage += CInt(attr.EnergyDamage);
+		"COLD":
+			return CInt(weapon.getAttrBase().ColdDamage);
 
-	return stats;
+		"POISON":
+			return CInt(weapon.getAttrBase().PoisonDamage);
+
+		"ENERGY":
+			return CInt(weapon.getAttrBase().EnergyDamage);
+
+		default:
+			return 0;	
+	endcase
 endfunction
 
-function addOthersAttributes(stats, weapon)
+function addCombatAttributes(stats, weapon)
 	var elem := getItemCfgElem(weapon);
 
 	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
-	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.EpicCriticalChance);
 
 	return stats;
 endfunction
@@ -189,7 +203,14 @@ function getArmorStats(armor)
 	if (armor.isShield())
 		stats := addShieldMods(stats, armor);
 	endif
-	// TODO: Calcular HP, durabilidade, Str required.
+
+	// TODO: Função para setar HP na prop
+	// TODO: Função para setar PESO na prop
+	// TODO: Função para setar STRRequired na prop
+
+	stats := addDurability(stats, armor);
+	stats := addWeight(stats, armor);
+	stats := addSTRRequired(stats, armor);
 
 	return stats;
 endfunction
@@ -198,6 +219,8 @@ function addResistsPhysical(stats, armor)
 	stats.+SlashResist := 0;
 	stats.+PiercingResist := 0;
 	stats.+BluntResist := 0;
+
+	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 	
 	stats := addResistPhysicalBy("MATERIAL", stats, armor);
 	stats := addResistPhysicalBy("SLOT", stats, armor);
@@ -284,49 +307,58 @@ function getResistPhysicalBySlot(armor)
 endfunction
 
 function getResistPhysicalByMaterial(armor)
+	// TODO: Pensar em transformar isso daqui em uma função que retorne TODAS as infos do material em um struct: Danos (Físicos e Elementais), Resists (Físicos e Elementais), mod de peso, mod de HP, etc.
 	var resists := array{};
-	// Feito com 3 valores também, pra caso, no futuro, resolva criar materiais com resistência melhor em determinada situação
 	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
-	case (Upper(armor.getMaterialName())) // {SlashResist, PiercingResist, BluntResist}
+	case (armor.getMaterialID()) // {SlashResist, PiercingResist, BluntResist}
 		// TECIDOS
-		"LA":
-		"ALGODAO":
-		"SEDA":
-		"LINHO":
-		"MALVA":
-		"SISAL":
-		"DENIM":
-		"RAMI":
-		"FLAMEL":
-		"RAJAR":
+		0xf125: // Lã
+		0xdf9: // Algodão
+		0x1a94: // Seda
+		0x1a9C: // Linho
+		0xdfa: // Malva
+		0xdfb: // Sisal
+		0xdfc: // Denim
+		0xdfd: // Rami
+		0xdf6: // Flamel
+		0xdf7: // Rajal
 
 		// PELES
-		"PELE CINZA":
-		"PELE BEGE":
-		"PELE MARROM":
-		"PELE POLAR":
+		0xee55: // Cinza
+		0xee56: // Marrom
+		0xee57: // Bege
+		0xee58: // Polar
 
 		// COUROS
-		"COURO CURTIDO":
-		"COURO PELUDO":
-		"COURO EFERVECIDO":
-		"COURO POLAR":
-		"COURO ESCAMOSO":
-		"COURO DRACONIANO":
-		"COURO DE GIGANTE":
-		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break;
+		0xee45: // Curtido
+		0xef24: // Peludo
+		"COURO EFERVECIDO": // Efervecido
+		0xef26: // Polar
+		0xef20: // Escamoso 
+		0xed29: // Draconiano
+		0xef27: // Gigante
+		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break; // Profundezas
 
 		// METAIS
-		"COBRE": resists := {0,0,0}; break;
+		0x6991: resists := {-2,-3,-4}; break;// Estanho
+		0x6465: resists := {0,0,0}; break; // Cobre
 
-		"BRONZE": resists := {1,1,1}; break;
-		"FERRO": resists := {1,1,1}; break;
-		"FERROTEMPERADO": resists := {2,2,2}; break;
+		0x6994: resists := {1,1,1}; break; // Bronze
+		0x62ff: resists := {1,1,1}; break; // Ferro
+		0x6309: resists := {2,2,2}; break; // Ferro Temperado
 
-		"ACO": "FULMETIUM": "VENETIUM": "IGNIUM": "FRIGUTIUM": resists := {3,3,3}; break;
+		0x6995: // Aço
+		0x630b: // Fulmetium
+		0x630c: // Venetium
+		0x630d: // Ignium
+		0x6460: // Frigutium
+			resists := {3,3,3}; break;
 		
-		"ILLYRA": resists := {4,4,4}; break;
-		"MITHRIL": resists := {5,5,5}; break;
+		0x6315: // Illyra
+			resists := {4,4,4}; break;
+
+		0x6311: // Mithril
+			resists := {5,5,5}; break;
 
 		// OSSOS
 		"OSSO":
@@ -354,6 +386,8 @@ function addResistsElemental(stats, armor)
 	stats.+ColdResist := 0;
 	stats.+PoisonResist := 0;
 	stats.+EnergyResist := 0;
+
+	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 
 	stats := addResistElementalByArmor(stats, armor);
 
@@ -510,4 +544,119 @@ function getShieldModsByProtection(shield)
 		"ParryDelay" -> mods[1],
 		"ParryBonus" -> mods[2]
 	};
+endfunction
+
+function addDurability(stats, item)
+	stats.+MaxHP := 0;
+
+	stats.MaxHP += getDurabilityByType(item);
+	if (item.isA(POLCLASS_ARMOR))
+		stats.MaxHP += getDurabilityBySlot(item);
+	endif
+
+	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
+
+	return stats;
+endfunction
+
+function getDurabilityByType(item)
+	var maxhp := 0;
+	
+	if(item.isA(POLCLASS_WEAPON))
+		case (item.getType())
+			SLASHDAMAGE: maxhp := 45; break;
+			PIERCINGDAMAGE: maxhp := 60; break;
+			BLUNTDAMAGE: maxhp := 75; break;
+
+			default: maxhp := 0; break;
+		endcase
+	elseif (item.isA(POLCLASS_ARMOR))
+		if (item.isShield())
+			case (item.getType().Upper())
+				SHIELD_BUCKLER: maxhp := 40; break;
+				SHIELD_SMALL: maxhp := 60; break;
+				SHIELD_MEDIUM: maxhp := 80; break;
+				SHIELD_LARGE: maxhp := 100; break;
+				SHIELD_TOWER: maxhp := 120; break;
+
+				default: maxhp := 0; break;
+			endcase
+		else
+			var resists := getResistPhysicalByProtection(item);
+			maxhp := Max(array{resists["SlashResist"], resists["PiercingResist"], resists["BluntResist"]});
+		endif
+	endif
+
+	return maxhp;
+endfunction
+
+function getDurabilityBySlot(item)
+	return Max(getResistPhysicalBySlot(item));
+endfunction
+
+function getDurabilityModByMaterial(item)
+	var modifier := 0;
+
+	case (item.getMaterialID())
+		0x6309: modifier := 1; break; // Ferro
+
+		default: modifier := 0.5;
+	endcase
+
+	return CDbl(modifier);
+endfunction
+
+function addWeight(stats, item)
+	stats.+Weight := 0;
+
+	stats.Weight += getWeightByType(item);
+
+	stats.Weight := CInt(stats.Weight * getWeightModByMaterial(item));
+
+	return stats;
+endfunction
+
+function getWeightModByMaterial(item)
+var modifier := 0;
+
+	case (item.getMaterialID())
+		0x6309: modifier := 1.2; break; // Ferro
+
+		default: modifier := 1;
+	endcase
+
+	return CDbl(modifier);
+endfunction
+
+function getWeightByType(item)
+	var weight;
+
+	if(item.isA(POLCLASS_WEAPON))
+		var maxMainDamage := item.getMainDamageMax();
+		maxMainDamage := Max(array{maxMainDamage.SlashDamage, maxMainDamage.PiercingDamage, maxMainDamage.BluntDamage});
+		var maxOffDamage := item.getOffDamageMax();
+		maxOffDamage := Max(array{maxOffDamage.SlashDamage, maxOffDamage.PiercingDamage, maxOffDamage.BluntDamage});
+
+		weight := CInt(maxMainDamage + maxOffDamage);
+	elseif (item.isA(POLCLASS_ARMOR))
+		if (item.isShield())
+			weight := item.getAttrBase().DexPen;
+		else
+			// Poderia ter sido feito direto no weight. Deixar assim pra caso precise de algum MOD futuramente.
+			var armorAttr := item.getAttrBase();
+			var maxResist := Max(array{armorAttr.SlashResist, armorAttr.PiercingResist, armorAttr.BluntResist});
+
+			weight := maxResist;
+		endif
+	endif
+
+	return weight;
+endfunction
+
+function addSTRRequired(stats, item)
+	stats.+STRRequired := 0;
+
+	// stats.STRRequired += getSTRRequiredByType(item);
+
+	return stats;
 endfunction
