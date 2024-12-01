@@ -144,52 +144,61 @@ endfunction
 
 function CreateSpawn(spawnpoint)
   var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
-  var spawn := GetObjProperty(spawnpoint, "Spawn");
- // if((spawn == "orchorde") || (spawn == "undead") || (spawn == "lesserundead") || (spawn == "trolls") || (spawn == "vermin") || (spawn == "dracos") || (spawn == "orcs") || (spawn == "lizardmen") || (spawn == "ratmen"))
-    spawn := GetCritter(spawn);
- // else
- // spawn := GetCritter(spawn);
- // endif
-  var range := GetObjProperty(spawnpoint, "Range");
-  var x, y, z, success := 0;
-  var i := 1;
-  var npc;
-  while(success == 0)
-    if(range == 0)
-      x := spawnpoint.x;
-      y := spawnpoint.y;
-      z := spawnpoint.z;
-    elseif(spawnpoint.z >= 0)
-      x := spawnpoint.x + RandomInt(2 * range) - range;
-      y := spawnpoint.y + RandomInt(2 * range) - range;
-      z := GetWorldHeight(x, y, spawnpoint.realm);
-    elseif(spawnpoint.z < 0)
-      x := spawnpoint.x + RandomInt(2 * range) - range;
-      y := spawnpoint.y + RandomInt(2 * range) - range;
-      z := spawnpoint.z;
+  var spawn_count;
+  for ( spawn_count := 1; spawn_count <= 3; spawn_count += 1 )
+    var spawn := GetObjProperty(spawnpoint, "Spawn");
+    if(!spawn)
+      spawn := GetObjProperty(spawnpoint, Cstr("Spawn" + spawn_count));
+      if(!spawn)
+        continue;
+      endif
     endif
+    // if((spawn == "orchorde") || (spawn == "undead") || (spawn == "lesserundead") || (spawn == "trolls") || (spawn == "vermin") || (spawn == "dracos") || (spawn == "orcs") || (spawn == "lizardmen") || (spawn == "ratmen"))
+    spawn := GetCritter(spawn);
+  // else
+  // spawn := GetCritter(spawn);
+  // endif
+    var range := GetObjProperty(spawnpoint, "Range");
+    var x, y, z, success := 0;
+    var i := 1;
+    var npc;
+    while(success == 0)
+      if(range == 0)
+        x := spawnpoint.x;
+        y := spawnpoint.y;
+        z := spawnpoint.z;
+      elseif(spawnpoint.z >= 0)
+        x := spawnpoint.x + RandomInt(2 * range) - range;
+        y := spawnpoint.y + RandomInt(2 * range) - range;
+        z := GetWorldHeight(x, y, spawnpoint.realm);
+      elseif(spawnpoint.z < 0)
+        x := spawnpoint.x + RandomInt(2 * range) - range;
+        y := spawnpoint.y + RandomInt(2 * range) - range;
+        z := spawnpoint.z;
+      endif
 
-    if(!loscheck)
-      if(CheckLosBetween( spawnpoint.x, spawnpoint.y, spawnpoint.z, x, y, z, spawnpoint.realm ))
+      if(!loscheck)
+        if(CheckLosBetween( spawnpoint.x, spawnpoint.y, spawnpoint.z, x, y, z, spawnpoint.realm ))
+          npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
+          success := 1;
+          SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+          return npc.serial;
+        endif
+      else //Usar em caso de lugares com muitos obstáculos ou probabilidade alta de spawnar travado
         npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
         return npc.serial;
       endif
-    else //Usar em caso de lugares com muitos obstáculos ou probabilidade alta de spawnar travado
-      npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
-      success := 1;
-      SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
-      return npc.serial;
-    endif
-    i := i + 1;
-    if(i > 10)
-      npc := CreateNpcFromTemplate(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
-      success := 1;
-      SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
-      return npc.serial;
-    endif
-  endwhile
+      i := i + 1;
+      if(i > 10)
+        npc := CreateNpcFromTemplate(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
+        success := 1;
+        SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+        return npc.serial;
+      endif
+    endwhile
+  endfor
 endfunction
 
 function GetCritter(type)
