@@ -14,8 +14,13 @@ include "include/facings";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":fls_core:fls_objtypes";
+include ":destroyable:include/destroyItem";
 
 program skill_LumberJack(who,tool)
+
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
 
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
@@ -26,6 +31,7 @@ program skill_LumberJack(who,tool)
 		SendSysMessage(who, "Cancelado.");
 		return 0;
 	endif
+	//remover esta parte inicio
 	var quebravel := GetObjProperty(targ.item, "quebravel");
 
 	if (targ.item)
@@ -34,7 +40,8 @@ program skill_LumberJack(who,tool)
 			return 0;
 		endif
 	endif
-
+	//remover esta parte fim.
+	
 	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1 )
 		SendSysMessage(who, "Muito longe.");
 		return 0;

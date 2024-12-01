@@ -15,12 +15,18 @@ include "include/tileEffects";
 include ":fls_core:fls_objtypes";
 include "include/sysEvent";
 include "include/eventID";
+include ":combat:weardown";
+
+const PROPNAME_DURABILIDADE := "durabItem"; 
+const PROPNAME_RESITEM_MULT := "resItem"; 
+const RESISTENCIA_BASE := 5; 
 
 program destroyitems(parms)
 
-	var who:=parms[1];
-	var item:=parms[2];
-	var arma:=parms[3];
+	var quem:=parms[1];
+	var itemAlvo:=parms[2];
+	var fonteDano:=parms[3];
+	var consumoStamina := 0;
 
 	/*
 		0x0f51	dagger
@@ -30,15 +36,143 @@ program destroyitems(parms)
 		11565	karda
 	*/
 
-	if((arma.objtype == 0x0f51) || (arma.objtype ==0x13f6) || (arma.objtype ==0x0ec2) || (arma.objtype == 0x0ec4) || (arma.objtype ==11565))
-		SendSysMessageEx(who,"Voce nao pode quebrar " + item.desc + " com isto.",SSM_FAIL);
-		return 0;
-	endif
+	//if((arma.objtype == 0x0f51) || (arma.objtype ==0x13f6) || (arma.objtype ==0x0ec2) || (arma.objtype == 0x0ec4) || (arma.objtype ==11565))
+	//	SendSysMessageEx(who,"Voce nao pode quebrar " + item.desc + " com isto.",SSM_FAIL);
+	//	return 0;
+	//endif
+	
+	while(true)
+		if(!isPossivelDestruir(quem,itemAlvo,fonteDano,consumoStamina))
+			break;
+		endif
+		var isDestruido := TentaDestruir(quem,itemAlvo,fonteDano,consumoStamina);
+		
+		if(isDestruido)
+			Destruir(itemAlvo);
+			break;
+		endif;
+		Sleep(2);
+	endwhile
 
-	isBreakble(who,item);
+	//isBreakble(who,item);
 
 endprogram
 
+function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
+	if(!itemAlvo || itemAlvo.invisible)
+		return false;
+	endif
+
+	//TODO Precisa forçar o war mode??
+
+	if (!itemAlvo.ISA(POLCLASS_ITEM))
+		SendSysMessage(quem, "O Alvo não é um item destruível.");
+		return false;
+	endif
+	if (itemAlvo.container)
+		SendSysMessage(quem, "Não é possivel destruir um item dentro de um container.");
+		return false;
+	endif
+
+	if(fonteDano.ISA(POLCLASS_WEAPON))
+		if (quem.weapon != fonteDano)
+			SendSysMessage(quem, "Você deve estar com a arma em mãos.");
+			return false;
+		endif
+
+		CalculaConsumoStamina(fonteDano,consumoStamina);
+		Print("Consumo de stamina: " + consumoStamina + " Stamina Total: " + AP_GetVital(quem,"Stamina") );
+		if(AP_GetVital(quem, "Stamina") < consumoStamina)
+			SendSysMessage(quem, "Você está muito cansado para continuar.");
+			return false;
+		endif
+	else
+		//Fonte de dano mágica.
+	endif
+
+	if ( CoordinateDistance(quem.x, quem.y, itemAlvo.x, itemAlvo.y) > 1 )
+		SendSysMessage(quem, "Muito longe.");
+		return false;
+	endif
+	return true;
+
+endfunction
+
+function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
+	if(fonteDano.ISA(POLCLASS_WEAPON))
+
+		var itemAlvoInfo := struct;
+		itemAlvoInfo.+resistencia := cInt(PegaResistenciaItem(itemAlvo));
+		itemAlvoInfo.+durabTotal := PegaDurabilidadeTotal(itemAlvo);
+
+		var propDur := GetObjProperty(itemAlvo,PROPNAME_DURABILIDADE);
+		if(!propDur)
+			SetObjProperty(itemAlvo,PROPNAME_DURABILIDADE,itemAlvoInfo.durabTotal);
+			itemAlvoInfo.+durabilidade := itemAlvoInfo.durabTotal;
+		else
+			itemAlvoInfo.+durabilidade := propDur;
+		endif
+
+		Print("[PropDur] ---" + itemAlvoInfo);
+
+		RodaEfeitosAnim(quem,itemAlvo);
+		ConsumeVital( quem, STAMINA, consumoStamina * 100);
+		WearDownWeapon(quem,fonteDano);
+		//TODO Lidar com armadilhas.
+		//TODO Disparar evento para guardas e mostros próximos.
+
+		var durabilidadeRestante :=  itemAlvoInfo.durabilidade - CalculaDanoRecebido(quem, fonteDano, itemAlvoInfo);
+		SetObjProperty(itemAlvo,PROPNAME_DURABILIDADE,durabilidadeRestante);
+		Print("Durabilidade Restante ------ " + durabilidadeRestante);
+		return durabilidadeRestante <= 0;// destruído! 
+	endif
+endfunction
+
+function RodaEfeitosAnim(quem, alvo)
+	PlayAttackAnimation(quem);
+	sleepms(600);
+	PlaySoundEffect(quem, FLS_SFX_SKILL_LUMBERJACK);
+	PlayStationaryEffect(alvo.x, alvo.y, alvo.item.z + 1, FX_SMOKE, 2, 4);
+endfunction
+
+function Destruir(itemAlvo)
+	EraseObjProperty(itemAlvo,PROPNAME_DURABILIDADE);
+	Print(" [" + itemAlvo.name + "]  *** Destruído !! ***");
+	itemAlvo.invisible := 1;
+	//TODO criar estilhaços no chão.
+	//TODO Verificar se é container, destruir e espalhar seu conteúdo.
+	//TODO Logar destruição.
+	//TODO Se for item criado por gm, disparar script de respawn.
+endfunction
+
+function CalculaDanoRecebido( quem, fonteDano, propDur)
+		var dadoDano :=  RandomDiceRoll("1d10");//RandomDiceRoll(fonteDano.getMainDamageDice());
+		var danoCru :=  dadoDano + (GetAttribute(quem,"Strength") / 10);
+		var danoRecebido := danoCru - propDur.resistencia;
+		Print(fonteDano);
+		Print("Dice: " + fonteDano.getMainDamageDice());
+		Print("Dano Cru: " + danoCru);
+		Print("danoRecebido: " + danoRecebido);
+		return danoRecebido < 0? 0 : danoRecebido;
+endfunction
+
+function CalculaConsumoStamina( fonteDano, byref consumoStamina)
+		consumoStamina := fonteDano.weight;
+endfunction
+
+function PegaResistenciaItem(itemAlvo)
+	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
+
+	if(propRes)
+		return RESISTENCIA_BASE * propRes;
+	else
+		return RESISTENCIA_BASE;
+	endif
+endfunction
+
+function PegaDurabilidadeTotal(itemAlvo)
+	return cint(itemAlvo.weight);
+endfunction
 
 function isBreakble(who,item)
 
