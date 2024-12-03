@@ -142,17 +142,9 @@ function ResetSpawnQueue(spawnpoint)
   SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
 endfunction
 
-function CreateSpawn(spawnpoint)
+function SetupSpawn(spawnpoint, key_spawn := "Spawn")
   var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
-  var spawn_count;
-  for ( spawn_count := 1; spawn_count <= 3; spawn_count += 1 )
-    var spawn := GetObjProperty(spawnpoint, "Spawn");
-    if(!spawn)
-      spawn := GetObjProperty(spawnpoint, Cstr("Spawn" + spawn_count));
-      if(!spawn)
-        continue;
-      endif
-    endif
+  var spawn := GetObjProperty(spawnpoint, key_spawn);
     // if((spawn == "orchorde") || (spawn == "undead") || (spawn == "lesserundead") || (spawn == "trolls") || (spawn == "vermin") || (spawn == "dracos") || (spawn == "orcs") || (spawn == "lizardmen") || (spawn == "ratmen"))
     spawn := GetCritter(spawn);
   // else
@@ -198,6 +190,17 @@ function CreateSpawn(spawnpoint)
         return npc.serial;
       endif
     endwhile
+endfunction
+
+function CreateSpawn(spawnpoint)
+  var spawn_count := GetObjProperty(spawnpoint, "SpawnCount") ? CInt(GetObjProperty(spawnpoint, "SpawnCount")) : 1;
+  var i;
+  for ( i := 1; i <= spawn_count; i += 1 )
+    if(spawn_count == 1)
+      SetupSpawn(spawnpoint);
+    else
+      SetupSpawn(spawnpoint, "Spawn" + i);
+    endif
   endfor
 endfunction
 
