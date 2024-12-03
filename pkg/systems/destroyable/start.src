@@ -1,0 +1,9 @@
+use os;
+use uo;
+use util;
+
+program reagentspan()
+
+print("** Iniciando Sistema de respawn de itens destruídos. **");
+
+endprogram
