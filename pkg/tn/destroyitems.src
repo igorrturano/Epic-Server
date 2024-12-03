@@ -16,8 +16,8 @@ include ":fls_core:fls_objtypes";
 include "include/sysEvent";
 include "include/eventID";
 include ":combat:weardown";
-include ":destroyable:include/destroyItemPersist";
 include ":destroyable:include/destroyItem";
+include "include/epicConstants";
 
 program destroyitems(parms)
 
@@ -89,7 +89,7 @@ function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
 	endif
 
 	if ( CoordinateDistance(quem.x, quem.y, itemAlvo.x, itemAlvo.y) > 1 )
-		SendSysMessage(quem, "Muito longe.");
+		SendSysMessage(quem, "Você está muito distante do alvo.");
 		return false;
 	endif
 	return true;
@@ -98,28 +98,18 @@ endfunction
 
 function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	if(fonteDano.ISA(POLCLASS_WEAPON))
-
-		var alvoInfo := struct;
-		alvoInfo.+resistencia := cInt(PegaResistenciaItem(itemAlvo));
-		alvoInfo.+durabTotal := PegaDurabilidadeTotal(itemAlvo);
-
-		var propDur := GetObjProperty(itemAlvo,PROPNAME_DURABILIDADE);
-		if(!propDur)
-			SetObjProperty(itemAlvo,PROPNAME_DURABILIDADE,alvoInfo.durabTotal);
-			alvoInfo.+durabilidade := alvoInfo.durabTotal;
-		else
-			alvoInfo.+durabilidade := propDur;
-		endif
-
-		Print("[PropDur] ---" + alvoInfo);
+		var alvoInfo := MontaAtributosItem(itemAlvo);
+		Print("[alvoInfo] ---" + alvoInfo);
 
 		RodaEfeitosAnim(quem,itemAlvo);
 		ConsumeVital( quem, STAMINA, consumoStamina * 100);
 		WearDownWeapon(quem,fonteDano);
 		//TODO Lidar com armadilhas.
 		//TODO Disparar evento para guardas e mostros próximos.
-		var danoCalculado := CalculaDanoRecebido(quem,fonteDano,propDur);
+		var danoCalculado := CalculaDanoRecebido(quem,fonteDano,alvoInfo);
+
 		if(danoCalculado.isEficaz)
+			PrintTextAbovePrivate(itemAlvo,CStr(danoCalculado.dano),quem,3,FOGO_LIGHT);
 			var durabilidadeRestante :=  alvoInfo.durabilidade - danoCalculado.dano;
 			SetObjProperty(itemAlvo,PROPNAME_DURABILIDADE,durabilidadeRestante);
 
@@ -127,7 +117,9 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 				if(!GetObjProperty(itemAlvo,PROPNAME_EMPERRADO))
 					SetObjProperty(itemAlvo,PROPNAME_EMPERRADO,true);
 				endif
-			elseif(durabilidadeRestante <= 0)
+			endif
+
+			if(durabilidadeRestante <= 0)
 				return true;// destruído! 
 			endif
 		else
@@ -137,36 +129,12 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	endif
 endfunction
 
+
 function RodaEfeitosAnim(quem, alvo)
 	PlayAttackAnimation(quem);
 	sleepms(600);
 	PlaySoundEffect(quem, FLS_SFX_SKILL_LUMBERJACK);
 	PlayStationaryEffect(alvo.x, alvo.y, alvo.z, FX_SMOKE, 2, 4);
-endfunction
-
-function Destruir(quem,itemAlvo)
-	EraseObjProperty(itemAlvo,PROPNAME_DURABILIDADE);
-
-	if(!GetObjProperty(itemAlvo,PROPNAME_ARTIFICE_SERIAL) 
-	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG))//se não foi criado por player e não foi marcado como dispensável..
-		MarcarRecriarItem(itemAlvo);
-	endif 
-
-	var serialAlvo := itemAlvo.serial;
-	DestroyItem(itemAlvo);
-	//TODO Criar sistema de respawn de objetos e entao:
-	//TODO remover esta parte inicio [Teste]
-	sleep(6);
-	var itemInfo := PegaItemMarcado(serialAlvo);
-	var copy := CreateItemAtLocationFromTemplate(itemInfo.x, itemInfo.y, itemInfo.z, itemInfo.realm, itemInfo.template);
-	copy.movable := itemInfo.movable;
-
-	//TODO remover esta parte fim 
-
-	//TODO criar estilhaços no chão.
-	//TODO Verificar se é container, destruir e espalhar seu conteúdo.
-	//TODO Logar destruição.
-	//TODO Se for item criado por gm, disparar script de respawn.
 endfunction
 
 function CalculaDanoRecebido( quem, fonteDano, propDur)
@@ -176,29 +144,11 @@ function CalculaDanoRecebido( quem, fonteDano, propDur)
 		var danoCalculado := struct;
 		danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
 		danoCalculado.+isEficaz := danoRecebido > 0;
-		Print(fonteDano);
-		Print("Dice: " + fonteDano.getMainDamageDice());
-		Print("Dano Cru: " + danoCru);
-		Print("danoRecebido: " + danoRecebido);
 		return danoCalculado;
 endfunction
 
 function CalculaConsumoStamina( fonteDano, byref consumoStamina)
 		consumoStamina := fonteDano.weight;
-endfunction
-
-function PegaResistenciaItem(itemAlvo)
-	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
-
-	if(propRes)
-		return RESISTENCIA_BASE * propRes;
-	else
-		return RESISTENCIA_BASE;
-	endif
-endfunction
-
-function PegaDurabilidadeTotal(itemAlvo)
-	return cint(itemAlvo.weight) * 2;
 endfunction
 
 function isBreakble(who,item)
@@ -267,9 +217,7 @@ function fBreak(who,item)
 			PrintText(item, "*A " +item.desc+ " começa a ceder*");
 			SetObjProperty(item,"hits",hits-1);
 		endif
-
 	else
-
 		PlayAttackAnimation(who);
 		sleepms(600);
 		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);

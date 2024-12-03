@@ -2,8 +2,13 @@ use os;
 use uo;
 use util;
 
-program reagentspan()
+program iniciaVigilante()
 
-print("** Iniciando Sistema de respawn de itens destruídos. **");
+	var script := Start_Script(":destroyable:vigilanteDestruiveis");
+	if ( script.errortext )
+		SysLog(script.errortext);
+	else
+		print("Starting Vigilante de itens destruídos... OK");
+	endif
 
 endprogram

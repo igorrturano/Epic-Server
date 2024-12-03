@@ -1,0 +1,26 @@
+use os;
+use uo;
+use util;
+
+include ":destroyable:include/destroyItemPersist";
+include ":destroyable:include/destroyItem";
+
+const T_HORA := 3600;
+
+program vigilanteDestruiveis()
+	while(true)
+		sleep(10);
+		var itensDestruidos := PegaListaItens(10);
+		
+		foreach infoItem in itensDestruidos
+			var copy := CreateItemAtLocationFromTemplate(infoItem.x, infoItem.y, infoItem.z, infoItem.realm, infoItem.template);
+			copy.movable := infoItem.movable;
+			RemoveItemMarcado(infoItem.serial);
+			
+			Sleepms(4);
+		endforeach
+		if(itensDestruidos.size() > 0)
+			Print("[VigilanteDestruíveis] -- " + itensDestruidos.size() + " Itens destruídos recriado com sucesso.");
+		endif
+	endwhile
+endprogram
