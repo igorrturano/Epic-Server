@@ -18,6 +18,8 @@ include "include/eventID";
 include ":combat:weardown";
 include ":destroyable:include/destroyItem";
 include "include/epicConstants";
+include "include/facings";
+include ":equipsys:utils";
 
 program destroyitems(parms)
 
@@ -63,8 +65,8 @@ function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
 
 	//TODO Precisa forçar o war mode??
 
-	if (!itemAlvo.ISA(POLCLASS_ITEM))
-		SendSysMessage(quem, "O Alvo não é um item destruível.");
+	if (!itemAlvo.ISA(POLCLASS_ITEM) || GetObjProperty(itemAlvo,PROPNAME_INDESTRUTIVEL))
+		SendSysMessage(quem, "Você não pode destruir isso.");
 		return false;
 	endif
 	if (itemAlvo.container)
@@ -99,20 +101,23 @@ endfunction
 function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	if(fonteDano.ISA(POLCLASS_WEAPON))
 		var alvoInfo := MontaAtributosItem(itemAlvo);
-		Print("[alvoInfo] ---" + alvoInfo);
-
-		RodaEfeitosAnim(quem,itemAlvo);
+		
+		if(!IsFacing(quem,itemAlvo.x,itemAlvo.y))
+			TurnObjectToward(quem,itemAlvo.x,itemAlvo.y);
+		endif
+		
+		RodaEfeitosAnim(quem,fonteDano,itemAlvo);
 		ConsumeVital( quem, STAMINA, consumoStamina * 100);
 		WearDownWeapon(quem,fonteDano);
-		//TODO Lidar com armadilhas.
+		//TODO Lidar com armadilhas a cada hit.
 		//TODO Disparar evento para guardas e mostros próximos.
 		var danoCalculado := CalculaDanoRecebido(quem,fonteDano,alvoInfo);
 
 		if(danoCalculado.isEficaz)
 			PrintTextAbovePrivate(itemAlvo,CStr(danoCalculado.dano),quem,3,FOGO_LIGHT);
-			var durabilidadeRestante :=  alvoInfo.durabilidade - danoCalculado.dano;
-			SetObjProperty(itemAlvo,PROPNAME_DURABILIDADE,durabilidadeRestante);
+			var durabilidadeRestante := DanificaItem(itemAlvo,alvoInfo.durabilidade,danoCalculado.dano);
 
+			//TODO Implementar mecânica de porta e baú emperrado.
 			if(durabilidadeRestante <= alvoInfo.durabTotal / 2 && itemAlvo.ISA(POLCLASS_LOCKABLE))
 				if(!GetObjProperty(itemAlvo,PROPNAME_EMPERRADO))
 					SetObjProperty(itemAlvo,PROPNAME_EMPERRADO,true);
@@ -129,18 +134,21 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	endif
 endfunction
 
-
-function RodaEfeitosAnim(quem, alvo)
+function RodaEfeitosAnim(quem,arma,alvo)
 	PlayAttackAnimation(quem);
 	sleepms(600);
-	PlaySoundEffect(quem, FLS_SFX_SKILL_LUMBERJACK);
+	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
+	Print("** SOM: " + somAtaque + " - " + arma);
+	PlaySoundEffect(quem, somAtaque);
 	PlayStationaryEffect(alvo.x, alvo.y, alvo.z, FX_SMOKE, 2, 4);
 endfunction
 
 function CalculaDanoRecebido( quem, fonteDano, propDur)
-		var dadoDano :=  RandomDiceRoll("1d10");//RandomDiceRoll(fonteDano.getMainDamageDice());
+		var dadoDano :=  RandomDiceRoll(fonteDano.getMainDamageDice());
 		var danoCru :=  dadoDano + (Ceil(GetAttribute(quem,"Strength") / 10));
 		var danoRecebido := danoCru - propDur.resistencia;
+		Print("** DanoCru: " + danoCru);
+		Print("** danoRecebido: " + danoRecebido);
 		var danoCalculado := struct;
 		danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
 		danoCalculado.+isEficaz := danoRecebido > 0;

@@ -1,5 +1,6 @@
 use uo;
 use os;
+use basic;
 
 include ":combat:combat";
 include ":attributes:attributes";
@@ -8,11 +9,28 @@ include ":itemutils:itemInfo";
 
 const PROPNAME_DURABILIDADE := "durabItem"; 
 const PROPNAME_CHAVE_ORIGINAL := "serialOriginal"; 
-const PROPNAME_EMPERRADO := "isEmperrado"; 
 const PROPNAME_RESITEM_MULT := "resItem"; 
 const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
-const PROPNAME_DISPENSAVEL_FLAG := "dispensavel"; 
+const PROPNAME_EMPERRADO := "isEmperrado"; 
+const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel"; 
+const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
+const PROPNAME_MATERIAL := "material"; 
+
 const RESISTENCIA_BASE := 5; 
+
+enum TIPO_MATERIAIS
+	PEDRA := "Stone",
+	TIJOLO := "Brick",
+	MARMORE := "marmore",
+	ARENITO := "arenito",
+	OSSOS := "ossos",
+	VIDRO := "Glass",
+	MADEIRA := "Wood",
+	PANO := "Cloth",
+	METAL := "Metal"
+endenum
+
+var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 
 function ComportamentoWarMode(quem, itemFonte)
 
@@ -42,11 +60,17 @@ function Destruir(quem,itemAlvo)
 		MarcarRecriarItem(itemAlvo);
 	endif 
 
+	if(itemAlvo.ISA(POLCLASS_CONTAINER))
+
+	endif
+
 	DestroyItem(itemAlvo);
+	//TODO implementar comando de Indestrutível.
 	//TODO criar estilhaços no chão.
-	//TODO Verificar se é container, destruir e espalhar seu conteúdo.
+	//TODO Verificar se é container para destruir e espalhar seu conteúdo (Ou talvez criar um container "morto" e colocar tudo dentro).
 	//TODO Logar destruição.
-	//TODO Se for item criado por gm, disparar script de respawn.
+	//TODO Criar comando de gm para consultar os logs e gerênciar o respawn de itens
+	//TODO Criar comando ou argumento do create para gms criarem itens dispensáveis.
 endfunction
 
 function LimpaObjPropsDestruiveis(itemAlvo)
@@ -64,23 +88,25 @@ function PegaResistenciaItem(itemAlvo)
 	endif
 endfunction
 
-function PegaDurabilidadeTotal(itemAlvo)
+function PegaDurabilidadeTotal(item)
 	var itemdesc := ReadConfigFile(":*:itemdesc");
-    var elem := FindConfigElem(itemdesc, itemAlvo.objtype);
+    var elem := FindConfigElem(itemdesc, item.objtype);
 	var pesoEscolhido := 0;
 
-	if(elem)
-		if(elem.weight > 0)
-			pesoEscolhido := CInt(elem.weight);
-			Print("Peso no itemDesc: " + pesoEscolhido);
-			return Ceil(pesoEscolhido);
+	if(item.ISA(POLCLASS_ARMOR) || item.ISA(POLCLASS_WEAPON))
+		return item.maxhp;
+	else
+		if(elem)
+			if(elem.weight > 0)
+				pesoEscolhido := CInt(elem.weight);
+				return Ceil(pesoEscolhido);
+			endif
 		endif
-	endif
 
-	var infoTile := IU_GetTileInfo(itemAlvo.Graphic);
-	pesoEscolhido := CInt(infoTile.Weight);
-	Print("Peso no Tile: " + infoTile.Weight);
-	return Ceil(pesoEscolhido) * 2;
+		var infoTile := IU_GetTileInfo(item.Graphic);
+		pesoEscolhido := CInt(infoTile.Weight);
+		return Ceil(pesoEscolhido) * 4;
+	endif
 endfunction
 
 function MontaAtributosItem(item)
@@ -88,13 +114,28 @@ function MontaAtributosItem(item)
 		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item));
 		itemAtrib.+durabTotal := PegaDurabilidadeTotal(item);
 
-		var propDur := GetObjProperty(item,PROPNAME_DURABILIDADE);
-		if(!propDur)
-			SetObjProperty(item,PROPNAME_DURABILIDADE,itemAtrib.durabTotal);
-			itemAtrib.+durabilidade := itemAtrib.durabTotal;
+		if(item.ISA(POLCLASS_ARMOR) || item.ISA(POLCLASS_WEAPON))
+			itemAtrib.+durabilidade := item.hp;
+			SetObjProperty(item,PROPNAME_DURABILIDADE, item.hp);
 		else
-			itemAtrib.+durabilidade := propDur;
+			var propDur := GetObjProperty(item,PROPNAME_DURABILIDADE);
+			if(!propDur)
+				SetObjProperty(item,PROPNAME_DURABILIDADE,itemAtrib.durabTotal);
+				itemAtrib.+durabilidade := itemAtrib.durabTotal;
+			else
+				itemAtrib.+durabilidade := propDur;
+			endif
 		endif
-
 	return itemAtrib;
+endfunction
+
+function DanificaItem(item,durabilidade,dano)
+	var durabilidadeRestante :=  durabilidade - dano;
+
+	if(Item.ISA(POLCLASS_ARMOR) || Item.ISA(POLCLASS_WEAPON))
+		item.hp := CInt(durabilidadeRestante);
+	endif
+	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
+
+	return durabilidadeRestante;
 endfunction
