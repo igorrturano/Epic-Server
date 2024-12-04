@@ -17,6 +17,7 @@ const PROPNAME_INDESTRUTIVEL := "isIndestrutivel";
 const PROPNAME_MATERIAL := "material"; 
 
 const RESISTENCIA_BASE := 5; 
+const DECAYTIME_DESTROCO := 20;
 
 enum TIPO_MATERIAIS
 	PEDRA := "Stone",
@@ -27,9 +28,11 @@ enum TIPO_MATERIAIS
 	VIDRO := "Glass",
 	MADEIRA := "Wood",
 	PANO := "Cloth",
-	METAL := "Metal"
+	METAL := "Metal",
+	INDEFINIDO := "indefinido"
 endenum
 
+var catalogoDestrocos := MontaCatalogoDestrocos();
 var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 
 function ComportamentoWarMode(quem, itemFonte)
@@ -60,10 +63,7 @@ function Destruir(quem,itemAlvo)
 		MarcarRecriarItem(itemAlvo);
 	endif 
 
-	if(itemAlvo.ISA(POLCLASS_CONTAINER))
-
-	endif
-
+	CriaDestrocos(itemAlvo,RandomIntMinMax(1,3),4);
 	DestroyItem(itemAlvo);
 	//TODO implementar comando de Indestrutível.
 	//TODO criar estilhaços no chão.
@@ -138,4 +138,106 @@ function DanificaItem(item,durabilidade,dano)
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 
 	return durabilidadeRestante;
+endfunction
+
+function MontaCatalogoDestrocos()
+	var catalogo := Dictionary;
+	
+	catalogo.insert(PEDRA,{0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
+	catalogo.insert(TIJOLO,{0x1038,0x0F3B});
+	catalogo.insert(MARMORE,{0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
+	catalogo.insert(ARENITO,{0x0DF9,0x0F3B});
+	catalogo.insert(OSSOS,{0x1B1A,0x1B19,0x1B12,0x1B11});
+	catalogo.insert(VIDRO,{0x5738});
+	catalogo.insert(MADEIRA,{0x0c2f,0x0c2e,0x1038});
+	catalogo.insert(PANO,{0x0DD5,0x0EE9,0x1766});
+	catalogo.insert(METAL,{0x0DFE,0x1B26,0x1B9D,0x1B9E});
+	catalogo.insert(INDEFINIDO,{0x0DFE,0x1B26,0x1B9D,0x1B9E});
+
+	return catalogo;
+endfunction
+
+function CriaDestrocos(itemAlvo,quantidade,distanciaMax := 0)
+	var material := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
+	var arrayDestrocos := array;
+	var corDestroco := 1001;
+	if(material)
+		arrayDestrocos := catalogoDestrocos[configRecursos[material].Type];
+		corDestroco := configRecursos[material].Color;
+	else
+		arrayDestrocos := catalogoDestrocos[INDEFINIDO];
+	endif
+
+	var i;
+	for (i := 1; i <= quantidade; i += 1)
+		var adicionalX := RandomInt(distanciaMax);
+		var adicionalY := RandomInt(distanciaMax);
+		var destrocoGraphic := arrayDestrocos[RandomIntMinMax(1,arrayDestrocos.size())];
+
+		var destrocoPos := struct;
+		destrocoPos.+x := itemAlvo.x + adicionalX;
+		destrocoPos.+y := itemAlvo.y + adicionalY;
+		destrocoPos.+z := itemAlvo.z;
+
+		if(!CheckLosBetween( itemAlvo.x, itemAlvo.y, itemAlvo.z,destrocoPos.x,destrocoPos.y,destrocoPos.z,BRITANNIA_REALM))
+			destrocoPos.x := itemAlvo.x; 
+			destrocoPos.y := itemAlvo.y; 
+			destrocoPos.z := itemAlvo.z; 
+		endif
+
+		PlayMovingEffectXYZEx(itemAlvo.x,
+			itemAlvo.y,
+			itemAlvo.z,
+			destrocoPos.x,
+			destrocoPos.y,
+			destrocoPos.z,
+			BRITANNIA_REALM,
+			destrocoGraphic,
+			2,
+			2,
+			corDestroco
+			);
+
+		var destroco := CreateItemAtLocation(destrocoPos.x , destrocoPos.y, destrocoPos.z, destrocoGraphic);
+		
+		destroco.color := corDestroco;
+		destroco.decayAt := ReadGameClock() + DECAYTIME_DESTROCO;
+		RenomeiaDestroco(destroco,configRecursos[material].type);
+	endfor
+endfunction
+
+function RenomeiaDestroco(byref destroco,tipo)
+	var novoNome := "destroços de ";
+		case (tipo)
+			PEDRA: 
+				novoNome := novoNome + "pedra";
+				break;
+			TIJOLO:  
+				novoNome :=	novoNome + "tijolo";
+				break;
+			MARMORE:  
+				novoNome :=	novoNome + "marmore";
+				break;
+			ARENITO:  
+				novoNome :=	novoNome + "arenito";
+				break;
+			OSSOS: 
+				novoNome :=	novoNome + "ossos";
+				break;
+			VIDRO: 
+				novoNome :=	novoNome + "vidro";
+				break;
+			MADEIRA: 
+				novoNome :=	novoNome + "madeira";
+				break;
+			PANO:  
+				novoNome :=	novoNome + "pano";
+				break;
+			METAL:  
+				novoNome :=	novoNome + "metal";
+				break;
+			default:
+				novoNome:=	"destroços";
+		endcase
+		SetName(destroco,novoNome);
 endfunction
