@@ -19,6 +19,7 @@ const PROPNAME_EMPERRADO := "isEmperrado";
 const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel"; 
 const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
 const PROPNAME_MATERIAL := "material"; 
+const PROPNAME_DESTROCO := "isDestroco"; 
 
 const RESISTENCIA_BASE := 8; // Resistencia de dano base de todos os itens.
 const DECAYTIME_DESTROCO := 10; // segundos [não funciona direito]
@@ -88,7 +89,10 @@ function Destruir(quem,itemAlvo)
 
 	RunTraps(itemAlvo,quem);
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
-	CriaDestrocos(itemAlvo,RandomIntMinMax(1,3),4);
+
+	if(!IsDestroco(itemAlvo))
+		CriaDestrocos(itemAlvo,RandomIntMinMax(1,3),4);
+	endif
 	DestroyItem(itemAlvo);
 	//TODO implementar comando de Indestrutível.
 	//TODO Logar destruição.
@@ -100,7 +104,8 @@ function DeveMarcarRecriarItem(itemAlvo)
 	return !GetObjProperty(itemAlvo,PROPNAME_ARTIFICE_SERIAL) 
 	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG)
 	&& !itemAlvo.ISA(POLCLASS_CORPSE)
-	&& itemAlvo.ISA(POLCLASS_ITEM);
+	&& itemAlvo.ISA(POLCLASS_ITEM)
+	&& !IsDestroco(itemAlvo);
 endfunction
 
 function AvaliaDisparoArmadilha(item)
@@ -265,8 +270,10 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 	endif
 		//TODO Disparar evento para guardas e mostros próximos.
 
-	if(RandomInt(100) <= CRIA_DESTROCO_CHANCE)
-		CriaDestrocos(item,1,3,false);
+	if(!IsDestroco(item))
+		if(RandomInt(100) <= CRIA_DESTROCO_CHANCE)
+			CriaDestrocos(item,1,3,false);
+		endif
 	endif
 
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
@@ -278,6 +285,10 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 	endif
 
 	return danoCalculado;
+endfunction
+
+function IsDestroco(item)
+	return GetObjProperty(item,PROPNAME_DESTROCO);
 endfunction
 
 function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx,ignoreSerial := 0)
@@ -403,4 +414,5 @@ function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 				novoNome:=	"destroços";
 		endcase
 		SetName(destroco,novoNome);
+		destroco.SetObjProperty(destroco,PROPNAME_DESTROCO,1);
 endfunction
