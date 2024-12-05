@@ -36,6 +36,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	endif
 
 	xDesc := PegaDescArtefato(objeto,who,xDesc);
+	xDesc := PegaDescEmperrado(objeto,xDesc);
 
 	if (isArma || isArmadura)
 		var cfgObj := MontaObjCfgArmaArmadura(objeto,xDesc);
@@ -49,7 +50,6 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 		endif
 	endif
 
-	xDesc := PegaDescMagicLore(objeto,who,xDesc);
 	XDesc := PegaDescGoles(objeto,xDesc);
 	
 	return xDesc;

@@ -20,6 +20,7 @@ include ":destroyable:include/destroyItem";
 include "include/epicConstants";
 include "include/facings";
 include ":equipsys:utils";
+include ":traps:traps";
 
 program destroyitems(parms)
 
@@ -45,12 +46,8 @@ program destroyitems(parms)
 		if(!isPossivelDestruir(quem,itemAlvo,fonteDano,consumoStamina))
 			break;
 		endif
-		var isDestruido := TentaDestruir(quem,itemAlvo,fonteDano,consumoStamina);
-		
-		if(isDestruido)
-			Destruir(quem,itemAlvo);
-			break;
-		endif;
+		TentaDestruir(quem,itemAlvo,fonteDano,consumoStamina);
+
 		Sleep(2);
 	endwhile
 
@@ -64,6 +61,10 @@ function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
 	endif
 
 	//TODO Precisa forçar o war mode??
+	if(itemAlvo.IsA(POLCLASS_CORPSE) && GetObjProperty(itemAlvo,"account"))
+		SendSysMessage(quem, "Você não pode destruir um corpo de jogador.");
+		return false;
+	endif
 
 	if (!itemAlvo.ISA(POLCLASS_ITEM) || GetObjProperty(itemAlvo,PROPNAME_INDESTRUTIVEL))
 		SendSysMessage(quem, "Você não pode destruir isso.");
@@ -81,7 +82,6 @@ function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
 		endif
 
 		CalculaConsumoStamina(fonteDano,consumoStamina);
-		Print("Consumo de stamina: " + consumoStamina + " Stamina Total: " + AP_GetVital(quem,"Stamina") );
 		if(AP_GetVital(quem, "Stamina") < consumoStamina)
 			SendSysMessage(quem, "Você está muito cansado para continuar.");
 			return false;
@@ -100,7 +100,6 @@ endfunction
 
 function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	if(fonteDano.ISA(POLCLASS_WEAPON))
-		var alvoInfo := MontaAtributosItem(itemAlvo);
 		
 		if(!IsFacing(quem,itemAlvo.x,itemAlvo.y))
 			TurnObjectToward(quem,itemAlvo.x,itemAlvo.y);
@@ -109,32 +108,11 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 		RodaEfeitosAnim(quem,fonteDano,itemAlvo);
 		ConsumeVital( quem, STAMINA, consumoStamina * 100);
 		WearDownWeapon(quem,fonteDano);
-		//TODO Lidar com armadilhas a cada hit.
-		//TODO Disparar evento para guardas e mostros próximos.
-		var danoCalculado := CalculaDanoRecebido(quem,fonteDano,alvoInfo);
-
-		if(danoCalculado.isEficaz)
-			PrintTextAbovePrivate(itemAlvo,CStr(danoCalculado.dano),quem,3,FOGO_LIGHT);
-			var durabilidadeRestante := DanificaItem(itemAlvo,alvoInfo.durabilidade,danoCalculado.dano);
-			
-			if(RandomInt(100) <= 15)
-				CriaDestrocos(itemAlvo,1,3,false);
-			endif
-
-			//TODO Implementar mecânica de porta e baú emperrado.
-			if(durabilidadeRestante <= alvoInfo.durabTotal / 2 && itemAlvo.ISA(POLCLASS_LOCKABLE))
-				if(!GetObjProperty(itemAlvo,PROPNAME_EMPERRADO))
-					SetObjProperty(itemAlvo,PROPNAME_EMPERRADO,true);
-				endif
-			endif
-
-			if(durabilidadeRestante <= 0)
-				return true;// destruído! 
-			endif
-		else
+		
+		var danoCalculado := DanificaItem(quem,itemAlvo,fonteDano);
+		if(!danoCalculado.isEficaz)
 			PrintTextAbove(itemAlvo,"*golpe ineficaz*");
 		endif
-		return false;
 	endif
 endfunction
 
@@ -142,25 +120,12 @@ function RodaEfeitosAnim(quem,arma,alvo)
 	PlayAttackAnimation(quem);
 	sleepms(600);
 	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
-	Print("** SOM: " + somAtaque + " - " + arma);
 	PlaySoundEffect(quem, somAtaque);
 	PlayStationaryEffect(alvo.x, alvo.y, alvo.z, FX_SMOKE, 2, 4);
 endfunction
 
-function CalculaDanoRecebido( quem, fonteDano, propDur)
-		var dadoDano :=  RandomDiceRoll(fonteDano.getMainDamageDice());
-		var danoCru :=  dadoDano + (Ceil(GetAttribute(quem,"Strength") / 10));
-		var danoRecebido := danoCru - propDur.resistencia;
-		Print("** DanoCru: " + danoCru);
-		Print("** danoRecebido: " + danoRecebido);
-		var danoCalculado := struct;
-		danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
-		danoCalculado.+isEficaz := danoRecebido > 0;
-		return danoCalculado;
-endfunction
-
 function CalculaConsumoStamina( fonteDano, byref consumoStamina)
-		consumoStamina := fonteDano.weight;
+		consumoStamina := CInt(fonteDano.weight * 1.5);
 endfunction
 
 function isBreakble(who,item)

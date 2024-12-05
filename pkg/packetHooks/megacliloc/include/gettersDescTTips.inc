@@ -6,6 +6,7 @@ include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:include/equipstats";
+include ":destroyable:include/destroyItem";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
@@ -310,4 +311,13 @@ function PegaDescGoles(objeto, xDesc)
 			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "goles") + " doses";
 		endif
 		return xDesc;
+endfunction
+
+function PegaDescEmperrado(objeto, xDesc)
+	if(objeto.ISA(POLCLASS_LOCKABLE))
+		if(IsEmperrado(objeto))
+			xDesc := xDesc + "[Emperrado]<br>";
+		endif
+	endif
+	return xDesc;
 endfunction
