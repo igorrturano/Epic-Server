@@ -261,3 +261,7 @@ function EncontraChavePorValor(valor, dict)
 		endif
 	endforeach
 endfunction;
+
+function PositivoNegativo(angulo)
+	return Sin(angulo) * 1 >= 0 ? 1 : -1;
+endfunction

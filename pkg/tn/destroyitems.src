@@ -117,8 +117,8 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 			PrintTextAbovePrivate(itemAlvo,CStr(danoCalculado.dano),quem,3,FOGO_LIGHT);
 			var durabilidadeRestante := DanificaItem(itemAlvo,alvoInfo.durabilidade,danoCalculado.dano);
 			
-			if(RandomInt(100) <= 20)
-				CriaDestrocos(itemAlvo,1,3);
+			if(RandomInt(100) <= 15)
+				CriaDestrocos(itemAlvo,1,3,false);
 			endif
 
 			//TODO Implementar mecânica de porta e baú emperrado.
