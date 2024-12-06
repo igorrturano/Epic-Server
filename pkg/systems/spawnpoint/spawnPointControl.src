@@ -5,6 +5,7 @@ use basicio;
 include ":attributes:attributes";
 include ":tn:boss";
 include ":combat:hitscripts";
+include "include/epicNPCUtils";
 
 program spawnpointcontrol(spawnpoint)
 
@@ -142,6 +143,18 @@ function ResetSpawnQueue(spawnpoint)
   SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
 endfunction
 
+function SetupCustomProps(spawnpoint, npc, key_spawn)
+  var tier := GetObjProperty(spawnpoint, "Tier") ? GetObjProperty(spawnpoint, "Tier") : "0";
+  customizeNpc(npc, tier);
+  if(key_spawn != "Spawn")
+    var counter := SplitWords(key_spawn)[2];
+    var name := GetObjProperty(spawnpoint, Cstr("Name" + counter));
+    if(name && name != "")
+      SetName(npc, name);
+    endif
+  endif
+endfunction
+
 function SetupSpawn(spawnpoint, key_spawn := "Spawn")
   var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
   var spawn := GetObjProperty(spawnpoint, key_spawn);
@@ -174,12 +187,14 @@ function SetupSpawn(spawnpoint, key_spawn := "Spawn")
           npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
           success := 1;
           SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+          SetupCustomProps(spawnpoint, npc, key_spawn);
           return npc.serial;
         endif
       else //Usar em caso de lugares com muitos obstáculos ou probabilidade alta de spawnar travado
         npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+        SetupCustomProps(spawnpoint, npc, key_spawn);
         return npc.serial;
       endif
       i := i + 1;
@@ -187,6 +202,7 @@ function SetupSpawn(spawnpoint, key_spawn := "Spawn")
         npc := CreateNpcFromTemplate(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+        SetupCustomProps(spawnpoint, npc, key_spawn);
         return npc.serial;
       endif
     endwhile
@@ -197,9 +213,9 @@ function CreateSpawn(spawnpoint)
   var i;
   for ( i := 1; i <= spawn_count; i += 1 )
     if(spawn_count == 1)
-      SetupSpawn(spawnpoint);
+      return SetupSpawn(spawnpoint);
     else
-      SetupSpawn(spawnpoint, "Spawn" + i);
+      return SetupSpawn(spawnpoint, "Spawn" + i);
     endif
   endfor
 endfunction
