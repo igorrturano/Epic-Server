@@ -4,7 +4,7 @@ use cfgfile;
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/toolTipUtils";
 include ":equipsys:props";
-
+include ":destroyable:include/destroyItem";
 
 
 function GetDmgStringDesc(elem, item)
@@ -84,7 +84,13 @@ endfunction
 function getCondition(item) //Durabilidade dos itens
 	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
 
-	var c := cdbl(item.hp) / cdbl(item.maxhp);
+	var c := 0.0;
+	if(item.ISA(POLCLASS_EQUIPMENT))
+		c := cdbl(item.hp) / cdbl(item.maxhp);
+	else
+		var atributos := MontaAtributosItem(item);
+		c := atributos.durabilidade / atributos.durabTotal;
+	endif
 
 	if (c > 0.9)
 		return "Boa";

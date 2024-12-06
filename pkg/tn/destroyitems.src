@@ -107,7 +107,7 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 		
 		RodaEfeitosAnim(quem,fonteDano,itemAlvo);
 		ConsumeVital( quem, STAMINA, consumoStamina * 100);
-		WearDownWeapon(quem,fonteDano);
+		WearDownWeapon(quem,fonteDano,3);
 		
 		var danoCalculado := DanificaItem(quem,itemAlvo,fonteDano);
 		if(!danoCalculado.isEficaz)

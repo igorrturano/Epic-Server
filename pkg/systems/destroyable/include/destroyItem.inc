@@ -15,7 +15,6 @@ const PROPNAME_CHAVE_ORIGINAL := "serialOriginal";
 const PROPNAME_RESITEM_MULT := "resItem"; 
 const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
 const PROPNAME_ARMADILHAS := "TrapList"; 
-const PROPNAME_EMPERRADO := "isEmperrado"; 
 const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel"; 
 const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
 const PROPNAME_MATERIAL := "material"; 
@@ -25,6 +24,8 @@ const RESISTENCIA_BASE := 8; // Resistencia de dano base de todos os itens.
 const DECAYTIME_DESTROCO := 10; // segundos [não funciona direito]
 const MULT_DISPARO_ARMADILHA := 5; // Multiplicador da chance 
 const CRIA_DESTROCO_CHANCE := 10; //Chance em %
+const ESPOLIO_DEST_CHANCE := 30; //Chance em %
+const HP_MAX_MULTPLICADOR := 3; //multiplicador de hp, caso seja definido o calculo por peso.
 
 enum TIPO_MATERIAIS
 	PEDRA := "Stone",
@@ -76,11 +77,14 @@ function Destruir(quem,itemAlvo)
 	//TODO talvez criar um container "morto" e colocar tudo dentro?.
 	if(itemAlvo.ISA(POLCLASS_CONTAINER))
 		var listaItens := EnumerateItemsInContainer(itemAlvo);
-		foreach item in listaItens
-			if(RandomInt(100) <= 30)
+		foreach espolio in listaItens
+			if(RandomInt(100) <= ESPOLIO_DEST_CHANCE)
 				continue;
 			else
-				MoveObjectToLocation(item,itemAlvo.x,itemAlvo.y,itemAlvo.z, itemAlvo.realm, MOVEOBJECT_FORCELOCATION);
+				if(espolio.ISA(POLCLASS_EQUIPMENT))
+					espolio.hp := espolio.hp - RandomIntMinMax(CInt(espolio.maxhp / 5), espolio.maxhp);
+				endif
+				MoveObjectToLocation(espolio,itemAlvo.x,itemAlvo.y,itemAlvo.z, itemAlvo.realm, MOVEOBJECT_FORCELOCATION);
 				isObjetoMovido := true;
 			endif
 			Sleepms(2);
@@ -89,9 +93,8 @@ function Destruir(quem,itemAlvo)
 
 	RunTraps(itemAlvo,quem);
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
-
 	if(!IsDestroco(itemAlvo))
-		CriaDestrocos(itemAlvo,RandomIntMinMax(1,3),4);
+		CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
 	endif
 	DestroyItem(itemAlvo);
 	//TODO implementar comando de Indestrutível.
@@ -106,6 +109,12 @@ function DeveMarcarRecriarItem(itemAlvo)
 	&& !itemAlvo.ISA(POLCLASS_CORPSE)
 	&& itemAlvo.ISA(POLCLASS_ITEM)
 	&& !IsDestroco(itemAlvo);
+endfunction
+
+function CalculaMaxDestrocos(item)
+	var numeroMaximoDest := Ceil(item.height / 5);
+	numeroMaximoDest := numeroMaximoDest > 0 ? numeroMaximoDest : 1;
+	return RandomIntMinMax(1,cInt(numeroMaximoDest));
 endfunction
 
 function AvaliaDisparoArmadilha(item)
@@ -130,7 +139,8 @@ function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 	if(itemAlvo.isA(POLCLASS_CORPSE))
 		material := CORPO;
 	else
-		material := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
+		var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
+		material := configRecursos[materialId].Type;
 	endif
 	
 	case (material)
@@ -140,11 +150,11 @@ function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 		ARENITO: sfx := 0x11C; break;
 		OSSOS: sfx := 0x342; break;
 		VIDRO: sfx := 0x03E; break;
-		MADEIRA: sfx := 0x475; break;
+		MADEIRA: sfx := 0x476; break;
 		PANO: sfx := 0x33A; break;
-		METAL: sfx := 0x056; break;
-		COURO: sfx := 0x04A; break;
-		CORPO: sfx := 0x145; break;
+		METAL: sfx := 0x057; break;
+		COURO: sfx := 0x04B; break;
+		CORPO: sfx := 0x146; break;
 		default: sfx := 0x33C;
 	endcase
 	PlaySoundEffect(itemAlvo,sfx);
@@ -155,7 +165,6 @@ endfunction
 
 function LimpaObjPropsDestruiveis(itemAlvo)
 	EraseObjProperty(itemAlvo,PROPNAME_DURABILIDADE);
-	EraseObjProperty(itemAlvo,PROPNAME_EMPERRADO);
 endfunction
 
 function PegaResistenciaItem(itemAlvo)
@@ -200,13 +209,13 @@ function PegaDurabilidadeTotal(item)
 		if(elem)
 			if(elem.weight > 0)
 				pesoEscolhido := CInt(elem.weight);
-				return Ceil(pesoEscolhido);
+				return Ceil(pesoEscolhido) * HP_MAX_MULTPLICADOR;
 			endif
 		endif
 
 		var infoTile := IU_GetTileInfo(item.Graphic);
-		pesoEscolhido := CInt(infoTile.Weight);
-		return Ceil(pesoEscolhido) * 4;
+		pesoEscolhido := CInt(infoTile.Weight) * HP_MAX_MULTPLICADOR;
+		return Ceil(pesoEscolhido) > 0? pesoEscolhido: 1;
 	endif
 endfunction
 
@@ -322,13 +331,16 @@ function MontaCatalogoDestrocos()
 endfunction
 
 function CriaDestrocos(itemAlvo,quantidade,distanciaMax := 0, deveCriarOrigem := true)
-	var material := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
+	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 
 	var arrayDestrocos := array;
 	var corDestroco := 1001;
-	if(material)
-		arrayDestrocos := catalogoDestrocos[configRecursos[material].Type];
-		corDestroco := configRecursos[material].Color;
+	var material := "";
+	
+	if(materialId)
+		arrayDestrocos := catalogoDestrocos[configRecursos[materialId].Type];
+		corDestroco := configRecursos[materialId].Color;
+		material := configRecursos[materialId].Type;
 	else
 		if(itemAlvo.ISA(POLCLASS_CORPSE))
 			arrayDestrocos:= catalogoDestrocos[CORPO];
@@ -413,6 +425,6 @@ function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 			default:
 				novoNome:=	"destroços";
 		endcase
+		SetObjProperty(destroco,PROPNAME_DESTROCO,1);
 		SetName(destroco,novoNome);
-		destroco.SetObjProperty(destroco,PROPNAME_DESTROCO,1);
 endfunction

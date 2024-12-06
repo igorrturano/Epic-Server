@@ -37,12 +37,10 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 
 	xDesc := PegaDescArtefato(objeto,who,xDesc);
 	xDesc := PegaDescEmperrado(objeto,xDesc);
-
+	xDesc := PegaDescComum(objeto,xDesc);
+	
 	if (isArma || isArmadura)
 		var cfgObj := MontaObjCfgArmaArmadura(objeto,xDesc);
-		
-		cfgObj.desc := PegaDescAAComum(objeto,cfgObj.desc);//Pega a descricao comum entre arma e armadura.
-			
 		if(isArma)
 			XDesc := PegaDescArmas(objeto,who,cfgObj);//o config já leva a desc
 		elseif (isArmadura)
