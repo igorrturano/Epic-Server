@@ -56,11 +56,10 @@ program destroyitems(parms)
 endprogram
 
 function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
-	if(!itemAlvo || itemAlvo.invisible)
+	if(!itemAlvo || itemAlvo.invisible || !quem.warmode)
 		return false;
 	endif
 
-	//TODO Precisa forçar o war mode??
 	if(itemAlvo.IsA(POLCLASS_CORPSE) && GetObjProperty(itemAlvo,"account"))
 		SendSysMessage(quem, "Você não pode destruir um corpo de jogador.");
 		return false;
@@ -203,7 +202,6 @@ function fBreak(who,item)
 
 		item.graphic:=Cint(quebrado);
 		SetObjProperty(item,"hits",3);
-
 
 		if((item.objtype==0xec25)||(item.objtype==0xec26)|| (item.objtype==0xFF04)|| (item.objtype==0xec27)|| (item.objtype==0xec28) )
 			PrintText(who, "*Quebra a " +item.desc+ "*");

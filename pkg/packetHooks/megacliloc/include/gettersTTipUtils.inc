@@ -85,12 +85,9 @@ function getCondition(item) //Durabilidade dos itens
 	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
 
 	var c := 0.0;
-	if(item.ISA(POLCLASS_EQUIPMENT))
-		c := cdbl(item.hp) / cdbl(item.maxhp);
-	else
-		var atributos := MontaAtributosItem(item);
-		c := atributos.durabilidade / atributos.durabTotal;
-	endif
+
+	var atributos := MontaAtributosItem(item);
+	c := cdbl(atributos.durabilidade) / cdbl(atributos.durabTotal);
 
 	if (c > 0.9)
 		return "Boa";

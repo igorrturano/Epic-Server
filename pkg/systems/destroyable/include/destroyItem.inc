@@ -61,10 +61,10 @@ function ComportamentoWarMode(quem, itemFonte)
 	start_script (":tn:destroyitems", {quem, targ.item, itemFonte});
 endfunction
 
-function Destruir(quem,itemAlvo)
+function Destruir(quem,itemAlvo,fonteDano)
 	LimpaObjPropsDestruiveis(itemAlvo);
-
-	if(DeveMarcarRecriarItem(itemAlvo))//se não foi criado por player, não é um corpo e não foi marcado como dispensável..
+	var deveMarcar := DeveMarcarRecriarItem(itemAlvo);
+	if(deveMarcar)//se não foi criado por player, não é um corpo e não foi marcado como dispensável..
 		var serialOriginal := GetObjProperty(itemAlvo,PROPNAME_CHAVE_ORIGINAL);
 		if(!serialOriginal)
 			SetObjProperty(itemAlvo,PROPNAME_CHAVE_ORIGINAL,itemAlvo.serial);//Grava serial do item original.
@@ -96,9 +96,11 @@ function Destruir(quem,itemAlvo)
 	if(!IsDestroco(itemAlvo))
 		CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
 	endif
-	DestroyItem(itemAlvo);
-	//TODO implementar comando de Indestrutível.
 	//TODO Logar destruição.
+	InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,fonteDano.desc,deveMarcar);
+	DestroyItem(itemAlvo);
+	//comandos:
+	//TODO implementar comando de Indestrutível.
 	//TODO Criar comando de gm para consultar os logs e gerênciar o respawn de itens
 	//TODO Criar comando ou argumento do create para gms criarem itens dispensáveis.
 endfunction
@@ -289,7 +291,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 	PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
 
 	if(durabilidadeRestante <= 0)
-		Destruir(quemDanificou,item);
+		Destruir(quemDanificou,item,fonteDano);
 		danoCalculado.+isDestruido := true;
 	endif
 
