@@ -939,11 +939,11 @@ function ArqueiroNPC(attacker, defender)
 	endif
 
 	SubtractAmount(ammo, 1); */
+	
 	var anim := wpn_a_elem.ProjectileAnim;
 	if ( !anim )
 		anim := 0xF79;
 	endif
-	print("ANIM: "+anim);
 	PlayMovingEffectXYZHued(attacker, defender, anim, 10, 10, 0, 0); //ammo_color);
 
 	return 1;
@@ -951,20 +951,15 @@ function ArqueiroNPC(attacker, defender)
 endfunction
 
 function ThrowerNPC(attacker, defender)
-    var throwInfo := GetObjProperty(attacker, "throwinfo");
-    if (!throwInfo)
+    var throwItem := GetObjProperty(attacker, "throwItem");
+    if (!throwItem)
         return 0;
     endif
     
-    // Perform throw animation
-    if (throwInfo.anim)
-        PerformAction(attacker, throwInfo.anim);
-    else
-        PerformAction(attacker, 4);
-    endif
+	PerformAction(attacker, 4);
     
     // Play the throw effect
-    PlayMovingEffectXYZHued(attacker, defender, throwInfo.item, 10, 10, 0, 0);
+    PlayMovingEffectXYZHued(attacker, defender, throwItem, 10, 10, 0, 0);
     
     return 1;
 endfunction
