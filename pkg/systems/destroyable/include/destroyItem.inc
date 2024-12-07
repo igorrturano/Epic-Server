@@ -300,9 +300,6 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 		item.hp := CInt(durabilidadeRestante);
 	endif
 
-	if(AvaliaDisparoArmadilha(item))
-		RunTraps(item,quemDanificou);
-	endif
 
 	if(gfx != 0)
 		PlayObjectCenteredEffect(item, gfx, 5, 6);
@@ -315,12 +312,17 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 		endif
 	endif
 
+	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 	PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
 
 	if(durabilidadeRestante <= 0)
 		Destruir(quemDanificou,item,fonteDano);
 		danoCalculado.+isDestruido := true;
+	else
+		if(AvaliaDisparoArmadilha(item))
+			RunTraps(item,quemDanificou);
+		endif
 	endif
 
 	return danoCalculado;
