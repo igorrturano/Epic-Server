@@ -23,6 +23,5 @@ program destruiveis(quem, texto)
 		GFTextLine(gump, 40, 80 + y * _log_iter, 0, "Como: "+ log.como);
 		GFTextLine(gump, 40, 100 + y * _log_iter, 0, "isReconstruivel: "+ log.isReconstruivel);
 	endforeach*/
-	
 	var valor := GFSendGump(quem,gump);
 endprogram

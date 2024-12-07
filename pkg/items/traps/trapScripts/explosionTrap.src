@@ -69,6 +69,7 @@ program trapScript(params)
 			DamageFLS(mobile, dmgfinal);
 			mobile.hidden := 0;
 		endif
+		Sleepms(3);
 	endforeach
 	return 1;
 endprogram

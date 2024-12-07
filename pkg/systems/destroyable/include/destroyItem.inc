@@ -23,8 +23,8 @@ const PROPNAME_DESTROCO := "isDestroco";
 const RESISTENCIA_BASE := 8; // Resistencia de dano base de todos os itens.
 const DECAYTIME_DESTROCO := 10; // segundos [não funciona direito]
 const MULT_DISPARO_ARMADILHA := 5; // Multiplicador da chance 
-const CRIA_DESTROCO_CHANCE := 10; //Chance em %
-const ESPOLIO_DEST_CHANCE := 30; //Chance em %
+const CRIA_DESTROCO_CHANCE := 15; //Chance em %
+const ESPOLIO_DEST_CHANCE := 40; //Chance em %
 const HP_MAX_MULTPLICADOR := 3; //multiplicador de hp, caso seja definido o calculo por peso.
 
 enum TIPO_MATERIAIS
@@ -337,7 +337,7 @@ function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx,ignoreSeria
 		if(CheckLosBetween(x,y,z,item.x,item.y,item.z,realm) && item.serial != ignoreSerial)
 			DanificaItem(quem,item,dano,gfx);
 		endif
-		Sleepms(2);
+		Sleepms(3);
 	endforeach
 endfunction
 
