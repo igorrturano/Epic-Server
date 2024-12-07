@@ -16,6 +16,7 @@ const GUMP_WIDTH := 540;
 const GUMP_HEIGHT := 550;
 const INTERNAL_WIDTH := 435;
 const BACKGROUND_WIDTH := 465;
+var spawn_count := 0;
 
 program use_spawnpoint( who, spawnpoint )
   if ( who.cmdlevel < 2 )
@@ -42,7 +43,7 @@ program use_spawnpoint( who, spawnpoint )
 	endif
 
   // Add labels, load saved templates and input fields for templates
-  var x_label := 30, x_field := 100, y := 80, spacing := 40, i, spawn_count := 0;
+  var x_label := 30, x_field := 100, y := 80, spacing := 40, i;
   for ( i := 1; i <= 3; i += 1 )
     var template := GetObjProperty(spawnpoint, Cstr("Template" + i)) ? GetObjProperty(spawnpoint, Cstr("Template" + i)) : "";
     var amount := GetObjProperty(spawnpoint, Cstr("Amount" + i)) ? GetObjProperty(spawnpoint, Cstr("Amount" + i)) : "";
@@ -105,6 +106,7 @@ function CreateNpcFromSpawnPoint(who, spawnpoint, i)
     SendSysMessage(who, "Error: " + npc.errortext);
 	else
 		SendSysMessage(who, "Sucesso ao criar o npc com base no template.");
+    spawn_count += 1;
 	endif
 endfunction
 
@@ -131,6 +133,7 @@ function InputsHandler( inputs, who, spawnpoint, unique )
     SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] );
     SetObjProperty( spawnpoint, "unique", inputs[17] );
     SetObjProperty(spawnpoint, "ResetMe",  1);
+    SetObjProperty(spawnpoint, "SpawnCount",  spawn_count);
 
     SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
   endif
