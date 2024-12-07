@@ -6,7 +6,7 @@ include ":ghaia:generic";
 include ":ghaia:ghaia";
 include ":ghaia:spell";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var idlesnd1;
 var idlesnd2;

@@ -11,7 +11,7 @@ include ":ghaia:objective";
 include ":faccao:faccao";
 include ":ghaia:combatevents";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var idlesnd1;
 var idlesnd2;

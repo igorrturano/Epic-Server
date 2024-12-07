@@ -12,7 +12,7 @@ include ":attributes:attributes";
 program SpellScript(params)
 	var who := params[1];
 
-    var cfg := ReadConfigFile(":brainai:npcdesc");
+    var cfg := ReadConfigFile(":*:npcdesc");
     var soul_less := array{"undead", "animal", "giantanimal"};
 
 	var magiclore := Cint(AP_GetSkill(who, MAGICLORE));

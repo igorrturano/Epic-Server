@@ -161,7 +161,7 @@ function MP_Mount(mobile, npc)
 	var chardata := GetObjProperty(mobile,  "chardata");
 	var mount_piece := GetEquipmentByLayer(mobile, LAYER_MOUNT);
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 
 	if (cfg[npctemplate.template].Category != "Mount")
 		SendSysMessage(mobile, "Nao pode montar este animal.");

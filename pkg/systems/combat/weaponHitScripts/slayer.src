@@ -43,7 +43,7 @@ program HitScript(params)
 
 	if (defender.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(weapon, "slayer");
 			if (cfg[npctemplate.template].Category == inimigo)
 				var dmg := rawdamage / 2;

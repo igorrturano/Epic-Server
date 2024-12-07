@@ -3,7 +3,7 @@ use cfgfile;
 
 function getnpccategory(template)
 
-	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
 	
 	var category := npccfgfile[template].Category;	
 	
@@ -13,19 +13,19 @@ function getnpccategory(template)
 		return category;
 	endif
 	
-	unloadConfigFile(":brainai:npcdesc");
+	unloadConfigFile(":*:npcdesc");
 
 endfunction
 
 function getnpcname(who, template)
 
-	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
 	
 	var name := CStr(npccfgfile[template].Name);	
 	
 	return name;
 
 	
-	unloadConfigFile(":brainai:npcdesc");
+	unloadConfigFile(":*:npcdesc");
 
 endfunction

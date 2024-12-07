@@ -32,7 +32,7 @@ include ":faccao:npc";
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var guild, guild_leader;
 
 program MerchantMenu(params)

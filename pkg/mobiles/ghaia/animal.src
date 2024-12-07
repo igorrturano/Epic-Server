@@ -13,7 +13,7 @@ include ":timedScripts:timedScripts";
 include "include/epicNPCUtils";
 include "include/produzTeia";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var idlesnd1;
 var idlesnd2;

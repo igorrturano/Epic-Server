@@ -3,133 +3,265 @@ include "include/sysEvent";
 include "include/sounds";
 include ":combat:damage";
 include "include/facings";
+include ":npcs:thor/handling/thorai";
 
 var me := Self();
 const AREA_SIZE := 16;
-var last_seen_opponent := struct{"x" := 0, "y" := 0, "z" := 0, "serial" := 0};
-var chasing := 0;
+var combat_cooldown := 0;
 
 function MonsterBrain()
-    print("MonsterBrain");
     var ev;
     var wanders := 0;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
+    // Get monster configuration
+    var npc_elem := NPC_GetNPCConfig(me);
+    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
+    var is_ranged := (speed_type[1] == "RANGED");
+
+    // Enable archer-specific abilities if needed
+    if (is_ranged)
+        GrantPrivilege(me, "firewhilemoving");
+        me.enable("firewhilemoving");
+    endif
+
     while (me)
         ev := os::wait_for_event(200);
-        print("ev: "+ev);
-        print("ev.type: "+ev.type);
+        
         if (ev)
             case (ev.type)
-                SYSEVENT_ENGAGED:
-                PrintTextAbove(me, "SYSEVENT_ENGAGED");
-                UpdateLastSeenOpponent(ev.source);
-                SYSEVENT_DAMAGED:
-                    printtextabove(me, "SYSEVENT_DAMAGED");
-                    wanders := 0;
-                    // Fight(ev.source);
-                    UpdateLastSeenOpponent(ev.source);
-                SYSEVENT_ENTEREDAREA:
+                SYSEVENT_ENGAGED: HandleCombatEvent(ev.source, is_ranged);
+                SYSEVENT_DAMAGED: HandleCombatEvent(ev.source, is_ranged);
+                SYSEVENT_ENTEREDAREA: 
                     if (CanFight(me, ev.source))
-                        wanders := 0;
-                        PrintTextAbove(me, "SYSEVENT_ENTEREDAREA");
-                        UpdateLastSeenOpponent(ev.source);
+                        HandleEnteredArea(ev.source, is_ranged);
                     endif
-                SYSEVENT_LEFTAREA:
-                    // Saiu da Area Size de 16 tiles, inclusive aqui o mob pode andar até o telepad que o jogador se escondeu
-                    PrintTextAbove(me, "SYSEVENT_LEFTAREA");
-                    ChaseLastSeenOpponent();
-                SYSEVENT_OPPONENT_MOVED:
-                // Quando o oponente anda. Não sei se vamos precisar ainda
-                    printtextabove(me, "SYSEVENT_OPPONENT_MOVED");
-                    print("SYSEVENT_OPPONENT_MOVED");
-                SYSEVENT_SPEECH:
-                    // Provocar de voltar com ChatGPT
-                    printtextabove(me, "SYSEVENT_SPEECH");
-                    print("SYSEVENT_SPEECH");
-                SYSEVENT_DISENGAGED:
-                    // Aqui quando o player fica peace ou morre. O mob vai roubar ele.
-                    printtextabove(me, "SYSEVENT_DISENGAGED");
-                    print("SYSEVENT_DISENGAGED");
-                EVID_ALERT_ALLIES:
-                    wanders := 0;
-                    printtextabove(me, "EVID_ALERT_ALLIES");
-                    // Fight(ev.opponent, 1);
-                    last_seen_opponent := struct{"x" := ev.opponent.x, "y" := ev.opponent.y, "z" := ev.opponent.z, "serial" := ev.opponent.serial};
-                EVID_HERDING:
-                    printtextabove(me, "EVID_HERDING");
-                    // MonsterHerd(ev);
-                EVID_TAUNT:
-                    printtextabove(me, "EVID_TAUNT");
+                SYSEVENT_OPPONENT_MOVED:                     
+                    if (me.opponent == ev.source)
+                        if (is_ranged)
+                            MaintainRange(ev.source);
+                        else
+                            TurnToward(ev.source);
+                            PursueTarget(ev.source);
+                        endif
+                    endif
+                SYSEVENT_SPEECH: HandleSpeech(ev.text, ev.source, is_ranged);
+                SYSEVENT_DISENGAGED: HandleDisengage(ev.source);
+                EVID_ALERT_ALLIES: 
                     if (ev.source)
-                        wanders := 0;
-                        // Fight(ev.source, 1);
-                        last_seen_opponent := struct{"x" := ev.source.x, "y" := ev.source.y, "z" := ev.source.z, "serial" := ev.source.serial};
+                        HandleCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_FLEE:
-                    printtextabove(me, "EVID_FLEE");
                     if (ev.source)
-                        // MonsterFlee(ev.source);
+                        FleeFrom(ev.source);
                     endif
             endcase
         endif
 
         sleepms(100);
-
-        MonsterLookAround(last_seen_opponent);
-        MonsterWander(wanders, last_seen_opponent);
+        MonsterIdle(wanders, is_ranged);
         wanders += 1;
 
         if (wanders >= 30)
             wanders := 0;
-            // ev := MonsterSleepMode();
+            HandleIdleState();
         endif
     endwhile
 endfunction
 
-function MonsterLookAround(byref last_seen_opponent)
+function HandleOpponentMovement(opponent)
+    if (!opponent || !CanFight(me, opponent))
+        return 0;
+    endif
+
+    // Update combat state if opponent moves
+    if (me.opponent == opponent)
+        TurnToward(opponent);
+        PursueTarget(opponent);
+    endif
+    
+    return 1;
+endfunction
+
+function HandleSpeech(text, source, is_ranged)
+    // Basic speech handling - could be expanded for specific responses
+    if (!source || !CanFight(me, source))
+        return 0;
+    endif
+
+    // Chance to aggro on speech
+    if (RandomInt(100) < 30)
+        HandleCombatEvent(source, is_ranged);
+    endif
+    
+    return 1;
+endfunction
+
+function HandleDisengage(opponent)
+    if (!opponent)
+        return 0;
+    endif
+
+    // Clear combat state
+    SetWarMode(0);
+    SetOpponent(0);
+    
+    // Check for loot if opponent is dead
+    if (opponent.dead)
+        // Add looting behavior here if desired
+    endif
+    
+    return 1;
+endfunction
+
+function DisableMainEvents()
+    DisableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA);
+    DisableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED);
+endfunction
+
+function HandleCombatEvent(opponent, is_ranged)
+    if (!opponent || opponent.dead || !CanFight(me, opponent))
+        return 0;
+    endif
+
+    const MAX_Z_DIFF := 18;
+    var z_diff := Abs(me.z - opponent.z);
+    if (z_diff > MAX_Z_DIFF)
+        return 0;
+    endif
+
+    SetOpponent(opponent);
+    TurnToward(opponent);
+
+    // Let the combat hook handle the actual attacks
+    if (is_ranged)
+        MaintainRange(opponent);
+    endif
+
+    return 1;
+endfunction
+
+function PursueTarget(opponent)
+    if (!opponent)
+        return 0;
+    endif
+
+    var dist := Distance(me, opponent);
+    
+    // Don't chase too far
+    if (dist > AREA_SIZE)
+        return 0;
+    endif
+
+    // Basic pathfinding approach
+    if (CheckLineOfSight(me, opponent))
+        RunToward(opponent);
+    else
+        // Try to find a path around obstacles
+        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
+        if (path)
+            foreach coord in path
+                RunTowardLocation(coord.x, coord.y);
+                if (Distance(me, opponent) <= 1)
+                    break;
+                endif
+                sleepms(100);
+            endforeach
+        endif
+    endif
+endfunction
+
+function PerformRangedAttack(opponent)
+    if (!opponent || !CheckLineOfSight(me, opponent))
+        return 0;
+    endif
+
+    TurnToward(opponent);
+    PerformAction(me, 0x12); // Bow animation
+    PlaySoundEffect(me, 0x235); // Bow sound
+    
+    return 1;
+endfunction
+
+function PerformMeleeAttack(opponent)
+    if (!opponent)
+        return 0;
+    endif
+
+    TurnToward(opponent);
+    PerformAction(me, 0x0A);
+    PlaySoundEffect(me, 0x23B);
+    
+    return 1;
+endfunction
+
+function MonsterIdle(wanders, is_ranged)
+    if (wanders > 10)
+        // Heal slowly while idle
+        var heal_amount := CInt(CDbl(AP_GetVitalMaximumValue(me, HITS)) * 0.01);
+        HealDamage(me, heal_amount);
+    endif
+
+    // Look for potential targets
     foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN)
         if (CanFight(me, mobile))
-            // Fight(mobile);
-            last_seen_opponent := struct{"x" := mobile.x, "y" := mobile.y, "z" := mobile.z, "serial" := mobile.serial};
+            HandleCombatEvent(mobile, is_ranged);
             return;
         endif
         sleepms(2);
     endforeach
     
-    // PlayIdleSound();
+    // Random wandering when no targets
+    if (RandomInt(100) < 30)
+        var direction := RandomInt(8);
+        case (direction)
+            0: WalkTowardLocation(me.x, me.y-1);
+            1: WalkTowardLocation(me.x+1, me.y-1);
+            2: WalkTowardLocation(me.x+1, me.y);
+            3: WalkTowardLocation(me.x+1, me.y+1);
+            4: WalkTowardLocation(me.x, me.y+1);
+            5: WalkTowardLocation(me.x-1, me.y+1);
+            6: WalkTowardLocation(me.x-1, me.y);
+            7: WalkTowardLocation(me.x-1, me.y-1);
+        endcase
+    endif
 endfunction
 
-function MonsterWander(byref wanders, byref last_seen_opponent)
-    if (wanders > 10)
-        var heal_amount := CInt(CDbl(AP_GetVitalMaximumValue(me, HITS)) * 0.01);
-        HealDamage(me, heal_amount);
-    endif
-
-    var anchor := GetObjProperty(me, "anchor");
-    var range := GetObjProperty(me, "range");
-
-    if (!range)
-        range := 6;
-    endif
-
-    if (last_seen_opponent.serial != 0)
-        var opponent := SystemFindObjectBySerial(last_seen_opponent.serial);
-        if (!opponent)
-            if (CoordinateDistance(me.x, me.y, last_seen_opponent.x, last_seen_opponent.y) > 1)
-                walkTowardLocation(last_seen_opponent.x, last_seen_opponent.y);
-            else
-                last_seen_opponent.serial := 0;
-            endif
-        else
-            last_seen_opponent := struct{"x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "serial" := opponent.serial};
+function HandleIdleState()
+    DisableMainEvents();
+    EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
+    
+    // Return to spawn point if we have one
+    var spawn_point := GetObjProperty(me, "spawn_loc");
+    if (spawn_point)
+        if (Distance(me, spawn_point) > 5)
+            WalkTowardLocation(spawn_point.x, spawn_point.y);
         endif
     endif
 endfunction
 
+function FleeFrom(opponent)
+    if (!opponent)
+        return 0;
+    endif
+
+    var runs := 0;
+    while (opponent && Distance(me, opponent) < 20 && runs < 50)
+        RunAwayFrom(opponent);
+        runs += 1;
+        sleepms(100);
+    endwhile
+endfunction
+
+function EnableMainEvents()
+    EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
+    EnableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED, AREA_SIZE);
+    EnableEvents(SYSEVENT_SPEECH, 4);
+endfunction
+
 function CanFight(attacker, defender)
-    if (defender.dead || defender.hidden || defender.concealed)
+    if (!defender || defender.dead || defender.hidden || defender.concealed)
         return 0;
     elseif (defender.npctemplate == attacker.npctemplate)
         return 0;
@@ -138,78 +270,95 @@ function CanFight(attacker, defender)
     return 1;
 endfunction
 
-function CloseDistance(opponent)
-    var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
-    if (dist > 1)
-        RunToward(opponent);
+function HandleEnteredArea(source, is_ranged)
+    if (!source || !CanFight(me, source))
         return 0;
+    endif
+
+    // Get monster category and player race
+    var npc_elem := NPC_GetNPCConfig(me);
+    var category := GetConfigString(npc_elem, "Category");
+    var playerRaca := source.getRace();
+    var name_mob := GetConfigString(npc_elem, "Name");
+    
+    if (!category)
+        HandleCombatEvent(source, is_ranged);
+        return 0;
+    endif
+
+    // Special handling for Goblins
+    if (category == "Goblin")
+        if (playerRaca == ORC || playerRaca == DROW)
+            // High chance to flee from these races
+            var randomDice := RandomInt(100);
+            if (randomDice < 75)
+                var playerinput := "*raça " + playerRaca + " assusta*";
+                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
+                if (responseAI)
+                    Say(responseAI);
+                endif
+                FleeFrom(source);
+                return 1;
+            endif
+        endif
+    endif
+
+    // Initial reaction based on category
+    var aggro_chance;
+    var playerinput;
+    
+    case (category)
+        "Goblin": 
+            aggro_chance := 20;
+            playerinput := "*raça " + playerRaca + " encontrada*";
+        "Giants": 
+            aggro_chance := 70;
+            playerinput := "*raça " + playerRaca + " invade território*";
+        "EvilHuman": 
+            aggro_chance := 60;
+            playerinput := "*raça " + playerRaca + " avistada*";
+        default: 
+            aggro_chance := 40;
+            playerinput := "*raça " + playerRaca + " aparece*";
+    endcase
+
+    // Generate and say initial response
+    var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
+    if (responseAI)
+        Say(responseAI);
+    endif
+
+    // Roll for aggro
+    if (RandomInt(100) < aggro_chance)
+        HandleCombatEvent(source, is_ranged);
+    endif
+    
+    return 1;
+endfunction
+
+function MaintainRange(opponent)
+    var sleepdelay := 275 - me.run_speed;
+    if (sleepdelay < 0)
+        sleepdelay := 50;
+    endif
+
+    var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
+    var z_diff := Abs(me.z - opponent.z);
+
+    if (z_diff > 18)
+        return 0;
+    endif
+
+    if (dist < 4)
+        RunAwayFrom(opponent);
+        sleepms(sleepdelay);
+    elseif (dist > 10)
+        RunToward(opponent);
+        sleepms(sleepdelay);
     else
+        TurnToward(opponent);
         return 1;
     endif
-endfunction
 
-function EnableMainEvents()
-  EnableEvents(SYSEVENT_SPEECH + SYSEVENT_LEFTAREA + SYSEVENT_DISENGAGED + SYSEVENT_OPPONENT_MOVED, AREA_SIZE);
-  EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-endfunction
-
-function UpdateLastSeenOpponent(opponent)
-    last_seen_opponent.x := opponent.x;
-    last_seen_opponent.y := opponent.y;
-    last_seen_opponent.z := opponent.z;
-    last_seen_opponent.serial := opponent.serial;
-    chasing := 0;
-endfunction
-
-function ChaseLastSeenOpponent()
-    var time := ReadGameClock() + 60;
-    var dist := CoordinateDistance(me.x, me.y, last_seen_opponent.x, last_seen_opponent.y);
-    var telepad := FindNearbyTelepad();
-    var initial_x := me.x;
-    var initial_y := me.y;
-    var initial_z := me.z;
-    
-    if (telepad)
-        last_seen_opponent.x := telepad.x;
-        last_seen_opponent.y := telepad.y;
-    endif
-    
-    while (dist > 1 && ReadGameClock() < time)
-        RunTowardLocation(last_seen_opponent.x, last_seen_opponent.y);
-        dist := CoordinateDistance(me.x, me.y, last_seen_opponent.x, last_seen_opponent.y);
-        
-        // Check if the NPC has crossed the telepad
-        if (HasCrossedTelepad(initial_x, initial_y, initial_z))
-            PrintTextAbove(me, "*reached point*");
-            break;
-        endif
-        
-        sleepms(10);
-    endwhile
-    
-    // If we've reached this point and haven't crossed a telepad, we're at the destination
-    if (dist <= 1)
-        PrintTextAbove(me, "*reached point*");
-    endif
-    
-    var result := SetOpponent(last_seen_opponent.serial);
-    print("SetOpponent: " + result);
-endfunction
-
-function FindNearbyTelepad()
-    var items := ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm);
-    foreach item in items
-        if (item.graphic == 0x17E5)
-            return item;
-        endif
-    endforeach
-    return 0;
-endfunction
-
-function HasCrossedTelepad(initial_x, initial_y, initial_z)
-    // Check if the NPC's position has changed significantly, indicating teleport
-    if (CoordinateDistance(initial_x, initial_y, me.x, me.y) > 5 || Abs(me.z - initial_z) > 5)
-        return 1;
-    endif
     return 0;
 endfunction
