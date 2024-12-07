@@ -39,6 +39,7 @@ enum TIPO_MATERIAIS
 	METAL := "Metal",
 	COURO := "Leather",
 	CORPO := "Corpo",
+	CORPO_HUMANO := "CorpoHumano",
 	INDEFINIDO := "indefinido"
 endenum
 
@@ -74,15 +75,15 @@ function Destruir(quem,itemAlvo,fonteDano)
 
 	var isObjetoMovido := false;
 
-	//TODO talvez criar um container "morto" e colocar tudo dentro?.
+	//TODO talvez criar um container "morto" e colocar todos os espolios dentro?.
 	if(itemAlvo.ISA(POLCLASS_CONTAINER))
 		var listaItens := EnumerateItemsInContainer(itemAlvo);
 		foreach espolio in listaItens
 			if(RandomInt(100) <= ESPOLIO_DEST_CHANCE)
-				continue;
+				continue; //deixa o equipamento para ser destruido junto com o container.
 			else
 				if(espolio.ISA(POLCLASS_EQUIPMENT))
-					espolio.hp := espolio.hp - RandomIntMinMax(CInt(espolio.maxhp / 5), espolio.maxhp);
+					espolio.hp := espolio.hp - RandomIntMinMax(CInt(espolio.maxhp / 5), espolio.maxhp);//Danifica o equipamento caso não seja destruído.
 				endif
 				MoveObjectToLocation(espolio,itemAlvo.x,itemAlvo.y,itemAlvo.z, itemAlvo.realm, MOVEOBJECT_FORCELOCATION);
 				isObjetoMovido := true;
@@ -95,10 +96,14 @@ function Destruir(quem,itemAlvo,fonteDano)
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
 	if(!IsDestroco(itemAlvo))
 		CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
+		var descFonteDano := fonteDano.desc;
+		if(!descFonteDano)
+			descFonteDano := "Desconhecido";
+		endif
+		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvo.desc,descFonteDano,deveMarcar);
 	endif
-	//TODO Logar destruição.
-	InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,fonteDano.desc,deveMarcar);
 	DestroyItem(itemAlvo);
+
 	//comandos:
 	//TODO implementar comando de Indestrutível.
 	//TODO Criar comando de gm para consultar os logs e gerênciar o respawn de itens
@@ -134,6 +139,26 @@ function AvaliaDisparoArmadilha(item)
 	return false;
 endfunction
 
+function MontaCatalogoDestrocos()
+	var catalogo := Dictionary;
+	
+	catalogo.insert(PEDRA,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
+	catalogo.insert(TIJOLO,{0x46C8,0x46CB,0x1038,0x0F3B});
+	catalogo.insert(MARMORE,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
+	catalogo.insert(ARENITO,{0x46C8,0x46CB,0x0DF9,0x0F3B});
+	catalogo.insert(OSSOS,{0x1B1A,0x1B19,0x1B12,0x1B11});
+	catalogo.insert(VIDRO,{0x5738});
+	catalogo.insert(MADEIRA,{0x0c2f,0x0c2e,0x1038,0x1B9D,0xABEA,0xABED});
+	catalogo.insert(PANO,{0x0DD5,0x0EE9,0x1766});
+	catalogo.insert(METAL,{0x1038,0x1B26,0x1B9D,0x1B9E});
+	catalogo.insert(COURO,{0x4006,0x1B9E});
+	catalogo.insert(CORPO,{0x122F,0x1CF0,0x1D10,0x1D0E,0x1D09,0x1D0D});
+	catalogo.insert(CORPO_HUMANO,{0x1CED,0x1CEE,0x1CF0,0x122F,0x1CE2,0x1CE9,0x1CE6,0x1CE4,0x1CE1,0x1CE5,0x1CEA,0x1CDD,0x1D10,0x1D0E,0x1D09,0x1D0D});
+	catalogo.insert(INDEFINIDO,{0x1038,0x1B26,0x1B9D,0x1B9E,0x0F3B,0x1038});
+
+	return catalogo;
+endfunction
+
 function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 	var material := "";
 	var sfx := 0;
@@ -157,6 +182,7 @@ function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 		METAL: sfx := 0x057; break;
 		COURO: sfx := 0x04B; break;
 		CORPO: sfx := 0x146; break;
+		CORPO_HUMANO: sfx := 0x146; break;
 		default: sfx := 0x33C;
 	endcase
 	PlaySoundEffect(itemAlvo,sfx);
@@ -184,6 +210,8 @@ function CalculaDanoRecebido( fonteDano, atributosItem)
 	if(fonteDano.ISA(POLCLASS_WEAPON))
 		var dadoDano :=  RandomDiceRoll(fonteDano.getMainDamageDice());
 		danoCru := dadoDano + (Ceil(GetAttribute(fonteDano.character_owner,"Strength") / 10));
+	elseif(TypeOf("Struct"))
+		danoCru := fonteDano.dano;
 	else
 		danoCru := fonteDano;
 	endif
@@ -223,7 +251,7 @@ endfunction
 
 function IsEmperrado(item)
 	if(!item.ISA(POLCLASS_LOCKABLE))
-		false;
+		return false;
 	endif
 
 	var atributos := MontaAtributosItem(item);
@@ -313,25 +341,6 @@ function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx,ignoreSeria
 	endforeach
 endfunction
 
-function MontaCatalogoDestrocos()
-	var catalogo := Dictionary;
-	
-	catalogo.insert(PEDRA,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
-	catalogo.insert(TIJOLO,{0x46C8,0x46CB,0x1038,0x0F3B});
-	catalogo.insert(MARMORE,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
-	catalogo.insert(ARENITO,{0x46C8,0x46CB,0x0DF9,0x0F3B});
-	catalogo.insert(OSSOS,{0x1B1A,0x1B19,0x1B12,0x1B11});
-	catalogo.insert(VIDRO,{0x5738});
-	catalogo.insert(MADEIRA,{0x0c2f,0x0c2e,0x1038,0x1B9D,0xABEA,0xABED});
-	catalogo.insert(PANO,{0x0DD5,0x0EE9,0x1766});
-	catalogo.insert(METAL,{0x1038,0x1B26,0x1B9D,0x1B9E});
-	catalogo.insert(COURO,{0x4006,0x1B9E});
-	catalogo.insert(CORPO,{0x122F,0x1CF0,0x1D10,0x1D0E,0x1D09,0x1D0D});
-	catalogo.insert(INDEFINIDO,{0x1038,0x1B26,0x1B9D,0x1B9E,0x0F3B,0x1038});
-
-	return catalogo;
-endfunction
-
 function CriaDestrocos(itemAlvo,quantidade,distanciaMax := 0, deveCriarOrigem := true)
 	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 
@@ -345,9 +354,22 @@ function CriaDestrocos(itemAlvo,quantidade,distanciaMax := 0, deveCriarOrigem :=
 		material := configRecursos[materialId].Type;
 	else
 		if(itemAlvo.ISA(POLCLASS_CORPSE))
-			arrayDestrocos:= catalogoDestrocos[CORPO];
-			material := CORPO;
-			corDestroco := 0;
+			var templateProp := GetObjProperty(itemAlvo,"npctemplate");
+			if(templateProp)
+				var parsed := NPC_ParseTemplateName(templateProp);
+				var cfg := ReadConfigFile(":brainai:npcdesc");
+				Case (cfg[parsed.template].Taxonomy)
+					"homo": 
+						arrayDestrocos:= catalogoDestrocos[CORPO_HUMANO];
+						material := CORPO_HUMANO;
+						corDestroco := 0;
+						break;
+					default:
+						arrayDestrocos:= catalogoDestrocos[CORPO];
+						material := CORPO;
+						corDestroco := 0;
+				endcase
+			endif
 		else
 			arrayDestrocos := catalogoDestrocos[INDEFINIDO];
 		endif
@@ -422,6 +444,7 @@ function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 				novoNome :=	novoNome + "metal";
 				break;
 			CORPO:  
+			CORPO_HUMANO:  
 				novoNome :=	"Restos de corpo";
 				break;
 			default:

@@ -33,7 +33,16 @@ program trapScript(params)
 	range := range*3;
 
 	var mobiles := ListMobilesNearLocationEx(object.x, object.y, object.z, range, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
-	DanificaObjetosProximos(mobile,object.x, object.y, object.z, object.realm,dmgfinal,range, GFX_EXPLODE_3,object.serial);
+	DanificaObjetosProximos(
+	mobile,
+	object.x,
+	object.y,
+	object.z,
+	object.realm,
+	struct{dano := dmgfinal, desc := "Armadilha Explosão." },
+	range,
+	GFX_EXPLODE_3,
+	object.serial);
 
 	PlaySoundEffect(object, 0x208);
 	foreach mobile in mobiles

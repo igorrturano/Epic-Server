@@ -120,7 +120,7 @@ function RodaEfeitosAnim(quem,arma,alvo)
 	sleepms(600);
 	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
 	PlaySoundEffect(quem, somAtaque);
-	PlayStationaryEffect(alvo.x, alvo.y, alvo.z, FX_SMOKE, 2, 4);
+	PlayObjectCenteredEffect(alvo, FX_SMOKE, 2, 4);
 endfunction
 
 function CalculaConsumoStamina( fonteDano, byref consumoStamina)

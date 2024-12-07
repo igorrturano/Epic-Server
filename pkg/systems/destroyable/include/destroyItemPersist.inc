@@ -13,6 +13,7 @@ enum DESTRUIVEIS_NOMES_LOG
 	CAMPO_ONDE_Z := "campo_onde_z",
 	CAMPO_ONDE_REALM := "campo_onde_realm",
 	CAMPO_COMO := "campo_como",
+	CAMPO_OQUE := "campo_oque",
 	CAMPO_RECONSTRUIVEL := "campo_reconstrivel",
 endenum
 
@@ -92,7 +93,49 @@ function PegaLogXMLDestruiveis()
 	return AbreLogXml(LOG_XML_NOME);
 endfunction
 
-function InsereLogItemDestruido(quem,quando,x,y,z,realm,como,isReconstruivel)
+function ListaLogItemDestruido()
+	var xml := PegaLogXMLDestruiveis();
+	var conjuntoResultado := array;
+	
+	if(xml)
+		foreach linha in xml
+			if(_linha_iter == 1)
+				continue;
+			endif
+			
+			var tupla := struct;
+
+			tupla.+quando := ExtraiDado(linha[CAMPO_QUANDO]);
+			tupla.+x := ExtraiDado(linha[CAMPO_ONDE_X]);
+			tupla.+y := ExtraiDado(linha[CAMPO_ONDE_Y]);
+			tupla.+z := ExtraiDado(linha[CAMPO_ONDE_Z]);
+			tupla.+realm := ExtraiDado(linha[CAMPO_ONDE_REALM]);
+			tupla.+quem := ExtraiDado(linha[CAMPO_QUEM]);
+			tupla.+oque := ExtraiDado(linha[CAMPO_OQUE]);
+			tupla.+como := ExtraiDado(linha[CAMPO_COMO]);
+			tupla.+isReconstruivel := ExtraiDado(linha[CAMPO_RECONSTRUIVEL]);
+
+			conjuntoResultado.Append(tupla);
+			Sleepms(2);
+		endforeach
+	else
+		return conjuntoResultado;
+	endif
+	return conjuntoResultado;
+endfunction
+
+function ExtraiDado(xmlNode)
+	var atributos := xmlNode.atrributtes;
+	if(atributos["tipo"] == "String")
+		return  Cstr(xmlNode.firstxmlchild());
+	elseif(atributos["tipo"] == "Integer")
+		return  CInt(xmlNode.firstxmlchild());
+	else
+		return  Cstr(xmlNode.firstxmlchild());
+	endif
+endfunction
+
+function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruivel)
 	var xml := PegaLogXMLDestruiveis();
 	if(xml)
 		var entradaLog := xml.appendxmlnode(TUPLA,struct{titulo := "linha"});
@@ -117,6 +160,9 @@ function InsereLogItemDestruido(quem,quando,x,y,z,realm,como,isReconstruivel)
 			
 			no := entradaLog.appendxmlnode(CAMPO_COMO,struct{tipo := "String"});
 			no.appendxmltext(CSTr(como));
+
+			no := entradaLog.appendxmlnode(CAMPO_OQUE,struct{tipo := "String"});
+			no.appendxmltext(CSTr(oque));
 			
 			no := entradaLog.appendxmlnode(CAMPO_RECONSTRUIVEL,struct{tipo := "Integer"});
 			no.appendxmltext(CSTr(isReconstruivel));
