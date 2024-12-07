@@ -14,7 +14,7 @@ enum DESTRUIVEIS_NOMES_LOG
 	CAMPO_ONDE_REALM := "campo_onde_realm",
 	CAMPO_COMO := "campo_como",
 	CAMPO_OQUE := "campo_oque",
-	CAMPO_RECONSTRUIVEL := "campo_reconstrivel",
+	CAMPO_RECONSTRUIVEL := "campo_reconstruivel",
 endenum
 
 const LOG_XML_NOME := "::data/log/logDestruiveis.xml";
