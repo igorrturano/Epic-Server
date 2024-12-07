@@ -62,7 +62,7 @@ function CreateBossStructGump( who, byref boss )
   var chargump := GFCreateGump();
   var input;
 
-  var cfg := ReadConfigFile( ":brainAI:npcdesc" );
+  var cfg := ReadConfigFile( ":*:npcdesc" );
   var npctemplate := boss.npctemplate;
   npctemplate := npctemplate[10, len( npctemplate ) - 9];
   cfg := cfg[npctemplate];
