@@ -799,69 +799,78 @@ endfunction
 
 // Arqueiros
 function AmmoCheckCombatHook(attacker, defender)
+    const STONE_OBJTYPE := 20481;
     var arcane_bows := array{0xFA6D, 0XF997};
-	if ( !wpn_a_elem.ProjectileType  )
-		return 1;
-	endif
-	if ( GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype in arcane_bows)
-		return 1;
-	endif
-
-	if(attacker.npctemplate)
-		ArqueiroNPC(attacker, defender);
-		return 1;
-	endif
-
-	var has_ammo := 0;
-	var aljavas := array{0x791c, 0x2fb7};
-	var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
-
-		if (aljava.objtype in aljavas)
-			var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
-		else
-			aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
-		endif
-	var ammo := GetObjProperty(attacker.weapon, "ammo");
-	if (!ammo)
-		SendSysMessage(attacker, "Voce nao definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
-		return 0;
-	endif
-
-
-    var in_aljava := 0;
-    foreach arrow in (EnumerateItemsInContainer(aljava))
-		if (arrow.serial == ammo)
-			in_aljava := 1;
-        endif
-    endforeach
-    if (in_aljava == 0)
-        return 0;
+    
+    if (!wpn_a_elem.ProjectileType)
+        return 1;
+    endif
+    
+    if (GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype in arcane_bows)
+        return 1;
     endif
 
-	if ( SubtractAmount( ammo, 1 ) )
-		var cfg:=ReadConfigFile(":woodworking:itemdesc");
-		var elem := FindConfigElem(cfg, GetObjType( ammo ));
-		var ammo_color := elem.color;
-		PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, ammo_color);
-		return 1;
-	else
-		return 0;
-	endif
+    if (attacker.npctemplate)
+        ArqueiroNPC(attacker, defender);
+        return 1;
+    endif
 
+    // Get saved ammo reference
+    var ammo := GetObjProperty(attacker.weapon, "ammo");
+    if (!ammo)
+        SendSysMessage(attacker, "Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
+        return 0;
+    endif
+	var obj := SystemFindObjectBySerial(ammo);
+    // Handle stones differently - they don't need aljava check
+    var needs_aljava := (obj.objtype != STONE_OBJTYPE);
+    
+    if (needs_aljava)
+        var aljavas := array{0x791c, 0x2fb7};
+        var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
+        
+        if (!(aljava.objtype in aljavas))
+            aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
+        endif
+        
+        // Check if ammo is in aljava
+        var found_in_aljava := 0;
+        foreach arrow in (EnumerateItemsInContainer(aljava))
+            if (arrow.serial == ammo)
+                found_in_aljava := 1;
+                break;
+            endif
+        endforeach
+        
+        if (!found_in_aljava)
+            return 0;
+        endif
+    endif
+
+    // Handle the ammunition consumption and effect
+    if (SubtractAmount(ammo, 1))
+        var cfg := ReadConfigFile(":woodworking:itemdesc");
+        var elem := FindConfigElem(cfg, GetObjType(ammo));
+        var ammo_color := elem.color;
+        PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, ammo_color);
+        return 1;
+    endif
+    
+    return 0;
 endfunction
 
 function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
+	if(attacker.npctemplate)
+		ThrowerNPC(attacker, defender);
+		return;
+	endif
+
 	if ( !wpn_a_elem.Throwable  )
 		return;
 	endif
 
 	if ( !AP_ConsumeVital(attacker, STAMINA, 10) )
 		SendSysMessageEx(attacker, "Você está exausto!");
-		return;
-	endif
-
-	if(attacker.npctemplate)
-		ThrowerNPC(attacker, defender);
 		return;
 	endif
 
@@ -903,7 +912,6 @@ function arcane_shooting(attacker, defender)
 endfunction
 
 function ArqueiroNPC(attacker, defender)
-
 /*	var aljava := attacker.backpack;
 
 	var aljava_itens := EnumerateItemsInContainer( aljava );
@@ -931,18 +939,34 @@ function ArqueiroNPC(attacker, defender)
 	endif
 
 	SubtractAmount(ammo, 1); */
-	PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, 0); //ammo_color);
+	var anim := wpn_a_elem.ProjectileAnim;
+	if ( !anim )
+		anim := 0xF79;
+	endif
+	print("ANIM: "+anim);
+	PlayMovingEffectXYZHued(attacker, defender, anim, 10, 10, 0, 0); //ammo_color);
 
 	return 1;
 
 endfunction
 
 function ThrowerNPC(attacker, defender)
-
-	PlayMovingEffectXYZHued(attacker, defender, wpn_a.graphic, 10, 10, 0, 0); //ammo_color);
-
-	return 1;
-
+    var throwInfo := GetObjProperty(attacker, "throwinfo");
+    if (!throwInfo)
+        return 0;
+    endif
+    
+    // Perform throw animation
+    if (throwInfo.anim)
+        PerformAction(attacker, throwInfo.anim);
+    else
+        PerformAction(attacker, 4);
+    endif
+    
+    // Play the throw effect
+    PlayMovingEffectXYZHued(attacker, defender, throwInfo.item, 10, 10, 0, 0);
+    
+    return 1;
 endfunction
 
 function CombatDbgMsg(mobile, text)
