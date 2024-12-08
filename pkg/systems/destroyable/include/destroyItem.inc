@@ -300,7 +300,6 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 		item.hp := CInt(durabilidadeRestante);
 	endif
 
-
 	if(gfx != 0)
 		PlayObjectCenteredEffect(item, gfx, 5, 6);
 	endif
@@ -311,7 +310,6 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 			CriaDestrocos(item,1,3,false);
 		endif
 	endif
-
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 	PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);

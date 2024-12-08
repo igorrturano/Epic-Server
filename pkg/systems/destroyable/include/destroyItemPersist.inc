@@ -3,15 +3,17 @@ use os;
 
 include ":datafile:include/datafile";
 include ":merchants:/include/item_template";
+include "/include/utils";
 
 enum DESTRUIVEIS_NOMES_LOG
 	TUPLA := "tupla",
 	CAMPO_QUANDO := "campo_quando",
 	CAMPO_QUEM := "campo_quem",
-	CAMPO_ONDE_X := "campo_onde_x",
-	CAMPO_ONDE_Y := "campo_onde_y",
-	CAMPO_ONDE_Z := "campo_onde_z",
-	CAMPO_ONDE_REALM := "campo_onde_realm",
+	CAMPO_ONDE := "campo_onde",
+	CAMPO_ONDE_X := "x",
+	CAMPO_ONDE_Y := "y",
+	CAMPO_ONDE_Z := "z",
+	CAMPO_ONDE_REALM := "realm",
 	CAMPO_COMO := "campo_como",
 	CAMPO_OQUE := "campo_oque",
 	CAMPO_RECONSTRUIVEL := "campo_reconstruivel",
@@ -106,10 +108,10 @@ function ListaLogItemDestruido()
 			var tupla := struct;
 
 			tupla.+quando := ExtraiDado(linha[CAMPO_QUANDO]);
-			tupla.+x := ExtraiDado(linha[CAMPO_ONDE_X]);
-			tupla.+y := ExtraiDado(linha[CAMPO_ONDE_Y]);
-			tupla.+z := ExtraiDado(linha[CAMPO_ONDE_Z]);
-			tupla.+realm := ExtraiDado(linha[CAMPO_ONDE_REALM]);
+			tupla.+x := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_X]);
+			tupla.+y := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_Y]);
+			tupla.+z := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_Z]);
+			tupla.+realm := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_REALM]);
 			tupla.+quem := ExtraiDado(linha[CAMPO_QUEM]);
 			tupla.+oque := ExtraiDado(linha[CAMPO_OQUE]);
 			tupla.+como := ExtraiDado(linha[CAMPO_COMO]);
@@ -125,47 +127,48 @@ function ListaLogItemDestruido()
 endfunction
 
 function ExtraiDado(xmlNode)
-	var atributos := xmlNode.atrributtes;
+	var atributos := xmlNode.attributes;
 	if(atributos["tipo"] == "String")
 		return  Cstr(xmlNode.firstxmlchild());
 	elseif(atributos["tipo"] == "Integer")
 		return  CInt(xmlNode.firstxmlchild());
+	elseif(atributos["tipo"] == "Timestamp")
+		Print("* timestamp + " +  Cstr(xmlNode.firstxmlchild()));
+		return FormatarData(CInt(xmlNode.firstxmlchild()));
 	else
+		Print("* string + " +  Cstr(xmlNode.firstxmlchild()));
+		Print("* atributos + " + atributos);
 		return  Cstr(xmlNode.firstxmlchild());
 	endif
+endfunction
+
+function AdicionaXmlNode(byref pai,atributos,chave,valores := {})
+	var no := pai.appendxmlnode(chave,atributos);
+
+	foreach valor in valores // fiz com array por que não vi um jeito de fazer com um if sem precisar de mais de 1 parametro.
+		no.appendxmltext(CSTr(valor));
+		Sleepms(1);
+	endforeach
+
+	return no;
 endfunction
 
 function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruivel)
 	var xml := PegaLogXMLDestruiveis();
 	if(xml)
-		var entradaLog := xml.appendxmlnode(TUPLA,struct{titulo := "linha"});
+		var entradaLog := AdicionaXmlNode(xml,struct{titulo := "linha"},TUPLA);
 		if(entradaLog)
-			var no := entradaLog.appendxmlnode(CAMPO_QUANDO,struct{tipo := "Integer"});
-			no.appendxmltext(CSTr(quando));
-
-			no := entradaLog.appendxmlnode(CAMPO_ONDE_X,struct{tipo := "Integer"});
-			no.appendxmltext(CSTr(x));
 			
-			no := entradaLog.appendxmlnode(CAMPO_ONDE_Y,struct{tipo := "Integer"});
-			no.appendxmltext(CSTr(y));
-			
-			no := entradaLog.appendxmlnode(CAMPO_ONDE_Z,struct{tipo := "Integer"});
-			no.appendxmltext(CSTr(z));
-			
-			no := entradaLog.appendxmlnode(CAMPO_ONDE_REALM,struct{tipo := "String"});
-			no.appendxmltext(CSTr(realm));
-			
-			no := entradaLog.appendxmlnode(CAMPO_QUEM,struct{tipo := "Integer"});
-			no.appendxmltext(CSTr(quem.serial));
-			
-			no := entradaLog.appendxmlnode(CAMPO_COMO,struct{tipo := "String"});
-			no.appendxmltext(CSTr(como));
-
-			no := entradaLog.appendxmlnode(CAMPO_OQUE,struct{tipo := "String"});
-			no.appendxmltext(CSTr(oque));
-			
-			no := entradaLog.appendxmlnode(CAMPO_RECONSTRUIVEL,struct{tipo := "Integer"});
-			no.appendxmltext(CSTr(isReconstruivel));
+			AdicionaXmlNode(entradaLog,struct{tipo := "Timestamp"},CAMPO_QUANDO,{quando});
+			AdicionaXmlNode(entradaLog,struct{tipo := "String"},CAMPO_QUEM,{quem.serial});
+			var noOnde := AdicionaXmlNode(entradaLog,struct{titulo := "envelope"},CAMPO_ONDE);
+			AdicionaXmlNode(noOnde,struct{tipo := "Integer"},CAMPO_ONDE_X,{x});
+			AdicionaXmlNode(noOnde,struct{tipo := "Integer"},CAMPO_ONDE_Y,{y});
+			AdicionaXmlNode(noOnde,struct{tipo := "Integer"},CAMPO_ONDE_Z,{z});
+			AdicionaXmlNode(noOnde,struct{tipo := "String"},CAMPO_ONDE_REALM,{realm});
+			AdicionaXmlNode(entradaLog,struct{tipo := "String"},CAMPO_COMO,{como});
+			AdicionaXmlNode(entradaLog,struct{tipo := "String"},CAMPO_OQUE,{oque});
+			AdicionaXmlNode(entradaLog,struct{tipo := "Integer"},CAMPO_RECONSTRUIVEL,{isReconstruivel});
 			
 			xml.savexml(LOG_XML_NOME);
 		endif
