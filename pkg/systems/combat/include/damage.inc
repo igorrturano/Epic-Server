@@ -53,7 +53,7 @@ function getNewDamageList(attacker)
 
 	if (attacker.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		list[DMG_PHYSICAL] := cfg[npctemplate.template].PhysicalDamage;
 		list[DMG_FIRE] := cfg[npctemplate.template].FireDamage;
 		list[DMG_COLD] := cfg[npctemplate.template].ColdDamage;
@@ -980,7 +980,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (TemHabilidade(attacker, "Inimigo Predileto"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "InimigoPredileto");
 
 		if (cfg[npctemplate.template].Category == inimigo)
@@ -990,7 +990,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
     elseif (TemHabilidade(attacker, "Exitium Maleficorum"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Undead", "Demons"};
 
 		if (cfg[npctemplate.template].Category in inimigo)
@@ -1000,7 +1000,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
 		if (cfg[npctemplate.template].Category == inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);

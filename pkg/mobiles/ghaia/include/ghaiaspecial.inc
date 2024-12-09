@@ -355,7 +355,7 @@ function MoveAround()
 	  if (!range)
 		range := 6;
 	  endif
-     var cfg := ReadConfigFile(":brainai:npcdesc");
+     var cfg := ReadConfigFile(":*:npcdesc");
       var npctemplate := NPC_ParseTemplateName(me.npctemplate);
     if (cfg[npctemplate.template].Category != "Animal")  
       if (anchor == error)

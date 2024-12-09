@@ -174,7 +174,7 @@ function taming(who)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var npctemplate := targ.npctemplate;
 	npctemplate := npctemplate[10, len(npctemplate)-9];
 	cfg := cfg[npctemplate];
@@ -412,7 +412,7 @@ function BuildInstincts(who, creature, byref gump, ins_elem, byref y_pos)
 
 var mount_packs := (creature.npctemplate == ":brainai:horse" || creature.npctemplate == ":brainai:horse2" || creature.npctemplate == ":brainai:horse3"|| creature.npctemplate == ":brainai:horse4" || creature.npctemplate == ":brainai:horse5" || creature.npctemplate == ":brainai:llama");// quem pode treinar animal de carga
 var sense_ones := (creature.npctemplate == ":brainai:dog" || creature.npctemplate == ":brainai:eagle"); // quem pode treinar sentido aguçado
-var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+var npccfgfile := ReadConfigFile(":*:npcdesc");
 var creature_who := NPC_ParseTemplateName(creature.npctemplate).template;
 var creature_taxonomy := GetConfigString(npccfgfile[creature_who], "Taxonomy"); // identifca a taxonomy do npcdesc
 var pet_instinct := GetConfigStringArray(ins_elem, "Taxonomy"); // LISTA TODOS do cfg

@@ -28,7 +28,7 @@ program wildshape(who)
     endif
 
     // Read the NPC configuration to find TameDifficulty (like in adestrar.src)
-    var cfg := ReadConfigFile(":brainai:npcdesc");
+    var cfg := ReadConfigFile(":*:npcdesc");
     var npctemplate := targ.npctemplate;
     npctemplate := npctemplate[10, len(npctemplate)-9];
     cfg := cfg[npctemplate];
