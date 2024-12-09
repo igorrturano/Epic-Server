@@ -131,13 +131,10 @@ function ExtraiDado(xmlNode)
 	if(atributos["tipo"] == "String")
 		return  Cstr(xmlNode.firstxmlchild());
 	elseif(atributos["tipo"] == "Integer")
-		return  CInt(xmlNode.firstxmlchild());
+		return  CInt(Cstr(xmlNode.firstxmlchild()));
 	elseif(atributos["tipo"] == "Timestamp")
-		Print("* timestamp + " +  Cstr(xmlNode.firstxmlchild()));
 		return FormatarData(CInt(xmlNode.firstxmlchild()));
 	else
-		Print("* string + " +  Cstr(xmlNode.firstxmlchild()));
-		Print("* atributos + " + atributos);
 		return  Cstr(xmlNode.firstxmlchild());
 	endif
 endfunction

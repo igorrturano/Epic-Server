@@ -13,15 +13,28 @@ program destruiveis(quem, texto)
 	var gump := GFECreateGump("Destruiveis",800,600,array{BORDER_BLUE,HIDE_TITLE});
 	var arrayLog := ListaLogItemDestruido();
 	var y := 70;
+	GFPage( gump, 0);
+	
+	var colCfg := dictionary;
+	colCfg["quem"] := struct{titulo := "Quem?",ordem := 1,largura := 1};
+	colCfg["quando"] := struct{titulo := "Quando?",ordem := 2,largura := 3};
+	colCfg["como"] := struct{titulo := "Como?",ordem := 3,largura := 2};
+	colCfg["oque"] := struct{titulo := "O que?",ordem := 4,largura := 2};
+	colCfg["x"] := struct{titulo := "x",ordem := 5};
+	colCfg["y"] := struct{titulo := "y",ordem := 6};
+	colCfg["z"] := struct{titulo := "z",ordem := 7};
+	colCfg["realm"] := struct{titulo := "Reino",ordem := 8};
+	colCfg["isReconstruivel"] := struct{titulo := "Volta?",largura := 0.5};
 
-	gump := CriaTabelaGump(40,40,800,arrayLog,gump);
-	/*foreach log in ( arrayLog )
-		GFTextLine(gump, 40, y * _log_iter, 0, "Quando: "+ log.quando);
-		GFTextLine(gump, 40,  20 + y * _log_iter, 0, "Onde: " + log.x + " - " + log.y + " - " + log.z + " - " + log.realm);
-		GFTextLine(gump, 40, 40 + y * _log_iter, 0, "Quem: "+ log.quem);
-		GFTextLine(gump, 40, 60 + y * _log_iter, 0, "O que: "+ log.oque);
-		GFTextLine(gump, 40, 80 + y * _log_iter, 0, "Como: "+ log.como);
-		GFTextLine(gump, 40, 100 + y * _log_iter, 0, "isReconstruivel: "+ log.isReconstruivel);
-	endforeach*/
+	GFAddButton( gump, 10, 10, 2224, 2224, GF_PAGE_BTN, gump.cur_page - 1 );
+	GFAddButton( gump, 40 , 10, 2223, 2223, GF_PAGE_BTN, gump.cur_page + 1 );
+
+	var pagina;
+	var qtdeMaxLinhas := 25;
+	var algo := CDbl(arrayLog.size()) / qtdeMaxLinhas;
+	for( pagina := 0; (pagina + 1) - algo < 1; pagina := pagina + 1)
+		GFPage( gump, pagina + 1);
+		gump := CriaTabelaGump(40,40,700,arrayLog,gump,pagina,struct{qtdeLimiteLinha:=qtdeMaxLinhas},colCfg);
+	endfor
 	var valor := GFSendGump(quem,gump);
 endprogram
