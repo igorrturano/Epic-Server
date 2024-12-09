@@ -8,6 +8,8 @@ include "/include/utils";
 enum DESTRUIVEIS_NOMES_LOG
 	TUPLA := "tupla",
 	CAMPO_QUANDO := "campo_quando",
+	CAMPO_QUANDO_FORMATADO := "campo_quando_formatado",
+	CAMPO_QUANDO_TIMESTAMP := "campo_quando_timestamp",
 	CAMPO_QUEM := "campo_quem",
 	CAMPO_ONDE := "campo_onde",
 	CAMPO_ONDE_X := "x",
@@ -95,7 +97,7 @@ function PegaLogXMLDestruiveis()
 	return AbreLogXml(LOG_XML_NOME);
 endfunction
 
-function ListaLogItemDestruido()
+function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 	var xml := PegaLogXMLDestruiveis();
 	var conjuntoResultado := array;
 	
@@ -106,12 +108,26 @@ function ListaLogItemDestruido()
 			endif
 			
 			var tupla := struct;
+			var quandoAFiltrar := ExtraiDado(linha[CAMPO_QUANDO][CAMPO_QUANDO_TIMESTAMP]);
+			if(filtroTempo)
+				if(POLCore().systime - filtroTempo >= POLCore().systime)
+					continue;
+				endif
+			endif
 
-			tupla.+quando := ExtraiDado(linha[CAMPO_QUANDO]);
+			tupla.+quando := ExtraiDado(linha[CAMPO_QUANDO][CAMPO_QUANDO_FORMATADO]);
 			tupla.+x := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_X]);
 			tupla.+y := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_Y]);
 			tupla.+z := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_Z]);
 			tupla.+realm := ExtraiDado(linha[CAMPO_ONDE][CAMPO_ONDE_REALM]);
+
+			If(filtroRegiao)
+				var distanciaEuclidiana := Sqrt( Pow(tupla.x - quem.x,2) + Pow(tupla.y - quem.y,2) + Pow(tupla.z - quem.z,2));
+				if(distanciaEuclidiana > filtroRegiao)
+					continue;
+				endif
+			endif
+
 			tupla.+quem := ExtraiDado(linha[CAMPO_QUEM]);
 			tupla.+oque := ExtraiDado(linha[CAMPO_OQUE]);
 			tupla.+como := ExtraiDado(linha[CAMPO_COMO]);
@@ -123,6 +139,7 @@ function ListaLogItemDestruido()
 	else
 		return conjuntoResultado;
 	endif
+	conjuntoResultado.reverse();
 	return conjuntoResultado;
 endfunction
 
@@ -132,8 +149,6 @@ function ExtraiDado(xmlNode)
 		return  Cstr(xmlNode.firstxmlchild());
 	elseif(atributos["tipo"] == "Integer")
 		return  CInt(Cstr(xmlNode.firstxmlchild()));
-	elseif(atributos["tipo"] == "Timestamp")
-		return FormatarData(CInt(xmlNode.firstxmlchild()));
 	else
 		return  Cstr(xmlNode.firstxmlchild());
 	endif
@@ -156,7 +171,9 @@ function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruive
 		var entradaLog := AdicionaXmlNode(xml,struct{titulo := "linha"},TUPLA);
 		if(entradaLog)
 			
-			AdicionaXmlNode(entradaLog,struct{tipo := "Timestamp"},CAMPO_QUANDO,{quando});
+			var noQuando := AdicionaXmlNode(entradaLog,struct{titulo := "envelope"},CAMPO_QUANDO);
+			AdicionaXmlNode(noQuando,struct{tipo := "String"},CAMPO_QUANDO_FORMATADO,{FormatarData(quando)});
+			AdicionaXmlNode(noQuando,struct{tipo := "Integer"},CAMPO_QUANDO_TIMESTAMP,{quando});
 			AdicionaXmlNode(entradaLog,struct{tipo := "String"},CAMPO_QUEM,{quem.serial});
 			var noOnde := AdicionaXmlNode(entradaLog,struct{titulo := "envelope"},CAMPO_ONDE);
 			AdicionaXmlNode(noOnde,struct{tipo := "Integer"},CAMPO_ONDE_X,{x});

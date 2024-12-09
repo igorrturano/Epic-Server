@@ -90,7 +90,7 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaArray := 0,opcoe
 		//tabela em si
 		var indice := paginaArray * opcoesTabela.qtdeLimiteLinha + 1;
 		var indiceLinha := 1;
-		for i := indice to  indice + opcoesTabela.qtdeLimiteLinha
+		for i := indice to  indice + (opcoesTabela.qtdeLimiteLinha - 1 )
 			if(i > dados.size())
 				break;
 			endif

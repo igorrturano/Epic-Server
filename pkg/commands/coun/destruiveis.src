@@ -7,14 +7,11 @@ include ":gumps:/include/gumps_ex";
 include ":destroyable:include/destroyItemPersist";
 include ":destroyable:include/destroyItemGump";
 
+const GUMP_LARGURA := 800;
+const GUMP_ALTURA := 600;
+const TEMPO_DIA := 86400;
 
 program destruiveis(quem, texto)
-
-	var gump := GFECreateGump("Destruiveis",800,600,array{BORDER_BLUE,HIDE_TITLE});
-	var arrayLog := ListaLogItemDestruido();
-	var y := 70;
-	GFPage( gump, 0);
-	
 	var colCfg := dictionary;
 	colCfg["quem"] := struct{titulo := "Quem?",ordem := 1,largura := 1};
 	colCfg["quando"] := struct{titulo := "Quando?",ordem := 2,largura := 3};
@@ -24,17 +21,54 @@ program destruiveis(quem, texto)
 	colCfg["y"] := struct{titulo := "y",ordem := 6};
 	colCfg["z"] := struct{titulo := "z",ordem := 7};
 	colCfg["realm"] := struct{titulo := "Reino",ordem := 8};
-	colCfg["isReconstruivel"] := struct{titulo := "Volta?",largura := 0.5};
+	colCfg["isReconstruivel"] := struct{titulo := "Volta?",largura := 1};
 
-	GFAddButton( gump, 10, 10, 2224, 2224, GF_PAGE_BTN, gump.cur_page - 1 );
-	GFAddButton( gump, 40 , 10, 2223, 2223, GF_PAGE_BTN, gump.cur_page + 1 );
+	Var pontoMedio := GUMP_LARGURA / 2 ;
 
-	var pagina;
-	var qtdeMaxLinhas := 25;
-	var algo := CDbl(arrayLog.size()) / qtdeMaxLinhas;
-	for( pagina := 0; (pagina + 1) - algo < 1; pagina := pagina + 1)
-		GFPage( gump, pagina + 1);
-		gump := CriaTabelaGump(40,40,700,arrayLog,gump,pagina,struct{qtdeLimiteLinha:=qtdeMaxLinhas},colCfg);
-	endfor
-	var valor := GFSendGump(quem,gump);
+	var valor := 1;
+	while(valor[0])
+		var filtroRegiao := 0;
+		var filtroTempo := 0;
+
+		if(valor[0] == 1)
+			filtroRegiao := 20;
+		elseif(valor[0] == 2)
+		elseif(valor[0] == 3)
+			filtroTempo := TEMPO_DIA * 5;
+		else
+			break;
+		endif
+		
+		var arrayLog := ListaLogItemDestruido(quem,filtroRegiao,filtroTempo);
+		var gump := GFECreateGump("Destruiveis",800,600,array{BORDER_BLUE,HIDE_TITLE});
+
+		GFPage( gump, 0);
+
+		GFAddButton(gump,50, 40,9720,9724,GF_CLOSE_BTN, 1);
+		GFTextLine( gump, 50 + 35, 40 + 5 , 1051, "Em um raio de 20 tiles");
+
+		GFAddButton(gump,250, 40,9720,9724,GF_CLOSE_BTN, 2);
+		GFTextLine( gump, 250 + 35, 40 + 5 , 1051,"Todos registros");
+
+		GFAddButton(gump,450, 40,9720,9724,GF_CLOSE_BTN, 3);
+		GFTextLine( gump, 450 + 35, 40 + 5 , 1051, "Ultimos 5 dias");
+
+		var pagina;
+		var qtdeMaxLinhas := 22;
+		var algo := CDbl(arrayLog.size()) / qtdeMaxLinhas;
+		for( pagina := 0; (pagina + 1) - algo < 1; pagina := pagina + 1)
+			GFPage( gump, pagina + 1);
+			gump := CriaTabelaGump(25,80,705,arrayLog,gump,pagina,struct{qtdeLimiteLinha:=qtdeMaxLinhas},colCfg);
+
+			//Controle de Paginação.
+			if(!pagina == 0)
+				GFAddButton( gump,  pontoMedio - 40, 570, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
+			endif
+			if((pagina + 2) - algo < 1)
+				GFAddButton( gump, pontoMedio + 40, 570, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
+			endif
+		endfor
+
+		valor := GFSendGump(quem,gump);
+	endwhile
 endprogram
