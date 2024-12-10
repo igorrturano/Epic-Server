@@ -8,6 +8,7 @@ include ":destroyable:include/destroyItemPersist";
 include ":itemutils:itemInfo";
 include "/include/utils";
 include ":traps:traps";
+include "include/packets";
 
 const PROPNAME_DURABILIDADE := "durabItem"; 
 const PROPNAME_DURABILIDADE_MAX := "maxDurabItem"; 
@@ -105,7 +106,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
 	//TODO Criar arquivo settings.cfg para guardar as configurações do sistema de destruiveis.
 	//TODO Adicionar comentários e documentação do que já foi feito.
-	//TODO inserir esse hook war em todos os scripts de arma.
 	//TODO inserir esse function de dano em todos os scripts de dano em área.
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Disparar discord web hook.
@@ -290,7 +290,7 @@ function MontaAtributosItem(item)
 	return itemAtrib;
 endfunction
 
-function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
+function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	if(item.concealed || item.invisible)
 		return struct;
 	endif
@@ -313,7 +313,11 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 	endif
 
 	if(gfx != 0)
-		PlayObjectCenteredEffect(item, gfx, 5, 6);
+		if(gfxHue)
+			PlayObjectCenteredEffectHuefx(item, gfx, 5, 6,gfxHue);
+		else
+			PlayObjectCenteredEffect(item, gfx, 5, 6);
+		endif
 	endif
 
 	if(!IsDestroco(item))
@@ -341,12 +345,12 @@ function IsDestroco(item)
 	return GetObjProperty(item,PROPNAME_DESTROCO);
 endfunction
 
-function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx,ignoreSerial := 0)
+function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx:=0,ignoreSerial := 0,gfxHue := 0)
 	var itens:= ListItemsNearLocation(x,y,z,distancia,realm);
 
 	foreach item in itens
 		if(CheckLosBetween(x,y,z,item.x,item.y,item.z,realm) && item.serial != ignoreSerial)
-			DanificaItem(quem,item,dano,gfx);
+			DanificaItem(quem,item,dano,gfx,gfxHue);
 		endif
 		Sleepms(3);
 	endforeach

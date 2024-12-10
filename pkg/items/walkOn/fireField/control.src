@@ -8,6 +8,7 @@ use os;
 use util;
 
 include ":combat:damage";
+include ":destroyable:include/destroyItem";
 
 program controlScript(field)
 	SetObjProperty(field, "#PID", GetPid());
@@ -24,6 +25,7 @@ program controlScript(field)
 
 	while ( field )
 		BurnNearbyMobiles(field, dmg_dice);
+		DanificaObjetosProximos(creator,field.x, field.y, field.z,field.realm,struct{dano := RandomDiceRoll(dmg_dice), desc := "Campo Flamejante." },0,0,field.serial);
 
 		if ( ReadGameClock() % 3 == 0 )
 			// Play once every 3 seconds.
