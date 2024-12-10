@@ -9,6 +9,7 @@ include ":combat:damage";
 include ":attributes:attributes";
 include ":mounts:mounts";
 include "include/shapes";
+include ":destroyable:include/destroyItem";
 
 program use_explosion(who, potion)
 	EraseObjProperty(who, "IsMeditating");
@@ -103,16 +104,19 @@ program use_explosion(who, potion)
 			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldEW", 1, who.realm);
 		endif
 		field.SetDuration(20);
+		field.SetOwner(who);
 		sleepms(5);
 	endforeach
 
 	PlaySoundEffect(cast_on, 0x208);
 
 	var chars := ListMobilesNearLocation(cast_on.x, cast_on.y, cast_on.z, 5, who.realm);
+	var danox := dano;
+	DanificaObjetosProximos(who,cast_on.x, cast_on.y, cast_on.z,cast_on.realm,struct{dano := danox, desc := "Bafo de dragão." },5,GFX_EXPLODE_2);
 	foreach mobile in chars
 		DamageFLS(mobile, dano, DMG_FIRE);
 	endforeach
-	destroycraft(cast_on, who);
+	//destroycraft(cast_on, who);
 	Detach();
 
     DestroyItem(Potion);
