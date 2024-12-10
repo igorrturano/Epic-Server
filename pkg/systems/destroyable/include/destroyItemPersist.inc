@@ -129,7 +129,8 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 				endif
 			endif
 
-			tupla.+quem := ExtraiDado(linha[CAMPO_QUEM]);
+			var quemObj := SystemFindObjectBySerial( ExtraiDado(linha[CAMPO_QUEM]), SYSFIND_SEARCH_OFFLINE_MOBILES );
+			tupla.+quem := quemObj.acctname;
 			tupla.+oque := ExtraiDado(linha[CAMPO_OQUE]);
 			tupla.+como := ExtraiDado(linha[CAMPO_COMO]);
 			tupla.+isReconstruivel := ExtraiDado(linha[CAMPO_RECONSTRUIVEL]);
@@ -175,7 +176,7 @@ function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruive
 			var noQuando := AdicionaXmlNode(entradaLog,struct{titulo := "envelope"},CAMPO_QUANDO);
 			AdicionaXmlNode(noQuando,struct{tipo := "String"},CAMPO_QUANDO_FORMATADO,{FormatarData(quando)});
 			AdicionaXmlNode(noQuando,struct{tipo := "Integer"},CAMPO_QUANDO_TIMESTAMP,{quando});
-			AdicionaXmlNode(entradaLog,struct{tipo := "String"},CAMPO_QUEM,{quem.serial});
+			AdicionaXmlNode(entradaLog,struct{tipo := "Integer"},CAMPO_QUEM,{quem.serial});
 			var noOnde := AdicionaXmlNode(entradaLog,struct{titulo := "envelope"},CAMPO_ONDE);
 			AdicionaXmlNode(noOnde,struct{tipo := "Integer"},CAMPO_ONDE_X,{x});
 			AdicionaXmlNode(noOnde,struct{tipo := "Integer"},CAMPO_ONDE_Y,{y});
