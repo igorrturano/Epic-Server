@@ -10,6 +10,7 @@ include ":gumps:yesNo";
 include "include/say";
 include ":keys:key";
 include ":tn:tngumps";
+include ":destroyable:include/destroyItem";
 
 //Gump Constants
 const BKGND_STONESLAB		:= 9200;  // Gray stone slab background
@@ -167,6 +168,7 @@ program MerchantMenu(params)
 				quartos := array;
 			endif
 			quartos.append(room);
+			SetObjProperty(porta, PROPNAME_INDESTRUTIVEL, 1);
 			SetObjProperty(npc, "quartos", quartos);
 		endif
 	elseif (input[0] == 100 ) //trocar fechadura
