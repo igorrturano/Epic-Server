@@ -345,8 +345,8 @@ function IsDestroco(item)
 	return GetObjProperty(item,PROPNAME_DESTROCO);
 endfunction
 
-function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx:=0,ignoreSerial := 0,gfxHue := 0)
-	var itens:= ListItemsNearLocation(x,y,z,distancia,realm);
+function DanificaObjetosProximos(quem,x,y,z,realm,dano,alcance,gfx:=0,ignoreSerial := 0,gfxHue := 0)
+	var itens:= ListItemsNearLocation(x,y,z,alcance,realm);
 
 	foreach item in itens
 		if(CheckLosBetween(x,y,z,item.x,item.y,item.z,realm) && item.serial != ignoreSerial)
@@ -356,7 +356,7 @@ function DanificaObjetosProximos(quem,x,y,z,realm,dano,distancia,gfx:=0,ignoreSe
 	endforeach
 endfunction
 
-function CriaDestrocos(itemAlvo,quantidade,distanciaMax := 0, deveCriarOrigem := true)
+function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := true)
 	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 
 	var arrayDestrocos := array;
@@ -392,8 +392,8 @@ function CriaDestrocos(itemAlvo,quantidade,distanciaMax := 0, deveCriarOrigem :=
 
 	var i;
 	for (i := 1; i <= quantidade; i += 1)
-		var adicionalX := RandomInt(distanciaMax) * PositivoNegativo(RandomInt(100));
-		var adicionalY := RandomInt(distanciaMax) * PositivoNegativo(RandomInt(100));
+		var adicionalX := RandomInt(alcanceMax) * PositivoNegativo(RandomInt(100));
+		var adicionalY := RandomInt(alcanceMax) * PositivoNegativo(RandomInt(100));
 		var destrocoGraphic := arrayDestrocos[RandomIntMinMax(1,arrayDestrocos.size())];
 		var destrocoPos := struct;
 		destrocoPos.+x := itemAlvo.x + adicionalX;

@@ -7,6 +7,7 @@ include "include/sounds";
 include ":acid:acid";
 include ":fls_core:packets";
 include ":taming:taming";
+include ":destroyable:include/destroyItem";
 
 program HitScript(params)
 	var attacker	:= params[1];
@@ -44,6 +45,8 @@ program HitScript(params)
 	endif
 	
 	if ( dmgtype == DMG_COLD )
+		var itemDmg :=cint((rawdamage*0.5)+1);
+		DanificaObjetosProximos(attacker,attacker.x, attacker.y, attacker.z,attacker.realm,struct{dano := itemDmg, desc := "Hit Script [Frio]." },range,GFX_BLUE_SPARKLE_GROUND);
 		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
 			if ( !(defender in attacker.party.members ) && !(defender in allPets) )
 				if (defender.serial != attacker.serial)
@@ -56,6 +59,8 @@ program HitScript(params)
 			endif
 		endforeach
 	elseif (dmgtype == DMG_FIRE)
+		var itemDmg :=cint((rawdamage*0.5)+1);
+		DanificaObjetosProximos(attacker,attacker.x, attacker.y, attacker.z,attacker.realm,struct{dano := itemDmg, desc := "Hit Script [Fogo]." },range,GFX_EXPLODE_1);
 		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
 			if ( !(defender in attacker.party.members ) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
@@ -67,6 +72,8 @@ program HitScript(params)
 			endif
 		endforeach
 	elseif (dmgtype == DMG_ENERGY)
+		var itemDmg :=cint((rawdamage*0.5)+1);
+		DanificaObjetosProximos(attacker,attacker.x, attacker.y, attacker.z,attacker.realm,struct{dano := itemDmg, desc := "Hit Script [Energia]." },range,GFX_ENERGY);
 		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
 			if ( !(defender in attacker.party.members ) && !(defender in allPets) )
 				if (defender.serial != attacker.serial)
@@ -81,6 +88,8 @@ program HitScript(params)
 			endif
 		endforeach		
 	elseif (dmgtype == DMG_PHYSICAL)
+		var itemDmg :=cint((rawdamage*1.5)+1);
+		DanificaObjetosProximos(attacker,attacker.x, attacker.y, attacker.z,attacker.realm,struct{dano := itemDmg, desc := "Hit Script [Fisico]." },range,0x22c6);
 		foreach defender in (ListMobilesNearLocation( attacker.x, attacker.y, attacker.z, range, attacker.realm ))
 			if ( !(defender in attacker.party.members ) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
