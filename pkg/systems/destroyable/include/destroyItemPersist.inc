@@ -106,6 +106,7 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 			if(_linha_iter == 1)
 				continue;
 			endif
+			Sleepms(1);
 			
 			var tupla := struct;
 			var quandoAFiltrar := ExtraiDado(linha[CAMPO_QUANDO][CAMPO_QUANDO_TIMESTAMP]);
@@ -134,7 +135,7 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 			tupla.+isReconstruivel := ExtraiDado(linha[CAMPO_RECONSTRUIVEL]);
 
 			conjuntoResultado.Append(tupla);
-			Sleepms(2);
+			Sleepms(1);
 		endforeach
 	else
 		return conjuntoResultado;
@@ -195,12 +196,12 @@ endfunction
 function LimpaLogItemDestruido()
 	var xml := PegaLogXMLDestruiveis();
 	if(xml)
-		Print(xml);
 		foreach linha in xml
 			if(_linha_iter == 1)
 				continue;
 			endif
 			var foi := xml.removexmlnode(1);
+			Sleepms(2);
 		endforeach
 		xml.savexml(LOG_XML_NOME);
 	endif

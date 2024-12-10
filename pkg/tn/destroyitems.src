@@ -43,6 +43,7 @@ program destroyitems(parms)
 	//endif
 	
 	while(true)
+		Attach(quem);
 		if(!isPossivelDestruir(quem,itemAlvo,fonteDano,consumoStamina))
 			break;
 		endif

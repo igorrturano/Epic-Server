@@ -34,7 +34,7 @@ program destruiveis(quem, texto)
 			filtroRegiao := 20;
 		elseif(valor[0] == 2)
 		elseif(valor[0] == 3)
-			filtroTempo := TEMPO_DIA * 5;
+			filtroTempo := TEMPO_DIA * 7;
 		elseif(valor[0] == 4)
 			LimpaLogItemDestruido();
 		else
@@ -47,13 +47,13 @@ program destruiveis(quem, texto)
 		GFPage( gump, 0);
 
 		GFAddButton(gump,50, 40,9720,9724,GF_CLOSE_BTN, 1);
-		GFTextLine( gump, 50 + 35, 40 + 5 , 1051, "Em um raio de 20 tiles");
+		GFTextLine( gump, 50 + 35, 40 + 5 , 1051, "Em um raio de 20 tiles.");
 
 		GFAddButton(gump,250, 40,9720,9724,GF_CLOSE_BTN, 2);
-		GFTextLine( gump, 250 + 35, 40 + 5 , 1051,"Todos registros");
+		GFTextLine( gump, 250 + 35, 40 + 5 , 1051,"Todos registros.");
 
 		GFAddButton(gump,450, 40,9720,9724,GF_CLOSE_BTN, 3);
-		GFTextLine( gump, 450 + 35, 40 + 5 , 1051, "Ultimos 5 dias");
+		GFTextLine( gump, 450 + 35, 40 + 5 , 1051, "Ultimos 7 dias.");
 
 		GFAddButton(gump,650, 40,9720,9724,GF_CLOSE_BTN, 4);
 		GFTextLine( gump, 650 + 35, 40 + 5 , 1051, "Limpar Log.");
