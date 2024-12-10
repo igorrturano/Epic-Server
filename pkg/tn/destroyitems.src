@@ -101,6 +101,12 @@ endfunction
 function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	if(fonteDano.ISA(POLCLASS_WEAPON))
 		
+		if(quem.concealed || quem.invisible)
+			SendSysMessage(quem, "Você foi revelado.");
+			quem.concealed := 0;
+			quem.invisible := 0;
+		endif
+		
 		if(!IsFacing(quem,itemAlvo.x,itemAlvo.y))
 			TurnObjectToward(quem,itemAlvo.x,itemAlvo.y);
 		endif

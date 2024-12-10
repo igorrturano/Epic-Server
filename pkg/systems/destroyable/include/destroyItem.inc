@@ -21,12 +21,7 @@ const PROPNAME_INDESTRUTIVEL := "isIndestrutivel";
 const PROPNAME_MATERIAL := "material"; 
 const PROPNAME_DESTROCO := "isDestroco"; 
 
-const RESISTENCIA_BASE := 8; // Resistencia de dano base de todos os itens.
-const DECAYTIME_DESTROCO := 10; // segundos [não funciona direito]
-const MULT_DISPARO_ARMADILHA := 5; // Multiplicador da chance 
-const CRIA_DESTROCO_CHANCE := 15; //Chance em %
-const ESPOLIO_DEST_CHANCE := 40; //Chance em %
-const HP_MAX_MULTPLICADOR := 3; //multiplicador de hp, caso seja definido o calculo por peso.
+const ELEM_CFG_DEST := "Destruiveis";
 
 enum TIPO_MATERIAIS
 	PEDRA := "Stone",
@@ -46,6 +41,7 @@ endenum
 
 var catalogoDestrocos := MontaCatalogoDestrocos();
 var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+var configDestruiveis := ReadConfigFile(":destroyable:settings");
 
 function ComportamentoWarMode(quem, itemFonte)
 
@@ -79,7 +75,7 @@ function Destruir(quem,itemAlvo,fonteDano)
 	if(itemAlvo.ISA(POLCLASS_CONTAINER))
 		var listaItens := EnumerateItemsInContainer(itemAlvo);
 		foreach espolio in listaItens
-			if(RandomInt(100) <= ESPOLIO_DEST_CHANCE)
+			if(RandomInt(100) <= configDestruiveis[ELEM_CFG_DEST].espolioDestChance)
 				continue; //deixa o equipamento para ser destruido junto com o container.
 			else
 				if(espolio.ISA(POLCLASS_EQUIPMENT))
@@ -106,7 +102,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
 	//TODO Criar arquivo settings.cfg para guardar as configurações do sistema de destruiveis.
 	//TODO Adicionar comentários e documentação do que já foi feito.
-	//TODO inserir esse function de dano em todos os scripts de dano em área.
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Disparar discord web hook.
 
@@ -139,7 +134,7 @@ function AvaliaDisparoArmadilha(item)
 			maiorforca := maiorForca < armadilha.strength? armadilha.strength: maiorForca;
 			Sleepms(2);
 		endforeach
-		if(RandomInt(100) < maiorForca * MULT_DISPARO_ARMADILHA)
+		if(RandomInt(100) < maiorForca * configDestruiveis[ELEM_CFG_DEST].multDisparoArmadilha)
 			return true;
 		endif;
 	endif
@@ -207,7 +202,7 @@ function PegaResistenciaItem(itemAlvo)
 	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 	var recursoMod := configRecursos[materialId].hpmod;
 
-	var resFinal := RESISTENCIA_BASE;
+	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
 	if(propRes)
 		resFinal := resFinal * propRes;
 	endif
@@ -256,12 +251,12 @@ function PegaDurabilidadeTotal(item)
 		if(elem)
 			if(elem.weight > 0)
 				pesoEscolhido := CInt(elem.weight);
-				return Ceil(pesoEscolhido) * HP_MAX_MULTPLICADOR + recursoMod;
+				return Ceil(pesoEscolhido) *  configDestruiveis[ELEM_CFG_DEST].hpMaxMultiplicador + recursoMod;
 			endif
 		endif
 
 		var infoTile := IU_GetTileInfo(item.Graphic);
-		pesoEscolhido := CInt(infoTile.Weight) * HP_MAX_MULTPLICADOR + recursoMod;
+		pesoEscolhido := CInt(infoTile.Weight) * configDestruiveis[ELEM_CFG_DEST].hpMaxMultiplicador + recursoMod;
 		return Ceil(pesoEscolhido) > 0? pesoEscolhido: 1;
 	endif
 endfunction
@@ -326,7 +321,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	endif
 
 	if(!IsDestroco(item))
-		if(RandomInt(100) <= CRIA_DESTROCO_CHANCE)
+		if(RandomInt(100) <= configDestruiveis[ELEM_CFG_DEST].criaDestrocoChance)
 			CriaDestrocos(item,1,3,false);
 		endif
 	endif
@@ -433,7 +428,7 @@ endfunction
 
 function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 	destroco.color := corDestroco;
-	destroco.decayat := ReadGameClock() + DECAYTIME_DESTROCO;
+	destroco.decayat := ReadGameClock() + configDestruiveis[ELEM_CFG_DEST].decayDestroco;
 	var novoNome := "destroços de ";
 		case (tipo)
 			PEDRA: 
