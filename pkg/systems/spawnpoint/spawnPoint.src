@@ -9,6 +9,7 @@ include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
 include ":tn:boss";
 include ":combat:hitscripts";
+include "include/epicNPCUtils";
 
 const GUMP_BACKGROUND := 39929;
 const INTERNAL_BACKGROUND := 9350;
@@ -38,17 +39,21 @@ program use_spawnpoint( who, spawnpoint )
   var boss_checked := GetObjProperty( spawnpoint, "unique" ) ? 1 : 0;
   var unique := GetObjProperty( spawnpoint, "uniquestat" );
 
-  if (!unique)
-		unique := struct;
-	endif
+  if ( !unique )
+    unique := struct;
+  endif
 
   // Add labels, load saved templates and input fields for templates
   var x_label := 30, x_field := 100, y := 80, spacing := 40, i;
   for ( i := 1; i <= 3; i += 1 )
-    var template := GetObjProperty(spawnpoint, Cstr("Template" + i)) ? GetObjProperty(spawnpoint, Cstr("Template" + i)) : "";
-    var amount := GetObjProperty(spawnpoint, Cstr("Amount" + i)) ? GetObjProperty(spawnpoint, Cstr("Amount" + i)) : "";
-    var tier := GetObjProperty(spawnpoint, Cstr("Tier" + i)) ? GetObjProperty(spawnpoint, Cstr("Tier" + i)) : "";
-    var name := GetObjProperty(spawnpoint, Cstr("Name" + i)) ? GetObjProperty(spawnpoint, Cstr("Name" + i)) : "";
+    var template := GetObjProperty( spawnpoint, Cstr( "Template" + i ) ) ? GetObjProperty(
+                                    spawnpoint, Cstr( "Template" + i ) ) : "";
+    var amount := GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ) ? GetObjProperty(
+                                  spawnpoint, Cstr( "Amount" + i ) ) : "";
+    var tier := GetObjProperty( spawnpoint, Cstr( "Tier" + i ) ) ? GetObjProperty(
+                                spawnpoint, Cstr( "Tier" + i ) ) : "";
+    var name := GetObjProperty( spawnpoint, Cstr( "Name" + i ) ) ? GetObjProperty(
+                                spawnpoint, Cstr( "Name" + i ) ) : "";
 
     GFTextLine( gump, x_label, y, 2100, "Nome:" );
     GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, i );
@@ -96,35 +101,78 @@ program use_spawnpoint( who, spawnpoint )
   spawnpoint.invisible := 1;
 endprogram
 
-function CreateNpcFromSpawnPoint(who, spawnpoint, i)
-  var template := GetObjProperty(spawnpoint, Cstr("Template" + i));
-  var npc := CreateNpcFromTemplate(template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
-  SetObjProperty(spawnpoint, "Spawn" + i, template);
-
-	if(!npc)
-		SendSysMessage(who, "Erro ao criar o npc.");
-    SendSysMessage(who, "Error: " + npc.errortext);
-	else
-		SendSysMessage(who, "Sucesso ao criar o npc com base no template.");
+function CreateNpcFromSpawnPoint( who, spawnpoint, i )
+  var template := GetObjProperty( spawnpoint, Cstr( "Template" + i ) );
+  var npc := CreateNpc( template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm );
+  SetObjProperty( spawnpoint, "Spawn" + i, template );
+  SetupCustomProps( spawnpoint, npc, i );
+  if ( !npc )
+    SendSysMessage( who, "Erro ao criar o npc." );
+    SendSysMessage( who, "Error: " + npc.errortext );
+  else
+    SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
     spawn_count += 1;
-	endif
+  endif
+endfunction
+
+function SetupCustomProps( spawnpoint, npc, counter )
+  var tier := GetObjProperty( spawnpoint, "Tier" ) ? GetObjProperty( spawnpoint,
+                              "Tier" ) : "0";
+  customizeNpc( npc, tier );
+  var name := GetObjProperty( spawnpoint, Cstr( "Name" + counter ) );
+  if ( name && name != "" )
+    SetName( npc, name );
+  endif
+endfunction
+
+function CreateNpc( template, x, y, z, props, realm )
+  var result;
+
+  var paths := array{ ":epicAI:" + template,
+                      ":brainAI:" + template,
+                      ":merchants:" + template };
+
+  if ( SplitWords( template )[1] != ":" )
+    foreach path in paths
+      result := CreateNpcFromTemplate( path, x, y, z, props, realm );
+      if ( result )
+        return result;
+      endif
+    endforeach
+    SysLog( "Error - Nao foi possivel criar o npc via spawnpoint -> " + template );
+  else
+    result := CreateNpcFromTemplate( template, x, y, z, props, realm );
+  endif
+
+  return result;
 endfunction
 
 function InputsHandler( inputs, who, spawnpoint, unique )
-  if ( inputs[100] == 100 ) // Is OK button?
+  if ( inputs[100] == 1 ) // Is OK button?
     var i;
 
-    if(inputs[17] == 1) //Is boss?
+    if ( inputs[17] == 1 ) // Is boss?
       SetObjProperty( spawnpoint, "uniquestat", unique );
-      CreateBossStructGump(who, unique);
+      CreateBossStructGump( who, unique );
     endif
 
     for ( i := 1; i <= 3; i += 1 )
-      SetObjProperty( spawnpoint, "Name" + i, inputs[i] );
-      SetObjProperty( spawnpoint, "Amount" + i, inputs[i + 3] );
-      SetObjProperty( spawnpoint, "Tier" + i, inputs[i + 6] );
-      SetObjProperty( spawnpoint, "Template" + i, inputs[i + 9] );
-      CreateNpcFromSpawnPoint(who, spawnpoint, i);
+      var name := inputs[i] ? inputs[i] : "";
+      var amount := inputs[i + 3] ? inputs[i + 3] : "";
+      var tier := inputs[i + 6] ? inputs[i + 6] : "";
+      var template := inputs[i + 9] ? inputs[i + 9] : "";
+
+      SysLog("Processando SpawnPoint - Nome: " + name + ", Quantidade: " + amount + ", Tier: " + tier + ", Template: " + template);
+
+      if ( name != "" && template != "" )
+        SetObjProperty( spawnpoint, "Name" + i, name );
+        SetObjProperty( spawnpoint, "Amount" + i, amount );
+        SetObjProperty( spawnpoint, "Tier" + i, tier );
+        SetObjProperty( spawnpoint, "Template" + i, template );
+        CreateNpcFromSpawnPoint( who, spawnpoint, i );
+      else
+        SysLog("Erro: Nome ou Template ausente para o índice " + i);
+      endif
     endfor
 
     SetObjProperty( spawnpoint, "Range", inputs[13] );
@@ -132,8 +180,8 @@ function InputsHandler( inputs, who, spawnpoint, unique )
     SetObjProperty( spawnpoint, "MaxDelay", inputs[15] );
     SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] );
     SetObjProperty( spawnpoint, "unique", inputs[17] );
-    SetObjProperty(spawnpoint, "ResetMe",  1);
-    SetObjProperty(spawnpoint, "SpawnCount",  spawn_count);
+    SetObjProperty( spawnpoint, "ResetMe", 1 );
+    SetObjProperty( spawnpoint, "SpawnCount", spawn_count );
 
     SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
   endif
