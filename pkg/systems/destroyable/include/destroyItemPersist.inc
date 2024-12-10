@@ -192,6 +192,20 @@ function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruive
 	endif
 endfunction
 
+function LimpaLogItemDestruido()
+	var xml := PegaLogXMLDestruiveis();
+	if(xml)
+		Print(xml);
+		foreach linha in xml
+			if(_linha_iter == 1)
+				continue;
+			endif
+			var foi := xml.removexmlnode(1);
+		endforeach
+		xml.savexml(LOG_XML_NOME);
+	endif
+endfunction
+
 function CriaLogXml(nomeArquivoXml);
 	var arquivoXml := CreateXMLFile();
 	var msgErro := error;

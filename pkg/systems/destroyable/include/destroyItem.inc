@@ -103,10 +103,10 @@ function Destruir(quem,itemAlvo,fonteDano)
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvo.desc,descFonteDano,deveMarcar);
 	endif
 	DestroyItem(itemAlvo);
+	//TODO
 
 	//comandos:
 	//TODO implementar comando de Indestrutível.
-	//TODO Criar comando de gm para consultar os logs e gerênciar o respawn de itens
 	//TODO Criar comando ou argumento do create para gms criarem itens dispensáveis.
 endfunction
 
