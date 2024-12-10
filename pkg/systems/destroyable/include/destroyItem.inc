@@ -48,7 +48,6 @@ var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 
 function ComportamentoWarMode(quem, itemFonte)
 
-	//TODO inserir esse hook em todos os scripts de arma.
 	EraseObjProperty(quem, "IsMeditating");
 	EraseObjProperty(quem, "HealTimer");
 	SendSysMessage(quem, "[Modo Guerra] Escolha o item que deseja destruir.");
@@ -103,7 +102,16 @@ function Destruir(quem,itemAlvo,fonteDano)
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvo.desc,descFonteDano,deveMarcar);
 	endif
 	DestroyItem(itemAlvo);
-	//TODO
+	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
+	//TODO Adicionar modificadores de resistencia baseado no material do item.
+	//TODO Criar arquivo settings.cfg para guardar as configurações do sistema de destruiveis.
+	//TODO Adicionar comentários e documentação do que já foi feito.
+	//TODO inserir esse hook war em todos os scripts de arma.
+	//TODO inserir esse function de dano em todos os scripts de dano em área.
+	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
+	//TODO Disparar discord web hook.
+
+	//TODO BUG FIX destruição e respawn de itens de deed.
 
 	//comandos:
 	//TODO implementar comando de Indestrutível.
@@ -197,12 +205,17 @@ endfunction
 
 function PegaResistenciaItem(itemAlvo)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
+	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
+	var recursoMod := configRecursos[materialId].hpmod;
 
+	var resFinal := RESISTENCIA_BASE;
 	if(propRes)
-		return RESISTENCIA_BASE * propRes;
-	else
-		return RESISTENCIA_BASE;
+		resFinal := resFinal * propRes;
 	endif
+	if(materialId)
+		resFinal := resFinal + recursoMod/2;
+	endif
+	return resFinal;
 endfunction
 
 function CalculaDanoRecebido( fonteDano, atributosItem)
@@ -303,7 +316,6 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 	if(gfx != 0)
 		PlayObjectCenteredEffect(item, gfx, 5, 6);
 	endif
-		//TODO Disparar evento para guardas e mostros próximos.
 
 	if(!IsDestroco(item))
 		if(RandomInt(100) <= CRIA_DESTROCO_CHANCE)
