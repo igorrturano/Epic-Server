@@ -1536,7 +1536,7 @@ function create_marked(who, x, y, z, type)
 
     SetObjProperty (created, "built_by_architect", who.serial);
     SetObjProperty (created, "architect_objtype", item_obj_type);
-    SetObjProperty (created, "PROPNAME_INDESTRUTIVEL", 1);
+    SetObjProperty (created, PROPNAME_INDESTRUTIVEL, 1);
 
     SetupNewLockDoor(who, created);
 
