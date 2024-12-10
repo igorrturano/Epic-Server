@@ -100,7 +100,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 	endif
 	DestroyItem(itemAlvo);
 	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
-	//TODO Criar arquivo settings.cfg para guardar as configurações do sistema de destruiveis.
 	//TODO Adicionar comentários e documentação do que já foi feito.
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Disparar discord web hook.
@@ -122,8 +121,8 @@ endfunction
 
 function CalculaMaxDestrocos(item)
 	var numeroMaximoDest := Ceil(item.height / 5);
-	numeroMaximoDest := numeroMaximoDest > 0 ? numeroMaximoDest : 1;
-	return RandomIntMinMax(1,cInt(numeroMaximoDest));
+	numeroMaximoDest := numeroMaximoDest > 1 ? numeroMaximoDest : 1;
+	return RandomInt(cInt(numeroMaximoDest)) + 1;
 endfunction
 
 function AvaliaDisparoArmadilha(item)
@@ -394,7 +393,7 @@ function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := t
 	for (i := 1; i <= quantidade; i += 1)
 		var adicionalX := RandomInt(alcanceMax) * PositivoNegativo(RandomInt(100));
 		var adicionalY := RandomInt(alcanceMax) * PositivoNegativo(RandomInt(100));
-		var destrocoGraphic := arrayDestrocos[RandomIntMinMax(1,arrayDestrocos.size())];
+		var destrocoGraphic := arrayDestrocos.randomentry();
 		var destrocoPos := struct;
 		destrocoPos.+x := itemAlvo.x + adicionalX;
 		destrocoPos.+y := itemAlvo.y + adicionalY;
@@ -420,7 +419,6 @@ function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := t
 			);
 
 		var destroco := CreateItemAtLocation(destrocoPos.x , destrocoPos.y, destrocoPos.z, destrocoGraphic);
-		
 		ConfiguraDestroco(destroco,material,corDestroco);
 		Sleepms(2);
 	endfor

@@ -130,7 +130,11 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 			endif
 
 			var quemObj := SystemFindObjectBySerial( ExtraiDado(linha[CAMPO_QUEM]), SYSFIND_SEARCH_OFFLINE_MOBILES );
-			tupla.+quem := quemObj.acctname;
+			if(quemObj.acctname)
+				tupla.+quem := quemObj.acctname;
+			else
+				tupla.+quem := quemObj.name;
+			endif
 			tupla.+oque := ExtraiDado(linha[CAMPO_OQUE]);
 			tupla.+como := ExtraiDado(linha[CAMPO_COMO]);
 			tupla.+isReconstruivel := ExtraiDado(linha[CAMPO_RECONSTRUIVEL]);

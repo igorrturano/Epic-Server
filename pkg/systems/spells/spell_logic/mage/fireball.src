@@ -51,6 +51,7 @@ program spell_fireball(params)
 		
 		var field := CreateItemAtLocation(coord.x, coord.y, caster.z, "FireField_NS", 1, caster.realm);
 		field.SetOwner(caster);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(0);
 		sleepms(105);
 	endforeach
@@ -77,6 +78,7 @@ program spell_fireball(params)
 			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldEW", 1, caster.realm);
 		endif
 		field.SetOwner(caster);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(1);
 		sleepms(5);
 	endforeach

@@ -78,6 +78,8 @@ program use_explosion(who, potion)
 		endif
 		
 		var field := CreateItemAtLocation(coord.x, coord.y, who.z, "FireField_NS", 1, who.realm);
+		field.SetOwner(who);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(0);
 		sleepms(105);
 	endforeach
@@ -104,6 +106,7 @@ program use_explosion(who, potion)
 			field := CreateItemAtLocation(coord.x, coord.y, cast_on.z, "FireFieldEW", 1, who.realm);
 		endif
 		field.SetDuration(20);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetOwner(who);
 		sleepms(5);
 	endforeach
