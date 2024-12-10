@@ -239,24 +239,29 @@ function PegaDurabilidadeTotal(item)
 	var itemdesc := ReadConfigFile(":*:itemdesc");
     var elem := FindConfigElem(itemdesc, item.objtype);
 	var pesoEscolhido := 0;
+	var materialId := GetObjProperty(item,PROPNAME_MATERIAL);
+	var recursoMod := configRecursos[materialId].hpmod;
 
 	if(item.ISA(POLCLASS_EQUIPMENT))
 		return item.maxhp;
 	else
 		var propMaxDurab := GetObjProperty(item,PROPNAME_DURABILIDADE_MAX);
 		if(GetObjProperty(item,PROPNAME_DURABILIDADE_MAX))
+			if(recursoMod)
+				propMaxDurab := propMaxDurab + recursoMod;
+			endif
 			return propMaxDurab;
 		endif
 		
 		if(elem)
 			if(elem.weight > 0)
 				pesoEscolhido := CInt(elem.weight);
-				return Ceil(pesoEscolhido) * HP_MAX_MULTPLICADOR;
+				return Ceil(pesoEscolhido) * HP_MAX_MULTPLICADOR + recursoMod;
 			endif
 		endif
 
 		var infoTile := IU_GetTileInfo(item.Graphic);
-		pesoEscolhido := CInt(infoTile.Weight) * HP_MAX_MULTPLICADOR;
+		pesoEscolhido := CInt(infoTile.Weight) * HP_MAX_MULTPLICADOR + recursoMod;
 		return Ceil(pesoEscolhido) > 0? pesoEscolhido: 1;
 	endif
 endfunction
