@@ -155,6 +155,30 @@ function SetupCustomProps(spawnpoint, npc, key_spawn)
   endif
 endfunction
 
+function CreateNpc(template, x, y, z, props, realm)
+  var result;
+
+  var paths := array{
+    ":epicAI:" + template,
+    ":brainAI:" + template,
+    ":merchants:" + template
+  };
+
+  if (SplitWords(template)[1] != ":")
+    foreach path in paths
+      result := CreateNpcFromTemplate(path, x, y, z, props, realm);
+      if (result)
+        return result;
+      endif
+    endforeach
+    SysLog("Error - Nao foi possivel criar o npc via spawnpoint -> " + template);
+  else
+    result := CreateNpcFromTemplate(template, x, y, z, props, realm);
+  endif
+
+  return result;
+endfunction
+
 function SetupSpawn(spawnpoint, key_spawn := "Spawn")
   var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
   var spawn := GetObjProperty(spawnpoint, key_spawn);
@@ -184,14 +208,14 @@ function SetupSpawn(spawnpoint, key_spawn := "Spawn")
 
       if(!loscheck)
         if(CheckLosBetween( spawnpoint.x, spawnpoint.y, spawnpoint.z, x, y, z, spawnpoint.realm ))
-          npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
+          npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
           success := 1;
           SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
           SetupCustomProps(spawnpoint, npc, key_spawn);
           return npc.serial;
         endif
       else //Usar em caso de lugares com muitos obstáculos ou probabilidade alta de spawnar travado
-        npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
+        npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
         SetupCustomProps(spawnpoint, npc, key_spawn);
@@ -199,7 +223,7 @@ function SetupSpawn(spawnpoint, key_spawn := "Spawn")
       endif
       i := i + 1;
       if(i > 10)
-        npc := CreateNpcFromTemplate(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
+        npc := CreateNpc(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
         SetupCustomProps(spawnpoint, npc, key_spawn);
