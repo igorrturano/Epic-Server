@@ -103,7 +103,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 	endif
 	DestroyItem(itemAlvo);
 	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
-	//TODO Adicionar modificadores de resistencia baseado no material do item.
 	//TODO Criar arquivo settings.cfg para guardar as configurações do sistema de destruiveis.
 	//TODO Adicionar comentários e documentação do que já foi feito.
 	//TODO inserir esse hook war em todos os scripts de arma.
@@ -298,7 +297,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0)
 
 	var atributosItem := MontaAtributosItem(item);
 	var danoCalculado := CalculaDanoRecebido(fonteDano,atributosItem);
-
+	
 	if(item.IsA(POLCLASS_CORPSE) && GetObjProperty(item,"account")) // Corpo de jogador.
 		danoCalculado.isEficaz := false;
 	endif

@@ -15,39 +15,10 @@ include ":attributes:attributes";
 include "include/client";
 include "include/say";
 include ":tn:cooldown";
+include ":destroyable:include/destroyItem";
 
 program use_Break(who, tool)
-	if (who.weapon != tool)
-		SendSysMessage(who, "Voce deve estar com a arma em maos.");
-		return 0;
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
 	endif
-	SendSysMessage(who, "O que voce deseja quebrar ?");
-	var targ := TargetCoordinates(who);
-	
-	if ( !targ )
-		SendSysMessage(who, "Cancelado.");
-		return 0;
-	endif
-	
-	if (targ.item)
-		DestroyItems(who, tool, targ.item);
-	else
-		SendSysMessage(who,"Voce nao pode quebrar isto.");
-		return 0;
-	endif
-
 endprogram
-
-function DestroyItems(who, tool, item)
-
-	if ((item.objtype == 0xec24) || (item.objtype == 0xec25) || (item.objtype == 0xec26) || (item.objtype == 0xFF04)||(item.objtype == 0xec27) || (item.objtype == 0xec28)) 
-		if ((!CheckLineOfSight(who, item)) or (Distance(who, item) > 1))
-			SendSysMessage(who, "O alvo esta distante.");
-			return;
-		else
-			var parms;
-			var script := start_script (":tn:destroyitems", {who, item, tool});
-			return 1;
-		endif
-	endif
-endfunction

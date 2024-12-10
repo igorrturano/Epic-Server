@@ -16,6 +16,7 @@ include ":charactercreation:habilidades";
 include ":tn:tngumps";
 include ":treasurehunting:treasuremaps";  // Adiciona esta linha
 include ":treasurehunting:treasuredigging";
+include ":destroyable:include/destroyItem";
 
 
 const MINING_ANIMATION	:= 0xB;
@@ -23,6 +24,11 @@ const MINING_SOUND	:= 0x126;
 
 
 program OreMining(who, tool)
+
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+
 	if ( GetEquipmentByLayer(who, LAYER_MOUNT) )
 		SendSysMessage(who, "Você não pode minerar montado.");
 		return;
