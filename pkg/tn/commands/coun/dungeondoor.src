@@ -4,6 +4,7 @@ include ":gumps:yesNo";
 include ":gumps:requestGump";
 include ":traps:traps";
 include ":tn:tngumps";
+include ":destroyable:include/destroyItem";
 
 program makedungeondoor(who)
 
@@ -39,6 +40,39 @@ program makedungeondoor(who)
 		var type := Radiogump(who, 200, 240, "Escolha o tipo de armadilha", array{"Needle", "Explosion", "PoisonGas", "Magic"});
 		var lvltrap := Cint(RequestGump(who, "Escolha o lvl da armadilha (1 a 5)"));
 		AddTrap(door, type, lvltrap);
+	endif
+
+	var bloqDes := YesNo(who, "Deseja bloquear a possibilidade de destruição desta porta? (Ela dará respawn após um tempo)");
+	if (bloqDes)
+		SetObjProperty(door,PROPNAME_INDESTRUTIVEL,1);
+	else
+		var durab := Cint(RequestGump(who, "Digite a durabilidade dessa porta (cancele para deixar o padrao.)"));
+		if(durab)
+			SetObjProperty(door,PROPNAME_DURABILIDADE_MAX,durab);
+			SetObjProperty(door,PROPNAME_DURABILIDADE,durab);
+		endif
+
+		var resYN := YesNo(who, "Deseja dar um multiplicador de resistencia para esta porta?");
+		if(resYN)
+			var res := CDbl(RequestGump(who, "Digite um multiplicador para a resistencia base da porta [ex: 2 , 1.4] (cancele para deixar o padrao.)"));
+			if (res)
+				SetObjProperty(door,PROPNAME_RESITEM_MULT,res);
+			endif
+		endif
+
+		var matYN := YesNo(who, "Deseja escolher qual o material desta porta?");
+		if(matYN)
+			var mat := Radiogump(who, 200, 240, "Escolha o material desta porta", array{"Madeira","Aço"});
+			if (mat)
+				case (mat)
+					"Madeira":
+						mat := 0x1bd7;
+					"Aço":
+						mat := 0x6995;
+				endcase
+				SetObjProperty(door,PROPNAME_MATERIAL,mat);
+			endif
+		endif
 	endif
 
 	var df := OpenDataFile( ":tn:doors" );
