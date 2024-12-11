@@ -75,19 +75,23 @@ function PegaItemMarcado(itemSerial)
 	return MontaStruturaInfo(elementoDados);
 endfunction
 
+function MontaChaveHex(arrayInt)
+	var retorno;
+		foreach inteiro in arrayInt //monta uma chave para ser usado no dict depois.
+			retorno := retorno + Hex(inteiro);
+			Sleepms(2);
+		endforeach;
+	return Cstr(retorno); 
+endfunction
+
 function MontaStruturaInfo(elemento)
 	var itemInfo := struct;
 	itemInfo.+serial := elemento.GetProp("serial");
 	itemInfo.+objtype := elemento.GetProp("objtype");
 	var deedSerials := elemento.GetProp("deedSerials");
 	if(deedSerials)
-		var serials := "";
-		foreach serial in deedSerials //monta uma chave para ser usado no dict depois.
-			serials := serials + CStr(serial);
-		endforeach;
-		itemInfo.+deedSerials := serials;
+		itemInfo.+deedSerials := MontaChaveHex(deedSerials);//monta uma chave para ser usado no dict depois.
 	endif
-
 	itemInfo.+amount := elemento.GetProp("amount");
 	itemInfo.+template := elemento.GetProp("template");
 	itemInfo.+x := elemento.GetProp("x");
@@ -101,22 +105,23 @@ endfunction
 
 function MarcarRecriarItem(item)
 	var data_elem := GetItemsDataElem(Hex(item.serial));
-	var template := CreateItemTemplate(item);
-	data_elem.SetProp("serial",item.serial);
-	data_elem.SetProp("objtype",item.objtype);
-	if(GetObjProperty(item,"ItemsCreatedSerials"))
-		data_elem.setprop("deedSerials",GetObjProperty(item,"ItemsCreatedSerials"));
+	if(data_elem)
+		var template := CreateItemTemplate(item);
+		data_elem.SetProp("serial",item.serial);
+		data_elem.SetProp("objtype",item.objtype);
+		if(GetObjProperty(item,"ItemsCreatedSerials"))
+			data_elem.setprop("deedSerials",GetObjProperty(item,"ItemsCreatedSerials"));
+		endif
+		data_elem.SetProp("amount",item.amount);
+		data_elem.SetProp("template",template);
+		data_elem.SetProp("qtd",item.amount);
+		data_elem.SetProp("x",item.x);
+		data_elem.SetProp("y",item.y);
+		data_elem.SetProp("z",item.z);
+		data_elem.SetProp("movable",item.movable);
+		data_elem.SetProp("realm",item.realm);
+		data_elem.SetProp("momento", polcore().systime);
 	endif
-	data_elem.SetProp("amount",item.amount);
-	data_elem.SetProp("template",template);
-	data_elem.SetProp("qtd",item.amount);
-	data_elem.SetProp("x",item.x);
-	data_elem.SetProp("y",item.y);
-	data_elem.SetProp("z",item.z);
-	data_elem.SetProp("movable",item.movable);
-	data_elem.SetProp("realm",item.realm);
-	data_elem.SetProp("momento", polcore().systime);
-	
 endfunction
 
 function RemoveItemMarcado(itemSerial)

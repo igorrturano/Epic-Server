@@ -42,7 +42,7 @@ endenum
 
 var catalogoDestrocos := MontaCatalogoDestrocos();
 var configRecursos := ReadConfigFile(":crafting:config/resourceList");
-var configDestruiveis := ReadConfigFile(":destroyable:settings");
+var configDestruiveis := ReadConfigFile(":destroyable:config/settings");
 
 function ComportamentoWarMode(quem, itemFonte)
 
@@ -63,7 +63,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 	LimpaObjPropsDestruiveis(itemAlvo);
 	var envelopeDeed := struct;
 	envelopeDeed.+isDeed := GetObjProperty(itemAlvo,PROPNAME_DEED_SERIALS);
-	var deveMarcar := DeveMarcarRecriarItem(itemAlvo);
 
 	if(envelopeDeed.isDeed)
 		envelopeDeed.+itensAssociados := array;
@@ -74,6 +73,7 @@ function Destruir(quem,itemAlvo,fonteDano)
 		endforeach
 	endif
 
+	var deveMarcar := DeveMarcarRecriarItem(itemAlvo);
 	if(deveMarcar)//se não foi criado por player, não é um corpo e não foi marcado como dispensável..
 		var serialOriginal := GetObjProperty(itemAlvo,PROPNAME_CHAVE_ORIGINAL);
 		if(!serialOriginal)
@@ -124,6 +124,7 @@ function Destruir(quem,itemAlvo,fonteDano)
 		endif
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
 	endif
+
 	if(!envelopeDeed.isDeed)
 		DestroyItem(itemAlvo);
 	else
@@ -132,11 +133,9 @@ function Destruir(quem,itemAlvo,fonteDano)
 			Sleepms(2);
 		endforeach
 	endif
-	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Disparar discord web hook.
 	//TODO Adicionar comentários e documentação do que já foi feito.
-
 
 	//comandos:
 	//TODO implementar comando de Indestrutível.

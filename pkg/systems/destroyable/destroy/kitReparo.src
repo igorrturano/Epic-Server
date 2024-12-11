@@ -1,0 +1,77 @@
+use uo;
+use os;
+include ":destroyable:include/destroyItem";
+include ":attributes:attributes";
+include "include/imersao";
+include "include/say";
+
+program kitReparo(quem,kit)
+
+	SendSysMessage(quem,"Selecione o item que deseja reparar.");
+	var alvo := Target(quem);
+
+	if(!IsUsoPermitido(quem,alvo))
+		return false;
+	endif
+
+	var atributos := MontaAtributosItem(alvo);
+	if(atributos.durabilidade < atributos.durabTotal)
+
+		var desgaste := atributos.durabTotal - atributos.durabilidade;
+		Imersao(quem, "mw");
+
+		if(kit.hp <= desgaste)
+			var reparo := Cint(kit.hp + atributos.durabilidade);
+			if(reparo >= atributos.durabTotal)
+				reparo := atributos.durabTotal;
+			endif
+			AtualizaProps(alvo,kit,reparo);
+			DestroyItem(kit);
+			SendSysMessageEx(quem,"Você reparou o item parcialmente e utilizou seu kit ao ponto do desgaste completo.", SSM_INFO_IC);
+		else
+			kit.hp := Cint(kit.hp - desgaste);
+			Print("Desgaste: " + desgaste + " kit.hp: " + kit.hp);
+			AtualizaProps(alvo,kit,desgaste + atributos.durabilidade);
+			SendSysMessageEx(quem,"Você reparou o item completamente.", SSM_INFO);
+		endif
+	else
+		SendSysMessage(quem,"O Alvo não está danificado.", SSM_INFO);
+	endif
+	
+endprogram
+
+function AtualizaProps(alvo,kit,reparo)
+	SetObjProperty(alvo,PROPNAME_DURABILIDADE,reparo);
+	SetObjProperty(kit,PROPNAME_DURABILIDADE,kit.hp);
+endfunction
+
+function IsUsoPermitido(quem,alvo)
+
+	if(!alvo)
+		SendSysMessageEx(quem,"Alvo Cancelado.",SSM_FAIL);
+		return false;
+	endif
+
+	if(!alvo.ISA( POLCLASS_ITEM))
+		SendSysMessageEx(quem,"Alvo Inválido.",SSM_FAIL);
+		return false;
+	endif
+
+	if(!maolivre(quem,2))
+		SendSysMessageEx(quem,"Você precisa esta com as duas mãos livres",SSM_FAIL);
+		return false;
+	endif
+
+	if ( Distance(quem, alvo) > 1 )
+		SendSysMessageEx(quem, "Você está muito distante do alvo.",SSM_FAIL);
+		return false;
+	endif
+
+	if ( !CheckLineOfSight(quem, alvo))
+		SendSysMessageEx(quem, "Você não enxerga o alvo.",SSM_FAIL);
+		return false;
+	endif
+
+	return true;
+	
+endfunction

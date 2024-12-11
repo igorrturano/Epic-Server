@@ -62,36 +62,36 @@ function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
 	endif
 
 	if(itemAlvo.IsA(POLCLASS_CORPSE) && GetObjProperty(itemAlvo,"account"))
-		SendSysMessage(quem, "Você não pode destruir um corpo de jogador.");
+		SendSysMessageEx(quem, "Você não pode destruir um corpo de jogador.", SSM_FAIL);
 		return false;
 	endif
 
 	if (!itemAlvo.ISA(POLCLASS_ITEM) || GetObjProperty(itemAlvo,PROPNAME_INDESTRUTIVEL))
-		SendSysMessage(quem, "Você não pode destruir isso.");
+		SendSysMessageEx(quem, "Você não pode destruir isso.", SSM_FAIL);
 		return false;
 	endif
 	if (itemAlvo.container)
-		SendSysMessage(quem, "Não é possivel destruir um item dentro de um container.");
+		SendSysMessageEx(quem, "Não é possivel destruir um item dentro de um container.", SSM_FAIL);
 		return false;
 	endif
 
 	if(fonteDano.ISA(POLCLASS_WEAPON))
 		if (quem.weapon != fonteDano)
-			SendSysMessage(quem, "Você deve estar com a arma em mãos.");
+			SendSysMessageEx(quem, "Você deve estar com a arma em mãos.", SSM_FAIL);
 			return false;
 		endif
 
 		CalculaConsumoStamina(fonteDano,consumoStamina);
 		if(AP_GetVital(quem, "Stamina") < consumoStamina)
-			SendSysMessage(quem, "Você está muito cansado para continuar.");
+			SendSysMessageEx(quem, "Você está muito cansado para continuar.", SSM_FAIL);
 			return false;
 		endif
 	else
 		//Fonte de dano mágica.
 	endif
 
-	if ( CoordinateDistance(quem.x, quem.y, itemAlvo.x, itemAlvo.y) > 1 )
-		SendSysMessage(quem, "Você está muito distante do alvo.");
+	if ( Distance(quem, itemAlvo) > 1 )
+		SendSysMessageEx(quem, "Você está muito distante do alvo.", SSM_FAIL);
 		return false;
 	endif
 	return true;
@@ -102,7 +102,7 @@ function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
 	if(fonteDano.ISA(POLCLASS_WEAPON))
 		
 		if(quem.concealed || quem.invisible)
-			SendSysMessage(quem, "Você foi revelado.");
+			SendSysMessageEx(quem, "Você foi revelado.", SSM_FAIL);
 			quem.concealed := 0;
 			quem.invisible := 0;
 		endif
