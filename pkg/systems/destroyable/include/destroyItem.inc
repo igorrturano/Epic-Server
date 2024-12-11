@@ -20,6 +20,7 @@ const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel";
 const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
 const PROPNAME_MATERIAL := "material"; 
 const PROPNAME_DESTROCO := "isDestroco"; 
+const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
 
 const ELEM_CFG_DEST := "Destruiveis";
 
@@ -60,13 +61,32 @@ endfunction
 
 function Destruir(quem,itemAlvo,fonteDano)
 	LimpaObjPropsDestruiveis(itemAlvo);
+	var envelopeDeed := struct;
+	envelopeDeed.+isDeed := GetObjProperty(itemAlvo,PROPNAME_DEED_SERIALS);
 	var deveMarcar := DeveMarcarRecriarItem(itemAlvo);
+
+	if(envelopeDeed.isDeed)
+		envelopeDeed.+itensAssociados := array;
+		foreach serial in (envelopeDeed.isDeed)
+			var item := SystemFindObjectBySerial(serial);
+			envelopeDeed.itensAssociados.append(item);;
+			Sleepms(2);
+		endforeach
+	endif
+
 	if(deveMarcar)//se não foi criado por player, não é um corpo e não foi marcado como dispensável..
 		var serialOriginal := GetObjProperty(itemAlvo,PROPNAME_CHAVE_ORIGINAL);
 		if(!serialOriginal)
 			SetObjProperty(itemAlvo,PROPNAME_CHAVE_ORIGINAL,itemAlvo.serial);//Grava serial do item original.
 		endif
-		MarcarRecriarItem(itemAlvo);
+		if(envelopeDeed.isDeed)
+			foreach item in (envelopeDeed.itensAssociados)
+				MarcarRecriarItem(item);
+				Sleepms(2);
+			endforeach
+		else
+			MarcarRecriarItem(itemAlvo);
+		endif
 	endif 
 
 	var isObjetoMovido := false;
@@ -91,20 +111,31 @@ function Destruir(quem,itemAlvo,fonteDano)
 	RunTraps(itemAlvo,quem);
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
 	if(!IsDestroco(itemAlvo))
-		CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
 		var descFonteDano := fonteDano.desc;
+		if(envelopeDeed.isDeed)
+			CriaDestrocos(itemAlvo,envelopeDeed.isDeed.size(),4);
+			descFonteDano += "[Deed]";
+		else
+			CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
+		endif
 		if(!descFonteDano)
 			descFonteDano := "Desconhecido";
 		endif
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvo.desc,descFonteDano,deveMarcar);
 	endif
-	DestroyItem(itemAlvo);
+	if(!envelopeDeed.isDeed)
+		DestroyItem(itemAlvo);
+	else
+		foreach item in (envelopeDeed.itensAssociados)
+			DestroyItem(item);
+			Sleepms(2);
+		endforeach
+	endif
 	//TODO Criar kit de reparo de itens e opção do crafter reparar item.
-	//TODO Adicionar comentários e documentação do que já foi feito.
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Disparar discord web hook.
+	//TODO Adicionar comentários e documentação do que já foi feito.
 
-	//TODO BUG FIX destruição e respawn de itens de deed.
 
 	//comandos:
 	//TODO implementar comando de Indestrutível.

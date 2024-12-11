@@ -39,18 +39,33 @@ function PegaListaItens(filtroTempo)
 	var data_file := GetItemsDataFile();
 	var data_list := DFGetElemNames(data_file);
 
-	var conjuntoDados := array{};
+	var itens := array{};
+	var itensDeed := dictionary;
+	var retorno := struct;
 
 	foreach elemento in data_list
 		var elementoDados :=  DFFindElement(data_file,elemento);
 		var info := MontaStruturaInfo(elementoDados);
 		if(info.momento <= (polcore().systime - filtroTempo))
-			conjuntoDados.append(info);
+			if(info.deedSerials) //se faz parte de uma deed
+				var arrayDeedItens := array;
+				if(itensDeed[info.deedSerials]) // Se for parte de uma deed conhecida, pega o array para adicionar mais este.
+					arrayDeedItens :=  itensDeed[info.deedSerials];
+					arrayDeedItens.append(info);
+				else //se não, cria um novo array.
+					arrayDeedItens.append(info);
+				endif
+				var ret := itensDeed.insert(info.deedSerials,arrayDeedItens);
+			else
+				itens.append(info);
+			endif
 		endif
 		Sleepms(4);
 	endforeach
 
-	return conjuntoDados;
+	retorno.+itens := itens;
+	retorno.+itensDeed := itensDeed;
+	return retorno;
 endfunction
 
 function PegaItemMarcado(itemSerial)
@@ -63,6 +78,17 @@ endfunction
 function MontaStruturaInfo(elemento)
 	var itemInfo := struct;
 	itemInfo.+serial := elemento.GetProp("serial");
+	itemInfo.+objtype := elemento.GetProp("objtype");
+	var deedSerials := elemento.GetProp("deedSerials");
+	if(deedSerials)
+		var serials := "";
+		foreach serial in deedSerials //monta uma chave para ser usado no dict depois.
+			serials := serials + CStr(serial);
+		endforeach;
+		itemInfo.+deedSerials := serials;
+	endif
+
+	itemInfo.+amount := elemento.GetProp("amount");
 	itemInfo.+template := elemento.GetProp("template");
 	itemInfo.+x := elemento.GetProp("x");
 	itemInfo.+y := elemento.GetProp("y");
@@ -77,6 +103,11 @@ function MarcarRecriarItem(item)
 	var data_elem := GetItemsDataElem(Hex(item.serial));
 	var template := CreateItemTemplate(item);
 	data_elem.SetProp("serial",item.serial);
+	data_elem.SetProp("objtype",item.objtype);
+	if(GetObjProperty(item,"ItemsCreatedSerials"))
+		data_elem.setprop("deedSerials",GetObjProperty(item,"ItemsCreatedSerials"));
+	endif
+	data_elem.SetProp("amount",item.amount);
 	data_elem.SetProp("template",template);
 	data_elem.SetProp("qtd",item.amount);
 	data_elem.SetProp("x",item.x);
@@ -85,6 +116,7 @@ function MarcarRecriarItem(item)
 	data_elem.SetProp("movable",item.movable);
 	data_elem.SetProp("realm",item.realm);
 	data_elem.SetProp("momento", polcore().systime);
+	
 endfunction
 
 function RemoveItemMarcado(itemSerial)
