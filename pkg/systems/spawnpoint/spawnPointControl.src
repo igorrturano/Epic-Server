@@ -5,6 +5,7 @@ use basicio;
 include ":attributes:attributes";
 include ":tn:boss";
 include ":combat:hitscripts";
+include "include/epicNPCUtils";
 
 program spawnpointcontrol(spawnpoint)
 
@@ -142,17 +143,45 @@ function ResetSpawnQueue(spawnpoint)
   SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
 endfunction
 
-function CreateSpawn(spawnpoint)
-  var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
-  var spawn_count;
-  for ( spawn_count := 1; spawn_count <= 3; spawn_count += 1 )
-    var spawn := GetObjProperty(spawnpoint, "Spawn");
-    if(!spawn)
-      spawn := GetObjProperty(spawnpoint, Cstr("Spawn" + spawn_count));
-      if(!spawn)
-        continue;
-      endif
+function SetupCustomProps(spawnpoint, npc, key_spawn)
+  var tier := GetObjProperty(spawnpoint, "Tier") ? GetObjProperty(spawnpoint, "Tier") : "0";
+  customizeNpc(npc, tier);
+  if(key_spawn != "Spawn")
+    var counter := SplitWords(key_spawn)[2];
+    var name := GetObjProperty(spawnpoint, Cstr("Name" + counter));
+    if(name && name != "")
+      SetName(npc, name);
     endif
+  endif
+endfunction
+
+function CreateNpc(template, x, y, z, props, realm)
+  var result;
+
+  var paths := array{
+    ":epicAI:" + template,
+    ":brainAI:" + template,
+    ":merchants:" + template
+  };
+
+  if (SplitWords(template)[1] != ":")
+    foreach path in paths
+      result := CreateNpcFromTemplate(path, x, y, z, props, realm);
+      if (result)
+        return result;
+      endif
+    endforeach
+    SysLog("Error - Nao foi possivel criar o npc via spawnpoint -> " + template);
+  else
+    result := CreateNpcFromTemplate(template, x, y, z, props, realm);
+  endif
+
+  return result;
+endfunction
+
+function SetupSpawn(spawnpoint, key_spawn := "Spawn")
+  var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
+  var spawn := GetObjProperty(spawnpoint, key_spawn);
     // if((spawn == "orchorde") || (spawn == "undead") || (spawn == "lesserundead") || (spawn == "trolls") || (spawn == "vermin") || (spawn == "dracos") || (spawn == "orcs") || (spawn == "lizardmen") || (spawn == "ratmen"))
     spawn := GetCritter(spawn);
   // else
@@ -179,25 +208,39 @@ function CreateSpawn(spawnpoint)
 
       if(!loscheck)
         if(CheckLosBetween( spawnpoint.x, spawnpoint.y, spawnpoint.z, x, y, z, spawnpoint.realm ))
-          npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
+          npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
           success := 1;
           SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+          SetupCustomProps(spawnpoint, npc, key_spawn);
           return npc.serial;
         endif
       else //Usar em caso de lugares com muitos obstáculos ou probabilidade alta de spawnar travado
-        npc := CreateNpcFromTemplate(spawn, x, y, z, 0, spawnpoint.realm);
+        npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+        SetupCustomProps(spawnpoint, npc, key_spawn);
         return npc.serial;
       endif
       i := i + 1;
       if(i > 10)
-        npc := CreateNpcFromTemplate(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
+        npc := CreateNpc(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
         success := 1;
         SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+        SetupCustomProps(spawnpoint, npc, key_spawn);
         return npc.serial;
       endif
     endwhile
+endfunction
+
+function CreateSpawn(spawnpoint)
+  var spawn_count := GetObjProperty(spawnpoint, "SpawnCount") ? CInt(GetObjProperty(spawnpoint, "SpawnCount")) : 1;
+  var i;
+  for ( i := 1; i <= spawn_count; i += 1 )
+    if(spawn_count == 1)
+      return SetupSpawn(spawnpoint);
+    else
+      return SetupSpawn(spawnpoint, "Spawn" + i);
+    endif
   endfor
 endfunction
 
