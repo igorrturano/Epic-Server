@@ -111,17 +111,18 @@ function Destruir(quem,itemAlvo,fonteDano)
 	RunTraps(itemAlvo,quem);
 	TocaSFXDestruicao(itemAlvo,isObjetoMovido);
 	if(!IsDestroco(itemAlvo))
-		var descFonteDano := fonteDano.desc;
+		var itemAlvoDesc := itemAlvo.desc;
 		if(envelopeDeed.isDeed)
 			CriaDestrocos(itemAlvo,envelopeDeed.isDeed.size(),4);
-			descFonteDano += "[Deed]";
+			itemAlvoDesc += "[Deed]";
 		else
 			CriaDestrocos(itemAlvo,CalculaMaxDestrocos(itemAlvo),4);
 		endif
+		var descFonteDano := fonteDano.desc;
 		if(!descFonteDano)
 			descFonteDano := "Desconhecido";
 		endif
-		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvo.desc,descFonteDano,deveMarcar);
+		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
 	endif
 	if(!envelopeDeed.isDeed)
 		DestroyItem(itemAlvo);
