@@ -9,6 +9,7 @@ include ":itemutils:itemInfo";
 include "/include/utils";
 include ":traps:traps";
 include "include/packets";
+include "include/packets";
 
 const PROPNAME_DURABILIDADE := "durabItem"; 
 const PROPNAME_DURABILIDADE_MAX := "maxDurabItem"; 
@@ -58,6 +59,27 @@ function ComportamentoWarMode(quem, itemFonte)
 	endif
 
 	start_script (":tn:destroyitems", {quem, targ.item, itemFonte});
+endfunction
+
+function EnviaEventoDanoItem(quem,item,atributosEvento)
+	var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, item.realm );
+
+	var evParams := array;
+	evParams.append(quem);
+	evParams.append(item);
+	evParams.append(atributosEvento);
+	
+	//TODO implementar envio de evento uma vez que a nova IA estiver mais madura. 
+	/*
+	var ev := struct;
+		ev.+type := 0x78454;
+		ev.+data := evParams;
+
+	foreach mob in mobiles
+		SendEvent(mob, ev);
+		Sleepms(2);
+	endforeach
+	*/
 endfunction
 
 function Destruir(quem,itemAlvo,fonteDano)
@@ -371,6 +393,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	
 	SetObjProperty(item,PROPNAME_DURABILIDADE,durabilidadeRestante);
 	PrintTextAbovePrivate(item,CStr(danoCalculado.dano),quemDanificou,3,FOGO_LIGHT);
+	EnviaEventoDanoItem(quemDanificou,item,atributosItem);
 
 	if(durabilidadeRestante <= 0)
 		Destruir(quemDanificou,item,fonteDano);
@@ -443,7 +466,7 @@ function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := t
 		destrocoPos.+y := itemAlvo.y + adicionalY;
 		destrocoPos.+z := itemAlvo.z;
 
-		if(!CheckLosBetween( itemAlvo.x, itemAlvo.y, itemAlvo.z,destrocoPos.x,destrocoPos.y,destrocoPos.z,BRITANNIA_REALM) || (deveCriarOrigem && i == 1))
+		if(!CheckLosBetween( itemAlvo.x, itemAlvo.y, itemAlvo.z,destrocoPos.x,destrocoPos.y,destrocoPos.z,itemAlvo.realm) || (deveCriarOrigem && i == 1))
 			destrocoPos.x := itemAlvo.x; 
 			destrocoPos.y := itemAlvo.y; 
 			destrocoPos.z := itemAlvo.z; 
@@ -455,7 +478,7 @@ function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := t
 			destrocoPos.x,
 			destrocoPos.y,
 			destrocoPos.z,
-			BRITANNIA_REALM,
+			itemAlvo.realm,
 			destrocoGraphic,
 			2,
 			2,
