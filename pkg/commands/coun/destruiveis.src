@@ -97,7 +97,12 @@ function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 			SetObjProperty(alvo,PROPNAME_MATERIAL, Cint(cfgselecao.material));
 		endif
 		if(cfgselecao.isEmperrada)
-			SetObjProperty(alvo,PROPNAME_DURABILIDADE,CInt(cfgselecao.durabTotal / 3));
+			if(alvo.ISA(POLCLASS_LOCKABLE))
+				var durabTotal := GetObjProperty(alvo,PROPNAME_DURABILIDADE_MAX);
+				SetObjProperty(alvo,PROPNAME_DURABILIDADE,CInt(durabTotal / 3));
+			else
+				SendSysMessageEx(quem," Configuração [Emperrada] pulada. O item {} não é trancável.".format(alvo.desc), SSM_INFO_IC);
+			endif
 		endif
 		SetObjProperty(alvo,PROPNAME_DISPENSAVEL_FLAG,Cint(cfgselecao.isDispensavel));
 		SetObjProperty(alvo,PROPNAME_INDESTRUTIVEL,Cint(cfgselecao.isIndestrutivel));

@@ -106,21 +106,23 @@ endfunction
 function MarcarRecriarItem(item)
 	var data_elem := GetItemsDataElem(Hex(item.serial));
 	if(data_elem)
-		var template := CreateItemTemplate(item);
-		data_elem.SetProp("serial",item.serial);
-		data_elem.SetProp("objtype",item.objtype);
-		if(GetObjProperty(item,"ItemsCreatedSerials"))
-			data_elem.setprop("deedSerials",GetObjProperty(item,"ItemsCreatedSerials"));
+		if(item.ISA(POLCLASS_ITEM))
+			var template := CreateItemTemplate(item);
+			data_elem.SetProp("serial",item.serial);
+			data_elem.SetProp("objtype",item.objtype);
+			if(GetObjProperty(item,"ItemsCreatedSerials"))
+				data_elem.setprop("deedSerials",GetObjProperty(item,"ItemsCreatedSerials"));
+			endif
+			data_elem.SetProp("amount",item.amount);
+			data_elem.SetProp("template",template);
+			data_elem.SetProp("qtd",item.amount);
+			data_elem.SetProp("x",item.x);
+			data_elem.SetProp("y",item.y);
+			data_elem.SetProp("z",item.z);
+			data_elem.SetProp("movable",item.movable);
+			data_elem.SetProp("realm",item.realm);
+			data_elem.SetProp("momento", polcore().systime);
 		endif
-		data_elem.SetProp("amount",item.amount);
-		data_elem.SetProp("template",template);
-		data_elem.SetProp("qtd",item.amount);
-		data_elem.SetProp("x",item.x);
-		data_elem.SetProp("y",item.y);
-		data_elem.SetProp("z",item.z);
-		data_elem.SetProp("movable",item.movable);
-		data_elem.SetProp("realm",item.realm);
-		data_elem.SetProp("momento", polcore().systime);
 	endif
 endfunction
 
@@ -170,7 +172,7 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 			if(quemObj.acctname)
 				tupla.+quem := quemObj.acctname;
 			else
-				tupla.+quem := quemObj.name;
+				tupla.+quem := quemObj.name + "[NPC]";
 			endif
 			tupla.+oque := ExtraiDado(linha[CAMPO_OQUE]);
 			tupla.+como := ExtraiDado(linha[CAMPO_COMO]);

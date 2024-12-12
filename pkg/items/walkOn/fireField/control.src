@@ -12,6 +12,7 @@ include ":destroyable:include/destroyItem";
 
 program controlScript(field)
 	SetObjProperty(field, "#PID", GetPid());
+	SetObjProperty(field, PROPNAME_INDESTRUTIVEL, 1);
 
 	var creator := field.GetOwner();
 	if ( creator )

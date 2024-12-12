@@ -23,6 +23,7 @@ const PROPNAME_DESTROCO := "isDestroco";
 const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
 
 const ELEM_CFG_DEST := "Destruiveis";
+const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
 
 enum TIPO_MATERIAIS
 	PEDRA := "Stone",
@@ -123,6 +124,7 @@ function Destruir(quem,itemAlvo,fonteDano)
 			descFonteDano := "Desconhecido";
 		endif
 		InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
+		DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 	endif
 
 	if(!envelopeDeed.isDeed)
@@ -133,15 +135,18 @@ function Destruir(quem,itemAlvo,fonteDano)
 			Sleepms(2);
 		endforeach
 	endif
-
-	//comandos:
-	//TODO implementar comando de Indestrutível.
-	//TODO Criar comando ou argumento do create para gms criarem itens dispensáveis.
-
 	
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Disparar discord web hook.
 	//TODO Adicionar comentários e documentação do que já foi feito.
+endfunction
+
+function DisparaAvisoDiscord(quem,x,y,z,realm,itemAlvoDesc,descFonteDano)
+	if(quem.acctname && !Find(UPPER(descFonteDano),"ARMADILHA",1))
+		var nome := GetObjProperty(quem, "nome_inicial");
+		var tipo := TIPO_DISCORD_DESTRUIDO;
+		Start_script(":DiscordWebhook:discord", {tipo, nome, quem.acctname , descFonteDano, realm, {x,y,z}, itemAlvoDesc});
+	endif
 endfunction
 
 function DeveMarcarRecriarItem(itemAlvo)
@@ -151,6 +156,7 @@ function DeveMarcarRecriarItem(itemAlvo)
 	&& itemAlvo.ISA(POLCLASS_ITEM)
 	&& !IsDestroco(itemAlvo);
 endfunction
+
 
 function CalculaMaxDestrocos(item)
 	var numeroMaximoDest := Ceil(item.height / 5);
@@ -277,7 +283,7 @@ function PegaDurabilidadeTotal(item)
 	if(item.ISA(POLCLASS_EQUIPMENT))
 		return item.maxhp;
 	else
-		var propMaxDurab := GetObjProperty(item,PROPNAME_DURABILIDADE_MAX);
+		var propMaxDurab := GetObjProperty(item,PROPNAME_DURABILIDADE_MAX); 
 		if(GetObjProperty(item,PROPNAME_DURABILIDADE_MAX))
 			if(recursoMod)
 				propMaxDurab := propMaxDurab + recursoMod;
