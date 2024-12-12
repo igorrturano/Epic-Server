@@ -137,7 +137,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 	endif
 	
 	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
-	//TODO Disparar discord web hook.
 	//TODO Adicionar comentários e documentação do que já foi feito.
 endfunction
 

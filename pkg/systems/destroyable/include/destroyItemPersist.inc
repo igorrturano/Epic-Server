@@ -150,7 +150,7 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 			var tupla := struct;
 			var quandoAFiltrar := ExtraiDado(linha[CAMPO_QUANDO][CAMPO_QUANDO_TIMESTAMP]);
 			if(filtroTempo)
-				if(POLCore().systime - filtroTempo >= POLCore().systime)
+				if(POLCore().systime - filtroTempo >= quandoAFiltrar)
 					continue;
 				endif
 			endif
