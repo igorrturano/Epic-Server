@@ -6,6 +6,7 @@ use file;
 include ":DiscordWebhook:outbound";
 include ":DiscordWebhook:report";
 include "include/arrays";
+include ":destroyable:include/destroyItem";
 
 program textcmd_testdiscordbot( params )
   var tipo := params[1]; // Id # of the spell
@@ -34,6 +35,9 @@ program textcmd_testdiscordbot( params )
 	var outbound := PresetDiscordMessage( message );
   elseif ( tipo == "thuriao" )
 	var message := "**THURIAO** -> *" + name + "* conta [" + acct_name + "] peidou para " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
+	var outbound := PresetDiscordMessage( message );
+  elseif ( tipo == TIPO_DISCORD_DESTRUIDO )
+	var message := "**Item Destruído** -> *" + name + "* conta [" + acct_name + "] detruiu " + item + " usando " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
 	var outbound := PresetDiscordMessage( message );
   elseif ( tipo == "morreu" )
 	var message := "**MORREU** -> *" + name + "* conta [" + acct_name + "] morreu em combate com " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
