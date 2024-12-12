@@ -10,7 +10,6 @@ include ":destroyable:include/destroyItemGump";
 include "include/utility";
 include ":gumps:yesNo";
 
-
 program destruiveis(quem, texto)
 
 	if(!texto)

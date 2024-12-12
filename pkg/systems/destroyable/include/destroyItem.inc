@@ -8,7 +8,7 @@ include ":destroyable:include/destroyItemPersist";
 include ":itemutils:itemInfo";
 include "/include/utils";
 include ":traps:traps";
-include "include/packets";
+//include "include/packets";
 include ":architect:architect";
 
 const PROPNAME_DURABILIDADE := "durabItem"; 
@@ -379,7 +379,7 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 
 	if(gfx != 0)
 		if(gfxHue)
-			PlayObjectCenteredEffectHuefx(item, gfx, 5, 6,gfxHue);
+			//PlayObjectCenteredEffectHuefx(item, gfx, 5, 6,gfxHue); // Conflito com includes por funcões duplicadas =(
 		else
 			PlayObjectCenteredEffect(item, gfx, 5, 6);
 		endif
@@ -573,4 +573,36 @@ function isDentroAreaArchitecct(objeto)
 	var area := GetResidenciasRegion(objeto);
 
 	return !(area == "Whole_World");
+endfunction
+
+function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
+	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
+		var material := configRecursos[cfgselecao.material];
+		if(cfgselecao.durabTotal)
+			SetObjProperty(alvo,PROPNAME_DURABILIDADE_MAX,CInt(cfgselecao.durabTotal));
+			var atributos := MontaAtributosItem(alvo);
+			SetObjProperty(alvo,PROPNAME_DURABILIDADE,CInt(atributos.durabTotal));
+		endif
+		if(cfgselecao.mltRes)
+			SetObjProperty(alvo,PROPNAME_RESITEM_MULT,CDbl(cfgselecao.mltRes));
+		endif
+		if(cfgselecao.material)
+			SetObjProperty(alvo,PROPNAME_MATERIAL, Cint(cfgselecao.material));
+		endif
+		if(cfgselecao.isEmperrada)
+			if(alvo.ISA(POLCLASS_LOCKABLE))
+				var durabTotal := GetObjProperty(alvo,PROPNAME_DURABILIDADE_MAX);
+				SetObjProperty(alvo,PROPNAME_DURABILIDADE,CInt(durabTotal / 3));
+			else
+				SendSysMessageEx(quem," Configuração [Emperrada] pulada. O item {} não é trancável.".format(alvo.desc), SSM_INFO_IC);
+			endif
+		endif
+		SetObjProperty(alvo,PROPNAME_DISPENSAVEL_FLAG,Cint(cfgselecao.isDispensavel));
+		SetObjProperty(alvo,PROPNAME_INDESTRUTIVEL,Cint(cfgselecao.isIndestrutivel));
+
+		alvo.color := material.Color;
+		if(mostrarMensagem)
+			SendSysMessageEx(quem,"Configurações aplicadas.", SSM_INFO);
+		endif
+	endif
 endfunction
