@@ -30,7 +30,6 @@ program kitReparo(quem,kit)
 			SendSysMessageEx(quem,"Você reparou o item parcialmente e utilizou seu kit ao ponto do desgaste completo.", SSM_INFO_IC);
 		else
 			kit.hp := Cint(kit.hp - desgaste);
-			Print("Desgaste: " + desgaste + " kit.hp: " + kit.hp);
 			AtualizaProps(alvo,kit,desgaste + atributos.durabilidade);
 			SendSysMessageEx(quem,"Você reparou o item completamente.", SSM_INFO);
 		endif
