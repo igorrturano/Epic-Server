@@ -12,8 +12,8 @@ include "include/packets";
 
 const PROPNAME_DURABILIDADE := "durabItem"; 
 const PROPNAME_DURABILIDADE_MAX := "maxDurabItem"; 
-const PROPNAME_CHAVE_ORIGINAL := "serialOriginal"; 
 const PROPNAME_RESITEM_MULT := "resItem"; 
+const PROPNAME_CHAVE_ORIGINAL := "serialOriginal"; 
 const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
 const PROPNAME_ARMADILHAS := "TrapList"; 
 const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel"; 
@@ -133,13 +133,15 @@ function Destruir(quem,itemAlvo,fonteDano)
 			Sleepms(2);
 		endforeach
 	endif
-	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
-	//TODO Disparar discord web hook.
-	//TODO Adicionar comentários e documentação do que já foi feito.
 
 	//comandos:
 	//TODO implementar comando de Indestrutível.
 	//TODO Criar comando ou argumento do create para gms criarem itens dispensáveis.
+
+	
+	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
+	//TODO Disparar discord web hook.
+	//TODO Adicionar comentários e documentação do que já foi feito.
 endfunction
 
 function DeveMarcarRecriarItem(itemAlvo)
@@ -174,10 +176,10 @@ endfunction
 function MontaCatalogoDestrocos()
 	var catalogo := Dictionary;
 	
-	catalogo.insert(PEDRA,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
+	catalogo.insert(PEDRA,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0F3B});
 	catalogo.insert(TIJOLO,{0x46C8,0x46CB,0x1038,0x0F3B});
-	catalogo.insert(MARMORE,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0DF9,0x0F3B});
-	catalogo.insert(ARENITO,{0x46C8,0x46CB,0x0DF9,0x0F3B});
+	catalogo.insert(MARMORE,{0x46C8,0x46CB,0x1038,0x19BA,0x19B8,0x0F3B});
+	catalogo.insert(ARENITO,{0x46C8,0x46CB,0x0F3B});
 	catalogo.insert(OSSOS,{0x1B1A,0x1B19,0x1B12,0x1B11});
 	catalogo.insert(VIDRO,{0x5738});
 	catalogo.insert(MADEIRA,{0x0c2f,0x0c2e,0x1038,0x1B9D,0xABEA,0xABED});
@@ -208,7 +210,7 @@ function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 		MARMORE: sfx := 0x11C; break;
 		ARENITO: sfx := 0x11C; break;
 		OSSOS: sfx := 0x342; break;
-		VIDRO: sfx := 0x03E; break;
+		VIDRO: sfx := 0x03F; break;
 		MADEIRA: sfx := 0x476; break;
 		PANO: sfx := 0x33A; break;
 		METAL: sfx := 0x057; break;
@@ -243,6 +245,12 @@ function PegaResistenciaItem(itemAlvo)
 endfunction
 
 function CalculaDanoRecebido( fonteDano, atributosItem)
+	var danoCalculado := struct;
+	If(atributosItem.isIndestrutivel)
+		danoCalculado.+isEficaz := false;
+		return danoCalculado;
+	endif
+
 	var danoCru := 0; 
 	if(fonteDano.ISA(POLCLASS_WEAPON))
 		var dadoDano :=  RandomDiceRoll(fonteDano.getMainDamageDice());
@@ -254,7 +262,6 @@ function CalculaDanoRecebido( fonteDano, atributosItem)
 	endif
 
 	var danoRecebido := danoCru - atributosItem.resistencia;
-	var danoCalculado := struct;
 	danoCalculado.+dano := danoRecebido < 0? 0 : danoRecebido;
 	danoCalculado.+isEficaz := danoRecebido > 0;
 	return danoCalculado;
@@ -303,7 +310,8 @@ endfunction
 function MontaAtributosItem(item)
 	var itemAtrib := struct;
 		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item));
-		itemAtrib.+durabTotal := PegaDurabilidadeTotal(item);
+		itemAtrib.+durabTotal := cInt(PegaDurabilidadeTotal(item));
+		itemAtrib.+isIndestrutivel := GetObjProperty(item,PROPNAME_INDESTRUTIVEL);
 
 		if(item.ISA(POLCLASS_EQUIPMENT))
 			itemAtrib.+durabilidade := item.hp;
@@ -457,6 +465,7 @@ endfunction
 
 function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 	destroco.color := corDestroco;
+	destroco.movable := 1;
 	destroco.decayat := ReadGameClock() + configDestruiveis[ELEM_CFG_DEST].decayDestroco;
 	var novoNome := "destroços de ";
 		case (tipo)
