@@ -9,7 +9,7 @@ include ":itemutils:itemInfo";
 include "/include/utils";
 include ":traps:traps";
 include "include/packets";
-include "include/packets";
+include ":architect:architect";
 
 const PROPNAME_DURABILIDADE := "durabItem"; 
 const PROPNAME_DURABILIDADE_MAX := "maxDurabItem"; 
@@ -22,6 +22,7 @@ const PROPNAME_INDESTRUTIVEL := "isIndestrutivel";
 const PROPNAME_MATERIAL := "material"; 
 const PROPNAME_DESTROCO := "isDestroco"; 
 const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
+const PROPNAME_AREA_SEGURA := "itemEmAreaSegura"; 
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -158,7 +159,6 @@ function Destruir(quem,itemAlvo,fonteDano)
 		endforeach
 	endif
 	
-	//TODO Disparar evento para guardas e mostros próximos. [ OBS Fazer Merge com a Develop Antes]
 	//TODO Adicionar comentários e documentação do que já foi feito.
 endfunction
 
@@ -533,4 +533,44 @@ function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 		endcase
 		SetObjProperty(destroco,PROPNAME_DESTROCO,1);
 		SetName(destroco,novoNome);
+endfunction
+
+function VerificaRegiaoSegura(item)
+	return isDentroAreaArchitecct(item) || isDentroQuartoEstalagem(item);
+endfunction
+
+function isDentroQuartoEstalagem(objeto)
+	var estalajadeiros := getglobalproperty("InnKeeper");
+	foreach estalajadeiro in estalajadeiros
+		Sleepms(2);
+		if (estalajadeiro.errortext)
+			continue;
+		endif
+
+		var quartos := GetObjProperty(estalajadeiro, "quartos");
+
+		foreach quarto in quartos;
+			var centro := quarto.centro;
+			var raio := 10; //mesma distância que usaram no estalagemcontrol.src
+			if(centro)
+				var distanciaEuclidiana := CoordinateDistanceEuclidean(objeto.x,objeto.y,centro[1],centro[2]);
+				if(distanciaEuclidiana <= raio)
+					return true;
+				endif
+			endif
+			Sleepms(2);
+		endforeach
+	endforeach
+
+	if (estalajadeiros[1] == error)
+		return false;
+	endif
+	
+	return false;
+endfunction
+
+function isDentroAreaArchitecct(objeto)
+	var area := GetResidenciasRegion(objeto);
+
+	return !(area == "Whole_World");
 endfunction

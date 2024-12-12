@@ -168,8 +168,8 @@ program MerchantMenu(params)
 				quartos := array;
 			endif
 			quartos.append(room);
-			SetObjProperty(porta, PROPNAME_INDESTRUTIVEL, 1);
 			SetObjProperty(npc, "quartos", quartos);
+			SetObjProperty(porta,PROPNAME_INDESTRUTIVEL,1);
 		endif
 	elseif (input[0] == 100 ) //trocar fechadura
 		var yes := yesno(player, "O chaveiro vai cobrar 100 moedas, deseja continuar? " );

@@ -3,18 +3,7 @@ use uo;
 use os;
 use polsys;
 
-include "include/client";
-include "include/say";
-include ":tn:cooldown";
-include ":combat:combat";
 include ":attributes:attributes";
-include ":fls_core:packets";
-include ":blood:blood";
-include ":combat:damage";
-include "include/tileEffects";
-include ":fls_core:fls_objtypes";
-include "include/sysEvent";
-include "include/eventID";
 include ":combat:weardown";
 include ":destroyable:include/destroyItem";
 include "include/epicConstants";
