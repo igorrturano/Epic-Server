@@ -135,10 +135,8 @@ function EnviaLogGump (quem)
 	while(valor[0])
 		if(deveRequisitarLog)
 			arrayLogPaginado := array;
-			Print( "filtro regiao " + filtroRegiao);
 			var arrayLog := ListaLogItemDestruido(quem,filtroRegiao,filtroTempo);
 			qtdPaginas := Cint(arraylog.size() / qtdeMaxLinhas);
-			Print( "filtro regiao " + arraylog.size());
 			var paginaLog := array;
 			var indice;
 			

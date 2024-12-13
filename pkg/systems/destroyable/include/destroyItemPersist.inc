@@ -35,6 +35,21 @@ function GetItemsDataElem(elem_name)
 	return data_elem;
 endfunction
 
+/* 
+ * PegaListaItens(filtroTempo)
+ *
+ * Purpose
+ *	Busca a lista de itens que foram marcados para ressurgirem.
+ * 
+ * Parameters
+ * filtroTempo: um filtro com um timestamp de partida para a lista.
+ *
+ * Return value
+ *   Um array com um struct dividindo os itens marcados em: 
+ *				.+itens // itens marcados
+ *				.+itensDeed // um array com os itens de deed agrupados.
+ *
+ */
 function PegaListaItens(filtroTempo)
 	var data_file := GetItemsDataFile();
 	var data_list := DFGetElemNames(data_file);
@@ -68,6 +83,34 @@ function PegaListaItens(filtroTempo)
 	return retorno;
 endfunction
 
+
+/* 
+ * PegaItemMarcado(itemSerial)
+ *
+ * Purpose
+ *	Busca um item marcado para ressurgir de acordo com o seu serial
+ * 
+ * Parameters
+ * itemSerial: serial do item marcado.
+ *
+ * Return value
+ *   Um struct com os dados do item, sendo:
+ *
+ *
+ *	itemInfo.+serial // serial do objeto marcado.
+	itemInfo.+objtype // objtype do objeto marcado
+	itemInfo.+deedSerials // uma chave com os serials que fazem parte da deed, caso haja.
+	itemInfo.+amount // quantidade
+	itemInfo.+template // template do item, caso tenha.
+	itemInfo.+x // coordenada x do item
+	itemInfo.+y // coordenada y do item
+	itemInfo.+z // coordenada z do item
+	itemInfo.+movable // se o item esta fixado ou não.
+	itemInfo.+realm // o reino do item
+	itemInfo.+momento // o momento que foi marcado.
+ *
+ *
+ */
 function PegaItemMarcado(itemSerial)
 	var elementoDados := GetItemsDataElem(Hex(itemSerial));
 	DFGetElemProps(elementoDados);
@@ -75,6 +118,19 @@ function PegaItemMarcado(itemSerial)
 	return MontaStruturaInfo(elementoDados);
 endfunction
 
+/* 
+ * MontaChaveHex(arrayInt)
+ *
+ * Purpose
+ *	Monta uma chave concatenando um array de int depois de converte-los para hex.
+ * 
+ * Parameters
+ * arrayInt: serial dos itens que comporão a chave.
+ *
+ * Return value
+ *   uma string com os valores concatenados.
+ *
+ */
 function MontaChaveHex(arrayInt)
 	var retorno;
 		foreach inteiro in arrayInt //monta uma chave para ser usado no dict depois.
@@ -84,6 +140,33 @@ function MontaChaveHex(arrayInt)
 	return Cstr(retorno); 
 endfunction
 
+/* 
+ * MontaStruturaInfo(itemSerial)
+ *
+ * Purpose
+ *	monta os dados de um objeto marcado e colaca num struct.
+ * 
+ * Parameters
+ * itemSerial: serial do item marcado.
+ *
+ * Return value
+ *   Um struct com os dados do item, sendo:
+ *
+ *
+ *	itemInfo.+serial // serial do objeto marcado.
+	itemInfo.+objtype // objtype do objeto marcado
+	itemInfo.+deedSerials // uma chave com os serials que fazem parte da deed, caso haja.
+	itemInfo.+amount // quantidade
+	itemInfo.+template // template do item, caso tenha.
+	itemInfo.+x // coordenada x do item
+	itemInfo.+y // coordenada y do item
+	itemInfo.+z // coordenada z do item
+	itemInfo.+movable // se o item esta fixado ou não.
+	itemInfo.+realm // o reino do item
+	itemInfo.+momento // o momento que foi marcado.
+ *
+ *
+ */
 function MontaStruturaInfo(elemento)
 	var itemInfo := struct;
 	itemInfo.+serial := elemento.GetProp("serial");
@@ -103,6 +186,19 @@ function MontaStruturaInfo(elemento)
 	return itemInfo;
 endfunction
 
+/* 
+ * MarcarRecriarItem(item)
+ *
+ * Purpose
+ *	Guarda as informações de um item dentro de um DataSet para ressurgir no futuro.
+ * 
+ * Parameters
+ * itemSerial: sitem marcado.
+ *
+ * Return value
+ *   sem retorno.
+ *
+ */
 function MarcarRecriarItem(item)
 	var data_elem := GetItemsDataElem(Hex(item.serial));
 	if(data_elem)
@@ -126,16 +222,66 @@ function MarcarRecriarItem(item)
 	endif
 endfunction
 
+/* 
+ * RemoveItemMarcado(itemSerial)
+ *
+ * Purpose
+ *	Remove as informações de um que foi marcado para ressurgir no futuro.
+ * 
+ * Parameters
+ * itemSerial: Serial do item marcado.
+ *
+ * Return value
+ *   DataElement do item removido.
+ *
+ */
 function RemoveItemMarcado(itemSerial)
 	var data_file := GetItemsDataFile();
 
 	return data_file.DeleteElement(Hex(itemSerial));
 endfunction
 
+/* 
+ * RemoveItemMarcado(itemSerial)
+ *
+ * Purpose
+ *	Abre o log xml dos itens que foram destruidos.
+ * 
+ * Parameters
+ * sem parâmetro.
+ *
+ * Return value
+ *   retorna a estrutura XML.
+ *
+ */
 function PegaLogXMLDestruiveis()
 	return AbreLogXml(LOG_XML_NOME);
 endfunction
 
+/* 
+ * ListaLogItemDestruido(quem,filtroRegiao,filtroTempo)
+ *
+ * Purpose
+ *	lista os registros do log dos intens destruídos.
+ * 
+ * Parameters
+ * quem: O ator que requisitou a lista.
+ * filtroRegiao: um raio de uma cordenada para filtrar os mais próximos no log.
+ * filtroTempo: um filtro ponto de partida no tempo.
+ *
+ * Return value
+ *   conjuntoResultado um array com os registros do log, sendo:
+ *				
+ *				registro.+quando // momento que foi destruido
+ *				registro.+x // coordenada x do ponto que foi destruido.
+ *				registro.+y // coordenada y do ponto que foi destruido.
+ *				registro.+z // coordenada z do ponto que foi destruido.
+ *				registro.+quem // Quem destruíu, pode ser npc ou player.
+ *				registro.+oque // A desc do item que foi destruído
+ *				registro.+como // A desc da fonte de dano.
+ *				registro.+isReconstruivel // 1 se foi marcado para retornar.
+ *
+ */
 function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 	var xml := PegaLogXMLDestruiveis();
 	var conjuntoResultado := array;
@@ -188,6 +334,19 @@ function ListaLogItemDestruido(quem,filtroRegiao := 0,filtroTempo := 0)
 	return conjuntoResultado;
 endfunction
 
+/* 
+ * ExtraiDado(xmlNode)
+ *
+ * Purpose
+ *	lExtrai o dado de um xmlnode.
+ * 
+ * Parameters
+ * xmlNode: o nó xml
+ *
+ * Return value
+ *   uma string com o valor da tag do nóxml.
+ *
+ */
 function ExtraiDado(xmlNode)
 	var atributos := xmlNode.attributes;
 	if(atributos["tipo"] == "String")
@@ -199,6 +358,22 @@ function ExtraiDado(xmlNode)
 	endif
 endfunction
 
+/* 
+ * ExtraiDado(byref pai,atributos,chave,valores := {})
+ *
+ * Purpose
+ *	Adiciona um nó na arvore do xml.
+ * 
+ * Parameters
+ * pai: O nó pai do nó que foi informado.
+ * atributos: array de atributos que será inserido na tag do nó.
+ * chave: Uma string que identificará o nó.
+ * valores: um array com o valor dentro da tag // fiz assim pq queria que fosse opcional, mas sem precisar de um segundo parametro pra informar.
+ *
+ * Return value
+ *   uma string com o valor da tag do nóxml.
+ *
+ */
 function AdicionaXmlNode(byref pai,atributos,chave,valores := {})
 	var no := pai.appendxmlnode(chave,atributos);
 
@@ -210,6 +385,26 @@ function AdicionaXmlNode(byref pai,atributos,chave,valores := {})
 	return no;
 endfunction
 
+/* 
+ * InsereLogItemDestruido(byref pai,atributos,chave,valores := {})
+ *
+ * Purpose
+ *	Insere um registro de item destruído no xml de log.
+ * 
+ * Parameters
+ * quem: char ou npc que destruiu o item
+ * quando: timestamp do momento que foi destruído.
+ * x: coordenada x do ponto onde item foi destruído.
+ * y: coordenada y do ponto onde item foi destruído.
+ * z: coordenada z do ponto onde item foi destruído.
+ * oque: desc do item que foi destruído.
+ * como: desc da fonte de dano.
+ * isReconstruivel.: 1 se foi marcado para ressurgir.
+ *
+ * Return value
+ *   1 se foi inserido com sucesso.
+ *
+ */
 function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruivel)
 	var xml := PegaLogXMLDestruiveis();
 	if(xml)
@@ -237,6 +432,19 @@ function InsereLogItemDestruido(quem,quando,x,y,z,realm,oque,como,isReconstruive
 	endif
 endfunction
 
+/* 
+ * LimpaLogItemDestruido()
+ *
+ * Purpose
+ *	remove todo os registros do log.
+ * 
+ * Parameters
+ * sem parâmetros.
+ *
+ * Return value
+ *  sem retorno.
+ *
+ */
 function LimpaLogItemDestruido()
 	var xml := PegaLogXMLDestruiveis();
 	if(xml)
@@ -251,6 +459,20 @@ function LimpaLogItemDestruido()
 	endif
 endfunction
 
+/* 
+ * CriaLogXml(nomeArquivoXml)
+ *
+ * Purpose
+ *	Cria um arquivo de log em xml.
+ * 
+ * Parameters
+ * nomeArquivoXml: path do arquvivo.
+ *
+ * Return value
+ *  referência do arquivo criado, ou erro.
+ *
+ *
+ */
 function CriaLogXml(nomeArquivoXml);
 	var arquivoXml := CreateXMLFile();
 	var msgErro := error;
@@ -274,6 +496,20 @@ function CriaLogXml(nomeArquivoXml);
 	return msgErro;
 endfunction
 
+/* 
+ * CriaLogXml(nomeArquivoXml, flag := DF_CREATE)
+ * Purpose
+ *	Abre ou cria um arquivo XML
+ * 
+ * Parameters
+ * nomeArquivoXml: path do arquvivo.
+ * flag: Flag se deve criar o arquivo caso não exista..
+ *
+ * Return value
+ *  referência do arquivo , ou erro.
+ *
+ *
+ */
 function AbreLogXml (nomeArquivoXml, flag := DF_CREATE)
 	var objetoXml;
 	if(FileExists(nomeArquivoXml))

@@ -24,6 +24,30 @@ enum GUMP_PARAMS
 	BORDER_GOLDEN, BORDER_BLUE, BORDER_MARBLE,
 	NO_CLOSABLE
 endenum
+
+enum OPCOES_TABELA
+	COR_TITULO_COLUNA := "corTituloId", // customiza a cor do titulo da COLUNA na tabela
+	COR_TITULO_TABELA := "corTituloTabId", // customiza a cor do titulo da tabela
+	COR_DADO := "corDadoId", // customiza a cor do valor nas celulas
+	QTD_LINHA_LIMITE := "qtdeLimiteLinha", // Customiza O máximo de linhas de cada página da tábela.
+	GUMPIC_FUNDO := "fundoId", // GUMPIC id do fundo da tabela.
+	TITULO_TABELA := "tituloTabela", // Customiza o titulo da tabela
+	BOTAO_APERTADO := "botaoApertadoId",
+	BOTAO_SOLTO := "botaoSoltoId",
+	CHECKBOX_APERTADO := "checkBoxApertadoId",
+	CHECKBOX_SOLTO := "checkBoxSoltoId",
+	RECUO_EIXO_X_BOTAO := "recuoExidoXBtn", // recua o botao no eixo x caso a centralização não tenha funcionado.
+	MOSTRAR_FUNDO := "isMostrarFundo", // customiza se deve mostrar o background da tabela.
+	MAX_PAGINAS := "numeroMaxPaginas" // Numero máximo de páginas na sua versão páginada.
+endenum
+
+enum IMPORTANCIA_ITEM
+	DISPENSAVEL := "dispensavel",
+	EMPERRADA := "emperrada",
+	INDESTRUTIVEL := "Indestrutível"
+endenum 
+
+
 /**
  * Purpose 
  * Criar um gump padronizado com os demais do Shard.
@@ -172,28 +196,54 @@ function GFEAdd(byref gump)
 
 endfunction
 
-enum OPCOES_TABELA
-	COR_TITULO_COLUNA := "corTituloId",
-	COR_TITULO_TABELA := "corTituloTabId",
-	COR_DADO := "corDadoId",
-	QTD_LINHA_LIMITE := "qtdeLimiteLinha",
-	GUMPIC_FUNDO := "fundoId",
-	TITULO_TABELA := "tituloTabela",
-	BOTAO_APERTADO := "botaoApertadoId",
-	BOTAO_SOLTO := "botaoSoltoId",
-	CHECKBOX_APERTADO := "checkBoxApertadoId",
-	CHECKBOX_SOLTO := "checkBoxSoltoId",
-	RECUO_EIXO_X_BOTAO := "recuoExidoXBtn",
-	MOSTRAR_FUNDO := "isMostrarFundo",
-	MAX_PAGINAS := "numeroMaxPaginas"
-endenum
 
-enum IMPORTANCIA_ITEM
-	DISPENSAVEL := "dispensavel",
-	EMPERRADA := "emperrada",
-	INDESTRUTIVEL := "Indestrutível"
-endenum 
+/* 
+ * CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opcoesTabela := dictionary,opcoesColunas := dictionary, indiceBtnInicial := 0)
+ *
+ * Purpose
+ *	Componente de tabela altamente customizavel. Para usar, basta mandar um array contendo structs que ele
+ *  automaticamente irá criar as colunas baseadas nos membros desses structs. No entanto, é possivel customizar
+ *  as colunas usando o parâmetro opcoesColunas e a própria tabela usando o parâmetro opcoesTabela.
+ * 
+ *  Nota importante. se o struct i
+ * 
+ * Parameters
+ * x: posição x inicial na tela
+ * y: posição y inicial na tela
+ * larguraTotal: largura total reservada para a tabela.
+ * dados:  um array contendo structs com as informaões da tabela. 
+		Atenção, se o valor de um dos membros for um struct com membros:
+			.+isColunaBotao
+			.+valor
+		a coluna terá um unico botão na célula
+		ou 
+			.+isColunaCheckBox
+			.+valor
+		a coluna teráum unico checkbox na celula
+ * gump:  o gump do qual a tabela fará parte..
+ * paginaTabela:  a pagina atual da tabela. [será usada como indice inicial. Começa em 0]
+ * opcoesTabela:  um dictionary com as configurações da tabela, sendo:
+ * 
+ * 		dictionary[chave<OPCOES_TABELA>] -> <valor>.
+ * 
+ * opcoesColunas: um dictionary com as configurações das colunas, sendo:
+ * 
+ * 		dictionary[chave<nome equivalente ao membro da struct que vai se configurar>] 
+ 							->  value<struct{titulo := <titulo da coluna> ,
+											[ordem := <ordem numerica>],
+											[largura := <um valor maior que zero e menor que 12>}]> //12 colunas na Grid.
 
+		exemplo:
+			colCFG := dictionary;
+			colCfg["nome"] := struct{titulo := "Nome Do personagem",ordem := 1,largura := 5};
+			ou
+			colCfg["nome"] := struct{titulo := "Nome Do personagem"}; // A ordem será definida automaticamente e a largura dividida igualmente.
+ * indiceBtnInicial: um indice para iniciar os botoes da tabela, caso precise.
+ *
+ * Return value
+ *   o gump
+ *
+ */
 function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opcoesTabela := dictionary,opcoesColunas := dictionary, indiceBtnInicial := 0)
 
 	if(dados.size() > 0 )
@@ -359,6 +409,49 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 	return gump;
 endfunction;
 
+/* 
+ * CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela := dictionary,opcoesColunas := dictionary, indiceBtnInicial := 0)
+ *
+ * Purpose
+ *	 Versão da CriaTabelaGump com um controle de paginação já imbutido. ideal para tabelas com poucos registros.
+ * 
+ * 
+ * Parameters
+ * x: posição x inicial na tela
+ * y: posição y inicial na tela
+ * larguraTotal: largura total reservada para a tabela.
+ * dados:  um array contendo structs com as informaões da tabela. 
+		Atenção, se o valor de um dos membros for um struct com membros:
+			.+isColunaBotao
+			.+valor
+		a coluna terá um unico botão na célula
+		ou 
+			.+isColunaCheckBox
+			.+valor
+		a coluna teráum unico checkbox na celula
+ * gump:  o gump do qual a tabela fará parte..
+ * opcoesTabela:  um dictionary com as configurações da tabela, sendo:
+ * 
+ * 		dictionary[chave<OPCOES_TABELA>] -> <valor>.
+ * 
+ * opcoesColunas: um dictionary com as configurações das colunas, sendo:
+ * 
+ * 		dictionary[chave<nome equivalente ao membro da struct que vai se configurar>] 
+ 							->  value<struct{titulo := <titulo da coluna> ,
+											[ordem := <ordem numerica>],
+											[largura := <um valor maior que zero e menor que 12>}]> //12 colunas na Grid.
+
+		exemplo:
+			colCFG := dictionary;
+			colCfg["nome"] := struct{titulo := "Nome Do personagem",ordem := 1,largura := 5};
+			ou
+			colCfg["nome"] := struct{titulo := "Nome Do personagem"}; // A ordem será definida automaticamente e a largura dividida igualmente.
+ * indiceBtnInicial: um indice para iniciar os botoes da tabela, caso precise.
+ *
+ * Return value
+ *   o gump
+ *
+ */
 function CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela := dictionary,opcoesColunas := dictionary, indiceBtnInicial := 0)
 
 	var opt_max_pagina := DeterminaOpcaoTabela(opcoesTabela,MAX_PAGINAS, 5);
@@ -385,6 +478,23 @@ function CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela :
 	return gump;
 endfunction
 
+/* 
+ * CentralizaEixoX(larguraGrid,conteudo,gridsUtilizadas := 1)
+ *
+ * Purpose
+ *	 Centraliza o conteúdo dentro de uma célula, usando o conceito de Grids utilizado no CriaTabelaGump.
+ * 
+ * 
+ * Parameters
+ * larguraGrid: largura de uma unidade da grid
+ * conteudo: conteudo a ser centralizado.
+ * gridsUtilizadas: quantidade de grids que o conteudo ocupa.
+
+ *
+ * Return value
+ *   valor no eixo x.
+ *
+ */
 function CentralizaEixoX(larguraGrid,conteudo,gridsUtilizadas := 1)
 	if(TypeOf(conteudo) == "String")
 		return (larguraGrid * gridsUtilizadas / 2) - (Len(conteudo) * 3);
@@ -393,6 +503,7 @@ function CentralizaEixoX(larguraGrid,conteudo,gridsUtilizadas := 1)
 	endif
 endfunction
 
+//Função "privada" da criação de tabela.
 function DeterminaOpcaoTabela(opcoesTabela,opcao,padrao)
 	return opcoesTabela[opcao]? opcoesTabela[opcao]:padrao;
 endfunction

@@ -47,6 +47,20 @@ var catalogoDestrocos := MontaCatalogoDestrocos();
 var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 var configDestruiveis := ReadConfigFile(":destroyable:config/settings");
 
+/*
+ * ComportamentoWarMode(quem, itemFonte)
+ *
+ * Purpose
+ * Criado para ser um gancho nos usescripts de armas e ferramentas
+ *
+ * Parameters
+ * quem:	   Personagem que ativou o script
+ * itemFonte:  o item que rodou o script
+ *
+ * Return value
+ *  Sem retorno
+ *
+ */
 function ComportamentoWarMode(quem, itemFonte)
 
 	EraseObjProperty(quem, "IsMeditating");
@@ -62,6 +76,20 @@ function ComportamentoWarMode(quem, itemFonte)
 	start_script (":tn:destroyitems", {quem, targ.item, itemFonte});
 endfunction
 
+/*
+ * EnviaEventoDanoItem(quem, item, atributosEvento)
+ *
+ * Purpose
+ * Envia evento de item danificado a todos os NPCs na região.
+ *
+ * Parameters
+ * quem:	   		Personagem que danificou
+ * tiem:  			item danificado.
+ * atributosEvento: atributos do ato de danificar.
+ * Return value
+ *  Sem retorno
+ *
+ */
 function EnviaEventoDanoItem(quem,item,atributosEvento)
 	var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, item.realm );
 
@@ -83,6 +111,21 @@ function EnviaEventoDanoItem(quem,item,atributosEvento)
 	*/
 endfunction
 
+/*
+ * Destruir(quem, item, fonteDano)
+ *
+ * Purpose
+ * Roda a lógica de destruição de um item que participe do escopo do sistema de destruição.
+ *
+ * Parameters
+ * quem:	   		Personagem que danificou
+ * itemAlvo:  		item danificado.
+ * fonteDano: 		fonte de dano. Pode <itemRef>, struct com membro <dano> e <desc>, ou apenas um valor real. 
+ *
+ * Return value
+ *  Sem retorno
+ *
+ */
 function Destruir(quem,itemAlvo,fonteDano)
 	LimpaObjPropsDestruiveis(itemAlvo);
 	var envelopeDeed := struct;
@@ -162,14 +205,46 @@ function Destruir(quem,itemAlvo,fonteDano)
 	//TODO Adicionar comentários e documentação do que já foi feito.
 endfunction
 
-function DisparaAvisoDiscord(quem,x,y,z,realm,itemAlvoDesc,descFonteDano)
+
+/*
+ * DisparaAvisoDiscord(quem, x,y,z,reino, itemAlvoDesc, descFonteDano)
+ *
+ * Purpose
+ * Dispara um aviso em um canal do discord, informando que um item foi destruído.
+ *
+ * Parameters
+ * quem:	   		Personagem que danificou
+ * x:	   			coordenada x  do acontecido
+ * y:	   			coordenada y  do acontecido
+ * z:	   			coordenada z  do acontecido
+ * reino:	   		Preino
+ * itemAlvoDesc:  		nome do item destruído
+ * descFonteDano: 		descrição da fonte de dano. 
+ *
+ * Return value
+ *  Sem retorno
+ *
+ */
+function DisparaAvisoDiscord(quem,x,y,z,reino,itemAlvoDesc,descFonteDano)
 	if(quem.acctname && !Find(UPPER(descFonteDano),"ARMADILHA",1))
 		var nome := GetObjProperty(quem, "nome_inicial");
 		var tipo := TIPO_DISCORD_DESTRUIDO;
-		Start_script(":DiscordWebhook:discord", {tipo, nome, quem.acctname , descFonteDano, realm, {x,y,z}, itemAlvoDesc});
+		Start_script(":DiscordWebhook:discord", {tipo, nome, quem.acctname , descFonteDano, reino, {x,y,z}, itemAlvoDesc});
 	endif
 endfunction
 
+/*
+ * DeveMarcarRecriarItem(itemAlvo)
+ *
+ * Purpose
+ * Avalia se o item deve ser marcado para recriação pelo vigilante de itens destruídos.
+ * Parameters
+ * itemAlvo:	   		item a ser avaliado
+ *
+ * Return value
+ *  true se o item se qualifica para ressurgimento.
+ *
+ */
 function DeveMarcarRecriarItem(itemAlvo)
 	return !GetObjProperty(itemAlvo,PROPNAME_ARTIFICE_SERIAL) 
 	&& !GetObjProperty(itemAlvo,PROPNAME_DISPENSAVEL_FLAG)
@@ -178,13 +253,36 @@ function DeveMarcarRecriarItem(itemAlvo)
 	&& !IsDestroco(itemAlvo);
 endfunction
 
-
+/*
+ * CalculaMaxDestrocos(item)
+ *
+ * Purpose
+ * Calcula um valor aleatório baseado na altura do item. 
+ * Parameters
+ * item:	   		item a ser avaliado
+ *
+ * Return value
+ *  Retorna um inteiro.
+ *
+ */
 function CalculaMaxDestrocos(item)
 	var numeroMaximoDest := Ceil(item.height / 5);
 	numeroMaximoDest := numeroMaximoDest > 1 ? numeroMaximoDest : 1;
 	return RandomInt(cInt(numeroMaximoDest)) + 1;
 endfunction
 
+/*
+ * AvaliaDisparoArmadilha(item)
+ *
+ * Purpose
+ * Realiza a chance de disparo de armadilha de um item.
+ * Parameters
+ * item:	   		item com a  armadilha
+ *
+ * Return value
+ *   true se o valor aleatório for menor ou igual a chance.
+ *
+ */
 function AvaliaDisparoArmadilha(item)
 	var armadilhas := GetObjProperty(item, PROPNAME_ARMADILHAS);
 	if(armadilhas)	
@@ -200,6 +298,17 @@ function AvaliaDisparoArmadilha(item)
 	return false;
 endfunction
 
+/*
+ * MontaCatalogoDestrocos()
+ *
+ * Purpose
+ * Guarda os Graphics que são usados nos destroços.
+ * Parameters
+ *
+ * Return value
+ *   um Dict com todos os diferentes tipos de material, sendo a chave <Type> do resourceList.cfg.
+ *
+ */
 function MontaCatalogoDestrocos()
 	var catalogo := Dictionary;
 	
@@ -220,6 +329,20 @@ function MontaCatalogoDestrocos()
 	return catalogo;
 endfunction
 
+/*
+ * TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
+ *
+ * Purpose
+ *	Toca o sound effect para cada material.
+ *
+ * Parameters
+ * itemAlvo:	   		item que foi destruído.
+ * deveTocarTesouro:	booleano, true se deve tocar som de tesouro ao destruir o item.
+ *
+ * Return value
+ *   sem retorno
+ *
+ */
 function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 	var material := "";
 	var sfx := 0;
@@ -252,10 +375,36 @@ function TocaSFXDestruicao(itemAlvo,deveTocarTesouro)
 	endif
 endfunction
 
+/*
+ * LimpaObjPropsDestruiveis(itemAlvo)
+ *
+ * Purpose
+ *	Lmpa as props utilizadas que não são mais necessárias ao final do script.
+ *
+ * Parameters
+ * itemAlvo:	   		item que vai receber  a limpeza.
+ *
+ * Return value
+ *   sem retorno
+ *
+ */
 function LimpaObjPropsDestruiveis(itemAlvo)
 	EraseObjProperty(itemAlvo,PROPNAME_DURABILIDADE);
 endfunction
 
+/*
+ * PegaResistenciaItem(itemAlvo)
+ *
+ * Purpose
+ *	Calcula e retorna a resistÊncia do item, baseado no seu material, se tem prop de multiplicador e em um valor base.
+ *
+ * Parameters
+ * itemAlvo:	   		item que terá sua resistência calculada.
+ *
+ * Return value
+ *   resistência total do item.
+ *
+ */
 function PegaResistenciaItem(itemAlvo)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
 	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
@@ -271,6 +420,20 @@ function PegaResistenciaItem(itemAlvo)
 	return resFinal;
 endfunction
 
+/*
+ * CalculaDanoRecebido(fonteDano, atributosItem)
+ *
+ * Purpose
+ *	Calcula o dano recebido, após subtração da resistência do item.
+ *
+ * Parameters
+ * fonteDano:	   		a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc> e <dano> ou um valor real.
+ * atributosItem:	   	atributos do item que receberá o dano. comtem a durabilidade, resistencia e durabildiade total.
+ *
+ * Return value
+ *   retorna um struct com danoCalculado.+dano valor total do dano e .+isEficaz, um boolean informando se foi eficaz.
+ *
+ */
 function CalculaDanoRecebido( fonteDano, atributosItem)
 	var danoCalculado := struct;
 	If(atributosItem.isIndestrutivel)
@@ -294,6 +457,23 @@ function CalculaDanoRecebido( fonteDano, atributosItem)
 	return danoCalculado;
 endfunction
 
+/*
+ * PegaDurabilidadeTotal(item)
+ *
+ * Purpose
+ *	Calcula a durabilidade total do item que está recebendo dano.
+ *	Se for equipamento, entao: MaxHP.
+ *	Se não for, então  escolhe uma precedência, sendo: Prop  > peso itemdesc > peso Tiles.cfg. e soma-se um modificador do material.
+ *
+ * *Nota*
+ *  Se  o teim não tiver a propriedade de durabilidade total, ele coloca.
+ * Parameters
+ * item: item que terá sua durabildiade estabelecida.
+ *
+ * Return value
+ *   o valor da durabildiade total.
+ *
+ */
 function PegaDurabilidadeTotal(item)
 	var itemdesc := ReadConfigFile(":*:itemdesc");
     var elem := FindConfigElem(itemdesc, item.objtype);
@@ -325,6 +505,19 @@ function PegaDurabilidadeTotal(item)
 	endif
 endfunction
 
+/*
+ * IsEmperrado(item)
+ *
+ * Purpose
+ *	Verifica se o item satisfaz a condição de emperrado.
+ *
+ * Parameters
+ * item: item a ser avaliado
+ *
+ * Return value
+ *   true caso o item esteja emperrado.
+ *
+ */
 function IsEmperrado(item)
 	if(!item.ISA(POLCLASS_LOCKABLE))
 		return false;
@@ -334,6 +527,23 @@ function IsEmperrado(item)
 	return atributos.durabTotal / 2 > atributos.durabilidade;   
 endfunction
 
+/*
+ * MontaAtributosItem(item)
+ *
+ * Purpose
+ *	Monta os atributos do item que está sendo danificado neste evento.
+ *
+ * Parameters
+ * item: item a ser avaliado.
+ *
+ * Return value
+ *   retorna um struct com:
+ *		.+resistencia //valor calculado da resistência do objeto.
+ *		.+durabTotal //valor da durabildiade máxima do objeto
+ *		.+durabilidade //valor da durabildiade atual do objeto
+ *		.+isIndestrutivel // Se o item é considerádo indestrutivel ou não.
+ *
+ */
 function MontaAtributosItem(item)
 	var itemAtrib := struct;
 		itemAtrib.+resistencia := cInt(PegaResistenciaItem(item));
@@ -355,6 +565,27 @@ function MontaAtributosItem(item)
 	return itemAtrib;
 endfunction
 
+/*
+ * DanificaItem(quemDanificou, item, fonteDano, gfx, gfxHue)
+ *
+ * Purpose
+ *	Responsável por executar a lógica de um item danificado. caso o item não tenha mais durabilidade, 
+ *	chama o metódo Destruir.
+ * 
+ * Parameters
+ * quemDanificou: O ator que danificou o item.
+ * item: O item que foi danificado
+ * fonteDano: a fonte causadora do dano, pode ser um: ItemRef, Struct com membro <desc> e <dano> ou um valor real.
+ * gfx: o efeito especial que será disparado no item danificado.
+ * gfxHue: a cor do efeito especial..
+ *
+ * Return value
+ *   retorna um struct com o dano calculado, sendo sua estrutura:
+ *		.+dano //valor total do dano recebido.
+ *		.+isEficaz // true se o dano foi eficaz.
+ *		.+isDestruido // true se o objeto foi destruído após a aplicação do dano.
+ *
+ */
 function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	if(item.concealed || item.invisible)
 		return struct;
@@ -407,10 +638,33 @@ function DanificaItem(quemDanificou,item,fonteDano,gfx := 0,gfxHue := 0)
 	return danoCalculado;
 endfunction
 
+
 function IsDestroco(item)
 	return GetObjProperty(item,PROPNAME_DESTROCO);
 endfunction
 
+/* 
+ * DanificaObjetosProximos(quem,x,y,z,realm,dano,alcance, gfx := 0, igrnoreSerial :=0,  gfxHue := 0)
+ *
+ * Purpose
+ *	Danifica todos os itens próximos a uma coordenada x ,y, z.
+ * 
+ * Parameters
+ * quem: O ator que danificou o item.
+ * x: coordenada x do ponto central da "esfera" de efeito.
+ * y: coordenada y do ponto central da "esfera" de efeito.
+ * z: coordenada z do ponto central da "esfera" de efeito.
+ * realm: o reino  do item danificado.
+ * dano: a quantidade de dano desferida.
+ * alcance: o raio de efeito.
+ * gfx: o efeito especial que será disparado no item danificado.
+ * igrnoreSerial: uma serial que será ignorada pela esfera de influencia, usada para que o dano seja ignorado naquele item. (armadilha, por exemplo.) 
+ * gfxHue: a cor do efeito especial..
+ *
+ * Return value
+ *   sem retorno.
+ *
+ */
 function DanificaObjetosProximos(quem,x,y,z,realm,dano,alcance,gfx:=0,ignoreSerial := 0,gfxHue := 0)
 	var itens:= ListItemsNearLocation(x,y,z,alcance,realm);
 
@@ -422,6 +676,23 @@ function DanificaObjetosProximos(quem,x,y,z,realm,dano,alcance,gfx:=0,ignoreSeri
 	endforeach
 endfunction
 
+
+/* 
+ * CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := true)
+ *
+ * Purpose
+ *	Cria e espalha destroços de algum item, levando em conta seu material.
+ * 
+ * Parameters
+ * itemAlvo: o item que está sendo danificado..
+ * quantidade: A quantidade de destroços que será criada.
+ * alcanceMax: O alcance máximo de lançamento dos destroços
+ * deveCriarOrigem: true se o primeiro destroço sempre vai na origem.
+ *
+ * Return value
+ *   sem retorno.
+ *
+ */
 function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := true)
 	var materialId := GetObjProperty(itemAlvo,PROPNAME_MATERIAL);
 
@@ -491,6 +762,22 @@ function CriaDestrocos(itemAlvo,quantidade,alcanceMax := 0, deveCriarOrigem := t
 	endfor
 endfunction
 
+
+/* 
+ * ConfiguraDestroco(byref destroco,tipo,corDestroco)
+ *
+ * Purpose
+ *	~Monta as configurações de um destroço que acaba de ser criado.
+ * 
+ * Parameters
+ * destroco: o destroço.
+ * quantidade: tipo o tipo de material do destroço.
+ * corDestroco: a cor do material.
+ *
+ * Return value
+ *   sem retorno.
+ *
+ */
 function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 	destroco.color := corDestroco;
 	destroco.movable := 1;
@@ -535,10 +822,36 @@ function ConfiguraDestroco(byref destroco,tipo,corDestroco)
 		SetName(destroco,novoNome);
 endfunction
 
+/* 
+ * VerificaRegiaoSegura(item)
+ *
+ * Purpose
+ *	Verifica se a região onde o item está é considerada segura (Architect ou estalagem.)
+ * 
+ * Parameters
+ * item: O item.
+ *
+ * Return value
+ *   true caso esteja numa região segura.
+ *
+ */
 function VerificaRegiaoSegura(item)
 	return isDentroAreaArchitecct(item) || isDentroQuartoEstalagem(item);
 endfunction
 
+/* 
+ * isDentroQuartoEstalagem(objeto)
+ *
+ * Purpose
+ *	Verifica se o objeto se encontra dentro de um quarto de estalagem.
+ * 
+ * Parameters
+ * item: O objeto.
+ *
+ * Return value
+ *   true caso esteja dentro de um quarto de estalagem.
+ *
+ */
 function isDentroQuartoEstalagem(objeto)
 	var estalajadeiros := getglobalproperty("InnKeeper");
 	foreach estalajadeiro in estalajadeiros
@@ -569,12 +882,41 @@ function isDentroQuartoEstalagem(objeto)
 	return false;
 endfunction
 
+/* 
+ * isDentroAreaArchitecct(objeto)
+ *
+ * Purpose
+ *	Verifica se o objeto se encontra dentro de uma region do architect
+ * 
+ * Parameters
+ * item: O objeto.
+ *
+ * Return value
+ *   true caso esteja dentro de uma region do architect.
+ *
+ */
 function isDentroAreaArchitecct(objeto)
 	var area := GetResidenciasRegion(objeto);
 
 	return !(area == "Whole_World");
 endfunction
 
+/* 
+ * ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
+ *
+ * Purpose
+ *	configura as propriedades de um alvo do gump do comando destruiveis.
+ * 
+ * Parameters
+ * quem: O ator que executou o comando.
+ * alvo: item que será configurado.
+ * cfgselecao: as configurações escolhidas no gump.
+ * mostrarMensagem: true caso seja necessário mandar a mensagem individual.
+ *
+ * Return value
+ *   sem retorno.
+ *
+ */
 function ConfiguraAlvo(quem,alvo,cfgselecao, mostrarMensagem := true)
 	if(alvo.ISA(POLCLASS_ITEM) && !alvo.ISA(POLCLASS_EQUIPMENT))
 		var material := configRecursos[cfgselecao.material];
