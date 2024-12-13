@@ -103,15 +103,19 @@ endprogram
 
 function CreateNpcFromSpawnPoint( who, spawnpoint, i )
   var template := GetObjProperty( spawnpoint, Cstr( "Template" + i ) );
-  var npc := CreateNpc( template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm );
-  SetObjProperty( spawnpoint, "Spawn" + i, template );
-  SetupCustomProps( spawnpoint, npc, i );
-  if ( !npc )
-    SendSysMessage( who, "Erro ao criar o npc - Template -> " + npc +" - Error -> " + npc.errortext );
-  else
-    SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
-    spawn_count += 1;
-  endif
+  var amount := Cint(GetObjProperty( spawnpoint, Cstr( "Amount" + i ) ));
+  var count := 0;
+  for(count := 1; count <= amount; count += 1)
+    var npc := CreateNpc( template, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm );
+    SetObjProperty( spawnpoint, "Spawn" + i, template );
+    SetupCustomProps( spawnpoint, npc, i );
+    if ( !npc )
+      SendSysMessage( who, "Erro ao criar o npc - Template -> " + npc +" - Error -> " + npc.errortext );
+    else
+      SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
+      spawn_count += 1;
+    endif
+  endfor
 endfunction
 
 function SetupCustomProps( spawnpoint, npc, counter )
