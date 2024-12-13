@@ -143,7 +143,7 @@ function CreateNpc( template, x, y, z, props, realm )
       endif
     endforeach
   else
-    result := CreateNpcFromTemplate( template, x, y, z, props, realm );
+    result := CreateNpcFromTemplate( Trim(template), x, y, z, props, realm );
   endif
 
   return result;
