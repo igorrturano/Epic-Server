@@ -30,7 +30,7 @@ program start_pet(who, txt)
 			if ((lower(txt[1])=="todos") || (txt[1]==pet.name))
 				//sendsysmessage(who, "quem " + txt[1]);
 				if (txt[2]=="falar")	
-					var cfg := ReadConfigFile(":brainAI:npcdesc");
+					var cfg := ReadConfigFile(":*:npcdesc");
 					var npctemplate := pet.npctemplate;
 					npctemplate := npctemplate[10, len(npctemplate)-9];
 					//sendsysmessage(who, "npctemplate " + npctemplate );					

@@ -37,7 +37,7 @@ program summontotem(params)
 	endif
 	npctemplate := npctemplate[10, len(npctemplate)-9];
 
-	var cfg2 := ReadConfigFile(":brainAI:npcdesc");
+	var cfg2 := ReadConfigFile(":*:npcdesc");
 	cfg2 := cfg2[npctemplate];
 
 	var petcost := 1; // Default pet cost

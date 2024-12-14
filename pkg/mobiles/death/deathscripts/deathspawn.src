@@ -16,7 +16,7 @@ program DeathScript(params)
 	var npc := params[2];
 	//var template := params[3];
 	params := 0; // Not needed anymore
-	var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+	var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 	var npctemplate := GetobjProperty(corpse, "npctemplate");
 	var mytemplate := ParseTemplateName(npctemplate).template;
 	var summon := npccfgfile[mytemplate].DeathScriptNpc;
