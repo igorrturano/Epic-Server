@@ -6,7 +6,7 @@ include ":ghaia:genericspecial";
 include ":ghaia:ghaiaspecial";
 include "include/epicNPCUtils";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var max_z := 18;
 var idlesnd1;
