@@ -9,6 +9,7 @@ include ":attributes:attributes";
 include "include/say";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
 
 program wall_of_stone( parms )
   	var caster := parms[1];
@@ -72,6 +73,7 @@ program wall_of_stone( parms )
 		endif
 
 		SetObjProperty(item, "SummonedField", caster.serial);
+		SetObjProperty(item, "PROPNAME_DISPENSAVEL_FLAG", 1);
 		item.SetOwner(caster);
 		item.SetDuration(duration);
 		SleepMS(2);

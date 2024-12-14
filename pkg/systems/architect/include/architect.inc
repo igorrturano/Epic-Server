@@ -39,7 +39,7 @@ function GetResidenciasRegion(who)
   foreach elem in (df.Keys())
     var region := df.FindElement(elem);
     var rect := region.getProp("Rect");
-    if (InRect(who, SplitWords(rect)))
+    if (AT_InRect(who, SplitWords(rect)))
       return elem;
     endif
   endforeach
@@ -47,7 +47,7 @@ function GetResidenciasRegion(who)
 
 endfunction
 
-function InRect(who, rect)
+function AT_InRect(who, rect)
 	var x1 := CInt(rect[1]);
 	var y1 := CInt(rect[2]);
 	var x2 := CInt(rect[3]);

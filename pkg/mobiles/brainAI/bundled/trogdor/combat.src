@@ -12,6 +12,7 @@ include "include/client";
 include "include/sounds";
 include "include/facings";
 include ":combat:damage";
+include ":destroyable:include/destroyItem";
 
 program BrainNerve(params)
 	var npc		:= params[1];
@@ -135,11 +136,14 @@ function SpitFireBall(npc, opponent)
 		endif
 		
 		var field := CreateItemAtLocation(coord.x, coord.y, npc.z, "FireField_NS", 1);
+		field.SetOwner(npc);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(2);
 		sleepms(105);
 	endforeach
 
 	PlaySoundEffect(opponent, 0x208);
+	DanificaObjetosProximos(npc,opponent.x, opponent.y, opponent.z,opponent.realm,struct{dano := RandomDiceRoll("3d7"), desc := "Cuspida de Fogo." },3,GFX_EXPLODE_1);
 	ApplyDamageEX(opponent, RandomDiceRoll("3d7"), DMG_FIRE);
 
 	foreach coord in GetCoordsInSquare(opponent.x, opponent.y, 3)
@@ -148,6 +152,8 @@ function SpitFireBall(npc, opponent)
 		endif
 		PlayStationaryEffect(coord.x, coord.y, npc.z, SelectRandomExplosion(), 10, 10, 0);
 		var field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldNS", 1);
+		field.SetOwner(npc);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(5);
 		sleepms(5);
 	endforeach

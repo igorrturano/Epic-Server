@@ -1,0 +1,36 @@
+use uo;
+use os;
+include ":destroyable:include/destroyItem";
+include ":attributes:attributes";
+include "include/imersao";
+include "include/say";
+
+program itemSelecionado(parms)
+
+	var quem:=parms[1];
+	var objetos:=parms[2];
+
+	while(true)
+		Sleepms(600);
+		var quebrar := false;
+		
+		foreach objeto in objetos
+			var pid := GetObjProperty(objeto,"pidSelec");
+			if(pid)
+				If(!GetProcess(pid))
+					objeto.color := GetObjProperty(objeto,"corOriginalSelec");
+					EraseObjProperty(objeto,"corOriginalSelec");
+					EraseObjProperty(objeto,"pidSelec");
+					quebrar := true;
+				endif
+			endif
+			Sleepms(2);
+		endforeach
+
+		if(quebrar)
+			break;
+		endif 
+	endwhile;
+
+	return 1;
+endprogram

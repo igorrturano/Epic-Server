@@ -107,8 +107,6 @@ function PreencheNomeItem(objeto)
         nomeObjeto := AdicionaLore(objeto,nomeObjeto);
     endif
     
-nomeObjeto := AdicionaDescricaoQuebravel(objeto, nomeObjeto, 1);
-    
     return nomeObjeto;
 endfunction
 
@@ -159,104 +157,6 @@ function AdicionaLore(objeto,nomeObjeto)
 		endif
 	endif
 	return nomeObjeto;
-endfunction
-
-
-function AdicionaDescricaoQuebravel(item, xDesc, apenasNome := 0)
-    var quebravel := GetObjProperty(item, "quebravel");
-    if (!quebravel)
-        return xDesc; // Retorna sem alterações se o item não for quebrável
-    endif
-
-    // Adiciona a descrição geral apenas se for apenasNome
-    if (apenasNome)
-        case (quebravel)
-            "gathering":
-                xDesc += "<br><BASEFONT COLOR=#FFD700>Parece quebrável";
-            "survival":
-                xDesc += "<br><BASEFONT COLOR=#FFD700>Parece cortável";
-        endcase
-        return xDesc;
-    endif
-
-    // Se não for apenasNome, adiciona apenas o estado atual
-    xDesc += DescricaoEstadoQuebravel(item, quebravel);
-    
-    return xDesc;
-endfunction
-
-function DescricaoEstadoQuebravel(item, tipo)
-   var durabilidade := CInt(GetObjProperty(item, "durabilidade"));
-   var durabilidade_maxima := CInt(GetObjProperty(item, "durabilidade_maxima"));
-   
-   if (!durabilidade || !durabilidade_maxima)
-       return "Estado desconhecido";
-   endif
-   
-   var percentagem := (CDbl(durabilidade) / CDbl(durabilidade_maxima)) * 100;
-   var descricao := "<br>";
-   
-   // Define a cor baseada na percentagem
-   var cor;
-   if (percentagem > 65)
-       cor := "<BASEFONT COLOR=#00FF00>"; // Verde
-   elseif (percentagem > 32)
-       cor := "<BASEFONT COLOR=#FFFF00>"; // Amarelo
-   else
-       cor := "<BASEFONT COLOR=#FF0000>"; // Vermelho
-   endif
-   
-   // Adiciona o estado textual com a cor apropriada
-   case (Lower(tipo))
-       "gathering":
-           if (percentagem > 90)
-               descricao += cor + "Intacto";
-           elseif (percentagem > 80)
-               descricao += cor + "Levemente Danificado";
-           elseif (percentagem > 70)
-               descricao += cor + "Desgaste Visível";
-           elseif (percentagem > 60)
-               descricao += cor + "Começando a Ceder";
-           elseif (percentagem > 50)
-               descricao += cor + "Fragilizado";
-           elseif (percentagem > 40)
-               descricao += cor + "Rachando";
-           elseif (percentagem > 30)
-               descricao += cor + "Se Rompendo";
-           elseif (percentagem > 20)
-               descricao += cor + "Despedaçando-se";
-           elseif (percentagem > 10)
-               descricao += cor + "Quase Irreconhecível";
-           else
-               descricao += cor + "À Beira da Destruição";
-           endif
-       "survival":
-           if (percentagem > 90)
-               descricao += cor + "Intacto";
-           elseif (percentagem > 80)
-               descricao += cor + "Levemente Cortado";
-           elseif (percentagem > 70)
-               descricao += cor + "Cortes Visíveis";
-           elseif (percentagem > 60)
-               descricao += cor + "Parcialmente Cortado";
-           elseif (percentagem > 50)
-               descricao += cor + "Cortes Profundos";
-           elseif (percentagem > 40)
-               descricao += cor + "Severamente Cortado";
-           elseif (percentagem > 30)
-               descricao += cor + "Bastante Danificado";
-           elseif (percentagem > 20)
-               descricao += cor + "Despedaçando-se";
-           elseif (percentagem > 10)
-               descricao += cor + "Praticamente Destruído";
-           else
-               descricao += cor + "À Beira da Destruição";
-           endif
-       default:
-           descricao += "Estado desconhecido";
-   endcase
-   
-   return descricao;
 endfunction
 
 function AddSpecialBookshelfDescription(item, xDesc)

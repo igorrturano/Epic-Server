@@ -153,6 +153,7 @@ function CreateIteminBackpackFromTemplate(player, selling)
 		book_elem.SetProp("Contents", bookinfo.contents);
 	endif
 	purchase.movable := 1;
+	return purchase;
 endfunction
 
 function CreateItemAtLocationFromTemplate(x, y, z, realm, selling)
@@ -182,4 +183,5 @@ function CreateItemAtLocationFromTemplate(x, y, z, realm, selling)
 		SetName(purchase, selling.desc);
 	endif
 	purchase.movable := 1;
+	return purchase;
 endfunction
