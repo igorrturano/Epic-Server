@@ -33,7 +33,7 @@ var wait_time := 10;
 var combatevents := array{};
 var guild, guild_leader, guild_laws, fix_location, guild_prison, guild_prisonl;
 var tools := array{0xec4, 0x13e3, 0xFB4, 0xFB5, 0x13f6, 0xe85, 0xf43, 0xec2, 0x1F020};
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 
 //Custom events
 const REVELADO_EVENT    := 0x78460;

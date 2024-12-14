@@ -7,7 +7,7 @@ include ":ghaia:ghaia";
 include ":ghaia:objective";
 include ":ghaia:boss1fight";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var idlesnd1;
 var idlesnd2;
