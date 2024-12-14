@@ -9,7 +9,7 @@ const T_HORA := 3600;
 
 program vigilanteDestruiveis()
 	while(true)
-		sleep(10);
+		sleep(T_HORA * 3);
 		var retornoListaItens := PegaListaItens(10);
 		
 		foreach infoItem in (retornoListaItens.itens)
