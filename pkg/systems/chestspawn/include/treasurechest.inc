@@ -6,13 +6,14 @@ include ":traps:traps";
 include "include/client";
 include "include/say";
 include ":timedscripts:timedScripts";
+include ":destroyable:include/destroyItem";
 
 /*
  * CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
  * Função para criar baús do tesouro com armadilhas e loot
  */
 function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
-    var newx, newy, newz, checker, type, gfx, lootgroup, chest;
+    var newx, newy, newz, checker, type, lootgroup, chest;
     var arraychest := array{};
     
     print("DEBUG::CreateTreasureChests - Iniciando criacao:");
@@ -48,15 +49,16 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
             
             if(len(ListItemsNearLocation(newx, newy, newz, 0, realm)) == 0)
                 type := RandomInt(4)+1;
-                case(type)
-                    1: gfx := 3650;
-                    2: gfx := 3651;
-                    3: gfx := 3703;
-                    4: gfx := 3648;
-                    5: gfx := 3708;
+                var chestStruct := struct;
+                case(type) // 0x1bd7 = madeira| 0x6995 = aço
+                    1: chestStruct.+gfx := 3650; chestStruct.+maxHp := 30; chestStruct.+material := 0x1bd7;
+                    2: chestStruct.+gfx := 3651; chestStruct.+maxHp := 30; chestStruct.+material := 0x1bd7;
+                    3: chestStruct.+gfx := 3703; chestStruct.+maxHp := 22; chestStruct.+material := 0x1bd7;
+                    4: chestStruct.+gfx := 3648; chestStruct.+maxHp := 45; chestStruct.+material := 0x6995;
+                    5: chestStruct.+gfx := 3708; chestStruct.+maxHp := 45; chestStruct.+material := 0x6995;
                 endcase
                 
-                chest := CreateItemAtLocation(newx, newy, newz, gfx, 1, realm);
+                chest := CreateItemAtLocation(newx, newy, newz, chestStruct.gfx, 1, realm);
             if(chest)
         checker := 1;
         chest.movable := 0;
@@ -69,6 +71,9 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
         // Configurações do baú
         SetObjProperty(chest, "IsTreasureChest", 1);
         SetObjProperty(chest, "CreatedOn", ReadGameClock());
+        SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, 1);
+        SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
+        SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
         SetObjProperty(chest, "level", lvl);
         
         if (GetObjProperty(chest, "link"))

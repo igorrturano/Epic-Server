@@ -114,7 +114,7 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 	return 1;
 endfunction
 
-function WearDownWeapon(attacker, weapon)
+function WearDownWeapon(attacker, weapon,wearRateMlt := 1)
 	if (weapon.IsA(POLCLASS_WEAPON))
 		//Se está desarmado não danifique a arma natural
 		if (weapon.objtype == 0x1F020)
@@ -133,7 +133,7 @@ function WearDownWeapon(attacker, weapon)
 			endif
 
 			if ( RandomDiceRoll("1d100") <= wearchance )
-				var weaponhp := weapon.hp - 1;
+				var weaponhp := weapon.hp - 1 * wearRateMlt;
 
 				if ( weaponhp <= 0 )
 					SendSysMessage(attacker, weapon.desc+" quebrou.");

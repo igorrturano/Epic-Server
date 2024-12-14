@@ -95,6 +95,7 @@ function makeChests(item, frq, amt, rng)
 					DestroyItem(thing);
 				endif
 			endif
+
 			sleepms(10);
 		endforeach
 

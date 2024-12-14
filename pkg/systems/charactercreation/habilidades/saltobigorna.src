@@ -12,6 +12,7 @@ include ":combat:damage";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":taming:taming";
+include ":destroyable:include/destroyItem";
 
 program animateSword(params)
 	var who := params[1];
@@ -58,6 +59,7 @@ program animateSword(params)
    endif
    
     var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 2 , who.realm );
+    DanificaObjetosProximos(who,who.x, who.y, who.z,who.realm,struct{dano := dano_mlore, desc := "Salto Bigorna." },2,0x6d67);
     foreach char in nearby
         var char_owner := GetObjProperty(char, "owner");
         if (!(char in (festa.members) || char == who))

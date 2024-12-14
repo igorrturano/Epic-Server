@@ -6,6 +6,7 @@ include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:include/equipstats";
+include ":destroyable:include/destroyItem";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
@@ -70,14 +71,21 @@ function PegaDescLeitura(who,lingua,description,xDesc := "")
 	return xDesc;
 endfunction
 
-function PegaDescAAComum(objeto,xDesc := "")
+function PegaDescComum(objeto,xDesc := "")
 
 	if (objeto.quality >= 1.1)
 		xDesc := xDesc + WHITE + getQuality(objeto.quality) + "<br>"; //exibe apenas dois digitos
 	endif
 
 	var cond := GetCondition(objeto);
-	xDesc := xDesc + "Condição: " + GetCondition(objeto) + "<br>";
+
+	if(objeto.ISA(POLCLASS_EQUIPMENT))
+		xDesc := xDesc + "Condição: " + cond + "<br>";
+	else
+		if(cond != "Boa")
+			xDesc := xDesc + "Condição: " + cond + "<br>";
+		endif
+	endif
 
 	return xDesc;
 endfunction
@@ -310,4 +318,13 @@ function PegaDescGoles(objeto, xDesc)
 			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "goles") + " doses";
 		endif
 		return xDesc;
+endfunction
+
+function PegaDescEmperrado(objeto, xDesc)
+	if(objeto.ISA(POLCLASS_LOCKABLE))
+		if(IsEmperrado(objeto))
+			xDesc := xDesc + "[Emperrado]<br>";
+		endif
+	endif
+	return xDesc;
 endfunction

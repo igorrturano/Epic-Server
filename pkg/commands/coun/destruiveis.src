@@ -1,0 +1,74 @@
+use uo;
+use polsys;
+
+include ":gumps:/include/gumps";
+include ":gumps:/include/epicGumps";
+include ":gumps:/include/gumps_ex";
+include ":destroyable:include/destroyItemPersist";
+include ":destroyable:include/destroyItem";
+include ":destroyable:include/destroyItemGump";
+include "include/utility";
+include ":gumps:yesNo";
+
+program destruiveis(quem, texto)
+
+	if(!texto)
+		var cfgselecao := EnviaConfigDesGump(quem);
+
+		if(cfgselecao.tipoAlvo == "cadeiaUnica")
+			while(true)
+				var alvo := Target(quem,TGTOPT_NOCHECK_LOS);
+				if(!alvo)
+					SendSysMessageEx(quem,"Alvo Cancelado.", SSM_FAIL);
+					break;
+				endif
+				ConfiguraAlvo(quem,alvo,cfgselecao);
+				Sleepms(2);
+			endwhile
+		elseif(cfgselecao.tipoAlvo == "retanguloSelecao")
+
+			SendSysMessageEx( quem, "Selecione o vertice superior esquerdo.", SSM_INFO);
+			var topoEsquerdo := TargetCoordinates(quem);
+			if ( !topoEsquerdo )
+				SendSysMessageEx(quem,"Alvo Cancelado.", SSM_FAIL);
+				return 0;
+			endif
+			SendSysMessageEx( quem, "Selecione o vertice inferior direito.", SSM_INFO);
+			var inferiorDireito := TargetCoordinates(quem);
+			if ( !inferiorDireito )
+				SendSysMessageEx(quem,"Alvo Cancelado.", SSM_FAIL);
+				return 0;
+			endif
+
+			var objetos := ListObjectsInBoxOfClass( POLCLASS_ITEM, topoEsquerdo.x,topoEsquerdo.y,-15, inferiorDireito.x,inferiorDireito.y,15, quem.realm );
+
+			foreach objeto in objetos
+				if(objeto.invisible == 1)
+					objetos.erase(_objeto_iter);
+					continue;
+				endif
+				SetObjProperty(objeto,"corOriginalSelec",objeto.color);
+				SetObjProperty(objeto,"pidSelec",GetPid());
+				objeto.color := 1266;
+				Sleepms(2);
+			endforeach
+			Start_Script(":destroyable:destroy/itemSelecionado",{quem,objetos,GetPid()});
+
+			var resposta := YesNo(quem," {} itens foram selecionados, deseja aplicar aas configurações a eles?".format(objetos.size()), "Sim","Não");
+			if(resposta)
+				foreach objeto in objetos
+					if(cfgselecao.material)
+						EraseObjProperty(objeto,"corOriginalSelec");
+						EraseObjProperty(objeto,"pidSelec");
+					endif
+					ConfiguraAlvo(quem,objeto,cfgselecao,false);
+				endforeach
+				SendSysMessageEX(quem,"Configurações aplicadas a {} itens".format(objetos.size()),SSM_INFO);
+			endif
+
+		endif
+	elseif(UPPER(texto) == "LOG")
+		EnviaLogGump(quem);
+	endif
+	
+endprogram
