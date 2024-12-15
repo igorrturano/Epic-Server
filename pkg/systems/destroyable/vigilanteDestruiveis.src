@@ -9,8 +9,8 @@ const T_HORA := 3600;
 
 program vigilanteDestruiveis()
 	while(true)
-		sleep(T_HORA * 3);
-		var retornoListaItens := PegaListaItens(10);
+		sleep(60);
+		var retornoListaItens := PegaListaItens(T_HORA * 2);
 		
 		foreach infoItem in (retornoListaItens.itens)
 			CriaItemMarcado(infoItem);
