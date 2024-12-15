@@ -1,5 +1,6 @@
 use uo;
 use os;
+use util;
 use math;
 use cfgfile;
 
@@ -261,3 +262,12 @@ function EncontraChavePorValor(valor, dict)
 		endif
 	endforeach
 endfunction;
+
+function PositivoNegativo(angulo)
+	return Sin(angulo) * 1 >= 0 ? 1 : -1;
+endfunction
+
+function FormatarData(timestamp)
+    var time := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
+    return time;
+endfunction

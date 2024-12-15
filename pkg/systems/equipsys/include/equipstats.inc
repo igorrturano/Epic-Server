@@ -162,6 +162,11 @@ function getDamageByTier(tier)
 		CROSSBOW_LOW: return "1d6";
 		CROSSBOW_MID: return "1d8";
 		CROSSBOW_HIGH: return "1d10";
+
+		// THROWING
+		THROWING_LOW: return "1d4";
+		THROWING_MID: return "1d6";
+		THROWING_HIGH: return "1d8";
 			
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase

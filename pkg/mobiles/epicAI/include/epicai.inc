@@ -32,11 +32,12 @@ function InitializeEpicNPC(mobile)
         Loot_Generate(mobile.backpack, loot);
     endif
 
-    var throwinfo := struct;
-    if (npc_elem.throwItem != error)
-        npcThrower(throwinfo, npc_elem);
+    var throwItem := CInt(npc_elem.throwItem);
+    if (throwItem != error)
+        SetObjProperty(mobile, "throwItem", throwItem);
     endif
 
+    var brain_type := GetConfigString(npc_elem, "BrainType");
     // Type-specific initialization
     case (brain_type)
         "monster":  InitializeMonsterNPC(mobile, npc_elem, elem, sounds);
@@ -53,6 +54,7 @@ function InitializeMonsterNPC(mobile, npc_elem, elem, sounds)
     if (has_colors)
         setupNPCColor(mobile, has_colors);
     endif
+    SetupNPCEquip(mobile, npc_elem);
 
     // Monstros falam uma língua específica
     var known_languages := SplitWords(npc_elem.Languages);
@@ -277,24 +279,6 @@ function setupChampspawnNPC(mobile)
     endif
 endfunction
 
-function npcThrower(throwinfo, npc_elem)
-    var shouldCreateItemInFloor := npc_elem.createItemInFloor;
-    throwinfo.+canthrow := 1;
-    throwinfo.+misssound := CInt(npc_elem.throwMiss);
-    throwinfo.+hitsound := CInt(npc_elem.throwHit);
-    throwinfo.+delay := CInt(npc_elem.throwDelay);
-    throwinfo.+anim := CInt(npc_elem.throwAnim);
-    throwinfo.+item := CInt(npc_elem.throwItem);
-    throwinfo.+damage := CStr(npc_elem.throwDamage);
-    throwinfo.+range :=   CInt(npc_elem.throwRange);
-
-    if (!shouldCreateItemInFloor)
-        throwinfo.+createItemInFloor := 0;
-    else
-        throwinfo.+createItemInFloor := 1;
-    endif
-endfunction
-
 function ParseTemplateName(template_name)
 
   if ( template_name.IsA(POLCLASS_NPC) )
@@ -327,7 +311,6 @@ function EquipNPCItemString(who, str, lastcolor)
     var lastc := 0;
     var colors := ReadConfigFile(":ghaia:config/colors");
     var vestiments := ReadConfigFile(":ghaia:config/cloths");
-
     objname := params[1];
     if(CInt(objname))
         objname := CInt(objname);

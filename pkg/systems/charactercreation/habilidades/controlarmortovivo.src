@@ -9,7 +9,7 @@ include ":attributes:attributes";
 
 program controlar(who)
 
-    var cfg := ReadConfigFile(":brainai:npcdesc");
+    var cfg := ReadConfigFile(":*:npcdesc");
 
 	SendSysMessageEx(who, "Escolha o morto para controlar.", SSM_REQUEST);
 	var targ := Target(who);

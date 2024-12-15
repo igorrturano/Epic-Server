@@ -114,7 +114,7 @@ program skinning(parms)
 			return;
 		endif
 		*/
-		var conf := ReadConfigFile(":brainAi:npcdesc");
+		var conf := ReadConfigFile(":*:npcdesc");
 		var tmplate := GetObjProperty(cadaver, "npctemplate");
 		//var tmplate := cadaver.NPCTemplate();
 

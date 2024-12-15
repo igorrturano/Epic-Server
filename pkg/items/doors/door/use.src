@@ -10,6 +10,7 @@ use os;
 
 include ":keys:key";
 include ":traps:traps";
+include ":destroyable:include/destroyItem";
 
 program useScript(mobile, door)
 
@@ -26,6 +27,11 @@ program useScript(mobile, door)
 
 	if ( GetObjProperty(door, "TrapList") != error)
 		RunTraps(door, mobile);
+		return 0;
+	endif
+
+	if (IsEmperrado(door))
+		PrintTextAbovePrivate(door,"*Emperrado*",mobile);
 		return 0;
 	endif
 

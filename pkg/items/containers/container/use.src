@@ -7,6 +7,7 @@ use cfgfile;
 include ":keys:key";
 include ":traps:traps";
 include "include/say";
+include ":destroyable:include/destroyItem";
 
 program useContainer(mobile, container)
 	var item_cfg := ReadConfigFile(":*:itemdesc");
@@ -19,6 +20,9 @@ program useContainer(mobile, container)
 		return 0;
 	elseif ( GetObjProperty(container, "TrapList") != error )
 		RunTraps(container, mobile);
+		return 0;
+	elseif (IsEmperrado(container))
+		PrintTextAbovePrivate(container,"*Emperrado*",mobile);
 		return 0;
 	endif
 

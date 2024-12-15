@@ -11,7 +11,7 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
 
-var cfg := ReadConfigFile(":brainAI:npcdesc");
+var cfg := ReadConfigFile(":*:npcdesc");
 const FOLLOW_CMD	:= 0xA001;
 var following := 0;
 program herd(who)

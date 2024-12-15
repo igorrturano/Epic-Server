@@ -5,6 +5,7 @@ use os;
 use basic;
 
 include ":loot:magicLoot";
+include ":destroyable:include/destroyItem";
 
 var itemdesc_cache := dictionary{};
 
@@ -57,10 +58,6 @@ function Loot_Generate(container, loot_index)
 	return 1;
 endfunction
 
-
-
-
-
 function CacheItemDesc()
     print("=== INICIANDO CACHE DE ITEMDESC ===");
     print("Tentando carregar :*:itemdesc");
@@ -104,6 +101,7 @@ function Loot_CreateItem(container, line)
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var item := CreateItemInContainer(container, parsed.name);
+            SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,1);
             if(item.errortext)
                 print("ERRO ao criar item ["+parsed.name+"]: " + item.errortext);
             else
@@ -124,6 +122,7 @@ function Loot_CreateStack(container, line)
 	
 	if ( Loot_ChanceCheck(parsed.chance) )
 		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
+        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,1);
 		if ( item.errortext )
 			print("ERRO ao criar stack: " + item.errortext);
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};

@@ -8,15 +8,18 @@ use os;
 use util;
 
 include ":combat:damage";
+include ":destroyable:include/destroyItem";
 
 program controlScript(field)
 	SetObjProperty(field, "#PID", GetPid());
+	SetObjProperty(field, PROPNAME_INDESTRUTIVEL, 1);
 
 	var creator := field.GetOwner();
 	if ( creator )
 		SetScriptController(creator);
 	endif
 
+	var sumDesc := GetObjProperty(field,"SummonedField") ? "[Invoc]": "";;
 	var dmg_dice := GetObjProperty(field, "DamageDice");
 	if ( !dmg_dice )
 		dmg_dice := "1d5";
@@ -24,6 +27,7 @@ program controlScript(field)
 
 	while ( field )
 		BurnNearbyMobiles(field, dmg_dice);
+		DanificaObjetosProximos(creator,field.x, field.y, field.z,field.realm,struct{dano := RandomDiceRoll(dmg_dice), desc := ("Campo Flamejante." + sumDesc) },0,0,field.serial);
 
 		if ( ReadGameClock() % 3 == 0 )
 			// Play once every 3 seconds.
