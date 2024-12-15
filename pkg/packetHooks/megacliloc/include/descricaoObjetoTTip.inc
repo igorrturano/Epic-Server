@@ -48,6 +48,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 		endif
 	endif
 
+	xDesc := PegaDescMagicLore(objeto,who,xDesc);
 	XDesc := PegaDescGoles(objeto,xDesc);
 	
 	return xDesc;
