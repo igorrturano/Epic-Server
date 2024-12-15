@@ -16,6 +16,7 @@ include ":charactercreation:habilidades";
 include ":tn:tngumps";
 include ":treasurehunting:treasuremaps";  // Adiciona esta linha
 include ":treasurehunting:treasuredigging";
+include ":destroyable:include/destroyItem";
 
 
 const MINING_ANIMATION	:= 0xB;
@@ -23,6 +24,11 @@ const MINING_SOUND	:= 0x126;
 
 
 program OreMining(who, tool)
+
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+
 	if ( GetEquipmentByLayer(who, LAYER_MOUNT) )
 		SendSysMessage(who, "Você não pode minerar montado.");
 		return;
@@ -35,11 +41,6 @@ program OreMining(who, tool)
     if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
         SendSysMessage(who, "Muito longe.");
         return;
-    elseif (targ.item)
-        if (quebravel)
-            Quebraitem(who, tool, targ.item);
-            return 0;
-        endif
     elseif ( !CanMine(targ, "Stone") )
         var maps := GetMapsInBackpack(who);
         SendSysMessage(who, "DEBUG: Mapas encontrados: " + maps.size());
@@ -243,85 +244,4 @@ function mineraRaroAleatorio(who)
 		SkillCheck(who, GATHERING, -1);
 	endif
 	return achou;
-endfunction
-
-function Quebraitem(who, tool, item)
-    print("Iniciando Quebraitem - Durabilidade inicial: " + GetObjProperty(item, "durabilidade"));
-
-    var quebravel := GetObjProperty(item, "quebravel");
-    if (quebravel == "gathering")
-        var mex := who.x;
-        var mey := who.y;
-        var durabilidade := CInt(GetObjProperty(item, "durabilidade"));
-        var durabilidade_maxima := CInt(GetObjProperty(item, "durabilidade_maxima"));
-        if (!durabilidade_maxima)
-            durabilidade_maxima := durabilidade;
-            SetObjProperty(item, "durabilidade_maxima", durabilidade_maxima);
-        endif
-        print("Durabilidade após leitura inicial: " + durabilidade);
-        
-        var gatherer := CInt(AP_GetSkill(who, GATHERING));
-        print("Valor de gatherer: " + gatherer);
-        
-        PrintTextAbove(who, "*Batendo com força*");
-        CheckToolWear(who, tool, GATHERING);
-
-        var i := 3;
-        while((i <= 9) && (who.x == mex) && (who.y == mey))
-            if((who.x != mex) || (who.y != mey))
-                SendSysMessageEx(who,"Você deve ficar parado enquanto trabalha", SSM_FAIL);
-                return;
-            endif
-
-            PerformAction(who, 0x0b);     // Mantemos a animação de atacar2 (0x0b)
-            PlaySoundEffect(who, 0x126);   // Alteramos o som para 0x126
-            sleep(1);
-            i := i + 1;
-        endwhile
-
-        print("Durabilidade antes da subtração: " + durabilidade);
-        durabilidade := durabilidade - gatherer;
-        print("Durabilidade após subtração: " + durabilidade);
-        
-        if(durabilidade < 0)
-            durabilidade := 0;
-        endif
-
-        SetObjProperty(item, "durabilidade", CInt(durabilidade));
-        print("Durabilidade após SetObjProperty: " + GetObjProperty(item, "durabilidade"));
-
-        // Força a atualização do tooltip
-        item.name := item.name;
-
-        // Verificamos se o item deve ser destruído
-	if (durabilidade <= 0)
-    PrintTextAbove(item, "*quebra*");
-    // Adiciona o som de reação baseado no gênero do personagem
-    if (who.gender == 1)  // Feminino
-        PlaySoundEffect(who, 0x30c);
-    else                  // Masculino
-        PlaySoundEffect(who, 0x41b);
-    endif
-    
-    sleep(2);
-
-            var itens := GetObjProperty(item,"itens");
-            if(itens)
-                foreach itemarray in itens
-                    var itemcriado := CreateItemAtLocation(item.x, item.y, item.z, itemarray, itemarray.amount, realm := _DEFAULT_REALM);
-                    SetName(itemcriado, itemarray.name);
-                endforeach
-            endif
-            
-            DestroyItem(item);
-            SendSysMessageEx(who, "O item foi completamente destruído.", SSM_INFO);
-        else
-            var percentagem := (CDbl(durabilidade) / CDbl(durabilidade_maxima)) * 100;
-          //  SendSysMessageEx(who, "A durabilidade do item foi reduzida para " + durabilidade + " (" + CInt(percentagem) + "%).", SSM_INFO);
-        endif
-    elseif ((quebravel == "survival") || (quebravel == "domesticwork"))
-        SendSysMessageEx(who, "Você deve usar outra ferramenta para este serviço", SSM_FAIL);
-        return;
-    endif
-    print("Finalizando Quebraitem - Durabilidade final: " + GetObjProperty(item, "durabilidade"));
 endfunction

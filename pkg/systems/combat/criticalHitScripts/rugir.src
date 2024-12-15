@@ -14,7 +14,7 @@ program HitScript(params)
 	var attacker := params[1];
 	var defender := params[2];
 	params := 0; // No longer needed
-	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
 	var creature_who := NPC_ParseTemplateName(attacker.npctemplate).template;
 	var urro_sound := GetConfigInt(npccfgfile[creature_who], "UrroSound"); // identifca o som de urro do npcdesc
 

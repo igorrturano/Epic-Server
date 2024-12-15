@@ -21,6 +21,7 @@ include ":gumps:yesNo";
 include ":architect:include/architect";
 include ":architect:include/systemclock";
 include ":charactercreation:habilidades";
+include ":destroyable:include/destroyItem";
 
 const SIGENA:= 0;
 const BLOCK_OF_STONE := 0x5001;
@@ -1535,6 +1536,7 @@ function create_marked(who, x, y, z, type)
 
     SetObjProperty (created, "built_by_architect", who.serial);
     SetObjProperty (created, "architect_objtype", item_obj_type);
+    SetObjProperty (created, PROPNAME_INDESTRUTIVEL, 1);
 
     SetupNewLockDoor(who, created);
 

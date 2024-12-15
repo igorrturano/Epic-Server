@@ -23,6 +23,7 @@ include ":timedScripts:timedScripts";
 include ":attributes:vitals";
 include ":charactercreation:resists";
 include "include/facings";
+include ":destroyable:include/destroyItem";
 
 program vacuodemana(params)
 	var who	:= params[1];
@@ -90,12 +91,14 @@ endforeach
     var bs_damage := Cint(AP_GetSkill(who, METALWORKING)/10);
     var dmg_dice := RandomDiceRoll(cstr(bs_damage+"d12")) + Cint((AP_GetStat(who, DEXTERITY) - 50) / 10) + Cint(AP_GetSkill(who, METALWORKING) / 10);
     var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 3, targ.realm);
+    DanificaObjetosProximos(who,targ.x, targ.y, targ.z,targ.realm,struct{dano := dmg_dice, desc := "Bomba de Fragmentacao." },6,0x36cc);
+    
     foreach mob in nearby
         DamageFLS(mob, dmg_dice, DMG_FIRE, who);
         PLayStationaryEffect(mob.x, mob.y, mob.z, 0x36cc, 0, 10, 0, mob.realm);
         TS_StartTimer(mob, "tombar", 10);
     endforeach
-	destroycraft(targ, who);
+	//destroycraft(targ, who);
 
 
     PrintTextAbove(who, "*Desmonta o equipamento*");
