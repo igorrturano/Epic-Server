@@ -8,7 +8,10 @@ include ":charactercreation:resists";
 include ":survival:fishingFunctions";
 include "include/dungeons";
 
-program HitScript(who)
+program HitScript(params)
+	var who := params[1];
+    var targ := params[2];
+    
     if(!InDarkness(who))
         SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
         return 0;
@@ -17,7 +20,6 @@ program HitScript(who)
     PerformAction(who, ANIM_CAST_AREA);
     sleep(2);
 
-	var targ := Target(who);
     var dist := Distance(who, targ);
     var mlore := Cint(AP_GetSkill(who, MAGICLORE));
     who.frozen := 1;
