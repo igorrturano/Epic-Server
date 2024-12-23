@@ -972,7 +972,7 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B78, 1); // shield
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x0F4E, 1); // bardiche
         endif
         if (skills[DUALWIELD] >= 1)
@@ -989,7 +989,7 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x1402, 1); // short spear
         endif
         if (skills[DUALWIELD] >= 1)
@@ -1006,7 +1006,7 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B73, 1); // buckler
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); //crescent
         endif
         if (skills[DUALWIELD] >= 1)
@@ -1024,7 +1024,7 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B73, 1); // buckler
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x0e87, 1); //crescent
         endif
         if (skills[DUALWIELD] >= 1)
@@ -1041,7 +1041,7 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B7A, 1); // wooden shield
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x0f49, 1); // axe
         endif
         if (skills[DUALWIELD] >= 1)
@@ -1052,14 +1052,13 @@ function weaponsByClassAndCulture(who)
     if (chardata.culture == LESTE)
         CreateItemInBackpack(who, 0xF99A, 1); // Adaga
 
-        // 0xF9DD
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x27EF, 1); // wakizashi
         endif
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B72, 1); // round shield
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x27A2, 1); // Katana
         endif
         if (skills[DUALWIELD] >= 1)
@@ -1069,7 +1068,6 @@ function weaponsByClassAndCulture(who)
 
     if (chardata.culture == BADURAN)
         CreateItemInBackpack(who, 0xF999, 1); // Adaga
-
     
         if (skills[ONEHANDED] >= 1)
             CreateItemInBackpack(who, 0x143c, 1); // HAMMERPICK
@@ -1094,7 +1092,7 @@ function weaponsByClassAndCulture(who)
         if (skills[PARRY] >= 1)
             CreateItemInBackpack(who, 0x1B73, 1); // buckler
         endif
-        if (skills[TWOHANDED ] >= 1)
+        if (skills[TWOHANDED] >= 1)
             CreateItemInBackpack(who, 0x26CB, 1); // crescent
         endif
         if (skills[DUALWIELD] >= 1)
@@ -2328,81 +2326,146 @@ function UpdateCharacterSkin(who, chardata)
 endfunction
 
 function spellChoices(who)
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
-    var x := 63;
-    var y := 100;
-    GFGumpPic(gump, 17, 31, 0x9E6);
-
-    GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas magias", 0, 0); //shadow
-    GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas magias", 0, 0);
-    
     var spellcfg := ReadConfigFile(":spells:config/spellcaster");
     var keys := GetConfigIntKeys(spellcfg);
-    var spells := array;
+    var mageryLevel := CInt(GetObjProperty(who, "chardata").Skills[MAGERY]);
+
+    // Get spells by circle
+    var spellsByCircle := dictionary;
+    spellsByCircle[1] := array;
+    spellsByCircle[2] := array;
+
     foreach key in keys
         var elem := FindConfigElem(spellcfg, key);
         var spelllvl := GetConfigInt(elem, "Circle");
         var spelltype := GetConfigString(elem, "Type");
-        if (spelltype == "spellcaster" && spelllvl == 1)
-            var spell := dictionary{ 
-                "id" -> key,
-                "circle" -> spelllvl,
-                "name" -> GetConfigString(elem, "Name"),
-                "desc" -> GetConfigString(elem, "Desc")
-            };
-            spells.append(spell);
+        
+        if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
+            var spell := dictionary;
+            spell["id"] := key;
+            spell["circle"] := spelllvl;
+            spell["name"] := GetConfigString(elem, "Name");
+            spell["desc"] := GetConfigString(elem, "Desc");
+            spellsByCircle[spelllvl].append(spell);
         endif
     endforeach
 
     var selected_spells := array;
     var btn_value;
+    var total_amount := 0;
+    
+    // Calculate how many spells they can choose
+    if (mageryLevel >= 1)
+        total_amount := 1;
+    endif
+    if (mageryLevel >= 2)
+        total_amount := 2;
+    endif
+    if (mageryLevel >= 3)
+        total_amount := 3; // 2 from circle 1 + 1 from circle 2
+    endif
+    
     while (1)
-        var input := spellSelectionGump(who, gump, spells, selected_spells, 2, x, y);
+        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
         
         foreach key in (input.keys)
             btn_value := key;
-            if (btn_value > 200 && btn_value <= 200 + spells.size())
-                var spell_index := btn_value - 200;
-                var spell_id := spells[spell_index].id;
-                if (spell_id in selected_spells)
-                    selected_spells.Erase(Find(selected_spells, spell_id, 1));
-                else
-                    selected_spells.append(spell_id);
-                endif
+            if (btn_value > 200 && btn_value <= 200 + spellsByCircle[1].size())
+                var spell := spellsByCircle[1][btn_value-200];
+                selected_spells.append(spell.id);
+            elseif (btn_value > 300 && btn_value <= 300 + spellsByCircle[2].size())
+                var spell := spellsByCircle[2][btn_value-300];
+                selected_spells.append(spell.id);
             endif
         endforeach
 
-        if (selected_spells.size() != 2)
+        // Validate selection
+        if (mageryLevel < 3 && selected_spells.size() != total_amount)
             selected_spells := array;
-            SendSysMessageEx(who, "Você deve escolher exatamente 2 magias.", SSM_FAIL);
+            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magia(s) do círculo 1.", SSM_FAIL);
+        elseif (mageryLevel >= 3)
+            // Count circle 1 and 2 spells
+            var circle1_count := 0;
+            var circle2_count := 0;
+            foreach spellid in (selected_spells)
+                foreach spell in (spellsByCircle[1])
+                    if (spell.id == spellid)
+                        circle1_count += 1;
+                    endif
+                endforeach
+                foreach spell in (spellsByCircle[2])
+                    if (spell.id == spellid)
+                        circle2_count += 1;
+                    endif
+                endforeach
+            endforeach
+            
+            if (circle1_count != 2 || circle2_count != 1)
+                selected_spells := array;
+                SendSysMessageEx(who, "Você deve escolher 2 magias do círculo 1 e 1 magia do círculo 2.", SSM_FAIL);
+            else
+                break;
+            endif
         else
             break;
         endif
     endwhile
 
-    SendSysMessageEX(who, "Você escolheu as magias: " + CStr(selected_spells), SSM_INFO);
+    SendSysMessageEX(who, "Você escolheu as magias: " + selected_spells, SSM_INFO);
     return selected_spells;
 endfunction
 
-
-function spellSelectionGump(who, gump, spells, selected_spells, qtd, x, y)
-
-    GFPage(gump, 1);
-    y := 100;
-    foreach spell in spells
-        var color := (spell.id in selected_spells) ? "#00FF00" : "#000000";
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+    
+    var x := 63;
+    var y := 100;
+    
+    GFGumpPic(gump, 17, 31, 0x9E6);
+    
+    // Circle 1 header
+    GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 1:", 1, 0);
+    y += 26;
+    
+    // Circle 1 spells
+    var i := 1;
+    foreach spell in (spellsByCircle[1])
+        var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
         GFTooltipText(gump, spell.desc);
-        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (spell.id in selected_spells), 200+_spell_iter);
+        if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
+            GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
+        endif
         y += 26;
+        i += 1;
     endforeach
-
-
-    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
-    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
-
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    
+    // Circle 2 spells if magery level 3
+    if (mageryLevel >= 3)
+        x += 300;
+        y := 50;
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
+        y += 26;
+        
+        i := 1;
+        foreach spell in (spellsByCircle[2])
+            var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
+            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
+            GFTooltipText(gump, spell.desc);
+            if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
+                GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
+            endif
+            y += 26;
+            i += 1;
+        endforeach
+    endif
+    
+    var remaining := total_amount - selected_spells.size();
+    GFHTMLArea(gump, 115, 665, 192, 40, "<BASEFONT Size=5 Color=#999999>Escolha " + remaining + " magia(s)", 0, 0);
+    GFHTMLArea(gump, 116, 666, 192, 40, "<BASEFONT Size=5 Color=#ffffff>Escolha " + remaining + " magia(s)", 0, 0);
+    
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666);
     return GFSendGump(who, gump);
 endfunction
 
@@ -2440,7 +2503,7 @@ function AlchChoices(who)
     var btn_value;
     while (1)
         var qtd := (skill*2)+2;
-        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd);
 
         foreach key in (input.keys)
             btn_value := key;
