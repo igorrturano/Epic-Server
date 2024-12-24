@@ -610,18 +610,18 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_BLUNT:
+		DMG_BLUNT:  
 			if (armorResists.BluntResist)
 				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
 			else
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
 			break;
-		// Adicionado defender.resist para hab proteçao elemental
-		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod) + Cint(defender.resist_fire_mod); break;
-		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod) + Cint(defender.resist_cold_mod); break;
-		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod) + Cint(defender.resist_energy_mod); break;
-		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod) + Cint(defender.resist_poison_mod); break;
+
+		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod) + Cint(GetObjProperty(defender,"fire_protection")); break;
+		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod) + Cint(GetObjProperty(defender, "cold_protection")); break;
+		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod) + Cint(GetObjProperty(defender, "energy_protection" )); break;
+		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod) + Cint(GetObjProperty(defender, "poison_protection")); break;
 	endcase
 
 	return CInt(resist);
