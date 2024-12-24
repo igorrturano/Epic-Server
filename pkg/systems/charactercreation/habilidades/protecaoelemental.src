@@ -7,17 +7,14 @@ include ":tn:tngumps";
 include ":combat:damage";
 
 program manobra(who)
-
 	var elemental := GetObjProperty(who, "elementalprotection");
+	var protection := Cint(AP_GetSkill(who, MAGICLORE)/ 20);
 	
 	if (elemental == error)
-		var prot := RadioGump(who, 200, 260, "Escolha o elemento", {"Fisica","Fogo", "Frio", "Veneno", "Energia"});
+		var prot := RadioGump(who, 200, 260, "Escolha o elemento", {"Fogo", "Frio", "Veneno", "Energia"});
 		SendSysMessageEx(who, "Voce escolheu protecao contra " + prot, SSM_INFO);
-		if (prot == "Fisica")
-			SetObjProperty(who,"elementalprotection", DMG_PHYSICAL);
-			who.resist_physical_mod  := 25;
-			return;
-		elseif (prot == "Fogo")
+
+		if (prot == "Fogo")
 			SetObjProperty(who,"elementalprotection", DMG_FIRE);
 			who.resist_fire_mod  := 25;
 			return;
@@ -35,10 +32,6 @@ program manobra(who)
 			return;
 		endif
 
-	elseif (elemental == DMG_PHYSICAL)
-		EraseObjProperty(who,"elementalprotection");
-			who.resist_physical_mod  := 0;
-			SendSysMEssageEx(who, "Voce desfaz sua protecao.", SSM_FAIL);
 	elseif (elemental == DMG_FIRE)
 		EraseObjProperty(who,"elementalprotection");
 			who.resist_fire_mod  := 0;

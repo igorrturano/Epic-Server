@@ -617,11 +617,11 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 				return getResistArmorByType(armor, DMG_PHYSICAL);
 			endif
 			break;
-
-		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod); break;
-		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod); break;
-		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod); break;
-		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod); break;
+		// Adicionado defender.resist para hab proteçao elemental
+		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod) + Cint(defender.resist_fire_mod); break;
+		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod) + Cint(defender.resist_cold_mod); break;
+		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod) + Cint(defender.resist_energy_mod); break;
+		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod) + Cint(defender.resist_poison_mod); break;
 	endcase
 
 	return CInt(resist);
