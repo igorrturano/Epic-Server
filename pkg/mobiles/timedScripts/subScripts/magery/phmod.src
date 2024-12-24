@@ -7,13 +7,12 @@ include ":attributes:attributes";
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	var level := params[3];
+	var mlore := params[3];
 
-	
-	var points := level;
+	var physical_resist_mod := Cint(mlore/20);
 
-	if (points > 20)
-		points := 20;
+	if (physical_resist_mod > 5)
+		physical_resist_mod := 5;
 	endif
 	
 	if (GetObjProperty(mobile, "phMod") != error)
@@ -21,11 +20,11 @@ program TimedScript_Clumsy(params)
 	endif
 
 	if (GetObjProperty(mobile, "auraPhMod") != error)
-		mobile.resist_physical_mod := mobile.resist_physical_mod - GetObjProperty(mobile, "auraPhMod") + points;
-		SetObjProperty(mobile, "phMod", points);
+		mobile.resist_physical_mod := mobile.resist_physical_mod - GetObjProperty(mobile, "auraPhMod") + physical_resist_mod;
+		SetObjProperty(mobile, "phMod", physical_resist_mod);
 		EraseObjProperty(mobile, "auraPhMod");					
 	else
-		SetObjProperty(mobile, "phMod", points);
+		SetObjProperty(mobile, "phMod", physical_resist_mod);
 		mobile.resist_physical_mod := mobile.resist_physical_mod + points;
 	endif
 	
