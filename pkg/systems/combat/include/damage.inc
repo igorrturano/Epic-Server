@@ -593,7 +593,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var armorResists := armor.getAttrBase();
 
 	case(type)
-		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
+		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod")); break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
 				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);

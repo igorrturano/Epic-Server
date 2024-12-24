@@ -25,9 +25,8 @@ program TimedScript_Clumsy(params)
 		EraseObjProperty(mobile, "auraPhMod");					
 	else
 		SetObjProperty(mobile, "phMod", physical_resist_mod);
-		mobile.resist_physical_mod := mobile.resist_physical_mod + points;
+		mobile.resist_physical_mod := mobile.resist_physical_mod + physical_resist_mod;
 	endif
-	
 	
 	//SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
 	
