@@ -116,6 +116,10 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	if (objeto.hp_mod > 0)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
 	endif
+
+	if (GetObjProperty(objeto, "Aprimoramentos"))
+		xDesc := xDesc + ROXO + "Aprimoramentos: " + GetObjProperty(objeto, "Aprimoramentos") + "<br>";
+	endif
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
 	XDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
