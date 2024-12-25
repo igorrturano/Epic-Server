@@ -690,6 +690,17 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
 			endif
 		endif
+		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
+			EraseObjProperty(attacker, "backstab");
+			EraseObjProperty(attacker.weapon, "backstab");
+			EraseObjProperty(attacker, "#nextcritical");
+			if (TemHabilidade(defender, "Sempre Alerta"))
+				TS_StartTimer(attacker, "paralysis", 5);
+				PrintTextAbove(defender, "*Sempre Alerta*");
+			else
+				ataqueFurtivo(attacker,defender);
+			endif
+		endif
 	endif
 	
 	var totaldamage := CInt(damage-resist); 
