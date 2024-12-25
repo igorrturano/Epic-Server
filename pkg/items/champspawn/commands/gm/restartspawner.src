@@ -1,0 +1,23 @@
+use uo;
+use os;
+include "include/client";
+include "include/say";
+
+program Logon()
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    print("globalSpawns: " + globalSpawns);
+    foreach spawner in (globalSpawns)
+        var altar := SystemFindObjectBySerial(spawner);
+        var result;
+        if (altar)
+            if (GetObjProperty(altar, "config"))
+                result := Start_Script(":champspawn:epiccontrol", altar);
+            else
+                result := Start_Script(":spawnpoint:spawnPointControl", altar);
+            endif
+            
+            printtextabove(altar, "result: " + result);
+        endif
+    endforeach
+
+endprogram
