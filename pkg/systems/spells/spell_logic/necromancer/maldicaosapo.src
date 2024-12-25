@@ -72,11 +72,13 @@ program SpellScript(params)
 	TS_StartTimer(Targ, "desmontar", time, 0, who);
 	TS_StartTimer(targ, "polymorph", time, 81, who);
 
-	// foreach equip in ListEquippedItems( targ )
-	// 	if ( (equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) && (equip.layer != LAYER_MOUNT) )
-	// 			MoveObjectToLocation( equip, targ.x, targ.y, targ.z, targ.realm );
-	// 	endif
-	// endforeach
+	if (targ.acctaname)
+		foreach equip in ListEquippedItems( targ )
+			if ( (equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) && (equip.layer != LAYER_MOUNT) )
+					MoveObjectToLocation( equip, targ.x, targ.y, targ.z, targ.realm );
+			endif
+		endforeach
+	endif
 
 	PlaySoundEffect(targ, 616); // som de sapo
 	
