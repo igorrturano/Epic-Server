@@ -66,12 +66,6 @@ exported function Attack(attacker, defender)
 		return 1;
 	endif
 
-	var anim := wpn_a_elem.Anim;
-
-	if (!attacker.acctname)
-		anim := 0x0c;
-	endif
-
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
 	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
