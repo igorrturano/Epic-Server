@@ -1258,7 +1258,7 @@ function ataqueFurtivo(attacker, defender)
         endif
     endif
 
-    var sneak_dmg := AP_GetSkill(attacker, SNEAK);
+    var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK)/2);
 	DamageFLS(defender, sneak_dmg, DMG_FORCED, attacker);
     PlaySoundEffect(defender, 0X510);
     MakeBleed(defender);
