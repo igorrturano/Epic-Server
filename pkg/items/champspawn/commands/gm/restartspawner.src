@@ -10,14 +10,12 @@ program Logon()
         var altar := SystemFindObjectBySerial(spawner);
         var result;
         if (altar)
-            if (GetObjProperty(altar, "config"))
-                result := Start_Script(":champspawn:epiccontrol", altar);
+            result := RestartScript(altar);
+            if (result)
+                printtextabove(altar, "Resetado com sucesso");
             else
-                result := Start_Script(":spawnpoint:spawnPointControl", altar);
+                printtextabove(altar, "Erro ao resetar");
             endif
-            
-            printtextabove(altar, "result: " + result);
         endif
     endforeach
-
 endprogram
