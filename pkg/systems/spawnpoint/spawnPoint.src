@@ -119,8 +119,10 @@ function CreateNpcFromSpawnPoint( who, spawnpoint, i )
 endfunction
 
 function SetupCustomProps( spawnpoint, npc, counter )
+	var npc_elem := NPC_GetNPCConfig(npc);
+
   var tier := GetObjProperty( spawnpoint, "Tier" ) ? GetObjProperty( spawnpoint,
-                              "Tier" ) : "0";
+                              "Tier" ) : npc_elem.Tier || "0";
   customizeNpc( npc, tier );
   var name := GetObjProperty( spawnpoint, Cstr( "Name" + counter ) );
   if ( name && name != "" )

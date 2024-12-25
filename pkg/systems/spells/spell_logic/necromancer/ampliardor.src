@@ -22,9 +22,11 @@ program SpellScript(params)
 	endif
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	var bonus := -epicWisdomPathBonus(who);
-	if (!CheckResist(targ, VONTADE, diff, bonus))
-		var duration := AP_GetSkill(who, MAGICLORE);
+	var bonus := epicWisdomPathBonus(who);
+	if (!CheckResist(targ, VONTADE, diff, -bonus))
+		var mlore := AP_GetSkill(who, MAGICLORE);
+		var duration := 10 + cint(mlore / 10);
+
 		TS_StartTimer(targ, "apodrecer", duration, targ.color, who, 0);
 		Corromper(who, 11, targ);
 
