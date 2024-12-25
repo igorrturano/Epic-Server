@@ -593,7 +593,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var armorResists := armor.getAttrBase();
 
 	case(type)
-		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
+		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod")); break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
 				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);
@@ -610,7 +610,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_BLUNT:
+		DMG_BLUNT:  
 			if (armorResists.BluntResist)
 				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
 			else
@@ -618,10 +618,10 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod); break;
-		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod); break;
-		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod); break;
-		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod); break;
+		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod) + Cint(GetObjProperty(defender,"fire_protection")); break;
+		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod) + Cint(GetObjProperty(defender, "cold_protection")); break;
+		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod) + Cint(GetObjProperty(defender, "energy_protection" )); break;
+		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod) + Cint(GetObjProperty(defender, "poison_protection")); break;
 	endcase
 
 	return CInt(resist);
@@ -688,6 +688,17 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 			if (resist < arcane_armor)
 				resist := arcane_armor;
 				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
+			endif
+		endif
+		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
+			EraseObjProperty(attacker, "backstab");
+			EraseObjProperty(attacker.weapon, "backstab");
+			EraseObjProperty(attacker, "#nextcritical");
+			if (TemHabilidade(defender, "Sempre Alerta"))
+				TS_StartTimer(attacker, "paralysis", 5);
+				PrintTextAbove(defender, "*Sempre Alerta*");
+			else
+				ataqueFurtivo(attacker,defender);
 			endif
 		endif
 	endif
