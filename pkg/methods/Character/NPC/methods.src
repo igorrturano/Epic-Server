@@ -1,0 +1,27 @@
+use uo;
+include "include/NPCUtil";
+include ":tn:cooldown";
+
+program Install()
+	print("INSTALLING: Methods for NPCs... OK!");
+	return 1;
+endprogram
+
+exported function canCharge(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    print( "template: " + template );
+    // Don't allow charge if already charging
+    if (GetObjProperty(who, "#chargestart"))
+        return 0;
+    endif
+
+    // Don't allow charge if NPC is on cooldown
+    if (GetCooldown(who, "charge"))
+        return 0; 
+    endif
+
+    if (template == "goblinrider") return 1; endif
+    if (template == "ratoide_barbaro") return 1; endif
+
+    return 0;
+endfunction
