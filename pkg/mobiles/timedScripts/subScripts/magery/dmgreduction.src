@@ -16,9 +16,8 @@ program TimedScript_Clumsy(params)
 	if (TemHabilidade(who, "Valdruk"))
 		total := total * 0.8;
 	endif
-
-	SetObjProperty(who, "dmgreduction", cint(GetObjProperty(who, "dmgreduction") + total));
-	SetObjProperty(who, "#dmgreductionspell", cint(total));
+	SetObjProperty(who, "dmgreduction", Cdbl(GetObjProperty(who, "dmgreduction") + total));
+	SetObjProperty(who, "#dmgreductionspell", Cdbl(total));
 
 	return 1;
 endprogram
