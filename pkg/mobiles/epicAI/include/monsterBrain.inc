@@ -179,7 +179,7 @@ function HandleDisengage(opponent)
             endwhile
 
             // Calculate max items to loot based on intelligence
-            var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/20);
+            var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/30);
             var looted := 0;
             
             // Ensure NPC has a backpack
@@ -309,6 +309,10 @@ function LootSomething(npc, corpse)
     var coins := array{0xBA63, 0xBA64, 0xBA65}; // copper, silver, gold
     var resources := array{0x1bf2, 0x1bd7};     // ingots, wood
 
+    if (GetCooldown(npc, "already_looted") > 0)
+        return 0;
+    endif
+
     // First try to loot coins
     var priority_loot := FindPriorityLoot(corpse, coins);
     if (priority_loot)
@@ -338,9 +342,10 @@ function LootSomething(npc, corpse)
                 return LootItem(npc, container_item);
             endif
         endif
-        
         sleepms(2);
     endforeach
+
+    SetCooldown(npc, "already_looted", 120);
 endfunction
 
 function FindEquipmentInContainer(container)
