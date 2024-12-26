@@ -12,9 +12,9 @@ program TimedScript_Clumsy(params)
 	if ( GetObjProperty(who, "#dmgreductionspell") )
 		return 0;
 	endif
-	var total := cint(mlore/20 * -1);
+	var total := Cdbl(mlore / 200); // 50% do mlore
 	if (TemHabilidade(who, "Valdruk"))
-		total := total * 2;
+		total := total * 0.8;
 	endif
 
 	SetObjProperty(who, "dmgreduction", cint(GetObjProperty(who, "dmgreduction") + total));
