@@ -9,7 +9,6 @@ endprogram
 
 exported function canCharge(who)
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
-    print( "template: " + template );
     // Don't allow charge if already charging
     if (GetObjProperty(who, "#chargestart"))
         return 0;

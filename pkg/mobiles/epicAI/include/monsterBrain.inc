@@ -611,10 +611,7 @@ function HandleEnteredArea(source, is_ranged)
     
     handleInitialReaction(source);
     if (me.canCharge())
-        print("Can charge");
         StartCharge(me, source);
-    else 
-        print("Can't charge");
     endif
 
     HandleCombatEvent(source, is_ranged);

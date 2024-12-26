@@ -363,10 +363,6 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 
 	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
 
-	if (hasAntiMountedWeapon(attacker, defender))
-		defender := attacker;
-	endif
-
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
@@ -377,19 +373,18 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		defender.frozen := 0;
 	endif
 
+	// defender := defender;
 	return totaldamage;
 endfunction
 
 function hasAntiMountedWeapon(attacker, defender)
 	var defenderHasAntiMountedWeapon := 0;
-
 	if (GetObjProperty(attacker, "charge_damage"))
 		var cfg := ReadConfigFile(":*:itemdesc");
 		var elem := FindConfigElem(cfg, defender.weapon.objtype);
 		var weapons_crits := GetconfigStringArray(elem, "HitScripts");
-
 		foreach crit in (weapons_crits)
-			if (lower(crit) == "antimountedhit")
+			if (crit == ":combat:weaponHitScripts/AntiMountedHit")
 				defenderHasAntiMountedWeapon := 1;
 			endif
 		endforeach
@@ -723,10 +718,23 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 				ataqueFurtivo(attacker,defender);
 			endif
 		endif
+	endif
 
-		if (GetObjProperty(attacker, "charge_damage"))
-			damage += Cint(GetObjProperty(attacker, "charge_damage"));
+	if (GetObjProperty(attacker, "charge_damage"))
+		damage += Cint(GetObjProperty(attacker, "charge_damage"));
+
+		if (hasAntiMountedWeapon(attacker, defender))
+			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
+			defender := attacker;
+			var resisted := CheckResist(defender, FORTITUDE, RESIST_MEDIUM);
+			if (!resisted)
+				TS_StartTimer(defender, "desmontar", 10);
+				TS_StartTimer(defender, "tombar", 5);
+				TS_StartTimer(defender, "paralysis", 5);
+			endif
 		endif
+
+		EraseObjProperty(attacker, "charge_damage");
 	endif
 	
 	var totaldamage := CInt(damage-resist); 
