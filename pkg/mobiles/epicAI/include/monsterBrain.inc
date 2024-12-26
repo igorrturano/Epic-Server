@@ -4,6 +4,7 @@ include "include/sounds";
 include ":combat:damage";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
+include "epicSpecial";
 
 var me := Self();
 const AREA_SIZE := 16;
@@ -607,67 +608,16 @@ function HandleEnteredArea(source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-
-    // Get monster category and player race
-    var npc_elem := NPC_GetNPCConfig(me);
-    var category := GetConfigString(npc_elem, "Category");
-    var playerRaca := source.getRace();
-    var name_mob := GetConfigString(npc_elem, "Name");
     
-    if (!category)
-        HandleCombatEvent(source, is_ranged);
-        return 0;
+    handleInitialReaction(source);
+    if (me.canCharge())
+        print("Can charge");
+        StartCharge(me, source);
+    else 
+        print("Can't charge");
     endif
 
-    // Special handling for Goblins
-    if (category == "Goblin")
-        if (playerRaca == ORC || playerRaca == DROW)
-            // High chance to flee from these races
-            var randomDice := RandomInt(100);
-            if (randomDice < 30)
-                var playerinput := "*raça " + playerRaca + " assusta*";
-                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-                if (responseAI)
-                    Say(responseAI);
-                else
-                    Say("Ahhh " + playerRaca + "!!!");
-                    PrintTextAbove(me, "*Aterrorizado*");
-                endif
-                FleeFrom(source);
-                return 1;
-            endif
-        endif
-    endif
-
-    // Initial reaction based on category
-    var aggro_chance;
-    var playerinput;
-    
-    case (category)
-        "Goblin": 
-            aggro_chance := 20;
-            playerinput := "*raça " + playerRaca + " encontrada*";
-        "Giants": 
-            aggro_chance := 70;
-            playerinput := "*raça " + playerRaca + " invade território*";
-        "EvilHuman": 
-            aggro_chance := 60;
-            playerinput := "*raça " + playerRaca + " avistada*";
-        default: 
-            aggro_chance := 40;
-            playerinput := "*raça " + playerRaca + " aparece*";
-    endcase
-
-    // Generate and say initial response
-    var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-    if (responseAI)
-        Say(responseAI);
-    endif
-
-    // Roll for aggro
-    if (RandomInt(100) < aggro_chance)
-        HandleCombatEvent(source, is_ranged);
-    endif
+    HandleCombatEvent(source, is_ranged);
     
     return 1;
 endfunction
@@ -729,4 +679,30 @@ function AlertAllies(attacker, defender)
         endif
         sleepms(2);
     endforeach
+endfunction
+
+function handleInitialReaction(source)
+    var npc_elem := NPC_GetNPCConfig(me);
+    var category := GetConfigString(npc_elem, "Category");
+
+    if (category == "Goblin")
+        var playerRaca := source.getRace();
+        var name_mob := GetConfigString(npc_elem, "Name");
+        if (playerRaca == ORC || playerRaca == DROW)
+            // High chance to flee from these races
+            var randomDice := RandomInt(100);
+            if (randomDice < 30)
+                var playerinput := "*raça " + playerRaca + " assusta*";
+                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
+                if (responseAI)
+                    Say(responseAI);
+                else
+                    Say("Ahhh " + playerRaca + "!!!");
+                    PrintTextAbove(me, "*Aterrorizado*");
+                endif
+                FleeFrom(source);
+                return 1;
+            endif
+        endif
+    endif
 endfunction

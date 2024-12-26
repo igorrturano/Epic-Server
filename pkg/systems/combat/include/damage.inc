@@ -363,6 +363,10 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 
 	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
 
+	if (hasAntiMountedWeapon(attacker, defender))
+		defender := attacker;
+	endif
+
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
@@ -374,6 +378,24 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 	endif
 
 	return totaldamage;
+endfunction
+
+function hasAntiMountedWeapon(attacker, defender)
+	var defenderHasAntiMountedWeapon := 0;
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		var cfg := ReadConfigFile(":*:itemdesc");
+		var elem := FindConfigElem(cfg, defender.weapon.objtype);
+		var weapons_crits := GetconfigStringArray(elem, "HitScripts");
+
+		foreach crit in (weapons_crits)
+			if (lower(crit) == "antimountedhit")
+				defenderHasAntiMountedWeapon := 1;
+			endif
+		endforeach
+	endif
+
+	return defenderHasAntiMountedWeapon;
 endfunction
 
 /**
@@ -700,6 +722,10 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 			else
 				ataqueFurtivo(attacker,defender);
 			endif
+		endif
+
+		if (GetObjProperty(attacker, "charge_damage"))
+			damage += Cint(GetObjProperty(attacker, "charge_damage"));
 		endif
 	endif
 	
