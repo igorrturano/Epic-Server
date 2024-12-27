@@ -614,6 +614,10 @@ function HandleEnteredArea(source, is_ranged)
         StartCharge(me, source);
     endif
 
+    if (me.isMyrkonid())
+        SporeSpecial(me, source);
+    endif
+
     HandleCombatEvent(source, is_ranged);
     
     return 1;

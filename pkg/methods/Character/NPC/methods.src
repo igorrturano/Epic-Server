@@ -24,3 +24,9 @@ exported function canCharge(who)
 
     return 0;
 endfunction
+
+exported function isMyrkonid(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "homemcogumelo") return 1; endif
+    return 0;
+endfunction
