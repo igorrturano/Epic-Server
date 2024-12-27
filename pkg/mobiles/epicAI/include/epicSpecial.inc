@@ -63,18 +63,18 @@ function SporeSpecial(attacker, defender)
         
         case (spore_type)
             1: // Charm
-                if (!CheckResist(mobile, VONTADE, RESIST_MEDIUM))
+                if (!CheckResist(mobile, VONTADE, RESIST_VERY_HARD))
                     PrintText(attacker, "*libera esporos hipnóticos*");
-                    PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
+                    PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 45, 2, 2740);
                     
                     SetObjProperty(mobile, "charmed_by", attacker.serial);
                     SetCooldown(mobile, "charmed", 15);
                     
-                    SendSysMessageEx(mobile, "Você foi hipnotizado pelo homem-cogumelo.", SSM_INFO);
+                    SendSysMessageEx(mobile, "Você foi hipnotizado pelo mirconídeo.", SSM_INFO);
                 endif
             
             2: // Poison
-                if (!CheckResist(mobile, FORTITUDE, RESIST_MEDIUM))
+                if (!CheckResist(mobile, FORTITUDE, RESIST_HARD))
                     PrintText(attacker, "*libera esporos venenosos*");
                     var sounds := { 560, 561, 562 };
                     PlaysoundEffect(mobile, sounds[RandomInt(sounds.size())+1]);
@@ -83,7 +83,7 @@ function SporeSpecial(attacker, defender)
                 endif
             
             3: // Blind
-                if (!CheckResist(mobile, REFLEXOS, RESIST_EASY))
+                if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
                     PrintText(attacker, "*libera esporos cegantes*");
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
                     SetCooldown(mobile, "blinded", 15);

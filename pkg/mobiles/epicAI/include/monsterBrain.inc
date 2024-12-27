@@ -438,6 +438,10 @@ function HandleCombatEvent(opponent, is_ranged)
         TurnToward(opponent);
         PursueTarget(opponent);
     endif
+    
+    if (me.isMyrkonid())
+        SporeSpecial(me, opponent);
+    endif
 
     return 1;
 endfunction
@@ -614,9 +618,6 @@ function HandleEnteredArea(source, is_ranged)
         StartCharge(me, source);
     endif
 
-    if (me.isMyrkonid())
-        SporeSpecial(me, source);
-    endif
 
     HandleCombatEvent(source, is_ranged);
     
