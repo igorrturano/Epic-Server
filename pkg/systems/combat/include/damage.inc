@@ -736,7 +736,7 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 
 		EraseObjProperty(attacker, "charge_damage");
 	endif
-	
+
 	var totaldamage := CInt(damage-resist); 
 	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
 endfunction

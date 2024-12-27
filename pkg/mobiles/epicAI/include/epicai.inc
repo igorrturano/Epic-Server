@@ -153,13 +153,6 @@ function SetupNPCEquip(who, npc_elem)
 	item.graphic := graphic;
 	Equipitem (who, item);
   endif
-
-    var mobile_taxonomy := GetConfigString(npc_elem, "Taxonomy");
-    if (!mobile_taxonomy)
-    else
-        SetupAnimalGender(who, npc_elem);
-        SetupAnimalCriticalHit(who, npc_elem);
-    endif
 endfunction
 
 function SetupAnimalCriticalHit(mobile, npc_elem)
