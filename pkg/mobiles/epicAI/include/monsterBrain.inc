@@ -461,15 +461,14 @@ function PursueTarget(opponent)
     if (CheckLineOfSight(me, opponent))
         PrintTextAbove(me, "Has line of sight");
         while (Distance(me, opponent) > 1 && CanFight(me, opponent))
-            PrintTextAbove(me, "Running toward opponent");
-            PrintTextAbove(me, "Opponent.Name: " + opponent.name);
+            // PrintTextAbove(me, "Running toward opponent");
+            // PrintTextAbove(me, "Opponent.Name: " + opponent.name);
             RunToward(opponent);
             sleepms(100);
         endwhile
     else
         // Try to find a path around obstacles
         var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
-        print("path: " + path);
         if (path)
             foreach coord in path
                 RunTowardLocation(coord.x, coord.y);
@@ -617,7 +616,9 @@ function HandleEnteredArea(source, is_ranged)
     if (me.canCharge())
         StartCharge(me, source);
     endif
-
+    if (me.isThief())
+        DoThiefCombatBehavior(source);
+    endif
 
     HandleCombatEvent(source, is_ranged);
     
@@ -707,4 +708,13 @@ function handleInitialReaction(source)
             endif
         endif
     endif
+endfunction
+
+function DoThiefCombatBehavior(opponent)
+    // 50% chance to steal, 50% chance to sneak attack
+    // if (RandomInt(100) < 50)
+    //     DoThiefSteal(opponent);
+    // else
+        DoThiefSneakAttack(opponent);
+    // endif
 endfunction

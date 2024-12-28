@@ -68,7 +68,8 @@ function SporeSpecial(attacker, defender)
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 45, 2, 2740);
                     
                     SetObjProperty(mobile, "charmed_by", attacker.serial);
-                    SetCooldown(mobile, "charmed", 15);
+                    sleep(15);
+                    EraseObjProperty(mobile, "charmed_by");
                     
                     SendSysMessageEx(mobile, "Você foi hipnotizado pelo mirconídeo.", SSM_INFO);
                 endif
@@ -106,4 +107,74 @@ function SporeSpecial(attacker, defender)
     endforeach
 
     return 1;
+endfunction
+
+
+function DoThiefSteal(opponent)
+    if (!opponent.backpack)
+        return 0;
+    endif
+
+    // First try to hide
+    GrantPrivilege(me, "hiddenattack");
+    me.enable("hiddenattack");
+    me.hidden := 1;
+    me.stealthsteps := 30;
+
+    // Move close to target
+    while (Distance(me, opponent) > 1)
+        WalkToward(opponent);
+        sleepms(100);
+        if (Distance(me, opponent) > 16)
+            break;
+        endif
+    endwhile
+
+    // Try to steal if close enough
+    if (Distance(me, opponent) <= 1)
+        var items := EnumerateItemsInContainer(opponent.backpack);
+        if (items.size() > 0)
+            var item := items[RandomInt(items.size())+1];
+            if (item.movable)
+                if (!me.backpack)
+                    var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
+                    EquipItem(me, backpack);
+                endif
+                MoveItemToContainer(item, me.backpack);
+                PrintTextAbove(me, "*furtou " + item.desc + "*");
+            endif
+        endif
+    endif
+    
+    if (me.hidden == 1)
+        me.hidden := 0;
+    endif
+endfunction
+
+function DoThiefSneakAttack(opponent)
+    // First try to hide and move behind target
+    GrantPrivilege(me, "hiddenattack");
+    me.enable("hiddenattack");
+    me.hidden := 1;
+    me.stealthsteps := 100;
+
+    // Try to get behind the target
+    var behind_x := opponent.x + (opponent.x - me.x);
+    var behind_y := opponent.y + (opponent.y - me.y);
+
+    // Move to position
+    while (!IsBehind(me, opponent.x, opponent.y) && Distance(me, opponent) > 1)
+        WalkTowardLocation(opponent.x, opponent.y);
+        sleepms(20);
+        if (Distance(me, opponent) > 16)
+            break;
+        endif
+    endwhile
+
+    // If we got behind them, perform sneak attack
+    if (IsBehind(me, opponent.x, opponent.y) && me.hidden == 1)
+        SetObjProperty(me, "backstab", 1);
+        SetObjProperty(me.weapon, "backstab", 1);
+        me.attack_once(opponent);
+    endif
 endfunction

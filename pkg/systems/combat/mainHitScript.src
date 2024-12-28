@@ -1199,6 +1199,16 @@ endfunction
 function ataqueFurtivo(attacker, defender)
 	var weapon := attacker.weapon;
 	var weaponBow := 0;
+	var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
+
+	if (attacker.npctemplate)
+		var npc_elem := NPC_GetNPCConfig(attacker);
+		sneak_dmg := Cint(npc_elem.Tier * 15);
+		if (sneak_dmg < 15)
+			sneak_dmg := 15;
+		endif
+	endif
+
 	if (lower(weapon.attribute) == "rangedcombat")
 		weaponBow := 1;
 	endif
@@ -1218,7 +1228,6 @@ function ataqueFurtivo(attacker, defender)
         endif
     endif
 
-    var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
 	DamageFLS(defender, sneak_dmg, DMG_FORCED, attacker);
     PlaySoundEffect(defender, 0X510);
     MakeBleed(defender);

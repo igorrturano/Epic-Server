@@ -1,6 +1,7 @@
 use uo;
 include "include/NPCUtil";
 include ":tn:cooldown";
+include "include/epicConstants";
 
 program Install()
 	print("INSTALLING: Methods for NPCs... OK!");
@@ -28,5 +29,13 @@ endfunction
 exported function isMyrkonid(who)
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template == "homemcogumelo") return 1; endif
+    return 0;
+endfunction
+
+exported function isThief(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var classe := npc_elem.Classe;
+
+    if (classe == LADINO) return 1; endif
     return 0;
 endfunction
