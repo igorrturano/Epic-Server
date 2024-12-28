@@ -152,29 +152,42 @@ function DoThiefSteal(opponent)
 endfunction
 
 function DoThiefSneakAttack(opponent)
-    // First try to hide and move behind target
+    // Grant stealth privileges
     GrantPrivilege(me, "hiddenattack");
     me.enable("hiddenattack");
+    GrantPrivilege(me, "runwhilestealth");
+    me.enable("runwhilestealth");
+    
     me.hidden := 1;
     me.stealthsteps := 100;
 
-    // Try to get behind the target
-    var behind_x := opponent.x + (opponent.x - me.x);
-    var behind_y := opponent.y + (opponent.y - me.y);
+    // Try to get behind the target without breaking stealth
+    var attempts := 0;
+    while (!IsBehind(me, opponent.x, opponent.y) && attempts < 10)
+        attempts += 1;
+        
+        // Calculate position behind target
+        var behind_x := opponent.x + (opponent.x - me.x);
+        var behind_y := opponent.y + (opponent.y - me.y);
+        
+        WalkTowardLocation(behind_x, behind_y);
+        sleepms(100);
 
-    // Move to position
-    while (!IsBehind(me, opponent.x, opponent.y) && Distance(me, opponent) > 1)
-        WalkTowardLocation(opponent.x, opponent.y);
-        sleepms(20);
-        if (Distance(me, opponent) > 16)
+        // Break if we lost stealth or got too far
+        if (!me.hidden || Distance(me, opponent) > 16)
             break;
         endif
     endwhile
 
-    // If we got behind them, perform sneak attack
-    if (IsBehind(me, opponent.x, opponent.y) && me.hidden == 1)
+    // Only attack if still hidden and in position
+    if (me.hidden && IsBehind(me, opponent.x, opponent.y))
+        PrintTextAbove(me, "*ataque furtivo*");
         SetObjProperty(me, "backstab", 1);
         SetObjProperty(me.weapon, "backstab", 1);
         me.attack_once(opponent);
+    else
+        // If stealth attack failed, engage in normal combat
+        HandleCombatEvent(opponent, 0);
     endif
 endfunction
+
