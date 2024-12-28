@@ -712,9 +712,9 @@ endfunction
 
 function DoThiefCombatBehavior(opponent)
     // 50% chance to steal, 50% chance to sneak attack
-    // if (RandomInt(100) < 50)
-    //     DoThiefSteal(opponent);
-    // else
+    if (RandomInt(100) < 50)
+        DoThiefSteal(opponent);
+    else
         DoThiefSneakAttack(opponent);
-    // endif
+    endif
 endfunction
