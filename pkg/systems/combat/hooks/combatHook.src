@@ -78,7 +78,7 @@ exported function Attack(attacker, defender)
 	var rolldice := RandomDiceRoll("1d100");
 	DebugMsg(attacker, DEBUG_DAMAGE, "Rolagem de acerto: "+rolldice);
 	if ( rolldice < hitchance )
-		DebugMsg(attacker, DEBUG_DAMAGE, "***SUCESSO!***");
+		DebugMsg(attacker, DEBUG_DAMAGE, "***ACERTOU!***");
         if (defender.frozen)
             defender.frozen := 0;
         endif
@@ -89,7 +89,7 @@ exported function Attack(attacker, defender)
 		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
 
 	else
-		DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
+		DebugMsg(attacker, DEBUG_DAMAGE, "***ERROU!***");
 		PlayMissSound(attacker);
 		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -710,6 +710,10 @@ function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
 		endif
 	endif
 	EraseObjProperty(attacker, "movement");
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		EraseObjProperty(attacker, "charge_damage");
+	endif
 
 	return 1;
 endfunction

@@ -39,7 +39,7 @@ function ProcessChargeImpact(attacker, defender)
 
    // Calculate distance charged
    var dist := CoordinateDistance(charge_start.x, charge_start.y, defender.x, defender.y);
-   var charge_damage := Cint(dist * 2);
+   var charge_damage := Cint(dist);
 
    EraseObjProperty(attacker, "#chargestart");
    SetObjProperty(attacker, "charge_damage", charge_damage);
