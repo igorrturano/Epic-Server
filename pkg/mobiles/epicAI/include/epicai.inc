@@ -180,7 +180,7 @@ function SetupAnimalCriticalHit(mobile, npc_elem)
             0: SetObjProperty(mobile, "Critic", "Frenesi" );
             1: SetObjProperty(mobile, "Critic", "Rugir" );
         endcase
-    elseif (taxonomy == "canidae" || taxonomy == "felidae" || taxonomy == "chiroptera" || taxonomy == "rodentia"|| taxonomy == "reptilia" || taxonomy == "crustacean" || taxonomy == "scarabaeidae")
+    elseif (taxonomy == "canidae" || taxonomy == "felidae" || taxonomy == "chiroptera" || taxonomy == "reptilia" || taxonomy == "crustacean" || taxonomy == "scarabaeidae")
         case (RandomInt(2))
             0: SetObjProperty(mobile, "Critic", "Presas_profundas" );
             1: SetObjProperty(mobile, "Critic", "Garras_afiadas" );
