@@ -1,6 +1,7 @@
 use uo;
 
 include ":merchants:include/cambio";
+include ":tn:cooldown";
 
 program Install()
 	print("INSTALLING: Methods for Characters... OK!");

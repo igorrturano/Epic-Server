@@ -13,7 +13,12 @@ program TimedScript_Clumsy(params)
 
 	params := 0; // Not needed anymore.
 	
-	PlayerSpeedBoost(mobile, 1);
+	if (mobile.npctemplate)
+		SetObjProperty(mobile, "runspeed", mobile.run_speed);
+		mobile.run_speed := 250;
+	else
+		PlayerSpeedBoost(mobile, 1);
+	endif
 	
 	return 1;
 endprogram

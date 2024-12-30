@@ -382,6 +382,11 @@ function checkTargetValidity(mobile, targ, spellinfo)
         endif
     endif
 
+    if(Cint(GetObjProperty(mobile, "charmed_by")) == targ.serial)
+		PrintTextAbove(mobile, "*hipnotizado*");	
+		return 0;
+    endif
+
     return 1;
 endfunction
 
