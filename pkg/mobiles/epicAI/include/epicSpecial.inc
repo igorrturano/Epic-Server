@@ -367,10 +367,14 @@ function TunnelTactics(me, targ)
         ally.concealed := 1;
         PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
         PrintTextAbove(ally, "*escava no subsolo*");
-           
+
         // Wait a moment before emerging
         sleep(3);
-        
+        // ReCheck so they don't emerge if target is dead or missing
+        if (!CanFight(ally, targ))
+            ally.concealed := 0;
+            return 0;
+        endif
         // Emerge behind targ in coordinated attack
         MoveObjectToLocation(ally, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
         ally.concealed := 0;
