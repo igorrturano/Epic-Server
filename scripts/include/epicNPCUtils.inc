@@ -344,3 +344,10 @@ function endControlNPC(who)
 
 	ErasePetMods(who);
 endfunction
+
+function isHurt(mobile)
+    if (AP_GetVital(mobile, HITS) / AP_GetVitalMaximumValue(mobile, HITS) < 0.70)
+        return 1;
+    endif
+    return 0;
+endfunction
