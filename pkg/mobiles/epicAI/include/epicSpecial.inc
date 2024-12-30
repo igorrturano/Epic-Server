@@ -1,6 +1,7 @@
 const CHARGE_MINIMUM_DISTANCE := 5;
 include ":timedScripts:timedScripts";
 include ":awareness:awareness";
+include ":nature:nature";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -191,3 +192,56 @@ function DoThiefSneakAttack(opponent)
     endif
 endfunction
 
+function PerformHeal(shaman, targ, tier)
+    if (!targ)
+        return 0;
+    endif
+
+    PrintText(shaman, "*curando " + targ.name + "*");
+    PerformAction(shaman, ANIM_CAST_AREA);
+    PlaySoundEffect(shaman, SFX_SPELL_HEAL);
+    PlayObjectCenteredEffect(targ, FX_HEAL_EFFECT, 7, 0x10);
+    
+    var heal_amount := tier * 12;
+    HealDamage(targ, heal_amount);
+    
+    return 1;
+endfunction
+
+function PerformHealingRain(shaman, allies)
+    var mlore := CInt(AP_GetSkill(shaman, MAGICLORE));
+    
+    PrintText(shaman, "*invoca tempestade*");
+    PerformAction(shaman, ANIM_CAST_AREA);
+    
+    // Heal allies
+    foreach ally in allies
+        if (!ally.isUnderRoof())
+            HealDamage(ally, CInt(mlore/3));
+            PlayObjectCenteredEffect(ally, FX_HEAL_EFFECT, 7, 0x10);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Damage enemies
+    foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 12)
+        if (!mobile.isUnderRoof() && CanFight(shaman, mobile))
+            PlayLightningBoltEffect(mobile);
+            DamageFLS(mobile, RandomDiceRoll("1d10") + 20, DMG_ENERGY, shaman);
+            PrintText(mobile, "*atingido por um raio*");
+            SetWeatherForPlayer(mobile, 1, 50);
+            wetPowder(mobile);
+        endif
+        sleepms(2);
+    endforeach
+
+    PlayWeatherEffect(shaman);
+    return 1;
+endfunction
+
+function PlayWeatherEffect(shaman)
+    var wind_sounds := array{0x15, 0x16, 0x17};
+    if (RandomInt(100) < 25) // 25% chance to play sound
+        PlaySoundEffect(shaman, wind_sounds[RandomInt(3) + 1]);
+    endif
+endfunction

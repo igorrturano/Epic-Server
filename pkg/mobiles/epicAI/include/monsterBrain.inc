@@ -19,7 +19,7 @@ function MonsterBrain()
     // Get monster configuration
     var npc_elem := NPC_GetNPCConfig(me);
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var is_ranged := (speed_type[1] == "RANGED");
+    var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
 
     // Enable archer-specific abilities if needed
     if (is_ranged)
@@ -48,6 +48,7 @@ function MonsterBrain()
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
                     PrintTextAbove(me, "DAMAGED");
+                    AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     PrintTextAbove(me, "ENTERED AREA"); 
@@ -56,7 +57,7 @@ function MonsterBrain()
                         HandleEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_OPPONENT_MOVED:
-                    PrintTextAbove(me, "OPPONENT MOVED");                     
+                    // PrintTextAbove(me, "OPPONENT MOVED");
                     if (!ev.source || ev.source.hidden || ev.source.concealed)
                         return 0;
                     endif
@@ -105,6 +106,8 @@ function MonsterBrain()
                             endif
                         endif
                     endif
+                EVID_BUDDYATTACKED:
+                    ShamanBehavior(me);
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
@@ -443,6 +446,10 @@ function HandleCombatEvent(opponent, is_ranged)
         SporeSpecial(me, opponent);
     endif
 
+    if (me.isSage())
+        ShamanBehavior(me);
+    endif
+
     return 1;
 endfunction
 
@@ -645,6 +652,19 @@ function MaintainRange(opponent)
         RunToward(opponent);
         sleepms(sleepdelay);
     else
+        // Try to stay closer to allies if possible
+        var allies := GetNearbyAllies(me);
+        if (allies.size() > 0)
+            var closest_ally := allies[1];
+            var ally_dist := Distance(me, closest_ally);
+            
+            if (ally_dist > 4)
+                RunToward(closest_ally);
+                sleepms(sleepdelay);
+                return 0;
+            endif
+        endif
+        
         TurnToward(opponent);
         return 1;
     endif
@@ -668,6 +688,7 @@ function AlertAllies(attacker, defender)
         ally_cats := array{GetConfigString(attacker_elem, "Category")};
         PrintTextAbove(attacker, "Using own category: " + ally_cats[1]);
     endif
+
     
     foreach mobile in ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8)
         if (mobile.npctemplate && mobile != attacker)
@@ -717,4 +738,107 @@ function DoThiefCombatBehavior(opponent)
     else
         DoThiefSneakAttack(opponent);
     endif
+endfunction
+
+function ShamanBehavior(shaman)
+    // First priority: Check allies health
+    if (GetCooldown(shaman, "heal_check"))
+        return 0;
+    endif
+
+    var npc_elem := NPC_GetNPCConfig(shaman);
+    var caster_tier := CInt(npc_elem.Tier);
+    if (!caster_tier)
+        caster_tier := 1;
+    endif
+
+    // Get all allies nearby
+    var allies := GetNearbyAllies(shaman);
+    var wounded_allies := array{};
+
+    // Check allies' health
+    foreach ally in allies
+        if ((AP_GetVital(ally, HITS) < AP_GetVitalMaximumValue(ally, HITS))) // Is Hurt
+            wounded_allies.append(ally);
+        endif
+    endforeach
+
+    // If multiple allies need help, cast healing rain
+    if (wounded_allies.size() >= 3 && !GetCooldown(shaman, "healing_rain"))
+        PerformHealingRain(shaman, wounded_allies);
+        SetCooldown(shaman, "healing_rain", 45);
+        return 1;
+    endif
+
+    foreach ally in wounded_allies
+        if ((AP_GetVital(ally, HITS) < AP_GetVitalMaximumValue(ally, HITS))) // Is Hurt
+            PerformHeal(shaman, ally, caster_tier);
+            SetCooldown(shaman, "heal_check", 15);
+            return 1;
+        endif
+        sleepms(2);
+    endforeach
+
+    return 0;
+endfunction
+
+function GetNearbyAllies(shaman)
+    var allies := array{};
+    foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 8)
+        if (NeedsShamanHelp(mobile))
+            allies.append(mobile);
+        endif
+        sleepms(2);
+    endforeach
+    
+    return allies;
+endfunction
+
+function NeedsShamanHelp(mobile)
+    if (!mobile || mobile.dead) return 0; endif
+
+    if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
+
+    if (mobile.hidden || mobile.concealed) return 0; endif
+
+    if (mobile.acctname || mobile.alignment != 1) return 0; endif
+    
+    return 1;
+endfunction
+
+function AskForHealing(me)
+    // First look specifically for shamans
+    if (!isHurt(me))
+        return 0;
+    endif
+
+    PrintTextAbove(me, RandomHealingCall());
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+        if (mobile.npctemplate && mobile != me)
+            if (mobile.isSage())
+                SetObjProperty(mobile, "#healing_needed", me.serial);
+                var result := SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
+            endif
+        endif
+        sleepms(2);
+    endforeach
+endfunction 
+
+function RandomHealingCall()
+    // Sons de dor/grunhidos simples
+    case(RandomInt(6))
+        0: return "Ughh!";
+        1: return "Argh!";
+        2: return "Khh!";
+        3: return "*sangra*";
+        4: return "*cambaleia*";
+        5: return "*ferido*";
+    endcase
+endfunction
+
+function isHurt(mobile)
+    if (AP_GetVital(mobile, HITS) / AP_GetVitalMaximumValue(mobile, HITS) < 0.60)
+        return 1;
+    endif
+    return 0;
 endfunction

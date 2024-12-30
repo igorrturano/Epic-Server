@@ -39,3 +39,11 @@ exported function isThief(who)
     if (classe == LADINO) return 1; endif
     return 0;
 endfunction
+
+exported function isSage(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var classe := npc_elem.Classe;
+
+    if (classe == SABIO) return 1; endif
+    return 0;
+endfunction
