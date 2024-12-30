@@ -67,7 +67,7 @@ function BuildXPGump(who, xpbar)
    endif
 
    // Level text
-   GFTextLine(gump, xpbar.pos_x+15, xpbar.pos_y+74, 1152, "Level {}".format(curr_level));
+   GFTextLine(gump, xpbar.pos_x+18, xpbar.pos_y+80, 1152, "Level {}".format(curr_level));
    
    // XP Progress text
    var xp_text := "{}/{}".format(curr_xp, next_level_xp);
@@ -87,7 +87,7 @@ function CalculateNextLevelXP(level)
       return 3000; // 3k for second level
    endif
    
-   var prev := 1;
+   var prev := 2;
    var curr := 3;
    for i := 2 to level
       var next := prev + curr;
