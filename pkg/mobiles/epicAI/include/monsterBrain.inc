@@ -61,15 +61,7 @@ function MonsterBrain()
                         return 0;
                     endif
                     
-                    // HandleOpponentMovement(ev.source);
-                    // if (me.opponent == ev.source)
-                    //     if (is_ranged)
-                    //         MaintainRange(ev.source);
-                    //     else
-                    //         TurnToward(ev.source);
-                    //         PursueTarget(ev.source);
-                    //     endif
-                    // endif
+                    HandleOpponentMovement(ev.source, is_ranged);
                 SYSEVENT_SPEECH: 
                     PrintTextAbove(me, "SPEECH");
                     HandleSpeech(ev.text, ev.source, is_ranged);
@@ -126,18 +118,20 @@ function MonsterBrain()
     endwhile
 endfunction
 
-function HandleOpponentMovement(opponent)
+function HandleOpponentMovement(opponent, is_ranged)
     if (!opponent || !CanFight(me, opponent))
         PrintTextAbove(me, "Invalid opponent");
         return 0;
     endif
 
-    // Update combat state if opponent moves
-    // if (me.opponent == opponent)
-    //     TurnToward(opponent);
-    //     PursueTarget(opponent);
-    // endif
-
+    if (me.opponent == opponent)
+        if (is_ranged)
+            MaintainRange(opponent);
+        else
+            TurnToward(opponent);
+            PursueTarget(opponent);
+        endif
+    endif
     
     return 1;
 endfunction
@@ -211,9 +205,8 @@ function HandleLeftArea(is_ranged)
     ClearCombatState();
     
     // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
-            PrintTextAbove(me, "*procura novo alvo*");
             HandleCombatEvent(mobile, is_ranged);
             return 1;
         endif
@@ -222,6 +215,7 @@ function HandleLeftArea(is_ranged)
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
+    PrintTextAbove(me, "*procura corpos*");
     foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE)
         if (item.IsA(POLCLASS_CORPSE))
             corpses.append(item);
@@ -625,6 +619,7 @@ function HandleEnteredArea(source, is_ranged)
     if (me.canCharge())
         StartCharge(me, source);
     endif
+
     if (me.isThief())
         DoThiefCombatBehavior(source);
     endif
