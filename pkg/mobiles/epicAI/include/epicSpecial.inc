@@ -245,3 +245,43 @@ function PlayWeatherEffect(shaman)
         PlaySoundEffect(shaman, wind_sounds[RandomInt(3) + 1]);
     endif
 endfunction
+
+function CastEnraizar(shaman, targ, diff)
+   if (!targ)
+      return 0;
+   endif
+   
+   PrintText(shaman, "*conjura raízes*");
+   PerformAction(shaman, ANIM_CAST_AREA);
+   
+   if (!CheckResist(targ, VONTADE, diff))
+      var duration := CInt(AP_GetSkill(shaman, MAGICLORE) / 10);
+      PlayStationaryEffect(targ.x, targ.y, targ.z-5, 0x6D01, 7, 40, 0, targ.realm);
+      TS_StartTimer(targ, "paralysis", duration);
+      SetCooldown(targ, "enraizar_cooldown", 120); // 2 minute cooldown per target
+      return 1;
+   endif
+   
+   return 0;
+endfunction
+
+function CastWeaken(shaman, targ, diff)
+   if (!targ)
+      return 0;
+   endif
+
+   PrintTextAbove(shaman, "*enfraquece inimigo*");
+   PerformAction(shaman, ANIM_CAST_AREA);
+   
+   var bonus := CInt(AP_GetSkill(shaman, MAGICLORE) / 20); // Small bonus based on skill
+   
+   if (!CheckResist(targ, VONTADE, diff, -bonus))
+      var duration := CInt(AP_GetSkill(shaman, MAGICLORE));
+      var amount := 10 + CInt(bonus / 2); // Base amount plus skill bonus
+      TS_StartTimer(targ, "weaken", duration, amount, shaman, 1);
+      SetCooldown(targ, "weaken_cooldown", 60); // 1 minute cooldown per target
+      return 1;
+   endif
+   
+   return 0;
+endfunction
