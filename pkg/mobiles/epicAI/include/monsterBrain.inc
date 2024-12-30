@@ -40,7 +40,6 @@ function MonsterBrain()
         endif
         
         if (ev)
-            PrintTextAbove(me, "Event: " + ev.type);
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     PrintTextAbove(me, "ENGAGED");
@@ -62,6 +61,7 @@ function MonsterBrain()
                         return 0;
                     endif
                     
+                    // HandleOpponentMovement(ev.source);
                     // if (me.opponent == ev.source)
                     //     if (is_ranged)
                     //         MaintainRange(ev.source);
@@ -134,14 +134,16 @@ endfunction
 
 function HandleOpponentMovement(opponent)
     if (!opponent || !CanFight(me, opponent))
+        PrintTextAbove(me, "Invalid opponent");
         return 0;
     endif
 
     // Update combat state if opponent moves
-    if (me.opponent == opponent)
-        TurnToward(opponent);
-        PursueTarget(opponent);
-    endif
+    // if (me.opponent == opponent)
+    //     TurnToward(opponent);
+    //     PursueTarget(opponent);
+    // endif
+
     
     return 1;
 endfunction
@@ -194,7 +196,7 @@ function HandleDisengage(opponent)
             
             // Loot items
             while (looted < max_loot)
-                PrintText(me, "*revirando o corpo*");
+                PrintTextAbove(me, "*revirando o corpo*");
                 LootSomething(me, corpse);
                 looted += 1;
                 sleepms(1500);
@@ -217,7 +219,7 @@ function HandleLeftArea(is_ranged)
     // First look for new opponents
     foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN)
         if (CanFight(me, mobile))
-            PrintText(me, "*procura novo alvo*");
+            PrintTextAbove(me, "*procura novo alvo*");
             HandleCombatEvent(mobile, is_ranged);
             return 1;
         endif
@@ -244,7 +246,7 @@ function HandleLeftArea(is_ranged)
     endif
 
     // If nothing else to do, go idle
-    PrintText(me, "*procura alvos*");
+    PrintTextAbove(me, "*procura alvos*");
     HandleIdleState();
     return 1;
 endfunction
@@ -282,7 +284,7 @@ function LootCorpse(corpse)
     
     // Loot items
     while (looted < max_loot)
-        PrintText(me, "*revira o corpo*");
+        PrintTextAbove(me, "*revira o corpo*");
         if (!LootSomething(me, corpse))
             break;
         endif
@@ -385,7 +387,7 @@ function LootItem(npc, item)
         EquipItem(npc, backpack);
     endif
 
-    PrintText(npc, "*pega " + item.desc + "*");
+    PrintTextAbove(npc, "*pega " + item.desc + "*");
     return MoveItemToContainer(item, npc.backpack);
 endfunction
 
@@ -419,8 +421,6 @@ function DisableMainEvents()
 endfunction
 
 function HandleCombatEvent(opponent, is_ranged)
-    PrintTextAbove(me, "Starting Combat");
-
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         PrintTextAbove(me, "Invalid opponent");
         return 0;
@@ -450,6 +450,10 @@ function HandleCombatEvent(opponent, is_ranged)
         ShamanBehavior(me);
     endif
 
+    if (me.hasHiveMind())
+        HiveMind(me);
+    endif
+
     return 1;
 endfunction
 
@@ -465,11 +469,15 @@ function PursueTarget(opponent)
         return 0;
     endif
 
+    if (me.canSpitAcid())
+        var dist := Distance(me, opponent);
+        if (dist >= 2 && dist <= 6)
+            AcidSpray(me, opponent);
+        endif
+    endif
+
     if (CheckLineOfSight(me, opponent))
-        PrintTextAbove(me, "Has line of sight");
         while (Distance(me, opponent) > 1 && CanFight(me, opponent))
-            // PrintTextAbove(me, "Running toward opponent");
-            // PrintTextAbove(me, "Opponent.Name: " + opponent.name);
             RunToward(opponent);
             sleepms(100);
         endwhile
@@ -627,6 +635,10 @@ function HandleEnteredArea(source, is_ranged)
         DoThiefCombatBehavior(source);
     endif
 
+    if (me.hasTunnelTactics())
+        TunnelTactics(me, source);
+    endif
+
     HandleCombatEvent(source, is_ranged);
     
     return 1;
@@ -698,7 +710,7 @@ function AlertAllies(attacker, defender)
             if (mobile_cat in ally_cats)
                 SetObjProperty(mobile, "#taunt_opponent", defender.serial);
                 SendEvent(mobile, EVID_TAUNT);
-                PrintText(mobile, "*alerted* by " + mobile_cat);
+                PrintTextAbove(mobile, "*alerted* by " + mobile_cat);
             endif
         endif
         sleepms(2);
