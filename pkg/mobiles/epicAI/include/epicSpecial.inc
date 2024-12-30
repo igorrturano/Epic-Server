@@ -341,6 +341,10 @@ function TunnelTactics(me, targ)
     if (GetCooldown(me, "tunnel_tactics") > 0)
         return 0;
     endif
+
+    if (!CanFight(me, targ))
+        return 0;
+    endif
     
     SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
     
