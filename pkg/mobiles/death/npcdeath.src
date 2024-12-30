@@ -26,6 +26,8 @@ include ":tn:npcutil";
 include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
+include ":expbar:expbar";
+
 
 //include ":spawnnet:spawnnet";
 //include ":spawnregion:spawn";
