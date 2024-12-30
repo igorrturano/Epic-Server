@@ -47,3 +47,22 @@ exported function isSage(who)
     if (classe == SABIO) return 1; endif
     return 0;
 endfunction
+
+exported function isFormian(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "formian") return 1; endif
+    if (template == "formian2") return 1; endif
+    return 0;
+endfunction
+
+exported function hasHiveMind(who)
+    if (isFormian(who)) return 1; endif
+endfunction
+
+exported function canSpitAcid(who)
+    if (isFormian(who)) return 1; endif
+endfunction
+
+exported function hasTunnelTactics(who)
+    if (isFormian(who)) return 1; endif
+endfunction

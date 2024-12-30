@@ -1282,7 +1282,6 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	endif
 
 	foreach hitscript in weapon_scripts
-		print("hit script: " + hitscript);
 		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage});
 		if ( !script || script.errortext )
 			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
