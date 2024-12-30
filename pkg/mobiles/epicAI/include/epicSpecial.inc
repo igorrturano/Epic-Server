@@ -2,6 +2,7 @@ const CHARGE_MINIMUM_DISTANCE := 5;
 include ":timedScripts:timedScripts";
 include ":awareness:awareness";
 include ":nature:nature";
+include ":acid:acid";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -19,7 +20,7 @@ function StartCharge(attacker, defender)
 
    // Grant speed boost during charge
    SetCooldown(attacker, "charge", 120);
-   PrintText(attacker, "*inicia carga*");
+   PrintTextAbove(attacker, "*inicia carga*");
    TS_StartTimer(attacker, "velocidade", 5);
 
    return 1;
@@ -65,7 +66,7 @@ function SporeSpecial(attacker, defender)
         case (spore_type)
             1: // Charm
                 if (!CheckResist(mobile, VONTADE, RESIST_VERY_HARD))
-                    PrintText(attacker, "*libera esporos hipnóticos*");
+                    PrintTextAbove(attacker, "*libera esporos hipnóticos*");
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 45, 2, 2740);
                     
                     SetObjProperty(mobile, "charmed_by", attacker.serial);
@@ -77,7 +78,7 @@ function SporeSpecial(attacker, defender)
             
             2: // Poison
                 if (!CheckResist(mobile, FORTITUDE, RESIST_HARD))
-                    PrintText(attacker, "*libera esporos venenosos*");
+                    PrintTextAbove(attacker, "*libera esporos venenosos*");
                     var sounds := { 560, 561, 562 };
                     PlaysoundEffect(mobile, sounds[RandomInt(sounds.size())+1]);
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, 0x54f7, 10, 30, 2283);
@@ -86,7 +87,7 @@ function SporeSpecial(attacker, defender)
             
             3: // Blind
                 if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
-                    PrintText(attacker, "*libera esporos cegantes*");
+                    PrintTextAbove(attacker, "*libera esporos cegantes*");
                     PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
                     SetCooldown(mobile, "blinded", 15);
                     PrintTextAbove(mobile, "*cegueira*");
@@ -197,7 +198,7 @@ function PerformHeal(shaman, targ, tier)
         return 0;
     endif
 
-    PrintText(shaman, "*curando " + targ.name + "*");
+    PrintTextAbove(shaman, "*curando " + targ.name + "*");
     PerformAction(shaman, ANIM_CAST_AREA);
     PlaySoundEffect(shaman, SFX_SPELL_HEAL);
     PlayObjectCenteredEffect(targ, FX_HEAL_EFFECT, 7, 0x10);
@@ -211,7 +212,7 @@ endfunction
 function PerformHealingRain(shaman, allies)
     var mlore := CInt(AP_GetSkill(shaman, MAGICLORE));
     
-    PrintText(shaman, "*invoca tempestade*");
+    PrintTextAbove(shaman, "*invoca tempestade*");
     PerformAction(shaman, ANIM_CAST_AREA);
     
     // Heal allies
@@ -228,7 +229,7 @@ function PerformHealingRain(shaman, allies)
         if (!mobile.isUnderRoof() && CanFight(shaman, mobile))
             PlayLightningBoltEffect(mobile);
             DamageFLS(mobile, RandomDiceRoll("1d10") + 20, DMG_ENERGY, shaman);
-            PrintText(mobile, "*atingido por um raio*");
+            PrintTextAbove(mobile, "*atingido por um raio*");
             SetWeatherForPlayer(mobile, 1, 50);
             wetPowder(mobile);
         endif
@@ -251,7 +252,7 @@ function CastEnraizar(shaman, targ, diff)
       return 0;
    endif
    
-   PrintText(shaman, "*conjura raízes*");
+   PrintTextAbove(shaman, "*conjura raízes*");
    PerformAction(shaman, ANIM_CAST_AREA);
    
    if (!CheckResist(targ, VONTADE, diff))
@@ -284,4 +285,99 @@ function CastWeaken(shaman, targ, diff)
    endif
    
    return 0;
+endfunction
+
+function AcidSpray(me, targ)
+   if (!CheckLineOfSight(me, targ))
+      return 0;
+   endif
+   
+   if (GetCooldown(me, "acid_spit") > 0)
+      return 0;
+   endif
+
+   SetCooldown(me, "acid_spit", 15); // 15 second cooldown
+   
+   PrintTextAbove(me, "*cospe ácido*");
+   PlayMovingEffectXYZHued(me, targ, 0x36d4, 5, 1, 1, 0x47, 0);
+   var acid_pool := CreateItemAtLocation(targ.x, targ.y, GetMapInfo(targ.x, targ.y).z, "acid", 1, targ.realm);
+   
+   // Deal initial acid damage
+   var acid_damage := "2d6+6";
+   DealAcidDamage(me, targ, acid_pool, acid_damage);
+   
+   return 1;
+endfunction
+
+function HiveMind(me)
+    // Get all nearby me allies
+    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    var ally := 0;
+    
+    foreach mobile in allies
+        if (mobile.npctemplate && mobile != me)
+            if (mobile.hasHiveMind())
+                ally += 1;
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Apply hive mind bonus
+    if (ally > 0)
+        var bonus := ally * 2;
+        SetObjProperty(me, "#attackbonus", bonus);
+        if (!GetCooldown(me, "hivemind_effect"))
+            PrintTextAbove(me, "*sincroniza com a colmeia*");
+            PlayObjectCenteredEffect(me, 0x376A, 7, 16);
+            SetCooldown(me, "hivemind_effect", 15);
+        endif
+    endif
+    
+    return ally;
+endfunction
+
+function TunnelTactics(me, targ)
+    if (GetCooldown(me, "tunnel_tactics") > 0)
+        return 0;
+    endif
+    
+    SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
+    
+    // Alert nearby allies to join the attack
+    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 12, LISTEX_FLAG_NORMAL);
+    var attacking_formation := array{me};
+
+    foreach mobile in allies
+        if (mobile.npctemplate && mobile != me)
+            if (mobile.hasTunnelTactics())
+                attacking_formation.append(mobile);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Perform tunnel tactics for all participating allies
+    foreach ally in attacking_formation
+        // Make them disappear
+        ally.concealed := 1;
+        PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
+        PrintTextAbove(ally, "*escava no subsolo*");
+           
+        // Wait a moment before emerging
+        sleep(3);
+        
+        // Emerge behind targ in coordinated attack
+        MoveObjectToLocation(ally, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
+        ally.concealed := 0;
+        PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
+        PrintTextAbove(ally, "*emerge do subsolo*");
+        
+        // Set all allies to attack the targ
+        ally.opponent := targ;
+        
+        sleepms(100);
+    endforeach
+    
+    return 1;
 endfunction
