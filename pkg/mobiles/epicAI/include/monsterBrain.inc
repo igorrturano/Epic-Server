@@ -4,6 +4,7 @@ include "include/sounds";
 include ":combat:damage";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
+include "epicSpecial";
 
 var me := Self();
 const AREA_SIZE := 16;
@@ -18,7 +19,7 @@ function MonsterBrain()
     // Get monster configuration
     var npc_elem := NPC_GetNPCConfig(me);
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var is_ranged := (speed_type[1] == "RANGED");
+    var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
 
     // Enable archer-specific abilities if needed
     if (is_ranged)
@@ -47,6 +48,7 @@ function MonsterBrain()
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
                     PrintTextAbove(me, "DAMAGED");
+                    AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     PrintTextAbove(me, "ENTERED AREA"); 
@@ -55,7 +57,7 @@ function MonsterBrain()
                         HandleEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_OPPONENT_MOVED:
-                    PrintTextAbove(me, "OPPONENT MOVED");                     
+                    // PrintTextAbove(me, "OPPONENT MOVED");
                     if (!ev.source || ev.source.hidden || ev.source.concealed)
                         return 0;
                     endif
@@ -104,6 +106,8 @@ function MonsterBrain()
                             endif
                         endif
                     endif
+                EVID_BUDDYATTACKED:
+                    ShamanBehavior(me);
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
@@ -437,6 +441,14 @@ function HandleCombatEvent(opponent, is_ranged)
         TurnToward(opponent);
         PursueTarget(opponent);
     endif
+    
+    if (me.isMyrkonid())
+        SporeSpecial(me, opponent);
+    endif
+
+    if (me.isSage())
+        ShamanBehavior(me);
+    endif
 
     return 1;
 endfunction
@@ -456,15 +468,14 @@ function PursueTarget(opponent)
     if (CheckLineOfSight(me, opponent))
         PrintTextAbove(me, "Has line of sight");
         while (Distance(me, opponent) > 1 && CanFight(me, opponent))
-            PrintTextAbove(me, "Running toward opponent");
-            PrintTextAbove(me, "Opponent.Name: " + opponent.name);
+            // PrintTextAbove(me, "Running toward opponent");
+            // PrintTextAbove(me, "Opponent.Name: " + opponent.name);
             RunToward(opponent);
             sleepms(100);
         endwhile
     else
         // Try to find a path around obstacles
         var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
-        print("path: " + path);
         if (path)
             foreach coord in path
                 RunTowardLocation(coord.x, coord.y);
@@ -607,67 +618,16 @@ function HandleEnteredArea(source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-
-    // Get monster category and player race
-    var npc_elem := NPC_GetNPCConfig(me);
-    var category := GetConfigString(npc_elem, "Category");
-    var playerRaca := source.getRace();
-    var name_mob := GetConfigString(npc_elem, "Name");
     
-    if (!category)
-        HandleCombatEvent(source, is_ranged);
-        return 0;
+    handleInitialReaction(source);
+    if (me.canCharge())
+        StartCharge(me, source);
+    endif
+    if (me.isThief())
+        DoThiefCombatBehavior(source);
     endif
 
-    // Special handling for Goblins
-    if (category == "Goblin")
-        if (playerRaca == ORC || playerRaca == DROW)
-            // High chance to flee from these races
-            var randomDice := RandomInt(100);
-            if (randomDice < 30)
-                var playerinput := "*raça " + playerRaca + " assusta*";
-                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-                if (responseAI)
-                    Say(responseAI);
-                else
-                    Say("Ahhh " + playerRaca + "!!!");
-                    PrintTextAbove(me, "*Aterrorizado*");
-                endif
-                FleeFrom(source);
-                return 1;
-            endif
-        endif
-    endif
-
-    // Initial reaction based on category
-    var aggro_chance;
-    var playerinput;
-    
-    case (category)
-        "Goblin": 
-            aggro_chance := 20;
-            playerinput := "*raça " + playerRaca + " encontrada*";
-        "Giants": 
-            aggro_chance := 70;
-            playerinput := "*raça " + playerRaca + " invade território*";
-        "EvilHuman": 
-            aggro_chance := 60;
-            playerinput := "*raça " + playerRaca + " avistada*";
-        default: 
-            aggro_chance := 40;
-            playerinput := "*raça " + playerRaca + " aparece*";
-    endcase
-
-    // Generate and say initial response
-    var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-    if (responseAI)
-        Say(responseAI);
-    endif
-
-    // Roll for aggro
-    if (RandomInt(100) < aggro_chance)
-        HandleCombatEvent(source, is_ranged);
-    endif
+    HandleCombatEvent(source, is_ranged);
     
     return 1;
 endfunction
@@ -692,6 +652,19 @@ function MaintainRange(opponent)
         RunToward(opponent);
         sleepms(sleepdelay);
     else
+        // Try to stay closer to allies if possible
+        var allies := GetNearbyAllies(me);
+        if (allies.size() > 0)
+            var closest_ally := allies[1];
+            var ally_dist := Distance(me, closest_ally);
+            
+            if (ally_dist > 4)
+                RunToward(closest_ally);
+                sleepms(sleepdelay);
+                return 0;
+            endif
+        endif
+        
         TurnToward(opponent);
         return 1;
     endif
@@ -715,6 +688,7 @@ function AlertAllies(attacker, defender)
         ally_cats := array{GetConfigString(attacker_elem, "Category")};
         PrintTextAbove(attacker, "Using own category: " + ally_cats[1]);
     endif
+
     
     foreach mobile in ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8)
         if (mobile.npctemplate && mobile != attacker)
@@ -729,4 +703,142 @@ function AlertAllies(attacker, defender)
         endif
         sleepms(2);
     endforeach
+endfunction
+
+function handleInitialReaction(source)
+    var npc_elem := NPC_GetNPCConfig(me);
+    var category := GetConfigString(npc_elem, "Category");
+
+    if (category == "Goblin")
+        var playerRaca := source.getRace();
+        var name_mob := GetConfigString(npc_elem, "Name");
+        if (playerRaca == ORC || playerRaca == DROW)
+            // High chance to flee from these races
+            var randomDice := RandomInt(100);
+            if (randomDice < 30)
+                var playerinput := "*raça " + playerRaca + " assusta*";
+                var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
+                if (responseAI)
+                    Say(responseAI);
+                else
+                    Say("Ahhh " + playerRaca + "!!!");
+                    PrintTextAbove(me, "*Aterrorizado*");
+                endif
+                FleeFrom(source);
+                return 1;
+            endif
+        endif
+    endif
+endfunction
+
+function DoThiefCombatBehavior(opponent)
+    // 50% chance to steal, 50% chance to sneak attack
+    if (RandomInt(100) < 50)
+        DoThiefSteal(opponent);
+    else
+        DoThiefSneakAttack(opponent);
+    endif
+endfunction
+
+function ShamanBehavior(shaman)
+    // First priority: Check allies health
+    if (GetCooldown(shaman, "heal_check"))
+        return 0;
+    endif
+
+    var npc_elem := NPC_GetNPCConfig(shaman);
+    var caster_tier := CInt(npc_elem.Tier);
+    if (!caster_tier)
+        caster_tier := 1;
+    endif
+
+    // Get all allies nearby
+    var allies := GetNearbyAllies(shaman);
+    var wounded_allies := array{};
+
+    // Check allies' health
+    foreach ally in allies
+        if ((AP_GetVital(ally, HITS) < AP_GetVitalMaximumValue(ally, HITS))) // Is Hurt
+            wounded_allies.append(ally);
+        endif
+    endforeach
+
+    // If multiple allies need help, cast healing rain
+    if (wounded_allies.size() >= 3 && !GetCooldown(shaman, "healing_rain"))
+        PerformHealingRain(shaman, wounded_allies);
+        SetCooldown(shaman, "healing_rain", 45);
+        return 1;
+    endif
+
+    foreach ally in wounded_allies
+        if ((AP_GetVital(ally, HITS) < AP_GetVitalMaximumValue(ally, HITS))) // Is Hurt
+            PerformHeal(shaman, ally, caster_tier);
+            SetCooldown(shaman, "heal_check", 15);
+            return 1;
+        endif
+        sleepms(2);
+    endforeach
+
+    return 0;
+endfunction
+
+function GetNearbyAllies(shaman)
+    var allies := array{};
+    foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 8)
+        if (NeedsShamanHelp(mobile))
+            allies.append(mobile);
+        endif
+        sleepms(2);
+    endforeach
+    
+    return allies;
+endfunction
+
+function NeedsShamanHelp(mobile)
+    if (!mobile || mobile.dead) return 0; endif
+
+    if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
+
+    if (mobile.hidden || mobile.concealed) return 0; endif
+
+    if (mobile.acctname || mobile.alignment != 1) return 0; endif
+    
+    return 1;
+endfunction
+
+function AskForHealing(me)
+    // First look specifically for shamans
+    if (!isHurt(me))
+        return 0;
+    endif
+
+    PrintTextAbove(me, RandomHealingCall());
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+        if (mobile.npctemplate && mobile != me)
+            if (mobile.isSage())
+                SetObjProperty(mobile, "#healing_needed", me.serial);
+                var result := SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
+            endif
+        endif
+        sleepms(2);
+    endforeach
+endfunction 
+
+function RandomHealingCall()
+    // Sons de dor/grunhidos simples
+    case(RandomInt(6))
+        0: return "Ughh!";
+        1: return "Argh!";
+        2: return "Khh!";
+        3: return "*sangra*";
+        4: return "*cambaleia*";
+        5: return "*ferido*";
+    endcase
+endfunction
+
+function isHurt(mobile)
+    if (AP_GetVital(mobile, HITS) / AP_GetVitalMaximumValue(mobile, HITS) < 0.60)
+        return 1;
+    endif
+    return 0;
 endfunction
