@@ -690,27 +690,13 @@ function AlertAllies(attacker, defender)
     if (!attacker.npctemplate)
         return 0;
     endif
-
-    PrintTextAbove(defender, "Alerting allies");
-    var attacker_elem := NPC_GetNPCConfig(attacker);
-    var ally_cats := GetConfigStringArray(attacker_elem, "AllyCategories");
-    
-    // If no allies specified, use own category
-    if (!ally_cats)
-        ally_cats := array{GetConfigString(attacker_elem, "Category")};
-        PrintTextAbove(attacker, "Using own category: " + ally_cats[1]);
-    endif
-
-    
+  
     foreach mobile in ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8)
         if (mobile.npctemplate && mobile != attacker)
-            var mobile_elem := NPC_GetNPCConfig(mobile);
-            var mobile_cat := GetConfigString(mobile_elem, "Category");
-            
-            if (mobile_cat in ally_cats)
+            if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", defender.serial);
                 SendEvent(mobile, EVID_TAUNT);
-                PrintTextAbove(mobile, "*alerted* by " + mobile_cat);
+                PrintTextAbove(mobile, "*alerted* by " + defender.name);
             endif
         endif
         sleepms(2);
@@ -815,7 +801,7 @@ endfunction
 function GetNearbyAllies(shaman)
     var allies := array{};
     foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 8)
-        if (NeedsShamanHelp(mobile))
+        if (isAlly(mobile))
             allies.append(mobile);
         endif
         sleepms(2);
@@ -824,7 +810,7 @@ function GetNearbyAllies(shaman)
     return allies;
 endfunction
 
-function NeedsShamanHelp(mobile)
+function isAlly(mobile)
     if (!mobile || mobile.dead) return 0; endif
 
     if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
