@@ -7,7 +7,13 @@ include ":fls_core:packets";
 program cureScript(params)
 	var mobile := params[1];
 	
-	PlayerSpeedBoost(mobile, 0);
-	
+	if (mobile.npctemplate)
+		var normal_speed := GetObjProperty(mobile, "runspeed");
+
+		mobile.run_speed := Cint(normal_speed);
+	else
+		PlayerSpeedBoost(mobile, 0);
+	endif
+
 	return 1;
 endprogram
