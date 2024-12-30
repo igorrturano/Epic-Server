@@ -758,10 +758,14 @@ function ShamanBehavior(shaman)
 
     // Check allies' health
     foreach ally in allies
-        if ((AP_GetVital(ally, HITS) < AP_GetVitalMaximumValue(ally, HITS))) // Is Hurt
+        if (isHurt(ally)) // Is Hurt
             wounded_allies.append(ally);
         endif
     endforeach
+
+    if (wounded_allies.size() == 0)
+        DoHarmfulSpell(shaman);
+    endif
 
     // If multiple allies need help, cast healing rain
     if (wounded_allies.size() >= 3 && !GetCooldown(shaman, "healing_rain"))
@@ -771,8 +775,22 @@ function ShamanBehavior(shaman)
     endif
 
     foreach ally in wounded_allies
-        if ((AP_GetVital(ally, HITS) < AP_GetVitalMaximumValue(ally, HITS))) // Is Hurt
-            PerformHeal(shaman, ally, caster_tier);
+        var most_wounded := struct{
+            "mobile" := 0,
+            "hp_percent" := 100
+        };
+
+        foreach ally in wounded_allies
+            var hp_percent := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS)) * 100;
+            if (hp_percent < most_wounded.hp_percent)
+                most_wounded.mobile := ally;
+                most_wounded.hp_percent := hp_percent;
+            endif
+            sleepms(2);
+        endforeach
+
+        if (most_wounded.mobile)
+            PerformHeal(shaman, most_wounded.mobile, caster_tier);
             SetCooldown(shaman, "heal_check", 15);
             return 1;
         endif
@@ -836,9 +854,43 @@ function RandomHealingCall()
     endcase
 endfunction
 
-function isHurt(mobile)
-    if (AP_GetVital(mobile, HITS) / AP_GetVitalMaximumValue(mobile, HITS) < 0.60)
-        return 1;
-    endif
-    return 0;
+function DoHarmfulSpell(shaman)
+   // Get NPC configuration for spell difficulty
+   var npc_elem := NPC_GetNPCConfig(shaman);
+   var tier := CInt(npc_elem.Tier);
+   if (!tier)
+      tier := 1;
+   endif
+   
+   // Calculate spell difficulty based on tier
+   var diff := RESIST_EASY;
+   case (tier)
+      1: diff := RESIST_EASY;
+      2: diff := RESIST_MEDIUM;
+      3: diff := RESIST_HARD;
+      4: diff := RESIST_VERY_HARD;
+      5: diff := RESIST_EXTREMELY_HARD;
+   endcase
+
+   // If shaman is being attacked, prioritize Enraizar
+   if (shaman.opponent)
+      if (!GetCooldown(shaman.opponent, "enraizar_cooldown"))
+         CastEnraizar(shaman, shaman.opponent, diff);
+         return 1;
+      endif
+   endif
+   
+   // Otherwise, look for enemies attacking allies to weaken
+   var allies := GetNearbyAllies(shaman);
+   foreach ally in allies
+      if (ally.opponent)
+         if (!GetCooldown(ally.opponent, "weaken_cooldown"))
+            CastWeaken(shaman, ally.opponent, diff);
+            return 1;
+         endif
+      endif
+      sleepms(2);
+   endforeach
+
+   return 0;
 endfunction
