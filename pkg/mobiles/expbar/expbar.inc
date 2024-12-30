@@ -144,12 +144,29 @@ function LevelUp(who)
    SetObjProperty(who, "Level", curr_level);
    
    // Create scroll reward
-   var scroll := CreateItemInBackpack(who, "pergaminho_"+curr_level);
-   SetObjProperty(scroll, "owner", who.serial);
-   
+   // if curr_level is even, give scroll, if is odd
+   if (curr_level % 2 == 0)
+      var scroll := CreateItemInBackpack(who, "pergaminho_"+curr_level);
+      SetObjProperty(scroll, "owner", who.serial);
+   else
+      var chardata := GetObjProperty(who, "chardata");
+      var hp_up := 0;
+      if (chardata.classe == GUERREIRO)
+         hp_up := 10;
+      elseif (chardata.classe == LADINO)
+         hp_up := 8;
+      elseif (chardata.classe == SABIO)
+         hp_up := 6;
+      endif
+      var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
+      hitsmod := hitsmod + hp_up;
+      SetObjProperty(who, "hitsmod",  hitsmod);
+      RecalcVitals(who);
+   endif
+
    // Visual and audio effects
    PlaySoundEffect(who, 0x1F3);
-   PlayObjectCenteredEffect(who, 0x373A, 10, 10);
+   PlayObjectCenteredEffect(who, 0xB462, 10, 60);
    
    // Floating text
    PrintTextAbove(who, "*LEVEL UP!*", _DEFAULT_TEXT_FONT, 1152);
