@@ -42,15 +42,15 @@ function MonsterBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED: 
-                    PrintTextAbove(me, "ENGAGED");
+                    // PrintTextAbove(me, "ENGAGED");
                     AlertAllies(ev.source, me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
-                    PrintTextAbove(me, "DAMAGED");
+                    // PrintTextAbove(me, "DAMAGED");
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    PrintTextAbove(me, "ENTERED AREA"); 
+                    // PrintTextAbove(me, "ENTERED AREA"); 
                     AlertAllies(ev.source, me);
                     if (CanFight(me, ev.source))
                         HandleEnteredArea(ev.source, is_ranged);
@@ -74,17 +74,22 @@ function MonsterBrain()
                     PrintTextAbove(me, "SPEECH");
                     HandleSpeech(ev.text, ev.source, is_ranged);
                 SYSEVENT_DISENGAGED: 
-                    PrintTextAbove(me, "DISENGAGED");
+                    // PrintTextAbove(me, "DISENGAGED");
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
-                    PrintTextAbove(me, "LEFT AREA");
+                    // PrintTextAbove(me, "LEFT AREA");
                     // if (ev.source == me.opponent || opponent.dead)
                         HandleLeftArea(is_ranged);
                     // endif
                 EVID_ALERT_ALLIES:
-                    PrintTextAbove(me, "ALERT ALLIES"); 
-                    if (ev.source)
-                        HandleCombatEvent(ev.source, is_ranged);
+                    // PrintTextAbove(me, "ALERT ALLIES"); 
+                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    if (opponent_serial)
+                        var opponent := SystemFindObjectBySerial(opponent_serial);
+                        if (opponent && CanFight(me, opponent))
+                            EraseObjProperty(me, "#taunt_opponent");
+                            HandleCombatEvent(opponent, is_ranged);
+                        endif
                     endif
                 EVID_FLEE:
                     PrintTextAbove(me, "FLEE");
@@ -92,19 +97,8 @@ function MonsterBrain()
                         FleeFrom(ev.source);
                     endif
                 EVID_TAUNT:
-                    if (ev.source) // If taunt comes from a player/ability
-                        if (CanFight(me, ev.source))
-                            HandleCombatEvent(ev.source, is_ranged);
-                        endif
-                    else // Check for ally alert
-                        var opponent_serial := GetObjProperty(me, "#taunt_opponent");
-                        if (opponent_serial)
-                            var opponent := SystemFindObjectBySerial(opponent_serial);
-                            if (opponent && CanFight(me, opponent))
-                                EraseObjProperty(me, "#taunt_opponent");
-                                HandleCombatEvent(opponent, is_ranged);
-                            endif
-                        endif
+                    if (CanFight(me, ev.source))
+                        HandleCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
@@ -685,32 +679,18 @@ function MaintainRange(opponent)
 endfunction
 
 // New function to handle ally behavior
-function AlertAllies(attacker, defender)
+function AlertAllies(invasor, me)
     // If attacker or defender aren't NPCs, return
-    if (!attacker.npctemplate)
+    if (!invasor.npctemplate)
         return 0;
     endif
-
-    PrintTextAbove(defender, "Alerting allies");
-    var attacker_elem := NPC_GetNPCConfig(attacker);
-    var ally_cats := GetConfigStringArray(attacker_elem, "AllyCategories");
-    
-    // If no allies specified, use own category
-    if (!ally_cats)
-        ally_cats := array{GetConfigString(attacker_elem, "Category")};
-        PrintTextAbove(attacker, "Using own category: " + ally_cats[1]);
-    endif
-
-    
-    foreach mobile in ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8)
-        if (mobile.npctemplate && mobile != attacker)
-            var mobile_elem := NPC_GetNPCConfig(mobile);
-            var mobile_cat := GetConfigString(mobile_elem, "Category");
-            
-            if (mobile_cat in ally_cats)
-                SetObjProperty(mobile, "#taunt_opponent", defender.serial);
-                SendEvent(mobile, EVID_TAUNT);
-                PrintTextAbove(mobile, "*alerted* by " + mobile_cat);
+  
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+        if (mobile.npctemplate && mobile != me)
+            if (isAlly(mobile))
+                SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
+                SendEvent(mobile, struct{ "type" := EVID_ALERT_ALLIES, "source" := invasor });
+                PrintTextAbove(mobile, "*alerted* by " + me.name);
             endif
         endif
         sleepms(2);
@@ -815,7 +795,7 @@ endfunction
 function GetNearbyAllies(shaman)
     var allies := array{};
     foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 8)
-        if (NeedsShamanHelp(mobile))
+        if (isAlly(mobile))
             allies.append(mobile);
         endif
         sleepms(2);
@@ -824,7 +804,7 @@ function GetNearbyAllies(shaman)
     return allies;
 endfunction
 
-function NeedsShamanHelp(mobile)
+function isAlly(mobile)
     if (!mobile || mobile.dead) return 0; endif
 
     if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
@@ -847,7 +827,7 @@ function AskForHealing(me)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
                 SetObjProperty(mobile, "#healing_needed", me.serial);
-                var result := SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
+                SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
             endif
         endif
         sleepms(2);
