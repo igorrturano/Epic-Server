@@ -66,3 +66,10 @@ endfunction
 exported function hasTunnelTactics(who)
     if (isFormian(who)) return 1; endif
 endfunction
+
+exported function getTier(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var tier := npc_elem.Tier;
+
+    return tier;
+endfunction
