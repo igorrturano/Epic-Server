@@ -166,7 +166,7 @@ function LevelUp(who)
 
    // Visual and audio effects
    PlaySoundEffect(who, 0x1F3);
-   PlayObjectCenteredEffect(who, 0x373A, 10, 10);
+   PlayObjectCenteredEffect(who, 0xB462, 10, 60);
    
    // Floating text
    PrintTextAbove(who, "*LEVEL UP!*", _DEFAULT_TEXT_FONT, 1152);
