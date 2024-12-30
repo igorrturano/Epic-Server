@@ -371,3 +371,74 @@ function handle_open_ai_npc_speech_thor(npc, language, event, npcEvil, mood, gos
    return responseText;
 endfunction
 
+function handle_combat_speech(npc_name, player_input, playerRaca)
+   var jsonData := PackJSON(struct{
+      "npcs" := struct{
+         "Goblin" := struct{
+            "name" := "Você é um Goblin covarde que teme raças maiores",
+            "context" := "um " + playerRaca + " vem te atacar em seu território",
+            "tone" := "medroso mas agressivo",
+            "exemple_response" := "sai... goblin odeia " + playerRaca + "!"
+         },
+         "Kobold" := struct{
+            "name" := "Você é um Kobold astuto que prefere emboscadas",
+            "context" := "um " + playerRaca + " invadiu sua toca",
+            "tone" := "hostil e territorial", 
+            "exemple_response" := "nossa toca... morte ao invasor!"
+         },
+         "Homem Rato" := struct{
+            "name" := "Você é um Ratman que vive nos esgotos",
+            "context" := "um " + playerRaca + " entrou em seu território",
+            "tone" := "agressivo e territorial",
+            "exemple_response" := "carne fresca nos esgotos!"
+         },
+         "Ratóide" := struct{
+            "name" := "Você é um Ratoide mais inteligente que um rato comum",
+            "context" := "um " + playerRaca + " descobriu seu esconderijo",
+            "tone" := "astuto e ameaçador",
+            "exemple_response" := "mais um para nossa coleção..."
+         },
+         "Hobgoblin" := struct{
+            "name" := "Você é um Hobgoblin brutal e disciplinado",
+            "context" := "um " + playerRaca + " desafiou sua autoridade",
+            "tone" := "autoritário e agressivo",
+            "exemple_response" := "esmagar " + playerRaca + " insolente!"
+         },
+         "Varag" := struct{
+            "name" := "Você é um Varag, um guerreiro feroz e territorial",
+            "context" := "um " + playerRaca + " invadiu suas terras",
+            "tone" := "furioso e ameaçador",
+            "exemple_response" := "invasor morrer agora!"
+         },
+         "Vulcanídeo" := struct{
+            "name" := "Você é um Vulcanídeo, uma criatura mágica e astuta",
+            "context" := "um " + playerRaca + " interrompeu seu ritual",
+            "tone" := "místico e ameaçador",
+            "exemple_response" := "sua alma alimentará nosso ritual!"
+         },
+         "Mirconídeo" := struct{
+            "name" := "Você é um Mirconídeo, uma criatura fúngica inteligente",
+            "context" := "um " + playerRaca + " perturbou sua colônia",
+            "tone" := "sinistro e alienígena",
+            "exemple_response" := "*libera esporos* juntar-se à colônia..."
+         },
+         "Formian" := struct{
+            "name" := "Você é um Formian, uma criatura insectóide da colmeia",
+            "context" := "um " + playerRaca + " ameaça a colmeia",
+            "tone" := "coletivo e hostil",
+            "exemple_response" := "proteger colmeia! destruir intruso!"
+         }
+      }
+   });
+
+   // Pegar o contexto apropriado baseado no nome do NPC
+   var context := jsonData.npcs[npc_name];
+   if (!context)
+      return ""; // Se não encontrar contexto específico, retorna vazio
+   endif
+
+   var responseAI := OpenAICompletion_Thor(context, player_input, 1.5);
+   responseAI := StrReplace(responseAI, "\"", " "); // Remove aspas
+   
+   return responseAI;
+endfunction

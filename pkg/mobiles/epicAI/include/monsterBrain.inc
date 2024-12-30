@@ -142,11 +142,8 @@ function HandleSpeech(text, source, is_ranged)
         return 0;
     endif
 
-    // Chance to aggro on speech
-    if (RandomInt(100) < 30)
-        HandleCombatEvent(source, is_ranged);
-    endif
-    
+    handle_combat_speech(me.name, text, source.getRace());
+
     return 1;
 endfunction
 
