@@ -266,24 +266,6 @@ function Habilidades(who, nivel)
 			SetObjProperty(who, "buyhab", habs);
 			AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
 		endif
-		
-		if (habs[nivel] == 2)
-			var hp_up := 0;
-			if (chardata.classe == GUERREIRO)
-				hp_up := 10;
-			elseif (chardata.classe == LADINO)
-				hp_up := 8;
-			elseif (chardata.classe == SABIO)
-				hp_up := 6;
-			endif
-			var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
-			hitsmod := hitsmod + hp_up;
-			SetObjProperty(who, "hitsmod",  hitsmod);
-			RecalcVitals(who);
-			HealDamage(who, hp_up);
-		else
-			SendSysMessageEx(who, "Ocorreu algum erro na hora de comprar o status", SSM_FAIL);
-		endif
 	else
 		SendSysMessageEx(who, "Voce nao pode comprar esse status.");
 	endif
