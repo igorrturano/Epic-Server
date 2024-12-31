@@ -431,8 +431,10 @@ function handle_combat_speech(npc_name, player_input, playerRaca)
       }
    });
 
+   var unpackedJSON := UnpackJSON(jsonData);
+
    // Pegar o contexto apropriado baseado no nome do NPC
-   var context := jsonData.npcs[npc_name];
+   var context := unpackedJSON["npcs"][npc_name];
    if (!context)
       return ""; // Se não encontrar contexto específico, retorna vazio
    endif

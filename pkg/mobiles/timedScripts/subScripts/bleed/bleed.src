@@ -22,9 +22,9 @@ program default_poison(params)
 		SetScriptController(attacker);
 	endif
 
-	var dmg := 8;
+	var dmg := CInt(AP_GetSkill(attacker, TACTICS) / 8 ) ? CInt(AP_GetSkill(attacker, TACTICS) / 8 ) : 8;
 	var i;
-	var loops := 6;
+	var loops := CInt(AP_GetSkill(attacker, TACTICS) / 10) ? CInt(AP_GetSkill(attacker, TACTICS) / 10) : 6;
 	
 	var poisonedmsg := "";
 	var viewermsg := "";
