@@ -417,12 +417,6 @@ function PursueTarget(opponent)
     endif
 
     var dist := Distance(me, opponent);
-    
-    // Don't chase too far
-    if (dist > AREA_SIZE * 2)
-        return 0;
-    endif
-
     if (me.canSpitAcid())
         var dist := Distance(me, opponent);
         if (dist >= 2 && dist <= 6)
@@ -430,24 +424,88 @@ function PursueTarget(opponent)
         endif
     endif
 
-    if (CheckLineOfSight(me, opponent))
-        if (Distance(me, opponent) > 1 && CanFight(me, opponent))
-            RunToward(opponent);
-            sleepms(100);
+    // Don't chase too far
+    if (dist > AREA_SIZE * 2)
+        return 0;
+    endif
+    // If we're in melee range and can see opponent, no need to move
+    if (dist <= 1 && CheckLineOfSight(me, opponent))
+        return 1;
+    endif
+
+    // Track progress towards target
+    var progress := GetObjProperty(me, "#pursue_progress");
+    if (!progress)
+        progress := struct{
+            "last_dist" := dist,
+            "last_pos" := struct{ "x" := me.x, "y" := me.y },
+            "last_check_time" := ReadGameClock(),
+            "no_progress_count" := 0,
+            "start_time" := ReadGameClock()
+        };
+    endif
+
+    // Only check progress every 2 seconds
+    if (ReadGameClock() >= progress.last_check_time + 2)
+        var moved := (me.x != progress.last_pos.x || me.y != progress.last_pos.y);
+        var got_closer := (dist < progress.last_dist);
+        
+        // No progress if we haven't moved OR haven't gotten closer in 2 seconds
+        if (!moved || !got_closer)
+            progress.no_progress_count += 1;
+            PrintTextAbove(me, "*sem progresso: " + progress.no_progress_count + "* [" + dist + "]");
+        else
+            progress.no_progress_count := 0;
+            PrintTextAbove(me, "*progredindo* [" + dist + "]");
         endif
+
+        // Update tracking info
+        progress.last_dist := dist;
+        progress.last_pos.x := me.x;
+        progress.last_pos.y := me.y;
+        progress.last_check_time := ReadGameClock();
+    endif
+
+    // If we're not making progress after several checks, force a reposition
+    if (progress.no_progress_count >= 1) // Zero tolerance for no progress
+        PrintTextAbove(me, "*impossível alcançar alvo - reposicionando*");
+        EraseObjProperty(me, "path");
+        EraseObjProperty(me, "#enemy_last_loc");
+        TacticalReposition(opponent);
+        progress.no_progress_count := 0;
+        progress.last_check_time := ReadGameClock();
+        SetObjProperty(me, "#pursue_progress", progress);
+        return 1;
+    endif
+
+    SetObjProperty(me, "#pursue_progress", progress);
+
+    // Normal pursuit logic
+    if (CheckLineOfSight(me, opponent))
+        if (Distance(me, opponent) > 1)
+            PrintTextAbove(me, "*perseguindo direto*");
+            RunToward(opponent);
+        endif
+        sleepms(100);
     else
-        // Try to find a path around obstacles
+        PrintTextAbove(me, "*procurando caminho*");
         var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
         if (path)
             foreach coord in path
-                RunTowardLocation(coord.x, coord.y);
                 if (Distance(me, opponent) <= 1)
                     break;
                 endif
+                RunTowardLocation(coord.x, coord.y);
+                PrintTextAbove(me, "*seguindo coordenada: " + coord.x + "," + coord.y + "*");
                 sleepms(100);
             endforeach
+        else
+            PrintTextAbove(me, "*caminho não encontrado*");
+            progress.no_progress_count += 1;
         endif
     endif
+
+    return 1;
 endfunction
 
 function PerformRangedAttack(opponent)
