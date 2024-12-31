@@ -142,7 +142,8 @@ function HandleSpeech(text, source, is_ranged)
         return 0;
     endif
 
-    handle_combat_speech(me.name, text, source.getRace());
+    var response := handle_combat_speech(me.name, text, source.getRace());
+    Say(response);
 
     return 1;
 endfunction
