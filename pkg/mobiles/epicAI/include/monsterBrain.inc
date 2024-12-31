@@ -50,7 +50,7 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    if (!IsAlly) // Only process if it's a player
+                    if (!IsAlly(ev.source)) // Only process if it's a player
                         PrintTextAbove(me, "ENTERED AREA"); 
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleEnteredArea(ev.source, is_ranged) : HandleLeftArea(is_ranged);
@@ -61,7 +61,7 @@ function MonsterBrain()
                     PrintTextAbove(me, "DISENGAGED");
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
-                    if (!IsAlly) // Only process if it's a player
+                    if (!IsAlly(ev.source)) // Only process if it's a player
                         PrintTextAbove(me, "LEFT AREA");
                         HandleLeftArea(is_ranged);
                     endif
@@ -106,24 +106,6 @@ function MonsterBrain()
 
         sleepms(100);
     endwhile
-endfunction
-
-function HandleOpponentMovement(opponent, is_ranged)
-    if (!opponent || !CanFight(me, opponent))
-        PrintTextAbove(me, "Invalid opponent");
-        return 0;
-    endif
-
-    if (me.opponent == opponent)
-        if (is_ranged)
-            MaintainRange(opponent);
-        else
-            TurnToward(opponent);
-            PursueTarget(opponent);
-        endif
-    endif
-    
-    return 1;
 endfunction
 
 function HandleSpeech(text, source, is_ranged)
@@ -437,7 +419,7 @@ function PursueTarget(opponent)
     var dist := Distance(me, opponent);
     
     // Don't chase too far
-    if (dist > AREA_SIZE)
+    if (dist > AREA_SIZE * 2)
         return 0;
     endif
 
@@ -682,11 +664,6 @@ endfunction
 
 // New function to handle ally behavior
 function AlertAllies(invasor, me)
-    // If attacker or defender aren't NPCs, return
-    if (!invasor.npctemplate)
-        return 0;
-    endif
-
     if (invasor.hidden || invasor.concealed)
         return 0;
     endif
