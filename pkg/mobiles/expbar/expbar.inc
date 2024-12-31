@@ -85,6 +85,8 @@ function CalculateNextLevelXP(level)
       return 1000; // 1k for first level
    elseif (level == 1) 
       return 3000; // 3k for second level
+   elseif (level == 20)
+      return 0;
    endif
    
    var prev := 2;
@@ -106,6 +108,9 @@ function AwardXPFromKill(killers, corpse)
 	if (!tier)
 		tier := 1;
     endif
+
+   // XP base pelo tier
+   var xp_gain := tier * 25;
 
    // Bônus por grupo
    if (killers.size() > 1)
