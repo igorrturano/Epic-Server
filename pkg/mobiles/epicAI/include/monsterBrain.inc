@@ -733,15 +733,7 @@ function AlertAllies(invasor, me)
     if (GetCooldown(me, "alert_allies"))
         return 0;
     endif
-
-    if (invasor.hidden || invasor.concealed)
-        return 0;
-    endif
-
-    if (GetCooldown(me, "alert_allies"))
-        return 0;
-    endif
-  
+    
     foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
