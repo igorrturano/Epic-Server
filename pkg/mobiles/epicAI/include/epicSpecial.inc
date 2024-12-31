@@ -349,7 +349,7 @@ function TunnelTactics(me, targ)
     SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
     
     // Alert nearby allies to join the attack
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 12, LISTEX_FLAG_NORMAL);
+    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 4, LISTEX_FLAG_NORMAL);
     var attacking_formation := array{me};
 
     foreach mobile in allies
