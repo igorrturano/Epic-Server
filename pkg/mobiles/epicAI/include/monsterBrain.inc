@@ -28,53 +28,46 @@ function MonsterBrain()
     endif
 
     while (me)
-        ev := os::wait_for_event(200000);
+        ev := os::wait_for_event(0);
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
-            if (is_ranged)
-                MaintainRange(me.opponent);
+            if (!CanFight(me, me.opponent))
+                HandleDisengage(me.opponent);
             else
-                PursueTarget(me.opponent);
+                is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
             endif
         endif
         
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED: 
-                    // PrintTextAbove(me, "ENGAGED");
+                    PrintTextAbove(me, "ENGAGED");
                     AlertAllies(ev.source, me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
-                    // PrintTextAbove(me, "DAMAGED");
+                    PrintTextAbove(me, "DAMAGED");
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    // PrintTextAbove(me, "ENTERED AREA"); 
+                    // check if is hidden or concealed
+                    PrintTextAbove(me, "ENTERED AREA"); 
                     AlertAllies(ev.source, me);
                     if (CanFight(me, ev.source))
                         HandleEnteredArea(ev.source, is_ranged);
+                    else
+                        HandleLeftArea(is_ranged);
                     endif
-                SYSEVENT_OPPONENT_MOVED:
-                    // PrintTextAbove(me, "OPPONENT MOVED");
-                    if (!ev.source || ev.source.hidden || ev.source.concealed)
-                        return 0;
-                    endif
-                    
-                    HandleOpponentMovement(ev.source, is_ranged);
                 SYSEVENT_SPEECH: 
-                    PrintTextAbove(me, "SPEECH");
                     HandleSpeech(ev.text, ev.source, is_ranged);
                 SYSEVENT_DISENGAGED: 
-                    // PrintTextAbove(me, "DISENGAGED");
+                    PrintTextAbove(me, "DISENGAGED");
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
-                    // PrintTextAbove(me, "LEFT AREA");
-                    // if (ev.source == me.opponent || opponent.dead)
-                        HandleLeftArea(is_ranged);
-                    // endif
+                    PrintTextAbove(me, "LEFT AREA");
+                    HandleLeftArea(is_ranged);
                 EVID_ALERT_ALLIES:
-                    // PrintTextAbove(me, "ALERT ALLIES"); 
+                    PrintTextAbove(me, "ALERT ALLIES"); 
                     var opponent_serial := GetObjProperty(me, "#taunt_opponent");
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
@@ -101,20 +94,18 @@ function MonsterBrain()
 
         // Also debug the idle state
         if (!ev)
-            PrintTextAbove(me, "*IDLE*");
+            if (!me.opponent)
+                MonsterIdle(wanders, is_ranged);
+                wanders += 1;
+                if (wanders >= 30)
+                    ev := os::wait_for_event(10);
+                    wanders := 0;
+                    HandleIdleState();
+                endif
+            endif
         endif
 
         sleepms(100);
-        if (!me.opponent)
-            MonsterIdle(wanders, is_ranged);
-            wanders += 1;
-
-            if (wanders >= 30)
-                PrintTextAbove(me, "*HANDLING IDLE STATE*");
-                wanders := 0;
-                HandleIdleState();
-            endif
-        endif
     endwhile
 endfunction
 
@@ -141,7 +132,6 @@ function HandleSpeech(text, source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
-
     var response := handle_combat_speech(me.name, text, source.getRace());
     Say(response);
 
@@ -153,8 +143,7 @@ function HandleDisengage(opponent)
         return 0;
     endif
 
-    SetWarMode(0);
-    SetOpponent(0);
+    ClearCombatState();
 
     if (opponent.dead)
         var corpse := opponent.GetCorpse();
@@ -213,7 +202,6 @@ function HandleLeftArea(is_ranged)
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
-    PrintTextAbove(me, "*procura corpos*");
     foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE)
         if (item.IsA(POLCLASS_CORPSE))
             corpses.append(item);
@@ -232,7 +220,6 @@ function HandleLeftArea(is_ranged)
     endif
 
     // If nothing else to do, go idle
-    PrintTextAbove(me, "*procura alvos*");
     HandleIdleState();
     return 1;
 endfunction
@@ -336,8 +323,6 @@ function LootSomething(npc, corpse)
         endif
         sleepms(2);
     endforeach
-
-    SetCooldown(npc, "already_looted", 300);
 endfunction
 
 function FindEquipmentInContainer(container)
@@ -374,6 +359,8 @@ function LootItem(npc, item)
     endif
 
     PrintTextAbove(npc, "*pega " + item.desc + "*");
+    SetCooldown(npc, "already_looted", 300);
+
     return MoveItemToContainer(item, npc.backpack);
 endfunction
 
@@ -463,10 +450,10 @@ function PursueTarget(opponent)
     endif
 
     if (CheckLineOfSight(me, opponent))
-        while (Distance(me, opponent) > 1 && CanFight(me, opponent))
+        if (Distance(me, opponent) > 1 && CanFight(me, opponent))
             RunToward(opponent);
             sleepms(100);
-        endwhile
+        endif
     else
         // Try to find a path around obstacles
         var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
@@ -519,7 +506,7 @@ function MonsterIdle(wanders, is_ranged)
     endif
 
     // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
             HandleCombatEvent(mobile, is_ranged);
             return;
@@ -548,12 +535,27 @@ function HandleIdleState()
     EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
     
     // Return to spawn point if we have one
-    var spawn_point := GetObjProperty(me, "spawn_loc");
+    var spawn_point := SystemFindObjectBySerial(GetObjProperty(me, "spawnpoint"));
+    var anchor := GetObjProperty(me, "anchor");
+    var home_x, home_y;
+    
     if (spawn_point)
-        if (Distance(me, spawn_point) > 5)
-            WalkTowardLocation(spawn_point.x, spawn_point.y);
-        endif
+        home_x := spawn_point.x;
+        home_y := spawn_point.y;
+    elseif (anchor)
+        home_x := anchor[1];
+        home_y := anchor[2];
+    else
+        return;
     endif
+
+    // Take one step towards home
+    if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+        WalkTowardLocation(home_x, home_y);
+    endif
+
+    // No need for event checking here since MonsterBrain already does it
+    return 1;
 endfunction
 
 function FleeFrom(opponent)
@@ -571,7 +573,7 @@ endfunction
 
 function EnableMainEvents()
     EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-    EnableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
+    EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
     EnableEvents(SYSEVENT_SPEECH, 4);
 endfunction
 
@@ -685,6 +687,14 @@ function AlertAllies(invasor, me)
     if (!invasor.npctemplate)
         return 0;
     endif
+
+    if (invasor.hidden || invasor.concealed)
+        return 0;
+    endif
+
+    if (GetCooldown(me, "alert_allies"))
+        return 0;
+    endif
   
     foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
         if (mobile.npctemplate && mobile != me)
@@ -696,6 +706,8 @@ function AlertAllies(invasor, me)
         endif
         sleepms(2);
     endforeach
+
+    SetCooldown(me, "alert_allies", 15);
 endfunction
 
 function handleInitialReaction(source)
