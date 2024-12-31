@@ -127,7 +127,7 @@ function DoThiefSteal(opponent)
     while (Distance(me, opponent) > 1)
         WalkToward(opponent);
         sleepms(100);
-        if (Distance(me, opponent) > 16)
+        if (Distance(me, opponent) > AREA_SIZE)
             break;
         endif
     endwhile
@@ -153,13 +153,13 @@ function DoThiefSteal(opponent)
     endif
 endfunction
 
-function DoThiefSneakAttack(opponent)
+function DoThiefSneakAttack(opponent)   
     // Grant stealth privileges
     GrantPrivilege(me, "hiddenattack");
     me.enable("hiddenattack");
     GrantPrivilege(me, "runwhilestealth");
     me.enable("runwhilestealth");
-    
+
     me.hidden := 1;
     me.stealthsteps := 100;
 
@@ -303,7 +303,7 @@ function AcidSpray(me, targ)
    var acid_pool := CreateItemAtLocation(targ.x, targ.y, GetMapInfo(targ.x, targ.y).z, "acid", 1, targ.realm);
    
    // Deal initial acid damage
-   var acid_damage := "2d6+6";
+   var acid_damage := "1d6";
    DealAcidDamage(me, targ, acid_pool, acid_damage);
    
    return 1;
@@ -349,7 +349,7 @@ function TunnelTactics(me, targ)
     SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
     
     // Alert nearby allies to join the attack
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 12, LISTEX_FLAG_NORMAL);
+    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 4, LISTEX_FLAG_NORMAL);
     var attacking_formation := array{me};
 
     foreach mobile in allies
@@ -371,7 +371,7 @@ function TunnelTactics(me, targ)
         // Wait a moment before emerging
         sleep(3);
         // ReCheck so they don't emerge if target is dead or missing
-        if (!CanFight(ally, targ))
+        if (!CanFight(ally, targ) || Distance(ally, targ) > AREA_SIZE)
             ally.concealed := 0;
             return 0;
         endif
