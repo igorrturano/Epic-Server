@@ -153,13 +153,13 @@ function DoThiefSteal(opponent)
     endif
 endfunction
 
-function DoThiefSneakAttack(opponent)
+function DoThiefSneakAttack(opponent)   
     // Grant stealth privileges
     GrantPrivilege(me, "hiddenattack");
     me.enable("hiddenattack");
     GrantPrivilege(me, "runwhilestealth");
     me.enable("runwhilestealth");
-    
+
     me.hidden := 1;
     me.stealthsteps := 100;
 

@@ -530,11 +530,11 @@ function HandleIdleState()
         return;
     endif
 
-    // Take one step towards home
-    if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
-        WalkTowardLocation(home_x, home_y);
-    endif
-
+    while (!hasPlayerNear(me))    
+        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+            WalkTowardLocation(home_x, home_y);
+        endif
+    endwhile
     // No need for event checking here since MonsterBrain already does it
     return 1;
 endfunction
@@ -717,6 +717,10 @@ function handleInitialReaction(source)
 endfunction
 
 function DoThiefCombatBehavior(opponent)
+    if (Distance(me, opponent) < 6)
+        return 0;
+    endif
+
     // 50% chance to steal, 50% chance to sneak attack
     if (RandomInt(100) < 50)
         DoThiefSteal(opponent);
