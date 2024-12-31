@@ -664,6 +664,10 @@ endfunction
 
 // New function to handle ally behavior
 function AlertAllies(invasor, me)
+    if (isAlly(invasor))
+        return 0;
+    endif
+
     if (invasor.hidden || invasor.concealed)
         return 0;
     endif
