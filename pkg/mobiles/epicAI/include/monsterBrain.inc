@@ -50,7 +50,7 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    if (!ev.source.npctemplate) // Only process if it's a player
+                    if (!IsAlly) // Only process if it's a player
                         PrintTextAbove(me, "ENTERED AREA"); 
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleEnteredArea(ev.source, is_ranged) : HandleLeftArea(is_ranged);
@@ -61,7 +61,7 @@ function MonsterBrain()
                     PrintTextAbove(me, "DISENGAGED");
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
-                    if (!ev.source.npctemplate) // Only process if it's a player
+                    if (!IsAlly) // Only process if it's a player
                         PrintTextAbove(me, "LEFT AREA");
                         HandleLeftArea(is_ranged);
                     endif
