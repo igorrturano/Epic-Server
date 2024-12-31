@@ -66,10 +66,15 @@ function MonsterBrain()
                         HandleLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
+                    PrintTextAbove(me, "ALERT ALLIES"); 
+                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    if (opponent_serial)
+                        var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))
                             EraseObjProperty(me, "#taunt_opponent");
                             HandleCombatEvent(opponent, is_ranged);
                         endif
+                    endif
                 EVID_FLEE:
                     PrintTextAbove(me, "FLEE");
                     if (ev.source)

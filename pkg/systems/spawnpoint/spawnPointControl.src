@@ -89,17 +89,23 @@ program spawnpointcontrol(spawnpoint)
         endif
     endwhile
 
-    var spawnqueue := array{};
-    var childrenSerial := array{};
-    for(i := 1; i <= totalAmount; i += 1)
-        spawnqueue[i] := "Empty";
-        childrenSerial[i] := "Empty";
-    endfor
+    // Verifica se já tem NPCs spawnados
+    var childrenSerial := GetObjProperty(spawnpoint, "Children");
+    var spawnqueue := GetObjProperty(spawnpoint, "SpawnQueue"); 
+    
+    // Se não tiver NPCs spawnados ainda, inicializa tudo
+    if (!childrenSerial)
+        childrenSerial := array{};
+        spawnqueue := array{};
+        for(i := 1; i <= totalAmount; i+=1)
+            spawnqueue[i] := "Empty";
+            childrenSerial[i] := "Empty";
+        endfor
 
-    SetObjProperty(spawnpoint, "Children", childrenSerial);
-    SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
-
-    ResetSpawnQueue(spawnpoint, amounts);
+        SetObjProperty(spawnpoint, "Children", childrenSerial);
+        SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+        ResetSpawnQueue(spawnpoint, amounts);
+    endif
 
     var randSleep := RandomInt(20);
     sleep(randSleep);
@@ -234,6 +240,15 @@ function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
             break;
         endif
     endfor
+
+    // Check if NPC already exists at this index
+    var childrenSerial := GetObjProperty(spawnpoint, "Children");
+    if (childrenSerial[index] != "Empty")
+        var existing := SystemFindObjectBySerial(CInt(childrenSerial[index]));
+        if (existing && !existing.dead && !existing.master)
+            return childrenSerial[index]; // Return existing NPC serial if it's still valid
+        endif
+    endif
 
     var chosenTemplate := templates[chosenTemplateIndex];
     var chosenTier := tiers[chosenTemplateIndex] ? tiers[chosenTemplateIndex] : "0";
