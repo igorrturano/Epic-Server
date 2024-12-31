@@ -105,14 +105,12 @@ function AwardXPFromKill(killers, corpse)
 	var npc_cfg := NPC_GetNPCConfig(template);
 
 	var tier := npc_cfg.Tier;
-	if (!tier)
-		tier := 1;
-    endif
+   var xp_gain := 5;
+	if (tier)
+		xp_gain := tier * 25;
+   endif
 
-   // XP base pelo tier
-   var xp_gain := tier * 25;
-
-   // Bônus por grupo
+  // Bônus por grupo
    if (killers.size() > 1)
       xp_gain := xp_gain * (1 + killers.size() * 0.1);
    endif

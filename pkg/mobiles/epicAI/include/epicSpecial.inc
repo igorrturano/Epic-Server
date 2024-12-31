@@ -127,7 +127,7 @@ function DoThiefSteal(opponent)
     while (Distance(me, opponent) > 1)
         WalkToward(opponent);
         sleepms(100);
-        if (Distance(me, opponent) > 16)
+        if (Distance(me, opponent) > AREA_SIZE)
             break;
         endif
     endwhile
@@ -371,7 +371,7 @@ function TunnelTactics(me, targ)
         // Wait a moment before emerging
         sleep(3);
         // ReCheck so they don't emerge if target is dead or missing
-        if (!CanFight(ally, targ))
+        if (!CanFight(ally, targ) || Distance(ally, targ) > AREA_SIZE)
             ally.concealed := 0;
             return 0;
         endif
