@@ -50,13 +50,10 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    // check if is hidden or concealed
-                    PrintTextAbove(me, "ENTERED AREA"); 
-                    AlertAllies(ev.source, me);
-                    if (CanFight(me, ev.source))
-                        HandleEnteredArea(ev.source, is_ranged);
-                    else
-                        HandleLeftArea(is_ranged);
+                    if (!ev.source.npctemplate) // Only process if it's a player
+                        PrintTextAbove(me, "ENTERED AREA"); 
+                        AlertAllies(ev.source, me);
+                        CanFight(me, ev.source) ? HandleEnteredArea(ev.source, is_ranged) : HandleLeftArea(is_ranged);
                     endif
                 SYSEVENT_SPEECH: 
                     HandleSpeech(ev.text, ev.source, is_ranged);
@@ -64,8 +61,10 @@ function MonsterBrain()
                     PrintTextAbove(me, "DISENGAGED");
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
-                    PrintTextAbove(me, "LEFT AREA");
-                    HandleLeftArea(is_ranged);
+                    if (!ev.source.npctemplate) // Only process if it's a player
+                        PrintTextAbove(me, "LEFT AREA");
+                        HandleLeftArea(is_ranged);
+                    endif
                 EVID_ALERT_ALLIES:
                     PrintTextAbove(me, "ALERT ALLIES"); 
                     var opponent_serial := GetObjProperty(me, "#taunt_opponent");
