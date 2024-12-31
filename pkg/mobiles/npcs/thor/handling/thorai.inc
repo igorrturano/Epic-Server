@@ -439,8 +439,10 @@ function handle_combat_speech(npc_name, player_input, playerRaca)
       return ""; // Se não encontrar contexto específico, retorna vazio
    endif
 
+   context := CStr(context);
+   player_input := array{ struct{ "user" := player_input } };
+
    var responseAI := OpenAICompletion_Thor(context, player_input, 1.5);
-   responseAI := StrReplace(responseAI, "\"", " "); // Remove aspas
-   
+   responseAI := StrReplace(responseAI, "\"", " "); // Remove aspas     
    return responseAI;
 endfunction
