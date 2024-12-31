@@ -435,7 +435,9 @@ function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
             SetOpponent(opponent);
             me.setAggro(opponent, 300);
          endif
-      endif 
+      endif
+
+      findAnotherPath();
    endwhile
 
    SetObjProperty(me, "#noback", polcore().systime+15);
@@ -485,8 +487,6 @@ endfunction
 function TacticalReposition(opponent)
     var runs := 0;
     var max_dist := 12; // Only run 5 tiles away instead of 30
-    var reposition_tries := 0;
-    var start_pos := struct{ "x" := me.x, "y" := me.y };
 
     while(Distance(me, opponent) < max_dist && runs < 10) // Reduced from 50 to 10 attempts
         RunAwayFrom(opponent);
@@ -510,32 +510,39 @@ function TacticalReposition(opponent)
         endif
 
         // If we haven't moved, try a different direction
-        if (me.x == start_pos.x && me.y == start_pos.y)
-            reposition_tries += 1;
-            if (reposition_tries >= 3)
-                PrintTextAbove(me, "*mudando direção*");
-                // Try to move laterally
-                var directions := array{
-                    struct{ "x" := 2, "y" := 0 },
-                    struct{ "x" := -2, "y" := 0 },
-                    struct{ "x" := 0, "y" := 2 },
-                    struct{ "x" := 0, "y" := -2 }
-                };
-                foreach dir in directions
-                    var new_x := me.x + dir.x;
-                    var new_y := me.y + dir.y;
-                    if (CheckLosAt(me, new_x, new_y, me.z))
-                        RunTowardLocation(new_x, new_y);
-                        sleepms(200);
-                        break;
-                    endif
-                    sleepms(2);
-                endforeach
-                reposition_tries := 0;
-            endif
-        endif
+        findAnotherPath();
     endwhile
 
     PrintTextAbove(me, "*reposição completa*");
     return 1;
+endfunction
+
+function findAnotherPath()
+    var start_pos := struct{ "x" := me.x, "y" := me.y };
+    var reposition_tries := 0;
+
+    if (me.x == start_pos.x && me.y == start_pos.y)
+        reposition_tries += 1;
+        if (reposition_tries >= 3)
+            PrintTextAbove(me, "*mudando direção*");
+            // Try to move laterally
+            var directions := array{
+                struct{ "x" := 2, "y" := 0 },
+                struct{ "x" := -2, "y" := 0 },
+                struct{ "x" := 0, "y" := 2 },
+                struct{ "x" := 0, "y" := -2 }
+            };
+            foreach dir in directions
+                var new_x := me.x + dir.x;
+                var new_y := me.y + dir.y;
+                if (CheckLosAt(me, new_x, new_y, me.z))
+                    RunTowardLocation(new_x, new_y);
+                    sleepms(200);
+                    break;
+                endif
+                sleepms(2);
+            endforeach
+            reposition_tries := 0;
+        endif
+    endif
 endfunction
