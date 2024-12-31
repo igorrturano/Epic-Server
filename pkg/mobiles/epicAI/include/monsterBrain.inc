@@ -154,10 +154,11 @@ function HandleDisengage(opponent)
 
     SetWarMode(0);
     SetOpponent(0);
-    
+
     if (opponent.dead)
         var corpse := opponent.GetCorpse();
         if (corpse)
+
             // First, approach the corpse
             while (Distance(me, corpse) > 1)
                 RunToward(corpse);
@@ -169,8 +170,7 @@ function HandleDisengage(opponent)
                 endif
             endwhile
 
-            // Calculate max items to loot based on intelligence
-            var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/30);
+            var max_loot := 1;
             var looted := 0;
             
             // Ensure NPC has a backpack
@@ -318,7 +318,7 @@ function LootSomething(npc, corpse)
 
     // Then look for equipment by class
     foreach item in EnumerateItemsInContainer(corpse)
-        if (!item.movable)
+        if (!item.movable || item.newbie)
             continue;
         endif
 
@@ -336,7 +336,7 @@ function LootSomething(npc, corpse)
         sleepms(2);
     endforeach
 
-    SetCooldown(npc, "already_looted", 120);
+    SetCooldown(npc, "already_looted", 300);
 endfunction
 
 function FindEquipmentInContainer(container)
@@ -579,6 +579,14 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Cooldown to avoid ress kill
+    if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
+        // Allow combat if defender initiated it
+        if (me.opponent == defender) return 1; endif
+        // Otherwise prevent attacking during cooldown
+        return 0;
+    endif
+
     // If defender is a player, normal combat rules apply
     if (!defender.npctemplate)
         return 1;
@@ -603,7 +611,7 @@ function CanFight(attacker, defender)
 
         return 0; // No valid reason for NPCs to fight
     endif
-    
+
     return 1;
 endfunction
 
@@ -814,7 +822,6 @@ function AskForHealing(me)
         return 0;
     endif
 
-    PrintTextAbove(me, RandomHealingCall());
     foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
@@ -825,18 +832,6 @@ function AskForHealing(me)
         sleepms(2);
     endforeach
 endfunction 
-
-function RandomHealingCall()
-    // Sons de dor/grunhidos simples
-    case(RandomInt(6))
-        0: return "Ughh!";
-        1: return "Argh!";
-        2: return "Khh!";
-        3: return "*sangra*";
-        4: return "*cambaleia*";
-        5: return "*ferido*";
-    endcase
-endfunction
 
 function DoHarmfulSpell(shaman)
    // Get NPC configuration for spell difficulty

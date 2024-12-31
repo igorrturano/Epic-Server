@@ -53,7 +53,7 @@ function BuildXPGump(who, xpbar)
    var curr_xp := CInt(GetObjProperty(who, "Experience"));
    var curr_level := CInt(GetObjProperty(who, "Level"));
    var next_level_xp := CalculateNextLevelXP(curr_level);
-   
+
    // Calculate progress percentage
    var progress := CDbl(curr_xp) / CDbl(next_level_xp) * 100;
    var width := CInt((progress * 597) / 100);
@@ -107,10 +107,15 @@ function AwardXPFromKill(killers, corpse)
 		tier := 1;
     endif
 
-   var xp_gain := tier * 25;
+   // Bônus por grupo
+   if (killers.size() > 1)
+      xp_gain := xp_gain * (1 + killers.size() * 0.1);
+   endif
+
+   // Divide entre os participantes
+   xp_gain := CInt(xp_gain / killers.size());
    foreach killer in killers
-	 xp_gain := Cint(xp_gain / killers.size());
-   	 AddXP(killer, xp_gain);
+   	AddXP(killer, xp_gain);
    endforeach
 
    return 1;
@@ -120,6 +125,11 @@ endfunction
 function AddXP(who, amount)
    var curr_xp := CInt(GetObjProperty(who, "Experience"));
    var curr_level := CInt(GetObjProperty(who, "Level")) ? CInt(GetObjProperty(who, "Level")) : 0;
+
+   // if level 20, then do nothing
+   if (curr_level == 20)
+      return 0;
+   endif
    
    // Add XP
    curr_xp += amount;
