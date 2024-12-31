@@ -303,7 +303,7 @@ function AcidSpray(me, targ)
    var acid_pool := CreateItemAtLocation(targ.x, targ.y, GetMapInfo(targ.x, targ.y).z, "acid", 1, targ.realm);
    
    // Deal initial acid damage
-   var acid_damage := "2d6+6";
+   var acid_damage := "1d6";
    DealAcidDamage(me, targ, acid_pool, acid_damage);
    
    return 1;

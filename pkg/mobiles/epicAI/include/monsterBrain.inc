@@ -425,7 +425,7 @@ function PursueTarget(opponent)
     endif
 
     // Don't chase too far
-    if (dist > AREA_SIZE * 2)
+    if (dist > AREA_SIZE + 6)
         return 0;
     endif
     // If we're in melee range and can see opponent, no need to move
