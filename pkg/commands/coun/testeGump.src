@@ -1,0 +1,8 @@
+use uo;
+use polsys;
+
+include ":crafting:gumps/itensComplexosGump";
+
+program testeGump(quem, texto)
+	EnviaGumpItensComplexos(quem);
+endprogram
