@@ -956,7 +956,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
 		endif
 	endif
 
