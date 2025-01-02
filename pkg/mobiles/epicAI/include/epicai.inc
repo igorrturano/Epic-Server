@@ -573,17 +573,14 @@ function CheckForIdealTarget()
       // Class-based opponenting
       if (me.isSage()) // NPC mage prefers warriors
          if (opponent_class == GUERREIRO)
-         PrintTextAbove(me, "*Sage -> Warrior*");
             priority += 2;
          endif
       elseif (me.isWarrior()) // NPC warrior prefers rogues
          if (opponent_class == LADINO)
-            PrintTextAbove(me, "*Warrior -> Rogue*");
             priority += 2;
          endif
       elseif (me.isRogue()) // NPC rogue prefers mages
          if (opponent_class == SABIO)
-            PrintTextAbove(me, "*Rogue -> Mage*");
             priority += 2;
          endif
       endif
