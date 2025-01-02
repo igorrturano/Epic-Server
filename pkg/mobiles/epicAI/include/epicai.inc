@@ -545,7 +545,7 @@ function findAnotherPath()
 endfunction
 
 function CheckForIdealTarget()
-   var potential_opponents := ListHostiles(me, AREA_SIZE);
+   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL);
    if (potential_opponents.size() < 1)
       return 0;
    endif
@@ -602,6 +602,5 @@ function CheckForIdealTarget()
 
       sleepms(2);
    endforeach
-
    return best_opponent.mobile;
 endfunction
