@@ -162,7 +162,7 @@ program use_FishingPole(who, fishingpole)
 
 			else
 				if( RandomInt(100) == 0 )
-					CriticalFailure(who, targetsquare);
+					fishingFail(who, targetsquare);
 				else
 					SendSysMessageEx(who, "Eles nao parecem estar mordendo a isca hoje.", SSM_FAIL);
 					CreateItemInBackpack(who, iscausada, 1);
@@ -235,7 +235,7 @@ function OtherChances(who, targetsquare, fishingpole)
 endfunction
 
 
-function CriticalFailure(who, targetsquare)
+function fishingFail(who, targetsquare)
 
 	var it := CreateNpcFromTemplate("seaserpent", targetsquare.x, targetsquare.y, targetsquare.z, 0, who.realm);
 	if(it)

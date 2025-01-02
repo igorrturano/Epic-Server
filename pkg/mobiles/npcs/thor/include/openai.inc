@@ -31,7 +31,7 @@ function isPromptSafe(prompt)
 	return results[1]["flagged"];
 endfunction
 
-function OpenAICompletion_Thor(systemMessage, questions, temperatura:=1.0, top_p:=1)
+function OpenAICompletion_Thor(systemMessage, questions, temperatura:=1.5, top_p:=1.0)
 	// print("temperatura: "+temperatura);
 	var prompt := "";
     foreach question in questions
