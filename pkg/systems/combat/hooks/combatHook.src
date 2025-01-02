@@ -269,9 +269,11 @@ function CalculateHitChance(attacker, defender)
 		hit_chance += 5;
 	endif
 
-	var balanced_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"];
+	var balanced_weapon := CInt(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"]);
 	if (balanced_weapon)
 		hit_chance += balanced_weapon;
+
+		DebugMsg(attacker, DEBUG_HIT, "Arma Balanceada: " + CInt(balanced_weapon));
 	endif
 
 	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
