@@ -3,6 +3,7 @@ include ":timedScripts:timedScripts";
 include ":awareness:awareness";
 include ":nature:nature";
 include ":acid:acid";
+include "include/epicNPCUtils";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -111,7 +112,6 @@ function SporeSpecial(attacker, defender)
     return 1;
 endfunction
 
-
 function DoThiefSteal(opponent)
     if (!opponent.backpack)
         return 0;
@@ -134,17 +134,32 @@ function DoThiefSteal(opponent)
 
     // Try to steal if close enough
     if (Distance(me, opponent) <= 1)
-        var items := EnumerateItemsInContainer(opponent.backpack);
-        if (items.size() > 0)
-            var item := items[RandomInt(items.size())+1];
-            if (item.movable)
-                if (!me.backpack)
-                    var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
-                    EquipItem(me, backpack);
+        var diff := 15 + CInt(AP_GetSkill(opponent, AWARENESS));
+        var check := SkillCheck(me, PICKPOCKETING, diff);
+
+        if (check > 0)
+            // Check for elemental weapon
+            if (TemHabilidade(opponent, "Vínculo Elemental"))
+                if (GetObjProperty(opponent.weapon, "#elementalweapon"))
+                    return 1;
                 endif
-                MoveItemToContainer(item, me.backpack);
-                PrintTextAbove(me, "*furtou " + item.desc + "*");
             endif
+
+            // Attempt steal
+            var items := EnumerateItemsInContainer(opponent.backpack);
+            if (items.size() > 0)
+                var item := items[RandomInt(items.size())+1];
+                if (item.movable)
+                    if (!me.backpack)
+                        var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
+                        EquipItem(me, backpack);
+                    endif
+                    MoveItemToContainer(item, me.backpack);
+                    PrintTextAbove(me, "*furtou " + item.desc + "*");
+                endif
+            endif
+        else
+            StealCriticalFailure(me, opponent);
         endif
     endif
     

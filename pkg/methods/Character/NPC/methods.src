@@ -48,6 +48,14 @@ exported function isSage(who)
     return 0;
 endfunction
 
+exported function isWarrior(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var classe := npc_elem.Classe;
+
+    if (classe == GUERREIRO) return 1; endif
+    return 0;
+endfunction
+
 exported function isFormian(who)
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template == "formian") return 1; endif

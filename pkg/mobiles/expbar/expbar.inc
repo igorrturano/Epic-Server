@@ -161,6 +161,8 @@ function LevelUp(who)
    if (curr_level % 2 == 0)
       var scroll := CreateItemInBackpack(who, "pergaminho_"+curr_level);
       SetObjProperty(scroll, "owner", who.serial);
+      scroll.color := 2117;
+      scroll.newbie := 1;
    else
       var chardata := GetObjProperty(who, "chardata");
       var hp_up := 0;
