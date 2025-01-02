@@ -496,7 +496,6 @@ function TacticalReposition(opponent)
         // Try to find a path after each reposition
         var test_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
         if (test_path)
-            PrintTextAbove(me, "*encontrou novo caminho*");
             foreach coord in test_path
                 if (Distance(me, opponent) <= 1)
                     break;
@@ -513,7 +512,6 @@ function TacticalReposition(opponent)
         findAnotherPath();
     endwhile
 
-    PrintTextAbove(me, "*reposição completa*");
     return 1;
 endfunction
 
@@ -524,7 +522,6 @@ function findAnotherPath()
     if (me.x == start_pos.x && me.y == start_pos.y)
         reposition_tries += 1;
         if (reposition_tries >= 3)
-            PrintTextAbove(me, "*mudando direção*");
             // Try to move laterally
             var directions := array{
                 struct{ "x" := 2, "y" := 0 },
