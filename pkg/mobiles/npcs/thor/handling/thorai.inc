@@ -371,78 +371,78 @@ function handle_open_ai_npc_speech_thor(npc, language, event, npcEvil, mood, gos
    return responseText;
 endfunction
 
-function handle_combat_speech(npc_name, player_input, playerRaca)
-   var jsonData := PackJSON(struct{
-      "npcs" := struct{
-         "Goblin" := struct{
-            "name" := "Você é um Goblin covarde que teme raças maiores",
-            "context" := "um " + playerRaca + " vem te atacar em seu território",
-            "tone" := "medroso mas agressivo",
-            "exemple_response" := "sai... goblin odeia " + playerRaca + "!"
-         },
-         "Kobold" := struct{
-            "name" := "Você é um Kobold astuto que prefere emboscadas",
-            "context" := "um " + playerRaca + " invadiu sua toca",
-            "tone" := "hostil e territorial", 
-            "exemple_response" := "nossa toca... morte ao invasor!"
-         },
-         "Homem Rato" := struct{
-            "name" := "Você é um Ratman que vive nos esgotos",
-            "context" := "um " + playerRaca + " entrou em seu território",
-            "tone" := "agressivo e territorial",
-            "exemple_response" := "carne fresca nos esgotos!"
-         },
-         "Ratóide" := struct{
-            "name" := "Você é um Ratoide mais inteligente que um rato comum",
-            "context" := "um " + playerRaca + " descobriu seu esconderijo",
-            "tone" := "astuto e ameaçador",
-            "exemple_response" := "mais um para nossa coleção..."
-         },
-         "Hobgoblin" := struct{
-            "name" := "Você é um Hobgoblin brutal e disciplinado",
-            "context" := "um " + playerRaca + " desafiou sua autoridade",
-            "tone" := "autoritário e agressivo",
-            "exemple_response" := "esmagar " + playerRaca + " insolente!"
-         },
-         "Varag" := struct{
-            "name" := "Você é um Varag, um guerreiro feroz e territorial",
-            "context" := "um " + playerRaca + " invadiu suas terras",
-            "tone" := "furioso e ameaçador",
-            "exemple_response" := "invasor morrer agora!"
-         },
-         "Vulcanídeo" := struct{
-            "name" := "Você é um Vulcanídeo, uma criatura mágica e astuta",
-            "context" := "um " + playerRaca + " interrompeu seu ritual",
-            "tone" := "místico e ameaçador",
-            "exemple_response" := "sua alma alimentará nosso ritual!"
-         },
-         "Mirconídeo" := struct{
-            "name" := "Você é um Mirconídeo, uma criatura fúngica inteligente",
-            "context" := "um " + playerRaca + " perturbou sua colônia",
-            "tone" := "sinistro e alienígena",
-            "exemple_response" := "*libera esporos* juntar-se à colônia..."
-         },
-         "Formian" := struct{
-            "name" := "Você é um Formian, uma criatura insectóide da colmeia",
-            "context" := "um " + playerRaca + " ameaça a colmeia",
-            "tone" := "coletivo e hostil",
-            "exemple_response" := "proteger colmeia! destruir intruso!"
-         }
-      }
-   });
+function handle_combat_speech(npc_name, player_input, playerRaca, npcState := "healthy")
+    var base_prompt := "
+        # Você é uma criatura em um RPG de fantasia medieval respondendo uma provocação em combate
+        
+        # Regras Importantes:
+        - Responda SEMPRE em menos de 20 caracteres
+        - Seja agressivo e direto
+        - Use ... em vez de vírgulas
+        - Não use pontuação no final
+        - Mantenha o tom da sua criatura
+        
+        # Estado atual: "+npcState;
 
-   var unpackedJSON := UnpackJSON(jsonData);
+    var cfg := ReadConfigFile(":epicAI:config/npc_speech");
+    if (!cfg)
+        return error{"errortext" := "Could not open npc_speech.cfg"};
+    endif
 
-   // Pegar o contexto apropriado baseado no nome do NPC
-   var context := unpackedJSON["npcs"][npc_name];
-   if (!context)
-      return ""; // Se não encontrar contexto específico, retorna vazio
-   endif
+    // Procura o elemento correto comparando o Name no config
+    var elem;
+    foreach entry in (GetConfigStringKeys(cfg))
+        var temp_elem := cfg[entry];
+        if (temp_elem.Name == npc_name)
+            elem := temp_elem;
+            break;
+        endif
+    endforeach
 
-   context := CStr(context);
-   player_input := array{ struct{ "user" := player_input } };
+    if (!elem)
+        return error{"errortext" := "NPC type ["+npc_name+"] not found in npc_speech.cfg"};
+    endif
 
-   var responseAI := OpenAICompletion_Thor(context, player_input, 1.5);
-   responseAI := StrReplace(responseAI, "\"", " "); // Remove aspas     
-   return responseAI;
+    // Build context
+    var context := base_prompt + "\n";
+    context += "# "+GetConfigString(elem, "Description")+"\n";
+    context += "# Tom: "+GetConfigString(elem, "Tone")+"\n\n";
+    
+    // Add examples based on state
+    context += "# Exemplos para seu estado atual:\n";
+    var responses := GetConfigStringArray(elem, npcState);
+    foreach response in responses
+        context += response + "\n";
+    endforeach
+
+    var questions := array{ struct{ "user" := player_input } };
+    var responseAI := OpenAICompletion_Thor(context, questions, 1.5, 0.7);
+    
+    return StrReplace(responseAI, "\"", " ");
+endfunction
+
+function getNPCState(npc)
+    var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
+    print(""+hp_percent);
+    if (hp_percent <= 25)
+        return "dying";
+    elseif (hp_percent <= 50)
+        return "hurt";
+    elseif (hp_percent <= 75)
+        return "injured";
+    else
+        return "healthy";
+    endif
+endfunction
+
+function handle_error_combat_AI_speech()
+    var responses := array{
+        "*Grunhe*",
+        "*Rosna*",
+        "*Ignora*",
+        "*Olha fixamente*",
+        "*Range*",
+        "*Murmura*"
+    };
+    return responses[RandomInt(responses.size())+1];
 endfunction
