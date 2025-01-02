@@ -602,5 +602,6 @@ function CheckForIdealTarget()
 
       sleepms(2);
    endforeach
+
    return best_opponent.mobile;
 endfunction
