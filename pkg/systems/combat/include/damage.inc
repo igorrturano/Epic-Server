@@ -878,7 +878,7 @@ function CalcDamageStats(attacker, damage)
 	var elem := getItemCfgElem(attacker.weapon);
 
 	SkillCheck(attacker, TACTICS, -1);
-	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/20);
+	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);
 	damage += tacticsmod;
 
 	stat := STRENGTH;
@@ -908,7 +908,7 @@ function CalcDamageWeapon(attacker, damage)
 		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25);
 	endif
 
-	var sharpened_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"];
+	var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
 	if(sharpened_weapon)
 		damage += sharpened_weapon;
 	endif
@@ -956,7 +956,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
 		endif
 	endif
 
