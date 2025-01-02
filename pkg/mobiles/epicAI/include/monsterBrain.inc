@@ -512,6 +512,9 @@ function PursueTarget(opponent)
             endforeach
         else
             progress.no_progress_count += 1;
+            if (me.hasTunnelTactics())
+                TunnelTactics(me, opponent);
+            endif
         endif
     endif
 
