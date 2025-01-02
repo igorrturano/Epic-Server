@@ -208,7 +208,7 @@ program skill_Stealing(mobile)
 					Detach();
 				endif
 				if ( check < -25 )
-					CriticalFailure(mobile, targ);
+					StealCriticalFailure(mobile, targ);
 				endif
 				break;
 			endif
@@ -234,7 +234,7 @@ program skill_Stealing(mobile)
         endif
 
 		if (check < -10) // Falha Crítica
-			CriticalFailure(mobile, targ);
+			StealCriticalFailure(mobile, targ);
 		endif
 	endif
 endprogram

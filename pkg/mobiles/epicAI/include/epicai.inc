@@ -546,3 +546,62 @@ function findAnotherPath()
         endif
     endif
 endfunction
+
+function CheckForIdealTarget()
+   var potential_opponents := ListHostiles(me, AREA_SIZE);
+   if (potential_opponents.size() < 1)
+      return 0;
+   endif
+
+   var best_opponent := struct{
+      "mobile" := 0,
+      "priority" := -1
+   };
+
+   foreach opponent in potential_opponents
+      // Skip invalid opponents
+      if (!CanFight(me, opponent) || !opponent.acctname)
+         continue;
+      endif
+
+      var opponent_class := GetObjProperty(opponent, "chardata").classe;
+      var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
+      var priority := 0;
+
+      // Fast NPC prioritizes ranged players
+      if (me.run_speed >= 200 && opponent_is_ranged)
+         priority += 3;
+      endif
+
+      // Class-based opponenting
+      if (me.isSage()) // NPC mage prefers warriors
+         if (opponent_class == GUERREIRO)
+            priority += 2;
+         endif
+      elseif (me.isWarrior()) // NPC warrior prefers rogues
+         if (opponent_class == LADINO)
+            priority += 2;
+         endif
+      elseif (me.isRogue()) // NPC rogue prefers mages
+         if (opponent_class == SABIO)
+            priority += 2;
+         endif
+      endif
+
+      // Prioritize close opponents slightly
+      var dist := Distance(me, opponent);
+      if (dist <= 4)
+         priority += 1;
+      endif
+
+      // Check if this is a better opponent
+      if (priority > best_opponent.priority)
+         best_opponent.mobile := opponent;
+         best_opponent.priority := priority;
+      endif
+
+      sleepms(2);
+   endforeach
+
+   return best_opponent.mobile;
+endfunction

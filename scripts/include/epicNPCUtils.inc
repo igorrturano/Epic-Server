@@ -356,7 +356,7 @@ function isHurt(mobile)
     return 0;
 endfunction
 
-function CriticalFailure(mobile, targ)
+function StealCriticalFailure(mobile, targ)
 	if (mobile.hidden)
 		mobile.hidden := 0;
 	endif

@@ -403,6 +403,8 @@ function HandleCombatEvent(opponent, is_ranged)
         return 0;
     endif
 
+    var chosen_opponent := CheckForIdealTarget();
+
     SetOpponent(opponent);
 
     // Let the combat hook handle the actual attacks

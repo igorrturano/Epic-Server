@@ -141,7 +141,6 @@ function DoThiefSteal(opponent)
             // Check for elemental weapon
             if (TemHabilidade(opponent, "Vínculo Elemental"))
                 if (GetObjProperty(opponent.weapon, "#elementalweapon"))
-                    SendSysMessageEx(who, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
                     return 1;
                 endif
             endif
@@ -160,7 +159,7 @@ function DoThiefSteal(opponent)
                 endif
             endif
         else
-            CriticalFailure(me, opponent);
+            StealCriticalFailure(me, opponent);
         endif
     endif
     
