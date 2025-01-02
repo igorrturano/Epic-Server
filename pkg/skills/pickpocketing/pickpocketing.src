@@ -14,9 +14,9 @@ use storage;
 include ":attributes:attributes";
 include "include/facings";
 include "include/say";
-include ":tn:npcutil";
 include ":timedscripts:timedScripts";
 include ":tn:boss";
+include "include/epicNPCUtils";
 
 program skill_Stealing(mobile)
 	if ( GetProcess(CInt(GetObjProperty(mobile, "#PickPid"))) )
@@ -208,7 +208,7 @@ program skill_Stealing(mobile)
 					Detach();
 				endif
 				if ( check < -25 )
-					CriticalFailure(mobile, targ);
+					StealCriticalFailure(mobile, targ);
 				endif
 				break;
 			endif
@@ -234,32 +234,7 @@ program skill_Stealing(mobile)
         endif
 
 		if (check < -10) // Falha Crítica
-			CriticalFailure(mobile, targ);
+			StealCriticalFailure(mobile, targ);
 		endif
 	endif
 endprogram
-
-function CriticalFailure(mobile, targ)
-	if (mobile.hidden)
-		mobile.hidden := 0;
-	endif
-	SendSysMessageEx(mobile, "Voce chamou muita atencao!", SSM_FAIL);
-				if (TS_GetTimerInfo(targ, "sleep"))
-					//print("entrou");
-					SendSysMessageEx(mobile, "Voce acordou o alvo!", SSM_FAIL);
-					TS_LowerDuration(targ, "sleep", -1);
-				endif
-	var range := 25 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/5);
-
-	foreach player in ( ListMobilesInLineOfSight(targ, range) )
-		if ( player.npctemplate );
-		elseif ( player == mobile );
-		elseif ( player == targ );
-		elseif ( !IsBehind(player, targ.x, targ.y) )
-			SendSysMessageEx(player, "Voce nota "+mobile.name+" tentando roubar de "+targ.name+".", SSM_INFO);
-		endif
-		SleepMS(2);
-	endforeach
-
-	return 1;
-endfunction

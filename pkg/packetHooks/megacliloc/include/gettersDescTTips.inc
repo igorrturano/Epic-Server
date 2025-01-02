@@ -103,6 +103,11 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
+
+	if (GetObjProperty(objeto, "polida"))
+		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
+	endif
+
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
 		xDesc := xDesc + LARANJA + crits;
@@ -117,8 +122,11 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
 	endif
 
-	if (GetObjProperty(objeto, "Aprimoramentos"))
-		xDesc := xDesc + ROXO + "Aprimoramentos: " + GetObjProperty(objeto, "Aprimoramentos") + "<br>";
+	if (GetObjProperty(objeto, "Aprimoramentos").keys().size() > 0)
+		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
+		foreach key in (GetObjProperty(objeto, "Aprimoramentos").keys())
+				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
+		endforeach
 	endif
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
