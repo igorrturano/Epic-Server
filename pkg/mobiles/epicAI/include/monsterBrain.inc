@@ -42,31 +42,25 @@ function MonsterBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED: 
-                    PrintTextAbove(me, "ENGAGED");
                     AlertAllies(ev.source, me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
-                    PrintTextAbove(me, "DAMAGED");
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source)) // Only process if it's a player
-                        PrintTextAbove(me, "ENTERED AREA"); 
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleEnteredArea(ev.source, is_ranged) : HandleLeftArea(is_ranged);
                     endif
                 SYSEVENT_SPEECH: 
                     HandleSpeech(ev.text, ev.source, is_ranged);
                 SYSEVENT_DISENGAGED: 
-                    PrintTextAbove(me, "DISENGAGED");
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source)) // Only process if it's a player
-                        PrintTextAbove(me, "LEFT AREA");
                         HandleLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
-                    PrintTextAbove(me, "ALERT ALLIES"); 
                     var opponent_serial := GetObjProperty(me, "#taunt_opponent");
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
@@ -74,11 +68,6 @@ function MonsterBrain()
                             EraseObjProperty(me, "#taunt_opponent");
                             HandleCombatEvent(opponent, is_ranged);
                         endif
-                    endif
-                EVID_FLEE:
-                    PrintTextAbove(me, "FLEE");
-                    if (ev.source)
-                        FleeFrom(ev.source);
                     endif
                 EVID_TAUNT:
                     if (CanFight(me, ev.source))
@@ -91,7 +80,6 @@ function MonsterBrain()
             endcase
         endif
 
-        // Also debug the idle state
         if (!ev)
             if (!me.opponent)
                 MonsterIdle(wanders, is_ranged);
@@ -109,13 +97,43 @@ function MonsterBrain()
 endfunction
 
 function HandleSpeech(text, source, is_ranged)
-    // Basic speech handling - could be expanded for specific responses
     if (!source || !CanFight(me, source))
         return 0;
     endif
-    var response := handle_combat_speech(me.name, text, source.getRace());
-    Say(response);
 
+    // Evita spam de falas
+    if (GetCooldown(me, "combat_speech") > 0)
+        return Say(handle_error_combat_AI_speech());
+    endif
+
+    var npcState := getNPCState(me);
+
+    // Adds diff to check resist based on npcState and Tier
+    var diff := getNpcResist();
+    var state_debuff := 0;
+    if (npcState == "dying")
+        state_debuff := 5;
+    elseif (npcState == "hurt")
+        state_debuff := 3;
+    endif
+
+    // Se perto da morte, pode querer fugir
+    if (npcState == "dying")
+        if (!CheckResist(me, FORTITUDE, 0, diff))
+            PrintTextAbove(me, "*"+me.name+" se acovarda*");
+            FleeFrom(source);
+            return 1;
+        endif
+    endif
+
+    // Gera e processa resposta
+    var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
+    if (response == error)
+        return Say(handle_error_combat_AI_speech());
+    endif
+    
+    Say(response);
+    SetCooldown(me, "combat_speech", 15);
     return 1;
 endfunction
 
@@ -376,7 +394,6 @@ endfunction
 
 function HandleCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
-        PrintTextAbove(me, "Invalid opponent");
         return 0;
     endif
 
@@ -385,6 +402,8 @@ function HandleCombatEvent(opponent, is_ranged)
     if (z_diff > MAX_Z_DIFF)
         return 0;
     endif
+
+    var chosen_opponent := CheckForIdealTarget();
 
     SetOpponent(opponent);
 
@@ -453,10 +472,8 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
-            PrintTextAbove(me, "*sem progresso: " + progress.no_progress_count + "* [" + dist + "]");
         else
             progress.no_progress_count := 0;
-            PrintTextAbove(me, "*progredindo* [" + dist + "]");
         endif
 
         // Update tracking info
@@ -468,7 +485,6 @@ function PursueTarget(opponent)
 
     // If we're not making progress after several checks, force a reposition
     if (progress.no_progress_count >= 1) // Zero tolerance for no progress
-        PrintTextAbove(me, "*impossível alcançar alvo - reposicionando*");
         EraseObjProperty(me, "path");
         EraseObjProperty(me, "#enemy_last_loc");
         TacticalReposition(opponent);
@@ -483,12 +499,10 @@ function PursueTarget(opponent)
     // Normal pursuit logic
     if (CheckLineOfSight(me, opponent))
         if (Distance(me, opponent) > 1)
-            PrintTextAbove(me, "*perseguindo direto*");
             RunToward(opponent);
         endif
         sleepms(100);
     else
-        PrintTextAbove(me, "*procurando caminho*");
         var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
         if (path)
             foreach coord in path
@@ -496,12 +510,13 @@ function PursueTarget(opponent)
                     break;
                 endif
                 RunTowardLocation(coord.x, coord.y);
-                PrintTextAbove(me, "*seguindo coordenada: " + coord.x + "," + coord.y + "*");
                 sleepms(100);
             endforeach
         else
-            PrintTextAbove(me, "*caminho não encontrado*");
             progress.no_progress_count += 1;
+            if (me.hasTunnelTactics())
+                TunnelTactics(me, opponent);
+            endif
         endif
     endif
 
@@ -534,7 +549,6 @@ endfunction
 
 function MonsterIdle(wanders, is_ranged)
    if (me.opponent)
-        PrintTextAbove(me, "Has opponent - skipping idle");
         return;
     endif
 
@@ -739,7 +753,6 @@ function AlertAllies(invasor, me)
             if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
                 SendEvent(mobile, struct{ "type" := EVID_ALERT_ALLIES, "source" := invasor });
-                PrintTextAbove(mobile, "*alerted* by " + me.name);
             endif
         endif
         sleepms(2);
@@ -811,7 +824,7 @@ function ShamanBehavior(shaman)
     endforeach
 
     if (wounded_allies.size() == 0)
-        DoHarmfulSpell(shaman);
+        DoHarmfulSpell();
     endif
 
     // If multiple allies need help, cast healing rain
@@ -888,9 +901,34 @@ function AskForHealing(me)
     endforeach
 endfunction 
 
-function DoHarmfulSpell(shaman)
+function DoHarmfulSpell()
+    var diff := getNpcResist();
+   // If me is being attacked, prioritize Enraizar
+   if (me.opponent)
+      if (!GetCooldown(me.opponent, "enraizar_cooldown"))
+         CastEnraizar(me, me.opponent, diff);
+         return 1;
+      endif
+   endif
+   
+   // Otherwise, look for enemies attacking allies to weaken
+   var allies := GetNearbyAllies(me);
+   foreach ally in allies
+      if (ally.opponent)
+         if (!GetCooldown(ally.opponent, "weaken_cooldown"))
+            CastWeaken(me, ally.opponent, diff);
+            return 1;
+         endif
+      endif
+      sleepms(2);
+   endforeach
+
+   return 0;
+endfunction
+
+function getNpcResist()
    // Get NPC configuration for spell difficulty
-   var npc_elem := NPC_GetNPCConfig(shaman);
+   var npc_elem := NPC_GetNPCConfig(me);
    var tier := CInt(npc_elem.Tier);
    if (!tier)
       tier := 1;
@@ -906,25 +944,5 @@ function DoHarmfulSpell(shaman)
       5: diff := RESIST_EXTREMELY_HARD;
    endcase
 
-   // If shaman is being attacked, prioritize Enraizar
-   if (shaman.opponent)
-      if (!GetCooldown(shaman.opponent, "enraizar_cooldown"))
-         CastEnraizar(shaman, shaman.opponent, diff);
-         return 1;
-      endif
-   endif
-   
-   // Otherwise, look for enemies attacking allies to weaken
-   var allies := GetNearbyAllies(shaman);
-   foreach ally in allies
-      if (ally.opponent)
-         if (!GetCooldown(ally.opponent, "weaken_cooldown"))
-            CastWeaken(shaman, ally.opponent, diff);
-            return 1;
-         endif
-      endif
-      sleepms(2);
-   endforeach
-
-   return 0;
+    return diff;
 endfunction
