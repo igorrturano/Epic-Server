@@ -33,6 +33,9 @@ function customizeNpc(mob, set_tier := "0")
 		AP_SetTrueSkill(mob, MAGICLORE, mob_skill);
 		skill_combat := MAGERY;
 		skill_support := MAGICLORE;
+	elseif(classe == LADINO)
+		AP_SetTrueSkill(mob, SNEAK, mob_skill);
+		AP_SetTrueSkill(mob, AWARENESS, mob_skill);
 	else
 		skill_combat := WRESTLING;
 		skill_support := TACTICS;
