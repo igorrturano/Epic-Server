@@ -149,7 +149,7 @@ function DoThiefSteal(opponent)
             var items := EnumerateItemsInContainer(opponent.backpack);
             if (items.size() > 0)
                 var item := items[RandomInt(items.size())+1];
-                if (item.movable)
+                if (item.movable && !item.newbie)
                     if (!me.backpack)
                         var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
                         EquipItem(me, backpack);
