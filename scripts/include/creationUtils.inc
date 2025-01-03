@@ -2341,12 +2341,12 @@ function spellChoices(who)
         var spelltype := GetConfigString(elem, "Type");
         
         if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
-            var spell := struct{
-            id := key,
-            circle := spelllvl,
-            name := GetConfigString(elem, "Name"),
-            desc := GetConfigString(elem, "Desc")
-            };
+            var spell := dictionary;
+            spell["id"] := key;
+            spell["circle"] := spelllvl;
+            spell["name"] := GetConfigString(elem, "Name");
+            spell["desc"] := GetConfigString(elem, "Desc");
+            spell["school"] := GetConfigString(elem, "School");
             spellsByCircle[spelllvl].append(spell);
         endif
     endforeach
@@ -2368,7 +2368,7 @@ function spellChoices(who)
     
     while (1)
         var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
-        
+
         foreach key in (input.keys)
             btn_value := key;
             if (btn_value > 200 && btn_value <= 200 + spellsByCircle[1].size())
@@ -2448,7 +2448,7 @@ function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, 
         y := 50;
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
         y += 26;
-        
+
         i := 1;
         foreach spell in (spellsByCircle[2])
             var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
@@ -2504,7 +2504,7 @@ function AlchChoices(who)
     var btn_value;
     while (1)
         var qtd := (skill*2)+2;
-        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd);
+        var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2528,5 +2528,23 @@ function AlchChoices(who)
 
     SendSysMessageEX(who, "Você escolheu as receitas: " + CStr(selected_recipes), SSM_INFO);
     return selected_recipes;
+endfunction
+
+function alchSelectionGump(who, gump, alchs, selected_alchs, qtd, x, y)
+    GFPage(gump, 1);
+    y := 100;
+    foreach alch in alchs
+        var color := (alch.id in selected_alchs) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, alch.name), 1, 0);
+        GFTooltipText(gump, alch.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (alch.id in selected_alchs), 200+_alch_iter);
+        y += 26;
+    endforeach
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    return GFSendGump(who, gump);
 endfunction
 
