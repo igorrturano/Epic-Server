@@ -2341,11 +2341,12 @@ function spellChoices(who)
         var spelltype := GetConfigString(elem, "Type");
         
         if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
-            var spell := dictionary;
-            spell["id"] := key;
-            spell["circle"] := spelllvl;
-            spell["name"] := GetConfigString(elem, "Name");
-            spell["desc"] := GetConfigString(elem, "Desc");
+            var spell := struct{
+            id := key,
+            circle := spelllvl,
+            name := GetConfigString(elem, "Name"),
+            desc := GetConfigString(elem, "Desc")
+            };
             spellsByCircle[spelllvl].append(spell);
         endif
     endforeach

@@ -322,6 +322,8 @@ function LootSomething(npc, corpse)
         endif
         sleepms(2);
     endforeach
+
+    return 1;
 endfunction
 
 function FindEquipmentInContainer(container)
