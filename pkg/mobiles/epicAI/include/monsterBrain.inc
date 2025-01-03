@@ -538,7 +538,7 @@ function shouldKeepPursuing(opponent, dist)
         var initial_allies := GetObjProperty(me, "initial_allies");
         // Se o número atual de aliados for menor que metade do inicial
         if (initial_allies && allies.size() <= CInt(initial_allies/2))
-            PrintTextAbove(me, ""+me.name+" recua*");
+            PrintTextAbove(me, "*"+me.name+" recua*");
             FleeFrom(opponent);
             return 0;
         endif
