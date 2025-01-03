@@ -65,7 +65,6 @@ endprogram
 
 function makeBlacksmithItems(who, what, amt, tool )
 
-
 	if(!what)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return 0;
@@ -87,6 +86,5 @@ function makeBlacksmithItems(who, what, amt, tool )
 
 	var item := CraftItem(who, "Blacksmithy", tool, what, amt, 0, anvil);
 	return 1;
-
 
 endfunction

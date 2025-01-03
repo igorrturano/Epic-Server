@@ -122,7 +122,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
-	XDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
+	xDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
 
 	if (PegaPropObjItemOrTemplate(objeto, "swordmage") != error)
 		xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "swordmage") + "<br>";
