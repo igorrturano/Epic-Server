@@ -2373,10 +2373,10 @@ function spellChoices(who)
             btn_value := key;
             if (btn_value > 200 && btn_value <= 200 + spellsByCircle[1].size())
                 var spell := spellsByCircle[1][btn_value-200];
-                selected_spells.append(spell.id);
+                selected_spells.append(spell);
             elseif (btn_value > 300 && btn_value <= 300 + spellsByCircle[2].size())
                 var spell := spellsByCircle[2][btn_value-300];
-                selected_spells.append(spell.id);
+                selected_spells.append(spell);
             endif
         endforeach
 
@@ -2388,14 +2388,14 @@ function spellChoices(who)
             // Count circle 1 and 2 spells
             var circle1_count := 0;
             var circle2_count := 0;
-            foreach spellid in (selected_spells)
+            foreach chosen_spell in (selected_spells)
                 foreach spell in (spellsByCircle[1])
-                    if (spell.id == spellid)
+                    if (spell.id == chosen_spell.id)
                         circle1_count += 1;
                     endif
                 endforeach
                 foreach spell in (spellsByCircle[2])
-                    if (spell.id == spellid)
+                    if (spell.id == chosen_spell.id)
                         circle2_count += 1;
                     endif
                 endforeach
