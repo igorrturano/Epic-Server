@@ -435,25 +435,14 @@ function HandleCombatEvent(opponent, is_ranged)
 endfunction
 
 function PursueTarget(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
     var dist := Distance(me, opponent);
+    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
+
     if (me.canSpitAcid())
         var dist := Distance(me, opponent);
         if (dist >= 2 && dist <= 6)
             AcidSpray(me, opponent);
         endif
-    endif
-
-    // Don't chase too far
-    if (dist > AREA_SIZE + 6)
-        return 0;
-    endif
-    // If we're in melee range and can see opponent, no need to move
-    if (dist <= 1 && CheckLineOfSight(me, opponent))
-        return 1;
     endif
 
     // Track progress towards target
@@ -513,6 +502,7 @@ function PursueTarget(opponent)
                 if (Distance(me, opponent) <= 1)
                     break;
                 endif
+                if (!shouldKeepPursuing(opponent, dist)) break; endif
                 RunTowardLocation(coord.x, coord.y);
                 sleepms(100);
             endforeach
@@ -522,6 +512,41 @@ function PursueTarget(opponent)
                 TunnelTactics(me, opponent);
             endif
         endif
+    endif
+
+    return 1;
+endfunction
+
+function shouldKeepPursuing(opponent, dist)
+    if (!opponent)
+        return 0;
+    endif
+
+    // Don't chase too far
+    if (dist > AREA_SIZE + 6)
+        return 0;
+    endif
+
+    var allies := GetNearbyAllies(me);
+    if (allies.size() > 0)
+        if (!GetCooldown(me, "allies"))
+            // Guarda o número inicial de aliados
+            SetObjProperty(me, "initial_allies", allies.size());
+            SetCooldown(me, "allies", 15);
+        endif
+
+        var initial_allies := GetObjProperty(me, "initial_allies");
+        // Se o número atual de aliados for menor que metade do inicial
+        if (initial_allies && allies.size() <= CInt(initial_allies/2))
+            PrintTextAbove(me, ""+me.name+" recua*");
+            FleeFrom(opponent);
+            return 0;
+        endif
+    endif
+
+    // If we're in melee range and can see opponent, no need to move
+    if (dist <= 1 && CheckLineOfSight(me, opponent))
+        return 0;
     endif
 
     return 1;
