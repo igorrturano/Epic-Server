@@ -566,8 +566,8 @@ function CheckForIdealTarget()
       var priority := 0;
 
       // Fast NPC prioritizes ranged players
-      if (me.run_speed >= 200 && opponent_is_ranged)
-         priority += 3;
+      if (opponent_is_ranged)
+         priority += 2;
       endif
 
       // Class-based opponenting
@@ -588,7 +588,7 @@ function CheckForIdealTarget()
       // Prioritize close opponents slightly
       var dist := Distance(me, opponent);
       if (dist <= 4)
-         priority += 1;
+         priority += RandomInt(3);
       endif
 
       // Check if this is a better opponent

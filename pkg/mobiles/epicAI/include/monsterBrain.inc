@@ -48,12 +48,11 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
+                    HandleSpeech(ev.text, ev.source, is_ranged);
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleEnteredArea(ev.source, is_ranged) : HandleLeftArea(is_ranged);
                     endif
-                SYSEVENT_SPEECH: 
-                    HandleSpeech(ev.text, ev.source, is_ranged);
                 SYSEVENT_DISENGAGED: 
                     HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
@@ -103,19 +102,13 @@ function HandleSpeech(text, source, is_ranged)
 
     // Evita spam de falas
     if (GetCooldown(me, "combat_speech") > 0)
-        return Say(handle_error_combat_AI_speech());
+        return;
     endif
 
     var npcState := getNPCState(me);
 
     // Adds diff to check resist based on npcState and Tier
     var diff := getNpcResist();
-    var state_debuff := 0;
-    if (npcState == "dying")
-        state_debuff := 5;
-    elseif (npcState == "hurt")
-        state_debuff := 3;
-    endif
 
     // Se perto da morte, pode querer fugir
     if (npcState == "dying")
@@ -131,7 +124,7 @@ function HandleSpeech(text, source, is_ranged)
     if (response == error)
         return Say(handle_error_combat_AI_speech());
     endif
-    
+
     Say(response);
     SetCooldown(me, "combat_speech", 15);
     return 1;
@@ -646,8 +639,12 @@ function FleeFrom(opponent)
     endif
 
     var runs := 0;
-    while (opponent && Distance(me, opponent) < 20 && runs < 50)
+    while (opponent && Distance(me, opponent) < 16 && runs < 20)
         RunAwayFrom(opponent);
+        if(!AP_ConsumeVital(me, STAMINA, 5))
+            PrintTextAbove(me, "*Exausto*");
+            break;
+        endif
         runs += 1;
         sleepms(100);
     endwhile
@@ -656,7 +653,6 @@ endfunction
 function EnableMainEvents()
     EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
     EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
-    EnableEvents(SYSEVENT_SPEECH, 4);
 endfunction
 
 function CanFight(attacker, defender)
