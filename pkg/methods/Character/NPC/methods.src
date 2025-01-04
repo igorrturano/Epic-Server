@@ -22,6 +22,7 @@ exported function canCharge(who)
 
     if (template == "goblinrider") return 1; endif
     if (template == "ratoide_barbaro") return 1; endif
+    if (template == "bugbear") return 1; endif
 
     return 0;
 endfunction
@@ -96,5 +97,14 @@ exported function isUmberHulk(who)
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
 
     if (template == "umberhulk") return 1; endif
+    return 0;
+endfunction
+
+exported function hasRage(who)
+    var templates := array{"ratoide_barbaro", "bugbear"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
     return 0;
 endfunction

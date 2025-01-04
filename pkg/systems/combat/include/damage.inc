@@ -1071,7 +1071,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (IsRaging(attacker))
 		var damagemod;
-		if (temHabilidade(attacker, "Nazg Khalug") || GetObjProperty(attacker, "NpcFuria"))
+		if (temHabilidade(attacker, "Nazg Khalug") || attacker.hasRage())
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
