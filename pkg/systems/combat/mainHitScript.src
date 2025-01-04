@@ -1017,7 +1017,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		defendeu := 1;
 
 		//Pike desarma defensor que bloquear sem escudo
-		if ((attacker.weapon.graphic == 0xF985) && ( usingWeapon ))
+		if ((attacker.weapon.graphic == 0x26BE) && ( usingWeapon ))
 			var defweapon := defender.weapon;
 			if (defweapon.objtype != 0x1F020)
 				var x := defender.x + RandomInt(2)+1;

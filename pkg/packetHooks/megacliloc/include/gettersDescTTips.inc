@@ -122,7 +122,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
 	endif
 
-	if (GetObjProperty(objeto, "Aprimoramentos").keys().size() > 0)
+	if (GetObjProperty(objeto, "Aprimoramentos"))
 		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
 		foreach key in (GetObjProperty(objeto, "Aprimoramentos").keys())
 				xDesc := xDesc + AMARELO_CLARO + key + "<br>";

@@ -539,15 +539,15 @@ function PositionGump(who, cur_x := 0, cur_y := 0)
 	   GFClosable(gump, 0);
 	   GFMovable(gump, 0);
 
-      GFResizePic(gump, 0, 0, 9200, 1920, 1080);
-      GFAddAlphaRegion(gump, 1, 2, 1920, 1080);
+      GFResizePic(gump, 0, 0, 9200, 2420, 1280);
+      GFAddAlphaRegion(gump, 1, 2, 2420, 1280);
       GFSetRadioGroup(gump, 0);
 
       var i := 1;
       var y;
-      for ( y := 3; y < 1080; y += 45)
+      for ( y := 3; y < 1280; y += 45)
          var x;
-         for (x := 1; x < 1920; x += 52)
+         for (x := 1; x < 2420; x += 52)
             positions.append(array{x, y});
             GFAddButton(gump, x, y, 1210, 1210, GF_CLOSE_BTN, positions.size());
             i += 1;
@@ -566,7 +566,7 @@ function PositionGump(who, cur_x := 0, cur_y := 0)
    if (cur_x || cur_y)
       GFGumpPic(gump, cur_x, cur_y, 1210, 2133);
    endif
-   
+
 	var res := GFSendGump(who, gump)[0];
    return positions[res];
 endfunction
