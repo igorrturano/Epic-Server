@@ -395,7 +395,9 @@ function TunnelTactics(me, targ)
         ally.concealed := 0;
         PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
         PrintTextAbove(ally, "*emerge do subsolo*");
-        
+        if (ally.isUmberHulk())
+            earthquake(ally);
+        endif
         // Set all allies to attack the targ
         ally.opponent := targ;
         
@@ -403,4 +405,157 @@ function TunnelTactics(me, targ)
     endforeach
     
     return 1;
+endfunction
+
+function earthquake(attacker)
+    var dmg := RandomDiceRoll("1d12");
+    var nearby := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 2 , attacker.realm );
+    DanificaObjetosProximos(attacker,attacker.x, attacker.y, attacker.z,attacker.realm,struct{dano := dmg, desc := "epicSpecial: Earth Quake" },2,0x6d67);
+    foreach defender in nearby
+        if (!(isAlly(defender) || defender == attacker))
+            PlayObjectCenteredEffect( defender, 0x6d67, 0, 10);
+            TS_StartTimer(defender, "tombar", 5);
+            TS_StartTimer(defender, "lentidao", 5*2);
+            TS_StartTimer(defender, "paralysis", 5);
+            DamageFLS(defender, dmg, DMG_FORCED, attacker);
+        endif
+    endforeach
+endfunction
+
+function doConfusion()
+    if (GetCooldown(me, "confusion_ability") > 0)
+        PrintTextAbove(me, "*recarregando confusao*");
+        return 0;
+    endif
+
+    var nearby := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    PrintTextAbove(me, "*procurando alvos proximos: " + nearby.size() + "*");
+    
+    var enemies := array{};
+    foreach mobile in nearby
+        if (!isAlly(mobile) && CanFight(me, mobile))
+            enemies.append(mobile);
+            PrintTextAbove(me, "*inimigo encontrado: " + mobile.name + "*");
+        endif
+        sleepms(2);
+    endforeach
+
+    if (enemies.size() < 1)
+        PrintTextAbove(me, "*nenhum alvo valido*");
+        return 0;
+    endif
+
+    SetCooldown(me, "confusion_ability", 30);
+    PrintTextAbove(me, "*usando confusao*");
+
+    foreach mobile in enemies
+        var confusion_type := RandomInt(3)+1;;
+        if (enemies.size() < 2) confusion_type := 1; endif
+        if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
+
+        case (confusion_type)
+            1: // Paralyze
+                PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6e0d, 5, 15);
+                TS_StartTimer(mobile, "paralysis", 5);
+                PrintTextAbove(mobile, "*paralisado*");
+                
+            2: // Attack allies
+                if (mobile.npctemplate)
+                    // For NPCs, make them attack other enemies
+                    var potential_targets := enemies;
+                    potential_targets.Erase(potential_targets.Find(mobile)); // Remove self from targets
+                    
+                    if (potential_targets.size() > 0)
+                        var random_target := potential_targets[RandomInt(potential_targets.size())+1];
+                        mobile.opponent := random_target;
+                        PrintTextAbove(mobile, "*ataca " + random_target.name + "*");
+                    endif
+                else
+                    // For players, make them walk to and attack an ally
+                    if (enemies.size() > 0)
+                        var random_ally := enemies[RandomInt(enemies.size())+1];
+                        var coords := GetCoordsInLine(mobile.x, mobile.y, random_ally.x, random_ally.y);
+                        foreach coord in coords
+                            MoveObjectToLocation(mobile, coord.x, coord.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
+                            PerformAction(mobile, ANIM_WALK_WARMODE);
+                            sleepms(150);
+                            if (Distance(mobile, random_ally) <= 1)
+                                mobile.warmode := 1;
+                                mobile.attack_once(random_ally);
+                                break;
+                            endif
+                        endforeach
+                        PrintTextAbove(mobile, "*ataca aliado " + random_ally.name + "*");
+                    endif
+                endif
+                
+            3: // Walk randomly
+                if (!mobile.npctemplate)
+                    // For players - simulate random walking
+                    var iterations := RandomInt(3) + 2; // 2-4 random moves
+                    for i := 1 to iterations
+                        var randx := mobile.x + RandomInt(6) - 3; // -3 to +3
+                        var randy := mobile.y + RandomInt(6) - 3;
+                        var coords := GetCoordsInLine(mobile.x, mobile.y, randx, randy);
+                        foreach coord in coords
+                            MoveObjectToLocation(mobile, coord.x, coord.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
+                            PerformAction(mobile, ANIM_WALK_WARMODE);
+                            sleepms(150);
+                        endforeach
+                        PrintTextAbove(mobile, "*movendo aleatoriamente*");
+                    endfor
+                else
+                    // For NPCs - use Wander()
+                    SetOpponent(0);
+                    for i := 1 to 5
+                        mobile.Wander();
+                        sleepms(100);
+                    endfor
+                    PrintTextAbove(mobile, "*vagueia*");
+                endif
+        endcase
+        sleepms(2);
+    endforeach
+    
+    return 1;
+endfunction
+
+function WalkRandomly(mobile)
+    if (mobile.npctemplate && mobile != me)
+        // NPC logic: Move NPC randomly
+        var direction := RandomInt(8);
+        var new_x := mobile.x;
+        var new_y := mobile.y;
+        var dir := RandomIntMinMax(-3, 3);
+        case (direction)
+            0: new_y := mobile.y - dir; break;
+            1: new_x := mobile.x + dir; new_y := mobile.y - dir; break;
+            2: new_x := mobile.x + dir; break;
+            3: new_x := mobile.x + dir; new_y := mobile.y + dir; break;
+            4: new_y := mobile.y + dir; break;
+            5: new_x := mobile.x - dir; new_y := mobile.y + dir; break;
+            6: new_x := mobile.x - dir; break;
+            7: new_x := mobile.x - dir; new_y := mobile.y - dir; break;
+        endcase
+        WalkTowardLocation(new_x, new_y);
+        sleepms(100);
+    else
+        // Player logic: Walk randomly
+        var direction := RandomInt(8);
+        var new_x := mobile.x;
+        var new_y := mobile.y;
+        var dir := RandomIntMinMax(-3, 3);
+        case (direction)
+            0: new_y := mobile.y - dir; break;
+            1: new_x := mobile.x + dir; new_y := mobile.y - dir; break;
+            2: new_x := mobile.x + dir; break;
+            3: new_x := mobile.x + dir; new_y := mobile.y + dir; break;
+            4: new_y := mobile.y + dir; break;
+            5: new_x := mobile.x - dir; new_y := mobile.y + dir; break;
+            6: new_x := mobile.x - dir; break;
+            7: new_x := mobile.x - dir; new_y := mobile.y - dir; break;
+        endcase
+        WalkTowardLocation(new_x, new_y);
+        sleepms(100);
+    endif
 endfunction

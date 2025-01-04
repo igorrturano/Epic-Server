@@ -128,7 +128,12 @@ function ShowHabilidadesPage(byref gump, who)
     var i;
     for(i := 0; i <= 20; i := i + 1)
         if (Cint(habs[i]) == 1)
-            GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
+            if (i%2 == 0)
+                GFTextLine(gump, x + 20, y, 1150, "Habilidade: ");
+            else
+                GFTextLine(gump, x + 20, y, 1150, "Atributo: ");
+            endif
+            
             if (i%2 == 1)
                 GFTextLine(gump, x + 90, y, 300, "Comprar Status");
                 GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
@@ -141,7 +146,11 @@ function ShowHabilidadesPage(byref gump, who)
                 endif
             endif
         elseif (cint(habs[i]) == 2)
-            GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
+            if (i%2 == 0)
+                GFTextLine(gump, x + 20, y, 1150, "Habilidade: ");
+            else
+                GFTextLine(gump, x + 20, y, 1150, "Atributo: ");
+            endif
             if (i%2 == 1)
                 GFTextLine(gump, x + 90, y, 300, "Status Comprado");
             else

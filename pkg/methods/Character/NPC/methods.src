@@ -69,10 +69,13 @@ endfunction
 
 exported function canSpitAcid(who)
     if (isFormian(who)) return 1; endif
+    if (isAnkheg(who)) return 1; endif
 endfunction
 
 exported function hasTunnelTactics(who)
     if (isFormian(who)) return 1; endif
+    if (isAnkheg(who)) return 1; endif
+    if (isUmberHulk(who)) return 1; endif
 endfunction
 
 exported function getTier(who)
@@ -80,4 +83,18 @@ exported function getTier(who)
 	var tier := npc_elem.Tier;
 
     return tier;
+endfunction
+
+exported function isAnkheg(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+
+    if (template == "ankheg") return 1; endif
+    return 0;
+endfunction
+
+exported function isUmberHulk(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+
+    if (template == "umberhulk") return 1; endif
+    return 0;
 endfunction
