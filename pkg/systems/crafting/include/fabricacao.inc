@@ -23,12 +23,25 @@ function EnviaItensComplexosGump(quem,profissao)
 		retorno := GFSendGump(quem,gump);
 
 		if(retorno)
-			if(retorno[0])
-				navegacao.categoriaSelecionada := parametros.visaoReceitas.keys()[retorno[0]];
-			else
-			endif
+			case(ClassificaRetornoComplexos(retorno[0]))
+				RT_CATEGORIAS:
+					navegacao.categoriaSelecionada := parametros.visaoReceitas.keys()[retorno[0] - COMPLEXOS_CATEGORIAS];
+					break;
+				RT_RECEITAS:
+					var indiceRetorno := retorno[0] - COMPLEXOS_RECEITAS;
+					var quantidadeBotoes := 3;
+					var indiceBotao := indiceRetorno % quantidadeBotoes;
+					indiceBotao := indiceBotao == 0? quantidadeBotoes : indiceBotao;
+					var indiceItem := (indiceRetorno - indiceBotao) / 3 + 1;
+					Print("indiceRetorno: " + indiceRetorno + " indiceBotao: " + indiceBotao);
+					Print("Fabricando Item: " + parametros.visaoReceitas[navegacao.categoriaSelecionada][indiceItem].desc);
+					navegacao.+esquemas := "";
+					break;
+				RT_BOTAO_MENU:
+					break;
+				default:
+			endcase
 		endif
-		
 	endwhile
 endfunction
 
@@ -123,8 +136,10 @@ function MontaInfoItem(quem,objtype)
 	infoItem.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem);
 	infoItem.+dificuldade := PegaDificuldade();
 	infoItem.+objtype := objtype;
+	infoItem.+uso := definicaoItem.Attribute;
+	infoItem.+desc := definicaoItem.desc;
 	infoItem.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype);
-	//TODO Implementar a busca pelos esquemas.
+
 	return infoItem;
 
 endfunction

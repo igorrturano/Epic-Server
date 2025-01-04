@@ -8,6 +8,18 @@ const G_MARGEM_ESQUERDA := 10;
 const G_MARGEM_SUPERIOR := 10;
 const G_ESPACAMENTO := 10;
 
+enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
+	COMPLEXOS_CATEGORIAS := 20,
+	COMPLEXOS_RECEITAS := 100
+endenum
+
+enum CLASSE_RETORNO_GUMP
+	RT_RECEITAS,
+	RT_CATEGORIAS,
+	RT_ESQUEMAS,
+	RT_BOTAO_MENU
+endenum
+
 var alturaCelula :=  G_ALTURA / G_CELULA_DIVISOR;
 var larguraCelula :=  G_LARGURA / G_CELULA_DIVISOR;
 
@@ -57,6 +69,16 @@ function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
 	return gump;
 endfunction
 
+function ClassificaRetornoComplexos(valorRetorno)
+	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
+		return RT_CATEGORIAS;
+	elseif(valorRetorno > COMPLEXOS_RECEITAS)
+		return RT_RECEITAS;
+	else
+		return RT_BOTAO_MENU;
+	endif
+endfunction
+
 function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas)
 
 	//TODO Implementar uma forma de lembrar onde estava da ultima vez que abriu o gump. Talvez usando a CProp legado "Craft".
@@ -66,7 +88,7 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 	if(receitas != error && receitas.size() > 0)
 		var linha := 0;
 		foreach receita in receitas
-			MontaJanelaReceita(gump , x + deslocamentoX, y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita);
+			MontaJanelaReceita(gump , x + deslocamentoX, y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter);
 
 			//Controle de Paginação.
 			if(_receita_iter % (colunasLinha * 2) == 0)
@@ -92,7 +114,7 @@ function PreencheCategorias(byref gump,larguraPainelCategoria, parametros)
 	
 	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraPainelCategoria / 2 - 35,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10,70,20,"<basefont size=55 color=#ffffff><center>Categorias</center>");
 	foreach categoria in (parametros.visaoReceitas.keys())
-		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, _categoria_iter);
+		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
 		GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),86,categoria);
 		Sleepms(2);
 	endforeach
@@ -125,15 +147,35 @@ function DefineAlturaPainel(quantidadeCelulas)
 	return alturaCelula * quantidadeCelulas - espacamentoAplicado;
 endfunction
 
-function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita)
+function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice)
 	y := y + 150 * linha;
 	x := x + 120 * coluna;
+
+	var numeroBotoes := 3;
+	var baseIdBotao :=  (indice - 1) * numeroBotoes + COMPLEXOS_RECEITAS;
+
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,
 	GFTooltipText(gump,receita.textoDescItem);
-	GFAddButton(gump,x + 15, y + 120,4011,4012);
-	GFAddButton(gump,x + 45,y + 120,4029,4030);
-	GFAddButton(gump,x + 75,y + 120,4023,4024);
+	GFAddButton(gump,x + 15, y + 120,4011,4012,GF_CLOSE_BTN,baseIdBotao + 1);
+	GFAddButton(gump,x + 45,y + 120,4029,4030,GF_CLOSE_BTN,baseIdBotao + 2);
+	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
 	GFGumpPic(gump,x + 60 ,y + 10,9009); // Pino
+
+	case (receita.uso)
+		"One_Handed":
+			GFGumpPic(gump,x + 5 ,y + 5,137,0x6c1);
+			break;
+		"Two_Handed":
+		"Dual_Wield":
+			GFGumpPic(gump,x + 5 ,y + 5,137,0x6c1);
+			GFGumpPic(gump,x + 28 ,y + 5,136,0x6c1);
+			break;
+		"Ranged":
+			GFGumpPic(gump,x + 5 ,y + 5,138,0x6c1);
+			break;
+		default:
+	endcase
+	
 	GFTilePic(gump, x + 30,y + 50, CInt(receita.graphic));
 	//TODO fazer com que os pinos tenham cor diferente de acordo com a dificuldade de criação do item.
 endfunction
