@@ -217,7 +217,7 @@ function maolivre(who, qtd, checkmount := 1)
     endif
 
     // Verifica se há itens nas mãos
-    if (rightHand || leftHand)
+    if (rightHand && leftHand)
         return 0;
     endif
 
