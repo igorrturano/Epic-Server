@@ -451,17 +451,15 @@ function doConfusion()
     foreach mobile in enemies
         var confusion_type := RandomInt(3)+1;;
         if (enemies.size() < 2) confusion_type := 1; endif
+        if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
+
         case (confusion_type)
             1: // Paralyze
-                if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
-
                 PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6e0d, 5, 15);
                 TS_StartTimer(mobile, "paralysis", 5);
                 PrintTextAbove(mobile, "*paralisado*");
                 
             2: // Attack allies
-                if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
-
                 if (mobile.npctemplate)
                     // For NPCs, make them attack other enemies
                     var potential_targets := enemies;
@@ -492,8 +490,6 @@ function doConfusion()
                 endif
                 
             3: // Walk randomly
-                if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
-
                 if (!mobile.npctemplate)
                     // For players - simulate random walking
                     var iterations := RandomInt(3) + 2; // 2-4 random moves
