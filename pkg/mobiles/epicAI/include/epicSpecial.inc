@@ -488,7 +488,7 @@ function doConfusion()
                         PrintTextAbove(mobile, "*ataca aliado " + random_ally.name + "*");
                     endif
                 endif
-                
+
             3: // Walk randomly
                 if (!mobile.npctemplate)
                     // For players - simulate random walking
