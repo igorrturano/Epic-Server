@@ -398,8 +398,6 @@ function HandleCombatEvent(opponent, is_ranged)
         return 0;
     endif
 
-    var chosen_opponent := CheckForIdealTarget();
-
     SetOpponent(opponent);
     opponent := CheckForIdealTarget();
     SetOpponent(opponent);
@@ -422,6 +420,10 @@ function HandleCombatEvent(opponent, is_ranged)
 
     if (me.hasHiveMind())
         HiveMind(me);
+    endif
+
+    if (me.isUmberHulk())
+        doConfusion();
     endif
 
     return 1;
@@ -885,9 +887,9 @@ function ShamanBehavior(shaman)
     return 0;
 endfunction
 
-function GetNearbyAllies(shaman)
+function GetNearbyAllies(mobile)
     var allies := array{};
-    foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 8)
+    foreach mobile in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 8)
         if (isAlly(mobile))
             allies.append(mobile);
         endif
@@ -895,6 +897,18 @@ function GetNearbyAllies(shaman)
     endforeach
     
     return allies;
+endfunction
+
+function GetPlayersPetsAndSummonsNearby(mobile)
+    var enemies := array{};
+    foreach mobile in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 8)
+        if (!isAlly(mobile))
+            enemies.append(mobile);
+        endif
+        sleepms(2);
+    endforeach
+    
+    return enemies;
 endfunction
 
 function isAlly(mobile)
