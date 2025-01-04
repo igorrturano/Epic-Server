@@ -373,7 +373,7 @@ endfunction
 
 function handle_combat_speech(npc_name, player_input, playerRaca, npcState := "healthy")
     var base_prompt := "
-        # Você é uma criatura em um RPG de fantasia medieval respondendo uma provocação em combate
+        # Você é uma criatura em um RPG de fantasia medieval avistando um oponente entrar no seu raio de visão
         
         # Regras Importantes:
         - Responda SEMPRE em menos de 20 caracteres
@@ -423,7 +423,7 @@ endfunction
 
 function getNPCState(npc)
     var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
-    print(""+hp_percent);
+
     if (hp_percent <= 25)
         return "dying";
     elseif (hp_percent <= 50)

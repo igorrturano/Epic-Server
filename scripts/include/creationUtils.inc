@@ -953,7 +953,11 @@ function genericItems(who)
         moedas := "1d12";
     endif
 	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
-    CreateItemInBackpack(who, 0x170D, 1); // Sandals
+    if (chardata.culture == BADURAN)
+        CreateItemInBackpack(who, "boots", 1); 
+    else
+        CreateItemInBackpack(who, 0x170D, 1); // Sandals
+    endif
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
@@ -990,7 +994,7 @@ function weaponsByClassAndCulture(who)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInBackpack(who, 0x1402, 1); // short spear
+            CreateItemInBackpack(who, 0xF9E2, 1); // two handed sword aigla
         endif
         if (skills[DUALWIELD] >= 1)
             CreateItemInBackpack(who, 0xF9CA, 1);
@@ -1121,10 +1125,11 @@ function armorsByCulture(who)
     endif
 
     if (chardata.culture == BADURAN)
-        CreateItemInBackpack(who, 0x13ec, 1); // Armadura de aneis
-        CreateItemInBackpack(who, 0x13ee, 1); // Armadura de aneis
-        CreateItemInBackpack(who, 0x13f0, 1); // Armadura de aneis
-        CreateItemInBackpack(who, 0x13f2, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF98E, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF987, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF98C, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF98A, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF989, 1); // Armadura de aneis
     endif
 
     if (chardata.culture == AIGLANA)
