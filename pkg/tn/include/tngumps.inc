@@ -545,9 +545,9 @@ function PositionGump(who, cur_x := 0, cur_y := 0)
 
       var i := 1;
       var y;
-      for ( y := 3; y < 1080; y += 45)
+      for ( y := 3; y < 1280; y += 45)
          var x;
-         for (x := 1; x < 1920; x += 52)
+         for (x := 1; x < 2420; x += 52)
             positions.append(array{x, y});
             GFAddButton(gump, x, y, 1210, 1210, GF_CLOSE_BTN, positions.size());
             i += 1;
