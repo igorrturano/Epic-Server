@@ -449,17 +449,19 @@ function doConfusion()
     PrintTextAbove(me, "*usando confusao*");
 
     foreach mobile in enemies
-        var confusion_type := 2; // RandomInt(3)+1;
+        var confusion_type := RandomInt(3)+1;;
         if (enemies.size() < 2) confusion_type := 1; endif
         case (confusion_type)
             1: // Paralyze
-                PrintTextAbove(me, "*tentando paralizar " + mobile.name + "*");
+                if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
+
                 PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6e0d, 5, 15);
                 TS_StartTimer(mobile, "paralysis", 5);
                 PrintTextAbove(mobile, "*paralisado*");
                 
             2: // Attack allies
-                PrintTextAbove(me, "*confundindo " + mobile.name + "*");
+                if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
+
                 if (mobile.npctemplate)
                     // For NPCs, make them attack other enemies
                     var potential_targets := enemies;
@@ -474,8 +476,6 @@ function doConfusion()
                     // For players, make them walk to and attack an ally
                     if (enemies.size() > 0)
                         var random_ally := enemies[RandomInt(enemies.size())+1];
-
-
                         var coords := GetCoordsInLine(mobile.x, mobile.y, random_ally.x, random_ally.y);
                         foreach coord in coords
                             MoveObjectToLocation(mobile, coord.x, coord.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
@@ -492,7 +492,8 @@ function doConfusion()
                 endif
                 
             3: // Walk randomly
-                PrintTextAbove(me, "*confundindo movimento de " + mobile.name + "*");
+                if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
+
                 if (!mobile.npctemplate)
                     // For players - simulate random walking
                     var iterations := RandomInt(3) + 2; // 2-4 random moves
