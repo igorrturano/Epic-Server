@@ -15,9 +15,11 @@ function UpdateXPBar(who)
       return 0;
    endif
    
-   CloseGump(who, 0xE7B);
+   const XPBAR_GUMP_ID := 0xE7B; // Fixed gump ID for XP bar
+   
+   // First ensure any existing process is stopped
    _checkPid(who, "xpbar");
-
+   
    var xpbar := GetObjProperty(who, "xpbar");
    if (!xpbar)
       xpbar := struct{
@@ -28,10 +30,14 @@ function UpdateXPBar(who)
    endif
 
    while (who.connected)
-      var gump := BuildXPGump(who, xpbar);
-      var input := GFSendGump(who, gump);
+      var gump := BuildXPGump(who, xpbar, XPBAR_GUMP_ID);
+      var input := SendDialogGump(who, gump.layout, gump.data, gump.base.x, gump.base.y, 0, XPBAR_GUMP_ID);
 
       if (input[0] == 2) // Move gump button
+         // First close the current gump
+         CloseGump(who, XPBAR_GUMP_ID);
+         sleepms(50);
+         
          var new_pos := PositionGump(who, xpbar.pos_x, xpbar.pos_y);
          xpbar.pos_x := new_pos[1];
          xpbar.pos_y := new_pos[2];
@@ -43,12 +49,12 @@ function UpdateXPBar(who)
    endwhile
 endfunction
 
-function BuildXPGump(who, xpbar)
+function BuildXPGump(who, xpbar, gumpid)
    var gump := GFCreateGump(0, 0);
    GFMovable(gump, 0);
    GFDisposable(gump, 0);
    GFClosable(gump, 0);
-   GFSetId(gump, 0xE7B);
+   GFSetId(gump, gumpid); // Set the fixed gump ID
 
    var curr_xp := CInt(GetObjProperty(who, "Experience"));
    var curr_level := CInt(GetObjProperty(who, "Level"));
