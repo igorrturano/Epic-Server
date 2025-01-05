@@ -654,7 +654,7 @@ endfunction
 
 function EnableMainEvents()
     EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-    EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
+    EnableEvents(EVID_TAUNT + SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
 endfunction
 
 function CanFight(attacker, defender)
