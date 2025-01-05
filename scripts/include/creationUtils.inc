@@ -1077,7 +1077,7 @@ function weaponsByClassAndCulture(who)
             CreateItemInBackpack(who, 0x143c, 1); // HAMMERPICK
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInBackpack(who, 0x1B74, 1); // Kite shield 
+            CreateItemInBackpack(who, 0xFA5E, 1); // escudo baduran
         endif
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x1438, 1); // warhammer
