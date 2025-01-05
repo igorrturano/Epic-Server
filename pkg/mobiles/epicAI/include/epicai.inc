@@ -550,10 +550,6 @@ function CheckForIdealTarget()
       return 0;
    endif
 
-   if (GetCooldown(me, "#blockaggro"))
-      return 0;
-    endif
-
    var best_opponent := struct{
       "mobile" := 0,
       "priority" := -1
@@ -603,8 +599,6 @@ function CheckForIdealTarget()
 
       sleepms(2);
    endforeach
-
-   SetCooldown(me, "#blockaggro", 15);
 
    return best_opponent.mobile;
 endfunction
