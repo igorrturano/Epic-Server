@@ -546,3 +546,36 @@ function SpearThrow(attacker, defender)
 
    return 1;
 endfunction
+
+function Bite(me, opponent)
+    if (GetCooldown(me, "bite_cooldown") > 0)
+        return 0;
+    endif
+
+    if (Distance(me, opponent) > 1)
+        return 0;
+    endif
+
+    var cd := 15;
+    var bite_dmg := "1d6";
+    if (me.hasRage() && IsRaging(me))
+        bite_dmg := "2d6";
+        cd := 10;
+    endif
+    
+    PrintTextAbove(me, "*morde*");
+    PlaySoundEffect(me, 0x28a);
+    PlayAttackAnimation(me);
+    
+    var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
+    if (!resist)
+        DamageFLS(opponent, bite_dmg, DMG_FORCED, me);
+    elseif (resist == -1) // Falha crítica
+        TS_StartTimer(opponent, "paralysis", 5);
+    else
+        PrintTextAbove(opponent, "*esquiva*");
+    endif
+
+    SetCooldown(me, "bite_cooldown", cd);
+    return 1;
+endfunction

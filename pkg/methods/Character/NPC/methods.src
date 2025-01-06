@@ -101,8 +101,9 @@ exported function isUmberHulk(who)
 endfunction
 
 exported function hasRage(who)
+    if (isReptoide(who)) return 1; endif
     var templates := array{"ratoide_barbaro", "bugbear"};
-
+    
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
     
@@ -120,4 +121,22 @@ endfunction
 exported function canThrowSpear(who)
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template == "lizardman2") return 1; endif
+
+    return 0;
+endfunction
+
+exported function canBite(who)
+    if (isLizardMan(who)) return 1; endif
+    if (isReptoide(who)) return 1; endif
+
+    return 0;
+endfunction
+
+exported function isReptoide(who)
+    var templates := array{"reptoide1", "reptoide2", "reptoide3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
 endfunction
