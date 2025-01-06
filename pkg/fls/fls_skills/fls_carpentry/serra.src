@@ -6,19 +6,37 @@ include ":gumps:gumps";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 
+
+var cfgRecursos := ReadConfigFile(":crafting:config/resourceList");
+
+var CATALOGO_LOG_PRA_TABUA := dictionary {
+        "0xee36" -> 0xee66,
+        "0xee37" -> 0xee67,
+        "0xee38" -> 0xee68,
+        "0xee39" -> 0xee69,
+        "0xee3a" -> 0xee70,
+        "0xee3b" -> 0xff05,
+        "0xee3c" -> 0xee65,
+        "0xee3f" -> 0xee64,
+        "0xee40" -> 0xef2a,
+        "0xee3d" -> 0xee73,
+        "0xee3e" -> 0x615b,
+        "0x1bdd" -> 0x1bd7
+        };
+
 program usar_serra(who, item)
 
 	if (!Accessible (who, item) )
-		SendSysMessage (who, "Voce nao alcanca aquilo!");
+		SendSysMessage (who, "Você não alcanca aquilo!");
 		return;
 	endif
 
 	if (!ReserveItem (item) )
-		SendSysMessage (who, "voce nao pode usar isso agora.");
+		SendSysMessage (who, "você não pode usar isso agora.");
 		return;
 	endif
 
-	SendSysMessage (who, "O que voce deseja fazer com isto?");
+	SendSysMessage (who, "O que você deseja fazer com isto?");
 	var targetted := Target (who);
 
 	if (!targetted)
@@ -26,20 +44,20 @@ program usar_serra(who, item)
 		return;
 	endif
 	if (!Accessible (who, targetted) )
-		SendSysMessage (who, "Voce nao alcanca isto!");
+		SendSysMessage (who, "Você não alcanca isto!");
 		return;
 	endif
 	if (!targetted.movable)
-		SendSysMessage (who, "Voce nao pode usar isto.");
+		SendSysMessage (who, "Você não pode usar isto.");
 		return;
 	endif
 	if (!ReserveItem (targetted) )
-		SendSysMessage (who, "Voce nao pode usar isto agora.");
+		SendSysMessage (who, "Você não pode usar isto agora.");
 		return;
 	endif
 
-	if((targetted.objtype != 0x1bdd) && (targetted.objtype != 0xee36) && (targetted.objtype != 0xee3f) && (targetted.objtype != 0xee40) && (targetted.objtype != 0xee37)  && (targetted.objtype != 0xee3d)  && (targetted.objtype != 0xee3e)  && (targetted.objtype != 0xee39)  && (targetted.objtype != 0xee38) && (targetted.objtype != 0xee3a) && (targetted.objtype != 0xee3b) && (targetted.objtype != 0xee3c) )
-           SendSysMessage(who, "Voce deve usar a serra nas madeiras!");
+	if(CStr(Hex(targetted.objtype)) in (dictionary.keys()))
+           SendSysMessage(who, "Você deve usar a serra nos troncos de madeira!");
            return;
         else
             OpenMenuLog(who, targetted);
@@ -53,7 +71,7 @@ function OpenMenuLog(who, targetted)
     GFResizePic(sawgump, 0, 60, 3600, 260, 230);
     GFResizePic(sawgump, 15, 75, 0x13BE, 230, 200);
 //cor 55 e 600 sao boas
-    GFTextLine(sawgump, 50, 93, 55, "O que voce deseja fazer?" );
+    GFTextLine(sawgump, 50, 93, 55, "O que você deseja fazer?" );
     GFTextLine(sawgump, 50, 123, 600, "Tabuas");
     GFTextLine(sawgump, 170, 123, 600, "Cabos");
     GFTilePic(sawgump, 60, 153, 7127);
@@ -66,65 +84,18 @@ function OpenMenuLog(who, targetted)
 
     var retv := GFSendGump(who, sawgump );
 
+    Print(CATALOGO_LOG_PRA_TABUA);
+
     if ( retv[0] == 1 )
         return 0;
     elseif ( retv[0] == 2 )
-        maketabuas(who, targetted);
+        MakeBoardSerra(who, targetted, CATALOGO_LOG_PRA_TABUA[Lower(CStr(Hex(targetted.objtype)))]);
     elseif ( retv[0] == 3)
-        makecabos(who, targetted);
+        MakeCaboSerra(who, targetted, CATALOGO_LOG_PRA_TABUA[Lower(CStr(Hex(targetted.objtype)))]);
     else
         return -1;
     endif
 
-endfunction
-
-function maketabuas(who, item)
-
-   var nova_tabua;
-
-   case (item.objtype)
-        0xee36:
-                nova_tabua :=0xee66;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee37:
-                nova_tabua :=0xee67;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee38:
-                nova_tabua :=0xee68;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee39:
-                nova_tabua :=0xee69;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee3a:
-                nova_tabua :=0xee70;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee3b:
-                nova_tabua := 0xff05;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee3c:
-                nova_tabua :=0xee65;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee3f:
-                nova_tabua :=0xee64;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee40:
-                nova_tabua :=0xef2a;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee3d:
-                nova_tabua :=0xee73;
-                MakeBoardSerra(who, item, nova_tabua);
-        0xee3e:
-                nova_tabua :=0x615b;
-                MakeBoardSerra(who, item, nova_tabua);
-                                             
-        default:
-                nova_tabua :=0x1bd7;
-                MakeBoardSerra(who, item, nova_tabua);
-   endcase
-
-   
- 
- 
 endfunction
 
 function MakeBoardSerra(who, item, nova_tabua)
@@ -133,7 +104,7 @@ function MakeBoardSerra(who, item, nova_tabua)
 	var charactery := who.y;
     var toras;
     
-    PrintTextAbove(who, "*comeca a serrar madeira*");
+    PrintTextAbove(who, "*começa a serrar madeira*");
 	repeat
         if ((item.amount) <= 0)
             break;
@@ -166,51 +137,20 @@ function MakeBoardSerra(who, item, nova_tabua)
 
 endfunction
 
-function makecabos(who, item)
-
-
-   case (item.objtype)
-        0xee36:
-                MakeCaboSerra(who, item);
-        0xee37:
-                MakeCaboSerra(who, item);
-        0xee38:
-                MakeCaboSerra(who, item);
-        0xee39:
-                MakeCaboSerra(who, item);
-        0xee3a:
-                MakeCaboSerra(who, item);
-        0xee3b:
-                MakeCaboSerra(who, item);
-        0xee3c:
-                MakeCaboSerra(who, item);
-        0xee3d:
-                MakeCaboSerra(who, item);
-        0xee3e:
-                MakeCaboSerra(who, item);
-        0xee3f:
-                MakeCaboSerra(who, item);
-        0xee40:
-                MakeCaboSerra(who, item);
-        default:
-                MakeCaboSerra(who, item);
-   endcase
-
-
-endfunction
-
-function MakeCaboSerra(who, item)
+function MakeCaboSerra(who, item, materialId)
     var cabo := 0xee71;
 	var characterx := who.x;
 	var charactery := who.y;
 
-    PrintTextAbove(who, "*comeca a serrar madeira*");
+    PrintTextAbove(who, "*começa a serrar madeira*");
 	repeat
         if ((item.amount) <= 0)
             return 0;
         else
             MakeSerraEfect(who);
-            CreateItemInContainer (who.backpack, cabo, item.amount);
+            var caboPronto := CreateItemInContainer (who.backpack, cabo, item.amount);
+            SetObjProperty(caboPronto, "material",materialId);
+            caboPronto.color := cfgRecursos[materialId].Color;
             SubtractAmount(item, item.amount);
         endif
     until ((who.x != characterx || who.y != charactery));
