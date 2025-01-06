@@ -22,7 +22,7 @@ function StartCharge(attacker, defender)
    // Grant speed boost during charge
    SetCooldown(attacker, "charge", 120);
    PrintTextAbove(attacker, "*inicia carga*");
-   TS_StartTimer(attacker, "velocidade", 5);
+   TS_StartTimer(attacker, "velocidade", 10);
 
    return 1;
 endfunction
@@ -55,7 +55,7 @@ function SporeSpecial(attacker, defender)
 
     // Get all potential targets in range
     var targets := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8);
-    
+
     foreach mobile in targets
         if (mobile.npctemplate || !CanFight(attacker, mobile))
             continue; 
@@ -510,4 +510,37 @@ function doConfusion(opponent)
     endcase
     
     return 1;
+endfunction
+
+function SpearThrow(attacker, defender)
+   if (!CheckLineOfSight(attacker, defender))
+      return 0;
+   endif
+   
+   if (GetCooldown(attacker, "throw_cooldown") > 0)
+      return 0;
+   endif
+
+   SetCooldown(attacker, "throw_cooldown", 150);
+
+   PrintTextAbove(attacker, "*arremessa*");
+   var throwItem := GetObjProperty(attacker, "throwItem");
+   PlayMovingEffectXYZHued(attacker, defender, throwItem, 5, 1, 0, 0, 0);
+   attacker.graphic := 0x21;
+   var the_spear := CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throwItem, 1, defender.realm);
+
+   var spear_dmg := "1d6";
+
+   if (!CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
+        if(defender.shield)
+            MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+            TS_StartTimer(defender, "desarmar", 15);
+        else
+            TS_StartTimer(defender, "tombar", 5);
+            TS_StartTimer(defender, "lentidao", 20);
+            DamageFLS(defender, spear_dmg, DMG_FORCED, me);
+        endif
+   endif
+
+   return 1;
 endfunction

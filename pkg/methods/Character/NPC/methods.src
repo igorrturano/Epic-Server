@@ -108,3 +108,16 @@ exported function hasRage(who)
     
     return 0;
 endfunction
+
+exported function isLizardMan(who)
+    var templates := array{"lizardman1", "lizardman2", "lizardman3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return 0;
+endfunction
+
+exported function canThrowSpear(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "lizardman2") return 1; endif
+endfunction

@@ -21,7 +21,7 @@ function SetEquipmentMods(who, item)
 	if (item.isa(POLCLASS_ARMOR) && (item.tile_layer == LAYER_HAND2))
 		EraseObjProperty(who, "twohanded");
 		var mod_percentual := 0.0;
-		var parryskill := AP_GetSkill(who, PARRY);
+		var parryskill := Cint(AP_GetSkill(who, PARRY));
 		var atributos_escudo := Dictionary;
 		atributos_escudo["physical"] := item.resist_physical-item.resist_physical_mod;
 		atributos_escudo["physicalmod"] := item.resist_physical_mod;
@@ -35,13 +35,10 @@ function SetEquipmentMods(who, item)
 		atributos_escudo["energymod"] := item.resist_energy_mod;
 		atributos_escudo["_equipped"] := 1;
 
-
-		mod_percentual := (parryskill-80.0) /100.0; //Acima de 0 o cara consegue mais proteção que o item base oferece e abaixo, menos.
-		SendSysMessage(who, "Eficiencia do escudo: " + CStr((1.0 + mod_percentual)*100.0) +"%.");
 		var shieldequipped := item.GetProp("atributos_escudo");
 		if (shieldequipped["_equipped"] != 1) //Gambiarra pra evitar que o POL mude as resistência no logon
 			SetObjProperty(item, "atributos_escudo", atributos_escudo);
-			SetResists(who, item, mod_percentual);
+			SetResists(who, item, parryskill);
 		endif
 	endif
 
