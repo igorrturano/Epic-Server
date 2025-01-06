@@ -426,6 +426,10 @@ function HandleCombatEvent(opponent, is_ranged)
         doConfusion(opponent);
     endif
 
+    if (me.CanBite())
+        Bite(me, opponent);
+    endif
+
     return 1;
 endfunction
 
@@ -596,7 +600,7 @@ function MonsterIdle(wanders, is_ranged)
         sleepms(2);
     endforeach
 
-    if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown")) me.graphic := 0x22; endif // Retorna o gráfico de lizard com lança
+    if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)

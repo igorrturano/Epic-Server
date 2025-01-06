@@ -124,7 +124,7 @@ function CheckResist(defender, resist_type, dif, mod := 0)
 
     if (dado == 1)
         SendSysMessageEx(defender, "Falha crítica no teste de resistência", SSM_FAIL);
-        return 0;
+        return -1;
     elseif (dado == 20)
         SendSysMessageEx(defender, "Sucesso crítico no teste de resistência", SSM_INFO);
         return 1;
@@ -147,6 +147,8 @@ function CheckResist(defender, resist_type, dif, mod := 0)
         SendSysMessageEx(defender, "Falhou no teste de resistência", SSM_INFO);
         return 0;
     endif
+
+	return 0;
 endfunction
 
 function ShouldGetSecondChance(defender, resist_type)
