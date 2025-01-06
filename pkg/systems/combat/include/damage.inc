@@ -378,6 +378,10 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 endfunction
 
 function hasAntiMountedWeapon(attacker, defender)
+	if (defender.warmode == 0)
+		return 0;
+	endif
+
 	var defenderHasAntiMountedWeapon := 0;
 	if (GetObjProperty(attacker, "charge_damage"))
 		var cfg := ReadConfigFile(":*:itemdesc");

@@ -160,7 +160,7 @@ function HandleDisengage(opponent)
                 var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
                 EquipItem(me, backpack);
             endif
-            
+
             // Loot items
             while (looted < max_loot)
                 PrintTextAbove(me, "*revirando o corpo*");
@@ -434,9 +434,14 @@ function PursueTarget(opponent)
     if (!shouldKeepPursuing(opponent, dist)) return 0; endif
 
     if (me.canSpitAcid())
-        var dist := Distance(me, opponent);
         if (dist >= 2 && dist <= 6)
             AcidSpray(me, opponent);
+        endif
+    endif
+
+    if (me.canThrowSpear())
+        if (dist >= 2 && dist <= 12)
+            SpearThrow(me, opponent);
         endif
     endif
 
