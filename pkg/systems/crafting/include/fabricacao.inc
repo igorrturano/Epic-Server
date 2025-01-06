@@ -1,3 +1,5 @@
+use Math;
+
 include "/include/epicConstants";
 include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
@@ -64,6 +66,49 @@ function PreparaItensComplexosGump(quem, profissao)
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.periciaCfg.Attribute);
 	
 	return parametrosGump;
+endfunction
+
+// TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
+// TODO puxar o calculo das chances pra antes do calculo de qualidade, para evitar overhead.
+function CalculaQualidadeComponentes(componente,valorPericia) 
+	var	pico := valorPericia / 20;
+	var	chances := DistribuicaoGaussianaNormalizada({1,2,3,4,5},pico,1);
+
+	foreach chance in chances
+		var rolagem := RandomFloat(100.0);
+		if (rolagem <= chance)
+			return _chance_iter; //nível da qualidade
+		endif
+		Sleepms(2);
+	endforeach
+
+	return 1;
+endfunction
+
+//fução do sino.
+function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio)
+
+	var gaussianas := array; 
+	var total := 0;
+	foreach x in valoresEixoX
+		var gaussiana := CalcularGaussiana(x,pico,declinio);
+		total += gaussiana;
+		gaussianas.append(gaussiana);
+		Sleepms(2);
+	endforeach
+
+	var normalizados := array;
+	foreach valor in gaussianas
+		normalizados.append((valor/total) * 100);
+		Sleepms(2);
+	endforeach;
+	
+	return normalizados;
+
+endfunction
+
+function CalcularGaussiana(x,pico,declinio)
+	return 100 * Pow(ConstE(),(-declinio * Pow(x - pico, 2)));
 endfunction
 
 function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
@@ -162,7 +207,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem)
 	endif
 
 	desc +=  "<br>";
-	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de fabricação</BASEFONT><br>" + PegaDuracaoFabricacao() + "<br>";
+	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de Fabricação</BASEFONT><br>" + PegaDuracaoFabricacao() + "<br>";
 
 	return desc;
 endfunction

@@ -13,7 +13,7 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_RECEITAS := 100
 endenum
 
-enum CLASSE_RETORNO_GUMP
+enum CLASSE_RETORNO_GUMP //RT = RETORNO.
 	RT_RECEITAS,
 	RT_CATEGORIAS,
 	RT_ESQUEMAS,
