@@ -595,6 +595,8 @@ function MonsterIdle(wanders, is_ranged)
         endif
         sleepms(2);
     endforeach
+
+    if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown")) me.graphic := 0x22; endif // Retorna o gráfico de lizard com lança
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)

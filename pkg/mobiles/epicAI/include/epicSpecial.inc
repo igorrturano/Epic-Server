@@ -375,7 +375,7 @@ function TunnelTactics(me, targ)
         endif
         sleepms(2);
     endforeach
-    
+  
     // Perform tunnel tactics for all participating allies
     foreach ally in attacking_formation
         // Make them disappear
@@ -395,6 +395,7 @@ function TunnelTactics(me, targ)
         ally.concealed := 0;
         PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
         PrintTextAbove(ally, "*emerge do subsolo*");
+        TS_StartTimer(ally, "hole", 5);
         if (ally.isUmberHulk())
             earthquake(ally);
         endif
@@ -403,7 +404,7 @@ function TunnelTactics(me, targ)
         
         sleepms(100);
     endforeach
-    
+
     return 1;
 endfunction
 
@@ -525,12 +526,13 @@ function SpearThrow(attacker, defender)
 
    PrintTextAbove(attacker, "*arremessa*");
    var throwItem := GetObjProperty(attacker, "throwItem");
+   PlayAttackAnimation(attacker);
+   sleepms(500);
    PlayMovingEffectXYZHued(attacker, defender, throwItem, 5, 1, 0, 0, 0);
-   attacker.graphic := 0x21;
+   if (attacker.isLizardMan()) attacker.graphic := 0x21; endif
+
    var the_spear := CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throwItem, 1, defender.realm);
-
    var spear_dmg := "1d6";
-
    if (!CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
         if(defender.shield)
             MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
