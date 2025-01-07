@@ -545,6 +545,14 @@ function findAnotherPath()
 endfunction
 
 function CheckForIdealTarget()
+   // If we already have an opponent, stick with them most of the time
+   if (me.opponent && CanFight(me, me.opponent))
+      // Only 10% chance to even consider switching targets
+      if (RandomInt(100) < 90)
+         return me.opponent;
+      endif
+   endif
+
    var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL);
    if (potential_opponents.size() < 1)
       return 0;
@@ -557,13 +565,18 @@ function CheckForIdealTarget()
 
    foreach opponent in potential_opponents
       // Skip invalid opponents
-      if (!CanFight(me, opponent) || !opponent.acctname)
+      if (!CanFight(me, opponent))
          continue;
       endif
 
       var opponent_class := GetObjProperty(opponent, "chardata").classe;
       var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
       var priority := 0;
+
+       // Current opponent gets huge priority bonus to maintain aggro
+      if (opponent == me.opponent)
+         priority += 10;
+      endif
 
       // Fast NPC prioritizes ranged players
       if (opponent_is_ranged)
@@ -588,7 +601,7 @@ function CheckForIdealTarget()
       // Prioritize close opponents slightly
       var dist := Distance(me, opponent);
       if (dist <= 4)
-         priority += RandomInt(3);
+         priority += 1;
       endif
 
       // Check if this is a better opponent

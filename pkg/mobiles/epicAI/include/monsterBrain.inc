@@ -160,7 +160,7 @@ function HandleDisengage(opponent)
                 var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
                 EquipItem(me, backpack);
             endif
-            
+
             // Loot items
             while (looted < max_loot)
                 PrintTextAbove(me, "*revirando o corpo*");
@@ -423,7 +423,11 @@ function HandleCombatEvent(opponent, is_ranged)
     endif
 
     if (me.isUmberHulk())
-        doConfusion();
+        doConfusion(opponent);
+    endif
+
+    if (me.CanBite())
+        Bite(me, opponent);
     endif
 
     return 1;
@@ -434,9 +438,14 @@ function PursueTarget(opponent)
     if (!shouldKeepPursuing(opponent, dist)) return 0; endif
 
     if (me.canSpitAcid())
-        var dist := Distance(me, opponent);
         if (dist >= 2 && dist <= 6)
             AcidSpray(me, opponent);
+        endif
+    endif
+
+    if (me.canThrowSpear())
+        if (dist >= 2 && dist <= 12)
+            SpearThrow(me, opponent);
         endif
     endif
 
@@ -590,6 +599,8 @@ function MonsterIdle(wanders, is_ranged)
         endif
         sleepms(2);
     endforeach
+
+    if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)

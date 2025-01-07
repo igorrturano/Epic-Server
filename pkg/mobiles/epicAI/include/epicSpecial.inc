@@ -22,7 +22,7 @@ function StartCharge(attacker, defender)
    // Grant speed boost during charge
    SetCooldown(attacker, "charge", 120);
    PrintTextAbove(attacker, "*inicia carga*");
-   TS_StartTimer(attacker, "velocidade", 5);
+   TS_StartTimer(attacker, "velocidade", 10);
 
    return 1;
 endfunction
@@ -55,7 +55,7 @@ function SporeSpecial(attacker, defender)
 
     // Get all potential targets in range
     var targets := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8);
-    
+
     foreach mobile in targets
         if (mobile.npctemplate || !CanFight(attacker, mobile))
             continue; 
@@ -375,7 +375,7 @@ function TunnelTactics(me, targ)
         endif
         sleepms(2);
     endforeach
-    
+  
     // Perform tunnel tactics for all participating allies
     foreach ally in attacking_formation
         // Make them disappear
@@ -395,6 +395,7 @@ function TunnelTactics(me, targ)
         ally.concealed := 0;
         PlayStationaryEffect(ally.x, ally.y, ally.z, 0x3735, 10, 30);
         PrintTextAbove(ally, "*emerge do subsolo*");
+        TS_StartTimer(ally, "hole", 5);
         if (ally.isUmberHulk())
             earthquake(ally);
         endif
@@ -403,7 +404,7 @@ function TunnelTactics(me, targ)
         
         sleepms(100);
     endforeach
-    
+
     return 1;
 endfunction
 
@@ -422,139 +423,159 @@ function earthquake(attacker)
     endforeach
 endfunction
 
-function doConfusion()
+function doConfusion(opponent)
     if (GetCooldown(me, "confusion_ability") > 0)
-        PrintTextAbove(me, "*recarregando confusao*");
         return 0;
     endif
 
     var nearby := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
-    PrintTextAbove(me, "*procurando alvos proximos: " + nearby.size() + "*");
     
     var enemies := array{};
     foreach mobile in nearby
         if (!isAlly(mobile) && CanFight(me, mobile))
             enemies.append(mobile);
-            PrintTextAbove(me, "*inimigo encontrado: " + mobile.name + "*");
         endif
         sleepms(2);
     endforeach
 
     if (enemies.size() < 1)
-        PrintTextAbove(me, "*nenhum alvo valido*");
         return 0;
     endif
 
     SetCooldown(me, "confusion_ability", 30);
-    PrintTextAbove(me, "*usando confusao*");
+ 	PlayMovingEffectXYZHued(me, opponent, 0xF79, 10, 10, 0, 0);
 
-    foreach mobile in enemies
-        var confusion_type := RandomInt(3)+1;;
-        if (enemies.size() < 2) confusion_type := 1; endif
-        if (CheckResist(mobile, VONTADE, RESIST_HARD)) return 0; endif;
+    var confusion_type := RandomInt(3)+1;
+    if (enemies.size() < 2) confusion_type := RandomInt(2)+1; endif
+    if (CheckResist(opponent, VONTADE, RESIST_HARD)) return 0; endif;
 
-        case (confusion_type)
-            1: // Paralyze
-                PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6e0d, 5, 15);
-                TS_StartTimer(mobile, "paralysis", 5);
-                PrintTextAbove(mobile, "*paralisado*");
-                
-            2: // Attack allies
-                if (mobile.npctemplate)
-                    // For NPCs, make them attack other enemies
-                    var potential_targets := enemies;
-                    potential_targets.Erase(potential_targets.Find(mobile)); // Remove self from targets
-                    
-                    if (potential_targets.size() > 0)
-                        var random_target := potential_targets[RandomInt(potential_targets.size())+1];
-                        mobile.opponent := random_target;
-                        PrintTextAbove(mobile, "*ataca " + random_target.name + "*");
-                    endif
-                else
-                    // For players, make them walk to and attack an ally
-                    if (enemies.size() > 0)
-                        var random_ally := enemies[RandomInt(enemies.size())+1];
-                        var coords := GetCoordsInLine(mobile.x, mobile.y, random_ally.x, random_ally.y);
-                        foreach coord in coords
-                            MoveObjectToLocation(mobile, coord.x, coord.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
-                            PerformAction(mobile, ANIM_WALK_WARMODE);
-                            sleepms(150);
-                            if (Distance(mobile, random_ally) <= 1)
-                                mobile.warmode := 1;
-                                mobile.attack_once(random_ally);
-                                break;
-                            endif
-                        endforeach
-                        PrintTextAbove(mobile, "*ataca aliado " + random_ally.name + "*");
-                    endif
+    case (confusion_type)
+        1: // Paralyze
+            PlayStationaryEffect(opponent.x, opponent.y, opponent.z, 0x6e0d, 5, 15);
+            TS_StartTimer(opponent, "paralysis", 5);
+            PrintTextAbove(opponent, "*paralisado*");
+        2: // Walk randomly
+            if (!opponent.npctemplate)
+                // For players - simulate random walking
+                var iterations := RandomInt(3) + 2; // 2-4 random moves
+                for i := 1 to iterations
+                    var randx := opponent.x + RandomInt(6) - 3; // -3 to +3
+                    var randy := opponent.y + RandomInt(6) - 3;
+                    var coords := GetCoordsInLine(opponent.x, opponent.y, randx, randy);
+                    foreach coord in coords
+                        MoveObjectToLocation(opponent, coord.x, coord.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
+                        PerformAction(opponent, ANIM_WALK_WARMODE);
+                        sleepms(200);
+                    endforeach
+                    PrintTextAbove(opponent, "*movendo aleatoriamente*");
+                endfor
+            else
+                // For NPCs - use Wander()
+                SetOpponent(0);
+                for i := 1 to 5
+                    opponent.Wander();
+                    sleepms(200);
+                endfor
+                PrintTextAbove(opponent, "*vagueia*");
+            endif
+        3: // Attack allies
+            if (opponent.npctemplate)
+                // For NPCs, make them attack other enemies
+                var potential_targets := enemies;
+                potential_targets.Erase(potential_targets.Find(opponent)); // Remove self from targets
+
+                if (potential_targets.size() > 0)
+                    var random_target := potential_targets[RandomInt(potential_targets.size())+1];
+                    if (random_target.hidden || random_target.concealed) return 0; endif
+                    opponent.opponent := random_target;
+                    PrintTextAbove(opponent, "*ataca " + random_target.name + "*");
                 endif
-            3: // Walk randomly
-                if (!mobile.npctemplate)
-                    // For players - simulate random walking
-                    var iterations := RandomInt(3) + 2; // 2-4 random moves
-                    for i := 1 to iterations
-                        var randx := mobile.x + RandomInt(6) - 3; // -3 to +3
-                        var randy := mobile.y + RandomInt(6) - 3;
-                        var coords := GetCoordsInLine(mobile.x, mobile.y, randx, randy);
-                        foreach coord in coords
-                            MoveObjectToLocation(mobile, coord.x, coord.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
-                            PerformAction(mobile, ANIM_WALK_WARMODE);
-                            sleepms(150);
-                        endforeach
-                        PrintTextAbove(mobile, "*movendo aleatoriamente*");
-                    endfor
-                else
-                    // For NPCs - use Wander()
-                    SetOpponent(0);
-                    for i := 1 to 5
-                        mobile.Wander();
-                        sleepms(100);
-                    endfor
-                    PrintTextAbove(mobile, "*vagueia*");
+            else
+                // For players, make them walk to and attack an ally
+                if (enemies.size() > 0)
+                    var random_ally := enemies[RandomInt(enemies.size())+1];
+                    var coords := GetCoordsInLine(opponent.x, opponent.y, random_ally.x, random_ally.y);
+                    foreach coord in coords
+                        MoveObjectToLocation(opponent, coord.x, coord.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
+                        PerformAction(opponent, ANIM_WALK_WARMODE);
+                        sleepms(200);
+                        if (Distance(opponent, random_ally) <= 1)
+                            if(!opponent.warmode || opponent.hidden || opponent.concealed) return 0; endif
+                            opponent.attack_once(random_ally);
+                            break;
+                        endif
+                    endforeach
+                    PrintTextAbove(opponent, "*ataca aliado " + random_ally.name + "*");
                 endif
-        endcase
-        sleepms(2);
-    endforeach
+            endif
+    endcase
     
     return 1;
 endfunction
 
-function WalkRandomly(mobile)
-    if (mobile.npctemplate && mobile != me)
-        // NPC logic: Move NPC randomly
-        var direction := RandomInt(8);
-        var new_x := mobile.x;
-        var new_y := mobile.y;
-        var dir := RandomIntMinMax(-3, 3);
-        case (direction)
-            0: new_y := mobile.y - dir; break;
-            1: new_x := mobile.x + dir; new_y := mobile.y - dir; break;
-            2: new_x := mobile.x + dir; break;
-            3: new_x := mobile.x + dir; new_y := mobile.y + dir; break;
-            4: new_y := mobile.y + dir; break;
-            5: new_x := mobile.x - dir; new_y := mobile.y + dir; break;
-            6: new_x := mobile.x - dir; break;
-            7: new_x := mobile.x - dir; new_y := mobile.y - dir; break;
-        endcase
-        WalkTowardLocation(new_x, new_y);
-        sleepms(100);
-    else
-        // Player logic: Walk randomly
-        var direction := RandomInt(8);
-        var new_x := mobile.x;
-        var new_y := mobile.y;
-        var dir := RandomIntMinMax(-3, 3);
-        case (direction)
-            0: new_y := mobile.y - dir; break;
-            1: new_x := mobile.x + dir; new_y := mobile.y - dir; break;
-            2: new_x := mobile.x + dir; break;
-            3: new_x := mobile.x + dir; new_y := mobile.y + dir; break;
-            4: new_y := mobile.y + dir; break;
-            5: new_x := mobile.x - dir; new_y := mobile.y + dir; break;
-            6: new_x := mobile.x - dir; break;
-            7: new_x := mobile.x - dir; new_y := mobile.y - dir; break;
-        endcase
-        WalkTowardLocation(new_x, new_y);
-        sleepms(100);
+function SpearThrow(attacker, defender)
+   if (!CheckLineOfSight(attacker, defender))
+      return 0;
+   endif
+   
+   if (GetCooldown(attacker, "throw_cooldown") > 0)
+      return 0;
+   endif
+
+   SetCooldown(attacker, "throw_cooldown", 150);
+
+   PrintTextAbove(attacker, "*arremessa*");
+   var throwItem := GetObjProperty(attacker, "throwItem");
+   PlayAttackAnimation(attacker);
+   sleepms(500);
+   PlayMovingEffectXYZHued(attacker, defender, throwItem, 5, 1, 0, 0, 0);
+   if (attacker.isLizardMan()) attacker.graphic := 0x21; endif
+
+   var the_spear := CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throwItem, 1, defender.realm);
+   var spear_dmg := "1d6";
+   if (!CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
+        if(defender.shield)
+            MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+            TS_StartTimer(defender, "desarmar", 15);
+        else
+            TS_StartTimer(defender, "tombar", 5);
+            TS_StartTimer(defender, "lentidao", 20);
+            DamageFLS(defender, spear_dmg, DMG_FORCED, me);
+        endif
+   endif
+
+   return 1;
+endfunction
+
+function Bite(me, opponent)
+    if (GetCooldown(me, "bite_cooldown") > 0)
+        return 0;
     endif
+
+    if (Distance(me, opponent) > 1)
+        return 0;
+    endif
+
+    var cd := 15;
+    var bite_dmg := "1d6";
+    if (me.hasRage() && IsRaging(me))
+        bite_dmg := "2d6";
+        cd := 10;
+    endif
+    
+    PrintTextAbove(me, "*morde*");
+    PlaySoundEffect(me, 0x28a);
+    PlayAttackAnimation(me);
+    
+    var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
+    if (!resist)
+        DamageFLS(opponent, bite_dmg, DMG_FORCED, me);
+    elseif (resist == -1) // Falha crítica
+        TS_StartTimer(opponent, "paralysis", 5);
+    else
+        PrintTextAbove(opponent, "*esquiva*");
+    endif
+
+    SetCooldown(me, "bite_cooldown", cd);
+    return 1;
 endfunction
