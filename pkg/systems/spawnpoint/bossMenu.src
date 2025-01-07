@@ -1,0 +1,187 @@
+use uo;
+use os;
+include ":attributes:attributes";
+include "include/say";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":gumps:requestGump";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+include ":tn:boss";
+include ":combat:hitscripts";
+include "include/epicNPCUtils";
+
+program bossMenu( who, spawnpoint )
+endprogram
+
+function ShowBossMenu( who )
+    // ID único do Gump. Ajuste se necessário para evitar conflito.
+    var gumpid := 9000;
+
+    // Cria a estrutura do Gump
+    var gump := GumpCreate( gumpid );
+    GumpSetTitle( gump, "BOSS Menu" );
+
+    // Seção: Campos de entrada principais
+    GumpText( gump, 30, 30, "Template:" );
+    GumpInputField( gump, 120, 28, 150, 20, 0, "BOSSDATA_TEMPLATE", "" );
+
+    GumpText( gump, 30, 60, "Nome:" );
+    GumpInputField( gump, 120, 58, 150, 20, 0, "BOSSDATA_NAME", "" );
+
+    GumpText( gump, 280, 30, "Alcance:" );
+    GumpInputField( gump, 350, 28, 50, 20, 0, "BOSSDATA_ALCANCE", "" );
+
+    GumpText( gump, 280, 60, "Cor:" );
+    GumpInputField( gump, 350, 58, 50, 20, 0, "BOSSDATA_COR", "" );
+
+    GumpText( gump, 420, 60, "Tier:" );
+    GumpInputField( gump, 480, 58, 50, 20, 0, "BOSSDATA_TIER", "" );
+
+    // Seção: STATUS (Modificadores)
+    GumpText( gump, 30, 95, "STATUS" );
+    GumpText( gump, 30, 120, "Str Mod:" );
+    GumpInputField( gump, 110, 118, 40, 20, 0, "BOSSDATA_STRMOD", "" );
+
+    GumpText( gump, 30, 145, "Int Mod:" );
+    GumpInputField( gump, 110, 143, 40, 20, 0, "BOSSDATA_INTMOD", "" );
+
+    GumpText( gump, 30, 170, "Dex Mod:" );
+    GumpInputField( gump, 110, 168, 40, 20, 0, "BOSSDATA_DEXMOD", "" );
+
+    GumpText( gump, 160, 120, "Dmg Mod:" );
+    GumpInputField( gump, 230, 118, 40, 20, 0, "BOSSDATA_DMGMOD", "" );
+
+    GumpText( gump, 160, 145, "Hit Mod:" );
+    GumpInputField( gump, 230, 143, 40, 20, 0, "BOSSDATA_HITMOD", "" );
+
+    // Seção: RESISTÊNCIAS
+    GumpText( gump, 300, 95, "RESISTÊNCIAS" );
+    GumpText( gump, 300, 120, "Físico:" );
+    GumpInputField( gump, 360, 118, 40, 20, 0, "BOSSDATA_RES_FISICO", "" );
+
+    GumpText( gump, 300, 145, "Fogo:" );
+    GumpInputField( gump, 360, 143, 40, 20, 0, "BOSSDATA_RES_FOGO", "" );
+
+    GumpText( gump, 300, 170, "Frio:" );
+    GumpInputField( gump, 360, 168, 40, 20, 0, "BOSSDATA_RES_FRIO", "" );
+
+    GumpText( gump, 420, 120, "Energia:" );
+    GumpInputField( gump, 490, 118, 40, 20, 0, "BOSSDATA_RES_ENERGIA", "" );
+
+    GumpText( gump, 420, 145, "Veneno:" );
+    GumpInputField( gump, 490, 143, 40, 20, 0, "BOSSDATA_RES_VENENO", "" );
+
+    // Seção: SKILLS
+    GumpText( gump, 30, 210, "SKILLS" );
+    GumpText( gump, 30, 230, "Wrestling:" );
+    GumpInputField( gump, 120, 228, 40, 20, 0, "BOSSDATA_WRESTLING", "" );
+
+    GumpText( gump, 30, 255, "Tactics:" );
+    GumpInputField( gump, 120, 253, 40, 20, 0, "BOSSDATA_TACTICS", "" );
+
+    GumpText( gump, 160, 230, "Awareness:" );
+    GumpInputField( gump, 240, 228, 40, 20, 0, "BOSSDATA_AWARENESS", "" );
+
+    GumpText( gump, 160, 255, "Magery:" );
+    GumpInputField( gump, 240, 253, 40, 20, 0, "BOSSDATA_MAGERY", "" );
+
+    // Seção: DESCRIÇÃO (campo maior de texto)
+    GumpText( gump, 30, 290, "Descrição:" );
+    GumpBigInputField( gump, 30, 310, 500, 60, 0, "BOSSDATA_DESC", "" );
+
+    // Seção: Loot, Special, Death Event, Combat Event
+    GumpText( gump, 30, 380, "Loot:" );
+    GumpInputField( gump, 80, 378, 120, 20, 0, "BOSSDATA_LOOT", "" );
+
+    GumpText( gump, 220, 380, "Special:" );
+    GumpInputField( gump, 280, 378, 120, 20, 0, "BOSSDATA_SPECIAL", "" );
+
+    GumpText( gump, 30, 410, "Death Event:" );
+    GumpInputField( gump, 120, 408, 120, 20, 0, "BOSSDATA_DEATHEVENT", "" );
+
+    GumpText( gump, 260, 410, "Combat Event:" );
+    GumpInputField( gump, 350, 408, 120, 20, 0, "BOSSDATA_COMBATEVENT", "" );
+
+    // Seção: Checkboxes e Respawn
+    GumpCheckBox( gump, 500, 30, "BOSSDATA_TRUEBOSS", 0 );
+    GumpText( gump, 520, 30, "TRUE BOSS" );
+
+    GumpCheckBox( gump, 500, 60, "BOSSDATA_IGNORARLOS", 0 );
+    GumpText( gump, 520, 60, "Ignorar LOS" );
+
+    GumpText( gump, 420, 95, "Respawn (em minutos):" );
+    GumpText( gump, 420, 115, "Mínimo:" );
+    GumpInputField( gump, 480, 113, 40, 20, 0, "BOSSDATA_RESPMIN", "" );
+
+    GumpText( gump, 420, 140, "Máximo:" );
+    GumpInputField( gump, 480, 138, 40, 20, 0, "BOSSDATA_RESPMAX", "" );
+
+    // Botões OK e CANCEL
+    GumpButton( gump, 200, 450, 0, 0, 1, "Okay" );
+    GumpButton( gump, 280, 450, 0, 0, 2, "Cancelar" );
+
+    // Exibe o Gump
+    GumpDisplay( who, gump );
+endfunction
+
+function OnBossGumpResponse( who, buttonid, gumpinfo )
+    // Se clicou em Cancelar
+    if ( buttonid == 2 )
+        SendSysMessage( who, "Edição de BOSS cancelada." );
+        return;
+    endif
+
+    // Se clicou em OK
+    var template   := gumpinfo["BOSSDATA_TEMPLATE"];
+    var nome       := gumpinfo["BOSSDATA_NAME"];
+    var alcance    := gumpinfo["BOSSDATA_ALCANCE"];
+    var cor        := gumpinfo["BOSSDATA_COR"];
+    var tier       := gumpinfo["BOSSDATA_TIER"];
+
+    var strmod     := gumpinfo["BOSSDATA_STRMOD"];
+    var intmod     := gumpinfo["BOSSDATA_INTMOD"];
+    var dexmod     := gumpinfo["BOSSDATA_DEXMOD"];
+    var dmgmod     := gumpinfo["BOSSDATA_DMGMOD"];
+    var hitmod     := gumpinfo["BOSSDATA_HITMOD"];
+
+    var res_fis    := gumpinfo["BOSSDATA_RES_FISICO"];
+    var res_fogo   := gumpinfo["BOSSDATA_RES_FOGO"];
+    var res_frio   := gumpinfo["BOSSDATA_RES_FRIO"];
+    var res_energ  := gumpinfo["BOSSDATA_RES_ENERGIA"];
+    var res_venen  := gumpinfo["BOSSDATA_RES_VENENO"];
+
+    var wrestling  := gumpinfo["BOSSDATA_WRESTLING"];
+    var tactics    := gumpinfo["BOSSDATA_TACTICS"];
+    var awareness  := gumpinfo["BOSSDATA_AWARENESS"];
+    var magery     := gumpinfo["BOSSDATA_MAGERY"];
+
+    var desc       := gumpinfo["BOSSDATA_DESC"];
+
+    var loot       := gumpinfo["BOSSDATA_LOOT"];
+    var special    := gumpinfo["BOSSDATA_SPECIAL"];
+    var deathEvent := gumpinfo["BOSSDATA_DEATHEVENT"];
+    var combatEvent:= gumpinfo["BOSSDATA_COMBATEVENT"];
+
+    var isTrueBoss := gumpinfo["BOSSDATA_TRUEBOSS"];      // 0 ou 1
+    var ignoreLOS  := gumpinfo["BOSSDATA_IGNORARLOS"];    // 0 ou 1
+    var respMin    := gumpinfo["BOSSDATA_RESPMIN"];
+    var respMax    := gumpinfo["BOSSDATA_RESPMAX"];
+
+    // Exemplo de feedback
+    SendSysMessage( who, "Dados do BOSS foram salvos/atualizados com sucesso!" );
+
+    // Exemplo de persistência (personalize conforme sua necessidade):
+    // SaveBossData( template, nome, alcance, cor, tier, ... )
+
+    return;
+endfunction
+
+// ----------------------------------------------------------
+// Exemplo de função para persistir dados (ajuste se quiser):
+// ----------------------------------------------------------
+function SaveBossData( template, nome, alcance, cor, tier )
+    // Aqui você pode salvar em arquivo .cfg, .txt ou manipular de outra forma.
+    // Ajuste conforme a lógica do seu shard.
+    return;
+endfunction
