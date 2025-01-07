@@ -664,8 +664,9 @@ function FleeFrom(opponent)
 endfunction
 
 function EnableMainEvents()
+    DisableEvents(SYSEVENT_OPPONENT_MOVED); // Explicitly disable opponent movement events
     EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-    EnableEvents(EVID_TAUNT + SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
+    EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
 endfunction
 
 function CanFight(attacker, defender)
