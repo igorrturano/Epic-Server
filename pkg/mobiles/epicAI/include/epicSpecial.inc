@@ -579,3 +579,90 @@ function Bite(me, opponent)
     SetCooldown(me, "bite_cooldown", cd);
     return 1;
 endfunction
+
+function HandleAmbush(me, opponent)
+    // Only some monsters will ambush - 30% chance or 70% if in swamp water
+    var chance := 30;
+    if (inSwampWater(me))
+        chance += 40;
+    endif
+
+    if (RandomInt(100) > chance)
+        return 0;
+    endif
+    
+    // Don't ambush if already in combat
+    if (me.opponent || GetObjProperty(me, "#inambush"))
+        return 0;
+    endif
+
+    // Set hidden state
+    GrantPrivilege(me, "hiddenattack");
+    me.enable("hiddenattack");
+    me.hidden := 1;
+    
+    // Mark that we're in ambush mode
+    SetObjProperty(me, "#inambush", 1);
+    
+    // Distance at which ambush triggers
+    const AMBUSH_DISTANCE := 3;
+    
+    // Wait for opponent to get close enough or max 30 seconds
+    var wait_time := 0;
+    var check_frequency := 2; // Check every 2 seconds
+    const MAX_WAIT := 30; // Maximum 30 seconds wait
+    
+    while (wait_time < MAX_WAIT)
+        // Break ambush if monster takes damage
+        if (!me.hidden)
+            EraseObjProperty(me, "#inambush");
+            return 0;
+        endif
+        
+        var dist := Distance(me, opponent);
+        
+        // When target gets close enough, ambush!
+        if (dist <= AMBUSH_DISTANCE)
+            MoveObjectToLocation(me, opponent.x, opponent.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
+            me.hidden := 0;
+            PrintText(me, "*emboscada*");
+            
+            // Set up advantage hits
+            SetObjProperty(me, "backstab", 1);
+            SetObjProperty(me.weapon, "backstab", 1);
+            
+            // Attack with advantage
+            me.attack_once(opponent);
+            
+            // Clean up properties
+            EraseObjProperty(me, "#inambush");
+            EraseObjProperty(me, "backstab");
+            EraseObjProperty(me.weapon, "backstab");
+            
+            return 1;
+        endif
+        
+        sleep(check_frequency);
+        wait_time += check_frequency;
+    endwhile
+    
+    // If we waited too long, clear ambush state
+    me.hidden := 0;
+    EraseObjProperty(me, "#inambush");
+    
+    return 0;
+endfunction
+
+function inSwampWater(who)
+    var area := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+    var is_on_swamp := 0;
+
+    foreach swamp in area
+        if (Cint(swamp.objtype) >= 5850 && Cint(swamp.objtype) <= 5871)
+            is_on_swamp := 1;
+            break;
+        endif
+    endforeach
+
+    return is_on_swamp;
+endfunction
