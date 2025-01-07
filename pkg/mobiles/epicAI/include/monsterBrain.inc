@@ -430,6 +430,10 @@ function HandleCombatEvent(opponent, is_ranged)
         Bite(me, opponent);
     endif
 
+    if (me.CanTongueGrab())
+        TongueGrab(me, opponent);
+    endif
+
     return 1;
 endfunction
 

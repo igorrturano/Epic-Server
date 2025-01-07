@@ -666,3 +666,93 @@ function inSwampWater(who)
 
     return is_on_swamp;
 endfunction
+
+function TongueGrab(toad, opponent)
+    if (GetCooldown(toad, "tongue_grab"))
+        return 0;
+    endif
+
+    const TONGUE_RANGE := 5;
+    var dist := Distance(toad, opponent);
+    
+    // Check if in range and LoS
+    if (!(dist >= 3 && dist <= TONGUE_RANGE) || !CheckLineOfSight(toad, opponent))
+        return 0;
+    endif
+    
+    // Animation and sound effects
+    PrintText(toad, "*dispara a língua*");
+    PlayAttackAnimation(toad);
+    PlaySoundEffect(toad, 0x2b2); //slurp sound
+    
+    // Create tongue effect from toad to player
+    PlayMovingEffectXYZ(toad.x, toad.y, toad.z+5, 
+                      opponent.x, opponent.y, opponent.z+5,
+                      0x0F51, 8, 0, 0, toad.realm); //red line effect
+    
+    // Initial resistance check
+    if (CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+        PrintText(opponent, "*desvia da língua*");
+        SetCooldown(toad, "tongue_grab", 10);
+        return 0;
+    endif
+    
+    // Success! Start dragging animation
+    PrintText(opponent, "*preso pela língua*");
+    opponent.frozen := 1;
+    
+    // Store original position to move back
+    var original_x := opponent.x;
+    var original_y := opponent.y;
+    var original_z := opponent.z;
+    
+    // Calculate steps needed
+    var steps := dist;
+    var dx := CInt((toad.x - opponent.x) / steps);
+    var dy := CInt((toad.y - opponent.y) / steps);
+    
+    var success := 1;
+    
+    // Move one tile at a time towards the toad
+    for i := 1 to steps
+        // Check if either creature died/disconnected
+        if (opponent.dead || toad.dead)
+            success := 0;
+            break;
+        endif
+        
+        // Try to move player
+        var new_x := original_x + (dx * i);
+        var new_y := original_y + (dy * i);
+        var new_z := GetWorldHeight(new_x, new_y, opponent.realm);
+        
+        // Move and animation
+        MoveObjectToLocation(opponent, new_x, new_y, new_z, opponent.realm, MOVEOBJECT_FORCELOCATION);
+        PlayMovingEffectXYZ(toad.x, toad.y, toad.z+5, 
+                          new_x, new_y, new_z+5,
+                          0x0F51, 8, 0, 0, toad.realm);
+        
+        // Per-tile resistance check (20% chance)
+        if (RandomInt(100) < 20)
+            if (CheckResist(opponent, FORTITUDE, RESIST_MEDIUM))
+                PrintText(opponent, "*se liberta*");
+                success := 0;
+                break;
+            endif
+        endif
+        
+        sleep(1);
+    endfor
+
+    opponent.frozen := 0;
+    if (success)
+        // Final grab damage
+        var raw_dmg := RandomDiceRoll("2d6");
+        DamageFLS(opponent, raw_dmg, DMG_PHYSICAL, toad);
+        PrintText(toad, "*engole " + opponent.name + "*");
+        TS_StartTimer(opponent, "paralysis", 5);
+    endif
+    
+    SetCooldown(toad, "tongue_grab", 15);
+    return 1;
+endfunction

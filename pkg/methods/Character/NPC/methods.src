@@ -150,3 +150,12 @@ exported function CanAmbush(who)
     return 0;
 
 endfunction
+
+exported function CanTongueGrab(who)
+    var templates := array{"", "gianttoad", ""};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
