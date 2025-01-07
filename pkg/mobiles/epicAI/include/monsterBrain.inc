@@ -7,7 +7,7 @@ include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 
 var me := Self();
-const AREA_SIZE := 16;
+const AREA_SIZE := 18;
 var combat_cooldown := 0;
 
 function MonsterBrain()
@@ -752,6 +752,10 @@ function HandleEnteredArea(source, is_ranged)
 
     if (me.hasTunnelTactics())
         TunnelTactics(me, source);
+    endif
+
+    if (me.CanAmbush())
+        HandleAmbush(me, source);
     endif
 
     HandleCombatEvent(source, is_ranged);

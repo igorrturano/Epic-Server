@@ -140,3 +140,13 @@ exported function isReptoide(who)
     
     return 0;
 endfunction
+
+exported function CanAmbush(who)
+    var templates := array{"bocudo", "reptoide1", ""};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+
+endfunction
