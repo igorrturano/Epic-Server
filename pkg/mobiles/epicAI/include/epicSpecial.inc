@@ -513,40 +513,6 @@ function doConfusion(opponent)
     return 1;
 endfunction
 
-function SpearThrow(attacker, defender)
-   if (!CheckLineOfSight(attacker, defender))
-      return 0;
-   endif
-   
-   if (GetCooldown(attacker, "throw_cooldown") > 0)
-      return 0;
-   endif
-
-   SetCooldown(attacker, "throw_cooldown", 150);
-
-   PrintTextAbove(attacker, "*arremessa*");
-   var throwItem := GetObjProperty(attacker, "throwItem");
-   PlayAttackAnimation(attacker);
-   sleepms(500);
-   PlayMovingEffectXYZHued(attacker, defender, throwItem, 5, 1, 0, 0, 0);
-   if (attacker.isLizardMan()) attacker.graphic := 0x21; endif
-
-   var the_spear := CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throwItem, 1, defender.realm);
-   var spear_dmg := "1d6";
-   if (!CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
-        if(defender.shield)
-            MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
-            TS_StartTimer(defender, "desarmar", 15);
-        else
-            TS_StartTimer(defender, "tombar", 5);
-            TS_StartTimer(defender, "lentidao", 20);
-            DamageFLS(defender, spear_dmg, DMG_FORCED, me);
-        endif
-   endif
-
-   return 1;
-endfunction
-
 function Bite(me, opponent)
     if (GetCooldown(me, "bite_cooldown") > 0)
         return 0;
@@ -755,4 +721,105 @@ function TongueGrab(toad, opponent)
     
     SetCooldown(toad, "tongue_grab", 15);
     return 1;
+endfunction
+
+function ThrowSpecial(attacker, defender)
+   if (!CanThrow(attacker, defender))
+      return 0;
+   endif
+
+   var throw_info := GetThrowInfo(attacker);
+   if (!throw_info)
+      return 0;
+   endif
+
+   // Set cooldown immediately after validation
+   SetCooldown(attacker, "throw_cooldown", throw_info.cooldown);
+
+   PlayThrowAnimation(attacker);
+   CreateThrowEffect(attacker, defender, throw_info);
+   ApplyThrowEffect(attacker, defender, throw_info);
+
+   return 1;
+endfunction
+
+function CanThrow(attacker, defender)
+   if (!CheckLineOfSight(attacker, defender))
+      return 0;
+   endif
+   
+   if (GetCooldown(attacker, "throw_cooldown") > 0)
+      return 0;
+   endif
+
+   var dist := Distance(attacker, defender);
+   if (dist < 2 || dist > 12)
+      return 0;
+   endif
+
+   return 1;
+endfunction
+
+function GetThrowInfo(attacker)
+   var throw_item := GetObjProperty(attacker, "throwItem");
+   if (!throw_item)
+      return 0;
+   endif
+
+   var throw_info := struct{
+      "graphic" := throw_item,
+      "dmg" := "1d6",
+      "cooldown" := 15,
+      "effects" := array{}
+   };
+
+   case (throw_item)
+      0x995b: // Toxic waste
+         throw_info.cooldown := 30;
+         throw_info.effects.append("apodrecer");
+      0x1402: // Spear
+         throw_info.effects.append("desarmar");
+         throw_info.effects.append("tombar");
+         throw_info.effects.append("lentidao");
+         throw_info.cooldown := 150;
+   endcase
+
+   return throw_info;
+endfunction
+
+function PlayThrowAnimation(attacker)
+   PrintTextAbove(attacker, "*arremessa*");
+   PlayAttackAnimation(attacker);
+   if (attacker.isLizardMan()) 
+      attacker.graphic := 0x21;
+   endif
+endfunction
+
+function CreateThrowEffect(attacker, defender, throw_info)
+   PlayMovingEffectXYZHued(attacker, defender, throw_info.graphic, 5, 1, 0, 0, 0);
+   CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throw_info.graphic, 1, defender.realm);
+endfunction
+
+function ApplyThrowEffect(attacker, defender, throw_info)
+   if (CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
+      return 0;
+   endif
+
+   foreach effect in (throw_info.effects)
+      case (effect)
+         "apodrecer": TS_StartTimer(defender, "apodrecer", 20); break;
+         "desarmar": 
+            if (defender.shield)
+               MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+               TS_StartTimer(defender, "desarmar", 15);
+            endif
+            break;
+         "tombar": TS_StartTimer(defender, "tombar", 5); break;
+         "lentidao": TS_StartTimer(defender, "lentidao", 20); break;
+      endcase
+   endforeach
+
+   DamageFLS(defender, throw_info.dmg, DMG_FORCED, attacker);
+
+   return 1;
 endfunction
