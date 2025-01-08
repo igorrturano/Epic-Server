@@ -115,12 +115,15 @@ exported function isLizardMan(who)
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
+
     return 0;
 endfunction
 
-exported function canThrowSpear(who)
+exported function canThrow(who)
+    var templates := array{"swampmonster", "lizardman2"};
+
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
-    if (template == "lizardman2") return 1; endif
+    if (template in templates) return 1; endif
 
     return 0;
 endfunction
@@ -134,6 +137,25 @@ endfunction
 
 exported function isReptoide(who)
     var templates := array{"reptoide1", "reptoide2", "reptoide3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function CanAmbush(who)
+    var templates := array{"bocudo", "reptoide1", "swampsqualid"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+
+endfunction
+
+exported function CanTongueGrab(who)
+    var templates := array{"", "gianttoad", ""};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
