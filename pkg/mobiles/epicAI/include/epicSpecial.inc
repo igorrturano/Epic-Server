@@ -513,40 +513,6 @@ function doConfusion(opponent)
     return 1;
 endfunction
 
-function SpearThrow(attacker, defender)
-   if (!CheckLineOfSight(attacker, defender))
-      return 0;
-   endif
-   
-   if (GetCooldown(attacker, "throw_cooldown") > 0)
-      return 0;
-   endif
-
-   SetCooldown(attacker, "throw_cooldown", 150);
-
-   PrintTextAbove(attacker, "*arremessa*");
-   var throwItem := GetObjProperty(attacker, "throwItem");
-   PlayAttackAnimation(attacker);
-   sleepms(500);
-   PlayMovingEffectXYZHued(attacker, defender, throwItem, 5, 1, 0, 0, 0);
-   if (attacker.isLizardMan()) attacker.graphic := 0x21; endif
-
-   var the_spear := CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throwItem, 1, defender.realm);
-   var spear_dmg := "1d6";
-   if (!CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
-        if(defender.shield)
-            MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
-            TS_StartTimer(defender, "desarmar", 15);
-        else
-            TS_StartTimer(defender, "tombar", 5);
-            TS_StartTimer(defender, "lentidao", 20);
-            DamageFLS(defender, spear_dmg, DMG_FORCED, me);
-        endif
-   endif
-
-   return 1;
-endfunction
-
 function Bite(me, opponent)
     if (GetCooldown(me, "bite_cooldown") > 0)
         return 0;
@@ -578,4 +544,282 @@ function Bite(me, opponent)
 
     SetCooldown(me, "bite_cooldown", cd);
     return 1;
+endfunction
+
+function HandleAmbush(me, opponent)
+    // Only some monsters will ambush - 30% chance or 70% if in swamp water
+    var chance := 30;
+    if (inSwampWater(me))
+        chance += 40;
+    endif
+
+    if (RandomInt(100) > chance)
+        return 0;
+    endif
+    
+    // Don't ambush if already in combat
+    if (me.opponent || GetObjProperty(me, "#inambush"))
+        return 0;
+    endif
+
+    // Set hidden state
+    GrantPrivilege(me, "hiddenattack");
+    me.enable("hiddenattack");
+    me.hidden := 1;
+    
+    // Mark that we're in ambush mode
+    SetObjProperty(me, "#inambush", 1);
+    
+    // Distance at which ambush triggers
+    const AMBUSH_DISTANCE := 3;
+    
+    // Wait for opponent to get close enough or max 30 seconds
+    var wait_time := 0;
+    var check_frequency := 2; // Check every 2 seconds
+    const MAX_WAIT := 30; // Maximum 30 seconds wait
+    
+    while (wait_time < MAX_WAIT)
+        // Break ambush if monster takes damage
+        if (!me.hidden)
+            EraseObjProperty(me, "#inambush");
+            return 0;
+        endif
+        
+        var dist := Distance(me, opponent);
+        
+        // When target gets close enough, ambush!
+        if (dist <= AMBUSH_DISTANCE)
+            MoveObjectToLocation(me, opponent.x, opponent.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
+            me.hidden := 0;
+            PrintText(me, "*emboscada*");
+            
+            // Set up advantage hits
+            SetObjProperty(me, "backstab", 1);
+            SetObjProperty(me.weapon, "backstab", 1);
+            
+            // Attack with advantage
+            me.attack_once(opponent);
+            
+            // Clean up properties
+            EraseObjProperty(me, "#inambush");
+            EraseObjProperty(me, "backstab");
+            EraseObjProperty(me.weapon, "backstab");
+            
+            return 1;
+        endif
+        
+        sleep(check_frequency);
+        wait_time += check_frequency;
+    endwhile
+    
+    // If we waited too long, clear ambush state
+    me.hidden := 0;
+    EraseObjProperty(me, "#inambush");
+    
+    return 0;
+endfunction
+
+function inSwampWater(who)
+    var area := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+    var is_on_swamp := 0;
+
+    foreach swamp in area
+        if (Cint(swamp.objtype) >= 5850 && Cint(swamp.objtype) <= 5871)
+            is_on_swamp := 1;
+            break;
+        endif
+    endforeach
+
+    return is_on_swamp;
+endfunction
+
+function TongueGrab(toad, opponent)
+    if (GetCooldown(toad, "tongue_grab"))
+        return 0;
+    endif
+
+    const TONGUE_RANGE := 5;
+    var dist := Distance(toad, opponent);
+    
+    // Check if in range and LoS
+    if (!(dist >= 3 && dist <= TONGUE_RANGE) || !CheckLineOfSight(toad, opponent))
+        return 0;
+    endif
+    
+    // Animation and sound effects
+    PrintText(toad, "*dispara a língua*");
+    PlayAttackAnimation(toad);
+    PlaySoundEffect(toad, 0x2b2); //slurp sound
+    
+    // Create tongue effect from toad to player
+    PlayMovingEffectXYZ(toad.x, toad.y, toad.z+5, 
+                      opponent.x, opponent.y, opponent.z+5,
+                      0x0F51, 8, 0, 0, toad.realm); //red line effect
+    
+    // Initial resistance check
+    if (CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+        PrintText(opponent, "*desvia da língua*");
+        SetCooldown(toad, "tongue_grab", 10);
+        return 0;
+    endif
+    
+    // Success! Start dragging animation
+    PrintText(opponent, "*preso pela língua*");
+    opponent.frozen := 1;
+    
+    // Store original position to move back
+    var original_x := opponent.x;
+    var original_y := opponent.y;
+    var original_z := opponent.z;
+    
+    // Calculate steps needed
+    var steps := dist;
+    var dx := CInt((toad.x - opponent.x) / steps);
+    var dy := CInt((toad.y - opponent.y) / steps);
+    
+    var success := 1;
+    
+    // Move one tile at a time towards the toad
+    for i := 1 to steps
+        // Check if either creature died/disconnected
+        if (opponent.dead || toad.dead)
+            success := 0;
+            break;
+        endif
+        
+        // Try to move player
+        var new_x := original_x + (dx * i);
+        var new_y := original_y + (dy * i);
+        var new_z := GetWorldHeight(new_x, new_y, opponent.realm);
+        
+        // Move and animation
+        MoveObjectToLocation(opponent, new_x, new_y, new_z, opponent.realm, MOVEOBJECT_FORCELOCATION);
+        PlayMovingEffectXYZ(toad.x, toad.y, toad.z+5, 
+                          new_x, new_y, new_z+5,
+                          0x0F51, 8, 0, 0, toad.realm);
+        
+        // Per-tile resistance check (20% chance)
+        if (RandomInt(100) < 20)
+            if (CheckResist(opponent, FORTITUDE, RESIST_MEDIUM))
+                PrintText(opponent, "*se liberta*");
+                success := 0;
+                break;
+            endif
+        endif
+        
+        sleep(1);
+    endfor
+
+    opponent.frozen := 0;
+    if (success)
+        // Final grab damage
+        var raw_dmg := RandomDiceRoll("2d6");
+        DamageFLS(opponent, raw_dmg, DMG_PHYSICAL, toad);
+        PrintText(toad, "*engole " + opponent.name + "*");
+        TS_StartTimer(opponent, "paralysis", 5);
+    endif
+    
+    SetCooldown(toad, "tongue_grab", 15);
+    return 1;
+endfunction
+
+function ThrowSpecial(attacker, defender)
+   if (!CanThrow(attacker, defender))
+      return 0;
+   endif
+
+   var throw_info := GetThrowInfo(attacker);
+   if (!throw_info)
+      return 0;
+   endif
+
+   // Set cooldown immediately after validation
+   SetCooldown(attacker, "throw_cooldown", throw_info.cooldown);
+
+   PlayThrowAnimation(attacker);
+   CreateThrowEffect(attacker, defender, throw_info);
+   ApplyThrowEffect(attacker, defender, throw_info);
+
+   return 1;
+endfunction
+
+function CanThrow(attacker, defender)
+   if (!CheckLineOfSight(attacker, defender))
+      return 0;
+   endif
+   
+   if (GetCooldown(attacker, "throw_cooldown") > 0)
+      return 0;
+   endif
+
+   var dist := Distance(attacker, defender);
+   if (dist < 2 || dist > 12)
+      return 0;
+   endif
+
+   return 1;
+endfunction
+
+function GetThrowInfo(attacker)
+   var throw_item := GetObjProperty(attacker, "throwItem");
+   if (!throw_item)
+      return 0;
+   endif
+
+   var throw_info := struct{
+      "graphic" := throw_item,
+      "dmg" := "1d6",
+      "cooldown" := 15,
+      "effects" := array{}
+   };
+
+   case (throw_item)
+      0x995b: // Toxic waste
+         throw_info.cooldown := 30;
+         throw_info.effects.append("apodrecer");
+      0x1402: // Spear
+         throw_info.effects.append("desarmar");
+         throw_info.effects.append("tombar");
+         throw_info.effects.append("lentidao");
+         throw_info.cooldown := 150;
+   endcase
+
+   return throw_info;
+endfunction
+
+function PlayThrowAnimation(attacker)
+   PrintTextAbove(attacker, "*arremessa*");
+   PlayAttackAnimation(attacker);
+   if (attacker.isLizardMan()) 
+      attacker.graphic := 0x21;
+   endif
+endfunction
+
+function CreateThrowEffect(attacker, defender, throw_info)
+   PlayMovingEffectXYZHued(attacker, defender, throw_info.graphic, 5, 1, 0, 0, 0);
+   CreateItemAtLocation(defender.x, defender.y, GetMapInfo(defender.x, defender.y).z, throw_info.graphic, 1, defender.realm);
+endfunction
+
+function ApplyThrowEffect(attacker, defender, throw_info)
+   if (CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
+      return 0;
+   endif
+
+   foreach effect in (throw_info.effects)
+      case (effect)
+         "apodrecer": TS_StartTimer(defender, "apodrecer", 20); break;
+         "desarmar": 
+            if (defender.shield)
+               MoveObjectToLocation(defender.shield, defender.x, defender.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+               TS_StartTimer(defender, "desarmar", 15);
+            endif
+            break;
+         "tombar": TS_StartTimer(defender, "tombar", 5); break;
+         "lentidao": TS_StartTimer(defender, "lentidao", 20); break;
+      endcase
+   endforeach
+
+   DamageFLS(defender, throw_info.dmg, DMG_FORCED, attacker);
+
+   return 1;
 endfunction

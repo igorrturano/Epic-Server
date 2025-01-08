@@ -7,7 +7,7 @@ include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 
 var me := Self();
-const AREA_SIZE := 16;
+const AREA_SIZE := 18;
 var combat_cooldown := 0;
 
 function MonsterBrain()
@@ -430,6 +430,10 @@ function HandleCombatEvent(opponent, is_ranged)
         Bite(me, opponent);
     endif
 
+    if (me.CanTongueGrab())
+        TongueGrab(me, opponent);
+    endif
+
     return 1;
 endfunction
 
@@ -443,9 +447,9 @@ function PursueTarget(opponent)
         endif
     endif
 
-    if (me.canThrowSpear())
+    if (me.canThrow())
         if (dist >= 2 && dist <= 12)
-            SpearThrow(me, opponent);
+            ThrowSpecial(me, opponent);
         endif
     endif
 
@@ -531,29 +535,55 @@ function shouldKeepPursuing(opponent, dist)
         return 0;
     endif
 
+    // If we're in melee range and can see opponent, stop pursuing
+    if (dist <= 1 && CheckLineOfSight(me, opponent))
+        return 0;
+    endif
+
+    // Prevent flee spam by adding a cooldown
+    if (GetCooldown(me, "flee_check"))
+        return 1; // Continue pursuing if on cooldown
+    endif
+    var npcState := getNPCState(me);
+    var cd := 15;
+    
+    if (npcState == "dying")
+        cd := 5;
+    endif
+
+    SetCooldown(me, "flee_check", cd);
     var allies := GetNearbyAllies(me);
     if (allies.size() > 0)
         if (!GetCooldown(me, "allies"))
-            // Guarda o número inicial de aliados
             SetObjProperty(me, "initial_allies", allies.size());
             SetCooldown(me, "allies", 15);
         endif
 
         var initial_allies := GetObjProperty(me, "initial_allies");
-        // Se o número atual de aliados for menor que metade do inicial
+        var already_fighting := GetObjProperty(me, "already_fighting");
+        
+        // Only consider fleeing if we've lost allies
         if (initial_allies && allies.size() <= CInt(initial_allies/2))
-            PrintTextAbove(me, "*"+me.name+" recua*");
-            FleeFrom(opponent);
+            // Don't flee if already engaged unless heavily outnumbered
+            if (!already_fighting || ListHostiles(me, 3).size() >= allies.size() * 2)
+                // Higher chance to flee when heavily damaged
+                var flee_chance := (npcState == "dying") ? 40 : 15;
+                
+                if (RandomInt(100) < flee_chance)
+                    PrintTextAbove(me, "*"+me.name+" recua*");
+                    FleeFrom(opponent);
+                    return 0;  // Added return 0 after fleeing
+                endif
+            endif
+        endif
+    else
+        // If alone, don't pursue new targets but stay if already fighting
+        if (!GetObjProperty(me, "already_fighting"))
             return 0;
         endif
     endif
 
-    // If we're in melee range and can see opponent, no need to move
-    if (dist <= 1 && CheckLineOfSight(me, opponent))
-        return 0;
-    endif
-
-    return 1;
+    return 1;  // Continue pursuing if none of the above conditions are met
 endfunction
 
 function PerformRangedAttack(opponent)
@@ -664,8 +694,9 @@ function FleeFrom(opponent)
 endfunction
 
 function EnableMainEvents()
+    DisableEvents(SYSEVENT_OPPONENT_MOVED); // Explicitly disable opponent movement events
     EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-    EnableEvents(EVID_TAUNT + SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
+    EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
 endfunction
 
 function CanFight(attacker, defender)
@@ -725,6 +756,10 @@ function HandleEnteredArea(source, is_ranged)
 
     if (me.hasTunnelTactics())
         TunnelTactics(me, source);
+    endif
+
+    if (me.CanAmbush())
+        HandleAmbush(me, source);
     endif
 
     HandleCombatEvent(source, is_ranged);
