@@ -1,5 +1,6 @@
 use uo;
 use util;
+use Math;
 
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
@@ -63,4 +64,30 @@ function join( a_array, delimiter )
   endfor
 
   return result;
+endfunction
+
+function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,multiplicadorFinal := 100)
+
+	var gaussianas := array; 
+	var total := 0;
+	foreach x in valoresEixoX
+		var gaussiana := CalcularGaussiana(x,pico,declinio);
+		total += gaussiana;
+		gaussianas.append(gaussiana);
+		Sleepms(2);
+	endforeach
+
+	var normalizados := array;
+	//normaliza os valores para que a somatória dos valores de y(chance) ao longo do eixo x, não ultrapasse 100.
+	foreach gaussiana in gaussianas
+		normalizados.append(Floor((gaussiana/total) * multiplicadorFinal)); 
+		Sleepms(2);
+	endforeach;
+	
+	return normalizados;
+
+endfunction
+
+function CalcularGaussiana(x,pico,declinio)
+	return 100 * Pow(ConstE(),(-declinio * Pow(x - pico, 2)));
 endfunction

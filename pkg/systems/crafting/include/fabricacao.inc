@@ -1,6 +1,7 @@
 use Math;
 
 include "/include/epicConstants";
+include "include/epicUtils";
 include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/itensComplexosGump";
@@ -69,47 +70,54 @@ function PreparaItensComplexosGump(quem, profissao)
 endfunction
 
 // TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-// TODO puxar o calculo das chances pra antes do calculo de qualidade, para evitar overhead.
-function CalculaQualidadeComponentes(componente,valorPericia) 
-	var	pico := valorPericia / 20;
-	var	chances := DistribuicaoGaussianaNormalizada({1,2,3,4,5},pico,1);
+function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico := -1) 
+	
+	if(quantidade == error || quantidade.size() == 0)
+		return error{"errortext":="O parâmentro componentes é obrigatório"};
+	endif
 
-	foreach chance in chances
+	var	pico := valorPericia / 20;
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},pico + deslocamentoPico,1.4);
+	var retorno := dictionary;
+
+	//Print("Chances: "  + chancesPorTier);
+	for i:=1 to quantidade
+		var isFalhouTudo := true;
 		var rolagem := RandomFloat(100.0);
-		if (rolagem <= chance)
-			return _chance_iter; //nível da qualidade
+		var chanceAcumulada := 0;
+
+		foreach chance in chancesPorTier
+			chanceAcumulada += chance;
+			//Print("Chance Tier " + _chance_iter + ": " + chance);
+			//Print("rolagem: " + rolagem + " chance: " + chanceAcumulada);
+			if (rolagem <= chanceAcumulada)
+				
+				isFalhouTudo := false;
+				if(retorno.exists(_chance_iter)) // popula o dict de retono com chave=tier e valor=quantidade de itens nesse tier.
+					retorno[_chance_iter] += 1;
+				else
+					retorno.insert(_chance_iter,1);
+				endif
+				break;
+			endif
+			Sleepms(2);
+		endforeach
+
+		if(isFalhouTudo)
+			if(retorno.exists(1))
+				retorno[1] += 1;
+			else
+				retorno.insert(1,1);
+			endif
 		endif
 		Sleepms(2);
-	endforeach
+	endfor
+	return retorno;
 
-	return 1;
 endfunction
 
 //fução do sino.
-function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio)
 
-	var gaussianas := array; 
-	var total := 0;
-	foreach x in valoresEixoX
-		var gaussiana := CalcularGaussiana(x,pico,declinio);
-		total += gaussiana;
-		gaussianas.append(gaussiana);
-		Sleepms(2);
-	endforeach
-
-	var normalizados := array;
-	foreach valor in gaussianas
-		normalizados.append((valor/total) * 100);
-		Sleepms(2);
-	endforeach;
-	
-	return normalizados;
-
-endfunction
-
-function CalcularGaussiana(x,pico,declinio)
-	return 100 * Pow(ConstE(),(-declinio * Pow(x - pico, 2)));
-endfunction
 
 function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 
@@ -188,6 +196,17 @@ function MontaInfoItem(quem,objtype)
 	return infoItem;
 
 endfunction
+
+/* preciso dessa função mesmo??
+function PegaNomeComponenteQualidade(tier)
+	case (tier)
+		MEDIOCRE: return "mediocre";
+		COMUM: return "comum";
+
+
+	endcase
+endfunction
+*/
 
 function PegaTextoDescItem(quem,objtype,definicaoItem)
 

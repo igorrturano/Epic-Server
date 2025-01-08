@@ -5,6 +5,7 @@ use util;
 include ":gumps:gumps";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
+include ":crafting:include/fabricacao";
 
 
 var cfgRecursos := ReadConfigFile(":crafting:config/resourceList");
@@ -21,7 +22,7 @@ var CATALOGO_LOG_PRA_TABUA := dictionary {
         "0xee40" -> 0xef2a,
         "0xee3d" -> 0xee73,
         "0xee3e" -> 0x615b,
-        "0x1bdd" -> 0x1bd7
+        "0x1bdd" -> 0x1bd7 //madeira
         };
 
 program usar_serra(who, item)
@@ -84,8 +85,6 @@ function OpenMenuLog(who, targetted)
 
     var retv := GFSendGump(who, sawgump );
 
-    Print(CATALOGO_LOG_PRA_TABUA);
-
     if ( retv[0] == 1 )
         return 0;
     elseif ( retv[0] == 2 )
@@ -141,6 +140,7 @@ function MakeCaboSerra(who, item, materialId)
     var cabo := 0xee71;
 	var characterx := who.x;
 	var charactery := who.y;
+    var periciaCarpentry := AP_GetSkill(who, "Wood_Working");
 
     PrintTextAbove(who, "*começa a serrar madeira*");
 	repeat
@@ -148,10 +148,19 @@ function MakeCaboSerra(who, item, materialId)
             return 0;
         else
             MakeSerraEfect(who);
-            var caboPronto := CreateItemInContainer (who.backpack, cabo, item.amount);
-            SetObjProperty(caboPronto, "material",materialId);
-            caboPronto.color := cfgRecursos[materialId].Color;
-            SubtractAmount(item, item.amount);
+            var qualidades := DistribuiQualidadeComponentes(item.amount,periciaCarpentry);
+            Print("Quantidade: " + item.amount);
+            Print(qualidades);
+            foreach qualidade in (qualidades.keys())
+                var descriptor := GetItemDescriptor(CInt(cabo));
+                descriptor.CProps.insert("material",materialId);
+                descriptor.CProps.insert("tierComponente",qualidade);
+                descriptor.color := cfgRecursos[materialId].Color;
+
+                CreateItemInBackpack(who,descriptor,cint(qualidades[qualidade]));
+                SubtractAmount(item, cint(qualidades[qualidade]));
+                Sleepms(2);
+            endforeach
         endif
     until ((who.x != characterx || who.y != charactery));
 endfunction
