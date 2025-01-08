@@ -447,9 +447,9 @@ function PursueTarget(opponent)
         endif
     endif
 
-    if (me.canThrowSpear())
+    if (me.canThrow())
         if (dist >= 2 && dist <= 12)
-            SpearThrow(me, opponent);
+            ThrowSpecial(me, opponent);
         endif
     endif
 
