@@ -47,6 +47,10 @@ program SpellStarter(params)
         return 0;
     endif
 
+    if (!checkCastingSuccess(mobile, spellinfo, scroll))
+        return 0;
+    endif
+
     return finalizeCasting(mobile, spellinfo, targ, scroll);
 endprogram
 
@@ -382,29 +386,42 @@ function checkTargetValidity(mobile, targ, spellinfo)
         endif
     endif
 
+    if(Cint(GetObjProperty(mobile, "charmed_by")) == targ.serial)
+		PrintTextAbove(mobile, "*hipnotizado*");	
+		return 0;
+    endif
+
     return 1;
 endfunction
 
-function finalizeCasting(mobile, spellinfo, targ, scroll)
+function checkCastingSuccess(mobile, spellinfo, scroll)
     var attribute := MAGERY;
 	if (TemHabilidade(mobile, "Sensibilidade Arcana"))
 		attribute := MAGICLORE;
 	endif
 
     var difficulty := CInt(spellinfo.Difficulty);
-
     var skill_check := SkillCheck(mobile, attribute, difficulty);
+
+    // Chance to also up magic lore on cast
+    SkillCheck(mobile, MAGICLORE, difficulty);
 
     if (skill_check > 0)
         if (scroll.isA(POLCLASS_ITEM))
             consumeScroll(mobile, scroll);
         endif
-
-        CastSpell(mobile, spellinfo, targ);
-    else
-        handleFailedSpell(mobile, spellinfo);
+        
+        return 1;
     endif
 
+    CancelTarget( mobile );
+    handleFailedSpell(mobile, spellinfo);
+
+    return 0;
+endfunction
+
+function finalizeCasting(mobile, spellinfo, targ, scroll)
+    CastSpell(mobile, spellinfo, targ);
     EraseObjProperty(mobile, "#Casting");
     EraseObjProperty(mobile, "#CustoDeterminacaoArcana");
     return 1;

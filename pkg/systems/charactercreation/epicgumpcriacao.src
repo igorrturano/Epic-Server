@@ -30,7 +30,7 @@ program epicCreationGump(who)
     skillSelection(who, culture_pic);
     attributeSelection(who, culture_pic);
     religionSelection(who);
-    gameModeSelection(who);
+    // gameModeSelection(who);
     pathOfWisdom(who, culture_pic);
     languageSelection(who, culture_pic);
     itemInheritance(who);
@@ -724,12 +724,12 @@ function pathOfWisdom(who, culture_pic)
             var spellinfo := struct;
             spellinfo.+magic_path := "spellcaster";
             var chosenSpells := spellChoices(who);
-            var p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
-            spellinfo.+id := chosenSpells[1];
-            SetObjProperty(p1, "spellinfo", spellinfo);
-            p1 := CreateItemInBackpack(who, "pergaminhospellcaster1");
-            spellinfo.id := chosenSpells[2];
-            SetObjProperty(p1, "spellinfo", spellinfo);
+            foreach spell in chosenSpells
+                var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
+                spellinfo.id := spell.id;
+                spellinfo.school := spell.School;
+                SetObjProperty(scroll, "spellinfo", spellinfo);
+            endforeach
             break;
         elseif (btn_value == 202) 
             chardata.+wisdom_path := "Alquimista";

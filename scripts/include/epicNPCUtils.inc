@@ -33,6 +33,10 @@ function customizeNpc(mob, set_tier := "0")
 		AP_SetTrueSkill(mob, MAGICLORE, mob_skill);
 		skill_combat := MAGERY;
 		skill_support := MAGICLORE;
+	elseif(classe == LADINO)
+		AP_SetTrueSkill(mob, SNEAK, mob_skill);
+		AP_SetTrueSkill(mob, AWARENESS, mob_skill);
+		AP_SetTrueSkill(mob, PICKPOCKETING, mob_skill);
 	else
 		skill_combat := WRESTLING;
 		skill_support := TACTICS;
@@ -343,4 +347,56 @@ function endControlNPC(who)
 	RestartScript(who);
 
 	ErasePetMods(who);
+endfunction
+
+function isHurt(mobile)
+    if (AP_GetVital(mobile, HITS) / AP_GetVitalMaximumValue(mobile, HITS) < 0.70)
+        return 1;
+    endif
+    return 0;
+endfunction
+
+function StealCriticalFailure(mobile, targ)
+	if (mobile.hidden)
+		mobile.hidden := 0;
+	endif
+	SendSysMessageEx(mobile, "Voce chamou muita atencao!", SSM_FAIL);
+	if (TS_GetTimerInfo(targ, "sleep"))
+		SendSysMessageEx(mobile, "Voce acordou o alvo!", SSM_FAIL);
+		TS_LowerDuration(targ, "sleep", -1);
+	endif
+	var range := 25 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/5);
+
+	foreach player in ( ListMobilesInLineOfSight(targ, range) )
+		if ( player.npctemplate );
+		elseif ( player == mobile );
+		elseif ( player == targ );
+		elseif ( !IsBehind(player, targ.x, targ.y) )
+			SendSysMessageEx(player, "Voce nota "+mobile.name+" tentando roubar de "+targ.name+".", SSM_INFO);
+		endif
+		SleepMS(2);
+	endforeach
+
+	return 1;
+endfunction
+
+function getNpcResist()
+   // Get NPC configuration for spell difficulty
+   var npc_elem := NPC_GetNPCConfig(me);
+   var tier := CInt(npc_elem.Tier);
+   if (!tier)
+      tier := 1;
+   endif
+   
+   // Calculate spell difficulty based on tier
+   var diff := RESIST_EASY;
+   case (tier)
+      1: diff := RESIST_EASY;
+      2: diff := RESIST_MEDIUM;
+      3: diff := RESIST_HARD;
+      4: diff := RESIST_VERY_HARD;
+      5: diff := RESIST_EXTREMELY_HARD;
+   endcase
+
+    return diff;
 endfunction

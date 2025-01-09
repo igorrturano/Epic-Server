@@ -15,6 +15,17 @@ program control(altar)
         sleep(10);
     endwhile
 
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns)
+        globalSpawns := array{};
+    endif
+    
+    if (!(altar.serial in globalSpawns))
+        print(altar.serial);
+        globalSpawns.append(altar.serial);
+        SetGlobalProperty("epicSpawns", globalSpawns);
+    endif
+
     var mobsBySerial := dictionary{};
     var totalMobs := array{};
 

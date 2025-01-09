@@ -373,7 +373,28 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		defender.frozen := 0;
 	endif
 
+	// defender := defender;
 	return totaldamage;
+endfunction
+
+function hasAntiMountedWeapon(attacker, defender)
+	if (defender.warmode == 0)
+		return 0;
+	endif
+
+	var defenderHasAntiMountedWeapon := 0;
+	if (GetObjProperty(attacker, "charge_damage"))
+		var cfg := ReadConfigFile(":*:itemdesc");
+		var elem := FindConfigElem(cfg, defender.weapon.objtype);
+		var weapons_crits := GetconfigStringArray(elem, "HitScripts");
+		foreach crit in (weapons_crits)
+			if (crit == ":combat:weaponHitScripts/AntiMountedHit")
+				defenderHasAntiMountedWeapon := 1;
+			endif
+		endforeach
+	endif
+
+	return defenderHasAntiMountedWeapon;
 endfunction
 
 /**
@@ -593,7 +614,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	var armorResists := armor.getAttrBase();
 
 	case(type)
-		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
+		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod")); break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
 				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);
@@ -610,7 +631,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_BLUNT:
+		DMG_BLUNT:  
 			if (armorResists.BluntResist)
 				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
 			else
@@ -618,10 +639,10 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod); break;
-		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod); break;
-		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod); break;
-		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod); break;
+		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod) + Cint(GetObjProperty(defender,"fire_protection")); break;
+		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod) + Cint(GetObjProperty(defender, "cold_protection")); break;
+		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod) + Cint(GetObjProperty(defender, "energy_protection" )); break;
+		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod) + Cint(GetObjProperty(defender, "poison_protection")); break;
 	endcase
 
 	return CInt(resist);
@@ -690,8 +711,36 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
 			endif
 		endif
+		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
+			EraseObjProperty(attacker, "backstab");
+			EraseObjProperty(attacker.weapon, "backstab");
+			EraseObjProperty(attacker, "#nextcritical");
+			if (TemHabilidade(defender, "Sempre Alerta"))
+				TS_StartTimer(attacker, "paralysis", 5);
+				PrintTextAbove(defender, "*Sempre Alerta*");
+			else
+				ataqueFurtivo(attacker,defender);
+			endif
+		endif
 	endif
-	
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		damage += Cint(GetObjProperty(attacker, "charge_damage"));
+
+		if (hasAntiMountedWeapon(attacker, defender))
+			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
+			defender := attacker;
+			var resisted := CheckResist(defender, FORTITUDE, RESIST_MEDIUM);
+			if (!resisted)
+				TS_StartTimer(defender, "desmontar", 10);
+				TS_StartTimer(defender, "tombar", 5);
+				TS_StartTimer(defender, "paralysis", 5);
+			endif
+		endif
+
+		EraseObjProperty(attacker, "charge_damage");
+	endif
+
 	var totaldamage := CInt(damage-resist); 
 	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
 endfunction
@@ -833,7 +882,7 @@ function CalcDamageStats(attacker, damage)
 	var elem := getItemCfgElem(attacker.weapon);
 
 	SkillCheck(attacker, TACTICS, -1);
-	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/20);
+	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);
 	damage += tacticsmod;
 
 	stat := STRENGTH;
@@ -863,7 +912,7 @@ function CalcDamageWeapon(attacker, damage)
 		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25);
 	endif
 
-	var sharpened_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"];
+	var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
 	if(sharpened_weapon)
 		damage += sharpened_weapon;
 	endif
@@ -911,7 +960,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -1026,7 +1075,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (IsRaging(attacker))
 		var damagemod;
-		if (temHabilidade(attacker, "Nazg Khalug") || GetObjProperty(attacker, "NpcFuria"))
+		if (temHabilidade(attacker, "Nazg Khalug") || attacker.hasRage())
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));

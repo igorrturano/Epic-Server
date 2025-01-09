@@ -371,3 +371,78 @@ function handle_open_ai_npc_speech_thor(npc, language, event, npcEvil, mood, gos
    return responseText;
 endfunction
 
+function handle_combat_speech(npc_name, player_input, playerRaca, npcState := "healthy")
+    var base_prompt := "
+        # Você é uma criatura em um RPG de fantasia medieval avistando um oponente entrar no seu raio de visão
+        
+        # Regras Importantes:
+        - Responda SEMPRE em menos de 20 caracteres
+        - Seja agressivo e direto
+        - Use ... em vez de vírgulas
+        - Não use pontuação no final
+        - Mantenha o tom da sua criatura
+        
+        # Estado atual: "+npcState;
+
+    var cfg := ReadConfigFile(":epicAI:config/npc_speech");
+    if (!cfg)
+        return error{"errortext" := "Could not open npc_speech.cfg"};
+    endif
+
+    // Procura o elemento correto comparando o Name no config
+    var elem;
+    foreach entry in (GetConfigStringKeys(cfg))
+        var temp_elem := cfg[entry];
+        if (temp_elem.Name == npc_name)
+            elem := temp_elem;
+            break;
+        endif
+    endforeach
+
+    if (!elem)
+        return error{"errortext" := "NPC type ["+npc_name+"] not found in npc_speech.cfg"};
+    endif
+
+    // Build context
+    var context := base_prompt + "\n";
+    context += "# "+GetConfigString(elem, "Description")+"\n";
+    context += "# Tom: "+GetConfigString(elem, "Tone")+"\n\n";
+    
+    // Add examples based on state
+    context += "# Exemplos para seu estado atual:\n";
+    var responses := GetConfigStringArray(elem, npcState);
+    foreach response in responses
+        context += response + "\n";
+    endforeach
+
+    var questions := array{ struct{ "user" := player_input } };
+    var responseAI := OpenAICompletion_Thor(context, questions, 1.5, 0.7);
+    
+    return StrReplace(responseAI, "\"", " ");
+endfunction
+
+function getNPCState(npc)
+    var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
+
+    if (hp_percent <= 25)
+        return "dying";
+    elseif (hp_percent <= 50)
+        return "hurt";
+    elseif (hp_percent <= 75)
+        return "injured";
+    else
+        return "healthy";
+    endif
+endfunction
+
+function handle_error_combat_AI_speech()
+    var responses := array{
+        "*Grunhe*",
+        "*Rosna*",
+        "*Ignora*",
+        "*Olha fixamente*",
+        "*Range*",
+        "*Murmura*"
+    };
+    return responses[RandomInt(responses.size())+1];
+endfunction

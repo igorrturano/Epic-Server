@@ -1,0 +1,185 @@
+use uo;
+include "include/NPCUtil";
+include ":tn:cooldown";
+include "include/epicConstants";
+
+program Install()
+	print("INSTALLING: Methods for NPCs... OK!");
+	return 1;
+endprogram
+
+exported function canCharge(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    // Don't allow charge if already charging
+    if (GetObjProperty(who, "#chargestart"))
+        return 0;
+    endif
+
+    // Don't allow charge if NPC is on cooldown
+    if (GetCooldown(who, "charge"))
+        return 0; 
+    endif
+
+    if (template == "goblinrider") return 1; endif
+    if (template == "ratoide_barbaro") return 1; endif
+    if (template == "bugbear") return 1; endif
+
+    return 0;
+endfunction
+
+exported function isMyrkonid(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "homemcogumelo") return 1; endif
+    return 0;
+endfunction
+
+exported function isThief(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var classe := npc_elem.Classe;
+
+    if (classe == LADINO) return 1; endif
+    return 0;
+endfunction
+
+exported function isSage(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var classe := npc_elem.Classe;
+
+    if (classe == SABIO) return 1; endif
+    return 0;
+endfunction
+
+exported function isWarrior(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var classe := npc_elem.Classe;
+
+    if (classe == GUERREIRO) return 1; endif
+    return 0;
+endfunction
+
+exported function isFormian(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "formian") return 1; endif
+    if (template == "formian2") return 1; endif
+    return 0;
+endfunction
+
+exported function hasHiveMind(who)
+    if (isFormian(who)) return 1; endif
+endfunction
+
+exported function canSpitAcid(who)
+    if (isFormian(who)) return 1; endif
+    if (isAnkheg(who)) return 1; endif
+endfunction
+
+exported function hasTunnelTactics(who)
+    if (isFormian(who)) return 1; endif
+    if (isAnkheg(who)) return 1; endif
+    if (isUmberHulk(who)) return 1; endif
+endfunction
+
+exported function getTier(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var tier := npc_elem.Tier;
+
+    return tier;
+endfunction
+
+exported function isAnkheg(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+
+    if (template == "ankheg") return 1; endif
+    return 0;
+endfunction
+
+exported function isUmberHulk(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+
+    if (template == "umberhulk") return 1; endif
+    return 0;
+endfunction
+
+exported function hasRage(who)
+    if (isReptoide(who)) return 1; endif
+    var templates := array{"ratoide_barbaro", "bugbear"};
+    
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function isLizardMan(who)
+    var templates := array{"lizardman1", "lizardman2", "lizardman3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+
+    return 0;
+endfunction
+
+exported function canThrow(who)
+    var templates := array{"swampmonster", "lizardman2"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+
+    return 0;
+endfunction
+
+exported function canBite(who)
+    if (isLizardMan(who)) return 1; endif
+    if (isReptoide(who)) return 1; endif
+
+    return 0;
+endfunction
+
+exported function isReptoide(who)
+    var templates := array{"reptoide1", "reptoide2", "reptoide3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function CanAmbush(who)
+    var templates := array{"bocudo", "reptoide1", "swampsqualid"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function CanTongueGrab(who)
+    var templates := array{"", "gianttoad", ""};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function isBloodless(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var category := Lower(npc_elem.Category);
+
+    if (category == "undead") return 1; endif
+
+    return 0;
+endfunction
+
+exported function isMage(who)
+   var npc_elem := NPC_GetNPCConfig(who);
+   return (npc_elem.SpellSchool != error) && (!who.isShaman());
+endfunction
+
+exported function isShaman(who)
+    var templates := array{"ratoide_xama", "vulcanideomage", "varagxama"};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction

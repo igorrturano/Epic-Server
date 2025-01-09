@@ -153,13 +153,6 @@ function SetupNPCEquip(who, npc_elem)
 	item.graphic := graphic;
 	Equipitem (who, item);
   endif
-
-    var mobile_taxonomy := GetConfigString(npc_elem, "Taxonomy");
-    if (!mobile_taxonomy)
-    else
-        SetupAnimalGender(who, npc_elem);
-        SetupAnimalCriticalHit(who, npc_elem);
-    endif
 endfunction
 
 function SetupAnimalCriticalHit(mobile, npc_elem)
@@ -187,7 +180,7 @@ function SetupAnimalCriticalHit(mobile, npc_elem)
             0: SetObjProperty(mobile, "Critic", "Frenesi" );
             1: SetObjProperty(mobile, "Critic", "Rugir" );
         endcase
-    elseif (taxonomy == "canidae" || taxonomy == "felidae" || taxonomy == "chiroptera" || taxonomy == "rodentia"|| taxonomy == "reptilia" || taxonomy == "crustacean" || taxonomy == "scarabaeidae")
+    elseif (taxonomy == "canidae" || taxonomy == "felidae" || taxonomy == "chiroptera" || taxonomy == "reptilia" || taxonomy == "crustacean" || taxonomy == "scarabaeidae")
         case (RandomInt(2))
             0: SetObjProperty(mobile, "Critic", "Presas_profundas" );
             1: SetObjProperty(mobile, "Critic", "Garras_afiadas" );
@@ -394,4 +387,231 @@ function EquipNPCItemString(who, str, lastcolor)
     endif
   endif
   return lastc;
+endfunction
+
+function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
+  //  if ("FleeStealth" in custombehaviors)
+  //     if (!GetCooldown(me, "fleestealth"))
+  //        PrintText(me, "*esconde*");
+  //        sleep(1);
+  //        me.hidden := 1;
+  //        me.stealthsteps := 30;
+  //        SetCooldown(me, "fleestealth", 30);
+  //     endif
+  //  endif
+
+   var numflees := cint(GetObjProperty(me,"#flees"));
+   if(numflees > 10)
+      EraseObjProperty(me, "#flees");
+      RestartScript(me);
+   else
+      numflees := numflees + 1;
+      SetObjProperty(me,"#flees", numflees);
+   endif
+   
+   var runs := 0;
+   if (!sleepdelay)
+      sleepdelay := 275 - me.run_speed;
+   endif
+   var last_loc := array{opponent.x, opponent.y, opponent.z};
+   while(Distance(me, opponent) < 30 && runs < 50 && CoordinateDistance(opponent.x, opponent.y, last_loc[1], last_loc[2]) <= 3)
+      sleepms(sleepdelay);
+      var ev := wait_for_event(0);
+      RunAwayFrom(opponent);
+      runs := runs +1;
+
+      if (change_opponent && randomint(6) <= 2)
+         me.setAggro(opponent.serial, -100);
+         if (ChooseHighestOpponent(me, opponent))
+            break;
+         endif
+      endif
+
+      if (ev.type == SYSEVENT_DAMAGED)
+         if (((ev.source.npctemplate) and (CheckLineOfSight(me, ev.source))) 
+               || (CoordinateDistance(me.x, me.y, ev.source.x, ev.source.y) < CoordinateDistance(me.x, me.y ,opponent.x, opponent.y)) 
+               || (!CheckLineOfSight(me, opponent)) || (!opponent) || (RandomInt(3)==1))
+            opponent := ev.source;
+            SetOpponent(opponent);
+            me.setAggro(opponent, 300);
+         endif
+      endif
+
+      findAnotherPath();
+   endwhile
+
+   SetObjProperty(me, "#noback", polcore().systime+15);
+endfunction
+
+function ChooseHighestOpponent(me, byref opponent, new_opponent := 0, force_change := 0)
+   if (!opponent && new_opponent)
+      opponent := new_opponent;
+      SetOpponent(new_opponent);
+      TurnToward(new_opponent);
+      return 1;
+   elseif (opponent && new_opponent)
+      SetOpponent(opponent);
+      TurnToward(opponent);
+      return 1;
+   elseif (opponent && !CheckLineOfSight(me, opponent))
+      me.setAggro(opponent.serial, -50);
+   endif
+
+   if (GetCooldown(me, "#blockaggro"))
+      return 0;
+   endif
+
+   var highest_aggro := getHighestAggro(me);
+   if (highest_aggro && (!opponent || highest_aggro != opponent.serial))
+      highest_aggro := SystemFindObjectBySerial(highest_aggro);
+      opponent := highest_aggro;
+      SetOpponent(highest_aggro);
+      TurnToward(highest_aggro);
+      return 1;
+   endif
+endfunction
+
+function getHighestAggro(creature)
+   var aggros := creature.aggroProp();
+   var highest := array{0, -9999999};
+   foreach serial in (aggros.keys())
+      if (aggros[serial] >= highest[2])
+         highest := array{serial, aggros[serial]};
+      endif
+      sleepms(2);
+   endforeach
+
+   return highest[1];
+endfunction
+
+function TacticalReposition(opponent)
+    var runs := 0;
+    var max_dist := 12; // Only run 5 tiles away instead of 30
+
+    while(Distance(me, opponent) < max_dist && runs < 10) // Reduced from 50 to 10 attempts
+        RunAwayFrom(opponent);
+        runs += 1;
+        sleepms(200);
+
+        // Try to find a path after each reposition
+        var test_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
+        if (test_path)
+            foreach coord in test_path
+                if (Distance(me, opponent) <= 1)
+                    break;
+                endif
+                RunTowardLocation(coord.x, coord.y);
+                sleepms(200);
+            endforeach
+            return 1;
+        else
+          Flee(opponent, 0, 1);
+        endif
+
+        // If we haven't moved, try a different direction
+        findAnotherPath();
+    endwhile
+
+    return 1;
+endfunction
+
+function findAnotherPath()
+    var start_pos := struct{ "x" := me.x, "y" := me.y };
+    var reposition_tries := 0;
+
+    if (me.x == start_pos.x && me.y == start_pos.y)
+        reposition_tries += 1;
+        if (reposition_tries >= 3)
+            // Try to move laterally
+            var directions := array{
+                struct{ "x" := 2, "y" := 0 },
+                struct{ "x" := -2, "y" := 0 },
+                struct{ "x" := 0, "y" := 2 },
+                struct{ "x" := 0, "y" := -2 }
+            };
+            foreach dir in directions
+                var new_x := me.x + dir.x;
+                var new_y := me.y + dir.y;
+                if (CheckLosAt(me, new_x, new_y, me.z))
+                    RunTowardLocation(new_x, new_y);
+                    sleepms(200);
+                    break;
+                endif
+                sleepms(2);
+            endforeach
+            reposition_tries := 0;
+        endif
+    endif
+endfunction
+
+function CheckForIdealTarget()
+   // If we already have an opponent, stick with them most of the time
+   if (me.opponent && CanFight(me, me.opponent))
+      // Only 10% chance to even consider switching targets
+      if (RandomInt(100) < 90)
+         return me.opponent;
+      endif
+   endif
+
+   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL);
+   if (potential_opponents.size() < 1)
+      return 0;
+   endif
+
+   var best_opponent := struct{
+      "mobile" := 0,
+      "priority" := -1
+   };
+
+   foreach opponent in potential_opponents
+      // Skip invalid opponents
+      if (!CanFight(me, opponent))
+         continue;
+      endif
+
+      var opponent_class := opponent.getClass();
+      var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
+      var priority := 0;
+
+       // Current opponent gets huge priority bonus to maintain aggro
+      if (opponent == me.opponent)
+         priority += 10;
+      endif
+
+      // Fast NPC prioritizes ranged players
+      if (opponent_is_ranged)
+         priority += 2;
+      endif
+
+      // Class-based opponenting
+      if (me.isSage()) // NPC mage prefers warriors
+         if (opponent_class == GUERREIRO)
+            priority += 2;
+         endif
+      elseif (me.isWarrior()) // NPC warrior prefers rogues
+         if (opponent_class == LADINO)
+            priority += 2;
+         endif
+      elseif (me.isRogue()) // NPC rogue prefers mages
+         if (opponent_class == SABIO)
+            priority += 2;
+         endif
+      endif
+
+      // Prioritize close opponents slightly
+      var dist := Distance(me, opponent);
+      if (dist <= 4)
+         priority += 1;
+      endif
+
+      // Check if this is a better opponent
+      if (priority > best_opponent.priority)
+         best_opponent.mobile := opponent;
+         best_opponent.priority := priority;
+      endif
+
+      sleepms(2);
+   endforeach
+
+   return best_opponent.mobile;
 endfunction

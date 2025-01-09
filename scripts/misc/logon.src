@@ -36,6 +36,10 @@ program Logon(who)
     EraseObjProperty(who, "#Casting"); // Bugs de cast
 	SetObjProperty(who, "ConnectTime", polcore().systime);
 
+	if (getObjProperty(who, "already_fighting"))
+		EraseObjProperty(who, "already_fighting");
+	endif
+
 	var createdat :=  getobjproperty(who, "createdate");
 
 	if (HaveReverseVision(who))
