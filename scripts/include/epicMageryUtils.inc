@@ -133,6 +133,8 @@ function distanceAllowedForSpells(who, mlore, school)
 	  dist_allowed := dist_allowed + (mlore * 2);
    elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
 	  dist_allowed := dist_allowed + (mlore * 2);
+	elseif(who.npctemplate)
+      dist_allowed := dist_allowed + (mlore * 2);
    endif
 
    return dist_allowed;

@@ -569,7 +569,7 @@ function CheckForIdealTarget()
          continue;
       endif
 
-      var opponent_class := GetObjProperty(opponent, "chardata").classe;
+      var opponent_class := opponent.getClass();
       var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
       var priority := 0;
 

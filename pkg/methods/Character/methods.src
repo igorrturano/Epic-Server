@@ -25,3 +25,7 @@ endfunction
 exported function spendgold( who , quantidade)
 	return EfetuaDebito(who, quantidade);
 endfunction
+
+exported function getClass(who)
+    return GetObjProperty(who, "chardata").classe;
+endfunction
