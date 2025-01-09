@@ -1,6 +1,8 @@
 function summon(template, targ, mage)
     var undead := CreateNpcFromTemplate(template, targ.x, targ.y, targ.z, 0, targ.realm);
-    undead.SetMaster(mage);
+    if (mage.acctname)
+        undead.SetMaster(mage);
+    endif
 
     var summons := GetObjProperty(mage, "SummonedPets");
     if(!summons)
@@ -25,9 +27,13 @@ function summon(template, targ, mage)
         SetObjProperty(mage, "summon_serial_"+CStr(slot), undead.serial);
     endif
 
-    undead.script := ":ghaia:tamed";
-    undead.facing := mage.facing;
-    RestartScript(undead);
+    if (mage.acctname)
+        undead.script := ":ghaia:tamed";
+        undead.facing := mage.facing;
+        RestartScript(undead);
+    else
+        undead.alignment := 1;
+    endif
 
     if(undead.name == "Globo de Luz")
         var light := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xa22, 1, targ.realm);

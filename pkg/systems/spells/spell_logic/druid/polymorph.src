@@ -148,4 +148,9 @@ function Transforma(who, animal, snd, graphic,namepoly)
 	endif
 	who.frozen := 0;
 	SetName(who,namepoly);
+
+	if (who.npctemplate)
+		SetObjProperty(who, "runspeed", who.run_speed);
+		who.run_speed := 200;
+	endif
 endfunction
