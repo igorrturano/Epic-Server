@@ -379,3 +379,24 @@ function StealCriticalFailure(mobile, targ)
 
 	return 1;
 endfunction
+
+function getNpcResist()
+   // Get NPC configuration for spell difficulty
+   var npc_elem := NPC_GetNPCConfig(me);
+   var tier := CInt(npc_elem.Tier);
+   if (!tier)
+      tier := 1;
+   endif
+   
+   // Calculate spell difficulty based on tier
+   var diff := RESIST_EASY;
+   case (tier)
+      1: diff := RESIST_EASY;
+      2: diff := RESIST_MEDIUM;
+      3: diff := RESIST_HARD;
+      4: diff := RESIST_VERY_HARD;
+      5: diff := RESIST_EXTREMELY_HARD;
+   endcase
+
+    return diff;
+endfunction
