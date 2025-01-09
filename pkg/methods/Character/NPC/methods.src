@@ -162,3 +162,12 @@ exported function CanTongueGrab(who)
     
     return 0;
 endfunction
+
+exported function isBloodless(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var category := Lower(npc_elem.Category);
+
+    if (category == "undead") return 1; endif
+
+    return 0;
+endfunction
