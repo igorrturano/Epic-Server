@@ -5,5 +5,10 @@ include ":crafting:fabricacao";
 var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
 
 program testeGump(quem, texto)
-	FabricaItensComplexos(quem,"Blacksmithy");// TODO TESTAR  [ultima tarefa]
+
+	if(texto == "complexos")
+		FabricaItensComplexos(quem,"Blacksmithy");// TODO TESTAR  [ultima tarefa]
+	elseif(texto == "componentes")
+		EnviaGumpComponentes(quem);
+	endif
 endprogram 

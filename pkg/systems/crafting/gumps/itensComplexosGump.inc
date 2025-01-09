@@ -69,6 +69,13 @@ function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
 	return gump;
 endfunction
 
+//function MontaComponentesGump(quem,byref gump,parametros,byref navegacao)
+function MontaComponentesGump(byref gump)
+	gump := GFECreateGump("GumpComponentes",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
+	GFAddButton(gump,20,20,4011,4012,GF_CLOSE_BTN,1);
+	return gump;
+endfunction
+
 function ClassificaRetornoComplexos(valorRetorno)
 	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
 		return RT_CATEGORIAS;
@@ -118,25 +125,6 @@ function PreencheCategorias(byref gump,larguraPainelCategoria, parametros)
 		GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),86,categoria);
 		Sleepms(2);
 	endforeach
-endfunction
-
-function EnviaGumpComponentes(quem)
-	var gump := GFECreateGump("GumpComponentes",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
-	
-	var opcoesTabela := dictionary{ 
-							QTD_LINHA_LIMITE -> 15,
-							TITULO_TABELA -> "Escolha um material:",
-							BOTAO_SOLTO -> 2510,
-							BOTAO_APERTADO -> 2511
-							};
-	var valor := 1; 
-	
-	var colCfg := dictionary;
-	colCfg["nome"] := struct{titulo := "Material",ordem := 1,largura := 5};
-	colCfg["tipo"] := struct{titulo := "Tipo",ordem := 2,largura := 5};
-	colCfg["marque"] := struct{titulo := "Selecione",ordem := 3,largura := 2};
-	//CriaTabelaGumpPaginada();
-	GFSendGump(quem,gump);
 endfunction
 
 function DefineLarguraPainel(quantidadeCelulas)

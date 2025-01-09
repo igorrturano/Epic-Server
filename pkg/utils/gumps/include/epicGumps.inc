@@ -9,7 +9,6 @@ use basic;
 //include "include/client";
 include "gumps";
 include "gumps_ex";
-include ":destroyable:include/destroyItemPersist";
 include ":destroyable:include/destroyItem";
 
 const ALTURA_LINHA := 20;
@@ -465,13 +464,18 @@ function CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela :
 		endif
 		GFPage( gump, pagina + 1);
 		gump := CriaTabelaGump(x,y,larguraTotal,dados,gump,pagina,opcoesTabela,opcoesColunas,indiceBtnInicial);
-
+		
 		//Controle de Paginação.
+		var linhaAdicional := 2;
+		if(opcoesTabela[TITULO_TABELA])
+			linhaAdicional :=  3;
+		endif
+
 		if(!pagina == 0)
-			GFAddButton( gump, x + larguraTotal / 2 - 40, y + (opt_qtd_limite_linha + 3) * ALTURA_LINHA, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
+			GFAddButton( gump, (x + larguraTotal) / 2 - 40, y + (opt_qtd_limite_linha + linhaAdicional) * ALTURA_LINHA, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
 		endif
 		if((pagina + 2) - algo < 1)
-			GFAddButton( gump, x + larguraTotal / 2  + 40, y + (opt_qtd_limite_linha + 3) * ALTURA_LINHA, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
+			GFAddButton( gump, (x + larguraTotal) / 2  + 40, y + (opt_qtd_limite_linha + linhaAdicional) * ALTURA_LINHA, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
 		endif
 	endfor
 
@@ -507,4 +511,3 @@ endfunction
 function DeterminaOpcaoTabela(opcoesTabela,opcao,padrao)
 	return opcoesTabela[opcao]? opcoesTabela[opcao]:padrao;
 endfunction
-

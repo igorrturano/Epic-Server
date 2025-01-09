@@ -5,11 +5,13 @@ include "include/epicUtils";
 include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/itensComplexosGump";
+include ":gumps:/include/dropDownGump";
 
 //var fabricacaoGump := DFOpenDataFile(":crafting:CraftGumps", DF_CREATE);
 var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
+//Itens Complexos Inicio
 function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
 endfunction
@@ -68,56 +70,6 @@ function PreparaItensComplexosGump(quem, profissao)
 	
 	return parametrosGump;
 endfunction
-
-// TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico := -1) 
-	
-	if(quantidade == error || quantidade.size() == 0)
-		return error{"errortext":="O parâmentro componentes é obrigatório"};
-	endif
-
-	var	pico := valorPericia / 20;
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},pico + deslocamentoPico,1.4);
-	var retorno := dictionary;
-
-	//Print("Chances: "  + chancesPorTier);
-	for i:=1 to quantidade
-		var isFalhouTudo := true;
-		var rolagem := RandomFloat(100.0);
-		var chanceAcumulada := 0;
-
-		foreach chance in chancesPorTier
-			chanceAcumulada += chance;
-			//Print("Chance Tier " + _chance_iter + ": " + chance);
-			//Print("rolagem: " + rolagem + " chance: " + chanceAcumulada);
-			if (rolagem <= chanceAcumulada)
-				
-				isFalhouTudo := false;
-				if(retorno.exists(_chance_iter)) // popula o dict de retono com chave=tier e valor=quantidade de itens nesse tier.
-					retorno[_chance_iter] += 1;
-				else
-					retorno.insert(_chance_iter,1);
-				endif
-				break;
-			endif
-			Sleepms(2);
-		endforeach
-
-		if(isFalhouTudo)
-			if(retorno.exists(1))
-				retorno[1] += 1;
-			else
-				retorno.insert(1,1);
-			endif
-		endif
-		Sleepms(2);
-	endfor
-	return retorno;
-
-endfunction
-
-//fução do sino.
-
 
 function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 
@@ -279,6 +231,88 @@ function MontaCraftProp(fabricacaoConfig)
 	return baseDict;
 
 endfunction
+//Itens Complexos Fim
+
+function EnviaGumpComponentes(quem)
+	var retorno := 1;
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+	var chaves := GetConfigStringKeys(configRecursos);
+	var valores := array;
+	var dropDownId := 55;
+
+	foreach chave in chaves
+		PreparaOpcaoDropDown(valores,configRecursos[chave].Name,chave);
+	endforeach
+
+	var dropDownProcess;
+	var gump;
+	while(retorno)
+		MontaComponentesGump(gump);
+		retorno := GFSendGump(quem,gump);
+		
+		if(retorno[0] == 1)
+			if( GetProcess( dropDownProcess.pid ))
+				CloseGump(quem,dropDownId);
+			endif
+			dropDownProcess := SendDropDownGump(quem, GetPid(),20,20 + 5,valores,dropDownId);
+		elseif(retorno[0])
+			Print(" deu bom?  - " + retorno[0]);
+		elseif(!retorno)
+			CloseGump(quem,dropDownId);
+		endif
+	endwhile
+endfunction
+//Componentes Inicio
+
+
+
+// TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
+function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico := -1) 
+	
+	if(quantidade == error || quantidade.size() == 0)
+		return error{"errortext":="O parâmetro quantidade é obrigatório."};
+	endif
+
+	var	pico := valorPericia / 20;
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},pico + deslocamentoPico,1.4);
+	var retorno := dictionary;
+
+	//Print("Chances: "  + chancesPorTier);
+	for i:=1 to quantidade
+		var isFalhouTudo := true;
+		var rolagem := RandomFloat(100.0);
+		var chanceAcumulada := 0;
+
+		foreach chance in chancesPorTier
+			chanceAcumulada += chance;
+			//Print("Chance Tier " + _chance_iter + ": " + chance);
+			//Print("rolagem: " + rolagem + " chance: " + chanceAcumulada);
+			if (rolagem <= chanceAcumulada)
+				
+				isFalhouTudo := false;
+				if(retorno.exists(_chance_iter)) // popula o dict de retono com chave=tier e valor=quantidade de itens nesse tier.
+					retorno[_chance_iter] += 1;
+				else
+					retorno.insert(_chance_iter,1);
+				endif
+				break;
+			endif
+			Sleepms(2);
+		endforeach
+
+		if(isFalhouTudo)
+			if(retorno.exists(1))
+				retorno[1] += 1;
+			else
+				retorno.insert(1,1);
+			endif
+		endif
+		Sleepms(2);
+	endfor
+	return retorno;
+
+endfunction
+
 
 //
 //  TruncatePlural()

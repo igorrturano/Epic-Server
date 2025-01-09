@@ -154,7 +154,7 @@ function MakeCaboSerra(who, item, materialId)
             foreach qualidade in (qualidades.keys())
                 var descriptor := GetItemDescriptor(CInt(cabo));
                 descriptor.CProps.insert("material",materialId);
-                descriptor.CProps.insert("tierComponente",qualidade);
+                descriptor.CProps.insert("tierComponente",qualidade); // Usar constante ou cfg vinda do include do craft ao invés de string crua.
                 descriptor.color := cfgRecursos[materialId].Color;
 
                 CreateItemInBackpack(who,descriptor,cint(qualidades[qualidade]));

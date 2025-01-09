@@ -66,7 +66,7 @@ function join( a_array, delimiter )
   return result;
 endfunction
 
-function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,multiplicadorFinal := 100)
+function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,eixoYMaximo := 100)
 
 	var gaussianas := array; 
 	var total := 0;
@@ -78,9 +78,9 @@ function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,multiplicad
 	endforeach
 
 	var normalizados := array;
-	//normaliza os valores para que a somatória dos valores de y(chance) ao longo do eixo x, não ultrapasse 100.
+	//normaliza os valores para que a somatória dos valores de y ao longo do eixo x, não ultrapasse o maximo de y.
 	foreach gaussiana in gaussianas
-		normalizados.append(Floor((gaussiana/total) * multiplicadorFinal)); 
+		normalizados.append(Floor((gaussiana/total) * eixoYMaximo)); 
 		Sleepms(2);
 	endforeach;
 	
