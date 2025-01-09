@@ -151,12 +151,33 @@ exported function CanAmbush(who)
     if (template in templates) return 1; endif
     
     return 0;
-
 endfunction
 
 exported function CanTongueGrab(who)
     var templates := array{"", "gianttoad", ""};
 
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function isBloodless(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var category := Lower(npc_elem.Category);
+
+    if (category == "undead") return 1; endif
+
+    return 0;
+endfunction
+
+exported function isMage(who)
+   var npc_elem := NPC_GetNPCConfig(who);
+   return (npc_elem.SpellSchool != error) && (!who.isShaman());
+endfunction
+
+exported function isShaman(who)
+    var templates := array{"ratoide_xama", "vulcanideomage", "varagxama"};
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
     
