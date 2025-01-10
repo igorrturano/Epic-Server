@@ -56,12 +56,12 @@ program meditar(who)
             
             start_script(":combat:weaponHitScripts/IceHit", array{who, targ, 0, 0, 0, mlore});
         else
-            Run_Script(":spells:spell_logic:mage:fireball", {who, targ});
+            Run_Script(":spells:spell_logic/mage/fireball", {who, targ});
         endif
         PlaySoundEffect(who, sound);// hammer
         PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, ammo_color);
 
     elseif(isEnergyArrow)
-        Run_Script(":spells:spell_logic:mage:teleport", {who});
+        Run_Script(":spells:spell_logic/mage/teleport", {who});
     endif
 endprogram

@@ -82,6 +82,12 @@ program cureScript( params )
   EraseObjProperty( who, "namechar" );
   SendPacket(who, "BF0006002600");  // Disable speed boost packet
 
+  if (who.npctemplate)
+		var normal_speed := GetObjProperty(who, "runspeed");
+
+		who.run_speed := Cint(normal_speed);
+  endif
+
   PlaySoundEffect( who, SFX_SPELL_POLYMORPH );
 endprogram
 function removeWerewolfBuffs( who )
