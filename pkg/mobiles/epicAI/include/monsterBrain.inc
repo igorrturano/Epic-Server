@@ -641,6 +641,12 @@ function MonsterIdle(wanders, is_ranged)
     endforeach
 
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
+    var anchor := GetObjProperty(me, "anchor");
+    if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
+      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      sleep(3);
+      MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
+     endif
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)
