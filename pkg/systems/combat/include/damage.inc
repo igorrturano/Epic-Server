@@ -897,7 +897,7 @@ function CalcDamageStats(attacker, damage)
 		statmod := CInt(AP_GetStat(attacker, stat));
 	endif
 
-	statmod := (statmod-50) / 10;
+	statmod := (statmod/* -50 */) / 10;
 	damage += statmod;
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de {stat}: {statmod}");
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de Tactics: {tacticsmod}");
