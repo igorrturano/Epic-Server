@@ -35,6 +35,7 @@ function MonsterBrain()
             if (!CanFight(me, me.opponent))
                 HandleDisengage(me.opponent);
             else
+                if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
             endif
         endif
@@ -302,6 +303,10 @@ function LootSomething(npc, corpse)
             continue;
         endif
 
+        if (CInt(GetObjProperty(item, "#EquippedOn")) == corpse.serial && item.IsA(POLCLASS_ARMOR))
+            continue;
+        endif
+
         if (item.IsA(POLCLASS_WEAPON) || item.IsShield() || item.IsA(POLCLASS_ARMOR))
             return LootItem(npc, item);
         endif
@@ -391,6 +396,7 @@ function HandleCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         return 0;
     endif
+    if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
 
     const MAX_Z_DIFF := 18;
     var z_diff := Abs(me.z - opponent.z);
