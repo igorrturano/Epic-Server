@@ -303,6 +303,10 @@ function LootSomething(npc, corpse)
             continue;
         endif
 
+        if (CInt(GetObjProperty(item, "#EquippedOn")) == corpse.serial && item.IsA(POLCLASS_ARMOR))
+            continue;
+        endif
+
         if (item.IsA(POLCLASS_WEAPON) || item.IsShield() || item.IsA(POLCLASS_ARMOR))
             return LootItem(npc, item);
         endif
