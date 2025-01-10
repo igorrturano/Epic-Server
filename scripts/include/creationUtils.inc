@@ -129,7 +129,7 @@ const INOCENTE_ID := 0x15C;
 const SABIO_ID := 0x15D;
 
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Precisão Élfica", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -806,9 +806,9 @@ function culturalTraitBonus(who, byref chardata)
         return chardata.+bgBonus := AWARENESS;
     elseif (culturalBg == "Pés Leves")
         return chardata.+bgBonus := SNEAK;
-    elseif (culturalBg == "Aliança natural")
+    elseif (culturalBg == "Cavalaria Nórdica")
         return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Escaramuçador")
+    elseif (culturalBg == "Precisão Élfica")
         return chardata.+bgBonus := RANGED;
     elseif (culturalBg == "Brutamontes")
         return chardata.+bgBonus := TWOHANDED;

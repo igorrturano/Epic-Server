@@ -210,7 +210,7 @@ function AimAndShoot(who, item, targ, weapon_info)
     endfor
     who.frozen := 0;
 
-    if (!CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm))
+    if (!CheckLineOfSight(who, targ))
         SendSysMessageEx(who, "O alvo saiu do seu campo de visao.", SSM_FAIL);
         return 0;
     endif
