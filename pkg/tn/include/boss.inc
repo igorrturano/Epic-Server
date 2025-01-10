@@ -103,7 +103,7 @@ function CreateBossStructGump( who, byref boss )
 
   // if (cfg.specialai != error)
   //	GFTextLine(chargump, 50, 200, 1153, "Special AI [" + cfg.specialai+ "]:"); ///////////////////////
-  //	else
+  // else
   // GFTextLine(chargump, 50, 200, 1153, "Special AI: ");
   // endif
 
@@ -166,10 +166,10 @@ function CreateBossStructGump( who, byref boss )
   endif
 
   // if (cfg)
-  //		GFTextLine(chargump, 250, 260, 1153, "R. Spells Mod [" + cint(cfg.ResistingSpells) + "]:");
-  //	else
-  //		GFTextLine(chargump, 250, 260, 1153, "R. Spells Mod: ");
-  //	endif
+  // GFTextLine(chargump, 250, 260, 1153, "R. Spells Mod [" + cint(cfg.ResistingSpells) + "]:");
+  // else
+  // GFTextLine(chargump, 250, 260, 1153, "R. Spells Mod: ");
+  // endif
 
   var template, nome, cor, statmod, resistmod, dmgmod, hitsmod, skillsmod, specialai,
 				descmod;
@@ -546,6 +546,121 @@ function CreateBossStructGump( who, byref boss )
   endif
 
 // return 0;
+endfunction
+
+function ShowBossGump( who, byref boss )
+    // Cria a estrutura do Gump
+    var gump := GFECreateGump( "", GUMP_WIDTH, GUMP_HEIGHT, array{ HIDE_BORDER } );
+	AdicionarMoldura( gump );
+    GFResizePic( gump, 15, 70, INTERNAL_BACKGROUND, GUMP_WIDTH - 20, GUMP_HEIGHT - 80 );
+  	GFTextMid( gump, 80, 35, 420, 53, "Boss Gump" );
+
+    // Seção: Campos de entrada principais
+    GFTextLine( gump, 30, 30, "Template:" );
+    GFEAddTextBox( gump, 120, 28, 150, 20, 0, "BOSSDATA_TEMPLATE", "" );
+
+    GFTextLine( gump, 30, 60, "Nome:" );
+    GFEAddTextBox( gump, 120, 58, 150, 20, 0, "BOSSDATA_NAME", "" );
+
+    GFTextLine( gump, 280, 30, "Alcance:" );
+    GFEAddTextBox( gump, 350, 28, 50, 20, 0, "BOSSDATA_ALCANCE", "" );
+
+    GFTextLine( gump, 280, 60, "Cor:" );
+    GFEAddTextBox( gump, 350, 58, 50, 20, 0, "BOSSDATA_COR", "" );
+
+    GFTextLine( gump, 420, 60, "Tier:" );
+    GFEAddTextBox( gump, 480, 58, 50, 20, 0, "BOSSDATA_TIER", "" );
+
+    // Seção: STATUS (Modificadores)
+    GFTextLine( gump, 30, 95, "STATUS" );
+    GFTextLine( gump, 30, 120, "Str Mod:" );
+    GFEAddTextBox( gump, 110, 118, 40, 20, 0, "BOSSDATA_STRMOD", "" );
+
+    GFTextLine( gump, 30, 145, "Int Mod:" );
+    GFEAddTextBox( gump, 110, 143, 40, 20, 0, "BOSSDATA_INTMOD", "" );
+
+    GFTextLine( gump, 30, 170, "Dex Mod:" );
+    GFEAddTextBox( gump, 110, 168, 40, 20, 0, "BOSSDATA_DEXMOD", "" );
+
+    GFTextLine( gump, 160, 120, "Dmg Mod:" );
+    GFEAddTextBox( gump, 230, 118, 40, 20, 0, "BOSSDATA_DMGMOD", "" );
+
+    GFTextLine( gump, 160, 145, "Hit Mod:" );
+    GFEAddTextBox( gump, 230, 143, 40, 20, 0, "BOSSDATA_HITMOD", "" );
+
+    // Seção: RESISTÊNCIAS
+    GFTextLine( gump, 300, 95, "RESISTÊNCIAS" );
+    GFTextLine( gump, 300, 120, "Físico:" );
+    GFEAddTextBox( gump, 360, 118, 40, 20, 0, "BOSSDATA_RES_FISICO", "" );
+
+    GFTextLine( gump, 300, 145, "Fogo:" );
+    GFEAddTextBox( gump, 360, 143, 40, 20, 0, "BOSSDATA_RES_FOGO", "" );
+
+    GFTextLine( gump, 300, 170, "Frio:" );
+    GFEAddTextBox( gump, 360, 168, 40, 20, 0, "BOSSDATA_RES_FRIO", "" );
+
+    GFTextLine( gump, 420, 120, "Energia:" );
+    GFEAddTextBox( gump, 490, 118, 40, 20, 0, "BOSSDATA_RES_ENERGIA", "" );
+
+    GFTextLine( gump, 420, 145, "Veneno:" );
+    GFEAddTextBox( gump, 490, 143, 40, 20, 0, "BOSSDATA_RES_VENENO", "" );
+
+    // Seção: SKILLS
+    GFTextLine( gump, 30, 210, "SKILLS" );
+    GFTextLine( gump, 30, 230, "Wrestling:" );
+    GFEAddTextBox( gump, 120, 228, 40, 20, 0, "BOSSDATA_WRESTLING", "" );
+
+    GFTextLine( gump, 30, 255, "Tactics:" );
+    GFEAddTextBox( gump, 120, 253, 40, 20, 0, "BOSSDATA_TACTICS", "" );
+
+    GFTextLine( gump, 160, 230, "Awareness:" );
+    GFEAddTextBox( gump, 240, 228, 40, 20, 0, "BOSSDATA_AWARENESS", "" );
+
+    GFTextLine( gump, 160, 255, "Magery:" );
+    GFEAddTextBox( gump, 240, 253, 40, 20, 0, "BOSSDATA_MAGERY", "" );
+
+    // Seção: DESCRIÇÃO (campo maior de texto)
+    GFTextLine( gump, 30, 290, "Descrição:" );
+    GFEAddTextBox( gump, 30, 310, 500, 60, 0, "BOSSDATA_DESC", "" );
+
+    // Seção: Loot, Special, Death Event, Combat Event
+    GFTextLine( gump, 30, 380, "Loot:" );
+    GFEAddTextBox( gump, 80, 378, 120, 20, 0, "BOSSDATA_LOOT", "" );
+
+    GFTextLine( gump, 220, 380, "Special:" );
+    GFEAddTextBox( gump, 280, 378, 120, 20, 0, "BOSSDATA_SPECIAL", "" );
+
+    GFTextLine( gump, 30, 410, "Death Event:" );
+    GFEAddTextBox( gump, 120, 408, 120, 20, 0, "BOSSDATA_DEATHEVENT", "" );
+
+    GFTextLine( gump, 260, 410, "Combat Event:" );
+    GFEAddTextBox( gump, 350, 408, 120, 20, 0, "BOSSDATA_COMBATEVENT", "" );
+
+    // Seção: Checkboxes e Respawn
+    GFCheckBox( gump, 500, 30, "BOSSDATA_TRUEBOSS", 0 );
+    GFTextLine( gump, 520, 30, "TRUE BOSS" );
+
+    GFCheckBox( gump, 500, 60, "BOSSDATA_IGNORARLOS", 0 );
+    GFTextLine( gump, 520, 60, "Ignorar LOS" );
+
+    GFTextLine( gump, 420, 95, "Respawn (em minutos):" );
+    GFTextLine( gump, 420, 115, "Mínimo:" );
+    GFEAddTextBox( gump, 480, 113, 40, 20, 0, "BOSSDATA_RESPMIN", "" );
+
+    GFTextLine( gump, 420, 140, "Máximo:" );
+    GFEAddTextBox( gump, 480, 138, 40, 20, 0, "BOSSDATA_RESPMAX", "" );
+
+    // Botões OK e CANCEL
+    GFAddButton( gump, 200, 450, 0, 0, 1, "Okay" );
+    GFAddButton( gump, 280, 450, 0, 0, 2, "Cancelar" );
+
+    // Display the GUMP
+    var inputs := GFSendGump( who, gump );
+
+    BossGumpInputsHandler( inputs, who, boss );
+endfunction
+
+function BossGumpInputsHandler( inputs, who, byref boss  )
 endfunction
 
 function showHurtDescription( npc )
