@@ -95,8 +95,6 @@ function HandleAnimalCombatEvent(opponent)
     endif
 
     SetOpponent(opponent);
-    opponent := CheckForIdealTarget();
-    SetOpponent(opponent);
 
     // Let the combat hook handle the actual attacks
     TurnToward(opponent);
@@ -106,7 +104,7 @@ function HandleAnimalCombatEvent(opponent)
         HiveMind(me);
     endif
 
-    if (me.isUmberHulk())
+    if (me.canDoConfusion())
         doConfusion(opponent);
     endif
 

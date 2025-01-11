@@ -549,8 +549,8 @@ endfunction
 function CheckForIdealTarget()
    // If we already have an opponent, stick with them most of the time
    if (me.opponent && CanFight(me, me.opponent))
-      // Only 10% chance to even consider switching targets
-      if (RandomInt(100) < 90)
+      // Only 5% chance to even consider switching targets
+      if (RandomInt(100) < 95)
          return me.opponent;
       endif
    endif
@@ -577,7 +577,7 @@ function CheckForIdealTarget()
 
        // Current opponent gets huge priority bonus to maintain aggro
       if (opponent == me.opponent)
-         priority += 10;
+         priority += 15;
       endif
 
       // Fast NPC prioritizes ranged players

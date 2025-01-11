@@ -183,3 +183,9 @@ exported function isShaman(who)
     
     return 0;
 endfunction
+
+exported function canDoConfusion(who)
+    if (isUmberHulk(who)) return 1; endif
+    
+    return 0;
+endfunction
