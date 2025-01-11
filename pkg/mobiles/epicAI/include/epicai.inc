@@ -5,6 +5,8 @@ include ":tn:recipes";
 include ":mounts:mounts";
 include "npcUtils";
 
+const MAX_Z_DIFF := 18;
+
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
     if (npc_already_initiliazed)
@@ -614,4 +616,84 @@ function CheckForIdealTarget()
    endforeach
 
    return best_opponent.mobile;
+endfunction
+
+// New function to handle ally behavior
+function AlertAllies(invasor, me)
+    if (isAlly(invasor))
+        return 0;
+    endif
+
+    if (invasor.hidden || invasor.concealed)
+        return 0;
+    endif
+
+    if (GetCooldown(me, "alert_allies"))
+        return 0;
+    endif
+    
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+        if (mobile.npctemplate && mobile != me)
+            if (isAlly(mobile))
+                SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
+                SendEvent(mobile, struct{ "type" := EVID_ALERT_ALLIES, "source" := invasor });
+            endif
+        endif
+        sleepms(2);
+    endforeach
+
+    SetCooldown(me, "alert_allies", 15);
+endfunction
+
+function isAlly(mobile)
+    if (!mobile || mobile.dead) return 0; endif
+
+    if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
+
+    if (mobile.hidden || mobile.concealed) return 0; endif
+
+    if (mobile.acctname || mobile.alignment != 1) return 0; endif
+    
+    return 1;
+endfunction
+
+function CanFight(attacker, defender)
+    if (!defender || defender.dead || defender.hidden || defender.concealed)
+        return 0;
+    endif
+
+    // Cooldown to avoid ress kill
+    if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
+        // Allow combat if defender initiated it
+        if (me.opponent == defender) return 1; endif
+        // Otherwise prevent attacking during cooldown
+        return 0;
+    endif
+
+    // If defender is a player, normal combat rules apply
+    if (!defender.npctemplate)
+        return 1;
+    endif
+
+    // NPC vs NPC combat only happens if:
+    if (defender.npctemplate)
+        // Check if forced to attack by GM command
+        var forced_target := GetObjProperty(attacker, "#ForcedTarget");
+        if (forced_target == defender.serial)
+            return 1;
+        endif
+
+        // Check enemy categories
+        var attacker_elem := NPC_GetNPCConfig(attacker);
+        var defender_elem := NPC_GetNPCConfig(defender);
+        var enemy_cats := GetConfigStringArray(attacker_elem, "EnemyCategories");
+        
+        if (enemy_cats && defender_elem.Category in enemy_cats)
+            return 1;
+        endif
+
+        return 0; // No valid reason for NPCs to fight
+    endif
+
+    return 1;
 endfunction

@@ -204,7 +204,11 @@ function DoThiefSneakAttack(opponent)
         me.attack_once(opponent);
     else
         // If stealth attack failed, engage in normal combat
-        HandleCombatEvent(opponent, 0);
+        case (brain_type)
+            "monster": HandleMonsterCombatEvent(opponent, 0);
+            "humanoid": 
+        endcase
+
     endif
 endfunction
 

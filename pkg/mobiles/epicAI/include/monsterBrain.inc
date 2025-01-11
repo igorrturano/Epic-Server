@@ -33,7 +33,7 @@ function MonsterBrain()
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             if (!CanFight(me, me.opponent))
-                HandleDisengage(me.opponent);
+                HandleMonsterDisengage(me.opponent);
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
@@ -44,21 +44,21 @@ function MonsterBrain()
             case (ev.type)
                 SYSEVENT_ENGAGED: 
                     AlertAllies(ev.source, me);
-                    HandleCombatEvent(ev.source, is_ranged);
+                    HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
                     AskForHealing(me);
-                    HandleCombatEvent(ev.source, is_ranged);
+                    HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     HandleSpeech(ev.text, ev.source, is_ranged);
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleEnteredArea(ev.source, is_ranged) : HandleLeftArea(is_ranged);
+                        CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
                     endif
                 SYSEVENT_DISENGAGED: 
-                    HandleDisengage(ev.source);
+                    HandleMonsterDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source)) // Only process if it's a player
-                        HandleLeftArea(is_ranged);
+                        HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := GetObjProperty(me, "#taunt_opponent");
@@ -66,12 +66,12 @@ function MonsterBrain()
                         var opponent := SystemFindObjectBySerial(opponent_serial);
                         if (opponent && CanFight(me, opponent))
                             EraseObjProperty(me, "#taunt_opponent");
-                            HandleCombatEvent(opponent, is_ranged);
+                            HandleMonsterCombatEvent(opponent, is_ranged);
                         endif
                     endif
                 EVID_TAUNT:
                     if (CanFight(me, ev.source))
-                        HandleCombatEvent(ev.source, is_ranged);
+                        HandleMonsterCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
@@ -131,7 +131,7 @@ function HandleSpeech(text, source, is_ranged)
     return 1;
 endfunction
 
-function HandleDisengage(opponent)
+function HandleMonsterDisengage(opponent)
     if (!opponent)
         return 0;
     endif
@@ -180,14 +180,14 @@ function ClearCombatState()
     SetOpponent(0);
 endfunction
 
-function HandleLeftArea(is_ranged)
+function HandleMonsterLeftArea(is_ranged)
     // Clear current combat state
     ClearCombatState();
     
     // First look for new opponents
     foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
-            HandleCombatEvent(mobile, is_ranged);
+            HandleMonsterCombatEvent(mobile, is_ranged);
             return 1;
         endif
         sleepms(2);
@@ -392,13 +392,12 @@ function DisableMainEvents()
     DisableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED);
 endfunction
 
-function HandleCombatEvent(opponent, is_ranged)
+function HandleMonsterCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         return 0;
     endif
     if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
 
-    const MAX_Z_DIFF := 18;
     var z_diff := Abs(me.z - opponent.z);
     if (z_diff > MAX_Z_DIFF)
         return 0;
@@ -634,7 +633,7 @@ function MonsterIdle(wanders, is_ranged)
     // Look for potential targets
     foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
-            HandleCombatEvent(mobile, is_ranged);
+            HandleMonsterCombatEvent(mobile, is_ranged);
             return;
         endif
         sleepms(2);
@@ -715,48 +714,7 @@ function EnableMainEvents()
     EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
 endfunction
 
-function CanFight(attacker, defender)
-    if (!defender || defender.dead || defender.hidden || defender.concealed)
-        return 0;
-    endif
-
-    // Cooldown to avoid ress kill
-    if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
-        // Allow combat if defender initiated it
-        if (me.opponent == defender) return 1; endif
-        // Otherwise prevent attacking during cooldown
-        return 0;
-    endif
-
-    // If defender is a player, normal combat rules apply
-    if (!defender.npctemplate)
-        return 1;
-    endif
-
-    // NPC vs NPC combat only happens if:
-    if (defender.npctemplate)
-        // Check if forced to attack by GM command
-        var forced_target := GetObjProperty(attacker, "#ForcedTarget");
-        if (forced_target == defender.serial)
-            return 1;
-        endif
-
-        // Check enemy categories
-        var attacker_elem := NPC_GetNPCConfig(attacker);
-        var defender_elem := NPC_GetNPCConfig(defender);
-        var enemy_cats := GetConfigStringArray(attacker_elem, "EnemyCategories");
-        
-        if (enemy_cats && defender_elem.Category in enemy_cats)
-            return 1;
-        endif
-
-        return 0; // No valid reason for NPCs to fight
-    endif
-
-    return 1;
-endfunction
-
-function HandleEnteredArea(source, is_ranged)
+function HandleMonsterEnteredArea(source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
@@ -778,7 +736,7 @@ function HandleEnteredArea(source, is_ranged)
         HandleAmbush(me, source);
     endif
 
-    HandleCombatEvent(source, is_ranged);
+    HandleMonsterCombatEvent(source, is_ranged);
     
     return 1;
 endfunction
@@ -821,33 +779,6 @@ function MaintainRange(opponent)
     endif
 
     return 0;
-endfunction
-
-// New function to handle ally behavior
-function AlertAllies(invasor, me)
-    if (isAlly(invasor))
-        return 0;
-    endif
-
-    if (invasor.hidden || invasor.concealed)
-        return 0;
-    endif
-
-    if (GetCooldown(me, "alert_allies"))
-        return 0;
-    endif
-    
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
-        if (mobile.npctemplate && mobile != me)
-            if (isAlly(mobile))
-                SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
-                SendEvent(mobile, struct{ "type" := EVID_ALERT_ALLIES, "source" := invasor });
-            endif
-        endif
-        sleepms(2);
-    endforeach
-
-    SetCooldown(me, "alert_allies", 15);
 endfunction
 
 function handleInitialReaction(source)
@@ -971,18 +902,6 @@ function GetPlayersPetsAndSummonsNearby(mobile)
     endforeach
     
     return enemies;
-endfunction
-
-function isAlly(mobile)
-    if (!mobile || mobile.dead) return 0; endif
-
-    if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
-
-    if (mobile.hidden || mobile.concealed) return 0; endif
-
-    if (mobile.acctname || mobile.alignment != 1) return 0; endif
-    
-    return 1;
 endfunction
 
 function AskForHealing(me)
