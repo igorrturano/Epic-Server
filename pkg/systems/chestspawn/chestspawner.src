@@ -53,9 +53,9 @@ function makeChests(item, frq, amt, rng)
 	var current, newamt;
 	var lvl := GetObjProperty(item, "level");
 	var lootname;
-	var class := cstr(GetObjProperty(item, "class"));
+	var classe := cstr(GetObjProperty(item, "classe"));
 	var race  := cstr(GetObjProperty(item, "race"));
-	lootname := race+class+"Chest"+lvl;
+	lootname := race+classe+"Chest"+lvl;
 	var chests;
 	while(item)
 		CleanArray(item);
@@ -104,7 +104,7 @@ function makeChests(item, frq, amt, rng)
 endfunction
 
 function ClearChests(spawn)
-
+ 
 	var chests := GetObjProperty(item, "chests");
 	foreach chestserial in chests
 			var item := SystemFindObjectBySerial(chestserial);
