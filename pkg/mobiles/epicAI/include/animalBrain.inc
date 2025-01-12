@@ -61,6 +61,7 @@ function AnimalBrain()
 
         // If no events and no combat, do idle behavior
         if (!ev && !me.opponent)
+            AnimalIdle(wanders);
             if (RandomInt(100) < 30) // 30% chance to wander
                 wanders += 1;
                 if (wanders >= 30)
@@ -71,9 +72,6 @@ function AnimalBrain()
         endif
 
         sleepms(100);
-        // Animal-specific behavior
-        // AnimalLookAround();
-        // AnimalWander();
     endwhile
 endfunction
 
@@ -82,7 +80,6 @@ function HandleAnimalEnteredArea(source)
         return 0;
     endif
 
-    handleInitialReaction(source);
     if (me.canCharge())
         StartCharge(me, source);
     endif
@@ -174,4 +171,47 @@ function HandleAnimalLeftArea(opponent)
     // If nothing else to do, go idle
     HandleIdleState();
     return 1;
+endfunction
+
+function AnimalIdle(wanders)
+   if (me.opponent)
+        return;
+    endif
+
+    if (wanders > 10)
+        // Heal slowly while idle
+        var heal_amount := CInt(CDbl(AP_GetVitalMaximumValue(me, HITS)) * 0.01);
+        HealDamage(me, heal_amount);
+    endif
+
+    // Look for potential targets
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
+        if (CanFight(me, mobile))
+            HandleAnimalCombatEvent(mobile);
+            return;
+        endif
+        sleepms(2);
+    endforeach
+
+    var anchor := GetObjProperty(me, "anchor");
+    if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
+      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      sleep(3);
+      MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
+     endif
+    
+    // Random wandering when no targets
+    if (RandomInt(100) < 30)
+        var direction := RandomInt(8);
+        case (direction)
+            0: WalkTowardLocation(me.x, me.y-1);
+            1: WalkTowardLocation(me.x+1, me.y-1);
+            2: WalkTowardLocation(me.x+1, me.y);
+            3: WalkTowardLocation(me.x+1, me.y+1);
+            4: WalkTowardLocation(me.x, me.y+1);
+            5: WalkTowardLocation(me.x-1, me.y+1);
+            6: WalkTowardLocation(me.x-1, me.y);
+            7: WalkTowardLocation(me.x-1, me.y-1);
+        endcase
+    endif
 endfunction
