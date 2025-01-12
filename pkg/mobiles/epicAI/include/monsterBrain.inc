@@ -6,10 +6,6 @@ include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 
-var me := Self();
-const AREA_SIZE := 18;
-var combat_cooldown := 0;
-
 function MonsterBrain()
     var ev;
     var wanders := 0;
@@ -33,7 +29,7 @@ function MonsterBrain()
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             if (!CanFight(me, me.opponent))
-                HandleMonsterDisengage(me.opponent);
+                HandleMonsterLeftArea(me.opponent);
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
@@ -54,8 +50,6 @@ function MonsterBrain()
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
                     endif
-                SYSEVENT_DISENGAGED: 
-                    HandleMonsterDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         HandleMonsterLeftArea(is_ranged);
@@ -128,50 +122,6 @@ function HandleSpeech(text, source, is_ranged)
 
     Say(response);
     SetCooldown(me, "combat_speech", 15);
-    return 1;
-endfunction
-
-function HandleMonsterDisengage(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
-    ClearCombatState();
-
-    if (opponent.dead)
-        var corpse := opponent.GetCorpse();
-        if (corpse)
-
-            // First, approach the corpse
-            while (Distance(me, corpse) > 1)
-                RunToward(corpse);
-                sleepms(100);
-                
-                // Break if corpse disappeared or too far
-                if (!corpse || Distance(me, corpse) > 20)
-                    return 0;
-                endif
-            endwhile
-
-            var max_loot := 1;
-            var looted := 0;
-            
-            // Ensure NPC has a backpack
-            if (!me.backpack)
-                var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
-                EquipItem(me, backpack);
-            endif
-
-            // Loot items
-            while (looted < max_loot)
-                PrintTextAbove(me, "*revirando o corpo*");
-                LootSomething(me, corpse);
-                looted += 1;
-                sleepms(1500);
-            endwhile
-        endif
-    endif
-    
     return 1;
 endfunction
 
@@ -387,11 +337,6 @@ function FindPriorityLoot(corpse, graphics_array)
     return 0;
 endfunction
 
-function DisableMainEvents()
-    DisableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA);
-    DisableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED);
-endfunction
-
 function HandleMonsterCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         return 0;
@@ -441,94 +386,6 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
 
     if (me.CanTongueGrab())
         TongueGrab(me, opponent);
-    endif
-
-    return 1;
-endfunction
-
-function PursueTarget(opponent)
-    var dist := Distance(me, opponent);
-    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
-
-    if (me.canSpitAcid())
-        if (dist >= 2 && dist <= 6)
-            AcidSpray(me, opponent);
-        endif
-    endif
-
-    if (me.canThrow())
-        if (dist >= 2 && dist <= 12)
-            ThrowSpecial(me, opponent);
-        endif
-    endif
-
-    // Track progress towards target
-    var progress := GetObjProperty(me, "#pursue_progress");
-    if (!progress)
-        progress := struct{
-            "last_dist" := dist,
-            "last_pos" := struct{ "x" := me.x, "y" := me.y },
-            "last_check_time" := ReadGameClock(),
-            "no_progress_count" := 0,
-            "start_time" := ReadGameClock()
-        };
-    endif
-
-    // Only check progress every 2 seconds
-    if (ReadGameClock() >= progress.last_check_time + 2)
-        var moved := (me.x != progress.last_pos.x || me.y != progress.last_pos.y);
-        var got_closer := (dist < progress.last_dist);
-        
-        // No progress if we haven't moved OR haven't gotten closer in 2 seconds
-        if (!moved || !got_closer)
-            progress.no_progress_count += 1;
-        else
-            progress.no_progress_count := 0;
-        endif
-
-        // Update tracking info
-        progress.last_dist := dist;
-        progress.last_pos.x := me.x;
-        progress.last_pos.y := me.y;
-        progress.last_check_time := ReadGameClock();
-    endif
-
-    // If we're not making progress after several checks, force a reposition
-    if (progress.no_progress_count >= 1) // Zero tolerance for no progress
-        EraseObjProperty(me, "path");
-        EraseObjProperty(me, "#enemy_last_loc");
-        TacticalReposition(opponent);
-        progress.no_progress_count := 0;
-        progress.last_check_time := ReadGameClock();
-        SetObjProperty(me, "#pursue_progress", progress);
-        return 1;
-    endif
-
-    SetObjProperty(me, "#pursue_progress", progress);
-
-    // Normal pursuit logic
-    if (CheckLineOfSight(me, opponent))
-        if (Distance(me, opponent) > 1)
-            RunToward(opponent);
-        endif
-        sleepms(100);
-    else
-        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
-        if (path)
-            foreach coord in path
-                if (Distance(me, opponent) <= 1)
-                    break;
-                endif
-                if (!shouldKeepPursuing(opponent, dist)) break; endif
-                RunTowardLocation(coord.x, coord.y);
-                sleepms(100);
-            endforeach
-        else
-            progress.no_progress_count += 1;
-            if (me.hasTunnelTactics())
-                TunnelTactics(me, opponent);
-            endif
-        endif
     endif
 
     return 1;
@@ -687,6 +544,7 @@ function HandleIdleState()
             WalkTowardLocation(home_x, home_y);
         endif
     endwhile
+    
     // No need for event checking here since MonsterBrain already does it
     return 1;
 endfunction
@@ -706,12 +564,6 @@ function FleeFrom(opponent)
         runs += 1;
         sleepms(100);
     endwhile
-endfunction
-
-function EnableMainEvents()
-    DisableEvents(SYSEVENT_OPPONENT_MOVED); // Explicitly disable opponent movement events
-    EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-    EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
 endfunction
 
 function HandleMonsterEnteredArea(source, is_ranged)

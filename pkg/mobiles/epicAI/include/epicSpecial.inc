@@ -827,3 +827,38 @@ function ApplyThrowEffect(attacker, defender, throw_info)
 
    return 1;
 endfunction
+
+function WebWrapCorpse(spider)
+   if (GetCooldown(spider, "web_wrap"))
+      return 0;
+   endif
+
+   var corpses := ListItemsNearLocation(spider.x, spider.y, spider.z, 3);
+   foreach item in corpses
+      if (item.IsA(POLCLASS_CORPSE) && !GetObjProperty(item, "webseal") && !GetObjProperty(item, "morto"))
+         // Create web animation/effect
+         Set_Critical(1);
+
+         PlayStationaryEffect(item.x, item.y, item.z, 0xCCA1, 5, 80);
+         for i:= 0 to 3
+            PlaySoundEffect(spider, 0x5A); // Web sound
+            PlayAttackAnimation(spider);
+            sleep(1);
+         endfor
+         sleep(1);
+
+         // Transform corpse appearance and set properties
+         item.graphic := 0x10DA;  // Web cocoon graphic
+    
+         start_script(":epicai:scripts/webcheck", {item, spider});     
+         PrintTextAbove(spider, "*envolve o corpo em teia*");
+         SetCooldown(spider, "web_wrap", 30);
+         Set_Critical(0);
+
+         return 1;
+      endif
+      sleepms(2);
+   endforeach
+
+   return 0;
+endfunction

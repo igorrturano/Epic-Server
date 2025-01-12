@@ -11,7 +11,7 @@ function AnimalBrain()
 
         if (me.opponent)
             if (!CanFight(me, me.opponent))
-                HandleAnimalDisengage(me.opponent);
+                HandleAnimalLeftArea(me.opponent);
             else
                 PursueTarget(me.opponent);
             endif
@@ -20,22 +20,25 @@ function AnimalBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED: 
+                    PrintTextAbove(me, "ENGAGED");
                     AlertAllies(ev.source, me);
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_DAMAGED: 
+                    PrintTextAbove(me, "DAMAGED");
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
+                    PrintTextAbove(me, "ENTERED AREA");
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea();
+                        CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
                     endif
-                SYSEVENT_DISENGAGED:
-                    HandleAnimalDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
+                    PrintTextAbove(me, "LEFT AREA");
                     if (!IsAlly(ev.source)) // Only process if it's a player
-                        HandleAnimalLeftArea();
+                        HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
+                    PrintTextAbove(me, "ALERT ALLIES");
                     var opponent_serial := GetObjProperty(me, "#taunt_opponent");
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
@@ -45,6 +48,7 @@ function AnimalBrain()
                         endif
                     endif
                 EVID_TAUNT:
+                    PrintTextAbove(me, "TAUNT");
                     if (CanFight(me, ev.source))
                         HandleAnimalCombatEvent(ev.source);
                     endif
@@ -55,6 +59,18 @@ function AnimalBrain()
             endcase
         endif
 
+        // If no events and no combat, do idle behavior
+        if (!ev && !me.opponent)
+            if (RandomInt(100) < 30) // 30% chance to wander
+                wanders += 1;
+                if (wanders >= 30)
+                    wanders := 0;
+                    HandleIdleState();
+                endif
+            endif
+        endif
+
+        sleepms(100);
         // Animal-specific behavior
         // AnimalLookAround();
         // AnimalWander();
@@ -119,10 +135,10 @@ function HandleAnimalCombatEvent(opponent)
     return 1;
 endfunction
 
-function HandleAnimalLeftArea()
+function HandleAnimalLeftArea(opponent)
     // Clear current combat state
     ClearCombatState();
-    
+
     // First look for new opponents
     foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
@@ -132,18 +148,6 @@ function HandleAnimalLeftArea()
         sleepms(2);
     endforeach
 
-    // If nothing else to do, go idle
-    HandleIdleState();
-    return 1;
-endfunction
-
-function HandleAnimalDisengage(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
-    ClearCombatState();
-
     if (opponent.dead)
         var corpse := opponent.GetCorpse();
         if (corpse)
@@ -152,15 +156,22 @@ function HandleAnimalDisengage(opponent)
             while (Distance(me, corpse) > 1)
                 RunToward(corpse);
                 sleepms(100);
-                
+                                
                 // Break if corpse disappeared or too far
                 if (!corpse || Distance(me, corpse) > 20)
                     return 0;
                 endif
             endwhile
 
+            if (me.CanDoWebWrap())
+                print("Web wrapping corpse");
+                WebWrapCorpse(me);
+            endif
+
         endif
     endif
-    
+
+    // If nothing else to do, go idle
+    HandleIdleState();
     return 1;
 endfunction

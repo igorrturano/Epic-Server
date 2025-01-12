@@ -189,3 +189,12 @@ exported function canDoConfusion(who)
     
     return 0;
 endfunction
+
+exported function CanDoWebWrap(who)
+    var templates := array{"dreadgiantspider"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
