@@ -46,8 +46,7 @@ class DropDown()
 	endfunction
 
 	function DefineValorEscolhido(this, idOpcaoSelecionada)
-		var indiceValorSelecionado :=  (idOpcaoSelecionada - this.adicionalIdValores) % this.maxOpcoes;
-		Print("indiceValorSelecionado: " + indiceValorSelecionado);
+		var indiceValorSelecionado :=  (idOpcaoSelecionada - this.adicionalIdValores) % this.gerenciador.maxOpcoes;
 		this.valorEscolhido := this.valores[indiceValorSelecionado].botao.valorReal;
 	endfunction
 

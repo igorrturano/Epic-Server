@@ -271,9 +271,9 @@ endfunction
 function PreparaDropDowns(quem, byref navegacao,byref gerenciador, parametros, configRecursos,pericia)
 	var materiais := SplitWords( navegacao.componenteSelecionado.materiais,",");
 	if(!parametros.?materiaisEncontrados)
-		parametros.+materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos);
+		parametros.+materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,navegacao.componenteSelecionado.materialPrincipal);
 	endif
-	parametros.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos);
+	parametros.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,navegacao.componenteSelecionado.materialPrincipal);
 
 	foreach material in materiais
 		var dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_material_iter);
@@ -298,30 +298,44 @@ function PreparaDropDowns(quem, byref navegacao,byref gerenciador, parametros, c
 	endforeach
 endfunction
 
-function CarregaMateriaisEncontrados(quem,configRecursos)
+function CarregaMateriaisEncontrados(quem,configRecursos, pericia, materialPrincipal)
 	var retorno := dictionary;
 
 	foreach item in EnumerateItemsInContainer(quem.backpack)
+		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
-			var encontrado;
+			
 			var tipo := Lower(materialDetalhe.type);
+			if(materialPrincipal == tipo &&  materialDetalhe.Skill > AP_GetSkill(quem,pericia)) continue; endif
+			MontaMaterialEncontrado(retorno,tipo,item);
+		else
+			var itemCfg := itemsConfig[item.objtype];
 
-			if( !retorno.exists(tipo))
-				retorno.insert(tipo, dictionary);
-			endif
-			encontrado := retorno[tipo];
-			if(!encontrado.exists(item.objtype))
-				encontrado.insert(item.objtype,array{item});
-				retorno[tipo] := encontrado;
-			else
-				encontrado[item.objtype].append(item);
+			if(itemCfg)
+				MontaMaterialEncontrado(retorno,item.objtype,item);
 			endif
 		endif
-		Sleepms(2);
 	endforeach 
 
 	return retorno;
+endfunction
+
+function MontaMaterialEncontrado(byref primeiraCamada, chave, item)
+	var encontrado;
+
+	if( !primeiraCamada.exists(chave))
+		primeiraCamada.insert(chave, dictionary);
+	endif
+
+	encontrado := primeiraCamada[chave];
+	
+	if(!encontrado.exists(item.objtype))
+		encontrado.insert(item.objtype,array{item});
+		primeiraCamada[chave] := encontrado;
+	else
+		encontrado[item.objtype].append(item);
+	endif
 endfunction
 
 function FechaTodosDropdowns(quem,dropdowns)
@@ -382,10 +396,10 @@ function PreparaComponentesGump(quem, configProfissao,byref navegacao)
 
 	var colCfg := dictionary;
 		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 2};
-		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 4};
 		colCfg["materialPrincipal"] := struct{titulo := "Principal Material",ordem := 3,largura := 2};
-		colCfg["estacao"] := struct{titulo := "Estação",ordem := 5,largura := 2};
-		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 2};
+		colCfg["estacao"] := struct{titulo := "Estação",ordem := 5,largura := 1.5};
+		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 1.5};
 		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
 
 	parametrosGump.+configColunas := colCfg;
