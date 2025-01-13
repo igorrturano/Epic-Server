@@ -40,7 +40,7 @@ function Slowdown(who, byref info)
 	SendSysMessage(who, "Voce se move devagar.");
 
 	info.status := 1;
-	info.dexmod := AP_GetStat(who, DEXTERITY);
+	info.dexmod := AP_GetStatMod(who, DEXTERITY);
 	
 	AP_ModifyStatMod(who, DEXTERITY, 0-info.dexmod);
 	who.paralyzed := 1;

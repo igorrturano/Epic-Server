@@ -1,0 +1,33 @@
+use uo;
+use os;
+
+include ":timedscripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include "include/sysEvent";
+include ":charactercreation:resists";
+
+program webTrap(mobile)
+    if (mobile.acctname)
+        TrapMobile(mobile);
+        AlertNearbySpiders(mobile);
+    endif
+endprogram
+
+function TrapMobile(mobile)
+    if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
+        SendSysMessageEx(mobile, "Você ficou preso na teia de aranha!", SSM_FAIL);
+        TS_StartTimer(mobile, "paralysis", 5);
+        SetObjProperty(mobile, "spiderWebArea", 1);
+        PrintTextAbove(mobile, "*preso na teia*");
+    endif
+endfunction
+
+function AlertNearbySpiders(mobile)
+    foreach spider in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 12)
+        if (spider.isSpider())
+            SendEvent(spider, struct{ "type" := EVID_ALERT_ALLIES, "source" := mobile });
+        endif
+        sleepms(2);
+    endforeach
+endfunction

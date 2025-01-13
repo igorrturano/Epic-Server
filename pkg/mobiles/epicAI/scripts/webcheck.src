@@ -1,0 +1,37 @@
+use os;
+use uo;
+include "include/say";
+
+program webcheck(params)
+   var corpse := params[1];
+   var spider := params[2];
+
+   while (corpse)
+      var nearby := ListMobilesNearLocationEx(corpse.x, corpse.y, corpse.z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN);
+      var players:= array;
+      foreach mob in nearby
+            if (mob.acctname && mob.cmdlevel < 1 && mob.serial != corpse.owner.serial)
+                players.append(mob);
+            endif
+      endforeach
+      if (players.size() > 0)
+         SetObjProperty(corpse, "webseal", 1);
+         corpse.decayAt := ReadGameClock() + 240; 
+
+         SendSysMessageEx(corpse, "Você está preso na teia de aranha!", SSM_FAIL);
+      elseif (GetObjProperty(corpse, "freed_from_web")) 
+         corpse.graphic := corpse.objtype;
+         SetObjProperty(corpse, "curado", 1);
+         EraseObjProperty(corpse, "freed_from_web");
+         break; 
+      else
+         SendSysMessageEx(corpse, "Você sente uma fina camada de teia envolver seu corpo!", SSM_INFO);
+         SetObjProperty(corpse, "prolongardesmaio", 1);
+         break;
+      endif
+      
+      sleep(5);
+   endwhile
+
+   EraseObjProperty(corpse, "webseal");
+endprogram
