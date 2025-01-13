@@ -29,7 +29,7 @@ function StartScript(mobile, attacker := 0, level := 0)
       PerformAction(mobile, 0x15, 5, 1, ACTION_DIR_FORWARD , 0, 4);
    endif
 
-   AP_ConsumeVital(mobile, STAMINA,20);
+   AP_ConsumeVital(mobile, STAMINA, 10);
 
    sleepms(750);
 	return 1;

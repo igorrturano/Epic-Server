@@ -204,7 +204,11 @@ function DoThiefSneakAttack(opponent)
         me.attack_once(opponent);
     else
         // If stealth attack failed, engage in normal combat
-        HandleCombatEvent(opponent, 0);
+        case (brain_type)
+            "monster": HandleMonsterCombatEvent(opponent, 0);
+            "humanoid": 
+        endcase
+
     endif
 endfunction
 
@@ -822,4 +826,201 @@ function ApplyThrowEffect(attacker, defender, throw_info)
    DamageFLS(defender, throw_info.dmg, DMG_FORCED, attacker);
 
    return 1;
+endfunction
+
+function WebWrapCorpse(spider)
+   if (GetCooldown(spider, "web_wrap"))
+      return 0;
+   endif
+
+   var corpses := ListItemsNearLocation(spider.x, spider.y, spider.z, 3);
+   foreach item in corpses
+      if (item.IsA(POLCLASS_CORPSE) && !GetObjProperty(item, "webseal") && !GetObjProperty(item, "morto"))
+         // Create web animation/effect
+         Set_Critical(1);
+
+         PlayStationaryEffect(item.x, item.y, item.z, 0xCCA1, 5, 80);
+         for i:= 0 to 3
+            PlaySoundEffect(spider, 0x5A); // Web sound
+            PlayAttackAnimation(spider);
+            sleep(1);
+         endfor
+         sleep(1);
+
+         // Transform corpse appearance and set properties
+         item.graphic := 0x10DA;  // Web cocoon graphic
+    
+         start_script(":epicai:scripts/webcheck", {item, spider});     
+         PrintTextAbove(spider, "*envolve o corpo em teia*");
+         SetCooldown(spider, "web_wrap", 30);
+         Set_Critical(0);
+
+         return 1;
+      endif
+      sleepms(2);
+   endforeach
+
+   return 0;
+endfunction
+
+function WebShot(spider, opponent)
+   if (GetCooldown(spider, "web_shot"))
+      return 0;
+   endif
+   
+   if (!CheckLineOfSight(spider, opponent))
+      return 0;
+   endif
+
+   var dist := Distance(spider, opponent);
+   if (dist > 6)
+      return 0;
+   endif
+
+   PrintTextAbove(spider, "*dispara teia*");
+   PlayMovingEffect(spider, opponent, 3814, 50);
+
+   if (!CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+      PrintTextAbove(opponent, "*preso na teia*");
+	  TS_StartTimer(opponent, "paralysis", 5);
+   else
+      TS_StartTimer(opponent, "lentidao", 10);
+      PrintTextAbove(opponent, "*parcialmente preso*");
+   endif
+
+   SetCooldown(spider, "web_shot", 15);
+   return 1;
+endfunction
+
+function WallClimb(spider)
+   if (GetCooldown(spider, "wall_climb"))
+      return 0;
+   endif
+
+   // Check if any opponents below
+   var opponents := ListHostiles(spider, 6);
+   if (opponents.size() < 1)
+      return 0;
+   endif
+
+   // 50% chance to climb when possible
+   if (RandomInt(100) < 50)
+      spider.concealed := 1;
+      PrintTextAbove(spider, "*sobe pela parede*");
+      
+      // Wait a moment
+      sleep(2);
+      
+      // Find closest opponent
+      var closest := opponents[1];
+      var closest_dist := Distance(spider, closest);
+      
+      foreach mobile in opponents
+         var dist := Distance(spider, mobile);
+         if (dist < closest_dist)
+            closest := mobile;
+            closest_dist := dist;
+         endif
+         sleepms(2);
+      endforeach
+
+      GrantPrivilege(me, "hiddenattack");
+      me.enable("hiddenattack");
+      GrantPrivilege(me, "runwhilestealth");
+      me.enable("runwhilestealth");
+
+      // Drop down for surprise attack
+      MoveObjectToLocation(spider, closest.x, closest.y, closest.z, closest.realm, MOVEOBJECT_FORCELOCATION);
+      spider.concealed := 0;
+      me.hidden := 1;
+      me.stealthsteps := 100;
+      
+      PrintTextAbove(spider, "*ataca do alto*");
+      SetObjProperty(spider, "backstab", 1);
+      SetObjProperty(spider.weapon, "backstab", 1);
+
+      spider.attack_once(closest);
+      
+      SetCooldown(spider, "wall_climb", 30);
+      return 1;
+   endif
+
+   return 0;
+endfunction
+
+function PoisonBite(spider, opponent)
+   if (GetCooldown(spider, "poison_bite"))
+      return 0;
+   endif
+
+   if (Distance(spider, opponent) > 1)
+      return 0;
+   endif
+
+   var npc_elem := NPC_GetNPCConfig(spider);
+   var tier := CInt(npc_elem.Tier);
+   if (!tier) tier := 1; endif
+
+   PrintTextAbove(spider, "*morde venenosamente*");
+   
+   if (!CheckResist(opponent, FORTITUDE, getNpcResist()))
+      case (RandomInt(6)+1)
+         1: TS_StartTimer(opponent, "defaultPoison", 60, tier, spider);
+         2: TS_StartTimer(opponent, "strPoison", 60, tier, spider);
+         3: TS_StartTimer(opponent, "dexPoison", 60, tier, spider);
+         4: TS_StartTimer(opponent, "intPoison", 60, tier, spider);
+         5: TS_StartTimer(opponent, "staminaPoison", 60, tier, spider);
+         6: TS_StartTimer(opponent, "manaPoison", 60, tier, spider);
+      endcase
+   endif
+
+   SetCooldown(spider, "poison_bite", 20);
+   return 1;
+endfunction
+
+function LayEggSac(spider)
+   if (GetCooldown(spider, "egg_sac"))
+      return 0;
+   endif
+
+   // Only lay eggs if in combat and health above 50%
+   if (!spider.opponent || AP_GetVital(spider, "Hits") < AP_GetVitalMaximumValue(spider, "Hits")/2)
+      return 0;
+   endif
+
+   var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1);
+   if (egg)
+      PrintTextAbove(spider, "*deposita ovos*");
+      SetObjProperty(egg, "SpawnTime", ReadGameClock());
+      SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
+      SetCooldown(spider, "egg_sac", 60);
+      return 1;
+   endif
+
+   return 0;
+endfunction
+
+function CreateInvisibleWeb(spider)
+    if (GetCooldown(spider, "create_web"))
+        return 0;
+    endif
+
+    var web := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderWebTrap", 1, spider.realm);
+    if (web)
+        PrintTextAbove(spider, "*tece teia*");
+        SetObjProperty(web, "Creator", spider.serial);
+        SetCooldown(spider, "create_web", 30);
+        
+        // Random static web graphic
+        var web_graphics := array{4280, 4281, 4282, 4283, 4284, 4285, 4286, 4287, 4288, 
+                                4289, 4290, 4291, 4292, 4293, 4294, 4295, 4296, 4297, 
+                                4298, 4299, 4300, 4301, 4302, 4303, 4304};
+        
+        web.graphic := web_graphics[RandomInt(web_graphics.size())+1];
+        web.invisible := 1;
+        SetObjProperty(web, "level", CInt(NPC_GetNPCConfig(spider).Tier));
+        return 1;
+    endif
+
+    return 0;
 endfunction
