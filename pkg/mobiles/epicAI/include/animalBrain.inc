@@ -129,6 +129,14 @@ function HandleAnimalCombatEvent(opponent)
         TongueGrab(me, opponent);
     endif
 
+    if (me.CanPoisonBite())
+        PoisonBite(me, opponent);
+    endif
+
+    if (me.CanClimbWall())
+        WallClimb(me);
+    endif
+
     return 1;
 endfunction
 
@@ -161,7 +169,6 @@ function HandleAnimalLeftArea(opponent)
             endwhile
 
             if (me.CanDoWebWrap())
-                print("Web wrapping corpse");
                 WebWrapCorpse(me);
             endif
 
@@ -198,7 +205,7 @@ function AnimalIdle(wanders)
       PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
-     endif
+    endif
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)
@@ -213,5 +220,14 @@ function AnimalIdle(wanders)
             6: WalkTowardLocation(me.x-1, me.y);
             7: WalkTowardLocation(me.x-1, me.y-1);
         endcase
+    endif
+
+    if (RandomInt(100) < 10) // 10% de chance de criar traps
+        if (me.isSpider())
+            CreateInvisibleWeb(me); 
+        endif
+        if (me.CanLayEggSac())
+            LayEggSac(me);
+        endif
     endif
 endfunction

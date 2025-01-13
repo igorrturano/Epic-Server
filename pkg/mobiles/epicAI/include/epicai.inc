@@ -702,14 +702,18 @@ function PursueTarget(opponent)
     var dist := Distance(me, opponent);
     if (!shouldKeepPursuing(opponent, dist)) return 0; endif
 
-    if (me.canSpitAcid())
-        if (dist >= 2 && dist <= 6)
+    if (dist >= 2 && dist <= 6)
+        if (me.canSpitAcid())
             AcidSpray(me, opponent);
         endif
+
+        if (me.canShootWeb())
+            WebShot(me, opponent);
+        endif 
     endif
 
     if (me.canThrow())
-        if (dist >= 2 && dist <= 12)
+        if (dist >= 2 && dist <= 8)
             ThrowSpecial(me, opponent);
         endif
     endif
