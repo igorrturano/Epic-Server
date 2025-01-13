@@ -47,7 +47,12 @@ endprogram
 
 function CarveItems(who, tool, item)
     if ( item.IsA(POLCLASS_CORPSE) ) //Escalpela e esquarteja corpo
-        return start_script(":survival:skinning", {who, item, tool});
+		if (item.graphic == 0x10DA) //Escalpela
+			PrintTextAbove(item, "*Liberta o corpo das teias*");
+			SetObjProperty(item, "freed_from_web", 1);
+		else
+        	return start_script(":survival:skinning", {who, item, tool});
+		endif
     else
         case (item.objtype)
             0x97E:

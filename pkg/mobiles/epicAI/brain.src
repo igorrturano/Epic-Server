@@ -7,6 +7,8 @@ include "include/humanoidBrain";
 include "include/epicNPCUtils";
 
 var brain_type;
+var me := Self();
+const AREA_SIZE := 18;
 
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
