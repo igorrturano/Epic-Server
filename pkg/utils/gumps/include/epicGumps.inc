@@ -36,6 +36,7 @@ enum OPCOES_TABELA
 	CHECKBOX_APERTADO := "checkBoxApertadoId",
 	CHECKBOX_SOLTO := "checkBoxSoltoId",
 	RECUO_EIXO_X_BOTAO := "recuoExidoXBtn", // recua o botao no eixo x caso a centralização não tenha funcionado.
+	RECUO_EIXO_Y_BOTAO := "recuoExidoXBtn", // recua o botao no eixo y caso a centralização não tenha funcionado.
 	MOSTRAR_FUNDO := "isMostrarFundo", // customiza se deve mostrar o background da tabela.
 	MAX_PAGINAS := "numeroMaxPaginas" // Numero máximo de páginas na sua versão páginada.
 endenum
@@ -256,7 +257,8 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 		var opt_botao_solto := DeterminaOpcaoTabela(opcoesTabela,BOTAO_SOLTO,2510);
 		var opt_checkbox_apertado := DeterminaOpcaoTabela(opcoesTabela,CHECKBOX_APERTADO,2511);
 		var opt_checkbox_solto := DeterminaOpcaoTabela(opcoesTabela,CHECKBOX_SOLTO,2510);
-		var opt_recuo_eixox_btn := DeterminaOpcaoTabela(opcoesTabela,RECUO_EIXO_X_BOTAO,5);
+		var opt_recuo_eixox_btn := DeterminaOpcaoTabela(opcoesTabela,RECUO_EIXO_X_BOTAO,-5);
+		var opt_recuo_eixoy_btn := DeterminaOpcaoTabela(opcoesTabela,RECUO_EIXO_Y_BOTAO,0);
 		var opt_is_mostrar_fundo := DeterminaOpcaoTabela(opcoesTabela,MOSTRAR_FUNDO,true);
 
 		var exemplo := dados[1];
@@ -329,13 +331,13 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 
 		if(opcoesTabela[TITULO_TABELA])
 			if(opt_is_mostrar_fundo)
-				GFResizePic(gump, x, y,opt_gumpic_fundo, larguraTotal, ALTURA_LINHA);
+				GFResizePic(gump, cInt(x), cInt(y),opt_gumpic_fundo, larguraTotal, ALTURA_LINHA);
 			endif
 
 			GFHTMLArea( 
 			gump,
-			x + CentralizaEixoX(larguraTotal,opcoesTabela[TITULO_TABELA]),
-			y,
+			cInt(x + CentralizaEixoX(larguraTotal,opcoesTabela[TITULO_TABELA])),
+			cInt(y),
 			larguraTotal,
 			ALTURA_LINHA,
 			"<{}size={} color={}>{}</{}>".format(
@@ -355,10 +357,10 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 				coluna.+largura := largura; 
 			endif
 			if(opt_is_mostrar_fundo)
-				GFResizePic(gump, x + larguraUtilizada, y,opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
+				GFResizePic(gump, cInt(x + larguraUtilizada), cInt(y),opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
 			endif
 
-			GFTextLine(gump, x + larguraUtilizada + CentralizaEixoX(larguraGrid,coluna.titulo,coluna.largura), y, opt_cor_titulo_coluna, coluna.titulo);
+			GFTextLine(gump,cInt( x + larguraUtilizada + CentralizaEixoX(larguraGrid,coluna.titulo,coluna.largura)),cInt( y), opt_cor_titulo_coluna, coluna.titulo);
 			larguraUtilizada := larguraUtilizada + larguraGrid * coluna.largura;
 			Sleepms(2);
 		endforeach
@@ -374,28 +376,27 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 			larguraUtilizada := 0;
 			foreach coluna in colunas
 				if(opt_is_mostrar_fundo)
-					GFResizePic(gump, x + larguraUtilizada, y + ALTURA_LINHA * indiceLinha, opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
+					GFResizePic(gump,cInt( x + larguraUtilizada),cInt( y + ALTURA_LINHA * indiceLinha), opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
 				endif
-				
 				var valorCelula :=  dados[linha][coluna.chaveReal];
 				var valorBotao := valorCelula.valor ? valorCelula.valor: indiceLinha + indiceBtnInicial;
 				if(valorCelula.isColunaBotao)
 					GFAddButton( gump,
-								x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) - opt_recuo_eixox_btn, 
-								y + ALTURA_LINHA * indiceLinha, opt_botao_solto, opt_botao_apertado, 
+								cInt(x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) + opt_recuo_eixox_btn), 
+								cInt(y + ALTURA_LINHA * indiceLinha + opt_recuo_eixoy_btn), opt_botao_solto, opt_botao_apertado, 
 								GF_CLOSE_BTN, 
 								valorBotao);
 
 				elseif(valorCelula.isColunaCheckBox)
 					GFCheckBox( gump,
-							x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) - opt_recuo_eixox_btn, 
-							y + ALTURA_LINHA * indiceLinha, 
+							cInt(x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) + opt_recuo_eixox_btn), 
+							cInt(y + ALTURA_LINHA * indiceLinha + opt_recuo_eixoy_btn), 
 							opt_checkbox_solto, 
 							opt_checkbox_apertado,
 							valorCelula.valor ? true:false,
 							valorBotao);
 				else
-					GFTextLine(gump, x + larguraUtilizada + 5, y + ALTURA_LINHA * indiceLinha,opt_cor_dado, valorCelula);
+					GFTextLine(gump, cInt(x + larguraUtilizada + 5), cInt(y + ALTURA_LINHA * indiceLinha),opt_cor_dado, valorCelula);
 				endif;
 				larguraUtilizada := larguraUtilizada + larguraGrid * coluna.largura;
 				Sleepms(2);
@@ -404,7 +405,6 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 			Sleepms(2);
 		endfor
 	endif
-
 	return gump;
 endfunction;
 
@@ -501,9 +501,9 @@ endfunction
  */
 function CentralizaEixoX(larguraGrid,conteudo,gridsUtilizadas := 1)
 	if(TypeOf(conteudo) == "String")
-		return (larguraGrid * gridsUtilizadas / 2) - (Len(conteudo) * 3);
+		return CInt((larguraGrid * gridsUtilizadas / 2) - (Len(conteudo) * 3));
 	else
-		return (larguraGrid * gridsUtilizadas / 2);
+		return CInt((larguraGrid * gridsUtilizadas / 2));
 	endif
 endfunction
 

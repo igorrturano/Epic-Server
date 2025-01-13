@@ -4,26 +4,22 @@ include ":gumps:/include/dropDownGump";
 
 
 program DropDownGump(parametros)
-	var quem	:= parametros[1];
-	var pidPai	:= parametros[2];
-	var x		:= parametros[3];
-	var y		:= parametros[4];
-	var valores	:= parametros[5];
-	var dropDownId := parametros[6];
+	var quem			:= parametros[1];
+	var pidPai			:= parametros[2];
+	var objetoDropDown	:= parametros[3];
 	var retonoPai := 0;
 	
-	if(!valores || valores.size() == 0)
+	if(!objetoDropDown)
 		return 1;
 	endif
 
-	Sleepms(150);
-
+	Sleepms(200);
 	var retornoDropDown := 1;
 	while ( GetProcess( pidPai ) && retornoDropDown)
 
 		while (retornoDropDown)
-			var gump := DropDownGump(x,y,valores);
-			retornoDropDown := SendDialogGump(quem, gump.layout, gump.data, gump.base.x, gump.base.y,0,dropDownId);
+			var gump := MontaDropDownGump(objetoDropDown.x,objetoDropDown.y,objetoDropDown.valores);
+			retornoDropDown := SendDialogGump(quem, gump.layout, gump.data, gump.base.x, gump.base.y,0,objetoDropDown.idBottao);
 
 			if(retornoDropDown[0])
 				return GFCloseGump(quem, pidPai, retornoDropDown[0]);
