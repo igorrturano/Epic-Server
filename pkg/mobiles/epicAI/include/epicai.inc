@@ -5,6 +5,8 @@ include ":tn:recipes";
 include ":mounts:mounts";
 include "npcUtils";
 
+const MAX_Z_DIFF := 18;
+
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
     if (npc_already_initiliazed)
@@ -547,8 +549,8 @@ endfunction
 function CheckForIdealTarget()
    // If we already have an opponent, stick with them most of the time
    if (me.opponent && CanFight(me, me.opponent))
-      // Only 10% chance to even consider switching targets
-      if (RandomInt(100) < 90)
+      // Only 5% chance to even consider switching targets
+      if (RandomInt(100) < 95)
          return me.opponent;
       endif
    endif
@@ -575,7 +577,7 @@ function CheckForIdealTarget()
 
        // Current opponent gets huge priority bonus to maintain aggro
       if (opponent == me.opponent)
-         priority += 10;
+         priority += 15;
       endif
 
       // Fast NPC prioritizes ranged players
@@ -614,4 +616,599 @@ function CheckForIdealTarget()
    endforeach
 
    return best_opponent.mobile;
+endfunction
+
+// New function to handle ally behavior
+function AlertAllies(invasor, me)
+    if (isAlly(invasor))
+        return 0;
+    endif
+
+    if (invasor.hidden || invasor.concealed)
+        return 0;
+    endif
+
+    if (GetCooldown(me, "alert_allies"))
+        return 0;
+    endif
+    
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+        if (mobile.npctemplate && mobile != me)
+            if (isAlly(mobile))
+                SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
+                SendEvent(mobile, struct{ "type" := EVID_ALERT_ALLIES, "source" := invasor });
+            endif
+        endif
+        sleepms(2);
+    endforeach
+
+    SetCooldown(me, "alert_allies", 15);
+endfunction
+
+function isAlly(mobile)
+    if (!mobile || mobile.dead) return 0; endif
+
+    if (mobile.master || GetObjProperty(mobile, "summoned")) return 0; endif
+
+    if (mobile.hidden || mobile.concealed) return 0; endif
+
+    if (mobile.acctname || mobile.alignment != 1) return 0; endif
+    
+    return 1;
+endfunction
+
+function CanFight(attacker, defender)
+    if (!defender || defender.dead || defender.hidden || defender.concealed)
+        return 0;
+    endif
+
+    // Cooldown to avoid ress kill
+    if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
+        // Allow combat if defender initiated it
+        if (me.opponent == defender) return 1; endif
+        // Otherwise prevent attacking during cooldown
+        return 0;
+    endif
+
+    // If defender is a player, normal combat rules apply
+    if (!defender.npctemplate)
+        return 1;
+    endif
+
+    // NPC vs NPC combat only happens if:
+    if (defender.npctemplate)
+        // Check if forced to attack by GM command
+        var forced_target := GetObjProperty(attacker, "#ForcedTarget");
+        if (forced_target == defender.serial)
+            return 1;
+        endif
+
+        // Check enemy categories
+        var attacker_elem := NPC_GetNPCConfig(attacker);
+        var defender_elem := NPC_GetNPCConfig(defender);
+        var enemy_cats := GetConfigStringArray(attacker_elem, "EnemyCategories");
+        
+        if (enemy_cats && defender_elem.Category in enemy_cats)
+            return 1;
+        endif
+
+        return 0; // No valid reason for NPCs to fight
+    endif
+
+    return 1;
+endfunction
+
+function PursueTarget(opponent)
+    var dist := Distance(me, opponent);
+    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
+
+    if (dist >= 2 && dist <= 6)
+        if (me.canSpitAcid())
+            AcidSpray(me, opponent);
+        endif
+
+        if (me.canShootWeb())
+            WebShot(me, opponent);
+        endif 
+    endif
+
+    if (me.canThrow())
+        if (dist >= 2 && dist <= 8)
+            ThrowSpecial(me, opponent);
+        endif
+    endif
+
+    // Track progress towards target
+    var progress := GetObjProperty(me, "#pursue_progress");
+    if (!progress)
+        progress := struct{
+            "last_dist" := dist,
+            "last_pos" := struct{ "x" := me.x, "y" := me.y },
+            "last_check_time" := ReadGameClock(),
+            "no_progress_count" := 0,
+            "start_time" := ReadGameClock()
+        };
+    endif
+
+    // Only check progress every 2 seconds
+    if (ReadGameClock() >= progress.last_check_time + 2)
+        var moved := (me.x != progress.last_pos.x || me.y != progress.last_pos.y);
+        var got_closer := (dist < progress.last_dist);
+        
+        // No progress if we haven't moved OR haven't gotten closer in 2 seconds
+        if (!moved || !got_closer)
+            progress.no_progress_count += 1;
+        else
+            progress.no_progress_count := 0;
+        endif
+
+        // Update tracking info
+        progress.last_dist := dist;
+        progress.last_pos.x := me.x;
+        progress.last_pos.y := me.y;
+        progress.last_check_time := ReadGameClock();
+    endif
+
+    // If we're not making progress after several checks, force a reposition
+    if (progress.no_progress_count >= 1) // Zero tolerance for no progress
+        EraseObjProperty(me, "path");
+        EraseObjProperty(me, "#enemy_last_loc");
+        TacticalReposition(opponent);
+        progress.no_progress_count := 0;
+        progress.last_check_time := ReadGameClock();
+        SetObjProperty(me, "#pursue_progress", progress);
+        return 1;
+    endif
+
+    SetObjProperty(me, "#pursue_progress", progress);
+
+    // Normal pursuit logic
+    if (CheckLineOfSight(me, opponent))
+        if (Distance(me, opponent) > 1)
+            RunToward(opponent);
+        endif
+        sleepms(100);
+    else
+        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
+        if (path)
+            foreach coord in path
+                if (Distance(me, opponent) <= 1)
+                    break;
+                endif
+                if (!shouldKeepPursuing(opponent, dist)) break; endif
+                RunTowardLocation(coord.x, coord.y);
+                sleepms(100);
+            endforeach
+        else
+            progress.no_progress_count += 1;
+            if (me.hasTunnelTactics())
+                TunnelTactics(me, opponent);
+            endif
+        endif
+    endif
+
+    return 1;
+endfunction
+
+function EnableMainEvents()
+    DisableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED);
+    EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
+    EnableEvents(SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
+endfunction
+
+function DisableMainEvents()
+    DisableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA);
+    DisableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED);
+endfunction
+
+function HandleIdleState()
+    DisableMainEvents();
+    EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
+    
+    // Return to spawn point if we have one
+    var spawn_point := SystemFindObjectBySerial(GetObjProperty(me, "spawnpoint"));
+    var anchor := GetObjProperty(me, "anchor");
+    var home_x, home_y;
+    
+    if (spawn_point)
+        home_x := spawn_point.x;
+        home_y := spawn_point.y;
+    elseif (anchor)
+        home_x := anchor[1];
+        home_y := anchor[2];
+    else
+        return;
+    endif
+
+    while (!hasPlayerNear(me))    
+        if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5)
+            WalkTowardLocation(home_x, home_y);
+        endif
+    endwhile
+    
+    // No need for event checking here since MonsterBrain already does it
+    return 1;
+endfunction
+
+function FleeFrom(opponent)
+    if (!opponent)
+        return 0;
+    endif
+
+    var runs := 0;
+    while (opponent && Distance(me, opponent) < 16 && runs < 20)
+        RunAwayFrom(opponent);
+        if(!AP_ConsumeVital(me, STAMINA, 5))
+            PrintTextAbove(me, "*Exausto*");
+            break;
+        endif
+        runs += 1;
+        sleepms(100);
+    endwhile
+endfunction
+
+function MaintainRange(opponent)
+    var sleepdelay := 275 - me.run_speed;
+    if (sleepdelay < 0)
+        sleepdelay := 50;
+    endif
+
+    var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
+    var z_diff := Abs(me.z - opponent.z);
+
+    if (z_diff > 18)
+        return 0;
+    endif
+
+    if (dist < 4)
+        RunAwayFrom(opponent);
+        sleepms(sleepdelay);
+    elseif (dist > 10)
+        RunToward(opponent);
+        sleepms(sleepdelay);
+    else
+        // Try to stay closer to allies if possible
+        var allies := NPC_GetNearbyAllies(me);
+        if (allies.size() > 0)
+            var closest_ally := allies[1];
+            var ally_dist := Distance(me, closest_ally);
+            
+            if (ally_dist > 4)
+                RunToward(closest_ally);
+                sleepms(sleepdelay);
+                return 0;
+            endif
+        endif
+        
+        TurnToward(opponent);
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+function DoThiefCombatBehavior(opponent)
+    if (Distance(me, opponent) < 6)
+        return 0;
+    endif
+
+    // 50% chance to steal, 50% chance to sneak attack
+    if (RandomInt(100) < 50)
+        DoThiefSteal(opponent);
+    else
+        DoThiefSneakAttack(opponent);
+    endif
+endfunction
+
+function ShamanBehavior(shaman)
+    // First priority: Check allies health
+    if (GetCooldown(shaman, "heal_check"))
+        return 0;
+    endif
+
+    var npc_elem := NPC_GetNPCConfig(shaman);
+    var caster_tier := CInt(npc_elem.Tier);
+    if (!caster_tier)
+        caster_tier := 1;
+    endif
+
+    // Get all allies nearby
+    var allies := NPC_GetNearbyAllies(shaman);
+    var wounded_allies := array{};
+
+    // Check allies' health
+    foreach ally in allies
+        if (isHurt(ally)) // Is Hurt
+            wounded_allies.append(ally);
+        endif
+    endforeach
+
+    if (wounded_allies.size() == 0)
+        DoHarmfulSpell();
+    endif
+
+    // If multiple allies need help, cast healing rain
+    if (wounded_allies.size() >= 3 && !GetCooldown(shaman, "healing_rain"))
+        PerformHealingRain(shaman, wounded_allies);
+        SetCooldown(shaman, "healing_rain", 45);
+        return 1;
+    endif
+
+    foreach ally in wounded_allies
+        var most_wounded := struct{
+            "mobile" := 0,
+            "hp_percent" := 100
+        };
+
+        foreach ally in wounded_allies
+            var hp_percent := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS)) * 100;
+            if (hp_percent < most_wounded.hp_percent)
+                most_wounded.mobile := ally;
+                most_wounded.hp_percent := hp_percent;
+            endif
+            sleepms(2);
+        endforeach
+
+        if (most_wounded.mobile)
+            PerformHeal(shaman, most_wounded.mobile, caster_tier);
+            SetCooldown(shaman, "heal_check", 15);
+            return 1;
+        endif
+        sleepms(2);
+    endforeach
+
+    return 0;
+endfunction
+
+function AskForHealing(me)
+    // First look specifically for shamans
+    if (!isHurt(me))
+        return 0;
+    endif
+
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+        if (mobile.npctemplate && mobile != me)
+            if (mobile.isSage())
+                SetObjProperty(mobile, "#healing_needed", me.serial);
+                SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
+            endif
+        endif
+        sleepms(2);
+    endforeach
+endfunction 
+
+function shouldKeepPursuing(opponent, dist)
+    if (!opponent)
+        return 0;
+    endif
+
+    // Don't chase too far
+    if (dist > AREA_SIZE + 6)
+        return 0;
+    endif
+
+    // If we're in melee range and can see opponent, stop pursuing
+    if (dist <= 1 && CheckLineOfSight(me, opponent))
+        return 0;
+    endif
+
+    // Prevent flee spam by adding a cooldown
+    if (GetCooldown(me, "flee_check"))
+        return 1; // Continue pursuing if on cooldown
+    endif
+    var npcState := getNPCState(me);
+    var cd := 15;
+    
+    if (npcState == "dying")
+        cd := 5;
+    endif
+
+    SetCooldown(me, "flee_check", cd);
+    var allies := NPC_GetNearbyAllies(me);
+    if (allies.size() > 0)
+        if (!GetCooldown(me, "allies"))
+            SetObjProperty(me, "initial_allies", allies.size());
+            SetCooldown(me, "allies", 15);
+        endif
+
+        var initial_allies := GetObjProperty(me, "initial_allies");
+        var already_fighting := GetObjProperty(me, "already_fighting");
+        
+        // Only consider fleeing if we've lost allies
+        if (initial_allies && allies.size() <= CInt(initial_allies/2))
+            // Don't flee if already engaged unless heavily outnumbered
+            if (!already_fighting || ListHostiles(me, 3).size() >= allies.size() * 2)
+                // Higher chance to flee when heavily damaged
+                var flee_chance := (npcState == "dying") ? 40 : 15;
+                
+                if (RandomInt(100) < flee_chance)
+                    PrintTextAbove(me, "*"+me.name+" recua*");
+                    FleeFrom(opponent);
+                    return 0;  // Added return 0 after fleeing
+                endif
+            endif
+        endif
+    else
+        // If alone, don't pursue new targets but stay if already fighting
+        if (!GetObjProperty(me, "already_fighting"))
+            return 0;
+        endif
+    endif
+
+    return 1;  // Continue pursuing if none of the above conditions are met
+endfunction
+
+function LootCorpse(corpse)
+    if (!CorpseHasLoot(corpse))
+        return 0;
+    endif
+
+    // Approach the corpse
+    while (Distance(me, corpse) > 1)
+        RunToward(corpse);
+        sleepms(100);
+        
+        // Break if corpse disappeared or too far
+        if (!corpse || Distance(me, corpse) > 20)
+            return 0;
+        endif
+    endwhile
+
+    // Calculate max items to loot based on intelligence
+    var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/20);
+    if (max_loot < 1)
+        max_loot := 1;
+    endif
+    var looted := 0;
+    
+    // Ensure NPC has a backpack
+    if (!me.backpack)
+        var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
+        if (!EquipItem(me, backpack))
+            return 0;
+        endif
+    endif
+    
+    // Loot items
+    while (looted < max_loot)
+        PrintTextAbove(me, "*revira o corpo*");
+        if (!LootSomething(me, corpse))
+            break;
+        endif
+        looted += 1;
+        sleepms(1500);
+    endwhile
+    
+    return (looted > 0);
+endfunction
+
+function CorpseHasLoot(corpse)
+    if (!corpse || corpse.IsA(POLCLASS_CORPSE) == error)
+        return 0;
+    endif
+
+    foreach item in EnumerateItemsInContainer(corpse)
+        if (item.movable)
+            return 1;
+        endif
+        sleepms(2);
+    endforeach
+
+    return 0;
+endfunction
+
+function LootSomething(npc, corpse)
+    // Define priority items by objtype (coins)
+    var coins := array{0xBA63, 0xBA64, 0xBA65}; // copper, silver, gold
+    var resources := array{0x1bf2, 0x1bd7};     // ingots, wood
+
+    if (GetCooldown(npc, "already_looted") > 0)
+        return 0;
+    endif
+
+    // First try to loot coins
+    var priority_loot := FindPriorityLoot(corpse, coins);
+    if (priority_loot)
+        return LootItem(npc, priority_loot);
+    endif
+
+    // Then try resources
+    var resource_loot := FindPriorityLoot(corpse, resources);
+    if (resource_loot)
+        return LootItem(npc, resource_loot);
+    endif
+
+    // Then look for equipment by class
+    foreach item in EnumerateItemsInContainer(corpse)
+        if (!item.movable || item.newbie)
+            continue;
+        endif
+
+        if (CInt(GetObjProperty(item, "#EquippedOn")) == corpse.serial && item.IsA(POLCLASS_ARMOR))
+            continue;
+        endif
+
+        if (item.IsA(POLCLASS_WEAPON) || item.IsShield() || item.IsA(POLCLASS_ARMOR))
+            return LootItem(npc, item);
+        endif
+
+        // Check containers
+        if (item.IsA(POLCLASS_CONTAINER))
+            var container_item := FindEquipmentInContainer(item);
+            if (container_item)
+                return LootItem(npc, container_item);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+
+    return 1;
+endfunction
+
+function FindEquipmentInContainer(container)
+    foreach item in EnumerateItemsInContainer(container)
+        if (!item.movable)
+            continue;
+        endif
+
+        if (item.IsA(POLCLASS_WEAPON) || item.IsShield() || item.IsA(POLCLASS_ARMOR))
+            return item;
+        endif
+
+        if (item.IsA(POLCLASS_CONTAINER))
+            var container_item := FindEquipmentInContainer(item);
+            if (container_item)
+                return container_item;
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    return 0;
+endfunction
+
+function LootItem(npc, item)
+    if (!item)
+        return 0;
+    endif
+
+    if (!npc.backpack)
+        var backpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "Backpack", 1);
+        EquipItem(npc, backpack);
+    endif
+
+    PrintTextAbove(npc, "*pega " + item.desc + "*");
+    SetCooldown(npc, "already_looted", 300);
+
+    return MoveItemToContainer(item, npc.backpack);
+endfunction
+
+function FindPriorityLoot(corpse, graphics_array)
+    foreach item in EnumerateItemsInContainer(corpse)
+        if (!item.movable)
+            continue;
+        endif
+
+        if (item.objtype in graphics_array || item.graphic in graphics_array)
+            return item;
+        endif
+
+        // Check containers for these items
+        if (item.IsA(POLCLASS_CONTAINER))
+            var container_item := FindPriorityLoot(item, graphics_array);
+            if (container_item)
+                return container_item;
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    return 0;
+endfunction
+
+function ClearCombatState()
+    SetWarMode(0);
+    SetOpponent(0);
 endfunction
