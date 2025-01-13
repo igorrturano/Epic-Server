@@ -10,7 +10,10 @@ const G_ESPACAMENTO := 10;
 
 enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_CATEGORIAS := 20,
-	COMPLEXOS_RECEITAS := 100
+	COMPLEXOS_RECEITAS := 100,
+	COMPONENTES_DROPDOWN_INICIAL := 100,
+	COMPONENTES_DROPDOWN_OPCOES_INICIAL :=	200,
+	COMPONENTES_DROPDOWN_MAX := 10
 endenum
 
 enum CLASSE_RETORNO_GUMP //RT = RETORNO.
@@ -62,7 +65,6 @@ function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
 	
 	GFGumpPic(gump,painelReceitasX + larguraPainelReceita / 2 - 102,20,1764); //Placa Titulo Receitas.
 	GFHTMLArea(gump,painelReceitasX + larguraPainelReceita / 2 - 102,35,205,20,"<basefont size=55 color=#ffffff><center>Receitas</center>");
-	
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,alturaCelula * 11 + 10, 5054, larguraPainelRodape, alturaPainelRodape);// Painel Rodapé
 
@@ -70,10 +72,86 @@ function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
 endfunction
 
 //function MontaComponentesGump(quem,byref gump,parametros,byref navegacao)
-function MontaComponentesGump(byref gump)
+function MontaComponentesGump(byref gump, parametros,byref navegacao)
+	//TODO tabela com todos os componentes.
 	gump := GFECreateGump("GumpComponentes",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
-	GFAddButton(gump,20,20,4011,4012,GF_CLOSE_BTN,1);
+
+	var larguraPainelEntrada := DefineLarguraPainel(12);
+	var alturaPainelEntrada := DefineAlturaPainel(3);
+
+	var larguraPainelComponentes := DefineLarguraPainel(12);
+	var alturaPainelComponentes := DefineAlturaPainel(9);
+
+
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
+	//ControleGump(gump,50,50,0,0);
+	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
+	//GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 89, 20, 1153,"20", 2,3);
+
+	var componenteSelecionado := navegacao.componenteSelecionado;
+	
+	if(componenteSelecionado)
+		foreach material in (SplitWords(componenteSelecionado.materiais,","))
+			DefinirMateriais(gump,
+							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
+							G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 20 * _material_iter,
+							material,
+							navegacao,
+							_material_iter);
+			Sleepms(2);
+		endforeach
+	endif
+
+	var opcoesTabela := dictionary{ 
+							MAX_PAGINAS -> 30,
+							QTD_LINHA_LIMITE -> 20,
+							TITULO_TABELA  -> "Componentes",
+							GUMPIC_FUNDO -> 3000,
+							BOTAO_APERTADO -> 2103,
+							BOTAO_SOLTO -> 2104,
+							RECUO_EIXO_Y_BOTAO -> 5
+							};
+
+	CriaTabelaGump(G_MARGEM_ESQUERDA + G_ESPACAMENTO,
+					alturaPainelEntrada + G_ESPACAMENTO + alturaCelula/2,
+					larguraPainelComponentes,
+					parametros.componentes,
+					gump,
+					0,
+					opcoesTabela,
+					parametros.configColunas);
 	return gump;
+endfunction
+
+function DefinirMateriais(byref gump,x,y,material,byref navegacao,indice)
+	if(indice < 1 || indice > 10 )
+		return 0;
+	endif
+	var gerenciador := navegacao.gerenciadorDropDown;
+	gerenciador.dropDowns[indice].x := x;
+	gerenciador.dropDowns[indice].y := y + 20;
+	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
+
+	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
+	GFTextLine(gump,x + 20,y,86, material + ": " + nome);
+endfunction
+
+function ControleGump(byref gump,controleX,controleY,gumpX,gumpY,idButaoInicial := 0,descIncremento := "Baixo")
+	//TODO Implementar o controle de gump de forma a ser um script autosuficiente.
+	GFResizePic(gump, controleX,controleY, 5054, 140, 70);
+
+	var centroCruzX := controleX + 25;
+	var centroCruzY := controleY + 25;
+	GFAddButton(gump,centroCruzX,centroCruzY - 15,5600,5600,GF_CLOSE_BTN,idButaoInicial);
+	GFAddButton(gump,centroCruzX + 15,centroCruzY ,5601,5601,GF_CLOSE_BTN,idButaoInicial + 1);
+	GFAddButton(gump,centroCruzX,centroCruzY + 15,5602,5602,GF_CLOSE_BTN, idButaoInicial + 2);
+	GFAddButton(gump,centroCruzX - 15,centroCruzY ,5603,5603,GF_CLOSE_BTN, idButaoInicial + 3);
+
+	GFTextLine(gump,centroCruzX + 40,centroCruzY,1258,descIncremento);
+
+	GFAddButton(gump,centroCruzX + 95,6 + centroCruzY - 15 ,2435,2436,GF_CLOSE_BTN, idButaoInicial + 4);
+	GFAddButton(gump,centroCruzX + 95,6 + centroCruzY + 15,2437,2438,GF_CLOSE_BTN, idButaoInicial + 5);
+	
 endfunction
 
 function ClassificaRetornoComplexos(valorRetorno)

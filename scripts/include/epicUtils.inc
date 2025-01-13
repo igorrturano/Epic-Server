@@ -71,7 +71,7 @@ function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,eixoYMaximo
 	var gaussianas := array; 
 	var total := 0;
 	foreach x in valoresEixoX
-		var gaussiana := CalcularGaussiana(x,pico,declinio);
+		var gaussiana := CalcularGaussiana(x,pico,declinio,eixoYMaximo);
 		total += gaussiana;
 		gaussianas.append(gaussiana);
 		Sleepms(2);
@@ -88,6 +88,6 @@ function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,eixoYMaximo
 
 endfunction
 
-function CalcularGaussiana(x,pico,declinio)
-	return 100 * Pow(ConstE(),(-declinio * Pow(x - pico, 2)));
+function CalcularGaussiana(x,pico,declinio,eixoYMaximo)
+	return eixoYMaximo * Pow(ConstE(),(-declinio * Pow(x - pico, 2)));
 endfunction

@@ -149,17 +149,6 @@ function MontaInfoItem(quem,objtype)
 
 endfunction
 
-/* preciso dessa função mesmo??
-function PegaNomeComponenteQualidade(tier)
-	case (tier)
-		MEDIOCRE: return "mediocre";
-		COMUM: return "comum";
-
-
-	endcase
-endfunction
-*/
-
 function PegaTextoDescItem(quem,objtype,definicaoItem)
 
 	var desc := struct;
@@ -233,37 +222,149 @@ function MontaCraftProp(fabricacaoConfig)
 endfunction
 //Itens Complexos Fim
 
+//Componentes Inicio
 function EnviaGumpComponentes(quem)
 	var retorno := 1;
 	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
-	var chaves := GetConfigStringKeys(configRecursos);
-	var valores := array;
-	var dropDownId := 55;
-
-	foreach chave in chaves
-		PreparaOpcaoDropDown(valores,configRecursos[chave].Name,chave);
-	endforeach
-
-	var dropDownProcess;
+	var configDetalhes := ReadConfigFile(":woodworking:carpentry");//TODO isto tem que virar um parâmetro, porque virá do script da ferramente\estação.
+	var chavesOpcoesMateriais := GetConfigStringKeys(configRecursos);
+	
+	var navegacao := struct;
+	var parametros := PreparaCompoenentesGump(quem,configDetalhes,navegacao);
+	var gerenciador := navegacao.gerenciadorDropDown;
 	var gump;
+
 	while(retorno)
-		MontaComponentesGump(gump);
+		Print("navegacao.componenteSelecionado: " + navegacao.componenteSelecionado);
+		Print("retorno[0]: " + retorno[0]);
+		if(navegacao.componenteSelecionado && navegacao.devePopularDropDown)
+			PreparaDropDowns(navegacao,gerenciador,chavesOpcoesMateriais,configRecursos);
+			navegacao.devePopularDropDown := false;
+		endif
+
+		MontaComponentesGump(gump, parametros,navegacao);
 		retorno := GFSendGump(quem,gump);
 		
-		if(retorno[0] == 1)
-			if( GetProcess( dropDownProcess.pid ))
-				CloseGump(quem,dropDownId);
+		Print(gerenciador.dropDowns);
+
+		if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,retorno[0]))
+			var indice := retorno[0] - gerenciador.adicionalIdDropDown;
+			var objetoDropDown := gerenciador.dropDowns[indice];
+
+			FechaTodosDropdowns(quem,gerenciador.dropDowns);
+			var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
+			//TODO Fazer a função para verificar os materiais da bag do jogador e popular o dropdown de acordo.
+			if(process)
+				objetoDropDown.pid := process.pid;
 			endif
-			dropDownProcess := SendDropDownGump(quem, GetPid(),20,20 + 5,valores,dropDownId);
+		elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,retorno[0]))
+			GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
+			Print("valor Escolhido: " + gerenciador.dropDowns[1].valorEscolhido + " indice: " + retorno[0] + " tamanho array." + gerenciador.dropDowns[1].valores.size());
 		elseif(retorno[0])
-			Print(" deu bom?  - " + retorno[0]);
+			GerenciadorDropDown::LimpaDropDowns(gerenciador);
+			navegacao.devePopularDropDown := true;
+			navegacao.componenteSelecionado := parametros.componentes[retorno[0]];
 		elseif(!retorno)
-			CloseGump(quem,dropDownId);
+			FechaTodosDropdowns(quem,gerenciador.dropDowns);
 		endif
 	endwhile
 endfunction
-//Componentes Inicio
 
+function PreparaDropDowns(byref navegacao,byref gerenciador, chavesOpcoesMateriais, configRecursos)
+	var materiais := SplitWords( navegacao.componenteSelecionado.materiais,",");
+
+	foreach material in materiais
+		var dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_material_iter);
+		var indiceOpcoes := 1;
+
+		foreach chave in chavesOpcoesMateriais
+			Sleepms(2);
+			var retorno := DropDown::AdicionaOpcao(dropDown,
+			configRecursos[chave].name,
+			indiceOpcoes,
+			struct {vlrChave := chave, nome := configRecursos[chave].name});
+
+			if(!retorno) 
+				Print("retorno: " + retorno); 
+				continue;
+			endif;
+			++indiceOpcoes;
+		endforeach
+		
+		Sleepms(2);
+	endforeach
+endfunction
+
+function FechaTodosDropdowns(quem,dropdowns)
+	foreach dropdown in dropdowns
+
+		if(GetProcess( dropdown.pid ))
+			CloseGump(quem,dropdown.idBottao);
+		endif
+		Sleepms(2);
+	endforeach
+endfunction
+
+function PreparaCompoenentesGump(quem, detalhes,byref navegacao)
+
+	var parametrosGump := struct;
+	
+	var chavesComponentes := GetConfigStringKeys(detalhes);
+
+	var materiais := array;
+	var componentes := array;
+	var indiceComponentes := 1;
+
+	navegacao.+gerenciadorDropDown := GerenciadorDropDown(30,
+										COMPONENTES_DROPDOWN_INICIAL,
+										COMPONENTES_DROPDOWN_OPCOES_INICIAL,
+										COMPONENTES_DROPDOWN_MAX);
+	navegacao.+componenteSelecionado := 0;
+	navegacao.+devePopularDropDown := true;
+
+	foreach chave in chavesComponentes
+		Sleepms(2);
+		if(!detalhes[chave].encaixeComponente)
+			continue;
+		endif
+
+		var materiaisNecessarios := GetConfigStringArray( detalhes[chave], "materials" );
+		var materiaisConcatenados := "";  
+		foreach material in materiaisNecessarios
+			if(_material_iter != 1)
+				materiaisConcatenados += ", ";
+			endif
+
+			materiaisConcatenados += material;
+			Sleepms(2);
+		endforeach
+
+		var componente := struct;
+		componente.+nome := detalhes[chave].name;
+		componente.+estacao := itemsConfig[detalhes[chave].estacao].desc;
+		componente.+materialPrincipal := detalhes[chave].principalMaterial;
+		componente.+materiais := materiaisConcatenados;
+		componente.+encaixe := detalhes[chave].encaixeComponente;
+		componente.+selecione := struct{isColunaBotao := true, valor := indiceComponentes};
+
+		componentes.append(componente);
+		indiceComponentes += 1;
+	endforeach
+
+	var colCfg := dictionary;
+		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 2};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 3};
+		colCfg["materialPrincipal"] := struct{titulo := "Principal Material",ordem := 3,largura := 2};
+		colCfg["estacao"] := struct{titulo := "Estação",ordem := 5,largura := 2};
+		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 2};
+		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
+
+	parametrosGump.+configColunas := colCfg;
+	parametrosGump.+materiais := materiais;
+	parametrosGump.+componentes := componentes;
+	
+	return parametrosGump;
+endfunction
 
 
 // TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
