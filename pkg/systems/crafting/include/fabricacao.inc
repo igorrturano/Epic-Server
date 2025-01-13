@@ -226,11 +226,12 @@ endfunction
 function EnviaGumpComponentes(quem)
 	var retorno := 1;
 	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
-	var configDetalhes := ReadConfigFile(":woodworking:carpentry");//TODO isto tem que virar um parâmetro, porque virá do script da ferramente\estação.
+	var configProfissao := ReadConfigFile(":woodworking:carpentry");//TODO isto tem que virar um parâmetro, porque virá do script da ferramente\estação.
+	var pericia := "Wood_Working";//TODO isto tem que virar um parâmetro, porque virá do script da ferramente\estação.
 	var chavesOpcoesMateriais := GetConfigStringKeys(configRecursos);
 	
 	var navegacao := struct;
-	var parametros := PreparaCompoenentesGump(quem,configDetalhes,navegacao);
+	var parametros := PreparaComponentesGump(quem,configProfissao,navegacao);
 	var gerenciador := navegacao.gerenciadorDropDown;
 	var gump;
 
@@ -238,15 +239,13 @@ function EnviaGumpComponentes(quem)
 		Print("navegacao.componenteSelecionado: " + navegacao.componenteSelecionado);
 		Print("retorno[0]: " + retorno[0]);
 		if(navegacao.componenteSelecionado && navegacao.devePopularDropDown)
-			PreparaDropDowns(navegacao,gerenciador,chavesOpcoesMateriais,configRecursos);
+			PreparaDropDowns(quem,navegacao,gerenciador,parametros,configRecursos,pericia);
 			navegacao.devePopularDropDown := false;
 		endif
 
 		MontaComponentesGump(gump, parametros,navegacao);
 		retorno := GFSendGump(quem,gump);
 		
-		Print(gerenciador.dropDowns);
-
 		if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,retorno[0]))
 			var indice := retorno[0] - gerenciador.adicionalIdDropDown;
 			var objetoDropDown := gerenciador.dropDowns[indice];
@@ -259,7 +258,6 @@ function EnviaGumpComponentes(quem)
 			endif
 		elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,retorno[0]))
 			GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
-			Print("valor Escolhido: " + gerenciador.dropDowns[1].valorEscolhido + " indice: " + retorno[0] + " tamanho array." + gerenciador.dropDowns[1].valores.size());
 		elseif(retorno[0])
 			GerenciadorDropDown::LimpaDropDowns(gerenciador);
 			navegacao.devePopularDropDown := true;
@@ -270,14 +268,19 @@ function EnviaGumpComponentes(quem)
 	endwhile
 endfunction
 
-function PreparaDropDowns(byref navegacao,byref gerenciador, chavesOpcoesMateriais, configRecursos)
+function PreparaDropDowns(quem, byref navegacao,byref gerenciador, parametros, configRecursos,pericia)
 	var materiais := SplitWords( navegacao.componenteSelecionado.materiais,",");
+	if(!parametros.?materiaisEncontrados)
+		parametros.+materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos);
+	endif
+	parametros.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos);
 
 	foreach material in materiais
 		var dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_material_iter);
+		var tipoMaterial := SplitWords(material);
 		var indiceOpcoes := 1;
 
-		foreach chave in chavesOpcoesMateriais
+		foreach chave in (parametros.materiaisEncontrados[Lower(tipoMaterial[1])].keys())
 			Sleepms(2);
 			var retorno := DropDown::AdicionaOpcao(dropDown,
 			configRecursos[chave].name,
@@ -295,6 +298,32 @@ function PreparaDropDowns(byref navegacao,byref gerenciador, chavesOpcoesMateria
 	endforeach
 endfunction
 
+function CarregaMateriaisEncontrados(quem,configRecursos)
+	var retorno := dictionary;
+
+	foreach item in EnumerateItemsInContainer(quem.backpack)
+		var materialDetalhe := configRecursos[item.objtype];
+		if(materialDetalhe)
+			var encontrado;
+			var tipo := Lower(materialDetalhe.type);
+
+			if( !retorno.exists(tipo))
+				retorno.insert(tipo, dictionary);
+			endif
+			encontrado := retorno[tipo];
+			if(!encontrado.exists(item.objtype))
+				encontrado.insert(item.objtype,array{item});
+				retorno[tipo] := encontrado;
+			else
+				encontrado[item.objtype].append(item);
+			endif
+		endif
+		Sleepms(2);
+	endforeach 
+
+	return retorno;
+endfunction
+
 function FechaTodosDropdowns(quem,dropdowns)
 	foreach dropdown in dropdowns
 
@@ -305,11 +334,11 @@ function FechaTodosDropdowns(quem,dropdowns)
 	endforeach
 endfunction
 
-function PreparaCompoenentesGump(quem, detalhes,byref navegacao)
+function PreparaComponentesGump(quem, configProfissao,byref navegacao)
 
 	var parametrosGump := struct;
 	
-	var chavesComponentes := GetConfigStringKeys(detalhes);
+	var chavesComponentes := GetConfigStringKeys(configProfissao);
 
 	var materiais := array;
 	var componentes := array;
@@ -324,11 +353,11 @@ function PreparaCompoenentesGump(quem, detalhes,byref navegacao)
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
-		if(!detalhes[chave].encaixeComponente)
+		if(!configProfissao[chave].encaixeComponente)
 			continue;
 		endif
 
-		var materiaisNecessarios := GetConfigStringArray( detalhes[chave], "materials" );
+		var materiaisNecessarios := GetConfigStringArray( configProfissao[chave], "materials" );
 		var materiaisConcatenados := "";  
 		foreach material in materiaisNecessarios
 			if(_material_iter != 1)
@@ -340,11 +369,11 @@ function PreparaCompoenentesGump(quem, detalhes,byref navegacao)
 		endforeach
 
 		var componente := struct;
-		componente.+nome := detalhes[chave].name;
-		componente.+estacao := itemsConfig[detalhes[chave].estacao].desc;
-		componente.+materialPrincipal := detalhes[chave].principalMaterial;
+		componente.+nome := configProfissao[chave].name;
+		componente.+estacao := itemsConfig[configProfissao[chave].estacao].desc;
+		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
-		componente.+encaixe := detalhes[chave].encaixeComponente;
+		componente.+encaixe := configProfissao[chave].encaixeComponente;
 		componente.+selecione := struct{isColunaBotao := true, valor := indiceComponentes};
 
 		componentes.append(componente);
