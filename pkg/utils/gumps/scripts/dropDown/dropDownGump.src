@@ -13,7 +13,7 @@ program DropDownGump(parametros)
 		return 1;
 	endif
 
-	Sleepms(200);
+	Sleepms(150);
 	var retornoDropDown := 1;
 	while ( GetProcess( pidPai ) && retornoDropDown)
 

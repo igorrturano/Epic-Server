@@ -13,7 +13,13 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_RECEITAS := 100,
 	COMPONENTES_DROPDOWN_INICIAL := 100,
 	COMPONENTES_DROPDOWN_OPCOES_INICIAL :=	200,
-	COMPONENTES_DROPDOWN_MAX := 10
+	COMPONENTES_DROPDOWN_MAX := 10,
+	COMPONENTES_TABELA_INICIAL := 1000
+endenum
+
+enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
+	COMPONENTES_BTN_QTD := 2,
+	COMPONENTES_BTN_FABRICAR :=	3
 endenum
 
 enum CLASSE_RETORNO_GUMP //RT = RETORNO.
@@ -81,16 +87,16 @@ function MontaComponentesGump(byref gump, parametros,byref navegacao)
 
 	var larguraPainelComponentes := DefineLarguraPainel(12);
 	var alturaPainelComponentes := DefineAlturaPainel(9);
+	var componenteSelecionado := navegacao.componenteSelecionado;
 
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
-	//ControleGump(gump,50,50,0,0);
 	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
-	//GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 89, 20, 1153,"20", 2,3);
-
-	var componenteSelecionado := navegacao.componenteSelecionado;
+	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153,navegacao.quantidade ?navegacao.quantidade:"1", 2,3);
 	
 	if(componenteSelecionado)
+		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
+		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,1147,1148,GF_CLOSE_BTN, 3);
 		foreach material in (SplitWords(componenteSelecionado.materiais,","))
 			DefinirMateriais(gump,
 							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
@@ -112,6 +118,7 @@ function MontaComponentesGump(byref gump, parametros,byref navegacao)
 							RECUO_EIXO_Y_BOTAO -> 5
 							};
 
+	//TODO Lidar com Paginação.
 	CriaTabelaGump(G_MARGEM_ESQUERDA + G_ESPACAMENTO,
 					alturaPainelEntrada + G_ESPACAMENTO + alturaCelula/2,
 					larguraPainelComponentes,
@@ -119,7 +126,8 @@ function MontaComponentesGump(byref gump, parametros,byref navegacao)
 					gump,
 					0,
 					opcoesTabela,
-					parametros.configColunas);
+					parametros.configColunas,
+					COMPONENTES_TABELA_INICIAL);
 	return gump;
 endfunction
 

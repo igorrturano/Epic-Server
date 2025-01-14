@@ -63,7 +63,19 @@ class DropDown()
 	endfunction
 
 	function PegaIdBottaoNormalizado(this)
+	
 		return this.idBottao - this.gerenciador.adicionalIdDropDown;
+	endfunction
+
+	function Equals(this,obj)
+		if(obj is @DropDown)
+			return cint(this.idBottao) == cint(obj.idBottao) ;
+		else
+			if(TypeOf(obj) == "Integer")
+				return cint(this.idBottao) == cint(obj);
+			endif
+			return false;
+		endif
 	endfunction
 endclass
 
@@ -80,10 +92,25 @@ class GerenciadorDropDown()
 	endfunction
 
 	function RegistraDropDown(this,idBottao, valorEscolhido := "")
-		var dropDown := DropDown(idBottao + this.adicionalIdDropDown,0,0,0,this.adicionalIdValores,valorEscolhido, this);
+		var dropDown := EncontraDropDown(this,cInt(idBottao));
+
+		if(!dropDown)
+			dropDown := DropDown(cInt(idBottao + this.adicionalIdDropDown),0,0,0,this.adicionalIdValores,valorEscolhido, this);
 			this.dropDowns.append(dropDown);
-			this.idsRegistradas.append(dropDown.idBottao);
-		return dropDown;
+			return dropDown;
+		else
+			return 0;
+		endif
+	endfunction
+
+	function EncontraDropDown(this,idBottao)
+		foreach object in (this.dropDowns)	
+			if(object.Equals(idBottao + this.adicionalIdDropDown))
+				return object;
+			endif
+			Sleepms(2);
+		endforeach
+		return 0;
 	endfunction
 
 	function DefineValorEscolhido(this,idOpcaoSelecionada)
@@ -123,7 +150,7 @@ function MontaDropDownGump(parx,pary,valores)
 	
 	GFMovable(gump, 0);
 	if(Valores.size() < opcoesTabela[QTD_LINHA_LIMITE])
-		diferencaValoresLinhas := 20 * ( opcoesTabela[QTD_LINHA_LIMITE] - Valores.size()) + 20;
+		diferencaValoresLinhas := 20 * ( opcoesTabela[QTD_LINHA_LIMITE] - Valores.size()) + 33;
 		altura :=  altura - diferencaValoresLinhas;
 	endif
 	GFResizePic( gump, x, y, 2620, 200, altura );
@@ -135,7 +162,7 @@ function MontaDropDownGump(parx,pary,valores)
 	if(valores.size() > 0)
 		CriaTabelaGumpPaginada(x + 10,y + 10,190,valores,gump,opcoesTabela,colCfg);
 	else
-		GFTextLine(gump,x + 10,y + 10,86, "Sem opções");
+		GFTextLine(gump,x + 10,y + 10,1153, "Sem opções.");
 	endif
 	return gump;
 endfunction 

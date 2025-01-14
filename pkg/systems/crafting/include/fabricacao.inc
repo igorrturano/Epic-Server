@@ -239,14 +239,20 @@ function EnviaGumpComponentes(quem)
 		Print("navegacao.componenteSelecionado: " + navegacao.componenteSelecionado);
 		Print("retorno[0]: " + retorno[0]);
 		if(navegacao.componenteSelecionado && navegacao.devePopularDropDown)
-			PreparaDropDowns(quem,navegacao,gerenciador,parametros,configRecursos,pericia);
+			PreparaDropDowns(quem,navegacao,gerenciador,configRecursos,pericia);
 			navegacao.devePopularDropDown := false;
 		endif
 
 		MontaComponentesGump(gump, parametros,navegacao);
 		retorno := GFSendGump(quem,gump);
+
+		if(find(retorno[COMPONENTES_BTN_QTD],":",1))
+			navegacao.quantidade := GFExtractData(retorno,COMPONENTES_BTN_QTD)[1,3];
+			print("navegacao.quantidade " + navegacao.quantidade);
+		endif
 		
 		if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,retorno[0]))
+
 			var indice := retorno[0] - gerenciador.adicionalIdDropDown;
 			var objetoDropDown := gerenciador.dropDowns[indice];
 
@@ -256,36 +262,155 @@ function EnviaGumpComponentes(quem)
 			if(process)
 				objetoDropDown.pid := process.pid;
 			endif
+
 		elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,retorno[0]))
+
 			GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
-		elseif(retorno[0])
+
+		elseif(retorno[0] >= COMPONENTES_TABELA_INICIAL)
+
 			GerenciadorDropDown::LimpaDropDowns(gerenciador);
 			navegacao.devePopularDropDown := true;
-			navegacao.componenteSelecionado := parametros.componentes[retorno[0]];
+			navegacao.componenteSelecionado := parametros.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
+
+		elseif(retorno[0] == COMPONENTES_BTN_FABRICAR)
+
+			var materiaisEscolhidos := array;
+			foreach dropDown in (gerenciador.dropDowns)
+				var escolhido := dropDown.valorEscolhido;
+				if(!escolhido || escolhido == "")
+					SendSysMessageEX(quem,"Você não escolheu todos os materiais necessários.",SSM_FAIL);
+					break;
+				endif
+				materiaisEscolhidos.append(dropDown.valorEscolhido);
+				Sleepms(2);
+			endforeach
+
+			//TODO Animações e emotes de construção.
+			ProduzComponentes(quem,
+				configRecursos,
+				navegacao.componenteSelecionado.selecione.objtype,
+				navegacao.materiaisEncontrados,
+				materiaisEscolhidos,
+				CInt(navegacao.quantidade),
+				pericia);
+
+			navegacao.devePopularDropDown := true;
+
+		elseif(retorno[0] == 1)
+			FechaTodosDropdowns(quem,gerenciador.dropDowns);
+			break;
 		elseif(!retorno)
 			FechaTodosDropdowns(quem,gerenciador.dropDowns);
 		endif
 	endwhile
 endfunction
 
-function PreparaDropDowns(quem, byref navegacao,byref gerenciador, parametros, configRecursos,pericia)
-	var materiais := SplitWords( navegacao.componenteSelecionado.materiais,",");
-	if(!parametros.?materiaisEncontrados)
-		parametros.+materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,navegacao.componenteSelecionado.materialPrincipal);
-	endif
-	parametros.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,navegacao.componenteSelecionado.materialPrincipal);
+function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia)
 
+	var chaveMaterialPrincipal; //objtype do material que irá decidir a cor e atributos principais do componente.
+
+	var quantidadeAFazer := CalculaQuantidadePossivel(quantidade,materiaisEscolhidos,materiaisEncontrados);
+	
+	if(quantidadeAFazer <= 0)
+			SendSysMessageEX(quem,"Você não possui material suficiente para produzir este componente.",SSM_FAIL);
+			return 0;
+	endif
+
+	ConsomeMateriais(chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
+
+	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer,AP_GetSkill(quem,pericia));
+	
+
+	foreach qualidade in (qualidades.keys())
+		var descriptor := GetItemDescriptor(CInt(objtype));
+		descriptor.CProps.insert("material",chaveMaterialPrincipal);
+		descriptor.CProps.insert("tierComponente",qualidade); // Usar constante ou cfg vinda do include do craft ao invés de string crua.
+		descriptor.color := configRecursos[chaveMaterialPrincipal].Color;
+		
+		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
+		
+		Sleepms(2);
+	endforeach
+
+	SendSysMessageEX(quem,"{} componete(s) criados.".format(quantidadeAFazer),SSM_INFO);
+endfunction
+
+function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEncontrados)
+	
+	var quantidadeAFazer := CInt(quantidade);
+
+	foreach materialEscolhido in materiaisEscolhidos
+
+		var qtdPossivel := cInt(materiaisEncontrados[materialEscolhido.tipoMaterial][materialEscolhido.objtype].quantidadeTotal / materialEscolhido.quantidadeNecessaria);
+		qtdPossivel := qtdPossivel >= quantidade? cInt(quantidade) : qtdPossivel;
+		
+		if(qtdPossivel < quantidadeAFazer) // a menor quantidade possivel determina a quantidade final.
+			quantidadeAFazer := qtdPossivel;
+		endif
+		Sleepms(2);
+	endforeach
+	
+	return quantidadeAFazer;
+endfunction
+
+function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer)
+
+	foreach materialEscolhido in materiaisEscolhidos
+	
+		if(materialEscolhido.isPrincipal) 
+			chaveMaterialPrincipal := materialEscolhido.objtype; 
+		endif
+
+		var quantidadeConsumo := cInt(materialEscolhido.quantidadeNecessaria) * quantidadeAFazer;
+		var quantidadeRestante := quantidadeConsumo;
+
+		foreach itemEncontrado in (materiaisEncontrados[materialEscolhido.tipoMaterial][materialEscolhido.objtype].itensEncontrados)
+			
+			If(quantidadeRestante <= 0) 
+				break; 
+			endif;
+			
+			if(itemEncontrado.stackable)
+				SubtractAmount(itemEncontrado, quantidadeRestante);
+				quantidadeRestante -= itemEncontrado.amount;
+			else
+				quantidadeRestante -= 1;
+				DestroyItem(itemEncontrado);
+			endif
+			Sleepms(2);
+		endforeach
+
+		Sleepms(2);
+	endforeach
+
+endfunction
+
+function PreparaDropDowns(quem, byref navegacao,byref gerenciador, configRecursos,pericia)
+	var materiais := SplitWords( navegacao.componenteSelecionado.materiais,",");
+	navegacao.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,navegacao.componenteSelecionado.materialPrincipal);
+	
 	foreach material in materiais
 		var dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_material_iter);
-		var tipoMaterial := SplitWords(material);
+		if(!dropDown) continue;	endif
+
+		var splitMaterial := SplitWords(material);
+		var tipo := Trim(Lower(splitMaterial[1]));
+		var qtd := splitMaterial[2];
 		var indiceOpcoes := 1;
 
-		foreach chave in (parametros.materiaisEncontrados[Lower(tipoMaterial[1])].keys())
+		foreach chave in (navegacao.materiaisEncontrados[tipo].keys())
 			Sleepms(2);
 			var retorno := DropDown::AdicionaOpcao(dropDown,
 			configRecursos[chave].name,
 			indiceOpcoes,
-			struct {vlrChave := chave, nome := configRecursos[chave].name});
+			struct {
+				objtype := chave,
+				nome := configRecursos[chave].name,
+				quantidadeNecessaria := qtd,
+				tipoMaterial := tipo,
+				isPrincipal := tipo == Trim(Lower(navegacao.componenteSelecionado.materialPrincipal))
+				});
 
 			if(!retorno) 
 				Print("retorno: " + retorno); 
@@ -321,20 +446,26 @@ function CarregaMateriaisEncontrados(quem,configRecursos, pericia, materialPrinc
 	return retorno;
 endfunction
 
-function MontaMaterialEncontrado(byref primeiraCamada, chave, item)
-	var encontrado;
+function MontaMaterialEncontrado(byref categorias, tipo, item)
+	var dictitemsEncontrados;
 
-	if( !primeiraCamada.exists(chave))
-		primeiraCamada.insert(chave, dictionary);
+	if( !categorias.exists(tipo)) // garante que o dictionary do tipo exista nas categorias de materias.
+		categorias.insert(tipo, dictionary);
 	endif
 
-	encontrado := primeiraCamada[chave];
-	
-	if(!encontrado.exists(item.objtype))
-		encontrado.insert(item.objtype,array{item});
-		primeiraCamada[chave] := encontrado;
+	dictitemsEncontrados := categorias[tipo]; 
+
+	var pacoteItem := struct{ itensEncontrados := array , quantidadeTotal := 0};
+
+	if(!dictitemsEncontrados.exists(item.objtype)) // contabiliza os itens, se nao existir cria novo registro de contabilidade.
+		pacoteItem.itensEncontrados.append(item);
+		pacoteItem.quantidadeTotal := item.amount;
+		dictitemsEncontrados.insert(item.objtype,pacoteItem);
+
+		categorias[tipo] := dictitemsEncontrados;
 	else
-		encontrado[item.objtype].append(item);
+		dictitemsEncontrados[item.objtype].itensEncontrados.append(item);
+		dictitemsEncontrados[item.objtype].quantidadeTotal += item.amount;
 	endif
 endfunction
 
@@ -356,14 +487,15 @@ function PreparaComponentesGump(quem, configProfissao,byref navegacao)
 
 	var materiais := array;
 	var componentes := array;
-	var indiceComponentes := 1;
 
 	navegacao.+gerenciadorDropDown := GerenciadorDropDown(30,
 										COMPONENTES_DROPDOWN_INICIAL,
 										COMPONENTES_DROPDOWN_OPCOES_INICIAL,
 										COMPONENTES_DROPDOWN_MAX);
 	navegacao.+componenteSelecionado := 0;
+	navegacao.+materiaisEncontrados := 0;
 	navegacao.+devePopularDropDown := true;
+	navegacao.+quantidade := "1";
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
@@ -388,10 +520,9 @@ function PreparaComponentesGump(quem, configProfissao,byref navegacao)
 		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := configProfissao[chave].encaixeComponente;
-		componente.+selecione := struct{isColunaBotao := true, valor := indiceComponentes};
+		componente.+selecione := struct{isColunaBotao := true, objtype := chave};
 
 		componentes.append(componente);
-		indiceComponentes += 1;
 	endforeach
 
 	var colCfg := dictionary;
@@ -444,7 +575,7 @@ function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico
 			Sleepms(2);
 		endforeach
 
-		if(isFalhouTudo)
+		if(isFalhouTudo) //Se falhou tudo, coloca na pior qualidade.
 			if(retorno.exists(1))
 				retorno[1] += 1;
 			else
