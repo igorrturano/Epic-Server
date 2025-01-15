@@ -220,6 +220,16 @@ function MontaCraftProp(fabricacaoConfig)
 	return baseDict;
 
 endfunction
+
+function ClassificaRetornoComplexos(valorRetorno)
+	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
+		return RT_CATEGORIAS;
+	elseif(valorRetorno > COMPLEXOS_RECEITAS)
+		return RT_RECEITAS;
+	else
+		return RT_BOTAO_MENU;
+	endif
+endfunction
 //Itens Complexos Fim
 
 //Componentes Inicio
@@ -252,70 +262,75 @@ function EnviaGumpComponentes(quem)
 			sessao.quantidade := GFExtractData(retorno,COMPONENTES_BTN_QTD)[1,3];
 		endif
 		
-		if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,retorno[0]))
+		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
+			RT_ESCOLHA_DROPDOWN:
+				var indice := retorno[0] - gerenciador.adicionalIdDropDown;
+				var objetoDropDown := gerenciador.dropDowns[indice];
 
-			var indice := retorno[0] - gerenciador.adicionalIdDropDown;
-			var objetoDropDown := gerenciador.dropDowns[indice];
-
-			FechaTodosDropdowns(quem,gerenciador.dropDowns);
-			var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
-			//TODO Fazer a função para verificar os materiais da bag do jogador e popular o dropdown de acordo.
-			if(process)
-				objetoDropDown.pid := process.pid;
-			endif
-
-		elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,retorno[0]))
-
-			GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
-
-		elseif(retorno[0] >= COMPONENTES_TABELA_INICIAL)
-
-			GerenciadorDropDown::LimpaDropDowns(gerenciador);
-			sessao.devePopularDropDown := true;
-			sessao.componenteSelecionado := parametros.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
-
-		elseif(retorno[0] == COMPONENTES_BTN_FABRICAR)
-			//TODO Animações e emotes de construção.
-			
-			var materiaisEscolhidos := array;
-			var isValidado := true;
-			foreach dropDown in (gerenciador.dropDowns)
-				var escolhido := dropDown.valorEscolhido;
-				if(!escolhido || escolhido.size() == 0)
-					SendSysMessageEX(quem,"Você não escolheu todos os materiais necessários.",SSM_FAIL);
-					isValidado := false;
-					break;
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
+				
+				if(process)
+					objetoDropDown.pid := process.pid;
 				endif
+				break;
 
-				foreach itemEncontrado in (sessao.materiaisEncontrados[dropDown.valorEscolhido.tipoMaterial][dropDown.valorEscolhido.objtype].itensEncontrados)
-					if(!itemEncontrado || !Accessible(quem,itemEncontrado, 1) )
-						SendSysMessageEX(quem,"Você não esta mais em posse do material {}.".format(itemEncontrado.desc),SSM_FAIL);
+			RT_ESCOLHA_DD_OPCOES:
+				GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
+				break;
+			
+			RT_ESCOLHA_COMPONENTE:
+				GerenciadorDropDown::LimpaDropDowns(gerenciador);
+				sessao.devePopularDropDown := true;
+				sessao.componenteSelecionado := parametros.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
+				break;
+			
+			RT_BTN_FABRICAR:
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				//TODO Animações e emotes de construção.
+
+				var materiaisEscolhidos := array;
+				var isValidado := true;
+				foreach dropDown in (gerenciador.dropDowns)
+					var escolhido := dropDown.valorEscolhido;
+					if(!escolhido || escolhido.size() == 0)
+						SendSysMessageEX(quem,"Você não escolheu todos os materiais necessários.",SSM_FAIL);
 						isValidado := false;
 						break;
 					endif
+
+					foreach itemEncontrado in (sessao.materiaisEncontrados[dropDown.valorEscolhido.tipoMaterial][dropDown.valorEscolhido.objtype].itensEncontrados)
+						if(!itemEncontrado || !Accessible(quem,itemEncontrado, 1) )
+							SendSysMessageEX(quem,"Você não esta mais em posse do material {}.".format(itemEncontrado.desc),SSM_FAIL);
+							isValidado := false;
+							break;
+						endif
+						Sleepms(2);
+					endforeach
+					materiaisEscolhidos.append(dropDown.valorEscolhido);
 					Sleepms(2);
 				endforeach
-				materiaisEscolhidos.append(dropDown.valorEscolhido);
-				Sleepms(2);
-			endforeach
 
-			
-			if(materiaisEscolhidos.size() > 0 && materiaisEscolhidos.size() == SplitWords( sessao.componenteSelecionado.materiais,",").size() && isValidado)
-				ProduzComponentes(quem,
-					configRecursos,
-					sessao.componenteSelecionado.selecione.objtype,
-					sessao.materiaisEncontrados,
-					materiaisEscolhidos,
-					CInt(sessao.quantidade),
-					pericia);
-			endif
+				
+				if(materiaisEscolhidos.size() > 0 && materiaisEscolhidos.size() == SplitWords( sessao.componenteSelecionado.materiais,",").size() && isValidado)
+					ProduzComponentes(quem,
+						configRecursos,
+						sessao.componenteSelecionado.selecione.objtype,
+						sessao.materiaisEncontrados,
+						materiaisEscolhidos,
+						CInt(sessao.quantidade),
+						pericia);
+				endif
 
-			sessao.devePopularDropDown := true;
+				sessao.devePopularDropDown := true;
+				break;
 
-		elseif(retorno[0] == 1)
-			FechaTodosDropdowns(quem,gerenciador.dropDowns);
-			break;
-		endif
+			RT_CANCELADO:
+			default:
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				retorno := 0;
+				break;
+		endcase
 	endwhile
 endfunction
 
@@ -346,7 +361,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 		Sleepms(2);
 	endforeach
 
-	SendSysMessageEX(quem,"{} componete(s) criados.".format(quantidadeAFazer),SSM_INFO);
+	SendSysMessageEX(quem,"{} componete(s) criado(s).".format(quantidadeAFazer),SSM_INFO);
 endfunction
 
 function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEncontrados)
@@ -495,7 +510,7 @@ endfunction
 function MontaMaterialEncontrado(byref categorias, tipo, item)
 	var dictitemsEncontrados;
 
-	if( !categorias.exists(tipo)) // garante que o dictionary do tipo exista nas categorias de materias.
+	if( !categorias.exists(tipo)) // garante que o dictionary do tipo exista nas categorias de materiais.
 		categorias.insert(tipo, dictionary);
 	endif
 
@@ -634,6 +649,21 @@ function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico
 
 endfunction
 
+function ClassificaRetornoComponentes(valorRetorno, gerenciador)
+	if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,valorRetorno))
+		return RT_ESCOLHA_DROPDOWN;
+	elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,valorRetorno))
+		return RT_ESCOLHA_DD_OPCOES;
+	elseif(valorRetorno >= COMPONENTES_TABELA_INICIAL)
+		return RT_ESCOLHA_COMPONENTE;
+	elseif(valorRetorno == COMPONENTES_BTN_FABRICAR)
+		return RT_BTN_FABRICAR;
+	elseif(valorRetorno == 1)
+		return RT_CANCELADO;
+	else
+		return RT_CANCELADO;
+	endif
+endfunction
 
 //
 //  TruncatePlural()

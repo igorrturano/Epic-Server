@@ -22,11 +22,19 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_BTN_FABRICAR :=	3
 endenum
 
-enum CLASSE_RETORNO_GUMP //RT = RETORNO.
+enum CLASSE_RETORNO_GUMP_COMPLX //RT = RETORNO.
 	RT_RECEITAS,
 	RT_CATEGORIAS,
 	RT_ESQUEMAS,
 	RT_BOTAO_MENU
+endenum
+
+enum CLASSE_RETORNO_GUMP_COMPNT //RT = RETORNO.
+	RT_ESCOLHA_DROPDOWN,
+	RT_ESCOLHA_DD_OPCOES,
+	RT_ESCOLHA_COMPONENTE,
+	RT_BTN_FABRICAR,
+	RT_CANCELADO
 endenum
 
 var alturaCelula :=  G_ALTURA / G_CELULA_DIVISOR;
@@ -138,7 +146,6 @@ function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
 	var gerenciador := sessao.gerenciadorDropDown;
 	gerenciador.dropDowns[indice].x := x;
 	gerenciador.dropDowns[indice].y := y + 20;
-	Print("nomeeee " + gerenciador.dropDowns[indice].valorEscolhido.nome);
 	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
 
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
@@ -161,16 +168,6 @@ function ControleGump(byref gump,controleX,controleY,gumpX,gumpY,idButaoInicial 
 	GFAddButton(gump,centroCruzX + 95,6 + centroCruzY - 15 ,2435,2436,GF_CLOSE_BTN, idButaoInicial + 4);
 	GFAddButton(gump,centroCruzX + 95,6 + centroCruzY + 15,2437,2438,GF_CLOSE_BTN, idButaoInicial + 5);
 	
-endfunction
-
-function ClassificaRetornoComplexos(valorRetorno)
-	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
-		return RT_CATEGORIAS;
-	elseif(valorRetorno > COMPLEXOS_RECEITAS)
-		return RT_RECEITAS;
-	else
-		return RT_BOTAO_MENU;
-	endif
 endfunction
 
 function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas)
