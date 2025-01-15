@@ -14,6 +14,29 @@ class DropDown()
 	endfunction
 
 	function AdicionaOpcao(this,opcao,indice,valor)
+
+		var isValida := ValidaOpcao(this,opcao);
+		if(!isValida)
+			return isValida;
+		endif
+		
+		var objeto := MontaOpcao(this, opcao, indice, valor);
+		this.valores.append(objeto);
+		return 1;
+	endfunction
+
+	function MontaOpcao(this,opcao,indice, valor)
+
+		var idOpcao :=  (this.PegaIdBottaoNormalizado() - 1) * this.gerenciador.maxOpcoes +  CInt(indice);
+		
+		var objeto := struct;
+		objeto.+opcao := opcao;
+		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdValores, valorReal := valor}; 
+
+		return objeto;
+	endfunction
+
+	function ValidaOpcao(this,opcao)
 		if(!opcao)
 			return error{"errortext" := "parâmetro obrigatório [opcao] não informado."};
 		endif
@@ -22,13 +45,15 @@ class DropDown()
 			return error{"errortext" := "Limite de opções alcançado. opcao "  + opcao + " não incluída."};
 		endif
 		
-		var idOpcao :=  (this.PegaIdBottaoNormalizado() - 1) * this.gerenciador.maxOpcoes +  CInt(indice);
-		
-		var objeto := struct;
-		objeto.+opcao := opcao;
-		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdValores, valorReal := valor}; 
-		this.valores.append(objeto);
 		return 1;
+	endfunction
+
+	function ResetaValores(this)
+		this.valores := array;
+	endfunction
+
+	function LimpaValorEscolhido(this)
+		this.valorEscolhido := struct;
 	endfunction
 
 	function RemoveOpcao(this,opcao)
@@ -92,15 +117,11 @@ class GerenciadorDropDown()
 	endfunction
 
 	function RegistraDropDown(this,idBottao, valorEscolhido := "")
-		var dropDown := EncontraDropDown(this,cInt(idBottao));
 
-		if(!dropDown)
-			dropDown := DropDown(cInt(idBottao + this.adicionalIdDropDown),0,0,0,this.adicionalIdValores,valorEscolhido, this);
-			this.dropDowns.append(dropDown);
-			return dropDown;
-		else
-			return 0;
-		endif
+		var dropDown := DropDown(cInt(idBottao + this.adicionalIdDropDown),0,0,0,this.adicionalIdValores,valorEscolhido, this);
+		this.dropDowns.append(dropDown);
+		return dropDown;
+
 	endfunction
 
 	function EncontraDropDown(this,idBottao)

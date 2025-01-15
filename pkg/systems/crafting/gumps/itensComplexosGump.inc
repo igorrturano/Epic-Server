@@ -34,7 +34,7 @@ var larguraCelula :=  G_LARGURA / G_CELULA_DIVISOR;
 
 var espacamentoAplicado := G_ESPACAMENTO * 2;
 
-function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
+function MontaItensComplexosGump(quem,byref gump,parametros,byref sessao)
 	gump := GFECreateGump("GumpItensComplexos",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
 
 	//GFResizePic(gump, 20, 20, 83, 140, 160);//5170, 1755,
@@ -67,7 +67,7 @@ function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
 	GFAddButton(gump,painelReceitasX + 45,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 40,4020,4021);
 	GFAddButton(gump,painelReceitasX + 75,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 40,4023,4024);
 
-	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[navegacao.categoriaSelecionada]);
+	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada]);
 	
 	GFGumpPic(gump,painelReceitasX + larguraPainelReceita / 2 - 102,20,1764); //Placa Titulo Receitas.
 	GFHTMLArea(gump,painelReceitasX + larguraPainelReceita / 2 - 102,35,205,20,"<basefont size=55 color=#ffffff><center>Receitas</center>");
@@ -77,8 +77,8 @@ function MontaItensComplexosGump(quem,byref gump,parametros,byref navegacao)
 	return gump;
 endfunction
 
-//function MontaComponentesGump(quem,byref gump,parametros,byref navegacao)
-function MontaComponentesGump(byref gump, parametros,byref navegacao)
+//function MontaComponentesGump(quem,byref gump,parametros,byref sessao)
+function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	//TODO tabela com todos os componentes.
 	gump := GFECreateGump("GumpComponentes",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
 
@@ -87,12 +87,12 @@ function MontaComponentesGump(byref gump, parametros,byref navegacao)
 
 	var larguraPainelComponentes := DefineLarguraPainel(12);
 	var alturaPainelComponentes := DefineAlturaPainel(9);
-	var componenteSelecionado := navegacao.componenteSelecionado;
+	var componenteSelecionado := sessao.componenteSelecionado;
 
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
 	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
-	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153,navegacao.quantidade ?navegacao.quantidade:"1", 2,3);
+	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", 2,3);
 	
 	if(componenteSelecionado)
 		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
@@ -102,7 +102,7 @@ function MontaComponentesGump(byref gump, parametros,byref navegacao)
 							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
 							G_MARGEM_SUPERIOR  + G_ESPACAMENTO + 20 * _material_iter,
 							material,
-							navegacao,
+							sessao,
 							_material_iter);
 			Sleepms(2);
 		endforeach
@@ -131,13 +131,14 @@ function MontaComponentesGump(byref gump, parametros,byref navegacao)
 	return gump;
 endfunction
 
-function DefinirMateriais(byref gump,x,y,material,byref navegacao,indice)
+function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
 	if(indice < 1 || indice > 10 )
 		return 0;
 	endif
-	var gerenciador := navegacao.gerenciadorDropDown;
+	var gerenciador := sessao.gerenciadorDropDown;
 	gerenciador.dropDowns[indice].x := x;
 	gerenciador.dropDowns[indice].y := y + 20;
+	Print("nomeeee " + gerenciador.dropDowns[indice].valorEscolhido.nome);
 	var nome := gerenciador.dropDowns[indice].valorEscolhido.nome ? gerenciador.dropDowns[indice].valorEscolhido.nome : "";
 
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, gerenciador.dropDowns[indice].idBottao);
