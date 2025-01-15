@@ -138,7 +138,8 @@ function MontaInfoItem(quem,objtype)
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
-	infoItem.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem);
+	infoItem.+componentes := PegaComponentesNecessarios(objtype);
+	infoItem.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,infoItem.componentes);
 	infoItem.+dificuldade := PegaDificuldade();
 	infoItem.+objtype := objtype;
 	infoItem.+uso := definicaoItem.Attribute;
@@ -149,7 +150,7 @@ function MontaInfoItem(quem,objtype)
 
 endfunction
 
-function PegaTextoDescItem(quem,objtype,definicaoItem)
+function PegaTextoDescItem(quem,objtype,definicaoItem,componentes)
 
 	var desc := struct;
 	//TODO Lembrar de lidar com as diferenças de nomenclatura para Alchemy.
@@ -157,7 +158,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem)
 	desc := MontaDescricaoItem(definicaoItem,quem,desc);
 	
 	var materiais := PegaMateriaisNecessarios(objtype);
-	if(materiais)
+	if(materiais && materiais.size() > 0)
 		desc +=  "<br>";
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Materiais Necessários</BASEFONT><br>";
 		foreach material in (materiais.keys())
@@ -166,10 +167,41 @@ function PegaTextoDescItem(quem,objtype,definicaoItem)
 		endforeach
 	endif
 
+	if(componentes  && componentes.size() > 0)
+		desc +=  "<br>";
+		desc +=  "<BASEFONT COLOR=#7bf8fe> Encaixes de Componente </BASEFONT><br>";
+		foreach componente in componentes
+			desc +=  componente.qtdNecessaria + " " + componente.encaixeDesc  + "<br>";
+			Sleepms(2);
+		endforeach
+	endif
+
 	desc +=  "<br>";
 	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de Fabricação</BASEFONT><br>" + PegaDuracaoFabricacao() + "<br>";
 
 	return desc;
+endfunction
+
+function PegaComponentesNecessarios(objtype)
+	var encaixesItem := GetConfigStringArray(craft_config[objtype],"ComponenteEncaixe");
+	var configEncaixes := ReadConfigFile(":*:encaixes");
+
+	var componentes := array;
+	foreach encaixe in encaixesItem
+		var componente := struct;
+		var splitEncaixe := SplitWords(encaixe);
+
+		componente.+caracteristica :=  splitEncaixe[1];
+		componente.+encaixe := splitEncaixe[2];
+		componente.+qtdNecessaria := splitEncaixe[3];
+		componente.+encaixeDesc := GetConfigString(configEncaixes[componente.encaixe],"Desc");
+		componente.+itens := GetConfigStringArray(configEncaixes[componente.encaixe],"Item");
+		componentes.append(componente);
+		Sleepms(2);
+	endforeach
+	Print("componentes: " + componentes);
+
+	return componentes;
 endfunction
 
 function PegaMateriaisNecessarios(objtype)
