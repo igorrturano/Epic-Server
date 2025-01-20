@@ -96,7 +96,6 @@ program spell_fireball(params)
 
 		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
-
 		if (Getcooldown(mobile, "spellthief"))
 			DamageFLS(caster, cint(dmg), DMG_FIRE, caster, "fireball");
 		else
