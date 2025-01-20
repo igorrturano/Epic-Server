@@ -1,4 +1,5 @@
 use cfgfile;
+use uo;
 
 program Install()
 	print("INSTALLING: Methods for Items... OK!");
@@ -37,4 +38,9 @@ endfunction
  */
 exported function getMaterialName(item)
 	return getMaterialID(item) ? FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name : getMaterialID(item);
+endfunction
+
+exported function isSpiderEggSac(item)
+	if (item.objtype == 0x10D9) return 1; endif
+	return 0;
 endfunction

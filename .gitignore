@@ -36,6 +36,8 @@ scripts/ecompile.cfg
 scripts/ecompile.cfg.example
 scripts/modules
 scripts/runecl
+scripts/leftovers.txt
+scripts/orphans.txt
 *.exe
 servers.cfg
 
@@ -61,3 +63,4 @@ plugins/**/*.dll
 
 # Others
 *.dll
+ecompile

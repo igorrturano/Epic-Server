@@ -400,3 +400,38 @@ function getNpcResist()
 
     return diff;
 endfunction
+
+function GetRandomNearbyCoords(item, range := 2)
+    var coords := array{};
+    for i := -range to range
+        for j := -range to range
+            if (i == 0 && j == 0) continue; endif // Skip item's exact position
+            
+            var x := item.x + i;
+            var y := item.y + j;
+            var z := GetWorldHeight(x, y, item.realm);
+            
+            // Check if location is walkable
+            if (CheckLosAt(item, x, y, z))
+                coords.append(struct{
+                    "x" := x,
+                    "y" := y, 
+                    "z" := z
+                });
+            endif
+            sleepms(2);
+        endfor
+    endfor
+    
+    if (coords.size() > 0)
+        var random_pos := coords[RandomInt(coords.size())+1];
+        return random_pos;
+    endif
+    
+    // Fallback to item position if no valid spots found
+    return struct{
+        "x" := item.x,
+        "y" := item.y,
+        "z" := item.z
+    };
+endfunction
