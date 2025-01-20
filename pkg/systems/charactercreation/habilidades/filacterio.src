@@ -45,5 +45,6 @@ program doubleattack(who)
     sleep(2);
     who.frozen := 0;
     var phylactery := CreateItemInBackpack(who, 0x0240, 1);
+    phylactery.decayAt := 0;
     SetObjProperty(who, "phylactery", who.serial);
 endprogram

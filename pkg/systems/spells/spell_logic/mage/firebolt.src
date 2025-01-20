@@ -10,6 +10,7 @@ include "include/sounds";
 include ":combat:damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
 
 program cast_firebolt(params)
     var caster := params[1];
@@ -20,10 +21,14 @@ program cast_firebolt(params)
 	params := 0; // No longer needed
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	if ( !targ.IsA(POLCLASS_MOBILE) )
-		SendSysMessage(caster, "Alvo invalido.");
-		return 0;
-	endif
+    if (!targ.IsA(POLCLASS_MOBILE))
+        if(targ.isSpiderEggSac()) 
+            BurnEgg(targ);
+            return 1;
+        endif
+        SendSysMessage(caster, "Alvo invalido.");
+        return 0;
+    endif
 
     if (!targ)
 		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
