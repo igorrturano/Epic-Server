@@ -11,6 +11,7 @@ include ":combat:damage";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
 
 program cast_firebolt(params)
     var caster := params[1];
@@ -22,6 +23,10 @@ program cast_firebolt(params)
 
 	SendSysMessage(caster, "Selecione o alvo.");
 	if ( !targ.IsA(POLCLASS_MOBILE) )
+		if(targ.isSpiderEggSac()) 
+			BurnEgg(targ);
+            return 1;
+        endif
 		SendSysMessage(caster, "Alvo invalido.");
 		return 0;
 	endif

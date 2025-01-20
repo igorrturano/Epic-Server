@@ -13,12 +13,19 @@ use os;
 use cfgfile;
 include ":tn:cooldown";
 include "include/say";
+include ":destroyable:include/destroyItem";
+
 program change(who, item )
   var cfg := ReadConfigFile(":*:itemdesc");
   var elem := FindConfigElem(cfg, item.objtype);
   if(elem.staff > who.cmdlevel)
     return;
   endif
+
+  if (who.warmode)
+      return ComportamentoWarMode(who, item);
+  endif
+
   if (GetCooldown(who, "darkness") > 0)
     SendSysMessage(who, "Você está envolto em sombras!", SSM_FAIL);
     return;

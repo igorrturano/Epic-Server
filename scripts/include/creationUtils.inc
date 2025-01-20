@@ -721,10 +721,32 @@ function skillGump(who, culture_pic, byref chardata)
         y += 26;
         i++;
     endforeach
-    y+=10;
-    value := 3;
+    // Cavar buraco
+    if (chardata.trait == "Cavar Buracos")
+        var gathering := GATHERING;
+
+        btn_value := GetSkillIdFromName(gathering);
+        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(gathering, "_", " ")), 1, 0);
+        if (chardata.Skills[gathering] >= 1)
+            GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
+        endif
+        if ((chardata.points - value >= 0) && (chardata.Skills[gathering] < 3) && ((chardata.Primarias < pri_allowed) || (chardata.Skills[gathering] < 2 && chardata.points - value >= 0))) 
+            GFAddButton(gump, x+158, y-2, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 230+btn_value);
+        endif
+        sleepms(2);
+        y += 26;
+        i++;
+
+        y+=10;
+        value := 3;
+    endif
+    // End Cavar Buraco
     foreach skill in terciarias
         if (skill == chardata.bgBonus)
+            continue;
+        endif
+
+        if (chardata.trait == "Cavar Buracos" && skill == GATHERING)
             continue;
         endif
 
