@@ -983,10 +983,10 @@ function LayEggSac(spider)
       return 0;
    endif
 
-   // Only lay eggs if in combat and health above 50%
-   if (!spider.opponent || AP_GetVital(spider, "Hits") < AP_GetVitalMaximumValue(spider, "Hits")/2)
-      return 0;
-   endif
+//    // Only lay eggs if in combat and health above 50%
+//    if (!spider.opponent || AP_GetVital(spider, "Hits") < AP_GetVitalMaximumValue(spider, "Hits")/2)
+//       return 0;
+//    endif
 
    var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1);
    if (egg)
@@ -996,6 +996,7 @@ function LayEggSac(spider)
       SetCooldown(spider, "egg_sac", 60);
       return 1;
    endif
+   egg.decayAt := ReadGameClock() + (60 * 15);
 
    return 0;
 endfunction
@@ -1018,6 +1019,7 @@ function CreateInvisibleWeb(spider)
         
         web.graphic := web_graphics[RandomInt(web_graphics.size())+1];
         web.invisible := 1;
+        web.decayAt := ReadGameClock() + 60;
         SetObjProperty(web, "level", CInt(NPC_GetNPCConfig(spider).Tier));
         return 1;
     endif

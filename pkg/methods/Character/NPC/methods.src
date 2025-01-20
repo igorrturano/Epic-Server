@@ -209,7 +209,7 @@ exported function CanShootWeb(who)
 endfunction
 
 exported function CanPoisonBite(who)
-    var templates := array{"dreadgiantspider"};
+    var templates := array{"dreadgiantspider", "spiderling"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
