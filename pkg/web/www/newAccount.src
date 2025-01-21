@@ -8,8 +8,6 @@
  * email=email ( string)
  * adminpw=creation password (string) - if set in settings.cfg
  *
- * Example:
- * ?username=Bob&password=Beer&cmdlevel=3&expansion=AOS&email=Bob@beer.org&adminpw=DistroR0x
  *
  */
 use uo;
