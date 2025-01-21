@@ -191,7 +191,7 @@ exported function canDoConfusion(who)
 endfunction
 
 exported function CanDoWebWrap(who)
-    var templates := array{"dreadgiantspider"};
+    var templates := array{"dreadgiantspider", "HugeSpider", "BlackHugeSpider", "Tarantula"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -200,7 +200,7 @@ exported function CanDoWebWrap(who)
 endfunction
 
 exported function CanShootWeb(who)
-    var templates := array{"dreadgiantspider"};
+    var templates := array{"dreadgiantspider", "BlackGiantSpider", "BlackHugeSpider", "SkullSpider", "PhaseSpider"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -209,7 +209,7 @@ exported function CanShootWeb(who)
 endfunction
 
 exported function CanPoisonBite(who)
-    var templates := array{"dreadgiantspider", "spiderling"};
+    var templates := array{"dreadgiantspider", "spiderling", "HugeSpider", "BlackHugeSpider", "SkullSpider", "PhaseSpider"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -218,7 +218,7 @@ exported function CanPoisonBite(who)
 endfunction
 
 exported function CanClimbWall(who)
-    var templates := array{"dreadgiantspider"};
+    var templates := array{"dreadgiantspider", "SkullSpider"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -227,7 +227,7 @@ exported function CanClimbWall(who)
 endfunction
 
 exported function CanLayEggSac(who)
-    var templates := array{"dreadgiantspider"};
+    var templates := array{"dreadgiantspider", "BlackGiantSpider", "BlackHugeSpider", "Tarantula"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -236,7 +236,7 @@ exported function CanLayEggSac(who)
 endfunction
 
 exported function isSpider(who)
-    var templates := array{"dreadgiantspider"};
+    var templates := array{"dreadgiantspider", "BlackGiantSpider", "HugeSpider", "BlackHugeSpider", "SkullSpider", "Tarantula", "PhaseSpider"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
