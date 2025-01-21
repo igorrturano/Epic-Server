@@ -435,3 +435,12 @@ function GetRandomNearbyCoords(item, range := 2)
         "z" := item.z
     };
 endfunction
+
+function AlertNearbySpiders(mobile)
+    foreach spider in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 12)
+        if (spider.isSpider())
+            SendEvent(spider, struct{ "type" := EVID_ALERT_ALLIES, "source" := mobile });
+        endif
+        sleepms(2);
+    endforeach
+endfunction

@@ -6,6 +6,7 @@ include "include/say";
 include ":tn:cooldown";
 include "include/sysEvent";
 include ":charactercreation:resists";
+include "include/epicNPCUtils";
 
 program webTrap(mobile)
     if (mobile.acctname)
@@ -21,13 +22,4 @@ function TrapMobile(mobile)
         SetObjProperty(mobile, "spiderWebArea", 1);
         PrintTextAbove(mobile, "*preso na teia*");
     endif
-endfunction
-
-function AlertNearbySpiders(mobile)
-    foreach spider in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 12)
-        if (spider.isSpider())
-            SendEvent(spider, struct{ "type" := EVID_ALERT_ALLIES, "source" := mobile });
-        endif
-        sleepms(2);
-    endforeach
 endfunction
