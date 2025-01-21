@@ -14,7 +14,7 @@ program summonSkeletaSteed(params)
 
     //GiantSpider
     //DreadGiantSpider
-    //HugeSpider
+    //HugeRedSpider
     //BlackHugeSpider
 	var template := ":brainai:GiantSpider";
     var lvl := Cint(AP_GetSkill(who, MAGICLORE));
@@ -22,7 +22,7 @@ program summonSkeletaSteed(params)
     if (lvl >= 90)
         template := ":brainai:BlackHugeSpider";
     elseif (lvl >= 70 )
-        template := ":brainai:HugeSpider";
+        template := ":brainai:HugeRedSpider";
     elseif (lvl >= 50)
         template := ":brainai:DreadGiantSpider";
     endif
