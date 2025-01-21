@@ -191,7 +191,7 @@ exported function canDoConfusion(who)
 endfunction
 
 exported function CanDoWebWrap(who)
-    var templates := array{"dreadgiantspider", "HugeSpider", "BlackHugeSpider", "Tarantula"};
+    var templates := array{"dreadgiantspider", "HugeRedSpider", "BlackHugeSpider", "Tarantula"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -209,7 +209,7 @@ exported function CanShootWeb(who)
 endfunction
 
 exported function CanPoisonBite(who)
-    var templates := array{"dreadgiantspider", "spiderling", "HugeSpider", "BlackHugeSpider", "SkullSpider", "PhaseSpider"};
+    var templates := array{"dreadgiantspider", "spiderling", "HugeRedSpider", "BlackHugeSpider", "SkullSpider", "GiantSpider"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
@@ -236,7 +236,7 @@ exported function CanLayEggSac(who)
 endfunction
 
 exported function isSpider(who)
-    var templates := array{"dreadgiantspider", "BlackGiantSpider", "HugeSpider", "BlackHugeSpider", "SkullSpider", "Tarantula", "PhaseSpider"};
+    var templates := array{"dreadgiantspider", "BlackGiantSpider", "HugeRedSpider", "BlackHugeSpider", "SkullSpider", "Tarantula", "GiantSpider"};
 
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
