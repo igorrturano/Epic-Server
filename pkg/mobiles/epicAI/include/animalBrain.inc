@@ -107,6 +107,10 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    if (me.isSpider() && opponent.getRace() == DROW)
+        return 0;
+    endif
+ 
     SetOpponent(opponent);
 
     // Let the combat hook handle the actual attacks
