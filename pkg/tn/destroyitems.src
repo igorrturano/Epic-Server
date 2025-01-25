@@ -3,135 +3,107 @@ use uo;
 use os;
 use polsys;
 
-include "include/client";
-include "include/say";
-include ":tn:cooldown";
-include ":combat:combat";
 include ":attributes:attributes";
-include ":fls_core:packets";
-include ":blood:blood";
-include ":combat:damage";
-include "include/tileEffects";
-include ":fls_core:fls_objtypes";
-include "include/sysEvent";
-include "include/eventID";
+include ":combat:weardown";
+include ":destroyable:include/destroyItem";
+include "include/epicConstants";
+include "include/facings";
+include ":equipsys:utils";
+include ":traps:traps";
 
 program destroyitems(parms)
 
-	var who:=parms[1];
-	var item:=parms[2];
-	var arma:=parms[3];
+	var quem:=parms[1];
+	var itemAlvo:=parms[2];
+	var fonteDano:=parms[3];
+	var consumoStamina := 0;
+	
+	while(true)
+		Attach(quem);
+		if(!isPossivelDestruir(quem,itemAlvo,fonteDano,consumoStamina))
+			break;
+		endif
+		TentaDestruir(quem,itemAlvo,fonteDano,consumoStamina);
 
-	/*
-		0x0f51	dagger
-		0x13f6	butcher
-		0x0ec2	cleaver
-		0x0ec4	SkinningKnife
-		11565	karda
-	*/
-
-	if((arma.objtype == 0x0f51) || (arma.objtype ==0x13f6) || (arma.objtype ==0x0ec2) || (arma.objtype == 0x0ec4) || (arma.objtype ==11565))
-		SendSysMessageEx(who,"Voce nao pode quebrar " + item.desc + " com isto.",SSM_FAIL);
-		return 0;
-	endif
-
-	isBreakble(who,item);
+		Sleep(2);
+	endwhile
 
 endprogram
 
-
-function isBreakble(who,item)
-
-	var cfg := ReadConfigFile(":destroyable:destroyitems");
-	var cfgitems:=GetConfigStringKeys( cfg);
-	var elem:=FindConfigElem( cfg, item.objtype);
-
-	var normal:=GetConfigString( elem, "normal");
-	var quebrado:=GetConfigString( elem, "quebrado");
-
-	if(Hex(item.graphic) == Hex(normal))
-		fBreak(who,item);
-		return 1;
-	elseif(Hex(item.graphic)==Hex(quebrado))
-		SendSysMessageEx(who,"Isto ja parece estar quebrado.",SSM_FAIL);
-		return 0;
+function isPossivelDestruir(quem , itemAlvo , fonteDano, byref consumoStamina )
+	if(!itemAlvo || itemAlvo.invisible || !quem.warmode)
+		return false;
 	endif
+
+	if(itemAlvo.IsA(POLCLASS_CORPSE) && GetObjProperty(itemAlvo,"account"))
+		SendSysMessageEx(quem, "Você não pode destruir um corpo de jogador.", SSM_FAIL);
+		return false;
+	endif
+
+	if (!itemAlvo.ISA(POLCLASS_ITEM) || GetObjProperty(itemAlvo,PROPNAME_INDESTRUTIVEL))
+		SendSysMessageEx(quem, "Você não pode destruir isso.", SSM_FAIL);
+		return false;
+	endif
+	if (itemAlvo.container)
+		SendSysMessageEx(quem, "Não é possivel destruir um item dentro de um container.", SSM_FAIL);
+		return false;
+	endif
+
+	if(fonteDano.ISA(POLCLASS_WEAPON))
+		if (quem.weapon != fonteDano)
+			SendSysMessageEx(quem, "Você deve estar com a arma em mãos.", SSM_FAIL);
+			return false;
+		endif
+
+		CalculaConsumoStamina(fonteDano,consumoStamina);
+		if(AP_GetVital(quem, "Stamina") < consumoStamina)
+			SendSysMessageEx(quem, "Você está muito cansado para continuar.", SSM_FAIL);
+			return false;
+		endif
+	else
+		//Fonte de dano mágica?
+	endif
+
+	if ( Distance(quem, itemAlvo) > 1 )
+		SendSysMessageEx(quem, "Você está muito distante do alvo.", SSM_FAIL);
+		return false;
+	endif
+	return true;
 
 endfunction
 
-function fBreak(who,item)
-	if(TemHabilidade(who, "Vigor do Extrator"))
-		if(AP_GetVital(who, "Stamina") < 8)
-			SendSysMessageEx(who, "Voce esta cansado demais.",SSM_FAIL);
-			return 0;
+function TentaDestruir(quem,itemAlvo,fonteDano, consumoStamina)
+	if(fonteDano.ISA(POLCLASS_WEAPON))
+		
+		if(quem.concealed || quem.invisible)
+			SendSysMessageEx(quem, "Você foi revelado.", SSM_FAIL);
+			quem.concealed := 0;
+			quem.invisible := 0;
 		endif
-	else
-		if(AP_GetVital(who, "Stamina") < 15)
-			SendSysMessageEx(who, "Voce esta cansado demais.",SSM_FAIL);
-			return 0;
+		
+		if(!IsFacing(quem,itemAlvo.x,itemAlvo.y))
+			TurnObjectToward(quem,itemAlvo.x,itemAlvo.y);
+		endif
+		
+		RodaEfeitosAnim(quem,fonteDano,itemAlvo);
+		ConsumeVital( quem, STAMINA, consumoStamina * 100);
+		WearDownWeapon(quem,fonteDano,3);
+		
+		var danoCalculado := DanificaItem(quem,itemAlvo,fonteDano);
+		if(!danoCalculado.isEficaz)
+			PrintTextAbove(itemAlvo,"*golpe ineficaz*");
 		endif
 	endif
-	var cfg := ReadConfigFile(":destroyable:destroyitems");
-	var elem:=FindConfigElem( cfg, item.objtype);
-	var normal:=GetConfigString( elem, "normal");
-	var quebrado:=GetConfigString( elem, "quebrado");
-	var hits:= GetObjProperty(item,"hits");
-	var porta := array{};
+endfunction
 
-	//Se são portas emperradas
-	if(((item.objtype==0xec25)||(item.objtype==0xec26)) && (hits > 0))
-		var mobiles:=ListMobilesNearLocation( item.x, item.y, item.z, 20, realm := _DEFAULT_REALM );
+function RodaEfeitosAnim(quem,arma,alvo)
+	PlayAttackAnimation(quem);
+	sleepms(600);
+	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
+	PlaySoundEffect(quem, somAtaque);
+	PlayObjectCenteredEffect(alvo, FX_SMOKE, 2, 4);
+endfunction
 
-		porta.append(item.x);
-	    porta.append(item.y);
-		var ev := struct;
-	        ev.+type := EVID_HERDING;
-	        ev.+data := porta;
-
-		foreach mob in mobiles
-			SendEvent(mob, ev);
-		endforeach
-
-		PlayAttackAnimation(who);
-		sleepms(600);
-		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
-		PlayStationaryEffect(item.x, item.y, item.z, FX_SMOKE, 2, 4);
-		//ConsumeVital( who, STAMINA, 2000 );
-		if (TemHabilidade(who, "Lenhador Eficaz"))
-			ConsumeVital( who, STAMINA, 1000 );
-			PrintText(item, "*Destroi " +item.desc+ " com um golpe*");
-			SetObjProperty(item,"hits",0);
-		else
-			ConsumeVital( who, STAMINA, 2000 );
-			PrintText(item, "*A " +item.desc+ " começa a ceder*");
-			SetObjProperty(item,"hits",hits-1);
-		endif
-
-	else
-
-		PlayAttackAnimation(who);
-		sleepms(600);
-		PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
-		PlayStationaryEffect(item.x, item.y, item.z, FX_SMOKE, 2, 4);
-		ConsumeVital( who, STAMINA, 2000 );
-
-		item.graphic:=Cint(quebrado);
-		SetObjProperty(item,"hits",3);
-
-
-		if((item.objtype==0xec25)||(item.objtype==0xec26)|| (item.objtype==0xFF04)|| (item.objtype==0xec27)|| (item.objtype==0xec28) )
-			PrintText(who, "*Quebra a " +item.desc+ "*");
-			SetName(item,item.desc + " [Quebrada] ");
-		elseif(item.objtype == 0xec24)
-			PrintText(who, "*Quebra o " +item.desc+ "*");
-			SetName(item,item.desc + " [Quebrado] ");
-		endif
-		var itens := GetObjProperty(item,"itens");
-		foreach itemarray in itens
-			var itemcriado:=CreateItemAtLocation(item.x, item.y, item.z,itemarray , itemarray.amount, realm := _DEFAULT_REALM);
-			SetName(itemcriado, itemarray.name);
-		endforeach
-		return 1;
-
-	endif
+function CalculaConsumoStamina( fonteDano, byref consumoStamina)
+		consumoStamina := CInt(fonteDano.weight * 1.5);
 endfunction

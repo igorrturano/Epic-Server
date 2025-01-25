@@ -1,0 +1,72 @@
+include "include/say";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    var spell := params[3];
+    var spell_school := spell.School;
+    
+    UnloadConfigFile(":combat:config/lightsources");
+    var cfg_lights := ReadConfigFile(":combat:config/lightsources");
+    var cfg_items := ReadConfigFile(":*:itemdesc");
+    var elem := cfg_lights["LightSources"];
+    var objtype_lightsources := array{};
+    var isEquippedLightSource := {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC628};
+    
+    foreach light in GetConfigStringArray(elem, "LightSource")
+        objtype_lightsources.append(CInt(light));
+    endforeach
+    
+    if (!targ.npctemplate)
+        foreach item in (ListEquippedItems(targ))
+            if ((item.objtype in objtype_lightsources) || (item.graphic in isEquippedLightSource))
+                if (item.graphic != item.objtype)
+                    var elem := FindConfigElem(cfg_items, item.objtype);
+                    if (elem && elem.changesnd)
+                        PlaySoundEffect(who, elem.changesnd);
+                    endif
+                    item.graphic := item.objtype;
+                    SetObjProperty(item, "graphic", item.graphic);
+                endif
+            endif
+        endforeach
+    endif
+    
+    foreach item in ListItemsNearLocation(targ.x, targ.y, targ.z, 2, targ.realm)
+        if (item.objtype in objtype_lightsources)
+            if (item.graphic != item.objtype)
+                var elem := FindConfigElem(cfg_items, item.objtype);
+                if (elem && elem.changesnd)
+                    PlaySoundEffect(who, elem.changesnd);
+                endif
+                item.graphic := item.objtype;
+                SetObjProperty(item, "graphic", item.graphic);
+            endif
+        endif
+    endforeach
+
+    var duration := cint(AP_GetSkill(who, MAGICLORE)/2);
+    if (TemHabilidade(who, "Valdruk"))
+        duration := Cint(duration * 2);
+    endif
+
+    if (targ.acctname)
+     	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	    var bonus := epicWisdomPathBonus(who);
+        if (CheckResist(targ, VONTADE, diff, -bonus))
+            SendSysMessageEx(who, "Você nota que o alvo nao foi afetado.", SSM_FAIL);
+            handleSilentMagic(who, targ, 0x3BE);
+            return;
+        endif
+        targ.setlightlevel( 30, 6000 );
+        SetCooldown(targ, "nightvision", 0);
+        SetCooldown(targ, "darkness", duration);
+        SendSysMessageEx(targ, "Sua visão noturna cessou!", SSM_FAIL);
+    endif
+
+    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, 30, 2, 2740);
+    
+    return 1;
+endprogram

@@ -174,7 +174,7 @@ program UseBandage(mobile, bandage)
 
 	var aux_skill := MEDICINE;
 	var elem := NPC_GetNPCConfig(targ.npctemplate);
-	var npcdesc := ReadConfigFile(":brainAI:npcdesc");
+	var npcdesc := ReadConfigFile(":*:npcdesc");
 	var npctemplate := targ.npctemplate;
 	npctemplate := npctemplate[10, len(npctemplate)-9];
 	npcdesc := npcdesc[npctemplate];

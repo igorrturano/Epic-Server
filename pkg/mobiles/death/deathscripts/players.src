@@ -209,12 +209,16 @@ program death(params)
 		if (tempo != 1)
 			sleep(30);
 		else
-			SendSysMessage(ghost, "30 segundos...");
-			sleep(10);
-			SendSysMessage(ghost, "20 segundos...");
-			sleep(10);
-			SendSysMessage(ghost, "10 segundos...");
-			sleep(10);
+			if (GetObjProperty(corpse, "webseal"))
+				tempo := 1;
+			else
+				SendSysMessage(ghost, "30 segundos...");
+				sleep(10);
+				SendSysMessage(ghost, "20 segundos...");
+				sleep(10);
+				SendSysMessage(ghost, "10 segundos...");
+				sleep(10);
+			endif
 		endif
 		if ( GetObjProperty(corpse, "curado") )
 			SendSysMessage(ghost, "Voce foi curado e acordara em 5 segundos!");
@@ -224,7 +228,7 @@ program death(params)
 			sleep(5);
 			break;
 		elseif ( GetObjProperty(corpse, "prolongardesmaio") )
-			SendSysMessage(ghost, "Seus batimentos cardiacos se reduzem, e você tem mais dificuldade em recobrar a consciencia.",3 , 0);
+			SendSysMessageEx(ghost, "Seus batimentos cardíacos se reduzem, e você tem mais dificuldade em recobrar a consciência.", SSM_FAIL);
 			EraseObjProperty(corpse, "prolongardesmaio");
 			SetObjProperty(corpse, "japrolongou", 1);
 			tempo := tempo * 2;
@@ -259,6 +263,9 @@ program death(params)
             //endif
             //FindAccount(ghost.acctname).setprop("mortelog", logs);
 			return 1;
+		elseif (GetObjProperty(corpse, "webseal"))
+			tempo := 1;
+        	SendSysMessageEx(corpse, "Você está preso na teia de aranha!", SSM_FAIL);
 		endif
 		tempo := tempo - 1;
 	endwhile
@@ -321,6 +328,11 @@ function KataWakeUp(ghost, corpse)
 	var serialC := ghost.serial;
 	//TS_StartTimer(ghost, "mortedelay", 10);
 	setcooldown(ghost, "deathtime", 25);
+
+	if (corpse.graphic == 0x10DA) // Web Cocconut
+		corpse.graphic := corpse.objtype;
+	endif
+
 	if ( !MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION) )
 		SendSysMessage(ghost, "Ocorreu algum problema ao retornar seu personagem para o corpo. Solicite ajude da Staff");
 
@@ -393,7 +405,10 @@ function KataWakeUp(ghost, corpse)
 		AP_SetVital(ghost, HITS, cint(save.hits));
 		eraseobjproperty(ghost, "savegame");
 	endif
-	TS_LowerDuration(ghost, "metamorfosedruida", 10000, 1);
+
+	if (GetObjProperty(ghost, "metamorfose"))
+		TS_LowerDuration(ghost, "metamorfosedruida", 10000, 1);
+	endif
 
 endfunction
 

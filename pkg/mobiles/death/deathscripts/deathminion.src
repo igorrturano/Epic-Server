@@ -17,7 +17,7 @@ include ":attributes:vitals";
 program DeathScript(params)
 	var corpse := params[1];
 
-	var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+	var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 	var npctemplate := GetobjProperty(corpse, "npctemplate");
 	var mytemplate := ParseTemplateName(npctemplate).template;
 	

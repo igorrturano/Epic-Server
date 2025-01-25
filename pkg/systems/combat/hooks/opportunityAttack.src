@@ -77,4 +77,3 @@ function canUseOpportunityHit(attacker, defender)
     
     return 1;
 endfunction
-

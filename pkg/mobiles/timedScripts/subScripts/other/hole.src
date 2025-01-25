@@ -1,0 +1,17 @@
+use uo;
+use os;
+use vitals;
+use util;
+
+include "include/say";
+
+program TimedScript_Paralysis(params)
+	var who := params[1];
+
+    var hole := CreateItemAtLocation(who.x, who.y, who.z, 0xBE20, 1, who.realm);
+    hole.movable := 0;
+    sleep(5);
+    DestroyItem(hole);
+	return 1;
+endprogram
+  

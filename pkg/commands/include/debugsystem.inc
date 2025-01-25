@@ -40,7 +40,8 @@ enum DEBUGNAMES
 	DEBUG_DAMAGE := "damage",
 	DEBUG_SMELTING := "smelting",
     DEBUG_UP := "up",
-	DEBUG_EQUIP := "equip"
+	DEBUG_EQUIP := "equip",
+    DEBUG_HIT := "hit",
 endenum
 
 var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com a tag e o cmdlevel
@@ -49,7 +50,8 @@ var listDebugs := array{ // Novos debugs precisam ser adicionados aqui com a tag
     struct { name := DEBUG_DAMAGE, "level" := 0 },
 	struct { name := DEBUG_SMELTING, "level" := 0 },
 	struct { name := DEBUG_UP, "level" := 0 },
-	struct { name := DEBUG_EQUIP, "level" := 0 }
+	struct { name := DEBUG_EQUIP, "level" := 0 },
+    struct { name := DEBUG_HIT, "level" := 0 }
 };
 
 function CheckDebug(who, debugName)

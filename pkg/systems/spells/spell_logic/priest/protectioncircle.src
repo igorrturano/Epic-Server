@@ -13,7 +13,7 @@ include "include/utils";
 program SpellScript(params)
 	var who := params[1];
 	params := 0; // No longer needed
-    var cfg := ReadConfigFile(":brainai:npcdesc");
+    var cfg := ReadConfigFile(":*:npcdesc");
 
 
 	PlaySoundEffect(who, SFX_SPELL_STRENGTH);

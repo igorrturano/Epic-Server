@@ -1,0 +1,66 @@
+use uo;
+use os;
+use util;
+include "include/epicNPCUtils";
+
+program control_spiderEgg(egg)
+    Set_Event_Queue_Size(20);
+    
+    var ev;
+    while(egg)
+        // Check for nearby players
+        var hasPlayer := 0;
+        foreach mobile in ListMobilesNearLocation(egg.x, egg.y, egg.z, 2)
+            if (!mobile.npctemplate && !mobile.concealed && !mobile.hidden)
+                hasPlayer := 1;
+                break;
+            endif
+            sleepms(2);
+        endforeach
+        
+        if (hasPlayer && !GetObjProperty(egg, "#hatching"))
+            StartHatching(egg);
+        endif
+        
+        Sleep(1);
+    endwhile
+endprogram
+
+function StartHatching(egg)
+    SetObjProperty(egg, "#hatching", 1);
+    
+    var countdown := 5;
+    PrintTextAbove(egg, "O ovo pulsa com a sua presenca... ");
+    while (countdown > 0)
+        PrintTextAbove(egg, Cstr(countdown));
+        sleep(1);
+        countdown := countdown - 1;
+        
+        // If egg was destroyed during countdown, stop
+        if (!egg)
+            return;
+        endif
+    endwhile
+    
+    // If we got here, hatch normally
+    HatchEgg(egg);
+endfunction
+
+function HatchEgg(egg)
+    var tier := GetObjProperty(egg, "ParentTier");
+    if (!tier)
+        tier := 1;
+    endif
+
+    var num_spiders := Cint(RandomDiceRoll("1d5") + tier);
+    for i := 1 to num_spiders
+        var pos := GetRandomNearbyCoords(egg);
+        var spider := CreateNpcFromTemplate(":epicAI:spiderling", pos.x, pos.y, pos.z, 0, egg.realm);
+        customizeNPC(spider, Cint(tier));
+        sleepms(100);
+    endfor
+    
+    var crackedEgg := CreateItemAtLocation(egg.x, egg.y, egg.z, "DestroyedEgg", 1, egg.realm);
+    
+    DestroyItem(egg);
+endfunction

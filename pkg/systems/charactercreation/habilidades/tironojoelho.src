@@ -30,7 +30,7 @@ program tironojoelho(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 	
-	if (lower(weapon.attribute) == "Ranged")
+	if (lower(weapon.attribute) == "ranged")
 		SendSysMessage(attacker, "A habilidade falhou, voce precisa estar usando arco");
 		return 1;
 	endif	

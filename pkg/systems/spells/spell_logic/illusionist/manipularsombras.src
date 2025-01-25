@@ -8,7 +8,10 @@ include ":charactercreation:resists";
 include ":survival:fishingFunctions";
 include "include/dungeons";
 
-program HitScript(who)
+program HitScript(params)
+	var who := params[1];
+    var targ := params[2];
+    
     if(!InDarkness(who))
         SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
         return 0;
@@ -17,21 +20,25 @@ program HitScript(who)
     PerformAction(who, ANIM_CAST_AREA);
     sleep(2);
 
-	var targ := Target(who);
     var dist := Distance(who, targ);
     var mlore := Cint(AP_GetSkill(who, MAGICLORE));
     who.frozen := 1;
 
     if(!CheckLosAt(who, targ.x, targ.y, targ.z))
 		SendSysMessage(who, "Voce nao consegue ver o alvo.");
-        who.concealed := 0;
+        who.hidden := 0;
         who.frozen := 0;
 		return 0;
 	endif
 
-    if (dist > (mlore/ 5))
+    var allowedDistance := mlore/10;
+    if (TemHabilidade(who, "Valdruk"))
+        allowedDistance := mlore/5;
+    endif
+
+    if (dist > Cint(allowedDistance))
         SendSysMessage(who, "O alvo esta muito distante");
-        who.concealed := 0;
+        who.hidden := 0;
         who.frozen := 0;
         return 0;
     endif
@@ -39,14 +46,14 @@ program HitScript(who)
 	var locinfo:= GetMapInfo( targ.x, targ.y, who.realm );
 	if(IsWater(targ, locinfo))
         SendSysMessage(who, "Voce nao pode clicar na agua");
-        who.concealed := 0;
+        who.hidden := 0;
         who.frozen := 0;
         return 0;
     endif
 
 	if ( !targ )
 		SendSysMessage(who, "Cancelled.");
-        who.concealed := 0;
+        who.hidden := 0;
         who.frozen := 0;
 		return 0;
 	endif
@@ -57,12 +64,12 @@ program HitScript(who)
 	endif
     PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
 
-    targ.concealed := 1;
+    targ.hidden := 1;
 
     var moveTo := TargetCoordinates(who);
     if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
         SendSysMessage(who, "Local Inacessível");
-        targ.concealed := 0;
+        targ.hidden := 0;
         who.frozen := 0;
         return 0;
     else
@@ -70,7 +77,7 @@ program HitScript(who)
     endif
 
     sleep(1);
-    targ.concealed := 0;
+    targ.hidden := 0;
     who.frozen := 0;
     PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
 
