@@ -1043,6 +1043,10 @@ function LootCorpse(corpse)
         return 0;
     endif
 
+    if (GetCooldown(me, "loot_cooldown") > 0)
+        return 0;
+    endif
+
     // Approach the corpse
     while (Distance(me, corpse) > 1)
         RunToward(corpse);
@@ -1055,7 +1059,7 @@ function LootCorpse(corpse)
     endwhile
 
     // Calculate max items to loot based on intelligence
-    var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/20);
+    var max_loot := 1/* CInt(AP_GetStat(me, INTELLIGENCE)/20) */;
     if (max_loot < 1)
         max_loot := 1;
     endif
@@ -1139,6 +1143,9 @@ function LootSomething(npc, corpse)
                 return LootItem(npc, container_item);
             endif
         endif
+        
+        // Adicionei pra meter o bicho em alguma coisa pelo menos (bandages, tesoura)
+        return LootItem(npc, item);
         sleepms(2);
     endforeach
 
