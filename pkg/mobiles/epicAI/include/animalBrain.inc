@@ -108,7 +108,16 @@ function HandleAnimalCombatEvent(opponent)
     endif
 
     if (me.isSpider() && opponent.getRace() == DROW)
-        return 0;
+        var npc_elem := NPC_GetNPCConfig(me);
+        var tier := CInt(npc_elem.Tier);
+        if (tier <= 2)
+            return 0;
+        elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
+            return 0;
+        elseif (tier <= 4 && opponent.getReligion == ELUITHORTH)
+            return 0;
+        endif
+        // Tier 5 sempre desafia drows para testar se são oponentes valiosos
     endif
  
     SetOpponent(opponent);
@@ -230,6 +239,9 @@ function AnimalIdle(wanders)
         if (me.isSpider())
             CreateInvisibleWeb(me); 
         endif
+
+        wander();
+        sleep(1);
         if (me.CanLayEggSac())
             LayEggSac(me);
         endif

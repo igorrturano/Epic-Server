@@ -22,10 +22,10 @@ program controleclima(who)
         shaman_souls := 0;
     endif
 
-    if (InDungeon(who))
-       SendSysMessageEx(who, "Você precisa estar fora de cavernas.", SSM_INFO);
-       return;
-    endif
+    // if (InDungeon(who))
+    //    SendSysMessageEx(who, "Você precisa estar fora de cavernas.", SSM_INFO);
+    //    return;
+    // endif
 
     type := 0; // chuva
     if (shaman_souls > 0)
