@@ -991,7 +991,6 @@ function LayEggSac(spider)
    var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1);
    if (egg)
       PrintTextAbove(spider, "*deposita ovos*");
-      SetObjProperty(egg, "SpawnTime", ReadGameClock());
       SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
       SetCooldown(spider, "egg_sac", 60);
       return 1;
@@ -1019,7 +1018,7 @@ function CreateInvisibleWeb(spider)
         
         web.graphic := web_graphics[RandomInt(web_graphics.size())+1];
         web.invisible := 1;
-        web.decayAt := ReadGameClock() + 60;
+        web.decayAt := ReadGameClock() + 120;
         SetObjProperty(web, "level", CInt(NPC_GetNPCConfig(spider).Tier));
         return 1;
     endif

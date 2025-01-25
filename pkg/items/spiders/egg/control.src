@@ -47,7 +47,7 @@ function StartHatching(egg)
 endfunction
 
 function HatchEgg(egg)
-    var tier := GetObjProperty(egg, "tier");
+    var tier := GetObjProperty(egg, "ParentTier");
     if (!tier)
         tier := 1;
     endif
@@ -56,7 +56,7 @@ function HatchEgg(egg)
     for i := 1 to num_spiders
         var pos := GetRandomNearbyCoords(egg);
         var spider := CreateNpcFromTemplate(":epicAI:spiderling", pos.x, pos.y, pos.z, 0, egg.realm);
-        customizeNPC(spider, RandomIntMinMax(0, Cint(tier)));
+        customizeNPC(spider, Cint(tier));
         sleepms(100);
     endfor
     
