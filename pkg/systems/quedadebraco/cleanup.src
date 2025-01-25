@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program cleanup_item(item)
+    var delete_time := GetObjProperty(item, "#DeleteTime");
+    if (!delete_time)
+        return;
+    endif
+    
+    while (item)
+        if (ReadGameClock() >= delete_time)
+            DestroyItem(item);
+            break;
+        endif
+        sleep(5);
+    endwhile
+endprogram

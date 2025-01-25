@@ -1,0 +1,156 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":coords:coords";
+include ":attributes:attributes";
+include "include/say";
+
+program use_compass(who, compass)
+    // Primeiro verifica se o jogador tem um mapa do tesouro
+    var maps := EnumerateItemsInContainer(who.backpack);
+    var treasure_map;
+    
+    foreach item in maps
+        if (GetObjProperty(item, "chestx") && GetObjProperty(item, "chesty"))
+            treasure_map := item;
+            break;
+        endif
+    endforeach
+    
+    if (!treasure_map)
+        SendSysMessageEx(who, "Voce precisa ter um mapa do tesouro decodificado no inventario.", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Pega as coordenadas do tesouro
+    var dest_x := GetObjProperty(treasure_map, "chestx");
+    var dest_y := GetObjProperty(treasure_map, "chesty");
+    
+    // Cria e mostra o gump inicial
+    var gump := BuildGump(who, dest_x, dest_y);
+    var ret := GFSendGump(who, gump);
+    
+    // Inicia o loop de atualização
+    while (who.connected)
+        var old_x := who.x;
+        var old_y := who.y;
+        
+        Sleep(1); // Pequena pausa para não sobrecarregar
+        
+        // Se o jogador se moveu, atualiza o gump
+        if (who.x != old_x || who.y != old_y)
+            gump := BuildGump(who, dest_x, dest_y);
+            ret := GFSendGump(who, gump);
+            
+            // Atualiza a quest arrow
+            SetQuestArrow(who, 1, dest_x, dest_y);
+        endif
+        
+        // Verifica se chegou muito perto do destino
+        if (GetDistanceBetweenPoints(who.x, who.y, dest_x, dest_y) <= 1)
+            SendSysMessageEx(who, "Voce chegou ao local do tesouro!", SSM_INFO);
+            SetQuestArrow(who, 0, 0, 0); // Desativa a arrow
+            break;
+        endif
+    endwhile
+    
+    return 1;
+endprogram
+
+function BuildGump(who, dest_x, dest_y)
+    var gump := GFCreateGump();
+    
+    // Layout básico - fundo menor e mais elegante
+    GFResizePic(gump, 0, 0, 9200, 250, 160);
+    GFAddAlphaRegion(gump, 0, 0, 250, 160);
+    
+    // Título
+    GFTextLine(gump, 75, 10, 2103, "Bussola Magica");
+    
+    // Informações
+    var dist := GetDistanceBetweenPoints(who.x, who.y, dest_x, dest_y);
+    var direction := GetDirectionText(who.x, who.y, dest_x, dest_y);
+    var current_coords := ToSextant(who.x, who.y);
+    
+    GFTextLine(gump, 20, 40, 2100, "Distancia: " + dist + " passos");
+    GFTextLine(gump, 20, 60, 2100, "Direcao: " + direction);
+    GFTextLine(gump, 20, 80, 2100, "Sua Posicao:");
+    GFTextLine(gump, 30, 100, 2100, current_coords);
+    
+    // Adiciona um ícone da bússola
+    GFGumpPic(gump, 180, 40, 0x1579, 2103); // Adiciona um gráfico decorativo
+    
+    return gump;
+endfunction
+
+function GetDirectionText(current_x, current_y, dest_x, dest_y)
+    var direction := GetFacingDirection(current_x, current_y, dest_x, dest_y);
+    case (direction)
+        0: return "Norte";
+        1: return "Nordeste";
+        2: return "Leste";
+        3: return "Sudeste";
+        4: return "Sul";
+        5: return "Sudoeste";
+        6: return "Oeste";
+        7: return "Noroeste";
+        default: return "Desconhecida";
+    endcase
+endfunction
+
+function GetFacingDirection(current_x, current_y, dest_x, dest_y)
+    // Determina a direção baseado na posição relativa
+    var dx := dest_x - current_x;
+    var dy := dest_y - current_y;
+    
+    if (dx == 0 && dy < 0)
+        return 0; // Norte
+    elseif (dx > 0 && dy < 0)
+        return 1; // Nordeste
+    elseif (dx > 0 && dy == 0)
+        return 2; // Leste
+    elseif (dx > 0 && dy > 0)
+        return 3; // Sudeste
+    elseif (dx == 0 && dy > 0)
+        return 4; // Sul
+    elseif (dx < 0 && dy > 0)
+        return 5; // Sudoeste
+    elseif (dx < 0 && dy == 0)
+        return 6; // Oeste
+    elseif (dx < 0 && dy < 0)
+        return 7; // Noroeste
+    endif
+    
+    return 0; // Norte por padrão
+endfunction
+
+function GetDistanceBetweenPoints(x1, y1, x2, y2)
+    return CInt(Floor(Sqrt(PowX(x2-x1) + PowY(y2-y1))));
+endfunction
+
+function PowX(x)
+    return x * x;
+endfunction
+
+function PowY(y)
+    return y * y;
+endfunction
+
+function SetQuestArrow(who, active, xLoc, yLoc)
+    var packet := "BA" + fixPacketLength(active, 1);
+    packet := packet + fixPacketLength(Hex(xLoc), 2);
+    packet := packet + fixPacketLength(Hex(yLoc), 2);
+    return SendPacket(who, packet);
+endfunction
+
+function fixPacketLength(value, size)
+    var str := CStr(value);
+    while(len(str) < size)
+        str := "0" + str;
+    endwhile
+    return str;
+endfunction

@@ -1,0 +1,64 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":quedadebraco:leaderboard";
+include ":gumps:epicGumps";
+
+program rankingboard(who, board)
+    if (!who || !who.connected || !board)
+        return 0;
+    endif
+
+    // Só processa se for clicado com DClicks
+    if (!board.IsA(POLCLASS_ITEM))
+        return 0;
+    endif
+    
+    var gump := GFECreateGump("Hall da Fama - Queda de Braço", 500, 600);
+    
+    var top_players := GetTopPlayers(20); // Mostra top 20 na placa
+    var stats := GetLeaderboardStats();
+    var y_pos := 80;
+    
+    // Cabeçalho
+    GFTextLine(gump, 20, 60, 2100, "=== Maiores Lutadores de Queda de Braço ===");
+    
+    // Lista jogadores
+    for i := 1 to top_players.size()
+        var player := top_players[i];
+        // Destaque diferente para top 3
+        var color := 2100; // Normal
+        if (i == 1)
+            color := 1161; // Dourado
+        elseif (i == 2)
+            color := 2101; // Prateado
+        elseif (i == 3)
+            color := 2103; // Bronze
+        endif
+        
+        var line := "";
+        line += PadString(i + "º", 4);
+        line += FormatDisplayName(player.display_name, 25);
+        line += PadString(player.title, 15);
+        line += PadString(player.wins + " V", 8);
+        line += PadString(player.losses + " D", 8);
+        line += player.points + " pts";
+        
+        GFTextLine(gump, 20, y_pos, color, line);
+        y_pos += 25;
+    endfor
+    
+    // Estatísticas gerais
+    y_pos += 10;
+    GFTextLine(gump, 20, y_pos, 2100, "Total de Competidores: " + stats.total_players);
+    y_pos += 20;
+    GFTextLine(gump, 20, y_pos, 2100, "Total de Partidas: " + stats.total_matches);
+    
+    // Informações adicionais
+    y_pos += 30;
+    GFTextLine(gump, 20, y_pos, 2100, "Use .quedadebraco para participar!");
+    
+    return GFSendGump(who, gump);
+endprogram

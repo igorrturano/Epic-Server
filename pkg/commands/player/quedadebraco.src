@@ -1,0 +1,346 @@
+use uo;
+use os;
+use util;
+
+include "include/say";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":quedadebraco:quedadebraco";
+include ":quedadebraco:game";
+include ":quedadebraco:leaderboard";
+include ":quedadebraco:gamestate";
+include ":quedadebraco:emotes";
+include ":quedadebraco:gumps";
+include ":charactercreation:resists";  // Para GetResist
+include ":attributes:stats";               // Para constantes de atributos
+
+program textcmd_quedadebraco(who)
+    if (!who.connected)
+        return 0;
+    endif
+    
+    // Verifica se o jogador já está em um jogo
+    if (IsPlayerInGame(who))
+        SendSysMessage(who, "Você já está em uma partida de queda de braço!");
+        return 0;
+    endif
+    
+    // Passo 1: Registrar apelido do desafiante
+    var challenger_name := SetupDisplayName(who);
+    if (!challenger_name)
+        return 0;
+    endif
+    
+    // Passo 2: Selecionar oponente
+    SendSysMessage(who, "Selecione seu oponente para a queda de braço.");
+    var opponent := Target(who, TGTOPT_NOCHECK_LOS);
+    
+    if (!opponent || !opponent.IsA(POLCLASS_MOBILE) || !opponent.connected)
+        SendSysMessage(who, "Oponente inválido.");
+        return 0;
+    endif
+    
+    // Verifica se o oponente já está em um jogo
+    if (IsPlayerInGame(opponent))
+        SendSysMessage(who, "Este jogador já está em uma partida!");
+        return 0;
+    endif
+    
+    if (!ValidateChallenge(who, opponent))
+        return 0;
+    endif
+    
+    // Passo 3: Pedir confirmação e apelido do oponente
+    if (!RequestOpponentParticipation(who, opponent))
+        return 0;
+    endif
+    
+    // Passo 4: Iniciar o jogo
+    var game := CreateGameStruct(who, opponent);
+    
+    // Registra o jogo no sistema de estados
+    var game_id := RegisterGame(game);
+    if (!game_id)
+        SendSysMessage(who, "Erro ao registrar o jogo.");
+        return 0;
+    endif
+    
+    // Inicializa o estado do jogo
+    SetGameState(game, STATE_STARTING);
+    
+    return StartGameRound(game);
+endprogram
+
+function SetupDisplayName(who)
+    var gump := GFECreateGump("Bem-vindo à Arena de Queda de Braço!", 400, 250);
+    
+    GFTextLine(gump, 20, 50, 2100, "Escolha seu apelido para esta disputa:");
+    var entry := GFTextEntry(gump, 20, 100, 350, 20, 2100, HasDisplayName(who) ? GetDisplayName(who) : "");
+    
+    GFAddButton(gump, 150, 150, 2128, 2129, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 180, 150, 2100, "Confirmar");
+    
+    var input := GFSendGump(who, gump);
+    if (input[0] != 1)
+        SendSysMessage(who, "Desafio cancelado.");
+        return 0;
+    endif
+    
+    var display_name := GFExtractData(input, entry);
+    if (!display_name || display_name == "")
+        SendSysMessage(who, "Você precisa escolher um apelido válido.");
+        return 0;
+    endif
+    
+    var result := SetPlayerDisplayName(who, display_name);
+    if (result.errortext)
+        SendSysMessage(who, result.errortext);
+        return 0;
+    endif
+    
+    return display_name;
+endfunction
+
+function RequestOpponentParticipation(challenger, opponent)
+    var challenger_name := GetDisplayName(challenger);
+    var gump := GFECreateGump("Desafio de Queda de Braço!", 400, 300);
+    
+    GFTextLine(gump, 20, 50, 2100, challenger_name + " desafiou você!");
+    GFTextLine(gump, 20, 80, 2100, "Escolha seu apelido para aceitar:");
+    
+    var entry := GFTextEntry(gump, 20, 110, 350, 20, 2100, HasDisplayName(opponent) ? GetDisplayName(opponent) : "");
+    
+    GFAddButton(gump, 100, 200, 2128, 2129, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 130, 200, 2100, "Aceitar");
+    
+    GFAddButton(gump, 250, 200, 2128, 2129, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 280, 200, 2100, "Recusar");
+    
+    var input := GFSendGump(opponent, gump);
+    if (input[0] != 1)
+        SendSysMessage(challenger, GetDisplayName(opponent) + " recusou seu desafio.");
+        SendSysMessage(opponent, "Você recusou o desafio.");
+        return 0;
+    endif
+    
+    var display_name := GFExtractData(input, entry);
+    if (!display_name || display_name == "")
+        SendSysMessage(opponent, "Você precisa escolher um apelido válido.");
+        SendSysMessage(challenger, "O oponente não escolheu um apelido válido.");
+        return 0;
+    endif
+    
+    var result := SetPlayerDisplayName(opponent, display_name);
+    if (result.errortext)
+        SendSysMessage(opponent, result.errortext);
+        SendSysMessage(challenger, "Houve um problema com o apelido do oponente.");
+        return 0;
+    endif
+    
+    return 1;
+endfunction
+
+function ValidateChallenge(who, opponent)
+    // Prevenir queda de braço consigo mesmo
+    if (who == opponent || who.serial == opponent.serial)
+        SendSysMessage(who, "Você não pode desafiar a si mesmo!");
+        return 0;
+    endif
+    
+    // Verifica se algum dos jogadores já está em uma partida
+    if (IsPlayerInGame(who))
+        SendSysMessage(who, "Você já está em uma disputa de queda de braço!");
+        return 0;
+    endif
+    
+    if (IsPlayerInGame(opponent))
+        SendSysMessage(who, "Este jogador já está em uma disputa de queda de braço!");
+        return 0;
+    endif
+
+    // Verifica se o desafiante está segurando algo
+    var hand1 := GetEquipmentByLayer(who, LAYER_HAND1);
+    var hand2 := GetEquipmentByLayer(who, LAYER_HAND2);
+    if (hand1 || hand2)
+        SendSysMessage(who, "Você precisa estar com as mãos livres para a queda de braço!");
+        return 0;
+    endif
+    
+    // Verifica se o oponente está segurando algo
+    hand1 := GetEquipmentByLayer(opponent, LAYER_HAND1);
+    hand2 := GetEquipmentByLayer(opponent, LAYER_HAND2);
+    if (hand1 || hand2)
+        SendSysMessage(who, "Seu oponente precisa estar com as mãos livres para a queda de braço!");
+        return 0;
+    endif
+    
+    // Checa distância
+    if (!CheckLOSBetweenPlayers(who, opponent))
+        SendSysMessage(who, "Você precisa estar mais próximo e ter linha de visão com " + GetDisplayName(opponent));
+        return 0;
+    endif
+   
+    return 1;
+endfunction
+
+function CheckLOSBetweenPlayers(player1, player2)
+    // Verifica se estão no máximo a 2 tiles de distância
+    if (CalculateDistance(player1.x, player1.y, player2.x, player2.y) > 2)
+        return 0;
+    endif
+    
+    // Verifica se estão no mesmo plano Z (altura) com uma pequena tolerância
+    if (Abs(player1.z - player2.z) > 10)
+        return 0;
+    endif
+    
+    return 1;
+endfunction
+
+function CalculateDistance(x1, y1, x2, y2)
+    return Max(Abs(x1 - x2), Abs(y1 - y2));
+endfunction
+
+function StartGameRound(game)
+    print("===========================================================");
+    print("INICIO DE RODADA - DEBUG");
+    print("Rodada Atual: " + game.current_round);
+    print("Placar: " + game.rounds_won_challenger + " (Desafiante) x " + game.rounds_won_opponent + " (Oponente)");
+    print("Estado do Jogo: " + game.stage);
+    print("===========================================================");
+    
+    // Verifica se o jogo deve terminar
+    if (game.current_round > TOTAL_ROUNDS || 
+        game.rounds_won_challenger >= ROUNDS_TO_WIN || 
+        game.rounds_won_opponent >= ROUNDS_TO_WIN)
+        print("DEBUG: Condição de término atingida:");
+        print("- Rodada atual: " + game.current_round + " (Máximo: " + TOTAL_ROUNDS + ")");
+        print("- Vitórias Desafiante: " + game.rounds_won_challenger);
+        print("- Vitórias Oponente: " + game.rounds_won_opponent);
+        print("- Vitórias necessárias: " + ROUNDS_TO_WIN);
+        return FinishArmWrestle(game);
+    endif
+    
+    if (game.current_round > 1)
+        print("DEBUG: Iniciando rodada subsequente " + game.current_round);
+        print("DEBUG: Aguardando 5 segundos antes de mostrar mensagem de nova rodada");
+        sleep(5); // Espera 5 segundos após o emote de vitória da rodada anterior
+        
+        PrintTextAbove(game.challenger, "*Inicio da Rodada " + game.current_round + "*", 3, 53);
+        PrintTextAbove(game.opponent, "*Inicio da Rodada " + game.current_round + "*", 3, 53);
+        
+        print("DEBUG: Mensagem de início da rodada " + game.current_round + " exibida");
+        print("DEBUG: Aguardando 2 segundos antes de iniciar contagem");
+        sleep(2); // Pequena pausa antes de começar a contagem
+    else
+        print("DEBUG: Iniciando primeira rodada");
+    endif
+    
+    foreach mobile in array{game.challenger, game.opponent}
+        SendSysMessage(mobile, "Rodada " + game.current_round + " começando!");
+    endforeach
+
+    print("DEBUG: Atualizando estado para escolha de movimentos");
+    SetGameState(game, STATE_CHOOSING_MOVES); // Mudado de UpdateGameState para SetGameState
+
+    print("DEBUG: Aguardando escolha de movimentos dos jogadores");
+    var challenger_move := ShowMoveSelectionGump(game.challenger, game.current_round);
+    var opponent_move := ShowMoveSelectionGump(game.opponent, game.current_round);
+    
+    print("DEBUG: Movimentos escolhidos - Desafiante: " + challenger_move + ", Oponente: " + opponent_move);
+    
+    SetGameState(game, STATE_PROCESSING); // Mudado de UpdateGameState para SetGameState
+    print("DEBUG: Iniciando processamento da rodada");
+    
+    var winner := ProcessRound(game, challenger_move, opponent_move);
+    print("DEBUG: Rodada processada - Vencedor determinado");
+    
+    
+    // Mostra o placar atual para todos
+    ShowCurrentScore(game);
+    
+    // Anuncia para espectadores
+    foreach mobile in ListMobilesNearLocation(game.challenger.x, game.challenger.y, game.challenger.z, 8)
+        if (mobile != game.challenger && mobile != game.opponent)
+            SendSysMessage(mobile, GetDisplayName(winner) + " venceu a rodada " + game.current_round + "!");
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Incrementa a rodada
+    game.current_round += 1;
+    print("DEBUG: Incrementando para rodada " + game.current_round);
+    SetGameState(game, STATE_ROUND_END); // Mudado de UpdateGameState para SetGameState
+    
+    print("DEBUG: Preparando para próxima rodada ou finalização");
+    print("===========================================================");
+    
+    // Importante: retorna recursivamente para a próxima rodada
+    return StartGameRound(game);
+endfunction
+
+
+// Função auxiliar para mostrar o placar atual
+function ShowCurrentScore(game)
+    var challenger_name := GetDisplayName(game.challenger);
+    var opponent_name := GetDisplayName(game.opponent);
+    
+    var score_message := challenger_name + " " + game.rounds_won_challenger + " x " + 
+                        game.rounds_won_opponent + " " + opponent_name;
+    
+    foreach mobile in array{game.challenger, game.opponent}
+        SendSysMessage(mobile, "Placar atual: " + score_message);
+    endforeach
+    
+    // Mostra também para espectadores
+    foreach mobile in ListMobilesNearLocation(game.challenger.x, game.challenger.y, game.challenger.z, 8)
+        if (mobile != game.challenger && mobile != game.opponent)
+            SendSysMessage(mobile, "Placar atual: " + score_message);
+        endif
+        sleepms(2);
+    endforeach
+endfunction
+
+function FinishArmWrestle(byref game)
+    print("===========================================================");
+    print("FINALIZANDO JOGO - DEBUG");
+    print("Rodadas jogadas: " + (game.current_round - 1));
+    print("Placar final: " + game.rounds_won_challenger + " (Desafiante) x " + game.rounds_won_opponent + " (Oponente)");
+    
+    if (!game)
+        print("ERROR: Objeto do jogo inválido");
+        return 0;
+    endif
+    
+    SetGameState(game, STATE_GAME_OVER);
+    print("DEBUG: Estado atualizado para GAME_OVER");
+    
+    var winner := (game.rounds_won_challenger >= ROUNDS_TO_WIN) ? game.challenger : game.opponent;
+    var loser := (winner == game.challenger) ? game.opponent : game.challenger;
+    
+    var winner_name := GetDisplayName(winner);
+    print("DEBUG: Vencedor determinado - " + winner_name);
+    
+    if (winner && loser)
+        SendSysMessage(winner, "Você venceu a queda de braço!");
+        SendSysMessage(loser, "Você perdeu a queda de braço!");
+        
+        // Anuncia o vencedor para todos os jogadores próximos
+        foreach mobile in ListMobilesNearLocation(winner.x, winner.y, winner.z, 8)
+            SendSysMessage(mobile, "O competidor " + winner_name + " venceu a disputa de queda de braço!");
+            sleepms(2);
+        endforeach
+        
+        print("DEBUG: Atualizando ranking e estatísticas");
+        UpdateLeaderboard(winner, loser);
+        
+        PlayVictoryEmote(winner); // Usa a função atualizada que já inclui o nome do jogador
+        PlaySoundEffect(winner, 0x4C);
+    endif
+    
+    print("DEBUG: Removendo registro do jogo");
+    UnregisterGame(game.challenger, game.opponent);
+    print("===========================================================");
+    return 1;
+endfunction
