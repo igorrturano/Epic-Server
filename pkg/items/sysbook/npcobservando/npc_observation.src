@@ -1,0 +1,682 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":charactercreation:habilidades";
+include "include/client";
+include ":charactercreation:RPTraits";
+include ":brainai:npcUtil";
+include ":mounts:mounts";
+include ":ghaia:ghaia";
+include ":taming:taming";
+include ":commands:include/characterDescriptions";
+include ":nature:nature";
+
+const SYSEVENT_UNICODE_SPEECH := 0x1001;
+const GUMP_WIDTH := 800;
+const GUMP_HEIGHT := 1050;
+const GUMP_BACKGROUND := 0x13BE;
+
+var categorias := array{
+    {"1 - Mão Direita", LAYER_HAND1},
+    {"2 - Mão Esquerda", LAYER_HAND2},
+    {"3 - Sapatos", LAYER_SHOES},
+    {"4 - Calças", LAYER_PANTS},
+    {"5 - Camisa", LAYER_SHIRT},
+    {"6 - Capacete/Chapéu", LAYER_HELM},
+    {"7 - Luvas", LAYER_GLOVES},
+    {"8 - Anel", LAYER_RING},
+    {"9 - Colar", LAYER_NECK},
+    {"10 - Cintura", LAYER_WAIST},
+    {"11 - Capa", LAYER_CAPE},
+    {"12 - Roupa", LAYER_ROBE},
+    {"13 - Montaria", LAYER_MOUNT},
+    {"14 - Peito Externo", LAYER_CHEST},
+    {"15 - Punho", LAYER_WRIST},
+    {"16 - Torso Interno", LAYER_TUNIC},
+    {"17 - Orelha", LAYER_EARS},
+    {"18 - Braços", LAYER_ARMS},
+    {"19 - Pernas Internas", LAYER_SKIRT},
+    {"20 - Pernas Armadura", LAYER_LEGS},
+    {"21 - Cor do cabelo", 0},
+    {"22 - Cabelo", 0},
+    {"23 - Barba", 0},
+    {"24 - Cor da pele", 0},
+    {"25 - Kit", 0},
+    {"26 - Sexo", 0},
+    {"27 - Raça", 0},
+    {"28 - Altura", 0},
+    {"29 - Peso", 0},
+    {"30 - Olhos", 0},
+    {"31 - Idade Aparente", 0},
+    {"32 - Voz", 0}
+};
+
+var categorias_sempre_visiveis := array{
+    {"25 - Kit", 0},
+    {"28 - Altura", 0},
+    {"29 - Peso", 0}
+};
+
+program ObserveAndReport(params)
+    var observer := params[1];
+    var targetCharacter := params[2];
+    
+    if (!observer || !targetCharacter)
+        return 0;
+    endif
+    
+    var report := GenerateObservationReport(observer, targetCharacter);
+    var book := CreateReportBook(observer, report);
+    
+    if (book)
+        PrintTextAbove(observer, "*Escrevendo em um livro*");
+    endif
+    
+    return 1;
+endprogram
+
+function GenerateObservationReport(observer, targetCharacter)
+    var gump := GFCreateGump();
+    var y_pos := 0;
+    var items_described := 0;
+    var observer_skill := CDbl(AP_GetSkill(observer, AWARENESS));
+    var target_skill := CDbl(AP_GetSkill(targetCharacter, SNEAK));
+    var num_visible_categories := CalculateObservableCategories(observer_skill, target_skill);
+    var visible_categories := GetVisibleCategories(num_visible_categories);
+    
+    var desc := GenerateCharacterDescription(targetCharacter, gump, y_pos, "SNEAK", items_described, array, observer, num_visible_categories, visible_categories);
+    
+    return desc;
+endfunction
+
+function CreateReportBook(observer, report)
+    var book := CreateItemInBackpack(observer, 0xFF5);
+    if (!book)
+        return 0;
+    endif
+    
+    var date := StrFormatTime("%d-%m-%Y %H:%M", POLCore().systime);
+    SetObjProperty(book, "Author", observer.name);
+    SetObjProperty(book, "Title", "Relatório de Observação - " + date);
+    
+    var pages := SplitTextIntoPages(report, 10, 20);
+    
+    SetObjProperty(book, "Contents", pages);
+    
+    book.movable := 1;
+    
+    return book;
+endfunction
+
+function SplitTextIntoPages(text, lines_per_page, chars_per_line)
+    var words := SplitWords(text);
+    var pages := array{};
+    var current_page := "";
+    var current_line := "";
+    var line_count := 0;
+    
+    foreach word in words
+        if (Len(current_line) + Len(word) + 1 > chars_per_line)
+            current_page += current_line + "\n";
+            current_line := word + " ";
+            line_count += 1;
+            
+            if (line_count >= lines_per_page)
+                pages.append(current_page);
+                current_page := "";
+                line_count := 0;
+            endif
+        else
+            current_line += word + " ";
+        endif
+    endforeach
+    
+    if (current_line != "")
+        current_page += current_line + "\n";
+    endif
+    
+    if (current_page != "")
+        pages.append(current_page);
+    endif
+    
+    return pages;
+endfunction
+
+function CalculateObservableCategories(observer_aw, target_sneak)
+    const MIN_OBSERVABLE := 5;
+    const MAX_OBSERVABLE := 32;
+    
+    var base_observable := CDbl(observer_aw) / 100.0 * MAX_OBSERVABLE;
+    var base_concealable := CDbl(target_sneak) / 100.0 * (MAX_OBSERVABLE - MIN_OBSERVABLE);
+    
+    var observable_categories := CInt(base_observable - base_concealable + MIN_OBSERVABLE);
+    observable_categories := Max(MIN_OBSERVABLE, Min(MAX_OBSERVABLE, observable_categories));
+    
+    return observable_categories;
+endfunction
+
+function GetVisibleCategories(num_categories)
+    var all_categories := categorias + categorias_sempre_visiveis;
+    var visible_categories := array{};
+
+    var i;
+    for (i := 1; i <= num_categories; i := i + 1)
+        if (i <= all_categories.size())
+            visible_categories.append(all_categories[i][1]);
+        endif
+    endfor
+
+    return visible_categories;
+endfunction
+
+function GenerateCharacterDescription(targ, byref gump, byref y_pos, mode, byref items_described, visible_info := array, observer := 0, num_visible_categories := 0, visible_categories := array)
+    items_described := 0;
+    var chardata := GetObjProperty(targ, "chardata");
+    var estacao := cint(getglobalproperty("season"));
+    var currentDate := getCurrentDate();
+    var diaounoite := GetGlobalProperty("dia");
+    var current_year := CINT(GetGlobalProperty("current_year"));
+    
+    var desc := "Durante " + diaounoite + ", na estação de " + GetSeasonName(estacao) + ", ";
+    desc += (diaounoite == "dia") ? "o sol parecia ter nascido há pouco" : "a lua estava na fase " + currentDate.moonPhase;
+    desc += ". Estávamos no mês de " + currentDate.month + ", no dia " + currentDate.day + ", do ano " + current_year + ". ";
+
+    desc += "Foi visto um indivíduo ";
+
+    if (CanDetectRace(targ) && "27 - Raça" in visible_categories)
+        desc += RacaToString(chardata.raca) + ", ";
+        items_described += 1;
+    endif
+
+    if (CanDetectGender(targ) && "26 - Sexo" in visible_categories)
+        desc += (targ.gender ? "do sexo feminino, " : "do sexo masculino, ");
+        items_described += 1;
+    endif
+
+    if (CanDetectHair(targ) && "22 - Cabelo" in visible_categories)
+        var hair := GetEquipmentByLayer(targ, LAYER_HAIR);
+        if (hair)
+            desc += "que possuia cabelos no estilo " + GetHairStyleName(hair.objtype) + ", de cor " + GetHairColorName(hair.color) + ", ";
+            items_described += 1;
+        endif
+    endif
+
+    if (CanDetectBeard(targ) && "23 - Barba" in visible_categories)
+        var beard := GetEquipmentByLayer(targ, LAYER_BEARD);
+        if (beard)
+            desc += "e ele possuia " + GetBeardStyleName(beard.objtype) + " de cor " + GetHairColorName(beard.color) + ". ";
+            items_described += 1;
+        endif
+    endif
+
+    var height := GetCharacterHeight(targ);
+    var weight := GetCharacterWeight(targ);
+    if (height != "Altura desconhecida" && weight != "Peso desconhecido" && "28 - Altura" in visible_categories && "29 - Peso" in visible_categories)
+        desc += "Sua altura era " + height + " e aparentava ter o peso " + weight + ". ";
+        items_described += 1;
+    endif
+    
+    var kit := GetCorpulentoAgilKit(targ);
+    if (kit != "" && "25 - Kit" in visible_categories)
+        desc += "A constituição física dessa pessoa era " + kit + ". ";
+        items_described += 1;
+    endif
+
+    if (CanDetectSkinColor(targ) && "24 - Cor da pele" in visible_categories)
+        desc += "Sua pele era " + GetSkinColorName(CInt(targ.color)) + ". ";
+        items_described += 1;
+    endif
+    
+    if (CanDetectEyes(targ) && "30 - Olhos" in visible_categories)
+        var eye_color := GetEyeColor(targ);
+        if (eye_color != "Desconhecido")
+            desc += "Seus olhos eram " + eye_color + ". ";
+            items_described += 1;
+        endif
+    endif
+
+    if (CanDetectApparentAge(targ) && "31 - Idade Aparente" in visible_categories)
+        var age := GetApparentAge(targ);
+        if (age != "Idade aparente desconhecida")
+            desc += "Parecia ser " + age + " para seu povo. ";
+            items_described += 1;
+        endif
+    endif
+
+    var clothing_desc := "";
+    var has_mount := 0;
+    foreach category in categorias
+        var layer := CInt(category[2]);
+        if (layer != 0 && CanDetectLayer(targ, layer) && category[1] in visible_categories)
+            var item := GetEquipmentByLayer(targ, layer);
+            if (item)
+                if (layer == LAYER_MOUNT)
+                    has_mount := 1;
+                else
+                    clothing_desc += (clothing_desc != "" ? ", " : "") + item.desc;
+                    items_described += 1;
+                endif
+            endif
+        endif
+    endforeach
+
+    if (clothing_desc != "")
+        desc += "Estava vestindo " + clothing_desc + ". ";
+    endif
+
+    var mount := GetEquipmentByLayer(targ, LAYER_MOUNT);
+    if (mount && "13 - Montaria" in visible_categories)
+        var mount_type := GetMountType(mount);
+        desc += "Está montado em um " + mount_type + ". ";
+        items_described += 1;
+    endif
+
+    if (CanDetectVoice(targ) && "32 - Voz" in visible_categories)
+        var voice := GetVoiceType(targ, observer);
+        if (voice != "Não falou recentemente")
+            desc += "Sua voz tinha um timbre " + voice + ". ";
+            items_described += 1;
+        endif
+    endif
+    
+    if (desc[desc.size()-1] == " " && desc[desc.size()-2] == ",")
+        desc := desc[1, desc.size()-2];
+    endif
+    desc += ". ";
+
+    if (mode == "SNEAK" && observer)
+        var effectiveness_score := (num_visible_categories - 16) * 2;
+        var sneak_result := CheckAwarenessVsSneak(effectiveness_score);
+    endif
+
+    return desc;
+endfunction
+
+
+function GetCategoryInfo(targ, category, observer := 0)
+    var chardata := GetObjProperty(targ, "chardata");
+    var racial_traits := GetRacialTraits(chardata.raca, chardata);
+
+    case (category)
+        "21 - Cor do cabelo": return GetHairColorName(CInt(GetEquipmentByLayer(targ, LAYER_HAIR).color));
+        "22 - Cabelo": return GetHairInfo(targ);
+        "23 - Barba": return GetBeardInfo(targ);
+        "24 - Cor da pele": return GetSkinColorName(CInt(targ.color));
+        "25 - Kit": return GetCorpulentoAgilKit(targ);
+        "26 - Sexo": return GetGenderName(targ.gender);
+        "27 - Raça": return RacaToString(chardata.raca);
+        "28 - Altura": return GetCharacterHeight(targ);
+        "29 - Peso": return GetCharacterWeight(targ);
+        "30 - Olhos": return GetEyeColor(targ);
+        "31 - Idade Aparente": return GetApparentAge(targ);
+        "32 - Voz": 
+            if (CanDetectVoice(targ))
+                return GetVoiceType(targ, observer);
+            else
+                return "Desconhecido";
+            endif
+    endcase
+endfunction
+
+function CanDetectVoice(targ)
+    var last_speech_time := GetObjProperty(targ, "#LastSpeechTime");
+    if (!last_speech_time)
+        last_speech_time := GetObjProperty(targ, "LastSpeechTime");
+    endif
+
+    if (last_speech_time)
+        var current_time := ReadGameClock();
+        var time_difference := current_time - last_speech_time;
+        return time_difference <= 30; // 30 segundos
+    endif
+    return 0;
+endfunction
+
+function GetCharacterHeight(targ)
+    var chardata := GetObjProperty(targ, "chardata");
+    if (chardata && chardata.caracteristicas_rp && chardata.caracteristicas_rp.Altura)
+        var racial_traits := GetRacialTraits(chardata.raca, chardata);
+        return racial_traits.Altura.opcoes[chardata.caracteristicas_rp.Altura];
+    endif
+    return "Altura desconhecida";
+endfunction
+
+function GetCharacterWeight(targ)
+    var chardata := GetObjProperty(targ, "chardata");
+    if (chardata && chardata.caracteristicas_rp && chardata.caracteristicas_rp.Peso)
+        var racial_traits := GetRacialTraits(chardata.raca, chardata);
+        return racial_traits.Peso.opcoes[chardata.caracteristicas_rp.Peso];
+    endif
+    return "Peso desconhecido";
+endfunction
+
+function GetApparentAge(targ)
+    var chardata := GetObjProperty(targ, "chardata");
+    if (chardata && chardata.caracteristicas_rp && chardata.caracteristicas_rp["Idade Aparente"])
+        var racial_traits := GetRacialTraits(chardata.raca, chardata);
+        return racial_traits["Idade Aparente"].opcoes[chardata.caracteristicas_rp["Idade Aparente"]];
+    endif
+    return "Idade aparente desconhecida";
+endfunction
+
+function GetEyeColor(targ)
+    var chardata := GetObjProperty(targ, "chardata");
+    if (chardata && chardata.caracteristicas_rp && chardata.caracteristicas_rp.Olhos)
+        var racial_traits := GetRacialTraits(chardata.raca, chardata);
+        return racial_traits.Olhos.opcoes[chardata.caracteristicas_rp.Olhos];
+    endif
+    return "Desconhecido";
+endfunction
+
+function GetVoiceType(targ, observer)
+    if (CanDetectVoice(targ))
+        var chardata := GetObjProperty(targ, "chardata");
+        if (chardata && chardata.caracteristicas_rp && chardata.caracteristicas_rp.Voz)
+            var racial_traits := GetRacialTraits(chardata.raca, chardata);
+            var voice_type := racial_traits.Voz.opcoes[chardata.caracteristicas_rp.Voz];
+            var lingua_falada := GetObjProperty(targ, "lingua_escolhida");
+            var lingua_observador := GetObjProperty(observer, "lingua_escolhida");
+            
+            var voice_description := voice_type + " ";
+            
+            if (lingua_falada == lingua_observador)
+                var last_msg := GetObjProperty(targ, "LastMSG");
+                voice_description += "(Ele falou em " + lingua_falada + ", e disse: '" + last_msg + "')";
+            else
+                voice_description += "(Eu ouvi ele falando, mas não entendi o que foi dito porque eu não falava a sua língua)";
+            endif
+            
+            return voice_description;
+        endif
+        return "Voz detectada (Não foi possível determinar características específicas)";
+    endif
+    return "Não falou recentemente";
+endfunction
+
+function GetHairInfo(targ)
+    var hair := GetEquipmentByLayer(targ, LAYER_HAIR);
+    if (hair)
+        return hair.desc;
+    else
+        return "Nenhum";
+    endif
+endfunction
+
+function GetBeardInfo(targ)
+    var beard := GetEquipmentByLayer(targ, LAYER_BEARD);
+    if (beard)
+        return beard.desc;
+    else
+        return "";
+    endif
+endfunction
+
+function GetCorpulentoAgilKit(targ)
+    var chardata := GetObjProperty(targ, "chardata");
+    if (chardata && chardata.trait)
+        if (chardata.trait == "Corpulento")
+            return "robusta e musculosa";
+        elseif (chardata.trait == "Agil")
+            return "flexível e rápida";
+        endif
+    endif
+    
+    if (TemHabilidade(targ, "Corpulento"))
+        return "Robusta e Musculosa";
+    elseif (TemHabilidade(targ, "Agil"))
+        return "Flexível e Rápida";
+    endif
+    
+    return "";
+endfunction
+
+function GetGenderName(gender)
+    if (gender == 0)
+        return "masculino";
+    else
+        return "feminino";
+    endif
+endfunction
+
+function CanDetectGender(targ)
+    var layers_hiding_gender := array{LAYER_PANTS, LAYER_SHIRT, LAYER_HELM, LAYER_ROBE};
+    foreach layer in layers_hiding_gender
+        if (!GetEquipmentByLayer(targ, layer))
+            return 1;
+        endif
+    endforeach
+    return 0;
+endfunction
+
+function CanDetectSkinColor(targ)
+    var layers_hiding_skin := array{LAYER_PANTS, LAYER_SHIRT, LAYER_HELM, LAYER_ROBE, LAYER_GLOVES, LAYER_NECK, LAYER_CAPE};
+    foreach layer in layers_hiding_skin
+        if (!GetEquipmentByLayer(targ, layer))
+            return 1;
+        endif
+    endforeach
+    return 0;
+endfunction
+
+function CanDetectRace(targ)
+    if (targ.title_race == "Polski" || targ.title_race == "Anao")
+        return 1;
+    endif
+    return CanDetectSkinColor(targ);
+endfunction
+
+function CanDetectApparentAge(targ)
+    return CanDetectSkinColor(targ);
+endfunction
+
+function CanDetectEyes(targ)
+    return !GetEquipmentByLayer(targ, LAYER_HELM);
+endfunction
+
+function CanDetectBeard(targ)
+    return !GetEquipmentByLayer(targ, LAYER_HELM) && !GetEquipmentByLayer(targ, LAYER_ROBE) && GetEquipmentByLayer(targ, LAYER_BEARD);
+endfunction
+
+function CanDetectHair(targ)
+    return !GetEquipmentByLayer(targ, LAYER_HELM) && !GetEquipmentByLayer(targ, LAYER_ROBE);
+endfunction
+
+function CanDetectRings(targ)
+    return !GetEquipmentByLayer(targ, LAYER_GLOVES);
+endfunction
+
+function CanDetectNecklace(targ)
+    return !GetEquipmentByLayer(targ, LAYER_NECK);
+endfunction
+
+function CanDetectEarrings(targ)
+    return !GetEquipmentByLayer(targ, LAYER_HELM);
+endfunction
+
+function CanDetectWrist(targ)
+    return !GetEquipmentByLayer(targ, LAYER_ROBE) && !GetEquipmentByLayer(targ, LAYER_GLOVES);
+endfunction
+
+function CanDetectUnderRobe(targ, layer)
+    var robe := GetEquipmentByLayer(targ, LAYER_ROBE);
+    if (!robe)
+        return 1;
+    endif
+
+    case (layer)
+        LAYER_WAIST:
+        LAYER_CAPE:
+        LAYER_SHOES:
+        LAYER_GLOVES:
+        LAYER_HAND1:
+        LAYER_HAND2:
+            return 1;
+        default:
+            return 0;
+    endcase
+endfunction
+
+function CheckAwarenessVsSneak(difference)
+    if (difference >= 15)
+        return "Furtividade inexistente; características são facilmente detectáveis.";
+    elseif (difference >= 10)
+        return "Furtividade baixa; características ainda visíveis com facilidade.";
+    elseif (difference >= 5)
+        return "Furtividade leve; características parcialmente ocultas, mas detectáveis.";
+    elseif (difference >= 0)
+        return "Furtividade moderada; ainda possível detectar, mas mais difícil.";
+    elseif (difference >= -5)
+        return "Furtividade avançada; muito difícil de detectar características ocultas.";
+    else
+        return "Furtividade excepcional; ocultação quase perfeita, quase impossível de detectar.";
+    endif
+endfunction
+
+function CanDetectLayer(targ, layer)
+    case (layer)
+        LAYER_EARS: return CanDetectEarrings(targ);
+        LAYER_RING: return CanDetectRings(targ);
+        LAYER_NECK: return CanDetectNecklace(targ);
+        LAYER_HAIR: return CanDetectHair(targ);
+        LAYER_BEARD: return CanDetectBeard(targ);
+        LAYER_HELM: return 1;
+        LAYER_MOUNT: return 1;
+        default: return CanDetectUnderRobe(targ, layer);
+    endcase
+endfunction
+
+
+
+function GetSeasonName(season)
+    case (season)
+        1: return "verão";
+        2: return "outono";
+        3: return "inverno";
+        5: return "primavera";
+        default: return "Desconhecida";
+    endcase
+endfunction
+
+function AddClimateInfo(byref gump, byref y_pos)
+    var currentDate := getCurrentDate();
+    var estacao := cint(getglobalproperty("season"));
+    var diaounoite := GetGlobalProperty("dia");
+
+    AddInfoLine(gump, y_pos, "Estação", GetSeasonName(estacao));
+    AddInfoLine(gump, y_pos, "Mês", currentDate.month);
+    AddInfoLine(gump, y_pos, "Dia", currentDate.day);
+    AddInfoLine(gump, y_pos, "Dia da Semana", currentDate.weekday);
+    AddInfoLine(gump, y_pos, "Fase da Lua", currentDate.moonPhase);
+    AddInfoLine(gump, y_pos, "Período", diaounoite);
+endfunction
+
+function AddInfoLine(byref gump, byref y_pos, title, value)
+    if (value != "Nada" && value != "nada")
+        GFTextLine(gump, 50, y_pos, 53, title + ":");
+        GFTextLine(gump, 370, y_pos, 230, value);
+        y_pos := y_pos + 22;
+    endif
+endfunction
+
+function ShowAWxSNEAKInfo(byref gump, targ, byref y_pos, who)
+    var observer_skill := CDbl(AP_GetSkill(who, AWARENESS));
+    var target_skill := CDbl(AP_GetSkill(targ, SNEAK));
+    
+    var num_visible_categories := CalculateObservableCategories(observer_skill, target_skill);
+    
+    var effectiveness_score := (num_visible_categories - 16) * 2;
+    
+    var sneak_result := CheckAwarenessVsSneak(effectiveness_score);
+    
+    var aw_sneak_info := CollectAWxSNEAKInfo(gump, targ, y_pos, who, num_visible_categories);
+    
+    AddInfoLine(gump, y_pos, "Resultado da Furtividade", sneak_result);
+    
+    var desc := GenerateCharacterDescription(targ, gump, y_pos, "SNEAK", aw_sneak_info.items_shown, aw_sneak_info.visible_info, who, num_visible_categories, aw_sneak_info.visible_categories);
+    GFHTMLArea(gump, 50, y_pos, 700, 400, desc, 1, 1);
+    y_pos := y_pos + 420;
+
+    return aw_sneak_info.items_shown;
+endfunction
+
+function CollectAWxSNEAKInfo(byref gump, targ, byref y_pos, observer, num_visible_categories)
+    var visible_info := array{};
+    var items_shown := 0;
+    
+    AddClimateInfo(gump, y_pos);
+    
+    var all_categories := categorias + categorias_sempre_visiveis;
+    var categories_checked := array{};
+    
+    if (!("32 - Voz" in categories_checked))
+        categories_checked.append("32 - Voz");
+    endif
+    
+    while (items_shown < num_visible_categories && categories_checked.size() < all_categories.size())
+        foreach category in all_categories
+            var category_name := category[1];
+            var layer := CInt(category[2]);
+            
+            if (category_name in categories_checked)
+                continue;
+            endif
+            
+            categories_checked.append(category_name);
+            
+            if (layer == 0)
+                var info := GetCategoryInfo(targ, category_name, observer);
+                if (info != "" && info != "Desconhecido" && info != "Não falou recentemente")
+                    if (CheckCategoryVisibility(category_name, targ))
+                        visible_info.append({category_name, info});
+                        AddInfoLine(gump, y_pos, category_name, info);
+                        items_shown += 1;
+                    endif
+                endif
+            else
+                if (CanDetectLayer(targ, layer))
+                    var item := GetEquipmentByLayer(targ, layer);
+                    if (item)
+                        visible_info.append({category_name, item.desc});
+                        AddInfoLine(gump, y_pos, category_name, item.desc);
+                        items_shown += 1;
+                    endif
+                endif
+            endif
+            
+            if (items_shown >= num_visible_categories)
+                break;
+            endif
+        endforeach
+    endwhile
+    
+    var result := struct{
+        "visible_info" := visible_info,
+        "items_shown" := items_shown,
+        "y_pos" := y_pos,
+        "visible_categories" := categories_checked
+    };
+    
+    return result;
+endfunction
+
+function CheckCategoryVisibility(category_name, targ)
+    case (category_name)
+        "32 - Voz": return CanDetectVoice(targ);
+        "30 - Olhos": return CanDetectEyes(targ);
+        "24 - Cor da pele":
+        "31 - Idade Aparente": return CanDetectSkinColor(targ);
+        "22 - Cabelo":
+        "21 - Cor do cabelo": return CanDetectHair(targ);
+        "23 - Barba": return CanDetectBeard(targ);
+        "25 - Kit":
+        "28 - Altura":
+        "29 - Peso": return 1;
+        "26 - Sexo": return CanDetectGender(targ);
+        "27 - Raça": return CanDetectRace(targ);
+        default: return 0;
+    endcase
+endfunction

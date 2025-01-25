@@ -1,0 +1,28 @@
+/*use uo;
+use os;
+
+include "include/client";
+
+program updateAllAges(params)
+    var current_year := params[1];
+    
+    foreach player in EnumerateOnlineCharacters()
+        updateCharacterAge(player, current_year);
+    endforeach
+endprogram
+
+function updateCharacterAge(who, current_year)
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata || !chardata.birthdate)
+        return;
+    endif
+
+    var years_passed := current_year - chardata.birthdate.year;
+    var new_age := chardata.initial_age + years_passed;
+
+    if (new_age != chardata.current_age)
+        chardata.current_age := new_age;
+        SetObjProperty(who, "chardata", chardata);
+        SendSysMessage(who, "Feliz aniversário! Você agora tem " + new_age + " anos.");
+    endif
+endfunction*/
