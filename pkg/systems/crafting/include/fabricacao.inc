@@ -11,20 +11,32 @@ include ":gumps:/include/dropDownGump";
 var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
+const PROPNAME_TIER_COMPONENTE := "tierComponente";
+
 //Itens Complexos Inicio
 function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
 endfunction
 
 function EnviaItensComplexosGump(quem,profissao)
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
 	var sessao := struct;
 	sessao.+categoriaSelecionada := "";
+	sessao.+receitaSelecionada := struct{
+		receita := "",
+		componentesEscolhidos := dictionary
+	};
+	sessao.+gumpAtual := "complexos";
 
 	while(retorno)
-		MontaItensComplexosGump(quem,gump,parametros,sessao);
+		if(sessao.gumpAtual == "complexos")
+			MontaItensComplexosGump(gump,parametros,sessao);
+		else
+			MontaEsquemaGump(gump,parametros,sessao);
+		endif
 		retorno := GFSendGump(quem,gump);
 
 		if(retorno)
@@ -38,9 +50,19 @@ function EnviaItensComplexosGump(quem,profissao)
 					var indiceBotao := indiceRetorno % quantidadeBotoes;
 					indiceBotao := indiceBotao == 0? quantidadeBotoes : indiceBotao;
 					var indiceItem := (indiceRetorno - indiceBotao) / 3 + 1;
+					if(indiceBotao == 2) // Novo Esquema.
+						sessao.gumpAtual := "esquemas";
+						sessao.receitaSelecionada.receita := parametros.visaoReceitas[sessao.categoriaSelecionada][indiceItem];
+						sessao.receitaSelecionada.componentesEscolhidos := dictionary; //limpa a seleção de componentes.
+					endif
 					Print("indiceRetorno: " + indiceRetorno + " indiceBotao: " + indiceBotao);
 					Print("Fabricando Item: " + parametros.visaoReceitas[sessao.categoriaSelecionada][indiceItem].desc);
 					sessao.+esquemas := "";
+					break;
+				RT_ESQUEMAS_CPNT:
+					var indice := retorno[0] - COMPLEXOS_ESQUEMAS_CPNT;
+					var alvo := target(quem);
+					TratarEscolhaComponente(quem, alvo, sessao,indice,configRecursos);
 					break;
 				RT_BOTAO_MENU:
 					break;
@@ -48,6 +70,92 @@ function EnviaItensComplexosGump(quem,profissao)
 			endcase
 		endif
 	endwhile
+endfunction
+
+function TratarEscolhaComponente(quem, alvo,byref sessao,indice,configRecursos)
+
+	var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[indice];
+	if(IsAlvoValido(quem,alvo))
+		
+		var isItemEncontrado := componenteNecessario.itens.find( @(item) {
+										return Cint(item) == Cint(alvo.objtype);
+									});
+		
+		if(isItemEncontrado)
+
+			var componenteEscolhido := struct;
+			componenteEscolhido.+componenteNecessario := componenteNecessario;
+			componenteEscolhido.+itemRef := alvo;
+			componenteEscolhido.+material := configRecursos[GetObjProperty(alvo,PROPNAME_MATERIAL)];
+			componenteEscolhido.+tier := PegaComponenteTierDesc(GetObjProperty(alvo,PROPNAME_TIER_COMPONENTE));
+			MontaPropriedadesComponente(componenteEscolhido);
+
+			if(sessao.receitaSelecionada.componentesEscolhidos.exists(indice))
+				sessao.receitaSelecionada.componentesEscolhidos[indice] := componenteEscolhido;
+			else
+				sessao.receitaSelecionada.componentesEscolhidos.insert(indice,componenteEscolhido);
+			endif
+
+			Print("****** -- " + sessao.receitaSelecionada.componentesEscolhidos);
+			
+		else
+			SendSysMessageEX(quem,"O alvo não cabe em um encaixe de compoenente de {}.".format(componenteNecessario.encaixe), SSM_FAIL);
+		endif
+	endif
+endfunction
+
+function MontaPropriedadesComponente(byref componenteEscolhido)
+	var propriedades := struct {};
+
+	propriedades.+caracteristica := componenteEscolhido.componenteNecessario.caracteristica;
+
+	var efeitosMaterial := GetConfigStringDictionary(componenteEscolhido.material,"ComponenteEfeito");
+	var efeitoEscolhido := efeitosMaterial[propriedades.caracteristica];
+	var subEfeitos := SplitWords(efeitoEscolhido);
+
+	propriedades.+valorPrincipal := CInt(subEfeitos[subEfeitos.size()]) + Cint(componenteEscolhido.tier.valor);
+	Print(propriedades.caracteristica + " ----------- " + propriedades.valorPrincipal + " ****** " + subEfeitos + " [" +subEfeitos.size() +  "]");
+
+	if(subEfeitos.size() > 1)
+		subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
+		Print(" shrink  [" +subEfeitos.size() +  "]");
+		var arraySubEfeitos := array{};
+
+		for indice := 1 to subEfeitos.size()
+			arraySubEfeitos.append(
+					struct {
+						efeito := subEfeitos[indice],
+						valor := Cint(subEfeitos[indice + 1])
+					}
+				);
+			indice := indice + 1;
+			Sleepms(2);
+		endfor
+		propriedades.+efeitosAdicionais := arraySubEfeitos;
+		
+	endif 
+
+	componenteEscolhido.+propriedades := propriedades; 
+endfunction
+
+function IsAlvoValido(quem, alvo)
+	
+	if(!alvo)
+		SendSysMessageEX(quem,"Alvo Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if( !alvo.ISa(POLCLASS_ITEM))
+		SendSysMessageEX(quem,"Alvo Inválido.", SSM_FAIL);
+		return 0;
+	endif
+
+	if( !Accessible(quem,alvo))
+		SendSysMessageEX(quem,"Você não alcança o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
 endfunction
 
 function PreparaItensComplexosGump(quem, profissao)
@@ -115,7 +223,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 
 			var objtype   := GetObjTypeByName(nomeItem);
 			if(TypeOf(objtype) == "Struct")
-        			continue;
+        		continue;
       		endif
 
 			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem))
@@ -138,8 +246,8 @@ function MontaInfoItem(quem,objtype)
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
-	infoItem.+componentes := PegaComponentesNecessarios(objtype);
-	infoItem.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,infoItem.componentes);
+	infoItem.+componentesNecessarios := PegaComponentesNecessarios(objtype);
+	infoItem.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,infoItem.componentesNecessarios);
 	infoItem.+dificuldade := PegaDificuldade();
 	infoItem.+objtype := objtype;
 	infoItem.+uso := definicaoItem.Attribute;
@@ -199,7 +307,6 @@ function PegaComponentesNecessarios(objtype)
 		componentes.append(componente);
 		Sleepms(2);
 	endforeach
-	Print("componentes: " + componentes);
 
 	return componentes;
 endfunction
@@ -256,8 +363,10 @@ endfunction
 function ClassificaRetornoComplexos(valorRetorno)
 	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
 		return RT_CATEGORIAS;
-	elseif(valorRetorno > COMPLEXOS_RECEITAS)
+	elseif(valorRetorno > COMPLEXOS_RECEITAS && valorRetorno <= COMPLEXOS_ESQUEMAS)
 		return RT_RECEITAS;
+	elseif(valorRetorno > COMPLEXOS_ESQUEMAS_CPNT)
+		return RT_ESQUEMAS_CPNT;
 	else
 		return RT_BOTAO_MENU;
 	endif
@@ -278,8 +387,6 @@ function EnviaGumpComponentes(quem)
 	var gump;
 
 	while(retorno)
-		Print("sessao.componenteSelecionado: " + sessao.componenteSelecionado);
-		Print("retorno[0]: " + retorno[0]);
 		FechaTodosDropdowns(quem,gerenciador.dropDowns);
 
 		if(sessao.componenteSelecionado && sessao.devePopularDropDown)
@@ -381,11 +488,10 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 
 	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer,AP_GetSkill(quem,pericia));
 	
-
 	foreach qualidade in (qualidades.keys())
 		var descriptor := GetItemDescriptor(CInt(objtype));
-		descriptor.CProps.insert("material",chaveMaterialPrincipal);
-		descriptor.CProps.insert("tierComponente",qualidade); // Usar constante ou cfg vinda do include do craft ao invés de string crua.
+		descriptor.CProps.insert(PROPNAME_MATERIAL,chaveMaterialPrincipal);
+		descriptor.CProps.insert(PROPNAME_TIER_COMPONENTE,qualidade); // Usar constante ou cfg vinda do include do craft ao invés de string crua.
 		descriptor.color := configRecursos[chaveMaterialPrincipal].Color;
 		
 		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
@@ -679,6 +785,18 @@ function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico
 	endfor
 	return retorno;
 
+endfunction
+
+function PegaComponenteTierDesc(tier)
+	case (tier)
+		1 : return struct {desc := "Mediocre" , valor := -1}; break;
+		2 : return struct {desc := "Comum" , valor := 0}; break;
+		3 : return struct {desc := "Notável" , valor := 1}; break;
+		4 : return struct {desc := "Superior" , valor := 2}; break;
+		5 : return struct {desc := "Excepcional" , valor := 3}; break;
+		default:
+			return struct {desc := "Erro!" , valor := 0}; break;
+	endcase
 endfunction
 
 function ClassificaRetornoComponentes(valorRetorno, gerenciador)
