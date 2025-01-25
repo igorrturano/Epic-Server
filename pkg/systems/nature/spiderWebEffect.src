@@ -2,6 +2,8 @@ use os;
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
+include "include/epicNPCUtils";
+include "include/sysEvent";
 
 program spiderWebEffect(who)
     SetObjProperty(who, "spiderWebArea", 1);
@@ -21,6 +23,7 @@ program spiderWebEffect(who)
             SendSysMessageEx(who, "Você ficou preso na teia de aranha!", SSM_FAIL);
             TS_StartTimer(who, "paralysis", 5);
             SetCooldown(who, "paralysis", 6);
+            AlertNearbySpiders(who);
         endif
 
         sleepms(200);

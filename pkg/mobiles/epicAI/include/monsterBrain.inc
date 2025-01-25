@@ -152,6 +152,7 @@ function HandleMonsterLeftArea(is_ranged)
     if (corpses.size() > 0)
         foreach corpse in corpses
             if (LootCorpse(corpse))
+                SetCooldown(me, "loot_cooldown", 300);
                 return 1;
             endif
             sleepms(100);

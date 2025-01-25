@@ -449,6 +449,10 @@ function CalculateHitChance(attacker, defender)
 		hit_chance -= 15.0;
 	endif
 
+	if (defender.npctemplate == ":epicai:spiderling")
+		hit_chance -= 20;
+	endif
+
 	EraseObjProperty(attacker, "insistencia");
 
 	if (TemHabilidade(attacker, "Tirothan"))
