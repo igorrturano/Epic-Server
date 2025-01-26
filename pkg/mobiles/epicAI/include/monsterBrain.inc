@@ -215,6 +215,10 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         TongueGrab(me, opponent);
     endif
 
+    if (me.CanCharm())
+        CharmOpponent(me, opponent);
+    endif
+
     return 1;
 endfunction
 
