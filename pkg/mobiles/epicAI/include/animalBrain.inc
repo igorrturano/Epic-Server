@@ -150,6 +150,10 @@ function HandleAnimalCombatEvent(opponent)
         WallClimb(me);
     endif
 
+    if (me.CanFrighten())
+        frightenOpponent(me, opponent);
+    endif
+
     return 1;
 endfunction
 
