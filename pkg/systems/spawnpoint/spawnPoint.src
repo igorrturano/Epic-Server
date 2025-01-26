@@ -54,7 +54,6 @@ program use_spawnpoint( who, spawnpoint )
                                 spawnpoint, Cstr( "Tier" + i ) ) : "";
     var name := GetObjProperty( spawnpoint, Cstr( "Name" + i ) ) ? GetObjProperty(
                                 spawnpoint, Cstr( "Name" + i ) ) : "";
-
     GFTextLine( gump, x_label, y, 2100, "Nome:" );
     GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, 100 + (i * 4) );
 
@@ -120,9 +119,8 @@ endfunction
 
 function SetupCustomProps( spawnpoint, npc, counter )
 	var npc_elem := NPC_GetNPCConfig(npc);
-
-  var tier := GetObjProperty( spawnpoint, "Tier" ) ? GetObjProperty( spawnpoint,
-                              "Tier" ) : npc_elem.Tier || "0";
+  var prop_tier := GetObjProperty( spawnpoint, Cstr("Tier" + counter) );
+  var tier := prop_tier ? prop_tier : npc_elem.Tier || "0";
   customizeNpc( npc, tier );
   var name := GetObjProperty( spawnpoint, Cstr( "Name" + counter ) );
   if ( name && name != "" )
