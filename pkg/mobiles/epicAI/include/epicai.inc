@@ -4,6 +4,7 @@ include ":loot:include/lootParser";
 include ":tn:recipes";
 include ":mounts:mounts";
 include "npcUtils";
+include ":fls_core:fls_characters";
 
 const MAX_Z_DIFF := 18;
 
@@ -87,12 +88,58 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
 
     setupNPCGender(mobile);
     SetupNPCEquip(mobile, npc_elem);
+    SetupBaseLanguages(mobile);
 
-    // Humanoid-specific initialization
+    if (mobile.isSage())
+        SetupWizardClass(mobile, npc_elem);
+    endif
+endfunction
+
+function SetupWizardClass(mobile, npc_elem)
+    if (!mobile.isMage())
+        return 0;
+    endif
+
+    var spellschool := GetConfigString(npc_elem, "SpellSchool");
+    var base_ability;
+    
+    case (spellschool)
+        "Kaijin": base_ability := "Sacrificio da Carne";
+        "Ahtaleloreth": base_ability := "Vínculo Elemental";
+        "Aradalore": base_ability := "Elo Natural";
+        "Evocatium": base_ability := "Determinacao Arcana";
+        "Velkyn": base_ability := "Danca das Sombras";
+        default: return 0;
+    endcase
+
+    // Build progression based on base ability
+    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var progression := GetClassProgression(habcfg, base_ability);
+    SetObjProperty(mobile, "myhabs", progression);
+
+    return 1;
+endfunction
+
+function SetupWarriorClass(mobile, npc_elem)
+    if (!npc.isWarrior())
+        return 0;
+    endif
+    var subclass;
+    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
+    var isArcher := (speed_type[1] == "RANGED");
+    if (isArcher)
+      subclass := "Tiro Poderoso";
+    endif
+
+    var progression := GetClassProgression(habcfg, subclass);
+    SetObjProperty(mobile, "myhabs", progression);
+
+    return 1;
+endfunction
+
+function SetupBaseLanguages(mobile)
     SetObjProperty(mobile, "linguas_conhecidas", {"Comum"});
     SetObjProperty(mobile, "lingua_escolhida", "Comum");
-
-    // Add any other humanoid-specific setup here
 endfunction
 
 function InitializeGenericNPC(mobile, npc_elem, elem, sounds)

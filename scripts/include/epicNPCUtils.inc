@@ -46,6 +46,7 @@ function customizeNpc(mob, set_tier := "0")
 	AP_SetTrueSkill(mob, TACTICS, tactics);
 
     var calculate_level_hp := Cint(AP_GetSkill(mob, skill_combat) + AP_GetSkill(mob, skill_support)) - 80;
+	var npc_level := (calculate_level_hp / 6);
 
 	var hp := 0;
 	if (classe == SABIO)
@@ -60,9 +61,9 @@ function customizeNpc(mob, set_tier := "0")
 	if (!hitsmod)
 		hitsmod := 0;
 	endif
-    if ((calculate_level_hp / 6) >= 1 )
+    if (npc_level >= 1 )
         var new_hp := 0;
-        var multiplier := Cint((calculate_level_hp / 6));
+        var multiplier := Cint(npc_level);
         if (classe == GUERREIRO)
             new_hp := 10 * multiplier;
         elseif (classe == LADINO)
