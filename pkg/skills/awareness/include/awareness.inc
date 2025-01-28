@@ -64,12 +64,12 @@ function ExaminarObjeto(who,targ)
 			var diff;
 			var lvl := Cint(GetObjProperty(targ, "level"));
 			case (lvl)
-				1: diff := 15;
+				1: diff := 20;
 				2: diff := 40;
 				3: diff := 60;
-				4: diff := 86;
-				5: diff := 90;
-				6: diff := 110;
+				4: diff := 80;
+				5: diff := 100;
+				6: diff := 120;
 				default: diff := 40;
 			endcase
 			sleep(1);
@@ -183,33 +183,21 @@ function ExaminarArea(who)
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
 		if ( item.invisible )
-			if ( item.isTrap())
-				lvl := Cint(GetObjProperty(item, "level"));
-				case (lvl)
-					1: diff := 15;
-					2: diff := 40;
-					3: diff := 60;
-					4: diff := 86;
-					5: diff := 90;
-					6: diff := 110;
-					default: diff := -1; //testa contra a propria skill
-				endcase
-				if ( SkillCheck(who, AWARENESS, diff) > 0 )
-					found := found+1;
-					item.invisible := 0;
-					SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-					PrintTextAbovePrivate(item, "*!*", who);
-				endif
-			else
-				var diff := CInt(GetObjProperty(item, "FindDiff"));
-				if ( diff )
-					if ( SkillCheck(who, AWARENESS, diff) > 0 )
-						found := found+1;
-						item.invisible := 0;
-						SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
-						PrintTextAbovePrivate(item, "*!*", who);
-					endif
-				endif
+			lvl := Cint(GetObjProperty(item, "level"));
+			case (lvl)
+				1: diff := 20;
+				2: diff := 40;
+				3: diff := 60;
+				4: diff := 80;
+				5: diff := 100;
+				6: diff := 120;
+				default: diff := -1; //testa contra a propria skill
+			endcase
+			if ( SkillCheck(who, AWARENESS, diff) > 0 )
+				found := found+1;
+				item.invisible := 0;
+				SendSysMessageEx(who, "Voce encontrou "+item.desc+".", SSM_INFO);
+				PrintTextAbovePrivate(item, "*!*", who);
 			endif
 		endif
 		sleepms(2);
