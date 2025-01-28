@@ -1,10 +1,15 @@
 const ONLY_ON := 0x11;
-
+use uo;
+use os;
+use cfgfile;
 include ":traps:traps";
 include "include/arrays";
 include ":tn:boss";
 include ":combat:hitscripts";
 include ":levers:efeitos";
+include ":tn:cooldown";
+include "include/say";
+include ":destroyable:include/destroyItem";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -286,15 +291,22 @@ function changegraphici(item, opts)
   SetObjProperty(item, "#inuse", 1);
 
   var serial;
-  
   foreach serial in  (opts.graphicarraysitem)
      serial := SystemFindObjectBySerial(CInt(serial));
+   var name_novo := GetObjProperty(serial, "new_name");
+  var name_antigo := GetObjProperty(serial, "old_name");
      var stat :=  GetObjProperty(item, "status");
      if ( (stat == error) || (stat == "on"))
         serial.graphic := GetObjProperty(serial, "graphicto");
-        //setobjproperty(item, "status", "unreleased");
+        if (name_novo)
+			serial.name := name_novo;
+		endif
+		//setobjproperty(item, "status", "unreleased");
      else
         serial.graphic := GetObjProperty(serial, "originalgraphic");
+		if (name_antigo)
+			serial.name := name_antigo;
+		endif
         //setobjproperty(item, "status", "released");
      endif
     
@@ -371,16 +383,24 @@ endfunction
 
 function openthedoors(item, opts)
    SetObjProperty(item, "#inuse", 1);
-   Detach();
-   
+   Detach();    
+   var set_prop := 1;
    var snd_effect := 0x1f5;
+   var door_open := 0;
    if (GetObjProperty(item, "status") == "on")
-      snd_effect := 0x200;
+      set_prop := 0;
+	  door_open := 1;
+	  snd_effect := 0x200;
    endif
 
    foreach item in (opts.opendoors)
       item := SystemFindObjectBySerial(cint(item));
-      item.doToggle();
+	  if (door_open == 1)
+		item.Open();
+	  else
+		item.close();
+	  endif
+	  item.locked := set_prop;
       PlaySoundEffect(item, snd_effect);
       sleepms(2);
    endforeach
@@ -389,9 +409,24 @@ function openthedoors(item, opts)
 endfunction
 
 function lightswitch(item, opts)
-   SetObjProperty(item, "#inuse", 1);
+  SetObjProperty(item, "#inuse", 1);
    Detach();
-   
+
+
+  foreach serial in (opts.lights)
+  serial := SystemFindObjectBySerial(cint(serial));
+    var cfg := ReadConfigFile(":*:itemdesc");
+  var elem := FindConfigElem(cfg, serial.objtype);
+  if(serial.graphic == serial.objtype)
+	var chan := elem.change;
+    serial.graphic := chan;
+    setobjproperty(serial, "graphic", chan);
+  else
+	serial.graphic := serial.objtype;
+    setobjproperty(serial, "graphic", serial.graphic);
+  endif
+  endforeach
+  
    EraseObjProperty(item, "#inuse");
 endfunction
 

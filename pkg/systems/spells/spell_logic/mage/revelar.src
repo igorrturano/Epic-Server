@@ -45,17 +45,11 @@ program SpellScript(params)
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, 5)
 		if ( item.invisible )
-			if ( item.isTrap() )
+			var diff := CInt(GetObjProperty(item, "level"));
+			if ( diff )
 				item.invisible := 0;
 				SendSysMessage(who, "Voce encontrou "+item.desc+".");
 				PrintTextAbovePrivate(item, "*!*", who);
-			else
-				var diff := CInt(GetObjProperty(item, "FindDiff"));
-				if ( diff )
-					item.invisible := 0;
-					SendSysMessage(who, "Voce encontrou "+item.desc+".");
-					PrintTextAbovePrivate(item, "*!*", who);
-				endif
 			endif
 		endif
 		sleepms(2);
