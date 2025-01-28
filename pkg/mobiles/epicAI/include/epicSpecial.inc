@@ -66,16 +66,7 @@ function SporeSpecial(attacker, defender)
         
         case (spore_type)
             1: // Charm
-                if (!CheckResist(mobile, VONTADE, RESIST_VERY_HARD))
-                    PrintTextAbove(attacker, "*libera esporos hipnóticos*");
-                    PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 45, 2, 2740);
-                    
-                    SetObjProperty(mobile, "charmed_by", attacker.serial);
-                    sleep(15);
-                    EraseObjProperty(mobile, "charmed_by");
-                    
-                    SendSysMessageEx(mobile, "Você foi hipnotizado pelo mirconídeo.", SSM_INFO);
-                endif
+                charmOpponent(attacker, mobile);
             
             2: // Poison
                 if (!CheckResist(mobile, FORTITUDE, RESIST_HARD))
@@ -1024,4 +1015,30 @@ function CreateInvisibleWeb(spider)
     endif
 
     return 0;
+endfunction
+
+function charmOpponent(attacker, defender)
+    if (!CheckResist(defender, VONTADE, RESIST_VERY_HARD))
+        PrintTextAbove(attacker, "*Hipnotiza*");
+        PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
+        
+        SetObjProperty(defender, "charmed_by", attacker.serial);
+        sleep(15);
+        EraseObjProperty(defender, "charmed_by");
+        var npc_name:= NPC_GetNPCConfig(attacker).Name;
+        SendSysMessageEx(defender, "Você foi hipnotizado por " + npc_name, SSM_INFO);
+    endif
+endfunction
+
+// Function to frighten opponents if they fail VONTADE check
+function frightenOpponent(attacker, defender)
+    if (!CheckResist(defender, VONTADE, RESIST_HARD))
+        PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
+        var skill := Cint(AP_GetSkill(attacker, WRESTLING));
+
+        TS_StartTimer(defender, "dmgreduction", 15, skill, attacker, 1);
+
+        var npc_name:= NPC_GetNPCConfig(attacker).Name;
+        SendSysMessageEx(defender, "Você foi aterrorizado por " + npc_name, SSM_INFO);
+    endif
 endfunction

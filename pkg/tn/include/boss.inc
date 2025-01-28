@@ -566,163 +566,146 @@ function showHurtDescription( npc )
 endfunction
 
 // transforma um npc em boss
-function SetBoss( npc, boss )
+function SetBoss(npc, boss, counter := 1)
+    SetName(npc, GetObjProperty(npc, "Name" + counter));
+    npc.color := boss.color;
+    npc.truecolor := boss.color;
+    SetObjProperty(npc, "descmodboss", Cstr(boss.descmod));
+    SetObjProperty(npc, "dmgbonus", Cdbl(boss.dmg));
 
-  SetName( npc, boss.name );
-  npc.color := boss.color;
-  npc.truecolor := boss.color;
-  SetObjProperty( npc, "descmodboss", Cstr( boss.descmod ) );
-  SetObjProperty( npc, "dmgbonus", Cdbl( boss.dmg ) );
+    if (boss.trueboss)
+        Setobjproperty(npc, "true_boss", 1);
+    endif
 
-  if ( boss.trueboss )
-	Setobjproperty( npc, "true_boss", 1 );
-  endif
+    // Apply resistances
+    if (boss.resist)
+        npc.resist_physical_mod := Cint(boss.resist);
+    else
+        npc.resist_physical_mod := Cint(boss.phresist);
+        npc.resist_fire_mod := Cint(boss.firesist);
+        npc.resist_cold_mod := Cint(boss.coresist); 
+        npc.resist_energy_mod := Cint(boss.enresist);
+        npc.resist_poison_mod := Cint(boss.poresist);
+    endif
 
-  if ( boss.resist )
-	npc.resist_physical_mod := Cint( boss.resist );
-  else
-	npc.resist_physical_mod := Cint( boss.phresist );
-	npc.resist_fire_mod := Cint( boss.firesist );
-	npc.resist_cold_mod := Cint( boss.coresist );
-	npc.resist_energy_mod := Cint( boss.enresist );
-	npc.resist_poison_mod := Cint( boss.poresist );
-  endif
+    // Set stats
+    if (boss.status)
+        AP_SetTrueStat(npc, STRENGTH, Cint(boss.status) + AP_GetStat(npc, STRENGTH));
+        AP_SetTrueStat(npc, DEXTERITY, Cint(boss.status) + AP_GetStat(npc, DEXTERITY));
+        AP_SetTrueStat(npc, INTELLIGENCE, Cint(boss.status) + AP_GetStat(npc, INTELLIGENCE));
+    else
+        AP_SetTrueStat(npc, STRENGTH, Cint(boss.str) + AP_GetStat(npc, STRENGTH));
+        AP_SetTrueStat(npc, DEXTERITY, Cint(boss.dex) + AP_GetStat(npc, DEXTERITY));
+        AP_SetTrueStat(npc, INTELLIGENCE, Cint(boss.int) + AP_GetStat(npc, INTELLIGENCE));
+    endif
 
-  if ( boss.status )
-	AP_SetTrueStat( npc, STRENGTH, Cint( boss.status ) + AP_GetStat( npc, STRENGTH )
-				 );
-	AP_SetTrueStat( npc, DEXTERITY, Cint( boss.status ) + AP_GetStat( npc, DEXTERITY )
-				 );
-	AP_SetTrueStat( npc, INTELLIGENCE, Cint( boss.status ) + AP_GetStat( npc, INTELLIGENCE )
-				 );
-  else
-	AP_SetTrueStat( npc, STRENGTH, Cint( boss.str ) + AP_GetStat( npc, STRENGTH ) );
-	AP_SetTrueStat( npc, DEXTERITY, Cint( boss.dex ) + AP_GetStat( npc, DEXTERITY )
-				 );
-	AP_SetTrueStat( npc, INTELLIGENCE, Cint( boss.int ) + AP_GetStat( npc, INTELLIGENCE )
-				 );
-  endif
+    // Set skills
+    if (boss.skills)
+        AP_SetTrueSkill(npc, TACTICS, Cint(boss.skills) + AP_GetSkill(npc, TACTICS));
+        AP_SetTrueSkill(npc, WRESTLING, Cint(boss.skills) + AP_GetSkill(npc, WRESTLING));
+        AP_SetTrueSkill(npc, MAGERY, Cint(boss.skills) + AP_GetSkill(npc, MAGERY));
+        AP_SetTrueSkill(npc, AWARENESS, Cint(boss.skills) + AP_GetSkill(npc, AWARENESS));
+    else
+        AP_SetTrueSkill(npc, TACTICS, Cint(boss.tactics) + AP_GetSkill(npc, TACTICS));
+        AP_SetTrueSkill(npc, WRESTLING, Cint(boss.wrestling) + AP_GetSkill(npc, WRESTLING));
+        AP_SetTrueSkill(npc, MAGERY, Cint(boss.magery) + AP_GetSkill(npc, MAGERY));
+        AP_SetTrueSkill(npc, AWARENESS, Cint(boss.awareness) + AP_GetSkill(npc, AWARENESS));
+    endif
 
-  if ( boss.skills )
-	AP_SetTrueSkill( npc, TACTICS, Cint( boss.skills ) + AP_GetSkill( npc, TACTICS )
-				  );
-	AP_SetTrueSkill( npc, WRESTLING, Cint( boss.skills ) + AP_GetSkill( npc, WRESTLING )
-				  );
-	AP_SetTrueSkill( npc, MAGERY, Cint( boss.skills ) + AP_GetSkill( npc, MAGERY ) );
-	AP_SetTrueSkill( npc, AWARENESS, Cint( boss.skills ) + AP_GetSkill( npc, AWARENESS )
-				  );
-  else
-	AP_SetTrueSkill( npc, TACTICS, Cint( boss.tactics ) + AP_GetSkill( npc, TACTICS )
-				  );
-	AP_SetTrueSkill( npc, WRESTLING, Cint( boss.wrestling ) + AP_GetSkill( npc, WRESTLING )
-				  );
-	AP_SetTrueSkill( npc, MAGERY, Cint( boss.magery ) + AP_GetSkill( npc, MAGERY ) );
-	AP_SetTrueSkill( npc, AWARENESS, Cint( boss.awareness ) + AP_GetSkill( npc, AWARENESS )
-				  );
-  endif
+    SetObjProperty(npc, "hitsmod", cint(boss.hits));
+    RecalcVitals(npc);
+    AP_RefreshVitals(npc);
 
-  SetObjProperty( npc, "hitsmod", cint( boss.hits ) );
-  RecalcVitals( npc );
-  AP_RefreshVitals( npc );
+    // Create backpack if needed
+    if (!npc.backpack)
+        var backpack := CreateItemAtLocation(npc.x, npc.y, npc.z, 2482, 1, npc.realm);
+        EquipItem(npc, backpack);
+    endif
 
-  if ( !npc.backpack )
-	var backpack := CreateItemAtLocation( npc.x, npc.y, npc.z, 2482, 1, npc.realm );
-	EquipItem( npc, backpack );
-  endif
+    // Add loot
+    foreach iteminfo in (boss.loot)
+        var amt := iteminfo.item.Amount;
+        if (!amt)
+            amt := 1;
+        endif
+        if (RandomInt(100) < iteminfo.chance)
+            var theitem := CreateItemInBackpackFromTemplate(npc, iteminfo.item);
+            theitem.movale := 1;
+            if (theitem.amount == 1)
+                Setname(theitem, iteminfo.item.desc);
+            endif
+        endif
+    endforeach
 
-  foreach iteminfo in ( boss.loot )
-	var amt := iteminfo.item.Amount;
-	if ( !amt )
-	  amt := 1;
-	endif
-	// printtextabove(npc, " " + iteminfo);
-	if ( RandomInt( 100 ) < iteminfo.chance )
-	  var theitem := CreateItemInBackpackFromTemplate( npc, iteminfo.item );
-	  // printtextabove(npc, " " + theitem);
-	  theitem.movale := 1;
-	  if ( theitem.amount == 1 )
-		Setname( theitem, iteminfo.item.desc );
-	  endif
-	endif
-  endforeach
+    // Add death events
+    if (boss.deathevent)
+        var lwprop := array;
+        foreach nevent in (boss.deathevent)
+            if (nevent.type == "Ultimas Palavras")
+                lwprop.append(nevent.text);
+            else
+                PrepareEvent(nevent);
+            endif
+        endforeach
+        if (lwprop.size() > 0)
+            SetObjProperty(npc, "Ultimas Palavras", lwprop);
+        endif
+    endif
 
-  // printtextabove(npc, " " + boss.special);
-  if ( boss.deathevent )
-	var lwprop := array;
-	foreach nevent in ( boss.deathevent )
-	  if ( nevent.type == "Ultimas Palavras" )
-		lwprop.append( nevent.text );
-	  else
-		PrepareEvent( nevent );
-	  endif
-	endforeach
-	if ( lwprop.size() > 0 )
-	  SetObjProperty( npc, "Ultimas Palavras", lwprop );
-	endif
-  endif
+    // Add special abilities 
+    if (boss.special)
+        foreach spec in (boss.special)
+            ConfigureSpecialAbility(npc, spec);
+        endforeach
+    endif
 
-  if ( boss.customai )
-	npc.script := boss.customai;
-	restartscript( npc );
-  endif
+    // Set custom AI if needed
+    if (boss.customai)
+        npc.script := boss.customai;
+        restartscript(npc);
+    endif
 
-  if ( boss.special )
-	foreach spec in ( boss.special )
-	  // printtextabove(npc,  " " + spec.name);
-	  if ( spec.name == "Ice Hit" )
-		var hit_scripts := GetObjProperty( npc, "HitScripts" );
-		if ( !hit_scripts )
-		  hit_scripts := array{};
-		endif
-		hit_scripts.append( ":combat:weaponHitScripts/IceHit" );
-		SetObjProperty( npc, "HitScripts", hit_scripts );
-	  elseif ( spec.name == "Fire Hit" )
-		var hit_scripts := GetObjProperty( npc, "HitScripts" );
-		if ( !hit_scripts )
-		  hit_scripts := array{};
-		endif
-		hit_scripts.append( ":combat:weaponHitScripts/FireHit" );
-		SetObjProperty( npc, "HitScripts", hit_scripts );
-	  elseif ( spec.name == "Energy Hit" )
-		var hit_scripts := GetObjProperty( npc, "HitScripts" );
-		if ( !hit_scripts )
-		  hit_scripts := array{};
-		endif
-		hit_scripts.append( ":combat:weaponHitScripts/LightningHit" );
-		SetObjProperty( npc, "HitScripts", hit_scripts );
-	  elseif ( spec.name == "Life Drain" )
-		var hit_scripts := GetObjProperty( npc, "HitScripts" );
-		if ( !hit_scripts )
-		  hit_scripts := array{};
-		endif
-		hit_scripts.append( ":combat:weaponHitScripts/draintouch" );
-		SetObjProperty( npc, "HitScripts", hit_scripts );
-	  elseif ( spec.name == "Dmg Return" )
-		var hit_scripts := GetObjProperty( npc, "ArmorHitScripts" );
-		if ( !hit_scripts )
-		  hit_scripts := array{};
-		endif
-		hit_scripts.append( ":combat:armorHitScripts/dmgreturn" );
-		SetObjProperty( npc, "ArmorHitScripts", hit_scripts );
-		SetObjProperty( npc, "dmgreturn", spec.amt );
-	  elseif ( spec.name == "Custom Hitscript" )
-		SetObjProperty( npc, "generichit", spec.hitopt );
-		var hit_scripts := GetObjProperty( npc, "HitScripts" );
-		if ( !hit_scripts )
-		  hit_scripts := array{};
-		endif
-		hit_scripts.Append( ":combat:weaponHitScripts/generic" );
-		SetObjProperty( npc, "HitScripts", hit_scripts );
-	  elseif ( spec.name == "Special AI" )
-		npc.script := spec.ai;
-		// printtextabove(npc, " " + spec.ai);
-		restartscript( npc );
-	  endif
-	endforeach
-  endif
+    return npc;
+endfunction
 
-  return npc;
+function ConfigureSpecialAbility(npc, spec)
+    case (spec.name)
+        "Ice Hit":
+            AddHitScript(npc, ":combat:weaponHitScripts/IceHit");
+        "Fire Hit": 
+            AddHitScript(npc, ":combat:weaponHitScripts/FireHit");
+        "Energy Hit":
+            AddHitScript(npc, ":combat:weaponHitScripts/LightningHit");
+        "Life Drain":
+            AddHitScript(npc, ":combat:weaponHitScripts/draintouch");
+        "Dmg Return":
+            AddArmorHitScript(npc, ":combat:armorHitScripts/dmgreturn");
+            SetObjProperty(npc, "dmgreturn", spec.amt);
+        "Custom Hitscript": 
+            SetObjProperty(npc, "generichit", spec.hitopt);
+            AddHitScript(npc, ":combat:weaponHitScripts/generic");
+        "Special AI":
+            npc.script := spec.ai;
+            restartscript(npc);
+    endcase
+endfunction
 
+function AddHitScript(npc, script)
+    var hit_scripts := GetObjProperty(npc, "HitScripts");
+    if (!hit_scripts)
+        hit_scripts := array{};
+    endif
+    hit_scripts.append(script);
+    SetObjProperty(npc, "HitScripts", hit_scripts);
+endfunction
+
+function AddArmorHitScript(npc, script) 
+    var hit_scripts := GetObjProperty(npc, "ArmorHitScripts");
+    if (!hit_scripts)
+        hit_scripts := array{};
+    endif
+    hit_scripts.append(script);
+    SetObjProperty(npc, "ArmorHitScripts", hit_scripts);
 endfunction
 
 // cria um boss

@@ -7,12 +7,12 @@ include ":attributes:attributes";
 program TimedScript_Clumsy(params)
 	var who := params[1];
 	var attacker := params[2];
-	var mlore := params[3];
+	var skill := params[3];
 
 	if ( GetObjProperty(who, "#dmgreductionspell") )
 		return 0;
 	endif
-	var total := Cdbl(mlore / 200); // 50% do mlore
+	var total := Cdbl(skill / 200); // 50% da skill
 	if (TemHabilidade(who, "Valdruk"))
 		total := total * 0.8;
 	endif
