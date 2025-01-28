@@ -313,7 +313,6 @@ function UseAbilities(npc, opponent)
    endif
 
     var best_hab := ChooseAbility(npc, state, habs);
-    print("best_hab: " + best_hab);
     var success := CInt(ProccessHab(npc, best_hab));
 
     return success;
