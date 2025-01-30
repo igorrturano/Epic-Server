@@ -112,6 +112,11 @@ function CreateNpcFromSpawnPoint( who, spawnpoint, i )
       SendSysMessage( who, "Erro ao criar o npc - Template -> " + npc +" - Error -> " + npc.errortext );
     else
       SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
+
+      SetObjProperty(npc, "GuardKill", 1);	
+      SetObjProperty(npc, "NoCorpse", 1);
+      ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
+
       spawn_count += 1;
     endif
   endfor

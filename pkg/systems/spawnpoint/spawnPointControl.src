@@ -225,7 +225,6 @@ function ResetSpawnQueue(spawnpoint, amounts)
 endfunction
 
 function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
-    print("DEBUG: Creating spawn for index " + index);
     var cumulative := 0;
     var chosenTemplateIndex := 0;
     var i;
