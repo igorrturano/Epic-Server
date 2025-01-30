@@ -64,6 +64,7 @@ function HumanoidBrain()
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
+                    HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
@@ -314,6 +315,7 @@ function UseAbilities(npc, opponent)
 
     var best_hab := ChooseAbility(npc, state, habs);
     var success := CInt(ProccessHab(npc, best_hab));
+    SetCooldown(npc, "ability_cooldown", 5);
 
     return success;
 endfunction
@@ -329,43 +331,16 @@ function GetCombatState(npc, opponent)
 endfunction
 
 function ChooseAbility(npc, state, habs)
-   // Filter only active abilities
-   var active_habs := array{};
-   var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-   
-   foreach hab in habs
-       var elem := FindConfigElem(habcfg, hab);
-       if (GetConfigString(elem, "uso") == "Ativa")
-           active_habs.append(hab);
-       endif
-       sleepms(2);
-   endforeach
-
-   if (active_habs.size() < 1)
-       return 0;
-   endif
-
-   if (RandomInt(100) < 15)
-       return active_habs[RandomInt(active_habs.size())+1];
-   endif
-
-   var success_rates := LoadCombatHistory(NPC_ParseTemplateName(npc.npctemplate).template);
-   var best_rate := 0;
-   var best_hab := active_habs[RandomInt(active_habs.size())+1];
-
-   foreach hab in active_habs
-       var key := FormatStateKey(state, hab);
-       if (success_rates[key])
-           var rate := CDbl(success_rates[key].successes) / success_rates[key].total;
-           if (rate > best_rate)
-               best_rate := rate;
-               best_hab := hab;
-           endif
-       endif
-       sleepms(2);
-   endforeach
-
-   return best_hab;
+    var npc_elem := NPC_GetNPCConfig(npc);
+    var npc_class := npc_elem.Classe;
+    
+    // First determine class behavior
+    case (npc_class)
+        GUERREIRO: return ChooseWarriorAbility(npc, state, habs);
+        LADINO: return ChooseRogueAbility(npc, state, habs);
+        SABIO: return ChooseSageAbility(npc, state, habs);
+        default: return habs[RandomInt(habs.size())+1];
+    endcase
 endfunction
 
 function GetHabsByLevel(npc, nivel)
@@ -489,4 +464,217 @@ function DetermineCombatSuccess(old_state, new_state)
     endif
     
     return new_state.distance >= 1;
+endfunction
+
+function ChooseWarriorAbility(npc, state, habs)
+    // Get count of nearby enemies
+    var enemies := ListHostiles(npc, 3);
+    var opponent := npc.opponent;
+    
+    // Emergency abilities when low health
+    if (state.health == "dying")
+        foreach hab in habs
+            case (hab)
+                "Manobra da Resiliencia":
+                "Shintai to Kokoro": 
+                "Shar Krith":
+                "Nazg Gûl":
+                "Resiliência Bárbara": return hab;
+            endcase
+        endforeach
+    endif
+    
+    // Multiple enemies
+    if (enemies.size() >= 2)
+        foreach hab in habs
+            case (hab)
+                "Golpes Amplos":
+                "Trespassar":
+                "Provocar":
+                "Manobra Desafiadora":
+                "Burz":
+                "Ghâshburz": return hab;
+            endcase
+        endforeach
+    endif
+
+    // Against ranged opponents
+    if (opponent.weapon.isRanged())
+        foreach hab in habs
+            case (hab)
+                "Ryū no Kamae": return hab;
+            endcase
+        endforeach
+    endif
+
+    if (opponent.master)
+        foreach hab in habs
+            case (hab)
+                "Caçador Implacável":
+                "Nazg khalug": return hab;
+            endcase
+        endforeach
+    endif
+
+    return habs[RandomInt(habs.size())+1]; // Fallback to random
+endfunction
+
+function ChooseRogueAbility(npc, state, habs)
+    var opponent := npc.opponent;
+
+    // Emergency abilities when low health
+    if (state.health == "dying")
+        foreach hab in habs
+            case (hab)
+                "Distrair Oponentes": return hab;
+            endcase
+        endforeach
+    endif
+
+    if (AP_GetVital(npc, STAMINA) < 40)
+        foreach hab in habs
+            case (hab)
+                "Reflexo Estrategico": return hab;
+            endcase
+        endforeach
+    endif
+    
+    // If hidden, prioritize surprise attacks
+    if (npc.hidden)
+        foreach hab in habs
+            case (hab)
+                "Ataque Furtivo":
+                "Salto das Sombras": return hab;
+            endcase
+        endforeach
+    endif
+
+    if (opponent.master)
+        foreach hab in habs
+            case (hab)
+                "Fantasma":
+                "Nazg khalug": return hab;
+            endcase
+        endforeach
+    endif
+
+    // When behind opponent
+    if (state.has_advantage)
+        foreach hab in habs
+            case (hab)
+                "Faro por Sangue":
+                "Golpe Sangrento": return hab;
+            endcase
+        endforeach
+    endif
+    
+    // Against mages
+    if (opponent.isSage())
+        foreach hab in habs
+            case (hab)
+                "Ladrao de Magias":
+                "Lamina da Escuridao": return hab;
+            endcase
+        endforeach
+    endif
+      
+    return habs[RandomInt(habs.size())+1];
+endfunction
+
+function ChooseSageAbility(npc, state, habs)
+    var opponent := npc.opponent;
+    
+    // Emergency abilities when low health
+    if (state.health == "dying")
+        foreach hab in habs
+            case (hab)
+                "Tactus Tenebris":
+                "Guardião do Bosque":
+                "Instinto de Sobrevivência":
+                "Prisão Dimensional":
+                "Aegis Vitalis":
+                "Decretum Venerationis":
+                "Sede de Sangue": 
+                "Salto Etéreo":
+                "Pele de pedra":
+                "Abrir Portais": return hab;
+            endcase
+        endforeach
+    endif
+
+    // Find corpses nearby
+    var nearby_corpses := ListItemsNearLocation(npc.x, npc.y, npc.z, 5);
+    foreach item in nearby_corpses
+        if (item.IsA(POLCLASS_CORPSE))
+            foreach hab in habs
+                case (hab)
+                    "Controlar Mortos":
+                    "Colheita de Almas": return hab;
+                endcase
+            endforeach
+            break;
+        endif
+        sleepms(2);
+    endforeach
+
+    // Multiple enemies
+    var enemies := ListHostiles(npc, 8);
+    if (enemies.size() >= 2)
+        foreach hab in habs
+            case (hab)
+                "Natureza Selvagem":
+                "Tormento de Idrith":
+                "Provocar":
+                "Ancestralidade Elemental": return hab;
+            endcase
+        endforeach
+    endif
+
+    // Against mages
+    if (opponent.isSage())
+        foreach hab in habs
+            case (hab)
+                "Vindicta Sancta": return hab;
+            endcase
+        endforeach
+    endif
+
+    if (opponent.hidden)
+        foreach hab in habs
+            case (hab)
+                "Visao verdadeira": return hab;
+            endcase
+        endforeach
+    endif
+
+    if (opponent.master)
+        foreach hab in habs
+            case (hab)
+                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_ParseTemplateName(npc.npctemplate).template}); 
+                "Treinamento Druídico": return hab; // controlar a besta
+            endcase
+        endforeach
+    endif
+       
+    return habs[RandomInt(habs.size())+1];
+endfunction
+
+// TODO: Criar uma IA propria pro Engenheiro
+// TODO: Criar uma IA pro Ladrao/Punguista
+// 
+function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
+    var habs := GetObjProperty(me, "myhabs");
+    foreach hab in habs
+        case (hab)
+            "Camuflagem":
+            "Invocacao do Caos": 
+            "Gwaenedh":
+            "Forma Adaptavel":
+            "Irmaos de Areia":
+            "Canhoneiro":
+            "Quinquilharias":
+            "Construtor de Golems": ProccessHab(me, hab);
+        endcase
+    endforeach
+
 endfunction
