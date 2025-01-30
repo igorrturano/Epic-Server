@@ -116,8 +116,11 @@ function PreencheEsquemas(byref gump, x,y, sessao)
 		endif
 		GFTextLine(gump,x + 95 + deslocamentoX * coluna,y + deslocamentoY * linha,86,esquema.nome);
 		GFAddButton(gump,x + deslocamentoX * coluna,y + deslocamentoY * linha,4011,4012, GF_CLOSE_BTN, baseIdBotao + 1);
+		GFTooltipText(gump,"Editar.");
 		GFAddButton(gump,x + 30 + deslocamentoX * coluna,y + deslocamentoY * linha,4020,4021, GF_CLOSE_BTN, baseIdBotao + 2);
+		GFTooltipText(gump,"Excluir.");
 		GFAddButton(gump,x + 60 + deslocamentoX * coluna,y + deslocamentoY * linha,4023,4024, GF_CLOSE_BTN, baseIdBotao + 3);
+		GFTooltipText(gump,"Montar.");
 
 		++indice;
 	endforeach
@@ -381,8 +384,11 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice)
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,
 	GFTooltipText(gump,receita.textoDescItem);
 	GFAddButton(gump,x + 15, y + 120,4011,4012,GF_CLOSE_BTN,baseIdBotao + 1);
+	GFTooltipText(gump,"Selecionar Receita.");
 	GFAddButton(gump,x + 45,y + 120,4029,4030,GF_CLOSE_BTN,baseIdBotao + 2);
+	GFTooltipText(gump,"Criar novo esquema.");
 	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
+	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
 	GFGumpPic(gump,x + 60 ,y + 10,9009); // Pino
 
 	case (receita.uso)

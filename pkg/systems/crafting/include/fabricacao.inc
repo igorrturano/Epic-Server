@@ -20,7 +20,7 @@ function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
 endfunction
 
-function InicializaSessao()
+function InicializaSessaoComplexos()
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
@@ -55,7 +55,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessao();
+	var sessao := InicializaSessaoComplexos();
 	
 	while(retorno)
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -74,7 +74,8 @@ function EnviaItensComplexosGump(quem,profissao)
 
 		case(ClassificaRetornoComplexos(retorno,sessao))
 			RT_CATEGORIAS:
-				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retorno[0] - COMPLEXOS_CATEGORIAS];
+				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_CATEGORIAS);
+				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retornoMapeado.indice];
 				NovoObjetoReceitaSelecionada(sessao);
 				break;
 			RT_RECEITAS:
@@ -105,6 +106,7 @@ function EnviaItensComplexosGump(quem,profissao)
 				break;
 			RT_ESQUEMAS_CPNT:
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS_CPNT);
+				//TODO usar drop down dos componentes na bag, não curti ter que ficar clicando com alvo.
 				var alvo := target(quem);
 				TratarEscolhaComponente(quem, alvo, sessao,retornoMapeado.indice,configRecursos);
 				break;
@@ -195,7 +197,7 @@ function TratarEscolhaComponente(quem, alvo,byref sessao,indice,configRecursos)
 			var material := configRecursos[GetObjProperty(alvo,PROPNAME_MATERIAL)];
 
 			componenteEscolhido.+componenteNecessario := componenteNecessario;
-			componenteEscolhido.+item := struct{nome := alvo.name, objtype := alvo.obj_type};
+			componenteEscolhido.+item := struct{nome := alvo.name, objtype := alvo.objtype};
 			componenteEscolhido.+material := struct{nome := material.name, chave := material};
 			componenteEscolhido.+tier := PegaComponenteTierDesc(GetObjProperty(alvo,PROPNAME_TIER_COMPONENTE));
 			MontaPropriedadesComponente(componenteEscolhido);
@@ -237,7 +239,7 @@ function MontaPropriedadesComponente(byref componenteEscolhido)
 						valor := Cint(subEfeitos[indice + 1])
 					}
 				);
-			indice := indice + 1;
+			++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
 			Sleepms(2);
 		endfor
 		propriedades.+efeitosAdicionais := arraySubEfeitos;
@@ -854,7 +856,6 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao)
 	
 	return parametrosGump;
 endfunction
-
 
 // TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
 function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico := -1) 

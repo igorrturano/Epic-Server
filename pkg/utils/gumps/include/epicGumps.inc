@@ -365,7 +365,7 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 			Sleepms(2);
 		endforeach
 
-		//tabela em si
+		//aqui começa a tabela em si
 		var indice := paginaTabela * opt_qtd_limite_linha + 1;
 		var indiceLinha := 1;
 
@@ -393,7 +393,7 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 							cInt(y + ALTURA_LINHA * indiceLinha + opt_recuo_eixoy_btn), 
 							opt_checkbox_solto, 
 							opt_checkbox_apertado,
-							valorCelula.valor ? true:false,
+							valorCelula.valor,
 							valorBotao);
 				else
 					GFTextLine(gump, cInt(x + larguraUtilizada + 5), cInt(y + ALTURA_LINHA * indiceLinha),opt_cor_dado, valorCelula);
