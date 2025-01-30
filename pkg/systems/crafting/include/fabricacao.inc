@@ -6,16 +6,48 @@ include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/itensComplexosGump";
 include ":gumps:/include/dropDownGump";
+include ":crafting:/craftingDFEsquemas";
 
 //var fabricacaoGump := DFOpenDataFile(":crafting:CraftGumps", DF_CREATE);
 var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 const PROPNAME_TIER_COMPONENTE := "tierComponente";
+const NR_MAXIMO_ESQUEMAS := 6;
 
 //Itens Complexos Inicio
 function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
+endfunction
+
+function InicializaSessao()
+	var sessao := struct;
+
+	sessao.+categoriaSelecionada := "";
+	NovoObjetoReceitaSelecionada(sessao);
+	sessao.+gumpAtual := COMPLEXOS;
+	sessao.+acao := ADICIONAR;
+
+	return sessao;
+endfunction
+
+function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsquemas := dictionary)
+	if(!sessao.?receitaSelecionada)
+		sessao.+receitaSelecionada := struct;
+	else
+		sessao.receitaSelecionada := struct;
+	endif
+	
+	sessao.receitaSelecionada.+receita := objetoReceita;
+	sessao.receitaSelecionada.+esquemas := dictEsquemas;
+	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
+endfunction
+
+function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary)
+	return struct{
+				nome := nomeEsquema,
+				componentesEscolhidos := dictComponentesEscolhidos
+			};
 endfunction
 
 function EnviaItensComplexosGump(quem,profissao)
@@ -23,53 +55,130 @@ function EnviaItensComplexosGump(quem,profissao)
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
-	var sessao := struct;
-	sessao.+categoriaSelecionada := "";
-	sessao.+receitaSelecionada := struct{
-		receita := "",
-		componentesEscolhidos := dictionary
-	};
-	sessao.+gumpAtual := "complexos";
-
+	var sessao := InicializaSessao();
+	
 	while(retorno)
-		if(sessao.gumpAtual == "complexos")
+		if(sessao.gumpAtual == COMPLEXOS)
 			MontaItensComplexosGump(gump,parametros,sessao);
 		else
 			MontaEsquemaGump(gump,parametros,sessao);
 		endif
 		retorno := GFSendGump(quem,gump);
 
-		if(retorno)
-			case(ClassificaRetornoComplexos(retorno[0]))
-				RT_CATEGORIAS:
-					sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retorno[0] - COMPLEXOS_CATEGORIAS];
-					break;
-				RT_RECEITAS:
-					var indiceRetorno := retorno[0] - COMPLEXOS_RECEITAS;
-					var quantidadeBotoes := 3;
-					var indiceBotao := indiceRetorno % quantidadeBotoes;
-					indiceBotao := indiceBotao == 0? quantidadeBotoes : indiceBotao;
-					var indiceItem := (indiceRetorno - indiceBotao) / 3 + 1;
-					if(indiceBotao == 2) // Novo Esquema.
-						sessao.gumpAtual := "esquemas";
-						sessao.receitaSelecionada.receita := parametros.visaoReceitas[sessao.categoriaSelecionada][indiceItem];
-						sessao.receitaSelecionada.componentesEscolhidos := dictionary; //limpa a seleção de componentes.
-					endif
-					Print("indiceRetorno: " + indiceRetorno + " indiceBotao: " + indiceBotao);
-					Print("Fabricando Item: " + parametros.visaoReceitas[sessao.categoriaSelecionada][indiceItem].desc);
-					sessao.+esquemas := "";
-					break;
-				RT_ESQUEMAS_CPNT:
-					var indice := retorno[0] - COMPLEXOS_ESQUEMAS_CPNT;
-					var alvo := target(quem);
-					TratarEscolhaComponente(quem, alvo, sessao,indice,configRecursos);
-					break;
-				RT_BOTAO_MENU:
-					break;
-				default:
-			endcase
+		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
+			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
+			if(entradaNome)
+				sessao.receitaSelecionada.esquemaSelecionado.nome := entradaNome;
+			endif
 		endif
+
+		case(ClassificaRetornoComplexos(retorno,sessao))
+			RT_CATEGORIAS:
+				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retorno[0] - COMPLEXOS_CATEGORIAS];
+				NovoObjetoReceitaSelecionada(sessao);
+				break;
+			RT_RECEITAS:
+				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_RECEITAS,3);
+				case (retornoMapeado.indiceBotao)
+					1: //Seleciona receita
+						var objetoReceita := parametros.visaoReceitas[sessao.categoriaSelecionada][retornoMapeado.indiceItem];
+						NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,objetoReceita.objtype));
+						break;
+					2: // Novo Esquema.
+						sessao.receitaSelecionada.receita := parametros.visaoReceitas[sessao.categoriaSelecionada][retornoMapeado.indiceItem];
+						sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos := dictionary; //limpa a seleção de componentes.
+						
+						var esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
+						if(esquemas.size() >= NR_MAXIMO_ESQUEMAS)
+							SendSysMessageEX(quem, "Limite de esquemas alcaçado para esta receita.",SSM_FAIL);
+							break;
+						endif
+
+						sessao.gumpAtual := ESQUEMAS;
+						sessao.acao := ADICIONAR;
+						break;
+					3: //Fabricar com melhores componentes.
+						Print("indiceRetorno: " + retornoMapeado.indice + " indiceBotao: " + retornoMapeado.indiceBotao);
+						Print("Fabricando Item: " + parametros.visaoReceitas[sessao.categoriaSelecionada][retornoMapeado.indiceItem].desc);
+						break;
+				endcase
+				break;
+			RT_ESQUEMAS_CPNT:
+				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS_CPNT);
+				var alvo := target(quem);
+				TratarEscolhaComponente(quem, alvo, sessao,retornoMapeado.indice,configRecursos);
+				break;
+			RT_ESQUEMAS_SALVAR:
+				//Print("Sessao info:   " + sessao.receitaSelecionada);
+				if(sessao.receitaSelecionada.esquemaSelecionado.nome == "")
+					SendSysMessageEX(quem,"O nome do esquema é obrigatório.", SSM_FAIL);
+					break;
+				endif
+				//Print("Salvei Esquema {}!".format(sessao.receitaSelecionada.esquemaSelecionado.nome));
+				case(sessao.acao)
+					ADICIONAR:
+						var isAdicionado := AdicionaEsquema(quem,
+										sessao.receitaSelecionada.receita.objtype,
+										sessao.receitaSelecionada.esquemaSelecionado);
+						if(isAdicionado)
+							sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
+						else
+							SendSysMessageEX(quem,isAdicionado.errortext,SSM_FAIL);
+						endif
+						break;
+					EDITAR:
+						EditaEsquema(quem,
+									sessao.receitaSelecionada.receita.objtype,
+									sessao.receitaSelecionada.esquemaSelecionado
+									);
+						sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
+						break;
+				endcase
+
+				sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();//limpa esquema selecionado.
+				sessao.gumpAtual := COMPLEXOS;
+				break;
+			RT_ESQUEMAS:
+				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS,3);
+				var chaveEsquema := sessao.receitaSelecionada.esquemas.keys()[retornoMapeado.indiceItem];
+				var esquema := sessao.receitaSelecionada.esquemas[chaveEsquema];
+
+				case (retornoMapeado.indiceBotao)
+					1: //Editar
+						sessao.receitaSelecionada.esquemaSelecionado := esquema;
+						sessao.gumpAtual := ESQUEMAS;
+						sessao.acao := EDITAR;
+						break;
+					2: //Excluir
+						sessao.receitaSelecionada.esquemas := RemoveEsquema(quem, sessao.receitaSelecionada.receita.objtype, esquema);
+						break;
+					3: //Fabricar
+						break;
+				endcase
+				break;
+			RT_BOTAO_MENU:
+				sessao.gumpAtual := ESQUEMAS;
+				break;
+			RT_CANCELADO_COMPLX:
+				sessao.gumpAtual := COMPLEXOS;
+				retorno := 1;
+				break;
+			default:
+		endcase
 	endwhile
+endfunction
+
+function MapeiaRetornoGump (retorno, indiceInicial, quantidadeBotoes := 0)
+	var objetoMapeado :=struct;
+	objetoMapeado.+indice := retorno - indiceInicial;
+	if(quantidadeBotoes >= 1)
+		objetoMapeado.+indiceBotao := objetoMapeado.indice  % quantidadeBotoes;
+		objetoMapeado.indiceBotao := objetoMapeado.indiceBotao == 0? quantidadeBotoes : objetoMapeado.indiceBotao;
+		objetoMapeado.+indiceItem :=  (objetoMapeado.indice - objetoMapeado.indiceBotao) / quantidadeBotoes + 1;
+	endif
+
+	return objetoMapeado;
+	
 endfunction
 
 function TratarEscolhaComponente(quem, alvo,byref sessao,indice,configRecursos)
@@ -82,21 +191,22 @@ function TratarEscolhaComponente(quem, alvo,byref sessao,indice,configRecursos)
 									});
 		
 		if(isItemEncontrado)
-
 			var componenteEscolhido := struct;
+			var material := configRecursos[GetObjProperty(alvo,PROPNAME_MATERIAL)];
+
 			componenteEscolhido.+componenteNecessario := componenteNecessario;
-			componenteEscolhido.+itemRef := alvo;
-			componenteEscolhido.+material := configRecursos[GetObjProperty(alvo,PROPNAME_MATERIAL)];
+			componenteEscolhido.+item := struct{nome := alvo.name, objtype := alvo.obj_type};
+			componenteEscolhido.+material := struct{nome := material.name, chave := material};
 			componenteEscolhido.+tier := PegaComponenteTierDesc(GetObjProperty(alvo,PROPNAME_TIER_COMPONENTE));
 			MontaPropriedadesComponente(componenteEscolhido);
 
-			if(sessao.receitaSelecionada.componentesEscolhidos.exists(indice))
-				sessao.receitaSelecionada.componentesEscolhidos[indice] := componenteEscolhido;
+			if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(indice))
+				sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indice] := componenteEscolhido;
 			else
-				sessao.receitaSelecionada.componentesEscolhidos.insert(indice,componenteEscolhido);
+				sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.insert(indice,componenteEscolhido);
 			endif
 
-			Print("****** -- " + sessao.receitaSelecionada.componentesEscolhidos);
+			//Print("****** -- " + sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos);
 			
 		else
 			SendSysMessageEX(quem,"O alvo não cabe em um encaixe de compoenente de {}.".format(componenteNecessario.encaixe), SSM_FAIL);
@@ -106,19 +216,18 @@ endfunction
 
 function MontaPropriedadesComponente(byref componenteEscolhido)
 	var propriedades := struct {};
-
+	//TODO Passar o modificador de HP e peso de acordo com o material. 
 	propriedades.+caracteristica := componenteEscolhido.componenteNecessario.caracteristica;
 
-	var efeitosMaterial := GetConfigStringDictionary(componenteEscolhido.material,"ComponenteEfeito");
+	var efeitosMaterial := GetConfigStringDictionary(componenteEscolhido.material.chave,"ComponenteEfeito");
 	var efeitoEscolhido := efeitosMaterial[propriedades.caracteristica];
 	var subEfeitos := SplitWords(efeitoEscolhido);
 
 	propriedades.+valorPrincipal := CInt(subEfeitos[subEfeitos.size()]) + Cint(componenteEscolhido.tier.valor);
-	Print(propriedades.caracteristica + " ----------- " + propriedades.valorPrincipal + " ****** " + subEfeitos + " [" +subEfeitos.size() +  "]");
+	//Print(propriedades.caracteristica + " ----------- " + propriedades.valorPrincipal + " ****** " + subEfeitos + " [" +subEfeitos.size() +  "]");
 
 	if(subEfeitos.size() > 1)
 		subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
-		Print(" shrink  [" +subEfeitos.size() +  "]");
 		var arraySubEfeitos := array{};
 
 		for indice := 1 to subEfeitos.size()
@@ -227,7 +336,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
       		endif
 
 			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem))
-				receitas.append(MontaInfoItem(quem,objtype));
+				receitas.append(MontaReceitaItem(quem,objtype));
 			endif
 			Sleepms(2);
 		endforeach
@@ -239,22 +348,22 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 
 endfunction
 
-function MontaInfoItem(quem,objtype)
-	var infoItem := struct;
+function MontaReceitaItem(quem,objtype)
+	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
-	infoItem.+componentesNecessarios := PegaComponentesNecessarios(objtype);
-	infoItem.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,infoItem.componentesNecessarios);
-	infoItem.+dificuldade := PegaDificuldade();
-	infoItem.+objtype := objtype;
-	infoItem.+uso := definicaoItem.Attribute;
-	infoItem.+desc := definicaoItem.desc;
-	infoItem.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype);
+	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype);
+	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios);
+	receita.+dificuldade := PegaDificuldade();
+	receita.+objtype := objtype;
+	receita.+uso := definicaoItem.Attribute;
+	receita.+desc := definicaoItem.desc;
+	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype);
 
-	return infoItem;
+	return receita;
 
 endfunction
 
@@ -360,15 +469,20 @@ function MontaCraftProp(fabricacaoConfig)
 
 endfunction
 
-function ClassificaRetornoComplexos(valorRetorno)
+function ClassificaRetornoComplexos(retorno,sessao)
+	var valorRetorno := retorno[0];
 	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
 		return RT_CATEGORIAS;
 	elseif(valorRetorno > COMPLEXOS_RECEITAS && valorRetorno <= COMPLEXOS_ESQUEMAS)
 		return RT_RECEITAS;
+	elseif(valorRetorno > COMPLEXOS_ESQUEMAS && valorRetorno <= COMPLEXOS_ESQUEMAS_CPNT)
+		return RT_ESQUEMAS;
 	elseif(valorRetorno > COMPLEXOS_ESQUEMAS_CPNT)
 		return RT_ESQUEMAS_CPNT;
-	else
-		return RT_BOTAO_MENU;
+	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
+		return RT_ESQUEMAS_SALVAR;
+	elseif(valorRetorno == 1 || (!retorno && sessao.gumpAtual == ESQUEMAS))
+		return RT_CANCELADO_COMPLX;
 	endif
 endfunction
 //Itens Complexos Fim
@@ -386,6 +500,8 @@ function EnviaGumpComponentes(quem)
 	var gerenciador := sessao.gerenciadorDropDown;
 	var gump;
 
+	//TODO Deixar o cara escolher se quer fazer um item de qualidade mais baixa.
+	//TODO Marcar itens craftados como dispensaveis nos sistema de destruiveis.
 	while(retorno)
 		FechaTodosDropdowns(quem,gerenciador.dropDowns);
 
@@ -397,8 +513,8 @@ function EnviaGumpComponentes(quem)
 		MontaComponentesGump(gump, parametros,sessao);
 		retorno := GFSendGump(quem,gump);
 
-		if(find(retorno[COMPONENTES_BTN_QTD],":",1))
-			sessao.quantidade := GFExtractData(retorno,COMPONENTES_BTN_QTD)[1,3];
+		if(find(retorno[COMPONENTES_INPT_QTD],":",1))
+			sessao.quantidade := GFExtractData(retorno,COMPONENTES_INPT_QTD)[1,3];
 		endif
 		
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
