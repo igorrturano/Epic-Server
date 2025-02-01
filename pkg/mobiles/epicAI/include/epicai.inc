@@ -730,6 +730,10 @@ function CanFight(attacker, defender)
             return 1;
         endif
 
+        if (defender.master)
+            return 1;
+        endif
+
         // Check enemy categories
         var attacker_elem := NPC_GetNPCConfig(attacker);
         var defender_elem := NPC_GetNPCConfig(defender);
