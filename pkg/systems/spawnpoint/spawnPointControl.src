@@ -244,34 +244,17 @@ function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
     var chosenTier := tiers[chosenTemplateIndex] ? tiers[chosenTemplateIndex] : "0";
     var chosenName := names[chosenTemplateIndex] ? names[chosenTemplateIndex] : "";
     
-    print("DEBUG: About to create NPC with template " + chosenTemplate + " tier " + chosenTier + " name " + chosenName);
     var npcSerial := SetupSpawn(spawnpoint, chosenTemplate, chosenTier, chosenName);
-    
-    // Let's inspect the spawnpoint properties
-    print("DEBUG: Checking spawnpoint properties");
-    print("DEBUG: unique property = " + GetObjProperty(spawnpoint, "unique"));
-    print("DEBUG: uniquestat property = " + GetObjProperty(spawnpoint, "uniquestat"));
     
     var theBoss := GetObjProperty(spawnpoint, "unique");
     if (theBoss)
-        print("DEBUG: This is a boss spawn");
         var spawnmod := GetObjProperty(spawnpoint, "uniquestat");
         if (spawnmod != error)
-            print("DEBUG: Found boss stats: " + spawnmod);
             var npc := SystemFindObjectBySerial(npcSerial);
             if (npc)
-                print("DEBUG: Found NPC to make boss");
-                print("DEBUG: NPC template: " + npc.npctemplate);
                 SetBoss(npc, spawnmod);
-                print("DEBUG: Boss properties set");
-            else
-                print("DEBUG: Failed to find NPC with serial " + npcSerial);
             endif
-        else
-            print("DEBUG: No boss stats found");
         endif
-    else
-        print("DEBUG: Not a boss spawn");
     endif
     
     return npcSerial;
