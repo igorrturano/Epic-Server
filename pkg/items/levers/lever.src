@@ -16,6 +16,7 @@ include ":traps:traps";
 include ":levers:lever";
 include ":tn:boss";
 include ":combat:hitscripts";
+include ":itemUtils:itemInfo";
 
 function ConstructGump(item)
    var opts := item.GetLeverOpts();
@@ -31,10 +32,10 @@ function ConstructGump(item)
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 99);
    if (!opts.is_linked)
       y += 20;
-      GFTextLine(gump, 45, y, _ifElse(opts.doorstatus, 520, 500), "Trancar/destrancar porta");
-      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 2);
+      GFTextLine(gump, 45, y, _ifElse(opts.lights, 520, 500), "Conectar Luzes");
+      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 4);
       y += 20;
-      GFTextLine(gump, 45, y, _ifElse(opts.opendoors, 520, 500), "Abrir/Fechar porta");
+      GFTextLine(gump, 45, y, _ifElse(opts.opendoors, 520, 500), "Abrir/Destrancar porta");
       GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 102);
       y += 20;
       GFTextLine(gump, 45, y, _ifElse(opts.moveitems, 520, 500), "Mover objetos");
@@ -99,6 +100,8 @@ function ConstructGump(item)
    GFAddButton(gump, 85, 270, 210, 211, GF_CLOSE_BTN, 22);
    GFTilePic(gump, 355, 270, 4241);
    GFAddButton(gump, 345, 270, 210, 211, GF_CLOSE_BTN, 23);
+   GFAddButton(gump, 240, 200, 210, 211, GF_CLOSE_BTN, 25);
+   GFTextLine(gump, 235, 220, 900, "Outro");
 
    GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
 
@@ -144,7 +147,7 @@ program lever(who, item)
       if (!trapstrength) trapstrength := 2; endif
 
       case(res[0])
-         2: doorstatus(who, item);
+         //2: doorstatus(who, item);
          3: bindlevers(who, item);
          4: bindlights(who, item);
          5: linkteleport(who, item);
@@ -175,6 +178,11 @@ program lever(who, item)
          23: item.graphic := 0x1092;           // graphic 4
             item.name    := "interruptor";
          24: setprp(who, item);           // setobjproperty()
+		 25: var graphic_lev := Cint(RequestGump(who, "Para que grafico a alavanca deve mudar?"));
+			if (!graphic_lev)
+			else
+			item.graphic := graphic_lev;
+			endif
 		 55: spawn_boss (who, item, cfg);
 		 56: efeitos (who, item);
 		 //98: setprp(who, item, res);           // setobjproperty()
@@ -230,14 +238,18 @@ function setMoveObject(who, item)
 endfunction
 
 function setHiding(who, item)
-	var dif := Cint(RadioGump(who, 0, 0, "Qual o level do interruptor?", array{"1", "2", "3", "4", "5", "Remover"}, 0, 1));
-   if (!dif)
+	var dif := (RadioGump(who, 0, 0, "Qual o level do interruptor?", array{"1", "2", "3", "4", "5", "Invisivel", "Remover"}, 0, 1));
+	if (dif == "Invisivel")
+		item.invisible := 1;
+		return;
+	endif
+   if (dif == "Remover")
       EraseObjProperty(item, "level");
-      item.invisible := 0;
-      return;
+      item.invisible := 0;     
+	return;
    endif
 
-	SetObjProperty(item, "level", dif);
+	SetObjProperty(item, "level", Cint(dif));
 	item.invisible := 1;
 endfunction
 
@@ -268,7 +280,7 @@ endfunction
 function changegraphic(who, item)
    var opts := item.GetLeverOpts();
    var newarray := array{};
-   SendSysMessage(who,"Escolha os itens que quer adicionar. esc para terminar.");
+   SendSysMessage(who,"Escolha os itens que quer adicionar. Esc para terminar.");
    var trg;
    
    while(1)
@@ -281,6 +293,9 @@ function changegraphic(who, item)
       newarray.append(trg.serial);
       var graphic := Cint(RequestGump(who, "Para que grafico o item deve mudar?"));
 	  SetObjProperty(trg, "graphicto", graphic);
+	  var nome_novo := Cstr(RequestGump(who, "Deseja mudar o nome do item? (Em branco para NÃO)"));
+	  SetObjProperty(trg, "old_name",trg.name);
+	  SetObjProperty(trg, "new_name", nome_novo);
    endwhile
 
    if (!newarray.size()) return; endif
@@ -499,16 +514,31 @@ function togglewalkon(who, item)
       SendSysMessageEx(who, "O item não será mais ativado ao andar por cima", SSM_FAIL);
       opts.-"walkon";
    else
-      SendSysMessageEx(who, "O item será mais ativado ao andar por cima", SSM_INFO);
+      SendSysMessageEx(who, "O item será ativado ao andar por cima. O graphic alterado para padrão passable, se quiser pode alterar por outro passable nas opções da alavanca", SSM_INFO);
       opts.walkon := 1;
+	  item.graphic := 0x0523;
    endif
    item.setLeverOpts(opts);
 endfunction
 
 function spawn_boss(who, item, cfg)
    var opts := item.GetLeverOpts();
-   var loc := RequestGump(who, "Escreva: nada  para aparecer onde a alavanca esta (Mude o graphic da alavanca para um passable!)", "OU Digite o x y z onde quer q o boss apareça: ", "", 1);
-       loc := splitwords(loc);
+   var first_quest := SendSysMessageEx(who,"Selecione o Local onde deseja que o boss apareça (CUIDADO o local tem que ser passable!)", SSM_INFO);
+   var trg_boss := TargetCoordinates(who);
+	if(!trg_boss)
+		SendSysMessageEx(who, "cancelado", SSM_FAIL);
+		return;
+   endif   
+if (CheckImpassable(trg_boss.objtype) == 1)
+	SendSysMessageEx(who, "Essa não é uma localização válida", SSM_FAIL);
+	return;
+endif
+   var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x) +" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z), 1);
+ if (loc == error)
+		SendSysMessageEx(who, "cancelado", SSM_FAIL);
+		return;
+   endif 
+	loc := splitwords(loc);
    if (loc[1] == "nada")
 		SetObjProperty(item, "loc", 1);
 	else

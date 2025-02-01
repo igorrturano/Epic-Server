@@ -225,14 +225,17 @@ function ResetSpawnQueue(spawnpoint, amounts)
 endfunction
 
 function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
+    print("DEBUG: Creating spawn for index " + index);
     var cumulative := 0;
     var chosenTemplateIndex := 0;
     var i;
 
     for(i := 1; i <= templates.size(); i+=1)
         cumulative += amounts[i];
+        print("DEBUG: Cumulative for template " + i + " is " + cumulative);
         if(index <= cumulative)
             chosenTemplateIndex := i;
+            print("DEBUG: Chose template index " + chosenTemplateIndex);
             break;
         endif
     endfor
