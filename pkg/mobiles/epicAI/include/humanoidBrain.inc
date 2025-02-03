@@ -470,6 +470,10 @@ function ChooseWarriorAbility(npc, state, habs)
     // Get count of nearby enemies
     var enemies := ListHostiles(npc, 3);
     var opponent := npc.opponent;
+
+    if (Distance(me, opponent) > 1)
+        return 0;
+    endif
     
     // Emergency abilities when low health
     if (state.health == "dying")
@@ -521,6 +525,10 @@ endfunction
 
 function ChooseRogueAbility(npc, state, habs)
     var opponent := npc.opponent;
+
+    if (Distance(me, opponent) > 1)
+        return 0;
+    endif
 
     // Emergency abilities when low health
     if (state.health == "dying")

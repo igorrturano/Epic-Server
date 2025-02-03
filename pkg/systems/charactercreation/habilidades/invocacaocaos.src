@@ -29,7 +29,7 @@ program summonSkeletaSteed(params)
         9: template := ":epicai:SkullSpider";
         10: template := ":epicai:ankheg";
     endcase
-    PrintTextAbove(who, "invocando um "+template);
+
     if (template == error)
 		SendSysMessage(who, "erro ao ler o template" + template);
 		return;
