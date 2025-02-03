@@ -5,6 +5,7 @@ use math;
 use util;
 
 include "include/client";
+include "/include/utils";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":datafile:datafile";
@@ -453,8 +454,3 @@ function AdicionarAvaliacaoFichaRP(targ, avaliador, texto)
     ficharp_elem.SetProp("Anotacoes", anotacoes);
 endfunction
 
-
-function FormatarData(timestamp)
-    var time := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
-    return time;
-endfunction

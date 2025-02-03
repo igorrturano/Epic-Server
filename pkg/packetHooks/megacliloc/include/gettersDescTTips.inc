@@ -6,6 +6,7 @@ include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:include/equipstats";
+include ":destroyable:include/destroyItem";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
@@ -70,14 +71,21 @@ function PegaDescLeitura(who,lingua,description,xDesc := "")
 	return xDesc;
 endfunction
 
-function PegaDescAAComum(objeto,xDesc := "")
+function PegaDescComum(objeto,xDesc := "")
 
 	if (objeto.quality >= 1.1)
 		xDesc := xDesc + WHITE + getQuality(objeto.quality) + "<br>"; //exibe apenas dois digitos
 	endif
 
 	var cond := GetCondition(objeto);
-	xDesc := xDesc + "Condição: " + GetCondition(objeto) + "<br>";
+
+	if(objeto.ISA(POLCLASS_EQUIPMENT))
+		xDesc := xDesc + "Condição: " + cond + "<br>";
+	else
+		if(cond != "Boa")
+			xDesc := xDesc + "Condição: " + cond + "<br>";
+		endif
+	endif
 
 	return xDesc;
 endfunction
@@ -95,6 +103,11 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
+
+	if (GetObjProperty(objeto, "polida"))
+		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
+	endif
+
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
 		xDesc := xDesc + LARANJA + crits;
@@ -107,6 +120,13 @@ function PegaDescArmas(objeto,who,cfg := struct)
 
 	if (objeto.hp_mod > 0)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
+	endif
+
+	if (GetObjProperty(objeto, "Aprimoramentos"))
+		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
+		foreach key in (GetObjProperty(objeto, "Aprimoramentos").keys())
+				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
+		endforeach
 	endif
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
@@ -221,9 +241,9 @@ function PegaDescResistArmadura(objeto,cfg, xDesc := "")
 	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
 
 	var bluntRes,slashRes,pircRes :=0;
-	if(!atrib)
-		atrib := getResistByProtection(cfg.elem.TipoProtecao);
-	endif
+	// if(!atrib)
+	// 	atrib := getResistByProtection(cfg.elem.TipoProtecao);
+	// endif
 	slashRes := atrib.SlashResist;
 	pircRes := atrib.PiercingResist;
 	bluntRes := atrib.BluntResist;
@@ -310,4 +330,13 @@ function PegaDescGoles(objeto, xDesc)
 			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "goles") + " doses";
 		endif
 		return xDesc;
+endfunction
+
+function PegaDescEmperrado(objeto, xDesc)
+	if(objeto.ISA(POLCLASS_LOCKABLE))
+		if(IsEmperrado(objeto))
+			xDesc := xDesc + "[Emperrado]<br>";
+		endif
+	endif
+	return xDesc;
 endfunction

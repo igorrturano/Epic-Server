@@ -7,6 +7,8 @@ include "include/humanoidBrain";
 include "include/epicNPCUtils";
 
 var brain_type;
+var me := Self();
+const AREA_SIZE := 18;
 
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
@@ -28,7 +30,7 @@ program KillPlayers()
                 // default: GenericBrain(); // chamar o ghaia:generic
             endcase
         endif
-        sleep(20);
+        sleep(15);
     endwhile
 endprogram
 

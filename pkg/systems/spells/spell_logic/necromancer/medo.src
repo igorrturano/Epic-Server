@@ -20,21 +20,24 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Voce so pode usar esta magia em coisas vivas.", SSM_FAIL);
 		return 0;
 	endif
-
-	var lvl := Cint(AP_GetSkill(who, MAGICLORE)/33);
-	if (lvl < 1)
-		lvl := 1;
-	endif
-
-	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	var bonus := epicWisdomPathBonus(who);
+	
 	if (temhabilidade(targ, "Fortitudo Impia"))
 		SendSysMessageEx(who, "O alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
 		return 1;
 	endif
+
+	var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+	var duration := 10 + cint(mlore / 10);
+	if (TemHabilidade(who, "Valdruk"))
+		duration := duration + 10;
+	endif
+
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+
 	if (!CheckResist(targ, VONTADE, diff, -bonus))
-		TS_StartTimer(targ, "dmgreduction", Cint(AP_GetSkill(who, MAGICLORE)), lvl, who, 1);
+		TS_StartTimer(targ, "dmgreduction", duration, mlore, who, 1);
 		handleSilentMagic(who, targ, SFX_SPELL_PROTECTION);
 
 		printText(targ, "*apavorado*");

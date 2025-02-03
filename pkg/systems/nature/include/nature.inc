@@ -167,31 +167,19 @@ function weathereffects(type, duration, severity := 5)
         endif 
         
         var packet := "65"+weatherid+"7000";
-    
+        
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
-            if (!GetObjProperty(person, "molhado"))
-                SetObjProperty(person, "molhado", 1);
-            endif
-            var itemsinbag := EnumerateItemsInContainer(person.backpack);
-            foreach item in itemsinbag
-                var container := item.container;
-                if ((item.objtype in fire_weapons || item.objtype == 0x9092) && (!container || container.objtype != 0xDE31))
-                    if (item.objtype in fire_weapons)
-                        SetObjProperty(item, "balas", 0);
-                        SendSysMessageEx(person, "A polvora da sua arma molhou!", SSM_INFO);
-                    else
-                        SetObjProperty(item, "molhado", 1);
-                    endif
-                endif
-            endforeach
+			if (!person.isUnderRoof())
+				wetPowder(person);
+            	SetWeatherForPlayer(person, type, 50);
+			endif
             
             if (person.x < 4174)
                 playweathersound(type, person);
                 SendPacket(person, packet);
             endif
         endforeach
-        
         sleep(5);
     endfor
     
@@ -268,66 +256,6 @@ function GetMoonLightMod()
        "Decrescens":  return 21;
     endcase
 endfunction
-
-function temperatura()
-   var basetemp := CINT(GetGlobalproperty("basetemp"));
-   if (basetemp < -20)
-      basetemp := 20;
-   endif
-   if (basetemp > 40)
-      basetemp := 20;
-   endif
-   if (!basetemp)
-      basetemp := 0;
-   endif
-   var temp;
-   var season := cint(getglobalproperty("season"));
-   if ( season == 1)
-      temp := 15 + randomint(20);
-      if (basetemp == 0)
-        basetemp := temp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 3;
-      else
-        basetemp := basetemp + 3;
-      endif
-   elseif ( season == 2)
-      temp := 0 + randomint(25);
-      if (basetemp == 0)
-        basetemp := temp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 4;
-      else
-        basetemp := basetemp + 2;
-      endif
-   elseif (season == 3 )
-      temp := -20 + randomint(40);
-      if (basetemp == 0)
-        basetemp := temp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 8;
-      else
-        basetemp := basetemp + 1;
-      endif
-   else
-      temp := 0 + randomint(25);
-      if (basetemp == 0)
-        basetemp := basetemp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 4;
-      else
-        basetemp := temp + 2;
-      endif
-   endif
-   
-   setglobalproperty("basetemp", basetemp);
-
-endfunction
-
 // function output(msgtext)
 // 	foreach player in enumerateonlinecharacters()
 // 		if (player.cmdlevel)
@@ -473,4 +401,31 @@ function updateCharacterAge(who)
         chardata.current_age := new_age;
         SetObjProperty(who, "chardata", chardata);
     endif
+endfunction
+
+function wetPowder(who)
+    SetObjProperty(who, "molhado", 1);
+    SendSysMessageEx(who, "Você está molhado!", SSM_INFO);
+    var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+
+    var itemsinbag := EnumerateItemsInContainer(who.backpack);
+    foreach item in itemsinbag
+        var container := item.container;
+        if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+            SendSysMessageEx(who, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+        if (item.objtype in fire_weapons)
+            SetObjProperty(item, "balas", 0);
+            SendSysMessageEx(who, "A pólvora da sua arma molhou!", SSM_FAIL);
+        endif
+    endforeach
+
+    var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+    foreach item in items
+        if (item.objtype == 0x9092)
+            PrintTextAbove(item, "*Molhada*");
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+    endforeach
 endfunction

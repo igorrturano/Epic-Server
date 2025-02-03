@@ -133,6 +133,8 @@ function distanceAllowedForSpells(who, mlore, school)
 	  dist_allowed := dist_allowed + (mlore * 2);
    elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
 	  dist_allowed := dist_allowed + (mlore * 2);
+	elseif(who.npctemplate)
+      dist_allowed := dist_allowed + (mlore * 2);
    endif
 
    return dist_allowed;
@@ -177,9 +179,11 @@ function handleSilentMagic(who, targ := 0, sound := 0)
 		PlaySoundEffect(targ, sound);
 		return 0;
 	endif
+	if (GetObjProperty(who, "#magiasilenciosa"))
+		SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
+		EraseObjProperty(who, "#magiasilenciosa");
+	endif
 
-	SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
-	EraseObjProperty(who, "#magiasilenciosa");
 	return 0;
 endfunction
 

@@ -18,6 +18,7 @@ include "include/client";
 include "include/sounds";
 include "include/facings";
 include ":combat:damage";
+include ":destroyable:include/destroyItem";
 
 program BrainNerve(params)
 	var npc		:= params[1];
@@ -118,6 +119,8 @@ function BreathAttack(npc, opponent, byref dist, settings)
 		endif
 		
 		var field := CreateItemAtLocation(coord.x, coord.y, npc.z, "FireField_NS", 1);
+		field.SetOwner(npc);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(0);
 		sleepms(105);
 	endforeach
@@ -143,6 +146,8 @@ function BreathAttack(npc, opponent, byref dist, settings)
 		else
 			field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldEW", 1);
 		endif
+		field.SetOwner(npc);
+		field.SetObjProperty(field,PROPNAME_INDESTRUTIVEL,1);
 		field.SetDuration(20);
 		sleepms(5);
 	endforeach
@@ -150,6 +155,7 @@ function BreathAttack(npc, opponent, byref dist, settings)
 	PlaySoundEffect(opponent, 0x208);
 
 	var chars := ListMobilesNearLocation(opponent.x, opponent.y, opponent.z, settings["BreathRadius"], npc.realm);
+	DanificaObjetosProximos(npc,opponent.x, opponent.y, opponent.z,opponent.realm,struct{dano := RandomDiceRoll(settings["BreathDamage"]), desc := "Bafo Draconico." },settings["BreathRadius"],GFX_EXPLODE_2);
 	foreach mobile in chars
 		ApplyDamageEX(mobile, RandomDiceRoll(settings["BreathDamage"]), DMG_FIRE);
 	endforeach

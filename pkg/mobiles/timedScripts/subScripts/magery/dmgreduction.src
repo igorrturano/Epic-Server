@@ -7,18 +7,19 @@ include ":attributes:attributes";
 program TimedScript_Clumsy(params)
 	var who := params[1];
 	var attacker := params[2];
-	var level := params[3];
-	params := 0; // Not needed anymore.
-
-	params := 0; // Not needed anymore.
+	var skill := params[3];
 
 	if ( GetObjProperty(who, "#dmgreductionspell") )
 		return 0;
 	endif
+	var total := Cdbl(skill / 200); // 50% da skill
+	if (TemHabilidade(who, "Valdruk"))
+		total := total * 0.8;
+	endif
+	SetObjProperty(who, "dmgreduction", Cdbl(GetObjProperty(who, "dmgreduction") + total));
+	SetObjProperty(who, "#dmgreductionspell", Cdbl(total));
 
-	SetObjProperty(who, "dmgreduction", cdbl(GetObjProperty(who, "dmgreduction")) + cdbl(level*0.2));
-	SetObjProperty(who, "#dmgreductionspell", cdbl(level*0.2));
-	
 	return 1;
 endprogram
-   
+
+   

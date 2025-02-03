@@ -1,5 +1,7 @@
 include "include/props";
 include "include/equipstats";
+include "include/utils";
+include ":commands:debugsystem";
 
 program EquipSys(params)
 	var who := params[1];
@@ -7,7 +9,123 @@ program EquipSys(params)
 
 	if (item.IsA(POLCLASS_ARMOR))
 		setArmorStats(item);
+		debugArmor(who, item);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		setWeaponStats(item);
+		debugWeapon(who, item);
 	endif
 endprogram
+
+/**
+ * setWeaponStats(weapon)
+ *
+ * Purpose
+ * Define os valores na arma, setando as devidas props e os atributos no item.
+ *
+ * Parameters
+ * weapon: ItemRef da arma.
+ *
+ */
+function setWeaponStats(weapon)
+	var stats := getWeaponStats(weapon);
+	weapon.setAttrBase(stats);
+
+	// Setar a partir daqui, direto no item, o que não vai em CProp
+	weapon.speed_mod := stats.AttackSpeed != error ? (CInt(stats.AttackSpeed) - 24) : 0;
+endfunction
+
+/**
+ * setArmorStats(armor)
+ *
+ * Purpose
+ * Define os valores na armadura, setando as devidas props e os atributos no item.
+ *
+ * Parameters
+ * weapon: ItemRef da armadura.
+ *
+ */
+function setArmorStats(armor)
+	var stats := getArmorStats(armor);
+	armor.setAttrBase(stats);
+
+	// Setar a partir daqui, direto no item, o que não vai em CProp
+endfunction
+
+function debugWeapon(who, item)
+	var itemAttr := item.getAttrBase();
+
+	var materialName := item.getMaterialName() ? item.getMaterialName() : "Nenhum";
+
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+	DebugMsg(who, DEBUG_EQUIP, $"Arma: {item.desc}");
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {SLASHDAMAGE}: {itemAttr.SlashMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {PIERCINGDAMAGE}: {itemAttr.PiercingMainDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO PRINCIPAL] {BLUNTDAMAGE}: {itemAttr.BluntMainDamage}");
+
+	if(item.isDualWield())
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {SLASHDAMAGE}: {itemAttr.SlashOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {PIERCINGDAMAGE}: {itemAttr.PiercingOffDamage}");
+		DebugMsg(who, DEBUG_EQUIP, $"[DANO SECUNDÁRIO] {BLUNTDAMAGE}: {itemAttr.BluntOffDamage}");
+	endif
+
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Fogo: {itemAttr.FireDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Gelo: {itemAttr.ColdDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Veneno: {itemAttr.PoisonDamage}");
+	DebugMsg(who, DEBUG_EQUIP, $"[DANO ELEMENTAL] Energia: {itemAttr.EnergyDamage}");
+
+	DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+	DebugMsg(who, DEBUG_EQUIP, $"Principal Postura de Ataque: {itemAttr.AttackType}");
+	DebugMsg(who, DEBUG_EQUIP, $"Velocidade: {itemAttr.AttackSpeed}");
+	DebugMsg(who, DEBUG_EQUIP, $"Chance de Crítico: {itemAttr.CriticalChance}%");
+endfunction
+
+function debugArmor(who, item)
+	var itemAttr := item.getAttrBase();
+
+	var materialName := item.getMaterialName() ? item.getMaterialName() : "Nenhum";
+	var slot := item.getSlot();
+	var type := item.getType();
+	
+	var resistByMaterial := getResistPhysicalByMaterial(item);
+	var resistBySlot := getResistPhysicalBySlot(item);
+	var resistByProtection := getResistPhysicalByProtection(item);
+	
+
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+	DebugMsg(who, DEBUG_EQUIP, $"Equipamento: {item.desc}");
+	DebugMsg(who, DEBUG_EQUIP, "====================");
+
+	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA FÍSICA]");
+	DebugMsg(who, DEBUG_EQUIP, $"{SLASHDAMAGE}: {itemAttr.SlashResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{PIERCINGDAMAGE}: {itemAttr.PiercingResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"{BLUNTDAMAGE}: {itemAttr.BluntResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Material ({materialName}): {resistByMaterial["SlashResist"]}/{resistByMaterial["PiercingResist"]}/{resistByMaterial["BluntResist"]}");
+	DebugMsg(who, DEBUG_EQUIP, $"Slot ({slot}): {resistBySlot["SlashResist"]}/{resistBySlot["PiercingResist"]}/{resistBySlot["BluntResist"]}");
+	DebugMsg(who, DEBUG_EQUIP, $"Tipo de Proteção ({type}): {resistByProtection["SlashResist"]}/{resistByProtection["PiercingResist"]}/{resistByProtection["BluntResist"]}
+	");
+
+	DebugMsg(who, DEBUG_EQUIP, "[RESISTÊNCIA ELEMENTAL]");
+	DebugMsg(who, DEBUG_EQUIP, $"Fogo: {itemAttr.FireResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Gelo: {itemAttr.ColdResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Veneno: {itemAttr.PoisonResist}");
+	DebugMsg(who, DEBUG_EQUIP, $"Energia: {itemAttr.EnergyResist}
+	");
+	
+	DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+	DebugMsg(who, DEBUG_EQUIP, $"Slot: {slot}
+	");
+
+	DebugMsg(who, DEBUG_EQUIP, "[PENALIDADES]");
+	DebugMsg(who, DEBUG_EQUIP, $"Dexterity: {itemAttr.DexPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Sneak: {itemAttr.SneakPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Mechanics: {itemAttr.MAPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Magery: {itemAttr.MageryPen}");
+	DebugMsg(who, DEBUG_EQUIP, $"Awareness: {itemAttr.AwarenessPen}
+	");
+
+	DebugMsg(who, DEBUG_EQUIP, "[MODIFICADORES]");
+	DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+	DebugMsg(who, DEBUG_EQUIP, $"Durabilidade: {itemAttr.MaxHP} ({getDurabilityByType(item)} + {CInt((getDurabilityByType(item)*getDurabilityModByMaterial(item))-getDurabilityByType(item))}) (Mod: {getDurabilityModByMaterial(item)})");
+	DebugMsg(who, DEBUG_EQUIP, $"Peso: {itemAttr.Weight} ({getWeightByType(item)} + {CInt((getWeightByType(item)*getWeightModByMaterial(item))-getWeightByType(item))}) (Mod: {getWeightModByMaterial(item)})");
+endfunction

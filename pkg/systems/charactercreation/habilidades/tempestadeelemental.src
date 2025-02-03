@@ -10,6 +10,7 @@ include ":spells:summon";
 include "include/shapes";
 include "include/sounds";
 include "include/client";
+include ":destroyable:include/destroyItem";
 
 program manobra(who)
 
@@ -102,6 +103,7 @@ function Rastrodefogo(npc, opponent, duracao)
 		else
 			field := CreateItemAtLocation(coord.x, coord.y, opponent.z, "FireFieldEW", 1);
 		endif
+		field.SetOwner(npc);
 		field.SetDuration(20);
 		sleepms(5);
 	endforeach
@@ -109,6 +111,7 @@ function Rastrodefogo(npc, opponent, duracao)
 	PlaySoundEffect(opponent, 0x208);
 
 	var chars := ListMobilesNearLocation(opponent.x, opponent.y, opponent.z, 4, npc.realm);
+	DanificaObjetosProximos(npc,opponent.x, opponent.y, opponent.z,opponent.realm,struct{dano := RandomIntMinMax(40,cint(duracao)), desc := "Tempestade Elemental." },2,0x36BD);
 	foreach mobile in chars
 		DamageFLS(mobile, RandomIntMinMax(40,cint(duracao)), DMG_FIRE, npc);
 	endforeach

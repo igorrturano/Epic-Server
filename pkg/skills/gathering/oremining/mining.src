@@ -14,90 +14,118 @@ include ":gathering:mining";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":tn:tngumps";
+include ":treasurehunting:treasuremaps";  // Adiciona esta linha
+include ":treasurehunting:treasuredigging";
+include ":destroyable:include/destroyItem";
+
 
 const MINING_ANIMATION	:= 0xB;
 const MINING_SOUND	:= 0x126;
 
 
 program OreMining(who, tool)
+
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+
 	if ( GetEquipmentByLayer(who, LAYER_MOUNT) )
 		SendSysMessage(who, "Você não pode minerar montado.");
 		return;
 	endif
 
-	SendSysMessageEx(who, "Onde você deseja minerar?", SSM_REQUEST);
-	var targ := TargetCoordinates(who);
-	var quebravel := GetObjProperty(targ.item, "quebrável");
+    SendSysMessageEx(who, "Onde você deseja minerar?", SSM_REQUEST);
+    var targ := TargetCoordinates(who);
+    var quebravel := GetObjProperty(targ.item, "quebrável");
 
-	if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
-		SendSysMessage(who, "Muito longe.");
-		return;
-	elseif (targ.item)
-		if (quebravel)
-			Quebraitem(who, tool, targ.item);
-			return 0;
-		endif
-	elseif ( !CanMine(targ, "Stone") )
-		var maps := GetMapsInBackpack(who);
-		//sendsysmessage(who, " " + maps);
-		if (maps.size() > 0)
-			var map := maps[1];
-			if (maps.size() > 1)
-				SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
-				map := target(who);
-				if (!(isTreasureMap(map)))
-					return;
-				endif
-			endif
-				DigForMap(who, targ, map);
-			return;
-		else
-			SendSysMessageEx(who, "Você não pode minerar aqui.", SSM_FAIL);
-			return;
-		endif
-	endif
+    if ( CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2 )
+        SendSysMessage(who, "Muito longe.");
+        return;
+    elseif ( !CanMine(targ, "Stone") )
+        var maps := GetMapsInBackpack(who);
+        SendSysMessage(who, "DEBUG: Mapas encontrados: " + maps.size());
+        
+        if (maps.size() > 0)
+            var map := maps[1];
+            if (maps.size() > 1)
+                SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
+                map := target(who);
+                if (!(IsTreasureMap(map)))
+                    SendSysMessage(who, "DEBUG: Mapa inválido selecionado");
+                    return;
+                endif
+            endif
 
-		var my_x := who.x;
-		var my_y := who.y;
-		var my_facing := GetFacing(who.x,who.y,targ.x,targ.y);
-		if(my_facing)
-			who.facing := my_facing;
-		else
-			my_facing := who.facing;
-		endif
-		
+            // Verificações adicionais de debug
+            SendSysMessage(who, "DEBUG: Verificando mapa...");
+            if (!IsTreasureMap(map))
+                SendSysMessageEx(who, "Este mapa não parece ser um mapa do tesouro válido.", SSM_FAIL);
+                return;
+            endif
+
+            if (IsMapSolved(map))
+                SendSysMessageEx(who, "Este mapa já foi resolvido.", SSM_FAIL);
+                return;
+            endif
+
+            if (!CanDecodeMap(who, map))
+                SendSysMessageEx(who, "Você não consegue entender este mapa.", SSM_FAIL);
+                return;
+            endif
+
+            var coords := GetMapCoordinates(map);
+            SendSysMessage(who, "DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: " + coords.y + " Z: " + coords.z);
+
+            // Tenta iniciar a escavação
+            if (!DigForMap(who, targ, map))
+                SendSysMessageEx(who, "Falha ao iniciar escavação.", SSM_FAIL);
+                return;
+            endif
+            
+            return;
+        else
+            SendSysMessageEx(who, "Voce nao pode minerar aqui.", SSM_FAIL);
+            return;
+        endif
+    endif
+
+    var my_x := who.x;
+    var my_y := who.y;
+    var my_facing := who.facing;
 
 		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
 			SendsysMessage(who, "Você parou de minerar.");
 			return;
 		endif
 
-		while(MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
-			CheckToolWear(who, tool, GATHERING);
+    while(MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
+        CheckToolWear(who, tool, GATHERING);
 
-			if(TemHabilidade(who, "Vigor do Extrator"))
-				if (!CheckLoop(who, tool, my_x, my_y, my_facing))
-					break;
-				elseif (AP_GetVital(who, "Stamina") < 3)
-					SendSysMessage(who, "Você está muito cansado para minerar.");
-					break;
-				endif
-				AP_ConsumeVital(who, "Stamina", 3);
-			else
-				if (!CheckLoop(who, tool, my_x, my_y, my_facing))
-					break;
-				elseif (AP_GetVital(who, "Stamina") < 5)
-					SendSysMessage(who, "Você está muito cansado para minerar.");
-					break;
-				endif
-				AP_ConsumeVital(who, "Stamina", 5);
-			endif
-			sleep(3);
-		endwhile
+        if(TemHabilidade(who, "Vigor do Extrator"))
+            if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+                break;
+            elseif (AP_GetVital(who, "Stamina") < 3)
+                SendSysMessage(who, "Voce esta muito cansado para minerar.");
+                break;
+            endif
+            AP_ConsumeVital(who, "Stamina", 3);
+        else
+            if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+                break;
+            elseif (AP_GetVital(who, "Stamina") < 5)
+                SendSysMessage(who, "Voce esta muito cansado para minerar.");
+                break;
+            endif
+            AP_ConsumeVital(who, "Stamina", 5);
+        endif
+        sleep(3);
+    endwhile
 
 		SendSysMessage(who, "Você parou de minerar.");
 
 endprogram
+
+
 
 function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 	var i;
@@ -216,85 +244,4 @@ function mineraRaroAleatorio(who)
 		SkillCheck(who, GATHERING, -1);
 	endif
 	return achou;
-endfunction
-
-function Quebraitem(who, tool, item)
-    print("Iniciando Quebraitem - Durabilidade inicial: " + GetObjProperty(item, "durabilidade"));
-
-    var quebravel := GetObjProperty(item, "quebravel");
-    if (quebravel == "gathering")
-        var mex := who.x;
-        var mey := who.y;
-        var durabilidade := CInt(GetObjProperty(item, "durabilidade"));
-        var durabilidade_maxima := CInt(GetObjProperty(item, "durabilidade_maxima"));
-        if (!durabilidade_maxima)
-            durabilidade_maxima := durabilidade;
-            SetObjProperty(item, "durabilidade_maxima", durabilidade_maxima);
-        endif
-        print("Durabilidade após leitura inicial: " + durabilidade);
-        
-        var gatherer := CInt(AP_GetSkill(who, GATHERING));
-        print("Valor de gatherer: " + gatherer);
-        
-        PrintTextAbove(who, "*Batendo com força*");
-        CheckToolWear(who, tool, GATHERING);
-
-        var i := 3;
-        while((i <= 9) && (who.x == mex) && (who.y == mey))
-            if((who.x != mex) || (who.y != mey))
-                SendSysMessageEx(who,"Você deve ficar parado enquanto trabalha", SSM_FAIL);
-                return;
-            endif
-
-            PerformAction(who, 0x0b);     // Mantemos a animação de atacar2 (0x0b)
-            PlaySoundEffect(who, 0x126);   // Alteramos o som para 0x126
-            sleep(1);
-            i := i + 1;
-        endwhile
-
-        print("Durabilidade antes da subtração: " + durabilidade);
-        durabilidade := durabilidade - gatherer;
-        print("Durabilidade após subtração: " + durabilidade);
-        
-        if(durabilidade < 0)
-            durabilidade := 0;
-        endif
-
-        SetObjProperty(item, "durabilidade", CInt(durabilidade));
-        print("Durabilidade após SetObjProperty: " + GetObjProperty(item, "durabilidade"));
-
-        // Força a atualização do tooltip
-        item.name := item.name;
-
-        // Verificamos se o item deve ser destruído
-	if (durabilidade <= 0)
-    PrintTextAbove(item, "*quebra*");
-    // Adiciona o som de reação baseado no gênero do personagem
-    if (who.gender == 1)  // Feminino
-        PlaySoundEffect(who, 0x30c);
-    else                  // Masculino
-        PlaySoundEffect(who, 0x41b);
-    endif
-    
-    sleep(2);
-
-            var itens := GetObjProperty(item,"itens");
-            if(itens)
-                foreach itemarray in itens
-                    var itemcriado := CreateItemAtLocation(item.x, item.y, item.z, itemarray, itemarray.amount, realm := _DEFAULT_REALM);
-                    SetName(itemcriado, itemarray.name);
-                endforeach
-            endif
-            
-            DestroyItem(item);
-            SendSysMessageEx(who, "O item foi completamente destruído.", SSM_INFO);
-        else
-            var percentagem := (CDbl(durabilidade) / CDbl(durabilidade_maxima)) * 100;
-          //  SendSysMessageEx(who, "A durabilidade do item foi reduzida para " + durabilidade + " (" + CInt(percentagem) + "%).", SSM_INFO);
-        endif
-    elseif ((quebravel == "survival") || (quebravel == "domesticwork"))
-        SendSysMessageEx(who, "Você deve usar outra ferramenta para este serviço", SSM_FAIL);
-        return;
-    endif
-    print("Finalizando Quebraitem - Durabilidade final: " + GetObjProperty(item, "durabilidade"));
 endfunction

@@ -16,6 +16,7 @@ function RemoveAcentos(text)
         else
             novoTexto += char;
         endif
+        Sleepms(2);//fix de runwayscript;
     endfor
 
     return novoTexto;

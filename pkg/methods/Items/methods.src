@@ -1,8 +1,0 @@
-program Install()
-	print("INSTALLING: Methods for Items, Weapons & Armor");
-	return 1;
-endprogram
-
-exported function getMaterial(item)
-	return item.getProp("material");
-endfunction

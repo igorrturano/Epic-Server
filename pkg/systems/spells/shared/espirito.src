@@ -1,27 +1,112 @@
 use uo;
+use os;
 
+include ":attributes:attributes";
 include "include/say";
+include "include/client";
+include "include/sounds";
+include ":timedScripts:timedScripts";
 
-program spirit(who ,item)
+program espirito(spirit)
+    // Verificação inicial de duração
+    var duration := GetObjProperty(spirit, "summon_duration");
+    var start_time := GetObjProperty(spirit, "summon_start_time");
+    var current_time := ReadGameClock();
 
-	SendSysMessageEx(who, "Escolha o totem para armazenar o espirito.", SSM_INFO);
-	var targ := Target(who);
-	
-	if  (targ.graphic  ==  0xA349)
-		
-		var spells := GetObjProperty(targ, "spells");
-		if (spells == error)
-			spells := array;
-		endif
-		var spellid := Cint(GetObjProperty(item, "id"));
-	
-		if (!(spellid in spells))
-			spells.append(spellid);
-			SendSysMessageEx(who, "Espirito adicionado no totem.", SSM_INFO);
-			SetObjProperty(targ, "spells", spells);
-			DestroyItem(item);
-		endif
-	
-	endif
+    if (!duration || !start_time || (current_time - start_time >= duration))
+        KillSpirit(spirit);
+        return;
+    endif
 
+    spirit.enable("damageevent");
+    
+    var next_check := current_time + 10; // Verifica a cada 10 segundos
+    
+    while (spirit && !spirit.dead)
+        // Verifica owner e timers
+        var owner := SystemFindObjectBySerial(GetObjProperty(spirit, "owneri"));
+        if (!owner)
+            KillSpirit(spirit);
+            break;
+        endif
+        
+        // Verifica duração periodicamente
+        current_time := ReadGameClock();
+        if (current_time >= next_check)
+            if (current_time - start_time >= duration)
+                KillSpirit(spirit);
+                break;
+            endif
+            next_check := current_time + 10;
+        endif
+
+        // Processa eventos
+        var ev := wait_for_event(2);
+        if (ev)
+            if (ev.type == "damage")
+                Fight(spirit, ev.source);
+            endif
+        endif
+        
+        sleepms(500);
+    endwhile
 endprogram
+
+function KillSpirit(spirit)
+    PrintText(spirit, "*sumindo pouco a pouco*");
+    PlaySoundEffect(spirit, SFX_SPELL_MANA_VAMPIRE);
+    PlayStationaryEffect(spirit.x, spirit.y, spirit.z, FX_SMOKE, 0xa, 0xa, 0, spirit.realm);
+    
+    // Limpa referências no owner e mata o spirit
+    var owner := SystemFindObjectBySerial(GetObjProperty(spirit, "owneri"));
+    if (owner)
+        // Limpa a lista de summons
+        var summons := GetObjProperty(owner, "SummonedPets");
+        if (summons)
+            var new_summons := array;
+            foreach serial in summons
+                if (serial != spirit.serial)
+                    new_summons.append(serial);
+                endif
+            endforeach
+            SetObjProperty(owner, "SummonedPets", new_summons);
+        endif
+        
+        // Limpa o slot
+        var slot := GetObjProperty(spirit, "slot");
+        if (slot)
+            EraseObjProperty(owner, "slot"+slot);
+            EraseObjProperty(owner, "summon_serial_"+slot);
+        endif
+    endif
+    
+    SetObjProperty(spirit, "GuardKill", 1);
+    ApplyRawDamage(spirit, AP_GetVital(spirit, "Hits") + 100);
+    
+    return 1;
+endfunction
+
+function Fight(spirit, opponent)
+    if (!opponent)
+        return;
+    endif
+    
+    var owner := SystemFindObjectBySerial(GetObjProperty(spirit, "owneri"));
+    if (!owner)
+        return;
+    endif
+    
+    // Não ataca GMs ou o próprio owner
+    if (opponent.cmdlevel || opponent.serial == owner.serial)
+        return;
+    endif
+    
+    spirit.opponent := opponent;
+    spirit.facing := opponent.facing;
+    
+    while (spirit && opponent && !spirit.dead && !opponent.dead && !opponent.hidden && !opponent.concealed)
+        sleepms(500);
+    endwhile
+    
+    spirit.opponent := 0;
+endfunction

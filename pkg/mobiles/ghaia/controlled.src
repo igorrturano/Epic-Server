@@ -279,7 +279,7 @@ function ProcessSpeech(ev)
 	elseif ( text[name+" novo dono"] || text["todos novo dono"] )
 
 
-		var cfg := ReadConfigFile(":brainAI:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var npctemplate := me.npctemplate;
 		npctemplate := npctemplate[10, len(npctemplate)-9];
 		cfg := cfg[npctemplate];

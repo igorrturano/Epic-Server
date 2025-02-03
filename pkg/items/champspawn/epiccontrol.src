@@ -15,6 +15,17 @@ program control(altar)
         sleep(10);
     endwhile
 
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns)
+        globalSpawns := array{};
+    endif
+    
+    if (!(altar.serial in globalSpawns))
+        print(altar.serial);
+        globalSpawns.append(altar.serial);
+        SetGlobalProperty("epicSpawns", globalSpawns);
+    endif
+
     var mobsBySerial := dictionary{};
     var totalMobs := array{};
 
@@ -29,10 +40,11 @@ program control(altar)
         mobsBySerial[3] := summonLevelMobs(altar, 3, mobsBySerial, totalMobs[3]);
 
         SetObjProperty(altar, "spawned", 1);
+        SetObjProperty(altar, "mobsBySerial", mobsBySerial);
     endif
-    SetObjProperty(altar, "mobsBySerial", mobsBySerial);
+
     while (altar)
-            var mobs := GetObjProperty(altar, "mobsBySerial");
+        var mobs := GetObjProperty(altar, "mobsBySerial");
 
         validateAndResummonMobs(altar, mobs, totalMobs);
         sleep(RESPAWN_DELAY);
@@ -122,7 +134,6 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
 
         mobsBySerial[level] := currentMobs;
         SetObjProperty(altar, "mobsBySerial", mobsBySerial);
-        return;
     endforeach
 endfunction
 

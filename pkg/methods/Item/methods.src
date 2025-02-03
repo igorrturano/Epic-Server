@@ -1,0 +1,46 @@
+use cfgfile;
+use uo;
+
+program Install()
+	print("INSTALLING: Methods for Items... OK!");
+	return 1;
+endprogram
+
+/**
+ * getMaterialID(item)
+ *
+ * Purpose
+ * Buscar o ID do material do item craftado pelo player
+ *
+ * Parameters
+ * item: itemRef
+ *
+ * Return value
+ * ID do material
+ *
+ */
+exported function getMaterialID(item)
+	return item.getProp("material") ? item.getProp("material") : error{"errortext" := "The item have no Material!"};
+endfunction
+
+/**
+ * getMaterialName(item)
+ *
+ * Purpose
+ * Buscar o nome do material do item craftado pelo player baseado no ID cadastrado na prop dele
+ *
+ * Parameters
+ * item: itemRef
+ *
+ * Return value
+ * Nome do material
+ *
+ */
+exported function getMaterialName(item)
+	return getMaterialID(item) ? FindConfigElem(ReadConfigFile(":crafting:config/resourceList"), getMaterialID(item)).name : getMaterialID(item);
+endfunction
+
+exported function isSpiderEggSac(item)
+	if (item.objtype == 0x10D9) return 1; endif
+	return 0;
+endfunction
