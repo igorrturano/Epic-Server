@@ -2,10 +2,11 @@ include ":gumps:/include/epicGumps";
 
 class DropDown()
 	
-	function DropDown(this,idBottao,x,y,pid,adicionalIdValores , valorEscolhido, gerenciador)
+	function DropDown(this,idBottao,x,y,pid,adicionalIdValores , valorEscolhido, gerenciador, largura := 200)
 		this.idBottao := CInt(idBottao);
 		this.x := x;
 		this.y := y;
+		this.largura := largura;
 		this.pid := pid;
 		this.gerenciador := gerenciador;
 		this.valores := array;
@@ -73,17 +74,18 @@ class DropDown()
 	function DefineValorEscolhido(this, idOpcaoSelecionada)
 		var indiceValorSelecionado :=  (idOpcaoSelecionada - this.adicionalIdValores) % this.gerenciador.maxOpcoes;
 		this.valorEscolhido := this.valores[indiceValorSelecionado].botao.valorReal;
+		return this;
 	endfunction
 
 	function PegaTexto(this)
 
 		return "idBottao: " + this.idBottao +
-		"x: " + this.x +
-		"y: " + this.y +
-		"pid: " + this.pid +
-		"valorEscolhido: " + this.valorEscolhido +
-		"valores: " + this.valores +
-		"adicionalIdValores: " + this.adicionalIdValores;
+		" x: " + this.x +
+		" y: " + this.y +
+		" pid: " + this.pid +
+		" valorEscolhido: " + this.valorEscolhido +
+		" valores: " + this.valores +
+		" adicionalIdValores: " + this.adicionalIdValores;
 
 	endfunction
 
@@ -138,7 +140,7 @@ class GerenciadorDropDown()
 
 		var indiceDropDownSelecionado := CInt((idOpcaoSelecionada - this.adicionalIdValores) / this.maxOpcoes) + 1;
 		if(indiceDropDownSelecionado && this.dropDowns.size() > 0 &&  indiceDropDownSelecionado <= this.dropDowns.size())
-			DropDown::DefineValorEscolhido(this.dropDowns[indiceDropDownSelecionado],idOpcaoSelecionada);
+			return DropDown::DefineValorEscolhido(this.dropDowns[indiceDropDownSelecionado],idOpcaoSelecionada);
 		endif
 
 		return error{"errortext" := "valor não encontrado"};
@@ -158,9 +160,9 @@ class GerenciadorDropDown()
 
 endclass
 
-function MontaDropDownGump(parx,pary,valores)
+function MontaDropDownGump(parx,pary,parLargura,valores)
 	var altura := 235;
-	var gump := GFCreateGump(parx, pary, 200, altura);
+	var gump := GFCreateGump(parx, pary, parLargura, altura);
 	var x := 0;
 	var y := 0;
 	var diferencaValoresLinhas := 0;
@@ -174,14 +176,14 @@ function MontaDropDownGump(parx,pary,valores)
 		diferencaValoresLinhas := 20 * ( opcoesTabela[QTD_LINHA_LIMITE] - Valores.size()) + 33;
 		altura :=  altura - diferencaValoresLinhas;
 	endif
-	GFResizePic( gump, x, y, 2620, 200, altura );
-	GFAddAlphaRegion( gump, x + 5, y + 5, 190, altura - 10 );
+	GFResizePic( gump, x, y, 2620, parLargura, altura );
+	GFAddAlphaRegion( gump, x + 5, y + 5, parLargura - 10, altura - 10 );
 
 	var colCfg := dictionary;
 	colCfg["opcao"] := struct{titulo := "Opção", largura := 9};
 	colCfg["botao"] := struct{titulo := "X",ordem := 1,largura := 3};
 	if(valores.size() > 0)
-		CriaTabelaGumpPaginada(x + 10,y + 10,190,valores,gump,opcoesTabela,colCfg);
+		CriaTabelaGumpPaginada(x + 10,y + 10,parLargura - 10,valores,gump,opcoesTabela,colCfg);
 	else
 		GFTextLine(gump,x + 10,y + 10,1153, "Sem opções.");
 	endif

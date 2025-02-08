@@ -27,6 +27,11 @@ function InicializaSessaoComplexos()
 	NovoObjetoReceitaSelecionada(sessao);
 	sessao.+gumpAtual := COMPLEXOS;
 	sessao.+acao := ADICIONAR;
+	sessao.+gerenciadorDropDown := GerenciadorDropDown(60,
+										COMPLEXOS_DROPDOWN_INICIAL,
+										COMPLEXOS_DROPDOWN_OPCOES_INICIAL,
+										COMPLEXOS_DROPDOWN_MAX);
+	sessao.+devePopularDropDown := true;
 
 	return sessao;
 endfunction
@@ -56,13 +61,20 @@ function EnviaItensComplexosGump(quem,profissao)
 	var retorno := true;
 	var gump;
 	var sessao := InicializaSessaoComplexos();
+	var gerenciador := sessao.gerenciadorDropDown;
 	
 	while(retorno)
 		if(sessao.gumpAtual == COMPLEXOS)
 			MontaItensComplexosGump(gump,parametros,sessao);
 		else
+			if(sessao.devePopularDropDown)
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
+				sessao.devePopularDropDown := false;
+			endif
 			MontaEsquemaGump(gump,parametros,sessao);
 		endif
+
 		retorno := GFSendGump(quem,gump);
 
 		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
@@ -91,12 +103,13 @@ function EnviaItensComplexosGump(quem,profissao)
 						
 						var esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
 						if(esquemas.size() >= NR_MAXIMO_ESQUEMAS)
-							SendSysMessageEX(quem, "Limite de esquemas alcaçado para esta receita.",SSM_FAIL);
+							SendSysMessageEX(quem, "Limite de esquemas alcançado para esta receita.",SSM_FAIL);
 							break;
 						endif
 
 						sessao.gumpAtual := ESQUEMAS;
 						sessao.acao := ADICIONAR;
+						sessao.devePopularDropDown := true;
 						break;
 					3: //Fabricar com melhores componentes.
 						Print("indiceRetorno: " + retornoMapeado.indice + " indiceBotao: " + retornoMapeado.indiceBotao);
@@ -104,12 +117,23 @@ function EnviaItensComplexosGump(quem,profissao)
 						break;
 				endcase
 				break;
-			RT_ESQUEMAS_CPNT:
-				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS_CPNT);
-				//TODO usar drop down dos componentes na bag, não curti ter que ficar clicando com alvo.
-				var alvo := target(quem);
-				TratarEscolhaComponente(quem, alvo, sessao,retornoMapeado.indice,configRecursos);
+
+			RT_ESCOLHA_DROPDOWN_CPX:
+							
+				var retornoMapeado := MapeiaRetornoGump(retorno[0],gerenciador.adicionalIdDropDown);
+				var objetoDropDown := gerenciador.dropDowns[retornoMapeado.indice];
+
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
+				
+				if(process)
+					objetoDropDown.pid := process.pid;
+				endif
 				break;
+			RT_ESCOLHA_DD_OPCOES_CPX: 
+				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
+				TratarEscolhaComponente(quem, dropdown.valorEscolhido, sessao);
+			break;
 			RT_ESQUEMAS_SALVAR:
 				//Print("Sessao info:   " + sessao.receitaSelecionada);
 				if(sessao.receitaSelecionada.esquemaSelecionado.nome == "")
@@ -134,11 +158,13 @@ function EnviaItensComplexosGump(quem,profissao)
 									sessao.receitaSelecionada.esquemaSelecionado
 									);
 						sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
+						sessao.devePopularDropDown := true;
 						break;
 				endcase
 
 				sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();//limpa esquema selecionado.
 				sessao.gumpAtual := COMPLEXOS;
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				break;
 			RT_ESQUEMAS:
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS,3);
@@ -160,9 +186,11 @@ function EnviaItensComplexosGump(quem,profissao)
 				break;
 			RT_BOTAO_MENU:
 				sessao.gumpAtual := ESQUEMAS;
+				sessao.devePopularDropDown := true;
 				break;
 			RT_CANCELADO_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				retorno := 1;
 				break;
 			default:
@@ -183,37 +211,100 @@ function MapeiaRetornoGump (retorno, indiceInicial, quantidadeBotoes := 0)
 	
 endfunction
 
-function TratarEscolhaComponente(quem, alvo,byref sessao,indice,configRecursos)
+function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao)
 
-	var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[indice];
-	if(IsAlvoValido(quem,alvo))
+	var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[retornoDropDownOpcao.indiceEncaixeComponente];
+	
+	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
 		
-		var isItemEncontrado := componenteNecessario.itens.find( @(item) {
-										return Cint(item) == Cint(alvo.objtype);
-									});
-		
-		if(isItemEncontrado)
-			var componenteEscolhido := struct;
-			var material := configRecursos[GetObjProperty(alvo,PROPNAME_MATERIAL)];
+		var componenteEscolhido := struct;
+		var material := retornoDropDownOpcao.materialRef;
+		var itemNaBag := retornoDropDownOpcao.itemRef;
 
-			componenteEscolhido.+componenteNecessario := componenteNecessario;
-			componenteEscolhido.+item := struct{nome := alvo.name, objtype := alvo.objtype};
-			componenteEscolhido.+material := struct{nome := material.name, chave := material};
-			componenteEscolhido.+tier := PegaComponenteTierDesc(GetObjProperty(alvo,PROPNAME_TIER_COMPONENTE));
-			MontaPropriedadesComponente(componenteEscolhido);
+		componenteEscolhido.+componenteNecessario := componenteNecessario;
+		componenteEscolhido.+item := struct{nome := itemNaBag.name, objtype := itemNaBag.objtype};
+		componenteEscolhido.+material := struct{nome := material.name, chave := material};
+		componenteEscolhido.+tier := retornoDropDownOpcao.componenteTier;
+		MontaPropriedadesComponente(componenteEscolhido);
 
-			if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(indice))
-				sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indice] := componenteEscolhido;
-			else
-				sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.insert(indice,componenteEscolhido);
-			endif
-
-			//Print("****** -- " + sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos);
-			
+		if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(retornoDropDownOpcao.indiceEncaixeComponente))
+			sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[retornoDropDownOpcao.indiceEncaixeComponente] := componenteEscolhido;
 		else
-			SendSysMessageEX(quem,"O alvo não cabe em um encaixe de compoenente de {}.".format(componenteNecessario.encaixe), SSM_FAIL);
+			sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.insert(retornoDropDownOpcao.indiceEncaixeComponente,componenteEscolhido);
 		endif
 	endif
+endfunction
+
+function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
+	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao);
+	
+	foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
+		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_componenteNecessario_iter);
+		
+		if(!dropDown) 
+			dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_componenteNecessario_iter);
+		else
+			DropDown::ResetaValores(dropDown);
+		endif
+
+		if(componentesEncontrados[componenteNecessario.encaixe])
+
+			var isValorEscolhidoPresente := false;
+			var indiceOpcoes := 1;
+
+			foreach componenteEncontrado in (componentesEncontrados[componenteNecessario.encaixe])
+				Sleepms(2);
+				if (dropDown.valorEscolhido.itemRef.objtype == componenteEncontrado)
+					isValorEscolhidoPresente := true;
+				endif
+
+				dropDown.largura := 350;
+				var material := configRecursos[GetObjProperty(componenteEncontrado,PROPNAME_MATERIAL)];
+				var tier := PegaComponenteTierDesc(GetObjProperty(componenteEncontrado,PROPNAME_TIER_COMPONENTE));
+				var nomeOpcao := " {} [{}] [{}]".format(componenteEncontrado.name,material.name,tier.desc);
+				var retorno := DropDown::AdicionaOpcao(dropDown,
+				nomeOpcao,
+				indiceOpcoes,
+				struct{ 
+					itemRef := componenteEncontrado,
+					componenteTier := tier,
+					materialRef := material,
+					indiceEncaixeComponente := _componenteNecessario_iter});
+
+				if(!retorno) 
+					continue;
+				endif;
+				++indiceOpcoes;
+			endforeach
+
+			if(!isValorEscolhidoPresente)
+				DropDown::LimpaValorEscolhido(dropDown);
+			endif
+		else
+			DropDown::LimpaValorEscolhido(dropDown);
+		endif
+		
+		Sleepms(2);
+	endforeach
+endfunction
+
+function CarregaComponentesEncontrados(quem, sessao)
+	var retorno := dictionary;
+
+	foreach item in EnumerateItemsInContainer(quem.backpack)
+		Sleepms(2);
+		foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
+			Sleepms(2);
+			if( CStr(item.objtype) in componenteNecessario.itens)
+				if(!retorno.exists(componenteNecessario.encaixe))
+					retorno.insert(componenteNecessario.encaixe,array);
+				endif
+				retorno[componenteNecessario.encaixe].append(item);
+			endif
+		endforeach
+	endforeach 
+
+	return retorno;
 endfunction
 
 function MontaPropriedadesComponente(byref componenteEscolhido)
@@ -223,43 +314,36 @@ function MontaPropriedadesComponente(byref componenteEscolhido)
 
 	var efeitosMaterial := GetConfigStringDictionary(componenteEscolhido.material.chave,"ComponenteEfeito");
 	var efeitoEscolhido := efeitosMaterial[propriedades.caracteristica];
-	var subEfeitos := SplitWords(efeitoEscolhido);
 
-	propriedades.+valorPrincipal := CInt(subEfeitos[subEfeitos.size()]) + Cint(componenteEscolhido.tier.valor);
-	//Print(propriedades.caracteristica + " ----------- " + propriedades.valorPrincipal + " ****** " + subEfeitos + " [" +subEfeitos.size() +  "]");
+	if(efeitoEscolhido)
+		var subEfeitos := SplitWords(efeitoEscolhido);
 
-	if(subEfeitos.size() > 1)
-		subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
-		var arraySubEfeitos := array{};
+		propriedades.+valorPrincipal := CInt(subEfeitos[subEfeitos.size()]) + Cint(componenteEscolhido.tier.valor);
+		//Print(propriedades.caracteristica + " ----------- " + propriedades.valorPrincipal + " ****** " + subEfeitos + " [" +subEfeitos.size() +  "]");
 
-		for indice := 1 to subEfeitos.size()
-			arraySubEfeitos.append(
-					struct {
-						efeito := subEfeitos[indice],
-						valor := Cint(subEfeitos[indice + 1])
-					}
-				);
-			++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
-			Sleepms(2);
-		endfor
-		propriedades.+efeitosAdicionais := arraySubEfeitos;
-		
-	endif 
+		if(subEfeitos.size() > 1)
+			subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
+			var arraySubEfeitos := array{};
 
+			for indice := 1 to subEfeitos.size()
+				arraySubEfeitos.append(
+						struct {
+							efeito := subEfeitos[indice],
+							valor := Cint(subEfeitos[indice + 1])
+						}
+					);
+				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
+				Sleepms(2);
+			endfor
+			propriedades.+efeitosAdicionais := arraySubEfeitos;
+			
+		endif 
+	endif
+	
 	componenteEscolhido.+propriedades := propriedades; 
 endfunction
 
 function IsAlvoValido(quem, alvo)
-	
-	if(!alvo)
-		SendSysMessageEX(quem,"Alvo Cancelado.", SSM_FAIL);
-		return 0;
-	endif
-
-	if( !alvo.ISa(POLCLASS_ITEM))
-		SendSysMessageEX(quem,"Alvo Inválido.", SSM_FAIL);
-		return 0;
-	endif
 
 	if( !Accessible(quem,alvo))
 		SendSysMessageEX(quem,"Você não alcança o alvo.", SSM_FAIL);
@@ -479,8 +563,10 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_RECEITAS;
 	elseif(valorRetorno > COMPLEXOS_ESQUEMAS && valorRetorno <= COMPLEXOS_ESQUEMAS_CPNT)
 		return RT_ESQUEMAS;
-	elseif(valorRetorno > COMPLEXOS_ESQUEMAS_CPNT)
-		return RT_ESQUEMAS_CPNT;
+	elseif(GerenciadorDropDown::IsIdDentroDropDowns(sessao.gerenciadorDropDown,valorRetorno))
+		return RT_ESCOLHA_DROPDOWN_CPX;
+	elseif(GerenciadorDropDown::IsIdDentroOpcoes(sessao.gerenciadorDropDown,valorRetorno))
+		return RT_ESCOLHA_DD_OPCOES_CPX;
 	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
 		return RT_ESQUEMAS_SALVAR;
 	elseif(valorRetorno == 1 || (!retorno && sessao.gumpAtual == ESQUEMAS))
@@ -508,7 +594,7 @@ function EnviaGumpComponentes(quem)
 		FechaTodosDropdowns(quem,gerenciador.dropDowns);
 
 		if(sessao.componenteSelecionado && sessao.devePopularDropDown)
-			PreparaDropDowns(quem,sessao,gerenciador,configRecursos,pericia);
+			PreparaDropDownsComponentes(quem,sessao,gerenciador,configRecursos,pericia);
 			sessao.devePopularDropDown := false;
 		endif
 
@@ -609,7 +695,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 	foreach qualidade in (qualidades.keys())
 		var descriptor := GetItemDescriptor(CInt(objtype));
 		descriptor.CProps.insert(PROPNAME_MATERIAL,chaveMaterialPrincipal);
-		descriptor.CProps.insert(PROPNAME_TIER_COMPONENTE,qualidade); // Usar constante ou cfg vinda do include do craft ao invés de string crua.
+		descriptor.CProps.insert(PROPNAME_TIER_COMPONENTE,qualidade);
 		descriptor.color := configRecursos[chaveMaterialPrincipal].Color;
 		
 		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
@@ -674,7 +760,7 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 
 endfunction
 
-function PreparaDropDowns(quem, byref sessao,byref gerenciador, configRecursos,pericia)
+function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos,pericia)
 	var materiais := SplitWords( sessao.componenteSelecionado.materiais,",");
 	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,sessao.componenteSelecionado.materialPrincipal);
 	
@@ -707,7 +793,7 @@ function PreparaDropDowns(quem, byref sessao,byref gerenciador, configRecursos,p
 				var retorno := DropDown::AdicionaOpcao(dropDown,
 				configRecursos[chave].name,
 				indiceOpcoes,
-				MontaValorOpcao(chave,qtd,tipo,sessao));
+				MontaValorOpcaoComponente(chave,qtd,tipo,sessao));
 
 				if(!retorno) 
 					Print("retorno: " + retorno); 
@@ -727,17 +813,15 @@ function PreparaDropDowns(quem, byref sessao,byref gerenciador, configRecursos,p
 	endforeach
 endfunction
 
-function MontaValorOpcao(chave,qtd,tipo,sessao)
+function MontaValorOpcaoComponente(chave,qtd,tipo,sessao)
 
-	var valorOpcao := struct {
+	return struct {
 					objtype := chave,
 					nome := configRecursos[chave].name,
 					quantidadeNecessaria := qtd,
 					tipoMaterial := tipo,
 					isPrincipal := tipo == Trim(Lower(sessao.componenteSelecionado.materialPrincipal))
 					};
-
-	return valorOpcao;
 endfunction
 
 function CarregaMateriaisEncontrados(quem,configRecursos, pericia, materialPrincipal)

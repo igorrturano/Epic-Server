@@ -13,6 +13,9 @@ enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_RECEITAS := 100,
 	COMPLEXOS_ESQUEMAS := 300,
 	COMPLEXOS_ESQUEMAS_CPNT := 330,
+	COMPLEXOS_DROPDOWN_INICIAL := 2000,
+	COMPLEXOS_DROPDOWN_OPCOES_INICIAL :=	3000,
+	COMPLEXOS_DROPDOWN_MAX := 20,
 	COMPONENTES_DROPDOWN_INICIAL := 100,
 	COMPONENTES_DROPDOWN_OPCOES_INICIAL :=	200,
 	COMPONENTES_DROPDOWN_MAX := 10,
@@ -34,7 +37,9 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ESQUEMAS,
 	RT_ESQUEMAS_SALVAR,
 	RT_BOTAO_MENU,
-	RT_CANCELADO_COMPLX
+	RT_CANCELADO_COMPLX,
+	RT_ESCOLHA_DROPDOWN_CPX,
+	RT_ESCOLHA_DD_OPCOES_CPX
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do Gump de Componentes.
@@ -89,7 +94,7 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	
 	GFHTMLArea(gump,painelReceitasX + larguraPainelEsquema / 2 - 35,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 15,70,20,"<basefont size=55 color=#ffffff><center>Esquemas</center>");
 	
-	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada]);
+	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada], sessao.receitaSelecionada);
 	PreencheEsquemas (gump,painelReceitasX + 15,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 40,sessao);
 	
 	GFGumpPic(gump,painelReceitasX + larguraPainelReceita / 2 - 102,20,1764); //Placa Titulo Receitas.
@@ -279,7 +284,13 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	GFTextLine(gump,x + larguraCelula * 2 ,y + 20,1153,encaixeComponente.encaixeDesc);
 
-	GFAddButton(gump,x + 5, y + 60 ,1209,1210,GF_CLOSE_BTN,COMPLEXOS_ESQUEMAS_CPNT + indice);
+	var xBotao := x + 5;
+	var yBotao := y + 60;
+	var gerenciador := sessao.gerenciadorDropDown;
+	gerenciador.dropDowns[indice].x := xBotao;
+	gerenciador.dropDowns[indice].y := yBotao + 20;
+	
+	GFAddButton(gump,xBotao, yBotao ,252,253,GF_CLOSE_BTN,gerenciador.dropDowns[indice].idBottao);
 	GFTooltipText(gump,"Escolher Componente.");
 
 	if(componenteEscolhido)
@@ -325,7 +336,7 @@ function GeraSetas(byref gump,x,y, valor)
 	endfor
 endfunction
 
-function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas)
+function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas, receitaSelecionada)
 	//TODO fazer a receita selecionada ficar em evidência de alguma forma. talvez mudando o y dela levemente?
 	//TODO Implementar uma forma de lembrar onde estava da ultima vez que abriu o gump. Talvez usando a CProp legado "Craft".
 	var page := 1;
@@ -334,7 +345,7 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 	if(receitas != error && receitas.size() > 0)
 		var linha := 0;
 		foreach receita in receitas
-			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter);
+			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter,receitaSelecionada);
 
 			//Controle de Paginação.
 			if(_receita_iter % (colunasLinha * 2) == 0)
@@ -374,7 +385,7 @@ function DefineAlturaPainel(quantidadeCelulas)
 	return alturaCelula * quantidadeCelulas - espacamentoAplicado;
 endfunction
 
-function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice)
+function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, receitaSelecionada)
 	y := y + 150 * linha;
 	x := x + 120 * coluna;
 
@@ -390,6 +401,9 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice)
 	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
 	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
 	GFGumpPic(gump,x + 60 ,y + 10,9009); // Pino
+	if(receitaSelecionada.receita.objtype == receita.objtype)
+		GFGumpPic(gump,x + 17 ,y + 95,30076,0x57); // seletor
+	endif
 
 	case (receita.uso)
 		"One_Handed":

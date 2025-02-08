@@ -18,7 +18,7 @@ program DropDownGump(parametros)
 	while ( GetProcess( pidPai ) && retornoDropDown)
 
 		while (retornoDropDown)
-			var gump := MontaDropDownGump(objetoDropDown.x,objetoDropDown.y,objetoDropDown.valores);
+			var gump := MontaDropDownGump(objetoDropDown.x,objetoDropDown.y,objetoDropDown.largura, objetoDropDown.valores);
 			retornoDropDown := SendDialogGump(quem, gump.layout, gump.data, gump.base.x, gump.base.y,0,objetoDropDown.idBottao);
 
 			if(retornoDropDown[0])
