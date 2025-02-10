@@ -8,11 +8,14 @@ include ":combat:damage";
 include "include/say";
 include ":tn:cooldown";
 include "include/epicConstants";
+include "include/epicNPCUtils";
 
 program doubleattack(who)
     var mlore_bonus := Cint(AP_GetSkill(who, MAGICLORE));
 	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
-
+    if (who.npctemplate)
+        targ := GetRandomNearbyHostile(who);
+    endif
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return;

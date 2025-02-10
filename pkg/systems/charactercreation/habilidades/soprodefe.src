@@ -16,6 +16,9 @@ program SecondWind(params)
     var who := params[1];
     params := 0; // No longer needed
     var targ := Target(who);
+    if (who.npctemplate)
+        targ := who;
+    endif
 
     var timer_list := TS_GetTimerList(targ);
     foreach timer in ( timer_list.keys() )

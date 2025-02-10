@@ -9,12 +9,16 @@ include ":survival:fishingFunctions";
 
 program HitScript(who)
 	var targ := Target(who);
+    if (who.npcTemplate)
+        targ := GetRandomNearbyHostile(who);
+    endif
+    
     SendSysMessage(who, "Escolha quem voce deseja aprisionar");
 
     var dist := Distance(who, targ);
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 5);
 
-    if (dist > (mlore/ 5))
+    if (dist > mlore)
         SendSysMessage(who, "O alvo esta muito distante");
         return 0;
     endif
