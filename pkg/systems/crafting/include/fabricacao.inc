@@ -64,6 +64,11 @@ function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhid
 			};
 endfunction
 
+function SelecionaReceita(byref sessao, quem, parametros , indice)
+	var objetoReceita := parametros.visaoReceitas[sessao.categoriaSelecionada][indice];
+	NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,objetoReceita.objtype));
+endfunction
+
 function EnviaItensComplexosGump(quem,profissao)
 	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 	var parametros := PreparaItensComplexosGump(quem, profissao);
@@ -108,8 +113,7 @@ function EnviaItensComplexosGump(quem,profissao)
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_RECEITAS,3);
 				case (retornoMapeado.indiceBotao)
 					1: //Seleciona receita
-						var objetoReceita := parametros.visaoReceitas[sessao.categoriaSelecionada][retornoMapeado.indiceItem];
-						NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,objetoReceita.objtype));
+						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
 						break;
 
 					2: // Novo Esquema.
@@ -127,6 +131,7 @@ function EnviaItensComplexosGump(quem,profissao)
 						break;
 
 					3: //Fabricar com melhores componentes.
+						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
 						var melhorEsquema := MontaMelhorEsquema(quem, sessao);
 
 						FabricaItemMontado(quem,melhorEsquema ,sessao.receitaSelecionada.receita);
