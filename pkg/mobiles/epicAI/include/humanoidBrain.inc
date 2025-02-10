@@ -17,10 +17,10 @@ function HumanoidBrain()
     // Get humanoid configuration
     var npc_elem := NPC_GetNPCConfig(me);
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
+    var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (is_ranged)
+    if (TemHabilidade(me, "Tiro em Movimento"))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
@@ -28,18 +28,6 @@ function HumanoidBrain()
     // Load Combat History
     var npc_template := NPC_ParseTemplateName(me.npctemplate).template;
     var combat_history := LoadCombatHistory(npc_template);
-
-    var habilidades := array{};
-    var calculate_level_hp := Cint(AP_GetSkill(me, WRESTLING) + AP_GetSkill(me, TACTICS)) - 80;
-	var npc_level := (calculate_level_hp / 6);
-
-	// Get valid habs for level
-	var habs_by_level := GetHabsByLevel(me, npc_level);
-	foreach hab in habs_by_level
-		habilidades.append(hab);
-	endforeach
-
-	SetObjProperty(me, "myhabs", habilidades);
 
     while (me)
         ev := os::wait_for_event(0);
@@ -49,8 +37,16 @@ function HumanoidBrain()
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
+                var dist := Distance(me, me.opponent);
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
+                
+                var range_info := GetWeaponRangeInfo();
+                // Only pursue if we're significantly out of range
+                if (dist > (range_info.max_range + 1))
+                    PursueTarget(me.opponent);
+                else
+                    MaintainRange(me.opponent);
+                endif
             endif
         endif
         
@@ -210,7 +206,27 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        MaintainRange(opponent);
+        if (Distance(me, opponent) < 2 && !TemHabilidade(me, "Tiro em Movimento"))
+            reachForMeleeWeapon(opponent);
+        endif
+
+        var range_info := GetWeaponRangeInfo();
+        print("range_info: "+range_info.max_range);
+        // Always try to maintain maximum range for ranged attackers
+        if (Distance(me, opponent) < range_info.max_range)
+            RunAwayFrom(opponent);
+        else
+            // Only move closer if we're too far to shoot
+            if (Distance(me, opponent) > range_info.max_range)
+                PursueTarget(opponent);
+            endif
+        endif
+        
+        // Continuously try to shoot while in combat
+        if (me.isShooter())
+            ShooterBehavior(me);
+        endif
+
     else
         TurnToward(opponent);
         PursueTarget(opponent);
@@ -227,6 +243,17 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     if (me.CanBite())
         Bite(me, opponent);
     endif
+
+    // if (TemHabilidade(me, "Alquimista Experiente"))
+        var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
+
+        foreach item in EnumerateItemsInContainer(me.backpack)
+            if (item.objtype in explosive_potions)
+                UseItem(item, me);
+                break;
+            endif
+        endforeach
+    // endif
 
     return 1;
 endfunction
@@ -520,7 +547,13 @@ function ChooseWarriorAbility(npc, state, habs)
         endforeach
     endif
 
-    return habs[RandomInt(habs.size())+1]; // Fallback to random
+    var chosen_hab := habs[RandomInt(habs.size())+1]; // Fallback to random
+    if (chosen_hab == "Caçador Experiente")
+        var net := CreateItemInBackpack(npc, 0x1EA3, 1);
+        UseItem(net, npc);
+    endif
+
+    return chosen_hab;
 endfunction
 
 function ChooseRogueAbility(npc, state, habs)
@@ -669,20 +702,69 @@ endfunction
 
 // TODO: Criar uma IA propria pro Engenheiro
 // TODO: Criar uma IA pro Ladrao/Punguista
-// 
+
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     var habs := GetObjProperty(me, "myhabs");
     foreach hab in habs
         case (hab)
-            "Camuflagem":
+            "Camuflagem": 
+                if (!me.hidden) 
+                    me.hidden := 1;
+                endif
+                ProccessHab(me, hab);
             "Invocacao do Caos": 
             "Gwaenedh":
             "Forma Adaptavel":
             "Irmaos de Areia":
             "Canhoneiro":
             "Quinquilharias":
-            "Construtor de Golems": ProccessHab(me, hab);
+            "Construtor de Golems": 
+                ProccessHab(me, hab);
         endcase
     endforeach
+endfunction
 
+function HandleAssassinBehavior(opponent)
+    if (!me.hidden && Distance(me, opponent) <= 6)
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        me.hidden := 1;
+        me.stealthsteps := 30;
+        
+        if (GetCooldown(me, "FaroPorSangue"))
+            SetObjProperty(me, "backstab", 1);
+            SetObjProperty(me.weapon, "backstab", 1);
+            me.attack_once(opponent);
+        endif
+    endif
+endfunction
+
+function HandleThiefBehavior(opponent)
+    if (!GetCooldown(me, "thief_abilities"))
+        if (!me.opponent) // Try to steal first
+            DoThiefSteal(opponent);
+        else // In combat 
+            var npcState := getNPCState(me);
+            if (npcState == "dying" && TemHabilidade(me, "Fuga de Emergencia"))
+                FleeFrom(opponent);
+                SetCooldown(me, "thief_abilities", 30);
+            endif
+        endif
+    endif
+endfunction
+
+function ShooterBehavior(me)
+    if (GetCooldown(me, "shooter_behavior"))
+        return;
+    endif
+
+    var equipped_weapon := GetEquipmentByLayer(me, LAYER_HAND1);
+    if (!equipped_weapon)
+        equipped_weapon := GetEquipmentByLayer(me, LAYER_HAND2);
+    endif
+
+    if (equipped_weapon)
+        UseItem(equipped_weapon, me);
+        SetCooldown(me, "shooter_behavior", 1); // Very short cooldown to prevent script overload
+    endif
 endfunction
