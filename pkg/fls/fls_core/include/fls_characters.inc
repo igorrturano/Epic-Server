@@ -448,6 +448,7 @@ function ProccessHab(who, txt)
 		endif
 		//sendsysmessage(who, " " + e );
 	endif
+	PrintTextAbove(who, Cstr(hab));
 
 	TS_StartCooldown(who, hab, delay);
 
