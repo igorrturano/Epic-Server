@@ -4,6 +4,7 @@ include "include/epicConstants";
 include ":attributes:attributes";
 include ":fls_core:packets";
 include ":timedscripts:timedScripts";
+include "include/epicNPCUtils";
 
 use os;
 use uo;
@@ -20,6 +21,11 @@ program meditar(who)
     var isEnergyArrow := GetObjProperty(who.weapon, "energy_arrow");
     var mlore := cint(AP_GetSkill(who, MAGICLORE)/5);
     var targ := Target(who);
+    if (who.npctemplate)
+        targ := GetRandomNearbyHostile(who);
+        PrintTextAbove(who, Cstr(targ.name));
+    endif
+
     if (!targ)
         SendSysMessage(who, "Você precisa selecionar um alvo.");
         return;

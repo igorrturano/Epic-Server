@@ -15,6 +15,9 @@ program vacuodemana(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
     var defender := Target(attacker);
+    if (attacker.npctemplate)
+        defender := GetRandomNearbyHostile(attacker);
+    endif
     if (!defender)
         return;
     endif
