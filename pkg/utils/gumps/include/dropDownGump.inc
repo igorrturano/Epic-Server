@@ -22,6 +22,7 @@ class DropDown()
 		endif
 		
 		var objeto := MontaOpcao(this, opcao, indice, valor);
+
 		this.valores.append(objeto);
 		return 1;
 	endfunction
@@ -33,6 +34,7 @@ class DropDown()
 		var objeto := struct;
 		objeto.+opcao := opcao;
 		objeto.+botao := struct{isColunaBotao := true, valor := idOpcao + this.adicionalIdValores, valorReal := valor}; 
+		
 
 		return objeto;
 	endfunction
@@ -44,6 +46,19 @@ class DropDown()
 
 		if(this.valores.size() > this.gerenciador.maxOpcoes)
 			return error{"errortext" := "Limite de opções alcançado. opcao "  + opcao + " não incluída."};
+		endif
+
+		var opcaoExists := false;
+		foreach valor in (this.valores)
+			Sleepms(2);
+			if(valor.opcao == opcao)
+				opcaoExists:= true;
+				break;
+			endif
+		endforeach
+
+		if( opcaoExists)
+			return error{"errortext" := "opção "  + opcao + " já foi incluída."};
 		endif
 		
 		return 1;
@@ -182,6 +197,7 @@ function MontaDropDownGump(parx,pary,parLargura,valores)
 	var colCfg := dictionary;
 	colCfg["opcao"] := struct{titulo := "Opção", largura := 9};
 	colCfg["botao"] := struct{titulo := "X",ordem := 1,largura := 3};
+	
 	if(valores.size() > 0)
 		CriaTabelaGumpPaginada(x + 10,y + 10,parLargura - 10,valores,gump,opcoesTabela,colCfg);
 	else

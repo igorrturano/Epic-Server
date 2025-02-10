@@ -337,7 +337,6 @@ function GeraSetas(byref gump,x,y, valor)
 endfunction
 
 function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas, receitaSelecionada)
-	//TODO fazer a receita selecionada ficar em evidência de alguma forma. talvez mudando o y dela levemente?
 	//TODO Implementar uma forma de lembrar onde estava da ultima vez que abriu o gump. Talvez usando a CProp legado "Craft".
 	var page := 1;
 	var colunasLinha := 4;
