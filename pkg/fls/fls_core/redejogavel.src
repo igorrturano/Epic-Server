@@ -10,6 +10,7 @@ include "include/client";
 include "include/sounds";
 include "include/facings";
 include ":combat:damage";
+include "include/epicNPCUtils";
 
 program jogarede(who, rede)
 
@@ -30,6 +31,10 @@ program jogarede(who, rede)
 
     SendSysMessageEx(who, "No que deseja arremesar a rede?", SSM_REQUEST);
     alvo := Target(who);
+
+    if (who.npctemplate)
+        alvo := GetRandomNearbyHostile(who);
+    endif
 
     if (alvo == who)
 		SendSysMessageEx(who, "Voce acha que talvez isso nao seja uma boa ideia.", SSM_FAIL);
