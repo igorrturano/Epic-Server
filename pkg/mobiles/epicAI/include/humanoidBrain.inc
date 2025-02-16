@@ -702,7 +702,6 @@ endfunction
 
 // TODO: Criar uma IA propria pro Engenheiro
 // TODO: Criar uma IA pro Ladrao/Punguista
-
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     var habs := GetObjProperty(me, "myhabs");
     foreach hab in habs
