@@ -313,6 +313,10 @@ function ChooseSpell(me, opponent, spells)
     var cfgFile := ":spells:config/spellcaster";
     var school := getSpellSchool(me);
 
+    if (school == "Ahtaleloreth")
+        return HandleSwordMageSpellChoice(opponent);
+    endif
+
     // Get ideal spell based on tactical considerations
     var chosen_spell := ChooseIdealSpell(me, opponent, spells);
 
@@ -388,10 +392,10 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
-   return CastMonsterSpell(me, chosen_spell);
+   return NPC_CastSpell(me, chosen_spell);
 endfunction
 
-function CastMonsterSpell(me, spellname)
+function NPC_CastSpell(me, spellname)
    var cfgFile := ":spells:config/spellcaster";
    var spellInfo := FindSpellInConfig(spellname, cfgFile);
    
@@ -412,4 +416,66 @@ function CastMonsterSpell(me, spellname)
    
    SetCooldown(me, "spell_cast", 15);
    return 1;
+endfunction
+
+function ChooseFireSpell()
+    var spells := array{
+        "Ataque elem. Fogo",
+        "Circ. Devast. Fogo", 
+        "Pandemonio Infernal",
+        "Chamas Perpetuas",
+        "Sacrificio Flamejante"
+    };
+    return spells[RandomInt(spells.size())+1];
+endfunction
+
+function ChooseEnergySpell()
+    var spells := array{
+        "Ataque elem. Energia",
+        "Circ. Devast. Energia",
+        "Canalizar Tempestade", 
+        "Campo Eletrico",
+        "Ataque Relampago"
+    };
+    return spells[RandomInt(spells.size())+1];
+endfunction
+
+function ChooseColdSpell() 
+    var spells := array{
+        "Ataque elem. Gelo",
+        "Circ. Devast. Gelo",
+        "Furia Glacial",
+        "Ataque Congelante",
+        "Prisao Gelida"
+    };
+    return spells[RandomInt(spells.size())+1];
+endfunction
+
+function HandleSwordMageSpellChoice(opponent)
+    if (!GetCooldown(me, "elemental_weapon"))
+        // First ensure weapon is enchanted
+        var elementalWeapon := GetObjProperty(me.weapon, "#elementalweapon");
+        if (!elementalWeapon)
+            var spells := array{"Lamina Flamejante", "Lamina de Gelo", "Lamina Eletrica"};
+            NPC_CastSpell(me, spells[RandomInt(spells.size())+1]);
+            SetCooldown(me, "elemental_weapon", 20);
+            return;
+        endif
+
+        // Choose spells based on enchantment type
+        var spell := "";
+        case (elementalWeapon.type)
+            DMG_FIRE:
+                spell := ChooseFireSpell();
+            DMG_ENERGY:
+                spell := ChooseEnergySpell();  
+            DMG_COLD:
+                spell := ChooseColdSpell();
+        endcase
+
+        if (spell)
+            NPC_CastSpell(me, spell);
+            SetCooldown(me, "elemental_weapon", 20);
+        endif
+    endif
 endfunction

@@ -17,6 +17,24 @@ program HitScript(who)
 	PlaySoundEffect(who, 0x1f2);
 
 	var targ := TargetCoordinates(who);
+    // Jump a random direction from who.opponent, beteween 5 and 10 tiles away
+    if (who.npctemplate)
+        var directions := array{
+            array{1, 0},
+            array{0, 1},
+            array{-1, 0},
+            array{0, -1}
+        };
+        var random_direction := directions[RandomInt(4)];
+        // The direction should be a struct with x, y, z and realm
+        targ := struct{
+            x := who.opponent.x + random_direction[1] * 5,
+            y := who.opponent.y + random_direction[2] * 5,
+            z := who.opponent.z,
+            realm := who.opponent.realm
+        };
+    endif
+
     var dist := Distance(who, targ);
     var mlore := Cint(AP_GetSkill(who, MAGICLORE));
 

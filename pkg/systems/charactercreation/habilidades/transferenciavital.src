@@ -9,10 +9,16 @@ include ":timedScripts:timedScripts";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 program manobra(mobile)
-	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);
+	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);	
 	var who := Target(mobile);
+	if (mobile.npctemplate)
+		who := mobile;
+	endif
 	SendSysMessageEx(mobile, "Escolha o doador da energia vital.", SSM_FAIL);
 	var targ := Target(mobile);
+	if (mobile.npctemplate)
+		targ := GetRandomNearbyHostile(mobile);
+	endif
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(mobile, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);

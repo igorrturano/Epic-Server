@@ -44,28 +44,3 @@ program cleric(who)
 
     return 1;
 endprogram
-
-function enterGolem(who)
-    var skill_a := Ap_GetSkill(who, METALWORKING) * 0.8;
-    var skill_d := Ap_GetSkill(who, METALWORKING) * 0.6;
-    var dicedmg := "1d12";
-    var hitsmod := 200;
-
-	SetObjProperty(who, "skill_a", skill_a);
-	SetObjProperty(who, "skill_d", skill_d);
-	SetObjProperty(who, "dicedmg", dicedmg);
-	SetObjProperty(who, "golemhitsmod", hitsmod);
-
-    var resistmod := 60;
-	who.resist_physical_mod := resistmod;
-	who.resist_fire_mod := resistmod;
-	who.resist_cold_mod := resistmod;
-	who.resist_poison_mod := resistmod;
-	who.resist_energy_mod := 0;
-    
-	SetObjProperty(who, "resistmod", resistmod);
-	SetObjProperty(who, "hitsmod", hitsmod);
-
-	recalcvitals(who);
-	HealDamage(who, hitsmod);
-endfunction

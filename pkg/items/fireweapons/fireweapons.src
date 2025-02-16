@@ -6,20 +6,24 @@ include ":timedScripts:timedScripts";
 include "include/sounds";
 include ":combat:damage";
 include "include/facings";
+include "include/epicNPCUtils";
 
 program fireweapons(who, item)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-    // Check if weapon is equipped
-    if (!IsWeaponEquipped(who, item))
-        SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
-        return;
-    endif
+    // Skip equipment checks for NPCs
+    if (!who.npctemplate)
+        // Check if weapon is equipped
+        if (!IsWeaponEquipped(who, item))
+            SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
+            return;
+        endif
 
-    // Check if weapon is properly bound
-    if (!IsWeaponBound(who, item))
-        SendSysMessageEx(who, "Você é incapaz de manusear a arma. [Anti Mulling]", SSM_FAIL);
-        return;
+        // Check if weapon is properly bound
+        if (!IsWeaponBound(who, item))
+            SendSysMessageEx(who, "Você é incapaz de manusear a arma. [Anti Mulling]", SSM_FAIL);
+            return;
+        endif
     endif
 
     var weapon_info := GetWeaponInfo(item);
@@ -27,7 +31,7 @@ program fireweapons(who, item)
         return;
     endif
 
-    // Check ammo and reload if needed
+    // Check ammo and reload if needed (for both NPCs and players)
     var balas := CInt(GetObjProperty(item, "balas"));
     if (balas <= 0)
         if (!ReloadWeapon(who, item, weapon_info))
@@ -92,30 +96,62 @@ function GetWeaponInfo(item)
 endfunction
 
 function ReloadWeapon(who, item, weapon_info)
-    // Check if environment is too wet
-    if (GetObjProperty(who, "molhado"))
-        SendSysMessageEx(who, "Voce nao consegue recarregar com o clima umido.", SSM_FAIL);
-        return 0;
+    // If it's an NPC, skip all item checks and just do the reload animation
+    if (who.npctemplate)
+        var reload_time := weapon_info.reload_time;
+        
+        // Visual feedback
+        printtext(who, "*Coloca polvora na arma*");
+        printtext(who, "*Socando a polvora*");
+        
+        // Animation and sound effects
+        var i := 0;
+        for (i := 0; i < reload_time; i++)
+            PlaySoundEffect(who, SFX_HIT_19);
+            sleep(1);
+        endfor
+
+        printtext(who, "*Municiando o equipamento*");
+        for (i := 0; i < 2; i++)
+            PlaySoundEffect(who, SFX_FARMING);
+            sleep(2);
+        endfor
+
+        PlaySoundEffect(who, SFX_HIT_11);
+        SetObjProperty(item, "balas", 1);
+        printtext(who, "*Arma recarregada*");
+        updateToolTip(item);
+        
+        return 1;
     endif
 
-    // Check for required items in backpack
+    // Rest of the original function for players
     var ammo := FindObjtypeInContainer(who.backpack, 0x9090);
     var powder := FindObjtypeInContainer(who.backpack, 0x9092);
     var powder_fixer := FindObjtypeInContainer(who.backpack, 0xC611);
-
-    if (!ammo || !powder || !powder_fixer)
-        SendSysMessageEx(who, "Voce precisa de municao, polvora e um socador de polvora em sua bolsa.", SSM_FAIL);
-        return 0;
-    endif
-
     var powder_needed := weapon_info.powder_amt;
-    if (TemHabilidade(who, "Municiador Experiente") && powder_needed > 2)
-        powder_needed := 2;
-    endif
 
-    if (powder.amount < powder_needed)
-        SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
-        return 0;
+    // Skip equipment checks for NPCs
+    if (!who.npctemplate)
+        // Check if environment is too wet
+        if (GetObjProperty(who, "molhado"))
+            SendSysMessageEx(who, "Voce nao consegue recarregar com o clima umido.", SSM_FAIL);
+            return 0;
+        endif
+
+        if (!ammo || !powder || !powder_fixer)
+            SendSysMessageEx(who, "Voce precisa de municao, polvora e um socador de polvora em sua bolsa.", SSM_FAIL);
+            return 0;
+        endif
+
+        if (TemHabilidade(who, "Municiador Experiente") && powder_needed > 2)
+            powder_needed := 2;
+        endif
+
+        if (powder.amount < powder_needed)
+            SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
+            return 0;
+        endif
     endif
 
     var current_x := who.x;
@@ -123,9 +159,12 @@ function ReloadWeapon(who, item, weapon_info)
     
     // Start reloading process
     printtext(who, "*Coloca polvora na arma*");
-    if (!SubtractAmount(ammo, 1) || !SubtractAmount(powder, powder_needed))
-        SendSysMessageEx(who, "Falha ao consumir os materiais.", SSM_FAIL);
-        return 0;
+    
+    if (!who.npctemplate)
+        if (!SubtractAmount(ammo, 1) || !SubtractAmount(powder, powder_needed))
+            SendSysMessageEx(who, "Falha ao consumir os materiais.", SSM_FAIL);
+            return 0;
+        endif
     endif
 
     printtext(who, "*Socando a polvora*");
@@ -138,9 +177,11 @@ function ReloadWeapon(who, item, weapon_info)
     // Animation and sound effects
     var i := 0;
     for (i := 0; i < reload_time; i++)
-        if (who.x != current_x || who.y != current_y)
-            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
-            return 0;
+        if (!who.npctemplate)  // Only check position for players
+            if (who.x != current_x || who.y != current_y)
+                SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
+                return 0;
+            endif
         endif
         PlaySoundEffect(who, SFX_HIT_19);
         sleep(1);
@@ -148,9 +189,11 @@ function ReloadWeapon(who, item, weapon_info)
 
     printtext(who, "*Municiando o equipamento*");
     for (i := 0; i < 2; i++)
-        if (who.x != current_x || who.y != current_y)
-            SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
-            return 0;
+        if (!who.npctemplate)  // Only check position for players
+            if (who.x != current_x || who.y != current_y)
+                SendSysMessage(who, "Você só consegue recarregar essa arma parado.");
+                return 0;
+            endif
         endif
         PlaySoundEffect(who, SFX_FARMING);
         sleep(2);
@@ -167,6 +210,11 @@ endfunction
 function FireWeapon(who, item, weapon_info)
     SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
     var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
+
+    if (who.npctemplate)
+        targ := GetRandomNearbyHostile(who);
+    endif
+
     if (!targ || targ.isa(POLCLASS_ITEM))
         SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
         return;
@@ -186,15 +234,18 @@ endfunction
 function AimAndShoot(who, item, targ, weapon_info)
     var dist := Distance(who, targ);
     
-    // Check minimum distance
-    var min_dist := weapon_info.min_dist;
-    if (GetObjProperty(who, "Cano Serrado"))
-        min_dist -= 1;
-    endif
-    
-    if (dist < min_dist)
-        SendSysMessageEx(who, "O alvo esta muito proximo!", SSM_FAIL);
-        return 0;
+    // Skip distance checks for NPCs
+    if (!who.npctemplate)
+        // Check minimum distance
+        var min_dist := weapon_info.min_dist;
+        if (GetObjProperty(who, "Cano Serrado"))
+            min_dist -= 1;
+        endif
+        
+        if (dist < min_dist)
+            SendSysMessageEx(who, "O alvo esta muito proximo!", SSM_FAIL);
+            return 0;
+        endif
     endif
 
     // Handle aiming animation
@@ -202,13 +253,16 @@ function AimAndShoot(who, item, targ, weapon_info)
     PrintText(who, "*mirando em {}*".format(targ.name));
     PlaySoundEffect(who, 0x667);
     
-    who.frozen := 1;
-    var i := 0;
-    for (i := 1; i < weapon_info.reload_time; i++)
-        PerformAction(who, 0x13);
-        sleep(1);
-    endfor
-    who.frozen := 0;
+    // Skip freezing for NPCs
+    // if (!who.npctemplate)
+        who.frozen := 1;
+        var i := 0;
+        for (i := 1; i < weapon_info.reload_time; i++)
+            PerformAction(who, 0x13);
+            sleep(1);
+        endfor
+        who.frozen := 0;
+    // endif
 
     if (!CheckLineOfSight(who, targ))
         SendSysMessageEx(who, "O alvo saiu do seu campo de visao.", SSM_FAIL);

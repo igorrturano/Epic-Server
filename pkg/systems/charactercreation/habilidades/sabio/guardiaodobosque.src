@@ -16,6 +16,9 @@ program SpellScript(params)
 	var who := params[1];
 
     var targ := Target(who);
+    if (who.npctemplate)
+        targ := who;
+    endif
 	if (!targ)
 		return;
 	endif

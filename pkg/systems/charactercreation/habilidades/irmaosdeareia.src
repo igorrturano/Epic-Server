@@ -11,8 +11,19 @@ include "include/dungeons";
 program summonSkeletaSteed(params)
 	var who := params[1];
 	var targ := TargetCoordinates(who);
+    // if (who.npctemplate)
+    //     targ := who;
+    // endif
+    if (!targ)
+        if (who.npctemplate)
+            targ := who;
+        else
+            SendSysMessage(who, "Voce precisa selecionar um alvo.");
+            return;
+        endif       
+    endif
 
-	var template := ":brainai:MonstrodaPoeira";
+	var template := ":epicai:MonstrodaPoeira";
     var lvl := Cint(AP_GetSkill(who, MAGICLORE));
 
     if (template == error)
