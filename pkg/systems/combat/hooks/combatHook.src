@@ -659,7 +659,7 @@ function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 	if (GetCooldown(defender, "contraataque") > 0)
 		if (GetObjProperty(defender, "#contraatacando") == error)
 			SetObjProperty(defender, "#contraatacando", 1);
-			printtext(defender, "*contra ataque*");
+			PrintTextAbove(defender, "*contra ataque*");
 			//defender.attack_once(attacker);
 			var new_hit_chance := CalculateHitChance(defender, attacker);
 			var new_random := RandomInt(100);

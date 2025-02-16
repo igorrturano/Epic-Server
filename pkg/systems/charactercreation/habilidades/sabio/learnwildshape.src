@@ -13,12 +13,51 @@ include ":attributes:attributes";
 include ":tn:boss";
 include ":tn:npcutil";
 include ":timedscripts:timedScripts";
+include ":epicai:epicai";
 
 const MAX_TRANSFORMATIONS := 10;  // Maximum number of wildshape_forms to store
 
 program wildshape(who)
+    // Handle NPCs differently - automatic transformation
+    if (who.npctemplate)
+        var npc_elem := NPC_GetNPCConfig(who);
+        var tier := CInt(npc_elem.Tier);
+        if (!tier)
+            tier := 1;
+        endif
+        
+        var template := FindAnimalTemplate(tier);
+        if (template)
+            // Create and store the transformation
+            var animal := CreateNpcFromTemplate(":epicai:" + template, who.x, who.y, who.z, 0, who.realm);
+            if (animal)
+                SetObjProperty(animal, "#original_npc", who.serial);
 
-    // Send message prompting player to target an animal for study
+                // Hide/remove the original druid
+                who.hidden := 1;
+                MoveObjectToLocation(who, 0, 0, 0, "britannia", MOVEOBJECT_FORCELOCATION);
+
+                // Set up the reversion timer (5 minutes = 300 seconds)
+                var params := struct{
+                    "animal" := animal.serial,
+                    "druid" := who.serial,
+                    "x" := animal.x,
+                    "y" := animal.y,
+                    "z" := animal.z,
+                    "realm" := animal.realm
+                };
+                
+                // Start the timer script
+                Start_Script(":charactercreation:revertWildshape", params);
+                
+                return 1;
+            endif
+        endif
+
+        return 0;
+    endif
+
+    // Regular player wildshape code continues here...
     SendSysMessageEx(who, "Qual criatura selvagem voce deseja estudar para aprender sua forma?", SSM_REQUEST);
     var targ := target(who);  // Target the animal
 

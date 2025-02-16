@@ -2,6 +2,7 @@ use uo;
 include "include/NPCUtil";
 include ":tn:cooldown";
 include "include/epicConstants";
+include "include/client";
 
 program Install()
 	print("INSTALLING: Methods for NPCs... OK!");
@@ -250,5 +251,53 @@ exported function CanCharm(who)
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
     
+    return 0;
+endfunction
+
+exported function isHumanoidBrain(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+    var brain_type := npc_elem.BrainType;
+
+    if (brain_type == "humanoid")
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isAnimalBrain(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+    var brain_type := npc_elem.BrainType;
+    
+    if (brain_type == "animal")
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isMonsterBrain(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+    var brain_type := npc_elem.BrainType;
+    
+    if (brain_type == "monster")
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isShooter(who)
+    var fire_weapons := array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+
+    var equipped_weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+    if (!equipped_weapon)
+        equipped_weapon := GetEquipmentByLayer(who, LAYER_HAND2);
+    endif
+
+    if (equipped_weapon.objtype in fire_weapons)
+        return 1;
+    endif
+
     return 0;
 endfunction
