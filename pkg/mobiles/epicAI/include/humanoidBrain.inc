@@ -232,11 +232,13 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (me.isMage())
+        PrintTextAbove(me, "Mage Behavior");
         MageBehavior(me, opponent);
     endif
 
     if (me.isShaman())
-        ShamanBehavior(me);
+        PrintTextAbove(me, "Shaman Behavior");
+        HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.CanBite())

@@ -266,7 +266,10 @@ function FindSpellInConfig( spellname, cfgFile )
                 "Difficulty" -> GetConfigInt( elem, "Difficulty" ),
                 "School" -> GetConfigString( elem, "School" ),
                 "Target" -> GetConfigString( elem, "Target" ),
-                "script" -> GetConfigString( elem, "SpellScript" )
+                "script" -> GetConfigString( elem, "SpellScript" ),
+                "Cycles" -> GetConfigInt( elem, "Cycles" ),
+                "PowerWords" -> GetConfigString( elem, "PowerWords" ),
+                "mana" -> GetConfigInt( elem, "Mana" )
                 };
                 return dict;
             endif
@@ -485,4 +488,171 @@ function HandleSwordMageSpellChoice(opponent)
     
     // Default return if we can't cast yet due to cooldown
     return "Misseis Magicos";
+endfunction
+
+// New functions for humanoid shaman mage behavior
+
+function GetAvailableShamanSpells(monster)
+    var npc_elem := NPC_GetNPCConfig(monster);
+    var tier := CInt(npc_elem.Tier);
+    if (!tier) tier := 1; endif;
+
+    // All shamans have a basic fallback spell
+    var spells := array{"Enfraquecer"};
+
+    // Read shaman spells configuration file
+    var cfg := ReadConfigFile(":spells:config/shamanspells");
+    foreach spellId in GetConfigIntKeys(cfg)
+        var elem := FindConfigElem(cfg, spellId);
+        // Use the spell's Circle value to determine if it is available at the current tier
+        // TODO: Ver se vale a pena deixar a 0, e colocar um CD menor, depois que fazer o Ideal Spell funcionar pra cada magia shaman
+        if (CInt(elem.Circle) <= tier && Cint(elem.Circle) > 0)
+            spells.append(elem.Name);
+        endif
+        sleepms(2);
+    endforeach
+    return spells;
+endfunction
+
+function NPC_CastShamanSpell(me, spellname)
+    var cfgFile := ":spells:config/shamanspells";
+    var spellInfo := FindSpellInConfig(spellname, cfgFile);
+    if (!spellInfo)
+        return 0;
+    endif
+
+    // Look up the target as set by the behavior (or default to opponent)
+    var targ := SystemFindObjectBySerial(GetObjProperty(me, "#SpellTarget"));
+    EraseObjProperty(me, "#SpellTarget");
+
+    var params := array{me, spellInfo, 0, targ};
+    var script := Start_Script(":spells:cast_spell", params);
+    if (script.errortext)
+        PrintTextAbove(me, "Error starting shaman spell: " + script.errortext);
+        return 0;
+    endif
+
+    SetCooldown(me, "spell_cast", 15);
+    return 1;
+endfunction
+
+function HumanoidShamanBehavior(me, opponent)
+    if (GetCooldown(me, "spell_cast"))
+        return 0;
+    endif
+
+    // Get castable shaman spells based on the caster's tier
+    var spells := GetAvailableShamanSpells(me);
+    if (!spells.size())
+        return 0;
+    endif
+
+    // Choose a spell based on current conditions.
+    // (Here we re-use the generic ChooseSpell function for simplicity.
+    // Later you could add additional conditions to favor buffs versus harmful spells.)
+    var chosen_spell := ChooseShamanSpell(me, opponent, spells);
+    if (!chosen_spell)
+        return 0;
+    endif
+
+    // Retrieve the chosen spell's configuration so that we can set the proper target.
+    var cfgFile := ":spells:config/shamanspells";
+    var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
+    if (!spellInfo) 
+        // Default to opponent if no spell info is found
+        SetObjProperty(me, "#SpellTarget", opponent.serial);
+    else
+        // Target selection: For spells marked "Unico" or "Area" use opponent; for "Self" use self.
+        if (spellInfo.Target in array{"Unico", "Area"})
+            SetObjProperty(me, "#SpellTarget", opponent.serial);
+        elseif (spellInfo.Target == "Self")
+            SetObjProperty(me, "#SpellTarget", me.serial);
+        endif
+    endif
+
+    PrintTextAbove(me, "Casting " + chosen_spell + " (Shaman)");
+    return NPC_CastShamanSpell(me, chosen_spell);
+endfunction
+
+function ChooseShamanSpell(me, opponent, spells)
+    var cfgFile := ":spells:config/shamanspells";
+
+    // Get ideal spell based on tactical considerations
+    var chosen_spell := ChooseIdealShamanSpells(me, opponent, spells);
+    // Get spell info for the chosen spell
+    var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
+    if (!spellInfo)
+        SetObjProperty(me, "#SpellTarget", opponent.serial);
+        return "Enfraquecer";
+    endif
+
+    // Set appropriate target based on spell type
+    if (spellInfo.Target in array{"Unico", "Area"})
+        SetObjProperty(me, "#SpellTarget", opponent.serial);
+    elseif (spellInfo.Target == "Self")
+        SetObjProperty(me, "#SpellTarget", me.serial);
+    endif
+
+    return chosen_spell;
+endfunction
+
+function ChooseIdealShamanSpells(me, opponent, spells)
+    // Gather battlefield information
+    var opponent_class := opponent.getClass();
+    var is_ranged := (opponent.weapon.attribute == "RangedCombat");
+    var dist := Distance(me, opponent);
+    var low_health := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.3);
+    var hurt := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.7);
+    var enemy_count := ListHostiles(me, 10).size();
+    var allies := NPC_GetNearbyAllies(me);
+    var ally_count := allies.size();
+    // Emergency priority:
+    // If low on health, try "Cura Grave" if available.
+    if (low_health && ("Cura Grave" in spells))
+        return "Cura Grave";
+    endif
+
+    if (hurt && ("Cura Leve" in spells))
+        return "Cura Leve";
+    endif
+
+    // If the opponent has summoned creatures, try "Enraizar" if available.
+    if (NPC_HasSummonedCreaturesNearby(opponent) && ("Enraizar" in spells))
+        return "Enraizar";
+    endif
+
+    // Build a weighted list from the available shaman spells (only those in shamanspells.cfg).
+    var valid_spells := array{};
+    foreach spell in spells
+        var weight := 50; // base weight for every available spell
+
+        // Example condition: if opponent is a warrior and the spell is "Enfraquecer",
+        // add bonus weight.
+        if (opponent_class == GUERREIRO && spell == "Enfraquecer")
+            weight += 20;
+        endif
+
+        // Example condition: if many enemies are present, and the spell is an AoE like "Cura em Area",
+        // add extra weight.
+        // Also check for hurt allies
+        foreach ally in allies
+            if (AP_GetVital(ally, HITS) < (AP_GetVitalMaximumValue(ally, HITS) * 0.7) && spell == "Cura em Area")
+                weight += 15;
+            endif
+        endforeach
+
+        // Add the spell structure into our weighted list.
+        valid_spells.append(struct{ "name" := spell, "weight" := weight });
+    endforeach
+
+    // Sort the spells by priority (this function can take into account spell circles as well if applicable).
+    valid_spells := SortSpellsByPriority(valid_spells);
+
+    // Choose one spell by weighted selection.
+    if (valid_spells.size() > 0)
+        return ChooseWeightedSpell(valid_spells);
+    endif
+
+    // If no appropriate spell is found, do not cast any spell.
+    return "Enfraquecer";
 endfunction

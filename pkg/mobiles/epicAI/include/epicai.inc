@@ -6,6 +6,7 @@ include ":mounts:mounts";
 include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
+include ":epicAI:epicSpecial";
 const MAX_Z_DIFF := 18;
 
 function InitializeEpicNPC(mobile)
@@ -268,15 +269,19 @@ function SetupAlchemistLoadout(mobile)
     // Create explosive potions
     var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
     foreach potion in explosive_potions
-        CreateItemInBackpack(mobile, potion, RandomInt(2)+1);
-        sleepms(2);
+        for i := 1 to 2
+            CreateItemInBackpack(mobile, potion, 1);
+            sleepms(2);
+        endfor
     endforeach
     
     // Create healing potions
     var heal_potions := array{0xDC01, 0xDC02, 0xDC03};
     foreach potion in heal_potions
-        CreateItemInBackpack(mobile, potion, RandomInt(2)+1);
-        sleepms(2);
+        for i := 1 to 2
+            CreateItemInBackpack(mobile, potion, 1);
+            sleepms(2);
+        endfor
     endforeach
     
     // Speed potion
@@ -1355,22 +1360,11 @@ function ShamanBehavior(shaman)
         return 0;
     endif
 
-    var npc_elem := NPC_GetNPCConfig(shaman);
-    var caster_tier := CInt(npc_elem.Tier);
-    if (!caster_tier)
-        caster_tier := 1;
-    endif
-
     // Get all allies nearby
-    var allies := NPC_GetNearbyAllies(shaman);
     var wounded_allies := array{};
 
     // Check allies' health
-    foreach ally in allies
-        if (isHurt(ally)) // Is Hurt
-            wounded_allies.append(ally);
-        endif
-    endforeach
+    wounded_allies := CheckForWoundedAllies(shaman);
 
     if (wounded_allies.size() == 0)
         DoHarmfulSpell();
@@ -1383,30 +1377,47 @@ function ShamanBehavior(shaman)
         return 1;
     endif
 
+    if (wounded_allies.size() > 0)
+        PerformHeal(shaman, wounded_allies, 1);
+        return 1;
+    endif   
+
+    return 0;
+endfunction
+
+function CheckForWoundedAllies(who)
+	var allies := NPC_GetNearbyAllies(who);
+	var wounded_allies := array{};
+
+	// Check allies' health
+	foreach ally in allies
+		if (isHurt(ally)) // Is Hurt
+			wounded_allies.append(ally);
+		endif
+	endforeach
+
+	return wounded_allies;
+endfunction
+
+function FindMostWoundedAlly(wounded_allies)
+    // Initialize our best candidate with a full 100% health
+    var most_wounded := struct{
+        "mobile" := 0,
+        "hp_percent" := 100.0
+    };
+
     foreach ally in wounded_allies
-        var most_wounded := struct{
-            "mobile" := 0,
-            "hp_percent" := 100
-        };
-
-        foreach ally in wounded_allies
-            var hp_percent := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS)) * 100;
-            if (hp_percent < most_wounded.hp_percent)
-                most_wounded.mobile := ally;
-                most_wounded.hp_percent := hp_percent;
-            endif
-            sleepms(2);
-        endforeach
-
-        if (most_wounded.mobile)
-            PerformHeal(shaman, most_wounded.mobile, caster_tier);
-            SetCooldown(shaman, "heal_check", 15);
-            return 1;
+        // Calculate current HP percentage for each ally
+        var hp_percent := (CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS))) * 100;
+        // Update if this ally has a lower (worse) percentage
+        if (hp_percent < most_wounded.hp_percent)
+            most_wounded.mobile := ally;
+            most_wounded.hp_percent := hp_percent;
         endif
         sleepms(2);
     endforeach
 
-    return 0;
+    return most_wounded.mobile;
 endfunction
 
 function AskForHealing(me)
