@@ -2,7 +2,6 @@ use uo;
 use os;
 use cfgfile;
 use math;
-use npc;
 
 include "include/client";
 include "include/sounds";
@@ -19,7 +18,7 @@ program animateSword(params)
 	var who := params[1];
 	params := 0; // No longer needed
    if (who.npctemplate)
-      who := TurnToward(who.opponent, 0x1); // Force facing to opponent
+      sleep(1);
    endif
    var world_z := GetStandingHeight( who.x, who.y, who.z+15, who.realm );
    var moved := 0;
