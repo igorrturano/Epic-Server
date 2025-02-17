@@ -3,6 +3,7 @@ include "include/NPCUtil";
 include ":tn:cooldown";
 include "include/epicConstants";
 include "include/client";
+include ":charactercreation:habilidades";
 
 program Install()
 	print("INSTALLING: Methods for NPCs... OK!");
@@ -173,15 +174,34 @@ exported function isBloodless(who)
 endfunction
 
 exported function isMage(who)
-   var npc_elem := NPC_GetNPCConfig(who);
-   return (npc_elem.SpellSchool != error) && (!who.isShaman());
+    var npc_elem := NPC_GetNPCConfig(who);
+    
+    // First check if it's a shaman - if so, definitely not a mage
+    if (isShaman(who))
+        return 0;
+    endif
+
+    // If already has SpellSchool defined, use that
+    if (npc_elem.SpellSchool != error)
+        return 1;
+    endif
+
+    // Store the school
+    if(GetObjProperty(who, "SpellSchool"))
+        return 1;
+    endif
+
+    return 0;
 endfunction
 
 exported function isShaman(who)
     var templates := array{"ratoide_xama", "vulcanideomage", "varagxama"};
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
+    // TODO:  Buscar se é xamã no cfg ou no EPIC BOSS
+    var habs := GetObjProperty(who, "myhabs");
+    if ("Sede de Sangue" in habs) return 1; endif
+
     return 0;
 endfunction
 
