@@ -211,7 +211,6 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         endif
 
         var range_info := GetWeaponRangeInfo();
-        print("range_info: "+range_info.max_range);
         // Always try to maintain maximum range for ranged attackers
         if (Distance(me, opponent) < range_info.max_range)
             RunAwayFrom(opponent);

@@ -761,7 +761,7 @@ function getHighestAggro(creature)
    return highest[1];
 endfunction
 
-function TacticalReposition(opponent)
+function TacticalReposition(opponent, chasing)
     var runs := 0;
     var max_dist := 12;
     var start_pos := struct{ "x" := me.x, "y" := me.y };
@@ -769,7 +769,7 @@ function TacticalReposition(opponent)
 
     while(Distance(me, opponent) < max_dist && runs < 10)
         var old_pos := struct{ "x" := me.x, "y" := me.y };
-        TryToRunAway(opponent);
+        TryToRunAway(opponent, 1);
         runs += 1;
         sleepms(200);
 
@@ -781,7 +781,6 @@ function TacticalReposition(opponent)
                 var possible_locations := GetAlternativeLocations(opponent);
                 foreach loc in possible_locations
                     if (CheckLosAt(me, loc.x, loc.y, me.z))
-                        print("Found alternative escape path");
                         RunTowardLocation(loc.x, loc.y);
                         return 1;
                     endif
@@ -1083,6 +1082,7 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
+
         else
             progress.no_progress_count := 0;
         endif
@@ -1093,12 +1093,11 @@ function PursueTarget(opponent)
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
     endif
-
     // If we're not making progress after several checks, force a reposition
-    if (progress.no_progress_count >= 1) // Zero tolerance for no progress
+    if (progress.no_progress_count >= 1)
         EraseObjProperty(me, "path");
         EraseObjProperty(me, "#enemy_last_loc");
-        TacticalReposition(opponent);
+        TacticalReposition(opponent, 1);
         progress.no_progress_count := 0;
         progress.last_check_time := ReadGameClock();
         SetObjProperty(me, "#pursue_progress", progress);
@@ -1716,7 +1715,7 @@ function isMonsterRanged()
     return is_ranged;
 endfunction
 
-function TryToRunAway(opponent)
+function TryToRunAway(opponent, chasing := 0)
     var progress := GetObjProperty(me, "#runaway_progress");
     if (!progress)
         progress := struct{
@@ -1727,10 +1726,12 @@ function TryToRunAway(opponent)
     endif
 
     // Run away from opponent
-    RunAwayFrom(opponent);
+    if (!chasing)
+        RunAwayFrom(opponent);
+    endif
 
-    // Check progress every 2 seconds
-    if (ReadGameClock() >= progress.last_check_time + 2)
+    // Check progress every 1 seconds
+    if (ReadGameClock() >= progress.last_check_time + 1)
         // Check if we're stuck in roughly the same area (2-3 tiles)
         var current_dist := CoordinateDistance(me.x, me.y, progress.last_pos.x, progress.last_pos.y);
         if (current_dist <= 3)
