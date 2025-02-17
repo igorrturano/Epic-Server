@@ -25,7 +25,6 @@ program SpellStarter(params)
     var spellinfo := params[2]; // spellinfo
     var scroll := params[3]; // item que usou pra castar o spell (scroll, book, varinha ou nada)
     var targ := params[4];
-    
     if (!initializeSpellCasting(mobile, spellinfo, scroll))
         return 0;
     endif
@@ -135,7 +134,7 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
     var mana_cost := spellinfo.mana;
     var current_mana := AP_GetVital(mobile, MANA);
     var current_stamina := AP_GetVital(mobile, STAMINA);
-
+    // TODO: Decidir se vou consumir mana dos humanoids 
     if (!mobile.npctemplate)
         if (TemHabilidade(mobile, "Determinacao Arcana"))
             if (current_mana >= mana_cost)
@@ -190,9 +189,9 @@ function performCastingProcess(mobile, spellinfo)
     SetObjProperty(mobile, "#Casting", 1);
     DistribuiEvento(mobile,EV_SPELLCAST);
 
-    if (!mobile.npctemplate)
-        performSpellVocalization(mobile, spellinfo);
-    endif
+    // if (!mobile.npctemplate)
+    performSpellVocalization(mobile, spellinfo);
+    // endif
 
     var orig_hp := AP_GetVital(mobile, "Hits");
     var delay := spellinfo.delay + CInt(GetObjProperty(mobile, "#delayspell"));
@@ -248,8 +247,7 @@ function replaceAccentedCharacters(text)
 endfunction
 
 function performSpellCycles(mobile, spellinfo, orig_hp)
-    var cycles := Max(spellinfo.cycles, 1);
-
+    var cycles := Max(CInt(spellinfo.Cycles), 1);
     while (cycles)
         if (!checkSpellInterruption(mobile, orig_hp))
             return 0;

@@ -5,7 +5,8 @@ include ":tn:recipes";
 include ":mounts:mounts";
 include "npcUtils";
 include ":fls_core:fls_characters";
-
+include "makeRace";
+include ":epicAI:epicSpecial";
 const MAX_Z_DIFF := 18;
 
 function InitializeEpicNPC(mobile)
@@ -89,6 +90,10 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     setupNPCGender(mobile);
     SetupHumanoidHabs(mobile);
     SetupItemsForSpecificClasses(mobile, npc_elem);
+    var race := GetObjProperty(mobile, "myrace");
+    if (!race)
+        makeRace(mobile);
+    endif
     SetupNPCEquip(mobile, npc_elem);
     SetupBaseLanguages(mobile);
 
@@ -149,10 +154,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             endif
 
             if ("Artilheiro Preparado" in habs)
+                makeRace(mobile, ANAO);
                 SetupFireweaponLoadout(mobile);
             endif
 
             if ("Construtor de Golems" in habs)
+                makeRace(mobile, ANAO);
                 // Store mobile's current position before hiding it
                 SetObjProperty(mobile, "#original_pos", struct{
                     "x" := mobile.x,
@@ -176,18 +183,36 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             endif
 
             if ("Vínculo Elemental" in habs)
+                makeRace(mobile, ELFO);
                 var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
                 EquipRandomFromArray(mobile, elementals);
             endif
 
             if ("Visao verdadeira" in habs)
+                mobile.gender := 1;
+                makeRace(mobile, DROW);
                 var whip := CreateItemInBackpack(mobile, 0x166E, 1);
                 EquipItem(mobile, whip);
             endif
 
             if ("Campeao das Montanhas" in habs)
+                makeRace(mobile, ANAO);
                 var hammer := CreateItemInBackpack(mobile, 0xFA11, 1);
                 EquipItem(mobile, hammer);
+            endif
+
+            if ("Sede de Sangue" in habs)
+                makeRace(mobile, ORC);
+                var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
+                EquipRandomFromArray(mobile, two_handed);
+            endif
+
+            if ("Gwaenedh" in habs)
+                makeRace(mobile, ELFO);
+            endif
+
+            if ("Elo Natural" in habs)
+                makeRace(mobile, ELFO);
             endif
 
     endcase
@@ -244,15 +269,19 @@ function SetupAlchemistLoadout(mobile)
     // Create explosive potions
     var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
     foreach potion in explosive_potions
-        CreateItemInBackpack(mobile, potion, RandomInt(2)+1);
-        sleepms(2);
+        for i := 1 to 2
+            CreateItemInBackpack(mobile, potion, 1);
+            sleepms(2);
+        endfor
     endforeach
     
     // Create healing potions
     var heal_potions := array{0xDC01, 0xDC02, 0xDC03};
     foreach potion in heal_potions
-        CreateItemInBackpack(mobile, potion, RandomInt(2)+1);
-        sleepms(2);
+        for i := 1 to 2
+            CreateItemInBackpack(mobile, potion, 1);
+            sleepms(2);
+        endfor
     endforeach
     
     // Speed potion
@@ -291,20 +320,14 @@ endfunction
 function SetupHumanoidHabs(mobile)
     var wrestling := AP_GetSkill(mobile, WRESTLING);
     var tactics := AP_GetSkill(mobile, TACTICS);
-    
-    print("DEBUG SetupHumanoidHabs: Wrestling=" + wrestling + " Tactics=" + tactics);
-    
     var calculate_level_hp := CInt(wrestling + tactics) - 80;
-    print("DEBUG SetupHumanoidHabs: calculate_level_hp=" + calculate_level_hp);
     
     // Add safety cap to prevent overflow
-    if (calculate_level_hp > 120)
-        calculate_level_hp := 120;
+    if (calculate_level_hp > 100)
+        calculate_level_hp := 100;
     endif
     
     var npc_level := (calculate_level_hp / 6);
-    print("DEBUG SetupHumanoidHabs: npc_level=" + npc_level);
-    
     // Ensure npc_level is within reasonable bounds
     if (npc_level < 0)
         npc_level := 0;
@@ -316,7 +339,6 @@ function SetupHumanoidHabs(mobile)
     var habs := array{};
     foreach hab in habs_by_level
         habs.append(hab);
-        print("DEBUG SetupHumanoidHabs: Added hab=" + hab);
         sleepms(2);
     endforeach
 
@@ -324,21 +346,43 @@ function SetupHumanoidHabs(mobile)
 endfunction
 
 function SetupWizardClass(mobile, npc_elem)
-    if (!mobile.isMage())
-        return 0;
+    // First try to get school from config
+    var spellschool := GetConfigString(npc_elem, "SpellSchool");
+    var base_ability := 0;
+    
+    // If no school defined in config, check habs
+    if (!spellschool)
+        var habs := GetObjProperty(mobile, "myhabs");
+        if (habs)
+            if ("Vínculo Elemental" in habs)
+                spellschool := "Ahtaleloreth";
+            elseif ("Elo Natural" in habs)
+                spellschool := "Aradalore";
+            elseif ("Sacrificio da Carne" in habs)
+                spellschool := "Kaijin";
+            elseif ("Danca das Sombras" in habs)
+                spellschool := "Velkyn";
+            elseif ("Determinacao Arcana" in habs)
+                spellschool := "Evocatium";
+            endif
+        endif
     endif
 
-    var spellschool := GetConfigString(npc_elem, "SpellSchool");
-    var base_ability;
-    
+    // Map school to base ability
     case (spellschool)
         "Kaijin": base_ability := "Sacrificio da Carne";
         "Ahtaleloreth": base_ability := "Vínculo Elemental";
         "Aradalore": base_ability := "Elo Natural";
         "Evocatium": base_ability := "Determinacao Arcana";
         "Velkyn": base_ability := "Danca das Sombras";
-        default: return 0;
     endcase
+
+    if (!base_ability)
+        return 0;
+    endif
+
+    // Store the school
+    SetObjProperty(mobile, "SpellSchool", spellschool);
 
     // Build progression based on base ability
     var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
@@ -761,7 +805,7 @@ function getHighestAggro(creature)
    return highest[1];
 endfunction
 
-function TacticalReposition(opponent)
+function TacticalReposition(opponent, chasing)
     var runs := 0;
     var max_dist := 12;
     var start_pos := struct{ "x" := me.x, "y" := me.y };
@@ -769,7 +813,7 @@ function TacticalReposition(opponent)
 
     while(Distance(me, opponent) < max_dist && runs < 10)
         var old_pos := struct{ "x" := me.x, "y" := me.y };
-        TryToRunAway(opponent);
+        TryToRunAway(opponent, 1);
         runs += 1;
         sleepms(200);
 
@@ -781,7 +825,6 @@ function TacticalReposition(opponent)
                 var possible_locations := GetAlternativeLocations(opponent);
                 foreach loc in possible_locations
                     if (CheckLosAt(me, loc.x, loc.y, me.z))
-                        print("Found alternative escape path");
                         RunTowardLocation(loc.x, loc.y);
                         return 1;
                     endif
@@ -1083,6 +1126,7 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
+
         else
             progress.no_progress_count := 0;
         endif
@@ -1093,12 +1137,11 @@ function PursueTarget(opponent)
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
     endif
-
     // If we're not making progress after several checks, force a reposition
-    if (progress.no_progress_count >= 1) // Zero tolerance for no progress
+    if (progress.no_progress_count >= 1)
         EraseObjProperty(me, "path");
         EraseObjProperty(me, "#enemy_last_loc");
-        TacticalReposition(opponent);
+        TacticalReposition(opponent, 1);
         progress.no_progress_count := 0;
         progress.last_check_time := ReadGameClock();
         SetObjProperty(me, "#pursue_progress", progress);
@@ -1317,22 +1360,11 @@ function ShamanBehavior(shaman)
         return 0;
     endif
 
-    var npc_elem := NPC_GetNPCConfig(shaman);
-    var caster_tier := CInt(npc_elem.Tier);
-    if (!caster_tier)
-        caster_tier := 1;
-    endif
-
     // Get all allies nearby
-    var allies := NPC_GetNearbyAllies(shaman);
     var wounded_allies := array{};
 
     // Check allies' health
-    foreach ally in allies
-        if (isHurt(ally)) // Is Hurt
-            wounded_allies.append(ally);
-        endif
-    endforeach
+    wounded_allies := CheckForWoundedAllies(shaman);
 
     if (wounded_allies.size() == 0)
         DoHarmfulSpell();
@@ -1345,30 +1377,47 @@ function ShamanBehavior(shaman)
         return 1;
     endif
 
+    if (wounded_allies.size() > 0)
+        PerformHeal(shaman, wounded_allies, 1);
+        return 1;
+    endif   
+
+    return 0;
+endfunction
+
+function CheckForWoundedAllies(who)
+	var allies := NPC_GetNearbyAllies(who);
+	var wounded_allies := array{};
+
+	// Check allies' health
+	foreach ally in allies
+		if (isHurt(ally)) // Is Hurt
+			wounded_allies.append(ally);
+		endif
+	endforeach
+
+	return wounded_allies;
+endfunction
+
+function FindMostWoundedAlly(wounded_allies)
+    // Initialize our best candidate with a full 100% health
+    var most_wounded := struct{
+        "mobile" := 0,
+        "hp_percent" := 100.0
+    };
+
     foreach ally in wounded_allies
-        var most_wounded := struct{
-            "mobile" := 0,
-            "hp_percent" := 100
-        };
-
-        foreach ally in wounded_allies
-            var hp_percent := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS)) * 100;
-            if (hp_percent < most_wounded.hp_percent)
-                most_wounded.mobile := ally;
-                most_wounded.hp_percent := hp_percent;
-            endif
-            sleepms(2);
-        endforeach
-
-        if (most_wounded.mobile)
-            PerformHeal(shaman, most_wounded.mobile, caster_tier);
-            SetCooldown(shaman, "heal_check", 15);
-            return 1;
+        // Calculate current HP percentage for each ally
+        var hp_percent := (CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS))) * 100;
+        // Update if this ally has a lower (worse) percentage
+        if (hp_percent < most_wounded.hp_percent)
+            most_wounded.mobile := ally;
+            most_wounded.hp_percent := hp_percent;
         endif
         sleepms(2);
     endforeach
 
-    return 0;
+    return most_wounded.mobile;
 endfunction
 
 function AskForHealing(me)
@@ -1716,7 +1765,7 @@ function isMonsterRanged()
     return is_ranged;
 endfunction
 
-function TryToRunAway(opponent)
+function TryToRunAway(opponent, chasing := 0)
     var progress := GetObjProperty(me, "#runaway_progress");
     if (!progress)
         progress := struct{
@@ -1727,10 +1776,12 @@ function TryToRunAway(opponent)
     endif
 
     // Run away from opponent
-    RunAwayFrom(opponent);
+    if (!chasing)
+        RunAwayFrom(opponent);
+    endif
 
-    // Check progress every 2 seconds
-    if (ReadGameClock() >= progress.last_check_time + 2)
+    // Check progress every 1 seconds
+    if (ReadGameClock() >= progress.last_check_time + 1)
         // Check if we're stuck in roughly the same area (2-3 tiles)
         var current_dist := CoordinateDistance(me.x, me.y, progress.last_pos.x, progress.last_pos.y);
         if (current_dist <= 3)
