@@ -2,6 +2,7 @@ use uo;
 use os;
 use cfgfile;
 use math;
+use npc;
 
 include "include/client";
 include "include/sounds";
