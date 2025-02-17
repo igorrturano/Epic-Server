@@ -5,7 +5,7 @@ include ":tn:recipes";
 include ":mounts:mounts";
 include "npcUtils";
 include ":fls_core:fls_characters";
-
+include "makeRace";
 const MAX_Z_DIFF := 18;
 
 function InitializeEpicNPC(mobile)
@@ -89,6 +89,10 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     setupNPCGender(mobile);
     SetupHumanoidHabs(mobile);
     SetupItemsForSpecificClasses(mobile, npc_elem);
+    var race := GetObjProperty(mobile, "myrace");
+    if (!race)
+        makeRace(mobile);
+    endif
     SetupNPCEquip(mobile, npc_elem);
     SetupBaseLanguages(mobile);
 
@@ -149,10 +153,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             endif
 
             if ("Artilheiro Preparado" in habs)
+                makeRace(mobile, ANAO);
                 SetupFireweaponLoadout(mobile);
             endif
 
             if ("Construtor de Golems" in habs)
+                makeRace(mobile, ANAO);
                 // Store mobile's current position before hiding it
                 SetObjProperty(mobile, "#original_pos", struct{
                     "x" := mobile.x,
@@ -176,19 +182,41 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             endif
 
             if ("Vínculo Elemental" in habs)
+                makeRace(mobile, ELFO);
                 var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
                 EquipRandomFromArray(mobile, elementals);
             endif
 
             if ("Visao verdadeira" in habs)
+                mobile.gender := 1;
+                makeRace(mobile, DROW);
                 var whip := CreateItemInBackpack(mobile, 0x166E, 1);
                 EquipItem(mobile, whip);
             endif
 
             if ("Campeao das Montanhas" in habs)
+                makeRace(mobile, ANAO);
                 var hammer := CreateItemInBackpack(mobile, 0xFA11, 1);
                 EquipItem(mobile, hammer);
             endif
+
+            if ("Sede de Sangue" in habs)
+                makeRace(mobile, ORC);
+                var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
+                EquipRandomFromArray(mobile, two_handed);
+            endif
+
+            if ("Gwaenedh" in habs)
+                makeRace(mobile, ELFO);
+            endif
+
+            if ("Elo Natural" in habs)
+                makeRace(mobile, ELFO);
+                var bow := CreateItemInBackpack(mobile, 0x13B2, 1);
+                EquipItem(mobile, bow);
+            endif
+            
+            
 
     endcase
 
@@ -291,20 +319,14 @@ endfunction
 function SetupHumanoidHabs(mobile)
     var wrestling := AP_GetSkill(mobile, WRESTLING);
     var tactics := AP_GetSkill(mobile, TACTICS);
-    
-    print("DEBUG SetupHumanoidHabs: Wrestling=" + wrestling + " Tactics=" + tactics);
-    
     var calculate_level_hp := CInt(wrestling + tactics) - 80;
-    print("DEBUG SetupHumanoidHabs: calculate_level_hp=" + calculate_level_hp);
     
     // Add safety cap to prevent overflow
-    if (calculate_level_hp > 120)
-        calculate_level_hp := 120;
+    if (calculate_level_hp > 100)
+        calculate_level_hp := 100;
     endif
     
     var npc_level := (calculate_level_hp / 6);
-    print("DEBUG SetupHumanoidHabs: npc_level=" + npc_level);
-    
     // Ensure npc_level is within reasonable bounds
     if (npc_level < 0)
         npc_level := 0;
@@ -316,7 +338,6 @@ function SetupHumanoidHabs(mobile)
     var habs := array{};
     foreach hab in habs_by_level
         habs.append(hab);
-        print("DEBUG SetupHumanoidHabs: Added hab=" + hab);
         sleepms(2);
     endforeach
 
