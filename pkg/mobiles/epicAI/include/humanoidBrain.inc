@@ -414,63 +414,72 @@ function GetHabsByLevel(npc, nivel)
 endfunction
 
 function GetClassProgression(habcfg, subclass)
-  var progression := array{};
-  var class_choice := array{};
-  var npc_elem := NPC_GetNPCConfig(me);
-  var class_tree := struct{};
-  var base_hab := "";
-  if (subclass)
-    base_hab := subclass;
-  else
-  // Build ability tree
+    var progression := array{};
+    var class_choice := array{};
+    var npc_elem := NPC_GetNPCConfig(me);
+    var class_tree := struct{};
+    var base_hab := "";
+
+    // Build ability tree ALWAYS, regardless of subclass
     foreach hab in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab);
         var classe := GetConfigString(elem, "classe");
+        if (!classe)
+            continue;
+        endif
+        
         var params := SplitWords(classe);
         var hab_class := params[1];
         var hab_level := CInt(params[2]) * 2;
         var my_class := npc_elem.Classe;
         var req := GetConfigString(elem, "requisito");
 
+        // Only process abilities for this NPC's class
         if (hab_class == my_class)
-        if (!req && hab_level == 4)
-            class_choice.append(hab);
-        endif
-        
-        // Add to progression tree
-        if (req)
-            if (!class_tree[req])
-            class_tree[req] := array{};
+            // Store level 4 abilities without prerequisites as potential base choices
+            if (!req && hab_level == 4)
+                class_choice.append(hab);
             endif
-            class_tree[req].append(hab);
-        endif
+            
+            // Build the prerequisite tree
+            if (req)
+                if (!class_tree[req])
+                    class_tree[req] := array{};
+                endif
+                class_tree[req].append(hab);
+            endif
         endif
     endforeach
 
-    base_hab := class_choice[RandomInt(class_choice.size())+1];
-  endif
-
-  // Pick base ability and build progression
-  progression.append(base_hab);
-
-  var current_level := base_hab;
-  var processed := array{};
-  
-  while (current_level && current_level != processed[processed.size()])
-    processed.append(current_level);
-    
-    if (class_tree[current_level])
-      foreach hab in (class_tree[current_level])
-        if (!(hab in progression))
-          progression.append(hab);
-          current_level := hab;
+    // AFTER building the tree, handle base_hab selection
+    if (subclass)
+        base_hab := subclass;
+    else
+        // Randomly select one of the base abilities if no subclass was specified
+        if (class_choice.size() > 0)
+            base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
-        sleepms(2);
-      endforeach
     endif
-  endwhile
 
-  return progression;
+    // Only proceed if we have a valid base ability
+    if (base_hab)
+        // Start with the base ability
+        progression.append(base_hab);
+        
+        // Follow the prerequisite chain to build full progression
+        var current := base_hab;
+        while (current && class_tree[current])
+            foreach next_hab in (class_tree[current])
+                if (!(next_hab in progression))
+                    progression.append(next_hab);
+                endif
+                sleepms(2);
+            endforeach
+            current := progression[progression.size()];
+        endwhile
+    endif
+
+    return progression;
 endfunction
 
 function FormatStateKey(state, hab)

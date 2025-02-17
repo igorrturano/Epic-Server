@@ -299,14 +299,18 @@ endfunction
 
 function getSpellSchool(monster)
    var npc_elem := NPC_GetNPCConfig(monster);
-   var school:= npc_elem.SpellSchool;
+   var school := npc_elem.SpellSchool;
 
+   var spellSchool := GetObjProperty(monster, "SpellSchool");
+    if (spellSchool)
+        school := spellSchool;
+    endif
    if (!school)
         var schools := array{"Evocatium", "Aradalore", "Ahtaleloreth", "Kaijin", "Velkyn"};
         school := schools[RandomInt(5)+1];
     endif
 
-   return npc_elem.SpellSchool;
+   return school;
 endfunction
 
 function ChooseSpell(me, opponent, spells)
@@ -319,7 +323,6 @@ function ChooseSpell(me, opponent, spells)
 
     // Get ideal spell based on tactical considerations
     var chosen_spell := ChooseIdealSpell(me, opponent, spells);
-
     // Get spell info for the chosen spell
     var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
     if (!spellInfo)
@@ -392,6 +395,7 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
+   PrintTextAbove(me, "Casting " + chosen_spell);
    return NPC_CastSpell(me, chosen_spell);
 endfunction
 
@@ -457,9 +461,9 @@ function HandleSwordMageSpellChoice(opponent)
         var elementalWeapon := GetObjProperty(me.weapon, "#elementalweapon");
         if (!elementalWeapon)
             var spells := array{"Lamina Flamejante", "Lamina de Gelo", "Lamina Eletrica"};
-            NPC_CastSpell(me, spells[RandomInt(spells.size())+1]);
-            SetCooldown(me, "elemental_weapon", 20);
-            return;
+            var chosen_spell := spells[RandomInt(spells.size())+1];
+            SetObjProperty(me, "#SpellTarget", me.weapon.serial);
+            return chosen_spell;
         endif
 
         // Choose spells based on enchantment type
@@ -474,8 +478,11 @@ function HandleSwordMageSpellChoice(opponent)
         endcase
 
         if (spell)
-            NPC_CastSpell(me, spell);
-            SetCooldown(me, "elemental_weapon", 20);
+            SetObjProperty(me, "#SpellTarget", opponent.serial);
+            return spell;
         endif
     endif
+    
+    // Default return if we can't cast yet due to cooldown
+    return "Misseis Magicos";
 endfunction

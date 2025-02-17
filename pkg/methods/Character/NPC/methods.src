@@ -173,8 +173,24 @@ exported function isBloodless(who)
 endfunction
 
 exported function isMage(who)
-   var npc_elem := NPC_GetNPCConfig(who);
-   return (npc_elem.SpellSchool != error) && (!who.isShaman());
+    var npc_elem := NPC_GetNPCConfig(who);
+    
+    // First check if it's a shaman - if so, definitely not a mage
+    if (isShaman(who))
+        return 0;
+    endif
+
+    // If already has SpellSchool defined, use that
+    if (npc_elem.SpellSchool != error)
+        return 1;
+    endif
+
+    // Store the school
+    if(GetObjProperty(who, "SpellSchool"))
+        return 1;
+    endif
+
+    return 0;
 endfunction
 
 exported function isShaman(who)

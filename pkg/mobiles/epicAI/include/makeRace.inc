@@ -2,16 +2,18 @@ include "include/client";
 
 function makeRace(mobile, race := 0)
     if (!race)
-        race := RandomInt(array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO});
+        var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
+        race := races[RandomInt(races.size()) + 1];
+        print("Making race: " + race);
     endif
-
+    
    case (race)
       ANAO:   makeDwarven(mobile);
       ELFO:   makeElven(mobile);
       DROW:   makeDrow(mobile);
       ORC:    makeOrc(mobile);
       POLSKI: makePolski(mobile);
-      default: makeHuman(mobile);
+      HUMANO: makeHuman(mobile);
    endcase
 
    SetObjProperty(mobile, "myrace", race);
@@ -174,9 +176,9 @@ endfunction
 function makeOrc(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
-      mobile.graphic := 1834; // Male orc graphic
+      mobile.graphic := 1832; // Male orc graphic
    else
-      mobile.graphic := 1835; // Female orc graphic
+      mobile.graphic := 1833; // Female orc graphic
    endif
 
    // Get configs
@@ -186,7 +188,7 @@ function makeOrc(mobile)
 
    // Get skin colors from config
    var skin_elem := skin_cfg["orc"];
-   var skin_colors := GetConfigStringArray(skin_elem, "color");
+   var skin_colors := GetConfigStringArray(skin_elem, "Color");
    mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
    mobile.truecolor := mobile.color;
 
@@ -231,9 +233,9 @@ endfunction
 function makePolski(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
-      mobile.graphic := 1836; // Male polski graphic
+      mobile.graphic := 1828;
    else
-      mobile.graphic := 1837; // Female polski graphic
+      mobile.graphic := 1829;
    endif
 
    // Get configs
