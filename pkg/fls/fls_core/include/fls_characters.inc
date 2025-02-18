@@ -135,23 +135,24 @@ function ReverseLight(player)
 
 endfunction
 
-function GetClass(who)
-	var classe := GetObjProperty(who, "classe");
-	if (!classe)
-		return 0;
-	else
-		return classe;
-	endif
-endfunction
+//RETIRADO por estar redundante com methods/char
+//function GetClass(who)
+//	var classe := GetObjProperty(who, "classe");
+//	if (!classe)
+//		return 0;
+//	else
+//		return classe;
+//	endif
+//endfunction
 
-function GetRace(who)
-	var raca := GetObjProperty(who, "raca");
-	if (!raca)
-		return 0;
-	else
-		return raca;
-	endif
-endfunction
+//function GetRace(who)
+//	var raca := GetObjProperty(who, "raca");
+//	if (!raca)
+//		return 0;
+//	else
+//		return raca;
+//	endif
+//endfunction
 
 function GetRaceCfgElem(race_name)
 	var cfg := GetRaceCfg();

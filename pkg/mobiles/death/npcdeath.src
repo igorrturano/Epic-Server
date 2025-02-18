@@ -301,9 +301,11 @@ program core_npcDeath(params)
 		var coords := GetObjProperty(corpse, "anchor");
 		var trueBoss := GetObjProperty(corpse, "true_boss");
 		if ( isBoss(corpse) )
-			if (fin.cmdlevel <= 0 && trueBoss == 1)//Para acionar o DiscordWebhook
+			coords.append(corpse.realm);
+			SetObjProperty(corpse, "coords", coords);
+			if (trueBoss == 1)//Para acionar o DiscordWebhook
 				var tipo := "boss"; 
-				Start_script (":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse_name, region, coords, 0});
+				Start_script (":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse_name, region, coords, corpse});
 			elseif (fin.cmdlevel == 4 && trueBoss == 1)
 				var finOwner := Cint(GetObjProperty(fin, "owner"));
 				var fin_owner := SystemFindObjectBySerial(finOwner);
