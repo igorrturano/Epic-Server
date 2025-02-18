@@ -752,7 +752,7 @@ function ShowDungeonInfoGump(who, name)
     
 // BOSS Section
 var boss_info := GetFormattedBossInfo(dungeon_elem, dungeon_realm);
-var button_id := 10;
+var button_id := 11;
 var base_x := x + 735;
 var current_y := y + 15;
 
@@ -936,7 +936,7 @@ y += 70;
         dungeon_elem.SetProp("Rect" + rect_index, new_rect);
         SendSysMessage(who, "Area " + rect_index + " atualizada com sucesso!");
         return ShowDungeonInfoGump(who, name);
-elseif (input[0] >= 10 && input[0] < button_id)// Teleport handling section
+elseif (input[0] >= 11 && input[0] < button_id)// Teleport handling section
     var boss_clicked;
     var is_trueboss := (input[0] >= first_trueboss_button);
     
@@ -944,7 +944,7 @@ elseif (input[0] >= 10 && input[0] < button_id)// Teleport handling section
         var trueboss_index := input[0] - first_trueboss_button;
         boss_clicked := boss_info.truebosses[trueboss_index + 1];
     else
-        var boss_index := input[0] - 10;
+        var boss_index := input[0] - 11;
         boss_clicked := boss_info.bosses[boss_index + 1];
     endif
     
