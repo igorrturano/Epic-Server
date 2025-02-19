@@ -1,5 +1,8 @@
 use cfgfile;
 use uo;
+use datafile;
+
+include ":gumps:epicGumps";
 
 program Install()
 	print("INSTALLING: Methods for Items... OK!");
@@ -43,4 +46,59 @@ endfunction
 exported function isSpiderEggSac(item)
 	if (item.objtype == 0x10D9) return 1; endif
 	return 0;
+endfunction
+
+exported function IsInTheDungeon(item)
+    // Boas práticas: declarar todas as variáveis no início
+    var who_x := item.x;
+    var who_y := item.y;
+    var who_z := item.z;
+    var who_realm := item.realm;
+    var coords := {who_x, who_y, who_z, who_realm};
+
+    var df := OpenDataFile(":tn:dungeons");
+    if (!df)
+        return 0;
+    endif
+    
+    foreach dungeon_name in (df.keys())
+        var dungeon_elem := df.FindElement(dungeon_name);
+        if (!dungeon_elem)
+            continue;
+        endif
+        
+        var dungeon_realm := dungeon_elem.GetProp("Realm");
+        var rect := dungeon_elem.GetProp("Rect");
+        var rect_array := SplitWords(rect);
+        
+        // Validação melhorada do tamanho do array
+        if (rect_array.size() < 4)
+            PrintTextAbove(item, "Erro: Dados de retângulo inválidos para " + dungeon_name);
+            continue;
+        endif
+        
+        // Conversão e validação das coordenadas
+        var x1 := CInt(rect_array[1]);
+        var y1 := CInt(rect_array[2]);
+        var x2 := CInt(rect_array[3]);
+        var y2 := CInt(rect_array[4]);
+        
+        // Cálculo dos limites
+        var min_x := Min(x1, x2);
+        var max_x := Max(x1, x2);
+        var min_y := Min(y1, y2);
+        var max_y := Max(y1, y2);
+        
+        // Verificação da localização
+        if (coords[4] == dungeon_realm)
+            if (coords[1] >= min_x && coords[1] <= max_x && 
+                coords[2] >= min_y && coords[2] <= max_y)
+                return dungeon_elem.GetProp("Name");
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    return 0;
 endfunction
