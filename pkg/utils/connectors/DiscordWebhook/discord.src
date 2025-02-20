@@ -2,6 +2,7 @@ use uo;
 use os;
 use cfgfile;
 use file;
+use datafile;
 
 include ":DiscordWebhook:outbound";
 include ":DiscordWebhook:report";
@@ -21,7 +22,18 @@ program textcmd_testdiscordbot( params )
 
   // COLOCAR CMD.LEVEL E TIRAR
   if ( tipo == "boss" )
-	var message := "**BOSS** -> *" + name + "* matou " + boss_name + " com a conta [" + acct_name + "] na regiao " + region + ", coordenadas: " + coords;
+	if (item.IsInTheDungeon())
+		var df := OpenDataFile(":tn:dungeons");
+		if (!df)
+			return 0;
+		endif
+		var dg_name := item.IsInTheDungeon();
+		var dungeon_elem := df.FindElement(dg_name);
+		var current_clear := CInt(dungeon_elem.GetProp("Finalizada"));
+		dungeon_elem.SetProp("Finalizada", current_clear+1); // Salva o novo valor
+		region := dg_name;
+	endif
+	var message := "**TRUEBOSS** -> *" + name + "* matou " + boss_name + " com a conta [" + acct_name + "] na regiao " + region + ", coordenadas: " + coords;
 	var outbound := PresetDiscordMessage( message );
   elseif ( tipo == "furto" )
 	var message := "**FURTO** -> *" + name + "* conta [" + acct_name + "] furtou " + item + " do char " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
@@ -40,6 +52,16 @@ program textcmd_testdiscordbot( params )
 	var message := "**Item Destruído** -> *" + name + "* conta [" + acct_name + "] destruiu " + item + " usando " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
 	var outbound := PresetDiscordMessage( message );
   elseif ( tipo == "morreu" )
+	if (item.IsInTheDungeon())
+		var df := OpenDataFile(":tn:dungeons");
+		if (!df)
+			return 0;
+		endif
+		var dg_name := item.IsInTheDungeon();
+		var dungeon_elem := df.FindElement(dg_name);
+		var current_clear := CInt(dungeon_elem.GetProp("Mortes"));
+		dungeon_elem.SetProp("Morte", current_clear+1); // Salva o novo valor
+	endif
 	var message := "**MORREU** -> *" + name + "* conta [" + acct_name + "] morreu em combate com " + boss_name + " na regiao " + region + ", coordenadas: " + coords;
 	var outbound := PresetDiscordMessage( message );
   elseif ( tipo == "pk" )

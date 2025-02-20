@@ -58,6 +58,12 @@ program walkOn(mobile, tile)
 		ReverseLight(mobile);
 	endif
 	destroyIllyraOutsideDungeons(mobile);
+    var name := mobile.IsInTheDungeon();
+    if (name)
+        SendSysMessageEx(mobile, "Dungeon: "+name+". Seu feedback é importante para nós!( .feedback ou no Discord)", SSM_INFO);
+	else
+		SendSysMessage(mobile, "NAO ENTROU"+name);
+    endif
 	return 1;
 endprogram
 
