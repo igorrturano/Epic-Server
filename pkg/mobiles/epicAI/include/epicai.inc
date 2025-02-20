@@ -1021,6 +1021,10 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    if ( GetCooldown(me, "peacemade") > 0 )
+        return 0;
+    endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0) 
         // Allow combat if defender initiated it
