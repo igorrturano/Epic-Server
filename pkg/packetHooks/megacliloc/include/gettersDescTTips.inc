@@ -32,6 +32,23 @@ function PegaDescComponente(objeto,xDesc := "")
 	return xDesc;
 endfunction
 
+function PegaDescProdutoMontado(objeto,xDesc := "")
+	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
+	if(prop)
+
+		xDesc := xDesc + WHITE + "Item: "+ prop.receita.desc +"<br><br>";
+		xDesc := xDesc + BLUE_ICE + "Componentes<br>";
+		foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)
+			Sleepms(2);
+			var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
+														componenteEscolhido.material.nome,
+														componenteEscolhido.tier.desc); 
+			xDesc := xDesc + WHITE + descComponente + " <br>";
+		endforeach
+	endif
+	return xDesc;
+endfunction
+
 function PegaDescDosesVeneno(objeto,xDesc := "")
 	if (PegaPropObjItemOrTemplate(objeto,"poisonInfo") != error )
 		if (objeto.graphic == 0x0F01)

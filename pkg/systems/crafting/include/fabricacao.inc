@@ -80,6 +80,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar input para quantidade
 	//TODO criar botão para sair
 	//TODO Testar consumo e obrigatoriedade de ingredientes.
+	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso. 
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
