@@ -399,7 +399,21 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, re
 	GFTooltipText(gump,"Criar novo esquema.");
 	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
 	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
-	GFGumpPic(gump,x + 60 ,y + 10,9009); // Pino
+	var corPino := 0;
+	if(receita.dificuldade.chanceBase > 45)
+		corPino := 1367; // verde
+	elseif(receita.dificuldade.chanceBase <= 45 && receita.dificuldade.chanceBase > 30)
+		corPino := 2212; //amarelo
+	elseif(receita.dificuldade.chanceBase <= 30 && receita.dificuldade.chanceBase > 10)
+		corPino:= 43;//Laranja
+	else
+		corPino := 0; // vermelho
+	endif
+	GFGumpPic(gump,x + 60 ,y + 10,9009, corPino); // Pino
+	if(receita.dificuldade.chanceBase)
+		GFTooltipText(gump,"Chance de obter sucessos: {}%".format(receita.dificuldade.chanceBase));
+	endif
+
 	if(receitaSelecionada.receita.objtype == receita.objtype)
 		GFGumpPic(gump,x + 17 ,y + 95,30076,0x57); // seletor
 	endif

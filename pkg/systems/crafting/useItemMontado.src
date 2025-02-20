@@ -1,0 +1,9 @@
+use os;
+use uo;
+
+include "include/say";
+
+program useItemMontado(who, item)
+	SendSysMessageEx(who, "Processo de Tratamento iniciado!", SSM_INFO);
+	return;
+endprogram

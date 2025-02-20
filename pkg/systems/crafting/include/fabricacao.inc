@@ -2,6 +2,7 @@ use Math;
 
 include "/include/epicConstants";
 include "/include/epicPropNames";
+include "/include/math";
 include "include/epicUtils";
 include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
@@ -16,6 +17,8 @@ var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
+const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump. 
+const CHANCE_FABRICACAO_MAX := 60.0;
 
 enum ESTADOS_FABRICACAO
 	ITEM_MONTADO,
@@ -80,7 +83,9 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar input para quantidade
 	//TODO criar botão para sair
 	//TODO Testar consumo e obrigatoriedade de ingredientes.
-	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso. 
+	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
+	//TODO Aplicar o peso do item no item montado.
+	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas.
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -260,7 +265,7 @@ function CriaItemMontado(quem,esquema,receita)
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
 	descriptor.color := esquema.cor;
 	descriptor.graphic := receita.graphic;
-		
+
 	var item := CreateItemInBackpack(quem,descriptor);
 
 	DefinePropFabricado(item,esquema,receita);
@@ -504,6 +509,8 @@ function MontaObetoOpcaoComponente(componenteEncontrado, indiceEncaixe)
 				indiceEncaixeComponente := indiceEncaixe};
 endfunction
 
+
+//TODO desamarrar esta função da SESSAO.
 function CarregaComponentesEncontrados(quem, sessao, configRecursos)
 	var retorno := dictionary;
 
@@ -697,7 +704,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
       		endif
 
 			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem))
-				receitas.append(MontaReceitaItem(quem,objtype));
+				receitas.append(MontaReceitaItem(quem, objtype, nomePericia));
 			endif
 			Sleepms(2);
 		endforeach
@@ -709,17 +716,18 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 
 endfunction
 
-function MontaReceitaItem(quem,objtype)
+function MontaReceitaItem(quem, objtype, nomePericia)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
+	var descritorFabricacao := craft_config[objtype];
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype);
-	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype);
+	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, descritorFabricacao);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios);
-	receita.+dificuldade := PegaDificuldade();
+	receita.+dificuldade := PegaDificuldade(quem, descritorFabricacao, nomePericia);
 	receita.+objtype := objtype;
 	receita.+uso := definicaoItem.Attribute;
 	receita.+desc := definicaoItem.desc;
@@ -783,8 +791,7 @@ function PegaComponentesNecessarios(objtype)
 	return componentes;
 endfunction
 
-function PegaMateriaisNecessarios(objtype)
-	var descritorFabricacao := craft_config[objtype];
+function PegaMateriaisNecessarios(objtype, descritorFabricacao)
 	var materials := GetConfigStringDictionary(descritorFabricacao, "materials");
 	return materials;
 endfunction
@@ -793,15 +800,28 @@ function PegaDuracaoFabricacao()
 	return "Longo";//TODO Implementar esta função.
 endfunction
 
-function PegaDificuldade()
-	//TODO Implementar esta função.
+function PegaDificuldade( quem, descritorFabricacao, nomePericia)
+	return struct{
+		skill := GetConfigString(descritorFabricacao,"skill"),
+		chanceBase := PegaChanceFabricacaoBase(quem,
+												nomePericia,
+												GetConfigString(descritorFabricacao,"skill"))
+	};
+endfunction
+
+function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem)
+	var valorPericia := AP_GetTrueSkill(quem, pericia);
+	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
+	var chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
+	Print("chancePelaSkill: " + chancePelaSkill);
+	return Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
 endfunction
 
 function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem)
 	
 	var isOrigemValida := false;
-	var isValorPericiaSuficiente := (craft_config[objtype].skill) <= AP_GetSkill(quem, nomePericia);
-
+	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, nomePericia);
+	
 	if(isDuplaOrigem)
 		isOrigemValida := nomeItem in receitasAprendidas || povo == itemOrigem;
 	else
@@ -813,6 +833,12 @@ function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,r
 	endif
 
 	return isOrigemValida && isValorPericiaSuficiente;
+endfunction
+
+function TemValorPericiaNecessaria(quem, objtype, nomePericia)
+	var settings := AP_GetSettingsCfgElem("Skills");
+	//Print( "OBJTYPE " + objtype + " diff: " + (craft_config[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) + " skill necessaria: " + (craft_config[objtype].skill));
+	return (  craft_config[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
 endfunction
 
 function MontaCraftProp(fabricacaoConfig)

@@ -1,0 +1,6 @@
+use os;
+use uo;
+
+program equipItemMontado(who, item, startup)
+	return 0;
+endprogram
