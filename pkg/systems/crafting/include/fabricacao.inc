@@ -91,7 +91,7 @@ function EnviaItensComplexosGump(quem,profissao)
 				PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
 				sessao.devePopularDropDown := false;
 			endif
-			MontaEsquemaGump(gump,parametros,sessao);
+			MontaEsquemaGump(gump,sessao);
 		endif
 
 		retorno := GFSendGump(quem,gump);
@@ -459,7 +459,6 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 		endif
 
 		if(componentesEncontrados[componenteNecessario.encaixe])
-
 			var isValorEscolhidoPresente := false;
 			var indiceOpcoes := 1;
 
@@ -501,7 +500,7 @@ function MontaObetoOpcaoComponente(componenteEncontrado, indiceEncaixe)
 				itemRef := componenteEncontrado.itemRef,
 				componenteTier := componenteEncontrado.tier,
 				nomeMaterial := componenteEncontrado.material.name,
-				chaveMaterial := componenteEncontrado.chaveMat,
+				chaveMaterial := componenteEncontrado.chaveMaterial,
 				indiceEncaixeComponente := indiceEncaixe};
 endfunction
 
@@ -542,7 +541,7 @@ endfunction
 
 function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica)
 	if(componentesEncontrados.melhor == 0)
-		componentesEncontrados := envelopeNovo;
+		componentesEncontrados.melhor := envelopeNovo;
 		return;
 	endif
 	

@@ -131,7 +131,7 @@ function PreencheEsquemas(byref gump, x,y, sessao)
 	endforeach
 endfunction
 
-function MontaEsquemaGump(byref gump,byref parametros,byref sessao)
+function MontaEsquemaGump(byref gump,byref sessao)
 	gump := GFECreateGump("GumpEsquema",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
 	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
 	var margemSuperiorLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO;
@@ -271,7 +271,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	var alturaPainel := alturaCelula * 3;
 	var alturaLinha := 30;
 	var componenteEscolhido := sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indice];
-
+	
 	var quantidadeEfeitosAdicionais := componenteEscolhido.propriedades.efeitosAdicionais.size();
 	if(quantidadeEfeitosAdicionais > 0)
 		alturaPainel := alturaPainel + alturaLinha * quantidadeEfeitosAdicionais;
