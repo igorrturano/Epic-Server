@@ -80,6 +80,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Fazer opção para reparar
 	//TODO criar input para quantidade
 	//TODO criar botão para sair
+	//TODO Testar consumo e obrigatoriedade de ingredientes.
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -345,28 +346,23 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 endfunction
 
 function ConsomeRequisitos(contagem)
-	foreach elemento in contagem
+	foreach contado in contagem
 		Sleepms(2);
-
-		foreach contado in contagem
-			var quantidadeRestante := contado.quantidadeNecessaria;
+		var quantidadeRestante := contado.quantidadeNecessaria;
+		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
-			foreach itemEncontrado in (contado.itemRefArray)
-				Print("quantidadeRestante " + quantidadeRestante + " itemEncontrado.stackable " + itemEncontrado.stackable + " itemEncontrado.desc " + itemEncontrado.desc);		
-				Sleepms(2);
-				If(quantidadeRestante <= 0) 
-					break; 
-				endif;
-				
-				if(itemEncontrado.stackable)
-					SubtractAmount(itemEncontrado, quantidadeRestante);
-					quantidadeRestante -= itemEncontrado.amount;
-				else
-					quantidadeRestante -= 1;
-					DestroyItem(itemEncontrado);
-				endif
-			endforeach	
-		endforeach
+			If(quantidadeRestante <= 0) 
+				break; 
+			endif;
+			
+			if(itemEncontrado.stackable)
+				SubtractAmount(itemEncontrado, quantidadeRestante);
+				quantidadeRestante -= itemEncontrado.amount;
+			else
+				quantidadeRestante -= 1;
+				DestroyItem(itemEncontrado);
+			endif
+		endforeach	
 	endforeach
 endfunction
 
@@ -550,7 +546,11 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 		return;
 	endif
 	
-	var poderAtual := AvaliaPoderComponente(componentesEncontrados.melhor.tier,componentesEncontrados.melhor.chaveMaterial, caracteristica, configRecursos);
+	var poderAtual := AvaliaPoderComponente(componentesEncontrados.melhor.tier,
+											componentesEncontrados.melhor.chaveMaterial,
+											caracteristica,
+											configRecursos);
+											
 	var poderNovo := AvaliaPoderComponente(envelopeNovo.tier,envelopeNovo.chaveMaterial, caracteristica, configRecursos);
 	
 	if( poderAtual < poderNovo)
