@@ -1,19 +1,18 @@
 use Math;
 
 include "/include/epicConstants";
+include "/include/epicPropNames";
 include "include/epicUtils";
 include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/itensComplexosGump";
 include ":gumps:/include/dropDownGump";
 include ":crafting:/craftingDFEsquemas";
+include ":crafting:/include/fabricacaoUtil";
 
 //var fabricacaoGump := DFOpenDataFile(":crafting:CraftGumps", DF_CREATE);
 var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
 var itemsConfig := ReadConfigFile(":*:itemdesc");
-
-const PROPNAME_TIER_COMPONENTE := "tierComponente";
-const PROPNAME_FABRICADO := "fabricado";
 
 const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
@@ -1264,18 +1263,6 @@ function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico
 	endfor
 	return retorno;
 
-endfunction
-
-function PegaComponenteTierDesc(tier)
-	case (tier)
-		1 : return struct {desc := "Mediocre" , valor := -1}; break;
-		2 : return struct {desc := "Comum" , valor := 0}; break;
-		3 : return struct {desc := "Notável" , valor := 1}; break;
-		4 : return struct {desc := "Superior" , valor := 2}; break;
-		5 : return struct {desc := "Excepcional" , valor := 3}; break;
-		default:
-			return struct {desc := "Erro!" , valor := 0}; break;
-	endcase
 endfunction
 
 function ClassificaRetornoComponentes(valorRetorno, gerenciador)

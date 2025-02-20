@@ -1,12 +1,14 @@
 use uo;
 
 include "/include/epicConstants";
+include "/include/epicPropNames";
 include ":charactercreation:habilidades";
 include ":custompizza:itemrp/include/lore_utils";
 include ":megacliloc:/include/toolTipUtils";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":equipsys:include/equipstats";
 include ":destroyable:include/destroyItem";
+include ":crafting:/include/fabricacaoUtil";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
@@ -15,6 +17,17 @@ function PegaDescMagica(objeto,xDesc := "")
 		xDesc := xDesc + ROXO + "Magico Excepcional<br>";
 	elseif (PegaPropObjItemOrTemplate(objeto,"magic"))
 		xDesc := xDesc + ROXO + "Magico<br>";
+	endif
+	return xDesc;
+endfunction
+
+function PegaDescComponente(objeto,xDesc := "")
+	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_TIER_COMPONENTE);
+	if(prop)
+		var tierDesc := PegaComponenteTierDesc(prop).desc;
+		if (tierDesc)
+			xDesc := xDesc + WHITE + "Qualidade: " + tierDesc + "<br>";
+		endif
 	endif
 	return xDesc;
 endfunction

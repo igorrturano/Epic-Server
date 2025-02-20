@@ -29,6 +29,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	var isArmadura := tipoObjeto == ITEM_ARMADURA || tipoObjeto == TEMPLATE_ARMADURA;
 
 	xDesc := PegaDescMagica(objeto,xDesc);
+	xDesc := PegaDescComponente(objeto,xDesc);
 	xDesc := PegaDescDosesVeneno(objeto,xDesc);
 	
 	if (isFireWeapon(objeto))

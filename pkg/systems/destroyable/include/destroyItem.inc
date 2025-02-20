@@ -7,22 +7,10 @@ include ":attributes:attributes";
 include ":destroyable:include/destroyItemPersist";
 include ":itemutils:itemInfo";
 include "/include/utils";
+include "/include/epicPropNames";
 include ":traps:traps";
 //include "include/packets";
 include ":architect:architect";
-
-const PROPNAME_DURABILIDADE := "durabItem"; 
-const PROPNAME_DURABILIDADE_MAX := "maxDurabItem"; 
-const PROPNAME_RESITEM_MULT := "resItem"; 
-const PROPNAME_CHAVE_ORIGINAL := "serialOriginal"; 
-const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
-const PROPNAME_ARMADILHAS := "TrapList"; 
-const PROPNAME_DISPENSAVEL_FLAG := "isDispensavel"; 
-const PROPNAME_INDESTRUTIVEL := "isIndestrutivel"; 
-const PROPNAME_MATERIAL := "material"; 
-const PROPNAME_DESTROCO := "isDestroco"; 
-const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
-const PROPNAME_AREA_SEGURA := "itemEmAreaSegura"; 
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
