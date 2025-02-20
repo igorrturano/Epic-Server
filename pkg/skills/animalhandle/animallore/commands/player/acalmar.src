@@ -47,7 +47,7 @@ program textcmd_acalmar(who)
 	var taxonomy := npccfgfile[creature_template].Taxonomy;	
 	var tameDifficulty := npccfgfile[creature_template].TameDifficulty;	
 
-	if( !taxonomy || tameDifficulty)
+	if( !taxonomy)
 			SendSysMessage(who, "Esse não pode ser um alvo válido.");
 			return 0;
 	endif
