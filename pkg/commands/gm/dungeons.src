@@ -38,7 +38,7 @@ program dungeonspawn(who, text)
                 ShowDungeonInfoGump(who, text);
                 return 1;
 			else
-				if (text != "aqui")
+				if (text != "aqui" && text != "feedbacks" && text != "examinar")
 					if (!(text in df.keys()))
 						SendSysMessageEx(who, "Essa dg não existe!",SSM_FAIL);
 						return;

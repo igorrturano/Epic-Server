@@ -7,38 +7,35 @@ include ":gumps:requestGump";
 include ":gumps:yesNo";
 include ":tn:tngumps";
 
-program FeedbackText (who, text := 0)
-var df := OpenDataFile(":tn:dungeons");
-var dungeon_name := who.IsInTheDungeon(); 
+program FeedbackText (who, text)
+    var df := OpenDataFile(":tn:dungeons");
+    var dungeon_name := who.IsInTheDungeon(); 
+    SendSysMessage(who, "Você pode digitar também:.feedback <nome da dungeons>");
     if (!df)
         SendSysMessage(who, "Erro ao abrir o arquivo de dados!");
         return 0;
     endif
-	
-if (dungeon == 0)
-    if (!dungeon_name)
-        SendSysMessage(who, "Voce nao esta em uma dungeon.");
-        return 0;
+    
+    if (!text)
+        if (!dungeon_name)
+            SendSysMessage(who, "Voce nao esta em uma dungeon.");
+            return 0;
+        endif
+        ShowDungeonFeedbackGump(who, dungeon_name);
+    else
+        // Verifica se o nome digitado (text) existe no df
+        var dungeon_element := df.FindElement(text);
+        if (dungeon_element)
+            ShowDungeonFeedbackGump(who, text);
+        else
+            SendSysMessage(who, "Essa dungeon não existe.");
+            return 0;
+        endif
     endif
-	ShowDungeonFeedbackGump(who, dungeon_name)
-else
-	dungeon_name := text;
-	var current_dungeon := df.FindElement(dungeon_name);
-    if (!current_dungeon)
-        SendSysMessage(who, "Erro ao encontrar dados da dungeon.");
-        return 0;
-    endif
-endif
 endprogram
 
-program ShowDungeonFeedbackGump(who, dungeon_name)
-    var dungeon_name := who.IsInTheDungeon();
-    
-    if (!dungeon_name)
-        SendSysMessage(who, "Voce nao esta em uma dungeon.");
-        return 0;
-    endif
-    
+function ShowDungeonFeedbackGump(who, dungeon_name)
+        
     var df := OpenDataFile(":tn:dungeons");
     if (!df)
         SendSysMessage(who, "Erro ao abrir o arquivo de dados!");
@@ -140,7 +137,7 @@ program ShowDungeonFeedbackGump(who, dungeon_name)
     endif
     
     return 0;
-endprogram
+endfunction
 
 // Função auxiliar para pegar o maior entre dois números
 function Maximum(a, b)
