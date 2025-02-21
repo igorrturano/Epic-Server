@@ -86,6 +86,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
 	//TODO Aplicar o peso do item no item montado.
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas.
+	//TODO implementar componentes opcionais (tranca, por exemplo)
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -720,15 +721,19 @@ function MontaReceitaItem(quem, objtype, nomePericia)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
 	var descritorFabricacao := craft_config[objtype];
+	var sucessos := GetConfigInt(craft_config[objtype],"SucessosFabricacao");
+
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype);
+	receita.+sucessosNecessarios := sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, descritorFabricacao);
-	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios);
+	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos);
 	receita.+dificuldade := PegaDificuldade(quem, descritorFabricacao, nomePericia);
 	receita.+objtype := objtype;
+	receita.+pericia := nomePericia;
 	receita.+uso := definicaoItem.Attribute;
 	receita.+desc := definicaoItem.desc;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
@@ -737,7 +742,7 @@ function MontaReceitaItem(quem, objtype, nomePericia)
 
 endfunction
 
-function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios)
+function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, sucessos)
 
 	var desc := struct;
 	//TODO Lembrar de lidar com as diferenças de nomenclatura para Alchemy.
@@ -763,14 +768,13 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	endif
 
 	desc +=  "<br>";
-	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de Fabricação</BASEFONT><br>" + PegaDuracaoFabricacao() + "<br>";
+	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de Fabricação</BASEFONT><br>" + PegaDescDuracaoFabricacao(sucessos) + "<br>";
 
 	return desc;
 endfunction
 
 function PegaComponentesNecessarios(objtype)
 	var encaixesItem := GetConfigStringArray(craft_config[objtype],"ComponenteEncaixe");
-	var componentePrincipal := GetConfigString(craft_config[objtype],"ComponentePrincipal");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 
 	var componentes := array;
@@ -781,7 +785,12 @@ function PegaComponentesNecessarios(objtype)
 		componente.+caracteristica :=  splitEncaixe[1];
 		componente.+encaixe := splitEncaixe[2];
 		componente.+qtdNecessaria := splitEncaixe[3];
-		componente.+isPrincipal := componentePrincipal == componente.encaixe;
+
+		case (splitEncaixe[4])
+			"principal": componente.+isPrincipal := splitEncaixe[4] == "principal"; break;
+			"opcional": componente.+isOpcional := splitEncaixe[4] == "opcional"; break;
+		endcase
+
 		componente.+encaixeDesc := GetConfigString(configEncaixes[componente.encaixe],"Desc");
 		componente.+itens := GetConfigStringArray(configEncaixes[componente.encaixe],"Item");
 		componentes.append(componente);
@@ -796,8 +805,21 @@ function PegaMateriaisNecessarios(objtype, descritorFabricacao)
 	return materials;
 endfunction
 
-function PegaDuracaoFabricacao()
-	return "Longo";//TODO Implementar esta função.
+function PegaDescDuracaoFabricacao(qtdSucessos)
+	Print("qtdSucessos: " + qtdSucessos);
+	if(qtdSucessos > 40)
+		return "Extremamente Longo";
+	elseif(qtdSucessos <= 40 && qtdSucessos > 30)
+		return "Muito Longo";
+	elseif(qtdSucessos <= 30 && qtdSucessos > 20)
+		return "Longo";
+	elseif(qtdSucessos <= 20 && qtdSucessos > 10)
+		return "Razoável";
+	elseif(qtdSucessos <= 10 && qtdSucessos > 5)
+		return "Rápido";
+	else
+		return "Muito Rápido";
+	endif
 endfunction
 
 function PegaDificuldade( quem, descritorFabricacao, nomePericia)
@@ -813,7 +835,6 @@ function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem)
 	var valorPericia := AP_GetTrueSkill(quem, pericia);
 	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
 	var chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
-	Print("chancePelaSkill: " + chancePelaSkill);
 	return Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
 endfunction
 
@@ -837,7 +858,6 @@ endfunction
 
 function TemValorPericiaNecessaria(quem, objtype, nomePericia)
 	var settings := AP_GetSettingsCfgElem("Skills");
-	//Print( "OBJTYPE " + objtype + " diff: " + (craft_config[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) + " skill necessaria: " + (craft_config[objtype].skill));
 	return (  craft_config[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
 endfunction
 
