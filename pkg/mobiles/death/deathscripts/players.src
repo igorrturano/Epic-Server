@@ -141,7 +141,7 @@ program death(params)
 				var coords := {corpse.x, corpse.y};
 				var nome := GetObjProperty(ghost, "nome_inicial");
 				ProcurarItensQuarto(ghost);
-				Start_script(":DiscordWebhook:discord", {tipo, nome, ghost.acctname, killer.name, region, coords});
+				Start_script(":DiscordWebhook:discord", {tipo, nome, ghost.acctname, killer.name, region, coords, corpse});
 				SetCooldown(corpse, "morto_recentemente", 300);
 				SetObjProperty(corpse, "morto", 1);
 				SetObjProperty(ghost, "morto", 1);

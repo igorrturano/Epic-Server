@@ -1,0 +1,1531 @@
+use uo;
+use datafile;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":ghaia:ghaia";
+include ":gumps:yesNo";
+include ":tn:tngumps";
+include ":gumps:htmlGump";
+include "include/say";
+
+const GUMP_WIDTH := 600;
+const GUMP_HEIGHT := 500;
+const VERTICAL_SPACING := 25;
+
+program dungeonspawn(who, text)
+    if (!text)
+        createDungeonGump(who, 1);
+        return 1;
+    elseif (text == "comandos")
+        commands_dg(who);
+        return 1;
+    elseif (text == "help")
+        CreateHelpGump(who);
+        return 1;
+    else
+        var df := OpenDataFile(":tn:dungeons");
+        if (!df)
+            SendSysMessageEx(who, "Não existem dgs registradas!",SSM_FAIL);
+            return 1;
+        endif
+        
+        foreach dungeon in (df.keys())
+            if (text == dungeon)
+                ShowDungeonInfoGump(who, text);
+                return 1;
+			else
+				if (text != "aqui" && text != "feedbacks" && text != "examinar")
+					if (!(text in df.keys()))
+						SendSysMessageEx(who, "Essa dg não existe!",SSM_FAIL);
+						return;
+					endif
+				endif
+            endif
+        endforeach
+        
+        var name := who.IsInTheDungeon();
+        if (!name)
+            SendSysMessage(who, "Você não está numa dg!");
+            return 1;
+        endif
+        
+        case(text)
+            "aqui":
+                ShowDungeonInfoGump(who, name);
+                return 1;
+            "feedbacks":
+                ShowDungeonFeedbackGump(who, name);
+                return 1;
+            "examinar":
+				var dungeon_elem := df.FindElement(name);
+				var rects := GetDungeonRects(dungeon_elem);
+				var realm := dungeon_elem.GetProp("Realm");
+				debug(who, rects, realm);
+				return 1;
+        endcase
+    endif
+endprogram
+
+function createDungeonGump(who, type, olddungeons := 0, start := 0, end := 0)
+    var df := OpenDataFile(":tn:dungeons");
+    if (!df)
+        df := CreateDataFile(":tn:dungeons", DF_KEYTYPE_STRING);
+    endif
+    var dungeons := array;
+    
+if (type == 1) //listar todos
+        var all_dungeons := array;
+        foreach dungeon in (df.keys())
+            all_dungeons.append(dungeon);
+            sleepms(2);
+        endforeach
+        // Ordenar array em ordem alfabética
+        all_dungeons.sort();
+        dungeons := all_dungeons;
+        
+    elseif (type == 2) //listar por realm
+        // Primeiro coletar todas as dungeons com seus realms
+        var temp_array := array;
+        foreach dungeon in (df.keys())
+            var dungeon_elem := DFFindElement(df, dungeon);
+            var realm := DFGetProp(dungeon_elem, "Realm");
+            temp_array.append(struct{"name" := dungeon, "realm" := realm});
+            sleepms(2);
+        endforeach
+        
+        // Bubble sort por realm (ordem alfabética) e nome
+        var n := temp_array.size();
+        for i := 0 to n - 1
+            for j := 0 to n - 2
+                if (temp_array[j].realm > temp_array[j+1].realm || 
+                   (temp_array[j].realm == temp_array[j+1].realm && temp_array[j].name > temp_array[j+1].name))
+                    var temp := temp_array[j];
+                    temp_array[j] := temp_array[j+1];
+                    temp_array[j+1] := temp;
+                endif
+            endfor
+        endfor
+        
+        // Extrair apenas os nomes ordenados
+        foreach entry in temp_array
+            dungeons.append(entry.name);
+            sleepms(2);
+        endforeach
+        
+    elseif (type == 3) //listar por level
+        var temp_array := array;
+        foreach dungeon in (df.keys())
+            var dungeon_elem := DFFindElement(df, dungeon);
+            var level := CInt(DFGetProp(dungeon_elem, "Level"));
+            temp_array.append(struct{"name" := dungeon, "value" := level});
+            sleepms(2);
+        endforeach
+        
+        // Bubble sort por level
+        var n := temp_array.size();
+        for i := 0 to n - 1
+            for j := 0 to n - 2
+                if (temp_array[j].value > temp_array[j+1].value)
+                    var temp := temp_array[j];
+                    temp_array[j] := temp_array[j+1];
+                    temp_array[j+1] := temp;
+                endif
+            endfor
+        endfor
+        
+        foreach entry in temp_array
+            dungeons.append(entry.name);
+            sleepms(2);
+        endforeach
+        
+    elseif (type == 4) //listar por vezes zerada
+        var temp_array := array;
+        foreach dungeon in (df.keys())
+            var dungeon_elem := DFFindElement(df, dungeon);
+            var cleared := CInt(DFGetProp(dungeon_elem, "Finalizada"));
+            temp_array.append(struct{"name" := dungeon, "value" := cleared});
+            sleepms(2);
+        endforeach
+        
+        // Bubble sort por cleared
+        var n := temp_array.size();
+        for i := 0 to n - 1
+            for j := 0 to n - 2
+                if (temp_array[j].value > temp_array[j+1].value)
+                    var temp := temp_array[j];
+                    temp_array[j] := temp_array[j+1];
+                    temp_array[j+1] := temp;
+                endif
+            endfor
+        endfor
+        
+        foreach entry in temp_array
+            dungeons.append(entry.name);
+            sleepms(2);
+        endforeach
+    elseif (type == 5) //listar por mortes
+        var temp_array := array;
+        foreach dungeon in (df.keys())
+            var dungeon_elem := DFFindElement(df, dungeon);
+            var cleared := CInt(DFGetProp(dungeon_elem, "Mortes"));
+            temp_array.append(struct{"name" := dungeon, "value" := cleared});
+            sleepms(2);
+        endforeach
+        
+        // Bubble sort por cleared
+        var n := temp_array.size();
+        for i := 0 to n - 1
+            for j := 0 to n - 2
+                if (temp_array[j].value > temp_array[j+1].value)
+                    var temp := temp_array[j];
+                    temp_array[j] := temp_array[j+1];
+                    temp_array[j+1] := temp;
+                endif
+            endfor
+        endfor
+        
+        foreach entry in temp_array
+            dungeons.append(entry.name);
+            sleepms(2);
+        endforeach
+    elseif (type == 6)//HELP
+		CreateHelpGump(who);
+        return 1;
+    elseif (type == 11)//comandos
+commands_dg(who);
+        return 1;
+    endif
+
+    if (dungeons.size() > 110)
+        createDungeonGump(who, 100, dungeons, 1, 100);
+        return 1;
+    endif
+
+    var gump := GFCreateGump();
+    GFDisposable(gump, 0);
+    GFResizePic(gump, 0, 25, 3600, 480, 470);
+    GFResizePic(gump, 15, 40, 0x13BE, 450, 440);
+    GFTextMid(gump, 15, 50, 500, 1150, "DUNGEONS");
+
+    GFPage(gump, 0);
+    GFTextLine(gump, 40, 70, 1153, "Listar todos");
+    GFTextLine(gump, 40, 85, 1153, "Listar por Realm");
+    GFTextLine(gump, 40, 100, 1153, "Listar por Lvl");
+    GFTextLine(gump, 40, 115, 1153, "Listar por zerada");
+	GFTextLine(gump, 200, 70, 1153, "Listar por mortes");
+    GFTextLine(gump, 200, 85, 1153, "Inserir Dungeon");
+    GFTextLine(gump, 200, 100, 1153, "Deletar Dg da lista");
+    GFAddButton(gump, 360, 70, 2033, 2032, 1, 6); // HELP button 1575 1576 2116
+	GFAddButton(gump, 365, 100, 2116, 2115, 1, 11);
+    if (olddungeons)
+        GFTextLine(gump, 200, 115, 1153, "Exibindo: " + start +" ate " + end +" de "+ olddungeons.size() );
+    endif
+
+    if (olddungeons)
+        GFTextLine(gump, 200, 130, 1153, "Next 100 " );
+        GFTextLine(gump, 300, 130, 1153, "Prev 100 " );
+        GFAddButton(gump, 180, 133, 2103, 2104, 1, 9);
+        GFAddButton(gump, 280, 133, 2103, 2104, 1, 10);
+    endif
+
+    GFTextLine(gump, 25, 145, 1153, "Nome");
+    GFTextLine(gump, 140, 145, 1153, "INFO"); 
+    GFTextLine(gump, 200, 145, 1153, "Realm");
+	GFTextLine(gump, 280, 145, 1153, "Lvl");
+	GFTextLine(gump, 320, 145, 1153, "Zerada");
+	GFTextLine(gump, 375, 145, 1153, "Mortes");
+    GFTextLine(gump, 430, 145, 1153, "GO");
+
+    GFAddButton(gump, 20, 73, 2103, 2104, 1, 1);//Listar todos
+    GFAddButton(gump, 20, 88, 2103, 2104, 1, 2); //listar por realm
+    GFAddButton(gump, 20, 103, 2103, 2104, 1, 3); //listar por level
+    GFAddButton(gump, 20, 118, 2103, 2104, 1, 4); //listar por xzerada
+    GFAddButton(gump, 180, 73, 2103, 2104, 1, 5); //listar por mortes
+	
+    GFAddButton(gump, 180, 88, 2103, 2104, 1, 7); // Inserir Dungeon
+    GFAddButton(gump, 180, 103, 2103, 2104, 1, 8); //Deletar dungeons selecionadas
+
+    var x := 40;
+    var y := 160;
+    var i := 1;
+    var pagecount := 0;
+    var page := 1;
+    GFSetRadioGroup(gump, 1);
+    GFPage(gump, 1);
+    
+    foreach dungeon in dungeons
+        var dungeon_elem := df.FindElement(dungeon);
+        var name := dungeon_elem.GetProp("Name");
+        var rect := dungeon_elem.GetProp("Rect1");
+        var realm := dungeon_elem.GetProp("Realm");
+		
+		var level := dungeon_elem.GetProp("Level");
+		var mortes := dungeon_elem.GetProp("Mortes");
+		var zerada := dungeon_elem.GetProp("Finalizada");
+        
+        GFTextLine(gump, x, y, 0, ""+name);
+        GFAddButton(gump, x+110, y+3, 2103, 2104, 1, 2000+i); 
+        GFTextLine(gump, x+160, y, 0, ""+realm);
+		GFTextLine(gump, x+245, y, 0, ""+level);
+		GFTextLine(gump, x+290, y, 0, ""+zerada);
+		GFTextLine(gump, x+340, y, 0, ""+mortes);
+        GFAddButton(gump, x+393, y+3, 2103, 2104, 1, 1000+i);
+        GFCheckBox(gump, 20, y+3, 2362, 2360, 0, 100+i);
+        
+        y := y + 15;
+        i := i + 1;
+        pagecount := pagecount + 1;
+        if (pagecount == 21)
+            y := 160;
+            pagecount := 0;
+            page := page+1;
+            GFAddButton(gump, 350, 470, 2437, 2437, GF_PAGE_BTN, page);
+            GFPage(gump, page);
+            GFAddButton(gump, 350, 160, 2436, 2436, GF_PAGE_BTN, page-1);
+        endif
+        sleepms(2);
+    endforeach
+
+    SendSysMessage(who, "Total de dungeons registradas: " + dungeons.size());
+
+    var result := GFSendGump(who, gump);
+    if (result[0])
+        if (result[0] == 7) //Inserir Dungeon
+            var dungeon_name := RequestGump(who, "Digite o nome da dungeon");
+            if (!dungeon_name)
+                SendSysMessage(who, "Canceled.");
+                return;
+            endif
+            
+            var dungeon_level := RequestGump(who, "Qual é o level da dungeon?");
+            if (!dungeon_level)
+                SendSysMessage(who, "Canceled.");
+                return;
+            endif
+
+            var rect := RequestGump(who, "Digite a area da dungeon (x1 y1 x2 y2). Como o jogo tem visão isométrica imagine o quadrado/retângulo em profundidade, 'inclinado', insira primeiro o canto inferior esquerdo e depois superior direito");
+            if (!rect)
+                SendSysMessage(who, "Canceled.");
+                return;
+            endif
+
+            var realm := RequestGump(who, "Confirma que o realm é o que você está no momento?", "", ""+who.realm);
+            if (!realm)
+                SendSysMessage(who, "Canceled.");
+                return;
+            endif
+            
+            var dungeon_elem := df.CreateElement(dungeon_name);
+            dungeon_elem.SetProp("Name", dungeon_name);
+            dungeon_elem.SetProp("Level", CInt(dungeon_level));
+            dungeon_elem.SetProp("Rect1", rect);
+            dungeon_elem.SetProp("Realm", realm);
+			dungeon_elem.SetProp("Finalizada", 0);
+			dungeon_elem.SetProp("Mortes", 0);
+            
+            SendSysMessage(who, "Dungeon registrada com sucesso!");
+            createDungeonGump(who, 1);
+        elseif (result[0] == 2) //listar por realm
+			createDungeonGump(who, 2);
+        elseif (result[0] == 3) //listar por level
+			createDungeonGump(who, 3);
+        elseif (result[0] == 4) //listar por xzerada
+			createDungeonGump(who, 4);
+        elseif (result[0] == 5) //listar por realm
+			createDungeonGump(who, 5);
+        elseif (result[0] == 8) //deletar
+            var modificar := array;
+            foreach key in (result.keys)
+                if (key >= 100)
+                    if (dungeons[key-100])
+                        modificar.append(dungeons[key-100]);
+                    endif
+                endif
+            endforeach
+            foreach dungeon in modificar
+                df.DeleteElement(dungeon);
+            endforeach
+            SendSysMessage(who, "Dungeon(s) deletada(s) com sucesso!");
+            createDungeonGump(who, 1);
+            
+        elseif (result[0] == 9) //next
+            var newstart := start + 100;
+            var newend := end + 100;
+            if (newend > olddungeons.size())
+                newend := olddungeons.size();
+            endif
+            if (newstart > olddungeons.size())
+                newstart := start;
+            endif
+            createDungeonGump(who, 100, olddungeons, newstart, newend);
+            return 1;
+            
+        elseif (result[0] == 10) //previous
+            var newstart := start - 100;
+            var newend := newstart + 99;
+            if (newstart < 0)
+                newstart := 0;
+            endif
+            if (newend > olddungeons.size())
+                newend := olddungeons.size();
+            endif
+            createDungeonGump(who, 100, olddungeons, newstart, newend);
+            return 1;
+            
+        elseif (result[0] >= 2000) 
+            var selected_dungeon := dungeons[result[0]-2000];
+            var dungeon_elem := df.FindElement(selected_dungeon);
+            var name := dungeon_elem.GetProp("Name");
+            ShowDungeonInfoGump(who, name);
+            
+        elseif (result[0] >= 1000)
+            var selected_dungeon := dungeons[result[0]-1000];
+            var dungeon_elem := df.FindElement(selected_dungeon);
+            var rect := dungeon_elem.GetProp("Rect1");
+            var realm := dungeon_elem.GetProp("Realm");
+            var rect_array := SplitWords(rect);
+            var x := CInt((CInt(rect_array[1]) + CInt(rect_array[3])) / 2);
+            var y := CInt((CInt(rect_array[2]) + CInt(rect_array[4])) / 2);
+            var z := GetWorldHeight(x, y, realm);
+            MoveObjectToLocation(who, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+        else
+            createDungeonGump(who, result[0]);
+        endif
+    endif
+endfunction
+
+function GetFormattedMobInfo(dungeon_elem, realm)
+    var info := struct{
+        "total" := 0,
+        "tiers" := dictionary,
+        "mobs" := dictionary,
+        "tiers_str" := "",
+        "mobs_str" := ""
+    };
+    
+    var rects := GetDungeonRects(dungeon_elem);
+    foreach rect in rects
+        var coords := SplitWords(rect);
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            if (x1 > x2)
+                var temp := x1;
+                x1 := x2;
+                x2 := temp;
+            endif
+            if (y1 > y2)
+                var temp := y1;
+                y1 := y2;
+                y2 := temp;
+            endif
+            
+            var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);
+            foreach item in items
+                if (item.name == "Spawn Point")
+                    for i := 1 to 3
+                        var template := GetObjProperty(item, "Template"+i);
+                        if (template)
+                            var amount := CInt(GetObjProperty(item, "Amount"+i));
+                            if (!amount)
+                                amount := 1;
+                            endif
+                            
+                            info.total += amount;
+                            
+                            var tier := GetObjProperty(item, "Tier"+i);
+                            if (!tier)
+                                tier := "0";
+                            endif
+                            
+                            info.tiers[tier] := CInt(info.tiers[tier]) + amount;
+                            info.mobs[template] := CInt(info.mobs[template]) + amount;
+                        endif
+                    endfor
+                    
+                elseif (item.name == "Epic! Spawner")
+                    var cfg := GetObjProperty(item, "config");
+                    if (cfg)
+                        for i := 1 to 3
+                            var mobs := GetObjProperty(cfg, "mobslvl"+i);
+                            var amt := CInt(GetObjProperty(cfg, "amtlvl"+i));
+                            
+                            if (mobs && amt)
+                                info.total += amt;
+                                info.tiers[i] := CInt(info.tiers[i]) + amt;
+                                info.mobs[mobs] := CInt(info.mobs[mobs]) + amt;
+                            endif
+                        endfor
+                    endif
+                endif
+                sleepms(2);
+            endforeach
+        endif
+        sleepms(2);
+    endforeach
+    
+    var tier_keys := info.tiers.keys();
+    tier_keys.sort();
+    foreach tier in tier_keys
+        if (info.tiers_str != "")
+            info.tiers_str += ", ";
+        endif
+        info.tiers_str += tier + "(" + info.tiers[tier] + ")";
+    endforeach
+    
+    foreach mob in (info.mobs.keys())
+        if (info.mobs_str != "")
+            info.mobs_str += ", ";
+        endif
+        var mob_name := mob;
+        if (mob_name[":"])
+            mob_name := SplitWords(mob_name, ":")[2];
+        endif
+        info.mobs_str += mob_name + "(" + info.mobs[mob] + ")";
+    endforeach
+    
+    return info;
+endfunction
+
+function GetFormattedBossInfo(dungeon_elem, realm)
+    var info := struct{
+        "bosses" := array{},
+        "truebosses" := array{},
+        "boss_str" := "",
+        "trueboss_str" := ""
+    };
+    
+    var rects := GetDungeonRects(dungeon_elem);
+    foreach rect in rects
+        var coords := SplitWords(rect);
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            if (x1 > x2)
+                var temp := x1;
+                x1 := x2;
+                x2 := temp;
+            endif
+            if (y1 > y2)
+                var temp := y1;
+                y1 := y2;
+                y2 := temp;
+            endif
+            
+            var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);
+            foreach item in items
+                if (item.name == "Spawn Point")
+                    var unique_prop := GetObjProperty(item, "unique");
+                    var unique_stat := GetObjProperty(item, "uniquestat");
+                    
+                    if (unique_stat && unique_stat.trueboss == 1)
+                        var trueboss_info := struct{
+                            "name" := "",
+                            "loot" := array{},
+                            "location" := struct{
+                                "x" := item.x,
+                                "y" := item.y,
+                                "z" := item.z
+                            }
+                        };
+                        
+                        for i := 1 to 3
+                            var name := GetObjProperty(item, "Name"+i);
+                            var template := GetObjProperty(item, "Template"+i);
+                            if (name || template)
+                                trueboss_info.name := name ? name : template;
+                                break;
+                            endif
+                        endfor
+                        
+                        if (unique_stat.loot)
+                            foreach loot_item in (unique_stat.loot)
+                                if (loot_item.item && loot_item.item.desc && loot_item.chance)
+                                    trueboss_info.loot.append(struct{
+                                        "name" := loot_item.item.desc,
+                                        "chance" := loot_item.chance
+                                    });
+                                endif
+                            endforeach
+                        endif
+                        
+                        info.truebosses.append(trueboss_info);
+                        
+                    elseif (unique_prop == "1")
+                        var boss_info := struct{
+                            "name" := "",
+                            "loot" := array{},
+                            "location" := struct{
+                                "x" := item.x,
+                                "y" := item.y,
+                                "z" := item.z
+                            }
+                        };
+                        
+                        for i := 1 to 3
+                            var name := GetObjProperty(item, "Name"+i);
+                            var template := GetObjProperty(item, "Template"+i);
+                            if (name || template)
+                                boss_info.name := name ? name : template;
+                                break;
+                            endif
+                        endfor
+                        
+                        if (unique_stat && unique_stat.loot)
+                            foreach loot_item in (unique_stat.loot)
+                                if (loot_item.item && loot_item.item.desc && loot_item.chance)
+                                    boss_info.loot.append(struct{
+                                        "name" := loot_item.item.desc,
+                                        "chance" := loot_item.chance
+                                    });
+                                endif
+                            endforeach
+                        endif
+                        
+                        info.bosses.append(boss_info);
+                    endif
+                endif
+                sleepms(2);
+            endforeach
+        endif
+        sleepms(2);
+    endforeach
+    
+    if (info.bosses.size() > 0)
+        info.boss_str := "Bosses(loot): ";
+        foreach boss in (info.bosses)
+            info.boss_str += boss.name;
+            if (boss.loot.size() > 0)
+                info.boss_str += "(";
+                foreach item in (boss.loot)
+                    info.boss_str += item.name + " " + item.chance + "%, ";
+                endforeach
+                info.boss_str := info.boss_str[1, len(info.boss_str)-2];
+                info.boss_str += ")";
+            endif
+            info.boss_str += " [X: " + boss.location.x + ", Y: " + boss.location.y + ", Z: " + boss.location.z + "]  ";
+        endforeach
+    else
+        info.boss_str := "Bosses(loot): Nenhum boss encontrado";
+    endif
+    
+    if (info.truebosses.size() > 0)
+        info.trueboss_str := "TrueBosses(loot): ";
+        foreach boss in (info.truebosses)
+            info.trueboss_str += boss.name;
+            if (boss.loot.size() > 0)
+                info.trueboss_str += "(";
+                foreach item in (boss.loot)
+                    info.trueboss_str += item.name + " " + item.chance + "%, ";
+                endforeach
+                info.trueboss_str := info.trueboss_str[1, len(info.trueboss_str)-2];
+                info.trueboss_str += ")";
+            endif
+            info.trueboss_str += " [X: " + boss.location.x + ", Y: " + boss.location.y + ", Z: " + boss.location.z + "]  ";
+        endforeach
+    else
+        info.trueboss_str := "TrueBosses(loot): Nenhum trueboss encontrado";
+    endif
+    
+    return info;
+endfunction
+
+function ShowDungeonInfoGump(who, name)
+    var df := OpenDataFile(":tn:dungeons");
+    if (!df)
+        SendSysMessage(who, "Erro ao abrir o arquivo de dados!");
+        return 0;
+    endif
+    
+    var dungeon_elem := df.FindElement(name);
+    if (!dungeon_elem)
+        SendSysMessage(who, "Dungeon não encontrada!");
+        return 0;
+    endif
+    
+    var current_level := CStr(dungeon_elem.GetProp("Level"));
+    if (!current_level)
+        current_level := "0";
+    endif
+    
+    var current_comments := dungeon_elem.GetProp("Comments");
+    if (current_comments == error)
+        current_comments := "";
+    endif
+    
+    var gump := GFECreateGump("Informações da Dungeon - " + name, 800, 650);
+    
+    var x := 20;
+    var y := 70;
+    
+    var colWidth := 370;
+    var halfHeight := 85;
+    
+    // DG Info Section with multiple rects
+    GFResizePic(gump, x, y, 9350, colWidth, halfHeight + 60); // Increased height for multiple rects
+    GFTextLine(gump, x + 10, y + 5, 53, "DG Info");
+    GFTextLine(gump, x + 30, y + 25, 0, "Lvl: ");
+    GFTextEntry(gump, x + 60, y + 25, 50, 20, 2100, current_level, 2100);
+    
+    // Display all rects
+    var rects := GetDungeonRects(dungeon_elem);
+    var realm := dungeon_elem.GetProp("Realm");
+    
+    for i := 1 to rects.size()
+        GFTextLine(gump, x + 130, y + 5 + (i * 20), 0, "Area " + i + ": ");
+        GFTextLine(gump, x + 180, y + 5 + (i * 20), 2100, rects[i] + " " + realm);
+        GFAddButton(gump, x + 350, y + 5 + (i * 20), 2103, 2104, 1, 7 + i); // Edit buttons for each rect
+    endfor
+    
+	if (rects.size() < 3)
+		GFTextLine(gump, x + 165, y + 5 + ((rects.size() + 1) * 20), 2010, "Adicionar mais uma área");
+		GFAddButton(gump, x + 315, y + 5 + ((rects.size() + 1) * 20), 55, 55, 1, 7); // Add new rect button
+	endif
+
+	if (rects.size() > 1)
+		GFTextLine(gump, x + 195, y + 80, 2084, "Deletar uma área");
+		GFAddButton(gump, x + 180, y + 80, 56, 56, 1, 3); // Del buttons for rect bigger than 1
+	endif
+	
+    GFTextLine(gump, x + 30, y + 45, 0, "Finalizada: ");
+    GFTextLine(gump, x + 100, y + 45, 2100, ""+dungeon_elem.GetProp("Finalizada"));
+    GFTextLine(gump, x + 30, y + 65, 0, "Mortes: ");
+    GFTextLine(gump, x + 80, y + 65, 2100, ""+dungeon_elem.GetProp("Mortes"));
+     
+    var dungeon_realm := dungeon_elem.GetProp("Realm");
+    var dungeon_rect := GetDungeonElements(dungeon_elem, dungeon_realm);
+     
+    var dungeon_elements := GetDungeonElements(dungeon_elem, dungeon_realm);
+  
+	var chest_info := GetChestSpawnerInfo(dungeon_elem, dungeon_realm);
+
+	// BAÚS Section
+	GFResizePic(gump, x, y + halfHeight + 10, 9350, colWidth, halfHeight);
+	GFTextLine(gump, x + 10, y + halfHeight + 15, 53, "BAÚS");
+	GFTextLine(gump, x + 30, y + halfHeight + 35, 0, "Nº baús: ");
+	GFTextLine(gump, x + 90, y + halfHeight + 35, 2100, "" + chest_info.total);
+	GFTextLine(gump, x + 30, y + halfHeight + 55, 0, "Tipo[qtd]: ");
+	GFTextLine(gump, x + 90, y + halfHeight + 55, 2100, chest_info.types_str);
+	GFTextLine(gump, x + 30, y + halfHeight + 75, 0, "Lvls[qtd]: ");
+	GFTextLine(gump, x + 90, y + halfHeight + 75, 2100, chest_info.levels_str);
+    
+	// MOBS Section
+	var mob_info := GetFormattedMobInfo(dungeon_elem, dungeon_realm);
+	GFResizePic(gump, x + colWidth + 20, y, 9350, colWidth, halfHeight * 2 + 10);
+	GFTextLine(gump, x + colWidth + 30, y + 5, 53, "MOBS");
+	GFTextLine(gump, x + colWidth + 50, y + 25, 0, "Nº Mobs: ");
+	GFTextLine(gump, x + colWidth + 120, y + 25, 2100, "" + mob_info.total);
+	GFTextLine(gump, x + colWidth + 50, y + 45, 0, "Tiers [qtd]: ");
+	GFTextLine(gump, x + colWidth + 120, y + 45, 2100, mob_info.tiers_str);
+	var mobs_words := SplitWords(mob_info.mobs_str);
+	var current_line := "";
+	var line_y := y + 65;
+	var max_width := 60;
+	GFTextLine(gump, x + colWidth + 50, line_y, 0, "Mobs [qtd]: ");
+	line_y += 20;
+    
+    foreach word in mobs_words
+        if ((len(current_line) + len(word) + 1) > max_width)
+            GFTextLine(gump, x + colWidth + 50, line_y, 2100, current_line);
+            current_line := word + " ";
+            line_y += 20;
+        else
+            current_line += word + " ";
+        endif
+    endforeach
+    
+    if (current_line != "")
+        GFTextLine(gump, x + colWidth + 50, line_y, 2100, current_line);
+    endif
+
+    y += halfHeight * 2 + 20;
+    
+// BOSS Section
+var boss_info := GetFormattedBossInfo(dungeon_elem, dungeon_realm);
+var button_id := 11;
+var base_x := x + 735;
+var current_y := y + 15;
+
+// Create the gump
+GFResizePic(gump, x, y, 9350, 760, 90);
+GFTextLine(gump, x + 10, y + 5, 53, "BOSS (" + boss_info.bosses.size() + ") E TRUEBOSS ");
+var combined_text := "";
+combined_text += "<BASEFONT COLOR=#000000>Bosses(loot): ";
+combined_text += "<BASEFONT COLOR=#0000FF>";
+
+// Process regular bosses
+foreach boss in (boss_info.bosses)
+    combined_text += " ";
+    GFAddButton(gump, base_x, current_y, 2117, 2118, GF_CLOSE_BTN, button_id);
+    button_id := button_id + 1;
+    current_y += 20;
+    
+    combined_text += boss.name;
+    if (boss.loot.size() > 0)
+        combined_text += "<BASEFONT COLOR=#2100>(";
+        foreach item in (boss.loot)
+            combined_text += item.name + " " + item.chance + "%, ";
+        endforeach
+        combined_text := combined_text[1, len(combined_text)-2];
+        combined_text += ")<BASEFONT COLOR=#0000FF>;  ";
+    endif
+endforeach
+
+// TRUEBOSS Section
+combined_text += "<BR>";
+combined_text += "<BASEFONT COLOR=#000000>Trueboss(loot): ";
+combined_text += "<BASEFONT COLOR=#FF0000>";
+current_y += 10;
+
+var first_trueboss_button := button_id;
+
+foreach boss in (boss_info.truebosses)
+    combined_text += " ";
+    GFAddButton(gump, base_x, current_y, 11410, 11412, GF_CLOSE_BTN, button_id);
+    button_id := button_id + 1;
+    current_y += 20;
+    
+    combined_text += boss.name;
+    if (boss.loot.size() > 0)
+        combined_text += "<BASEFONT COLOR=#2100>(";
+        foreach item in (boss.loot)
+            combined_text += item.name + " " + item.chance + "%, ";
+        endforeach
+        combined_text := combined_text[1, len(combined_text)-2];
+        combined_text += ")<BASEFONT COLOR=#FF0000>;  ";
+    endif
+endforeach
+    
+    GFHTMLArea(gump, x + 30, y + 25, 700, 55, combined_text, 0, 1);
+    
+    y += 100;
+    
+// Armadilhas Section
+GFResizePic(gump, x, y, 9350, 760, 60);
+GFTextLine(gump, x + 10, y + 5, 53, "Armadilhas [qtd]");
+var traps_array := SplitWords(dungeon_elements.traps, ",");
+var trap_line := "";
+foreach trap in traps_array
+    if (trap != "")
+        var trap_parts := SplitWords(trap, "(");
+        if (trap_parts.size() >= 2)
+            if (trap_line != "")
+                trap_line += ", ";
+            endif
+            var trap_name := trap_parts[1];
+            var quantity := trap_parts[2];
+            if (quantity[len(quantity)] == ")")
+                quantity := quantity[1, len(quantity)-1];
+            endif
+            trap_line += trap_name + "(" + quantity + ")";
+        endif
+    endif
+endforeach
+
+GFTextLine(gump, x + 30, y + 25, 2100, trap_line);
+y += 70;
+    
+    // Outros Section
+    GFResizePic(gump, x, y, 9350, 760, 50);
+    GFTextLine(gump, x + 10, y + 5, 53, "Outros [qtd]");
+    GFTextLine(gump, x + 30, y + 25, 0, "Dungeondoors: ");
+    GFTextLine(gump, x + 120, y + 25, 2100, "" + dungeon_elements.doors);
+    GFTextLine(gump, x + 190, y + 25, 0, "Alavancas: ");
+    GFTextLine(gump, x + 260, y + 25, 2100, "" + dungeon_elements.levers);
+    GFTextLine(gump, x + 320, y + 25, 0, "Itens Únicos: ");
+    GFTextLine(gump, x + 400, y + 25, 2100, "" + dungeon_elements.uniques);
+    GFTextLine(gump, x + 460, y + 25, 0, "Quadros Rp: ");
+    GFTextLine(gump, x + 540, y + 25, 2100, "" + dungeon_elements.quadrorp);
+	GFTextLine(gump, x + 590, y + 25, 0, "Alertas Área/Dano/Eco: ");
+    GFTextLine(gump, x + 740, y + 25, 2100, "" + dungeon_elements.alertas);
+    y += 60;
+    
+    // Comentarios Section
+    GFResizePic(gump, x, y, 9350, 760, 110);
+    GFTextLine(gump, x + 10, y + 5, 53, "Comentários");
+    GFTextEntry(gump, x + 10, y + 25, 740, 75, 2200, current_comments, 8);
+    
+	// Bottom buttons section
+    GFAddButton(gump, 30, y + 120, 8364, 8365, 1, 4); // Avaliações button
+    GFAddButton(gump, 100, y + 120, 8366, 8367, 1, 5); // DEBUG button
+    GFAddButton(gump, 350, y + 120, 2128, 2129, 1, 1); // Original OK button
+    GFAddButton(gump, 450, y + 120, 2119, 2120, 1, 0); // Original Cancel button
+    GFAddButton(gump, 720, y + 120, 2033, 2032, 1, 6); // HELP button
+   
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 1) //OK button
+		var new_level := CInt(GFExtractData(input, 2100));
+        var new_comments := GFExtractData(input, 8);
+        if (new_comments == error)
+            new_comments := "";
+        endif
+        var comments_result := dungeon_elem.SetProp("Comments", new_comments);
+        if (comments_result == error)
+            SendSysMessage(who, "Erro ao salvar os comentários!");
+            return 0;
+        endif
+        dungeon_elem.SetProp("Level", new_level);
+        SendSysMessage(who, "Level e comentários da dungeon atualizados!");
+        return 1;
+    elseif (input[0] == 7) // Add new rect
+        var new_rect := RequestGump(who, "Digite a nova area da dungeon (x1 y1 x2 y2).");
+        if (!new_rect)
+            SendSysMessage(who, "Cancelado.");
+            return 0;
+        endif
+        
+        var new_index := rects.size() + 1;
+        dungeon_elem.SetProp("Rect" + new_index, new_rect);
+        SendSysMessage(who, "Nova area adicionada com sucesso!");
+        return ShowDungeonInfoGump(who, name);
+ elseif (input[0] == 3) // Del 
+    var gump_del := GFECreateGump("Qual área quer deletar?", 300, 300);
+    
+    // Armazena os valores retornados pelos checkboxes
+    var checkbox1 := GFCheckBox(gump_del, 40, 80, 2362, 2360, 0, 1);
+    var checkbox2 := GFCheckBox(gump_del, 40, 120, 2362, 2360, 0, 2);
+    
+    // Adiciona texto ao lado dos checkboxes
+    GFTextLine(gump_del, 70, 80, 2100, "Área 2");
+    GFTextLine(gump_del, 70, 120, 2100, "Área 3");
+    
+    // Adiciona botão de confirmação
+    GFAddButton(gump_del, 120, 200, 2128, 2129, 1, 10);
+    
+    // Envia o gump e recebe a resposta
+    var input_del := GFSendGump(who, gump_del);
+    
+    // Verifica os checkboxes marcados
+    if (input_del[1])
+        SendSysMessage(who, "Área 2 (Rect2) deletada");
+       dungeon_elem.eraseprop("Rect2");
+    endif
+    if (input_del[2])
+        SendSysMessage(who, "´Área 3 (Rect3) deletada!");
+		dungeon_elem.eraseprop("Rect3");
+    endif
+	        return 1;
+    elseif (input[0] == 4) //AVALIAR
+        return ShowDungeonFeedbackGump(who, name);
+    elseif (input[0] == 5)//EXAMINAR
+	   var dungeon_rect := GetDungeonRects(dungeon_elem);;
+		var dungeon_realm := dungeon_elem.GetProp("Realm");
+        debug(who, dungeon_rect, dungeon_realm);
+    elseif (input[0] == 6)//HELP
+		CreateHelpGump(who);
+        return 1;
+    elseif (input[0] >= 8 && input[0] <= 10) // Edit rect buttons (8 for Rect1, 9 for Rect2, 10 for Rect3)
+        var rect_index := input[0] - 7;
+        var new_rect := RequestGump(who, "Digite a area " + rect_index + " da dungeon (x1 y1 x2 y2).");
+        if (!new_rect)
+            SendSysMessage(who, "Cancelado.");
+            return 0;
+        endif
+        
+        dungeon_elem.SetProp("Rect" + rect_index, new_rect);
+        SendSysMessage(who, "Area " + rect_index + " atualizada com sucesso!");
+        return ShowDungeonInfoGump(who, name);
+elseif (input[0] >= 11 && input[0] < button_id)// Teleport handling section
+    var boss_clicked;
+    var is_trueboss := (input[0] >= first_trueboss_button);
+    
+    if (is_trueboss)
+        var trueboss_index := input[0] - first_trueboss_button;
+        boss_clicked := boss_info.truebosses[trueboss_index + 1];
+    else
+        var boss_index := input[0] - 11;
+        boss_clicked := boss_info.bosses[boss_index + 1];
+    endif
+    
+    if (boss_clicked && boss_clicked.location)
+        var loc := boss_clicked.location;
+        SendSysMessage(who, "Teleportando para " + boss_clicked.name);
+        MoveObjectToLocation(who, loc.x, loc.y, loc.z, dungeon_elem.GetProp("Realm"), MOVEOBJECT_FORCELOCATION);
+        SendSysMessage(who, "Teleportado com sucesso!");
+    else
+        SendSysMessage(who, "Erro: Localização não encontrada!");
+        return;
+    endif
+endif
+    return 0;
+endfunction
+
+function GetDungeonElements(dungeon_element, realm)
+    var elements := struct{
+        "doors" := 0,
+        "levers" := 0,
+        "uniques" := 0,
+        "quadrorp" := 0,
+        "alertas" := 0,
+        "traps" := dictionary
+    };
+    
+    var rects := GetDungeonRects(dungeon_element);
+    foreach rect in rects
+        var coords := SplitWords(rect);
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            if (x1 > x2)
+                var temp := x1;
+                x1 := x2;
+                x2 := temp;
+            endif
+            if (y1 > y2)
+                var temp := y1;
+                y1 := y2;
+                y2 := temp;
+            endif
+            
+            var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);//ERRO V In call to 'ListObjectsInBox': Too many arguments passed.  Expected 7, got 8.
+            foreach item in items
+                if (item.IsA(POLCLASS_DOOR) && GetObjProperty(item, "level"))
+                    elements.doors += 1;
+                elseif (item.objtype == 0x108c)
+                    elements.levers += 1;
+                elseif (GetObjProperty(item, "itemunico"))
+                    elements.uniques += 1;
+                elseif (GetObjProperty(item, "walktrap"))
+                    var trap_type := item.name;
+                    elements.traps[trap_type] := CInt(elements.traps[trap_type]) + 1;
+                elseif (GetObjProperty(item, "ImageItem"))
+                    elements.quadrorp += 1;
+                elseif (item.objtype == 0xeefec || item.objtype == 0xeefed || item.objtype == 0xFE77)
+                    elements.alertas += 1;
+                endif
+                sleepms(2);
+            endforeach
+        endif
+        sleepms(2);
+    endforeach
+    
+    var trap_string := "";
+    foreach trap_type in (elements.traps.keys())
+        if (trap_string != "")
+            trap_string += ", ";
+        endif
+        trap_string += trap_type + "(" + elements.traps[trap_type] + ")";
+    endforeach
+    
+    elements.traps := trap_string == "" ? "Nenhuma armadilha encontrada" : trap_string;
+    
+    return elements;
+endfunction
+
+function GetChestSpawnerInfo(dungeon_elem, realm)
+    var info := struct{
+        "total" := 0,
+        "types_str" := "",
+        "levels_str" := "",
+        "types" := dictionary,
+        "levels" := dictionary
+    };
+    
+    var rects := GetDungeonRects(dungeon_elem);
+    foreach rect in rects
+        var coords := SplitWords(rect);
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            if (x1 > x2)
+                var temp := x1;
+                x1 := x2;
+                x2 := temp;
+            endif
+            if (y1 > y2)
+                var temp := y1;
+                y1 := y2;
+                y2 := temp;
+            endif
+            
+            var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);
+            foreach item in items
+                if (GetObjProperty(item, "IsChestSpawner"))
+                    var amount := CInt(GetObjProperty(item, "amount"));
+                    if (!amount)
+                        amount := 1;
+                    endif
+                    
+                    info.total := info.total + amount;
+                    
+                    var loot_type := GetObjProperty(item, "class");
+                    if (loot_type)
+                        info.types[loot_type] := CInt(info.types[loot_type]) + amount;
+                    endif
+                    
+                    var level := CStr(GetObjProperty(item, "level"));
+                    if (level)
+                        info.levels[level] := CInt(info.levels[level]) + amount;
+                    endif
+                endif
+                sleepms(2);
+            endforeach
+        endif
+        sleepms(2);
+    endforeach
+    
+    foreach type in (info.types.keys())
+        if (info.types_str != "")
+            info.types_str := info.types_str + ", ";
+        endif
+        info.types_str := info.types_str + type + "(" + info.types[type] + ")";
+    endforeach
+    
+    var level_keys := info.levels.keys();
+    level_keys.sort();
+    foreach level in (level_keys)
+        if (info.levels_str != "")
+            info.levels_str := info.levels_str + ", ";
+        endif
+        info.levels_str := info.levels_str + level + "(" + info.levels[level] + ")";
+    endforeach
+    
+    return info;
+endfunction
+
+function debug(who, rects, realm)
+    if (!rects || !realm)
+        SendSysMessage(who, "Coordenadas ou realm não definidos!");
+        return 0;
+    endif
+    
+    var all_items := GetItems(rects, realm, 1); // 1 para check_containers
+    foreach rect in rects
+        var coords := SplitWords(rect);
+        if (coords.size() >= 4)
+            SendSysMessage(who, "Processando área: " + coords[1] + " " + coords[2] + " " + coords[3] + " " + coords[4]);
+        endif
+    endforeach
+	
+    var errors_found := array{};
+    
+    // Procura por erros em todos os itens
+    foreach item in all_items
+        var item_props := GetObjPropertyNames(item);
+        var item_error := struct{
+            "serial" := item.serial,
+            "name" := item.name,
+            "x" := item.x,
+            "y" := item.y,
+            "z" := item.z,
+            "errors" := array{}
+        };
+        var has_error := 0;
+        
+        // Verifica props na raiz
+        foreach prop in item_props
+            var prop_value := GetObjProperty(item, prop);
+            var err := error;
+            if (prop_value == err)
+                item_error.errors.append("Prop '"+prop+"' retornou error");
+                has_error := 1;
+            elseif (prop_value.errortext)
+                item_error.errors.append("Prop '"+prop+"' tem errortext: "+prop_value.errortext);
+                has_error := 1;
+            endif
+            
+            // Verifica se é um array
+            if (TypeOf(prop_value) == "Array")
+                foreach value in prop_value
+                    if (value == err)
+                        item_error.errors.append("Array '"+prop+"' contém error");
+                        has_error := 1;
+                    elseif (value.errortext)
+                        item_error.errors.append("Array '"+prop+"' contém errortext: "+value.errortext);
+                        has_error := 1;
+                    endif
+                endforeach
+            // Verifica se é um dictionary
+            elseif (TypeOf(prop_value) == "Dictionary")
+                foreach key in (prop_value.keys())
+                    var dict_value := prop_value[key];
+                    if (dict_value == err)
+                        item_error.errors.append("Dictionary '"+prop+"' tem key '"+key+"' com error");
+                        has_error := 1;
+                    elseif (dict_value.errortext)
+                        item_error.errors.append("Dictionary '"+prop+"' tem key '"+key+"' com errortext: "+dict_value.errortext);
+                        has_error := 1;
+                    endif
+                endforeach
+            endif
+        endforeach
+        
+        if (has_error)
+            errors_found.append(item_error);
+        endif
+        sleepms(2);
+    endforeach
+    
+    if (errors_found.size() == 0)
+        SendSysMessage(who, "Nenhum erro encontrado na dungeon!");
+        return 1;
+    endif
+    
+    // Cria o gump com os erros encontrados
+    var gump := GFCreateGump();
+    GFDisposable(gump, 0);
+    GFResizePic(gump, 0, 0, 3600, 600, 500);
+    GFResizePic(gump, 15, 15, 0x13BE, 570, 470);
+    GFTextMid(gump, 15, 25, 570, 1153, "DEBUG DA DUNGEON - Erros Encontrados");
+    
+    var y := 60;
+    var page := 1;
+    var items_per_page := 8;
+    var current_item := 1;
+    
+    GFPage(gump, page);
+    
+    foreach error_item in errors_found
+        if (current_item > items_per_page)
+            GFAddButton(gump, 530, 440, 0x15E1, 0x15E5, GF_PAGE_BTN, page + 1);
+            page := page + 1;
+            current_item := 1;
+            y := 60;
+            GFPage(gump, page);
+            GFAddButton(gump, 30, 440, 0x15E3, 0x15E7, GF_PAGE_BTN, page - 1);
+        endif
+        
+        GFTextLine(gump, 30, y, 1153, "Item: " + error_item.name + " ("+error_item.x+","+error_item.y+","+error_item.z+")");
+        GFAddButton(gump, 530, y, 2103, 2104, 1, error_item.serial);
+        
+        y += 20;
+        foreach errormsg in (error_item.errors)
+            GFTextLine(gump, 50, y, 2100, "- " + errormsg);
+            y += 20;
+        endforeach
+        
+        y += 10;
+        current_item += 1;
+    endforeach
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] > 0)
+        // Teleporta o jogador para o item selecionado
+        foreach error_item in errors_found
+            if (error_item.serial == input[0])
+                MoveObjectToLocation(who, error_item.x, error_item.y, error_item.z, realm, MOVEOBJECT_FORCELOCATION);
+                break;
+            endif
+        endforeach
+    endif
+    
+    return 1;
+endfunction
+
+function ShowDungeonFeedbackGump(who, dungeon_name)
+var df := OpenDataFile(":tn:dungeons");
+    if (!df)
+        SendSysMessage(who, "Erro ao abrir o arquivo de dados!");
+        return 0;
+    endif
+    
+    var dungeon_elem := df.FindElement(dungeon_name);
+    if (!dungeon_elem)
+        SendSysMessage(who, "Dungeon não encontrada!");
+        return 0;
+    endif
+	
+    var feedback_infos := dungeon_elem.GetProp("FeedbackInfos");
+    var feedback_texts := dungeon_elem.GetProp("FeedbackTexts");
+    
+    if (!feedback_infos || TypeOf(feedback_infos) != "Array")
+        feedback_infos := array{};
+    endif
+    if (!feedback_texts || TypeOf(feedback_texts) != "Array")
+        feedback_texts := array{};
+    endif
+    
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFResizePic(gump, 0, 0, 9350, 500, 620);
+    
+    // Header - sempre visível
+    GFPage(gump, 0);
+    GFTextMid(gump, 10, 10, 480, 53, "Feedbacks da Dungeon: " + dungeon_name);
+    GFTextLine(gump, 20, 40, 53, "Total de Feedbacks: " + feedback_infos.size());
+    
+    // Botão de voltar - sempre visível
+    GFAddButton(gump, 20, 590, 4014, 4016, 1, 1);
+
+    // Área scrollável principal
+    var content_height := 470; // Altura disponível para conteúdo
+    var y_pos := 80;
+    var items_per_page := 3;
+    var total_pages := CInt(CDbl(feedback_infos.size()) / items_per_page + 0.9);
+    
+    for page := 1 to total_pages
+        GFPage(gump, page);
+        
+        if (page > 1)
+            // Botão para página anterior
+            GFAddButton(gump, 450, 40, 2704, 2705, GF_PAGE_BTN, page-1);
+        endif
+        
+        if (page < total_pages)
+            // Botão para próxima página
+            GFAddButton(gump, 465, 40, 2706, 2707, GF_PAGE_BTN, page+1); //4017, 4019
+        endif
+        
+        var start_index := (page-1) * items_per_page + 1;
+        var end_index := Min(start_index + items_per_page - 1, feedback_infos.size());
+        
+        y_pos := 80; // Reset y_pos para cada página
+        
+        for i := start_index to end_index
+            if (i <= feedback_infos.size())
+                var info := feedback_infos[i];
+                var text := feedback_texts[i];
+                
+                // Container para cada feedback
+                GFResizePic(gump, 20, y_pos, 9350, 440, 150);
+                
+                // Informações do feedback
+                var date_str := FormatTime(info.t);
+                GFTextLine(gump, 40, y_pos + 10, 53, "Conta: " + info.a);
+                GFTextLine(gump, 40, y_pos + 30, 53, "Char: " + info.p);
+                GFTextLine(gump, 40, y_pos + 50, 53, "Data: " + date_str);
+                
+                // Texto do feedback
+                GFHTMLArea(gump, 50, y_pos + 80, 400, 400, text, 0, 0);
+				
+				// Botão de deletar
+                if (who.cmdlevel >= 3 || who.acctname == info.a)
+                    GFAddButton(gump, 410, y_pos + 10, 4017, 4019, 1, 100 + i);
+                endif
+                
+                y_pos += 170;
+            endif
+        endfor
+    endfor
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        return;
+	elseif (input[0] == 1)
+		ShowDungeonInfoGump(who, dungeon_name);
+    elseif (input[0] >= 100)
+        var feedback_index := input[0] - 100;
+        
+        if (YesNo(who, "Tem certeza que deseja deletar este feedback?"))
+            feedback_infos.erase(feedback_index);
+            feedback_texts.erase(feedback_index);
+            dungeon_elem.SetProp("FeedbackInfos", feedback_infos);
+            dungeon_elem.SetProp("FeedbackTexts", feedback_texts);
+            SendSysMessage(who, "Feedback deletado com sucesso!");
+        endif
+        
+        return ShowDungeonFeedbackGump(who, dungeon_name);
+    endif
+    
+    return 1;
+endfunction
+
+// Função auxiliar para formatar o timestamp
+function FormatTime(timestamp)
+    var time_struct := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
+    return time_struct;
+endfunction
+
+function GetItems(rects, realm, check_containers := 0)
+    // Lista de todos os itens encontrados
+    var items := array{};
+    
+    // Se for passado apenas um rect como string, converte para array
+    if (TypeOf(rects) == "String")
+        rects := array{rects};
+    endif
+    
+    // Itera sobre cada rect
+    foreach rect in rects
+        var coords := SplitWords(rect);
+        
+        var x1 := CInt(coords[1]);
+        var y1 := CInt(coords[2]);
+        var x2 := CInt(coords[3]);
+        var y2 := CInt(coords[4]);
+        
+        // Pega todos os itens da superfície do rect atual
+        var surface_items := ListObjectsInBox(x1, y1, -128, x2, y2, 128, realm);
+        
+        // Adiciona os itens da superfície
+        foreach item in surface_items
+            items.append(item);
+            
+            // Se precisar checar containers e este for um container
+            if (check_containers == 1)
+                if (item.item_count != 1) // Small Crate
+                    // Tenta pegar os itens do container
+                    var container_items := EnumerateItemsInContainer(item);
+                    foreach thing in container_items
+                        items.append(thing);
+                    endforeach
+                endif
+            endif
+        endforeach
+        
+        sleepms(2);
+    endforeach
+    
+    return items;
+endfunction
+
+function CreateHelpGump(who)
+    var gump := GFECreateGump("Sistema de Dungeons - Ajuda", GUMP_WIDTH, GUMP_HEIGHT);
+    
+    var y_pos := 70;
+    
+    // Seção de seleção de área
+    GFResizePic(gump, 20, y_pos, 9350, GUMP_WIDTH - 40, 150);
+    GFTextLine(gump, 30, y_pos + 10, 53, "Como Marcar uma Área Isométrica:");
+    
+    // Arte ASCII da área
+    var ascii_art := array{
+        "           /--------------------2*",
+        "          /               /",
+        "         /               /",
+        "        /               /",
+        "       /               /",
+        "     1*---------------------"
+    };
+    
+    y_pos += 30;
+    foreach line in ascii_art
+        GFTextLine(gump, 30, y_pos, 0, line);
+        y_pos += 10;
+    endforeach
+    
+    // Instruções de marcação
+    var instructions := array{
+        "Para marcar uma área:",
+        "1. Selecione o ponto inferior esquerdo",
+        "2. Selecione o ponto superior direito",
+        "3. A área será marcada automaticamente"
+    };
+    
+    y_pos := 90;
+    foreach inst in instructions
+        GFTextLine(gump, 275, y_pos, 0, inst);
+        y_pos += 20;
+    endforeach
+    
+    GFTextLine(gump, 30, 190, 2100, "OBS: OU se vc estiver utilizando o ClassicUO, use o WorldMap e dê FLIP nele!");
+    
+    // Seção de comandos
+    y_pos := 240;
+    GFResizePic(gump, 20, y_pos, 9350, GUMP_WIDTH - 40, 230);
+    GFTextLine(gump, 30, y_pos + 10, 53, "Comandos Disponíveis:");
+    
+    var commands := array{
+        ".dungeons - Abre o menu principal",
+        ".dungeons comandos - Lista todos os comandos para dgs disponíveis",
+        ".dungeons aqui - Mostra informações da dungeon atual",
+        ".dungeons help - Abre este menu de ajuda",
+        ".dungeons feedbacks - Abre o gump de feedbacks da dungeon atual",
+        ".dungeons examinar - Debug da dungeon atual",
+        ".dungeons <nome da dg> - Abre informações de uma dungeon específica",
+		"*************LEMBRE-SE: A dg só pode ter UM TRUEBOSS!!!*************"
+    };
+    
+    y_pos += 30;
+    foreach cmd in commands
+        GFTextLine(gump, 30, y_pos, 2100, cmd);
+        y_pos += VERTICAL_SPACING;
+    endforeach
+    
+    GFSendGump(who, gump);
+    
+    return 1;
+endfunction
+
+function commands_dg(who)
+    var gump := GFCreateGump(400, 500);
+    
+    // Background - using a common background graphic ID
+    GFResizePic(gump, 0, 0, 9200, 450, 500); // Adjusted size to fit content
+    
+    // Título
+    GFTextLine(gump, 15, 15, 1035, "Comandos para Build de DGs:");
+    
+    // Lista de comandos
+    var y_pos := 45;
+    GFTextLine(gump, 15, y_pos, 2100, ".createat spawnpoint - spawn de criaturas/bosses/Trueboss");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".epicspawner - spawn de múltiplas criaturas (+ amplo)");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".chestspawner - spawn de baús");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".createat telepad - teletransporte passable (chão)");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".control doors - cria portas");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".makerope - tipo telepad, mas com efeito de escalar pro char");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".dungeondoor - para portas: armadilhas, lvl para arrombar, destrutível");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".settrap - permite inserir armadilha a qqr objeto");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".create lever - sistema de alavancas com diversas opções");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".control traps - inserir armadilhas no ambiente");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".criarquadrorp - insere imagens rp em quadros");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".create magickey - chave para porta mágica (lvl 6) no dgndoor");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".createat 0xeefec - dano area");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".createat 0xeefed - alerta area");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".createat 0xFE77 - eco area");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".quebravel - definir destroyable para qqr item");
+    y_pos += 25;
+    GFTextLine(gump, 15, y_pos, 2100, ".architect - para decorar a dg");
+    
+    GFSendGump(who, gump);
+    
+    return 1;
+endfunction
+
+function GetDungeonRects(dungeon_elem)
+    var rects := array{};
+    
+    // Get all possible rect properties (Rect1, Rect2, Rect3)
+    for i := 1 to 3
+        var rect_name := "Rect" + i;
+        var rect := dungeon_elem.GetProp(rect_name);
+        if (rect)
+            rects.append(rect);
+        endif
+    endfor
+    
+/*
+    // If no rects were found, try the legacy "Rect" property
+    if (rects.size() == 0)
+        var legacy_rect := dungeon_elem.GetProp("Rect");
+        if (legacy_rect)
+            rects.append(legacy_rect);
+        endif
+    endif
+  */  
+    return rects;
+endfunction
