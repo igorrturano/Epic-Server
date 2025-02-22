@@ -6,6 +6,8 @@ include ":attributes:attributes";
 include "include/dungeons";
 include ":timedScripts:timedScripts";
 include ":tn:cooldown";
+include "include/packets";
+include "include/epicCombatUtils";
 
 program sanctuary(params)
 	var who := params[1];
@@ -28,7 +30,13 @@ program sanctuary(params)
 
     var i := 0;
     PlayObjectCenteredEffectHuefx(who, 0x54CE, 10, 20, 1420, 1);
-    PLaySoundEffect(who, 0x204);
+    PlaySoundEffect(who, 0x204);
+    if (who.npctemplate)
+        who.concealed := 1;
+        moveToBehind(who, who.opponent);
+        sleep(1);
+        who.concealed := 0;
+    endif
 	while (protected(who) && i < duration)
         who.concealed := 1;
 		sleep(1);

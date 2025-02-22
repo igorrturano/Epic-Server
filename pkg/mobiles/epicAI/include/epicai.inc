@@ -126,13 +126,23 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 var template := FindAnimalTemplate(tier);
                 if (template)
                     SetObjProperty(mobile, "#camuflagem_template", template);
-                    var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, mobile.realm);
+                    var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
+                    sleepms(250);  // This was the key - giving the NPC time to initialize
+                    pet.alignment := 1;
                     SetObjProperty(pet, "owner", mobile.serial);
-                    pet.setmaster(mobile);
+                    GrantPrivilege(pet, "hiddenattack");
+                    pet.enable("hiddenattack");
+                    GrantPrivilege(mobile, "hiddenattack");
+                    mobile.enable("hiddenattack");
+                    mobile.stealthsteps := 30;
+                    pet.stealthsteps := 30;
                 endif
                 var net := CreateItemInBackpack(mobile, "net", RandomInt(2)+1);
             endif
 
+            if ("Nazg khalug" in habs)
+                makeRace(mobile, ORC);
+            endif
         LADINO:
             if ("Mestre dos Venenos" in habs)
                 var bleed_weapons := array{0x1401, 0x13f6, 0x0ec2, 0x26C5, 11565, 0x27af, 0x27ab};
@@ -215,6 +225,11 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 makeRace(mobile, ELFO);
             endif
 
+            if ("Forma Adaptavel" in habs)
+                var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
+                EquipRandomFromArray(mobile, two_handed);
+            endif
+
     endcase
 
     return 1;
@@ -241,7 +256,7 @@ function FindAnimalTemplate(tier)
     endforeach
     // If we found valid templates, return a random one
     if (valid_templates.size() > 0)
-        return valid_templates[RandomInt(valid_templates.size())+1];
+        return valid_templates[RandomIntMinMax(1, valid_templates.size())];
     endif
     return 0;
 endfunction
@@ -1092,21 +1107,37 @@ function PursueTarget(opponent)
             if (dist <= range_info.max_range)
                 return 1;
             else
-                RunToward(opponent);
+                if (me.hidden || me.concealed)
+                    RunToward(opponent);
+                else
+                    WalkToward(opponent);
+                endif
             endif
         elseif (me.isSage() && me.weapon.objtype == FIST)
             // Don't get closer than 6 tiles
             if (dist <= 6)
                 return 1;
             else
-                RunToward(opponent);
+                if (me.hidden || me.concealed)
+                    RunToward(opponent);
+                else
+                    WalkToward(opponent);
+                endif
             endif
         else
-            RunToward(opponent);
+            if (me.hidden || me.concealed)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
         endif
     else
         if (dist > 1)
-            RunToward(opponent);
+            if (me.hidden || me.concealed)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
         endif
     endif
 
@@ -1164,7 +1195,11 @@ function PursueTarget(opponent)
         endif
 
         if (Distance(me, opponent) > min_distance)
-            RunToward(opponent);
+            if (me.hidden || me.concealed)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
         endif
         sleepms(100);
     else
@@ -1182,7 +1217,11 @@ function PursueTarget(opponent)
                     break;
                 endif
                 if (!shouldKeepPursuing(opponent, dist)) break; endif
-                RunTowardLocation(coord.x, coord.y);
+                if (me.hidden || me.concealed)
+                    RunTowardLocation(coord.x, coord.y);
+                else
+                    WalkTowardLocation(coord.x, coord.y);
+                endif
                 sleepms(100);
             endforeach
         else

@@ -40,6 +40,7 @@ function customizeNpc(mob, set_tier := "0")
 	else
 		skill_combat := WRESTLING;
 		skill_support := TACTICS;
+		AP_SetTrueSkill(mob, SURVIVAL, mob_skill);
 	endif
 
 	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
