@@ -1335,12 +1335,34 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
     endif
 
     if (me.weapon.isRanged() || range_info.max_range > 1)
-        if (dist < range_info.max_range)
-            TryToRunAway(opponent);
-            sleepms(sleepdelay);
-        elseif (dist > range_info.max_range)
-            RunToward(opponent);
-            sleepms(sleepdelay);
+        // Check if we can actually move to ideal range
+        var ideal_range := range_info.max_range;
+        var can_move_back := CanMoveInDirection(me, opponent, 1); // 1 means moving away
+        var can_move_forward := CanMoveInDirection(me, opponent, 0); // 0 means moving toward
+
+        if (dist < ideal_range)
+            if (can_move_back)
+                TryToRunAway(opponent);
+                sleepms(sleepdelay);
+            else
+                // If we can't move back, just maintain current position
+                TurnToward(opponent);
+                return StayNearAllies(4, sleepdelay, opponent);
+            endif
+        elseif (dist > ideal_range)
+            if (can_move_forward)
+                if (GetObjProperty(me, "metamorfose"))
+                    RunToward(opponent);
+                    sleepms(sleepdelay);
+                else
+                    RunToward(opponent);
+                    sleepms(sleepdelay);
+                endif
+            else
+                // If we can't move forward, just maintain current position
+                TurnToward(opponent);
+                return StayNearAllies(4, sleepdelay, opponent);
+            endif
         else
             TurnToward(opponent);
             return StayNearAllies(4, sleepdelay, opponent);
@@ -1367,6 +1389,31 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
     endif
 
     return 0;
+endfunction
+
+function CanMoveInDirection(me, opponent, moving_away := 0)
+    var test_distance := 3; // Check 3 tiles ahead
+    var angle := GetFacing(me.x, me.y, opponent.x, opponent.y);
+    var test_coords;
+    
+    if (moving_away)
+        // Reverse the angle when moving away
+        angle := (angle + 4) % 8;
+    endif
+    
+    case (angle)
+        0: test_coords := struct{ "x" := me.x, "y" := me.y - test_distance }; // North
+        1: test_coords := struct{ "x" := me.x + test_distance, "y" := me.y - test_distance }; // Northeast
+        2: test_coords := struct{ "x" := me.x + test_distance, "y" := me.y }; // East
+        3: test_coords := struct{ "x" := me.x + test_distance, "y" := me.y + test_distance }; // Southeast
+        4: test_coords := struct{ "x" := me.x, "y" := me.y + test_distance }; // South
+        5: test_coords := struct{ "x" := me.x - test_distance, "y" := me.y + test_distance }; // Southwest
+        6: test_coords := struct{ "x" := me.x - test_distance, "y" := me.y }; // West
+        7: test_coords := struct{ "x" := me.x - test_distance, "y" := me.y - test_distance }; // Northwest
+    endcase
+    
+    // Check if we can actually move there
+    return CheckLosAt(me, test_coords.x, test_coords.y, me.z);
 endfunction
 
 function MaintainSimpleDistance(opponent, dist, sleepdelay)  
