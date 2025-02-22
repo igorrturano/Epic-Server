@@ -83,7 +83,12 @@ function HumanoidBrain()
                         HandleHumanoidCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
-                    ShamanBehavior(me);
+                    if (me.isShaman()   )
+                        HumanoidShamanBehavior(me, ev.source);
+                    endif
+                    if (me.isPriest())
+                        HumanoidPriestBehavior(me, ev.source);
+                    endif
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
@@ -243,6 +248,11 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     if (me.isShaman())
         PrintTextAbove(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
+    endif
+
+    if (me.isPriest())
+        PrintTextAbove(me, "Priest Behavior");
+        HumanoidPriestBehavior(me, opponent);
     endif
 
     if (me.CanBite())

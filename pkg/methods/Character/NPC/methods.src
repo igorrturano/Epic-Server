@@ -321,3 +321,17 @@ exported function isShooter(who)
 
     return 0;
 endfunction
+
+exported function isPriest(who)
+    var templates := array{};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    // TODO:  Buscar se é priest no cfg ou no EPIC BOSS
+    var habs := GetObjProperty(who, "myhabs");
+    if ("Aura Mortis" in habs) return 1; endif
+    if ("Dominatio Animae" in habs) return 1; endif
+    if ("Visao verdadeira" in habs) return 1; endif
+    if ("Campeao das Montanhas" in habs) return 1; endif
+
+    return 0;
+endfunction

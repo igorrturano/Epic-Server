@@ -9,6 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];
@@ -19,6 +20,11 @@ program SpellScript(params)
 	//	SendSysMessageEx(who, "Voce nao pode ser alvejado por essa magia.", SSM_FAIL);
 	//	return;
 	//endif
+
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);	
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
 
 	if (!targ)
 		return;
