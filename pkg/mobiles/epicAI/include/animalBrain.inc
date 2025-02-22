@@ -54,6 +54,11 @@ function AnimalBrain()
                     endif
                 EVID_BUDDYATTACKED:
                     // Talvez nao precise usar
+                EVID_PEACEMADE:
+                    PrintTextAbove(me, "PEACEMADE");
+                    SetWarMode( 0 );
+                    SetOpponent( 0 );
+                    sleep(1);
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
