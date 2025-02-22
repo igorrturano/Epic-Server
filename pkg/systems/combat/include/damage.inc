@@ -940,7 +940,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (getCooldown(attacker, "faroporsangue"))
 		var bonus := AP_GetVital(defender, HITS) / AP_GetVitalMaximumValue(defender, HITS);
-        
+
 		if (bonus <= 0.25)
 			bonus := "1d12";
 		elseif (bonus <= 0.5)

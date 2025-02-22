@@ -1,4 +1,5 @@
 use uo;
+include "include/facings";
 
 function isAssassinWeapon(who)
     var assassin_weapons := {
@@ -86,4 +87,24 @@ function enterGolem(who)
 
 	recalcvitals(who);
 	HealDamage(who, hitsmod);
+endfunction
+
+function moveToBehind(attacker, defender)
+	if ( !IsBehind( attacker, defender.x, defender.y ) && IsFacing( defender, attacker.x,
+	  attacker.y ) )
+	  var behindX := defender.x + ( defender.x - attacker.x );
+	  var behindY := defender.y + ( defender.y - attacker.y );
+
+	  if ( defender.x == attacker.x && defender.y == attacker.y )
+		SendSysMessageEx( attacker, "Você esta muito proximo do oponente!", SSM_FAIL );
+		return 0;
+	  else
+		PlayObjectCenteredEffect( attacker, 0x5433, 7, 16 );
+		PlaySoundEffect( attacker, 0x526 );
+		MoveObjectToLocation( attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION );
+		if ( !IsFacing( attacker, defender.x, defender.y ) )
+		  TurnObjectToward( attacker, defender.x, defender.y );
+		endif
+	  endif
+	endif
 endfunction

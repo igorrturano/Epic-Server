@@ -83,7 +83,12 @@ function HumanoidBrain()
                         HandleHumanoidCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
-                    ShamanBehavior(me);
+                    if (me.isShaman()   )
+                        HumanoidShamanBehavior(me, ev.source);
+                    endif
+                    if (me.isPriest())
+                        HumanoidPriestBehavior(me, ev.source);
+                    endif
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
@@ -182,7 +187,11 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         return 0;
     endif
-    if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
+    
+    // Force melee combat when metamorphosed
+    if (GetObjProperty(me, "metamorfose"))
+        is_ranged := 0;
+    endif
 
     var z_diff := Abs(me.z - opponent.z);
     if (z_diff > MAX_Z_DIFF)
@@ -239,6 +248,11 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     if (me.isShaman())
         PrintTextAbove(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
+    endif
+
+    if (me.isPriest())
+        PrintTextAbove(me, "Priest Behavior");
+        HumanoidPriestBehavior(me, opponent);
     endif
 
     if (me.CanBite())
@@ -710,7 +724,6 @@ function ChooseSageAbility(npc, state, habs)
     return habs[RandomInt(habs.size())+1];
 endfunction
 
-// TODO: Criar uma IA propria pro Engenheiro
 // TODO: Criar uma IA pro Ladrao/Punguista
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     var habs := GetObjProperty(me, "myhabs");

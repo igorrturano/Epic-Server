@@ -15,6 +15,9 @@ program SpellScript(params)
 
 	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
 	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (who.npctemplate)
+		targ := GetRandomNearbyHostile(who);
+	endif
 	if (!targ)
 		return;
 	endif

@@ -7,11 +7,17 @@ include "include/sounds";
 include "include/say";
 include "include/tileEffects";
 include ":timedScripts:timedScripts";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	params := 0; // No longer needed
+
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);	
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
 
 	if (!targ)
 		return;
