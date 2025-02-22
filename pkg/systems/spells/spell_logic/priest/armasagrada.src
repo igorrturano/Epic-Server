@@ -14,6 +14,10 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	if (who.npctemplate)
+		targ := who.weapon;
+	endif
+
 	var mlore :=  Cint(AP_GetSkill(who, MAGICLORE));
 	var duration := Cint(mlore);
 	var bonus := Cint(mlore/10);

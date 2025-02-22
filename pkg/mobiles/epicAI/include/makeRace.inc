@@ -123,36 +123,26 @@ function makeDrow(mobile)
    
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
-      mobile.graphic := 1832; // Male drow graphic
-      Print("Setting male drow graphic: 1832");
+      mobile.graphic := 1830; // Male elf graphic
    else
-      mobile.graphic := 1833; // Female drow graphic
-      Print("Setting female drow graphic: 1833");
+      mobile.graphic := 1831; // Female elf graphic
    endif
-   Print("Current graphic: " + mobile.graphic);
 
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
    var types_cfg := ReadConfigFile(":fls_core:config/hairtypes");
-   Print("Configs loaded");
 
    // Get skin colors from config
    var skin_elem := skin_cfg["drow"];
-   Print("Skin element: " + skin_elem);
    var skin_colors := GetConfigStringArray(skin_elem, "color");
-   Print("Available skin colors: " + skin_colors.size());
    mobile.color := CInt(skin_colors[RandomIntMinMax(1, skin_colors.size())]);
-   Print("Selected skin color: " + mobile.color);
    mobile.truecolor := mobile.color;
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Cabelo Drow"];
-   Print("Hair element: " + hair_elem);
    var hair_colors := GetConfigStringArray(hair_elem, "Color");
-   Print("Available hair colors: " + hair_colors.size());
    var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
-   Print("Selected hair color: " + hair_color);
 
    // Get hair styles from config
    var hair_types := types_cfg["todos"];
@@ -162,13 +152,11 @@ function makeDrow(mobile)
       style := SplitWords(style);
       valid_hair_styles.append(CInt(style[2]));
    endforeach
-   Print("Available hair styles: " + valid_hair_styles.size());
    
    // Create and equip hair
    var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
    hair.color := hair_color;
    EquipItem(mobile, hair);
-   Print("Hair equipped with color: " + hair.color);
 
    return 1;
 endfunction
