@@ -36,6 +36,7 @@ include "include/epicConstants";
 include ":commands:debugsystem";
 include "include/epicMageryUtils";
 include ":fls_magery:spellSounds";
+include "include/epicCombatUtils";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -494,23 +495,7 @@ function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
   endif
 
   if ( getCooldown( attacker, "deathdance" ) > 0 )
-	if ( !IsBehind( attacker, defender.x, defender.y ) && IsFacing( defender, attacker.x,
-	  attacker.y ) )
-	  var behindX := defender.x + ( defender.x - attacker.x );
-	  var behindY := defender.y + ( defender.y - attacker.y );
-
-	  if ( defender.x == attacker.x && defender.y == attacker.y )
-		SendSysMessageEx( attacker, "Você esta muito proximo do oponente!", SSM_FAIL );
-		return 0;
-	  else
-		PlayObjectCenteredEffect( attacker, 0x5433, 7, 16 );
-		PlaySoundEffect( attacker, 0x526 );
-		MoveObjectToLocation( attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION );
-		if ( !IsFacing( attacker, defender.x, defender.y ) )
-		  TurnObjectToward( attacker, defender.x, defender.y );
-		endif
-	  endif
-	endif
+	moveToBehind(attacker, defender);
   endif
 
   if ( TemHabilidade( attacker, "Ainalaith" ) )

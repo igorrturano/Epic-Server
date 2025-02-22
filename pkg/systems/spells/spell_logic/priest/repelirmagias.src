@@ -15,6 +15,10 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	if (who.npctemplate)
+		targ := who;
+	endif
+
 	if (!targ)
 		return;
 	endif

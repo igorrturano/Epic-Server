@@ -126,13 +126,23 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 var template := FindAnimalTemplate(tier);
                 if (template)
                     SetObjProperty(mobile, "#camuflagem_template", template);
-                    var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, mobile.realm);
+                    var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
+                    sleepms(250);  // This was the key - giving the NPC time to initialize
+                    pet.alignment := 1;
                     SetObjProperty(pet, "owner", mobile.serial);
-                    pet.setmaster(mobile);
+                    GrantPrivilege(pet, "hiddenattack");
+                    pet.enable("hiddenattack");
+                    GrantPrivilege(mobile, "hiddenattack");
+                    mobile.enable("hiddenattack");
+                    mobile.stealthsteps := 30;
+                    pet.stealthsteps := 30;
                 endif
                 var net := CreateItemInBackpack(mobile, "net", RandomInt(2)+1);
             endif
 
+            if ("Nazg khalug" in habs)
+                makeRace(mobile, ORC);
+            endif
         LADINO:
             if ("Mestre dos Venenos" in habs)
                 var bleed_weapons := array{0x1401, 0x13f6, 0x0ec2, 0x26C5, 11565, 0x27af, 0x27ab};
@@ -215,6 +225,11 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 makeRace(mobile, ELFO);
             endif
 
+            if ("Forma Adaptavel" in habs)
+                var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
+                EquipRandomFromArray(mobile, two_handed);
+            endif
+
     endcase
 
     return 1;
@@ -241,7 +256,7 @@ function FindAnimalTemplate(tier)
     endforeach
     // If we found valid templates, return a random one
     if (valid_templates.size() > 0)
-        return valid_templates[RandomInt(valid_templates.size())+1];
+        return valid_templates[RandomIntMinMax(1, valid_templates.size())];
     endif
     return 0;
 endfunction
@@ -1092,21 +1107,37 @@ function PursueTarget(opponent)
             if (dist <= range_info.max_range)
                 return 1;
             else
-                RunToward(opponent);
+                if (me.hidden || me.concealed)
+                    RunToward(opponent);
+                else
+                    WalkToward(opponent);
+                endif
             endif
         elseif (me.isSage() && me.weapon.objtype == FIST)
             // Don't get closer than 6 tiles
             if (dist <= 6)
                 return 1;
             else
-                RunToward(opponent);
+                if (me.hidden || me.concealed)
+                    RunToward(opponent);
+                else
+                    WalkToward(opponent);
+                endif
             endif
         else
-            RunToward(opponent);
+            if (me.hidden || me.concealed)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
         endif
     else
         if (dist > 1)
-            RunToward(opponent);
+            if (me.hidden || me.concealed)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
         endif
     endif
 
@@ -1164,7 +1195,11 @@ function PursueTarget(opponent)
         endif
 
         if (Distance(me, opponent) > min_distance)
-            RunToward(opponent);
+            if (me.hidden || me.concealed)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
         endif
         sleepms(100);
     else
@@ -1182,7 +1217,11 @@ function PursueTarget(opponent)
                     break;
                 endif
                 if (!shouldKeepPursuing(opponent, dist)) break; endif
-                RunTowardLocation(coord.x, coord.y);
+                if (me.hidden || me.concealed)
+                    RunTowardLocation(coord.x, coord.y);
+                else
+                    WalkTowardLocation(coord.x, coord.y);
+                endif
                 sleepms(100);
             endforeach
         else
@@ -1283,13 +1322,47 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
         endif
     endif
 
-    if (me.weapon.isRanged() || range_info.max_range > 1)
-        if (dist < range_info.max_range)
-            TryToRunAway(opponent);
-            sleepms(sleepdelay);
-        elseif (dist > range_info.max_range)
+    if (GetObjProperty(me, "metamorfose"))
+        // Force melee behavior
+        if (dist > 1)
             RunToward(opponent);
             sleepms(sleepdelay);
+        else
+            TurnToward(opponent);
+            return StayNearAllies(4, sleepdelay, opponent);
+        endif
+        return 0;
+    endif
+
+    if (me.weapon.isRanged() || range_info.max_range > 1)
+        // Check if we can actually move to ideal range
+        var ideal_range := range_info.max_range;
+        var can_move_back := CanMoveInDirection(me, opponent, 1); // 1 means moving away
+        var can_move_forward := CanMoveInDirection(me, opponent, 0); // 0 means moving toward
+
+        if (dist < ideal_range)
+            if (can_move_back)
+                TryToRunAway(opponent);
+                sleepms(sleepdelay);
+            else
+                // If we can't move back, just maintain current position
+                TurnToward(opponent);
+                return StayNearAllies(4, sleepdelay, opponent);
+            endif
+        elseif (dist > ideal_range)
+            if (can_move_forward)
+                if (GetObjProperty(me, "metamorfose"))
+                    RunToward(opponent);
+                    sleepms(sleepdelay);
+                else
+                    RunToward(opponent);
+                    sleepms(sleepdelay);
+                endif
+            else
+                // If we can't move forward, just maintain current position
+                TurnToward(opponent);
+                return StayNearAllies(4, sleepdelay, opponent);
+            endif
         else
             TurnToward(opponent);
             return StayNearAllies(4, sleepdelay, opponent);
@@ -1316,6 +1389,31 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
     endif
 
     return 0;
+endfunction
+
+function CanMoveInDirection(me, opponent, moving_away := 0)
+    var test_distance := 3; // Check 3 tiles ahead
+    var angle := GetFacing(me.x, me.y, opponent.x, opponent.y);
+    var test_coords;
+    
+    if (moving_away)
+        // Reverse the angle when moving away
+        angle := (angle + 4) % 8;
+    endif
+    
+    case (angle)
+        0: test_coords := struct{ "x" := me.x, "y" := me.y - test_distance }; // North
+        1: test_coords := struct{ "x" := me.x + test_distance, "y" := me.y - test_distance }; // Northeast
+        2: test_coords := struct{ "x" := me.x + test_distance, "y" := me.y }; // East
+        3: test_coords := struct{ "x" := me.x + test_distance, "y" := me.y + test_distance }; // Southeast
+        4: test_coords := struct{ "x" := me.x, "y" := me.y + test_distance }; // South
+        5: test_coords := struct{ "x" := me.x - test_distance, "y" := me.y + test_distance }; // Southwest
+        6: test_coords := struct{ "x" := me.x - test_distance, "y" := me.y }; // West
+        7: test_coords := struct{ "x" := me.x - test_distance, "y" := me.y - test_distance }; // Northwest
+    endcase
+    
+    // Check if we can actually move there
+    return CheckLosAt(me, test_coords.x, test_coords.y, me.z);
 endfunction
 
 function MaintainSimpleDistance(opponent, dist, sleepdelay)  
