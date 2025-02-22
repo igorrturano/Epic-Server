@@ -1283,6 +1283,18 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
         endif
     endif
 
+    if (GetObjProperty(me, "metamorfose"))
+        // Force melee behavior
+        if (dist > 1)
+            RunToward(opponent);
+            sleepms(sleepdelay);
+        else
+            TurnToward(opponent);
+            return StayNearAllies(4, sleepdelay, opponent);
+        endif
+        return 0;
+    endif
+
     if (me.weapon.isRanged() || range_info.max_range > 1)
         if (dist < range_info.max_range)
             TryToRunAway(opponent);

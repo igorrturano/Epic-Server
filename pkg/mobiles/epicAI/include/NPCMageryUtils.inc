@@ -385,6 +385,10 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
+   if (GetObjProperty(me, "metamorfose"))
+      return 0;
+   endif
+
    // Get available spells
    var spells := getAvailableSpells(me);
    if (!spells.size())
