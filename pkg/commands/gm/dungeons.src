@@ -408,6 +408,7 @@ function GetFormattedMobInfo(dungeon_elem, realm)
     };
     
     var rects := GetDungeonRects(dungeon_elem);
+    
     foreach rect in rects
         var coords := SplitWords(rect);
         if (coords.size() >= 4)
@@ -428,6 +429,7 @@ function GetFormattedMobInfo(dungeon_elem, realm)
             endif
             
             var items := ListObjectsInBox(x1, y1, -128, x2, y2, 127, realm);
+            
             foreach item in items
                 if (item.name == "Spawn Point")
                     for i := 1 to 3
@@ -440,7 +442,7 @@ function GetFormattedMobInfo(dungeon_elem, realm)
                             
                             info.total += amount;
                             
-                            var tier := GetObjProperty(item, "Tier"+i);
+                            var tier := CStr(GetObjProperty(item, "Tier"+i));
                             if (!tier)
                                 tier := "0";
                             endif
@@ -450,16 +452,18 @@ function GetFormattedMobInfo(dungeon_elem, realm)
                         endif
                     endfor
                     
-                elseif (item.name == "Epic! Spawner")
+                elseif (item.objtype == 20480)
                     var cfg := GetObjProperty(item, "config");
+                    
                     if (cfg)
                         for i := 1 to 3
-                            var mobs := GetObjProperty(cfg, "mobslvl"+i);
-                            var amt := CInt(GetObjProperty(cfg, "amtlvl"+i));
+                            var mobs := cfg["mobslvl"+i];
+                            var amt := CInt(cfg["amtlvl"+i]);
                             
-                            if (mobs && amt)
+                            if (mobs && amt > 0)
                                 info.total += amt;
-                                info.tiers[i] := CInt(info.tiers[i]) + amt;
+                                var tier := CStr(i);
+                                info.tiers[tier] := CInt(info.tiers[tier]) + amt;
                                 info.mobs[mobs] := CInt(info.mobs[mobs]) + amt;
                             endif
                         endfor
@@ -471,13 +475,22 @@ function GetFormattedMobInfo(dungeon_elem, realm)
         sleepms(2);
     endforeach
     
+    // Ordenar as chaves numericamente
     var tier_keys := info.tiers.keys();
-    tier_keys.sort();
-    foreach tier in tier_keys
+    // Convertendo para números para ordenação
+    var numeric_keys := array;
+    foreach key in tier_keys
+        numeric_keys.append(CInt(key));
+    endforeach
+    numeric_keys.sort();
+    
+    // Construir a string dos tiers usando as chaves ordenadas
+    foreach tier in numeric_keys
         if (info.tiers_str != "")
             info.tiers_str += ", ";
         endif
-        info.tiers_str += tier + "(" + info.tiers[tier] + ")";
+        var tier_str := CStr(tier);
+        info.tiers_str += tier_str + "(" + info.tiers[tier_str] + ")";
     endforeach
     
     foreach mob in (info.mobs.keys())
@@ -719,34 +732,21 @@ function ShowDungeonInfoGump(who, name)
 	GFTextLine(gump, x + 30, y + halfHeight + 75, 0, "Lvls[qtd]: ");
 	GFTextLine(gump, x + 90, y + halfHeight + 75, 2100, chest_info.levels_str);
     
-	// MOBS Section
-	var mob_info := GetFormattedMobInfo(dungeon_elem, dungeon_realm);
-	GFResizePic(gump, x + colWidth + 20, y, 9350, colWidth, halfHeight * 2 + 10);
-	GFTextLine(gump, x + colWidth + 30, y + 5, 53, "MOBS");
-	GFTextLine(gump, x + colWidth + 50, y + 25, 0, "Nº Mobs: ");
-	GFTextLine(gump, x + colWidth + 120, y + 25, 2100, "" + mob_info.total);
-	GFTextLine(gump, x + colWidth + 50, y + 45, 0, "Tiers [qtd]: ");
-	GFTextLine(gump, x + colWidth + 120, y + 45, 2100, mob_info.tiers_str);
-	var mobs_words := SplitWords(mob_info.mobs_str);
-	var current_line := "";
-	var line_y := y + 65;
-	var max_width := 60;
-	GFTextLine(gump, x + colWidth + 50, line_y, 0, "Mobs [qtd]: ");
-	line_y += 20;
-    
-    foreach word in mobs_words
-        if ((len(current_line) + len(word) + 1) > max_width)
-            GFTextLine(gump, x + colWidth + 50, line_y, 2100, current_line);
-            current_line := word + " ";
-            line_y += 20;
-        else
-            current_line += word + " ";
-        endif
-    endforeach
-    
-    if (current_line != "")
-        GFTextLine(gump, x + colWidth + 50, line_y, 2100, current_line);
-    endif
+// MOBS Section
+var mob_info := GetFormattedMobInfo(dungeon_elem, dungeon_realm);
+GFResizePic(gump, x + colWidth + 20, y, 9350, colWidth, halfHeight * 2 + 10);
+GFTextLine(gump, x + colWidth + 30, y + 5, 53, "MOBS");
+GFTextLine(gump, x + colWidth + 50, y + 25, 0, "Nº Mobs: ");
+GFTextLine(gump, x + colWidth + 120, y + 25, 2100, "" + mob_info.total);
+GFTextLine(gump, x + colWidth + 50, y + 45, 0, "Tiers [qtd]: ");
+GFTextLine(gump, x + colWidth + 120, y + 45, 2100, mob_info.tiers_str);
+
+// Label em preto
+GFTextLine(gump, x + colWidth + 50, y + 65, 0, "Mobs [qtd]:");
+
+// Lista de mobs separada em cor 2100
+var mobs_words := SplitWords(mob_info.mobs_str);
+GFHTMLArea(gump, x + colWidth + 120, y + 65, 250, 100, "<BASEFONT COLOR=#5e5d5e>" + mob_info.mobs_str, 12, 1);
 
     y += halfHeight * 2 + 20;
     
@@ -839,11 +839,13 @@ y += 70;
     GFResizePic(gump, x, y, 9350, 760, 50);
     GFTextLine(gump, x + 10, y + 5, 53, "Outros [qtd]");
     GFTextLine(gump, x + 30, y + 25, 0, "Dungeondoors: ");
-    GFTextLine(gump, x + 120, y + 25, 2100, "" + dungeon_elements.doors);
-    GFTextLine(gump, x + 190, y + 25, 0, "Alavancas: ");
-    GFTextLine(gump, x + 260, y + 25, 2100, "" + dungeon_elements.levers);
-    GFTextLine(gump, x + 320, y + 25, 0, "Itens Únicos: ");
-    GFTextLine(gump, x + 400, y + 25, 2100, "" + dungeon_elements.uniques);
+    GFTextLine(gump, x + 110, y + 25, 2100, "" + dungeon_elements.doors);
+    GFTextLine(gump, x + 150, y + 25, 0, "Alavancas: ");
+    GFTextLine(gump, x + 210, y + 25, 2100, "" + dungeon_elements.levers);
+	GFTextLine(gump, x + 250, y + 25, 0, "Ropes: ");
+    GFTextLine(gump, x + 290, y + 25, 2100, "" + dungeon_elements.ropes);
+    GFTextLine(gump, x + 340, y + 25, 0, "Itens Únicos: ");
+    GFTextLine(gump, x + 420, y + 25, 2100, "" + dungeon_elements.uniques);
     GFTextLine(gump, x + 460, y + 25, 0, "Quadros Rp: ");
     GFTextLine(gump, x + 540, y + 25, 2100, "" + dungeon_elements.quadrorp);
 	GFTextLine(gump, x + 590, y + 25, 0, "Alertas Área/Dano/Eco: ");
@@ -966,6 +968,7 @@ function GetDungeonElements(dungeon_element, realm)
         "doors" := 0,
         "levers" := 0,
         "uniques" := 0,
+		"ropes" := 0,
         "quadrorp" := 0,
         "alertas" := 0,
         "traps" := dictionary
@@ -997,6 +1000,8 @@ function GetDungeonElements(dungeon_element, realm)
                     elements.doors += 1;
                 elseif (item.objtype == 0x108c)
                     elements.levers += 1;
+                elseif (item.objtype == 4032)
+                    elements.ropes += 1;
                 elseif (GetObjProperty(item, "itemunico"))
                     elements.uniques += 1;
                 elseif (GetObjProperty(item, "walktrap"))
@@ -1185,33 +1190,50 @@ function debug(who, rects, realm)
     GFResizePic(gump, 15, 15, 0x13BE, 570, 470);
     GFTextMid(gump, 15, 25, 570, 1153, "DEBUG DA DUNGEON - Erros Encontrados");
     
-    var y := 60;
+    //const GUMP_HEIGHT := 470; // Altura útil do gump
+    const INITIAL_Y := 60;    // Posição Y inicial
+    const HEADER_HEIGHT := 20; // Altura do cabeçalho do item
+    const ERROR_HEIGHT := 20;  // Altura de cada mensagem de erro
+    const SPACING := 10;       // Espaçamento entre items
+    const MAX_Y := 420;       // Limite Y máximo para conteúdo (deixando espaço para botões de navegação)
+    
+    var y := INITIAL_Y;
     var page := 1;
-    var items_per_page := 8;
-    var current_item := 1;
+    var current_item := 0;
     
     GFPage(gump, page);
     
     foreach error_item in errors_found
-        if (current_item > items_per_page)
+        // Calcula altura necessária para este item
+        var item_total_height := HEADER_HEIGHT + (error_item.errors.size() * ERROR_HEIGHT) + SPACING;
+        
+        // Verifica se o item cabe na página atual
+        if ((y + item_total_height) > MAX_Y)
+            // Adiciona botão para próxima página
             GFAddButton(gump, 530, 440, 0x15E1, 0x15E5, GF_PAGE_BTN, page + 1);
-            page := page + 1;
-            current_item := 1;
-            y := 60;
+            
+            // Nova página
+            page += 1;
+            y := INITIAL_Y;
             GFPage(gump, page);
+            
+            // Adiciona botão para página anterior
             GFAddButton(gump, 30, 440, 0x15E3, 0x15E7, GF_PAGE_BTN, page - 1);
         endif
         
+        // Adiciona cabeçalho do item
         GFTextLine(gump, 30, y, 1153, "Item: " + error_item.name + " ("+error_item.x+","+error_item.y+","+error_item.z+")");
         GFAddButton(gump, 530, y, 2103, 2104, 1, error_item.serial);
         
-        y += 20;
+        y += HEADER_HEIGHT;
+        
+        // Adiciona mensagens de erro
         foreach errormsg in (error_item.errors)
             GFTextLine(gump, 50, y, 2100, "- " + errormsg);
-            y += 20;
+            y += ERROR_HEIGHT;
         endforeach
         
-        y += 10;
+        y += SPACING;
         current_item += 1;
     endforeach
     
