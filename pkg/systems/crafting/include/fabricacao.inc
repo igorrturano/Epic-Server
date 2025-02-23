@@ -1,3 +1,5 @@
+//Author: Deiro || Rafael Santos
+
 use Math;
 
 include "/include/epicConstants";
@@ -806,7 +808,6 @@ function PegaMateriaisNecessarios(objtype, descritorFabricacao)
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
-	Print("qtdSucessos: " + qtdSucessos);
 	if(qtdSucessos > 40)
 		return "Extremamente Longo";
 	elseif(qtdSucessos <= 40 && qtdSucessos > 30)

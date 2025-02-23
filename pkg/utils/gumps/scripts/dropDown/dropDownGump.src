@@ -1,3 +1,5 @@
+//Author: Deiro || Rafael Santos
+
 include ":gumps:gumps";
 include ":gumps:/include/epicGumps";
 include ":gumps:/include/dropDownGump";

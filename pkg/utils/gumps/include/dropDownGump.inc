@@ -1,3 +1,5 @@
+//Author: Deiro || Rafael Santos
+
 include ":gumps:/include/epicGumps";
 
 class DropDown()
@@ -187,6 +189,7 @@ function MontaDropDownGump(parx,pary,parLargura,valores)
 							};
 	
 	GFMovable(gump, 0);
+	
 	if(Valores.size() < opcoesTabela[QTD_LINHA_LIMITE])
 		diferencaValoresLinhas := 20 * ( opcoesTabela[QTD_LINHA_LIMITE] - Valores.size()) + 33;
 		altura :=  altura - diferencaValoresLinhas;

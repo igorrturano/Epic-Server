@@ -21,7 +21,7 @@ const TEMPO_DIA := 86400;
 enum GUMP_PARAMS
 	HIDE_TITLE, HIDE_PAGE, HIDE_BORDER,
 	BORDER_GOLDEN, BORDER_BLUE, BORDER_MARBLE,
-	NO_CLOSABLE
+	NO_CLOSABLE, NO_MOVABLE
 endenum
 
 enum OPCOES_TABELA
@@ -71,7 +71,12 @@ function GFECreateGump(title, width, height, params := array{})
 	else
 		GFClosable(gump, 1);
 	endif
-    GFDisposable(gump, 1);
+
+	if (NO_MOVABLE in params)
+		GFMovable(gump, 0);
+	else
+		GFMovable(gump, 1);
+	endif
 
 	if (!(HIDE_BORDER in params))
 		var border;
@@ -510,4 +515,8 @@ endfunction
 //Função "privada" da criação de tabela.
 function DeterminaOpcaoTabela(opcoesTabela,opcao,padrao)
 	return opcoesTabela[opcao]? opcoesTabela[opcao]:padrao;
+endfunction
+
+function EnviaGumpPosicao( quem, pid, gumpApelido)
+	return Start_Script( ":gumps:scripts/posicao/posicaoGump", array{quem, pid, gumpApelido} );
 endfunction

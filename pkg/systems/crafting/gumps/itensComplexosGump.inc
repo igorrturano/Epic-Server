@@ -1,3 +1,5 @@
+//Author: Deiro || Rafael Santos
+
 include ":gumps:/include/epicGumps";
 
 const G_LARGURA := 800;
@@ -182,7 +184,6 @@ function MontaEsquemaGump(byref gump,byref sessao)
 	endforeach
 endfunction
 
-//function MontaComponentesGump(quem,byref gump,parametros,byref sessao)
 function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	//TODO tabela com todos os componentes.
 	gump := GFECreateGump("GumpComponentes",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
@@ -248,22 +249,13 @@ function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
 	GFTextLine(gump,x + 20,y,86, material + ": " + nome);
 endfunction
 
-function ControleGump(byref gump,controleX,controleY,gumpX,gumpY,idButaoInicial := 0,descIncremento := "Baixo")
-	//TODO Implementar o controle de gump de forma a ser um script autosuficiente.
-	GFResizePic(gump, controleX,controleY, 5054, 140, 70);
+function MontaTratamentoGump(x, y)
+	var gump := GFCreateGump(0,0,400,250);
+	GFMovable(gump, 0);
 
-	var centroCruzX := controleX + 25;
-	var centroCruzY := controleY + 25;
-	GFAddButton(gump,centroCruzX,centroCruzY - 15,5600,5600,GF_CLOSE_BTN,idButaoInicial);
-	GFAddButton(gump,centroCruzX + 15,centroCruzY ,5601,5601,GF_CLOSE_BTN,idButaoInicial + 1);
-	GFAddButton(gump,centroCruzX,centroCruzY + 15,5602,5602,GF_CLOSE_BTN, idButaoInicial + 2);
-	GFAddButton(gump,centroCruzX - 15,centroCruzY ,5603,5603,GF_CLOSE_BTN, idButaoInicial + 3);
-
-	GFTextLine(gump,centroCruzX + 40,centroCruzY,1258,descIncremento);
-
-	GFAddButton(gump,centroCruzX + 95,6 + centroCruzY - 15 ,2435,2436,GF_CLOSE_BTN, idButaoInicial + 4);
-	GFAddButton(gump,centroCruzX + 95,6 + centroCruzY + 15,2437,2438,GF_CLOSE_BTN, idButaoInicial + 5);
-	
+	GFResizePic(gump, x, y, 2620, 400, 200 );
+	GFAddButton(gump,x + 40, y + 40,2648,2649,GF_CLOSE_BTN, 2);
+	return gump;
 endfunction
 
 function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
@@ -315,7 +307,6 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 		endforeach
 	endif
 endfunction
-
 
 function GeraSetas(byref gump,x,y, valor)
 	var deslocamentoX := 16;
@@ -401,7 +392,7 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, re
 	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
 	var corPino := 0;
 	if(receita.dificuldade.chanceBase > 45)
-		corPino := 1367; // verde
+		corPino := 78; // verde
 	elseif(receita.dificuldade.chanceBase <= 45 && receita.dificuldade.chanceBase > 30)
 		corPino := 2212; //amarelo
 	elseif(receita.dificuldade.chanceBase <= 30 && receita.dificuldade.chanceBase > 10)
@@ -434,5 +425,4 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, re
 	endcase
 	
 	GFTilePic(gump, x + 30,y + 50, CInt(receita.graphic));
-	//TODO fazer com que os pinos tenham cor diferente de acordo com a dificuldade de criação do item.
 endfunction

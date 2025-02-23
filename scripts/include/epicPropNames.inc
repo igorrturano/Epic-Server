@@ -16,3 +16,7 @@ const PROPNAME_INDESTRUTIVEL := "isIndestrutivel";
 const PROPNAME_DESTROCO := "isDestroco"; 
 const PROPNAME_DEED_SERIALS := "ItemsCreatedSerials"; 
 const PROPNAME_AREA_SEGURA := "itemEmAreaSegura"; 
+
+//CONTROLE DE GUMP
+
+const PROPNAME_POSICAO_GUMP := "posicaoGump";

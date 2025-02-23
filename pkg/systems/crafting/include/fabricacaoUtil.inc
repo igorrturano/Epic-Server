@@ -1,3 +1,4 @@
+//Author: Deiro || Rafael Santos
 
 function PegaComponenteTierDesc(tier)
 	case (tier)

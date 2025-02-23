@@ -1,0 +1,71 @@
+//Author: Deiro || Rafael Santos
+
+include ":gumps:gumps";
+include ":gumps:/include/epicGumps";
+include ":crafting:gumps/itensComplexosGump";
+include ":gumps:/include/posicaoGump";
+
+program PosicaoGump(parametros)
+	var quem			:= parametros[1];
+	var pidPai			:= parametros[2];
+	var gumpApelido			:= parametros[3];
+	var retonoPai := 0;
+	
+	var distancias := array{
+							struct{desc := "Curta", distancia := 15},
+							struct{desc := "Média", distancia := 80},
+							struct{desc := "Alta", distancia := 150},
+							struct{desc := "Muito Alta", distancia := 300}
+						};
+	var distanciaSelecionada := 1;
+	Sleepms(150);
+	var retornoGump := true;
+	while ( GetProcess( pidPai ) && retornoGump)
+		var posicao2D := PegaPosicaoGump(quem, gumpApelido);
+		var gump := MontaControleGump(0,0,distancias[distanciaSelecionada].desc);
+		var retornoGump := SendDialogGump(quem, gump.layout, gump.data, gump.base.x, gump.base.y,0,ATUALIZA_POS_ID);
+
+		case (retornoGump[0])
+			POSICAO_TOPO:
+				posicao2D.y += -distancias[distanciaSelecionada].distancia;
+				posicao2D.y := posicao2D.y < 0 ? 0: posicao2D.y; 
+				AtualizaPosicaoProp(quem,gumpApelido,posicao2D);
+				break;
+			POSICAO_DIREITA:
+				posicao2D.x += distancias[distanciaSelecionada].distancia;
+				AtualizaPosicaoProp(quem,gumpApelido,posicao2D);
+				break;
+			POSICAO_BAIXO:
+				posicao2D.y += distancias[distanciaSelecionada].distancia;
+				AtualizaPosicaoProp(quem,gumpApelido,posicao2D);
+				break;
+			POSICAO_ESQUERDA:
+				posicao2D.x += -distancias[distanciaSelecionada].distancia;
+				posicao2D.x := posicao2D.x < 0 ? 0: posicao2D.x;
+				AtualizaPosicaoProp(quem,gumpApelido,posicao2D);
+				break;
+			POSICAO_RESETA:
+				AtualizaPosicaoProp(quem,gumpApelido,struct{x := 0, y := 0});
+				break;
+			DISTANCIA_AUMENTA:
+				if(distancias.size() > distanciaSelecionada)
+					distanciaSelecionada += 1;
+				endif
+				break;
+			DISTANCIA_DIMINUI:
+				if(distanciaSelecionada <= 1 )
+					distanciaSelecionada := 1;
+				else
+					distanciaSelecionada -= 1;
+				endif
+				break;
+		endcase
+
+		if(retornoGump)
+			GFCloseGump(quem,pidPai,ATUALIZA_POS_PAI_ID);
+		else
+			break;
+		endif
+		SleepMS ( 10 );
+	endwhile
+endprogram
