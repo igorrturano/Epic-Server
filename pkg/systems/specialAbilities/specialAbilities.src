@@ -1,0 +1,119 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":charactercreation:habilidades";
+include "include/utils";
+
+program specialAbilities(who)
+    if (!who)
+        return 0;
+    endif
+
+    // Check if player is dead or disconnected
+    if (who.dead || !who.connected)
+        return 0;
+    endif
+
+    // Get character data
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0;
+    endif
+
+    // Get level and calculate cooldown
+    var level := CInt(GetObjProperty(who, "Level"));
+    var base_cooldown := 180; // 3 minutes base
+    var cooldown_reduction := Floor(level/4) * 30; // Reduce 30s every 4 levels
+    var final_cooldown := base_cooldown - cooldown_reduction;
+
+    // Check if ability is on cooldown
+    if (GetCooldown(who, "special_ability") > 0)
+        SendSysMessageEx(who, "Habilidade ainda em recarga!", SSM_FAIL);
+        return 0;
+    endif
+
+    // Execute ability based on class
+    case (chardata.classe)
+        GUERREIRO:
+            return DoWarriorAbility(who, final_cooldown);
+        LADINO:
+            return DoRogueAbility(who, final_cooldown);
+        SABIO:
+            return DoSageAbility(who, chardata, final_cooldown);
+    endcase
+
+    return 0;
+endprogram
+
+function DoWarriorAbility(who, cooldown)
+    PrintTextAbove(who, "*ataque extra*");
+    who.attack_once();
+    SetCooldown(who, "special_ability", cooldown);
+    return 1;
+endfunction
+
+function DoRogueAbility(who, cooldown)
+    PrintTextAbove(who, "*evasão*");
+    who.hidden := 1;
+    sleepms(500);
+    PushBack(who, 4, 75, 1);
+    who.hidden := 0;
+    SetCooldown(who, "special_ability", cooldown);
+    return 1;
+endfunction
+
+function DoSageAbility(who, chardata, cooldown)
+    case (chardata.wisdom_path)
+        "Engenheiro":
+            return DoEngineerAbility(who, cooldown);
+        default: // Mago, Xamã, Clérigo
+            if (chardata.magia == "Arqueiro Arcano")
+                return DoArcaneArcherAbility(who, cooldown);
+            else
+                return DoSpellcasterAbility(who, cooldown);
+            endif
+    endcase
+endfunction
+
+function DoEngineerAbility(who, cooldown)
+    var firearms := array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+    var weapon1 := GetEquipmentByLayer(who, LAYER_HAND1);
+    var weapon2 := GetEquipmentByLayer(who, LAYER_HAND2);
+    
+    // Check both hands for firearms
+    if (weapon1 && weapon1.objtype in firearms)
+        return FastReload(who, weapon1, cooldown);
+    elseif (weapon2 && weapon2.objtype in firearms)
+        return FastReload(who, weapon2, cooldown);
+    endif
+
+    SendSysMessageEx(who, "Você precisa estar com uma arma de fogo equipada!", SSM_FAIL);
+    return 0;
+endfunction
+
+function FastReload(who, weapon, cooldown)
+    var balas := CInt(GetObjProperty(weapon, "balas"));
+    SetObjProperty(weapon, "balas", balas + 1);
+    PrintTextAbove(who, "*recarrega rapidamente*");
+    SetCooldown(who, "special_ability", cooldown);
+    return 1;
+endfunction
+
+function DoSpellcasterAbility(who, cooldown)
+    SetObjProperty(who, "#free_cast", 1);
+    SetObjProperty(who, "#cast_time", ReadGameClock());
+    PrintTextAbove(who, "*conjuração rápida*");
+    SetCooldown(who, "special_ability", cooldown);
+    return 1;
+endfunction
+
+function DoArcaneArcherAbility(who, cooldown)
+    TS_StartTimer(who, "velocidade", 4); // 4 seconds of speed boost
+    PrintTextAbove(who, "*velocidade arcana*");
+    SetCooldown(who, "special_ability", cooldown);
+    return 1;
+endfunction 
