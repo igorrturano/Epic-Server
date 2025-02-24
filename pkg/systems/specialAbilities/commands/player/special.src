@@ -1,0 +1,5 @@
+use os;
+
+program specialAbilityCommand(who)
+    return start_script(":specialAbilities:specialAbilities", who);
+endprogram 

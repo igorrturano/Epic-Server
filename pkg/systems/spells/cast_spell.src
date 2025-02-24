@@ -127,6 +127,14 @@ function performPreCastingChecks(mobile, byref spellinfo)
         return 0;
     endif
 
+    var cast_time := CInt(GetObjProperty(mobile, "#cast_time"));
+    if (cast_time != error)
+        if (ReadGameClock() > cast_time + 15 )
+            SendSysMessageEx(mobile, "Você demorou demais para usar seu feitiço.", SSM_FAIL);
+            return 0;
+        endif
+    endif
+
     return 1;
 endfunction
 
@@ -134,6 +142,9 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
     var mana_cost := spellinfo.mana;
     var current_mana := AP_GetVital(mobile, MANA);
     var current_stamina := AP_GetVital(mobile, STAMINA);
+    if (GetObjProperty(mobile, "#free_cast"))
+        return 1;
+    endif
     // TODO: Decidir se vou consumir mana dos humanoids 
     if (!mobile.npctemplate)
         if (TemHabilidade(mobile, "Determinacao Arcana"))
@@ -248,6 +259,12 @@ endfunction
 
 function performSpellCycles(mobile, spellinfo, orig_hp)
     var cycles := Max(CInt(spellinfo.Cycles), 1);
+
+    if (GetObjProperty(mobile, "#free_cast"))
+        cycles := 1;
+        EraseObjProperty(mobile, "#free_cast");
+    endif
+
     while (cycles)
         if (!checkSpellInterruption(mobile, orig_hp))
             return 0;
