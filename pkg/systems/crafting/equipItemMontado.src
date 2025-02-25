@@ -2,5 +2,6 @@ use os;
 use uo;
 
 program equipItemMontado(who, item, startup)
+	//TODO PErmitir equipar o produto montado, caso seja uma arma e esteja realizando animação de tratamento.
 	return 0;
 endprogram

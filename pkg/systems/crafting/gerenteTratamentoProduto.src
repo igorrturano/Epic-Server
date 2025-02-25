@@ -1,0 +1,44 @@
+use uo;
+use os;
+
+include "/include/epicPropNames";
+include ":gumps:/include/epicGumps";
+include ":gumps:/include/posicaoGump";
+include ":crafting:/gumps/itensComplexosGump";
+include ":crafting:/include/tratamentoProduto";
+
+program GerenteTratamentoProduto(parametros)
+	var quem			:= parametros[1];
+	var produto			:= parametros[2];
+	
+	var deveSair := false;
+	var evento;
+	var processosGerenciados := dictionary{ 
+		"tratamentoGump" -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto} ),
+		"cicloTratamento" -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, GetPid()} )
+	};
+
+	while(!deveSair)
+		evento :=  Wait_For_Event(60);
+		
+		foreach processo in processosGerenciados
+			if(!processo.state)
+				//TODO limpar os demais processos que por ventura ainda estejam rodando.
+				deveSair := true;
+			endif
+			Sleepms(2);
+		endforeach
+
+		if(deveSair)
+			break;
+		endif
+
+		case (evento.id)
+			EV_FIM_CICLO:
+				SendSysMessageEx(quem, "Fim De Ciclo detectado.",SSM_INFO);
+				break;
+			EV_GUMP_CANCELADO:
+				break;
+		endcase
+	endwhile
+endprogram

@@ -9,25 +9,6 @@ include ":crafting:/gumps/itensComplexosGump";
 
 program useItemMontado(quem, item)
 	SendSysMessageEx(quem, "Processo de Tratamento iniciado!", SSM_INFO);
-	var gump;
-	var posicao2D;
-	var apelidoGump := "gumpTratamentoProduto";  
-	var retorno := true;
-	while(retorno)
-
-		var posicaoProp := GetObjProperty(quem, PROPNAME_POSICAO_GUMP);
-		posicao2D := PegaPosicaoGump(quem, apelidoGump);
-
-		gump := MontaTratamentoGump(posicao2D.x,posicao2D.y);
-		retorno := SendDialogGump(quem, gump.layout,gump.data);
-
-		if(retorno[0] == 2)
-			GFCloseGump(quem,ATUALIZA_POS_ID);
-			EnviaGumpPosicao(quem, GetPid(),apelidoGump);
-		elseif(retorno[0] == ATUALIZA_POS_PAI_ID)
-
-		endif
-	endwhile
-
+	Start_Script( ":crafting:gerenteTratamentoProduto", array{quem, item} );
 	return;
 endprogram

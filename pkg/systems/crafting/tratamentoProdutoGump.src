@@ -1,0 +1,30 @@
+include "/include/epicPropNames";
+include ":gumps:/include/epicGumps";
+include ":gumps:/include/posicaoGump";
+include ":crafting:/gumps/itensComplexosGump";
+
+program GerenteTratamentoProduto(parametros)
+	var quem			:= parametros[1];
+	var produto			:= parametros[2];
+
+	var gump;
+	var posicao2D;
+	var apelidoGump := "gumpTratamentoProduto";  
+	var retorno := true;
+
+	while(retorno)
+
+		var posicaoProp := GetObjProperty(quem, PROPNAME_POSICAO_GUMP);
+		posicao2D := PegaPosicaoGump(quem, apelidoGump);
+
+		gump := MontaTratamentoGump(posicao2D.x,posicao2D.y);
+		retorno := SendDialogGump(quem, gump.layout,gump.data);
+
+		if(retorno[0] == 2)
+			GFCloseGump(quem,ATUALIZA_POS_ID);
+			EnviaGumpPosicao(quem, GetPid(),apelidoGump);
+		elseif(retorno[0] == ATUALIZA_POS_PAI_ID)
+
+		endif
+	endwhile
+endprogram

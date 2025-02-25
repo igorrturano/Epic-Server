@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":crafting:/include/tratamentoProduto";
+
+program CicloTratamentoProduto(parametros)
+	var quem			:= parametros[1];
+	var produto			:= parametros[2];
+	var pidGerente 		:= parametros[3];
+	
+	var deveSair := false;
+	var evento;	
+	var tempContador := 0;
+	
+	while(!deveSair)
+		Sleep(2);
+		var processoGerente := GetProcess(pidGerente);
+
+		if(processoGerente)
+			PrintTextAbove(quem,"*Tratando Produto*");
+			processoGerente.sendEvent(struct {id := EV_FIM_CICLO});
+			tempContador += 1;
+		else
+			deveSair := true;
+		endif
+
+		If(tempContador >= 4)
+			deveSair := true;
+		endif
+	endwhile
+endprogram
