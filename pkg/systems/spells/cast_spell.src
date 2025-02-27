@@ -131,6 +131,8 @@ function performPreCastingChecks(mobile, byref spellinfo)
     if (cast_time != error)
         if (ReadGameClock() > cast_time + 15 )
             SendSysMessageEx(mobile, "Você demorou demais para usar seu feitiço.", SSM_FAIL);
+            FailSpell(mobile);
+            EraseObjProperty(mobile, "#Casting");
             return 0;
         endif
     endif
