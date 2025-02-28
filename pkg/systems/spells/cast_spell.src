@@ -128,10 +128,20 @@ function performPreCastingChecks(mobile, byref spellinfo)
     endif
 
     var cast_time := CInt(GetObjProperty(mobile, "#cast_time"));
+    var free_cast := GetObjProperty(mobile, "#free_cast");
+    
     if (cast_time != error)
-        if (ReadGameClock() > cast_time + 15 )
-            SendSysMessageEx(mobile, "Você demorou demais para usar seu feitiço.", SSM_FAIL);
-            return 0;
+        if (ReadGameClock() > cast_time + 15)
+            if (free_cast != error)
+                SendSysMessageEx(mobile, "Você demorou demais para usar seu feitiço.", SSM_FAIL);
+                EraseObjProperty(mobile, "#free_cast");
+                EraseObjProperty(mobile, "#cast_time");
+                mobile.frozen := 0;
+                return 0;
+            endif
+            
+            // Always clean up expired cast_time even for normal casts
+            EraseObjProperty(mobile, "#cast_time");
         endif
     endif
 
