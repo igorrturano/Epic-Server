@@ -29,12 +29,22 @@ function PegaDescComponente(objeto,xDesc := "")
 			xDesc := xDesc + WHITE + "Qualidade: " + tierDesc + "<br>";
 		endif
 	endif
+
+	prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
+	if((prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
+		xDesc := xDesc + ROXO + "Aprimoramentos " + "<br>";
+		foreach componente in (prop.componentes)
+			xDesc := PegaDescEfeitosComponente(componente, xDesc);
+			Sleepms(2);
+		endforeach
+		xDesc := xDesc + "<br>";
+	endif
 	return xDesc;
 endfunction
 
 function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if(prop)
+	if(prop.estado == ITEM_MONTADO)
 
 		xDesc := xDesc + WHITE + "Item: "+ prop.receita.desc +"<br><br>";
 		xDesc := xDesc + BLUE_ICE + "Componentes<br>";
@@ -359,6 +369,18 @@ function PegaDescEmperrado(objeto, xDesc)
 		if(IsEmperrado(objeto))
 			xDesc := xDesc + "[Emperrado]<br>";
 		endif
+	endif
+	return xDesc;
+endfunction
+
+function PegaDescEfeitosComponente(componente, xDesc)
+	var propriedades := componente.propriedades;
+	xDesc := xDesc + BLUE + getComponenteToAprimoramento(propriedades.caracteristica,propriedades.valorPrincipal) + " " + SOFT_GREEN + "+"+ propriedades.valorPrincipal + " <br>";
+
+	if(propriedades.efeitosAdicionais)
+		foreach efeitoAdicional in (propriedades.efeitosAdicionais)
+			xDesc := xDesc + BLUE + "+" +  efeitoAdicional.efeito + " " + SOFT_GREEN + "+"+ efeitoAdicional.valor + " <br>";
+		endforeach
 	endif
 	return xDesc;
 endfunction

@@ -10,6 +10,12 @@ include "/include/epicPropNames";
 
 const CHANCE_FABRICACAO_MAX := 80.0;
 
+enum ESTADOS_FABRICACAO
+	ITEM_PRONTO,
+	ITEM_MONTADO,
+	ITEM_GERADO
+endenum
+
 function PegaComponenteTierDesc(tier)
 	case (tier)
 		1 : return struct {desc := "Mediocre" , valor := -1}; break;
@@ -46,7 +52,11 @@ function CriaItemFabricado(quem, produto)
 	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
 	var item := CreateItemInBackpack(quem,CInt(propFabricadoMontado.receita.objtype));
 	item.color := produto.cor;
-	SetObjProperty(item, PROPNAME_FABRICADO,propFabricadoMontado.componentesEscolhidos);
+	var novaPropFabricada := struct{
+				estado := ITEM_PRONTO ,
+				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
+				componentes := propFabricadoMontado.esquema.componentesEscolhidos};
+	SetObjProperty(item, PROPNAME_FABRICADO, novaPropFabricada);
 	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG,true);
 	SetObjProperty(item, PROPNAME_ARTIFICE_SERIAL,quem.serial);
 endfunction

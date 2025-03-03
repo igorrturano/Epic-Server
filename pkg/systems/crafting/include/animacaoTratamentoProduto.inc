@@ -32,6 +32,7 @@ var CATALOGO_FONTE_AGUA := array{0x0B41,0x0B42,0x0B43,0x0B44,
 var CORES_AQUECIMENTO_FORJA := array {1254,1256,1258,1260};
 
 function isAnimacaoFerreiroPossivel(quem, produto, estacao)
+	//TODO VALIDAR se pode continuar animação.
 	return true;
 endfunction
 
@@ -103,7 +104,16 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 
 
 				if(classificacaoProduto == ITEM_ARMA || classificacaoProduto == TEMPLATE_ARMA)
-					Print(EquipItem(quem, produto));
+					var equipou := EquipItem(quem, produto);
+					if(!equipou)
+						MoveObjectToLocation( 
+								produto,
+								estacao[FONTE_AGUA].x,
+								estacao[FONTE_AGUA].y,
+								estacao[FONTE_AGUA].height, 
+								estacao[FONTE_AGUA].realm, 
+								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
+					endif
 				else
 					MoveObjectToLocation( 
 								produto,

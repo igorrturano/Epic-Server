@@ -21,11 +21,6 @@ const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-enum ESTADOS_FABRICACAO
-	ITEM_MONTADO,
-	ITEM_PRONTO
-endenum
-
 //Itens Complexos Inicio
 function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
@@ -63,6 +58,7 @@ function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhid
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
+				isCompletamenteComum := 1,
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
 endfunction
@@ -86,8 +82,10 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Testar consumo e obrigatoriedade de ingredientes.
 	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
 	//TODO Aplicar o peso do item no item montado.
+	//TODO Criar fluxo para itens stackaveis.
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO implementar componentes opcionais (tranca, por exemplo)
+	//TODO Solucionar o problema das armaduras estarem sem informações.
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -446,6 +444,10 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 		sessao.receitaSelecionada.esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 	endif
 
+	if(componenteEscolhido.tier.valor != 0 && sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum)
+		sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum := 0;
+	endif
+
 	if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
 		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
 	else
@@ -512,7 +514,6 @@ function MontaObetoOpcaoComponente(componenteEncontrado, indiceEncaixe)
 				indiceEncaixeComponente := indiceEncaixe};
 endfunction
 
-
 //TODO desamarrar esta função da SESSAO.
 function CarregaComponentesEncontrados(quem, sessao, configRecursos)
 	var retorno := dictionary;
@@ -564,7 +565,7 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 		return;
 	endif
 	
-
+	//TODO [futuras versoes] Talvez deixar o poder do atual já guardado, pra nao ter que avaliar toda vez.
 	var poderAtual := AvaliaPoderComponente(componentesEncontrados.melhor.tier,
 											componentesEncontrados.melhor.chaveMaterial,
 											caracteristica,
@@ -1150,10 +1151,9 @@ function CarregaMateriaisEncontrados(quem,configRecursos, pericia, materialPrinc
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
-			
-			var tipo := Lower(materialDetalhe.type);
-			if(materialPrincipal == tipo &&  materialDetalhe.Skill > AP_GetSkill(quem,pericia)) continue; endif
-			MontaMaterialEncontrado(retorno,tipo,item);
+			var tipoMaterial := Lower(materialDetalhe.type);
+			if(materialPrincipal == tipoMaterial &&  materialDetalhe.Skill > AP_GetSkill(quem,pericia)) continue; endif
+			MontaMaterialEncontrado(retorno,tipoMaterial,item);
 		else
 			var itemCfg := itemsConfig[item.objtype];
 

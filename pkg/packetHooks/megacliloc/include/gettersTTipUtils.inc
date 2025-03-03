@@ -227,3 +227,10 @@ function GetConsultaEspecialistaTexto(profissao)
         default: return "Consulte um especialista em " + profissao_traduzida;
     endcase
 endfunction
+
+function getComponenteToAprimoramento(caracteristicaComponente, valor)
+	case (caracteristicaComponente)
+		"precisao": return valor > 0 ? "Arma Balanceada" : "Arma Desbalanceada"; break;
+		"dano": return valor > 0 ? "Arma Afiada" : "Arma Cega"; break;
+	endcase
+endfunction

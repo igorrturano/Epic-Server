@@ -29,7 +29,6 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_BTN_FABRICAR :=	3,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3
-	
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
