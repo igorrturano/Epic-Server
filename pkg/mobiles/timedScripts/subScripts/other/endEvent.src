@@ -1,0 +1,41 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+include ":datafile:include/datafile";
+include ":tn:questevent";
+include ":merchants:pcconversation";
+
+program endEvent(params)
+    var mobile := params[1];
+    var npcelem := GetConversationDataElem(mobile.serial);
+    // Here's the issue - the evento property isn't properly accessed
+    var evento := GetObjProperty(mobile, "currentEvent");
+    
+    if (!evento)
+        return 0;
+    endif
+       
+    if (evento.type == "Abrir Porta" )
+        foreach serial in (evento.items)
+            var item := SystemFindObjectBySerial(serial);
+            item.locked := 1;
+        endforeach
+    elseif (evento.type == "Abrir Passagem")
+        var i := 0;
+        while ( i < 20)
+            foreach serial in (evento.items)
+                var item := SystemFindObjectBySerial(serial);
+                item.movable := 1;
+                MoveObjectToLocation(item, item.x, item.y, item.z - 1, item.realm, MOVEOBJECT_FORCELOCATION);
+                item.movable := 0;
+            endforeach
+            i := i + 1;
+        endwhile
+    endif
+    
+    // Clear the current event
+    EraseObjProperty(mobile, "currentEvent");
+    
+    return 1;
+endprogram
