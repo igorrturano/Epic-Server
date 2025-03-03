@@ -103,6 +103,18 @@ program equipweapon(who, item)
         endif
 	endif
 
+	// STR Required check
+	var str_required := GetObjProperty(item, "atributos").STRRequired;
+	if (str_required > 0)
+		var who_str := AP_GetStat(who, STRENGTH);
+		var str_mod := AP_GetStatMod(who, STRENGTH);
+		var total_str := who_str + str_mod;
+		if (total_str < str_required)
+			SendSysMessageEx(who, "Voce nao tem forca suficiente para equipar este item.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
 	if ( !GetCooldown(item, "blessweapon") && GetObjProperty(item, "armaSagradaOriginalColor") != error )
 		item.color := Cint(GetObjProperty(item, "armaSagradaOriginalColor"));
 		EraseObjProperty(item, "armaSagradaOriginalColor");
