@@ -44,7 +44,7 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    HandleMonsterSpeech(ev.text, ev.source, is_ranged);
+                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
