@@ -88,42 +88,6 @@ function graphicByAltar(altar)
    return graphic;
 endfunction
 
-function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
-   if (targ == 0)
-	  targ := who;
-   endif
-
-   var mobiles := array{};
-   var allies := who.party;
-	var alreadydamaged := array{};
-
-   var party_members := who.party.members;
-	  if (who.party)
-	  foreach member in party_members
-		 if (member != who)
-			   var memberObj := SystemFindObjectBySerial(member.serial);
-			   var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
-			   foreach pet in allPetsAndSummonedPets
-				  mobiles.append(pet);
-			   endforeach
-		 endif
-	  endforeach
-   endif
-
-   var nearby := ListMobilesNearLocation( targ.x ,targ.y, targ.z, range, targ.realm);
-   foreach char in nearby
-	  var char_owner := GetObjProperty(char, "owner");
-	  if (!(char in (allies.members) || char == who))
-		 if (!(char.serial in alreadydamaged) && !(char in mobiles) && !(char in who.party.members) && !(char_owner == who.serial))
-			alreadydamaged.Append(char.serial);
-			mobiles.append(char);
-		 endif
-	  endif
-   endforeach
-
-   return mobiles;
-endfunction
-
 function distanceAllowedForSpells(who, mlore, school)
    var dist_allowed := 5 + mlore;
 

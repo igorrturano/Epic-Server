@@ -43,6 +43,9 @@ program select(player, tool)
 
     var metalworking := CInt(AP_GetSkill(player, METALWORKING));
     var max_improvements := metalworking / 30;
+    if (max_improvements > 4)
+        max_improvements := 4;
+    endif
     
     var selected_improvements := array{};
 
