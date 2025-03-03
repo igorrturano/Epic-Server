@@ -357,6 +357,10 @@ endfunction
 
 function DoHarmfulSpell()
     var diff := getNpcResist();
+    if (GetCooldown(me, "DoHarmfulSpell"))
+        return 0;
+    endif
+    
    // If me is being attacked, prioritize Enraizar
    if (me.opponent)
       if (!GetCooldown(me.opponent, "enraizar_cooldown"))
@@ -377,6 +381,7 @@ function DoHarmfulSpell()
       sleepms(2);
    endforeach
 
+   SetCooldown(me, "DoHarmfulSpell", 15);
    return 0;
 endfunction
 

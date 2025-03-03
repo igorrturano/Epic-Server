@@ -288,7 +288,7 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 				foreach member in party_members
 					if (member != attacker)
 						var memberObj := SystemFindObjectBySerial(member.serial);
-						var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+						var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
 						foreach pet in allPetsAndSummonedPets
 							allPets.append(pet);
 						endforeach
@@ -1261,7 +1261,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	endif
 	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
 
-	var can_crit := GetObjProperty(weapon, "Aprimoramentos")["Arma Elaborada"] || attacker.npctemplate || weapon == FIST;
+	var can_crit := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Elaborada"] || attacker.npctemplate || weapon == FIST;
 	if (weapon_scripts.size() > 0 && can_crit)
 		var critdelay := ReadGameClock()+180;
 		if (!GetObjProperty(weapon, "polida"))
