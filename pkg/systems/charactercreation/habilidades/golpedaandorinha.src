@@ -77,7 +77,7 @@ function PushBackEX(who, dist, delay, invert := 0)
 			foreach member in party_members
 				if (member != who)
 					var memberObj := SystemFindObjectBySerial(member.serial);
-					var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+					var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
 					foreach pet in allPetsAndSummonedPets
 							allPets.append(pet);
 					endforeach
