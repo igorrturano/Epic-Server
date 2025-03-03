@@ -1108,9 +1108,9 @@ function PursueTarget(opponent)
                 return 1;
             else
                 if (me.hidden || me.concealed)
-                    RunToward(opponent);
-                else
                     WalkToward(opponent);
+                else
+                    RunToward(opponent);
                 endif
             endif
         elseif (me.isSage() && me.weapon.objtype == FIST)
@@ -1119,24 +1119,24 @@ function PursueTarget(opponent)
                 return 1;
             else
                 if (me.hidden || me.concealed)
-                    RunToward(opponent);
-                else
                     WalkToward(opponent);
+                else
+                    RunToward(opponent);
                 endif
             endif
         else
             if (me.hidden || me.concealed)
-                RunToward(opponent);
-            else
                 WalkToward(opponent);
+            else
+                RunToward(opponent);
             endif
         endif
     else
         if (dist > 1)
             if (me.hidden || me.concealed)
-                RunToward(opponent);
-            else
                 WalkToward(opponent);
+            else
+                RunToward(opponent);
             endif
         endif
     endif
@@ -1196,9 +1196,9 @@ function PursueTarget(opponent)
 
         if (Distance(me, opponent) > min_distance)
             if (me.hidden || me.concealed)
-                RunToward(opponent);
-            else
                 WalkToward(opponent);
+            else
+                RunToward(opponent);
             endif
         endif
         sleepms(100);
@@ -1218,9 +1218,9 @@ function PursueTarget(opponent)
                 endif
                 if (!shouldKeepPursuing(opponent, dist)) break; endif
                 if (me.hidden || me.concealed)
-                    RunTowardLocation(coord.x, coord.y);
-                else
                     WalkTowardLocation(coord.x, coord.y);
+                else
+                    RunTowardLocation(coord.x, coord.y);
                 endif
                 sleepms(100);
             endforeach
@@ -1479,10 +1479,12 @@ function ShamanBehavior(shaman)
         return 1;
     endif
 
-    if (wounded_allies.size() > 0)
-        PerformHeal(shaman, wounded_allies, 1);
+    var most_wounded := FindMostWoundedAlly(wounded_allies);
+    if (most_wounded)
+        PerformHeal(shaman, most_wounded, 1);
+        SetCooldown(shaman, "heal_check", 15);
         return 1;
-    endif   
+    endif
 
     return 0;
 endfunction

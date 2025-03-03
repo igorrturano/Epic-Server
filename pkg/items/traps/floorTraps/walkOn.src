@@ -40,20 +40,32 @@ program TrapWalkOn(mobile, trap)
 
 	// Se for trap atraiinimigo
 	if(trap.objtype == 0xff99)
+		// Check if the trap is on cooldown
+		if (GetObjProperty(trap, "last_triggered"))
+			var last_time := GetObjProperty(trap, "last_triggered");
+			if ((ReadGameClock() - last_time) < 20) // 20 second cooldown
+				return 0; // Skip activation if on cooldown
+			endif
+		endif
+		
+		// Set the cooldown timestamp
+		SetObjProperty(trap, "last_triggered", ReadGameClock());
+		
 		trap.invisible := 0;
 		SendSysMessageEx(mobile, "Voce acionou uma armadilha e chamou a atencao das criaturas proximas a voce.", SSM_FAIL);
 
-		var mobiles:=ListMobilesNearLocation( trap.x, trap.y, trap.z, 20, realm := _DEFAULT_REALM );
-		PlaySoundEffect( trap, 558 );
-		PlaySoundEffect( trap, 75 );
-		atrai.append(trap.x);
-		atrai.append(trap.y);
+		var mobiles := ListMobilesNearLocation(trap.x, trap.y, trap.z, 20, realm := _DEFAULT_REALM);
+		PlaySoundEffect(trap, 558);
+		PlaySoundEffect(trap, 75);
+		
 		var ev := struct;
-		ev.+type := EVID_HERDING;
-		ev.+data := atrai;
+		ev.+type := SYSEVENT_ENTEREDAREA;
+		ev.+source := mobile; // The player who triggered the trap
 
 		foreach mob in mobiles
-			SendEvent(mob, ev);
+			if (mob.npctemplate && !mob.dead) // Only send to living NPCs
+				SendEvent(mob, ev);
+			endif
 		endforeach
 
 		sleep(10);
