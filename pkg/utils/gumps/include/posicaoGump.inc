@@ -3,7 +3,7 @@ use uo;
 include "/include/epicPropNames";
 include ":gumps:/include/epicGumps";
 
-const ATUALIZA_POS_PAI_ID := 9;
+const ATUALIZA_POS_RESPOSTA_ID := 9;
 const ATUALIZA_POS_ID := 15;
 
 enum GUMP_POSICAO_DIRECAO

@@ -9,6 +9,9 @@ include ":crafting:/gumps/itensComplexosGump";
 
 program useItemMontado(quem, item)
 	SendSysMessageEx(quem, "Processo de Tratamento iniciado!", SSM_INFO);
-	Start_Script( ":crafting:gerenteTratamentoProduto", array{quem, item} );
+	var alvo := Target(quem);
+	if(alvo)
+		Start_Script( ":crafting:gerenteTratamentoProduto", array{quem, item, alvo} );
+	endif
 	return;
 endprogram

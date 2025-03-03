@@ -1,8 +1,10 @@
 //CRAFTING
 const PROPNAME_TIER_COMPONENTE := "tierComponente";
 const PROPNAME_FABRICADO := "fabricado";
+const PROPNAME_FABRICADO_TRATAMENTO := "fabricadoTratamento";
 const PROPNAME_MATERIAL := "material"; 
 const PROPNAME_ARTIFICE_SERIAL := "crafterserial"; 
+const PROPNAME_ESTACAO_FORJA := "estacaoForja"; 
 
 
 //SISTEMA DESTRUIVEIS

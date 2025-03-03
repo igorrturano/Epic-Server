@@ -1,7 +1,10 @@
 use os;
 use uo;
 
+include "/include/epicPropNames";
+
 program equipItemMontado(who, item, startup)
-	//TODO PErmitir equipar o produto montado, caso seja uma arma e esteja realizando animação de tratamento.
-	return 0;
+	var propTratamento := GetObjProperty(item,PROPNAME_FABRICADO_TRATAMENTO);
+	Print("propTratamento: " + propTratamento.isTratando);
+	return propTratamento.isTratando;
 endprogram

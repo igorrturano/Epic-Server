@@ -62,7 +62,7 @@ program PosicaoGump(parametros)
 		endcase
 
 		if(retornoGump)
-			GFCloseGump(quem,pidPai,ATUALIZA_POS_PAI_ID);
+			GFCloseGump(quem,pidPai,ATUALIZA_POS_RESPOSTA_ID);
 		else
 			break;
 		endif

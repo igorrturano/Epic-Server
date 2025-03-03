@@ -1,4 +1,14 @@
 //Author: Deiro || Rafael Santos
+use uo;
+use os;
+use Math;
+use cfgfile;
+
+include "/include/math";
+include ":attributes:attributes";
+include "/include/epicPropNames";
+
+const CHANCE_FABRICACAO_MAX := 80.0;
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
@@ -10,4 +20,33 @@ function PegaComponenteTierDesc(tier)
 		default:
 			return struct {desc := "Erro!" , valor := 0}; break;
 	endcase
+endfunction
+
+function PegaDificuldade( quem, descritorFabricacao, nomePericia)
+	 var retorno := struct;
+	 
+	 retorno.+skill := CDbl(GetConfigString(descritorFabricacao,"skill"));
+	 retorno.+chancePelaSkill := 0;
+	 retorno.+chanceBase := PegaChanceFabricacaoBase(quem,
+												nomePericia,
+												retorno.skill,
+												retorno.chancePelaSkill);
+
+		return retorno;
+endfunction
+
+function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill)
+	var valorPericia := AP_GetTrueSkill(quem, pericia);
+	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
+	chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
+	return  Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
+endfunction
+
+function CriaItemFabricado(quem, produto)
+	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	var item := CreateItemInBackpack(quem,CInt(propFabricadoMontado.receita.objtype));
+	item.color := produto.cor;
+	SetObjProperty(item, PROPNAME_FABRICADO,propFabricadoMontado.componentesEscolhidos);
+	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG,true);
+	SetObjProperty(item, PROPNAME_ARTIFICE_SERIAL,quem.serial);
 endfunction

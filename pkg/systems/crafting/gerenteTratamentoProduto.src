@@ -6,16 +6,21 @@ include ":gumps:/include/epicGumps";
 include ":gumps:/include/posicaoGump";
 include ":crafting:/gumps/itensComplexosGump";
 include ":crafting:/include/tratamentoProduto";
+include ":crafting:/include/fabricacaoUtil";
+include ":gumps:/include/posicaoGump";
 
 program GerenteTratamentoProduto(parametros)
 	var quem			:= parametros[1];
 	var produto			:= parametros[2];
+	var alvo			:= parametros[3];
 	
 	var deveSair := false;
 	var evento;
+	var corOriginal := produto.color;
 	var processosGerenciados := dictionary{ 
-		"tratamentoGump" -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto} ),
-		"cicloTratamento" -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, GetPid()} )
+		GUMP_INTERATIVO -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto} ),
+		CICLO -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, GetPid()} ),
+		ANIMACAO -> Start_Script( ":crafting:animacaoTratamentoProduto", array{quem, produto, GetPid(), alvo} )
 	};
 
 	while(!deveSair)
@@ -23,22 +28,38 @@ program GerenteTratamentoProduto(parametros)
 		
 		foreach processo in processosGerenciados
 			if(!processo.state)
-				//TODO limpar os demais processos que por ventura ainda estejam rodando.
 				deveSair := true;
 			endif
 			Sleepms(2);
 		endforeach
 
 		if(deveSair)
+			//TODO limpar os demais processos que por ventura ainda estejam rodando. 
 			break;
 		endif
 
 		case (evento.id)
 			EV_FIM_CICLO:
-				SendSysMessageEx(quem, "Fim De Ciclo detectado.",SSM_INFO);
+				SendSysMessageEx(quem, "Fim De Ciclo detectado.",SSM_HELPFU);
+				CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,1);
+				break;
+			EV_ITEM_PRODUZIDO:
+				SendSysMessageEx(quem, "Item produzido com sucesso.",SSM_INFO);
+				CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
+				processosGerenciados[CICLO].kill();
+				CriaItemFabricado(quem,produto);
+				break;
+			EV_ITEM_QUEBROU:
+				SendSysMessageEx(quem, "O Item se partiu.",SSM_FAIL);
+				CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
+				processosGerenciados[CICLO].kill();
 				break;
 			EV_GUMP_CANCELADO:
 				break;
 		endcase
 	endwhile
+	produto.color := corOriginal;// TODO remover no final;
+	produto.movable := 1;
+	MoveItemToContainer( produto, quem.backpack);
+	SendSysMessageEX(quem, "Gerenciador Finalizado.", SSM_INFO);
 endprogram

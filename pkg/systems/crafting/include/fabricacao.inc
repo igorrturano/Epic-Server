@@ -19,8 +19,7 @@ var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
-const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump. 
-const CHANCE_FABRICACAO_MAX := 60.0;
+const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
 enum ESTADOS_FABRICACAO
 	ITEM_MONTADO,
@@ -87,7 +86,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Testar consumo e obrigatoriedade de ingredientes.
 	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
 	//TODO Aplicar o peso do item no item montado.
-	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas.
+	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO implementar componentes opcionais (tranca, por exemplo)
 	while(retorno)
 		Sleepms(2);
@@ -281,14 +280,13 @@ function DefinePropFabricado(item,esquema,receita)
 	receita.-componentesNecessarios;
 	receita.-materiaisNecessarios;
 	receita.-textoDescItem;
+	receita.-dificuldade;
 	receita.-uso;
 
 	var propFabricado := struct{ 
 		estado := ITEM_MONTADO,
 		receita := receita,
-		esquema := esquema,
-		sucessos := 0,
-		falhas := 0 };
+		esquema := esquema};
 
 	SetObjProperty(item, PROPNAME_FABRICADO, propFabricado);
 	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG, true);
@@ -296,7 +294,7 @@ endfunction
 
 function isRequisitoSuficiente(quem, contagem, receita)
 
-	var quantidadeEncaixesFornecidos := 0;
+	var encaixesEncontrados := array;
 	foreach elemento in  contagem
 		Sleepms(2);
 
@@ -306,20 +304,22 @@ function isRequisitoSuficiente(quem, contagem, receita)
 		endif
 
 		if(elemento.?encaixe)
-			++quantidadeEncaixesFornecidos;
+			encaixesEncontrados.append(elemento.encaixe);
 		endif
 	endforeach
 
-	if(quantidadeEncaixesFornecidos < receita.componentesNecessarios.size())
-		SendSysMessageEX(quem,"Você não tem todos os componentes necessários para montar a receita.",SSM_FAIL);
-		return false;
-	endif
+	foreach necessario in (receita.componentesNecessarios)
+		Sleepms(2);
+		if(!(necessario.encaixe in encaixesEncontrados) && !necessario.isOpcional)
+			SendSysMessageEX(quem,"O encaixe {} é obrigatório e não foi preenchido.".format(necessario.encaixe),SSM_FAIL);
+			return false;
+		endif
+	endforeach
 
 	return true;
 endfunction
 
 function ContaQuantidadeRequisitos(quem, esquema, receita)
-	var envelopeContatado := struct;
 	var contagemFinal := dictionary;
 
 	foreach item in EnumerateItemsInContainer(quem.backpack)
@@ -374,9 +374,9 @@ function ConsomeRequisitos(contagem)
 	endforeach
 endfunction
 
-function RegistraInformacoesContagem(byref envelope ,byref item , quantidadeNecessaria, encaixe := 0)
+function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, encaixe := 0)
 
-	if(!envelope.exists(item.objtype))
+	if(!catalogoContagem.exists(item.objtype))
 		var informacoesContagem := struct;
 		informacoesContagem.+quantidadeEncontrada := 0;
 		informacoesContagem.+itemRefArray := array;
@@ -385,11 +385,11 @@ function RegistraInformacoesContagem(byref envelope ,byref item , quantidadeNece
 		if(encaixe)
 			informacoesContagem.+encaixe := encaixe;
 		endif
-		envelope.insert(item.objtype, informacoesContagem);
+		catalogoContagem.insert(item.objtype, informacoesContagem);
 	endif
 
-	envelope[item.objtype].quantidadeEncontrada += item.amount;
-	envelope[item.objtype].itemRefArray.append(item);
+	catalogoContagem[item.objtype].quantidadeEncontrada += item.amount;
+	catalogoContagem[item.objtype].itemRefArray.append(item);
 endfunction
 
 function isMaterialNecessario (item, objtypeIngrediente)
@@ -537,9 +537,13 @@ function CarregaComponentesEncontrados(quem, sessao, configRecursos)
 					itemRef := item, 
 					chaveMaterial := chaveMat,
 					material := material,
-					tier := tier};
+					tier := tier,
+					quantidade := item.amount};
 
-				AtualizaMelhorComponente(retorno[componenteNecessario.encaixe], envelope, componenteNecessario.caracteristica);
+				AtualizaMelhorComponente(retorno[componenteNecessario.encaixe],
+										envelope,
+										componenteNecessario.caracteristica,
+										componenteNecessario.qtdNecessaria);
 
 				retorno[componenteNecessario.encaixe].conjunto.append(envelope);
 			endif
@@ -549,12 +553,18 @@ function CarregaComponentesEncontrados(quem, sessao, configRecursos)
 	return retorno;
 endfunction
 
-function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica)
+function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica, quantidadeNecessaria)
+
+	if(TypeOfInt(envelopeNovo.quantidade) != OT_UNINIT && envelopeNovo.quantidade < CInt(quantidadeNecessaria))
+		return;
+	endif
+
 	if(componentesEncontrados.melhor == 0)
 		componentesEncontrados.melhor := envelopeNovo;
 		return;
 	endif
 	
+
 	var poderAtual := AvaliaPoderComponente(componentesEncontrados.melhor.tier,
 											componentesEncontrados.melhor.chaveMaterial,
 											caracteristica,
@@ -808,35 +818,19 @@ function PegaMateriaisNecessarios(objtype, descritorFabricacao)
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
-	if(qtdSucessos > 40)
+	if(qtdSucessos > 30)
 		return "Extremamente Longo";
-	elseif(qtdSucessos <= 40 && qtdSucessos > 30)
+	elseif(qtdSucessos <= 30 && qtdSucessos > 25)
 		return "Muito Longo";
-	elseif(qtdSucessos <= 30 && qtdSucessos > 20)
+	elseif(qtdSucessos <= 20 && qtdSucessos > 15)
 		return "Longo";
-	elseif(qtdSucessos <= 20 && qtdSucessos > 10)
+	elseif(qtdSucessos <= 15 && qtdSucessos > 10)
 		return "Razoável";
 	elseif(qtdSucessos <= 10 && qtdSucessos > 5)
 		return "Rápido";
 	else
 		return "Muito Rápido";
 	endif
-endfunction
-
-function PegaDificuldade( quem, descritorFabricacao, nomePericia)
-	return struct{
-		skill := GetConfigString(descritorFabricacao,"skill"),
-		chanceBase := PegaChanceFabricacaoBase(quem,
-												nomePericia,
-												GetConfigString(descritorFabricacao,"skill"))
-	};
-endfunction
-
-function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem)
-	var valorPericia := AP_GetTrueSkill(quem, pericia);
-	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
-	var chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
-	return Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
 endfunction
 
 function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem)

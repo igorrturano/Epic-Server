@@ -2,6 +2,9 @@ use uo;
 use os;
 
 include ":crafting:/include/tratamentoProduto";
+include ":crafting:/include/fabricacaoUtil";
+include ":crafting:/include/tratamentoProduto";
+include "/include/epicPropNames";
 
 program CicloTratamentoProduto(parametros)
 	var quem			:= parametros[1];
@@ -16,15 +19,49 @@ program CicloTratamentoProduto(parametros)
 		Sleep(2);
 		var processoGerente := GetProcess(pidGerente);
 
-		if(processoGerente)
-			PrintTextAbove(quem,"*Tratando Produto*");
-			processoGerente.sendEvent(struct {id := EV_FIM_CICLO});
-			tempContador += 1;
-		else
-			deveSair := true;
-		endif
+		if(processoGerente.state)
+			var craft_config := ReadConfigFile(":metalworking:blacksmithy");//TODO alterar para a solução definitiva de como ler as configs de craft; 
+			var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
+			
+			var dificuldades := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia);
+			var rolagem := RandomIntMinMax(0,100);
+			CheckSkillAdvance(quem,propFabricado.receita.pericia,dificuldades.skill + 15,dificuldades.chancePelaSkill);
+			var isSucesso := rolagem <= dificuldades.chanceBase;
+			var propTratamento := GetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO);
 
-		If(tempContador >= 4)
+			if(!propTratamento)
+				propTratamento := struct{
+									sucessos := 0,
+									falhas := 0,
+									ciclos := 0,
+									ultimoSucesso := false,
+									isTratando := true
+								};
+			endif
+
+			if(isSucesso)
+				propTratamento.sucessos += 1;
+			else
+				propTratamento.falhas += 1;
+			endif
+			propTratamento.ciclos += 1;
+			propTratamento.ultimoSucesso := isSucesso;
+
+			if(propTratamento.falhas >= PegaMaximoFalhas(produto))
+				propTratamento.isTratando := false;
+				SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+				processoGerente.sendEvent(struct {id := EV_ITEM_QUEBROU});
+			endif
+
+			if(propTratamento.sucessos >= propFabricado.receita.sucessosNecessarios)
+				propTratamento.isTratando := false;
+				SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+				processoGerente.sendEvent(struct {id := EV_ITEM_PRODUZIDO});
+			endif
+			
+			SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+			processoGerente.sendEvent(struct {id := EV_FIM_CICLO});
+		else
 			deveSair := true;
 		endif
 	endwhile

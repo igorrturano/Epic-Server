@@ -2,6 +2,8 @@ include "/include/epicPropNames";
 include ":gumps:/include/epicGumps";
 include ":gumps:/include/posicaoGump";
 include ":crafting:/gumps/itensComplexosGump";
+include ":crafting:/include/fabricacaoUtil";
+include ":crafting:/include/tratamentoProduto";
 
 program GerenteTratamentoProduto(parametros)
 	var quem			:= parametros[1];
@@ -11,20 +13,55 @@ program GerenteTratamentoProduto(parametros)
 	var posicao2D;
 	var apelidoGump := "gumpTratamentoProduto";  
 	var retorno := true;
+	var sessao := InicializaSessao(quem, produto);
 
 	while(retorno)
+		
+		var propTratamento := GetObjProperty(produto, PROPNAME_FABRICADO_TRATAMENTO);
+		if(propTratamento)
+			sessao.sucessos := propTratamento.sucessos;
+			sessao.falhas := propTratamento.falhas;
+			sessao.ciclos := propTratamento.ciclos;
+			sessao.ultimoSucesso := propTratamento.ultimoSucesso;
+		endif
 
 		var posicaoProp := GetObjProperty(quem, PROPNAME_POSICAO_GUMP);
 		posicao2D := PegaPosicaoGump(quem, apelidoGump);
 
-		gump := MontaTratamentoGump(posicao2D.x,posicao2D.y);
+		gump := MontaTratamentoGump(posicao2D.x,posicao2D.y, sessao);
 		retorno := SendDialogGump(quem, gump.layout,gump.data);
 
 		if(retorno[0] == 2)
 			GFCloseGump(quem,ATUALIZA_POS_ID);
 			EnviaGumpPosicao(quem, GetPid(),apelidoGump);
-		elseif(retorno[0] == ATUALIZA_POS_PAI_ID)
+		elseif(retorno[0] == 1)
+		elseif(retorno[0] == ATUALIZA_POS_RESPOSTA_ID)
 
 		endif
 	endwhile
 endprogram
+
+function PreparaTratamentoGump (quem , produto)
+
+	var parametrosGump := struct;
+endfunction
+
+function InicializaSessao (quem , produto)
+	var sessao := struct;
+	var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
+	var propTratamento := GetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO);
+	var craft_config    := ReadConfigFile(":metalworking:blacksmithy");//TODO alterar para a solução definitiva de como ler as configs de craft; 
+
+	sessao.+nomeItem := propFabricado.receita.desc;
+	sessao.+sucessosNecessarios := propFabricado.receita.sucessosNecessarios;
+	sessao.+maximoFalhas := PegaMaximoFalhas(produto);
+	sessao.+dificuldade := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia).chanceBase;
+	sessao.+sucessos := propTratamento.sucessos ? propTratamento.sucessos : 0;
+	sessao.+falhas := propTratamento.falhas ? propTratamento.falhas : 0;
+	sessao.+ciclos := propTratamento.ciclos ? propTratamento.ciclos : 0;
+	sessao.+ultimoSucesso := propTratamento.ultimoSucesso;
+
+	Print("propFabricado.receita.pericia: " + propFabricado.receita.pericia);
+	Print("craft_config: " + craft_config[propFabricado.receita.objtype]);
+	return sessao;
+endfunction

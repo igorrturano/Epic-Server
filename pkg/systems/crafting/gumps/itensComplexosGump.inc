@@ -249,12 +249,52 @@ function DefinirMateriais(byref gump,x,y,material,byref sessao,indice)
 	GFTextLine(gump,x + 20,y,86, material + ": " + nome);
 endfunction
 
-function MontaTratamentoGump(x, y)
-	var gump := GFCreateGump(0,0,400,250);
+function MontaTratamentoGump(x, y, byref sessao)
+	var largura := 480;
+	var altura := 200;
+
+	var alturaCelula := altura / G_CELULA_DIVISOR;
+	var larguraCelula := largura / G_CELULA_DIVISOR;
+
+	var gump := GFCreateGump(0,0,largura,altura);
 	GFMovable(gump, 0);
 
-	GFResizePic(gump, x, y, 2620, 400, 200 );
-	GFAddButton(gump,x + 40, y + 40,2648,2649,GF_CLOSE_BTN, 2);
+	GFResizePic(gump, x, y, 39925, largura, altura );
+	GFResizePic(gump, x+ 20, y + 20, 3500, 437, 160 );
+	GFResizePic(gump, x + larguraCelula - 5, y - 3 + alturaCelula * 2, 302, 105, 140 ); // Painel ImagemPericia
+	GFGumpPic(gump,x - 32 + larguraCelula * 2,y - 20 + alturaCelula * 5,1417);//Borda Imagem Pericia
+	GFResizePic(gump, x - 40 + larguraCelula* 5, y + 5 + alturaCelula * 4, 302, 279, 70 ); // Painel Barras
+	GFHTMLArea(gump,x - 40 + larguraCelula* 5,y + 5 + alturaCelula * 2,300,20,"<basefont size=55 color=#0667e3><center>{}</center>".format(sessao.nomeItem));
+	GFGumpPic(gump,x + 15 + larguraCelula* 5,y + 5 + alturaCelula * 3,96); // Underline nome item
+	if(sessao.ciclos)
+		if(sessao.ultimoSucesso)
+			GFGumpPic(gump,x - 20 + larguraCelula* 5,y + 20 + alturaCelula * 4,6425);// Seta Maior
+		else
+			GFGumpPic(gump,x - 20 + larguraCelula* 5,y + 20 + alturaCelula * 4,6426);// Seta Maior vermelha
+		endif
+	endif
+
+	if(cint(sessao.ciclos) % 2 == 0)
+		GFGumpPic(gump,x + 25 + larguraCelula* 5,y + 30 + alturaCelula * 4,1608);// Sinalizador
+	else
+		GFGumpPic(gump,x + 25 + larguraCelula* 5,y + 30 + alturaCelula * 4,1606);// Sinalizador preto
+	endif
+
+	GFGumpPic(gump,x - 20 + larguraCelula* 7,y + 10 + alturaCelula * 5,9750); // barra vazia cima
+	GFTooltipText(gump,"Sucessos: {}/{}".format(sessao.sucessos, sessao.sucessosNecessarios));
+	var larguraBarraSucesso:=  CInt(96 * (CDbl(sessao.sucessos) / CDbl(sessao.sucessosNecessarios)));
+	GFPicTiled(gump, x - 20 + larguraCelula* 7,y + 10 + alturaCelula * 5,larguraBarraSucesso != 0 ? larguraBarraSucesso : 1, 8,9751);
+
+	GFGumpPic(gump,x - 20 + larguraCelula* 7,y + 30 + alturaCelula * 5,9750); // barra vazia baixo
+	GFTooltipText(gump,"Falhas: {}/{}".format(sessao.falhas, sessao.maximoFalhas));
+	var larguraBarraFalha:=  CInt(96 * (CDbl(sessao.falhas) / CDbl(sessao.maximoFalhas)));
+	GFPicTiled(gump, x - 20 + larguraCelula* 7,y + 30 + alturaCelula * 5,larguraBarraFalha != 0 ? larguraBarraFalha : 1 , 8,9753);
+
+	GFGumpPic(gump,cint(x - 28 + larguraCelula* 10),y + 12 + alturaCelula * 5,1594); // espaço porcentagem
+	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(sessao.dificuldade));
+	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,5555,5556,GF_CLOSE_BTN, 2);
+	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 2);
+	GFAddButton(gump,cint(x + larguraCelula * 10.6), y + alturaCelula * 2,9780,9781,GF_CLOSE_BTN, 2);
 	return gump;
 endfunction
 
