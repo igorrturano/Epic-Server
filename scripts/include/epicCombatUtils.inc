@@ -108,3 +108,56 @@ function moveToBehind(attacker, defender)
 	  endif
 	endif
 endfunction
+
+function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
+   if (targ == 0)
+      targ := who;
+   endif
+
+   var mobiles := array{};
+   var excluded_serials := array{who.serial};
+   var alreadyProcessed := dictionary{};
+   
+   // Add party members to excluded list
+   if (who.party)
+      foreach member in (who.party.members)
+         excluded_serials.append(member.serial);
+         
+         // Get pets of party members
+         var memberObj := SystemFindObjectBySerial(member.serial);
+         if (memberObj)
+            var allPets := ListAllPetsAndSummonedPetsNear(memberObj, range);
+            foreach pet in allPets
+               excluded_serials.append(pet.serial);
+            endforeach
+         endif
+      endforeach
+   else
+      // If not in party, still exclude own pets
+      var ownPets := ListAllPetsAndSummonedPetsNear(who, range);
+      foreach pet in ownPets
+         excluded_serials.append(pet.serial);
+      endforeach
+   endif
+
+   // Get all mobiles near target location
+   var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, range, targ.realm);
+   foreach char in nearby
+      // Skip if already processed or in excluded list
+      if (char.serial in excluded_serials || alreadyProcessed[char.serial])
+         continue;
+      endif
+      
+      // Skip if char is owned by the caster
+      var char_owner := GetObjProperty(char, "owner");
+      if (char_owner == who.serial || CStr(char_owner) == CStr(who.serial))
+         continue;
+      endif
+      
+      // Add to results and mark as processed
+      alreadyProcessed[char.serial] := 1;
+      mobiles.append(char);
+   endforeach
+
+   return mobiles;
+endfunction
