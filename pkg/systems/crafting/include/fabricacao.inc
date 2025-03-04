@@ -26,13 +26,14 @@ function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
 endfunction
 
-function InicializaSessaoComplexos()
+function InicializaSessaoComplexos(quem)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
 	NovoObjetoReceitaSelecionada(sessao);
 	sessao.+gumpAtual := COMPLEXOS;
 	sessao.+acao := ADICIONAR;
+	sessao.+quantidade := 1;
 	sessao.+gerenciadorDropDown := GerenciadorDropDown(60,
 										COMPLEXOS_DROPDOWN_INICIAL,
 										COMPLEXOS_DROPDOWN_OPCOES_INICIAL,
@@ -40,6 +41,11 @@ function InicializaSessaoComplexos()
 	sessao.+devePopularDropDown := true;
 
 	return sessao;
+endfunction
+
+
+function CriaObjetoPosicao(quem)
+	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
 endfunction
 
 function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsquemas := dictionary)
@@ -73,7 +79,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessaoComplexos();
+	var sessao := InicializaSessaoComplexos(quem);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	//TODO Fazer opção para reparar
@@ -86,6 +92,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO implementar componentes opcionais (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
+	//TODO associações dos componentes aos produtos montandos tá muito amarrada ao gump. tentar desacoplar isso onde for possivel.
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -105,6 +112,11 @@ function EnviaItensComplexosGump(quem,profissao)
 			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
 			if(entradaNome)
 				sessao.receitaSelecionada.esquemaSelecionado.nome := entradaNome;
+			endif
+		elseif(find(retorno[COMPLEXOS_INPT_QTD],":",1))
+			var quantidade := GFExtractData(retorno,COMPLEXOS_INPT_QTD)[1,3];
+			if(quantidade)
+				sessao.quantidade := quantidade;
 			endif
 		endif
 
@@ -140,7 +152,7 @@ function EnviaItensComplexosGump(quem,profissao)
 						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
 						var melhorEsquema := MontaMelhorEsquema(quem, sessao);
 
-						FabricaItemMontado(quem,melhorEsquema ,sessao.receitaSelecionada.receita);
+						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade);
 						sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 						break;
 
@@ -162,7 +174,7 @@ function EnviaItensComplexosGump(quem,profissao)
 			RT_ESCOLHA_DD_OPCOES_CPX: 
 				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
 				TratarEscolhaComponente(quem, dropdown.valorEscolhido, sessao, configRecursos);
-			break;
+				break;
 
 			RT_ESQUEMAS_SALVAR:
 				//Print("Sessao info:   " + sessao.receitaSelecionada);
@@ -216,7 +228,7 @@ function EnviaItensComplexosGump(quem,profissao)
 
 					3: //Fabricar
 						//TODO Animações e sons.
-						FabricaItemMontado(quem,esquema, sessao.receitaSelecionada.receita);
+						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade);
 						break;
 
 				endcase
@@ -227,13 +239,16 @@ function EnviaItensComplexosGump(quem,profissao)
 				sessao.devePopularDropDown := true;
 				break;
 
-			RT_CANCELADO_COMPLX:
+			RT_CANCELADO_ESQUEMA_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				retorno := 1;
 				break;
 
-			default:
+			RT_CANCELADO_COMPLX:
+				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				retorno := 0;
+				break;
 		endcase
 	endwhile
 endfunction
@@ -251,29 +266,56 @@ function MontaMelhorEsquema(quem, sessao)
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
 
-function FabricaItemMontado(quem,esquema, receita)
-	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita);
-	
-	if(isRequisitoSuficiente(quem,contagem, receita))
-		ConsomeRequisitos(contagem);
-		CriaItemMontado(quem,esquema,receita);
+function FabricaItens(quem, esquema, receita, quantidade := 1)
+	var posicaoInicial := CriaObjetoPosicao(quem);
+	if(receita.isEmpilhavel)
+		var retorno := FabricaItemMontado(quem,posicaoInicial,esquema, receita, quantidade);
+		if(!retorno)
+			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
+		endif
+	else
+		for indice := 1 to Cint(quantidade)
+			Sleep(1);
+			var retorno := FabricaItemMontado(quem,posicaoInicial,esquema, receita);
+			if(!retorno)
+				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
+				break;
+			endif
+		endfor
 	endif
 endfunction
 
-function CriaItemMontado(quem,esquema,receita)
+function FabricaItemMontado(quem,posicaoInicial,esquema, receita, quantidade := 1)
+	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita);
+	
+	if(isRequisitoSuficiente(quem,contagem, receita, quantidade) || hasMovido(quem,posicaoInicial))
+		ConsomeRequisitos(contagem, quantidade);
+		CriaItemMontado(quem,esquema,receita, quantidade);
+	else 
+		return 0;
+	endif
+
+	return 1;
+endfunction
+
+function hasMovido(quem,posicaoInicial)
+	return quem.x != posicaoInicial.x || quem.y != posicaoInicial.y || quem.z != posicaoInicial.z || quem.realm != posicaoInicial.realm;
+endfunction
+
+function CriaItemMontado(quem,esquema,receita, quantidade)
 
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
 	descriptor.color := esquema.cor;
 	descriptor.graphic := receita.graphic;
-
-	var item := CreateItemInBackpack(quem,descriptor);
-
-	DefinePropFabricado(item,esquema,receita);
+	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
+	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
+	
+	var item := CreateItemInBackpack(quem,descriptor, quantidade);
 	SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
 
 endfunction
 
-function DefinePropFabricado(item,esquema,receita)
+function DefinePropFabricado(esquema,receita)
 	//Limpa propriedades desnecessárias ou rendundantes.
 	receita.-componentesNecessarios;
 	receita.-materiaisNecessarios;
@@ -286,17 +328,16 @@ function DefinePropFabricado(item,esquema,receita)
 		receita := receita,
 		esquema := esquema};
 
-	SetObjProperty(item, PROPNAME_FABRICADO, propFabricado);
-	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG, true);
+	return propFabricado;
 endfunction
 
-function isRequisitoSuficiente(quem, contagem, receita)
+function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 
 	var encaixesEncontrados := array;
 	foreach elemento in  contagem
 		Sleepms(2);
 
-		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria )
+		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade )
 			SendSysMessageEX(quem,"Você não tem {} suficiente.".format(elemento.nomeItem),SSM_FAIL);
 			return false;
 		endif
@@ -351,10 +392,10 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 	return contagemFinal;
 endfunction
 
-function ConsomeRequisitos(contagem)
+function ConsomeRequisitos(contagem, quantidade := 1)
 	foreach contado in contagem
 		Sleepms(2);
-		var quantidadeRestante := contado.quantidadeNecessaria;
+		var quantidadeRestante := contado.quantidadeNecessaria * quantidade;
 		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
 			If(quantidadeRestante <= 0) 
@@ -700,6 +741,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 			case (itemStringArr.size())
 				1:
 					nomeItem := itemStringArr[1]; // nome
+					itemOrigem := "itemComum";
 					break;
 				2:
 					nomeItem := itemStringArr[2]; // nome
@@ -750,7 +792,9 @@ function MontaReceitaItem(quem, objtype, nomePericia)
 	receita.+uso := definicaoItem.Attribute;
 	receita.+desc := definicaoItem.desc;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
-
+	
+	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
+	receita.+isEmpilhavel := definicaoTileItem.Stackable;
 	return receita;
 
 endfunction
@@ -844,6 +888,8 @@ function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,r
 	else
 		if(itemOrigem == "Recipe")
 			isOrigemValida := nomeItem in receitasAprendidas;
+		elseif(itemOrigem == "itemComum")
+			isOrigemValida := true;
 		else
 			isOrigemValida := povo == itemOrigem;
 		endif
@@ -888,7 +934,9 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_ESCOLHA_DD_OPCOES_CPX;
 	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
 		return RT_ESQUEMAS_SALVAR;
-	elseif(valorRetorno == 1 || (!retorno && sessao.gumpAtual == ESQUEMAS))
+	elseif(valorRetorno == 1 && sessao.gumpAtual == ESQUEMAS)
+		return RT_CANCELADO_ESQUEMA_COMPLX;
+	elseif(valorRetorno == 1)
 		return RT_CANCELADO_COMPLX;
 	endif
 endfunction

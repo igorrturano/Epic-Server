@@ -28,7 +28,8 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_INPT_QTD := 2,
 	COMPONENTES_BTN_FABRICAR :=	3,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
-	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3
+	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
+	COMPLEXOS_INPT_QTD := 4
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -38,6 +39,7 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ESQUEMAS,
 	RT_ESQUEMAS_SALVAR,
 	RT_BOTAO_MENU,
+	RT_CANCELADO_ESQUEMA_COMPLX,
 	RT_CANCELADO_COMPLX,
 	RT_ESCOLHA_DROPDOWN_CPX,
 	RT_ESCOLHA_DD_OPCOES_CPX
@@ -102,7 +104,8 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	GFHTMLArea(gump,painelReceitasX + larguraPainelReceita / 2 - 102,35,205,20,"<basefont size=55 color=#ffffff><center>Receitas</center>");
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,alturaCelula * 11 + 10, 5054, larguraPainelRodape, alturaPainelRodape);// Painel Rodapé
-
+	GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 10,alturaCelula * 11 + 17,86,"Quantidade:");
+	GFTextEntry( gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraCelula * 11,alturaCelula * 11 + 17, 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPLEXOS_INPT_QTD,3);
 	return gump;
 endfunction
 

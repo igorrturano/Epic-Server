@@ -49,6 +49,7 @@ function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePe
 endfunction
 
 function CriaItemFabricado(quem, produto)
+
 	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
 	var item := CreateItemInBackpack(quem,CInt(propFabricadoMontado.receita.objtype));
 	item.color := produto.cor;
@@ -56,6 +57,7 @@ function CriaItemFabricado(quem, produto)
 				estado := ITEM_PRONTO ,
 				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
 				componentes := propFabricadoMontado.esquema.componentesEscolhidos};
+
 	SetObjProperty(item, PROPNAME_FABRICADO, novaPropFabricada);
 	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG,true);
 	SetObjProperty(item, PROPNAME_ARTIFICE_SERIAL,quem.serial);
