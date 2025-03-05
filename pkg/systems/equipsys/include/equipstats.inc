@@ -617,7 +617,10 @@ function addWeight(stats, item)
 	stats.Weight += getWeightByType(item);
 
 	stats.Weight := CInt(stats.Weight * getWeightModByMaterial(item));
-
+	if (item.weight == 1)
+		item.weight_multiplier_mod := stats.Weight;
+	endif
+	
 	return stats;
 endfunction
 
@@ -625,7 +628,11 @@ function getWeightModByMaterial(item)
 var modifier := 0;
 
 	case (item.getMaterialID())
-		0x6309: modifier := 1.2; break; // Ferro
+		0x6994: modifier := 1.3; break; // Bronze
+		0x6309: modifier := 1.1; break; // Ferro
+		0x6995: modifier := 0.9; break; // Aço
+        0x6315: modifier := 0.8; break; // Illyra
+        0x6311: modifier := 0.7; break; // Mithril
 
 		default: modifier := 1;
 	endcase
@@ -639,6 +646,7 @@ function getWeightByType(item)
 	if(item.isA(POLCLASS_WEAPON))
 		var maxMainDamage := item.getMainDamageMax();
 		maxMainDamage := Max(array{maxMainDamage.SlashDamage, maxMainDamage.PiercingDamage, maxMainDamage.BluntDamage});
+
 		var maxOffDamage := item.getOffDamageMax();
 		maxOffDamage := Max(array{maxOffDamage.SlashDamage, maxOffDamage.PiercingDamage, maxOffDamage.BluntDamage});
 
@@ -650,11 +658,10 @@ function getWeightByType(item)
 			// Poderia ter sido feito direto no weight. Deixar assim pra caso precise de algum MOD futuramente.
 			var armorAttr := item.getAttrBase();
 			var maxResist := Max(array{armorAttr.SlashResist, armorAttr.PiercingResist, armorAttr.BluntResist});
-
+			maxResist += CInt(getDurabilityBySlot(item));
 			weight := maxResist;
 		endif
 	endif
-
 	return weight;
 endfunction
 
@@ -663,5 +670,7 @@ function addSTRRequired(stats, item)
 
 	// stats.STRRequired += getSTRRequiredByType(item);
 
+	var weight := getWeightByType(item);
+	stats.STRRequired := CInt(weight * 7.5);
 	return stats;
 endfunction
