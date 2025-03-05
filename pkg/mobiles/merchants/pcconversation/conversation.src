@@ -121,7 +121,7 @@ function ConversationPlayer(who, npc, conversation)
 			SetObjProperty(npc, "currentEvent", element.event);
 			ExecuteEvent(element.event);
 			if (element.event.type == "Abrir Passagem" || element.event.type == "Abrir Porta")
-			TS_StartTimer(npc, "events", 60);
+			TS_StartTimer(npc, "events", 8400);
 			else
 			    EraseObjProperty(npc, "currentEvent");
 			endif
