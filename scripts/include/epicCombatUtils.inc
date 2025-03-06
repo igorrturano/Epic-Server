@@ -1,4 +1,5 @@
 use uo;
+include "include/facings";
 
 function isAssassinWeapon(who)
     var assassin_weapons := {
@@ -61,4 +62,102 @@ function leaveGolem(who)
 	EraseObjProperty(who, "polymorphbonus");
 	EraseObjProperty(who, "metamorfose");
 	EraseObjProperty(who, "golemhitsmod");
+endfunction
+
+function enterGolem(who)
+    var skill_a := Ap_GetSkill(who, METALWORKING) * 0.8;
+    var skill_d := Ap_GetSkill(who, METALWORKING) * 0.6;
+    var dicedmg := "1d12";
+    var hitsmod := 200;
+
+	SetObjProperty(who, "skill_a", skill_a);
+	SetObjProperty(who, "skill_d", skill_d);
+	SetObjProperty(who, "dicedmg", dicedmg);
+	SetObjProperty(who, "golemhitsmod", hitsmod);
+
+    var resistmod := 60;
+	who.resist_physical_mod := resistmod;
+	who.resist_fire_mod := resistmod;
+	who.resist_cold_mod := resistmod;
+	who.resist_poison_mod := resistmod;
+	who.resist_energy_mod := 0;
+    
+	SetObjProperty(who, "resistmod", resistmod);
+	SetObjProperty(who, "hitsmod", hitsmod);
+
+	recalcvitals(who);
+	HealDamage(who, hitsmod);
+endfunction
+
+function moveToBehind(attacker, defender)
+	if ( !IsBehind( attacker, defender.x, defender.y ) && IsFacing( defender, attacker.x,
+	  attacker.y ) )
+	  var behindX := defender.x + ( defender.x - attacker.x );
+	  var behindY := defender.y + ( defender.y - attacker.y );
+
+	  if ( defender.x == attacker.x && defender.y == attacker.y )
+		SendSysMessageEx( attacker, "Você esta muito proximo do oponente!", SSM_FAIL );
+		return 0;
+	  else
+		PlayObjectCenteredEffect( attacker, 0x5433, 7, 16 );
+		PlaySoundEffect( attacker, 0x526 );
+		MoveObjectToLocation( attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION );
+		if ( !IsFacing( attacker, defender.x, defender.y ) )
+		  TurnObjectToward( attacker, defender.x, defender.y );
+		endif
+	  endif
+	endif
+endfunction
+
+function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
+   if (targ == 0)
+      targ := who;
+   endif
+
+   var mobiles := array{};
+   var excluded_serials := array{who.serial};
+   var alreadyProcessed := dictionary{};
+   
+   // Add party members to excluded list
+   if (who.party)
+      foreach member in (who.party.members)
+         excluded_serials.append(member.serial);
+         
+         // Get pets of party members
+         var memberObj := SystemFindObjectBySerial(member.serial);
+         if (memberObj)
+            var allPets := ListAllPetsAndSummonedPetsNear(memberObj, range);
+            foreach pet in allPets
+               excluded_serials.append(pet.serial);
+            endforeach
+         endif
+      endforeach
+   else
+      // If not in party, still exclude own pets
+      var ownPets := ListAllPetsAndSummonedPetsNear(who, range);
+      foreach pet in ownPets
+         excluded_serials.append(pet.serial);
+      endforeach
+   endif
+
+   // Get all mobiles near target location
+   var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, range, targ.realm);
+   foreach char in nearby
+      // Skip if already processed or in excluded list
+      if (char.serial in excluded_serials || alreadyProcessed[char.serial])
+         continue;
+      endif
+      
+      // Skip if char is owned by the caster
+      var char_owner := GetObjProperty(char, "owner");
+      if (char_owner == who.serial || CStr(char_owner) == CStr(who.serial))
+         continue;
+      endif
+      
+      // Add to results and mark as processed
+      alreadyProcessed[char.serial] := 1;
+      mobiles.append(char);
+   endforeach
+
+   return mobiles;
 endfunction

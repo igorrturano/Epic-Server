@@ -40,6 +40,7 @@ function customizeNpc(mob, set_tier := "0")
 	else
 		skill_combat := WRESTLING;
 		skill_support := TACTICS;
+		AP_SetTrueSkill(mob, SURVIVAL, mob_skill);
 	endif
 
 	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
@@ -444,4 +445,14 @@ function AlertNearbySpiders(mobile)
         endif
         sleepms(2);
     endforeach
+endfunction
+
+function GetRandomNearbyHostile(who)
+	var opponents := ListHostiles(who, 8);
+	var chosen_opponent := opponents[RandomIntMinMax(1, opponents.size())];
+	if (!chosen_opponent)
+		return who.opponent;
+	endif
+
+	return chosen_opponent;
 endfunction

@@ -70,7 +70,7 @@ function ExaminarObjeto(who,targ)
 				4: diff := 80;
 				5: diff := 100;
 				6: diff := 120;
-				default: diff := 40;
+				default: diff := 1000; // Telepads e afins
 			endcase
 			sleep(1);
 			if ( SkillCheck(who, AWARENESS, diff) > 0 )

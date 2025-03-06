@@ -14,9 +14,7 @@ function MonsterBrain()
     Set_Event_Queue_Size(50);
 
     // Get monster configuration
-    var npc_elem := NPC_GetNPCConfig(me);
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
+    var is_ranged := isMonsterRanged();
 
     // Enable archer-specific abilities if needed
     if (is_ranged)
@@ -46,7 +44,7 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    HandleMonsterSpeech(ev.text, ev.source, is_ranged);
+                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);

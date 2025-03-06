@@ -8,6 +8,9 @@ include ":tn:cooldown";
 program manobra(who)
 
     var targ := Target(who);
+    if (who.npctemplate)
+        targ := who;
+    endif
     if (!targ || !targ.isA(POLCLASS_MOBILE))
         SendsysMessageEx(who, "Alvo invalido");
         return 0;

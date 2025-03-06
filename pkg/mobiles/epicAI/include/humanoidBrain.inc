@@ -17,10 +17,10 @@ function HumanoidBrain()
     // Get humanoid configuration
     var npc_elem := NPC_GetNPCConfig(me);
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
+    var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (is_ranged)
+    if (TemHabilidade(me, "Tiro em Movimento"))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
@@ -28,18 +28,6 @@ function HumanoidBrain()
     // Load Combat History
     var npc_template := NPC_ParseTemplateName(me.npctemplate).template;
     var combat_history := LoadCombatHistory(npc_template);
-
-    var habilidades := array{};
-    var calculate_level_hp := Cint(AP_GetSkill(me, WRESTLING) + AP_GetSkill(me, TACTICS)) - 80;
-	var npc_level := (calculate_level_hp / 6);
-
-	// Get valid habs for level
-	var habs_by_level := GetHabsByLevel(me, npc_level);
-	foreach hab in habs_by_level
-		habilidades.append(hab);
-	endforeach
-
-	SetObjProperty(me, "myhabs", habilidades);
 
     while (me)
         ev := os::wait_for_event(0);
@@ -49,8 +37,16 @@ function HumanoidBrain()
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
+                var dist := Distance(me, me.opponent);
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
+                
+                var range_info := GetWeaponRangeInfo();
+                // Only pursue if we're significantly out of range
+                if (dist > (range_info.max_range + 1))
+                    PursueTarget(me.opponent);
+                else
+                    MaintainRange(me.opponent);
+                endif
             endif
         endif
         
@@ -87,7 +83,12 @@ function HumanoidBrain()
                         HandleHumanoidCombatEvent(ev.source, is_ranged);
                     endif
                 EVID_BUDDYATTACKED:
-                    ShamanBehavior(me);
+                    if (me.isShaman()   )
+                        HumanoidShamanBehavior(me, ev.source);
+                    endif
+                    if (me.isPriest())
+                        HumanoidPriestBehavior(me, ev.source);
+                    endif
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
@@ -186,7 +187,11 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
         return 0;
     endif
-    if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
+    
+    // Force melee combat when metamorphosed
+    if (GetObjProperty(me, "metamorfose"))
+        is_ranged := 0;
+    endif
 
     var z_diff := Abs(me.z - opponent.z);
     if (z_diff > MAX_Z_DIFF)
@@ -210,23 +215,60 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        MaintainRange(opponent);
+        if (Distance(me, opponent) < 2 && !TemHabilidade(me, "Tiro em Movimento"))
+            reachForMeleeWeapon(opponent);
+        endif
+
+        var range_info := GetWeaponRangeInfo();
+        // Always try to maintain maximum range for ranged attackers
+        if (Distance(me, opponent) < range_info.max_range)
+            RunAwayFrom(opponent);
+        else
+            // Only move closer if we're too far to shoot
+            if (Distance(me, opponent) > range_info.max_range)
+                PursueTarget(opponent);
+            endif
+        endif
+        
+        // Continuously try to shoot while in combat
+        if (me.isShooter())
+            ShooterBehavior(me);
+        endif
+
     else
         TurnToward(opponent);
         PursueTarget(opponent);
     endif
 
     if (me.isMage())
+        PrintTextAbove(me, "Mage Behavior");
         MageBehavior(me, opponent);
     endif
 
     if (me.isShaman())
-        ShamanBehavior(me);
+        PrintTextAbove(me, "Shaman Behavior");
+        HumanoidShamanBehavior(me, opponent);
+    endif
+
+    if (me.isPriest())
+        PrintTextAbove(me, "Priest Behavior");
+        HumanoidPriestBehavior(me, opponent);
     endif
 
     if (me.CanBite())
         Bite(me, opponent);
     endif
+
+    // if (TemHabilidade(me, "Alquimista Experiente"))
+        var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
+
+        foreach item in EnumerateItemsInContainer(me.backpack)
+            if (item.objtype in explosive_potions)
+                UseItem(item, me);
+                break;
+            endif
+        endforeach
+    // endif
 
     return 1;
 endfunction
@@ -388,63 +430,72 @@ function GetHabsByLevel(npc, nivel)
 endfunction
 
 function GetClassProgression(habcfg, subclass)
-  var progression := array{};
-  var class_choice := array{};
-  var npc_elem := NPC_GetNPCConfig(me);
-  var class_tree := struct{};
-  var base_hab := "";
-  if (subclass)
-    base_hab := subclass;
-  else
-  // Build ability tree
+    var progression := array{};
+    var class_choice := array{};
+    var npc_elem := NPC_GetNPCConfig(me);
+    var class_tree := struct{};
+    var base_hab := "";
+
+    // Build ability tree ALWAYS, regardless of subclass
     foreach hab in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab);
         var classe := GetConfigString(elem, "classe");
+        if (!classe)
+            continue;
+        endif
+        
         var params := SplitWords(classe);
         var hab_class := params[1];
         var hab_level := CInt(params[2]) * 2;
         var my_class := npc_elem.Classe;
         var req := GetConfigString(elem, "requisito");
 
+        // Only process abilities for this NPC's class
         if (hab_class == my_class)
-        if (!req && hab_level == 4)
-            class_choice.append(hab);
-        endif
-        
-        // Add to progression tree
-        if (req)
-            if (!class_tree[req])
-            class_tree[req] := array{};
+            // Store level 4 abilities without prerequisites as potential base choices
+            if (!req && hab_level == 4)
+                class_choice.append(hab);
             endif
-            class_tree[req].append(hab);
-        endif
+            
+            // Build the prerequisite tree
+            if (req)
+                if (!class_tree[req])
+                    class_tree[req] := array{};
+                endif
+                class_tree[req].append(hab);
+            endif
         endif
     endforeach
 
-    base_hab := class_choice[RandomInt(class_choice.size())+1];
-  endif
-
-  // Pick base ability and build progression
-  progression.append(base_hab);
-
-  var current_level := base_hab;
-  var processed := array{};
-  
-  while (current_level && current_level != processed[processed.size()])
-    processed.append(current_level);
-    
-    if (class_tree[current_level])
-      foreach hab in (class_tree[current_level])
-        if (!(hab in progression))
-          progression.append(hab);
-          current_level := hab;
+    // AFTER building the tree, handle base_hab selection
+    if (subclass)
+        base_hab := subclass;
+    else
+        // Randomly select one of the base abilities if no subclass was specified
+        if (class_choice.size() > 0)
+            base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
-        sleepms(2);
-      endforeach
     endif
-  endwhile
 
-  return progression;
+    // Only proceed if we have a valid base ability
+    if (base_hab)
+        // Start with the base ability
+        progression.append(base_hab);
+        
+        // Follow the prerequisite chain to build full progression
+        var current := base_hab;
+        while (current && class_tree[current])
+            foreach next_hab in (class_tree[current])
+                if (!(next_hab in progression))
+                    progression.append(next_hab);
+                endif
+                sleepms(2);
+            endforeach
+            current := progression[progression.size()];
+        endwhile
+    endif
+
+    return progression;
 endfunction
 
 function FormatStateKey(state, hab)
@@ -470,6 +521,10 @@ function ChooseWarriorAbility(npc, state, habs)
     // Get count of nearby enemies
     var enemies := ListHostiles(npc, 3);
     var opponent := npc.opponent;
+
+    if (Distance(me, opponent) > 1)
+        return 0;
+    endif
     
     // Emergency abilities when low health
     if (state.health == "dying")
@@ -516,11 +571,21 @@ function ChooseWarriorAbility(npc, state, habs)
         endforeach
     endif
 
-    return habs[RandomInt(habs.size())+1]; // Fallback to random
+    var chosen_hab := habs[RandomInt(habs.size())+1]; // Fallback to random
+    if (chosen_hab == "Caçador Experiente")
+        var net := CreateItemInBackpack(npc, 0x1EA3, 1);
+        UseItem(net, npc);
+    endif
+
+    return chosen_hab;
 endfunction
 
 function ChooseRogueAbility(npc, state, habs)
     var opponent := npc.opponent;
+
+    if (Distance(me, opponent) > 1)
+        return 0;
+    endif
 
     // Emergency abilities when low health
     if (state.health == "dying")
@@ -659,22 +724,69 @@ function ChooseSageAbility(npc, state, habs)
     return habs[RandomInt(habs.size())+1];
 endfunction
 
-// TODO: Criar uma IA propria pro Engenheiro
 // TODO: Criar uma IA pro Ladrao/Punguista
-// 
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     var habs := GetObjProperty(me, "myhabs");
     foreach hab in habs
         case (hab)
-            "Camuflagem":
+            "Camuflagem": 
+                if (!me.hidden) 
+                    me.hidden := 1;
+                endif
+                ProccessHab(me, hab);
             "Invocacao do Caos": 
             "Gwaenedh":
             "Forma Adaptavel":
             "Irmaos de Areia":
             "Canhoneiro":
             "Quinquilharias":
-            "Construtor de Golems": ProccessHab(me, hab);
+            "Construtor de Golems": 
+                ProccessHab(me, hab);
         endcase
     endforeach
+endfunction
 
+function HandleAssassinBehavior(opponent)
+    if (!me.hidden && Distance(me, opponent) <= 6)
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        me.hidden := 1;
+        me.stealthsteps := 30;
+        
+        if (GetCooldown(me, "FaroPorSangue"))
+            SetObjProperty(me, "backstab", 1);
+            SetObjProperty(me.weapon, "backstab", 1);
+            me.attack_once(opponent);
+        endif
+    endif
+endfunction
+
+function HandleThiefBehavior(opponent)
+    if (!GetCooldown(me, "thief_abilities"))
+        if (!me.opponent) // Try to steal first
+            DoThiefSteal(opponent);
+        else // In combat 
+            var npcState := getNPCState(me);
+            if (npcState == "dying" && TemHabilidade(me, "Fuga de Emergencia"))
+                FleeFrom(opponent);
+                SetCooldown(me, "thief_abilities", 30);
+            endif
+        endif
+    endif
+endfunction
+
+function ShooterBehavior(me)
+    if (GetCooldown(me, "shooter_behavior"))
+        return;
+    endif
+
+    var equipped_weapon := GetEquipmentByLayer(me, LAYER_HAND1);
+    if (!equipped_weapon)
+        equipped_weapon := GetEquipmentByLayer(me, LAYER_HAND2);
+    endif
+
+    if (equipped_weapon)
+        UseItem(equipped_weapon, me);
+        SetCooldown(me, "shooter_behavior", 1); // Very short cooldown to prevent script overload
+    endif
 endfunction

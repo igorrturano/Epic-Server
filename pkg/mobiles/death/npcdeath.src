@@ -127,26 +127,36 @@ program core_npcDeath(params)
 	endif
 
 	var pilot := GetObjProperty(corpse, "golem_maker");
-	if (pilot)
-		var who := SystemFindObjectBySerial(pilot);
-		EraseObjProperty(who, "golem_maker");
-        EraseObjProperty(who, "pilotando");
-        leaveGolem(who);
-		sleep(1);
-		printtextabove(corpse, "*EJETAR*");
-        who.concealed := 0;
-		sleep(1);
-		PushBackEX(who, 3, 300);
-		printtextabove(corpse, "*Iniciar auto destruição*");
-		var i := 1;
-		while (i <= 3)
+	if (pilot != error && pilot != 0)
+		var who := SystemFindObjectBySerial(CInt(pilot));
+		if (who)
+			// NPC-specific handling
+			if (who.npctemplate)
+				SetObjProperty(who, "anchor", array{ corpse.x , corpse.y , corpse.z });
+				MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
+			else
+				leaveGolem(who);
+			endif
+
+			EraseObjProperty(who, "golem_maker");
+			EraseObjProperty(who, "pilotando");
+			who.concealed := 0;
+			printtextabove(corpse, "*EJETAR*");
 			sleep(1);
-			printtextabove(corpse, Cstr(i));
-			i++;
-		endwhile
-		AP_SetTrueSkill(corpse, MAGICLORE, 100);
-		Run_Script(":spells:spell_logic:mage:fireball", {corpse, corpse});
-    endif
+			PushBackEX(who, 3, 300);
+			printtextabove(corpse, "*Iniciar auto destruição*");
+
+			var i := 1;
+			while (i <= 3)
+				sleep(1);
+				printtextabove(corpse, Cstr(i));
+				i++;
+			endwhile
+
+			AP_SetTrueSkill(corpse, MAGICLORE, 100);
+			Run_Script(":spells:spell_logic/mage/fireball", {corpse, corpse});
+		endif
+	endif
 
     if (GetObjProperty(corpse, "soulharvest"))
         var shamanserial := getobjProperty(corpse, "soulharvest");
@@ -301,9 +311,11 @@ program core_npcDeath(params)
 		var coords := GetObjProperty(corpse, "anchor");
 		var trueBoss := GetObjProperty(corpse, "true_boss");
 		if ( isBoss(corpse) )
-			if (fin.cmdlevel <= 0 && trueBoss == 1)//Para acionar o DiscordWebhook
+			coords.append(corpse.realm);
+			SetObjProperty(corpse, "coords", coords);
+			if (trueBoss == 1)//Para acionar o DiscordWebhook
 				var tipo := "boss"; 
-				Start_script (":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse_name, region, coords, 0});
+				Start_script (":DiscordWebhook:discord", {tipo, nome, fin.acctname, corpse_name, region, coords, corpse});
 			elseif (fin.cmdlevel == 4 && trueBoss == 1)
 				var finOwner := Cint(GetObjProperty(fin, "owner"));
 				var fin_owner := SystemFindObjectBySerial(finOwner);

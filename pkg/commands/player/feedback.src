@@ -1,0 +1,165 @@
+use uo;
+use datafile;
+use os;
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":gumps:yesNo";
+include ":tn:tngumps";
+
+program FeedbackText (who, text)
+    var df := OpenDataFile(":tn:dungeons");
+    var dungeon_name := who.IsInTheDungeon(); 
+    SendSysMessage(who, "Você pode digitar também:.feedback <nome da dungeons>");
+    if (!df)
+        SendSysMessage(who, "Erro ao abrir o arquivo de dados!");
+        return 0;
+    endif
+    
+    if (!text)
+        if (!dungeon_name)
+            SendSysMessage(who, "Voce nao esta em uma dungeon.");
+            return 0;
+        endif
+        ShowDungeonFeedbackGump(who, dungeon_name);
+    else
+        // Verifica se o nome digitado (text) existe no df
+        var dungeon_element := df.FindElement(text);
+        if (dungeon_element)
+            ShowDungeonFeedbackGump(who, text);
+        else
+            SendSysMessage(who, "Essa dungeon não existe.");
+            return 0;
+        endif
+    endif
+endprogram
+
+function ShowDungeonFeedbackGump(who, dungeon_name)
+        
+    var df := OpenDataFile(":tn:dungeons");
+    if (!df)
+        SendSysMessage(who, "Erro ao abrir o arquivo de dados!");
+        return 0;
+    endif
+    
+    var current_dungeon := df.FindElement(dungeon_name);
+    if (!current_dungeon)
+        SendSysMessage(who, "Erro ao encontrar dados da dungeon.");
+        return 0;
+    endif
+    
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFResizePic(gump, 0, 0, 9350, 400, 500);
+    
+    GFTextMid(gump, 10, 8, 380, 53, "Feedback da Dungeon: " + dungeon_name);
+    GFTextLine(gump, 20, 22, 0, "Por favor, deixe sua opinião ou sugestão sobre a dungeon:");
+	GFTextLine(gump, 20, 38, 0, "(240 caracteres, caso deseje enviar mais use nosso Discord)");    
+    GFResizePic(gump, 20, 60, 9350, 360, 100);
+    GFTextEntry(gump, 25, 65, 350, 170, 1000, "", 1, 248);
+    
+    GFAddButton(gump, 150, 180, 2128, 2129, GF_CLOSE_BTN, 1); // OK
+    GFAddButton(gump, 250, 180, 2119, 2120, GF_CLOSE_BTN, 0); // Cancel
+    
+    // Mostrar feedbacks existentes
+    var feedback_infos := current_dungeon.GetProp("FeedbackInfos");
+    var feedback_texts := current_dungeon.GetProp("FeedbackTexts");
+    
+    if (feedback_infos && feedback_texts)
+        GFTextLine(gump, 20, 210, 53, "Últimos 5 Feedbacks:");
+        var y_pos := 230;
+        
+        // Calcular o índice inicial para mostrar apenas os últimos 5
+        var start_index := Maximum(1, feedback_infos.size() - 4);
+        
+        for i := start_index to feedback_infos.size()
+            var info := feedback_infos[i];
+            var text := feedback_texts[i];
+            
+            // Mostra informações do feedback
+            GFTextLine(gump, 40, y_pos, 0, "Player: " + info.p + " - " + FormatTimestamp(info.t));
+            GFTextLine(gump, 40, y_pos + 20, 0, "Feedback: " + text[1, 34] + "...");
+
+            // Adiciona botão de delete se for GM ou o próprio player
+            if (who.cmdlevel >= 3 || who.acctname == info.a)
+                GFAddButton(gump, 350, y_pos, 0x15E1, 0x15E5, GF_CLOSE_BTN, 100 + i);
+            endif
+            
+            y_pos += 50;
+        endfor
+    endif
+    
+    var input := GFSendGump(who, gump);
+    
+    // Processar botão de delete
+    if (input[0] >= 100)
+        var index := input[0] - 100;
+        DeleteFeedback(current_dungeon, index);
+        SendSysMessage(who, "Feedback deletado com sucesso!");
+        //return ShowDungeonFeedbackGump(who);
+    endif
+    
+    // Processar novo feedback
+    if (input[0] == 1)
+        var feedback := GFExtractData(input, 1);
+        if (!feedback || feedback == "")
+            SendSysMessage(who, "O feedback não pode estar vazio!");
+            return 0;
+        endif
+        
+        // Criar entrada de informações
+        var info_entry := struct{
+            "p" := who.name,
+            "a" := who.acctname,
+            "t" := PolCore().systime
+        };
+        
+        // Obter arrays existentes ou criar novos
+        var infos := feedback_infos;
+        var texts := feedback_texts;
+        if (!infos || TypeOf(infos) != "Array")
+            infos := array{};
+        endif
+        if (!texts || TypeOf(texts) != "Array")
+            texts := array{};
+        endif
+        
+        // Adicionar novo feedback
+        infos.append(info_entry);
+        texts.append(feedback);
+        
+        // Salvar arrays atualizados
+        current_dungeon.SetProp("FeedbackInfos", infos);
+        current_dungeon.SetProp("FeedbackTexts", texts);
+        
+        SendSysMessage(who, "Feedback enviado com sucesso! Obrigado pela sua opinião.");
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+// Função auxiliar para pegar o maior entre dois números
+function Maximum(a, b)
+    if (a > b)
+        return a;
+    endif
+    return b;
+endfunction
+
+function DeleteFeedback(dungeon_elem, index)
+    var infos := dungeon_elem.GetProp("FeedbackInfos");
+    var texts := dungeon_elem.GetProp("FeedbackTexts");
+    
+    if (infos && texts && index <= infos.size())
+        infos.erase(index);
+        texts.erase(index);
+        
+        dungeon_elem.SetProp("FeedbackInfos", infos);
+        dungeon_elem.SetProp("FeedbackTexts", texts);
+    endif
+endfunction
+
+function FormatTimestamp(timestamp)
+    return timestamp;
+endfunction
