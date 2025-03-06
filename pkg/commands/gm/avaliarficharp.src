@@ -16,6 +16,7 @@ include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
 include ":charactercreation:RPTraits";
+include "/include/utils";
 
 const BOTAO_NOBREZA := 1;
 const BOTAO_FICHARP := 2;
@@ -478,11 +479,6 @@ function AdicionarAvaliacaoFichaRP(targ, avaliador, texto)
     anotacoes.append(nova_anotacao);
     
     ficharp_elem.SetProp("Anotacoes", anotacoes);
-endfunction
-
-function FormatarData(timestamp)
-    var time := StrFormatTime("%d/%m/%Y %H:%M:%S", timestamp);
-    return time;
 endfunction
 
 function FormatarConteudoAvaliacoes(anotacoes)

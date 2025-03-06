@@ -7,11 +7,17 @@ include "include/sounds";
 include "include/say";
 include "include/tileEffects";
 include ":timedScripts:timedScripts";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	params := 0; // No longer needed
+
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);	
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
 
 	if (!targ)
 		return;
@@ -22,18 +28,14 @@ program SpellScript(params)
 		return;
 	endif
 
-	var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
-	if ( temHabilidade(who, "Ultimo Milagre"))
-			if ( isBloodied(targ))
-				level := level + cint(level*0.5);
-			endif
-	endif
+	var mlore := CInt(AP_GetSkill(who, MAGICLORE));
+	var duration := 60 + cint(mlore * 3);
 
-	TS_StartTimer(targ, "phmod", cint(AP_GetSkill(who, MAGICLORE)*2), level, who, 1); //5 min
+	TS_StartTimer(targ, "phmod", duration, mlore, who, 1);
 
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
-	SendSysMessageEx(targ, "Voce esta protegido.", SSM_INFO);
+	SendSysMessageEx(targ, "Voce está protegido.", SSM_INFO);
 	SendStatus(targ);	
 	return 1;
 endprogram 

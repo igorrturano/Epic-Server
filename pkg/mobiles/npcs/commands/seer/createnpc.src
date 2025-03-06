@@ -22,7 +22,6 @@ include ":gumps:selectionGump";
 include ":gumps:gumpPrompt";
 include ":attributes:attributes";
 include ":ghaia:ghaia";
-include "include/epicConstants";
 include "include/epicNPCUtils";
 
 program	text_command_createnpc(who, template)
@@ -76,7 +75,10 @@ endprogram
 // Start functions
 /////////////////////////////////////////////////////////////////
 
-function createthenpc(who, template)
+function createthenpc(who, text)
+	text := SplitWords(text);
+	var template := text[1];
+	var tier := text[2] ? text[2] : "0";
 	var loc := TargetCoordinates(who);
 	if(!loc)
 		SendSysMessage(who, "Cancelled.", color := 33);
@@ -96,7 +98,7 @@ function createthenpc(who, template)
 		endif
 	endif
 
-	customizeNpc(result);
+	customizeNpc(result, tier);
 endfunction
 
 function createmerc(who)

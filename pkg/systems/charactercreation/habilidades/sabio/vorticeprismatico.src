@@ -13,6 +13,7 @@ include ":timedScripts:timedScripts";
 include "include/client";
 include ":tn:cooldown";
 include ":taming:taming";
+include ":destroyable:include/destroyItem";
 
 program doubleattack(who)
 
@@ -35,7 +36,7 @@ program doubleattack(who)
         foreach member in party_members
             if (member != who)
                 var memberObj := SystemFindObjectBySerial(member.serial);
-                var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+                var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
                 foreach pet in allPetsAndSummonedPets
                     allPets.append(pet);
                 endforeach
@@ -43,6 +44,7 @@ program doubleattack(who)
         endforeach
     endif
 // 0x5CF
+    DanificaObjetosProximos(who,who.x, who.y, who.z,who.realm,struct{dano := total_dmg, desc := "Vortice Prismatico." },range);
     foreach char in nearby
         var char_owner := GetObjProperty(char, "owner");
         if (!(char in (festa.members) || char == who))

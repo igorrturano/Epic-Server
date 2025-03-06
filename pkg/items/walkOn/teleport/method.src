@@ -15,12 +15,13 @@ exported function IsTeleporter(tile)
 	return 1;
 endfunction
 
-exported function SetDestination(tile, x, y, z, realm)
+exported function SetDestination(tile, x, y, z, realm, race)
 	var coords := struct;
 	coords.+x := CInt(x);
 	coords.+y := CInt(y);
 	coords.+z := CInt(z);
 	coords.+realm := CStr(realm);
+	coords.+race := Cstr(race);
 	
 	return SetObjProperty(tile, "Destination", coords);
 endfunction
@@ -28,7 +29,7 @@ endfunction
 exported function GetDestination(tile)
 	var destination := GetObjProperty(tile, "Destination");
 	if ( !destination )
-		destination := struct{"x":=0, "y":=0, "z":=0, "realm":=tile.realm};
+		destination := struct{"x":=0, "y":=0, "z":=0, "realm":=tile.realm, "race":=0};
 	endif
 	
 	return destination;

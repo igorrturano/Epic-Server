@@ -11,7 +11,8 @@ program camuflagem(who)
     var nearby := ListMobilesNearLocationEx( who.x, who.y, LIST_IGNORE_Z, 5 ,LISTEX_FLAG_NORMAL, who.realm);
     var skill_bonus := Cint(AP_GetSkill(who, SURVIVAL) / 5);
     foreach mob in nearby
-        if (mob.master.serial == who.serial)
+        var mobOwner := GetObjProperty(mob, "owner"); // NPC Ranger
+        if (mob.master.serial == who.serial || mobOwner == who.serial)
             if (mob.hidden)
                 SendSysMessageEx(who, "Seu animal já está escondido.", SSM_FAIL);
                 return;

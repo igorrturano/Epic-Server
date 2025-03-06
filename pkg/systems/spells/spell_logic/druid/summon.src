@@ -37,7 +37,7 @@ program summontotem(params)
 	endif
 	npctemplate := npctemplate[10, len(npctemplate)-9];
 
-	var cfg2 := ReadConfigFile(":brainAI:npcdesc");
+	var cfg2 := ReadConfigFile(":*:npcdesc");
 	cfg2 := cfg2[npctemplate];
 
 	var petcost := 1; // Default pet cost
@@ -61,6 +61,14 @@ program summontotem(params)
 	var slot2 := Getobjproperty(who, "slot2");
 	var slot3 := Getobjproperty(who, "slot3");
 	var slot4 := Getobjproperty(who, "slot4");
+	if (who.npctemplate)
+		var tier := NPC_GetNPCConfig(who).Tier;
+		if (tier >= 1) Setobjproperty(who, "slot1", 1); endif
+		if (tier >= 2) Setobjproperty(who, "slot2", 2); endif
+		if (tier >= 3) Setobjproperty(who, "slot3", 3); endif
+		if (tier >= 4) Setobjproperty(who, "slot4", 4); endif
+	endif
+		
 	var i := 1;
 	while (i <= 4)
 		var slot := GetObjProperty(who, "slot" + CStr(i));

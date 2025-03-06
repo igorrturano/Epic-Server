@@ -95,6 +95,7 @@ function makeChests(item, frq, amt, rng)
 					DestroyItem(thing);
 				endif
 			endif
+
 			sleepms(10);
 		endforeach
 
@@ -115,42 +116,41 @@ function ClearChests(spawn)
 endfunction
 
 function cleanarray(item)
-
-	var chests := GetObjProperty(item, "chests");
-	if (!chests)
-		chests := array;
-	endif
-	var index := 1;
-	foreach chestserial in chests
-		var chest := SystemFindObjectBySerial(chestserial);
-		//printtextabove(item, "serial " + chestserial + " " + chest);
-		if (chest.locked == 0)
-			DestroyItem(chest);
-			chests.erase(index);
-//			printtextabove(item, "deletando chest aberta");
-		endif
-
-		if (!chest)
-			DestroyItem(chest);
-			chests.erase(index);
-//			printtextabove(item, "deletando chest nao encontrada");
-		endif
-		index := index + 1;
-		sleep(1);
-	endforeach
-	SetObjProperty(item, "chests", chests);
-
-//codigo velho
-/*  var newarray := {};
-
-  foreach chestserial in chestarray
-    var chest := SystemFindObjectBySerial(chest);
-    if((chest.locked == 0) || (!chest))
-      DestroyItem(chest);
-    elseif(chest)
-      newarray.append(chest.serial);
+    print("DEBUG::CleanArray - Iniciando limpeza para item " + item.serial);
+    
+    var chests := GetObjProperty(item, "chests");
+    if (!chests)
+        chests := array;
     endif
-	 sleepms(10);
-  endforeach
-  chestarray := newarray;*/
+    
+    var index := 1;
+    foreach chestserial in chests
+        var chest := SystemFindObjectBySerial(chestserial);
+        
+        if (!chest)
+            print("DEBUG::CleanArray - Removendo bau invalido no indice " + index);
+            chests.erase(index);
+            continue;
+        endif
+        
+        // Checa origem do baú
+        if (GetObjProperty(chest, "IsPlayerCreated"))
+            print("DEBUG::CleanArray - Ignorando bau de player " + chest.serial);
+            continue;
+        endif
+        
+        if (GetObjProperty(chest, "IsSpawned"))
+            if (chest.locked == 0)
+                print("DEBUG::CleanArray - Destruindo bau aberto " + chest.serial);
+                DestroyItem(chest);
+                chests.erase(index);
+            endif
+        endif
+        
+        index := index + 1;
+        sleep(1);
+    endforeach
+    
+    SetObjProperty(item, "chests", chests);
+    print("DEBUG::CleanArray - Limpeza concluida para item " + item.serial);
 endfunction

@@ -1,0 +1,66 @@
+/* NOTES:
+ *
+ * Expects a URL string with info for the following
+ * username=username (string)
+ * password=password (string)
+ * cmdlevel=default command level (integer)
+ * expansion=expansion (string)
+ * email=email ( string)
+ * adminpw=creation password (string) - if set in settings.cfg
+ *
+ *
+ */
+use uo;
+use os;
+use http;
+
+include ":accounts:accounts";
+include ":accounts:settings";
+
+program HTTPScript()
+    var settings := ACCT_GetSettingsCfgElem("Settings");
+    if (!settings.AllowWWWAccounts)
+        WriteStatus(403, "Web account creation disabled");
+        WriteHeader("Content-Type", "application/json");
+        WriteHTMLRaw("{\"error\": \"Web account creation is disabled\"}");
+        return 0;
+    endif
+    
+    WriteHeader("Content-Type", "application/json");
+    WriteHeader("Access-Control-Allow-Origin", "*"); // Allow cross-origin requests
+    
+    var username := QueryParam("username");
+    var password := QueryParam("password");
+    var email := QueryParam("email");
+    var cmd_lvl := 0; // Force command level to 0 for web-created accounts
+    var expansion := settings.DefaultExpansion;
+    var admin_pw := QueryParam("adminpw");
+    
+    // Basic validation
+    if (!username || !password)
+        WriteStatus(400, "Bad Request");
+        WriteHTMLRaw("{\"error\": \"Username and password are required\"}");
+        return 0;
+    endif
+    
+    // Check admin password if configured
+    if (settings.AuxWebPassword)
+        if (settings.AuxWebPassword != admin_pw)
+            WriteStatus(401, "Unauthorized");
+            WriteHTMLRaw("{\"error\": \"Invalid administration password\"}");
+            return 0;
+        endif
+    endif
+
+    // Attempt to create account
+    var result := CreateNewAccount(username, password, cmd_lvl, expansion, email);
+    if (result.errortext)
+        WriteStatus(400, "Bad Request");
+        WriteHTMLRaw("{\"error\": \"" + result.errortext + "\"}");
+    else
+        WriteStatus(200, "OK");
+        WriteHTMLRaw("{\"success\": true, \"account\": \"" + username + "\"}");
+    endif
+
+    return 1;
+endprogram

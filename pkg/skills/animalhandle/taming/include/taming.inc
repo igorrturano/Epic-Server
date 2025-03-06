@@ -1,10 +1,11 @@
 use uo;
 
 include ":timedScripts:timedScripts";
+include ":mounts:mounts";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 
 	var mobs := array;
 	foreach mob in ListMobilesNearLocation( x, y, z, range, realm);
@@ -31,7 +32,7 @@ endfunction
 //ve quantos slots custa o npc
 function GetPetCost(pet)
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var npctemplate := pet.npctemplate;
 	npctemplate := npctemplate[10, len(npctemplate)-9];
 	cfg := cfg[npctemplate];
@@ -54,7 +55,7 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
-			var cfg := ReadConfigFile(":brainAI:npcdesc");
+			var cfg := ReadConfigFile(":*:npcdesc");
 			var npctemplate := pet.npctemplate;
 			npctemplate := npctemplate[10, len(npctemplate)-9];
 			cfg := cfg[npctemplate];
@@ -91,7 +92,7 @@ function GetNumSummons(who)
         // Check if the pet is still a valid summon
         if (pet && pet.master == who && GetObjProperty(pet, "summoned"))
             // Read the npcdesc configuration file
-            var cfg := ReadConfigFile(":brainAI:npcdesc");
+            var cfg := ReadConfigFile(":*:npcdesc");
             var npctemplate := pet.npctemplate[10, len(pet.npctemplate)-9];  // Trim the template name
             var pet_config := cfg[npctemplate];  // Retrieve pet config for the template
 
@@ -346,7 +347,7 @@ function isTamable(mob)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":brainAI:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var npctemplate := mob.npctemplate;
 	npctemplate := npctemplate[10, len(npctemplate)-9];
 	cfg := cfg[npctemplate];
@@ -369,7 +370,7 @@ function SetPetMods(pet)
 	healdamage(pet, 255);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var phys := cint(cfg[npctemplate.template].PhysicalResist);
 	if (phys > 35)
 		phys := 35;
@@ -384,7 +385,7 @@ function ErasePetMods(pet)
 	recalcvitals(pet);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
-	var cfg := ReadConfigFile(":brainai:npcdesc");
+	var cfg := ReadConfigFile(":*:npcdesc");
 	var phys := cint(cfg[npctemplate.template].PhysicalResist);
 	if (phys > 35)
 		phys := 35;

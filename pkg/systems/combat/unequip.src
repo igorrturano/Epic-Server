@@ -52,7 +52,7 @@ program unequipweapon(who, item)
 
 	RemoveEquipmentMods(who, item);
 
-	Run_Script_To_Completion(":equipsys:equipsys", {who, item});
+	// Run_Script_To_Completion(":equipsys:equipsys", {who, item});
 
 	set_critical(0);
 endprogram

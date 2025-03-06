@@ -15,6 +15,7 @@ include "include/say";
 include ":taming:taming";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
 
 program spell_meteorSwarm( parms )
     var caster := parms[1];
@@ -32,6 +33,10 @@ program spell_meteorSwarm( parms )
         SendSysMessage(caster, "O alvo esta muito distante");
         return 0;
     endif
+
+    var dmg := epicSpellDamageRoll(caster, spell_circle);
+    dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+    DanificaObjetosProximos(caster,targ.x, targ.y, targ.z,targ.realm,struct{dano := dmg, desc := "Chuva de Meteoros." },5,0x6CCE);
 
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
     foreach mobile in allMobiles

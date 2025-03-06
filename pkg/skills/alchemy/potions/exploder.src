@@ -8,6 +8,7 @@ include "include/shapes";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 include ":alchemy:alchemy";
+include ":destroyable:include/destroyItem";
 
 
 program exploder(parms)
@@ -69,6 +70,7 @@ function FlameEffect(who, potion, lvl, bonus)
 	var coords := GetCoordsInSquare(potion.x, potion.y, lvl);
 	foreach coord in coords;
 		var field := CreateItemAtLocation(coord.x, coord.y, potion.z, "FireField_NS", 1, who.realm);
+		field.SetOwner(who);
 		if (checklineofsight(field, potion))
 			field.SetDuration(10);
 			SetObjProperty(field, "DamageDice", dice);
@@ -99,7 +101,7 @@ function FlameEffect(who, potion, lvl, bonus)
 	endforeach
 
 	//efeitocascata(potion, who);
-	destroycraft(potion, who);
+	//destroycraft(potion, who);
 
 
 endfunction
@@ -227,6 +229,7 @@ function ExplosionEffect(who, potion, dmg)
 					PlaySoundEffect( critter, 0x208);
 					//ApplyDamageEX(critter, dmg, DMG_FIRE);
 					DamageFLS(critter, CInt(dmg/2), dmg_type);
+					DanificaObjetosProximos(who,potion.x, potion.y, potion.z,potion.realm,struct{dano := dmg, desc := "Bomba de Fragmentacao." },6,0x36b0,potion.serial,color);
 					if (TemHabilidade(who, "Bomba de Fragmentacao"))
 						TS_StartTimer(critter, "bleed", 7);
 					endif
@@ -238,6 +241,7 @@ function ExplosionEffect(who, potion, dmg)
 					PlaySoundEffect( critter, 0x208);
 					//ApplyDamageEX(critter, dmg, DMG_FIRE);
 					DamageFLS(critter, CInt(dmg/2), dmg_type);
+					DanificaObjetosProximos(who,potion.x, potion.y, potion.z,potion.realm,struct{dano := dmg, desc := "Bomba de Fragmentacao." },6,0x36b0,potion.serial);
 					if (TemHabilidade(who, "Bomba de Fragmentacao"))
 						TS_StartTimer(critter, "bleed", 7);
 					endif
@@ -247,6 +251,7 @@ function ExplosionEffect(who, potion, dmg)
 					PlaySoundEffect( critter, 0x208);
 					//ApplyDamageEX(critter, dmg, DMG_FIRE);
 					DamageFLS(critter, CInt(dmg/2), dmg_type);
+					DanificaObjetosProximos(who,potion.x, potion.y, potion.z,potion.realm,struct{dano := dmg, desc := "Bomba de Fragmentacao." },6,0x36b0,potion.serial);
 					if (TemHabilidade(who, "Bomba de Fragmentacao"))
 						TS_StartTimer(critter, "bleed", 7);
 					endif
@@ -255,16 +260,18 @@ function ExplosionEffect(who, potion, dmg)
 					PlaySoundEffect( critter, 0x208);
 					//ApplyDamageEX(critter, dmg, DMG_FIRE);
 					DamageFLS(critter, dmg, dmg_type);
+					DanificaObjetosProximos(who,potion.x, potion.y, potion.z,potion.realm,struct{dano := dmg, desc := "Bomba de Fragmentacao." },6,0x36b0,potion.serial);
 					if (TemHabilidade(who, "Bomba de Fragmentacao"))
 						TS_StartTimer(critter, "bleed", 15);
 					endif
 				endif
 			endif
 		endif
+		Sleepms(2);
 	endforeach
 
 	//efeitocascata(potion, who);
-	destroycraft(potion, who);
+	//destroycraft(potion, who);
 
 endfunction
 

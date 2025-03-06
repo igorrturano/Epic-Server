@@ -1,0 +1,32 @@
+use uo;
+use os;
+
+program revertWildshape(params)
+    var animal := SystemFindObjectBySerial(params.animal);
+    var druid := SystemFindObjectBySerial(params.druid);
+    
+    // Wait for the duration
+    sleep(300);
+    
+    if (animal && druid)
+        print("DEBUG: Reverting wildshape transformation");
+        
+        // Move druid back to animal's location
+        druid.hidden := 0;
+        MoveObjectToLocation(druid, params.x, params.y, params.z, params.realm, MOVEOBJECT_FORCELOCATION);
+        
+        // Destroy the animal
+        SetObjProperty(animal, "NoCorpse", 1);
+        animal.Kill();
+    else
+        print("DEBUG: Failed to find animal or druid for reversion");
+        // SHould kill which one stills alive
+        if (animal)
+            animal.Kill();
+        endif
+        if (druid)
+            SetObjProperty(druid, "NoCorpse", 1);
+            druid.Kill();
+        endif
+    endif
+endprogram

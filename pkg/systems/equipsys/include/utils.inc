@@ -3,7 +3,7 @@ use util;
 use cfgfile;
 
 include "include/client";
-include "props";
+include ":attributes:attributeConstants";
 
 enum TIERS
 	TIER0, TIER1, TIER2, TIER3, TIER4, TIER5
@@ -18,7 +18,9 @@ enum DAMAGETAG
 	ONEHANDED_LOW := "ONEHANDED_LOW", ONEHANDED_MID := "ONEHANDED_MID", ONEHANDED_HIGH := "ONEHANDED_HIGH",
 	TWOHANDED_LOW := "TWOHANDED_LOW", TWOHANDED_MID := "TWOHANDED_MID", TWOHANDED_HIGH := "TWOHANDED_HIGH",
 	BOW_LOW := "BOW_LOW", BOW_MID := "BOW_MID", BOW_HIGH := "BOW_HIGH",
-	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH"
+	CROSSBOW_LOW := "CROSSBOW_LOW", CROSSBOW_MID := "CROSSBOW_MID", CROSSBOW_HIGH := "CROSSBOW_HIGH",
+	THROWING_LOW := "THROWING_LOW", THROWING_MID := "THROWING_MID", THROWING_HIGH := "THROWING_HIGH"
+
 endenum
 enum WEAPONTYPE
 	BOW := "Bow", CROSSBOW := "Crossbow"
@@ -50,133 +52,128 @@ var MISS_FX := struct {
 };
 var UNARMED_FX := struct {
 	ANIM := array{0x9, 0xA},
-	SFX := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B}
+	SFX := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var BOW_FX := struct {
 	ANIM := array{0x12},
-	SFX := array{0x235, 0x4C9, 0x4CA}
+	SFX := array{0x235, 0x4C9, 0x4CA},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var CROSSBOW_FX := struct {
 	ANIM := array{0x13},
-	SFX := array{0x235, 0x4C9, 0x4CA}
+	SFX := array{0x235, 0x4C9, 0x4CA},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var SLASH_1H_FX := struct {
 	ANIM := array{0xD},
-	SFX := array{0x23C,0x23D}
+	SFX := array{0x23C,0x23D},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var SLASH_2H_FX := struct {
 	ANIM := array{0xC},
-	SFX := array{0x237,0x238}
+	SFX := array{0x237,0x238},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var PIERCING_1H_FX := struct {
 	ANIM := array{0xA},
-	SFX := array{0x23C,0x23D}
+	SFX := array{0x23C,0x23D},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var PIERCING_2H_FX := struct {
 	ANIM := array{0xE},
-	SFX := array{0x23D, 0x23D}
+	SFX := array{0x23D, 0x23D},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var BLUNT_1H_FX := struct {
 	ANIM := array{0xB},
-	SFX := array{0x3AC}
+	SFX := array{0x3AC},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 var BLUNT_2H_FX := struct {
 	ANIM := array{0xB},
-	SFX := array{0x3AE}
+	SFX := array{0x3AE},
+	ANIM_CRITICAL := array{},
+	SFX_CRITICAL := array{}
 };
 
 function getItemCfgElem(item) //RETORNA TODOS OS VALORES DO ITEM QUE AINDA ESTIVEREM NO .CFG
 	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
 endfunction
 
-function IsDualWield(item)
-	var elem := getItemCfgElem(item);
-
-	if (elem.Attribute.Upper() == DUALWIELD.Upper())
-		return 1;
-	endif
-
-	return 0;
-endfunction
-
-function IsShield(item)
-    var tipoequip := item.getType();
-    var escudo := SplitWords(tipoequip); escudo := escudo[1];
-	escudo.Lower();
-
-    if (escudo == "escudo")
-		return 1;
-    else
-		return 0;
-    endif
-endfunction
-
-function getWeaponFX(FX, weapon)
+function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	var attackFX;
 	var elem := getItemCfgElem(weapon);
-	var prop := getPropBase(weapon);
+	var weaponAttr := weapon.getAttrBase();
 
 	if (!elem)
 		if (FX == WEAPON_FX_ANIM)
-			attackFX := getAnim(UNARMED_FX);
+			attackFX := getAnim(UNARMED_FX, isCriticalAttack);
 		else
-			attackFX := getSound(UNARMED_FX);
+			attackFX := getSound(UNARMED_FX, isCriticalAttack);
 		endif
 	else
-		if (elem.Attribute.Upper() == RANGED.Upper())
-			var isBow := elem.ProjectileType == 0xf3f ? 1 : 0;
-			if (isBow)
+		if (weapon.isRanged())
+			if (weapon.isBow())
 				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(BOW_FX);
+					attackFX := getAnim(BOW_FX, isCriticalAttack);
 				else
-					attackFX := getSound(BOW_FX);
+					attackFX := getSound(BOW_FX, isCriticalAttack);
 				endif
 			else
 				if (FX == WEAPON_FX_ANIM)
-					attackFX := getAnim(CROSSBOW_FX);
+					attackFX := getAnim(CROSSBOW_FX, isCriticalAttack);
 				else
-					attackFX := getSound(CROSSBOW_FX);
+					attackFX := getSound(CROSSBOW_FX, isCriticalAttack);
 				endif
 			endif
 		else
 			if (elem.Attribute.Upper() == TWOHANDED.Upper())
-				if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
-						attackFX := getAnim(SLASH_2H_FX);
+						attackFX := getAnim(SLASH_2H_FX, isCriticalAttack);
 					else
-						attackFX := getSound(SLASH_2H_FX);
+						attackFX := getSound(SLASH_2H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
-						attackFX := getAnim(PIERCING_2H_FX);
+						attackFX := getAnim(PIERCING_2H_FX, isCriticalAttack);
 					else
-						attackFX := getSound(PIERCING_2H_FX);
+						attackFX := getSound(PIERCING_2H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
-						attackFX := getAnim(BLUNT_2H_FX);
+						attackFX := getAnim(BLUNT_2H_FX, isCriticalAttack);
 					else
-						attackFX := getSound(BLUNT_2H_FX);
+						attackFX := getSound(BLUNT_2H_FX, isCriticalAttack);
 					endif
 				endif
 			else
-				if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+				if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
-						attackFX := getAnim(SLASH_1H_FX);
+						attackFX := getAnim(SLASH_1H_FX, isCriticalAttack);
 					else
-						attackFX := getSound(SLASH_1H_FX);
+						attackFX := getSound(SLASH_1H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
-						attackFX := getAnim(PIERCING_1H_FX);
+						attackFX := getAnim(PIERCING_1H_FX, isCriticalAttack);
 					else
-						attackFX := getSound(PIERCING_1H_FX);
+						attackFX := getSound(PIERCING_1H_FX, isCriticalAttack);
 					endif
-				elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+				elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
 					if (FX == WEAPON_FX_ANIM)
-						attackFX := getAnim(BLUNT_1H_FX);
+						attackFX := getAnim(BLUNT_1H_FX, isCriticalAttack);
 					else
-						attackFX := getSound(BLUNT_1H_FX);
+						attackFX := getSound(BLUNT_1H_FX, isCriticalAttack);
 					endif
 				endif
 			endif
@@ -186,10 +183,10 @@ function getWeaponFX(FX, weapon)
 	return attackFX;
 endfunction
 
-function getAnim(fxs)
-	return fxs.ANIM[RandomInt(fxs.ANIM.Size())+1];
+function getAnim(fxs, isCriticalAttack := 0)
+	return !isCriticalAttack ? fxs.ANIM[RandomInt(fxs.ANIM.Size())+1] : fxs.ANIM_CRITICAL[RandomInt(fxs.ANIM_CRITICAL.Size())+1];
 endfunction
 
-function getSound(fxs)
-	return fxs.SFX[RandomInt(fxs.SFX.Size())+1];
+function getSound(fxs, isCriticalAttack := 0)
+	return !isCriticalAttack ? fxs.SFX[RandomInt(fxs.SFX.Size())+1] : fxs.SFX_CRITICAL[RandomInt(fxs.SFX_CRITICAL.Size())+1];
 endfunction
