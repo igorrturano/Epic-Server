@@ -10,6 +10,9 @@ include ":attributes:skills";
 include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":mechanicalapitude:lockpick_minigame";
+include ":keys:key";
+include "include/string";
 
 program skill_lockpicking(me, lockpick)
     EraseObjProperty(me, "IsMeditating");
@@ -101,6 +104,11 @@ function PickTreasureChest(me, lockpick, chest)
         return 0;
     endif
 
+	if (GetObjProperty(chest, "fechadura_quebrada") == 1)
+        SendSysMessageEx(me, "A fechadura está quebrada!", SSM_FAIL);
+        return 0;
+	endif
+	
     if(valorInicial(me, AWARENESS) >= 40)
         if(me.hidden)
             SendSysMessageEx(me, "*Arrombando a fechadura. [silencioso]*", SSM_INFO);
@@ -139,6 +147,34 @@ function PickTreasureChest(me, lockpick, chest)
     endif
 
     var check := SkillCheck(me, MECHANICS, diff);
+	var mec_skill := AP_GetSkill(me, MECHANICS);
+	var magic_chest := (GetObjProperty(chest, "level") == 6);
+	var hab1_mchest := temHabilidade(me, "Sensibilidade Arcana");
+	var hab2_mchest := temHabilidade(me, "Desbravador Nato");
+
+if ( hab1_mchest || hab2_mchest)
+	if (magic_chest || (diff > mec_skill + 15 && diff < mec_skill + 40) )
+	if(mini_game(me, diff, mec_skill, chest))
+    //set_critical(1);
+        KP_ToggleLock(chest, me); // Coloque aqui primeiro
+        SetObjProperty(chest, "arrombado", "" + me.name);
+		SetObjProperty(chest, "locktime", polcore().systime);
+        PlaySoundEffect(chest, 0x0200);
+        PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
+        //set_critical(0);
+        SendViewContainer(me, chest);
+		return 1;
+    else
+		SendSysMessageEx("Voce falhou!", SSM_FAIL);
+		return;
+	endif
+	endif
+	endif
+
+
+if (magic_chest && !hab1_mchest && !hab2_mchest)
+	SendSysMessageEx(me, "Você não sabe lidar com fechaduras mágicas!", SSM_FAIL);
+endif
 
     if (check > 0)
         if(valorInicial(me, AWARENESS) >= 40)
@@ -173,4 +209,6 @@ function PickTreasureChest(me, lockpick, chest)
         endif
         return 0;
     endif
+
+
 endfunction

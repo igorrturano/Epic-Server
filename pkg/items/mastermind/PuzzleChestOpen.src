@@ -15,7 +15,7 @@ program PuzzleChestOpen(who,container)
 	if(who.cmdlevel > 0)
 		SendViewContainer(who, container);
 	else
-		if(mastermind(who))
+		if(mastermind(who))	
 			SendViewContainer(who, container);
 		else
 //lock chest or something
