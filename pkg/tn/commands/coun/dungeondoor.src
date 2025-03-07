@@ -35,6 +35,9 @@ program makedungeondoor(who)
 		return;
 	endif
 	SetObjProperty(door, "level", lvl);
+	if (lvl == 6)
+		createitematlocation(door.x, door.y, door.z+3, 0x377a, 1, door.realm);
+	endif
 
 	var trap := YesNo(who, "Deseja adicionar alguma armadilha na porta?");
 	if (trap)
