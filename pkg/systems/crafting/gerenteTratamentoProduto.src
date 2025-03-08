@@ -9,57 +9,146 @@ include ":crafting:/include/tratamentoProduto";
 include ":crafting:/include/fabricacaoUtil";
 include ":gumps:/include/posicaoGump";
 
+enum ESTADOS_GERENCIAMENTO
+	CICLANDO,
+	SEMELHANTE_ENCONTRADO,
+	CANCELADO,
+	FINALIZADO
+endenum
+
 program GerenteTratamentoProduto(parametros)
 	var quem			:= parametros[1];
 	var produto			:= parametros[2];
 	var alvo			:= parametros[3];
 	
-	var deveSair := false;
 	var evento;
 	var corOriginal := produto.color;
-	var processosGerenciados := dictionary{ 
-		GUMP_INTERATIVO -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto} ),
-		CICLO -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, GetPid()} ),
-		ANIMACAO -> Start_Script( ":crafting:animacaoTratamentoProduto", array{quem, produto, GetPid(), alvo} )
-	};
+	var processosGerenciados := IniciaProcessosGerenciados(dictionary, quem, getPid(), produto, alvo);
 
-	while(!deveSair)
-		evento :=  Wait_For_Event(60);
-		
-		foreach processo in processosGerenciados
-			if(!processo.state)
-				deveSair := true;
+	var fazerSemelhantes := true;
+	var estadoGerenciamento := CICLANDO;
+
+	while(!DeveFinalizarPesquisaSemelhante(estadoGerenciamento))
+		Sleepms(2);
+		while(!DeveFinalizarTratamento(estadoGerenciamento))
+			evento :=  Wait_For_Event(60);
+			
+			foreach processo in processosGerenciados // Se algum dos processos gerênciados morrer, marca para sair do loop.
+				Print("processo.state " + processo.state);
+				if(!processo.state)
+					estadoGerenciamento := FINALIZADO;
+					break;
+				endif
+				Sleepms(2);
+			endforeach
+
+			if(DeveFinalizarTratamento(estadoGerenciamento) && evento.id != EV_CANCELADO) // sai do loop imediatamente, a não ser que seja cancelamento.
+				LimpaProcessosGerenciados(processosGerenciados);
+				break;
 			endif
-			Sleepms(2);
-		endforeach
 
-		if(deveSair)
-			//TODO limpar os demais processos que por ventura ainda estejam rodando. 
-			break;
+			case (evento.id)
+				EV_FIM_CICLO:
+					SendSysMessageEx(quem, "Fim De Ciclo detectado.",SSM_HELPFU);
+					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,5);
+					estadoGerenciamento := CICLANDO;
+					break;
+				EV_ITEM_PRODUZIDO:
+					SendSysMessageEx(quem, "Item produzido com sucesso.",SSM_INFO);
+					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
+					processosGerenciados[CICLO].kill();
+					CriaItemFabricado(quem,produto);
+					estadoGerenciamento := FINALIZADO;
+					break;
+				EV_ITEM_QUEBROU:
+					SendSysMessageEx(quem, "O Item se partiu.",SSM_FAIL);
+					PrintTextAbove(produto,"*O Item se parte*");
+					Sleepms(200);
+					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
+					DestroyItem(produto);
+					processosGerenciados[CICLO].kill();
+					estadoGerenciamento := FINALIZADO;
+					break;
+				EV_TODOS_ALTERADO:
+					fazerSemelhantes := evento.fazerTodos;
+					break;
+				EV_CANCELADO:
+					Print("Evento Cancelado!");
+					estadoGerenciamento := CANCELADO;
+					break;
+			endcase
+		endwhile
+
+		if(estadoGerenciamento != CANCELADO)
+			if(fazerSemelhantes)
+				var produtoAntigo := produto; 
+				produto := EncontraNovoProduto( quem, produtoAntigo);
+				if(produto)
+					processosGerenciados := IniciaProcessosGerenciados(processosGerenciados, quem, getPid(), produto, alvo);
+					estadoGerenciamento := SEMELHANTE_ENCONTRADO;
+				else
+					estadoGerenciamento := FINALIZADO;
+				endif
+				DestroyItem(produtoAntigo);
+			else
+				DestroyItem(produto);
+			endif
+		else
+			if(produto)
+				//evento interrompido (EV_CANCELADO).
+				produto.color := corOriginal;
+				produto.movable := 1;
+				MoveItemToContainer( produto, quem.backpack);
+			endif
 		endif
 
-		case (evento.id)
-			EV_FIM_CICLO:
-				SendSysMessageEx(quem, "Fim De Ciclo detectado.",SSM_HELPFU);
-				CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,1);
-				break;
-			EV_ITEM_PRODUZIDO:
-				SendSysMessageEx(quem, "Item produzido com sucesso.",SSM_INFO);
-				CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
-				processosGerenciados[CICLO].kill();
-				CriaItemFabricado(quem,produto);
-				break;
-			EV_ITEM_QUEBROU:
-				SendSysMessageEx(quem, "O Item se partiu.",SSM_FAIL);
-				CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
-				processosGerenciados[CICLO].kill();
-				break;
-			EV_GUMP_CANCELADO:
-				break;
-		endcase
+		//cancelado := false;//reseta a variavel
 	endwhile
-	produto.color := corOriginal;// TODO remover no final;
-	produto.movable := 1;
-	MoveItemToContainer( produto, quem.backpack);
+
 	SendSysMessageEX(quem, "Gerenciador Finalizado.", SSM_INFO);
 endprogram
+
+function DeveFinalizarTratamento(estadoGerenciamento)
+	return estadoGerenciamento == FINALIZADO ||  estadoGerenciamento == CANCELADO;
+endfunction
+
+function DeveFinalizarPesquisaSemelhante(estadoGerenciamento)
+	return estadoGerenciamento == FINALIZADO ||  estadoGerenciamento == CANCELADO;
+endfunction
+
+function IniciaProcessosGerenciados (processosAntigos, quem, pidGerente, produto, alvo)
+	if(processosAntigos.size() > 0)
+		LimpaProcessosGerenciados(processosAntigos);
+	endif
+
+	return dictionary{ 
+		GUMP_INTERATIVO -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto, pidGerente} ),
+		CICLO -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, pidGerente} ),
+		ANIMACAO -> Start_Script( ":crafting:animacaoTratamentoProduto", array{quem, produto, pidGerente, alvo} )
+	};
+endfunction
+
+function LimpaProcessosGerenciados(processosGerenciados)
+	foreach processo in processosGerenciados
+		Print("Limpando processos Gerenciado: " + processo.state);
+		processo.kill();
+		Sleepms(2);
+	endforeach
+	Clear_Event_Queue();
+endfunction
+
+function EncontraNovoProduto(quem, produtoAntigo)
+	foreach item in EnumerateItemsInContainer(quem.backpack)
+		Sleepms(2);
+		if (item.objtype == produtoAntigo.objtype)//ambos são produtos montados.
+			var itemProp :=  GetObjProperty(item,PROPNAME_FABRICADO);
+			var antigoProp :=  GetObjProperty(produtoAntigo,PROPNAME_FABRICADO);
+			if(itemProp.receita.objtype == antigoProp.receita.objtype)
+				Print("novo produto encontrado: " + item.desc);
+				return item;
+			endif
+		endif
+	endforeach
+	Print("nenhum novo encontrado");
+	return 0;
+endfunction

@@ -19,7 +19,6 @@ program AnimacaoTratamentoProduto(parametros)
 	
 	if(propFabricado.receita.pericia == "Metal_Working")
 		estacao := PegaEstacaoFerreiro(quem, alvo);
-		Print("Peguei estação? " + estacao);
 	endif
 
 	while(!deveSair)

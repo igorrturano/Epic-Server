@@ -295,8 +295,15 @@ function MontaTratamentoGump(x, y, byref sessao)
 	GFGumpPic(gump,cint(x - 28 + larguraCelula* 10),y + 12 + alturaCelula * 5,1594); // espaço porcentagem
 	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(sessao.dificuldade));
 	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,5555,5556,GF_CLOSE_BTN, 2);
-	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 2);
-	GFAddButton(gump,cint(x + larguraCelula * 10.6), y + alturaCelula * 2,9780,9781,GF_CLOSE_BTN, 2);
+	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 3);
+	if(sessao.fazerTodos)
+		GFHTMLArea(gump,x + cint(larguraCelula) * 6, cint(y - 10 + alturaCelula * 9.9),180,30,"<basefont size=55 color=#000000><right>Produzindo Semelhantes.</right>");
+		GFAddButton(gump,x + cint(larguraCelula * 10.3), cint(y - 10 + alturaCelula * 9.5) , 9793 , 9792,GF_CLOSE_BTN, 4); //Checkbox de fazer todos
+	else
+		GFHTMLArea(gump,x + cint(larguraCelula) * 6.5, cint(y - 10 + alturaCelula * 9.9),160,30,"<basefont size=55 color=#000000><right>Produzindo Este.</right>");
+		GFAddButton(gump,x + cint(larguraCelula * 10.3), cint(y - 10 + alturaCelula * 9.5) ,9792, 9793,GF_CLOSE_BTN, 4); //Checkbox de fazer todos
+	endif
+	GFAddButton(gump,cint(x + larguraCelula * 10.6), y + alturaCelula * 2,9780,9781,GF_CLOSE_BTN, 2); // botao de reposicionamento do gump
 	return gump;
 endfunction
 

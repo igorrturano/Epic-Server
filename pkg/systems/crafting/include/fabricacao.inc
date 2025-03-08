@@ -60,10 +60,11 @@ function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsq
 	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 endfunction
 
-function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0)
+function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "")
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
+				material := material,
 				isCompletamenteComum := 1,
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
@@ -483,9 +484,10 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 
 	if(componenteNecessario.isPrincipal)
 		sessao.receitaSelecionada.esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
+		sessao.receitaSelecionada.esquemaSelecionado.material := componenteEscolhido.material.chave;
 	endif
 
-	if(componenteEscolhido.tier.valor != 0 && sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum)
+	if(componenteEscolhido.tier.valor != 0 && sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
 		sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum := 0;
 	endif
 
@@ -1028,7 +1030,8 @@ function EnviaGumpComponentes(quem)
 						sessao.materiaisEncontrados,
 						materiaisEscolhidos,
 						CInt(sessao.quantidade),
-						pericia);
+						pericia,
+						sessao.componenteSelecionado.encaixe);
 				endif
 
 				sessao.devePopularDropDown := true;
@@ -1044,7 +1047,7 @@ function EnviaGumpComponentes(quem)
 	endwhile
 endfunction
 
-function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia)
+function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia, encaixe)
 
 	var chaveMaterialPrincipal; //objtype do material que irá decidir a cor e atributos principais do componente.
 
@@ -1063,6 +1066,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 		var descriptor := GetItemDescriptor(CInt(objtype));
 		descriptor.CProps.insert(PROPNAME_MATERIAL,chaveMaterialPrincipal);
 		descriptor.CProps.insert(PROPNAME_TIER_COMPONENTE,qualidade);
+		descriptor.CProps.insert(PROPNAME_ENCAIXE_COMPONENTE,encaixe);
 		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		descriptor.color := configRecursos[chaveMaterialPrincipal].Color;
 		

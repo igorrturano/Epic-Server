@@ -1,5 +1,6 @@
 //CRAFTING
 const PROPNAME_TIER_COMPONENTE := "tierComponente";
+const PROPNAME_ENCAIXE_COMPONENTE := "encaixeComponente";
 const PROPNAME_FABRICADO := "fabricado";
 const PROPNAME_FABRICADO_TRATAMENTO := "fabricadoTratamento";
 const PROPNAME_MATERIAL := "material"; 

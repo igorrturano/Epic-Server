@@ -8,12 +8,14 @@ include ":crafting:/include/tratamentoProduto";
 program GerenteTratamentoProduto(parametros)
 	var quem			:= parametros[1];
 	var produto			:= parametros[2];
+	var pidGerente		:= parametros[3];
 
 	var gump;
 	var posicao2D;
 	var apelidoGump := "gumpTratamentoProduto";  
 	var retorno := true;
 	var sessao := InicializaSessao(quem, produto);
+	var processoGerente := GetProcess(pidGerente);
 
 	while(retorno)
 		
@@ -34,9 +36,14 @@ program GerenteTratamentoProduto(parametros)
 		if(retorno[0] == 2)
 			GFCloseGump(quem,ATUALIZA_POS_ID);
 			EnviaGumpPosicao(quem, GetPid(),apelidoGump);
-		elseif(retorno[0] == 1)
-		elseif(retorno[0] == ATUALIZA_POS_RESPOSTA_ID)
-
+		elseif(retorno[0] == 5)// Retorno da atualização de ciclo.
+		elseif(retorno[0] == 4)
+			sessao.fazerTodos := !sessao.fazerTodos;
+			processoGerente.sendEvent(struct {id := EV_TODOS_ALTERADO , fazerTodos := sessao.fazerTodos});
+		elseif(retorno[0] == ATUALIZA_POS_RESPOSTA_ID) //quem manda esse retorno é o gump de reposicionamento.
+		else
+			processoGerente.sendEvent(struct {id := EV_CANCELADO});
+			retorno := false;
 		endif
 	endwhile
 endprogram
@@ -60,8 +67,6 @@ function InicializaSessao (quem , produto)
 	sessao.+falhas := propTratamento.falhas ? propTratamento.falhas : 0;
 	sessao.+ciclos := propTratamento.ciclos ? propTratamento.ciclos : 0;
 	sessao.+ultimoSucesso := propTratamento.ultimoSucesso;
-
-	Print("propFabricado.receita.pericia: " + propFabricado.receita.pericia);
-	Print("craft_config: " + craft_config[propFabricado.receita.objtype]);
+	sessao.+fazerTodos := 1;
 	return sessao;
 endfunction
