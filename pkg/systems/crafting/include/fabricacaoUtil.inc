@@ -61,4 +61,5 @@ function CriaItemFabricado(quem, produto)
 	SetObjProperty(item, PROPNAME_FABRICADO, novaPropFabricada);
 	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG,true);
 	SetObjProperty(item, PROPNAME_ARTIFICE_SERIAL,quem.serial);
+	SetObjProperty(item, PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 endfunction
