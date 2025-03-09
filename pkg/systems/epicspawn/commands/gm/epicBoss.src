@@ -6,6 +6,7 @@ use util;
 include "include/client";
 include "include/say";
 include ":gumps:include/epicGumps";
+include ":tn:boss";
 
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
@@ -35,6 +36,12 @@ program epicBOSS(who)
     
     // Process user input until they close the gump
     while (input[0] != 0)
+        // Check if the Create Boss button was clicked
+        if (input[0] == 100)
+            CreateBossFromGump(who, input);
+            break; // Exit after creating the boss
+        endif
+        
         var new_menu := UpdateMenuState(input[0]);
         case (new_menu)
             MENU_PAGE1: 
@@ -144,6 +151,21 @@ function ShowPage1(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 390, 1153, "Special AI:");
     GFTextEntry(gump, 200, 390, 300, 20, 1150, "", 6);
     
+    // NPC Profile Section
+    GFTextMid(gump, 0, 430, gump_width, 1153, "NPC PROFILE");
+    
+    // URL for image
+    GFTextLine(gump, 50, 460, 1153, "Image URL (200x200):");
+    GFTextEntry(gump, 200, 460, 400, 20, 1150, "", 7);
+    
+    // Detailed Description
+    GFTextLine(gump, 50, 490, 1153, "Detailed Description:");
+    GFTextEntry(gump, 200, 490, 400, 100, 1150, "", 8);
+    
+    // Add Create Boss button at the bottom
+    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    
     // Send the gump to the player
     var input := GFSendGump(who, gump);
     return input;
@@ -223,6 +245,10 @@ function ShowPage2(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 520, 1153, "Awareness Modifier:");
     GFTextEntry(gump, 200, 520, 100, 20, 1150, "0", 23);
     
+    // Add Create Boss button at the bottom
+    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    
     // Send the gump to the player
     var input := GFSendGump(who, gump);
     return input;
@@ -272,6 +298,10 @@ function ShowPage3(who, title, gump_width, gump_height)
     GFTextLine(gump, 600, 370, 1153, "Death Events:");
     GFAddButton(gump, 800, 370, 2103, 2104, 1, 60);
     GFTextLine(gump, 830, 370, 1153, "Add Death Event");
+    
+    // Add Create Boss button at the bottom
+    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -331,6 +361,10 @@ function ShowPage4(who, title, gump_width, gump_height)
     GFTextLine(gump, 600, 270, 1153, "Target Selection:");
     GFAddButton(gump, 730, 270, 2103, 2104, 1, 77);
     GFTextLine(gump, 760, 270, 1153, "Highest Damage");
+    
+    // Add Create Boss button at the bottom
+    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -392,7 +426,82 @@ function ShowPage5(who, title, gump_width, gump_height)
     GFTextLine(gump, 600, 210, 1153, "Default Drop Chance (%):");
     GFTextEntry(gump, 800, 210, 100, 20, 1150, "25", 91);
     
+    // Add Create Boss button at the bottom
+    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    
     // Send the gump to the player
     var input := GFSendGump(who, gump);
     return input;
+endfunction
+
+// Add a function to create the boss from gump data
+function CreateBossFromGump(who, input)
+    // Create a boss structure
+    var boss := struct{};
+    
+    // Initialize arrays
+    boss.special := array{};
+    boss.loot := array{};
+    boss.deathevent := array{};
+    
+    // Basic info
+    boss.npctemplate := GFExtractData(input, 1);
+    boss.name := GFExtractData(input, 2);
+    boss.color := CInt(GFExtractData(input, 3));
+    boss.description := GFExtractData(input, 4);
+    boss.trueboss := input[5];
+    
+    // Special AI
+    var special_ai := GFExtractData(input, 6);
+    if (special_ai != "")
+        var ai_spec := struct{};
+        ai_spec.name := "Special AI";
+        ai_spec.ai := special_ai;
+        boss.special.append(ai_spec);
+    endif
+    
+    // NPC Profile
+    boss.url := GFExtractData(input, 7);
+    boss.detailed_description := GFExtractData(input, 8);
+    
+    // Attributes
+    boss.str := CInt(GFExtractData(input, 10));
+    boss.dex := CInt(GFExtractData(input, 11));
+    boss.int := CInt(GFExtractData(input, 12));
+    boss.hits := CInt(GFExtractData(input, 13));
+    boss.dmg := CDbl(GFExtractData(input, 14));
+    
+    // Resistances
+    boss.phresist := CInt(GFExtractData(input, 15));
+    boss.firesist := CInt(GFExtractData(input, 16));
+    boss.coresist := CInt(GFExtractData(input, 17));
+    boss.enresist := CInt(GFExtractData(input, 18));
+    boss.poresist := CInt(GFExtractData(input, 19));
+    
+    // Skills
+    boss.wrestling := CInt(GFExtractData(input, 20));
+    boss.tactics := CInt(GFExtractData(input, 21));
+    boss.magery := CInt(GFExtractData(input, 22));
+    boss.awareness := CInt(GFExtractData(input, 23));
+    
+    SendSysMessage(who, "Creating boss...");
+    
+    var npc := CreateBoss(boss, who.x, who.y, who.z, who.realm);
+    if (npc == error)
+        SendSysMessage(who, "Error creating boss: " + npc.errortext);
+        return 0;
+    endif
+    
+    // Set the profile properties
+    if (boss.url != "")
+        SetObjProperty(npc, "url", boss.url);
+    endif
+    
+    if (boss.detailed_description != "")
+        SetObjProperty(npc, "descricao", boss.detailed_description);
+    endif
+    
+    SendSysMessage(who, "Boss created successfully!");
+    return 1;
 endfunction
