@@ -4,6 +4,9 @@ use math;
 
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include "include/say";
 
 var stones := {6255, 6250, 6251, 6252, 6253, 6254, 6249, 6256};
 var stands := {"", "", "", "", ""};
@@ -16,7 +19,6 @@ var marked_colors := dictionary{}; // Dicionário para armazenar cores marcadas
 
 function mastermind(who)
     enigma := RandomSet(who);
-    var skill_mech := AP_GetSkill(who, MECHANICS);
     
     // Inicializar dicionário de cores marcadas
     foreach stone in stones
@@ -25,7 +27,8 @@ function mastermind(who)
     
     while(who.connected)
         if(counter < 1)
-            return 0;
+            SendSysMessageEx(who, "Você falhou em resolver o enigma!", SSM_FAIL);
+            return 0; // Retorna 0 para falha, fazendo o container desaparecer
         endif
         
         var gump := GFCreateGump(50, 50, 720, 400);
@@ -210,19 +213,18 @@ function mastermind(who)
         GFRadioButton(gump, 358, 325, 2151, 2154, 0, 105);
         
         // ---------------------------------------------------- Histórico de tentativas anteriores
-        // Número de tentativas adicionais visíveis baseado na skill mechanics
-        var visible_attempts := GetVisibleAttempts(skill_mech);
+        // Mostrar todas as tentativas anteriores, sem limitação por skill
+        var display_count := prev_attempts.size();
         
         // Adicionar legenda
         GFTextLine(gump, 450, 360, 63, "Posição correta");
         GFTextLine(gump, 450, 380, 53, "Cor correta");
         
-        // Exibir histórico de tentativas - SIMPLIFICADO
-        if(prev_attempts.size() > 0 && visible_attempts > 0)
+        // Exibir histórico de tentativas - SEM LIMITAÇÃO POR SKILL
+        if(display_count > 0)
             GFResizePic(gump, 510, 40, 3500, 200, 320);
             GFTextLine(gump, 520, 50, 37, "Histórico de Tentativas:");
             
-            var display_count := Min(visible_attempts, prev_attempts.size());
             var i := 1;
             
             // Exibir tentativas em posições fixas, da mais recente para a mais antiga
@@ -256,8 +258,9 @@ function mastermind(who)
         var Res := GFSendGump(who, gump);
         
         if(Res[0] < 1)
-            if(YesNo(who, "Realy cancel ?"))
-                return 0;
+            if(YesNo(who, "Realmente cancelar?"))
+                SendSysMessageEx(who, "Você cancelou o puzzle!", SSM_FAIL);
+                return 0; // Retorna 0 para cancelamento, fazendo o container desaparecer
             else
                 continue;
             endif
@@ -299,7 +302,7 @@ function mastermind(who)
                 SendSysMessageEx(who, result.desc_colors, SSM_INFO);
                 sleep(1);
                 
-                // Armazenar tentativa e resultado juntos - SIMPLIFICADO
+                // Armazenar tentativa e resultado juntos
                 StorePreviousAttempt(stands, result);
                 
                 // Atualizar para próxima rodada
@@ -309,35 +312,17 @@ function mastermind(who)
                 // Verificar vitória
                 if(result.hits == 5)
                     SendSysMessageEx(who, "Parabéns! Você descobriu a combinação correta!", SSM_INFO);
-                    return 1;
+                    return 1; // Retorna 1 para sucesso, mostrando o conteúdo do container
                 endif
             endif
         endif
     endwhile
-endfunction
-
-// Função para determinar o número de tentativas anteriores visíveis baseado na skill
-function GetVisibleAttempts(skill_mech)
-    if(skill_mech >= 100)
-        return 7;  // Mestre - pode ver 7 tentativas anteriores
-    elseif(skill_mech >= 90)
-        return 6;  // Grandmaster - pode ver 6 tentativas anteriores
-    elseif(skill_mech >= 80)
-        return 5;  // Expert - pode ver 5 tentativas anteriores
-    elseif(skill_mech >= 60)
-        return 4;  // Adept - pode ver 4 tentativas anteriores
-    elseif(skill_mech >= 40)
-        return 3;  // Journeyman - pode ver 3 tentativas anteriores
-    elseif(skill_mech >= 30)
-        return 2;  // Apprentice - pode ver 2 tentativas anteriores
-    elseif(skill_mech >= 20)
-        return 1;  // Novice - pode ver 1 tentativa anterior
-    endif
     
-    return 0;  // Neófito - não vê tentativas anteriores
+    // Se o jogador se desconectar, retorna 0 para fazer o container desaparecer
+    return 0;
 endfunction
 
-// Função simplificada para armazenar tentativa e seu resultado
+// Função para armazenar tentativa e seu resultado
 function StorePreviousAttempt(attempt, result)
     // Criar um struct que contém tanto a tentativa quanto seu resultado
     var entry := struct;
@@ -389,7 +374,7 @@ function RandomSet(who)
     return temp;
 endfunction
 
-// Função de resultado da tentativa - mais limpa
+// Função de resultado da tentativa
 function GetAttemptResult(attempt_stands)
     var hits := 0;
     var colors := 0;
