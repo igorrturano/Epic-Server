@@ -6,7 +6,7 @@ use util;
 include "include/client";
 include "include/say";
 include ":gumps:include/epicGumps";
-include ":tn:boss";
+include ":epicspawn:epicBoss";
 
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
@@ -38,6 +38,7 @@ program epicBOSS(who)
     while (input[0] != 0)
         // Check if the Create Boss button was clicked
         if (input[0] == 100)
+            SendSysMessage(who, "Creating boss...");
             CreateBossFromGump(who, input);
             break; // Exit after creating the boss
         endif
@@ -487,7 +488,8 @@ function CreateBossFromGump(who, input)
     
     SendSysMessage(who, "Creating boss...");
     
-    var npc := CreateBoss(boss, who.x, who.y, who.z, who.realm);
+    // Create a test boss to show the player
+    var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
     if (npc == error)
         SendSysMessage(who, "Error creating boss: " + npc.errortext);
         return 0;
@@ -502,6 +504,30 @@ function CreateBossFromGump(who, input)
         SetObjProperty(npc, "descricao", boss.detailed_description);
     endif
     
-    SendSysMessage(who, "Boss created successfully!");
+    // Create a spawner for this boss
+    var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0xA402, 1, who.realm);
+    if (spawner)
+        // Set the boss structure in the spawner
+        SetObjProperty(spawner, "BossStruct", boss);
+        
+        // Set default spawn settings
+        SetObjProperty(spawner, "MinDelay", 60);  // 60 minutes
+        SetObjProperty(spawner, "MaxDelay", 120); // 120 minutes
+        SetObjProperty(spawner, "Range", 5);      // 5 tiles
+        
+        // Link the test boss to the spawner
+        SetObjProperty(npc, "epicspawner", spawner.serial);
+        SetObjProperty(spawner, "ChildSerial", npc.serial);
+        SetObjProperty(spawner, "SpawnQueue", "Active");
+        
+        spawner.invisible := 1;
+        
+        SendSysMessage(who, "Boss created successfully with spawner!");
+        SendSysMessage(who, "The boss will respawn between 60-120 minutes after death.");
+        SendSysMessage(who, "Double-click the spawner (invisible at your feet) to configure.");
+    else
+        SendSysMessage(who, "Boss created successfully, but failed to create spawner!");
+    endif
+    
     return 1;
 endfunction
