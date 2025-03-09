@@ -63,6 +63,12 @@ program epicBOSS(who)
         // Extract data from the current page
         ExtractPageData(input, last_clicked_button);
         
+        // Check if the Cancel button was clicked
+        if (input[0] == 101 || input[101])
+            SendSysMessage(who, "Boss creation cancelled.");
+            break; // Exit without creating the boss
+        endif
+        
         // Check if the Create Boss button was clicked
         if (input[0] == 100 || input[100])
             // Save form data before creating the boss
@@ -491,9 +497,13 @@ function ShowPage1(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 510, 1153, "Detailed Description:");
     GFTextEntry(gump, 200, 510, 400, 100, 1150, form_data.detailed_description ? form_data.detailed_description : "", 8);
     
-    // Add Create Boss button at the bottom
-    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    // Add Create Boss and Cancel buttons at the bottom
+    GFAddButton(gump, gump_width/2 - 100, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 60, gump_height - 45, 1153, "CREATE BOSS");
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width/2 + 50, gump_height - 50, 2119, 2120, 1, 101);
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 45, 1153, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -574,9 +584,13 @@ function ShowPage2(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 520, 1153, "Awareness Modifier:");
     GFTextEntry(gump, 200, 520, 100, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23);
     
-    // Add Create Boss button at the bottom
-    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    // Add Create Boss and Cancel buttons at the bottom
+    GFAddButton(gump, gump_width/2 - 100, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 60, gump_height - 45, 1153, "CREATE BOSS");
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width/2 + 50, gump_height - 50, 2119, 2120, 1, 101);
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 45, 1153, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -628,9 +642,13 @@ function ShowPage3(who, title, gump_width, gump_height)
     GFAddButton(gump, 800, 370, 2103, 2104, 1, 60);
     GFTextLine(gump, 830, 370, 1153, "Add Death Event");
     
-    // Add Create Boss button at the bottom
-    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    // Add Create Boss and Cancel buttons at the bottom
+    GFAddButton(gump, gump_width/2 - 100, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 60, gump_height - 45, 1153, "CREATE BOSS");
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width/2 + 50, gump_height - 50, 2119, 2120, 1, 101);
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 45, 1153, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -691,9 +709,13 @@ function ShowPage4(who, title, gump_width, gump_height)
     GFAddButton(gump, 730, 270, 2103, 2104, 1, 77);
     GFTextLine(gump, 760, 270, 1153, form_data.target_selection ? form_data.target_selection : "Highest Damage");
     
-    // Add Create Boss button at the bottom
-    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    // Add Create Boss and Cancel buttons at the bottom
+    GFAddButton(gump, gump_width/2 - 100, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 60, gump_height - 45, 1153, "CREATE BOSS");
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width/2 + 50, gump_height - 50, 2119, 2120, 1, 101);
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 45, 1153, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -755,9 +777,13 @@ function ShowPage5(who, title, gump_width, gump_height)
     GFTextLine(gump, 600, 210, 1153, "Default Drop Chance (%):");
     GFTextEntry(gump, 800, 210, 100, 20, 1150, form_data.drop_chance ? form_data.drop_chance : "25", 91);
     
-    // Add Create Boss button at the bottom
-    GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 40, gump_height - 45, 1153, "CREATE BOSS");
+    // Add Create Boss and Cancel buttons at the bottom
+    GFAddButton(gump, gump_width/2 - 100, gump_height - 50, 2128, 2129, 1, 100);
+    GFTextLine(gump, gump_width/2 - 60, gump_height - 45, 1153, "CREATE BOSS");
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width/2 + 50, gump_height - 50, 2119, 2120, 1, 101);
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 45, 1153, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
