@@ -42,17 +42,40 @@ program epicBOSS(who)
     
     // Process user input until they close the gump
     while (input[0] != 0)
-        // Save form data from the current page
-        SaveFormData(input);
+        // Debug: Print input values
+        SendSysMessage(who, "DEBUG: input[0] = " + input[0]);
+        
+        // Debug: Print all input values
+        print("DEBUG: Input array contents:");
+        foreach key in (input.keys())
+            print("DEBUG: input[" + key + "] = " + input[key]);
+        endforeach
+        
+        // Check if any navigation button was clicked
+        var nav_button_clicked := 0;
+        for i := 1 to 5
+            if (input[i])
+                SendSysMessage(who, "DEBUG: Navigation button " + i + " was clicked");
+                nav_button_clicked := i;
+            endif
+        endfor
+        
+        // Extract data from the current page
+        ExtractPageData(input, last_clicked_button);
         
         // Check if the Create Boss button was clicked
-        if (input[0] == 100)
+        if (input[0] == 100 || input[100])
+            // Save form data before creating the boss
+            SendSysMessage(who, "DEBUG: Create Boss button was clicked");
             SendSysMessage(who, "Creating boss...");
             CreateBossFromGump(who, form_data);
             break; // Exit after creating the boss
         endif
         
+        // Update the menu state and get the new page to show
         var new_menu := UpdateMenuState(input[0], who);
+        
+        // Show the new page
         case (new_menu)
             MENU_PAGE1: 
                 input := ShowPage1(who, title, gump_width, gump_height);
@@ -126,201 +149,224 @@ function InitializeFormData()
     form_data.teleport_loc := struct{};
 endfunction
 
-// Save form data from the current page
-function SaveFormData(input)
-    // Check which page we're on based on the last clicked button
-    case (last_clicked_button)
+// Extract data from the current page
+function ExtractPageData(input, page)
+    print("DEBUG: Extracting data for page " + page);
+    
+    case (page)
         BOTAO_PAGE1:
             // Basic info
-            if (input[1])
-                form_data.npctemplate := GFExtractData(input, 1);
+            var npctemplate := GFExtractData(input, 1);
+            if (npctemplate != error && npctemplate != "")
+                form_data.npctemplate := npctemplate;
+                print("DEBUG: Extracted npctemplate = " + form_data.npctemplate);
             endif
-            if (input[2])
-                form_data.name := GFExtractData(input, 2);
+            
+            var name := GFExtractData(input, 2);
+            if (name != error && name != "")
+                form_data.name := name;
+                print("DEBUG: Extracted name = " + form_data.name);
             endif
-            if (input[3])
-                form_data.color := GFExtractData(input, 3);
+            
+            var color := GFExtractData(input, 3);
+            if (color != error && color != "")
+                form_data.color := color;
+                print("DEBUG: Extracted color = " + form_data.color);
             endif
-            if (input[4])
-                form_data.description := GFExtractData(input, 4);
+            
+            var description := GFExtractData(input, 4);
+            if (description != error && description != "")
+                form_data.description := description;
+                print("DEBUG: Extracted description = " + form_data.description);
             endif
-            form_data.trueboss := input[5];
-            if (input[6])
-                form_data.special_ai := GFExtractData(input, 6);
+            
+            if (input[5])
+                form_data.trueboss := input[5];
+                print("DEBUG: Extracted trueboss = " + form_data.trueboss);
             endif
-            if (input[7])
-                form_data.url := GFExtractData(input, 7);
+            
+            var special_ai := GFExtractData(input, 6);
+            if (special_ai != error && special_ai != "")
+                form_data.special_ai := special_ai;
+                print("DEBUG: Extracted special_ai = " + form_data.special_ai);
             endif
-            if (input[8])
-                form_data.detailed_description := GFExtractData(input, 8);
+            
+            var url := GFExtractData(input, 7);
+            if (url != error && url != "")
+                form_data.url := url;
+                print("DEBUG: Extracted url = " + form_data.url);
+            endif
+            
+            var detailed_description := GFExtractData(input, 8);
+            if (detailed_description != error && detailed_description != "")
+                form_data.detailed_description := detailed_description;
+                print("DEBUG: Extracted detailed_description = " + form_data.detailed_description);
             endif
             break;
             
         BOTAO_PAGE2:
             // Attributes
-            if (input[10])
-                form_data.str := GFExtractData(input, 10);
+            var str := GFExtractData(input, 10);
+            if (str != error && str != "")
+                form_data.str := str;
+                print("DEBUG: Extracted str = " + form_data.str);
             endif
-            if (input[11])
-                form_data.dex := GFExtractData(input, 11);
+            
+            var dex := GFExtractData(input, 11);
+            if (dex != error && dex != "")
+                form_data.dex := dex;
+                print("DEBUG: Extracted dex = " + form_data.dex);
             endif
-            if (input[12])
-                form_data.int := GFExtractData(input, 12);
+            
+            var int := GFExtractData(input, 12);
+            if (int != error && int != "")
+                form_data.int := int;
+                print("DEBUG: Extracted int = " + form_data.int);
             endif
-            if (input[13])
-                form_data.hits := GFExtractData(input, 13);
+            
+            var hits := GFExtractData(input, 13);
+            if (hits != error && hits != "")
+                form_data.hits := hits;
+                print("DEBUG: Extracted hits = " + form_data.hits);
             endif
-            if (input[14])
-                form_data.dmg := GFExtractData(input, 14);
+            
+            var dmg := GFExtractData(input, 14);
+            if (dmg != error && dmg != "")
+                form_data.dmg := dmg;
+                print("DEBUG: Extracted dmg = " + form_data.dmg);
             endif
             
             // Resistances
-            if (input[15])
-                form_data.phresist := GFExtractData(input, 15);
+            var phresist := GFExtractData(input, 15);
+            if (phresist != error && phresist != "")
+                form_data.phresist := phresist;
+                print("DEBUG: Extracted phresist = " + form_data.phresist);
             endif
-            if (input[16])
-                form_data.firesist := GFExtractData(input, 16);
+            
+            var firesist := GFExtractData(input, 16);
+            if (firesist != error && firesist != "")
+                form_data.firesist := firesist;
+                print("DEBUG: Extracted firesist = " + form_data.firesist);
             endif
-            if (input[17])
-                form_data.coresist := GFExtractData(input, 17);
+            
+            var coresist := GFExtractData(input, 17);
+            if (coresist != error && coresist != "")
+                form_data.coresist := coresist;
+                print("DEBUG: Extracted coresist = " + form_data.coresist);
             endif
-            if (input[18])
-                form_data.enresist := GFExtractData(input, 18);
+            
+            var enresist := GFExtractData(input, 18);
+            if (enresist != error && enresist != "")
+                form_data.enresist := enresist;
+                print("DEBUG: Extracted enresist = " + form_data.enresist);
             endif
-            if (input[19])
-                form_data.poresist := GFExtractData(input, 19);
+            
+            var poresist := GFExtractData(input, 19);
+            if (poresist != error && poresist != "")
+                form_data.poresist := poresist;
+                print("DEBUG: Extracted poresist = " + form_data.poresist);
             endif
             
             // Skills
-            if (input[20])
-                form_data.wrestling := GFExtractData(input, 20);
+            var wrestling := GFExtractData(input, 20);
+            if (wrestling != error && wrestling != "")
+                form_data.wrestling := wrestling;
+                print("DEBUG: Extracted wrestling = " + form_data.wrestling);
             endif
-            if (input[21])
-                form_data.tactics := GFExtractData(input, 21);
+            
+            var tactics := GFExtractData(input, 21);
+            if (tactics != error && tactics != "")
+                form_data.tactics := tactics;
+                print("DEBUG: Extracted tactics = " + form_data.tactics);
             endif
-            if (input[22])
-                form_data.magery := GFExtractData(input, 22);
+            
+            var magery := GFExtractData(input, 22);
+            if (magery != error && magery != "")
+                form_data.magery := magery;
+                print("DEBUG: Extracted magery = " + form_data.magery);
             endif
-            if (input[23])
-                form_data.awareness := GFExtractData(input, 23);
+            
+            var awareness := GFExtractData(input, 23);
+            if (awareness != error && awareness != "")
+                form_data.awareness := awareness;
+                print("DEBUG: Extracted awareness = " + form_data.awareness);
             endif
             break;
             
         BOTAO_PAGE3:
             // Special abilities
             // These would be handled by specific buttons on page 3
-            // For now, we'll just save any button clicks for future implementation
-            if (input[30])
-                // Add Special Ability button
-                // This would typically open a sub-gump to select an ability
-            endif
-            
-            if (input[40])
-                // Add Combat Event button
-                // This would typically open a sub-gump to configure a combat event
-            endif
-            
-            if (input[50])
-                // Add TimedScript button
-                // This would typically open a sub-gump to select a timed script
-            endif
-            
-            if (input[60])
-                // Add Death Event button
-                // This would typically open a sub-gump to configure a death event
-            endif
             break;
             
         BOTAO_PAGE4:
             // Behavior
-            if (input[70])
-                // Set Patrol Location 1 button
-                // This would typically store the player's current location
+            var teleport_health := GFExtractData(input, 72);
+            if (teleport_health != error && teleport_health != "")
+                form_data.teleport_health := teleport_health;
+                print("DEBUG: Extracted teleport_health = " + form_data.teleport_health);
             endif
             
-            if (input[71])
-                // Set Patrol Location 2 button
-                // This would typically store the player's current location
-            endif
-            
-            if (input[72])
-                form_data.teleport_health := GFExtractData(input, 72);
-            endif
-            
-            if (input[73])
-                // Set Teleport Location button
-                // This would typically store the player's current location
-            endif
-            
-            if (input[74])
-                // Add Ability Condition button
-                // This would typically open a sub-gump to configure a condition
-            endif
-            
-            if (input[75])
-                // Aggression Level button
-                // This would typically cycle through different aggression levels
-                form_data.aggression := "High"; // Default for now
-            endif
-            
-            if (input[76])
-                form_data.flee_health := GFExtractData(input, 76);
-            endif
-            
-            if (input[77])
-                // Target Selection button
-                // This would typically cycle through different target selection methods
-                form_data.target_selection := "Highest Damage"; // Default for now
+            var flee_health := GFExtractData(input, 76);
+            if (flee_health != error && flee_health != "")
+                form_data.flee_health := flee_health;
+                print("DEBUG: Extracted flee_health = " + form_data.flee_health);
             endif
             break;
             
         BOTAO_PAGE5:
             // Equipment
-            // Weapon type radio buttons
+            var specific_weapon := GFExtractData(input, 84);
+            if (specific_weapon != error && specific_weapon != "")
+                form_data.specific_weapon := specific_weapon;
+                print("DEBUG: Extracted specific_weapon = " + form_data.specific_weapon);
+            endif
+            
+            var magic_school := GFExtractData(input, 88);
+            if (magic_school != error && magic_school != "")
+                form_data.magic_school := magic_school;
+                print("DEBUG: Extracted magic_school = " + form_data.magic_school);
+            endif
+            
+            var drop_chance := GFExtractData(input, 91);
+            if (drop_chance != error && drop_chance != "")
+                form_data.drop_chance := drop_chance;
+                print("DEBUG: Extracted drop_chance = " + form_data.drop_chance);
+            endif
+            
+            // Handle radio buttons
             if (input[80])
                 form_data.weapon_type := "Dual Wield";
+                print("DEBUG: Set weapon_type = Dual Wield");
             endif
             
             if (input[81])
                 form_data.weapon_type := "One-Handed";
+                print("DEBUG: Set weapon_type = One-Handed");
             endif
             
             if (input[82])
                 form_data.weapon_type := "Two-Handed";
+                print("DEBUG: Set weapon_type = Two-Handed");
             endif
             
             if (input[83])
                 form_data.weapon_type := "Ranged";
+                print("DEBUG: Set weapon_type = Ranged");
             endif
             
-            if (input[84])
-                form_data.specific_weapon := GFExtractData(input, 84);
-            endif
-            
-            // Class type radio buttons
             if (input[85])
                 form_data.class := "Warrior";
+                print("DEBUG: Set class = Warrior");
             endif
             
             if (input[86])
                 form_data.class := "Mage";
+                print("DEBUG: Set class = Mage");
             endif
             
             if (input[87])
                 form_data.class := "Ranger";
-            endif
-            
-            if (input[88])
-                form_data.magic_school := GFExtractData(input, 88);
-            endif
-            
-            if (input[90])
-                // Add Loot Item button
-                // This would typically open a sub-gump to select a loot item
-            endif
-            
-            if (input[91])
-                form_data.drop_chance := GFExtractData(input, 91);
+                print("DEBUG: Set class = Ranger");
             endif
             break;
     endcase
@@ -328,7 +374,14 @@ endfunction
 
 // Function to update which menu is active based on button click
 function UpdateMenuState(input, who)
+    // Debug: Print input value
+    SendSysMessage(who, "DEBUG: UpdateMenuState input = " + input);
+    
+    // Update the last clicked button
     last_clicked_button := input;
+    
+    // Debug: Print last_clicked_button
+    SendSysMessage(who, "DEBUG: last_clicked_button = " + last_clicked_button);
     
     // Inform the user that their data is being saved
     case (input)
@@ -356,6 +409,7 @@ function UpdateMenuState(input, who)
 
     // Default to page 1 if no valid input
     button_states := array{1, 0, 0, 0, 0};
+    last_clicked_button := BOTAO_PAGE1;
     SendSysMessage(who, "Switching to Basic Info page. Your data has been saved.");
     return MENU_PAGE1;
 endfunction
@@ -403,39 +457,39 @@ function ShowPage1(who, title, gump_width, gump_height)
     
     // NPC Template selection
     GFTextLine(gump, 50, 200, 1153, "NPC Template:");
-    GFTextEntry(gump, 200, 200, 300, 20, 1150, form_data.npctemplate, 1);
+    GFTextEntry(gump, 200, 200, 300, 20, 1150, form_data.npctemplate ? form_data.npctemplate : "", 1);
     GFTextLine(gump, 200, 220, 2100, "(No need to specify :brainAI: or :epicAI: prefix)");
     
     // Boss Name
     GFTextLine(gump, 50, 250, 1153, "Boss Name:");
-    GFTextEntry(gump, 200, 250, 300, 20, 1150, form_data.name, 2);
+    GFTextEntry(gump, 200, 250, 300, 20, 1150, form_data.name ? form_data.name : "", 2);
     
     // Color
     GFTextLine(gump, 50, 280, 1153, "Color:");
-    GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.color, 3);
+    GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.color ? form_data.color : "0", 3);
     
     // Description
     GFTextLine(gump, 50, 310, 1153, "Description:");
-    GFTextEntry(gump, 200, 310, 400, 60, 1150, form_data.description, 4);
+    GFTextEntry(gump, 200, 310, 400, 60, 1150, form_data.description ? form_data.description : "", 4);
     
     // True Boss checkbox
-    GFCheckBox(gump, 50, 380, 2510, 2511, form_data.trueboss, 5);
+    GFCheckBox(gump, 50, 380, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
     GFTextLine(gump, 80, 380, 1153, "True Boss");
     
     // Special AI
     GFTextLine(gump, 50, 410, 1153, "Special AI:");
-    GFTextEntry(gump, 200, 410, 300, 20, 1150, form_data.special_ai, 6);
+    GFTextEntry(gump, 200, 410, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
     
     // NPC Profile Section
     GFTextMid(gump, 0, 450, gump_width, 1153, "NPC PROFILE");
     
     // URL for image
     GFTextLine(gump, 50, 480, 1153, "Image URL (200x200):");
-    GFTextEntry(gump, 200, 480, 400, 20, 1150, form_data.url, 7);
+    GFTextEntry(gump, 200, 480, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
     
     // Detailed Description
     GFTextLine(gump, 50, 510, 1153, "Detailed Description:");
-    GFTextEntry(gump, 200, 510, 400, 100, 1150, form_data.detailed_description, 8);
+    GFTextEntry(gump, 200, 510, 400, 100, 1150, form_data.detailed_description ? form_data.detailed_description : "", 8);
     
     // Add Create Boss button at the bottom
     GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
@@ -460,65 +514,65 @@ function ShowPage2(who, title, gump_width, gump_height)
     
     // Strength
     GFTextLine(gump, 50, 210, 1153, "Strength Modifier:");
-    GFTextEntry(gump, 200, 210, 100, 20, 1150, form_data.str, 10);
+    GFTextEntry(gump, 200, 210, 100, 20, 1150, form_data.str ? form_data.str : "0", 10);
     
     // Dexterity
     GFTextLine(gump, 50, 240, 1153, "Dexterity Modifier:");
-    GFTextEntry(gump, 200, 240, 100, 20, 1150, form_data.dex, 11);
+    GFTextEntry(gump, 200, 240, 100, 20, 1150, form_data.dex ? form_data.dex : "0", 11);
     
     // Intelligence
     GFTextLine(gump, 50, 270, 1153, "Intelligence Modifier:");
-    GFTextEntry(gump, 200, 270, 100, 20, 1150, form_data.int, 12);
+    GFTextEntry(gump, 200, 270, 100, 20, 1150, form_data.int ? form_data.int : "0", 12);
     
     // Hits
     GFTextLine(gump, 50, 300, 1153, "Hits Modifier:");
-    GFTextEntry(gump, 200, 300, 100, 20, 1150, form_data.hits, 13);
+    GFTextEntry(gump, 200, 300, 100, 20, 1150, form_data.hits ? form_data.hits : "0", 13);
     
     // Damage Modifier
     GFTextLine(gump, 50, 330, 1153, "Damage Modifier (0.1-1.0):");
-    GFTextEntry(gump, 250, 330, 100, 20, 1150, form_data.dmg, 14);
+    GFTextEntry(gump, 250, 330, 100, 20, 1150, form_data.dmg ? form_data.dmg : "0", 14);
     
     // Resistances section
     GFTextMid(gump, 0, 370, gump_width, 1153, "Resistances");
     
     // Physical
     GFTextLine(gump, 600, 210, 1153, "Physical:");
-    GFTextEntry(gump, 700, 210, 100, 20, 1150, form_data.phresist, 15);
+    GFTextEntry(gump, 700, 210, 100, 20, 1150, form_data.phresist ? form_data.phresist : "0", 15);
     
     // Fire
     GFTextLine(gump, 600, 240, 1153, "Fire:");
-    GFTextEntry(gump, 700, 240, 100, 20, 1150, form_data.firesist, 16);
+    GFTextEntry(gump, 700, 240, 100, 20, 1150, form_data.firesist ? form_data.firesist : "0", 16);
     
     // Cold
     GFTextLine(gump, 600, 270, 1153, "Cold:");
-    GFTextEntry(gump, 700, 270, 100, 20, 1150, form_data.coresist, 17);
+    GFTextEntry(gump, 700, 270, 100, 20, 1150, form_data.coresist ? form_data.coresist : "0", 17);
     
     // Energy
     GFTextLine(gump, 600, 300, 1153, "Energy:");
-    GFTextEntry(gump, 700, 300, 100, 20, 1150, form_data.enresist, 18);
+    GFTextEntry(gump, 700, 300, 100, 20, 1150, form_data.enresist ? form_data.enresist : "0", 18);
     
     // Poison
     GFTextLine(gump, 600, 330, 1153, "Poison:");
-    GFTextEntry(gump, 700, 330, 100, 20, 1150, form_data.poresist, 19);
+    GFTextEntry(gump, 700, 330, 100, 20, 1150, form_data.poresist ? form_data.poresist : "0", 19);
     
     // Skills section
     GFTextMid(gump, 0, 400, gump_width, 1153, "Skills");
     
     // Wrestling
     GFTextLine(gump, 50, 430, 1153, "Wrestling Modifier:");
-    GFTextEntry(gump, 200, 430, 100, 20, 1150, form_data.wrestling, 20);
+    GFTextEntry(gump, 200, 430, 100, 20, 1150, form_data.wrestling ? form_data.wrestling : "0", 20);
     
     // Tactics
     GFTextLine(gump, 50, 460, 1153, "Tactics Modifier:");
-    GFTextEntry(gump, 200, 460, 100, 20, 1150, form_data.tactics, 21);
+    GFTextEntry(gump, 200, 460, 100, 20, 1150, form_data.tactics ? form_data.tactics : "0", 21);
     
     // Magery
     GFTextLine(gump, 50, 490, 1153, "Magery Modifier:");
-    GFTextEntry(gump, 200, 490, 100, 20, 1150, form_data.magery, 22);
+    GFTextEntry(gump, 200, 490, 100, 20, 1150, form_data.magery ? form_data.magery : "0", 22);
     
     // Awareness
     GFTextLine(gump, 50, 520, 1153, "Awareness Modifier:");
-    GFTextEntry(gump, 200, 520, 100, 20, 1150, form_data.awareness, 23);
+    GFTextEntry(gump, 200, 520, 100, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23);
     
     // Add Create Boss button at the bottom
     GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
@@ -794,4 +848,24 @@ function CreateBossFromGump(who, form_data)
     endif
     
     return 1;
+endfunction
+
+// Safely extract data from a gump input, returning a fallback value if there's an error
+function SafeExtractData(input, key, fallback)
+    var result := fallback;
+    
+    // Debug: Print input and key
+    print("DEBUG: SafeExtractData key = " + key + ", fallback = " + fallback);
+    
+    if (input[0] && key in input)
+        // Check if we can extract data without error
+        var extracted := GFExtractData(input, key);
+        if (extracted != error && extracted != "")
+            result := extracted;
+            // Debug: Print extracted value
+            print("DEBUG: Extracted value = " + result);
+        endif
+    endif
+    
+    return result;
 endfunction
