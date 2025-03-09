@@ -11,8 +11,8 @@ function CreateEpicBoss(boss, x, y, z, realm)
         return error{"errortext" := "Boss structure missing npctemplate"};
     endif
     
-    // Create the NPC
-    var npc := CreateNpcFromTemplate(boss.npctemplate, x, y, z, 0, realm);
+    // Create the NPC with proper template path
+    var npc := CreateNpcWithPrefix(boss.npctemplate, x, y, z, realm);
     if (!npc || npc == error)
         return error{"errortext" := "Failed to create boss at x " + x + " y " + y + " z " + z + ": " + npc.errortext};
     endif
@@ -71,9 +71,9 @@ function CreateEpicBoss(boss, x, y, z, realm)
     endif
 
     if (boss.hits)
-        SetObjProperty( npc, "hitsmod", cint( boss.hits ) );
-        RecalcVitals( npc );
-        AP_RefreshVitals( npc );
+        SetObjProperty(npc, "hitsmod", CInt(boss.hits));
+        RecalcVitals(npc);
+        AP_RefreshVitals(npc);
     endif
     
     // Set skill modifiers
@@ -158,6 +158,41 @@ function CreateEpicBoss(boss, x, y, z, realm)
     return npc;
 endfunction
 
+// Creates an NPC with the appropriate package prefix
+function CreateNpcWithPrefix(template, x, y, z, realm)
+    var npc;
+    
+    // Check if template already has a package prefix
+    if (template[1] == ":")
+        npc := CreateNpcFromTemplate(template, x, y, z, 0, realm);
+        if (npc && npc != error)
+            return npc;
+        endif
+    else
+        // Try different package prefixes
+        var prefixes := array{
+            ":epicAI:",
+            ":brainAI:",
+            ":merchants:"
+        };
+        
+        foreach prefix in prefixes
+            npc := CreateNpcFromTemplate(prefix + template, x, y, z, 0, realm);
+            if (npc && npc != error)
+                return npc;
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
+    // If all attempts fail, return the error
+    if (npc == error)
+        return npc;
+    endif
+    
+    return error{"errortext" := "Could not create NPC with template " + template};
+endfunction
+
 // Adds a hit script to an NPC
 function AddHitScript(npc, script)
     var hit_scripts := GetObjProperty(npc, "HitScripts");
@@ -168,12 +203,12 @@ function AddHitScript(npc, script)
     SetObjProperty(npc, "HitScripts", hit_scripts);
 endfunction
 
-// // Adds an armor hit script to an NPC
-// function AddArmorHitScript(npc, script) 
-//     var hit_scripts := GetObjProperty(npc, "ArmorHitScripts");
-//     if (!hit_scripts)
-//         hit_scripts := array{};
-//     endif
-//     hit_scripts.append(script);
-//     SetObjProperty(npc, "ArmorHitScripts", hit_scripts);
-// endfunction
+// Adds an armor hit script to an NPC
+function AddArmorHitScript(npc, script) 
+    var hit_scripts := GetObjProperty(npc, "ArmorHitScripts");
+    if (!hit_scripts)
+        hit_scripts := array{};
+    endif
+    hit_scripts.append(script);
+    SetObjProperty(npc, "ArmorHitScripts", hit_scripts);
+endfunction

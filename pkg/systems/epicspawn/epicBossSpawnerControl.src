@@ -68,7 +68,7 @@ program epicBossSpawnerControl(spawner)
         if (childSerial == "Empty")
             if (spawnQueue == 0)
                 // Check if players are nearby before spawning
-                while (HasPlayerNear(spawner))
+                while (HasPlayerNearSpawn(spawner.x, spawner.y, spawner.realm))
                     sleep(60);
                 endwhile
                 
@@ -90,6 +90,11 @@ program epicBossSpawnerControl(spawner)
         sleep(60); // Check every minute
     endwhile
 endprogram
+
+function hasplayernearSpawn(x, y, realm)
+    var num_player := ListMobilesNearLocation( x, y, 19, LISTEX_FLAG_PLAYERS_ONLY && LISTEX_FLAG_NORMAL, realm).size();
+    return num_player > 0;
+endfunction
 
 function KillBoss(spawner)
     var childSerial := GetObjProperty(spawner, "ChildSerial");
@@ -157,7 +162,7 @@ function SpawnBoss(spawner)
         if (bossStruct)
             boss := CreateEpicBoss(bossStruct, x, y, z, spawner.realm);
         else
-            boss := CreateNpcFromTemplate(bossTemplate, x, y, z, 0, spawner.realm);
+            boss := CreateNpcWithPrefix(bossTemplate, x, y, z, spawner.realm);
         endif
         
         if (boss && boss != error)
@@ -172,7 +177,7 @@ function SpawnBoss(spawner)
     if (bossStruct)
         boss := CreateEpicBoss(bossStruct, spawner.x, spawner.y, spawner.z, spawner.realm);
     else
-        boss := CreateNpcFromTemplate(bossTemplate, spawner.x, spawner.y, spawner.z, 0, spawner.realm);
+        boss := CreateNpcWithPrefix(bossTemplate, spawner.x, spawner.y, spawner.z, spawner.realm);
     endif
     
     if (boss && boss != error)
@@ -181,4 +186,4 @@ function SpawnBoss(spawner)
     endif
     
     return 0;
-endfunction 
+endfunction

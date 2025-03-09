@@ -35,25 +35,26 @@ program use_epicBossSpawner(who, spawner)
     // Add labels and input fields
     GFTextLine(gump, 50, 60, 1153, "Boss Template:");
     GFTextEntry(gump, 150, 60, 200, 20, 1150, bossTemplate, 1);
+    GFTextLine(gump, 150, 80, 2100, "(No need to specify :brainAI: or :epicAI: prefix)");
     
-    GFTextLine(gump, 50, 90, 1153, "Min Respawn (minutes):");
-    GFTextEntry(gump, 200, 90, 100, 20, 1150, minDelay, 2);
+    GFTextLine(gump, 50, 110, 1153, "Min Respawn (minutes):");
+    GFTextEntry(gump, 200, 110, 100, 20, 1150, minDelay, 2);
     
-    GFTextLine(gump, 50, 120, 1153, "Max Respawn (minutes):");
-    GFTextEntry(gump, 200, 120, 100, 20, 1150, maxDelay, 3);
+    GFTextLine(gump, 50, 140, 1153, "Max Respawn (minutes):");
+    GFTextEntry(gump, 200, 140, 100, 20, 1150, maxDelay, 3);
     
-    GFTextLine(gump, 50, 150, 1153, "Spawn Range:");
-    GFTextEntry(gump, 150, 150, 100, 20, 1150, range, 4);
+    GFTextLine(gump, 50, 170, 1153, "Spawn Range:");
+    GFTextEntry(gump, 150, 170, 100, 20, 1150, range, 4);
     
     // Add buttons
-    GFAddButton(gump, 150, 200, 2128, 2129, GF_CLOSE_BTN, 100); // Save button
-    GFTextLine(gump, 190, 200, 1153, "Save Settings");
+    GFAddButton(gump, 150, 220, 2128, 2129, GF_CLOSE_BTN, 100); // Save button
+    GFTextLine(gump, 190, 220, 1153, "Save Settings");
     
-    GFAddButton(gump, 150, 240, 2128, 2129, GF_CLOSE_BTN, 101); // Test spawn button
-    GFTextLine(gump, 190, 240, 1153, "Test Spawn");
+    GFAddButton(gump, 150, 260, 2128, 2129, GF_CLOSE_BTN, 101); // Test spawn button
+    GFTextLine(gump, 190, 260, 1153, "Test Spawn");
     
-    GFAddButton(gump, 150, 280, 2128, 2129, GF_CLOSE_BTN, 102); // Reset button
-    GFTextLine(gump, 190, 280, 1153, "Reset Spawner");
+    GFAddButton(gump, 150, 300, 2128, 2129, GF_CLOSE_BTN, 102); // Reset button
+    GFTextLine(gump, 190, 300, 1153, "Reset Spawner");
     
     // Display the gump
     var input := GFSendGump(who, gump);
@@ -127,7 +128,7 @@ function TestSpawn(who, spawner)
     if (bossStruct)
         boss := CreateEpicBoss(bossStruct, who.x, who.y, who.z, who.realm);
     else
-        boss := CreateNpcFromTemplate(bossTemplate, who.x, who.y, who.z, 0, who.realm);
+        boss := CreateNpcWithPrefix(bossTemplate, who.x, who.y, who.z, who.realm);
     endif
     
     if (boss && boss != error)

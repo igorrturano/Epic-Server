@@ -25,25 +25,34 @@ const MENU_PAGE5 := 5;
 var button_states := array{1, 0, 0, 0, 0};
 var last_clicked_button := BOTAO_PAGE1;
 
+// Global storage for form data
+var form_data := struct{};
+
 program epicBOSS(who)
     // Create a gump with title "EPIC BOSS"
     var gump_width := 1200;
     var gump_height := 800;
     var title := "EPIC BOSS";
     
+    // Initialize form data
+    InitializeFormData();
+    
     // Show the first page initially
     var input := ShowPage1(who, title, gump_width, gump_height);
     
     // Process user input until they close the gump
     while (input[0] != 0)
+        // Save form data from the current page
+        SaveFormData(input);
+        
         // Check if the Create Boss button was clicked
         if (input[0] == 100)
             SendSysMessage(who, "Creating boss...");
-            CreateBossFromGump(who, input);
+            CreateBossFromGump(who, form_data);
             break; // Exit after creating the boss
         endif
         
-        var new_menu := UpdateMenuState(input[0]);
+        var new_menu := UpdateMenuState(input[0], who);
         case (new_menu)
             MENU_PAGE1: 
                 input := ShowPage1(who, title, gump_width, gump_height);
@@ -61,29 +70,293 @@ program epicBOSS(who)
     return 1;
 endprogram
 
+// Initialize the form data structure with default values
+function InitializeFormData()
+    // Basic info
+    form_data.npctemplate := "goblin";
+    form_data.name := "";
+    form_data.color := "0";
+    form_data.description := "";
+    form_data.trueboss := 0;
+    form_data.special_ai := "";
+    form_data.url := "";
+    form_data.detailed_description := "";
+    
+    // Attributes
+    form_data.str := "0";
+    form_data.dex := "0";
+    form_data.int := "0";
+    form_data.hits := "0";
+    form_data.dmg := "0";
+    
+    // Resistances
+    form_data.phresist := "0";
+    form_data.firesist := "0";
+    form_data.coresist := "0";
+    form_data.enresist := "0";
+    form_data.poresist := "0";
+    
+    // Skills
+    form_data.wrestling := "0";
+    form_data.tactics := "0";
+    form_data.magery := "0";
+    form_data.awareness := "0";
+    
+    // Behavior
+    form_data.teleport_health := "25";
+    form_data.aggression := "High";
+    form_data.flee_health := "10";
+    form_data.target_selection := "Highest Damage";
+    
+    // Equipment
+    form_data.weapon_type := "";
+    form_data.specific_weapon := "";
+    form_data.class := "";
+    form_data.magic_school := "";
+    form_data.drop_chance := "25";
+    
+    // Special abilities, loot, and death events will be initialized as needed
+    form_data.special := array{};
+    form_data.loot := array{};
+    form_data.deathevent := array{};
+    
+    // Patrol and teleport locations
+    form_data.patrol_loc1 := struct{};
+    form_data.patrol_loc2 := struct{};
+    form_data.teleport_loc := struct{};
+endfunction
+
+// Save form data from the current page
+function SaveFormData(input)
+    // Check which page we're on based on the last clicked button
+    case (last_clicked_button)
+        BOTAO_PAGE1:
+            // Basic info
+            if (input[1])
+                form_data.npctemplate := GFExtractData(input, 1);
+            endif
+            if (input[2])
+                form_data.name := GFExtractData(input, 2);
+            endif
+            if (input[3])
+                form_data.color := GFExtractData(input, 3);
+            endif
+            if (input[4])
+                form_data.description := GFExtractData(input, 4);
+            endif
+            form_data.trueboss := input[5];
+            if (input[6])
+                form_data.special_ai := GFExtractData(input, 6);
+            endif
+            if (input[7])
+                form_data.url := GFExtractData(input, 7);
+            endif
+            if (input[8])
+                form_data.detailed_description := GFExtractData(input, 8);
+            endif
+            break;
+            
+        BOTAO_PAGE2:
+            // Attributes
+            if (input[10])
+                form_data.str := GFExtractData(input, 10);
+            endif
+            if (input[11])
+                form_data.dex := GFExtractData(input, 11);
+            endif
+            if (input[12])
+                form_data.int := GFExtractData(input, 12);
+            endif
+            if (input[13])
+                form_data.hits := GFExtractData(input, 13);
+            endif
+            if (input[14])
+                form_data.dmg := GFExtractData(input, 14);
+            endif
+            
+            // Resistances
+            if (input[15])
+                form_data.phresist := GFExtractData(input, 15);
+            endif
+            if (input[16])
+                form_data.firesist := GFExtractData(input, 16);
+            endif
+            if (input[17])
+                form_data.coresist := GFExtractData(input, 17);
+            endif
+            if (input[18])
+                form_data.enresist := GFExtractData(input, 18);
+            endif
+            if (input[19])
+                form_data.poresist := GFExtractData(input, 19);
+            endif
+            
+            // Skills
+            if (input[20])
+                form_data.wrestling := GFExtractData(input, 20);
+            endif
+            if (input[21])
+                form_data.tactics := GFExtractData(input, 21);
+            endif
+            if (input[22])
+                form_data.magery := GFExtractData(input, 22);
+            endif
+            if (input[23])
+                form_data.awareness := GFExtractData(input, 23);
+            endif
+            break;
+            
+        BOTAO_PAGE3:
+            // Special abilities
+            // These would be handled by specific buttons on page 3
+            // For now, we'll just save any button clicks for future implementation
+            if (input[30])
+                // Add Special Ability button
+                // This would typically open a sub-gump to select an ability
+            endif
+            
+            if (input[40])
+                // Add Combat Event button
+                // This would typically open a sub-gump to configure a combat event
+            endif
+            
+            if (input[50])
+                // Add TimedScript button
+                // This would typically open a sub-gump to select a timed script
+            endif
+            
+            if (input[60])
+                // Add Death Event button
+                // This would typically open a sub-gump to configure a death event
+            endif
+            break;
+            
+        BOTAO_PAGE4:
+            // Behavior
+            if (input[70])
+                // Set Patrol Location 1 button
+                // This would typically store the player's current location
+            endif
+            
+            if (input[71])
+                // Set Patrol Location 2 button
+                // This would typically store the player's current location
+            endif
+            
+            if (input[72])
+                form_data.teleport_health := GFExtractData(input, 72);
+            endif
+            
+            if (input[73])
+                // Set Teleport Location button
+                // This would typically store the player's current location
+            endif
+            
+            if (input[74])
+                // Add Ability Condition button
+                // This would typically open a sub-gump to configure a condition
+            endif
+            
+            if (input[75])
+                // Aggression Level button
+                // This would typically cycle through different aggression levels
+                form_data.aggression := "High"; // Default for now
+            endif
+            
+            if (input[76])
+                form_data.flee_health := GFExtractData(input, 76);
+            endif
+            
+            if (input[77])
+                // Target Selection button
+                // This would typically cycle through different target selection methods
+                form_data.target_selection := "Highest Damage"; // Default for now
+            endif
+            break;
+            
+        BOTAO_PAGE5:
+            // Equipment
+            // Weapon type radio buttons
+            if (input[80])
+                form_data.weapon_type := "Dual Wield";
+            endif
+            
+            if (input[81])
+                form_data.weapon_type := "One-Handed";
+            endif
+            
+            if (input[82])
+                form_data.weapon_type := "Two-Handed";
+            endif
+            
+            if (input[83])
+                form_data.weapon_type := "Ranged";
+            endif
+            
+            if (input[84])
+                form_data.specific_weapon := GFExtractData(input, 84);
+            endif
+            
+            // Class type radio buttons
+            if (input[85])
+                form_data.class := "Warrior";
+            endif
+            
+            if (input[86])
+                form_data.class := "Mage";
+            endif
+            
+            if (input[87])
+                form_data.class := "Ranger";
+            endif
+            
+            if (input[88])
+                form_data.magic_school := GFExtractData(input, 88);
+            endif
+            
+            if (input[90])
+                // Add Loot Item button
+                // This would typically open a sub-gump to select a loot item
+            endif
+            
+            if (input[91])
+                form_data.drop_chance := GFExtractData(input, 91);
+            endif
+            break;
+    endcase
+endfunction
+
 // Function to update which menu is active based on button click
-function UpdateMenuState(input)
+function UpdateMenuState(input, who)
     last_clicked_button := input;
+    
+    // Inform the user that their data is being saved
     case (input)
         BOTAO_PAGE1:
             button_states := array{1, 0, 0, 0, 0};
+            SendSysMessage(who, "Switching to Basic Info page. Your data has been saved.");
             return MENU_PAGE1;
         BOTAO_PAGE2:
             button_states := array{0, 1, 0, 0, 0};
+            SendSysMessage(who, "Switching to Attributes page. Your data has been saved.");
             return MENU_PAGE2;
         BOTAO_PAGE3:
             button_states := array{0, 0, 1, 0, 0};
+            SendSysMessage(who, "Switching to Abilities page. Your data has been saved.");
             return MENU_PAGE3;
         BOTAO_PAGE4:
             button_states := array{0, 0, 0, 1, 0};
+            SendSysMessage(who, "Switching to Behavior page. Your data has been saved.");
             return MENU_PAGE4;
         BOTAO_PAGE5:
             button_states := array{0, 0, 0, 0, 1};
+            SendSysMessage(who, "Switching to Equipment page. Your data has been saved.");
             return MENU_PAGE5;
     endcase
 
     // Default to page 1 if no valid input
     button_states := array{1, 0, 0, 0, 0};
+    SendSysMessage(who, "Switching to Basic Info page. Your data has been saved.");
     return MENU_PAGE1;
 endfunction
 
@@ -130,38 +403,39 @@ function ShowPage1(who, title, gump_width, gump_height)
     
     // NPC Template selection
     GFTextLine(gump, 50, 200, 1153, "NPC Template:");
-    GFTextEntry(gump, 200, 200, 300, 20, 1150, ":brainai:", 1);
+    GFTextEntry(gump, 200, 200, 300, 20, 1150, form_data.npctemplate, 1);
+    GFTextLine(gump, 200, 220, 2100, "(No need to specify :brainAI: or :epicAI: prefix)");
     
     // Boss Name
-    GFTextLine(gump, 50, 230, 1153, "Boss Name:");
-    GFTextEntry(gump, 200, 230, 300, 20, 1150, "", 2);
+    GFTextLine(gump, 50, 250, 1153, "Boss Name:");
+    GFTextEntry(gump, 200, 250, 300, 20, 1150, form_data.name, 2);
     
     // Color
-    GFTextLine(gump, 50, 260, 1153, "Color:");
-    GFTextEntry(gump, 200, 260, 100, 20, 1150, "0", 3);
+    GFTextLine(gump, 50, 280, 1153, "Color:");
+    GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.color, 3);
     
     // Description
-    GFTextLine(gump, 50, 290, 1153, "Description:");
-    GFTextEntry(gump, 200, 290, 400, 60, 1150, "", 4);
+    GFTextLine(gump, 50, 310, 1153, "Description:");
+    GFTextEntry(gump, 200, 310, 400, 60, 1150, form_data.description, 4);
     
     // True Boss checkbox
-    GFCheckBox(gump, 50, 360, 2510, 2511, 0, 5);
-    GFTextLine(gump, 80, 360, 1153, "True Boss");
+    GFCheckBox(gump, 50, 380, 2510, 2511, form_data.trueboss, 5);
+    GFTextLine(gump, 80, 380, 1153, "True Boss");
     
     // Special AI
-    GFTextLine(gump, 50, 390, 1153, "Special AI:");
-    GFTextEntry(gump, 200, 390, 300, 20, 1150, "", 6);
+    GFTextLine(gump, 50, 410, 1153, "Special AI:");
+    GFTextEntry(gump, 200, 410, 300, 20, 1150, form_data.special_ai, 6);
     
     // NPC Profile Section
-    GFTextMid(gump, 0, 430, gump_width, 1153, "NPC PROFILE");
+    GFTextMid(gump, 0, 450, gump_width, 1153, "NPC PROFILE");
     
     // URL for image
-    GFTextLine(gump, 50, 460, 1153, "Image URL (200x200):");
-    GFTextEntry(gump, 200, 460, 400, 20, 1150, "", 7);
+    GFTextLine(gump, 50, 480, 1153, "Image URL (200x200):");
+    GFTextEntry(gump, 200, 480, 400, 20, 1150, form_data.url, 7);
     
     // Detailed Description
-    GFTextLine(gump, 50, 490, 1153, "Detailed Description:");
-    GFTextEntry(gump, 200, 490, 400, 100, 1150, "", 8);
+    GFTextLine(gump, 50, 510, 1153, "Detailed Description:");
+    GFTextEntry(gump, 200, 510, 400, 100, 1150, form_data.detailed_description, 8);
     
     // Add Create Boss button at the bottom
     GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
@@ -186,65 +460,65 @@ function ShowPage2(who, title, gump_width, gump_height)
     
     // Strength
     GFTextLine(gump, 50, 210, 1153, "Strength Modifier:");
-    GFTextEntry(gump, 200, 210, 100, 20, 1150, "0", 10);
+    GFTextEntry(gump, 200, 210, 100, 20, 1150, form_data.str, 10);
     
     // Dexterity
     GFTextLine(gump, 50, 240, 1153, "Dexterity Modifier:");
-    GFTextEntry(gump, 200, 240, 100, 20, 1150, "0", 11);
+    GFTextEntry(gump, 200, 240, 100, 20, 1150, form_data.dex, 11);
     
     // Intelligence
     GFTextLine(gump, 50, 270, 1153, "Intelligence Modifier:");
-    GFTextEntry(gump, 200, 270, 100, 20, 1150, "0", 12);
+    GFTextEntry(gump, 200, 270, 100, 20, 1150, form_data.int, 12);
     
     // Hits
     GFTextLine(gump, 50, 300, 1153, "Hits Modifier:");
-    GFTextEntry(gump, 200, 300, 100, 20, 1150, "0", 13);
+    GFTextEntry(gump, 200, 300, 100, 20, 1150, form_data.hits, 13);
     
     // Damage Modifier
     GFTextLine(gump, 50, 330, 1153, "Damage Modifier (0.1-1.0):");
-    GFTextEntry(gump, 250, 330, 100, 20, 1150, "0", 14);
+    GFTextEntry(gump, 250, 330, 100, 20, 1150, form_data.dmg, 14);
     
     // Resistances section
     GFTextMid(gump, 0, 370, gump_width, 1153, "Resistances");
     
     // Physical
     GFTextLine(gump, 600, 210, 1153, "Physical:");
-    GFTextEntry(gump, 700, 210, 100, 20, 1150, "0", 15);
+    GFTextEntry(gump, 700, 210, 100, 20, 1150, form_data.phresist, 15);
     
     // Fire
     GFTextLine(gump, 600, 240, 1153, "Fire:");
-    GFTextEntry(gump, 700, 240, 100, 20, 1150, "0", 16);
+    GFTextEntry(gump, 700, 240, 100, 20, 1150, form_data.firesist, 16);
     
     // Cold
     GFTextLine(gump, 600, 270, 1153, "Cold:");
-    GFTextEntry(gump, 700, 270, 100, 20, 1150, "0", 17);
+    GFTextEntry(gump, 700, 270, 100, 20, 1150, form_data.coresist, 17);
     
     // Energy
     GFTextLine(gump, 600, 300, 1153, "Energy:");
-    GFTextEntry(gump, 700, 300, 100, 20, 1150, "0", 18);
+    GFTextEntry(gump, 700, 300, 100, 20, 1150, form_data.enresist, 18);
     
     // Poison
     GFTextLine(gump, 600, 330, 1153, "Poison:");
-    GFTextEntry(gump, 700, 330, 100, 20, 1150, "0", 19);
+    GFTextEntry(gump, 700, 330, 100, 20, 1150, form_data.poresist, 19);
     
     // Skills section
     GFTextMid(gump, 0, 400, gump_width, 1153, "Skills");
     
     // Wrestling
     GFTextLine(gump, 50, 430, 1153, "Wrestling Modifier:");
-    GFTextEntry(gump, 200, 430, 100, 20, 1150, "0", 20);
+    GFTextEntry(gump, 200, 430, 100, 20, 1150, form_data.wrestling, 20);
     
     // Tactics
     GFTextLine(gump, 50, 460, 1153, "Tactics Modifier:");
-    GFTextEntry(gump, 200, 460, 100, 20, 1150, "0", 21);
+    GFTextEntry(gump, 200, 460, 100, 20, 1150, form_data.tactics, 21);
     
     // Magery
     GFTextLine(gump, 50, 490, 1153, "Magery Modifier:");
-    GFTextEntry(gump, 200, 490, 100, 20, 1150, "0", 22);
+    GFTextEntry(gump, 200, 490, 100, 20, 1150, form_data.magery, 22);
     
     // Awareness
     GFTextLine(gump, 50, 520, 1153, "Awareness Modifier:");
-    GFTextEntry(gump, 200, 520, 100, 20, 1150, "0", 23);
+    GFTextEntry(gump, 200, 520, 100, 20, 1150, form_data.awareness, 23);
     
     // Add Create Boss button at the bottom
     GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
@@ -328,7 +602,7 @@ function ShowPage4(who, title, gump_width, gump_height)
     
     // Teleport Conditions section
     GFTextLine(gump, 50, 250, 1153, "Teleport When Health Below:");
-    GFTextEntry(gump, 250, 250, 100, 20, 1150, "25", 72);
+    GFTextEntry(gump, 250, 250, 100, 20, 1150, form_data.teleport_health ? form_data.teleport_health : "25", 72);
     GFTextLine(gump, 360, 250, 1153, "%");
     
     GFAddButton(gump, 250, 280, 2103, 2104, 1, 73);
@@ -351,17 +625,17 @@ function ShowPage4(who, title, gump_width, gump_height)
     // Aggression Level
     GFTextLine(gump, 600, 210, 1153, "Aggression Level:");
     GFAddButton(gump, 730, 210, 2103, 2104, 1, 75);
-    GFTextLine(gump, 760, 210, 1153, "High");
+    GFTextLine(gump, 760, 210, 1153, form_data.aggression ? form_data.aggression : "High");
     
     // Flee Level
     GFTextLine(gump, 600, 240, 1153, "Flee When Health Below:");
-    GFTextEntry(gump, 780, 240, 100, 20, 1150, "10", 76);
+    GFTextEntry(gump, 780, 240, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "10", 76);
     GFTextLine(gump, 890, 240, 1153, "%");
     
     // Target Selection
     GFTextLine(gump, 600, 270, 1153, "Target Selection:");
     GFAddButton(gump, 730, 270, 2103, 2104, 1, 77);
-    GFTextLine(gump, 760, 270, 1153, "Highest Damage");
+    GFTextLine(gump, 760, 270, 1153, form_data.target_selection ? form_data.target_selection : "Highest Damage");
     
     // Add Create Boss button at the bottom
     GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
@@ -399,7 +673,7 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Specific weapon
     GFTextLine(gump, 50, 340, 1153, "Specific Weapon (ID or Name):");
-    GFTextEntry(gump, 250, 340, 200, 20, 1150, "", 84);
+    GFTextEntry(gump, 250, 340, 200, 20, 1150, form_data.specific_weapon ? form_data.specific_weapon : "", 84);
     
     // Class Selection (for humanoid)
     GFTextLine(gump, 50, 380, 1153, "Class (for Humanoid):");
@@ -416,7 +690,7 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Magic School (for mage)
     GFTextLine(gump, 50, 510, 1153, "Magic School:");
-    GFTextEntry(gump, 250, 510, 200, 20, 1150, "", 88);
+    GFTextEntry(gump, 250, 510, 200, 20, 1150, form_data.magic_school ? form_data.magic_school : "", 88);
     
     // Loot section
     GFTextLine(gump, 600, 180, 1153, "Loot Items:");
@@ -425,7 +699,7 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Loot chance
     GFTextLine(gump, 600, 210, 1153, "Default Drop Chance (%):");
-    GFTextEntry(gump, 800, 210, 100, 20, 1150, "25", 91);
+    GFTextEntry(gump, 800, 210, 100, 20, 1150, form_data.drop_chance ? form_data.drop_chance : "25", 91);
     
     // Add Create Boss button at the bottom
     GFAddButton(gump, gump_width/2 - 80, gump_height - 50, 2128, 2129, 1, 100);
@@ -436,8 +710,8 @@ function ShowPage5(who, title, gump_width, gump_height)
     return input;
 endfunction
 
-// Add a function to create the boss from gump data
-function CreateBossFromGump(who, input)
+// Add a function to create the boss from form data
+function CreateBossFromGump(who, form_data)
     // Create a boss structure
     var boss := struct{};
     
@@ -447,44 +721,43 @@ function CreateBossFromGump(who, input)
     boss.deathevent := array{};
     
     // Basic info
-    boss.npctemplate := GFExtractData(input, 1);
-    boss.name := GFExtractData(input, 2);
-    boss.color := CInt(GFExtractData(input, 3));
-    boss.description := GFExtractData(input, 4);
-    boss.trueboss := input[5];
+    boss.npctemplate := form_data.npctemplate;
+    boss.name := form_data.name;
+    boss.color := CInt(form_data.color);
+    boss.description := form_data.description;
+    boss.trueboss := form_data.trueboss;
     
     // Special AI
-    var special_ai := GFExtractData(input, 6);
-    if (special_ai != "")
+    if (form_data.special_ai != "")
         var ai_spec := struct{};
         ai_spec.name := "Special AI";
-        ai_spec.ai := special_ai;
+        ai_spec.ai := form_data.special_ai;
         boss.special.append(ai_spec);
     endif
     
     // NPC Profile
-    boss.url := GFExtractData(input, 7);
-    boss.detailed_description := GFExtractData(input, 8);
+    boss.url := form_data.url;
+    boss.detailed_description := form_data.detailed_description;
     
     // Attributes
-    boss.str := CInt(GFExtractData(input, 10));
-    boss.dex := CInt(GFExtractData(input, 11));
-    boss.int := CInt(GFExtractData(input, 12));
-    boss.hits := CInt(GFExtractData(input, 13));
-    boss.dmg := CDbl(GFExtractData(input, 14));
+    boss.str := CInt(form_data.str);
+    boss.dex := CInt(form_data.dex);
+    boss.int := CInt(form_data.int);
+    boss.hits := CInt(form_data.hits);
+    boss.dmg := CDbl(form_data.dmg);
     
     // Resistances
-    boss.phresist := CInt(GFExtractData(input, 15));
-    boss.firesist := CInt(GFExtractData(input, 16));
-    boss.coresist := CInt(GFExtractData(input, 17));
-    boss.enresist := CInt(GFExtractData(input, 18));
-    boss.poresist := CInt(GFExtractData(input, 19));
+    boss.phresist := CInt(form_data.phresist);
+    boss.firesist := CInt(form_data.firesist);
+    boss.coresist := CInt(form_data.coresist);
+    boss.enresist := CInt(form_data.enresist);
+    boss.poresist := CInt(form_data.poresist);
     
     // Skills
-    boss.wrestling := CInt(GFExtractData(input, 20));
-    boss.tactics := CInt(GFExtractData(input, 21));
-    boss.magery := CInt(GFExtractData(input, 22));
-    boss.awareness := CInt(GFExtractData(input, 23));
+    boss.wrestling := CInt(form_data.wrestling);
+    boss.tactics := CInt(form_data.tactics);
+    boss.magery := CInt(form_data.magery);
+    boss.awareness := CInt(form_data.awareness);
     
     SendSysMessage(who, "Creating boss...");
     
@@ -493,15 +766,6 @@ function CreateBossFromGump(who, input)
     if (npc == error)
         SendSysMessage(who, "Error creating boss: " + npc.errortext);
         return 0;
-    endif
-    
-    // Set the profile properties
-    if (boss.url != "")
-        SetObjProperty(npc, "url", boss.url);
-    endif
-    
-    if (boss.detailed_description != "")
-        SetObjProperty(npc, "descricao", boss.detailed_description);
     endif
     
     // Create a spawner for this boss
