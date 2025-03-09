@@ -30,8 +30,8 @@ var form_data := struct{};
 
 program epicBOSS(who)
     // Create a gump with title "EPIC BOSS"
-    var gump_width := 1200;
-    var gump_height := 800;
+    var gump_width := 960; // Reduced from 1200 (20% reduction)
+    var gump_height := 640; // Reduced from 800 (20% reduction)
     var title := "EPIC BOSS";
     
     // Initialize form data
@@ -429,11 +429,11 @@ function AddNavigationButtons(byref gump, gump_width)
         "BEHAVIOR",        // Patrol areas, conditions, AI settings
         "EQUIPMENT"        // Weapons, armor, and loot
     };
-    var x_positions := array{150, 350, 550, 750, 950};
+    var x_positions := array{120, 280, 440, 600, 760}; // Adjusted from {150, 350, 550, 750, 950}
     var buttons := array{BOTAO_PAGE1, BOTAO_PAGE2, BOTAO_PAGE3, BOTAO_PAGE4, BOTAO_PAGE5};
     
     // Create a background for the navigation bar
-    GFResizePic(gump, 45, 80, 9350, gump_width - 90, 40);
+    GFResizePic(gump, 40, 80, 9350, gump_width - 80, 40);
     
     // Add each button with appropriate styling
     for i := 1 to titles.size()
@@ -459,67 +459,67 @@ function ShowPage1(who, title, gump_width, gump_height)
     AddNavigationButtons(gump, gump_width);
     
     // Page 1 content - BASIC INFO
-    GFTextMid(gump, 0, 150, gump_width, 1153, "BASIC INFORMATION");
+    GFTextMid(gump, 0, 130, gump_width, 1153, "BASIC INFORMATION");
     
     // Add a divider line
-    GFResizePic(gump, 50, 175, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
     
     // Left side - Form fields
     // NPC Template selection
-    GFTextLine(gump, 50, 200, 1153, "NPC Template:");
-    GFTextEntry(gump, 200, 200, 300, 20, 1150, form_data.npctemplate ? form_data.npctemplate : "", 1);
-    GFTextLine(gump, 200, 220, 2100, "(No need to specify :brainAI: or :epicAI: prefix)");
+    GFTextLine(gump, 50, 170, 1153, "NPC Template:");
+    GFTextEntry(gump, 200, 170, 300, 20, 1150, form_data.npctemplate ? form_data.npctemplate : "", 1);
+    GFTextLine(gump, 200, 190, 2100, "(No need to specify :brainAI: or :epicAI: prefix)");
     
     // Boss Name
-    GFTextLine(gump, 50, 250, 1153, "Boss Name:");
-    GFTextEntry(gump, 200, 250, 300, 20, 1150, form_data.name ? form_data.name : "", 2);
+    GFTextLine(gump, 50, 220, 1153, "Boss Name:");
+    GFTextEntry(gump, 200, 220, 300, 20, 1150, form_data.name ? form_data.name : "", 2);
     
     // Color
-    GFTextLine(gump, 50, 280, 1153, "Color:");
-    GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.color ? form_data.color : "0", 3);
+    GFTextLine(gump, 50, 250, 1153, "Color:");
+    GFTextEntry(gump, 200, 250, 100, 20, 1150, form_data.color ? form_data.color : "0", 3);
     
     // Description
-    GFTextLine(gump, 50, 310, 1153, "Description:");
-    GFTextEntry(gump, 200, 310, 300, 60, 1150, form_data.description ? form_data.description : "", 4);
+    GFTextLine(gump, 50, 280, 1153, "Description:");
+    GFTextEntry(gump, 200, 280, 300, 60, 1150, form_data.description ? form_data.description : "", 4);
     
     // True Boss checkbox
-    GFCheckBox(gump, 50, 380, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
-    GFTextLine(gump, 80, 380, 1153, "True Boss");
+    GFCheckBox(gump, 50, 350, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
+    GFTextLine(gump, 80, 350, 1153, "True Boss");
     
     // Special AI
-    GFTextLine(gump, 50, 410, 1153, "Special AI:");
-    GFTextEntry(gump, 200, 410, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
+    GFTextLine(gump, 50, 380, 1153, "Special AI:");
+    GFTextEntry(gump, 200, 380, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
     
     // Add a vertical divider
-    GFResizePic(gump, 550, 190, 3000, 2, 250);
+    GFResizePic(gump, 520, 160, 3000, 2, 230);
     
     // Right side - Preview and Profile
     // Add a preview box for the boss image
-    GFResizePic(gump, 600, 200, 9350, 200, 200);
+    GFResizePic(gump, 550, 170, 9350, 200, 200);
     
     // If URL is provided, show the image
     if (form_data.url && form_data.url != "")
-        GFHTMLArea(gump, 600, 200, 200, 200, "<img src=\"" + form_data.url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">", 0, 0);
+        GFHTMLArea(gump, 550, 170, 200, 200, "<img src=\"" + form_data.url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">", 0, 0);
     else
-        GFTextMid(gump, 600, 290, 200, 1153, "Preview Image");
+        GFTextMid(gump, 550, 260, 200, 1153, "Preview Image");
     endif
     
     // NPC Profile Section
-    GFTextMid(gump, 0, 450, gump_width, 1153, "NPC PROFILE");
+    GFTextMid(gump, 0, 410, gump_width, 1153, "NPC PROFILE");
     
     // Add a divider line
-    GFResizePic(gump, 50, 475, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 430, 3000, gump_width - 80, 2);
     
     // URL for image
-    GFTextLine(gump, 50, 490, 1153, "Image URL (200x200):");
-    GFTextEntry(gump, 200, 490, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
+    GFTextLine(gump, 50, 450, 1153, "Image URL (200x200):");
+    GFTextEntry(gump, 200, 450, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
     
     // Detailed Description
-    GFTextLine(gump, 50, 520, 1153, "Detailed Description:");
-    GFTextEntry(gump, 200, 520, 400, 100, 1150, form_data.detailed_description ? form_data.detailed_description : "", 8);
+    GFTextLine(gump, 50, 480, 1153, "Detailed Description:");
+    GFTextEntry(gump, 200, 480, 400, 80, 1150, form_data.detailed_description ? form_data.detailed_description : "", 8);
     
     // Add a divider line before buttons
-    GFResizePic(gump, 50, gump_height - 70, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -527,11 +527,11 @@ function ShowPage1(who, title, gump_width, gump_height)
     
     // Add Create Boss button
     GFAddButton(gump, gump_width/2 - 130, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 80, gump_height - 45, 33, "CREATE BOSS");
+    GFTextLine(gump, gump_width/2 - 70, gump_height - 50, 33, "CREATE BOSS");
     
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
-    GFTextLine(gump, gump_width/2 + 80, gump_height - 45, 33, "CANCEL");
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -545,84 +545,84 @@ function ShowPage2(who, title, gump_width, gump_height)
     AddNavigationButtons(gump, gump_width);
     
     // Page 2 content - ATTRIBUTES
-    GFTextMid(gump, 0, 150, gump_width, 1153, "ATTRIBUTES & STATS");
+    GFTextMid(gump, 0, 130, gump_width, 1153, "ATTRIBUTES & STATS");
     
     // Add a divider line
-    GFResizePic(gump, 50, 175, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
     
     // Stats section
-    GFTextMid(gump, 0, 180, gump_width, 1153, "Base Stats");
+    GFTextMid(gump, 0, 160, gump_width, 1153, "Base Stats");
     
     // Strength
-    GFTextLine(gump, 50, 210, 1153, "Strength Modifier:");
-    GFTextEntry(gump, 200, 210, 100, 20, 1150, form_data.str ? form_data.str : "0", 10);
+    GFTextLine(gump, 50, 190, 1153, "Strength Modifier:");
+    GFTextEntry(gump, 200, 190, 100, 20, 1150, form_data.str ? form_data.str : "0", 10);
     
     // Dexterity
-    GFTextLine(gump, 50, 240, 1153, "Dexterity Modifier:");
-    GFTextEntry(gump, 200, 240, 100, 20, 1150, form_data.dex ? form_data.dex : "0", 11);
+    GFTextLine(gump, 50, 220, 1153, "Dexterity Modifier:");
+    GFTextEntry(gump, 200, 220, 100, 20, 1150, form_data.dex ? form_data.dex : "0", 11);
     
     // Intelligence
-    GFTextLine(gump, 50, 270, 1153, "Intelligence Modifier:");
-    GFTextEntry(gump, 200, 270, 100, 20, 1150, form_data.int ? form_data.int : "0", 12);
+    GFTextLine(gump, 50, 250, 1153, "Intelligence Modifier:");
+    GFTextEntry(gump, 200, 250, 100, 20, 1150, form_data.int ? form_data.int : "0", 12);
     
     // Hits
-    GFTextLine(gump, 50, 300, 1153, "Hits Modifier:");
-    GFTextEntry(gump, 200, 300, 100, 20, 1150, form_data.hits ? form_data.hits : "0", 13);
+    GFTextLine(gump, 50, 280, 1153, "Hits Modifier:");
+    GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.hits ? form_data.hits : "0", 13);
     
     // Damage Modifier
-    GFTextLine(gump, 50, 330, 1153, "Damage Modifier (0.1-1.0):");
-    GFTextEntry(gump, 250, 330, 100, 20, 1150, form_data.dmg ? form_data.dmg : "0", 14);
+    GFTextLine(gump, 50, 310, 1153, "Damage Modifier (0.1-1.0):");
+    GFTextEntry(gump, 250, 310, 100, 20, 1150, form_data.dmg ? form_data.dmg : "0", 14);
     
     // Add a vertical divider
-    GFResizePic(gump, 550, 190, 3000, 2, 250);
+    GFResizePic(gump, 520, 160, 3000, 2, 230);
     
     // Resistances section
-    GFTextMid(gump, 0, 370, gump_width, 1153, "Resistances");
+    GFTextMid(gump, 0, 340, gump_width, 1153, "Resistances");
     
     // Add a divider line
-    GFResizePic(gump, 50, 395, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 360, 3000, gump_width - 80, 2);
     
     // Physical
-    GFTextLine(gump, 600, 210, 1153, "Physical:");
-    GFTextEntry(gump, 700, 210, 100, 20, 1150, form_data.phresist ? form_data.phresist : "0", 15);
+    GFTextLine(gump, 550, 190, 1153, "Physical:");
+    GFTextEntry(gump, 650, 190, 100, 20, 1150, form_data.phresist ? form_data.phresist : "0", 15);
     
     // Fire
-    GFTextLine(gump, 600, 240, 1153, "Fire:");
-    GFTextEntry(gump, 700, 240, 100, 20, 1150, form_data.firesist ? form_data.firesist : "0", 16);
+    GFTextLine(gump, 550, 220, 1153, "Fire:");
+    GFTextEntry(gump, 650, 220, 100, 20, 1150, form_data.firesist ? form_data.firesist : "0", 16);
     
     // Cold
-    GFTextLine(gump, 600, 270, 1153, "Cold:");
-    GFTextEntry(gump, 700, 270, 100, 20, 1150, form_data.coresist ? form_data.coresist : "0", 17);
+    GFTextLine(gump, 550, 250, 1153, "Cold:");
+    GFTextEntry(gump, 650, 250, 100, 20, 1150, form_data.coresist ? form_data.coresist : "0", 17);
     
     // Energy
-    GFTextLine(gump, 600, 300, 1153, "Energy:");
-    GFTextEntry(gump, 700, 300, 100, 20, 1150, form_data.enresist ? form_data.enresist : "0", 18);
+    GFTextLine(gump, 550, 280, 1153, "Energy:");
+    GFTextEntry(gump, 650, 280, 100, 20, 1150, form_data.enresist ? form_data.enresist : "0", 18);
     
     // Poison
-    GFTextLine(gump, 600, 330, 1153, "Poison:");
-    GFTextEntry(gump, 700, 330, 100, 20, 1150, form_data.poresist ? form_data.poresist : "0", 19);
+    GFTextLine(gump, 550, 310, 1153, "Poison:");
+    GFTextEntry(gump, 650, 310, 100, 20, 1150, form_data.poresist ? form_data.poresist : "0", 19);
     
     // Skills section
-    GFTextMid(gump, 0, 400, gump_width, 1153, "Skills");
+    GFTextMid(gump, 0, 380, gump_width, 1153, "Skills");
     
     // Wrestling
-    GFTextLine(gump, 50, 430, 1153, "Wrestling Modifier:");
-    GFTextEntry(gump, 200, 430, 100, 20, 1150, form_data.wrestling ? form_data.wrestling : "0", 20);
+    GFTextLine(gump, 50, 410, 1153, "Wrestling Modifier:");
+    GFTextEntry(gump, 200, 410, 100, 20, 1150, form_data.wrestling ? form_data.wrestling : "0", 20);
     
     // Tactics
-    GFTextLine(gump, 50, 460, 1153, "Tactics Modifier:");
-    GFTextEntry(gump, 200, 460, 100, 20, 1150, form_data.tactics ? form_data.tactics : "0", 21);
+    GFTextLine(gump, 50, 440, 1153, "Tactics Modifier:");
+    GFTextEntry(gump, 200, 440, 100, 20, 1150, form_data.tactics ? form_data.tactics : "0", 21);
     
     // Magery
-    GFTextLine(gump, 50, 490, 1153, "Magery Modifier:");
-    GFTextEntry(gump, 200, 490, 100, 20, 1150, form_data.magery ? form_data.magery : "0", 22);
+    GFTextLine(gump, 50, 470, 1153, "Magery Modifier:");
+    GFTextEntry(gump, 200, 470, 100, 20, 1150, form_data.magery ? form_data.magery : "0", 22);
     
     // Awareness
-    GFTextLine(gump, 50, 520, 1153, "Awareness Modifier:");
-    GFTextEntry(gump, 200, 520, 100, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23);
+    GFTextLine(gump, 50, 500, 1153, "Awareness Modifier:");
+    GFTextEntry(gump, 200, 500, 100, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23);
     
     // Add a divider line before buttons
-    GFResizePic(gump, 50, gump_height - 70, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -630,11 +630,11 @@ function ShowPage2(who, title, gump_width, gump_height)
     
     // Add Create Boss button
     GFAddButton(gump, gump_width/2 - 130, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 80, gump_height - 45, 33, "CREATE BOSS");
+    GFTextLine(gump, gump_width/2 - 70, gump_height - 50, 33, "CREATE BOSS");
     
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
-    GFTextLine(gump, gump_width/2 + 80, gump_height - 45, 33, "CANCEL");
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -648,55 +648,55 @@ function ShowPage3(who, title, gump_width, gump_height)
     AddNavigationButtons(gump, gump_width);
     
     // Page 3 content - ABILITIES
-    GFTextMid(gump, 0, 150, gump_width, 1153, "SPECIAL ABILITIES");
+    GFTextMid(gump, 0, 130, gump_width, 1153, "SPECIAL ABILITIES");
     
     // Add a divider line
-    GFResizePic(gump, 50, 175, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
     
     // Special Abilities section
-    GFTextLine(gump, 50, 180, 1153, "Special Abilities:");
-    GFAddButton(gump, 250, 180, 2103, 2104, 1, 30);
-    GFTextLine(gump, 280, 180, 1153, "Add Special Ability");
+    GFTextLine(gump, 50, 160, 1153, "Special Abilities:");
+    GFAddButton(gump, 250, 160, 2103, 2104, 1, 30);
+    GFTextLine(gump, 280, 160, 1153, "Add Special Ability");
     
     // List of available abilities
-    GFTextLine(gump, 50, 210, 1153, "Available Abilities:");
-    GFTextLine(gump, 80, 230, 1153, "- Ice Hit");
-    GFTextLine(gump, 80, 250, 1153, "- Fire Hit");
-    GFTextLine(gump, 80, 270, 1153, "- Energy Hit");
-    GFTextLine(gump, 80, 290, 1153, "- Life Drain");
-    GFTextLine(gump, 80, 310, 1153, "- Damage Return");
-    GFTextLine(gump, 80, 330, 1153, "- Custom Hit Script");
+    GFTextLine(gump, 50, 190, 1153, "Available Abilities:");
+    GFTextLine(gump, 80, 210, 1153, "- Ice Hit");
+    GFTextLine(gump, 80, 230, 1153, "- Fire Hit");
+    GFTextLine(gump, 80, 250, 1153, "- Energy Hit");
+    GFTextLine(gump, 80, 270, 1153, "- Life Drain");
+    GFTextLine(gump, 80, 290, 1153, "- Damage Return");
+    GFTextLine(gump, 80, 310, 1153, "- Custom Hit Script");
     
     // Add a vertical divider
-    GFResizePic(gump, 550, 190, 3000, 2, 250);
+    GFResizePic(gump, 520, 160, 3000, 2, 230);
     
     // Combat Events section
-    GFTextLine(gump, 600, 180, 1153, "Combat Events:");
-    GFAddButton(gump, 800, 180, 2103, 2104, 1, 40);
-    GFTextLine(gump, 830, 180, 1153, "Add Combat Event");
+    GFTextLine(gump, 550, 160, 1153, "Combat Events:");
+    GFAddButton(gump, 750, 160, 2103, 2104, 1, 40);
+    GFTextLine(gump, 780, 160, 1153, "Add Combat Event");
     
     // Add a divider line
-    GFResizePic(gump, 50, 360, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 340, 3000, gump_width - 80, 2);
     
     // TimedScripts section
-    GFTextLine(gump, 50, 370, 1153, "TimedScripts:");
-    GFAddButton(gump, 250, 370, 2103, 2104, 1, 50);
-    GFTextLine(gump, 280, 370, 1153, "Add TimedScript");
+    GFTextLine(gump, 50, 350, 1153, "TimedScripts:");
+    GFAddButton(gump, 250, 350, 2103, 2104, 1, 50);
+    GFTextLine(gump, 280, 350, 1153, "Add TimedScript");
     
     // List of available timedscripts
-    GFTextLine(gump, 80, 400, 1153, "- Poison");
-    GFTextLine(gump, 80, 420, 1153, "- Paralysis");
-    GFTextLine(gump, 80, 440, 1153, "- Clumsy");
-    GFTextLine(gump, 80, 460, 1153, "- Weaken");
-    GFTextLine(gump, 80, 480, 1153, "- Bleed");
+    GFTextLine(gump, 80, 380, 1153, "- Poison");
+    GFTextLine(gump, 80, 400, 1153, "- Paralysis");
+    GFTextLine(gump, 80, 420, 1153, "- Clumsy");
+    GFTextLine(gump, 80, 440, 1153, "- Weaken");
+    GFTextLine(gump, 80, 460, 1153, "- Bleed");
     
     // Death Events section
-    GFTextLine(gump, 600, 370, 1153, "Death Events:");
-    GFAddButton(gump, 800, 370, 2103, 2104, 1, 60);
-    GFTextLine(gump, 830, 370, 1153, "Add Death Event");
+    GFTextLine(gump, 550, 350, 1153, "Death Events:");
+    GFAddButton(gump, 750, 350, 2103, 2104, 1, 60);
+    GFTextLine(gump, 780, 350, 1153, "Add Death Event");
     
     // Add a divider line before buttons
-    GFResizePic(gump, 50, gump_height - 70, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -704,11 +704,11 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     // Add Create Boss button
     GFAddButton(gump, gump_width/2 - 130, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 80, gump_height - 45, 33, "CREATE BOSS");
+    GFTextLine(gump, gump_width/2 - 70, gump_height - 50, 33, "CREATE BOSS");
     
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
-    GFTextLine(gump, gump_width/2 + 80, gump_height - 45, 33, "CANCEL");
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -722,64 +722,64 @@ function ShowPage4(who, title, gump_width, gump_height)
     AddNavigationButtons(gump, gump_width);
     
     // Page 4 content - BEHAVIOR
-    GFTextMid(gump, 0, 150, gump_width, 1153, "BEHAVIOR & MOVEMENT");
+    GFTextMid(gump, 0, 130, gump_width, 1153, "BEHAVIOR & MOVEMENT");
     
     // Add a divider line
-    GFResizePic(gump, 50, 175, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
     
     // Patrol Areas section
-    GFTextLine(gump, 50, 180, 1153, "Patrol Areas:");
-    GFAddButton(gump, 250, 180, 2103, 2104, 1, 70);
-    GFTextLine(gump, 280, 180, 1153, "Set Patrol Location 1");
+    GFTextLine(gump, 50, 160, 1153, "Patrol Areas:");
+    GFAddButton(gump, 250, 160, 2103, 2104, 1, 70);
+    GFTextLine(gump, 280, 160, 1153, "Set Patrol Location 1");
     
-    GFAddButton(gump, 250, 210, 2103, 2104, 1, 71);
-    GFTextLine(gump, 280, 210, 1153, "Set Patrol Location 2");
+    GFAddButton(gump, 250, 190, 2103, 2104, 1, 71);
+    GFTextLine(gump, 280, 190, 1153, "Set Patrol Location 2");
     
     // Teleport Conditions section
-    GFTextLine(gump, 50, 250, 1153, "Teleport When Health Below:");
-    GFTextEntry(gump, 250, 250, 100, 20, 1150, form_data.teleport_health ? form_data.teleport_health : "25", 72);
-    GFTextLine(gump, 360, 250, 1153, "%");
+    GFTextLine(gump, 50, 230, 1153, "Teleport When Health Below:");
+    GFTextEntry(gump, 250, 230, 100, 20, 1150, form_data.teleport_health ? form_data.teleport_health : "25", 72);
+    GFTextLine(gump, 360, 230, 1153, "%");
     
-    GFAddButton(gump, 250, 280, 2103, 2104, 1, 73);
-    GFTextLine(gump, 280, 280, 1153, "Set Teleport Location");
+    GFAddButton(gump, 250, 260, 2103, 2104, 1, 73);
+    GFTextLine(gump, 280, 260, 1153, "Set Teleport Location");
     
     // Add a vertical divider
-    GFResizePic(gump, 550, 190, 3000, 2, 250);
+    GFResizePic(gump, 520, 160, 3000, 2, 230);
     
     // AI Settings section
-    GFTextLine(gump, 600, 180, 1153, "AI Settings:");
+    GFTextLine(gump, 550, 160, 1153, "AI Settings:");
     
     // Aggression Level
-    GFTextLine(gump, 600, 210, 1153, "Aggression Level:");
-    GFAddButton(gump, 730, 210, 2103, 2104, 1, 75);
-    GFTextLine(gump, 760, 210, 1153, form_data.aggression ? form_data.aggression : "High");
+    GFTextLine(gump, 550, 190, 1153, "Aggression Level:");
+    GFAddButton(gump, 680, 190, 2103, 2104, 1, 75);
+    GFTextLine(gump, 710, 190, 1153, form_data.aggression ? form_data.aggression : "High");
     
     // Flee Level
-    GFTextLine(gump, 600, 240, 1153, "Flee When Health Below:");
-    GFTextEntry(gump, 780, 240, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "10", 76);
-    GFTextLine(gump, 890, 240, 1153, "%");
+    GFTextLine(gump, 550, 220, 1153, "Flee When Health Below:");
+    GFTextEntry(gump, 730, 220, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "10", 76);
+    GFTextLine(gump, 840, 220, 1153, "%");
     
     // Target Selection
-    GFTextLine(gump, 600, 270, 1153, "Target Selection:");
-    GFAddButton(gump, 730, 270, 2103, 2104, 1, 77);
-    GFTextLine(gump, 760, 270, 1153, form_data.target_selection ? form_data.target_selection : "Highest Damage");
+    GFTextLine(gump, 550, 250, 1153, "Target Selection:");
+    GFAddButton(gump, 680, 250, 2103, 2104, 1, 77);
+    GFTextLine(gump, 710, 250, 1153, form_data.target_selection ? form_data.target_selection : "Highest Damage");
     
     // Add a divider line
-    GFResizePic(gump, 50, 310, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 290, 3000, gump_width - 80, 2);
     
     // Ability Conditions section
-    GFTextLine(gump, 50, 320, 1153, "Ability Conditions:");
-    GFAddButton(gump, 250, 320, 2103, 2104, 1, 74);
-    GFTextLine(gump, 280, 320, 1153, "Add Ability Condition");
+    GFTextLine(gump, 50, 300, 1153, "Ability Conditions:");
+    GFAddButton(gump, 250, 300, 2103, 2104, 1, 74);
+    GFTextLine(gump, 280, 300, 1153, "Add Ability Condition");
     
     // Examples of conditions
-    GFTextLine(gump, 80, 350, 1153, "Examples:");
-    GFTextLine(gump, 80, 370, 1153, "- Use ability when health below X%");
-    GFTextLine(gump, 80, 390, 1153, "- Use ability when X players are nearby");
-    GFTextLine(gump, 80, 410, 1153, "- Use ability every X seconds");
+    GFTextLine(gump, 80, 330, 1153, "Examples:");
+    GFTextLine(gump, 80, 350, 1153, "- Use ability when health below X%");
+    GFTextLine(gump, 80, 370, 1153, "- Use ability when X players are nearby");
+    GFTextLine(gump, 80, 390, 1153, "- Use ability every X seconds");
     
     // Add a divider line before buttons
-    GFResizePic(gump, 50, gump_height - 70, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -787,11 +787,11 @@ function ShowPage4(who, title, gump_width, gump_height)
     
     // Add Create Boss button
     GFAddButton(gump, gump_width/2 - 130, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 80, gump_height - 45, 33, "CREATE BOSS");
+    GFTextLine(gump, gump_width/2 - 70, gump_height - 50, 33, "CREATE BOSS");
     
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
-    GFTextLine(gump, gump_width/2 + 80, gump_height - 45, 33, "CANCEL");
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
@@ -805,65 +805,65 @@ function ShowPage5(who, title, gump_width, gump_height)
     AddNavigationButtons(gump, gump_width);
     
     // Page 5 content - EQUIPMENT
-    GFTextMid(gump, 0, 150, gump_width, 1153, "EQUIPMENT & LOOT");
+    GFTextMid(gump, 0, 130, gump_width, 1153, "EQUIPMENT & LOOT");
     
     // Add a divider line
-    GFResizePic(gump, 50, 175, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
     
     // Weapon Selection section
-    GFTextLine(gump, 50, 180, 1153, "Weapon Type:");
+    GFTextLine(gump, 50, 160, 1153, "Weapon Type:");
     
     // Weapon type radio buttons
-    GFAddButton(gump, 50, 210, 2151, 2153, 1, 80);
-    GFTextLine(gump, 80, 210, 1153, "Dual Wield");
+    GFAddButton(gump, 50, 190, 2151, 2153, 1, 80);
+    GFTextLine(gump, 80, 190, 1153, "Dual Wield");
     
-    GFAddButton(gump, 50, 240, 2151, 2153, 1, 81);
-    GFTextLine(gump, 80, 240, 1153, "One-Handed");
+    GFAddButton(gump, 50, 220, 2151, 2153, 1, 81);
+    GFTextLine(gump, 80, 220, 1153, "One-Handed");
     
-    GFAddButton(gump, 50, 270, 2151, 2153, 1, 82);
-    GFTextLine(gump, 80, 270, 1153, "Two-Handed");
+    GFAddButton(gump, 50, 250, 2151, 2153, 1, 82);
+    GFTextLine(gump, 80, 250, 1153, "Two-Handed");
     
-    GFAddButton(gump, 50, 300, 2151, 2153, 1, 83);
-    GFTextLine(gump, 80, 300, 1153, "Ranged");
+    GFAddButton(gump, 50, 280, 2151, 2153, 1, 83);
+    GFTextLine(gump, 80, 280, 1153, "Ranged");
     
     // Specific weapon
-    GFTextLine(gump, 50, 340, 1153, "Specific Weapon (ID or Name):");
-    GFTextEntry(gump, 250, 340, 200, 20, 1150, form_data.specific_weapon ? form_data.specific_weapon : "", 84);
+    GFTextLine(gump, 50, 320, 1153, "Specific Weapon (ID or Name):");
+    GFTextEntry(gump, 250, 320, 200, 20, 1150, form_data.specific_weapon ? form_data.specific_weapon : "", 84);
     
     // Add a vertical divider
-    GFResizePic(gump, 550, 190, 3000, 2, 350);
+    GFResizePic(gump, 520, 160, 3000, 2, 230);
     
     // Loot section
-    GFTextLine(gump, 600, 180, 1153, "Loot Items:");
-    GFAddButton(gump, 800, 180, 2103, 2104, 1, 90);
-    GFTextLine(gump, 830, 180, 1153, "Add Loot Item");
+    GFTextLine(gump, 550, 160, 1153, "Loot Items:");
+    GFAddButton(gump, 750, 160, 2103, 2104, 1, 90);
+    GFTextLine(gump, 780, 160, 1153, "Add Loot Item");
     
     // Loot chance
-    GFTextLine(gump, 600, 210, 1153, "Default Drop Chance (%):");
-    GFTextEntry(gump, 800, 210, 100, 20, 1150, form_data.drop_chance ? form_data.drop_chance : "25", 91);
+    GFTextLine(gump, 550, 190, 1153, "Default Drop Chance (%):");
+    GFTextEntry(gump, 750, 190, 100, 20, 1150, form_data.drop_chance ? form_data.drop_chance : "25", 91);
     
     // Add a divider line
-    GFResizePic(gump, 50, 370, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, 350, 3000, gump_width - 80, 2);
     
     // Class Selection (for humanoid)
-    GFTextLine(gump, 50, 380, 1153, "Class (for Humanoid):");
+    GFTextLine(gump, 50, 360, 1153, "Class (for Humanoid):");
     
     // Class type radio buttons
-    GFAddButton(gump, 50, 410, 2151, 2153, 1, 85);
-    GFTextLine(gump, 80, 410, 1153, "Warrior");
+    GFAddButton(gump, 50, 390, 2151, 2153, 1, 85);
+    GFTextLine(gump, 80, 390, 1153, "Warrior");
     
-    GFAddButton(gump, 50, 440, 2151, 2153, 1, 86);
-    GFTextLine(gump, 80, 440, 1153, "Mage");
+    GFAddButton(gump, 50, 420, 2151, 2153, 1, 86);
+    GFTextLine(gump, 80, 420, 1153, "Mage");
     
-    GFAddButton(gump, 50, 470, 2151, 2153, 1, 87);
-    GFTextLine(gump, 80, 470, 1153, "Ranger");
+    GFAddButton(gump, 50, 450, 2151, 2153, 1, 87);
+    GFTextLine(gump, 80, 450, 1153, "Ranger");
     
     // Magic School (for mage)
-    GFTextLine(gump, 50, 510, 1153, "Magic School:");
-    GFTextEntry(gump, 250, 510, 200, 20, 1150, form_data.magic_school ? form_data.magic_school : "", 88);
+    GFTextLine(gump, 50, 480, 1153, "Magic School:");
+    GFTextEntry(gump, 250, 480, 200, 20, 1150, form_data.magic_school ? form_data.magic_school : "", 88);
     
     // Add a divider line before buttons
-    GFResizePic(gump, 50, gump_height - 70, 3000, gump_width - 100, 2);
+    GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -871,11 +871,11 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Add Create Boss button
     GFAddButton(gump, gump_width/2 - 130, gump_height - 50, 2128, 2129, 1, 100);
-    GFTextLine(gump, gump_width/2 - 80, gump_height - 45, 33, "CREATE BOSS");
+    GFTextLine(gump, gump_width/2 - 70, gump_height - 50, 33, "CREATE BOSS");
     
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
-    GFTextLine(gump, gump_width/2 + 80, gump_height - 45, 33, "CANCEL");
+    GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
