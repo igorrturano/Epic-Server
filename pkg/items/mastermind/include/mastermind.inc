@@ -151,8 +151,8 @@ function mastermind(who)
         // Adicionar indicadores para a última tentativa
         if(prev_attempts.size() > 0)
             var last_entry := prev_attempts[prev_attempts.size()];
-            GFTextLine(gump, 390, 215, 63, CStr(last_entry.hits)); // Posição correta
-            GFTextLine(gump, 410, 215, 53, CStr(last_entry.colors)); // Cor correta
+            GFTextLine(gump, 380, 215, 63, CStr(last_entry.hits)); // Posição correta
+            GFTextLine(gump, 395, 215, 53, CStr(last_entry.colors)); // Cor correta
         endif
         
         //----------------------------------------- stands -----------
@@ -223,13 +223,13 @@ function mastermind(who)
         // Exibir histórico de tentativas - SEM LIMITAÇÃO POR SKILL
         if(display_count > 0)
             GFResizePic(gump, 510, 40, 3500, 200, 320);
-            GFTextLine(gump, 520, 50, 37, "Histórico de Tentativas:");
+            GFTextLine(gump, 520, 30, 37, "Histórico de Tentativas:");
             
             var i := 1;
             
             // Exibir tentativas em posições fixas, da mais recente para a mais antiga
             while(i <= display_count)
-                var y_pos := 80 + ((i-1) * 40);
+                var y_pos := 50 + ((i-1) * 40);
                 var history_idx := prev_attempts.size() - (i-1);
                 var entry := prev_attempts[history_idx];
                 
@@ -246,8 +246,8 @@ function mastermind(who)
                 endwhile
                 
                 // Mostrar os resultados já armazenados com a tentativa
-                GFTextLine(gump, 630, y_pos + 22, 63, CStr(entry.hits)); // Posição correta
-                GFTextLine(gump, 650, y_pos + 22, 53, CStr(entry.colors)); // Cor correta
+                GFTextLine(gump, 640, y_pos + 22, 63, CStr(entry.hits)); // Posição correta
+                GFTextLine(gump, 660, y_pos + 22, 53, CStr(entry.colors)); // Cor correta
                 
                 i := i + 1;
             endwhile
