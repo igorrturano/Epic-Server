@@ -1,0 +1,14 @@
+use uo;
+
+program textcmd_Invisible(who)
+	var invis := who.GetProp("invisible");
+	if (invis)
+		who.EraseProp("invisible");
+		who.graphic := invis;
+		SendSysMessage(who, "Voce esta visivel.");
+	else
+		who.SetProp("invisible", who.graphic);
+		who.graphic := 800;
+		SendSysMessage(who, "Voce esta invisivel.");
+	endif
+endprogram
