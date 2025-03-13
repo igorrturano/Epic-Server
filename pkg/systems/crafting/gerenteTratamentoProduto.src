@@ -34,7 +34,6 @@ program GerenteTratamentoProduto(parametros)
 			evento :=  Wait_For_Event(60);
 			
 			foreach processo in processosGerenciados // Se algum dos processos gerênciados morrer, marca para sair do loop.
-				Print("processo.state " + processo.state);
 				if(!processo.state)
 					estadoGerenciamento := FINALIZADO;
 					break;
@@ -53,6 +52,7 @@ program GerenteTratamentoProduto(parametros)
 					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,5);
 					estadoGerenciamento := CICLANDO;
 					break;
+					
 				EV_ITEM_PRODUZIDO:
 					SendSysMessageEx(quem, "Item produzido com sucesso.",SSM_INFO);
 					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,0);
@@ -60,6 +60,7 @@ program GerenteTratamentoProduto(parametros)
 					CriaItemFabricado(quem,produto);
 					estadoGerenciamento := FINALIZADO;
 					break;
+
 				EV_ITEM_QUEBROU:
 					SendSysMessageEx(quem, "O Item se partiu.",SSM_FAIL);
 					PrintTextAbove(produto,"*O Item se parte*");
@@ -69,11 +70,12 @@ program GerenteTratamentoProduto(parametros)
 					processosGerenciados[CICLO].kill();
 					estadoGerenciamento := FINALIZADO;
 					break;
+
 				EV_TODOS_ALTERADO:
 					fazerSemelhantes := evento.fazerTodos;
 					break;
+
 				EV_CANCELADO:
-					Print("Evento Cancelado!");
 					estadoGerenciamento := CANCELADO;
 					break;
 			endcase

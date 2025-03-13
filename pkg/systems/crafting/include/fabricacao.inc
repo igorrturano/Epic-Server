@@ -60,12 +60,13 @@ function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsq
 	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 endfunction
 
-function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "")
+function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "", deCaracteristicaParaIndice := dictionary)
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
 				material := material,
 				isCompletamenteComum := 1,
+				deCaracteristicaParaIndice := deCaracteristicaParaIndice,
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
 endfunction
@@ -84,16 +85,21 @@ function EnviaItensComplexosGump(quem,profissao)
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	//TODO Fazer opção para reparar
-	//TODO criar input para quantidade
 	//TODO criar botão para sair
 	//TODO Testar consumo e obrigatoriedade de ingredientes.
 	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
 	//TODO Aplicar o peso do item no item montado.
-	//TODO Criar fluxo para itens stackaveis.
+	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
-	//TODO implementar componentes opcionais (tranca, por exemplo)
+	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
+	//TODO Decidir se item complexos pode ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO associações dos componentes aos produtos montandos tá muito amarrada ao gump. tentar desacoplar isso onde for possivel.
+	//TODO criar um membro do struct de fabricado do item final para indexar os componentes por caracteristica. (Fica menos custoso na hora de aplicar o efeito)
+	//TODO Criar gumps de ajuda.
+	//TODO Munições precisão ser fabricadas de tantas em tantas. [ 10 em 10 ]?
+	//TODO Embelezar gumps [Penultima fase]
+	//TODO Documentar tudo [Ultima fase]
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
@@ -339,7 +345,13 @@ function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 		Sleepms(2);
 
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade )
-			SendSysMessageEX(quem,"Você não tem {} suficiente.".format(elemento.nomeItem),SSM_FAIL);
+			var mensagem; 
+			if (elemento.?encaixe)
+				mensagem := "Você não tem {} [{}] suficiente.".format(elemento.nomeItem,elemento.tierDesc);
+			else
+				mensagem := "Você não tem {} suficiente.".format(elemento.nomeItem);
+			endif
+			SendSysMessageEX(quem,mensagem,SSM_FAIL);
 			return false;
 		endif
 
@@ -372,7 +384,8 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											necessario.qtdNecessaria,
-											necessario.encaixe
+											necessario.encaixe,
+											componenteEscolhido.tier.desc
 											);
 
 			endif
@@ -414,13 +427,14 @@ function ConsomeRequisitos(contagem, quantidade := 1)
 	endforeach
 endfunction
 
-function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, encaixe := 0)
+function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
 		var informacoesContagem := struct;
 		informacoesContagem.+quantidadeEncontrada := 0;
 		informacoesContagem.+itemRefArray := array;
 		informacoesContagem.+nomeItem := item.name;
+		informacoesContagem.+tierDesc := tierDesc;
 		informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
 		if(encaixe)
 			informacoesContagem.+encaixe := encaixe;
@@ -481,6 +495,12 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 														componenteEscolhido.componenteNecessario.caracteristica,
 														componenteEscolhido.tier,
 														configRecursos);
+		componenteEscolhido.+poderAvaliado := AvaliaPoderComponente(
+														componenteEscolhido.tier,
+														componenteEscolhido.material.chave,
+														componenteEscolhido.componenteNecessario.caracteristica,
+														componenteEscolhido.propriedades
+														);
 
 	if(componenteNecessario.isPrincipal)
 		sessao.receitaSelecionada.esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
@@ -491,9 +511,12 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 		sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum := 0;
 	endif
 
+	//deCaracteristicaParaIndice [trata-se de um indice inverso para ficar mais facil pegar o valor na hora de fabricar o produto final. (marretinha de levis)]
 	if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
+		sessao.receitaSelecionada.esquemaSelecionado.deCaracteristicaParaIndice[componenteEscolhido.componenteNecessario.caracteristica] := indiceEncaixe;
 		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
 	else
+		sessao.receitaSelecionada.esquemaSelecionado.deCaracteristicaParaIndice.insert(componenteEscolhido.componenteNecessario.caracteristica, indiceEncaixe);
 		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.insert(indiceEncaixe,componenteEscolhido);
 	endif
 
@@ -622,16 +645,19 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 
 endfunction
 
-function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos)
+function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
 	var poderContado := 0;
 
 	//TODO contabilizar HP e Peso no cálculo, talvez como critério de desempate?
 
-	var propriedades := MontaPropriedadesComponente(
-								chaveMaterial,
-								caracteristica,
-								tier,
-								configRecursos);
+	if(!propriedades)
+		propriedades := MontaPropriedadesComponente(
+									chaveMaterial,
+									caracteristica,
+									tier,
+									configRecursos);
+
+	endif
 								
 	poderContado += propriedades.valorPrincipal;
 
@@ -958,7 +984,6 @@ function EnviaGumpComponentes(quem)
 	var gump;
 
 	//TODO Deixar o cara escolher se quer fazer um item de qualidade mais baixa.
-	//TODO Marcar itens craftados como dispensaveis nos sistema de destruiveis.
 	while(retorno)
 		FechaTodosDropdowns(quem,gerenciador.dropDowns);
 

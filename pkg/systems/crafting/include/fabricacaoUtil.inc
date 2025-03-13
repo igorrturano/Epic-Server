@@ -48,18 +48,24 @@ function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePe
 	return  Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
 endfunction
 
-function CriaItemFabricado(quem, produto)
+function CriaItemFabricado(quem, produto, quantidade := 1)
 
 	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
-	var item := CreateItemInBackpack(quem,CInt(propFabricadoMontado.receita.objtype));
-	item.color := produto.cor;
+
 	var novaPropFabricada := struct{
 				estado := ITEM_PRONTO ,
 				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
 				componentes := propFabricadoMontado.esquema.componentesEscolhidos};
 
-	SetObjProperty(item, PROPNAME_FABRICADO, novaPropFabricada);
-	SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG,true);
-	SetObjProperty(item, PROPNAME_ARTIFICE_SERIAL,quem.serial);
-	SetObjProperty(item, PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
+	var descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
+		descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
+		descriptor.CProps.insert(PROPNAME_FABRICADO, novaPropFabricada);
+		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+		if(!propFabricadoMontado.receita.isEmpilhavel)
+			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
+		endif
+		descriptor.color := propFabricadoMontado.esquema.cor;
+		
+	var item := CreateItemInBackpack(quem,descriptor, quantidade);
+
 endfunction

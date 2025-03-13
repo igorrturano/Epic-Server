@@ -36,7 +36,7 @@ function PegaDescComponente(objeto,xDesc := "")
 
 	prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
 	if((prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
-		xDesc := xDesc + "<br>";
+		//xDesc := xDesc + "<br>";
 		foreach componente in (prop.componentes)
 			xDesc := PegaDescEfeitosComponente(componente, xDesc);
 			Sleepms(2);
@@ -380,7 +380,16 @@ endfunction
 function PegaDescEfeitosComponente(componente, xDesc)
 	var propriedades := componente.propriedades;
 	if(propriedades.valorPrincipal != 0)
-		xDesc := xDesc + BLUE + getComponenteToAprimoramento(propriedades.caracteristica,propriedades.valorPrincipal) + " " + SOFT_GREEN + "+"+ propriedades.valorPrincipal + " <br>";
+		var descValor, corLinha;
+		if(propriedades.valorPrincipal > 0)
+			descValor := SOFT_GREEN + "+"+ propriedades.valorPrincipal + " <br>";
+			corLinha := BLUE;
+		else
+			corLinha := SOFT_PINK;
+			descValor := RED_FIRE + propriedades.valorPrincipal + " <br>";
+		endif
+
+		xDesc := xDesc + corLinha + getComponenteToAprimoramento(propriedades.caracteristica,propriedades.valorPrincipal) + " " + descValor;
 	endif
 
 	if(propriedades.efeitosAdicionais)
