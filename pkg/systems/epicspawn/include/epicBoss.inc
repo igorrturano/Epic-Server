@@ -224,6 +224,22 @@ function CreateEpicBoss(boss, x, y, z, realm)
     // Set the boss structure on the NPC for reference
     SetObjProperty(npc, "EpicBossStruct", boss);
     
+    // Set timedscripts
+    if (boss.timedscripts && boss.timedscripts.size() > 0)
+        var timedscripts_array := array{};
+        foreach script in (boss.timedscripts)
+            var script_struct := struct{};
+            script_struct.+name := script.name;
+            script_struct.+target := script.target;
+            script_struct.+duration := script.duration;
+            script_struct.+level := script.level;
+            
+            timedscripts_array.append(script_struct);
+        endforeach
+        SetObjProperty(npc, "TimedScripts", timedscripts_array);
+        print("DEBUG: Set TimedScripts property with " + timedscripts_array.size() + " scripts");
+    endif
+    
     return npc;
 endfunction
 

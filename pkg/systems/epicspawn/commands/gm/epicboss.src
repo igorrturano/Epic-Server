@@ -775,7 +775,7 @@ function ShowPage3(who, title, gump_width, gump_height)
             GFTextLine(gump, 330, y_pos, 2100, ability.name);
             if (ability.description)
                 GFTooltipText(gump, ability.description);
-    endif
+            endif
             y_pos += 20;
         endforeach
     endif
@@ -810,15 +810,25 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     // TimedScripts section
     GFTextLine(gump, 50, 350, 1153, "TimedScripts:");
-    GFAddButton(gump, 250, 350, 2103, 2104, 1, 50);
+    GFAddButton(gump, 250, 350, 2103, 2104, GF_CLOSE_BTN, 50);
     GFTextLine(gump, 280, 350, 1153, "Add TimedScript");
     
-    // List of available timedscripts
-    GFTextLine(gump, 80, 380, 1153, "- Poison");
-    GFTextLine(gump, 80, 400, 1153, "- Paralysis");
-    GFTextLine(gump, 80, 420, 1153, "- Clumsy");
-    GFTextLine(gump, 80, 440, 1153, "- Weaken");
-    GFTextLine(gump, 80, 460, 1153, "- Bleed");
+    // Display chosen timedscripts
+    y_pos := 380;
+    if (form_data.timedscripts && form_data.timedscripts.size() > 0)
+        foreach script in (form_data.timedscripts)
+            GFTextLine(gump, 80, y_pos, 1153, "- " + script.name + " (Target: " + script.target + 
+                      ", Duration: " + script.duration + "s, Level: " + script.level + ")");
+            y_pos += 20;
+        endforeach
+    else
+        // List of available timedscripts examples
+        GFTextLine(gump, 80, 380, 1153, "- Poison");
+        GFTextLine(gump, 80, 400, 1153, "- Paralysis");
+        GFTextLine(gump, 80, 420, 1153, "- Clumsy");
+        GFTextLine(gump, 80, 440, 1153, "- Weaken");
+        GFTextLine(gump, 80, 460, 1153, "- Bleed");
+    endif
     
     // Death Events section
     GFTextLine(gump, 550, 350, 1153, "Death Events:");
@@ -849,6 +859,9 @@ function ShowPage3(who, title, gump_width, gump_height)
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     elseif (input[0] == 11) // Add Armor Special Ability
         HandleAddArmorSpecialAbility(who, input, form_data);
+        return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+    elseif (input[0] == 50) // Add TimedScript
+        HandleAddTimedScript(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     endif
 
@@ -1433,6 +1446,35 @@ function CreateBossFromGump(who, form_data)
         SendSysMessage(who, "DEBUG: No armor special abilities found in form_data");
     endif
     
+    // Debug: Print form_data timedscripts
+    SendSysMessage(who, "DEBUG: Checking form_data timedscripts");
+    if (form_data.timedscripts && form_data.timedscripts.size() > 0)
+        SendSysMessage(who, "DEBUG: Found " + form_data.timedscripts.size() + " timedscripts in form_data");
+        
+        // Initialize timedscripts array if needed
+        if (!boss.timedscripts)
+            boss.+timedscripts := array{};
+        endif
+        
+        foreach script in (form_data.timedscripts)
+            SendSysMessage(who, "DEBUG: form_data timedscript: " + script.name + 
+                          " targeting " + script.target + 
+                          " with duration " + script.duration + 
+                          " and level " + script.level);
+            
+            // Copy the timedscript to the boss structure
+            var script_struct := struct{};
+            script_struct.+name := script.name;
+            script_struct.+target := script.target;
+            script_struct.+duration := script.duration;
+            script_struct.+level := script.level;
+            
+            boss.timedscripts.append(script_struct);
+        endforeach
+    else
+        SendSysMessage(who, "DEBUG: No timedscripts found in form_data");
+    endif
+    
     // Special AI
     if (form_data.special_ai != "")
         var ai_spec := struct{};
@@ -1500,4 +1542,197 @@ function CreateBossFromGump(who, form_data)
     endif
     
     return 1;
+endfunction
+
+function HandleAddTimedScript(who, input, byref form_data)
+    var timedscripts := GetTimedScripts();
+    
+    // Create a gump with the same style as in the screenshot
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+    GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select TimedScript");
+    
+    var y_pos := 60;
+    var counter := 1;
+    
+    foreach script in timedscripts
+        // Use blue gem buttons as shown in the screenshot
+        GFAddButton(gump, 30, y_pos, 2104, 2103, GF_CLOSE_BTN, counter);
+        GFTextLine(gump, 60, y_pos, 1153, script);
+        y_pos += 20;
+        counter += 1;
+    endforeach
+    
+    // Add Cancel button at the bottom right
+    GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999);
+    
+    var result := GFSendGump(who, gump);
+    
+    // Debug message to see what's being returned
+    print("DEBUG: HandleAddTimedScript result[0] = " + result[0]);
+    
+    // Check for the cancel button (result[0] == 999)
+    if (result[0] == 999)
+        SendSysMessage(who, "TimedScript selection cancelled.");
+        return 0; // User canceled
+    endif
+    
+    if (result[0] == 0)
+        SendSysMessage(who, "TimedScript selection cancelled.");
+        return 0; // User canceled
+    endif
+    
+    var selected_script := timedscripts[result[0]];
+    
+    // Now display options for the selected script
+    var config_result := DisplayTimedScriptOptions(who, input, selected_script, form_data);
+    
+    // Only return success if the configuration was completed successfully
+    if (config_result)
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+function DisplayTimedScriptOptions(who, input, script_name, byref form_data)
+    // Create a gump with the same style as in the screenshot
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+    GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Configure " + script_name);
+    
+    var y_pos := 60;
+    
+    // Target selection
+    GFTextLine(gump, 30, y_pos, 1153, "Target:");
+    y_pos += 30;
+    
+    // Radio buttons for target selection
+    GFAddButton(gump, 30, y_pos, 210, 211, 1, 1);
+    GFTextLine(gump, 60, y_pos, 1153, "Self");
+    
+    GFAddButton(gump, 150, y_pos, 210, 211, 1, 2);
+    GFTextLine(gump, 180, y_pos, 1153, "Opponent");
+    
+    GFAddButton(gump, 300, y_pos, 210, 211, 1, 3);
+    GFTextLine(gump, 330, y_pos, 1153, "All Opponents");
+    
+    y_pos += 40;
+    
+    // Duration
+    GFTextLine(gump, 30, y_pos, 1153, "Duration (seconds, max 120):");
+    y_pos += 30;
+    GFTextEntry(gump, 30, y_pos, 100, 20, 1153, "30", 4);
+    
+    y_pos += 40;
+    
+    // Level
+    GFTextLine(gump, 30, y_pos, 1153, "Level (1-5):");
+    y_pos += 30;
+    GFTextEntry(gump, 30, y_pos, 100, 20, 1153, "1", 5);
+    
+    y_pos += 50;
+    
+    // Use the same button style as page 5
+    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 10); // Confirm button - returns 10
+    
+    // Cancel button
+    GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999); // Cancel button - returns 999
+    
+    var result := GFSendGump(who, gump);
+    
+    // Debug message to see what's being returned
+    print("DEBUG: DisplayTimedScriptOptions result[0] = " + result[0]);
+    
+    // Check for the cancel button (result[0] == 999)
+    if (result[0] == 999)
+        SendSysMessage(who, "TimedScript configuration cancelled.");
+        return 0; // User canceled
+    endif
+    
+    // Only proceed if the confirm button was clicked (result[0] == 10)
+    if (result[0] != 10)
+        SendSysMessage(who, "Unexpected result: " + result[0]);
+        return 0;
+    endif
+    
+    // Determine which target was selected
+    var targ := "";
+    if (result[1])
+        targ := "Self";
+    elseif (result[2])
+        targ := "Opponent";
+    elseif (result[3])
+        targ := "All Opponents";
+    else
+        SendSysMessage(who, "Error: No target selected.");
+        return 0;
+    endif
+    
+    // Extract duration and level
+    var duration := CInt(GFExtractData(result, 4));
+    if (duration <= 0 || duration > 120)
+        SendSysMessage(who, "Error: Duration must be between 1 and 120 seconds.");
+        return 0;
+    endif
+    
+    var level := CInt(GFExtractData(result, 5));
+    if (level <= 0 || level > 5)
+        SendSysMessage(who, "Error: Level must be between 1 and 5.");
+        return 0;
+    endif
+    
+    // Add the timedscript to the form_data structure
+    if (!form_data.timedscripts)
+        form_data.+timedscripts := array{};
+    endif
+    
+    var script_struct := struct{};
+    script_struct.+name := script_name;
+    script_struct.+target := targ;
+    script_struct.+duration := duration;
+    script_struct.+level := level;
+    
+    // Debug message to verify the structure
+    SendSysMessage(who, "DEBUG: Adding timedscript: " + script_name + " targeting " + targ + 
+                  " with duration " + duration + " and level " + level);
+    
+    form_data.timedscripts.append(script_struct);
+    SendSysMessage(who, "Added " + script_name + " to timedscripts.");
+    
+    return 1;
+endfunction
+
+// Get all available timedscripts
+function GetTimedScripts()
+    return array{
+        "defaultPoison",
+        "hallucination",
+        "paralysis",
+        "clumsy",
+        "feeblemind",
+        "weaken",
+        "atrasarmagias",
+        "fugademana",
+        "staminaPoison",
+        "manaPoison",
+        "bleed",
+        "darkborer",
+        "agility",
+        "strength",
+        "invis",
+        "desviarprojetil",
+        "dmgreduction",
+        "evasao",
+        "precisao",
+        "phmod",
+        "fimod",
+        "comod",
+        "pomod",
+        "enmod"
+    };
 endfunction
