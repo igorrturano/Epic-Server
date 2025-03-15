@@ -52,14 +52,9 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 
 	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
 
-	var novaPropFabricada := struct{
-				estado := ITEM_PRONTO ,
-				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
-				componentes := propFabricadoMontado.esquema.componentesEscolhidos};
-
 	var descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
 		descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
-		descriptor.CProps.insert(PROPNAME_FABRICADO, novaPropFabricada);
+		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
 		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
@@ -68,4 +63,22 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 		
 	var item := CreateItemInBackpack(quem,descriptor, quantidade);
 
+endfunction
+
+function CriaNovaPropFabricado ( propFabricadoMontado)
+
+	var componentesRefatorado := dictionary;
+
+	//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
+	foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
+		Sleepms(2);
+		componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
+	endforeach
+	
+	var novaPropFabricada := struct{
+				estado := ITEM_PRONTO ,
+				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
+				componentes := componentesRefatorado};
+				
+	return novaPropFabricada;
 endfunction

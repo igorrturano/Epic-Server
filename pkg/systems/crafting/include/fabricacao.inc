@@ -60,13 +60,12 @@ function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsq
 	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 endfunction
 
-function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "", deCaracteristicaParaIndice := dictionary)
+function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "")
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
 				material := material,
 				isCompletamenteComum := 1,
-				deCaracteristicaParaIndice := deCaracteristicaParaIndice,
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
 endfunction
@@ -511,12 +510,9 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 		sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum := 0;
 	endif
 
-	//deCaracteristicaParaIndice [trata-se de um indice inverso para ficar mais facil pegar o valor na hora de fabricar o produto final. (marretinha de levis)]
 	if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
-		sessao.receitaSelecionada.esquemaSelecionado.deCaracteristicaParaIndice[componenteEscolhido.componenteNecessario.caracteristica] := indiceEncaixe;
 		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
 	else
-		sessao.receitaSelecionada.esquemaSelecionado.deCaracteristicaParaIndice.insert(componenteEscolhido.componenteNecessario.caracteristica, indiceEncaixe);
 		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.insert(indiceEncaixe,componenteEscolhido);
 	endif
 

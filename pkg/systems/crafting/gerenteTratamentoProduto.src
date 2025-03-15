@@ -131,7 +131,6 @@ endfunction
 
 function LimpaProcessosGerenciados(processosGerenciados)
 	foreach processo in processosGerenciados
-		Print("Limpando processos Gerenciado: " + processo.state);
 		processo.kill();
 		Sleepms(2);
 	endforeach
@@ -145,11 +144,9 @@ function EncontraNovoProduto(quem, produtoAntigo)
 			var itemProp :=  GetObjProperty(item,PROPNAME_FABRICADO);
 			var antigoProp :=  GetObjProperty(produtoAntigo,PROPNAME_FABRICADO);
 			if(itemProp.receita.objtype == antigoProp.receita.objtype)
-				Print("novo produto encontrado: " + item.desc);
 				return item;
 			endif
 		endif
 	endforeach
-	Print("nenhum novo encontrado");
 	return 0;
 endfunction
