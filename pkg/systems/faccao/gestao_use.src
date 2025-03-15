@@ -1,0 +1,671 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+use guilds;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":faccao:faccao";
+include ":datafile:datafile";
+include "include/say";
+include "include/arrays";
+include ":tn:tngumps";
+include "include/shared_functions";
+
+
+const BKGND_BLUESLAB := 9200;
+const BKGND_STONESLAB := 3500;
+
+const BOTAO_REINO := 1;
+const BOTAO_LEIS := 2;
+const BOTAO_FACCOES := 3;
+const BOTAO_DOACOES := 4;
+const BOTAO_CONSTRUCOES := 5;
+const BOTAO_GUERRA := 6;
+
+const MENU_INTRO := 0;
+const MENU_REINO := 1;
+const MENU_LEIS := 2;
+const MENU_FACCOES := 3;
+const MENU_DOACOES := 4;
+const MENU_CONSTRUCOES := 5;
+const MENU_GUERRA := 6;
+var button_states := array{0, 0, 0, 0, 0, 0};
+
+program gestao_use(who, item)
+    if (!who || !item)
+        SendSysMessage(who, "Erro: who ou item é nulo");
+        return 0;
+    endif
+
+    if (!CanAccessGestao(who))
+        SendSysMessage(who, "Você não tem permissão para acessar a interface de gestão");
+        return 0;
+    endif
+    
+    SendSysMessage(who, "Acessando interface de gestão do Reino");
+    ShowKingdomManagementGump(who, item);
+    
+    return 1;
+endprogram
+
+function CanAccessGestao(who)
+    // GMs sempre podem acessar
+    if (who.cmdlevel >= 3)
+        return 1;
+    endif
+
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0;
+    endif
+
+    // Verificar títulos de nobreza
+    if (chardata.current_nobility_title in {"Rei", "Rainha"} ||
+        chardata.current_professional_position in {"Mão do Rei", "Imperador"})
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+function ShowKingdomManagementGump(who, item)
+    var cur_menu := MENU_DOACOES;
+    var input;
+
+    repeat
+        var gump := CreateKingdomManagementGump(who, cur_menu, item);
+        input := GFSendGump(who, gump);
+        
+        if (input[0] >= 700 && input[0] < 900)
+            ProcessarAcaoTerritorio(who, input[0], item);
+            continue; // Continuar no loop do gump
+        elseif (input[0] != 0)
+            cur_menu := AtualizarEstadoMenu(input[0]);
+        endif
+    until (input[0] == 0);
+endfunction
+
+function CreateKingdomManagementGump(who, cur_menu, item)
+    var gump := CriarLayoutBase();
+    
+    case (cur_menu)
+        MENU_REINO:
+            ReinoGump(gump);
+        MENU_LEIS:
+            LeisGump(gump);
+        MENU_FACCOES:
+            FaccoesGump(gump);
+        MENU_DOACOES:
+            DoacoesGump(gump, item);
+        MENU_CONSTRUCOES:
+            ConstrucoesGump(gump);
+        MENU_GUERRA:
+            GuerraGump(gump);
+        default:
+            DoacoesGump(gump, item);
+    endcase
+
+    return gump;
+endfunction
+
+function CriarLayoutBase()
+    var gump := GFCreateGump();
+    
+    GFGumpPicTiled(gump, 19, 19, 759, 550, 39929);
+    AdicionarMoldura(gump);
+    GFGumpPicTiled(gump, 32, 24, 733, 29, 9354);
+    AdicionarBotoesNavegacao(gump);
+    
+    return gump;
+endfunction
+
+function AdicionarMoldura(byref gump)
+    var molduras := array{
+        struct{ x := 0, y := 5, width := 35, height := 36, gump := 39925 },
+        struct{ x := 33, y := 5, width := 729, height := 21, gump := 39926 },
+        struct{ x := 0, y := 41, width := 21, height := 539, gump := 39928 },
+        struct{ x := 759, y := 5, width := 35, height := 36, gump := 39927 },
+        struct{ x := 759, y := 36, width := 37, height := 534, gump := 39930 },
+        struct{ x := 0, y := 561, width := 37, height := 33, gump := 39931 },
+        struct{ x := 33, y := 561, width := 730, height := 33, gump := 39932 },
+        struct{ x := 759, y := 561, width := 36, height := 33, gump := 39933 },
+        struct{ x := 444, y := 60, width := 8, height := 502, gump := 39928 }
+    };
+
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction
+
+function AdicionarBotoesNavegacao(byref gump)
+    var textos := array{"Reino", "Leis", "Facções", "Doações", "Construções", "Guerra"};
+    var x_positions := array{85, 185, 285, 395, 505, 635};
+    var botoes := array{BOTAO_REINO, BOTAO_LEIS, BOTAO_FACCOES, BOTAO_DOACOES, BOTAO_CONSTRUCOES, BOTAO_GUERRA};
+    
+    for i := 1 to 6
+        var gump_button := 2151;
+        var text_color := 53;
+        
+        if (button_states[i])
+            gump_button := 2153;
+            text_color := 230;
+        endif
+        
+        GFTextLine(gump, x_positions[i], 27, text_color, textos[i]);
+        GFAddButton(gump, x_positions[i] - 35, 23, gump_button, gump_button, GF_CLOSE_BTN, botoes[i]);
+    endfor
+endfunction
+
+function AtualizarEstadoMenu(input)
+    case (input)
+        BOTAO_REINO:
+            button_states := array{1, 0, 0, 0, 0, 0};
+            return MENU_REINO;
+        BOTAO_LEIS:
+            button_states := array{0, 1, 0, 0, 0, 0};
+            return MENU_LEIS;
+        BOTAO_FACCOES:
+            button_states := array{0, 0, 1, 0, 0, 0};
+            return MENU_FACCOES;
+        BOTAO_DOACOES:
+            button_states := array{0, 0, 0, 1, 0, 0};
+            return MENU_DOACOES;
+        BOTAO_CONSTRUCOES:
+            button_states := array{0, 0, 0, 0, 1, 0};
+            return MENU_CONSTRUCOES;
+        BOTAO_GUERRA:
+            button_states := array{0, 0, 0, 0, 0, 1};
+            return MENU_GUERRA;
+        default:
+            return MENU_DOACOES;
+    endcase
+endfunction
+
+function ReinoGump(byref gump)
+    // Manter a parte visual existente
+    GFResizePic(gump, 38, 60, 40267, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Gestão do Reino");
+    
+    // Adicionar a visualização de territórios
+    var rect_df := OpenDataFile(":architect:areas");
+    if (rect_df)
+        // Criar um único background para a área de territórios
+        GFResizePic(gump, 460, 100, 9350, 320, 300);
+        
+        // Adicionar cabeçalhos
+        GFTextLine(gump, 485, 105, 53, "Nome do Terreno");
+        GFTextLine(gump, 690, 105, 53, "Info");
+        GFTextLine(gump, 730, 105, 53, "Aliados");
+        
+        var y := 140; // Começar após os cabeçalhos
+        var territorios_mostrados := 0;
+        
+        foreach elem_name in (rect_df.keys())
+            var elem := rect_df.FindElement(elem_name);
+            var faction := elem.GetProp("Faction");
+            
+            // Se tiver uma facção controlando, mostrar na lista
+            if (faction && faction != "Selvagem")
+                // Número e nome do território (sem background adicional)
+                GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
+                GFTextLine(gump, 485, y+5, 53, elem_name);
+                
+                // Botões de informação e aliados
+                GFAddButton(gump, 693, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 700 + territorios_mostrados);
+                GFAddButton(gump, 740, y+5, 0x4B9, 0x4BA, GF_CLOSE_BTN, 800 + territorios_mostrados);
+                
+                y += 35; // Espaçamento entre territórios
+                territorios_mostrados += 1;
+                
+                // Limite para não sobrecarregar a interface
+                if (territorios_mostrados >= 10)
+                    break;
+                endif
+            endif
+            sleepms(2);
+        endforeach
+        
+        if (territorios_mostrados == 0)
+            GFTextMid(gump, 460, 200, 150, 38, "Não há territórios controlados por facções.");
+        endif
+    else
+        GFTextMid(gump, 620, 200, 150, 38, "Sistema de territórios indisponível.");
+    endif
+    
+    return gump;
+endfunction
+
+function ProcessarAcaoTerritorio(who, input, item)
+    if (input >= 700 && input < 800)
+        // Botão de visualizar mapa do território
+        var territorio_idx := input - 700;
+        MostrarMapaTerritorio(who, territorio_idx);
+    elseif (input >= 800 && input < 900)
+        // Botão de informações do território
+        var territorio_idx := input - 800;
+        MostrarInformacoesTerritorio(who, territorio_idx, item);
+    endif
+endfunction
+
+function MostrarMapaTerritorio(who, index)
+    var rect_df := OpenDataFile(":architect:areas");
+    if (!rect_df) 
+        return SendSysMessage(who, "Sistema de territórios indisponível.");
+    endif
+    
+    var territorios := array{};
+    foreach elem_name in (rect_df.keys())
+        var elem := rect_df.FindElement(elem_name);
+        if (elem.GetProp("Faction") && elem.GetProp("Faction") != "Selvagem")
+            territorios.append(elem_name);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Verificar se o índice é válido
+    if (index < 0 || index >= territorios.size())
+        return SendSysMessage(who, "Território não encontrado. Índice: " + index + ", Total: " + territorios.size());
+    endif
+    
+    var territorio := territorios[index+1]; // Ajustando para indexação baseada em 1
+    var elem := rect_df.FindElement(territorio);
+    
+    // Mostrar as coordenadas no mapa e oferecer teleporte
+    var rect := elem.GetProp("Rect");
+    var coords := SplitWords(rect);
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 400, 300);
+    GFResizePic(gump, 15, 15, 9350, 370, 270);
+    
+    GFTextMid(gump, 20, 25, 370, 2100, "Mapa do Território: " + territorio);
+    var y := 60;
+    if (coords.size() >= 4)
+        var x1 := CInt(coords[1]);
+        var y1 := CInt(coords[2]);
+        var x2 := CInt(coords[3]);
+        var y2 := CInt(coords[4]);
+        GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
+        GFTextLine(gump, 110, y, 53, rect);
+        GFTextLine(gump, 30, y+20, 2100, "Facção: ");
+        GFTextLine(gump, 110, y+20, 53, elem.GetProp("Faction"));
+        
+        // Adicionar botão de teleporte para GMs
+        if (who.cmdlevel >= 3) 
+            GFAddButton(gump, 30, y+50, 2117, 2118, GF_CLOSE_BTN, 1);
+            GFTextLine(gump, 60, y+50, 53, "Teleportar para o território");
+        endif
+    endif
+    
+    GFAddButton(gump, 150, 250, 2128, 2129, GF_CLOSE_BTN, 0);
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 1 && who.cmdlevel >= 3)
+        // Teleportar GM para o território
+        var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
+        var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+        var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
+        
+        MoveObjectToLocation(who, center_x, center_y, center_z, elem.GetProp("Realm"), MOVEOBJECT_FORCELOCATION);
+    endif
+endfunction
+
+function LeisGump(byref gump)
+    GFResizePic(gump, 38, 60, 40266, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Sistema de Leis");
+    // TODO: Adicionar conteúdo relacionado às leis do reino
+endfunction
+
+function FaccoesGump(byref gump)
+    GFResizePic(gump, 38, 60, 40264, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Facções");
+    // TODO: Adicionar conteúdo relacionado às facções
+endfunction
+
+function DoacoesGump(byref gump, item)
+    GFResizePic(gump, 38, 60, 40260, 400, 502);
+    
+    // Obter o nome da facção para personalizar o título
+    var faction_name := GetObjProperty(item, "faction");
+    var titulo := faction_name ? "Recursos de " + faction_name : "Recursos do Reino";
+    
+    GFTextMid(gump, 490, 60, 263, 2100, titulo);
+    
+    // Passar o item para a função
+    var recursos := ObterRecursosBau(item);
+    CriarLayoutDoacoes(gump, recursos);
+endfunction
+
+function ConstrucoesGump(byref gump)
+    GFResizePic(gump, 38, 60, 40263, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Gerenciamento de Construções");
+    // TODO: Adicionar conteúdo relacionado às construções do reino
+endfunction
+
+function GuerraGump(byref gump)
+    GFResizePic(gump, 38, 60, 40265, 400, 502);
+    GFTextMid(gump, 490, 60, 263, 2100, "Sistema de Guerra");
+    // TODO: Adicionar conteúdo relacionado ao sistema de guerra
+endfunction
+
+function CriarLayoutDoacoes(byref gump, recursos)
+    if (!gump)
+        return 0;
+    endif
+
+    GFGumpPicTiled(gump, 466, 60, 263, 21, 9354);
+    AdicionarQuadradosRecursos(gump);
+    AdicionarIconesItens(gump);
+    GFTextLine(gump, 541, 60, 53, "Recursos do Reino");
+    AdicionarTextosTiposDoacao(gump);
+    AdicionarValoresRecursos(gump, recursos);
+
+    return 1;
+endfunction
+
+function AdicionarQuadradosRecursos(byref gump)
+    var quadrados := array{
+        struct{ "x" := 466, "y" := 98 },
+        struct{ "x" := 630, "y" := 97 },
+        struct{ "x" := 467, "y" := 220 },
+        struct{ "x" := 630, "y" := 217 },
+        struct{ "x" := 466, "y" := 338 },
+        struct{ "x" := 630, "y" := 335 },
+        struct{ "x" := 466, "y" := 456 },
+        struct{ "x" := 630, "y" := 456 }
+    };
+
+    foreach quadrado in quadrados
+        GFGumpPicTiled(gump, quadrado.x, quadrado.y, 98, 78, 9354);
+        GFGumpPicTiled(gump, quadrado.x, quadrado.y + 85, 98, 21, 9394);
+    endforeach
+endfunction
+
+function AdicionarIconesItens(byref gump)
+    var itens := array{
+        struct{ "x" := 490, "y" := 124, "grafico" := 29807 },
+        struct{ "x" := 655, "y" := 132, "grafico" := 3823 },
+        struct{ "x" := 492, "y" := 247, "grafico" := 4225 },
+        struct{ "x" := 659, "y" := 242, "grafico" := 29421 },
+        struct{ "x" := 493, "y" := 361, "grafico" := 7135 },
+        struct{ "x" := 660, "y" := 364, "grafico" := 5991 },
+        struct{ "x" := 495, "y" := 485, "grafico" := 4963 },
+        struct{ "x" := 652, "y" := 493, "grafico" := 41779 }
+    };
+
+    foreach item in itens
+        GFTilePic(gump, item.x, item.y, item.grafico);
+    endforeach
+endfunction
+
+function AdicionarTextosTiposDoacao(byref gump)
+    var tipos := array{
+        struct{ "x" := 498, "y" := 99, "texto" := "Comida" },
+        struct{ "x" := 660, "y" := 101, "texto" := "Moedas" },
+        struct{ "x" := 498, "y" := 219, "texto" := "Couro" },
+        struct{ "x" := 660, "y" := 220, "texto" := "Metais" },
+        struct{ "x" := 492, "y" := 338, "texto" := "Madeira" },
+        struct{ "x" := 660, "y" := 340, "texto" := "Tecidos" },
+        struct{ "x" := 498, "y" := 456, "texto" := "Pedras" },
+        struct{ "x" := 660, "y" := 459, "texto" := "Joias" }
+    };
+
+    foreach tipo in tipos
+        GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
+    endforeach
+endfunction
+
+function AdicionarValoresRecursos(byref gump, recursos)
+    if (!gump || !recursos)
+        return 0;
+    endif
+
+    var posicoes := array{
+        struct{ "x" := 503, "y" := 184, "valor" := recursos.comida },
+        struct{ "x" := 667, "y" := 184, "valor" := recursos.moedas },
+        struct{ "x" := 503, "y" := 304, "valor" := recursos.couro },
+        struct{ "x" := 667, "y" := 304, "valor" := recursos.metal },
+        struct{ "x" := 503, "y" := 424, "valor" := recursos.madeira },
+        struct{ "x" := 667, "y" := 424, "valor" := recursos.pano },
+        struct{ "x" := 503, "y" := 541, "valor" := recursos.pedras },
+        struct{ "x" := 667, "y" := 541, "valor" := recursos.joias }
+    };
+
+    foreach pos in posicoes
+        GFTextLine(gump, pos.x, pos.y, 53, CStr(pos.valor));
+    endforeach
+
+    return 1;
+endfunction
+
+function ObterRecursosBau(item)
+    // Obter a facção associada ao item (mesa de gestão)
+    var faction_name := GetObjProperty(item, "faction");
+    
+    // Se é uma interface específica de facção, obter recursos apenas dessa facção
+    if (faction_name && faction_name != "Reino")
+        Print("DEBUG: Obtendo recursos para facção específica: " + faction_name);
+        
+        // Tentar encontrar o baú da facção pelo serial salvo na guilda
+        var guild := FindGuildByName(faction_name);
+        if (guild)
+            var guild_obj := FindGuild(guild);
+            if (guild_obj)
+                var chest_serial := guild_obj.GetProp("donation_chest");
+                if (chest_serial)
+                    var donation_chest := SystemFindObjectBySerial(chest_serial);
+                    if (donation_chest)
+                        Print("DEBUG: Baú encontrado pelo serial: " + donation_chest.serial);
+                        return ContarItensDoadosNoBau(donation_chest);
+                    endif
+                endif
+            endif
+        endif
+        
+        // Se não encontrar o baú diretamente, procurar pelos baús no mundo
+        Print("DEBUG: Procurando baú por nome/propriedade...");
+        foreach item_chest in EnumerateItemsInContainer(1)
+            if ((item_chest.objtype == 0xff11 || item_chest.objtype == 0xba63) && 
+                GetObjProperty(item_chest, "faction") == faction_name)
+                Print("DEBUG: Baú encontrado pelo nome/propriedade: " + item_chest.serial);
+                return ContarItensDoadosNoBau(item_chest);
+            endif
+        endforeach
+        
+        // Se não encontrou, retornar um struct vazio
+        Print("DEBUG: Nenhum baú encontrado para facção: " + faction_name);
+        return struct{
+            comida := 0,
+            moedas := 0,
+            couro := 0,
+            metal := 0,
+            madeira := 0,
+            pano := 0,
+            pedras := 0,
+            joias := 0
+        };
+    endif
+    
+    // Comportamento padrão - obter do datafile (para o "Reino" geral)
+    return ObterRecursosDoReino();
+endfunction
+
+
+function MostrarInformacoesTerritorio(who, index, item)
+    var rect_df := OpenDataFile(":architect:areas");
+    if (!rect_df) 
+        return SendSysMessage(who, "Sistema de territórios indisponível.");
+    endif
+    
+    var territorios := array{};
+    foreach elem_name in (rect_df.keys())
+        var elem := rect_df.FindElement(elem_name);
+        // Verificar se as propriedades existem antes de acessá-las
+        var faction := elem.GetProp("Faction");
+        if (faction && faction != "Selvagem")
+            territorios.append(elem_name);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Verificar se o índice é válido
+    if (index < 0 || index >= territorios.size())
+        return SendSysMessage(who, "Território não encontrado. Índice: " + index + ", Total: " + territorios.size());
+    endif
+    
+    // Obter o nome do território e o elemento correspondente
+    var territorio := territorios[index+1]; // Ajustando para indexação baseada em 1
+    if (!territorio)
+        return SendSysMessage(who, "Nome do território inválido.");
+    endif
+    
+    var elem := rect_df.FindElement(territorio);
+    if (!elem)
+        return SendSysMessage(who, "Elemento do território não encontrado: " + territorio);
+    endif
+    
+    // Obter as propriedades com verificação de null
+    var faction := elem.GetProp("Faction");
+    if (!faction) faction := "Desconhecida"; endif
+    
+    var rect := elem.GetProp("Rect");
+    if (!rect) rect := "Desconhecidas"; endif
+    
+    var realm := elem.GetProp("Realm");
+    if (!realm) realm := "Desconhecido"; endif
+    
+    // Mostrar informações detalhadas e opções administrativas
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 400, 350);
+    GFResizePic(gump, 15, 15, 9350, 370, 320);
+    
+    // Mudança aqui: GFTextMid para GFTextLine para o título não ficar centralizado
+    GFTextLine(gump, 30, 25, 2100, "Informações do Território:");
+    
+    // Declaração da variável y antes de usá-la
+    var y := 60;
+
+    GFTextLine(gump, 30, y, 2100, "Nome: ");
+    GFTextLine(gump, 85, y, 53, territorio);
+    y += 20;
+
+    GFTextLine(gump, 30, y, 2100, "Facção: ");
+    GFTextLine(gump, 85, y, 53, faction);
+    y += 20;
+
+    GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
+    GFTextLine(gump, 140, y, 53, rect);
+    y += 20;
+
+    GFTextLine(gump, 30, y, 2100, "Realm: ");
+    GFTextLine(gump, 85, y, 53, realm);
+    y += 30;
+    
+    // Opções administrativas (apenas para GM ou Rei)
+    var chardata := GetObjProperty(who, "chardata");
+    if (who.cmdlevel >= 3 || (chardata && (chardata.current_nobility_title in {"Rei", "Rainha"})))
+        GFTextLine(gump, 30, y, 2100, "Ações Administrativas:");
+        y += 20;
+        
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, 50, y, 53, "Revogar controle da facção");
+        y += 25;
+        
+        GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, 50, y, 53, "Transferir para outra facção");
+    endif
+    
+    GFAddButton(gump, 150, 300, 2128, 2129, GF_CLOSE_BTN, 0);
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 1)
+        // Revogar controle
+        if (YesNo(who, "Tem certeza que deseja revogar o controle de " + faction + " sobre este território?"))
+            elem.SetProp("Faction", "Selvagem");
+            SendSysMessage(who, "Controle revogado com sucesso!");
+            
+            // Atualizar a lista de territórios da facção
+            var fac_guildid := FindGuildByName(faction);
+            if (fac_guildid)
+                var guild := FindGuild(fac_guildid);
+                if (guild)
+                    var territories := guild.GetProp("territories");
+                    if (territories)
+                        var territory_index := FindInArray(territories, territorio);
+                        if (territory_index > 0)
+                            territories.Erase(territory_index);
+                            guild.SetProp("territories", territories);
+                        endif
+                    endif
+                endif
+            endif
+        endif
+    elseif (input[0] == 2)
+        // Transferir para outra facção
+        var guilds := ListGuilds();
+        var guild_opts := array{};
+        
+        foreach guild in guilds
+            var name := guild.GetProp("name");
+            if (name)
+                guild_opts.append(name);
+            endif
+            sleepms(2);
+        endforeach
+        
+        guild_opts.append("Cancelar");
+        
+        var choice := RadioGump(who, 300, 0, "Escolha a facção para transferir " + territorio, guild_opts, 0, 1);
+        
+        if (!choice || choice >= guild_opts.size())
+            return; // Cancelado
+        endif
+        
+        // Ajustando para indexação baseada em 1 do POL
+        var new_faction := guild_opts[choice];
+        
+        if (YesNo(who, "Transferir controle de " + territorio + " para " + new_faction + "?"))
+            // Remover do controle da facção atual
+            var old_faction := faction;
+            var old_guild := FindGuildByName(old_faction);
+            if (old_guild)
+                var old_guild_obj := FindGuild(old_guild);
+                if (old_guild_obj)
+                    var old_territories := old_guild_obj.GetProp("territories");
+                    if (old_territories)
+                        var territory_index := FindInArray(old_territories, territorio);
+                        if (territory_index > 0)
+                            old_territories.Erase(territory_index);
+                            old_guild_obj.SetProp("territories", old_territories);
+                        endif
+                    endif
+                endif
+            endif
+            
+            // Adicionar ao controle da nova facção
+            elem.SetProp("Faction", new_faction);
+            var new_guild := FindGuildByName(new_faction);
+            if (new_guild)
+                var new_guild_obj := FindGuild(new_guild);
+                if (new_guild_obj)
+                    var new_territories := new_guild_obj.GetProp("territories");
+                    if (!new_territories)
+                        new_territories := array{};
+                    endif
+                    
+                    if (FindInArray(new_territories, territorio) <= 0)
+                        new_territories.append(territorio);
+                        new_guild_obj.SetProp("territories", new_territories);
+                    endif
+                endif
+            endif
+            
+            SendSysMessage(who, "Território transferido com sucesso!");
+        endif
+    endif
+endfunction
