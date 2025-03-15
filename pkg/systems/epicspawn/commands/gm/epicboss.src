@@ -577,49 +577,49 @@ function ShowPage2(who, title, gump_width, gump_height)
     GFResizePic(gump, 520, 160, 3000, 2, 230);
     
     // Resistances section
-    GFTextMid(gump, 0, 340, gump_width, 1153, "Resistances");
+    GFTextMid(gump, 90, 160, gump_width, 1153, "Resistances");
     
     // Add a divider line
     GFResizePic(gump, 40, 360, 3000, gump_width - 80, 2);
     
     // Physical
     GFTextLine(gump, 550, 190, 1153, "Physical:");
-    GFTextEntry(gump, 650, 190, 100, 20, 1150, form_data.phresist ? form_data.phresist : "0", 15);
+    GFTextEntry(gump, 650, 190, 30, 20, 1150, form_data.phresist ? form_data.phresist : "0", 15, 4);
     
     // Fire
     GFTextLine(gump, 550, 220, 1153, "Fire:");
-    GFTextEntry(gump, 650, 220, 100, 20, 1150, form_data.firesist ? form_data.firesist : "0", 16);
+    GFTextEntry(gump, 650, 220, 30, 20, 1150, form_data.firesist ? form_data.firesist : "0", 16, 4);
     
     // Cold
     GFTextLine(gump, 550, 250, 1153, "Cold:");
-    GFTextEntry(gump, 650, 250, 100, 20, 1150, form_data.coresist ? form_data.coresist : "0", 17);
+    GFTextEntry(gump, 650, 250, 30, 20, 1150, form_data.coresist ? form_data.coresist : "0", 17, 4);
     
     // Energy
     GFTextLine(gump, 550, 280, 1153, "Energy:");
-    GFTextEntry(gump, 650, 280, 100, 20, 1150, form_data.enresist ? form_data.enresist : "0", 18);
+    GFTextEntry(gump, 650, 280, 30, 20, 1150, form_data.enresist ? form_data.enresist : "0", 18, 4);
     
     // Poison
     GFTextLine(gump, 550, 310, 1153, "Poison:");
-    GFTextEntry(gump, 650, 310, 100, 20, 1150, form_data.poresist ? form_data.poresist : "0", 19);
+    GFTextEntry(gump, 650, 310, 30, 20, 1150, form_data.poresist ? form_data.poresist : "0", 19, 4);
     
     // Skills section
     GFTextMid(gump, 0, 380, gump_width, 1153, "Skills");
     
     // Wrestling
     GFTextLine(gump, 50, 410, 1153, "Wrestling Modifier:");
-    GFTextEntry(gump, 200, 410, 100, 20, 1150, form_data.wrestling ? form_data.wrestling : "0", 20);
+    GFTextEntry(gump, 200, 410, 20, 20, 1150, form_data.wrestling ? form_data.wrestling : "0", 20);
     
     // Tactics
     GFTextLine(gump, 50, 440, 1153, "Tactics Modifier:");
-    GFTextEntry(gump, 200, 440, 100, 20, 1150, form_data.tactics ? form_data.tactics : "0", 21);
+    GFTextEntry(gump, 200, 440, 20, 20, 1150, form_data.tactics ? form_data.tactics : "0", 21);
     
     // Magery
     GFTextLine(gump, 50, 470, 1153, "Magery Modifier:");
-    GFTextEntry(gump, 200, 470, 100, 20, 1150, form_data.magery ? form_data.magery : "0", 22);
+    GFTextEntry(gump, 200, 470, 20, 20, 1150, form_data.magery ? form_data.magery : "0", 22);
     
     // Awareness
     GFTextLine(gump, 50, 500, 1153, "Awareness Modifier:");
-    GFTextEntry(gump, 200, 500, 100, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23);
+    GFTextEntry(gump, 200, 500, 20, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23);
     
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
@@ -773,10 +773,9 @@ function ShowPage4(who, title, gump_width, gump_height)
     GFTextLine(gump, 280, 300, 1153, "Add Ability Condition");
     
     // Examples of conditions
-    GFTextLine(gump, 80, 330, 1153, "Examples:");
-    GFTextLine(gump, 80, 350, 1153, "- Use ability when health below X%");
-    GFTextLine(gump, 80, 370, 1153, "- Use ability when X players are nearby");
-    GFTextLine(gump, 80, 390, 1153, "- Use ability every X seconds");
+    GFTextLine(gump, 80, 330, 1153, "- Use ability when health below X%");
+    GFTextLine(gump, 80, 350, 1153, "- Use ability when X players are nearby");
+    GFTextLine(gump, 80, 370, 1153, "- Use ability every X seconds");
     
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
@@ -861,6 +860,114 @@ function ShowPage5(who, title, gump_width, gump_height)
     // Magic School (for mage)
     GFTextLine(gump, 50, 480, 1153, "Magic School:");
     GFTextEntry(gump, 250, 480, 200, 20, 1150, form_data.magic_school ? form_data.magic_school : "", 88);
+    
+    // Skills section
+    GFTextMid(gump, 0, 380, gump_width, 1153, "Skills");
+    
+    // Column 1
+    // Wrestling
+    GFTextLine(gump, 50, 410, 1153, "Wrestling:");
+    GFTextEntry(gump, 200, 410, 30, 20, 1150, form_data.wrestling ? form_data.wrestling : "0", 20, 4);
+    
+    // Tactics
+    GFTextLine(gump, 50, 440, 1153, "Tactics:");
+    GFTextEntry(gump, 200, 440, 30, 20, 1150, form_data.tactics ? form_data.tactics : "0", 21, 4);
+    
+    // Magery
+    GFTextLine(gump, 50, 470, 1153, "Magery:");
+    GFTextEntry(gump, 200, 470, 30, 20, 1150, form_data.magery ? form_data.magery : "0", 22, 4);
+    
+    // Awareness
+    GFTextLine(gump, 50, 500, 1153, "Awareness:");
+    GFTextEntry(gump, 200, 500, 30, 20, 1150, form_data.awareness ? form_data.awareness : "0", 23, 4);
+    
+    // Magic Lore
+    GFTextLine(gump, 50, 530, 1153, "Magic Lore:");
+    GFTextEntry(gump, 200, 530, 30, 20, 1150, form_data.magic_lore ? form_data.magic_lore : "0", 24, 4);
+    
+    // Column 2
+    // Parry
+    GFTextLine(gump, 250, 410, 1153, "Parry:");
+    GFTextEntry(gump, 400, 410, 30, 20, 1150, form_data.parry ? form_data.parry : "0", 25, 4);
+    
+    // One Handed
+    GFTextLine(gump, 250, 440, 1153, "One Handed:");
+    GFTextEntry(gump, 400, 440, 30, 20, 1150, form_data.one_handed ? form_data.one_handed : "0", 26, 4);
+    
+    // Two Handed
+    GFTextLine(gump, 250, 470, 1153, "Two Handed:");
+    GFTextEntry(gump, 400, 470, 30, 20, 1150, form_data.two_handed ? form_data.two_handed : "0", 27, 4);
+    
+    // Ranged
+    GFTextLine(gump, 250, 500, 1153, "Ranged:");
+    GFTextEntry(gump, 400, 500, 30, 20, 1150, form_data.ranged ? form_data.ranged : "0", 28, 4);
+    
+    // Sneak
+    GFTextLine(gump, 250, 530, 1153, "Sneak:");
+    GFTextEntry(gump, 400, 530, 30, 20, 1150, form_data.sneak ? form_data.sneak : "0", 29, 4);
+    
+    // Column 3
+    // Pickpocketing
+    GFTextLine(gump, 450, 410, 1153, "Pickpocketing:");
+    GFTextEntry(gump, 600, 410, 30, 20, 1150, form_data.pickpocketing ? form_data.pickpocketing : "0", 30, 4);
+    
+    // Mechanics
+    GFTextLine(gump, 450, 440, 1153, "Mechanics:");
+    GFTextEntry(gump, 600, 440, 30, 20, 1150, form_data.mechanics ? form_data.mechanics : "0", 31, 4);
+    
+    // Medicine
+    GFTextLine(gump, 450, 470, 1153, "Medicine:");
+    GFTextEntry(gump, 600, 470, 30, 20, 1150, form_data.medicine ? form_data.medicine : "0", 32, 4);
+    
+    // Survival
+    GFTextLine(gump, 450, 500, 1153, "Survival:");
+    GFTextEntry(gump, 600, 500, 30, 20, 1150, form_data.survival ? form_data.survival : "0", 33, 4);
+    
+    // Metal Working
+    GFTextLine(gump, 450, 530, 1153, "Metal Working:");
+    GFTextEntry(gump, 600, 530, 30, 20, 1150, form_data.metal_working ? form_data.metal_working : "0", 34, 4);
+    
+    // Column 4
+    // Wood Working
+    GFTextLine(gump, 650, 410, 1153, "Wood Working:");
+    GFTextEntry(gump, 800, 410, 30, 20, 1150, form_data.wood_working ? form_data.wood_working : "0", 35, 4);
+    
+    // Domestic Work
+    GFTextLine(gump, 650, 440, 1153, "Domestic Work:");
+    GFTextEntry(gump, 800, 440, 30, 20, 1150, form_data.domestic_work ? form_data.domestic_work : "0", 36, 4);
+    
+    // Gathering
+    GFTextLine(gump, 650, 470, 1153, "Gathering:");
+    GFTextEntry(gump, 800, 470, 30, 20, 1150, form_data.gathering ? form_data.gathering : "0", 37, 4);
+    
+    // Handle Animal
+    GFTextLine(gump, 650, 500, 1153, "Handle Animal:");
+    GFTextEntry(gump, 800, 500, 30, 20, 1150, form_data.handle_animal ? form_data.handle_animal : "0", 38, 4);
+    
+    // Dual Wield
+    GFTextLine(gump, 650, 530, 1153, "Dual Wield:");
+    GFTextEntry(gump, 800, 530, 30, 20, 1150, form_data.dual_wield ? form_data.dual_wield : "0", 39, 4);
+    
+    // Column 5 (new row)
+    // Throwing
+    GFTextLine(gump, 50, 560, 1153, "Throwing:");
+    GFTextEntry(gump, 200, 560, 30, 20, 1150, form_data.throwing ? form_data.throwing : "0", 40, 4);
+    
+    // Alchemy
+    GFTextLine(gump, 250, 560, 1153, "Alchemy:");
+    GFTextEntry(gump, 400, 560, 30, 20, 1150, form_data.alchemy ? form_data.alchemy : "0", 41, 4);
+    
+    // Theology (requested)
+    GFTextLine(gump, 450, 560, 1153, "Theology:");
+    GFTextEntry(gump, 600, 560, 30, 20, 1150, form_data.theology ? form_data.theology : "0", 42, 4);
+    
+    // Science (requested)
+    GFTextLine(gump, 650, 560, 1153, "Science:");
+    GFTextEntry(gump, 800, 560, 30, 20, 1150, form_data.science ? form_data.science : "0", 43, 4);
+    
+    // Arcana (requested)
+    GFTextLine(gump, 50, 590, 1153, "Arcana:");
+    GFTextEntry(gump, 200, 590, 30, 20, 1150, form_data.arcana ? form_data.arcana : "0", 44, 4);
     
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
