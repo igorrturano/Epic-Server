@@ -3,7 +3,10 @@ use os;
 
 include "/include/epicPropNames";
 include "include/client";
+include "include/say";
 include ":megacliloc:/include/toolTipUtils";
+include ":crafting:/include/fabricacaoUtil";
+include ":attributes:vitals";
 
 const LIMITE_MARTELADAS := 3;
 const LIMITE_AQUECIMENTO := 4;
@@ -31,8 +34,37 @@ var CATALOGO_FONTE_AGUA := array{0x0B41,0x0B42,0x0B43,0x0B44,
 
 var CORES_AQUECIMENTO_FORJA := array {1254,1256,1258,1260};
 
-function isAnimacaoFerreiroPossivel(quem, produto, estacao)
-	//TODO VALIDAR se pode continuar animação.
+function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial)
+	if(!Accessible(quem,estacao[FONTE_CALOR],1) || !CheckLineOfSight( quem, estacao[FONTE_CALOR]))
+		SendSysMessageEx(quem,"É necessário que haja uma fonte de calor próximo a você.",SSM_FAIL);
+		return false;
+	endif
+	if(!Accessible(quem,estacao[FONTE_AGUA],1) || !CheckLineOfSight( quem, estacao[FONTE_AGUA]))
+		SendSysMessageEx(quem,"É necessário que haja uma fonte de resfriamento próximo a você.",SSM_FAIL);
+		return false;
+	endif
+	if(!Accessible(quem,estacao[BIGORNA],1) || !CheckLineOfSight( quem, estacao[BIGORNA]))
+		SendSysMessageEx(quem,"É necessário que haja uma bigorna próxima a você.",SSM_FAIL);
+		return false;
+	endif
+	Print("ferramentaNecessaria " +  ferramentaNecessaria);
+	if(ferramentaNecessaria.objtype != 0x13e3) //Martelo de ferreiro.
+		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+		return false;
+	endif
+	if(quem.warmode)
+		SendSysMessageEx(quem,"Você não pode estar em combate.",SSM_FAIL);
+		return false;
+	endif
+	if(saudeInicial !=  AP_GetVital(quem, "Hits"))
+		SendSysMessageEx(quem,"Você foi ferido.",SSM_FAIL);
+		return false;
+	endif
+	if(posicaoInicial.x != quem.x || posicaoInicial.y != quem.y|| posicaoInicial.z != quem.z || posicaoInicial.realm != quem.realm )
+		SendSysMessageEx(quem,"Você se moveu.",SSM_FAIL);
+		return false;
+	endif
+
 	return true;
 endfunction
 
@@ -41,13 +73,17 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 	var contadorEstagio := 0;
 	var contadorInterno := 0;
 	var deveMudarEstagio;
+	var ferramentaNecessaria := BuscaFerramenta(quem,"Metal_Working");
+	var posicaoInicial := CriaObjetoPosicao(quem);
+	var saudeInicial := AP_GetVital(quem, "Hits");
 
-	while (processoGerente.state && IsAnimacaoFerreiroPossivel(quem,produto,estacao))
+	while (processoGerente.state && IsAnimacaoFerreiroPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial))
 		var estagioAtual := contadorEstagio %  estagios.size();
 		deveMudarEstagio := false;
 
 		case (estagioAtual)
 			0://Aquecendo
+				DesequipaArma(quem);
 				produto.movable := 0;
 				quem.facing := GetFacing(quem.x,quem.y,estacao[FONTE_CALOR].x,estacao[FONTE_CALOR].y);
 				MoveObjectToLocation( 
@@ -76,6 +112,14 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 				endif
 				break;
 			1://Martelando
+				if(quem.weapon != ferramentaNecessaria)
+					DesequipaArma(quem);
+					var equipou := EquipItem(quem, ferramentaNecessaria);
+					if(!equipou)
+						SendSysMessageEX(quem, "Você não pôde equipar seu martelo.", SSM_FAIL);
+						return true;
+					endif
+				endif
 				produto.movable := 0;
 				quem.facing := GetFacing(quem.x,quem.y,estacao[BIGORNA].x,estacao[BIGORNA].y);
 				MoveObjectToLocation( 
@@ -97,11 +141,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 			2://Esfriando
 				produto.movable := 1;
 				quem.facing := GetFacing(quem.x,quem.y,estacao[FONTE_AGUA].x,estacao[FONTE_AGUA].y);
-				var itemEquipado := GetEquipmentByLayer(quem, LAYER_HAND1);
-				if(itemEquipado)
-					MoveItemToContainer(itemEquipado,quem.backpack);
-				endif
-
+				DesequipaArma(quem);
 
 				if(classificacaoProduto == ITEM_ARMA || classificacaoProduto == TEMPLATE_ARMA)
 					var equipou := EquipItem(quem, produto);
@@ -137,8 +177,11 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 		if(deveMudarEstagio)
 			++contadorEstagio;
 		endif
+		ferramentaNecessaria := BuscaFerramenta(quem,"Metal_Working");
 		Sleep(2);
 	endwhile
+
+	return true;
 endfunction
 
 function DefineItemEstacao (byref estacao, quem, objProp, serialGuardada, itemEstacao)
@@ -148,6 +191,28 @@ function DefineItemEstacao (byref estacao, quem, objProp, serialGuardada, itemEs
 	endif
 
 endfunction
+
+function BuscaFerramenta (quem, pericia)
+	var ferramenta;
+	case (pericia)
+		"Metal_Working":
+			if(quem.weapon.objtype == 0x13e3)
+				ferramenta := quem.weapon;
+			else
+				ferramenta := FindObjtypeInContainer(quem.backpack, 0x13e3);
+			endif
+		break;
+	endcase
+	return ferramenta;
+endfunction
+
+function DesequipaArma(quem)
+	var itemEquipado := quem.weapon;
+	if(itemEquipado)
+		MoveItemToContainer(itemEquipado,quem.backpack);
+	endif
+endfunction
+
 
 function PegaEstacaoFerreiro (quem, bigorna)
 	var propForja := GetObjProperty(bigorna,PROPNAME_ESTACAO_FORJA);

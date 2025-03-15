@@ -42,7 +42,7 @@ program GerenteTratamentoProduto(parametros)
 			endforeach
 
 			if(DeveFinalizarTratamento(estadoGerenciamento) && evento.id != EV_CANCELADO) // sai do loop imediatamente, a não ser que seja cancelamento.
-				LimpaProcessosGerenciados(processosGerenciados);
+				LimpaProcessosGerenciados(quem, processosGerenciados);
 				break;
 			endif
 
@@ -101,6 +101,7 @@ program GerenteTratamentoProduto(parametros)
 				produto.color := corOriginal;
 				produto.movable := 1;
 				MoveItemToContainer( produto, quem.backpack);
+				LimpaProcessosGerenciados(quem, processosGerenciados);
 			endif
 		endif
 
@@ -119,7 +120,7 @@ endfunction
 
 function IniciaProcessosGerenciados (processosAntigos, quem, pidGerente, produto, alvo)
 	if(processosAntigos.size() > 0)
-		LimpaProcessosGerenciados(processosAntigos);
+		LimpaProcessosGerenciados(quem, processosAntigos);
 	endif
 
 	return dictionary{ 
@@ -129,8 +130,11 @@ function IniciaProcessosGerenciados (processosAntigos, quem, pidGerente, produto
 	};
 endfunction
 
-function LimpaProcessosGerenciados(processosGerenciados)
+function LimpaProcessosGerenciados(quem, processosGerenciados)
 	foreach processo in processosGerenciados
+		if(_processo_iter == GUMP_INTERATIVO || _processo_iter == GUMP_STATICO)
+			CloseGump(quem,processosGerenciados[_processo_iter].pid,0);
+		endif
 		processo.kill();
 		Sleepms(2);
 	endforeach

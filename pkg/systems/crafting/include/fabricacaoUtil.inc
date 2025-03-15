@@ -82,3 +82,7 @@ function CriaNovaPropFabricado ( propFabricadoMontado)
 				
 	return novaPropFabricada;
 endfunction
+
+function CriaObjetoPosicao(quem)
+	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
+endfunction

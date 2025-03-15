@@ -5,6 +5,7 @@ use cfgfile;
 include "/include/epicPropNames";
 include ":crafting:/include/animacaoTratamentoProduto";
 include ":megacliloc:/include/toolTipUtils";
+include ":crafting:/include/tratamentoProduto";
 
 program AnimacaoTratamentoProduto(parametros)
 	var quem			:= parametros[1];
@@ -16,13 +17,13 @@ program AnimacaoTratamentoProduto(parametros)
 	var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
 	var estacao;
 	var itemDescGeral := ReadConfigFile(":*:itemdesc");
+	var processoGerente := GetProcess(pidGerente);
 	
 	if(propFabricado.receita.pericia == "Metal_Working")
 		estacao := PegaEstacaoFerreiro(quem, alvo);
 	endif
 
 	while(!deveSair)
-		var processoGerente := GetProcess(pidGerente);
 
 		if(processoGerente.state)
 			case (propFabricado.receita.pericia)
@@ -30,7 +31,7 @@ program AnimacaoTratamentoProduto(parametros)
 					var produtoElemConfig := itemDescGeral[propFabricado.receita.objtype];
 					var classificacaoProduto := ClassificaParametro(produtoElemConfig);
 					if(classificacaoProduto != DESCONHECIDO)
-						RodaAnimacaoFerreiro(quem,produto,estacao,processoGerente, classificacaoProduto);
+						devesair := RodaAnimacaoFerreiro(quem,produto,estacao,processoGerente, classificacaoProduto);
 					else
 						deveSair := true; //TODO tratar tinkering;
 					endif
@@ -40,4 +41,8 @@ program AnimacaoTratamentoProduto(parametros)
 			deveSair := true;
 		endif
 	endwhile
+
+	if(processoGerente.state)
+		processoGerente.sendEvent(struct {id := EV_CANCELADO});
+	endif
 endprogram

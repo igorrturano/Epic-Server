@@ -44,10 +44,6 @@ function InicializaSessaoComplexos(quem)
 endfunction
 
 
-function CriaObjetoPosicao(quem)
-	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
-endfunction
-
 function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsquemas := dictionary)
 	if(!sessao.?receitaSelecionada)
 		sessao.+receitaSelecionada := struct;
