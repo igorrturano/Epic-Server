@@ -755,17 +755,47 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     // Special Abilities section
     GFTextLine(gump, 50, 160, 1153, "Special Abilities:");
-    GFAddButton(gump, 250, 160, 2103, 2104, 1, 30);
-    GFTextLine(gump, 280, 160, 1153, "Add Special Ability");
     
-    // List of available abilities
-    GFTextLine(gump, 50, 190, 1153, "Available Abilities:");
-    GFTextLine(gump, 80, 210, 1153, "- Ice Hit");
-    GFTextLine(gump, 80, 230, 1153, "- Fire Hit");
-    GFTextLine(gump, 80, 250, 1153, "- Energy Hit");
-    GFTextLine(gump, 80, 270, 1153, "- Life Drain");
-    GFTextLine(gump, 80, 290, 1153, "- Damage Return");
-    GFTextLine(gump, 80, 310, 1153, "- Custom Hit Script");
+    // Add Weapon Special Ability button (using the same style as Page 5)
+    GFAddButton(gump, 50, 190, 2117, 2118, GF_CLOSE_BTN, 10);
+    GFTextLine(gump, 80, 190, 1153, "Add Weapon Special Ability");
+    
+    // Add Armor Special Ability button (right below the Weapon button)
+    GFAddButton(gump, 50, 220, 2117, 2118, GF_CLOSE_BTN, 11);
+    GFTextLine(gump, 80, 220, 1153, "Add Armor Special Ability");
+    
+    // Display chosen abilities in the center area
+    GFTextLine(gump, 330, 160, 1153, "Chosen abilities:");
+    
+    var y_pos := 190;
+    
+    // Display weapon special abilities
+    if (form_data.special && form_data.special.size() > 0)
+        foreach ability in (form_data.special)
+            GFTextLine(gump, 330, y_pos, 2100, ability.name);
+            if (ability.description)
+                GFTooltipText(gump, ability.description);
+    endif
+            y_pos += 20;
+        endforeach
+    endif
+    
+    // Display "..." if there are many abilities
+    if (form_data.special && form_data.special.size() > 4)
+        GFTextLine(gump, 330, y_pos, 2100, "...");
+        y_pos += 20;
+    endif
+    
+    // Display armor special abilities
+    if (form_data.armorspecial && form_data.armorspecial.size() > 0)
+        foreach ability in (form_data.armorspecial)
+            GFTextLine(gump, 330, y_pos, 2100, ability.name);
+            if (ability.description)
+                GFTooltipText(gump, ability.description);
+            endif
+            y_pos += 20;
+        endforeach
+    endif
     
     // Add a vertical divider
     GFResizePic(gump, 520, 160, 3000, 2, 230);
@@ -812,7 +842,372 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
+    
+    // Handle special ability buttons
+    if (input[0] == 10) // Add Weapon Special Ability
+        HandleAddWeaponSpecialAbility(who, input, form_data);
+        return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+    elseif (input[0] == 11) // Add Armor Special Ability
+        HandleAddArmorSpecialAbility(who, input, form_data);
+        return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+    endif
+
     return input;
+endfunction
+
+// Function to handle adding weapon special abilities
+function HandleAddWeaponSpecialAbility(who, input, byref form_data)
+    var weapon_abilities := GetWeaponHitScripts();
+    
+    // Create a gump with the same style as in the screenshot
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+    GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Weapon Special Ability");
+    
+    var y_pos := 60;
+    var counter := 1;
+    
+    foreach ability in weapon_abilities
+        // Use blue gem buttons as shown in the screenshot
+        GFAddButton(gump, 30, y_pos, 2104, 2103, GF_CLOSE_BTN, counter);
+        GFTextLine(gump, 60, y_pos, 1153, ability);
+        y_pos += 20;
+        counter += 1;
+    endforeach
+    
+    // Add Cancel button at the bottom right - without text
+    // CRITICAL FIX: Use a special value (999) for the cancel button
+    GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999);
+    
+    var result := GFSendGump(who, gump);
+    
+    // Debug message to see what's being returned
+    print("DEBUG: HandleAddWeaponSpecialAbility result[0] = " + result[0]);
+    
+    // Check for the cancel button (result[0] == 999)
+    if (result[0] == 999)
+        SendSysMessage(who, "Weapon ability selection cancelled.");
+        return 0; // User canceled
+    endif
+    
+    if (result[0] == 0)
+        SendSysMessage(who, "Weapon ability selection cancelled.");
+        return 0; // User canceled
+    endif
+    
+    var selected_ability := weapon_abilities[result[0]];
+    
+    // Now display options for the selected ability
+    var config_result := DisplayWeaponAbilityOptions(who, input, selected_ability, form_data);
+    
+    // Only return success if the configuration was completed successfully
+    if (config_result)
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+function DisplayWeaponAbilityOptions(who, input, ability, byref form_data)
+    // Create a gump with the same style as in the screenshot
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+    GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Configure " + ability);
+    
+    var y_pos := 60;
+    var script_path := "";
+    var description := "";
+    
+    case (ability)
+        "Ice Hit":
+            description := "Ice Hit applies cold damage to the target";
+            script_path := ":combat:weaponHitScripts/IceHit";
+            break;
+        "Fire Hit":
+            description := "Fire Hit applies fire damage to the target";
+            script_path := ":combat:weaponHitScripts/FireHit";
+            break;
+        "Energy Hit":
+            description := "Energy Hit applies energy damage to the target";
+            script_path := ":combat:weaponHitScripts/LightningHit";
+            break;
+        "Life Drain":
+            description := "Life Drain steals health from the target";
+            script_path := ":combat:weaponHitScripts/draintouch";
+            break;
+        "Bleeding Strike":
+            description := "Bleeding Strike causes the target to bleed over time";
+            script_path := ":combat:weaponHitScripts/bleedingstrike";
+            break;
+        "Concussion Hit":
+            description := "Concussion Hit drains stamina from the target";
+            script_path := ":combat:weaponHitScripts/ConcussionHit";
+            break;
+        "Unmount Hit":
+            description := "Unmount Hit knocks players off their mounts";
+            script_path := ":combat:weaponHitScripts/UnmountHit";
+            break;
+        "Anti Mounted Hit":
+            description := "Anti Mounted Hit does extra damage to mounted players";
+            script_path := ":combat:weaponHitScripts/AntiMountedHit";
+            break;
+        "Charge Hit":
+            description := "Charge Hit does extra damage when mounted";
+            script_path := ":combat:weaponHitScripts/ChargeHit";
+            break;
+        "Height Hit":
+            description := "Height Hit does damage based on height difference";
+            script_path := ":combat:weaponHitScripts/HeightHit";
+            break;
+        "Free Armor Hit":
+            description := "Free Armor Hit ignores armor protection";
+            script_path := ":combat:weaponHitScripts/FreeArmorHit";
+            break;
+        "Queima Roupa":
+            description := "Queima Roupa does extra damage at close range";
+            script_path := ":combat:weaponHitScripts/QueimaRoupa";
+            break;
+        "Area Damage":
+            description := "Area Damage affects multiple targets";
+            script_path := ":combat:weaponHitScripts/areadmg";
+            break;
+        "Freeze Hit":
+            description := "Freeze Hit temporarily paralyzes the target";
+            script_path := ":combat:weaponHitScripts/freezehitumsec";
+            break;
+        "Slayer":
+            description := "Slayer does extra damage to specific creature types";
+            script_path := ":combat:weaponHitScripts/slayer";
+            break;
+        "Pushback":
+            description := "Pushback knocks the target back";
+            script_path := ":combat:weaponHitScripts/pushback";
+            break;
+        "Spit Acid":
+            description := "Spit Acid applies acid damage to the target";
+            script_path := ":combat:weaponHitScripts/spitacid";
+            break;
+        "Custom Hit Script":
+            description := "Custom hit script";
+            GFTextLine(gump, 30, y_pos, 1153, "Enter custom hit script path:");
+            y_pos += 30;
+            GFTextEntry(gump, 30, y_pos, 300, 20, 1153, "", 1);
+            break;
+        default:
+            description := "No additional configuration needed";
+            break;
+    endcase
+    
+    GFTextLine(gump, 30, y_pos, 1153, description);
+    y_pos += 30;
+    
+    if (ability != "Custom Hit Script")
+        GFTextLine(gump, 30, y_pos, 1153, "Script: " + script_path);
+    endif
+    
+    y_pos += 50;
+    // Use the same button style as page 5
+    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 1); // Confirm button - returns 1
+    
+    // CRITICAL FIX: Change the button type to GF_CLOSE_BTN and use a different return value
+    GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999); // Cancel button - returns 999
+    
+    var result := GFSendGump(who, gump);
+    
+    // Debug message to see what's being returned
+    print("DEBUG: DisplayWeaponAbilityOptions result[0] = " + result[0]);
+    
+    // Check for the cancel button (result[0] == 999)
+    if (result[0] == 999)
+        SendSysMessage(who, "Weapon ability configuration cancelled.");
+        return 0; // User canceled
+    endif
+    
+    // Only proceed if the confirm button was clicked (result[0] == 1)
+    if (result[0] != 1)
+        SendSysMessage(who, "Unexpected result: " + result[0]);
+        return 0;
+    endif
+    
+    // Add the ability to the form_data structure
+    if (!form_data.special)
+        form_data.+special := array{};
+    endif
+    
+    var ability_struct := struct{};
+    ability_struct.+name := ability;
+    ability_struct.+description := description;
+    
+    if (ability == "Custom Hit Script")
+        ability_struct.+script_path := GFExtractData(result, 1);
+    else
+        ability_struct.+script_path := script_path;
+    endif
+    
+    // Debug message to verify the structure
+    SendSysMessage(who, "DEBUG: Adding ability: " + ability + " with script: " + ability_struct.script_path);
+    
+    form_data.special.append(ability_struct);
+    SendSysMessage(who, "Added " + ability + " to weapon special abilities.");
+    
+    return 1;
+endfunction
+
+function HandleAddArmorSpecialAbility(who, input, byref form_data)
+    var armor_abilities := GetArmorHitScripts();
+    
+    // Create a gump with the same style as in the screenshot
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+    GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Armor Special Ability");
+    
+    var y_pos := 60;
+    var counter := 1;
+    
+    foreach ability in armor_abilities
+        // Use the same button style as page 5 (2117/2118)
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, counter);
+        GFTextLine(gump, 60, y_pos, 1153, ability);
+        y_pos += 20;
+        counter += 1;
+    endforeach
+    
+    // Add Cancel button with the same style as page 5
+    // CRITICAL FIX: Use a special value (999) for the cancel button
+    GFAddButton(gump, 200, 350, 2119, 2120, GF_CLOSE_BTN, 999);
+    
+    var result := GFSendGump(who, gump);
+    
+    // Debug message to see what's being returned
+    print("DEBUG: HandleAddArmorSpecialAbility result[0] = " + result[0]);
+    
+    // Check for the cancel button (result[0] == 999)
+    if (result[0] == 999)
+        SendSysMessage(who, "Armor ability selection cancelled.");
+        return 0; // User canceled
+    endif
+    
+    if (result[0] == 0)
+        SendSysMessage(who, "Armor ability selection cancelled.");
+        return 0; // User canceled
+    endif
+    
+    var selected_ability := armor_abilities[result[0]];
+    
+    // Now display options for the selected ability
+    var config_result := DisplayArmorAbilityOptions(who, input, selected_ability, form_data);
+    
+    // Only return success if the configuration was completed successfully
+    if (config_result)
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+function DisplayArmorAbilityOptions(who, input, ability, byref form_data)
+    // Create a gump with the same style as page 5
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 400);
+    GFResizePic(gump, 15, 15, 9350, 470, 370); // Using the same background as page 5
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Configure " + ability);
+    
+    var y_pos := 60;
+    var script_path := "";
+    var description := "";
+    
+    case (ability)
+        "Damage Return":
+            description := "Damage Return reflects damage back to the attacker";
+            script_path := ":combat:armorHitScripts/dmgreturn";
+            break;
+        "Raw Damage Return":
+            description := "Raw Damage Return reflects raw damage back to the attacker";
+            script_path := ":combat:armorHitScripts/rawdmgreturn";
+            break;
+        "Bog Thing":
+            description := "Bog Thing summons a creature when hit";
+            script_path := ":combat:armorHitScripts/bogthing";
+            break;
+        "Campo Eletrico":
+            description := "Campo Eletrico creates an electric field when hit";
+            script_path := ":combat:armorHitScripts/campoeletrico";
+            break;
+        "Dupe Me":
+            description := "Dupe Me creates a duplicate of the NPC when hit";
+            script_path := ":combat:armorHitScripts/dupeme";
+            break;
+        "Custom Armor Hit Script":
+            description := "Custom armor hit script";
+            GFTextLine(gump, 30, y_pos, 1153, "Enter custom armor hit script path:");
+            y_pos += 30;
+            GFTextEntry(gump, 30, y_pos, 300, 20, 1153, "", 1);
+            break;
+        default:
+            description := "No additional configuration needed";
+            break;
+    endcase
+    
+    GFTextLine(gump, 30, y_pos, 1153, description);
+    y_pos += 30;
+    
+    if (ability != "Custom Armor Hit Script")
+        GFTextLine(gump, 30, y_pos, 1153, "Script: " + script_path);
+    endif
+    
+    y_pos += 50;
+    // Use the same button style as page 5
+    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 1); // Confirm button - returns 1
+    
+    // CRITICAL FIX: Change the button type to GF_CLOSE_BTN and use a different return value
+    GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999); // Cancel button - returns 999
+    
+    var result := GFSendGump(who, gump);
+    
+    // Debug message to see what's being returned
+    print("DEBUG: DisplayArmorAbilityOptions result[0] = " + result[0]);
+    
+    // Check for the cancel button (result[0] == 999)
+    if (result[0] == 999)
+        SendSysMessage(who, "Armor ability configuration cancelled.");
+        return 0; // User canceled
+    endif
+    
+    // Only proceed if the confirm button was clicked (result[0] == 1)
+    if (result[0] != 1)
+        SendSysMessage(who, "Unexpected result: " + result[0]);
+        return 0;
+    endif
+    
+    // Add the ability to the form_data structure
+    if (!form_data.armorspecial)
+        form_data.+armorspecial := array{};
+    endif
+    
+    var ability_struct := struct{};
+    ability_struct.+name := ability;
+    ability_struct.+description := description;
+    
+    if (ability == "Custom Armor Hit Script")
+        ability_struct.+script_path := GFExtractData(result, 1);
+    else
+        ability_struct.+script_path := script_path;
+    endif
+    
+    // Add debug message
+    SendSysMessage(who, "DEBUG: Adding armor ability: " + ability + " with script: " + ability_struct.script_path);
+    
+    form_data.armorspecial.append(ability_struct);
+    SendSysMessage(who, "Added " + ability + " to armor special abilities.");
+    
+    return 1;
 endfunction
 
 function ShowPage4(who, title, gump_width, gump_height)
@@ -998,6 +1393,46 @@ function CreateBossFromGump(who, form_data)
     boss.description := form_data.description;
     boss.trueboss := form_data.trueboss;
     
+    // Debug: Print form_data special abilities
+    SendSysMessage(who, "DEBUG: Checking form_data special abilities");
+    if (form_data.special && form_data.special.size() > 0)
+        SendSysMessage(who, "DEBUG: Found " + form_data.special.size() + " special abilities in form_data");
+        foreach ability in (form_data.special)
+            SendSysMessage(who, "DEBUG: form_data ability: " + ability.name + " with script: " + ability.script_path);
+            
+            // Copy the ability to the boss structure
+            var ability_struct := struct{};
+            ability_struct.+name := ability.name;
+            ability_struct.+script_path := ability.script_path;
+            boss.special.append(ability_struct);
+        endforeach
+    else
+        SendSysMessage(who, "DEBUG: No special abilities found in form_data");
+    endif
+    
+    // Debug: Print form_data armor special abilities
+    SendSysMessage(who, "DEBUG: Checking form_data armor special abilities");
+    if (form_data.armorspecial && form_data.armorspecial.size() > 0)
+        SendSysMessage(who, "DEBUG: Found " + form_data.armorspecial.size() + " armor special abilities in form_data");
+        foreach ability in (form_data.armorspecial)
+            SendSysMessage(who, "DEBUG: form_data armor ability: " + ability.name + " with script: " + ability.script_path);
+            
+            // Copy the ability to the boss structure
+            var ability_struct := struct{};
+            ability_struct.+name := ability.name;
+            ability_struct.+script_path := ability.script_path;
+            
+            // Initialize armorspecial array if needed
+            if (!boss.armorspecial)
+                boss.+armorspecial := array{};
+            endif
+            
+            boss.armorspecial.append(ability_struct);
+        endforeach
+    else
+        SendSysMessage(who, "DEBUG: No armor special abilities found in form_data");
+    endif
+    
     // Special AI
     if (form_data.special_ai != "")
         var ai_spec := struct{};
@@ -1009,14 +1444,14 @@ function CreateBossFromGump(who, form_data)
     // NPC Profile
     boss.url := form_data.url;
     boss.detailed_description := form_data.detailed_description;
-    
+
     // Attributes
     boss.str := CInt(form_data.str);
     boss.dex := CInt(form_data.dex);
     boss.int := CInt(form_data.int);
     boss.hits := CInt(form_data.hits);
     boss.dmg := CDbl(form_data.dmg);
-    
+
     // Resistances
     boss.phresist := CInt(form_data.phresist);
     boss.firesist := CInt(form_data.firesist);
@@ -1029,7 +1464,7 @@ function CreateBossFromGump(who, form_data)
     boss.tactics := CInt(form_data.tactics);
     boss.magery := CInt(form_data.magery);
     boss.awareness := CInt(form_data.awareness);
-    
+
     SendSysMessage(who, "Creating boss...");
     
     // Create a test boss to show the player
@@ -1086,3 +1521,4 @@ function SafeExtractData(input, key, fallback)
     
     return result;
 endfunction
+

@@ -35,7 +35,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.dmg)
         SetObjProperty(npc, "dmgbonus", CDbl(boss.dmg));
     endif
-    
+// TODO: Validar se as resistencias estão sendo aplicadas corretamente
     // Set resistances
     if (boss.phresist)
         npc.resist_physical_mod := CInt(boss.phresist);
@@ -93,34 +93,103 @@ function CreateEpicBoss(boss, x, y, z, realm)
         AP_SetSkillMod(npc, AWARENESS, CInt(boss.awareness));
     endif
     
+    // Add all other skills from attributeConstants.inc
+    if (boss.alchemy)
+        AP_SetSkillMod(npc, ALCHEMY, CInt(boss.alchemy));
+    endif
+    
+    if (boss.parry)
+        AP_SetSkillMod(npc, PARRY, CInt(boss.parry));
+    endif
+    
+    if (boss.onehanded)
+        AP_SetSkillMod(npc, ONEHANDED, CInt(boss.onehanded));
+    endif
+    
+    if (boss.twohanded)
+        AP_SetSkillMod(npc, TWOHANDED, CInt(boss.twohanded));
+    endif
+    
+    if (boss.dualwield)
+        AP_SetSkillMod(npc, DUALWIELD, CInt(boss.dualwield));
+    endif
+    
+    if (boss.ranged)
+        AP_SetSkillMod(npc, RANGED, CInt(boss.ranged));
+    endif
+    
+    if (boss.sneak)
+        AP_SetSkillMod(npc, SNEAK, CInt(boss.sneak));
+    endif
+    
+    if (boss.pickpocketing)
+        AP_SetSkillMod(npc, PICKPOCKETING, CInt(boss.pickpocketing));
+    endif
+    
+    if (boss.mechanics)
+        AP_SetSkillMod(npc, MECHANICS, CInt(boss.mechanics));
+    endif
+    
+    if (boss.medicine)
+        AP_SetSkillMod(npc, MEDICINE, CInt(boss.medicine));
+    endif
+    
+    if (boss.survival)
+        AP_SetSkillMod(npc, SURVIVAL, CInt(boss.survival));
+    endif
+    
+    if (boss.metalworking)
+        AP_SetSkillMod(npc, METALWORKING, CInt(boss.metalworking));
+    endif
+    
+    if (boss.woodworking)
+        AP_SetSkillMod(npc, WOODWORKING, CInt(boss.woodworking));
+    endif
+    
+    if (boss.domestic_work)
+        AP_SetSkillMod(npc, Domestic_Work, CInt(boss.domestic_work));
+    endif
+    
+    if (boss.gathering)
+        AP_SetSkillMod(npc, GATHERING, CInt(boss.gathering));
+    endif
+    
+    if (boss.handleanimal)
+        AP_SetSkillMod(npc, HANDLEANIMAL, CInt(boss.handleanimal));
+    endif
+    
     // Set special abilities
     if (boss.special && boss.special.size() > 0)
         foreach ability in (boss.special)
-            if (ability.name && ability.ai)
-                case (ability.name)
-                    "Special AI":
-                        SetObjProperty(npc, "AIScript", ability.ai);
-                        SetObjProperty(npc, "AIType", ability.ai);
-                        break;
-                    "Ice Hit":
-                        AddHitScript(npc, ":combat:icehit");
-                        break;
-                    "Fire Hit":
-                        AddHitScript(npc, ":combat:firehit");
-                        break;
-                    "Energy Hit":
-                        AddHitScript(npc, ":combat:energyhit");
-                        break;
-                    "Life Drain":
-                        AddHitScript(npc, ":combat:lifedrain");
-                        break;
-                    "Damage Return":
-                        AddHitScript(npc, ":combat:damagereturn");
-                        break;
-                    "Custom Hit Script":
-                        AddHitScript(npc, ability.ai);
-                        break;
-                endcase
+            // Get the script path from the ability
+            var script := ability.script_path;
+            
+            if (ability.name && script)
+                // For Special AI, we need to set specific properties
+                if (ability.name == "Special AI")
+                    SetObjProperty(npc, "AIScript", script);
+                    SetObjProperty(npc, "AIType", script);
+                else
+                    // For all other abilities, just add the hit script directly
+                    AddHitScript(npc, script);
+                endif
+            endif
+        endforeach
+    endif
+    
+    // Set armor hit scripts
+    if (boss.armorspecial && boss.armorspecial.size() > 0)
+        foreach ability in (boss.armorspecial)
+            var script := ability.script_path;
+            
+            if (ability.name && script)
+                // For all armor abilities, just add the armor hit script directly
+                print("DEBUG: Adding armor hit script: " + script + " for ability: " + ability.name);
+                AddArmorHitScript(npc, script);
+                
+                // Verify the script was added
+                var armor_scripts := GetObjProperty(npc, "ArmorHitScripts");
+                print("DEBUG: ArmorHitScripts after adding: " + armor_scripts);
             endif
         endforeach
     endif
@@ -195,20 +264,82 @@ endfunction
 
 // Adds a hit script to an NPC
 function AddHitScript(npc, script)
+    // Check if NPC is valid
+    if (!npc)
+        return 0;
+    endif
+    
+    // Get current hit scripts
     var hit_scripts := GetObjProperty(npc, "HitScripts");
+    
     if (!hit_scripts)
         hit_scripts := array{};
     endif
+    
+    // Add the new script
     hit_scripts.append(script);
+    
+    // Set the property
     SetObjProperty(npc, "HitScripts", hit_scripts);
+    
+    return 1;
 endfunction
 
 // Adds an armor hit script to an NPC
 function AddArmorHitScript(npc, script) 
+    // Check if NPC is valid
+    if (!npc)
+        return 0;
+    endif
+    
+    // Get current armor hit scripts
     var hit_scripts := GetObjProperty(npc, "ArmorHitScripts");
+    
     if (!hit_scripts)
         hit_scripts := array{};
     endif
+    
+    // Add the new script
     hit_scripts.append(script);
+    
+    // Set the property
     SetObjProperty(npc, "ArmorHitScripts", hit_scripts);
+    
+    return 1;
+endfunction
+
+// Get all available weapon hit scripts
+function GetWeaponHitScripts()
+    return array{
+        "Ice Hit",
+        "Fire Hit",
+        "Energy Hit",
+        "Life Drain",
+        "Bleeding Strike",
+        "Concussion Hit",
+        "Unmount Hit",
+        "Anti Mounted Hit",
+        "Charge Hit",
+        "Height Hit",
+        "Free Armor Hit",
+        "Queima Roupa",
+        "Area Damage",
+        "Freeze Hit",
+        "Slayer",
+        "Pushback",
+        "Spit Acid",
+        "Custom Hit Script"
+    };
+endfunction
+
+// Get all available armor hit scripts
+function GetArmorHitScripts()
+    return array{
+        "Damage Return",
+        "Raw Damage Return",
+        "Bog Thing",
+        "Campo Eletrico",
+        "Dupe Me",
+        "Custom Armor Hit Script"
+    };
 endfunction
