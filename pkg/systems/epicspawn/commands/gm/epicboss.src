@@ -1501,24 +1501,3 @@ function CreateBossFromGump(who, form_data)
     
     return 1;
 endfunction
-
-// Safely extract data from a gump input, returning a fallback value if there's an error
-function SafeExtractData(input, key, fallback)
-    var result := fallback;
-    
-    // Debug: Print input and key
-    print("DEBUG: SafeExtractData key = " + key + ", fallback = " + fallback);
-    
-    if (input[0] && key in input)
-        // Check if we can extract data without error
-        var extracted := GFExtractData(input, key);
-        if (extracted != error && extracted != "")
-            result := extracted;
-            // Debug: Print extracted value
-            print("DEBUG: Extracted value = " + result);
-        endif
-    endif
-    
-    return result;
-endfunction
-
