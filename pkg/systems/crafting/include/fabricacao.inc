@@ -87,10 +87,10 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO Decidir se item complexos pode ser usado como componente. (tranca, por exemplo)
+	//TODO Validar a Ação no loop de fabricação de intens complexos e componentes.
+	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO associações dos componentes aos produtos montandos tá muito amarrada ao gump. tentar desacoplar isso onde for possivel.
-	//TODO criar um membro do struct de fabricado do item final para indexar os componentes por caracteristica. (Fica menos custoso na hora de aplicar o efeito)
 	//TODO Criar gumps de ajuda.
 	//TODO Munições precisão ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Embelezar gumps [Penultima fase]
@@ -494,6 +494,7 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 														componenteEscolhido.tier,
 														componenteEscolhido.material.chave,
 														componenteEscolhido.componenteNecessario.caracteristica,
+														configRecursos,
 														componenteEscolhido.propriedades
 														);
 
@@ -502,7 +503,8 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 		sessao.receitaSelecionada.esquemaSelecionado.material := componenteEscolhido.material.chave;
 	endif
 
-	if(componenteEscolhido.tier.valor != 0 && sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
+	Print("componenteEscolhido.poderAvaliado " + componenteEscolhido.poderAvaliado);
+	if(componenteEscolhido.poderAvaliado != 0)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
 		sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum := 0;
 	endif
 

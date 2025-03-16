@@ -37,11 +37,14 @@ function PegaDescComponente(objeto,xDesc := "")
 	prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
 	if((prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
 		//xDesc := xDesc + "<br>";
+		var larguraInicial := Len(xDesc);
 		foreach componente in (prop.componentes)
 			xDesc := PegaDescEfeitosComponente(componente, xDesc);
 			Sleepms(2);
 		endforeach
-		xDesc := xDesc + "<br>";
+		if(larguraInicial != Len(xDesc))
+			xDesc := xDesc + "<br>";
+		endif
 	endif
 	return xDesc;
 endfunction

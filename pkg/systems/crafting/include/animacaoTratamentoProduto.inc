@@ -47,7 +47,6 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 		SendSysMessageEx(quem,"É necessário que haja uma bigorna próxima a você.",SSM_FAIL);
 		return false;
 	endif
-	Print("ferramentaNecessaria " +  ferramentaNecessaria);
 	if(ferramentaNecessaria.objtype != 0x13e3) //Martelo de ferreiro.
 		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
 		return false;
