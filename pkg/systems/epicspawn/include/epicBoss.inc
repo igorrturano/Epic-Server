@@ -237,7 +237,11 @@ function CreateEpicBoss(boss, x, y, z, realm)
             timedscripts_array.append(script_struct);
         endforeach
         SetObjProperty(npc, "TimedScripts", timedscripts_array);
+        SetObjProperty(npc, "IsBoss", 1); // Mark this NPC as a boss
         print("DEBUG: Set TimedScripts property with " + timedscripts_array.size() + " scripts");
+        
+        // Start the TimedScript control process
+        start_script(":epicAI:scripts/timedScriptControl", array{npc});
     endif
     
     return npc;

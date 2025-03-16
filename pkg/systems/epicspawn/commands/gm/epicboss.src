@@ -1549,24 +1549,33 @@ function HandleAddTimedScript(who, input, byref form_data)
     
     // Create a gump with the same style as in the screenshot
     var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
-    GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700); // Increased height further
+    GFResizePic(gump, 15, 15, 9350, 470, 670); // Increased height further
     
     GFTextMid(gump, 0, 25, 500, 1153, "Select TimedScript");
     
     var y_pos := 60;
     var counter := 1;
     
+    // Create a dictionary of descriptions for each timedscript
+    var descriptions := GetTimedScriptDescriptions();
+    
     foreach script in timedscripts
         // Use blue gem buttons as shown in the screenshot
         GFAddButton(gump, 30, y_pos, 2104, 2103, GF_CLOSE_BTN, counter);
         GFTextLine(gump, 60, y_pos, 1153, script);
+        
+        // Add tooltip if description exists
+        if (descriptions.exists(script))
+            GFTooltipText(gump, descriptions[script]);
+        endif
+        
         y_pos += 20;
         counter += 1;
     endforeach
     
     // Add Cancel button at the bottom right
-    GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999);
+    GFAddButton(gump, 400, 630, 4017, 4019, GF_CLOSE_BTN, 999);
     
     var result := GFSendGump(who, gump);
     
@@ -1595,6 +1604,68 @@ function HandleAddTimedScript(who, input, byref form_data)
     endif
     
     return 0;
+endfunction
+
+// Function to get descriptions for each timedscript
+function GetTimedScriptDescriptions()
+    var descriptions := dictionary{
+        "defaultPoison" -> "Applies poison damage over time",
+        "hallucination" -> "Causes visual hallucinations and confusion",
+        "paralysis" -> "Temporarily paralyzes the target",
+        "clumsy" -> "Reduces target's dexterity",
+        "feeblemind" -> "Reduces target's intelligence",
+        "weaken" -> "Reduces target's strength",
+        "atrasarmagias" -> "Delays spell casting",
+        "fugademana" -> "Drains mana over time",
+        "staminaPoison" -> "Drains stamina over time",
+        "manaPoison" -> "Drains mana over time",
+        "bleed" -> "Causes bleeding damage over time",
+        "darkborer" -> "Applies a powerful poison effect",
+        "agility" -> "Increases dexterity",
+        "strength" -> "Increases strength",
+        "invis" -> "Makes the target invisible",
+        "desviarprojetil" -> "Chance to avoid projectile attacks",
+        "dmgreduction" -> "Reduces incoming damage",
+        "evasao" -> "Increases chance to dodge attacks",
+        "precisao" -> "Increases hit chance",
+        "phmod" -> "Modifies physical resistance",
+        "fimod" -> "Modifies fire resistance",
+        "comod" -> "Modifies cold resistance",
+        "pomod" -> "Modifies poison resistance",
+        "enmod" -> "Modifies energy resistance"
+    };
+    
+    return descriptions;
+endfunction
+
+// Get all available timedscripts
+function GetTimedScripts()
+    return array{
+        "defaultPoison",
+        "hallucination",
+        "paralysis",
+        "clumsy",
+        "feeblemind",
+        "weaken",
+        "atrasarmagias",
+        "fugademana",
+        "staminaPoison",
+        "manaPoison",
+        "bleed",
+        "darkborer",
+        "agility",
+        "strength",
+        "invis",
+        "desviarprojetil",
+        "dmgreduction",
+        "evasao",
+        "precisao",
+        "phmod",
+        "fimod",
+        "comod",
+        "pomod",
+        "enmod"
+    };
 endfunction
 
 function DisplayTimedScriptOptions(who, input, script_name, byref form_data)
@@ -1708,34 +1779,4 @@ function DisplayTimedScriptOptions(who, input, script_name, byref form_data)
     SendSysMessage(who, "Added " + script_name + " to timedscripts.");
     
     return 1;
-endfunction
-
-// Get all available timedscripts
-function GetTimedScripts()
-    return array{
-        "defaultPoison",
-        "hallucination",
-        "paralysis",
-        "clumsy",
-        "feeblemind",
-        "weaken",
-        "atrasarmagias",
-        "fugademana",
-        "staminaPoison",
-        "manaPoison",
-        "bleed",
-        "darkborer",
-        "agility",
-        "strength",
-        "invis",
-        "desviarprojetil",
-        "dmgreduction",
-        "evasao",
-        "precisao",
-        "phmod",
-        "fimod",
-        "comod",
-        "pomod",
-        "enmod"
-    };
 endfunction

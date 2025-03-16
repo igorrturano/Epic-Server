@@ -5,6 +5,7 @@ include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
+include "include/timedScripts";
 
 var brain_type;
 var me := Self();
@@ -30,6 +31,9 @@ program KillPlayers()
                 // default: GenericBrain(); // chamar o ghaia:generic
             endcase
         endif
+        // Process any TimedScripts
+        start_script(":epicAI:scripts/timedScriptControl", array{me});
+        
         sleep(15);
     endwhile
 endprogram
