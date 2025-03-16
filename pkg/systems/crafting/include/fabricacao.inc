@@ -90,8 +90,8 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Validar a Ação no loop de fabricação de intens complexos e componentes.
 	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
-	//TODO associações dos componentes aos produtos montandos tá muito amarrada ao gump. tentar desacoplar isso onde for possivel.
 	//TODO Criar gumps de ajuda.
+	//TODO verificar porque os componentes não estão estacando na criação..
 	//TODO Munições precisão ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Embelezar gumps [Penultima fase]
 	//TODO Documentar tudo [Ultima fase]
@@ -262,7 +262,8 @@ function MontaMelhorEsquema(quem, sessao)
 		Sleepms(2);
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		MontaComponentesEscolhidos(sessao, opcaoEncontrada, componenteNecessario, componenteEncontrado.indiceEncaixe,configRecursos);
+		var componenteEscolhido := MontaComponentesEscolhidos(opcaoEncontrada, componenteNecessario, configRecursos);
+		var temp := AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
@@ -472,11 +473,32 @@ function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, config
 									componentesNecessarios[retornoDropDownOpcao.indiceEncaixeComponente];
 	
 	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
-		MontaComponentesEscolhidos(sessao, retornoDropDownOpcao, componenteNecessario, retornoDropDownOpcao.indiceEncaixeComponente, configRecursos);
+		var componenteEscolhido := MontaComponentesEscolhidos(retornoDropDownOpcao, componenteNecessario, configRecursos);
+		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, retornoDropDownOpcao.indiceEncaixeComponente);
 	endif
 endfunction
 
-function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componenteNecessario, indiceEncaixe, configRecursos)
+function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe)
+	if(componenteNecessario.isPrincipal)
+			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
+			esquemaSelecionado.material := componenteEscolhido.material.chave;
+	endif
+
+	if(componenteEscolhido.poderAvaliado != 0)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
+		esquemaSelecionado.isCompletamenteComum := 0;
+	endif
+
+	if(esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
+		esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
+	else
+		esquemaSelecionado.componentesEscolhidos.insert(indiceEncaixe, componenteEscolhido);
+	endif
+
+	return esquemaSelecionado;
+	
+endfunction
+
+function MontaComponentesEscolhidos(componenteEncontrado, componenteNecessario, configRecursos)
 	var componenteEscolhido := struct;
 		var itemNaBag := componenteEncontrado.itemRef;
 
@@ -498,22 +520,7 @@ function MontaComponentesEscolhidos(byref sessao, componenteEncontrado, componen
 														componenteEscolhido.propriedades
 														);
 
-	if(componenteNecessario.isPrincipal)
-		sessao.receitaSelecionada.esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
-		sessao.receitaSelecionada.esquemaSelecionado.material := componenteEscolhido.material.chave;
-	endif
-
-	Print("componenteEscolhido.poderAvaliado " + componenteEscolhido.poderAvaliado);
-	if(componenteEscolhido.poderAvaliado != 0)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
-		sessao.receitaSelecionada.esquemaSelecionado.isCompletamenteComum := 0;
-	endif
-
-	if(sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
-		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
-	else
-		sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos.insert(indiceEncaixe,componenteEscolhido);
-	endif
-
+	return componenteEscolhido;
 endfunction
 
 function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
