@@ -1,8 +1,10 @@
 use uo;
+use guilds;
+
 include "include/say";
+include ":faccao:include/shared_functions";
 
-program CanRemove(mobile, container, item, move_type)
-
+program CanRemove(mobile, unused_container, unused_item, unused_move_type)
     if (!CanRemoveItems(mobile))
         SendSysMessage(mobile, "Você não tem permissão para remover itens deste baú.");
         return 0;

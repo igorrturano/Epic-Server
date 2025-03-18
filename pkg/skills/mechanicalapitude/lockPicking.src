@@ -155,17 +155,38 @@ function PickTreasureChest(me, lockpick, chest)
 if ( hab1_mchest || hab2_mchest)
 	if (magic_chest || (diff > mec_skill + 15 && diff < mec_skill + 40) )
 	if(mini_game(me, diff, mec_skill, chest))
-    //set_critical(1);
-        KP_ToggleLock(chest, me); // Coloque aqui primeiro
-        SetObjProperty(chest, "arrombado", "" + me.name);
-		SetObjProperty(chest, "locktime", polcore().systime);
-        PlaySoundEffect(chest, 0x0200);
-        PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
-        //set_critical(0);
-        SendViewContainer(me, chest);
+		if (chest.isDoor())
+			set_critical(1);
+			PrintText(me, "*Destrancou "+chest.desc+"*");
+			chest.locked := 0;
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", polcore().systime);
+			PlaySoundEffect(chest, 0x0200);
+			PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
+			set_critical(0);
+		else
+			set_critical(1);
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", ReadGameClock());
+			chest.locked := 0;
+			set_critical(0);
+			PrintTextAbove(me, "*"+me.name+" disparou a armadilha*");
+			SendSysMessageEx(me,"Você forçou a abertura disparando a armadilha!", SSM_FAIL);
+			RunTraps(chest, me);
+			SendViewContainer(me, chest);
+		endif
+		var current_skill := AP_GetTrueSkill(me, "MECHANICS"); 
+		AP_SetTrueSkill(me, "MECHANICS", current_skill + 0.1); //Como não tem checkskill e a falha quebra a tranca, 0.1 up de skill garantido sempre ao abrir
 		return 1;
-    else
+	else
 		SendSysMessageEx("Voce falhou!", SSM_FAIL);
+		if (chest.isDoor())
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", polcore().systime);
+		else
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", ReadGameClock());
+		endif
 		return;
 	endif
 	endif
@@ -203,7 +224,7 @@ endif
         Sleepms(500);
         
         if (!temHabilidade(me, "Especialista em Invasoes") && check < -20)
-            PlaySoundEffect(chest, 0x0F3);
+            PlaySoundEffect(chest, 0x040);
             SendSysMessageEx(me, "Sua gazua quebrou!", SSM_FAIL);
             SubtractAmount(lockpick, 1);
         endif
