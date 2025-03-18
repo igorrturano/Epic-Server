@@ -21,7 +21,7 @@ program HitScript(params)
     sleep(2);
 
     var dist := Distance(who, targ);
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, ARCANA));
     who.frozen := 1;
 
     if(!CheckLosAt(who, targ.x, targ.y, targ.z))

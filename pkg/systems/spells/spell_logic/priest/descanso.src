@@ -28,9 +28,9 @@ program SpellScript(params)
 		return;
 	endif
 
-//	SetVital( targ, STAMINA, cint(GetVital( targ, STAMINA ) + AP_GetSkill(targ, MAGICLORE)/10) );	
+//	SetVital( targ, STAMINA, cint(GetVital( targ, STAMINA ) + AP_GetSkill(targ, THEOLOGY)/10) );	
 
-	HealStamina(targ, AP_GetSkill(who, MAGICLORE)/4);
+	HealStamina(targ, AP_GetSkill(who, THEOLOGY)/4);
 	
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);

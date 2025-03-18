@@ -17,7 +17,7 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-    var duration := (CInt(AP_GetSkill(who, MAGICLORE)) / 10);
+    var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
 
     PlayStationaryEffect(info.x, info.y, info.z, 0x6cb7, 10, 20, 0, who.realm);
     foreach mob in ListMobilesNearLocation(info.x, info.y, info.z, 3, info.realm)

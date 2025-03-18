@@ -11,7 +11,7 @@
 // const GUMPID_CLERICSPELL := 0x00001C;
 
 // program melhorar(player)
-//     var mlore := Cint(AP_GetSkill(player, MAGICLORE));
+//     var mlore := Cint(AP_GetSkill(player, ARCANA));
 //     var input := create_portal_gump(player);
 //     if (input[0] == 201) // Mira
 //         if (GetObjProperty(player, "Cano Serrado"))

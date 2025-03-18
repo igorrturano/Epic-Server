@@ -47,7 +47,7 @@ program SpellScript(params)
         endif
     endforeach
 
-    var duration := cint(AP_GetSkill(who, MAGICLORE)/2);
+    var duration := cint(AP_GetSkill(who, ARCANA)/2);
     if (TemHabilidade(who, "Valdruk"))
         duration := Cint(duration * 2);
     endif

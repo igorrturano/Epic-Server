@@ -17,7 +17,7 @@ program summonSkeletaSteed(params)
     //HugeRedSpider
     //BlackHugeSpider
 	var template := ":epicai:GiantSpider";
-    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+    var lvl := Cint(AP_GetSkill(who, THEOLOGY));
 
     if (lvl >= 90)
         template := ":epicai:BlackHugeSpider";
@@ -45,7 +45,7 @@ program summonSkeletaSteed(params)
     PlaySoundEffect(who, 0x686);
 
 	var mount := summon(template, targ, who);
-	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+	var duracao := 120 + 180 * AP_GetSkill(who, THEOLOGY)/ 100;
     var mount2 := summon(template, targ, who);
 	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
     if (InDarkness(who))

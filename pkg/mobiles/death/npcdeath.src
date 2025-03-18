@@ -153,7 +153,7 @@ program core_npcDeath(params)
 				i++;
 			endwhile
 
-			AP_SetTrueSkill(corpse, MAGICLORE, 100);
+			AP_SetTrueSkill(corpse, ARCANA, 100);
 			Run_Script(":spells:spell_logic/mage/fireball", {corpse, corpse});
 		endif
 	endif
@@ -161,7 +161,7 @@ program core_npcDeath(params)
     if (GetObjProperty(corpse, "soulharvest"))
         var shamanserial := getobjProperty(corpse, "soulharvest");
         var shaman := SystemFindObjectBySerial(shamanserial);
-        var shaman_reap_bonus := Cint(AP_GetSkill(shaman, MAGICLORE));
+        var shaman_reap_bonus := Cint(AP_GetSkill(shaman, ARCANA));
 
         var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
         if (!shaman_souls)
@@ -199,7 +199,7 @@ program core_npcDeath(params)
 			endif
 		endif
         
-        var shaman_reap_bonus := Cint(AP_GetSkill(mob, MAGICLORE));
+        var shaman_reap_bonus := Cint(AP_GetSkill(mob, ARCANA));
 
         // HABILIDADES SHAMAN
         if (TemHabilidade(mob, "Sede de sangue"))

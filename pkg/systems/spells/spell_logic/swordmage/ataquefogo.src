@@ -24,7 +24,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var time := GetSpellDuration( AP_GetSkill(who, MAGICLORE) );
+	var time := GetSpellDuration( AP_GetSkill(who, ARCANA) );
 	
 	if (targ.isA(POLCLASS_WEAPON))
 

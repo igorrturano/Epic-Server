@@ -138,7 +138,7 @@ program SpellScript(params)
 
 	detach();
 
-	var time := cint(AP_GetSkill(who, MAGICLORE) );
+	var time := cint(AP_GetSkill(who, THEOLOGY) );
 	if (time < 30 )
 		time := 30;
 	endif

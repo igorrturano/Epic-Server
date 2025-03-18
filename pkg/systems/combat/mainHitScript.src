@@ -231,7 +231,7 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 			var copmobs := GetObjProperty(defender, "#chainserials");
 			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
 			var copdefenders := array;
-			var lvl := cdbl(AP_GetSkill(mage, MAGICLORE)/200);
+			var lvl := cdbl(AP_GetSkill(mage, ARCANA)/200);
 
 			foreach serial in copmobs
 				copdefenders.append(SystemFindObjectBySerial(serial));
@@ -250,7 +250,7 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 	endif
 
 	total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);
-	var shaman_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
+	var shaman_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 5);
 	if (Getcooldown(attacker, "bloodlust") > 0)
 		PlayStationaryEffect(attacker.x, attacker.y, attacker.z, GFX_BLUE_SPARKLE_GROUND, 10, 20, 0, attacker.realm);
 		HealFLS(attacker, total * shaman_bonus/100);
@@ -516,7 +516,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 	if (GetCooldown(weapon, "ataqueelemental") )
 		EraseObjProperty(weapon, "#ataqueelemental");
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
-		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
 		dmg := ApplyChargesCalculation(weapon, dmg, 1);
 
 		if (elemental != error)
@@ -532,7 +532,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 
     var arcane_bows := array{0xFA6D, 0XF997};
 	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype in arcane_bows)
-		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
 		var arcane_damage := dmg*0.5;
 
 		if (TemHabilidade(attacker, "Tirothan"))
@@ -563,7 +563,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 
     //if (GetObjProperty(attacker, "#justicaderothen"))
 	//	var dmg := 1;
-    //    dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+    //    dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
         
     //    Run_Script_To_Completion(":combat:weaponHitScripts/smiteEvil", array{attacker, defender, weapon, armor, basedamage, dmg*2});
 	//endif
@@ -571,7 +571,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 	if ( GetCooldown(weapon, "circulodevas") )
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
-			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			var dmg  := AP_GetSkill(attacker, ARCANA)/10;
 			dmg := ApplyChargesCalculation(weapon, dmg, 2);
 			if(dmg < 3)
 				dmg := 3;
@@ -825,7 +825,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 			endif
             // Sempre que for mexer nesse timer, mexer também  no .arremessar ou criar funcao e chamar em ambos
 			if (poisonInfo.name == "paralyzePoison")
-                var duration := CInt(AP_GetSkill(attacker, ALCHEMY) / 20 );
+                var duration := CInt(AP_GetSkill(attacker, SCIENCE) / 20 );
                 if (duration < 2)
                     duration := 2;
                 endif

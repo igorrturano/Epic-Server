@@ -23,7 +23,7 @@ program SpellScript(params)
   endif
 
   //Bonus
-  var bonus := Cint( AP_GetSkill( who, MAGICLORE ) );
+  var bonus := Cint( AP_GetSkill( who, ARCANA ) );
 
   if (temHabilidade(who, "Domínio Vital"))
 		bonus := CInt(bonus * 0.07); // TODO: Rever se esse valor vai ser coerente com a hab. Max = 7

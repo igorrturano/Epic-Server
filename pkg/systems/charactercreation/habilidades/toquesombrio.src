@@ -15,7 +15,7 @@ program manobra(who)
 		return 1;
 	endif
 	
-	var level := cInt(AP_GetSkill(who, MAGICLORE)/20);
+	var level := cInt(AP_GetSkill(who, THEOLOGY)/20);
 	
 	TS_StartTimer(targ, "regensombrio", 45, level, who);
 	DamageFLS(targ, level*22, DMG_FORCED, who);

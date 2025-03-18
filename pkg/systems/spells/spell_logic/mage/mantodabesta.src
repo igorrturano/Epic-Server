@@ -23,7 +23,7 @@ program SpellScript(params)
 		return 0;
 	endif
 	
-	TS_StartTimer(targ, "mantodabesta", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), 1, who, 1); 
+	TS_StartTimer(targ, "mantodabesta", GetSpellDuration(AP_GetSkill(who, ARCANA)), 1, who, 1); 
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 	SendSysMessageEx(who, "O alvo foi encantado com sucesso.", SSM_INFO);
 	
