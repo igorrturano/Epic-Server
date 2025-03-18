@@ -561,13 +561,6 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		start_script(":combat:weaponHitScripts/bleedingstrike", array{attacker, defender, weapon, armor, basedamage, dmg*2});
 	endif
 
-    //if (GetObjProperty(attacker, "#justicaderothen"))
-	//	var dmg := 1;
-    //    dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
-        
-    //    Run_Script_To_Completion(":combat:weaponHitScripts/smiteEvil", array{attacker, defender, weapon, armor, basedamage, dmg*2});
-	//endif
-
 	if ( GetCooldown(weapon, "circulodevas") )
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
