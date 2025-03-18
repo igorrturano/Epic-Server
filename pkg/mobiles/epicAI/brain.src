@@ -28,12 +28,11 @@ program KillPlayers()
                 "monster": MonsterBrain();
                 "animal":  AnimalBrain();
                 "humanoid": HumanoidBrain();
-                // default: GenericBrain(); // chamar o ghaia:generic
+                // default: GenericBrain(); // chamar o ghaia:generic -> TODO: Criar um headless brain para npcs burros
             endcase
+            // Process any TimedScripts
+            start_script(":epicAI:scripts/timedScriptControl", array{me});
         endif
-        // Process any TimedScripts
-        start_script(":epicAI:scripts/timedScriptControl", array{me});
-        
         sleep(15);
     endwhile
 endprogram
