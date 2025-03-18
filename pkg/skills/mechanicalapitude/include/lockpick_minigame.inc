@@ -2,6 +2,7 @@
 use uo;
 use os;
 use math;
+use util;
 
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
@@ -116,18 +117,20 @@ function mini_game(who, diff, mec_skill, chest)
     
     // Send specific failure message
     var lvl := CInt(GetObjProperty(chest, "level"));
-    if(lvl != 6)
+
+    //if(lvl != 6)
         if(failure_reason == 1)
             SendSysMessageEx(who, "Você cancelou a tentativa de abrir a fechadura e a quebrou!", SSM_FAIL);
             Setobjproperty(chest, "fechadura_quebrada", 1);
         elseif(failure_reason == 2)
             Setobjproperty(chest, "fechadura_quebrada", 1);
         endif
-    else
-        SendSysMessageEx(who, "A fechadura mágica reaparece!", SSM_INFO);
+
+   // else
+        //SendSysMessageEx(who, "A fechadura mágica reaparece!", SSM_INFO);
         // IMPORTANTE: Reiniciar a contagem de pinos mágicos usados ao falhar em uma fechadura mágica
-        EraseObjProperty(chest, "magic_pins_used");
-    endif
+       // EraseObjProperty(chest, "magic_pins_used");
+    //endif
     return 0; // Failure
 endfunction
 
@@ -155,6 +158,13 @@ function CheckTensionBreakRoll(tension)
 endfunction
 
 function CheckLockpickStatus(who, total_pins)
+    // Verificar se há status de falha forçada
+    var forced_status := GetObjProperty(who, "lockpick_game_status");
+    if(forced_status == 2)
+        EraseObjProperty(who, "lockpick_game_status");
+        return 2; // Lock broke
+    endif
+    
     // Verificar tensão a cada iteração
     if(tension > 5.0)
         // Adiciona teste de quebra
@@ -195,7 +205,7 @@ function CreateLockpickGump(who, total_pins, chest)
         titulo := "Fechadura Mágica";
         border := BORDER_BLUE;
     else
-        titulo := "Fechadura Avançada";
+        titulo := "Forçar Fechadura Avançada";
         border := BORDER_GOLDEN;
     endif
     
@@ -300,8 +310,62 @@ function TryPickPin(who, pin_index)
     if(current_position == sweet_spot)
         SendSysMessageEx(who, "Pino " + pin_index + " destravado!", SSM_SUCCESS);
         correct_pins[pin_index] := 1; // Marca como acertado
+		PlaySoundEffect(who, 0x3e5);
     else
-        SendSysMessageEx(who, "Falhou no pino " + pin_index, SSM_FAIL);
+        
+        var shouldBreakLockpick := 0;
+        PlaySoundEffect(who, 0x3e7);
+        // NOVA LÓGICA: Chance de perder lockpick quando erra o pino
+        if(tension_increase == 9)  // Erro máximo: 100% de chance de quebrar
+            shouldBreakLockpick := 1;
+        elseif(tension_increase >= 4 && RandomInt(100) < 35)  // Erro grande (4-8): 35% de chance
+            shouldBreakLockpick := 1;
+        endif
+        
+if(shouldBreakLockpick)
+    // Verificar se o jogador tem uma lockpick
+    var items := EnumerateItemsInContainer(who.backpack);
+    var lockpicks := array{};
+
+    // Filter for lockpicks
+    foreach item in items
+        if(item.objtype == 0x14FB)
+            lockpicks.append(item);
+        endif
+    endforeach
+
+    if(lockpicks.size() > 0)
+        // Get the first lockpick found
+        var lockpick_to_break := lockpicks[1];
+        
+        // Tocar som de quebra
+        PlaySoundEffect(who, 0x040);
+        
+        // Reduzir a quantidade
+        SubtractAmount(lockpick_to_break, 1);
+        
+        // Verificar se ainda tem gazuas após quebrar uma
+        //lockpicks := EnumerateItemsInContainer(backpack, 0x14FC);
+        
+        if(lockpicks.size() == 0)
+            // Não tem mais gazuas, definir código de falha e encerrar minigame
+            SendSysMessageEx(who, "Sua última gazua quebrou! A fechadura danificou-se permanentemente.", SSM_FAIL);
+            SetObjProperty(who, "lockpick_game_status", 2); // Código 2 = lock broke
+            return;
+        else
+            // Ainda tem gazuas disponíveis
+            if(tension_increase == 9)
+                SendSysMessageEx(who, "Você quebrou uma gazua pela pressão extrema no pino!", SSM_FAIL);
+            else
+                SendSysMessageEx(who, "Você quebrou uma gazua pela pressão excessiva no pino!", SSM_FAIL);
+            endif
+        endif
+    else// Não tem gazuas, definir código de falha e encerrar minigame
+        SendSysMessageEx(who, "Você não tem mais gazuas! A fechadura danificou-se permanentemente.", SSM_FAIL);
+        SetObjProperty(who, "lockpick_game_status", 2); // Código 2 = lock broke
+        return;
+    endif
+        endif
     endif
 endfunction
 

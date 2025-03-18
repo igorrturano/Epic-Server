@@ -1,0 +1,767 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/client";
+include "include/say";
+include ":gumps:gumps_ex";
+include ":gumps:gumps";
+include "include/utils";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":brainAI:include/npcInit";
+include ":coords:coords";
+include ":dyes:include/dyes";
+
+program evidence(params)
+    var character := params[1];
+    var victimSerial := params[2];
+    var areax := params[3];
+    var areay := params[4];
+    var areaz := params[5];
+    var arearealm := params[6];
+    var evidenceType := params[7];
+    var crimeType := params[8];
+	var magnifyingGlassSerial := params[9];
+    var victim := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES); 
+
+    if(evidenceType == "inqueritoVítima")
+		var existingCase := FindExistingCase(character.serial, crimeType, victimSerial, areax, areay, areaz, arearealm);
+	if (existingCase == 0)
+		var remember;
+		if (!victim.acctname)
+			remember := "Sofri "+crimeType+"!!! Vou te repassar o que me lembro..."; 
+			PrintTextAbovePrivate(victim, remember, character);
+		else
+			var options := {"Sim", "Não"};
+		    var quest_gump := SelectionGumpSmall(character, "Você quer repassar as informações do crime para o investigador?", options);
+			if (options == "Sim")
+				remember := "*"+crimeType+"!!! Você repassa o que se recorda*"; 
+				PrintTextAbove(victim, remember);
+			else
+				remember := "A vítima se nega a te repassar informações sobre o crime";
+				PrintTextAbovePrivate(character, remember, character);
+				return;
+			endif
+		endif
+	endif
+	endif
+	
+    var magnifyingGlass := CreateOrFindMagnifyingGlass(character, crimeType, victimSerial, areax, areay, areaz, arearealm, evidenceType);
+    
+    if (!magnifyingGlass)
+        SendSysMessageEx(character, "Não foi possível criar ou encontrar a investigação para este caso.", SSM_FAIL);
+        return;
+    endif
+    
+    var nomeCaso := magnifyingGlass.GetProp("CaseID");
+    var andamento := IsInvestigationActive(magnifyingGlass) ? "em andamento" : "expirada";
+    SetObjProperty(magnifyingGlass, "description", "Investigação " + andamento);
+    if (crimeType == "agressao" || crimeType == "homicidio")
+        var lastDamage := GetObjProperty(victim, "LastDamage");
+        var tipo_equip := lastDamage["TipoEquip"];
+        SetObjProperty(magnifyingGlass, "TipoEquip", tipo_equip);
+    endif
+
+    case (evidenceType)
+		"inqueritoVítima":
+			SetObjProperty(magnifyingGlass, "RealizarInqueritoVitima", 1);
+        "Desenhar arma do crime":
+			murder_weapon(character, victimSerial, magnifyingGlass);
+        "Investigar Area do Crime":
+            InvestigarAreaCrime(magnifyingGlass, areaX, areaY, areaZ, arearealm);
+        "Analisar Pegada":
+            InvestigarEvidencias(magnifyingGlass, character);
+        "Colher Depoimento":
+            InvestigarEvidencias(magnifyingGlass, character, "depoimento");
+        default:
+            //SendSysMessage(character, "Tipo de evidência desconhecido.");
+    endcase
+endprogram
+
+function CreateOrFindMagnifyingGlass(character, crimeType, victimSerial, areax, areay, areaz, arearealm, evidenceType)
+    var investigatorSerial := character.serial;
+    var existingCase := FindExistingCase(investigatorSerial, crimeType, victimSerial, areax, areay, areaz, arearealm);
+    
+    if (existingCase)
+        if (evidenceType == "Investigar Area do Crime" || evidenceType == "Analisar Pegada" || evidenceType == "Colher Depoimento")
+            return existingCase;
+		else
+            SendSysMessageEx(character, "Você já tem uma investigação em andamento para este caso.", SSM_FAIL);
+            return existingCase;
+        endif
+    endif	
+    
+    var magnifyingGlass := CreateItemInBackpack(character, 0xee00);
+    if (!magnifyingGlass)
+        SendSysMessageEx(character, "Não foi possível criar uma nova lupa.", SSM_FAIL);
+        return 0;
+    endif
+    var victim_find := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	var author;
+    if (crimeType == "furto")
+        var ult_furto := GetObjProperty(victim_find, "ultimo_furto");
+        var obj_furtado := ult_furto["item_furtado"];
+		author := ult_furto["ladraoserial"];
+        SetObjProperty(magnifyingGlass, "prop_furto", ult_furto);
+        SetObjProperty(magnifyingGlass, "item_furtado", obj_furtado);
+    else
+        var ult_dano := GetObjProperty(victim_find, "LastDamage");
+        SetObjProperty(magnifyingGlass, "prop_damage", ult_dano);
+		author := ult_dano["serial"];
+    endif
+    
+    var InvestigationCases := GetObjProperty(character, "InvestigationCases");
+    if (!InvestigationCases)
+        InvestigationCases := array{};
+    endif
+    
+    var caseID := InvestigationCases.size() + 1;
+    var caseName := "Caso " + caseID;
+	
+// Criar e mostrar o gump para nomear o caso
+var gump := GFCreateGump();
+GFResizePic(gump, 15, 50, 2620, 320, 30); // Ajustado para uma linha de texto
+GFResizePic(gump, 15, 20, GFCfgConst("Defaults", "ForeGround"), 320, 30);
+GFResizePic(gump, 15, 80, GFCfgConst("Defaults", "ForeGround"), 320, 30);
+
+GFAddButton(gump, 280, 85, 4011, 4023, GF_CLOSE_BTN, 1);
+GFTextLine(gump, 110, 25, 2100, "Dê um nome ao Caso:");
+
+var textEntry := GFTextEntry(gump, 20, 56, 310, 25, 2100, "Caso ");
+
+var input := GFSendGump(character, gump);    
+    if (input[0] == 1)
+        var enteredName := GFExtractData(input, textEntry);
+        if (enteredName && enteredName != "Caso ")
+            caseName := enteredName;
+			print("entrou certo");
+		else
+			caseName := "Caso " + caseID;
+			print("errado entrou");
+        endif
+    endif
+    
+    SetObjProperty(magnifyingGlass, "CaseID", caseID);
+    SetObjProperty(magnifyingGlass, "CaseName", caseName);
+    SetObjProperty(magnifyingGlass, "CreationTime", polcore().systime);
+    SetObjProperty(magnifyingGlass, "CrimeType", crimeType);
+    SetObjProperty(magnifyingGlass, "InvestigatorSerial", investigatorSerial);
+    SetObjProperty(magnifyingGlass, "VictimSerial", victimSerial);
+    SetObjProperty(magnifyingGlass, "AreaX", areax);
+    SetObjProperty(magnifyingGlass, "AreaY", areay);
+    SetObjProperty(magnifyingGlass, "AreaZ", areaz);
+    SetObjProperty(magnifyingGlass, "AreaRealm", arearealm);
+
+    InvestigationCases.append(magnifyingGlass.serial);
+    SetObjProperty(character, "InvestigationCases", InvestigationCases);
+    magnifyingGlass.name := caseName;
+    
+    SendSysMessageEx(character, "Uma nova investigação foi aberta para o " + caseName, SSM_INFO);
+	var author_find := SystemFindObjectBySerial(author, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    SendSysMessageEx(author_find, "Uma nova investigação foi aberta para o " + caseName, SSM_INFO);//0x6Bd6 letter: 0x748e
+	gump_autor(author_find, magnifyingGlass);
+	return magnifyingGlass;
+endfunction
+
+function gump_autor (who, magnifyingGlass)
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFGumpPic(gump, 243, 6, 1596);
+    GFGumpPic(gump, 243, 148, 295);
+    //GFGumpPic(gump, 243, 290, 1598);
+    GFGumpPic(gump, 243, 432, 294);
+    
+    GFGumpPic(gump, 475, 55, 293);
+endfunction
+
+function FindExistingCase(investigatorSerial, crimeType, victimSerial, areax, areay, areaz, arearealm)
+    var character := SystemFindObjectBySerial(investigatorSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var victim_find := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var InvestigationCases := GetObjProperty(character, "InvestigationCases");
+    if (!InvestigationCases)
+        return 0;
+    endif
+
+    foreach magnifyingGlassSerial in InvestigationCases
+        var magnifyingGlass := SystemFindObjectBySerial(magnifyingGlassSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (!magnifyingGlass)
+            continue;
+        endif
+
+        var matchFound := 0;
+        case (crimeType)
+            "homicidio":
+                matchFound := (magnifyingGlass.GetProp("InvestigatorSerial") == investigatorSerial &&
+                               magnifyingGlass.GetProp("CrimeType") == crimeType &&
+                               magnifyingGlass.GetProp("VictimSerial") == victimSerial &&
+                               magnifyingGlass.GetProp("AreaX") == areax &&
+                               magnifyingGlass.GetProp("AreaY") == areay &&
+                               magnifyingGlass.GetProp("AreaZ") == areaz &&
+                               magnifyingGlass.GetProp("AreaRealm") == arearealm);
+            "furto":
+                var ult_furto := GetObjProperty(victim_find, "ultimo_furto");
+                var obj_furtado := ult_furto["item_furtado"];
+                matchFound := (magnifyingGlass.GetProp("InvestigatorSerial") == investigatorSerial &&
+                               magnifyingGlass.GetProp("CrimeType") == crimeType &&
+                               magnifyingGlass.GetProp("VictimSerial") == victimSerial &&
+                               magnifyingGlass.GetProp("item_furtado") == obj_furtado);
+            "agressao":
+                var time_lupa := magnifyingGlass.GetProp("prop_damage");
+                var ult_agre := GetObjProperty(victim_find, "LastDamage");
+                matchFound := (magnifyingGlass.GetProp("InvestigatorSerial") == investigatorSerial &&
+                               magnifyingGlass.GetProp("CrimeType") == crimeType &&
+                               magnifyingGlass.GetProp("VictimSerial") == victimSerial &&
+                               time_lupa.time == ult_agre.time);
+        endcase
+
+        if (matchFound && IsInvestigationActive(magnifyingGlass))
+            return magnifyingGlass;
+        endif
+    endforeach
+    
+    return 0;
+endfunction
+
+function IsInvestigationActive(magnifyingGlass)
+    var creationTime := magnifyingGlass.GetProp("CreationTime");
+    return (creationTime + (7 * 24 * 60 * 60)) > polcore().systime;
+endfunction
+
+function InvestigarAreaCrime(magnifyingGlass, areax, areay, areaz, arearealm)
+    var investigator := SystemFindObjectBySerial(magnifyingGlass.GetProp("InvestigatorSerial"), SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var crimeType := magnifyingGlass.GetProp("CrimeType");
+    var victimSerial := magnifyingGlass.GetProp("VictimSerial");
+    var victim := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    
+    var perpetrator;
+    if (crimeType == "furto")
+        var ult_furto := magnifyingGlass.GetProp("prop_furto");
+        perpetrator := SystemFindObjectBySerial(ult_furto.ladraoserial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    else
+        var lastDamage := magnifyingGlass.GetProp("prop_damage");
+        perpetrator := SystemFindObjectBySerial(lastDamage.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    endif
+
+    if (!perpetrator)
+        SendSysMessageEx(investigator, "Não foi possível encontrar informações sobre o perpetrador.", SSM_FAIL);
+        return;
+    endif    
+
+	SetObjProperty(magnifyingGlass, "InvestigarAreaCrime_Realizado", 1);
+
+    var investigatorSkill := AP_GetTrueSkill(investigator, AWARENESS);
+    var perpetratorSkill := AP_GetTrueSkill(perpetrator, SNEAK);
+    SetObjProperty(magnifyingGlass, "PerpetratorSkill", perpetratorSkill);
+    var skillDifference := investigatorSkill - perpetratorSkill;
+    var difficulty := 50 - (skillDifference / 2);
+    difficulty := Cint(Max(10, Min(90, difficulty)));
+    
+    var skillCheck_inv := SkillCheck(investigator, AWARENESS, difficulty);
+    
+    var numOptions := 0;
+    if (skillCheck_inv > 0)
+        numOptions := Max(1, Min(3, CInt(skillCheck_inv / 25) + 1));
+    endif
+    
+    var allOptions := array{"pegadas", "testemunha", "dedução"};
+    var selectedOptions := array{};
+    
+    while (selectedOptions.size() < numOptions && allOptions.size() > 0)
+        var index := RandomInt(allOptions.size()) + 1;
+        selectedOptions.append(allOptions[index]);
+        allOptions.erase(index);
+    endwhile
+	
+	SetObjProperty(magnifyingGlass, "DiscoveredEvidenceTypes", selectedOptions);     
+    
+	var opcoesDisponiveis := "";
+    foreach option in selectedOptions
+        if (opcoesDisponiveis != "")
+            opcoesDisponiveis += ", ";
+        endif
+        opcoesDisponiveis += option;
+    endforeach
+    
+    if (opcoesDisponiveis != "")
+        SendSysMessageEx(investigator, "Você descobriu " + selectedOptions.size() + " opções de investigação: " + opcoesDisponiveis, SSM_INFO);
+    else
+        SendSysMessageEx(investigator, "Você é incapaz de achar qualquer vestígio para investigação.", SSM_FAIL);
+        return;
+    endif
+    
+    sleep(3);
+    
+    foreach option in selectedOptions
+        case (option)
+            "pegadas":
+                Printtextabove(investigator, "*Analisando o solo em busca de pegadas*");
+                CreatePegadas(magnifyingGlass, areax, areay, areaz, arearealm, skillCheck_inv, investigator);
+            "testemunha":
+                Printtextabove(investigator, "*Recolhendo evidências acerca de testemunha ocular*");
+                CriarTestemunha(magnifyingGlass, areax, areay, areaz, arearealm, skillCheck_inv);
+            "dedução":
+                Printtextabove(investigator, "*Efetuando deduções conforme vestígios do ambiente*");
+				SetObjProperty(magnifyingGlass, "Deduzir Realizado", 1);
+                InvestigarEvidencias(magnifyingGlass, investigator, "deduzir");
+        endcase
+        sleep(2);
+    endforeach
+endfunction
+
+function ShuffleArray(byref arr)
+    var n := arr.size();
+    var i := n - 1;
+    while (i > 0)
+        var j := RandomInt(i + 1);
+        var temp := arr[i];
+        arr[i] := arr[j];
+        arr[j] := temp;
+        i := i - 1;
+    endwhile
+    return arr;
+endfunction
+
+function CreatePegadas(magnifyingGlass, areax, areay, areaz, arearealm, skillCheck_inv, investigator)
+    var raio := Max(15, Min(1, CInt(skillCheck_inv / 20)));
+    var x, y, z;
+    var max_attempts := 20;
+    var attempts := 1;
+    var pegadas := CreateItemAtLocation(1, 1, 1, 0xfa84, 1, arearealm);
+	SetObjProperty(magnifyingGlass, "CreatePegadas_Realizado", 1);
+	SetObjProperty(magnifyingGlass, "SkillCheckResult_pegada", skillCheck_inv);
+	SetObjProperty(magnifyingGlass, "pegada", pegadas.serial);
+    while (attempts <= max_attempts)
+	print("tentando");
+        x := areax + RandomInt(2*raio) - raio;
+        y := areay + RandomInt(2*raio) - raio;
+        z := investigator.z+1;
+		print("x "+x+" y "+y+" z "+z+" arearealm "+arearealm);
+        var moveobj := MoveObjectToLocation(pegadas, x, y, z, arearealm, flags := MOVEITEM_IGNOREMOVABLE);
+        attempts += 1;
+        if (moveobj != error)
+            SetObjProperty(pegadas, "evidência", 1);
+            PrintTextAbove(pegadas, "*!*");
+			SendSysMessage(investigator, "Você encontrou pegadas suspeitas na área.");
+			print(" x "+x+" y "+y);
+            return pegadas;
+        endif
+    endwhile
+    
+    SendSysMessageEx(investigator, "Infelizmente as pegadas foram levadas pelo vento", SSM_FAIL);
+    return 0;
+endfunction
+
+function CriarTestemunha(magnifyingGlass, areax, areay, areaz, arearealm, skillCheck_inv)
+    var investigator := SystemFindObjectBySerial(magnifyingGlass.GetProp("InvestigatorSerial"), SYSFIND_SEARCH_OFFLINE_MOBILES);
+    
+    var locais := dictionary{
+        "Nygurath" -> array{
+            array{1632, 1595, 0, "britannia"},
+            array{1581, 1575, 0, "britannia"},
+            array{1564, 1552, 0, "britannia"}
+        },
+        "Aigla" -> array{
+            array{1056, 970, -60, "britannia_alt"},
+            array{1117, 999, -60, "britannia_alt"},
+            array{1073, 946, -60, "britannia_alt"}
+        },
+        "Khron Kaz'ad" -> array{
+            array{4675, 1825, -35, "britannia_alt"},
+            array{4666, 1805, 10, "britannia_alt"},
+            array{4654, 1817, 35, "britannia_alt"}
+        },
+        "Colhesol" -> array{
+            array{785, 962, -55, "britannia_alt"},
+            array{818, 985, -60, "britannia_alt"},
+            array{819, 937, -60, "britannia_alt"}
+        },
+        "Gulshurr" -> array{
+            array{1638, 1687, -58, "britannia_alt"},
+            array{1607, 1765, -59, "britannia_alt"},
+            array{1651, 1659, -58, "britannia_alt"}
+        },
+        "Aldorathrim" -> array{
+            array{922, 1333, -100, "britannia_alt"},
+            array{954, 1375, -5, "britannia_alt"},
+            array{899, 1271, -120, "britannia_alt"}
+        }
+    };
+    
+    var racas := locais.keys();
+    var raca_escolhida := racas[RandomInt(racas.size()) + 1];
+    
+    var locais_raca := locais[raca_escolhida];
+    var local := locais_raca[RandomInt(locais_raca.size()) + 1];
+    
+    var npc := CreateNPCFromTemplate(":brainai:exampleNPC", local[1], local[2], local[3], 0, local[4]);
+ print("npc foi criado em "+local[1]+" "+local[2]+" "+local[3]);
+	if (npc)
+        SetObjProperty(npc, "Raca", raca_escolhida);
+        var name_raca;
+        if (raca_escolhida == "Khron Kaz'ad")
+            npc.graphic := 1828;
+            name_raca := "DwarvenMale";
+			npc.title_race := "Anão";
+		elseif (raca_escolhida == "Colhesol")
+		    npc.graphic := 1829;
+            name_raca := "Fada";
+			npc.title_race := "Polski";
+        elseif (raca_escolhida == "Aigla")
+			npc.title_race := "Humano";
+            name_raca := "AiglaMale";
+        elseif (raca_escolhida == "Nygurath")
+            npc.graphic := 1830;
+            npc.color := 2406;
+            name_raca := "Drow";
+			npc.title_race := name_raca;
+        elseif (raca_escolhida == "Aldorathrim")
+            npc.graphic := 1830;
+            name_raca := "CelticMale";
+			npc.title_race := "Elfo";
+        elseif (raca_escolhida == "Gulshurr")
+            npc.graphic := 1832;
+            npc.color := 1428;
+            name_raca := "Orc";
+			npc.title_race := name_raca;
+        endif
+        
+        var currentTime := polcore().systime;
+        var lupaCreationTime := magnifyingGlass.GetProp("CreationTime");
+        var investigationEndTime := lupaCreationTime + (7 * 24 * 60 * 60);
+        var threeDaysInSeconds := 3 * 24 * 60 * 60;
+        
+        var remainingInvestigationTime := investigationEndTime - currentTime;
+        
+        var tempoVida := Min(threeDaysInSeconds, remainingInvestigationTime);
+        
+        tempoVida := Max(0, tempoVida);
+        
+        SetObjProperty(npc, "GuardKill", 1);
+        var my_name := NPC_SetupName1(name_raca);
+        SetName(npc, my_name);
+        
+        TS_StartTimer(npc, "kill", tempoVida, 1, investigator);
+        
+        NPC_SetupRandomEquipment(npc, "Villager_1");
+        foreach item in (ListEquippedItems(npc))
+            if (CanDye(item))
+                item.color := RandomDyeColor();
+            endif
+            SleepMS(2);
+        endforeach
+        
+        SendSysMessageEx(investigator, "Procure a testemunha " + my_name + ", última vez vista em " + raca_escolhida + ".", SSM_INFO);
+        
+        var dicasReveladas := GetObjProperty(magnifyingGlass, "DicasReveladas");
+        if (!dicasReveladas)
+            dicasReveladas := dictionary{};
+        endif
+        dicasReveladas["Testemunha"] := npc.name + " última vez vista em " + raca_escolhida + ".";
+        SetObjProperty(magnifyingGlass, "DicasReveladas", dicasReveladas);
+		SetObjProperty(magnifyingGlass, "SkillCheckResult_testemunha", skillCheck_inv);
+		SetObjProperty(magnifyingGlass, "TestemunhaSerial", npc.serial);
+    else
+        SendSysMessageEx(investigator, "Não foi possível criar uma testemunha.", SSM_FAIL);
+		return;
+    endif
+	SetObjProperty(magnifyingGlass, "CriarTestemunha_Realizado", 1);
+endfunction
+
+function InvestigarEvidencias(magnifyingGlass, investigator, type := "pegada")
+    var isAnalisarPegada := (type == "pegada");
+    var isDepoimento := (type == "depoimento");
+    var isDeduzir := (type == "deduzir");
+
+    var targ := 0;
+    var skillCheckt := 0;
+    var autor := 0;
+
+    if (isDeduzir)
+        var perpetratorSkill := GetObjProperty(magnifyingGlass, "PerpetratorSkill");
+        if (!perpetratorSkill)
+            SendSysMessageEx(investigator, "Não foi possível recuperar as informações do perpetrador.", SSM_FAIL);
+            return;
+        endif
+        var investigatorSkill := AP_GetTrueSkill(investigator, MEDICINE);
+        var skillDifference := investigatorSkill - perpetratorSkill;
+        var difficulty := 50 - (skillDifference / 2);
+        difficulty := Cint(Max(10, Min(120, difficulty)));
+        skillCheckt := SkillCheck(investigator, MEDICINE, difficulty);
+        
+        // Recuperar o autor do crime para o caso de dedução
+        var crimeType := magnifyingGlass.GetProp("CrimeType");
+        var victimSerial := magnifyingGlass.GetProp("VictimSerial");
+        var victim := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (crimeType == "furto")
+            var ult_furto := GetObjProperty(victim, "ultimo_furto");
+            autor := SystemFindObjectBySerial(ult_furto.ladraoserial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        else
+            var lastDamage := magnifyingGlass.GetProp("prop_damage");
+            autor := SystemFindObjectBySerial(lastDamage.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        endif
+    else
+        var targetMsg := isAnalisarPegada ? "Selecione a pegada que deseja analisar." : "Selecione o NPC para colher o depoimento.";
+        SendSysMessageEx(investigator, targetMsg, SSM_REQUEST);
+        targ := Target(investigator);
+
+        if (!targ)
+            SendSysMessageEx(investigator, "Cancelado.", SSM_FAIL);
+            return;
+        endif
+        
+		if(Distance(investigator, targ) > 2)
+			SendSysMessageEx(investigator, "Seu alvo está muito longe", SSM_FAIL);
+			return;
+		endif
+		
+        var evidenceProperty := isAnalisarPegada ? "pegada" : "TestemunhaSerial";
+        var evidenceRegistrada := GetObjProperty(magnifyingGlass, evidenceProperty);
+        
+        if (!evidenceRegistrada || targ.serial != evidenceRegistrada)
+            var errorMsg := isAnalisarPegada ? "Esta não é a pegada correta para análise." : "Este não é o NPC correto para colher o depoimento.";
+            SendSysMessageEx(investigator, errorMsg, SSM_FAIL);
+            return;
+        endif
+        
+        var skillCheckProperty := isAnalisarPegada ? "SkillCheckResult_pegada" : "SkillCheckResult_testemunha";
+        skillCheckt := GetObjProperty(magnifyingGlass, skillCheckProperty);
+    endif
+    
+    var numDicas := 0;
+    if (skillCheckt > 0)
+        if (isDeduzir)
+            numDicas := Max(1, Min(3, CInt(skillCheckt / 25) + 1));
+        else
+            if (skillCheckt <= 33)
+                numDicas := 1;
+            elseif (skillCheckt <= 66)
+                numDicas := 2;
+            else
+                numDicas := 3;
+            endif
+        endif
+    endif
+    
+    var tipoInvestigacao;
+    if (isAnalisarPegada)
+        tipoInvestigacao := "analisarPegada";
+		PerformAction(investigator, 0x0020);
+    elseif (isDepoimento)
+        tipoInvestigacao := "depoimento";
+    elseif (isDeduzir)
+		tipoInvestigacao := "deduzir";
+    endif
+    
+    var novasDicas := GerenciarDicas(magnifyingGlass, numDicas, autor, tipoInvestigacao, investigator);
+    
+    if (isAnalisarPegada)
+        DestroyItem(targ);
+        SetObjProperty(magnifyingGlass, "Pegada Analisada", 1);
+    elseif (isDepoimento)
+        SetObjProperty(magnifyingGlass, "Depoimento Coletado", 1);
+        SetObjProperty(targ, "GuardKill", 1);
+        Sleep(2);
+        PrintTextAbove(targ, "*Sofre um ataque cardíaco fulminante*");
+        Sleep(2);
+        ApplyRawDamage(targ, CInt(AP_GetVitalMaximumValue(targ, "Hits")));
+    endif
+endfunction
+
+function NPC_SetupName1(name_elem)
+	var npc_names := ReadConfigFile(":ghaia:config/names");
+	var name_list := GetConfigStringArray(npc_names[name_elem], "Name");
+	var replacement := name_list[RandomInt(name_list.Size())+1];
+
+return replacement; 
+
+endfunction
+
+function murder_weapon (character, victimSerial, magnifyingGlass)
+    var pts := CInt(GetAttribute(character, MEDICINE) / 10) + 20;
+    var victim := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES); 
+    var lastDamage := GetObjProperty(victim, "LastDamage");
+    
+	var weapon_serial := lastDamage.serial_weapon;
+	
+    var weapon_objtype := lastDamage.objtype;
+	
+    var corpse_name := victim.name;
+    var spell_circle := lastDamage.circle;
+
+    if (weapon_serial == 0x4001ce76 || spell_circle >= 1 )
+        SendSysMessage(character, "O ataque não foi efetuado por uma arma!");
+        return;
+    endif
+
+    if(pts < 10)
+        pts := 10;
+    endif
+
+    if (SkillCheck(character, MEDICINE, -1, pts) > 0)
+        Printtextabove(character, "Desenhando...");
+        sleep(3);
+        SendSysMessage(character, "Você concluiu o desenho da suposta arma com sucesso!");
+
+        // Lendo o nome padrão da arma do itemdesc.cfg
+        var cfg := ReadConfigFile(":combat:itemdesc");
+        var weapon_elem := FindConfigElem(cfg, weapon_objtype);
+        var weapon_name := weapon_elem.Desc;
+        if (!weapon_name)
+            weapon_name := "Arma desconhecida";
+        endif
+
+        SetObjProperty(magnifyingGlass, "weaponSerial", weapon_serial);
+        SetObjProperty(magnifyingGlass, "weaponName", weapon_name);
+
+        SendSysMessageEx(character, "A arma utilizada parece ser: " + weapon_name, SSM_INFO);
+    else
+        SendSysMessage(character, "Você falhou em analisar a ferida.");
+    endif
+endfunction
+
+function GerenciarDicas(magnifyingGlass, numDicas, autor, tipo, alvo := 0)
+    var dicasPossiveis := array{"Força", "Destreza", "Inteligência", "Raça", "Altura", "Peso", "Idade", "Olhos", "Voz"};
+    var dicasReveladas := GetObjProperty(magnifyingGlass, "DicasReveladas");
+    if (!dicasReveladas)
+        dicasReveladas := dictionary{};
+    endif
+    var novasDicas := 0;
+    
+    for (numDicas; numDicas > 0; numDicas -= 1)
+        if (dicasPossiveis.size() == 0)
+            break;
+        endif
+        
+        var index := RandomInt(dicasPossiveis.size()) + 1;
+        var dica := dicasPossiveis[index];
+        dicasPossiveis.Erase(index);
+        
+        if (!(dica in dicasReveladas.keys()))
+           var resultado := "";
+		   var resultado1 := "";
+			case (dica)
+				"Força":
+					var forca := GetAttribute(autor, "Strength");
+					resultado := "Ao observar atentamente, notei que o criminoso " + getValour(forca, "forca");
+					resultado1 := getValour(forca, "forca");
+				"Destreza":
+					var destreza := GetAttribute(autor, "Dexterity");
+					resultado := "Pelos movimentos do criminoso, achei " + getValour(destreza, "destreza");
+					resultado1 := getValour(destreza, "destreza");
+				"Inteligência":
+					var inteligencia := GetAttribute(autor, "Intelligence");
+					resultado := "Deduzo que ele tinha " + getValour(inteligencia, "inteligencia");
+					resultado1 := getValour(inteligencia, "inteligencia");
+				"Raça":
+					resultado := "As feições do criminoso lembravam um " + autor.title_race;
+					resultado1 := autor.title_race;
+				"Altura":
+					resultado := "Comparando com objetos ao redor, estimo altura em muito baixo" + GetCharacterAttribute(autor, "Altura");
+					resultado1 := GetCharacterAttribute(autor, "Altura");
+				"Peso":
+					resultado := "Baseado na estrutura corporal, julgo o peso em leve" + GetCharacterAttribute(autor, "Peso");
+					resultado1 := + GetCharacterAttribute(autor, "Peso");
+				"Idade":
+					resultado := "Analisando as feições e postura, estimo a idade em jovem"+ GetCharacterAttribute(autor, "Idade");
+					resultado1 := GetCharacterAttribute(autor, "Idade");
+				"Olhos":
+					resultado := "No breve contato visual, eram castanhos profundos" + GetCharacterAttribute(autor, "Cor do Olho");
+					resultado1 := GetCharacterAttribute(autor, "Cor do Olho");
+				"Voz":
+					resultado := "Você ouviu uma voz próxima de voz grave e ressonante" + GetCharacterAttribute(autor, "Voz");
+					resultado1 := GetCharacterAttribute(autor, "Voz");
+			endcase
+            
+			dicasReveladas[dica] := resultado1;
+            novasDicas += 1;
+            
+            case (tipo)
+                "analisarPegada":
+                    SendSysMessageEx(alvo, "Nova informação sobre: " + dica, SSM_INFO);
+                "depoimento":
+                    PrintTextAbove(alvo, resultado);
+                "deduzir":
+                    SendSysMessageEx(alvo, "Nova informação sobre: " + dica, SSM_INFO);
+            endcase
+        endif
+    endfor
+    
+    SetObjProperty(magnifyingGlass, "DicasReveladas", dicasReveladas);
+    
+    if (novasDicas == 0)
+        SendSysMessageEx(alvo, "Você falhou em obter novas informações.", SSM_FAIL);
+    endif
+	
+    return novasDicas;
+endfunction
+
+function GetCharacterAttribute(targ, attribute)
+    var chardata := GetObjProperty(targ, "chardata");
+    if (!chardata || !chardata.caracteristicas_rp)
+        return error{"errortext" := "Dados do personagem não encontrados"};
+    endif
+
+    case (attribute)
+        "Altura":
+            return chardata.caracteristicas_rp.Altura ? chardata.caracteristicas_rp.Altura : "Altura desconhecida";
+        "Peso":
+            return chardata.caracteristicas_rp.Peso ? chardata.caracteristicas_rp.Peso : "Peso desconhecido";
+        "Idade":
+            return chardata.caracteristicas_rp["Idade Aparente"] ? chardata.caracteristicas_rp["Idade Aparente"] : "Idade aparente desconhecida";
+        "Cor do Olho":
+            return chardata.caracteristicas_rp.Olhos ? chardata.caracteristicas_rp.Olhos : "Desconhecido";
+        "Voz":
+            if (chardata.caracteristicas_rp.Voz)
+                return chardata.caracteristicas_rp.Voz + " (Eu ouvi ele falando: ";
+            else
+                return "Não tem voz";
+            endif
+        default:
+            return error{"errortext" := "Atributo desconhecido"};
+    endcase
+endfunction
+
+function getValour(number, typ)
+    if (typ == "forca")
+        if (number >= 100) return "tem força sobrehumana";
+        elseif (number >= 90) return "é um dos mais fortes que você já viu";
+        elseif (number >= 80) return "é forte como uma besta";
+        elseif (number >= 70) return "é extraordinariamente forte";
+        elseif (number >= 60) return "é extremamente forte";
+        elseif (number >= 50) return "é muito forte";
+        elseif (number >= 40) return "é um tanto forte";
+        elseif (number >= 30) return "é normal";
+        elseif (number >= 20) return "é fraco";
+        elseif (number >= 10) return "é bastante fraco";
+        else return "tem problemas levantando uma pena";
+		endif
+    elseif (typ == "destreza")
+        if (number >= 100) return "rápido";
+        elseif (number >= 90) return "mais rápido que você já viu";
+        elseif (number >= 80) return "ágil como o vento";
+        elseif (number >= 70) return "extraordinariamente ágil";
+        elseif (number >= 60) return "extremamente ágil";
+        elseif (number >= 50) return "muito ágil";
+        elseif (number >= 40) return "um tanto ágil";
+        elseif (number >= 30) return "moderadamente hábil";
+        elseif (number >= 20) return "um tanto descordenado";
+        elseif (number >= 10) return "muito desajeitado";
+        else return "desastrado e mal consegue ficar em pé";
+		endif
+    else
+        if (number >= 100) return "genialidade";
+        elseif (number >= 90) return "inteligência excepcional";
+        elseif (number >= 80) return "muita inteligência";
+        elseif (number >= 70) return "boa capacidade intelectual";
+        elseif (number >= 60) return "inteligência acima da média";
+        elseif (number >= 50) return "inteligência mediana";
+        elseif (number >= 40) return "inteligência abaixo da média";
+        elseif (number >= 30) return "dificuldades de aprendizado";
+        elseif (number >= 20) return "sérias limitações cognitivas";
+        elseif (number >= 10) return "capacidade mental muito reduzida";
+        else return "comprometimento cognitivo severo";
+		endif
+	endif
+endfunction

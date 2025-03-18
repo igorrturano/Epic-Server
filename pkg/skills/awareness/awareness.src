@@ -1,13 +1,10 @@
-/* $Id: hiding.src 974 2007-01-18 10:52:17Z sroyalty $
- *
- */
-
 use uo;
 use os;
-
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":awareness:awareness";
+include ":gumps:yesNo";
+include ":gumps:selectionGump";
 
 program skill_Alertness(who)
 	if ( CInt(GetobjProperty(who, "#Alertness")) > ReadGameClock() )
@@ -16,10 +13,8 @@ program skill_Alertness(who)
 	else
 		SetObjProperty(who, "#Alertness", ReadGameClock()+1);
 	endif
-
 	EraseObjProperty(who, "#IsMeditating");
 	EraseObjProperty(who, "#IsWaiting");
-
 	var deveCheckarLOS := 0;
 	var isLOS := 0;
 	var isEncontrado := 0;
@@ -27,7 +22,6 @@ program skill_Alertness(who)
 	SendSysMessageEx(who, "Selecione um alvo. selecionar o chão procurará algo em volta.", SSM_INFO);
 	SendSysMessageEx(who, "Selecionar a si mesmo Ativa ou Desativa a procura passiva. [Atual: {}]".format(!ignore? "Ativado.": "Desativado."), SSM_INFO);
 	var targ := TargetCoordinates(who);
-
 	if (targ.mobile.isA(POLCLASS_MOBILE))
 		deveCheckarLOS := true;
 		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
@@ -37,7 +31,17 @@ program skill_Alertness(who)
 				isEncontrado := 1;
 			else
 				isEncontrado := ExaminarMobile(who,targ.mobile);
+				// Adiciona opção de investigação para vítimas de crime
+				InvestigarCrime(who, targ.mobile);
 			endif
+		endif
+	elseif(targ.item.isA(POLCLASS_CORPSE))
+		deveCheckarLOS := true;
+		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
+		if(isLOS)
+			// Adiciona opção de investigação para corpo da vítima
+			InvestigarCorpo(who, targ.item);
+			isEncontrado := 1;
 		endif
 	elseif(targ.item.isA(POLCLASS_CONTAINER) || targ.item.isA(POLCLASS_DOOR))
 		deveCheckarLOS := true;
@@ -55,9 +59,155 @@ program skill_Alertness(who)
 		endif
 		isEncontrado := ExaminarArea(who);
 	endif
-
 	if(deveCheckarLOS && !isLOS)
 		SendSysMessageEx(who, "Você não enxerga o alvo.", SSM_FAIL);
 	endif
 	return;
 endprogram
+
+function InvestigarCrime(who, subject)
+    // Verifica se o sujeito foi vítima de crime
+    var lastDamage := GetObjProperty(subject, "LastDamage");
+    var furto := GetObjProperty(subject, "ultimo_furto");
+    var time_actual := POLCore().systime;
+    var time_inquerito_agressao;
+    var time_inquerito_furto;
+    
+	if (!lastDamage && !furto)
+		SendSysMessageEx(who, "saiu", SSM_FAIL);
+		return;
+	endif
+	
+    if(lastDamage)
+        var time_lastdamage := lastDamage.time;
+        time_inquerito_agressao := time_actual - time_lastdamage;
+    endif
+    
+    if(furto)
+        var time_furto_origin := furto.tempo;
+        time_inquerito_furto := time_actual - time_furto_origin;
+    endif
+    
+    // Verifica se houve crime recente (nas últimas 24 horas)
+    if((time_inquerito_agressao <= 86400) || (time_inquerito_furto <= 86400))
+        // Se encontrou os dois tipos de crime, deixa o jogador escolher qual investigar
+        if((time_inquerito_agressao <= 86400) && (time_inquerito_furto <= 86400))
+            var options := array{"Agressão", "Furto"};
+            var agressao_furto := SelectionGumpSmall(who, "Qual deseja investigar?", options, btn_type:=BTN_TYPE_NORMAL);
+            
+            if(agressao_furto == "Agressão")
+                var prompt := "Você descobriu vestígios de agressão, deseja iniciar uma investigação?";
+                var yn_gump := YesNo(who, prompt, "Sim", "Não");
+                
+                if(yn_gump)
+                    var autopsy_stats := GetObjProperty(subject, "Autopsy_stats");
+                    var areaX := autopsy_stats."areax";
+                    var areaY := autopsy_stats."areay";
+                    start_script(":awareness:evidence", {who, subject.serial, areaX, areaY, subject.z, subject.realm, "inqueritoVítima", "agressao"});
+                endif
+            elseif(agressao_furto == "Furto")
+                var prompt := "Você descobriu vestígios de furto, deseja iniciar uma investigação?";
+                var yn_gump := YesNo(who, prompt, "Sim", "Não");
+                
+                if(yn_gump)
+                    var furto_info := GetObjProperty(subject, "ultimo_furto");
+                    var areaX := furto_info.local.coordenadas[1];
+                    var areaY := furto_info.local.coordenadas[2];
+                    start_script(":awareness:evidence", {who, subject.serial, areaX, areaY, subject.z, subject.realm, "inqueritoVítima", "furto"});
+                endif
+            endif
+        else
+            // Se encontrou apenas um tipo de crime, mostra o gump específico
+            if(time_inquerito_agressao <= 86400)
+                var prompt := "Você descobriu vestígios de agressão, deseja iniciar uma investigação?";
+                var yn_gump := YesNo(who, prompt, "Sim", "Não");
+                
+                if(yn_gump)
+                    var autopsy_stats := GetObjProperty(subject, "Autopsy_stats");
+                    var areaX := autopsy_stats."areax";
+                    var areaY := autopsy_stats."areay";
+                    start_script(":awareness:evidence", {who, subject.serial, areaX, areaY, subject.z, subject.realm, "inqueritoVítima", "agressao"});
+                endif
+            elseif(time_inquerito_furto <= 86400)
+                var prompt := "Você descobriu vestígios de furto, deseja iniciar uma investigação?";
+                var yn_gump := YesNo(who, prompt, "Sim", "Não");
+                
+                if(yn_gump)
+                    var furto_info := GetObjProperty(subject, "ultimo_furto");
+                    var areaX := furto_info.local.coordenadas[1];
+                    var areaY := furto_info.local.coordenadas[2];
+                    start_script(":awareness:evidence", {who, subject.serial, areaX, areaY, subject.z, subject.realm, "inqueritoVítima", "furto"});
+                endif
+            endif
+        endif
+    endif
+endfunction
+
+function InvestigarCorpo(who, corpse)
+    // Verifica se o corpo é vítima de homicídio
+    var lastDamage := GetObjProperty(corpse, "LastDamage");
+    
+    if(lastDamage)
+        // Pergunta se deseja iniciar a investigação de homicídio
+        var prompt := "Você descobriu vestígios de homicídio, deseja iniciar uma investigação?";
+        var yn_gump := YesNo(who, prompt, "Sim", "Não");
+        
+        if(yn_gump)
+            var corpsex := corpse.x;
+            var corpsey := corpse.y;
+            var corpsez := corpse.z;
+            var corpserealm := corpse.realm;
+            start_script(":awareness:evidence", {who, corpse.serial, corpsex, corpsey, corpsez, corpserealm, "Iniciar Investigação Homicidio", "homicidio"});
+        endif
+    endif
+endfunction
+
+function info_corpo(who, subject)
+    var lastDamage := GetObjProperty(subject, "LastDamage");
+    var furto := GetObjProperty(subject, "ultimo_furto");
+    var time_actual := POLCore().systime;
+    var text_death := "";
+    var text_damage := "";
+    var text_furto := "";
+    var dead_one := subject.isA(POLCLASS_CORPSE);
+
+    // Verifica dano
+    if(lastDamage)
+        var type_damage := lastDamage["TipoEquip"];
+        var time_damage := lastDamage.time;
+        var time_death := (time_actual) - (time_damage);
+        var time_agressao := time_actual - time_damage;
+
+        if(dead_one)
+            if(time_death < 600)
+                text_death := "<basefont color=#FFFFFF>O corpo está quente.</basefont> ";
+            else
+                text_death := "<basefont color=#FFFFFF>O corpo está frio.</basefont> ";
+            endif
+            text_damage := "<basefont color=#FFFFFF>Há vestígios de </basefont><basefont color=#FF0000>homicídio</basefont><basefont color=#FFFFFF> cujo golpe fulminante foi " + type_damage + ". </basefont>";
+        else
+            if(time_agressao <= 86400)
+                text_damage := "<basefont color=#FFFFFF>Há vestígios de </basefont><basefont color=#FF0000>agressão</basefont><basefont color=#FFFFFF>, as lesões apontam dano " + type_damage + ". </basefont>";
+            endif
+        endif
+    endif
+
+    // Verifica furto
+    if(furto)
+        var time_furto_origin := furto.tempo;
+        var time_furto := (time_actual) - (time_furto_origin);
+
+        if(time_furto <= 86400)
+            text_furto := "<basefont color=#FFFFFF>Há vestígios de </basefont><basefont color=#FF0000>furto</basefont><basefont color=#FFFFFF> ocorrido recentemente.</basefont> ";
+        else
+            EraseObjProperty(subject, "ultimo_furto");
+        endif
+    endif
+
+    // Compõe a resposta final
+    if(text_damage != "" || text_furto != "")
+        return text_death + text_damage + text_furto;
+    else
+        return "<basefont color=#FFFFFF>Não há vestígios de crimes recentes.</basefont>";
+    endif
+endfunction
