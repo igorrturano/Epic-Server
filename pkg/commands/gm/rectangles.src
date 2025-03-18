@@ -1,0 +1,518 @@
+use uo;
+use os;
+use datafile;
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:requestGump";
+include ":gumps:yesNo";
+include ":gumps:epicGumps";
+include ":gumps:/include/epicGumps";
+
+program rectangle_creator(who, params)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Você não tem permissão para usar este comando.");
+        return;
+    endif
+    
+    // Abrir ou criar datafile para armazenar os retângulos
+    var rect_df := OpenDataFile(":architect:areas");
+    if (rect_df == error)
+        rect_df := CreateDataFile(":architect:areas");
+        if (rect_df == error)
+            SendSysMessage(who, "Erro ao criar arquivo de dados!");
+            return;
+        endif
+    endif
+    
+    // Checar se o comando é para visualização direta
+    params := Lower(params);
+    if (params == "ver")
+        ShowRectangles(who, rect_df);
+        return;
+    endif
+    
+    // Processo normal de criação de retângulo
+    SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
+    var first_point := TargetCoordinates(who);
+    if (!first_point)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+    
+    SendSysMessage(who, "Selecione o segundo ponto (canto inferior direito)");
+    var second_point := TargetCoordinates(who);
+    if (!second_point)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+    
+    // Organizar coordenadas para que x1,y1 seja o canto superior esquerdo
+    // e x2,y2 seja o canto inferior direito
+    var x1 := first_point.x;
+    var y1 := first_point.y;
+    var x2 := second_point.x;
+    var y2 := second_point.y;
+    
+    if (x1 > x2)
+        var temp := x1;
+        x1 := x2;
+        x2 := temp;
+    endif
+    
+    if (y1 > y2)
+        var temp := y1;
+        y1 := y2;
+        y2 := temp;
+    endif
+    
+    var rect_str := $"{x1} {y1} {x2} {y2}";
+    var realm := first_point.realm;
+    
+    // Mostrar o retângulo selecionado
+    SendSysMessage(who, $"Retângulo definido: {rect_str} no realm {realm}");
+    
+    // Pedir o nome do retângulo
+    var rect_name := RequestGump(who, "Digite um nome para este retângulo:");
+    if (!rect_name || rect_name == "")
+        SendSysMessage(who, "Operação cancelada - nome não fornecido.");
+        return;
+    endif
+    
+    // Verificar se o retângulo se sobrepõe a outro existente
+    if (CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
+        SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
+        SendSysMessage(who, "Operação cancelada.");
+        return;
+    endif
+    
+    // Verificar se o nome já existe e confirmar sobrescrita
+    var elem := rect_df.FindElement(rect_name);
+    if (elem)
+        var confirm := YesNo(who, $"Já existe um retângulo com o nome '{rect_name}'. Sobrescrever?");
+        if (!confirm)
+            SendSysMessage(who, "Operação cancelada.");
+            return;
+        endif
+    else
+        elem := rect_df.CreateElement(rect_name);
+    endif
+    
+    // Salvar as informações do retângulo
+    elem.SetProp("Name", rect_name);
+    elem.SetProp("Rect", rect_str);
+    elem.SetProp("Realm", realm);
+    elem.SetProp("Faction", "Selvagem"); // Novo campo para indicar qual facção controla o território
+
+    // Configurar recursos e intervalos para o território
+    SetupResourcesForTerritory(who, elem);
+    
+    SendSysMessage(who, $"Retângulo '{rect_name}' salvo com sucesso!");
+    
+    // Opção para visualizar os retângulos existentes
+    if (YesNo(who, "Deseja visualizar todos os retângulos salvos?"))
+        ShowRectangles(who, rect_df);
+    endif
+endprogram
+
+// Nova função para configurar recursos para o território
+function SetupResourcesForTerritory(who, elem)
+    // Lista de conjuntos de recursos predefinidos
+    var resource_sets := array{
+        "IronOre, couroespesso, cogumelo",
+        "madeirapinheiro, glanduladearanha, caveiradeliche",
+        "madeirapinheiro, carvao, pelebranca",
+        "madeirateixo, prataIngot, escamasazuis",
+        "couropolar, madeirateixo, ossogigante",
+        "IronOre, ossodemoniaco, courodraconiano",
+        "acoIngot, vidro, carvao",
+        "couropolar, osso, couroescamoso"
+    };
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 500, 450);
+    GFResizePic(gump, 15, 15, 9350, 470, 420);
+    
+    GFTextMid(gump, 250, 25, 470, 2100, "Configurar Recursos para: " + elem.GetProp("Name"));
+    
+    var y := 60;
+    
+    // Alterar para intervalo em minutos em vez de horas
+    GFTextLine(gump, 30, y, 2100, "Intervalo de Geração (minutos):");
+    GFResizePic(gump, 230, y, 9350, 60, 25);
+    GFTextEntry(gump, 235, y, 50, 25, 1153, "60", 10); // Default: 60 minutos
+    y += 40;
+    
+    // Quantidade de recursos
+    GFTextLine(gump, 30, y, 2100, "Quantidade por Geração:");
+    GFResizePic(gump, 230, y, 9350, 60, 25);
+    GFTextEntry(gump, 235, y, 50, 25, 1153, "5", 20); // Default: 5 unidades
+    y += 40;
+    
+    // Instrução sobre limite de 3 recursos
+    GFTextLine(gump, 30, y, 38, "Selecione até 3 recursos para o território:");
+    y += 25;
+    
+    // Lista para armazenar as caixas de seleção
+    var checkboxes := array{};
+    
+    // Conjuntos de recursos predefinidos - com checkboxes individuais por recurso
+    for i := 1 to resource_sets.size()
+        var resources := SplitWords(resource_sets[i]);
+        
+        for j := 1 to resources.size()
+            var resource := resources[j];
+            // Verificar se o recurso já está na lista para evitar duplicatas
+            var is_duplicate := 0;
+            foreach checkbox in checkboxes
+                if (checkbox.resource == resource)
+                    is_duplicate := 1;
+                    break;
+                endif
+            endforeach
+            
+            if (!is_duplicate)
+                checkboxes.append(struct{
+                    "resource" := resource,
+                    "y" := y,
+                    "id" := 300 + checkboxes.size()
+                });
+                
+                GFCheckBox(gump, 30, y, 9792, 9793, 0, checkboxes[checkboxes.size()].id);
+                GFTextLine(gump, 50, y, 1153, resource);
+                y += 25;
+                
+                // Limitar número de recursos exibidos para não sobrecarregar o gump
+                if (checkboxes.size() >= 15)
+                    break;
+                endif
+            endif
+        endfor
+        
+        if (checkboxes.size() >= 15)
+            break;
+        endif
+    endfor
+    
+    y += 10;
+    
+    // Botões de salvar e cancelar
+    GFAddButton(gump, 150, 400, 2128, 2129, 1, 100); // Salvar
+    GFTextLine(gump, 185, 400, 2100, "Salvar Configurações");
+    
+    GFAddButton(gump, 330, 400, 2119, 2120, 1, 0); // Cancelar
+    GFTextLine(gump, 365, 400, 2100, "Cancelar");
+    
+    var input := GFSendGump(who, gump);
+    var button := input[0];
+    
+    // Se cancelou, deixar com valores padrão
+    if (button == 0)
+        elem.SetProp("ResourceInterval", 60); // 60 minutos
+        elem.SetProp("ResourceAmount", 5);    // 5 unidades
+        // Escolher 3 recursos do primeiro conjunto
+        var default_resources := SplitWords(resource_sets[1]);
+        var resource_str := "";
+        for i := 1 to 3
+            if (i <= default_resources.size())
+                if (i > 1)
+                    resource_str += ", ";
+                endif
+                resource_str += default_resources[i];
+            endif
+        endfor
+        elem.SetProp("Resources", resource_str);
+        return;
+    endif
+    
+    if (button == 100)
+        // Salvar configurações
+        var interval := CInt(GFExtractData(input, 10));
+        var amount := CInt(GFExtractData(input, 20));
+        
+        // Validar entradas
+        if (interval < 1)
+            interval := 1;
+        endif
+        
+        if (amount < 1)
+            amount := 1;
+        endif
+        
+        // Obter recursos selecionados (limitados a 3)
+        var selected_resources := array{};
+        foreach checkbox in checkboxes
+            if (input[checkbox.id])
+                selected_resources.append(checkbox.resource);
+                if (selected_resources.size() >= 3)
+                    break;
+                endif
+            endif
+        endforeach
+        
+        // Se nenhum recurso foi selecionado, usar padrão
+        if (selected_resources.size() == 0)
+            var default_resources := SplitWords(resource_sets[1]);
+            for i := 1 to 3
+                if (i <= default_resources.size())
+                    selected_resources.append(default_resources[i]);
+                endif
+            endfor
+        endif
+        
+        // Converter lista de recursos em string
+        var resources := "";
+        for i := 1 to selected_resources.size()
+            if (i > 1)
+                resources += ", ";
+            endif
+            resources += selected_resources[i];
+        endfor
+        
+        // Salvar no elemento
+        elem.SetProp("ResourceInterval", interval);
+        elem.SetProp("ResourceAmount", amount);
+        elem.SetProp("Resources", resources);
+        
+        // Configurar próxima geração
+        var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+        elem.SetProp("NextResourceTime", next_time);
+        
+        SendSysMessage(who, "Recursos configurados: " + resources);
+        SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades por recurso");
+    endif
+endfunction
+
+function ShowRectangles(who, rect_df)
+    // Usando a função GFECreateGump para criar o gump padronizado
+    // Usando os valores de largura e altura do sistema sem redefinir constantes
+    var rect_gump_width := 320;
+    var rect_gump_height := 480;
+    
+    var gump := GFECreateGump("Gerenciador de Retângulos", rect_gump_width, rect_gump_height, array{BORDER_GOLDEN});
+    
+    var y := 41;
+    var i := 1;
+    
+    GFTextMid(gump, rect_gump_width/2, y, rect_gump_width, 1153, "Retângulos Salvos");
+    y += 30;
+    
+    // Adicionar linhas para cada retângulo
+    foreach rect_name in (rect_df.keys())
+        GFTextLine(gump, 35, y, 1153, rect_name);
+        GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
+        i := i + 1;
+        y := y + 20;
+    endforeach
+    
+    var input := GFSendGump(who, gump);
+    input := input[0];
+    
+    if (input >= 400)
+        var index := input - 400;
+        var elem := rect_df.FindElement(rect_df.keys()[index]);
+        
+        DisplayRectangleDetails(who, elem);
+    endif
+endfunction
+
+// Função para verificar se um retângulo se sobrepõe a outro
+function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "")
+    foreach rect_name in (rect_df.keys())
+        // Pular a verificação se for o próprio retângulo que estamos editando
+        if (rect_name == exclude_name)
+            continue;
+        endif
+        
+        var rect_elem := rect_df.FindElement(rect_name);
+        var rect_realm := rect_elem.GetProp("Realm");
+        
+        // Se não estiver no mesmo realm, não há sobreposição
+        if (rect_realm != realm)
+            continue; 
+        endif
+        
+        var rect_coords := SplitWords(rect_elem.GetProp("Rect"));
+        if (rect_coords.size() < 4)
+            continue; // Dados inválidos, pular
+        endif
+        
+        var r_x1 := CInt(rect_coords[1]);
+        var r_y1 := CInt(rect_coords[2]);
+        var r_x2 := CInt(rect_coords[3]);
+        var r_y2 := CInt(rect_coords[4]);
+        
+        // Verificar se há sobreposição
+        // Dois retângulos não se sobrepõem se um está à esquerda, direita, acima ou abaixo do outro
+        if (!(x2 < r_x1 || x1 > r_x2 || y2 < r_y1 || y1 > r_y2))
+            return 1; // Há sobreposição
+        endif
+    endforeach
+    
+    return 0; // Não há sobreposição
+endfunction
+
+function DisplayRectangleDetails(who, elem)
+    // Usando componentes padronizados para o gump de detalhes
+    var detail_gump_width := 300;
+    var detail_gump_height := 320; // Aumentado para acomodar os novos botões
+    
+    var gump := GFECreateGump("Detalhes do Retângulo", detail_gump_width, detail_gump_height, array{BORDER_GOLDEN});
+    var y := 60;
+    
+    // Informações do retângulo
+    GFTextLine(gump, 30, y, 2100, "Nome:"); 
+    GFTextLine(gump, 140, y, 1153, elem.GetProp("Name"));
+    y += 20;
+    
+    GFTextLine(gump, 30, y, 2100, "Coordenadas:");
+    GFTextLine(gump, 140, y, 1153, elem.GetProp("Rect"));
+    y += 20;
+    
+    GFTextLine(gump, 30, y, 2100, "Realm:");
+    GFTextLine(gump, 140, y, 1153, elem.GetProp("Realm"));
+    y += 20;
+    
+    GFTextLine(gump, 30, y, 2100, "Facção:");
+    GFTextLine(gump, 140, y, 1153, elem.GetProp("Faction") ? elem.GetProp("Faction") : "Selvagem");
+    y += 20;
+    
+    // Informações de recursos
+    var resources := elem.GetProp("Resources");
+    var interval := elem.GetProp("ResourceInterval");
+    var amount := elem.GetProp("ResourceAmount");
+    
+    GFTextLine(gump, 30, y, 2100, "Recursos:");
+    GFTextLine(gump, 140, y, resources ? 63 : 38, resources ? "Configurados" : "Não definidos");
+    y += 25;
+    
+    // Botões de ação
+    // Adicionar botão para configurar recursos
+    GFAddButton(gump, 30, y, 2361, 2361, 1, 500);
+    GFTextLine(gump, 50, y-4, 40, "Configurar Recursos");
+    y += 25;
+    
+    // Adicionar botão para criar totem
+    if (who.cmdlevel >= 1) // Apenas para GMs
+        GFAddButton(gump, 30, y, 2361, 2361, 1, 400);
+        GFTextLine(gump, 50, y-4, 40, "Criar Totem");
+        y += 25;
+    endif
+    
+    GFAddButton(gump, 30, y, 2361, 2361, 1, 100);
+    GFTextLine(gump, 50, y-4, 40, "Deletar Retângulo");
+    y += 25;
+    
+    GFAddButton(gump, 30, y, 2361, 2361, 1, 200);
+    GFTextLine(gump, 50, y-4, 40, "Editar Retângulo");
+    y += 25;
+    
+    GFAddButton(gump, 30, y, 2361, 2361, 1, 300);
+    GFTextLine(gump, 50, y-4, 40, "Ir para Retângulo");
+    
+    var input := GFSendGump(who, gump);
+    input := input[0];
+    
+    if (input == 500) // Configurar Recursos
+        SetupResourcesForTerritory(who, elem);
+    elseif (input == 400) // Criar Totem
+        CreateTerritoryTotem(who, elem);
+    elseif (input == 100)
+        // Deletar retângulo
+        if (YesNo(who, "Tem certeza que deseja deletar o retângulo '" + elem.GetProp("Name") + "'?"))
+            var rect_df := OpenDataFile(":architect:areas");
+            rect_df.DeleteElement(elem.GetProp("Name"));
+            SendSysMessage(who, "Retângulo deletado com sucesso!");
+        endif
+    elseif (input == 200)
+        // Editar retângulo
+        SendSysMessage(who, "Selecione novos pontos para o retângulo");
+        
+        // Solicitar ao GM que selecione os dois pontos do retângulo
+        SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
+        var first_point := TargetCoordinates(who);
+        if (!first_point)
+            SendSysMessage(who, "Edição cancelada.");
+            return;
+        endif
+        
+        SendSysMessage(who, "Selecione o segundo ponto (canto inferior direito)");
+        var second_point := TargetCoordinates(who);
+        if (!second_point)
+            SendSysMessage(who, "Edição cancelada.");
+            return;
+        endif
+        
+        // Organizar coordenadas
+        var x1 := first_point.x;
+        var y1 := first_point.y;
+        var x2 := second_point.x;
+        var y2 := second_point.y;
+        
+        if (x1 > x2)
+            var temp := x1;
+            x1 := x2;
+            x2 := temp;
+        endif
+        
+        if (y1 > y2)
+            var temp := y1;
+            y1 := y2;
+            y2 := temp;
+        endif
+        
+        var rect_str := $"{x1} {y1} {x2} {y2}";
+        var rect_name := elem.GetProp("Name");
+        
+        // Verificar se o retângulo se sobrepõe a outro existente (exceto a si mesmo)
+        if (CheckRectangleOverlap(OpenDataFile(":architect:areas"), x1, y1, x2, y2, first_point.realm, rect_name))
+            SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
+            SendSysMessage(who, "Edição cancelada.");
+            return;
+        endif
+        
+        // Atualizar o elemento existente
+        elem.SetProp("Rect", rect_str);
+        elem.SetProp("Realm", first_point.realm);
+        
+        SendSysMessage(who, $"Retângulo '{rect_name}' atualizado!");
+    elseif (input == 300)
+        // Teleportar para o centro do retângulo
+        var rect := elem.GetProp("Rect");
+        var realm := elem.GetProp("Realm");
+        var coords := SplitWords(rect);
+        
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            var center_x := CInt((x1 + x2) / 2);
+            var center_y := CInt((y1 + y2) / 2);
+            var center_z := GetWorldHeight(center_x, center_y, realm);
+            
+            MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
+            SendSysMessage(who, "Teleportado para o centro do retângulo!");
+        else
+            SendSysMessage(who, "Erro ao analisar as coordenadas do retângulo!");
+        endif
+    endif
+endfunction
+
+function CreateTerritoryTotem(who, elem)
+    var totem := CreateItemInBackpack(who, 0xA102, 1); // Usar o objtype do TotemDeAquisicao
+    if (!totem)
+        SendSysMessage(who, "Falha ao criar o totem. Verifique o espaço na sua mochila.");
+        return 0;
+    endif
+    
+    // Configurar propriedades do totem
+    SetObjProperty(totem, "RectName", elem.GetProp("Name"));
+    SetObjProperty(totem, "Rect", elem.GetProp("Rect"));
+    SetObjProperty(totem, "Realm", elem.GetProp("Realm"));
+    SetObjProperty(totem, "CreatedBy", who.serial);
+    SetObjProperty(totem, "CreationDate", polcore().systime);
+    
+    SendSysMessage(who, "Um totem para o território '" + elem.GetProp("Name") + "' foi criado em sua mochila.");
+    return 1;
+endfunction

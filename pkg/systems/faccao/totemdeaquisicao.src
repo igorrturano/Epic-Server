@@ -1,0 +1,170 @@
+use uo;
+use os;
+use datafile;
+
+include ":faccao:faccao";
+// Removida a inclusão problemática:
+// include ":architect:areas";
+
+program TotemDeAquisicao(who, totem)
+    if (!who || !totem)
+        return 0;
+    endif
+    
+    var rect_name := GetObjProperty(totem, "RectName");
+    if (!rect_name)
+        SendSysMessage(who, "Totem inválido.");
+        return 0;
+    endif
+    
+    // Verificar se o jogador é líder de uma facção
+    var guild := who.guild;
+    if (!guild)
+        SendSysMessage(who, "Você precisa pertencer a uma facção para reivindicar territórios.");
+        return 0;
+    endif
+    
+    var guild_obj := GetFaccao(guild);
+    if (!guild_obj || guild_obj.leader != who.serial)
+        SendSysMessage(who, "Apenas o líder da facção pode reivindicar territórios.");
+        return 0;
+    endif
+    
+    // Abrir o datafile de áreas
+    var rect_df := OpenDataFile(":architect:areas");
+    if (!rect_df)
+        SendSysMessage(who, "Sistema de territórios indisponível no momento.");
+        return 0;
+    endif
+    
+    var elem := rect_df.FindElement(rect_name);
+    if (!elem)
+        SendSysMessage(who, "Território não encontrado: " + rect_name);
+        return 0;
+    endif
+    
+    // Verificar se o território já está reivindicado
+    var current_faction := elem.GetProp("Faction");
+    if (current_faction && current_faction != "Selvagem")
+        SendSysMessage(who, "Este território já está reivindicado por: " + current_faction);
+        return 0;
+    endif
+    
+    // Reivindicar o território
+    elem.SetProp("Faction", guild_obj.name);
+    
+    // Adicionar o território à lista da facção
+    var territories := guild.GetProp("territories");
+    if (!territories)
+        territories := array{};
+    endif
+    
+    if (!(rect_name in territories))
+        territories.append(rect_name);
+        guild.SetProp("territories", territories);
+    endif
+    
+    // Criar o monumento no centro do território
+    CreateTerritoryMonument(who, elem, rect_name);
+    
+    // Configurar timer para geração de recursos
+    // Verificar se o território já tem recursos configurados
+    if (!elem.GetProp("Resources"))
+        // Se não houver recursos configurados, usar um conjunto padrão (3 recursos)
+        var default_resources := SplitWords("IronOre, couroespesso, cogumelo");
+        var resource_str := "";
+        for i := 1 to 3
+            if (i > 1)
+                resource_str += ", ";
+            endif
+            resource_str += default_resources[i];
+        endfor
+        elem.SetProp("Resources", resource_str);
+    endif
+    
+    if (!elem.GetProp("ResourceInterval"))
+        elem.SetProp("ResourceInterval", 1); // Default: 1 minuto para testes
+    endif
+    
+    if (!elem.GetProp("ResourceAmount"))
+        elem.SetProp("ResourceAmount", 5); // Default: 5 unidades por recurso
+    endif
+    
+    // Configurar próxima geração de recursos
+    var interval := CInt(elem.GetProp("ResourceInterval"));
+    var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+    elem.SetProp("NextResourceTime", next_time);
+    
+    // Destruir o totem após uso
+    DestroyItem(totem);
+    
+    SendSysMessage(who, "Sua facção reivindicou com sucesso o território: " + rect_name);
+    SendSysMessage(who, "O território começará a produzir recursos em " + interval + " minutos.");
+    PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + guild_obj.name + "*");
+    
+    return 1;
+endprogram
+
+function CreateTerritoryMonument(who, elem, rect_name)
+    var rect := elem.GetProp("Rect");
+    var realm := elem.GetProp("Realm");
+    var coords := SplitWords(rect);
+    
+    if (coords.size() >= 4)
+        var x1 := CInt(coords[1]);
+        var y1 := CInt(coords[2]);
+        var x2 := CInt(coords[3]);
+        var y2 := CInt(coords[4]);
+        
+        var center_x := CInt((x1 + x2) / 2);
+        var center_y := CInt((y1 + y2) / 2);
+        var center_z := GetWorldHeight(center_x, center_y, realm);
+        
+        var faction_name := who.guild.getProp("name");
+        
+        // Criar o mural de recrutamento à esquerda
+        var monument := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm);
+        if (monument)
+            SetObjProperty(monument, "RectName", rect_name);
+            SetObjProperty(monument, "Faction", faction_name);
+            monument.name := "Mural de Recrutamento [" + faction_name + "]";
+            SetObjProperty(monument, "CreatedBy", who.serial);
+            SetObjProperty(monument, "CreationDate", polcore().systime);
+            monument.movable := 0;
+            
+            // Criar o baú de doações específico para esta facção
+            var donation_chest := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm);
+            if (donation_chest)
+                donation_chest.name := "Baú de Doações [" + faction_name + "]";
+                // Importante: definir a propriedade faction corretamente
+                SetObjProperty(donation_chest, "faction", faction_name);
+                // Adicionar um ID exclusivo para este baú
+                SetObjProperty(donation_chest, "faction_chest_id", faction_name + "_" + polcore().systime);
+                donation_chest.movable := 0;
+                
+                // Registrar o baú na facção - isto é crucial para vincular corretamente
+                var guild := who.guild;
+                guild.SetProp("donation_chest", donation_chest.serial);
+                
+                // Criar a mesa de gestão à direita
+                var interface_item := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm);
+                if (interface_item)
+                    interface_item.name := "Mesa de Gestão [" + faction_name + "]";
+                    // Importante: definir a propriedade faction corretamente também na mesa
+                    SetObjProperty(interface_item, "faction", faction_name);
+                    interface_item.movable := 0;
+                    
+                    SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
+                else
+                    SendSysMessage(who, "Falha ao criar a mesa de gestão. Por favor, notifique um GM.");
+                endif
+            else
+                SendSysMessage(who, "Falha ao criar o baú de doações. Por favor, notifique um GM.");
+            endif
+            
+            return monument;
+        endif
+    endif
+    
+    return 0;
+endfunction
