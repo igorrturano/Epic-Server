@@ -90,8 +90,13 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Validar a Ação no loop de fabricação de intens complexos e componentes.
 	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
+	//TODO Pensar em implementar uma equivalência de componentes. exemplo: um componente maior que cabe na lamina, equivale a 3 menores.
 	//TODO Criar gumps de ajuda.
+	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
+	//TODO Deixar o cara escolher se quer fazer um componente de qualidade mais baixa.
 	//TODO verificar porque os componentes não estão estacando na criação..
+	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
+	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
 	//TODO Munições precisão ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Embelezar gumps [Penultima fase]
 	//TODO Documentar tudo [Ultima fase]
@@ -256,14 +261,14 @@ function EnviaItensComplexosGump(quem,profissao)
 endfunction
 
 function MontaMelhorEsquema(quem, sessao)
-	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao, configRecursos);
+	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao.receitaSelecionada.receita, configRecursos);
 
 	foreach componenteEncontrado in componentesEncontrados
 		Sleepms(2);
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		var componenteEscolhido := MontaComponentesEscolhidos(opcaoEncontrada, componenteNecessario, configRecursos);
-		var temp := AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente);
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos);
+		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
@@ -339,7 +344,7 @@ function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 	var encaixesEncontrados := array;
 	foreach elemento in  contagem
 		Sleepms(2);
-
+		Print("nomeItem "  + elemento.nomeItem + elemento.quantidadeNecessaria);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade )
 			var mensagem; 
 			if (elemento.?encaixe)
@@ -364,7 +369,16 @@ function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 		endif
 	endforeach
 
+	if(IsMateriaisNaoEncontrados(receita, contagem))
+		SendSysMessageEX(quem,"Você não tem todos materiais necessários.",SSM_FAIL);
+		return false;
+	endif
+
 	return true;
+endfunction
+
+function IsMateriaisNaoEncontrados(receita, contagem)
+	return receita.materiaisNecessarios.size() - receita.componentesNecessarios.size() > contagem.size();
 endfunction
 
 function ContaQuantidadeRequisitos(quem, esquema, receita)
@@ -389,8 +403,10 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 
 		foreach ingrediente in (receita.materiaisNecessarios)
 			Sleepms(2);
-			if(isMaterialNecessario(item, ingrediente[1]))
-				var qtdNecessaria := SplitWords(receita.materiaisNecessarios[cstr(item.objtype)])[2];
+			var ingredienteInfo := SplitWords(ingrediente);
+
+			if(isMaterialNecessario(item, ingredienteInfo[1]))
+				var qtdNecessaria := cint(ingredienteInfo[2]);
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											qtdNecessaria
@@ -443,7 +459,7 @@ function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quanti
 endfunction
 
 function isMaterialNecessario (item, objtypeIngrediente)
-	return cstr(item.objtype) ==  objtypeIngrediente;
+	return cint(item.objtype) == cint(objtypeIngrediente);
 endfunction
 
 function isItemEscolhido(item,componenteEscolhido)
@@ -473,7 +489,7 @@ function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, config
 									componentesNecessarios[retornoDropDownOpcao.indiceEncaixeComponente];
 	
 	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
-		var componenteEscolhido := MontaComponentesEscolhidos(retornoDropDownOpcao, componenteNecessario, configRecursos);
+		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos);
 		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, retornoDropDownOpcao.indiceEncaixeComponente);
 	endif
 endfunction
@@ -498,7 +514,7 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 	
 endfunction
 
-function MontaComponentesEscolhidos(componenteEncontrado, componenteNecessario, configRecursos)
+function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos)
 	var componenteEscolhido := struct;
 		var itemNaBag := componenteEncontrado.itemRef;
 
@@ -581,13 +597,12 @@ function MontaObetoOpcaoComponente(componenteEncontrado, indiceEncaixe)
 				indiceEncaixeComponente := indiceEncaixe};
 endfunction
 
-//TODO desamarrar esta função da SESSAO.
-function CarregaComponentesEncontrados(quem, sessao, configRecursos)
+function CarregaComponentesEncontrados(quem, receita, configRecursos)
 	var retorno := dictionary;
 
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
-		foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
+		foreach componenteNecessario in (receita.componentesNecessarios)
 			Sleepms(2);
 			if( CStr(item.objtype) in componenteNecessario.itens)
 				if(!retorno.exists(componenteNecessario.encaixe))
@@ -649,8 +664,6 @@ endfunction
 function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
 	var poderContado := 0;
 
-	//TODO contabilizar HP e Peso no cálculo, talvez como critério de desempate?
-
 	if(!propriedades)
 		propriedades := MontaPropriedadesComponente(
 									chaveMaterial,
@@ -676,7 +689,6 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier, config
 	endif
 
 	var propriedades := struct {};
-	//TODO Passar o modificador de HP e peso de acordo com o material. 
 	propriedades.+caracteristica := caracteristica;
 
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
@@ -755,7 +767,6 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 	endif
 
 	foreach categoria in categorias
-		//TODO Modificar as Configs pra colocar o elemento "item" onde não tiver.
 		var itens := GetConfigStringArray(menuPericiaCfg[categoria], "Item");
 		var receitas := Array;
 
@@ -838,8 +849,9 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	if(materiaisNecessarios && materiaisNecessarios.size() > 0)
 		desc +=  "<br>";
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Materiais Necessários</BASEFONT><br>";
-		foreach material in (materiaisNecessarios.keys())
-			desc +=  materiaisNecessarios[material] + " " + GetMaterialName(material)  + "<br>";
+		foreach material in materiaisNecessarios
+			var materialInfo := SplitWords(material);
+			desc +=  materialInfo[2] + " " + GetMaterialName(materialInfo[1])  + "<br>";
 			Sleepms(2);
 		endforeach
 	endif
@@ -887,7 +899,7 @@ function PegaComponentesNecessarios(objtype)
 endfunction
 
 function PegaMateriaisNecessarios(objtype, descritorFabricacao)
-	var materials := GetConfigStringDictionary(descritorFabricacao, "materials");
+	var materials := GetConfigStringArray(descritorFabricacao, "materials");
 	return materials;
 endfunction
 
@@ -984,7 +996,6 @@ function EnviaGumpComponentes(quem)
 	var gerenciador := sessao.gerenciadorDropDown;
 	var gump;
 
-	//TODO Deixar o cara escolher se quer fazer um item de qualidade mais baixa.
 	while(retorno)
 		FechaTodosDropdowns(quem,gerenciador.dropDowns);
 
@@ -1338,7 +1349,7 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao)
 	return parametrosGump;
 endfunction
 
-// TODO pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
+// TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
 function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico := -1) 
 	
 	if(quantidade == error || quantidade.size() == 0)
