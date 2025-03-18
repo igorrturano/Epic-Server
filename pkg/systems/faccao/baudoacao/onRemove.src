@@ -1,0 +1,57 @@
+use uo;
+use os;
+use guilds;
+include "include/say";
+include ":faccao:include/shared_functions";
+
+program OnRemove(who, container, item, item_amount, movetype)
+    // Verificar se o item removido é um recurso do reino
+    var donation_types := array{
+        "IsKingdomDonationComida",
+        "IsKingdomDonationMoedas",
+        "IsKingdomDonationCouro",
+        "IsKingdomDonationMetal",
+        "IsKingdomDonationMadeira",
+        "IsKingdomDonationPano",
+        "IsKingdomDonationPedra",
+        "IsKingdomDonationJoias"
+    };
+    
+    var is_donation := 0;
+    foreach donation_type in donation_types
+        if (GetObjProperty(item, donation_type))
+            is_donation := 1;
+            break;
+        endif
+    endforeach
+    
+    if (is_donation)
+        // Registrar a remoção de recursos
+        if (!(who.concealed || who.hidden))
+            PrintText(who, "*Removeu " + item.desc + " do " + container.desc + "*", 6);
+        endif
+        
+        // Atualizar contadores de recursos após a remoção
+        var recursos_atualizados := ContarItensDoadosNoBau(container);
+        AtualizarRecursosNoDataFile(recursos_atualizados);
+        
+        var chardata := GetObjProperty(who, "chardata");
+        var titulo := "";
+        
+        if (chardata)
+            if (chardata.current_nobility_title)
+                titulo := chardata.current_nobility_title;
+            elseif (chardata.current_professional_position)
+                titulo := chardata.current_professional_position;
+            endif
+        endif
+        
+        if (titulo)
+            SendSysMessageEx(who, "Você, como " + titulo + ", removeu recursos do tesouro do reino.", SSM_INFO);
+        else
+            SendSysMessageEx(who, "Você removeu recursos do tesouro do reino.", SSM_INFO);
+        endif
+    endif
+    
+    return 1;
+endprogram

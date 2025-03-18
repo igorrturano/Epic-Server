@@ -115,6 +115,34 @@ function RemFaccao(guild_obj)
       sleepms(2);
    endforeach
 
+    
+    // Liberar todos os territórios
+    var territories := guild_obj.GetProp("territories");
+    if (territories)
+        var rect_df := OpenDataFile(":architect:areas");
+        foreach territory in territories
+            var elem := rect_df.FindElement(territory);
+            if (elem)
+                elem.SetProp("Faction", "Selvagem");
+                
+                // Remover monumentos
+                var coords := SplitWords(elem.GetProp("Rect"));
+                if (coords.size() >= 4)
+                    var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
+                    var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+                    
+                    foreach item in ListItemsNearLocation(center_x, center_y, GetWorldHeight(center_x, center_y, elem.GetProp("Realm")), 3, elem.GetProp("Realm"))
+                        if (item.objtype == 0xA104 && GetObjProperty(item, "RectName") == territory)
+                            DestroyItem(item);
+                            break;
+                        endif
+                    endforeach
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
    return DestroyGuild(guild);
 endfunction
 
@@ -195,23 +223,42 @@ function isLeader(faccao, mobile)
 endfunction
 
 function inGuildRect(guild, item := 0)
-   if (typeof(guild) == "String")
-      guild := FindGuild(guild);
-   endif
+    if (typeof(guild) == "String")
+        guild := FindGuild(guild);
+    endif
 
-   if (!guild) return; endif
+    if (!guild) return; endif
 
-   var area := guild.getProp("area");
-   foreach rect in area
-      sleepms(2);
-      if (!rect || rect.size() < 4) 
-         continue;
-      elseif (item.x >= cint(rect[1]) && item.x <= cint(rect[3]) && item.y >= cint(rect[2]) && item.y <= cint(rect[4]));
-         return 1;
-      endif
-   endforeach
+    // Verificar nas áreas definidas diretamente
+    var area := guild.getProp("area");
+    foreach rect in area
+        sleepms(2);
+        if (!rect || rect.size() < 4) 
+            continue;
+        elseif (item.x >= cint(rect[1]) && item.x <= cint(rect[3]) && item.y >= cint(rect[2]) && item.y <= cint(rect[4]));
+            return 1;
+        endif
+    endforeach
 
-   return 0;
+    // Verificar nos territórios controlados
+    var territories := guild.GetProp("territories");
+    if (territories)
+        var rect_df := OpenDataFile(":architect:areas");
+        foreach territory in territories
+            var elem := rect_df.FindElement(territory);
+            if (elem && elem.GetProp("Faction") == guild.GetProp("name"))
+                var coords := SplitWords(elem.GetProp("Rect"));
+                if (coords.size() >= 4 && item.realm == elem.GetProp("Realm"))
+                    if (item.x >= cint(coords[1]) && item.x <= cint(coords[3]) && item.y >= cint(coords[2]) && item.y <= cint(coords[4]))
+                        return 1;
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
+
+    return 0;
 endfunction
 
 function AddReport(guild, report)

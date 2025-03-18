@@ -1,9 +1,35 @@
 use uo;
 use cfgfile;
+use guilds;
+
 include "include/say";
+include ":faccao:include/shared_functions";
 
 
 program CanInsert(mobile, container, movetype, insert_type, adding_item, existing_stack, amt_to_add)
+    // Debug intensivo
+    Print("DEBUG: canInsert sendo chamado para container: " + container.serial);
+    
+    if (adding_item)
+        Print("DEBUG: Item a adicionar: " + adding_item.desc + " (ObjType: " + Hex(adding_item.objtype) + ")");
+    endif
+
+    // Informações sobre o baú
+    Print("DEBUG: Propriedades do baú: Capacidade=" + container.max_capacity + ", Itens=" + container.item_count);
+    
+    // Permitir itens do sistema (quando mobile é null ou não inicializado)
+    if (!mobile)
+        Print("DEBUG: Item sendo adicionado pelo sistema, permitindo");
+        return 1;
+    endif
+    
+    // Verificar se tem nossa propriedade especial
+    if (GetObjProperty(adding_item, "CreatedByResourceController"))
+        Print("DEBUG: Item criado pelo ResourceController, permitindo inserção");
+        return 1;
+    endif
+    
+    // Parâmetros que precisamos preservar mesmo que não usemos
     amt_to_add := amt_to_add;
     existing_stack := existing_stack;
     insert_type := insert_type;
@@ -15,7 +41,6 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
         SendSysMessage(mobile, "Você não tem permissão para inserir itens neste baú.");
         return 0;
     endif
-
 
     SendSysMessage(mobile, "Tentando inserir item no container.");
 
@@ -50,8 +75,6 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
     SendSysMessage(mobile, "Isso não é uma doação válida para o reino.");
     return 0;
 endprogram
-
-
 
 function CanInsertItems(who)
     var chardata := GetObjProperty(who, "chardata");
