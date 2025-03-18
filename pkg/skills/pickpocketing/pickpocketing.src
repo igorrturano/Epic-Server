@@ -194,7 +194,20 @@ program skill_Stealing(mobile)
 
 				var nome1 := GetObjProperty(mobile, "nome_inicial");
 				var nome2 := GetObjProperty(targ, "nome_inicial");
+				var tempo_furto := polcore().systime;
 				if ( targ.connected == 1 )
+					if (GetObjProperty(targ, "ultimo_furto"))
+						Eraseobjproperty(targ, "ultimo_furto");
+					endif
+					var furto_info := struct;
+					furto_info.+local := struct;
+					furto_info.local.+regiao := region;
+					furto_info.local.+coordenadas := coords;
+					furto_info.+autor := nome1;
+					furto_info.+ladraoserial := mobile.serial;
+					furto_info.+item_furtado := steal.desc;
+					furto_info.+tempo := tempo_furto;
+					SetObjProperty(targ, "ultimo_furto", furto_info);					
 					Start_script(":DiscordWebhook:discord", {tipo, nome1, fin.acctname, nome2, region, coords, steal.desc});
 				endif
 			else

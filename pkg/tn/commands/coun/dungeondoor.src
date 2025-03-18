@@ -23,7 +23,7 @@ program makedungeondoor(who)
 
 	door.locked := 1;
 
-	var time := Cint(RequestGump(who, "Digite de quanto em quanto tempo a porta se fecha (em minutos)"));
+	var time := Cint(RequestGump(who, "Digite de quanto em quanto tempo a porta tranca de novo (em minutos)"));
 	if (!time)
 		SendSysMessage(who, "Cancelado.");
 		return;

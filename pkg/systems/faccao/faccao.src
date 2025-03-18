@@ -1,5 +1,7 @@
 use uo;
 use os;
+use datafile;
+use guilds;
 
 include ":loot:lootParser";
 include ":attributes:attributes";
@@ -37,6 +39,9 @@ const BTN_FACCAO := 0x100;
 const BTN_NEW_FACCAO := 0x4;
 
 const BUTTON_CHECK_GUILD := 0x350;
+
+const BUTTON_TERRITORY := 0x500; // ID de botão para manipulador de territórios
+const BUTTON_TERRITORIES := 0x505; // Botão para acessar o gump de territórios
 
 
 var guild;
@@ -127,9 +132,18 @@ program faccao(params)
    GFSetId(gump, 0x689);
 	GFResizePic(gump, 26, 19, 39925, 573, 417); //background
 
+
+
 	GFResizePic(gump, 228, 29, 9350, 171, 34);
 
    GFHtmlShadowed(gump,232, 36, 165, 20, "#FFC33C", "<center>{}".format(guild_obj.name), 8);
+
+
+
+
+   // Botão para Territórios - Adicionar isso
+GFAddButton(gump, 67-10, 45, 5605, 5605, GF_CLOSE_BTN, BUTTON_TERRITORIES);
+GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
 
    if (who.cmdlevel >= 2)
       GFAddButton(gump, 430-20, 42+2, 5605, 5605, GF_CLOSE_BTN, BUTTON_GM_OPTS);
@@ -289,7 +303,9 @@ program faccao(params)
       npcHandler(who, input[0]);
    elseif (input[0] >= BUTTON_ADD_LAW && input[0] <= BUTTON_CHANGE_LAW+0x50)
       lawHandler(who, input[0]);
-   elseif (input[0] >= BUTTON_CHECK_GUILD && input[0] <= BUTTON_CHECK_GUILD+20);
+   elseif (input[0] >= BUTTON_TERRITORY && input[0] <= BUTTON_TERRITORY+50)
+      territoryHandler(who, input[0]);
+   elseif (input[0] >= BUTTON_CHECK_GUILD && input[0] <= BUTTON_CHECK_GUILD+20)
       return start_script(":faccao:faccao", array{who, input[0]-BUTTON_CHECK_GUILD, "isabove"});
    else
       return;
@@ -1050,4 +1066,189 @@ function ResetAllNpcs()
       SendEvent(npc, struct{ "type" := 0x78457});
       sleepms(2);
    endforeach
+endfunction
+
+
+function territoryHandler(who, input)
+    input := input - BUTTON_TERRITORY;
+    var territories := guild.GetProp("territories");
+    
+    // Check if the index is valid
+    if (input < 0 || input >= territories.size())
+        return SendSysMessageEx(who, "Índice de território inválido.", SSM_FAIL);
+    endif
+    
+    var territory := territories[input];
+    
+    var rect_df := OpenDataFile(":architect:areas");
+    if (!rect_df)
+        return SendSysMessageEx(who, "O sistema de territórios está indisponível no momento.", SSM_FAIL);
+    endif
+    
+    var elem := rect_df.FindElement(territory);
+    
+    if (!elem)
+        // If the territory doesn't exist, remove it from the faction's list
+        territories.Erase(input);
+        guild.SetProp("territories", territories);
+        return SendSysMessageEx(who, "Este território não existe mais e foi removido da lista.", SSM_FAIL);
+    endif
+    
+    // Verifying that the territory still belongs to this faction
+    if (elem.GetProp("Faction") != guild_obj.name)
+        territories.Erase(input);
+        guild.SetProp("territories", territories);
+        return SendSysMessageEx(who, "Este território não pertence mais à sua facção e foi removido da lista.", SSM_FAIL);
+    endif
+    
+    var options := array{"Ver Detalhes", "Ir para Território", "Abandonar Território", "Cancelar"};
+    var output := RadioGump(who, 300, 0, "Escolha uma opção", options, 0, 1);
+    
+    if (output["Ver"])
+        // Show territory details
+        var detail_gump := GFCreateGump(0, 0, 350, 300);
+        GFResizePic(detail_gump, 0, 0, 9200, 350, 300);
+        GFResizePic(detail_gump, 15, 15, 9350, 320, 270);
+        
+        var y := 30;
+        GFTextMid(detail_gump, 175, y, 320, 2100, "Território: " + territory);
+        y += 30;
+        
+        var rect := elem.GetProp("Rect");
+        var realm := elem.GetProp("Realm");
+        
+        GFTextLine(detail_gump, 30, y, 2100, "Coordenadas:");
+        GFTextLine(detail_gump, 130, y, 1153, rect);
+        y += 20;
+        
+        GFTextLine(detail_gump, 30, y, 2100, "Realm:");
+        GFTextLine(detail_gump, 130, y, 1153, realm);
+        y += 20;
+        
+        GFTextLine(detail_gump, 30, y, 2100, "Facção:");
+        GFTextLine(detail_gump, 130, y, 1153, elem.GetProp("Faction"));
+        
+        GFAddButton(detail_gump, 150, 250, 2128, 2129, GF_CLOSE_BTN, 0);
+        
+        GFSendGump(who, detail_gump);
+        
+    elseif (output["Ir"])
+        // Teleport to center of territory
+        var rect := elem.GetProp("Rect");
+        var realm := elem.GetProp("Realm");
+        var coords := SplitWords(rect);
+        
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            var center_x := CInt((x1 + x2) / 2);
+            var center_y := CInt((y1 + y2) / 2);
+            var center_z := GetWorldHeight(center_x, center_y, realm);
+            
+            MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
+            SendSysMessageEx(who, "Teleportado para o centro do território!", SSM_INFO);
+        else
+            SendSysMessageEx(who, "Erro ao analisar as coordenadas do território!", SSM_FAIL);
+        endif
+        
+    elseif (output["Abandonar"])
+        if (is_gm_or_leader)
+            if (YesNo(who, "Tem certeza que deseja abandonar o território '" + territory + "'?"))
+                elem.SetProp("Faction", "Selvagem");
+                territories.Erase(input);
+                guild.SetProp("territories", territories);
+                SendSysMessageEx(who, "Território abandonado com sucesso!", SSM_INFO);
+                
+                // Remove monument if exists
+                var coords := SplitWords(elem.GetProp("Rect"));
+                if (coords.size() >= 4)
+                    var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
+                    var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+                    var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
+                    
+                    foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, elem.GetProp("Realm"))
+                        if (item.objtype == 0x46AE && GetObjProperty(item, "RectName") == territory)
+                            DestroyItem(item);
+                            break;
+                        endif
+                    endforeach
+                endif
+            endif
+        else
+            SendSysMessageEx(who, "Apenas o líder pode abandonar territórios.", SSM_FAIL);
+        endif
+    endif
+endfunction
+
+
+// Adicionar esta função no arquivo faccao.src após as outras funções
+
+function ShowTerritoriesGump(who, guild)
+    // Criar um gump dedicado para listar os territórios controlados pela facção
+    var territories_gump_width := 350;
+    var territories_gump_height := 450;
+    var gump := GFCreateGump();
+    
+    GFResizePic(gump, 0, 0, 39925, territories_gump_width, territories_gump_height);
+    GFResizePic(gump, 15, 15, 9350, territories_gump_width-30, 30);
+    GFTextMid(gump, territories_gump_width/2, 20, territories_gump_width-30, 1153, "Territórios Controlados");
+    
+    var y := 55;
+    var i := 0;
+    var valid_territories := array{};
+    
+    // Buscar territórios da facção
+    var territories := guild.GetProp("territories");
+    if (!territories) 
+        territories := array{};
+        guild.SetProp("territories", territories);
+    endif
+    
+    var rect_df := OpenDataFile(":architect:areas");
+    if (rect_df)
+        foreach territory in territories
+            var rect_elem := rect_df.FindElement(territory);
+            
+            if (rect_elem && rect_elem.GetProp("Faction") == guild_obj.name)
+                valid_territories.append(territory);
+            endif
+            sleepms(2);
+        endforeach
+        
+        // Update the faction's territory list if inconsistencies were found
+        if (valid_territories.size() != territories.size())
+            guild.SetProp("territories", valid_territories);
+            territories := valid_territories;
+        endif
+    endif
+    
+    if (territories.size() == 0)
+        GFTextMid(gump, territories_gump_width/2, 100, territories_gump_width-40, 38, "Esta facção não controla nenhum território.");
+    else
+        GFResizePic(gump, 15, y, 9350, territories_gump_width-30, territories_gump_height-70);
+        y += 10;
+        
+        foreach territory in territories
+            GFTextLine(gump, 30, y, 1153, territory);
+            GFAddButton(gump, 20, y+2, 2117, 2118, GF_CLOSE_BTN, BUTTON_TERRITORY+i);
+            y += 25;
+            i += 1;
+            sleepms(2);
+        endforeach
+    endif
+    
+    // Botão para fechar
+    GFAddButton(gump, territories_gump_width/2-15, territories_gump_height-40, 2130, 2131, GF_CLOSE_BTN, 0);
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] >= BUTTON_TERRITORY && input[0] <= BUTTON_TERRITORY+50)
+        territoryHandler(who, input[0]);
+    endif
+    
+    // Retornar ao gump principal da facção
+    start_script(":faccao:faccao", array{who, guild.guildid, "guild"});
 endfunction

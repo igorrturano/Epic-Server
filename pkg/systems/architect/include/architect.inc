@@ -56,3 +56,30 @@ function AT_InRect(who, rect)
 
 	return ( who.realm == realm && (CInt(who.x) >= x1 && CInt(who.x) <= x2) && (CInt(who.y) >= y1 && CInt(who.y) <= y2) );
 endfunction
+
+function OpenAreasDataFile(create := 0)
+    var df := OpenDataFile(":architect:areas");
+    if (!df && create)
+        df := CreateDataFile(":architect:areas");
+    endif
+    return df;
+endfunction
+
+function GetTerritoryInfo(territory_name)
+    var df := OpenAreasDataFile();
+    if (!df)
+        return 0;
+    endif
+    
+    return df.FindElement(territory_name);
+endfunction
+
+function IsInTerritory(mobile, territory_name)
+    var territory := GetTerritoryInfo(territory_name);
+    if (!territory)
+        return 0;
+    endif
+    
+    var rect := SplitWords(territory.GetProp("Rect"));
+    return IsInRect(mobile, rect, territory.GetProp("Realm"));
+endfunction

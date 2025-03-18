@@ -7,19 +7,78 @@ include "include/arrays";
 include ":gumps:gumps";
 include ":gumps:yesNo";
 include "include/say";
+include ":tn:cooldown";
 
 include ":mastermind:mastermind";
 
 program PuzzleChestOpen(who,container)
+var time := Getobjproperty (container, "time_fechadura");
+if (!time)
+	Setobjproperty(container, "time_fechadura", 10);
+	time := 10;
+endif
 
 	if(who.cmdlevel > 0)
+		var destYN := YesNo(who, "Deseja configurar o puzzlebox?");
+		if (destYN)
+			if (Getobjproperty(container, "aberto") == 1)
+				var destYN2 := YesNo(who, "A puzzlebox está aberta, quer resetar para fechada?");
+				if (destYN2)
+					Eraseobjproperty(container, "aberto");
+				endif
+			endif
+			var destYN3 := YesNo(who, "Quer definir a puzzle como recreativa? (Não pede skill em mech e não some a fechadura)");
+				if (destYN3)
+					Setobjproperty(container, "recreativa", 1);
+				endif
+			time := Cint(RequestGump(who, "Digite quanto tempo a fechadura reaparece após uma falha (em minutos); deixe em branco para cancelar"));
+			if (!time)
+				SendSysMessage(who, "Cancelado.");
+			else
+				Setobjproperty(container, "time_fechadura", time*60);
+			endif
+		endif
 		SendViewContainer(who, container);
-	else
-		if(mastermind(who))	
+		return 1;
+	endif
+	
+	if (GetCooldown(container, "fechou"))
+		SendSysMessage(who, "Não há fechadura!");
+		return;
+	endif
+	
+	if (Getobjproperty(container, "aberto"))
+		SendSysMessage(who, "A fechadura está aberta");
+		SendViewContainer(who, container);
+		return 1;
+	endif
+	
+	if (Getobjproperty(container, "recreativa") == 1)
+		if (mastermind (who))
 			SendViewContainer(who, container);
+			return 1;
 		else
-//lock chest or something
+			SendSysMessageEx(who, "Você falhou, tente novamente!", SSM_FAIL);
+			return;
 		endif
 	endif
 
+	var mec_skill := AP_GetSkill(who, MECHANICS);
+if (mec_skill > 0)
+	if (mastermind(who)) 	
+		PlaySoundEffect(container, 0x0200);
+		PlayObjectCenteredEffect(container, 0x3763, 1, 16);
+		SendViewContainer(who, container);
+		Setobjproperty(container, "aberto", 1);
+		return 1;
+	else
+		SendSysMessageEx(who, "A fechadura mágica desapareceu!");
+		PlaySoundEffect(container, 0x1f5);
+		SetCooldown(container, "fechou", time);
+		return;
+	endif
+else
+	SendSysMessageEx(who, "Você não faz a míníma ideia de como funciona esse mecanismo!", SSM_FAIL);
+	return;
+endif
 endprogram
