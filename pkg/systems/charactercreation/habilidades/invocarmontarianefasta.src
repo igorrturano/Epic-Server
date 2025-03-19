@@ -32,7 +32,7 @@ program summonSkeletaSteed(params)
 	PlaySoundEffect(targ, SFX_SPELL_SUMMON_ELEMENTAL);
 
 	var mount := summon(template, targ, who);
-	var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+	var duracao := 120 + 180 * AP_GetSkill(who, ARCANA)/ 100;
 
 	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
     SetObjProperty(who, "dread_lord", 1);

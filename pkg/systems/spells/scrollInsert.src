@@ -49,7 +49,7 @@ endprogram
 
 function addScroll(who, book, rune)
     var rune_list := GetObjProperty(book, "spells");
-    var mlore := cint( AP_GetSkill(who, MAGICLORE) );
+    var mlore := cint( AP_GetSkill(who, ARCANA) );
     var max_scrolls;
 
     // Determina o número máximo de pergaminhos baseado no tipo de personagem

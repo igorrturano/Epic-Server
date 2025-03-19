@@ -55,7 +55,7 @@ program SpellScript(params)
 		PlayMovingEffectEx( targs, targets[y], 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0 );
 		SetObjProperty(targs, "chainofpain", copmobs);
 		SetObjProperty(targs, "copnumber", len(targets));	
-		TS_StartTimer(targs, "chainofpain", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 4, 0, who, 0);
+		TS_StartTimer(targs, "chainofpain", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4, 0, who, 0);
 	endforeach
 
 	PlaySoundEffect(who, 384);

@@ -34,7 +34,7 @@ program SpellScript(params)
 	//	sendsysmessage(who,  " " + rune);
 	endforeach	
 
-	var time := Cint(AP_GetSkill(who, MAGICLORE));
+	var time := Cint(AP_GetSkill(who, ARCANA));
 	TS_StartTimer(who, "paralysis", time);
 	TS_StartTimer(who, "invul", time);
 

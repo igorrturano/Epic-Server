@@ -12,7 +12,7 @@ include "include/dungeons";
 
 program controleclima(who)
     var type;
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, THEOLOGY));
     var duration := Cint(mlore / 10);
     var som := 0;
     var bolt := 0;

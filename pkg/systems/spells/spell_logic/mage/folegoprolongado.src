@@ -19,7 +19,7 @@ program SpellScript(params)
 		return;
 	endif
 
-    var duration := 120 * Cint((AP_GetSkill(who, "MAGICLORE")/20));
+    var duration := 120 * Cint((AP_GetSkill(who, "ARCANA")/20));
 
     //Bonus de especialização
     if(Temhabilidade(who, "Valdruk"))

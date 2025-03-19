@@ -26,9 +26,9 @@ program SpellScript(params)
         PlaySoundEffect(targ, SFX_BLESS);
         PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 16);
 
-	var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
-	TS_StartTimer(targ, "comod", GetSpellDuration(AP_GetSkill(who,MAGICLORE)), level); //20 min
-	TS_StartTimer(targ, "coldward", GetSpellDuration(AP_GetSkill(who, MAGICLORE) ));
+	var level := (CInt(AP_GetSkill(who, THEOLOGY))/5)+5;
+	TS_StartTimer(targ, "comod", GetSpellDuration(AP_GetSkill(who,THEOLOGY)), level); //20 min
+	TS_StartTimer(targ, "coldward", GetSpellDuration(AP_GetSkill(who, THEOLOGY) ));
 
 	SendSysMessageEx(targ, "Voce esta protegido contra o frio.", SSM_INFO);
 

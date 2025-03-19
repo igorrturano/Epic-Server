@@ -14,7 +14,7 @@ use uo;
  */
 function AP_GetSkill(who, skill_name)
 	var bonus_corrucao := 0;
-	if (skill_name == MAGICLORE)
+	if (skill_name == ARCANA)
 		if (TemHabilidade(who, "Corrupcao Constante"))
 			bonus_corrucao := cInt(GetObjProperty(who, "corruption")/1000);
 		endif
@@ -423,7 +423,7 @@ endfunction
 
 function FormatSkillName(skillName)
     case (skillName)
-        "Magic_Lore":     return "Magic Lore";
+        "Arcana":         return "Arcana";
         "Handle_Animal":  return "Handle Animal";
         "Domestic_Work":  return "Domestic Work";
         "Wood_Working":   return "Wood Working";

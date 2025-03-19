@@ -20,7 +20,7 @@ program controlar(who)
 		return 1;
 	endif
 
-	var duration := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+	var duration := 120 + 180 * AP_GetSkill(who, ARCANA)/ 100;
 	TS_StartTimer(targ, "controlarmortovivo", duration, 1, who);
 
 endprogram 

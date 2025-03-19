@@ -195,7 +195,7 @@ GFGumpPic( book_gump, 395, 50, 59 );
 
     // Adiciona informação de limite de pergaminhos
     var chardata := GetObjProperty(who, "chardata");
-    var mlore := CInt(AP_GetSkill(who, MAGICLORE));
+    var mlore := CInt(AP_GetSkill(who, ARCANA));
     var max_text;
 
     if (chardata.magia == "spellcaster")

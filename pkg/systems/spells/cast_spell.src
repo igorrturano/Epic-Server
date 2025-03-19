@@ -19,6 +19,7 @@ include ":spells:include/swordmage";
 include "include/facings";
 include ":tn:cooldown";
 include "include/meusProcessos";
+include "include/epicMageryUtils";
 
 program SpellStarter(params)
     var mobile := params[1]; // Caster
@@ -422,14 +423,14 @@ endfunction
 function checkCastingSuccess(mobile, spellinfo, scroll)
     var attribute := MAGERY;
 	if (TemHabilidade(mobile, "Sensibilidade Arcana"))
-		attribute := MAGICLORE;
+		attribute := ARCANA;
 	endif
 
     var difficulty := CInt(spellinfo.Difficulty);
     var skill_check := SkillCheck(mobile, attribute, difficulty);
 
     // Chance to also up magic lore on cast
-    SkillCheck(mobile, MAGICLORE, difficulty);
+    SkillCheck(mobile, HandleSpellSkill (mobile), difficulty);
 
     if (skill_check > 0)
         if (scroll.isA(POLCLASS_ITEM))
@@ -458,7 +459,7 @@ function consumeScroll(mobile, scroll)
     else
 	    var attrib_value := MAGERY;
 		if (TemHabilidade(mobile, "Sensibilidade Arcana"))
-			attrib_value := MAGICLORE;
+			attrib_value := ARCANA;
 		endif
         var chance := RandomIntMinMax(0, 100);
         if (chance > attrib_value)

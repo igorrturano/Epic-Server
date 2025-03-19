@@ -183,7 +183,7 @@ function ApplySpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circle 
 	amount := CInt(amount);
 	// base damage * ( 3 * Evaluating Intelligence / 100 + 1 )
 	if( source )
-		amount := amount + CInt( (3 * GetAttribute( source, MAGICLORE ) / 100) ) + 1;
+		amount := amount + CInt( (3 * GetAttribute( source, ARCANA ) / 100) ) + 1;
 	endif
 
 	//				Settings Checks
@@ -245,7 +245,7 @@ function ApplyRawSpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circ
 
 	// base damage * ( 3 * Evaluating Intelligence / 100 + 1 )
 	if( source )
-		amount := amount + CInt( (3 * GetAttribute( source, MAGICLORE ) / 100) ) + 1;
+		amount := amount + CInt( (3 * GetAttribute( source, ARCANA ) / 100) ) + 1;
 	endif
 
 	//				Settings Checks
@@ -685,7 +685,7 @@ function DoManaSuck(defender, attacker, amount)
   // Added for necromancer wraith form
   // Get Spirit Speak skill level from the attacker and divide it by 5.
   // Then convert to percent (div by 100) and determine the mana amount to suck from defender.
-    var sspeak := GetAttribute(attacker, MAGICLORE);
+    var sspeak := GetAttribute(attacker, ARCANA);
     sspeak := CDbl(sspeak);
     sspeak := sspeak/5;
     if(sspeak < 8)

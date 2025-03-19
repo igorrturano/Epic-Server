@@ -70,7 +70,7 @@ program SpellScript(params)
 			if ( !(defender in who.party.members ) )
 				if (defender.serial != who.serial)
       					PlaySoundEffect(defender, 0x228);
-					var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
+					var dmg := cint(AP_GetSkill(who, ARCANA))/2;
       					PlayLightningBoltEffect( defender );
 					DamageFLS(defender, cint(dmg), DMG_COLD, who);
 				endif

@@ -31,7 +31,7 @@ program vacuodemana(params)
 	var basedamage	:= params[5];
 	var rawdamage	:= params[6];
 	
-    var mlore := Cint(AP_GetSkill(attacker, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(attacker, ARCANA));
 
 
 	DamageFLS(defender, Cint(mlore/2), DMG_FORCED, attacker);

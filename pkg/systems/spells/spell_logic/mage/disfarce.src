@@ -18,7 +18,7 @@ program SpellScript(params)
 	PlaySoundEffect(who, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "Voce alterou sua aparencia.", SSM_INFO);
 	SetObjProperty(who, "disfarce", name);
-	TS_StartTimer(who, "disfarce", GetSpellDuration( AP_GetSkill(who, MAGICLORE)) );
+	TS_StartTimer(who, "disfarce", GetSpellDuration( AP_GetSkill(who, ARCANA)) );
 
 	return 1;
 endprogram

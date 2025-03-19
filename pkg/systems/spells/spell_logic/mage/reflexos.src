@@ -23,10 +23,10 @@ program SpellScript(params)
 		return;
 	endif
 
-	var amt :=  Cint(AP_GetSKILL(who, MAGICLORE)*0.5);
-	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
+	var amt :=  Cint(AP_GetSKILL(who, ARCANA)*0.5);
+	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, ARCANA))*2;
 
-	TS_StartTimer(targ, "agility", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1); //20 min
+	TS_StartTimer(targ, "agility", GetSpellDuration(AP_GetSkill(who, ARCANA)), amt, who, 1); //20 min
 
 	PlaySoundEffect(targ, SFX_SPELL_AGILITY);
 	SendSysMessageEx(who, "Voce esta muito agil.", SSM_INFO);

@@ -11,7 +11,7 @@ program SpellScript(params)
   var info := params[2];
 
   who.hidden := 1;
-  var steps := AP_GetSkill(who, MAGICLORE)/10;
+  var steps := AP_GetSkill(who, THEOLOGY)/10;
   who.stealthsteps := steps + 5;
   SendSysMessageEx(who, "Voce esta invisivel.", SSM_INFO);
 endprogram

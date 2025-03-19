@@ -17,7 +17,7 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	var duration := (CInt(AP_GetSkill(who, MAGICLORE)) / 10);
+	var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
     //PlayStationaryEffect( x, y, z, effect, speed, loop := 0, explode := 0, realm := _DEFAULT_REALM );
 
 	PlayStationaryEffect(info.x, info.y, info.z-5, 0X6D01 , 7, 40, 0, info.realm);

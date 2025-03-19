@@ -32,7 +32,7 @@ program vacuodemana(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
-    var mlore := Cint(AP_GetSkill(attacker, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(attacker, ARCANA));
 
     Setcooldown(defender, "deathdance", Cint(mlore/5));
     return 1;

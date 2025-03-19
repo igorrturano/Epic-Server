@@ -13,7 +13,7 @@ program manobra(who)
 		var drained := GetObjProperty(corpo, "drained");
 		if (corpo.corpsetype != error && drained == error)
 			var hits := AP_GetVital(who, HITS);
-			var bonus := AP_GetSkill(who, MAGICLORE)/2;
+			var bonus := AP_GetSkill(who, ARCANA)/2;
 			hits := hits+bonus;
 			AP_SetVital(who, HITS, hits+60);
 			SetObjProperty(corpo, "drained", 1);

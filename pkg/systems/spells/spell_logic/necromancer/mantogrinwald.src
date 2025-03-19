@@ -32,7 +32,7 @@ program SpellScript(params)
 	AP_SetVitalRegenRateMod(targ, "Hits", number);
 
 	SetObjProperty(targ, "CannotHeal", 1);
-	TS_StartTimer(targ, "mantogrinwald", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 5, 1, who, 0); //20 min
+	TS_StartTimer(targ, "mantogrinwald", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 5, 1, who, 0); //20 min
 	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "O corpo do alvo nao podera se regenerar durante o efeito.", SSM_INFO);
 	SendSysMessageEx(targ, "Você sente sua pele repuxar e ressecar se tornando sem vida.", SSM_INFO);

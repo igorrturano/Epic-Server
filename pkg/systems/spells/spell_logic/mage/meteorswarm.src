@@ -25,7 +25,7 @@ program spell_meteorSwarm( parms )
     var spell_school := spell.School;
 
     SendSysMessage(caster, "Selecione o alvo.");
-    var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);
+    var mlore := cint(AP_GetSkill(caster, ARCANA)/20);
     var dist := Distance(caster, targ);
     var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 

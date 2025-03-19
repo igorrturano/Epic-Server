@@ -31,7 +31,7 @@ program SummonMagicCreature(params)
 		Corromper(who, 90, targ);
 	endif
 
-	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2);
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);
 	return 1;
 endprogram
 

@@ -24,7 +24,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var time :=  cint(AP_GetSkill(who, MAGICLORE) / 2);
+	var time :=  cint(AP_GetSkill(who, ARCANA) / 2);
 	
 	if (targ.isA(POLCLASS_WEAPON))
 

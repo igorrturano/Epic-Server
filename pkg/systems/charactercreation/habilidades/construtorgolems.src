@@ -23,7 +23,7 @@ program summonSkeletaSteed(params)
 		return 0;
 	endif
 
-    //var dano_mlore := CInt(AP_GetSkill(who, MAGICLORE));
+    //var dano_mlore := CInt(AP_GetSkill(who, ARCANA));
     
     if (who.weapon.objtype != 0x13e3)
         SendSysMessage(who, "Use um martelo de ferreiro.");
@@ -91,7 +91,7 @@ program summonSkeletaSteed(params)
     SetObjProperty(golem, "golem_maker", who.serial);
     PrintTextAbove(golem, "O mecanismo esta pronto para ser operado");
 	//var mount := summon(template, targ, who);
-	//var duracao := 120 + 180 * AP_GetSkill(who, MAGICLORE)/ 100;
+	//var duracao := 120 + 180 * AP_GetSkill(who, ARCANA)/ 100;
 
 	//TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
     SetObjProperty(who, "golem_maker", 1);
