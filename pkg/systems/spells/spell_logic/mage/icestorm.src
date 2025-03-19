@@ -27,7 +27,7 @@ program spell_iceStorm( parms )
     SendSysMessage(caster, "Selecione o alvo.");
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
 
-    var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
+    var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
 	var dist := Distance(caster, targ);
     var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 

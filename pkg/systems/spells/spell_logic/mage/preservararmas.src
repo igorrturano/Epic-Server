@@ -21,7 +21,7 @@ program SpellScript(params)
 	endif
 
 	if (targ.isA(POLCLASS_WEAPON))
-		targ.maxhp_mod := Cint(AP_GetSkill(who, MAGICLORE)) + 10;	
+		targ.maxhp_mod := Cint(AP_GetSkill(who, ARCANA)) + 10;	
         	PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "Voce encantou a arma.", SSM_INFO);
 	else

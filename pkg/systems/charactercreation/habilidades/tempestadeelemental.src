@@ -27,7 +27,7 @@ program manobra(who)
 	
 	element := element.type;
 	var duracao ;
-	duracao := AP_GetSkill(who, MAGICLORE);
+	duracao := AP_GetSkill(who, ARCANA);
 	case(element)
 		"Fire":
 		SendSysMessageEx(who, "Voce conjura uma explosao na direcao apontada.", SSM_INFO);

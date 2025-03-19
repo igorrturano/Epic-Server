@@ -50,7 +50,7 @@ program SpellScript(params)
   	MoveObjectToLocation (targ, 5950, 3486, 0, targ.realm);
 	SetObjProperty(targ, "GuardKill", 1);
 	ApplyDamage(targ, 9999);
-	TS_StartTimer(who, "dominioprofano", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 3);
+	TS_StartTimer(who, "dominioprofano", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 3);
 
 	
 	return 1;

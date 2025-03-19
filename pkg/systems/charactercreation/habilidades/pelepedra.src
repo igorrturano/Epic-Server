@@ -16,7 +16,7 @@ program manobra(who)
         return 0;
     endif
 
-    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 10);
+    var duration := Cint(AP_GetSkill(who, THEOLOGY) / 10);
     var i := 0;
     PLaySoundEffect(who, 0x216);
     PlayObjectCenteredEffect(targ, 0x6C79, 0, 25);

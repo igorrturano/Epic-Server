@@ -24,7 +24,7 @@ program SpellScript(params)
 	var oldx := who.x;
 	var oldy := who.y;
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)/ 10);
+	var amt := Cint(AP_GetSkill(who, THEOLOGY)/ 10);
 
 	SetObjProperty(who, "#Casting",1);
 

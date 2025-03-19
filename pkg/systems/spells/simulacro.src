@@ -33,7 +33,7 @@ program SummonMagicCreature(params)
 		SendSysMessageEx(who, "Voce teve sucesso em invocar  a criatura.", SSM_INFO);
 	endif
 
-	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2);	
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);	
 
 	return 1;
 

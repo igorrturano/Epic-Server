@@ -86,7 +86,7 @@ program SpellScript(params)
 		endwhile
 
 		foreach defender in mobs
-			var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
+			var dmg := cint(AP_GetSkill(who, ARCANA))/2;
 			dmg := Floor( dmg / cargasRetorno.divisor);
 			DamageFLS(defender, cint(dmg), DMG_COLD, who);
 			defender.frozen := 0;

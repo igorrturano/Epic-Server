@@ -5,10 +5,11 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:tngumps";
 include ":combat:damage";
+include "include/epicMageryUtils";
 
 program manobra(who)
 	var elemental := GetObjProperty(who, "elementalprotection");
-	var protection := Cint(AP_GetSkill(who, MAGICLORE)/ 20);
+	var protection := Cint(HandleSpellSkill (who)/ 20);
 
 	if (elemental == error)
 		var prot := RadioGump(who, 200, 260, "Escolha o elemento", {"Fogo", "Frio", "Veneno", "Energia"});

@@ -24,7 +24,7 @@ program summonSkeletaSteed(params)
     endif
 
 	var template := ":epicai:MonstrodaPoeira";
-    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+    var lvl := Cint(AP_GetSkill(who, THEOLOGY));
 
     if (template == error)
 		SendSysMessage(who, "erro ao ler o template" + template);
@@ -46,7 +46,7 @@ program summonSkeletaSteed(params)
     if (!shaman_souls)
         var shaman_souls := 1;
     endif
-	var duracao := 120 + (180 + shaman_souls) * AP_GetSkill(who, MAGICLORE)/ 100;
+	var duracao := 120 + (180 + shaman_souls) * AP_GetSkill(who, THEOLOGY)/ 100;
 
 	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
 

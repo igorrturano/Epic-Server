@@ -20,7 +20,7 @@ program clericPowerWords( who )
   endif
   CloseGump( who, GUMPID_CLERICSPELL );
 
-  var mlore := cint( AP_GetSkill( who, MAGICLORE ) );
+  var mlore := cint( AP_GetSkill( who, THEOLOGY ) );
   var cleric_slots := Cint( mlore / 5 );
 
   if ( magia == "Shaman" )

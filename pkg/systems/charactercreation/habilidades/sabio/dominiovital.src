@@ -22,7 +22,7 @@ program doubleattack(who)
 	endif
 
     var dist := Distance(who, targ);
-    var total_distance := Cint(AP_GetSkill(who, MAGICLORE)/10);
+    var total_distance := Cint(AP_GetSkill(who, ARCANA)/10);
 
     PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 20, 0, 1);
     if (dist == 1)

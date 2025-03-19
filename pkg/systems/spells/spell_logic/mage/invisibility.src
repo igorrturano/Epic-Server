@@ -10,7 +10,7 @@ include ":timedscripts:timedScripts";
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	var MagicLore := AP_GetSkill(who, MAGICLORE);
+	var MagicLore := AP_GetSkill(who, ARCANA);
 	params := 0; // No longer needed
 
 	PlaySoundEffect(who, SFX_SPELL_HEAL);

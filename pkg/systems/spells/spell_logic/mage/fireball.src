@@ -32,7 +32,7 @@ program spell_fireball(params)
         return 0;
     endif
 
-	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
+	var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
 	var dist := Distance(caster, cast_on);
     var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
@@ -85,7 +85,7 @@ program spell_fireball(params)
 
 	PlaySoundEffect(cast_on, 0x208);
     
-	var range := cint(AP_GetSkill(caster, MAGICLORE)/20);
+	var range := cint(AP_GetSkill(caster, ARCANA)/20);
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, cast_on);
 	var dmg := epicSpellDamageRoll(caster, spell_circle);
 	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);

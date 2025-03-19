@@ -22,7 +22,7 @@ program SpellScript(params)
 
 	var amt;
 
-	var time := cint(AP_GetSkill(who, MAGICLORE))/4;
+	var time := cint(AP_GetSkill(who, ARCANA))/4;
 	if (time < 10)
 		time := 10;
 	endif

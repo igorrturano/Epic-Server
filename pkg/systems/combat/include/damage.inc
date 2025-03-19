@@ -701,9 +701,9 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
         elseif (TemHabilidade(defender, "Resiliência Bárbara"))
 			resist += RandomDiceRoll("1d4");
 		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, MAGICLORE)/20;
+			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
 			if (GetCooldown(defender, "armor_drain") > 0)
-				arcane_armor += AP_GetSkill(defender, MAGICLORE)/30;
+				arcane_armor += AP_GetSkill(defender, ARCANA)/30;
 				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
 			endif
 			if (resist < arcane_armor)
@@ -973,7 +973,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	endif
 
 	if (TemHabilidade(attacker, "Precisao Cirurgica"))
-		var damagemod := CInt(AP_GetSkill(attacker, ALCHEMY) / 20);
+		var damagemod := CInt(AP_GetSkill(attacker, SCIENCE) / 20);
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
@@ -1014,7 +1014,7 @@ function CalcDamageHabs(attacker, defender, damage)
 						break;
 
 					"energy_arrow":
-						damagemod += Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+						damagemod += Cint(AP_GetSkill(attacker, ARCANA) / 20);
 						break;
 				endcase
 
@@ -1043,7 +1043,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var inimigo := array{"Undead", "Demons"};
 
 		if (cfg[npctemplate.template].Category in inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + CInt(damagemod));
 		endif
@@ -1052,7 +1052,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
 		if (cfg[npctemplate.template].Category == inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, SCIENCE) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + CInt(damagemod));
 		endif
@@ -1064,9 +1064,9 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
 	endif
 
-	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, MAGICLORE) / 2))
+	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
 		if (GetObjProperty(attacker, "metamorfose") != error)
-			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
@@ -1083,7 +1083,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 		if (temHabilidade(attacker, "Furia Primitiva"))
 			if (GetObjProperty(attacker, "metamorfose") != error)
-				damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+				damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 				damage += damagemod;
 				DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia Primitiva]: " + CInt(damagemod));
 			endif

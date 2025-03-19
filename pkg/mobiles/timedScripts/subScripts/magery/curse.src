@@ -31,7 +31,7 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif	
 
-	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE));
+	var cast_points := CInt(AP_GetSkill(attacker, ARCANA));
 	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
 	cast_points := CInt(((int_bonus - 50)/10) + (cast_points/10));
 	var final := cast_points;
