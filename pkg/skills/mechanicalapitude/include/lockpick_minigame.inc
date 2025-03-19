@@ -117,7 +117,6 @@ function mini_game(who, diff, mec_skill, chest)
     
     // Send specific failure message
     var lvl := CInt(GetObjProperty(chest, "level"));
-
     //if(lvl != 6)
         if(failure_reason == 1)
             SendSysMessageEx(who, "Você cancelou a tentativa de abrir a fechadura e a quebrou!", SSM_FAIL);
@@ -125,7 +124,6 @@ function mini_game(who, diff, mec_skill, chest)
         elseif(failure_reason == 2)
             Setobjproperty(chest, "fechadura_quebrada", 1);
         endif
-
    // else
         //SendSysMessageEx(who, "A fechadura mágica reaparece!", SSM_INFO);
         // IMPORTANTE: Reiniciar a contagem de pinos mágicos usados ao falhar em uma fechadura mágica
