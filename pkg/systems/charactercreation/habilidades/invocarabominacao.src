@@ -8,7 +8,7 @@ include "include/client";
 program manobra(attacker)
 
 	var targ := Target(attacker);
-	var lvl := cint(AP_GetSkill(attacker,MAGICLORE));
+	var lvl := cint(AP_GetSkill(attacker,ARCANA));
 	
 	if (!CheckLOSAt(attacker, targ.x, targ.y, targ.z))
 		SendSysMessageEx(attacker, "O Alvo nao esta visivel para voce.", SSM_FAIL);

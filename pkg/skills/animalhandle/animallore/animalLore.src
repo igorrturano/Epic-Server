@@ -133,7 +133,7 @@ function AL_LoadGump(who, creature)
         var anatStr := 0; //AP_GetSkill(creature, ANATOMY);
         var poisonStr := 0; // AP_GetSkill(creature, POISONING);
         var mageryStr := AP_GetSkill(creature, MAGERY);
-        var magicloreStr := AP_GetSkill(creature, MAGICLORE);
+        var magicloreStr := AP_GetSkill(creature, ARCANA);
 
         var cTemplate := NPC_GetNPCConfig(creature.npctemplate);
 

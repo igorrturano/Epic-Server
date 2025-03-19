@@ -31,7 +31,7 @@ program earthquake( parms )
     PlaySoundEffect( caster, SFX_223 );
     sleepms(200);
 
-    var range := Cint(AP_GetSKill(caster, MAGICLORE)/10);
+    var range := Cint(AP_GetSKill(caster, ARCANA)/10);
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
 
     foreach mobile in allMobiles

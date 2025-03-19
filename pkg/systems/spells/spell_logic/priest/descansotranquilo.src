@@ -32,10 +32,10 @@ program SpellScript(params)
 	var x := targ.x; 
 	var y := targ.y;
 	var i := 0; 
-	var heal := AP_GetSkill(who, MAGICLORE) /20;
+	var heal := AP_GetSkill(who, THEOLOGY) /20;
 	SetObjProperty(targ, "#descansotranquilo", 1);
 
-	while ( i < AP_GetSkill(who, MAGICLORE) )
+	while ( i < AP_GetSkill(who, THEOLOGY) )
 
 		if (targ.x != x || targ.y != y)
 			SendSysMessageEx(who, "Voce cancelou a magia.", SSM_FAIL);

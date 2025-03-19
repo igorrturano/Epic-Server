@@ -14,7 +14,7 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	var bonus :=  cint(AP_GetSkill(who,MAGICLORE)*6);
+	var bonus :=  cint(AP_GetSkill(who,ARCANA)*6);
 	var duration := ReadGameClock() + bonus;
 	SetObjProperty(who, "#satisfacaosadica", duration );
 

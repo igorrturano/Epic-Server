@@ -12,9 +12,9 @@ program SpellScript(params)
   var info := params[2];
   params := 0; // No longer needed
 
-  var amt :=  cint( AP_GetSkill(who, MAGICLORE)*0.5);
+  var amt :=  cint( AP_GetSkill(who, THEOLOGY)*0.5);
 
-  TS_StartTimer(who, "berserk", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1 );
+  TS_StartTimer(who, "berserk", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), amt, who, 1 );
 
   PlaySoundEffect(who, SFX_SPELL_STRENGTH);
   SendSysMessageEx(who, "Voce entrou em um estado de furia.", SSM_INFO);

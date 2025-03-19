@@ -44,7 +44,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var healed := cint(AP_GetSkill(who, MAGICLORE)*1.4);
+	var healed := cint(AP_GetSkill(who, THEOLOGY)*1.4);
 	//sendsysmessage(who, "healed " + healed);
 	//healdamage(targ, healed);
 	if (GetObjProperty(who, "votovinganca") == 1)

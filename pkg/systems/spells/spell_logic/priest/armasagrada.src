@@ -18,7 +18,7 @@ program SpellScript(params)
 		targ := who.weapon;
 	endif
 
-	var mlore :=  Cint(AP_GetSkill(who, MAGICLORE));
+	var mlore :=  Cint(AP_GetSkill(who, THEOLOGY));
 	var duration := Cint(mlore);
 	var bonus := Cint(mlore/10);
 		

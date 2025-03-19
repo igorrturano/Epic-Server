@@ -40,10 +40,10 @@ program animateSword(params)
 //   PlayStationaryEffect( x, y, z, effect, speed, loop := 0, explode := 0, realm := _DEFAULT_REALM )
    PLayStationaryEffect(who.x+2, who.y+2, who.z, 0x6C9B, 0, 10, 0, who.realm);
    PlaySoundEffect(who, 0x221);
-    var duration := cint(AP_GetSkill(who, MAGICLORE)/10);
+    var duration := cint(AP_GetSkill(who, THEOLOGY)/10);
     sleepms(500);
     var festa := who.party;
-    var dano_mlore := CInt(AP_GetSkill(who, MAGICLORE) / 2);
+    var dano_mlore := CInt(AP_GetSkill(who, THEOLOGY) / 2);
 
    var allPets := array{};
    var party_members := who.party.members;

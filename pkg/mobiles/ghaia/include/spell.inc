@@ -495,7 +495,7 @@ function CastSpellNPC(opponent, spell_list)
 			if (GetCooldown(me, "retribuicao") == 0)
 				start_script(":spells:spell_logic:necromancer:retribuicao", array{me, me});
 				SetCooldown(me, "npcspell", 5);
-				SetCooldown(me, "retribuicao", cint(AP_GetSkill(me, MAGICLORE))*2);
+				SetCooldown(me, "retribuicao", cint(AP_GetSkill(me, ARCANA))*2);
 			endif
 		endif
 	endif
@@ -509,12 +509,12 @@ function CastSpellNPC(opponent, spell_list)
 					loc.y := me.y;
 					loc.z := me.z;
 					start_script(":spells:spell_logic:necromancer:correntedor", array{me, loc});
-					SetCooldown(me, "correntes", cint(AP_GetSkill(me, MAGICLORE))+5);
+					SetCooldown(me, "correntes", cint(AP_GetSkill(me, ARCANA))+5);
 					SetCooldown(me, "npcspell", 5);
 				endif
 
 				if (GetCooldown(me, "sonho") == 0)
-					SetCooldown(me, "sonho", cint(AP_GetSkill(me, MAGICLORE))+5);
+					SetCooldown(me, "sonho", cint(AP_GetSkill(me, ARCANA))+5);
 					start_script(":spells:spell_logic:necromancer:sonhomacabro", array{me, enemies[RandomInt(enemies.size())+1]}); //escolher: melee maior dano
 					SetCooldown(me, "npcspell", 5);
 				endif
@@ -526,12 +526,12 @@ function CastSpellNPC(opponent, spell_list)
 					loc.y := me.y;
 					loc.z := me.z;
 					start_script(":spells:spell_logic:necromancer:correntedor", array{me, loc});
-					SetCooldown(me, "correntes", cint(AP_GetSkill(me, MAGICLORE))+5);
+					SetCooldown(me, "correntes", cint(AP_GetSkill(me, ARCANA))+5);
 					SetCooldown(me, "npcspell", 5);
 				endif
 			elseif (sonho)
 				if (GetCooldown(me, "sonho") == 0)
-					SetCooldown(me, "sonho", cint(AP_GetSkill(me, MAGICLORE))+5);
+					SetCooldown(me, "sonho", cint(AP_GetSkill(me, ARCANA))+5);
 					start_script(":spells:spell_logic:necromancer:sonhomacabro", array{me, enemies[RandomInt(enemies.size())+1]}); //escolher: melee maior dano
 					SetCooldown(me, "npcspell", 5);
 				endif

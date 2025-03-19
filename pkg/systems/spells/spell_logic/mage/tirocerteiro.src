@@ -21,7 +21,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var shots := Cint(AP_GetSkill(who, MAGICLORE)/25);
+	var shots := Cint(AP_GetSkill(who, ARCANA)/25);
 	if (shots < 1)
 		shots := 1;
 	endif

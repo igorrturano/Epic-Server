@@ -15,7 +15,7 @@ program select(params)
 
 	SendSysMessage(player, "Defina o elemento de sua flecha");
     
-    var mlore := Cint(AP_GetSkill(player, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(player, ARCANA));
     var input := create_portal_gump(player);
     if (input[0] == 201) // Fogo
         if (GetObjProperty(player.weapon, "energy_arrow"))

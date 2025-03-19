@@ -25,7 +25,9 @@ endenum
 enum SKILLS
 	ALCHEMY			:= "Alchemy",
 	MAGERY			:= "Magery",
-	MAGICLORE		:= "Magic_Lore",
+	ARCANA			:= "Arcana",
+	SCIENCE			:= "Science",
+	THEOLOGY		:= "Theology",
 
 	PARRY			:= "Parry",
 	ONEHANDED		:= "One_Handed",

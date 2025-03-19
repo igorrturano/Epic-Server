@@ -9,7 +9,7 @@ program TimedScript_bard_inspirar_heroismo_end(params)
 	var modificador := (-1) * GetObjProperty(alvo, "#Bard_inspirar_heroismo");
 	Set_Critical(1);
 	AP_ModifySkillMod(alvo, MAGERY, modificador);
-	AP_ModifySkillMod(alvo, MAGICLORE, modificador);
+	AP_ModifySkillMod(alvo, ARCANA, modificador);
 	AP_ModifySkillMod(alvo, PARRY, modificador);
 	AP_ModifySkillMod(alvo, ONEHANDED, modificador);
 	AP_ModifySkillMod(alvo, TWOHANDED, modificador);

@@ -25,7 +25,7 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
-    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var mlore := cint(AP_GetSkill(who, ARCANA)/20);
 	SendSysMessageEx(who, "O disparo mistico sai de sua mao", SSM_INFO);
 
     PlayMovingEffectEx(who, targ, 0xCDD2, 10, 20, 2442, 2);

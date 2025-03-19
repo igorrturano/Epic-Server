@@ -29,7 +29,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var e := TS_StartTimer(targ, "sleep", cint(AP_GetSkill(who, MAGICLORE)/2), 1, who, 0);
+	var e := TS_StartTimer(targ, "sleep", cint(AP_GetSkill(who, ARCANA)/2), 1, who, 0);
 	Detach();
 	Attach(targ);
 	if (e == error)

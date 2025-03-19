@@ -34,7 +34,7 @@ program SpellScript(params)
 	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);	
 
 	SetObjProperty(targ, "mage", who.serial);
-	TS_StartTimer(targ, "bless", CINT(AP_GetSkill(who, MAGERY)*2)+35, 1, who);
+	TS_StartTimer(targ, "bless", CINT(AP_GetSkill(who, THEOLOGY)*2)+35, 1, who);
 //	TS_StartTimer(targ, "strength", CINT(AP_GetSkill(who, MAGERY)*2)+35, who);
 //	TS_StartTimer(targ, "agility", CINT(AP_GetSkill(who, MAGERY)*2)+35, who);
 	

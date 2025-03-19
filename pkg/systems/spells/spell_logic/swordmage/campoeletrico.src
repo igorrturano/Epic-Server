@@ -22,7 +22,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var time := GetSpellDuration( AP_GetSkill(who, MAGICLORE) );
+	var time := GetSpellDuration( AP_GetSkill(who, ARCANA) );
 	
 	if (targ.isA(POLCLASS_WEAPON))
 
@@ -36,7 +36,7 @@ program SpellScript(params)
 	        return 0;
         endif        
 
-		var duracao := Cint(AP_GetSkill(who, MAGICLORE));
+		var duracao := Cint(AP_GetSkill(who, ARCANA));
 		SetCooldown(who, "campoeletrico", duracao);
 	
         	PlaySoundEffect(targ, SFX_BLESS);

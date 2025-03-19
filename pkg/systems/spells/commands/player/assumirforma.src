@@ -163,7 +163,7 @@ function ApplyAttributeModifiers( who, form, duration )
   endif
 
   var bonusMagicLore := 0;
-  bonusMagicLore := CINT( AP_GetSkill( who, MAGICLORE ) / 10 );
+  bonusMagicLore := CINT( AP_GetSkill( who, THEOLOGY ) / 10 );
   if ( TemHabilidade( who, "Instinto de Sobrevivência" ) )
     skill_a_calc := CINT( skill_a_calc + bonusMagicLore );
     skill_d_calc := CINT( skill_d_calc + bonusMagicLore );
@@ -314,7 +314,7 @@ function CalculateDiceDamage( strength )
 endfunction
 
 function CalculateTransformationDuration( who )
-  var duration := 60 + 540 * AP_GetSkill( who, MAGICLORE ) / 100;
+  var duration := 60 + 540 * AP_GetSkill( who, THEOLOGY ) / 100;
   if ( TemHabilidade( who, "Treinamento Druídico" ) )
     duration := duration * 2;
   endif
