@@ -24,6 +24,7 @@ endfunction
 function PegaDescComponente(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_TIER_COMPONENTE);
 	if(prop)
+		xDesc := xDesc + SOFT_PINK + "Componente<br>";
 		var tierDesc := PegaComponenteTierDesc(prop).desc;
 		if (tierDesc)
 			xDesc := xDesc + WHITE + "Qualidade: " + tierDesc + "<br>";
@@ -53,15 +54,17 @@ function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
 	if(prop.estado == ITEM_MONTADO)
 
-		xDesc := xDesc + WHITE + "Item: "+ prop.receita.desc +"<br><br>";
-		xDesc := xDesc + BLUE_ICE + "Componentes<br>";
-		foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)
-			Sleepms(2);
-			var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
-														componenteEscolhido.material.nome,
-														componenteEscolhido.tier.desc); 
-			xDesc := xDesc + WHITE + descComponente + " <br>";
-		endforeach
+		xDesc := xDesc + WHITE + "Item: "+ prop.receita.desc +"<br>";
+		if(prop.esquema.componentesEscolhidos.size() > 0)
+			xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
+			foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)
+				Sleepms(2);
+				var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
+															componenteEscolhido.material.nome,
+															componenteEscolhido.tier.desc); 
+				xDesc := xDesc + WHITE + descComponente + " <br>";
+			endforeach
+		endif
 	endif
 	return xDesc;
 endfunction

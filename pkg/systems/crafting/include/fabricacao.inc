@@ -81,7 +81,6 @@ function EnviaItensComplexosGump(quem,profissao)
 	
 	//TODO Fazer opção para reparar
 	//TODO criar botão para sair
-	//TODO Testar consumo e obrigatoriedade de ingredientes.
 	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
 	//TODO Aplicar o peso do item no item montado.
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
@@ -90,14 +89,14 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Validar a Ação no loop de fabricação de intens complexos e componentes.
 	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
-	//TODO Pensar em implementar uma equivalência de componentes. exemplo: um componente maior que cabe na lamina, equivale a 3 menores.
-	//TODO Criar gumps de ajuda.
 	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
 	//TODO Deixar o cara escolher se quer fazer um componente de qualidade mais baixa.
 	//TODO verificar porque os componentes não estão estacando na criação..
 	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
 	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
-	//TODO Munições precisão ser fabricadas de tantas em tantas. [ 10 em 10 ]?
+	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
+	//TODO Criar gumps de ajuda.
+	//TODO Animações para todas as profissões. [Late]
 	//TODO Embelezar gumps [Penultima fase]
 	//TODO Documentar tudo [Ultima fase]
 	while(retorno)
@@ -540,7 +539,7 @@ function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, co
 endfunction
 
 function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
-	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao, configRecursos);
+	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao.receitaSelecionada.receita, configRecursos);
 	
 	foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
 		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_componenteNecessario_iter);
@@ -599,14 +598,13 @@ endfunction
 
 function CarregaComponentesEncontrados(quem, receita, configRecursos)
 	var retorno := dictionary;
-
+	
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
 		foreach componenteNecessario in (receita.componentesNecessarios)
 			Sleepms(2);
 			if( CStr(item.objtype) in componenteNecessario.itens)
 				if(!retorno.exists(componenteNecessario.encaixe))
-
 					var envelopeRetorno := struct{ conjunto := array, melhor := 0, indiceEncaixe := _componenteNecessario_iter};
 					retorno.insert(componenteNecessario.encaixe, envelopeRetorno);
 
