@@ -559,9 +559,13 @@ function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRe
 				if (dropDown.valorEscolhido.itemRef.objtype == componenteEncontrado.itemRef)
 					isValorEscolhidoPresente := true;
 				endif
-
+				var quantidadeFormatada :=  componenteEncontrado.quantidade <= 99 ? 
+												cstr(componenteEncontrado.quantidade) :
+												cstr(componenteEncontrado.quantidade)[1,2] + "..";
 				dropDown.largura := 350;
-				var nomeOpcao := " {} [{}] [{}]".format(componenteEncontrado.itemRef.name,
+				var nomeOpcao := "{} {} [{}] [{}]".format(
+														quantidadeFormatada,
+														componenteEncontrado.itemRef.name,
 														componenteEncontrado.material.name,
 														componenteEncontrado.tier.desc);
 				
