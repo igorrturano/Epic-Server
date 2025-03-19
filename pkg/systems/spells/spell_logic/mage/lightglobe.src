@@ -15,6 +15,7 @@ include "include/tileEffects";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
 include "include/eventID";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
@@ -36,7 +37,7 @@ program SpellScript(params)
             return;
         endif
 
-        var magiclore_skill := AP_GetSkill(who, MAGICLORE);
+        var magiclore_skill := HandleSpellSkill(who);
         
         var globodeluz :=   summon(template, who, who);
         var hitsmod := CInt(magiclore_skill * 10);

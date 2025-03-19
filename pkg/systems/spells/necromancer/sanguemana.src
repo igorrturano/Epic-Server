@@ -23,7 +23,7 @@ program SpellScript(params)
 	var mana := AP_GetVital(who, MANA);
 	var maxmana := AP_GetVitalMaximumValue(who, MANA);
 
-	var bonus := 10 + 10 * AP_GetSkill(who, MAGICLORE)/100; //da de +10 a +20 de mana
+	var bonus := 10 + 10 * AP_GetSkill(who, ARCANA)/100; //da de +10 a +20 de mana
 	mana := mana+bonus;
 
 	if(mana > maxmana)

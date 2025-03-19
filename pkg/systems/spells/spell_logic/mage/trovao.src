@@ -20,6 +20,6 @@ endprogram
 function LaunchProjectile(caster, info)
     PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
     PlayLightningBoltEffect(info);
-    var dmg := cint(AP_GetSkill(caster, MAGICLORE)) + RandomDiceRoll("4d8");
+    var dmg := cint(AP_GetSkill(caster, THEOLOGY)) + RandomDiceRoll("4d8");
     DamageFLS(info, cint(dmg), DMG_ENERGY, caster);
 endfunction

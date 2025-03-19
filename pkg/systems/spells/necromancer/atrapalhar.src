@@ -26,9 +26,9 @@ program SpellScript(params)
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 	if (!CheckResist(targ, VONTADE, diff, -bonus))
-		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
+		amt := Cint(AP_GetSkill(who, ARCANA)*0.5);
 	else
-		amt := Cint(AP_GetSkill(who, MAGICLORE)*0.25);
+		amt := Cint(AP_GetSkill(who, ARCANA)*0.25);
 	endif
 
 	if (temHabilidade(who, "Sacrificio da Carne"))
@@ -37,7 +37,7 @@ program SpellScript(params)
 		endif
 	endif
 
-	TS_StartTimer(targ, "clumsy", cint(AP_GetSkill(who, MAGICLORE)), amt, who, 1);
+	TS_StartTimer(targ, "clumsy", cint(AP_GetSkill(who, ARCANA)), amt, who, 1);
 
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 

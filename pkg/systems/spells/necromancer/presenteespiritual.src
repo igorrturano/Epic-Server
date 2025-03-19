@@ -14,7 +14,7 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	SetObjProperty(who, "#presenteespiritual", ReadGameClock()+cint(AP_GetSkill(who, MAGICLORE)*6) );
+	SetObjProperty(who, "#presenteespiritual", ReadGameClock()+cint(AP_GetSkill(who, ARCANA)*6) );
 
 	handleSilentMagic(who, who, 385);
 	SendSysMessageEx(who, "Cada morte e um presente.", SSM_INFO);

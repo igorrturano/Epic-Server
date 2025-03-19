@@ -10,7 +10,7 @@ include ":attributes:attributes";
 program spell_MirrorImage(params)
 	var who := params[1];
 	var info := params[2];
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, ARCANA));
 
     var numCopies := Cint(mlore / 30);
     var copyDuration := Cint(mlore / 5);

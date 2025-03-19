@@ -194,8 +194,8 @@ function checkForElementalWeapons(who, targ)
 endfunction
 
 function epicWisdomPathBonus(who)
-   var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
-   var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 10); 
+	var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
+	var mlore := Cint(HandleSpellSkill(who) / 10);
 
    return (int_bonus + mlore);
 endfunction
@@ -222,7 +222,7 @@ function ApplyElementalWeaponProperties( who, elemento )
   var jaEncantada := elementalPropAtual != error;
 
   var dmgdice := DefineElementalWeaponDice( who );
-  var cargas := Floor( AP_GetSkill( who, MAGICLORE ) / 4 );
+  var cargas := Floor( AP_GetSkill( who, ARCANA ) / 4 );
   cargas := cargas <= 0 ? 1 : cargas; // no minimo uma carga.
 
   var elementalWeapon := struct;
@@ -268,7 +268,7 @@ endfunction
 */
 function DefineElementalWeaponDice( who )
 
-  var faixaMLore := AP_GetSkill( who, MAGICLORE );
+  var faixaMLore := AP_GetSkill( who, ARCANA );
   var dmgdice := "0";
 
   if ( faixaMLore < 40 )
@@ -391,4 +391,14 @@ function ApplyChargesCalculation( weapon, dmg, chargesAmount )
   var cargasRetorno := ConsumeItemArcaneCharges( weapon, chargesAmount );
   var damage := Floor( dmg / cargasRetorno.divisor );
   return damage;
+endfunction
+
+function HandleSpellSkill (who)
+	var chardata := getobjProperty(who, "chardata");
+	var skill := Cint(AP_GetSkill(who, ARCANA));
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(who, "Sensibilidade Arcana")))
+		skill := Cint(AP_GetSkill(who, THEOLOGY));
+	endif
+
+	return skill;
 endfunction

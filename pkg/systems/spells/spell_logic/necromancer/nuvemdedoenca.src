@@ -53,7 +53,7 @@ program SpellScript(params)
 		item.name := "Nuvem Nefasta";
 		item.movable := 0;
 		item.color := 563;
-		item.decayat := ReadGameClock()+ cint(GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 10);
+		item.decayat := ReadGameClock()+ cint(GetSpellDuration(AP_GetSkill(who, ARCANA)) / 10);
 	endforeach	
 	
 	return 1;

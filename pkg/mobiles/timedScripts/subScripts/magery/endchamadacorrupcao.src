@@ -12,10 +12,10 @@ program TimedScript_Clumsy(params)
 	var mobile := params[1];
 
 	var lvl := cInt(GetObjProperty(mobile, "chamadacorrupcao"));
-	var mlore := AP_GetSkillMod(mobile, MAGICLORE);
+	var mlore := AP_GetSkillMod(mobile, ARCANA);
 	EraseObjProperty(mobile, "chamadacorrupcao");
 	var bonus := mlore - lvl;
-	AP_SetSkillMod(mobile, MAGICLORE, bonus);
+	AP_SetSkillMod(mobile, ARCANA, bonus);
 	
 	
 	return 1;

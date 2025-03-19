@@ -23,7 +23,7 @@ program SpellScript(params)
     var spellinfo := params[3];
     var spell_circle := spellinfo.Circle;
     var spell_school := spellinfo.School;
-    var range := cint(AP_GetSkill(caster, MAGICLORE)/20);
+    var range := cint(AP_GetSkill(caster, ARCANA)/20);
 
     SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
     var targ := TargetCoordinates(caster);

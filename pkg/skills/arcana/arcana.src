@@ -30,7 +30,7 @@ program skill_armslore(who)
 	endif
 	if ( !(who.serial in whos))
 		PrintText(who, "*analisando um item*");
-		if (SkillCheck(who, MAGICLORE, -1) > 0)
+		if (SkillCheck(who, ARCANA, -1) > 0)
 			whos.append(who.serial);	
 			SetObjProperty(item, "magicwho", whos);
 			if (GetObjProperty(item, "magic"))

@@ -28,7 +28,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var mlore := CInt(AP_GetSkill(who, MAGICLORE));
+	var mlore := CInt(AP_GetSkill(who, THEOLOGY));
 	var duration := 60 + cint(mlore * 3);
 
 	TS_StartTimer(targ, "phmod", duration, mlore, who, 1);

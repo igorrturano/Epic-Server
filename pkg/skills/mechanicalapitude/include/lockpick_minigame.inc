@@ -482,11 +482,11 @@ function UnlockMagicalPin(who, total_pins, chest)
 endfunction
 
 function CalculateIdentifiablePins(who, chest)
-    // Obter valores de mana e magiclore
+    // Obter valores de mana e arcana
     var player_mana := AP_GetVital(who, MANA);
-    var magic_lore := AP_GetSkill(who, MAGICLORE);
+    var magic_lore := AP_GetSkill(who, ARCANA);
     
-    // Usar o maior valor entre mana e magiclore
+    // Usar o maior valor entre mana e arcana
     var identification_value;
     if(magic_lore > player_mana)
         identification_value := magic_lore;

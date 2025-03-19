@@ -17,7 +17,7 @@ program SpellScript(params)
 //		time := 30;
 //	endif
 
-	var lvl := Cint(AP_GetSkill(who, MAGICLORE)/33);
+	var lvl := Cint(AP_GetSkill(who, THEOLOGY)/33);
 	if (lvl < 1)
 		lvl := 1;
 	endif
