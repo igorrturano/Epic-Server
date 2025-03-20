@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include "/include/epicPropNames";
+include "include/epicValidAction";
 include "include/client";
 include "include/say";
 include ":megacliloc:/include/toolTipUtils";
@@ -51,20 +52,8 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
 		return false;
 	endif
-	if(quem.warmode)
-		SendSysMessageEx(quem,"Você não pode estar em combate.",SSM_FAIL);
-		return false;
-	endif
-	if(saudeInicial !=  AP_GetVital(quem, "Hits"))
-		SendSysMessageEx(quem,"Você foi ferido.",SSM_FAIL);
-		return false;
-	endif
-	if(posicaoInicial.x != quem.x || posicaoInicial.y != quem.y|| posicaoInicial.z != quem.z || posicaoInicial.realm != quem.realm )
-		SendSysMessageEx(quem,"Você se moveu.",SSM_FAIL);
-		return false;
-	endif
-
-	return true;
+	
+	return CheckCanWork(quem,saudeInicial,posicaoInicial);
 endfunction
 
 function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classificacaoProduto)

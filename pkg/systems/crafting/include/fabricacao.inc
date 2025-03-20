@@ -12,6 +12,7 @@ include ":crafting:gumps/itensComplexosGump";
 include ":gumps:/include/dropDownGump";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
+include "include/epicValidAction";
 
 //var fabricacaoGump := DFOpenDataFile(":crafting:CraftGumps", DF_CREATE);
 var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
@@ -83,10 +84,8 @@ function EnviaItensComplexosGump(quem,profissao)
 	
 	//TODO Fazer opção para reparar
 	//TODO criar botão para sair
-	//TODO Aplicar o peso do item no item montado.
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO Validar a Ação no loop de fabricação de intens complexos e componentes.
 	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO Deixar o cara escolher se quer fazer um componente de qualidade mais baixa.
@@ -304,14 +303,19 @@ endfunction
 
 function FabricaItens(quem, esquema, receita, quantidade := 1)
 	var posicaoInicial := CriaObjetoPosicao(quem);
+	var vidaInicial := AP_GetVital(quem, "Hits");
+
 	if(receita.isEmpilhavel)
-		var retorno := FabricaItemMontado(quem,posicaoInicial,esquema, receita, quantidade);
+		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade);
 		if(!retorno)
 			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 		endif
 	else
 		for indice := 1 to Cint(quantidade)
 			Sleep(1);
+			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
+				break;
+			endif
 			var retorno := FabricaItemMontado(quem,posicaoInicial,esquema, receita);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
@@ -321,10 +325,10 @@ function FabricaItens(quem, esquema, receita, quantidade := 1)
 	endif
 endfunction
 
-function FabricaItemMontado(quem,posicaoInicial,esquema, receita, quantidade := 1)
+function FabricaItemMontado(quem,esquema, receita, quantidade := 1)
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita);
 	
-	if(isRequisitoSuficiente(quem,contagem, receita, quantidade) || hasMovido(quem,posicaoInicial))
+	if(isRequisitoSuficiente(quem,contagem, receita, quantidade))
 		ConsomeRequisitos(contagem, quantidade);
 		CriaItemMontado(quem,esquema,receita, quantidade);
 	else 
@@ -351,7 +355,6 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 		pesoFinal := pesoFinal * definicaoTileItem.weight;
 	endif
 
-	Print("definicaoItem.weight " + definicaoItem.weight);
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
 	descriptor.color := esquema.cor;
 	descriptor.graphic := receita.graphic;
@@ -386,7 +389,6 @@ function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 	var encaixesEncontrados := array;
 	foreach elemento in  contagem
 		Sleepms(2);
-		Print("nomeItem "  + elemento.nomeItem + elemento.quantidadeNecessaria);
 		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade )
 			var mensagem; 
 			if (elemento.?encaixe)
@@ -792,9 +794,7 @@ function PreparaItensComplexosGump(quem, profissao)
 	parametrosGump.+profissao := profissao;
 	parametrosGump.+propCraft := propCraft;
 	parametrosGump.+pericia := fabricacaoConfig[profissao].Attribute;
-	Print("Antes " + parametrosGump.propCraft[parametrosGump.pericia]["visualizadas"].categorias);
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.pericia, parametrosGump.propCraft);
-	Print("Depois " + parametrosGump.propCraft[parametrosGump.pericia]["visualizadas"].categorias);
 	
 	return parametrosGump;
 endfunction
