@@ -192,26 +192,44 @@ function CheckTerritoryResources()
     return 1;
 endfunction
 
-function GenerateResourcesForTerritory(elem, faction_name, amount)
-    // Verificações de entrada
+function GenerateResourcesForTerritory(territory_name, faction_name, amount)
+    Print("DEBUG GenerateResources: Iniciando para " + territory_name);
+    
+    var rect_df := OpenDataFile(":architect:areas");
+    if (!rect_df)
+        Print("ERROR: GenerateResourcesForTerritory: Não foi possível abrir o datafile de áreas");
+        return 0;
+    endif
+    
+    var elem := rect_df.FindElement(territory_name);
     if (!elem)
-        PrintError("GenerateResourcesForTerritory: Element is null");
+        Print("ERROR: GenerateResourcesForTerritory: Elemento não encontrado " + territory_name);
         return 0;
     endif
     
-    if (!faction_name || faction_name == "")
-        PrintError("GenerateResourcesForTerritory: Invalid faction name");
+    // Obter a facção de forma robusta
+    var faction := elem.GetProp(TERRITORY_FACTION_PROP);
+    if (!faction)
+        faction := elem.GetProp("Faction"); // Compatibilidade legada
+    endif
+    
+    if (!faction || faction == error)
+        Print("ERROR: GenerateResourcesForTerritory: Invalid faction name");
+        return 0;
+    endif
+
+    // Verificar se é selvagem
+    if (faction == DEFAULT_FACTION || faction == "Selvagem")
+        Print("DEBUG: Território selvagem, pulando geração de recursos");
         return 0;
     endif
     
-    if (amount <= 0)
-        PrintError("GenerateResourcesForTerritory: Invalid amount: " + amount);
-        return 0;
-    endif
+    Print("DEBUG GenerateResources: Facção do território: " + faction);
     
+    // Obter a string de recursos
     var resources_string := elem.GetProp("Resources");
-    if (!resources_string || resources_string == "")
-        PrintError("GenerateResourcesForTerritory: No resources defined for territory");
+    if (!resources_string)
+        Print("ERROR: GenerateResourcesForTerritory: Nenhum recurso configurado");
         return 0;
     endif
     
@@ -439,8 +457,20 @@ function NotifyFactionLeaders(faction_name, territory_name, resources_string, am
     return leader_serials.size();
 endfunction
 
-function FindDonationChest(faction_name)
-    Print("DEBUG: Procurando baú para facção: " + faction_name);
+function FindDonationChest(faction_name, territory_id := "")
+    Print("DEBUG: Procurando baú para facção: " + faction_name + ", território: " + territory_id);
+    
+    // Se temos o ID do território, tentar encontrar o baú específico
+    if (territory_id != "")
+        foreach item in EnumerateItemsInContainer(0)
+            if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+                GetObjProperty(item, "faction") == faction_name && 
+                GetObjProperty(item, "territory_id") == territory_id)
+                Print("DEBUG: Baú encontrado pelo ID do território: " + item.serial);
+                return item;
+            endif
+        endforeach
+    endif
     
     // Primeira tentativa: pelo serial registrado na guilda
     var guild_id := 0;
@@ -480,7 +510,7 @@ function FindDonationChest(faction_name)
     var bau_obj_types := array{0xff11, 0xba63}; // Tipos comuns de baús
     
     // Primeiro procura baús com o nome específico da facção
-    foreach item in EnumerateItemsInContainer(1) // 1 é o serial do mundo
+    foreach item in EnumerateItemsInContainer(0) // 0 é o serial do mundo
         if (item.objtype in bau_obj_types)
             // Verificar se o nome e a propriedade 'faction' correspondem
             if (GetObjProperty(item, "faction") == faction_name)
@@ -895,4 +925,47 @@ function FindExistingResource(container, objtype)
     
     Print("DEBUG: Nenhum item compatível encontrado");
     return 0;
+endfunction
+
+
+function ProcessRevocations()
+    // Verifica se há notificações de revogação
+    var df := OpenDataFile(":system:messages");
+    if (df)
+        var elem := DFFindElement(df, "resource_controller");
+        if (elem)
+            var revocations := elem.GetProp("revocations");
+            if (revocations && revocations.size() > 0)
+                foreach territorio in revocations
+                    // Remover do agendamento
+                    if (next_territory_checks.exists(territorio))
+                        next_territory_checks.Erase(territorio);
+                        Print("ResourceController: Revogação processada para " + territorio);
+                    endif
+                    sleepms(2);
+                endforeach
+                // Limpar lista de revogações
+                elem.SetProp("revocations", array{});
+            endif
+        endif
+    endif
+    
+    // Também verificar diretamente o status de territórios agendados
+    foreach territorio in (next_territory_checks.keys())
+        var rect_df := OpenDataFile(":architect:areas");
+        if (rect_df)
+            var elem := rect_df.FindElement(territorio);
+            if (elem)
+                var faction := elem.GetProp(TERRITORY_FACTION_PROP);
+                // Se o território agora é selvagem, remover do agendamento
+                if (!faction || faction == DEFAULT_FACTION)
+                    next_territory_checks.Erase(territorio);
+                    Print("ResourceController: Território " + territorio + " agora é selvagem, removido do agendamento");
+                endif
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return 1;
 endfunction

@@ -1,0 +1,102 @@
+use uo;
+use os;
+use guilds;
+
+include ":faccao:faccao_constants";
+include ":gumps:yesNo";  // Adicionar esta linha para a função YesNo
+
+program fix_guild_access(who, params)
+    if (who.cmdlevel < 2)
+        return SendSysMessage(who, "Este comando é exclusivo para GMs.");
+    endif
+    
+    var targ_player;  // Mudei o nome de target para targ_player
+    if (params)
+        // Tenta encontrar o jogador pelo nome
+        foreach player in EnumerateOnlineCharacters()
+            if (Lower(player.name) == Lower(params))
+                targ_player := player;
+                break;
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
+    if (!targ_player)
+        SendSysMessage(who, "Selecione o jogador para verificar/reparar acesso:");
+        targ_player := Target(who);
+        
+        if (!targ_player || !targ_player.IsA(POLCLASS_MOBILE) || !targ_player.acctname)
+            return SendSysMessage(who, "Alvo inválido.");
+        endif
+    endif
+    
+    SendSysMessage(who, "Verificando acesso para: " + targ_player.name);
+    
+    // Verificar se o jogador tem uma guilda
+    var guild := targ_player.guild;
+    if (!guild)
+        return SendSysMessage(who, "Este jogador não pertence a nenhuma guilda.");
+    endif
+    
+    // Verificar informações da guilda
+    SendSysMessage(who, "Guilda: " + guild.guildname);
+    SendSysMessage(who, "ID da Guilda: " + guild.guildid);
+    
+    // Verificar se é o líder
+    var guild_leader := guild.leader;
+    SendSysMessage(who, "Líder da guilda (serial): " + guild_leader);
+    
+    if (guild_leader == targ_player.serial)
+        SendSysMessage(who, "Status: É o LÍDER da guilda");
+    else
+        SendSysMessage(who, "Status: NÃO é o líder da guilda");
+    endif
+    
+    // Verificar propriedade faction
+    var faction_prop := GetObjProperty(targ_player, "faction");
+    SendSysMessage(who, "Propriedade 'faction': " + faction_prop);
+    
+    // Verificar cargo na guilda
+    var rank_prop := GetObjProperty(targ_player, "guild_rank");
+    SendSysMessage(who, "Propriedade 'guild_rank': " + rank_prop);
+    
+    // Perguntar se deve fazer correções
+    if (!YesNo(who, "Deseja corrigir todas as propriedades?"))
+        return SendSysMessage(who, "Operação cancelada.");
+    endif
+    
+    // Correções
+    
+    // 1. Corrigir propriedade faction
+    var faction_name := guild.GetProp(FACTION_PROP_NAME);
+    if (!faction_name)
+        faction_name := guild.GetProp("name");
+    endif
+    if (!faction_name)
+        faction_name := guild.guildname;
+    endif
+    
+    SetObjProperty(targ_player, "faction", faction_name);
+    SendSysMessage(who, "Propriedade 'faction' corrigida para: " + faction_name);
+    
+    // 2. Corrigir cargo conforme status de liderança
+    if (guild_leader == targ_player.serial)
+        SetObjProperty(targ_player, "guild_rank", "Lider");  // Removi o acento
+        SendSysMessage(who, "Cargo corrigido: Lider");
+    else
+        // Verificar se já tem um cargo válido
+        if (!rank_prop || rank_prop == error || !(rank_prop in {"Líder", "Capitão", "Tenente", "Leader", "Captain", "Lieutenant", "Lider", "Capitao", "Tenente"}))
+            SetObjProperty(targ_player, "guild_rank", "Membro");
+            SendSysMessage(who, "Cargo corrigido: Membro");
+        endif
+    endif
+    
+    // 3. Forçar acesso temporário
+    if (YesNo(who, "Deseja conceder acesso temporário aos baús?"))
+        SetObjProperty(targ_player, "AllowAllChestAccess", 1);
+        SendSysMessage(who, "Acesso temporário ativado. Use .remtempaccess para remover mais tarde.");
+    endif
+    
+    return SendSysMessage(who, "Correções aplicadas com sucesso.");
+endprogram

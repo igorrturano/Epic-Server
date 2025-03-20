@@ -1,0 +1,517 @@
+use uo;
+use os;
+use datafile;
+use polsys;
+
+include ":faccao:faccao_constants";
+
+// Tipos de objetos a procurar
+var TIPO_BAU := 0xFF11;
+var TIPO_MESA := 0xFE5C; 
+var TIPO_MURAL := 0x46AE;
+
+program limpa_territorio(params)
+    Print("======================= INÍCIO DA EXECUÇÃO =======================");
+    Print("DEBUG: Iniciando limpa_territorio.src");
+    
+    var territorio_id := params[1];
+    var faction := params[2];
+    var who := params[3];
+    var target_realm := params.size() >= 4 ? CStr(params[4]) : "britannia";
+    
+    Print("LIMPA_DEBUG: Parâmetros recebidos:");
+    Print("   - territorio_id: '" + territorio_id + "'");
+    Print("   - faction: '" + faction + "'");
+    Print("   - who: " + (who ? who.name + " (Serial: " + who.serial + ")" : "null"));
+    Print("   - realm específico: '" + target_realm + "'");
+    Print("   - Número total de parâmetros: " + params.size());
+    
+    // Contador de objetos encontrados de cada tipo
+    var counters := struct{
+        "baus" := 0,
+        "mesas" := 0,
+        "murais" := 0,
+        "destruidos" := 0
+    };
+    
+    // Recuperar o realm do território se disponível
+    Print("DEBUG: Tentando obter informações do território no datafile");
+    var realm_territorio := target_realm;
+    var coordinates := struct{
+        "x1" := 0,
+        "y1" := 0,
+        "x2" := 0,
+        "y2" := 0
+    };
+    
+    var rect_df := OpenDataFile(":architect:areas");
+    if (rect_df)
+        Print("DEBUG: Datafile de áreas aberto com sucesso");
+        var territorios := rect_df.keys();
+        Print("DEBUG: Total de territórios no datafile: " + territorios.size());
+        
+        var found := 0;
+        foreach nome_territorio in territorios
+            var elem := rect_df.FindElement(nome_territorio);
+            var id_territorio := elem.GetProp(TERRITORY_ID_PROP);
+            
+            Print("DEBUG: Verificando território: " + nome_territorio + ", ID: " + id_territorio);
+            
+            if (id_territorio == territorio_id)
+                Print("DEBUG: Território encontrado! Nome: " + nome_territorio);
+                found := 1;
+                
+                realm_territorio := elem.GetProp("Realm");
+                Print("DEBUG: Realm do território: " + realm_territorio);
+                
+                // Também recuperar coordenadas do território
+                var rect_str := elem.GetProp("Rect");
+                Print("DEBUG: Rect do território: " + rect_str);
+                
+                if (rect_str)
+                    var coords := SplitWords(rect_str);
+                    Print("DEBUG: Coords separados: " + coords.size() + " elementos");
+                    
+                    if (coords.size() >= 4)
+                        coordinates.x1 := CInt(coords[1]);
+                        coordinates.y1 := CInt(coords[2]);
+                        coordinates.x2 := CInt(coords[3]);
+                        coordinates.y2 := CInt(coords[4]);
+                        Print("DEBUG: Coordenadas do território: (" + coordinates.x1 + "," + coordinates.y1 + ") a (" + coordinates.x2 + "," + coordinates.y2 + ")");
+                    else
+                        Print("ERRO: Formato de coordenadas inválido: " + rect_str);
+                    endif
+                else
+                    Print("ERRO: Território sem coordenadas definidas");
+                endif
+                
+                break;
+            endif
+            sleepms(1);
+        endforeach
+        
+        if (!found)
+            Print("ERRO: Território " + territorio_id + " não encontrado no datafile");
+        endif
+    else
+        Print("ERRO: Não foi possível abrir o datafile de áreas");
+    endif
+    
+    if (!realm_territorio)
+        Print("DEBUG: Realm não especificado, usando 'britannia' como padrão");
+        realm_territorio := "britannia";
+    endif
+    
+    Print("LIMPA_DEBUG: Realm final do território: " + realm_territorio);
+    
+    // Busca por seriais registrados (mais confiável)
+    Print("DEBUG: Tentando encontrar seriais registrados para o território");
+    var seriais_df := OpenDataFile(":faccao:seriais");
+    if (!seriais_df)
+        Print("DEBUG: Datafile de seriais não existe, tentando criar");
+        seriais_df := CreateDataFile(":faccao:seriais");
+        if (seriais_df == error)
+            Print("ERRO: Não foi possível criar o datafile de seriais: " + seriais_df);
+        else
+            Print("DEBUG: Datafile de seriais criado com sucesso");
+        endif
+    else
+        Print("DEBUG: Datafile de seriais aberto com sucesso");
+    endif
+    
+    var territorios_seriais := dictionary{};
+    var found_serials := 0;
+    
+    if (seriais_df && seriais_df != error)
+        territorios_seriais := seriais_df.GetProp("territorios");
+        if (!territorios_seriais)
+            Print("DEBUG: Nenhum registro de territórios encontrado no datafile de seriais");
+            territorios_seriais := dictionary{};
+        else
+            Print("DEBUG: Registros de territórios encontrados: " + territorios_seriais.keys().size() + " territórios");
+            
+            if (territorios_seriais.exists(territorio_id))
+                Print("DEBUG: Seriais encontrados para o território " + territorio_id);
+                found_serials := 1;
+            else
+                Print("DEBUG: Nenhum serial registrado para o território " + territorio_id);
+            endif
+        endif
+    endif
+    
+    if (found_serials && territorios_seriais[territorio_id])
+        var info := territorios_seriais[territorio_id];
+        Print("DEBUG: Encontrados seriais registrados para o território. Tentando remoção direta...");
+        Print("DEBUG: Seriais registrados: Baú=" + info.bau + ", Mesa=" + info.mesa + ", Mural=" + info.mural);
+        
+        // Remover baú
+        var bau := SystemFindObjectBySerial(info.bau);
+        if (bau)
+            Print("DEBUG: Baú encontrado pelo serial: " + bau.name + " (Serial: " + bau.serial + ")");
+            if (DestruirObjeto(bau))
+                counters.baus += 1;
+                counters.destruidos += 1;
+                Print("DEBUG: Baú destruído com sucesso");
+            else
+                Print("ERRO: Falha ao destruir o baú");
+            endif
+        else
+            Print("ERRO: Baú não encontrado pelo serial: " + info.bau);
+        endif
+        
+        // Remover mesa
+        var mesa := SystemFindObjectBySerial(info.mesa);
+        if (mesa)
+            Print("DEBUG: Mesa encontrada pelo serial: " + mesa.name + " (Serial: " + mesa.serial + ")");
+            if (DestruirObjeto(mesa))
+                counters.mesas += 1;
+                counters.destruidos += 1;
+                Print("DEBUG: Mesa destruída com sucesso");
+            else
+                Print("ERRO: Falha ao destruir a mesa");
+            endif
+        else
+            Print("ERRO: Mesa não encontrada pelo serial: " + info.mesa);
+        endif
+        
+        // Remover mural
+        var mural := SystemFindObjectBySerial(info.mural);
+        if (mural)
+            Print("DEBUG: Mural encontrado pelo serial: " + mural.name + " (Serial: " + mural.serial + ")");
+            if (DestruirObjeto(mural))
+                counters.murais += 1;
+                counters.destruidos += 1;
+                Print("DEBUG: Mural destruído com sucesso");
+            else
+                Print("ERRO: Falha ao destruir o mural");
+            endif
+        else
+            Print("ERRO: Mural não encontrado pelo serial: " + info.mural);
+        endif
+        
+        // Remover do dicionário
+        Print("DEBUG: Removendo registro do território do datafile");
+        territorios_seriais.Erase(territorio_id);
+        if (seriais_df.SetProp("territorios", territorios_seriais))
+            Print("DEBUG: Registro removido com sucesso");
+        else
+            Print("ERRO: Falha ao atualizar o datafile de seriais");
+        endif
+    endif
+    
+    // Se não conseguiu destruir todos por serial, usar busca por localização
+    Print("DEBUG: Total de objetos destruídos via seriais: " + counters.destruidos);
+    
+    if (counters.destruidos < 3)
+        Print("DEBUG: Ainda restam objetos para destruir, usando métodos alternativos");
+        
+        // Busca por tipo específico - no centro do território com raio limitado
+        var center_x, center_y, radius;
+        
+        if (coordinates.x1 == 0 && coordinates.y1 == 0 && coordinates.x2 == 0 && coordinates.y2 == 0)
+            // Se não temos coordenadas, tentar primeiro pelos seriais conhecidos da facção
+            Print("DEBUG: Coordenadas desconhecidas, tentando busca por nome");
+            
+            Print("DEBUG: Iniciando busca por nome em todos os objetos do mundo");
+            var total_items := 0;
+            var matching_items := 0;
+            
+            // Primeiro, vamos buscar pelo nome
+            foreach item in EnumerateItemsInContainer(0)
+                total_items += 1;
+                
+                if ((item.objtype == TIPO_BAU || item.objtype == TIPO_MESA || item.objtype == TIPO_MURAL))
+                    var name_match := (item.name.find(territorio_id) != error || item.name.find(faction) != error);
+                    
+                    if (name_match)
+                        matching_items += 1;
+                        Print("DEBUG: Encontrado objeto pelo nome: " + item.name + " (Serial: " + item.serial + ")");
+                        
+                        if (DestruirObjeto(item))
+                            counters.destruidos += 1;
+                            if (item.objtype == TIPO_BAU)
+                                counters.baus += 1;
+                                Print("DEBUG: Baú destruído com sucesso");
+                            elseif (item.objtype == TIPO_MESA)
+                                counters.mesas += 1;
+                                Print("DEBUG: Mesa destruída com sucesso");
+                            elseif (item.objtype == TIPO_MURAL)
+                                counters.murais += 1;
+                                Print("DEBUG: Mural destruído com sucesso");
+                            endif
+                        else
+                            Print("ERRO: Falha ao destruir objeto: " + item.name);
+                        endif
+                    endif
+                endif
+                
+                // Log periódico para acompanhamento
+                if (total_items % 1000 == 0)
+                    Print("DEBUG: Já verificados " + total_items + " itens, encontrados " + matching_items + " matches");
+                endif
+                sleepms(1);
+            endforeach
+            
+            Print("DEBUG: Busca por nome concluída. Itens verificados: " + total_items + ", Matches: " + matching_items);
+        else
+            // Usar as coordenadas conhecidas
+            center_x := CInt((coordinates.x1 + coordinates.x2) / 2);
+            center_y := CInt((coordinates.y1 + coordinates.y2) / 2);
+            
+            // Calcular raio adequado - não muito grande, apenas o suficiente
+            // Distância de Manhattan entre cantos opostos / 4 + pequena margem
+            var dx := coordinates.x2 - coordinates.x1;
+            var dy := coordinates.y2 - coordinates.y1;
+            
+            if (dx < 0) dx := -dx; endif
+            if (dy < 0) dy := -dy; endif
+            
+            radius := CInt((dx + dy) / 4) + 3; // Raio menor, apenas para cobrir o centro
+            
+            Print("DEBUG: Buscando objetos no centro exato do território: (" + center_x + "," + center_y + ") com raio " + radius);
+            Print("DEBUG: Dimensões do território: " + dx + "x" + dy + ", Raio calculado: " + radius);
+            
+            // 1. Buscar baús
+            Print("DEBUG: Buscando baús com ListItemsNearLocationOfType");
+            var baus := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_BAU, realm_territorio);
+            if (baus == error)
+                Print("ERRO: Falha ao buscar baús: " + baus);
+                baus := {};
+            endif
+            Print("DEBUG: Encontrados " + baus.size() + " baús na área");
+            
+            // 2. Buscar mesas
+            Print("DEBUG: Buscando mesas com ListItemsNearLocationOfType");
+            var mesas := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MESA, realm_territorio);
+            if (mesas == error)
+                Print("ERRO: Falha ao buscar mesas: " + mesas);
+                mesas := {};
+            endif
+            Print("DEBUG: Encontradas " + mesas.size() + " mesas na área");
+            
+            // 3. Buscar murais
+            Print("DEBUG: Buscando murais com ListItemsNearLocationOfType");
+            var murais := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MURAL, realm_territorio);
+            if (murais == error)
+                Print("ERRO: Falha ao buscar murais: " + murais);
+                murais := {};
+            endif
+            Print("DEBUG: Encontrados " + murais.size() + " murais na área");
+            
+            // Processar todos os objetos encontrados
+            Print("DEBUG: Processando baús encontrados");
+            foreach bau in baus
+                Print("DEBUG: Verificando baú: " + bau.name + " (Serial: " + bau.serial + ")");
+                if (VerificarObjeto(bau, territorio_id, faction))
+                    Print("DEBUG: Baú confirmado como pertencente ao território");
+                    if (DestruirObjeto(bau))
+                        counters.baus += 1;
+                        counters.destruidos += 1;
+                        Print("DEBUG: Baú destruído com sucesso");
+                    else
+                        Print("ERRO: Falha ao destruir baú");
+                    endif
+                else
+                    Print("DEBUG: Baú não pertence ao território alvo, ignorando");
+                endif
+            endforeach
+            
+            Print("DEBUG: Processando mesas encontradas");
+            foreach mesa in mesas
+                Print("DEBUG: Verificando mesa: " + mesa.name + " (Serial: " + mesa.serial + ")");
+                if (VerificarObjeto(mesa, territorio_id, faction))
+                    Print("DEBUG: Mesa confirmada como pertencente ao território");
+                    if (DestruirObjeto(mesa))
+                        counters.mesas += 1;
+                        counters.destruidos += 1;
+                        Print("DEBUG: Mesa destruída com sucesso");
+                    else
+                        Print("ERRO: Falha ao destruir mesa");
+                    endif
+                else
+                    Print("DEBUG: Mesa não pertence ao território alvo, ignorando");
+                endif
+            endforeach
+            
+            Print("DEBUG: Processando murais encontrados");
+            foreach mural in murais
+                Print("DEBUG: Verificando mural: " + mural.name + " (Serial: " + mural.serial + ")");
+                if (VerificarObjeto(mural, territorio_id, faction))
+                    Print("DEBUG: Mural confirmado como pertencente ao território");
+                    if (DestruirObjeto(mural))
+                        counters.murais += 1;
+                        counters.destruidos += 1;
+                        Print("DEBUG: Mural destruído com sucesso");
+                    else
+                        Print("ERRO: Falha ao destruir mural");
+                    endif
+                else
+                    Print("DEBUG: Mural não pertence ao território alvo, ignorando");
+                endif
+            endforeach
+        endif
+    endif
+    
+    // Resumo da operação
+    Print("LIMPA_DEBUG: Resumo final da operação:");
+    Print("   - Baús encontrados e destruídos: " + counters.baus);
+    Print("   - Mesas encontradas e destruídas: " + counters.mesas);
+    Print("   - Murais encontrados e destruídos: " + counters.murais);
+    Print("   - Total de objetos destruídos: " + counters.destruidos);
+    Print("   - Realm verificado: " + realm_territorio);
+    
+    if (who)
+        SendSysMessage(who, "Limpeza concluída: " + counters.destruidos + " objetos removidos.");
+        Print("DEBUG: Mensagem enviada ao usuário: " + who.name);
+    endif
+    
+    Print("======================= FIM DA EXECUÇÃO =======================");
+    
+    return counters.destruidos;
+endprogram
+
+// Função para verificar se um objeto pertence ao território/facção
+function VerificarObjeto(item, territorio_id, faction)
+    Print("VERIFY: Iniciando verificação de objeto - Serial: " + item.serial);
+    
+    if (!item)
+        Print("VERIFY: Item nulo, retornando false");
+        return 0;
+    endif
+    
+    // Debug do item
+    Print("VERIFY: Detalhes do objeto:");
+    Print("  - Serial: " + item.serial);
+    Print("  - Nome: " + item.name);
+    Print("  - Tipo: " + Hex(item.objtype));
+    Print("  - Realm: " + item.realm);
+    Print("  - Coordenadas: " + item.x + ", " + item.y + ", " + item.z);
+    
+    // 1. Verificar pelo nome do objeto
+    var name_match_territorio := (item.name.find(territorio_id) != error);
+    var name_match_faction := (item.name.find(faction) != error);
+    
+    Print("VERIFY: Match por nome do território: " + name_match_territorio);
+    Print("VERIFY: Match por nome da facção: " + name_match_faction);
+    
+    if (name_match_territorio || name_match_faction)
+        Print("VERIFY: Match encontrado pelo nome, retornando true");
+        return 1;
+    endif
+    
+    // 2. Verificar pelas propriedades
+    Print("VERIFY: Verificando propriedades do objeto");
+    
+    // Lista todas as propriedades para debug
+    Print("VERIFY: Todas as propriedades do objeto:");
+    var all_props := GetObjPropertyNames(item);
+    foreach prop_name in all_props
+        var prop_value := GetObjProperty(item, prop_name);
+        Print("  - " + prop_name + ": " + prop_value);
+    endforeach
+    
+    // Verificar território primeiro
+    var territorio_match := 0;
+    var territory_id_prop := GetObjProperty(item, TERRITORY_ID_PROP);
+    var territory_id_raw := GetObjProperty(item, "TerritoryID");
+    
+    Print("VERIFY: Propriedade " + TERRITORY_ID_PROP + ": " + territory_id_prop);
+    Print("VERIFY: Propriedade TerritoryID: " + territory_id_raw);
+    
+    if (territory_id_prop == territorio_id || territory_id_raw == territorio_id)
+        territorio_match := 1;
+        Print("VERIFY: Match encontrado por propriedade de território");
+    endif
+    
+    // Verificar facção
+    var faction_match := 0;
+    var faction_prop := GetObjProperty(item, OBJ_FACTION_PROP);
+    var faction_raw := GetObjProperty(item, "Faction");
+    var faction_lower := GetObjProperty(item, "faction");
+    
+    Print("VERIFY: Propriedade " + OBJ_FACTION_PROP + ": " + faction_prop);
+    Print("VERIFY: Propriedade Faction: " + faction_raw);
+    Print("VERIFY: Propriedade faction: " + faction_lower);
+    
+    if (faction_prop == faction || faction_raw == faction || faction_lower == faction)
+        faction_match := 1;
+        Print("VERIFY: Match encontrado por propriedade de facção");
+    endif
+    
+    if (territorio_match || faction_match)
+        Print("VERIFY: Match encontrado por propriedade, retornando true");
+        return 1;
+    endif
+    
+    Print("VERIFY: Nenhum match encontrado, retornando false");
+    return 0;
+endfunction
+
+// Função unificada para destruir objetos
+function DestruirObjeto(item)
+    Print("DESTROY: Iniciando destruição de objeto - Serial: " + item.serial);
+    
+    if (!item)
+        Print("DESTROY: Item nulo, retornando false");
+        return 0;
+    endif
+    
+    Print("DESTROY: Tentando destruir objeto: " + item.name + " (Serial: " + item.serial + ")");
+    Print("DESTROY: Estado atual - movable: " + item.movable + ", invisible: " + item.invisible);
+    
+    // Notificação visual
+    PrintTextAbove(item, "*Este objeto será removido*");
+    Print("DESTROY: Mensagem visual exibida");
+    
+    // Preparar para destruição
+    var old_movable := item.movable;
+    Print("DESTROY: Valor original de movable: " + old_movable);
+    
+    item.movable := 1;
+    Print("DESTROY: Movable definido como 1");
+    Sleep(1);
+    
+    // TENTATIVA 1: DestroyItem
+    Print("DESTROY: Tentativa 1 - DestroyItem");
+    var destroy_result := DestroyItem(item);
+    if (destroy_result)
+        Print("DESTROY: Objeto destruído com sucesso via DestroyItem");
+        return 1;
+    endif
+    
+    Print("DESTROY: Falha ao destruir objeto via DestroyItem. Retorno: " + destroy_result);
+    Print("DESTROY: Tentativa 2 - Mover para o void");
+    
+    // TENTATIVA 2: Mover para o void
+    var move_result := MoveObjectToLocation(item, 6000, 6000, 0, item.realm, MOVEOBJECT_FORCELOCATION);
+    if (move_result)
+        Print("DESTROY: Objeto movido para o void com sucesso");
+        return 1;
+    endif
+    
+    Print("DESTROY: Falha ao mover para o void. Retorno: " + move_result);
+    Print("DESTROY: Tentativa 3 - Desativação completa");
+    
+    // TENTATIVA 3: Desativar completamente
+    item.invisible := 1;
+    Print("DESTROY: Invisibility definida como 1");
+    
+    item.movable := 0;
+    Print("DESTROY: Movable definido como 0");
+    
+    item.graphic := 0x1;
+    Print("DESTROY: Graphic alterado para 0x1");
+    
+    item.color := 0;
+    Print("DESTROY: Color definida como 0");
+    
+    item.usescript := "";
+    Print("DESTROY: Usescript removido");
+    
+    var old_name := item.name;
+    item.name := "Objeto_Desativado_" + item.serial;
+    Print("DESTROY: Nome alterado de '" + old_name + "' para '" + item.name + "'");
+    
+    Print("DESTROY: Objeto desativado (invisível/inutilizável)");
+    return 1;
+endfunction
