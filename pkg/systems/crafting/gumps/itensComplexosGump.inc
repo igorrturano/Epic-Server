@@ -88,7 +88,7 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO, G_MARGEM_SUPERIOR + G_ESPACAMENTO, 83, larguraPainelCategoria, alturaPainelCategoria); // Painel Categorias.
 	
-	PreencheCategorias(gump,larguraPainelCategoria,parametros);
+	PreencheCategorias(gump,larguraPainelCategoria,parametros, sessao);
 
 	var painelReceitasX := G_MARGEM_ESQUERDA + espacamentoAplicado + larguraPainelCategoria;
 	var painelReceitasY := G_MARGEM_SUPERIOR + G_ESPACAMENTO ;
@@ -97,7 +97,7 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	
 	GFHTMLArea(gump,painelReceitasX + larguraPainelEsquema / 2 - 35,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 15,70,20,"<basefont size=55 color=#ffffff><center>Esquemas</center>");
 	
-	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada], sessao.receitaSelecionada);
+	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada], sessao);
 	PreencheEsquemas (gump,painelReceitasX + 15,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 40,sessao);
 	
 	GFGumpPic(gump,painelReceitasX + larguraPainelReceita / 2 - 102,20,1764); //Placa Titulo Receitas.
@@ -376,7 +376,7 @@ function GeraSetas(byref gump,x,y, valor)
 	endfor
 endfunction
 
-function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas, receitaSelecionada)
+function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas,sessao)
 	//TODO Implementar uma forma de lembrar onde estava da ultima vez que abriu o gump. Talvez usando a CProp legado "Craft".
 	var page := 1;
 	var colunasLinha := 4;
@@ -384,7 +384,7 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 	if(receitas != error && receitas.size() > 0)
 		var linha := 0;
 		foreach receita in receitas
-			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter,receitaSelecionada);
+			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter,sessao);
 
 			//Controle de Paginação.
 			if(_receita_iter % (colunasLinha * 2) == 0)
@@ -406,12 +406,18 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 	GFPage(gump,0);
 endfunction
 
-function PreencheCategorias(byref gump,larguraPainelCategoria, parametros)
+function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessao)
 	//TODO fazer um highlight para a categoria selecionada.
 	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraPainelCategoria / 2 - 35,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10,70,20,"<basefont size=55 color=#ffffff><center>Categorias</center>");
 	foreach categoria in (parametros.visaoReceitas.keys())
+		var posX := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45;
 		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
-		GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),86,categoria);
+		if(!(categoria in (sessao.visualizadas.categorias)))
+			GFGumpPic(gump, posX, G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter), 1655);
+			posX += 20; 
+		endif
+		
+		GFTextLine(gump,posX,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),86,categoria);
 		Sleepms(2);
 	endforeach
 endfunction
@@ -424,7 +430,7 @@ function DefineAlturaPainel(quantidadeCelulas)
 	return alturaCelula * quantidadeCelulas - espacamentoAplicado;
 endfunction
 
-function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, receitaSelecionada)
+function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, sessao)
 	y := y + 150 * linha;
 	x := x + 120 * coluna;
 
@@ -454,7 +460,7 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, re
 		GFTooltipText(gump,"Chance de obter sucessos: {}%".format(receita.dificuldade.chanceBase));
 	endif
 
-	if(receitaSelecionada.receita.objtype == receita.objtype)
+	if(sessao.receitaSelecionada.receita.objtype == receita.objtype)
 		GFGumpPic(gump,x + 17 ,y + 95,30076,0x57); // seletor
 	endif
 
@@ -473,5 +479,13 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, re
 		default:
 	endcase
 	
-	GFTilePic(gump, x + 30,y + 50, CInt(receita.graphic));
+	if (!isReceitaVisualizada(sessao, receita))
+		GFGumpPic(gump, x + 90, y + 15, 1655);
+	endif
+
+	GFTilePic(gump, x + 30,y + 50, CInt(receita.graphic));//Papel de fundo
+endfunction
+
+function isReceitaVisualizada(sessao, receita)
+	return receita.isVisualizada || !sessao.deveAtrasarAtualizacao;
 endfunction

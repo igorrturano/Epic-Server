@@ -26,7 +26,7 @@ function FabricaItensComplexos(quem,profissao)
 	EnviaItensComplexosGump(quem,profissao);
 endfunction
 
-function InicializaSessaoComplexos(quem)
+function InicializaSessaoComplexos(quem, profissaoCraftProp)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
@@ -34,6 +34,8 @@ function InicializaSessaoComplexos(quem)
 	sessao.+gumpAtual := COMPLEXOS;
 	sessao.+acao := ADICIONAR;
 	sessao.+quantidade := 1;
+	sessao.+deveAtrasarAtualizacao := false;
+	sessao.+visualizadas := profissaoCraftProp["visualizadas"];
 	sessao.+gerenciadorDropDown := GerenciadorDropDown(60,
 										COMPLEXOS_DROPDOWN_INICIAL,
 										COMPLEXOS_DROPDOWN_OPCOES_INICIAL,
@@ -76,12 +78,11 @@ function EnviaItensComplexosGump(quem,profissao)
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessaoComplexos(quem);
+	var sessao := InicializaSessaoComplexos(quem, parametros.propCraft[parametros.pericia]);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	//TODO Fazer opção para reparar
 	//TODO criar botão para sair
-	//TODO Criar Qof para feedback visual de novas Receitas aprendidas desde o ultimo acesso.
 	//TODO Aplicar o peso do item no item montado.
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
@@ -114,6 +115,10 @@ function EnviaItensComplexosGump(quem,profissao)
 
 		retorno := GFSendGump(quem,gump);
 
+		if(sessao.deveAtrasarAtualizacao)//booleano para atrasar atualizacao de alguma parte do gump por 1 ciclo. [visualizados, por exemplo]
+			sessao.deveAtrasarAtualizacao := false;
+		endif
+
 		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
 			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
 			if(entradaNome)
@@ -130,6 +135,7 @@ function EnviaItensComplexosGump(quem,profissao)
 			RT_CATEGORIAS:
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_CATEGORIAS);
 				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retornoMapeado.indice];
+				MarcaCategoriaVisualizada(sessao,parametros);
 				NovoObjetoReceitaSelecionada(sessao);
 				break;
 
@@ -252,11 +258,30 @@ function EnviaItensComplexosGump(quem,profissao)
 				break;
 
 			RT_CANCELADO_COMPLX:
+				var propCraft := GetObjProperty(quem, "Craft");
+				propCraft[parametros.pericia]["visualizadas"] := sessao.visualizadas;
+				SetObjProperty(quem, "Craft", propCraft);
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				retorno := 0;
 				break;
 		endcase
 	endwhile
+endfunction
+
+function MarcaCategoriaVisualizada(byref sessao,parametros)
+	
+	if(!(sessao.categoriaSelecionada in (sessao.visualizadas.categorias)))
+		sessao.visualizadas.categorias.append(sessao.categoriaSelecionada);
+		if(!sessao.deveAtrasarAtualizacao)
+			foreach receita in (parametros.visaoReceitas[sessao.categoriaSelecionada])
+				Sleepms(2);
+				if(!(receita.objtype in sessao.visualizadas.receitas))
+					sessao.visualizadas.receitas.append(receita.objtype); //guardo as que foram visualizadas para atualizar a prop no final;
+				endif
+			endforeach
+		endif
+		sessao.deveAtrasarAtualizacao := true;
+	endif
 endfunction
 
 function MontaMelhorEsquema(quem, sessao)
@@ -328,6 +353,7 @@ function DefinePropFabricado(esquema,receita)
 	receita.-materiaisNecessarios;
 	receita.-textoDescItem;
 	receita.-dificuldade;
+	receita.-isVisualizada;
 	receita.-uso;
 
 	var propFabricado := struct{ 
@@ -748,13 +774,15 @@ function PreparaItensComplexosGump(quem, profissao)
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+profissao := profissao;
 	parametrosGump.+propCraft := propCraft;
-	parametrosGump.+periciaCfg := fabricacaoConfig[profissao];
-	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.periciaCfg.Attribute);
+	parametrosGump.+pericia := fabricacaoConfig[profissao].Attribute;
+	Print("Antes " + parametrosGump.propCraft[parametrosGump.pericia]["visualizadas"].categorias);
+	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.pericia, parametrosGump.propCraft);
+	Print("Depois " + parametrosGump.propCraft[parametrosGump.pericia]["visualizadas"].categorias);
 	
 	return parametrosGump;
 endfunction
 
-function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
+function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia,byref propCraft)
 
 	var retornoVisao := Dictionary;
 	
@@ -802,7 +830,13 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
       		endif
 
 			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem))
-				receitas.append(MontaReceitaItem(quem, objtype, nomePericia));
+				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, propCraft);
+				if(!receitaItem.isVisualizada)
+					//TODO FIX tá removendo todas as categorias visualizadas, mesmo quando eu já vi elas.
+					var index := propCraft[nomePericia]["visualizadas"].categorias.findIndex( @(categoriaArray) {return categoriaArray == categoria;});
+					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
+				endif
+				receitas.append(receitaItem);
 			endif
 			Sleepms(2);
 		endforeach
@@ -814,7 +848,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia)
 
 endfunction
 
-function MontaReceitaItem(quem, objtype, nomePericia)
+function MontaReceitaItem(quem, objtype, nomePericia,byref propCraft)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
 	var descritorFabricacao := craft_config[objtype];
@@ -834,7 +868,8 @@ function MontaReceitaItem(quem, objtype, nomePericia)
 	receita.+uso := definicaoItem.Attribute;
 	receita.+desc := definicaoItem.desc;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
-	
+	receita.+isVisualizada:=  objtype in (propCraft[nomePericia]["visualizadas"].receitas);
+
 	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
 	receita.+isEmpilhavel := definicaoTileItem.Stackable;
 	return receita;
@@ -951,14 +986,17 @@ function MontaCraftProp(fabricacaoConfig)
 	var baseDict  := dictionary;
 	foreach pericia in GetConfigStringArray(fabricacaoConfig["Skills"], "Skill")
 		var temp := dictionary;
+		var visualizadas := struct;
+		visualizadas.+receitas := array;
+		visualizadas.+categorias := array;
+
 		temp.+skill  := fabricacaoConfig[pericia].Attribute;
-		temp.+amount := CInt(fabricacaoConfig["Setup"].DefaultAmount);
-		temp.+retain := CInt(fabricacaoConfig[pericia].RetainColor);
+		temp.+visualizadas := visualizadas;
 		temp.+last   := 0;
 		baseDict[temp.skill] := temp;
 		Sleepms(2);
 	endforeach
-
+	
 	return baseDict;
 
 endfunction
