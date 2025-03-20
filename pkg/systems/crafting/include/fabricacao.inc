@@ -94,6 +94,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
 	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
 	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
+	//TODO Definir um fluxo para Excepcionais.
 	//TODO implementar lógica de adicionais de dificuldade. (Exemplo: componentes melhores deixam mais dificil.)
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
@@ -339,6 +340,18 @@ endfunction
 
 function CriaItemMontado(quem,esquema,receita, quantidade)
 
+	var definicaoItem := itemsConfig[receita.objtype];
+	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
+
+	var pesoFinal := 1;
+
+	if(definicaoItem.weight)
+		pesoFinal := pesoFinal * definicaoItem.weight;
+	else
+		pesoFinal := pesoFinal * definicaoTileItem.weight;
+	endif
+
+	Print("definicaoItem.weight " + definicaoItem.weight);
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
 	descriptor.color := esquema.cor;
 	descriptor.graphic := receita.graphic;
@@ -346,6 +359,7 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
 	
 	var item := CreateItemInBackpack(quem,descriptor, quantidade);
+	item.weight_multiplier_mod := pesoFinal;
 	SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
 
 endfunction
