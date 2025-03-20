@@ -85,19 +85,22 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar botão para sair
 	//TODO Aplicar o peso do item no item montado.
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
-	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
 	//TODO Validar a Ação no loop de fabricação de intens complexos e componentes.
 	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Solucionar o problema das armaduras estarem sem informações.
-	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
 	//TODO Deixar o cara escolher se quer fazer um componente de qualidade mais baixa.
 	//TODO verificar porque os componentes não estão estacando na criação..
 	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
 	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
 	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
+	//TODO implementar lógica de adicionais de dificuldade. (Exemplo: componentes melhores deixam mais dificil.)
+	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
+	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
 	//TODO Criar gumps de ajuda.
+	//TODO Criar API para gerar item fabricado.
 	//TODO Animações para todas as profissões. [Late]
+	//TODO Marcar sistema antigo como depreciado. [Late]
 	//TODO Embelezar gumps [Penultima fase]
 	//TODO Documentar tudo [Ultima fase]
 	while(retorno)

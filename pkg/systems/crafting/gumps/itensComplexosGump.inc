@@ -417,7 +417,9 @@ function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessa
 			posX += 20; 
 		endif
 		
-		GFTextLine(gump,posX,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),86,categoria);
+		var cortexto := sessao.categoriaSelecionada == categoria ? 47 : 86;
+
+		GFTextLine(gump,posX,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),cortexto,categoria);
 		Sleepms(2);
 	endforeach
 endfunction
