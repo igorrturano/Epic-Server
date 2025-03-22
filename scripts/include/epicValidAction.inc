@@ -4,7 +4,6 @@ include ":attributes:vitals";
 
 function CheckCanWork(who, startingHealth := 0, initialPosStruct := 0)
 
-	Print("startingHealth " + startingHealth + " initialPosStruct " + initialPosStruct);
 	startingHealth := !startingHealth ? AP_GetVital(who, "Hits") : startingHealth;
 	initialPosStruct := !initialPosStruct ? struct {x := who.x, y := who.y, z := who.z, realm := who.realm} : initialPosStruct ;
 

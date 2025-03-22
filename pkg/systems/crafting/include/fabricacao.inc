@@ -1141,15 +1141,38 @@ function EnviaGumpComponentes(quem)
 				endforeach
 				
 				if(materiaisEscolhidos.size() > 0 && materiaisEscolhidos.size() == SplitWords( sessao.componenteSelecionado.materiais,",").size() && isValidado)
-					ProduzComponentes(quem,
-						configRecursos,
-						sessao.componenteSelecionado.selecione.objtype,
-						sessao.materiaisEncontrados,
-						materiaisEscolhidos,
-						CInt(sessao.quantidade),
-						pericia,
-						sessao.componenteSelecionado.encaixe,
-						sessao.picoPericia);
+					
+					var quantidade := CInt(sessao.quantidade) ;
+					if(quantidade <= 0)
+						SendSysMessageEX(quem, "A quantidade não pode ser menor que 1.", SSM_FAIL);
+						break;
+					endif
+
+					var quantidadePorLote := 20;
+					var lotes := Ceil(CDBL(quantidade) / quantidadePorLote);
+					var resto := quantidade % quantidadePorLote;
+					lotes := lotes < 1 ? 1 : lotes;
+					var posicaoInicial :=  CriaObjetoPosicao(quem);
+					var vidaInicial := AP_GetVital(quem, "Hits");
+
+					for i := 1 to lotes
+
+						var interrompido := CheckCanWork(quem, vidaInicial, posicaoInicial);
+						if(!interrompido)
+							break;
+						endif
+
+						Sleep(2);
+						ProduzComponentes(quem,
+							configRecursos,
+							sessao.componenteSelecionado.selecione.objtype,
+							sessao.materiaisEncontrados,
+							materiaisEscolhidos,
+							i == lotes && resto > 0 ? resto : quantidadePorLote,
+							pericia,
+							sessao.componenteSelecionado.encaixe,
+							sessao.picoPericia);
+					endfor
 				endif
 
 				sessao.devePopularDropDown := true;
