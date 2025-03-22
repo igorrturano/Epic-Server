@@ -1,0 +1,710 @@
+// ==========================================================================
+// PROCESSADOR DE ATUALIZAÇÕES DE RECURSOS
+// Arquivo: :faccao:process_recursos_updates.src
+// ==========================================================================
+//
+// Este script processa as atualizações pendentes de recursos de facções
+// em lotes, evitando o impacto de processamento no servidor durante períodos
+// de alta atividade dos jogadores.
+//
+// Versão: 2.0 - Processamento centralizado
+// ==========================================================================
+
+use os;
+use uo;
+use datafile;
+use math; // Adicionado para usar a função Abs
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_resources";
+include ":faccao:faccao_constants";
+
+// Constantes configuráveis
+const MAX_ITEMS_PER_CYCLE := 10;       // Máximo de itens processados por ciclo
+const CYCLE_WAIT_TIME := 60;           // Segundos entre ciclos de processamento
+const EMERGENCY_CYCLE_TIME := 300;     // Tempo para ciclo de emergência (segundos)
+const PRIORITY_THRESHOLD := 1800;      // Tempo (segundos) para considerar prioridade
+const MAX_PROCESSING_TIME := 60;       // Tempo máximo (segundos) para processar um baú
+
+program ProcessRecursosUpdates()
+    Print("Iniciando processador centralizado de atualizações de recursos...");
+    
+    // Registrar PID para que outros scripts possam verificar se está rodando
+    SetGlobalProperty("recursos_update_processor_pid", GetPid());
+    
+    // Inicializar contador de ciclos
+    var cycle_count := 0;
+    var last_emergency_cycle := 0;
+    
+    // Loop principal - continuará rodando até o servidor ser reiniciado
+    while (1)
+        cycle_count += 1;
+        
+        // Obter lista de atualizações pendentes
+        var updates_pending := GetGlobalProperty("recursos_updates_pending");
+        
+        // Verificar se há atualizações pendentes
+        if (!updates_pending || updates_pending.keys().size() == 0)
+            // Verificar se devemos executar um ciclo de emergência
+            var current_time := polcore().systime;
+            if (cycle_count % 5 == 0 || (current_time - last_emergency_cycle > EMERGENCY_CYCLE_TIME))
+                ExecutarCicloEmergencia();
+                last_emergency_cycle := current_time;
+            endif
+            
+            // Se não há atualizações pendentes, pausar e verificar novamente
+            Sleep(CYCLE_WAIT_TIME);
+            continue;
+        endif
+        
+        // Processar atualizações pendentes
+        ProcessarAtualizacoesPendentes(updates_pending);
+        
+        // Verificar se há inconsistências globais ocasionalmente
+        if (cycle_count % 10 == 0)
+            VerificarInconsistenciasGlobais();
+        endif
+        
+        // Verificar novamente após um tempo
+        Sleep(CYCLE_WAIT_TIME);
+    endwhile
+endprogram
+
+// Função principal para processar atualizações pendentes
+function ProcessarAtualizacoesPendentes(byref updates_pending)
+    Print("Processando atualizações pendentes (" + updates_pending.keys().size() + " baús na fila)");
+    
+    // Rastrear métricas para logging
+    var total_processado := 0;
+    var total_erro := 0;
+    var tempo_inicio := polcore().systime;
+    
+    // Organizar por prioridade
+    var sorted_serials := OrganizarAtualizacoesPorPrioridade(updates_pending);
+    
+    // Processar baús (limitado por ciclo)
+    var items_processed := 0;
+    var current_time := polcore().systime;
+    
+    foreach serial in sorted_serials
+        var bau := SystemFindObjectBySerial(CInt(serial));
+        
+        if (bau)
+            var tempo_enfileirado := current_time - updates_pending[serial];
+            
+            Print("Processando baú #" + serial + " (Tempo em fila: " + tempo_enfileirado + "s)");
+            
+            // Definir tempo limite para processamento
+            var start_time := polcore().systime;
+            var result := ProcessarBauComTimeout(bau, MAX_PROCESSING_TIME);
+            var processing_time := polcore().systime - start_time;
+            
+            if (result)
+                total_processado += 1;
+                Print("Baú #" + serial + " processado com sucesso em " + processing_time + "s");
+            else
+                total_erro += 1;
+                Print("ERRO: Falha ao processar baú #" + serial + " após " + processing_time + "s");
+                
+                // Se falhou por timeout, reagendar com baixa prioridade
+                if (processing_time >= MAX_PROCESSING_TIME)
+                    updates_pending[serial] := current_time - (PRIORITY_THRESHOLD / 2);
+                    Print("Baú #" + serial + " reagendado devido a timeout");
+                    continue; // Não remover da lista
+                endif
+            endif
+        else
+            Print("ERRO: Baú #" + serial + " não encontrado");
+            total_erro += 1;
+        endif
+        
+        // Remover da lista de pendências
+        updates_pending.erase(serial);
+        
+        // Controle de quantidade por ciclo
+        items_processed += 1;
+        if (items_processed >= MAX_ITEMS_PER_CYCLE)
+            Print("Limite de " + MAX_ITEMS_PER_CYCLE + " itens por ciclo atingido. Continuando no próximo ciclo.");
+            break;
+        endif
+        
+        Sleep(2); // Breve pausa entre atualizações para não sobrecarregar
+    endforeach
+    
+    // Atualizar a lista global
+    SetGlobalProperty("recursos_updates_pending", updates_pending);
+    
+    // Registrar métricas
+    var tempo_total := polcore().systime - tempo_inicio;
+    Print("Processamento de ciclo concluído em " + tempo_total + "s. Processados: " + 
+           total_processado + ", Erros: " + total_erro + ", Restantes: " + updates_pending.keys().size());
+    
+    // Salvar estatísticas
+    SalvarEstatisticasProcessamento(total_processado, total_erro, tempo_total, updates_pending.keys().size());
+    
+    return total_processado;
+endfunction
+
+// Função para organizar atualizações por prioridade
+function OrganizarAtualizacoesPorPrioridade(updates_pending)
+    var priorities := dictionary{};
+    var current_time := polcore().systime;
+    
+    // Classificar cada baú por prioridade
+    foreach serial in (updates_pending.keys())
+        var enqueued_time := updates_pending[serial];
+        var time_in_queue := current_time - enqueued_time;
+        
+        // Prioridade alta: baús na fila há muito tempo
+        if (time_in_queue > PRIORITY_THRESHOLD)
+            if (!priorities.exists("high"))
+                priorities["high"] := array{};
+            endif
+            priorities["high"].append(serial);
+        else
+            // Prioridade normal
+            if (!priorities.exists("normal"))
+                priorities["normal"] := array{};
+            endif
+            priorities["normal"].append(serial);
+        endif
+    endforeach
+    
+    // Combinar as listas, com alta prioridade primeiro
+    var sorted_serials := array{};
+    
+    if (priorities.exists("high"))
+        foreach serial in (priorities["high"])
+            sorted_serials.append(serial);
+        endforeach
+    endif
+    
+    if (priorities.exists("normal"))
+        foreach serial in (priorities["normal"])
+            sorted_serials.append(serial);
+        endforeach
+    endif
+    
+    return sorted_serials;
+endfunction
+
+// Função para processar um baú com timeout
+function ProcessarBauComTimeout(bau, timeout_seconds)
+    var start_time := polcore().systime;
+    
+    // Verificar periperties básicas para determinar se é válido
+    if (!bau || !bau.isA(POLCLASS_CONTAINER) || bau.objtype != 0xFF11)
+        return 0;
+    endif
+    
+    // Verificar se o baú está sendo usado no momento
+    if (GetObjProperty(bau, "being_processed"))
+        Print("AVISO: Baú #" + bau.serial + " já está sendo processado, pulando");
+        return 0;
+    endif
+    
+    // Marcar como em processamento
+    SetObjProperty(bau, "being_processed", polcore().systime);
+    
+    // Processar o baú
+    var success := 0;
+    
+    // Primeira etapa: Corrigir inconsistências
+    var inconsistencias := VerificarEResolverInconsistencias(bau);
+    
+    // Segunda etapa: Forçar sincronização se necessário
+    if (inconsistencias > 0)
+        Print("Encontradas " + inconsistencias + " inconsistências no baú #" + bau.serial);
+        success := ForcarSincronizacaoBau(bau);
+    else
+        // Se não há inconsistências, apenas verificar se precisa sincronizar
+        var last_sync := GetObjProperty(bau, DATAFILE_SYNC_PROP);
+        var current_time := polcore().systime;
+        
+        if (!last_sync || (current_time - last_sync > DATAFILE_UPDATE_INTERVAL))
+            Print("Baú #" + bau.serial + " precisa sincronização periódica");
+            success := ForcarSincronizacaoBau(bau);
+        else
+            // Não precisa sincronizar agora
+            Print("Baú #" + bau.serial + " verificado, não precisa sincronização");
+            success := 1;
+        endif
+    endif
+    
+    // Limpar flag de processamento
+    EraseObjProperty(bau, "being_processed");
+    
+    return success;
+endfunction
+
+// Função para executar um ciclo de emergência (verificação geral)
+function ExecutarCicloEmergencia()
+    Print("Executando ciclo de emergência para verificar integridade dos recursos...");
+    
+    // Verificar facções importantes
+    VerificarFaccoesImportantes();
+    
+    // Verificar inconsistências no datafile
+    VerificarIntegridadeDatafile();
+    
+    Print("Ciclo de emergência concluído");
+endfunction
+
+// Função para verificar facções importantes
+function VerificarFaccoesImportantes()
+    // Verificar primeiro o Reino
+    VerificarRecursosDoReino();
+    
+    // Verificar facções ativas
+    var guilds := ListGuilds();
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (guild && guild.members.size() > 0)
+            var faction_name := guild.GetProp("name");
+            if (!faction_name)
+                faction_name := guild.guildname;
+            endif
+            
+            if (faction_name)
+                VerificarRecursosDaFaccao(faction_name, guild);
+            endif
+        endif
+        Sleep(1);
+    endforeach
+endfunction
+
+// Função para verificar recursos do Reino
+function VerificarRecursosDoReino()
+    // Verificar recursos no datafile
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (df)
+        var elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+        var recursos := elem.GetProp("recursos");
+        
+        if (!recursos)
+            // Se não há recursos definidos, criar struct vazio
+            recursos := CreateEmptyResourceStruct();
+            elem.SetProp("recursos", recursos);
+            Print("Inicializado struct de recursos do Reino");
+        else
+            // Validar e corrigir se necessário
+            var recursos_validados := ValidarRecursos(recursos);
+            
+            // Se houve alterações durante a validação
+            if (recursos_validados.comida != recursos.comida ||
+                recursos_validados.moedas != recursos.moedas ||
+                recursos_validados.couro != recursos.couro ||
+                recursos_validados.metal != recursos.metal ||
+                recursos_validados.madeira != recursos.madeira ||
+                recursos_validados.pano != recursos.pano ||
+                recursos_validados.pedras != recursos.pedras ||
+                recursos_validados.joias != recursos.joias)
+                
+                elem.SetProp("recursos", recursos_validados);
+                Print("Corrigidos recursos inválidos do Reino");
+            endif
+        endif
+    endif
+    
+    // Verificar baús do Reino
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11 && 
+            (GetObjProperty(item, OBJ_FACTION_PROP) == KINGDOM_FACTION || 
+             GetObjProperty(item, OBJ_FACTION_PROP) == "Reino"))
+             
+            // Verificar e corrigir inconsistências
+            VerificarEResolverInconsistencias(item);
+            
+            // Verificar sincronização
+            var last_sync := GetObjProperty(item, DATAFILE_SYNC_PROP);
+            var current_time := polcore().systime;
+            
+            if (!last_sync || (current_time - last_sync > DATAFILE_UPDATE_INTERVAL))
+                ForcarSincronizacaoBau(item);
+            endif
+        endif
+        Sleep(1);
+    endforeach
+endfunction
+
+// Função para verificar recursos de uma facção
+function VerificarRecursosDaFaccao(faction_name, guild := 0)
+    if (!faction_name)
+        return 0;
+    endif
+    
+    // Verificar recursos no datafile
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (df)
+        var elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
+        var recursos := elem.GetProp("recursos");
+        
+        if (!recursos)
+            // Se não há recursos definidos, criar struct vazio
+            recursos := CreateEmptyResourceStruct();
+            elem.SetProp("recursos", recursos);
+            Print("Inicializado struct de recursos da facção: " + faction_name);
+        else
+            // Validar e corrigir se necessário
+            var recursos_validados := ValidarRecursos(recursos);
+            
+            // Se houve alterações durante a validação
+            if (recursos_validados.comida != recursos.comida ||
+                recursos_validados.moedas != recursos.moedas ||
+                recursos_validados.couro != recursos.couro ||
+                recursos_validados.metal != recursos.metal ||
+                recursos_validados.madeira != recursos.madeira ||
+                recursos_validados.pano != recursos.pano ||
+                recursos_validados.pedras != recursos.pedras ||
+                recursos_validados.joias != recursos.joias)
+                
+                elem.SetProp("recursos", recursos_validados);
+                Print("Corrigidos recursos inválidos da facção: " + faction_name);
+            endif
+        endif
+    endif
+    
+    // Verificar baús da facção
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11 && GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
+            // Verificar e corrigir inconsistências
+            VerificarEResolverInconsistencias(item);
+            
+            // Verificar sincronização
+            var last_sync := GetObjProperty(item, DATAFILE_SYNC_PROP);
+            var current_time := polcore().systime;
+            
+            if (!last_sync || (current_time - last_sync > DATAFILE_UPDATE_INTERVAL))
+                ForcarSincronizacaoBau(item);
+            endif
+            
+            // Atualizar registro na guilda
+            if (guild)
+                RegisterFactionChest(faction_name, item, guild);
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    return 1;
+endfunction
+
+// Função para registrar baú de facção na guilda
+function RegisterFactionChest(faction_name, chest, guild)
+    if (!faction_name || !chest || !guild)
+        return 0;
+    endif
+    
+    // Verificar se o serial já está registrado
+    var current_chest := guild.GetProp("donation_chest");
+    
+    // Se não há registro ou o baú registrado não existe mais
+    if (!current_chest || !SystemFindObjectBySerial(current_chest))
+        guild.SetProp("donation_chest", chest.serial);
+        Print("Baú #" + chest.serial + " registrado para facção: " + faction_name);
+        
+        // Também registrar no datafile específico
+        var df := DFOpenDataFile("faction_chests", DF_CREATE);
+        var elem := DFFindElement(df, faction_name, DF_CREATE);
+        
+        elem.SetProp("chest_serial", chest.serial);
+        elem.SetProp("location", struct{
+            "x" := chest.x,
+            "y" := chest.y,
+            "z" := chest.z,
+            "realm" := chest.realm
+        });
+        elem.SetProp("last_update", polcore().systime);
+    endif
+    
+    return 1;
+endfunction
+
+// Função para verificar a integridade do datafile
+function VerificarIntegridadeDatafile()
+    Print("Verificando integridade do datafile de recursos...");
+    
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível abrir o datafile de recursos");
+        return 0;
+    endif
+    
+    // Verificar elementos do datafile
+    var correcoes := 0;
+    
+    // 1. Verificar elemento do Reino
+    var reino_elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    var recursos_reino := reino_elem.GetProp("recursos");
+    
+    if (!recursos_reino)
+        recursos_reino := CreateEmptyResourceStruct();
+        reino_elem.SetProp("recursos", recursos_reino);
+        correcoes += 1;
+        Print("Criado struct de recursos do Reino");
+    else
+        // Validar e corrigir
+        var recursos_validados := ValidarRecursos(recursos_reino);
+        
+        // Se houve alterações
+        if (!SaoRecursosIguais(recursos_reino, recursos_validados))
+            reino_elem.SetProp("recursos", recursos_validados);
+            correcoes += 1;
+            Print("Corrigidos recursos do Reino");
+        endif
+    endif
+    
+    // 2. Verificar elementos de facções
+    foreach elem_name in (df.keys())
+        if (elem_name != KINGDOM_RESOURCE_ELEM && elem_name.find("faction_") != error)
+            var faction_elem := df.FindElement(elem_name);
+            var recursos := faction_elem.GetProp("recursos");
+            
+            if (!recursos)
+                recursos := CreateEmptyResourceStruct();
+                faction_elem.SetProp("recursos", recursos);
+                correcoes += 1;
+                Print("Criado struct de recursos para: " + elem_name);
+            else
+                // Validar e corrigir
+                var recursos_validados := ValidarRecursos(recursos);
+                
+                // Se houve alterações
+                if (!SaoRecursosIguais(recursos, recursos_validados))
+                    faction_elem.SetProp("recursos", recursos_validados);
+                    correcoes += 1;
+                    Print("Corrigidos recursos para: " + elem_name);
+                endif
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    Print("Verificação de integridade do datafile concluída. Correções: " + correcoes);
+    return correcoes;
+endfunction
+
+// Função auxiliar para comparar dois structs de recursos
+function SaoRecursosIguais(recursos1, recursos2)
+    if (!recursos1 || !recursos2)
+        return 0;
+    endif
+    
+    return (recursos1.comida == recursos2.comida &&
+            recursos1.moedas == recursos2.moedas &&
+            recursos1.couro == recursos2.couro &&
+            recursos1.metal == recursos2.metal &&
+            recursos1.madeira == recursos2.madeira &&
+            recursos1.pano == recursos2.pano &&
+            recursos1.pedras == recursos2.pedras &&
+            recursos1.joias == recursos2.joias);
+endfunction
+
+// Função para verificar inconsistências globais
+function VerificarInconsistenciasGlobais()
+    Print("Verificando inconsistências globais entre baús e datafile...");
+    
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (!df)
+        return 0;
+    endif
+    
+    var inconsistencias := 0;
+    
+    // 1. Verificar Reino
+    inconsistencias += VerificarInconsistenciasDoReino(df);
+    
+    // 2. Verificar facções específicas
+    foreach elem_name in (df.keys())
+        if (elem_name.find("faction_") != error)
+            var faction_name := elem_name[8, elem_name.size()-7]; // Extrair nome da facção
+            inconsistencias += VerificarInconsistenciasDaFaccao(faction_name, df);
+        endif
+        Sleep(1);
+    endforeach
+    
+    Print("Verificação de inconsistências globais concluída. Inconsistências encontradas: " + inconsistencias);
+    return inconsistencias;
+endfunction
+
+// Função para verificar inconsistências do Reino
+function VerificarInconsistenciasDoReino(df)
+    if (!df)
+        return 0;
+    endif
+    
+    var reino_elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    var recursos_datafile := reino_elem.GetProp("recursos");
+    
+    if (!recursos_datafile)
+        recursos_datafile := CreateEmptyResourceStruct();
+        reino_elem.SetProp("recursos", recursos_datafile);
+    endif
+    
+    // Contar recursos totais em todos os baús do Reino
+    var recursos_reais := CreateEmptyResourceStruct();
+    var baus_encontrados := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11 && 
+            (GetObjProperty(item, OBJ_FACTION_PROP) == KINGDOM_FACTION || 
+             GetObjProperty(item, OBJ_FACTION_PROP) == "Reino"))
+            
+            baus_encontrados += 1;
+            var bau_recursos := ContarRecursosReais(item);
+            
+            // Somar aos recursos totais
+            recursos_reais.comida += bau_recursos.comida;
+            recursos_reais.moedas += bau_recursos.moedas;
+            recursos_reais.couro += bau_recursos.couro;
+            recursos_reais.metal += bau_recursos.metal;
+            recursos_reais.madeira += bau_recursos.madeira;
+            recursos_reais.pano += bau_recursos.pano;
+            recursos_reais.pedras += bau_recursos.pedras;
+            recursos_reais.joias += bau_recursos.joias;
+        endif
+        Sleep(1);
+    endforeach
+    
+    // Verificar se há diferença significativa
+    var inconsistencias := 0;
+    var tolerancia := 20; // Tolerância maior para o Reino
+    
+    if (Abs(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
+        Abs(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
+        Abs(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
+        Abs(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
+        Abs(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
+        Abs(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
+        Abs(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
+        Abs(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
+        
+        // Atualizar o datafile com os recursos reais
+        reino_elem.SetProp("recursos", recursos_reais);
+        inconsistencias += 1;
+        
+        Print("AVISO: Corrigida inconsistência global nos recursos do Reino");
+        Print("  - Baús encontrados: " + baus_encontrados);
+    endif
+    
+    return inconsistencias;
+endfunction
+
+// Função para verificar inconsistências de uma facção específica
+function VerificarInconsistenciasDaFaccao(faction_name, df)
+    if (!faction_name || !df)
+        return 0;
+    endif
+    
+    var faction_elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
+    var recursos_datafile := faction_elem.GetProp("recursos");
+    
+    if (!recursos_datafile)
+        recursos_datafile := CreateEmptyResourceStruct();
+        faction_elem.SetProp("recursos", recursos_datafile);
+    endif
+    
+    // Contar recursos totais em todos os baús da facção
+    var recursos_reais := CreateEmptyResourceStruct();
+    var baus_encontrados := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11 && GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
+            baus_encontrados += 1;
+            var bau_recursos := ContarRecursosReais(item);
+            
+            // Somar aos recursos totais
+            recursos_reais.comida += bau_recursos.comida;
+            recursos_reais.moedas += bau_recursos.moedas;
+            recursos_reais.couro += bau_recursos.couro;
+            recursos_reais.metal += bau_recursos.metal;
+            recursos_reais.madeira += bau_recursos.madeira;
+            recursos_reais.pano += bau_recursos.pano;
+            recursos_reais.pedras += bau_recursos.pedras;
+            recursos_reais.joias += bau_recursos.joias;
+        endif
+        Sleep(1);
+    endforeach
+    
+    // Verificar se há diferença significativa
+    var inconsistencias := 0;
+    var tolerancia := 10; // Tolerância menor para facções específicas
+    
+    if (Abs(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
+        Abs(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
+        Abs(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
+        Abs(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
+        Abs(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
+        Abs(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
+        Abs(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
+        Abs(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
+        
+        // Atualizar o datafile com os recursos reais
+        faction_elem.SetProp("recursos", recursos_reais);
+        inconsistencias += 1;
+        
+        Print("AVISO: Corrigida inconsistência global nos recursos da facção: " + faction_name);
+        Print("  - Baús encontrados: " + baus_encontrados);
+        
+        // Atualizar também na guilda
+        var guild_id := FindGuildByName(faction_name);
+        if (guild_id)
+            var guild := FindGuild(guild_id);
+            if (guild)
+                guild.SetProp("recursos", recursos_reais);
+                guild.SetProp("recursos_timestamp", polcore().systime);
+            endif
+        endif
+    endif
+    
+    return inconsistencias;
+endfunction
+
+// Função para salvar estatísticas de processamento
+function SalvarEstatisticasProcessamento(processados, erros, tempo, pendentes)
+    var df := DFOpenDataFile("resource_stats", DF_CREATE);
+    var elem := DFFindElement(df, "processamento", DF_CREATE);
+    
+    var history := elem.GetProp("ciclos");
+    if (!history)
+        history := array{};
+    endif
+    
+    // Adicionar nova entrada
+    history.append(struct{
+        "timestamp" := polcore().systime,
+        "processados" := processados,
+        "erros" := erros,
+        "tempo" := tempo,
+        "pendentes" := pendentes
+    });
+    
+    // Limitar o tamanho do histórico
+    while (history.size() > 50)
+        history.erase(1);
+    endwhile
+    
+    elem.SetProp("ciclos", history);
+    
+    // Atualizar estatísticas agregadas
+    var stats := elem.GetProp("totais");
+    if (!stats)
+        stats := struct{
+            "total_processados" := 0,
+            "total_erros" := 0,
+            "total_ciclos" := 0,
+            "tempo_total" := 0,
+            "ultimo_ciclo" := 0
+        };
+    endif
+    
+    stats.total_processados += processados;
+    stats.total_erros += erros;
+    stats.total_ciclos += 1;
+    stats.tempo_total += tempo;
+    stats.ultimo_ciclo := polcore().systime;
+    
+    elem.SetProp("totais", stats);
+    
+    return 1;
+endfunction

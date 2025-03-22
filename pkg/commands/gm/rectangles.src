@@ -8,6 +8,7 @@ include ":gumps:yesNo";
 include ":gumps:epicGumps";
 include ":gumps:/include/epicGumps";
 include ":faccao:faccao_constants";
+include ":faccao:include/shared_functions";
 
 program rectangle_creator(who, params)
     if (!who.cmdlevel)
@@ -794,23 +795,27 @@ function DisplayRectangleDetails(who, elem)
     var button := input[0];
     
     if (button == 100) // Deletar
-        if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
-            // Primeiro, destruir os objetos do território, se houver
-            var faction := elem.GetProp(TERRITORY_FACTION_PROP);
-            if (!faction || faction == error)
-                faction := elem.GetProp("Faction");  // Compatibilidade legada
-            endif
-            
-            var territory_id := elem.GetProp(TERRITORY_ID_PROP);
-            if (territory_id && faction)
-                DestruirObjetosTerritorio(territory_id, faction);
-            endif
-            
-            // Agora deletar o território
-            var rect_df := OpenDataFile(":architect:areas");
-            rect_df.DeleteElement(name);
-            SendSysMessage(who, "Território deletado com sucesso!");
+    if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
+        // Primeiro, destruir os objetos do território, se houver
+        var faction := elem.GetProp(TERRITORY_FACTION_PROP);
+        if (!faction || faction == error)
+            faction := elem.GetProp("Faction");  // Compatibilidade legada
         endif
+        
+        var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+        if (territory_id && faction)
+            DestruirObjetosTerritorio(territory_id, faction);
+        endif
+        
+        // NOVA LINHA: Remover referências do território em todas as guildas
+        RemoveTerritoryFromGuilds(name, territory_id);
+        
+        // Agora deletar o território
+        var rect_df := OpenDataFile(":architect:areas");
+        rect_df.DeleteElement(name);
+        SendSysMessage(who, "Território deletado com sucesso!");
+    endif
+
     elseif (button == 200) // Editar
         // Implementação existente para editar território
         SendSysMessage(who, "Selecione novos pontos para o território");

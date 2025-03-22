@@ -32,6 +32,12 @@ const TERRITORY_RECT_PROP := "Rect";
 // Propriedade que armazena o realm do território
 const TERRITORY_REALM_PROP := "Realm";
 
+// Propriedade que identifica se um território é capital
+const TERRITORY_IS_CAPITAL_PROP := "IsCapital";
+
+// Propriedade que armazena o ID único do território
+const TERRITORY_ID_PROP := "TerritoryID";
+
 // =======================================
 // Propriedades de Baús de Doação
 // =======================================
@@ -82,10 +88,39 @@ const KINGDOM_RESOURCE_DATAFILE := "kingdom_resources";
 // Nome do elemento para recursos do reino
 const KINGDOM_RESOURCE_ELEM := "resources";
 
-// Propriedade que armazena o ID único do território
-const TERRITORY_ID_PROP := "TerritoryID";
+// Nome do datafile que armazena recursos de facções
+const FACTION_RESOURCES_DATAFILE := "faction_resources";
 
-const ITEM_UNIQUE_ID_PROP := "unique_id";
+// Nome do datafile que armazena recursos do reino
+const REINO_RESOURCES_DATAFILE := "kingdom_resources";
+
+// Nome do elemento para recursos do reino
+const REINO_RESOURCES_ELEM := "resources";
+
+// Nome da propriedade na guilda para armazenar recursos
+const GUILD_RESOURCES_PROP := "faction_resources";
+
+// =======================================
+// Constantes para sistema de cache
+// =======================================
+
+// Tempo (em segundos) para expiração do cache
+const CACHE_EXPIRY_TIME := 300; // 5 minutos
+
+// Tempo (em segundos) para atualização do datafile global
+const DATAFILE_UPDATE_INTERVAL := 1800; // 30 minutos
+
+// Nome da propriedade onde o cache é armazenado
+const CACHE_PROP_NAME := "recursos_cache";
+
+// Nome da propriedade que armazena timestamp da última atualização
+const CACHE_UPDATE_PROP := "recursos_ultimo_update";
+
+// Nome da propriedade que armazena timestamp da última sincronização com datafile
+const DATAFILE_SYNC_PROP := "recursos_ultima_sync";
+
+// Flag para indicar que um recurso foi adicionado/removido e o cache precisa ser atualizado
+const CACHE_DIRTY_FLAG := "recursos_cache_dirty";
 
 // =======================================
 // Constantes para sistema de identificação
@@ -93,11 +128,9 @@ const ITEM_UNIQUE_ID_PROP := "unique_id";
 
 // Propriedade para ID único padronizado
 const UNIQUE_ID_PROP := "unique_id";
+const ITEM_UNIQUE_ID_PROP := "unique_id";
 
 // Tipos de itens
 const ITEM_TYPE_BAU := "BAU";
 const ITEM_TYPE_MESA := "MESA";
 const ITEM_TYPE_MURAL := "MURAL";
-
-// Propriedade para território capital
-const TERRITORY_IS_CAPITAL_PROP := "is_capital";

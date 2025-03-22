@@ -13,7 +13,7 @@ program fix_guild_access(who, params)
     var targ_player;  // Mudei o nome de target para targ_player
     if (params)
         // Tenta encontrar o jogador pelo nome
-        foreach player in EnumerateOnlineCharacters()
+        foreach player in (EnumerateOnlineCharacters())
             if (Lower(player.name) == Lower(params))
                 targ_player := player;
                 break;

@@ -1,0 +1,361 @@
+use uo;
+use os;
+use guilds;
+use datafile;
+
+include ":datafile:datafile";
+include ":faccao:faccao_constants";
+
+/* 
+ * guild_registry.src
+ *
+ * Sistema de registro persistente de guildas/facções
+ * Mantém um registro de todas as guildas do servidor com suas informações
+ * básicas em um datafile para acesso confiável, independente de jogadores online.
+ */
+
+// Constantes para datafile
+const GUILD_REGISTRY_DATAFILE := "guild_registry";
+const GUILD_REGISTRY_ELEM := "guilds";
+const GUILD_REGISTRY_TIMESTAMP := "last_update";
+
+program guild_registry()
+    Print("Iniciando sistema de registro de guildas...");
+    
+    // Registrar o script como um serviço contínuo
+    SetGlobalProperty("guild_registry_pid", GetPid());
+    
+    // Inicializar o registro
+    InitializeGuildRegistry();
+    
+    // Loop principal - Atualizar o registro periodicamente
+    var last_check := ReadGameClock();
+    
+    while(1)
+        if ((ReadGameClock() - last_check) >= 3600) // 1 hora
+            UpdateGuildRegistry();
+            last_check := ReadGameClock();
+        endif
+        
+        // Verificar eventos e comandos
+        var ev := wait_for_event(300); // 5 minutos
+        if (ev)
+            case (ev.type)
+                "update": 
+                    Print("Atualizando registro de guildas sob demanda");
+                    UpdateGuildRegistry();
+                    last_check := ReadGameClock();
+                "lookup":
+                    if (ev.name)
+                        var guild_id := LookupGuildByName(ev.name);
+                        if (ev.process)
+                            var process := GetProcess(ev.process);
+                            if (process)
+                                process.SendEvent(struct{
+                                    "type" := "lookup_result",
+                                    "name" := ev.name,
+                                    "guild_id" := guild_id
+                                });
+                            endif
+                        endif
+                    endif
+                "register":
+                    if (ev.name && ev.guild_id)
+                        RegisterGuild(ev.name, ev.guild_id);
+                    endif
+            endcase
+        endif
+        
+        sleepms(2);
+    endwhile
+endprogram
+
+/*
+ * InitializeGuildRegistry()
+ *
+ * Purpose: Inicializar o registro de guildas
+ * Parameters: Nenhum
+ * Return: 1 se bem-sucedido, 0 se falha
+ */
+function InitializeGuildRegistry()
+    Print("Inicializando registro de guildas...");
+    
+    // Verificar se o registro já existe e está atualizado
+    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE, DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível criar o datafile de registro de guildas");
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM, DF_CREATE);
+    if (!elem)
+        Print("ERRO: Não foi possível criar o elemento de registro de guildas");
+        return 0;
+    endif
+    
+    var last_update := elem.GetProp(GUILD_REGISTRY_TIMESTAMP);
+    var current_time := polcore().systime;
+    
+    // Se nunca foi atualizado ou foi há mais de 24 horas, atualizar agora
+    if (!last_update || (current_time - last_update) > 86400)
+        return UpdateGuildRegistry();
+    endif
+    
+    Print("Registro de guildas já inicializado e atualizado. Última atualização: " + 
+          FormatRegistryTime(last_update));
+    
+    return 1;
+endfunction
+
+/*
+ * UpdateGuildRegistry()
+ *
+ * Purpose: Atualizar o registro de guildas com informações atuais
+ * Parameters: Nenhum
+ * Return: 1 se bem-sucedido, 0 se falha
+ */
+function UpdateGuildRegistry()
+    Print("Atualizando registro de guildas...");
+    
+    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE, DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível abrir o datafile de registro de guildas");
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM, DF_CREATE);
+    if (!elem)
+        Print("ERRO: Não foi possível acessar o elemento de registro de guildas");
+        return 0;
+    endif
+    
+    // Obter o registro atual para verificação
+    var registry := elem.GetProp("registry");
+    if (!registry || typeof(registry) != "Dictionary")
+        registry := dictionary{};
+    endif
+    
+    // Mapear nome da guilda -> ID da guilda
+    var guild_map := dictionary{};
+    
+    // Registrar todas as guildas existentes
+    var guilds := ListGuilds();
+    if (guilds)
+        Print("Encontradas " + guilds.size() + " guildas para registrar");
+        
+        foreach guild in (guilds)
+            var guild_name := guild.GetProp("name");
+            if (!guild_name || guild_name == error)
+                guild_name := guild.GetProp(FACTION_PROP_NAME);
+            endif
+            
+            if (!guild_name || guild_name == error)
+                guild_name := guild.guildname;
+            endif
+            
+            if (guild_name && guild_name != error)
+                guild_map[guild_name] := guild.guildid;
+                
+                // Verificar guildas com nomes alternativos registrados
+                var alt_names := guild.GetProp("alt_names");
+                if (alt_names && typeof(alt_names) == "Array")
+                    foreach alt_name in (alt_names)
+                        if (alt_name && alt_name != "")
+                            guild_map[alt_name] := guild.guildid;
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+            endif
+            
+            sleepms(2);
+        endforeach
+    else
+        Print("AVISO: ListGuilds() falhou, tentando métodos alternativos");
+        
+        // Método alternativo: obter informações de guildas dos jogadores online
+        foreach player in (EnumerateOnlineCharacters())
+            if (player.guildid)
+                var player_guild := player.guild;
+                if (player_guild)
+                    var guild_name := player_guild.GetProp("name");
+                    if (!guild_name || guild_name == error)
+                        guild_name := player_guild.GetProp(FACTION_PROP_NAME);
+                    endif
+                    
+                    if (!guild_name || guild_name == error)
+                        guild_name := player_guild.guildname;
+                    endif
+                    
+                    if (guild_name && guild_name != error)
+                        guild_map[guild_name] := player_guild.guildid;
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+        
+        // Combinar com registros existentes
+        foreach name in (registry.keys())
+            if (!guild_map.exists(name))
+                var guild_id := registry[name];
+                if (guild_id)
+                    var guild := FindGuild(guild_id);
+                    if (guild) // Verificar se a guilda ainda existe
+                        guild_map[name] := guild_id;
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
+    // Atualizar o datafile com as informações coletadas
+    elem.SetProp("registry", guild_map);
+    elem.SetProp(GUILD_REGISTRY_TIMESTAMP, polcore().systime);
+    
+    Print("Registro de guildas atualizado com sucesso. Total: " + guild_map.keys().size() + " entradas");
+    
+    return 1;
+endfunction
+
+/*
+ * LookupGuildByName(name)
+ *
+ * Purpose: Buscar o ID de uma guilda pelo nome
+ * Parameters: 
+ *   name - Nome da guilda a ser buscada
+ * Return: ID da guilda ou 0 se não encontrada
+ */
+function LookupGuildByName(name)
+    if (!name || name == "")
+        return 0;
+    endif
+    
+    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE);
+    if (!df)
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM);
+    if (!elem)
+        return 0;
+    endif
+    
+    var registry := elem.GetProp("registry");
+    if (!registry || typeof(registry) != "Dictionary")
+        return 0;
+    endif
+    
+    // Verificar se existe exatamente
+    if (registry.exists(name))
+        return registry[name];
+    endif
+    
+    // Verificar case-insensitive
+    var lower_name := Lower(name);
+    foreach key in (registry.keys())
+        if (Lower(key) == lower_name)
+            return registry[key];
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Verificar nomes parciais como último recurso
+    foreach key in (registry.keys())
+        if (Lower(key).find(lower_name) != error || lower_name.find(Lower(key)) != error)
+            return registry[key];
+        endif
+        sleepms(2);
+    endforeach
+    
+    return 0;
+endfunction
+
+/*
+ * RegisterGuild(name, guild_id)
+ *
+ * Purpose: Registrar manualmente uma guilda no registro
+ * Parameters:
+ *   name - Nome da guilda
+ *   guild_id - ID da guilda a ser registrada
+ * Return: 1 se bem-sucedido, 0 se falha
+ */
+function RegisterGuild(name, guild_id)
+    if (!name || !guild_id)
+        return 0;
+    endif
+    
+    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE, DF_CREATE);
+    if (!df)
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM, DF_CREATE);
+    if (!elem)
+        return 0;
+    endif
+    
+    var registry := elem.GetProp("registry");
+    if (!registry || typeof(registry) != "Dictionary")
+        registry := dictionary{};
+    endif
+    
+    registry[name] := guild_id;
+    elem.SetProp("registry", registry);
+    
+    return 1;
+endfunction
+
+/*
+ * FormatRegistryTime(timestamp)
+ *
+ * Purpose: Formatar timestamp para exibição
+ * Parameters:
+ *   timestamp - Timestamp Unix
+ * Return: String formatada com data e hora
+ */
+function FormatRegistryTime(timestamp)
+    if (!timestamp || timestamp == error)
+        return "Data desconhecida";
+    endif
+    
+    // Método simples que não usa systime_precise
+    var seconds_per_day := 86400;
+    var seconds_per_hour := 3600;
+    var seconds_per_minute := 60;
+    
+    var days := CInt(timestamp / seconds_per_day) % 365;
+    var hours := CInt((timestamp % seconds_per_day) / seconds_per_hour);
+    var minutes := CInt((timestamp % seconds_per_hour) / seconds_per_minute);
+    var seconds := CInt(timestamp % seconds_per_minute);
+    
+    // Formatar simples (ano fixo - mais para exibição do que precisão)
+    var formatted := CStr(2023) + "-" + 
+                   PadRegistryStr(CStr(1), 2, "0") + "-" + 
+                   PadRegistryStr(CStr(days+1), 2, "0") + " " + 
+                   PadRegistryStr(CStr(hours), 2, "0") + ":" + 
+                   PadRegistryStr(CStr(minutes), 2, "0") + ":" + 
+                   PadRegistryStr(CStr(seconds), 2, "0");
+    
+    return formatted;
+endfunction
+
+/*
+ * PadRegistryStr(str, length, padchar)
+ *
+ * Purpose: Adicionar padding a uma string
+ * Parameters:
+ *   str - String a ser padronizada
+ *   length - Comprimento desejado
+ *   padchar - Caractere de padding (default: "0")
+ * Return: String com padding
+ */
+function PadRegistryStr(str, length, padchar := "0")
+    str := CStr(str);
+    while (len(str) < length)
+        str := padchar + str;
+    endwhile
+    
+    return str;
+endfunction

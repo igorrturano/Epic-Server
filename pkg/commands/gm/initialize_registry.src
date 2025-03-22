@@ -1,0 +1,144 @@
+use uo;
+use os;
+use guilds;
+use datafile;
+
+include ":datafile:datafile";
+include ":faccao:faccao_constants";
+
+/*
+ * initialize_registry.src
+ *
+ * Script para inicialização manual do registro de guildas.
+ * Útil para ser executado por comando de GM em caso de problemas.
+ */
+
+program initialize_registry(params)
+    var who := params[1];
+    
+    if (who)
+        SendSysMessage(who, "Inicializando registro de guildas...");
+    endif
+    
+    Print("Inicializando registro de guildas manualmente...");
+    
+    // Criar datafile
+    var df := DFOpenDataFile("guild_registry", DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível criar o datafile guild_registry");
+        if (who)
+            SendSysMessage(who, "ERRO: Não foi possível criar o datafile guild_registry");
+        endif
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, "guilds", DF_CREATE);
+    if (!elem)
+        Print("ERRO: Não foi possível criar o elemento guilds");
+        if (who)
+            SendSysMessage(who, "ERRO: Não foi possível criar o elemento guilds");
+        endif
+        return 0;
+    endif
+    
+    // Mapear nome da guilda -> ID da guilda
+    var guild_map := dictionary{};
+    var total_guildas := 0;
+    
+    // Registrar todas as guildas existentes
+    var guilds := ListGuilds();
+    if (guilds)
+        Print("Encontradas " + guilds.size() + " guildas para registrar");
+        
+        foreach guild in (guilds)
+            var guild_name := guild.GetProp("name");
+            if (!guild_name || guild_name == error)
+                guild_name := guild.GetProp(FACTION_PROP_NAME);
+            endif
+            
+            if (!guild_name || guild_name == error)
+                guild_name := guild.guildname;
+            endif
+            
+            if (guild_name && guild_name != error)
+                guild_map[guild_name] := guild.guildid;
+                total_guildas += 1;
+                Print("Registrada guilda: " + guild_name + " (ID: " + guild.guildid + ")");
+                
+                // Verificar guildas com nomes alternativos registrados
+                var alt_names := guild.GetProp("alt_names");
+                if (alt_names && typeof(alt_names) == "Array")
+                    foreach alt_name in (alt_names)
+                        if (alt_name && alt_name != "")
+                            guild_map[alt_name] := guild.guildid;
+                            total_guildas += 1;
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+            endif
+            
+            sleepms(2);
+        endforeach
+    else
+        Print("AVISO: ListGuilds() falhou, tentando métodos alternativos");
+        
+        // Método alternativo: obter informações de guildas dos jogadores online
+        foreach player in (EnumerateOnlineCharacters())
+            if (player.guildid)
+                var player_guild := player.guild;
+                if (player_guild)
+                    var guild_name := player_guild.GetProp("name");
+                    if (!guild_name || guild_name == error)
+                        guild_name := player_guild.GetProp(FACTION_PROP_NAME);
+                    endif
+                    
+                    if (!guild_name || guild_name == error)
+                        guild_name := player_guild.guildname;
+                    endif
+                    
+                    if (guild_name && guild_name != error)
+                        guild_map[guild_name] := player_guild.guildid;
+                        total_guildas += 1;
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
+    // Atualizar o datafile com as informações coletadas
+    elem.SetProp("registry", guild_map);
+    elem.SetProp("last_update", polcore().systime);
+    
+    var msg := "Registro de guildas inicializado com sucesso. Total: " + total_guildas + " guildas registradas";
+    Print(msg);
+    
+    if (who)
+        SendSysMessage(who, msg);
+    endif
+    
+    // Iniciar o processo de registro se não estiver rodando
+    var registry_pid := GetGlobalProperty("guild_registry_pid");
+    if (!registry_pid || !GetProcess(registry_pid))
+        var script := start_script(":faccao:guild_registry");
+        if (script.errortext)
+            Print("ERRO: Não foi possível iniciar o processo de registro: " + script.errortext);
+            if (who)
+                SendSysMessage(who, "ERRO: Não foi possível iniciar o processo de registro: " + script.errortext);
+            endif
+        else
+            Print("Processo de registro de guildas iniciado com sucesso.");
+            if (who)
+                SendSysMessage(who, "Processo de registro de guildas iniciado com sucesso.");
+            endif
+        endif
+    else
+        Print("Processo de registro de guildas já está em execução.");
+        if (who)
+            SendSysMessage(who, "Processo de registro de guildas já está em execução.");
+        endif
+    endif
+    
+    return 1;
+endprogram

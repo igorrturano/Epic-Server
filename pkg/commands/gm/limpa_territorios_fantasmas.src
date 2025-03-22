@@ -1,0 +1,102 @@
+// ==========================================
+// limpa_territorios_fantasmas.src
+// Script para limpar territórios "fantasmas" em guildas
+// ==========================================
+
+use uo;
+use os;
+use datafile;
+use guilds;
+
+include ":faccao:faccao_constants";
+
+program limpa_territorios_fantasmas(who)
+    if (!who || !who.cmdlevel)
+        return SendSysMessage(who, "Você não tem permissão para executar este comando.");
+    endif
+    
+    SendSysMessage(who, "Iniciando limpeza de territórios fantasmas...");
+    
+    // Obter lista de territórios reais do datafile
+    var rect_df := OpenDataFile(":architect:areas");
+    if (rect_df == error)
+        return SendSysMessage(who, "Erro ao abrir datafile de áreas.");
+    endif
+    
+    var territorios_reais := dictionary{};
+    foreach elem_name in (rect_df.keys())
+        var elem := rect_df.FindElement(elem_name);
+        var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+        
+        // Registrar tanto o nome quanto o ID (se disponível)
+        territorios_reais[elem_name] := 1;
+        if (territory_id)
+            territorios_reais[territory_id] := 1;
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    SendSysMessage(who, "Encontrados " + territorios_reais.keys().size() + " territórios reais.");
+    
+    // Verificar todas as guildas
+    var guilds := ListGuilds();
+    var total_corrigidos := 0;
+    
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (!guild)
+            continue;
+        endif
+        
+        var guild_name := guild.GetProp("name");
+        if (!guild_name)
+            guild_name := guild.guildname;
+        endif
+        
+        var territories := guild.GetProp("territories");
+        if (!territories || typeof(territories) != "Array")
+            continue;
+        endif
+        
+        SendSysMessage(who, "Verificando guilda: " + guild_name + " - " + territories.size() + " territórios");
+        
+        // Criar uma nova lista apenas com territórios válidos
+        var valid_territories := array{};
+        var deleted_count := 0;
+        
+        foreach territory in territories
+            var is_valid := 0;
+            
+            // Verificar se o território existe no datafile
+            if (typeof(territory) == "String" && territorios_reais.exists(territory))
+                is_valid := 1;
+            elseif (typeof(territory) == "Struct" && territory.name && territorios_reais.exists(territory.name))
+                is_valid := 1;
+            elseif (typeof(territory) == "Struct" && territory.id && territorios_reais.exists(territory.id))
+                is_valid := 1;
+            endif
+            
+            if (is_valid)
+                valid_territories.append(territory);
+            else
+                deleted_count += 1;
+                PrintTextAbove(who, "Removendo território fantasma: " + territory);
+            endif
+            
+            sleepms(2);
+        endforeach
+        
+        // Atualizar a guilda se necessário
+        if (deleted_count > 0)
+            guild.SetProp("territories", valid_territories);
+            total_corrigidos += deleted_count;
+            SendSysMessage(who, "Removidos " + deleted_count + " territórios fantasmas da guilda " + guild_name);
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    SendSysMessage(who, "Limpeza concluída. Total de " + total_corrigidos + " territórios fantasmas removidos.");
+    return 1;
+endprogram

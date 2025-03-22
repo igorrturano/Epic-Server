@@ -13,6 +13,30 @@ endif
 // Definir o intervalo de ciclo em segundos (1 hora)
 const CYCLE_WAIT := 3600;
 
+// Iniciar o processador de atualizações de recursos
+var update_script := start_script(":faccao:process_recursos_updates");
+if (update_script.errortext)
+    SysLog("Erro ao iniciar processador de atualizações: " + update_script.errortext);
+else
+    Print("Starting resource updates processor... ok.");
+endif
+
+// Iniciar o verificador de consistência
+var verify_script := start_script(":faccao:verify_faction_resources");
+if (verify_script.errortext)
+    SysLog("Erro ao iniciar verificador de consistência: " + verify_script.errortext);
+else
+    Print("Starting resources consistency verifier... ok.");
+endif
+
+// NOVO: Iniciar o sistema de registro de guildas
+var guild_registry := start_script(":faccao:guild_registry");
+if (guild_registry.errortext)
+    SysLog("Erro ao iniciar o sistema de registro de guildas: " + guild_registry.errortext);
+else
+    Print("Starting guild registry system... ok.");
+endif
+
 // Inicia o controlador de recursos territoriais com controle de tempo
 function start_resource_controller()
     var last_time := CInt(GetGlobalProperty("last_execution"));
@@ -28,9 +52,9 @@ function start_resource_controller()
     
     if (should_execute)
         Print("Iniciando ResourceController imediatamente.");
-        var script := start_script("ResourceController");
-        if (script.errortext)
-            SysLog("Erro ao iniciar o sistema de recursos: " + script.errortext);
+        var resource_script := start_script("ResourceController");
+        if (resource_script.errortext)
+            SysLog("Erro ao iniciar o sistema de recursos: " + resource_script.errortext);
         else
             Print("Starting territory resource controller... ok.");
             // Armazenar o tempo desta execução

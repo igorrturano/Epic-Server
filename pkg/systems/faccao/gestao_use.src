@@ -14,6 +14,8 @@ include "include/arrays";
 include ":tn:tngumps";
 include ":faccao:include/shared_functions";
 include ":faccao:faccao_constants";
+include ":faccao:include/faccao_resources";
+
 
 
 
@@ -189,9 +191,9 @@ function AdicionarMoldura(byref gump)
         struct{ x := 444, y := 60, width := 8, height := 502, gump := 39928 }
     };
 
-    foreach moldura in molduras
-        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
-    endforeach
+foreach moldura in (molduras)
+    GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+endforeach
 endfunction
 
 function AdicionarBotoesNavegacao(byref gump)
@@ -292,7 +294,7 @@ function ReinoGump(byref gump, item)
         var y := 140; // Começar após os cabeçalhos
         var territorios_mostrados := 0;
         
-        foreach territorio in territorios_visiveis
+        foreach territorio in (territorios_visiveis)
             // Verificar se é capital
             var is_capital := IsTerritoryCapital(territorio.id);
             
@@ -480,10 +482,10 @@ function AdicionarQuadradosRecursos(byref gump)
         struct{ "x" := 630, "y" := 456 }
     };
 
-    foreach quadrado in quadrados
-        GFGumpPicTiled(gump, quadrado.x, quadrado.y, 98, 78, 9354);
-        GFGumpPicTiled(gump, quadrado.x, quadrado.y + 85, 98, 21, 9394);
-    endforeach
+foreach quadrado in (quadrados)
+    GFGumpPicTiled(gump, quadrado.x, quadrado.y, 98, 78, 9354);
+    GFGumpPicTiled(gump, quadrado.x, quadrado.y + 85, 98, 21, 9394);
+endforeach
 endfunction
 
 function AdicionarIconesItens(byref gump)
@@ -498,9 +500,9 @@ function AdicionarIconesItens(byref gump)
         struct{ "x" := 652, "y" := 493, "grafico" := 41779 }
     };
 
-    foreach item in itens
-        GFTilePic(gump, item.x, item.y, item.grafico);
-    endforeach
+foreach item in (itens)
+    GFTilePic(gump, item.x, item.y, item.grafico);
+endforeach
 endfunction
 
 function AdicionarTextosTiposDoacao(byref gump)
@@ -515,9 +517,9 @@ function AdicionarTextosTiposDoacao(byref gump)
         struct{ "x" := 660, "y" := 459, "texto" := RESOURCE_TYPE_JOIAS }
     };
 
-    foreach tipo in tipos
-        GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
-    endforeach
+foreach tipo in (tipos)
+    GFTextLine(gump, tipo.x, tipo.y, 53, tipo.texto);
+endforeach
 endfunction
 
 function AdicionarValoresRecursos(byref gump, recursos)
@@ -536,77 +538,118 @@ function AdicionarValoresRecursos(byref gump, recursos)
         struct{ "x" := 667, "y" := 541, "valor" := recursos.joias }
     };
 
-    foreach pos in posicoes
-        GFTextLine(gump, pos.x, pos.y, 53, CStr(pos.valor));
-    endforeach
+foreach pos in (posicoes)
+    GFTextLine(gump, pos.x, pos.y, 53, CStr(pos.valor));
+endforeach
 
     return 1;
 endfunction
-
 function ObterRecursosBau(item)
-    // Obter a facção e ID do território associados ao item (mesa de gestão)
+    // Registrar o início da função para depuração
+    Print("DEBUG: ObterRecursosBau() iniciada para item: " + item.serial);
+
+    // 1. Obter propriedades fundamentais do item (mesa de gestão)
     var faction_name := GetObjProperty(item, OBJ_FACTION_PROP);
     var territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
+    var chest; // Declara a variável chest uma única vez aqui
     
-    // Se é uma interface específica de facção, obter recursos apenas dessa facção
-    if (faction_name && faction_name != KINGDOM_FACTION)
-        Print("DEBUG: Obtendo recursos para facção específica: " + faction_name);
-        
-        // Primeiro tenta pelo ID do território e facção
-        if (territory_id)
-            foreach item_chest in EnumerateItemsInContainer(0)
-                if ((item_chest.objtype == 0xff11 || item_chest.objtype == 0xba63) && 
-                    GetObjProperty(item_chest, OBJ_FACTION_PROP) == faction_name &&
-                    GetObjProperty(item_chest, TERRITORY_ID_PROP) == territory_id)
-                    Print("DEBUG: Baú encontrado pelo ID do território: " + item_chest.serial);
-                    return ContarItensDoadosNoBau(item_chest);
-                endif
-            endforeach
+    Print("DEBUG: Propriedades da mesa - Facção: " + faction_name + ", Território: " + territory_id);
+    
+    // 2. Se não tiver faction_name, registrar erro e tentar criar um struct vazio
+if (!faction_name || faction_name == error)
+    Print("AVISO: Mesa de gestão sem facção definida - Serial: " + item.serial);
+    return CreateEmptyResourceStruct();
+endif
+    
+    // 3. Verificar se é mesa do reino
+    if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
+        Print("DEBUG: Mesa do Reino, obtendo recursos gerais");
+        return ObterRecursosFaccao();  // This was previously returning ObterRecursosDoReino()
+    endif
+    
+    // 4. A partir daqui, estamos tratando uma mesa de facção específica
+    Print("DEBUG: Procurando baú para facção: " + faction_name);
+    
+    // Estratégia 1: Buscar pelo ID do território (mais específico)
+    if (territory_id)
+        Print("DEBUG: Buscando pelo ID do território: " + territory_id);
+        chest := EncontrarBauPorTerritorioEFaccao(territory_id, faction_name);
+        if (chest)
+            Print("DEBUG: Baú encontrado pelo ID do território: " + chest.serial);
+            return ContarItensDoadosNoBau(chest);
         endif
-        
-        // Tentar encontrar o baú da facção pelo serial salvo na guilda
-        var guild := FindGuildByName(faction_name);
-        if (guild)
-            var guild_obj := FindGuild(guild);
-            if (guild_obj)
-                var chest_serial := guild_obj.GetProp(GUILD_CHEST_PROP);
-                if (chest_serial)
-                    var donation_chest := SystemFindObjectBySerial(chest_serial);
-                    if (donation_chest)
-                        Print("DEBUG: Baú encontrado pelo serial: " + donation_chest.serial);
-                        return ContarItensDoadosNoBau(donation_chest);
+    endif
+    
+    // Estratégia 2: Buscar pelo serial registrado na guilda
+    Print("DEBUG: Buscando pelo serial registrado na guilda: " + faction_name);
+    chest := EncontrarBauPelaGuilda(faction_name);
+    if (chest)
+        Print("DEBUG: Baú encontrado pelo serial na guilda: " + chest.serial);
+        return ContarItensDoadosNoBau(chest);
+    endif
+    
+    // Estratégia 3: Buscar qualquer baú da facção
+    Print("DEBUG: Buscando qualquer baú da facção: " + faction_name);
+    chest := EncontrarQualquerBauDaFaccao(faction_name);
+    if (chest)
+        Print("DEBUG: Baú encontrado pela busca geral: " + chest.serial);
+        return ContarItensDoadosNoBau(chest);
+    endif
+    
+    // Se nenhum baú for encontrado, retornar um struct vazio
+    Print("AVISO: Nenhum baú encontrado para a facção: " + faction_name);
+    return CreateEmptyResourceStruct();
+endfunction
+// Função auxiliar para encontrar baú por território e facção
+function EncontrarBauPorTerritorioEFaccao(territory_id, faction_name)
+    foreach item in EnumerateItemsInContainer(0)
+        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+            GetObjProperty(item, OBJ_FACTION_PROP) == faction_name &&
+            GetObjProperty(item, TERRITORY_ID_PROP) == territory_id)
+            return item;
+        endif
+        sleepms(1); // Para não sobrecarregar o servidor
+    endforeach
+    
+    return 0;
+endfunction
+
+// Função auxiliar para encontrar baú pelo registro na guilda
+function EncontrarBauPelaGuilda(faction_name)
+    var guild := FindGuildByName(faction_name);
+    if (guild)
+        var guild_obj := FindGuild(guild);
+        if (guild_obj)
+            var chest_serial := guild_obj.GetProp(GUILD_CHEST_PROP);
+            if (chest_serial)
+                var donation_chest := SystemFindObjectBySerial(chest_serial);
+                if (donation_chest)
+                    // Verificar se o baú ainda pertence a esta facção
+                    if (GetObjProperty(donation_chest, OBJ_FACTION_PROP) == faction_name)
+                        return donation_chest;
                     endif
                 endif
             endif
         endif
-        
-        // Se não encontrar por ID ou na guilda, procurar por facção
-        Print("DEBUG: Procurando baú por nome/propriedade...");
-        foreach item_chest in EnumerateItemsInContainer(0)
-            if ((item_chest.objtype == 0xff11 || item_chest.objtype == 0xba63) && 
-                GetObjProperty(item_chest, OBJ_FACTION_PROP) == faction_name)
-                Print("DEBUG: Baú encontrado pelo nome/propriedade: " + item_chest.serial);
-                return ContarItensDoadosNoBau(item_chest);
-            endif
-        endforeach
-        
-        // Se não encontrou, retornar um struct vazio
-        Print("DEBUG: Nenhum baú encontrado para facção: " + faction_name);
-        return struct{
-            comida := 0,
-            moedas := 0,
-            couro := 0,
-            metal := 0,
-            madeira := 0,
-            pano := 0,
-            pedras := 0,
-            joias := 0
-        };
     endif
     
-    // Comportamento padrão - obter do datafile (para o "Reino" geral)
-    return ObterRecursosDoReino();
+    return 0;
 endfunction
+
+// Função auxiliar para encontrar qualquer baú da facção
+function EncontrarQualquerBauDaFaccao(faction_name)
+    foreach item in EnumerateItemsInContainer(0)
+        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+            GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
+            return item;
+        endif
+        sleepms(1); // Para não sobrecarregar o servidor
+    endforeach
+    
+    return 0;
+endfunction
+
+
 
 function MostrarInformacoesTerritorio(who, index, item)
     Print("DEBUG-INFO: Iniciando função MostrarInformacoesTerritorio, index: " + index);
@@ -790,8 +833,7 @@ endfunction
 
 
 function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
-    Print("DEBUG-TRANSFER: Iniciando transferência de território com melhorias de acesso");
-    Print("DEBUG-TRANSFER: Dados recebidos - old_faction: " + old_faction);
+    Print("DEBUG-TRANSFER: Iniciando transferência de território com proteção de transações");
     
     // Garantir compatibilidade com ambos os formatos
     var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
@@ -813,8 +855,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     var guild_names := array{};
     var button_id := 1;
     
-    foreach guild in guilds
-        // Tentar obter o nome da guilda de múltiplas fontes
+    foreach guild in (guilds)
         var name := guild.GetProp(FACTION_PROP_NAME);
         if (!name || name == error)
             name := guild.GetProp("name");
@@ -823,16 +864,12 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
             endif
         endif
         
-        if (name)
-            // Não incluir a facção atual na lista
-            if (name != old_faction)
-                guild_names.append(name);
-                GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, button_id);
-                GFTextLine(gump, 60, y, 1153, name);
-                y += 25;
-                button_id += 1;
-                Print("DEBUG-TRANSFER: Adicionada opção de facção: " + name);
-            endif
+        if (name && name != old_faction)
+            guild_names.append(name);
+            GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, button_id);
+            GFTextLine(gump, 60, y, 1153, name);
+            y += 25;
+            button_id += 1;
         endif
         sleepms(2);
     endforeach
@@ -841,60 +878,48 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     GFAddButton(gump, 30, y + 20, 2117, 2118, GF_CLOSE_BTN, 0);
     GFTextLine(gump, 60, y + 20, 2100, "Cancelar");
     
-    Print("DEBUG-TRANSFER: Total de opções de facção: " + guild_names.size());
-    
     // Enviar gump e obter resposta
     var input := GFSendGump(who, gump);
     var choice := input[0];
-    Print("DEBUG-TRANSFER: Escolha do usuário (botão): " + choice);
     
     // Se clicou em Cancelar ou fechou o gump
     if (choice == 0)
-        Print("DEBUG-TRANSFER: Transferência cancelada pelo usuário");
         return 0;
     endif
     
     // Obter a facção selecionada pelo índice do botão
     var new_faction := guild_names[choice];
-    Print("DEBUG-TRANSFER: Nova facção selecionada: " + new_faction);
     
     if (YesNo(who, "Transferir controle de " + territorio_nome + " para " + new_faction + "?"))
-        Print("DEBUG-TRANSFER: Transferência confirmada pelo usuário");
+        // Iniciar uma transação para operação atômica
+        var transaction_data := struct{
+            "territorio_id" := territorio_id,
+            "territorio_nome" := territorio_nome,
+            "faccao_original" := old_faction,
+            "faccao_nova" := new_faction
+        };
         
-        // ===== NOVA ETAPA: ATUALIZAR PERMISSÕES DOS MEMBROS DA NOVA FACÇÃO =====
-        Print("DEBUG-TRANSFER: Atualizando permissões dos membros da nova facção");
-        
-        // Garantir que todos os players da nova facção tenham suas permissões atualizadas
-        var new_guild := FindGuildByName(new_faction);
-        if (new_guild)
-            Print("DEBUG-TRANSFER: Guilda da nova facção encontrada: " + new_guild);
-            var new_guild_obj := FindGuild(new_guild);
-            if (new_guild_obj)
-                Print("DEBUG-TRANSFER: Objeto da guilda da nova facção recuperado");
-                // Atualizar a lista de membros e seus cargos
-                foreach member in (new_guild_obj.members)
-                    var player := SystemFindObjectBySerial(member.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
-                    if (player)
-                        // Garantir que todos os membros tenham a propriedade faction atualizada
-                        SetObjProperty(player, "faction", new_faction);
-                        
-                        // Garantir que os oficiais tenham seus cargos definidos corretamente
-                        if (member.guild_title in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
-                            SetObjProperty(player, "guild_rank", member.guild_title);
-                            Print("DEBUG-TRANSFER: Atualizado cargo de " + player.name + " para " + member.guild_title);
-                        endif
-                    endif
-                    sleepms(2);
-                endforeach
-                Print("DEBUG-TRANSFER: Permissões dos membros atualizadas");
+        // Capturar seriais dos objetos originais para possível reversão
+        var seriais_df := OpenDataFile(":faccao:seriais");
+        if (seriais_df)
+            var territorios_seriais := seriais_df.GetProp("territorios");
+            if (territorios_seriais && territorios_seriais[territorio_id])
+                transaction_data.seriais_originais := territorios_seriais[territorio_id];
             endif
         endif
         
+        // Iniciar a transação
+        var transaction_id := IniciarTransacao("transferir_territorio", transaction_data);
+        if (transaction_id == error)
+            SendSysMessage(who, "Erro ao iniciar transação. Transferência cancelada.");
+            return 0;
+        endif
+        
+        SendSysMessage(who, "Processando: Iniciando transferência de território...");
+        
         // ===== ETAPA 1: LIMPAR OS OBJETOS EXISTENTES =====
-        Print("DEBUG-TRANSFER: ETAPA 1 - Remover objetos existentes");
         SendSysMessage(who, "Processando: Removendo objetos existentes...");
         
-        // Usar o script dedicado para limpar os objetos
         var territorio_realm := elem.GetProp("Realm");
         if (!territorio_realm)
             territorio_realm := "britannia"; // Padrão se não encontrar
@@ -903,62 +928,42 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         var script := start_script(":faccao:limpa_territorio", array{territorio_id, old_faction, who, territorio_realm});
         if (script == error)
             SendSysMessage(who, "Erro ao iniciar o script de limpeza: " + script);
-            Print("ERRO AO INICIAR SCRIPT: " + script);
+            DesfazerTransacao(transaction_id);
             return 0;
         endif
         
-        // Aguardar limpeza ser concluída (3 segundos)
+        // Aguardar limpeza ser concluída
         Sleep(3);
         
-        // ===== ETAPA 2: REMOVER TERRITÓRIO DA FACÇÃO ANTIGA =====
-        Print("DEBUG-TRANSFER: ETAPA 2 - Remover território da facção antiga");
-        SendSysMessage(who, "Processando: Atualizando registros de facção...");
+        // ===== ETAPA 2: ATUALIZAR O DATAFILE DE ÁREAS =====
+        elem.SetProp("Faction", new_faction);
+        elem.SetProp(TERRITORY_FACTION_PROP, new_faction);
         
-        // Remover da facção antiga
+        // ===== ETAPA 3: ATUALIZAR AS GUILDAS =====
+        
+        // 3.1 Remover da facção antiga
         var old_guild := FindGuildByName(old_faction);
         if (old_guild)
-            Print("DEBUG-TRANSFER: Guilda antiga encontrada: " + old_guild);
             var old_guild_obj := FindGuild(old_guild);
             if (old_guild_obj)
-                Print("DEBUG-TRANSFER: Objeto da guilda antiga recuperado");
                 var old_territories := old_guild_obj.GetProp("territories");
                 if (old_territories)
-                    Print("DEBUG-TRANSFER: Lista de territórios da facção antiga recuperada");
-                    
                     // Criar nova lista sem o território removido
-                    var new_territories := array{};
+                    var new_old_territories := array{};
                     foreach terr in old_territories
-                        if ((TypeOf(terr) == "Struct" && terr.id != territorio_id) ||
-                            (TypeOf(terr) == "String" && terr != territorio_nome))
-                            new_territories.append(terr);
+                        if (terr != territorio_id && terr != territorio_nome)
+                            new_old_territories.append(terr);
                         endif
                         sleepms(2);
                     endforeach
                     
-                    old_guild_obj.SetProp("territories", new_territories);
-                    Print("DEBUG-TRANSFER: Território removido da lista da facção antiga");
+                    old_guild_obj.SetProp("territories", new_old_territories);
                 endif
             endif
         endif
         
-        // ===== ETAPA 3: ATUALIZAR O DATAFILE DE ÁREAS =====
-        Print("DEBUG-TRANSFER: ETAPA 3 - Atualizar datafile de áreas");
-        
-        // Atualizar propriedades no datafile
-        elem.SetProp("Faction", new_faction);
-        elem.SetProp(TERRITORY_FACTION_PROP, new_faction);
-        Print("DEBUG-TRANSFER: Propriedades do território atualizadas para: " + new_faction);
-        
-        // ===== ETAPA 4: ADICIONAR O TERRITÓRIO À NOVA FACÇÃO =====
-        Print("DEBUG-TRANSFER: ETAPA 4 - Adicionar território à nova facção");
-        
-        // Criar struct com ID e nome
-        var territory_info := struct{
-            "name" := territorio_nome,
-            "id" := territorio_id
-        };
-        
-        // Verificar se ainda temos a referência para a guilda da nova facção
+        // 3.2 Adicionar à nova facção
+        var new_guild := FindGuildByName(new_faction);
         if (new_guild)
             var new_guild_obj := FindGuild(new_guild);
             if (new_guild_obj)
@@ -970,8 +975,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
                 // Verificar se já existe
                 var exists := 0;
                 foreach terr in new_territories
-                    if ((TypeOf(terr) == "Struct" && terr.id == territorio_id) ||
-                        (TypeOf(terr) == "String" && terr == territorio_nome))
+                    if (terr == territorio_id || terr == territorio_nome)
                         exists := 1;
                         break;
                     endif
@@ -979,16 +983,14 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
                 endforeach
                 
                 if (!exists)
-                    new_territories.append(territory_info);
+                    new_territories.append(territorio_id);
                 endif
                 
                 new_guild_obj.SetProp("territories", new_territories);
-                Print("DEBUG-TRANSFER: Território adicionado à lista da nova facção");
             endif
         endif
         
-        // ===== ETAPA 5: CRIAR NOVOS OBJETOS PARA A NOVA FACÇÃO =====
-        Print("DEBUG-TRANSFER: ETAPA 5 - Criar novos objetos para a nova facção");
+        // ===== ETAPA 4: CRIAR NOVOS OBJETOS PARA A NOVA FACÇÃO =====
         SendSysMessage(who, "Processando: Criando novos objetos para a facção...");
         
         // Obter coordenadas do território
@@ -1006,151 +1008,80 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
             var center_y := CInt((y1 + y2) / 2);
             var center_z := GetMapInfo(center_x, center_y, realm).z;
             
-            // 1. Criar o baú primeiro
-            Print("DEBUG-TRANSFER: Criando baú no centro do território");
+            // 4.1 Criar o baú
             var chest := CreateItemAtLocation(center_x, center_y, center_z, 0xFF11, 1, realm);
-            if (chest)
-                Print("DEBUG-TRANSFER: Baú criado com sucesso (Serial: " + chest.serial + ")");
-                
-                // NOVO: Garantir que o objeto seja completamente novo
-                DestroyItem(chest);
-                chest := CreateItemAtLocation(center_x, center_y, center_z, 0xFF11, 1, realm);
-                
-                chest.movable := 0;
-                
-                // NOVO: Limpar completamente todas as propriedades antes de adicionar novas
-                foreach prop_name in GetObjPropertyNames(chest)
-                    EraseObjProperty(chest, prop_name);
-                    sleepms(1);
-                endforeach
-                
-                // Definir propriedades do baú explicitamente
-                SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
-                SetObjProperty(chest, "FactionName", new_faction);
-                SetObjProperty(chest, TERRITORY_ID_PROP, territorio_id);
-                
-                // Definir o ID único do baú com formato padronizado
-                var chest_id := new_faction + "_" + territorio_id;
-                SetObjProperty(chest, CHEST_ID_PROP, chest_id);
-                
-                // Verificar se as constantes estão definidas
-                if (IsDefined("UNIQUE_ID_PROP") && IsDefined("ITEM_TYPE_BAU"))
-                    var unique_id := new_faction + ":" + ITEM_TYPE_BAU + ":" + territorio_id;
-                    SetObjProperty(chest, UNIQUE_ID_PROP, unique_id);
-                endif
-                
-                // NOVO: Forçar o reset de cache
-                SetObjProperty(chest, "reset_faction_cache", 1);
-                
-                // Nome do baú
-                var nome_bau := "Baú de Doações de " + new_faction;
-                if (territorio_id)
-                    nome_bau += " - " + territorio_id;
-                endif
-                SetName(chest, nome_bau);
-                
-                // Scripts do baú
-                chest.usescript := ":faccao:baudoacao/use";
-                SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
-                SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
-                SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
-                SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
-                
-                Print("DEBUG-TRANSFER: Baú configurado com sucesso");
-            else
-                Print("DEBUG-TRANSFER: ERRO - Falha ao criar baú");
+            if (!chest)
+                DesfazerTransacao(transaction_id);
+                SendSysMessage(who, "Erro ao criar baú. Transferência revertida.");
+                return 0;
             endif
             
-            // 2. Criar a mesa de gestão
-            Print("DEBUG-TRANSFER: Criando mesa de gestão");
+            chest.movable := 0;
+            SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
+            SetObjProperty(chest, "FactionName", new_faction);
+            SetObjProperty(chest, TERRITORY_ID_PROP, territorio_id);
+            
+            var chest_id := new_faction + "_" + territorio_id;
+            SetObjProperty(chest, CHEST_ID_PROP, chest_id);
+            
+            var nome_bau := "Baú de Doações de " + new_faction;
+            if (territorio_id)
+                nome_bau += " - " + territorio_id;
+            endif
+            SetName(chest, nome_bau);
+            
+            chest.usescript := ":faccao:baudoacao/use";
+            SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
+            SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+            SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
+            SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+            
+            // 4.2 Criar a mesa de gestão
             var table := CreateItemAtLocation(center_x+1, center_y, center_z, 0xFE5C, 1, realm);
-            if (table)
-                Print("DEBUG-TRANSFER: Mesa criada com sucesso (Serial: " + table.serial + ")");
-                
-                // NOVO: Garantir que o objeto seja completamente novo
-                DestroyItem(table);
-                table := CreateItemAtLocation(center_x+1, center_y, center_z, 0xFE5C, 1, realm);
-                
-                table.movable := 0;
-                
-                // NOVO: Limpar completamente todas as propriedades antes de adicionar novas
-                foreach prop_name in GetObjPropertyNames(table)
-                    EraseObjProperty(table, prop_name);
-                    sleepms(1);
-                endforeach
-                
-                // Definir propriedades da mesa explicitamente
-                SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
-                SetObjProperty(table, "FactionName", new_faction);
-                SetObjProperty(table, TERRITORY_ID_PROP, territorio_id);
-                
-                // Verificar se as constantes estão definidas
-                if (IsDefined("UNIQUE_ID_PROP") && IsDefined("ITEM_TYPE_MESA"))
-                    var unique_id := new_faction + ":" + ITEM_TYPE_MESA + ":" + territorio_id;
-                    SetObjProperty(table, UNIQUE_ID_PROP, unique_id);
-                endif
-                
-                // Nome da mesa
-                var nome_mesa := "Mesa de Gestão de " + new_faction;
-                if (territorio_id)
-                    nome_mesa += " - " + territorio_id;
-                endif
-                SetName(table, nome_mesa);
-                
-                // Script da mesa
-                table.usescript := ":faccao:gestao_use";
-                
-                Print("DEBUG-TRANSFER: Mesa configurada com sucesso");
-            else
-                Print("DEBUG-TRANSFER: ERRO - Falha ao criar mesa");
+            if (!table)
+                DesfazerTransacao(transaction_id);
+                DestroyItem(chest); // Limpar o baú criado
+                SendSysMessage(who, "Erro ao criar mesa de gestão. Transferência revertida.");
+                return 0;
             endif
             
-            // 3. Criar o mural de recrutamento
-            Print("DEBUG-TRANSFER: Criando mural de recrutamento");
+            table.movable := 0;
+            SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
+            SetObjProperty(table, "FactionName", new_faction);
+            SetObjProperty(table, TERRITORY_ID_PROP, territorio_id);
+            
+            var nome_mesa := "Mesa de Gestão de " + new_faction;
+            if (territorio_id)
+                nome_mesa += " - " + territorio_id;
+            endif
+            SetName(table, nome_mesa);
+            
+            table.usescript := ":faccao:gestao_use";
+            
+            // 4.3 Criar o mural de recrutamento
             var mural := CreateItemAtLocation(center_x, center_y+1, center_z, 0x46AE, 1, realm);
-            if (mural)
-                Print("DEBUG-TRANSFER: Mural criado com sucesso (Serial: " + mural.serial + ")");
-                
-                // NOVO: Garantir que o objeto seja completamente novo
-                DestroyItem(mural);
-                mural := CreateItemAtLocation(center_x, center_y+1, center_z, 0x46AE, 1, realm);
-                
-                mural.movable := 0;
-                
-                // NOVO: Limpar completamente todas as propriedades antes de adicionar novas
-                foreach prop_name in GetObjPropertyNames(mural)
-                    EraseObjProperty(mural, prop_name);
-                    sleepms(1);
-                endforeach
-                
-                // Definir propriedades do mural explicitamente
-                SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
-                SetObjProperty(mural, "FactionName", new_faction);
-                SetObjProperty(mural, TERRITORY_ID_PROP, territorio_id);
-                
-                // Verificar se as constantes estão definidas
-                if (IsDefined("UNIQUE_ID_PROP") && IsDefined("ITEM_TYPE_MURAL")) 
-                    var unique_id := new_faction + ":" + ITEM_TYPE_MURAL + ":" + territorio_id;
-                    SetObjProperty(mural, UNIQUE_ID_PROP, unique_id);
-                endif
-                
-                // Nome do mural
-                var nome_mural := "Mural de Recrutamento de " + new_faction;
-                if (territorio_id)
-                    nome_mural += " - " + territorio_id;
-                endif
-                SetName(mural, nome_mural);
-                
-                // Script do mural
-                mural.usescript := ":faccao:faccao";
-                
-                Print("DEBUG-TRANSFER: Mural configurado com sucesso");
-            else
-                Print("DEBUG-TRANSFER: ERRO - Falha ao criar mural");
+            if (!mural)
+                DesfazerTransacao(transaction_id);
+                DestroyItem(chest);
+                DestroyItem(table);
+                SendSysMessage(who, "Erro ao criar mural. Transferência revertida.");
+                return 0;
             endif
             
-            // Salvar os seriais no datafile
-            Print("DEBUG-TRANSFER: Salvando seriais no datafile");
+            mural.movable := 0;
+            SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
+            SetObjProperty(mural, "FactionName", new_faction);
+            SetObjProperty(mural, TERRITORY_ID_PROP, territorio_id);
+            
+            var nome_mural := "Mural de Recrutamento de " + new_faction;
+            if (territorio_id)
+                nome_mural += " - " + territorio_id;
+            endif
+            SetName(mural, nome_mural);
+            
+            mural.usescript := ":faccao:faccao";
+            
+            // 4.4 Salvar os seriais no datafile
             var seriais_df := OpenDataFile(":faccao:seriais");
             if (seriais_df == error)
                 seriais_df := CreateDataFile(":faccao:seriais");
@@ -1170,27 +1101,30 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
                 };
                 
                 seriais_df.SetProp("territorios", territorios_seriais);
-                Print("DEBUG-TRANSFER: Seriais salvos no datafile com sucesso");
             else
-                Print("DEBUG-TRANSFER: ERRO - Falha ao acessar datafile de seriais");
+                DesfazerTransacao(transaction_id);
+                DestroyItem(chest);
+                DestroyItem(table);
+                DestroyItem(mural);
+                SendSysMessage(who, "Erro ao registrar seriais. Transferência revertida.");
+                return 0;
             endif
         else
-            Print("DEBUG-TRANSFER: ERRO - Coordenadas inválidas para o território");
+            DesfazerTransacao(transaction_id);
             SendSysMessage(who, "Erro: Coordenadas inválidas para o território.");
+            return 0;
         endif
         
-        // ===== ETAPA 6: NOTIFICAR O CONTROLADOR DE RECURSOS =====
-        Print("DEBUG-TRANSFER: ETAPA 6 - Notificar controlador de recursos");
+        // ===== ETAPA 5: NOTIFICAR O CONTROLADOR DE RECURSOS =====
         NotificarControladorRecursos(territorio_nome);
         
-Print("DEBUG-TRANSFER: Processo de transferência concluído com sucesso");
-SendSysMessage(who, "Território transferido com sucesso para " + new_faction + "!");
-return 1; // Indica que deve sair do gump
-    else
-        Print("DEBUG-TRANSFER: Transferência cancelada na confirmação");
+        // Finalizar a transação com sucesso
+        FinalizarTransacao(transaction_id);
+        
+        SendSysMessage(who, "Território transferido com sucesso para " + new_faction + "!");
+        return 1; // Indica que deve sair do gump
     endif
     
-    Print("DEBUG-TRANSFER: Saindo da função de transferência");
     return 0;
 endfunction
 
@@ -1809,6 +1743,10 @@ endfunction
 
 // Função auxiliar para verificar se uma constante está definida
 function IsDefined(constant_name)
+    if (!constant_name)
+        return 0;
+    endif
+    
     case (constant_name)
         "UNIQUE_ID_PROP": return (TypeOf(UNIQUE_ID_PROP) != "error");
         "ITEM_TYPE_BAU": return (TypeOf(ITEM_TYPE_BAU) != "error");
@@ -1816,4 +1754,92 @@ function IsDefined(constant_name)
         "ITEM_TYPE_MURAL": return (TypeOf(ITEM_TYPE_MURAL) != "error");
         default: return 0;
     endcase
+endfunction
+
+function ShowPermissionsManagementGump(who, faction_name)
+    // Verificação inicial de permissões
+    if (!who.cmdlevel && !IsGuildLeader(who))
+        SendSysMessage(who, "Apenas líderes de facção podem gerenciar permissões.");
+        return 0;
+    endif
+    
+    // Criar gump
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 500, 400);
+    GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 470, 370);
+    
+    // Título
+    GFTextMid(gump, 10, 25, 480, 2100, "Gerenciamento de Permissões - " + faction_name);
+    
+    // Cabeçalho da lista
+    var y := 60;
+    GFTextLine(gump, 25, y, 2100, "Membros com Permissão Especial:");
+    y += 25;
+    
+    // Buscar membros com permissão
+    var guild := FindGuildByName(faction_name);
+    if (!guild)
+        return 0;
+    endif
+    
+    var guild_obj := FindGuild(guild);
+    if (!guild_obj)
+        return 0;
+    endif
+    
+    // Lista de permissões
+    var special_permissions := guild_obj.GetProp("chest_permissions");
+    if (!special_permissions)
+        special_permissions := dictionary{};
+    endif
+    
+    // Mostrar membros
+    if (special_permissions.keys().size() > 0)
+        foreach serial in (special_permissions.keys())
+            var member := SystemFindObjectBySerial(serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+            if (!member)
+                continue;
+            endif
+            
+            var permission := special_permissions[serial];
+            GFTextLine(gump, 30, y, 2100, member.name + " - " + permission);
+            GFAddButton(gump, 390, y, 2117, 2118, GF_CLOSE_BTN, 100 + _serial_iter);
+            y += 25;
+            sleepms(2);
+        endforeach
+    else
+        GFTextLine(gump, 30, y, 2100, "Nenhum membro com permissão especial configurada.");
+        y += 25;
+    endif
+    
+    // Botão para adicionar novo
+    y += 20;
+    GFAddButton(gump, 25, y, 2117, 2118, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 50, y, 2103, "Adicionar Permissão Especial para Membro");
+    
+    // Processar resposta
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        return 0;
+    endif
+    
+    if (input[0] == 1)
+        AddSpecialPermission(who, faction_name);
+        return 1;
+    endif
+    
+    if (input[0] >= 100)
+        var index := input[0] - 100;
+        var keys := special_permissions.keys();
+        if (index >= 0 && index < keys.size())
+            var serial := keys[index+1]; // POL usa arrays com base 1
+            special_permissions.erase(serial);
+            guild_obj.SetProp("chest_permissions", special_permissions);
+            SendSysMessage(who, "Permissão especial removida.");
+            ShowPermissionsManagementGump(who, faction_name);
+        endif
+    endif
+    
+    return 1;
 endfunction

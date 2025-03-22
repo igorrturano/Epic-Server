@@ -8,6 +8,7 @@ use file;
 include "include/say";
 include ":faccao:include/shared_functions";
 include ":architect:include/systemclock";
+include ":faccao:include/faccao_resources";
 
 
 
@@ -51,10 +52,14 @@ function InitializeSchedule()
     
     foreach rect_name in (rect_df.keys())
         var elem := rect_df.FindElement(rect_name);
+        if (!elem || elem == error)
+            continue;
+        endif
+        
         var faction := elem.GetProp("Faction");
         
         // Verificar apenas territórios controlados
-        if (faction && faction != "Selvagem")
+        if (faction && faction != error && faction != "Selvagem")
             var next_time := CInt(elem.GetProp("NextResourceTime"));
             if (!next_time)
                 // Se não tiver próxima verificação, configurar
@@ -107,32 +112,142 @@ function ProcessTerritory(territory_name, current_time)
         return 1;
     endif
     
-    var next_time := CInt(elem.GetProp("NextResourceTime"));
+    var next_time_prop := elem.GetProp("NextResourceTime");
+    var next_time := 0;
+
+    if (next_time_prop && next_time_prop != error)
+        next_time := CInt(next_time_prop);
+    endif
+
     if (next_time > current_time)
-        // Ainda não está na hora
-        return 1;
+        return 1; // Ainda não é hora
     endif
     
-    // Resto da lógica de geração de recursos...
-    var faction := elem.GetProp("Faction");
+    // Verificar e obter dados do território de forma robusta
+    var faction := elem.GetProp(TERRITORY_FACTION_PROP);
+    if (!faction)
+        faction := elem.GetProp("Faction"); // Compatibilidade legada
+    endif
+    
     var resource_interval := CInt(elem.GetProp("ResourceInterval"));
     var resource_amount := CInt(elem.GetProp("ResourceAmount"));
-    var resources := elem.GetProp("Resources");
+    var resources_string := elem.GetProp("Resources");
     
-    if (resource_interval && resource_amount && resources)
-        Print("Gerando recursos para território: " + territory_name);
+    // Pré-processamento dos recursos para validação
+    var resources := ProcessResourceString(resources_string);
+    
+    // Verificar validade dos dados
+    var validade := VerificarValidadeDosDados(elem, faction, resources, resource_amount);
+    if (!validade.valido)
+        Print("ERRO: " + validade.mensagem);
+        // Agendar tentativa futura e registrar falha
+        RescheduleTerritory(territory_name, current_time + 300); // 5 minutos
+        RegistrarFalhaDeCriacao(elem, faction, territory_name, resources_string);
+        return 0;
+    endif
+    
+    Print("Gerando recursos para território: " + territory_name);
+    
+    // Geração dos recursos com tratamento de erros mais detalhado
+    var success := GenerateResourcesForTerritory(elem, faction, resource_amount);
+    if (success)
+        // Configurar próxima geração
+        var next_gen_time := current_time + (resource_interval * 60);
+        elem.SetProp("NextResourceTime", next_gen_time);
+        next_territory_checks[territory_name] := next_gen_time;
         
-        if (GenerateResourcesForTerritory(elem, faction, resource_amount))
-            // Configurar próxima geração
-            var next_gen_time := current_time + (resource_interval * 60);
-            elem.SetProp("NextResourceTime", next_gen_time);
-            next_territory_checks[territory_name] := next_gen_time;
-            
-            return 1;
+        Print("Próxima geração para " + territory_name + " agendada para daqui a " + resource_interval + " minutos");
+        return 1;
+    else
+        // Tratar falha na geração
+        Print("ERRO: Falha ao gerar recursos para " + territory_name);
+        
+        // Verificar se devemos tentar criar um baú de emergência
+        var emergency_result := TentarCriarBauEmergencia(faction, territory_name);
+        if (emergency_result)
+            Print("AVISO: Baú de emergência criado. Reagendando geração de recursos.");
+            // Agendar nova tentativa em breve
+            RescheduleTerritory(territory_name, current_time + 120); // 2 minutos
+            return 0;
+        else
+            // Falhou completamente, agendar para muito mais tarde
+            Print("ERRO CRÍTICO: Impossível gerar recursos. Agendando nova tentativa para mais tarde.");
+            RescheduleTerritory(territory_name, current_time + 3600); // 1 hora
+            return 0;
         endif
     endif
     
     return 0;
+endfunction
+
+// Função de tentativa de criação de baú de emergência
+function TentarCriarBauEmergencia(faction_name, territory_name)
+    Print("AVISO: Tentando criar baú de emergência para " + faction_name + " (Território: " + territory_name + ")");
+    
+    var emergency_chest := CreateEmergencyDonationChest(faction_name);
+    if (emergency_chest)
+        // Registrar associação com o território
+        SetObjProperty(emergency_chest, "territory_id", territory_name);
+        SetObjProperty(emergency_chest, "emergency_for_territory", territory_name);
+        
+        // Notificar administradores
+        foreach player in EnumerateOnlineCharacters()
+            if (player.cmdlevel >= 3)
+                SendSysMessageEx(player, "SISTEMA: Baú de emergência criado para facção " + faction_name + 
+                                 " devido a falhas de geração em " + territory_name, SSM_INFO);
+            endif
+        endforeach
+        
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+// Função para registrar inconsistências no log e no datafile
+function RegistrarInconsistencia(container, recursos_antigos, recursos_novos, inconsistencias)
+    var timestamp := polcore().systime;
+    var container_faction := GetObjProperty(container, OBJ_FACTION_PROP);
+    
+    // Criar mensagem detalhada para o log
+    var log_msg := "[" + timestamp + "] Inconsistência no baú " + container.serial + " (Facção: " + container_faction + ")";
+    
+    foreach inc in inconsistencias
+        log_msg += " | " + inc.tipo + ": " + inc.antigo + " -> " + inc.novo + " (Δ" + inc.diferenca + ")";
+    endforeach
+    
+    // Registrar no log do sistema
+    Print("AVISO: " + log_msg);
+    
+    // Salvar no datafile de inconsistências para análise posterior
+    var df := DFOpenDataFile(":faccao:recursos_inconsistencias", DF_CREATE);
+    if (df)
+        var elem := DFFindElement(df, "registros", DF_CREATE);
+        
+        var registros := elem.GetProp("list");
+        if (!registros)
+            registros := array{};
+        endif
+        
+        // Adicionar novo registro
+        registros.append(struct{
+            "tempo" := timestamp,
+            "container" := container.serial,
+            "faction" := container_faction,
+            "antigos" := recursos_antigos,
+            "novos" := recursos_novos,
+            "inconsistencias" := inconsistencias
+        });
+        
+        // Limitar o tamanho do array para não crescer indefinidamente
+        while (registros.size() > 100)
+            registros.erase(1);
+        endwhile
+        
+        elem.SetProp("list", registros);
+    endif
+    
+    return 1;
 endfunction
 
 function RescheduleTerritory(territory_name, new_time)
@@ -192,20 +307,36 @@ function CheckTerritoryResources()
     return 1;
 endfunction
 
-function GenerateResourcesForTerritory(territory_name, faction_name, amount)
-    Print("DEBUG GenerateResources: Iniciando para " + territory_name);
-    
-    var rect_df := OpenDataFile(":architect:areas");
-    if (!rect_df)
-        Print("ERROR: GenerateResourcesForTerritory: Não foi possível abrir o datafile de áreas");
+function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
+    if (!elem || !faction_name || resource_amount <= 0)
+        Print("ERRO: Parâmetros inválidos para geração de recursos");
         return 0;
     endif
     
-    var elem := rect_df.FindElement(territory_name);
-    if (!elem)
-        Print("ERROR: GenerateResourcesForTerritory: Elemento não encontrado " + territory_name);
-        return 0;
+    var territory_name;
+    if (TypeOf(elem) == "String")
+        territory_name := elem;
+        var rect_df := OpenDataFile(":architect:areas");
+        if (!rect_df)
+            Print("ERRO: Não foi possível abrir o datafile de áreas");
+            return 0;
+        endif
+        
+        elem := rect_df.FindElement(territory_name);
+        if (!elem)
+            Print("ERRO: Território não encontrado: " + territory_name);
+            return 0;
+        endif
+    else
+        // Obter nome do território do elemento
+        territory_name := elem.GetProp("Name");
+        if (!territory_name)
+            territory_name := "Desconhecido";
+        endif
     endif
+    
+    Print("DEBUG: Iniciando geração de recursos para território: " + territory_name);
+    Print("DEBUG: Facção: " + faction_name + ", Quantidade: " + resource_amount);
     
     // Obter a facção de forma robusta
     var faction := elem.GetProp(TERRITORY_FACTION_PROP);
@@ -214,7 +345,7 @@ function GenerateResourcesForTerritory(territory_name, faction_name, amount)
     endif
     
     if (!faction || faction == error)
-        Print("ERROR: GenerateResourcesForTerritory: Invalid faction name");
+        Print("ERRO: Informação de facção inválida para o território");
         return 0;
     endif
 
@@ -224,185 +355,521 @@ function GenerateResourcesForTerritory(territory_name, faction_name, amount)
         return 0;
     endif
     
-    Print("DEBUG GenerateResources: Facção do território: " + faction);
+    // Verificar se a facção passada corresponde à do território
+    if (faction_name != faction)
+        Print("AVISO: Facção passada (" + faction_name + ") não corresponde à facção do território (" + faction + ")");
+        // Usar a facção correta
+        faction_name := faction;
+    endif
     
-    // Obter a string de recursos
+    Print("DEBUG: Facção confirmada: " + faction_name);
+    
+    // Obter o ID do território
+    var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+    if (!territory_id)
+        territory_id := elem.GetProp("Name"); // Fallback para nome do território
+        Print("DEBUG: Usando nome do território como ID: " + territory_id);
+    endif
+    
+    // Obter a string de recursos de forma segura
     var resources_string := elem.GetProp("Resources");
     if (!resources_string)
-        Print("ERROR: GenerateResourcesForTerritory: Nenhum recurso configurado");
+        Print("ERRO: Nenhum recurso configurado para o território");
         return 0;
     endif
     
-    // Debugging específico para ver o que está na string de recursos
-    DebugResourcesList(resources_string);
+    // Verificar o que está na string de recursos para depuração
+    Print("DEBUG: String de recursos: " + resources_string);
     
-    // Usar SplitWords com vírgula como delimitador
-    var resources := SplitWords(resources_string, ",");
+    // Processar a lista de recursos com tratamento robusto
+    var resources := ProcessResourceString(resources_string);
     
-    // Remover qualquer elemento vazio ou só com espaços
-    var cleaned_resources := array{};
-    foreach res in (resources)
-        res := Trim(res);
-        if (res != "")
-            cleaned_resources.append(res);
-        endif
-        sleepms(2);
-    endforeach
-    
-    // Se não encontrou recursos válidos, retornar
-    if (cleaned_resources.size() < 1)
-        Print("ERRO: Nenhum recurso válido encontrado após limpeza");
+    if (!resources || resources.size() < 1)
+        Print("ERRO: Nenhum recurso válido encontrado após processamento");
         return 0;
     endif
     
-    Print("DEBUG: Recursos válidos após limpeza: " + cleaned_resources.join(", "));
+    Print("DEBUG: " + resources.size() + " recursos válidos identificados");
     
-    // Encontrar o baú de doações
-    var donation_chest := FindDonationChest(faction_name);
+    // Encontrar o baú de doações com tratamento de erros - USANDO TERRITORY_ID
+    var donation_chest := FindDonationChest(faction_name, territory_id);
     if (!donation_chest)
-        Print("ERRO: Baú de doações não encontrado para facção: " + faction_name);
+        Print("ERRO: Baú de doações não encontrado ou inacessível para facção: " + faction_name);
+        
+        // Tentar segunda busca apenas pela facção
+        if (territory_id)
+            Print("DEBUG: Tentando busca secundária apenas pela facção");
+            donation_chest := FindDonationChest(faction_name);
+        endif
+        
+        // Se ainda não encontrou, tentar criar um baú de emergência
+        if (!donation_chest)
+            Print("AVISO: Criando baú de emergência para " + faction_name);
+            donation_chest := CreateEmergencyDonationChest(faction_name);
+            
+            if (!donation_chest)
+                Print("ERRO CRÍTICO: Impossível criar ou localizar baú de doações");
+                return 0;
+            endif
+        endif
+    endif
+    
+    // Verificar a validade do baú encontrado
+    if (!IsValidContainer(donation_chest))
+        Print("ERRO: Baú de doações encontrado não é válido ou está inacessível");
         return 0;
     endif
     
-    // Informações sobre o baú encontrado
-    Print("DEBUG: Baú encontrado - Serial: " + donation_chest.serial + 
-          ", ObjType: 0x" + Hex(donation_chest.objtype) + 
-          ", Container: " + (donation_chest.container ? donation_chest.container.serial : "none") + 
-          ", Movable: " + donation_chest.movable);
+    // Verificar se o baú tem espaço
+    if (!HasContainerSpace(donation_chest, resources.size()))
+        Print("AVISO: Baú de doações pode estar cheio, alguns recursos podem não ser adicionados");
+        // Continuar mesmo assim, tentando adicionar o que for possível
+    endif
     
-    // Verificar o estado de bloqueio do baú
-    Print("DEBUG: Baú está locked? " + donation_chest.locked);
+    Print("DEBUG: Iniciando adição de recursos ao baú " + donation_chest.serial);
     
-    // Listar itens existentes no baú
-    Print("DEBUG: Itens existentes no baú:");
-    foreach existing_item in EnumerateItemsInContainer(donation_chest)
-        Print("  - Item: " + existing_item.desc + " (Serial: " + existing_item.serial + ", ObjType: 0x" + Hex(existing_item.objtype) + ")");
-    endforeach
-    
+    // Adicionar cada recurso com tratamento apropriado
     var success_count := 0;
+    var log_entries := array{};
     
-   foreach resource in (cleaned_resources)
-    Print("DEBUG: Processando recurso: '" + resource + "'");
-    
-    // Obter objtype do recurso
-    var objtype := GetResourceObjtype(resource);
-    if (!objtype)
-        Print("ERRO: Tipo de objeto não encontrado para recurso: " + resource);
-        continue;
-    endif
-    
-    // NOVA FUNÇÃO: Verifica se já existe um item deste tipo no baú para empilhar
-    var existing_item := FindExistingResource(donation_chest, objtype);
- if (existing_item)
-    // Empilhar com o item existente - usando a abordagem de substituição
-    Print("DEBUG: Item existente encontrado, empilhando recursos");
-    var qtd_anterior := existing_item.amount;
-    var qtd_total := qtd_anterior + amount;
-    
-    // Salvar as propriedades do item existente
-    var props := dictionary{};
-    foreach prop_name in (GetObjPropertyNames(existing_item))
-        props[prop_name] := GetObjProperty(existing_item, prop_name);
+    foreach resource in (resources)
+        Print("DEBUG: Processando recurso: " + resource);
+        
+        // Obter objtype do recurso
+        var objtype := GetResourceObjtype(resource);
+        if (!objtype)
+            Print("ERRO: Tipo de objeto não encontrado para recurso: " + resource);
+            log_entries.append("Falha ao mapear recurso: " + resource);
+            continue;
+        endif
+        
+        // Obter categoria do recurso
+        var category := GetResourceCategory(resource);
+        if (!category)
+            Print("AVISO: Categoria não determinada para recurso: " + resource + ", usando padrão");
+            category := "metal"; // Valor padrão
+        endif
+        
+        // Preparar as propriedades necessárias para o item
+        var properties := dictionary{
+            "IsKingdomDonation" + category   := 1,
+            "GeneratedForTerritory"          := territory_name,
+            "GeneratedTime"                  := polcore().systime,
+            "GeneratedByFaction"             := faction_name,
+            "CreatedByResourceController"    := 1,
+            "faction"                        := faction_name,  // Importante para o baú ser reconhecido
+            "territory_id"                   := territory_id   // Importante para território
+        };
+        
+        // ABORDAGEM UNIFICADA: Usar SafeCreateItemInContainer
+        var result := SafeCreateItemInContainer(donation_chest, objtype, resource_amount, properties);
+        
+        if (result)
+            success_count += 1;
+            log_entries.append("Recurso criado: " + resource + " x" + resource_amount);
+            Print("DEBUG: Recurso adicionado com sucesso: " + resource + " x" + resource_amount);
+        else
+            // Tentar método alternativo se falhar
+            Print("AVISO: Falha ao criar item usando SafeCreateItemInContainer, tentando método direto");
+            
+            var new_item := CreateItemInContainer(donation_chest, objtype, resource_amount);
+            if (new_item)
+                // Aplicar todas as propriedades
+                foreach prop_name in (properties.keys())
+                    SetObjProperty(new_item, prop_name, properties[prop_name]);
+                    sleepms(1);
+                endforeach
+                
+                success_count += 1;
+                log_entries.append("Recurso criado (método alternativo): " + resource + " x" + resource_amount);
+                Print("DEBUG: Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);
+            else
+                log_entries.append("Falha ao criar recurso: " + resource);
+                Print("ERRO: Falha ao criar recurso: " + resource);
+            endif
+        endif
+        
+        sleepms(10); // Pequena pausa entre criações para não sobrecarregar
     endforeach
     
-    // Registrar o objtype para recriar o item
-    var item_objtype := existing_item.objtype;
+    // Registrar resultados
+    if (success_count > 0)
+        // Atualizar contagem de recursos do baú
+        UpdateResourceCache(donation_chest);
+        
+        // Registrar a atividade no histórico do território
+        var history := elem.GetProp("ResourceHistory");
+        if (!history)
+            history := array{};
+        endif
+        
+        history.append(struct{
+            "time" := polcore().systime,
+            "resources" := resources,
+            "amount" := resource_amount,
+            "success" := success_count,
+            "details" := log_entries,
+            "chest_serial" := donation_chest.serial,
+            "chest_name" := donation_chest.name
+        });
+        
+        // Limitar o histórico a 10 entradas
+        while (history.size() > 10)
+            history.erase(1);
+        endwhile
+        
+        elem.SetProp("ResourceHistory", history);
+        
+        // Notificar líderes sobre o sucesso
+        NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, resource_amount, success_count);
+    endif
     
-    // Destruir o item antigo
-    Print("DEBUG: Destruindo item antigo (Serial: " + existing_item.serial + ")");
-    var destroy_result := DestroyItem(existing_item);
-    Print("DEBUG: Resultado da destruição: " + destroy_result);
+    return success_count;
+endfunction
+
+
+
+
+// Função auxiliar para processar a string de recursos de forma segura
+function ProcessResourceString(resources_string)
+if (!resources_string || resources_string == error)
+    return array{};
+endif
     
-    // Criar um novo item com a quantidade total
-    Print("DEBUG: Criando novo item combinado com quantidade " + qtd_total);
-    var new_item := CreateItemInContainer(donation_chest, item_objtype, qtd_total);
+    // Tentar dividir por diferentes delimitadores
+    var resources := array{};
     
-    if (new_item)
-        // Restaurar propriedades
-        foreach prop_name in (props.keys())
-            SetObjProperty(new_item, prop_name, props[prop_name]);
+    // Primeiro tentar vírgula
+    if (resources_string.find(",") != error)
+        var parts := SplitWords(resources_string, ",");
+        foreach part in (parts)
+            part := Trim(part);
+            if (part != "")
+                resources.append(part);
+            endif
+            sleepms(1);
         endforeach
-        
-        success_count += 1;
-        Print("Recurso empilhado via substituição: " + resource + " x" + amount + " (Total: " + new_item.amount + ")");
     else
-        Print("ERRO: Falha ao criar novo item para empilhamento");
+        // Tentar espaço se não houver vírgulas
+        var parts := SplitWords(resources_string, " ");
+        foreach part in (parts)
+            part := Trim(part);
+            if (part != "")
+                resources.append(part);
+            endif
+            sleepms(1);
+        endforeach
     endif
-else
-    // Criar um novo item
-    Print("DEBUG: Tentando criar " + resource + " (" + Hex(objtype) + ") diretamente no baú");
     
-    var item := CreateItemInContainer(donation_chest, objtype, amount);
+    // Se ainda não temos recursos, tentar uma última abordagem
+    if (resources.size() < 1 && resources_string != "")
+        // Usar a string inteira como um único recurso
+        resources.append(Trim(resources_string));
+    endif
     
-    if (item)
-        Print("DEBUG: Item criado com sucesso diretamente no baú - Serial: " + item.serial);
-        
-        // Definir a propriedade de doação com base no tipo de recurso
-        var category := GetResourceCategory(resource);
-        if (category)
-            SetObjProperty(item, "IsKingdomDonation" + category, 1);
-            Print("DEBUG: Propriedade definida: IsKingdomDonation" + category);
-        else
-            SetObjProperty(item, "IsKingdomDonationMetal", 1); // Padrão
-            Print("DEBUG: Propriedade padrão definida: IsKingdomDonationMetal");
+    return resources;
+endfunction
+
+// Função melhorada para encontrar o baú de doações com mais segurança
+function FindDonationChestSafely(faction_name, territory_id := "")
+    Print("DEBUG: Procurando baú para facção: " + faction_name + ", território: " + territory_id);
+    
+    // Tentar até 3 métodos diferentes
+    var chest := 0;
+    
+    // Método 1: Pelo registro na guilda
+    chest := FindChestByGuildRecord(faction_name);
+    if (chest && chest != error && IsValidContainer(chest))
+        Print("DEBUG: Baú encontrado pelo registro na guilda: " + chest.serial);
+        return chest;
+    endif
+    
+    // Método 2: Pela busca no mundo
+    chest := FindChestInWorld(faction_name, territory_id);
+    if (chest && IsValidContainer(chest))
+        Print("DEBUG: Baú encontrado pela busca no mundo: " + chest.serial);
+        // Atualizar o registro na guilda
+        UpdateGuildChestRecord(faction_name, chest);
+        return chest;
+    endif
+    
+    // Método 3: Pelo registro em datafile
+    chest := FindChestByDatafile(faction_name);
+    if (chest && IsValidContainer(chest))
+        Print("DEBUG: Baú encontrado pelo datafile: " + chest.serial);
+        // Atualizar o registro na guilda
+        UpdateGuildChestRecord(faction_name, chest);
+        return chest;
+    endif
+    
+    Print("DEBUG: Nenhum baú encontrado para facção: " + faction_name);
+    return 0;
+endfunction
+
+// Funções auxiliares para busca de baús
+function FindChestByGuildRecord(faction_name)
+var guild_id := FindGuildByName(faction_name);
+if (!guild_id || guild_id == error)
+    return 0;
+endif
+    
+    var guild := FindGuild(guild_id);
+    if (!guild)
+        return 0;
+    endif
+    
+    var chest_serial := guild.GetProp("donation_chest");
+    if (!chest_serial)
+        return 0;
+    endif
+    
+    var chest := SystemFindObjectBySerial(chest_serial);
+    
+    // Verificar se o baú pertence à facção correta
+    if (chest && GetObjProperty(chest, "faction") == faction_name)
+        return chest;
+    endif
+    
+    return 0;
+endfunction
+
+function FindChestInWorld(faction_name, territory_id := "")
+    // Tipos de baús a procurar
+    var chest_types := array{0xff11, 0xba63};
+    
+    // Se temos ID de território, procurar baús com esse ID
+    if (territory_id)
+        foreach item in (EnumerateItemsInContainer(0))
+            if (item.objtype in chest_types && 
+                GetObjProperty(item, "faction") == faction_name && 
+                GetObjProperty(item, "territory_id") == territory_id)
+                return item;
+            endif
+            sleepms(1);
+        endforeach
+    endif
+    
+    // Procurar qualquer baú da facção
+    foreach item in (EnumerateItemsInContainer(0))
+       var faction_prop := GetObjProperty(item, "faction");
+if (item.objtype in chest_types && faction_prop && faction_prop != error && faction_prop == faction_name)
+            return item;
+        endif
+        sleepms(1);
+    endforeach
+    
+    return 0;
+endfunction
+
+function FindChestByDatafile(faction_name)
+    var df := DFOpenDataFile("faction_chests", DF_CREATE);
+    var elem := DFFindElement(df, faction_name);
+    if (!elem)
+        return 0;
+    endif
+    
+    var chest_serial := elem.GetProp("chest_serial");
+    if (!chest_serial)
+        return 0;
+    endif
+    
+    var chest := SystemFindObjectBySerial(chest_serial);
+    if (chest && GetObjProperty(chest, "faction") == faction_name)
+        return chest;
+    endif
+    
+    // Se o registro está desatualizado, tentar localização salva
+    var loc := elem.GetProp("location");
+    if (!loc)
+        return 0;
+    endif
+    
+    foreach item in ListItemsAtLocation(loc.x, loc.y, loc.z, loc.realm)
+        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+            GetObjProperty(item, "faction") == faction_name)
+            // Atualizar o registro
+            elem.SetProp("chest_serial", item.serial);
+            return item;
+        endif
+        sleepms(1);
+    endforeach
+    
+    return 0;
+endfunction
+
+function UpdateGuildChestRecord(faction_name, chest)
+    var guild_id := FindGuildByName(faction_name);
+    if (!guild_id)
+        return 0;
+    endif
+    
+    var guild := FindGuild(guild_id);
+    if (!guild)
+        return 0;
+    endif
+    
+    guild.SetProp("donation_chest", chest.serial);
+    
+    // Também atualizar o datafile
+    var df := DFOpenDataFile("faction_chests", DF_CREATE);
+    var elem := DFFindElement(df, faction_name, DF_CREATE);
+    
+    elem.SetProp("chest_serial", chest.serial);
+    elem.SetProp("location", struct{
+        "x" := chest.x,
+        "y" := chest.y,
+        "z" := chest.z,
+        "realm" := chest.realm
+    });
+    elem.SetProp("last_update", polcore().systime);
+    
+    return 1;
+endfunction
+
+// Função para criar um baú de emergência se nenhum for encontrado
+function CreateEmergencyDonationChest(faction_name)
+    Print("AVISO: Tentando criar baú de emergência para " + faction_name);
+    
+    // Local de emergência para criar o baú (geralmente um lugar seguro)
+    var x := 5288;
+    var y := 1176;
+    var z := 0;
+    var realm := "britannia";
+    
+    // Criar o baú
+    var chest := CreateItemAtLocation(x, y, z, 0xff11, 1, realm);
+    if (!chest)
+        Print("ERRO: Falha ao criar baú de emergência");
+        return 0;
+    endif
+    
+    // Configurar o baú
+    chest.name := "Baú de Doações de " + faction_name + " [Emergência]";
+    SetObjProperty(chest, "faction", faction_name);
+    SetObjProperty(chest, "faction_chest_id", faction_name + "_emergency_" + polcore().systime);
+    SetObjProperty(chest, "is_emergency_chest", 1);
+    SetObjProperty(chest, "created_time", polcore().systime);
+    
+    // Definir scripts
+    chest.usescript := ":faccao:baudoacao/use";
+    SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
+    SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+    SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
+    SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+    
+    // Registrar o baú
+    UpdateGuildChestRecord(faction_name, chest);
+    
+    // Registrar um aviso no log
+    Print("AVISO: Baú de emergência criado para " + faction_name + " em " + x + "," + y + "," + z + " " + realm);
+    
+    return chest;
+endfunction
+
+// Função para notificar líderes sobre geração de recursos
+function NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, amount, success_count)
+var guild := FindGuildByName(faction_name);
+if (!guild || guild == error)
+    return 0;
+endif
+    
+    var leader_serials := array{};
+    
+    // Adicionar o líder da facção
+    var leader_serial := guild.GetProp("leader");
+    if (leader_serial)
+        leader_serials.append(leader_serial);
+    endif
+    
+    // Buscar oficiais online
+    foreach player in EnumerateOnlineCharacters()
+        // Verificar se é da mesma facção
+        if (player.guildid == guild.guildid)
+            // Verificar se tem cargo de oficial
+            var player_rank := GetObjProperty(player, "guild_rank");
+            if (player_rank in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
+                if (!(player.serial in leader_serials))
+                    leader_serials.append(player.serial);
+                endif
+            endif
+            
+            // Verificar se tem título de nobreza
+            var chardata := GetObjProperty(player, "chardata");
+            if (chardata && (chardata.current_nobility_title in {"Rei", "Rainha"} || 
+                chardata.current_professional_position in {"Imperador", "Mão do Rei"}))
+                if (!(player.serial in leader_serials))
+                    leader_serials.append(player.serial);
+                endif
+            endif
+        endif
+    endforeach
+    
+    // Se não encontramos nenhum líder online, retornar
+    if (leader_serials.size() == 0)
+        return 0;
+    endif
+    
+    // Criar uma mensagem adequada
+    var resource_names := "";
+    for i := 1 to resources.size()
+        if (i > 1)
+            resource_names += ", ";
         endif
         
-        success_count += 1;
-        Print("Recurso adicionado diretamente: " + resource + " x" + amount);
-    else
-        Print("ERRO: Falha ao criar " + resource + " diretamente no baú");
-        
-        // Tentativa alternativa: criar o item normalmente e tentar mover
-        Print("DEBUG: Tentando método alternativo - criar e mover");
-        var alt_item := CreateResourceWithDonationProperty(resource, amount, donation_chest);
-        if (alt_item && MoveItemToContainer(alt_item, donation_chest))
-            success_count += 1;
-            Print("Recurso adicionado via método alternativo: " + resource + " x" + amount);
-        elseif (alt_item)
-            DestroyItem(alt_item);
-            Print("ERRO: Todas as tentativas de adicionar o recurso falharam: " + resource);
+        if (i == resources.size() && i > 1)
+            resource_names += "e ";
         endif
+        
+        resource_names += resources[i];
+    endfor
+    
+    var message := "Milord, um carregamento de recursos (";
+    message += resource_names + ", " + amount + " unidades de cada) ";
+    message += "produzido em '" + territory_name + "' chegou aos portões";
+    
+    if (success_count < resources.size())
+        message += ". " + success_count + " dos " + resources.size() + " tipos de recursos foram armazenados.";
+    else
+        message += " e foi armazenado nos devidos baús.";
     endif
+    
+    // Enviar a mensagem para cada líder
+    foreach serial in (leader_serials)
+        var leader := SystemFindObjectBySerial(serial);
+        if (leader && leader != error && leader.connected)
+            SendSysMessageEx(leader, message, SSM_INFO);
+        endif
+    endforeach
+    
+    return leader_serials.size();
+endfunction
+
+// Função para atualizar o cache de recursos do baú
+function UpdateResourceCache(chest)
+    if (!chest)
+        return 0;
+    endif
+    
+    // Marcar o baú para atualização
+    SetObjProperty(chest, "recursos_cache_dirty", 1);
+    
+    // Agendar atualização
+    var result := AgendarAtualizacaoBau(chest);
+if (result == error)
+    Print("ERRO: Falha ao agendar atualização para o baú");
+    return 0;
 endif
-
-sleepms(5);
-endforeach
-
-// Atualizar contagem de recursos do baú após todas as operações
-AtualizarContagemRecursos(donation_chest);
-
-// Registrar a atividade
-var history := elem.GetProp("ResourceHistory");
-if (!history)
-    history := array{};
-endif
-
-history.append(struct{
-    "time" := polcore().systime,
-    "resources" := cleaned_resources,
-    "amount" := amount,
-    "success" := success_count
-});
-
-// Limitar o histórico a 10 entradas
-if (history.size() > 10)
-    history.erase(1);
-endif
-
-elem.SetProp("ResourceHistory", history);
-
-return success_count;
+return result;
 endfunction
         
 
 
 // Também modifique a função NotifyFactionLeaders para usar a nova função
 function NotifyFactionLeaders(faction_name, territory_name, resources_string, amount)
-    var guild := FindGuildByName(faction_name);
-    if (!guild)
-        return 0;
-    endif
-    
+var guild := FindGuildByName(faction_name);
+if (!guild || guild == error)
+    return 0;
+endif
     var leader_serials := array{};
     
     // Adicionar o líder da facção
@@ -414,7 +881,7 @@ function NotifyFactionLeaders(faction_name, territory_name, resources_string, am
     // Buscar todos os jogadores online que possuem os títulos específicos
     foreach player in (EnumerateOnlineCharacters())
         var chardata := GetObjProperty(player, "chardata");
-        if (chardata)
+        if (chardata && chardata != error)
             // Verificar se o jogador tem um dos títulos específicos e pertence à mesma facção
             if (player.guildid == guild.guildid && 
                (chardata.current_nobility_title in {"Rei", "Rainha"} || 
@@ -438,7 +905,7 @@ function NotifyFactionLeaders(faction_name, territory_name, resources_string, am
     
     foreach serial in (leader_serials)
         var leader := SystemFindObjectBySerial(serial);
-        if (leader && leader.connected)
+        if (leader && leader != error && leader.connected)
             foreach resource in (resources)
                 // Validar o recurso
                 resource := Trim(resource);
@@ -460,25 +927,25 @@ endfunction
 function FindDonationChest(faction_name, territory_id := "")
     Print("DEBUG: Procurando baú para facção: " + faction_name + ", território: " + territory_id);
     
-    // Se temos o ID do território, tentar encontrar o baú específico
+    // MÉTODO 1: Específico pelo território - mantido como está
     if (territory_id != "")
-        foreach item in EnumerateItemsInContainer(0)
+        foreach item in (EnumerateItemsInContainer(0))
             if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
                 GetObjProperty(item, "faction") == faction_name && 
                 GetObjProperty(item, "territory_id") == territory_id)
                 Print("DEBUG: Baú encontrado pelo ID do território: " + item.serial);
                 return item;
             endif
+            sleepms(1);  // Prevenir congelamento do servidor
         endforeach
     endif
     
-    // Primeira tentativa: pelo serial registrado na guilda
-    var guild_id := 0;
+    // MÉTODO 2: Pelo registro na guilda - melhorado com mais verificações
     var guild := 0;
     
     // Buscar a guilda de forma segura
     if (faction_name && faction_name != "")
-        guild_id := FindGuildByName(faction_name);
+        var guild_id := FindGuildByName(faction_name);
         if (guild_id)
             guild := FindGuild(guild_id);
         endif
@@ -486,18 +953,27 @@ function FindDonationChest(faction_name, territory_id := "")
     
     if (guild)
         Print("DEBUG: Guilda encontrada: " + guild.guildid);
+        
+        // Verificar as duas possíveis propriedades para o serial do baú
         var chest_serial := guild.GetProp("donation_chest");
+        if (!chest_serial)
+            chest_serial := guild.GetProp(GUILD_CHEST_PROP);  // Usar constante alternativa
+        endif
+        
         if (chest_serial)
             var chest := SystemFindObjectBySerial(chest_serial);
             if (chest)
-                // Verificar se o baú ainda pertence a esta facção
+                // Verificação de facção mais robusta
                 var chest_faction := GetObjProperty(chest, "faction");
-                if (chest_faction == faction_name)
-                    Print("DEBUG: Baú encontrado pelo serial: " + chest.serial + " para facção: " + faction_name);
+                if (!chest_faction)
+                    chest_faction := GetObjProperty(chest, OBJ_FACTION_PROP);  // Verificar ambas propriedades
+                endif
+                
+                if (chest_faction && chest_faction != error && chest_faction == faction_name)
+                    Print("DEBUG: Baú encontrado pelo serial na guilda: " + chest.serial);
                     return chest;
                 else
                     Print("DEBUG: Baú encontrado com serial " + chest.serial + ", mas pertence à facção: " + chest_faction);
-                    // O baú existe mas pertence a outra facção - continuar a busca
                 endif
             endif
         endif
@@ -505,48 +981,90 @@ function FindDonationChest(faction_name, territory_id := "")
         Print("DEBUG: Guilda não encontrada para facção: " + faction_name);
     endif
     
-    // Segunda tentativa: procurar por baús no mundo com a propriedade correta
+    // MÉTODO 3: Verificar datafile de seriais
+    var seriais_df := OpenDataFile(":faccao:seriais");
+    if (seriais_df)
+        var territorios_seriais := seriais_df.GetProp("territorios");
+        if (territorios_seriais)
+            // Verificar todos os territórios desta facção
+            foreach terr_id in (territorios_seriais.keys())
+                var info := territorios_seriais[terr_id];
+                if (info.faction == faction_name && info.bau)
+                    var chest := SystemFindObjectBySerial(info.bau);
+                    if (chest)
+                        Print("DEBUG: Baú encontrado pelo datafile: " + chest.serial);
+                        
+                        // Atualizar na guilda
+                        if (guild)
+                            guild.SetProp("donation_chest", chest.serial);
+                        endif
+                        
+                        return chest;
+                    endif
+                endif
+                sleepms(1);
+            endforeach
+        endif
+    endif
+    
+    // MÉTODO 4: Buscar no mundo (como na versão atual)
     Print("DEBUG: Procurando por baús no mundo para a facção: " + faction_name);
     var bau_obj_types := array{0xff11, 0xba63}; // Tipos comuns de baús
     
-    // Primeiro procura baús com o nome específico da facção
-    foreach item in EnumerateItemsInContainer(0) // 0 é o serial do mundo
+    // Buscar baús pela propriedade 'faction'
+    foreach item in (EnumerateItemsInContainer(0))
         if (item.objtype in bau_obj_types)
-            // Verificar se o nome e a propriedade 'faction' correspondem
-            if (GetObjProperty(item, "faction") == faction_name)
+            var item_faction := GetObjProperty(item, "faction");
+            if (!item_faction)
+                item_faction := GetObjProperty(item, OBJ_FACTION_PROP); // Verificar ambas propriedades
+            endif
+            
+            if (item_faction == faction_name)
                 Print("DEBUG: Baú correto encontrado: " + item.name + " (Serial: " + item.serial + ")");
                 
-                // Registrar na guilda se possível
+                // Registrar na guilda
                 if (guild)
                     guild.SetProp("donation_chest", item.serial);
-                    Print("DEBUG: Serial do baú registrado na guilda: " + item.serial);
+                endif
+                
+                // Registrar no datafile de seriais se possível
+                if (seriais_df)
+                    var territorios_seriais := seriais_df.GetProp("territorios");
+                    if (!territorios_seriais)
+                        territorios_seriais := dictionary{};
+                    endif
+                    
+                    // Se o baú tem ID de território, salvá-lo adequadamente
+                    var item_territory := GetObjProperty(item, "territory_id");
+                    if (item_territory)
+                        if (!territorios_seriais[item_territory])
+                            territorios_seriais[item_territory] := struct{};
+                        endif
+                        territorios_seriais[item_territory].bau := item.serial;
+                        territorios_seriais[item_territory].faction := faction_name;
+                        seriais_df.SetProp("territorios", territorios_seriais);
+                        Print("DEBUG: Baú registrado no datafile de seriais");
+                    endif
                 endif
                 
                 return item;
             endif
         endif
+        sleepms(1);
     endforeach
     
-    // Se não encontrou, tentar criar um novo baú no "porto seguro"
-    Print("DEBUG: Criando novo baú para a facção: " + faction_name);
-    var chest := CreateItemAtLocation(5288, 1176, 0, 0xff11, 1, "britannia");
+    // MÉTODO 5: Criar um baú de emergência - mantido da versão atual
+    Print("DEBUG: Criando baú de emergência para a facção: " + faction_name);
+    
+    var chest := CreateEmergencyDonationChest(faction_name);
     if (chest)
-        chest.name := "Baú de Doações [" + faction_name + "]";
-        SetObjProperty(chest, "faction", faction_name);
-        SetObjProperty(chest, "faction_chest_id", faction_name + "_" + polcore().systime);
-        
-        // Registrar na guilda
-        if (guild)
-            guild.SetProp("donation_chest", chest.serial);
-        endif
-        
-        Print("DEBUG: Criado novo baú com serial: " + chest.serial);
         return chest;
     endif
     
     Print("DEBUG: Todas as tentativas de encontrar um baú falharam");
     return 0;
 endfunction
+
 
 function CreateResourceWithDonationProperty(resource_name, amount := 1, donation_chest := 0)
     var objtype := GetResourceObjtype(resource_name);
@@ -605,149 +1123,594 @@ function CreateResourceWithDonationProperty(resource_name, amount := 1, donation
     return item;
 endfunction
 
-function GetResourceObjtype(resource_name)
-    // Log inicial
-    Print("DEBUG: Procurando objtype para recurso: '" + resource_name + "'");
+// Função auxiliar para verificar se uma string contém outra
+function StringContains(source_string, search_string)
+    if (!source_string || !search_string)
+        return 0;
+    endif
     
-    // Normalizar o nome do recurso
+    return (source_string.find(search_string) != error);
+endfunction
+
+function GetResourceObjtype(resource_name)
+    // Normalizar o nome do recurso (remover espaços extras, converter para minúsculas)
     resource_name := Trim(Lower(resource_name));
     
     // Remover qualquer vírgula no final
     if (resource_name.size() > 0 && resource_name[resource_name.size()] == ",")
         resource_name := resource_name[1, resource_name.size()-1];
-        Print("DEBUG: Removida vírgula do final do nome do recurso: '" + resource_name + "'");
     endif
     
-    // Mapeamento direto - adicionando mais nomes alternativos
-    case (resource_name)
-        // Não tente muita sofisticação, apenas mapear diretamente
-        "caveiradeliche":    return 0x1AE0;
-        "caveiraliche":      return 0x1AE0;
-        "caveira de liche":  return 0x1AE0;
-        "caveira":           return 0x1AE0;
+    // Dicionário de mapeamento completo e robusto
+    var resource_map := dictionary{
+        // Recursos básicos
+        "ironore"           := 0x6300,  // Minério de ferro
+        "iron ore"          := 0x6300,
+        "ferro"             := 0x6300,
         
-        "carvao":            return 0x1bde;
-        "carvoes":           return 0x1bde;
-        "carvão":            return 0x1bde;
+        // Couros e peles
+        "couroespesso"      := 0xef12,  // Couro espesso
+        "couro espesso"     := 0xef12,
+        "leather"           := 0xef12,
+        "couropolar"        := 0xef17,  // Couro polar
+        "couro polar"       := 0xef17,
+        "courodraconiano"   := 0xed20,  // Couro draconiano
+        "couro draconiano"  := 0xed20,
+        "couroescamoso"     := 0xef11,  // Couro escamoso
+        "couro escamoso"    := 0xef11,
         
-        "pelebranca":        return 0xee52;
-        "pele branca":       return 0xee52;
+        // Materiais vegetais
+        "madeirapinheiro"   := 0xee36,  // Madeira de pinheiro
+        "madeira pinheiro"  := 0xee36,
+        "pine lumber"       := 0xee36,
+        "madeirateixo"      := 0xee3e,  // Madeira de teixo
+        "madeira teixo"     := 0xee3e,
+        "yew lumber"        := 0xee3e,
+        "cogumelo"          := 0x0D16,  // Cogumelo
+        "mushroom"          := 0x0D16,
         
-        "ironore":           return 0x6300;
-        "ferro":             return 0x6300;
+        // Minerais e metais
+        "carvao"            := 0x1bde,  // Carvão
+        "carvoes"           := 0x1bde,
+        "carvão"            := 0x1bde,
+        "coal"              := 0x1bde,
+        "prataingot"        := 0x6993,  // Lingote de prata
+        "prata ingot"       := 0x6993,
+        "silver ingot"      := 0x6993,
+        "acoingot"          := 0x6995,  // Lingote de aço
+        "aco ingot"         := 0x6995,
+        "steel ingot"       := 0x6995,
+        "vidro"             := 0x1BE3,  // Vidro
+        "glass"             := 0x1BE3,
         
-        "couroespesso":      return 0xef12;
-        
-        "cogumelo":          return 0x0D16;
-        
-        "madeirapinheiro":   return 0xee36;
-        "madeirateixo":      return 0xee3e;
-        
-        "escamasazuis":      return 0xef36;
-        "couropolar":        return 0xef17;
-        "ossogigante":       return 0xef3A;
-        "ossodemoniaco":     return 0xef29;
-        "courodraconiano":   return 0xed20;
-        "acoingot":          return 0x6995;
-        "prataingot":        return 0x6993;
-        "vidro":             return 0x1BE3;
-        "osso":              return 0x0F7E;
-        "couroescamoso":     return 0xef11;
-    endcase
+        // Partes de animais
+        "pelebranca"        := 0xee52,  // Pele branca
+        "pele branca"       := 0xee52,
+        "white hide"        := 0xee52,
+        "escamasazuis"      := 0xef36,  // Escamas azuis
+        "escamas azuis"     := 0xef36,
+        "blue scales"       := 0xef36,
+        "ossogigante"       := 0xef3A,  // Osso gigante
+        "osso gigante"      := 0xef3A,
+        "giant bone"        := 0xef3A,
+        "ossodemoniaco"     := 0xef29,  // Osso demoníaco
+        "osso demoniaco"    := 0xef29,
+        "demonic bone"      := 0xef29,
+        "osso"              := 0x0F7E   // Osso comum
+    };
     
-    // Se não encontrou no caso acima, tente verificar se o nome contém uma palavra-chave
-    if (resource_name.find("caveira") != error)
-        Print("DEBUG: Encontrada correspondência parcial para 'caveira' no recurso: '" + resource_name + "'");
-        return 0x1AE0;
-    elseif (resource_name.find("carv") != error)
-        Print("DEBUG: Encontrada correspondência parcial para 'carv' no recurso: '" + resource_name + "'");
-        return 0x1bde;
-    elseif (resource_name.find("pele") != error)
-        Print("DEBUG: Encontrada correspondência parcial para 'pele' no recurso: '" + resource_name + "'");
-        return 0xee52;
-    elseif (resource_name.find("ferro") != error || resource_name.find("iron") != error)
-        Print("DEBUG: Encontrada correspondência parcial para 'ferro/iron' no recurso: '" + resource_name + "'");
-        return 0x6300;
-    elseif (resource_name.find("couro") != error)
-        Print("DEBUG: Encontrada correspondência parcial para 'couro' no recurso: '" + resource_name + "'");
-        return 0xef12;
+    // Verificar se o recurso existe no mapeamento direto
+    if (resource_map.exists(resource_name))
+        return resource_map[resource_name];
     endif
     
-    // Se chegou aqui, não encontrou o recurso
-    Print("ERRO: Recurso não encontrado: '" + resource_name + "'");
-    return 0;
+    // Se não encontrou no mapeamento direto, tentar encontrar correspondência parcial
+    // Mas agora fazemos de forma mais controlada e priorizamos por especificidade
+    var partial_match := 0;
+    var partial_match_score := 0;
+    
+    foreach key in (resource_map.keys())
+        // Verificar se o recurso contém a chave ou vice-versa
+        if (StringContains(resource_name, key))
+            var score := key.size(); // Quanto maior a string que corresponde, maior a pontuação
+            if (score > partial_match_score)
+                partial_match := resource_map[key];
+                partial_match_score := score;
+            endif
+        elseif (StringContains(key, resource_name))
+            var score := resource_name.size();
+            if (score > partial_match_score)
+                partial_match := resource_map[key];
+                partial_match_score := score;
+            endif
+        endif
+        sleepms(1); // Pequena pausa para não sobrecarregar
+    endforeach
+    
+    // Se encontrou uma correspondência parcial com pontuação significativa
+    if (partial_match_score > 3) // Pelo menos 4 caracteres devem corresponder
+        Print("AVISO: Usando correspondência parcial para recurso '" + resource_name + "'");
+        return partial_match;
+    endif
+    
+    // Usar valores padrão por categoria como último recurso
+    if (StringContains(resource_name, "metal") || StringContains(resource_name, "ingot"))
+        return 0x6300; // Padrão: minério de ferro
+    elseif (StringContains(resource_name, "couro") || StringContains(resource_name, "leather"))
+        return 0xef12; // Padrão: couro espesso
+    elseif (StringContains(resource_name, "madeira") || StringContains(resource_name, "wood"))
+        return 0xee36; // Padrão: madeira de pinheiro
+    elseif (StringContains(resource_name, "osso") || StringContains(resource_name, "bone"))
+        return 0x0F7E; // Padrão: osso comum
+    endif
+    
+    Print("ERRO: Recurso não mapeado: '" + resource_name + "', usando padrão");
+    return 0x6300; // Padrão: minério de ferro
 endfunction
 
 function GetResourceCategory(resource_name)
-    // Determina a categoria de doação com base no tipo de recurso
-    resource_name := Lower(resource_name);
+    // Normalizar o nome do recurso
+    resource_name := Trim(Lower(resource_name));
     
-    var resource_categories := dictionary{
-        "ironore"         := "metal",
-        "couroespesso"    := "couro",
-        "cogumelo"        := "comida",
-        "madeirapinheiro" := "madeira",
-        "glanduladearanha":= "pano",
-        "caveiradeliche"  := "pedras",
-        "caveiraliche"    := "pedras",
-        "carvao"          := "madeira",
-        "pelebranca"      := "pano",
-        "madeirateixo"    := "madeira",
-        "prataingot"      := "metal",
-        "escamasazuis"    := "pano",
-        "couropolar"      := "couro",
-        "ossogigante"     := "pedras",
-        "ossodemoniaco"   := "pedras",
-        "courodraconiano" := "couro",
-        "acoingot"        := "metal",
-        "vidro"           := "joias",
-        "osso"            := "pedras",
-        "couroescamoso"   := "couro"
+    // Mapeamento completo de recursos para categorias
+    var category_map := dictionary{
+        // Metais e minérios
+        "ironore"           := "metal",
+        "iron ore"          := "metal",
+        "ferro"             := "metal",
+        "prataingot"        := "metal",
+        "prata ingot"       := "metal",
+        "silver ingot"      := "metal",
+        "acoingot"          := "metal",
+        "aco ingot"         := "metal",
+        "steel ingot"       := "metal",
+        "cobre"             := "metal",
+        "copper"            := "metal",
+        "bronze"            := "metal",
+        "ouro"              := "metal",
+        "gold"              := "metal",
+        
+        // Couro e peles
+        "couroespesso"      := "couro",
+        "couro espesso"     := "couro",
+        "couropolar"        := "couro",
+        "couro polar"       := "couro",
+        "courodraconiano"   := "couro",
+        "couro draconiano"  := "couro",
+        "couroescamoso"     := "couro",
+        "couro escamoso"    := "couro",
+        "leather"           := "couro",
+        "hide"              := "couro",
+        "pele"              := "couro",
+        
+        // Madeiras e vegetais
+        "madeirapinheiro"   := "madeira",
+        "madeira pinheiro"  := "madeira",
+        "madeirateixo"      := "madeira",
+        "madeira teixo"     := "madeira",
+        "pinewood"          := "madeira",
+        "yewwood"           := "madeira",
+        "log"               := "madeira",
+        "tora"              := "madeira",
+        "oak"               := "madeira",
+        "carvalho"          := "madeira",
+        "carvao"            := "madeira",
+        "carvão"            := "madeira",
+        "coal"              := "madeira",
+        "wood"              := "madeira",
+        "lumber"            := "madeira",
+        
+        // Comida
+        "cogumelo"          := "comida",
+        "mushroom"          := "comida",
+        "peixe"             := "comida",
+        "fish"              := "comida",
+        "carne"             := "comida",
+        "meat"              := "comida",
+        "fruta"             := "comida",
+        "fruit"             := "comida",
+        "vegetal"           := "comida",
+        "vegetable"         := "comida",
+        "pão"               := "comida",
+        "bread"             := "comida",
+        "cereal"            := "comida",
+        "bolo"              := "comida",
+        "cake"              := "comida",
+        
+        // Tecidos e peles decorativas
+        "pelebranca"        := "pano",
+        "pele branca"       := "pano",
+        "escamasazuis"      := "pano",
+        "escamas azuis"     := "pano",
+        "escamas"           := "pano",
+        "scales"            := "pano",
+        "cloth"             := "pano",
+        "tecido"            := "pano",
+        "silk"              := "pano",
+        "seda"              := "pano",
+        "cotton"            := "pano",
+        "algodão"           := "pano",
+        "wool"              := "pano",
+        "lã"                := "pano",
+        
+        // Pedras e ossos
+        "ossogigante"       := "pedras",
+        "osso gigante"      := "pedras",
+        "ossodemoniaco"     := "pedras",
+        "osso demoniaco"    := "pedras",
+        "osso"              := "pedras",
+        "bone"              := "pedras",
+        "stone"             := "pedras",
+        "pedra"             := "pedras",
+        "rock"              := "pedras",
+        "rocha"             := "pedras",
+        "granite"           := "pedras",
+        "granito"           := "pedras",
+        "marble"            := "pedras",
+        "mármore"           := "pedras",
+        "sand"              := "pedras",
+        "areia"             := "pedras",
+        
+        // Vidros e joias
+        "vidro"             := "joias",
+        "glass"             := "joias",
+        "gem"               := "joias",
+        "gema"              := "joias",
+        "joia"              := "joias",
+        "jewel"             := "joias",
+        "ruby"              := "joias",
+        "rubi"              := "joias",
+        "diamond"           := "joias",
+        "diamante"          := "joias",
+        "pearl"             := "joias",
+        "pérola"            := "joias",
+        "emerald"           := "joias",
+        "esmeralda"         := "joias",
+        "sapphire"          := "joias",
+        "safira"            := "joias",
+        "crystal"           := "joias",
+        "cristal"           := "joias",
+        
+        // Moedas
+        "moeda"             := "moedas",
+        "coin"              := "moedas",
+        "copper coin"       := "moedas",
+        "silver coin"       := "moedas",
+        "gold coin"         := "moedas",
+        "moeda de cobre"    := "moedas",
+        "moeda de prata"    := "moedas",
+        "moeda de ouro"     := "moedas"
     };
     
-    return resource_categories[resource_name];
+    // Verificar correspondência direta
+    if (category_map.exists(resource_name))
+        return category_map[resource_name];
+    endif
+    
+    // Correspondência parcial por palavras-chave - ordem de verificação importante!
+    var keywords := dictionary{
+        "couro"     := "couro",
+        "leather"   := "couro",
+        "hide"      := "couro",
+        "pele"      := "couro",
+        
+        "madeira"   := "madeira",
+        "wood"      := "madeira",
+        "lumber"    := "madeira",
+        "log"       := "madeira",
+        "carv"      := "madeira",
+        "coal"      := "madeira",
+        
+        "food"      := "comida",
+        "comida"    := "comida",
+        "fruit"     := "comida",
+        "meat"      := "comida",
+        "fish"      := "comida",
+        "bread"     := "comida",
+        "mushroom"  := "comida",
+        "cogumelo"  := "comida",
+        
+        "cloth"     := "pano",
+        "pano"      := "pano",
+        "escama"    := "pano",
+        "scale"     := "pano",
+        "wool"      := "pano",
+        "cotton"    := "pano",
+        "silk"      := "pano",
+        
+        "osso"      := "pedras",
+        "bone"      := "pedras",
+        "rock"      := "pedras",
+        "stone"     := "pedras",
+        "pedra"     := "pedras",
+        "sand"      := "pedras",
+        
+        "glass"     := "joias",
+        "gem"       := "joias",
+        "jewel"     := "joias",
+        "joia"      := "joias",
+        "crystal"   := "joias",
+        
+        "coin"      := "moedas",
+        "moeda"     := "moedas",
+        
+        "ingot"     := "metal",
+        "ore"       := "metal",
+        "metal"     := "metal",
+        "ferro"     := "metal",
+        "iron"      := "metal",
+        "copper"    := "metal",
+        "gold"      := "metal",
+        "silver"    := "metal",
+        "steel"     := "metal"
+    };
+    
+    // Procurar correspondências parciais
+    foreach keyword in (keywords.keys())
+        if (resource_name.find(keyword) != error)
+            return keywords[keyword];
+        endif
+        sleepms(1);
+    endforeach
+    
+    // Análise de objtype, caso disponível
+    var objtype_categories := dictionary{
+        0x6300 := "metal",     // Iron ore
+        0x6993 := "metal",     // Silver ingot
+        0x6995 := "metal",     // Steel ingot
+        0xef12 := "couro",     // Couro espesso
+        0xef17 := "couro",     // Couro polar
+        0xed20 := "couro",     // Couro draconiano
+        0xef11 := "couro",     // Couro escamoso
+        0xee36 := "madeira",   // Madeira de pinheiro
+        0xee3e := "madeira",   // Madeira de teixo
+        0x1bde := "madeira",   // Carvão
+        0x0D16 := "comida",    // Cogumelo
+        0xee52 := "pano",      // Pele branca
+        0xef36 := "pano",      // Escamas azuis
+        0xef3A := "pedras",    // Osso gigante
+        0xef29 := "pedras",    // Osso demoníaco
+        0x0F7E := "pedras",    // Osso comum
+        0x1BE3 := "joias",     // Vidro
+        0x0EED := "moedas",    // Moedas de ouro
+        0x0EEA := "moedas",    // Moedas de prata
+        0x0EE8 := "moedas"     // Moedas de cobre
+    };
+    
+    // Se conhecemos o objtype do recurso
+    var resource_objtype := 0;
+    
+    // Tentar determinar o objtype pelo objeto atual, se disponível
+    if (TypeOf(resource_name) == "ItemRef")
+        resource_objtype := resource_name.objtype;
+    endif
+    
+    // Ou usar a função de mapeamento, se for string
+    if (!resource_objtype && TypeOf(resource_name) == "String")
+        resource_objtype := GetResourceObjtype(resource_name);
+    endif
+    
+    // Se conseguimos um objtype, verificar categorias
+    if (resource_objtype && objtype_categories.exists(resource_objtype))
+        return objtype_categories[resource_objtype];
+    endif
+    
+    // Se chegamos até aqui, usar categoria padrão mais comum
+    Print("AVISO: Recurso não categorizado: " + resource_name + ", usando categoria padrão 'metal'");
+    return "metal";
 endfunction
 
 // Função para atualizar contagem de recursos no baú
-function AtualizarContagemRecursos(bau)
-    var recursos := struct{
-        comida := 0,
-        moedas := 0,
-        couro := 0,
-        metal := 0,
-        madeira := 0,
-        pano := 0,
-        pedras := 0,
-        joias := 0
-    };
+// ==========================================================================
+// FUNÇÕES PRINCIPAIS DO SISTEMA DE CACHE E VERIFICAÇÃO DE CONSISTÊNCIA
+// ==========================================================================
+
+// Função para atualizar a contagem de recursos diretamente no baú
+// Esta função substitui a antiga AtualizarContagemRecursos e ContarItensDoadosNoBau
+function AtualizarContagemRecursos(bau, force_update := 0)
+    // Registrar início para depuração
+    Print("DEBUG: AtualizarContagemRecursos() iniciada para baú: " + bau.serial);
     
-    foreach item in EnumerateItemsInContainer(bau)
-        if (GetObjProperty(item, "IsKingdomDonationComida"))
-            recursos.comida += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationMoedas"))
-            recursos.moedas += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationCouro"))
-            recursos.couro += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationMetal"))
-            recursos.metal += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationMadeira"))
-            recursos.madeira += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationPano"))
-            recursos.pano += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationPedra"))
-            recursos.pedras += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationJoias"))
-            recursos.joias += item.amount;
+    // Obter último timestamp de atualização
+    var ultimo_update := GetObjProperty(bau, "recursos_ultimo_update");
+    var current_time := polcore().systime;
+    
+    // Se a última atualização foi recente e não estamos forçando nova contagem, usar o cache
+    if (!force_update && ultimo_update && (current_time - ultimo_update < 300))
+        Print("DEBUG: Usando cache - última atualização há " + (current_time - ultimo_update) + " segundos");
+        var recursos_cache := GetObjProperty(bau, "recursos_cache");
+        if (recursos_cache)
+            return recursos_cache;
         endif
-    endforeach
+    endif
     
-    // Atualizar propriedade do baú para gumps dinâmicos
-    SetObjProperty(bau, "RecursosDoados", recursos);
+    // Realizar contagem completa
+    Print("DEBUG: Realizando contagem completa dos recursos no baú");
+    var recursos := ContarRecursosReais(bau);
+    
+    // Verificar inconsistências se houver cache anterior
+    var recursos_cache := GetObjProperty(bau, "recursos_cache");
+    if (recursos_cache)
+        var inconsistencias := VerificarInconsistenciasLocal(recursos_cache, recursos);
+        if (inconsistencias.size() > 0)
+            RegistrarInconsistencia(bau, recursos_cache, recursos, inconsistencias);
+        endif
+    endif
+    
+    // Atualizar o cache no baú
+    SetObjProperty(bau, "recursos_cache", recursos);
+    SetObjProperty(bau, "recursos_ultimo_update", current_time);
+    Print("DEBUG: Cache atualizado no baú");
+    
+    // Verificar se devemos atualizar o datafile global também
+    var ultima_sync := GetObjProperty(bau, "recursos_ultima_sync");
+    if (!ultima_sync || (current_time - ultima_sync > 1800) || force_update)
+        // Se passou mais de 30 minutos da última sincronização ou estamos forçando
+       SincronizarComDataFileLocal(bau, recursos);
+        SetObjProperty(bau, "recursos_ultima_sync", current_time);
+        Print("DEBUG: Datafile global atualizado");
+    else
+        Print("DEBUG: Datafile global não atualizado - última sync há " + (current_time - ultima_sync) + " segundos");
+        // Agendar atualização futura se necessário
+       AgendarAtualizacaoDataFileLocal(bau);
+    endif
     
     return recursos;
 endfunction
 
 
+// Verificar inconsistências entre o cache e a contagem atual
+function VerificarInconsistenciasLocal(container, recursos_novos)
+    var recursos_cache := GetObjProperty(container, CACHE_PROP_NAME);
+    if (!recursos_cache)
+        // Não há cache anterior para comparar
+        return 0;
+    endif
+    
+    // Lista para armazenar diferenças encontradas
+    var inconsistencias := array{};
+    
+    // Verificar cada tipo de recurso
+    if (recursos_cache.comida != recursos_novos.comida)
+        inconsistencias.append(struct{
+            "tipo" := "comida",
+            "antigo" := recursos_cache.comida,
+            "novo" := recursos_novos.comida,
+            "diferenca" := recursos_novos.comida - recursos_cache.comida
+        });
+    endif
+    
+    if (recursos_cache.moedas != recursos_novos.moedas)
+        inconsistencias.append(struct{
+            "tipo" := "moedas",
+            "antigo" := recursos_cache.moedas,
+            "novo" := recursos_novos.moedas,
+            "diferenca" := recursos_novos.moedas - recursos_cache.moedas
+        });
+    endif
+    
+    if (recursos_cache.couro != recursos_novos.couro)
+        inconsistencias.append(struct{
+            "tipo" := "couro",
+            "antigo" := recursos_cache.couro,
+            "novo" := recursos_novos.couro,
+            "diferenca" := recursos_novos.couro - recursos_cache.couro
+        });
+    endif
+    
+    if (recursos_cache.metal != recursos_novos.metal)
+        inconsistencias.append(struct{
+            "tipo" := "metal",
+            "antigo" := recursos_cache.metal,
+            "novo" := recursos_novos.metal,
+            "diferenca" := recursos_novos.metal - recursos_cache.metal
+        });
+    endif
+    
+    if (recursos_cache.madeira != recursos_novos.madeira)
+        inconsistencias.append(struct{
+            "tipo" := "madeira",
+            "antigo" := recursos_cache.madeira,
+            "novo" := recursos_novos.madeira,
+            "diferenca" := recursos_novos.madeira - recursos_cache.madeira
+        });
+    endif
+    
+    if (recursos_cache.pano != recursos_novos.pano)
+        inconsistencias.append(struct{
+            "tipo" := "pano",
+            "antigo" := recursos_cache.pano,
+            "novo" := recursos_novos.pano,
+            "diferenca" := recursos_novos.pano - recursos_cache.pano
+        });
+    endif
+    
+    if (recursos_cache.pedras != recursos_novos.pedras)
+        inconsistencias.append(struct{
+            "tipo" := "pedras",
+            "antigo" := recursos_cache.pedras,
+            "novo" := recursos_novos.pedras,
+            "diferenca" := recursos_novos.pedras - recursos_cache.pedras
+        });
+    endif
+    
+    if (recursos_cache.joias != recursos_novos.joias)
+        inconsistencias.append(struct{
+            "tipo" := "joias",
+            "antigo" := recursos_cache.joias,
+            "novo" := recursos_novos.joias,
+            "diferenca" := recursos_novos.joias - recursos_cache.joias
+        });
+    endif
+    
+    // Se encontrou inconsistências, registrá-las
+    if (inconsistencias.size() > 0)
+        RegistrarInconsistencia(container, recursos_cache, recursos_novos, inconsistencias);
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+// Agendar atualização futura do datafile global
+function AgendarAtualizacaoDataFileLocal(container)
+    // Obter a lista de atualizações pendentes
+    var updates_pending := GetGlobalProperty("recursos_updates_pending");
+    if (!updates_pending)
+        updates_pending := dictionary{};
+    endif
+    
+    // Adicionar este baú à lista, se ainda não estiver
+    if (!updates_pending.exists(container.serial))
+        updates_pending[container.serial] := polcore().systime;
+        SetGlobalProperty("recursos_updates_pending", updates_pending);
+        
+        // Verificar se o processador de atualizações está rodando
+        var processor_pid := GetGlobalProperty("recursos_update_processor_pid");
+        if (!processor_pid || !GetProcess(processor_pid))
+            // Iniciar o processador se não estiver rodando
+            var script := start_script(":faccao:process_recursos_updates");
+            if (script)
+                SetGlobalProperty("recursos_update_processor_pid", script.pid);
+            endif
+        endif
+    endif
+    
+    return 1;
+endfunction
+
+// Sincronizar dados com o datafile global
+function SincronizarComDataFileLocal(container, recursos)
+    var faction_name := GetObjProperty(container, OBJ_FACTION_PROP);
+    
+if (!faction_name)
+    Print("ERRO: Nome da facção não fornecido para busca de baú");
+    return 0;
+endif
+    
+    if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
+        // Atualizar recursos do reino no datafile principal
+        var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+        var elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+        elem.SetProp("recursos", recursos);
+    else
+        // Atualizar recursos da facção em seu próprio elemento no datafile
+        var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+        var elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
+        elem.SetProp("recursos", recursos);
+        
+        // Atualizar também nas propriedades da guilda
+        var guild := FindGuildByName(faction_name);
+        if (guild)
+            var guild_obj := FindGuild(guild);
+            if (guild_obj)
+                guild_obj.SetProp("recursos", recursos);
+            endif
+        endif
+    endif
+    
+    return 1;
+endfunction
 
 function SplitResourcesString(resource_string)
     // Primeiro, dividir a string por vírgulas
@@ -905,7 +1868,7 @@ function PrintError(message)
     WriteFile(":faccao:logs/resource_errors.txt", timestamp + " - " + message);
 endfunction
 
-function FormatTime()
+function FormatTimeLocal()
     var time := polcore().systime;
     return CStr(time) + " [" + GetFormattedSysClock(time) + "]";
 endfunction
@@ -913,20 +1876,189 @@ endfunction
 
 function FindExistingResource(container, objtype)
     Print("DEBUG: Procurando item com objtype: 0x" + Hex(objtype) + " no contêiner");
-    foreach item in EnumerateItemsInContainer(container)
-        if (item.objtype == objtype)
-            // Verificar se o item tem espaço para mais unidades (limite de 60000)
-            if (item.amount < 60000)
-                Print("DEBUG: Item encontrado - Serial: " + item.serial + ", Qtd atual: " + item.amount);
-                return item;
+    var items := EnumerateItemsInContainer(container);
+    if (items != error)
+        foreach item in items
+            if (item && item != error && item.objtype == objtype)
+                // Verificar se o item tem espaço para mais unidades (limite de 60000)
+                if (item.amount < 60000)
+                    Print("DEBUG: Item encontrado - Serial: " + item.serial + ", Qtd atual: " + item.amount);
+                    return item;
+                endif
             endif
-        endif
-    endforeach
+        endforeach
+    endif
     
     Print("DEBUG: Nenhum item compatível encontrado");
     return 0;
+endfunction 
+
+// Função para verificar a validade dos dados antes da criação de recursos
+function VerificarValidadeDosDados(elem, faction_name, resources_list, resource_amount)
+    var resultado := struct{
+        "valido" := 1,
+        "mensagem" := "Dados válidos"
+    };
+    
+    // Verificar parâmetros básicos
+    if (!elem || !faction_name || !resources_list || resource_amount <= 0)
+        resultado.valido := 0;
+        resultado.mensagem := "Parâmetros inválidos: Elemento, facção, recursos ou quantidade incorretos";
+        return resultado;
+    endif
+    
+    // Verificar se faction_name é válido (não nulo, não vazio, não "Selvagem")
+    if (!faction_name || faction_name == "" || faction_name == DEFAULT_FACTION || faction_name == "Selvagem")
+        resultado.valido := 0;
+        resultado.mensagem := "Facção inválida ou selvagem: " + faction_name;
+        return resultado;
+    endif
+    
+    // Verificar se resources_list é um array válido e tem pelo menos um item
+    if (!resources_list || resources_list.size() < 1)
+        resultado.valido := 0;
+        resultado.mensagem := "Lista de recursos vazia ou inválida";
+        return resultado;
+    endif
+    
+    // Verificar se os recursos são mapeáveis para objtypes
+    var recursos_invalidos := 0;
+    var recursosProblematicos := "";
+    
+    foreach resource in resources_list
+        var objtype := GetResourceObjtype(resource);
+        if (!objtype)
+            recursos_invalidos += 1;
+            if (recursosProblematicos == "")
+                recursosProblematicos := resource;
+            else
+                recursosProblematicos += ", " + resource;
+            endif
+        endif
+        sleepms(1);
+    endforeach
+    
+    if (recursos_invalidos > 0)
+        resultado.valido := 0;
+        resultado.mensagem := "Recursos não mapeáveis: " + recursosProblematicos;
+        return resultado;
+    endif
+    
+    return resultado;
 endfunction
 
+// Função para verificar a validade do baú antes de adicionar recursos
+function VerificarValidadeDoBau(chest, faction_name)
+    var resultado := struct{
+        "valido" := 1,
+        "mensagem" := "Baú válido"
+    };
+    
+    // Verificar se o baú existe
+    if (!chest)
+        resultado.valido := 0;
+        resultado.mensagem := "Baú não encontrado";
+        return resultado;
+    endif
+    
+    // Verificar se o baú pertence à facção correta
+    var chest_faction := GetObjProperty(chest, OBJ_FACTION_PROP);
+    if (!chest_faction)
+        chest_faction := GetObjProperty(chest, "faction"); // Compatibilidade
+    endif
+    
+    if (chest_faction != faction_name)
+        resultado.valido := 0;
+        resultado.mensagem := "Baú pertence à facção " + chest_faction + ", mas deveria pertencer a " + faction_name;
+        return resultado;
+    endif
+    
+    // Verificar se o baú é um container válido
+    if (!IsValidContainer(chest))
+        resultado.valido := 0;
+        resultado.mensagem := "Baú não é um container válido";
+        return resultado;
+    endif
+    
+    // Verificar se o baú tem espaço disponível
+    if (!HasContainerSpace(chest, 1))
+        // Avisar mas não falhar completamente
+        Print("AVISO: Baú provavelmente está cheio, recursos podem não ser adicionados");
+        // No futuro pode-se criar um baú de overflow
+    endif
+    
+    return resultado;
+endfunction
+
+// Função para registrar falhas de criação de recursos
+function RegistrarFalhaDeCriacao(elem, faction_name, territory_name, recursos_falhos)
+    // Registrar no log
+    Print("ERRO: Falha ao criar recursos para " + territory_name + " (Facção: " + faction_name + ")");
+    Print("Recursos falhos: " + recursos_falhos);
+    
+    // Adicionar ao histórico de falhas do território
+    var history := elem.GetProp("ResourceFailHistory");
+    if (!history)
+        history := array{};
+    endif
+    
+    history.append(struct{
+        "time" := polcore().systime,
+        "failed_resources" := recursos_falhos,
+        "faction" := faction_name
+    });
+    
+    // Limitar o histórico a 10 entradas
+    while (history.size() > 10)
+        history.erase(1);
+    endwhile
+    
+    elem.SetProp("ResourceFailHistory", history);
+    
+    // Tentar notificar os administradores
+    NotificarAdministradoresFalhaRecursos(faction_name, territory_name, recursos_falhos);
+    
+    return 1;
+endfunction
+
+// Função para notificar os administradores sobre falhas de recursos
+function NotificarAdministradoresFalhaRecursos(faction_name, territory_name, recursos_falhos)
+    var mensagem := "SISTEMA: Falha ao gerar recursos em " + territory_name + 
+                    " (Facção: " + faction_name + "). Recursos falhos: " + recursos_falhos;
+    
+    // Enviar para todos os GMs online
+    foreach player in EnumerateOnlineCharacters()
+        if (player.cmdlevel >= 3)
+            SendSysMessageEx(player, mensagem, SSM_FAIL);
+        endif
+    endforeach
+    
+    // Registrar em um datafile específico para consulta posterior
+    var df := DFOpenDataFile(":faccao:resource_failures", DF_CREATE);
+    if (df)
+        var elem := DFFindElement(df, "log", DF_CREATE);
+        var logs := elem.GetProp("entries");
+        if (!logs)
+            logs := array{};
+        endif
+        
+        logs.append(struct{
+            "time" := polcore().systime,
+            "faction" := faction_name,
+            "territory" := territory_name,
+            "failed_resources" := recursos_falhos
+        });
+        
+        // Limitar o tamanho do log
+        while (logs.size() > 100)
+            logs.erase(1);
+        endwhile
+        
+        elem.SetProp("entries", logs);
+    endif
+    
+    return 1;
+endfunction
 
 function ProcessRevocations()
     // Verifica se há notificações de revogação
@@ -935,17 +2067,32 @@ function ProcessRevocations()
         var elem := DFFindElement(df, "resource_controller");
         if (elem)
             var revocations := elem.GetProp("revocations");
-            if (revocations && revocations.size() > 0)
+            if (revocations != error && revocations)
                 foreach territorio in revocations
-                    // Remover do agendamento
-                    if (next_territory_checks.exists(territorio))
-                        next_territory_checks.Erase(territorio);
-                        Print("ResourceController: Revogação processada para " + territorio);
+                    if (territorio && territorio != error)
+                        Print("DEBUG: Processando revogação de território: " + territorio);
+                        
+                        // Remover do registro de recursos
+                        var territorio_elem := FindElement(territorio);  // Renomeado para evitar conflito
+                        if (territorio_elem && territorio_elem != error)
+                            territorio_elem.EraseProp("NextResourceTime");
+                            Print("DEBUG: Propriedade NextResourceTime removida para: " + territorio);
+                        endif
+                        
+                        // Procurar o objeto existente que corresponde a este território
+                        var item := FindExistingStackableItem(territorio);
+                        if (item && item != error)
+                            Print("DEBUG: Item existente encontrado para: " + territorio);
+                            // Processar o item...
+                        endif
+                        
+                        // Quaisquer outras ações necessárias
                     endif
-                    sleepms(2);
+                    sleepms(2); // Prevenir congelamento do servidor
                 endforeach
-                // Limpar lista de revogações
-                elem.SetProp("revocations", array{});
+                
+                // Limpar a lista após processar
+                elem.EraseProp("revocations");
             endif
         endif
     endif

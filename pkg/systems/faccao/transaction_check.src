@@ -1,0 +1,24 @@
+use uo;
+use os;
+use datafile;
+
+include ":faccao:include/shared_functions";
+
+program transaction_check()
+    Print("Iniciando verificação de transações pendentes...");
+    
+    // Registrar PID para que outros scripts possam verificar se está rodando
+    SetGlobalProperty("transactions_check_pid", GetPid());
+    
+    // Loop principal
+    while (1)
+        var count := VerificarTransacoesPendentes();
+        
+        if (count > 0)
+            Print("Resolvidas " + count + " transações pendentes");
+        endif
+        
+        // Verificar a cada 30 minutos
+        Sleep(1800);
+    endwhile
+endprogram

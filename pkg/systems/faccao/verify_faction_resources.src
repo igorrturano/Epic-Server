@@ -1,0 +1,1396 @@
+// ==========================================================================
+// VERIFICADOR DE RECURSOS DE FACÇÕES
+// Arquivo: :faccao:verify_faction_resources.src
+// ==========================================================================
+//
+// Este script executa verificações periódicas da integridade dos dados de
+// recursos em todo o sistema, identificando e corrigindo problemas
+// automaticamente para garantir a consistência dos dados entre facções.
+//
+// Versão: 2.0 - Verificação consolidada
+// ==========================================================================
+
+use uo;
+use os;
+use datafile;
+use guilds;
+
+include ":faccao:include/faccao_constants";
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_resources";
+
+// Constantes de configuração
+const VERIFY_INTERVAL := 3600;         // 1 hora entre verificações completas
+const VERIFICACAO_PARCIAL := 1800;     // 30 minutos entre verificações parciais
+const MAX_ITENS_POR_CICLO := 50;       // Limitar carga por ciclo
+const QUIET_HOURS_START := 2;          // Hora de início do período tranquilo (2 AM)
+const QUIET_HOURS_END := 7;            // Hora de fim do período tranquilo (7 AM)
+const MAX_INCONSISTENCY_HISTORY := 20; // Máximo de entradas no histórico de inconsistências
+const LOGGING_ENABLED := 1;            // Ativar/desativar logs detalhados
+
+
+program VerifyFactionResources()
+    Print("=== Iniciando Verificador de Recursos de Facções ===");
+    
+    // Registrar PID para que outros scripts possam verificar se está rodando
+    SetGlobalProperty("faction_resources_verifier_pid", GetPid());
+    
+    // Verificar se é preciso migração inicial
+    if (!GetGlobalProperty("resources_migration_done"))
+        MigrarRecursosAntigosPrimeiraVez();
+        SetGlobalProperty("resources_migration_done", 1);
+    endif
+    
+    // Inicializar contadores
+    var last_full_check := 0;
+    var last_partial_check := 0;
+    var cycle_count := 0;
+    
+    // Loop principal
+    while (1)
+        cycle_count += 1;
+        var current_time := polcore().systime;
+        
+        // Determinar tipo de verificação a realizar
+        if ((current_time - last_full_check) >= VERIFY_INTERVAL && DeveExecutarVerificacao(1))
+            // Verificação completa
+            if (LOGGING_ENABLED)
+                Print("Executando verificação COMPLETA do sistema de recursos...");
+            endif
+            ExecutarVerificacaoCompleta();
+            last_full_check := current_time;
+            last_partial_check := current_time; // Atualizar ambos os contadores
+        elseif ((current_time - last_partial_check) >= VERIFICACAO_PARCIAL && DeveExecutarVerificacao(0))
+            // Verificação parcial
+            if (LOGGING_ENABLED)
+                Print("Executando verificação PARCIAL do sistema de recursos...");
+            endif
+            ExecutarVerificacaoParcial();
+            last_partial_check := current_time;
+        else
+            // Verificação rápida em cada ciclo
+            ExecutarVerificacaoRapida();
+        endif
+        
+        // Em cada 5º ciclo, verificar inconsistências específicas
+        if (cycle_count % 5 == 0)
+            VerificarLidasFaccao();
+        endif
+        
+        // Dormir até o próximo ciclo - tempo variável
+        var tempo_espera := DeterminarTempoEspera(last_full_check, last_partial_check);
+        Sleep(tempo_espera);
+    endwhile
+endprogram
+
+// Função para determinar se deve executar verificação agora
+function DeveExecutarVerificacao(is_full := 0)
+    // Verificar número de jogadores online
+    var jogadores_online := EnumerateOnlineCharacters().size();
+    
+    // Se for verificação completa, ser mais restritivo
+    var limite_jogadores := is_full ? 5 : 10;
+    
+    // Se houver poucos jogadores, é um bom momento
+    if (jogadores_online < limite_jogadores)
+        return 1;
+    endif
+    
+    // Verificar hora do dia - ideal durante madrugada
+    var system_time := ReadGameClock();
+    var hour := (system_time / 3600) % 24;
+    
+    if (hour >= QUIET_HOURS_START && hour <= QUIET_HOURS_END)
+        return 1;
+    endif
+    
+    // Verificar uptime do servidor - não executar logo após inicialização
+    if (polcore().uptime < 1800) // 30 minutos
+        return 0;
+    endif
+    
+    // Por padrão, não permitir verificação completa fora dos horários ideais
+    if (is_full)
+        return 0;
+    endif
+    
+    // Por padrão, permitir verificação parcial
+    return 1;
+endfunction
+
+// Função para determinar tempo de espera até próxima verificação
+function DeterminarTempoEspera(last_full, last_partial)
+    var current_time := polcore().systime;
+    var tempo_ate_full := VERIFY_INTERVAL - (current_time - last_full);
+    var tempo_ate_partial := VERIFICACAO_PARCIAL - (current_time - last_partial);
+    
+    // Determinar próxima verificação
+    var proximo_check := tempo_ate_partial < tempo_ate_full ? tempo_ate_partial : tempo_ate_full;
+    
+    // Garantir que não é um valor negativo
+    if (proximo_check < 0)
+        proximo_check := 300; // 5 minutos como fallback
+    endif
+    
+    // Limitar o máximo de espera
+    if (proximo_check > 3600)
+        proximo_check := 3600; // Máximo de 1 hora
+    endif
+    
+    return proximo_check;
+endfunction
+
+// Função para executar verificação completa
+function ExecutarVerificacaoCompleta()
+    Print("Iniciando verificação COMPLETA de recursos de facções...");
+    var tempo_inicio := polcore().systime;
+    var stats := struct{
+        "tipo" := "completa",
+        "datafile_correcoes" := 0,
+        "baus_verificados" := 0,
+        "baus_corrigidos" := 0,
+        "inconsistencias" := 0,
+        "guildas_atualizadas" := 0,
+        "territorios_verificados" := 0
+    };
+    
+    // Verificar se o controlador de recursos está rodando
+    VerificarControladorRecursos();
+    
+    // 1. Verificar e corrigir integridade do datafile
+    stats.datafile_correcoes += VerificarIntegridadeDatafile();
+    
+    // 2. Verificar baús de todas as facções
+    var resultado_baus := VerificarBausTodosSistema();
+    stats.baus_verificados += resultado_baus.verificados;
+    stats.baus_corrigidos += resultado_baus.corrigidos;
+    
+    // 3. Verificar consistência entre datafile e baús
+    stats.inconsistencias += VerificarConsistenciaGlobalBausDatafile();
+    
+    // 4. Verificar propriedades das guildas
+    stats.guildas_atualizadas += VerificarPropriedadesGuildas();
+    
+    // 5. Verificar territórios e sua associação com facções
+    stats.territorios_verificados += VerificarTerritoriosEFaccoes();
+    
+    // Registrar conclusão
+    var tempo_total := polcore().systime - tempo_inicio;
+    Print("Verificação COMPLETA concluída em " + tempo_total + " segundos");
+    
+    // Adicionar estatísticas de tempo
+    stats.timestamp := polcore().systime;
+    stats.duracao := tempo_total;
+    
+    // Salvar estatísticas
+    SetGlobalProperty("last_full_resources_check", polcore().systime);
+    SalvarEstatisticasVerificacao(stats);
+    
+    return 1;
+endfunction
+
+// Função para verificar se o ResourceController está rodando
+function VerificarControladorRecursos()
+    var pid := GetGlobalProperty("ResourceControllerPID");
+    var controller_running := 0;
+    
+    if (pid)
+        var process := GetProcess(pid);
+        if (process)
+            controller_running := 1;
+            Print("ResourceController está rodando (PID: " + pid + ")");
+        endif
+    endif
+    
+    if (!controller_running)
+        Print("AVISO: ResourceController não está rodando, reiniciando...");
+        var script := start_script("ResourceController");
+        if (script.errortext)
+            Print("ERRO: Falha ao reiniciar ResourceController: " + script.errortext);
+        else
+            SetGlobalProperty("ResourceControllerPID", script.pid);
+            Print("ResourceController reiniciado com sucesso (PID: " + script.pid + ")");
+        endif
+    endif
+    
+    return controller_running;
+endfunction
+
+// Função para executar verificação parcial
+function ExecutarVerificacaoParcial()
+    Print("Iniciando verificação PARCIAL de recursos de facções...");
+    var tempo_inicio := polcore().systime;
+    var stats := struct{
+        "tipo" := "parcial",
+        "baus_verificados" := 0,
+        "baus_corrigidos" := 0,
+        "facoes_verificadas" := 0
+    };
+    
+    // Verificar se o controlador está rodando
+    VerificarControladorRecursos();
+    
+    // 1. Verificar baús com marcação de modificação recente
+    var resultados := VerificarBausModificadosRecentemente();
+    stats.baus_verificados += resultados.verificados;
+    stats.baus_corrigidos += resultados.corrigidos;
+    
+    // 2. Verificar datafile para facções ativas
+    stats.facoes_verificadas += VerificarDatafileFaccoesAtivas();
+    
+    // Registrar conclusão
+    var tempo_total := polcore().systime - tempo_inicio;
+    Print("Verificação PARCIAL concluída em " + tempo_total + " segundos");
+    
+    // Adicionar estatísticas de tempo
+    stats.timestamp := polcore().systime;
+    stats.duracao := tempo_total;
+    
+    // Salvar estatísticas
+    SetGlobalProperty("last_partial_resources_check", polcore().systime);
+    SalvarEstatisticasVerificacao(stats);
+    
+    return 1;
+endfunction
+
+// Função para executar verificação rápida
+function ExecutarVerificacaoRapida()
+    // Verificar apenas elementos críticos que precisam verificação constante
+    var stats := struct{
+        "tipo" := "rapida",
+        "baus_verificados" := 0,
+        "baus_corrigidos" := 0
+    };
+    
+    // 1. Verificar baús marcados como "sujos"
+    var baus_sujos := VerificarBausSujos();
+    stats.baus_verificados += baus_sujos.verificados;
+    stats.baus_corrigidos += baus_sujos.corrigidos;
+    
+    // 2. Verificar qualquer baú com inconsistência recente
+    var baus_inconsistentes := VerificarBausComInconsistenciasRecentes();
+    stats.baus_verificados += baus_inconsistentes.verificados;
+    stats.baus_corrigidos += baus_inconsistentes.corrigidos;
+    
+    // Não registra estatísticas para verificações rápidas
+    return (stats.baus_corrigidos > 0);
+endfunction
+
+// Função para migrar recursos antigos para o novo formato
+function MigrarRecursosAntigosPrimeiraVez()
+    Print("Realizando migração inicial de recursos antigos...");
+    
+    // Verificar se o datafile antigo existe
+    var old_df := DFOpenDataFile("kingdom_resources");
+    if (!old_df)
+        Print("Datafile antigo não encontrado, criando estrutura do zero");
+        CriarEstruturaNovaRecursos();
+        return 1;
+    endif
+    
+    // Migrar recursos do Reino
+    MigrarRecursosReino(old_df);
+    
+    // Migrar recursos de facções
+    MigrarRecursosFaccoes(old_df);
+    
+    Print("Migração inicial concluída.");
+    return 1;
+endfunction
+
+// Função para criar estrutura nova de recursos
+function CriarEstruturaNovaRecursos()
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    
+    // Criar elemento para o Reino
+    var reino_elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    reino_elem.SetProp("recursos", CreateEmptyResourceStruct());
+    
+    // Criar elementos para facções existentes
+    var guilds := ListGuilds();
+    foreach guild in guilds
+        var guild_obj := FindGuild(guild.guildid);
+        if (guild_obj)
+            var faction_name := guild_obj.GetProp(FACTION_PROP_NAME);
+            if (!faction_name)
+                faction_name := guild_obj.GetProp("name");
+            endif
+            if (!faction_name)
+                faction_name := guild.guildname;
+            endif
+            
+            if (faction_name)
+                var faction_elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
+                faction_elem.SetProp("recursos", CreateEmptyResourceStruct());
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    Print("Nova estrutura de recursos criada para " + (guilds.size() + 1) + " facções");
+    return 1;
+endfunction
+
+// Função para migrar recursos do Reino
+function MigrarRecursosReino(old_df)
+    var elem := DFFindElement(old_df, "resources");
+    if (!elem)
+        Print("Nenhum recurso do Reino encontrado para migrar");
+        return 0;
+    endif
+    
+    var recursos := elem.GetProp("recursos");
+    if (!recursos)
+        Print("Struct de recursos do Reino não encontrado");
+        return 0;
+    endif
+    
+    // Validar e migrar
+    var recursos_validados := ValidarRecursos(recursos);
+    
+    // Salvar no novo formato
+    var new_df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    var new_elem := DFFindElement(new_df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    new_elem.SetProp("recursos", recursos_validados);
+    
+    Print("Recursos do Reino migrados com sucesso");
+    return 1;
+endfunction
+
+// Função para migrar recursos de facções
+function MigrarRecursosFaccoes(old_df)
+    var facoes_migradas := 0;
+    
+    // Procurar elementos com prefixo "faction_"
+    foreach elem_name in (old_df.keys())
+        if (elem_name.find("faction_") != error)
+            var faction_name := elem_name[8, elem_name.size()-7];
+            var elem := old_df.FindElement(elem_name);
+            var recursos := elem.GetProp("recursos");
+            
+            if (recursos)
+                // Validar e migrar
+                var recursos_validados := ValidarRecursos(recursos);
+                
+                // Salvar no novo formato
+                var new_df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+                var new_elem := DFFindElement(new_df, elem_name, DF_CREATE);
+                new_elem.SetProp("recursos", recursos_validados);
+                
+                facoes_migradas += 1;
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    Print("Recursos de " + facoes_migradas + " facções migrados com sucesso");
+    return facoes_migradas;
+endfunction
+
+// Função para verificar baús de todas as facções
+function VerificarBausTodosSistema()
+    Print("Verificando baús de todas as facções...");
+    
+    var tempo_inicio := polcore().systime;
+    var baús_verificados := 0;
+    var baús_corrigidos := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11)
+            var faction := GetObjProperty(item, OBJ_FACTION_PROP);
+            if (faction)
+                baús_verificados += 1;
+                var inconsistencias := VerificarEResolverInconsistencias(item);
+                
+                if (inconsistencias > 0)
+                    baús_corrigidos += 1;
+                    Print("Corrigidas " + inconsistencias + " inconsistências no baú #" + item.serial + " da facção: " + faction);
+                endif
+            endif
+            
+            // Limitar quantidade por execução
+            if (baús_verificados >= MAX_ITENS_POR_CICLO)
+                Print("Limite de itens por ciclo atingido. Processados: " + baús_verificados);
+                break;
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    var tempo_total := polcore().systime - tempo_inicio;
+    Print("Verificação de baús concluída em " + tempo_total + "s. Verificados: " + 
+          baús_verificados + ", Corrigidos: " + baús_corrigidos);
+    
+    return struct{
+        "verificados" := baús_verificados,
+        "corrigidos" := baús_corrigidos,
+        "tempo" := tempo_total
+    };
+endfunction
+
+
+// Função para verificar baús marcados recentemente
+function VerificarBausModificadosRecentemente()
+    Print("Verificando baús com modificações recentes...");
+    
+    var tempo_inicio := polcore().systime;
+    var baús_verificados := 0;
+    var baús_corrigidos := 0;
+    var current_time := polcore().systime;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11)
+            // Verificar se foi modificado recentemente
+            var last_modified := GetObjProperty(item, "recursos_last_modified");
+            if (last_modified && (current_time - last_modified < 86400)) // 24 horas
+                baús_verificados += 1;
+                var inconsistencias := VerificarEResolverInconsistencias(item);
+                
+                if (inconsistencias > 0)
+                    baús_corrigidos += 1;
+                    Print("Corrigidas " + inconsistencias + " inconsistências no baú recentemente modificado #" + item.serial);
+                endif
+                
+                // Limitar quantidade por execução
+                if (baús_verificados >= MAX_ITENS_POR_CICLO / 2)
+                    Print("Limite de itens por ciclo atingido. Processados: " + baús_verificados);
+                    break;
+                endif
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    var tempo_total := polcore().systime - tempo_inicio;
+    Print("Verificação de baús modificados concluída em " + tempo_total + "s. Verificados: " + 
+          baús_verificados + ", Corrigidos: " + baús_corrigidos);
+    
+    return struct{
+        "verificados" := baús_verificados,
+        "corrigidos" := baús_corrigidos,
+        "tempo" := tempo_total
+    };
+endfunction
+
+// Função para verificar baús marcados como "sujos"
+function VerificarBausSujos()
+    var baus_verificados := 0;
+    var baus_corrigidos := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11)
+            // Verificar se está marcado como sujo
+            var cache_dirty := GetObjProperty(item, CACHE_DIRTY_FLAG);
+            if (cache_dirty)
+                baus_verificados += 1;
+                var inconsistencias := VerificarEResolverInconsistencias(item);
+                
+                if (inconsistencias > 0)
+                    baus_corrigidos += 1;
+                endif
+                
+                // Limite por verificação rápida
+                if (baus_verificados >= 10)
+                    break;
+                endif
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    return struct{
+        "verificados" := baus_verificados,
+        "corrigidos" := baus_corrigidos
+    };
+endfunction
+
+// Função para verificar baús com inconsistências recentes
+function VerificarBausComInconsistenciasRecentes()
+    var baus_verificados := 0;
+    var baus_corrigidos := 0;
+    var current_time := polcore().systime;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11)
+            // Verificar histórico de inconsistências
+            var historico := GetObjProperty(item, "recursos_inconsistency_history");
+            if (historico && historico.size() > 0)
+                // Verificar se a última inconsistência foi recente
+                var ultima := historico[historico.size()];
+                if (ultima && ultima.timestamp && (current_time - ultima.timestamp < 7200)) // 2 horas
+                    baus_verificados += 1;
+                    var inconsistencias := VerificarEResolverInconsistencias(item);
+                    
+                    if (inconsistencias > 0)
+                        baus_corrigidos += 1;
+                    endif
+                    
+                    // Limite por verificação rápida
+                    if (baus_verificados >= 10)
+                        break;
+                    endif
+                endif
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    return struct{
+        "verificados" := baus_verificados,
+        "corrigidos" := baus_corrigidos
+    };
+endfunction
+
+// Função para registrar uma inconsistência
+function RegistrarInconsistencia(bau, recursos_cache, recursos_reais)
+    var historico := GetObjProperty(bau, "recursos_inconsistency_history");
+    if (!historico)
+        historico := array{};
+    endif
+    
+    // Adicionar nova entrada
+    var entry := struct{
+        "timestamp" := polcore().systime,
+        "cache" := recursos_cache,
+        "real" := recursos_reais
+    };
+    
+    historico.append(entry);
+    
+    // Limitar tamanho do histórico
+    while (historico.size() > MAX_INCONSISTENCY_HISTORY)
+        historico.erase(1);
+    endwhile
+    
+    SetObjProperty(bau, "recursos_inconsistency_history", historico);
+    return 1;
+endfunction
+
+// Função para verificar integridade do datafile
+function VerificarIntegridadeDatafile()
+    Print("Verificando integridade do datafile de recursos...");
+    
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível abrir o datafile de recursos");
+        return 0;
+    endif
+    
+    // Verificar elementos do datafile
+    var correcoes := 0;
+    
+    // 1. Verificar elemento do Reino
+    var reino_elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    var recursos_reino := reino_elem.GetProp("recursos");
+    
+    if (!recursos_reino)
+        recursos_reino := CreateEmptyResourceStruct();
+        reino_elem.SetProp("recursos", recursos_reino);
+        correcoes += 1;
+        Print("Criado struct de recursos do Reino");
+    else
+        // Validar e corrigir
+        var recursos_validados := ValidarRecursos(recursos_reino);
+        
+        // Se houve alterações
+        if (!SaoRecursosIguais(recursos_reino, recursos_validados))
+            reino_elem.SetProp("recursos", recursos_validados);
+            correcoes += 1;
+            Print("Corrigidos recursos do Reino");
+        endif
+    endif
+    
+    // 2. Verificar elementos de facções
+    foreach elem_name in (df.keys())
+        if (elem_name != KINGDOM_RESOURCE_ELEM && elem_name.find("faction_") != error)
+            var faction_elem := df.FindElement(elem_name);
+            var recursos := faction_elem.GetProp("recursos");
+            
+            if (!recursos)
+                recursos := CreateEmptyResourceStruct();
+                faction_elem.SetProp("recursos", recursos);
+                correcoes += 1;
+                Print("Criado struct de recursos para: " + elem_name);
+            else
+                // Validar e corrigir
+                var recursos_validados := ValidarRecursos(recursos);
+                
+                // Se houve alterações
+                if (!SaoRecursosIguais(recursos, recursos_validados))
+                    faction_elem.SetProp("recursos", recursos_validados);
+                    correcoes += 1;
+                    Print("Corrigidos recursos para: " + elem_name);
+                endif
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    Print("Verificação de integridade do datafile concluída. Correções: " + correcoes);
+    return correcoes;
+endfunction
+
+// Função para verificar consistência global entre baús e datafile
+function VerificarConsistenciaGlobalBausDatafile()
+    Print("Verificando consistência global entre baús e datafile...");
+    
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (!df)
+        return 0;
+    endif
+    
+    var inconsistencias := 0;
+    
+    // 1. Verificar Reino
+    inconsistencias += VerificarConsistenciaReino(df);
+    
+    // 2. Verificar facções específicas
+    var max_faccoes := 5; // Limitar número de facções por execução
+    var processadas := 0;
+    
+    foreach elem_name in (df.keys())
+        if (elem_name.find("faction_") != error)
+            var faction_name := elem_name[8, elem_name.size()-7]; // Extrair nome da facção
+            inconsistencias += VerificarConsistenciaFaccao(faction_name, df);
+            
+            processadas += 1;
+            if (processadas >= max_faccoes)
+                break;
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    Print("Verificação de consistência global concluída. Inconsistências encontradas: " + inconsistencias);
+    return inconsistencias;
+endfunction
+
+// Função para verificar consistência de uma facção específica
+function VerificarConsistenciaFaccao(faction_name, df)
+    if (!faction_name || !df)
+        return 0;
+    endif
+    
+    var faction_elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
+    var recursos_datafile := faction_elem.GetProp("recursos");
+    
+    if (!recursos_datafile)
+        recursos_datafile := CreateEmptyResourceStruct();
+        faction_elem.SetProp("recursos", recursos_datafile);
+    endif
+    
+    // Contar recursos totais em todos os baús da facção
+    var recursos_reais := CreateEmptyResourceStruct();
+    var baus_encontrados := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11 && GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
+            baus_encontrados += 1;
+            var bau_recursos := ContarRecursosReais(item);
+            
+            // Somar aos recursos totais
+            recursos_reais.comida += bau_recursos.comida;
+            recursos_reais.moedas += bau_recursos.moedas;
+            recursos_reais.couro += bau_recursos.couro;
+            recursos_reais.metal += bau_recursos.metal;
+            recursos_reais.madeira += bau_recursos.madeira;
+            recursos_reais.pano += bau_recursos.pano;
+            recursos_reais.pedras += bau_recursos.pedras;
+            recursos_reais.joias += bau_recursos.joias;
+        endif
+        Sleep(1);
+    endforeach
+    
+    // Verificar se há diferença significativa
+    var inconsistencias := 0;
+    var tolerancia := 10; // Tolerância menor para facções específicas
+    
+    if (Abs(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
+        Abs(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
+        Abs(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
+        Abs(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
+        Abs(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
+        Abs(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
+        Abs(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
+        Abs(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
+    
+        // Atualizar o datafile com os recursos reais
+        faction_elem.SetProp("recursos", recursos_reais);
+        inconsistencias += 1;
+        
+        Print("AVISO: Corrigida inconsistência global nos recursos da facção: " + faction_name);
+        Print("  - Baús encontrados: " + baus_encontrados);
+        
+        // Atualizar também na guilda
+        var guild_id := FindGuildByName(faction_name);
+        if (guild_id)
+            var guild := FindGuild(guild_id);
+            if (guild)
+                guild.SetProp("recursos", recursos_reais);
+                guild.SetProp("recursos_timestamp", polcore().systime);
+            endif
+        endif
+    endif
+    
+    return inconsistencias;
+endfunction
+
+// Função para verificar consistência do Reino
+function VerificarConsistenciaReino(df)
+    if (!df)
+        return 0;
+    endif
+    
+    var reino_elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    var recursos_datafile := reino_elem.GetProp("recursos");
+    
+    if (!recursos_datafile)
+        recursos_datafile := CreateEmptyResourceStruct();
+        reino_elem.SetProp("recursos", recursos_datafile);
+    endif
+    
+    // Contar recursos totais em todos os baús do Reino
+    var recursos_reais := CreateEmptyResourceStruct();
+    var baus_encontrados := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype == 0xFF11 && 
+            (GetObjProperty(item, OBJ_FACTION_PROP) == KINGDOM_FACTION || 
+             GetObjProperty(item, OBJ_FACTION_PROP) == "Reino"))
+        
+            baus_encontrados += 1;
+            var bau_recursos := ContarRecursosReais(item);
+            
+            // Somar aos recursos totais
+            recursos_reais.comida += bau_recursos.comida;
+            recursos_reais.moedas += bau_recursos.moedas;
+            recursos_reais.couro += bau_recursos.couro;
+            recursos_reais.metal += bau_recursos.metal;
+            recursos_reais.madeira += bau_recursos.madeira;
+            recursos_reais.pano += bau_recursos.pano;
+            recursos_reais.pedras += bau_recursos.pedras;
+            recursos_reais.joias += bau_recursos.joias;
+        endif
+        Sleep(1);
+    endforeach
+    
+    // Verificar se há diferença significativa
+    var inconsistencias := 0;
+    var tolerancia := 20; // Tolerância maior para o Reino
+    
+    if (Abs(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
+        Abs(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
+        Abs(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
+        Abs(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
+        Abs(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
+        Abs(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
+        Abs(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
+        Abs(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
+    
+        // Atualizar o datafile com os recursos reais
+        reino_elem.SetProp("recursos", recursos_reais);
+        inconsistencias += 1;
+        
+        Print("AVISO: Corrigida inconsistência global nos recursos do Reino");
+        Print("  - Baús encontrados: " + baus_encontrados);
+    endif
+    
+    return inconsistencias;
+endfunction
+
+
+
+function RegistrarTerritorioParaRegeneracao(territory_id, faction)
+    var df := DFOpenDataFile(":system:messages", DF_CREATE);
+    if (!df)
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, "territory_regeneration", DF_CREATE);
+    var pendentes := elem.GetProp("pendentes");
+    
+    if (!pendentes)
+        pendentes := array{};
+    endif
+    
+    // Verificar se já está na lista
+    foreach request in pendentes
+        if (request.territory_id == territory_id)
+            // Já está na lista, apenas atualizar timestamp
+            request.timestamp := polcore().systime;
+            elem.SetProp("pendentes", pendentes);
+            return 1;
+        endif
+    endforeach
+    
+    // Adicionar nova solicitação
+    var request := struct{
+        "territory_id" := territory_id,
+        "faction" := faction,
+        "timestamp" := polcore().systime,
+        "attempts" := 0
+    };
+    
+    pendentes.append(request);
+    elem.SetProp("pendentes", pendentes);
+    
+    Print("Território " + territory_id + " registrado para regeneração");
+    return 1;
+endfunction
+
+
+// Implementação simples da função Abs (valor absoluto)
+function Abs(value)
+    if (value < 0)
+        return -value;
+    endif
+    return value;
+endfunction
+
+
+function VerificarPropriedadesGuildas()
+    Print("Verificando propriedades de guildas relacionadas a facções...");
+    var guildas_atualizadas := 0;
+    
+    var guilds := ListGuilds();
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (!guild)
+            continue;
+        endif
+        
+        var atualizacoes := 0;
+        
+        // 1. Verificar se tem nome de facção padrão 
+        var faction_name := guild.GetProp(FACTION_PROP_NAME);
+        if (!faction_name)
+            // Tentar usar guildname como nome de facção
+            guild.SetProp(FACTION_PROP_NAME, guild.guildname);
+            atualizacoes += 1;
+        endif
+        
+        // 2. Verificar recursos de facção
+        var recursos := guild.GetProp("recursos");
+        if (!recursos)
+            // Nenhum recurso definido, inicializar
+            recursos := CreateEmptyResourceStruct();
+            guild.SetProp("recursos", recursos);
+            atualizacoes += 1;
+        else
+            // Validar recursos existentes
+            var recursos_validados := ValidarRecursos(recursos);
+            
+            // Se houver diferenças, atualizar
+            if (!SaoRecursosIguais(recursos, recursos_validados))
+                guild.SetProp("recursos", recursos_validados);
+                Print("Corrigidos recursos para guilda " + guild.guildname);
+                atualizacoes += 1;
+            endif
+        endif
+        
+        // 3. Verificar territórios
+        var territories := guild.GetProp("territories");
+        if (territories && typeof(territories) == "Array")
+            var territories_validos := array{};
+            var df := DFOpenDataFile(":architect:areas");
+            
+            if (df)
+                foreach terr in territories
+                    // Verificar se o território existe
+                    var elem;
+                    if (typeof(terr) == "String")
+                        elem := df.FindElement(terr);
+                    endif
+                    
+                    if (elem)
+                        territories_validos.append(terr);
+                    else
+                        Print("Território não encontrado: " + terr + " (removido da lista da guilda)");
+                    endif
+                    sleepms(2);
+                endforeach
+                
+                // Atualizar se necessário
+                if (territories_validos.size() != territories.size())
+                    guild.SetProp("territories", territories_validos);
+                    atualizacoes += 1;
+                endif
+            endif
+        endif
+        
+        // Contabilizar guilda se teve alguma atualização
+        if (atualizacoes > 0)
+            guildas_atualizadas += 1;
+        endif
+        
+        sleepms(5);
+    endforeach
+    
+    Print("Verificação de guildas concluída. Guildas atualizadas: " + guildas_atualizadas);
+    return guildas_atualizadas;
+endfunction
+
+// Função para verificar territórios e sua associação com facções
+function VerificarTerritoriosEFaccoes()
+    Print("Verificando territórios e suas associações com facções...");
+    var territorios_verificados := 0;
+    var territorios_atualizados := 0;
+    
+    var df := DFOpenDataFile(":architect:areas");
+    if (!df)
+        Print("ERRO: Não foi possível abrir o datafile de áreas");
+        return 0;
+    endif
+    
+    // Obter registros de seriais para cruzamento
+    var seriais_df := DFOpenDataFile(":faccao:seriais");
+    var territorios_seriais := dictionary{};
+    
+    if (seriais_df)
+        territorios_seriais := seriais_df.GetProp("territorios");
+        if (!territorios_seriais)
+            territorios_seriais := dictionary{};
+        endif
+    endif
+    
+    foreach nome_territorio in (df.keys())
+        var elem := df.FindElement(nome_territorio);
+        if (!elem)
+            continue;
+        endif
+        
+        territorios_verificados += 1;
+        var atualizacoes := 0;
+        
+        // 1. Verificar propriedade de facção (padronizar)
+        var faction := elem.GetProp("Faction");  // Legado (maiúscula)
+        var faction_std := elem.GetProp(TERRITORY_FACTION_PROP);  // Novo padrão (minúscula)
+        
+        // Padronizar uso da propriedade TERRITORY_FACTION_PROP
+        if (faction && !faction_std)
+            elem.SetProp(TERRITORY_FACTION_PROP, faction);
+            atualizacoes += 1;
+        elseif (faction_std && !faction)
+            elem.SetProp("Faction", faction_std);  // Manter compatibilidade
+            atualizacoes += 1;
+        elseif (faction && faction_std && faction != faction_std)
+            // Usar o valor de TERRITORY_FACTION_PROP como padrão
+            elem.SetProp("Faction", faction_std);
+            atualizacoes += 1;
+        endif
+        
+        // 2. Verificar ID do território
+        var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+        if (!territory_id)
+            // Gerar ID se não existir (usando nome + timestamp)
+            territory_id := "TER_" + nome_territorio + "_" + polcore().systime;
+            elem.SetProp(TERRITORY_ID_PROP, territory_id);
+            atualizacoes += 1;
+        endif
+        
+        // 3. Verificar configurações de recursos
+        // Verificar se o território tem recursos configurados
+        if (!elem.GetProp("Resources") && elem.GetProp(TERRITORY_FACTION_PROP) && 
+            elem.GetProp(TERRITORY_FACTION_PROP) != DEFAULT_FACTION)
+            // Se for território controlado mas sem recursos, configurar padrão
+            elem.SetProp("Resources", "IronOre, couroespesso, cogumelo");
+            elem.SetProp("ResourceInterval", 120);  // 2 horas
+            elem.SetProp("ResourceAmount", 10);
+            elem.SetProp("NextResourceTime", polcore().systime + 7200);  // 2 horas
+            atualizacoes += 1;
+        endif
+        
+        // 4. Verificar seriais registrados
+        var faction_atual := elem.GetProp(TERRITORY_FACTION_PROP);
+        if (faction_atual && faction_atual != DEFAULT_FACTION)
+            // Verificar se tem registro nos seriais
+            if (territorios_seriais.exists(nome_territorio) || territorios_seriais.exists(territory_id))
+                var info := territorios_seriais[nome_territorio] ? 
+                             territorios_seriais[nome_territorio] : territorios_seriais[territory_id];
+                
+                // Verificar se a facção no registro corresponde
+                if (info.faction != faction_atual)
+                    info.faction := faction_atual;
+                    atualizacoes += 1;
+                endif
+                
+                // Verificar os objetos do território
+                VerificarObjetosDoTerritorio(info, faction_atual, territory_id);
+            endif
+        endif
+        
+        if (atualizacoes > 0)
+            territorios_atualizados += 1;
+        endif
+        
+        sleepms(5);
+    endforeach
+    
+    Print("Verificação de territórios concluída. Verificados: " + territorios_verificados + 
+          ", Atualizados: " + territorios_atualizados);
+    return territorios_verificados;
+endfunction
+
+// Função auxiliar para verificar objetos do território (baú, mesa, etc)
+function VerificarObjetosDoTerritorio(byref info, faction_name, territory_id)
+    var atualizado := 0;
+    
+    // Verificar baú
+    if (info.bau)
+        var bau := SystemFindObjectBySerial(info.bau);
+        if (bau)
+            // Verificar se o baú tem a facção correta
+            var bau_faction := GetObjProperty(bau, OBJ_FACTION_PROP);
+            if (bau_faction != faction_name)
+                SetObjProperty(bau, OBJ_FACTION_PROP, faction_name);
+                atualizado += 1;
+            endif
+            
+            // Verificar ID do território
+            var bau_territory_id := GetObjProperty(bau, TERRITORY_ID_PROP);
+            if (bau_territory_id != territory_id)
+                SetObjProperty(bau, TERRITORY_ID_PROP, territory_id);
+                atualizado += 1;
+            endif
+            
+            // Verificar unique_id
+            var unique_id := GetObjProperty(bau, UNIQUE_ID_PROP);
+            var expected_id := CreateUniqueItemID(faction_name, ITEM_TYPE_BAU, territory_id);
+            if (!unique_id || unique_id != expected_id)
+                SetObjProperty(bau, UNIQUE_ID_PROP, expected_id);
+                atualizado += 1;
+            endif
+        endif
+    endif
+    
+    // Verificar mesa
+    if (info.mesa)
+        var mesa := SystemFindObjectBySerial(info.mesa);
+        if (mesa)
+            // Verificar se a mesa tem a facção correta
+            var mesa_faction := GetObjProperty(mesa, OBJ_FACTION_PROP);
+            if (mesa_faction != faction_name)
+                SetObjProperty(mesa, OBJ_FACTION_PROP, faction_name);
+                atualizado += 1;
+            endif
+            
+            // Verificar ID do território
+            var mesa_territory_id := GetObjProperty(mesa, TERRITORY_ID_PROP);
+            if (mesa_territory_id != territory_id)
+                SetObjProperty(mesa, TERRITORY_ID_PROP, territory_id);
+                atualizado += 1;
+            endif
+            
+            // Verificar unique_id
+            var unique_id := GetObjProperty(mesa, UNIQUE_ID_PROP);
+            var expected_id := CreateUniqueItemID(faction_name, ITEM_TYPE_MESA, territory_id);
+            if (!unique_id || unique_id != expected_id)
+                SetObjProperty(mesa, UNIQUE_ID_PROP, expected_id);
+                atualizado += 1;
+            endif
+        endif
+    endif
+    
+    // Verificar mural
+    if (info.mural)
+        var mural := SystemFindObjectBySerial(info.mural);
+        if (mural)
+            // Verificar se o mural tem a facção correta
+            var mural_faction := GetObjProperty(mural, OBJ_FACTION_PROP);
+            if (mural_faction != faction_name)
+                SetObjProperty(mural, OBJ_FACTION_PROP, faction_name);
+                atualizado += 1;
+            endif
+            
+            // Verificar ID do território
+            var mural_territory_id := GetObjProperty(mural, TERRITORY_ID_PROP);
+            if (mural_territory_id != territory_id)
+                SetObjProperty(mural, TERRITORY_ID_PROP, territory_id);
+                atualizado += 1;
+            endif
+            
+            // Verificar unique_id
+            var unique_id := GetObjProperty(mural, UNIQUE_ID_PROP);
+            var expected_id := CreateUniqueItemID(faction_name, ITEM_TYPE_MURAL, territory_id);
+            if (!unique_id || unique_id != expected_id)
+                SetObjProperty(mural, UNIQUE_ID_PROP, expected_id);
+                atualizado += 1;
+            endif
+        endif
+    endif
+    
+    return atualizado;
+endfunction
+
+// Função para salvar estatísticas de verificação
+function SalvarEstatisticasVerificacao(stats)
+    if (!stats)
+        return 0;
+    endif
+    
+    var df := DFOpenDataFile(":faccao:verificacoes", DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível abrir o datafile de verificações");
+        return 0;
+    endif
+    
+    var elem := DFFindElement(df, "historico", DF_CREATE);
+    
+    // Obter histórico existente
+    var historico := elem.GetProp("verificacoes");
+    if (!historico)
+        historico := array{};
+    endif
+    
+    // Adicionar novas estatísticas
+    historico.append(stats);
+    
+    // Limitar o tamanho do histórico
+    while (historico.size() > 50)
+        historico.erase(1);
+    endwhile
+    
+    // Salvar histórico atualizado
+    elem.SetProp("verificacoes", historico);
+    
+    // Salvar estatísticas agregadas
+    var agregadas := elem.GetProp("agregadas");
+    if (!agregadas)
+agregadas := struct{
+    "total_verificacoes" := 0,
+            "total_correcoes" := 0,
+            "total_inconsistencias" := 0,
+            "ultima_verificacao" := 0
+        };
+    endif
+    
+    // Atualizar estatísticas agregadas
+    agregadas.total_verificacoes += 1;
+    
+    if (stats.datafile_correcoes)
+        agregadas.total_correcoes += stats.datafile_correcoes;
+    endif
+    
+    if (stats.baus_corrigidos)
+        agregadas.total_correcoes += stats.baus_corrigidos;
+    endif
+    
+    if (stats.inconsistencias)
+        agregadas.total_inconsistencias += stats.inconsistencias;
+    endif
+    
+    agregadas.ultima_verificacao := polcore().systime;
+    
+    elem.SetProp("agregadas", agregadas);
+    
+    return 1;
+endfunction
+
+// Função para verificar se dois structs de recursos são iguais
+function SaoRecursosIguais(recursos1, recursos2)
+    if (!recursos1 || !recursos2)
+        return 0;
+    endif
+    
+    // Verificar cada campo individualmente
+    if (recursos1.comida != recursos2.comida ||
+        recursos1.moedas != recursos2.moedas ||
+        recursos1.couro != recursos2.couro ||
+        recursos1.metal != recursos2.metal ||
+        recursos1.madeira != recursos2.madeira ||
+        recursos1.pano != recursos2.pano ||
+        recursos1.pedras != recursos2.pedras ||
+        recursos1.joias != recursos2.joias)
+        return 0;
+    endif
+    
+    return 1;
+endfunction
+
+// Função para verificar datafile de facções ativas
+function VerificarDatafileFaccoesAtivas()
+    Print("Verificando datafile para facções ativas...");
+    var facoes_verificadas := 0;
+    
+    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
+    if (!df)
+        Print("ERRO: Não foi possível abrir o datafile de recursos");
+        return 0;
+    endif
+    
+    // 1. Verificar Reino primeiro
+    var reino_elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
+    var recursos_reino := reino_elem.GetProp("recursos");
+    if (!recursos_reino)
+        recursos_reino := CreateEmptyResourceStruct();
+        reino_elem.SetProp("recursos", recursos_reino);
+        facoes_verificadas += 1;
+    else
+        // Validar recursos do reino
+        var recursos_validados := ValidarRecursos(recursos_reino);
+        if (!SaoRecursosIguais(recursos_reino, recursos_validados))
+            reino_elem.SetProp("recursos", recursos_validados);
+            facoes_verificadas += 1;
+        endif
+    endif
+    
+    // 2. Obter facções ativas (guildas com membros)
+    var faccoes_ativas := array{};
+    var guilds := ListGuilds();
+    
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (guild && guild.members.size() > 0)
+            var faction_name := guild.GetProp(FACTION_PROP_NAME);
+            if (!faction_name)
+                faction_name := guild.guildname;
+            endif
+            
+            if (faction_name)
+                faccoes_ativas.append(faction_name);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    // 3. Verificar cada facção ativa
+    foreach faction_name in faccoes_ativas
+        var elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
+        var recursos := elem.GetProp("recursos");
+        
+        if (!recursos)
+            // Inicializar recursos se não existirem
+            recursos := CreateEmptyResourceStruct();
+            elem.SetProp("recursos", recursos);
+            facoes_verificadas += 1;
+        else
+            // Validar recursos existentes
+            var recursos_validados := ValidarRecursos(recursos);
+            if (!SaoRecursosIguais(recursos, recursos_validados))
+                elem.SetProp("recursos", recursos_validados);
+                facoes_verificadas += 1;
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    // 4. Limpar facções inativas (opcional)
+    foreach elem_name in (df.keys())
+        if (elem_name.find("faction_") == 0)
+            var faction_name := elem_name[8, elem_name.size()-7]; // Extrair nome da facção
+            
+            if (!(faction_name in faccoes_ativas))
+                // Verificar se a facção tem territórios
+                var tem_territorio := 0;
+                
+                var rect_df := DFOpenDataFile(":architect:areas");
+                if (rect_df)
+                    foreach territory in (rect_df.keys())
+                        var terr_elem := rect_df.FindElement(territory);
+                        if (terr_elem)
+                            var terr_faction := terr_elem.GetProp(TERRITORY_FACTION_PROP);
+                            if (terr_faction == faction_name)
+                                tem_territorio := 1;
+                                break;
+                            endif
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+                
+                // Se a facção não tem territórios, podemos limpá-la (opcional)
+                // Comentado para evitar perda de dados acidental
+                /*
+                if (!tem_territorio)
+                    df.DeleteElement(elem_name);
+                    facoes_verificadas += 1;
+                    Print("Facção inativa removida do datafile: " + faction_name);
+                endif
+                */
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    Print("Verificação de datafile de facções ativas concluída. Facções verificadas/atualizadas: " + facoes_verificadas);
+    return facoes_verificadas;
+endfunction
+
+
+// Função para verificar lidas (registros de comunicação) das facções
+function VerificarLidasFaccao()
+    Print("Verificando registros de comunicação de facções...");
+    var count := 0;
+    
+    // Abrir o datafile de mensagens, se existir
+    var msg_df := DFOpenDataFile(":system:messages");
+    if (!msg_df)
+        return 0;
+    endif
+    
+    var elem := msg_df.FindElement("faccao_mensagens");
+    if (!elem)
+        return 0;
+    endif
+    
+    var mensagens := elem.GetProp("mensagens");
+    if (!mensagens || typeof(mensagens) != "Array")
+        return 0;
+    endif
+    
+    Print("Verificando " + mensagens.size() + " mensagens pendentes...");
+    var mensagens_atualizadas := array{};
+    var current_time := polcore().systime;
+    
+    // Processar cada mensagem
+    foreach msg in (mensagens)  // Corrigido: adicionado parênteses
+        // Verificar se a mensagem expirou (mais de 30 dias)
+        if (msg.timestamp && (current_time - msg.timestamp) > (30 * 86400))
+            count += 1;
+            // Não adicionar à lista atualizada, expirando a mensagem
+        else
+            var adicionar_mensagem := 1;
+            
+            // Verificar se os destinatários ainda são válidos
+            if (msg.destinatarios)
+                var destinatarios_validos := array{};
+                
+                foreach dest in (msg.destinatarios)  // Corrigido: adicionado parênteses
+                    // Verificar se facção/guilda ainda existe
+                    if (FindGuildByName(dest.faction))
+                        destinatarios_validos.append(dest);
+                    else
+                        count += 1;
+                    endif
+                    sleepms(2);
+                endforeach
+                
+                // Atualizar só se houver mudanças
+                if (destinatarios_validos.size() != msg.destinatarios.size())
+                    msg.destinatarios := destinatarios_validos;
+                endif
+                
+                // Não adicionar se não tiver destinatários
+                if (msg.destinatarios.size() == 0)
+                    adicionar_mensagem := 0;
+                endif
+            endif
+            
+            // Adicionar mensagem se for válida
+            if (adicionar_mensagem)
+                mensagens_atualizadas.append(msg);
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    // Salvar a lista atualizada
+    if (mensagens_atualizadas.size() != mensagens.size())
+        elem.SetProp("mensagens", mensagens_atualizadas);
+        Print("Mensagens atualizadas: " + count + " mensagens expiradas ou com destinatários inválidos removidas");
+    endif
+    
+    return count;
+endfunction
