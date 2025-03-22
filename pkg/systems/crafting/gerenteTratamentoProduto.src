@@ -107,7 +107,7 @@ program GerenteTratamentoProduto(parametros)
 
 	endwhile
 
-	SendSysMessageEX(quem, "Gerenciador Finalizado.", SSM_INFO);
+	SendSysMessageEX(quem, "Tratamento Finalizado.", SSM_INFO);
 endprogram
 
 function DeveFinalizarTratamento(estadoGerenciamento)

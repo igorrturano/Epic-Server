@@ -94,11 +94,15 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
 	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Definir um fluxo para Excepcionais.
+	//TODO criar botão "Avaliar" que deixar o cara saber se ele pode trabalhar o material daquele componente/ingrediente
 	//TODO implementar lógica de adicionais de dificuldade. (Exemplo: componentes melhores deixam mais dificil.)
+	//TODO refatorar includes
+	//*** POS MERGE DEVELOP***
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
 	//TODO Criar gumps de ajuda.
 	//TODO Criar API para gerar item fabricado.
+	//TODO Criar e atribuir componentes a todos os itens.
 	//TODO Animações para todas as profissões. [Late]
 	//TODO Marcar sistema antigo como depreciado. [Late]
 	//TODO Embelezar gumps [Penultima fase]
@@ -361,9 +365,14 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
 	
-	var item := CreateItemInBackpack(quem,descriptor, quantidade);
-	item.weight_multiplier_mod := pesoFinal;
-	SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
+	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
+	Print("item: " + item  + " descriptor: " + descriptor + " quantidade: " + quantidade);
+	if(item)
+		item.weight_multiplier_mod := pesoFinal;
+		SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
+	else
+		SendSysMessageEX(quem, "falha ao criar item.".format(item.desc), SSM_FAIL);
+	endif
 
 endfunction
 
@@ -1365,7 +1374,7 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao)
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
-		if(!configProfissao[chave].encaixeComponente)
+		if(!configProfissao[chave].encaixe)
 			continue;
 		endif
 
@@ -1385,7 +1394,7 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao)
 		componente.+estacao := itemsConfig[configProfissao[chave].estacao].desc;
 		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
-		componente.+encaixe := configProfissao[chave].encaixeComponente;
+		componente.+encaixe := configProfissao[chave].encaixe;
 		componente.+selecione := struct{isColunaBotao := true, objtype := chave};
 
 		componentes.append(componente);
