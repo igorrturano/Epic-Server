@@ -156,7 +156,9 @@ function MontaEsquemaGump(byref gump,byref sessao)
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + (larguraCelula * 4.4) - 5,CInt(alturaCelula * 4.9) + 4, 3000, larguraCelula * 3, alturaEncaixeHeader - 7);
 	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO,CInt(alturaCelula * 4.9) + 7,larguraEncaixeHeader,alturaEncaixeHeader,"<basefont size=55 color=#024d95><center>Encaixes de Componente</center>");
 	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula * 0.5),1153,"Receita: {}".format("PlaceHolder"));
-	
+	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula * 2),1153,"PesoTotal: {}".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorPesoTotal));
+	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula * 3),1153,"HpTotal: {}".format(sessao.receitaSelecionada.esquemaSelecionado.modificadorHpTotal));
+
 	GFTextLine(gump,margemEsquerdaLocal + 10, margemSuperiorLocal + Cint(alturaCelula),1153,"Nome do Esquema:");
 	if(sessao.acao == ADICIONAR)
 		GFTextEntry(gump,margemEsquerdaLocal  + (larguraCelula * 2), margemSuperiorLocal + Cint(alturaCelula), 120, 17, 1153, sessao.receitaSelecionada.esquemaSelecionado.nome, 2,40);
@@ -319,12 +321,17 @@ endfunction
 function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	var larguraLocal := larguraCelula * 3.7;
 	var alturaPainel := alturaCelula * 3;
-	var alturaLinha := 30;
+	var alturaLinha := 20;
 	var componenteEscolhido := sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indice];
+	var isHpModificado := componenteEscolhido.propriedades.modificadorHp != 0 && TypeOfInt(componenteEscolhido.propriedades.modificadorHp) != OT_UNINIT;
+	var isPesoModificado := componenteEscolhido.propriedades.modificadorPeso != 0 && TypeOfInt(componenteEscolhido.propriedades.modificadorPeso) != OT_UNINIT;
 	
 	var quantidadeEfeitosAdicionais := componenteEscolhido.propriedades.efeitosAdicionais.size();
-	if(quantidadeEfeitosAdicionais > 0)
-		alturaPainel := alturaPainel + alturaLinha * quantidadeEfeitosAdicionais;
+
+	if(quantidadeEfeitosAdicionais > 0 || isHpModificado || isPesoModificado)
+		alturaPainel := alturaPainel + alturaLinha * (quantidadeEfeitosAdicionais ? quantidadeEfeitosAdicionais : 0);
+		alturaPainel := AumentaPainelSe(isHpModificado,alturaPainel,alturaLinha);
+		alturaPainel := AumentaPainelSe(isPesoModificado,alturaPainel,alturaLinha);
 	endif
 
 	GFResizePic(gump, x - 10,y, 3600, larguraLocal, alturaPainel - 10);
@@ -364,6 +371,41 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 			Sleepms(2);
 		endforeach
 	endif
+
+	posYcaracteristicas += alturaLinha * (componenteEscolhido.propriedades.efeitosAdicionais.size() + 1);
+	
+	if(isHpModificado)
+		var info := CriaCorSinal(componenteEscolhido.propriedades.modificadorHp);
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,"Hp");
+		GFTextLine(gump,x + 195,posYcaracteristicas,info.cor,"{}{}".format(info.sinal,componenteEscolhido.propriedades.modificadorHp));
+		posYcaracteristicas += alturaLinha;
+	endif
+
+	if(isPesoModificado)
+		var info := CriaCorSinal(componenteEscolhido.propriedades.modificadorPeso, true);
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,"peso");
+		GFTextLine(gump,x + 195,posYcaracteristicas,info.cor,"{}{}%".format(info.sinal,componenteEscolhido.propriedades.modificadorPeso));
+	endif
+
+endfunction
+
+function CriaCorSinal(valor, isInvertido := false)
+	var retorno := struct;
+	if(valor > 0)
+		retorno.+cor := isInvertido ? 38 : 62;
+		retorno.+sinal := "+";
+	else
+		retorno.+cor := isInvertido ? 62 : 38;
+		retorno.+sinal := "";
+	endif
+	return retorno;
+endfunction
+
+function AumentaPainelSe(isTrue, valor, acrescimo)
+	if(isTrue)
+		valor += acrescimo;
+	endif 
+	return valor;
 endfunction
 
 function GeraSetas(byref gump,x,y, valor)
@@ -504,7 +546,7 @@ endfunction
 function AvaliaEsforço(sessao, parametros)
 	var diferenca := parametros.picoMaximoPericia - sessao.picoPericia;
 	case (cint(diferenca))
-	
+
 		0: return "Máximo.";
 		1: return "Muito Grande.";
 		2: return "Grande.";

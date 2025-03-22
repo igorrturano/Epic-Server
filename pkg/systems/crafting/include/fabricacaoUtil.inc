@@ -49,19 +49,28 @@ function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePe
 endfunction
 
 function CriaItemFabricado(quem, produto, quantidade := 1)
-
 	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
 
 	var descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
 		descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
 		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
 		descriptor.color := propFabricadoMontado.esquema.cor;
 		
-	var item := CreateItemInBackpack(quem,descriptor, quantidade);
+	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
+	if(!item)
+		item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidade), quem.realm);
+	endif
+
+	if(!item)
+		SendSysMessageEX(quem, "Erro ao criar objeto.",SSM_FAIL);
+	endif
+
+	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
 
 endfunction
 

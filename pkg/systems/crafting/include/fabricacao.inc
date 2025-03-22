@@ -65,6 +65,8 @@ function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhid
 				cor := corItem,
 				material := material,
 				isCompletamenteComum := 1,
+				modificadorHpTotal := 0,
+				modificadorPesoTotal := 0,
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
 endfunction
@@ -86,8 +88,6 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar botão para sair
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO Deixar o cara escolher se quer fazer um componente de qualidade mais baixa.
-	//TODO verificar porque os componentes não estão estacando na criação..
 	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
 	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
 	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
@@ -103,6 +103,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO Criar gumps de ajuda.
 	//TODO Criar API para gerar item fabricado.
 	//TODO Criar e atribuir componentes a todos os itens.
+	//TODO aplicar efeitos do componente em suas respectivas ações.
 	//TODO Animações para todas as profissões. [Late]
 	//TODO Marcar sistema antigo como depreciado. [Late]
 	//TODO Embelezar gumps [Penultima fase]
@@ -297,8 +298,9 @@ function MontaMelhorEsquema(quem, sessao)
 	foreach componenteEncontrado in componentesEncontrados
 		Sleepms(2);
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
+		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos);
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria);
 		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
 
@@ -320,7 +322,7 @@ function FabricaItens(quem, esquema, receita, quantidade := 1)
 			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
 				break;
 			endif
-			var retorno := FabricaItemMontado(quem,posicaoInicial,esquema, receita);
+			var retorno := FabricaItemMontado(quem,esquema, receita);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 				break;
@@ -347,16 +349,16 @@ function hasMovido(quem,posicaoInicial)
 endfunction
 
 function CriaItemMontado(quem,esquema,receita, quantidade)
-
 	var definicaoItem := itemsConfig[receita.objtype];
 	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
 
 	var pesoFinal := 1;
 
+	var modificador := esquema.modificadorPesoTotal ? pesoFinal + ((esquema.modificadorPesoTotal / 100) + 1) : pesoFinal;
 	if(definicaoItem.weight)
-		pesoFinal := pesoFinal * definicaoItem.weight;
+		pesoFinal := pesoFinal * (definicaoItem.weight * modificador);
 	else
-		pesoFinal := pesoFinal * definicaoTileItem.weight;
+		pesoFinal := pesoFinal * (definicaoTileItem.weight * modificador);
 	endif
 
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
@@ -364,7 +366,7 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	descriptor.graphic := receita.graphic;
 	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
-	
+
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
 
 	if(item)
@@ -542,7 +544,8 @@ function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, config
 									componentesNecessarios[retornoDropDownOpcao.indiceEncaixeComponente];
 	
 	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
-		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos);
+		var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
+		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos, quantidadeComponentesNecessaria);
 		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, retornoDropDownOpcao.indiceEncaixeComponente);
 	endif
 endfunction
@@ -553,8 +556,16 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
 	endif
 
-	if(componenteEscolhido.poderAvaliado != 0)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
+	if(componenteEscolhido.poderAvaliado.poderContado != 0)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
 		esquemaSelecionado.isCompletamenteComum := 0;
+	endif
+
+	if(componenteEscolhido.propriedades.modificadorHp != 0)
+		esquemaSelecionado.modificadorHpTotal += componenteEscolhido.propriedades.modificadorHp;
+	endif
+
+	if(componenteEscolhido.propriedades.modificadorPeso != 0)
+		esquemaSelecionado.modificadorPesoTotal += componenteEscolhido.propriedades.modificadorPeso;
 	endif
 
 	if(esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
@@ -567,7 +578,7 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 	
 endfunction
 
-function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos)
+function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos, quantidadeComponentesNecessaria)
 	var componenteEscolhido := struct;
 		var itemNaBag := componenteEncontrado.itemRef;
 
@@ -580,7 +591,9 @@ function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, co
 														componenteEscolhido.material.chave,
 														componenteEscolhido.componenteNecessario.caracteristica,
 														componenteEscolhido.tier,
-														configRecursos);
+														quantidadeComponentesNecessaria,
+														configRecursos
+														);
 		componenteEscolhido.+poderAvaliado := AvaliaPoderComponente(
 														componenteEscolhido.tier,
 														componenteEscolhido.material.chave,
@@ -711,14 +724,25 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 											
 	var poderNovo := AvaliaPoderComponente(envelopeNovo.tier,envelopeNovo.chaveMaterial, caracteristica, configRecursos);
 	
-	if( poderAtual < poderNovo)
+	if( poderAtual.poderContado < poderNovo.poderContado)
 		componentesEncontrados.melhor := envelopeNovo;
+	else
+		if(poderAtual.poderContado == poderNovo.poderContado) //Empatou
+			if(poderAtual.modificadorHp < poderNovo.poderContado) //Prioridade do desempate é o bônus no HP
+				componentesEncontrados.melhor := envelopeNovo;
+			else
+				if(poderAtual.modificadorPeso < poderNovo.modificadorPeso) // Depois o bônus no peso
+					componentesEncontrados.melhor := envelopeNovo;
+				endif
+			endif
+		endif
 	endif
 
 endfunction
 
 function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
 	var poderContado := 0;
+	var retorno := struct;
 
 	if(!propriedades)
 		propriedades := MontaPropriedadesComponente(
@@ -735,10 +759,14 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 		poderContado += efeitoSecundario.valor;
 	endforeach
 
+	retorno.+poderContado := poderContado;
+	retorno.+modPeso := propriedades.modificadorPeso;
+	retorno.+modHp := propriedades.modificadorHp;
+
 	return poderContado;
 endfunction
 
-function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier, configRecursos := 0)
+function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quantidadeComponentesNecessaria ,configRecursos := 0)
 
 	if(!configRecursos)
 		configRecursos := ReadConfigFile(":crafting:config/resourceList");
@@ -748,8 +776,21 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier, config
 	propriedades.+caracteristica := caracteristica;
 
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
+	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
+	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
 	var efeitoEscolhido := efeitosMaterial[propriedades.caracteristica];
 	
+	if(modificadorHp)
+		propriedades.+modificadorHp := modificadorHp;
+	else
+		propriedades.-modificadorHp;
+	endif
+	if(modificadorPeso)
+		propriedades.+modificadorPeso := Round(modificadorPeso / quantidadeComponentesNecessaria);
+	else
+		propriedades.-modificadorHp;
+	endif
+
 	if(efeitoEscolhido)
 		var subEfeitos := SplitWords(efeitoEscolhido);
 
@@ -899,7 +940,6 @@ function MontaReceitaItem(quem, objtype, nomePericia,byref propCraft)
 	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
 	receita.+isEmpilhavel := definicaoTileItem.Stackable;
 	return receita;
-
 endfunction
 
 function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, sucessos)
