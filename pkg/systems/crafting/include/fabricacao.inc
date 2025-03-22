@@ -86,19 +86,19 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar botão para sair
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
-	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO Deixar o cara escolher se quer fazer um componente de qualidade mais baixa.
 	//TODO verificar porque os componentes não estão estacando na criação..
 	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
 	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
 	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Definir um fluxo para Excepcionais.
+	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO criar botão "Avaliar" que deixar o cara saber se ele pode trabalhar o material daquele componente/ingrediente
 	//TODO implementar lógica de adicionais de dificuldade. (Exemplo: componentes melhores deixam mais dificil.)
 	//TODO refatorar includes
 	//*** POS MERGE DEVELOP***
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
+	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
 	//TODO Criar gumps de ajuda.
 	//TODO Criar API para gerar item fabricado.
@@ -366,7 +366,7 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
 	
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
-	Print("item: " + item  + " descriptor: " + descriptor + " quantidade: " + quantidade);
+
 	if(item)
 		item.weight_multiplier_mod := pesoFinal;
 		SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
@@ -1058,7 +1058,7 @@ function EnviaGumpComponentes(quem)
 	var chavesOpcoesMateriais := GetConfigStringKeys(configRecursos);
 	
 	var sessao := struct;
-	var parametros := PreparaComponentesGump(quem,configProfissao,sessao);
+	var parametros := PreparaComponentesGump(quem,configProfissao,sessao, pericia);
 	var gerenciador := sessao.gerenciadorDropDown;
 	var gump;
 
@@ -1100,6 +1100,20 @@ function EnviaGumpComponentes(quem)
 				sessao.componenteSelecionado := parametros.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
 				break;
 			
+			RT_BTN_ESFORCO_MAIS:
+				sessao.picoPericia += 1;
+				if(sessao.picoPericia > parametros.picoMaximoPericia)
+					sessao.picoPericia:= parametros.picoMaximoPericia;
+				endif
+				break;
+				
+			RT_BTN_ESFORCO_MENOS:
+				sessao.picoPericia -= 1;
+				if(sessao.picoPericia < 0)
+					sessao.picoPericia := 0;
+				endif
+				break;
+				
 			RT_BTN_FABRICAR:
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
 				//TODO Animações e emotes de construção.
@@ -1134,7 +1148,8 @@ function EnviaGumpComponentes(quem)
 						materiaisEscolhidos,
 						CInt(sessao.quantidade),
 						pericia,
-						sessao.componenteSelecionado.encaixe);
+						sessao.componenteSelecionado.encaixe,
+						sessao.picoPericia);
 				endif
 
 				sessao.devePopularDropDown := true;
@@ -1150,7 +1165,7 @@ function EnviaGumpComponentes(quem)
 	endwhile
 endfunction
 
-function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia, encaixe)
+function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia, encaixe, picoPericia)
 
 	var chaveMaterialPrincipal; //objtype do material que irá decidir a cor e atributos principais do componente.
 
@@ -1163,7 +1178,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 
 	ConsomeMateriais(chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
 
-	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer,AP_GetSkill(quem,pericia));
+	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer,picoPericia);
 	
 	foreach qualidade in (qualidades.keys())
 		var descriptor := GetItemDescriptor(CInt(objtype));
@@ -1354,7 +1369,7 @@ function FechaTodosDropdowns(quem,dropdowns)
 	endforeach
 endfunction
 
-function PreparaComponentesGump(quem, configProfissao,byref sessao)
+function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 
 	var parametrosGump := struct;
 	
@@ -1371,6 +1386,7 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao)
 	sessao.+materiaisEncontrados := 0;
 	sessao.+devePopularDropDown := true;
 	sessao.+quantidade := "1";
+	sessao.+picoPericia := AP_GetSkill(quem,pericia) / 20;
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
@@ -1411,19 +1427,19 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao)
 	parametrosGump.+configColunas := colCfg;
 	parametrosGump.+materiais := materiais;
 	parametrosGump.+componentes := componentes;
+	parametrosGump.+picoMaximoPericia := sessao.picoPericia;
 	
 	return parametrosGump;
 endfunction
 
 // TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPericia, deslocamentoPico := -1) 
+function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
 	
 	if(quantidade == error || quantidade.size() == 0)
 		return error{"errortext":="O parâmetro quantidade é obrigatório."};
 	endif
 
-	var	pico := valorPericia / 20;
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},pico + deslocamentoPico,1.4);
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
 	var retorno := dictionary;
 
 	//Print("Chances: "  + chancesPorTier);
@@ -1471,6 +1487,10 @@ function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 		return RT_ESCOLHA_COMPONENTE;
 	elseif(valorRetorno == COMPONENTES_BTN_FABRICAR)
 		return RT_BTN_FABRICAR;
+	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MAIS)
+		return RT_BTN_ESFORCO_MAIS;
+	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MENOS)
+		return RT_BTN_ESFORCO_MENOS;
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO;
 	else

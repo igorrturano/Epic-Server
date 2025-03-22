@@ -27,6 +27,8 @@ endenum
 enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_INPT_QTD := 2,
 	COMPONENTES_BTN_FABRICAR :=	3,
+	COMPONENTES_BTN_ESFORCO_MAIS := 4,
+	COMPONENTES_BTN_ESFORCO_MENOS := 5,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
 	COMPLEXOS_INPT_QTD := 4
@@ -50,6 +52,8 @@ enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do G
 	RT_ESCOLHA_DD_OPCOES,
 	RT_ESCOLHA_COMPONENTE,
 	RT_BTN_FABRICAR,
+	RT_BTN_ESFORCO_MAIS,
+	RT_BTN_ESFORCO_MENOS,
 	RT_CANCELADO
 endenum
 
@@ -203,7 +207,12 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	
 	if(componenteSelecionado)
 		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
-		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,1147,1148,GF_CLOSE_BTN, 3);
+		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 10,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,1147,1148,GF_CLOSE_BTN, COMPONENTES_BTN_FABRICAR);
+		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 40,86,"Esforço:  " + AvaliaEsforço(sessao,parametros));
+		GFAddButton(gump,(G_MARGEM_ESQUERDA+ G_ESPACAMENTO) * 4,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 40,2435,2436,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MAIS);
+		GFTooltipText(gump,"Aumentar o esforço produz componentes de melhor qualidade.");
+		GFAddButton(gump,(G_MARGEM_ESQUERDA+ G_ESPACAMENTO) * 4 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 50,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
+		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
 		foreach material in (SplitWords(componenteSelecionado.materiais,","))
 			DefinirMateriais(gump,
 							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
@@ -490,4 +499,19 @@ endfunction
 
 function isReceitaVisualizada(sessao, receita)
 	return receita.isVisualizada || !sessao.deveAtrasarAtualizacao;
+endfunction
+
+function AvaliaEsforço(sessao, parametros)
+	var diferenca := parametros.picoMaximoPericia - sessao.picoPericia;
+	case (cint(diferenca))
+	
+		0: return "Máximo.";
+		1: return "Muito Grande.";
+		2: return "Grande.";
+		3: return "Médio.";
+		4: return "Minimo.";
+		5: return "Algum.";
+		default:
+			return "Erro!";
+	endcase
 endfunction
