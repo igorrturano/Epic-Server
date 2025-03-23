@@ -5,6 +5,5 @@ include "/include/epicPropNames";
 
 program equipItemMontado(who, item, startup)
 	var propTratamento := GetObjProperty(item,PROPNAME_FABRICADO_TRATAMENTO);
-	Print("propTratamento: " + propTratamento.isTratando);
 	return propTratamento.isTratando;
 endprogram

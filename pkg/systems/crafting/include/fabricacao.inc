@@ -90,8 +90,6 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar botão para sair
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO Definir um fluxo para Excepcionais.
-	//TODO criar botão "Avaliar" que deixar o cara saber se ele pode trabalhar o material daquele componente/ingrediente
 	//TODO implementar lógica de adicionais de dificuldade. (Exemplo: componentes melhores deixam mais dificil.)
 	//TODO refatorar includes
 	//*** POS MERGE DEVELOP***
@@ -1200,6 +1198,24 @@ function EnviaGumpComponentes(quem)
 					sessao.picoPericia := 0;
 				endif
 				break;
+
+			RT_BTN_AVALIAR:
+				var alvo :=  Target(quem);
+				if(alvo)
+					var materialDetalhes := configRecursos[alvo.objtype];
+					if(materialDetalhes)
+						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,pericia);
+						if(isTrabalhavel)
+							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar este material.",SSM_HELPFU);
+						else
+							SendSysMessageEX(quem,"Você não pode trabalhar este material.",SSM_HARMFUL);
+						endif
+					else
+						SendSysMessageEX(quem,"Você não pode trabalhar este material.",SSM_HARMFUL);
+					endif
+				else
+					SendSysMessageEX(quem,"Alvo cancelado.",SSM_FAIL);
+				endif
 				
 			RT_BTN_FABRICAR:
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
@@ -1601,6 +1617,8 @@ function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 		return RT_BTN_ESFORCO_MAIS;
 	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MENOS)
 		return RT_BTN_ESFORCO_MENOS;
+	elseif(valorRetorno == COMPONENTES_BTN_AVALIAR)
+		return RT_BTN_AVALIAR;
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO;
 	else

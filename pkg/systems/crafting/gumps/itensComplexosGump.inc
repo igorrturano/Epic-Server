@@ -29,6 +29,7 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_BTN_FABRICAR :=	3,
 	COMPONENTES_BTN_ESFORCO_MAIS := 4,
 	COMPONENTES_BTN_ESFORCO_MENOS := 5,
+	COMPONENTES_BTN_AVALIAR := 6,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
 	COMPLEXOS_INPT_QTD := 4
@@ -53,6 +54,7 @@ enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do G
 	RT_BTN_FABRICAR,
 	RT_BTN_ESFORCO_MAIS,
 	RT_BTN_ESFORCO_MENOS,
+	RT_BTN_AVALIAR,
 	RT_CANCELADO
 endenum
 
@@ -205,6 +207,8 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
 	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
 	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
+	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11,G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 2,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
+	GFTooltipText(gump,"Avaliar Material.");
 	
 	if(componenteSelecionado)
 		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
