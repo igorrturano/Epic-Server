@@ -9,12 +9,13 @@ program GerenteTratamentoProduto(parametros)
 	var quem			:= parametros[1];
 	var produto			:= parametros[2];
 	var pidGerente		:= parametros[3];
+	var estacao			:= parametros[4];
 
 	var gump;
 	var posicao2D;
 	var apelidoGump := "gumpTratamentoProduto";  
 	var retorno := true;
-	var sessao := InicializaSessao(quem, produto);
+	var sessao := InicializaSessao(quem, produto, estacao);
 	var processoGerente := GetProcess(pidGerente);
 
 	while(retorno)
@@ -53,7 +54,7 @@ function PreparaTratamentoGump (quem , produto)
 	var parametrosGump := struct;
 endfunction
 
-function InicializaSessao (quem , produto)
+function InicializaSessao (quem , produto, estacao)
 	var sessao := struct;
 	var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
 	var propTratamento := GetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO);
@@ -62,11 +63,12 @@ function InicializaSessao (quem , produto)
 	sessao.+nomeItem := propFabricado.receita.desc;
 	sessao.+sucessosNecessarios := propFabricado.receita.sucessosNecessarios;
 	sessao.+maximoFalhas := PegaMaximoFalhas(produto);
-	sessao.+dificuldade := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia).chanceBase;
+	sessao.+dificuldade := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia, produto, estacao);
 	sessao.+sucessos := propTratamento.sucessos ? propTratamento.sucessos : 0;
 	sessao.+falhas := propTratamento.falhas ? propTratamento.falhas : 0;
 	sessao.+ciclos := propTratamento.ciclos ? propTratamento.ciclos : 0;
 	sessao.+ultimoSucesso := propTratamento.ultimoSucesso;
 	sessao.+fazerTodos := 1;
+
 	return sessao;
 endfunction

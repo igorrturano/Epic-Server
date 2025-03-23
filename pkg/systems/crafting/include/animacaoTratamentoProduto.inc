@@ -4,10 +4,12 @@ use os;
 include "/include/epicPropNames";
 include "include/epicValidAction";
 include "include/client";
+include "include/objtype";
 include "include/say";
 include ":megacliloc:/include/toolTipUtils";
 include ":crafting:/include/fabricacaoUtil";
 include ":attributes:vitals";
+
 
 const LIMITE_MARTELADAS := 3;
 const LIMITE_AQUECIMENTO := 4;
@@ -203,6 +205,11 @@ endfunction
 
 
 function PegaEstacaoFerreiro (quem, bigorna)
+	if(!bigorna || bigorna.objtype != UOBJ_ANVIL1)
+		SendSysMessageEX(quem,"Alvo informado inválido.", SSM_FAIL);
+		return 0;
+	endif
+
 	var propForja := GetObjProperty(bigorna,PROPNAME_ESTACAO_FORJA);
 	var estacao := struct;
 	var propFoiAlterada := false;

@@ -7,6 +7,7 @@ use cfgfile;
 include "/include/math";
 include ":attributes:attributes";
 include "/include/epicPropNames";
+include "/include/epicConstants";
 
 const CHANCE_FABRICACAO_MAX := 80.0;
 
@@ -28,17 +29,40 @@ function PegaComponenteTierDesc(tier)
 	endcase
 endfunction
 
-function PegaDificuldade( quem, descritorFabricacao, nomePericia)
+function PegaDificuldade( quem, descritorFabricacao, nomePericia, produto := 0, estacao  := 0)
 	 var retorno := struct;
 	 
 	 retorno.+skill := CDbl(GetConfigString(descritorFabricacao,"skill"));
 	 retorno.+chancePelaSkill := 0;
+	 retorno.+modificadoresChance := array;
+	 retorno.+chanceModificadaTotal := 0;
 	 retorno.+chanceBase := PegaChanceFabricacaoBase(quem,
 												nomePericia,
 												retorno.skill,
 												retorno.chancePelaSkill);
+	
+	var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO );
+	
+	if(propFabricado)
+		foreach componente in (propFabricado.esquema.componentesEscolhidos)
+			Sleepms(2);
+			
+			var chanceCalculada := cint(componente.poderAvaliado.poderContado) * -2;
+			
+			var modificador := struct{
+				origem := BLUE + "Poder {} :{} {}%<br>".format(componente.item.nome,chanceCalculada < 0? RED_FIRE: SOFT_GREEN, "{}"),
+				valor :=  chanceCalculada
+			};
 
-		return retorno;
+			retorno.modificadoresChance.append(modificador);
+			retorno.chanceModificadaTotal += chanceCalculada;
+			retorno.chancePelaSkill += chanceCalculada;
+		endforeach
+	endif
+
+	retorno.+chanceTotal := retorno.chanceBase + retorno.chanceModificadaTotal;
+	retorno.chanceTotal := retorno.chanceTotal < 0 ? 0: retorno.chanceTotal;
+	return retorno;
 endfunction
 
 function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill)

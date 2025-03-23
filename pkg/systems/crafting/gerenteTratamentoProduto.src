@@ -48,7 +48,6 @@ program GerenteTratamentoProduto(parametros)
 
 			case (evento.id)
 				EV_FIM_CICLO:
-					SendSysMessageEx(quem, "Fim De Ciclo detectado.",SSM_HELPFU);
 					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,5);
 					estadoGerenciamento := CICLANDO;
 					break;
@@ -124,8 +123,8 @@ function IniciaProcessosGerenciados (processosAntigos, quem, pidGerente, produto
 	endif
 
 	return dictionary{ 
-		GUMP_INTERATIVO -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto, pidGerente} ),
-		CICLO -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, pidGerente} ),
+		GUMP_INTERATIVO -> Start_Script( ":crafting:tratamentoProdutoGump", array{quem, produto, pidGerente, alvo} ),
+		CICLO -> Start_Script( ":crafting:cicloTratamentoProduto", array{quem, produto, pidGerente, alvo} ),
 		ANIMACAO -> Start_Script( ":crafting:animacaoTratamentoProduto", array{quem, produto, pidGerente, alvo} )
 	};
 endfunction

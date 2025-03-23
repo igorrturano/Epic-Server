@@ -11,17 +11,19 @@ program AnimacaoTratamentoProduto(parametros)
 	var quem			:= parametros[1];
 	var produto			:= parametros[2];
 	var pidGerente 		:= parametros[3];
-	var alvo 			:= parametros[4];
+	var estacaoAlvo 	:= parametros[4];
 	
-	var deveSair := false;
+	 ;
 	var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
 	var estacao;
 	var itemDescGeral := ReadConfigFile(":*:itemdesc");
 	var processoGerente := GetProcess(pidGerente);
 	
 	if(propFabricado.receita.pericia == "Metal_Working")
-		estacao := PegaEstacaoFerreiro(quem, alvo);
+		estacao := PegaEstacaoFerreiro(quem, estacaoAlvo.item);
 	endif
+
+	var deveSair := !estacao;
 
 	while(!deveSair)
 

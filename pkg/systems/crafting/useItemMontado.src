@@ -8,10 +8,13 @@ include ":gumps:/include/posicaoGump";
 include ":crafting:/gumps/itensComplexosGump";
 
 program useItemMontado(quem, item)
-	SendSysMessageEx(quem, "Processo de Tratamento iniciado!", SSM_INFO);
-	var alvo := Target(quem);
+	
+	var alvo := TargetCoordinates(quem);
 	if(alvo)
+		SendSysMessageEx(quem, "Processo de Tratamento iniciado!", SSM_INFO);
 		Start_Script( ":crafting:gerenteTratamentoProduto", array{quem, item, alvo} );
+	else
+		SendSysMessageEx(quem, "Alvo cancelado.", SSM_FAIL);
 	endif
 	return;
 endprogram

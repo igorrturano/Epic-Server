@@ -10,6 +10,7 @@ program CicloTratamentoProduto(parametros)
 	var quem			:= parametros[1];
 	var produto			:= parametros[2];
 	var pidGerente 		:= parametros[3];
+	var estacao 			:= parametros[4];
 	
 	var deveSair := false;
 	var evento;	
@@ -23,10 +24,10 @@ program CicloTratamentoProduto(parametros)
 			var craft_config := ReadConfigFile(":metalworking:blacksmithy");//TODO alterar para a solução definitiva de como ler as configs de craft; 
 			var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
 			
-			var dificuldades := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia);
+			var dificuldades := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia, produto, estacao);
 			var rolagem := RandomIntMinMax(0,100);
 			CheckSkillAdvance(quem,propFabricado.receita.pericia,dificuldades.skill + 15,dificuldades.chancePelaSkill);
-			var isSucesso := rolagem <= dificuldades.chanceBase;
+			var isSucesso := rolagem <= Cint(dificuldades.chanceTotal);
 			var propTratamento := GetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO);
 
 			if(!propTratamento)

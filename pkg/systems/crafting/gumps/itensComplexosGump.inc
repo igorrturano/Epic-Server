@@ -307,7 +307,15 @@ function MontaTratamentoGump(x, y, byref sessao)
 	GFPicTiled(gump, x - 20 + larguraCelula* 7,y + 30 + alturaCelula * 5,larguraBarraFalha != 0 ? larguraBarraFalha : 1 , 8,9753);
 
 	GFGumpPic(gump,cint(x - 28 + larguraCelula* 10),y + 12 + alturaCelula * 5,1594); // espaço porcentagem
-	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(sessao.dificuldade));
+	var tooltipChance := "Chance Base: {}<br>".format(cint(sessao.dificuldade.chanceBase));
+	
+	foreach modificador in (sessao.dificuldade.modificadoresChance)
+		Sleepms(2);
+		tooltipChance += modificador.origem.format(modificador.valor);
+	endforeach
+	GFTooltipText(gump,tooltipChance);
+
+	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(cint(sessao.dificuldade.chanceTotal)));
 	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,5555,5556,GF_CLOSE_BTN, 2);
 	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 3);
 	if(sessao.fazerTodos)
