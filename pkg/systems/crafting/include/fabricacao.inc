@@ -67,6 +67,7 @@ function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhid
 				isCompletamenteComum := 1,
 				modificadorHpTotal := 0,
 				modificadorPesoTotal := 0,
+				modificadorCache := struct{ peso := dictionary, hp := dictionary},
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
 endfunction
@@ -387,6 +388,8 @@ function DefinePropFabricado(esquema,receita)
 	receita.-isVisualizada;
 	receita.-uso;
 
+	esquema.-modificadorCache;
+
 	var propFabricado := struct{ 
 		estado := ITEM_MONTADO,
 		receita := receita,
@@ -560,13 +563,19 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 		esquemaSelecionado.isCompletamenteComum := 0;
 	endif
 
-	if(componenteEscolhido.propriedades.modificadorHp != 0)
-		esquemaSelecionado.modificadorHpTotal += componenteEscolhido.propriedades.modificadorHp;
-	endif
+	AtualizaModificadorTotal(
+				componenteEscolhido.propriedades.modificadorHp,
+				esquemaSelecionado.modificadorHpTotal,
+				esquemaSelecionado.modificadorCache.HP,
+				indiceEncaixe
+				);
 
-	if(componenteEscolhido.propriedades.modificadorPeso != 0)
-		esquemaSelecionado.modificadorPesoTotal += componenteEscolhido.propriedades.modificadorPeso;
-	endif
+	AtualizaModificadorTotal(
+				componenteEscolhido.propriedades.modificadorPeso,
+				esquemaSelecionado.modificadorPesoTotal,
+				esquemaSelecionado.modificadorCache.Peso,
+				indiceEncaixe
+				);
 
 	if(esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
 		esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
@@ -576,6 +585,21 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 
 	return esquemaSelecionado;
 	
+endfunction
+
+function AtualizaModificadorTotal(byref modificador,byref modificadorTotal,byref cache, indice)
+	Print("modificador " + modificador + " modificadorTotal " + modificadorTotal + " cache " + cache + " indice " + indice);
+	if(modificador != 0)
+		var modificadorAntigo;
+		var hasAntigo := cache.exists(indice);
+		if(hasAntigo)
+			modificadorTotal -= cache[indice];
+			cache[indice] := modificador;
+		else
+			cache.insert(indice,modificador);
+		endif
+		modificadorTotal += modificador;
+	endif
 endfunction
 
 function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, configRecursos, quantidadeComponentesNecessaria)
@@ -783,12 +807,12 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 	if(modificadorHp)
 		propriedades.+modificadorHp := modificadorHp;
 	else
-		propriedades.-modificadorHp;
+		propriedades.modificadorHp := 0;
 	endif
 	if(modificadorPeso)
 		propriedades.+modificadorPeso := Round(modificadorPeso / quantidadeComponentesNecessaria);
 	else
-		propriedades.-modificadorHp;
+		propriedades.modificadorHp := 0;
 	endif
 
 	if(efeitoEscolhido)
