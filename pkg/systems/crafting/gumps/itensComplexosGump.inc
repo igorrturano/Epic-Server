@@ -322,6 +322,7 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	var alturaPainel := alturaCelula * 3;
 	var alturaLinha := 20;
 	var componenteEscolhido := sessao.receitaSelecionada.esquemaSelecionado.componentesEscolhidos[indice];
+	var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[indice];
 	var isHpModificado := componenteEscolhido.propriedades.modificadorHp != 0 && TypeOfInt(componenteEscolhido.propriedades.modificadorHp) != OT_UNINIT;
 	var isPesoModificado := componenteEscolhido.propriedades.modificadorPeso != 0 && TypeOfInt(componenteEscolhido.propriedades.modificadorPeso) != OT_UNINIT;
 	
@@ -339,6 +340,15 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 	GFPicTiled(gump, x, y + 90, larguraLocal - 20, 2, 30002); // 2700 
 
 	GFTextLine(gump,x + larguraCelula * 2 ,y + 20,1153,encaixeComponente.encaixeDesc);
+	if(componenteNecessario.isPrincipal)
+		GFGumpPic( gump, x + cint(larguraCelula/ 6), y + 22, 1655);
+		GFTooltipText(gump,"Componente principal.");
+	else
+		if(componenteNecessario.isOpcional)
+			GFGumpPic( gump, x + cint(larguraCelula/ 6), y + 22, 1653);
+			GFTooltipText(gump,"Componente opcional.");
+		endif
+	endif
 
 	var xBotao := x + 5;
 	var yBotao := y + 60;
@@ -414,6 +424,10 @@ function GeraSetas(byref gump,x,y, valor)
 	if(valor < 0)
 		isPositivo := false;
 		valor := valor * -1;
+	else
+		if(valor == 0)
+			GFGumpPic( gump, x + 5, y +  5 , 1672);
+		endif
 	endif
 
 	for i:=1 to valor
