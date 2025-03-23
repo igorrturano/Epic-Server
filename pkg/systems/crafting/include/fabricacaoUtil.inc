@@ -87,6 +87,9 @@ function CriaNovaPropFabricado ( propFabricadoMontado)
 	var novaPropFabricada := struct{
 				estado := ITEM_PRONTO ,
 				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
+				qualidade := propFabricadoMontado.esquema.qualidade,
+				modificadorHpTotal := propFabricadoMontado.esquema.modificadorHpTotal,
+				modificadorPesoTotal := propFabricadoMontado.esquema.modificadorPesoTotal,
 				componentes := componentesRefatorado};
 				
 	return novaPropFabricada;

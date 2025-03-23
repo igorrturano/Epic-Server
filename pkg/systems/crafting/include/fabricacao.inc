@@ -67,7 +67,8 @@ function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhid
 				isCompletamenteComum := 1,
 				modificadorHpTotal := 0,
 				modificadorPesoTotal := 0,
-				modificadorCache := struct{ peso := dictionary, hp := dictionary},
+				qualidade := 0,
+				modificadorCache := struct{ peso := dictionary, hp := dictionary, qualidade := dictionary},
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
 endfunction
@@ -89,18 +90,16 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar botão para sair
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO Na hora de montar as propriedades, Passar o modificador de HP e peso de acordo com o material.
-	//TODO contabilizar HP e Peso no cálculo para avaliar o poder, talvez como critério de desempate?
-	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Definir um fluxo para Excepcionais.
-	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO criar botão "Avaliar" que deixar o cara saber se ele pode trabalhar o material daquele componente/ingrediente
 	//TODO implementar lógica de adicionais de dificuldade. (Exemplo: componentes melhores deixam mais dificil.)
 	//TODO refatorar includes
 	//*** POS MERGE DEVELOP***
 	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
+	//TODO Solucionar o problema das armaduras estarem sem informações.
 	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
 	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
+	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Criar gumps de ajuda.
 	//TODO Criar API para gerar item fabricado.
 	//TODO Criar e atribuir componentes a todos os itens.
@@ -554,9 +553,11 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
 	endif
 
-	if(componenteEscolhido.poderAvaliado.poderContado != 0)// lida com a flag para ignorar desc na tooltip se tiver só componente comum
-		esquemaSelecionado.isCompletamenteComum := 0;
-	endif
+	DefineTagQualidade(
+				esquemaSelecionado,
+				esquemaSelecionado.modificadorCache.qualidade,
+				indiceEncaixe,
+				componenteEscolhido.Tier);
 
 	AtualizaModificadorTotal(
 				componenteEscolhido.propriedades.modificadorHp,
@@ -580,6 +581,33 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 
 	return esquemaSelecionado;
 	
+endfunction
+
+function DefineTagQualidade(byref esquemaSelecionado, byref cache, indice, tier)
+	if(esquemaSelecionado.componenteEscolhido.poderAvaliado.poderContado != 0)
+		esquemaSelecionado.isCompletamenteComum := 0; // lida com a flag para ignorar desc na tooltip se tiver só componente comum
+		
+		var qualidadeAntiga;
+		var hasAntigo := cache.exists(indice);
+		if(hasAntigo)
+			qualidadeAntiga := cache[indice];
+		endif
+
+		if(tier.valor < 0)
+			esquemaSelecionado.qualidade := -1;
+			!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
+		else
+			if(tier.valor == 3  && qualidadeAntiga != 1) // Se não tem nenhum componente mediocre, mas tem algum exepcional. considere o item excepcional.
+				esquemaSelecionado.qualidade := 1;
+				!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
+			else
+				if(tier.valor < 3  && qualidadeAntiga == 1)
+					esquemaSelecionado.qualidade := 0;
+					!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
+				endif
+			endif
+		endif
+	endif
 endfunction
 
 function AtualizaModificadorTotal(byref modificador,byref modificadorTotal,byref cache, indice)
