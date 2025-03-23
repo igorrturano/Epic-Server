@@ -19,6 +19,7 @@ program CicloTratamentoProduto(parametros)
 	while(!deveSair)
 		Sleep(2);
 		var processoGerente := GetProcess(pidGerente);
+		Attach(quem);
 
 		if(processoGerente.state)
 			var craft_config := ReadConfigFile(":metalworking:blacksmithy");//TODO alterar para a solução definitiva de como ler as configs de craft; 
