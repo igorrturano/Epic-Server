@@ -741,7 +741,7 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 											configRecursos);
 											
 	var poderNovo := AvaliaPoderComponente(envelopeNovo.tier,envelopeNovo.chaveMaterial, caracteristica, configRecursos);
-	
+
 	if( poderAtual.poderContado < poderNovo.poderContado)
 		componentesEncontrados.melhor := envelopeNovo;
 	else
@@ -755,6 +755,7 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 			endif
 		endif
 	endif
+
 
 endfunction
 
@@ -781,7 +782,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 	retorno.+modPeso := propriedades.modificadorPeso;
 	retorno.+modHp := propriedades.modificadorHp;
 
-	return poderContado;
+	return retorno;
 endfunction
 
 function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quantidadeComponentesNecessaria ,configRecursos := 0)

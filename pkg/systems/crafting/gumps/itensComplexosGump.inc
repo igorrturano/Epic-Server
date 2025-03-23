@@ -127,10 +127,10 @@ function PreencheEsquemas(byref gump, x,y, sessao)
 			++coluna;
 		endif
 		GFTextLine(gump,x + 95 + deslocamentoX * coluna,y + deslocamentoY * linha,86,esquema.nome);
-		GFAddButton(gump,x + deslocamentoX * coluna,y + deslocamentoY * linha,4011,4012, GF_CLOSE_BTN, baseIdBotao + 1);
-		GFTooltipText(gump,"Editar.");
-		GFAddButton(gump,x + 30 + deslocamentoX * coluna,y + deslocamentoY * linha,4020,4021, GF_CLOSE_BTN, baseIdBotao + 2);
+		GFAddButton(gump,x + deslocamentoX * coluna,y + deslocamentoY * linha,4020,4021, GF_CLOSE_BTN, baseIdBotao + 2);
 		GFTooltipText(gump,"Excluir.");
+		GFAddButton(gump,x + 30 + deslocamentoX * coluna,y + deslocamentoY * linha,4011,4012, GF_CLOSE_BTN, baseIdBotao + 1);
+		GFTooltipText(gump,"Editar.");
 		GFAddButton(gump,x + 60 + deslocamentoX * coluna,y + deslocamentoY * linha,4023,4024, GF_CLOSE_BTN, baseIdBotao + 3);
 		GFTooltipText(gump,"Montar.");
 
