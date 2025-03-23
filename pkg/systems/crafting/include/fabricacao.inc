@@ -255,11 +255,6 @@ function EnviaItensComplexosGump(quem,profissao)
 				endcase
 				break;
 
-			RT_BOTAO_MENU:
-				sessao.gumpAtual := ESQUEMAS;
-				sessao.devePopularDropDown := true;
-				break;
-
 			RT_CANCELADO_ESQUEMA_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
@@ -588,7 +583,6 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 endfunction
 
 function AtualizaModificadorTotal(byref modificador,byref modificadorTotal,byref cache, indice)
-	Print("modificador " + modificador + " modificadorTotal " + modificadorTotal + " cache " + cache + " indice " + indice);
 	if(modificador != 0)
 		var modificadorAntigo;
 		var hasAntigo := cache.exists(indice);
@@ -1105,7 +1099,7 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_ESCOLHA_DD_OPCOES_CPX;
 	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
 		return RT_ESQUEMAS_SALVAR;
-	elseif(valorRetorno == 1 && sessao.gumpAtual == ESQUEMAS)
+	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO_COMPLX;
