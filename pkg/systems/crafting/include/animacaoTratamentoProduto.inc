@@ -9,6 +9,7 @@ include "include/say";
 include ":megacliloc:/include/toolTipUtils";
 include ":crafting:/include/fabricacaoUtil";
 include ":attributes:vitals";
+include ":crafting:toolWear";
 
 
 const LIMITE_MARTELADAS := 3;
@@ -70,7 +71,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 	while (processoGerente.state && IsAnimacaoFerreiroPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial))
 		var estagioAtual := contadorEstagio %  estagios.size();
 		deveMudarEstagio := false;
-
+		CheckToolWear(quem,ferramentaNecessaria,"Metal_Working");
 		case (estagioAtual)
 			0://Aquecendo
 				DesequipaArma(quem);
