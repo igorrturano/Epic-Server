@@ -122,3 +122,21 @@ endfunction
 function CriaObjetoPosicao(quem)
 	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
 endfunction
+
+function isEstacaoValida(quem, estacaoAlvo, pericia)
+	if(estacaoAlvo.item)
+		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
+		
+		if(ocupanteSerial)
+			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
+			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
+				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+			endif
+		endif
+	else
+		SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
+		return 0;
+	endif
+	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
+	return 1;
+endfunction

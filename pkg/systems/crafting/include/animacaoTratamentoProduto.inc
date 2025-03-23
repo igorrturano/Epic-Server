@@ -205,8 +205,9 @@ endfunction
 
 
 function PegaEstacaoFerreiro (quem, bigorna)
-	if(!bigorna || bigorna.objtype != UOBJ_ANVIL1)
-		SendSysMessageEX(quem,"Alvo informado inválido.", SSM_FAIL);
+
+	if(bigorna.objtype != UOBJ_ANVIL1)
+		SendSysMessageEX(quem,"A estação escolhida não é uma bigorna.", SSM_FAIL);
 		return 0;
 	endif
 

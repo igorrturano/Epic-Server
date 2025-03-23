@@ -106,6 +106,7 @@ program GerenteTratamentoProduto(parametros)
 
 	endwhile
 
+	EraseObjProperty(alvo.item,PROPNAME_ISESTACAO_OCUPADA);
 	SendSysMessageEX(quem, "Tratamento Finalizado.", SSM_INFO);
 endprogram
 

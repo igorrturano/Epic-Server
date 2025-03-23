@@ -13,17 +13,17 @@ program AnimacaoTratamentoProduto(parametros)
 	var pidGerente 		:= parametros[3];
 	var estacaoAlvo 	:= parametros[4];
 	
-	 ;
 	var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
 	var estacao;
 	var itemDescGeral := ReadConfigFile(":*:itemdesc");
 	var processoGerente := GetProcess(pidGerente);
 	
-	if(propFabricado.receita.pericia == "Metal_Working")
+	var isAlvoValido := isEstacaoValida(quem,estacaoAlvo,propFabricado.receita.pericia);
+	if(propFabricado.receita.pericia == "Metal_Working" && isAlvoValido)
 		estacao := PegaEstacaoFerreiro(quem, estacaoAlvo.item);
 	endif
 
-	var deveSair := !estacao;
+	var deveSair := !(estacao && isAlvoValido);
 
 	while(!deveSair)
 
