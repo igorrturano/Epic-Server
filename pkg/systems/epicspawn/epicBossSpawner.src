@@ -104,6 +104,12 @@ function SaveSettings(who, spawner, input)
     // Reset the spawner to apply changes
     SetObjProperty(spawner, "ResetMe", 1);
     
+    // When configuring the spawnpoint with the boss data:
+    if (bossStruct && bossStruct.combatevents && bossStruct.combatevents.size() > 0)
+        SetObjProperty(spawner, "CombatEvents", bossStruct.combatevents);
+        print("DEBUG: Set CombatEvents property on spawnpoint with " + bossStruct.combatevents.size() + " events");
+    endif
+    
     SendSysMessage(who, "Epic Boss Spawner settings saved successfully!");
 endfunction
 

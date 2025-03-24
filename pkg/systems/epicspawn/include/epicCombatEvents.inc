@@ -1,20 +1,20 @@
-// Function to handle adding combat events with improved UI flow
 function HandleAddCombatEvent(who, input, byref form_data)
-    // Initialize the event structure if it doesn't exist
+    // Initialize the combat events array if it doesn't exist
     if (!form_data.combatevents)
         form_data.+combatevents := array{};
     endif
     
-    // Create a new event structure
+    // Create a new event structure with proper initialization
     var combat_event := struct{
         name := "Combat Event " + (form_data.combatevents.size() + 1),
         cd := 30,
         onlybloodied := 0,
         dist := 0,
-        actions := array{}
+        actions := array{},
+        steps := array{} // Keep this for backward compatibility
     };
     
-    // Show the events management screen first
+    // Show the events management screen
     var result := ShowCombatEventsList(who, combat_event);
     
     // If the user completed the event configuration successfully
@@ -25,9 +25,20 @@ function HandleAddCombatEvent(who, input, byref form_data)
             return 0;
         endif
         
+        // Copy actions to steps for compatibility (no need to check if steps exists, we created it above)
+        combat_event.steps.length := 0; // Clear the array first
+        foreach action in (combat_event.actions)
+            combat_event.steps.append(action);
+        endforeach
+        
+        // Log for debugging
+        SendSysMessage(who, "DEBUG: Event has " + combat_event.actions.size() + " actions and " + 
+                      combat_event.steps.size() + " steps");
+        
         // Add the event to form_data
         form_data.combatevents.append(combat_event);
-        SendSysMessage(who, "Added combat event '" + combat_event.name + "' with " + combat_event.actions.size() + " actions.");
+        SendSysMessage(who, "Added combat event '" + combat_event.name + "' with " + 
+                      combat_event.actions.size() + " actions.");
         return 1;
     endif
     

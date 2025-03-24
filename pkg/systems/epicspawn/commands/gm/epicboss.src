@@ -7,7 +7,7 @@ include "include/client";
 include "include/say";
 include ":gumps:include/epicGumps";
 include ":epicspawn:epicBoss";
-
+include ":epicspawn:epicCombatEvents";
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
 const BOTAO_PAGE2 := 2;
@@ -148,7 +148,8 @@ function InitializeFormData()
     form_data.special := array{};
     form_data.loot := array{};
     form_data.deathevent := array{};
-    
+    form_data.combatevents := array{}; // Add this line to initialize combat events array
+
     // Patrol and teleport locations
     form_data.patrol_loc1 := struct{};
     form_data.patrol_loc2 := struct{};
@@ -802,8 +803,21 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     // Combat Events section
     GFTextLine(gump, 550, 160, 1153, "Combat Events:");
-    GFAddButton(gump, 750, 160, 2103, 2104, 1, 40);
+    GFAddButton(gump, 750, 160, 2103, 2104, GF_CLOSE_BTN, 40);
     GFTextLine(gump, 780, 160, 1153, "Add Combat Event");
+    
+    // Display existing combat events
+    var y_posc := 190;
+    if (form_data.combatevents && form_data.combatevents.size() > 0)
+        foreach event in (form_data.combatevents)
+            GFTextLine(gump, 580, y_posc, 1153, "- " + event.name + 
+                      " (Steps: " + event.steps.size() + 
+                      ", CD: " + event.cd + "s)");
+            y_posc += 20;
+        endforeach
+    else
+        GFTextLine(gump, 580, y_posc, 1153, "No combat events configured");
+    endif
     
     // Add a divider line
     GFResizePic(gump, 40, 340, 3000, gump_width - 80, 2);
@@ -862,6 +876,9 @@ function ShowPage3(who, title, gump_width, gump_height)
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     elseif (input[0] == 50) // Add TimedScript
         HandleAddTimedScript(who, input, form_data);
+        return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+    elseif (input[0] == 40) // Add Combat Event
+        HandleAddCombatEvent(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     endif
 
@@ -1398,13 +1415,50 @@ function CreateBossFromGump(who, form_data)
     boss.special := array{};
     boss.loot := array{};
     boss.deathevent := array{};
-    
+    boss.combatevents := array{};
+
     // Basic info
     boss.npctemplate := form_data.npctemplate;
     boss.name := form_data.name;
     boss.color := CInt(form_data.color);
     boss.description := form_data.description;
     boss.trueboss := form_data.trueboss;
+
+    // Debug: Print form_data combat events
+    SendSysMessage(who, "DEBUG: Checking form_data combat events");
+    if (form_data.combatevents && form_data.combatevents.size() > 0)
+        SendSysMessage(who, "DEBUG: Found " + form_data.combatevents.size() + " combat events in form_data");
+        foreach event in (form_data.combatevents)
+            SendSysMessage(who, "DEBUG: Processing combat event: " + event.name);
+            
+            // Create a clean event structure with only necessary properties
+            var event_struct := struct{};
+            event_struct.+name := event.name;
+            event_struct.+cd := event.cd;
+            event_struct.+onlybloodied := event.onlybloodied;
+            event_struct.+dist := event.dist;
+            
+            // Initialize both arrays to ensure compatibility
+            event_struct.+actions := array{};
+            event_struct.+steps := array{}; // Keep both for compatibility
+            
+            // Copy all actions
+            if (event.actions && event.actions.size() > 0)
+                SendSysMessage(who, "DEBUG: Event has " + event.actions.size() + " actions");
+                foreach action in (event.actions)
+                    event_struct.actions.append(action);
+                    event_struct.steps.append(action); // Copy to both arrays for compatibility
+                endforeach
+            else
+                SendSysMessage(who, "DEBUG: Event has no actions");
+            endif
+            
+            boss.combatevents.append(event_struct);
+            SendSysMessage(who, "DEBUG: Added event to boss.combatevents");
+        endforeach
+    else
+        SendSysMessage(who, "DEBUG: No combat events found in form_data");
+    endif
     
     // Debug: Print form_data special abilities
     SendSysMessage(who, "DEBUG: Checking form_data special abilities");

@@ -220,9 +220,47 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.detailed_description)
         SetObjProperty(npc, "descricao", boss.detailed_description);
     endif
-    
+
+    SetObjProperty(npc, "IsBoss", 1); // Mark this NPC as a boss
     // Set the boss structure on the NPC for reference
     SetObjProperty(npc, "EpicBossStruct", boss);
+
+    // Set combat events
+    if (boss.combatevents && boss.combatevents.size() > 0)
+        print("DEBUG: Processing " + boss.combatevents.size() + " combat events");
+        
+        // Create a clean array with consistent structure
+        var cleaned_events := array{};
+        
+        foreach event in (boss.combatevents)
+            var clean_event := struct{};
+            clean_event.+name := event.name;
+            clean_event.+cd := event.cd;
+            clean_event.+onlybloodied := event.onlybloodied;
+            clean_event.+dist := event.dist;
+            clean_event.+steps := array{};
+            
+            // Use actions if available, otherwise fall back to steps
+            if (event.actions && event.actions.size() > 0)
+                print("DEBUG: Event " + event.name + " has " + event.actions.size() + " actions");
+                foreach action in (event.actions)
+                    clean_event.steps.append(action);
+                endforeach
+            elseif (event.steps && event.steps.size() > 0)
+                print("DEBUG: Event " + event.name + " has " + event.steps.size() + " steps");
+                foreach action in (event.steps)
+                    clean_event.steps.append(action);
+                endforeach
+            else
+                print("DEBUG: Event " + event.name + " has no actions/steps!");
+            endif
+            
+            cleaned_events.append(clean_event);
+        endforeach
+        
+        SetObjProperty(npc, "CombatEvents", cleaned_events);
+        print("DEBUG: Set CombatEvents property with " + cleaned_events.size() + " events");
+    endif
     
     // Set timedscripts
     if (boss.timedscripts && boss.timedscripts.size() > 0)
@@ -237,7 +275,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
             timedscripts_array.append(script_struct);
         endforeach
         SetObjProperty(npc, "TimedScripts", timedscripts_array);
-        SetObjProperty(npc, "IsBoss", 1); // Mark this NPC as a boss
         print("DEBUG: Set TimedScripts property with " + timedscripts_array.size() + " scripts");
         
         // Start the TimedScript control process
@@ -363,3 +400,22 @@ function GetArmorHitScripts()
         "Custom Armor Hit Script"
     };
 endfunction
+
+/*
+ * GetAllOpponents(npc)
+ * Purpose: Gets all opponents (players) in combat with the NPC
+ * Parameters: npc - The NPC to get opponents for
+ * Return: Array of opponents
+ */
+function GetAllOpponents(npc)
+    var opponents := array{};
+    var range := 8; // Search range
+    
+    foreach mobile in ListMobilesNearLocation(npc.x, npc.y, npc.z, range, npc.realm)
+        if (mobile.IsA(POLCLASS_MOBILE) && !mobile.dead && mobile.opponent == npc)
+            opponents.append(mobile);
+        endif
+    endforeach
+    
+    return opponents;
+endfunction 

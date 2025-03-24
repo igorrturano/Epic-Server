@@ -24,6 +24,8 @@ program KillPlayers()
     while (1)
         var hasPlayerNearMe := HasPlayerNear(me);
         if (hasPlayerNearMe)
+            start_script(":epicAI:scripts/timedScriptControl", array{me});
+            start_script(":epicspawn:scripts/combatEventsControl", array{me});
             case (brain_type)
                 "monster": MonsterBrain();
                 "animal":  AnimalBrain();
@@ -31,7 +33,6 @@ program KillPlayers()
                 // default: GenericBrain(); // chamar o ghaia:generic -> TODO: Criar um headless brain para npcs burros
             endcase
             // Process any TimedScripts
-            start_script(":epicAI:scripts/timedScriptControl", array{me});
         endif
         sleep(15);
     endwhile
