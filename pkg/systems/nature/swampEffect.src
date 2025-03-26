@@ -21,7 +21,6 @@ program spiderWebEffect(who)
             endif
         endforeach
 
-
         foreach mushroom in area
             if (Cint(mushroom.objtype) >= 4432 && Cint(mushroom.objtype) <= 4437)
                 PlaysoundEffect(who, sounds[RandomInt(sounds.size())+1] );

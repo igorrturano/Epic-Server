@@ -11,11 +11,17 @@ include "include/tileEffects";
 include ":charactercreation:habilidades";
 include ":combat:damage";
 include ":brainai:npcUtil";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	params := 0; // No longer needed
+
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);	
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
 
 	if (!targ)
 		return;
@@ -38,7 +44,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var healed := cint(AP_GetSkill(who, MAGICLORE)*1.4);
+	var healed := cint(AP_GetSkill(who, THEOLOGY)*1.4);
 	//sendsysmessage(who, "healed " + healed);
 	//healdamage(targ, healed);
 	if (GetObjProperty(who, "votovinganca") == 1)

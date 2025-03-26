@@ -30,4 +30,3 @@ program SpellScript(params)
 	
 	return 1;
 endprogram 
-

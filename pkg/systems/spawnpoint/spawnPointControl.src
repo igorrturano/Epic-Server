@@ -89,17 +89,23 @@ program spawnpointcontrol(spawnpoint)
         endif
     endwhile
 
-    var spawnqueue := array{};
-    var childrenSerial := array{};
-    for(i := 1; i <= totalAmount; i += 1)
-        spawnqueue[i] := "Empty";
-        childrenSerial[i] := "Empty";
-    endfor
+    // Verifica se já tem NPCs spawnados
+    var childrenSerial := GetObjProperty(spawnpoint, "Children");
+    var spawnqueue := GetObjProperty(spawnpoint, "SpawnQueue"); 
+    
+    // Se não tiver NPCs spawnados ainda, inicializa tudo
+    if (!childrenSerial)
+        childrenSerial := array{};
+        spawnqueue := array{};
+        for(i := 1; i <= totalAmount; i+=1)
+            spawnqueue[i] := "Empty";
+            childrenSerial[i] := "Empty";
+        endfor
 
-    SetObjProperty(spawnpoint, "Children", childrenSerial);
-    SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
-
-    ResetSpawnQueue(spawnpoint, amounts);
+        SetObjProperty(spawnpoint, "Children", childrenSerial);
+        SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+        ResetSpawnQueue(spawnpoint, amounts);
+    endif
 
     var randSleep := RandomInt(20);
     sleep(randSleep);
@@ -143,10 +149,6 @@ program spawnpointcontrol(spawnpoint)
                         sleep(60);
                     endwhile
                     childrenSerial[i] := CreateSpawn(spawnpoint, templates, amounts, tiers, names, i);
-                    if (GetObjProperty(spawnpoint, "unique") == 1)
-                        var spawnmod := GetObjProperty(spawnpoint, "uniquestat");
-                        SetBoss(SystemFindObjectBySerial(childrenSerial[i]), spawnmod);
-                    endif
                     spawnqueue[i] := "Active";
                 else
                     spawnqueue[i] := state - 1;
@@ -223,14 +225,17 @@ function ResetSpawnQueue(spawnpoint, amounts)
 endfunction
 
 function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
+    print("DEBUG: Creating spawn for index " + index);
     var cumulative := 0;
     var chosenTemplateIndex := 0;
     var i;
 
     for(i := 1; i <= templates.size(); i+=1)
         cumulative += amounts[i];
+        print("DEBUG: Cumulative for template " + i + " is " + cumulative);
         if(index <= cumulative)
             chosenTemplateIndex := i;
+            print("DEBUG: Chose template index " + chosenTemplateIndex);
             break;
         endif
     endfor
@@ -238,7 +243,21 @@ function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
     var chosenTemplate := templates[chosenTemplateIndex];
     var chosenTier := tiers[chosenTemplateIndex] ? tiers[chosenTemplateIndex] : "0";
     var chosenName := names[chosenTemplateIndex] ? names[chosenTemplateIndex] : "";
-    return SetupSpawn(spawnpoint, chosenTemplate, chosenTier, chosenName);
+    
+    var npcSerial := SetupSpawn(spawnpoint, chosenTemplate, chosenTier, chosenName);
+    
+    var theBoss := GetObjProperty(spawnpoint, "unique");
+    if (theBoss)
+        var spawnmod := GetObjProperty(spawnpoint, "uniquestat");
+        if (spawnmod != error)
+            var npc := SystemFindObjectBySerial(npcSerial);
+            if (npc)
+                SetBoss(npc, spawnmod);
+            endif
+        endif
+    endif
+    
+    return npcSerial;
 endfunction
 
 function SetupSpawn(spawnpoint, spawn, tier, npcName)
@@ -246,8 +265,6 @@ function SetupSpawn(spawnpoint, spawn, tier, npcName)
     var range := GetObjProperty(spawnpoint, "Range");
     loscheck := loscheck ? Cint(loscheck) : 0;
     range := range ? Cint(range) : 0;
-
-    spawn := GetCritter(spawn);
 
     var x, y, z, success := 0;
     var i := 1;
@@ -322,95 +339,4 @@ function CreateNpc(template, x, y, z, props, realm)
     endif
 
     return result;
-endfunction
-
-function GetCritter(type)
-    if(type == "vermin")
-        case(RandomInt(11) + 1)
-            1: return "grat";
-            2: return "grat";
-            3: return "grat";
-            4: return "jwilson";
-            5: return "slime";
-            6: return "slime";
-            7: return "slime";
-            8: return "giant_serpent";
-            9: return "giant_serpent";
-           10: return "giantscorp";
-           11: return "giantscorp";
-        endcase
-    elseif(type == "orcs")
-        case(RandomInt(10) + 1)
-            1: return "orcmage";
-            2: return "orclord";
-            3: return "orc1";
-            4: return "orc1";
-            5: return "orc1";
-            6: return "orc2";
-            7: return "orc2";
-            8: return "orc2";
-            9: return "ettin";
-           10: return "ettin2";
-        endcase
-    elseif(type == "orchorde")
-        case(RandomInt(8) + 1)
-            1: return "orc1";
-            2: return "orc1";
-            3: return "orc1";
-            4: return "orcmage";
-            5: return "orclord";
-            6: return "orc2";
-            7: return "orc2";
-            8: return "orc2";
-        endcase
-    elseif(type == "ratmen")
-        case(RandomInt(3) + 1)
-            1: return "ratman3";
-            2: return "ratman2";
-            3: return "ratman1";
-        endcase
-    elseif(type == "lizardmen")
-        case(RandomInt(3) + 1)
-            1: return "lizardman3";
-            2: return "lizardman2";
-            3: return "lizardman1";
-        endcase
-    elseif(type == "dracos")
-        case(RandomInt(4) + 1)
-            1: return "dragon1";
-            2: return "dragon2";
-            3: return "drake1";
-            4: return "drake2";
-        endcase
-    elseif(type == "trolls")
-        case(RandomInt(3) + 1)
-            1: return "troll1";
-            2: return "troll2";
-            3: return "troll3";
-        endcase
-    elseif(type == "undead")
-        case(RandomInt(7) + 1)
-            1: return "zombie";
-            2: return "zombie";
-            3: return "skeleton";
-            4: return "skeleton";
-            5: return "shade";
-            6: return "shade";
-            7: return "liche";
-        endcase
-    elseif(type == "lesserundead")
-        case(RandomInt(4) + 1)
-            1: return "zombie";
-            2: return "zombie";
-            3: return "skeleton";
-            4: return "skeleton";
-        endcase
-    elseif(type == "ettins")
-        case(RandomInt(2) + 1)
-            1: return "ettin";
-            2: return "ettin2";
-        endcase
-    else
-        return type;
-    endif
 endfunction

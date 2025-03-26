@@ -31,14 +31,14 @@ program lever(item)
             var word := lower(event.text);
             if (word == lower(powerevent))
                item.invisible := 0;
-               //PrintText(item, "*Uma alavanca aparece*");
+               PrintText(item, "*!*");
                SetObjProperty(item, "reset_cd", polcore().systime+600);
             endif
          elseif (event.source.concealed)
-         elseif (event.type == SYSEVENT_ENTEREDAREA && event.source.connected && item.invisible && !powerevent)
-            item.invisible := 0;
+//         elseif (event.type == SYSEVENT_ENTEREDAREA && event.source.connected && item.invisible && !powerevent)
+  //          item.invisible := 0;
             //PrintText(item, "*!*");
-            SetObjProperty(item, "reset_cd", polcore().systime+600);
+    //        SetObjProperty(item, "reset_cd", polcore().systime+600);
          endif
       endif
 		reset(item); //reset testa se ta ativado, se tiver volta pro normal.

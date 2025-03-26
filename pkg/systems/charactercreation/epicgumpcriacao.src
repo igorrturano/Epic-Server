@@ -724,9 +724,10 @@ function pathOfWisdom(who, culture_pic)
             var spellinfo := struct;
             spellinfo.+magic_path := "spellcaster";
             var chosenSpells := spellChoices(who);
-            foreach spellId in chosenSpells
+            foreach spell in chosenSpells
                 var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
-                spellinfo.id := spellId;
+                spellinfo.id := spell.id;
+                spellinfo.school := spell.School;
                 SetObjProperty(scroll, "spellinfo", spellinfo);
             endforeach
             break;
@@ -746,6 +747,14 @@ function pathOfWisdom(who, culture_pic)
             break;
         elseif (btn_value == 204) 
             chardata.+wisdom_path := "Engenheiro";
+            CreateItemInBackPack(who, "ammo", 20);
+            CreateItemInBackPack(who, "powder", 20);
+            CreateItemInBackPack(who, "powderfixer", 1);
+
+            var pistol1 := CreateItemInBackPack(who, "pistol1", 1);
+            var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
+            SetObjProperty(pistol1, "serialid", who.serial);
+            SetObjProperty(pistol2, "serialid", who.serial);
             break;
         else
             SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);

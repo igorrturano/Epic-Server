@@ -37,10 +37,10 @@ program use_spawnpoint( who, spawnpoint )
   var maxdelay := GetObjProperty( spawnpoint, "MaxDelay" );
   var los_checked := GetObjProperty( spawnpoint, "IgnoreLOS" ) ? 1 : 0;
   var boss_checked := GetObjProperty( spawnpoint, "unique" ) ? 1 : 0;
-  var unique := GetObjProperty( spawnpoint, "uniquestat" );
+  var uniquestat := GetObjProperty( spawnpoint, "uniquestat" );
 
-  if ( !unique )
-    unique := struct;
+  if ( !uniquestat )
+    uniquestat := struct;
   endif
 
   // Add labels, load saved templates and input fields for templates
@@ -54,7 +54,6 @@ program use_spawnpoint( who, spawnpoint )
                                 spawnpoint, Cstr( "Tier" + i ) ) : "";
     var name := GetObjProperty( spawnpoint, Cstr( "Name" + i ) ) ? GetObjProperty(
                                 spawnpoint, Cstr( "Name" + i ) ) : "";
-
     GFTextLine( gump, x_label, y, 2100, "Nome:" );
     GFEAddTextBox( gump, x_field, y, 150, 20, COLOR_YELLOW, name, 100 + (i * 4) );
 
@@ -97,7 +96,7 @@ program use_spawnpoint( who, spawnpoint )
   // Display the GUMP
   var inputs := GFSendGump( who, gump );
 
-  InputsHandler( inputs, who, spawnpoint, unique );
+  InputsHandler( inputs, who, spawnpoint, uniquestat );
   spawnpoint.invisible := 1;
 endprogram
 
@@ -113,6 +112,11 @@ function CreateNpcFromSpawnPoint( who, spawnpoint, i )
       SendSysMessage( who, "Erro ao criar o npc - Template -> " + npc +" - Error -> " + npc.errortext );
     else
       SendSysMessage( who, "Sucesso ao criar o npc com base no template." );
+
+      SetObjProperty(npc, "GuardKill", 1);	
+      SetObjProperty(npc, "NoCorpse", 1);
+      ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
+
       spawn_count += 1;
     endif
   endfor
@@ -120,9 +124,8 @@ endfunction
 
 function SetupCustomProps( spawnpoint, npc, counter )
 	var npc_elem := NPC_GetNPCConfig(npc);
-
-  var tier := GetObjProperty( spawnpoint, "Tier" ) ? GetObjProperty( spawnpoint,
-                              "Tier" ) : npc_elem.Tier || "0";
+  var prop_tier := GetObjProperty( spawnpoint, Cstr("Tier" + counter) );
+  var tier := prop_tier ? prop_tier : npc_elem.Tier || "0";
   customizeNpc( npc, tier );
   var name := GetObjProperty( spawnpoint, Cstr( "Name" + counter ) );
   if ( name && name != "" )
@@ -151,13 +154,12 @@ function CreateNpc( template, x, y, z, props, realm )
   return result;
 endfunction
 
-function InputsHandler( inputs, who, spawnpoint, unique )
+function InputsHandler( inputs, who, spawnpoint, uniquestat )
   if ( inputs[100] == 1 ) // Is OK button?
     var i;
-
     if ( inputs[17] == 1 ) // Is boss?
-      SetObjProperty( spawnpoint, "uniquestat", Trim(unique) );
-      CreateBossStructGump( who, unique );
+      SetObjProperty( spawnpoint, "unique", 1 );
+      CreateBossStructGump( who, uniquestat );
     endif
 
     for ( i := 1; i <= 3; i += 1 )
@@ -180,10 +182,11 @@ function InputsHandler( inputs, who, spawnpoint, unique )
     SetObjProperty( spawnpoint, "Range", Trim(SplitWords(inputs[13], ":")[2]) );
     SetObjProperty( spawnpoint, "MinDelay", Trim(SplitWords(inputs[14], ":")[2]) );
     SetObjProperty( spawnpoint, "MaxDelay", Trim(SplitWords(inputs[15], ":")[2]) );
-    SetObjProperty( spawnpoint, "IgnoreLOS", Trim(SplitWords(inputs[16], ":")[2]) );
-    SetObjProperty( spawnpoint, "unique", Trim(SplitWords(inputs[17], ":")[2]) );
+    SetObjProperty( spawnpoint, "IgnoreLOS", Trim(SplitWords(inputs[16], ":")[1]) );
+    SetObjProperty( spawnpoint, "unique", Trim(SplitWords(inputs[17], ":")[1]) );
     SetObjProperty( spawnpoint, "ResetMe", 1 );
-    SetObjProperty( spawnpoint, "SpawnCount", Trim(spawn_count) );
+    SetObjProperty( spawnpoint, "SpawnCount", (spawn_count) );
+    SetObjProperty( spawnpoint, "uniquestat", uniquestat );
 
     SendSysMessage( who, "Valores do spawnpoint salvos com sucesso!" );
   endif

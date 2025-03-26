@@ -373,7 +373,28 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		defender.frozen := 0;
 	endif
 
+	// defender := defender;
 	return totaldamage;
+endfunction
+
+function hasAntiMountedWeapon(attacker, defender)
+	if (defender.warmode == 0)
+		return 0;
+	endif
+
+	var defenderHasAntiMountedWeapon := 0;
+	if (GetObjProperty(attacker, "charge_damage"))
+		var cfg := ReadConfigFile(":*:itemdesc");
+		var elem := FindConfigElem(cfg, defender.weapon.objtype);
+		var weapons_crits := GetconfigStringArray(elem, "HitScripts");
+		foreach crit in (weapons_crits)
+			if (crit == ":combat:weaponHitScripts/AntiMountedHit")
+				defenderHasAntiMountedWeapon := 1;
+			endif
+		endforeach
+	endif
+
+	return defenderHasAntiMountedWeapon;
 endfunction
 
 /**
@@ -680,9 +701,9 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
         elseif (TemHabilidade(defender, "Resiliência Bárbara"))
 			resist += RandomDiceRoll("1d4");
 		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, MAGICLORE)/20;
+			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
 			if (GetCooldown(defender, "armor_drain") > 0)
-				arcane_armor += AP_GetSkill(defender, MAGICLORE)/30;
+				arcane_armor += AP_GetSkill(defender, ARCANA)/30;
 				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
 			endif
 			if (resist < arcane_armor)
@@ -702,7 +723,24 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 			endif
 		endif
 	endif
-	
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		damage += Cint(GetObjProperty(attacker, "charge_damage"));
+
+		if (hasAntiMountedWeapon(attacker, defender))
+			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
+			defender := attacker;
+			var resisted := CheckResist(defender, FORTITUDE, RESIST_MEDIUM);
+			if (!resisted)
+				TS_StartTimer(defender, "desmontar", 10);
+				TS_StartTimer(defender, "tombar", 5);
+				TS_StartTimer(defender, "paralysis", 5);
+			endif
+		endif
+
+		EraseObjProperty(attacker, "charge_damage");
+	endif
+
 	var totaldamage := CInt(damage-resist); 
 	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
 endfunction
@@ -844,7 +882,7 @@ function CalcDamageStats(attacker, damage)
 	var elem := getItemCfgElem(attacker.weapon);
 
 	SkillCheck(attacker, TACTICS, -1);
-	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/20);
+	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);
 	damage += tacticsmod;
 
 	stat := STRENGTH;
@@ -859,7 +897,7 @@ function CalcDamageStats(attacker, damage)
 		statmod := CInt(AP_GetStat(attacker, stat));
 	endif
 
-	statmod := (statmod-50) / 10;
+	statmod := (statmod/* -50 */) / 10;
 	damage += statmod;
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de {stat}: {statmod}");
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de Tactics: {tacticsmod}");
@@ -874,7 +912,7 @@ function CalcDamageWeapon(attacker, damage)
 		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25);
 	endif
 
-	var sharpened_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"];
+	var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
 	if(sharpened_weapon)
 		damage += sharpened_weapon;
 	endif
@@ -902,7 +940,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (getCooldown(attacker, "faroporsangue"))
 		var bonus := AP_GetVital(defender, HITS) / AP_GetVitalMaximumValue(defender, HITS);
-        
+
 		if (bonus <= 0.25)
 			bonus := "1d12";
 		elseif (bonus <= 0.5)
@@ -922,7 +960,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -935,7 +973,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	endif
 
 	if (TemHabilidade(attacker, "Precisao Cirurgica"))
-		var damagemod := CInt(AP_GetSkill(attacker, ALCHEMY) / 20);
+		var damagemod := CInt(AP_GetSkill(attacker, SCIENCE) / 20);
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
@@ -976,7 +1014,7 @@ function CalcDamageHabs(attacker, defender, damage)
 						break;
 
 					"energy_arrow":
-						damagemod += Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+						damagemod += Cint(AP_GetSkill(attacker, ARCANA) / 20);
 						break;
 				endcase
 
@@ -1005,7 +1043,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var inimigo := array{"Undead", "Demons"};
 
 		if (cfg[npctemplate.template].Category in inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + CInt(damagemod));
 		endif
@@ -1014,7 +1052,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
 		if (cfg[npctemplate.template].Category == inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, SCIENCE) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + CInt(damagemod));
 		endif
@@ -1026,9 +1064,9 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
 	endif
 
-	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, MAGICLORE) / 2))
+	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
 		if (GetObjProperty(attacker, "metamorfose") != error)
-			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
@@ -1037,7 +1075,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (IsRaging(attacker))
 		var damagemod;
-		if (temHabilidade(attacker, "Nazg Khalug") || GetObjProperty(attacker, "NpcFuria"))
+		if (temHabilidade(attacker, "Nazg Khalug") || attacker.hasRage())
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
@@ -1045,7 +1083,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 		if (temHabilidade(attacker, "Furia Primitiva"))
 			if (GetObjProperty(attacker, "metamorfose") != error)
-				damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+				damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 				damage += damagemod;
 				DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia Primitiva]: " + CInt(damagemod));
 			endif

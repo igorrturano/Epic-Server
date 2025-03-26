@@ -8,7 +8,7 @@ include "include/say";
 include ":tn:cooldown";
 
 program taunt(who)
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, ARCANA));
 	SendSysMessageEx(who, "Voce reflete magias", SSM_INFO);
 	SetCooldown(who, "spellthief", mlore); 
 endprogram

@@ -8,11 +8,14 @@ include ":combat:damage";
 include "include/say";
 include ":tn:cooldown";
 include "include/epicConstants";
+include "include/epicNPCUtils";
 
 program doubleattack(who)
-    var mlore_bonus := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore_bonus := Cint(AP_GetSkill(who, ARCANA));
 	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
-
+    if (who.npctemplate)
+        targ := GetRandomNearbyHostile(who);
+    endif
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return;
@@ -31,7 +34,7 @@ program doubleattack(who)
     SendSysMessageEx(targ, "Suas defesas são drenadas!", SSM_FAIL);
 	SetObjProperty(who, "#bomcomeco", 1);
 
-    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 10);
+    var duration := Cint(AP_GetSkill(who, ARCANA) / 10);
     SetCooldown(who, "armor_drain", duration);
     sleep(duration);
 
@@ -44,7 +47,7 @@ function grantBonus(who, targ)
     var weapon := who.weapon;
     var effect_color := 0;
     var sound;
-    var armor_drain := Cint(AP_GetSkill(who, MAGICLORE) * 0.3);
+    var armor_drain := Cint(AP_GetSkill(who, ARCANA) * 0.3);
 	if (weapon.color == FOGO)
         effect_color := FOGO;
 	    targ.resist_fire_mod := targ.resist_fire_mod - armor_drain;
@@ -69,7 +72,7 @@ endfunction
 function revokeBonus(who, targ)
     var weapon := who.weapon;
     var effect_color := 0;
-    var armor_drain := Cint(AP_GetSkill(who, MAGICLORE) * 0.3);
+    var armor_drain := Cint(AP_GetSkill(who, ARCANA) * 0.3);
 	if (weapon.color == FOGO)
         effect_color := FOGO;
 	    targ.resist_fire_mod := targ.resist_fire_mod + armor_drain;

@@ -4,10 +4,8 @@ include "include/sounds";
 include ":combat:damage";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
-
-var me := Self();
-const AREA_SIZE := 16;
-var combat_cooldown := 0;
+include "epicSpecial";
+include "NPCMageryUtils";
 
 function MonsterBrain()
     var ev;
@@ -16,9 +14,7 @@ function MonsterBrain()
     Set_Event_Queue_Size(50);
 
     // Get monster configuration
-    var npc_elem := NPC_GetNPCConfig(me);
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var is_ranged := (speed_type[1] == "RANGED");
+    var is_ranged := isMonsterRanged();
 
     // Enable archer-specific abilities if needed
     if (is_ranged)
@@ -27,194 +23,115 @@ function MonsterBrain()
     endif
 
     while (me)
-        ev := os::wait_for_event(200000);
+        ev := os::wait_for_event(0);
     
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
-            if (is_ranged)
-                MaintainRange(me.opponent);
+            if (!CanFight(me, me.opponent))
+                HandleMonsterLeftArea(me.opponent);
             else
-                PursueTarget(me.opponent);
+                if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
+                is_ranged ? MaintainRange(me.opponent) : PursueTarget(me.opponent);
             endif
         endif
         
         if (ev)
-            PrintTextAbove(me, "Event: " + ev.type);
             case (ev.type)
                 SYSEVENT_ENGAGED: 
-                    PrintTextAbove(me, "ENGAGED");
                     AlertAllies(ev.source, me);
-                    HandleCombatEvent(ev.source, is_ranged);
+                    HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED: 
-                    PrintTextAbove(me, "DAMAGED");
-                    HandleCombatEvent(ev.source, is_ranged);
+                    AskForHealing(me);
+                    HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    PrintTextAbove(me, "ENTERED AREA"); 
-                    AlertAllies(ev.source, me);
-                    if (CanFight(me, ev.source))
-                        HandleEnteredArea(ev.source, is_ranged);
+                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
+                    if (!IsAlly(ev.source)) // Only process if it's a player
+                        AlertAllies(ev.source, me);
+                        CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
                     endif
-                SYSEVENT_OPPONENT_MOVED:
-                    PrintTextAbove(me, "OPPONENT MOVED");                     
-                    if (!ev.source || ev.source.hidden || ev.source.concealed)
-                        return 0;
-                    endif
-                    
-                    // if (me.opponent == ev.source)
-                    //     if (is_ranged)
-                    //         MaintainRange(ev.source);
-                    //     else
-                    //         TurnToward(ev.source);
-                    //         PursueTarget(ev.source);
-                    //     endif
-                    // endif
-                SYSEVENT_SPEECH: 
-                    PrintTextAbove(me, "SPEECH");
-                    HandleSpeech(ev.text, ev.source, is_ranged);
-                SYSEVENT_DISENGAGED: 
-                    PrintTextAbove(me, "DISENGAGED");
-                    HandleDisengage(ev.source);
                 SYSEVENT_LEFTAREA:
-                    PrintTextAbove(me, "LEFT AREA");
-                    // if (ev.source == me.opponent || opponent.dead)
-                        HandleLeftArea(is_ranged);
-                    // endif
-                EVID_ALERT_ALLIES:
-                    PrintTextAbove(me, "ALERT ALLIES"); 
-                    if (ev.source)
-                        HandleCombatEvent(ev.source, is_ranged);
+                    if (!IsAlly(ev.source)) // Only process if it's a player
+                        HandleMonsterLeftArea(is_ranged);
                     endif
-                EVID_FLEE:
-                    PrintTextAbove(me, "FLEE");
-                    if (ev.source)
-                        FleeFrom(ev.source);
+                EVID_ALERT_ALLIES:
+                    var opponent_serial := GetObjProperty(me, "#taunt_opponent");
+                    if (opponent_serial)
+                        var opponent := SystemFindObjectBySerial(opponent_serial);
+                        if (opponent && CanFight(me, opponent))
+                            EraseObjProperty(me, "#taunt_opponent");
+                            HandleMonsterCombatEvent(opponent, is_ranged);
+                        endif
                     endif
                 EVID_TAUNT:
-                    if (ev.source) // If taunt comes from a player/ability
-                        if (CanFight(me, ev.source))
-                            HandleCombatEvent(ev.source, is_ranged);
-                        endif
-                    else // Check for ally alert
-                        var opponent_serial := GetObjProperty(me, "#taunt_opponent");
-                        if (opponent_serial)
-                            var opponent := SystemFindObjectBySerial(opponent_serial);
-                            if (opponent && CanFight(me, opponent))
-                                EraseObjProperty(me, "#taunt_opponent");
-                                HandleCombatEvent(opponent, is_ranged);
-                            endif
-                        endif
+                    if (CanFight(me, ev.source))
+                        HandleMonsterCombatEvent(ev.source, is_ranged);
                     endif
+                EVID_BUDDYATTACKED:
+                    ShamanBehavior(me);
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
-        // Also debug the idle state
         if (!ev)
-            PrintTextAbove(me, "*IDLE*");
+            if (!me.opponent)
+                MonsterIdle(wanders, is_ranged);
+                wanders += 1;
+                if (wanders >= 30)
+                    ev := os::wait_for_event(10);
+                    wanders := 0;
+                    HandleIdleState();
+                endif
+            endif
         endif
 
         sleepms(100);
-        if (!me.opponent)
-            MonsterIdle(wanders, is_ranged);
-            wanders += 1;
-
-            if (wanders >= 30)
-                PrintTextAbove(me, "*HANDLING IDLE STATE*");
-                wanders := 0;
-                HandleIdleState();
-            endif
-        endif
     endwhile
 endfunction
 
-function HandleOpponentMovement(opponent)
-    if (!opponent || !CanFight(me, opponent))
-        return 0;
-    endif
-
-    // Update combat state if opponent moves
-    if (me.opponent == opponent)
-        TurnToward(opponent);
-        PursueTarget(opponent);
-    endif
-    
-    return 1;
-endfunction
-
-function HandleSpeech(text, source, is_ranged)
-    // Basic speech handling - could be expanded for specific responses
+function HandleMonsterSpeech(text, source, is_ranged)
     if (!source || !CanFight(me, source))
         return 0;
     endif
 
-    // Chance to aggro on speech
-    if (RandomInt(100) < 30)
-        HandleCombatEvent(source, is_ranged);
-    endif
-    
-    return 1;
-endfunction
-
-function HandleDisengage(opponent)
-    if (!opponent)
-        return 0;
+    // Evita spam de falas
+    if (GetCooldown(me, "combat_speech") > 0)
+        return;
     endif
 
-    SetWarMode(0);
-    SetOpponent(0);
-    
-    if (opponent.dead)
-        var corpse := opponent.GetCorpse();
-        if (corpse)
-            // First, approach the corpse
-            while (Distance(me, corpse) > 1)
-                RunToward(corpse);
-                sleepms(100);
-                
-                // Break if corpse disappeared or too far
-                if (!corpse || Distance(me, corpse) > 20)
-                    return 0;
-                endif
-            endwhile
+    var npcState := getNPCState(me);
 
-            // Calculate max items to loot based on intelligence
-            var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/30);
-            var looted := 0;
-            
-            // Ensure NPC has a backpack
-            if (!me.backpack)
-                var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
-                EquipItem(me, backpack);
-            endif
-            
-            // Loot items
-            while (looted < max_loot)
-                PrintText(me, "*revirando o corpo*");
-                LootSomething(me, corpse);
-                looted += 1;
-                sleepms(1500);
-            endwhile
+    // Adds diff to check resist based on npcState and Tier
+    var diff := getNpcResist();
+
+    // Se perto da morte, pode querer fugir
+    if (npcState == "dying")
+        if (!CheckResist(me, FORTITUDE, 0, diff))
+            PrintTextAbove(me, "*"+me.name+" se acovarda*");
+            FleeFrom(source);
+            return 1;
         endif
     endif
-    
+
+    // Gera e processa resposta
+    var response := handle_combat_speech(me.name, text, source.getRace(), npcState);
+    if (response == error)
+        return Say(handle_error_combat_AI_speech());
+    endif
+
+    Say(response);
+    SetCooldown(me, "combat_speech", 15);
     return 1;
 endfunction
 
-function ClearCombatState()
-    SetWarMode(0);
-    SetOpponent(0);
-endfunction
-
-function HandleLeftArea(is_ranged)
+function HandleMonsterLeftArea(is_ranged)
     // Clear current combat state
     ClearCombatState();
     
     // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
-            PrintText(me, "*procura novo alvo*");
-            HandleCombatEvent(mobile, is_ranged);
+            HandleMonsterCombatEvent(mobile, is_ranged);
             return 1;
         endif
         sleepms(2);
@@ -233,6 +150,7 @@ function HandleLeftArea(is_ranged)
     if (corpses.size() > 0)
         foreach corpse in corpses
             if (LootCorpse(corpse))
+                SetCooldown(me, "loot_cooldown", 300);
                 return 1;
             endif
             sleepms(100);
@@ -240,194 +158,23 @@ function HandleLeftArea(is_ranged)
     endif
 
     // If nothing else to do, go idle
-    PrintText(me, "*procura alvos*");
     HandleIdleState();
     return 1;
 endfunction
 
-function LootCorpse(corpse)
-    if (!CorpseHasLoot(corpse))
-        return 0;
-    endif
-
-    // Approach the corpse
-    while (Distance(me, corpse) > 1)
-        RunToward(corpse);
-        sleepms(100);
-        
-        // Break if corpse disappeared or too far
-        if (!corpse || Distance(me, corpse) > 20)
-            return 0;
-        endif
-    endwhile
-
-    // Calculate max items to loot based on intelligence
-    var max_loot := CInt(AP_GetStat(me, INTELLIGENCE)/20);
-    if (max_loot < 1)
-        max_loot := 1;
-    endif
-    var looted := 0;
-    
-    // Ensure NPC has a backpack
-    if (!me.backpack)
-        var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
-        if (!EquipItem(me, backpack))
-            return 0;
-        endif
-    endif
-    
-    // Loot items
-    while (looted < max_loot)
-        PrintText(me, "*revira o corpo*");
-        if (!LootSomething(me, corpse))
-            break;
-        endif
-        looted += 1;
-        sleepms(1500);
-    endwhile
-    
-    return (looted > 0);
-endfunction
-
-function CorpseHasLoot(corpse)
-    if (!corpse || corpse.IsA(POLCLASS_CORPSE) == error)
-        return 0;
-    endif
-
-    foreach item in EnumerateItemsInContainer(corpse)
-        if (item.movable)
-            return 1;
-        endif
-        sleepms(2);
-    endforeach
-
-    return 0;
-endfunction
-
-function LootSomething(npc, corpse)
-    // Define priority items by objtype (coins)
-    var coins := array{0xBA63, 0xBA64, 0xBA65}; // copper, silver, gold
-    var resources := array{0x1bf2, 0x1bd7};     // ingots, wood
-
-    if (GetCooldown(npc, "already_looted") > 0)
-        return 0;
-    endif
-
-    // First try to loot coins
-    var priority_loot := FindPriorityLoot(corpse, coins);
-    if (priority_loot)
-        return LootItem(npc, priority_loot);
-    endif
-
-    // Then try resources
-    var resource_loot := FindPriorityLoot(corpse, resources);
-    if (resource_loot)
-        return LootItem(npc, resource_loot);
-    endif
-
-    // Then look for equipment by class
-    foreach item in EnumerateItemsInContainer(corpse)
-        if (!item.movable)
-            continue;
-        endif
-
-        if (item.IsA(POLCLASS_WEAPON) || item.IsShield() || item.IsA(POLCLASS_ARMOR))
-            return LootItem(npc, item);
-        endif
-
-        // Check containers
-        if (item.IsA(POLCLASS_CONTAINER))
-            var container_item := FindEquipmentInContainer(item);
-            if (container_item)
-                return LootItem(npc, container_item);
-            endif
-        endif
-        sleepms(2);
-    endforeach
-
-    SetCooldown(npc, "already_looted", 120);
-endfunction
-
-function FindEquipmentInContainer(container)
-    foreach item in EnumerateItemsInContainer(container)
-        if (!item.movable)
-            continue;
-        endif
-
-        if (item.IsA(POLCLASS_WEAPON) || item.IsShield() || item.IsA(POLCLASS_ARMOR))
-            return item;
-        endif
-
-        if (item.IsA(POLCLASS_CONTAINER))
-            var container_item := FindEquipmentInContainer(item);
-            if (container_item)
-                return container_item;
-            endif
-        endif
-        
-        sleepms(2);
-    endforeach
-    
-    return 0;
-endfunction
-
-function LootItem(npc, item)
-    if (!item)
-        return 0;
-    endif
-
-    if (!npc.backpack)
-        var backpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "Backpack", 1);
-        EquipItem(npc, backpack);
-    endif
-
-    PrintText(npc, "*pega " + item.desc + "*");
-    return MoveItemToContainer(item, npc.backpack);
-endfunction
-
-function FindPriorityLoot(corpse, graphics_array)
-    foreach item in EnumerateItemsInContainer(corpse)
-        if (!item.movable)
-            continue;
-        endif
-
-        if (item.objtype in graphics_array || item.graphic in graphics_array)
-            return item;
-        endif
-
-        // Check containers for these items
-        if (item.IsA(POLCLASS_CONTAINER))
-            var container_item := FindPriorityLoot(item, graphics_array);
-            if (container_item)
-                return container_item;
-            endif
-        endif
-        
-        sleepms(2);
-    endforeach
-    
-    return 0;
-endfunction
-
-function DisableMainEvents()
-    DisableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA);
-    DisableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED);
-endfunction
-
-function HandleCombatEvent(opponent, is_ranged)
-    PrintTextAbove(me, "Starting Combat");
-
+function HandleMonsterCombatEvent(opponent, is_ranged)
     if (!opponent || opponent.dead || !CanFight(me, opponent))
-        PrintTextAbove(me, "Invalid opponent");
         return 0;
     endif
+    if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
 
-    const MAX_Z_DIFF := 18;
     var z_diff := Abs(me.z - opponent.z);
     if (z_diff > MAX_Z_DIFF)
         return 0;
     endif
 
+    SetOpponent(opponent);
+    opponent := CheckForIdealTarget();
     SetOpponent(opponent);
 
     // Let the combat hook handle the actual attacks
@@ -437,73 +184,44 @@ function HandleCombatEvent(opponent, is_ranged)
         TurnToward(opponent);
         PursueTarget(opponent);
     endif
-
-    return 1;
-endfunction
-
-function PursueTarget(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
-    var dist := Distance(me, opponent);
     
-    // Don't chase too far
-    if (dist > AREA_SIZE)
-        return 0;
+    if (me.isMyrkonid())
+        SporeSpecial(me, opponent);
     endif
 
-    if (CheckLineOfSight(me, opponent))
-        PrintTextAbove(me, "Has line of sight");
-        while (Distance(me, opponent) > 1 && CanFight(me, opponent))
-            PrintTextAbove(me, "Running toward opponent");
-            PrintTextAbove(me, "Opponent.Name: " + opponent.name);
-            RunToward(opponent);
-            sleepms(100);
-        endwhile
-    else
-        // Try to find a path around obstacles
-        var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES);
-        print("path: " + path);
-        if (path)
-            foreach coord in path
-                RunTowardLocation(coord.x, coord.y);
-                if (Distance(me, opponent) <= 1)
-                    break;
-                endif
-                sleepms(100);
-            endforeach
-        endif
-    endif
-endfunction
-
-function PerformRangedAttack(opponent)
-    if (!opponent || !CheckLineOfSight(me, opponent))
-        return 0;
+    if (me.isMage())
+        MageBehavior(me, opponent);
     endif
 
-    TurnToward(opponent);
-    PerformAction(me, 0x12); // Bow animation
-    PlaySoundEffect(me, 0x235); // Bow sound
-    
-    return 1;
-endfunction
-
-function PerformMeleeAttack(opponent)
-    if (!opponent)
-        return 0;
+    if (me.isShaman())
+        ShamanBehavior(me);
     endif
 
-    TurnToward(opponent);
-    PerformAction(me, 0x0A);
-    PlaySoundEffect(me, 0x23B);
-    
+    if (me.hasHiveMind())
+        HiveMind(me);
+    endif
+
+    if (me.isUmberHulk())
+        doConfusion(opponent);
+    endif
+
+    if (me.CanBite())
+        Bite(me, opponent);
+    endif
+
+    if (me.CanTongueGrab())
+        TongueGrab(me, opponent);
+    endif
+
+    if (me.CanCharm())
+        CharmOpponent(me, opponent);
+    endif
+
     return 1;
 endfunction
 
 function MonsterIdle(wanders, is_ranged)
    if (me.opponent)
-        PrintTextAbove(me, "Has opponent - skipping idle");
         return;
     endif
 
@@ -514,13 +232,21 @@ function MonsterIdle(wanders, is_ranged)
     endif
 
     // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
         if (CanFight(me, mobile))
-            HandleCombatEvent(mobile, is_ranged);
+            HandleMonsterCombatEvent(mobile, is_ranged);
             return;
         endif
         sleepms(2);
     endforeach
+
+    if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
+    var anchor := GetObjProperty(me, "anchor");
+    if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
+      PrintText(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+      sleep(3);
+      MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
+     endif
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)
@@ -538,89 +264,40 @@ function MonsterIdle(wanders, is_ranged)
     endif
 endfunction
 
-function HandleIdleState()
-    DisableMainEvents();
-    EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
+function HandleMonsterEnteredArea(source, is_ranged)
+    if (!source || !CanFight(me, source))
+        return 0;
+    endif
     
-    // Return to spawn point if we have one
-    var spawn_point := GetObjProperty(me, "spawn_loc");
-    if (spawn_point)
-        if (Distance(me, spawn_point) > 5)
-            WalkTowardLocation(spawn_point.x, spawn_point.y);
-        endif
-    endif
-endfunction
-
-function FleeFrom(opponent)
-    if (!opponent)
-        return 0;
+    handleMonsterInitialReaction(source);
+    if (me.canCharge())
+        StartCharge(me, source);
     endif
 
-    var runs := 0;
-    while (opponent && Distance(me, opponent) < 20 && runs < 50)
-        RunAwayFrom(opponent);
-        runs += 1;
-        sleepms(100);
-    endwhile
-endfunction
-
-function EnableMainEvents()
-    EnableEvents(SYSEVENT_ENGAGED + SYSEVENT_DAMAGED + SYSEVENT_ENTEREDAREA, AREA_SIZE);
-    EnableEvents(SYSEVENT_OPPONENT_MOVED + SYSEVENT_DISENGAGED + SYSEVENT_LEFTAREA, AREA_SIZE);
-    EnableEvents(SYSEVENT_SPEECH, 4);
-endfunction
-
-function CanFight(attacker, defender)
-    if (!defender || defender.dead || defender.hidden || defender.concealed)
-        return 0;
+    if (me.isThief())
+        DoThiefCombatBehavior(source);
     endif
 
-    // If defender is a player, normal combat rules apply
-    if (!defender.npctemplate)
-        return 1;
+    if (me.hasTunnelTactics())
+        TunnelTactics(me, source);
     endif
 
-    // NPC vs NPC combat only happens if:
-    if (defender.npctemplate)
-        // Check if forced to attack by GM command
-        var forced_target := GetObjProperty(attacker, "#ForcedTarget");
-        if (forced_target == defender.serial)
-            return 1;
-        endif
-
-        // Check enemy categories
-        var attacker_elem := NPC_GetNPCConfig(attacker);
-        var defender_elem := NPC_GetNPCConfig(defender);
-        var enemy_cats := GetConfigStringArray(attacker_elem, "EnemyCategories");
-        
-        if (enemy_cats && defender_elem.Category in enemy_cats)
-            return 1;
-        endif
-
-        return 0; // No valid reason for NPCs to fight
+    if (me.CanAmbush())
+        HandleAmbush(me, source);
     endif
+
+    HandleMonsterCombatEvent(source, is_ranged);
     
     return 1;
 endfunction
 
-function HandleEnteredArea(source, is_ranged)
-    if (!source || !CanFight(me, source))
-        return 0;
-    endif
-
-    // Get monster category and player race
+function handleMonsterInitialReaction(source)
     var npc_elem := NPC_GetNPCConfig(me);
     var category := GetConfigString(npc_elem, "Category");
-    var playerRaca := source.getRace();
-    var name_mob := GetConfigString(npc_elem, "Name");
-    
-    if (!category)
-        HandleCombatEvent(source, is_ranged);
-        return 0;
-    endif
 
-    // Special handling for Goblins
     if (category == "Goblin")
+        var playerRaca := source.getRace();
+        var name_mob := GetConfigString(npc_elem, "Name");
         if (playerRaca == ORC || playerRaca == DROW)
             // High chance to flee from these races
             var randomDice := RandomInt(100);
@@ -638,95 +315,4 @@ function HandleEnteredArea(source, is_ranged)
             endif
         endif
     endif
-
-    // Initial reaction based on category
-    var aggro_chance;
-    var playerinput;
-    
-    case (category)
-        "Goblin": 
-            aggro_chance := 20;
-            playerinput := "*raça " + playerRaca + " encontrada*";
-        "Giants": 
-            aggro_chance := 70;
-            playerinput := "*raça " + playerRaca + " invade território*";
-        "EvilHuman": 
-            aggro_chance := 60;
-            playerinput := "*raça " + playerRaca + " avistada*";
-        default: 
-            aggro_chance := 40;
-            playerinput := "*raça " + playerRaca + " aparece*";
-    endcase
-
-    // Generate and say initial response
-    var responseAI := handle_combat_ai(category, name_mob, playerinput, playerRaca);
-    if (responseAI)
-        Say(responseAI);
-    endif
-
-    // Roll for aggro
-    if (RandomInt(100) < aggro_chance)
-        HandleCombatEvent(source, is_ranged);
-    endif
-    
-    return 1;
-endfunction
-
-function MaintainRange(opponent)
-    var sleepdelay := 275 - me.run_speed;
-    if (sleepdelay < 0)
-        sleepdelay := 50;
-    endif
-
-    var dist := CoordinateDistance(me.x, me.y, opponent.x, opponent.y);
-    var z_diff := Abs(me.z - opponent.z);
-
-    if (z_diff > 18)
-        return 0;
-    endif
-
-    if (dist < 4)
-        RunAwayFrom(opponent);
-        sleepms(sleepdelay);
-    elseif (dist > 10)
-        RunToward(opponent);
-        sleepms(sleepdelay);
-    else
-        TurnToward(opponent);
-        return 1;
-    endif
-
-    return 0;
-endfunction
-
-// New function to handle ally behavior
-function AlertAllies(attacker, defender)
-    // If attacker or defender aren't NPCs, return
-    if (!attacker.npctemplate)
-        return 0;
-    endif
-
-    PrintTextAbove(defender, "Alerting allies");
-    var attacker_elem := NPC_GetNPCConfig(attacker);
-    var ally_cats := GetConfigStringArray(attacker_elem, "AllyCategories");
-    
-    // If no allies specified, use own category
-    if (!ally_cats)
-        ally_cats := array{GetConfigString(attacker_elem, "Category")};
-        PrintTextAbove(attacker, "Using own category: " + ally_cats[1]);
-    endif
-    
-    foreach mobile in ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 8)
-        if (mobile.npctemplate && mobile != attacker)
-            var mobile_elem := NPC_GetNPCConfig(mobile);
-            var mobile_cat := GetConfigString(mobile_elem, "Category");
-            
-            if (mobile_cat in ally_cats)
-                SetObjProperty(mobile, "#taunt_opponent", defender.serial);
-                SendEvent(mobile, EVID_TAUNT);
-                PrintText(mobile, "*alerted* by " + mobile_cat);
-            endif
-        endif
-        sleepms(2);
-    endforeach
 endfunction

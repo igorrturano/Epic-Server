@@ -11,6 +11,10 @@ function LogPlayerSpeech( who, text )
     return 0;
   endif
 
+  if (who.npctemplate)
+    return 0;
+  endif
+
   var account_name := who.acctname;
   var character_name := "";
   var position := "{}:{}:{}".format( who.x, who.y, who.z );
@@ -66,4 +70,84 @@ function GetPlayersInRange( who, range )
 
   endforeach
   return players_in_range;
+endfunction
+
+function LogCombatAction(npc, state, ability, success)
+  var npc_elem := NPC_GetNPCConfig(npc);
+  var class_type := npc_elem.Classe;
+  var log_dir := "::data/log/npc_combat/{}/".format(class_type);
+  
+  if (!FileExists(log_dir))
+     CreateDirectory(log_dir);
+  endif
+
+  var npc_template := NPC_ParseTemplateName(npc.npctemplate).template;
+  var log_file := "{}{}.log".format(log_dir, npc_template);
+
+  // Get opponent info
+  var opponent := me.opponent;
+  var opponent_class := opponent.acctname ? GetObjProperty(opponent, "chardata").classe : NPC_GetNPCConfig(opponent).Classe;
+  var opponent_type := opponent.acctname ? opponent.acctname : NPC_ParseTemplateName(opponent.npctemplate).template;
+
+  var log_entry := "{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
+     FormatState(state),
+     ability,
+     CInt(success),
+     StrFormatTime( "%d-%m-%Y %H:%M:%S", POLCore().systime ),
+     opponent_class,
+     opponent_type, 
+     AP_GetVital(npc, HITS),
+     AP_GetVitalMaximumValue(npc, HITS),
+     AP_GetVital(opponent, HITS),
+     AP_GetVitalMaximumValue(opponent, HITS),
+     opponent.weapon.isRanged(),
+     state.distance
+  );
+
+  LogToFile(log_file, log_entry, 0);
+endfunction
+
+function LoadCombatHistory(npc_template)
+   var log_file := "::data/log/npc_combat/{}.log".format(npc_template);
+   if (!FileExists(log_file))
+      return dictionary;
+   endif
+
+   var success_rates := dictionary;
+   var lines := ReadFile(log_file);
+    print("LineS: " + lines);
+   foreach line in lines
+      print("line: " + line);
+      var data := SplitWords(line, ",");
+      var state := data[2];
+      var ability := data[3];
+      var success := CInt(data[4]);
+      print("state: " + state);
+      
+      var key := state + "_" + ability;
+      if (!success_rates[key])
+         success_rates[key] := struct{
+            "successes" := 0,
+            "total" := 0
+         };
+      endif
+      
+      success_rates[key].total += 1;
+      if (success)
+         success_rates[key].successes += 1;
+      endif
+      sleepms(2);
+   endforeach
+
+   return success_rates;
+endfunction
+
+function FormatState(state)
+   return "{}|{}|{}|{}|{}".format(
+      state.health,  // "dying", "hurt", "injured", "healthy"  
+      state.distance,
+      state.stamina,
+      CInt(state.opponent_casting),
+      CInt(state.has_advantage)
+   );
 endfunction

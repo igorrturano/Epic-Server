@@ -9,12 +9,16 @@ include ":survival:fishingFunctions";
 
 program HitScript(who)
 	var targ := Target(who);
+    if (who.npcTemplate)
+        targ := GetRandomNearbyHostile(who);
+    endif
+    
     SendSysMessage(who, "Escolha quem voce deseja aprisionar");
 
     var dist := Distance(who, targ);
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, ARCANA) / 5);
 
-    if (dist > (mlore/ 5))
+    if (dist > mlore)
         SendSysMessage(who, "O alvo esta muito distante");
         return 0;
     endif
@@ -37,7 +41,7 @@ program HitScript(who)
     targ.frozen := 1;
     PlayStationaryEffect(targ.x, targ.y, targ.z, globe, 0, 40,0, who.realm); // globo invul
     sleep(2);
-    var duration := Cint(AP_GetSkill(who, MAGICLORE)/ 5);
+    var duration := Cint(AP_GetSkill(who, ARCANA)/ 5);
     //if (targ.npctemplate)
     //    targ.concealed := 1;
     //    sleep(duration);

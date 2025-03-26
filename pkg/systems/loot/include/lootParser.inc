@@ -259,18 +259,14 @@ endif
 endfunction
 
 function Loot_ChanceCheck(chance)
-	var rolado := CInt(RandomFloat(1000)); 
-	var rolado2 := rolado+1;
-	var threshold := CInt(CDbl(chance)*10.0);
-	print("Chance check: rolou " + rolado2 + " precisa <= " + threshold);
-	if ( rolado2 <= threshold )
+	var rolado := RandomInt(100) + 1;
+
+	if ( rolado <= CInt(chance) )
 		return 1;
 	else
 		return 0;
 	endif
 endfunction
-
-
 
 function Loot_ParseString(line)
     line := SplitWords(line);

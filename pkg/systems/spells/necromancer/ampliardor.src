@@ -24,7 +24,7 @@ program SpellScript(params)
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := -epicWisdomPathBonus(who);
 	if (!CheckResist(targ, VONTADE, diff, bonus))
-		var duration := AP_GetSkill(who, MAGICLORE);
+		var duration := AP_GetSkill(who, ARCANA);
 		TS_StartTimer(targ, "apodrecer", duration, targ.color, who, 0);
 		Corromper(who, 11, targ);
 

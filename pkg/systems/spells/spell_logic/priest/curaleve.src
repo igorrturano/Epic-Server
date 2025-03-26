@@ -11,20 +11,21 @@ include "include/tileEffects";
 include ":charactercreation:habilidades";
 include ":combat:damage";
 include ":brainai:npcUtil";
+include ":epicAI:epicai";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);	
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
+
 	if (!targ)
 		return;
 	endif
-
-	//if ( !targ.npctemplate && (targ == who) )
-	//	SendSysMessageEx(who, "Voce nao pode ser alvejado por essa magia.", SSM_FAIL);
-	//	return;
-	//endif
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
@@ -36,7 +37,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var healed := cint(AP_GetSkill(who, MAGICLORE)/2);
+	var healed := cint(AP_GetSkill(who, THEOLOGY)/2);
 	if (healed < 20)
 		healed := 20;
 	endif

@@ -15,7 +15,7 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	SetObjProperty(who, "aparenciacadaverica", 1);
-	TS_StartTimer(who, "aparenciacadaverica", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), 1, who, 0); //20 min
+	TS_StartTimer(who, "aparenciacadaverica", GetSpellDuration(AP_GetSkill(who, ARCANA)), 1, who, 0); //20 min
 	handleSilentMagic(who, who, 385);
 
 	SendSysMessageEx(who, "A sua aparencia se torna cadaverica", SSM_INFO);

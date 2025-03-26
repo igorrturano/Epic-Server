@@ -16,6 +16,17 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	if (who.npctemplate)
+		var time := cint(AP_GetSkill(who, ARCANA))*2;
+		var lvl := cdbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
+	    if (TemHabilidade(targ, "Aura Mortis"))
+			SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
+			lvl *= 1.34;
+		endif
+		TS_StartTimer(who, "dmgreturn", time, lvl, who, 1);
+		return 1;
+	endif
+
 	var chardata := GetObjProperty(who, "chardata");
 	if (chardata.wisdom_path != "Mago" && !TemHabilidade(who, "Aura Mortis") && !TemHabilidade(who, "Sensibilidade Arcana"))
         SendSysMessageEx(who, "Você não sabe usar essa magia.", SSM_INFO);
@@ -27,14 +38,14 @@ program SpellScript(params)
 		return;
 	endif
 
-	var lvl := cdbl(AP_GetSkill(who, MAGICLORE) * 0.6 / 100);
+	var lvl := cdbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
 
     if (TemHabilidade(targ, "Aura Mortis"))
     	SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
         lvl *= 1.34;
     endif
 
-	var time := cint(AP_GetSkill(who, MAGICLORE))*2;
+	var time := cint(AP_GetSkill(who, ARCANA))*2;
 	Corromper(who, 28, targ);
 	SendSysMessageEx(targ, "Olho por olho...", SSM_INFO);
 	TS_StartTimer(targ, "dmgreturn", time, lvl, who, 1);

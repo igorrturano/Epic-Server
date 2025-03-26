@@ -256,66 +256,6 @@ function GetMoonLightMod()
        "Decrescens":  return 21;
     endcase
 endfunction
-
-function temperatura()
-   var basetemp := CINT(GetGlobalproperty("basetemp"));
-   if (basetemp < -20)
-      basetemp := 20;
-   endif
-   if (basetemp > 40)
-      basetemp := 20;
-   endif
-   if (!basetemp)
-      basetemp := 0;
-   endif
-   var temp;
-   var season := cint(getglobalproperty("season"));
-   if ( season == 1)
-      temp := 15 + randomint(20);
-      if (basetemp == 0)
-        basetemp := temp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 3;
-      else
-        basetemp := basetemp + 3;
-      endif
-   elseif ( season == 2)
-      temp := 0 + randomint(25);
-      if (basetemp == 0)
-        basetemp := temp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 4;
-      else
-        basetemp := basetemp + 2;
-      endif
-   elseif (season == 3 )
-      temp := -20 + randomint(40);
-      if (basetemp == 0)
-        basetemp := temp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 8;
-      else
-        basetemp := basetemp + 1;
-      endif
-   else
-      temp := 0 + randomint(25);
-      if (basetemp == 0)
-        basetemp := basetemp;
-      endif
-      if (basetemp < temp)
-        basetemp := basetemp - 4;
-      else
-        basetemp := temp + 2;
-      endif
-   endif
-   
-   setglobalproperty("basetemp", basetemp);
-
-endfunction
-
 // function output(msgtext)
 // 	foreach player in enumerateonlinecharacters()
 // 		if (player.cmdlevel)

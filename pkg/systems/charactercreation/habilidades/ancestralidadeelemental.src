@@ -12,7 +12,7 @@ include "include/dungeons";
 
 program controleclima(who)
     var type;
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, THEOLOGY));
     var duration := Cint(mlore / 10);
     var som := 0;
     var bolt := 0;
@@ -22,10 +22,10 @@ program controleclima(who)
         shaman_souls := 0;
     endif
 
-    if (InDungeon(who))
-       SendSysMessageEx(who, "Você precisa estar fora de cavernas.", SSM_INFO);
-       return;
-    endif
+    // if (InDungeon(who))
+    //    SendSysMessageEx(who, "Você precisa estar fora de cavernas.", SSM_INFO);
+    //    return;
+    // endif
 
     type := 0; // chuva
     if (shaman_souls > 0)

@@ -23,11 +23,11 @@ program doubleattack(who)
 
     sleep(10);
     
-    var range := cint(AP_GetSkill(who, MAGICLORE)/10);
+    var range := cint(AP_GetSkill(who, ARCANA)/10);
     var nearby := ListMobilesNearLocation( who.x ,who.y, who.z, range, who.realm);
 	var festa := who.party;
     var effect := who.weapon.color;
-    var total_dmg := Cint(Cint(GetObjProperty(who, "vortice_dmg")) + Cint(AP_GetSkill(who, MAGICLORE)));
+    var total_dmg := Cint(Cint(GetObjProperty(who, "vortice_dmg")) + Cint(AP_GetSkill(who, ARCANA)));
     PerformAction(who, ANIM_CAST_AREA);
 
     var allPets := array{};
@@ -36,7 +36,7 @@ program doubleattack(who)
         foreach member in party_members
             if (member != who)
                 var memberObj := SystemFindObjectBySerial(member.serial);
-                var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+                var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
                 foreach pet in allPetsAndSummonedPets
                     allPets.append(pet);
                 endforeach

@@ -9,7 +9,7 @@ include "include/say";
 program spell_Pressagio(params)
     var who := params[1];
     var targ := params[2];
-    var mlore := CInt(AP_GetSkill(who, MAGICLORE));
+    var mlore := CInt(AP_GetSkill(who, ARCANA));
     
     // Duração baseada em Magic Lore
     var duration := CInt(mlore / 10);

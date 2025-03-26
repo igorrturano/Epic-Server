@@ -149,13 +149,28 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 	var xDesc := cfg.desc;
-	if(cfg.elem.strrequired > 0)
-		xDesc := xDesc + "Força exigida: " + cfg.elem.strrequired + "<br>";
+	// Coloca vermelho se a força do usuario for menor, verde se for maior ou igual a força exigida
+	var str_required := GetObjProperty(objeto, "atributos").STRRequired;
+	var who_str := AP_GetStat(who, STRENGTH);
+	var str_mod := AP_GetStatMod(who, STRENGTH);
+	var total_str := who_str + str_mod;
+	if(GetObjProperty(objeto, "atributos").STRRequired > 0)
+		if (total_str < str_required)
+			xDesc := xDesc + RED + "Força exigida: " + str_required + "<br>";
+		else
+			xDesc := xDesc + "Força exigida: " + str_required + "<br>";
+		endif
 	endif
+
 	xDesc := xDesc + "Perícia: " + StrReplace(cfg.elem.Attribute,"_"," ") + "<br>";
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
+
+	if (GetObjProperty(objeto, "polida"))
+		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
+	endif
+
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
 		xDesc := xDesc + LARANJA + crits;
@@ -171,7 +186,10 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	if (GetObjProperty(objeto, "Aprimoramentos"))
-		xDesc := xDesc + ROXO + "Aprimoramentos: " + GetObjProperty(objeto, "Aprimoramentos") + "<br>";
+		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
+		foreach key in (GetObjProperty(objeto, "Aprimoramentos").keys())
+				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
+		endforeach
 	endif
 		
 	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.

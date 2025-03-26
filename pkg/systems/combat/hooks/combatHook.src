@@ -36,6 +36,7 @@ include "include/epicConstants";
 include ":commands:debugsystem";
 include "include/epicMageryUtils";
 include ":fls_magery:spellSounds";
+include "include/epicCombatUtils";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -69,16 +70,16 @@ exported function Attack(attacker, defender)
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
 
 	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
-	DebugMsg(attacker, DEBUG_DAMAGE, "=================");
-	DebugMsg(attacker, DEBUG_DAMAGE, "ATAQUE INICIADO!");
-	DebugMsg(attacker, DEBUG_DAMAGE, "=================");
-	DebugMsg(attacker, DEBUG_DAMAGE, "Mão -> MainHand");
+	DebugMsg(attacker, DEBUG_HIT, "=================");
+	DebugMsg(attacker, DEBUG_HIT, "ATAQUE INICIADO!");
+	DebugMsg(attacker, DEBUG_HIT, "=================");
+	DebugMsg(attacker, DEBUG_HIT, "Mão -> MainHand");
 	var hitchance := CInt(CalculateHitChance(attacker, defender));
-	DebugMsg(attacker, DEBUG_DAMAGE, "Chance de acerto: "+hitchance);
+	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+hitchance);
 	var rolldice := RandomDiceRoll("1d100");
-	DebugMsg(attacker, DEBUG_DAMAGE, "Rolagem de acerto: "+rolldice);
+	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+rolldice);
 	if ( rolldice < hitchance )
-		DebugMsg(attacker, DEBUG_DAMAGE, "***SUCESSO!***");
+		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
         if (defender.frozen)
             defender.frozen := 0;
         endif
@@ -89,7 +90,7 @@ exported function Attack(attacker, defender)
 		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
 
 	else
-		DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
+		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
 		PlayMissSound(attacker);
 		
 		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -98,25 +99,25 @@ exported function Attack(attacker, defender)
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
 		Start_Script("weaponHitScripts/AttackAnimation", {attacker, 500});
-		DebugMsg(attacker, DEBUG_DAMAGE, "Mão -> OffHand");
+		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
 		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
 		if (penalty < 10)
 			penalty := 10;
 		endif
 
 		hitchance -= penalty;
-		DebugMsg(attacker, DEBUG_DAMAGE, "Chance de acerto: "+hitchance);
+		DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+hitchance);
 		rolldice := RandomDiceRoll("1d100");
-		DebugMsg(attacker, DEBUG_DAMAGE, "Rolagem de acerto: "+rolldice);
+		DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+rolldice);
 		if ( rolldice < hitchance )
-			DebugMsg(attacker, DEBUG_DAMAGE, "***SUCESSO!***");
+			DebugMsg(attacker, DEBUG_HIT, "***SUCESSO!***");
 			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
 			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
 
 			EpicAttack(attacker, defender, DAMAGE_OFFHAND);
 
 		else
-			DebugMsg(attacker, DEBUG_DAMAGE, "***FALHA!***");
+			DebugMsg(attacker, DEBUG_HIT, "***FALHA!***");
 			PlayMissSound(attacker);
 
 			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
@@ -269,9 +270,11 @@ function CalculateHitChance(attacker, defender)
 		hit_chance += 5;
 	endif
 
-	var balanced_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"];
+	var balanced_weapon := CInt(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Balanceada"]);
 	if (balanced_weapon)
 		hit_chance += balanced_weapon;
+
+		DebugMsg(attacker, DEBUG_HIT, "Arma Balanceada: " + CInt(balanced_weapon));
 	endif
 
 	if (GetCooldown(attacker, "furia" && TemHabilidade(attacker, "Fúria Indomável")))
@@ -355,7 +358,7 @@ function CalculateHitChance(attacker, defender)
 		endif
 	endif
 
-    var dancer_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
+    var dancer_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 5);
     if (TemHabilidade(attacker, "Danca das Sombras"))
         hit_chance := hit_chance + dancer_bonus;
 	endif
@@ -372,7 +375,7 @@ function CalculateHitChance(attacker, defender)
         hit_chance := hit_chance - swash_bonus;
     endif
     
-	var witcher_bonus := Cint(AP_GetSkill(attacker, ALCHEMY) / 5);
+	var witcher_bonus := Cint(AP_GetSkill(attacker, SCIENCE) / 5);
 	if (TemHabilidade(attacker, "Oleo do Cacador"))
 		hit_chance := hit_chance + witcher_bonus;
 	endif
@@ -447,10 +450,14 @@ function CalculateHitChance(attacker, defender)
 		hit_chance -= 15.0;
 	endif
 
+	if (defender.npctemplate == ":epicai:spiderling")
+		hit_chance -= 20;
+	endif
+
 	EraseObjProperty(attacker, "insistencia");
 
 	if (TemHabilidade(attacker, "Tirothan"))
-		var mlore_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
+		var mlore_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 10);
 		hit_chance += mlore_bonus;
 	endif
 
@@ -481,30 +488,14 @@ function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
 	TS_StartTimer( defender, "velocidade", 5 );
   endif
 
-  var trickster_bonus := CInt( AP_GetSkill( attacker, MAGICLORE ) / 20 );
+  var trickster_bonus := CInt( AP_GetSkill( attacker, ARCANA ) / 20 );
   if ( getCooldown( attacker, "disparomistico" ) )
 	PrintTextAbovePrivate( attacker, "*passo nebuloso*", attacker );
 	SetCooldown( attacker, "disparomisticoHit", trickster_bonus );
   endif
 
   if ( getCooldown( attacker, "deathdance" ) > 0 )
-	if ( !IsBehind( attacker, defender.x, defender.y ) && IsFacing( defender, attacker.x,
-	  attacker.y ) )
-	  var behindX := defender.x + ( defender.x - attacker.x );
-	  var behindY := defender.y + ( defender.y - attacker.y );
-
-	  if ( defender.x == attacker.x && defender.y == attacker.y )
-		SendSysMessageEx( attacker, "Você esta muito proximo do oponente!", SSM_FAIL );
-		return 0;
-	  else
-		PlayObjectCenteredEffect( attacker, 0x5433, 7, 16 );
-		PlaySoundEffect( attacker, 0x526 );
-		MoveObjectToLocation( attacker, behindX, behindY, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION );
-		if ( !IsFacing( attacker, defender.x, defender.y ) )
-		  TurnObjectToward( attacker, defender.x, defender.y );
-		endif
-	  endif
-	endif
+	moveToBehind(attacker, defender);
   endif
 
   if ( TemHabilidade( attacker, "Ainalaith" ) )
@@ -653,7 +644,7 @@ function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 	if (GetCooldown(defender, "contraataque") > 0)
 		if (GetObjProperty(defender, "#contraatacando") == error)
 			SetObjProperty(defender, "#contraatacando", 1);
-			printtext(defender, "*contra ataque*");
+			PrintTextAbove(defender, "*contra ataque*");
 			//defender.attack_once(attacker);
 			var new_hit_chance := CalculateHitChance(defender, attacker);
 			var new_random := RandomInt(100);
@@ -710,6 +701,10 @@ function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
 		endif
 	endif
 	EraseObjProperty(attacker, "movement");
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		EraseObjProperty(attacker, "charge_damage");
+	endif
 
 	return 1;
 endfunction

@@ -10,6 +10,9 @@ include ":attributes:skills";
 include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":mechanicalapitude:lockpick_minigame";
+include ":keys:key";
+include "include/string";
 
 program skill_lockpicking(me, lockpick)
     EraseObjProperty(me, "IsMeditating");
@@ -101,6 +104,11 @@ function PickTreasureChest(me, lockpick, chest)
         return 0;
     endif
 
+	if (GetObjProperty(chest, "fechadura_quebrada") == 1)
+        SendSysMessageEx(me, "A fechadura está quebrada!", SSM_FAIL);
+        return 0;
+	endif
+	
     if(valorInicial(me, AWARENESS) >= 40)
         if(me.hidden)
             SendSysMessageEx(me, "*Arrombando a fechadura. [silencioso]*", SSM_INFO);
@@ -139,6 +147,55 @@ function PickTreasureChest(me, lockpick, chest)
     endif
 
     var check := SkillCheck(me, MECHANICS, diff);
+	var mec_skill := AP_GetSkill(me, MECHANICS);
+	var magic_chest := (GetObjProperty(chest, "level") == 6);
+	var hab1_mchest := temHabilidade(me, "Sensibilidade Arcana");
+	var hab2_mchest := temHabilidade(me, "Desbravador Nato");
+
+if ( hab1_mchest || hab2_mchest)
+	if (magic_chest || (diff > mec_skill + 15 && diff < mec_skill + 40) )
+	if(mini_game(me, diff, mec_skill, chest))
+		if (chest.isDoor())
+			set_critical(1);
+			PrintText(me, "*Destrancou "+chest.desc+"*");
+			chest.locked := 0;
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", polcore().systime);
+			PlaySoundEffect(chest, 0x0200);
+			PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
+			set_critical(0);
+		else
+			set_critical(1);
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", ReadGameClock());
+			chest.locked := 0;
+			set_critical(0);
+			PrintTextAbove(me, "*"+me.name+" disparou a armadilha*");
+			SendSysMessageEx(me,"Você forçou a abertura disparando a armadilha!", SSM_FAIL);
+			RunTraps(chest, me);
+			SendViewContainer(me, chest);
+		endif
+		var current_skill := AP_GetTrueSkill(me, "MECHANICS"); 
+		AP_SetTrueSkill(me, "MECHANICS", current_skill + 0.1); //Como não tem checkskill e a falha quebra a tranca, 0.1 up de skill garantido sempre ao abrir
+		return 1;
+	else
+		SendSysMessageEx("Voce falhou!", SSM_FAIL);
+		if (chest.isDoor())
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", polcore().systime);
+		else
+			SetObjProperty(chest, "arrombado", "" + me.name);
+			SetObjProperty(chest, "locktime", ReadGameClock());
+		endif
+		return;
+	endif
+	endif
+	endif
+
+
+if (magic_chest && !hab1_mchest && !hab2_mchest)
+	SendSysMessageEx(me, "Você não sabe lidar com fechaduras mágicas!", SSM_FAIL);
+endif
 
     if (check > 0)
         if(valorInicial(me, AWARENESS) >= 40)
@@ -167,10 +224,12 @@ function PickTreasureChest(me, lockpick, chest)
         Sleepms(500);
         
         if (!temHabilidade(me, "Especialista em Invasoes") && check < -20)
-            PlaySoundEffect(chest, 0x0F3);
+            PlaySoundEffect(chest, 0x040);
             SendSysMessageEx(me, "Sua gazua quebrou!", SSM_FAIL);
             SubtractAmount(lockpick, 1);
         endif
         return 0;
     endif
+
+
 endfunction

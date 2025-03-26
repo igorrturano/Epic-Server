@@ -20,7 +20,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	var dmgbonus := cdbl(GetObjProperty(mobile, "#dmgbonus"));
-	var dmg := cint( AP_GetSkill(mobile, MAGICLORE)/100);
+	var dmg := cint( AP_GetSkill(mobile, THEOLOGY)/100);
 	SetObjProperty(mobile, "dmg", dmg );
 	SetObjProperty(mobile, "#dmgbonus", dmgbonus + dmg );
 

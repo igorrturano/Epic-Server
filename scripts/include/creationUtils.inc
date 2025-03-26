@@ -129,7 +129,7 @@ const INOCENTE_ID := 0x15C;
 const SABIO_ID := 0x15D;
 
 var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Aliança natural", "Björska" := "Escaramuçador", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Precisão Élfica", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -721,10 +721,32 @@ function skillGump(who, culture_pic, byref chardata)
         y += 26;
         i++;
     endforeach
-    y+=10;
-    value := 3;
+    // Cavar buraco
+    if (chardata.trait == "Cavar Buracos")
+        var gathering := GATHERING;
+
+        btn_value := GetSkillIdFromName(gathering);
+        GFHTMLArea(gump, x, y-4, 135, 24, "<BASEFONT color=#007A23 >{}".format(StrReplace(gathering, "_", " ")), 1, 0);
+        if (chardata.Skills[gathering] >= 1)
+            GFAddButton(gump, x+138, y-2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 200+btn_value);
+        endif
+        if ((chardata.points - value >= 0) && (chardata.Skills[gathering] < 3) && ((chardata.Primarias < pri_allowed) || (chardata.Skills[gathering] < 2 && chardata.points - value >= 0))) 
+            GFAddButton(gump, x+158, y-2, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 230+btn_value);
+        endif
+        sleepms(2);
+        y += 26;
+        i++;
+
+        y+=10;
+        value := 3;
+    endif
+    // End Cavar Buraco
     foreach skill in terciarias
         if (skill == chardata.bgBonus)
+            continue;
+        endif
+
+        if (chardata.trait == "Cavar Buracos" && skill == GATHERING)
             continue;
         endif
 
@@ -806,9 +828,9 @@ function culturalTraitBonus(who, byref chardata)
         return chardata.+bgBonus := AWARENESS;
     elseif (culturalBg == "Pés Leves")
         return chardata.+bgBonus := SNEAK;
-    elseif (culturalBg == "Aliança natural")
+    elseif (culturalBg == "Cavalaria Nórdica")
         return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Escaramuçador")
+    elseif (culturalBg == "Precisão Élfica")
         return chardata.+bgBonus := RANGED;
     elseif (culturalBg == "Brutamontes")
         return chardata.+bgBonus := TWOHANDED;
@@ -953,7 +975,11 @@ function genericItems(who)
         moedas := "1d12";
     endif
 	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
-    CreateItemInBackpack(who, 0x170D, 1); // Sandals
+    if (chardata.culture == BADURAN)
+        CreateItemInBackpack(who, "boots", 1); 
+    else
+        CreateItemInBackpack(who, 0x170D, 1); // Sandals
+    endif
     CreateItemInBackpack(who, 0x152e, 1); // short pants
     CreateItemInBackpack(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
@@ -990,7 +1016,7 @@ function weaponsByClassAndCulture(who)
             CreateItemInBackpack(who, 0xD1A1, 1); // Caetra
         endif
         if (skills[TWOHANDED] >= 1)
-            CreateItemInBackpack(who, 0x1402, 1); // short spear
+            CreateItemInBackpack(who, 0xF9E2, 1); // two handed sword aigla
         endif
         if (skills[DUALWIELD] >= 1)
             CreateItemInBackpack(who, 0xF9CA, 1);
@@ -1073,7 +1099,7 @@ function weaponsByClassAndCulture(who)
             CreateItemInBackpack(who, 0x143c, 1); // HAMMERPICK
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInBackpack(who, 0x1B74, 1); // Kite shield 
+            CreateItemInBackpack(who, 0xFA5E, 1); // escudo baduran
         endif
         if (skills[TWOHANDED ] >= 1)
             CreateItemInBackpack(who, 0x1438, 1); // warhammer
@@ -1121,10 +1147,11 @@ function armorsByCulture(who)
     endif
 
     if (chardata.culture == BADURAN)
-        CreateItemInBackpack(who, 0x13ec, 1); // Armadura de aneis
-        CreateItemInBackpack(who, 0x13ee, 1); // Armadura de aneis
-        CreateItemInBackpack(who, 0x13f0, 1); // Armadura de aneis
-        CreateItemInBackpack(who, 0x13f2, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF98E, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF987, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF98C, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF98A, 1); // Armadura de aneis
+        CreateItemInBackpack(who, 0xF989, 1); // Armadura de aneis
     endif
 
     if (chardata.culture == AIGLANA)
@@ -2346,6 +2373,7 @@ function spellChoices(who)
             spell["circle"] := spelllvl;
             spell["name"] := GetConfigString(elem, "Name");
             spell["desc"] := GetConfigString(elem, "Desc");
+            spell["school"] := GetConfigString(elem, "School");
             spellsByCircle[spelllvl].append(spell);
         endif
     endforeach
@@ -2367,15 +2395,15 @@ function spellChoices(who)
     
     while (1)
         var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
-        
+
         foreach key in (input.keys)
             btn_value := key;
             if (btn_value > 200 && btn_value <= 200 + spellsByCircle[1].size())
                 var spell := spellsByCircle[1][btn_value-200];
-                selected_spells.append(spell.id);
+                selected_spells.append(spell);
             elseif (btn_value > 300 && btn_value <= 300 + spellsByCircle[2].size())
                 var spell := spellsByCircle[2][btn_value-300];
-                selected_spells.append(spell.id);
+                selected_spells.append(spell);
             endif
         endforeach
 
@@ -2387,14 +2415,14 @@ function spellChoices(who)
             // Count circle 1 and 2 spells
             var circle1_count := 0;
             var circle2_count := 0;
-            foreach spellid in (selected_spells)
+            foreach chosen_spell in (selected_spells)
                 foreach spell in (spellsByCircle[1])
-                    if (spell.id == spellid)
+                    if (spell.id == chosen_spell.id)
                         circle1_count += 1;
                     endif
                 endforeach
                 foreach spell in (spellsByCircle[2])
-                    if (spell.id == spellid)
+                    if (spell.id == chosen_spell.id)
                         circle2_count += 1;
                     endif
                 endforeach
@@ -2447,7 +2475,7 @@ function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, 
         y := 50;
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
         y += 26;
-        
+
         i := 1;
         foreach spell in (spellsByCircle[2])
             var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
@@ -2503,7 +2531,7 @@ function AlchChoices(who)
     var btn_value;
     while (1)
         var qtd := (skill*2)+2;
-        var input := spellSelectionGump(who, gump, recipes, selected_recipes, qtd);
+        var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2527,5 +2555,23 @@ function AlchChoices(who)
 
     SendSysMessageEX(who, "Você escolheu as receitas: " + CStr(selected_recipes), SSM_INFO);
     return selected_recipes;
+endfunction
+
+function alchSelectionGump(who, gump, alchs, selected_alchs, qtd, x, y)
+    GFPage(gump, 1);
+    y := 100;
+    foreach alch in alchs
+        var color := (alch.id in selected_alchs) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, alch.name), 1, 0);
+        GFTooltipText(gump, alch.desc);
+        GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, (alch.id in selected_alchs), 200+_alch_iter);
+        y += 26;
+    endforeach
+
+    GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha " +cstr(qtd)+ "opções", 0, 0);
+    GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha " +cstr(qtd)+ " opções", 0, 0); //shadow
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 666); // Botão de fechar
+    return GFSendGump(who, gump);
 endfunction
 

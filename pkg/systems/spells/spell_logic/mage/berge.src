@@ -17,7 +17,7 @@ Program spell(params)
 		return;
 	endif
 
-	var cast_points := CInt(AP_GetSkill(who, MAGICLORE)/10);
+	var cast_points := CInt(AP_GetSkill(who, ARCANA)/10);
 	var i;
 	var coord_list := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
 	var num_loops := coord_list.size();

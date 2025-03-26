@@ -57,8 +57,8 @@ program SpellScript(params)
 	targ.graphic := graphic;
 	sleepms(200);
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
-	var time := Cint(AP_GetSkill(who, MAGICLORE)/10) + 10;
+	var amt := Cint(AP_GetSkill(who, ARCANA)*0.5);
+	var time := Cint(AP_GetSkill(who, ARCANA)/10) + 10;
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);

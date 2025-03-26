@@ -15,6 +15,10 @@ program vacuodemana(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
     var defender := Target(attacker);
+    if (attacker.npctemplate)
+        defender := GetRandomNearbyHostile(attacker);
+    endif
+    
     if (!defender)
         return;
     endif
@@ -27,13 +31,13 @@ program vacuodemana(params)
 
     SetObjProperty(attacker, "#attackbonus", 100);
 
-    var dano_mlore := CInt(AP_GetSkill(attacker, MAGICLORE));
+    var dano_mlore := CInt(AP_GetSkill(attacker, THEOLOGY));
     if (attacker.weapon.objtype != 0x166E)
         SendSysMessage(attacker, "Voce precisa estar usando chicote para usar essa habilidade");
         return 1;
     endif
 
-    var duration := cint(AP_GetSkill(attacker, MAGICLORE)/10);
+    var duration := cint(AP_GetSkill(attacker, THEOLOGY)/10);
     if (InDarkness(attacker))
         PlaySoundEffect(attacker, 0x685);
         TS_StartTimer(defender, "paralysis", duration);

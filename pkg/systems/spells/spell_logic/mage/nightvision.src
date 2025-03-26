@@ -19,7 +19,7 @@ program SpellScript(params)
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
 
-	var magiclore_skill := AP_GetSkill(who, MAGICLORE);
+	var magiclore_skill := HandleSpellSkill(who);
     var duration := CInt( 120 + (magiclore_skill * 5));
 
     //Bonus de especialização

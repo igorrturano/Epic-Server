@@ -30,9 +30,9 @@ program SpellScript(params)
 		targ.color := 986;
 	endif		
 
-	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
+	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, ARCANA))*2;
 	//sendsysmessage(who, " amt "+ amt);
-	TS_StartTimer(targ, "apodrecer", GetSpellDuration(AP_GetSkill(who, MAGICLORE)) / 2, targ.color, who, 0); //20 min
+	TS_StartTimer(targ, "apodrecer", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2, targ.color, who, 0); //20 min
 	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "O corpo do alvo se torna podre e menos resistente", SSM_INFO);
 	

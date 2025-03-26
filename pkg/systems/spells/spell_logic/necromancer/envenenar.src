@@ -24,7 +24,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var lvl := cint(AP_GetSkill(who, MAGICLORE)/25);
+	var lvl := cint(AP_GetSkill(who, ARCANA)/25);
 
 	if (temHabilidade(who, "Sacrificio da Carne"))
 		if (isBloodied(who))

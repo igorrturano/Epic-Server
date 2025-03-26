@@ -13,7 +13,7 @@ program manobra(who)
 	var mana := AP_GetVital(who, MANA);
 	var maxmana := AP_GetVitalMaximumValue(who, MANA);
 
-	var bonus := AP_GetSkill(who, MAGICLORE)*2;
+	var bonus := AP_GetSkill(who, ARCANA)*2;
 	mana := mana+bonus;
 
 	AP_SetVital(who, MANA, mana);

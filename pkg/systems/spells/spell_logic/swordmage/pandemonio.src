@@ -27,7 +27,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var time := GetSpellDuration( AP_GetSkill(who, MAGICLORE) );	
+	var time := GetSpellDuration( AP_GetSkill(who, ARCANA) );	
 
 	if (targ.isA(POLCLASS_WEAPON))
 
@@ -103,7 +103,7 @@ program SpellScript(params)
 				if (defender.serial != who.serial)
       					PlayObjectCenteredEffect(defender, 0x36cb, 7, 0x10);
       					PlaySoundEffect(defender, 0x228);
-					var dmg := cint(AP_GetSkill(who, MAGICLORE))/2;
+					var dmg := cint(AP_GetSkill(who, ARCANA))/2;
 					dmg := Floor( dmg / cargasRetorno.divisor);
 					DamageFLS(defender, cint(dmg), DMG_FIRE, who);
       					//ApplyDamageEX(defender, cint(dmg), DMG_FIRE);
