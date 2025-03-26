@@ -212,3 +212,13 @@ endfunction
 function SendDropDownGump( quem, pid, objetoDropDown)
 	return Start_Script( ":gumps:scripts/dropDown/dropDownGump", array{quem, pid, objetoDropDown} );
 endfunction
+
+function FechaTodosDropdowns(quem,dropdowns)
+	foreach dropdown in dropdowns
+
+		if(GetProcess( dropdown.pid ))
+			CloseGump(quem,dropdown.idBottao);
+		endif
+		Sleepms(2);
+	endforeach
+endfunction

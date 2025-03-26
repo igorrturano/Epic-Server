@@ -9,6 +9,6 @@ program testeGump(quem, texto)
 	if(texto == "complexos")
 		FabricaItensComplexos(quem,"Blacksmithy");// TODO TESTAR  [ultima tarefa]
 	elseif(texto == "componentes")
-		EnviaGumpComponentes(quem);
+		FabricaComponentes(quem,"Blacksmithy");
 	endif
 endprogram 

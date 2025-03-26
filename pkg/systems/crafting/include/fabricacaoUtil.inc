@@ -47,10 +47,10 @@ function PegaDificuldade( quem, descritorFabricacao, nomePericia, produto := 0, 
 		foreach componente in (propFabricado.esquema.componentesEscolhidos)
 			Sleepms(2);
 			
-			var chanceCalculada := cint(componente.poderAvaliado.poderContado) * -2;
+			var chanceCalculada := cint(componente.poderAvaliado.poderContado) * -1;
 			
 			var modificador := struct{
-				origem := BLUE + "Poder {} :{} {}%<br>".format(componente.item.nome,chanceCalculada < 0? RED_FIRE: SOFT_GREEN, "{}"),
+				origem := BLUE + "Dificuldade {} :{} {}%<br>".format(componente.item.nome,chanceCalculada < 0? RED_FIRE: SOFT_GREEN, "{}"),
 				valor :=  chanceCalculada
 			};
 
@@ -139,4 +139,40 @@ function isEstacaoValida(quem, estacaoAlvo, pericia)
 	endif
 	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
 	return 1;
+endfunction
+
+function PegaDescDuracaoFabricacao(qtdSucessos)
+	if(qtdSucessos > 30)
+		return "Extremamente Longo";
+	elseif(qtdSucessos <= 30 && qtdSucessos > 25)
+		return "Muito Longo";
+	elseif(qtdSucessos <= 20 && qtdSucessos > 15)
+		return "Longo";
+	elseif(qtdSucessos <= 15 && qtdSucessos > 10)
+		return "Razoável";
+	elseif(qtdSucessos <= 10 && qtdSucessos > 5)
+		return "Rápido";
+	else
+		return "Muito Rápido";
+	endif
+endfunction
+
+function MontaCraftProp(fabricacaoConfig)
+
+	var baseDict  := dictionary;
+	foreach pericia in GetConfigStringArray(fabricacaoConfig["Skills"], "Skill")
+		var temp := dictionary;
+		var visualizadas := struct;
+		visualizadas.+receitas := array;
+		visualizadas.+categorias := array;
+
+		temp.+skill  := fabricacaoConfig[pericia].Attribute;
+		temp.+visualizadas := visualizadas;
+		temp.+last   := 0;
+		baseDict[temp.skill] := temp;
+		Sleepms(2);
+	endforeach
+	
+	return baseDict;
+
 endfunction
