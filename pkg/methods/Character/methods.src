@@ -4,6 +4,7 @@ use datafile;
 include ":merchants:include/cambio";
 include ":tn:cooldown";
 include ":gumps:epicGumps";
+include ":equipsys:tags";
 
 program Install()
 	print("INSTALLING: Methods for Characters... OK!");
@@ -105,4 +106,17 @@ exported function IsInTheDungeon(who)
     endforeach
     
     return 0;
+endfunction
+
+exported function getDefenses(who)
+	return struct{
+		HEAD := "",
+		NECK := "",
+		BODY := "",
+		ARMS := "",
+		LEGS := "",
+		FEET := "",
+		HANDS := "",
+		SHIELD := ""
+	};
 endfunction
