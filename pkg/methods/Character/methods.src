@@ -107,16 +107,3 @@ exported function IsInTheDungeon(who)
     
     return 0;
 endfunction
-
-exported function getDefenses(who)
-	return struct{
-		HEAD := "",
-		NECK := "",
-		BODY := "",
-		ARMS := "",
-		LEGS := "",
-		FEET := "",
-		HANDS := "",
-		SHIELD := ""
-	};
-endfunction
