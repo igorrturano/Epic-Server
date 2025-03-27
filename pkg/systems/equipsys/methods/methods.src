@@ -7,7 +7,7 @@ program Install()
 endprogram
 
 exported function getDefenses(who)
-	var armorSlot := struct {
+	var armorSlot := struct{
 		HEAD := CS_GetEquipmentInArmorZone(who, HEAD),
 		NECK := CS_GetEquipmentInArmorZone(who, NECK),
 		BODY := CS_GetEquipmentInArmorZone(who, BODY),
@@ -17,6 +17,7 @@ exported function getDefenses(who)
 		HANDS := CS_GetEquipmentInArmorZone(who, HANDS),
 		SHIELD := CS_GetEquipmentInArmorZone(who, SHIELD)
 	};
+	print("DEBUG: " + armorSlot);
 	
 	return struct{
 		HEAD := struct{

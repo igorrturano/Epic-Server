@@ -260,26 +260,8 @@ endfunction
 
 function getResistPhysicalByProtection(armor)
 	var resists := array{};
-	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
-	case(Upper(armor.getType())) // {SlashResist, PiercingResist, BluntResist}
-		//TIER 1
-		ARMOR_LOWLOW: resists := {0,0,0}; break;
-		ARMOR_LOWMID: resists := {1,1,1}; break;
-		ARMOR_LOWHIGH: resists := {2,2,2}; break;
-
-		//TIER 2
-		ARMOR_MIDLOW: resists := {3,3,3}; break;
-		ARMOR_MIDMID: resists := {4,4,4}; break;
-		ARMOR_MIDHIGH: resists := {5,5,5}; break;
-
-		//TIER 3
-		ARMOR_HIGHLOW: resists := {6,6,6}; break;
-		ARMOR_HIGHMID: resists := {7,7,7}; break;
-		ARMOR_HIGHHIGH: resists := {8,8,8}; break;
-
-		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
-		default: resists := {0,0,0}; break;
-	endcase
+	
+	resists := getResistPhysicalByProtectionType(armor.getType());
 
 	return dictionary{
 		"SlashResist" -> resists[1],
@@ -288,20 +270,33 @@ function getResistPhysicalByProtection(armor)
 	};
 endfunction
 
+function getResistPhysicalByProtectionType(type)
+	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
+	case(Upper(type)) // {SlashResist, PiercingResist, BluntResist}
+		//TIER 1
+		ARMOR_LOWLOW: return {0,0,0}; break;
+		ARMOR_LOWMID: return {1,1,1}; break;
+		ARMOR_LOWHIGH: return {2,2,2}; break;
+
+		//TIER 2
+		ARMOR_MIDLOW: return {3,3,3}; break;
+		ARMOR_MIDMID: return {4,4,4}; break;
+		ARMOR_MIDHIGH: return {5,5,5}; break;
+
+		//TIER 3
+		ARMOR_HIGHLOW: return {6,6,6}; break;
+		ARMOR_HIGHMID: return {7,7,7}; break;
+		ARMOR_HIGHHIGH: return {8,8,8}; break;
+
+		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
+		default: return {0,0,0}; break;
+	endcase
+endfunction
+
 function getResistPhysicalBySlot(armor)
 	var resists := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
-			HEAD: resists := {2,2,2}; break;
-			NECK: resists := {1,1,1}; break;
-			BODY: resists := {4,4,4}; break;
-			ARMS: resists := {2,2,2}; break;
-			HANDS: resists := {1,1,1}; break;
-			LEGS: resists := {3,3,3}; break;
-			FEET: resists := {2,2,2}; break;
-			
-			default: resists := {0,0,0}; break;
-		endcase
+		resists := getResistPhysicalBySlotString(armor.getSlot());
 	endif
 
 	return dictionary{
@@ -311,11 +306,36 @@ function getResistPhysicalBySlot(armor)
 	};
 endfunction
 
+function getResistPhysicalBySlotString(slot)
+	case(Upper(slot)) // {SlashResist, PiercingResist, BluntResist}
+			HEAD: return {2,2,2}; break;
+			NECK: return {1,1,1}; break;
+			BODY: return {4,4,4}; break;
+			ARMS: return {2,2,2}; break;
+			HANDS: return {1,1,1}; break;
+			LEGS: return {3,3,3}; break;
+			FEET: return {2,2,2}; break;
+			
+			default: return {0,0,0}; break;
+		endcase
+endfunction
+
 function getResistPhysicalByMaterial(armor)
 	// TODO: Pensar em transformar isso daqui em uma função que retorne TODAS as infos do material em um struct: Danos (Físicos e Elementais), Resists (Físicos e Elementais), mod de peso, mod de HP, etc.
 	var resists := array{};
+	
+	resists := getResistPhysicalByMaterialID(armor.getMaterialID());
+
+	return dictionary{
+		"SlashResist" -> resists[1],
+		"PiercingResist" -> resists[2],
+		"BluntResist" -> resists[3]
+	};
+endfunction
+
+function getResistPhysicalByMaterialID(ID)
 	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
-	case (armor.getMaterialID()) // {SlashResist, PiercingResist, BluntResist}
+	case (ID) // {SlashResist, PiercingResist, BluntResist}
 		// TECIDOS
 		0xf125: // Lã
 		0xdf9: // Algodão
@@ -342,28 +362,28 @@ function getResistPhysicalByMaterial(armor)
 		0xef20: // Escamoso 
 		0xed29: // Draconiano
 		0xef27: // Gigante
-		"COURO DAS PROFUNDEZAS": resists := {0,0,0}; break; // Profundezas
+		"COURO DAS PROFUNDEZAS": return {0,0,0}; break; // Profundezas
 
 		// METAIS
-		0x6991: resists := {-2,-3,-4}; break;// Estanho
-		0x6465: resists := {0,0,0}; break; // Cobre
+		0x6991: return {-2,-3,-4}; break;// Estanho
+		0x6465: return {0,0,0}; break; // Cobre
 
-		0x6994: resists := {1,1,1}; break; // Bronze
-		0x62ff: resists := {1,1,1}; break; // Ferro
-		0x6309: resists := {2,2,2}; break; // Ferro Temperado
+		0x6994: return {1,1,1}; break; // Bronze
+		0x62ff: return {1,1,1}; break; // Ferro
+		0x6309: return {2,2,2}; break; // Ferro Temperado
 
 		0x6995: // Aço
 		0x630b: // Fulmetium
 		0x630c: // Venetium
 		0x630d: // Ignium
 		0x6460: // Frigutium
-			resists := {3,3,3}; break;
+			return {3,3,3}; break;
 		
 		0x6315: // Illyra
-			resists := {4,4,4}; break;
+			return {4,4,4}; break;
 
 		0x6311: // Mithril
-			resists := {5,5,5}; break;
+			return {5,5,5}; break;
 
 		// OSSOS
 		"OSSO":
@@ -376,14 +396,8 @@ function getResistPhysicalByMaterial(armor)
 		"OSSO DE TERATHAN":
 		"OSSO DEMONIACO":
 
-		default: resists := {0,0,0}; break;
+		default: return {0,0,0}; break;
 	endcase
-
-	return dictionary{
-		"SlashResist" -> resists[1],
-		"PiercingResist" -> resists[2],
-		"BluntResist" -> resists[3]
-	};
 endfunction
 
 function addResistsElemental(stats, armor)
