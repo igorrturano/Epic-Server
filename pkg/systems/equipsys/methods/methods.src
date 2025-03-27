@@ -1,0 +1,63 @@
+include ":equipsys:tags";
+include ":combat:armorZones";
+
+program Install()
+	print("INSTALLING: Methods for EquipSys... OK!");
+	return 1;
+endprogram
+
+exported function getDefenses(who)
+	var armorSlot := struct {
+		HEAD := CS_GetEquipmentInArmorZone(who, HEAD),
+		NECK := CS_GetEquipmentInArmorZone(who, NECK),
+		BODY := CS_GetEquipmentInArmorZone(who, BODY),
+		ARMS := CS_GetEquipmentInArmorZone(who, ARMS),
+		LEGS := CS_GetEquipmentInArmorZone(who, LEGS),
+		FEET := CS_GetEquipmentInArmorZone(who, FEET),
+		HANDS := CS_GetEquipmentInArmorZone(who, HANDS),
+		SHIELD := CS_GetEquipmentInArmorZone(who, SHIELD)
+	};
+	
+	return struct{
+		HEAD := struct{
+			SLASHDAMAGE := CInt(armorSlot.HEAD.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.HEAD.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.HEAD.BLUNTDAMAGE)
+		},
+		NECK := struct{
+			SLASHDAMAGE := CInt(armorSlot.NECK.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.NECK.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.NECK.BLUNTDAMAGE)
+		},
+		BODY := struct{
+			SLASHDAMAGE := CInt(armorSlot.BODY.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.BODY.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.BODY.BLUNTDAMAGE)
+		},
+		ARMS := struct{
+			SLASHDAMAGE := CInt(armorSlot.ARMS.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.ARMS.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.ARMS.BLUNTDAMAGE)
+		},
+		LEGS := struct{
+			SLASHDAMAGE := CInt(armorSlot.LEGS.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.LEGS.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.LEGS.BLUNTDAMAGE)
+		},
+		FEET := struct{
+			SLASHDAMAGE := CInt(armorSlot.FEET.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.FEET.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.FEET.BLUNTDAMAGE)
+		},
+		HANDS := struct{
+			SLASHDAMAGE := CInt(armorSlot.HANDS.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.HANDS.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.HANDS.BLUNTDAMAGE)
+		},
+		SHIELD := struct{
+			SLASHDAMAGE := CInt(armorSlot.SHIELD.SLASHDAMAGE),
+			PIERCINGDAMAGE := CInt(armorSlot.SHIELD.PIERCINGDAMAGE),
+			BLUNTDAMAGE := CInt(armorSlot.SHIELD.BLUNTDAMAGE)
+		}
+	};
+endfunction
