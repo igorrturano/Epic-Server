@@ -1,0 +1,250 @@
+use uo;
+use os;
+
+include "include/say";
+include ":merchants:item_template";
+include ":tn:boss";
+include ":timedscripts:timedScripts";
+include ":merchants:pcconversation";
+
+program DeathEventsControl(params)
+    var npc := params[1];
+    
+    if (!npc || npc.errortext)
+        print("ERROR: DeathEventsControl called with invalid NPC");
+        return 0;
+    endif
+    
+    print("DEBUG: DeathEventsControl started for " + npc.name + " [" + npc.serial + "]");
+    
+    // Check if NPC has death events
+    var death_events := GetObjProperty(npc, "DeathEvents");
+    if (!death_events || !death_events.size())
+        print("DEBUG: No death events found on NPC " + npc.serial);
+        return 0;
+    endif
+    
+    print("DEBUG: Found " + death_events.size() + " death events");
+    
+    // Wait for the NPC to die
+    while(!npc.dead)
+        sleep(1);
+    endwhile
+    
+    print("DEBUG: NPC " + npc.name + " [" + npc.serial + "] died, processing death events");
+    
+    // Process each death event
+    foreach event in death_events
+        print("DEBUG: Processing death event of type: " + event.type);
+        
+        case (event.type)
+            "Criar Itens":
+                ProcessCreateItemsEvent(npc, event);
+                break;
+            "Abrir Porta":
+            "Abrir Porta/Passagem":
+                ProcessOpenDoorEvent(npc, event);
+                break;
+            "Abrir Passagem":
+                ProcessOpenPassageEvent(npc, event);
+                break;
+            "Criar Npcs":
+                ProcessCreateNpcsEvent(npc, event);
+                break;
+            "Ultimas Palavras":
+                ProcessLastWordsEvent(npc, event);
+                break;
+            default:
+                print("DEBUG: Unknown event type: " + event.type);
+                break;
+        endcase
+        
+        sleepms(100);
+    endforeach
+    
+    print("DEBUG: Finished processing death events for " + npc.name);
+    return 1;
+endprogram
+
+function ProcessCreateItemsEvent(npc, event)
+    print("DEBUG: Processing CreateItems event");
+    
+    if (!event.items || !event.items.size())
+        print("DEBUG: No items found in event");
+        return 0;
+    endif
+    
+    foreach iteminfo in (event.items)
+        var item := CreateItemAtLocationFromTemplate(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z), CStr(event.realm), iteminfo.item);
+        print("DEBUG: Created item: " + item);
+    endforeach
+    
+    return 1;
+endfunction
+
+function ProcessOpenDoorEvent(npc, event)
+    print("DEBUG: Processing OpenDoor event");
+    
+    if (!event.items || !event.items.size())
+        print("DEBUG: No doors found in event");
+        return 0;
+    endif
+    
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            print("DEBUG: Unlocking door: " + item.serial);
+            item.locked := 0;
+        else
+            print("DEBUG: Could not find door with serial: " + serial);
+        endif
+    endforeach
+    
+    return 1;
+endfunction
+
+function ProcessOpenPassageEvent(npc, event)
+    print("DEBUG: Processing OpenPassage event");
+    
+    if (!event.items || !event.items.size())
+        print("DEBUG: No passages found in event");
+        return 0;
+    endif
+    
+    var i := 0;
+    while (i < 20)
+        foreach serial in (event.items)
+            var item := SystemFindObjectBySerial(serial);
+            if (item)
+                print("DEBUG: Moving passage item: " + item.serial);
+                item.movable := 1;
+                var e := MoveObjectToLocation(item, item.x, item.y, item.z + 1, item.realm, MOVEOBJECT_FORCELOCATION);
+                item.movable := 0;
+            else
+                print("DEBUG: Could not find passage item with serial: " + serial);
+            endif
+        endforeach
+        i := i + 1;
+    endwhile
+    
+    return 1;
+endfunction
+
+function ProcessCreateNpcsEvent(npc, event)
+    print("DEBUG: Processing CreateNpcs event");
+    
+    if (!event.amount || !event.npctemplate)
+        print("DEBUG: Missing amount or template in event");
+        return 0;
+    endif
+    
+    var x, y, z;
+    
+    // Check if the spawn location is where the boss died (6 6 6)
+    if (event.x == "6" && event.y == "6" && event.z == "6")
+        x := npc.x;
+        y := npc.y;
+        z := npc.z;
+        print("DEBUG: Using boss death location for spawn: " + x + "," + y + "," + z);
+    else
+        x := CInt(event.x);
+        y := CInt(event.y);
+        z := CInt(event.z);
+        print("DEBUG: Using specified location for spawn: " + x + "," + y + "," + z);
+    endif
+    
+    var amt := 0;
+    while (amt < CInt(event.amount))
+        var spawn_x := x + RandomInt(2 * CInt(event.range)) - CInt(event.range);
+        var spawn_y := y + RandomInt(2 * CInt(event.range)) - CInt(event.range);
+        var new_npc := CreateNpcFromTemplate(CStr(event.npctemplate), spawn_x, spawn_y, z, 0, CStr(event.realm));
+        
+        if (new_npc != error)
+            print("DEBUG: Created NPC: " + new_npc.name + " at " + spawn_x + "," + spawn_y + "," + z);
+            amt := amt + 1;
+            var duration := event.duracao ? CInt(event.duracao) : 120;
+            TS_StartTimer(new_npc, "summon", duration);
+            
+            if (event.summontext)
+                PrintText(new_npc, event.summontext);
+            endif
+        else
+            print("DEBUG: Failed to create NPC: " + new_npc.errortext);
+        endif
+        
+        sleepms(2);
+    endwhile
+    
+    // Create boss if specified
+    if (event.bossinfo)
+        print("DEBUG: Creating boss NPC");
+        var success := 0;
+        var attempts := 0;
+        
+        while (!success && attempts < 5)
+            attempts += 1;
+            // Using direct NPC creation since we don't have access to the CreateBoss function
+            var boss := CreateNpcFromTemplate(event.bossinfo.npctemplate, x, y, z, 0, CStr(event.realm));
+            
+            if (boss)
+                print("DEBUG: Created boss: " + boss.name);
+                
+                if (event.bossinfo.name)
+                    SetName(boss, event.bossinfo.name);
+                endif
+                
+                if (event.bossinfo.color)
+                    boss.color := CInt(event.bossinfo.color);
+                endif
+                
+                // Apply other properties from bossinfo
+                if (event.bossinfo.str)
+                    AP_SetStatMod(boss, STRENGTH, CInt(event.bossinfo.str));
+                endif
+                
+                if (event.bossinfo.dex)
+                    AP_SetStatMod(boss, DEXTERITY, CInt(event.bossinfo.dex));
+                endif
+                
+                if (event.bossinfo.int)
+                    AP_SetStatMod(boss, INTELLIGENCE, CInt(event.bossinfo.int));
+                endif
+                
+                if (event.bossinfo.hits)
+                    SetObjProperty(boss, "hitsmod", CInt(event.bossinfo.hits));
+                    RecalcVitals(boss);
+                    AP_RefreshVitals(boss);
+                endif
+                
+                SetObjProperty(boss, "anchor", array{boss.x, boss.y});
+                success := 1;
+                
+                if (event.summonbosstext)
+                    PrintText(boss, event.summonbosstext);
+                endif
+            else
+                print("DEBUG: Failed to create boss: " + (boss.errortext ? boss.errortext : "Unknown error"));
+            endif
+            
+            sleepms(2);
+        endwhile
+    endif
+    
+    return 1;
+endfunction
+
+function ProcessLastWordsEvent(npc, event)
+    print("DEBUG: Processing LastWords event");
+
+    if (!event.text || !event.text.size())
+        print("DEBUG: No text found in LastWords event");
+        return 0;
+    endif
+
+    print("DEBUG: Setting Ultimas Palavras property with " + event.text.size() + " phrases");
+
+    // Set the Ultimas Palavras property so the CanDie hook handles it
+    SetObjProperty(npc, "Ultimas Palavras", event.text);
+
+    return 1;
+endfunction 
