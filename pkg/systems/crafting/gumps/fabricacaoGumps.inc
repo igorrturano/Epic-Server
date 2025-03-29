@@ -382,8 +382,10 @@ function PreencheEncaixes(byref gump, x, y, indice,encaixeComponente,sessao)
 
 	var posYcaracteristicas := y + 100;
 	var posYSetasDeslocamento := 2;
-	GFTextLine(gump,x + 5,posYcaracteristicas,1153,encaixeComponente.caracteristica); // caracteristica;
-	GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento,componenteEscolhido.propriedades.valorPrincipal);
+	if(componenteEscolhido.propriedades.valorPrincipal)
+		GFTextLine(gump,x + 5,posYcaracteristicas,1153,encaixeComponente.caracteristica); // caracteristica;
+		GeraSetas(gump, x + 205,posYcaracteristicas + posYSetasDeslocamento,componenteEscolhido.propriedades.valorPrincipal);
+	endif
 	
 	if(quantidadeEfeitosAdicionais > 0)
 		foreach efeitoAdicional in (componenteEscolhido.propriedades.efeitosAdicionais)

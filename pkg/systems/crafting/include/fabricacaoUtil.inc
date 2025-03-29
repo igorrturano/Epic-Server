@@ -10,6 +10,7 @@ include "/include/epicPropNames";
 include "/include/epicConstants";
 
 const CHANCE_FABRICACAO_MAX := 80.0;
+var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 enum ESTADOS_FABRICACAO
 	ITEM_PRONTO,

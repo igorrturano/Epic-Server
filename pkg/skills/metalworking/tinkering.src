@@ -5,6 +5,7 @@ include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
 include ":crafting:crafting";
+include ":crafting:controladoraComplexos";
 include ":crafting:craftingRepair";
 include ":crafting:toolWear";
 include ":itemutils:canAccess";
@@ -28,28 +29,7 @@ program use_TinkerTool(who, tool)
 		return;
 	endif
 
-	var rinfo := sendCraftGump(who, "Tinkering");
-
-	// OK was pressed, close it on out
-	if(rinfo == 0)
-		return 0;
-	endif
-
-	var the_objtype := rinfo[1];
-	var amt         := rinfo[2];
-	var repairit    := rinfo[3];
-	var resmeltit   := rinfo[4];
-
-	if(repairit)
-		repair_this(who, craft_skill);
-		return 0;
-	endif
-	if(resmeltit)
-		resmelt(who, craft_skill);
-		return 0;
-	endif
-
-	makeTinkeringItems(who, the_objtype, amt, tool);
+	FabricaItensComplexos(who,"Tinkering");
 
 endprogram
 
@@ -68,7 +48,10 @@ function makeTinkeringItems(who, what, amt, tool)
 		return 0;
 	endif
 
-	if (what == 0x1085 || what == 0x1086 || what == 0xA349 || what == 0xCE3D || what == 0xCE3E || what == 0xCE3F || what == 0x1087 || what == 0x1088 || what == 0x1089 || what == 0x108a || what == 0x2b6e || what == 0x2b6f || what == 0x2b70 || what ==  4001 || what == 0x376a /*|| what == 0xff97 ||  what == 0xff98 */)
+	
+	
+	/*
+	if (what == 0x1085 || what == 0x1086 || what == 0xA349 || what == 0xCE3D || what == 0xCE3E || what == 0xCE3F || what == 0x1087 || what == 0x1088 || what == 0x1089 || what == 0x108a || what == 0x2b6e || what == 0x2b6f || what == 0x2b70 || what ==  4001 || what == 0x376a )
 		amt := 1;
 	endif
 
@@ -122,7 +105,8 @@ function makeTinkeringItems(who, what, amt, tool)
 			SetObjProperty(theitem, "LockId", lockid);
 			SetObjProperty(key, "LockId", lockid);
 			SetObjProperty(theitem, "levelPlayerLock", lvl);
-			SendSysMessageEx(who, "Você fez a fechadura e a chave.", SSM_INFO);
+			SendSysMessageEx(who, "Você fez a fechadura e a chave.", SSM_INFO);*/
+	
 	/*	elseif ( theitem.objtype == 0x367a)
 			SendSysMessageEx(who, "Escolha a pocao do gas venenoso.", SSM_REQUEST);
 			var pot := Target(who);
@@ -191,8 +175,8 @@ function makeTinkeringItems(who, what, amt, tool)
 		elseif (theitem.objtype == 0xff98)
 			SetObjProperty(theitem, "traplevel", Cint( AP_GetSkill(who, METALWORKING)/20 ));  */
 
-		endif
-	endforeach
+		//endif
+	//endforeach
 
 
 	return 0;

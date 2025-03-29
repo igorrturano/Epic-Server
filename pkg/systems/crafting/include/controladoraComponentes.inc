@@ -14,8 +14,6 @@ include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
-var itemsConfig := ReadConfigFile(":*:itemdesc");
-
 function FabricaComponentes(quem,profissao)
 	EnviaGumpComponentes(quem);
 endfunction

@@ -406,7 +406,7 @@ endfunction
 
 function PegaDescEfeitosComponente(componente, xDesc)
 	var propriedades := componente.propriedades;
-	if(propriedades.valorPrincipal != 0)
+	if(propriedades.valorPrincipal != 0 && TypeOfInt(propriedades.valorPrincipal) != OT_UNINIT)
 		var descValor, corLinha;
 
 		if(propriedades.valorPrincipal > 0)

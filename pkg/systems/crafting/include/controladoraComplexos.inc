@@ -830,7 +830,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 		propriedades.modificadorHp := 0;
 	endif
 
-	if(efeitoEscolhido)
+	if(efeitoEscolhido && Upper(efeitoEscolhido) != "VAZIO")
 		var subEfeitos := SplitWords(efeitoEscolhido);
 
 		propriedades.+valorPrincipal := CInt(subEfeitos[subEfeitos.size()]) + Cint(tier.valor);
