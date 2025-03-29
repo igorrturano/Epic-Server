@@ -4,7 +4,7 @@ use os;
 include "/include/epicPropNames";
 include ":gumps:/include/epicGumps";
 include ":gumps:/include/posicaoGump";
-include ":crafting:/gumps/itensComplexosGump";
+include ":crafting:/gumps/fabricacaoGumps";
 include ":crafting:/include/tratamentoProduto";
 include ":crafting:/include/fabricacaoUtil";
 include ":gumps:/include/posicaoGump";

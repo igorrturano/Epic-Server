@@ -1,7 +1,8 @@
 use uo;
 use polsys;
 
-include ":crafting:fabricacao";
+include ":crafting:controladoraComponentes";
+include ":crafting:controladoraComplexos";
 var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
 
 program testeGump(quem, texto)

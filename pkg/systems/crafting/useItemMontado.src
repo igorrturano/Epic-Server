@@ -5,7 +5,7 @@ include "include/say";
 include "/include/epicPropNames";
 include ":gumps:/include/epicGumps";
 include ":gumps:/include/posicaoGump";
-include ":crafting:/gumps/itensComplexosGump";
+include ":crafting:/gumps/fabricacaoGumps";
 
 program useItemMontado(quem, item)
 	

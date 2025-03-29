@@ -8,13 +8,17 @@ include "/include/math";
 include "include/epicUtils";
 include ":crafting:craftingUtil";
 include ":megacliloc:/include/descricaoObjetoTTip";
-include ":crafting:gumps/itensComplexosGump";
+include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/dropDownGump";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
 var itemsConfig := ReadConfigFile(":*:itemdesc");
+
+function FabricaComponentes(quem,profissao)
+	EnviaGumpComponentes(quem);
+endfunction
 
 function EnviaGumpComponentes(quem)
 	var retorno := 1;

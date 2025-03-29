@@ -5,7 +5,7 @@ include "include/epicUtils";
 include ":crafting:craftingUtil";
 include ":crafting:crafting";
 include ":megacliloc:/include/descricaoObjetoTTip";
-include ":crafting:gumps/itensComplexosGump";
+include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/dropDownGump";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
@@ -16,6 +16,10 @@ var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
 const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
+
+function FabricaItensComplexos(quem,profissao)
+	EnviaItensComplexosGump(quem,profissao);
+endfunction
 
 function InicializaSessaoComplexos(quem, profissaoCraftProp)
 	var sessao := struct;

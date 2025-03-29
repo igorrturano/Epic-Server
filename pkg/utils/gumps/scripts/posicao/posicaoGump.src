@@ -2,7 +2,7 @@
 
 include ":gumps:gumps";
 include ":gumps:/include/epicGumps";
-include ":crafting:gumps/itensComplexosGump";
+include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/posicaoGump";
 
 program PosicaoGump(parametros)
