@@ -106,17 +106,29 @@ endfunction
  */
 function GetActionTargets(npc, action)
     var targets := array{};
+
+    var target_type := action.targ;
+    if (!target_type && action.target)
+        target_type := action.target;
+    endif
+    
+    print("DEBUG: GetActionTargets - Target type: " + target_type);
     
     // Determine targets based on the action's targ property
     if (!action.targ || action.targ == "Self")
         targets.append(npc);
+        print("DEBUG: Target set to Self (NPC)");
     elseif (action.targ == "Opponent")
         var opponent := npc.opponent;
         if (opponent)
             targets.append(opponent);
+            print("DEBUG: Target set to Opponent: " + opponent.name);
+        else
+            print("DEBUG: No opponent found for NPC");
         endif
     elseif (action.targ == "All Opponents")
         targets := GetAllOpponents(npc);
+        print("DEBUG: Targets set to All Opponents: " + targets.size() + " found");
     endif
     
     return targets;
@@ -136,17 +148,27 @@ function ExecuteMoveAction(npc, action)
 endfunction
 
 function ExecuteTeleportAction(npc, targets, action)
-    if (!action.x || !action.y || !action.z)
+    if (!action.x || !action.y)
         return 0;
     endif
+
+    var x := CInt(action.x);
+    var y := CInt(action.y);
+    var z := CInt(action.z);
     
     var success := 0;
     foreach targ in targets
-        print("DEBUG: Teleporting " + targ.name + " to " + action.x + ", " + action.y + ", " + action.z);
-        if (MoveObjectToLocation(targ, action.x, action.y, action.z, targ.realm, MOVEOBJECT_FORCELOCATION))
+        var move_result := MoveObjectToLocation(targ, x, y, z, targ.realm, MOVEOBJECT_FORCELOCATION);
+        if (move_result)
             success := 1;
+        else
+            PrintTextAbove(npc, "DEBUG: MoveObjectToLocation failed: " + move_result.errortext);
         endif
     endforeach
+    
+    if (!targets.size())
+        PrintTextAbove(npc, "DEBUG: Teleport failed - No valid targets found");
+    endif
     
     return success;
 endfunction
