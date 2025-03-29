@@ -5,7 +5,7 @@ use util;
 include ":gumps:gumps";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
-include ":crafting:include/fabricacao";
+include ":crafting:fabricacaoUtil";
 
 
 var cfgRecursos := ReadConfigFile(":crafting:config/resourceList");

@@ -433,52 +433,6 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	return parametrosGump;
 endfunction
 
-// TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
-	
-	if(quantidade == error || quantidade.size() == 0)
-		return error{"errortext":="O parâmetro quantidade é obrigatório."};
-	endif
-
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
-	var retorno := dictionary;
-
-	//Print("Chances: "  + chancesPorTier);
-	for i:=1 to quantidade
-		var isFalhouTudo := true;
-		var rolagem := RandomFloat(100.0);
-		var chanceAcumulada := 0;
-
-		foreach chance in chancesPorTier
-			chanceAcumulada += chance;
-			//Print("Chance Tier " + _chance_iter + ": " + chance);
-			//Print("rolagem: " + rolagem + " chance: " + chanceAcumulada);
-			if (rolagem <= chanceAcumulada)
-				
-				isFalhouTudo := false;
-				if(retorno.exists(_chance_iter)) // popula o dict de retono com chave=tier e valor=quantidade de itens nesse tier.
-					retorno[_chance_iter] += 1;
-				else
-					retorno.insert(_chance_iter,1);
-				endif
-				break;
-			endif
-			Sleepms(2);
-		endforeach
-
-		if(isFalhouTudo) //Se falhou tudo, coloca na pior qualidade.
-			if(retorno.exists(1))
-				retorno[1] += 1;
-			else
-				retorno.insert(1,1);
-			endif
-		endif
-		Sleepms(2);
-	endfor
-	return retorno;
-
-endfunction
-
 function ClassificaRetornoComponentes(valorRetorno, gerenciador)
 	if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,valorRetorno))
 		return RT_ESCOLHA_DROPDOWN;
