@@ -9,6 +9,7 @@ use datafile;
 use guilds;
 
 include ":faccao:faccao_constants";
+include ":faccao:include/datafile_helpers";
 
 program limpa_territorios_fantasmas(who)
     if (!who || !who.cmdlevel)
@@ -18,15 +19,15 @@ program limpa_territorios_fantasmas(who)
     SendSysMessage(who, "Iniciando limpeza de territórios fantasmas...");
     
     // Obter lista de territórios reais do datafile
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df == error)
         return SendSysMessage(who, "Erro ao abrir datafile de áreas.");
     endif
     
     var territorios_reais := dictionary{};
     foreach elem_name in (rect_df.keys())
-        var elem := rect_df.FindElement(elem_name);
-        var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+        var elem := SafeFindElement(rect_df, elem_name);
+        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
         
         // Registrar tanto o nome quanto o ID (se disponível)
         territorios_reais[elem_name] := 1;

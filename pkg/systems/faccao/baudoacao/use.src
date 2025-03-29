@@ -21,6 +21,7 @@ include ":gumps:gumps_ex";
 include ":datafile:datafile";
 include "include/say";
 include ":faccao:include/shared_functions";
+include ":faccao:include/permissions";
 
 program use_donation_chest(who, item)
     if (!who || !item)
@@ -29,7 +30,7 @@ program use_donation_chest(who, item)
     endif
 
     // INÍCIO DEPURAÇÃO
-    Print("DEBUG-BAU: " + who.name + " está tentando abrir o baú " + item.desc);
+    LogDebug("bau", who.name + " está tentando abrir o baú " + item.desc);
     
     // MODIFICADO: Verificação de permissão usando CanAccessChest (que por sua vez chama a função unificada)
     if (!CanAccessChest(who, item))

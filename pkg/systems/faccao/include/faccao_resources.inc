@@ -2,10 +2,14 @@ use uo;
 use os;
 use cfgfile;
 use datafile;
+use math; // Adicionado para usar a função Abs
 
 include ":datafile:datafile";
 include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions";
+include ":faccao:include/permissions";
+include ":faccao:include/datafile_helpers";
+
 
 /*
  * CreateEmptyResourceStruct()
@@ -43,7 +47,8 @@ function ContarRecursosReais(container)
         return recursos;
     endif
     
-    Print("DEBUG: Iniciando contagem física de recursos em " + container.desc);
+    LogDebug("recursos", "Iniciando contagem física de recursos em " + container.desc);
+
     
     foreach item in EnumerateItemsInContainer(container)
         // Verificar se o item é uma doação válida
@@ -114,74 +119,7 @@ function GetDonationType(item)
         return DeterminarTipoRecursoAutomatico(item);
     endif
 endfunction
-
-/*
- * DeterminarTipoRecursoAutomatico(item)
- *
- * Purpose: Tenta determinar automaticamente o tipo de recurso baseado no objtype
- * Parameters: item - O item a analisar
- * Return: String com o tipo de recurso determinado
- */
-function DeterminarTipoRecursoAutomatico(item)
-    var objtype := item.objtype;
-    
-    // Categorias comuns de itens
-    case (objtype)
-        // Comida
-        0x097B: // Peixe
-        0x097C: // Peixe
-        0x09B7: // Carne
-        0x09C0: // Carne
-        0x09D2: // Queijo
-        0x09D0: // Bolo
-        0x09EB: // Maçã
-            return RESOURCE_TYPE_COMIDA;
-            
-        // Moedas
-        0x0EED: // Moedas de ouro
-        0x0EEA: // Moedas de prata
-        0x0EE8: // Moedas de cobre
-            return RESOURCE_TYPE_MOEDAS;
-            
-        // Couro
-        0x1078: // Couro
-        0x1079: // Peles
-            return RESOURCE_TYPE_COURO;
-            
-        // Metal
-        0x1BEF: // Lingote de ferro
-        0x1BF2: // Lingote de cobre
-        0x1BEE: // Lingote de ouro
-            return RESOURCE_TYPE_METAL;
-            
-        // Madeira
-        0x1BD7: // Toras
-        0x1BD8: // Toras
-        0x1BD9: // Toras
-            return RESOURCE_TYPE_MADEIRA;
-            
-        // Pano
-        0x1766: // Pano
-        0x1767: // Pano
-        0x1768: // Pano
-            return RESOURCE_TYPE_PANO;
-            
-        // Pedras
-        0x1BDD: // Pedra
-        0x1BDC: // Pedra
-            return RESOURCE_TYPE_PEDRA;
-            
-        // Joias
-        0x1F13: // Joia
-        0x1F15: // Joia
-        0x1F11: // Joia
-            return RESOURCE_TYPE_JOIAS;
-            
-        default:
-            return RESOURCE_TYPE_COMIDA; // Valor padrão se não conseguir determinar
-    endcase
-endfunction
-
+ 
 /*
  * ProcessResourceItem(item, type, byref recursos)
  *
@@ -227,89 +165,10 @@ function ProcessResourceItem(item, type, byref recursos)
     endcase
 endfunction
 
-/*
- * VerificarInconsistencias(container, recursos_atuais)
- *
- * Purpose: Compara a contagem atual com o cache para detectar inconsistências
- * Parameters: 
- *   container - O baú sendo verificado
- *   recursos_atuais - A contagem atual de recursos
- * Return: 1 se detectou inconsistências, 0 caso contrário
- */
-function VerificarInconsistencias(container, recursos_atuais)
-    var recursos_cache := GetObjProperty(container, CACHE_PROP_NAME);
-    if (!recursos_cache)
-        return 0; // Não tem cache para comparar
-    endif
-    
-    var diferenca := 0;
-    
-    // Comparar cada tipo de recurso
-    if (recursos_cache.comida != recursos_atuais.comida)
-        Print("DEBUG: Inconsistência em comida: " + recursos_cache.comida + " vs " + recursos_atuais.comida);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.moedas != recursos_atuais.moedas)
-        Print("DEBUG: Inconsistência em moedas: " + recursos_cache.moedas + " vs " + recursos_atuais.moedas);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.couro != recursos_atuais.couro)
-        Print("DEBUG: Inconsistência em couro: " + recursos_cache.couro + " vs " + recursos_atuais.couro);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.metal != recursos_atuais.metal)
-        Print("DEBUG: Inconsistência em metal: " + recursos_cache.metal + " vs " + recursos_atuais.metal);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.madeira != recursos_atuais.madeira)
-        Print("DEBUG: Inconsistência em madeira: " + recursos_cache.madeira + " vs " + recursos_atuais.madeira);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.pano != recursos_atuais.pano)
-        Print("DEBUG: Inconsistência em pano: " + recursos_cache.pano + " vs " + recursos_atuais.pano);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.pedras != recursos_atuais.pedras)
-        Print("DEBUG: Inconsistência em pedras: " + recursos_cache.pedras + " vs " + recursos_atuais.pedras);
-        diferenca := 1;
-    endif
-    
-    if (recursos_cache.joias != recursos_atuais.joias)
-        Print("DEBUG: Inconsistência em joias: " + recursos_cache.joias + " vs " + recursos_atuais.joias);
-        diferenca := 1;
-    endif
-    
-    // Registrar inconsistência se encontrada
-    if (diferenca)
-        var historico := GetObjProperty(container, "recursos_verify_history");
-        if (!historico)
-            historico := array{};
-        endif
-        
-        historico.append(struct{
-            "timestamp" := polcore().systime,
-            "diff" := 1
-        });
-        
-        if (historico.size() > 20)
-            historico.Erase(1); // Manter apenas os 20 mais recentes
-        endif
-        
-        SetObjProperty(container, "recursos_verify_history", historico);
-    endif
-    
-    return diferenca;
-endfunction
 
 function SincronizarComDataFile(container, recursos)
     if (!container || !recursos)
-        Print("ERRO: Parâmetros inválidos para sincronização");
+        LogError("recursos", "Parâmetros inválidos para sincronização");
         return 0;
     endif
     
@@ -323,17 +182,17 @@ function SincronizarComDataFile(container, recursos)
     endif
     
     if (faction_name == error || !faction_name)
-        Print("ERRO: Não foi possível determinar a facção para sincronização");
+        LogError("recursos", "Não foi possível determinar a facção para sincronização");
         faction_name := DEFAULT_FACTION; // Usar valor padrão se não encontrar
     endif
     
     // Registrar início da sincronização
-    Print("DEBUG: Iniciando sincronização de recursos para facção: " + faction_name);
+    LogDebug("recursos", "Iniciando sincronização de recursos para facção: " + faction_name);
     
     // Verificar se os recursos são válidos antes de salvar
     recursos := ValidarRecursos(recursos);
     if (!recursos)
-        Print("ERRO: Recursos inválidos após validação");
+        LogError("recursos", "Recursos inválidos após validação");
         return 0;
     endif
     
@@ -344,8 +203,8 @@ function SincronizarComDataFile(container, recursos)
     var guild_success := AtualizarPropriedadesGuildaRecursos(faction_name, recursos);
     
     // Registrar resultado
-    Print("DEBUG: Sincronização concluída - Datafile: " + (df_success ? "Sucesso" : "Falha") + 
-          ", Guilda: " + (guild_success ? "Sucesso" : "Falha"));
+    LogDebug("recursos", "Sincronização concluída - Datafile: " + (df_success ? "Sucesso" : "Falha") + 
+             ", Guilda: " + (guild_success ? "Sucesso" : "Falha"));
     
     // Retornar 1 se pelo menos uma das sincronizações funcionou
     return (df_success || guild_success) ? 1 : 0;
@@ -379,130 +238,19 @@ function ObterRecursosFaccao(faction_name := "")
         faction_name := KINGDOM_FACTION;
     endif
     
-    var df := OpenDataFile(KINGDOM_RESOURCE_DATAFILE);
-    if (df == error)
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+    if (!df)
         return CreateEmptyResourceStruct();
     endif
     
-    var elem := DFFindElement(df, faction_name);
-    if (elem == error)
+    var elem := SafeFindElement(df, faction_name);
+    if (!elem)
         return CreateEmptyResourceStruct();
     endif
     
-    var recursos := elem.GetProp(KINGDOM_RESOURCE_ELEM);
-    if (!recursos)
-        return CreateEmptyResourceStruct();
-    endif
-    
+    var recursos := GetElementProp(elem, KINGDOM_RESOURCE_ELEM, CreateEmptyResourceStruct());
     return recursos;
 endfunction
-
-/*
- * GetPlayerFaction(who)
- *
- * Purpose: Obter o nome da facção de um jogador de forma segura
- * Parameters:
- *   who - O jogador a ser verificado
- * Return:
- *   Nome da facção ou string vazia se não pertencer a nenhuma facção
- */
-function GetPlayerFaction(who)
-    if (!who)
-        return "";
-    endif
-    
-    // Verificar se o jogador pertence a uma guilda
-    if (!who.guildid)
-        // Verificar propriedade alternativa como fallback
-        var faction := GetObjProperty(who, "faction");
-        if (faction && faction != error)
-            return faction;
-        endif
-        
-        return "";
-    endif
-    
-    var player_guild;
-    
-    // Obter o objeto guild sem try/catch
-    // Primeiro método: .guild
-    player_guild := who.guild;
-    
-    // Se falhar, tentar FindGuild
-    if (!player_guild)
-        player_guild := FindGuild(who.guildid);
-    endif
-    
-    if (!player_guild)
-        // Se não conseguir obter a guilda, verificar propriedade alternativa
-        var faction := GetObjProperty(who, "faction");
-        if (faction && faction != error)
-            return faction;
-        endif
-        
-        return "";
-    endif
-    
-    // Tentar obter o nome da facção/guilda com várias tentativas
-    var faction_name := "";
-    
-    // Método 1: Verificar propriedade FACTION_PROP_NAME
-    faction_name := player_guild.GetProp(FACTION_PROP_NAME);
-    if (faction_name && faction_name != error)
-        return faction_name;
-    endif
-    
-    // Método 2: Verificar propriedade "name"
-    faction_name := player_guild.GetProp("name");
-    if (faction_name && faction_name != error)
-        return faction_name;
-    endif
-    
-    // Método 3: Verificar guildname
-    if (player_guild.guildname)
-        return player_guild.guildname;
-    endif
-    
-    // Método 4: Verificar propriedade alternativa como último recurso
-    var faction := GetObjProperty(who, "faction");
-    if (faction && faction != error)
-        return faction;
-    endif
-    
-    return "";
-endfunction
-
-/*
- * IsGuildLeader(who)
- *
- * Purpose: Verifica se o jogador é líder de uma guilda
- * Parameters: who - O jogador a verificar
- * Return: 1 se for líder, 0 caso contrário
- */
-function IsGuildLeader(who)
-    if (!who)
-        return 0;
-    endif
-    
-    // Método 1: Verificar se tem uma guilda e se é o líder
-    var player_guild := who.guild;
-    if (player_guild)
-        if (player_guild.leader == who.serial)
-            return 1;
-        endif
-    endif
-    
-    // Método 2: Verificar por cargo armazenado em propriedade
-    var player_rank := GetObjProperty(who, "guild_rank");
-    if (player_rank in {"Lider", "Leader"})
-        return 1;
-    endif
-    
-    // Não é líder de guilda
-    return 0;
-endfunction
-
-
 
 /*
  * AtualizarRecursosFaccao(faction_name, recursos)
@@ -514,352 +262,22 @@ endfunction
  * Return: 1 para sucesso, 0 para falha
  */
 function AtualizarRecursosFaccao(faction_name, recursos)
-    var df := OpenDataFile(KINGDOM_RESOURCE_DATAFILE);
-    if (df == error)
-        df := CreateDataFile(KINGDOM_RESOURCE_DATAFILE);
-        if (df == error)
-            Print("ERROR: Não foi possível criar o datafile de recursos");
-            return 0;
-        endif
-    endif
-    
-    var elem := DFFindElement(df, faction_name, DF_CREATE);
-    if (elem == error)
-        Print("ERROR: Não foi possível criar/encontrar o elemento para " + faction_name);
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1); // 1 = criar se não existir
+    if (!df)
+        LogError("recursos", "Não foi possível criar o datafile de recursos");
         return 0;
     endif
     
-    elem.SetProp(KINGDOM_RESOURCE_ELEM, recursos);
-    return 1;
+    var elem := SafeFindElement(df, faction_name, 1); // 1 = criar se não existir
+    if (!elem)
+        LogError("recursos", "Não foi possível criar/encontrar o elemento para " + faction_name);
+        return 0;
+    endif
+    
+    return SetElementProp(elem, KINGDOM_RESOURCE_ELEM, recursos);
 endfunction
 
-
-// ==========================================================================
-// FUNÇÕES PARA CLASSIFICAÇÃO DE RECURSOS
-// ==========================================================================
-
-// Uma função unificada para classificar recursos em categorias padronizadas
-// Chama GetResourceCategory em ResourceController.src, mas adiciona validação
-function ClassificarRecurso(resource)
-    // Verificar o tipo do parâmetro
-    if (!resource)
-        return "desconhecido";
-    endif
-    
-    // Se for um item/objeto
-    if (TypeOf(resource) == "ItemRef")
-        // Verificar primeiro por propriedades explícitas
-        if (GetObjProperty(resource, "IsKingdomDonationComida"))
-            return "comida";
-        elseif (GetObjProperty(resource, "IsKingdomDonationMoedas"))
-            return "moedas";
-        elseif (GetObjProperty(resource, "IsKingdomDonationCouro"))
-            return "couro";
-        elseif (GetObjProperty(resource, "IsKingdomDonationMetal"))
-            return "metal";
-        elseif (GetObjProperty(resource, "IsKingdomDonationMadeira"))
-            return "madeira";
-        elseif (GetObjProperty(resource, "IsKingdomDonationPano"))
-            return "pano";
-        elseif (GetObjProperty(resource, "IsKingdomDonationPedra"))
-            return "pedras";
-        elseif (GetObjProperty(resource, "IsKingdomDonationJoias"))
-            return "joias";
-        endif
-        
-        // Se não tem propriedade explícita, usar a categorização pelo objtype
-        return CategoriaRecursoPorObjtype(resource.objtype);
-    endif
-    
-    // Se for uma string
-    if (TypeOf(resource) == "String")
-        // Usar a categorização baseada em nome
-        return CategoriaRecursoPorNome(resource);
-    endif
-    
-    // Se for um número (objtype direto)
-    if (TypeOf(resource) == "Integer")
-        return CategoriaRecursoPorObjtype(resource);
-    endif
-    
-    // Não conseguimos classificar
-    return "desconhecido";
-endfunction
-
-// Função para categorizar recursos pelo nome
-function CategoriaRecursoPorNome(resource_name)
-    // Normalizar o nome do recurso
-    resource_name := Trim(Lower(resource_name));
-    
-    // Mapeamento extenso de nomes para categorias
-    // Inclui várias formas de escrever o mesmo recurso
-    var category_map := dictionary{
-        // Metais
-        "ironore"           := "metal",
-        "iron ore"          := "metal",
-        "ferro"             := "metal",
-        "minério de ferro"  := "metal",
-        "prataingot"        := "metal",
-        "prata"             := "metal",
-        "silver"            := "metal",
-        "acoingot"          := "metal",
-        "aço"               := "metal",
-        "steel"             := "metal",
-        "cobre"             := "metal",
-        "copper"            := "metal",
-        "bronze"            := "metal",
-        "ouro"              := "metal",
-        "gold"              := "metal",
-        "metal"             := "metal",
-        "minério"           := "metal",
-        "ore"               := "metal",
-        "lingote"           := "metal",
-        "ingot"             := "metal",
-        
-        // Couro
-        "couroespesso"      := "couro",
-        "couro espesso"     := "couro",
-        "couropolar"        := "couro",
-        "couro polar"       := "couro",
-        "courodraconiano"   := "couro",
-        "couro draconiano"  := "couro",
-        "couroescamoso"     := "couro",
-        "couro escamoso"    := "couro",
-        "couro"             := "couro",
-        "leather"           := "couro",
-        "hide"              := "couro",
-        "pele"              := "couro",
-        "skin"              := "couro",
-        
-        // Madeira
-        "madeirapinheiro"   := "madeira",
-        "madeira pinheiro"  := "madeira",
-        "madeirateixo"      := "madeira",
-        "madeira teixo"     := "madeira",
-        "madeira"           := "madeira",
-        "wood"              := "madeira",
-        "pinewood"          := "madeira",
-        "yewwood"           := "madeira",
-        "log"               := "madeira",
-        "tora"              := "madeira",
-        "oak"               := "madeira",
-        "carvalho"          := "madeira",
-        "carvao"            := "madeira",
-        "carvão"            := "madeira",
-        "coal"              := "madeira",
-        "lumber"            := "madeira",
-        
-        // Comida
-        "cogumelo"          := "comida",
-        "mushroom"          := "comida",
-        "peixe"             := "comida",
-        "fish"              := "comida",
-        "carne"             := "comida",
-        "meat"              := "comida",
-        "fruta"             := "comida",
-        "fruit"             := "comida",
-        "vegetal"           := "comida",
-        "vegetable"         := "comida",
-        "pão"               := "comida",
-        "bread"             := "comida",
-        "cereal"            := "comida",
-        "bolo"              := "comida",
-        "cake"              := "comida",
-        "food"              := "comida",
-        "comida"            := "comida",
-        "alimento"          := "comida",
-        
-        // Tecidos/Panos
-        "pelebranca"        := "pano",
-        "pele branca"       := "pano",
-        "escamasazuis"      := "pano",
-        "escamas azuis"     := "pano",
-        "escamas"           := "pano",
-        "scales"            := "pano",
-        "cloth"             := "pano",
-        "tecido"            := "pano",
-        "pano"              := "pano",
-        "silk"              := "pano",
-        "seda"              := "pano",
-        "cotton"            := "pano",
-        "algodão"           := "pano",
-        "wool"              := "pano",
-        "lã"                := "pano",
-        "fabric"            := "pano",
-        
-        // Pedras
-        "ossogigante"       := "pedras",
-        "osso gigante"      := "pedras",
-        "ossodemoniaco"     := "pedras",
-        "osso demoniaco"    := "pedras",
-        "osso"              := "pedras",
-        "bone"              := "pedras",
-        "stone"             := "pedras",
-        "pedra"             := "pedras",
-        "rock"              := "pedras",
-        "rocha"             := "pedras",
-        "granite"           := "pedras",
-        "granito"           := "pedras",
-        "marble"            := "pedras",
-        "mármore"           := "pedras",
-        "sand"              := "pedras",
-        "areia"             := "pedras",
-        
-        // Joias
-        "vidro"             := "joias",
-        "glass"             := "joias",
-        "gem"               := "joias",
-        "gema"              := "joias",
-        "joia"              := "joias",
-        "jewel"             := "joias",
-        "ruby"              := "joias",
-        "rubi"              := "joias",
-        "diamond"           := "joias",
-        "diamante"          := "joias",
-        "pearl"             := "joias",
-        "pérola"            := "joias",
-        "emerald"           := "joias",
-        "esmeralda"         := "joias",
-        "sapphire"          := "joias",
-        "safira"            := "joias",
-        "crystal"           := "joias",
-        "cristal"           := "joias",
-        
-        // Moedas
-        "moeda"             := "moedas",
-        "coin"              := "moedas",
-        "copper coin"       := "moedas",
-        "silver coin"       := "moedas",
-        "gold coin"         := "moedas",
-        "moeda de cobre"    := "moedas",
-        "moeda de prata"    := "moedas",
-        "moeda de ouro"     := "moedas",
-        "dinheiro"          := "moedas",
-        "money"             := "moedas",
-        "currency"          := "moedas"
-    };
-    
-    // Primeiro verificar correspondência direta
-    if (category_map.exists(resource_name))
-        return category_map[resource_name];
-    endif
-    
-    // Tentar correspondência parcial - verificando palavras-chave na string
-    foreach key in (category_map.keys())
-        if (resource_name.find(key) != error)
-            return category_map[key];
-        endif
-        sleepms(1);
-    endforeach
-    
-    // Categorização por sufixos/prefixos comuns
-    if (resource_name.find("ore") != error || resource_name.find("ingot") != error)
-        return "metal";
-    elseif (resource_name.find("log") != error || resource_name.find("wood") != error)
-        return "madeira";
-    elseif (resource_name.find("hide") != error || resource_name.find("leather") != error)
-        return "couro";
-    endif
-    
-    // Não conseguimos categorizar pelo nome
-    return "desconhecido";
-endfunction
-
-// Função para categorizar recursos pelo objtype
-function CategoriaRecursoPorObjtype(objtype)
-    // Mapeamento detalhado de objtypes para categorias
-    var objtype_map := dictionary{
-        // Metais
-        0x6300 := "metal",     // Iron ore
-        0x6993 := "metal",     // Silver ingot
-        0x6995 := "metal",     // Steel ingot
-        0x1BEF := "metal",     // Iron ingot
-        0x1BF2 := "metal",     // Copper ingot
-        0x1BEE := "metal",     // Gold ingot
-        
-        // Couro
-        0xef12 := "couro",     // Couro espesso
-        0xef17 := "couro",     // Couro polar
-        0xed20 := "couro",     // Couro draconiano
-        0xef11 := "couro",     // Couro escamoso
-        0x1078 := "couro",     // Couro comum
-        0x1079 := "couro",     // Peles
-        
-        // Madeira
-        0xee36 := "madeira",   // Madeira de pinheiro
-        0xee3e := "madeira",   // Madeira de teixo
-        0x1bde := "madeira",   // Carvão
-        0x1BD7 := "madeira",   // Toras
-        0x1BD8 := "madeira",   // Toras
-        0x1BD9 := "madeira",   // Toras
-        
-        // Comida
-        0x0D16 := "comida",    // Cogumelo
-        0x097B := "comida",    // Peixe
-        0x097C := "comida",    // Peixe
-        0x09B7 := "comida",    // Carne
-        0x09C0 := "comida",    // Carne
-        0x09D2 := "comida",    // Queijo
-        0x09D0 := "comida",    // Bolo
-        0x09EB := "comida",    // Maçã
-        
-        // Tecidos/Panos
-        0xee52 := "pano",      // Pele branca
-        0xef36 := "pano",      // Escamas azuis
-        0x1766 := "pano",      // Pano
-        0x1767 := "pano",      // Pano
-        0x1768 := "pano",      // Pano
-        
-        // Pedras
-        0xef3A := "pedras",    // Osso gigante
-        0xef29 := "pedras",    // Osso demoníaco
-        0x0F7E := "pedras",    // Osso comum
-        0x1BDD := "pedras",    // Pedra
-        0x1BDC := "pedras",    // Pedra
-        
-        // Joias
-        0x1BE3 := "joias",     // Vidro
-        0x1F13 := "joias",     // Joia
-        0x1F15 := "joias",     // Joia
-        0x1F11 := "joias",     // Joia
-        
-        // Moedas
-        0x0EED := "moedas",    // Moedas de ouro
-        0x0EEA := "moedas",    // Moedas de prata
-        0x0EE8 := "moedas",    // Moedas de cobre
-        0xBA63 := "moedas",    // Moedas novas
-        0xBA64 := "moedas",    // Moedas novas
-        0xBA65 := "moedas"     // Moedas novas
-    };
-    
-    // Verificar mapeamento direto
-    if (objtype_map.exists(objtype))
-        return objtype_map[objtype];
-    endif
-    
-    // Categorização por faixas de objtype (baseado em tendências observadas)
-    if (objtype >= 0x1BEE && objtype <= 0x1BF5)
-        return "metal"; // Faixa de ingots
-    elseif (objtype >= 0x1078 && objtype <= 0x1079)
-        return "couro"; // Faixa de couros
-    elseif (objtype >= 0x1BD7 && objtype <= 0x1BDD)
-        return "madeira"; // Faixa de madeiras
-    elseif (objtype >= 0x097B && objtype <= 0x09EB)
-        return "comida"; // Faixa de comidas
-    elseif (objtype >= 0x1766 && objtype <= 0x1768)
-        return "pano"; // Faixa de panos
-    elseif (objtype >= 0x1F11 && objtype <= 0x1F15)
-        return "joias"; // Faixa de joias
-    elseif (objtype >= 0x0EE8 && objtype <= 0x0EED)
-        return "moedas"; // Faixa de moedas antigas
-    elseif (objtype >= 0xBA63 && objtype <= 0xBA65)
-        return "moedas"; // Faixa de moedas novas
-    endif
-    
-    // Não conseguimos categorizar pelo objtype
-    return "desconhecido";
-endfunction
-
+   
 // Função para obter contagem de recursos agrupados por categoria
 function ContarRecursosPorCategoria(container)
     var contagem := dictionary{
@@ -900,7 +318,7 @@ endfunction
 function VerificarCategoriaRecurso(resource)
     var categoria := ClassificarRecurso(resource);
     
-    Print("Recurso: " + resource + " => Categoria: " + categoria);
+    LogDebug("recursos", "Recurso: " + resource + " => Categoria: " + categoria);
     
     return categoria;
 endfunction
@@ -948,7 +366,8 @@ function SafeStackItems(container, objtype, amount, properties := 0)
                 
                 return existing_item;
             else
-                Print("AVISO: Falha ao aumentar quantidade diretamente. Tentando método alternativo.");
+                LogWarning("recursos", "Falha ao aumentar quantidade diretamente. Tentando método alternativo.");
+
             endif
         endif
     endif
@@ -959,7 +378,7 @@ function SafeStackItems(container, objtype, amount, properties := 0)
     
     // Verificar se a criação foi bem-sucedida
     if (!new_item)
-        Print("ERRO: Falha ao criar novo item para empilhamento");
+       LogError("recursos", "Falha ao criar novo item para empilhamento");
         return 0;
     endif
     
@@ -1066,7 +485,8 @@ function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
         return 0;
     endif
     
-    Print("DEBUG: Tentando substituir item " + old_item.serial + " com qtd adicional " + amount_to_add);
+    LogDebug("recursos", "Tentando substituir item " + old_item.serial + " com qtd adicional " + amount_to_add);
+
     
     var objtype := old_item.objtype;
     var old_amount := old_item.amount;
@@ -1089,7 +509,7 @@ function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     // Criar novo item com quantidade total
     var new_item := CreateItemInContainer(container, objtype, total_amount);
     if (!new_item)
-        Print("ERRO: Falha ao criar novo item para substituição");
+        LogError("recursos", "Falha ao criar novo item para substituição");
         return 0;
     endif
     
@@ -1110,6 +530,433 @@ function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     // Destruir item antigo
     DestroyItem(old_item);
     
-    Print("DEBUG: Item substituído com sucesso, nova quantidade: " + new_item.amount);
+    LogDebug("recursos", "Item substituído com sucesso, nova quantidade: " + new_item.amount);
+
     return new_item;
+endfunction
+
+
+
+/*
+ * VerificarInconsistencias(container, recursos_atuais := 0, nivel := "local")
+ *
+ * Purpose: Verifica inconsistências entre a contagem atual e o cache/datafile
+ * Parameters: 
+ *   container - O baú sendo verificado
+ *   recursos_atuais - A contagem atual de recursos (opcional se nivel = "global")
+ *   nivel - "local" (apenas este baú) ou "global" (todos os baús da facção)
+ * Return: Array de inconsistências encontradas ou contagem de inconsistências
+ */
+function VerificarInconsistencias(container, recursos_atuais := 0, nivel := "local")
+    var inconsistencias := array{};
+    
+    if (nivel == "local")
+        // Verificação local (um único baú)
+        if (!recursos_atuais)
+            recursos_atuais := ContarRecursosReais(container);
+        endif
+        
+        var recursos_cache := GetObjProperty(container, CACHE_PROP_NAME);
+        if (!recursos_cache)
+            return inconsistencias; // Não há cache para comparar
+        endif
+        
+        // Verificar cada tipo de recurso
+        if (recursos_cache.comida != recursos_atuais.comida)
+            inconsistencias.append(struct{
+                "tipo" := "comida",
+                "antigo" := recursos_cache.comida,
+                "novo" := recursos_atuais.comida,
+                "diferenca" := recursos_atuais.comida - recursos_cache.comida
+            });
+            LogDebug("recursos", "Inconsistência em comida: " + recursos_cache.comida + " vs " + recursos_atuais.comida);
+        endif
+        
+        if (recursos_cache.moedas != recursos_atuais.moedas)
+            inconsistencias.append(struct{
+                "tipo" := "moedas",
+                "antigo" := recursos_cache.moedas,
+                "novo" := recursos_atuais.moedas,
+                "diferenca" := recursos_atuais.moedas - recursos_cache.moedas
+            });
+            LogDebug("recursos", "Inconsistência em moedas: " + recursos_cache.moedas + " vs " + recursos_atuais.moedas);
+        endif
+        
+        if (recursos_cache.couro != recursos_atuais.couro)
+            inconsistencias.append(struct{
+                "tipo" := "couro",
+                "antigo" := recursos_cache.couro,
+                "novo" := recursos_atuais.couro,
+                "diferenca" := recursos_atuais.couro - recursos_cache.couro
+            });
+            LogDebug("recursos", "Inconsistência em couro: " + recursos_cache.couro + " vs " + recursos_atuais.couro);
+        endif
+        
+        if (recursos_cache.metal != recursos_atuais.metal)
+            inconsistencias.append(struct{
+                "tipo" := "metal",
+                "antigo" := recursos_cache.metal,
+                "novo" := recursos_atuais.metal,
+                "diferenca" := recursos_atuais.metal - recursos_cache.metal
+            });
+            LogDebug("recursos", "Inconsistência em metal: " + recursos_cache.metal + " vs " + recursos_atuais.metal);
+        endif
+        
+        if (recursos_cache.madeira != recursos_atuais.madeira)
+            inconsistencias.append(struct{
+                "tipo" := "madeira",
+                "antigo" := recursos_cache.madeira,
+                "novo" := recursos_atuais.madeira,
+                "diferenca" := recursos_atuais.madeira - recursos_cache.madeira
+            });
+            LogDebug("recursos", "Inconsistência em madeira: " + recursos_cache.madeira + " vs " + recursos_atuais.madeira);
+        endif
+        
+        if (recursos_cache.pano != recursos_atuais.pano)
+            inconsistencias.append(struct{
+                "tipo" := "pano",
+                "antigo" := recursos_cache.pano,
+                "novo" := recursos_atuais.pano,
+                "diferenca" := recursos_atuais.pano - recursos_cache.pano
+            });
+            LogDebug("recursos", "Inconsistência em pano: " + recursos_cache.pano + " vs " + recursos_atuais.pano);
+        endif
+        
+        if (recursos_cache.pedras != recursos_atuais.pedras)
+            inconsistencias.append(struct{
+                "tipo" := "pedras",
+                "antigo" := recursos_cache.pedras,
+                "novo" := recursos_atuais.pedras,
+                "diferenca" := recursos_atuais.pedras - recursos_cache.pedras
+            });
+            LogDebug("recursos", "Inconsistência em pedras: " + recursos_cache.pedras + " vs " + recursos_atuais.pedras);
+        endif
+        
+        if (recursos_cache.joias != recursos_atuais.joias)
+            inconsistencias.append(struct{
+                "tipo" := "joias",
+                "antigo" := recursos_cache.joias,
+                "novo" := recursos_atuais.joias,
+                "diferenca" := recursos_atuais.joias - recursos_cache.joias
+            });
+            LogDebug("recursos", "Inconsistência em joias: " + recursos_cache.joias + " vs " + recursos_atuais.joias);
+        endif
+        
+        // Registrar inconsistência se encontrada
+        if (inconsistencias.size() > 0)
+            var historico := GetObjProperty(container, "recursos_verify_history");
+            if (!historico)
+                historico := array{};
+            endif
+            
+            historico.append(struct{
+                "timestamp" := polcore().systime,
+                "diff" := 1
+            });
+            
+            if (historico.size() > 20)
+                historico.Erase(1); // Manter apenas os 20 mais recentes
+            endif
+            
+            SetObjProperty(container, "recursos_verify_history", historico);
+            RegistrarInconsistencia(container, recursos_cache, recursos_atuais, inconsistencias);
+        endif
+        
+        return inconsistencias;
+    else
+        // Verificação global (todos os baús da facção)
+        var faction_name := GetObjProperty(container, OBJ_FACTION_PROP);
+        if (!faction_name)
+            return 0;
+        endif
+        
+        // Obter recursos do datafile
+var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1); // 1 = criar
+if (!df)
+    return 0;
+endif
+
+var elem := SafeFindElement(df, "faction_" + faction_name, 1); // 1 = criar
+var recursos_datafile := GetElementProp(elem, "recursos", CreateEmptyResourceStruct());
+        
+        if (!recursos_datafile)
+            recursos_datafile := CreateEmptyResourceStruct();
+            SetElementProp(elem, "recursos", recursos_datafile);
+        endif
+        
+        // Contar recursos reais em todos os baús da facção
+        var recursos_reais := CreateEmptyResourceStruct();
+        var baus_contados := 0;
+        
+        foreach item in EnumerateItemsInContainer(0)
+            if (item.objtype == 0xFF11 && GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
+                baus_contados += 1;
+                var bau_recursos := ContarRecursosReais(item);
+                
+                // Somar aos recursos totais
+                recursos_reais.comida += bau_recursos.comida;
+                recursos_reais.moedas += bau_recursos.moedas;
+                recursos_reais.couro += bau_recursos.couro;
+                recursos_reais.metal += bau_recursos.metal;
+                recursos_reais.madeira += bau_recursos.madeira;
+                recursos_reais.pano += bau_recursos.pano;
+                recursos_reais.pedras += bau_recursos.pedras;
+                recursos_reais.joias += bau_recursos.joias;
+            endif
+            Sleep(1);
+        endforeach
+        
+        // Verificar diferenças significativas
+        var tolerancia := (faction_name == KINGDOM_FACTION || faction_name == "Reino") ? 20 : 10;
+        var inconsistencias_count := 0;
+        
+        if (Abs(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
+            Abs(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
+            Abs(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
+            Abs(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
+            Abs(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
+            Abs(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
+            Abs(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
+            Abs(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
+            
+            // Atualizar o datafile com os recursos reais
+            SetElementProp(elem, "recursos", recursos_reais);
+            inconsistencias_count += 1;
+            
+            LogWarning("recursos", "Corrigida inconsistência global nos recursos da facção: " + faction_name);
+            LogInfo("recursos", "  - Baús encontrados: " + baus_contados);
+            
+            // Atualizar também na guilda
+            var guild_id := FindGuildByName(faction_name);
+            if (guild_id)
+                var guild := FindGuild(guild_id);
+                if (guild)
+                    guild.SetProp("recursos", recursos_reais);
+                    guild.SetProp("recursos_timestamp", polcore().systime);
+                endif
+            endif
+        endif
+        
+        return inconsistencias_count;
+    endif
+endfunction
+
+
+/*
+ * MapearRecurso(resource_name)
+ *
+ * Purpose: Mapeia um nome de recurso para seu objtype correspondente
+ * Parameters: resource_name - Nome do recurso a ser mapeado
+ * Return: Objtype do recurso ou 0 se não encontrado
+ */
+function MapearRecurso(resource_name)
+    // Normalizar o nome
+    resource_name := Lower(Trim(resource_name));
+    
+    // Mapeamento direto (apenas os mais comuns)
+    var mapping := dictionary{
+        "ferro" := 0x6300,
+        "ouro" := 0x1BEE,
+        "prata" := 0x6993,
+        "couro" := 0x1078,
+        "madeira" := 0x1BD7,
+        "peixe" := 0x097B,
+        "carne" := 0x09B7,
+        "pano" := 0x1766,
+        "pedra" := 0x1BDD,
+        "osso" := 0x0F7E,
+        "vidro" := 0x1BE3,
+        "joia" := 0x1F13,
+        "moeda" := 0x0EED
+    };
+    
+    // Verificar correspondência direta
+    if (mapping.exists(resource_name))
+        return mapping[resource_name];
+    endif
+    
+    // Verificar correspondência parcial
+    foreach key in (mapping.keys())
+        if (resource_name.find(key) != error)
+            return mapping[key];
+        endif
+    endforeach
+    
+    // Determinação baseada na categoria
+    var categoria := ClassificarRecurso(resource_name);
+    case (categoria)
+        "metal":   return 0x6300; // Ferro (padrão para metais)
+        "couro":   return 0x1078; // Couro comum
+        "madeira": return 0x1BD7; // Tora comum
+        "comida":  return 0x097B; // Peixe
+        "pano":    return 0x1766; // Pano básico
+        "pedras":  return 0x1BDD; // Pedra comum
+        "joias":   return 0x1F13; // Joia básica
+        "moedas":  return 0x0EED; // Moedas de ouro
+    endcase
+    
+    return 0; // Não foi possível mapear
+endfunction
+
+// Função auxiliar para processar a string de recursos de forma segura
+function ProcessResourceString(resources_string)
+    // Delegar para a função centralizada em faccao_resources.inc
+    return ParseResourceList(resources_string);
+endfunction
+
+
+/*
+ * RegistrarInconsistencia(container, recursos_antigos, recursos_novos, inconsistencias)
+ *
+ * Purpose: Registra inconsistências encontradas entre recursos esperados e atuais
+ * Parameters: 
+ *   container - O baú onde a inconsistência foi encontrada
+ *   recursos_antigos - Struct com os recursos esperados/anteriores
+ *   recursos_novos - Struct com os recursos atuais encontrados
+ *   inconsistencias - Array de structs com detalhes das inconsistências
+ * Return: 1 para sucesso, 0 para falha
+ */
+function RegistrarInconsistencia(container, recursos_antigos, recursos_novos, inconsistencias)
+    var timestamp := polcore().systime;
+    var container_faction := GetObjProperty(container, OBJ_FACTION_PROP);
+    if (!container_faction)
+        container_faction := GetObjProperty(container, "faction");
+    endif
+    
+    // Criar mensagem detalhada para o log
+    var log_msg := "[" + timestamp + "] Inconsistência no baú " + container.serial + " (Facção: " + container_faction + ")";
+    
+    foreach inc in inconsistencias
+        log_msg += " | " + inc.tipo + ": " + inc.antigo + " -> " + inc.novo + " (Δ" + inc.diferenca + ")";
+    endforeach
+    
+    // Registrar no log do sistema
+    LogWarning("recursos", log_msg);
+    
+    // Salvar no datafile de inconsistências para análise posterior
+var df := SafeOpenDataFile(":faccao:recursos_inconsistencias", 1);
+if (df)
+    var elem := SafeFindElement(df, "registros", 1);
+    
+    var registros := GetElementProp(elem, "list", array{});
+
+        
+        // Adicionar novo registro
+        registros.append(struct{
+            "tempo" := timestamp,
+            "container" := container.serial,
+            "faction" := container_faction,
+            "antigos" := recursos_antigos,
+            "novos" := recursos_novos,
+            "inconsistencias" := inconsistencias
+        });
+        
+        // Limitar o tamanho do array para não crescer indefinidamente
+        while (registros.size() > 100)
+            registros.erase(1);
+        endwhile
+        
+        SetElementProp(elem, "list", registros);
+    endif
+    
+    // Também atualizar o histórico de verificação no próprio baú
+    var historico := GetObjProperty(container, "recursos_verify_history");
+    if (!historico)
+        historico := array{};
+    endif
+    
+    historico.append(struct{
+        "timestamp" := timestamp,
+        "diff" := 1
+    });
+    
+    // Limitar tamanho do histórico
+    while (historico.size() > 20)
+        historico.Erase(1);
+    endwhile
+    
+    SetObjProperty(container, "recursos_verify_history", historico);
+    
+    return 1;
+endfunction
+
+
+
+// Funções de compatibilidade para código legado
+function GetResourceCategory(resource)
+    return ClassificarRecurso(resource);
+endfunction
+
+function GetResourceObjtype(resource_name)
+    return MapearRecurso(resource_name);
+endfunction
+
+/*
+ * DeterminarTipoRecursoAutomatico(item)
+ *
+ * Purpose: Determina automaticamente o tipo de recurso com base no objtype
+ * Parameters: item - O item a ser analisado
+ * Return: String com o tipo de recurso
+ */
+function DeterminarTipoRecursoAutomatico(item)
+    if (!item)
+        return "desconhecido";
+    endif
+    
+    var objtype := 0;
+    if (TypeOf(item) == "ItemRef")
+        objtype := item.objtype;
+    else
+        objtype := CInt(item);
+    endif
+    
+    // Usar ClassificarRecurso para determinar o tipo
+    return ClassificarRecurso(objtype);
+endfunction
+
+/*
+ * GetActiveFactions()
+ *
+ * Purpose: Obtém uma lista de facções ativas no servidor
+ * Parameters: Nenhum
+ * Return: Array com nomes de facções ativas
+ */
+function GetActiveFactions()
+    var active_factions := array{};
+    
+    // Adicionar o Reino como facção padrão
+    active_factions.append(KINGDOM_FACTION);
+    
+    // Obter facções de guildas
+    var guilds := ListGuilds();
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (guild && guild.members.size() > 0)
+            var faction_name := guild.GetProp("name");
+            if (!faction_name)
+                faction_name := guild.guildname;
+            endif
+            
+            if (faction_name && !(faction_name in active_factions))
+                active_factions.append(faction_name);
+            endif
+        endif
+        sleepms(1);
+    endforeach
+    
+    // Verificar também no datafile
+var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
+if (df)
+    foreach key in (df.keys())
+        if (key.find("faction_") == 0)
+            var faction_name := key[8, key.size()-7]; // Remover o prefixo "faction_"
+            if (!(faction_name in active_factions))
+                active_factions.append(faction_name);
+            endif
+        endif
+        sleepms(1);
+    endforeach
+endif
+    
+    return active_factions;
 endfunction

@@ -6,25 +6,27 @@ include ":faccao:include/shared_functions";
 
 program OnRemove(who, container, item, item_amount, movetype)
     if (who == error || container == error || item == error)
-        Print("OnRemove called with invalid parameters");
+        LogError("recursos", "OnRemove chamado com parâmetros inválidos");
         return 0;
     endif
+    
     // Verificar se o item removido é um recurso do reino
-   var donation_types;
-donation_types := array{
-    "IsKingdomDonationComida",
-    "IsKingdomDonationMoedas",
-    "IsKingdomDonationCouro",
-    "IsKingdomDonationMetal",
-    "IsKingdomDonationMadeira",
-    "IsKingdomDonationPano",
-    "IsKingdomDonationPedra",
-    "IsKingdomDonationJoias"
-};
-if (donation_types == error)
-    Print("Error creating donation_types array");
-    return 0;
-endif
+    var donation_types;
+    donation_types := array{
+        "IsKingdomDonationComida",
+        "IsKingdomDonationMoedas",
+        "IsKingdomDonationCouro",
+        "IsKingdomDonationMetal",
+        "IsKingdomDonationMadeira",
+        "IsKingdomDonationPano",
+        "IsKingdomDonationPedra",
+        "IsKingdomDonationJoias"
+    };
+    
+    if (donation_types == error)
+        LogError("recursos", "Erro ao criar array de donation_types");
+        return 0;
+    endif
 
 var is_donation := 0;
 foreach donation_type in donation_types
@@ -53,7 +55,7 @@ PrintText(who, "*Removeu " + item_desc + " do " + container_desc + "*", 6);
     // Marcar recursos como modificados para atualização posterior
     var result := MarcarRecursosModificados(container);
 if (result == error)
-    Print("Error marking resources as modified for container: " + container.serial);
+    LogError("recursos", "Erro ao marcar recursos como modificados para container: " + container.serial);
 endif
     
     var chardata := GetObjProperty(who, "chardata");

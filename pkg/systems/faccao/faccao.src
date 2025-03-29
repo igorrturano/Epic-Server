@@ -19,6 +19,8 @@ include ":gumps:htmlGump";
 include ":keys:key";
 // Incluir o arquivo de constantes para resolver os erros
 include ":faccao:faccao_constants";
+include ":faccao:include/logging";
+include ":faccao:include/datafile_helpers";
 
 const BUTTON_BUY_UNIFORM := 0x2;
 const BUTTON_ADD_PLAYER := 0x3;
@@ -1046,18 +1048,20 @@ function territoryHandler(who, input)
     endif
 
     var territory := territories[input+1]; // Ajuste para indexação base-1 do POL
-    if (!territory)
+ if (!territory)
+    if (input+1 <= territories.size()) // Verificação de segurança
         territories.Erase(input+1);
         guild.SetProp("territories", territories);
-        return SendSysMessageEx(who, "Referência de território inválida, registro removido.", SSM_FAIL);
     endif
+    return SendSysMessageEx(who, "Referência de território inválida, registro removido.", SSM_FAIL);
+endif
     
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return SendSysMessageEx(who, "O sistema de territórios está indisponível no momento.", SSM_FAIL);
     endif
     
-    var elem := rect_df.FindElement(territory);
+    var elem := SafeFindElement(rect_df, territory);
     
     if (!elem)
         // If the territory doesn't exist, remove it from the faction's list
@@ -1066,9 +1070,9 @@ function territoryHandler(who, input)
         return SendSysMessageEx(who, "Este território não existe mais e foi removido da lista.", SSM_FAIL);
     endif
     
-    var faction := elem.GetProp("Faction");
+   var faction := GetElementProp(elem, "Faction", "");
     if (!faction || faction == error)
-        faction := elem.GetProp(TERRITORY_FACTION_PROP);
+        faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
         if (!faction || faction == error)
             faction := DEFAULT_FACTION;
         endif
@@ -1094,8 +1098,8 @@ function territoryHandler(who, input)
         GFTextMid(detail_gump, 175, y, 320, 2100, "Território: " + territory);
         y += 30;
         
-        var rect := elem.GetProp("Rect");
-        var realm := elem.GetProp("Realm");
+        var rect := GetElementProp(elem, "Rect", "");
+        var realm := GetElementProp(elem, "Realm", ""); 
         
         GFTextLine(detail_gump, 30, y, 2100, "Coordenadas:");
         GFTextLine(detail_gump, 130, y, 1153, rect);
@@ -1114,8 +1118,8 @@ function territoryHandler(who, input)
         
     elseif (output["Ir"])
         // Teleport to center of territory
-        var rect := elem.GetProp("Rect");
-        var realm := elem.GetProp("Realm");
+        var rect := GetElementProp(elem, "Rect", "");
+        var realm := GetElementProp(elem, "Realm", "");
         var coords := SplitWords(rect);
         
         if (coords.size() >= 4)
@@ -1138,21 +1142,21 @@ function territoryHandler(who, input)
         if (is_gm_or_leader)
             if (YesNo(who, "Tem certeza que deseja abandonar o território '" + territory + "'?"))
                 // Atualizar AMBAS as propriedades para compatibilidade completa
-                elem.SetProp("Faction", DEFAULT_FACTION);
-                elem.SetProp(TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+                SetElementProp(elem, "Faction", DEFAULT_FACTION);
+                SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
                 
                 territories.Erase(input+1); // Ajustar para indexação base-1 do POL
                 guild.SetProp("territories", territories);
                 SendSysMessageEx(who, "Território abandonado com sucesso!", SSM_INFO);
                 
                 // Remove monument if exists
-                var coords := SplitWords(elem.GetProp("Rect"));
+                var coords := SplitWords(GetElementProp(elem, "Rect", ""));
                 if (coords.size() >= 4)
                     var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
                     var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
-                    var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
+                    var center_z := GetWorldHeight(center_x, center_y, GetElementProp(elem, "Realm", ""));
                     
-                    foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, elem.GetProp("Realm"))
+                    foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, GetElementProp(elem, "Realm", ""))
                         if (item.objtype == 0xA104 && GetObjProperty(item, "RectName") == territory)
                             DestroyItem(item);
                             break;
@@ -1172,7 +1176,8 @@ function ShowTerritoriesGump(who, guild)
     var territories_gump_height := 450;
     var gump := GFCreateGump();
     
-    Print("DEBUG: Iniciando ShowTerritoriesGump para guild: " + guild);
+LogDebug("territorio", "Iniciando ShowTerritoriesGump para guild: " + guild);
+
     
     GFResizePic(gump, 0, 0, 39925, territories_gump_width, territories_gump_height);
     GFResizePic(gump, 15, 15, 9350, territories_gump_width-30, 30);
@@ -1195,9 +1200,10 @@ function ShowTerritoriesGump(who, guild)
         guild_name := guild.guildname;
     endif
     
-    Print("DEBUG: Nome da facção: " + guild_name + ", Territórios: " + territories.size());
+    LogDebug("territorio", "Nome da facção: " + guild_name + ", Territórios: " + territories.size());
+
     
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         if (territories && territories.size() > 0)
             foreach territory in territories
@@ -1205,21 +1211,21 @@ function ShowTerritoriesGump(who, guild)
                     continue;
                 endif
                 
-                var rect_elem := rect_df.FindElement(territory);
+                var rect_elem := SafeFindElement(rect_df, territory);
                 if (!rect_elem)
                     continue;
                 endif
                 
-                // Verificar AMBAS as formas da propriedade
-                var faction := rect_elem.GetProp("Faction");  // Forma antiga (maiúscula)
-                if (!faction || faction == error)
-                    faction := rect_elem.GetProp(TERRITORY_FACTION_PROP);  // Forma nova (minúscula)
-                    if (!faction || faction == error)
-                        faction := DEFAULT_FACTION;
-                    endif
-                endif
+            // Verificar AMBAS as formas da propriedade
+var faction := GetElementProp(rect_elem, "Faction", ""); // Corrigido: rect_elem em vez de elem
+if (!faction || faction == error)
+    faction := GetElementProp(rect_elem, TERRITORY_FACTION_PROP, ""); 
+    if (!faction || faction == error)
+        faction := DEFAULT_FACTION;
+    endif
+endif
                     
-                Print("DEBUG: Território: " + territory + " Facção: " + faction);
+                LogDebug("territorio", "Território: " + territory + " Facção: " + faction);
                     
                 if (faction && guild_name && faction == guild_name)
                     valid_territories.append(territory);
@@ -1230,8 +1236,8 @@ function ShowTerritoriesGump(who, guild)
         
         // Update the faction's territory list if inconsistencies were found
         if (valid_territories.size() != territories.size())
-            Print("DEBUG: Corrigindo inconsistências na lista de territórios: " + 
-                  territories.size() + " -> " + valid_territories.size());
+LogDebug("territorio", "Corrigindo inconsistências na lista de territórios: " + 
+          territories.size() + " -> " + valid_territories.size());
             guild.SetProp("territories", valid_territories);
             territories := valid_territories;
         endif

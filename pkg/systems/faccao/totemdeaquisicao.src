@@ -40,22 +40,23 @@ program TotemDeAquisicao(who, totem)
     endif
     
     // Abrir o datafile de áreas
-    var rect_df := OpenDataFile(":architect:areas");
+var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         SendSysMessage(who, "Sistema de territórios indisponível no momento.");
         return 0;
     endif
     
-    var elem := rect_df.FindElement(rect_name);
+    var elem := SafeFindElement(rect_df, rect_name);
     if (!elem)
         SendSysMessage(who, "Território não encontrado: " + rect_name);
         return 0;
     endif
     
     // Verificar se o território já está reivindicado (verificando ambas as propriedades)
-    var current_faction := elem.GetProp("Faction");  // Legado (maiúscula)
+   var current_faction := GetElementProp(elem, "Faction", ""); // Legado (maiúscula)
     if (!current_faction || current_faction == error) 
-        current_faction := elem.GetProp(TERRITORY_FACTION_PROP); // Novo padrão (minúscula)
+        current_faction := GetElementProp(elem, TERRITORY_FACTION_PROP, ""); // Novo padrão (minúscula)
+
     endif
 
     if (current_faction && current_faction != DEFAULT_FACTION && current_faction != "Selvagem")
@@ -80,11 +81,11 @@ program TotemDeAquisicao(who, totem)
     endif
 
     // Imprime para debug
-    Print("DEBUG: Nome da facção final: " + faction_name);
+    LogDebug("faccao", "Nome da facção final: " + faction_name);
     
     // Atualizar a propriedade do território em ambos os formatos
-    elem.SetProp("Faction", faction_name);  // Legado (maiúscula)
-    elem.SetProp(TERRITORY_FACTION_PROP, faction_name);  // Novo padrão (minúscula)
+    SetElementProp(elem, "Faction", faction_name); // Legado (maiúscula)
+    SetElementProp(elem, TERRITORY_FACTION_PROP, faction_name); // Novo padrão (minúscula)
     
     // Adicionar o território à lista da facção de forma robusta
     var territories := guild.GetProp("territories");
@@ -102,7 +103,7 @@ program TotemDeAquisicao(who, totem)
     
     // Configurar timer para geração de recursos
     // Verificar se o território já tem recursos configurados
-    if (!elem.GetProp("Resources"))
+    if (GetElementProp(elem, "Resources", ""))
         // Se não houver recursos configurados, usar um conjunto padrão (3 recursos)
         var default_resources := SplitWords("IronOre, couroespesso, cogumelo");
         var resource_str := "";
@@ -112,21 +113,21 @@ program TotemDeAquisicao(who, totem)
             endif
             resource_str += default_resources[i];
         endfor
-        elem.SetProp("Resources", resource_str);
+        SetElementProp(elem, "Resources", resource_str);
     endif
     
-    if (!elem.GetProp("ResourceInterval"))
-        elem.SetProp("ResourceInterval", 1); // Default: 1 minuto para testes
+    if (GetElementProp(elem, "ResourceInterval", 0))
+        SetElementProp(elem, "ResourceInterval", 2); // Default: 1 minuto para testes
     endif
     
-    if (!elem.GetProp("ResourceAmount"))
-        elem.SetProp("ResourceAmount", 5); // Default: 5 unidades por recurso
+    if (GetElementProp(elem, "ResourceAmount", 0))
+        SetElementProp(elem, "ResourceAmount", 5); // Default: 5 unidades por recurso
     endif
     
     // Configurar próxima geração de recursos
-    var interval := CInt(elem.GetProp("ResourceInterval"));
+   var interval := CInt(GetElementProp(elem, "ResourceInterval", 0));
     var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-    elem.SetProp("NextResourceTime", next_time);
+    SetElementProp(elem, "NextResourceTime", next_time);
     
     // Destruir o totem após uso
     DestroyItem(totem);
@@ -139,15 +140,15 @@ program TotemDeAquisicao(who, totem)
 endprogram
 
 function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
-    var rect := elem.GetProp(TERRITORY_RECT_PROP);
-    var realm := elem.GetProp(TERRITORY_REALM_PROP);
+    var rect := GetElementProp(elem, TERRITORY_RECT_PROP, "");
+    var realm := GetElementProp(elem, TERRITORY_REALM_PROP, "");
     var coords := SplitWords(rect);
     
     // Obter o ID do território
     if (!territory_id)
         // Gerar um ID único para o território
         territory_id := "TER_" + CStr(polcore().systime);
-        elem.SetProp(TERRITORY_ID_PROP, territory_id);
+        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     endif
     
     if (coords.size() >= 4)
@@ -168,7 +169,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
         // Datafile para armazenar seriais
         var seriais_df := OpenDataFile(":faccao:seriais");
         if (!seriais_df)
-            seriais_df := CreateDataFile(":faccao:seriais");
+           seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
         endif
         
         // Criar o mural de recrutamento à esquerda

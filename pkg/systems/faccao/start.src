@@ -2,12 +2,15 @@ use os;
 use datafile;
 use uo;
 
+include ":faccao:include/permissions";
+include ":faccao:include/logging";
+
 // Inicia o controle de soldo
 var script := start_script("soldocontrol");
 if (script.errortext)
-    SysLog(script.errortext);
+    LogError("sistema", "Erro no script de controle de soldo: " + script.errortext);
 else
-    Print("Starting guild npc check script... ok.");
+    LogDebug("sistema", "Starting guild npc check script... ok.");
 endif
 
 // Definir o intervalo de ciclo em segundos (1 hora)
@@ -16,25 +19,25 @@ const CYCLE_WAIT := 3600;
 // Iniciar o processador de atualizações de recursos
 var update_script := start_script(":faccao:process_recursos_updates");
 if (update_script.errortext)
-    SysLog("Erro ao iniciar processador de atualizações: " + update_script.errortext);
+    LogError("recursos", "Erro ao iniciar processador de atualizações: " + update_script.errortext);
 else
-    Print("Starting resource updates processor... ok.");
+    LogDebug("sistema", "Starting resource updates processor... ok.");
 endif
 
 // Iniciar o verificador de consistência
 var verify_script := start_script(":faccao:verify_faction_resources");
 if (verify_script.errortext)
-    SysLog("Erro ao iniciar verificador de consistência: " + verify_script.errortext);
+    LogError("recursos", "Erro ao iniciar verificador de consistência: " + verify_script.errortext);
 else
-    Print("Starting resources consistency verifier... ok.");
+    LogDebug("sistema", "Starting resources consistency verifier... ok.");
 endif
 
 // NOVO: Iniciar o sistema de registro de guildas
 var guild_registry := start_script(":faccao:guild_registry");
 if (guild_registry.errortext)
-    SysLog("Erro ao iniciar o sistema de registro de guildas: " + guild_registry.errortext);
+    LogError("sistema", "Erro ao iniciar o sistema de registro de guildas: " + guild_registry.errortext);
 else
-    Print("Starting guild registry system... ok.");
+    LogDebug("sistema", "Starting guild registry system... ok.");
 endif
 
 // Inicia o controlador de recursos territoriais com controle de tempo
@@ -51,18 +54,18 @@ function start_resource_controller()
     var should_execute := (last_time == 0 || time_since_last >= CYCLE_WAIT);
     
     if (should_execute)
-        Print("Iniciando ResourceController imediatamente.");
+        LogDebug("recursos", "Iniciando ResourceController imediatamente.");
         var resource_script := start_script("ResourceController");
         if (resource_script.errortext)
-            SysLog("Erro ao iniciar o sistema de recursos: " + resource_script.errortext);
+            LogError("recursos", "Erro ao iniciar o sistema de recursos: " + resource_script.errortext);
         else
-            Print("Starting territory resource controller... ok.");
+            LogDebug("sistema", "Starting territory resource controller... ok.");
             // Armazenar o tempo desta execução
             SetGlobalProperty("last_execution", current_time);
         endif
     else
         var wait_time := CYCLE_WAIT - time_since_last;
-        Print("Próxima execução do ResourceController em " + wait_time + " segundos.");
+        LogDebug("recursos", "Próxima execução do ResourceController em " + wait_time + " segundos.");
     endif
 endfunction
 

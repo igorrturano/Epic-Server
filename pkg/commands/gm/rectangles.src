@@ -19,23 +19,29 @@ program rectangle_creator(who, params)
 
     
     // Abrir datafile apenas uma vez
-    var rect_df := OpenDataFile(":architect:areas");
-    
-    // Verificar de migração: converter propriedades "Faction" para "faction"
-    if (rect_df != error)
-        foreach elem_name in (rect_df.keys())
-            var elem := rect_df.FindElement(elem_name);
-            var old_faction := elem.GetProp("Faction");
-            if (old_faction)
-                elem.SetProp(TERRITORY_FACTION_PROP, old_faction);
-                elem.EraseProp("Faction");
-            endif
-        endforeach
-    endif
+    var rect_df := SafeOpenDataFile(":architect:areas");
+// Verificar de migração: converter propriedades "Faction" para "faction"
+if (rect_df)
+    foreach elem_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, elem_name);
+        if (!elem)
+            continue; // Elemento não encontrado, já logado pelo SafeFindElement
+        endif
+        
+        var old_faction := GetElementProp(elem, "Faction", "");
+        if (old_faction)
+            // Usar o helper para definir a nova propriedade
+            SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
+            
+            // Ainda precisamos usar EraseProp diretamente pois não há helper para isso
+            elem.EraseProp("Faction");
+        endif
+    endforeach
+endif
 
     // Depois reutilizar a mesma variável sem o "var"
     if (rect_df == error)
-        rect_df := CreateDataFile(":architect:areas");
+        rect_df := SafeOpenDataFile(":architect:areas", 1); // 1 = criar se não existir
         if (rect_df == error)
             SendSysMessage(who, "Erro ao criar arquivo de dados!");
             return;
@@ -104,7 +110,7 @@ program rectangle_creator(who, params)
     endif
     
     // Verificar se o nome já existe e confirmar sobrescrita
-    var elem := rect_df.FindElement(rect_name);
+    var elem := SafeFindElement(rect_df, rect_name);
     if (elem)
         var confirm := YesNo(who, $"Já existe um retângulo com o nome '{rect_name}'. Sobrescrever?");
         if (!confirm)
@@ -117,13 +123,14 @@ program rectangle_creator(who, params)
     
     // Gerar e salvar um ID único para o território
 var territory_id := CreateTerritoryID();
-elem.SetProp(TERRITORY_ID_PROP, territory_id);
+SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
 
     // Salvar as informações do retângulo
-    elem.SetProp("Name", rect_name);
-    elem.SetProp("Rect", rect_str);
-    elem.SetProp("Realm", realm);
-    elem.SetProp(TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Usar constante para facção padrão
+    SetElementProp(elem, "Name", rect_name);
+   SetElementProp(elem, "Rect", rect_str);
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Usar constante para facção padrão
+
     
     // Configurar recursos e intervalos para o território
     SetupResourcesForTerritory(who, elem);
@@ -173,33 +180,33 @@ function SetupResourcesForTerritory(who, elem)
     
     // Usar os recursos únicos daqui em diante
     resource_sets := unique_resources;
+    // Recuperar valores atuais se existirem, usando os helpers para simplificar
+var current_interval := GetElementProp(elem, "ResourceInterval", 60);
+var current_amount := GetElementProp(elem, "ResourceAmount", 5);
+
+// Processar recursos atuais, garantindo que não haja entradas vazias e limitando a 3
+var current_resources := array{};
+var resource_string := GetElementProp(elem, "Resources", "");
+
+if (resource_string)
+    var raw_resources := SplitWords(resource_string, ",");
     
-    // Recuperar valores atuais se existirem
-    var current_interval := elem.GetProp("ResourceInterval") ? elem.GetProp("ResourceInterval") : 60;
-    var current_amount := elem.GetProp("ResourceAmount") ? elem.GetProp("ResourceAmount") : 5;
-    
-    // Processar recursos atuais, garantindo que não haja entradas vazias e limitando a 3
-    var current_resources := array{};
-    if (elem.GetProp("Resources"))
-        var resource_string := elem.GetProp("Resources");
-        var raw_resources := SplitWords(resource_string, ",");
+    var count := 0;
+    foreach res in raw_resources
+        // Limpar espaços extras
+        res := TrimString(res);
         
-        var count := 0;
-        foreach res in raw_resources
-            // Limpar espaços extras
-            res := TrimString(res);
-            
-            // Adicionar apenas recursos não vazios
-            if (res != "" && count < 3)
-                current_resources.append(res);
-                count += 1;
-            endif
-            
-            if (count >= 3)
-                break;
-            endif
-        endforeach
-    endif
+        // Adicionar apenas recursos não vazios
+        if (res != "" && count < 3)
+            current_resources.append(res);
+            count += 1;
+        endif
+        
+        if (count >= 3)
+            break;
+        endif
+    endforeach
+endif
     
     // Início do processo de seleção interativa
     var selected_resources := array{};
@@ -269,13 +276,13 @@ function SetupResourcesForTerritory(who, elem)
                 endfor
                 
                 // Salvar no elemento
-                elem.SetProp("ResourceInterval", interval);
-                elem.SetProp("ResourceAmount", amount);
-                elem.SetProp("Resources", resources_str);
+                SetElementProp(elem, "ResourceInterval", interval);
+                SetElementProp(elem, "ResourceAmount", amount);
+                SetElementProp(elem, "Resources", resources_str);
                 
                 // Configurar próxima geração
                 var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-                elem.SetProp("NextResourceTime", next_time);
+                SetElementProp(elem, "NextResourceTime", next_time);
                 
                 SendSysMessage(who, "Recursos configurados: " + resources_str);
                 SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
@@ -293,7 +300,8 @@ function CreateResourceGumpForTerritory(elem, resource_sets, selected_checkboxes
     // Dimensões e configurações do gump
     var width := 500;
     var height := 470;
-    var title := "Configurar Recursos para: " + elem.GetProp("Name");
+    var title := "Configurar Recursos para: " + GetElementProp(elem, "Name", "");
+
     
     // Criar gump usando o estilo padronizado
     var gump := GFECreateGump(title, width, height, array{BORDER_GOLDEN});
@@ -412,11 +420,11 @@ function ShowRectangles(who, rect_df)
     
     // Cria uma tabela simples de territórios
     foreach rect_name in (rect_df.keys())
-        var elem := rect_df.FindElement(rect_name);
+        var elem := SafeFindElement(rect_df, rect_name);
         
         // Tratamento seguro para obter a facção
         var faction := "";
-        var faction_property := elem.GetProp(TERRITORY_FACTION_PROP);
+        var faction_property := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
         
         if (faction_property && faction_property != error)
             // Verificar se não é um array ou struct
@@ -424,22 +432,22 @@ function ShowRectangles(who, rect_df)
                 faction := faction_property;
             else
                 // Tentar usar a propriedade legada
-                faction := elem.GetProp("Faction");
+                faction := GetElementProp(elem, "Faction", "");
                 if (!faction || faction == error)
                     faction := DEFAULT_FACTION;
                 else
                     // Atualizar para o formato padronizado
-                    elem.SetProp(TERRITORY_FACTION_PROP, faction);
+                    SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
                 endif
             endif
         else
             // Tentar usar a propriedade legada
-            faction := elem.GetProp("Faction");
+            faction := GetElementProp(elem, "Faction", "");
             if (!faction || faction == error)
                 faction := DEFAULT_FACTION;
             else
                 // Atualizar para o formato padronizado
-                elem.SetProp(TERRITORY_FACTION_PROP, faction);
+                SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
             endif
         endif
         
@@ -479,7 +487,7 @@ function ShowRectangles(who, rect_df)
     if (button >= 400 && button < 999)
         var index := button - 400;
         var rect_name := rect_df.keys()[index];
-        var elem := rect_df.FindElement(rect_name);
+       var elem := SafeFindElement(rect_df, rect_name);
         
         DisplayRectangleDetails(who, elem);
     elseif (button == 999)
@@ -514,9 +522,8 @@ function ShowRectanglesPage2(who, rect_df, start_index)
     
     while (i <= total && displayed <= 18)
         var rect_name := keys[i];
-        var elem := rect_df.FindElement(rect_name);
-        var faction := elem.GetProp(TERRITORY_FACTION_PROP) ? elem.GetProp(TERRITORY_FACTION_PROP) : DEFAULT_FACTION;
-        
+       var elem := SafeFindElement(rect_df, rect_name);
+var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);        
         var color := 1153;
         if (faction == DEFAULT_FACTION)
             color := 38;
@@ -542,7 +549,7 @@ function ShowRectanglesPage2(who, rect_df, start_index)
     if (button >= 400)
         var index := button - 400;
         var rect_name := keys[index];
-        var elem := rect_df.FindElement(rect_name);
+        var elem := SafeFindElement(rect_df, rect_name);
         
         DisplayRectangleDetails(who, elem);
     elseif (button == 998)
@@ -559,15 +566,15 @@ function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "
             continue;
         endif
         
-        var rect_elem := rect_df.FindElement(rect_name);
-        var rect_realm := rect_elem.GetProp("Realm");
+        var rect_elem := SafeFindElement(rect_df, rect_name);
+        var rect_realm := GetElementProp(rect_elem, "Realm", ""); 
         
         // Se não estiver no mesmo realm, não há sobreposição
         if (rect_realm != realm)
             continue; 
         endif
         
-        var rect_coords := SplitWords(rect_elem.GetProp("Rect"));
+        var rect_coords := SplitWords(GetElementProp(rect_elem, "Rect", ""));
         if (rect_coords.size() < 4)
             continue; // Dados inválidos, pular
         endif
@@ -593,7 +600,8 @@ function DestruirObjetosTerritorio(territorio_id, faction)
     // Tipos de objetos a serem destruídos
     var tipos_objetos := array{0xff11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
     
-    Print("DEBUG: Buscando objetos do território: " + territorio_id + " da facção: " + faction);
+    LogDebug("territorio", $"Buscando objetos do território: {territorio_id} da facção: {faction}");
+
     
     foreach item in EnumerateItemsInContainer(1) // 1 = mundo
         if (item.objtype in tipos_objetos)
@@ -606,7 +614,8 @@ function DestruirObjetosTerritorio(territorio_id, faction)
                 (item_name && item_name.find(territorio_id) != error) ||
                 (item_faction && item_faction == faction))
                 
-                Print("DEBUG: Encontrado objeto: " + item.name + " (Serial: " + item.serial + ")");
+                LogDebug("territorio", $"Encontrado objeto: {item.name} (Serial: {item.serial})");
+
                 PrintTextAbove(item, "*Este objeto está sendo destruído*");
                 
                 // Tornar o item móvel para permitir a destruição
@@ -617,14 +626,17 @@ function DestruirObjetosTerritorio(territorio_id, faction)
                 var destroy_result := DestroyItem(item);
                 if (destroy_result)
                     objetos_destruidos += 1;
-                    Print("DEBUG: Objeto destruído com sucesso");
+                    LogDebug("territorio", "Objeto destruído com sucesso");
+
                 else
-                    Print("DEBUG: Falha ao destruir objeto: " + destroy_result);
+                    LogError("territorio", $"Falha ao destruir objeto: {destroy_result}");
+
                     
                     // Se falhar, tentar método alternativo: mover para o void
                     MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
                     objetos_destruidos += 1;
-                    Print("DEBUG: Objeto movido para o void como alternativa");
+                    LogWarning("territorio", "Objeto movido para o void como alternativa");
+
                 endif
                 
                 Sleep(2); // Pausa entre destruições
@@ -639,15 +651,14 @@ endfunction
 function DisplayRectangleDetails(who, elem)
     var width := 400;
     var height := 380;
-    
-    var name := elem.GetProp("Name");
-    var rect := elem.GetProp("Rect");
-    var realm := elem.GetProp("Realm");
-    var faction := elem.GetProp(TERRITORY_FACTION_PROP) ? elem.GetProp(TERRITORY_FACTION_PROP) : DEFAULT_FACTION;
-    var resources := elem.GetProp("Resources") ? elem.GetProp("Resources") : "Não definidos";
-    var interval := elem.GetProp("ResourceInterval") ? elem.GetProp("ResourceInterval") : 0;
-    var amount := elem.GetProp("ResourceAmount") ? elem.GetProp("ResourceAmount") : 0;
-    
+    var name := GetElementProp(elem, "Name", "");
+var rect := GetElementProp(elem, "Rect", "");
+var realm := GetElementProp(elem, "Realm", "");
+var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+var resources := GetElementProp(elem, "Resources", "Não definidos");
+var interval := GetElementProp(elem, "ResourceInterval", 0);
+var amount := GetElementProp(elem, "ResourceAmount", 0);
+
     // Define a cor do título baseada na facção controladora
     var title_color := 53; // Dourado padrão
     if (faction == DEFAULT_FACTION)
@@ -733,7 +744,7 @@ function DisplayRectangleDetails(who, elem)
             y += 20;
             
             // Verifica se tem informação de próxima geração
-            var next_time := elem.GetProp("NextResourceTime");
+            var next_time := GetElementProp(elem, "NextResourceTime", 0);
             if (next_time)
                 var time_left := next_time - polcore().systime;
                 var minutes_left := CInt(time_left/60);
@@ -797,12 +808,12 @@ function DisplayRectangleDetails(who, elem)
     if (button == 100) // Deletar
     if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
         // Primeiro, destruir os objetos do território, se houver
-        var faction := elem.GetProp(TERRITORY_FACTION_PROP);
-        if (!faction || faction == error)
-            faction := elem.GetProp("Faction");  // Compatibilidade legada
-        endif
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+if (!faction)
+    faction := GetElementProp(elem, "Faction", "");  // Compatibilidade legada
+endif
         
-        var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
         if (territory_id && faction)
             DestruirObjetosTerritorio(territory_id, faction);
         endif
@@ -811,8 +822,8 @@ function DisplayRectangleDetails(who, elem)
         RemoveTerritoryFromGuilds(name, territory_id);
         
         // Agora deletar o território
-        var rect_df := OpenDataFile(":architect:areas");
-        rect_df.DeleteElement(name);
+        var rect_df := SafeOpenDataFile(":architect:areas");
+       DeleteDatafileEntry(":architect:areas", name);
         SendSysMessage(who, "Território deletado com sucesso!");
     endif
 
@@ -854,16 +865,17 @@ function DisplayRectangleDetails(who, elem)
         
         var rect_str := $"{x1} {y1} {x2} {y2}";
         
-        // Verificar sobreposição
-        if (CheckRectangleOverlap(OpenDataFile(":architect:areas"), x1, y1, x2, y2, first_point.realm, name))
-            SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
-            SendSysMessage(who, "Edição cancelada.");
-            return;
-        endif
+// Verificar sobreposição
+var areas_df := SafeOpenDataFile(":architect:areas");
+if (CheckRectangleOverlap(areas_df, x1, y1, x2, y2, first_point.realm, name))
+    SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
+    SendSysMessage(who, "Edição cancelada.");
+    return;
+endif
         
         // Atualizar elemento
-        elem.SetProp("Rect", rect_str);
-        elem.SetProp("Realm", first_point.realm);
+        SetElementProp(elem, "Rect", rect_str);
+        SetElementProp(elem, "Realm", first_point.realm);
         
         SendSysMessage(who, $"Território '{name}' atualizado!");
     elseif (button == 300) // Ir para território
@@ -898,22 +910,22 @@ function CreateTerritoryTotem(who, elem)
     endif
     
     // Obter o ID do território ou criar um se não existir
-    var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
     if (!territory_id)
         territory_id := CreateTerritoryID();
-        elem.SetProp(TERRITORY_ID_PROP, territory_id);
+        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     endif
     
     // Configurar propriedades do totem
-    SetObjProperty(totem, TERRITORY_NAME_PROP, elem.GetProp("Name"));
-    SetObjProperty(totem, TERRITORY_RECT_PROP, elem.GetProp("Rect"));
-    SetObjProperty(totem, TERRITORY_REALM_PROP, elem.GetProp("Realm"));
-    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);  // Salvar o ID
-    SetObjProperty(totem, "CreatedBy", who.serial);
-    SetObjProperty(totem, "CreationDate", polcore().systime);
-    
-    SendSysMessage(who, "Um totem para o território '" + elem.GetProp("Name") + "' foi criado em sua mochila.");
-    return 1;
+SetObjProperty(totem, TERRITORY_NAME_PROP, GetElementProp(elem, "Name", ""));
+SetObjProperty(totem, TERRITORY_RECT_PROP, GetElementProp(elem, "Rect", ""));
+SetObjProperty(totem, TERRITORY_REALM_PROP, GetElementProp(elem, "Realm", ""));
+SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);  // Salvar o ID
+SetObjProperty(totem, "CreatedBy", who.serial);
+SetObjProperty(totem, "CreationDate", polcore().systime);
+
+SendSysMessage(who, "Um totem para o território '" + GetElementProp(elem, "Name", "") + "' foi criado em sua mochila.");
+return 1;
 endfunction
 
 // Função TrimString consolidada (use apenas esta versão)

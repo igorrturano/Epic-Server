@@ -24,67 +24,65 @@ const HEARTBEAT_TIMEOUT := 300;  // 5 minutos de timeout para processos que não
  *   error em caso de falha no registro
  */
 function RegisterProcess(process_name, unique_id := "")
-    Print("Tentativa de registro do processo: " + process_name + (unique_id ? " (" + unique_id + ")" : ""));
+    // Log inicial de tentativa de registro
+    LogInfo("processo", $"Tentativa de registro do processo: {process_name}" + 
+            (unique_id ? $" ({unique_id})" : ""));
     
-    var df := DFOpenDataFile(PROCESS_REGISTRY_DATAFILE, DF_CREATE);
-    if (!df)
-        Print("ERRO CRÍTICO: Não foi possível abrir/criar registry datafile");
+    // Abrir datafile com tratamento de erro
+    var df := SafeOpenDataFile(PROCESS_REGISTRY_DATAFILE);
+    if (df == error)
+        LogCritical("processo", "Falha ao abrir datafile de registro");
         return error;
     endif
     
-    var process_id := process_name;
-    if (unique_id)
-        process_id := process_name + "_" + unique_id;
-    endif
+    // Criar identificador único do processo
+    var process_id := unique_id ? 
+        $"{process_name}_{unique_id}" : 
+        process_name;
     
-    var elem := DFFindElement(df, process_id, DF_CREATE);
-    if (!elem)
-        Print("ERRO: Falha ao criar/encontrar elemento no registry");
+    // Encontrar/criar elemento no registro
+   var elem := SafeFindElement(df, process_id);
+    if (elem == error)
+        LogError("processo", $"Falha ao acessar elemento: {process_id}");
         return error;
     endif
     
-    // Verificar se há um processo registrado e se ainda está ativo
-    var registered_pid := elem.GetProp("pid");
-    var registered_time := elem.GetProp("registered_time");
-    var last_heartbeat := elem.GetProp("last_heartbeat");
     var current_time := polcore().systime;
+    var registered_pid := elem.GetProp("pid");
+    var last_heartbeat := elem.GetProp("last_heartbeat");
     
-    // Se já existe um processo registrado
+    // Verificar processo existente
     if (registered_pid)
-        // Verificar se o processo ainda está ativo
         var proc := GetProcess(registered_pid);
         
-        // Se o processo existe e seu último heartbeat é recente
-        if (proc && last_heartbeat && (current_time - last_heartbeat) < HEARTBEAT_TIMEOUT)
-            Print("AVISO: Processo " + process_name + " já está em execução (PID: " + registered_pid + ")");
-            // Registrar tentativa de inicialização duplicada
-            var duplicate_attempts := elem.GetProp("duplicate_attempts");
-            if (!duplicate_attempts)
-                duplicate_attempts := 0;
-            endif
-            elem.SetProp("duplicate_attempts", duplicate_attempts + 1);
-            elem.SetProp("last_duplicate_attempt", current_time);
+        // Verificar se processo está ativo
+        if (proc && last_heartbeat && 
+            (current_time - last_heartbeat) < HEARTBEAT_TIMEOUT)
             
-            // Este processo deve ser encerrado
+            LogWarning("processo", $"Processo {process_name} já em execução (PID: {registered_pid})");
+            
+            // Registrar tentativa duplicada
+            var duplicate_attempts := elem.GetProp("duplicate_attempts") ?: 0;
+            SetElementProp(elem, "duplicate_attempts", duplicate_attempts + 1);
+            SetElementProp(elem, "last_duplicate_attempt", current_time);
+            
             return 0;
-        else
-            // Processo morto ou timeout, registrar este como novo
-            Print("Encontrado registro de processo obsoleto. Substituindo...");
-            if (proc)
-                // Se o processo existe mas não deu heartbeat, tentar finalizá-lo
-                Print("Tentando finalizar processo zumbi: " + registered_pid);
-                proc.kill();
-            endif
+        endif
+        
+        // Processo morto ou timeout
+        if (proc)
+            LogWarning("processo", $"Finalizando processo zumbi: {registered_pid}");
+            proc.kill();
         endif
     endif
     
-    // Registrar este processo
-    elem.SetProp("pid", getpid());
-    elem.SetProp("registered_time", current_time);
-    elem.SetProp("last_heartbeat", current_time);
-    elem.SetProp("host_runtime", polcore().systime);
+    // Registrar novo processo
+    SetElementProp(elem, "pid", getpid());
+    SetElementProp(elem, "registered_time", current_time);
+    SetElementProp(elem, "last_heartbeat", current_time);
+    SetElementProp(elem, "host_runtime", polcore().systime);
     
-    Print("Processo " + process_name + " registrado com sucesso (PID: " + getpid() + ")");
+    LogInfo("processo", $"Processo {process_name} registrado (PID: {getpid()})");
     return 1;
 endfunction
 
@@ -117,13 +115,14 @@ function UpdateProcessHeartbeat(process_name, unique_id := "")
     // Verificar se o PID corresponde ao processo atual
     var registered_pid := elem.GetProp("pid");
     if (registered_pid != getpid())
-        Print("AVISO: PID registrado (" + registered_pid + ") não corresponde ao processo atual (" + getpid() + ")");
+        LogWarning("processo", $"PID registrado ({registered_pid}) não corresponde ao processo atual ({getpid()})");
+
         // Não atualizar se não for o processo registrado
         return 0;
     endif
     
     // Atualizar o heartbeat
-    elem.SetProp("last_heartbeat", polcore().systime);
+    SetElementProp(elem, "last_heartbeat", polcore().systime);
     return 1;
 endfunction
 
@@ -156,16 +155,18 @@ function DeregisterProcess(process_name, unique_id := "")
     // Verificar se o PID corresponde ao processo atual
     var registered_pid := elem.GetProp("pid");
     if (registered_pid != getpid())
-        Print("AVISO: Tentativa de desregistro de outro processo. PID registrado: " + registered_pid + ", PID atual: " + getpid());
+       LogWarning("processo", $"Tentativa de desregistro de outro processo. PID registrado: {registered_pid}, PID atual: {getpid()}");
+
         return 0;
     endif
     
     // Não apagar o elemento, apenas marcar como inativo
-    elem.SetProp("pid", 0);
-    elem.SetProp("deregistered_time", polcore().systime);
-    elem.SetProp("status", "stopped");
+    SetElementProp(elem, "pid", 0);
+    SetElementProp(elem, "deregistered_time", polcore().systime);
+    SetElementProp(elem, "status", "stopped");
     
-    Print("Processo " + process_name + " desregistrado com sucesso");
+    LogInfo("processo", $"Processo {process_name} desregistrado com sucesso");
+
     return 1;
 endfunction
 
@@ -200,16 +201,17 @@ function CheckAndCleanupProcesses()
             
             // Se o processo não existe ou excedeu o timeout
             if (!proc || (last_heartbeat && (current_time - last_heartbeat) > HEARTBEAT_TIMEOUT))
-                Print("Limpando registro obsoleto: " + key + " (PID: " + registered_pid + ")");
+                LogDebug("processo", $"Limpando registro obsoleto: {key} (PID: {registered_pid})");
                 
                 // Marcar como inativo
-                elem.SetProp("pid", 0);
-                elem.SetProp("status", "expired");
-                elem.SetProp("expired_time", current_time);
+                SetElementProp(elem, "pid", 0);
+                SetElementProp(elem, "status", "expired");
+                SetElementProp(elem, "expired_time", current_time);
                 
                 // Tentar matar o processo se ele existe mas está unresponsive
                 if (proc)
-                    Print("Tentando encerrar processo zumbi: " + registered_pid);
+                    LogWarning("processo", $"Tentando encerrar processo zumbi: {registered_pid}");
+
                     proc.kill();
                 endif
                 

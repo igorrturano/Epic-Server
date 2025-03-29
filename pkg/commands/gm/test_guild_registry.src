@@ -67,7 +67,8 @@ program test_guild_registry(params)
     if (df)
         var elem := DFFindElement(df, "guilds");
         if (elem)
-            var registry := elem.GetProp("registry");
+            var registry := GetElementProp(elem, "registry", dictionary{});
+
             if (registry && typeof(registry) == "Dictionary")
                 // Verificar correspondência exata
                 if (registry.exists(guild_name))

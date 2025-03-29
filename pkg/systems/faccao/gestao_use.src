@@ -15,7 +15,8 @@ include ":tn:tngumps";
 include ":faccao:include/shared_functions";
 include ":faccao:faccao_constants";
 include ":faccao:include/faccao_resources";
-
+include ":faccao:include/permissions";
+include ":faccao:include/logging";
 
 
 
@@ -38,6 +39,9 @@ const MENU_CONSTRUCOES := 5;
 const MENU_GUERRA := 6;
 var button_states := array{0, 0, 0, 0, 0, 0};
 
+// Controle de depuração global - 0 = desligado, 1 = ligado
+var DEBUG_GESTAO := 0;
+
 program gestao_use(who, item)
     if (!who || !item)
         SendSysMessage(who, "Erro: who ou item é nulo");
@@ -56,74 +60,10 @@ program gestao_use(who, item)
 endprogram
 
 function CanAccessGestao(who, item)
-    // GMs sempre podem acessar
-    if (who.cmdlevel >= 3)
-        return 1;
-    endif
-    
-    // Verificar a facção do item
-    var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-    
-    // Verificar se quem acessa pertence à mesma facção
-    var player_guild := who.guild;
-    var player_faction := "";
-    
-    if (player_guild)
-        // Obter nome da facção/guilda do jogador
-        player_faction := player_guild.GetProp(FACTION_PROP_NAME);
-        if (!player_faction)
-            player_faction := player_guild.GetProp("name");
-        endif
-        if (!player_faction)
-            player_faction := player_guild.guildname;
-        endif
-        
-        // Se pertence à mesma facção que o item
-        if (player_faction == item_faction)
-            // Verificar se é líder da guilda
-            if (player_guild.leader == who.serial)
-                return 1;
-            endif
-            
-            // Verificar cargo na facção
-            var player_rank := GetObjProperty(who, "guild_rank");
-            if (player_rank in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
-                return 1;
-            endif
-        endif
-    endif
-    
-    // Verificar propriedade alternativa de facção
-    var alt_faction := GetObjProperty(who, "faction");
-    if (alt_faction == item_faction)
-        var player_rank := GetObjProperty(who, "guild_rank");
-        if (player_rank in {"Lider", "Capitao", "Tenente", "Leader", "Captain", "Lieutenant"})
-            return 1;
-        endif
-    endif
-    
-    // Verificar títulos de nobreza
-    var chardata := GetObjProperty(who, "chardata");
-    if (chardata)
-        // Itens do Reino - acessíveis por cargos reais
-        if (item_faction == KINGDOM_FACTION || item_faction == "Reino")
-            if (chardata.current_nobility_title in {"Rei", "Rainha"} || 
-                chardata.current_professional_position in {"Mão do Rei", "Imperador"})
-                return 1;
-            endif
-        endif
-        
-        // Itens de outras facções - NÃO acessíveis por nobreza
-        // Esta é a alteração crucial que impede acesso entre facções
-        
-        // Se você quiser adicionar exceções específicas para testes
-        if (GetObjProperty(who, "AllowAllGestaoAccess"))
-            return 1;
-        endif
-    endif
-    
-    return 0;
+    // Usar sistema de permissões centralizado
+    return CheckPermission(who, item, "access");
 endfunction
+
 function ShowKingdomManagementGump(who, item)
     var cur_menu := MENU_DOACOES;
     var continuar := 1;
@@ -241,7 +181,8 @@ function AtualizarEstadoMenu(input)
 endfunction
 
 function ReinoGump(byref gump, item)
-    Print("DEBUG: Iniciando ReinoGump");
+    LogDebug("territorio", "Iniciando ReinoGump");
+
     GFResizePic(gump, 38, 60, 40267, 400, 502);
     
     // Obter a facção da mesa de gestão
@@ -251,22 +192,22 @@ function ReinoGump(byref gump, item)
     var titulo := mesa_faction ? "Gestão de " + mesa_faction : "Gestão do Reino";
     GFTextMid(gump, 490, 60, 263, 2100, titulo);
     
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
         // Criar lista de territórios visíveis baseados na mesa_faction
         var territorios_visiveis := array{};
         
         foreach elem_name in (rect_df.keys())
-            var elem := rect_df.FindElement(elem_name);
+            var elem := SafeFindElement(rect_df, elem_name);
             
             // Verificar propriedades de facção
-            var faction := elem.GetProp(TERRITORY_FACTION_PROP);
+           var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
             if (!faction || faction == error)
-                faction := elem.GetProp("Faction");
+                faction := GetElementProp(elem, "Faction", "");
             endif
             
             // Obter ID do território
-            var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+            var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
             if (!territory_id)
                 territory_id := elem_name; // Compatibilidade retroativa
             endif
@@ -353,7 +294,7 @@ function ProcessarAcaoTerritorio(who, input, item)
 endfunction
 
 function MostrarMapaTerritorio(who, index, item)
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df) 
         return SendSysMessage(who, "Sistema de territórios indisponível.");
     endif
@@ -363,12 +304,12 @@ function MostrarMapaTerritorio(who, index, item)
     
     var territorios := array{};
     foreach elem_name in (rect_df.keys())
-        var elem := rect_df.FindElement(elem_name);
+        var elem := SafeFindElement(rect_df, elem_name);
         
         // Verificar propriedades de facção
-        var faction := elem.GetProp(TERRITORY_FACTION_PROP);
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
         if (!faction || faction == error)
-            faction := elem.GetProp("Faction");
+            faction := GetElementProp(elem, "Faction", "");
         endif
         
         // Filtrar por facção da mesa
@@ -385,10 +326,10 @@ function MostrarMapaTerritorio(who, index, item)
     endif
     
     var territorio := territorios[index+1]; // Ajustando para indexação baseada em 1
-    var elem := rect_df.FindElement(territorio);
+    var elem := SafeFindElement(rect_df, territorio);
     
     // Mostrar as coordenadas no mapa
-    var rect := elem.GetProp("Rect");
+    var rect := GetElementProp(elem, "Rect", "");
     var coords := SplitWords(rect);
     
     var gump := GFCreateGump();
@@ -405,7 +346,7 @@ function MostrarMapaTerritorio(who, index, item)
         GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
         GFTextLine(gump, 110, y, 53, rect);
         GFTextLine(gump, 30, y+20, 2100, "Facção: ");
-        GFTextLine(gump, 110, y+20, 53, elem.GetProp(TERRITORY_FACTION_PROP));
+        GFTextLine(gump, 110, y+20, 53, GetElementProp(elem, TERRITORY_FACTION_PROP, ""));
         
         // Botão de teleporte removido conforme solicitado
     endif
@@ -544,196 +485,129 @@ endforeach
 
     return 1;
 endfunction
+
 function ObterRecursosBau(item)
-    // Registrar o início da função para depuração
-    Print("DEBUG: ObterRecursosBau() iniciada para item: " + item.serial);
+    if (DEBUG_GESTAO)
+        LogDebug("recursos", "ObterRecursosBau() iniciada para item: " + item.serial);
+    endif
 
-    // 1. Obter propriedades fundamentais do item (mesa de gestão)
+    // Obter propriedades fundamentais do item
     var faction_name := GetObjProperty(item, OBJ_FACTION_PROP);
-    var territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
-    var chest; // Declara a variável chest uma única vez aqui
     
-    Print("DEBUG: Propriedades da mesa - Facção: " + faction_name + ", Território: " + territory_id);
+    if (!faction_name || faction_name == error)
+        if (DEBUG_GESTAO)
+            LogWarning("recursos", "Mesa de gestão sem facção definida - Serial: " + item.serial);
+        endif
+        return CreateEmptyResourceStruct();
+    endif
     
-    // 2. Se não tiver faction_name, registrar erro e tentar criar um struct vazio
-if (!faction_name || faction_name == error)
-    Print("AVISO: Mesa de gestão sem facção definida - Serial: " + item.serial);
-    return CreateEmptyResourceStruct();
-endif
-    
-    // 3. Verificar se é mesa do reino
+    // Se for mesa do Reino, obter recursos gerais
     if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
-        Print("DEBUG: Mesa do Reino, obtendo recursos gerais");
-        return ObterRecursosFaccao();  // This was previously returning ObterRecursosDoReino()
+        return ObterRecursosFaccao();
     endif
     
-    // 4. A partir daqui, estamos tratando uma mesa de facção específica
-    Print("DEBUG: Procurando baú para facção: " + faction_name);
+    // Buscar baú para esta facção
+    var chest := FindFactionChest(faction_name);
     
-    // Estratégia 1: Buscar pelo ID do território (mais específico)
-    if (territory_id)
-        Print("DEBUG: Buscando pelo ID do território: " + territory_id);
-        chest := EncontrarBauPorTerritorioEFaccao(territory_id, faction_name);
-        if (chest)
-            Print("DEBUG: Baú encontrado pelo ID do território: " + chest.serial);
-            return ContarItensDoadosNoBau(chest);
+    if (chest)
+        if (DEBUG_GESTAO)
+            LogDebug("recursos", "Baú encontrado para facção: " + faction_name);
         endif
-    endif
-    
-    // Estratégia 2: Buscar pelo serial registrado na guilda
-    Print("DEBUG: Buscando pelo serial registrado na guilda: " + faction_name);
-    chest := EncontrarBauPelaGuilda(faction_name);
-    if (chest)
-        Print("DEBUG: Baú encontrado pelo serial na guilda: " + chest.serial);
         return ContarItensDoadosNoBau(chest);
     endif
     
-    // Estratégia 3: Buscar qualquer baú da facção
-    Print("DEBUG: Buscando qualquer baú da facção: " + faction_name);
-    chest := EncontrarQualquerBauDaFaccao(faction_name);
-    if (chest)
-        Print("DEBUG: Baú encontrado pela busca geral: " + chest.serial);
-        return ContarItensDoadosNoBau(chest);
+    // Se não encontrou baú, retornar struct vazio
+    if (DEBUG_GESTAO)
+        LogWarning("recursos", "Nenhum baú encontrado para a facção: " + faction_name);
     endif
-    
-    // Se nenhum baú for encontrado, retornar um struct vazio
-    Print("AVISO: Nenhum baú encontrado para a facção: " + faction_name);
     return CreateEmptyResourceStruct();
-endfunction
-// Função auxiliar para encontrar baú por território e facção
-function EncontrarBauPorTerritorioEFaccao(territory_id, faction_name)
-    foreach item in EnumerateItemsInContainer(0)
-        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
-            GetObjProperty(item, OBJ_FACTION_PROP) == faction_name &&
-            GetObjProperty(item, TERRITORY_ID_PROP) == territory_id)
-            return item;
-        endif
-        sleepms(1); // Para não sobrecarregar o servidor
-    endforeach
-    
-    return 0;
-endfunction
-
-// Função auxiliar para encontrar baú pelo registro na guilda
-function EncontrarBauPelaGuilda(faction_name)
-    var guild := FindGuildByName(faction_name);
-    if (guild)
-        var guild_obj := FindGuild(guild);
-        if (guild_obj)
-            var chest_serial := guild_obj.GetProp(GUILD_CHEST_PROP);
-            if (chest_serial)
-                var donation_chest := SystemFindObjectBySerial(chest_serial);
-                if (donation_chest)
-                    // Verificar se o baú ainda pertence a esta facção
-                    if (GetObjProperty(donation_chest, OBJ_FACTION_PROP) == faction_name)
-                        return donation_chest;
-                    endif
-                endif
-            endif
-        endif
-    endif
-    
-    return 0;
-endfunction
-
-// Função auxiliar para encontrar qualquer baú da facção
-function EncontrarQualquerBauDaFaccao(faction_name)
-    foreach item in EnumerateItemsInContainer(0)
-        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
-            GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
-            return item;
-        endif
-        sleepms(1); // Para não sobrecarregar o servidor
-    endforeach
-    
-    return 0;
 endfunction
 
 
 
 function MostrarInformacoesTerritorio(who, index, item)
-    Print("DEBUG-INFO: Iniciando função MostrarInformacoesTerritorio, index: " + index);
+    if (DEBUG_GESTAO)
+        LogDebug("territorio", "Iniciando função MostrarInformacoesTerritorio, index: " + index);
+    endif
     
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df) 
-        Print("DEBUG-INFO: ERRO - Datafile de áreas não encontrado");
-        return SendSysMessage(who, "Sistema de territórios indisponível.");
+        SendSysMessage(who, "Sistema de territórios indisponível.");
+        return 0;
     endif
     
     // Obter a facção da mesa de gestão
     var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-    Print("DEBUG-INFO: Facção da mesa: " + mesa_faction);
     
     // Coletar territórios visíveis para esta facção
     var territorios := array{};
-    Print("DEBUG-INFO: Iniciando coleta de territórios");
     foreach elem_name in (rect_df.keys())
-        var elem := rect_df.FindElement(elem_name);
+        var elem := SafeFindElement(rect_df, elem_name);
         
         // Verificar propriedades de facção
-        var faction := elem.GetProp("Faction");  // Forma antiga
-        if (!faction || faction == error)
-            faction := elem.GetProp(TERRITORY_FACTION_PROP);
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+        if (!faction)
+            faction := GetElementProp(elem, "Faction", ""); // Compatibilidade
         endif
         
         // Obter ID do território
-        var territory_id := elem.GetProp(TERRITORY_ID_PROP);
+        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
         if (!territory_id)
             territory_id := elem_name; // Compatibilidade retroativa
         endif
         
         // Filtrar por facção
-        if (faction && faction != DEFAULT_FACTION && faction != "Selvagem" && 
+        if (faction && faction != DEFAULT_FACTION && 
             (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
             territorios.append(struct{
                 "name" := elem_name,
                 "id" := territory_id,
                 "elem" := elem
             });
-            Print("DEBUG-INFO: Território adicionado: " + elem_name + ", Facção: " + faction);
         endif
         sleepms(2);
     endforeach
     
-    Print("DEBUG-INFO: Total de territórios encontrados: " + territorios.size());
-    
     // Verificação de índice
     if (index < 0 || index >= territorios.size())
-        Print("DEBUG-INFO: ERRO - Índice inválido: " + index + ", Total: " + territorios.size());
-        return SendSysMessage(who, "Território não encontrado. Índice: " + index + ", Total: " + territorios.size());
+        SendSysMessage(who, "Território não encontrado.");
+        return 0;
     endif
     
     // Obter o território pelo índice (ajustado para indexação baseada em 1)
     var territorio := territorios[index+1];
     if (!territorio)
-        Print("DEBUG-INFO: ERRO - Território não encontrado no índice: " + (index+1));
-        return SendSysMessage(who, "Nome do território inválido.");
+        SendSysMessage(who, "Nome do território inválido.");
+        return 0;
     endif
-    
-    Print("DEBUG-INFO: Território selecionado: " + territorio.name + ", ID: " + territorio.id);
     
     var elem := territorio.elem;
     if (!elem)
-        Print("DEBUG-INFO: ERRO - Elemento do território não encontrado: " + territorio.name);
-        return SendSysMessage(who, "Elemento do território não encontrado: " + territorio.name);
+        SendSysMessage(who, "Elemento do território não encontrado.");
+        return 0;
     endif
     
     // Obter propriedades
-    var faction := elem.GetProp("Faction");
-    if (!faction || faction == error)
-        faction := elem.GetProp(TERRITORY_FACTION_PROP);
+    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+    if (!faction)
+        faction := GetElementProp(elem, "Faction", "");
     endif
     if (!faction) faction := "Desconhecida"; endif
     
-    var rect := elem.GetProp("Rect");
+    var rect := GetElementProp(elem, "Rect", "");
     if (!rect) rect := "Desconhecidas"; endif
     
-    var realm := elem.GetProp("Realm");
+    var realm := GetElementProp(elem, "Realm", "");
     if (!realm) realm := "Desconhecido"; endif
     
-    Print("DEBUG-INFO: Propriedades recuperadas - Facção: " + faction + ", Rect: " + rect + ", Realm: " + realm);
+    // Mostrar interface de informações
+    MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm, item);
     
-    // Interface de informações
+    return 1;
+endfunction
+
+function MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm, item)
+    // Criar gump
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, 9200, 400, 350);
     GFResizePic(gump, 15, 15, 9350, 370, 320);
@@ -741,32 +615,30 @@ function MostrarInformacoesTerritorio(who, index, item)
     GFTextLine(gump, 30, 25, 2100, "Informações do Território:");
     
     var y := 60;
-
+    
     GFTextLine(gump, 30, y, 2100, "Nome: ");
     GFTextLine(gump, 85, y, 53, territorio.name);
     y += 20;
-
+    
     GFTextLine(gump, 30, y, 2100, "ID: ");
     GFTextLine(gump, 85, y, 53, territorio.id);
     y += 20;
-
+    
     GFTextLine(gump, 30, y, 2100, "Facção: ");
     GFTextLine(gump, 85, y, 53, faction);
     y += 20;
-
+    
     GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
     GFTextLine(gump, 140, y, 53, rect);
     y += 20;
-
+    
     GFTextLine(gump, 30, y, 2100, "Realm: ");
     GFTextLine(gump, 85, y, 53, realm);
     y += 30;
     
     // Opções administrativas (apenas para GM ou Rei)
     var chardata := GetObjProperty(who, "chardata");
-    Print("DEBUG-INFO: Verificando permissões administrativas para: " + who.name + ", cmdlevel: " + who.cmdlevel);
     if (who.cmdlevel >= 3 || (chardata && (chardata.current_nobility_title in {"Rei", "Rainha"})))
-        Print("DEBUG-INFO: Permissões administrativas concedidas");
         GFTextLine(gump, 30, y, 2100, "Ações Administrativas:");
         y += 20;
         
@@ -783,63 +655,76 @@ function MostrarInformacoesTerritorio(who, index, item)
         var capital_text := is_capital ? "Remover status de Capital" : "Definir como Capital";
         GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 3);
         GFTextLine(gump, 50, y, 53, capital_text);
-    else
-        Print("DEBUG-INFO: Usuário sem permissões administrativas");
     endif
     
     GFAddButton(gump, 150, 300, 2128, 2129, GF_CLOSE_BTN, 0);
     
-    Print("DEBUG-INFO: Gump de informações criado, aguardando input do usuário");
     var input := GFSendGump(who, gump);
-    Print("DEBUG-INFO: Input recebido: " + input[0]);
     
-    var resultado := 0; // 0 = continuar no gump, 1 = sair do gump
-    
-if (input[0] == 1)
-    Print("DEBUG-INFO: Usuário selecionou revogar controle");
-    resultado := RevogarTerritorioFaccao(who, elem, territorio, faction);
-elseif (input[0] == 2)
-    Print("DEBUG-INFO: Usuário selecionou transferir para outra facção");
-    resultado := TransferirTerritorioFaccao(who, elem, territorio, faction);
-elseif (input[0] == 3)
-
-
-        // Toggle status de capital
-        var is_capital := IsTerritoryCapital(territorio.id);
-        if (is_capital)
-            // Remover status
-            var territory_elem := FindTerritoryByID(territorio.id);
-            if (territory_elem)
-                territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
-                SendSysMessage(who, "Status de Capital removido do território.");
-            endif
-        else
-            // Verificar se a mesa está associada a uma facção específica
-            var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-            if (!mesa_faction)
-                mesa_faction := faction; // Usar a facção do território
-            endif
-            
-            if (SetTerritoryAsCapital(territorio.id, mesa_faction))
-                SendSysMessage(who, "Território definido como Capital de " + mesa_faction + "!");
-            else
-                SendSysMessage(who, "Falha ao definir território como Capital.");
-            endif
-        endif
+    // Processar escolha
+    ProcessarAcaoTerritorioGump(who, input[0], territorio, faction, item);
+endfunction
+function ProcessarAcaoTerritorioGump(who, choice, territorio, faction, item)
+    if (choice == 0)
+        return 0;
     endif
     
-    Print("DEBUG-INFO: Finalizando função MostrarInformacoesTerritorio");
+    if (choice == 1)
+        // Revogar controle
+        RevogarTerritorioFaccao(who, territorio.elem, territorio, faction);
+    elseif (choice == 2)
+        // Transferir para outra facção
+        TransferirTerritorioFaccao(who, territorio.elem, territorio, faction);
+    elseif (choice == 3)
+        // Toggle status de capital - CORREÇÃO: passa faction como parâmetro
+        ToggleStatusCapital(who, territorio, item);
+    endif
+    
+    return 1;
 endfunction
 
+function ToggleStatusCapital(who, territorio, item)
+    var is_capital := IsTerritoryCapital(territorio.id);
+    
+    if (is_capital)
+        // Remover status
+        var territory_elem := FindTerritoryByID(territorio.id);
+        if (territory_elem)
+            territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
+            SendSysMessage(who, "Status de Capital removido do território.");
+        endif
+    else
+        // Verificar se a mesa está associada a uma facção específica
+        var mesa_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+        if (!mesa_faction)
+            // CORREÇÃO: Obter a facção do território em vez de usar uma variável indefinida
+            var territorio_faction := "";
+            if (territorio.elem)
+                territorio_faction := GetObjProperty(territorio.elem, TERRITORY_FACTION_PROP);
+                if (!territorio_faction)
+                    territorio_faction := GetObjProperty(territorio.elem, "Faction"); // Compatibilidade
+                endif
+            endif
+            
+            mesa_faction := territorio_faction ? territorio_faction : "Desconhecida";
+        endif
+        
+        if (SetTerritoryAsCapital(territorio.id, mesa_faction))
+            SendSysMessage(who, "Território definido como Capital de " + mesa_faction + "!");
+        else
+            SendSysMessage(who, "Falha ao definir território como Capital.");
+        endif
+    endif
+endfunction
 
 function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
-    Print("DEBUG-TRANSFER: Iniciando transferência de território com proteção de transações");
-    
+    LogDebug("territorio", "Iniciando transferência de território com proteção de transações");
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
     // Garantir compatibilidade com ambos os formatos
     var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
     var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
     
-    Print("DEBUG-TRANSFER: Território identificado - ID: " + territorio_id + ", Nome: " + territorio_nome);
+    LogDebug("territorio", "Território identificado - ID: " + territorio_id + ", Nome: " + territorio_nome);
     
     // Montar lista de facções
     var gump := GFCreateGump();
@@ -850,7 +735,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     
     var y := 60;
     var guilds := ListGuilds();
-    Print("DEBUG-TRANSFER: Total de guildas encontradas: " + guilds.size());
+    LogDebug("territorio", "Total de guildas encontradas: " + guilds.size());
     
     var guild_names := array{};
     var button_id := 1;
@@ -900,7 +785,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         };
         
         // Capturar seriais dos objetos originais para possível reversão
-        var seriais_df := OpenDataFile(":faccao:seriais");
+        var rect_df := SafeOpenDataFile(":architect:areas");
         if (seriais_df)
             var territorios_seriais := seriais_df.GetProp("territorios");
             if (territorios_seriais && territorios_seriais[territorio_id])
@@ -920,7 +805,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         // ===== ETAPA 1: LIMPAR OS OBJETOS EXISTENTES =====
         SendSysMessage(who, "Processando: Removendo objetos existentes...");
         
-        var territorio_realm := elem.GetProp("Realm");
+        var territorio_realm := GetElementProp(elem, "Realm", "");
         if (!territorio_realm)
             territorio_realm := "britannia"; // Padrão se não encontrar
         endif
@@ -936,8 +821,8 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         Sleep(3);
         
         // ===== ETAPA 2: ATUALIZAR O DATAFILE DE ÁREAS =====
-        elem.SetProp("Faction", new_faction);
-        elem.SetProp(TERRITORY_FACTION_PROP, new_faction);
+        SetElementProp(elem, "Faction", new_faction);
+        SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
         
         // ===== ETAPA 3: ATUALIZAR AS GUILDAS =====
         
@@ -994,8 +879,8 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         SendSysMessage(who, "Processando: Criando novos objetos para a facção...");
         
         // Obter coordenadas do território
-        var coords := SplitWords(elem.GetProp("Rect"));
-        var realm := elem.GetProp("Realm");
+        var coords := SplitWords(GetElementProp(elem, "Rect", ""));
+       var realm := GetElementProp(elem, "Realm", "");
         
         if (coords.size() >= 4)
             var x1 := CInt(coords[1]);
@@ -1082,9 +967,9 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
             mural.usescript := ":faccao:faccao";
             
             // 4.4 Salvar os seriais no datafile
-            var seriais_df := OpenDataFile(":faccao:seriais");
+            var rect_df := SafeOpenDataFile(":architect:areas");
             if (seriais_df == error)
-                seriais_df := CreateDataFile(":faccao:seriais");
+                seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
             endif
             
             if (seriais_df && seriais_df != error)
@@ -1131,9 +1016,9 @@ endfunction
 
 // Nova função para atualizar os objetos físicos do território
 function AtualizarObjetosDoTerritorio(territorio_id, old_faction, new_faction)
-    Print("DEBUG-OBJECTS: Iniciando atualização de objetos para território: " + territorio_id);
-    Print("DEBUG-OBJECTS: Alterando propriedade de facção de '" + old_faction + "' para '" + new_faction + "'");
-    
+    LogDebug("territorio", "Iniciando atualização de objetos para território: " + territorio_id);
+    LogDebug("territorio", "Alterando propriedade de facção de '" + old_faction + "' para '" + new_faction + "'");
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
     // Tipos de objetos do território a serem atualizados
     var tipos_objetos := array{
         0xFF11, // Baú da facção
@@ -1145,7 +1030,7 @@ function AtualizarObjetosDoTerritorio(territorio_id, old_faction, new_faction)
     var objetos_atualizados := 0;
     
     // MÉTODO 1: Verificar registros de seriais
-    var seriais_df := OpenDataFile(":faccao:seriais");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     var seriais_encontrados := 0;
     var seriais_dict := dictionary{};
     
@@ -1156,103 +1041,103 @@ function AtualizarObjetosDoTerritorio(territorio_id, old_faction, new_faction)
         endif
         
         if (seriais_dict && seriais_dict[territorio_id])
-            Print("DEBUG-OBJECTS: Encontrados seriais registrados para este território: " + territorio_id);
-            var info := seriais_dict[territorio_id];
-            
-            // Atualizar baú
-            if (info.bau)
-                var bau := SystemFindObjectBySerial(CInt(info.bau));
-                if (bau)
-                    Print("DEBUG-OBJECTS: Atualizando baú (Serial: " + bau.serial + ")");
-                    // Atualizar propriedades
-                    PrintTextAbove(bau, "*Atualizando propriedades*");
-                    Sleep(1);
-                    SetObjProperty(bau, OBJ_FACTION_PROP, new_faction);
-                    SetObjProperty(bau, "FactionName", new_faction);
-                    
-                    // ATUALIZAÇÃO IMPORTANTE: Atualizar faction_chest_id
-                    var chest_id := new_faction + "_" + territorio_id;
-                    SetObjProperty(bau, CHEST_ID_PROP, chest_id);
-                    Print("DEBUG-OBJECTS: Atualizado faction_chest_id para: " + chest_id);
-                    
-                    // Atualizar nome
-                    var nome_base := "Baú de Doações de " + new_faction;
-                    if (territorio_id)
-                        nome_base += " - " + territorio_id;
-                    endif
-                    Print("DEBUG-OBJECTS: Renomeando para: " + nome_base);
-                    SetName(bau, nome_base);
-                    objetos_atualizados += 1;
-                    seriais_encontrados += 1;
-                    PrintTextAbove(bau, "*Atualizado para " + new_faction + "*");
-                else
-                    Print("DEBUG-OBJECTS: ERRO - Baú não encontrado pelo serial: " + info.bau);
-                endif
-            endif
-            
-            // Atualizar mesa
-            if (info.mesa)
-                var mesa := SystemFindObjectBySerial(CInt(info.mesa));
-                if (mesa)
-                    Print("DEBUG-OBJECTS: Atualizando mesa (Serial: " + mesa.serial + ")");
-                    // Atualizar propriedades
-                    PrintTextAbove(mesa, "*Atualizando propriedades*");
-                    Sleep(1);
-                    SetObjProperty(mesa, OBJ_FACTION_PROP, new_faction);
-                    SetObjProperty(mesa, "FactionName", new_faction);
-                    // Atualizar nome
-                    var nome_mesa := "Mesa de Gestão de " + new_faction;
-                    if (territorio_id)
-                        nome_mesa += " - " + territorio_id;
-                    endif
-                    Print("DEBUG-OBJECTS: Renomeando para: " + nome_mesa);
-                    SetName(mesa, nome_mesa);
-                    objetos_atualizados += 1;
-                    seriais_encontrados += 1;
-                    PrintTextAbove(mesa, "*Atualizado para " + new_faction + "*");
-                else
-                    Print("DEBUG-OBJECTS: ERRO - Mesa não encontrada pelo serial: " + info.mesa);
-                endif
-            endif
-            
-            // Atualizar mural
-            if (info.mural)
-                var mural := SystemFindObjectBySerial(CInt(info.mural));
-                if (mural)
-                    Print("DEBUG-OBJECTS: Atualizando mural (Serial: " + mural.serial + ")");
-                    // Atualizar propriedades
-                    PrintTextAbove(mural, "*Atualizando propriedades*");
-                    Sleep(1);
-                    SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
-                    SetObjProperty(mural, "FactionName", new_faction);
-                    // Atualizar nome
-                    var nome_mural := "Mural de Recrutamento de " + new_faction;
-                    if (territorio_id)
-                        nome_mural += " - " + territorio_id;
-                    endif
-                    Print("DEBUG-OBJECTS: Renomeando para: " + nome_mural);
-                    SetName(mural, nome_mural);
-                    objetos_atualizados += 1;
-                    seriais_encontrados += 1;
-                    PrintTextAbove(mural, "*Atualizado para " + new_faction + "*");
-                else
-                    Print("DEBUG-OBJECTS: ERRO - Mural não encontrado pelo serial: " + info.mural);
-                endif
-            endif
-            
-            // Atualizar informações de serial
-            seriais_dict[territorio_id].faction := new_faction;
-            seriais_df.SetProp("territorios", seriais_dict);
-            Print("DEBUG-OBJECTS: Atualizadas informações no datafile de seriais");
-        else
-            Print("DEBUG-OBJECTS: Não foram encontrados registros de seriais para este território");
-        endif
-    else
-        Print("DEBUG-OBJECTS: AVISO - Não foi possível acessar o datafile de seriais");
-    endif
+    LogDebug("territorio", "Encontrados seriais registrados para este território: " + territorio_id);
+    var info := seriais_dict[territorio_id];
     
-    // MÉTODO 2: Busca por propriedades nos objetos do mundo
-    Print("DEBUG-OBJECTS: Buscando objetos no mundo...");
+    // Atualizar baú
+    if (info.bau)
+        var bau := SystemFindObjectBySerial(CInt(info.bau));
+        if (bau)
+            LogDebug("territorio", "Atualizando baú (Serial: " + bau.serial + ")");
+            // Atualizar propriedades
+            PrintTextAbove(bau, "*Atualizando propriedades*");
+            Sleep(1);
+            SetObjProperty(bau, OBJ_FACTION_PROP, new_faction);
+            SetObjProperty(bau, "FactionName", new_faction);
+            
+            // ATUALIZAÇÃO IMPORTANTE: Atualizar faction_chest_id
+            var chest_id := new_faction + "_" + territorio_id;
+            SetObjProperty(bau, CHEST_ID_PROP, chest_id);
+            LogDebug("territorio", "Atualizado faction_chest_id para: " + chest_id);
+            
+            // Atualizar nome
+            var nome_base := "Baú de Doações de " + new_faction;
+            if (territorio_id)
+                nome_base += " - " + territorio_id;
+            endif
+            LogDebug("territorio", "Renomeando para: " + nome_base);
+            SetName(bau, nome_base);
+            objetos_atualizados += 1;
+            seriais_encontrados += 1;
+            PrintTextAbove(bau, "*Atualizado para " + new_faction + "*");
+        else
+            LogError("territorio", "ERRO - Baú não encontrado pelo serial: " + info.bau);
+        endif
+    endif
+            
+          // Atualizar mesa
+if (info.mesa)
+    var mesa := SystemFindObjectBySerial(CInt(info.mesa));
+    if (mesa)
+        LogDebug("territorio", "Atualizando mesa (Serial: " + mesa.serial + ")");
+        // Atualizar propriedades
+        PrintTextAbove(mesa, "*Atualizando propriedades*");
+        Sleep(1);
+        SetObjProperty(mesa, OBJ_FACTION_PROP, new_faction);
+        SetObjProperty(mesa, "FactionName", new_faction);
+        // Atualizar nome
+        var nome_mesa := "Mesa de Gestão de " + new_faction;
+        if (territorio_id)
+            nome_mesa += " - " + territorio_id;
+        endif
+        LogDebug("territorio", "Renomeando para: " + nome_mesa);
+        SetName(mesa, nome_mesa);
+        objetos_atualizados += 1;
+        seriais_encontrados += 1;
+        PrintTextAbove(mesa, "*Atualizado para " + new_faction + "*");
+    else
+        LogError("territorio", "ERRO - Mesa não encontrada pelo serial: " + info.mesa);
+    endif
+endif
+
+// Atualizar mural
+if (info.mural)
+    var mural := SystemFindObjectBySerial(CInt(info.mural));
+    if (mural)
+        LogDebug("territorio", "Atualizando mural (Serial: " + mural.serial + ")");
+        // Atualizar propriedades
+        PrintTextAbove(mural, "*Atualizando propriedades*");
+        Sleep(1);
+        SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
+        SetObjProperty(mural, "FactionName", new_faction);
+        // Atualizar nome
+        var nome_mural := "Mural de Recrutamento de " + new_faction;
+        if (territorio_id)
+            nome_mural += " - " + territorio_id;
+        endif
+        LogDebug("territorio", "Renomeando para: " + nome_mural);
+        SetName(mural, nome_mural);
+        objetos_atualizados += 1;
+        seriais_encontrados += 1;
+        PrintTextAbove(mural, "*Atualizado para " + new_faction + "*");
+    else
+        LogError("territorio", "ERRO - Mural não encontrado pelo serial: " + info.mural);
+    endif
+endif
+
+// Atualizar informações de serial
+seriais_dict[territorio_id].faction := new_faction;
+seriais_df.SetProp("territorios", seriais_dict);
+LogDebug("territorio", "Atualizadas informações no datafile de seriais");
+else
+    LogWarning("territorio", "Não foram encontrados registros de seriais para este território");
+endif
+else
+    LogError("territorio", "AVISO - Não foi possível acessar o datafile de seriais");
+endif
+
+// MÉTODO 2: Busca por propriedades nos objetos do mundo
+LogDebug("territorio", "Buscando objetos no mundo...");
     
     // Força a busca no mundo mesmo se encontrou pelos seriais
     var busca_x_objetos := 0;
@@ -1274,125 +1159,124 @@ function AtualizarObjetosDoTerritorio(territorio_id, old_faction, new_faction)
             if ((item_territory_id && item_territory_id == territorio_id) || 
                 (item_faction && item_faction == old_faction) ||
                 (item_name && (item_name.find(territorio_id) != error || item_name.find(old_faction) != error)))
-                
                 objetos_encontrados += 1;
-                Print("DEBUG-OBJECTS: Objeto encontrado - Tipo: " + item.objtype + ", Serial: " + item.serial);
-                Print("DEBUG-OBJECTS: Propriedades atuais - Nome: " + item_name + ", Facção: " + item_faction + ", ID: " + item_territory_id);
-                
-                // Verificar se já foi atualizado pelos seriais
-                var ja_atualizado := 0;
-                
-                if (seriais_df != error && seriais_dict && seriais_dict[territorio_id])
-                    var info := seriais_dict[territorio_id];
-                    if ((info.bau && CInt(item.serial) == CInt(info.bau)) || 
-                        (info.mesa && CInt(item.serial) == CInt(info.mesa)) || 
-                        (info.mural && CInt(item.serial) == CInt(info.mural)))
-                        ja_atualizado := 1;
-                    endif
-                endif
-                
-                if (!ja_atualizado)
-                    // Atualizar facção do objeto
-                    PrintTextAbove(item, "*Atualizando propriedades*");
-                    Sleep(1);
-                    SetObjProperty(item, OBJ_FACTION_PROP, new_faction);
-                    SetObjProperty(item, "FactionName", new_faction);
-                    
-                    // Definir TERRITÓRIO_ID_PROP explicitamente (caso não tenha)
-                    if (!item_territory_id)
-                        SetObjProperty(item, TERRITORY_ID_PROP, territorio_id);
-                    endif
-                    
-                    // ADICIONADO: Atualizar faction_chest_id para baús
-                    if (item.objtype == 0xFF11) // Baú da facção
-                        var chest_id := new_faction + "_" + territorio_id;
-                        SetObjProperty(item, CHEST_ID_PROP, chest_id);
-                        Print("DEBUG-OBJECTS: Atualizado faction_chest_id para: " + chest_id);
-                    endif
-                    
-                    if (item.objtype == 0xFF11) // Baú da facção
-    // Verificação adicional - limpar todas as propriedades relacionadas à facção antiga
-    foreach prop_name in (GetObjPropertyNames(item))
-        if (prop_name.find("faction") != error || prop_name.find("Faction") != error)
-            // Guardar o valor para logging
-            var old_value := GetObjProperty(item, prop_name);
-            Print("DEBUG-OBJECTS: Propriedade " + prop_name + " com valor " + old_value);
-            
-            // Atualizar para nova facção
-            SetObjProperty(item, prop_name, new_faction);
-            Print("DEBUG-OBJECTS: Atualizada para " + new_faction);
-        endif
-    endforeach
-    
-    // Forçar atualização de chest_id em formato padronizado
-    var chest_id := new_faction + "_" + territorio_id;
-    SetObjProperty(item, "faction_chest_id", chest_id);
-    Print("DEBUG-OBJECTS: Atualizado faction_chest_id (verificação adicional) para: " + chest_id);
-    
-    // Limpar cache do baú (se existir)
-    EraseObjProperty(item, "cache_faction");
-    EraseObjProperty(item, "last_accessed");
+LogDebug("territorio", "Objeto encontrado - Tipo: " + item.objtype + ", Serial: " + item.serial);
+LogDebug("territorio", "Propriedades atuais - Nome: " + item_name + ", Facção: " + item_faction + ", ID: " + item_territory_id);
+
+// Verificar se já foi atualizado pelos seriais
+var ja_atualizado := 0;
+
+if (seriais_df != error && seriais_dict && seriais_dict[territorio_id])
+    var info := seriais_dict[territorio_id];
+    if ((info.bau && CInt(item.serial) == CInt(info.bau)) || 
+        (info.mesa && CInt(item.serial) == CInt(info.mesa)) || 
+        (info.mural && CInt(item.serial) == CInt(info.mural)))
+        ja_atualizado := 1;
+    endif
 endif
 
-                    // Atualizar nome com base no tipo de objeto
-                    var nome := "";
-                    case (item.objtype)
-                        0xFF11: nome := "Baú de Doações de " + new_faction; break;
-                        0xFE5C: nome := "Mesa de Gestão de " + new_faction; break;
-                        0x46AE: nome := "Mural de Recrutamento de " + new_faction; break;
-                    endcase
-                    
-                    if (territorio_id)
-                        nome += " - " + territorio_id;
-                    endif
-                    
-                    if (nome != "")
-                        Print("DEBUG-OBJECTS: Renomeando para: " + nome);
-                        SetName(item, nome);
-                    endif
-                    
-                    // Registrar os seriais se não estiverem registrados
-                    if (seriais_df != error)
-                        if (!seriais_dict[territorio_id])
-                            seriais_dict[territorio_id] := struct{};
-                        endif
-                        
-                        case (item.objtype)
-                            0xFF11: seriais_dict[territorio_id].bau := item.serial; break;
-                            0xFE5C: seriais_dict[territorio_id].mesa := item.serial; break;
-                            0x46AE: seriais_dict[territorio_id].mural := item.serial; break;
-                        endcase
-                        
-                        seriais_dict[territorio_id].faction := new_faction;
-                        seriais_df.SetProp("territorios", seriais_dict);
-                        Print("DEBUG-OBJECTS: Salvo serial do objeto no datafile");
-                    endif
-                    
-                    objetos_atualizados += 1;
-                    objetos_por_mundo += 1;
-                    PrintTextAbove(item, "*Propriedade transferida para " + new_faction + "*");
-                endif
+if (!ja_atualizado)
+    // Atualizar facção do objeto
+    PrintTextAbove(item, "*Atualizando propriedades*");
+    Sleep(1);
+    SetObjProperty(item, OBJ_FACTION_PROP, new_faction);
+    SetObjProperty(item, "FactionName", new_faction);
+    
+    // Definir TERRITÓRIO_ID_PROP explicitamente (caso não tenha)
+    if (!item_territory_id)
+        SetObjProperty(item, TERRITORY_ID_PROP, territorio_id);
+    endif
+    
+    // ADICIONADO: Atualizar faction_chest_id para baús
+    if (item.objtype == 0xFF11) // Baú da facção
+        var chest_id := new_faction + "_" + territorio_id;
+        SetObjProperty(item, CHEST_ID_PROP, chest_id);
+        LogDebug("territorio", "Atualizado faction_chest_id para: " + chest_id);
+    endif
+    
+    if (item.objtype == 0xFF11) // Baú da facção
+        // Verificação adicional - limpar todas as propriedades relacionadas à facção antiga
+        foreach prop_name in (GetObjPropertyNames(item))
+            if (prop_name.find("faction") != error || prop_name.find("Faction") != error)
+                // Guardar o valor para logging
+                var old_value := GetObjProperty(item, prop_name);
+                LogDebug("territorio", "Propriedade " + prop_name + " com valor " + old_value);
+                
+                // Atualizar para nova facção
+                SetObjProperty(item, prop_name, new_faction);
+                LogDebug("territorio", "Atualizada para " + new_faction);
+            endif
+        endforeach
+        
+        // Forçar atualização de chest_id em formato padronizado
+        var chest_id := new_faction + "_" + territorio_id;
+        SetObjProperty(item, "faction_chest_id", chest_id);
+        LogDebug("territorio", "Atualizado faction_chest_id (verificação adicional) para: " + chest_id);
+        
+        // Limpar cache do baú (se existir)
+        EraseObjProperty(item, "cache_faction");
+        EraseObjProperty(item, "last_accessed");
+    endif
+
+    // Atualizar nome com base no tipo de objeto
+    var nome := "";
+    case (item.objtype)
+        0xFF11: nome := "Baú de Doações de " + new_faction; break;
+        0xFE5C: nome := "Mesa de Gestão de " + new_faction; break;
+        0x46AE: nome := "Mural de Recrutamento de " + new_faction; break;
+    endcase
+    
+    if (territorio_id)
+        nome += " - " + territorio_id;
+    endif
+    
+    if (nome != "")
+        LogDebug("territorio", "Renomeando para: " + nome);
+        SetName(item, nome);
+    endif
+    
+    // Registrar os seriais se não estiverem registrados
+    if (seriais_df != error)
+        if (!seriais_dict[territorio_id])
+            seriais_dict[territorio_id] := struct{};
+        endif
+        
+        case (item.objtype)
+            0xFF11: seriais_dict[territorio_id].bau := item.serial; break;
+            0xFE5C: seriais_dict[territorio_id].mesa := item.serial; break;
+            0x46AE: seriais_dict[territorio_id].mural := item.serial; break;
+        endcase
+        
+        seriais_dict[territorio_id].faction := new_faction;
+        seriais_df.SetProp("territorios", seriais_dict);
+        LogDebug("territorio", "Salvo serial do objeto no datafile");
+    endif
+    
+   objetos_atualizados += 1;
+objetos_por_mundo += 1;
+PrintTextAbove(item, "*Propriedade transferida para " + new_faction + "*");
+endif
             endif
         endif
     endforeach
     
-    Print("DEBUG-OBJECTS: Verificados " + busca_x_objetos + " objetos no mundo");
-    Print("DEBUG-OBJECTS: Encontrados " + objetos_por_mundo + " objetos adicionais no mundo");
+    LogDebug("territorio", "Verificados " + busca_x_objetos + " objetos no mundo");
+    LogDebug("territorio", "Encontrados " + objetos_por_mundo + " objetos adicionais no mundo");
     
     // MÉTODO 3: Última tentativa - busca por range de coordenadas
     if (objetos_atualizados == 0)
-        Print("DEBUG-OBJECTS: Tentando busca por coordenadas...");
+        LogDebug("territorio", "Tentando busca por coordenadas...");
         
         // Obter coordenadas do território
-        var rect_df := OpenDataFile(":architect:areas");
+        var rect_df := SafeOpenDataFile(":architect:areas");
         if (rect_df)
             var elem_names := rect_df.keys();
             foreach elem_name in elem_names
-                var elem := rect_df.FindElement(elem_name);
-                var elem_id := elem.GetProp(TERRITORY_ID_PROP);
+                var elem := SafeFindElement(rect_df, elem_name);
+                var elem_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
                 
                 if (elem_id == territorio_id || elem_name == territorio_id)
-                    var rect_str := elem.GetProp("Rect");
+                    var rect_str := GetElementProp(elem, "Rect", "");
                     var coords := SplitWords(rect_str);
                     
                     if (coords.size() >= 4)
@@ -1400,9 +1284,9 @@ endif
                         var y1 := CInt(coords[2]);
                         var x2 := CInt(coords[3]);
                         var y2 := CInt(coords[4]);
-                        var realm := elem.GetProp("Realm");
+                        var realm := GetElementProp(elem, "Realm", "");
                         
-                        Print("DEBUG-OBJECTS: Território encontrado - Coords: " + x1 + "," + y1 + " a " + x2 + "," + y2 + " em " + realm);
+                        LogDebug("territorio", "Território encontrado - Coords: " + x1 + "," + y1 + " a " + x2 + "," + y2 + " em " + realm);
                         
                         // Buscar objetos na área
                         var objetos_por_coordenadas := 0;
@@ -1420,7 +1304,7 @@ endif
                                     if (item.objtype == 0xFF11) // Baú da facção
                                         var chest_id := new_faction + "_" + territorio_id;
                                         SetObjProperty(item, CHEST_ID_PROP, chest_id);
-                                        Print("DEBUG-OBJECTS: Atualizado faction_chest_id para: " + chest_id);
+                                        LogDebug("territorio", "Atualizado faction_chest_id para: " + chest_id);
                                     endif
                                     
                                     // Atualizar nome com base no tipo de objeto
@@ -1463,7 +1347,7 @@ endif
                             Sleep(1);
                         endforeach
                         
-                        Print("DEBUG-OBJECTS: Encontrados " + objetos_por_coordenadas + " objetos por coordenadas");
+                        LogDebug("territorio", "Encontrados " + objetos_por_coordenadas + " objetos por coordenadas");
                     endif
                     break;
                 endif
@@ -1472,9 +1356,9 @@ endif
         endif
     endif
     
-    Print("DEBUG-OBJECTS: Resumo da atualização - Objetos encontrados via seriais: " + seriais_encontrados);
-    Print("DEBUG-OBJECTS: Objetos encontrados no total: " + objetos_encontrados);
-    Print("DEBUG-OBJECTS: Objetos atualizados no total: " + objetos_atualizados);
+    LogDebug("territorio", "Resumo da atualização - Objetos encontrados via seriais: " + seriais_encontrados);
+    LogDebug("territorio", "Objetos encontrados no total: " + objetos_encontrados);
+    LogDebug("territorio", "Objetos atualizados no total: " + objetos_atualizados);
     
     return objetos_atualizados;
 endfunction
@@ -1484,21 +1368,22 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
     // Garantir compatibilidade com ambos os formatos
     var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
     var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
     
     if (YesNo(who, "Tem certeza que deseja revogar o controle de " + faction + " sobre este território?"))
         // Obter o realm do território para passar ao script de limpeza
-        var territorio_realm := elem.GetProp("Realm");
+        var territorio_realm := GetElementProp(elem, "Realm", "");
         if (!territorio_realm)
             territorio_realm := "britannia"; // Padrão se não encontrar
         endif
         
-        Print("DEBUG: Iniciando remoção para território: " + territorio_id);
-        Print("   - Facção: " + faction);
-        Print("   - Realm: " + territorio_realm);
-        Print("   - Nome: " + territorio_nome);
+        LogDebug("territorio", "Iniciando remoção para território: " + territorio_id);
+        LogDebug("territorio", "Facção: " + faction);
+        LogDebug("territorio", "Realm: " + territorio_realm);
+        LogDebug("territorio", "Nome: " + territorio_nome);
         
         // Verificar se temos os seriais armazenados
-        var seriais_df := OpenDataFile(":faccao:seriais");
+        var seriais_df := SafeOpenDataFile(":faccao:seriais");
         var territorios_seriais := dictionary{};
         
         if (seriais_df)
@@ -1511,15 +1396,15 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
         if (territorios_seriais && territorios_seriais[territorio_id])
             var info := territorios_seriais[territorio_id];
             
-            Print("DEBUG: Seriais encontrados no registro para " + territorio_id);
-            Print("   - Baú: " + info.bau);
-            Print("   - Mesa: " + info.mesa);
-            Print("   - Mural: " + info.mural);
+            LogDebug("territorio", "Seriais encontrados no registro para " + territorio_id);
+            LogDebug("territorio", "Baú: " + info.bau);
+            LogDebug("territorio", "Mesa: " + info.mesa);
+            LogDebug("territorio", "Mural: " + info.mural);
             
             // Remover baú
             var bau := SystemFindObjectBySerial(info.bau);
             if (bau)
-                Print("DEBUG: Destruindo baú: " + bau.name);
+                LogDebug("territorio", "Destruindo baú: " + bau.name);
                 DestroyItem(bau);
                 seriais_encontrados += 1;
             endif
@@ -1527,7 +1412,7 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
             // Remover mesa
             var mesa := SystemFindObjectBySerial(info.mesa);
             if (mesa)
-                Print("DEBUG: Destruindo mesa: " + mesa.name);
+                LogDebug("territorio", "Destruindo mesa: " + mesa.name);
                 DestroyItem(mesa);
                 seriais_encontrados += 1;
             endif
@@ -1535,7 +1420,7 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
             // Remover mural
             var mural := SystemFindObjectBySerial(info.mural);
             if (mural)
-                Print("DEBUG: Destruindo mural: " + mural.name);
+                LogDebug("territorio", "Destruindo mural: " + mural.name);
                 DestroyItem(mural);
                 seriais_encontrados += 1;
             endif
@@ -1544,25 +1429,25 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
             territorios_seriais.Erase(territorio_id);
             seriais_df.SetProp("territorios", territorios_seriais);
             
-            Print("DEBUG: " + seriais_encontrados + " objetos destruídos diretamente pelos seriais.");
+            LogDebug("territorio", seriais_encontrados + " objetos destruídos diretamente pelos seriais.");
         else
-            Print("DEBUG: Nenhum serial encontrado no registro, usando busca por área.");
+            LogDebug("territorio", "Nenhum serial encontrado no registro, usando busca por área.");
         endif
         
         // Se não conseguiu remover todos os objetos, usar o script completo
         if (seriais_encontrados < 3)
-            Print("DEBUG: Iniciando script de limpeza completa...");
+            LogDebug("territorio", "Iniciando script de limpeza completa...");
             // Usar o script dedicado para limpar os objetos
             var script := start_script(":faccao:limpa_territorio", array{territorio_id, faction, who, territorio_realm});
             if (script == error)
                 SendSysMessage(who, "Erro ao iniciar o script de limpeza: " + script);
-                Print("ERRO AO INICIAR SCRIPT: " + script);
+                LogError("territorio", "Erro ao iniciar script: " + script);
             endif
         endif
         
         // Atualizar propriedades no datafile
-        elem.SetProp("Faction", DEFAULT_FACTION);
-        elem.SetProp(TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+        SetElementProp(elem, "Faction", DEFAULT_FACTION);
+        SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
         elem.EraseProp("NextResourceTime");
         
         // Remover da lista de territórios da facção
@@ -1594,9 +1479,9 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
         // Notificar o controlador de recursos
         NotificarControladorRecursos(territorio_nome);
         
-SendSysMessage(who, "Controle do território revogado com sucesso!");
-SendSysMessage(who, "Os objetos do território foram removidos.");
-return 1; // Indica que deve sair do gump
+        SendSysMessage(who, "Controle do território revogado com sucesso!");
+        SendSysMessage(who, "Os objetos do território foram removidos.");
+        return 1; // Indica que deve sair do gump
     endif
     
     return 1;
@@ -1607,31 +1492,31 @@ endfunction
 
 function NotificarControladorRecursos(territorio)
     // Esta função notifica o ResourceController sobre a revogação ou transferência
-    Print("DEBUG-NOTIFY: Tentando notificar o controlador de recursos para: " + territorio);
+    LogDebug("territorio", "Tentando notificar o controlador de recursos para: " + territorio);
     
     // Tentar várias localizações possíveis para o datafile
-    var df := OpenDataFile(":system:messages");
+    var df := SafeOpenDataFile(":system:messages");
     if (df == error)
-        df := OpenDataFile("messages");
+        df := SafeOpenDataFile("messages");
         if (df == error)
-            df := CreateDataFile("messages");
+            df := SafeOpenDataFile("messages", 1);
             if (df == error)
-                Print("DEBUG-NOTIFY: ERRO - Não foi possível criar ou acessar o datafile de mensagens");
+                LogError("territorio", "Não foi possível criar ou acessar o datafile de mensagens");
                 return 0;
             endif
         endif
     endif
     
     if (df)
-        Print("DEBUG-NOTIFY: Datafile de mensagens encontrado");
+        LogDebug("territorio", "Datafile de mensagens encontrado");
         var elem := DFFindElement(df, "resource_controller", DF_CREATE);
         if (elem)
-            var revocations := elem.GetProp("revocations");
+            var revocations := GetElementProp(elem, "revocations", 0);
             if (!revocations || revocations == error)
                 revocations := array{};
-                Print("DEBUG-NOTIFY: Criando nova lista de notificações");
+                LogDebug("territorio", "Criando nova lista de notificações");
             else
-                Print("DEBUG-NOTIFY: Lista de notificações existente encontrada com " + revocations.size() + " itens");
+                LogDebug("territorio", "Lista de notificações existente encontrada com " + revocations.size() + " itens");
             endif
             
             // Verificar se este território já está na lista
@@ -1645,20 +1530,20 @@ function NotificarControladorRecursos(territorio)
             
             if (!already_exists)
                 revocations.append(territorio);
-                elem.SetProp("revocations", revocations);
-                Print("DEBUG-NOTIFY: Território " + territorio + " adicionado à lista de notificações");
+                SetElementProp(elem, "revocations", revocations);
+                LogDebug("territorio", "Território " + territorio + " adicionado à lista de notificações");
                 return 1;
             else
-                Print("DEBUG-NOTIFY: Território " + territorio + " já está na lista de notificações");
+                LogDebug("territorio", "Território " + territorio + " já está na lista de notificações");
                 return 1;
             endif
         else
-            Print("DEBUG-NOTIFY: ERRO - Não foi possível criar o elemento resource_controller");
+            LogError("territorio", "Não foi possível criar o elemento resource_controller");
         endif
     endif
     
     // Método alternativo - enviar mensagem para o controlador via events
-    Print("DEBUG-NOTIFY: Tentando notificar via evento do sistema");
+    LogDebug("territorio", "Tentando notificar via evento do sistema");
     var ev := struct{
         "type" := "TerritoryChange",
         "territory" := territorio,
@@ -1671,19 +1556,19 @@ function NotificarControladorRecursos(territorio)
         var process := GetProcess(pid);
         if (process)
             process.SendEvent(ev);
-            Print("DEBUG-NOTIFY: Evento enviado para o controlador de recursos (PID: " + pid + ")");
+            LogDebug("territorio", "Evento enviado para o controlador de recursos (PID: " + pid + ")");
             return 1;
         endif
     endif
     
-    Print("DEBUG-NOTIFY: AVISO - Todas as tentativas de notificação falharam");
+    LogWarning("territorio", "Todas as tentativas de notificação falharam");
     return 0;
 endfunction
 
 
 function DestruirObjetosTerritorio(territorio_id, faction)
     var objetos_destruidos := 0;
-    Print("DEBUG: Tentando destruir objetos para: " + territorio_id + ", facção: " + faction);
+    LogDebug("territorio", "Tentando destruir objetos para: " + territorio_id + ", facção: " + faction);
     
     // Buscando TODOS os objetos no mundo
     foreach item in EnumerateItemsInContainer(1)
@@ -1692,7 +1577,7 @@ function DestruirObjetosTerritorio(territorio_id, faction)
             // Verificar nome explicitamente
             var nome_item := item.name;
             if (nome_item.find(territorio_id) != error || nome_item.find(faction) != error)
-                Print("DEBUG: Correspondência encontrada por nome: " + nome_item);
+                LogDebug("territorio", "Correspondência encontrada por nome: " + nome_item);
                 // Tornar móvel e destruir em duas etapas separadas
                 PrintTextAbove(item, "*Este objeto será removido*");
                 item.movable := 1;
@@ -1700,13 +1585,13 @@ function DestruirObjetosTerritorio(territorio_id, faction)
                 var destroy_result := DestroyItem(item);
                 if (destroy_result)
                     objetos_destruidos += 1;
-                    Print("DEBUG: Objeto destruído com sucesso");
+                    LogDebug("territorio", "Objeto destruído com sucesso");
                 else
-                    Print("DEBUG: Falha ao destruir objeto: " + destroy_result);
+                    LogWarning("territorio", "Falha ao destruir objeto: " + destroy_result);
                     // Tentativa alternativa - mover para o void
                     MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
                     objetos_destruidos += 1;
-                    Print("DEBUG: Objeto movido para o void como alternativa");
+                    LogDebug("territorio", "Objeto movido para o void como alternativa");
                 endif
                 Sleep(2);
             else
@@ -1715,20 +1600,20 @@ function DestruirObjetosTerritorio(territorio_id, faction)
                 var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
                 
                 if (item_territory == territorio_id || item_faction == faction)
-                    Print("DEBUG: Correspondência encontrada por propriedade");
+                    LogDebug("territorio", "Correspondência encontrada por propriedade");
                     PrintTextAbove(item, "*Este objeto será removido*");
                     item.movable := 1;
                     Sleep(1);
                     var destroy_result := DestroyItem(item);
                     if (destroy_result)
                         objetos_destruidos += 1;
-                        Print("DEBUG: Objeto destruído com sucesso");
+                        LogDebug("territorio", "Objeto destruído com sucesso");
                     else
-                        Print("DEBUG: Falha ao destruir objeto: " + destroy_result);
+                        LogWarning("territorio", "Falha ao destruir objeto: " + destroy_result);
                         // Tentativa alternativa - mover para o void
                         MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
                         objetos_destruidos += 1;
-                        Print("DEBUG: Objeto movido para o void como alternativa");
+                        LogDebug("territorio", "Objeto movido para o void como alternativa");
                     endif
                     Sleep(2);
                 endif

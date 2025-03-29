@@ -8,6 +8,8 @@ include ":datafile:datafile";
 include ":faccao:faccao_constants";
 include ":faccao:include/faccao_resources";
 include ":timeutils:time";
+include ":faccao:include/logging";
+include ":faccao:include/datafile_helpers";  // Nova inclusão
 
 
 // Funções compartilhadas entre o sistema de baú e o sistema de gestão
@@ -22,181 +24,66 @@ include ":timeutils:time";
  *   Struct com contagens de cada tipo de recurso
  */
 function ContarItensDoadosNoBau(container, force_count := 0)
+    // Validação inicial do container
     if (!container)
-        Print("ERRO: ContarItensDoadosNoBau chamada com container nulo");
+        LogError("recursos", "ContarItensDoadosNoBau chamada com container nulo");
         return CreateEmptyResourceStruct();
     endif
     
-    // Registrar início para depuração
-    Print("DEBUG: ContarItensDoadosNoBau() iniciada para baú: " + container.serial);
+    LogDebug("recursos", $"Iniciando contagem de itens doados no baú: {container.serial}");
     
-    // Verificar se o cache está "sujo" (marcado para atualização)
+    // Verificar condições de cache
     var cache_dirty := GetObjProperty(container, CACHE_DIRTY_FLAG);
+    var ultimo_update := GetObjProperty(container, CACHE_UPDATE_PROP);
+    var current_time := polcore().systime;
     
-// Verificar se tem cache válido e recente
-var ultimo_update := GetObjProperty(container, CACHE_UPDATE_PROP);
-var current_time := polcore().systime;
-    
-    // Usar cache se: 
-    // 1. Não estamos forçando contagem
-    // 2. O cache não está marcado como sujo
-    // 3. O cache foi atualizado recentemente
-if (!force_count && !cache_dirty && ultimo_update != error && ultimo_update && (current_time - ultimo_update < CACHE_EXPIRY_TIME))
-        Print("DEBUG: Usando cache - última atualização há " + (current_time - ultimo_update) + " segundos");
+    // Lógica de uso de cache otimizada
+    if (!force_count && 
+        !cache_dirty && 
+        ultimo_update && 
+        (current_time - ultimo_update < CACHE_EXPIRY_TIME))
+        
+        LogDebug("recursos", $"Usando cache - última atualização há {current_time - ultimo_update} segundos");
+        
         var recursos_cache := GetObjProperty(container, CACHE_PROP_NAME);
         if (recursos_cache)
             return recursos_cache;
         endif
     endif
     
-    // Se chegou aqui, precisamos fazer uma contagem completa
-    // Chamando a função centralizada em faccao_resources.inc
-    Print("DEBUG: Realizando contagem completa dos recursos no baú");
+    // Contagem completa de recursos
+    LogInfo("recursos", "Realizando contagem completa dos recursos no baú");
     var recursos := ContarRecursosReais(container);
     
-    // Comparar com o cache anterior para detectar inconsistências
-    VerificarInconsistencias(container, recursos);
+    // Verificar inconsistências
+    var recursos_cache := GetObjProperty(container, CACHE_PROP_NAME);
+    if (recursos_cache)
+        VerificarInconsistencias(container, recursos, "local");
+    endif
     
-    // Atualizar o cache
+    // Atualizar cache
     SetObjProperty(container, CACHE_PROP_NAME, recursos);
     SetObjProperty(container, CACHE_UPDATE_PROP, current_time);
-    EraseObjProperty(container, CACHE_DIRTY_FLAG); // Limpar flag de sujeira
+    EraseObjProperty(container, CACHE_DIRTY_FLAG);
     
-    Print("DEBUG: Cache atualizado no baú");
+    LogDebug("recursos", "Cache de recursos atualizado");
     
-    // Verificar se precisamos atualizar o datafile global
+    // Lógica de sincronização com datafile
     var ultima_sync := GetObjProperty(container, DATAFILE_SYNC_PROP);
-    if (!ultima_sync || (current_time - ultima_sync > DATAFILE_UPDATE_INTERVAL) || force_count)
-        // Usar a função de sincronização centralizada
+    if (!ultima_sync || 
+        (current_time - ultima_sync > DATAFILE_UPDATE_INTERVAL) || 
+        force_count)
+        
         SincronizarComDataFile(container, recursos);
         SetObjProperty(container, DATAFILE_SYNC_PROP, current_time);
-        Print("DEBUG: Datafile global atualizado");
+        
+        LogInfo("recursos", "Datafile global atualizado");
     else
-        Print("DEBUG: Atualizando datafile apenas no fechamento - última sync há " + (current_time - ultima_sync) + " segundos");
-        AgendarAtualizacaoDataFile(container); // Agendar atualização futura
+        LogDebug("recursos", $"Atualização de datafile agendada - última sync há {current_time - ultima_sync} segundos");
+        AgendarAtualizacaoDataFile(container);
     endif
     
     return recursos;
-endfunction
-
-
-function GetFactionOfChest(chest)
-    Print("DEBUG-FACTION: Iniciando verificação de facção para o baú: " + chest.desc);
-    
-    // CORREÇÃO 1: Forçar reset de cache se estiver com problema
-    if (GetObjProperty(chest, "reset_faction_cache"))
-        EraseObjProperty(chest, "cache_faction");
-        EraseObjProperty(chest, "last_accessed");
-        EraseObjProperty(chest, "reset_faction_cache");
-        Print("DEBUG-FACTION: Cache resetado forçadamente");
-    endif
-    
-    // Verificar cache primeiro para melhor performance
-var cached_faction := GetObjProperty(chest, "cache_faction");
-var last_accessed := GetObjProperty(chest, "last_accessed");
-    
-    // Se tiver cache recente, usar
-if (cached_faction != error && cached_faction && last_accessed != error && last_accessed && (ReadGameClock() - last_accessed < 300))
-        Print("DEBUG-FACTION: Usando cache: " + cached_faction);
-        return cached_faction;
-    endif
-    
-    // Tentar obter a facção do baú de várias formas
-    var faction := "";
-    
-    // 1. Da propriedade OBJ_FACTION_PROP (definida no faccao_constants.inc)
-    faction := GetObjProperty(chest, OBJ_FACTION_PROP);
-    if (faction && faction != error)
-        Print("DEBUG-FACTION: Encontrado via OBJ_FACTION_PROP: " + faction);
-    else
-        // 2. Da propriedade "FactionName" (suporte para compatibilidade)
-        faction := GetObjProperty(chest, "FactionName");
-        if (faction && faction != error)
-            Print("DEBUG-FACTION: Encontrado via FactionName: " + faction);
-        else
-            // 3. Do ID único do baú (formato: facção:tipo:território)
-            var unique_id := GetObjProperty(chest, UNIQUE_ID_PROP);
-            if (unique_id)
-                var parts := SplitWords(unique_id, ":");
-                if (parts.size() >= 3)
-                    faction := parts[1];
-                    Print("DEBUG-FACTION: Encontrado via UNIQUE_ID_PROP: " + faction);
-                endif
-            endif
-        endif
-    endif
-    
-    // 4. Do faction_chest_id (formato: facção_território)
-    if (!faction || faction == error)
-        var chest_id := GetObjProperty(chest, CHEST_ID_PROP);
-        if (chest_id)
-            var parts := SplitWords(chest_id, "_");
-            if (parts.size() >= 2)
-                faction := parts[1];
-                Print("DEBUG-FACTION: Encontrado via CHEST_ID_PROP: " + faction);
-            endif
-        endif
-    endif
-    
- // 5. Verificar seriais no datafile
-if (!faction || faction == error)
-    var seriais_df := OpenDataFile(":faccao:seriais");
-    if (seriais_df != error)
-        var territorios_seriais := seriais_df.GetProp("territorios");
-        if (territorios_seriais != error && territorios_seriais)
-            var keys := territorios_seriais.keys();
-            if (keys && keys != error)
-                foreach territorio in keys
-                    if (!territorios_seriais.exists(territorio))
-                        continue;
-                    endif
-                    
-                    var info := territorios_seriais[territorio];
-                    if (!info || TypeOf(info) != "Struct")
-                        continue;
-                    endif
-                    
-                    if ((info.exists("bau") && info.bau == chest.serial) || 
-                        (info.exists("mesa") && info.mesa == chest.serial) || 
-                        (info.exists("mural") && info.mural == chest.serial))
-                        if (info.exists("faction"))
-                            faction := info.faction;
-                            Print("DEBUG-FACTION: Encontrado via datafile de seriais: " + faction);
-                        endif
-                        break;
-                    endif
-                    sleepms(1);
-                endforeach
-            endif
-        endif
-    endif
-endif
-    
-    // 6. Verificar pelo nome do objeto (último recurso)
-    if (!faction || faction == error)
-        var nome := Lower(chest.name);
-        if (nome.find("baú de doações de ") == 0)
-            var resto := nome[18, len(nome)-17];
-            var pos_traço := Find(resto, "-", 1);
-            if (pos_traço)
-                faction := Trim(resto[1, pos_traço-1]);
-                Print("DEBUG-FACTION: Encontrado via nome do objeto: " + faction);
-            else
-                faction := Trim(resto);
-                Print("DEBUG-FACTION: Encontrado via nome do objeto (sem traço): " + faction);
-            endif
-        endif
-    endif
-    
-    // Armazenar em cache para futuras consultas
-    if (faction && faction != error)
-        SetObjProperty(chest, "cache_faction", faction);
-        SetObjProperty(chest, "last_accessed", ReadGameClock());
-        return faction;
-    endif
-    
-    Print("DEBUG-FACTION: Não foi possível determinar a facção, usando padrão: " + KINGDOM_FACTION);
-    return KINGDOM_FACTION; // Valor padrão se não encontrar
 endfunction
 
 /*
@@ -234,15 +121,15 @@ function FindGuildByName(name)
     endif
     
     // MÉTODO 2: Tentar buscar diretamente no datafile de registro (em caso de falha do processo)
-    var df := OpenDataFile(":faccao:guild_registry");
+    var df := SafeOpenDataFile(":faccao:guild_registry");
     if (!df)
-        df := OpenDataFile("guild_registry");
+        df := SafeOpenDataFile("guild_registry");
     endif
     
     if (df)
-        var elem := df.FindElement("guilds");
+        var elem := SafeFindElement(df, "guilds");
         if (elem)
-            var registry := elem.GetProp("registry");
+            var registry := GetElementProp(elem, "registry");
             if (registry && typeof(registry) == "Dictionary")
                 // Verificar correspondência exata
                 if (registry.exists(name))
@@ -429,35 +316,35 @@ function FindItemsByFactionAndType(faction_name, item_type := "", territory_id :
     endif
     
     // Primeiro tentar pelos registros no datafile
-    var seriais_df := OpenDataFile(":faccao:seriais");
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
     if (seriais_df)
-        var territorios_seriais := seriais_df.GetProp("territorios");
+        var territorios_seriais := GetElementProp(seriais_df, "territorios");
         if (territorios_seriais)
             foreach territorio_id in (territorios_seriais.keys())
                   var info := territorios_seriais[territorio_id];
-    if (!info || TypeOf(info) != "Struct")
-        continue;
-    endif
+                  if (!info || TypeOf(info) != "Struct")
+                      continue;
+                  endif
                 
                 // Se territórios específicos foram solicitados
                 if (territory_id && territorio_id != territory_id)
                     continue;
                 endif
                 
-    // Verificar se a facção corresponde
-    if (!info.?faction || info.faction != faction_name)
-        continue;
-    endif
+                // Verificar se a facção corresponde
+                if (!info.?faction || info.faction != faction_name)
+                    continue;
+                endif
                 
-    // Adicionar itens conforme o tipo solicitado
-    if (!item_type || item_type == ITEM_TYPE_BAU)
-        if (info.?bau)
-            var bau := SystemFindObjectBySerial(info.bau);
-            if (bau)
-                matching_items.append(bau);
-            endif
-        endif
-    endif
+                // Adicionar itens conforme o tipo solicitado
+                if (!item_type || item_type == ITEM_TYPE_BAU)
+                    if (info.?bau)
+                        var bau := SystemFindObjectBySerial(info.bau);
+                        if (bau)
+                            matching_items.append(bau);
+                        endif
+                    endif
+                endif
                 
                 if (!item_type || item_type == ITEM_TYPE_MESA)
                     var mesa := SystemFindObjectBySerial(info.mesa);
@@ -518,38 +405,35 @@ endfunction
  *   1 para sucesso, 0 para falha
  */
 function SetTerritoryAsCapital(territory_id, faction_name)
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return 0;
     endif
     
-// Primeiro, remover flag de capital de todos os territórios desta facção
-var keys := rect_df.keys();
-if (keys && keys != error)
-    foreach elem_name in keys
-        var elem := rect_df.FindElement(elem_name);
-        if (elem && elem != error)
-            var faction := elem.GetProp(TERRITORY_FACTION_PROP);
-            if (faction == error || !faction)
-                faction := elem.GetProp("Faction"); // Compatibilidade
-                if (faction == error)
-                    faction := "";
+    // Primeiro, remover flag de capital de todos os territórios desta facção
+    var keys := rect_df.keys();
+    if (keys && keys != error)
+        foreach elem_name in keys
+            var elem := SafeFindElement(rect_df, elem_name);
+            if (elem)
+                var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+                if (!faction)
+                    faction := GetElementProp(elem, "Faction"); // Compatibilidade
+                endif
+                
+                var is_capital := GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP);
+                if (faction == faction_name && is_capital)
+                    elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
                 endif
             endif
-            
-            var is_capital := elem.GetProp(TERRITORY_IS_CAPITAL_PROP);
-            if (faction == faction_name && is_capital != error && is_capital)
-                elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
-            endif
-        endif
-        sleepms(2);
-    endforeach
-endif
+            sleepms(2);
+        endforeach
+    endif
     
     // Encontrar o território alvo e defini-lo como capital
     var territory_elem := FindTerritoryByID(territory_id);
     if (territory_elem)
-        territory_elem.SetProp(TERRITORY_IS_CAPITAL_PROP, 1);
+        SetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP, 1);
         return 1;
     endif
     
@@ -566,21 +450,21 @@ endfunction
  *   Elemento do datafile ou 0 se não encontrado
  */
 function FindTerritoryByID(territory_id)
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return 0;
     endif
     
     // Primeiro tentar encontrar pelo ID direto (se o ID for o nome)
-    var elem := rect_df.FindElement(territory_id);
+    var elem := SafeFindElement(rect_df, territory_id);
     if (elem)
         return elem;
     endif
     
     // Se não encontrar, procurar em todos os elementos
     foreach elem_name in (rect_df.keys())
-        elem := rect_df.FindElement(elem_name);
-        var id := elem.GetProp(TERRITORY_ID_PROP);
+        elem := SafeFindElement(rect_df, elem_name);
+        var id := GetElementProp(elem, TERRITORY_ID_PROP);
         if (id == territory_id)
             return elem;
         endif
@@ -592,9 +476,9 @@ endfunction
 
 function IsTerritoryCapital(territory_id)
     var territory_elem := FindTerritoryByID(territory_id);
-    if (territory_elem && territory_elem != error)
-        var prop := territory_elem.GetProp(TERRITORY_IS_CAPITAL_PROP);
-        if (prop != error && prop)
+    if (territory_elem)
+        var prop := GetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP);
+        if (prop)
             return 1;
         endif
     endif
@@ -627,6 +511,7 @@ endfunction
 // Função centralizada para agendar atualizações
 function AgendarAtualizacaoBau(container)
     if (!container)
+        LogWarning("recursos", "Tentativa de agendar atualização para container nulo");
         return 0;
     endif
     
@@ -640,18 +525,17 @@ function AgendarAtualizacaoBau(container)
     if (updates_pending.exists(container.serial))
         // Apenas atualizar o timestamp se já existe
         updates_pending[container.serial] := polcore().systime;
+        LogDebug("recursos", $"Timestamp atualizado para baú #{container.serial}");
     else
         // Adicionar à fila se não existe
         updates_pending[container.serial] := polcore().systime;
-        
-        // Log de depuração
-        Print("DEBUG: Baú #" + container.serial + " agendado para atualização");
+        LogInfo("recursos", $"Baú #{container.serial} agendado para atualização");
     endif
     
     // Atualizar a propriedade global
     var result := SetGlobalProperty("recursos_updates_pending", updates_pending);
     if (result != 1)
-        Print("ERRO ao agendar baú: " + result);
+        LogError("recursos", $"Falha ao agendar baú: {result}");
         return 0;
     endif
     
@@ -660,7 +544,9 @@ function AgendarAtualizacaoBau(container)
     if (!pid || !GetProcess(pid))
         var script := start_script(":faccao:process_recursos_updates");
         if (script && script.errortext)
-            Print("ERRO ao iniciar processador: " + script.errortext);
+            LogCritical("recursos", $"Erro ao iniciar processador de recursos: {script.errortext}");
+        else
+            LogInfo("recursos", "Processador de recursos iniciado");
         endif
     endif
     
@@ -677,7 +563,8 @@ function ForcarSincronizacaoBau(container)
     
     // Verificar se já existe uma sincronização em andamento
     if (GLOBAL_SYNC_IN_PROGRESS)
-        Print("AVISO: Sincronização já em andamento, agendando para posterior");
+        LogWarning("sincronizacao", "Sincronização já em andamento, agendando para posterior");
+
         return AgendarAtualizacaoBau(container);
     endif
     
@@ -727,21 +614,21 @@ function AtualizarDatafileRecursos(faction_name, recursos)
         return 0;
     endif
     
-    var df := DFOpenDataFile(KINGDOM_RESOURCE_DATAFILE, DF_CREATE);
-    if (df == error)
-        Print("ERRO: Não foi possível abrir/criar o datafile de recursos");
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+    if (!df)
+        LogError("recursos", "Não foi possível abrir/criar o datafile de recursos");
         return 0;
     endif
     
     // Abordagem diferente dependendo se é Reino ou facção específica
     if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
         // Reino: usar o elemento principal
-        var elem := DFFindElement(df, KINGDOM_RESOURCE_ELEM, DF_CREATE);
-        elem.SetProp("recursos", recursos);
+        var elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);
+        SetElementProp(elem, "recursos", recursos);
     else
         // Facção específica: criar elemento dedicado
-        var elem := DFFindElement(df, "faction_" + faction_name, DF_CREATE);
-        elem.SetProp("recursos", recursos);
+        var elem := SafeFindElement(df, "faction_" + faction_name, 1);
+        SetElementProp(elem, "recursos", recursos);
     endif
     
     return 1;
@@ -766,90 +653,90 @@ function VerificarEResolverInconsistencias(container)
         return 0;
     endif
     
-// Verificar se há diferenças significativas
-var inconsistencias := 0;
-var diff_details := array{};
+    // Verificar se há diferenças significativas
+    var inconsistencias := 0;
+    var diff_details := array{};
     
-// Verificar cada tipo de recurso
-if (recursos_reais.exists("comida") && recursos_cache.exists("comida") && MyAbs(recursos_reais.comida - recursos_cache.comida) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "comida",
-        "cache" := recursos_cache.comida,
-        "real" := recursos_reais.comida,
-        "diff" := recursos_reais.comida - recursos_cache.comida
-    });
-endif
+    // Verificar cada tipo de recurso
+    if (recursos_reais.exists("comida") && recursos_cache.exists("comida") && MyAbs(recursos_reais.comida - recursos_cache.comida) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "comida",
+            "cache" := recursos_cache.comida,
+            "real" := recursos_reais.comida,
+            "diff" := recursos_reais.comida - recursos_cache.comida
+        });
+    endif
     
-if (recursos_reais.exists("moedas") && recursos_cache.exists("moedas") && MyAbs(recursos_reais.moedas - recursos_cache.moedas) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "moedas",
-        "cache" := recursos_cache.moedas,
-        "real" := recursos_reais.moedas,
-        "diff" := recursos_reais.moedas - recursos_cache.moedas
-    });
-endif
+    if (recursos_reais.exists("moedas") && recursos_cache.exists("moedas") && MyAbs(recursos_reais.moedas - recursos_cache.moedas) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "moedas",
+            "cache" := recursos_cache.moedas,
+            "real" := recursos_reais.moedas,
+            "diff" := recursos_reais.moedas - recursos_cache.moedas
+        });
+    endif
     
-if (recursos_reais.exists("couro") && recursos_cache.exists("couro") && MyAbs(recursos_reais.couro - recursos_cache.couro) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "couro",
-        "cache" := recursos_cache.couro,
-        "real" := recursos_reais.couro,
-        "diff" := recursos_reais.couro - recursos_cache.couro
-    });
-endif
+    if (recursos_reais.exists("couro") && recursos_cache.exists("couro") && MyAbs(recursos_reais.couro - recursos_cache.couro) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "couro",
+            "cache" := recursos_cache.couro,
+            "real" := recursos_reais.couro,
+            "diff" := recursos_reais.couro - recursos_cache.couro
+        });
+    endif
     
-if (recursos_reais.exists("metal") && recursos_cache.exists("metal") && MyAbs(recursos_reais.metal - recursos_cache.metal) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "metal",
-        "cache" := recursos_cache.metal,
-        "real" := recursos_reais.metal,
-        "diff" := recursos_reais.metal - recursos_cache.metal
-    });
-endif
+    if (recursos_reais.exists("metal") && recursos_cache.exists("metal") && MyAbs(recursos_reais.metal - recursos_cache.metal) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "metal",
+            "cache" := recursos_cache.metal,
+            "real" := recursos_reais.metal,
+            "diff" := recursos_reais.metal - recursos_cache.metal
+        });
+    endif
     
-if (recursos_reais.exists("madeira") && recursos_cache.exists("madeira") && MyAbs(recursos_reais.madeira - recursos_cache.madeira) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "madeira",
-        "cache" := recursos_cache.madeira,
-        "real" := recursos_reais.madeira,
-        "diff" := recursos_reais.madeira - recursos_cache.madeira
-    });
-endif
+    if (recursos_reais.exists("madeira") && recursos_cache.exists("madeira") && MyAbs(recursos_reais.madeira - recursos_cache.madeira) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "madeira",
+            "cache" := recursos_cache.madeira,
+            "real" := recursos_reais.madeira,
+            "diff" := recursos_reais.madeira - recursos_cache.madeira
+        });
+    endif
     
-if (recursos_reais.exists("pano") && recursos_cache.exists("pano") && MyAbs(recursos_reais.pano - recursos_cache.pano) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "pano",
-        "cache" := recursos_cache.pano,
-        "real" := recursos_reais.pano,
-        "diff" := recursos_reais.pano - recursos_cache.pano
-    });
-endif
+    if (recursos_reais.exists("pano") && recursos_cache.exists("pano") && MyAbs(recursos_reais.pano - recursos_cache.pano) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "pano",
+            "cache" := recursos_cache.pano,
+            "real" := recursos_reais.pano,
+            "diff" := recursos_reais.pano - recursos_cache.pano
+        });
+    endif
     
-if (recursos_reais.exists("pedras") && recursos_cache.exists("pedras") && MyAbs(recursos_reais.pedras - recursos_cache.pedras) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "pedras",
-        "cache" := recursos_cache.pedras,
-        "real" := recursos_reais.pedras,
-        "diff" := recursos_reais.pedras - recursos_cache.pedras
-    });
-endif
+    if (recursos_reais.exists("pedras") && recursos_cache.exists("pedras") && MyAbs(recursos_reais.pedras - recursos_cache.pedras) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "pedras",
+            "cache" := recursos_cache.pedras,
+            "real" := recursos_reais.pedras,
+            "diff" := recursos_reais.pedras - recursos_cache.pedras
+        });
+    endif
     
-if (recursos_reais.exists("joias") && recursos_cache.exists("joias") && MyAbs(recursos_reais.joias - recursos_cache.joias) > 5)
-    inconsistencias += 1;
-    diff_details.append(struct{
-        "tipo" := "joias",
-        "cache" := recursos_cache.joias,
-        "real" := recursos_reais.joias,
-        "diff" := recursos_reais.joias - recursos_cache.joias
-    });
-endif
+    if (recursos_reais.exists("joias") && recursos_cache.exists("joias") && MyAbs(recursos_reais.joias - recursos_cache.joias) > 5)
+        inconsistencias += 1;
+        diff_details.append(struct{
+            "tipo" := "joias",
+            "cache" := recursos_cache.joias,
+            "real" := recursos_reais.joias,
+            "diff" := recursos_reais.joias - recursos_cache.joias
+        });
+    endif
     
     // Se encontrou inconsistências
     if (inconsistencias > 0)
@@ -877,7 +764,8 @@ endif
         SetObjProperty(container, "recursos_inconsistency_history", historico);
         
         // Log de depuração
-        Print("AVISO: Encontradas " + inconsistencias + " inconsistências no baú #" + container.serial);
+        LogWarning("recursos", $"Encontradas {inconsistencias} inconsistências no baú #{container.serial}");
+
         
         // Sincronizar com datafile
         SincronizarComDataFile(container, recursos_reais);
@@ -920,6 +808,8 @@ function AtualizarPropriedadesGuildaRecursos(faction_name, recursos)
     return 1;
 endfunction
 
+
+
 // Função para obter estatísticas de um baú específico
 function ObterEstatisticasBau(container)
     if (!container)
@@ -939,81 +829,6 @@ function ObterEstatisticasBau(container)
     return stats;
 endfunction
 
-
-/*
- * AddSpecialPermission(who, faction_name)
- *
- * Purpose: Adiciona permissão especial para um membro da facção
- * Parameters: 
- *   who - O jogador que está concedendo a permissão
- *   faction_name - O nome da facção
- * Return: 1 para sucesso, 0 para falha
- */
-function AddSpecialPermission(who, faction_name)
-    SendSysMessage(who, "Selecione o membro para conceder permissão especial:");
-    var target := Target(who);
-    
-    if (!target || !target.isA(POLCLASS_MOBILE))
-        SendSysMessage(who, "Você deve selecionar um jogador.");
-        return 0;
-    endif
-    
-    // Verificar se o alvo pertence à facção
-    var target_faction := GetPlayerFaction(target);
-    if (target_faction != faction_name)
-        SendSysMessage(who, "Este jogador não pertence à sua facção.");
-        return 0;
-    endif
-    
-    // Solicitar o tipo de permissão
-    var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 200);
-    GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 270, 170);
-    
-    GFTextMid(gump, 10, 25, 280, 2100, "Tipo de Permissão");
-    
-    var y := 60;
-    GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, 55, y, 2103, "Ver e Depositar");
-    y += 25;
-    
-    GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 2);
-    GFTextLine(gump, 55, y, 2103, "Ver, Depositar e Remover");
-    y += 25;
-    
-    GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 3);
-    GFTextLine(gump, 55, y, 38, "Cancelar");
-    
-    var input := GFSendGump(who, gump);
-    
-    var permission := "";
-    case (input[0])
-        1: permission := "depositar";
-        2: permission := "remover";
-        default: return 0;
-    endcase
-    
-    // Salvar a permissão especial
-    var guild := FindGuildByName(faction_name);
-    if (guild)
-        var guild_obj := FindGuild(guild);
-        if (guild_obj)
-            var special_permissions := guild_obj.GetProp("chest_permissions");
-            if (!special_permissions)
-                special_permissions := dictionary{};
-            endif
-            
-            special_permissions[target.serial] := permission;
-            guild_obj.SetProp("chest_permissions", special_permissions);
-            
-            SendSysMessage(who, "Permissão especial concedida para " + target.name + ".");
-            return 1;
-        endif
-    endif
-    
-    SendSysMessage(who, "Erro ao salvar permissão especial.");
-    return 0;
-endfunction
 // Função para verificar se um container é válido e acessível
 function IsValidContainer(container)
     if (!container)
@@ -1069,13 +884,13 @@ function SafeCreateItemInContainer(container, objtype, amount, properties := 0)
         return 0;
     endif
     
-    Print("DEBUG: Tentando criar item 0x" + Hex(objtype) + " x" + amount + " em contêiner " + container.serial);
+    LogDebug("criacao_item", $"Tentando criar item 0x{Hex(objtype)} x{amount} em contêiner {container.serial}");
     
     // ABORDAGEM 1: Verificar se já existe um item do mesmo tipo para empilhar
     var existing_item := FindExistingStackableItem(container, objtype);
     
     if (existing_item)
-        Print("DEBUG: Item existente encontrado, tentando empilhar");
+        LogDebug("criacao_item", "Item existente encontrado, tentando empilhar");
         
         // Verificar limite de empilhamento
         var old_amount := existing_item.amount;
@@ -1096,25 +911,25 @@ function SafeCreateItemInContainer(container, objtype, amount, properties := 0)
                     endforeach
                 endif
                 
-                Print("DEBUG: Item empilhado com sucesso, nova quantidade: " + existing_item.amount);
+                LogDebug("criacao_item", $"Item empilhado com sucesso, nova quantidade: {existing_item.amount}");
                 return existing_item;
             else
                 // Restaurar quantidade original se falhou
                 existing_item.amount := before_amount;
-                Print("AVISO: Falha ao aumentar quantidade, tentando método alternativo");
+                LogWarning("criacao_item", "Falha ao aumentar quantidade, tentando método alternativo");
             endif
         endif
         
         // ABORDAGEM 2: Se não conseguiu empilhar diretamente, criar um item substituto
         var replacement := ReplaceStackWithNew(existing_item, amount, properties);
         if (replacement)
-            Print("DEBUG: Item substituído com sucesso");
+            LogDebug("criacao_item", "Item substituído com sucesso");
             return replacement;
         endif
     endif
     
     // ABORDAGEM 3: Criar novo item
-    Print("DEBUG: Criando novo item");
+    LogDebug("criacao_item", "Criando novo item");
     var new_item := CreateItemInContainer(container, objtype, amount);
     
     if (new_item)
@@ -1126,11 +941,11 @@ function SafeCreateItemInContainer(container, objtype, amount, properties := 0)
             endforeach
         endif
         
-        Print("DEBUG: Item criado com sucesso: " + new_item.serial);
+        LogDebug("criacao_item", $"Item criado com sucesso: {new_item.serial}");
         return new_item;
     endif
     
-    Print("ERRO: Falha ao criar item");
+    LogError("criacao_item", "Falha ao criar item");
     return 0;
 endfunction
 
@@ -1175,7 +990,7 @@ function SafeIncreaseAmount(item, amount)
     if (item.amount == new_amount)
         return 1;
     else
-        Print("ERRO: Falha ao aumentar quantidade do item " + item.serial + ": " + item.amount + " != " + new_amount);
+LogError("criacao_item", $"Falha ao aumentar quantidade do item {item.serial}: {item.amount} != {new_amount}");
         // Tentar restaurar valor original
         item.amount := before_change;
         return 0;
@@ -1225,258 +1040,6 @@ function ValidarRecursos(recursos)
 endfunction
 
 
-/*
- * UnifiedCheckInsertPermission(who, container)
- *
- * Purpose: Verificação unificada de permissão para inserir itens no baú
- * Parameters:
- *   who - O jogador que está tentando inserir itens
- *   container - O baú onde o jogador está tentando inserir
- * Return:
- *   1 se tem permissão, 0 se não tem
- */
-function UnifiedCheckInsertPermission(who, container)
-    // Debug
-    Print("DEBUG-PERM: Verificando permissão para INSERIR - Player: " + who.name);
-    
-    // GMs sempre podem inserir
-    if (who.cmdlevel >= 3)
-        Print("DEBUG-PERM: Permissão concedida - GM");
-        return 1;
-    endif
-    
-    // Se não tiver container, usar comportamento permissivo (para compatibilidade)
-    if (!container)
-        Print("DEBUG-PERM: Container não especificado, permitindo inserção");
-        return 1;
-    endif
-    
-    // Verificar facção do baú
-    var chest_faction := GetFactionOfChest(container);
-    Print("DEBUG-PERM: Facção do baú: " + chest_faction);
-    
-    // Obter facção do jogador
-    var player_faction := GetPlayerFaction(who);
-    Print("DEBUG-PERM: Facção do jogador: " + player_faction);
-    
-    // Regras para baús do Reino - qualquer um pode inserir
-    if (chest_faction == KINGDOM_FACTION || chest_faction == "Reino")
-        Print("DEBUG-PERM: Baú do Reino - inserção permitida para todos");
-        return 1;
-    endif
-    
-    // Para baús de facções específicas
-    
-    // Se o jogador for da mesma facção que o baú, pode inserir
-    if (player_faction == chest_faction)
-        Print("DEBUG-PERM: Jogador é membro da facção - inserção permitida");
-        return 1;
-    endif
-    
-    // Verificar permissões especiais
-    if (HasSpecialPermission(who, container, "insert"))
-        Print("DEBUG-PERM: Jogador tem permissão especial - inserção permitida");
-        return 1;
-    endif
-    
-    // Verificar títulos de nobreza para acesso especial
-    var chardata := GetObjProperty(who, "chardata");
-    if (chardata)
-        if (chardata.current_nobility_title in {"Rei", "Rainha"} || 
-            chardata.current_professional_position in {"Mão do Rei", "Imperador"})
-            Print("DEBUG-PERM: Jogador tem título de nobreza/cargo especial - inserção permitida");
-            return 1;
-        endif
-    endif
-    
-    // Se chegou aqui, não tem permissão
-    Print("DEBUG-PERM: Permissão negada para inserção");
-    return 0;
-endfunction
-
-/*
- * UnifiedCheckRemovePermission(who, container)
- *
- * Purpose: Verificação unificada de permissão para remover itens do baú
- * Parameters:
- *   who - O jogador que está tentando remover itens
- *   container - O baú de onde o jogador está tentando remover
- * Return:
- *   1 se tem permissão, 0 se não tem
- */
-function UnifiedCheckRemovePermission(who, container)
-    // Debug
-    Print("DEBUG-PERM: Verificando permissão para REMOVER - Player: " + who.name);
-    
-    // GMs sempre podem remover
-    if (who.cmdlevel >= 3)
-        Print("DEBUG-PERM: Permissão concedida - GM");
-        return 1;
-    endif
-    
-    // Se não tiver container, verificar se tem título de nobreza (compatibilidade)
-    if (!container)
-        var chardata := GetObjProperty(who, "chardata");
-        if (!chardata)
-            return 0;
-        endif
-    
-        // Verificar se o personagem é Rei, Rainha ou Mão do Rei
-        if (chardata.current_nobility_title == "Rei" || chardata.current_nobility_title == "Rainha")
-            return 1;
-        endif
-    
-        if (chardata.current_professional_position == "Mão do Rei")
-            return 1;
-        endif
-    
-        return 0;
-    endif
-    
-    // Verificar facção do baú
-    var chest_faction := GetFactionOfChest(container);
-    Print("DEBUG-PERM: Facção do baú: " + chest_faction);
-    
-    // Obter facção do jogador
-    var player_faction := GetPlayerFaction(who);
-    Print("DEBUG-PERM: Facção do jogador: " + player_faction);
-    
-    // Regras para baús do Reino
-    if (chest_faction == KINGDOM_FACTION || chest_faction == "Reino")
-        // Apenas cargos de alto escalão podem remover itens do Reino
-        var chardata := GetObjProperty(who, "chardata");
-        if (chardata)
-            if (chardata.current_nobility_title in {"Rei", "Rainha"} || 
-                chardata.current_professional_position in {"Mão do Rei", "Imperador"})
-                Print("DEBUG-PERM: Jogador tem título de nobreza/cargo real - remoção permitida");
-                return 1;
-            endif
-        endif
-        
-        // Outros jogadores não podem remover
-        Print("DEBUG-PERM: Permissão negada - não tem cargo real necessário");
-        return 0;
-    endif
-    
-    // Para baús de facções específicas
-    
-    // Se o jogador for da mesma facção, verificar cargo
-    if (player_faction == chest_faction)
-        // Verificar se é líder da guilda
-        if (IsGuildLeader(who))
-            Print("DEBUG-PERM: Jogador é líder da facção - remoção permitida");
-            return 1;
-        endif
-        
-        // Verificar cargo na facção
-        var player_rank := GetObjProperty(who, "guild_rank");
-        if (player_rank in {"Lider", "Capitao", "Leader", "Captain"})
-            Print("DEBUG-PERM: Jogador tem cargo alto na facção - remoção permitida");
-            return 1;
-        endif
-        
-        if (player_rank in {"Tenente", "Lieutenant"})
-            Print("DEBUG-PERM: Tenente da facção - remoção permitida");
-            return 1;
-        endif
-        
-        // Verificar permissões especiais
-        if (HasSpecialPermission(who, container, "remove"))
-            Print("DEBUG-PERM: Jogador tem permissão especial - remoção permitida");
-            return 1;
-        endif
-        
-        // Membros regulares não podem remover
-        Print("DEBUG-PERM: Membro regular da facção - remoção negada");
-        return 0;
-    endif
-    
-    // Verificar nobreza do reino para acesso a baús de facções
-    var chardata := GetObjProperty(who, "chardata");
-    if (chardata)
-        if (chardata.current_nobility_title in {"Rei", "Rainha"} || 
-            chardata.current_professional_position in {"Mão do Rei", "Imperador"})
-            Print("DEBUG-PERM: Jogador tem título de nobreza/cargo real - remoção permitida");
-            return 1;
-        endif
-    endif
-    
-    // Se chegou aqui, não tem permissão
-    Print("DEBUG-PERM: Permissão negada para remoção");
-    return 0;
-endfunction
-
-/*
- * UnifiedCheckOpenPermission(who, container)
- *
- * Purpose: Verificação unificada de permissão para abrir o baú
- * Parameters:
- *   who - O jogador que está tentando abrir o baú
- *   container - O baú que o jogador está tentando abrir
- * Return:
- *   1 se tem permissão, 0 se não tem
- */
-function UnifiedCheckOpenPermission(who, container)
-    // Debug
-    Print("DEBUG-PERM: Verificando permissão para ABRIR - Player: " + who.name);
-    
-    // GMs sempre podem abrir
-    if (who.cmdlevel >= 3)
-        Print("DEBUG-PERM: Permissão concedida - GM");
-        return 1;
-    endif
-    
-    // Se não tiver container, não permitir (segurança)
-    if (!container)
-        Print("DEBUG-PERM: Container não especificado, negando acesso");
-        return 0;
-    endif
-    
-    // Verificar facção do baú
-    var chest_faction := GetFactionOfChest(container);
-    Print("DEBUG-PERM: Facção do baú: " + chest_faction);
-    
-    // Verificar facção do jogador
-    var player_faction := GetPlayerFaction(who);
-    Print("DEBUG-PERM: Facção do jogador: " + player_faction);
-    
-    // REGRA PRINCIPAL: Facções devem ser idênticas para acesso
-    if (player_faction == chest_faction)
-        Print("DEBUG-PERM: Jogador é membro da facção - acesso permitido");
-        return 1;
-    endif
-    
-    // EXCEÇÃO 1: Baús do Reino podem ser acessados por jogadores com títulos nobres
-    if (chest_faction == KINGDOM_FACTION || chest_faction == "Reino")
-        var chardata := GetObjProperty(who, "chardata");
-        if (chardata)
-            if (chardata.current_nobility_title in {"Rei", "Rainha"} || 
-                chardata.current_professional_position in {"Mão do Rei", "Imperador"})
-                Print("DEBUG-PERM: Jogador tem título de nobreza/cargo real - acesso a baú do Reino permitido");
-                return 1;
-            endif
-        endif
-    endif
-    
-    // EXCEÇÃO 2: Verificar permissões especiais específicas
-    if (HasSpecialPermission(who, container, "open") || 
-        HasSpecialPermission(who, container, "insert") || 
-        HasSpecialPermission(who, container, "remove"))
-        Print("DEBUG-PERM: Jogador tem permissão especial - acesso permitido");
-        return 1;
-    endif
-    
-    // EXCEÇÃO 3: Permissões de debug para testes (apenas para desenvolvimento)
-    if (GetObjProperty(who, "AllowFullChestAccess") || 
-        GetObjProperty(who, "AllowAllChestAccess"))
-        Print("DEBUG-PERM: Jogador tem permissão de debug - acesso permitido");
-        return 1;
-    endif
-    
-    // Negação padrão: se nenhuma regra ou exceção permitir acesso
-    Print("DEBUG-PERM: Permissão negada para abrir o baú");
-    return 0;
-endfunction
 
 /*
  * IsGuildMember(who, faction_name)
@@ -1497,232 +1060,6 @@ function IsGuildMember(who, faction_name)
     return (player_faction == faction_name);
 endfunction
 
-/*
- * GetPlayerRankInGuild(who)
- *
- * Purpose: Obter o cargo/rank do jogador na guilda de forma padronizada
- * Parameters:
- *   who - O jogador a ser verificado
- * Return:
- *   String com o cargo do jogador, ou string vazia se não tiver
- */
-function GetPlayerRankInGuild(who)
-    if (!who)
-        return "";
-    endif
-    
-    // Primeiro tentar obter da propriedade armazenada
-    var player_rank := GetObjProperty(who, "guild_rank");
-    if (player_rank)
-        return player_rank;
-    endif
-    
-    // Se não encontrou, tentar obter diretamente da guilda
-    var player_guild := who.guild;
-    if (!player_guild)
-        return "";
-    endif
-    
-    // Verificar nos membros da guilda
-    foreach member in (player_guild.members)
-        if (member.serial == who.serial && member.guild_title)
-            // Atualizar a propriedade para futuras consultas
-            SetObjProperty(who, "guild_rank", member.guild_title);
-            return member.guild_title;
-        endif
-        sleepms(1);
-    endforeach
-    
-    return "";
-endfunction
-
-/*
- * LogPermissionCheck(who, container, action, result)
- *
- * Purpose: Função padronizada para registrar verificações de permissão
- * Parameters:
- *   who - O jogador que está sendo verificado
- *   container - O container envolvido
- *   action - A ação que está sendo verificada ("OPEN", "INSERT", "REMOVE")
- *   result - O resultado da verificação (1 para permitido, 0 para negado)
- */
-function LogPermissionCheck(who, container, action, result)
-    if (!who || !container)
-        return;
-    endif
-    
-    // Timestamp para registros
-    var timestamp := polcore().systime;
-    var time_str := CStr(timestamp); // Fallback para o timestamp cru
-    
-    // Formatar o timestamp de forma segura
-    var formatted_time := FormatTimeString(timestamp);
-    if (formatted_time && formatted_time != error)
-        time_str := formatted_time;
-    endif
-    
-    // Obter informações relevantes com verificações de segurança
-    var chest_faction := "Desconhecida";
-    var player_faction := "Desconhecida";
-    var player_rank := "";
-    
-    // Obter facção do baú com verificação de erro
-    var temp_faction := GetFactionOfChest(container);
-    if (temp_faction && temp_faction != error)
-        chest_faction := temp_faction;
-    endif
-    
-    // Obter facção do jogador com verificação de erro
-    temp_faction := GetPlayerFaction(who);
-    if (temp_faction && temp_faction != error)
-        player_faction := temp_faction;
-    endif
-    
-    // Obter rank do jogador com verificação de erro
-    var temp_rank := GetPlayerRankInGuild(who);
-    if (temp_rank && temp_rank != error)
-        player_rank := temp_rank;
-    endif
-    
-    // Registrar no console do servidor (log básico)
-    var log_message := "[" + time_str + "] PERM-CHECK: " + who.name + " [" + player_faction + "/" + player_rank + "] " + 
-          action + " " + (result ? "PERMITIDO" : "NEGADO") + " para baú " + container.serial + 
-          " (Facção: " + chest_faction + ")";
-    
-    Print(log_message);
-    
-    // Registrar no datafile para análise posterior (log detalhado)
-    var df := DFOpenDataFile(":faccao:chest_access_log");
-    if (df != error && df)
-        var elem := DFFindElement(df, "logs", DF_CREATE);
-        if (elem != error && elem)
-            var logs := elem.GetProp("entries");
-            if (!logs || logs == error)
-                logs := array{};
-            endif
-            
-            // Criar entrada de log com verificações de tipo
-            var log_entry := struct{
-                "timestamp" := timestamp,
-                "player" := who.name,
-                "player_serial" := who.serial,
-                "player_faction" := player_faction,
-                "player_rank" := player_rank,
-                "chest_serial" := container.serial,
-                "chest_faction" := chest_faction,
-                "action" := action,
-                "success" := result ? 1 : 0,
-                "cmdlevel" := who.cmdlevel
-            };
-            
-            logs.append(log_entry);
-            
-            // Limitar o tamanho do log para evitar crescimento excessivo
-            while (logs.size() > 200)
-                logs.erase(1);
-            endwhile
-            
-            elem.SetProp("entries", logs);
-        endif
-    endif
-endfunction
-
-
-/*
- * FormatTimeString(timestamp)
- *
- * Purpose: Formatar timestamp para uso em logs
- * Parameters:
- *   timestamp - Timestamp do polcore().systime
- * Return:
- *   String formatada com data e hora
- */
-function FormatTimeString(timestamp)
-    // Verificação inicial para prevenir erros
-    if (!timestamp || timestamp == error)
-        return CStr(ReadGameClock());
-    endif
-    
-    // Método simples que não usa systime_precise
-    var seconds_per_day := 86400;
-    var seconds_per_hour := 3600;
-    var seconds_per_minute := 60;
-    
-    var days := CInt(timestamp / seconds_per_day) % 365;
-    var hours := CInt((timestamp % seconds_per_day) / seconds_per_hour);
-    var minutes := CInt((timestamp % seconds_per_hour) / seconds_per_minute);
-    var seconds := CInt(timestamp % seconds_per_minute);
-    
-    // Formatar simples (ano fixo - mais para exibição do que precisão)
-    var formatted := CStr(2023) + "-" + 
-                   PadStr(CStr(1), 2, "0") + "-" + 
-                   PadStr(CStr(days+1), 2, "0") + " " + 
-                   PadStr(CStr(hours), 2, "0") + ":" + 
-                   PadStr(CStr(minutes), 2, "0") + ":" + 
-                   PadStr(CStr(seconds), 2, "0");
-    
-    return formatted;
-endfunction
-
-function PadStr(str, length_needed, padchar := " ")
-    str := CStr(str);
-    while (length_needed > len(str))
-        str := padchar + str;
-    endwhile
-    
-    return str;
-endfunction
-
-// Função para compatibilidade com código existente
-function CanAccessChest(who, chest)
-    return UnifiedCheckOpenPermission(who, chest);
-endfunction
-
-// Função para compatibilidade com código existente
-function CanInsertItems(who, container := 0)
-    return UnifiedCheckInsertPermission(who, container);
-endfunction
-
-// Função para compatibilidade com código existente
-function CanRemoveItems(who, container := 0)
-    return UnifiedCheckRemovePermission(who, container);
-endfunction
-
-
-/*
- * HasSpecialPermission(who, container, permission_type)
- *
- * Purpose: Verificar se um jogador tem permissão especial para um container
- * Parameters:
- *   who - O jogador a ser verificado
- *   container - O container a ser verificado
- *   permission_type - O tipo de permissão ("open", "insert", "remove")
- * Return:
- *   1 se tem permissão, 0 se não tem
- */
-function HasSpecialPermission(who, container, permission_type)
-    // Verificar se o jogador tem permissão específica
-    var container_permissions := GetObjProperty(container, "special_permissions");
-    if (!container_permissions)
-        return 0;
-    endif
-    
-    // Procurar permissão específica para este jogador
-    if (container_permissions[who.serial])
-        // Se tiver entrada para este jogador, verificar permissão específica
-        var player_permissions := container_permissions[who.serial];
-        if (TypeOf(player_permissions) == "Struct" && player_permissions[permission_type])
-            return 1;
-        endif
-    endif
-    
-    // Verificar permissões de debug
-    if (GetObjProperty(who, "AllowFullChestAccess"))
-        return 1;
-    endif
-    
-    return 0;
-endfunction
 
 
 
@@ -1731,88 +1068,118 @@ endfunction
 ///////////////////////////////////////////////////////////////
 
 /*
- * IniciarTransacao(operacao, dados)
- * Inicia uma transação e registra em um datafile para rastreamento
+ * IniciarTransacao(operacao, dados_chave)
+ * 
+ * Purpose: Registra o início de uma operação crítica
+ * Parameters:
+ *   operacao - Tipo de operação (ex: "transferir_territorio")
+ *   dados_chave - Dados essenciais para identificação e reversão
+ * Return: ID da transação ou error em caso de falha
  */
-function IniciarTransacao(operacao, dados)
-    var df := OpenDataFile(":faccao:transacoes");
+function IniciarTransacao(operacao, dados_chave)
+    var df := SafeOpenDataFile(":faccao:transacoes", 1); // 1 = criar se não existir
     if (!df)
-        df := CreateDataFile(":faccao:transacoes");
-        if (!df)
-            Print("Erro ao criar datafile de transações");
-            return error;
-        endif
+        return error; // Erro já logado pela função SafeOpenDataFile
     endif
     
-    var transaction_id := CStr(PolCore().systime) + "_" + CStr(RandomInt(1000));
-    var elem := df.CreateElement(transaction_id);
+    // ID simplificado baseado em operação e timestamp
+    var transaction_id := operacao + "_" + CStr(polcore().systime);
+    var elem := SafeFindElement(df, transaction_id, 1); // 1 = criar se não existir
+    if (!elem)
+        return error; // Erro já logado pela função SafeFindElement
+    endif
     
-    elem.SetProp("operacao", operacao);
-    elem.SetProp("dados", dados);
-    elem.SetProp("status", "iniciada");
-    elem.SetProp("timestamp", PolCore().systime);
+    // Armazenar apenas dados essenciais
+    SetElementProp(elem, "operacao", operacao);
+    SetElementProp(elem, "dados", dados_chave);
+    SetElementProp(elem, "status", "iniciada");
+    SetElementProp(elem, "timestamp", polcore().systime);
     
-    Print("DEBUG-TRANS: Transação " + transaction_id + " iniciada para operação: " + operacao);
+    LogInfo("transacao", "Transação iniciada: " + transaction_id);
     
     return transaction_id;
 endfunction
 
+
 /*
  * FinalizarTransacao(transaction_id)
- * Marca uma transação como concluída
+ * 
+ * Purpose: Marca uma transação como concluída
+ * Parameters:
+ *   transaction_id - ID da transação
+ * Return: 1 para sucesso, 0 para falha
  */
 function FinalizarTransacao(transaction_id)
-    var df := OpenDataFile(":faccao:transacoes");
+    var df := SafeOpenDataFile(":faccao:transacoes");
     if (!df)
-        Print("Erro ao abrir datafile de transações");
-        return error;
+        return 0; // Erro já logado pela função SafeOpenDataFile
     endif
     
-    var elem := df.FindElement(transaction_id);
+    var elem := SafeFindElement(df, transaction_id);
     if (!elem)
-        Print("Transação " + transaction_id + " não encontrada");
-        return error;
+        return 0; // Erro já logado pela função SafeFindElement
     endif
     
-    elem.SetProp("status", "concluida");
-    elem.SetProp("timestamp_conclusao", PolCore().systime);
+    // Apenas marcar como concluída
+    SetElementProp(elem, "status", "concluida");
+    SetElementProp(elem, "timestamp_conclusao", polcore().systime);
     
-    Print("DEBUG-TRANS: Transação " + transaction_id + " finalizada com sucesso");
+    LogInfo("transacao", "Transação finalizada: " + transaction_id);
+    
+    // Usar um contador global em vez de aleatoriedade
+    var cleanup_counter := GetGlobalProperty("transaction_cleanup_counter");
+    if (!cleanup_counter)
+        cleanup_counter := 0;
+    endif
+    
+    cleanup_counter += 1;
+    if (cleanup_counter >= 20)  // A cada 20 transações
+        LimparTransacoesAntigas(df);
+        cleanup_counter := 0;
+    endif
+    
+    SetGlobalProperty("transaction_cleanup_counter", cleanup_counter);
     
     return 1;
 endfunction
 
+
 /*
  * DesfazerTransacao(transaction_id)
- * Desfaz uma transação em caso de falha
+ * 
+ * Purpose: Desfaz uma transação em caso de falha
+ * Parameters:
+ *   transaction_id - ID da transação a ser desfeita
+ * Return: 1 para sucesso, 0 para falha
  */
 function DesfazerTransacao(transaction_id)
-    var df := OpenDataFile(":faccao:transacoes");
+    var df := SafeOpenDataFile(":faccao:transacoes");
     if (!df)
-        Print("Erro ao abrir datafile de transações");
-        return error;
+        return 0; // Erro já logado pela função SafeOpenDataFile
     endif
     
-    var elem := df.FindElement(transaction_id);
+    var elem := SafeFindElement(df, transaction_id);
     if (!elem)
-        Print("Transação " + transaction_id + " não encontrada");
-        return error;
+        return 0; // Erro já logado pela função SafeFindElement
     endif
     
-    var operacao := elem.GetProp("operacao");
-    var dados := elem.GetProp("dados");
+    var operacao := GetElementProp(elem, "operacao");
+    var dados := GetElementProp(elem, "dados");
     
-    Print("DEBUG-TRANS: Desfazendo transação " + transaction_id + " para operação: " + operacao);
+    LogInfo("transacao", "Desfazendo transação: " + transaction_id);
     
-    // Executar lógica de reversão com base no tipo de operação
+    // Apenas suportar operações críticas específicas
     var resultado := 0;
     case (operacao)
-        "transferir_territorio": resultado := DesfazerTransferenciaTerritorio(dados);
-        default: Print("Tipo de operação desconhecido: " + operacao);
+        "transferir_territorio": 
+            resultado := DesfazerTransferenciaTerritorio(dados);
+        default: 
+            LogWarning("transacao", "Tipo de operação desconhecido: " + operacao);
     endcase
     
-    elem.SetProp("status", "desfeita");
-    elem.SetProp("timestamp_desfazer", PolCore().systime);
+    // Marcar status
+    SetElementProp(elem, "status", "desfeita");
+    SetElementProp(elem, "timestamp_desfazer", polcore().systime);
     
     return resultado;
 endfunction
@@ -1823,12 +1190,13 @@ endfunction
  */
 function DesfazerTransferenciaTerritorio(dados)
     if (!dados)
+        LogWarning("transacao", "Tentativa de desfazer transferência com dados nulos");
         return 0;
     endif
     
-    Print("DEBUG-TRANS: Desfazendo transferência de território");
-    Print("DEBUG-TRANS: Território: " + dados.territorio_id);
-    Print("DEBUG-TRANS: Facção original: " + dados.faccao_original);
+    LogDebug("transacao", $"Desfazendo transferência de território");
+    LogDebug("transacao", $"Território: {dados.territorio_id}");
+    LogDebug("transacao", $"Facção original: {dados.faccao_original}");
     
     var territorio_id := dados.territorio_id;
     var faccao_original := dados.faccao_original;
@@ -1836,21 +1204,22 @@ function DesfazerTransferenciaTerritorio(dados)
     // 1. Restaurar facção original no território
     var elem := FindTerritoryByID(territorio_id);
     if (!elem)
-        Print("Território " + territorio_id + " não encontrado");
+        LogError("transacao", $"Território {territorio_id} não encontrado");
         return 0;
     endif
     
-    elem.SetProp(TERRITORY_FACTION_PROP, faccao_original);
-    elem.SetProp("Faction", faccao_original); // Para compatibilidade
+    SetElementProp(elem, TERRITORY_FACTION_PROP, faccao_original);
+    SetElementProp(elem, "Faction", faccao_original); // Para compatibilidade
     
     // 2. Restaurar objetos originais se informação disponível
     if (dados.seriais_originais)
-        var seriais_df := OpenDataFile(":faccao:seriais");
+        var seriais_df := SafeOpenDataFile(":faccao:seriais");
         if (seriais_df)
-            var territorios_seriais := seriais_df.GetProp("territorios");
+            var territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
             if (territorios_seriais)
                 territorios_seriais[territorio_id] := dados.seriais_originais;
-                seriais_df.SetProp("territorios", territorios_seriais);
+                SetElementProp(seriais_df, "territorios", territorios_seriais);
+                LogInfo("transacao", $"Seriais originais restaurados para território {territorio_id}");
             endif
         endif
     endif
@@ -1860,14 +1229,12 @@ function DesfazerTransferenciaTerritorio(dados)
     if (guild_original)
         var guild_obj := FindGuild(guild_original);
         if (guild_obj)
-            var territories := guild_obj.GetProp("territories");
-            if (!territories)
-                territories := array{};
-            endif
+            var territories := guild_obj.GetProp("territories") ?: array{};
             
             if (!(territorio_id in territories))
                 territories.append(territorio_id);
                 guild_obj.SetProp("territories", territories);
+                LogInfo("transacao", $"Território {territorio_id} restaurado para facção {faccao_original}");
             endif
         endif
     endif
@@ -1889,36 +1256,47 @@ function DesfazerTransferenciaTerritorio(dados)
                     endforeach
                     
                     guild_obj.SetProp("territories", new_territories);
+                    LogInfo("transacao", $"Território {territorio_id} removido da facção {dados.faccao_nova}");
                 endif
             endif
         endif
     endif
     
-    Print("DEBUG-TRANS: Transferência de território desfeita com sucesso");
+    LogInfo("transacao", $"Transferência de território {territorio_id} desfeita com sucesso");
     
     return 1;
 endfunction
 
 /*
  * VerificarTransacoesPendentes()
- * Verifica transações pendentes e tenta recuperar ou finalizar
+ * 
+ * Purpose: Verifica e processa transações pendentes
+ * Return: Número de transações processadas
  */
 function VerificarTransacoesPendentes()
-    var df := OpenDataFile(":faccao:transacoes");
+    var df := SafeOpenDataFile(":faccao:transacoes");
     if (!df)
-        return error;
+        return 0; // Erro já logado pela função SafeOpenDataFile
     endif
     
-    var now := PolCore().systime;
+    var now := polcore().systime;
     var count := 0;
+    var timeout := 300;  // 5 minutos
     
     foreach key in (df.Keys())
-        var elem := df.FindElement(key);
-        var status := elem.GetProp("status");
-        var timestamp := elem.GetProp("timestamp");
+        var elem := SafeFindElement(df, key);
+        if (!elem)
+            continue;
+        endif
         
-        if (status == "iniciada" && (now - timestamp) > 300) // 5 minutos de timeout
-            Print("Transação " + key + " pendente há muito tempo. Tentando desfazer...");
+        var status := GetElementProp(elem, "status");
+        var timestamp := GetElementProp(elem, "timestamp");
+        
+        // Processar apenas transações iniciadas e expiradas
+        if (status == "iniciada" && (now - timestamp) > timeout)
+            LogWarning("transacao", "Transação pendente expirada: " + key);
+            
+            // Tentar desfazer a transação
             DesfazerTransacao(key);
             count += 1;
         endif
@@ -1926,10 +1304,66 @@ function VerificarTransacoesPendentes()
         sleepms(2);
     endforeach
     
+    // Contador global para limpeza
+    var verify_counter := GetGlobalProperty("transaction_verify_counter");
+    if (!verify_counter)
+        verify_counter := 0;
+    endif
+    
+    verify_counter += 1;
+    if (verify_counter >= 5)  // A cada 5 verificações
+        LimparTransacoesAntigas(df);
+        verify_counter := 0;
+    endif
+    
+    SetGlobalProperty("transaction_verify_counter", verify_counter);
+    
     return count;
 endfunction
 
-
+/*
+ * LimparTransacoesAntigas(df)
+ * 
+ * Purpose: Remove transações concluídas/desfeitas antigas
+ * Parameters:
+ *   df - Datafile de transações
+ * Return: Número de transações removidas
+ */
+function LimparTransacoesAntigas(df)
+    if (!df)
+        return 0;
+    endif
+    
+    var now := polcore().systime;
+    var count := 0;
+    var limite_idade := 604800;  // 7 dias em segundos
+    
+    foreach key in (df.Keys())
+        var elem := SafeFindElement(df, key);
+        if (!elem)
+            continue;
+        endif
+        
+        var status := GetElementProp(elem, "status");
+        var timestamp := GetElementProp(elem, "timestamp");
+        
+        // Remover apenas transações concluídas ou desfeitas antigas
+        if ((status == "concluida" || status == "desfeita") && 
+            (now - timestamp) > limite_idade)
+            if (DeleteDatafileEntry(":faccao:transacoes", key))
+                count += 1;
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    if (count > 0)
+        LogInfo("transacao", "Limpeza: removidas " + count + " transações antigas");
+    endif
+    
+    return count;
+endfunction
 /*
  * RemoveTerritoryFromGuilds(territory_name, territory_id)
  *
@@ -1940,7 +1374,7 @@ endfunction
  * Return: Número de guildas atualizadas
  */
 function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
-    Print("Iniciando limpeza de referências ao território: " + territory_name);
+    LogDebug("territorio", "Iniciando limpeza de referências ao território: " + territory_name);
     
     var guilds_updated := 0;
     var guilds := ListGuilds();
@@ -1977,7 +1411,7 @@ function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
                 new_territories.append(terr);
             else
                 changed := 1;
-                Print("Removendo território '" + territory_name + "' da facção: " + guild.GetProp("name"));
+                LogInfo("territorio", "Removendo território \"" + territory_name + "\" da facção: " + guild.GetProp("name"));
             endif
             
             sleepms(2);
@@ -1992,6 +1426,379 @@ function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
         sleepms(2);
     endforeach
     
-    Print("Limpeza concluída. Atualizadas " + guilds_updated + " guildas.");
+    LogInfo("territorio", "Limpeza concluída. Atualizadas " + guilds_updated + " guildas.");
+
     return guilds_updated;
+endfunction
+
+
+/*
+ * ClassificarRecurso(resource)
+ *
+ * Purpose: Função unificada para categorizar recursos (string, objtype ou item)
+ * Parameters: resource - Pode ser um ItemRef, String ou Integer (objtype)
+ * Return: String com a categoria do recurso (comida, metal, etc.)
+ */
+function ClassificarRecurso(resource)
+    // Verificar tipo do parâmetro para determinar abordagem
+    if (!resource)
+        return "desconhecido";
+    endif
+    
+    // Se for um item/objeto
+    if (TypeOf(resource) == "ItemRef")
+        // Verificar propriedades explícitas primeiro
+        if (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_COMIDA))
+            return RESOURCE_TYPE_COMIDA;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_MOEDAS))
+            return RESOURCE_TYPE_MOEDAS;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_COURO))
+            return RESOURCE_TYPE_COURO;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_METAL))
+            return RESOURCE_TYPE_METAL;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_MADEIRA))
+            return RESOURCE_TYPE_MADEIRA;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_PANO))
+            return RESOURCE_TYPE_PANO;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_PEDRA))
+            return RESOURCE_TYPE_PEDRA;
+        elseif (GetObjProperty(resource, DONATION_PREFIX + RESOURCE_TYPE_JOIAS))
+            return RESOURCE_TYPE_JOIAS;
+        endif
+        
+        // Se não tem propriedade explícita, usar a categorização pelo objtype
+        return ClassificarPorObjtype(resource.objtype);
+    endif
+    
+    // Se for uma string
+    if (TypeOf(resource) == "String")
+        return ClassificarPorNome(resource);
+    endif
+    
+    // Se for um número (objtype)
+    if (TypeOf(resource) == "Integer")
+        return ClassificarPorObjtype(resource);
+    endif
+    
+    return "desconhecido";
+endfunction
+
+// Funções auxiliares privadas para a categorização
+function ClassificarPorNome(resource_name)
+    // Normalizar o nome
+    resource_name := Lower(Trim(resource_name));
+    
+    var categorias := dictionary{
+        "metal" := array{"ferro", "prata", "ouro", "cobre", "bronze", "metal", "ingot", "ore"},
+        "couro" := array{"couro", "leather", "hide", "pele", "escamoso", "polar"},
+        "madeira" := array{"madeira", "wood", "log", "tora", "carvao", "carvão", "coal"},
+        "comida" := array{"comida", "food", "peixe", "fish", "carne", "meat", "pão", "bread"},
+        "pano" := array{"pano", "cloth", "tecido", "escamas", "scales", "seda", "silk"},
+        "pedras" := array{"pedra", "stone", "rock", "osso", "bone", "areia", "sand"},
+        "joias" := array{"joia", "jewel", "gem", "vidro", "glass", "crystal"},
+        "moedas" := array{"moeda", "coin", "dinheiro", "money", "currency"}
+    };
+    
+    // Verificar cada categoria
+    foreach categoria in (categorias.keys())
+        foreach palavra in (categorias[categoria])
+            if (resource_name.find(palavra) != error)
+                return categoria;
+            endif
+        endforeach
+    endforeach
+    
+    return "desconhecido";
+endfunction
+
+function ClassificarPorObjtype(objtype)
+    // Mapeamento direto de objtypes comuns
+    var objtype_map := dictionary{
+        // Metais
+        0x6300 := "metal",     // Iron ore
+        0x6993 := "metal",     // Silver ingot
+        0x6995 := "metal",     // Steel ingot
+        0x1BEF := "metal",     // Iron ingot
+        
+        // Couro
+        0xef12 := "couro",     // Couro espesso
+        0xef17 := "couro",     // Couro polar
+        0x1078 := "couro",     // Couro comum
+        
+        // Madeira
+        0xee36 := "madeira",   // Madeira de pinheiro
+        0xee3e := "madeira",   // Madeira de teixo
+        0x1BD7 := "madeira",   // Toras
+        
+        // Comida
+        0x097B := "comida",    // Peixe
+        0x09B7 := "comida",    // Carne
+        0x09D2 := "comida",    // Queijo
+        
+        // Tecidos
+        0x1766 := "pano",      // Pano
+        0xee52 := "pano",      // Pele branca
+        
+        // Pedras/Ossos
+        0x1BDD := "pedras",    // Pedra
+        0x0F7E := "pedras",    // Osso
+        
+        // Joias/Vidro
+        0x1BE3 := "joias",     // Vidro
+        0x1F13 := "joias",     // Joia
+        
+        // Moedas
+        0x0EED := "moedas"     // Moedas de ouro
+    };
+    
+    // Verificar mapeamento direto
+    if (objtype_map.exists(objtype))
+        return objtype_map[objtype];
+    endif
+    
+    // Categorização por faixas de objtype
+    if (objtype >= 0x1BEE && objtype <= 0x1BF5)
+        return "metal"; // Faixa de ingots
+    elseif (objtype >= 0x1078 && objtype <= 0x1079)
+        return "couro"; // Faixa de couros
+    elseif (objtype >= 0x097B && objtype <= 0x09EB)
+        return "comida"; // Faixa de comidas
+    endif
+    
+    return "desconhecido";
+endfunction
+
+/*
+ * FindFactionChest(faction_name, territory_id := "", create_if_missing := 0)
+ *
+ * Purpose: Função unificada para encontrar baús de facção usando múltiplas estratégias
+ * 
+ * Parameters:
+ *   faction_name - Nome da facção dona do baú
+ *   territory_id - ID específico do território (opcional)
+ *   create_if_missing - Se deve criar um baú de emergência caso não encontre (0 = não, 1 = sim)
+ *
+ * Return:
+ *   Referência para o baú encontrado ou 0 se não encontrar
+ */
+function FindFactionChest(faction_name, territory_id := "", create_if_missing := 0)
+    if (!faction_name)
+        LogError("recursos", "FindFactionChest() chamado sem nome de facção");
+        return 0;
+    endif
+    
+    var chest := 0;
+    
+    // ESTRATÉGIA 1: Busca específica por território
+    if (territory_id)
+        LogDebug("recursos", "Buscando baú para facção: " + faction_name + ", território: " + territory_id);
+        
+        // 1.1: Verificar seriais registrados
+        var seriais_df := SafeOpenDataFile(":faccao:seriais");
+        if (seriais_df)
+            var territorios_seriais := GetElementProp(seriais_df, "territorios");
+            if (territorios_seriais && territorios_seriais[territory_id])
+                var info := territorios_seriais[territory_id];
+                if (info.bau)
+                    chest := SystemFindObjectBySerial(info.bau);
+                    if (chest && GetObjProperty(chest, "faction") == faction_name)
+                        LogDebug("recursos", "Baú encontrado via seriais registrados: " + chest.serial);
+                        return chest;
+                    endif
+                endif
+            endif
+        endif
+        
+        // 1.2: Buscar pelo território no mundo
+        foreach item in (EnumerateItemsInContainer(0))
+            if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+                GetObjProperty(item, "faction") == faction_name && 
+                GetObjProperty(item, "territory_id") == territory_id)
+                LogDebug("recursos", "Baú encontrado via busca no mundo por território: " + item.serial);
+                // Atualizar registro
+                RegisterDonationChest(faction_name, item);
+                return item;
+            endif
+            sleepms(1);
+        endforeach
+    endif
+    
+    // ESTRATÉGIA 2: Busca pelo registro na guilda
+    var guild := FindGuildByName(faction_name);
+    if (guild)
+        var guild_obj := FindGuild(guild);
+        if (guild_obj)
+            var chest_serial := guild_obj.GetProp("donation_chest");
+            if (!chest_serial)
+                chest_serial := guild_obj.GetProp(GUILD_CHEST_PROP); // Nome alternativo
+            endif
+            
+            if (chest_serial)
+                chest := SystemFindObjectBySerial(chest_serial);
+                if (chest && GetObjProperty(chest, "faction") == faction_name)
+                    LogDebug("recursos", "Baú encontrado via registro na guilda: " + chest.serial);
+                    // Atualizar território se necessário
+                    if (territory_id && !GetObjProperty(chest, "territory_id"))
+                        SetObjProperty(chest, "territory_id", territory_id);
+                    endif
+                    return chest;
+                endif
+            endif
+        endif
+    endif
+    
+    // ESTRATÉGIA 3: Busca direta no datafile
+    var df := SafeOpenDataFile("faction_chests");
+    if (df)
+        var elem := SafeFindElement(df, faction_name);
+        if (elem)
+            var chest_serial := GetElementProp(elem, "chest_serial");
+            if (chest_serial)
+                chest := SystemFindObjectBySerial(chest_serial);
+                if (chest && GetObjProperty(chest, "faction") == faction_name)
+                    LogDebug("recursos", "Baú encontrado via datafile: " + chest.serial);
+                    // Atualizar território se necessário
+                    if (territory_id && !GetObjProperty(chest, "territory_id"))
+                        SetObjProperty(chest, "territory_id", territory_id);
+                    endif
+                    // Atualizar registro na guilda
+                    UpdateGuildChestRecord(faction_name, chest);
+                    return chest;
+                endif
+            endif
+            
+            // Verificar coordenadas salvas
+            var loc := GetElementProp(elem, "location");
+            if (loc)
+                foreach item in ListItemsAtLocation(loc.x, loc.y, loc.z, loc.realm)
+                    if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+                        GetObjProperty(item, "faction") == faction_name)
+                        LogDebug("recursos", "Baú encontrado por localização: " + item.serial);
+                        // Atualizar registros
+                        SetElementProp(elem, "chest_serial", item.serial);
+                        if (territory_id && !GetObjProperty(item, "territory_id"))
+                            SetObjProperty(item, "territory_id", territory_id);
+                        endif
+                        UpdateGuildChestRecord(faction_name, item);
+                        return item;
+                    endif
+                    sleepms(1);
+                endforeach
+            endif
+        endif
+    endif
+    
+    // ESTRATÉGIA 4: Busca completa no mundo
+    LogDebug("recursos", "Realizando busca completa no mundo para " + faction_name);
+    foreach item in EnumerateItemsInContainer(0)
+        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+            GetObjProperty(item, "faction") == faction_name)
+            // Se temos ID do território e este baú tem outro ID, continuar buscando
+            var item_territory := GetObjProperty(item, "territory_id");
+            if (territory_id && item_territory && item_territory != territory_id)
+                continue;
+            endif
+            
+            LogDebug("recursos", "Baú encontrado via busca completa: " + item.serial);
+            // Atualizar registros
+            RegisterDonationChest(faction_name, item);
+            UpdateGuildChestRecord(faction_name, item);
+            return item;
+        endif
+        sleepms(1);
+    endforeach
+    
+    // ESTRATÉGIA 5: Criar baú de emergência se solicitado
+    if (create_if_missing)
+        LogInfo("recursos", "Criando baú de emergência para " + faction_name);
+        chest := CreateEmergencyDonationChest(faction_name);
+        if (chest)
+            if (territory_id)
+                SetObjProperty(chest, "territory_id", territory_id);
+            endif
+            RegisterDonationChest(chest, faction_name);
+            UpdateGuildChestRecord(faction_name, chest);
+            return chest;
+        endif
+    endif
+    
+    LogWarning("recursos", "Nenhum baú encontrado para facção " + faction_name);
+    return 0;
+endfunction
+
+
+// Função para criar um baú de emergência se nenhum for encontrado
+function CreateEmergencyDonationChest(faction_name)
+    LogWarning("recursos", "Tentando criar baú de emergência para " + faction_name);
+
+    
+    // Local de emergência para criar o baú (geralmente um lugar seguro)
+    var x := 5288;
+    var y := 1176;
+    var z := 0;
+    var realm := "britannia";
+    
+    // Criar o baú
+    var chest := CreateItemAtLocation(x, y, z, 0xff11, 1, realm);
+    if (!chest)
+        LogError("recursos", "Falha ao criar baú de emergência");
+        return 0;
+    endif
+    
+    // Configurar o baú
+    chest.name := "Baú de Doações de " + faction_name + " [Emergência]";
+    SetObjProperty(chest, "faction", faction_name);
+    SetObjProperty(chest, "faction_chest_id", faction_name + "_emergency_" + polcore().systime);
+    SetObjProperty(chest, "is_emergency_chest", 1);
+    SetObjProperty(chest, "created_time", polcore().systime);
+    
+    // Definir scripts
+    chest.usescript := ":faccao:baudoacao/use";
+    SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
+    SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+    SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
+    SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+    
+    // Registrar o baú
+    UpdateGuildChestRecord(faction_name, chest);
+    
+    // Registrar um aviso no log
+    LogWarning("recursos", "Baú de emergência criado para " + faction_name + " em " + x + "," + y + "," + z + " " + realm);
+
+    
+    return chest;
+endfunction
+
+
+// Função auxiliar para registrar baú no datafile
+function RegisterDonationChest(faction_name, chest)
+    var df := SafeOpenDataFile("faction_chests", 1);
+    var elem := SafeFindElement(df, faction_name, 1);
+    
+    SetElementProp(elem, "chest_serial", chest.serial);
+    SetElementProp(elem, "location", struct{
+        "x" := chest.x,
+        "y" := chest.y,
+        "z" := chest.z,
+        "realm" := chest.realm
+    });
+    SetElementProp(elem, "last_update", polcore().systime);
+    
+    return 1;
+endfunction
+
+// Função auxiliar para atualizar registro na guilda
+function UpdateGuildChestRecord(faction_name, chest)
+    var guild := FindGuildByName(faction_name);
+    if (!guild)
+        return 0;
+    endif
+    
+    var guild_obj := FindGuild(guild);
+    if (!guild_obj)
+        return 0;
+    endif
+    
+    guild_obj.SetProp("donation_chest", chest.serial);
+    return 1;
 endfunction

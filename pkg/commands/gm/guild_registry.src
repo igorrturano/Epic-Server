@@ -5,6 +5,8 @@ use datafile;
 
 include ":datafile:datafile";
 include ":faccao:faccao_constants";
+include ":faccao:include/logging";
+include ":faccao:include/datafile_helpers";  // Nova inclusão
 
 /* 
  * guild_registry.src
@@ -20,7 +22,7 @@ const GUILD_REGISTRY_ELEM := "guilds";
 const GUILD_REGISTRY_TIMESTAMP := "last_update";
 
 program guild_registry()
-    Print("Iniciando sistema de registro de guildas...");
+    LogInfo("registro_guildas", "Iniciando sistema de registro de guildas...");
     
     // Registrar o script como um serviço contínuo
     SetGlobalProperty("guild_registry_pid", GetPid());
@@ -42,7 +44,7 @@ program guild_registry()
         if (ev)
             case (ev.type)
                 "update": 
-                    Print("Atualizando registro de guildas sob demanda");
+                    LogInfo("registro_guildas", "Atualizando registro de guildas sob demanda");
                     UpdateGuildRegistry();
                     last_check := ReadGameClock();
                 "lookup":
@@ -78,22 +80,22 @@ endprogram
  * Return: 1 se bem-sucedido, 0 se falha
  */
 function InitializeGuildRegistry()
-    Print("Inicializando registro de guildas...");
+    LogInfo("registro_guildas", "Inicializando registro de guildas...");
     
-    // Verificar se o registro já existe e está atualizado
-    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE, DF_CREATE);
+    // Usar a nova função auxiliar SafeOpenDataFile
+    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);  // 1 = criar se não existir
     if (!df)
-        Print("ERRO: Não foi possível criar o datafile de registro de guildas");
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM, DF_CREATE);
+    // Usar a nova função auxiliar SafeFindElement
+    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);  // 1 = criar se não existir
     if (!elem)
-        Print("ERRO: Não foi possível criar o elemento de registro de guildas");
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var last_update := elem.GetProp(GUILD_REGISTRY_TIMESTAMP);
+    // Usar a nova função auxiliar GetElementProp
+    var last_update := GetElementProp(elem, GUILD_REGISTRY_TIMESTAMP, 0);
     var current_time := polcore().systime;
     
     // Se nunca foi atualizado ou foi há mais de 24 horas, atualizar agora
@@ -101,8 +103,8 @@ function InitializeGuildRegistry()
         return UpdateGuildRegistry();
     endif
     
-    Print("Registro de guildas já inicializado e atualizado. Última atualização: " + 
-          FormatRegistryTime(last_update));
+    LogInfo("registro_guildas", "Registro de guildas já inicializado e atualizado. Última atualização: " +
+        FormatRegistryTime(last_update));
     
     return 1;
 endfunction
@@ -115,25 +117,21 @@ endfunction
  * Return: 1 se bem-sucedido, 0 se falha
  */
 function UpdateGuildRegistry()
-    Print("Atualizando registro de guildas...");
+    LogInfo("registro_guildas", "Atualizando registro de guildas...");
     
-    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE, DF_CREATE);
+    // Usar as funções auxiliares do datafile_helpers.inc
+    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);
     if (!df)
-        Print("ERRO: Não foi possível abrir o datafile de registro de guildas");
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM, DF_CREATE);
+    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);
     if (!elem)
-        Print("ERRO: Não foi possível acessar o elemento de registro de guildas");
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    // Obter o registro atual para verificação
-    var registry := elem.GetProp("registry");
-    if (!registry || typeof(registry) != "Dictionary")
-        registry := dictionary{};
-    endif
+    // Obter o registro atual para verificação usando função auxiliar
+    var registry := GetElementProp(elem, "registry", dictionary{});
     
     // Mapear nome da guilda -> ID da guilda
     var guild_map := dictionary{};
@@ -141,7 +139,7 @@ function UpdateGuildRegistry()
     // Registrar todas as guildas existentes
     var guilds := ListGuilds();
     if (guilds)
-        Print("Encontradas " + guilds.size() + " guildas para registrar");
+        LogDebug("registro_guildas", "Encontradas " + guilds.size() + " guildas para registrar");
         
         foreach guild in (guilds)
             var guild_name := guild.GetProp("name");
@@ -171,7 +169,7 @@ function UpdateGuildRegistry()
             sleepms(2);
         endforeach
     else
-        Print("AVISO: ListGuilds() falhou, tentando métodos alternativos");
+        LogWarning("registro_guildas", "ListGuilds() falhou, tentando métodos alternativos");
         
         // Método alternativo: obter informações de guildas dos jogadores online
         foreach player in (EnumerateOnlineCharacters())
@@ -210,12 +208,12 @@ function UpdateGuildRegistry()
         endforeach
     endif
     
-    // Atualizar o datafile com as informações coletadas
-    elem.SetProp("registry", guild_map);
-    elem.SetProp(GUILD_REGISTRY_TIMESTAMP, polcore().systime);
+    // Atualizar o datafile com as informações coletadas - usar funções auxiliares
+    SetElementProp(elem, "registry", guild_map);
+    SetElementProp(elem, GUILD_REGISTRY_TIMESTAMP, polcore().systime);
     
-    Print("Registro de guildas atualizado com sucesso. Total: " + guild_map.keys().size() + " entradas");
-    
+    LogInfo("registro_guildas", "Registro de guildas atualizado com sucesso. Total: " + guild_map.keys().size() + " entradas");
+
     return 1;
 endfunction
 
@@ -232,20 +230,19 @@ function LookupGuildByName(name)
         return 0;
     endif
     
-    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE);
+    // Usar funções auxiliares do datafile_helpers.inc
+    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE);
     if (!df)
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM);
+    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM);
     if (!elem)
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var registry := elem.GetProp("registry");
-    if (!registry || typeof(registry) != "Dictionary")
-        return 0;
-    endif
+    // Usar função auxiliar com valor padrão para caso de erro
+    var registry := GetElementProp(elem, "registry", dictionary{});
     
     // Verificar se existe exatamente
     if (registry.exists(name))
@@ -286,25 +283,23 @@ function RegisterGuild(name, guild_id)
         return 0;
     endif
     
-    var df := DFOpenDataFile(GUILD_REGISTRY_DATAFILE, DF_CREATE);
+    // Usar funções auxiliares do datafile_helpers.inc
+    var df := SafeOpenDataFile(GUILD_REGISTRY_DATAFILE, 1);
     if (!df)
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var elem := DFFindElement(df, GUILD_REGISTRY_ELEM, DF_CREATE);
+    var elem := SafeFindElement(df, GUILD_REGISTRY_ELEM, 1);
     if (!elem)
-        return 0;
+        return 0;  // Erro já foi logado pela função auxiliar
     endif
     
-    var registry := elem.GetProp("registry");
-    if (!registry || typeof(registry) != "Dictionary")
-        registry := dictionary{};
-    endif
+    // Usar função auxiliar com valor padrão para caso de erro
+    var registry := GetElementProp(elem, "registry", dictionary{});
     
     registry[name] := guild_id;
-    elem.SetProp("registry", registry);
-    
-    return 1;
+    // Usar função auxiliar para definir propriedade com tratamento de erro
+    return SetElementProp(elem, "registry", registry);
 endfunction
 
 /*

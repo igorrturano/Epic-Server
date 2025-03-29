@@ -3,9 +3,10 @@ use os;
 use datafile;
 
 include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
 
 program transaction_check()
-    Print("Iniciando verificação de transações pendentes...");
+    LogInfo("recursos", "Iniciando verificação de transações pendentes...");
     
     // Registrar PID para que outros scripts possam verificar se está rodando
     SetGlobalProperty("transactions_check_pid", GetPid());
@@ -15,7 +16,9 @@ program transaction_check()
         var count := VerificarTransacoesPendentes();
         
         if (count > 0)
-            Print("Resolvidas " + count + " transações pendentes");
+            LogInfo("recursos", "Processadas " + count + " transações pendentes expiradas");
+        else
+            LogDebug("recursos", "Nenhuma transação pendente encontrada");
         endif
         
         // Verificar a cada 30 minutos

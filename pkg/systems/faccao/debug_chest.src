@@ -3,6 +3,7 @@ use os;
 
 include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions";
+include ":faccao:include/permissions";
 
 program debug_chest(who)
     SendSysMessage(who, "Selecione o baú para verificar permissões");

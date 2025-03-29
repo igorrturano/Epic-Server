@@ -121,13 +121,13 @@ function RemFaccao(guild_obj)
     // Liberar todos os territórios
     var territories := guild_obj.GetProp("territories");
     if (territories)
-        var rect_df := OpenDataFile(":architect:areas");
+        var rect_df := SafeOpenDataFile(":architect:areas");
         foreach territory in territories
-            var elem := rect_df.FindElement(territory);
+            var elem := SafeFindElement(rect_df, territory);
             if (elem)
                 // Atualizar AMBAS as propriedades para compatibilidade completa
-                elem.SetProp("Faction", DEFAULT_FACTION);  // Formato antigo
-                elem.SetProp(TERRITORY_FACTION_PROP, DEFAULT_FACTION);  // Formato novo
+                SetElementProp(elem, "Faction", DEFAULT_FACTION); // Formato antigo
+                SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Formato novo
                 
                 // Remover monumentos
                 var coords := SplitWords(elem.GetProp("Rect"));
@@ -247,9 +247,9 @@ function inGuildRect(guild, item := 0)
     // Verificar nos territórios controlados
     var territories := guild.GetProp("territories");
     if (territories)
-        var rect_df := OpenDataFile(":architect:areas");
+        var rect_df := SafeOpenDataFile(":architect:areas");
         foreach territory in territories
-            var elem := rect_df.FindElement(territory);
+            var elem := SafeFindElement(rect_df, territory);
             if (!elem) continue; endif
             
             // Verificar AMBAS as propriedades possíveis para compatibilidade
