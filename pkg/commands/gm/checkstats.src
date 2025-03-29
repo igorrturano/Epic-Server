@@ -1,0 +1,292 @@
+/* 
+ * $Id: checkstats.src
+ *
+ * Command to verify stat packets being sent to clients
+ */
+ 
+use uo;
+use os;
+use polsys;
+use vitals;
+include "include/packets";
+
+include "include/client";
+include ":attributes:attributes";
+include ":taming:taming";
+include ":combat:damage";
+include ":charactercreation:resists";
+
+program command_checkstats(who)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "You do not have access to this command.");
+        return 0;
+    endif
+    
+    SendSysMessage(who, "Select target to check stats packets for:");
+    var targ := Target(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Cancelled.");
+        return 0;
+    endif
+    
+    if (!targ.IsA(POLCLASS_MOBILE))
+        SendSysMessage(who, "You must target a mobile.");
+        return 0;
+    endif
+    
+    VerifyStats(who, targ);
+    
+    return 1;
+endprogram
+
+function VerifyStats(who, character)
+    SendSysMessage(who, "STAT PACKET INFORMATION FOR: " + character.name, 3, 70);
+    SendSysMessage(who, "---------------------------------------", 3, 70);
+    
+    // Basic stats
+    SendSysMessage(who, "Basic Stats:", 3, 53);
+    SendSysMessage(who, "Strength: " + character.strength);
+    SendSysMessage(who, "Dexterity: " + character.dexterity);
+    SendSysMessage(who, "Intelligence: " + character.intelligence);
+    SendSysMessage(who, "StatCap: 225");
+    
+    // Pet info
+    var petcnt := GetNumPets(character);
+    var petmax := GetMaxPets(character);
+    SendSysMessage(who, "Pet Count: " + petcnt + " / " + petmax, 3, 53);
+    
+    // Get custom properties
+    SendSysMessage(who, "Custom Stats:", 3, 53);
+    var fortitude := GetResist(character, FORTITUDE);
+    var reflexos := GetResist(character, REFLEXOS);
+    var vontade := GetResist(character, VONTADE);
+    var hunger := GetObjProperty(character, "hunger");
+    if (!hunger)
+        hunger := 0;
+    endif
+    var vicio := GetObjProperty(character, "vicio");
+    if (!vicio)
+        vicio := 0;
+    endif
+    var dps_current := AP_GetVital(character, "DP");
+    var dps_max := AP_GetVitalMaximumValue(character, "DP");
+    
+    SendSysMessage(who, "Fortitude: " + fortitude);
+    SendSysMessage(who, "Reflexos: " + reflexos);
+    SendSysMessage(who, "Vontade: " + vontade);
+    SendSysMessage(who, "Hunger: " + hunger);
+    SendSysMessage(who, "Vicio: " + vicio);
+    SendSysMessage(who, "DP: " + dps_current + " / " + dps_max);
+    
+    // Weapon information
+    var weapon := character.weapon;
+    SendSysMessage(who, "Weapon Information:", 3, 53);
+    
+    if (!weapon)
+        SendSysMessage(who, "No weapon equipped.");
+    else
+        SendSysMessage(who, "Weapon: " + weapon.desc, 3, 66);
+        var stats := getWeaponStatss(weapon);
+        
+        // Main hand damage
+        SendSysMessage(who, "- Main Hand Damage -");
+        SendSysMessage(who, "Slash: " + CInt(stats.SlashMainDamage));
+        SendSysMessage(who, "Pierce: " + CInt(stats.PiercingMainDamage));
+        SendSysMessage(who, "Blunt: " + CInt(stats.BluntMainDamage));
+        
+        // Elemental damage
+        SendSysMessage(who, "- Elemental Damage -");
+        SendSysMessage(who, "Fire: " + CInt(stats.FireDamage));
+        SendSysMessage(who, "Cold: " + CInt(stats.ColdDamage));
+        SendSysMessage(who, "Poison: " + CInt(stats.PoisonDamage));
+        SendSysMessage(who, "Energy: " + CInt(stats.EnergyDamage));
+        
+        // Check if dual-wielded - safe check for the method
+        var isDual := 0;
+        isDual := GetObjProperty(weapon, "IsDualWield");
+        if (!isDual)
+            // Try alternate method
+            isDual := GetObjProperty(weapon, "DualWield");
+        endif
+        
+        if (isDual)
+            SendSysMessage(who, "- Off Hand Damage -", 3, 66);
+            SendSysMessage(who, "Slash: " + CInt(stats.SlashOffDamage));
+            SendSysMessage(who, "Pierce: " + CInt(stats.PiercingOffDamage));
+            SendSysMessage(who, "Blunt: " + CInt(stats.BluntOffDamage));
+        endif
+    endif
+    
+    // Armor resistances
+    SendSysMessage(who, "Armor Resistances:", 3, 53);
+    
+    // Get all armor pieces
+    var headArmor := GetEquipmentByLayer(character, LAYER_HELM);
+    var neckArmor := GetEquipmentByLayer(character, LAYER_NECK);
+    var bodyArmor := GetEquipmentByLayer(character, LAYER_CHEST);
+    var armsArmor := GetEquipmentByLayer(character, LAYER_ARMS);
+    var legsArmor := GetEquipmentByLayer(character, LAYER_LEGS);
+    var feetArmor := GetEquipmentByLayer(character, LAYER_SHOES);
+    var handsArmor := GetEquipmentByLayer(character, LAYER_GLOVES);
+    
+    // Display head resistances
+    SendSysMessage(who, "- Head Armor -");
+    if (headArmor)
+        SendSysMessage(who, headArmor.desc, 3, 66);
+        var resist := getArmorResistances(headArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Display neck resistances
+    SendSysMessage(who, "- Neck Armor -");
+    if (neckArmor)
+        SendSysMessage(who, neckArmor.desc, 3, 66);
+        var resist := getArmorResistances(neckArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Display body resistances
+    SendSysMessage(who, "- Body Armor -");
+    if (bodyArmor)
+        SendSysMessage(who, bodyArmor.desc, 3, 66);
+        var resist := getArmorResistances(bodyArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Display arms resistances
+    SendSysMessage(who, "- Arms Armor -");
+    if (armsArmor)
+        SendSysMessage(who, armsArmor.desc, 3, 66);
+        var resist := getArmorResistances(armsArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Display legs resistances
+    SendSysMessage(who, "- Legs Armor -");
+    if (legsArmor)
+        SendSysMessage(who, legsArmor.desc, 3, 66);
+        var resist := getArmorResistances(legsArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Display feet resistances
+    SendSysMessage(who, "- Feet Armor -");
+    if (feetArmor)
+        SendSysMessage(who, feetArmor.desc, 3, 66);
+        var resist := getArmorResistances(feetArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Display hands resistances
+    SendSysMessage(who, "- Hands Armor -");
+    if (handsArmor)
+        SendSysMessage(who, handsArmor.desc, 3, 66);
+        var resist := getArmorResistances(handsArmor);
+        SendSysMessage(who, "Fire: " + resist[1] + " Cold: " + resist[2] + " Poison: " + resist[3] + " Energy: " + resist[4]);
+    else
+        SendSysMessage(who, "None equipped");
+    endif
+    
+    // Packet structure information
+    SendSysMessage(who, "Packet Structure Info:", 3, 53);
+    SendSysMessage(who, "Bytes 70-82: Main weapon damage");
+    SendSysMessage(who, "Bytes 84-99: DP current and custom stats");
+    SendSysMessage(who, "Bytes 100-112: Custom character stats");
+    SendSysMessage(who, "Bytes 140-194: Armor resistances (all pieces)");
+    SendSysMessage(who, "Bytes 196-202: Off-hand weapon damage (if dual-wield)");
+    
+    // Debug packet size estimate
+    var packetSize := 70 + 66; // Base packet size + extended stats size
+    SendSysMessage(who, "Estimated packet size: " + packetSize + " bytes");
+    
+    return 1;
+endfunction
+
+// Helper function to get armor resistances
+function getArmorResistances(armor)
+    var fireResist := 0;
+    var coldResist := 0;
+    var poisonResist := 0;
+    var energyResist := 0;
+
+    if (armor)
+        var prop := armor.getAttrBase();
+        fireResist := CInt(prop.FireResist);
+        coldResist := CInt(prop.ColdResist);
+        poisonResist := CInt(prop.PoisonResist);
+        energyResist := CInt(prop.EnergyResist);
+    endif
+    
+    // Store the resistances in an array variable
+    var resistances := array{fireResist, coldResist, poisonResist, energyResist};
+    return resistances;
+endfunction
+
+// Function to get weapon stats (placeholder - should match the one in sendStats.src)
+function getWeaponStatss(weapon)
+    var stats := struct{
+        SlashMainDamage := 0,
+        PiercingMainDamage := 0,
+        BluntMainDamage := 0,
+        FireDamage := 0,
+        ColdDamage := 0,
+        PoisonDamage := 0,
+        EnergyDamage := 0,
+        SlashOffDamage := 0,
+        PiercingOffDamage := 0,
+        BluntOffDamage := 0
+    };
+    
+    if (!weapon)
+        return stats;
+    endif
+    
+    // This is just a placeholder - in a real implementation, 
+    // this would extract the actual damage values from the weapon
+    var prop := 0;
+    
+    // Safely get attributes
+    // If this fails, we'll just continue with defaults
+    prop := weapon.getAttrBase();
+    if (!prop)
+        prop := struct{};
+    endif
+    
+    // Get properties with safe default values
+    stats.SlashMainDamage := CInt(GetObjProperty(weapon, "SlashDamage"));
+    stats.PiercingMainDamage := CInt(GetObjProperty(weapon, "PierceDamage"));
+    stats.BluntMainDamage := CInt(GetObjProperty(weapon, "BluntDamage"));
+    stats.FireDamage := CInt(GetObjProperty(weapon, "FireDamage"));
+    stats.ColdDamage := CInt(GetObjProperty(weapon, "ColdDamage"));
+    stats.PoisonDamage := CInt(GetObjProperty(weapon, "PoisonDamage"));
+    stats.EnergyDamage := CInt(GetObjProperty(weapon, "EnergyDamage"));
+    
+    // Safely check if dual wield
+    var isDual := 0;
+    isDual := GetObjProperty(weapon, "IsDualWield");
+    if (!isDual)
+        // Try alternate method
+        isDual := GetObjProperty(weapon, "DualWield");
+    endif
+    
+    if (isDual)
+        stats.SlashOffDamage := CInt(GetObjProperty(weapon, "OffhandSlashDamage"));
+        stats.PiercingOffDamage := CInt(GetObjProperty(weapon, "OffhandPierceDamage"));
+        stats.BluntOffDamage := CInt(GetObjProperty(weapon, "OffhandBluntDamage"));
+    endif
+    
+    return stats;
+endfunction 
