@@ -5,17 +5,8 @@ use cfgfile;
 use polsys;
 use util;
 
-include ":attributes:attributeConstants";
-include ":attributes:attributes";
-include ":attributes:skillCheck";
-include ":crafting:crafting";
-include ":crafting:craftingRepair";
-include ":crafting:toolWear";
-include ":itemutils:canAccess";
-include ":fls_core:fls_crafting";
-include "include/say";
-include ":keys:key";
-include ":gumps:yesNo";
+
+include ":crafting:controladoraComplexos";
 
 CONST CARP_WOOD_SOUND := 0x23e;
 
@@ -25,148 +16,7 @@ var craft_config    := ReadConfigFile(":woodworking:CarpItems");
 
 program use_carptool(who, tool)
 
-	if(!can_access(who, tool))
-		return 0;
-	endif
-	if( (!tool.movable) or !ReserveItem(tool) )
-		SendSysMessage(who, "Voce nao pode usar isto.");
-		return 0;
-	endif
-	if( !(tool in EnumerateItemsInContainer(who.backpack)) )
-		SendSysMessage(who, "O item nao esta na sua mochila.");
-		return 0;
-	endif
-
-	EraseObjProperty(who, "IsMeditating");
-	EraseObjProperty(who, "HealTimer");
-
-	var rinfo := sendCraftGump(who, "Carpentry");
-
-	// OK was pressed, close it on out
-	if(rinfo == 0)
-		return 0;
-	endif
-
-	var the_objtype := rinfo[1];
-	var amt         := rinfo[2];
-	var repairit    := rinfo[3];
-
-	if(repairit)
-		repair_this(who, craft_skill);
-		return 0;
-	endif
-
-
-	CarpentryItems(who, tool, the_objtype, amt);
+	FabricaItensComplexos(who,"Carpentry");
 
 endprogram
 
-
-
-function CarpentryItems(who, tool, what, amt)
-
-	if(!what)
-		SendSysMessage(who, "Cancelado.");
-		return 0;
-	endif
-
-
-	var items := CraftItem(who, "Carpentry", tool, what, amt, 1, 0);
-
-
-
-/*	var nails     := Cint(craft_config[objtype].nails);
-	pts           := CInt(pts + ptmod);
-
-	if (who.cmdlevel > 1)
-		SendSysMessage(who, "Dbg: itemname: " + itemname + " craft_config " + craft_config + " objtype " + objtype);
-	endif
-
-	var counter := 0;
-	var nailsAmt;
-	while(counter < amt)
-		if((who.x != x) || (who.y != y))
-			SendSysMessage(who, "Voce parou de trabalhar.");
-			break;
-		endif
-		if( !tool )
-			break;
-		endif
-		sleep(2);
-		nailsAmt := CheckForNails(who);
-
-		if (nailsAmt < nails)
-			SendSysMessage(who, "Voce nao tem pregos!");
-			return 0;
-		else
-			if (!ConsumeNails(who, nails))
-				SendSysMessage(who, "Voce nao tem pregos!");
-				return 0;
-			endif
-		endif
-
-		if( GetAmount(item1) >= material )
-			if( item2 != 0 && GetAmount(item2) < material2 )
-				SendSysMessage(who, "Voce nao possui materiais suficiente.");
-				return 0;
-			endif
-			if( SkillCheck(who, craft_skill, diff, pts) > 0 )
-				if( skillid2 )
-					if( (skill2 <= AP_GetSkill(who, skillid2)) )
-						theitem := CreateCraftItem(who, craft_skill, item1, item1objtype, objtype, material, itemname, reqd);
-					else
-						chk := -2;
-					endif
-				else
-					theitem := CreateCraftItem(who, craft_skill, item1, item1objtype, objtype, material, itemname, reqd);
-					theitem.movable := 1;
-					if( theitem && theitem != 0 && !theitem.errortext )
-						if( item2 != 0 )
-							if( !SubtractAmount(item2, material2) )
-								DestroyItem(theitem);
-								chk := -1;
-							endif
-						else
-							CheckToolWear (who, tool, craft_skill);
-							chk := 1;
-						endif
-					else
-						chk := 0;
-					endif
-				endif
-			endif
-		endif
-
-		//SendSysMessage(who, "a " + theitem.isDoor() + " " + KP_islockable(theitem ) );
-		//CraftLockable(who, theitem)
-
-		SetObjProperty(theitem, "crafterserial", who.serial);
-		SetObjProperty(theitem, "crafteracc", who.acctname);
-
-		if( chk == 0 )
-			SubtractAmount(item1, (material / 2));
-			if( material2 )
-				if( !SubtractAmount(item2, CInt(material2 / 2)) )
-					SendSysMessage(who, "Voce nao possui materiais suficiente.");
-					return 0;
-				endif
-			endif
-			SendSysMessage(who, "Voce falhou em criar o item e perdeu parte dos materiais.");
-			counter := counter + 1;
-			continue;
-		endif
-		if( chk == -1 )
-			SendSysMessage(who, "Voce nao tem materiais suficiente.");
-			return 0;
-		endif
-		if( chk == -2 )
-			SendSysMessage(who, "Voce nao tem conhecimento suficiente para fazer este item.");
-			return 0;
-		endif
-		theitem.movable := 1;
-		counter := counter + 1;
-	endwhile
-*/
-	return 1;
-
-endfunction

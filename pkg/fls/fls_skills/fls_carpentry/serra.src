@@ -6,6 +6,7 @@ include ":gumps:gumps";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include ":crafting:fabricacaoUtil";
+include ":crafting:controladoraComponentes";
 
 
 var cfgRecursos := ReadConfigFile(":crafting:config/resourceList");
@@ -74,7 +75,7 @@ function OpenMenuLog(who, targetted)
 //cor 55 e 600 sao boas
     GFTextLine(sawgump, 50, 93, 55, "O que você deseja fazer?" );
     GFTextLine(sawgump, 50, 123, 600, "Tabuas");
-    GFTextLine(sawgump, 170, 123, 600, "Cabos");
+    GFTextLine(sawgump, 170, 123, 600, "Componentes");
     GFTilePic(sawgump, 60, 153, 7127);
     GFTilePic(sawgump, 180, 153, 3978);
 
@@ -90,7 +91,7 @@ function OpenMenuLog(who, targetted)
     elseif ( retv[0] == 2 )
         MakeBoardSerra(who, targetted, CATALOGO_LOG_PRA_TABUA[Lower(CStr(Hex(targetted.objtype)))]);
     elseif ( retv[0] == 3)
-        MakeCaboSerra(who, targetted, CATALOGO_LOG_PRA_TABUA[Lower(CStr(Hex(targetted.objtype)))]);
+        FabricaComponentes(who, "Wood_Working");
     else
         return -1;
     endif
@@ -136,34 +137,6 @@ function MakeBoardSerra(who, item, nova_tabua)
 
 endfunction
 
-function MakeCaboSerra(who, item, materialId)
-    var cabo := 0xee71;
-	var characterx := who.x;
-	var charactery := who.y;
-    var periciaCarpentry := AP_GetSkill(who, "Wood_Working");
-
-    PrintTextAbove(who, "*começa a serrar madeira*");
-	repeat
-        if ((item.amount) <= 0)
-            return 0;
-        else
-            MakeSerraEfect(who);
-            var qualidades := DistribuiQualidadeComponentes(item.amount,periciaCarpentry);
-            Print("Quantidade: " + item.amount);
-            Print(qualidades);
-            foreach qualidade in (qualidades.keys())
-                var descriptor := GetItemDescriptor(CInt(cabo));
-                descriptor.CProps.insert("material",materialId);
-                descriptor.CProps.insert("tierComponente",qualidade); // Usar constante ou cfg vinda do include do craft ao invés de string crua.
-                descriptor.color := cfgRecursos[materialId].Color;
-
-                CreateItemInBackpack(who,descriptor,cint(qualidades[qualidade]));
-                SubtractAmount(item, cint(qualidades[qualidade]));
-                Sleepms(2);
-            endforeach
-        endif
-    until ((who.x != characterx || who.y != charactery));
-endfunction
 
 function MakeSerraEfect(who)
   PlaySoundEffect(who, 0xff);

@@ -1,0 +1,8 @@
+include ":itemutils:canAccess";
+include ":crafting:controladoraComponentes";
+
+program fabricaComponentes(who, tool)
+
+	var rinfo := fabricaComponentes(who, "Metal_Working");
+
+endprogram
