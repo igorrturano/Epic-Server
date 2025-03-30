@@ -8,6 +8,7 @@ include "include/say";
 include ":gumps:include/epicGumps";
 include ":epicspawn:epicBoss";
 include ":epicspawn:epicCombatEvents";
+include ":epicspawn:epicDeathEvents";
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
 const BOTAO_PAGE2 := 2;
@@ -154,6 +155,14 @@ function InitializeFormData()
     form_data.patrol_loc1 := struct{};
     form_data.patrol_loc2 := struct{};
     form_data.teleport_loc := struct{};
+
+    // This should be in the part where you initialize the form_data structure
+    if (!form_data.deathevents)
+        form_data.+deathevents := array{};
+    endif
+
+    // Verify death events are properly initialized
+    print("DEBUG: Death events after initialization: " + form_data.deathevents);
 endfunction
 
 // Extract data from the current page
@@ -819,6 +828,7 @@ function ShowPage3(who, title, gump_width, gump_height)
         GFTextLine(gump, 580, y_posc, 1153, "No combat events configured");
     endif
     
+    
     // Add a divider line
     GFResizePic(gump, 40, 340, 3000, gump_width - 80, 2);
     
@@ -848,6 +858,21 @@ function ShowPage3(who, title, gump_width, gump_height)
     GFTextLine(gump, 550, 350, 1153, "Death Events:");
     GFAddButton(gump, 750, 350, 2103, 2104, 1, 60);
     GFTextLine(gump, 780, 350, 1153, "Add Death Event");
+
+    // Display existing death events
+    var y_posd := 380; // Use a different y position than combat events
+    if (form_data.deathevents && form_data.deathevents.size() > 0)
+        GFTextLine(gump, 580, y_posd, 1153, "Death Events:");
+        y_posd += 20;
+        
+        foreach event in (form_data.deathevents)
+            GFTextLine(gump, 580, y_posd, 1153, "- " + event.name + 
+                      " (Type: " + event.type + ")");
+            y_posd += 20;
+        endforeach
+    else
+        GFTextLine(gump, 580, y_posd, 1153, "No death events configured");
+    endif
     
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
@@ -879,6 +904,9 @@ function ShowPage3(who, title, gump_width, gump_height)
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     elseif (input[0] == 40) // Add Combat Event
         HandleAddCombatEvent(who, input, form_data);
+        return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+    elseif (input[0] == 60) // Add Death Event
+        HandleAddDeathEvent(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     endif
 
@@ -1594,6 +1622,16 @@ function CreateBossFromGump(who, form_data)
     else
         SendSysMessage(who, "Boss created successfully, but failed to create spawner!");
     endif
+    
+    // First, add this debug statement to see what's in form_data.deathevents
+    print("DEBUG: Death events before saving: " + form_data.deathevents);
+
+    // Make sure this line exists when setting properties on the NPC
+    SetObjProperty(npc, "DeathEvents", form_data.deathevents);
+
+    // After setting the property, verify it was set correctly
+    var debug_events := GetObjProperty(npc, "DeathEvents");
+    print("DEBUG: Death events after saving: " + debug_events);
     
     return 1;
 endfunction

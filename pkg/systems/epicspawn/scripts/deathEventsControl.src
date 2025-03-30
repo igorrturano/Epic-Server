@@ -2,14 +2,12 @@ use uo;
 use os;
 
 include "include/say";
-include ":merchants:item_template";
 include ":tn:boss";
 include ":timedscripts:timedScripts";
 include ":merchants:pcconversation";
 
 program DeathEventsControl(params)
     var npc := params[1];
-    
     if (!npc || npc.errortext)
         print("ERROR: DeathEventsControl called with invalid NPC");
         return 0;
@@ -26,107 +24,99 @@ program DeathEventsControl(params)
     
     print("DEBUG: Found " + death_events.size() + " death events");
     
-    // Wait for the NPC to die
-    while(!npc.dead)
-        sleep(1);
-    endwhile
-    
-    print("DEBUG: NPC " + npc.name + " [" + npc.serial + "] died, processing death events");
-    
-    // Process each death event
+    // Process Last Words events first, before NPC dies
     foreach event in death_events
-        print("DEBUG: Processing death event of type: " + event.type);
-        
-        case (event.type)
-            "Criar Itens":
-                ProcessCreateItemsEvent(npc, event);
-                break;
-            "Abrir Porta":
-            "Abrir Porta/Passagem":
-                ProcessOpenDoorEvent(npc, event);
-                break;
-            "Abrir Passagem":
-                ProcessOpenPassageEvent(npc, event);
-                break;
-            "Criar Npcs":
-                ProcessCreateNpcsEvent(npc, event);
-                break;
-            "Ultimas Palavras":
-                ProcessLastWordsEvent(npc, event);
-                break;
-            default:
-                print("DEBUG: Unknown event type: " + event.type);
-                break;
-        endcase
-        
-        sleepms(100);
+        print("DEBUG: Processing event: " + event);
+        if (event.type == "Ultimas Palavras")
+            print("DEBUG: Processing Last Words event before death");
+            ProcessLastWordsEvent(npc, event);
+        elseif (event.type == "Criar Npcs")
+            print("DEBUG: Processing CreateNpcs event before death");
+            ProcessCreateNpcsEvent(npc, event);
+        elseif (event.type == "Criar Itens")
+            print("DEBUG: Processing Criar Itens event before death");
+            ProcessCreateItemsEvent(npc, event);
+        elseif (event.type == "Abrir Porta")
+            print("DEBUG: Processing Abrir Porta event before death");
+            ProcessOpenDoorEvent(npc, event);
+        elseif (event.type == "Abrir Passagem")
+            print("DEBUG: Processing Abrir Passagem event before death");
+            ProcessOpenPassageEvent(npc, event);
+        endif
     endforeach
     
-    print("DEBUG: Finished processing death events for " + npc.name);
+    // After processing all death events, return
     return 1;
 endprogram
 
 function ProcessCreateItemsEvent(npc, event)
-    print("DEBUG: Processing CreateItems event");
-    
     if (!event.items || !event.items.size())
-        print("DEBUG: No items found in event");
         return 0;
     endif
     
     foreach iteminfo in (event.items)
-        var item := CreateItemAtLocationFromTemplate(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z), CStr(event.realm), iteminfo.item);
-        print("DEBUG: Created item: " + item);
-    endforeach
-    
-    return 1;
-endfunction
-
-function ProcessOpenDoorEvent(npc, event)
-    print("DEBUG: Processing OpenDoor event");
-    
-    if (!event.items || !event.items.size())
-        print("DEBUG: No doors found in event");
-        return 0;
-    endif
-    
-    foreach serial in (event.items)
-        var item := SystemFindObjectBySerial(serial);
-        if (item)
-            print("DEBUG: Unlocking door: " + item.serial);
-            item.locked := 0;
+        var item := CreateItemAtLocation(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z), CInt(iteminfo.item), 1, CStr(npc.realm));
+        
+        if (item == error)
+            PrintTextAbove(npc, "DEBUG: Failed to create item: " + item.errortext);
         else
-            print("DEBUG: Could not find door with serial: " + serial);
+            PrintTextAbove(npc, "DEBUG: Created item: " + item);
         endif
     endforeach
     
     return 1;
 endfunction
 
-function ProcessOpenPassageEvent(npc, event)
-    print("DEBUG: Processing OpenPassage event");
-    
+function ProcessOpenDoorEvent(npc, event)
     if (!event.items || !event.items.size())
-        print("DEBUG: No passages found in event");
         return 0;
     endif
     
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            item.locked := 0;
+        endif
+        sleepms(20);
+    endforeach
+    sleep(60);
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            item.locked := 1;
+        endif
+        sleepms(20);
+    endforeach
+    
+    return 1;
+endfunction
+
+function ProcessOpenPassageEvent(npc, event)
+    if (!event.items || !event.items.size())
+        return 0;
+    endif
     var i := 0;
     while (i < 20)
         foreach serial in (event.items)
             var item := SystemFindObjectBySerial(serial);
             if (item)
-                print("DEBUG: Moving passage item: " + item.serial);
                 item.movable := 1;
                 var e := MoveObjectToLocation(item, item.x, item.y, item.z + 1, item.realm, MOVEOBJECT_FORCELOCATION);
                 item.movable := 0;
-            else
-                print("DEBUG: Could not find passage item with serial: " + serial);
+                sleepms(800);
             endif
         endforeach
         i := i + 1;
     endwhile
-    
+    sleep(60);
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            item.movable := 1;
+            MoveObjectToLocation(item, item.x, item.y, item.z - 20, item.realm, MOVEOBJECT_FORCELOCATION);
+            item.movable := 0;
+        endif
+    endforeach
     return 1;
 endfunction
 
@@ -138,29 +128,39 @@ function ProcessCreateNpcsEvent(npc, event)
         return 0;
     endif
     
-    var x, y, z;
-    
-    // Check if the spawn location is where the boss died (6 6 6)
-    if (event.x == "6" && event.y == "6" && event.z == "6")
-        x := npc.x;
-        y := npc.y;
-        z := npc.z;
-        print("DEBUG: Using boss death location for spawn: " + x + "," + y + "," + z);
-    else
-        x := CInt(event.x);
-        y := CInt(event.y);
-        z := CInt(event.z);
-        print("DEBUG: Using specified location for spawn: " + x + "," + y + "," + z);
-    endif
     
     var amt := 0;
-    while (amt < CInt(event.amount))
-        var spawn_x := x + RandomInt(2 * CInt(event.range)) - CInt(event.range);
-        var spawn_y := y + RandomInt(2 * CInt(event.range)) - CInt(event.range);
-        var new_npc := CreateNpcFromTemplate(CStr(event.npctemplate), spawn_x, spawn_y, z, 0, CStr(event.realm));
+    var fail_count := 0;
+    var max_attempts := CInt(event.amount) * 3; // Allow 3x attempts per requested NPC
+    var range := CInt(event.range);
+    
+    while (amt < CInt(event.amount) && fail_count < max_attempts)
+        // Calculate spawn position using RandomIntMinMax for proper range control
+        var spawn_x := RandomIntMinMax(npc.x - range, npc.x + range);
+        var spawn_y := RandomIntMinMax(npc.y - range, npc.y + range);
+        
+        // Try with different package prefixes
+        var template := CStr(event.npctemplate);
+        var new_npc := error;
+        print("TEMPLATE: " + template);
+        
+        // If template doesn't already have a package prefix, try different ones
+        if (template[1] != ":")
+            var prefixes := array{":brainAI:", ":merchants:", ":epicAI:", ""};
+            foreach prefix in prefixes
+                print("Trying: " + prefix + template + " at " + spawn_x + "," + spawn_y + "," + npc.z);
+                new_npc := CreateNpcFromTemplate(prefix + template, spawn_x, spawn_y, npc.z, 0, CStr(event.realm));
+                if (new_npc != error)
+                    break;
+                endif
+            endforeach
+        else
+            // Template already has a prefix
+            new_npc := CreateNpcFromTemplate(template, spawn_x, spawn_y, npc.z, 0, CStr(event.realm));
+        endif
         
         if (new_npc != error)
-            print("DEBUG: Created NPC: " + new_npc.name + " at " + spawn_x + "," + spawn_y + "," + z);
+            print("DEBUG: Created NPC: " + new_npc.name + " at " + spawn_x + "," + spawn_y + "," + npc.z);
             amt := amt + 1;
             var duration := event.duracao ? CInt(event.duracao) : 120;
             TS_StartTimer(new_npc, "summon", duration);
@@ -168,12 +168,19 @@ function ProcessCreateNpcsEvent(npc, event)
             if (event.summontext)
                 PrintText(new_npc, event.summontext);
             endif
+            fail_count := 0; // Reset fail counter on success
         else
             print("DEBUG: Failed to create NPC: " + new_npc.errortext);
+            fail_count := fail_count + 1;
+            sleepms(50); // Slightly longer delay on failure
         endif
         
         sleepms(2);
     endwhile
+    
+    if (fail_count >= max_attempts)
+        print("DEBUG: Stopped NPC creation after " + max_attempts + " failed attempts");
+    endif
     
     // Create boss if specified
     if (event.bossinfo)
@@ -184,7 +191,7 @@ function ProcessCreateNpcsEvent(npc, event)
         while (!success && attempts < 5)
             attempts += 1;
             // Using direct NPC creation since we don't have access to the CreateBoss function
-            var boss := CreateNpcFromTemplate(event.bossinfo.npctemplate, x, y, z, 0, CStr(event.realm));
+            var boss := CreateNpcFromTemplate(event.bossinfo.npctemplate, npc.x, npc.y, npc.z, 0, CStr(event.realm));
             
             if (boss)
                 print("DEBUG: Created boss: " + boss.name);
@@ -234,17 +241,11 @@ function ProcessCreateNpcsEvent(npc, event)
 endfunction
 
 function ProcessLastWordsEvent(npc, event)
-    print("DEBUG: Processing LastWords event");
-
     if (!event.text || !event.text.size())
-        print("DEBUG: No text found in LastWords event");
         return 0;
     endif
-
-    print("DEBUG: Setting Ultimas Palavras property with " + event.text.size() + " phrases");
-
-    // Set the Ultimas Palavras property so the CanDie hook handles it
+    
     SetObjProperty(npc, "Ultimas Palavras", event.text);
-
+    start_script(":death:hooks/speaklastwords", npc);
     return 1;
 endfunction 
