@@ -9,38 +9,26 @@ include ":merchants:pcconversation";
 program DeathEventsControl(params)
     var npc := params[1];
     if (!npc || npc.errortext)
-        print("ERROR: DeathEventsControl called with invalid NPC");
         return 0;
     endif
-    
-    print("DEBUG: DeathEventsControl started for " + npc.name + " [" + npc.serial + "]");
     
     // Check if NPC has death events
     var death_events := GetObjProperty(npc, "DeathEvents");
     if (!death_events || !death_events.size())
-        print("DEBUG: No death events found on NPC " + npc.serial);
         return 0;
     endif
     
-    print("DEBUG: Found " + death_events.size() + " death events");
-    
     // Process Last Words events first, before NPC dies
     foreach event in death_events
-        print("DEBUG: Processing event: " + event);
         if (event.type == "Ultimas Palavras")
-            print("DEBUG: Processing Last Words event before death");
             ProcessLastWordsEvent(npc, event);
         elseif (event.type == "Criar Npcs")
-            print("DEBUG: Processing CreateNpcs event before death");
             ProcessCreateNpcsEvent(npc, event);
         elseif (event.type == "Criar Itens")
-            print("DEBUG: Processing Criar Itens event before death");
             ProcessCreateItemsEvent(npc, event);
         elseif (event.type == "Abrir Porta")
-            print("DEBUG: Processing Abrir Porta event before death");
             ProcessOpenDoorEvent(npc, event);
         elseif (event.type == "Abrir Passagem")
-            print("DEBUG: Processing Abrir Passagem event before death");
             ProcessOpenPassageEvent(npc, event);
         endif
     endforeach
@@ -121,10 +109,7 @@ function ProcessOpenPassageEvent(npc, event)
 endfunction
 
 function ProcessCreateNpcsEvent(npc, event)
-    print("DEBUG: Processing CreateNpcs event");
-    
     if (!event.amount || !event.npctemplate)
-        print("DEBUG: Missing amount or template in event");
         return 0;
     endif
     
@@ -142,13 +127,11 @@ function ProcessCreateNpcsEvent(npc, event)
         // Try with different package prefixes
         var template := CStr(event.npctemplate);
         var new_npc := error;
-        print("TEMPLATE: " + template);
         
         // If template doesn't already have a package prefix, try different ones
         if (template[1] != ":")
             var prefixes := array{":brainAI:", ":merchants:", ":epicAI:", ""};
             foreach prefix in prefixes
-                print("Trying: " + prefix + template + " at " + spawn_x + "," + spawn_y + "," + npc.z);
                 new_npc := CreateNpcFromTemplate(prefix + template, spawn_x, spawn_y, npc.z, 0, CStr(event.realm));
                 if (new_npc != error)
                     break;
@@ -160,7 +143,6 @@ function ProcessCreateNpcsEvent(npc, event)
         endif
         
         if (new_npc != error)
-            print("DEBUG: Created NPC: " + new_npc.name + " at " + spawn_x + "," + spawn_y + "," + npc.z);
             amt := amt + 1;
             var duration := event.duracao ? CInt(event.duracao) : 120;
             TS_StartTimer(new_npc, "summon", duration);
@@ -170,73 +152,12 @@ function ProcessCreateNpcsEvent(npc, event)
             endif
             fail_count := 0; // Reset fail counter on success
         else
-            print("DEBUG: Failed to create NPC: " + new_npc.errortext);
             fail_count := fail_count + 1;
             sleepms(50); // Slightly longer delay on failure
         endif
         
         sleepms(2);
     endwhile
-    
-    if (fail_count >= max_attempts)
-        print("DEBUG: Stopped NPC creation after " + max_attempts + " failed attempts");
-    endif
-    
-    // Create boss if specified
-    if (event.bossinfo)
-        print("DEBUG: Creating boss NPC");
-        var success := 0;
-        var attempts := 0;
-        
-        while (!success && attempts < 5)
-            attempts += 1;
-            // Using direct NPC creation since we don't have access to the CreateBoss function
-            var boss := CreateNpcFromTemplate(event.bossinfo.npctemplate, npc.x, npc.y, npc.z, 0, CStr(event.realm));
-            
-            if (boss)
-                print("DEBUG: Created boss: " + boss.name);
-                
-                if (event.bossinfo.name)
-                    SetName(boss, event.bossinfo.name);
-                endif
-                
-                if (event.bossinfo.color)
-                    boss.color := CInt(event.bossinfo.color);
-                endif
-                
-                // Apply other properties from bossinfo
-                if (event.bossinfo.str)
-                    AP_SetStatMod(boss, STRENGTH, CInt(event.bossinfo.str));
-                endif
-                
-                if (event.bossinfo.dex)
-                    AP_SetStatMod(boss, DEXTERITY, CInt(event.bossinfo.dex));
-                endif
-                
-                if (event.bossinfo.int)
-                    AP_SetStatMod(boss, INTELLIGENCE, CInt(event.bossinfo.int));
-                endif
-                
-                if (event.bossinfo.hits)
-                    SetObjProperty(boss, "hitsmod", CInt(event.bossinfo.hits));
-                    RecalcVitals(boss);
-                    AP_RefreshVitals(boss);
-                endif
-                
-                SetObjProperty(boss, "anchor", array{boss.x, boss.y});
-                success := 1;
-                
-                if (event.summonbosstext)
-                    PrintText(boss, event.summonbosstext);
-                endif
-            else
-                print("DEBUG: Failed to create boss: " + (boss.errortext ? boss.errortext : "Unknown error"));
-            endif
-            
-            sleepms(2);
-        endwhile
-    endif
-    
     return 1;
 endfunction
 

@@ -227,8 +227,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
 
     // Set combat events
     if (boss.combatevents && boss.combatevents.size() > 0)
-        print("DEBUG: Processing " + boss.combatevents.size() + " combat events");
-        
         // Create a clean array with consistent structure
         var cleaned_events := array{};
         
@@ -242,24 +240,20 @@ function CreateEpicBoss(boss, x, y, z, realm)
             
             // Use actions if available, otherwise fall back to steps
             if (event.actions && event.actions.size() > 0)
-                print("DEBUG: Event " + event.name + " has " + event.actions.size() + " actions");
                 foreach action in (event.actions)
                     clean_event.steps.append(action);
                 endforeach
             elseif (event.steps && event.steps.size() > 0)
-                print("DEBUG: Event " + event.name + " has " + event.steps.size() + " steps");
                 foreach action in (event.steps)
                     clean_event.steps.append(action);
                 endforeach
-            else
-                print("DEBUG: Event " + event.name + " has no actions/steps!");
             endif
             
             cleaned_events.append(clean_event);
         endforeach
         
         SetObjProperty(npc, "CombatEvents", cleaned_events);
-        print("DEBUG: Set CombatEvents property with " + cleaned_events.size() + " events");
+        start_script(":epicspawn:scripts/combatEventsControl", array{npc});
     endif
     
     // Set timedscripts
@@ -275,7 +269,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
             timedscripts_array.append(script_struct);
         endforeach
         SetObjProperty(npc, "TimedScripts", timedscripts_array);
-        print("DEBUG: Set TimedScripts property with " + timedscripts_array.size() + " scripts");
         
         // Start the TimedScript control process
         start_script(":epicAI:scripts/timedScriptControl", array{npc});

@@ -1283,10 +1283,27 @@ function ShowPage4(who, title, gump_width, gump_height)
     // Patrol Areas section
     GFTextLine(gump, 50, 160, 1153, "Patrol Areas:");
     GFAddButton(gump, 250, 160, 2103, 2104, 1, 70);
-    GFTextLine(gump, 280, 160, 1153, "Set Patrol Location 1");
+    GFTextLine(gump, 280, 160, 1153, "Add Patrol Point");
     
-    GFAddButton(gump, 250, 190, 2103, 2104, 1, 71);
-    GFTextLine(gump, 280, 190, 1153, "Set Patrol Location 2");
+    // Display existing patrol points
+    var y_pos := 190;
+    if (form_data.patrol_points)
+        GFTextLine(gump, 50, y_pos, 1153, "Current Patrol Points:");
+        y_pos += 20;
+        
+        for i := 1 to form_data.patrol_points.size()
+            var point := form_data.patrol_points[i];
+            GFTextLine(gump, 70, y_pos, 33, i + ": " + point.x + ", " + point.y );
+            y_pos += 20;
+        endfor
+        
+        // Add clear all button if there are points
+        if (form_data.patrol_points.size() > 0)
+            GFAddButton(gump, 250, y_pos, 2103, 2104, 1, 71);
+            GFTextLine(gump, 280, y_pos, 1153, "Clear All Patrol Points");
+            y_pos += 20;
+        endif
+    endif
     
     // Teleport Conditions section
     GFTextLine(gump, 50, 230, 1153, "Teleport When Health Below:");
@@ -1295,7 +1312,7 @@ function ShowPage4(who, title, gump_width, gump_height)
     
     GFAddButton(gump, 250, 260, 2103, 2104, 1, 73);
     GFTextLine(gump, 280, 260, 1153, "Set Teleport Location");
-    
+
     // Add a vertical divider
     GFResizePic(gump, 520, 160, 3000, 2, 230);
     
@@ -1344,9 +1361,23 @@ function ShowPage4(who, title, gump_width, gump_height)
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
     GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
-    
+
+            
     // Send the gump to the player
     var input := GFSendGump(who, gump);
+
+    if (input[0] == 70) // Add Patrol Point
+        SelectPatrolArea(who, input, form_data);
+        return ShowPage4(who, title, gump_width, gump_height);
+    elseif (input[0] == 71) // Clear All Patrol Points
+        form_data.patrol_points := array{};
+        SendSysMessage(who, "All patrol points cleared.");
+        return ShowPage4(who, title, gump_width, gump_height);
+    elseif (input[0] == 73) // Set Teleport Location
+        ManageTeleportLocations(who, form_data);
+        return ShowPage4(who, title, gump_width, gump_height);
+    endif
+
     return input;
 endfunction
 
@@ -1632,6 +1663,12 @@ function CreateBossFromGump(who, form_data)
     // After setting the property, verify it was set correctly
     var debug_events := GetObjProperty(npc, "DeathEvents");
     print("DEBUG: Death events after saving: " + debug_events);
+    
+    // Set patrol points if they exist
+    if (form_data.patrol_points && form_data.patrol_points.size() > 0)
+        SetObjProperty(npc, "patrol_points", form_data.patrol_points);
+        SetObjProperty(npc, "#current_patrol_point", 1);
+    endif
     
     return 1;
 endfunction

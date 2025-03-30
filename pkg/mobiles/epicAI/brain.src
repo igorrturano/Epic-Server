@@ -23,9 +23,11 @@ program KillPlayers()
 
     while (1)
         var hasPlayerNearMe := HasPlayerNear(me);
-        if (hasPlayerNearMe)
-            start_script(":epicAI:scripts/timedScriptControl", array{me});
-            start_script(":epicspawn:scripts/combatEventsControl", array{me});
+        var patrol_points := GetObjProperty(me, "patrol_points");
+        var isOnPatrol := (patrol_points && patrol_points.size() >= 2);
+        
+        if (hasPlayerNearMe || isOnPatrol)
+           
             case (brain_type)
                 "monster": MonsterBrain();
                 "animal":  AnimalBrain();
@@ -34,6 +36,7 @@ program KillPlayers()
             endcase
             // Process any TimedScripts
         endif
+        
         sleep(15);
     endwhile
 endprogram
