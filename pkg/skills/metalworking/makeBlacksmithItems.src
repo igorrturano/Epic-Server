@@ -4,12 +4,10 @@ use util;
 include ":itemutils:canAccess";
 include ":crafting:controladoraComplexos";
 
-var item_config     := ReadConfigFile(":*:itemdesc");
-var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
 
 program use_SmithTool(who, tool)
 
-	var rinfo := FabricaItensComplexos(who, "Blacksmithy");
+	var rinfo := FabricaItensComplexos(who, "Blacksmithy", ":metalworking:blacksmithy");
 
 endprogram
 

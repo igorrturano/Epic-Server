@@ -4,12 +4,10 @@ use util;
 
 include ":crafting:controladoraComplexos";
 
-var item_config     := ReadConfigFile(":*:itemdesc");
-var craft_config    := ReadConfigFile(":DomesticWork:tailoring");
 
 program use_SmithTool(who, tool)
 
-	FabricaItensComplexos(who, "Tailoring");
+	FabricaItensComplexos(who, "Tailoring", ":DomesticWork:tailoring");
 
 endprogram
 

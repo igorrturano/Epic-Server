@@ -5,10 +5,6 @@ use util;
 
 include ":crafting:controladoraComplexos";
 
-
-var item_config     := ReadConfigFile(":*:itemdesc");
-var craft_config    := ReadConfigFile(":alchemy:AlchItems");
-
 program use_Alchemy(who, tool)
-	FabricaItensComplexos(who, "Alchemy");
+	FabricaItensComplexos(who, "Alchemy", ":alchemy:AlchItems");
 endprogram

@@ -1,5 +1,8 @@
 use uo;
 
+const PROFISSAO_CONFIG_PATH := ":crafting:config/craftConfig";
+const RECURSOS_CONFIG_PATH := ":crafting:config/resourceList";
+
 enum CULTURA
     AIGLANA := "Aiglana",
     HAROLOTH := "Har'oloth",

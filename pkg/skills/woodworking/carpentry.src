@@ -8,15 +8,9 @@ use util;
 
 include ":crafting:controladoraComplexos";
 
-CONST CARP_WOOD_SOUND := 0x23e;
-
-var item_config     := ReadConfigFile(":*:itemdesc");
-unloadconfigfile(":woodworking:CarpItems");
-var craft_config    := ReadConfigFile(":woodworking:CarpItems");
-
 program use_carptool(who, tool)
 
-	FabricaItensComplexos(who,"Carpentry");
+	FabricaItensComplexos(who,"Carpentry", ":woodworking:CarpItems");
 
 endprogram
 

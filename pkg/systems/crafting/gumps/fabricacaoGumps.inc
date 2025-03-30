@@ -207,8 +207,6 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
 	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
 	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
-	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11,G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 2,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
-	GFTooltipText(gump,"Avaliar Material.");
 	
 	if(componenteSelecionado)
 		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
@@ -218,6 +216,8 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 		GFTooltipText(gump,"Aumentar o esforço produz componentes de melhor qualidade.");
 		GFAddButton(gump,(G_MARGEM_ESQUERDA+ G_ESPACAMENTO) * 4 ,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 50,2437,2438,GF_CLOSE_BTN, COMPONENTES_BTN_ESFORCO_MENOS);
 		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
+		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11,G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 2,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
+		GFTooltipText(gump,"Avaliar Material.");
 		foreach material in (SplitWords(componenteSelecionado.materiais,","))
 			DefinirMateriais(gump,
 							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
@@ -465,7 +465,7 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter,sessao);
 
 			//Controle de Paginação.
-			if(_receita_iter % (colunasLinha * 2) == 0)
+			if(_receita_iter % (colunasLinha * 2) == 0 && _receita_iter != receitas.size())
 				page += 1;
 				GFAddButton(gump,x + largura - 45, y + altura / 2,4005,4006,GF_PAGE_BTN,gump.cur_page + 1);
 				GFPage(gump,page);

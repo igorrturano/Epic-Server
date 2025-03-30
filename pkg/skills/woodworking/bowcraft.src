@@ -5,13 +5,10 @@ use util;
 
 include ":crafting:controladoraComplexos";
 
-var item_config     := ReadConfigFile(":*:itemdesc");
-var craft_config    := ReadConfigFile(":woodworking:bowcraft");
-var amount;
 
 program use_FletchTool(who, tool)
 
-	FabricaItensComplexos(who,"BowcraftFletching");
+	FabricaItensComplexos(who,"BowcraftFletching", ":woodworking:bowcraft");
 
 endprogram
 

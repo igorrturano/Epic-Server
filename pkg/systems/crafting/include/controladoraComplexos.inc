@@ -11,14 +11,12 @@ include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
-var fabricacaoConfig := ReadConfigFile( ":crafting:config/craftConfig" );
-
 const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-function FabricaItensComplexos(quem,profissao)
-	EnviaItensComplexosGump(quem,profissao);
+function FabricaItensComplexos(quem,profissao, receitasConfigPath)
+	EnviaItensComplexosGump(quem,profissao, receitasConfigPath);
 endfunction
 
 function InicializaSessaoComplexos(quem, profissaoCraftProp)
@@ -72,9 +70,9 @@ function SelecionaReceita(byref sessao, quem, parametros , indice)
 	NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,objetoReceita.objtype));
 endfunction
 
-function EnviaItensComplexosGump(quem,profissao)
-	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
-	var parametros := PreparaItensComplexosGump(quem, profissao);
+function EnviaItensComplexosGump(quem,profissao, receitasConfigPath)
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
+	var parametros := PreparaItensComplexosGump(quem, profissao, receitasConfigPath);
 	var retorno := true;
 	var gump;
 	var sessao := InicializaSessaoComplexos(quem, parametros.propCraft[parametros.pericia]);
@@ -867,28 +865,30 @@ function IsAlvoValido(quem, alvo)
 	return 1;
 endfunction
 
-function PreparaItensComplexosGump(quem, profissao)
+function PreparaItensComplexosGump(quem, profissao, receitasConfigPath)
 
 	var parametrosGump := struct;
-	var menuFile    := fabricacaoConfig[profissao].MenuFile;
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var menuFile    := profissaoConfig[profissao].MenuFile;
 	var menuPericiaCfg := ReadConfigFile(menuFile);
 
 	var propCraft := GetObjProperty(quem, "Craft");
 	if( TypeOf(propCraft) != "Dictionary" )
-		propCraft := MontaCraftProp(fabricacaoConfig);
+		propCraft := profissaoConfig;
 		SetObjProperty(quem, "Craft", propCraft);
 	endif
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+profissao := profissao;
 	parametrosGump.+propCraft := propCraft;
-	parametrosGump.+pericia := fabricacaoConfig[profissao].Attribute;
-	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.pericia, parametrosGump.propCraft);
+	parametrosGump.+receitasConfig := ReadConfigFile(receitasConfigPath);
+	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
+	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.pericia, parametrosGump.receitasConfig , parametrosGump.propCraft);
 	
 	return parametrosGump;
 endfunction
 
-function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia,byref propCraft)
+function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft)
 
 	var retornoVisao := Dictionary;
 	
@@ -935,10 +935,9 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia,byref pro
         		continue;
       		endif
 
-			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem))
-				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, propCraft);
+			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem, receitasConfig))
+				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft);
 				if(!receitaItem.isVisualizada)
-					//TODO FIX tá removendo todas as categorias visualizadas, mesmo quando eu já vi elas.
 					var index := propCraft[nomePericia]["visualizadas"].categorias.findIndex( @(categoriaArray) {return categoriaArray == categoria;});
 					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
 				endif
@@ -954,17 +953,17 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia,byref pro
 
 endfunction
 
-function MontaReceitaItem(quem, objtype, nomePericia,byref propCraft)
+function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref propCraft)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
-	var descritorFabricacao := craft_config[objtype];
-	var sucessos := GetConfigInt(craft_config[objtype],"SucessosFabricacao");
+	var descritorFabricacao := receitasConfig[objtype];
+	var sucessos := GetConfigInt(receitasConfig[objtype],"SucessosFabricacao");
 
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
-	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype);
+	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig);
 	receita.+sucessosNecessarios := sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, descritorFabricacao);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos);
@@ -1013,8 +1012,8 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	return desc;
 endfunction
 
-function PegaComponentesNecessarios(objtype)
-	var encaixesItem := GetConfigStringArray(craft_config[objtype],"ComponenteEncaixe");
+function PegaComponentesNecessarios(objtype, receitasConfig)
+	var encaixesItem := GetConfigStringArray(receitasConfig[objtype],"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 
 	var componentes := array;
@@ -1045,10 +1044,10 @@ function PegaMateriaisNecessarios(objtype, descritorFabricacao)
 	return materials;
 endfunction
 
-function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem)
+function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem, receitasConfig)
 	
 	var isOrigemValida := false;
-	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, nomePericia);
+	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, nomePericia, receitasConfig);
 	
 	if(isDuplaOrigem)
 		isOrigemValida := nomeItem in receitasAprendidas || povo == itemOrigem;
@@ -1065,9 +1064,9 @@ function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,r
 	return isOrigemValida && isValorPericiaSuficiente;
 endfunction
 
-function TemValorPericiaNecessaria(quem, objtype, nomePericia)
+function TemValorPericiaNecessaria(quem, objtype, nomePericia, receitasConfig)
 	var settings := AP_GetSettingsCfgElem("Skills");
-	return (  craft_config[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
+	return (  receitasConfig[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
 endfunction
 
 function ClassificaRetornoComplexos(retorno,sessao)

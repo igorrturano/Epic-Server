@@ -14,15 +14,29 @@ include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
-function FabricaComponentes(quem,profissao)
-	EnviaGumpComponentes(quem);
+function FabricaComponentes(quem,pericia := "todas")
+	EnviaGumpComponentes(quem, pericia );
 endfunction
 
-function EnviaGumpComponentes(quem)
+function DecideConfigComponentes(pericia)
+	var retorno;
+	case(pericia)
+		"Wood_Working": retorno :=  ":woodworking:"; break;
+		"Metal_Working": retorno :=  ":metalworking:"; break;
+		"Alchemy":  retorno :=  ":alchemy:"; break;
+		"Domestic_Work": retorno :=  ":DomesticWork:"; break;
+		default:
+			retorno := ":*:"; break;
+	endcase
+
+	retorno += "componentes";
+	return retorno;
+endfunction
+
+function EnviaGumpComponentes(quem, pericia := "todas")
 	var retorno := 1;
-	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
-	var configProfissao := ReadConfigFile(":woodworking:carpentry");//TODO isto tem que virar um parâmetro, porque virá do script da ferramente\estação.
-	var pericia := "Wood_Working";//TODO isto tem que virar um parâmetro, porque virá do script da ferramente\estação.
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
+	var configProfissao := ReadConfigFile(DecideConfigComponentes(pericia));
 	var chavesOpcoesMateriais := GetConfigStringKeys(configRecursos);
 	
 	var sessao := struct;
@@ -87,14 +101,14 @@ function EnviaGumpComponentes(quem)
 				if(alvo)
 					var materialDetalhes := configRecursos[alvo.objtype];
 					if(materialDetalhes)
-						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,pericia);
+						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,configProfissao[sessao.componenteSelecionado.selecione.objtype].pericia);
 						if(isTrabalhavel)
-							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar este material.",SSM_HELPFU);
+							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar o material indicado.",SSM_HELPFU);
 						else
-							SendSysMessageEX(quem,"Você não pode trabalhar este material.",SSM_HARMFUL);
+							SendSysMessageEX(quem,"Você não pode trabalhar o material indicado para este componente .",SSM_HARMFUL);
 						endif
 					else
-						SendSysMessageEX(quem,"Você não pode trabalhar este material.",SSM_HARMFUL);
+						SendSysMessageEX(quem,"O Alvo não é um material trabalhavel.",SSM_HARMFUL);
 					endif
 				else
 					SendSysMessageEX(quem,"Alvo cancelado.",SSM_FAIL);
@@ -173,6 +187,7 @@ function EnviaGumpComponentes(quem)
 		endcase
 	endwhile
 endfunction
+
 
 function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia, encaixe, picoPericia)
 
@@ -406,7 +421,6 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 
 		var componente := struct;
 		componente.+nome := configProfissao[chave].name;
-		componente.+estacao := itemsConfig[configProfissao[chave].estacao].desc;
 		componente.+materialPrincipal := configProfissao[chave].principalMaterial;
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := configProfissao[chave].encaixe;
@@ -416,11 +430,10 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	endforeach
 
 	var colCfg := dictionary;
-		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 2};
-		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 4};
-		colCfg["materialPrincipal"] := struct{titulo := "Principal Material",ordem := 3,largura := 2};
-		colCfg["estacao"] := struct{titulo := "Estação",ordem := 5,largura := 1.5};
-		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 1.5};
+		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 4.5};
+		colCfg["materialPrincipal"] := struct{titulo := "Principal",ordem := 3,largura := 1.5};
+		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 2};
 		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
 
 	parametrosGump.+configColunas := colCfg;
