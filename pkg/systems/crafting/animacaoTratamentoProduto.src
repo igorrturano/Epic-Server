@@ -3,6 +3,7 @@ use os;
 use cfgfile;
 
 include "/include/epicPropNames";
+include "/include/epicConstants";
 include ":crafting:/include/animacaoTratamentoProduto";
 include ":megacliloc:/include/toolTipUtils";
 include ":crafting:/include/tratamentoProduto";
@@ -19,9 +20,12 @@ program AnimacaoTratamentoProduto(parametros)
 	var itemDescGeral := ReadConfigFile(":*:itemdesc");
 	var processoGerente := GetProcess(pidGerente);
 	
-	var isAlvoValido := isEstacaoValida(quem,estacaoAlvo,propFabricado.receita.pericia);
-	if(propFabricado.receita.pericia == "Metal_Working" && isAlvoValido)
+	var isAlvoValido := isEstacaoValida(quem,estacaoAlvo,propFabricado.receita.profissao);
+	
+	if(propFabricado.receita.profissao == "Blacksmithy" && isAlvoValido)
 		estacao := PegaEstacaoFerreiro(quem, estacaoAlvo.item);
+	else
+		estacao := estacaoAlvo;
 	endif
 
 	var deveSair := !(estacao && isAlvoValido);
@@ -29,16 +33,17 @@ program AnimacaoTratamentoProduto(parametros)
 	while(!deveSair)
 
 		if(processoGerente.state)
-			case (propFabricado.receita.pericia)
-				"Metal_Working":
+			case (propFabricado.receita.profissao)
+				"Blacksmithy":
 					var produtoElemConfig := itemDescGeral[propFabricado.receita.objtype];
 					var classificacaoProduto := ClassificaParametro(produtoElemConfig);
 					if(classificacaoProduto != DESCONHECIDO)
 						devesair := RodaAnimacaoFerreiro(quem,produto,estacao,processoGerente, classificacaoProduto);
-					else
-						deveSair := true; //TODO tratar tinkering;
 					endif
 					break;
+				default:
+					devesair := RodaAnimacaoPadrao(quem,produto,estacao,processoGerente,propFabricado);
+
 			endcase
 		else
 			deveSair := true;

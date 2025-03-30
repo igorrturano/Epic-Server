@@ -297,6 +297,7 @@ function FabricaItens(quem, esquema, receita, quantidade := 1)
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)
+		Sleep(1);
 		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade);
 		if(!retorno)
 			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
@@ -883,12 +884,19 @@ function PreparaItensComplexosGump(quem, profissao, receitasConfigPath)
 	parametrosGump.+propCraft := propCraft;
 	parametrosGump.+receitasConfig := ReadConfigFile(receitasConfigPath);
 	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
-	parametrosGump.+visaoReceitas := MontaVisaoReceitas(quem,categorias,menuPericiaCfg,parametrosGump.pericia, parametrosGump.receitasConfig , parametrosGump.propCraft);
+	parametrosGump.+visaoReceitas := MontaVisaoReceitas(
+											quem,
+											categorias,
+											menuPericiaCfg,
+											parametrosGump.pericia,
+											parametrosGump.receitasConfig, 
+											parametrosGump.propCraft,
+											profissao);
 	
 	return parametrosGump;
 endfunction
 
-function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft)
+function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft, nomeProfissao)
 
 	var retornoVisao := Dictionary;
 	
@@ -935,8 +943,18 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
         		continue;
       		endif
 
-			if(DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem, receitasConfig))
-				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft);
+			if(DeveAparecerReceita(
+							quem,
+							povo,
+							itemOrigem,
+							nomeItem,
+							objtype,
+							nomePericia,
+							receitasAprendidas,
+							isDuplaOrigem,
+							receitasConfig))
+
+				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao);
 				if(!receitaItem.isVisualizada)
 					var index := propCraft[nomePericia]["visualizadas"].categorias.findIndex( @(categoriaArray) {return categoriaArray == categoria;});
 					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
@@ -953,10 +971,11 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 
 endfunction
 
-function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref propCraft)
+function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref propCraft, nomeProfissao)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
 	var descritorFabricacao := receitasConfig[objtype];
+	var isComponente := GetConfigString(descritorFabricacao, "encaixe");
 	var sucessos := GetConfigInt(receitasConfig[objtype],"SucessosFabricacao");
 
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
@@ -967,18 +986,30 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+sucessosNecessarios := sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, descritorFabricacao);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos);
-	receita.+dificuldade := PegaDificuldade(quem, descritorFabricacao, nomePericia);
+	receita.+dificuldade := PegaDificuldade(quem, GetConfigReal(descritorFabricacao,"skill"), nomePericia);
+	receita.+skillNecessaria :=  GetConfigReal(descritorFabricacao,"skill");
 	receita.+objtype := objtype;
 	receita.+pericia := nomePericia;
+	receita.+profissao := nomeProfissao;
 	receita.+uso := definicaoItem.Attribute;
 	receita.+desc := definicaoItem.desc;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
 	receita.+isVisualizada:=  objtype in (propCraft[nomePericia]["visualizadas"].receitas);
+	
+	if(isComponente)
+		receita.+complexoComponente := MontaComplexoComponente(descritorFabricacao); //o item é um complexo considerado componente também.
+	endif
 
 	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
 	receita.+isEmpilhavel := definicaoTileItem.Stackable;
 	return receita;
 endfunction
+
+function MontaComplexoComponente(descritorFabricacao);
+	return struct {
+		encaixe :=  GetConfigString(descritorFabricacao, "encaixe")
+	};
+endfunction 
 
 function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, sucessos)
 

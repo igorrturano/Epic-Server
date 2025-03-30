@@ -59,12 +59,30 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 	return CheckCanWork(quem,saudeInicial,posicaoInicial);
 endfunction
 
+function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial, profissao)
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	if(!CoordinateDistanceEuclidean(quem.x, quem.y, estacao.x, estacao.y) || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
+		SendSysMessageEx(quem,"Você não alcança a estação escolhida",SSM_FAIL);
+		return false;
+	endif
+
+	if(profissaoConfig[profissao].Ferramenta)
+		if(ferramentaNecessaria.objtype != profissaoConfig[profissao].Ferramenta)
+			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+			return false;
+		endif
+	endif
+	
+	return CheckCanWork(quem,saudeInicial,posicaoInicial);
+endfunction
+
+// ------------        Animações Inicio			--------------
 function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classificacaoProduto)
 	var estagios := array {"aquecendo", "martelando", "esfriando"};
 	var contadorEstagio := 0;
 	var contadorInterno := 0;
 	var deveMudarEstagio;
-	var ferramentaNecessaria := BuscaFerramenta(quem,"Metal_Working");
+	var ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
 	var posicaoInicial := CriaObjetoPosicao(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 
@@ -168,12 +186,29 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 		if(deveMudarEstagio)
 			++contadorEstagio;
 		endif
-		ferramentaNecessaria := BuscaFerramenta(quem,"Metal_Working");
+		ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
 		Sleep(2);
 	endwhile
 
 	return true;
 endfunction
+
+function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabricado)
+	var ferramentaNecessaria := BuscaFerramenta(quem,propFabricado.receita.profissao);
+	var posicaoInicial := CriaObjetoPosicao(quem);
+	var saudeInicial := AP_GetVital(quem, "Hits");
+
+	while (processoGerente.state && isAnimacaoPadraoPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial,propFabricado.receita.profissao))
+		PrintTextAbove(quem,"*Trabalhando*");
+		PerformAction( quem, ANIM_CAST_DIR ); 
+		PlaySoundEffect(quem, SFX_2C);
+		Sleep(2);
+	endwhile
+
+	return true;
+endfunction
+
+// ------------        Animações Fim			--------------
 
 function DefineItemEstacao (byref estacao, quem, objProp, serialGuardada, itemEstacao)
 	estacao.insert(itemEstacao, SystemFindObjectBySerial( objProp[serialGuardada], sysfind_flags := 0 ));
@@ -183,17 +218,16 @@ function DefineItemEstacao (byref estacao, quem, objProp, serialGuardada, itemEs
 
 endfunction
 
-function BuscaFerramenta (quem, pericia)
+function BuscaFerramenta (quem, profissao)
 	var ferramenta;
-	case (pericia)
-		"Metal_Working":
-			if(quem.weapon.objtype == 0x13e3)
-				ferramenta := quem.weapon;
-			else
-				ferramenta := FindObjtypeInContainer(quem.backpack, 0x13e3);
-			endif
-		break;
-	endcase
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+
+	if(quem.weapon.objtype == cint(profissaoConfig[profissao].Ferramenta))
+		ferramenta := quem.weapon;
+	else
+		ferramenta := FindObjtypeInContainer(quem.backpack, cint(profissaoConfig[profissao].Ferramenta));
+	endif
+
 	return ferramenta;
 endfunction
 

@@ -232,5 +232,6 @@ function getComponenteToAprimoramento(caracteristicaComponente, valor)
 	case (caracteristicaComponente)
 		"precisao": return valor > 0 ? "Arma Balanceada" : "Arma Desbalanceada"; break;
 		"dano": return valor > 0 ? "Arma Afiada" : "Arma Cega"; break;
+		"tranca": return valor > 0 ? "Tranca" : "Tranca Improvisada"; break;
 	endcase
 endfunction

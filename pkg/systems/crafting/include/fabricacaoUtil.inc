@@ -8,6 +8,7 @@ include "/include/math";
 include ":attributes:attributes";
 include "/include/epicPropNames";
 include "/include/epicConstants";
+include ":keys:key";
 
 const CHANCE_FABRICACAO_MAX := 80.0;
 var itemsConfig := ReadConfigFile(":*:itemdesc");
@@ -17,6 +18,52 @@ enum ESTADOS_FABRICACAO
 	ITEM_MONTADO,
 	ITEM_GERADO
 endenum
+
+// TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
+function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
+	
+	if(quantidade == error || quantidade.size() == 0)
+		return error{"errortext":="O parâmetro quantidade é obrigatório."};
+	endif
+
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
+	var retorno := dictionary;
+
+	//Print("Chances: "  + chancesPorTier);
+	for i:=1 to quantidade
+		var isFalhouTudo := true;
+		var rolagem := RandomFloat(100.0);
+		var chanceAcumulada := 0;
+
+		foreach chance in chancesPorTier
+			chanceAcumulada += chance;
+			//Print("Chance Tier " + _chance_iter + ": " + chance);
+			//Print("rolagem: " + rolagem + " chance: " + chanceAcumulada);
+			if (rolagem <= chanceAcumulada)
+				
+				isFalhouTudo := false;
+				if(retorno.exists(_chance_iter)) // popula o dict de retono com chave=tier e valor=quantidade de itens nesse tier.
+					retorno[_chance_iter] += 1;
+				else
+					retorno.insert(_chance_iter,1);
+				endif
+				break;
+			endif
+			Sleepms(2);
+		endforeach
+
+		if(isFalhouTudo) //Se falhou tudo, coloca na pior qualidade.
+			if(retorno.exists(1))
+				retorno[1] += 1;
+			else
+				retorno.insert(1,1);
+			endif
+		endif
+		Sleepms(2);
+	endfor
+	return retorno;
+
+endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
@@ -30,10 +77,14 @@ function PegaComponenteTierDesc(tier)
 	endcase
 endfunction
 
-function PegaDificuldade( quem, descritorFabricacao, nomePericia, produto := 0, estacao  := 0)
+function CalculaValorPico(quem, pericia)
+	return AP_GetSkill(quem,pericia) / 20;
+endfunction
+
+function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, estacao  := 0)
 	 var retorno := struct;
 	 
-	 retorno.+skill := CDbl(GetConfigString(descritorFabricacao,"skill"));
+	 retorno.+skill := CDbl(skillNecessaria);
 	 retorno.+chancePelaSkill := 0;
 	 retorno.+modificadoresChance := array;
 	 retorno.+chanceModificadaTotal := 0;
@@ -73,18 +124,46 @@ function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePe
 	return  Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
 endfunction
 
-function CriaItemFabricado(quem, produto, quantidade := 1)
-	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
-
-	var descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
-		descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
-		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
+function CriaComponenteDescriptor(objtype, chaveMaterial, qualidade, encaixe, configRecursos)
+		var descriptor := GetItemDescriptor(CInt(objtype));
+		descriptor.CProps.insert(PROPNAME_MATERIAL,chaveMaterial);
+		descriptor.CProps.insert(PROPNAME_TIER_COMPONENTE,qualidade);
+		descriptor.CProps.insert(PROPNAME_ENCAIXE_COMPONENTE,encaixe);
 		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
-		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
-		if(!propFabricadoMontado.receita.isEmpilhavel)
-			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
-		endif
-		descriptor.color := propFabricadoMontado.esquema.cor;
+		descriptor.color := configRecursos[chaveMaterial].Color;
+
+		return descriptor;
+endfunction
+
+function CriaItemFabricado(quem, produto, quantidade := 1)
+
+	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	var descriptor;
+
+	if(propFabricadoMontado.receita.complexoComponente) // Se for item complexo que é considerado componente. [ex: fechadura]
+		var qualidades := DistribuiQualidadeComponentes(1,CalculaValorPico(quem,propFabricadoMontado.receita.pericia));
+		
+		descriptor := CriaComponenteDescriptor(
+										propFabricadoMontado.receita.objtype,
+										propFabricadoMontado.esquema.material,
+										qualidades.keys()[1],
+										propFabricadoMontado.receita.complexoComponente.encaixe,
+										ReadConfigFile(RECURSOS_CONFIG_PATH)
+										);
+	else
+		descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
+		descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
+		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
+	endif
+
+	descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
+	descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
+	
+	if(!propFabricadoMontado.receita.isEmpilhavel)
+		descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
+	endif
+
+	descriptor.color := propFabricadoMontado.esquema.cor;
 		
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
 	if(!item)
@@ -95,8 +174,33 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 		SendSysMessageEX(quem, "Erro ao criar objeto.",SSM_FAIL);
 	endif
 
+	AplicaFechadura(quem, item);
+
 	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
 
+endfunction
+
+function AplicaFechadura(quem, item)
+	var levelFechadura := PegaCaracteristica(item, "tranca");
+	
+	if(levelFechadura && KP_IsLockable(item))
+		    var lockid := AllocLockId();
+			var key := CreateItemInBackpack( quem, "ironkey", 1 );
+			if(key)
+				SetObjProperty( item, "LockId", lockid );
+				SetObjProperty(item,"level", levelFechadura > 5?  5 : levelFechadura);
+				SetObjProperty( key, "LockId", lockid );
+				SendSysMessageEx( quem, "A chave criada esta na sua mochila.", SSM_INFO );
+			else
+				SendSysMessageEx( quem, "Não foi possível criar a chave do item com fechadura.", SSM_FAIL );
+			endif
+	endif
+endfunction
+
+function PegaCaracteristica(item, caracteristica)
+	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
+	Print(propFabricadoMontado);
+	return propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
 endfunction
 
 function CriaNovaPropFabricado ( propFabricadoMontado)
@@ -106,7 +210,11 @@ function CriaNovaPropFabricado ( propFabricadoMontado)
 	//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
 	foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
 		Sleepms(2);
-		componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
+		if(componente.componenteNecessario.caracteristica != "vazio")
+			componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
+		else
+			componentesRefatorado.insert(_componente_iter,componente);
+		endif
 	endforeach
 	
 	var novaPropFabricada := struct{
@@ -124,8 +232,11 @@ function CriaObjetoPosicao(quem)
 	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
 endfunction
 
-function isEstacaoValida(quem, estacaoAlvo, pericia)
-	if(estacaoAlvo.item)
+function isEstacaoValida(quem, estacaoAlvo, profissao)
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
+
+	if(cstr(estacaoAlvo.item.objtype) in estacoesValidas ||  "superficie" in estacoesValidas )
 		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
 		
 		if(ocupanteSerial)
@@ -175,51 +286,5 @@ function MontaCraftProp(fabricacaoConfig)
 	endforeach
 	
 	return baseDict;
-
-endfunction
-
-// TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
-	
-	if(quantidade == error || quantidade.size() == 0)
-		return error{"errortext":="O parâmetro quantidade é obrigatório."};
-	endif
-
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
-	var retorno := dictionary;
-
-	//Print("Chances: "  + chancesPorTier);
-	for i:=1 to quantidade
-		var isFalhouTudo := true;
-		var rolagem := RandomFloat(100.0);
-		var chanceAcumulada := 0;
-
-		foreach chance in chancesPorTier
-			chanceAcumulada += chance;
-			//Print("Chance Tier " + _chance_iter + ": " + chance);
-			//Print("rolagem: " + rolagem + " chance: " + chanceAcumulada);
-			if (rolagem <= chanceAcumulada)
-				
-				isFalhouTudo := false;
-				if(retorno.exists(_chance_iter)) // popula o dict de retono com chave=tier e valor=quantidade de itens nesse tier.
-					retorno[_chance_iter] += 1;
-				else
-					retorno.insert(_chance_iter,1);
-				endif
-				break;
-			endif
-			Sleepms(2);
-		endforeach
-
-		if(isFalhouTudo) //Se falhou tudo, coloca na pior qualidade.
-			if(retorno.exists(1))
-				retorno[1] += 1;
-			else
-				retorno.insert(1,1);
-			endif
-		endif
-		Sleepms(2);
-	endfor
-	return retorno;
 
 endfunction

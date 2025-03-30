@@ -36,11 +36,11 @@ endfunction
 function EnviaGumpComponentes(quem, pericia := "todas")
 	var retorno := 1;
 	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
-	var configProfissao := ReadConfigFile(DecideConfigComponentes(pericia));
+	var configComponentes := ReadConfigFile(DecideConfigComponentes(pericia));
 	var chavesOpcoesMateriais := GetConfigStringKeys(configRecursos);
 	
 	var sessao := struct;
-	var parametros := PreparaComponentesGump(quem,configProfissao,sessao, pericia);
+	var parametros := PreparaComponentesGump(quem,configComponentes,sessao, pericia);
 	var gerenciador := sessao.gerenciadorDropDown;
 	var gump;
 
@@ -80,12 +80,14 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				GerenciadorDropDown::LimpaDropDowns(gerenciador);
 				sessao.devePopularDropDown := true;
 				sessao.componenteSelecionado := parametros.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
+				sessao.picoPericia :=  CalculaValorPico(quem, configComponentes[sessao.componenteSelecionado.selecione.objtype].pericia);
+				sessao.picoMaximoPericia :=  sessao.picoPericia;
 				break;
 			
 			RT_BTN_ESFORCO_MAIS:
 				sessao.picoPericia += 1;
-				if(sessao.picoPericia > parametros.picoMaximoPericia)
-					sessao.picoPericia:= parametros.picoMaximoPericia;
+				if(sessao.picoPericia > sessao.picoMaximoPericia)
+					sessao.picoPericia:= sessao.picoMaximoPericia;
 				endif
 				break;
 				
@@ -101,7 +103,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				if(alvo)
 					var materialDetalhes := configRecursos[alvo.objtype];
 					if(materialDetalhes)
-						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,configProfissao[sessao.componenteSelecionado.selecione.objtype].pericia);
+						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,configComponentes[sessao.componenteSelecionado.selecione.objtype].pericia);
 						if(isTrabalhavel)
 							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar o material indicado.",SSM_HELPFU);
 						else
@@ -205,13 +207,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer,picoPericia);
 	
 	foreach qualidade in (qualidades.keys())
-		var descriptor := GetItemDescriptor(CInt(objtype));
-		descriptor.CProps.insert(PROPNAME_MATERIAL,chaveMaterialPrincipal);
-		descriptor.CProps.insert(PROPNAME_TIER_COMPONENTE,qualidade);
-		descriptor.CProps.insert(PROPNAME_ENCAIXE_COMPONENTE,encaixe);
-		descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
-		descriptor.color := configRecursos[chaveMaterialPrincipal].Color;
-		
+		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
 		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
 		
 		Sleepms(2);
@@ -400,7 +396,8 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	sessao.+materiaisEncontrados := 0;
 	sessao.+devePopularDropDown := true;
 	sessao.+quantidade := "1";
-	sessao.+picoPericia := AP_GetSkill(quem,pericia) / 20;
+	sessao.+picoPericia := CalculaValorPico(quem,pericia);
+	sessao.+picoMaximoPericia := sessao.picoPericia;
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
@@ -439,7 +436,7 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	parametrosGump.+configColunas := colCfg;
 	parametrosGump.+materiais := materiais;
 	parametrosGump.+componentes := componentes;
-	parametrosGump.+picoMaximoPericia := sessao.picoPericia;
+	
 	
 	return parametrosGump;
 endfunction

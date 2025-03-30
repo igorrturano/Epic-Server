@@ -90,9 +90,18 @@ program GerenteTratamentoProduto(parametros)
 				else
 					estadoGerenciamento := FINALIZADO;
 				endif
-				DestroyItem(produtoAntigo);
+
+				if(produto.stackable)
+					SubtractAmount(produtoAntigo, 1);
+				else
+					DestroyItem(produtoAntigo);
+				endif
 			else
-				DestroyItem(produto);
+				if(produto.stackable)
+					SubtractAmount(produto, 1);
+				else
+					DestroyItem(produto);
+				endif
 			endif
 		else
 			if(produto)
