@@ -1,0 +1,158 @@
+use uo;
+use os;
+use math; // Adicionado para usar funções matemáticas
+
+include ":faccao:include/logging";
+include ":faccao:include/territory_management";
+
+program TerritoryEventHandler(resource_controller_pid)
+    LogInfo("eventos", "Iniciando manipulador de eventos de território");
+    
+    if (!resource_controller_pid)
+        LogError("eventos", "PID do controlador de recursos não fornecido");
+        return 0;
+    endif
+    
+    var resource_controller := GetProcess(resource_controller_pid);
+    if (!resource_controller)
+        LogError("eventos", "Controlador de recursos não encontrado");
+        return 0;
+    endif
+    
+    LogInfo("eventos", "Manipulador de eventos conectado ao ResourceController (PID: " + resource_controller_pid + ")");
+    
+    // Definir tamanho da fila de eventos
+    Set_Event_Queue_Size(200);
+    
+    // Loop infinito para processar eventos
+    while (1)
+        var event := os::wait_for_event(60); // Verificar a cada 60 segundos ou quando receber um evento
+        
+        if (event)
+            case (event.type)
+                "TerritoryChange":
+                    ProcessTerritoryChangeEvent(event, resource_controller);
+                    break;
+                    
+                default:
+                    LogDebug("eventos", "Evento desconhecido recebido: " + event.type);
+            endcase
+        endif
+        
+        // Verificar também o datafile de mensagens para notificações antigas
+        CheckPendingNotifications(resource_controller);
+        
+        // Verificar se o controlador ainda está ativo
+        if (!GetProcess(resource_controller_pid))
+            LogError("eventos", "Controlador de recursos não responde. Encerrando manipulador.");
+            break;
+        endif
+    endwhile
+endprogram
+
+/*
+ * ProcessTerritoryChangeEvent(event, resource_controller)
+ *
+ * Purpose: Processa um evento de mudança de território e notifica o controlador
+ * Parameters:
+ *   event - Estrutura do evento
+ *   resource_controller - Referência ao processo do controlador
+ * Return:
+ *   1 para sucesso, 0 para falha
+ */
+function ProcessTerritoryChangeEvent(event, resource_controller)
+    if (!event || !event.territory_id || !event.change_type)
+        LogError("eventos", "Notificação de território recebida com dados inválidos");
+        return 0;
+    endif
+    
+    var territory_id := event.territory_id;
+    var change_type := event.change_type;
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    
+    LogInfo("eventos", "Processando evento: " + change_type + " para território: " + territory_id);
+    
+    // Criar um novo evento para o controlador de recursos
+    var resource_event := struct{
+        "type" := "TerritoryUpdate",
+        "territory_id" := territory_id,
+        "change_type" := change_type,
+        "data" := event.change_data,
+        "territory_info" := territory_info
+    };
+    
+    // Enviar para o controlador de recursos
+    resource_controller.SendEvent(resource_event);
+    
+    // Registrar detalhes adicionais para depuração
+    if (territory_info)
+        var faction := territory_info.faction ? territory_info.faction : "Nenhuma";
+        LogDebug("eventos", "Detalhes: Território " + territory_id + ", Facção: " + faction);
+    endif
+    
+    return 1;
+endfunction
+
+/*
+ * CheckPendingNotifications(resource_controller)
+ *
+ * Purpose: Verifica notificações pendentes no datafile
+ * Parameters:
+ *   resource_controller - Referência ao processo do controlador
+ * Return:
+ *   Número de notificações processadas
+ */
+function CheckPendingNotifications(resource_controller)
+    var df := SafeOpenDataFile(":system:messages");
+    if (!df)
+        return 0;
+    endif
+    
+    var elem := SafeFindElement(df, "territory_changes");
+    if (!elem)
+        return 0;
+    endif
+    
+    var changes := GetElementProp(elem, "changes", array{});
+    var processed := 0;
+    
+    // Processar apenas as três mudanças mais recentes por ciclo para não sobrecarregar
+    var max_process := min(3, changes.size());
+    for i := 1 to max_process
+        var change := changes[i];
+        if (change && change.territory_id && change.type)
+            // Criar um novo evento para o controlador de recursos
+            var territory_info := TM_GetTerritoryInfo(change.territory_id);
+            
+            var resource_event := struct{
+                "type" := "TerritoryUpdate",
+                "territory_id" := change.territory_id,
+                "change_type" := change.type,
+                "data" := change.data,
+                "territory_info" := territory_info,
+                "from_datafile" := 1
+            };
+            
+            // Enviar para o controlador de recursos
+            resource_controller.SendEvent(resource_event);
+            
+            processed += 1;
+            LogDebug("eventos", "Notificação pendente processada: " + change.type + " para " + change.territory_id);
+        endif
+        
+        sleepms(10); // Pequena pausa entre processamentos
+    endfor
+    
+    // Se processamos alguma, podemos remover do array
+    if (processed > 0)
+        var new_changes := array{};
+        for i := processed+1 to changes.size()
+            new_changes.append(changes[i]);
+        endfor
+        
+        SetElementProp(elem, "changes", new_changes);
+        LogInfo("eventos", processed + " notificações pendentes processadas e removidas");
+    endif
+    
+    return processed;
+endfunction

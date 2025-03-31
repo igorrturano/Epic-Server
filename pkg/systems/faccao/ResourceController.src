@@ -12,17 +12,26 @@ include ":architect:include/systemclock";
 include ":faccao:include/faccao_resources";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers"; // Nova inclusão
+include ":faccao:include/territory_management"; // Incluir o módulo centralizado
 
-
+// Registrar PID para notificações
+var event_handler_pid := 0;
 
 // Lista para rastrear o próximo território a ser verificado
 var next_territory_checks := dictionary{};
 
+
 program ResourceController()
     LogInfo("recursos", "Iniciando Controlador de Recursos de Territórios...");
     
-    // Inicialização: construir agenda inicial
+    // Registrar PID para receber notificações de territórios
+    SetGlobalProperty("ResourceControllerPID", GetPid());
+    
+    // Inicialização: construir agenda inicial usando TM_GetAllTerritories()
     InitializeSchedule();
+    
+    // Configurar manipulador de eventos para notificações
+    event_handler_pid := ConfigurarReceptorNotificacoes();
     
     var check_interval := 30; // 30 segundos entre verificações
     
@@ -40,60 +49,73 @@ program ResourceController()
             sleepms(10); // Pequena pausa para não sobrecarregar
         endforeach
         
+        // Processar notificações de revogação se houver
+        ProcessRevocations();
+        
         Sleep(check_interval);
     endwhile
 endprogram
 
 
 function InitializeSchedule()
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
-    endif
-    
     var current_time := polcore().systime;
     
-    foreach rect_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, rect_name);
-        if (!elem)
+    // Obter todos os territórios, excluindo os selvagens
+    var territories := TM_GetAllTerritories();
+    
+    foreach territory_id in territories
+        // Obter informações completas do território
+        var territory_info := TM_GetTerritoryInfo(territory_id);
+        if (!territory_info)
             continue;
         endif
         
-        var faction := GetElementProp(elem, "Faction");
-        
-        // Verificar apenas territórios controlados
-        if (faction && faction != "Selvagem")
-            var next_time := CInt(GetElementProp(elem, "NextResourceTime"));
-            if (!next_time)
-                // Se não tiver próxima verificação, configurar
-                var interval := CInt(GetElementProp(elem, "ResourceInterval"));
+        // Verificar apenas territórios controlados por facções (não selvagens)
+        if (territory_info.faction && territory_info.faction != DEFAULT_FACTION && territory_info.faction != "Selvagem")
+            // Obter informações sobre recursos e tempo
+            var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+            
+            // Configurar próxima verificação
+            var next_time;
+            if (resource_info && resource_info.next_time)
+                next_time := resource_info.next_time;
+            else
+                // Se não tiver próxima verificação configurada, configurar
+                var interval := resource_info ? resource_info.interval : 60;
                 if (!interval) 
                     interval := 60; // Padrão: 60 minutos
                 endif
                 
                 next_time := current_time + (interval * 60);
-                SetElementProp(elem, "NextResourceTime", next_time);
+                
+                // Atualizar no datafile
+                TM_UpdateTerritoryResources(territory_id, resource_info ? resource_info.resources_str : "", interval, resource_info ? resource_info.amount : 5);
             endif
             
-            next_territory_checks[rect_name] := next_time;
+            // Adicionar ao dicionário de verificações
+            next_territory_checks[territory_id] := next_time;
+            
+            LogDebug("recursos", "Território agendado: " + territory_id + " (Facção: " + territory_info.faction + ") para " + next_time);
         endif
         
         sleepms(5);
     endforeach
     
+    LogInfo("recursos", "Inicialização concluída. " + next_territory_checks.keys().size() + " territórios agendados para verificação.");
     return 1;
 endfunction
+
 
 function GetTerritoriesDueForCheck(current_time)
     var due_territories := array{};
     var window_size := 60; // 1 minuto de janela
     
-    foreach territory_name in (next_territory_checks.keys())
-        var check_time := next_territory_checks[territory_name];
+    foreach territory_id in (next_territory_checks.keys())
+        var check_time := next_territory_checks[territory_id];
         
         // Se está no intervalo de verificação
         if (check_time <= current_time + window_size)
-            due_territories.append(territory_name);
+            due_territories.append(territory_id);
         endif
         
         sleepms(2);
@@ -102,82 +124,84 @@ function GetTerritoriesDueForCheck(current_time)
     return due_territories;
 endfunction
 
-function ProcessTerritory(territory_name, current_time)
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
-    endif
-    
-    var elem := SafeFindElement(rect_df, territory_name);
-    if (!elem)
+// MUDANÇA 2: Substituir ProcessTerritory para usar as funções TM de recurso
+function ProcessTerritory(territory_id, current_time)
+    // Obter informações completas do território
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    if (!territory_info)
         // Território não existe mais, remover da agenda
-        next_territory_checks.Erase(territory_name);
+        next_territory_checks.Erase(territory_id);
+        LogWarning("recursos", "Território não encontrado, removido da agenda: " + territory_id);
+        return 1;
+    endif
+
+    // Verificar se o território ainda tem uma facção válida
+    var faction := territory_info.faction;
+    if (!faction || faction == DEFAULT_FACTION || faction == "Selvagem")
+        // Território agora é selvagem, remover da agenda
+        next_territory_checks.Erase(territory_id);
+        LogInfo("recursos", "Território agora é selvagem, removido da agenda: " + territory_id);
         return 1;
     endif
     
-    var next_time_prop := GetElementProp(elem, "NextResourceTime");
-    var next_time := 0;
-
-    if (next_time_prop)
-        next_time := CInt(next_time_prop);
+    // Obter informações de recursos do território
+    var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+    if (!resource_info)
+        LogError("recursos", "Informações de recursos não encontradas para território: " + territory_id);
+        return 0;
     endif
-
+    
+    var next_time := resource_info.next_time;
     if (next_time > current_time)
         return 1; // Ainda não é hora
     endif
     
-    // Verificar e obter dados do território de forma robusta
-    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-    if (!faction)
-        faction := GetElementProp(elem, "Faction"); // Compatibilidade legada
-    endif
-    
-    var resource_interval := CInt(GetElementProp(elem, "ResourceInterval"));
-    var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
-    var resources_string := GetElementProp(elem, "Resources");
-    
-    // Pré-processamento dos recursos para validação
-    var resources := ProcessResourceString(resources_string);
-    
     // Verificar validade dos dados
-    var validade := VerificarValidadeDosDados(elem, faction, resources, resource_amount);
+    var resources := ProcessResourceString(resource_info.resources_str);
+    var validade := VerificarValidadeDosDados(territory_id, faction, resources, resource_info.amount);
     if (!validade.valido)
-        LogError("recursos", validade.mensagem);
+        LogError("recursos", validade.mensagem + " (Território: " + territory_id + ")");
         // Agendar tentativa futura e registrar falha
-        RescheduleTerritory(territory_name, current_time + 300); // 5 minutos
-        RegistrarFalhaDeCriacao(elem, faction, territory_name, resources_string);
+        RescheduleTerritory(territory_id, current_time + 300); // 5 minutos
+        RegistrarFalhaDeCriacao(territory_id, faction, territory_info.name, resource_info.resources_str);
         return 0;
     endif
     
-    LogInfo("recursos", "Gerando recursos para território: " + territory_name);
+    LogInfo("recursos", "Gerando recursos para território: " + territory_id + " (Nome: " + territory_info.name + ")");
 
     // Geração dos recursos com tratamento de erros mais detalhado
-    var success := GenerateResourcesForTerritory(elem, faction, resource_amount);
+    var success := TM_GenerateResourcesForTerritory(territory_id, faction, resource_info.amount);
     if (success)
         // Configurar próxima geração
-        var next_gen_time := current_time + (resource_interval * 60);
-        SetElementProp(elem, "NextResourceTime", next_gen_time);
-        next_territory_checks[territory_name] := next_gen_time;
+        var next_gen_time := current_time + (resource_info.interval * 60);
         
-        LogInfo("recursos", "Próxima geração para " + territory_name + " agendada para daqui a " + resource_interval + " minutos");
+        // Atualizar no módulo centralizado
+        TM_UpdateTerritoryResources(territory_id, resource_info.resources_str, resource_info.interval, resource_info.amount);
+        
+        // Atualizar o dict local
+        next_territory_checks[territory_id] := next_gen_time;
+        
+        LogInfo("recursos", "Próxima geração para " + territory_id + " agendada para daqui a " + resource_info.interval + " minutos");
+        
+        // Notificar líderes da facção sobre a geração bem-sucedida
+        NotifyFactionLeaders(faction, territory_info.name, resource_info.resources_str, resource_info.amount);
 
         return 1;
     else
         // Tratar falha na geração
-        LogError("recursos", "Falha ao gerar recursos para " + territory_name);
+        LogError("recursos", "Falha ao gerar recursos para " + territory_id);
         
         // Verificar se devemos tentar criar um baú de emergência
-        var emergency_result := TentarCriarBauEmergencia(faction, territory_name);
+        var emergency_result := TentarCriarBauEmergencia(faction, territory_id);
         if (emergency_result)
             LogWarning("recursos", "Baú de emergência criado. Reagendando geração de recursos.");
             // Agendar nova tentativa em breve
-            RescheduleTerritory(territory_name, current_time + 120); // 2 minutos
+            RescheduleTerritory(territory_id, current_time + 120); // 2 minutos
             return 0;
         else
             // Falhou completamente, agendar para muito mais tarde
             LogCritical("recursos", "Impossível gerar recursos. Agendando nova tentativa para mais tarde.");
-
-            RescheduleTerritory(territory_name, current_time + 3600); // 1 hora
+            RescheduleTerritory(territory_id, current_time + 3600); // 1 hora
             return 0;
         endif
     endif
@@ -210,54 +234,66 @@ function TentarCriarBauEmergencia(faction_name, territory_name)
     return 0;
 endfunction
 
-function RescheduleTerritory(territory_name, new_time)
-    next_territory_checks[territory_name] := new_time;
+function RescheduleTerritory(territory_id, new_time)
+    next_territory_checks[territory_id] := new_time;
     
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (rect_df)
-        var elem := SafeFindElement(rect_df, territory_name);
-        if (elem)
-            SetElementProp(elem, "NextResourceTime", new_time);
+    // Atualizar também no datafile através do TM
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    if (territory_info)
+        var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+        if (resource_info)
+            // Atualizar mantendo os mesmos recursos e configurações, apenas mudando o tempo
+            TM_UpdateTerritoryResources(territory_id, resource_info.resources_str, 
+                                        resource_info.interval, resource_info.amount);
+            
+            LogDebug("recursos", "Território " + territory_id + " reagendado para: " + new_time);
         endif
     endif
 endfunction
 
-function CheckTerritoryResources()
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
-    endif
-    
+function TM_VerifyTerritoryResources()
     var current_time := polcore().systime;
+    var territories := TM_GetAllTerritories();
+    var checked := 0;
+    var updated := 0;
     
-    foreach rect_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, rect_name);
-        var faction := GetElementProp(elem, "Faction");
+    foreach territory_id in territories
+        var territory_info := TM_GetTerritoryInfo(territory_id);
+        if (!territory_info)
+            continue;
+        endif
         
         // Verificar apenas territórios controlados
-        if (faction && faction != "Selvagem")
+        if (territory_info.faction && territory_info.faction != DEFAULT_FACTION && territory_info.faction != "Selvagem")
+            checked += 1;
+            
+            // Verificar recursos
+            var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+            if (!resource_info)
+                continue;
+            endif
+            
             // Verificar se está na hora de gerar recursos
-            var next_time := CInt(GetElementProp(elem, "NextResourceTime"));
+            var next_time := resource_info.next_time;
             
             if (next_time && current_time >= next_time)
-                var resource_interval := CInt(GetElementProp(elem, "ResourceInterval"));
-                var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
-                var resources := GetElementProp(elem, "Resources");
-                
-                if (resource_interval && resource_amount && resources)
-                    LogInfo("recursos", "Gerando recursos para território: " + rect_name + " (Facção: " + faction + ")");
-
+                // Verificar se os recursos estão configurados corretamente
+                if (resource_info.interval && resource_info.amount && resource_info.resources_str)
+                    LogInfo("recursos", "Verificando recursos para território: " + territory_id + " (Facção: " + territory_info.faction + ")");
                     
-                    if (GenerateResourcesForTerritory(elem, faction, resource_amount))
+                    // Gerar recursos usando a função TM_GenerateResourcesForTerritory
+                    if (TM_GenerateResourcesForTerritory(territory_id, territory_info.faction, resource_info.amount))
                         // Configurar próxima geração
-                        var next_gen_time := current_time + (resource_interval * 60); // Converter minutos para segundos
-                        SetElementProp(elem, "NextResourceTime", next_gen_time);
+                        var next_gen_time := current_time + (resource_info.interval * 60);
                         
-                        LogInfo("recursos", "Próxima geração para " + rect_name + " em " + resource_interval + " minutos");
-
+                        // Atualizar no datafile centralizado
+                        TM_UpdateTerritoryResources(territory_id, resource_info.resources_str, resource_info.interval, resource_info.amount);
                         
-                        // Notificar líderes da facção
-                        NotifyFactionLeaders(faction, rect_name, resources, resource_amount);
+                        // Atualizar o dicionário local
+                        next_territory_checks[territory_id] := next_gen_time;
+                        
+                        LogInfo("recursos", "Recursos verificados e atualizados para " + territory_id);
+                        updated += 1;
                     endif
                 endif
             endif
@@ -266,109 +302,63 @@ function CheckTerritoryResources()
         sleepms(10); // Pequena pausa para não sobrecarregar
     endforeach
     
-    return 1;
+    LogInfo("recursos", "Verificação de recursos concluída. " + checked + " territórios verificados, " + updated + " atualizados.");
+    return updated;
 endfunction
 
-function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
-    if (!elem || !faction_name || resource_amount <= 0)
+// Renomeado para TM_GenerateResourcesForTerritory para seguir convenção
+function TM_GenerateResourcesForTerritory(territory_id, faction_name, resource_amount)
+    if (!territory_id || !faction_name || resource_amount <= 0)
         LogError("recursos", "Parâmetros inválidos para geração de recursos");
-
         return 0;
     endif
     
-    var territory_name;
-    if (TypeOf(elem) == "String")
-        territory_name := elem;
-        var rect_df := SafeOpenDataFile(":architect:areas");
-        if (!rect_df)
-            LogError("recursos", "Não foi possível abrir o datafile de áreas");
-            return 0;
-        endif
-        
-        elem := SafeFindElement(rect_df, territory_name);
-        if (!elem)
-            LogError("recursos", "Território não encontrado: " + territory_name);
-            return 0;
-        endif
-    else
-        // Obter nome do território do elemento
-        territory_name := GetElementProp(elem, "Name");
-        if (!territory_name)
-            territory_name := "Desconhecido";
-        endif
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    if (!territory_info)
+        LogError("recursos", "Território não encontrado: " + territory_id);
+        return 0;
     endif
+    
+    var territory_name := territory_info.name;
     
     LogDebug("recursos", "Iniciando geração de recursos para território: " + territory_name);
     LogDebug("recursos", "Facção: " + faction_name + ", Quantidade: " + resource_amount);
     
-    // Obter a facção de forma robusta
-    var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-    if (!faction)
-        faction := GetElementProp(elem, "Faction"); // Compatibilidade legada
-    endif
-    
-    if (!faction)
-        LogError("recursos", "Informação de facção inválida para o território");
-        return 0;
-    endif
-
-    // Verificar se é selvagem
-    if (faction == DEFAULT_FACTION || faction == "Selvagem")
-        LogDebug("recursos", "Território selvagem, pulando geração de recursos");
-
-        return 0;
-    endif
-    
-    // Verificar se a facção passada corresponde à do território
-    if (faction_name != faction)
-        LogWarning("recursos", "Facção passada (" + faction_name + ") não corresponde à facção do território (" + faction + ")");
-
-        // Usar a facção correta
-        faction_name := faction;
-    endif
-    
-    LogDebug("recursos", "Facção confirmada: " + faction_name);
-
-    
-    // Obter o ID do território
-    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
-    if (!territory_id)
-        territory_id := GetElementProp(elem, "Name"); // Fallback para nome do território
-        LogDebug("recursos", "Usando nome do território como ID: " + territory_id);
-
-    endif
-    
-    // Obter a string de recursos de forma segura
-    var resources_string := GetElementProp(elem, "Resources");
-    if (!resources_string)
+    // Obter informações de recursos
+    var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+    if (!resource_info || !resource_info.resources_str)
         LogError("recursos", "Nenhum recurso configurado para o território");
         return 0;
     endif
     
     // Verificar o que está na string de recursos para depuração
-    LogDebug("recursos", "String de recursos: " + resources_string);
-
+    LogDebug("recursos", "String de recursos: " + resource_info.resources_str);
     
     // Processar a lista de recursos com tratamento robusto
-    var resources := ProcessResourceString(resources_string);
+    var resources := ProcessResourceString(resource_info.resources_str);
     
     if (!resources || resources.size() < 1)
         LogError("recursos", "Nenhum recurso válido encontrado após processamento");
         return 0;
     endif
     
-    LogDebug("recursos", "" + resources.size() + " recursos válidos identificados");
+    LogDebug("recursos", resources.size() + " recursos válidos identificados");
     
-    // Encontrar o baú de doações com tratamento de erros - USANDO TERRITORY_ID
-    var donation_chest := FindFactionChest(faction_name, territory_id);
+    // Encontrar objetos do território usando a função centralizada
+    var territory_objects := TM_FindTerritoryObjects(territory_id, faction_name);
+    if (!territory_objects)
+        LogError("recursos", "Objetos do território não encontrados: " + territory_id);
+        return 0;
+    endif
+    
+    // Verificar se o baú existe
+    var donation_chest := territory_objects.bau;
     if (!donation_chest)
-        LogError("recursos", "Baú de doações não encontrado ou inacessível para facção: " + faction_name);
+        LogError("recursos", "Baú de doações não encontrado para território: " + territory_id);
         
         // Tentar segunda busca apenas pela facção
-        if (territory_id)
-            LogDebug("recursos", "Tentando busca secundária apenas pela facção");
-            donation_chest := FindFactionChest(faction_name);
-        endif
+        LogDebug("recursos", "Tentando busca secundária apenas pela facção");
+        donation_chest := FindFactionChest(faction_name);
         
         // Se ainda não encontrou, tentar criar um baú de emergência
         if (!donation_chest)
@@ -450,7 +440,7 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
                 
                 success_count += 1;
                 log_entries.append("Recurso criado (método alternativo): " + resource + " x" + resource_amount);
-                LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);;
+                LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);
             else
                 log_entries.append("Falha ao criar recurso: " + resource);
                 LogError("recursos", "Falha ao criar recurso: " + resource);
@@ -465,27 +455,31 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
         // Atualizar contagem de recursos do baú
         UpdateResourceCache(donation_chest);
         
-        // Registrar a atividade no histórico do território
-        var history := GetElementProp(elem, "ResourceHistory", array{});
+        // Registrar a atividade no histórico do território - usando o objeto resource_info para evitar nova busca
+        // Atualizando o datafile do território através do módulo centralizado
+        var territory_elem := TM_FindTerritory(territory_id);
+        if (territory_elem)
+            var history := GetElementProp(territory_elem, "ResourceHistory", array{});
+            
+            history.append(struct{
+                "time" := polcore().systime,
+                "resources" := resources,
+                "amount" := resource_amount,
+                "success" := success_count,
+                "details" := log_entries,
+                "chest_serial" := donation_chest.serial,
+                "chest_name" := donation_chest.name
+            });
+            
+            // Limitar o histórico a 10 entradas
+            while (history.size() > 10)
+                history.erase(1);
+            endwhile
+            
+            SetElementProp(territory_elem, "ResourceHistory", history);
+        endif
         
-        history.append(struct{
-            "time" := polcore().systime,
-            "resources" := resources,
-            "amount" := resource_amount,
-            "success" := success_count,
-            "details" := log_entries,
-            "chest_serial" := donation_chest.serial,
-            "chest_name" := donation_chest.name
-        });
-        
-        // Limitar o histórico a 10 entradas
-        while (history.size() > 10)
-            history.erase(1);
-        endwhile
-        
-        SetElementProp(elem, "ResourceHistory", history);
-        
-        // Notificar líderes sobre o sucesso
+        // Notificar sistema sobre a geração bem-sucedida
         NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, resource_amount, success_count);
     endif
     
@@ -624,15 +618,15 @@ function NotifyFactionLeaders(faction_name, territory_name, resources_string, am
     endif
     
     // Separar recursos individuais e enviar uma mensagem para cada
-    // Usar a nova função para tratar recursos com vírgulas
-    var resources := SplitResourcesString(resources_string);
+    // Usar a função padrão para tratar recursos com vírgulas
+    var resources := ProcessResourceString(resources_string);
     
     foreach serial in (leader_serials)
         var leader := SystemFindObjectBySerial(serial);
         if (leader && leader != error && leader.connected)
             foreach resource in (resources)
                 // Validar o recurso
-                resource := Trim(resource);
+                resource := TrimString(resource);
                 if (resource == "")
                     continue;
                 endif
@@ -738,27 +732,30 @@ function SincronizarComDataFileLocal(container, recursos)
 endfunction
 
 
-// Registrar falha de criação
-function RegistrarFalhaDeCriacao(elem, faction_name, territory_name, recursos_falhos)
+// Registrar falha de criação com base no ID do território
+function RegistrarFalhaDeCriacao(territory_id, faction_name, territory_name, recursos_falhos)
     // Registrar no log
     LogError("recursos", "Falha ao criar recursos para " + territory_name + " (Facção: " + faction_name + ")");
     LogError("recursos", "Recursos falhos: " + recursos_falhos);
     
-    // Adicionar ao histórico de falhas do território
-    var history := GetElementProp(elem, "ResourceFailHistory", array{});
-    
-    history.append(struct{
-        "time" := polcore().systime,
-        "failed_resources" := recursos_falhos,
-        "faction" := faction_name
-    });
-    
-    // Limitar o histórico a 10 entradas
-    while (history.size() > 10)
-        history.erase(1);
-    endwhile
-    
-    SetElementProp(elem, "ResourceFailHistory", history);
+    // Adicionar ao histórico de falhas do território usando o TM
+    var territory_elem := TM_FindTerritory(territory_id);
+    if (territory_elem)
+        var history := GetElementProp(territory_elem, "ResourceFailHistory", array{});
+        
+        history.append(struct{
+            "time" := polcore().systime,
+            "failed_resources" := recursos_falhos,
+            "faction" := faction_name
+        });
+        
+        // Limitar o histórico a 10 entradas
+        while (history.size() > 10)
+            history.erase(1);
+        endwhile
+        
+        SetElementProp(territory_elem, "ResourceFailHistory", history);
+    endif
     
     // Tentar notificar os administradores
     NotificarAdministradoresFalhaRecursos(faction_name, territory_name, recursos_falhos);
@@ -816,20 +813,21 @@ function ProcessRevocations()
                         LogDebug("recursos", "Processando revogação de território: " + territorio);
                         
                         // Remover do registro de recursos
-                        var territorio_elem := FindElement(territorio);  // Renomeado para evitar conflito
+                        var territorio_elem := TM_FindTerritory(territorio);  // Utilizar a função TM
                         if (territorio_elem && territorio_elem != error)
-                            territorio_elem.EraseProp("NextResourceTime");
-                            LogDebug("recursos", "Propriedade NextResourceTime removida para: " + territorio);
+                            // Usar TM_UpdateTerritoryResources para marcar como sem recursos
+                            var territory_info := TM_GetTerritoryInfo(territorio);
+                            if (territory_info)
+                                TM_UpdateTerritoryResources(territorio, "", 0, 0);
+                                LogDebug("recursos", "Recursos removidos para: " + territorio);
+                            endif
                         endif
                         
-                        // Procurar o objeto existente que corresponde a este território
-                        var item := FindExistingStackableItem(territorio);
-                        if (item && item != error)
-                            LogDebug("recursos", "Item existente encontrado para: " + territorio);
-                            // Processar o item...
+                        // Remover do dicionário de verificações
+                        if (territorio in next_territory_checks)
+                            next_territory_checks.Erase(territorio);
+                            LogInfo("recursos", "Território revogado removido da agenda: " + territorio);
                         endif
-                        
-                        // Quaisquer outras ações necessárias
                     endif
                     sleepms(2); // Prevenir congelamento do servidor
                 endforeach
@@ -842,17 +840,18 @@ function ProcessRevocations()
     
     // Também verificar diretamente o status de territórios agendados
     foreach territorio in (next_territory_checks.keys())
-        var rect_df := SafeOpenDataFile(":architect:areas");
-        if (rect_df)
-            var elem := SafeFindElement(rect_df, territorio);
-            if (elem)
-                var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-                // Se o território agora é selvagem, remover do agendamento
-                if (!faction || faction == DEFAULT_FACTION)
-                    next_territory_checks.Erase(territorio);
-                    LogInfo("recursos", "Território " + territorio + " agora é selvagem, removido do agendamento");
-                endif
-            endif
+        var territory_info := TM_GetTerritoryInfo(territorio);
+        if (!territory_info)
+            // Território não existe mais
+            next_territory_checks.Erase(territorio);
+            LogInfo("recursos", "Território não encontrado, removido do agendamento: " + territorio);
+            continue;
+        endif
+        
+        // Se o território agora é selvagem, remover do agendamento
+        if (!territory_info.faction || territory_info.faction == DEFAULT_FACTION || territory_info.faction == "Selvagem")
+            next_territory_checks.Erase(territorio);
+            LogInfo("recursos", "Território " + territorio + " agora é selvagem, removido do agendamento");
         endif
         sleepms(2);
     endforeach
@@ -860,15 +859,15 @@ function ProcessRevocations()
     return 1;
 endfunction
 
-function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
+function VerificarValidadeDosDados(territory_id, faction, resources, resource_amount)
     var validade := struct{
         "valido" := 1,
         "mensagem" := ""
     };
     
-    if (!elem)
+    if (!territory_id)
         validade.valido := 0;
-        validade.mensagem := "Elemento inválido";
+        validade.mensagem := "ID de território inválido";
         return validade;
     endif
     
@@ -893,13 +892,108 @@ function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
     return validade;
 endfunction
 
+// MUDANÇA 3: Implementar receptor de notificações usando TM_SubscribeToTerritoryChanges()
+function ConfigurarReceptorNotificacoes()
+    // Criar um processo separado que escuta as notificações
+    var script := start_script(":faccao:territory_event_handler", GetPid());
+    if (script == error)
+        LogError("recursos", "Falha ao iniciar manipulador de eventos de território: " + script);
+        return 0;
+    endif
+    
+    LogInfo("recursos", "Manipulador de eventos de território iniciado. PID: " + script.pid);
+    return script.pid;
+endfunction
+
+
+// Essa função é chamada pelo manipulador de eventos
+function ProcessarNotificacaoTerritorio(event)
+    if (!event || !event.territory_id || !event.change_type)
+        LogError("recursos", "Notificação de território recebida com dados inválidos");
+        return 0;
+    endif
+    
+    var territory_id := event.territory_id;
+    var change_type := event.change_type;
+    var territory_info := TM_GetTerritoryInfo(territory_id);
+    
+    LogDebug("recursos", "Notificação de território recebida: " + territory_id + " (" + change_type + ")");
+    
+    case (change_type)
+        "created":
+            // Novo território criado, verificar se precisa ser agendado
+            if (territory_info && territory_info.faction && 
+                territory_info.faction != DEFAULT_FACTION && 
+                territory_info.faction != "Selvagem")
+                
+                // Configurar recursos iniciais se necessário
+                var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+                if (!resource_info || !resource_info.next_time)
+                    // Configurar tempo inicial
+                    var current_time := polcore().systime;
+                    var interval := resource_info ? resource_info.interval : 60;
+                    var next_time := current_time + (interval * 60);
+                    
+                    // Agendar verificação
+                    next_territory_checks[territory_id] := next_time;
+                    
+                    LogInfo("recursos", "Novo território adicionado à agenda: " + territory_id);
+                endif
+            endif
+            break;
+            
+        "deleted":
+            // Território removido, remover da agenda
+            if (territory_id in next_territory_checks)
+                next_territory_checks.Erase(territory_id);
+                LogInfo("recursos", "Território removido da agenda: " + territory_id);
+            endif
+            break;
+            
+        "transfer":
+            // Território transferido, atualizar agenda se necessário
+            if (territory_info)
+                if (territory_info.faction == DEFAULT_FACTION || territory_info.faction == "Selvagem")
+                    // Remover da agenda se agora é selvagem
+                    if (territory_id in next_territory_checks)
+                        next_territory_checks.Erase(territory_id);
+                        LogInfo("recursos", "Território transferido para Selvagem, removido da agenda: " + territory_id);
+                    endif
+                else
+                    // Manter na agenda se pertence a uma facção
+                    var resource_info := TM_GetTerritoryResourceInfo(territory_id);
+                    var current_time := polcore().systime;
+                    
+                    // Configurar próxima verificação se não existir
+                    if (!resource_info || !resource_info.next_time)
+                        var interval := resource_info ? resource_info.interval : 60;
+                        var next_time := current_time + (interval * 60);
+                        
+                        // Agendar verificação
+                        next_territory_checks[territory_id] := next_time;
+                        
+                        LogInfo("recursos", "Território transferido, configurado na agenda: " + territory_id);
+                    endif
+                endif
+            endif
+            break;
+            
+        default:
+            LogDebug("recursos", "Tipo de mudança não reconhecido: " + change_type);
+            break;
+    endcase
+    
+    return 1;
+endfunction
+
+// Função auxiliar ParseResourceList que é esperada por faccao_resources.inc
 function ParseResourceList(resources_string)
     if (!resources_string)
         return array{};
     endif
     
     // Remover espaços extras
-    resources_string := Trim(resources_string);
+    resources_string := TrimString(resources_string);
     
     // Se contém vírgulas, dividir por vírgulas
     if (resources_string.find(",") != error)
@@ -907,7 +1001,7 @@ function ParseResourceList(resources_string)
         var parts := SplitWords(resources_string, ",");
         
         foreach part in parts
-            part := Trim(part);
+            part := TrimString(part);
             if (part != "")
                 resources.append(part);
             endif
@@ -928,7 +1022,18 @@ function ParseResourceList(resources_string)
     return array{resources_string};
 endfunction
 
-// Adicionar também a função auxiliar SplitResourcesString
-function SplitResourcesString(resources_string)
-    return ParseResourceList(resources_string);
+// Função de compatibilidade para código existente que usa GenerateResourcesForTerritory
+function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
+    var territory_id;
+    
+    if (TypeOf(elem) == "String")
+        territory_id := elem;
+    else
+        territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
+        if (!territory_id)
+            territory_id := GetElementProp(elem, "Name");
+        endif
+    endif
+    
+    return TM_GenerateResourcesForTerritory(territory_id, faction_name, resource_amount);
 endfunction
