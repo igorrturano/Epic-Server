@@ -6,9 +6,8 @@ include ":faccao:faccao";
 include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions";
 include ":faccao:include/faccao_resources";
-
-// Removida a inclusão problemática:
-// include ":architect:areas";
+// Adicionamos o novo include
+include ":faccao:include/territory_management";
 
 program TotemDeAquisicao(who, totem)
     if (!who || !totem)
@@ -39,25 +38,17 @@ program TotemDeAquisicao(who, totem)
         return 0;
     endif
     
-    // Abrir o datafile de áreas
-var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        SendSysMessage(who, "Sistema de territórios indisponível no momento.");
-        return 0;
-    endif
-    
-    var elem := SafeFindElement(rect_df, rect_name);
-    if (!elem)
+    // Usamos TM_FindTerritory no lugar de abrir o datafile diretamente
+    var territorio_elem := TM_FindTerritory(rect_name);
+    if (!territorio_elem)
         SendSysMessage(who, "Território não encontrado: " + rect_name);
         return 0;
     endif
     
     // Verificar se o território já está reivindicado (verificando ambas as propriedades)
-   var current_faction := GetElementProp(elem, "Faction", ""); // Legado (maiúscula)
-    if (!current_faction || current_faction == error) 
-        current_faction := GetElementProp(elem, TERRITORY_FACTION_PROP, ""); // Novo padrão (minúscula)
-
-    endif
+    // Usamos TM_GetTerritoryInfo para obter informações do território
+    var territorio_info := TM_GetTerritoryInfo(rect_name);
+    var current_faction := territorio_info.faction;
 
     if (current_faction && current_faction != DEFAULT_FACTION && current_faction != "Selvagem")
         SendSysMessage(who, "Este território já está reivindicado por: " + current_faction);
@@ -83,9 +74,8 @@ var rect_df := SafeOpenDataFile(":architect:areas");
     // Imprime para debug
     LogDebug("faccao", "Nome da facção final: " + faction_name);
     
-    // Atualizar a propriedade do território em ambos os formatos
-    SetElementProp(elem, "Faction", faction_name); // Legado (maiúscula)
-    SetElementProp(elem, TERRITORY_FACTION_PROP, faction_name); // Novo padrão (minúscula)
+    // Substituímos SetElementProp por TM_SetTerritoryFaction
+    TM_SetTerritoryFaction(rect_name, faction_name);
     
     // Adicionar o território à lista da facção de forma robusta
     var territories := guild.GetProp("territories");
@@ -99,11 +89,12 @@ var rect_df := SafeOpenDataFile(":architect:areas");
     endif
     
     // Criar o monumento no centro do território
-    CreateTerritoryMonument(who, elem, rect_name, territory_id, totem);
+    CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, totem);
     
     // Configurar timer para geração de recursos
     // Verificar se o território já tem recursos configurados
-    if (GetElementProp(elem, "Resources", ""))
+    var recursos_atuais := GetElementProp(territorio_elem, "Resources", "");
+    if (!recursos_atuais)
         // Se não houver recursos configurados, usar um conjunto padrão (3 recursos)
         var default_resources := SplitWords("IronOre, couroespesso, cogumelo");
         var resource_str := "";
@@ -113,27 +104,21 @@ var rect_df := SafeOpenDataFile(":architect:areas");
             endif
             resource_str += default_resources[i];
         endfor
-        SetElementProp(elem, "Resources", resource_str);
+        
+        // Aqui utilizamos TM_UpdateTerritoryResources para configurar os recursos
+        TM_UpdateTerritoryResources(rect_name, resource_str, 2, 5);
+    else
+        // Atualizar apenas o próximo tempo de geração se já existem recursos
+        var interval := CInt(GetElementProp(territorio_elem, "ResourceInterval", 2));
+        var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+        SetElementProp(territorio_elem, "NextResourceTime", next_time);
     endif
-    
-    if (GetElementProp(elem, "ResourceInterval", 0))
-        SetElementProp(elem, "ResourceInterval", 2); // Default: 1 minuto para testes
-    endif
-    
-    if (GetElementProp(elem, "ResourceAmount", 0))
-        SetElementProp(elem, "ResourceAmount", 5); // Default: 5 unidades por recurso
-    endif
-    
-    // Configurar próxima geração de recursos
-   var interval := CInt(GetElementProp(elem, "ResourceInterval", 0));
-    var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-    SetElementProp(elem, "NextResourceTime", next_time);
     
     // Destruir o totem após uso
     DestroyItem(totem);
     
     SendSysMessage(who, "Sua facção reivindicou com sucesso o território: " + rect_name);
-    SendSysMessage(who, "O território começará a produzir recursos em " + interval + " minutos.");
+    SendSysMessage(who, "O território começará a produzir recursos em breve.");
     PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + faction_name + "*");
     
     return 1;
@@ -157,9 +142,11 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
         var x2 := CInt(coords[3]);
         var y2 := CInt(coords[4]);
         
-        var center_x := CInt((x1 + x2) / 2);
-        var center_y := CInt((y1 + y2) / 2);
-        var center_z := GetWorldHeight(center_x, center_y, realm);
+        // Usar TM_GetTerritoryCenter para obter o centro do território
+        var center := TM_GetTerritoryCenter(rect_name);
+        var center_x := center.x;
+        var center_y := center.y;
+        var center_z := center.z;
         
         var faction_name := who.guild.GetProp("name");
         if (!faction_name || faction_name == error)
@@ -169,7 +156,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
         // Datafile para armazenar seriais
         var seriais_df := OpenDataFile(":faccao:seriais");
         if (!seriais_df)
-           seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
+            seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
         endif
         
         // Criar o mural de recrutamento à esquerda
@@ -180,8 +167,8 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
             SetObjProperty(monument, TERRITORY_ID_PROP, territory_id);
             SetObjProperty(monument, OBJ_FACTION_PROP, faction_name);
             
-            // Novo ID único
-            var unique_id := CreateUniqueItemID(faction_name, ITEM_TYPE_MURAL, territory_id);
+            // Novo ID único, usando a função TM_CreateUniqueItemID
+            var unique_id := TM_CreateUniqueItemID(faction_name, ITEM_TYPE_MURAL, territory_id);
             SetObjProperty(monument, UNIQUE_ID_PROP, unique_id);
             
             monument.name := "Mural de Recrutamento [" + faction_name + "] - " + territory_id;
@@ -199,7 +186,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
             var donation_chest := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm);
             if (donation_chest)
                 // Configurar propriedades do baú
-                var unique_id_bau := CreateUniqueItemID(faction_name, ITEM_TYPE_BAU, territory_id);
+                var unique_id_bau := TM_CreateUniqueItemID(faction_name, ITEM_TYPE_BAU, territory_id);
                 SetObjProperty(donation_chest, UNIQUE_ID_PROP, unique_id_bau);
                 
                 donation_chest.name := "Baú de Doações [" + faction_name + "] - " + territory_id;
@@ -226,7 +213,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
                 var interface_item := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm);
                 if (interface_item)
                     // Configurar propriedades da mesa
-                    var unique_id_mesa := CreateUniqueItemID(faction_name, ITEM_TYPE_MESA, territory_id);
+                    var unique_id_mesa := TM_CreateUniqueItemID(faction_name, ITEM_TYPE_MESA, territory_id);
                     SetObjProperty(interface_item, UNIQUE_ID_PROP, unique_id_mesa);
                     
                     interface_item.name := "Mesa de Gestão [" + faction_name + "] - " + territory_id;
@@ -240,14 +227,8 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
                     // Registrar o serial da mesa
                     seriais_df.SetProp("ultima_mesa", interface_item.serial);
                     
-                    // Registrar associação com território
-                    var territorios_seriais := seriais_df.GetProp("territorios");
-                    if (!territorios_seriais)
-                        territorios_seriais := dictionary{};
-                    endif
-                    
-                    // Armazenar todos os seriais relacionados ao território
-                    territorios_seriais[territory_id] := struct{
+                    // Registrar associação com território usando TM_RegisterTerritoryObjects
+                    var object_serials := struct{
                         "bau" := donation_chest.serial,
                         "mesa" := interface_item.serial,
                         "mural" := monument.serial,
@@ -256,7 +237,7 @@ function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
                         "realm" := realm
                     };
                     
-                    seriais_df.SetProp("territorios", territorios_seriais);
+                    TM_RegisterTerritoryObjects(territory_id, object_serials);
                     
                     SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
                 else

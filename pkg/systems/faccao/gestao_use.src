@@ -17,6 +17,7 @@ include ":faccao:faccao_constants";
 include ":faccao:include/faccao_resources";
 include ":faccao:include/permissions";
 include ":faccao:include/logging";
+include ":faccao:include/territory_management";
 
 
 
@@ -198,19 +199,17 @@ function ReinoGump(byref gump, item)
         var territorios_visiveis := array{};
         
         foreach elem_name in (rect_df.keys())
-            var elem := SafeFindElement(rect_df, elem_name);
+            // Usar TM_GetTerritoryInfo para obter informações de território
+            var territory_info := TM_GetTerritoryInfo(elem_name);
             
-            // Verificar propriedades de facção
-           var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
-            if (!faction || faction == error)
-                faction := GetElementProp(elem, "Faction", "");
+            // Verificar se o território existe
+            if (!territory_info)
+                continue;
             endif
             
-            // Obter ID do território
-            var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
-            if (!territory_id)
-                territory_id := elem_name; // Compatibilidade retroativa
-            endif
+            // Obter o ID e facção do território
+           var territory_id := territory_info.id ? territory_info.id : "";
+            var faction := territory_info.faction;
             
             // Filtrar por facção
             if (faction && faction != DEFAULT_FACTION && 
@@ -237,7 +236,7 @@ function ReinoGump(byref gump, item)
         
         foreach territorio in (territorios_visiveis)
             // Verificar se é capital
-            var is_capital := IsTerritoryCapital(territorio.id);
+           var is_capital := TM_IsTerritoryCapital(territorio.id);
             
             // Número do território
             GFTextLine(gump, 470, y+5, 2100, territorios_mostrados+1 + ".");
@@ -304,17 +303,15 @@ function MostrarMapaTerritorio(who, index, item)
     
     var territorios := array{};
     foreach elem_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, elem_name);
-        
-        // Verificar propriedades de facção
-        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
-        if (!faction || faction == error)
-            faction := GetElementProp(elem, "Faction", "");
+        // Usar TM_GetTerritoryInfo para simplificar a obtenção das informações
+        var territory_info := TM_GetTerritoryInfo(elem_name);
+        if (!territory_info)
+            continue;
         endif
         
         // Filtrar por facção da mesa
-        if (faction && faction != DEFAULT_FACTION && 
-            (!mesa_faction || mesa_faction == KINGDOM_FACTION || faction == mesa_faction))
+        if (territory_info.faction && territory_info.faction != DEFAULT_FACTION && 
+            (!mesa_faction || mesa_faction == KINGDOM_FACTION || territory_info.faction == mesa_faction))
             territorios.append(elem_name);
         endif
         sleepms(2);
@@ -326,10 +323,15 @@ function MostrarMapaTerritorio(who, index, item)
     endif
     
     var territorio := territorios[index+1]; // Ajustando para indexação baseada em 1
-    var elem := SafeFindElement(rect_df, territorio);
+    
+    // Obter informações do território usando TM_GetTerritoryInfo
+    var territory_info := TM_GetTerritoryInfo(territorio);
+    if (!territory_info)
+        return SendSysMessage(who, "Informações do território não encontradas.");
+    endif
     
     // Mostrar as coordenadas no mapa
-    var rect := GetElementProp(elem, "Rect", "");
+    var rect := territory_info.rect;
     var coords := SplitWords(rect);
     
     var gump := GFCreateGump();
@@ -346,16 +348,12 @@ function MostrarMapaTerritorio(who, index, item)
         GFTextLine(gump, 30, y, 2100, "Coordenadas: ");
         GFTextLine(gump, 110, y, 53, rect);
         GFTextLine(gump, 30, y+20, 2100, "Facção: ");
-        GFTextLine(gump, 110, y+20, 53, GetElementProp(elem, TERRITORY_FACTION_PROP, ""));
-        
-        // Botão de teleporte removido conforme solicitado
+        GFTextLine(gump, 110, y+20, 53, territory_info.faction);
     endif
     
     GFAddButton(gump, 150, 250, 2128, 2129, GF_CLOSE_BTN, 0);
     
     var input := GFSendGump(who, gump);
-    
-    // Remover o processamento do botão de teleporte
 endfunction
 
 function LeisGump(byref gump)
@@ -651,7 +649,7 @@ function MostrarGumpInformacoesTerritorio(who, territorio, faction, rect, realm,
         y += 25;
         
         // Nova opção para definir como capital
-        var is_capital := IsTerritoryCapital(territorio.id);
+        var is_capital := TM_IsTerritoryCapital(territorio.id);
         var capital_text := is_capital ? "Remover status de Capital" : "Definir como Capital";
         GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, 3);
         GFTextLine(gump, 50, y, 53, capital_text);
@@ -684,11 +682,11 @@ function ProcessarAcaoTerritorioGump(who, choice, territorio, faction, item)
 endfunction
 
 function ToggleStatusCapital(who, territorio, item)
-    var is_capital := IsTerritoryCapital(territorio.id);
+    var is_capital := TM_IsTerritoryCapital(territorio.id);
     
     if (is_capital)
         // Remover status
-        var territory_elem := FindTerritoryByID(territorio.id);
+        var territory_elem := TM_FindTerritory(territorio.id);
         if (territory_elem)
             territory_elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
             SendSysMessage(who, "Status de Capital removido do território.");
@@ -709,7 +707,8 @@ function ToggleStatusCapital(who, territorio, item)
             mesa_faction := territorio_faction ? territorio_faction : "Desconhecida";
         endif
         
-        if (SetTerritoryAsCapital(territorio.id, mesa_faction))
+        // Usar a função TM_SetTerritoryAsCapital
+        if (TM_SetTerritoryAsCapital(territorio.id, mesa_faction))
             SendSysMessage(who, "Território definido como Capital de " + mesa_faction + "!");
         else
             SendSysMessage(who, "Falha ao definir território como Capital.");
@@ -720,6 +719,7 @@ endfunction
 function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     LogDebug("territorio", "Iniciando transferência de território com proteção de transações");
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    
     // Garantir compatibilidade com ambos os formatos
     var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
     var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
@@ -821,6 +821,10 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         Sleep(3);
         
         // ===== ETAPA 2: ATUALIZAR O DATAFILE DE ÁREAS =====
+        // Aqui estava o erro! Agora usamos TM_SetTerritoryFaction depois que as variáveis estão definidas
+        TM_SetTerritoryFaction(territorio_id, new_faction);
+        
+        // Também definimos as propriedades tradicionais para compatibilidade
         SetElementProp(elem, "Faction", new_faction);
         SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
         
@@ -880,7 +884,7 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         
         // Obter coordenadas do território
         var coords := SplitWords(GetElementProp(elem, "Rect", ""));
-       var realm := GetElementProp(elem, "Realm", "");
+        var realm := GetElementProp(elem, "Realm", "");
         
         if (coords.size() >= 4)
             var x1 := CInt(coords[1]);
@@ -967,7 +971,6 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
             mural.usescript := ":faccao:faccao";
             
             // 4.4 Salvar os seriais no datafile
-            var rect_df := SafeOpenDataFile(":architect:areas");
             if (seriais_df == error)
                 seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
             endif
@@ -1567,6 +1570,7 @@ endfunction
 
 
 function DestruirObjetosTerritorio(territorio_id, faction)
+var tipos_objetos := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
     var objetos_destruidos := 0;
     LogDebug("territorio", "Tentando destruir objetos para: " + territorio_id + ", facção: " + faction);
     

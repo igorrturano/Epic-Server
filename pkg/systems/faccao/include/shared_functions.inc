@@ -394,51 +394,6 @@ function FindItemsByFactionAndType(faction_name, item_type := "", territory_id :
     return matching_items;
 endfunction
 
-/*
- * SetTerritoryAsCapital(territory_id, faction_name)
- *
- * Purpose: Define um território como capital de uma facção
- * Parameters:
- *   territory_id - ID do território
- *   faction_name - Nome da facção
- * Return:
- *   1 para sucesso, 0 para falha
- */
-function SetTerritoryAsCapital(territory_id, faction_name)
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
-    endif
-    
-    // Primeiro, remover flag de capital de todos os territórios desta facção
-    var keys := rect_df.keys();
-    if (keys && keys != error)
-        foreach elem_name in keys
-            var elem := SafeFindElement(rect_df, elem_name);
-            if (elem)
-                var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
-                if (!faction)
-                    faction := GetElementProp(elem, "Faction"); // Compatibilidade
-                endif
-                
-                var is_capital := GetElementProp(elem, TERRITORY_IS_CAPITAL_PROP);
-                if (faction == faction_name && is_capital)
-                    elem.EraseProp(TERRITORY_IS_CAPITAL_PROP);
-                endif
-            endif
-            sleepms(2);
-        endforeach
-    endif
-    
-    // Encontrar o território alvo e defini-lo como capital
-    var territory_elem := FindTerritoryByID(territory_id);
-    if (territory_elem)
-        SetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP, 1);
-        return 1;
-    endif
-    
-    return 0;
-endfunction
 
 /*
  * FindTerritoryByID(territory_id)
@@ -470,18 +425,6 @@ function FindTerritoryByID(territory_id)
         endif
         sleepms(2);
     endforeach
-    
-    return 0;
-endfunction
-
-function IsTerritoryCapital(territory_id)
-    var territory_elem := FindTerritoryByID(territory_id);
-    if (territory_elem)
-        var prop := GetElementProp(territory_elem, TERRITORY_IS_CAPITAL_PROP);
-        if (prop)
-            return 1;
-        endif
-    endif
     
     return 0;
 endfunction

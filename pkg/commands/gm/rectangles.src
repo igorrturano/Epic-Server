@@ -9,6 +9,7 @@ include ":gumps:epicGumps";
 include ":gumps:/include/epicGumps";
 include ":faccao:faccao_constants";
 include ":faccao:include/shared_functions";
+include ":faccao:include/territory_management";
 
 program rectangle_creator(who, params)
     if (!who.cmdlevel)
@@ -180,33 +181,35 @@ function SetupResourcesForTerritory(who, elem)
     
     // Usar os recursos únicos daqui em diante
     resource_sets := unique_resources;
-    // Recuperar valores atuais se existirem, usando os helpers para simplificar
-var current_interval := GetElementProp(elem, "ResourceInterval", 60);
-var current_amount := GetElementProp(elem, "ResourceAmount", 5);
-
-// Processar recursos atuais, garantindo que não haja entradas vazias e limitando a 3
-var current_resources := array{};
-var resource_string := GetElementProp(elem, "Resources", "");
-
-if (resource_string)
-    var raw_resources := SplitWords(resource_string, ",");
     
-    var count := 0;
-    foreach res in raw_resources
-        // Limpar espaços extras
-        res := TrimString(res);
+    // Recuperar valores atuais se existirem, usando os helpers para simplificar
+    var current_interval := GetElementProp(elem, "ResourceInterval", 60);
+    var current_amount := GetElementProp(elem, "ResourceAmount", 5);
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+    
+    // Processar recursos atuais, garantindo que não haja entradas vazias e limitando a 3
+    var current_resources := array{};
+    var resource_string := GetElementProp(elem, "Resources", "");
+
+    if (resource_string)
+        var raw_resources := SplitWords(resource_string, ",");
         
-        // Adicionar apenas recursos não vazios
-        if (res != "" && count < 3)
-            current_resources.append(res);
-            count += 1;
-        endif
-        
-        if (count >= 3)
-            break;
-        endif
-    endforeach
-endif
+        var count := 0;
+        foreach res in raw_resources
+            // Limpar espaços extras
+            res := TrimString(res);
+            
+            // Adicionar apenas recursos não vazios
+            if (res != "" && count < 3)
+                current_resources.append(res);
+                count += 1;
+            endif
+            
+            if (count >= 3)
+                break;
+            endif
+        endforeach
+    endif
     
     // Início do processo de seleção interativa
     var selected_resources := array{};
@@ -283,6 +286,11 @@ endif
                 // Configurar próxima geração
                 var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
                 SetElementProp(elem, "NextResourceTime", next_time);
+                
+                // Usar TM_UpdateTerritoryResources DEPOIS de ter o territory_id e new_selections definidos
+                if (territory_id)
+                    TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount);
+                endif
                 
                 SendSysMessage(who, "Recursos configurados: " + resources_str);
                 SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
@@ -566,27 +574,29 @@ function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "
             continue;
         endif
         
-        var rect_elem := SafeFindElement(rect_df, rect_name);
-        var rect_realm := GetElementProp(rect_elem, "Realm", ""); 
+        // Usar TM_GetTerritoryInfo para obter informações do território
+        var territory_info := TM_GetTerritoryInfo(rect_name);
+        if (!territory_info)
+            continue;
+        endif
+        
+        var rect_realm := territory_info.realm;
         
         // Se não estiver no mesmo realm, não há sobreposição
         if (rect_realm != realm)
             continue; 
         endif
         
-        var rect_coords := SplitWords(GetElementProp(rect_elem, "Rect", ""));
-        if (rect_coords.size() < 4)
-            continue; // Dados inválidos, pular
+        var rect_str := territory_info.rect;
+        if (!rect_str)
+            continue;
         endif
         
-        var r_x1 := CInt(rect_coords[1]);
-        var r_y1 := CInt(rect_coords[2]);
-        var r_x2 := CInt(rect_coords[3]);
-        var r_y2 := CInt(rect_coords[4]);
+        // Usar TM_CheckRectangleOverlap para verificar sobreposição
+        var rect1 := array{x1, y1, x2, y2};
+        var rect2 := SplitWords(rect_str);
         
-        // Verificar se há sobreposição
-        // Dois retângulos não se sobrepõem se um está à esquerda, direita, acima ou abaixo do outro
-        if (!(x2 < r_x1 || x1 > r_x2 || y2 < r_y1 || y1 > r_y2))
+        if (TM_DoRectanglesOverlap(rect1, rect2, realm, rect_realm))
             return 1; // Há sobreposição
         endif
     endforeach
@@ -595,58 +605,99 @@ function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "
 endfunction
 
 function DestruirObjetosTerritorio(territorio_id, faction)
+var tipos_objetos := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
     var objetos_destruidos := 0;
-    
-    // Tipos de objetos a serem destruídos
-    var tipos_objetos := array{0xff11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
-    
     LogDebug("territorio", $"Buscando objetos do território: {territorio_id} da facção: {faction}");
-
     
-    foreach item in EnumerateItemsInContainer(1) // 1 = mundo
-        if (item.objtype in tipos_objetos)
-            var item_name := item.name;
-            var item_territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
-            var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
-            
-            // Verificar se o item pertence ao território por nome ou propriedade
-            if ((item_territory_id && item_territory_id == territorio_id) || 
-                (item_name && item_name.find(territorio_id) != error) ||
-                (item_faction && item_faction == faction))
-                
-                LogDebug("territorio", $"Encontrado objeto: {item.name} (Serial: {item.serial})");
-
-                PrintTextAbove(item, "*Este objeto está sendo destruído*");
-                
-                // Tornar o item móvel para permitir a destruição
-                item.movable := 1;
-                Sleep(1); // Pausa para o servidor processar a mudança
-                
-                // Tentar destruir o item
-                var destroy_result := DestroyItem(item);
-                if (destroy_result)
-                    objetos_destruidos += 1;
-                    LogDebug("territorio", "Objeto destruído com sucesso");
-
-                else
-                    LogError("territorio", $"Falha ao destruir objeto: {destroy_result}");
-
-                    
-                    // Se falhar, tentar método alternativo: mover para o void
-                    MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
-                    objetos_destruidos += 1;
-                    LogWarning("territorio", "Objeto movido para o void como alternativa");
-
-                endif
-                
-                Sleep(2); // Pausa entre destruições
-            endif
+    // Usar TM_FindTerritoryObjects para localizar objetos
+    var objetos := TM_FindTerritoryObjects(territorio_id, faction);
+    
+    // Destruir os objetos encontrados
+    if (objetos.bau)
+        PrintTextAbove(objetos.bau, "*Este objeto será removido*");
+        objetos.bau.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.bau))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Baú destruído com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.bau, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
         endif
-    endforeach
+    endif
+    
+    if (objetos.mesa)
+        PrintTextAbove(objetos.mesa, "*Este objeto será removido*");
+        objetos.mesa.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.mesa))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Mesa destruída com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.mesa, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    if (objetos.mural)
+        PrintTextAbove(objetos.mural, "*Este objeto será removido*");
+        objetos.mural.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.mural))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Mural destruído com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.mural, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    // Buscar objetos adicionais no mundo (abordagem de fallback)
+    if (objetos_destruidos < 3)
+        foreach item in EnumerateItemsInContainer(1) // 1 = mundo
+            if (item.objtype in tipos_objetos)
+                var item_name := item.name;
+                var item_territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
+                var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+                
+                // Verificar se o item pertence ao território por nome ou propriedade
+                if ((item_territory_id && item_territory_id == territorio_id) || 
+                    (item_name && item_name.find(territorio_id) != error) ||
+                    (item_faction && item_faction == faction))
+                    
+                    LogDebug("territorio", $"Encontrado objeto: {item.name} (Serial: {item.serial})");
+
+                    PrintTextAbove(item, "*Este objeto está sendo destruído*");
+                    
+                    // Tornar o item móvel para permitir a destruição
+                    item.movable := 1;
+                    Sleep(1); // Pausa para o servidor processar a mudança
+                    
+                    // Tentar destruir o item
+                    var destroy_result := DestroyItem(item);
+                    if (destroy_result)
+                        objetos_destruidos += 1;
+                        LogDebug("territorio", "Objeto destruído com sucesso");
+                    else
+                        LogError("territorio", $"Falha ao destruir objeto: {destroy_result}");
+                        
+                        // Se falhar, tentar método alternativo: mover para o void
+                        MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+                        objetos_destruidos += 1;
+                        LogWarning("territorio", "Objeto movido para o void como alternativa");
+                    endif
+                    
+                    Sleep(2); // Pausa entre destruições
+                endif
+            endif
+        endforeach
+    endif  // ADICIONADO: endif faltante
     
     return objetos_destruidos;
 endfunction
-
 
 function DisplayRectangleDetails(who, elem)
     var width := 400;
@@ -658,6 +709,8 @@ var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
 var resources := GetElementProp(elem, "Resources", "Não definidos");
 var interval := GetElementProp(elem, "ResourceInterval", 0);
 var amount := GetElementProp(elem, "ResourceAmount", 0);
+var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+var is_capital := TM_IsTerritoryCapital(territory_id);
 
     // Define a cor do título baseada na facção controladora
     var title_color := 53; // Dourado padrão
@@ -718,7 +771,7 @@ var amount := GetElementProp(elem, "ResourceAmount", 0);
         // Filtrar recursos vazios e limpar espaços extras
         foreach resource in resource_list
             // Remover espaços no início e fim
-            resource := TrimString(resource);
+            resource := RectTrimString(resource);
             
             // Adicionar apenas recursos não vazios
             if (resource != "")
@@ -909,27 +962,47 @@ function CreateTerritoryTotem(who, elem)
         return 0;
     endif
     
+    // Obter informações do território usando TM_GetTerritoryInfo
+    var territory_name := GetElementProp(elem, "Name", "");
+    var territory_info := TM_GetTerritoryInfo(territory_name);
+    
     // Obter o ID do território ou criar um se não existir
-    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+    var territory_id := "";
+if (territory_info && territory_info.id)
+    territory_id := territory_info.id;
+endif
     if (!territory_id)
-        territory_id := CreateTerritoryID();
+        territory_id := "TER_" + polcore().systime + "_" + RandomInt(10000);
         SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     endif
     
-    // Configurar propriedades do totem
-SetObjProperty(totem, TERRITORY_NAME_PROP, GetElementProp(elem, "Name", ""));
-SetObjProperty(totem, TERRITORY_RECT_PROP, GetElementProp(elem, "Rect", ""));
-SetObjProperty(totem, TERRITORY_REALM_PROP, GetElementProp(elem, "Realm", ""));
-SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);  // Salvar o ID
+  // Configurar propriedades do totem
+SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
+
+// Corrigir o uso de ?.rect e ?.realm
+var rect_prop := "";
+var realm_prop := "";
+if (territory_info)
+    if (territory_info.rect)
+        rect_prop := territory_info.rect;
+    endif
+    if (territory_info.realm)
+        realm_prop := territory_info.realm;
+    endif
+endif
+
+SetObjProperty(totem, TERRITORY_RECT_PROP, rect_prop);
+SetObjProperty(totem, TERRITORY_REALM_PROP, realm_prop);
+SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
 SetObjProperty(totem, "CreatedBy", who.serial);
 SetObjProperty(totem, "CreationDate", polcore().systime);
-
-SendSysMessage(who, "Um totem para o território '" + GetElementProp(elem, "Name", "") + "' foi criado em sua mochila.");
-return 1;
+    
+    SendSysMessage(who, "Um totem para o território '" + territory_name + "' foi criado em sua mochila.");
+    return 1;
 endfunction
 
 // Função TrimString consolidada (use apenas esta versão)
-function TrimString(str)
+function RectTrimString(str)
     // Verificar se a string é vazia ou nula
     if (!str || str == "")
         return "";
@@ -952,4 +1025,8 @@ endfunction
 function CreateTerritoryID()
     // Combinar o timestamp com um número aleatório para garantir unicidade
     return "TER_" + polcore().systime + "_" + RandomInt(10000);
+endfunction
+
+function IsTerritoryCapital(territory_id)
+    return TM_IsTerritoryCapital(territory_id);
 endfunction
