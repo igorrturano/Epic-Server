@@ -10,7 +10,7 @@ include ":crafting:controladoraComplexos";
 
 program use_carptool(who, tool)
 
-	FabricaItensComplexos(who,"Carpentry", ":woodworking:CarpItems");
+	FabricaItensComplexos(who,"Carpentry");
 
 endprogram
 

@@ -8,7 +8,7 @@ include ":crafting:controladoraComplexos";
 
 program use_FletchTool(who, tool)
 
-	FabricaItensComplexos(who,"BowcraftFletching", ":woodworking:bowcraft");
+	FabricaItensComplexos(who,"BowcraftFletching");
 
 endprogram
 

@@ -3,10 +3,9 @@ use os;
 
 include ":datafile:datafile";
 
-function AdicionaEsquema(quem, receitaObjtype, esquema)
+function AdicionaEsquema(quem, nomeReceitaClassificada, esquema)
 	var dFile := DFOpenDataFile(":crafting:esquemas", DF_CREATE);
 	var elemento := DFFindElement(dFile, quem.client.accname, DF_CREATE);
-	receitaObjtype :=  Hex(receitaObjtype);
 
 	if(elemento)
 		TrataRegistrosMortos(); // Limpa informação de personagens deletados.
@@ -16,8 +15,8 @@ function AdicionaEsquema(quem, receitaObjtype, esquema)
 		var isNovaReceita := true;
 
 		if(receitas)
-			if(receitas.exists(receitaObjtype))
-				registroEsquemas := receitas[receitaObjtype];
+			if(receitas.exists(nomeReceitaClassificada))
+				registroEsquemas := receitas[nomeReceitaClassificada];
 				isNovaReceita := false;
 			endif
 		else
@@ -31,9 +30,9 @@ function AdicionaEsquema(quem, receitaObjtype, esquema)
 		endif
 		
 		if(isNovaReceita)
-			receitas.insert(receitaObjtype,registroEsquemas);
+			receitas.insert(nomeReceitaClassificada,registroEsquemas);
 		else
-			receitas[receitaObjtype] := registroEsquemas;
+			receitas[nomeReceitaClassificada] := registroEsquemas;
 		endif
 
 		elemento.SetProp(Hex(quem.serial), receitas);
@@ -43,19 +42,18 @@ function AdicionaEsquema(quem, receitaObjtype, esquema)
 	return error{"errortext" := "Erro inesperado."};
 endfunction
 
-function EditaEsquema(quem, receitaObjtype,esquema)
+function EditaEsquema(quem, nomeReceitaClassificada,esquema)
 	var dFile := DFOpenDataFile(":crafting:esquemas", DF_CREATE);
 	var elemento := DFFindElement(dFile, quem.client.accname, DF_CREATE);
-	receitaObjtype :=  Hex(receitaObjtype);
 
 	if(elemento)
 		TrataRegistrosMortos(); // Limpa informação de personagens deletados.
 
 		var receitas := elemento.GetProp(Hex(quem.serial));
-		var registroEsquemas := receitas[receitaObjtype];
+		var registroEsquemas := receitas[nomeReceitaClassificada];
 		registroEsquemas[esquema.nome] := esquema;
 
-		receitas[receitaObjtype] := registroEsquemas;
+		receitas[nomeReceitaClassificada] := registroEsquemas;
 
 		elemento.SetProp(Hex(quem.serial), receitas);
 		return esquema;
@@ -64,7 +62,7 @@ function EditaEsquema(quem, receitaObjtype,esquema)
 	return error{"errortext" := "Erro inesperado."};
 endfunction
 
-function ListaEsquemas(quem, receitaObjtype)
+function ListaEsquemas(quem, nomeReceitaClassificada)
 	var dFile := DFOpenDataFile(":crafting:esquemas", DF_CREATE);
 	var elemento := DFFindElement(dFile, quem.client.accname, DF_CREATE);
 	
@@ -72,7 +70,7 @@ function ListaEsquemas(quem, receitaObjtype)
 		TrataRegistrosMortos(); // Limpa informação de personagens deletados.
 
 		var receitas := elemento.GetProp(Hex(quem.serial));
-		var esquemas := receitas[Hex(receitaObjtype)];
+		var esquemas := receitas[nomeReceitaClassificada];
 
 		return esquemas;
 		
@@ -81,7 +79,7 @@ function ListaEsquemas(quem, receitaObjtype)
 	return error{"errortext" := "Nenhum registro Encontrado."};
 endfunction
 
-function RemoveEsquema(quem, receitaObjtype,esquema)
+function RemoveEsquema(quem, nomeReceitaClassificada,esquema)
 	var dFile := DFOpenDataFile(":crafting:esquemas", DF_CREATE);
 	var elemento := DFFindElement(dFile, quem.client.accname, DF_CREATE);
 	
@@ -89,10 +87,10 @@ function RemoveEsquema(quem, receitaObjtype,esquema)
 		TrataRegistrosMortos(); // Limpa informação de personagens deletados.
 
 		var receitas := elemento.GetProp(Hex(quem.serial));
-		var esquemas := receitas[Hex(receitaObjtype)];
+		var esquemas := receitas[nomeReceitaClassificada];
 		if(esquemas.exists(esquema.nome))
 			esquemas.erase(esquema.nome);
-			receitas[Hex(receitaObjtype)] := esquemas;
+			receitas[nomeReceitaClassificada] := esquemas;
 			elemento.SetProp(Hex(quem.serial),receitas);
 			return esquemas;
 		endif

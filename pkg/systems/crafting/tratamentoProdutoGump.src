@@ -63,7 +63,15 @@ function InicializaSessao (quem , produto, estacao)
 	sessao.+nomeItem := propFabricado.receita.desc;
 	sessao.+sucessosNecessarios := propFabricado.receita.sucessosNecessarios;
 	sessao.+maximoFalhas := PegaMaximoFalhas(produto);
-	sessao.+dificuldade := PegaDificuldade(quem, craft_config[propFabricado.receita.objtype],propFabricado.receita.pericia, produto, estacao);
+	sessao.+dificuldade := PegaDificuldadeFrabicarObjeto(
+											quem,
+											propFabricado.receita.objtype,
+											propFabricado.receita.profissao,
+											propFabricado.receita.pericia,
+											propFabricado.receita.receitaClassificada.classe,
+											produto,
+											estacao);
+											
 	sessao.+sucessos := propTratamento.sucessos ? propTratamento.sucessos : 0;
 	sessao.+falhas := propTratamento.falhas ? propTratamento.falhas : 0;
 	sessao.+ciclos := propTratamento.ciclos ? propTratamento.ciclos : 0;

@@ -15,8 +15,8 @@ const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-function FabricaItensComplexos(quem,profissao, receitasConfigPath)
-	EnviaItensComplexosGump(quem,profissao, receitasConfigPath);
+function FabricaItensComplexos(quem,profissao)
+	EnviaItensComplexosGump(quem,profissao);
 endfunction
 
 function InicializaSessaoComplexos(quem, profissaoCraftProp)
@@ -67,12 +67,13 @@ endfunction
 
 function SelecionaReceita(byref sessao, quem, parametros , indice)
 	var objetoReceita := parametros.visaoReceitas[sessao.categoriaSelecionada][indice];
-	NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,objetoReceita.objtype));
+	var nomeReceitaClassificado := PegaNomeReceitaClassificada(objetoReceita.receitaClassificada);
+	NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,nomeReceitaClassificado));
 endfunction
 
-function EnviaItensComplexosGump(quem,profissao, receitasConfigPath)
+function EnviaItensComplexosGump(quem,profissao)
 	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
-	var parametros := PreparaItensComplexosGump(quem, profissao, receitasConfigPath);
+	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
 	var sessao := InicializaSessaoComplexos(quem, parametros.propCraft[parametros.pericia]);
@@ -193,12 +194,14 @@ function EnviaItensComplexosGump(quem,profissao, receitasConfigPath)
 					break;
 				endif
 				//Print("Salvei Esquema {}!".format(sessao.receitaSelecionada.esquemaSelecionado.nome));
+				var nomeReceitaClassificado := PegaNomeReceitaClassificada(sessao.receitaSelecionada.receita.receitaClassificada);
+
 				case(sessao.acao)
 					ADICIONAR:
 						var isAdicionado := AdicionaEsquema(quem,
-										sessao.receitaSelecionada.receita.objtype,
+										nomeReceitaClassificado,
 										sessao.receitaSelecionada.esquemaSelecionado);
-						sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
+						sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,nomeReceitaClassificado);
 						if(!isAdicionado)
 							SendSysMessageEX(quem,isAdicionado.errortext,SSM_FAIL);
 						endif
@@ -206,10 +209,10 @@ function EnviaItensComplexosGump(quem,profissao, receitasConfigPath)
 
 					EDITAR:
 						EditaEsquema(quem,
-									sessao.receitaSelecionada.receita.objtype,
+									nomeReceitaClassificado,
 									sessao.receitaSelecionada.esquemaSelecionado
 									);
-						sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,sessao.receitaSelecionada.receita.objtype);
+						sessao.receitaSelecionada.esquemas := ListaEsquemas(quem,nomeReceitaClassificado);
 						sessao.devePopularDropDown := true;
 						break;
 
@@ -224,6 +227,7 @@ function EnviaItensComplexosGump(quem,profissao, receitasConfigPath)
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS,3);
 				var chaveEsquema := sessao.receitaSelecionada.esquemas.keys()[retornoMapeado.indiceItem];
 				var esquema := sessao.receitaSelecionada.esquemas[chaveEsquema];
+				var nomeReceitaClassificado := PegaNomeReceitaClassificada(sessao.receitaSelecionada.receita.receitaClassificada);
 
 				case (retornoMapeado.indiceBotao)
 					1: //Editar
@@ -233,7 +237,7 @@ function EnviaItensComplexosGump(quem,profissao, receitasConfigPath)
 						break;
 
 					2: //Excluir
-						sessao.receitaSelecionada.esquemas := RemoveEsquema(quem, sessao.receitaSelecionada.receita.objtype, esquema);
+						sessao.receitaSelecionada.esquemas := RemoveEsquema(quem, nomeReceitaClassificado, esquema);
 						break;
 
 					3: //Fabricar
@@ -268,8 +272,9 @@ function MarcaCategoriaVisualizada(byref sessao,parametros)
 		if(!sessao.deveAtrasarAtualizacao)
 			foreach receita in (parametros.visaoReceitas[sessao.categoriaSelecionada])
 				Sleepms(2);
-				if(!(receita.objtype in sessao.visualizadas.receitas))
-					sessao.visualizadas.receitas.append(receita.objtype); //guardo as que foram visualizadas para atualizar a prop no final;
+				var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
+				if(!(nomeClassificado in sessao.visualizadas.receitas))
+					sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
 				endif
 			endforeach
 		endif
@@ -817,6 +822,8 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
 	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
 	var efeitoEscolhido := efeitosMaterial[propriedades.caracteristica];
+	var subEfeitos;
+	var valorEfeito := 0;
 	
 	if(modificadorHp)
 		propriedades.+modificadorHp := modificadorHp;
@@ -829,10 +836,10 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 		propriedades.modificadorHp := 0;
 	endif
 
-	if(efeitoEscolhido && Upper(efeitoEscolhido) != "VAZIO")
-		var subEfeitos := SplitWords(efeitoEscolhido);
-
-		propriedades.+valorPrincipal := CInt(subEfeitos[subEfeitos.size()]) + Cint(tier.valor);
+	
+	if(efeitoEscolhido)
+		subEfeitos := SplitWords(efeitoEscolhido);
+		valorEfeito := CInt(subEfeitos[subEfeitos.size()]);
 
 		if(subEfeitos.size() > 1)
 			subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
@@ -853,6 +860,10 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 		endif 
 	endif
 	
+	if(Upper(caracteristica) != "VAZIO")
+		propriedades.+valorPrincipal := valorEfeito + Cint(tier.valor);
+	endif
+	
 	return propriedades; 
 endfunction
 
@@ -866,7 +877,7 @@ function IsAlvoValido(quem, alvo)
 	return 1;
 endfunction
 
-function PreparaItensComplexosGump(quem, profissao, receitasConfigPath)
+function PreparaItensComplexosGump(quem, profissao)
 
 	var parametrosGump := struct;
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
@@ -875,14 +886,14 @@ function PreparaItensComplexosGump(quem, profissao, receitasConfigPath)
 
 	var propCraft := GetObjProperty(quem, "Craft");
 	if( TypeOf(propCraft) != "Dictionary" )
-		propCraft := profissaoConfig;
+		propCraft := MontaCraftProp(profissaoConfig);
 		SetObjProperty(quem, "Craft", propCraft);
 	endif
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+profissao := profissao;
 	parametrosGump.+propCraft := propCraft;
-	parametrosGump.+receitasConfig := ReadConfigFile(receitasConfigPath);
+	parametrosGump.+receitasConfig := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
 	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(
 											quem,
@@ -915,6 +926,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 		var receitas := Array;
 
 		foreach item in itens
+			Sleepms(2);
 			var itemStringArr := SplitWords(item);
 			var receita := Struct;
 
@@ -937,8 +949,9 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 					isDuplaOrigem := true; // Neste caso, devo verificar se conheço por cultura ou receita.
 					break;
 			endcase
-
-			var objtype   := GetObjTypeByName(nomeItem);
+			
+			var receitaClassificada := ClassificaNomeReceita(nomeItem);
+			var objtype   := GetObjTypeByName(receitaClassificada.nome);
 			if(TypeOf(objtype) == "Struct")
         		continue;
       		endif
@@ -947,21 +960,20 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 							quem,
 							povo,
 							itemOrigem,
-							nomeItem,
+							receitaClassificada,
 							objtype,
 							nomePericia,
 							receitasAprendidas,
 							isDuplaOrigem,
-							receitasConfig))
+							nomeProfissao))
 
-				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao);
+				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao, receitaClassificada);
 				if(!receitaItem.isVisualizada)
 					var index := propCraft[nomePericia]["visualizadas"].categorias.findIndex( @(categoriaArray) {return categoriaArray == categoria;});
 					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
 				endif
 				receitas.append(receitaItem);
 			endif
-			Sleepms(2);
 		endforeach
 		retornoVisao.insert(categoria,receitas);
 		Sleepms(2);
@@ -971,7 +983,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 
 endfunction
 
-function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref propCraft, nomeProfissao)
+function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref propCraft, nomeProfissao, receitaClassificada)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
 	var descritorFabricacao := receitasConfig[objtype];
@@ -982,19 +994,20 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
-	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig);
+	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe);
 	receita.+sucessosNecessarios := sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, descritorFabricacao);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos);
-	receita.+dificuldade := PegaDificuldade(quem, GetConfigReal(descritorFabricacao,"skill"), nomePericia);
-	receita.+skillNecessaria :=  GetConfigReal(descritorFabricacao,"skill");
+	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
 	receita.+objtype := objtype;
 	receita.+pericia := nomePericia;
 	receita.+profissao := nomeProfissao;
 	receita.+uso := definicaoItem.Attribute;
+	receita.+receitaClassificada := receitaClassificada;
 	receita.+desc := definicaoItem.desc;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
-	receita.+isVisualizada:=  objtype in (propCraft[nomePericia]["visualizadas"].receitas);
+	
+	receita.+isVisualizada:= PegaNomeReceitaClassificada(receitaClassificada) in (propCraft[nomePericia]["visualizadas"].receitas);
 	
 	if(isComponente)
 		receita.+complexoComponente := MontaComplexoComponente(descritorFabricacao); //o item é um complexo considerado componente também.
@@ -1043,28 +1056,31 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	return desc;
 endfunction
 
-function PegaComponentesNecessarios(objtype, receitasConfig)
+function PegaComponentesNecessarios(objtype, receitasConfig, classe)
 	var encaixesItem := GetConfigStringArray(receitasConfig[objtype],"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
+	classe := classe ? classe : 1;
 
 	var componentes := array;
 	foreach encaixe in encaixesItem
+		Sleepms(2);
 		var componente := struct;
 		var splitEncaixe := SplitWords(encaixe);
+		componente.+classe := splitEncaixe[DESC_ENCAIXE_CLASSE];
+		if(Cint(componente.classe) != cint(classe)) continue; endif
 
-		componente.+caracteristica :=  splitEncaixe[1];
-		componente.+encaixe := splitEncaixe[2];
-		componente.+qtdNecessaria := splitEncaixe[3];
+		componente.+caracteristica :=  splitEncaixe[DESC_ENCAIXE_CARACTERISTICA];
+		componente.+encaixe := splitEncaixe[DESC_ENCAIXE_ENCAIXE];
+		componente.+qtdNecessaria := splitEncaixe[DESC_ENCAIXE_QTD_NECESSARIA];
 
-		case (splitEncaixe[4])
-			"principal": componente.+isPrincipal := splitEncaixe[4] == "principal"; break;
-			"opcional": componente.+isOpcional := splitEncaixe[4] == "opcional"; break;
+		case (splitEncaixe[DESC_ENCAIXE_CONDICIONAL])
+			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; break;
+			"opcional": componente.+isOpcional := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "opcional"; break;
 		endcase
 
 		componente.+encaixeDesc := GetConfigString(configEncaixes[componente.encaixe],"Desc");
 		componente.+itens := GetConfigStringArray(configEncaixes[componente.encaixe],"Item");
 		componentes.append(componente);
-		Sleepms(2);
 	endforeach
 
 	return componentes;
@@ -1075,16 +1091,16 @@ function PegaMateriaisNecessarios(objtype, descritorFabricacao)
 	return materials;
 endfunction
 
-function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,receitasAprendidas,isDuplaOrigem, receitasConfig)
+function DeveAparecerReceita(quem,povo,itemOrigem,receitaClassificada,objtype,nomePericia,receitasAprendidas,isDuplaOrigem, nomeProfissao)
 	
 	var isOrigemValida := false;
-	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, nomePericia, receitasConfig);
+	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, receitaClassificada.classe, nomePericia, nomeProfissao );
 	
 	if(isDuplaOrigem)
-		isOrigemValida := nomeItem in receitasAprendidas || povo == itemOrigem;
+		isOrigemValida := receitaClassificada.nome in receitasAprendidas || povo == itemOrigem;
 	else
 		if(itemOrigem == "Recipe")
-			isOrigemValida := nomeItem in receitasAprendidas;
+			isOrigemValida := receitaClassificada.nome in receitasAprendidas;
 		elseif(itemOrigem == "itemComum")
 			isOrigemValida := true;
 		else
@@ -1095,9 +1111,10 @@ function DeveAparecerReceita(quem,povo,itemOrigem,nomeItem,objtype,nomePericia,r
 	return isOrigemValida && isValorPericiaSuficiente;
 endfunction
 
-function TemValorPericiaNecessaria(quem, objtype, nomePericia, receitasConfig)
+function TemValorPericiaNecessaria(quem, objtype, classe, nomePericia, nomeProfissao)
 	var settings := AP_GetSettingsCfgElem("Skills");
-	return (  receitasConfig[objtype].skill - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
+
+	return (  PegaSkillNecessaria(objtype, nomeProfissao, classe) - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
 endfunction
 
 function ClassificaRetornoComplexos(retorno,sessao)

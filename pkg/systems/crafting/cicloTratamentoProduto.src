@@ -24,7 +24,15 @@ program CicloTratamentoProduto(parametros)
 		if(processoGerente.state)
 			var propFabricado := GetObjProperty(produto,PROPNAME_FABRICADO);
 			
-			var dificuldades := PegaDificuldade(quem, CDbl( propFabricado.receita.skillNecessaria),propFabricado.receita.pericia, produto, estacao);
+			var dificuldades :=  PegaDificuldadeFrabicarObjeto(
+										quem,
+										propFabricado.receita.objtype,
+										propFabricado.receita.profissao,
+										propFabricado.receita.pericia,
+										propFabricado.receita.receitaClassificada.classe,
+										produto,
+										estacao);
+
 			var rolagem := RandomIntMinMax(0,100);
 			CheckSkillAdvance(quem,propFabricado.receita.pericia,dificuldades.skill + 15,dificuldades.chancePelaSkill);
 			var isSucesso := rolagem <= Cint(dificuldades.chanceTotal);

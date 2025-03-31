@@ -6,5 +6,5 @@ use util;
 include ":crafting:controladoraComplexos";
 
 program use_Alchemy(who, tool)
-	FabricaItensComplexos(who, "Alchemy", ":alchemy:AlchItems");
+	FabricaItensComplexos(who, "Alchemy");
 endprogram

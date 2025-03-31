@@ -70,8 +70,9 @@ endenum
 
 var alturaCelula :=  G_ALTURA / G_CELULA_DIVISOR;
 var larguraCelula :=  G_LARGURA / G_CELULA_DIVISOR;
-
 var espacamentoAplicado := G_ESPACAMENTO * 2;
+
+var coresClassesReceitas := array{0,737,727,717,707,797};
 
 function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	gump := GFECreateGump("GumpItensComplexos",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
@@ -525,6 +526,9 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 	GFTooltipText(gump,"Criar novo esquema.");
 	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
 	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
+	if(receita.receitaClassificada.classe)
+		GFGumpPic(gump,x + 30 ,y + 10,1592,coresClassesReceitas[cint(receita.receitaClassificada.classe)]); //
+	endif
 	var corPino := 0;
 	if(receita.dificuldade.chanceBase > 45)
 		corPino := 78; // verde
@@ -540,7 +544,8 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		GFTooltipText(gump,"Chance de obter sucessos: {}%".format(receita.dificuldade.chanceBase));
 	endif
 
-	if(sessao.receitaSelecionada.receita.objtype == receita.objtype)
+	if(sessao.receitaSelecionada.receita.receitaClassificada.nome == receita.receitaClassificada.nome &&
+		sessao.receitaSelecionada.receita.receitaClassificada.classe == receita.receitaClassificada.classe)
 		GFGumpPic(gump,x + 17 ,y + 95,30076,0x57); // seletor
 	endif
 
@@ -559,8 +564,8 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		default:
 	endcase
 	
-	if (!isReceitaVisualizada(sessao, receita))
-		GFGumpPic(gump, x + 90, y + 15, 1655);
+	if (!isReceitaVisualizada(sessao, receita))//icone de visualizacao
+		GFGumpPic(gump, x + 75, y + 15, 1655);
 	endif
 
 	GFTilePic(gump, x + 30,y + 50, CInt(receita.graphic));//Papel de fundo

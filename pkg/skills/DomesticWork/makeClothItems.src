@@ -7,7 +7,7 @@ include ":crafting:controladoraComplexos";
 
 program use_SmithTool(who, tool)
 
-	FabricaItensComplexos(who, "Tailoring", ":DomesticWork:tailoring");
+	FabricaItensComplexos(who, "Tailoring");
 
 endprogram
 

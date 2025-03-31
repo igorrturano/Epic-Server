@@ -7,7 +7,7 @@ include ":crafting:controladoraComplexos";
 
 program use_SmithTool(who, tool)
 
-	var rinfo := FabricaItensComplexos(who, "Blacksmithy", ":metalworking:blacksmithy");
+	var rinfo := FabricaItensComplexos(who, "Blacksmithy");
 
 endprogram
 

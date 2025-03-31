@@ -19,6 +19,49 @@ enum ESTADOS_FABRICACAO
 	ITEM_GERADO
 endenum
 
+enum COMPONENTES_ENCAIXE_ORDEM
+	DESC_ENCAIXE_CLASSE := 1,
+	DESC_ENCAIXE_CARACTERISTICA := 2,
+	DESC_ENCAIXE_ENCAIXE := 3,
+	DESC_ENCAIXE_QTD_NECESSARIA := 4,
+	DESC_ENCAIXE_CONDICIONAL := 5,
+endenum
+
+function ClassificaNomeReceita(nomeReceita)
+	var dividido := SplitWords(nomeReceita,"-");
+	return dictionary {
+		"nome" -> dividido[1],
+		"classe" -> dividido[2]
+	};
+endfunction
+
+function PegaNomeReceitaClassificada(receitaClassificada)
+	var nomeClassificado;
+
+	if(receitaClassificada.classe)
+		nomeClassificado := receitaClassificada.nome + "-" + receitaClassificada.classe;
+	else
+		nomeClassificado := receitaClassificada.nome;
+	endif
+
+	return nomeClassificado;
+endfunction
+
+function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var InfoFabricacao := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
+	var skills := SplitWords(InfoFabricacao[objtype].skill);
+	var skill;
+
+	if(!classeReceita) // se mandarem uma undefined ou com erro, 
+		skill := skills[1];
+	else
+		skill := skills[cint(classeReceita)];
+	endif
+
+	return skill ? CDbl(skill) : 0;
+endfunction
+
 // TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
 function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
 	
@@ -81,6 +124,11 @@ function CalculaValorPico(quem, pericia)
 	return AP_GetSkill(quem,pericia) / 20;
 endfunction
 
+function PegaDificuldadeFrabicarObjeto(quem, objtype, nomeProfissao, nomePericia, classe , produto := 0, estacao  := 0)
+	var skill :=  PegaSkillNecessaria(objtype, nomeProfissao, classe);
+	return PegaDificuldade(quem, skill, nomePericia, produto, estacao);
+endfunction 
+
 function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, estacao  := 0)
 	 var retorno := struct;
 	 
@@ -93,6 +141,7 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 												retorno.skill,
 												retorno.chancePelaSkill);
 	
+	print("retorno " + retorno);
 	var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO );
 	
 	if(propFabricado)
