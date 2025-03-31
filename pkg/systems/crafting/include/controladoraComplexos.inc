@@ -969,7 +969,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 
 				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao, receitaClassificada);
 				if(!receitaItem.isVisualizada)
-					var index := propCraft[nomePericia]["visualizadas"].categorias.findIndex( @(categoriaArray) {return categoriaArray == categoria;});
+					var index := categoria in propCraft[nomePericia]["visualizadas"].categorias;
 					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
 				endif
 				receitas.append(receitaItem);
@@ -1006,9 +1006,8 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+receitaClassificada := receitaClassificada;
 	receita.+desc := definicaoItem.desc;
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
-	
 	receita.+isVisualizada:= PegaNomeReceitaClassificada(receitaClassificada) in (propCraft[nomePericia]["visualizadas"].receitas);
-	
+
 	if(isComponente)
 		receita.+complexoComponente := MontaComplexoComponente(descritorFabricacao); //o item é um complexo considerado componente também.
 	endif
