@@ -1097,10 +1097,10 @@ function DeveAparecerReceita(quem,povo,itemOrigem,receitaClassificada,objtype,no
 	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, receitaClassificada.classe, nomePericia, nomeProfissao );
 	
 	if(isDuplaOrigem)
-		isOrigemValida := receitaClassificada.nome in receitasAprendidas || povo == itemOrigem;
+		isOrigemValida := PegaNomeReceitaClassificada(receitaClassificada) in receitasAprendidas || povo == itemOrigem;
 	else
 		if(itemOrigem == "Recipe")
-			isOrigemValida := receitaClassificada.nome in receitasAprendidas;
+			isOrigemValida := PegaNomeReceitaClassificada(receitaClassificada) in receitasAprendidas;
 		elseif(itemOrigem == "itemComum")
 			isOrigemValida := true;
 		else
