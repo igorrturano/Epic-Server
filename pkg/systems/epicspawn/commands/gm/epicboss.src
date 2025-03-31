@@ -135,7 +135,7 @@ function InitializeFormData()
     // Behavior
     form_data.teleport_health := "25";
     form_data.aggression := "High";
-    form_data.flee_health := "10";
+    form_data.flee_health := "0";
     form_data.target_selection := "Highest Damage";
     
     // Equipment
@@ -316,12 +316,12 @@ function ExtractPageData(input, page)
             
         BOTAO_PAGE4:
             
-            var flee_health := GFExtractData(input, 76);
-            if (flee_health != error && flee_health != "")
-                form_data.flee_health := flee_health;
-                print("DEBUG: Extracted flee_health = " + form_data.flee_health);
-            endif
-            break;
+        var flee_health := GFExtractData(input, 76);
+        if (flee_health != error && flee_health != "")
+            form_data.flee_health := flee_health;
+            print("DEBUG: Extracted flee_health = " + form_data.flee_health);
+        endif
+        break;
             
         BOTAO_PAGE5:
             // Equipment
@@ -1334,7 +1334,7 @@ function ShowPage4(who, title, gump_width, gump_height)
     
     // Flee Level
     GFTextLine(gump, 550, 220, 1153, "Flee When Health Below:");
-    GFTextEntry(gump, 730, 220, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "10", 76);
+    GFTextEntry(gump, 730, 220, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "0", 76);
     GFTextLine(gump, 840, 220, 1153, "%");
     
     // Target Selection
@@ -1632,6 +1632,9 @@ function CreateBossFromGump(who, form_data)
     boss.tactics := CInt(form_data.tactics);
     boss.magery := CInt(form_data.magery);
     boss.awareness := CInt(form_data.awareness);
+
+    // Movement
+    boss.flee_health := CInt(form_data.flee_health);
 
     SendSysMessage(who, "Creating boss...");
     

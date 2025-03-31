@@ -273,6 +273,10 @@ function CreateEpicBoss(boss, x, y, z, realm)
         // Start the TimedScript control process
         start_script(":epicAI:scripts/timedScriptControl", array{npc});
     endif
+
+    if (boss.flee_health)
+        SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
+    endif
     
     return npc;
 endfunction

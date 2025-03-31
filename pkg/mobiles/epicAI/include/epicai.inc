@@ -1959,3 +1959,16 @@ function CheckHealthTeleport(mobile)
     
     return 0;
 endfunction
+
+function ShouldFlee(me)
+    // should flee when life is below X%
+    var flee_health := CInt(GetObjProperty(me, "flee_health"));
+    if (flee_health)
+        var max_hp := AP_GetVitalMaximumValue(me, HITS);
+        var current_hp_percent := CInt((CDbl(AP_GetVital(me, HITS)) / CDbl(max_hp)) * 100);
+        if (current_hp_percent <= flee_health)
+            return 1;
+        endif
+    endif
+    return 0;
+endfunction

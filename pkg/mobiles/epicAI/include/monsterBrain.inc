@@ -220,6 +220,11 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         CharmOpponent(me, opponent);
     endif
 
+    if (ShouldFlee(me))
+        FleeFrom(opponent);
+        return 1;
+    endif
+
     return 1;
 endfunction
 

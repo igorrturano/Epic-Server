@@ -27,7 +27,6 @@ program KillPlayers()
         var isOnPatrol := (patrol_points && patrol_points.size() >= 2);
         
         if (hasPlayerNearMe || isOnPatrol)
-           
             case (brain_type)
                 "monster": MonsterBrain();
                 "animal":  AnimalBrain();

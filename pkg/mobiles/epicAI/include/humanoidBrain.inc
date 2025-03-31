@@ -205,6 +205,11 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     opponent := CheckForIdealTarget();
     SetOpponent(opponent);
 
+    if (ShouldFlee(me))
+        FleeFrom(opponent);
+        return 1;
+    endif
+
     // Track initial state before combat
     var initial_state := GetCombatState(me, opponent);
     var used_ability := UseAbilities(me, opponent);
