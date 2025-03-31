@@ -1911,3 +1911,51 @@ function TryToRunAway(opponent, chasing := 0)
 
     SetObjProperty(me, "#runaway_progress", progress);
 endfunction
+
+/*
+ * CheckHealthTeleport(mobile)
+ * Checks if mobile should teleport based on current health percentage
+ * Returns: 1 if teleported, 0 if not
+ */
+function CheckHealthTeleport(mobile)
+    var teleport_locations := GetObjProperty(mobile, "teleport_locations");
+    
+    if (!teleport_locations || teleport_locations.size() < 1)
+        return 0;
+    endif
+    
+    var max_hp := AP_GetVitalMaximumValue(mobile, HITS);
+    var current_hp_percent := CInt((CDbl(AP_GetVital(mobile, HITS)) / CDbl(max_hp)) * 100);
+    
+    // Find best matching location (highest hp_percent threshold that's <= current_hp_percent)
+    var best_location := 0;
+    var best_index := -1;
+    var i := 1;  // Start from 1 since POL arrays are 1-indexed
+    
+    foreach location in teleport_locations
+        if (current_hp_percent <= location.hp_percent)
+            if (!best_location || location.hp_percent > best_location.hp_percent)
+                best_location := location;
+                best_index := i;
+            endif
+        endif
+        i := i + 1;
+    endforeach
+    
+    if (best_index >= 0)
+        // Teleport the mobile to the best location
+        if (MoveObjectToLocation(mobile, best_location.x, best_location.y, best_location.z, best_location.realm, MOVEOBJECT_FORCELOCATION))
+            PlaySoundEffect(mobile, 0x1FE);
+            PlayObjectCenteredEffect(mobile, 0x3728, 7, 0x10);
+            
+            // Remove this location from the array so it won't be used again
+            teleport_locations.erase(best_index);
+            SetObjProperty(mobile, "teleport_locations", teleport_locations);
+            return 1;
+        else
+            return 0;
+        endif
+    endif
+    
+    return 0;
+endfunction

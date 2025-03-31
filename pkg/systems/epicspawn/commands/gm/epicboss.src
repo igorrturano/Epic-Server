@@ -315,12 +315,6 @@ function ExtractPageData(input, page)
             break;
             
         BOTAO_PAGE4:
-            // Behavior
-            var teleport_health := GFExtractData(input, 72);
-            if (teleport_health != error && teleport_health != "")
-                form_data.teleport_health := teleport_health;
-                print("DEBUG: Extracted teleport_health = " + form_data.teleport_health);
-            endif
             
             var flee_health := GFExtractData(input, 76);
             if (flee_health != error && flee_health != "")
@@ -1306,13 +1300,27 @@ function ShowPage4(who, title, gump_width, gump_height)
     endif
     
     // Teleport Conditions section
-    GFTextLine(gump, 50, 230, 1153, "Teleport When Health Below:");
-    GFTextEntry(gump, 250, 230, 100, 20, 1150, form_data.teleport_health ? form_data.teleport_health : "25", 72);
-    GFTextLine(gump, 360, 230, 1153, "%");
+    GFTextLine(gump, 50, 300, 1153, "Teleport When Health Below:");
+    // Set Teleport Location - MOVED to where Ability Conditions was
+    GFAddButton(gump, 250, 300, 2103, 2104, 1, 73);
+    GFTextLine(gump, 280, 300, 1153, "Set Teleport Location");
     
-    GFAddButton(gump, 250, 260, 2103, 2104, 1, 73);
-    GFTextLine(gump, 280, 260, 1153, "Set Teleport Location");
-
+    // Add display of configured teleport locations
+    y_pos := 350;
+    if (form_data.teleport_locations && form_data.teleport_locations.size() > 0)
+        GFTextLine(gump, 50, y_pos, 1153, "Current Teleport Locations:");
+        y_pos += 25;
+        
+        foreach location in (form_data.teleport_locations)
+            GFTextLine(gump, 70, y_pos, 66, "HP " + location.hp_percent + "% → X:" + location.x + 
+                      " Y:" + location.y + " Z:" + location.z);
+            y_pos += 20;
+        endforeach
+        
+        // Add button to clear teleport locations
+        GFAddButton(gump, 50, y_pos + 10, 2103, 2104, 1, 78);
+        GFTextLine(gump, 80, y_pos + 10, 33, "Clear Teleport Locations");
+    endif
     // Add a vertical divider
     GFResizePic(gump, 520, 160, 3000, 2, 230);
     
@@ -1337,15 +1345,17 @@ function ShowPage4(who, title, gump_width, gump_height)
     // Add a divider line
     GFResizePic(gump, 40, 290, 3000, gump_width - 80, 2);
     
-    // Ability Conditions section
-    GFTextLine(gump, 50, 300, 1153, "Ability Conditions:");
-    GFAddButton(gump, 250, 300, 2103, 2104, 1, 74);
-    GFTextLine(gump, 280, 300, 1153, "Add Ability Condition");
+    // Ability Conditions section - MOVED below AI Settings
+    GFTextLine(gump, 550, 300, 1153, "Ability Conditions:");
     
     // Examples of conditions
-    GFTextLine(gump, 80, 330, 1153, "- Use ability when health below X%");
-    GFTextLine(gump, 80, 350, 1153, "- Use ability when X players are nearby");
-    GFTextLine(gump, 80, 370, 1153, "- Use ability every X seconds");
+    GFTextLine(gump, 580, 330, 1153, "- Use ability when health below X%");
+    GFTextLine(gump, 580, 350, 1153, "- Use ability when X players are nearby");
+    GFTextLine(gump, 580, 370, 1153, "- Use ability every X seconds");
+    GFAddButton(gump, 680, 390, 2103, 2104, 1, 74);
+    GFTextLine(gump, 710, 390, 1153, "Add Ability Condition");
+    
+ 
     
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
@@ -1361,20 +1371,23 @@ function ShowPage4(who, title, gump_width, gump_height)
     // Add Cancel button
     GFAddButton(gump, gump_width/2 + 30, gump_height - 50, 2119, 2120, 1, 101);
     GFTextLine(gump, gump_width/2 + 90, gump_height - 50, 33, "CANCEL");
-
-            
+    
     // Send the gump to the player
     var input := GFSendGump(who, gump);
 
     if (input[0] == 70) // Add Patrol Point
-        SelectPatrolArea(who, input, form_data);
+        SelectPatrolArea(who, form_data);
         return ShowPage4(who, title, gump_width, gump_height);
     elseif (input[0] == 71) // Clear All Patrol Points
         form_data.patrol_points := array{};
         SendSysMessage(who, "All patrol points cleared.");
         return ShowPage4(who, title, gump_width, gump_height);
-    elseif (input[0] == 73) // Set Teleport Location
-        ManageTeleportLocations(who, form_data);
+    elseif (input[0] == 73) // Set Teleport Locations
+        SelectTeleportLocations(who, form_data);
+        return ShowPage4(who, title, gump_width, gump_height);
+    elseif (input[0] == 78) // Clear Teleport Locations - changed button ID
+        form_data.teleport_locations := array{};
+        SendSysMessage(who, "Teleport locations cleared.", color := 33);
         return ShowPage4(who, title, gump_width, gump_height);
     endif
 
@@ -1654,20 +1667,21 @@ function CreateBossFromGump(who, form_data)
         SendSysMessage(who, "Boss created successfully, but failed to create spawner!");
     endif
     
-    // First, add this debug statement to see what's in form_data.deathevents
-    print("DEBUG: Death events before saving: " + form_data.deathevents);
-
     // Make sure this line exists when setting properties on the NPC
     SetObjProperty(npc, "DeathEvents", form_data.deathevents);
 
     // After setting the property, verify it was set correctly
     var debug_events := GetObjProperty(npc, "DeathEvents");
-    print("DEBUG: Death events after saving: " + debug_events);
     
     // Set patrol points if they exist
     if (form_data.patrol_points && form_data.patrol_points.size() > 0)
         SetObjProperty(npc, "patrol_points", form_data.patrol_points);
         SetObjProperty(npc, "#current_patrol_point", 1);
+    endif
+    
+    // Add teleport locations to boss structure
+    if (form_data.teleport_locations && form_data.teleport_locations.size() > 0)
+        SetObjProperty(npc, "teleport_locations", form_data.teleport_locations);
     endif
     
     return 1;
@@ -1906,6 +1920,126 @@ function DisplayTimedScriptOptions(who, input, script_name, byref form_data)
     
     form_data.timedscripts.append(script_struct);
     SendSysMessage(who, "Added " + script_name + " to timedscripts.");
+    
+    return 1;
+endfunction
+
+function SelectTeleportLocations(who, byref form_data)
+    // Initialize teleport_locations in form_data if it doesn't exist
+    if (!form_data.teleport_locations)
+        form_data.teleport_locations := array{};
+    endif
+    
+    SendSysMessage(who, "Target where you want the monster to teleport to.", color := 33);
+    var targ := TargetCoordinates(who);
+    if (!targ)
+        SendSysMessage(who, "Cancelled.", color := 33);
+        return 0;
+    endif
+    
+    // Create health percentage selection gump
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 400, 400);
+    GFResizePic(gump, 10, 10, 9350, 380, 380);
+    
+    GFTextMid(gump, 10, 20, 380, 1153, "Select Health Percentage Threshold");
+    GFTextLine(gump, 50, 60, 1153, "When HP drops below this %, monster will teleport to:");
+    GFTextLine(gump, 50, 85, 66, "X: " + targ.x + " Y: " + targ.y + " Z: " + targ.z + " Realm: " + who.realm);
+    
+    // Common health thresholds as buttons
+    var y_pos := 130;
+    var thresholds := {75, 50, 25, 10};
+    var btn_id := 1;
+    
+    foreach threshold in thresholds
+        GFAddButton(gump, 50, y_pos, 2117, 2118, 1, btn_id);
+        GFTextLine(gump, 80, y_pos, 1153, threshold + "% Health");
+        y_pos += 30;
+        btn_id += 1;
+    endforeach
+    
+    // Custom health threshold
+    GFTextLine(gump, 50, 250, 1153, "Or enter custom percentage (1-99):");
+    GFResizePic(gump, 50, 275, 9350, 60, 30);
+    GFTextEntry(gump, 55, 280, 50, 25, 1153, "", 5);
+    GFAddButton(gump, 120, 275, 2117, 2118, 1, 10);
+    
+    // Cancel button
+    GFAddButton(gump, 150, 350, 2119, 2120, 1, 0);
+    GFTextLine(gump, 185, 350, 33, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    if (!input[0])
+        SendSysMessage(who, "Cancelled.", color := 33);
+        return 0;
+    endif
+    
+    var hp_percent;
+    
+    if (input[0] == 10) // Custom input
+        hp_percent := CInt(GFExtractData(input, 5));
+        if (!hp_percent || hp_percent < 1 || hp_percent > 99)
+            SendSysMessage(who, "Invalid health percentage. Must be between 1 and 99.", color := 33);
+            return 0;
+        endif
+    else // Preset buttons
+        case (input[0])
+            1: hp_percent := 75; break;
+            2: hp_percent := 50; break;
+            3: hp_percent := 25; break;
+            4: hp_percent := 10; break;
+            default: 
+                SendSysMessage(who, "ERROR: Unknown button ID: " + input[0], color := 33);
+                return 0;
+        endcase
+    endif
+    print("DEBUG: hp_percent = " + hp_percent);
+    // Create a new teleport location struct
+    var teleport_location := struct{
+        "hp_percent" := hp_percent,
+        "x" := targ.x,
+        "y" := targ.y,
+        "z" := targ.z,
+        "realm" := who.realm  // Use the GM's realm as you mentioned
+    };
+    
+    // Add to the form_data teleport_locations array
+    form_data.teleport_locations.append(teleport_location);
+    
+    // Sort by hp_percent (highest to lowest)
+    form_data.teleport_locations.sort();
+    print("DEBUG: form_data.teleport_locations = " + form_data.teleport_locations);
+    form_data.teleport_locations.reverse(); // Highest HP threshold first
+    print("DEBUG: form_data.teleport_locations = " + form_data.teleport_locations);
+    
+    SendSysMessage(who, "Teleport location added. Boss will teleport when health is at or below " + hp_percent + "%", color := 66);
+    return 1;
+endfunction
+
+function SelectPatrolArea(who, byref form_data)
+    // Initialize patrol points array if it doesn't exist
+    if (!form_data.patrol_points)
+        form_data.patrol_points := array{};
+    endif
+    
+    SendSysMessage(who, "Select a location for the patrol point. ESC to cancel.");
+    var targ := TargetCoordinates(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Canceled.");
+        return 0;
+    endif
+    
+    // Create a new patrol point struct
+    var patrol_point := struct{
+        "x" := targ.x,
+        "y" := targ.y,
+        "z" := targ.z,
+        "realm" := targ.realm
+    };
+    
+    form_data.patrol_points.append(patrol_point);
+    SendSysMessage(who, "Patrol point added: " + targ.x + ", " + targ.y + ", " + targ.z);
     
     return 1;
 endfunction

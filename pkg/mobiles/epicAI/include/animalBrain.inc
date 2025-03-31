@@ -112,6 +112,9 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    // Check for health-based teleport
+    CheckHealthTeleport(me);
+
     if (me.isSpider() && opponent.getRace() == DROW)
         var npc_elem := NPC_GetNPCConfig(me);
         var tier := CInt(npc_elem.Tier);

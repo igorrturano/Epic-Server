@@ -345,3 +345,4 @@ function handleMonsterInitialReaction(source)
         endif
     endif
 endfunction
+

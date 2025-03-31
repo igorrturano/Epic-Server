@@ -198,6 +198,9 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         return 0;
     endif
 
+    // Check for health-based teleport
+    CheckHealthTeleport(me);
+
     SetOpponent(opponent);
     opponent := CheckForIdealTarget();
     SetOpponent(opponent);
