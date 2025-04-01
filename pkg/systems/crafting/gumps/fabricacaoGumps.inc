@@ -517,15 +517,17 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 
 	var numeroBotoes := 3;
 	var baseIdBotao :=  (indice - 1) * numeroBotoes + COMPLEXOS_RECEITAS;
+	var deslocamentoGraphicY;
+
+	if(receita.profissao == "Carpentry")
+		deslocamentoGraphicY := 15; //alguns graphics estão saindo da janela.
+	else
+		deslocamentoGraphicY := 0;
+	endif
 
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,
 	GFTooltipText(gump,receita.textoDescItem);
-	GFAddButton(gump,x + 15, y + 120,4011,4012,GF_CLOSE_BTN,baseIdBotao + 1);
-	GFTooltipText(gump,"Selecionar Receita.");
-	GFAddButton(gump,x + 45,y + 120,4029,4030,GF_CLOSE_BTN,baseIdBotao + 2);
-	GFTooltipText(gump,"Criar novo esquema.");
-	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
-	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
+
 	if(receita.receitaClassificada.classe)
 		GFGumpPic(gump,x + 30 ,y + 10,1592,coresClassesReceitas[cint(receita.receitaClassificada.classe)]); //
 	endif
@@ -568,7 +570,14 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		GFGumpPic(gump, x + 75, y + 15, 1655);
 	endif
 
-	GFTilePic(gump, x + 30,y + 50, CInt(receita.graphic));//Papel de fundo
+	GFTilePic(gump, x + 30,y + 50 - deslocamentoGraphicY, CInt(receita.graphic));//Graphic
+
+	GFAddButton(gump,x + 15, y + 120,4011,4012,GF_CLOSE_BTN,baseIdBotao + 1);
+	GFTooltipText(gump,"Selecionar Receita.");
+	GFAddButton(gump,x + 45,y + 120,4029,4030,GF_CLOSE_BTN,baseIdBotao + 2);
+	GFTooltipText(gump,"Criar novo esquema.");
+	GFAddButton(gump,x + 75,y + 120,4023,4024,GF_CLOSE_BTN,baseIdBotao + 3);
+	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
 endfunction
 
 function isReceitaVisualizada(sessao, receita)

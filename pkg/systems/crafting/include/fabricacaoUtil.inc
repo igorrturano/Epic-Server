@@ -141,7 +141,7 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 												retorno.skill,
 												retorno.chancePelaSkill);
 	
-	print("retorno " + retorno);
+	
 	var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO );
 	
 	if(propFabricado)
@@ -248,7 +248,6 @@ endfunction
 
 function PegaCaracteristica(item, caracteristica)
 	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	Print(propFabricadoMontado);
 	return propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
 endfunction
 
