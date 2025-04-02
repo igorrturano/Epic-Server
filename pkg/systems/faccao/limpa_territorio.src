@@ -6,11 +6,15 @@ use polsys;
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";
-include ":faccao:include/territory_management";  // Incluir o novo módulo centralizado
+
+// Tipos de objetos a procurar
+var TIPO_BAU := 0xFF11;
+var TIPO_MESA := 0xFE5C; 
+var TIPO_MURAL := 0x46AE;
 
 program limpa_territorio(params)
     LogInfo("territorio", "======================= INÍCIO DA EXECUÇÃO =======================");
-    LogDebug("territorio", "Iniciando limpa_territorio.src usando o sistema centralizado");
+    LogDebug("territorio", "Iniciando limpa_territorio.src");
     
     var territorio_id := params[1];
     var faction := params[2];
@@ -24,51 +28,17 @@ program limpa_territorio(params)
     LogInfo("territorio", "   - realm específico: '" + target_realm + "'");
     LogInfo("territorio", "   - Número total de parâmetros: " + params.size());
     
-    // Estrutura para o relatório final
-    var report := struct{
-        "territory_id" := territorio_id,
-        "territory_name" := "",
-        "faction" := faction,
-        "objects_found" := 0,
-        "objects_removed" := 0,
-        "chest_removed" := 0,
-        "desk_removed" := 0,
-        "board_removed" := 0,
-        "errors" := array{},
-        "cleanup_method" := "unknown",
-        "realm" := target_realm
+    // Contador de objetos encontrados de cada tipo
+    var counters := struct{
+        "baus" := 0,
+        "mesas" := 0,
+        "murais" := 0,
+        "destruidos" := 0
     };
     
-    // ETAPA 1: Obter informações completas do território usando TM_GetTerritoryInfo
-    LogDebug("territorio", "Buscando informações do território via TM_GetTerritoryInfo");
-    var territory_info := TM_GetTerritoryInfo(territorio_id);
-    
-    if (!territory_info)
-        LogError("territorio", "Território não encontrado: " + territorio_id);
-        report.errors.append("Território não encontrado no sistema");
-        
-        if (who)
-            SendSysMessage(who, "Erro: Território não encontrado no sistema.");
-        endif
-        
-        LogInfo("territorio", "Resumo final da operação:");
-        LogInfo("territorio", "   - Território não encontrado");
-        LogInfo("territorio", "======================= FIM DA EXECUÇÃO =======================");
-        
-        return 0;
-    endif
-    
-    LogInfo("territorio", "Território encontrado: " + territory_info.name);
-    report.territory_name := territory_info.name;
-    
-    // Usar realm do território se disponível
-    if (territory_info.realm)
-        target_realm := territory_info.realm;
-        report.realm := target_realm;
-        LogDebug("territorio", "Usando realm do território: " + target_realm);
-    endif
-    
-    // Recuperar coordenadas do território
+    // Recuperar o realm do território se disponível
+    LogDebug("territorio", "Tentando obter informações do território no datafile");
+    var realm_territorio := target_realm;
     var coordinates := struct{
         "x1" := 0,
         "y1" := 0,
@@ -76,259 +46,326 @@ program limpa_territorio(params)
         "y2" := 0
     };
     
-    if (territory_info.rect)
-        var coords := SplitWords(territory_info.rect);
-        LogDebug("territorio", "Coords separados: " + coords.size() + " elementos");
+var rect_df := SafeOpenDataFile(":architect:areas");
+if (rect_df)
+        LogDebug("territorio", "Datafile de áreas aberto com sucesso");
+        var territorios := rect_df.keys();
+        LogDebug("territorio", "Total de territórios no datafile: " + territorios.size());
         
-        if (coords.size() >= 4)
-            coordinates.x1 := CInt(coords[1]);
-            coordinates.y1 := CInt(coords[2]);
-            coordinates.x2 := CInt(coords[3]);
-            coordinates.y2 := CInt(coords[4]);
-            LogDebug("territorio", "Coordenadas do território: (" + coordinates.x1 + "," + coordinates.y1 + ") a (" + coordinates.x2 + "," + coordinates.y2 + ")");
-        else
-            LogError("territorio", "Formato de coordenadas inválido: " + territory_info.rect);
-            report.errors.append("Formato de coordenadas inválido");
+        var found := 0;
+        foreach nome_territorio in territorios
+    var elem := SafeFindElement(rect_df, nome_territorio);
+    var id_territorio := GetElementProp(elem, TERRITORY_ID_PROP);
+            
+            LogDebug("territorio", "Verificando território: " + nome_territorio + ", ID: " + id_territorio);
+            
+            if (id_territorio == territorio_id)
+                LogInfo("territorio", "Território encontrado! Nome: " + nome_territorio);
+                found := 1;
+                
+                realm_territorio := GetElementProp(elem, "Realm", "");
+                LogDebug("territorio", "Realm do território: " + realm_territorio);
+                
+                // Também recuperar coordenadas do território
+                var rect_str := GetElementProp(elem, "Rect", "");
+                LogDebug("territorio", "Rect do território: " + rect_str);
+                
+                if (rect_str)
+                    var coords := SplitWords(rect_str);
+                    LogDebug("territorio", "Coords separados: " + coords.size() + " elementos");
+                    
+                    if (coords.size() >= 4)
+                        coordinates.x1 := CInt(coords[1]);
+                        coordinates.y1 := CInt(coords[2]);
+                        coordinates.x2 := CInt(coords[3]);
+                        coordinates.y2 := CInt(coords[4]);
+                        LogDebug("territorio", "Coordenadas do território: (" + coordinates.x1 + "," + coordinates.y1 + ") a (" + coordinates.x2 + "," + coordinates.y2 + ")");
+                    else
+                        LogError("territorio", "Formato de coordenadas inválido: " + rect_str);
+                    endif
+                else
+                    LogError("territorio", "Território sem coordenadas definidas");
+                endif
+                
+                break;
+            endif
+            sleepms(1);
+        endforeach
+        
+        if (!found)
+            LogError("territorio", "Território " + territorio_id + " não encontrado no datafile");
         endif
     else
-        LogWarning("territorio", "Território sem coordenadas definidas");
-        report.errors.append("Território sem coordenadas definidas");
+       LogError("territorio", "Não foi possível abrir o datafile de áreas");
     endif
     
-    // ETAPA 2: Usar a função TM_DeleteTerritoryObjects para remover objetos
-    LogInfo("territorio", "Iniciando remoção de objetos usando TM_DeleteTerritoryObjects");
+    if (!realm_territorio)
+        LogDebug("territorio", "Realm não especificado, usando 'britannia' como padrão");
+        realm_territorio := "britannia";
+    endif
     
-    var objects_removed := TM_DeleteTerritoryObjects(territorio_id, faction);
+    LogInfo("territorio", "Realm final do território: " + realm_territorio);
     
-    if (objects_removed > 0)
-        LogInfo("territorio", "TM_DeleteTerritoryObjects removeu " + objects_removed + " objetos");
-        report.objects_removed := objects_removed;
-        report.cleanup_method := "tm_delete_territory_objects";
+    // Busca por seriais registrados (mais confiável)
+    LogDebug("territorio", "Tentando encontrar seriais registrados para o território");
+var seriais_df := SafeOpenDataFile(":faccao:seriais", 1); // 1 = criar se não existir
+if (!seriais_df)
+    LogError("territorio", "Não foi possível criar o datafile de seriais");
+else
+    LogDebug("territorio", "Datafile de seriais aberto com sucesso");
+endif
+    
+    var territorios_seriais := dictionary{};
+var found_serials := 0;
+
+if (seriais_df)
+    territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
+    
+    if (territorios_seriais.size() > 0)
+        LogDebug("territorio", "Registros de territórios encontrados: " + territorios_seriais.keys().size() + " territórios");
         
-        // Estimativa aproximada da distribuição de objetos removidos
-        // Normalmente seriam 3 objetos por território (baú, mesa e mural)
-        if (objects_removed >= 3)
-            report.chest_removed := 1;
-            report.desk_removed := 1;
-            report.board_removed := 1;
-        elseif (objects_removed == 2)
-            report.chest_removed := 1;
-            report.desk_removed := 1;
-        elseif (objects_removed == 1)
-            report.chest_removed := 1;
+        if (territorios_seriais.exists(territorio_id))
+            LogDebug("territorio", "Seriais encontrados para o território " + territorio_id);
+            found_serials := 1;
+        else
+            LogDebug("territorio", "Nenhum serial registrado para o território " + territorio_id);
         endif
     else
-        LogWarning("territorio", "TM_DeleteTerritoryObjects não conseguiu remover objetos");
-        report.errors.append("Falha no método principal de remoção");
+        LogDebug("territorio", "Nenhum registro de territórios encontrado no datafile de seriais");
     endif
+endif
     
-    // ETAPA 3: Verificação manual apenas se a função TM não conseguiu remover tudo
-    if (objects_removed < 3)
-        LogInfo("territorio", "Iniciando verificação manual para garantir remoção completa");
+    if (found_serials && territorios_seriais[territorio_id])
+        var info := territorios_seriais[territorio_id];
+        LogInfo("territorio", "Encontrados seriais registrados para o território. Tentando remoção direta...");
+        LogDebug("territorio", "Seriais registrados: Baú=" + info.bau + ", Mesa=" + info.mesa + ", Mural=" + info.mural);
         
-        // Encontrar objetos do território usando TM_FindTerritoryObjects
-        var territory_objects := TM_FindTerritoryObjects(territorio_id, faction);
-        
-        if (territory_objects)
-            LogDebug("territorio", "TM_FindTerritoryObjects encontrou objetos para verificação adicional");
-            
-            // Verificar e destruir o baú
-            if (territory_objects.bau)
-                LogDebug("territorio", "Verificando baú: " + territory_objects.bau.name + " (Serial: " + territory_objects.bau.serial + ")");
-                if (DestruirObjeto(territory_objects.bau))
-                    report.chest_removed := 1;
-                    report.objects_removed += 1;
-                    LogInfo("territorio", "Baú destruído com sucesso no estágio de verificação");
-                else
-                    LogError("territorio", "Falha ao destruir baú no estágio de verificação");
-                    report.errors.append("Falha ao destruir baú");
-                endif
+        // Remover baú
+        var bau := SystemFindObjectBySerial(info.bau);
+        if (bau)
+            LogDebug("territorio", "Baú encontrado pelo serial: " + bau.name + " (Serial: " + bau.serial + ")");
+            if (DestruirObjeto(bau))
+                counters.baus += 1;
+                counters.destruidos += 1;
+                LogInfo("territorio", "Baú destruído com sucesso");
+            else
+                LogError("territorio", "Falha ao destruir o baú");
             endif
-            
-            // Verificar e destruir a mesa
-            if (territory_objects.mesa)
-                LogDebug("territorio", "Verificando mesa: " + territory_objects.mesa.name + " (Serial: " + territory_objects.mesa.serial + ")");
-                if (DestruirObjeto(territory_objects.mesa))
-                    report.desk_removed := 1;
-                    report.objects_removed += 1;
-                    LogInfo("territorio", "Mesa destruída com sucesso no estágio de verificação");
-                else
-                    LogError("territorio", "Falha ao destruir mesa no estágio de verificação");
-                    report.errors.append("Falha ao destruir mesa");
-                endif
-            endif
-            
-            // Verificar e destruir o mural
-            if (territory_objects.mural)
-                LogDebug("territorio", "Verificando mural: " + territory_objects.mural.name + " (Serial: " + territory_objects.mural.serial + ")");
-                if (DestruirObjeto(territory_objects.mural))
-                    report.board_removed := 1;
-                    report.objects_removed += 1;
-                    LogInfo("territorio", "Mural destruído com sucesso no estágio de verificação");
-                else
-                    LogError("territorio", "Falha ao destruir mural no estágio de verificação");
-                    report.errors.append("Falha ao destruir mural");
-                endif
-            endif
-            
-            report.cleanup_method := "tm_find_and_manual";
         else
-            LogDebug("territorio", "TM_FindTerritoryObjects não encontrou objetos adicionais");
+            LogError("territorio", "Baú não encontrado pelo serial: " + info.bau);
         endif
         
-        // ETAPA 4: Busca pelo centro do território (método legado) como último recurso
-        if (report.objects_removed < 3 && coordinates.x1 != 0 && coordinates.y1 != 0)
-            LogInfo("territorio", "Iniciando busca espacial como último recurso");
+        // Remover mesa
+        var mesa := SystemFindObjectBySerial(info.mesa);
+        if (mesa)
+            LogDebug("territorio", "Mesa encontrada pelo serial: " + mesa.name + " (Serial: " + mesa.serial + ")");
+            if (DestruirObjeto(mesa))
+                counters.mesas += 1;
+                counters.destruidos += 1;
+                LogInfo("territorio", "Mesa destruída com sucesso");
+            else
+                LogError("territorio", "Falha ao destruir a mesa");
+            endif
+        else
+            LogError("territorio", "Mesa não encontrada pelo serial: " + info.mesa);
+        endif
+        
+        // Remover mural
+        var mural := SystemFindObjectBySerial(info.mural);
+        if (mural)
+            LogDebug("territorio", "Mural encontrado pelo serial: " + mural.name + " (Serial: " + mural.serial + ")");
+            if (DestruirObjeto(mural))
+                counters.murais += 1;
+                counters.destruidos += 1;
+                LogInfo("territorio", "Mural destruído com sucesso");
+            else
+                LogError("territorio", "Falha ao destruir o mural");
+            endif
+        else
+            LogError("territorio", "Mural não encontrado pelo serial: " + info.mural);
+        endif
+        
+        // Remover do dicionário
+        LogDebug("territorio", "Removendo registro do território do datafile");
+        territorios_seriais.Erase(territorio_id);
+if (SetElementProp(seriais_df, "territorios", territorios_seriais))
+            LogDebug("territorio", "Registro removido com sucesso");
+        else
+            LogError("territorio", "Falha ao atualizar o datafile de seriais");
+        endif
+    endif
+    
+    // Se não conseguiu destruir todos por serial, usar busca por localização
+    LogInfo("territorio", "Total de objetos destruídos via seriais: " + counters.destruidos);
+    
+    if (counters.destruidos < 3)
+        LogInfo("territorio", "Ainda restam objetos para destruir, usando métodos alternativos");
+        
+        // Busca por tipo específico - no centro do território com raio limitado
+        var center_x, center_y, radius;
+        
+        if (coordinates.x1 == 0 && coordinates.y1 == 0 && coordinates.x2 == 0 && coordinates.y2 == 0)
+            // Se não temos coordenadas, tentar primeiro pelos seriais conhecidos da facção
+            LogDebug("territorio", "Coordenadas desconhecidas, tentando busca por nome");
             
-            var center_x := CInt((coordinates.x1 + coordinates.x2) / 2);
-            var center_y := CInt((coordinates.y1 + coordinates.y2) / 2);
+            LogInfo("territorio", "Iniciando busca por nome em todos os objetos do mundo");
+            var total_items := 0;
+            var matching_items := 0;
             
-            // Calcular raio adequado
+            // Primeiro, vamos buscar pelo nome
+            foreach item in EnumerateItemsInContainer(0)
+                total_items += 1;
+                
+                if ((item.objtype == TIPO_BAU || item.objtype == TIPO_MESA || item.objtype == TIPO_MURAL))
+                    var name_match := (item.name.find(territorio_id) != error || item.name.find(faction) != error);
+                    
+                    if (name_match)
+                        matching_items += 1;
+                        LogDebug("territorio", "Encontrado objeto pelo nome: " + item.name + " (Serial: " + item.serial + ")");
+                        
+                        if (DestruirObjeto(item))
+                            counters.destruidos += 1;
+                            if (item.objtype == TIPO_BAU)
+                                counters.baus += 1;
+                                LogInfo("territorio", "Baú destruído com sucesso");
+                            elseif (item.objtype == TIPO_MESA)
+                                counters.mesas += 1;
+                                LogInfo("territorio", "Mesa destruída com sucesso");
+                            elseif (item.objtype == TIPO_MURAL)
+                                counters.murais += 1;
+                                LogInfo("territorio", "Mural destruído com sucesso");
+                            endif
+                        else
+                            LogError("territorio", "Falha ao destruir objeto: " + item.name);
+                        endif
+                    endif
+                endif
+                
+                // Log periódico para acompanhamento
+                if (total_items % 1000 == 0)
+                    LogDebug("territorio", "Já verificados " + total_items + " itens, encontrados " + matching_items + " matches");
+                endif
+                sleepms(1);
+            endforeach
+            
+            LogInfo("territorio", "Busca por nome concluída. Itens verificados: " + total_items + ", Matches: " + matching_items);
+        else
+            // Usar as coordenadas conhecidas
+            center_x := CInt((coordinates.x1 + coordinates.x2) / 2);
+            center_y := CInt((coordinates.y1 + coordinates.y2) / 2);
+            
+            // Calcular raio adequado - não muito grande, apenas o suficiente
+            // Distância de Manhattan entre cantos opostos / 4 + pequena margem
             var dx := coordinates.x2 - coordinates.x1;
             var dy := coordinates.y2 - coordinates.y1;
             
             if (dx < 0) dx := -dx; endif
             if (dy < 0) dy := -dy; endif
             
-            var radius := CInt((dx + dy) / 4) + 3;
+            radius := CInt((dx + dy) / 4) + 3; // Raio menor, apenas para cobrir o centro
             
-            LogDebug("territorio", "Buscando objetos no centro do território: (" + center_x + "," + center_y + ") com raio " + radius);
+            LogDebug("territorio", "Buscando objetos no centro exato do território: (" + center_x + "," + center_y + ") com raio " + radius);
+            LogDebug("territorio", "Dimensões do território: " + dx + "x" + dy + ", Raio calculado: " + radius);
             
-            // Usar a nova função TM_FindObjectsInTerritory se disponível, caso contrário usar o método legado
-            var all_territory_objects := array{};
+            // 1. Buscar baús
+            LogDebug("territorio", "Buscando baús com ListItemsNearLocationOfType");
+            var baus := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_BAU, realm_territorio);
+            if (baus == error)
+                LogError("territorio", "Falha ao buscar baús: " + baus);
+                baus := {};
+            endif
+            LogDebug("territorio", "Encontrados " + baus.size() + " baús na área");
             
-            // Tipos de objeto a procurar
-            var object_types := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
+            // 2. Buscar mesas
+            LogDebug("territorio", "Buscando mesas com ListItemsNearLocationOfType");
+            var mesas := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MESA, realm_territorio);
+            if (mesas == error)
+                LogError("territorio", "Falha ao buscar mesas: " + mesas);
+                mesas := {};
+            endif
+            LogDebug("territorio", "Encontradas " + mesas.size() + " mesas na área");
             
-            foreach obj_type in object_types
-                var items := ListItemsNearLocationOfType(center_x, center_y, 0, radius, obj_type, target_realm);
-                if (items && TypeOf(items) == "Array")
-                    all_territory_objects := all_territory_objects + items;
-                endif
-                sleepms(2);
-            endforeach
+            // 3. Buscar murais
+            LogDebug("territorio", "Buscando murais com ListItemsNearLocationOfType");
+            var murais := ListItemsNearLocationOfType(center_x, center_y, 0, radius, TIPO_MURAL, realm_territorio);
+            if (murais == error)
+                LogError("territorio", "Falha ao buscar murais: " + murais);
+                murais := {};
+            endif
+            LogDebug("territorio", "Encontrados " + murais.size() + " murais na área");
             
-            LogDebug("territorio", "Encontrados " + all_territory_objects.size() + " objetos potenciais na área");
-            
-            foreach item in all_territory_objects
-                if (VerificarObjeto(item, territorio_id, faction))
-                    LogDebug("territorio", "Objeto confirmado como pertencente ao território: " + item.name);
-                    
-                    if (DestruirObjeto(item))
-                        report.objects_removed += 1;
-                        
-                        // Classificar o tipo de objeto
-                        if (item.objtype == 0xFF11 && !report.chest_removed)
-                            report.chest_removed := 1;
-                            LogInfo("territorio", "Baú destruído com sucesso pela busca espacial");
-                        elseif (item.objtype == 0xFE5C && !report.desk_removed)
-                            report.desk_removed := 1;
-                            LogInfo("territorio", "Mesa destruída com sucesso pela busca espacial");
-                        elseif (item.objtype == 0x46AE && !report.board_removed)
-                            report.board_removed := 1;
-                            LogInfo("territorio", "Mural destruído com sucesso pela busca espacial");
-                        endif
-                        
-                        report.cleanup_method := "spatial_search_fallback";
+// Processar todos os objetos encontrados
+            LogDebug("territorio", "Processando baús encontrados");
+            foreach bau in baus
+                LogDebug("territorio", "Verificando baú: " + bau.name + " (Serial: " + bau.serial + ")");
+                if (VerificarObjeto(bau, territorio_id, faction))
+                    LogDebug("territorio", "Baú confirmado como pertencente ao território");
+                    if (DestruirObjeto(bau))
+                        counters.baus += 1;
+                        counters.destruidos += 1;
+                        LogInfo("territorio", "Baú destruído com sucesso");
                     else
-                        LogError("territorio", "Falha ao destruir objeto na busca espacial: " + item.name);
-                        report.errors.append("Falha ao destruir objeto via busca espacial");
+                        LogError("territorio", "Falha ao destruir baú");
                     endif
+                else
+                    LogDebug("territorio", "Baú não pertence ao território alvo, ignorando");
                 endif
-                sleepms(2);
             endforeach
-        endif
-    endif
-    
-    // ETAPA 5: Remover registros de seriais usando TM
-    LogDebug("territorio", "Removendo registros do território no datafile de seriais");
-    var seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
-    if (seriais_df)
-        var territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
-        if (territorios_seriais && territorios_seriais.exists(territorio_id))
-            territorios_seriais.erase(territorio_id);
-            SetElementProp(seriais_df, "territorios", territorios_seriais);
-            LogDebug("territorio", "Registro de seriais removido com sucesso");
-        endif
-    endif
-    
-    // ETAPA 6: Registrar e notificar o resultado
-    // Armazenar o relatório no datafile para histórico
-    var clean_df := SafeOpenDataFile(":faccao:territory_cleanups", 1);
-    if (clean_df)
-        var elem := SafeFindElement(clean_df, "history", 1);
-        if (elem)
-            var history := GetElementProp(elem, "cleanups", array{});
             
-            // Adicionar timestamp e dados do executor
-            report.timestamp := polcore().systime;
-            report.executor := who ? struct{
-                "name" := who.name,
-                "account" := who.acctname,
-                "serial" := who.serial
-            } : struct{
-                "name" := "System",
-                "account" := "System",
-                "serial" := 0
-            };
+            LogDebug("territorio", "Processando mesas encontradas");
+            foreach mesa in mesas
+                LogDebug("territorio", "Verificando mesa: " + mesa.name + " (Serial: " + mesa.serial + ")");
+                if (VerificarObjeto(mesa, territorio_id, faction))
+                    LogDebug("territorio", "Mesa confirmada como pertencente ao território");
+                    if (DestruirObjeto(mesa))
+                        counters.mesas += 1;
+                        counters.destruidos += 1;
+                        LogInfo("territorio", "Mesa destruída com sucesso");
+                    else
+                        LogError("territorio", "Falha ao destruir mesa");
+                    endif
+                else
+                    LogDebug("territorio", "Mesa não pertence ao território alvo, ignorando");
+                endif
+            endforeach
             
-            // Adicionar ao início do histórico
-            history.insert(1, report);
-            
-            // Manter tamanho razoável
-            while (history.size() > 50)
-                history.erase(history.size());
-            endwhile
-            
-            SetElementProp(elem, "cleanups", history);
-            LogDebug("territorio", "Relatório de limpeza registrado no histórico");
+            LogDebug("territorio", "Processando murais encontrados");
+            foreach mural in murais
+                LogDebug("territorio", "Verificando mural: " + mural.name + " (Serial: " + mural.serial + ")");
+                if (VerificarObjeto(mural, territorio_id, faction))
+                    LogDebug("territorio", "Mural confirmado como pertencente ao território");
+                    if (DestruirObjeto(mural))
+                        counters.murais += 1;
+                        counters.destruidos += 1;
+                        LogInfo("territorio", "Mural destruído com sucesso");
+                    else
+                        LogError("territorio", "Falha ao destruir mural");
+                    endif
+                else
+                    LogDebug("territorio", "Mural não pertence ao território alvo, ignorando");
+                endif
+            endforeach
         endif
     endif
     
     // Resumo da operação
     LogInfo("territorio", "Resumo final da operação:");
-    LogInfo("territorio", "   - Território: " + territory_info.name + " (ID: " + territorio_id + ")");
-    LogInfo("territorio", "   - Facção: " + faction);
-    LogInfo("territorio", "   - Total de objetos removidos: " + report.objects_removed);
-    LogInfo("territorio", "   - Baú removido: " + (report.chest_removed ? "Sim" : "Não"));
-    LogInfo("territorio", "   - Mesa removida: " + (report.desk_removed ? "Sim" : "Não"));
-    LogInfo("territorio", "   - Mural removido: " + (report.board_removed ? "Sim" : "Não"));
-    LogInfo("territorio", "   - Método usado: " + report.cleanup_method);
-    LogInfo("territorio", "   - Realm: " + report.realm);
+    LogInfo("territorio", "   - Baús encontrados e destruídos: " + counters.baus);
+    LogInfo("territorio", "   - Mesas encontradas e destruídas: " + counters.mesas);
+    LogInfo("territorio", "   - Murais encontrados e destruídos: " + counters.murais);
+    LogInfo("territorio", "   - Total de objetos destruídos: " + counters.destruidos);
+    LogInfo("territorio", "   - Realm verificado: " + realm_territorio);
     
-    if (report.errors.size() > 0)
-        LogWarning("territorio", "   - Erros encontrados: " + report.errors.size());
-        var i;
-        for (i := 1; i <= report.errors.size(); i += 1)
-            LogWarning("territorio", "     * " + report.errors[i]);
-        endfor
-    endif
-    
-    // Notificar o usuário
     if (who)
-        var message := "Limpeza concluída: " + report.objects_removed + " objetos removidos";
-        if (report.errors.size() > 0)
-            message += " com " + report.errors.size() + " erros.";
-        else
-            message += ".";
-        endif
-        
-        SendSysMessage(who, message);
+        SendSysMessage(who, "Limpeza concluída: " + counters.destruidos + " objetos removidos.");
         LogDebug("territorio", "Mensagem enviada ao usuário: " + who.name);
     endif
     
-    // Notificar o sistema sobre a mudança via TM_NotifyTerritoryChange
-    TM_NotifyTerritoryChange(territorio_id, "cleanup", struct{
-        "objects_removed" := report.objects_removed,
-        "faction" := faction,
-        "executor" := who ? who.name : "System"
-    });
-    
     LogInfo("territorio", "======================= FIM DA EXECUÇÃO =======================");
     
-    return report.objects_removed;
+    return counters.destruidos;
 endprogram
-
+           
 // Função para verificar se um objeto pertence ao território/facção
 function VerificarObjeto(item, territorio_id, faction)
     LogDebug("territorio", "Iniciando verificação de objeto - Serial: " + item.serial);
@@ -338,9 +375,20 @@ function VerificarObjeto(item, territorio_id, faction)
         return 0;
     endif
     
+    // Debug do item
+    LogDebug("territorio", "Detalhes do objeto:");
+    LogDebug("territorio", "  - Serial: " + item.serial);
+    LogDebug("territorio", "  - Nome: " + item.name);
+    LogDebug("territorio", "  - Tipo: " + Hex(item.objtype));
+    LogDebug("territorio", "  - Realm: " + item.realm);
+    LogDebug("territorio", "  - Coordenadas: " + item.x + ", " + item.y + ", " + item.z);
+    
     // 1. Verificar pelo nome do objeto
     var name_match_territorio := (item.name.find(territorio_id) != error);
     var name_match_faction := (item.name.find(faction) != error);
+    
+    LogDebug("territorio", "Match por nome do território: " + name_match_territorio);
+    LogDebug("territorio", "Match por nome da facção: " + name_match_faction);
     
     if (name_match_territorio || name_match_faction)
         LogDebug("territorio", "Match encontrado pelo nome, retornando true");
@@ -348,12 +396,27 @@ function VerificarObjeto(item, territorio_id, faction)
     endif
     
     // 2. Verificar pelas propriedades
+    LogDebug("territorio", "Verificando propriedades do objeto");
+    
+    // Lista todas as propriedades para debug
+    LogDebug("territorio", "Todas as propriedades do objeto:");
+    var all_props := GetObjPropertyNames(item);
+    foreach prop_name in all_props
+        var prop_value := GetObjProperty(item, prop_name);
+        LogDebug("territorio", "  - " + prop_name + ": " + prop_value);
+    endforeach
+    
+    // Verificar território primeiro
     var territorio_match := 0;
     var territory_id_prop := GetObjProperty(item, TERRITORY_ID_PROP);
     var territory_id_raw := GetObjProperty(item, "TerritoryID");
     
+    LogDebug("territorio", "Propriedade " + TERRITORY_ID_PROP + ": " + territory_id_prop);
+    LogDebug("territorio", "Propriedade TerritoryID: " + territory_id_raw);
+    
     if (territory_id_prop == territorio_id || territory_id_raw == territorio_id)
         territorio_match := 1;
+        LogDebug("territorio", "Match encontrado por propriedade de território");
     endif
     
     // Verificar facção
@@ -362,46 +425,89 @@ function VerificarObjeto(item, territorio_id, faction)
     var faction_raw := GetObjProperty(item, "Faction");
     var faction_lower := GetObjProperty(item, "faction");
     
+    LogDebug("territorio", "Propriedade " + OBJ_FACTION_PROP + ": " + faction_prop);
+    LogDebug("territorio", "Propriedade Faction: " + faction_raw);
+    LogDebug("territorio", "Propriedade faction: " + faction_lower);
+    
     if (faction_prop == faction || faction_raw == faction || faction_lower == faction)
         faction_match := 1;
+        LogDebug("territorio", "Match encontrado por propriedade de facção");
     endif
     
-    return (territorio_match || faction_match);
+    if (territorio_match || faction_match)
+        LogDebug("territorio", "Match encontrado por propriedade, retornando true");
+        return 1;
+    endif
+    
+    LogDebug("territorio", "Nenhum match encontrado, retornando false");
+    return 0;
 endfunction
 
 // Função unificada para destruir objetos
 function DestruirObjeto(item)
+    LogDebug("territorio", "Iniciando destruição de objeto - Serial: " + item.serial);
+    
     if (!item)
+        LogDebug("territorio", "Item nulo, retornando false");
         return 0;
     endif
     
+    LogDebug("territorio", "Tentando destruir objeto: " + item.name + " (Serial: " + item.serial + ")");
+    LogDebug("territorio", "Estado atual - movable: " + item.movable + ", invisible: " + item.invisible);
+    
     // Notificação visual
     PrintTextAbove(item, "*Este objeto será removido*");
+    LogDebug("territorio", "Mensagem visual exibida");
     
     // Preparar para destruição
     var old_movable := item.movable;
+    LogDebug("territorio", "Valor original de movable: " + old_movable);
+    
     item.movable := 1;
+    LogDebug("territorio", "Movable definido como 1");
     Sleep(1);
     
     // TENTATIVA 1: DestroyItem
+    LogDebug("territorio", "Tentativa 1 - DestroyItem");
     var destroy_result := DestroyItem(item);
     if (destroy_result)
+        LogInfo("territorio", "Objeto destruído com sucesso via DestroyItem");
         return 1;
     endif
+    
+    LogWarning("territorio", "Falha ao destruir objeto via DestroyItem. Retorno: " + destroy_result);
+    LogDebug("territorio", "Tentativa 2 - Mover para o void");
     
     // TENTATIVA 2: Mover para o void
     var move_result := MoveObjectToLocation(item, 6000, 6000, 0, item.realm, MOVEOBJECT_FORCELOCATION);
     if (move_result)
+        LogInfo("territorio", "Objeto movido para o void com sucesso");
         return 1;
     endif
     
+    LogWarning("territorio", "Falha ao mover para o void. Retorno: " + move_result);
+    LogDebug("territorio", "Tentativa 3 - Desativação completa");
+    
     // TENTATIVA 3: Desativar completamente
     item.invisible := 1;
-    item.movable := 0;
-    item.graphic := 0x1;
-    item.color := 0;
-    item.usescript := "";
-    item.name := "Objeto_Desativado_" + item.serial;
+    LogDebug("territorio", "Invisibility definida como 1");
     
+    item.movable := 0;
+    LogDebug("territorio", "Movable definido como 0");
+    
+    item.graphic := 0x1;
+    LogDebug("territorio", "Graphic alterado para 0x1");
+    
+    item.color := 0;
+    LogDebug("territorio", "Color definida como 0");
+    
+    item.usescript := "";
+    LogDebug("territorio", "Usescript removido");
+    
+    var old_name := item.name;
+    item.name := "Objeto_Desativado_" + item.serial;
+    LogDebug("territorio", "Nome alterado de '" + old_name + "' para '" + item.name + "'");
+    
+    LogInfo("territorio", "Objeto desativado (invisível/inutilizável)");
     return 1;
 endfunction

@@ -17,26 +17,28 @@ program rectangle_creator(who, params)
         return;
     endif
     
+
+    
     // Abrir datafile apenas uma vez
     var rect_df := SafeOpenDataFile(":architect:areas");
-    // Verificar de migração: converter propriedades "Faction" para "faction"
-    if (rect_df)
-        foreach elem_name in (rect_df.keys())
-            var elem := SafeFindElement(rect_df, elem_name);
-            if (!elem)
-                continue; // Elemento não encontrado, já logado pelo SafeFindElement
-            endif
+// Verificar de migração: converter propriedades "Faction" para "faction"
+if (rect_df)
+    foreach elem_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, elem_name);
+        if (!elem)
+            continue; // Elemento não encontrado, já logado pelo SafeFindElement
+        endif
+        
+        var old_faction := GetElementProp(elem, "Faction", "");
+        if (old_faction)
+            // Usar o helper para definir a nova propriedade
+            SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
             
-            var old_faction := GetElementProp(elem, "Faction", "");
-            if (old_faction)
-                // Usar o helper para definir a nova propriedade
-                SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
-                
-                // Ainda precisamos usar EraseProp diretamente pois não há helper para isso
-                elem.EraseProp("Faction");
-            endif
-        endforeach
-    endif
+            // Ainda precisamos usar EraseProp diretamente pois não há helper para isso
+            elem.EraseProp("Faction");
+        endif
+    endforeach
+endif
 
     // Depois reutilizar a mesma variável sem o "var"
     if (rect_df == error)
@@ -101,8 +103,8 @@ program rectangle_creator(who, params)
         return;
     endif
     
-    // Verificar se o retângulo se sobrepõe a outro existente usando a função centralizada
-    if (TM_CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm))
+    // Verificar se o retângulo se sobrepõe a outro existente
+    if (CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
         SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
         SendSysMessage(who, "Operação cancelada.");
         return;
@@ -117,20 +119,19 @@ program rectangle_creator(who, params)
             return;
         endif
     else
-        // Se não existe, usar TM_CreateNewTerritory para criar um novo território
-        var territory_id := TM_CreateNewTerritory(rect_name, x1, y1, x2, y2, realm, DEFAULT_FACTION);
-        if (!territory_id)
-            SendSysMessage(who, "Erro ao criar território. Operação cancelada.");
-            return;
-        endif
-        
-        // Recuperar o elemento para configurar recursos
-        elem := SafeFindElement(rect_df, rect_name);
-        if (!elem)
-            SendSysMessage(who, "Erro inesperado: elemento não encontrado após criação.");
-            return;
-        endif
+        elem := rect_df.CreateElement(rect_name);
     endif
+    
+    // Gerar e salvar um ID único para o território
+var territory_id := CreateTerritoryID();
+SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+
+    // Salvar as informações do retângulo
+    SetElementProp(elem, "Name", rect_name);
+   SetElementProp(elem, "Rect", rect_str);
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Usar constante para facção padrão
+
     
     // Configurar recursos e intervalos para o território
     SetupResourcesForTerritory(who, elem);
@@ -181,7 +182,7 @@ function SetupResourcesForTerritory(who, elem)
     // Usar os recursos únicos daqui em diante
     resource_sets := unique_resources;
     
-    // Recuperar valores atuais e ID do território
+    // Recuperar valores atuais se existirem, usando os helpers para simplificar
     var current_interval := GetElementProp(elem, "ResourceInterval", 60);
     var current_amount := GetElementProp(elem, "ResourceAmount", 5);
     var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
@@ -267,38 +268,33 @@ function SetupResourcesForTerritory(who, elem)
                     endif
                 endfor
             else
-                // Se 3 ou menos, usar a função centralizada TM_UpdateTerritoryResources
-                if (territory_id)
-                    // Usar a função centralizada
-                    if (TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount))
-                        SendSysMessage(who, "Recursos configurados com sucesso!");
-                    else
-                        SendSysMessage(who, "Erro ao configurar recursos, verificar logs.");
+                // Se 3 ou menos, salvar e encerrar
+                // Converter lista de recursos em string
+                var resources_str := "";
+                for i := 1 to new_selections.size()
+                    if (i > 1)
+                        resources_str += ", ";
                     endif
-                else
-                    // Método legado se não tiver ID (compatibilidade)
-                    // Converter lista de recursos em string
-                    var resources_str := "";
-                    for i := 1 to new_selections.size()
-                        if (i > 1)
-                            resources_str += ", ";
-                        endif
-                        resources_str += new_selections[i];
-                    endfor
-                    
-                    // Salvar no elemento
-                    SetElementProp(elem, "ResourceInterval", interval);
-                    SetElementProp(elem, "ResourceAmount", amount);
-                    SetElementProp(elem, "Resources", resources_str);
-                    
-                    // Configurar próxima geração
-                    var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-                    SetElementProp(elem, "NextResourceTime", next_time);
-                    
-                    SendSysMessage(who, "Recursos configurados: " + resources_str);
+                    resources_str += new_selections[i];
+                endfor
+                
+                // Salvar no elemento
+                SetElementProp(elem, "ResourceInterval", interval);
+                SetElementProp(elem, "ResourceAmount", amount);
+                SetElementProp(elem, "Resources", resources_str);
+                
+                // Configurar próxima geração
+                var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+                SetElementProp(elem, "NextResourceTime", next_time);
+                
+                // Usar TM_UpdateTerritoryResources DEPOIS de ter o territory_id e new_selections definidos
+                if (territory_id)
+                    TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount);
                 endif
                 
+                SendSysMessage(who, "Recursos configurados: " + resources_str);
                 SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
+                
                 done := 1;
             endif
         endif
@@ -313,6 +309,7 @@ function CreateResourceGumpForTerritory(elem, resource_sets, selected_checkboxes
     var width := 500;
     var height := 470;
     var title := "Configurar Recursos para: " + GetElementProp(elem, "Name", "");
+
     
     // Criar gump usando o estilo padronizado
     var gump := GFECreateGump(title, width, height, array{BORDER_GOLDEN});
@@ -431,15 +428,35 @@ function ShowRectangles(who, rect_df)
     
     // Cria uma tabela simples de territórios
     foreach rect_name in (rect_df.keys())
-        // Usar TM_GetTerritoryInfo para obter informações do território
-        var territory_info := TM_GetTerritoryInfo(rect_name);
-        if (!territory_info)
-            continue;
-        endif
+        var elem := SafeFindElement(rect_df, rect_name);
         
-        var faction := territory_info.faction;
-        if (!faction)
-            faction := DEFAULT_FACTION;
+        // Tratamento seguro para obter a facção
+        var faction := "";
+        var faction_property := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+        
+        if (faction_property && faction_property != error)
+            // Verificar se não é um array ou struct
+            if (TypeOf(faction_property) == "String")
+                faction := faction_property;
+            else
+                // Tentar usar a propriedade legada
+                faction := GetElementProp(elem, "Faction", "");
+                if (!faction || faction == error)
+                    faction := DEFAULT_FACTION;
+                else
+                    // Atualizar para o formato padronizado
+                    SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
+                endif
+            endif
+        else
+            // Tentar usar a propriedade legada
+            faction := GetElementProp(elem, "Faction", "");
+            if (!faction || faction == error)
+                faction := DEFAULT_FACTION;
+            else
+                // Atualizar para o formato padronizado
+                SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
+            endif
         endif
         
         // Define a cor baseada na facção - territórios selvagens em vermelho
@@ -478,7 +495,7 @@ function ShowRectangles(who, rect_df)
     if (button >= 400 && button < 999)
         var index := button - 400;
         var rect_name := rect_df.keys()[index];
-        var elem := SafeFindElement(rect_df, rect_name);
+       var elem := SafeFindElement(rect_df, rect_name);
         
         DisplayRectangleDetails(who, elem);
     elseif (button == 999)
@@ -513,19 +530,8 @@ function ShowRectanglesPage2(who, rect_df, start_index)
     
     while (i <= total && displayed <= 18)
         var rect_name := keys[i];
-        
-        // Usar TM_GetTerritoryInfo para obter informações do território
-        var territory_info := TM_GetTerritoryInfo(rect_name);
-        if (!territory_info)
-            i += 1;
-            continue;
-        endif
-        
-        var faction := territory_info.faction;
-        if (!faction)
-            faction := DEFAULT_FACTION;
-        endif
-        
+       var elem := SafeFindElement(rect_df, rect_name);
+var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);        
         var color := 1153;
         if (faction == DEFAULT_FACTION)
             color := 38;
@@ -560,30 +566,151 @@ function ShowRectanglesPage2(who, rect_df, start_index)
     endif
 endfunction
 
+// Função para verificar se um retângulo se sobrepõe a outro
+function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "")
+    foreach rect_name in (rect_df.keys())
+        // Pular a verificação se for o próprio retângulo que estamos editando
+        if (rect_name == exclude_name)
+            continue;
+        endif
+        
+        // Usar TM_GetTerritoryInfo para obter informações do território
+        var territory_info := TM_GetTerritoryInfo(rect_name);
+        if (!territory_info)
+            continue;
+        endif
+        
+        var rect_realm := territory_info.realm;
+        
+        // Se não estiver no mesmo realm, não há sobreposição
+        if (rect_realm != realm)
+            continue; 
+        endif
+        
+        var rect_str := territory_info.rect;
+        if (!rect_str)
+            continue;
+        endif
+        
+        // Usar TM_CheckRectangleOverlap para verificar sobreposição
+        var rect1 := array{x1, y1, x2, y2};
+        var rect2 := SplitWords(rect_str);
+        
+        if (TM_DoRectanglesOverlap(rect1, rect2, realm, rect_realm))
+            return 1; // Há sobreposição
+        endif
+    endforeach
+    
+    return 0; // Não há sobreposição
+endfunction
+
+function DestruirObjetosTerritorio(territorio_id, faction)
+var tipos_objetos := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
+    var objetos_destruidos := 0;
+    LogDebug("territorio", $"Buscando objetos do território: {territorio_id} da facção: {faction}");
+    
+    // Usar TM_FindTerritoryObjects para localizar objetos
+    var objetos := TM_FindTerritoryObjects(territorio_id, faction);
+    
+    // Destruir os objetos encontrados
+    if (objetos.bau)
+        PrintTextAbove(objetos.bau, "*Este objeto será removido*");
+        objetos.bau.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.bau))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Baú destruído com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.bau, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    if (objetos.mesa)
+        PrintTextAbove(objetos.mesa, "*Este objeto será removido*");
+        objetos.mesa.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.mesa))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Mesa destruída com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.mesa, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    if (objetos.mural)
+        PrintTextAbove(objetos.mural, "*Este objeto será removido*");
+        objetos.mural.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.mural))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Mural destruído com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.mural, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    // Buscar objetos adicionais no mundo (abordagem de fallback)
+    if (objetos_destruidos < 3)
+        foreach item in EnumerateItemsInContainer(1) // 1 = mundo
+            if (item.objtype in tipos_objetos)
+                var item_name := item.name;
+                var item_territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
+                var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+                
+                // Verificar se o item pertence ao território por nome ou propriedade
+                if ((item_territory_id && item_territory_id == territorio_id) || 
+                    (item_name && item_name.find(territorio_id) != error) ||
+                    (item_faction && item_faction == faction))
+                    
+                    LogDebug("territorio", $"Encontrado objeto: {item.name} (Serial: {item.serial})");
+
+                    PrintTextAbove(item, "*Este objeto está sendo destruído*");
+                    
+                    // Tornar o item móvel para permitir a destruição
+                    item.movable := 1;
+                    Sleep(1); // Pausa para o servidor processar a mudança
+                    
+                    // Tentar destruir o item
+                    var destroy_result := DestroyItem(item);
+                    if (destroy_result)
+                        objetos_destruidos += 1;
+                        LogDebug("territorio", "Objeto destruído com sucesso");
+                    else
+                        LogError("territorio", $"Falha ao destruir objeto: {destroy_result}");
+                        
+                        // Se falhar, tentar método alternativo: mover para o void
+                        MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+                        objetos_destruidos += 1;
+                        LogWarning("territorio", "Objeto movido para o void como alternativa");
+                    endif
+                    
+                    Sleep(2); // Pausa entre destruições
+                endif
+            endif
+        endforeach
+    endif  // ADICIONADO: endif faltante
+    
+    return objetos_destruidos;
+endfunction
+
 function DisplayRectangleDetails(who, elem)
     var width := 400;
     var height := 380;
-    
-    // Usar TM_GetTerritoryInfo para obter informações completas do território
     var name := GetElementProp(elem, "Name", "");
-    var territory_info := TM_GetTerritoryInfo(name);
-    
-    if (!territory_info)
-        SendSysMessage(who, "Erro ao obter informações do território.");
-        return;
-    endif
-    
-    var rect := territory_info.rect;
-    var realm := territory_info.realm;
-    var faction := territory_info.faction;
-    var territory_id := territory_info.id;
-    var is_capital := territory_info.is_capital;
-    
-    // Obter informações de recursos
-    var resource_info := TM_GetTerritoryResourceInfo(territory_id);
-    var resources := resource_info ? resource_info.resources_str : "Não definidos";
-    var interval := resource_info ? resource_info.interval : 0;
-    var amount := resource_info ? resource_info.amount : 0;
+var rect := GetElementProp(elem, "Rect", "");
+var realm := GetElementProp(elem, "Realm", "");
+var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+var resources := GetElementProp(elem, "Resources", "Não definidos");
+var interval := GetElementProp(elem, "ResourceInterval", 0);
+var amount := GetElementProp(elem, "ResourceAmount", 0);
+var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+var is_capital := TM_IsTerritoryCapital(territory_id);
 
     // Define a cor do título baseada na facção controladora
     var title_color := 53; // Dourado padrão
@@ -637,17 +764,29 @@ function DisplayRectangleDetails(who, elem)
     y += 20;
     
     if (resources != "Não definidos")
-        // Processar e mostrar recursos
-        var resource_list := resource_info ? resource_info.resources : array{};
+        // Limpar e processar a lista de recursos
+        var resource_list := SplitWords(resources, ",");
+        var clean_resources := array{};
+        
+        // Filtrar recursos vazios e limpar espaços extras
+        foreach resource in resource_list
+            // Remover espaços no início e fim
+            resource := RectTrimString(resource);
+            
+            // Adicionar apenas recursos não vazios
+            if (resource != "")
+                clean_resources.append(resource);
+            endif
+        endforeach
         
         // Exibir os recursos limpos
-        foreach resource in resource_list
+        foreach resource in clean_resources
             GFTextLine(gump, x+20, y, 63, "• " + resource);
             y += 20;
         endforeach
         
         // Se não houver recursos válidos após a limpeza
-        if (resource_list.size() == 0)
+        if (clean_resources.size() == 0)
             GFTextLine(gump, x+20, y, 38, "Nenhum recurso configurado");
             y += 25;
         else
@@ -658,8 +797,10 @@ function DisplayRectangleDetails(who, elem)
             y += 20;
             
             // Verifica se tem informação de próxima geração
-            if (resource_info && resource_info.next_time)
-                var minutes_left := CInt(resource_info.time_left / 60);
+            var next_time := GetElementProp(elem, "NextResourceTime", 0);
+            if (next_time)
+                var time_left := next_time - polcore().systime;
+                var minutes_left := CInt(time_left/60);
                 
                 if (minutes_left > 0)
                     GFTextLine(gump, x, y, 2100, "Próxima geração em:");
@@ -707,23 +848,38 @@ function DisplayRectangleDetails(who, elem)
         
         btn_y += 25;
         
-   // Botão Deletar (separado visualmente)
+        // Botão Deletar (separado visualmente)
         GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 100);
         GFTextLine(gump, btn_x+20, btn_y-4, 38, "Deletar Território");
     endif
+    
+
     
     var input := GFSendGump(who, gump);
     var button := input[0];
     
     if (button == 100) // Deletar
-        if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
-            // Usar a função centralizada TM_DeleteTerritory
-            if (TM_DeleteTerritory(territory_id))
-                SendSysMessage(who, "Território deletado com sucesso!");
-            else
-                SendSysMessage(who, "Falha ao deletar território, verificar logs.");
-            endif
+    if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
+        // Primeiro, destruir os objetos do território, se houver
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+if (!faction)
+    faction := GetElementProp(elem, "Faction", "");  // Compatibilidade legada
+endif
+        
+        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+        if (territory_id && faction)
+            DestruirObjetosTerritorio(territory_id, faction);
         endif
+        
+        // NOVA LINHA: Remover referências do território em todas as guildas
+        RemoveTerritoryFromGuilds(name, territory_id);
+        
+        // Agora deletar o território
+        var rect_df := SafeOpenDataFile(":architect:areas");
+       DeleteDatafileEntry(":architect:areas", name);
+        SendSysMessage(who, "Território deletado com sucesso!");
+    endif
+
     elseif (button == 200) // Editar
         // Implementação existente para editar território
         SendSysMessage(who, "Selecione novos pontos para o território");
@@ -762,13 +918,13 @@ function DisplayRectangleDetails(who, elem)
         
         var rect_str := $"{x1} {y1} {x2} {y2}";
         
-        // Verificar sobreposição usando a função centralizada
-        var areas_df := SafeOpenDataFile(":architect:areas");
-        if (TM_CheckRectangleOverlap(areas_df, x1, y1, x2, y2, first_point.realm, name))
-            SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
-            SendSysMessage(who, "Edição cancelada.");
-            return;
-        endif
+// Verificar sobreposição
+var areas_df := SafeOpenDataFile(":architect:areas");
+if (CheckRectangleOverlap(areas_df, x1, y1, x2, y2, first_point.realm, name))
+    SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
+    SendSysMessage(who, "Edição cancelada.");
+    return;
+endif
         
         // Atualizar elemento
         SetElementProp(elem, "Rect", rect_str);
@@ -776,29 +932,21 @@ function DisplayRectangleDetails(who, elem)
         
         SendSysMessage(who, $"Território '{name}' atualizado!");
     elseif (button == 300) // Ir para território
-        // Usar TM_GetTerritoryCenter para obter o centro e teleportar o jogador
-        var center := TM_GetTerritoryCenter(territory_id);
-        if (center)
-            MoveObjectToLocation(who, center.x, center.y, center.z, center.realm, MOVEOBJECT_FORCELOCATION);
+        var coords := SplitWords(rect);
+        if (coords.size() >= 4)
+            var x1 := CInt(coords[1]);
+            var y1 := CInt(coords[2]);
+            var x2 := CInt(coords[3]);
+            var y2 := CInt(coords[4]);
+            
+            var center_x := CInt((x1 + x2) / 2);
+            var center_y := CInt((y1 + y2) / 2);
+            var center_z := GetWorldHeight(center_x, center_y, realm);
+            
+            MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
             SendSysMessage(who, "Teleportado para o centro do território!");
         else
-            // Fallback para o método antigo
-            var coords := SplitWords(rect);
-            if (coords.size() >= 4)
-                var x1 := CInt(coords[1]);
-                var y1 := CInt(coords[2]);
-                var x2 := CInt(coords[3]);
-                var y2 := CInt(coords[4]);
-                
-                var center_x := CInt((x1 + x2) / 2);
-                var center_y := CInt((y1 + y2) / 2);
-                var center_z := GetWorldHeight(center_x, center_y, realm);
-                
-                MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
-                SendSysMessage(who, "Teleportado para o centro do território!");
-            else
-                SendSysMessage(who, "Erro ao analisar as coordenadas do território!");
-            endif
+            SendSysMessage(who, "Erro ao analisar as coordenadas do território!");
         endif
     elseif (button == 400) // Criar Totem
         CreateTerritoryTotem(who, elem);
@@ -818,33 +966,67 @@ function CreateTerritoryTotem(who, elem)
     var territory_name := GetElementProp(elem, "Name", "");
     var territory_info := TM_GetTerritoryInfo(territory_name);
     
-    // Configurar o totem usando os dados retornados pela função centralizada
-    if (territory_info)
-        SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
-        SetObjProperty(totem, TERRITORY_RECT_PROP, territory_info.rect);
-        SetObjProperty(totem, TERRITORY_REALM_PROP, territory_info.realm);
-        SetObjProperty(totem, TERRITORY_ID_PROP, territory_info.id);
-        SetObjProperty(totem, "CreatedBy", who.serial);
-        SetObjProperty(totem, "CreationDate", polcore().systime);
-        
-        SendSysMessage(who, "Um totem para o território '" + territory_name + "' foi criado em sua mochila.");
-        return 1;
+    // Obter o ID do território ou criar um se não existir
+    var territory_id := "";
+if (territory_info && territory_info.id)
+    territory_id := territory_info.id;
+endif
+    if (!territory_id)
+        territory_id := "TER_" + polcore().systime + "_" + RandomInt(10000);
+        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
     endif
     
-    // Se não conseguiu obter território_info, usar método legado
-    SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
-    SetObjProperty(totem, TERRITORY_RECT_PROP, GetElementProp(elem, "Rect", ""));
-    SetObjProperty(totem, TERRITORY_REALM_PROP, GetElementProp(elem, "Realm", ""));
-    SetObjProperty(totem, TERRITORY_ID_PROP, GetElementProp(elem, TERRITORY_ID_PROP, ""));
-    SetObjProperty(totem, "CreatedBy", who.serial);
-    SetObjProperty(totem, "CreationDate", polcore().systime);
+  // Configurar propriedades do totem
+SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
+
+// Corrigir o uso de ?.rect e ?.realm
+var rect_prop := "";
+var realm_prop := "";
+if (territory_info)
+    if (territory_info.rect)
+        rect_prop := territory_info.rect;
+    endif
+    if (territory_info.realm)
+        realm_prop := territory_info.realm;
+    endif
+endif
+
+SetObjProperty(totem, TERRITORY_RECT_PROP, rect_prop);
+SetObjProperty(totem, TERRITORY_REALM_PROP, realm_prop);
+SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
+SetObjProperty(totem, "CreatedBy", who.serial);
+SetObjProperty(totem, "CreationDate", polcore().systime);
     
     SendSysMessage(who, "Um totem para o território '" + territory_name + "' foi criado em sua mochila.");
     return 1;
 endfunction
 
-// Usar a função DestruirObjetosTerritorio delegando para TM_DeleteTerritoryObjects
-function DestruirObjetosTerritorio(territorio_id, faction)
-    return TM_DeleteTerritoryObjects(territorio_id, faction);
+// Função TrimString consolidada (use apenas esta versão)
+function RectTrimString(str)
+    // Verificar se a string é vazia ou nula
+    if (!str || str == "")
+        return "";
+    endif
+    
+    // Remove espaços no início
+    while (str.length() > 0 && str[1] == " ")
+        str := str[2, str.length()];
+    endwhile
+    
+    // Remove espaços no fim
+    while (str.length() > 0 && str[str.length()] == " ")
+        str := str[1, str.length()-1];
+    endwhile
+    
+    return str;
 endfunction
 
+// Função para gerar um ID único para o território
+function CreateTerritoryID()
+    // Combinar o timestamp com um número aleatório para garantir unicidade
+    return "TER_" + polcore().systime + "_" + RandomInt(10000);
+endfunction
+
+function IsTerritoryCapital(territory_id)
+    return TM_IsTerritoryCapital(territory_id);
+endfunction
