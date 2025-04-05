@@ -393,7 +393,7 @@ function isRequisitoSuficiente(quem, contagem, receita, quantidade := 1)
 	var encaixesEncontrados := array;
 	foreach elemento in  contagem
 		Sleepms(2);
-		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade )
+		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
 			var mensagem; 
 			if (elemento.?encaixe)
 				mensagem := "Você não tem {} [{}] suficiente.".format(elemento.nomeItem,elemento.tierDesc);
@@ -442,6 +442,7 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											necessario.qtdNecessaria,
+											receita.lote,
 											necessario.encaixe,
 											componenteEscolhido.tier.desc
 											);
@@ -457,7 +458,8 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 				var qtdNecessaria := cint(ingredienteInfo[2]);
 				RegistraInformacoesContagem(contagemFinal,
 											item,
-											qtdNecessaria
+											qtdNecessaria,
+											receita.lote
 											);
 			endif
 		endforeach
@@ -469,7 +471,7 @@ endfunction
 function ConsomeRequisitos(contagem, quantidade := 1)
 	foreach contado in contagem
 		Sleepms(2);
-		var quantidadeRestante := contado.quantidadeNecessaria * quantidade;
+		var quantidadeRestante := contado.quantidadeNecessaria * contado.lote * quantidade;
 		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
 			If(quantidadeRestante <= 0) 
@@ -487,7 +489,7 @@ function ConsomeRequisitos(contagem, quantidade := 1)
 	endforeach
 endfunction
 
-function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, encaixe := 0, tierDesc := "")
+function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
 		var informacoesContagem := struct;
@@ -495,6 +497,7 @@ function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quanti
 		informacoesContagem.+itemRefArray := array;
 		informacoesContagem.+nomeItem := item.name;
 		informacoesContagem.+tierDesc := tierDesc;
+		informacoesContagem.+lote := lote;
 		informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
 		if(encaixe)
 			informacoesContagem.+encaixe := encaixe;
@@ -986,8 +989,8 @@ endfunction
 function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref propCraft, nomeProfissao, receitaClassificada)
 	var receita := struct;
 	var definicaoItem := itemsConfig[objtype];
-	var descritorFabricacao := receitasConfig[objtype];
-	var isComponente := GetConfigString(descritorFabricacao, "encaixe");
+	var definicaoFabricacao := receitasConfig[objtype];
+	var isComponente := GetConfigString(definicaoFabricacao, "encaixe");
 	var sucessos := GetConfigInt(receitasConfig[objtype],"SucessosFabricacao");
 
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
@@ -996,12 +999,13 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe);
 	receita.+sucessosNecessarios := sucessos;
-	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, descritorFabricacao);
-	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos);
+	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, definicaoFabricacao);
+	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos, definicaoFabricacao.lote);
 	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
 	receita.+objtype := objtype;
 	receita.+pericia := nomePericia;
 	receita.+profissao := nomeProfissao;
+	receita.+lote := definicaoFabricacao.lote ? definicaoFabricacao.lote : 1;
 	receita.+uso := definicaoItem.Attribute;
 	receita.+receitaClassificada := receitaClassificada;
 	receita.+desc := definicaoItem.desc;
@@ -1009,7 +1013,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+isVisualizada:= PegaNomeReceitaClassificada(receitaClassificada) in (propCraft[nomePericia]["visualizadas"].receitas);
 
 	if(isComponente)
-		receita.+complexoComponente := MontaComplexoComponente(descritorFabricacao); //o item é um complexo considerado componente também.
+		receita.+complexoComponente := MontaComplexoComponente(definicaoFabricacao); //o item é um complexo considerado componente também.
 	endif
 
 	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
@@ -1023,11 +1027,16 @@ function MontaComplexoComponente(descritorFabricacao);
 	};
 endfunction 
 
-function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, sucessos)
+function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, sucessos, lote)
 
 	var desc := struct;
+	var labelQuantidade := "";
 	//TODO Lembrar de lidar com as diferenças de nomenclatura para Alchemy.
-	desc := "<BASEFONT COLOR=#ffe242>" + TruncatePlural(objtype) + "</BASEFONT><br>";
+	if(lote > 0)
+		labelQuantidade := lote + "x ";
+	endif
+	
+	desc := "<BASEFONT COLOR=#ffe242>" + labelQuantidade + TruncatePlural(objtype) + "</BASEFONT><br>";
 	desc := MontaDescricaoItem(definicaoItem,quem,desc);
 	
 	if(materiaisNecessarios && materiaisNecessarios.size() > 0)
@@ -1035,7 +1044,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Materiais Necessários</BASEFONT><br>";
 		foreach material in materiaisNecessarios
 			var materialInfo := SplitWords(material);
-			desc +=  materialInfo[2] + " " + GetMaterialName(materialInfo[1])  + "<br>";
+			desc +=  cint(materialInfo[2]) * lote + " " + GetMaterialName(materialInfo[1])  + "<br>";
 			Sleepms(2);
 		endforeach
 	endif
@@ -1044,7 +1053,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 		desc +=  "<br>";
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Encaixes de Componente </BASEFONT><br>";
 		foreach componente in componentes
-			desc +=  componente.qtdNecessaria + " " + componente.encaixeDesc  + "<br>";
+			desc +=  cint(componente.qtdNecessaria) * lote+ " " + componente.encaixeDesc  + "<br>";
 			Sleepms(2);
 		endforeach
 	endif

@@ -56,8 +56,12 @@ endfunction
 function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
 	if(prop.estado == ITEM_MONTADO)
-
-		xDesc := xDesc + WHITE + "Item: "+ prop.receita.desc +"<br>";
+		var quantidadeLote := "";
+		if(prop.receita.lote && prop.receita.lote > 1)
+			quantidadeLote := prop.receita.lote  + "x ";
+		endif
+		
+		xDesc := xDesc + WHITE + "Item: "+  quantidadeLote + prop.receita.desc +"<br>";
 		if(prop.esquema.componentesEscolhidos.size() > 0)
 			xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
 			foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)

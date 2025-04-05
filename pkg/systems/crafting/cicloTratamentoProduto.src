@@ -53,25 +53,42 @@ program CicloTratamentoProduto(parametros)
 			else
 				propTratamento.falhas += 1;
 			endif
+
 			propTratamento.ciclos += 1;
 			propTratamento.ultimoSucesso := isSucesso;
 
 			if(propTratamento.falhas >= PegaMaximoFalhas(produto))
-				propTratamento.isTratando := false;
-				SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
-				processoGerente.sendEvent(struct {id := EV_ITEM_QUEBROU});
+				FinalizaTratamento(propTratamento, processoGerente, produto, EV_ITEM_QUEBROU);
 			endif
 
 			if(propTratamento.sucessos >= propFabricado.receita.sucessosNecessarios)
-				propTratamento.isTratando := false;
-				SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
-				processoGerente.sendEvent(struct {id := EV_ITEM_PRODUZIDO});
+				FinalizaTratamento(propTratamento, processoGerente, produto, EV_ITEM_PRODUZIDO);
 			endif
 			
-			SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
-			processoGerente.sendEvent(struct {id := EV_FIM_CICLO});
+			if(propTratamento.isTratando)
+				SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+				processoGerente.sendEvent(struct {id := EV_FIM_CICLO});
+			endif
 		else
 			deveSair := true;
 		endif
 	endwhile
 endprogram
+
+function FinalizaTratamento(byref propTratamento, processoGerente, produto, event)
+	if(produto.stackable)
+		ReinicializaPropTratamento(propTratamento);
+	else
+		propTratamento.isTratando := false;
+	endif
+	SetObjProperty(produto,PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+	processoGerente.sendEvent(struct {id := event});
+endfunction
+
+function ReinicializaPropTratamento(byref propTratamento)
+	propTratamento.sucessos := 0;
+	propTratamento.falhas := 0;
+	propTratamento.ciclos := 0;
+	propTratamento.ultimoSucesso := false;
+	propTratamento.isTratando := true;
+endfunction

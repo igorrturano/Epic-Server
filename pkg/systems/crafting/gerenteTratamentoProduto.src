@@ -83,18 +83,19 @@ program GerenteTratamentoProduto(parametros)
 		if(estadoGerenciamento != CANCELADO)
 			if(fazerSemelhantes)
 				var produtoAntigo := produto; 
+
+				if(produto.stackable)
+					SubtractAmount(produtoAntigo, 1);
+				else
+					DestroyItem(produtoAntigo);
+				endif
+
 				produto := EncontraNovoProduto( quem, produtoAntigo);
 				if(produto)
 					processosGerenciados := IniciaProcessosGerenciados(processosGerenciados, quem, getPid(), produto, alvo);
 					estadoGerenciamento := SEMELHANTE_ENCONTRADO;
 				else
 					estadoGerenciamento := FINALIZADO;
-				endif
-
-				if(produto.stackable)
-					SubtractAmount(produtoAntigo, 1);
-				else
-					DestroyItem(produtoAntigo);
 				endif
 			else
 				if(produto.stackable)

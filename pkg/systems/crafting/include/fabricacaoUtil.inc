@@ -213,8 +213,13 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 	endif
 
 	descriptor.color := propFabricadoMontado.esquema.cor;
+
+	var quantidadeFinal := 1;
+	if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
+		quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
+	endif
 		
-	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
+	var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
 	if(!item)
 		item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidade), quem.realm);
 	endif
