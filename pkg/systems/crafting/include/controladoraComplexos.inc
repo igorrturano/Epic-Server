@@ -83,13 +83,8 @@ function EnviaItensComplexosGump(quem,profissao)
 	//TODO criar botão para sair
 	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
 	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//TODO refatorar includes
 	//*** POS MERGE DEVELOP***
-	//TODO implementar a chamada tanto do gump de componentes quanto gump de complexos usando as pericias corretas e alterar a forma de leitura da cfg de craft.
 	//TODO Solucionar o problema das armaduras estarem sem informações.
-	//TODO Decidir se item complexos podem ser usado como componente. (tranca, por exemplo)
-	//TODO Modificar as Configs das receitas pra colocar o elemento "item" onde não tiver.
-	//TODO Munições precisam ser fabricadas de tantas em tantas. [ 10 em 10 ]?
 	//TODO Criar gumps de ajuda.
 	//TODO Criar API para gerar item fabricado.
 	//TODO Criar adicionais de dificuldade para estações de tipos diferentes na fabricação.
