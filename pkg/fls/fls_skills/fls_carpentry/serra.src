@@ -6,7 +6,7 @@ include ":gumps:gumps";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include ":crafting:fabricacaoUtil";
-include ":crafting:controladoraComponentes";
+include ":crafting:fabricaComponentes";
 
 
 var cfgRecursos := ReadConfigFile(":crafting:config/resourceList");

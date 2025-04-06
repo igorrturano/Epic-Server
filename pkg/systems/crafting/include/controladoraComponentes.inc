@@ -14,10 +14,6 @@ include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
-function FabricaComponentes(quem,pericia := "todas")
-	EnviaGumpComponentes(quem, pericia );
-endfunction
-
 function DecideConfigComponentes(pericia)
 	var retorno;
 	case(pericia)

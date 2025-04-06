@@ -269,16 +269,25 @@ function CriaNovaPropFabricado ( propFabricadoMontado)
 			componentesRefatorado.insert(_componente_iter,componente);
 		endif
 	endforeach
-	
-	var novaPropFabricada := struct{
-				estado := ITEM_PRONTO ,
-				isCompletamenteComum := propFabricadoMontado.esquema.isCompletamenteComum,
-				qualidade := propFabricadoMontado.esquema.qualidade,
-				modificadorHpTotal := propFabricadoMontado.esquema.modificadorHpTotal,
-				modificadorPesoTotal := propFabricadoMontado.esquema.modificadorPesoTotal,
-				componentes := componentesRefatorado};
 				
-	return novaPropFabricada;
+	return CriaObjetoFabricado(
+							ITEM_PRONTO,
+							propFabricadoMontado.esquema.isCompletamenteComum,
+							propFabricadoMontado.esquema.qualidade,
+							propFabricadoMontado.esquema.modificadorHpTotal,
+							propFabricadoMontado.esquema.modificadorPesoTotal,
+							componentesRefatorado
+							);
+endfunction
+
+function CriaObjetoFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,componentes)
+	return struct{
+				estado := estado ,
+				isCompletamenteComum := isCompletamenteComum,
+				qualidade := qualidade,
+				modificadorHpTotal := modificadorHpTotal,
+				modificadorPesoTotal := modificadorPesoTotal,
+				componentes := componentes};
 endfunction
 
 function CriaObjetoPosicao(quem)

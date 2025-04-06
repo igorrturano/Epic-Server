@@ -15,10 +15,6 @@ const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-function FabricaItensComplexos(quem,profissao)
-	EnviaItensComplexosGump(quem,profissao);
-endfunction
-
 function InicializaSessaoComplexos(quem, profissaoCraftProp)
 	var sessao := struct;
 
@@ -183,12 +179,10 @@ function EnviaItensComplexosGump(quem,profissao)
 				break;
 
 			RT_ESQUEMAS_SALVAR:
-				//Print("Sessao info:   " + sessao.receitaSelecionada);
 				if(sessao.receitaSelecionada.esquemaSelecionado.nome == "")
 					SendSysMessageEX(quem,"O nome do esquema é obrigatório.", SSM_FAIL);
 					break;
 				endif
-				//Print("Salvei Esquema {}!".format(sessao.receitaSelecionada.esquemaSelecionado.nome));
 				var nomeReceitaClassificado := PegaNomeReceitaClassificada(sessao.receitaSelecionada.receita.receitaClassificada);
 
 				case(sessao.acao)
