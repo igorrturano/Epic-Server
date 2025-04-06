@@ -1,5 +1,5 @@
 include ":itemutils:canAccess";
-include ":crafting:controladoraComponentes";
+include ":crafting:fabricaComponentes";
 
 program fabricaComponentes(who, tool)
 
