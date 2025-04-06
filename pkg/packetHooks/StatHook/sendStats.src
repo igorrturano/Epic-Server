@@ -93,7 +93,7 @@ exported function HandleSendStats( character, byref packet )
 		packet.SetString(121, url, 1);
 		
 		// Process extended stats
-		HandleExtended(source, packet);
+		// HandleExtended(source, packet);
 	endif
 
 	return 0;
