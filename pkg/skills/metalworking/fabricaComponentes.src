@@ -1,3 +1,5 @@
+//Author: Deiro || Rafael Santos
+
 include ":itemutils:canAccess";
 include ":crafting:fabricaComponentes";
 

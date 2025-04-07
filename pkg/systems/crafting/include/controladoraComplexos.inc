@@ -1,3 +1,5 @@
+//Author: Deiro || Rafael Santos
+
 include "/include/epicConstants";
 include "/include/epicPropNames";
 include "/include/math";

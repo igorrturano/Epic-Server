@@ -1,4 +1,5 @@
 //Author: Deiro || Rafael Santos
+
 use uo;
 use os;
 use Math;
@@ -221,7 +222,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 		
 	var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
 	if(!item)
-		item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidade), quem.realm);
+		item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
 	endif
 
 	if(!item)
