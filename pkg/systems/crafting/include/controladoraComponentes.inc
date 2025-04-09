@@ -51,10 +51,13 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		MontaComponentesGump(gump, parametros,sessao);
 		retorno := GFSendGump(quem,gump);
 
-		if(find(retorno[COMPONENTES_INPT_QTD],":",1))
-			sessao.quantidade := GFExtractData(retorno,COMPONENTES_INPT_QTD)[1,3];
-		endif
 		
+		if(find(retorno[COMPONENTES_INPT_QTD],":",1))
+			sessao.quantidade := ExtraiDadosRetorno(retorno,COMPONENTES_INPT_QTD)[1,3];
+		endif
+		sessao.filtros.encaixe := ExtraiDadosRetorno(retorno,COMPONENTES_INPT_FILTRO_ENCAIXE);
+		sessao.filtros.nome := ExtraiDadosRetorno(retorno,COMPONENTES_INPT_FILTRO_NOME);
+
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
 				var indice := retorno[0] - gerenciador.adicionalIdDropDown;
@@ -75,7 +78,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 			RT_ESCOLHA_COMPONENTE:
 				GerenciadorDropDown::LimpaDropDowns(gerenciador);
 				sessao.devePopularDropDown := true;
-				sessao.componenteSelecionado := parametros.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
+				sessao.componenteSelecionado := sessao.componentes[retorno[0] - COMPONENTES_TABELA_INICIAL];
 				sessao.picoPericia :=  CalculaValorPico(quem, configComponentes[sessao.componenteSelecionado.selecione.objtype].pericia);
 				sessao.picoMaximoPericia :=  sessao.picoPericia;
 				break;
@@ -92,6 +95,15 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 				if(sessao.picoPericia < 0)
 					sessao.picoPericia := 0;
 				endif
+				break;
+
+			RT_BTN_FILTRAR:
+				AtualizaPesquisaComponentes(configComponentes,sessao);
+				break;
+
+			RT_BTN_LIMPA_FILTRO:
+				sessao.filtros := struct{ nome := "", encaixe := ""};
+				AtualizaPesquisaComponentes(configComponentes,sessao);
 				break;
 
 			RT_BTN_AVALIAR:
@@ -186,6 +198,21 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 	endwhile
 endfunction
 
+function ExtraiDadosRetorno(entrada, id)
+	var chave := CStr(id)+": ";
+	var stringDados := entrada[id];
+	if( entrada[id] == chave)
+		return "";
+	else
+		return stringDados[Len(chave)+1,Len(stringDados)];
+	endif
+endfunction
+
+function AtualizaPesquisaComponentes(configComponentes,byref sessao)
+	sessao.componentes := MontaVisaoComponentes(configComponentes, sessao.filtros.encaixe, sessao.filtros.nome);
+	sessao.devePopularDropDown := true;
+	sessao.componenteSelecionado := 0;
+endfunction
 
 function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia, encaixe, picoPericia)
 
@@ -378,8 +405,6 @@ endfunction
 function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 
 	var parametrosGump := struct;
-	
-	var chavesComponentes := GetConfigStringKeys(configProfissao);
 
 	var materiais := array;
 	var componentes := array;
@@ -394,10 +419,64 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 	sessao.+quantidade := "1";
 	sessao.+picoPericia := CalculaValorPico(quem,pericia);
 	sessao.+picoMaximoPericia := sessao.picoPericia;
+	sessao.+filtros := struct{ nome := "", encaixe := ""};
+	sessao.+componentes := MontaVisaoComponentes(configProfissao);
+
+	var colCfg := dictionary;
+		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
+		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 4.5};
+		colCfg["materialPrincipal"] := struct{titulo := "Principal",ordem := 3,largura := 1.5};
+		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 2};
+		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
+
+	parametrosGump.+configColunas := colCfg;
+	parametrosGump.+materiais := materiais;
+	
+	
+	return parametrosGump;
+endfunction
+
+function ClassificaRetornoComponentes(valorRetorno, gerenciador)
+	if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,valorRetorno))
+		return RT_ESCOLHA_DROPDOWN;
+	elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,valorRetorno))
+		return RT_ESCOLHA_DD_OPCOES;
+	elseif(valorRetorno >= COMPONENTES_TABELA_INICIAL)
+		return RT_ESCOLHA_COMPONENTE;
+	elseif(valorRetorno == COMPONENTES_BTN_FABRICAR)
+		return RT_BTN_FABRICAR;
+	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MAIS)
+		return RT_BTN_ESFORCO_MAIS;
+	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MENOS)
+		return RT_BTN_ESFORCO_MENOS;
+	elseif(valorRetorno == COMPONENTES_BTN_AVALIAR)
+		return RT_BTN_AVALIAR;
+	elseif(valorRetorno == COMPONENTES_BTN_FILTRAR)
+		return RT_BTN_FILTRAR;
+	elseif(valorRetorno == COMPONENTES_BTN_LIMPA_FILTRO)
+		return RT_BTN_LIMPA_FILTRO;
+	elseif(valorRetorno == 1)
+		return RT_CANCELADO;
+	else
+		return RT_CANCELADO;
+	endif
+endfunction
+
+function MontaVisaoComponentes(configProfissao, filtroEncaixe := "", filtroNome := "")
+	var componentes := array;
+	var chavesComponentes := GetConfigStringKeys(configProfissao);
 
 	foreach chave in chavesComponentes
 		Sleepms(2);
 		if(!configProfissao[chave].encaixe)
+			continue;
+		endif
+
+		if(filtroEncaixe != "" && !Find(UPPER(configProfissao[chave].encaixe),UPPER(filtroEncaixe),1))
+			continue;
+		endif
+
+		if(filtroNome != "" && !Find(UPPER(configProfissao[chave].name),UPPER(filtroNome),1))
 			continue;
 		endif
 
@@ -422,39 +501,5 @@ function PreparaComponentesGump(quem, configProfissao,byref sessao, pericia)
 		componentes.append(componente);
 	endforeach
 
-	var colCfg := dictionary;
-		colCfg["nome"] := struct{titulo := "Nome",ordem := 1, largura := 3};
-		colCfg["materiais"] := struct{titulo := "Materiais",ordem := 2,largura := 4.5};
-		colCfg["materialPrincipal"] := struct{titulo := "Principal",ordem := 3,largura := 1.5};
-		colCfg["encaixe"] := struct{titulo := "Encaixe",ordem := 4,largura := 2};
-		colCfg["selecione"] := struct{titulo := "Selecione",ordem := 6,largura := 1};
-
-	parametrosGump.+configColunas := colCfg;
-	parametrosGump.+materiais := materiais;
-	parametrosGump.+componentes := componentes;
-	
-	
-	return parametrosGump;
-endfunction
-
-function ClassificaRetornoComponentes(valorRetorno, gerenciador)
-	if(GerenciadorDropDown::IsIdDentroDropDowns(gerenciador,valorRetorno))
-		return RT_ESCOLHA_DROPDOWN;
-	elseif(GerenciadorDropDown::IsIdDentroOpcoes(gerenciador,valorRetorno))
-		return RT_ESCOLHA_DD_OPCOES;
-	elseif(valorRetorno >= COMPONENTES_TABELA_INICIAL)
-		return RT_ESCOLHA_COMPONENTE;
-	elseif(valorRetorno == COMPONENTES_BTN_FABRICAR)
-		return RT_BTN_FABRICAR;
-	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MAIS)
-		return RT_BTN_ESFORCO_MAIS;
-	elseif(valorRetorno == COMPONENTES_BTN_ESFORCO_MENOS)
-		return RT_BTN_ESFORCO_MENOS;
-	elseif(valorRetorno == COMPONENTES_BTN_AVALIAR)
-		return RT_BTN_AVALIAR;
-	elseif(valorRetorno == 1)
-		return RT_CANCELADO;
-	else
-		return RT_CANCELADO;
-	endif
+	return componentes;
 endfunction

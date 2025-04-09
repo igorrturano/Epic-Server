@@ -30,6 +30,10 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_BTN_ESFORCO_MAIS := 4,
 	COMPONENTES_BTN_ESFORCO_MENOS := 5,
 	COMPONENTES_BTN_AVALIAR := 6,
+	COMPONENTES_INPT_FILTRO_NOME := 7,
+	COMPONENTES_INPT_FILTRO_ENCAIXE := 8,
+	COMPONENTES_BTN_FILTRAR := 9,
+	COMPONENTES_BTN_LIMPA_FILTRO := 10,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
 	COMPLEXOS_INPT_QTD := 4
@@ -55,6 +59,8 @@ enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do G
 	RT_BTN_ESFORCO_MAIS,
 	RT_BTN_ESFORCO_MENOS,
 	RT_BTN_AVALIAR,
+	RT_BTN_FILTRAR,
+	RT_BTN_LIMPA_FILTRO,
 	RT_CANCELADO
 endenum
 
@@ -208,6 +214,12 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO,G_MARGEM_SUPERIOR + G_ESPACAMENTO, 5054, larguraPainelEntrada, alturaPainelEntrada);
 	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2,86,"Quantidade:");
 	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 70, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 , 25, 17, 1153, sessao.quantidade ? sessao.quantidade : "1", COMPONENTES_INPT_QTD,3);
+	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 60,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 60,86,"Nome:");
+	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 130, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 60 , 120, 17, 1153, sessao.filtros.nome, COMPONENTES_INPT_FILTRO_NOME);
+	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,4020,4022,GF_CLOSE_BTN, COMPONENTES_BTN_LIMPA_FILTRO);
+	GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 30,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,4005,4006,GF_CLOSE_BTN, COMPONENTES_BTN_FILTRAR);
+	GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 60,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80,86,"Encaixe:");
+	GFTextEntry( gump, G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + 130, G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 80 , 120, 17, 1153, sessao.filtros.encaixe , COMPONENTES_INPT_FILTRO_ENCAIXE);
 	
 	if(componenteSelecionado)
 		GFTextLine(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2,G_MARGEM_SUPERIOR + G_ESPACAMENTO * 2 + 20,86,"Selecionado: " + componenteSelecionado.nome);
@@ -219,6 +231,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 		GFTooltipText(gump,"Diminuir o esforço produz componentes de menor qualidade.");
 		GFAddButton(gump,G_MARGEM_ESQUERDA+ G_ESPACAMENTO * 2 + larguraCelula * 11,G_MARGEM_SUPERIOR + G_ESPACAMENTO + alturaCelula * 2,1531,1532,GF_CLOSE_BTN, COMPONENTES_BTN_AVALIAR);
 		GFTooltipText(gump,"Avaliar Material.");
+
 		foreach material in (SplitWords(componenteSelecionado.materiais,","))
 			DefinirMateriais(gump,
 							G_MARGEM_ESQUERDA+ G_ESPACAMENTO + larguraCelula * 3,
@@ -244,7 +257,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	CriaTabelaGump(G_MARGEM_ESQUERDA + G_ESPACAMENTO,
 					alturaPainelEntrada + G_ESPACAMENTO + alturaCelula/2,
 					larguraPainelComponentes,
-					parametros.componentes,
+					sessao.componentes,
 					gump,
 					0,
 					opcoesTabela,
