@@ -15,7 +15,7 @@ include ":itemutils:canAccess";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":crafting:toolWear";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":loot:lootParser";
 include "include/sysEvent";
 

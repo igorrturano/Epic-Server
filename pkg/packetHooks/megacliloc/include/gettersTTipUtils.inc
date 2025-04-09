@@ -118,7 +118,7 @@ function GetCriticalInfo(entry)
 
 endfunction
 
-function GetHitsInfo(entry)
+function GetHitsInfo2(entry)
 
 	var criticals := GetconfigStringArray(entry, "HitScripts");
 
@@ -147,7 +147,7 @@ function getTipoStringDesc(elem) //Exibe o tipo de arma
 endfunction
 
 
-function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
+function getVelStringDesc2(elem, item) //Velocidade da arma. Mostra diferença pra item base
 	var speedI := GetObjProperty(item,"attackspeedbonus");
 	var itemAttr := item.getAttrBase();
 	var speedE := CInt(itemAttr.AttackSpeed);

@@ -257,37 +257,44 @@ function PegaCaracteristica(item, caracteristica)
 	return propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
 endfunction
 
-function CriaNovaPropFabricado ( propFabricadoMontado)
+function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 
 	var componentesRefatorado := dictionary;
+	if(estado != ITEM_GERADO)
+		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
+		foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
+			Sleepms(2);
+			if(componente.componenteNecessario.caracteristica != "vazio")
+				componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
+			else
+				componentesRefatorado.insert(_componente_iter,componente);
+			endif
+		endforeach
+	else
+		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
+	endif
 
-	//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
-	foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
-		Sleepms(2);
-		if(componente.componenteNecessario.caracteristica != "vazio")
-			componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
-		else
-			componentesRefatorado.insert(_componente_iter,componente);
-		endif
-	endforeach
-				
 	return CriaObjetoFabricado(
-							ITEM_PRONTO,
+							estado,
 							propFabricadoMontado.esquema.isCompletamenteComum,
 							propFabricadoMontado.esquema.qualidade,
 							propFabricadoMontado.esquema.modificadorHpTotal,
 							propFabricadoMontado.esquema.modificadorPesoTotal,
+							propFabricadoMontado.esquema.cor,
+							propFabricadoMontado.esquema.classe,
 							componentesRefatorado
 							);
 endfunction
 
-function CriaObjetoFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,componentes)
+function CriaObjetoFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes)
 	return struct{
 				estado := estado ,
 				isCompletamenteComum := isCompletamenteComum,
 				qualidade := qualidade,
 				modificadorHpTotal := modificadorHpTotal,
 				modificadorPesoTotal := modificadorPesoTotal,
+				cor := cor,
+				classe := classe,
 				componentes := componentes};
 endfunction
 
@@ -350,4 +357,20 @@ function MontaCraftProp(fabricacaoConfig)
 	
 	return baseDict;
 
+endfunction
+
+function PegaTipoMaterialAleatorio(tipoMaterial)
+	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
+	var chavesElemento := GetConfigStringKeys( recursosConfig );
+	var materiais := array;
+	
+	foreach chave in chavesElemento
+		var recurso := recursosConfig[chave];
+		Sleepms(2);
+		if(UPPER(recurso.type) == UPPER(tipoMaterial))
+			materiais.append(chave);
+		endif
+	endforeach
+
+	return materiais[RandomIntMinMax(1,materiais.size())];
 endfunction

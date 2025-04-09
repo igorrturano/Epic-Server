@@ -9,8 +9,7 @@ use util;
 
 include ":gathering:lumberJack";
 include ":survival:fishingFunctions";
-include ":fls_core:fls_objtypes";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":attributes:attributes";
 include "include/client";
 include "include/say";

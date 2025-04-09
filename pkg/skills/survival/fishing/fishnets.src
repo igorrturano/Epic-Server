@@ -12,7 +12,7 @@ include ":attributes:include/attributes";
 include ":attributes:include/skillCheck";
 include ":attributes:include/skills";
 include ":survival:include/fishingFunctions";
-include ":itemutils:objtype";
+include "include/objtype";
 
 program use_FishNets(who, fishnet)
 

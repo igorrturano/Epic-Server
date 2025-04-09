@@ -49,7 +49,7 @@ function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsq
 	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 endfunction
 
-function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "")
+function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "", classe := 1)
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
@@ -58,6 +58,7 @@ function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhid
 				modificadorHpTotal := 0,
 				modificadorPesoTotal := 0,
 				qualidade := 0,
+				classe := classe,
 				modificadorCache := struct{ peso := dictionary, hp := dictionary, qualidade := dictionary},
 				componentesEscolhidos := dictComponentesEscolhidos
 			};
@@ -282,7 +283,12 @@ function MontaMelhorEsquema(quem, sessao)
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
 		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria);
-		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente);
+		AcrescentaComponenteEscolhido(
+				sessao.receitaSelecionada.esquemaSelecionado,
+				componenteNecessario,
+				componenteEscolhido, 
+				opcaoEncontrada.indiceEncaixeComponente, 
+				sessao.receitaSelecionada.receita.receitaClassificada.classe);
 	endforeach
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
@@ -533,14 +539,21 @@ function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, config
 	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
 		var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos, quantidadeComponentesNecessaria);
-		AcrescentaComponenteEscolhido(sessao.receitaSelecionada.esquemaSelecionado,componenteNecessario,componenteEscolhido, retornoDropDownOpcao.indiceEncaixeComponente);
+		AcrescentaComponenteEscolhido(
+				sessao.receitaSelecionada.esquemaSelecionado,
+				componenteNecessario,
+				componenteEscolhido, 
+				retornoDropDownOpcao.indiceEncaixeComponente, 
+				sessao.receitaSelecionada.receita.receitaClassificada.classe
+				);
 	endif
 endfunction
 
-function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe)
+function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe, classe)
 	if(componenteNecessario.isPrincipal)
 			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
+			esquemaSelecionado.classe := classe;
 	endif
 
 	DefineTagQualidade(
@@ -1056,10 +1069,13 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 endfunction
 
 function PegaComponentesNecessarios(objtype, receitasConfig, classe)
-	var encaixesItem := GetConfigStringArray(receitasConfig[objtype],"ComponenteEncaixe");
+	Print("receitasConfig[objtype] " + receitasConfig[objtype]);
+	Print("Typeof(objtype) " + Typeof(objtype));
+	var encaixesItem := GetConfigStringArray(receitasConfig[hex(objtype)],"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 	classe := classe ? classe : 1;
 
+	Print("encaixesItem " + encaixesItem);
 	var componentes := array;
 	foreach encaixe in encaixesItem
 		Sleepms(2);
@@ -1135,4 +1151,40 @@ function ClassificaRetornoComplexos(retorno,sessao)
 	elseif(valorRetorno == 1)
 		return RT_CANCELADO_COMPLX;
 	endif
+endfunction
+
+function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
+	var itemDescConfig := ReadConfigFile(":*:itemdesc");
+	var fabricacaoDescConfig := ReadConfigFile(":*:fabricacaoDesc");
+	var componenteDescConfig := ReadConfigFile(":*:componentes");
+	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
+	var objetoDesc := itemDescConfig[objtype];
+
+	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
+	var componentesEscolhidos := dictionary;
+	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0);
+
+	foreach componenteNecessario in (receita.componentesNecessarios)
+		Sleepms(2);
+		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size())];
+		var materialComponente;
+		
+		if(componenteNecessario.isPrincipal)
+			materialComponente := recursosConfig[material];
+		else
+			materialComponente := PegaTipoMaterialAleatorio(componenteDescConfig[componenteAleatorio].principalMaterial);
+		endif
+
+		var opcaoEncontrada := struct{ 
+				itemRef := 0,
+				componenteTier :=  PegaComponenteTierDesc(cint(tier)),
+				nomeMaterial := "",
+				chaveMaterial := materialComponente.principalMaterial,
+				indiceEncaixeComponente := componenteNecessario.caracteristica};
+
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size());
+		AcrescentaComponenteEscolhido(objetoEsquema,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente, classe);
+	endforeach
+
+	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
 endfunction

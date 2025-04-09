@@ -3,7 +3,7 @@ use os;
 use cfgfile;
 use util;
 
-include ":itemutils:objtype";
+include "include/objtype";
 include ":itemutils:canAccess";
 include ":attributes:attributeConstants";
 include ":attributes:skills";

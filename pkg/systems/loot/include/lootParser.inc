@@ -101,12 +101,14 @@ function Loot_CreateItem(container, line)
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var item := CreateItemInContainer(container, parsed.name);
+            
             SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,1);
             if(item.errortext)
                 print("ERRO ao criar item ["+parsed.name+"]: " + item.errortext);
             else
                 print("Item criado com sucesso: " + item.desc);
             endif
+
             sleepms(2);
         endfor
     endif

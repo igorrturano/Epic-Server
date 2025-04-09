@@ -3,7 +3,7 @@ use os;
 use cfgfile;
 
 include "include/client";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":coords:isValidLoc";
 
 

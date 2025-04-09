@@ -6,7 +6,7 @@ use os;
 use cfgfile;
 
 include ":keys:key";
-include ":itemutils:objtype";
+include "include/objtype";
 include ":gumps:yesNo";
 
 const UOBJECT_DOORS_START   := 0x0675;

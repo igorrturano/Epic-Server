@@ -155,7 +155,7 @@ program chestspawner(who)
        3: classstring := "Sabio";
        4: classstring := "Artifice";
     endcase
-    SetObjProperty(item, "class", classstring);
+    SetObjProperty(item, "classe", classstring);
     EraseObjProperty(item,"waiting");
     item.locked :=  1;
     item.movable := 0;

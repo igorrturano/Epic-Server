@@ -169,7 +169,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	xDesc := xDesc + "Perícia: " + StrReplace(cfg.elem.Attribute,"_"," ") + "<br>";
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
-	xDesc := xDesc + "Velocidade: " + GetVelStringDesc(cfg.elem, objeto) + "<br>";
+	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(cfg.elem, objeto) + "<br>";
 
 	if (GetObjProperty(objeto, "polida"))
 		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
@@ -180,7 +180,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + LARANJA + crits;
 	endif
 
-	var hits :=  GetHitsInfo(cfg.elem);
+	var hits :=  GetHitsInfo2(cfg.elem);
 	if (hits != "")
 		xDesc := xDesc + AMARELO_CLARO + hits;
 	endif

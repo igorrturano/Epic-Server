@@ -164,8 +164,6 @@ Const UOBJ_BASCINET			:= 0x140c;
 Const UOBJ_BASCINET2		:= 0x140d;
 Const UOBJ_NOSEHELM			:= 0x140e;
 Const UOBJ_NOSEHELM2		:= 0x140f;
-Const UOBJ_ORCHELM			:= 0x1F0B;
-Const UOBJ_ORCHELM2			:= 0x1F0C;
 
 
 
