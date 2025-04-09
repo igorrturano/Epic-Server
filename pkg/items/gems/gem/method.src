@@ -46,17 +46,17 @@ exported function GetGemColor(item)
 	elseif ( item.objtype == 0xf10)
 		return 1268;
 	elseif ( item.objtype == 0xf11)
-		return 1261;
+		return 1262;
 	elseif (item.objtype == 0xf13 )
-		return 1157;
+		return 2379;
 	elseif (item.objtype == 0xf15)
 		return 1161;
 	elseif (item.objtype == 0xf16)
-		return 1158;
+		return 2290;
 	elseif (item.objtype == 0xf18 )
 		return 1260;
 	elseif (item.objtype == 0xf25)
-		return 1260;
+		return 2289;
 	elseif (item.objtype == 0xf30 )
 		return 1153;
 	endif
