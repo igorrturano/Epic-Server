@@ -252,9 +252,25 @@ function AplicaFechadura(quem, item)
 	endif
 endfunction
 
-function PegaCaracteristica(item, caracteristica)
+function PegaValorCaracteristica(item, caracteristica)
 	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
 	return propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
+endfunction
+
+function PegaValorSubEfeito(item, caracteristica, subEfeitoAlvo)
+	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
+	foreach subEfeito in (propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais)
+		if(subEfeito.efeito == subEfeitoAlvo)
+			return subEfeito.valor;
+		endif
+	endforeach
+
+	return  error{"errortext":="Subefeito não encontrado"}; 
+endfunction
+
+function PegaSubEfeitos(item, caracteristica)
+	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
+	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais; 
 endfunction
 
 function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
