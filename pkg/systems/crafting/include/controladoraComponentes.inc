@@ -14,6 +14,25 @@ include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
+function PegaPericiaPeloMaterial(tipoMaterial)
+	case (tipoMaterial)
+		"metal":
+		"gems":
+			return "Metal_Working";
+		"cloth":
+		"ossos":
+		"leather":
+			return "Domestic_Work";
+		"wood":
+			return "Wood_Working";
+		"ingredient": //TODO pedir pro l4nc1s definir um tipo pros materiais de alquimia 
+			return "Alchemy";
+		default:
+			return "Wood_Working";
+			break;
+	endcase
+endfunction
+
 function DecideConfigComponentes(pericia)
 	var retorno;
 	case(pericia)
@@ -44,7 +63,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		FechaTodosDropdowns(quem,gerenciador.dropDowns);
 
 		if(sessao.componenteSelecionado && sessao.devePopularDropDown)
-			PreparaDropDownsComponentes(quem,sessao,gerenciador,configRecursos,pericia);
+			PreparaDropDownsComponentes(quem,sessao,gerenciador,configRecursos);
 			sessao.devePopularDropDown := false;
 		endif
 
@@ -53,10 +72,10 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 
 		
 		if(find(retorno[COMPONENTES_INPT_QTD],":",1))
-			sessao.quantidade := ExtraiDadosRetorno(retorno,COMPONENTES_INPT_QTD)[1,3];
+			sessao.quantidade := GFExtractData(retorno,COMPONENTES_INPT_QTD)[1,3];
 		endif
-		sessao.filtros.encaixe := ExtraiDadosRetorno(retorno,COMPONENTES_INPT_FILTRO_ENCAIXE);
-		sessao.filtros.nome := ExtraiDadosRetorno(retorno,COMPONENTES_INPT_FILTRO_NOME);
+		sessao.filtros.encaixe := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_ENCAIXE);
+		sessao.filtros.nome := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_NOME);
 
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
@@ -198,7 +217,10 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 	endwhile
 endfunction
 
-function ExtraiDadosRetorno(entrada, id)
+function ExtraiStringEntradaOuVazio(entrada, id)
+	Print(entrada);
+	if(!find(entrada[id],":",1)) return ""; endif
+
 	var chave := CStr(id)+": ";
 	var stringDados := entrada[id];
 	if( entrada[id] == chave)
@@ -293,9 +315,9 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 
 endfunction
 
-function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos,pericia)
+function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
 	var materiais := SplitWords( sessao.componenteSelecionado.materiais,",");
-	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,pericia,sessao.componenteSelecionado.materialPrincipal);
+	sessao.materiaisEncontrados := CarregaMateriaisEncontrados(quem,configRecursos,sessao.componenteSelecionado.materialPrincipal);
 	
 	foreach material in materiais
 
@@ -357,15 +379,19 @@ function MontaValorOpcaoComponente(chave,qtd,tipo,sessao)
 					};
 endfunction
 
-function CarregaMateriaisEncontrados(quem,configRecursos, pericia, materialPrincipal)
+function CarregaMateriaisEncontrados(quem,configRecursos, materialPrincipal)
 	var retorno := dictionary;
 
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
+			materialPrincipal := Lower(materialPrincipal);
 			var tipoMaterial := Lower(materialDetalhe.type);
+			var pericia := PegaPericiaPeloMaterial(materialPrincipal);
+
 			if(materialPrincipal == tipoMaterial &&  materialDetalhe.Skill > AP_GetSkill(quem,pericia)) continue; endif
+			
 			MontaMaterialEncontrado(retorno,tipoMaterial,item);
 		else
 			var itemCfg := itemsConfig[item.objtype];

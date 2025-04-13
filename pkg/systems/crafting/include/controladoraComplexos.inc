@@ -810,7 +810,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 	poderContado += propriedades.valorPrincipal;
 
 	foreach efeitoSecundario in (propriedades.efeitosAdicionais)
-		poderContado += efeitoSecundario.valor;
+		poderContado += efeitoSecundario;
 	endforeach
 
 	retorno.+poderContado := poderContado;
@@ -854,19 +854,14 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 
 		if(subEfeitos.size() > 1)
 			subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
-			var arraySubEfeitos := array{};
+			var subefeitosDict := dictionary{};
 
 			for indice := 1 to subEfeitos.size()
-				arraySubEfeitos.append(
-						struct {
-							efeito := subEfeitos[indice],
-							valor := Cint(subEfeitos[indice + 1])
-						}
-					);
+				subefeitosDict.insert( subEfeitos[indice], Cint(subEfeitos[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
 				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
 				Sleepms(2);
 			endfor
-			propriedades.+efeitosAdicionais := arraySubEfeitos;
+			propriedades.+efeitosAdicionais := subefeitosDict;
 			
 		endif 
 	endif

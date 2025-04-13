@@ -427,12 +427,12 @@ function PegaDescEfeitosComponente(componente, xDesc)
 
 		xDesc := xDesc + corLinha + getComponenteToAprimoramento(propriedades.caracteristica,propriedades.valorPrincipal) + " " + descValor;
 	endif
-
+	
 	if(propriedades.efeitosAdicionais)
 		foreach efeitoAdicional in (propriedades.efeitosAdicionais)
 			Sleepms(2);
-			if(efeitoAdicional.valor != 0)
-				xDesc := xDesc + BLUE + "+" +  efeitoAdicional.efeito + " " + SOFT_GREEN + "+"+ efeitoAdicional.valor + " <br>";
+			if(efeitoAdicional != 0)
+				xDesc := xDesc + BLUE + "*" +  _efeitoAdicional_iter + " " + SOFT_GREEN + "+"+ efeitoAdicional[_efeitoAdicional_iter] + " <br>";
 			else
 				continue;
 			endif

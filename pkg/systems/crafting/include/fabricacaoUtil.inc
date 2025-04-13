@@ -259,7 +259,7 @@ endfunction
 
 function PegaValorSubEfeito(item, caracteristica, subEfeitoAlvo)
 	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	foreach subEfeito in (propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais)
+	foreach subEfeito in (propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo])
 		Sleepms(2);
 		if(subEfeito.efeito == subEfeitoAlvo)
 			return subEfeito.valor;
