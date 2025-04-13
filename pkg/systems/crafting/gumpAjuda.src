@@ -1,0 +1,10 @@
+include ":crafting:/include/controladoraFabricacaoAjuda";
+
+program gumpAjuda(parametros)
+	var quem		:= parametros[1];
+	var profissao	:= parametros[2];
+	var idAba		:= parametros[3];
+
+	EnviaFabricacaoAjudaGump(quem, profissao, idAba);
+
+endprogram

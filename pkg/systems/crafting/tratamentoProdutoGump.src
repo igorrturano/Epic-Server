@@ -38,6 +38,8 @@ program GerenteTratamentoProduto(parametros)
 			GFCloseGump(quem,ATUALIZA_POS_ID);
 			EnviaGumpPosicao(quem, GetPid(),apelidoGump);
 		elseif(retorno[0] == 5)// Retorno da atualização de ciclo.
+		elseif(retorno[0] == 6)// Retorno da atualização de ciclo.
+			Start_Script( ":crafting:gumpAjuda", array{quem, sessao.profissao, FABRICACAO_AJUDA_ABA_TRATAMENTO});
 		elseif(retorno[0] == 4)
 			sessao.fazerTodos := !sessao.fazerTodos;
 			processoGerente.sendEvent(struct {id := EV_TODOS_ALTERADO , fazerTodos := sessao.fazerTodos});
@@ -61,6 +63,7 @@ function InicializaSessao (quem , produto, estacao)
 	var craft_config    := ReadConfigFile(":metalworking:blacksmithy");//TODO alterar para a solução definitiva de como ler as configs de craft; 
 
 	sessao.+nomeItem := propFabricado.receita.desc;
+	sessao.+profissao := propFabricado.receita.profissao;
 	sessao.+sucessosNecessarios := propFabricado.receita.sucessosNecessarios;
 	sessao.+maximoFalhas := PegaMaximoFalhas(produto);
 	sessao.+dificuldade := PegaDificuldadeFrabicarObjeto(

@@ -236,7 +236,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 endfunction
 
 function AplicaFechadura(quem, item)
-	var levelFechadura := PegaCaracteristica(item, "tranca");
+	var levelFechadura := PegaValorCaracteristica(item, "tranca");
 	
 	if(levelFechadura && KP_IsLockable(item))
 		    var lockid := AllocLockId();
@@ -260,6 +260,7 @@ endfunction
 function PegaValorSubEfeito(item, caracteristica, subEfeitoAlvo)
 	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
 	foreach subEfeito in (propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais)
+		Sleepms(2);
 		if(subEfeito.efeito == subEfeitoAlvo)
 			return subEfeito.valor;
 		endif
@@ -290,7 +291,7 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
 	endif
 
-	return CriaObjetoFabricado(
+	return CriaObjetoPropFabricado(
 							estado,
 							propFabricadoMontado.esquema.isCompletamenteComum,
 							propFabricadoMontado.esquema.qualidade,
@@ -302,7 +303,7 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 							);
 endfunction
 
-function CriaObjetoFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes)
+function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes)
 	return struct{
 				estado := estado ,
 				isCompletamenteComum := isCompletamenteComum,

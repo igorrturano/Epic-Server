@@ -10,6 +10,21 @@ const G_MARGEM_ESQUERDA := 10;
 const G_MARGEM_SUPERIOR := 10;
 const G_ESPACAMENTO := 10;
 
+/*
+código de html aceito:
+
+<code>
+	&lt;B&gt;&lt;/B&gt; &lt;BIG&gt;&lt;/BIG&gt; &lt;SMALL&gt;&lt;/SMALL&gt; &lt;EM&gt;&lt;/EM&gt; &lt;I&gt;&lt;/I&gt;	&lt;U&gt;&lt;/U&gt;<br>
+	&lt;H1&gt;&lt;/H1&gt; &lt;H2&gt;&lt;/H2&gt; &lt;H3&gt;&lt;/H3&gt; 
+	&lt;H4&gt;&lt;/H4&gt; &lt;H5&gt;&lt;/H5&gt; &lt;H6&gt;&lt;/H6&gt;
+	&lt;a href=""&gt;&lt;/a&gt;<br>
+	&lt;div align=&quot;right&quot;&gt;&lt;div align=&quot;left&quot;&gt;&lt;/DIV&gt;
+	&lt;left&gt;&lt;/left&gt; &lt;P&gt;
+	&lt;CENTER&gt;&lt;/CENTER&gt; &lt;BR&gt;&lt;/BR&gt;
+	&lt;BASEFONT color=#ffffff size=1-7&gt;&lt;/BASEFONT&gt;
+</code>
+*/
+
 enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_CATEGORIAS := 20,
 	COMPLEXOS_RECEITAS := 100,
@@ -36,7 +51,8 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPONENTES_BTN_LIMPA_FILTRO := 10,
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
-	COMPLEXOS_INPT_QTD := 4
+	COMPLEXOS_BTN_AJUDA := 4,
+	COMPLEXOS_INPT_QTD := 5
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -48,7 +64,8 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_CANCELADO_ESQUEMA_COMPLX,
 	RT_CANCELADO_COMPLX,
 	RT_ESCOLHA_DROPDOWN_CPX,
-	RT_ESCOLHA_DD_OPCOES_CPX
+	RT_ESCOLHA_DD_OPCOES_CPX,
+	RT_AJUDA_CPX
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do Gump de Componentes.
@@ -74,11 +91,26 @@ enum ACAO_COMPLEXOS //Definição do Gump atual da sessão no gump de itens comp
 	EDITAR
 endenum
 
+enum ABA_AJUDA
+	FABRICACAO_AJUDA_ABA_GERAL := 1,
+	FABRICACAO_AJUDA_ABA_COMPONENTES := 2,
+	FABRICACAO_AJUDA_ABA_MONTAGEM := 3,
+	FABRICACAO_AJUDA_ABA_TRATAMENTO := 4,
+endenum
+
 var alturaCelula :=  G_ALTURA / G_CELULA_DIVISOR;
 var larguraCelula :=  G_LARGURA / G_CELULA_DIVISOR;
 var espacamentoAplicado := G_ESPACAMENTO * 2;
 
 var coresClassesReceitas := array{0,737,727,717,707,797};
+var gumpicIdProfissoes := dictionary {
+							"Alchemy" -> 5557,
+							"Blacksmithy" -> 5555,
+							"Carpentry" -> 5559,
+							"BowcraftFletching" -> 5551,
+							"Tailoring" -> 5579,
+							"Tinkering" -> 5571
+						};
 
 function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	gump := GFECreateGump("GumpItensComplexos",G_LARGURA,G_ALTURA,array{BORDER_BLUE,HIDE_TITLE,HIDE_PAGE});
@@ -330,7 +362,7 @@ function MontaTratamentoGump(x, y, byref sessao)
 	GFTooltipText(gump,tooltipChance);
 
 	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(cint(sessao.dificuldade.chanceTotal)));
-	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,5555,5556,GF_CLOSE_BTN, 2);
+	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,gumpicIdProfissoes[sessao.profissao],gumpicIdProfissoes[sessao.profissao] + 1,GF_CLOSE_BTN, 6); // Botao ajuda pericia.
 	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 3);
 	if(sessao.fazerTodos)
 		GFHTMLArea(gump,x + cint(larguraCelula) * 6, cint(y - 10 + alturaCelula * 9.9),180,30,"<basefont size=55 color=#000000><right>Produzindo Semelhantes.</right>");
@@ -500,18 +532,25 @@ endfunction
 
 function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessao)
 	//TODO fazer um highlight para a categoria selecionada.
-	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraPainelCategoria / 2 - 35,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10,70,20,"<basefont size=55 color=#ffffff><center>Categorias</center>");
+	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
+	var margemSuperiorLocal := G_MARGEM_SUPERIOR + G_ESPACAMENTO + 25;
+	var alturaIniciocategorias := margemSuperiorLocal + 80;
+	GFGumpPic(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50,margemSuperiorLocal,1417);
+	GFAddButton(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50 + 8,margemSuperiorLocal + 10,gumpicIdProfissoes[parametros.profissao],gumpicIdProfissoes[parametros.profissao] + 1,GF_CLOSE_BTN, COMPLEXOS_BTN_AJUDA);
+	GFTooltipText(gump,"Clique aqui para mais informações sobre como o sistema funciona.");
+	GFHTMLArea(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + larguraPainelCategoria / 2 - 35,margemSuperiorLocal + 85,70,20,"<basefont size=55 color=#ffffff><center>Categorias</center>");
+	
 	foreach categoria in (parametros.visaoReceitas.keys())
 		var posX := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45;
-		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
+		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  alturaIniciocategorias + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
 		if(!(categoria in (sessao.visualizadas.categorias)))
-			GFGumpPic(gump, posX, G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter), 1655);
+			GFGumpPic(gump, posX, alturaIniciocategorias + (30 * _categoria_iter), 1655);
 			posX += 20; 
 		endif
 		
 		var cortexto := sessao.categoriaSelecionada == categoria ? 47 : 86;
 
-		GFTextLine(gump,posX,G_MARGEM_SUPERIOR + G_ESPACAMENTO + 10 + (30 * _categoria_iter),cortexto,categoria);
+		GFTextLine(gump,posX,alturaIniciocategorias + (30 * _categoria_iter),cortexto,categoria);
 		Sleepms(2);
 	endforeach
 endfunction
@@ -610,4 +649,34 @@ function AvaliaEsforço(sessao)
 		default:
 			return "Erro!";
 	endcase
+endfunction
+
+function MontaFabricacaoAjudaGump(byref gump, parametros)
+	gump := GFECreateGump("Manual de fabricação de {}".format(parametros.profissao.label),G_LARGURA,G_ALTURA,array{BORDER_BLUE});
+
+	var margemEsquerda := espacamentoAplicado;
+	var alturaBarraMenu := 80;
+
+	GFAddButton(gump, larguraCelula * 1, alturaBarraMenu,2117,2118,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_GERAL);
+	GFTextLine(gump, larguraCelula * 1 + 20, alturaBarraMenu,52,"Geral");
+	GFAddButton(gump, larguraCelula * 4, alturaBarraMenu,2117,2118,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_COMPONENTES);
+	GFTextLine(gump, larguraCelula * 4 + 20, alturaBarraMenu,52,"Componentes");
+	GFAddButton(gump, larguraCelula * 7, alturaBarraMenu,2117,2118,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_MONTAGEM);
+	GFTextLine(gump, larguraCelula * 7 + 20, alturaBarraMenu,52,"Montagem");
+	GFAddButton(gump, larguraCelula * 10, alturaBarraMenu,2117,2118,GF_PAGE_BTN,FABRICACAO_AJUDA_ABA_TRATAMENTO);
+	GFTextLine(gump, larguraCelula * 10 + 20, alturaBarraMenu,52,"Tratamento.");
+
+	GFPage(gump, FABRICACAO_AJUDA_ABA_GERAL);
+	GFHTMLArea(gump,larguraCelula * 1,alturaBarraMenu + 40,larguraCelula * 10, alturaCelula * 8,parametros.geral.textoPrincipal);
+
+	GFPage(gump, FABRICACAO_AJUDA_ABA_COMPONENTES);
+	GFHTMLArea(gump,larguraCelula * 1,alturaBarraMenu + 40,larguraCelula * 10, alturaCelula * 8,parametros.profissao.textoComponentes);
+	GFPage(gump, FABRICACAO_AJUDA_ABA_MONTAGEM);
+	GFHTMLArea(gump,larguraCelula * 1,alturaBarraMenu + 40,larguraCelula * 10, alturaCelula * 8,parametros.profissao.textoMontagem);
+	GFPage(gump, FABRICACAO_AJUDA_ABA_TRATAMENTO);
+	GFHTMLArea(gump,larguraCelula * 1,alturaBarraMenu + 40,larguraCelula * 10, alturaCelula * 8,parametros.profissao.textoTratamento);
+
+	gump.cur_page := cint(parametros.pagina);
+	Print("gump.cur_page " + gump.cur_page + " parametros.pagina " +  parametros.pagina);
+	return gump;
 endfunction

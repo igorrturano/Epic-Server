@@ -17,7 +17,7 @@ const NR_MAXIMO_ESQUEMAS := 6;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-function InicializaSessaoComplexos(quem, profissaoCraftProp)
+function InicializaSessaoComplexos(profissaoCraftProp)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
@@ -75,7 +75,7 @@ function EnviaItensComplexosGump(quem,profissao)
 	var parametros := PreparaItensComplexosGump(quem, profissao);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessaoComplexos(quem, parametros.propCraft[parametros.pericia]);
+	var sessao := InicializaSessaoComplexos(parametros.propCraft[parametros.pericia]);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	//TODO Fazer opção para reparar
@@ -179,6 +179,10 @@ function EnviaItensComplexosGump(quem,profissao)
 			RT_ESCOLHA_DD_OPCOES_CPX: 
 				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
 				TratarEscolhaComponente(quem, dropdown.valorEscolhido, sessao, configRecursos);
+				break;
+			
+			RT_AJUDA_CPX: 
+				Start_Script( ":crafting:gumpAjuda", array{quem, parametros.profissao, FABRICACAO_AJUDA_ABA_MONTAGEM});
 				break;
 
 			RT_ESQUEMAS_SALVAR:
@@ -1069,13 +1073,10 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 endfunction
 
 function PegaComponentesNecessarios(objtype, receitasConfig, classe)
-	Print("receitasConfig[objtype] " + receitasConfig[objtype]);
-	Print("Typeof(objtype) " + Typeof(objtype));
 	var encaixesItem := GetConfigStringArray(receitasConfig[hex(objtype)],"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 	classe := classe ? classe : 1;
 
-	Print("encaixesItem " + encaixesItem);
 	var componentes := array;
 	foreach encaixe in encaixesItem
 		Sleepms(2);
@@ -1146,6 +1147,8 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_ESCOLHA_DD_OPCOES_CPX;
 	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
 		return RT_ESQUEMAS_SALVAR;
+	elseif(valorRetorno == COMPLEXOS_BTN_AJUDA)
+		return RT_AJUDA_CPX;
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
 	elseif(valorRetorno == 1)
