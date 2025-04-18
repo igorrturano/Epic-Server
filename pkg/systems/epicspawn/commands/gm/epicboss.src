@@ -9,6 +9,7 @@ include ":gumps:include/epicGumps";
 include ":epicspawn:epicBoss";
 include ":epicspawn:epicCombatEvents";
 include ":epicspawn:epicDeathEvents";
+
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
 const BOTAO_PAGE2 := 2;
@@ -106,6 +107,7 @@ function InitializeFormData()
     form_data.npctemplate := "goblin";
     form_data.name := "";
     form_data.color := "0";
+    form_data.tier := "0"; // Default tier
     form_data.description := "";
     form_data.trueboss := 0;
     form_data.special_ai := "";
@@ -161,6 +163,9 @@ function InitializeFormData()
         form_data.+deathevents := array{};
     endif
 
+    // Add class-related fields
+    form_data.class := "";
+
     // Verify death events are properly initialized
     print("DEBUG: Death events after initialization: " + form_data.deathevents);
 endfunction
@@ -189,7 +194,21 @@ function ExtractPageData(input, page)
                 form_data.color := color;
                 print("DEBUG: Extracted color = " + form_data.color);
             endif
-            
+
+            // Add tier extraction (new)
+            var tier := GFExtractData(input, 9);
+            if (tier != error && tier != "" && tier != "0")
+                // Validate tier range
+                tier := CInt(tier);
+                if (tier < 1)
+                    tier := 1;
+                elseif (tier > 5)
+                    tier := 5;
+                endif
+                form_data.tier := tier;
+                print("DEBUG: Extracted tier = " + form_data.tier);
+            endif
+
             var description := GFExtractData(input, 4);
             if (description != error && description != "")
                 form_data.description := description;
@@ -481,10 +500,15 @@ function ShowPage1(who, title, gump_width, gump_height)
     // Color
     GFTextLine(gump, 50, 250, 1153, "Color:");
     GFTextEntry(gump, 200, 250, 100, 20, 1150, form_data.color ? form_data.color : "0", 3);
-    
-    // Description
-    GFTextLine(gump, 50, 280, 1153, "Description:");
-    GFTextEntry(gump, 200, 280, 300, 60, 1150, form_data.description ? form_data.description : "", 4);
+
+    // Add Tier selection (new)
+    GFTextLine(gump, 50, 280, 1153, "Tier (1-5):");
+    GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.tier ? form_data.tier : "", 9);
+    GFTextLine(gump, 310, 280, 2100, "(Padrão se não especificado)");
+        
+    // Description 
+    GFTextLine(gump, 50, 310, 1153, "Description:");
+    GFTextEntry(gump, 200, 310, 300, 60, 1150, form_data.description ? form_data.description : "", 4);
     
     // True Boss checkbox
     GFCheckBox(gump, 50, 350, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
@@ -1479,16 +1503,20 @@ function ShowPage5(who, title, gump_width, gump_height)
     // Handle Dual Wield button click
     if (input[0] == 80)
         return ShowDualWieldWeapons(who, title, gump_width, gump_height);
-    endif
-    if (input[0] == 81)
+    elseif (input[0] == 81)
         return OneHandedWeapons(who, title, gump_width, gump_height);
-    endif
-    if (input[0] == 82)
+    elseif (input[0] == 82)
         return TwoHandedWeapons(who, title, gump_width, gump_height);
-    endif
-    if (input[0] == 83)
+    elseif (input[0] == 83)
         return RangedWeapons(who, title, gump_width, gump_height);
+    elseif (input[0] == 85) // Guerreiro selected
+        return ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
+    elseif (input[0] == 86) // Sabio selected
+        return ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
+    elseif (input[0] == 87) // Ladino selected
+        return ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
     endif
+
     return input;
 endfunction
 
@@ -1509,6 +1537,13 @@ function CreateBossFromGump(who, form_data)
     boss.color := CInt(form_data.color);
     boss.description := form_data.description;
     boss.trueboss := form_data.trueboss;
+    if (form_data.tier && (form_data.tier != "0" || form_data.tier != ""))
+        boss.tier := CInt(form_data.tier);
+    else 
+        boss.tier := "0";
+        // Default to 0 if no tier is specified
+        SendSysMessage(who, "No tier specified, using NPC's default tier.");
+    endif
 
     // Debug: Print form_data combat events
     SendSysMessage(who, "DEBUG: Checking form_data combat events");
@@ -1711,7 +1746,12 @@ function CreateBossFromGump(who, form_data)
             SendSysMessage(who, "Failed to add weapon to the boss.");
         endif
     endif
-    
+
+    // Set class and abilities
+    if (form_data.class)
+        SetObjProperty(npc, "subclass", form_data.class);
+    endif
+
     return 1;
 endfunction
 

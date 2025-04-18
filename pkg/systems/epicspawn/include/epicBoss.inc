@@ -3,6 +3,7 @@ use os;
 use cfgfile;
 include ":attributes:attributes";
 include ":combat:hitscripts";
+include "include/epicNPCUtils";
 
 // Creates an epic boss from a boss structure
 function CreateEpicBoss(boss, x, y, z, realm)
@@ -16,7 +17,9 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (!npc || npc == error)
         return error{"errortext" := "Failed to create boss at x " + x + " y " + y + " z " + z + ": " + npc.errortext};
     endif
-    
+    var npc_elem := NPC_GetNPCConfig(npc);
+    var tier := boss.tier != 0 ? boss.tier : npc_elem.Tier;
+    customizeNpc(npc, tier);
     // Set basic properties
     if (boss.name)
         SetName(npc, boss.name);
@@ -277,7 +280,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.flee_health)
         SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
     endif
-    
     return npc;
 endfunction
 
@@ -286,8 +288,10 @@ function CreateNpcWithPrefix(template, x, y, z, realm)
     var npc;
     
     // Check if template already has a package prefix
+
     if (template[1] == ":")
         npc := CreateNpcFromTemplate(template, x, y, z, 0, realm);
+
         if (npc && npc != error)
             return npc;
         endif
