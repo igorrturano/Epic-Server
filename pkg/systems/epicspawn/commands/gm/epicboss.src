@@ -1446,13 +1446,13 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Class type radio buttons
     GFAddButton(gump, 50, 390, 2151, 2153, 1, 85);
-    GFTextLine(gump, 80, 390, 1153, "Warrior");
+    GFTextLine(gump, 80, 390, 1153, "Guerreiro");
     
     GFAddButton(gump, 50, 420, 2151, 2153, 1, 86);
-    GFTextLine(gump, 80, 420, 1153, "Mage");
+    GFTextLine(gump, 80, 420, 1153, "Sabio");
     
     GFAddButton(gump, 50, 450, 2151, 2153, 1, 87);
-    GFTextLine(gump, 80, 450, 1153, "Ranger");
+    GFTextLine(gump, 80, 450, 1153, "Ladino");
     
     // Magic School (for mage)
     GFTextLine(gump, 50, 480, 1153, "Magic School:");
@@ -1475,6 +1475,11 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
+
+    // Handle Dual Wield button click
+    if (input[0] == 80)
+        return ShowDualWieldWeapons(who, title, gump_width, gump_height);
+    endif
     return input;
 endfunction
 

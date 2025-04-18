@@ -416,3 +416,83 @@ function GetAllOpponents(npc)
     
     return opponents;
 endfunction 
+
+function ShowDualWieldWeapons(who, title, gump_width, gump_height)
+    var gump := GFECreateGump(title, gump_width, gump_height);
+    
+    // Add navigation buttons
+    AddNavigationButtons(gump, gump_width);
+    
+    // Title
+    GFTextMid(gump, 0, 130, gump_width, 1153, "SELECT DUAL WIELD WEAPON");
+    
+    // Add a divider line
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+    
+    // Fetch dual wield weapons from itemdesc.cfg
+    var weapons := GetWeaponsByAttribute("Dual_Wield");
+    
+    // Display weapons
+    var x := 50;
+    var y := 170;
+    foreach weapon in weapons
+        // Display weapon image
+        GFTilePic(gump, x, y, weapon.objtype);
+        
+        // Display weapon name
+        GFTextLine(gump, x + 50, y + 10, 1153, weapon.name);
+        
+        // Add button to select weapon
+        GFAddButton(gump, x + 150, y + 10, 2117, 2118, 1, weapon.objtype);
+        
+        y += 50;
+        if (y > gump_height - 100)
+            y := 170;
+            x += 200;
+        endif
+    endforeach
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
+    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
+    
+    var input := GFSendGump(who, gump);
+    
+    // Handle weapon selection
+    if (input[0] > 0)
+        SetObjProperty(who, "chose_weapon", input[0]);
+        SendSysMessage(who, "Selected weapon ID: " + input[0]);
+        return ShowPage5(who, title, gump_width, gump_height);
+    endif
+    
+    return input;
+endfunction
+
+function GetWeaponsByAttribute(attribute)
+    var weapons := array{};
+    var config := ReadConfigFile(":combat:itemdesc");
+    
+    if (!config)
+        return weapons;
+    endif
+    
+    // Get all entries from the config file
+    var entries := GetConfigStringKeys(config);
+    
+    foreach entry in entries
+        var elem := FindConfigElem(config, entry);
+        if (elem)
+            // Check if it's a weapon with the desired attribute
+            if (elem.Attribute == attribute)
+                var weapon := struct{
+                    "objtype" := CInt(entry),
+                    "name" := elem.Name
+                };
+                weapons.append(weapon);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return weapons;
+endfunction
