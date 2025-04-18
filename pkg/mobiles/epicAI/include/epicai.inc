@@ -480,6 +480,17 @@ function SetupNPCEquip(who, npc_elem)
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
     endif
+    if (GetObjProperty(who, "specific_weapon"))
+        var weapon := GetObjProperty(who, "specific_weapon");
+        if (weapon)
+            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
+            // First Unequip hands
+            if (who.weapon)
+                DestroyItem(who.weapon);
+            endif
+            EquipItem(who, item);
+        endif
+    endif
     
   var montaria := Getobjproperty(who, "Montaria");
   if (!montaria)

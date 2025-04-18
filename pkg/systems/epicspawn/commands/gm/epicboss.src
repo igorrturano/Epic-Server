@@ -330,7 +330,7 @@ function ExtractPageData(input, page)
                 form_data.specific_weapon := specific_weapon;
                 print("DEBUG: Extracted specific_weapon = " + form_data.specific_weapon);
             endif
-            
+
             var magic_school := GFExtractData(input, 88);
             if (magic_school != error && magic_school != "")
                 form_data.magic_school := magic_school;
@@ -1480,6 +1480,15 @@ function ShowPage5(who, title, gump_width, gump_height)
     if (input[0] == 80)
         return ShowDualWieldWeapons(who, title, gump_width, gump_height);
     endif
+    if (input[0] == 81)
+        return OneHandedWeapons(who, title, gump_width, gump_height);
+    endif
+    if (input[0] == 82)
+        return TwoHandedWeapons(who, title, gump_width, gump_height);
+    endif
+    if (input[0] == 83)
+        return RangedWeapons(who, title, gump_width, gump_height);
+    endif
     return input;
 endfunction
 
@@ -1690,6 +1699,17 @@ function CreateBossFromGump(who, form_data)
     // Add teleport locations to boss structure
     if (form_data.teleport_locations && form_data.teleport_locations.size() > 0)
         SetObjProperty(npc, "teleport_locations", form_data.teleport_locations);
+    endif
+
+    // Add Equipment if selected
+    if (form_data.specific_weapon)
+        var weapon := form_data.specific_weapon;
+        if (weapon)
+            SetObjProperty(npc, "specific_weapon", weapon);
+            SendSysMessage(who, "Weapon added to the boss.");
+        else
+            SendSysMessage(who, "Failed to add weapon to the boss.");
+        endif
     endif
     
     return 1;

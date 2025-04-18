@@ -417,55 +417,24 @@ function GetAllOpponents(npc)
     return opponents;
 endfunction 
 
+function OneHandedWeapons(who, title, gump_width, gump_height)
+    var weapons := GetWeaponsByAttribute("One_Handed");
+    return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, "ONE-HANDED");
+endfunction
+
+function TwoHandedWeapons(who, title, gump_width, gump_height)
+    var weapons := GetWeaponsByAttribute("Two_Handed");
+    return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, "TWO-HANDED");
+endfunction
+
 function ShowDualWieldWeapons(who, title, gump_width, gump_height)
-    var gump := GFECreateGump(title, gump_width, gump_height);
-    
-    // Add navigation buttons
-    AddNavigationButtons(gump, gump_width);
-    
-    // Title
-    GFTextMid(gump, 0, 130, gump_width, 1153, "SELECT DUAL WIELD WEAPON");
-    
-    // Add a divider line
-    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
-    
-    // Fetch dual wield weapons from itemdesc.cfg
     var weapons := GetWeaponsByAttribute("Dual_Wield");
-    
-    // Display weapons
-    var x := 50;
-    var y := 170;
-    foreach weapon in weapons
-        // Display weapon image
-        GFTilePic(gump, x, y, weapon.objtype);
-        
-        // Display weapon name
-        GFTextLine(gump, x + 50, y + 10, 1153, weapon.name);
-        
-        // Add button to select weapon
-        GFAddButton(gump, x + 150, y + 10, 2117, 2118, 1, weapon.objtype);
-        
-        y += 50;
-        if (y > gump_height - 100)
-            y := 170;
-            x += 200;
-        endif
-    endforeach
-    
-    // Add Cancel button
-    GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
-    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
-    
-    var input := GFSendGump(who, gump);
-    
-    // Handle weapon selection
-    if (input[0] > 0)
-        SetObjProperty(who, "chose_weapon", input[0]);
-        SendSysMessage(who, "Selected weapon ID: " + input[0]);
-        return ShowPage5(who, title, gump_width, gump_height);
-    endif
-    
-    return input;
+    return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, "DUAL WIELD");
+endfunction
+
+function RangedWeapons(who, title, gump_width, gump_height)
+    var weapons := GetWeaponsByAttribute("Ranged");
+    return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, "RANGED");
 endfunction
 
 function GetWeaponsByAttribute(attribute)
@@ -495,4 +464,91 @@ function GetWeaponsByAttribute(attribute)
     endforeach
     
     return weapons;
+endfunction
+
+function ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, weapon_type, page := 1)
+    var gump := GFECreateGump(title, gump_width, gump_height);
+    
+    // Add navigation buttons
+    AddNavigationButtons(gump, gump_width);
+    
+    // Title
+    GFTextMid(gump, 0, 130, gump_width, 1153, "SELECT " + weapon_type + " WEAPON");
+    
+    // Add a divider line
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+    
+    // Calculate pagination
+    var items_per_page := 12; // 3 columns x 4 rows
+    var total_pages := Ceil(weapons.size() / items_per_page);
+    var start_index := (page) * items_per_page;
+    var end_index := Min(start_index + items_per_page, weapons.size());
+    
+    // Display weapons in a grid (3 columns x 4 rows)
+    var x := 50;
+    var y := 170;
+    var column := 0;
+    
+    for i := start_index to end_index
+        var weapon := weapons[i];
+        
+        // Display weapon image
+        GFTilePic(gump, x, y, weapon.objtype);
+        
+        // Display weapon name
+        GFTextLine(gump, x + 50, y + 10, 1153, weapon.name);
+        
+        // Add button to select weapon
+        GFAddButton(gump, x + 150, y + 10, 2117, 2118, 1, weapon.objtype);
+        
+        // Move to next position
+        column += 1;
+        if (column >= 3) // Move to next row after 3 items
+            column := 0;
+            x := 50;
+            y += 80;
+        else
+            x += 250; // Move to next column
+        endif
+    endfor
+    
+    // Add pagination controls at the bottom
+    var pagination_y := gump_height - 100;
+    
+    // Previous page button
+    if (page > 1)
+        GFAddButton(gump, gump_width/2 - 100, pagination_y, 2117, 2118, 1, 900);
+        GFTextLine(gump, gump_width/2 - 70, pagination_y, 1153, "Previous");
+    endif
+    
+    // Page indicator
+    GFTextMid(gump, 0, pagination_y, gump_width, 1153, "Page " + page + " of " + total_pages);
+    
+    // Next page button
+    if (page < total_pages)
+        GFAddButton(gump, gump_width/2 + 50, pagination_y, 2117, 2118, 1, 901);
+        GFTextLine(gump, gump_width/2 + 80, pagination_y, 1153, "Next");
+    endif
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
+    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
+    
+    var input := GFSendGump(who, gump);
+    
+    // Handle pagination buttons
+    if (input[0] == 900) // Previous page
+        return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, weapon_type, page - 1);
+    elseif (input[0] == 901) // Next page
+        return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, weapon_type, page + 1);
+    endif
+    
+    // Handle weapon selection
+    if (input[0] > 0 && input[0] != 900 && input[0] != 901)
+        form_data.specific_weapon := input[0];
+        SendSysMessage(who, "Selected weapon ID: " + input[0]);
+        return ShowPage5(who, title, gump_width, gump_height);
+    endif
+
+    return input;
 endfunction
