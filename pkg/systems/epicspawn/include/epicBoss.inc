@@ -656,3 +656,69 @@ function GetClassAbilities(class_name)
     
     return abilities;
 endfunction
+
+function ShowMagicSchoolSelection(who, title, gump_width, gump_height)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 400);
+    GFResizePic(gump, 15, 15, 9350, 470, 370);
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Magic School");
+    
+    // Add school descriptions with their associated abilities
+    var schools := array{
+        struct{
+            "name" := "Ahtaleloreth",
+            "desc" := "School of Elements - Base: Vínculo Elemental",
+            "color" := 1645 // Light blue
+        },
+        struct{
+            "name" := "Evocatium",
+            "desc" := "School of Pure Magic - Base: Determinacao Arcana",
+            "color" := 2100 // Purple
+        },
+        struct{
+            "name" := "Kaijin",
+            "desc" := "School of Blood - Base: Sacrificio da Carne",
+            "color" := 32 // Dark red
+        },
+        struct{
+            "name" := "Aradalore",
+            "desc" := "School of Nature - Base: Elo Natural",
+            "color" := 272 // Green
+        },
+        struct{
+            "name" := "Velkyn",
+            "desc" := "School of Shadows - Base: Danca das Sombras",
+            "color" := 902 // Dark purple
+        }
+    };
+    
+    var y_pos := 60;
+    for i := 1 to schools.size()
+        // Add selection button
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, i);
+        
+        // School name in its thematic color
+        GFTextLine(gump, 60, y_pos, schools[i].color, schools[i].name);
+        
+        // Description in normal color
+        GFTextLine(gump, 60, y_pos + 20, 2100, schools[i].desc);
+        
+        y_pos += 60;
+    endfor
+    
+    // Add Cancel button
+    GFAddButton(gump, 200, 350, 2119, 2120, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 240, 350, 33, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        return "";
+    endif
+    
+    var selected_school := schools[input[0]].name;
+    SendSysMessage(who, "Selected " + selected_school + " magic school.");
+    
+    return selected_school;
+endfunction

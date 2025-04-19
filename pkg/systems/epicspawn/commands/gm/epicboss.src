@@ -1466,7 +1466,8 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Magic School (for mage)
     GFTextLine(gump, 50, 480, 1153, "Magic School:");
-    GFTextEntry(gump, 250, 480, 200, 20, 1150, form_data.magic_school ? form_data.magic_school : "", 88);
+    GFAddButton(gump, 200, 480, 2117, 2118, 1, 88);
+    GFTextLine(gump, 230, 480, 1153, form_data.magic_school ? form_data.magic_school : "Select School");    
     
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
@@ -1501,6 +1502,13 @@ function ShowPage5(who, title, gump_width, gump_height)
         form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
     elseif (input[0] == 87) // Ladino selected
         form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
+    elseif (input[0] == 88) // Magic School button
+        var selected_school := ShowMagicSchoolSelection(who, title, gump_width, gump_height);
+        if (selected_school != "")
+            form_data.magic_school := selected_school;
+            SendSysMessage(who, "Selected magic school: " + selected_school);
+        endif
+        return ShowPage5(who, title, gump_width, gump_height);
     endif
 
     return input;
@@ -1739,6 +1747,16 @@ function CreateBossFromGump(who, form_data)
     if (form_data.class)
         boss.class := form_data.class;
     endif   
+    
+    // In CreateBossFromGump function, add:
+    if (form_data.magic_school)
+        boss.spell_school := form_data.magic_school;
+    endif
+
+    // And when creating the NPC:
+    if (boss.spell_school)
+        SetObjProperty(npc, "SpellSchool", boss.spell_school);
+    endif
     return 1;
 endfunction
 

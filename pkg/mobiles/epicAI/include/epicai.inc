@@ -362,7 +362,7 @@ endfunction
 
 function SetupWizardClass(mobile, npc_elem)
     // First try to get school from config
-    var spellschool := GetConfigString(npc_elem, "SpellSchool");
+    var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
     
     // If no school defined in config, check habs
