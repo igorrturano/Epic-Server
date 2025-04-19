@@ -984,3 +984,40 @@ function ShowTargetSelectionMenu(who, byref form_data)
     SendSysMessage(who, "Target selection set to: " + options[input[0]].name);
     return 1;
 endfunction
+
+function ShowTargetPriorityMenu(who, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 300);
+    GFResizePic(gump, 15, 15, 9350, 370, 270);
+    
+    GFTextMid(gump, 0, 25, 400, 1153, "Select Target Priority");
+    
+    var priorities := array{
+        struct{ "name" := "Normal", "desc" := "30% de chance de mudar de alvo" },
+        struct{ "name" := "Aggressive", "desc" := "50% de chance de mudar de alvo" },
+        struct{ "name" := "Defensive", "desc" := "20% de chance de mudar de alvo" },
+        struct{ "name" := "Focus", "desc" := "5% de chance de mudar de alvo" }
+    };
+    
+    var y_pos := 60;
+    foreach priority in priorities
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, _priority_iter);
+        GFTextLine(gump, 60, y_pos, 1153, priority.name);
+        GFTooltipText(gump, priority.desc);
+        y_pos += 30;
+    endforeach
+    
+    // Cancel button
+    GFAddButton(gump, 150, 240, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 185, 240, 33, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (!input[0] || input[0] == 999)
+        return 0;
+    endif
+    
+    form_data.target_priority := priorities[input[0]].name;
+    
+    return 1;
+endfunction

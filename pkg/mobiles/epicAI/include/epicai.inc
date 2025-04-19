@@ -939,13 +939,22 @@ function findAnotherPath()
 endfunction
 
 function CheckForIdealTarget()
-   // If we already have an opponent, stick with them most of the time
+   // Get the target priority
+   var target_priority := GetObjProperty(me, "target_priority");
+   var switch_chance := 70; // Default 10% chance to switch
+   case (target_priority)
+      "Aggressive": switch_chance := 50;  // 15% chance to switch
+      "Defensive":  switch_chance := 85;   // 5% chance to switch
+      "Focus":      switch_chance := 95;   // 2% chance to switch
+   endcase
+   
+   // If we already have an opponent, check if we should stick with them
    if (me.opponent && CanFight(me, me.opponent))
-      // Only 5% chance to even consider switching targets
-      if (RandomInt(100) < 10)
+      if (RandomInt(100) < switch_chance)
          return me.opponent;
       endif
    endif
+
    var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
    if (potential_opponents.size() < 1)
       return 0;

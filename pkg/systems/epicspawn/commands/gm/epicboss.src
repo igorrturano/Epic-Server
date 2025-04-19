@@ -138,7 +138,7 @@ function InitializeFormData()
     form_data.teleport_health := "25";
     form_data.aggression := "High";
     form_data.flee_health := "0";
-    form_data.target_selection := "Highest Damage";
+    form_data.target_selection := "";
     
     // Equipment
     form_data.weapon_type := "";
@@ -1337,20 +1337,20 @@ function ShowPage4(who, title, gump_width, gump_height)
     // AI Settings section
     GFTextLine(gump, 550, 160, 1153, "AI Settings:");
     
-    // Aggression Level
-    GFTextLine(gump, 550, 190, 1153, "Aggression Level:");
+    // Replace Aggression Level with Target Priority
+    GFTextLine(gump, 550, 190, 1153, "Target Priority:");
     GFAddButton(gump, 680, 190, 2103, 2104, 1, 75);
-    GFTextLine(gump, 710, 190, 1153, form_data.aggression ? form_data.aggression : "High");
-    
+    GFTextLine(gump, 710, 190, 1153, form_data.target_priority ? form_data.target_priority : "Normal");
+
     // Flee Level
     GFTextLine(gump, 550, 220, 1153, "Flee When Health Below:");
     GFTextEntry(gump, 730, 220, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "0", 76);
     GFTextLine(gump, 840, 220, 1153, "%");
     
     // Target Selection
-    GFTextLine(gump, 550, 250, 1153, "Target Selection:");
+    GFTextLine(gump, 550, 250, 1153, "Alvo favorito:");
     GFAddButton(gump, 680, 250, 2103, 2104, 1, 77);
-    GFTextLine(gump, 710, 250, 1153, form_data.target_selection ? form_data.target_selection : "Highest Damage");
+    GFTextLine(gump, 710, 250, 1153, form_data.target_selection ? form_data.target_selection : "");
     
     // Add a divider line
     GFResizePic(gump, 40, 290, 3000, gump_width - 80, 2);
@@ -1405,6 +1405,9 @@ function ShowPage4(who, title, gump_width, gump_height)
         return ShowPage4(who, title, gump_width, gump_height);
     elseif (input[0] == 77) // Target Selection button
         ShowTargetSelectionMenu(who, form_data);
+        return ShowPage4(who, title, gump_width, gump_height);
+    elseif (input[0] == 75) // Target Priority button
+        ShowTargetPriorityMenu(who, form_data);
         return ShowPage4(who, title, gump_width, gump_height);
     endif
 
@@ -1743,6 +1746,10 @@ function CreateBossFromGump(who, form_data)
         boss.preferred_target := form_data.preferred_target;
     endif
 
+    if (form_data.target_priority)
+        boss.target_priority := form_data.target_priority;
+    endif
+
     // Create a test boss to show the player
     var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
     if (npc == error)
@@ -1752,6 +1759,10 @@ function CreateBossFromGump(who, form_data)
 
     if (boss.preferred_target)
         SetObjProperty(npc, "preferred_target", boss.preferred_target);
+    endif
+
+    if (boss.target_priority)
+        SetObjProperty(npc, "target_priority", boss.target_priority);
     endif
     
     // Create a spawner for this boss
