@@ -575,7 +575,7 @@ function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
     
     // Get abilities for the selected class
     var abilities := GetClassAbilities(class_name);
-    var ability_map := dictionary{}; // Map to store button ID -> ability mapping
+    var ability_map := dictionary{}; // Map to store button ID := ability mapping
     
     // Display abilities in a list format
     var y := 170;
@@ -787,5 +787,158 @@ function HandleAddLootItem(who, byref form_data)
     
     SendSysMessage(who, "Added " + targ.desc + " with " + drop_chance + "% drop chance to generate on " + 
                   (loot_item.on_death ? "death" : "initialization") + ".", color := 66);
+    return 1;
+endfunction
+
+function GetAvailableCustomAbilities()
+    var abilities := dictionary{
+        "WebWrap" := struct{
+            "name" := "Web Wrap",
+            "description" := "Allows the NPC to wrap targets in web",
+            "method" := "CanDoWebWrap"
+        },
+        "SpitAcid" := struct{
+            "name" := "Spit Acid",
+            "description" := "Allows the NPC to spit acid at targets",
+            "method" := "canSpitAcid"
+        },
+        "TongueGrab" := struct{
+            "name" := "Tongue Grab",
+            "description" := "Allows the NPC to grab targets with tongue",
+            "method" := "CanTongueGrab"
+        },
+        "Charge" := struct{
+            "name" := "Charge",
+            "description" := "Allows the NPC to charge at targets",
+            "method" := "canCharge"
+        },
+        "Ambush" := struct{
+            "name" := "Ambush",
+            "description" := "Allows the NPC to ambush targets",
+            "method" := "CanAmbush"
+        },
+        "Confusion" := struct{
+            "name" := "Confusion",
+            "description" := "Allows the NPC to confuse targets",
+            "method" := "canDoConfusion"
+        },
+        "WebShoot" := struct{
+            "name" := "Web Shoot",
+            "description" := "Allows the NPC to shoot webs at targets",
+            "method" := "CanShootWeb"
+        },
+        "PoisonBite" := struct{
+            "name" := "Poison Bite",
+            "description" := "Allows the NPC to poison targets with bite",
+            "method" := "CanPoisonBite"
+        },
+        "ClimbWall" := struct{
+            "name" := "Climb Wall",
+            "description" := "Allows the NPC to climb walls",
+            "method" := "CanClimbWall"
+        },
+        "LayEggSac" := struct{
+            "name" := "Lay Egg Sac",
+            "description" := "Allows the NPC to lay egg sacs",
+            "method" := "CanLayEggSac"
+        },
+        "Charm" := struct{
+            "name" := "Charm",
+            "description" := "Allows the NPC to charm targets",
+            "method" := "CanCharm"
+        },
+        "Bite" := struct{
+            "name" := "Bite",
+            "description" := "Allows the NPC to bite targets",
+            "method" := "canBite"
+        },
+        "Throw" := struct{
+            "name" := "Throw",
+            "description" := "Allows the NPC to throw objects or weapons",
+            "method" := "canThrow"
+        },
+            "HiveMind" := struct{
+            "name" := "Hive Mind",
+            "description" := "Allows the NPC to share information with others of its kind",
+            "method" := "hasHiveMind"
+        },
+        "TunnelTactics" := struct{
+            "name" := "Tunnel Tactics",
+            "description" := "Allows the NPC to use special tactics in tunnels",
+            "method" := "hasTunnelTactics"
+        },
+        "Rage" := struct{
+            "name" := "Rage",
+            "description" := "Allows the NPC to enter a rage state",
+            "method" := "hasRage"
+        }
+    };
+    
+    return abilities;
+endfunction
+
+function HandleAddCustomAbility(who, byref form_data)
+    var abilities := GetAvailableCustomAbilities();
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450);
+    GFResizePic(gump, 15, 15, 9350, 470, 420);
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Select Custom Behavior");
+    
+    var y_pos := 60;
+    var btn_id := 1;
+    var ability_map := dictionary{}; // To track button-to-ability mapping
+    
+    // Store ability keys in an array to maintain order
+    var ability_keys := array{};
+    foreach key in (abilities.keys())
+        ability_keys.append(key);
+        sleepms(2);
+    endforeach
+    
+    foreach ability in ability_keys
+        ability_map[btn_id] := ability;   // Map button to ability
+        
+        // Add button and display the proper ability name
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, btn_id);
+        GFTextLine(gump, 60, y_pos, 1153, ability.name);
+        GFTooltipText(gump, ability.description);
+        
+        y_pos += 25;
+        btn_id += 1;
+        sleepms(2);
+    endforeach
+
+    // Add Cancel button
+    GFAddButton(gump, 30, y_pos + 20, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 60, y_pos + 20, 33, "Cancel");
+    
+    var result := GFSendGump(who, gump);
+    
+    if (result[0] == 999 || !result[0])
+        return 0;
+    endif
+    
+    // Get selected ability name using the ability map
+    var selected_ability := ability_map[result[0]];
+   
+    if (!selected_ability)
+        return 0;
+    endif
+    
+    // Initialize custom abilities array if needed
+    if (!form_data.custom_abilities)
+        form_data.+custom_abilities := array{};
+    endif
+
+    // Add ability if not already present
+    if (!(selected_ability in form_data.custom_abilities))
+        form_data.custom_abilities.append(selected_ability);
+        SendSysMessage(who, "Added " + abilities[selected_ability].name + " ability.");
+    else
+        SendSysMessage(who, "This ability is already added.");
+    endif
+    
     return 1;
 endfunction

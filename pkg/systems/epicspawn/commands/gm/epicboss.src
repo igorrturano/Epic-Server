@@ -1355,18 +1355,19 @@ function ShowPage4(who, title, gump_width, gump_height)
     // Add a divider line
     GFResizePic(gump, 40, 290, 3000, gump_width - 80, 2);
     
-    // Ability Conditions section - MOVED below AI Settings
-    GFTextLine(gump, 550, 300, 1153, "Ability Conditions:");
-    
-    // Examples of conditions
-    GFTextLine(gump, 580, 330, 1153, "- Use ability when health below X%");
-    GFTextLine(gump, 580, 350, 1153, "- Use ability when X players are nearby");
-    GFTextLine(gump, 580, 370, 1153, "- Use ability every X seconds");
-    GFAddButton(gump, 680, 390, 2103, 2104, 1, 74);
-    GFTextLine(gump, 710, 390, 1153, "Add Ability Condition");
-    
- 
-    
+    // Special abilities section - Fixed position and better aligned with the rest of the content
+    GFTextLine(gump, 550, 300, 1153, "Add Custom Behavior:");
+    GFAddButton(gump, 680, 300, 2103, 2104, 1, 74);
+
+    // Display existing custom abilities
+    y_pos := 330;
+    if (form_data.custom_abilities && form_data.custom_abilities.size() > 0)
+        foreach ability in (form_data.custom_abilities)
+            GFTextLine(gump, 580, y_pos, 1153, "- " + ability.name);
+            y_pos += 20;
+        endforeach
+    endif
+
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
@@ -1398,6 +1399,9 @@ function ShowPage4(who, title, gump_width, gump_height)
     elseif (input[0] == 78) // Clear Teleport Locations - changed button ID
         form_data.teleport_locations := array{};
         SendSysMessage(who, "Teleport locations cleared.", color := 33);
+        return ShowPage4(who, title, gump_width, gump_height);
+    elseif (input[0] == 74) // Add Custom Ability button
+        HandleAddCustomAbility(who, form_data);
         return ShowPage4(who, title, gump_width, gump_height);
     endif
 
@@ -1791,10 +1795,14 @@ function CreateBossFromGump(who, form_data)
             SendSysMessage(who, "Failed to add weapon to the boss.");
         endif
     endif
-    
+
     // And when creating the NPC:
     if (boss.spell_school)
         SetObjProperty(npc, "SpellSchool", boss.spell_school);
+    endif
+
+    if (form_data.custom_abilities && form_data.custom_abilities.size() > 0)
+        SetObjProperty(npc, "CustomAbilities", form_data.custom_abilities);
     endif
 
     return 1;
