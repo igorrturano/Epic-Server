@@ -280,6 +280,10 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (boss.flee_health)
         SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
     endif
+    if (boss.class)
+        SetObjProperty(npc, "subclass", boss.class);
+    endif
+
     return npc;
 endfunction
 
@@ -555,4 +559,100 @@ function ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons,
     endif
 
     return input;
+endfunction
+
+function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
+    var gump := GFECreateGump(title, gump_width, gump_height);
+    
+    // Add navigation buttons
+    AddNavigationButtons(gump, gump_width);
+    
+    // Title
+    GFTextMid(gump, 0, 130, gump_width, 1153, "SELECT " + class_name + " LEVEL 4 ABILITY");
+    
+    // Add a divider line
+    GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+    
+    // Get abilities for the selected class
+    var abilities := GetClassAbilities(class_name);
+    var ability_map := dictionary{}; // Map to store button ID -> ability mapping
+    
+    // Display abilities in a list format
+    var y := 170;
+    var button_id := 100;
+
+    foreach ability in abilities
+        // Convert button_id to string for dictionary key
+        var key := CStr(button_id);
+        print("DEBUG: Mapping button " + key + " to ability: " + ability.name);
+        ability_map[key] := ability;
+        
+        // Add the ability name with a button
+        GFAddButton(gump, 50, y, 2117, 2118, 1, button_id);
+        GFTextLine(gump, 80, y, 1153, ability.name);
+        
+        // Add tooltip with description
+        if (ability.desc)
+            GFTooltipText(gump, ability.desc);
+        endif
+        
+        y += 30;
+        button_id += 1;
+    endforeach
+
+    
+    // Add Cancel button
+    GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
+    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
+    
+    var input := GFSendGump(who, gump);
+    
+    // Handle ability selection
+    if (input[0] >= 100)
+        print("DEBUG: Input received: " + input[0]);
+        var key := CStr(input[0]);
+        print("DEBUG: Looking up ability with key: " + key);
+        print("DEBUG: Available keys in map: " + ability_map.keys());
+        
+        var selected_ability := ability_map[key];
+        if (selected_ability)
+            print("DEBUG: Selected ability: " + selected_ability.name);
+            return selected_ability.name;
+        else
+            print("DEBUG: No ability found for key: " + key);
+        endif
+    endif
+
+endfunction
+
+function GetClassAbilities(class_name)
+    var abilities := array{};
+    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+        
+    foreach hab in (GetConfigStringKeys(habcfg))
+        var elem := FindConfigElem(habcfg, hab);
+        var classe := GetConfigString(elem, "classe");
+        
+        if (classe)
+            var params := SplitWords(classe);
+            var hab_class := params[1];
+            var hab_level := CInt(params[2]);
+                      
+            // Only get level 4 abilities for the selected class
+            if (hab_class == class_name && hab_level == 2)
+                var ability := struct{
+                    "name" := GetConfigString(elem, "nome"),
+                    "desc" := GetConfigString(elem, "desc")
+                };
+                // Debug when an ability is actually added
+                print("DEBUG: ADDING ability: " + ability.name + 
+                      " | Class: " + hab_class + 
+                      " | Level: " + hab_level);
+                abilities.append(ability);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    return abilities;
 endfunction

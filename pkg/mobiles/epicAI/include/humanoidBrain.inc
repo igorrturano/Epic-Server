@@ -446,7 +446,8 @@ function GetHabsByLevel(npc, nivel)
 
   // At level 4+, get subclass-specific abilities respecting prerequisites
   if (nivel >= 4)
-    var progression := GetClassProgression(habcfg, 0);
+    var subclass := GetObjProperty(npc, "subclass");
+    var progression := GetClassProgression(habcfg, subclass);
     foreach hab in progression
       var elem := FindConfigElem(habcfg, hab);
       var classe := GetConfigString(elem, "classe"); 
@@ -510,7 +511,6 @@ function GetClassProgression(habcfg, subclass)
             base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
     endif
-
     // Only proceed if we have a valid base ability
     if (base_hab)
         // Start with the base ability
@@ -528,7 +528,6 @@ function GetClassProgression(habcfg, subclass)
             current := progression[progression.size()];
         endwhile
     endif
-
     return progression;
 endfunction
 

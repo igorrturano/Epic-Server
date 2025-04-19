@@ -382,21 +382,7 @@ function ExtractPageData(input, page)
                 form_data.weapon_type := "Ranged";
                 print("DEBUG: Set weapon_type = Ranged");
             endif
-            
-            if (input[85])
-                form_data.class := "Warrior";
-                print("DEBUG: Set class = Warrior");
-            endif
-            
-            if (input[86])
-                form_data.class := "Mage";
-                print("DEBUG: Set class = Mage");
-            endif
-            
-            if (input[87])
-                form_data.class := "Ranger";
-                print("DEBUG: Set class = Ranger");
-            endif
+        
             break;
     endcase
 endfunction
@@ -1499,7 +1485,7 @@ function ShowPage5(who, title, gump_width, gump_height)
     
     // Send the gump to the player
     var input := GFSendGump(who, gump);
-
+ 
     // Handle Dual Wield button click
     if (input[0] == 80)
         return ShowDualWieldWeapons(who, title, gump_width, gump_height);
@@ -1510,11 +1496,11 @@ function ShowPage5(who, title, gump_width, gump_height)
     elseif (input[0] == 83)
         return RangedWeapons(who, title, gump_width, gump_height);
     elseif (input[0] == 85) // Guerreiro selected
-        return ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
+        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
     elseif (input[0] == 86) // Sabio selected
-        return ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
+        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
     elseif (input[0] == 87) // Ladino selected
-        return ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
+        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
     endif
 
     return input;
@@ -1684,9 +1670,11 @@ function CreateBossFromGump(who, form_data)
 
     // Movement
     boss.flee_health := CInt(form_data.flee_health);
-
     SendSysMessage(who, "Creating boss...");
-    
+
+    if (form_data.class && form_data.class != "")
+        boss.class := form_data.class;
+    endif
     // Create a test boss to show the player
     var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
     if (npc == error)
@@ -1749,9 +1737,8 @@ function CreateBossFromGump(who, form_data)
 
     // Set class and abilities
     if (form_data.class)
-        SetObjProperty(npc, "subclass", form_data.class);
-    endif
-
+        boss.class := form_data.class;
+    endif   
     return 1;
 endfunction
 
