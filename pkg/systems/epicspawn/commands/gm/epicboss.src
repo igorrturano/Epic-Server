@@ -1443,10 +1443,19 @@ function ShowPage5(who, title, gump_width, gump_height)
     GFTextLine(gump, 550, 160, 1153, "Loot Items:");
     GFAddButton(gump, 750, 160, 2103, 2104, 1, 90);
     GFTextLine(gump, 780, 160, 1153, "Add Loot Item");
-    
-    // Loot chance
-    GFTextLine(gump, 550, 190, 1153, "Default Drop Chance (%):");
-    GFTextEntry(gump, 750, 190, 100, 20, 1150, form_data.drop_chance ? form_data.drop_chance : "25", 91);
+    // Display configured loot items
+    var loot_y := 190;
+    if (form_data.loot && form_data.loot.size() > 0)
+        Print("DEBUG: Creating boss with following loot:");
+
+        foreach item in (form_data.loot)
+            Print("DEBUG: Item: " + item.name + " Drop on death: " + item.on_death + " Chance: " + item.drop_chance);
+            GFTextLine(gump, 580, loot_y, 1153, "- " + item.name + " (" + item.drop_chance + "%)");
+            // Add delete button for each item
+            GFAddButton(gump, 550, loot_y, 4017, 4019, 1, 91 + _item_iter);
+            loot_y += 20;
+        endforeach
+    endif
     
     // Add a divider line
     GFResizePic(gump, 40, 350, 3000, gump_width - 80, 2);
@@ -1468,7 +1477,7 @@ function ShowPage5(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 480, 1153, "Magic School:");
     GFAddButton(gump, 200, 480, 2117, 2118, 1, 88);
     GFTextLine(gump, 230, 480, 1153, form_data.magic_school ? form_data.magic_school : "Select School");    
-    
+
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
     
@@ -1508,6 +1517,15 @@ function ShowPage5(who, title, gump_width, gump_height)
             form_data.magic_school := selected_school;
             SendSysMessage(who, "Selected magic school: " + selected_school);
         endif
+        return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 90) // Add Loot Item button
+        HandleAddLootItem(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
+    // Handle delete loot item buttons
+    elseif (input[0] >= 91 && input[0] <= 91 + form_data.loot.size())
+        var index := input[0] - 91;
+        form_data.loot.erase(index);
+        SendSysMessage(who, "Loot item removed.");
         return ShowPage5(who, title, gump_width, gump_height);
     endif
 
@@ -1683,6 +1701,37 @@ function CreateBossFromGump(who, form_data)
     if (form_data.class && form_data.class != "")
         boss.class := form_data.class;
     endif
+
+    Print("DEBUG: Transferring loot data to boss structure");
+    if (form_data.loot && form_data.loot.size() > 0)
+        Print("DEBUG: Found " + form_data.loot.size() + " loot items to transfer");
+        boss.+loot := array{};  // Ensure loot array exists in boss struct
+        
+        foreach item in (form_data.loot)
+            Print("DEBUG: Processing loot item: " + item.name);
+            // Create clean loot item structure
+            var loot_item := struct{
+                "objtype" := item.objtype,
+                "name" := item.name,
+                "color" := item.color,
+                "drop_chance" := CInt(item.drop_chance),
+                "on_death" := item.on_death
+            };
+            boss.loot.append(loot_item);
+            Print("DEBUG: Added loot item to boss.loot");
+        endforeach
+    endif
+
+    // Set class and abilities
+    if (form_data.class)
+        boss.class := form_data.class;
+    endif   
+    
+    // In CreateBossFromGump function, add:
+    if (form_data.magic_school)
+        boss.spell_school := form_data.magic_school;
+    endif
+
     // Create a test boss to show the player
     var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
     if (npc == error)
@@ -1742,21 +1791,12 @@ function CreateBossFromGump(who, form_data)
             SendSysMessage(who, "Failed to add weapon to the boss.");
         endif
     endif
-
-    // Set class and abilities
-    if (form_data.class)
-        boss.class := form_data.class;
-    endif   
     
-    // In CreateBossFromGump function, add:
-    if (form_data.magic_school)
-        boss.spell_school := form_data.magic_school;
-    endif
-
     // And when creating the NPC:
     if (boss.spell_school)
         SetObjProperty(npc, "SpellSchool", boss.spell_school);
     endif
+
     return 1;
 endfunction
 

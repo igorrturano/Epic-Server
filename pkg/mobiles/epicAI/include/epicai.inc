@@ -36,6 +36,11 @@ function InitializeEpicNPC(mobile)
         Loot_Generate(mobile.backpack, loot);
     endif
 
+    var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
+    if (boss_struct)
+        HandleInitializationLoot(mobile, boss_struct);
+    endif
+
     var throwItem := CInt(npc_elem.throwItem);
     if (throwItem != error)
         SetObjProperty(mobile, "throwItem", throwItem);
@@ -100,6 +105,8 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
+
+
 endfunction
 
 function SetupItemsForSpecificClasses(mobile, npc_elem)
@@ -1982,4 +1989,50 @@ function ShouldFlee(me)
         endif
     endif
     return 0;
+endfunction
+
+function HandleInitializationLoot(mobile, boss_struct)
+    Print("DEBUG: HandleInitializationLoot called for " + mobile.name);
+    
+    if (!boss_struct)
+        Print("DEBUG: No boss_struct found");
+        return 0;
+    endif
+    
+    if (!boss_struct.loot || boss_struct.loot.size() < 1)
+        Print("DEBUG: No loot array found or empty");
+        return 0;
+    endif
+
+    Print("DEBUG: Found " + boss_struct.loot.size() + " loot items");
+    
+    foreach loot_item in (boss_struct.loot)
+        Print("DEBUG: Processing loot item: " + loot_item.name);
+        Print("DEBUG: on_death value: " + loot_item.on_death);
+        
+        if (!loot_item.on_death) // Only process initialization items
+            var roll := RandomInt(100);
+            Print("DEBUG: Roll " + roll + " vs drop_chance " + loot_item.drop_chance);
+            
+            if (roll < loot_item.drop_chance)
+                Print("DEBUG: Creating item " + loot_item.objtype);
+                var item := CreateItemInBackpack(mobile, loot_item.objtype, 1);
+                if (item)
+                    Print("DEBUG: Item created successfully");
+                    if (loot_item.color)
+                        item.color := loot_item.color;
+                    endif
+                    if (loot_item.name)
+                        SetName(item, loot_item.name);
+                    endif
+                    item.movable := 1;
+                else
+                    Print("DEBUG: Failed to create item");
+                endif
+            endif
+        endif
+        sleepms(2);
+    endforeach
+
+    return 1;
 endfunction

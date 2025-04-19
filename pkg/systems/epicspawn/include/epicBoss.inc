@@ -722,3 +722,70 @@ function ShowMagicSchoolSelection(who, title, gump_width, gump_height)
     
     return selected_school;
 endfunction
+
+// Add this new function to handle loot selection and configuration
+function HandleAddLootItem(who, byref form_data)
+    SendSysMessage(who, "Target the item you want to add as loot.", color := 33);
+    var targ := Target(who);
+    
+    if (!targ || !targ.IsA(POLCLASS_ITEM))
+        SendSysMessage(who, "Cancelled or invalid target.", color := 33);
+        return 0;
+    endif
+    
+    // Create drop chance selection gump
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 300);
+    GFResizePic(gump, 15, 15, 9350, 370, 270);
+    
+    GFTextMid(gump, 0, 25, 400, 1153, "Set Loot Details");
+    GFTextLine(gump, 50, 60, 1153, "Item: " + targ.desc);
+    
+    // Add drop chance entry
+    GFTextLine(gump, 50, 90, 1153, "Drop chance (1-100%):");
+    GFTextEntry(gump, 50, 120, 100, 20, 1153, "25", 1);
+    
+    // Simplified death option - just a checkbox
+    GFCheckBox(gump, 50, 160, 2510, 2511, 0, 2);
+    GFTextLine(gump, 80, 160, 1153, "Generate on death only");
+    
+    // Add Create and Cancel buttons
+    GFAddButton(gump, 50, 250, 2128, 2129, 1, 100);
+    GFTextLine(gump, 90, 250, 33, "Add Item");
+    
+    GFAddButton(gump, 200, 250, 2119, 2120, 1, 0);
+    GFTextLine(gump, 240, 250, 33, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    if (!input[0])
+        return 0;
+    endif
+    
+    var drop_chance := CInt(GFExtractData(input, 1));
+    if (!drop_chance || drop_chance < 1 || drop_chance > 100)
+        SendSysMessage(who, "Invalid drop chance. Must be between 1 and 100.", color := 33);
+        return 0;
+    endif
+    
+    // Create loot item structure
+    var loot_item := struct{
+        "objtype" := targ.objtype,
+        "name" := targ.desc,
+        "color" := targ.color,
+        "drop_chance" := drop_chance,
+        "on_death" := input[2] ? 1 : 0  // If checkbox is checked, it's a death drop
+    };
+    
+    Print("DEBUG: Creating loot item with on_death = " + loot_item.on_death);
+    
+    // Initialize loot array if it doesn't exist
+    if (!form_data.loot)
+        form_data.+loot := array{};
+    endif
+    
+    form_data.loot.append(loot_item);
+    
+    SendSysMessage(who, "Added " + targ.desc + " with " + drop_chance + "% drop chance to generate on " + 
+                  (loot_item.on_death ? "death" : "initialization") + ".", color := 66);
+    return 1;
+endfunction
