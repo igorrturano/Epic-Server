@@ -1403,6 +1403,9 @@ function ShowPage4(who, title, gump_width, gump_height)
     elseif (input[0] == 74) // Add Custom Ability button
         HandleAddCustomAbility(who, form_data);
         return ShowPage4(who, title, gump_width, gump_height);
+    elseif (input[0] == 77) // Target Selection button
+        ShowTargetSelectionMenu(who, form_data);
+        return ShowPage4(who, title, gump_width, gump_height);
     endif
 
     return input;
@@ -1736,11 +1739,19 @@ function CreateBossFromGump(who, form_data)
         boss.spell_school := form_data.magic_school;
     endif
 
+   if (form_data.preferred_target)
+        boss.preferred_target := form_data.preferred_target;
+    endif
+
     // Create a test boss to show the player
     var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
     if (npc == error)
         SendSysMessage(who, "Error creating boss: " + npc.errortext);
         return 0;
+    endif
+
+    if (boss.preferred_target)
+        SetObjProperty(npc, "preferred_target", boss.preferred_target);
     endif
     
     // Create a spawner for this boss

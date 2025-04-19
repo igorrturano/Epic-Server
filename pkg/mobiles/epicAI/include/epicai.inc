@@ -942,16 +942,14 @@ function CheckForIdealTarget()
    // If we already have an opponent, stick with them most of the time
    if (me.opponent && CanFight(me, me.opponent))
       // Only 5% chance to even consider switching targets
-      if (RandomInt(100) < 95)
+      if (RandomInt(100) < 10)
          return me.opponent;
       endif
    endif
-
-   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL);
+   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
    if (potential_opponents.size() < 1)
       return 0;
    endif
-
    var best_opponent := struct{
       "mobile" := 0,
       "priority" := -1
@@ -996,6 +994,23 @@ function CheckForIdealTarget()
       var dist := Distance(me, opponent);
       if (dist <= 4)
          priority += 1;
+      endif
+
+      // Check for preferred target types
+      var preferred_target := GetObjProperty(me, "preferred_target");
+      if (preferred_target)
+          case (preferred_target)
+          "Ranged": if (opponent_is_ranged) priority += 4; endif
+          "Melee": if (!opponent_is_ranged) priority += 4; endif
+          "Guerreiro": if (opponent_class == GUERREIRO) priority += 4; endif
+          "Ladino": if (opponent_class == LADINO) priority += 4; endif
+          "Mago": if (opponent_class == SABIO) priority += 4; endif
+          "Pouca vida": 
+              var hp_percent := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS)) * 100;
+              if (hp_percent <= 50) 
+                  priority += 3;
+              endif
+          endcase
       endif
 
       // Check if this is a better opponent

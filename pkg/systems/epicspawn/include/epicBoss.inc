@@ -942,3 +942,45 @@ function HandleAddCustomAbility(who, byref form_data)
     
     return 1;
 endfunction
+
+function ShowTargetSelectionMenu(who, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 450);
+    GFResizePic(gump, 15, 15, 9350, 370, 420);
+    
+    GFTextMid(gump, 0, 25, 400, 1153, "Target Selection Strategy");
+    
+    var y_pos := 60;
+    var options := array{
+        struct{ "name" := "Ranged", "desc" := "Prioritizes ranged attackers" },
+        struct{ "name" := "Melee", "desc" := "Prioritizes melee attackers" },
+        struct{ "name" := "Guerreiro", "desc" := "Prioritizes warrior class" },
+        struct{ "name" := "Ladino", "desc" := "Prioritizes rogue class" },
+        struct{ "name" := "Mago", "desc" := "Prioritizes mage class" },
+        struct{ "name" := "Pouca vida", "desc" := "Prioritizes targets below 50% health" }    };
+    
+    foreach option in options
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, _option_iter);
+        GFTextLine(gump, 60, y_pos, 1153, option.name);
+        GFTooltipText(gump, option.desc);
+        y_pos += 30;
+    endforeach
+    
+    // Cancel button
+    GFAddButton(gump, 150, 380, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 185, 380, 33, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (!input[0] || input[0] == 999)
+        SendSysMessage(who, "Cancelled target selection.");
+        return 0;
+    endif
+    
+    // Save selection to form_data
+    form_data.target_selection := options[input[0]].name;
+    form_data.preferred_target := options[input[0]].name;
+    
+    SendSysMessage(who, "Target selection set to: " + options[input[0]].name);
+    return 1;
+endfunction
