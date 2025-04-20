@@ -28,6 +28,7 @@ include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
 include ":epicspawn:epicBoss"; 
+include ":epicspawn:epicBoss"; 
 
 
 //include ":spawnnet:spawnnet";
