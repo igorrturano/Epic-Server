@@ -64,8 +64,6 @@ program use_SmithTool(who, tool)
 endprogram
 
 function makeBlacksmithItems(who, what, amt, tool )
-
-
 	if(!what)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return 0;
