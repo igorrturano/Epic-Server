@@ -79,7 +79,7 @@ program SpellScript(params)
 	var numbersummons := Cint(GetObjProperty(who, "NecroSummons"));
 	SetObjProperty(who, "NecroSummons", (numbersummons + 1));
 
-	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)));
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)));
 
 	SendSysMessageEx(who, "Voce teve sucesso invocar a montaria nefasta.", SSM_INFO);
 	

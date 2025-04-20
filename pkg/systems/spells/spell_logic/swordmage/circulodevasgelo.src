@@ -24,7 +24,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var time := GetSpellDuration( AP_GetSkill(who, MAGICLORE) );
+	var time := GetSpellDuration( AP_GetSkill(who, ARCANA) );
 	
 	if (targ.isA(POLCLASS_WEAPON))
 
@@ -38,7 +38,7 @@ program SpellScript(params)
 	        return 0;
         endif        
 
-		var duration := Cint(AP_GetSkill(who, MAGICLORE)) / 2 + 10;
+		var duration := Cint(AP_GetSkill(who, ARCANA)) / 2 + 10;
 		SetCooldown(targ, "circulodevas", duration);
 
         	PlaySoundEffect(targ, SFX_BLESS);

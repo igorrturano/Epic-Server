@@ -1,0 +1,398 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/client";
+include "include/say";
+include ":gumps:gumps_ex";
+include ":gumps:gumps";
+include "include/utils";
+include ":attributes:attributes";
+include ":coords:coords";
+include ":timedscripts:timedScripts";
+include ":brainAI:include/npcInit";
+include ":dyes:include/dyes";
+
+program ShowInvestigationMenu(character, magnifyingGlass)
+   // Verificar se o item já foi transformado em relatório
+   if (magnifyingGlass.graphic == 0x46AE)
+      ShowReportReadOnly(character, magnifyingGlass);
+      return;
+   endif
+
+   // Verificar se passaram 6 dias desde a criação do item
+    var creationTime := magnifyingGlass.GetProp("CreationTime");
+    var currentTime := polcore().systime;
+    var sixDaysInSeconds := 6 * 24 * 60 * 60; // 6 dias em segundos
+
+    if ((currentTime - creationTime) >= sixDaysInSeconds)
+        SendSysMessageEx(character, "Este caso expirou e será arquivado automaticamente.", SSM_FAIL);
+        ArquivarCaso(character, magnifyingGlass);
+        return;
+    endif
+	
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFGumpPic(gump, 243, 6, 1596);
+    GFGumpPic(gump, 243, 148, 295);
+    //GFGumpPic(gump, 243, 290, 1598);
+    GFGumpPic(gump, 243, 432, 294);
+    
+    GFGumpPic(gump, 475, 55, 293);
+    var caseName := magnifyingGlass.GetProp("CaseName");
+
+    // Detalhes do Caso
+    GFTextLine(gump, 285, 55, 2108, "DETALHES DO "+caseName);
+    GFGumpPic(gump, 260, 52, 1606);
+	
+    var crimeType := magnifyingGlass.GetProp("CrimeType");
+    var victimSerial := magnifyingGlass.GetProp("VictimSerial");
+    var victim := SystemFindObjectBySerial(victimSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	var victimName := magnifyingGlass.GetProp("VictimName");
+		if (!victimName)
+			victimName := "<Escreva>";
+		endif
+    var areaX := magnifyingGlass.GetProp("AreaX");
+    var areaY := magnifyingGlass.GetProp("AreaY");
+    var areaZ := magnifyingGlass.GetProp("AreaZ");
+	var arearealm := magnifyingGlass.GetProp("AreaRealm"); 
+	var sextant := ToSextant(areaX, areaY);
+
+    GFTextLine(gump, 273, 75, 2100, "Tipo de Crime: " + crimeType);
+	var victimNameEntry := GFTextEntry(gump, 323, 95, 200, 20, 457, victimName, 1);
+	GFTextLine(gump, 273, 95, 2100, "Vítima: ");
+    GFTextLine(gump, 273, 115, 2100, "Local: " + sextant);
+
+    if (crimeType == "furto")
+        var stolenItem := magnifyingGlass.GetProp("item_furtado");
+        GFTextLine(gump, 273, 135, 2100, "Item Roubado: " + (stolenItem ? stolenItem : "Desconhecido"));
+
+elseif (crimeType == "homicidio")
+    var weaponType := magnifyingGlass.GetProp("weaponName");
+    var weapon_name := GetObjProperty(magnifyingGlass, "Arma_encontrada");
+    var displayText := "Arma Usada: ";
+    if (weapon_name)
+        displayText += weapon_name + " <ENCONTRADA!>";
+    elseif (weaponType)
+        displayText += weaponType;
+    else
+        displayText += "Desconhecida";
+    endif 
+    GFTextLine(gump, 273, 135, 2100, displayText);
+    if (weapon_name || weaponType)
+        GFAddButton(gump, 255, 135, 1210, 1209, GF_CLOSE_BTN, 4);
+    endif
+
+	elseif (crimeType == "agressao")
+		var typedamage := magnifyingGlass.GetProp("TipoEquip");
+        GFTextLine(gump, 273, 135, 2100, "Tipo de Dano: " + (typedamage ? typedamage : "Desconhecida"));
+    endif
+    var timeLeft := (magnifyingGlass.GetProp("CreationTime") + (7 * 24 * 60 * 60)) - polcore().systime;
+    var daysLeft := CInt(timeLeft / (24 * 60 * 60));
+    GFTextLine(gump, 273, 155, 2100, "Tempo Restante: " + daysLeft + " dias");
+	
+   // Modificação na lógica de verificação das diligências
+    var diligencias := array{};
+    if (GetObjProperty(magnifyingGlass, "RealizarInqueritoVitima") == 1)
+        diligencias.append("Interrogatório");
+    endif
+    if (GetObjProperty(magnifyingGlass, "Pegada Analisada") == 1)
+        diligencias.append("Pegadas");
+    endif
+    if (GetObjProperty(magnifyingGlass, "autopsia") == 1)
+        diligencias.append("Autópsia");
+    endif
+    if (GetObjProperty(magnifyingGlass, "Depoimento Coletado") == 1)
+        diligencias.append("Testemunha");
+    endif
+    var diligencias_texto := diligencias.size() > 0 ? " ".join(diligencias) : "Nenhuma";
+ // Substituindo a seção de diligências
+GFTextLine(gump, 370, 175, 2108, "Diligências:");
+
+// Posição inicial para as imagens
+var img_x := 443;
+var img_y := 155;
+var img_spacing := 45; // Espaçamento entre as imagens
+
+// Vamos usar cores com transparência
+// 0 = sem transparência (diligência realizada)
+// 1001 = com 50% de transparência (diligência pendente)
+var diligences_allowed := GetObjProperty(magnifyingGlass, "DiscoveredEvidenceTypes");  
+
+// Interrogatório - Gump ID 2286
+if (crimeType != "homicidio")
+if (GetObjProperty(magnifyingGlass, "RealizarInqueritoVitima") == 1)
+    GFGumpPic(gump, img_x, img_y, 2286, 0); // Sem transparência
+else
+    GFGumpPic(gump, img_x, img_y, 2286, 1001); // Com transparência
+endif
+GFTextLine(gump, img_x, img_y + 35, 2100, "Inter.");
+img_x += img_spacing;
+endif
+
+// Pegadas - Gump ID 2292
+if ("dedução" in diligences_allowed)
+if (GetObjProperty(magnifyingGlass, "Deduzir Realizado") == 1)
+    GFGumpPic(gump, img_x, img_y, 2292, 0); // Sem transparência
+else
+    GFGumpPic(gump, img_x, img_y, 2292, 1001); // Com transparência
+endif
+GFTextLine(gump, img_x, img_y + 35, 2100, "Deduç.");
+img_x += img_spacing;
+endif
+
+// Pegadas - Gump ID 2248
+if ("pegadas" in diligences_allowed)
+if (GetObjProperty(magnifyingGlass, "Pegada Analisada") == 1)
+    GFGumpPic(gump, img_x, img_y, 2248, 0); // Sem transparência
+else
+    GFGumpPic(gump, img_x, img_y, 2248, 1001); // Com transparência
+endif
+GFTextLine(gump, img_x, img_y + 35, 2100, "Pegad.");
+img_x += img_spacing;
+endif
+
+// Testemunha - Gump ID 2249
+if ("testemunha" in diligences_allowed)
+if (GetObjProperty(magnifyingGlass, "Depoimento Coletado") == 1)
+    GFGumpPic(gump, img_x, img_y, 2249, 0); // Sem transparência
+else
+    GFGumpPic(gump, img_x, img_y, 2249, 1001); // Com transparência
+endif
+GFTextLine(gump, img_x, img_y + 35, 2100, "Testem.");
+img_x += img_spacing;
+endif
+
+// Autópsia - Gump ID 2243
+if (crimeType == "homicidio")
+if (GetObjProperty(magnifyingGlass, "autopsia"))
+    GFGumpPic(gump, img_x, img_y, 2243, 0); // Sem transparência
+else
+    GFGumpPic(gump, img_x, img_y, 2243, 1001); // Com transparência
+endif
+GFTextLine(gump, img_x, img_y + 35, 2100, "Aut");
+endif
+
+	// Dados do Suspeito
+    GFTextLine(gump, 285, 207, 2108, "DADOS DO SUSPEITO");
+	GFGumpPic(gump, 260, 204, 1606);
+    var dicasReveladas := magnifyingGlass.GetProp("DicasReveladas");
+    var y := 227;
+    if (!dicasReveladas)
+		GFTextLine(gump, 273, 228, 2100, "Sem evidências");
+	else
+    var depoimentoColetado := GetObjProperty(magnifyingGlass, "Depoimento Coletado") == 1;
+    
+    if (depoimentoColetado && dicasReveladas["Testemunha"])
+        dicasReveladas.erase("Testemunha");
+        SetObjProperty(magnifyingGlass, "DicasReveladas", dicasReveladas);
+    endif
+	
+	foreach dica in (dicasReveladas.keys())
+        GFTextLine(gump, 273, y, 2100, dica + ": " + dicasReveladas[dica]);
+        y += 20;
+    endforeach
+	endif
+	
+    // Anotações
+    GFTextLine(gump, 285, 409, 2108, "ANOTAÇÕES");
+    GFGumpPic(gump, 260, 406, 1606);
+	var anotacoes := magnifyingGlass.GetProp("Anotacoes");
+print("Tamanho das anotações: " + len(anotacoes));
+	var anotacoesEntry := GFTextEntry(gump, 285, 426, 350, 270, 2100, anotacoes ? anotacoes : "", 0, 239);
+	GFGumpPic(gump, 255, 430, 1611);
+    
+	// Botões
+	var investigar_realizado := GetObjProperty(magnifyingGlass, "InvestigarAreaCrime_Realizado");
+	if (!investigar_realizado)
+		GFAddButton(gump, 293, 526, 4005, 4007, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 328, 526, 2100, "Analisar Cena do Crime");
+	else
+		if (GetObjProperty(magnifyingGlass, "CriarTestemunha_Realizado") == 1 && !GetObjProperty(magnifyingGlass, "Depoimento Coletado"))
+			GFAddButton(gump, 400, 526, 4005, 4007, GF_CLOSE_BTN, 5);
+			GFTextLine(gump, 435, 526, 2100, "Colher Depoimento");
+		endif
+		if (GetObjProperty(magnifyingGlass, "CreatePegadas_Realizado") == 1 && !GetObjProperty(magnifyingGlass, "Pegada Analisada"))
+			GFAddButton(gump, 263, 526, 4005, 4007, GF_CLOSE_BTN, 6);
+			GFTextLine(gump, 298, 526, 2100, "Analisar Pegada");
+		endif	
+	endif
+    GFAddButton(gump, 548, 526, 4005, 4007, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 582, 526, 2100, "Arquivar Caso");
+
+   var input := GFSendGump(character, gump);
+    
+    if (input[0] == 3)
+        if ( CoordinateDistance(character.x, character.y, areaX, areaY) <= 5)
+            // Modificação aqui para garantir que todas as propriedades relevantes sejam passadas
+			print("areas "+areaX+areaY+" e corrd deu "+CoordinateDistance(character.x, character.y, areaX, areaY));
+			start_script(":awareness:evidence", {character, victimSerial, areaX, areaY, areaZ, arearealm, "Investigar Area do Crime", crimeType, magnifyingGlass.serial});
+        else
+            SendSysMessageEx(character, "Você deve estar próximo ao local do crime!", SSM_FAIL);
+			return;
+        endif
+    elseif (input[0] == 2)
+        ArquivarCaso(character, magnifyingGlass);
+    elseif (input[0] == 4)
+		var weapon := magnifyingGlass.GetProp("weaponSerial");
+		CompareMurderWeapons(character, weapon, magnifyingGlass);
+	elseif (input[0] == 5)
+		start_script(":awareness:evidence", {character, victimSerial, areaX, areaY, areaZ, arearealm, "Colher Depoimento", crimeType, magnifyingGlass.serial});
+    elseif (input[0] == 6)
+		start_script(":awareness:evidence", {character, victimSerial, areaX, areaY, areaZ, arearealm, "Analisar Pegada", crimeType, magnifyingGlass.serial});
+    endif
+
+   // Save the new victim name
+   var newVictimName := GFExtractData(input, victimNameEntry);
+   if (newVictimName != "<Escreva>" && newVictimName != "")
+      magnifyingGlass.SetProp("VictimName", newVictimName);
+   endif
+
+    // Salvar anotações
+    var novasAnotacoes := GFExtractData(input, anotacoesEntry);
+    magnifyingGlass.SetProp("Anotacoes", novasAnotacoes);
+endprogram
+
+function ShowReportReadOnly(character, report)
+   var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFGumpPic(gump, 243, 6, 1596);
+    GFGumpPic(gump, 243, 148, 295);
+    //GFGumpPic(gump, 243, 290, 1598);
+    GFGumpPic(gump, 243, 432, 294);
+    
+    GFGumpPic(gump, 475, 55, 293);
+
+   GFTextMid(gump, 160, 50, 610, 2108, "Relatório do " + report.GetProp("CaseName"));
+
+   var y := 70;
+   GFTextLine(gump, 273, y, 2100, "Tipo de Crime: " + report.GetProp("CrimeType"));
+   y += 20;
+   var victimName := report.GetProp("VictimName");
+   if (!victimName || victimName == "<Escreva>")
+      victimName := "Desconhecido";
+   endif
+   GFTextLine(gump, 273, y, 2100, "Vítima: " + victimName);
+   y += 20;
+   GFTextLine(gump, 273, y, 2100, "Local: " + ToSextant(report.GetProp("AreaX"), report.GetProp("AreaY")));
+   y += 20;
+
+   var crimeType := report.GetProp("CrimeType");
+   if (crimeType == "furto")
+      GFTextLine(gump, 273, y, 2100, "Item Roubado: " + (report.GetProp("item_furtado") ? report.GetProp("item_furtado") : "Desconhecido"));
+   elseif (crimeType == "homicidio")
+      GFTextLine(gump, 273, y, 2100, "Arma Usada: " + (report.GetProp("weaponName") ? report.GetProp("weaponName") : "Desconhecida"));
+   elseif (crimeType == "agressao")
+      GFTextLine(gump, 273, y, 2100, "Tipo de Dano: " + (report.GetProp("TipoEquip") ? report.GetProp("TipoEquip") : "Desconhecido"));
+   endif
+   y += 40;
+
+   GFTextLine(gump, 273, y, 2108, "Dados do Suspeito:");
+   y += 20;
+   var dicasReveladas := report.GetProp("DicasReveladas");
+   if (dicasReveladas)
+      foreach dica in (dicasReveladas.keys())
+         GFTextLine(gump, 273, y, 2100, dica + ": " + dicasReveladas[dica]);
+         y += 20;
+      endforeach
+   else
+      GFTextLine(gump, 273, y, 2100, "Nenhuma informação disponível sobre o suspeito.");
+      y += 20;
+   endif
+   y += 20;
+
+   GFTextLine(gump, 273, y, 2108, "Conclusão: " + report.GetProp("Conclusao"));
+   y += 20;
+   if (report.GetProp("NomeAcusado"))
+      GFTextLine(gump, 273, y, 2100, "Nome do Acusado: " + report.GetProp("NomeAcusado"));
+   endif
+	y += 40;
+   GFTextLine(gump, 273, y, 2108, "Anotações:");
+   y += 20;
+   var anotacoes := report.GetProp("Anotacoes");
+   if (anotacoes)
+      GFHTMLArea(gump, 273, y, 350, 270, anotacoes);
+   else
+      GFTextLine(gump, 273, y, 2100, "Nenhuma anotação disponível.");
+   endif
+   GFSendGump(character, gump);
+endfunction
+
+function ArquivarCaso(character, magnifyingGlass)
+    var options := {"Conclusivo", "Inconclusivo"};
+    var result := SelectionGumpSmall(character, "Arquivar Caso", options);
+    
+    if (result != error)
+        var conclusao := result;
+        magnifyingGlass.SetProp("Conclusao", conclusao);
+        var nomeAcusado;
+        if (conclusao == "Conclusivo")
+            nomeAcusado := RequestGump(character, "Escreva o nome do acusado:");
+            magnifyingGlass.SetProp("NomeAcusado", nomeAcusado);
+        endif
+        // Adicionar uma marca de tempo ao relatório
+        var currentTime := PolCore().systime;
+        magnifyingGlass.SetProp("ArquivadoEm", currentTime);
+        // Transformar a lupa em relatório
+        magnifyingGlass.graphic := 0x46AE;
+        magnifyingGlass.name := "Relatório: " + magnifyingGlass.GetProp("CaseName");
+        if (!magnifyingGlass.GetProp("NomeAcusado"))
+            SetObjProperty(magnifyingGlass, "description", conclusao);
+        else
+            SetObjProperty(magnifyingGlass, "description", conclusao+": "+nomeAcusado);
+        endif
+        SendSysMessageEx(character, "Caso arquivado com sucesso.", SSM_INFO);
+
+        var casesOpen := GetObjProperty(character, "InvestigationCases");
+        if (casesOpen && TypeOf(casesOpen) == "Array")
+            var newCases := array();
+            var caseRemoved := false;
+            foreach serial in casesOpen
+                if (serial != magnifyingGlass.serial)
+                    newCases.Append(serial);
+                else
+                    caseRemoved := true;
+                endif
+            endforeach
+
+            if (caseRemoved)
+                if (newCases.Size() == 0)
+                    EraseObjProperty(character, "InvestigationCases");
+                else
+                    if (!SetObjProperty(character, "InvestigationCases", newCases))
+                        SendSysMessageEx(character, "Erro ao atualizar a lista de casos.", SSM_FAIL);
+                    else
+                        SendSysMessageEx(character, "Caso removido da lista de casos ativos.", SSM_INFO);
+                    endif
+                endif
+            else
+                SendSysMessageEx(character, "Caso não encontrado na lista de casos ativos.", SSM_FAIL);
+            endif
+        else
+            SendSysMessageEx(character, "Nenhuma lista de casos ativos encontrada.", SSM_FAIL);
+        endif
+    endif
+endfunction
+
+function CompareMurderWeapons(character, murder_weapon, magnifyingGlass)
+  EraseObjProperty(character, "IsMeditating");
+  EraseObjProperty(character, "HealTimer");
+  SendSysMessage(character,"Selecione a arma que você quer comparar com a evidência");
+  var what := Target(character, TGTOPT_CHECK_LOS);
+  if(!what)
+    SendSysMessage(character, "Alvo cancelado");
+    return;
+  endif
+	if (!what.isa(POLCLASS_WEAPON))
+		SendSysMessage(character, "Isso não é uma arma!");
+		return;
+	endif
+  if(what.serial == CInt(murder_weapon))
+    PrintTextAbovePrivate(what, "Isso combina com a evidência!", character);
+	SetObjProperty(magnifyingGlass, "Arma_encontrada", what.name);
+  else
+    PrintTextAbovePrivate(what, "Não são compatíveis", character);
+  endif
+  
+  endfunction

@@ -19,8 +19,8 @@ include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
-	var duration := (CInt(AP_GetSkill(who, MAGICLORE)) / 10);
-    var range := cint(AP_GetSkill(who, MAGICLORE)/5);
+	var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
+    var range := cint(AP_GetSkill(who, THEOLOGY)/5);
 
     var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);
 
@@ -31,7 +31,7 @@ program SpellScript(params)
         TS_StartTimer(mobile, "paralysis", duration);
         sleep(5);
         SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
-        TS_StartTimer(mobile, "bleed", AP_GetSkill(who, MAGICLORE) / 4);
+        TS_StartTimer(mobile, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
         sleepms(20);
     endforeach
 

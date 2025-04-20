@@ -22,8 +22,8 @@ program spell_fireball(params)
 
     params := 0; // No longer needed
 
-    var mlore := cint(AP_GetSkill(who, MAGICLORE)/20);   
-    var range := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var mlore := cint(AP_GetSkill(who, ARCANA)/20);   
+    var range := cint(AP_GetSkill(who, ARCANA)/20);
     var dist_allowed := distanceAllowedForSpells(who, mlore, spell_school);
 
     if (TemHabilidade(who, "Tirothan"))

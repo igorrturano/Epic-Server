@@ -1543,7 +1543,6 @@ function CreateBossFromGump(who, form_data)
     else
         SendSysMessage(who, "DEBUG: No combat events found in form_data");
     endif
-
     SendSysMessage(who, "DEBUG: Checking form_data special abilities");
     if (form_data.special && form_data.special.size() > 0)
         SendSysMessage(who, "DEBUG: Found " + form_data.special.size() + " special abilities in form_data");

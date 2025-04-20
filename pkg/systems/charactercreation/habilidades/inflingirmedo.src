@@ -9,7 +9,7 @@ program manobra(who)
 
 	SendSysMessageEx(who, "Escolha o alvo do toque sombrio", SSM_INFO);
 	var targ := Target(who, TGTOPT_CHECK_LOS+TGTOPT_NEUTRAL);
-	var lvl := cint(AP_GetSkill(who,MAGICLORE)/1.5);
+	var lvl := cint(AP_GetSkill(who,ARCANA)/1.5);
 	
 	if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
 		SendSysMessageEx(who, "O Alvo nao esta visivel para voce.", SSM_FAIL);

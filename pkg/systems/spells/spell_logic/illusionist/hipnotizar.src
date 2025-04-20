@@ -21,7 +21,7 @@ program SpellScript(params)
         return;
     endif
 
-    var duration := cint(AP_GetSkill(who, MAGICLORE)/5);
+    var duration := cint(AP_GetSkill(who, ARCANA)/5);
     if (TemHabilidade(who, "Valdruk"))
         duration := Cint(duration * 2);
         controlNPC(who, targ);

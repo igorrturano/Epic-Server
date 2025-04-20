@@ -11,22 +11,22 @@ include ":combat:damage";
 include "include/epicMageryUtils";
 
 program truesight(who)
-    var dano_mlore := CInt(AP_GetSkill(who, MAGICLORE) / 2);
-    var range := cint(AP_GetSkill(who, MAGICLORE)/5);
+    var dano_mlore := CInt(AP_GetSkill(who, THEOLOGY) / 2);
+    var range := cint(AP_GetSkill(who, THEOLOGY)/5);
 
     PerformAction(who, ANIM_CAST_AREA);
     PlaySoundEffect(who, 0x684);
 
     var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);
     foreach mobile in allMobiles
-        var duration := cint(AP_GetSkill(who, MAGICLORE)/8);
+        var duration := cint(AP_GetSkill(who, THEOLOGY)/8);
         TS_StartTimer(mobile, "paralysis", duration);
         PlayObjectCenteredEffect(mobile, 0x54F7, 10, 30);
         PrintTextAbove(mobile, "*atormentado*");
         DamageFLS(mobile, dano_mlore, DMG_FORCED, who);
 
         if (InDarkness(mobile))
-            duration += cint(AP_GetSkill(who, MAGICLORE)/5);
+            duration += cint(AP_GetSkill(who, THEOLOGY)/5);
             SetCooldown(mobile, "blinded", duration);
             PrintTextAbove(mobile, "*cegueira*");
         endif

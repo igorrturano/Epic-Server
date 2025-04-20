@@ -14,7 +14,7 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	var targets := array;
-	foreach mobile in (ListMobilesNearLocation( who.x, who.y, who.z, Cint(AP_GetSkill(who, MAGICLORE)/10), who.realm))
+	foreach mobile in (ListMobilesNearLocation( who.x, who.y, who.z, Cint(AP_GetSkill(who, THEOLOGY)/10), who.realm))
 		if (CheckLineOfSight(who, mobile) && mobile.isa(POLCLASS_NPC) && (who.npctemplate == "Undead" || who.npctemplate == "Demons"))
 			targets.append(mobile);
 		endif
@@ -22,7 +22,7 @@ program SpellScript(params)
 
 	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
 
-	var skill := Cint(AP_GetSkill(who, MAGICLORE));
+	var skill := Cint(AP_GetSkill(who, THEOLOGY));
 	var random := 0;
 	foreach mobile in targets			
 			random := RandomInt(100);

@@ -358,7 +358,7 @@ function CalculateHitChance(attacker, defender)
 		endif
 	endif
 
-    var dancer_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
+    var dancer_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 5);
     if (TemHabilidade(attacker, "Danca das Sombras"))
         hit_chance := hit_chance + dancer_bonus;
 	endif
@@ -375,7 +375,7 @@ function CalculateHitChance(attacker, defender)
         hit_chance := hit_chance - swash_bonus;
     endif
     
-	var witcher_bonus := Cint(AP_GetSkill(attacker, ALCHEMY) / 5);
+	var witcher_bonus := Cint(AP_GetSkill(attacker, SCIENCE) / 5);
 	if (TemHabilidade(attacker, "Oleo do Cacador"))
 		hit_chance := hit_chance + witcher_bonus;
 	endif
@@ -457,7 +457,7 @@ function CalculateHitChance(attacker, defender)
 	EraseObjProperty(attacker, "insistencia");
 
 	if (TemHabilidade(attacker, "Tirothan"))
-		var mlore_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
+		var mlore_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 10);
 		hit_chance += mlore_bonus;
 	endif
 
@@ -488,7 +488,7 @@ function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
 	TS_StartTimer( defender, "velocidade", 5 );
   endif
 
-  var trickster_bonus := CInt( AP_GetSkill( attacker, MAGICLORE ) / 20 );
+  var trickster_bonus := CInt( AP_GetSkill( attacker, ARCANA ) / 20 );
   if ( getCooldown( attacker, "disparomistico" ) )
 	PrintTextAbovePrivate( attacker, "*passo nebuloso*", attacker );
 	SetCooldown( attacker, "disparomisticoHit", trickster_bonus );

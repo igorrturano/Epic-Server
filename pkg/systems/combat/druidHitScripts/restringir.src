@@ -29,7 +29,7 @@ program loko(params)
 
 			while (i < y)
 				PrintTextAbove(targ, "*sendo segurado*");
-				DamageFLS(targ, AP_GetSkill(who, MAGICLORE)/20, DMG_FORCED, who);
+				DamageFLS(targ, AP_GetSkill(who, THEOLOGY)/20, DMG_FORCED, who);
 				Sleep(1);
 				if (!AP_ConsumeVital(who, STAMINA, 5))
 					break;

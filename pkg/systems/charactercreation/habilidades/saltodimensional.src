@@ -36,7 +36,7 @@ program HitScript(who)
     endif
 
     var dist := Distance(who, targ);
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, ARCANA));
 
     if(!CheckLosAt(who, targ.x, targ.y, targ.z))
 		SendSysMessage(who, "Você não consegue ver o alvo.");
