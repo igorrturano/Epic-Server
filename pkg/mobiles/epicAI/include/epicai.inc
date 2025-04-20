@@ -107,6 +107,8 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     endif
 
 
+
+
 endfunction
 
 function SetupItemsForSpecificClasses(mobile, npc_elem)
@@ -486,6 +488,17 @@ function SetupNPCEquip(who, npc_elem)
         foreach str in GetConfigStringArray(group, "Weapon")
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
+    endif
+    if (GetObjProperty(who, "specific_weapon"))
+        var weapon := GetObjProperty(who, "specific_weapon");
+        if (weapon)
+            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
+            // First Unequip hands
+            if (who.weapon)
+                DestroyItem(who.weapon);
+            endif
+            EquipItem(who, item);
+        endif
     endif
     if (GetObjProperty(who, "specific_weapon"))
         var weapon := GetObjProperty(who, "specific_weapon");
@@ -2015,46 +2028,28 @@ function ShouldFlee(me)
     return 0;
 endfunction
 
-function HandleInitializationLoot(mobile, boss_struct)
-    Print("DEBUG: HandleInitializationLoot called for " + mobile.name);
-    
+function HandleInitializationLoot(mobile, boss_struct)   
     if (!boss_struct)
-        Print("DEBUG: No boss_struct found");
         return 0;
     endif
     
     if (!boss_struct.loot || boss_struct.loot.size() < 1)
-        Print("DEBUG: No loot array found or empty");
         return 0;
     endif
-
-    Print("DEBUG: Found " + boss_struct.loot.size() + " loot items");
     
-    foreach loot_item in (boss_struct.loot)
-        Print("DEBUG: Processing loot item: " + loot_item.name);
-        Print("DEBUG: on_death value: " + loot_item.on_death);
-        
+    foreach loot_item in (boss_struct.loot)       
         if (!loot_item.on_death) // Only process initialization items
             var roll := RandomInt(100);
-            Print("DEBUG: Roll " + roll + " vs drop_chance " + loot_item.drop_chance);
             
             if (roll < loot_item.drop_chance)
-                Print("DEBUG: Creating item " + loot_item.objtype);
-                var item := CreateItemInBackpack(mobile, loot_item.objtype, 1);
+                // Create item directly with the template
+                var item := CreateIteminBackpackFromTemplate(mobile, loot_item.template);
                 if (item)
-                    Print("DEBUG: Item created successfully");
-                    if (loot_item.color)
-                        item.color := loot_item.color;
-                    endif
-                    if (loot_item.name)
-                        SetName(item, loot_item.name);
-                    endif
                     item.movable := 1;
-                else
-                    Print("DEBUG: Failed to create item");
                 endif
             endif
         endif
+
         sleepms(2);
     endforeach
 
