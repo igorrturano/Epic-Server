@@ -81,53 +81,8 @@ program core_npcDeath(params)
         endif
     endforeach
 
-	if (GetObjProperty(corpse, "EpicBossStruct"))
-		Print("DEBUG: Found EpicBossStruct on corpse");
-		var boss_struct := GetObjProperty(corpse, "EpicBossStruct");
-		
-		if (!boss_struct)
-			Print("DEBUG: Failed to retrieve boss_struct");
-		else
-			Print("DEBUG: Successfully retrieved boss_struct");
-			
-			if (boss_struct.loot && boss_struct.loot.size() > 0)
-				Print("DEBUG: Found " + boss_struct.loot.size() + " loot items");
-				
-				foreach loot_item in (boss_struct.loot)
-					Print("DEBUG: Processing loot item: " + loot_item.name);
-					Print("DEBUG: on_death value: " + loot_item.on_death);
-					
-					if (loot_item.on_death) // Only process death items
-						var roll := RandomInt(100);
-						Print("DEBUG: Roll " + roll + " vs drop_chance " + loot_item.drop_chance);
-						
-						if (roll < loot_item.drop_chance)
-							Print("DEBUG: Creating item " + loot_item.objtype);
-							var item := CreateItemInContainer(corpse, loot_item.objtype, 1);
-							if (item)
-								Print("DEBUG: Item created successfully");
-								if (loot_item.color)
-									item.color := loot_item.color;
-								endif
-								if (loot_item.name)
-									SetName(item, loot_item.name);
-								endif
-								item.movable := 1;
-							else
-								Print("DEBUG: Failed to create item");
-							endif
-						endif
-					endif
-					sleepms(2);
-				endforeach
-			else
-				Print("DEBUG: No loot array found or empty");
-			endif
-		endif
-	else
-		Print("DEBUG: No EpicBossStruct found on corpse");
-	endif
-
+	HandleEpicBossLoot(corpse);
+	
 	if (getObjProperty(corpse, "owner")) //se for tamed, atualiza a prop tamedpets do master
         var lastDamage := GetObjProperty(corpse, "LastDamage");
         var region := GetRegionName(corpse);
@@ -477,4 +432,35 @@ function PushBackEX(who, dist, delay, invert := 0)
 	endfor
 
    return 1;
+endfunction
+
+function HandleEpicBossLoot(corpse)
+    var boss_struct := GetObjProperty(corpse, "EpicBossStruct");
+    if (!boss_struct)
+        return 0;
+    endif
+    
+    if (!boss_struct.loot || boss_struct.loot.size() < 1)
+        return 0;
+    endif
+      
+    foreach loot_item in (boss_struct.loot)
+        if (!loot_item.on_death)
+            continue; // Skip non-death items
+        endif
+        
+        var roll := RandomInt(100);      
+        if (roll >= loot_item.drop_chance)
+            continue; // Failed drop roll
+        endif
+        
+        var item := CreateItemInContainerFromTemplate(corpse, loot_item.template);
+        if (!item)
+            continue;
+        endif
+        
+        item.movable := 1;
+    endforeach
+    
+    return 1;
 endfunction

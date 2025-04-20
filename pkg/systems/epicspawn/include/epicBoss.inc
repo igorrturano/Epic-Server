@@ -4,6 +4,7 @@ use cfgfile;
 include ":attributes:attributes";
 include ":combat:hitscripts";
 include "include/epicNPCUtils";
+include ":merchants:include/item_template";
 
 // Creates an epic boss from a boss structure
 function CreateEpicBoss(boss, x, y, z, realm)
@@ -187,12 +188,10 @@ function CreateEpicBoss(boss, x, y, z, realm)
             
             if (ability.name && script)
                 // For all armor abilities, just add the armor hit script directly
-                print("DEBUG: Adding armor hit script: " + script + " for ability: " + ability.name);
                 AddArmorHitScript(npc, script);
                 
                 // Verify the script was added
                 var armor_scripts := GetObjProperty(npc, "ArmorHitScripts");
-                print("DEBUG: ArmorHitScripts after adding: " + armor_scripts);
             endif
         endforeach
     endif
@@ -584,7 +583,6 @@ function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
     foreach ability in abilities
         // Convert button_id to string for dictionary key
         var key := CStr(button_id);
-        print("DEBUG: Mapping button " + key + " to ability: " + ability.name);
         ability_map[key] := ability;
         
         // Add the ability name with a button
@@ -609,17 +607,11 @@ function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
     
     // Handle ability selection
     if (input[0] >= 100)
-        print("DEBUG: Input received: " + input[0]);
         var key := CStr(input[0]);
-        print("DEBUG: Looking up ability with key: " + key);
-        print("DEBUG: Available keys in map: " + ability_map.keys());
         
         var selected_ability := ability_map[key];
         if (selected_ability)
-            print("DEBUG: Selected ability: " + selected_ability.name);
             return selected_ability.name;
-        else
-            print("DEBUG: No ability found for key: " + key);
         endif
     endif
 
@@ -644,10 +636,6 @@ function GetClassAbilities(class_name)
                     "name" := GetConfigString(elem, "nome"),
                     "desc" := GetConfigString(elem, "desc")
                 };
-                // Debug when an ability is actually added
-                print("DEBUG: ADDING ability: " + ability.name + 
-                      " | Class: " + hab_class + 
-                      " | Level: " + hab_level);
                 abilities.append(ability);
             endif
         endif
@@ -726,20 +714,26 @@ endfunction
 // Add this new function to handle loot selection and configuration
 function HandleAddLootItem(who, byref form_data)
     SendSysMessage(who, "Target the item you want to add as loot.", color := 33);
-    var targ := Target(who);
+    var item := Target(who);
     
-    if (!targ || !targ.IsA(POLCLASS_ITEM))
+    if (!item || !item.IsA(POLCLASS_ITEM))
         SendSysMessage(who, "Cancelled or invalid target.", color := 33);
         return 0;
     endif
-    
+
+    var template := CreateItemTemplate(item);
+    if (template == error)
+        SendSysMessage(who, "Error creating item template: " + template.errortext);
+        return 0;
+    endif
+
     // Create drop chance selection gump
     var gump := GFCreateGump();
     GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 300);
     GFResizePic(gump, 15, 15, 9350, 370, 270);
     
     GFTextMid(gump, 0, 25, 400, 1153, "Set Loot Details");
-    GFTextLine(gump, 50, 60, 1153, "Item: " + targ.desc);
+    GFTextLine(gump, 50, 60, 1153, "Item: " + item.desc);
     
     // Add drop chance entry
     GFTextLine(gump, 50, 90, 1153, "Drop chance (1-100%):");
@@ -769,23 +763,20 @@ function HandleAddLootItem(who, byref form_data)
     
     // Create loot item structure
     var loot_item := struct{
-        "objtype" := targ.objtype,
-        "name" := targ.desc,
-        "color" := targ.color,
+        "template" := template,
         "drop_chance" := drop_chance,
-        "on_death" := input[2] ? 1 : 0  // If checkbox is checked, it's a death drop
+        "on_death" := input[2] ? 1 : 0,  // If checkbox is checked, it's a death drop
+        "desc" := item.desc
     };
-    
-    Print("DEBUG: Creating loot item with on_death = " + loot_item.on_death);
-    
+
     // Initialize loot array if it doesn't exist
     if (!form_data.loot)
         form_data.+loot := array{};
     endif
     
     form_data.loot.append(loot_item);
-    
-    SendSysMessage(who, "Added " + targ.desc + " with " + drop_chance + "% drop chance to generate on " + 
+
+    SendSysMessage(who, "Added " + item.desc + " with " + drop_chance + "% drop chance to generate on " + 
                   (loot_item.on_death ? "death" : "initialization") + ".", color := 66);
     return 1;
 endfunction
