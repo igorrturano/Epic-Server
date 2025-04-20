@@ -613,6 +613,8 @@ function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
         if (selected_ability)
             return selected_ability.name;
         endif
+    else
+        return ShowPage5(who, title, gump_width, gump_height);
     endif
 
 endfunction
