@@ -44,14 +44,7 @@ program epicBOSS(who)
     
     // Process user input until they close the gump
     while (input[0] != 0)
-        // Debug: Print input values
         SendSysMessage(who, "DEBUG: input[0] = " + input[0]);
-        
-        // Debug: Print all input values
-        print("DEBUG: Input array contents:");
-        foreach key in (input.keys())
-            print("DEBUG: input[" + key + "] = " + input[key]);
-        endforeach
         
         // Check if any navigation button was clicked
         var nav_button_clicked := 0;
@@ -165,14 +158,10 @@ function InitializeFormData()
 
     // Add class-related fields
     form_data.class := "";
-
-    // Verify death events are properly initialized
-    print("DEBUG: Death events after initialization: " + form_data.deathevents);
 endfunction
 
 // Extract data from the current page
 function ExtractPageData(input, page)
-    print("DEBUG: Extracting data for page " + page);
     
     case (page)
         BOTAO_PAGE1:
@@ -180,19 +169,16 @@ function ExtractPageData(input, page)
             var npctemplate := GFExtractData(input, 1);
             if (npctemplate != error && npctemplate != "")
                 form_data.npctemplate := npctemplate;
-                print("DEBUG: Extracted npctemplate = " + form_data.npctemplate);
             endif
             
             var name := GFExtractData(input, 2);
             if (name != error && name != "")
                 form_data.name := name;
-                print("DEBUG: Extracted name = " + form_data.name);
             endif
             
             var color := GFExtractData(input, 3);
             if (color != error && color != "")
                 form_data.color := color;
-                print("DEBUG: Extracted color = " + form_data.color);
             endif
 
             // Add tier extraction (new)
@@ -206,36 +192,30 @@ function ExtractPageData(input, page)
                     tier := 5;
                 endif
                 form_data.tier := tier;
-                print("DEBUG: Extracted tier = " + form_data.tier);
             endif
 
             var description := GFExtractData(input, 4);
             if (description != error && description != "")
                 form_data.description := description;
-                print("DEBUG: Extracted description = " + form_data.description);
             endif
             
             if (input[5])
                 form_data.trueboss := input[5];
-                print("DEBUG: Extracted trueboss = " + form_data.trueboss);
             endif
             
             var special_ai := GFExtractData(input, 6);
             if (special_ai != error && special_ai != "")
                 form_data.special_ai := special_ai;
-                print("DEBUG: Extracted special_ai = " + form_data.special_ai);
             endif
             
             var url := GFExtractData(input, 7);
             if (url != error && url != "")
                 form_data.url := url;
-                print("DEBUG: Extracted url = " + form_data.url);
             endif
             
             var detailed_description := GFExtractData(input, 8);
             if (detailed_description != error && detailed_description != "")
                 form_data.detailed_description := detailed_description;
-                print("DEBUG: Extracted detailed_description = " + form_data.detailed_description);
             endif
             break;
             
@@ -244,87 +224,73 @@ function ExtractPageData(input, page)
             var str := GFExtractData(input, 10);
             if (str != error && str != "")
                 form_data.str := str;
-                print("DEBUG: Extracted str = " + form_data.str);
             endif
             
             var dex := GFExtractData(input, 11);
             if (dex != error && dex != "")
                 form_data.dex := dex;
-                print("DEBUG: Extracted dex = " + form_data.dex);
             endif
             
             var int := GFExtractData(input, 12);
             if (int != error && int != "")
                 form_data.int := int;
-                print("DEBUG: Extracted int = " + form_data.int);
             endif
             
             var hits := GFExtractData(input, 13);
             if (hits != error && hits != "")
                 form_data.hits := hits;
-                print("DEBUG: Extracted hits = " + form_data.hits);
             endif
             
             var dmg := GFExtractData(input, 14);
             if (dmg != error && dmg != "")
                 form_data.dmg := dmg;
-                print("DEBUG: Extracted dmg = " + form_data.dmg);
             endif
             
             // Resistances
             var phresist := GFExtractData(input, 15);
             if (phresist != error && phresist != "")
                 form_data.phresist := phresist;
-                print("DEBUG: Extracted phresist = " + form_data.phresist);
             endif
             
             var firesist := GFExtractData(input, 16);
             if (firesist != error && firesist != "")
                 form_data.firesist := firesist;
-                print("DEBUG: Extracted firesist = " + form_data.firesist);
             endif
             
             var coresist := GFExtractData(input, 17);
             if (coresist != error && coresist != "")
                 form_data.coresist := coresist;
-                print("DEBUG: Extracted coresist = " + form_data.coresist);
             endif
             
             var enresist := GFExtractData(input, 18);
             if (enresist != error && enresist != "")
                 form_data.enresist := enresist;
-                print("DEBUG: Extracted enresist = " + form_data.enresist);
             endif
             
             var poresist := GFExtractData(input, 19);
             if (poresist != error && poresist != "")
                 form_data.poresist := poresist;
-                print("DEBUG: Extracted poresist = " + form_data.poresist);
             endif
             
             // Skills
             var wrestling := GFExtractData(input, 20);
             if (wrestling != error && wrestling != "")
                 form_data.wrestling := wrestling;
-                print("DEBUG: Extracted wrestling = " + form_data.wrestling);
             endif
             
             var tactics := GFExtractData(input, 21);
             if (tactics != error && tactics != "")
                 form_data.tactics := tactics;
-                print("DEBUG: Extracted tactics = " + form_data.tactics);
             endif
             
             var magery := GFExtractData(input, 22);
             if (magery != error && magery != "")
                 form_data.magery := magery;
-                print("DEBUG: Extracted magery = " + form_data.magery);
             endif
             
             var awareness := GFExtractData(input, 23);
             if (awareness != error && awareness != "")
                 form_data.awareness := awareness;
-                print("DEBUG: Extracted awareness = " + form_data.awareness);
             endif
             break;
             
@@ -338,7 +304,6 @@ function ExtractPageData(input, page)
         var flee_health := GFExtractData(input, 76);
         if (flee_health != error && flee_health != "")
             form_data.flee_health := flee_health;
-            print("DEBUG: Extracted flee_health = " + form_data.flee_health);
         endif
         break;
             
@@ -347,40 +312,33 @@ function ExtractPageData(input, page)
             var specific_weapon := GFExtractData(input, 84);
             if (specific_weapon != error && specific_weapon != "")
                 form_data.specific_weapon := specific_weapon;
-                print("DEBUG: Extracted specific_weapon = " + form_data.specific_weapon);
             endif
 
             var magic_school := GFExtractData(input, 88);
             if (magic_school != error && magic_school != "")
                 form_data.magic_school := magic_school;
-                print("DEBUG: Extracted magic_school = " + form_data.magic_school);
             endif
             
             var drop_chance := GFExtractData(input, 91);
             if (drop_chance != error && drop_chance != "")
                 form_data.drop_chance := drop_chance;
-                print("DEBUG: Extracted drop_chance = " + form_data.drop_chance);
             endif
             
             // Handle radio buttons
             if (input[80])
                 form_data.weapon_type := "Dual Wield";
-                print("DEBUG: Set weapon_type = Dual Wield");
             endif
             
             if (input[81])
                 form_data.weapon_type := "One-Handed";
-                print("DEBUG: Set weapon_type = One-Handed");
             endif
             
             if (input[82])
                 form_data.weapon_type := "Two-Handed";
-                print("DEBUG: Set weapon_type = Two-Handed");
             endif
             
             if (input[83])
                 form_data.weapon_type := "Ranged";
-                print("DEBUG: Set weapon_type = Ranged");
             endif
         
             break;
@@ -389,13 +347,11 @@ endfunction
 
 // Function to update which menu is active based on button click
 function UpdateMenuState(input, who)
-    // Debug: Print input value
     SendSysMessage(who, "DEBUG: UpdateMenuState input = " + input);
     
     // Update the last clicked button
     last_clicked_button := input;
     
-    // Debug: Print last_clicked_button
     SendSysMessage(who, "DEBUG: last_clicked_button = " + last_clicked_button);
     
     // Inform the user that their data is being saved
@@ -945,9 +901,6 @@ function HandleAddWeaponSpecialAbility(who, input, byref form_data)
     
     var result := GFSendGump(who, gump);
     
-    // Debug message to see what's being returned
-    print("DEBUG: HandleAddWeaponSpecialAbility result[0] = " + result[0]);
-    
     // Check for the cancel button (result[0] == 999)
     if (result[0] == 999)
         SendSysMessage(who, "Weapon ability selection cancelled.");
@@ -1079,10 +1032,7 @@ function DisplayWeaponAbilityOptions(who, input, ability, byref form_data)
     GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999); // Cancel button - returns 999
     
     var result := GFSendGump(who, gump);
-    
-    // Debug message to see what's being returned
-    print("DEBUG: DisplayWeaponAbilityOptions result[0] = " + result[0]);
-    
+        
     // Check for the cancel button (result[0] == 999)
     if (result[0] == 999)
         SendSysMessage(who, "Weapon ability configuration cancelled.");
@@ -1145,9 +1095,6 @@ function HandleAddArmorSpecialAbility(who, input, byref form_data)
     GFAddButton(gump, 200, 350, 2119, 2120, GF_CLOSE_BTN, 999);
     
     var result := GFSendGump(who, gump);
-    
-    // Debug message to see what's being returned
-    print("DEBUG: HandleAddArmorSpecialAbility result[0] = " + result[0]);
     
     // Check for the cancel button (result[0] == 999)
     if (result[0] == 999)
@@ -1232,9 +1179,6 @@ function DisplayArmorAbilityOptions(who, input, ability, byref form_data)
     GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999); // Cancel button - returns 999
     
     var result := GFSendGump(who, gump);
-    
-    // Debug message to see what's being returned
-    print("DEBUG: DisplayArmorAbilityOptions result[0] = " + result[0]);
     
     // Check for the cancel button (result[0] == 999)
     if (result[0] == 999)
@@ -1456,11 +1400,9 @@ function ShowPage5(who, title, gump_width, gump_height)
     // Display configured loot items
     var loot_y := 190;
     if (form_data.loot && form_data.loot.size() > 0)
-        Print("DEBUG: Creating boss with following loot:");
 
         foreach item in (form_data.loot)
-            Print("DEBUG: Item: " + item.name + " Drop on death: " + item.on_death + " Chance: " + item.drop_chance);
-            GFTextLine(gump, 580, loot_y, 1153, "- " + item.name + " (" + item.drop_chance + "%)");
+            GFTextLine(gump, 580, loot_y, 1153, "- " + item.desc + " (" + item.drop_chance + "%)");
             // Add delete button for each item
             GFAddButton(gump, 550, loot_y, 4017, 4019, 1, 91 + _item_iter);
             loot_y += 20;
@@ -1567,7 +1509,6 @@ function CreateBossFromGump(who, form_data)
         SendSysMessage(who, "No tier specified, using NPC's default tier.");
     endif
 
-    // Debug: Print form_data combat events
     SendSysMessage(who, "DEBUG: Checking form_data combat events");
     if (form_data.combatevents && form_data.combatevents.size() > 0)
         SendSysMessage(who, "DEBUG: Found " + form_data.combatevents.size() + " combat events in form_data");
@@ -1602,8 +1543,7 @@ function CreateBossFromGump(who, form_data)
     else
         SendSysMessage(who, "DEBUG: No combat events found in form_data");
     endif
-    
-    // Debug: Print form_data special abilities
+
     SendSysMessage(who, "DEBUG: Checking form_data special abilities");
     if (form_data.special && form_data.special.size() > 0)
         SendSysMessage(who, "DEBUG: Found " + form_data.special.size() + " special abilities in form_data");
@@ -1620,7 +1560,6 @@ function CreateBossFromGump(who, form_data)
         SendSysMessage(who, "DEBUG: No special abilities found in form_data");
     endif
     
-    // Debug: Print form_data armor special abilities
     SendSysMessage(who, "DEBUG: Checking form_data armor special abilities");
     if (form_data.armorspecial && form_data.armorspecial.size() > 0)
         SendSysMessage(who, "DEBUG: Found " + form_data.armorspecial.size() + " armor special abilities in form_data");
@@ -1643,7 +1582,6 @@ function CreateBossFromGump(who, form_data)
         SendSysMessage(who, "DEBUG: No armor special abilities found in form_data");
     endif
     
-    // Debug: Print form_data timedscripts
     SendSysMessage(who, "DEBUG: Checking form_data timedscripts");
     if (form_data.timedscripts && form_data.timedscripts.size() > 0)
         SendSysMessage(who, "DEBUG: Found " + form_data.timedscripts.size() + " timedscripts in form_data");
@@ -1668,8 +1606,6 @@ function CreateBossFromGump(who, form_data)
             
             boss.timedscripts.append(script_struct);
         endforeach
-    else
-        SendSysMessage(who, "DEBUG: No timedscripts found in form_data");
     endif
     
     // Special AI
@@ -1712,23 +1648,18 @@ function CreateBossFromGump(who, form_data)
         boss.class := form_data.class;
     endif
 
-    Print("DEBUG: Transferring loot data to boss structure");
     if (form_data.loot && form_data.loot.size() > 0)
-        Print("DEBUG: Found " + form_data.loot.size() + " loot items to transfer");
         boss.+loot := array{};  // Ensure loot array exists in boss struct
         
         foreach item in (form_data.loot)
-            Print("DEBUG: Processing loot item: " + item.name);
-            // Create clean loot item structure
-            var loot_item := struct{
-                "objtype" := item.objtype,
-                "name" := item.name,
-                "color" := item.color,
-                "drop_chance" := CInt(item.drop_chance),
-                "on_death" := item.on_death
+            // Keep the same structure as form_data
+            var loot_entry := struct{
+                "template" := item.template,  // Keep as template
+                "drop_chance" := item.drop_chance,  // Keep as drop_chance
+                "on_death" := item.on_death,
+                "desc" := item.desc
             };
-            boss.loot.append(loot_item);
-            Print("DEBUG: Added loot item to boss.loot");
+            boss.loot.append(loot_entry);
         endforeach
     endif
 
@@ -1864,10 +1795,7 @@ function HandleAddTimedScript(who, input, byref form_data)
     GFAddButton(gump, 400, 630, 4017, 4019, GF_CLOSE_BTN, 999);
     
     var result := GFSendGump(who, gump);
-    
-    // Debug message to see what's being returned
-    print("DEBUG: HandleAddTimedScript result[0] = " + result[0]);
-    
+       
     // Check for the cancel button (result[0] == 999)
     if (result[0] == 999)
         SendSysMessage(who, "TimedScript selection cancelled.");
@@ -2004,10 +1932,7 @@ function DisplayTimedScriptOptions(who, input, script_name, byref form_data)
     GFTextLine(gump, 240, y_pos, 1153, "Cancel");
     
     var result := GFSendGump(who, gump);
-    
-    // Debug message to see what's being returned
-    print("DEBUG: DisplayTimedScriptOptions result[0] = " + result[0]);
-    
+   
     // Check for the cancel button (result[0] == 999)
     if (result[0] == 999)
         SendSysMessage(who, "TimedScript configuration cancelled.");
@@ -2136,7 +2061,6 @@ function SelectTeleportLocations(who, byref form_data)
                 return 0;
         endcase
     endif
-    print("DEBUG: hp_percent = " + hp_percent);
     // Create a new teleport location struct
     var teleport_location := struct{
         "hp_percent" := hp_percent,
@@ -2151,9 +2075,7 @@ function SelectTeleportLocations(who, byref form_data)
     
     // Sort by hp_percent (highest to lowest)
     form_data.teleport_locations.sort();
-    print("DEBUG: form_data.teleport_locations = " + form_data.teleport_locations);
     form_data.teleport_locations.reverse(); // Highest HP threshold first
-    print("DEBUG: form_data.teleport_locations = " + form_data.teleport_locations);
     
     SendSysMessage(who, "Teleport location added. Boss will teleport when health is at or below " + hp_percent + "%", color := 66);
     return 1;
