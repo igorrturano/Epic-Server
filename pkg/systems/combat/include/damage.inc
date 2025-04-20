@@ -1037,15 +1037,15 @@ function CalcDamageHabs(attacker, defender, damage)
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + CInt(damagemod));
 		endif
-    elseif (TemHabilidade(attacker, "Exitium Maleficorum"))
+    elseif (TemHabilidade(attacker, "Consagracao Divina"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
-		var inimigo := array{"Undead", "Demons"};
+		var inimigo := array{"Undead"}; // Removi Demons pra deixar pro DH
 
 		if (cfg[npctemplate.template].Category in inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage := damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Consagracao Divina]: " + CInt(damagemod));
 		endif
 	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
