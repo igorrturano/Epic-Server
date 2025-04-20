@@ -1,0 +1,172 @@
+use uo;
+use os;
+
+include "include/say";
+include ":tn:boss";
+include ":timedscripts:timedScripts";
+include ":merchants:pcconversation";
+
+program DeathEventsControl(params)
+    var npc := params[1];
+    if (!npc || npc.errortext)
+        return 0;
+    endif
+    
+    // Check if NPC has death events
+    var death_events := GetObjProperty(npc, "DeathEvents");
+    if (!death_events || !death_events.size())
+        return 0;
+    endif
+    
+    // Process Last Words events first, before NPC dies
+    foreach event in death_events
+        if (event.type == "Ultimas Palavras")
+            ProcessLastWordsEvent(npc, event);
+        elseif (event.type == "Criar Npcs")
+            ProcessCreateNpcsEvent(npc, event);
+        elseif (event.type == "Criar Itens")
+            ProcessCreateItemsEvent(npc, event);
+        elseif (event.type == "Abrir Porta")
+            ProcessOpenDoorEvent(npc, event);
+        elseif (event.type == "Abrir Passagem")
+            ProcessOpenPassageEvent(npc, event);
+        endif
+    endforeach
+    
+    // After processing all death events, return
+    return 1;
+endprogram
+
+function ProcessCreateItemsEvent(npc, event)
+    if (!event.items || !event.items.size())
+        return 0;
+    endif
+    
+    foreach iteminfo in (event.items)
+        var item := CreateItemAtLocation(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z), CInt(iteminfo.item), 1, CStr(npc.realm));
+        
+        if (item == error)
+            PrintTextAbove(npc, "DEBUG: Failed to create item: " + item.errortext);
+        else
+            PrintTextAbove(npc, "DEBUG: Created item: " + item);
+        endif
+    endforeach
+    
+    return 1;
+endfunction
+
+function ProcessOpenDoorEvent(npc, event)
+    if (!event.items || !event.items.size())
+        return 0;
+    endif
+    
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            item.locked := 0;
+        endif
+        sleepms(20);
+    endforeach
+    sleep(60);
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            item.locked := 1;
+        endif
+        sleepms(20);
+    endforeach
+    
+    return 1;
+endfunction
+
+function ProcessOpenPassageEvent(npc, event)
+    if (!event.items || !event.items.size())
+        return 0;
+    endif
+    var i := 0;
+    while (i < 20)
+        foreach serial in (event.items)
+            var item := SystemFindObjectBySerial(serial);
+            if (item)
+                item.movable := 1;
+                var e := MoveObjectToLocation(item, item.x, item.y, item.z + 1, item.realm, MOVEOBJECT_FORCELOCATION);
+                item.movable := 0;
+                sleepms(800);
+            endif
+        endforeach
+        i := i + 1;
+    endwhile
+    sleep(60);
+    foreach serial in (event.items)
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            item.movable := 1;
+            MoveObjectToLocation(item, item.x, item.y, item.z - 20, item.realm, MOVEOBJECT_FORCELOCATION);
+            item.movable := 0;
+        endif
+    endforeach
+    return 1;
+endfunction
+
+function ProcessCreateNpcsEvent(npc, event)
+    if (!event.amount || !event.npctemplate)
+        return 0;
+    endif
+    
+    
+    var amt := 0;
+    var fail_count := 0;
+    var max_attempts := CInt(event.amount) * 3; // Allow 3x attempts per requested NPC
+    var range := CInt(event.range);
+    
+    while (amt < CInt(event.amount) && fail_count < max_attempts)
+        // Calculate spawn position using RandomIntMinMax for proper range control
+        var spawn_x := RandomIntMinMax(npc.x - range, npc.x + range);
+        var spawn_y := RandomIntMinMax(npc.y - range, npc.y + range);
+        
+        // Try with different package prefixes
+        var template := CStr(event.npctemplate);
+        var new_npc := error;
+        
+        // If template doesn't already have a package prefix, try different ones
+        if (template[1] != ":")
+            var prefixes := array{":brainAI:", ":merchants:", ":epicAI:", ""};
+            foreach prefix in prefixes
+                new_npc := CreateNpcFromTemplate(prefix + template, spawn_x, spawn_y, npc.z, 0, CStr(event.realm));
+                if (new_npc != error)
+                    break;
+                endif
+            endforeach
+        else
+            // Template already has a prefix
+            new_npc := CreateNpcFromTemplate(template, spawn_x, spawn_y, npc.z, 0, CStr(event.realm));
+        endif
+        
+        if (new_npc != error)
+            amt := amt + 1;
+            var duration := event.duracao ? CInt(event.duracao) : 120;
+            TS_StartTimer(new_npc, "summon", duration);
+            
+            if (event.summontext)
+                PrintText(new_npc, event.summontext);
+            endif
+            fail_count := 0; // Reset fail counter on success
+        else
+            fail_count := fail_count + 1;
+            sleepms(50); // Slightly longer delay on failure
+        endif
+        
+        sleepms(2);
+    endwhile
+    return 1;
+endfunction
+
+function ProcessLastWordsEvent(npc, event)
+    if (!event.text || !event.text.size())
+        return 0;
+    endif
+    
+    SetObjProperty(npc, "Ultimas Palavras", event.text);
+    start_script(":death:hooks/speaklastwords", npc);
+    return 1;
+endfunction 

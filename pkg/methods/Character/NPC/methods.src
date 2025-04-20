@@ -1,3 +1,31 @@
+/*
+ABILITY REGISTRY
+To add a new ability:
+1. Create the Can* function in methods.src
+2. Add the ability to GetAvailableCustomAbilities() in epicBoss.inc
+3. Add appropriate properties to the ability dictionary
+
+Current Abilities:
+- CanDoWebWrap
+- canSpitAcid
+- CanTongueGrab
+- canCharge
+- CanAmbush
+- canDoConfusion
+- CanShootWeb
+- CanPoisonBite
+- CanClimbWall
+- CanLayEggSac
+- CanCharm
+- canBite
+- canThrow
+- hasHiveMind
+- hasTunnelTactics
+- hasRage
+Remember to maintain alphabetical order in both the comment block and the dictionary.
+*/
+
+
 use uo;
 include "include/NPCUtil";
 include ":tn:cooldown";
@@ -10,8 +38,22 @@ program Install()
 	return 1;
 endprogram
 
+function HasCustomAbility(who, method_name)
+    var custom_abilities := GetObjProperty(who, "CustomAbilities");
+    if (!custom_abilities)
+        return 0;
+    endif
+    
+    foreach ability in custom_abilities
+        if (ability.method == method_name)
+            return 1;
+        endif
+    endforeach
+    
+    return 0;
+endfunction
+
 exported function canCharge(who)
-    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     // Don't allow charge if already charging
     if (GetObjProperty(who, "#chargestart"))
         return 0;
@@ -22,11 +64,12 @@ exported function canCharge(who)
         return 0; 
     endif
 
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template == "goblinrider") return 1; endif
     if (template == "ratoide_barbaro") return 1; endif
     if (template == "bugbear") return 1; endif
+    return HasCustomAbility(who, "canCharge");
 
-    return 0;
 endfunction
 
 exported function isMyrkonid(who)
@@ -68,17 +111,20 @@ endfunction
 
 exported function hasHiveMind(who)
     if (isFormian(who)) return 1; endif
+    return HasCustomAbility(who, "hasHiveMind");
 endfunction
 
 exported function canSpitAcid(who)
     if (isFormian(who)) return 1; endif
     if (isAnkheg(who)) return 1; endif
+    return HasCustomAbility(who, "canSpitAcid");
 endfunction
 
 exported function hasTunnelTactics(who)
     if (isFormian(who)) return 1; endif
     if (isAnkheg(who)) return 1; endif
     if (isUmberHulk(who)) return 1; endif
+    return HasCustomAbility(who, "hasTunnelTactics");
 endfunction
 
 exported function getTier(who)
@@ -105,11 +151,10 @@ endfunction
 exported function hasRage(who)
     if (isReptoide(who)) return 1; endif
     var templates := array{"ratoide_barbaro", "bugbear"};
-    
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "hasRage");
+
 endfunction
 
 exported function isLizardMan(who)
@@ -123,18 +168,15 @@ endfunction
 
 exported function canThrow(who)
     var templates := array{"swampmonster", "lizardman2"};
-
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-
-    return 0;
+    return HasCustomAbility(who, "canThrow");
 endfunction
 
 exported function canBite(who)
     if (isLizardMan(who)) return 1; endif
     if (isReptoide(who)) return 1; endif
-
-    return 0;
+    return HasCustomAbility(who, "canBite");
 endfunction
 
 exported function isReptoide(who)
@@ -148,20 +190,16 @@ endfunction
 
 exported function CanAmbush(who)
     var templates := array{"bocudo", "reptoide1", "swampsqualid"};
-
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanAmbush");
 endfunction
 
 exported function CanTongueGrab(who)
     var templates := array{"", "gianttoad", ""};
-
     var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanTongueGrab");
 endfunction
 
 exported function isBloodless(who)
@@ -207,53 +245,45 @@ endfunction
 
 exported function canDoConfusion(who)
     if (isUmberHulk(who)) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "canDoConfusion");
 endfunction
 
 exported function CanDoWebWrap(who)
     var templates := array{"DreadGiantSpider", "HugeRedSpider", "BlackHugeSpider", "Tarantula"};
-
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanDoWebWrap");
+
 endfunction
 
 exported function CanShootWeb(who)
     var templates := array{"DreadGiantSpider", "BlackGiantSpider", "BlackHugeSpider", "SkullSpider", "PhaseSpider"};
-
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanShootWeb");
+
 endfunction
 
 exported function CanPoisonBite(who)
     var templates := array{"DreadGiantSpider", "spiderling", "HugeRedSpider", "BlackHugeSpider", "SkullSpider", "GiantSpider"};
-
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanPoisonBite");
+
 endfunction
 
 exported function CanClimbWall(who)
     var templates := array{"DreadGiantSpider", "SkullSpider"};
-
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanClimbWall");
 endfunction
 
 exported function CanLayEggSac(who)
     var templates := array{"DreadGiantSpider", "BlackGiantSpider", "BlackHugeSpider", "Tarantula"};
-
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanLayEggSac");
 endfunction
 
 exported function isSpider(who)
@@ -267,11 +297,9 @@ endfunction
 
 exported function CanCharm(who)
     var templates := array{"SuccubusVermelha"};
-
     var template := (NPC_ParseTemplateName(who.npctemplate).template);
     if (template in templates) return 1; endif
-    
-    return 0;
+    return HasCustomAbility(who, "CanCharm");
 endfunction
 
 exported function isHumanoidBrain(who)
