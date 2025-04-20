@@ -198,9 +198,17 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         return 0;
     endif
 
+    // Check for health-based teleport
+    CheckHealthTeleport(me);
+
     SetOpponent(opponent);
     opponent := CheckForIdealTarget();
     SetOpponent(opponent);
+
+    if (ShouldFlee(me))
+        FleeFrom(opponent);
+        return 1;
+    endif
 
     // Track initial state before combat
     var initial_state := GetCombatState(me, opponent);
@@ -299,6 +307,32 @@ function HumanoidIdle(wanders, is_ranged)
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
      endif
+
+         // Check if NPC should patrol
+    var patrol_points := GetObjProperty(me, "patrol_points");
+    var current_patrol_point := GetObjProperty(me, "#current_patrol_point");
+    if (!current_patrol_point)
+        current_patrol_point := 1;
+    endif
+    
+    if (patrol_points && patrol_points.size() >= 2)
+        // Handle patrolling
+        var dest := patrol_points[current_patrol_point];
+        
+        // Check if we've reached the destination (within 1 tile)
+        if (CoordinateDistance(me.x, me.y, dest.x, dest.y) <= 1)
+            // Move to next patrol point
+            current_patrol_point += 1;
+            if (current_patrol_point > patrol_points.size())
+                current_patrol_point := 1; // Loop back to first point
+            endif
+            SetObjProperty(me, "#current_patrol_point", current_patrol_point);
+        endif
+        
+        // Walk toward destination
+        WalkTowardLocation(dest.x, dest.y);
+        return; // Skip regular wandering
+    endif
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)
@@ -412,7 +446,8 @@ function GetHabsByLevel(npc, nivel)
 
   // At level 4+, get subclass-specific abilities respecting prerequisites
   if (nivel >= 4)
-    var progression := GetClassProgression(habcfg, 0);
+    var subclass := GetObjProperty(npc, "subclass");
+    var progression := GetClassProgression(habcfg, subclass);
     foreach hab in progression
       var elem := FindConfigElem(habcfg, hab);
       var classe := GetConfigString(elem, "classe"); 
@@ -476,7 +511,6 @@ function GetClassProgression(habcfg, subclass)
             base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
     endif
-
     // Only proceed if we have a valid base ability
     if (base_hab)
         // Start with the base ability
@@ -494,7 +528,6 @@ function GetClassProgression(habcfg, subclass)
             current := progression[progression.size()];
         endwhile
     endif
-
     return progression;
 endfunction
 
