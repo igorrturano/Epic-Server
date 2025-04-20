@@ -255,7 +255,6 @@ function FLS_GetSkillCap(who, skillname)
 endfunction
 
 function FLS_GetSkills(who, category)
-
 	var grad := 0;
 	if (category == "primarias")
 		grad := 3;

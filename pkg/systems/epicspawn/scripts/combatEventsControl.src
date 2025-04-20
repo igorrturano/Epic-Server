@@ -1,0 +1,149 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":damage:damage";
+include ":attributes:attributes";
+include ":epicspawn:epicCombatEventsController";
+
+program combatEventsControl(params)
+    var npc := params[1];
+    
+    if (!npc || npc.dead)
+        return 0;
+    endif
+    
+    // Check if this is a boss
+    if (!GetObjProperty(npc, "IsBoss"))
+        print("DEBUG: Not a boss, exiting CombatEventsControl for " + npc.name);
+        return 0;
+    endif
+
+    print("DEBUG: Combat Events controller started for " + npc.name);
+    
+    // Initialize tracking for combat events
+    SetupCombatEventTracking(npc);
+    
+    // Run the main loop while NPC is alive
+    while (npc && !npc.dead)
+        // Process combat events if in combat
+        if (npc.opponent)
+            ProcessCombatEvents(npc);
+        endif
+        
+        // Sleep to avoid excessive CPU usage
+        sleep(2);
+    endwhile
+    
+    return 1;
+endprogram
+
+/*
+ * SetupCombatEventTracking(npc)
+ * Purpose: Initializes tracking for combat events
+ * Parameters: npc - The NPC to setup combat event tracking for
+ */
+function SetupCombatEventTracking(npc)
+    // Get the combat events
+    var combat_events := GetObjProperty(npc, "CombatEvents");
+    
+    if (!combat_events || !combat_events.size())
+        print("DEBUG: No combat events found for " + npc.name);
+        return;
+    endif
+    
+    print("DEBUG: Found " + combat_events.size() + " combat events for " + npc.name);
+    
+    // Initialize last cast times for each event
+    var last_cast_times := dictionary{};
+    foreach event in combat_events
+        last_cast_times[event.name] := 0; // Never cast yet
+    endforeach
+    
+    // Store the last cast times
+    SetObjProperty(npc, "EventLastCastTimes", last_cast_times);
+    print("DEBUG: Combat event tracking initialized");
+endfunction
+
+/*
+ * ProcessCombatEvents(npc)
+ * Purpose: Processes any combat events configured for the NPC
+ * Parameters: npc - The NPC to process combat events for
+ * Return: 1 if any events were processed, 0 if none
+ */
+function ProcessCombatEvents(npc)
+    // Get the combat events
+    var combat_events := GetObjProperty(npc, "CombatEvents");
+    if (!combat_events || !combat_events.size())
+        return 0;
+    endif
+    
+    // Get the last cast times
+    var last_cast_times := GetObjProperty(npc, "EventLastCastTimes");
+    if (!last_cast_times)
+        // Initialize if missing
+        SetupCombatEventTracking(npc);
+        last_cast_times := GetObjProperty(npc, "EventLastCastTimes");
+    endif
+    
+    var current_time := ReadGameClock();
+    var processed := 0;
+    
+    // Check each combat event
+    foreach event in combat_events
+        // Skip if no name
+        if (!event.name)
+            continue;
+        endif
+        
+        // Check if the event has steps or actions
+        var event_actions := array{};
+        if (event.steps && event.steps.size() > 0)
+            event_actions := event.steps;
+        elseif (event.actions && event.actions.size() > 0)
+            event_actions := event.actions;
+        else
+            continue; // No actions to perform
+        endif
+        
+        // Skip if the cooldown hasn't elapsed
+        if (last_cast_times.exists(event.name) && 
+            (current_time - last_cast_times[event.name]) < CInt(event.cd))
+            continue;
+        endif
+        
+        // Check if the NPC is bloodied (below 50% health) if required
+        if (event.onlybloodied)
+            var max_hits := AP_GetVitalMaximumValue(npc, HITS);
+            var curr_hits := AP_GetVital(npc, HITS);
+            if (curr_hits > (max_hits * 0.5))
+                continue; // Not bloodied, skip
+            endif
+        endif
+        
+        // Check if opponent is within required distance
+        if (event.dist > 0)
+            var opponent := npc.opponent;
+            if (!opponent || Distance(npc, opponent) > event.dist)
+                continue; // Opponent too far, skip
+            endif
+        endif
+        
+        // All conditions met, execute the event
+        print("DEBUG: Executing combat event: " + event.name);
+        
+        // Execute the event using the function from epicCombatEvents.inc
+        if (ExecuteCombatEvent(npc, event, event_actions))
+            // Update the last cast time
+            last_cast_times[event.name] := current_time;
+            SetObjProperty(npc, "EventLastCastTimes", last_cast_times);
+            processed += 1;
+            
+            // Only process one event per cycle
+            break;
+        endif
+    endforeach
+    
+    return processed;
+endfunction

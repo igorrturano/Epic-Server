@@ -5,6 +5,7 @@ include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
+include "include/timedScripts";
 
 var brain_type;
 var me := Self();
@@ -22,14 +23,19 @@ program KillPlayers()
 
     while (1)
         var hasPlayerNearMe := HasPlayerNear(me);
-        if (hasPlayerNearMe)
+        var patrol_points := GetObjProperty(me, "patrol_points");
+        var isOnPatrol := (patrol_points && patrol_points.size() >= 2);
+        
+        if (hasPlayerNearMe || isOnPatrol)
             case (brain_type)
                 "monster": MonsterBrain();
                 "animal":  AnimalBrain();
                 "humanoid": HumanoidBrain();
-                // default: GenericBrain(); // chamar o ghaia:generic
+                // default: GenericBrain(); // chamar o ghaia:generic -> TODO: Criar um headless brain para npcs burros
             endcase
+            // Process any TimedScripts
         endif
+        
         sleep(15);
     endwhile
 endprogram
