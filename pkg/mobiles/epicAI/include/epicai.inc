@@ -41,6 +41,11 @@ function InitializeEpicNPC(mobile)
         HandleInitializationLoot(mobile, boss_struct);
     endif
 
+    var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
+    if (boss_struct)
+        HandleInitializationLoot(mobile, boss_struct);
+    endif
+
     var throwItem := CInt(npc_elem.throwItem);
     if (throwItem != error)
         SetObjProperty(mobile, "throwItem", throwItem);
@@ -105,6 +110,8 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
+
+
 
 
 endfunction
@@ -370,6 +377,7 @@ endfunction
 function SetupWizardClass(mobile, npc_elem)
     // First try to get school from config
     var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
+    var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
     
     // If no school defined in config, check habs
@@ -486,6 +494,17 @@ function SetupNPCEquip(who, npc_elem)
         foreach str in GetConfigStringArray(group, "Weapon")
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
+    endif
+    if (GetObjProperty(who, "specific_weapon"))
+        var weapon := GetObjProperty(who, "specific_weapon");
+        if (weapon)
+            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
+            // First Unequip hands
+            if (who.weapon)
+                DestroyItem(who.weapon);
+            endif
+            EquipItem(who, item);
+        endif
     endif
     if (GetObjProperty(who, "specific_weapon"))
         var weapon := GetObjProperty(who, "specific_weapon");
@@ -949,12 +968,24 @@ function CheckForIdealTarget()
    endcase
    
    // If we already have an opponent, check if we should stick with them
+   // Get the target priority
+   var target_priority := GetObjProperty(me, "target_priority");
+   var switch_chance := 70; // Default 10% chance to switch
+   case (target_priority)
+      "Aggressive": switch_chance := 50;  // 15% chance to switch
+      "Defensive":  switch_chance := 85;   // 5% chance to switch
+      "Focus":      switch_chance := 95;   // 2% chance to switch
+   endcase
+   
+   // If we already have an opponent, check if we should stick with them
    if (me.opponent && CanFight(me, me.opponent))
+      if (RandomInt(100) < switch_chance)
       if (RandomInt(100) < switch_chance)
          return me.opponent;
       endif
    endif
 
+   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
    var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
    if (potential_opponents.size() < 1)
       return 0;
@@ -1003,6 +1034,23 @@ function CheckForIdealTarget()
       var dist := Distance(me, opponent);
       if (dist <= 4)
          priority += 1;
+      endif
+
+      // Check for preferred target types
+      var preferred_target := GetObjProperty(me, "preferred_target");
+      if (preferred_target)
+          case (preferred_target)
+          "Ranged": if (opponent_is_ranged) priority += 4; endif
+          "Melee": if (!opponent_is_ranged) priority += 4; endif
+          "Guerreiro": if (opponent_class == GUERREIRO) priority += 4; endif
+          "Ladino": if (opponent_class == LADINO) priority += 4; endif
+          "Mago": if (opponent_class == SABIO) priority += 4; endif
+          "Pouca vida": 
+              var hp_percent := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS)) * 100;
+              if (hp_percent <= 50) 
+                  priority += 3;
+              endif
+          endcase
       endif
 
       // Check for preferred target types
