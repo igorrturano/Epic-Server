@@ -87,26 +87,27 @@ function PaladinSpellsGump(who, max_circle)
     var input := GFSendGump(who, gump);
     if (input[0] > 0)
         // Get the spell info directly from config
-        var spell_elem := FindConfigElem(cfg, input[0]);
-        if (!spell_elem)
+        var elem := FindConfigElem(cfg, input[0]);
+        if (!elem)
             SendSysMessageEx(who, "Erro ao encontrar informações da magia.", SSM_FAIL);
             return 0;
         endif
         
         // Build a complete spellinfo struct with ALL necessary fields
         var spellinfo := struct{
-            "id" := input[0],
-            "name" := spell_elem.Name,
-            "desc" := spell_elem.Desc,
-            "alvo" := spell_elem.Target,
-            "powerwords" := spell_elem.PowerWords,
-            "SpellScript" := spell_elem.SpellScript,
-            "magic_path" := ":spells:config/paladinspells",
-            "mana" := CInt(spell_elem.Mana),
-            "delay" := CInt(spell_elem.Delay),
-            "cycles" := CInt(spell_elem.Cycles),
-            "align" := spell_elem.Align ? spell_elem.Align : "Neutral",
-            "range" := spell_elem.Range ? spell_elem.Range : "Distancia"
+            "id" := elem.SpellId,
+            "name" := elem.Name,
+            "desc" := elem.Desc,
+            "alvo" := elem.Target,
+            "powerwords" := elem.PowerWords,
+            "script" := elem.SpellScript,
+            "type" := elem.Type,
+            "circle" := CInt(elem.Circle),
+            "difficulty" := CInt(elem.Difficulty),
+            "mana" := CInt(elem.Mana),
+            "delay" := CInt(elem.Delay),
+            "cycles" := CInt(elem.Cycles),
+            "range" := elem.Range
         };
         
         var script := Start_Script(":spells:cast_spell", {who, spellinfo});
