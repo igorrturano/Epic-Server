@@ -1,0 +1,85 @@
+use uo;
+use os;
+use polsys;
+use npc;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include "include/sysEvent";
+include "include/eventID";
+include "include/facings";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    params := 0;
+    
+    Print("DEBUG: Spell started - Target: " + targ.name);
+    
+    if (!targ)
+        return 0;
+    endif
+    
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Check if target is an animal
+    var npc_config := NPC_GetNPCConfig(targ);
+    var brain_type := lower(npc_config.BrainType);
+    if (targ.npctemplate && brain_type == "animal")
+        SendSysMessageEx(who, "Esta magia não funciona em animais.", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Visual and sound effects
+    PlaySoundEffect(targ, 0x1FD);
+    PlayObjectCenteredEffect(targ, 0x37B9, 7, 0x10);
+    PrintTextAbove(who, "Fuja!", 3); // Font 3, Red color
+    
+    
+    // Handle NPCs
+    if (targ.npctemplate)
+        var event := struct{
+            "type":=EVID_FLEE,
+            "source":=who
+        };
+        SendEvent(targ, event);
+    // Handle Players
+    else
+        // Get direction opposite to the paladin
+        var facing := GetFacing(targ.x, targ.y, who.x, who.y);
+        var opposite_facing := (facing + 4) % 8;
+                
+        // Calculate duration based on THEOLOGY skill (1 second per 10 skill points)
+        var duration := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+        var end_time := ReadGameClock() + duration;
+       
+        var packet := CreatePacket(0x97, 2);
+        
+        while (ReadGameClock() < end_time)
+            var mods := GetModByFacing(opposite_facing);
+            if (!mods)
+                break;
+            endif
+            
+            var new_x := targ.x + mods[1];
+            var new_y := targ.y + mods[2];
+            
+            // Check if we can move there
+            if (CheckLOSAt(targ, new_x, new_y, targ.z))
+                packet.SetInt8(1, opposite_facing | 0x80); // Run flag
+                packet.SendPacket(targ);
+                Sleepms(100);
+            else
+                break; // Stop if hitting a wall
+            endif
+        endwhile
+    endif
+    
+    return 1;
+endprogram
