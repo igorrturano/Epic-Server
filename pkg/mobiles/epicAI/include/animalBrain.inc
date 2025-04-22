@@ -59,6 +59,8 @@ function AnimalBrain()
                     SetWarMode( 0 );
                     SetOpponent( 0 );
                     sleep(1);
+                EVID_FLEE:
+                    FleeFrom(ev.source);
                 default:
                     PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase

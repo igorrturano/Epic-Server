@@ -54,7 +54,7 @@ function PaladinSpellsGump(who, max_circle)
     GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#FFFFFF >Magias Divinas", 0, 0);
     GFGumpPic(gump, 41, 84, 1469);
     
-    var y := 116;
+    var y := 90;
     var current_circle := -1;
     
     foreach spell_id in spell_list

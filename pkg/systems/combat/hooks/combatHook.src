@@ -262,6 +262,25 @@ function CalculateHitChance(attacker, defender)
 		hit_chance += 10;
 	endif
 
+    var challenged_by := GetObjProperty(attacker, "#DuelChallenge");
+    if (challenged_by && attacker.acctname) // Only affects players
+        if (challenged_by.time < ReadGameClock()) // Challenge expired
+            EraseObjProperty(attacker, "#DuelChallenge");
+        else
+            var challenger := SystemFindObjectBySerial(challenged_by.challenger);
+            if (challenger && challenger.connected)
+                if (defender.serial != challenger.serial) // If attacking someone other than the challenger
+                    hit_chance -= 10;
+                    if (RandomInt(100) < 20) // 20% chance to remind
+                        SendSysMessageEx(attacker, "Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", SSM_FAIL);
+                    endif
+                endif
+            else
+                EraseObjProperty(attacker, "#DuelChallenge"); // Clean up if challenger disconnected
+            endif
+        endif
+    endif
+
 	if (TemHabilidade(attacker, "Poder da Alianca"))
 		hit_chance += attacker.party.members.size() * 2;
 	endif
