@@ -29,56 +29,67 @@ const PRIORITY_THRESHOLD := 1800;      // Tempo (segundos) para considerar prior
 const MAX_PROCESSING_TIME := 60;       // Tempo máximo (segundos) para processar um baú
 
 program ProcessRecursosUpdates()
-    LogInfo("recursos", "Iniciando processador centralizado de atualizações de recursos...");
+    LogInfo("recursos", "Iniciando processador de atualizações de recursos (Versão Simplificada)...");
     
     // Registrar PID para que outros scripts possam verificar se está rodando
     SetGlobalProperty("recursos_update_processor_pid", GetPid());
     
-    // Inicializar contador de ciclos
-    var cycle_count := 0;
-    var last_emergency_cycle := 0;
-    
-    // Loop principal - continuará rodando até o servidor ser reiniciado
+    // Loop principal simplificado
     while (1)
-        cycle_count += 1;
-        
         // Obter lista de atualizações pendentes
         var updates_pending := GetGlobalProperty("recursos_updates_pending");
         
         // Verificar se há atualizações pendentes
-        if (!updates_pending || updates_pending.keys().size() == 0)
-            // Verificar se devemos executar um ciclo de emergência
-            var current_time := polcore().systime;
-            if (cycle_count % 5 == 0 || (current_time - last_emergency_cycle > EMERGENCY_CYCLE_TIME))
-                ExecutarCicloEmergencia();
-                last_emergency_cycle := current_time;
-            endif
+        if (updates_pending && updates_pending.keys().size() > 0)
+            ProcessarAtualizacoesPendentes(updates_pending);
             
-            // Se não há atualizações pendentes, pausar e verificar novamente
-            Sleep(CYCLE_WAIT_TIME);
-            continue;
-        endif
-        
-        // Processar atualizações pendentes
-        ProcessarAtualizacoesPendentes(updates_pending);
-        
-        // Verificar se há inconsistências globais ocasionalmente
-        if (cycle_count % 10 == 0)
-            // Usar qualquer container válido para a verificação global
-            var faccoes := GetActiveFactions(); // Esta função precisa ser implementada ou substituída
-            
-            foreach faction_name in faccoes
-                var container := FindFactionChest(faction_name); // Esta função precisa ser implementada ou substituída
-                if (container)
-                    VerificarInconsistencias(container, 0, "global");
-                endif
-            endforeach
+            // Atualizar a propriedade global
+            SetGlobalProperty("recursos_updates_pending", updates_pending);
         endif
         
         // Verificar novamente após um tempo
-        Sleep(CYCLE_WAIT_TIME);
+        Sleep(60); // 1 minuto entre ciclos
     endwhile
 endprogram
+
+
+// Função simplificada para processar baú individual
+function ProcessarBau(bau)
+    // Verificar se é válido
+    if (!bau || !bau.isA(POLCLASS_CONTAINER))
+        return 0;
+    endif
+    
+    // Verificar se o baú está sendo usado no momento
+    if (GetObjProperty(bau, "being_processed"))
+        return 0;
+    endif
+    
+    // Marcar como em processamento
+    SetObjProperty(bau, "being_processed", polcore().systime);
+    
+    // Processar o baú
+    var success := 0;
+    
+    // Contar recursos no baú
+    var recursos_reais := ContarRecursosReais(bau);
+    
+    // Atualizar o cache
+    SetObjProperty(bau, CACHE_PROP_NAME, recursos_reais);
+    SetObjProperty(bau, CACHE_UPDATE_PROP, polcore().systime);
+    EraseObjProperty(bau, CACHE_DIRTY_FLAG);
+    
+    // Sincronizar com datafile
+    var faction_name := GetObjProperty(bau, OBJ_FACTION_PROP);
+    if (faction_name)
+        success := SincronizarComDataFile(bau, recursos_reais);
+    endif
+    
+    // Limpar flag de processamento
+    EraseObjProperty(bau, "being_processed");
+    
+    return success;
+endfunction
 
 // Função principal para processar atualizações pendentes
 function ProcessarAtualizacoesPendentes(byref updates_pending)

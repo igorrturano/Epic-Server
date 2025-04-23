@@ -10,6 +10,7 @@ include ":faccao:include/faccao_resources";
 include ":timeutils:time";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
+include ":faccao:include/territory_management";
 
 
 // Funções compartilhadas entre o sistema de baú e o sistema de gestão
@@ -821,75 +822,72 @@ endif
 endfunction
 
 
-// Função auxiliar para criação segura de itens
+// Modificação da função SafeCreateItemInContainer com logs de depuração
 function SafeCreateItemInContainer(container, objtype, amount, properties := 0)
-    if (!container || !objtype || amount <= 0)
+    LogDebug("SafeCreate_DEBUG", "Entrando em SafeCreate: Cont=" + container.serial + ", Obj=0x" + Hex(objtype) + ", Amt=" + amount);
+
+    if (!container || !objtype || amount <= 0) 
         return 0;
     endif
-    
-    LogDebug("criacao_item", $"Tentando criar item 0x{Hex(objtype)} x{amount} em contêiner {container.serial}");
-    
-    // ABORDAGEM 1: Verificar se já existe um item do mesmo tipo para empilhar
+
     var existing_item := FindExistingStackableItem(container, objtype);
-    
     if (existing_item)
-        LogDebug("criacao_item", "Item existente encontrado, tentando empilhar");
-        
-        // Verificar limite de empilhamento
+        LogDebug("SafeCreate_DEBUG", "ExistingItem encontrado: " + existing_item.serial);
+    else
+        LogDebug("SafeCreate_DEBUG", "ExistingItem encontrado: Nenhum");
+    endif
+
+    if (existing_item)
+        var max_stack := 60000;
         var old_amount := existing_item.amount;
-        var new_amount := old_amount + amount;
-        
-        if (new_amount <= 60000) // Limite máximo de pilha
-            // Tentar aumentar a quantidade diretamente
-            var before_amount := existing_item.amount;
-            existing_item.amount := new_amount;
-            
-            // Verificar se o aumento foi bem-sucedido
-            if (existing_item.amount == new_amount)
-                // Atualizar propriedades se fornecidas
-                if (properties)
-                    foreach prop_name in (properties.keys())
-                        SetObjProperty(existing_item, prop_name, properties[prop_name]);
-                        sleepms(1);
-                    endforeach
-                endif
-                
-                LogDebug("criacao_item", $"Item empilhado com sucesso, nova quantidade: {existing_item.amount}");
-                return existing_item;
-            else
-                // Restaurar quantidade original se falhou
-                existing_item.amount := before_amount;
-                LogWarning("criacao_item", "Falha ao aumentar quantidade, tentando método alternativo");
+        var amount_to_add_now := amount;
+
+        if (old_amount + amount_to_add_now > max_stack)
+            amount_to_add_now := max_stack - old_amount;
+            if (amount_to_add_now <= 0) 
+                existing_item := 0; // Não pode empilhar, força criação de novo
             endif
         endif
-        
-        // ABORDAGEM 2: Se não conseguiu empilhar diretamente, criar um item substituto
-        var replacement := ReplaceStackWithNew(existing_item, amount, properties);
-        if (replacement)
-            LogDebug("criacao_item", "Item substituído com sucesso");
-            return replacement;
+
+        if (existing_item && amount_to_add_now > 0)
+            LogDebug("SafeCreate_DEBUG", "Tentando TryIncreaseAmount no item " + existing_item.serial + " com +" + amount_to_add_now);
+            var added_amount := TryIncreaseAmount(existing_item, amount_to_add_now);
+
+            if (added_amount > 0)
+                LogDebug("SafeCreate_DEBUG", "TryIncreaseAmount SUCESSO. Adicionado: " + added_amount + ". Aplicando props...");
+                if (properties) 
+                    ApplyPropertiesToItem(existing_item, properties);
+                endif
+                LogDebug("SafeCreate_DEBUG", "Propriedades aplicadas (ou nenhuma). Retornando item existente " + existing_item.serial);
+                return existing_item;
+            else
+                LogWarning("SafeCreate_DEBUG", "TryIncreaseAmount FALHOU. Tentando ReplaceStackWithNew...");
+                var replacement := ReplaceStackWithNew(existing_item, amount, properties); // Tenta com o amount original
+                if (replacement)
+                    LogDebug("SafeCreate_DEBUG", "Resultado ReplaceStackWithNew: " + replacement.serial);
+                else
+                    LogDebug("SafeCreate_DEBUG", "Resultado ReplaceStackWithNew: Falha");
+                endif
+                return replacement; // Retorna o novo item ou 0 se falhar
+            endif
         endif
     endif
-    
-    // ABORDAGEM 3: Criar novo item
-    LogDebug("criacao_item", "Criando novo item");
+
+    // Criar novo item
+    LogDebug("SafeCreate_DEBUG", "Criando novo item via CreateItemInContainer...");
     var new_item := CreateItemInContainer(container, objtype, amount);
-    
+
     if (new_item)
-        // Aplicar propriedades se fornecidas
-        if (properties)
-            foreach prop_name in (properties.keys())
-                SetObjProperty(new_item, prop_name, properties[prop_name]);
-                sleepms(1);
-            endforeach
+        LogDebug("SafeCreate_DEBUG", "CreateItemInContainer SUCESSO. Novo serial: " + new_item.serial + ". Aplicando props...");
+        if (properties) 
+            ApplyPropertiesToItem(new_item, properties);
         endif
-        
-        LogDebug("criacao_item", $"Item criado com sucesso: {new_item.serial}");
+        LogDebug("SafeCreate_DEBUG", "Propriedades aplicadas (ou nenhuma). Retornando novo item " + new_item.serial);
         return new_item;
+    else
+        LogError("SafeCreate_DEBUG", "CreateItemInContainer FALHOU.");
+        return 0;
     endif
-    
-    LogError("criacao_item", "Falha ao criar item");
-    return 0;
 endfunction
 
 // Função para encontrar um item do mesmo tipo para empilhar
@@ -1129,83 +1127,160 @@ endfunction
 
 /*
  * DesfazerTransferenciaTerritorio(dados)
- * Desfaz uma transferência de território incompleta
+ *
+ * Purpose: Desfaz a transferência de território em caso de falha
+ * Parameters:
+ *   dados - Dados da transação salva
+ * Return:
+ *   1 para sucesso, 0 para falha
  */
 function DesfazerTransferenciaTerritorio(dados)
     if (!dados)
-        LogWarning("transacao", "Tentativa de desfazer transferência com dados nulos");
+        LogError("territorio", "DesfazerTransferenciaTerritorio: Dados de transação não fornecidos");
         return 0;
     endif
     
-    LogDebug("transacao", $"Desfazendo transferência de território");
-    LogDebug("transacao", $"Território: {dados.territorio_id}");
-    LogDebug("transacao", $"Facção original: {dados.faccao_original}");
+    LogWarning("territorio", "Iniciando rollback de transferência de território: " + dados.territorio_id);
     
     var territorio_id := dados.territorio_id;
     var faccao_original := dados.faccao_original;
     
-    // 1. Restaurar facção original no território
-    var elem := FindTerritoryByID(territorio_id);
-    if (!elem)
-        LogError("transacao", $"Território {territorio_id} não encontrado");
+    // 1. Restaurar a facção original no datafile
+    if (!TM_SetTerritoryFaction(territorio_id, faccao_original))
+        LogError("territorio", "DesfazerTransferenciaTerritorio: Falha ao restaurar facção original no datafile");
         return 0;
     endif
     
-    SetElementProp(elem, TERRITORY_FACTION_PROP, faccao_original);
-    SetElementProp(elem, "Faction", faccao_original); // Para compatibilidade
+    // 2. Remover objetos criados para a nova facção
+    TM_DeleteTerritoryObjects(territorio_id, dados.faccao_nova);
     
-    // 2. Restaurar objetos originais se informação disponível
+    // 3. Restaurar os dados originais de seriais, se existirem
     if (dados.seriais_originais)
-        var seriais_df := SafeOpenDataFile(":faccao:seriais");
+        // NOVA VERSÃO: Restaurar no elemento específico do território
+        var seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
         if (seriais_df)
-            var territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
-            if (territorios_seriais)
-                territorios_seriais[territorio_id] := dados.seriais_originais;
-                SetElementProp(seriais_df, "territorios", territorios_seriais);
-                LogInfo("transacao", $"Seriais originais restaurados para território {territorio_id}");
+            // Criar/Encontrar o elemento para este território
+            var territory_elem := SafeFindElement(seriais_df, territorio_id, 1); // 1 = criar
+            if (territory_elem)
+                // Restaurar as propriedades do elemento
+                foreach key in (dados.seriais_originais.keys())
+                    SetElementProp(territory_elem, key, dados.seriais_originais[key]);
+                    sleepms(1);
+                endforeach
+                
+                LogInfo("territorio", "Seriais originais restaurados para território: " + territorio_id);
+            else
+                LogError("territorio", "Falha ao criar/encontrar elemento para restaurar seriais: " + territorio_id);
             endif
-        endif
-    endif
-    
-    // 3. Restaurar lista de territórios da facção original
-    var guild_original := FindGuildByName(faccao_original);
-    if (guild_original)
-        var guild_obj := FindGuild(guild_original);
-        if (guild_obj)
-            var territories := guild_obj.GetProp("territories") ?: array{};
             
-            if (!(territorio_id in territories))
-                territories.append(territorio_id);
-                guild_obj.SetProp("territories", territories);
-                LogInfo("transacao", $"Território {territorio_id} restaurado para facção {faccao_original}");
+            // LEGADO: Também restaurar no formato antigo
+            var territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
+            if (!territorios_seriais)
+                territorios_seriais := dictionary{};
             endif
+            
+            territorios_seriais[territorio_id] := dados.seriais_originais;
+            SetElementProp(seriais_df, "territorios", territorios_seriais);
+            LogDebug("territorio", "Registro de seriais legado restaurado para: " + territorio_id);
         endif
     endif
     
-    // 4. Remover da nova facção (se aplicável)
-    if (dados.faccao_nova)
-        var guild_nova := FindGuildByName(dados.faccao_nova);
-        if (guild_nova)
-            var guild_obj := FindGuild(guild_nova);
-            if (guild_obj)
-                var territories := guild_obj.GetProp("territories");
-                if (territories)
-                    var new_territories := array{};
-                    foreach terr in territories
-                        if (terr != territorio_id)
-                            new_territories.append(terr);
+    // 4. Restaurar objetos originais, se possível
+    if (dados.seriais_originais)
+        var center := TM_GetTerritoryCenter(territorio_id);
+        if (center)
+            // Se havia um baú original, tentar recriar
+            if (dados.seriais_originais.bau)
+                var orig_bau := SystemFindObjectBySerial(dados.seriais_originais.bau);
+                if (!orig_bau)
+                    // Recriar o baú
+                    var bau := CreateItemAtLocation(center.x, center.y, center.z, 0xFF11, 1, center.realm);
+                    if (bau)
+                        bau.movable := 0;
+                        SetObjProperty(bau, OBJ_FACTION_PROP, faccao_original);
+                        SetObjProperty(bau, "FactionName", faccao_original);
+                        SetObjProperty(bau, TERRITORY_ID_PROP, territorio_id);
+                        
+                        var chest_id := faccao_original + "_" + territorio_id;
+                        SetObjProperty(bau, CHEST_ID_PROP, chest_id);
+                        
+                        var nome_bau := "Baú de Doações de " + faccao_original;
+                        if (territorio_id)
+                            nome_bau += " - " + territorio_id;
                         endif
-                        sleepms(2);
-                    endforeach
-                    
-                    guild_obj.SetProp("territories", new_territories);
-                    LogInfo("transacao", $"Território {territorio_id} removido da facção {dados.faccao_nova}");
+                        SetName(bau, nome_bau);
+                        
+                        bau.usescript := ":faccao:baudoacao/use";
+                        SetObjProperty(bau, "OnInsertScript", ":faccao:baudoacao/onInsert");
+                        SetObjProperty(bau, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+                        SetObjProperty(bau, "CanInsertScript", ":faccao:baudoacao/canInsert");
+                        SetObjProperty(bau, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+                        
+                        LogInfo("territorio", "Baú recriado para território: " + territorio_id);
+                    endif
+                endif
+            endif
+            
+            // Se havia uma mesa original, tentar recriar
+            if (dados.seriais_originais.mesa)
+                var orig_mesa := SystemFindObjectBySerial(dados.seriais_originais.mesa);
+                if (!orig_mesa)
+                    // Recriar a mesa
+                    var mesa := CreateItemAtLocation(center.x+1, center.y, center.z, 0xFE5C, 1, center.realm);
+                    if (mesa)
+                        mesa.movable := 0;
+                        SetObjProperty(mesa, OBJ_FACTION_PROP, faccao_original);
+                        SetObjProperty(mesa, "FactionName", faccao_original);
+                        SetObjProperty(mesa, TERRITORY_ID_PROP, territorio_id);
+                        
+                        var nome_mesa := "Mesa de Gestão de " + faccao_original;
+                        if (territorio_id)
+                            nome_mesa += " - " + territorio_id;
+                        endif
+                        SetName(mesa, nome_mesa);
+                        
+                        mesa.usescript := ":faccao:gestao_use";
+                        
+                        LogInfo("territorio", "Mesa recriada para território: " + territorio_id);
+                    endif
+                endif
+            endif
+            
+            // Se havia um mural original, tentar recriar
+            if (dados.seriais_originais.mural)
+                var orig_mural := SystemFindObjectBySerial(dados.seriais_originais.mural);
+                if (!orig_mural)
+                    // Recriar o mural
+                    var mural := CreateItemAtLocation(center.x, center.y+1, center.z, 0x46AE, 1, center.realm);
+                    if (mural)
+                        mural.movable := 0;
+                        SetObjProperty(mural, OBJ_FACTION_PROP, faccao_original);
+                        SetObjProperty(mural, "FactionName", faccao_original);
+                        SetObjProperty(mural, TERRITORY_ID_PROP, territorio_id);
+                        
+                        var nome_mural := "Mural de Recrutamento de " + faccao_original;
+                        if (territorio_id)
+                            nome_mural += " - " + territorio_id;
+                        endif
+                        SetName(mural, nome_mural);
+                        
+                        mural.usescript := ":faccao:faccao";
+                        
+                        LogInfo("territorio", "Mural recriado para território: " + territorio_id);
+                    endif
                 endif
             endif
         endif
     endif
     
-    LogInfo("transacao", $"Transferência de território {territorio_id} desfeita com sucesso");
+    // 5. Notificar o controlador de recursos sobre o rollback
+    TM_NotifyTerritoryChange(territorio_id, "rollback", struct{
+        "old_faction" := dados.faccao_nova,
+        "restored_faction" := faccao_original
+    });
+    
+    LogInfo("territorio", "Rollback concluído. Território " + territorio_id + " restaurado para facção original: " + 
+                           faccao_original);
     
     return 1;
 endfunction
@@ -1328,7 +1403,21 @@ function RemoveTerritoryFromGuilds(territory_name, territory_id := "")
             continue;
         endif
         
-        var territories := guild.GetProp("territories");
+       var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
         if (!territories || typeof(territories) != "Array")
             continue;
         endif
@@ -1432,12 +1521,12 @@ function ClassificarPorNome(resource_name)
     resource_name := Lower(Trim(resource_name));
     
     var categorias := dictionary{
-        "metal" := array{"ferro", "prata", "ouro", "cobre", "bronze", "metal", "ingot", "ore"},
-        "couro" := array{"couro", "leather", "hide", "pele", "escamoso", "polar"},
-        "madeira" := array{"madeira", "wood", "log", "tora", "carvao", "carvão", "coal"},
-        "comida" := array{"comida", "food", "peixe", "fish", "carne", "meat", "pão", "bread"},
-        "pano" := array{"pano", "cloth", "tecido", "escamas", "scales", "seda", "silk"},
-        "pedras" := array{"pedra", "stone", "rock", "osso", "bone", "areia", "sand"},
+        "metal" := array{"ferro", "prata", "ouro", "cobre", "bronze", "metal", "ingot", "ore", "ironore", "prataingot", "acoingot"},
+        "couro" := array{"couro", "leather", "hide", "pele", "escamoso", "polar", "couroespesso", "couroescamoso", "couropolar", "courodraconiano", "escamasazuis"},
+        "madeira" := array{"madeira", "wood", "log", "tora", "carvao", "carvão", "coal", "madeirapinheiro", "madeirateixo"},
+        "comida" := array{"comida", "food", "peixe", "fish", "carne", "meat", "pão", "bread", "cogumelo"},
+        "pano" := array{"pano", "cloth", "tecido", "escamas", "scales", "seda", "silk", "pelebranca"},
+        "pedras" := array{"pedra", "stone", "rock", "osso", "bone", "areia", "sand", "ossogigante", "ossodemoniaco"},
         "joias" := array{"joia", "jewel", "gem", "vidro", "glass", "crystal"},
         "moedas" := array{"moeda", "coin", "dinheiro", "money", "currency"}
     };
@@ -1454,6 +1543,7 @@ function ClassificarPorNome(resource_name)
     return "desconhecido";
 endfunction
 
+
 function ClassificarPorObjtype(objtype)
     // Mapeamento direto de objtypes comuns
     var objtype_map := dictionary{
@@ -1462,21 +1552,27 @@ function ClassificarPorObjtype(objtype)
         0x6993 := "metal",     // Silver ingot
         0x6995 := "metal",     // Steel ingot
         0x1BEF := "metal",     // Iron ingot
+        0x1BF2 := "metal",     // Aço
         
         // Couro
         0xef12 := "couro",     // Couro espesso
         0xef17 := "couro",     // Couro polar
         0x1078 := "couro",     // Couro comum
+        0xef11 := "couro",     // Couro escamoso
+        0xed20 := "couro",     // Couro draconiano
+        0xef36 := "couro",     // Escamas azuis
         
         // Madeira
         0xee36 := "madeira",   // Madeira de pinheiro
         0xee3e := "madeira",   // Madeira de teixo
         0x1BD7 := "madeira",   // Toras
+        0x1BDE := "madeira",   // Carvão
         
         // Comida
         0x097B := "comida",    // Peixe
         0x09B7 := "comida",    // Carne
         0x09D2 := "comida",    // Queijo
+        0x0D16 := "comida",    // Cogumelo
         
         // Tecidos
         0x1766 := "pano",      // Pano
@@ -1511,161 +1607,208 @@ function ClassificarPorObjtype(objtype)
     return "desconhecido";
 endfunction
 
-/*
- * FindFactionChest(faction_name, territory_id := "", create_if_missing := 0)
- *
- * Purpose: Função unificada para encontrar baús de facção usando múltiplas estratégias
- * 
- * Parameters:
- *   faction_name - Nome da facção dona do baú
- *   territory_id - ID específico do território (opcional)
- *   create_if_missing - Se deve criar um baú de emergência caso não encontre (0 = não, 1 = sim)
- *
- * Return:
- *   Referência para o baú encontrado ou 0 se não encontrar
- */
 function FindFactionChest(faction_name, territory_id := "", create_if_missing := 0)
     if (!faction_name)
         LogError("recursos", "FindFactionChest() chamado sem nome de facção");
         return 0;
     endif
     
+    LogDebug("recursos", "FindFactionChest: Buscando baú para facção '" + faction_name + 
+             (territory_id ? "', território '" + territory_id + "'" : "'"));
+    
     var chest := 0;
     
-    // ESTRATÉGIA 1: Busca específica por território
+    // ESTRATÉGIA 1: Busca específica pelo território no formato novo (elemento específico)
     if (territory_id)
-        LogDebug("recursos", "Buscando baú para facção: " + faction_name + ", território: " + territory_id);
-        
-        // 1.1: Verificar seriais registrados
         var seriais_df := SafeOpenDataFile(":faccao:seriais");
         if (seriais_df)
-            var territorios_seriais := GetElementProp(seriais_df, "territorios");
+            // Buscar pelo elemento específico do território (formato novo)
+            var territory_elem := SafeFindElement(seriais_df, territory_id);
+            if (territory_elem)
+                LogDebug("recursos", "Elemento do território encontrado no datafile");
+                
+                // Verificar se a facção corresponde
+                var elem_faction := GetElementProp(territory_elem, "faction");
+                if (elem_faction == faction_name)
+                    LogDebug("recursos", "Facção corresponde, verificando serial do baú");
+                    
+                    // Obter serial do baú e verificá-lo
+                    var chest_serial := GetElementProp(territory_elem, "bau");
+                    if (chest_serial)
+                        LogDebug("recursos", "Serial do baú encontrado: " + chest_serial);
+                        
+                        chest := SystemFindObjectBySerial(chest_serial);
+                        if (chest)
+                            LogDebug("recursos", "Baú encontrado com sucesso usando elemento de território");
+                            // Verificar se o baú está acessível e pertence à facção correta
+                            if (IsValidContainer(chest) && GetObjProperty(chest, "faction") == faction_name)
+                                return chest;
+                            else
+                                LogWarning("recursos", "Baú encontrado, mas é inválido ou facção não corresponde");
+                                chest := 0; // Resetar para continuar com outras estratégias
+                            endif
+                        else
+                            LogWarning("recursos", "Serial do baú válido, mas objeto não encontrado");
+                        endif
+                    endif
+                else
+                    LogDebug("recursos", "Facção não corresponde. Esperado: " + faction_name + ", Encontrado: " + elem_faction);
+                endif
+            else
+                LogDebug("recursos", "Elemento do território não encontrado no datafile");
+            endif
+            
+            // ESTRATÉGIA 2: Verificar no formato antigo (dicionário territorios)
+            var territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
             if (territorios_seriais && territorios_seriais[territory_id])
+                LogDebug("recursos", "Registro encontrado no formato antigo");
+                
                 var info := territorios_seriais[territory_id];
-                if (info.bau)
+                if (info.faction == faction_name && info.bau)
+                    LogDebug("recursos", "Facção corresponde, verificando serial do baú (formato antigo)");
+                    
                     chest := SystemFindObjectBySerial(info.bau);
-                    if (chest && GetObjProperty(chest, "faction") == faction_name)
-                        LogDebug("recursos", "Baú encontrado via seriais registrados: " + chest.serial);
+                    if (chest && IsValidContainer(chest))
+                        LogDebug("recursos", "Baú encontrado com sucesso usando formato antigo");
+                        
+                        // Atualizar para o novo formato enquanto estamos aqui
+                        var territory_elem := SafeFindElement(seriais_df, territory_id, 1); // 1 = criar
+                        if (territory_elem)
+                            SetElementProp(territory_elem, "bau", info.bau);
+                            SetElementProp(territory_elem, "faction", info.faction);
+                            if (info.mesa) 
+                                SetElementProp(territory_elem, "mesa", info.mesa);
+                            endif
+                            if (info.mural) 
+                                SetElementProp(territory_elem, "mural", info.mural);
+                            endif
+                            LogInfo("recursos", "Migrado registro de baú para novo formato");
+                        endif
+                        
                         return chest;
                     endif
                 endif
             endif
         endif
-        
-        // 1.2: Buscar pelo território no mundo
-        foreach item in (EnumerateItemsInContainer(0))
-            if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
-                GetObjProperty(item, "faction") == faction_name && 
+    endif
+    
+    // ESTRATÉGIA 3: Busca no mundo por qualquer baú da facção e território
+    LogDebug("recursos", "Buscando baús no mundo");
+    
+    // 3.1: Primeiro, buscar baú que corresponda exatamente à facção e território
+    if (territory_id)
+        foreach item in EnumerateItemsInContainer(0) // 0 = raiz do mundo
+            if ((item.objtype == 0xFF11 || item.objtype == 0xBA63) && 
+                GetObjProperty(item, "faction") == faction_name &&
                 GetObjProperty(item, "territory_id") == territory_id)
-                LogDebug("recursos", "Baú encontrado via busca no mundo por território: " + item.serial);
-                // Atualizar registro
-                RegisterDonationChest(faction_name, item);
+                
+                LogInfo("recursos", "Baú com facção e território correspondentes encontrado no mundo: " + item.serial);
+                
+                // Atualizar registro no datafile
+                var seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
+                if (seriais_df)
+                    var territory_elem := SafeFindElement(seriais_df, territory_id, 1);
+                    if (territory_elem)
+                        SetElementProp(territory_elem, "bau", item.serial);
+                        SetElementProp(territory_elem, "faction", faction_name);
+                    endif
+                endif
+                
                 return item;
             endif
             sleepms(1);
         endforeach
     endif
     
-    // ESTRATÉGIA 2: Busca pelo registro na guilda
-    var guild := FindGuildByName(faction_name);
-    if (guild)
-        var guild_obj := FindGuild(guild);
-        if (guild_obj)
-            var chest_serial := guild_obj.GetProp("donation_chest");
-            if (!chest_serial)
-                chest_serial := guild_obj.GetProp(GUILD_CHEST_PROP); // Nome alternativo
-            endif
-            
-            if (chest_serial)
-                chest := SystemFindObjectBySerial(chest_serial);
-                if (chest && GetObjProperty(chest, "faction") == faction_name)
-                    LogDebug("recursos", "Baú encontrado via registro na guilda: " + chest.serial);
-                    // Atualizar território se necessário
-                    if (territory_id && !GetObjProperty(chest, "territory_id"))
-                        SetObjProperty(chest, "territory_id", territory_id);
-                    endif
-                    return chest;
-                endif
-            endif
-        endif
-    endif
+    // 3.2: Buscar qualquer baú da facção
+    var generic_chest := 0;
+    var neutral_chest := 0; // Baú sem território atribuído
     
-    // ESTRATÉGIA 3: Busca direta no datafile
-    var df := SafeOpenDataFile("faction_chests");
-    if (df)
-        var elem := SafeFindElement(df, faction_name);
-        if (elem)
-            var chest_serial := GetElementProp(elem, "chest_serial");
-            if (chest_serial)
-                chest := SystemFindObjectBySerial(chest_serial);
-                if (chest && GetObjProperty(chest, "faction") == faction_name)
-                    LogDebug("recursos", "Baú encontrado via datafile: " + chest.serial);
-                    // Atualizar território se necessário
-                    if (territory_id && !GetObjProperty(chest, "territory_id"))
-                        SetObjProperty(chest, "territory_id", territory_id);
-                    endif
-                    // Atualizar registro na guilda
-                    UpdateGuildChestRecord(faction_name, chest);
-                    return chest;
-                endif
-            endif
-            
-            // Verificar coordenadas salvas
-            var loc := GetElementProp(elem, "location");
-            if (loc)
-                foreach item in ListItemsAtLocation(loc.x, loc.y, loc.z, loc.realm)
-                    if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
-                        GetObjProperty(item, "faction") == faction_name)
-                        LogDebug("recursos", "Baú encontrado por localização: " + item.serial);
-                        // Atualizar registros
-                        SetElementProp(elem, "chest_serial", item.serial);
-                        if (territory_id && !GetObjProperty(item, "territory_id"))
-                            SetObjProperty(item, "territory_id", territory_id);
-                        endif
-                        UpdateGuildChestRecord(faction_name, item);
-                        return item;
-                    endif
-                    sleepms(1);
-                endforeach
-            endif
-        endif
-    endif
-    
-    // ESTRATÉGIA 4: Busca completa no mundo
-    LogDebug("recursos", "Realizando busca completa no mundo para " + faction_name);
     foreach item in EnumerateItemsInContainer(0)
-        if ((item.objtype == 0xff11 || item.objtype == 0xba63) && 
+        if ((item.objtype == 0xFF11 || item.objtype == 0xBA63) && 
             GetObjProperty(item, "faction") == faction_name)
-            // Se temos ID do território e este baú tem outro ID, continuar buscando
-            var item_territory := GetObjProperty(item, "territory_id");
-            if (territory_id && item_territory && item_territory != territory_id)
-                continue;
+            
+            generic_chest := item; // Guardar qualquer baú da facção
+            
+            // Verificar se não tem território atribuído
+            if (!GetObjProperty(item, "territory_id"))
+                neutral_chest := item;
+                LogDebug("recursos", "Baú neutro (sem território) encontrado: " + item.serial);
+                break; // Preferir um baú neutro
             endif
             
-            LogDebug("recursos", "Baú encontrado via busca completa: " + item.serial);
-            // Atualizar registros
-            RegisterDonationChest(faction_name, item);
-            UpdateGuildChestRecord(faction_name, item);
-            return item;
+            sleepms(1);
         endif
-        sleepms(1);
     endforeach
     
-    // ESTRATÉGIA 5: Criar baú de emergência se solicitado
+    // Preferir baú neutro se encontrado
+    if (neutral_chest)
+        LogInfo("recursos", "Usando baú neutro encontrado: " + neutral_chest.serial);
+        
+        // Se fornecido um território, atribuir ao baú
+        if (territory_id)
+            SetObjProperty(neutral_chest, "territory_id", territory_id);
+            
+            // Atualizar registro no datafile
+            var seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
+            if (seriais_df)
+                var territory_elem := SafeFindElement(seriais_df, territory_id, 1);
+                if (territory_elem)
+                    SetElementProp(territory_elem, "bau", neutral_chest.serial);
+                    SetElementProp(territory_elem, "faction", faction_name);
+                endif
+            endif
+            
+            LogInfo("recursos", "Território " + territory_id + " atribuído ao baú neutro");
+        endif
+        
+        return neutral_chest;
+    endif
+    
+    // Se não encontrou baú neutro, usar qualquer baú da facção
+    if (generic_chest)
+        LogInfo("recursos", "Usando baú genérico da facção: " + generic_chest.serial);
+        
+        // Se fornecido um território, atribuir ao baú
+        if (territory_id && GetObjProperty(generic_chest, "territory_id") != territory_id)
+            LogWarning("recursos", "Baú já possui outro território. Atual: " + 
+                      GetObjProperty(generic_chest, "territory_id") + ", Solicitado: " + territory_id);
+        endif
+        
+        return generic_chest;
+    endif
+    
+    // ESTRATÉGIA 4: Criar baú de emergência se solicitado
     if (create_if_missing)
-        LogInfo("recursos", "Criando baú de emergência para " + faction_name);
+        LogWarning("recursos", "Criando baú de emergência para " + faction_name);
         chest := CreateEmergencyDonationChest(faction_name);
+        
         if (chest)
+            // Atribuir território ao baú criado, se fornecido
             if (territory_id)
                 SetObjProperty(chest, "territory_id", territory_id);
+                LogInfo("recursos", "Território " + territory_id + " atribuído ao baú de emergência");
+                
+                // Registrar no datafile
+                var seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
+                if (seriais_df)
+                    var territory_elem := SafeFindElement(seriais_df, territory_id, 1);
+                    if (territory_elem)
+                        SetElementProp(territory_elem, "bau", chest.serial);
+                        SetElementProp(territory_elem, "faction", faction_name);
+                    endif
+                endif
             endif
-            RegisterDonationChest(chest, faction_name);
-            UpdateGuildChestRecord(faction_name, chest);
+            
             return chest;
+        else
+            LogCritical("recursos", "Falha ao criar baú de emergência");
         endif
     endif
     
-    LogWarning("recursos", "Nenhum baú encontrado para facção " + faction_name);
+    LogError("recursos", "Nenhum baú encontrado para facção: " + faction_name + 
+            (territory_id ? " (Território: " + territory_id + ")" : ""));
+    
     return 0;
 endfunction
 

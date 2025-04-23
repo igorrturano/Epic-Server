@@ -18,16 +18,17 @@ include ":faccao:include/datafile_helpers";
  * Parameters: Nenhum
  * Return: Struct com todos os tipos de recursos zerados
  */
+// Versão correta (usando a sintaxe adequada de eScript)
 function CreateEmptyResourceStruct()
     var recursos := struct{
-        "comida" := 0,
-        "moedas" := 0,
-        "couro" := 0,
-        "metal" := 0,
-        "madeira" := 0,
-        "pano" := 0,
-        "pedras" := 0,
-        "joias" := 0
+        comida := 0,
+        moedas := 0,
+        couro := 0,
+        metal := 0,
+        madeira := 0,
+        pano := 0,
+        pedras := 0,
+        joias := 0
     };
     
     return recursos;
@@ -402,10 +403,18 @@ function FindExistingStackableItem(container, objtype)
     return 0;
 endfunction
 
-
-// Tenta aumentar a quantidade diretamente
 function TryIncreaseAmount(item, amount)
-    if (!item || amount <= 0)
+    // Verificações iniciais com logs
+    LogDebug("TryIncrease_DEBUG", "Iniciando TryIncreaseAmount para item " + (item ? item.serial : "NULO") + 
+             ", amount = " + amount);
+             
+    if (!item)
+        LogError("TryIncrease_DEBUG", "Erro: Item é nulo");
+        return 0;
+    endif
+    
+    if (amount <= 0)
+        LogError("TryIncrease_DEBUG", "Erro: Amount inválido (" + amount + ")");
         return 0;
     endif
     
@@ -414,19 +423,63 @@ function TryIncreaseAmount(item, amount)
     
     // Verificar limites
     if (new_amount > 60000)
+        LogWarning("TryIncrease_DEBUG", "Limitando nova quantidade: " + new_amount + " -> 60000");
         new_amount := 60000;
         amount := 60000 - original_amount;
     endif
     
-    // Tentar aplicar a nova quantidade
+    // Verificar propriedades do item que poderiam bloquear a alteração
+    LogDebug("TryIncrease_DEBUG", "Item: " + item.serial + ", ObjType: 0x" + Hex(item.objtype) + 
+             ", Quantidade atual: " + original_amount + ", Nova quantidade: " + new_amount);
+    
+    // Verificar se o item tem lock ou outro atributo que impediria modificação
+    var locked := GetObjProperty(item, "Locked");
+    if (locked)
+        LogWarning("TryIncrease_DEBUG", "Item está bloqueado (Locked). Isto pode impedir alterações.");
+    endif
+    
+    var control_script := GetObjProperty(item, "ControlScript");
+    if (control_script)
+        LogWarning("TryIncrease_DEBUG", "Item tem ControlScript: " + control_script + ". Pode interferir na alteração.");
+    endif
+    
+    // Verificar se o item foi criado recentemente
+    var created_time := GetObjProperty(item, "GeneratedTime");
+    if (created_time)
+        var time_diff := polcore().systime - CInt(created_time);
+        if (time_diff < 5) // menos de 5 segundos
+            LogWarning("TryIncrease_DEBUG", "Item foi criado há apenas " + time_diff + " segundos. Isso pode causar problemas.");
+        endif
+    endif
+    
+    // Tentar aplicar a nova quantidade - Versão simples sem try/except
+    LogDebug("TryIncrease_DEBUG", "Tentando atribuir nova quantidade...");
+    var before_change := item.amount;
     item.amount := new_amount;
     
     // Verificar se funcionou
     if (item.amount == new_amount)
+        LogDebug("TryIncrease_DEBUG", "SUCESSO! Quantidade atualizada: " + item.amount);
         return amount; // Retorna a quantidade efetivamente adicionada
     else
+        LogError("TryIncrease_DEBUG", "FALHA! Quantidade não foi alterada. Original: " + original_amount + ", Atual: " + item.amount);
+        
         // Tentar restaurar valor original em caso de falha
         item.amount := original_amount;
+        
+        // Adicionar uma pequena pausa e tentar novamente uma vez como teste
+        LogDebug("TryIncrease_DEBUG", "Tentando novamente após pausa...");
+        sleepms(100);
+        
+        // Segunda tentativa
+        item.amount := new_amount;
+        if (item.amount == new_amount)
+            LogInfo("TryIncrease_DEBUG", "Segunda tentativa TEVE SUCESSO após pausa!");
+            return amount;
+        else
+            LogWarning("TryIncrease_DEBUG", "Segunda tentativa também falhou.");
+        endif
+        
         return 0;
     endif
 endfunction
@@ -437,13 +490,20 @@ function MergeItemProperties(item, properties)
         return 0;
     endif
     
+    LogDebug("MergeProps_DEBUG", "Iniciando mesclagem de propriedades para item " + item.serial);
     var merged := 0;
     
     // Se propriedades é um dicionário/struct, aplicar diretamente
     if (TypeOf(properties) == "Dictionary" || TypeOf(properties) == "Struct")
+        LogDebug("MergeProps_DEBUG", "Mesclando de Dictionary/Struct com " + properties.keys().size() + " propriedades");
         foreach prop_name in (properties.keys())
-            SetObjProperty(item, prop_name, properties[prop_name]);
-            merged += 1;
+            LogDebug("MergeProps_DEBUG", "  -> SetProp: " + prop_name + " = " + properties[prop_name]);
+            var result := SetObjProperty(item, prop_name, properties[prop_name]);
+            if (result != error)
+                merged += 1;
+            else
+                LogError("MergeProps_DEBUG", "  -> FALHA ao definir " + prop_name + "!");
+            endif
             sleepms(1);
         endforeach
     endif
@@ -453,40 +513,61 @@ function MergeItemProperties(item, properties)
         var source_item := properties;
         var prop_names := GetObjPropertyNames(source_item);
         
+        LogDebug("MergeProps_DEBUG", "Mesclando de ItemRef " + source_item.serial + " com " + prop_names.size() + " propriedades");
         foreach prop_name in prop_names
             var value := GetObjProperty(source_item, prop_name);
-            SetObjProperty(item, prop_name, value);
-            merged += 1;
+            LogDebug("MergeProps_DEBUG", "  -> CopyProp: " + prop_name);
+            var result := SetObjProperty(item, prop_name, value);
+            if (result != error)
+                merged += 1;
+            else
+                LogError("MergeProps_DEBUG", "  -> FALHA ao copiar " + prop_name + "!");
+            endif
             sleepms(1);
         endforeach
     endif
     
+    LogDebug("MergeProps_DEBUG", "Mesclagem concluída: " + merged + " propriedades aplicadas");
     return merged;
 endfunction
 
+
 // Função para aplicar propriedades a um item
 function ApplyPropertiesToItem(item, properties)
+    LogDebug("ApplyProps_DEBUG", "Aplicando propriedades ao item " + (item ? item.serial : "NULL"));
+    
     if (!item)
+        LogError("ApplyProps_DEBUG", "Item inválido (NULL)");
         return 0;
     endif
     
-    return MergeItemProperties(item, properties);
+    if (!properties)
+        LogDebug("ApplyProps_DEBUG", "Nenhuma propriedade para aplicar");
+        return 1; // Sucesso - não havia nada para fazer
+    endif
+    
+    var result := MergeItemProperties(item, properties);
+    LogDebug("ApplyProps_DEBUG", "Aplicação concluída: " + result + " propriedades aplicadas");
+    return result;
 endfunction
+
 
 
 // Função para substituir um item existente por um novo com quantidade acumulada
 function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     if (!old_item)
+        LogError("ReplaceStack_DEBUG", "Erro: old_item é NULL");
         return 0;
     endif
     
     var container := old_item.container;
     if (!container)
+        LogError("ReplaceStack_DEBUG", "Erro: container do old_item é NULL. Item: " + old_item.serial);
         return 0;
     endif
     
-    LogDebug("recursos", "Tentando substituir item " + old_item.serial + " com qtd adicional " + amount_to_add);
-
+    LogDebug("ReplaceStack_DEBUG", "Iniciando ReplaceStackWithNew para item " + old_item.serial + " em container " + container.serial);
+    LogDebug("ReplaceStack_DEBUG", "Quantidade atual: " + old_item.amount + ", Quantidade a adicionar: " + amount_to_add);
     
     var objtype := old_item.objtype;
     var old_amount := old_item.amount;
@@ -494,6 +575,7 @@ function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     
     // Verificar limite
     if (total_amount > 60000)
+        LogDebug("ReplaceStack_DEBUG", "Limite de 60000 excedido. Ajustando de " + total_amount + " para 60000");
         total_amount := 60000;
     endif
     
@@ -501,19 +583,25 @@ function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     var old_properties := dictionary{};
     var prop_names := GetObjPropertyNames(old_item);
     
+    LogDebug("ReplaceStack_DEBUG", "Salvando " + prop_names.size() + " propriedades do item antigo");
     foreach prop_name in prop_names
         old_properties[prop_name] := GetObjProperty(old_item, prop_name);
         sleepms(1);
     endforeach
     
     // Criar novo item com quantidade total
+    LogDebug("ReplaceStack_DEBUG", "Criando novo item de tipo 0x" + Hex(objtype) + " com quantidade " + total_amount);
     var new_item := CreateItemInContainer(container, objtype, total_amount);
+    
     if (!new_item)
-        LogError("recursos", "Falha ao criar novo item para substituição");
+        LogError("ReplaceStack_DEBUG", "FALHA na criação do novo item. Retornando 0");
         return 0;
     endif
     
+    LogInfo("ReplaceStack_DEBUG", "SUCESSO: Novo item criado com serial " + new_item.serial);
+    
     // Transferir propriedades antigas
+    LogDebug("ReplaceStack_DEBUG", "Transferindo propriedades do item antigo para o novo");
     foreach prop_name in (old_properties.keys())
         SetObjProperty(new_item, prop_name, old_properties[prop_name]);
         sleepms(1);
@@ -521,17 +609,27 @@ function ReplaceStackWithNew(old_item, amount_to_add, properties := 0)
     
     // Adicionar novas propriedades
     if (properties)
-        foreach prop_name in (properties.keys())
-            SetObjProperty(new_item, prop_name, properties[prop_name]);
-            sleepms(1);
-        endforeach
+        LogDebug("ReplaceStack_DEBUG", "Adicionando novas propriedades ao item");
+        if (TypeOf(properties) == "Dictionary")
+            foreach prop_name in (properties.keys())
+                SetObjProperty(new_item, prop_name, properties[prop_name]);
+                sleepms(1);
+            endforeach
+        else
+            LogWarning("ReplaceStack_DEBUG", "Propriedades fornecidas não são um Dictionary: " + TypeOf(properties));
+        endif
     endif
     
     // Destruir item antigo
-    DestroyItem(old_item);
+    LogDebug("ReplaceStack_DEBUG", "Destruindo item antigo " + old_item.serial);
+    var destroy_result := DestroyItem(old_item);
+    if (destroy_result)
+        LogDebug("ReplaceStack_DEBUG", "Item antigo destruído com sucesso");
+    else
+        LogWarning("ReplaceStack_DEBUG", "Falha ao destruir item antigo: " + destroy_result);
+    endif
     
-    LogDebug("recursos", "Item substituído com sucesso, nova quantidade: " + new_item.amount);
-
+    LogInfo("ReplaceStack_DEBUG", "ReplaceStackWithNew concluído. Novo item: " + new_item.serial + " com quantidade " + new_item.amount);
     return new_item;
 endfunction
 
@@ -741,7 +839,20 @@ var recursos_datafile := GetElementProp(elem, "recursos", CreateEmptyResourceStr
     endif
 endfunction
 
-
+/*
+ * MapearRecurso(resource_name)
+ *
+ * Purpose: Mapeia um nome de recurso para seu objtype correspondente
+ * Parameters: resource_name - Nome do recurso a ser mapeado
+ * Return: Objtype do recurso ou 0 se não encontrado
+ */
+/*
+ * MapearRecurso(resource_name)
+ *
+ * Purpose: Mapeia um nome de recurso para seu objtype correspondente
+ * Parameters: resource_name - Nome do recurso a ser mapeado
+ * Return: Objtype do recurso ou 0 se não encontrado
+ */
 /*
  * MapearRecurso(resource_name)
  *
@@ -750,54 +861,76 @@ endfunction
  * Return: Objtype do recurso ou 0 se não encontrado
  */
 function MapearRecurso(resource_name)
-    // Normalizar o nome
+    // Verificar entrada
+    if (!resource_name || TypeOf(resource_name) != "String") 
+        LogError("recursos", "Nome de recurso inválido: " + resource_name);
+        return 0;
+    endif
+
+    // Normalizar nome
+    var original_name := resource_name;
     resource_name := Lower(Trim(resource_name));
     
-    // Mapeamento direto (apenas os mais comuns)
-    var mapping := dictionary{
-        "ferro" := 0x6300,
-        "ouro" := 0x1BEE,
-        "prata" := 0x6993,
-        "couro" := 0x1078,
-        "madeira" := 0x1BD7,
-        "peixe" := 0x097B,
-        "carne" := 0x09B7,
-        "pano" := 0x1766,
-        "pedra" := 0x1BDD,
-        "osso" := 0x0F7E,
-        "vidro" := 0x1BE3,
-        "joia" := 0x1F13,
-        "moeda" := 0x0EED
-    };
+    LogDebug("recursos", "MapearRecurso: normalizado '" + resource_name + "' (original: '" + original_name + "')");
     
-    // Verificar correspondência direta
-    if (mapping.exists(resource_name))
-        return mapping[resource_name];
+    // Mapeamento completo de recursos
+    var resource_map := dictionary;
+    // Recursos básicos
+    resource_map["ironore"] := 0x6300;     // Minério de ferro
+    resource_map["couro"] := 0x1078;       // Couro comum
+    resource_map["madeira"] := 0x1BD7;     // Toras
+    resource_map["comida"] := 0x097B;      // Peixe
+    resource_map["pano"] := 0x1766;        // Pano
+    resource_map["pedra"] := 0x1BDD;       // Pedra
+    resource_map["joias"] := 0x1F13;       // Joia
+    resource_map["moedas"] := 0x0EED;      // Moedas
+    
+    // Recursos específicos - problemas anteriores
+    resource_map["acoingot"] := 0x1BF2;    // Lingote de aço
+    resource_map["vidro"] := 0x1BE3;       // Vidro 
+    resource_map["osso"] := 0x0F7E;        // Osso
+    
+    // Recursos adicionais
+    resource_map["couroespesso"] := 0xEF12; // Couro espesso
+    resource_map["couroescamoso"] := 0xEF11; // Couro escamoso
+    resource_map["couropolar"] := 0xEF17;   // Couro polar
+    resource_map["courodraconiano"] := 0xED20; // Couro draconiano
+    resource_map["pelebranca"] := 0xEE52;  // Pele branca
+    resource_map["madeirapinheiro"] := 0xEE36; // Madeira de pinheiro
+    resource_map["madeirateixo"] := 0xEE3E; // Madeira de teixo
+    resource_map["carvao"] := 0x1BDE;      // Carvão
+    resource_map["prataingot"] := 0x6993;  // Lingote de prata
+    resource_map["escamasazuis"] := 0xEF36; // Escamas azuis
+    resource_map["ossogigante"] := 0xEF3A; // Osso gigante
+    resource_map["ossodemoniaco"] := 0xEF29; // Osso demoníaco
+    resource_map["cogumelo"] := 0x0D16;    // Cogumelo
+    
+    // Verificar mapeamento direto - ÚNICA TENTATIVA DE MAPEAMENTO
+    if (resource_map.exists(resource_name))
+        LogDebug("recursos", "MapearRecurso: correspondência direta '" + resource_name + "' -> 0x" + Hex(resource_map[resource_name]));
+        return resource_map[resource_name];
     endif
     
-    // Verificar correspondência parcial
-    foreach key in (mapping.keys())
-        if (resource_name.find(key) != error)
-            return mapping[key];
-        endif
-    endforeach
-    
-    // Determinação baseada na categoria
-    var categoria := ClassificarRecurso(resource_name);
-    case (categoria)
-        "metal":   return 0x6300; // Ferro (padrão para metais)
-        "couro":   return 0x1078; // Couro comum
-        "madeira": return 0x1BD7; // Tora comum
-        "comida":  return 0x097B; // Peixe
-        "pano":    return 0x1766; // Pano básico
-        "pedras":  return 0x1BDD; // Pedra comum
-        "joias":   return 0x1F13; // Joia básica
-        "moedas":  return 0x0EED; // Moedas de ouro
-    endcase
-    
-    return 0; // Não foi possível mapear
+    // Falha no mapeamento - não usar correspondência parcial ou fallback genérico
+    LogError("recursos", "Recurso não mapeado: '" + resource_name + "'. Adicione este recurso ao dicionário em MapearRecurso.");
+    return 0; // Retorna 0 para indicar falha
 endfunction
 
+// Função auxiliar para remover espaços em branco no início e fim
+function TruncateWhiteSpace(str)
+    var start := 1;
+    var end := Len(str);
+
+    while (start <= end && str[start] == " ")
+        start := start + 1;
+    endwhile
+
+    while (end >= start && str[end] == " ")
+        end := end - 1;
+    endwhile
+
+    return str[start, end];
+endfunction
 // Função auxiliar para processar a string de recursos de forma segura
 function ProcessResourceString(resources_string)
     // Delegar para a função centralizada em faccao_resources.inc

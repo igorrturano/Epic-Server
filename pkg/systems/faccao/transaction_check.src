@@ -4,6 +4,7 @@ use datafile;
 
 include ":faccao:include/shared_functions";
 include ":faccao:include/logging";
+include ":faccao:include/territory_management";
 
 program transaction_check()
     LogInfo("recursos", "Iniciando verificação de transações pendentes...");

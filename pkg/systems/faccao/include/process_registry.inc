@@ -8,7 +8,7 @@ use os;
 use datafile;
 
 // Constantes para configuração
-const PROCESS_REGISTRY_DATAFILE := ":system:process_registry";
+const PROCESS_REGISTRY_DATAFILE := ":faccao:process_registry";
 const HEARTBEAT_TIMEOUT := 300;  // 5 minutos de timeout para processos que não respondem
 
 /*
@@ -41,7 +41,7 @@ function RegisterProcess(process_name, unique_id := "")
         process_name;
     
     // Encontrar/criar elemento no registro
-   var elem := SafeFindElement(df, process_id);
+    var elem := SafeFindElement(df, process_id);
     if (elem == error)
         LogError("processo", $"Falha ao acessar elemento: {process_id}");
         return error;
@@ -63,8 +63,13 @@ function RegisterProcess(process_name, unique_id := "")
             
             // Registrar tentativa duplicada
             var duplicate_attempts := elem.GetProp("duplicate_attempts") ?: 0;
-            SetElementProp(elem, "duplicate_attempts", duplicate_attempts + 1);
-            SetElementProp(elem, "last_duplicate_attempt", current_time);
+            if (!SetElementProp(elem, "duplicate_attempts", duplicate_attempts + 1))
+                LogError("processo", "Falha ao atualizar contagem de tentativas duplicadas");
+            endif
+            
+            if (!SetElementProp(elem, "last_duplicate_attempt", current_time))
+                LogError("processo", "Falha ao atualizar timestamp de tentativa duplicada");
+            endif
             
             return 0;
         endif
@@ -77,10 +82,25 @@ function RegisterProcess(process_name, unique_id := "")
     endif
     
     // Registrar novo processo
-    SetElementProp(elem, "pid", getpid());
-    SetElementProp(elem, "registered_time", current_time);
-    SetElementProp(elem, "last_heartbeat", current_time);
-    SetElementProp(elem, "host_runtime", polcore().systime);
+    if (!SetElementProp(elem, "pid", getpid()))
+        LogError("processo", "Falha ao definir PID");
+        return error;
+    endif
+    
+    if (!SetElementProp(elem, "registered_time", current_time))
+        LogError("processo", "Falha ao definir tempo de registro");
+        return error;
+    endif
+    
+    if (!SetElementProp(elem, "last_heartbeat", current_time))
+        LogError("processo", "Falha ao definir último heartbeat");
+        return error;
+    endif
+    
+    if (!SetElementProp(elem, "host_runtime", polcore().systime))
+        LogError("processo", "Falha ao definir runtime do host");
+        return error;
+    endif
     
     LogInfo("processo", $"Processo {process_name} registrado (PID: {getpid()})");
     return 1;

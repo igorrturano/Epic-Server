@@ -292,45 +292,58 @@ function LogPermissionCheck(who, container, action, result)
                              player_faction, player_rank, chest_faction);
 endfunction
 
-function LogPermissionToDatafile(who, container, action, result, 
-                                  player_faction, player_rank, chest_faction)
-    var df := SafeOpenDataFile(":faccao:chest_access_log");
-    if (df == error)
-        df := SafeOpenDataFile(":faccao:chest_access_log", 1);
+/*
+ * LogPermissionToDatafile(who, item, action, result, player_faction, player_rank, chest_faction)
+ *
+ * Registra operações de permissão no datafile para auditoria
+ */
+function LogPermissionToDatafile(who, item, action, result := 0, player_faction := "", player_rank := "", chest_faction := "")
+    // Abrir/criar datafile
+    var df := SafeOpenDataFile(":faccao:chest_access_log", 1);
+    if (!df)
+        LogError("permissao", "Falha ao abrir datafile de log de acesso");
+        return 0;
     endif
     
-    if (df == error)
-        LogError("permissao", "Falha ao criar datafile de log");
-        return;
+    // Encontrar/criar elemento de logs
+    var elem := SafeFindElement(df, "logs", 1);
+    if (!elem)
+        LogError("permissao", "Falha ao criar elemento de logs");
+        return 0;
     endif
     
-   var elem := SafeFindElement(df, "logs");
-    if (elem == error)
-        elem := SafeFindElement(df, "logs", 1); // 1 = criar se não existir
+    // Obter registros existentes com segurança
+    var logs := GetElementProp(elem, "entries", array{});
+    if (!logs)
+        logs := array{};
     endif
     
-    var logs := elem.GetProp("entries") ?: array{};
-    
-    // Entrada de log simplificada
-    var log_entry := struct{
-        "timestamp" := polcore().systime,
-        "player" := who.name,
-        "player_serial" := who.serial,
+    // Adicionar novo registro
+    logs.append(struct{
+        "time" := polcore().systime,
+        "character" := who.name,
+        "serial" := who.serial,
+        "item" := item.desc,
+        "item_serial" := item.serial,
+        "action" := action,
+        "result" := result ? 1 : 0,
         "player_faction" := player_faction,
         "player_rank" := player_rank,
-        "chest_serial" := container.serial,
-        "chest_faction" := chest_faction,
-        "action" := action,
-        "success" := result ? 1 : 0
-    };
+        "chest_faction" := chest_faction
+    });
     
-    // Manter apenas os 200 logs mais recentes
-    logs.append(log_entry);
-    if (logs.size() > 200)
-        logs.Erase(1);
+    // Limitar o tamanho do histórico
+    while (logs.size() > 100)
+        logs.erase(1);
+    endwhile
+    
+    // Salvar registros atualizados com verificação
+    if (!SetElementProp(elem, "entries", logs))
+        LogError("permissao", "Falha ao salvar histórico de acesso");
+        return 0;
     endif
     
-    SetElementProp(elem, "entries", logs);
+    return 1;
 endfunction
 
 

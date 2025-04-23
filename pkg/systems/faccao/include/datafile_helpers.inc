@@ -19,20 +19,24 @@ include ":faccao:include/logging";
  * Retorna o datafile ou 0 em caso de erro
  */
 function SafeOpenDataFile(datafile_name, create := 0)
+    LogDebug("datafile", "SafeOpenDataFile: Tentando abrir " + datafile_name + (create ? " (criando se não existir)" : ""));
+    
     var df;
     
     if (create)
         df := DFOpenDataFile(datafile_name, DF_CREATE);
         if (df == error)
-            LogError("datafile", "Falha ao criar datafile: " + datafile_name);
+            LogError("datafile", "Falha ao criar datafile: " + datafile_name + ", Erro: " + df);
             return 0;
         endif
+        LogDebug("datafile", "Datafile criado com sucesso: " + datafile_name);
     else
         df := DFOpenDataFile(datafile_name);
         if (df == error)
-            LogError("datafile", "Falha ao abrir datafile: " + datafile_name);
+            LogError("datafile", "Falha ao abrir datafile: " + datafile_name + ", Erro: " + df);
             return 0;
         endif
+        LogDebug("datafile", "Datafile aberto com sucesso: " + datafile_name);
     endif
     
     return df;
@@ -102,13 +106,19 @@ function SetElementProp(elem, prop_name, value)
         return 0;
     endif
     
-    var result := elem.SetProp(prop_name, value); // Esta linha está no arquivo de helpers e não deve ser alterada
+    LogDebug("datafile", "SetElementProp: Definindo " + prop_name + " com valor do tipo " + TypeOf(value));
+    if (TypeOf(value) == "Dictionary" || TypeOf(value) == "Array" || TypeOf(value) == "Struct")
+        LogDebug("datafile", "SetElementProp: Objeto complexo, Size: " + (TypeOf(value) == "Dictionary" || TypeOf(value) == "Array" ? value.size() : "N/A"));
+    endif
+    
+    var result := elem.SetProp(prop_name, value);
 
     if (result == error)
-        LogError("datafile", "Falha ao definir propriedade: " + prop_name);
+        LogError("datafile", "Falha ao definir propriedade: " + prop_name + ", Erro: " + result);
         return 0;
     endif
     
+    LogDebug("datafile", "SetElementProp: Propriedade " + prop_name + " definida com sucesso");
     return 1;
 endfunction
 
@@ -166,23 +176,41 @@ endfunction
 /*
  * DeleteDatafileEntry(datafile_name, elem_name)
  * 
- * Remove um elemento do datafile com tratamento de erro
- * Retorna 1 para sucesso, 0 para falha
+ * Remove um elemento do datafile com tratamento de erro e lógica aprimorada
+ * para lidar tanto com nomes quanto com IDs de território
  */
 function DeleteDatafileEntry(datafile_name, elem_name)
     var df := SafeOpenDataFile(datafile_name);
     if (!df)
+        LogError("datafile", "Datafile não encontrado: " + datafile_name);
         return 0;
     endif
     
-    var result := df.DeleteElement(elem_name); // Usar o método nativo do datafile
-    
-    if (result == error)
-        LogError("datafile", "Falha ao deletar elemento: " + elem_name);
-        return 0;
+    // Tentar deletar diretamente pelo nome
+    var result := df.DeleteElement(elem_name);
+    if (result && result != error)
+        return 1;
     endif
     
-    return 1;
+    // Se falhou e parece ser um ID de território (começando com TER_)
+    if (elem_name.find("TER_") == 1)
+        foreach key in (df.Keys())
+            var elem := df.FindElement(key);
+            if (elem)
+                var id := elem.GetProp(TERRITORY_ID_PROP);
+                if (id == elem_name)
+                    result := df.DeleteElement(key);
+                    if (result && result != error)
+                        return 1;
+                    endif
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
+    LogError("datafile", "Falha ao deletar elemento: " + elem_name);
+    return 0;
 endfunction
 
 /*
@@ -224,20 +252,23 @@ function FindDatafileByPath(path_list)
 endfunction
 
 
-// Função para verificar a integridade do datafile
+// Função para verificar a integridade do datafile - corrigida
 function VerificarIntegridadeDatafile()
     LogInfo("recursos", "Verificando integridade do datafile de recursos...");
     
-    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);  // 1 = criar
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
     if (!df)
-        return 0;  // Erro já foi logado pela função auxiliar
+        return 0;
     endif
+    
+    // Correção: Limpar elementos duplicados primeiro
+    LimparElementosDuplicados(df);
     
     // Verificar elementos do datafile
     var correcoes := 0;
     
     // 1. Verificar elemento do Reino
-    var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);  // 1 = criar
+    var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);
     var recursos_reino := GetElementProp(reino_elem, "recursos");
     
     if (!recursos_reino)
@@ -259,7 +290,7 @@ function VerificarIntegridadeDatafile()
     
     // 2. Verificar elementos de facções
     foreach elem_name in (df.keys())
-        if (elem_name != KINGDOM_RESOURCE_ELEM && elem_name.find("faction_") != error)
+        if (elem_name != KINGDOM_RESOURCE_ELEM && elem_name.find("faction_") == 1)
             var faction_elem := SafeFindElement(df, elem_name);
             var recursos := GetElementProp(faction_elem, "recursos");
             
@@ -285,4 +316,73 @@ function VerificarIntegridadeDatafile()
     
     LogInfo("recursos", "Verificação de integridade do datafile concluída. Correções: " + correcoes);
     return correcoes;
+endfunction
+
+
+
+// Função para limpar elementos duplicados - nova função simples
+function LimparElementosDuplicados(df)
+    var elementos_removidos := 0;
+    var elementos_a_remover := array{};
+    var dados_a_migrar := dictionary{};
+    
+    // Identificar elementos incorretos e planejar migrações
+    foreach elem_name in (df.keys())
+        if (elem_name.find("faction_faction_") == 1)
+            // Extrair o nome real da facção
+            var nome_base := "";
+            var partes := SplitWords(elem_name, "_");
+            
+            // Pular os prefixos "faction_" e pegar o resto
+            for i := 3 to partes.size()
+                if (i > 3)
+                    nome_base += "_";
+                endif
+                nome_base += partes[i];
+            endfor
+            
+            // Nome correto para migração
+            var nome_correto := "faction_" + nome_base;
+            
+            // Marcar para remoção
+            elementos_a_remover.append(elem_name);
+            
+            // Guardar dados para migração
+            var elem := SafeFindElement(df, elem_name);
+            if (elem)
+                var recursos := elem.GetProp("recursos");
+                if (recursos)
+                    dados_a_migrar[nome_correto] := recursos;
+                endif
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Migrar dados para elementos corretos
+    foreach nome_correto in (dados_a_migrar.keys())
+        var elem := SafeFindElement(df, nome_correto, 1);
+        var recursos_existentes := elem.GetProp("recursos");
+        
+        // Só migrar se não tiver recursos ou forem diferentes
+        if (!recursos_existentes || !SaoRecursosIguais(recursos_existentes, dados_a_migrar[nome_correto]))
+            SetElementProp(elem, "recursos", dados_a_migrar[nome_correto]);
+            LogInfo("recursos", "Dados migrados para: " + nome_correto);
+        endif
+        sleepms(2);
+    endforeach
+    
+    // Remover elementos incorretos
+    foreach elem_name in elementos_a_remover
+        df.DeleteElement(elem_name);
+        elementos_removidos += 1;
+        LogInfo("recursos", "Elemento incorreto removido: " + elem_name);
+        sleepms(2);
+    endforeach
+    
+    if (elementos_removidos)
+        LogInfo("recursos", "Total de elementos incorretos removidos: " + elementos_removidos);
+    endif
+    
+    return elementos_removidos;
 endfunction

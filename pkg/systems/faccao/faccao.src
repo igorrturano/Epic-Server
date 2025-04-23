@@ -1033,6 +1033,20 @@ endfunction
 function territoryHandler(who, input)
     input := input - BUTTON_TERRITORY;
     var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
     
     // Check if the index is valid
     if (!territories || input < 0 || input+1 > territories.size())
@@ -1189,6 +1203,20 @@ LogDebug("territorio", "Iniciando ShowTerritoriesGump para guild: " + guild);
     
     // Buscar territórios da facção
     var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
     if (!territories || territories == error) 
         territories := array{};
         guild.SetProp("territories", territories);

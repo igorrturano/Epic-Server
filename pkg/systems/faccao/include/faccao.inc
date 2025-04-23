@@ -246,6 +246,20 @@ function inGuildRect(guild, item := 0)
 
     // Verificar nos territórios controlados
     var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
     if (territories)
         var rect_df := SafeOpenDataFile(":architect:areas");
         foreach territory in territories

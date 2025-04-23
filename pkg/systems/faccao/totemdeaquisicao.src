@@ -10,47 +10,81 @@ include ":faccao:include/faccao_resources";
 include ":faccao:include/territory_management";
 
 program TotemDeAquisicao(who, totem)
+    LogDebug("faccao", "TotemDeAquisicao: Iniciando função com who=" + who.serial + ", totem=" + totem.serial);
+    
     if (!who || !totem)
+        LogError("faccao", "TotemDeAquisicao: Parâmetros inválidos");
         return 0;
     endif
     
     var rect_name := GetObjProperty(totem, TERRITORY_NAME_PROP);
+    LogDebug("faccao", "TotemDeAquisicao: Nome do território: " + rect_name);
+    
     if (!rect_name)
+        LogWarning("faccao", "TotemDeAquisicao: Totem inválido - nome do território não encontrado");
         SendSysMessage(who, "Totem inválido.");
         return 0;
     endif
     
     var territory_id := GetObjProperty(totem, TERRITORY_ID_PROP);
-    if (!territory_id)
-        territory_id := GetObjProperty(totem, TERRITORY_NAME_PROP); // Fallback para compatibilidade
+    LogDebug("faccao", "TotemDeAquisicao: ID do território: " + territory_id);
+    
+    // VERIFICAÇÃO DE CONSISTÊNCIA
+    if (territory_id)
+        var territory_info_from_id := TM_GetTerritoryInfo(territory_id);
+        if (territory_info_from_id && territory_info_from_id.name != rect_name)
+            LogError("faccao", "INCONSISTÊNCIA NO TOTEM! Nome no totem ('" + rect_name + "') não corresponde ao nome do território com ID '" + territory_id + "' ('" + territory_info_from_id.name + "'). Usando ID '" + territory_id + "'.");
+            
+            // Atualizar o nome do território para o correto
+            rect_name := territory_info_from_id.name;
+            
+            // Opcional: Notificar o jogador sobre a inconsistência
+            SendSysMessage(who, "Aviso: O nome do território no totem foi corrigido para '" + rect_name + "'");
+        endif
     endif
-
+    
     // Verificar se o jogador é líder de uma facção
     var guild := who.guild;
+    LogDebug("faccao", "TotemDeAquisicao: Guild do jogador: " + (guild ? guild.guildid : "NULL"));
+    
     if (!guild)
+        LogWarning("faccao", "TotemDeAquisicao: Jogador não pertence a uma facção");
         SendSysMessage(who, "Você precisa pertencer a uma facção para reivindicar territórios.");
         return 0;
     endif
     
     var guild_obj := GetFaccao(guild);
+    LogDebug("faccao", "TotemDeAquisicao: Objeto de facção: " + (guild_obj ? "Obtido" : "NULL"));
+    
     if (!guild_obj || guild_obj.leader != who.serial)
+        LogWarning("faccao", "TotemDeAquisicao: Jogador não é líder da facção");
+        LogDebug("faccao", "TotemDeAquisicao: guild_obj=" + guild_obj + ", leader=" + 
+                (guild_obj ? guild_obj.leader : "NULL") + ", player serial=" + who.serial);
         SendSysMessage(who, "Apenas o líder da facção pode reivindicar territórios.");
         return 0;
     endif
     
     // Usamos TM_FindTerritory no lugar de abrir o datafile diretamente
+    LogDebug("faccao", "TotemDeAquisicao: Buscando território: " + rect_name);
     var territorio_elem := TM_FindTerritory(rect_name);
+    LogDebug("faccao", "TotemDeAquisicao: Elemento encontrado: " + (territorio_elem ? "Sim" : "Não"));
+    
     if (!territorio_elem)
+        LogWarning("faccao", "TotemDeAquisicao: Território não encontrado: " + rect_name);
         SendSysMessage(who, "Território não encontrado: " + rect_name);
         return 0;
     endif
     
-    // Verificar se o território já está reivindicado (verificando ambas as propriedades)
-    // Usamos TM_GetTerritoryInfo para obter informações do território
+    // Verificar se o território já está reivindicado
+    LogDebug("faccao", "TotemDeAquisicao: Obtendo informações do território");
     var territorio_info := TM_GetTerritoryInfo(rect_name);
+    LogDebug("faccao", "TotemDeAquisicao: Info obtida: " + (territorio_info ? "Sim" : "Não"));
+    
     var current_faction := territorio_info.faction;
+    LogDebug("faccao", "TotemDeAquisicao: Facção atual: " + current_faction);
 
     if (current_faction && current_faction != DEFAULT_FACTION && current_faction != "Selvagem")
+        LogWarning("faccao", "TotemDeAquisicao: Território já reivindicado por: " + current_faction);
         SendSysMessage(who, "Este território já está reivindicado por: " + current_faction);
         return 0;
     endif
@@ -59,42 +93,124 @@ program TotemDeAquisicao(who, totem)
     // Obter o nome da facção da propriedade padronizada
     var faction_name;
     if (guild)
+        LogDebug("faccao", "TotemDeAquisicao: Obtendo facção da guilda: " + guild.guildid);
+        
         // Tenta obter diretamente da guilda principal
         faction_name := guild.guildname;
+        LogDebug("faccao", "TotemDeAquisicao: guild.guildname: " + faction_name);
+        
         if (!faction_name || faction_name == error)
             faction_name := guild.GetProp("name");
+            LogDebug("faccao", "TotemDeAquisicao: guild.GetProp('name'): " + faction_name);
+            
             if (!faction_name || faction_name == error)
                 faction_name := "Desconhecido";
+                LogWarning("faccao", "TotemDeAquisicao: Não conseguiu obter nome da facção, usando 'Desconhecido'");
             endif
         endif
+        
+        LogDebug("faccao", "TotemDeAquisicao: Facção obtida: " + faction_name);
     else
         faction_name := "Desconhecido";
+        LogWarning("faccao", "TotemDeAquisicao: Guild nula, usando 'Desconhecido'");
     endif
-
-    // Imprime para debug
-    LogDebug("faccao", "Nome da facção final: " + faction_name);
     
-    // Substituímos SetElementProp por TM_SetTerritoryFaction
-    TM_SetTerritoryFaction(rect_name, faction_name);
+    // Definir a facção do território
+    LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território " + rect_name + " para " + faction_name);
+    var tf_result := TM_SetTerritoryFaction(rect_name, faction_name);
+    LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + tf_result);
     
     // Adicionar o território à lista da facção de forma robusta
+    LogDebug("faccao", "TotemDeAquisicao: Obtendo lista de territórios da guilda: " + guild.guildid);
     var territories := guild.GetProp("territories");
+    if (!territories || territories == error || TypeOf(territories) != "Array")
+        territories := array{};
+    endif
+
+    // Garantir que seja um array limpo
+    var cleaned_territories := array{};
+    foreach terr in territories
+        // Apenas adicionar itens válidos
+        if (TypeOf(terr) == "String" && terr != "")
+            cleaned_territories.append(terr);
+        endif
+        sleepms(2);
+    endforeach
+    territories := cleaned_territories;
+    LogDebug("faccao", "TotemDeAquisicao: Lista de territórios: " + TypeOf(territories) + 
+              ", Size: " + (territories && territories != error ? territories.size() : "NULL/ERROR"));
+    
     if (!territories || territories == error)
+        LogDebug("faccao", "TotemDeAquisicao: Criando novo array para lista de territórios");
         territories := array{};
     endif
     
-    if (!(rect_name in territories))
-        territories.append(rect_name);
-        guild.SetProp("territories", territories);
+    // Verificar se já existe na lista
+    var exists := 0;
+    LogDebug("faccao", "TotemDeAquisicao: Verificando se território já existe na lista");
+    foreach terr in territories
+        LogDebug("faccao", "TotemDeAquisicao: Território existente na lista: " + terr + ", Tipo: " + TypeOf(terr));
+        if (terr == rect_name || terr == territory_id)
+            exists := 1;
+            LogDebug("faccao", "TotemDeAquisicao: Território já existe na lista");
+            break;
+        endif
+        sleepms(2);
+    endforeach
+
+    if (!exists)
+        LogDebug("faccao", "TotemDeAquisicao: CRÍTICO - Adicionando território à lista");
+        LogDebug("faccao", "TotemDeAquisicao: território_id: " + territory_id);
+        LogDebug("faccao", "TotemDeAquisicao: Guild: " + guild.guildid + ", Nome: " + guild.guildname);
+        LogDebug("faccao", "TotemDeAquisicao: Territories antes: " + TypeOf(territories) + 
+                 ", Size: " + territories.size());
+        
+        territories.append(territory_id);
+        
+        LogDebug("faccao", "TotemDeAquisicao: Territories após append: Size: " + territories.size());
+        LogDebug("faccao", "TotemDeAquisicao: CRÍTICO - Prestes a executar guild.SetProp('territories', territories)");
+        
+        // Implementar retentativas para o SetProp
+        var max_retries := 3;
+        var retry_count := 0;
+        var success := 0;
+
+        while (!success && retry_count < max_retries)
+            retry_count += 1;
+            var result := guild.SetProp("territories", territories);
+            
+            LogDebug("faccao", "TotemDeAquisicao: SetProp('territories') tentativa #" + retry_count + ", resultado: " + result);
+            
+            if (result != error)
+                success := 1;
+                LogDebug("faccao", "TotemDeAquisicao: SetProp bem-sucedido na tentativa #" + retry_count);
+            else
+                LogWarning("faccao", "TotemDeAquisicao: Falha no SetProp, tentativa #" + retry_count + ": " + result);
+                sleep(1); // Esperar um segundo antes de tentar novamente
+            endif
+        endwhile
+
+        if (!success)
+            LogError("faccao", "TotemDeAquisicao: Todas as tentativas de SetProp falharam");
+        endif
+    else
+        LogDebug("faccao", "TotemDeAquisicao: Território já existe na lista, não é necessário atualizar");
     endif
     
     // Criar o monumento no centro do território
-    CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, totem);
+    LogDebug("faccao", "TotemDeAquisicao: Criando monumento no território");
+    var monument := CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, totem);
+    LogDebug("faccao", "TotemDeAquisicao: Monumento criado: " + (monument ? "Sim, serial=" + monument.serial : "Não"));
     
     // Configurar timer para geração de recursos
+    LogDebug("faccao", "TotemDeAquisicao: Configurando recursos para o território");
+    
     // Verificar se o território já tem recursos configurados
     var recursos_atuais := GetElementProp(territorio_elem, "Resources", "");
+    LogDebug("faccao", "TotemDeAquisicao: Recursos atuais: " + recursos_atuais);
+    
     if (!recursos_atuais)
+        LogDebug("faccao", "TotemDeAquisicao: Nenhum recurso configurado, usando padrão");
         // Se não houver recursos configurados, usar um conjunto padrão (3 recursos)
         var default_resources := SplitWords("IronOre, couroespesso, cogumelo");
         var resource_str := "";
@@ -105,22 +221,40 @@ program TotemDeAquisicao(who, totem)
             resource_str += default_resources[i];
         endfor
         
+        LogDebug("faccao", "TotemDeAquisicao: Configurando recursos padrão: " + resource_str);
+        
         // Aqui utilizamos TM_UpdateTerritoryResources para configurar os recursos
-        TM_UpdateTerritoryResources(rect_name, resource_str, 2, 5);
+        var update_result := TM_UpdateTerritoryResources(rect_name, resource_str, 2, 5);
+        LogDebug("faccao", "TotemDeAquisicao: Resultado de TM_UpdateTerritoryResources: " + update_result);
     else
+        LogDebug("faccao", "TotemDeAquisicao: Recursos existentes, atualizando apenas próxima geração");
         // Atualizar apenas o próximo tempo de geração se já existem recursos
         var interval := CInt(GetElementProp(territorio_elem, "ResourceInterval", 2));
         var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-        SetElementProp(territorio_elem, "NextResourceTime", next_time);
+        LogDebug("faccao", "TotemDeAquisicao: Próxima geração em " + interval + " minutos");
+        
+        var set_result := SetElementProp(territorio_elem, "NextResourceTime", next_time);
+        LogDebug("faccao", "TotemDeAquisicao: Resultado de definir NextResourceTime: " + set_result);
     endif
     
     // Destruir o totem após uso
-    DestroyItem(totem);
+    LogDebug("faccao", "TotemDeAquisicao: Destruindo totem após uso");
+    var destroy_result := DestroyItem(totem);
+    LogDebug("faccao", "TotemDeAquisicao: Resultado de DestroyItem: " + destroy_result);
     
     SendSysMessage(who, "Sua facção reivindicou com sucesso o território: " + rect_name);
     SendSysMessage(who, "O território começará a produzir recursos em breve.");
     PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + faction_name + "*");
     
+    LogInfo("faccao", "TotemDeAquisicao: Território " + rect_name + " reivindicado com sucesso por " + faction_name);
+    
+    
+LogInfo("faccao", "Notificando sistema de eventos sobre reivindicação do território: " + rect_name);
+TM_NotifyTerritoryChange(territory_id, "claimed", struct{ 
+    "name" := rect_name, 
+    "faction" := faction_name, 
+    "resources" := GetElementProp(territorio_elem, "Resources", "") 
+});
     return 1;
 endprogram
 

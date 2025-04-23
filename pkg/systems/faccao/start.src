@@ -43,8 +43,6 @@ endif
 // Inicia o controlador de recursos territoriais com controle de tempo
 function start_resource_controller()
     var last_time := CInt(GetGlobalProperty("last_execution"));
-    
-    // Se a conversão retornar erro ou 0, definir como 0
     if (last_time == error)
         last_time := 0;
     endif
@@ -53,18 +51,22 @@ function start_resource_controller()
     var time_since_last := current_time - last_time;
     var should_execute := (last_time == 0 || time_since_last >= CYCLE_WAIT);
     
+    // Adicionar log detalhado
+    LogDebug("start_DEBUG", "Verificando ResourceController: CurrentTime=" + current_time + ", LastTime=" + last_time + ", TimeSinceLast=" + time_since_last + ", ShouldExecute=" + should_execute);
+    
     if (should_execute)
-        LogDebug("recursos", "Iniciando ResourceController imediatamente.");
+        LogInfo("start_DEBUG", "- DECISÃO: INICIAR ResourceController agora (PID: " + GetPid() + ")");
         var resource_script := start_script("ResourceController");
         if (resource_script.errortext)
             LogError("recursos", "Erro ao iniciar o sistema de recursos: " + resource_script.errortext);
         else
+            LogInfo("start_DEBUG", "- ResourceController iniciado com sucesso. Novo PID (reportado): " + resource_script.pid);
             LogDebug("sistema", "Starting territory resource controller... ok.");
-            // Armazenar o tempo desta execução
             SetGlobalProperty("last_execution", current_time);
         endif
     else
         var wait_time := CYCLE_WAIT - time_since_last;
+        LogInfo("start_DEBUG", "- DECISÃO: AGUARDAR. Próxima execução do ResourceController em " + wait_time + " segundos.");
         LogDebug("recursos", "Próxima execução do ResourceController em " + wait_time + " segundos.");
     endif
 endfunction

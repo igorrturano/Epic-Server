@@ -55,10 +55,21 @@ program limpa_territorios_fantasmas(who)
             guild_name := guild.guildname;
         endif
         
-        var territories := guild.GetProp("territories");
-        if (!territories || typeof(territories) != "Array")
-            continue;
-        endif
+var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
         
         SendSysMessage(who, "Verificando guilda: " + guild_name + " - " + territories.size() + " territórios");
         

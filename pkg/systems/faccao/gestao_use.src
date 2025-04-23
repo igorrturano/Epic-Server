@@ -719,12 +719,14 @@ endfunction
 function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     LogDebug("territorio", "Iniciando transferência de território com proteção de transações");
     var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    LogDebug("territorio", "Datafile seriais: " + (seriais_df ? "Aberto com sucesso" : "FALHA ao abrir"));
     
     // Garantir compatibilidade com ambos os formatos
     var territorio_id := TypeOf(territorio_info) == "Struct" ? territorio_info.id : territorio_info;
     var territorio_nome := TypeOf(territorio_info) == "Struct" ? territorio_info.name : territorio_info;
     
     LogDebug("territorio", "Território identificado - ID: " + territorio_id + ", Nome: " + territorio_nome);
+    LogDebug("territorio", "Facção atual: " + old_faction);
     
     // Montar lista de facções
     var gump := GFCreateGump();
@@ -769,13 +771,17 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
     
     // Se clicou em Cancelar ou fechou o gump
     if (choice == 0)
+        LogDebug("territorio", "Transferência cancelada pelo usuário");
         return 0;
     endif
     
     // Obter a facção selecionada pelo índice do botão
     var new_faction := guild_names[choice];
+    LogDebug("territorio", "Facção selecionada: " + new_faction);
     
     if (YesNo(who, "Transferir controle de " + territorio_nome + " para " + new_faction + "?"))
+        LogDebug("territorio", "Transferência confirmada, iniciando processo");
+        
         // Iniciar uma transação para operação atômica
         var transaction_data := struct{
             "territorio_id" := territorio_id,
@@ -786,105 +792,192 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
         
         // Capturar seriais dos objetos originais para possível reversão
         var rect_df := SafeOpenDataFile(":architect:areas");
+        LogDebug("territorio", "Datafile areas: " + (rect_df ? "Aberto com sucesso" : "FALHA ao abrir"));
+        
         if (seriais_df)
             var territorios_seriais := seriais_df.GetProp("territorios");
+            LogDebug("territorio", "Seriais obtidos: " + (territorios_seriais ? "OK, tipo: " + TypeOf(territorios_seriais) : "NULL"));
+            
             if (territorios_seriais && territorios_seriais[territorio_id])
                 transaction_data.seriais_originais := territorios_seriais[territorio_id];
+                LogDebug("territorio", "Seriais originais armazenados para possível reversão");
             endif
         endif
         
         // Iniciar a transação
         var transaction_id := IniciarTransacao("transferir_territorio", transaction_data);
         if (transaction_id == error)
+            LogError("territorio", "Falha ao iniciar transação: " + transaction_id);
             SendSysMessage(who, "Erro ao iniciar transação. Transferência cancelada.");
             return 0;
         endif
+        LogDebug("territorio", "Transação iniciada com ID: " + transaction_id);
         
         SendSysMessage(who, "Processando: Iniciando transferência de território...");
         
         // ===== ETAPA 1: LIMPAR OS OBJETOS EXISTENTES =====
+        LogDebug("territorio", "ETAPA 1: Removendo objetos existentes");
         SendSysMessage(who, "Processando: Removendo objetos existentes...");
         
         var territorio_realm := GetElementProp(elem, "Realm", "");
         if (!territorio_realm)
             territorio_realm := "britannia"; // Padrão se não encontrar
         endif
+        LogDebug("territorio", "Realm do território: " + territorio_realm);
         
         var script := start_script(":faccao:limpa_territorio", array{territorio_id, old_faction, who, territorio_realm});
         if (script == error)
+            LogError("territorio", "Falha ao iniciar script de limpeza: " + script);
             SendSysMessage(who, "Erro ao iniciar o script de limpeza: " + script);
             DesfazerTransacao(transaction_id);
             return 0;
         endif
+        LogDebug("territorio", "Script de limpeza iniciado: PID " + script);
         
         // Aguardar limpeza ser concluída
         Sleep(3);
+        LogDebug("territorio", "Aguardando conclusão da limpeza...");
         
         // ===== ETAPA 2: ATUALIZAR O DATAFILE DE ÁREAS =====
-        // Aqui estava o erro! Agora usamos TM_SetTerritoryFaction depois que as variáveis estão definidas
-        TM_SetTerritoryFaction(territorio_id, new_faction);
+        LogDebug("territorio", "ETAPA 2: Atualizando datafile de áreas");
+        LogDebug("territorio", "Chamando TM_SetTerritoryFaction(" + territorio_id + ", " + new_faction + ")");
+        var tm_result := TM_SetTerritoryFaction(territorio_id, new_faction);
+        LogDebug("territorio", "Resultado TM_SetTerritoryFaction: " + tm_result);
         
         // Também definimos as propriedades tradicionais para compatibilidade
-        SetElementProp(elem, "Faction", new_faction);
-        SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
+        LogDebug("territorio", "Atualizando propriedades diretas para compatibilidade");
+        var prop1 := SetElementProp(elem, "Faction", new_faction);
+        var prop2 := SetElementProp(elem, TERRITORY_FACTION_PROP, new_faction);
+        LogDebug("territorio", "Resultados: Faction=" + prop1 + ", " + TERRITORY_FACTION_PROP + "=" + prop2);
         
         // ===== ETAPA 3: ATUALIZAR AS GUILDAS =====
+        LogDebug("territorio", "ETAPA 3: Atualizando guildas");
         
         // 3.1 Remover da facção antiga
+        LogDebug("territorio", "3.1: Removendo da facção antiga: " + old_faction);
         var old_guild := FindGuildByName(old_faction);
+        LogDebug("territorio", "Resultado FindGuildByName para facção antiga: " + old_guild);
+        
         if (old_guild)
             var old_guild_obj := FindGuild(old_guild);
+            LogDebug("territorio", "Resultado FindGuild para facção antiga: " + (old_guild_obj ? "OK" : "FALHA"));
+            
             if (old_guild_obj)
                 var old_territories := old_guild_obj.GetProp("territories");
+                LogDebug("territorio", "Territories da facção antiga: " + (old_territories ? "Encontrados" : "NULL") + 
+                         ", Tipo: " + TypeOf(old_territories));
+                
                 if (old_territories)
                     // Criar nova lista sem o território removido
                     var new_old_territories := array{};
+                    LogDebug("territorio", "Criando nova lista sem o território: " + territorio_id);
+                    
                     foreach terr in old_territories
+                        LogDebug("territorio", "Verificando território da lista: " + terr);
                         if (terr != territorio_id && terr != territorio_nome)
                             new_old_territories.append(terr);
+                        else
+                            LogDebug("territorio", "Removendo território da lista: " + terr);
                         endif
                         sleepms(2);
                     endforeach
                     
-                    old_guild_obj.SetProp("territories", new_old_territories);
+                    LogDebug("territorio", "Lista atualizada criada, tamanho: " + new_old_territories.size());
+                    LogDebug("territorio", "Salvando territories na facção antiga");
+                    LogDebug("territorio", "Guild tipo: " + TypeOf(old_guild_obj) + 
+                             ", Territories tipo: " + TypeOf(new_old_territories) + 
+                             ", Size: " + new_old_territories.size());
+                    
+// Implementar retentativas para o SetProp da facção antiga
+var max_retries := 3;
+var retry_count := 0;
+var success := 0;
+
+while (!success && retry_count < max_retries)
+    retry_count += 1;
+    var set_result := old_guild_obj.SetProp("territories", new_old_territories);
+    
+    LogDebug("territorio", "Resultado SetProp para facção antiga, tentativa #" + retry_count + ": " + set_result);
+    
+    if (set_result != error)
+        success := 1;
+        LogDebug("territorio", "SetProp da facção antiga bem-sucedido na tentativa #" + retry_count);
+    else
+        LogWarning("territorio", "Falha no SetProp da facção antiga, tentativa #" + retry_count + ": " + set_result);
+        sleep(1); // Esperar um segundo antes de tentar novamente
+    endif
+endwhile
+
+if (!success)
+    LogError("territorio", "Todas as tentativas de SetProp da facção antiga falharam");
+    // Continuar mesmo com erro
+endif
                 endif
             endif
         endif
         
         // 3.2 Adicionar à nova facção
+        LogDebug("territorio", "3.2: Adicionando à nova facção: " + new_faction);
         var new_guild := FindGuildByName(new_faction);
+        LogDebug("territorio", "Resultado FindGuildByName para nova facção: " + new_guild);
+        
         if (new_guild)
             var new_guild_obj := FindGuild(new_guild);
+            LogDebug("territorio", "Resultado FindGuild para nova facção: " + (new_guild_obj ? "OK" : "FALHA"));
+            
             if (new_guild_obj)
                 var new_territories := new_guild_obj.GetProp("territories");
-                if (!new_territories)
+                LogDebug("territorio", "Territories da nova facção: " + (new_territories ? "Encontrados" : "NULL") + 
+                         ", Tipo: " + TypeOf(new_territories));
+                
+                if (!new_territories || new_territories == error)
+                    LogDebug("territorio", "Criando novo array para territories");
                     new_territories := array{};
                 endif
                 
                 // Verificar se já existe
                 var exists := 0;
+                LogDebug("territorio", "Verificando se território já existe na lista");
+                
                 foreach terr in new_territories
+                    LogDebug("territorio", "Território existente: " + terr);
                     if (terr == territorio_id || terr == territorio_nome)
                         exists := 1;
+                        LogDebug("territorio", "Território já existe na lista");
                         break;
                     endif
                     sleepms(2);
                 endforeach
                 
                 if (!exists)
+                    LogDebug("territorio", "Adicionando território à lista: " + territorio_id);
                     new_territories.append(territorio_id);
+                    LogDebug("territorio", "Novo tamanho da lista: " + new_territories.size());
                 endif
                 
-                new_guild_obj.SetProp("territories", new_territories);
+                LogDebug("territorio", "Salvando territories na nova facção");
+                LogDebug("territorio", "Guild tipo: " + TypeOf(new_guild_obj) + 
+                         ", Territories tipo: " + TypeOf(new_territories) + 
+                         ", Size: " + new_territories.size());
+                
+                var set_result := new_guild_obj.SetProp("territories", new_territories);
+                LogDebug("territorio", "Resultado SetProp para nova facção: " + set_result);
+                
+                if (set_result == error)
+                    LogError("territorio", "FALHA ao atualizar territories na nova facção: " + set_result);
+                    // Continuar mesmo com erro
+                endif
             endif
         endif
         
         // ===== ETAPA 4: CRIAR NOVOS OBJETOS PARA A NOVA FACÇÃO =====
+        LogDebug("territorio", "ETAPA 4: Criando novos objetos para a nova facção");
         SendSysMessage(who, "Processando: Criando novos objetos para a facção...");
         
         // Obter coordenadas do território
         var coords := SplitWords(GetElementProp(elem, "Rect", ""));
         var realm := GetElementProp(elem, "Realm", "");
+        LogDebug("territorio", "Coordenadas: " + (coords ? coords : "NULL") + ", Realm: " + realm);
         
         if (coords.size() >= 4)
             var x1 := CInt(coords[1]);
@@ -896,14 +989,18 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
             var center_x := CInt((x1 + x2) / 2);
             var center_y := CInt((y1 + y2) / 2);
             var center_z := GetMapInfo(center_x, center_y, realm).z;
+            LogDebug("territorio", "Centro calculado: " + center_x + "," + center_y + "," + center_z);
             
             // 4.1 Criar o baú
+            LogDebug("territorio", "4.1: Criando baú no centro do território");
             var chest := CreateItemAtLocation(center_x, center_y, center_z, 0xFF11, 1, realm);
             if (!chest)
+                LogError("territorio", "Falha ao criar baú");
                 DesfazerTransacao(transaction_id);
                 SendSysMessage(who, "Erro ao criar baú. Transferência revertida.");
                 return 0;
             endif
+            LogDebug("territorio", "Baú criado com sucesso, serial: " + chest.serial);
             
             chest.movable := 0;
             SetObjProperty(chest, OBJ_FACTION_PROP, new_faction);
@@ -912,27 +1009,33 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
             
             var chest_id := new_faction + "_" + territorio_id;
             SetObjProperty(chest, CHEST_ID_PROP, chest_id);
+            LogDebug("territorio", "Propriedades do baú definidas, chest_id: " + chest_id);
             
             var nome_bau := "Baú de Doações de " + new_faction;
             if (territorio_id)
                 nome_bau += " - " + territorio_id;
             endif
             SetName(chest, nome_bau);
+            LogDebug("territorio", "Nome do baú definido: " + nome_bau);
             
             chest.usescript := ":faccao:baudoacao/use";
             SetObjProperty(chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
             SetObjProperty(chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
             SetObjProperty(chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
             SetObjProperty(chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+            LogDebug("territorio", "Scripts do baú configurados");
             
             // 4.2 Criar a mesa de gestão
+            LogDebug("territorio", "4.2: Criando mesa de gestão");
             var table := CreateItemAtLocation(center_x+1, center_y, center_z, 0xFE5C, 1, realm);
             if (!table)
+                LogError("territorio", "Falha ao criar mesa de gestão");
                 DesfazerTransacao(transaction_id);
                 DestroyItem(chest); // Limpar o baú criado
                 SendSysMessage(who, "Erro ao criar mesa de gestão. Transferência revertida.");
                 return 0;
             endif
+            LogDebug("territorio", "Mesa criada com sucesso, serial: " + table.serial);
             
             table.movable := 0;
             SetObjProperty(table, OBJ_FACTION_PROP, new_faction);
@@ -944,18 +1047,23 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
                 nome_mesa += " - " + territorio_id;
             endif
             SetName(table, nome_mesa);
+            LogDebug("territorio", "Nome da mesa definido: " + nome_mesa);
             
             table.usescript := ":faccao:gestao_use";
+            LogDebug("territorio", "Script da mesa configurado");
             
             // 4.3 Criar o mural de recrutamento
+            LogDebug("territorio", "4.3: Criando mural de recrutamento");
             var mural := CreateItemAtLocation(center_x, center_y+1, center_z, 0x46AE, 1, realm);
             if (!mural)
+                LogError("territorio", "Falha ao criar mural");
                 DesfazerTransacao(transaction_id);
                 DestroyItem(chest);
                 DestroyItem(table);
                 SendSysMessage(who, "Erro ao criar mural. Transferência revertida.");
                 return 0;
             endif
+            LogDebug("territorio", "Mural criado com sucesso, serial: " + mural.serial);
             
             mural.movable := 0;
             SetObjProperty(mural, OBJ_FACTION_PROP, new_faction);
@@ -967,52 +1075,61 @@ function TransferirTerritorioFaccao(who, elem, territorio_info, old_faction)
                 nome_mural += " - " + territorio_id;
             endif
             SetName(mural, nome_mural);
+            LogDebug("territorio", "Nome do mural definido: " + nome_mural);
             
             mural.usescript := ":faccao:faccao";
-            
-            // 4.4 Salvar os seriais no datafile
-            if (seriais_df == error)
-                seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
-            endif
-            
-            if (seriais_df && seriais_df != error)
-                var territorios_seriais := seriais_df.GetProp("territorios");
-                if (!territorios_seriais)
-                    territorios_seriais := dictionary{};
-                endif
-                
-                territorios_seriais[territorio_id] := struct{
-                    "bau" := chest ? chest.serial : 0,
-                    "mesa" := table ? table.serial : 0,
-                    "mural" := mural ? mural.serial : 0,
-                    "faction" := new_faction
-                };
-                
-                seriais_df.SetProp("territorios", territorios_seriais);
-            else
-                DesfazerTransacao(transaction_id);
-                DestroyItem(chest);
-                DestroyItem(table);
-                DestroyItem(mural);
-                SendSysMessage(who, "Erro ao registrar seriais. Transferência revertida.");
-                return 0;
-            endif
-        else
-            DesfazerTransacao(transaction_id);
-            SendSysMessage(who, "Erro: Coordenadas inválidas para o território.");
-            return 0;
-        endif
+            LogDebug("territorio", "Script do mural configurado");
+  // 4.4 Salvar os seriais no datafile - USANDO O NOVO MÉTODO CENTRALIZADO
+LogDebug("territorio", "4.4: Registrando seriais via TM_RegisterTerritoryObjects");
+
+var objeto_seriais := struct{
+    "bau" := chest ? chest.serial : 0,
+    "mesa" := table ? table.serial : 0,
+    "mural" := mural ? mural.serial : 0,
+    "faction" := new_faction,
+    "coords" := GetElementProp(elem, "Rect", ""),
+    "realm" := realm
+};
+
+var register_result := TM_RegisterTerritoryObjects(territorio_id, objeto_seriais);
+
+if (!register_result) // Se TM_RegisterTerritoryObjects retornar 0 ou error
+    LogError("territorio", "FALHA ao registrar seriais usando TM_RegisterTerritoryObjects");
+    DesfazerTransacao(transaction_id);
+    if (chest) DestroyItem(chest); endif
+    if (table) DestroyItem(table); endif
+    if (mural) DestroyItem(mural); endif
+    SendSysMessage(who, "Erro ao registrar seriais. Transferência revertida.");
+    return 0;
+else
+    LogInfo("territorio", "Seriais registrados com sucesso usando TM_RegisterTerritoryObjects.");
+endif
+
+else
+    LogError("territorio", "Coordenadas inválidas para o território");
+    DesfazerTransacao(transaction_id);
+    SendSysMessage(who, "Erro: Coordenadas inválidas para o território.");
+    return 0;
+endif
         
-        // ===== ETAPA 5: NOTIFICAR O CONTROLADOR DE RECURSOS =====
-        NotificarControladorRecursos(territorio_nome);
+   
         
         // Finalizar a transação com sucesso
+        LogDebug("territorio", "Finalizando transação com sucesso");
         FinalizarTransacao(transaction_id);
-        
+
+LogInfo("territorio", "Notificando sistema de eventos sobre transferência de território: " + territorio_id);
+TM_NotifyTerritoryChange(territorio_id, "transfer", struct{ 
+    "old_faction" := old_faction, 
+    "new_faction" := new_faction, 
+    "name" := territorio_nome 
+      });   
+        LogDebug("territorio", "Transferência concluída com sucesso: " + territorio_nome + " para " + new_faction);
         SendSysMessage(who, "Território transferido com sucesso para " + new_faction + "!");
         return 1; // Indica que deve sair do gump
     endif
     
+    LogDebug("territorio", "Transferência cancelada na confirmação");
     return 0;
 endfunction
 
@@ -1458,115 +1575,59 @@ function RevogarTerritorioFaccao(who, elem, territorio_info, faction)
         if (fac_guildid)
             var guild := FindGuild(fac_guildid);
             if (guild)
-                var territories := guild.GetProp("territories");
-                if (territories)
-                    // Procurar pelo ID ou pelo nome
-                    var territory_index := 0;
-                    for i := 1 to territories.size()
-                        if ((TypeOf(territories[i]) == "Struct" && territories[i].id == territorio_id) ||
-                            (TypeOf(territories[i]) == "String" && territories[i] == territorio_nome))
-                            territory_index := i;
-                            break;
-                        endif
-                    endfor
-                    
-                    if (territory_index > 0)
-                        territories.Erase(territory_index);
-                        guild.SetProp("territories", territories);
-                        SendSysMessage(who, "Território removido da lista da facção.");
-                    endif
-                endif
+               var territories := guild.GetProp("territories");
+               if (!territories || territories == error || TypeOf(territories) != "Array")
+                   territories := array{};
+               endif
+               
+               // Garantir que seja um array limpo
+               var cleaned_territories := array{};
+               foreach terr in territories
+                   // Apenas adicionar itens válidos
+                   if (TypeOf(terr) == "String" && terr != "")
+                       cleaned_territories.append(terr);
+                   endif
+                   sleepms(2);
+               endforeach
+               territories := cleaned_territories;
+               
+               if (territories)
+                   // Procurar pelo ID ou pelo nome
+                   var territory_index := 0;
+                   for i := 1 to territories.size()
+                       if ((TypeOf(territories[i]) == "Struct" && territories[i].id == territorio_id) ||
+                           (TypeOf(territories[i]) == "String" && territories[i] == territorio_nome))
+                           territory_index := i;
+                           break;
+                       endif
+                   endfor
+                   
+                   if (territory_index > 0)
+                       territories.Erase(territory_index);
+                       guild.SetProp("territories", territories);
+                       SendSysMessage(who, "Território removido da lista da facção.");
+                   endif
+               endif
             endif
         endif
         
-        // Notificar o controlador de recursos
-        NotificarControladorRecursos(territorio_nome);
+
         
         SendSysMessage(who, "Controle do território revogado com sucesso!");
         SendSysMessage(who, "Os objetos do território foram removidos.");
+
+       LogInfo("territorio", "Notificando sistema de eventos sobre revogação de território: " + territorio_id);
+TM_NotifyTerritoryChange(territorio_id, "revoked", struct{ 
+    "name" := territorio_nome, 
+    "faction" := faction 
+});
+
         return 1; // Indica que deve sair do gump
     endif
     
     return 1;
 endfunction
 
-
-// No início de cada ciclo do controlador
-
-function NotificarControladorRecursos(territorio)
-    // Esta função notifica o ResourceController sobre a revogação ou transferência
-    LogDebug("territorio", "Tentando notificar o controlador de recursos para: " + territorio);
-    
-    // Tentar várias localizações possíveis para o datafile
-    var df := SafeOpenDataFile(":system:messages");
-    if (df == error)
-        df := SafeOpenDataFile("messages");
-        if (df == error)
-            df := SafeOpenDataFile("messages", 1);
-            if (df == error)
-                LogError("territorio", "Não foi possível criar ou acessar o datafile de mensagens");
-                return 0;
-            endif
-        endif
-    endif
-    
-    if (df)
-        LogDebug("territorio", "Datafile de mensagens encontrado");
-        var elem := DFFindElement(df, "resource_controller", DF_CREATE);
-        if (elem)
-            var revocations := GetElementProp(elem, "revocations", 0);
-            if (!revocations || revocations == error)
-                revocations := array{};
-                LogDebug("territorio", "Criando nova lista de notificações");
-            else
-                LogDebug("territorio", "Lista de notificações existente encontrada com " + revocations.size() + " itens");
-            endif
-            
-            // Verificar se este território já está na lista
-            var already_exists := 0;
-            foreach terr in revocations
-                if (terr == territorio)
-                    already_exists := 1;
-                    break;
-                endif
-            endforeach
-            
-            if (!already_exists)
-                revocations.append(territorio);
-                SetElementProp(elem, "revocations", revocations);
-                LogDebug("territorio", "Território " + territorio + " adicionado à lista de notificações");
-                return 1;
-            else
-                LogDebug("territorio", "Território " + territorio + " já está na lista de notificações");
-                return 1;
-            endif
-        else
-            LogError("territorio", "Não foi possível criar o elemento resource_controller");
-        endif
-    endif
-    
-    // Método alternativo - enviar mensagem para o controlador via events
-    LogDebug("territorio", "Tentando notificar via evento do sistema");
-    var ev := struct{
-        "type" := "TerritoryChange",
-        "territory" := territorio,
-        "timestamp" := polcore().systime
-    };
-    
-    // Tentar enviar evento para o controlador
-    var pid := GetGlobalProperty("ResourceControllerPID");
-    if (pid)
-        var process := GetProcess(pid);
-        if (process)
-            process.SendEvent(ev);
-            LogDebug("territorio", "Evento enviado para o controlador de recursos (PID: " + pid + ")");
-            return 1;
-        endif
-    endif
-    
-    LogWarning("territorio", "Todas as tentativas de notificação falharam");
-    return 0;
-endfunction
 
 
 function DestruirObjetosTerritorio(territorio_id, faction)

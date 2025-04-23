@@ -183,7 +183,7 @@ function SetupResourcesForTerritory(who, elem)
     resource_sets := unique_resources;
     
     // Recuperar valores atuais se existirem, usando os helpers para simplificar
-    var current_interval := GetElementProp(elem, "ResourceInterval", 60);
+    var current_interval := GetElementProp(elem, "ResourceInterval", 1);
     var current_amount := GetElementProp(elem, "ResourceAmount", 5);
     var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
     
@@ -278,24 +278,80 @@ function SetupResourcesForTerritory(who, elem)
                     resources_str += new_selections[i];
                 endfor
                 
-                // Salvar no elemento
-                SetElementProp(elem, "ResourceInterval", interval);
-                SetElementProp(elem, "ResourceAmount", amount);
-                SetElementProp(elem, "Resources", resources_str);
-                
-                // Configurar próxima geração
-                var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-                SetElementProp(elem, "NextResourceTime", next_time);
-                
-                // Usar TM_UpdateTerritoryResources DEPOIS de ter o territory_id e new_selections definidos
-                if (territory_id)
-                    TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount);
+               // Salvar no elemento
+SetElementProp(elem, "ResourceInterval", interval);
+SetElementProp(elem, "ResourceAmount", amount);
+SetElementProp(elem, "Resources", resources_str);
+
+// Configurar próxima geração
+var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+SetElementProp(elem, "NextResourceTime", next_time);
+
+// Notificar o ResourceController sobre a atualização
+var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+var territory_name := GetElementProp(elem, "Name", "");
+
+// Log ANTES de tentar obter o PID
+LogDebug("EventoTerritorio", "Tentando obter PID para notificar sobre atualização de recursos do território " + territory_name + " (" + territory_id + ")");
+var controller_pid_prop := GetGlobalProperty("ResourceControllerPID");
+
+if (controller_pid_prop)
+    LogDebug("EventoTerritorio", "PID encontrado na GlobalProperty: " + controller_pid_prop + " (Tipo: " + TypeOf(controller_pid_prop) + ")");
+    var controller_pid := CInt(controller_pid_prop);
+
+    // Log ANTES de GetProcess
+    LogDebug("EventoTerritorio", "Tentando GetProcess(" + controller_pid + ")...");
+    var process := GetProcess(controller_pid);
+
+    if (process)
+        LogInfo("EventoTerritorio", "Processo encontrado! Enviando TerritoryChange (resources_updated) para PID " + controller_pid);
+        var ev := struct{
+            "type" := "TerritoryChange",
+            "territory_id" := territory_id ? territory_id : territory_name, // Usar ID ou nome
+            "change_type" := "resources_updated",
+            "change_data" := struct{
+                "resources" := resources_str,
+                "interval" := interval,
+                "amount" := amount,
+                "next_time" := next_time
+            },
+            "timestamp" := polcore().systime
+        };
+        var send_result := process.SendEvent(ev);
+        if (send_result == error)
+            LogError("EventoTerritorio", "Falha ao ENVIAR evento para PID " + controller_pid + ": " + send_result.errortext);
+        else
+            LogInfo("EventoTerritorio", "Evento enviado com sucesso para PID " + controller_pid + ".");
+        endif
+    else
+        LogError("EventoTerritorio", "FALHA CRÍTICA: GetProcess(" + controller_pid + ") falhou ao encontrar o processo do ResourceController.");
+        // Opcional: Listar processos ativos para diagnóstico
+        LogError("EventoTerritorio", "Tentando listar alguns processos ativos para diagnóstico...");
+        var found_processes := 0;
+        foreach process_id in (GetGlobalProperty("ActiveProcesses"))
+            if (found_processes < 5) // Limitar a 5 processos para não sobrecarregar
+                var proc := GetProcess(process_id);
+                if (proc)
+                    LogError("EventoTerritorio", "Processo ativo: PID=" + process_id + ", Nome=" + proc.name);
+                    found_processes += 1;
                 endif
-                
-                SendSysMessage(who, "Recursos configurados: " + resources_str);
-                SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
-                
-                done := 1;
+            endif
+            sleepms(1);
+        endforeach
+    endif
+else
+    LogWarning("EventoTerritorio", "PID do ResourceController NÃO encontrado na GlobalProperty 'ResourceControllerPID'");
+endif
+
+// Usar TM_UpdateTerritoryResources DEPOIS de ter o territory_id e new_selections definidos
+if (territory_id)
+    TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount);
+endif
+
+SendSysMessage(who, "Recursos configurados: " + resources_str);
+SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
+
+done := 1;
             endif
         endif
     endwhile
@@ -962,42 +1018,49 @@ function CreateTerritoryTotem(who, elem)
         return 0;
     endif
     
+    // NOVO DEBUG
+    var territory_name_to_set := GetElementProp(elem, "Name", "ERRO_NOME");
+    var territory_id_to_set := GetElementProp(elem, TERRITORY_ID_PROP, "ERRO_ID");
+    LogDebug("rectangles_DEBUG", $"Preparando para configurar totem para Território '{territory_name_to_set}' com ID '{territory_id_to_set}'");
+    
     // Obter informações do território usando TM_GetTerritoryInfo
-    var territory_name := GetElementProp(elem, "Name", "");
+    var territory_name := territory_name_to_set;
     var territory_info := TM_GetTerritoryInfo(territory_name);
     
     // Obter o ID do território ou criar um se não existir
-    var territory_id := "";
-if (territory_info && territory_info.id)
-    territory_id := territory_info.id;
-endif
+    var territory_id := territory_id_to_set;
     if (!territory_id)
         territory_id := "TER_" + polcore().systime + "_" + RandomInt(10000);
         SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+        LogDebug("rectangles_DEBUG", $"Gerado novo ID para território: {territory_id}");
     endif
     
-  // Configurar propriedades do totem
-SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
-
-// Corrigir o uso de ?.rect e ?.realm
-var rect_prop := "";
-var realm_prop := "";
-if (territory_info)
-    if (territory_info.rect)
-        rect_prop := territory_info.rect;
-    endif
-    if (territory_info.realm)
-        realm_prop := territory_info.realm;
-    endif
-endif
-
-SetObjProperty(totem, TERRITORY_RECT_PROP, rect_prop);
-SetObjProperty(totem, TERRITORY_REALM_PROP, realm_prop);
-SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
-SetObjProperty(totem, "CreatedBy", who.serial);
-SetObjProperty(totem, "CreationDate", polcore().systime);
+    // Configurar propriedades do totem
+    SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
     
-    SendSysMessage(who, "Um totem para o território '" + territory_name + "' foi criado em sua mochila.");
+    // Corrigir o uso de ?.rect e ?.realm
+    var rect_prop := "";
+    var realm_prop := "";
+    if (territory_info)
+        if (territory_info.rect)
+            rect_prop := territory_info.rect;
+        endif
+        if (territory_info.realm)
+            realm_prop := territory_info.realm;
+        endif
+    endif
+    
+    SetObjProperty(totem, TERRITORY_RECT_PROP, rect_prop);
+    SetObjProperty(totem, TERRITORY_REALM_PROP, realm_prop);
+    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
+    SetObjProperty(totem, "CreatedBy", who.serial);
+    SetObjProperty(totem, "CreationDate", polcore().systime);
+    
+    // NOVO DEBUG
+    LogDebug("rectangles_DEBUG", $"Propriedades definidas no totem {totem.serial}: Name='{GetObjProperty(totem, TERRITORY_NAME_PROP)}', ID='{GetObjProperty(totem, TERRITORY_ID_PROP)}'");
+    
+    // Mensagem mais clara para o GM
+    SendSysMessage(who, "Um totem para o território '" + territory_name + "' (ID: " + territory_id + ") foi criado em sua mochila.");
     return 1;
 endfunction
 

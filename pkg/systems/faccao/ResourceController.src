@@ -12,37 +12,189 @@ include ":architect:include/systemclock";
 include ":faccao:include/faccao_resources";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers"; // Nova inclusão
-
-
+include ":faccao:include/process_registry";
 
 // Lista para rastrear o próximo território a ser verificado
 var next_territory_checks := dictionary{};
 
 program ResourceController()
+    var controller_pid := GetPid();
+    LogInfo("ResourceController_DEBUG", "=== ResourceController INICIADO - PID: " + controller_pid + " ===");
+    
+    // Armazenar PID para verificações externas
+    var pid_result := SetGlobalProperty("ResourceControllerPID", controller_pid);
+    if (pid_result == error)
+        LogError("ResourceController_DEBUG", "FALHA ao salvar PID (" + controller_pid + ") como GlobalProperty: " + pid_result.errortext);
+    else
+        LogInfo("ResourceController_DEBUG", "PID " + controller_pid + " salvo com sucesso como GlobalProperty");
+    endif
+
+    // Também registrar no array de processos ativos (opcional)
+    var active_processes := GetGlobalProperty("ActiveProcesses");
+    if (!active_processes || active_processes == error)
+        active_processes := array{};
+    endif
+    
+    if (!(controller_pid in active_processes))
+        active_processes.append(controller_pid);
+        SetGlobalProperty("ActiveProcesses", active_processes);
+        LogInfo("ResourceController_DEBUG", "PID " + controller_pid + " adicionado à lista de processos ativos");
+    endif
+    
     LogInfo("recursos", "Iniciando Controlador de Recursos de Territórios...");
-    
-    // Inicialização: construir agenda inicial
     InitializeSchedule();
+    // Modificações para o loop principal em :faccao:ResourceController.src
+var check_interval := 30;
+var last_event_check := 0;
+var event_check_interval := 15; // Verificar eventos a cada 15 segundos
+
+// Loop principal do ResourceController modificado para usar Event-Driven
+while(1)
+    // Atualizar o heartbeat dentro do loop
+    UpdateProcessHeartbeat("ResourceController");
+    LogInfo("ResourceController", "Ciclo iniciado. PID: " + GetPid());
+
+    var current_time := polcore().systime;
     
-    var check_interval := 30; // 30 segundos entre verificações
-    
-    while(1)
-        // Verificar apenas territórios que estão próximos da hora de gerar recursos
-        var current_time := polcore().systime;
-        var territories_to_check := GetTerritoriesDueForCheck(current_time);
-        
-        foreach territory in (territories_to_check)
-            var success := ProcessTerritory(territory, current_time);
-            if (!success)
-                // Se falhar, tentar novamente mais tarde
-                RescheduleTerritory(territory, current_time + 60);
-            endif
-            sleepms(10); // Pequena pausa para não sobrecarregar
-        endforeach
-        
-        Sleep(check_interval);
-    endwhile
+    // 1. VERIFICAR E PROCESSAR EVENTOS PENDENTES (NOVO)
+    if (current_time - last_event_check >= event_check_interval)
+        ProcessPendingEvents();
+        last_event_check := current_time;
+    endif
+
+    // 2. Processar territórios que já estão na hora (lógica existente)
+    var territories_to_check := GetTerritoriesDueForCheck(current_time);
+    // ... (loop foreach para chamar ProcessTerritory) ...
+
+    // 3. Calcular tempo de espera (lógica existente ou simplificada)
+    var wait_time := check_interval;
+    // ... (lógica para calcular wait_time baseado em next_territory_checks ou usar check_interval) ...
+    if(wait_time < 1) 
+        wait_time := 1;
+    endif
+
+    LogDebug("ResourceController_DEBUG", "Indo para Sleep(" + wait_time + ")");
+    Sleep(wait_time); // Voltar a usar Sleep simples
+endwhile
 endprogram
+
+// NOVA FUNÇÃO para processar eventos do datafile
+function ProcessPendingEvents()
+    var df := SafeOpenDataFile(":faccao:messages");
+    if(!df) 
+        return; 
+    endif
+
+    var elem := SafeFindElement(df, "controller_events");
+    if(!elem) 
+        return; 
+    endif
+
+    var events := GetElementProp(elem, "pending", array{});
+    if (TypeOf(events) != "Array" || events.size() == 0) 
+        return; 
+    endif // Nenhum evento
+
+    LogInfo("ResourceController_Event", "Processando " + events.size() + " eventos pendentes...");
+    var processed_events := 0;
+
+    // Criar uma nova lista para eventos não processados (se houver erro)
+    var remaining_events := array{};
+
+    foreach ev in events
+        if (TypeOf(ev) == "Struct" && ev.territory_id && ev.type)
+            LogInfo("ResourceController", "Processando evento " + ev.type + " para território: " + ev.territory_id);
+            case (ev.type)
+                "created":
+                "transfer":
+                "claimed":
+                "resources_updated":
+                "rollback": // Adicionar rollback se necessário
+                     UpdateTerritorySchedule(ev.territory_id);
+                     processed_events += 1;
+
+                "deleted":
+                "revoked":
+                     if (next_territory_checks.exists(ev.territory_id))
+                         next_territory_checks.erase(ev.territory_id);
+                         LogInfo("ResourceController", "Território " + ev.territory_id + " removido do agendamento (evento " + ev.type + ").");
+                     endif
+                     processed_events += 1;
+
+                default:
+                     LogWarning("ResourceController", "Tipo de evento desconhecido no datafile: " + ev.type);
+                     remaining_events.append(ev); // Manter evento não reconhecido? Opcional.
+            endcase
+        else
+            LogWarning("ResourceController_Event", "Evento inválido encontrado no datafile: " + ev);
+            // Não re-adicionar evento inválido
+        endif
+        sleepms(5); // Pequena pausa
+    endforeach
+
+    // Salvar a lista de eventos (apenas os não processados/inválidos, se houver)
+    // Se todos foram processados, a lista estará vazia.
+    SetElementProp(elem, "pending", remaining_events);
+    LogInfo("ResourceController_Event", "Processamento de eventos concluído. Processados: " + processed_events + ".");
+endfunction
+
+function UpdateTerritorySchedule(territory_id)
+    LogInfo("ResourceController_Schedule", "Tentando atualizar agenda para: " + territory_id);
+    
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogError("ResourceController_Schedule", "Não foi possível abrir datafile de áreas");
+        return 0;
+    endif
+    
+    // Tentar encontrar o território pelo ID ou nome
+    var elem := TM_FindTerritory(territory_id);
+    if (!elem)
+        elem := SafeFindElement(rect_df, territory_id); // Tentar diretamente pelo ID como nome
+    endif
+    
+    if (elem)
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
+        if (!faction)
+            faction := GetElementProp(elem, "Faction"); // Compatibilidade
+        endif
+        
+        var next_time := GetElementProp(elem, "NextResourceTime");
+        
+        if (faction && faction != DEFAULT_FACTION && faction != "Selvagem")
+            if (next_time)
+                LogInfo("ResourceController_Schedule", "Adicionando/Atualizando " + territory_id + " na agenda. Próximo Check: " + next_time);
+                next_territory_checks[territory_id] := next_time;
+            else
+                // Se não tiver próxima verificação, configurar
+                var interval := CInt(GetElementProp(elem, "ResourceInterval"));
+                if (!interval) 
+                    interval :=1; // Padrão: 60 minutos
+                endif
+                
+                next_time := polcore().systime + (interval * 60);
+                SetElementProp(elem, "NextResourceTime", next_time);
+                next_territory_checks[territory_id] := next_time;
+                
+                LogInfo("ResourceController_Schedule", "Configurando agendamento inicial para " + territory_id + ": " + next_time);
+            endif
+            return 1;
+        else
+            if (next_territory_checks.exists(territory_id))
+                LogInfo("ResourceController_Schedule", "Removendo " + territory_id + " da agenda (Facção: " + faction + ")");
+                next_territory_checks.erase(territory_id);
+            endif
+            return 0;
+        endif
+    else
+        // Território não existe mais no datafile, remover da agenda se existir
+        if (next_territory_checks.exists(territory_id))
+            LogWarning("ResourceController_Schedule", "Território " + territory_id + " não encontrado no datafile. Removendo da agenda.");
+            next_territory_checks.erase(territory_id);
+        endif
+        return 0;
+    endif
+endfunction
 
 
 function InitializeSchedule()
@@ -68,7 +220,7 @@ function InitializeSchedule()
                 // Se não tiver próxima verificação, configurar
                 var interval := CInt(GetElementProp(elem, "ResourceInterval"));
                 if (!interval) 
-                    interval := 60; // Padrão: 60 minutos
+                    interval := 1; // Padrão: 60 minutos
                 endif
                 
                 next_time := current_time + (interval * 60);
@@ -84,105 +236,241 @@ function InitializeSchedule()
     return 1;
 endfunction
 
+// Função GetTerritoriesDueForCheck modificada - Adicionar log mais detalhado
 function GetTerritoriesDueForCheck(current_time)
     var due_territories := array{};
     var window_size := 60; // 1 minuto de janela
     
+    // Log DEBUG
+    LogDebug("ResourceController_DEBUG", "Verificando territórios com next_territory_checks.size() = " + next_territory_checks.size());
+    
     foreach territory_name in (next_territory_checks.keys())
         var check_time := next_territory_checks[territory_name];
         
+        // Log detalhado para cada verificação
+        LogDebug("ResourceController_DEBUG", "Território: " + territory_name + ", CheckTime: " + check_time + ", CurrentTime: " + current_time);
+        
         // Se está no intervalo de verificação
         if (check_time <= current_time + window_size)
+            LogDebug("ResourceController_DEBUG", "Adicionando território: " + territory_name + " à lista de verificação");
             due_territories.append(territory_name);
         endif
         
         sleepms(2);
     endforeach
     
+    LogDebug("ResourceController_DEBUG", "GetTerritoriesDueForCheck: Encontrados " + due_territories.size() + " territórios para verificar");
     return due_territories;
 endfunction
 
+// Início da função ProcessTerritory modificada - Adicionar mais logs
 function ProcessTerritory(territory_name, current_time)
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
+    LogDebug("ProcessTerritory_DEBUG", "-- Iniciando ProcessTerritory para: " + territory_name + " (CurrentTime: " + current_time + ") --"); // Log de Entrada
+    
+    // Verificações de segurança
+    if (!territory_name)
+        LogError("ProcessTerritory_DEBUG", "territory_name é nulo ou inválido");
         return 0;
     endif
     
+    if (TypeOf(territory_name) != "String")
+        LogError("ProcessTerritory_DEBUG", "territory_name não é String, é " + TypeOf(territory_name));
+        return 0;
+    endif
+
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        LogError("ProcessTerritory_DEBUG", "Não foi possível abrir o datafile :architect:areas");
+        return 0;
+    endif
+
     var elem := SafeFindElement(rect_df, territory_name);
     if (!elem)
-        // Território não existe mais, remover da agenda
+        LogWarning("ProcessTerritory_DEBUG", "Elemento '" + territory_name + "' não encontrado. Removendo da agenda.");
         next_territory_checks.Erase(territory_name);
         return 1;
     endif
-    
+    LogDebug("ProcessTerritory_DEBUG", "Elemento encontrado.");
+
     var next_time_prop := GetElementProp(elem, "NextResourceTime");
     var next_time := 0;
-
     if (next_time_prop)
         next_time := CInt(next_time_prop);
     endif
+    LogDebug("ProcessTerritory_DEBUG", "NextResourceTime lido: " + next_time);
 
+    // Log ANTES da verificação de tempo
+    LogDebug("ProcessTerritory_DEBUG", "Verificando tempo: NextTime(" + next_time + ") > CurrentTime(" + current_time + ")?");
     if (next_time > current_time)
-        return 1; // Ainda não é hora
+        LogDebug("ProcessTerritory_DEBUG", "--> Retornando 1 (Ainda não é hora)"); // Log de Saída Prematura
+        return 1;
     endif
-    
-    // Verificar e obter dados do território de forma robusta
+
+    // Obter dados...
     var faction := GetElementProp(elem, TERRITORY_FACTION_PROP);
     if (!faction)
         faction := GetElementProp(elem, "Faction"); // Compatibilidade legada
     endif
+    LogDebug("ProcessTerritory_DEBUG", "Facção obtida: '" + faction + "'");
     
     var resource_interval := CInt(GetElementProp(elem, "ResourceInterval"));
+    LogDebug("ProcessTerritory_DEBUG", "ResourceInterval: " + resource_interval);
+    
     var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
+    LogDebug("ProcessTerritory_DEBUG", "ResourceAmount: " + resource_amount);
+    
     var resources_string := GetElementProp(elem, "Resources");
+    LogDebug("ProcessTerritory_DEBUG", "Resources string: '" + resources_string + "'");
     
     // Pré-processamento dos recursos para validação
     var resources := ProcessResourceString(resources_string);
+    LogDebug("ProcessTerritory_DEBUG", "Recursos processados: " + resources.size() + " recursos");
     
-    // Verificar validade dos dados
+    // Log ANTES da validação
+    LogDebug("ProcessTerritory_DEBUG", "Verificando validade dos dados...");
     var validade := VerificarValidadeDosDados(elem, faction, resources, resource_amount);
+
     if (!validade.valido)
+        LogError("ProcessTerritory_DEBUG", "--> Retornando 0 (Dados inválidos: " + validade.mensagem + ")"); // Log de Saída por Validade
         LogError("recursos", validade.mensagem);
         // Agendar tentativa futura e registrar falha
         RescheduleTerritory(territory_name, current_time + 300); // 5 minutos
         RegistrarFalhaDeCriacao(elem, faction, territory_name, resources_string);
         return 0;
     endif
+    LogDebug("ProcessTerritory_DEBUG", "Dados válidos. Prosseguindo para GenerateResourcesForTerritory...");
     
     LogInfo("recursos", "Gerando recursos para território: " + territory_name);
 
     // Geração dos recursos com tratamento de erros mais detalhado
-    var success := GenerateResourcesForTerritory(elem, faction, resource_amount);
-    if (success)
+    LogDebug("ProcessTerritory_DEBUG", "Chamando GenerateResourcesForTerritory(elem, '" + faction + "', " + resource_amount + ")");
+    var success_count := GenerateResourcesForTerritory(elem, faction, resource_amount);
+    LogDebug("ProcessTerritory_DEBUG", "Resultado de GenerateResourcesForTerritory: " + success_count);
+    
+    if (success_count > 0)
         // Configurar próxima geração
         var next_gen_time := current_time + (resource_interval * 60);
+        LogDebug("ProcessTerritory_DEBUG", "Configurando próxima geração para: " + next_gen_time + " (em " + resource_interval + " minutos)");
+        
         SetElementProp(elem, "NextResourceTime", next_gen_time);
         next_territory_checks[territory_name] := next_gen_time;
         
         LogInfo("recursos", "Próxima geração para " + territory_name + " agendada para daqui a " + resource_interval + " minutos");
-
+        LogDebug("ProcessTerritory_DEBUG", "--> Retornando 1 (Sucesso)");
         return 1;
     else
         // Tratar falha na geração
         LogError("recursos", "Falha ao gerar recursos para " + territory_name);
+        LogError("ProcessTerritory_DEBUG", "Falha na geração de recursos. Tentando criar baú de emergência...");
         
         // Verificar se devemos tentar criar um baú de emergência
         var emergency_result := TentarCriarBauEmergencia(faction, territory_name);
         if (emergency_result)
             LogWarning("recursos", "Baú de emergência criado. Reagendando geração de recursos.");
+            LogDebug("ProcessTerritory_DEBUG", "Baú de emergência criado com sucesso. Reagendando para daqui a 2 minutos.");
             // Agendar nova tentativa em breve
             RescheduleTerritory(territory_name, current_time + 120); // 2 minutos
+            LogDebug("ProcessTerritory_DEBUG", "--> Retornando 0 (Falha com baú de emergência)");
             return 0;
         else
             // Falhou completamente, agendar para muito mais tarde
             LogCritical("recursos", "Impossível gerar recursos. Agendando nova tentativa para mais tarde.");
-
+            LogCritical("ProcessTerritory_DEBUG", "Falha crítica: não foi possível criar baú de emergência. Reagendando para daqui a 1 hora.");
             RescheduleTerritory(territory_name, current_time + 3600); // 1 hora
+            LogDebug("ProcessTerritory_DEBUG", "--> Retornando 0 (Falha completa)");
             return 0;
         endif
     endif
     
+    LogDebug("ProcessTerritory_DEBUG", "AVISO: Final inesperado da função. Retornando 0.");
     return 0;
+endfunction
+
+function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
+    LogDebug("ProcessTerritory_DEBUG", "Iniciando VerificarValidadeDosDados...");
+    
+    var validade := struct{
+        "valido" := 1,
+        "mensagem" := ""
+    };
+    
+    if (!elem)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Elemento inválido");
+        validade.valido := 0;
+        validade.mensagem := "Elemento inválido";
+        return validade;
+    endif
+    
+    if (!faction)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Facção não encontrada");
+        validade.valido := 0;
+        validade.mensagem := "Facção não encontrada";
+        return validade;
+    endif
+    
+    if (faction == "Selvagem" || faction == DEFAULT_FACTION)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Território selvagem (" + faction + ")");
+        validade.valido := 0;
+        validade.mensagem := "Facção inválida ou território selvagem: " + faction;
+        return validade;
+    endif
+    
+    if (!resources)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Array de recursos é NULL");
+        validade.valido := 0;
+        validade.mensagem := "Nenhum recurso configurado";
+        return validade;
+    endif
+    
+    if (TypeOf(resources) != "Array")
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Resources não é um Array (Tipo: " + TypeOf(resources) + ")");
+        validade.valido := 0;
+        validade.mensagem := "Formato de recursos inválido";
+        return validade;
+    endif
+    
+    if (!resources.size())
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Array de recursos está vazio");
+        validade.valido := 0;
+        validade.mensagem := "Nenhum recurso válido configurado";
+        return validade;
+    endif
+    
+    if (resource_amount <= 0)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Quantidade de recursos inválida (" + resource_amount + ")");
+        validade.valido := 0;
+        validade.mensagem := "Quantidade de recursos inválida: " + resource_amount;
+        return validade;
+    endif
+    
+    // Verificação adicional: verificar se cada recurso na lista é mapeável
+    var recursos_invalidos := array{};
+    foreach resource in resources
+        var objtype := MapearRecurso(resource);
+        if (!objtype)
+            recursos_invalidos.append(resource);
+        endif
+        sleepms(1);
+    endforeach
+    
+    if (recursos_invalidos.size() > 0)
+        var msg_recursos := "";
+        foreach r in recursos_invalidos
+            if (msg_recursos != "") 
+                msg_recursos += ", ";
+            endif
+            msg_recursos += r;
+            sleepms(1);
+        endforeach
+        
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Recursos não mapeáveis: " + msg_recursos);
+        validade.valido := 0;
+        validade.mensagem := "Recursos não reconhecidos: " + msg_recursos;
+        return validade;
+    endif
+    
+    LogDebug("ProcessTerritory_DEBUG", "Validação SUCESSO: Todos os dados são válidos");
+    return validade;
 endfunction
 
 // Função de tentativa de criação de baú de emergência
@@ -222,57 +510,9 @@ function RescheduleTerritory(territory_name, new_time)
     endif
 endfunction
 
-function CheckTerritoryResources()
-    var rect_df := SafeOpenDataFile(":architect:areas");
-    if (!rect_df)
-        return 0;
-    endif
-    
-    var current_time := polcore().systime;
-    
-    foreach rect_name in (rect_df.keys())
-        var elem := SafeFindElement(rect_df, rect_name);
-        var faction := GetElementProp(elem, "Faction");
-        
-        // Verificar apenas territórios controlados
-        if (faction && faction != "Selvagem")
-            // Verificar se está na hora de gerar recursos
-            var next_time := CInt(GetElementProp(elem, "NextResourceTime"));
-            
-            if (next_time && current_time >= next_time)
-                var resource_interval := CInt(GetElementProp(elem, "ResourceInterval"));
-                var resource_amount := CInt(GetElementProp(elem, "ResourceAmount"));
-                var resources := GetElementProp(elem, "Resources");
-                
-                if (resource_interval && resource_amount && resources)
-                    LogInfo("recursos", "Gerando recursos para território: " + rect_name + " (Facção: " + faction + ")");
-
-                    
-                    if (GenerateResourcesForTerritory(elem, faction, resource_amount))
-                        // Configurar próxima geração
-                        var next_gen_time := current_time + (resource_interval * 60); // Converter minutos para segundos
-                        SetElementProp(elem, "NextResourceTime", next_gen_time);
-                        
-                        LogInfo("recursos", "Próxima geração para " + rect_name + " em " + resource_interval + " minutos");
-
-                        
-                        // Notificar líderes da facção
-                        NotifyFactionLeaders(faction, rect_name, resources, resource_amount);
-                    endif
-                endif
-            endif
-        endif
-        
-        sleepms(10); // Pequena pausa para não sobrecarregar
-    endforeach
-    
-    return 1;
-endfunction
-
 function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     if (!elem || !faction_name || resource_amount <= 0)
         LogError("recursos", "Parâmetros inválidos para geração de recursos");
-
         return 0;
     endif
     
@@ -315,27 +555,23 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     // Verificar se é selvagem
     if (faction == DEFAULT_FACTION || faction == "Selvagem")
         LogDebug("recursos", "Território selvagem, pulando geração de recursos");
-
         return 0;
     endif
     
     // Verificar se a facção passada corresponde à do território
     if (faction_name != faction)
         LogWarning("recursos", "Facção passada (" + faction_name + ") não corresponde à facção do território (" + faction + ")");
-
         // Usar a facção correta
         faction_name := faction;
     endif
     
     LogDebug("recursos", "Facção confirmada: " + faction_name);
-
     
     // Obter o ID do território
     var territory_id := GetElementProp(elem, TERRITORY_ID_PROP);
     if (!territory_id)
         territory_id := GetElementProp(elem, "Name"); // Fallback para nome do território
         LogDebug("recursos", "Usando nome do território como ID: " + territory_id);
-
     endif
     
     // Obter a string de recursos de forma segura
@@ -347,7 +583,6 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     
     // Verificar o que está na string de recursos para depuração
     LogDebug("recursos", "String de recursos: " + resources_string);
-
     
     // Processar a lista de recursos com tratamento robusto
     var resources := ProcessResourceString(resources_string);
@@ -361,6 +596,14 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     
     // Encontrar o baú de doações com tratamento de erros - USANDO TERRITORY_ID
     var donation_chest := FindFactionChest(faction_name, territory_id);
+    
+    // Novo log de depuração
+    if (donation_chest)
+        LogDebug("GenerateResources_DEBUG", "Baú alvo encontrado: " + donation_chest.serial);
+    else
+        LogCritical("GenerateResources_DEBUG", "FALHA CRÍTICA ao encontrar baú para " + faction_name + "/" + territory_id);
+    endif
+    
     if (!donation_chest)
         LogError("recursos", "Baú de doações não encontrado ou inacessível para facção: " + faction_name);
         
@@ -394,6 +637,8 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
         // Continuar mesmo assim, tentando adicionar o que for possível
     endif
     
+    // Novo log de depuração
+    LogDebug("GenerateResources_DEBUG", "Iniciando loop de criação de recursos no baú " + donation_chest.serial);
     LogDebug("recursos", "Iniciando adição de recursos ao baú " + donation_chest.serial);
     
     // Adicionar cada recurso com tratamento apropriado
@@ -401,6 +646,8 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     var log_entries := array{};
     
     foreach resource in (resources)
+        // Novo log de depuração
+        LogDebug("GenerateResources_DEBUG", "-- Processando Recurso: " + resource + " --");
         LogDebug("recursos", "Processando recurso: " + resource);
         
         // Obter objtype do recurso
@@ -411,6 +658,9 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
             continue;
         endif
         
+        // Novo log de depuração
+        LogDebug("GenerateResources_DEBUG", "Objtype mapeado: 0x" + Hex(objtype));
+        
         // Obter categoria do recurso
         var category := ClassificarRecurso(resource);
         if (!category)
@@ -418,39 +668,81 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
             category := "metal"; // Valor padrão
         endif
         
+        // Novo log de depuração
+        LogDebug("GenerateResources_DEBUG", "Categoria determinada: " + category);
+        
         // Preparar as propriedades necessárias para o item
-        var properties := dictionary{
-            "IsKingdomDonation" + category   := 1,
-            "GeneratedForTerritory"          := territory_name,
-            "GeneratedTime"                  := polcore().systime,
-            "GeneratedByFaction"             := faction_name,
-            "CreatedByResourceController"    := 1,
-            "faction"                        := faction_name,  // Importante para o baú ser reconhecido
-            "territory_id"                   := territory_id   // Importante para território
-        };
+        // CORREÇÃO: Usar strings explícitas para as chaves para evitar problemas de conversão
+       // Preparar as propriedades necessárias para o item
+    // CORREÇÃO: Usar strings explícitas para as chaves para evitar problemas de conversão
+    var properties := dictionary{}; // Inicializar um dicionário vazio primeiro
+
+    // Adicionar as propriedades explicitamente como strings
+    properties["IsKingdomDonation" + category] := 1;
+    properties["GeneratedForTerritory"] := territory_name;
+    properties["GeneratedTime"] := polcore().systime; // CORRIGIDO: Chave deve ser string
+    properties["GeneratedByFaction"] := faction_name;
+    properties["CreatedByResourceController"] := 1; // CORRIGIDO: Chave deve ser string
+    properties["faction"] := faction_name;
+    properties["territory_id"] := territory_id;
+
+    // Verificação adicional de debug para garantir que todas as chaves são strings
+    LogDebug("PROP_CHECK", "--> Propriedades ANTES de SafeCreateItemInContainer:");
+    if (TypeOf(properties) == "Dictionary") 
+        foreach prop_key in (properties.keys())
+            LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' ("+ TypeOf(prop_key) +") = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
+            sleepms(1);
+        endforeach
+    else 
+        LogDebug("PROP_CHECK", "    'properties' NÃO é Dictionary! Tipo: " + TypeOf(properties)); 
+    endif
+    LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
+    
+    // ABORDAGEM UNIFICADA: Usar SafeCreateItemInContainer
+    var result := SafeCreateItemInContainer(donation_chest, objtype, resource_amount, properties);
+    
         
-        // ABORDAGEM UNIFICADA: Usar SafeCreateItemInContainer
-        var result := SafeCreateItemInContainer(donation_chest, objtype, resource_amount, properties);
-        
-        if (result)
+        // Novo log de depuração para verificar resultado
+        if (result && result != error)
+            LogInfo("GenerateResources_DEBUG", "SUCESSO SafeCreate! Item Ref: " + result + ", Serial: " + result.serial + ", Amount: " + result.amount + ", Objtype: 0x" + Hex(result.objtype));
             success_count += 1;
-            log_entries.append("Recurso criado: " + resource + " x" + resource_amount);
+            log_entries.append("Recurso criado: " + resource + " x" + resource_amount + " (Serial: " + result.serial + ")");
             LogDebug("recursos", "Recurso adicionado com sucesso: " + resource + " x" + resource_amount);
+            
+            // Verificação adicional de propriedades - NOVO
+            var has_created_prop := GetObjProperty(result, "CreatedByResourceController");
+            var has_time_prop := GetObjProperty(result, "GeneratedTime");
+            
+            if (!has_created_prop || !has_time_prop)
+                LogWarning("GenerateResources_DEBUG", "Propriedades críticas faltando no item criado! Corrigindo manualmente...");
+                // Aplicar propriedades manualmente como fallback
+                if (!has_created_prop)
+                    SetObjProperty(result, "CreatedByResourceController", 1);
+                endif
+                if (!has_time_prop)
+                    SetObjProperty(result, "GeneratedTime", polcore().systime);
+                endif
+            endif
         else
+            LogError("GenerateResources_DEBUG", "FALHA SafeCreate! Resultado: " + result + " (Tipo: " + TypeOf(result) + ")");
+            
             // Tentar método alternativo se falhar
             LogWarning("recursos", "Falha ao criar item usando SafeCreateItemInContainer, tentando método direto");
             
             var new_item := CreateItemInContainer(donation_chest, objtype, resource_amount);
             if (new_item)
-                // Aplicar todas as propriedades
+                // Aplicar todas as propriedades diretamente
                 foreach prop_name in (properties.keys())
-                    SetObjProperty(new_item, prop_name, properties[prop_name]);
+                    SetObjProperty(new_item, CStr(prop_name), properties[prop_name]);
                     sleepms(1);
                 endforeach
                 
+                // Novo log de depuração para método alternativo
+                LogInfo("GenerateResources_DEBUG", "SUCESSO (método alternativo)! Item Ref: " + new_item + ", Serial: " + new_item.serial);
+                
                 success_count += 1;
                 log_entries.append("Recurso criado (método alternativo): " + resource + " x" + resource_amount);
-                LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);;
+                LogDebug("recursos", "Recurso adicionado com método alternativo: " + resource + " x" + resource_amount);
             else
                 log_entries.append("Falha ao criar recurso: " + resource);
                 LogError("recursos", "Falha ao criar recurso: " + resource);
@@ -459,6 +751,95 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
         
         sleepms(10); // Pequena pausa entre criações para não sobrecarregar
     endforeach
+    
+    // Novo log de depuração - verificar conteúdo final do baú
+    LogDebug("GenerateResources_DEBUG", "=== Conteúdo final do Baú " + donation_chest.serial + " ===");
+    var final_items := EnumerateItemsInContainer(donation_chest);
+    if (final_items == error || !final_items)
+        LogWarning("GenerateResources_DEBUG", "Não foi possível enumerar itens no baú ao final.");
+    else
+        if (final_items.size() == 0) 
+            LogDebug("GenerateResources_DEBUG", "Baú está vazio.");
+        else 
+            foreach final_item in final_items
+                if (final_item)
+                    LogDebug("GenerateResources_DEBUG", "- Item: " + final_item.desc + " (Serial: " + final_item.serial + ", Objtype: 0x" + Hex(final_item.objtype) + ", Amount: " + final_item.amount + ")");
+                    
+                    // Verificar se o item tem a propriedade de recurso do sistema
+                    var is_system := GetObjProperty(final_item, "CreatedByResourceController");
+                    if (is_system)
+                        LogDebug("GenerateResources_DEBUG", "  [É um recurso do sistema] Criado em: " + GetObjProperty(final_item, "GeneratedTime"));
+                    endif
+                    
+                    // Verificar propriedades KingdomDonation
+                    var donation_types := array{
+                        "IsKingdomDonationComida",
+                        "IsKingdomDonationMoedas",
+                        "IsKingdomDonationCouro", 
+                        "IsKingdomDonationMetal",
+                        "IsKingdomDonationMadeira",
+                        "IsKingdomDonationPano",
+                        "IsKingdomDonationPedra",
+                        "IsKingdomDonationJoias"
+                    };
+                    
+                    foreach donation_type in donation_types
+                        if (GetObjProperty(final_item, donation_type))
+                            LogDebug("GenerateResources_DEBUG", "  [Tipo de doação]: " + donation_type);
+                            break;
+                        endif
+                        sleepms(1);
+                    endforeach
+                endif
+                sleepms(1);
+            endforeach
+            
+            // Verificação adicional de contagem de recursos recém-criados
+            var new_resources_count := 0;
+            var current_time := polcore().systime;
+            var time_threshold := 300; // 5 minutos
+            
+            foreach final_item in final_items
+                if (final_item)
+                    var gen_time := GetObjProperty(final_item, "GeneratedTime");
+                    if (gen_time && (current_time - gen_time) < time_threshold)
+                        new_resources_count += 1;
+                    endif
+                endif
+                sleepms(1);
+            endforeach
+            
+            LogInfo("GenerateResources_DEBUG", "Total de itens no baú: " + final_items.size() + ", Recursos recém-criados: " + new_resources_count);
+        endif
+    endif
+    LogDebug("GenerateResources_DEBUG", "=============================================");
+
+    // Verificação adicional - Force uma contagem dos recursos e compare com o cache
+    LogDebug("GenerateResources_DEBUG", "Realizando verificação de consistência de recursos...");
+    var recursos_reais := ContarRecursosReais(donation_chest);
+    var recursos_cache := GetObjProperty(donation_chest, CACHE_PROP_NAME);
+
+    if (recursos_cache)
+        var inconsistencias := VerificarInconsistencias(donation_chest, recursos_reais, "local");
+        if (inconsistencias && inconsistencias.size() > 0)
+            LogWarning("GenerateResources_DEBUG", "Detectadas " + inconsistencias.size() + " inconsistências entre recursos reais e cache");
+        else
+            LogInfo("GenerateResources_DEBUG", "Recursos consistentes entre contagem real e cache");
+        endif
+    else
+        LogInfo("GenerateResources_DEBUG", "Primeiro cadastro de recursos no cache - não há comparação disponível");
+    endif
+
+    // Forçar sincronização dos dados do datafile
+    var sync_result := SincronizarComDataFile(donation_chest, recursos_reais);
+    if (sync_result)
+        LogInfo("GenerateResources_DEBUG", "Sincronização com datafile realizada com sucesso");
+    else
+        LogWarning("GenerateResources_DEBUG", "Falha na sincronização com datafile");
+    endif
+
+    // Adicionar um sleep curto antes de retornar para garantir que todas as operações sejam concluídas
+    Sleep(1);
     
     // Registrar resultados
     if (success_count > 0)
@@ -491,7 +872,6 @@ function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     
     return success_count;
 endfunction
-
 // Função para notificar líderes sobre geração de recursos
 function NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, amount, success_count)
     var guild := FindGuildByName(faction_name);
@@ -805,7 +1185,7 @@ endfunction
 // Processar revogações de territórios
 function ProcessRevocations()
     // Verifica se há notificações de revogação
-    var df := SafeOpenDataFile(":system:messages");
+    var df := SafeOpenDataFile(":faccao:messages");
     if (df)
         var elem := SafeFindElement(df, "resource_controller");
         if (elem)
@@ -860,38 +1240,6 @@ function ProcessRevocations()
     return 1;
 endfunction
 
-function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
-    var validade := struct{
-        "valido" := 1,
-        "mensagem" := ""
-    };
-    
-    if (!elem)
-        validade.valido := 0;
-        validade.mensagem := "Elemento inválido";
-        return validade;
-    endif
-    
-    if (!faction || faction == "Selvagem" || faction == DEFAULT_FACTION)
-        validade.valido := 0;
-        validade.mensagem := "Facção inválida ou território selvagem";
-        return validade;
-    endif
-    
-    if (!resources || !resources.size())
-        validade.valido := 0;
-        validade.mensagem := "Nenhum recurso válido configurado";
-        return validade;
-    endif
-    
-    if (resource_amount <= 0)
-        validade.valido := 0;
-        validade.mensagem := "Quantidade de recursos inválida";
-        return validade;
-    endif
-    
-    return validade;
-endfunction
 
 function ParseResourceList(resources_string)
     if (!resources_string)

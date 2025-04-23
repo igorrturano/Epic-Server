@@ -22,6 +22,8 @@ include ":faccao:include/faccao_resources";
 include ":faccao:include/logging";
 include ":faccao:include/permissions";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
+include ":faccao:include/territory_management";
+include ":faccao:include/process_registry";  // ADICIONADO: include do process_registry
 
 // Constantes de configuração
 const VERIFY_INTERVAL := 3600;         // 1 hora entre verificações completas
@@ -34,58 +36,75 @@ const MAX_INCONSISTENCY_HISTORY := 20; // Máximo de entradas no histórico de i
 
 
 program VerifyFactionResources()
-    LogInfo("recursos", "Iniciando Verificador de Recursos de Facções");
+    LogInfo("recursos", "Iniciando Verificador de Recursos de Facções (Versão Simplificada)");
     
-    // Registrar PID para que outros scripts possam verificar se está rodando
+    // Registrar PID
     SetGlobalProperty("faction_resources_verifier_pid", GetPid());
     
-    // Verificar se é preciso migração inicial
-    if (!GetGlobalProperty("resources_migration_done"))
-        MigrarRecursosAntigosPrimeiraVez();
-        SetGlobalProperty("resources_migration_done", 1);
-    endif
-    
-    // Inicializar contadores
-    var last_full_check := 0;
-    var last_partial_check := 0;
-    var cycle_count := 0;
-    
-    // Loop principal
+    // Loop principal simplificado
     while (1)
-        cycle_count += 1;
         var current_time := polcore().systime;
+        var last_check := GetGlobalProperty("last_resources_check");
         
-        // Determinar tipo de verificação a realizar
-        if ((current_time - last_full_check) >= VERIFY_INTERVAL && DeveExecutarVerificacao(1))
-            // Verificação completa
-            if (LOGGING_ENABLED)
-          LogInfo("recursos", "Executando verificação COMPLETA do sistema de recursos...");
-            endif
+        // Verificar se é hora de executar (a cada hora)
+        if (!last_check || (current_time - last_check) >= 3600)
+            LogInfo("recursos", "Executando verificação de recursos...");
+            
+            // Executar verificação principal
             ExecutarVerificacaoCompleta();
-            last_full_check := current_time;
-            last_partial_check := current_time; // Atualizar ambos os contadores
-        elseif ((current_time - last_partial_check) >= VERIFICACAO_PARCIAL && DeveExecutarVerificacao(0))
-            // Verificação parcial
-            if (LOGGING_ENABLED)
-                LogInfo("recursos", "Executando verificação PARCIAL do sistema de recursos...");
-            endif
-            ExecutarVerificacaoParcial();
-            last_partial_check := current_time;
-        else
-            // Verificação rápida em cada ciclo
-            ExecutarVerificacaoRapida();
+            
+            // Atualizar timestamp da última verificação
+            SetGlobalProperty("last_resources_check", current_time);
         endif
         
-        // Em cada 5º ciclo, verificar inconsistências específicas
-        if (cycle_count % 5 == 0)
-            VerificarLidasFaccao();
+        // Determinar tempo até próxima verificação
+        var next_check := last_check ? (last_check + 3600) : (current_time + 3600);
+        var wait_time := next_check - current_time;
+        
+        // Garantir valor razoável
+        if (wait_time < 60) 
+            wait_time := 60;
+        elseif (wait_time > 3600)
+            wait_time := 3600;
         endif
         
-        // Dormir até o próximo ciclo - tempo variável
-        var tempo_espera := DeterminarTempoEspera(last_full_check, last_partial_check);
-        Sleep(tempo_espera);
+        Sleep(wait_time);
     endwhile
 endprogram
+
+// Verificação de consistência otimizada (baseada em caches)
+function VerificarConsistenciaOptimizada()
+    LogInfo("recursos", "Verificando consistência entre baús e datafile (método otimizado)...");
+    
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+    if (!df)
+        LogError("recursos", "Não foi possível abrir o datafile de recursos");
+        return 0;
+    endif
+    
+    // Verificar Reino primeiro
+    VerificarConsistenciaReinoOptimizada(df);
+    
+    // Verificar facções
+    var guilds := ListGuilds();
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (guild)
+            var faction_name := guild.GetProp(FACTION_PROP_NAME);
+            if (!faction_name)
+                faction_name := guild.guildname;
+            endif
+            
+            if (faction_name)
+                VerificarConsistenciaFaccaoOptimizada(faction_name, df);
+            endif
+        endif
+        Sleep(1);
+    endforeach
+    
+    return 1;
+endfunction
+
 
 // Função para determinar se deve executar verificação agora
 function DeveExecutarVerificacao(is_full := 0)
@@ -193,31 +212,33 @@ function ExecutarVerificacaoCompleta()
     return 1;
 endfunction
 
-// Função para verificar se o ResourceController está rodando
 function VerificarControladorRecursos()
-    var pid := GetGlobalProperty("ResourceControllerPID");
-    var controller_running := 0;
-    
-    if (pid)
-        var process := GetProcess(pid);
-        if (process)
-            controller_running := 1;
-            LogInfo("recursos", "ResourceController está rodando (PID: " + pid + ")");
-        endif
+    // Verificar via registro de processos (mais confiável)
+    var controller_running := IsProcessRunning("ResourceController");
+
+    if (controller_running == 1)
+        LogInfo("recursos", "ResourceController está rodando (verificação via registro de processos)");
+        return 1;
+    elseif (controller_running == error)
+        LogError("recursos", "Erro ao verificar o estado do ResourceController via registro.");
+        controller_running := 0;
     endif
-    
+
+    // Apenas iniciar se NÃO estiver rodando (retorno 0 ou error)
     if (!controller_running)
-        LogWarning("recursos", "ResourceController não está rodando, reiniciando...");
-        var script := start_script("ResourceController");
+        LogWarning("recursos", "ResourceController não está rodando ou houve erro na verificação, reiniciando...");
+        var script := start_script("ResourceController"); // Ou :faccao:ResourceController se necessário
         if (script.errortext)
-           LogError("recursos", "Falha ao reiniciar ResourceController: " + script.errortext);
+            LogError("recursos", "Falha ao reiniciar ResourceController: " + script.errortext);
+            return 0; // Falhou ao reiniciar
         else
-            SetGlobalProperty("ResourceControllerPID", script.pid);
-           LogInfo("recursos", "ResourceController reiniciado com sucesso (PID: " + script.pid + ")");
+            LogInfo("recursos", "ResourceController reiniciado com sucesso (PID: " + script.pid + ")");
+            return 1; // Iniciado com sucesso
         endif
     endif
-    
-    return controller_running;
+
+    // Caso inesperado
+    return 0;
 endfunction
 
 // Função para executar verificação parcial
@@ -321,11 +342,14 @@ function CriarEstruturaNovaRecursos()
                 faction_name := guild.guildname;
             endif
             
-            if (faction_name)
-                var faction_elem := SafeFindElement(df, "faction_" + faction_name, 1);
-                SetElementProp(faction_elem, "recursos", CreateEmptyResourceStruct());
-            endif
-        endif
+if (faction_name)
+    var elem_name_normalizado := NormalizarNomeElementoFaccao(faction_name);
+    if (elem_name_normalizado != error)
+        var faction_elem := SafeFindElement(df, elem_name_normalizado, 1);
+        SetElementProp(faction_elem, "recursos", CreateEmptyResourceStruct());
+    endif
+endif
+endif
         Sleep(1);
     endforeach
     
@@ -335,57 +359,102 @@ function CriarEstruturaNovaRecursos()
 endfunction
 
 // Função para migrar recursos do Reino
+// Correção para a função MigrarRecursosReino
 function MigrarRecursosReino(old_df)
-var elem := SafeFindElement(old_df, "resources");
-if (!elem)
-    LogInfo("recursos", "Nenhum recurso do Reino encontrado para migrar");
-    return 0;
-endif
+    var elem := SafeFindElement(old_df, "resources");
+    if (!elem)
+        LogInfo("recursos", "Nenhum recurso do Reino encontrado para migrar");
+        return 0;
+    endif
 
-var recursos := GetElementProp(elem, "recursos", {});
-if (!recursos)
-    LogWarning("recursos", "Struct de recursos do Reino não encontrado");
-    return 0;
-endif
+    var recursos := GetElementProp(elem, "recursos", {});
+    if (!recursos)
+        LogWarning("recursos", "Struct de recursos do Reino não encontrado");
+        return 0;
+    endif
 
-// Validar e migrar
-var recursos_validados := ValidarRecursos(recursos);
+    // Validar e migrar
+    var recursos_validados := ValidarRecursos(recursos);
 
-// Salvar no novo formato
-var new_df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
-var new_elem := SafeFindElement(new_df, KINGDOM_RESOURCE_ELEM, 1);
-SetElementProp(new_elem, "recursos", recursos_validados);
+    // Salvar no novo formato
+    var new_df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
+    var reino_elem := SafeFindElement(new_df, KINGDOM_RESOURCE_ELEM, 1);
+    SetElementProp(reino_elem, "recursos", recursos_validados);
     
     LogInfo("recursos", "Recursos do Reino migrados com sucesso");
     return 1;
 endfunction
 
+// Função para normalizar nome de facção
+function NormalizarNomeFaccao(faction_name)
+    if (!faction_name)
+        return "";
+    endif
+    
+    // Se já tem prefixo, remove
+    if (faction_name.find("faction_") == 1)
+        faction_name := faction_name[9, faction_name.len()-8];
+    endif
+    
+    // Adiciona prefixo único
+    return "faction_" + faction_name;
+endfunction
 // Função para migrar recursos de facções
+
 function MigrarRecursosFaccoes(old_df)
     var facoes_migradas := 0;
-    
-    // Procurar elementos com prefixo "faction_"
-foreach elem_name in (old_df.keys())
-    if (elem_name.find("faction_") != error)
-        var faction_name := elem_name[8, elem_name.size()-7];
-        var elem := SafeFindElement(old_df, elem_name);
-        var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct()); // Valor padrão com função
+    var new_df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
 
-        if (recursos)
-            // Validar e migrar
-            var recursos_validados := ValidarRecursos(recursos);
-            
-            // Salvar no novo formato
-            var new_df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
-            var new_elem := SafeFindElement(new_df, elem_name, 1);
-            SetElementProp(new_elem, "recursos", recursos_validados);
-            
-            facoes_migradas += 1;
-        endif
+    if (!new_df)
+        LogError("recursos", "Falha crítica ao abrir/criar o novo datafile de recursos para migração.");
+        return 0;
     endif
-    Sleep(1);
-endforeach
-    
+
+    // Procurar elementos no datafile ANTIGO
+    var keys := old_df.keys();
+    var i;
+    for (i := 1; i <= keys.size(); i := i + 1)
+        var elem_name_antigo := keys[i];
+
+        // Verificar se o nome do elemento antigo parece ser de facção
+        if (elem_name_antigo.find("faction_") != error)
+            // Obter o nome BASE da facção a partir do nome antigo
+            var nome_base_faccao := elem_name_antigo;
+            if (nome_base_faccao.find("faction_") == 1)
+                if (nome_base_faccao.len() > 8)
+                   nome_base_faccao := nome_base_faccao[9, nome_base_faccao.len()-8];
+                else
+                   nome_base_faccao := "";
+                endif
+            else
+                nome_base_faccao := "";
+            endif
+
+            // Processar apenas se conseguimos extrair um nome base válido
+            if (nome_base_faccao != "")
+                var elem_antigo := SafeFindElement(old_df, elem_name_antigo);
+                var recursos := GetElementProp(elem_antigo, "recursos", CreateEmptyResourceStruct());
+
+                if (recursos)
+                    var recursos_validados := ValidarRecursos(recursos);
+
+                    // Criar/encontrar elemento no NOVO datafile usando nome NORMALIZADO
+                    var elem_name_normalizado := NormalizarNomeElementoFaccao(nome_base_faccao);
+
+                    if (elem_name_normalizado != error)
+                        var new_elem := SafeFindElement(new_df, elem_name_normalizado, 1);
+                        SetElementProp(new_elem, "recursos", recursos_validados);
+                        facoes_migradas := facoes_migradas + 1;
+                    endif
+                endif
+            else
+                LogWarning("recursos", "Não foi possível extrair nome base da facção do elemento antigo: " + elem_name_antigo);
+            endif
+        endif
+        
+        sleepms(1);
+    endfor
+
     LogInfo("recursos", "Recursos de " + facoes_migradas + " facções migrados com sucesso");
     return facoes_migradas;
 endfunction
@@ -551,32 +620,30 @@ endfunction
 function VerificarConsistenciaGlobalBausDatafile()
     LogInfo("recursos", "Verificando consistência global entre baús e datafile...");
     
-    var inconsistencias := 0; // Adicionando a variável faltante
-    var facoes_verificadas := 0; // Adicionando a variável faltante
+    var inconsistencias := 0;
+    var facoes_verificadas := 0;
     
-    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1); // 1 = criar se não existir
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
     if (!df)
         LogError("recursos", "Não foi possível abrir o datafile de recursos");
         return 0;
     endif
     
-    // Resto da função permanece igual
-
-// 1. Verificar Reino primeiro
-var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);
-var recursos_reino := GetElementProp(reino_elem, "recursos", {});
-if (!recursos_reino)
-    recursos_reino := CreateEmptyResourceStruct();
-    SetElementProp(reino_elem, "recursos", recursos_reino);
-    facoes_verificadas += 1;
-else
-    // Validar recursos do reino
-    var recursos_validados := ValidarRecursos(recursos_reino);
-    if (!SaoRecursosIguais(recursos_reino, recursos_validados))
-        SetElementProp(reino_elem, "recursos", recursos_validados);
+    // 1. Verificar Reino primeiro
+    var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);
+    var recursos_reino := GetElementProp(reino_elem, "recursos", {});
+    if (!recursos_reino)
+        recursos_reino := CreateEmptyResourceStruct();
+        SetElementProp(reino_elem, "recursos", recursos_reino);
         facoes_verificadas += 1;
+    else
+        // Validar recursos do reino
+        var recursos_validados := ValidarRecursos(recursos_reino);
+        if (!SaoRecursosIguais(recursos_reino, recursos_validados))
+            SetElementProp(reino_elem, "recursos", recursos_validados);
+            facoes_verificadas += 1;
+        endif
     endif
-endif
     
     // 2. Verificar facções específicas
     var max_faccoes := 5; // Limitar número de facções por execução
@@ -584,8 +651,19 @@ endif
     
     foreach elem_name in (df.keys())
         if (elem_name.find("faction_") != error)
-            var faction_name := elem_name[8, elem_name.size()-7]; // Extrair nome da facção
-            inconsistencias += VerificarConsistenciaFaccao(faction_name, df);
+            // Extrair nome da facção sem o prefixo
+            var faction_name := elem_name;
+            // Remover o prefixo faction_ se existir
+            if (faction_name.find("faction_") == 1)
+                // Usando uma string temporária para evitar problemas de indexação
+                var temp := "";
+                for i := 9 to faction_name.size()
+                    temp := temp + faction_name[i];
+                endfor
+                faction_name := temp;
+            endif
+            
+            inconsistencias += VerificarConsistenciaFaccaoOptimizada(faction_name, df);
             
             processadas += 1;
             if (processadas >= max_faccoes)
@@ -598,70 +676,89 @@ endif
     LogInfo("recursos", "Verificação de consistência global concluída. Inconsistências encontradas: " + inconsistencias);
     return inconsistencias;
 endfunction
-
-// Função para verificar consistência de uma facção específica
-function VerificarConsistenciaFaccao(faction_name, df)
+function VerificarConsistenciaFaccaoOptimizada(faction_name, df)
     if (!faction_name || !df)
         return 0;
     endif
     
-var faction_elem := SafeFindElement(df, "faction_" + faction_name, 1); // 1 = criar
-var recursos_datafile := GetElementProp(faction_elem, "recursos", {});
-
-if (!recursos_datafile)
-    recursos_datafile := CreateEmptyResourceStruct();
-    SetElementProp(faction_elem, "recursos", recursos_datafile);
-endif
+    // Obter recursos do datafile
+    var nome_normalizado := NormalizarNomeElementoFaccao(faction_name);
+    if (nome_normalizado == error) 
+        return 0;
+    endif
     
-    // Contar recursos totais em todos os baús da facção
-    var recursos_reais := CreateEmptyResourceStruct();
+    var faction_elem := SafeFindElement(df, nome_normalizado, 1);
+    var recursos_datafile := GetElementProp(faction_elem, "recursos", CreateEmptyResourceStruct());
+    
+    if (!recursos_datafile)
+        recursos_datafile := CreateEmptyResourceStruct();
+        SetElementProp(faction_elem, "recursos", recursos_datafile);
+    endif
+    
+    // Somar caches dos baús da facção
+    var recursos_cache_total := CreateEmptyResourceStruct();
     var baus_encontrados := 0;
+    var baus_sem_cache := 0;
     
     foreach item in EnumerateItemsInContainer(0)
         if (item.objtype == 0xFF11 && GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
             baus_encontrados += 1;
-            var bau_recursos := ContarRecursosReais(item);
             
-            // Somar aos recursos totais
-            recursos_reais.comida += bau_recursos.comida;
-            recursos_reais.moedas += bau_recursos.moedas;
-            recursos_reais.couro += bau_recursos.couro;
-            recursos_reais.metal += bau_recursos.metal;
-            recursos_reais.madeira += bau_recursos.madeira;
-            recursos_reais.pano += bau_recursos.pano;
-            recursos_reais.pedras += bau_recursos.pedras;
-            recursos_reais.joias += bau_recursos.joias;
+            // Tentar usar o cache
+            var bau_recursos := GetObjProperty(item, CACHE_PROP_NAME);
+            
+            // Se não tem cache ou está marcado como sujo, contar
+            if (!bau_recursos || GetObjProperty(item, CACHE_DIRTY_FLAG))
+                baus_sem_cache += 1;
+                bau_recursos := ContarRecursosReais(item);
+                
+                // Atualizar o cache
+                SetObjProperty(item, CACHE_PROP_NAME, bau_recursos);
+                SetObjProperty(item, CACHE_UPDATE_PROP, polcore().systime);
+                EraseObjProperty(item, CACHE_DIRTY_FLAG);
+            endif
+            
+            // Somar recursos
+            if (bau_recursos)
+                recursos_cache_total.comida += bau_recursos.comida;
+                recursos_cache_total.moedas += bau_recursos.moedas;
+                recursos_cache_total.couro += bau_recursos.couro;
+                recursos_cache_total.metal += bau_recursos.metal;
+                recursos_cache_total.madeira += bau_recursos.madeira;
+                recursos_cache_total.pano += bau_recursos.pano;
+                recursos_cache_total.pedras += bau_recursos.pedras;
+                recursos_cache_total.joias += bau_recursos.joias;
+            endif
         endif
-        Sleep(1);
+        sleepms(1);
     endforeach
     
     // Verificar se há diferença significativa
     var inconsistencias := 0;
-    var facoes_verificadas := 0; // Declarar a variável que faltava
     var tolerancia := 10; // Tolerância menor para facções específicas
     
-    if (ValorAbsoluto(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
-        ValorAbsoluto(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
-        ValorAbsoluto(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
-        ValorAbsoluto(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
-        ValorAbsoluto(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
-        ValorAbsoluto(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
-        ValorAbsoluto(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
-        ValorAbsoluto(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
-    
-        // Atualizar o datafile com os recursos reais
-        SetElementProp(faction_elem, "recursos", recursos_reais);
+    if (Abs(recursos_cache_total.comida - recursos_datafile.comida) > tolerancia ||
+        Abs(recursos_cache_total.moedas - recursos_datafile.moedas) > tolerancia ||
+        Abs(recursos_cache_total.couro - recursos_datafile.couro) > tolerancia ||
+        Abs(recursos_cache_total.metal - recursos_datafile.metal) > tolerancia ||
+        Abs(recursos_cache_total.madeira - recursos_datafile.madeira) > tolerancia ||
+        Abs(recursos_cache_total.pano - recursos_datafile.pano) > tolerancia ||
+        Abs(recursos_cache_total.pedras - recursos_datafile.pedras) > tolerancia ||
+        Abs(recursos_cache_total.joias - recursos_datafile.joias) > tolerancia)
+        
+        // Atualizar o datafile com os recursos do cache
+        SetElementProp(faction_elem, "recursos", recursos_cache_total);
         inconsistencias += 1;
         
-LogWarning("recursos", "Corrigida inconsistência global nos recursos da facção: " + faction_name);
-LogInfo("recursos", "  - Baús encontrados: " + baus_encontrados);
+        LogWarning("recursos", "Inconsistência corrigida para facção: " + faction_name);
+        LogInfo("recursos", "  - Baús encontrados: " + baus_encontrados + ", sem cache: " + baus_sem_cache);
         
         // Atualizar também na guilda
         var guild_id := FindGuildByName(faction_name);
         if (guild_id)
             var guild := FindGuild(guild_id);
             if (guild)
-                guild.SetProp("recursos", recursos_reais);
+                guild.SetProp("recursos", recursos_cache_total);
                 guild.SetProp("recursos_timestamp", polcore().systime);
             endif
         endif
@@ -669,70 +766,6 @@ LogInfo("recursos", "  - Baús encontrados: " + baus_encontrados);
     
     return inconsistencias;
 endfunction
-
-// Função para verificar consistência do Reino
-function VerificarConsistenciaReino(df)
-    if (!df)
-        return 0;
-    endif
-    
-    var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1); // 1 = criar
-    var recursos_datafile := GetElementProp(reino_elem, "recursos", {});
-    
-    if (!recursos_datafile)
-        recursos_datafile := CreateEmptyResourceStruct();
-        SetElementProp(reino_elem, "recursos", recursos_datafile);
-    endif
-    
-    // Contar recursos totais em todos os baús do Reino
-    var recursos_reais := CreateEmptyResourceStruct();
-    var baus_encontrados := 0;
-    
-    foreach item in EnumerateItemsInContainer(0)
-        if (item.objtype == 0xFF11 && 
-            (GetObjProperty(item, OBJ_FACTION_PROP) == KINGDOM_FACTION || 
-             GetObjProperty(item, OBJ_FACTION_PROP) == "Reino"))
-        
-            baus_encontrados += 1;
-            var bau_recursos := ContarRecursosReais(item);
-            
-            // Somar aos recursos totais
-            recursos_reais.comida += bau_recursos.comida;
-            recursos_reais.moedas += bau_recursos.moedas;
-            recursos_reais.couro += bau_recursos.couro;
-            recursos_reais.metal += bau_recursos.metal;
-            recursos_reais.madeira += bau_recursos.madeira;
-            recursos_reais.pano += bau_recursos.pano;
-            recursos_reais.pedras += bau_recursos.pedras;
-            recursos_reais.joias += bau_recursos.joias;
-        endif
-        Sleep(1);
-    endforeach
-    
-    // Verificar se há diferença significativa
-    var inconsistencias := 0;
-    var tolerancia := 20; // Tolerância maior para o Reino
-    
-    if (ValorAbsoluto(recursos_reais.comida - recursos_datafile.comida) > tolerancia ||
-        ValorAbsoluto(recursos_reais.moedas - recursos_datafile.moedas) > tolerancia ||
-        ValorAbsoluto(recursos_reais.couro - recursos_datafile.couro) > tolerancia ||
-        ValorAbsoluto(recursos_reais.metal - recursos_datafile.metal) > tolerancia ||
-        ValorAbsoluto(recursos_reais.madeira - recursos_datafile.madeira) > tolerancia ||
-        ValorAbsoluto(recursos_reais.pano - recursos_datafile.pano) > tolerancia ||
-        ValorAbsoluto(recursos_reais.pedras - recursos_datafile.pedras) > tolerancia ||
-        ValorAbsoluto(recursos_reais.joias - recursos_datafile.joias) > tolerancia)
-    
-        // Atualizar o datafile com os recursos reais
-        SetElementProp(reino_elem, "recursos", recursos_reais);
-        inconsistencias += 1;
-        
-LogWarning("recursos", "Corrigida inconsistência global nos recursos do Reino");
-LogInfo("recursos", "  - Baús encontrados: " + baus_encontrados);
-    endif
-    
-    return inconsistencias;
-endfunction
-
 
 
 
@@ -784,9 +817,22 @@ function VerificarPropriedadesGuildas()
             endif
         endif
         
-        // 3. Verificar territórios
-        var territories := guild.GetProp("territories");
-        if (territories && typeof(territories) == "Array")
+// 3. Verificar territórios
+var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
             var territories_validos := array{};
             var df := DFOpenDataFile(":architect:areas");
             
@@ -813,12 +859,14 @@ function VerificarPropriedadesGuildas()
                     atualizacoes += 1;
                 endif
             endif
-        endif
+
         
         // Contabilizar guilda se teve alguma atualização
         if (atualizacoes > 0)
             guildas_atualizadas += 1;
         endif
+        
+ 
         
         sleepms(5);
     endforeach
@@ -829,9 +877,8 @@ function VerificarPropriedadesGuildas()
 endfunction
 
 
-// Função corrigida
 function VerificarTerritoriosEFaccoes()
-   LogInfo("recursos", "Verificando territórios e suas associações com facções...");
+    LogInfo("recursos", "Verificando territórios e suas associações com facções...");
     var territorios_verificados := 0;
     var territorios_atualizados := 0;
     
@@ -841,80 +888,119 @@ function VerificarTerritoriosEFaccoes()
         return 0;
     endif
 
+    // NOVA LÓGICA: Iterar pelos elementos em :faccao:seriais
+    var seriais_df := SafeOpenDataFile(":faccao:seriais");
+    if (!seriais_df)
+        LogWarning("recursos", "Não foi possível abrir :faccao:seriais para verificação cruzada.");
+    endif
     
-    // Obter registros de seriais para cruzamento
-    var seriais_df := DFOpenDataFile(":faccao:seriais");
+    // Obter dicionário legado para compatibilidade
     var territorios_seriais := dictionary{};
-    
     if (seriais_df)
-        territorios_seriais := seriais_df.GetProp("territorios");
+        territorios_seriais := GetElementProp(seriais_df, "territorios", dictionary{});
         if (!territorios_seriais)
             territorios_seriais := dictionary{};
         endif
     endif
     
-    foreach nome_territorio in (df.keys())
-        var elem := SafeFindElement(df, nome_territorio);
-        if (!elem)
-            continue;
+    foreach nome_territorio_arch in (df.keys()) // Iterar pelos territórios em :architect:areas
+        var elem_arch := SafeFindElement(df, nome_territorio_arch);
+        if (!elem_arch) 
+            continue; 
         endif
-        
+
         territorios_verificados += 1;
         var atualizacoes := 0;
-        
+
         // 1. Verificar propriedade de facção (padronizar)
-        var faction := GetElementProp(elem, "Faction", "");  // Legado (maiúscula)
-        var faction_std := GetElementProp(elem, TERRITORY_FACTION_PROP, "");  // Novo padrão (minúscula)
+        var faction := GetElementProp(elem_arch, "Faction", "");  // Legado (maiúscula)
+        var faction_std := GetElementProp(elem_arch, TERRITORY_FACTION_PROP, "");  // Novo padrão (minúscula)
         
-if (faction && !faction_std)
-    SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
-    atualizacoes += 1;
-endif  // Adicionado o endif que estava faltando
+        if (faction && !faction_std)
+            SetElementProp(elem_arch, TERRITORY_FACTION_PROP, faction);
+            atualizacoes += 1;
+        endif
         
-// 2. Verificar ID do território
-var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+        // 2. Verificar ID do território
+        var territory_id := GetElementProp(elem_arch, TERRITORY_ID_PROP, "");
         if (!territory_id)
             // Gerar ID se não existir (usando nome + timestamp)
-            territory_id := "TER_" + nome_territorio + "_" + polcore().systime;
-            SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+            territory_id := "TER_" + nome_territorio_arch + "_" + polcore().systime;
+            SetElementProp(elem_arch, TERRITORY_ID_PROP, territory_id);
             atualizacoes += 1;
         endif
         
         // 3. Verificar configurações de recursos
         // Verificar se o território tem recursos configurados
-        if (!elem.GetProp("Resources") && elem.GetProp(TERRITORY_FACTION_PROP) && 
-            elem.GetProp(TERRITORY_FACTION_PROP) != DEFAULT_FACTION)
+        if (!elem_arch.GetProp("Resources") && elem_arch.GetProp(TERRITORY_FACTION_PROP) && 
+            elem_arch.GetProp(TERRITORY_FACTION_PROP) != DEFAULT_FACTION)
             // Se for território controlado mas sem recursos, configurar padrão
-            SetElementProp(elem, "Resources", "IronOre, couroespesso, cogumelo");
-            SetElementProp(elem, "ResourceInterval", 120); // 2 horas
-            SetElementProp(elem, "ResourceAmount", 10);
-            SetElementProp(elem, "NextResourceTime", polcore().systime + 7200); // 2 horas
+            SetElementProp(elem_arch, "Resources", "IronOre, couroespesso, cogumelo");
+            SetElementProp(elem_arch, "ResourceInterval", 120); // 2 horas
+            SetElementProp(elem_arch, "ResourceAmount", 10);
+            SetElementProp(elem_arch, "NextResourceTime", polcore().systime + 7200); // 2 horas
             atualizacoes += 1;
         endif
         
-        // 4. Verificar seriais registrados
-        var faction_atual := elem.GetProp(TERRITORY_FACTION_PROP);
-        if (faction_atual && faction_atual != DEFAULT_FACTION)
-            // Verificar se tem registro nos seriais
-            if (territorios_seriais.exists(nome_territorio) || territorios_seriais.exists(territory_id))
-                var info := territorios_seriais[nome_territorio] ? 
-                             territorios_seriais[nome_territorio] : territorios_seriais[territory_id];
-                
-                // Verificar se a facção no registro corresponde
-                if (info.faction != faction_atual)
-                    info.faction := faction_atual;
+        // 4. Verificar seriais registrados (SE O DATAFILE FOI ABERTO)
+        var faction_arch := GetElementProp(elem_arch, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+        if (seriais_df && faction_arch != DEFAULT_FACTION)
+            // NOVA ABORDAGEM: Buscar elemento correspondente em :faccao:seriais usando o ID
+            var elem_serial := SafeFindElement(seriais_df, territory_id);
+            if (elem_serial)
+                var faction_serial := GetElementProp(elem_serial, "faction");
+
+                // Verificar se a facção no registro corresponde à de :architect:areas
+                if (faction_serial != faction_arch)
+                    LogWarning("recursos", "Inconsistência de facção para " + territory_id +
+                               ": Arch=" + faction_arch + ", Seriais=" + faction_serial + ". Corrigindo seriais.");
+                    SetElementProp(elem_serial, "faction", faction_arch);
                     atualizacoes += 1;
                 endif
+
+                // Preparar struct 'info' para VerificarObjetosDoTerritorio
+                var info_seriais := struct{
+                   "bau" := GetElementProp(elem_serial, "bau"),
+                   "mesa" := GetElementProp(elem_serial, "mesa"),
+                   "mural" := GetElementProp(elem_serial, "mural"),
+                   "faction" := faction_arch // Usar a facção confirmada de :architect:areas
+                };
                 
-                // Verificar os objetos do território
-                VerificarObjetosDoTerritorio(info, faction_atual, territory_id);
+                // Verificar os objetos do território usando os seriais lidos
+                atualizacoes += VerificarObjetosDoTerritorio(info_seriais, faction_arch, territory_id);
+            else
+                // LEGADO: Verificar no formato antigo (dictionary)
+                if (territorios_seriais.exists(nome_territorio_arch) || territorios_seriais.exists(territory_id))
+                    var info := territorios_seriais[nome_territorio_arch] ? 
+                                 territorios_seriais[nome_territorio_arch] : territorios_seriais[territory_id];
+                    
+                    // Verificar se a facção no registro corresponde
+                    if (info.faction != faction_arch)
+                        info.faction := faction_arch;
+                        atualizacoes += 1;
+                    endif
+                    
+                    // Verificar os objetos do território
+                    atualizacoes += VerificarObjetosDoTerritorio(info, faction_arch, territory_id);
+                    
+                    // Migrar para o novo formato
+                    LogInfo("recursos", "Migrando seriais do território " + territory_id + " para novo formato");
+                    var new_elem := SafeFindElement(seriais_df, territory_id, 1);
+                    if (new_elem)
+                        SetElementProp(new_elem, "faction", faction_arch);
+                        SetElementProp(new_elem, "bau", info.bau);
+                        SetElementProp(new_elem, "mesa", info.mesa);
+                        SetElementProp(new_elem, "mural", info.mural);
+                    endif
+                else
+                    LogWarning("recursos", "Nenhum registro de serial encontrado para território controlado: " + territory_id + " ("+ faction_arch +")");
+                endif
+            endif
+
+            if (atualizacoes > 0)
+                territorios_atualizados += 1;
             endif
         endif
-        
-        if (atualizacoes > 0)
-            territorios_atualizados += 1;
-        endif
-        
         sleepms(5);
     endforeach
     
@@ -922,6 +1008,7 @@ var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
       ", Atualizados: " + territorios_atualizados);
     return territorios_verificados;
 endfunction
+
 
 // Função auxiliar para verificar objetos do território (baú, mesa, etc)
 function VerificarObjetosDoTerritorio(byref info, faction_name, territory_id)
@@ -1091,31 +1178,33 @@ function SaoRecursosIguais(recursos1, recursos2)
     return 1;
 endfunction
 
+
+
 // Função para verificar datafile de facções ativas
 function VerificarDatafileFaccoesAtivas()
     LogInfo("recursos", "Verificando datafile para facções ativas...");
     var facoes_verificadas := 0;
     
-    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1); // 1 = criar se não existir
+    var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
     if (!df)
         LogError("recursos", "Não foi possível abrir o datafile de recursos");
         return 0;
     endif
-    
+
     // 1. Verificar Reino primeiro
     var reino_elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1); 
-
-    var recursos_reino := reino_elem.GetProp("recursos");
+    var recursos_reino := GetElementProp(reino_elem, "recursos", {});
+    
     if (!recursos_reino)
         recursos_reino := CreateEmptyResourceStruct();
         SetElementProp(reino_elem, "recursos", recursos_reino);
-        facoes_verificadas += 1;
+        facoes_verificadas := facoes_verificadas + 1;
     else
         // Validar recursos do reino
         var recursos_validados := ValidarRecursos(recursos_reino);
         if (!SaoRecursosIguais(recursos_reino, recursos_validados))
             SetElementProp(reino_elem, "recursos", recursos_validados);
-            facoes_verificadas += 1;
+            facoes_verificadas := facoes_verificadas + 1;
         endif
     endif
     
@@ -1123,8 +1212,9 @@ function VerificarDatafileFaccoesAtivas()
     var faccoes_ativas := array{};
     var guilds := ListGuilds();
     
-    foreach guild_id in guilds
-        var guild := FindGuild(guild_id);
+    var i;
+    for (i := 1; i <= guilds.size(); i := i + 1)
+        var guild := FindGuild(guilds[i]);
         if (guild && guild.members.size() > 0)
             var faction_name := guild.GetProp(FACTION_PROP_NAME);
             if (!faction_name)
@@ -1132,155 +1222,213 @@ function VerificarDatafileFaccoesAtivas()
             endif
             
             if (faction_name)
+                // Guardar apenas o nome base, sem prefixo
+                if (faction_name.find("faction_") == 1)
+                    faction_name := faction_name[9, faction_name.len()-8];
+                endif
                 faccoes_ativas.append(faction_name);
             endif
         endif
         sleepms(2);
-    endforeach
+    endfor
     
     // 3. Verificar cada facção ativa
-    foreach faction_name in faccoes_ativas
-        var elem := SafeFindElement(df, "faction_" + faction_name, 1); 
-
-       var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct()); // Valor padrão com função
-
+    for (i := 1; i <= faccoes_ativas.size(); i := i + 1)
+        var faction_name_base := faccoes_ativas[i];
+        var elem_name_normalizado := NormalizarNomeElementoFaccao(faction_name_base);
         
+        if (elem_name_normalizado == error)
+            continue;
+        endif
+
+        var elem := SafeFindElement(df, elem_name_normalizado, 1);
+        var recursos := GetElementProp(elem, "recursos", CreateEmptyResourceStruct());
+
         if (!recursos)
             // Inicializar recursos se não existirem
             recursos := CreateEmptyResourceStruct();
             SetElementProp(elem, "recursos", recursos);
-            facoes_verificadas += 1;
+            facoes_verificadas := facoes_verificadas + 1;
         else
             // Validar recursos existentes
             var recursos_validados := ValidarRecursos(recursos);
             if (!SaoRecursosIguais(recursos, recursos_validados))
                 SetElementProp(elem, "recursos", recursos_validados);
-                facoes_verificadas += 1;
+                facoes_verificadas := facoes_verificadas + 1;
             endif
         endif
-        
-        sleepms(2);
-    endforeach
-    
-    // 4. Limpar facções inativas (opcional)
-    foreach elem_name in (df.keys())
-        if (elem_name.find("faction_") == 0)
-            var faction_name := elem_name[8, elem_name.size()-7]; // Extrair nome da facção
-            
-            if (!(faction_name in faccoes_ativas))
-                // Verificar se a facção tem territórios
-                var tem_territorio := 0;
-                
-                var rect_df := DFOpenDataFile(":architect:areas");
-                if (rect_df)
-                    foreach territory in (rect_df.keys())
-                        var terr_elem := SafeFindElement(rect_df, territory);
-                        if (terr_elem)
-                            var terr_faction := terr_elem.GetProp(TERRITORY_FACTION_PROP);
-                            if (terr_faction == faction_name)
-                                tem_territorio := 1;
-                                break;
-                            endif
-                        endif
-                        sleepms(2);
-                    endforeach
-                endif
-                
-                // Se a facção não tem territórios, podemos limpá-la (opcional)
-                // Comentado para evitar perda de dados acidental
-                /*
-                if (!tem_territorio)
-                    df.DeleteElement(elem_name);
-                    facoes_verificadas += 1;
-                    
-                endif
-                */
-            endif
-        endif
-        sleepms(2);
-    endforeach
-    
-   LogInfo("recursos", "Verificação de datafile de facções ativas concluída. Facções verificadas/atualizadas: " + facoes_verificadas);
 
+        sleepms(2);
+    endfor
+    
+    LogInfo("recursos", "Verificação de datafile de facções ativas concluída. Facções verificadas/atualizadas: " + facoes_verificadas);
     return facoes_verificadas;
 endfunction
 
 
 // Função para verificar lidas (registros de comunicação) das facções
 function VerificarLidasFaccao()
-   LogInfo("recursos", "Verificando registros de comunicação de facções...");
+    LogInfo("recursos", "Verificando registros de comunicação de facções...");
     var count := 0;
-    
-    // Abrir o datafile de mensagens, se existir
-   var msg_df := SafeOpenDataFile(":system:messages");
-if (!msg_df)
-    return 0;
-endif
 
-var elem := SafeFindElement(msg_df, "faccao_mensagens");
-if (!elem)
-    return 0;
-endif
+    var msg_df := SafeOpenDataFile(":faccao:messages");
+    if (!msg_df)
+        return 0;
+    endif
 
-var mensagens := GetElementProp(elem, "mensagens", array{});
-if (!mensagens)
-    return 0;
-endif
-    
+    var elem := SafeFindElement(msg_df, "faccao_mensagens");
+    if (!elem)
+        return 0;
+    endif
+
+    var mensagens := GetElementProp(elem, "mensagens", array{});
+    if (TypeOf(mensagens) != "Array")
+        if (mensagens != 0)
+            LogError("recursos", "Propriedade 'mensagens' em :faccao:messages/faccao_mensagens não é um array. Tipo: " + TypeOf(mensagens));
+        endif
+        return 0;
+    endif
+
     LogInfo("recursos", "Verificando " + mensagens.size() + " mensagens pendentes...");
 
     var mensagens_atualizadas := array{};
     var current_time := polcore().systime;
-    
-    // Processar cada mensagem
-    foreach msg in (mensagens)  // Corrigido: adicionado parênteses
-        // Verificar se a mensagem expirou (mais de 30 dias)
-        if (msg.timestamp && (current_time - msg.timestamp) > (30 * 86400))
-            count += 1;
-            // Não adicionar à lista atualizada, expirando a mensagem
-        else
-            var adicionar_mensagem := 1;
+
+    var i;
+    for (i := 1; i <= mensagens.size(); i := i + 1)
+        var msg := mensagens[i];
+
+        // Verificar se a mensagem expirou
+        if (TypeOf(msg) == "Struct" && msg.exists("timestamp") && (current_time - CInt(msg.timestamp)) > (30 * 86400))
+            count := count + 1;
+            continue;
+        endif
+
+        // Verificar se a mensagem NÃO expirou E é um struct válido
+        if (TypeOf(msg) != "Struct")
+            LogWarning("recursos", "Item inválido (não é Struct) encontrado na lista de mensagens.");
+            count := count + 1;
+            continue;
+        endif
+
+        var adicionar_mensagem := 1;
+
+        if (msg.exists("destinatarios"))
+            var destinatarios_originais := msg.destinatarios;
             
-            // Verificar se os destinatários ainda são válidos
-            if (msg.destinatarios)
-                var destinatarios_validos := array{};
+            if (TypeOf(destinatarios_originais) != "Array")
+                LogWarning("recursos", "Propriedade 'destinatarios' inválida (não é array) na mensagem timestamp " + msg.timestamp);
+                count := count + 1;
+                continue;
+            endif
+
+            var destinatarios_validos := array{};
+            var houve_mudanca_dest := 0;
+
+            var j;
+            for (j := 1; j <= destinatarios_originais.size(); j := j + 1)
+                var dest := destinatarios_originais[j];
                 
-                foreach dest in (msg.destinatarios)  // Corrigido: adicionado parênteses
+                if (TypeOf(dest) == "Struct" && dest.exists("faction"))
                     // Verificar se facção/guilda ainda existe
-                    if (FindGuildByName(dest.faction))
+                    if (FindGuildByName(CStr(dest.faction)))
                         destinatarios_validos.append(dest);
                     else
-                        count += 1;
+                        count := count + 1;
+                        houve_mudanca_dest := 1;
                     endif
-                    sleepms(2);
-                endforeach
-                
-                // Atualizar só se houver mudanças
-                if (destinatarios_validos.size() != msg.destinatarios.size())
-                    msg.destinatarios := destinatarios_validos;
+                else
+                    LogWarning("recursos", "Item inválido encontrado na lista de destinatários da mensagem timestamp " + msg.timestamp);
+                    count := count + 1;
+                    houve_mudanca_dest := 1;
                 endif
                 
-                // Não adicionar se não tiver destinatários
-                if (msg.destinatarios.size() == 0)
+                sleepms(2);
+            endfor
+
+            if (houve_mudanca_dest)
+                if (destinatarios_validos.size() > 0)
+                    msg.destinatarios := destinatarios_validos;
+                else
                     adicionar_mensagem := 0;
                 endif
-            endif
-            
-            // Adicionar mensagem se for válida
-            if (adicionar_mensagem)
-                mensagens_atualizadas.append(msg);
+            elseif (destinatarios_originais.size() == 0)
+                adicionar_mensagem := 0;
             endif
         endif
-        
-        sleepms(2);
-    endforeach
-    
-    // Salvar a lista atualizada
-    if (mensagens_atualizadas.size() != mensagens.size())
-        SetElementProp(elem, "mensagens", mensagens_atualizadas);
-        LogInfo("recursos", "Mensagens atualizadas: " + count + " mensagens expiradas ou com destinatários inválidos removidas");
 
+        if (adicionar_mensagem)
+            mensagens_atualizadas.append(msg);
+        endif
+
+        sleepms(2);
+    endfor
+
+    if (count > 0 || mensagens_atualizadas.size() != mensagens.size())
+        SetElementProp(elem, "mensagens", mensagens_atualizadas);
+        LogInfo("recursos", "Mensagens atualizadas: " + count + " mensagens inválidas/expiradas encontradas/removidas");
+    endif
+
+    return count;
+endfunction
+
+
+/*
+ * NormalizarNomeElementoFaccao(nome_faccao_bruto)
+ *
+ * Purpose: Normaliza o nome de uma facção para uso em elementos do datafile
+ * Parameters:
+ *   nome_faccao_bruto - Nome da facção a normalizar
+ * Return:
+ *   String normalizada no formato "faction_nome" ou um error
+ */
+function NormalizarNomeElementoFaccao(nome_faccao_bruto)
+    if (!nome_faccao_bruto)
+        LogError("recursos", "Nome de facção nulo ou vazio");
+        return error{"errortext" := "Nome de facção inválido"};
     endif
     
-    return count;
+    // Converter para minúsculas e remover espaços
+    var nome_base := Lower(CStr(nome_faccao_bruto));
+    nome_base := StrReplace(nome_base, " ", "_");
+    
+    // Remover caracteres não-alfanuméricos (exceto underscore)
+    // (pulando a etapa de remover acentos)
+    
+    // Remover prefixos redundantes se já existirem
+    if (nome_base["faction_"] == 0)
+        nome_base := StrReplace(nome_base, "faction_", "");
+    endif
+    
+    // Se o nome base ficou vazio após remover prefixos, retorna erro
+    if (nome_base == "")
+        LogError("recursos", "Nome de facção ficou vazio após normalização: " + nome_faccao_bruto);
+        return error{"errortext" := "Nome de facção inválido"};
+    endif
+    
+    return "faction_" + nome_base;
+endfunction
+
+
+// Função auxiliar para substituir caracteres acentuados por equivalentes sem acento
+function ReplaceAccentedChars(text)
+    if (!text)
+        return "";
+    endif
+    
+    // Substituições básicas para caracteres mais comuns
+    text := StrReplace(text, "á", "a");
+    text := StrReplace(text, "à", "a");
+    text := StrReplace(text, "ã", "a");
+    text := StrReplace(text, "â", "a");
+    text := StrReplace(text, "é", "e");
+    text := StrReplace(text, "ê", "e");
+    text := StrReplace(text, "í", "i");
+    text := StrReplace(text, "ó", "o");
+    text := StrReplace(text, "ô", "o");
+    text := StrReplace(text, "õ", "o");
+    text := StrReplace(text, "ú", "u");
+    text := StrReplace(text, "ç", "c");
+    
+    return text;
 endfunction

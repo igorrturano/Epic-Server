@@ -203,6 +203,20 @@ program test_guild_registry(params)
             SendSysMessage(who, "Líder: " + guild.GetProp("leader"));
             
             var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
             if (territories && territories.size() > 0)
                 SendSysMessage(who, "Territórios: " + territories.size());
                 foreach territory in territories
