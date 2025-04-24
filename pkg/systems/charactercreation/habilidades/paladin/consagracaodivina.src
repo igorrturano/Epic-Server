@@ -38,17 +38,26 @@ function PaladinSpellsGump(who, max_circle)
         endif
         sleepms(2);
     endforeach
-    
+
     var size := spell_list.size();
     if (size >= 1)
         size := size * 26;
+        // Add extra space for circle headers
+        var circles := dictionary{};
+        foreach spell_id in spell_list
+            var spell_elem := FindConfigElem(cfg, spell_id);
+            var circle := CInt(spell_elem.Circle);
+            circles[circle] := 1;
+        endforeach
+        // Add 26 pixels of height for each circle header
+        size += circles.keys().size() * 26;
     else
         size := 0;
     endif
     
     GFSetId(gump, GUMPID_PALADINSPELL);
     GFClosable(gump, 1);
-    GFResizePic(gump, 10, 26, 9390, 276, 140+size);
+    GFResizePic(gump, 10, 26, 9390, 276, 100+size);
     GFHTMLArea(gump, 80, 65, 142, 20, "<BASEFONT Size=5 Color=#666666 >Magias Divinas", 0, 0); // shadow
     GFHTMLArea(gump, 82, 67, 142, 20, "<BASEFONT Size=5 Color=#666666 >Magias Divinas", 0, 0);
     GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#FFFFFF >Magias Divinas", 0, 0);
