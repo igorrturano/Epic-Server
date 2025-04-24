@@ -17,8 +17,6 @@ program SpellScript(params)
     var targ := params[2];
     params := 0;
     
-    Print("DEBUG: Spell started - Target: " + targ.name);
-    
     if (!targ)
         return 0;
     endif
