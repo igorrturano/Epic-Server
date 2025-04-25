@@ -281,8 +281,8 @@ function CalculateHitChance(attacker, defender)
         endif
     endif
 
-	if (TemHabilidade(attacker, "Poder da Alianca"))
-		hit_chance += attacker.party.members.size() * 2;
+	if (TemHabilidade(attacker, "Aura de Fe"))
+		hit_chance += attacker.party.members.size()/*  * 2 */;
 	endif
 
 	if ( GetObjProperty(attacker, "armapreferida") == attacker.weapon.objtype )

@@ -1,0 +1,95 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":combat:damage";
+include ":tn:cooldown";
+
+program aurafe(paladin)
+    var festa := paladin.party;
+    if (!festa)
+        SendSysMessageEx(paladin, "Voce nao tem aliados!", SSM_FAIL);
+        return;
+    endif
+
+    SendSysMessageEx(paladin, "Escolha seu comando:", SSM_INFO);
+    SendSysMessageEx(paladin, "1 - Formacao!", SSM_INFO);
+    SendSysMessageEx(paladin, "2 - Ate o fim!", SSM_INFO); 
+    SendSysMessageEx(paladin, "3 - Pela Gloria!", SSM_INFO);
+    SendSysMessageEx(paladin, "4 - Protejam-se!", SSM_INFO);
+
+    var input := CInt(RequestInput(paladin, paladin.backpack, "Escolha (1-4):"));
+    if(!(input >= 1 && input <= 4))
+        SendSysMessageEx(paladin, "Comando invalido!", SSM_FAIL);
+        return;
+    endif
+
+    case(input)
+        1: // Formacao
+            PrintText(paladin, "*ordena formacao*");
+            foreach member in (festa.members)
+                if (member.serial != paladin.serial)
+                    if (Distance(paladin, member) < 8)
+                        var ok := 0;
+                        foreach member2 in (festa.members)
+                            if (distance(member, member2) < 2)
+                                ok := 1;
+                                break;
+                            endif
+                        endforeach
+                        if (!ok)
+                            SendSysMessageEx(paladin, "Seus aliados nao mantiveram a formacao", SSM_FAIL);
+                            return;
+                        endif
+                    endif
+                endif
+            endforeach
+            
+            foreach member in (festa.members)
+                SetObjProperty(member, "#tempparrybonus", cint(AP_GetSkill(paladin, THEOLOGY)/2));
+            endforeach
+            break;
+
+        2: // Ate o fim
+            PrintText(paladin, "*ordena resiliencia*");
+            foreach member in (festa.members)
+                if (member.serial != paladin.serial)
+                    if (Distance(paladin, member) < 8)
+                        if (isBloodied(member))
+                            HealFLS(member, cint(GetHP(member) - AP_GetVital(member, HITS) + AP_GetSkill(paladin, THEOLOGY)/10));
+                        endif
+                    endif
+                endif
+            endforeach
+            break;
+
+        3: // Pela Gloria
+            PrintText(paladin, "*inspira seus aliados*");
+            var duracao := cint(AP_GetSkill(paladin, THEOLOGY) / 2);
+            
+            foreach member in (festa.members)
+                if (member.serial != paladin.serial)
+                    if (Distance(paladin, member) < 8)
+                        SendSysMessageEx(member, "Seus ataques estao poderosos!", SSM_INFO);
+                        TS_StartTimer(member, "heroismo", duracao);
+                    endif
+                endif
+            endforeach
+            break;
+
+        4: // Protejam-se - Using Barreira de Escudos logic
+            SendSysMessageEx(paladin, "Seu escudo e uma barreira!", SSM_INFO);
+            foreach member in (festa.members)
+                SendSysMessageEx(member, "Fique proximo do seu aliado com o escudo para se proteger!", SSM_INFO);
+            endforeach
+            var barreira := struct;
+            barreira.+blocker := paladin.serial;
+            barreira.+chance := cint(AP_GetSkill(paladin, THEOLOGY)/4);
+            festa.setprop("BarreiraDeEscudos", barreira);
+            SetCooldown(paladin, "BarreiraDeEscudos", 60);
+            break;
+    endcase
+
+endprogram

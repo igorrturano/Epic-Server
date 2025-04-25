@@ -14,8 +14,7 @@ include ":combat:damage";
 program habilidade(params)
     var who := params[1];
     var targ := params[2];
-    print("WHO: " + who);
-    print("TARG: " + targ);
+
     var chardata := GetObjProperty(who, "chardata");
     var religiao := chardata.religion;
     var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 10);
