@@ -64,3 +64,36 @@ function join( a_array, delimiter )
 
   return result;
 endfunction
+
+function ChooseWings(who)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9380, 400, 500);
+    GFTextMid(gump, 10, 30, 380, 2100, "Escolha Suas Asas Divinas");
+    GFTextMid(gump, 10, 60, 380, 2100, "Esta escolha é permanente");
+    
+    var wing_types := array{0xF050, 0xF051, 0xF052, 0xF053, 0xF054, 0xF055};
+    var wing_gumps:= array{0xD0A1, 0xD0A2, 0xD0A3, 0xD0A4, 0xD0A5, 0xD0A6};
+    var y_pos := 100;
+    var x_pos := 50;
+    
+    foreach graphic in wing_gumps
+        GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, _graphic_iter);
+        GFResizePic(gump, x_pos + 40, y_pos, 9350, 100, 100);
+        GFGumpPic(gump, x_pos, y_pos - 40, graphic);
+        
+        if (_graphic_iter % 2 == 0)
+            y_pos += 120;
+            x_pos := 50;
+        else
+            x_pos := 200;
+        endif
+        sleepms(2);
+    endforeach
+    
+    var input := GFSendGump(who, gump);
+    if (input[0])
+        return wing_types[input[0]];
+    endif
+    
+    return 0;
+endfunction

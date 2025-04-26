@@ -1,0 +1,72 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/epicUtils";
+
+program campeaodivino(who)
+    // Calculate bonus based on theology
+    var theology := CInt(AP_GetSkill(who, THEOLOGY));
+    var stat_bonus := CInt(theology / 2);
+    var duration := 20; // Fixed duration of 20 seconds
+
+        var wing_type := GetObjProperty(who, "chosen_wings");
+    if (!wing_type)
+        wing_type := ChooseWings(who);
+        if (!wing_type)
+            return 0;
+        endif
+        SetObjProperty(who, "chosen_wings", wing_type);
+    endif
+    
+    // Save current back layer item
+    var back_item := GetEquipmentByLayer(who, 0x0A);
+    var stored_item := 0;
+    
+    if (back_item)
+        stored_item := back_item;
+        MoveItemToContainer(back_item, who.backpack);
+    endif
+    
+    // Create and equip wings with chosen graphic
+    var wings := CreateItemAtLocation(who.x, who.y, who.z, wing_type, 1, who.realm);
+    var equip := EquipItem(who, wings);
+    if (!equip)
+        SendSysMessage(who, "Erro ao equipar as asas.");
+        DestroyItem(wings);
+        return 0;
+    endif
+    
+    // Apply stat bonuses through timed scripts
+    TS_StartTimer(who, "strength", duration, stat_bonus, who, 1);
+    TS_StartTimer(who, "agility", duration, stat_bonus, who, 1);
+    TS_StartTimer(who, "intelligence", duration, stat_bonus, who, 1);
+    
+    // Set flag for divine retaliation
+    SetObjProperty(who, "#campeaodivino", 1);
+    
+    // Visual and sound effects
+    PlaySoundEffect(who, 0x208);
+    PlayObjectCenteredEffect(who, 0x376A, 1, 32);
+    PrintText(who, "*Torna-se um avatar divino*");
+    
+    // Remove flag after duration
+    sleep(duration);
+
+    // Clean up
+    MoveItemToContainer(wings, who.backpack);
+    DestroyItem(wings);
+
+    // Re-equip original item
+    if (stored_item)
+        EquipItem(who, stored_item);
+    endif
+
+    EraseObjProperty(who, "#campeaodivino");
+
+    return 1;
+endprogram

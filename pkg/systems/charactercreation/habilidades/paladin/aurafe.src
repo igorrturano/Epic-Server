@@ -14,6 +14,25 @@ program aurafe(paladin)
         return;
     endif
 
+    // Get paladin's religion
+    var paladin_religion := paladin.getReligion();
+
+
+    // Check if carrying or wielding religious banner
+    var range := 2; // Default range
+    var religious_banners := {0xF091, 0xF092, 0xF090, 0xECEB, 0xECEA, 0xECE9};
+    var has_banner := 0;
+
+    // Check equipped items
+    var hand1 := GetEquipmentByLayer(paladin, LAYER_HAND1);
+    var hand2 := GetEquipmentByLayer(paladin, LAYER_HAND2);
+
+    if((hand1 && hand1.objtype in religious_banners) 
+        || (hand2 && hand2.objtype in religious_banners))
+            range := 6;
+            has_banner := 1;
+    endif
+
     SendSysMessageEx(paladin, "Escolha seu comando:", SSM_INFO);
     SendSysMessageEx(paladin, "1 - Formacao!", SSM_INFO);
     SendSysMessageEx(paladin, "2 - Ate o fim!", SSM_INFO); 
@@ -31,7 +50,7 @@ program aurafe(paladin)
             PrintText(paladin, "*ordena formacao*");
             foreach member in (festa.members)
                 if (member.serial != paladin.serial)
-                    if (Distance(paladin, member) < 8)
+                    if (Distance(paladin, member) < range)
                         var ok := 0;
                         foreach member2 in (festa.members)
                             if (distance(member, member2) < 2)
@@ -43,12 +62,17 @@ program aurafe(paladin)
                             SendSysMessageEx(paladin, "Seus aliados nao mantiveram a formacao", SSM_FAIL);
                             return;
                         endif
+
+                        // Get bonus amount
+                        var bonus := cint(AP_GetSkill(paladin, THEOLOGY)/2);
+                        // Enhanced effect for same religion
+                        var member_chardata := GetObjProperty(member, "chardata");
+                        if(has_banner && member.getReligion() == paladin_religion)
+                            bonus := bonus * 1.5; // 50% more effective for same religion
+                        endif
+                        SetObjProperty(member, "#tempparrybonus", bonus);
                     endif
                 endif
-            endforeach
-            
-            foreach member in (festa.members)
-                SetObjProperty(member, "#tempparrybonus", cint(AP_GetSkill(paladin, THEOLOGY)/2));
             endforeach
             break;
 
@@ -56,9 +80,14 @@ program aurafe(paladin)
             PrintText(paladin, "*ordena resiliencia*");
             foreach member in (festa.members)
                 if (member.serial != paladin.serial)
-                    if (Distance(paladin, member) < 8)
+                    if (Distance(paladin, member) < range)
                         if (isBloodied(member))
-                            HealFLS(member, cint(GetHP(member) - AP_GetVital(member, HITS) + AP_GetSkill(paladin, THEOLOGY)/10));
+                            var heal_amount := cint(GetHP(member) - AP_GetVital(member, HITS) + AP_GetSkill(paladin, THEOLOGY)/10);
+                            var member_chardata := GetObjProperty(member, "chardata");
+                            if(has_banner && member.getReligion() == paladin_religion)
+                                heal_amount := heal_amount * 1.5; // 50% more healing for same religion
+                            endif
+                            HealFLS(member, heal_amount);
                         endif
                     endif
                 endif
@@ -71,22 +100,30 @@ program aurafe(paladin)
             
             foreach member in (festa.members)
                 if (member.serial != paladin.serial)
-                    if (Distance(paladin, member) < 8)
+                    if (Distance(paladin, member) < range)
                         SendSysMessageEx(member, "Seus ataques estao poderosos!", SSM_INFO);
+                        var member_chardata := GetObjProperty(member, "chardata");
+                        if(has_banner && member.getReligion() == paladin_religion)
+                            duracao := duracao * 1.5; // 50% longer duration for same religion
+                        endif
                         TS_StartTimer(member, "heroismo", duracao);
                     endif
                 endif
             endforeach
             break;
 
-        4: // Protejam-se - Using Barreira de Escudos logic
+        4: // Protejam-se
             SendSysMessageEx(paladin, "Seu escudo e uma barreira!", SSM_INFO);
             foreach member in (festa.members)
                 SendSysMessageEx(member, "Fique proximo do seu aliado com o escudo para se proteger!", SSM_INFO);
             endforeach
             var barreira := struct;
             barreira.+blocker := paladin.serial;
-            barreira.+chance := cint(AP_GetSkill(paladin, THEOLOGY)/4);
+            var chance := cint(AP_GetSkill(paladin, THEOLOGY)/4);
+            if(has_banner)
+                chance := chance * 1.5; // 50% more effective with banner
+            endif
+            barreira.+chance := chance;
             festa.setprop("BarreiraDeEscudos", barreira);
             SetCooldown(paladin, "BarreiraDeEscudos", 60);
             break;

@@ -681,6 +681,8 @@ function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 		endif
 	endif
 
+	paladinRebuke(attacker, defender);
+
 	return 1;
 endfunction
 
@@ -1102,4 +1104,11 @@ function HasLightNearby(defender)
 	endforeach
     
 	return 0;
+endfunction
+
+function paladinRebuke(attacker, defender)
+    if (GetObjProperty(defender, "#campeaodivino"))
+        // Apply divine retaliation
+        Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{defender, attacker});
+    endif
 endfunction
