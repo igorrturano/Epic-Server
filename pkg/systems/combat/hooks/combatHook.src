@@ -385,15 +385,26 @@ function CalculateHitChance(attacker, defender)
         hit_chance := hit_chance - dancer_bonus;
     endif
 
-    var swash_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
     if (TemHabilidade(attacker, "Movimentacao Graciosa"))
+	    var swash_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
         hit_chance := hit_chance + swash_bonus;
     endif
 
     if (TemHabilidade(defender, "Movimentacao Graciosa"))
+		var swash_bonus := CInt(AP_GetSkill(defender, TACTICS) / 10);
         hit_chance := hit_chance - swash_bonus;
     endif
-    
+
+	if (TemHabilidade(attacker, "Mancha da Corrupcao"))
+		var demon_hunter_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 10);
+		hit_chance := hit_chance + demon_hunter_bonus;
+	endif
+
+	if (TemHabilidade(defender, "Mancha da Corrupcao"))
+		var demon_hunter_bonus := CInt(AP_GetSkill(defender, THEOLOGY) / 10);
+		hit_chance := hit_chance - demon_hunter_bonus;
+	endif
+
 	var witcher_bonus := Cint(AP_GetSkill(attacker, SCIENCE) / 5);
 	if (TemHabilidade(attacker, "Oleo do Cacador"))
 		hit_chance := hit_chance + witcher_bonus;
