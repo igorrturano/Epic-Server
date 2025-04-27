@@ -774,6 +774,43 @@ function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, ty
 	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
 	endif
+
+	if( GetObjProperty(defender, "#chainofpain") != error )
+		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
+			var copmobs := GetObjProperty(defender, "#chainserials");
+			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
+			var copdefenders := array;
+			
+			// Get the higher skill between ARCANA and THEOLOGY
+			var arcana_skill := AP_GetSkill(mage, ARCANA);
+			var theology_skill := AP_GetSkill(mage, THEOLOGY);
+			var skill_value := (arcana_skill > theology_skill) ? arcana_skill : theology_skill;
+			var lvl := cdbl(skill_value/200);
+			
+			var originalDefenderSerial := defender.serial;  // Store original defender's serial
+
+			foreach serial in copmobs
+				// Only add other targets, not the original defender
+				if (serial != originalDefenderSerial)
+					var targ := SystemFindObjectBySerial(serial);
+					if (targ)
+						copdefenders.append(targ);
+					endif
+				endif
+			endforeach
+			
+			// Apply damage to connected targets (excluding original)
+			foreach opponent in copdefenders
+				var total := Cint(damage * lvl);
+				if (total < 1)
+					total := 1;
+				endif
+				DamageFLS(opponent, total, DMG_FORCED, mage);
+			endforeach
+
+			return 1;
+		endif
+	endif
 endfunction
 
 function destroycraft(potion, who)
