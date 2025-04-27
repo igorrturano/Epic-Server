@@ -87,7 +87,7 @@ function GetResist(who, resist)
 		var paladin_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 20);
 		if ( GetCooldown(who, "VontadeIndomavel"))
 			valor := valor + 5;
-		elseif (temHabilidade(who, "Dominatio Animae"))
+		elseif (temHabilidade(who, "Sigilo de Protecao"))
 			valor := valor + 5;
         elseif (TemHabilidade(who, "Campeao das Montanhas"))
             valor := valor + 2;
