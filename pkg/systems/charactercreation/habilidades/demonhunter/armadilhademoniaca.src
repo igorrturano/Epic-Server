@@ -6,6 +6,8 @@ include ":timedscripts:timedScripts";
 include "include/client";
 include "include/sounds";
 include "include/say";
+include "include/shapes";
+include "include/utils";
 
 program armadilhademoniaca(params)
     var who := params[1];
@@ -15,76 +17,110 @@ program armadilhademoniaca(params)
     if (range < 2)
         range := 2;
     endif
-
-    var gliphs := array{};
-    var duration := CInt(AP_GetSkill(who, THEOLOGY)/5);; // 10 seconds duration
     
-    // Create pentagram points around the caster
-    CreateRandomGliph(gliphs, who.x-range, who.y+range, who.z, who.realm);
-    CreateRandomGliph(gliphs, who.x+range, who.y+range, who.z, who.realm);
-    CreateRandomGliph(gliphs, who.x+range, who.y-range, who.z, who.realm);
-    CreateRandomGliph(gliphs, who.x-range, who.y-range, who.z, who.realm);
-    CreateRandomGliph(gliphs, who.x, who.y, who.z, who.realm);
-
-    // Find affected targets and apply effects
-    var targets := array{};
+    var duration := 30; // 10 seconds
     var cfg := ReadConfigFile(":*:npcdesc");
     var inimigo := array{"Demon", "Undead"};
     
-    // Chain of pain logic
-    foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+    // Create pentagram using two triangles
+    // First triangle (pointing up)
+    var tri1_coords := GetCoordsInTriangle(who.x, who.y-range, 
+                                           who.x+range, who.y+range, 
+                                           who.x-range, who.y+range);
+                                           
+    // Second triangle (pointing down)
+    var tri2_coords := GetCoordsInTriangle(who.x-range, who.y-range/2, 
+                                           who.x+range, who.y-range/2, 
+                                           who.x, who.y+range);
+    
+    // Combine coordinates
+    var all_coords := tri1_coords + tri2_coords;
+    
+    // Play pentagram effects
+    var rune_effects := array{0x484A, 0x484D, 0x4850, 0x4853, 0x4856, 0x4859, 0x485C, 0x485F};
+    
+    // Find all affected targets
+    var targets := array{};
+    
+    foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
         if (mob.serial != who.serial)
             if (!(mob in who.party.members))
                 targets.append(mob.serial);
+                
+                // Mark for chain of pain
                 SetObjProperty(mob, "#chainofpain", ReadGameClock() + duration);
                 SetObjProperty(mob, "#mageserial", who.serial);
                 
-                // Check if demon/undead for extra effects
+                // Apply trap to demons/undead
                 if (mob.npctemplate)
                     var npctemplate := NPC_ParseTemplateName(mob.npctemplate);
                     if (cfg[npctemplate.template].Category in inimigo)
                         TS_StartTimer(mob, "paralysis", duration);
+                        // Enhanced damage for demons/undead
+                        ApplyRawDamage(mob, range); // Extra damage for demons/undead
                     endif
                 endif
             endif
         endif
     endforeach
-
-    // Create chain effects between targets
-    var y := 0;
-    foreach targs in targets
-        var mob := SystemFindObjectBySerial(targs);
-        if (y != len(targets))
-            y := y + 1;
-        else
-            y := 1;
-        endif
-        var mob2 := SystemFindObjectBySerial(targets[y]);
-        PlayObjectCenteredEffectEx(mob, 0x484A, 0, 10, 2444);
-        PlayMovingEffectEx(mob, mob2, 0x484A, 10, 0, 2444);
-        SetObjProperty(mob, "#chainserials", targets);
-    endforeach
-
-    // Cleanup glyphs after duration
-    sleepms(duration * 1000);
-    foreach gliph in gliphs
-        DestroyItem(gliph);
-        sleepms(2);
-    endforeach
-
-    SendSysMessageEx(who, "Você criou uma armadilha demoníaca!", SSM_INFO);
+    
+    // Create visual chain connections between targets
+    if (targets.size() > 0)
+        var y := 0;
+        foreach targs in targets
+            var mob := SystemFindObjectBySerial(targs);
+            if (y != targets.size())
+                y := y + 1;
+            else
+                y := 1;
+            endif
+            
+            var mob2 := SystemFindObjectBySerial(targets[y]);
+            
+            // Visual effects for the chain
+            PlayObjectCenteredEffectEx(mob, 0x484A, 0, 10, 2444);
+            PlayMovingEffectEx(mob, mob2, 0x484D, 10, 0, 2444);
+            
+            // Store chain serials for damage sharing
+            SetObjProperty(mob, "#chainserials", targets);
+        endforeach
+        
+        // Apply initial damage to all targets
+        foreach targs in targets
+            var mob := SystemFindObjectBySerial(targs);
+            ApplyRawDamage(mob, 20); // Base damage to all targets
+        endforeach
+    endif
+    
+    // Maintain the pentagram effect
+    var end_time := ReadGameClock() + duration;
+    while (ReadGameClock() < end_time)
+        // Refresh pentagram visuals
+        foreach coord in all_coords
+            if (RandomInt(5) == 1) // Only refresh some effects to avoid overload
+                PlayStationaryEffect(coord.x, coord.y, who.z, rune_effects.randomentry(), 1, 10, 0);
+            endif
+        endforeach
+        
+        // Check for demons/undead trying to escape
+        foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range+2, who.realm)
+            if (mob.serial != who.serial && !(mob in who.party.members))
+                if (mob.npctemplate)
+                    var npctemplate := NPC_ParseTemplateName(mob.npctemplate);
+                    if (cfg[npctemplate.template].Category in inimigo)
+                        var dist := CoordinateDistance(who.x, who.y, mob.x, mob.y);
+                        if (dist > range)
+                            // Push back inside
+                            PushBack(mob, 5, 100);
+                        endif
+                    endif
+                endif
+            endif
+        endforeach
+        
+        sleepms(500);
+    endwhile
+    
+    SendSysMessageEx(who, "Armadilha demoníaca finalizada.", SSM_INFO);
     return 1;
 endprogram
-
-function CreateRandomGliph(byref gliphs, x, y, z, realm)
-    var gliph_graphics := array{0x484A, 0x484D, 0x4850, 0x4853, 0x4856};
-    var gliph := CreateItemAtLocation(x, y, z, 0x790d);
-    
-    gliph.graphic := gliph_graphics.randomentry();
-    
-    if (typeof(gliphs) == "Array")
-        gliphs.append(gliph);
-    else
-        return gliph;
-    endif
-endfunction
