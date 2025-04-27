@@ -1,0 +1,90 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program armadilhademoniaca(params)
+    var who := params[1];
+    
+    // Calculate range based on Theology
+    var range := CInt(AP_GetSkill(who, THEOLOGY)/10);
+    if (range < 2)
+        range := 2;
+    endif
+
+    var gliphs := array{};
+    var duration := CInt(AP_GetSkill(who, THEOLOGY)/5);; // 10 seconds duration
+    
+    // Create pentagram points around the caster
+    CreateRandomGliph(gliphs, who.x-range, who.y+range, who.z, who.realm);
+    CreateRandomGliph(gliphs, who.x+range, who.y+range, who.z, who.realm);
+    CreateRandomGliph(gliphs, who.x+range, who.y-range, who.z, who.realm);
+    CreateRandomGliph(gliphs, who.x-range, who.y-range, who.z, who.realm);
+    CreateRandomGliph(gliphs, who.x, who.y, who.z, who.realm);
+
+    // Find affected targets and apply effects
+    var targets := array{};
+    var cfg := ReadConfigFile(":*:npcdesc");
+    var inimigo := array{"Demon", "Undead"};
+    
+    // Chain of pain logic
+    foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+        if (mob.serial != who.serial)
+            if (!(mob in who.party.members))
+                targets.append(mob.serial);
+                SetObjProperty(mob, "#chainofpain", ReadGameClock() + duration);
+                SetObjProperty(mob, "#mageserial", who.serial);
+                
+                // Check if demon/undead for extra effects
+                if (mob.npctemplate)
+                    var npctemplate := NPC_ParseTemplateName(mob.npctemplate);
+                    if (cfg[npctemplate.template].Category in inimigo)
+                        TS_StartTimer(mob, "paralysis", duration);
+                    endif
+                endif
+            endif
+        endif
+    endforeach
+
+    // Create chain effects between targets
+    var y := 0;
+    foreach targs in targets
+        var mob := SystemFindObjectBySerial(targs);
+        if (y != len(targets))
+            y := y + 1;
+        else
+            y := 1;
+        endif
+        var mob2 := SystemFindObjectBySerial(targets[y]);
+        PlayObjectCenteredEffectEx(mob, 0x484A, 0, 10, 2444);
+        PlayMovingEffectEx(mob, mob2, 0x484A, 10, 0, 2444);
+        SetObjProperty(mob, "#chainserials", targets);
+    endforeach
+
+    // Cleanup glyphs after duration
+    sleepms(duration * 1000);
+    foreach gliph in gliphs
+        DestroyItem(gliph);
+        sleepms(2);
+    endforeach
+
+    SendSysMessageEx(who, "Você criou uma armadilha demoníaca!", SSM_INFO);
+    return 1;
+endprogram
+
+function CreateRandomGliph(byref gliphs, x, y, z, realm)
+    var gliph_graphics := array{0x484A, 0x484D, 0x4850, 0x4853, 0x4856};
+    var gliph := CreateItemAtLocation(x, y, z, 0x790d);
+    
+    gliph.graphic := gliph_graphics.randomentry();
+    
+    if (typeof(gliphs) == "Array")
+        gliphs.append(gliph);
+    else
+        return gliph;
+    endif
+endfunction
