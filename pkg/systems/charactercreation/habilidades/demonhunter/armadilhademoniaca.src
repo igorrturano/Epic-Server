@@ -8,43 +8,85 @@ include "include/sounds";
 include "include/say";
 include "include/shapes";
 include "include/utils";
+include "include/facings"; // Added include for facings
 
 program armadilhademoniaca(params)
     var who := params[1];
-    
+    var trap_center_x := who.x; // Store initial X
+    var trap_center_y := who.y; // Store initial Y
+    var trap_center_z := who.z; // Store initial Z
+
     // Calculate range based on Theology
-    var range := CInt(AP_GetSkill(who, THEOLOGY)/10);
-    if (range < 2)
-        range := 2;
+    var range := CInt(AP_GetSkill(who, THEOLOGY)/10); // Changed range calculation
+    if (range < 1) // Adjusted minimum range if needed
+        range := 1;
     endif
     
-    var duration := 30; // 10 seconds
+    var duration := 30; // Duration in seconds
     var cfg := ReadConfigFile(":*:npcdesc");
     var inimigo := array{"Demon", "Undead"};
     
-    // Create pentagram using two triangles
-    // First triangle (pointing up)
-    var tri1_coords := GetCoordsInTriangle(who.x, who.y-range, 
-                                           who.x+range, who.y+range, 
-                                           who.x-range, who.y+range);
-                                           
-    // Second triangle (pointing down)
-    var tri2_coords := GetCoordsInTriangle(who.x-range, who.y-range/2, 
-                                           who.x+range, who.y-range/2, 
-                                           who.x, who.y+range);
+    // Define vertices for a Star of David (hexagram)
+    var vertices := array{};
+    var num_points := range; // Hexagram has 6 points
+    var rotation_offset := 30; // Start angle to orient the star properly (degrees)
     
-    // Combine coordinates
-    var all_coords := tri1_coords + tri2_coords;
+    // Calculate vertices using trigonometry
+    for i := 0 to (num_points - 1)
+        // Angle in radians for trigonometric functions
+        var angle_rad := (rotation_offset + (i * 360 / num_points)) * ConstPi() / 180; 
+        var x := trap_center_x + CInt(range * Cos(angle_rad)); // Use trap_center_x
+        var y := trap_center_y + CInt(range * Sin(angle_rad)); // Use trap_center_y
+        
+        // Store vertex location as a temporary invisible item for moving effects
+        var vertex_loc := CreateItemAtLocation(x, y, who.z, 0x1f16, 1, who.realm); // Use an invisible item like GM Robe tile
+        if (!vertex_loc)
+            SendSysMessageEx(who, "Falha ao criar ponto da armadilha.", SSM_FAIL);
+            return 0;
+        endif
+        SetObjProperty(vertex_loc, "Timer", ReadGameClock() + duration + 5); // Set timer for cleanup
+        vertex_loc.invisible := 1;
+        vertex_loc.movable := 0;
+        vertices.append(vertex_loc); // Store the item reference
+    endfor
     
-    // Play pentagram effects
-    var rune_effects := array{0x484A, 0x484D, 0x4850, 0x4853, 0x4856, 0x4859, 0x485C, 0x485F};
+    // Play Star of David effects
+    var vertex_effect := 0x484A; // Effect for vertices
+    var line_effect := 0x484D;   // Effect for lines
+    var effect_speed := 10;
+    var effect_loop := 0;
+    var effect_color := 2444; // Example color
+
+    // Initial display of the star: Stationary effects at vertices
+    foreach vertex_item in vertices
+        PlayObjectCenteredEffectEx(vertex_item, vertex_effect, effect_speed, effect_loop, effect_color);
+        sleepms(10);
+    endforeach
+
+    // Draw lines using moving effects between vertices
+    // First triangle (points 0, 2, 4)
+    PlayMovingEffectEx(vertices[0], vertices[2], line_effect, effect_speed, effect_loop, effect_color);
+    sleepms(10);
+    PlayMovingEffectEx(vertices[2], vertices[4], line_effect, effect_speed, effect_loop, effect_color);
+    sleepms(10);
+    PlayMovingEffectEx(vertices[4], vertices[0], line_effect, effect_speed, effect_loop, effect_color);
+    sleepms(10);
     
+    // Second triangle (points 1, 3, 5)
+    PlayMovingEffectEx(vertices[1], vertices[3], line_effect, effect_speed, effect_loop, effect_color);
+    sleepms(10);
+    PlayMovingEffectEx(vertices[3], vertices[5], line_effect, effect_speed, effect_loop, effect_color);
+    sleepms(10);
+    PlayMovingEffectEx(vertices[5], vertices[1], line_effect, effect_speed, effect_loop, effect_color);
+    sleepms(10);
+
     // Find all affected targets
     var targets := array{};
-    
-    foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
+
+    foreach mob in ListMobilesNearLocation(trap_center_x, trap_center_y, trap_center_z, range, who.realm) // Use trap center
         if (mob.serial != who.serial)
             if (!(mob in who.party.members))
+                targets.append(mob.serial);
                 targets.append(mob.serial);
                 
                 // Mark for chain of pain
@@ -57,29 +99,36 @@ program armadilhademoniaca(params)
                     if (cfg[npctemplate.template].Category in inimigo)
                         TS_StartTimer(mob, "paralysis", duration);
                         // Enhanced damage for demons/undead
-                        ApplyRawDamage(mob, range); // Extra damage for demons/undead
+                        ApplyRawDamage(mob, 1); // Extra damage for demons/undead
                     endif
                 endif
             endif
         endif
     endforeach
-    
+
     // Create visual chain connections between targets
     if (targets.size() > 0)
         var y := 0;
         foreach targs in targets
             var mob := SystemFindObjectBySerial(targs);
-            if (y != targets.size())
+            if(!mob) // Check if mob exists
+                continue;
+            endif
+
+            if (y < targets.size() -1) // Correct loop for connecting targets
                 y := y + 1;
             else
-                y := 1;
+                y := 0; // Connect last target back to the first
             endif
             
             var mob2 := SystemFindObjectBySerial(targets[y]);
+            if(!mob2) // Check if mob2 exists
+                continue;
+            endif
             
             // Visual effects for the chain
-            PlayObjectCenteredEffectEx(mob, 0x484A, 0, 10, 2444);
-            PlayMovingEffectEx(mob, mob2, 0x484D, 10, 0, 2444);
+            PlayObjectCenteredEffectEx(mob, vertex_effect, effect_speed, effect_loop, effect_color); // Use same vertex effect
+            PlayMovingEffectEx(mob, mob2, line_effect, effect_speed, effect_loop, effect_color); // Use same line effect
             
             // Store chain serials for damage sharing
             SetObjProperty(mob, "#chainserials", targets);
@@ -88,39 +137,60 @@ program armadilhademoniaca(params)
         // Apply initial damage to all targets
         foreach targs in targets
             var mob := SystemFindObjectBySerial(targs);
-            ApplyRawDamage(mob, 20); // Base damage to all targets
+             if(!mob) // Check if mob exists
+                continue;
+            endif
+            ApplyRawDamage(mob, 2); // Base damage to all targets
         endforeach
     endif
     
-    // Maintain the pentagram effect
+    // Maintain the Star of David effect
     var end_time := ReadGameClock() + duration;
     while (ReadGameClock() < end_time)
-        // Refresh pentagram visuals
-        foreach coord in all_coords
-            if (RandomInt(5) == 1) // Only refresh some effects to avoid overload
-                PlayStationaryEffect(coord.x, coord.y, who.z, rune_effects.randomentry(), 1, 10, 0);
-            endif
+        // Refresh star visuals (only on some vertices to avoid visual overload)
+        foreach vertex_item in vertices
+             if (RandomInt(10) == 1) // Only refresh some effects occasionally
+                PlayObjectCenteredEffectEx(vertex_item, vertex_effect, effect_speed, effect_loop, effect_color);
+             endif
         endforeach
         
         // Check for demons/undead trying to escape
-        foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range+2, who.realm)
+        foreach mob in ListMobilesNearLocation(trap_center_x, trap_center_y, trap_center_z, range+2, who.realm) // Use trap center
             if (mob.serial != who.serial && !(mob in who.party.members))
                 if (mob.npctemplate)
                     var npctemplate := NPC_ParseTemplateName(mob.npctemplate);
                     if (cfg[npctemplate.template].Category in inimigo)
-                        var dist := CoordinateDistance(who.x, who.y, mob.x, mob.y);
+                        var dist := CoordinateDistance(trap_center_x, trap_center_y, mob.x, mob.y); // Use trap center
                         if (dist > range)
                             // Push back inside
-                            PushBack(mob, 5, 100);
+                            TS_StartTimer(mob, "paralysis", 1);
+                            PushBack(mob, range, 100);
                         endif
                     endif
                 endif
             endif
         endforeach
         
-        sleepms(500);
+        sleepms(100);
     endwhile
     
+    // Cleanup properties and temporary vertex items
+    foreach targs in targets
+        var mob := SystemFindObjectBySerial(targs);
+        if(mob)
+            EraseObjProperty(mob, "#chainofpain");
+            EraseObjProperty(mob, "#mageserial");
+            EraseObjProperty(mob, "#chainserials");
+        endif
+    endforeach
+
+    // Destroy the temporary vertex items
+    foreach vertex_item in vertices
+        if (vertex_item)
+            DestroyItem(vertex_item);
+        endif
+    endforeach
+
     SendSysMessageEx(who, "Armadilha demoníaca finalizada.", SSM_INFO);
     return 1;
 endprogram

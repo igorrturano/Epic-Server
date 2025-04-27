@@ -7,102 +7,63 @@ include ":attributes:attributes";
 
 const GUMPID_DEMONHUNTERSPELL := 0x00001E;
 
-program sigilodeprotecao(who)
+program sigilodeprotecao(who, spellname := "") // Added optional spellname parameter
     if (GetObjProperty(who, "#Casting"))
-        SendSysMessageEx(who, "Você não pode abrir o menu de magias agora.", SSM_FAIL);
+        SendSysMessageEx(who, "Você não pode usar um sigilo agora.", SSM_FAIL); // Changed message slightly
         return 0;
     endif
 
     var isDemonHunter := TemHabilidade(who, "Sigilo de Protecao");
     if (!isDemonHunter)
-        SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
+        SendSysMessageEx(who, "Apenas Caçadores de Demônios podem usar este comando.", SSM_FAIL); // Changed class name
         return;
     endif
-    
+
     var theology_skill := CInt(AP_GetSkill(who, "Theology"));
     var max_circle := theology_skill / 20;
-    
+
     if (max_circle < 1)
         max_circle := 1;
     endif
-    
-    DemonHunterSpellsGump(who, max_circle);
-endprogram
 
-function DemonHunterSpellsGump(who, max_circle)
-    var gump := GFCreateGump();
-    var cfg := ReadConfigFile(":spells:config/demonhunterspells");
-    var spell_list := array{};
-    
-    foreach spell_id in (GetConfigIntKeys(cfg))
-        var spell_elem := FindConfigElem(cfg, spell_id);
-        var circle := CInt(spell_elem.Circle);
-        
-        if (circle <= max_circle)
-            spell_list.append(spell_id);
-        endif
-        sleepms(2);
-    endforeach
+    if (!spellname) // If no spellname is provided, show the gump
+        Start_Script(":charactercreation:habilidades/demonhunter/sigilodeprotecao", who);
+        return;    else // If spellname is provided, try to cast it directly
+        var cfg := ReadConfigFile(":spells:config/demonhunterspells");
+        var elem;
+        var achou := 0;
+        var spell_id_found := 0;
 
-    var size := spell_list.size();
-    if (size >= 1)
-        size := size * 26;
-        var circles := dictionary{};
-        foreach spell_id in spell_list
-            var spell_elem := FindConfigElem(cfg, spell_id);
-            var circle := CInt(spell_elem.Circle);
-            circles[circle] := 1;
-        endforeach
-        size += circles.keys().size() * 26;
-    else
-        size := 0;
-    endif
-    
-    GFSetId(gump, GUMPID_DEMONHUNTERSPELL);
-    GFClosable(gump, 1);
-    GFResizePic(gump, 10, 26, 9390, 276, 100+size);
-    GFHTMLArea(gump, 80, 65, 142, 20, "<BASEFONT Size=5 Color=#666666>Sigilos Demoníacos", 0, 0);
-    GFHTMLArea(gump, 82, 67, 142, 20, "<BASEFONT Size=5 Color=#666666>Sigilos Demoníacos", 0, 0);
-    GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#FF0000>Sigilos Demoníacos", 0, 0);
-    GFGumpPic(gump, 41, 84, 1469);
-    
-    var y := 90;
-    var current_circle := -1;
-    
-    foreach spell_id in spell_list
-        var spell := FindConfigElem(cfg, spell_id);
-        var circle := CInt(spell.Circle);
-        
-        if (circle != current_circle && ((circle > 0) || (current_circle == -1 && circle == 0)))
-            current_circle := circle;
-            var circle_name := "Sigilos Básicos";
-            if (circle > 0)
-                circle_name := "Sigilos Círculo " + circle;
+        foreach spell_id_key in (GetConfigIntKeys(cfg))
+            elem := FindConfigElem(cfg, spell_id_key);
+            if (Lower(GetConfigString(elem, "Name")) == Lower(spellname))
+                // Check if the player has enough Theology for this spell's circle
+                var spell_circle := CInt(elem.Circle);
+                if (spell_circle > max_circle)
+                    SendSysMessageEx(who, "Você não possui conhecimento teológico suficiente para este sigilo.", SSM_FAIL);
+                    return;
+                endif
+
+                achou := 1;
+                spell_id_found := spell_id_key;
+                break;
             endif
-            
-            GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FF0000><B>" + circle_name + "</B>", 1, 0);
-            y += 26;
+            sleepms(2); // Keep sleepms for potentially large configs
+        endforeach
+
+        if (!achou)
+            SendSysMessageEx(who, "O sigilo '" + spellname + "' não existe.", SSM_FAIL);
+            return;
         endif
-        
-        var spellname := spell.name;
-        var desc := spell.desc;
-        
-        GFAddButton(gump, 30, y+2, 2117, 2118, GF_CLOSE_BTN, spell_id);
-        GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FFFFFF>" + spellname, 1, 0);
-        GFToolTipText(gump, "<BASEFONT color=#FF0000>" + spellname + "<br><BASEFONT color=#FFFFFF>" + desc);
-        
-        y += 26;
-        sleepms(2);
-    endforeach
-    
-    var input := GFSendGump(who, gump);
-    if (input[0] > 0)
-        var elem := FindConfigElem(cfg, input[0]);
-        if (!elem)
-            SendSysMessageEx(who, "Erro ao encontrar informações do sigilo.", SSM_FAIL);
-            return 0;
+
+        // Reload elem just in case (though break should preserve it)
+        elem := FindConfigElem(cfg, spell_id_found);
+        if (!elem) // Should not happen if achou is 1, but good practice
+             SendSysMessageEx(who, "Erro ao encontrar informações do sigilo.", SSM_FAIL);
+             return 0;
         endif
-        
+
+        // Build the spellinfo struct
         var spellinfo := struct{
             "id" := elem.SpellId,
             "name" := elem.Name,
@@ -118,13 +79,11 @@ function DemonHunterSpellsGump(who, max_circle)
             "cycles" := CInt(elem.Cycles),
             "range" := elem.Range
         };
-        
+
         var script := Start_Script(":spells:cast_spell", {who, spellinfo});
         if (script.errortext)
             SendSysMessage(who, "Erro ao iniciar o sigilo -> " + script.errortext);
             return 0;
         endif
     endif
-    
-    return 1;
-endfunction
+endprogram
