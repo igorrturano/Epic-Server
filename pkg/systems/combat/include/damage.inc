@@ -496,8 +496,7 @@ function EpicCalculateDamage(attacker, defender, armor, damage, type)
         var zone_name := zones[1];
         
         if(zone_name == "Body" || zone_name == "Legs") 
-            var zone_info := GetArmorInZone(defender, zone_name);
-            
+            var zone_info := GetArmorInZone(defender, zone_name, type);
             foreach item in (zone_info.items)
                 WearDownArmor(defender, item, damage, attacker.weapon);
                 sleepms(2);
@@ -1314,7 +1313,7 @@ function ApplyDamageHabElementalWeapon( attacker, defender, damageDice, elementa
   ApplyRawDamage( defender, totalDamage );
 endfunction
 
-function GetArmorInZone(mobile, zone_name)
+function GetArmorInZone(mobile, zone_name, type)
     var result := struct{
         "items" := array{},
         "total_resist" := 0
@@ -1341,7 +1340,7 @@ function GetArmorInZone(mobile, zone_name)
     foreach item in equipped_items
         if(item.layer in layer_numbers)
             result.items.append(item);
-            var item_resist := getResistArmorByType(item, DMG_BLUNT);
+            var item_resist := getResistArmorByType(item, type);
             result.total_resist += item_resist;
         endif
         sleepms(2);
