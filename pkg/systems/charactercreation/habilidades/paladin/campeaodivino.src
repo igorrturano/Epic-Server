@@ -52,7 +52,6 @@ program campeaodivino(who)
     // Visual and sound effects
     PlaySoundEffect(who, 0x208);
     PlayObjectCenteredEffect(who, 0x376A, 1, 32);
-    PrintText(who, "*Torna-se um avatar divino*");
     
     // Remove flag after duration
     sleep(duration);

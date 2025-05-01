@@ -21,7 +21,8 @@ program armadilhademoniaca(params)
     if (range < 1) // Adjusted minimum range if needed
         range := 1;
     endif
-    
+    PerformAction(who, ANIM_CAST_AREA);
+
     var duration := 30; // Duration in seconds
     var cfg := ReadConfigFile(":*:npcdesc");
     var inimigo := array{"Demon", "Undead"};
@@ -170,7 +171,7 @@ program armadilhademoniaca(params)
                 endif
             endif
         endforeach
-        
+
         sleepms(100);
     endwhile
     
