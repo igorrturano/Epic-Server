@@ -994,16 +994,16 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	var definicaoItem := itemsConfig[objtype];
 	var definicaoFabricacao := receitasConfig[objtype];
 	var isComponente := GetConfigString(definicaoFabricacao, "encaixe");
-	var sucessos := GetConfigInt(receitasConfig[objtype],"SucessosFabricacao");
+	var duracao := GetConfigInt(receitasConfig[objtype],"DuracaoFabricacao");
 
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
 	endif
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe);
-	receita.+sucessosNecessarios := sucessos;
-	receita.+materiaisNecessarios := PegaMateriaisNecessarios(objtype, definicaoFabricacao);
-	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, sucessos, definicaoFabricacao.lote);
+	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
+	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao);
+	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
 	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
 	receita.+objtype := objtype;
 	receita.+pericia := nomePericia;
@@ -1030,7 +1030,7 @@ function MontaComplexoComponente(descritorFabricacao);
 	};
 endfunction 
 
-function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, sucessos, lote)
+function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNecessarios, duracao, lote)
 
 	var desc := struct;
 	var labelQuantidade := "";
@@ -1062,7 +1062,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 	endif
 
 	desc +=  "<br>";
-	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de Fabricação</BASEFONT><br>" + PegaDescDuracaoFabricacao(sucessos) + "<br>";
+	desc +=  "<BASEFONT COLOR=#7bf8fe> Tempo de Fabricação</BASEFONT><br>" + PegaDescDuracaoFabricacao(duracao).desc + "<br>";
 
 	return desc;
 endfunction
@@ -1097,7 +1097,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe)
 	return componentes;
 endfunction
 
-function PegaMateriaisNecessarios(objtype, descritorFabricacao)
+function PegaMateriaisNecessarios(descritorFabricacao)
 	var materials := GetConfigStringArray(descritorFabricacao, "materials");
 	return materials;
 endfunction

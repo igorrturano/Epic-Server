@@ -341,19 +341,15 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
-	if(qtdSucessos > 30)
-		return "Extremamente Longo";
-	elseif(qtdSucessos <= 30 && qtdSucessos > 25)
-		return "Muito Longo";
-	elseif(qtdSucessos <= 20 && qtdSucessos > 15)
-		return "Longo";
-	elseif(qtdSucessos <= 15 && qtdSucessos > 10)
-		return "Razoável";
-	elseif(qtdSucessos <= 10 && qtdSucessos > 5)
-		return "Rápido";
-	else
-		return "Muito Rápido";
-	endif
+	case(qtdSucessos)
+		"EXTREMAMENTE_LONGO": return struct{ desc := "Extremamente Longo" , sucessos := 24}; break;
+		"MUITO_LONGO": return struct{ desc := "Muito Longo" , sucessos := 20}; break;
+		"LONGO": return struct{ desc := "Longo" , sucessos := 15}; break;
+		"EXTREMAMENTE_RAPIDO": return struct{ desc := "Extremamente Rápido" , sucessos := 2}; break;
+		"MUITO_RAPIDO": return struct{ desc := "Muito Rápido" , sucessos := 5}; break;
+		"RAPIDO": return struct{ desc := "Rápido" , sucessos := 8}; break;
+		default: return struct{ desc := "Razoável" , sucessos := 12}; break;
+	endcase
 endfunction
 
 function MontaCraftProp(fabricacaoConfig)
