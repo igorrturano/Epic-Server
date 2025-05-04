@@ -1,0 +1,76 @@
+use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":spells:summon";
+include "include/client";
+
+program SpellScript(params)
+    var who := params[1];
+    params := 0;
+    
+    SendSysMessageEx(who, "Escolha onde invocar o demônio.", SSM_REQUEST);
+    var targ := TargetCoordinates(who);
+    if (!targ)
+        return 0;
+    endif
+
+    var template := ":epicai:imp";
+    var theology := CInt(AP_GetSkill(who, THEOLOGY));
+    var dice_roll := RandomDiceRoll("1d10");
+    PrintTextAbovePrivate(who, "Rolou "+dice_roll, who);
+    
+    case (dice_roll)
+        1: template := ":epicai:imp";
+        2: template := ":epicai:succubus";
+        3: template := ":epicai:DemonKnight";
+        4: template := ":epicai:SuccubusVermelha";
+        5: template := ":epicai:Shadowlord";
+        6: template := ":epicai:Balron";
+        7: template := ":epicai:DemonLord";
+        8: template := ":epicai:PitFiend";
+        9: template := ":epicai:Abyssal";
+        10: template := ":epicai:ArchDemon";
+    endcase
+
+    if (template == error)
+        SendSysMessage(who, "Erro ao invocar demônio: " + template);
+        return 0;
+    endif
+
+    var i := 0;
+    who.frozen := 1;
+    while (i < 4)
+        PerformAction(who, ANIM_CAST_DIR);
+        sleep(1);
+        i += 1;
+    endwhile
+    who.frozen := 0;
+
+    PlaySoundEffect(targ, 0x215);
+    PlayObjectCenteredEffect(targ, 0x3728, 10, 10);
+    
+    var demon := summon(template, targ, who);
+    if (!demon)
+        SendSysMessageEx(who, "Falha ao invocar o demônio!", SSM_FAIL);
+        return 0;
+    endif
+
+    var duracao := 120 + 180 * theology/100;
+    TS_StartTimer(demon, "summon", duracao);
+
+    if (dice_roll == 9)
+        PlayObjectCenteredEffect(demon, 0x37CC, 10, 20);
+        sleep(1);
+        PrintTextAbove(demon, "*O ar fica denso com a presença demoníaca*");
+        duracao := theology;
+    elseif (dice_roll == 1)
+        PrintTextAbove(demon, "*Um pequeno diabrete aparece*");
+    endif
+
+    SetObjProperty(demon, "anchor", array{who.x, who.y, who.z + 2});
+    SendSysMessageEx(who, "O demônio atenderá seus comandos por "+duracao+" segundos.", SSM_INFO);
+    
+    return 1;
+endprogram

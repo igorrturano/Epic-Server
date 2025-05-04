@@ -89,8 +89,10 @@ function HumanoidBrain()
                     if (me.isPriest())
                         HumanoidPriestBehavior(me, ev.source);
                     endif
+                EVID_FLEE:
+                    FleeFrom(ev.source);
                 default:
-                    PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 

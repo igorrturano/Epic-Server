@@ -1,0 +1,63 @@
+use uo;
+use os;
+use vitals;
+use cfgfile;
+
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+
+program SpellScript_AprisionarDemonio(params)
+    var caster := params[1];
+    var targ := params[2];
+    params := 0;
+    
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessage(caster, "Você precisa selecionar uma criatura!");
+        return 0;
+    endif
+    
+    // Check if target is a demon using the correct method
+    if (!IsDemon(targ))
+        SendSysMessage(caster, "Esta magia só funciona em demônios!");
+        return 0;
+    endif
+    
+    // Visual and sound effects
+    PlaySoundEffect(targ, 0x202); // Magical sound
+    PlayStationaryEffect(targ.x, targ.y, targ.z, 0x375A, 10, 10); // Blue magical circle
+    
+    // Duration based on Theology skill
+    var duration := 5 + CInt(AP_GetSkill(caster, THEOLOGY) / 10);
+    
+    // Apply paralysis effect
+    TS_StartTimer(targ, "paralysis", duration);
+    
+    // Create visual prison effect (circle of magical effects)
+    var effects := array{
+        {targ.x-1, targ.y-1}, {targ.x, targ.y-1}, {targ.x+1, targ.y-1},
+        {targ.x-1, targ.y}, {targ.x+1, targ.y},
+        {targ.x-1, targ.y+1}, {targ.x, targ.y+1}, {targ.x+1, targ.y+1}
+    };
+    
+    foreach position in effects
+        PlayStationaryEffect(position[1], position[2], targ.z, 0x375A, 10, duration * 1000);
+    endforeach
+    
+    return 1;
+endprogram
+
+function IsDemon(mobile)
+    if (!mobile.npctemplate)
+        return 0;
+    endif
+    
+    var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
+    var cfg := ReadConfigFile(":*:npcdesc");
+    var inimigo := array{"Demon"}; 
+    
+    if (cfg[npctemplate.template].Category in inimigo)
+        return 1;
+    endif
+    
+    return 0;
+endfunction

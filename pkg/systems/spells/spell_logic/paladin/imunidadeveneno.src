@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program SpellScript(params)
+    var who := params[1];
+    params := 0; // No longer needed
+    
+    // Visual and sound effects
+    PlaySoundEffect(who, SFX_SPELL_BLESS);
+    PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+    
+    var theology := AP_GetSkill(who, "Theology");
+    
+    SetObjProperty(who, "protecaoveneno", 1);
+    sleep(cint(theology));
+    EraseObjProperty(who, "protecaoveneno");    
+
+    SendSysMessageEx(who, "Você se sente protegido contra venenos.", SSM_INFO);
+    
+    return 1;
+endprogram
