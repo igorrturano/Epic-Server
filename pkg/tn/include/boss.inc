@@ -1,4 +1,3 @@
-
 use uo;
 use vitals;
 include "include/say";
@@ -398,7 +397,11 @@ function CreateBossStructGump( who, byref boss )
 	return;
   elseif ( input[0] == 500 )
 	var str1 := SmallRequestGump( who, "Descreva o item", 0 );
-	boss.descmod := str1;
+	// Only set the descmod property if user entered a description
+	Sendsysmessage( who, " " + str1 + " " );
+	if (str1 && str1 != "" && str1 != error)
+		boss.descmod := str1;
+	endif
 	CreateBossStructGump( who, boss );
 
   elseif ( input[0] == 10 || input[0] == 11 || input[0] == 12 || input[0] == 13 ||
@@ -570,7 +573,9 @@ function SetBoss(npc, boss, counter := 1)
     SetName(npc, GetObjProperty(npc, "Name" + counter));
     npc.color := boss.color;
     npc.truecolor := boss.color;
-    SetObjProperty(npc, "descmodboss", Cstr(boss.descmod));
+	if (boss.descmod)
+    	SetObjProperty(npc, "descmodboss", Cstr(boss.descmod));
+	endif
     SetObjProperty(npc, "dmgbonus", Cdbl(boss.dmg));
 
     if (boss.trueboss)
