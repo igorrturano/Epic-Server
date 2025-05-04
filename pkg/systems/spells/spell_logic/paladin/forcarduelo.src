@@ -1,0 +1,54 @@
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include ":brainai:npcUtil";
+include "include/sysEvent";
+include "include/eventID";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    params := 0;
+    
+    if (!targ)
+        return;
+    endif
+    
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+        return;
+    endif
+    
+    // For NPCs
+    if (targ.npctemplate)
+        var event := struct{
+            "type":=EVID_TAUNT,
+            "source":=who
+        };
+        SendEvent(targ, event);
+    // For Players
+    else
+        if (GetObjProperty(targ, "#DuelChallenge"))
+            SendSysMessageEx(who, "Este alvo já está em duelo.", SSM_FAIL);
+            return;
+        endif
+        
+        SetObjProperty(targ, "#DuelChallenge", struct{
+            "challenger" := who.serial,
+            "time" := ReadGameClock() + 30  // 30 seconds challenge
+        });
+        
+        SendSysMessageEx(targ, who.name + " te desafia para um duelo!", SSM_INFO);
+        SendSysMessageEx(who, "Você desafiou " + targ.name + " para um duelo!", SSM_INFO);
+    endif
+    
+    PlaySoundEffect(targ, 0x5C);
+    PlayObjectCenteredEffect(targ, 0x37C4, 7, 0x10);
+    
+    return 1;
+endprogram

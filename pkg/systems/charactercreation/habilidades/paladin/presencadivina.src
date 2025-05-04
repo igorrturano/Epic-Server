@@ -1,0 +1,147 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":combat:damage";
+include ":tn:cooldown";
+
+program presencadivina(paladin)
+    var festa := paladin.party;
+    if (!festa)
+        SendSysMessageEx(paladin, "Voce nao tem aliados!", SSM_FAIL);
+        return;
+    endif
+
+    // Get paladin's religion
+    var paladin_religion := paladin.getReligion();
+
+    // Check if carrying religious banner
+    var range := 2; // Default range
+    var religious_banners := {0xF091, 0xF092, 0xF090, 0xECEB, 0xECEA, 0xECE9};
+    var has_banner := 0;
+
+    // Check equipped items
+    var hand1 := GetEquipmentByLayer(paladin, LAYER_HAND1);
+    var hand2 := GetEquipmentByLayer(paladin, LAYER_HAND2);
+
+    if((hand1 && hand1.objtype in religious_banners) 
+        || (hand2 && hand2.objtype in religious_banners))
+            range := 6;
+            has_banner := 1;
+    endif
+
+    SendSysMessageEx(paladin, "Escolha seu comando:", SSM_INFO);
+    SendSysMessageEx(paladin, "1 - Cerquem!", SSM_INFO);
+    SendSysMessageEx(paladin, "2 - Reviravolta!", SSM_INFO); 
+    SendSysMessageEx(paladin, "3 - Por Justica!", SSM_INFO);
+    SendSysMessageEx(paladin, "4 - Vitoria Divina!", SSM_INFO);
+
+    var input := CInt(RequestInput(paladin, paladin.backpack, "Escolha (1-4):"));
+    if(!(input >= 1 && input <= 4))
+        SendSysMessageEx(paladin, "Comando invalido!", SSM_FAIL);
+        return;
+    endif
+
+    case(input)
+        1: // Cerquem!
+            PrintText(paladin, "*ordena cerco*");
+            SendSysMessageEx(paladin, "Escolha o alvo para seus aliados cercarem.", SSM_REQUEST);
+            var alvo := Target(paladin);
+            if (!alvo)
+                SendSysMessageEx(paladin, "Cancelado.", SSM_FAIL);
+                return;
+            endif
+
+            var count := 1;
+            foreach member in (festa.members)
+                if (member.serial != paladin.serial)
+                    if (Distance(paladin, member) < range)
+                        if (Distance(member, alvo) < 2)
+                            count := count + 1;
+                        endif
+                    endif
+                endif
+            endforeach
+
+            if (count == festa.members.size())
+                foreach member in (festa.members)
+                    SendSysMessageEx(member, "Seus ataques estao poderosos!", SSM_INFO);
+                    TS_StartTimer(member, "heroismo", cint(AP_GetSkill(paladin, THEOLOGY)));
+                    if (has_banner && member.getReligion() == paladin_religion)
+                        TS_StartTimer(member, "bencaodivina", 10); // Bonus para mesma religião
+                    endif
+                endforeach
+            endif
+            break;
+
+        2: // Reviravolta!
+            PrintText(paladin, "*ordena reviravolta*");
+            var inimigos := ListHostiles(paladin, range);
+            if (len(inimigos) < cint(festa.members.size())/2)
+                SendSysMessageEx(paladin, "Voce nao esta em desvantagem.", SSM_FAIL);
+                return;
+            endif
+
+            foreach member in (festa.members)
+                if (Distance(paladin, member) < range)
+                    var bonus := AP_GetSkill(paladin, THEOLOGY);
+                    if (has_banner && member.getReligion() == paladin_religion)
+                        bonus *= 1.5;
+                    endif
+                    TS_StartTimer(member, "heroismo", CInt(bonus));
+                endif
+            endforeach
+            break;
+
+        3: // Por Justica!
+            PrintText(paladin, "*guia aliado para gloria*");
+            var testes := array;
+            
+            foreach member in (festa.members)
+                if (member.serial != paladin.serial)
+                    if (Distance(paladin, member) < range)
+                        testes.append(member);
+                    endif
+                endif
+            endforeach
+
+            if (testes.size() < 1)
+                SendSysMessageEx(paladin, "Nenhum aliado próximo!", SSM_FAIL);
+                return;
+            endif
+
+            var selected := testes[RandomInt(testes.size()+1)];
+            SetObjProperty(selected, "#CriticalChance", 100);
+            
+            if (has_banner && selected.getReligion() == paladin_religion)
+                TS_StartTimer(selected, "bencaodivina", 15); // Duração maior para mesma religião
+            else
+                TS_StartTimer(selected, "bencaodivina", 10);
+            endif
+            
+            sleep(5);
+            EraseObjProperty(selected, "#CriticalChance");
+            break;
+
+        4: // Vitoria Divina!
+            PrintText(paladin, "*proclama vitória divina*");
+            foreach member in (festa.members)
+                if (Distance(paladin, member) < range)
+                    var cds := TS_GetCooldownList(member);
+                    foreach cd in cds
+                        // Se for mesma religião, reseta todos cooldowns
+                        if (has_banner && member.getReligion() == paladin_religion)
+                            TS_LowerDuration(member, cd, -1, 1);
+                        // Se não, apenas os menores que 3 min
+                        elseif (cd.duration <= 180) 
+                            TS_LowerDuration(member, cd, -1, 1);
+                        endif
+                    endforeach
+                endif
+            endforeach
+            break;
+    endcase
+
+endprogram
