@@ -68,8 +68,10 @@ function MonsterBrain()
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
+                EVID_FLEE:
+                    FleeFrom(ev.source);
                 default:
-                    PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 

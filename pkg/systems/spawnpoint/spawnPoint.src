@@ -160,6 +160,8 @@ function InputsHandler( inputs, who, spawnpoint, uniquestat )
     if ( inputs[17] == 1 ) // Is boss?
       SetObjProperty( spawnpoint, "unique", 1 );
       CreateBossStructGump( who, uniquestat );
+    else
+      SetObjProperty( spawnpoint, "unique", 0 );
     endif
 
     for ( i := 1; i <= 3; i += 1 )
@@ -182,8 +184,15 @@ function InputsHandler( inputs, who, spawnpoint, uniquestat )
     SetObjProperty( spawnpoint, "Range", Trim(SplitWords(inputs[13], ":")[2]) );
     SetObjProperty( spawnpoint, "MinDelay", Trim(SplitWords(inputs[14], ":")[2]) );
     SetObjProperty( spawnpoint, "MaxDelay", Trim(SplitWords(inputs[15], ":")[2]) );
-    SetObjProperty( spawnpoint, "IgnoreLOS", Trim(SplitWords(inputs[16], ":")[1]) );
-    SetObjProperty( spawnpoint, "unique", Trim(SplitWords(inputs[17], ":")[1]) );
+    
+    // Fix for checkbox values - explicitly check if they're checked
+    SetObjProperty( spawnpoint, "IgnoreLOS", inputs[16] ? 1 : 0 );
+    if (inputs[17] == error)
+      // Keep the existing value if there was an error
+    else
+      SetObjProperty( spawnpoint, "unique", inputs[17] ? 1 : 0 );
+    endif
+    
     SetObjProperty( spawnpoint, "ResetMe", 1 );
     SetObjProperty( spawnpoint, "SpawnCount", (spawn_count) );
     SetObjProperty( spawnpoint, "uniquestat", uniquestat );

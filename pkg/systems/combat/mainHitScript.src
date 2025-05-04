@@ -32,7 +32,6 @@ program MainHitScript(params)
 	var rawdamage := params[6];
 	var waitAnim := params[7];
 	var elementalDamages;
-
 	// Garante dano mínimo de 1
 	if (rawdamage < 1)
 		rawdamage := 1;
@@ -75,7 +74,6 @@ program MainHitScript(params)
 			basedamage := 0;
 		endif
 	endif
-
 	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 
@@ -224,29 +222,6 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 		var modphy := dmgList["Physical"];
 		dmgList["Physical"] := 0;
 		dmgList[encantada.type] := dmgList[encantada.type] + modphy;
-	endif
-
-	if( GetObjProperty(defender, "#chainofpain") != error )
-		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
-			var copmobs := GetObjProperty(defender, "#chainserials");
-			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
-			var copdefenders := array;
-			var lvl := cdbl(AP_GetSkill(mage, ARCANA)/200);
-
-			foreach serial in copmobs
-				copdefenders.append(SystemFindObjectBySerial(serial));
-			endforeach
-
-			foreach targ in copdefenders
-				defender := targ;
-				total := CalculateTotalDamage(defender, basedamage * lvl, attacker, dmgList);
-				if (total < 1)
-					total := 1;
-				endif
-				DamageFLS(defender, total, DMG_FORCED, mage);
-			endforeach
-			return 1;
-		endif
 	endif
 
 	total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);

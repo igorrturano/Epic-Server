@@ -1,0 +1,85 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":charactercreation:resists";
+include "include/epicConstants";
+include ":combat:damage";
+
+program habilidade(params)
+    var who := params[1];
+    var targ := params[2];
+
+    var chardata := GetObjProperty(who, "chardata");
+    var religiao := chardata.religion;
+    var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 10);
+
+    PrintText(who, "*Invoca poder profano*");
+    PlayObjectCenteredEffect(who, 0x376A, 1, 32);
+
+    case (religiao)
+        VENERATIO:
+            PlayObjectCenteredEffectHuefx(targ, 0x54b3, 10, 20, 1254, 1);
+            PlaySoundEffect(targ, 0x1FB);
+            SetCooldown(targ, "silence", theology_bonus);
+        
+        BOKK_BHARAZ:
+            var equipped := GetEquipmentByLayer(who, LAYER_HAND1);
+            if (equipped)
+                MoveItemToContainer(equipped, who.backpack);
+            endif
+            
+            var weapon := CreateItemAtLocation(who.x, who.y, who.z, 0xC5FE, 1);
+            weapon.color := 2598; // Gold color
+            if (weapon)
+                SetObjProperty(weapon, "balas", 1);
+                SetObjProperty(weapon, "serialid", who.serial);
+                EquipItem(who, weapon);
+                UseItem(weapon, who);
+                sleep(5);
+                DestroyItem(weapon);
+                EquipItem(who, equipped);
+            endif
+        
+        HALLEUAD:
+            PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, 15, 2, 2740);
+            SetCooldown(targ, "blinded", 15);
+            PrintTextAbove(targ, "*cegueira*");
+        
+        ELUITHORTH:
+            var globo := CreateNpcFromTemplate(":brainai:globodeluz", targ.x, targ.y, targ.z, 0, targ.realm);
+            SetObjProperty(globo, "NoCorpse", 1);
+            globo.name := "Ilusão";
+            var duration := theology_bonus;
+            createIllusion(globo, duration);
+        
+        KAI:
+            TS_StartTimer(targ, "bleedingstrike", 30, 1, who, 2);
+    endcase
+
+    // Apply divine damage
+    DamageFLS(targ, theology_bonus, DMG_FORCED, who);
+    return 1;
+endprogram
+
+function createIllusion(illusion, duration)
+    var nearby := ListMobilesNearLocation(illusion.x, illusion.y, illusion.z, 8, illusion.realm);
+    var i := 0;
+
+    while(i < duration)
+        foreach char in nearby
+            var event := struct{"type":=EVID_TAUNT, "source":=illusion};
+            SendEvent(char, event);
+        endforeach
+
+        sleep(2);
+        i++;
+    endwhile
+    SetObjProperty(illusion, "guardkill", 1);
+    ApplyDamage(illusion, 9999);
+endfunction

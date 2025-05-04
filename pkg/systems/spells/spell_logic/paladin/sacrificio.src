@@ -1,0 +1,50 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    params := 0;
+
+    if (!targ)
+        SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+        return 0;
+    endif
+
+    // Visual effects
+    PlaySoundEffect(who, SFX_SPELL_BLESS);
+    PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+    PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+
+    // Get caster's vitals
+    var hp := AP_GetVital(who, "Hits") - 1;
+    var stam := AP_GetVital(who, "Stamina") - 1;
+    var mana := AP_GetVital(who, "Mana") - 1;
+
+    // Transfer vitals to target
+    AP_SetVital(targ, "Hits", AP_GetVital(targ, "Hits") + hp);
+    AP_SetVital(targ, "Stamina", AP_GetVital(targ, "Stamina") + stam);
+    AP_SetVital(targ, "Mana", AP_GetVital(targ, "Mana") + mana);
+
+    // Reduce caster's vitals to 1
+    AP_SetVital(who, "Hits", 1);
+    AP_SetVital(who, "Stamina", 1);
+    AP_SetVital(who, "Mana", 1);
+
+    SendSysMessageEx(who, "Você sacrificou sua vitalidade para fortalecer "+targ.name+"!", SSM_INFO);
+    SendSysMessageEx(targ, who.name+" sacrificou sua vitalidade para te fortalecer!", SSM_INFO);
+
+    return 1;
+endprogram

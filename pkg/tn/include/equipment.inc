@@ -231,7 +231,12 @@ function RemoveEquipmentMods(who, item)
 		item.speed_mod := 0;
 	endif
 
-	AP_ModifyStatMod(who, DEXTERITY, (penalty));
+	var chardata := GetObjProperty(who, "chardata");
+    var isScutum := {0x1B76, 0x1B77, 0xFA62};
+	if (chardata.trait == "Força da Legião" && (item.objtype in isScutum))
+        penalty *= 2;
+    endif
+	AP_ModifyStatMod(who, DEXTERITY, (-1)*(penalty));
 
 	//sneak
   	penalty := GetObjProperty(item, "atributos").SneakPen;

@@ -14,8 +14,6 @@ program EquipSys(params)
 		setWeaponStats(item);
 		debugWeapon(who, item);
 	endif
-
-	print("PROTECAO VESTIDA -> " + who.getMobileDefenses()); // Apenas para teste. Deletar depois.
 endprogram
 
 /**

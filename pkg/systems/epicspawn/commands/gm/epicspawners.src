@@ -1,0 +1,395 @@
+use uo;
+use os;
+use util;
+use datafile;
+
+include ":gumps:gumps";
+include ":gumps:epicGumps";
+
+program epicspawners(who)
+    DisplaySpawnersGump(who);
+endprogram
+
+function DisplaySpawnersGump(who)
+    // Sempre obtenha a lista mais atual de spawners da propriedade global
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns || globalSpawns.size() == 0)
+        SendSysMessage(who, "Nenhum Epic spawner foi criado ainda.", color := 33);
+        return 0;
+    endif
+    
+    // Primeiro, valide o array de spawners e remova quaisquer entradas inválidas
+    var validSpawns := array{};
+    foreach serial in globalSpawns
+        var spawner := SystemFindObjectBySerial(serial);
+        if (spawner)
+            validSpawns.append(serial);
+        endif
+    endforeach
+    
+    // Atualize a propriedade global se algum spawner inválido foi encontrado
+    if (validSpawns.size() != globalSpawns.size())
+        SetGlobalProperty("epicSpawns", validSpawns);
+        globalSpawns := validSpawns;
+    endif
+    
+    if (globalSpawns.size() == 0)
+        SendSysMessage(who, "Nenhum Epic spawner válido foi encontrado.", color := 33);
+        return 0;
+    endif
+    
+    // Crie o gump usando o estilo Epic gump
+    var gump := GFECreateGump("Epic Spawner Gerenciamento", 550, 500);
+    
+    // Cabeçalho
+    var y_pos := 70;
+    GFTextLine(gump, 30, y_pos, 66, "ID");
+    GFTextLine(gump, 80, y_pos, 66, "Nome");
+    GFTextLine(gump, 175, y_pos, 66, "Tipos de Criaturas");
+    GFTextLine(gump, 400, y_pos, 66, "Ações");
+    
+    // Divisor
+    y_pos += 20;
+    GFResizePic(gump, 20, y_pos, 3000, 510, 2);
+    y_pos += 10;
+    
+    // Liste os spawners com paginação, se necessário
+    var itemsPerPage := 12;
+    var pageNum := 1;
+    var itemCount := 0;
+    
+    for i := 1 to globalSpawns.size()
+        var serial := globalSpawns[i];
+        var spawner := SystemFindObjectBySerial(serial);
+        if (!spawner)
+            // Pule spawners inválidos
+            continue;
+        endif
+        
+        // Calcule em qual página este item deve estar
+        if (itemCount >= itemsPerPage)
+            // Adicione botão de próxima página na parte inferior
+            GFAddButton(gump, 450, 450, 9903, 9904, GF_PAGE_BTN, pageNum + 1);
+            GFTextLine(gump, 480, 450, 1153, "Próximo");
+            
+            // Mova para a próxima página
+            pageNum += 1;
+            GFPage(gump, pageNum);
+            
+            // Se não estiver na primeira página, adicione botão de página anterior
+            if (pageNum > 1)
+                GFAddButton(gump, 30, 450, 9909, 9910, GF_PAGE_BTN, pageNum - 1);
+                GFTextLine(gump, 60, 450, 1153, "Anterior");
+            endif
+            
+            y_pos := 100; // Redefina a posição para a nova página
+            itemCount := 0;
+        endif
+        
+        // Obtenha os dados de configuração para este spawner
+        var form_data := GetObjProperty(spawner, "form_data");
+        var cfg := GetObjProperty(spawner, "config");
+        
+        // Use form_data se disponível, caso contrário, use cfg
+        var display_data := form_data ? form_data : cfg;
+        
+        if (display_data)
+            // ID/Serial - Alterado para lista ordenada
+            GFTextLine(gump, 30, y_pos, 1153, CStr(i));
+            
+            // Nome (novo campo) ou localização se não houver nome - Corrigido problema de exibição
+            var nameText := "";
+            if (display_data.spawner_name && display_data.spawner_name != "")
+                nameText := display_data.spawner_name;
+                // Adicione tooltip para descrição, se disponível
+                if (display_data.description && display_data.description != "")
+                    GFTextLine(gump, 80, y_pos, 1153, nameText);
+                    GFTooltipText(gump, display_data.description);
+                else
+                    GFTextLine(gump, 80, y_pos, 1153, nameText);
+                endif
+            else
+                // Use localização se nenhum nome estiver definido
+                var locationText := "";
+                if (display_data.location)
+                    locationText := display_data.location.x + "," + display_data.location.y;
+                else
+                    locationText := spawner.x + "," + spawner.y;
+                endif
+                GFTextLine(gump, 80, y_pos, 1153, locationText);
+            endif
+            
+            // Tipos de Criaturas (abreviado com contagem)
+            var mobsText := "";
+            if (display_data.mobslvl1 && display_data.mobslvl1 != "")
+                var mobs := SplitWords(display_data.mobslvl1);
+                mobsText := "Nvl1: " + mobs.size() + " Qtd: (" + display_data.amtlvl1 + ")";
+            endif
+            if (display_data.mobslvl2 && display_data.mobslvl2 != "")
+                if (mobsText != "")
+                    mobsText += ", ";
+                endif
+                var mobs := SplitWords(display_data.mobslvl2);
+                mobsText += "Nvl2: " + mobs.size() + " Qtd: (" + display_data.amtlvl2 + ")";
+            endif
+            if (display_data.mobslvl3 && display_data.mobslvl3 != "")
+                if (mobsText != "")
+                    mobsText += ", ";
+                endif
+                var mobs := SplitWords(display_data.mobslvl3);
+                mobsText += "Nvl3: " + mobs.size() + " Qtd: (" + display_data.amtlvl3 + ")";
+            endif
+            
+            GFTextLine(gump, 175, y_pos, 1153, mobsText);
+            
+            // Botões de ação - Alterado botão de exclusão e adicionado botão de atualização
+            GFAddButton(gump, 330, y_pos, 0x659, 0x65A, GF_CLOSE_BTN, 1000 + i);
+            GFTextLine(gump, 350, y_pos, 33, "Editar");
+            
+            // Adicionado botão de atualização para spawner individual
+            GFAddButton(gump, 400, y_pos, 0x659, 0x65A, GF_CLOSE_BTN, 3000 + i);
+            GFTextLine(gump, 420, y_pos, 66, "Resetar");
+            
+            // Alterado botão de exclusão para um ícone melhor
+            GFAddButton(gump, 470, y_pos, 30008, 30009, GF_CLOSE_BTN, 2000 + i);
+            GFTextLine(gump, 490, y_pos, 33, "Excluir");
+            
+            y_pos += 30;
+            itemCount += 1;
+        endif
+    endfor
+    
+    // Adicione botões de ação global
+    GFResizePic(gump, 20, 450, 3000, 510, 2);
+    
+    GFAddButton(gump, 30, 470, 2117, 2118, GF_CLOSE_BTN, 500);
+    GFTextLine(gump, 60, 470, 66, "Criar Novo Spawner");
+    
+    GFAddButton(gump, 200, 470, 2117, 2118, GF_CLOSE_BTN, 501);
+    GFTextLine(gump, 230, 470, 66, "Ir Para Spawner");
+    
+    GFAddButton(gump, 400, 470, 2117, 2118, GF_CLOSE_BTN, 502);
+    GFTextLine(gump, 430, 470, 66, "Resetar Todos");
+    
+    var input := GFSendGump(who, gump);
+    
+    // Lide com as respostas dos botões
+    if (input[0] >= 1000 && input[0] < 2000)
+        // Botão de editar clicado
+        var index := input[0] - 1000;
+        if (index >= 1 && index <= globalSpawns.size())
+            var spawner := SystemFindObjectBySerial(globalSpawns[index]);
+            if (spawner)
+                // Execute o comando epicspawner neste spawner
+                var script := start_script(":epicspawn:commands/gm/epicspawner", {who, spawner});
+                if (script.errortext)
+                    SendSysMessage(who, "Erro: " + script.errortext, color := 33);
+                endif
+                // Sem sleep e redisplay - removido para corrigir o problema de gump duplo
+            else
+                SendSysMessage(who, "Este spawner não existe mais.", color := 33);
+                DisplaySpawnersGump(who);
+            endif
+        endif
+    elseif (input[0] >= 2000 && input[0] < 3000)
+        // Botão de exclusão clicado
+        var index := input[0] - 2000;
+        if (index >= 1 && index <= globalSpawns.size())
+            DeleteSpawner(who, globalSpawns[index]);
+            DisplaySpawnersGump(who);
+        endif
+    elseif (input[0] >= 3000)
+        // Botão de atualização de spawner individual clicado
+        var index := input[0] - 3000;
+        if (index >= 1 && index <= globalSpawns.size())
+            RefreshSingleSpawner(who, globalSpawns[index]);
+            DisplaySpawnersGump(who);
+        endif
+    elseif (input[0] == 500)
+        // Criar novo spawner
+        var script := start_script(":epicspawn:commands/gm/epicspawner", who);
+        if (script.errortext)
+            SendSysMessage(who, "Erro: " + script.errortext, color := 33);
+        endif
+    elseif (input[0] == 501)
+        // Ir para spawner selecionado (perguntar qual)
+        TeleportToSpawner(who, globalSpawns);
+    elseif (input[0] == 502)
+        // Atualizar todos os spawners
+        RefreshAllSpawners(who, globalSpawns);
+        DisplaySpawnersGump(who);
+    endif
+endfunction
+
+function DeleteSpawner(who, serial)
+    var spawner := SystemFindObjectBySerial(serial);
+    if (!spawner)
+        SendSysMessage(who, "Este spawner não existe mais.", color := 33);
+        return 0;
+    endif
+    
+    // Primeiro pergunte por confirmação
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 400, 220);
+    GFResizePic(gump, 15, 15, 9350, 370, 190);
+    
+    GFTextMid(gump, 10, 30, 380, 33, "Confirmar Exclusão do Spawner");
+    GFTextLine(gump, 30, 70, 1153, "Tem certeza que deseja excluir este spawner?");
+    GFTextLine(gump, 30, 100, 1153, "Isso também removerá todas as criaturas geradas.");
+    
+    GFAddButton(gump, 100, 150, 2128, 2129, GF_CLOSE_BTN, 1);   
+    GFAddButton(gump, 250, 150, 2119, 2120, GF_CLOSE_BTN, 0);
+
+    var input := GFSendGump(who, gump);
+        
+    if (input[0] == 1)
+        // Remova da lista global de spawners
+        var globalSpawns := GetGlobalProperty("epicSpawns");
+        var index := FindInArray(globalSpawns, serial);
+        if (index > 0)
+            globalSpawns.erase(index);
+            SetGlobalProperty("epicSpawns", globalSpawns);
+        endif
+        
+        // Mate todas as criaturas geradas
+        var mobsBySerial := GetObjProperty(spawner, "mobsBySerial");
+        if (mobsBySerial)
+            foreach level in (mobsBySerial.keys())
+                foreach mobSerial in (mobsBySerial[level])
+                    var mob := SystemFindObjectBySerial(mobSerial);
+                    SetObjProperty(mob, "NoCorpse", 1);
+                    if (mob)
+                        mob.Kill();
+                    endif
+                endforeach
+            endforeach
+        endif
+        
+        // Destrua o item spawner
+        DestroyItem(spawner);
+        
+        SendSysMessage(who, "Spawner excluído com sucesso.", color := 66);
+        return 1;
+    endif
+    
+    return 0;
+endfunction
+
+function RefreshSingleSpawner(who, serial)
+    var spawner := SystemFindObjectBySerial(serial);
+    if (!spawner)
+        SendSysMessage(who, "Este spawner não existe mais.", color := 33);
+        return 0;
+    endif
+    
+    // Redefina o estado gerado para forçar o respawn
+    EraseObjProperty(spawner, "spawned");
+    EraseObjProperty(spawner, "mobsBySerial");
+    RestartScript(spawner);
+    PrintTextAbove(spawner, "Resetado com sucesso");
+    
+    SendSysMessage(who, "Spawner atualizado com sucesso. Novas criaturas aparecerão em breve.", color := 66);
+    return 1;
+endfunction
+
+function TeleportToSpawner(who, globalSpawns)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9200, 400, 400);
+    GFResizePic(gump, 15, 15, 9350, 370, 370);
+    
+    GFTextMid(gump, 10, 20, 380, 1153, "Selecione o Spawner para Teleportar");
+    
+    // Divisor
+    GFResizePic(gump, 20, 45, 3000, 360, 2);
+    
+    var y_pos := 60;
+    var count := 0;
+    
+    for i := 1 to globalSpawns.size()
+        var serial := globalSpawns[i];
+        var spawner := SystemFindObjectBySerial(serial);
+        if (!spawner)
+            continue;
+        endif
+        
+        var cfg := GetObjProperty(spawner, "config");
+        var form_data := GetObjProperty(spawner, "form_data");
+        var display_data := form_data ? form_data : cfg;
+        
+        var locationText := "";
+        var nameText := "";
+        
+        if (display_data.spawner_name && display_data.spawner_name != "")
+            nameText := display_data.spawner_name + " - ";
+        endif
+        
+        if (display_data.location)
+            locationText := nameText + display_data.location.x + "," + display_data.location.y + " (" + display_data.location.realm + ")";
+        else
+            locationText := nameText + spawner.x + "," + spawner.y + " (" + spawner.realm + ")";
+        endif
+        
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, i);
+        GFTextLine(gump, 60, y_pos, 1153, locationText);
+        
+        y_pos += 25;
+        count += 1;
+        
+        // Adicione paginação, se necessário (simplificado por enquanto)
+        if (count >= 12 && i < globalSpawns.size())
+            break;
+        endif
+    endfor
+    
+    // Botão de cancelar
+    GFAddButton(gump, 150, 350, 2119, 2120, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 185, 350, 33, "Cancelar");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] > 0 && input[0] <= globalSpawns.size())
+        var spawner := SystemFindObjectBySerial(globalSpawns[input[0]]);
+        if (spawner)
+            // Teleporte para o spawner
+            var x := spawner.x;
+            var y := spawner.y;
+            var z := spawner.z;
+            var realm := spawner.realm;
+            
+            // Use a localização armazenada, se disponível
+            var cfg := GetObjProperty(spawner, "config");
+            if (cfg && cfg.location)
+                x := cfg.location.x;
+                y := cfg.location.y;
+                z := cfg.location.z;
+                realm := cfg.location.realm;
+            endif
+            
+            MoveObjectToLocation(who, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+            SendSysMessage(who, "Você foi teleportado para o spawner.", color := 66);
+        else
+            SendSysMessage(who, "Este spawner não existe mais.", color := 33);
+            DisplaySpawnersGump(who);
+        endif
+    endif
+endfunction
+
+function RefreshAllSpawners(who, globalSpawns)
+    var refreshCount := 0;
+    
+    foreach serial in globalSpawns
+        var spawner := SystemFindObjectBySerial(serial);
+        if (!spawner)
+            continue;
+        endif
+        
+        // Redefina o estado gerado para forçar o respawn
+        EraseObjProperty(spawner, "spawned");
+        EraseObjProperty(spawner, "mobsBySerial");
+        RestartScript(spawner);
+        PrintTextAbove(spawner, "Resetado com sucesso");
+        refreshCount += 1;
+    endforeach
+    
+    SendSysMessage(who, "Atualizados " + refreshCount + " spawners. Novas criaturas aparecerão em breve.", color := 66);
+endfunction
