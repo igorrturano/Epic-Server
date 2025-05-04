@@ -1,0 +1,69 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/sounds";
+include ":attributes:attributes";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/epicUtils";
+
+program voar(params)
+    var who := params[1];
+    if (!who)
+        SendSysMessage(who, "Error: No character reference!");
+        return 0;
+    endif
+
+    if (who.warmode)
+        SendSysMessageEx(who, "Você não pode voar em combate!", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Check if wing type is already chosen
+    var wing_type := GetObjProperty(who, "chosen_wings");
+    if (!wing_type)
+        wing_type := ChooseWings(who);
+        if (!wing_type)
+            return 0;
+        endif
+        SetObjProperty(who, "chosen_wings", wing_type);
+    endif
+    
+    // Save current back layer item
+    var back_item := GetEquipmentByLayer(who, LAYER_UNUSED9);
+    var stored_item := 0;
+    
+    if (back_item)
+        stored_item := back_item;
+        MoveItemToContainer(back_item, who.backpack);
+    endif
+    
+    // Create and equip wings with chosen graphic
+    var wings := CreateItemAtLocation(who.x, who.y, who.z, wing_type, 1, who.realm);
+    var equip := EquipItem(who, wings);
+    if (!equip)
+        SendSysMessage(who, "Erro ao equipar as asas.");
+        DestroyItem(wings);
+        return 0;
+    endif
+    
+    // Execute jump/flight - passing who directly, not as an array
+    var jump_script := Start_Script(":spells:spell_logic/druid/jump", who);
+    if (jump_script.errortext)
+        SendSysMessage(who, "Erro ao executar salto: " + jump_script.errortext);
+        return 0;
+    endif
+    sleepms(2500);
+    // Clean up
+    MoveItemToContainer(wings, who.backpack);
+    DestroyItem(wings);
+    
+    // Re-equip original item
+    if (stored_item)
+        EquipItem(who, stored_item);
+    endif
+    
+    return 1;
+endprogram
+

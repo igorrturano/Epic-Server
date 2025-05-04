@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":combat:damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    var spellinfo := params[3];
+    
+    SendSysMessage(who, "Selecione o alvo.");
+    if (!targ.IsA(POLCLASS_MOBILE))
+        SendSysMessage(who, "Alvo inválido.");
+        return 0;
+    endif
+
+    var theology := AP_GetSkill(who, THEOLOGY);
+    var damage := RandomDiceRoll("1d6") + CInt(theology/10);
+    
+    // Visual effect - golden color (0x0845)
+    PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 0x0845, 2);
+    PlaySoundEffect(who, 0x235); // Different holy sound
+    
+    DamageFLS(targ, damage, DMG_FORCED, who);
+    
+    // Apply the apodrecer effect
+    var targcolor := targ.color;
+    SetObjProperty(targ, "#RealColor", targcolor);
+    targ.color := 2516;
+    
+    TS_StartTimer(targ, "apodrecer", Cint(AP_GetSkill(who, THEOLOGY)) / 2);
+    
+    SendSysMessageEx(who, "Uma flecha divina atinge o alvo!", SSM_INFO);
+    return 1;
+endprogram

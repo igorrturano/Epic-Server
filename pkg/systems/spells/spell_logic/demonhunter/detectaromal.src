@@ -1,0 +1,70 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+
+program SpellScript_DetectarOMal(params)
+    var caster := params[1];
+    var targ := params[2];
+    
+    SendSysMessage(caster, "Você concentra sua fé para sentir a presença do mal...");
+
+    // Check minimum theology requirement
+    var theology_skill := AP_GetSkill(caster, THEOLOGY);
+    if (theology_skill < 5)
+        SendSysMessage(caster, "Sua fé é muito fraca para discernir o mal oculto.");
+        return 0;
+    endif
+
+    // Calculate detection threshold based on Theology
+    var detection_threshold := Max(-20000, CInt(-100000 / theology_skill));
+
+    // If no target specified, target a mobile
+    if (!targ)
+        SendSysMessage(caster, "Escolha um alvo para examinar...");
+        targ := Target(caster);
+    endif
+
+    if (!targ || !targ.IsA(POLCLASS_MOBILE))
+        SendSysMessage(caster, "Alvo inválido.");
+        return 0;
+    endif
+
+    if (!CheckLosAt(caster, targ.x, targ.y, targ.z))
+        SendSysMessage(caster, "Você não consegue ver o alvo.");
+        return 0;
+    endif
+
+    // Check for corruption/evil
+    var is_evil := 0;
+    var corruption := GetObjProperty(targ, "corruption");
+
+    // Visual effect on cast
+    PlayObjectCenteredEffect(caster, FX_BLESS_EFFECT, 10, 10);
+    SleepMS(500);
+
+    // Check corruption level
+    if (corruption <= detection_threshold)
+        SendSysMessage(caster, "Você sente uma aura maligna emanando de " + targ.name + "!");
+        PlayObjectCenteredEffect(targ, FX_CURSE_EFFECT, 10, 10);
+        is_evil := 1;
+    endif
+
+    // Check for disguise/shapeshifting
+    if (GetObjProperty(targ, "IsDisguised") || GetObjProperty(targ, "TrueForm"))
+        if (theology_skill >= 50) // Requires decent theology to detect disguises
+            SendSysMessage(caster, targ.name + " parece estar ocultando sua verdadeira forma!");
+            is_evil := 1;
+            
+            // Optional: Add visual indicator
+            PlayObjectCenteredEffect(targ, FX_SPARK_EFFECT, 10, 10);
+        endif
+    endif
+
+    if (!is_evil)
+        SendSysMessage(caster, "Você não detecta nada de maligno em " + targ.name + ".");
+    endif
+
+    return 1;
+endprogram

@@ -84,13 +84,15 @@ function GetResist(who, resist)
 		if ((GetObjProperty(who, "chardata")).culture == ALURIEL)
 			valor := valor + 2;
 		endif
-
+		var paladin_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 20);
 		if ( GetCooldown(who, "VontadeIndomavel"))
 			valor := valor + 5;
-		elseif (temHabilidade(who, "Dominatio Animae"))
+		elseif (temHabilidade(who, "Sigilo de Protecao"))
 			valor := valor + 5;
         elseif (TemHabilidade(who, "Campeao das Montanhas"))
             valor := valor + 2;
+		elseif (TemHabilidade(who, "Consagracao Divina"))
+			valor := valor + paladin_bonus;
 		endif
 	endif
 

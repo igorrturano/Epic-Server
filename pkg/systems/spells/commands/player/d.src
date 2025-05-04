@@ -1,0 +1,89 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":attributes:attributes";
+
+const GUMPID_DEMONHUNTERSPELL := 0x00001E;
+
+program sigilodeprotecao(who, spellname := "") // Added optional spellname parameter
+    if (GetObjProperty(who, "#Casting"))
+        SendSysMessageEx(who, "Você não pode usar um sigilo agora.", SSM_FAIL); // Changed message slightly
+        return 0;
+    endif
+
+    var isDemonHunter := TemHabilidade(who, "Sigilo de Protecao");
+    if (!isDemonHunter)
+        SendSysMessageEx(who, "Apenas Caçadores de Demônios podem usar este comando.", SSM_FAIL); // Changed class name
+        return;
+    endif
+
+    var theology_skill := CInt(AP_GetSkill(who, "Theology"));
+    var max_circle := theology_skill / 20;
+
+    if (max_circle < 1)
+        max_circle := 1;
+    endif
+
+    if (!spellname) // If no spellname is provided, show the gump
+        Start_Script(":charactercreation:habilidades/demonhunter/sigilodeprotecao", who);
+        return;    else // If spellname is provided, try to cast it directly
+        var cfg := ReadConfigFile(":spells:config/demonhunterspells");
+        var elem;
+        var achou := 0;
+        var spell_id_found := 0;
+
+        foreach spell_id_key in (GetConfigIntKeys(cfg))
+            elem := FindConfigElem(cfg, spell_id_key);
+            if (Lower(GetConfigString(elem, "Name")) == Lower(spellname))
+                // Check if the player has enough Theology for this spell's circle
+                var spell_circle := CInt(elem.Circle);
+                if (spell_circle > max_circle)
+                    SendSysMessageEx(who, "Você não possui conhecimento teológico suficiente para este sigilo.", SSM_FAIL);
+                    return;
+                endif
+
+                achou := 1;
+                spell_id_found := spell_id_key;
+                break;
+            endif
+            sleepms(2); // Keep sleepms for potentially large configs
+        endforeach
+
+        if (!achou)
+            SendSysMessageEx(who, "O sigilo '" + spellname + "' não existe.", SSM_FAIL);
+            return;
+        endif
+
+        // Reload elem just in case (though break should preserve it)
+        elem := FindConfigElem(cfg, spell_id_found);
+        if (!elem) // Should not happen if achou is 1, but good practice
+             SendSysMessageEx(who, "Erro ao encontrar informações do sigilo.", SSM_FAIL);
+             return 0;
+        endif
+
+        // Build the spellinfo struct
+        var spellinfo := struct{
+            "id" := elem.SpellId,
+            "name" := elem.Name,
+            "desc" := elem.Desc,
+            "alvo" := elem.Target,
+            "powerwords" := elem.PowerWords,
+            "script" := elem.SpellScript,
+            "type" := elem.Type,
+            "circle" := CInt(elem.Circle),
+            "difficulty" := CInt(elem.Difficulty),
+            "mana" := CInt(elem.Mana),
+            "delay" := CInt(elem.Delay),
+            "cycles" := CInt(elem.Cycles),
+            "range" := elem.Range
+        };
+
+        var script := Start_Script(":spells:cast_spell", {who, spellinfo});
+        if (script.errortext)
+            SendSysMessage(who, "Erro ao iniciar o sigilo -> " + script.errortext);
+            return 0;
+        endif
+    endif
+endprogram

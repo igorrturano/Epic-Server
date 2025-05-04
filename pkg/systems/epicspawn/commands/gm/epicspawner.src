@@ -1,52 +1,374 @@
 use uo;
 use datafile;
 use cfgfile;
+use util;
 
 include ":gumps:gumps";
 include ":gumps:requestGump";
+include ":gumps:epicGumps";
 
-program epicspawner(who)
+// Global form_data to maintain state between gump interactions
+var form_data;
 
-    var spawner := ListItemsNearLocationOfType( who.x, who.y, who.z, 8, 0x5000, who.realm)[1];
-    if (!spawner)
-	    spawner := CreateItemAtLocation( who.x, who.y, who.z, 0x5000, 1 ,who.realm);
+program epicspawner(params)
+    var who, spawner;
+    
+    // Check if called with parameters (from epicspawners.src)
+    if (TypeOf(params) == "Array")
+        who := params[1];
+        spawner := params[2];
+    else
+        who := params;
+        spawner := ListItemsNearLocationOfType(who.x, who.y, who.z, 8, 0x5000, who.realm)[1];
+        if (!spawner)
+            spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x5000, 1, who.realm);
+        endif
+        spawner.invisible := 1;
     endif
-    spawner.invisible := 1;
-	sendsysmessage(who, "spawner: " +spawner);
-
+    
+    // Initialize form_data from spawner config or form_data property
+    var saved_form_data := GetObjProperty(spawner, "form_data");
     var cfg := GetObjProperty(spawner, "config");
-	sendsysmessage(who, ""+cfg);
-
-	if (cfg == error)
-		cfg := struct;
-		cfg.+mobslvl1 := "";
-        cfg.+mobslvl2 := "";
-        cfg.+mobslvl3 := "";
-        cfg.+amtlvl1 := 0;
-        cfg.+amtlvl2 := 0;
-        cfg.+amtlvl3 := 0;
-        cfg.+rect := "";
-	endif
-
-    var gump := GFCreateGump();
-	var mobslvl1 := Requestgump(who, "Escreva o npctemplate dos mobs level 1", "", cfg.mobslvl1 );
-    var amtlvl1 := Requestgump(who, "Quantos mobs level? 1", "", cfg.amtlvl1 );
-
-    var mobslvl2 := Requestgump(who, "Escreva o npctemplate dos mobs level 2", "", cfg.mobslvl2 );
-    var amtlvl2 := Requestgump(who, "Quantos mobs level 2", "", cfg.amtlvl2 );
-
-    var mobslvl3 := Requestgump(who, "Escreva o npctemplate dos mobs level 3", "", cfg.mobslvl3 );
-    var amtlvl3 := Requestgump(who, "Quantos mobs level 3", "", cfg.amtlvl3 );
-
-    var rect := Requestgump(who, "Digite o x1, y1, x2, y2", "", cfg.rect );
-
-    cfg.mobslvl1 := mobslvl1;
-    cfg.amtlvl1 := amtlvl1;
-    cfg.mobslvl2 := mobslvl2;
-    cfg.amtlvl2 := amtlvl2;
-    cfg.mobslvl3 := mobslvl3;
-    cfg.amtlvl3 := amtlvl3;
-    cfg.rect := rect;
-
-    SetObjProperty(spawner, "config", cfg);
+    
+    if (saved_form_data)
+        // Use saved form_data if available
+        form_data := saved_form_data;
+    elseif (cfg == error)
+        // Create default structure if no config exists
+        form_data := struct{
+            "spawner_name" := "",
+            "description" := "",
+            "mobslvl1" := "",
+            "mobslvl2" := "",
+            "mobslvl3" := "",
+            "amtlvl1" := 0,
+            "amtlvl2" := 0,
+            "amtlvl3" := 0,
+            "rect" := "",
+            "location" := struct{
+                "x" := who.x,
+                "y" := who.y,
+                "z" := who.z,
+                "realm" := who.realm
+            },
+            "min_respawn" := 60,  // Default 60 minutes
+            "max_respawn" := 120  // Default 120 minutes
+        };
+    else
+        // Convert existing config to form_data format
+        form_data := struct{
+            "spawner_name" := cfg.spawner_name ? cfg.spawner_name : "",
+            "description" := cfg.description ? cfg.description : "",
+            "mobslvl1" := cfg.mobslvl1 ? cfg.mobslvl1 : "",
+            "mobslvl2" := cfg.mobslvl2 ? cfg.mobslvl2 : "",
+            "mobslvl3" := cfg.mobslvl3 ? cfg.mobslvl3 : "",
+            "amtlvl1" := cfg.amtlvl1 ? cfg.amtlvl1 : 0,
+            "amtlvl2" := cfg.amtlvl2 ? cfg.amtlvl2 : 0,
+            "amtlvl3" := cfg.amtlvl3 ? cfg.amtlvl3 : 0,
+            "rect" := cfg.rect ? cfg.rect : "",
+            "location" := cfg.location ? cfg.location : struct{
+                "x" := who.x,
+                "y" := who.y,
+                "z" := who.z,
+                "realm" := who.realm
+            },
+            "min_respawn" := cfg.min_respawn ? cfg.min_respawn : 60,
+            "max_respawn" := cfg.max_respawn ? cfg.max_respawn : 120
+        };
+    endif
+    
+    // Start gump interaction loop
+    var input := DisplaySpawnerGump(who, spawner);
+    
+    // Continue showing gump until user cancels or saves
+    while (input[0] != 0)
+        // Extract and save the form data before processing any buttons
+        // This ensures form_data is always up to date before targeting
+        ExtractFormData(input);
+        SaveFormData(spawner);
+        
+        // Process the input
+        if (input[0] == 50 || input[0] == 51) // Target corner buttons
+            ProcessGumpInput(who, spawner, input);
+            input := DisplaySpawnerGump(who, spawner);
+        elseif (input[0] == 100) // Save button clicked
+            SaveSpawnerConfig(who, spawner);
+            break; // Exit the loop after saving
+        elseif (input[0] == 666) // Cancel button clicked
+            // DeleteSpawner(who, spawner);
+            break; // Exit the loop after cancelling
+        else
+            // Show the gump again for other inputs
+            input := DisplaySpawnerGump(who, spawner);
+        endif
+    endwhile
+    
+    // If cancelled with the X button at the top right
+    if (input[0] == 666)
+        // DeleteSpawner(who, spawner);
+    endif
+    
+    return 1;
 endprogram
+
+function ExtractFormData(input)
+    form_data.spawner_name := GFExtractData(input, 1);
+    form_data.description := GFExtractData(input, 2);
+    form_data.mobslvl1 := GFExtractData(input, 10);
+    form_data.amtlvl1 := CInt(GFExtractData(input, 11));
+    form_data.mobslvl2 := GFExtractData(input, 20);
+    form_data.amtlvl2 := CInt(GFExtractData(input, 21));
+    form_data.mobslvl3 := GFExtractData(input, 30);
+    form_data.amtlvl3 := CInt(GFExtractData(input, 31));
+    form_data.min_respawn := CInt(GFExtractData(input, 40));
+    form_data.max_respawn := CInt(GFExtractData(input, 41));
+endfunction
+
+function SaveFormData(spawner)
+    // Only save to form_data property but don't update config yet
+    SetObjProperty(spawner, "form_data", form_data);
+endfunction
+
+function DeleteSpawner(who, spawner)
+    SendSysMessage(who, "Cancelling spawner creation...");
+    
+    // Remove from global spawner list if it exists there
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (globalSpawns && spawner.serial in globalSpawns)
+        var index := FindInArray(globalSpawns, spawner.serial);
+        if (index > 0)
+            globalSpawns.erase(index);
+            SetGlobalProperty("epicSpawns", globalSpawns);
+        endif
+    endif
+    
+    // Kill any spawned mobs
+    var mobsBySerial := GetObjProperty(spawner, "mobsBySerial");
+    if (mobsBySerial)
+        foreach level in (mobsBySerial.keys())
+            foreach mobSerial in (mobsBySerial[level])
+                var mob := SystemFindObjectBySerial(mobSerial);
+                if (mob)
+                    mob.Kill();
+                endif
+            endforeach
+        endforeach
+    endif
+    
+    // Delete the spawner item
+    DestroyItem(spawner);
+    SendSysMessage(who, "Spawner cancelled and deleted.");
+endfunction
+
+function DisplaySpawnerGump(who, spawner)
+    var area_coords := "";
+    if (form_data.rect != "")
+        area_coords := form_data.rect;
+    endif
+
+    // Use the Epic Shard gump style with increased height
+    var gump := GFECreateGump("Configuração de Epic Spawner", 500, 580);
+    
+    // Spawner Name and Description (new fields) - adjusted to be slightly lower
+    var y_pos := 70; // Increased from 60 to move down a bit
+    GFTextLine(gump, 30, y_pos, 1153, "Nome do Spawner:");
+    GFResizePic(gump, 150, y_pos, 9350, 300, 25);
+    GFTextEntry(gump, 155, y_pos, 290, 20, 1153, form_data.spawner_name ? form_data.spawner_name : "", 1);
+    
+    y_pos += 30;
+    GFTextLine(gump, 30, y_pos, 1153, "Descrição:");
+    GFResizePic(gump, 150, y_pos, 9350, 300, 25);
+    GFTextEntry(gump, 155, y_pos, 290, 20, 1153, form_data.description ? form_data.description : "", 2);
+    
+    // Divider after name/description
+    y_pos += 40;
+    GFResizePic(gump, 20, y_pos, 3000, 460, 2);
+    y_pos += 10;
+    
+    // Level 1 Configuration
+    GFTextLine(gump, 30, y_pos, 1153, "Monstros Nível 1:");
+    GFResizePic(gump, 150, y_pos, 9350, 300, 25);
+    GFTextEntry(gump, 155, y_pos, 290, 20, 1153, form_data.mobslvl1 ? form_data.mobslvl1 : "", 10);
+    
+    y_pos += 30;
+    GFTextLine(gump, 30, y_pos, 1153, "Quantidade:");
+    GFResizePic(gump, 150, y_pos, 9350, 60, 25);
+    GFTextEntry(gump, 155, y_pos, 50, 20, 1153, form_data.amtlvl1 ? form_data.amtlvl1 : "", 11);
+    
+    // Level 2 Configuration
+    y_pos += 40;
+    GFTextLine(gump, 30, y_pos, 1153, "Monstros Nível 2:");
+    GFResizePic(gump, 150, y_pos, 9350, 300, 25);
+    GFTextEntry(gump, 155, y_pos, 290, 20, 1153, form_data.mobslvl2 ? form_data.mobslvl2 : "", 20);
+    
+    y_pos += 30;
+    GFTextLine(gump, 30, y_pos, 1153, "Quantidade:");
+    GFResizePic(gump, 150, y_pos, 9350, 60, 25);
+    GFTextEntry(gump, 155, y_pos, 50, 20, 1153, form_data.amtlvl2 ? form_data.amtlvl2 : "", 21);
+    
+    // Level 3 Configuration
+    y_pos += 40;
+    GFTextLine(gump, 30, y_pos, 1153, "Monstros Nível 3:");
+    GFResizePic(gump, 150, y_pos, 9350, 300, 25);
+    GFTextEntry(gump, 155, y_pos, 290, 20, 1153, form_data.mobslvl3 ? form_data.mobslvl3 : "", 30);
+    
+    y_pos += 30;
+    GFTextLine(gump, 30, y_pos, 1153, "Quantidade:");
+    GFResizePic(gump, 150, y_pos, 9350, 60, 25);
+    GFTextEntry(gump, 155, y_pos, 50, 20, 1153, form_data.amtlvl3 ? form_data.amtlvl3 : "", 31);
+    
+    // Divider
+    y_pos += 40;
+    GFResizePic(gump, 20, y_pos, 3000, 460, 2);
+    y_pos += 20;
+    
+    // Spawn Area Configuration
+    GFTextLine(gump, 30, y_pos, 1153, "Área de Spawn:");
+    
+    y_pos += 25;
+    if (area_coords == "")
+        GFTextLine(gump, 30, y_pos, 33, "Não definido - Selecione os cantos da área");
+    else
+        var coords := SplitWords(area_coords);
+        if (coords.size() >= 4)
+            GFTextLine(gump, 30, y_pos, 66, "Área: (" + coords[1] + "," + coords[2] + ") até (" + coords[3] + "," + coords[4] + ")");
+        endif
+    endif
+    
+    // Reorganized buttons - stacked vertically instead of side by side
+    y_pos += 25;
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 50);
+    GFTextLine(gump, 60, y_pos, 1153, "Selecionar Primeiro Canto (X1,Y1)");
+    
+    y_pos += 25; // Add the second button below, not beside
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 51);
+    GFTextLine(gump, 60, y_pos, 1153, "Selecionar Segundo Canto (X2,Y2)");
+    
+    // Respawn Time Configuration
+    y_pos += 30;
+    GFTextLine(gump, 30, y_pos, 1153, "Tempo de Respawn (minutos):");
+    
+    GFTextLine(gump, 30, y_pos + 25, 1153, "Mínimo:");
+    GFResizePic(gump, 100, y_pos + 25, 9350, 60, 25);
+    GFTextEntry(gump, 105, y_pos + 25, 50, 20, 1153, form_data.min_respawn, 40);
+    
+    GFTextLine(gump, 200, y_pos + 25, 1153, "Máximo:");
+    GFResizePic(gump, 270, y_pos + 25, 9350, 60, 25);
+    GFTextEntry(gump, 275, y_pos + 25, 50, 20, 1153, form_data.max_respawn, 41);
+    
+    // Save and Cancel buttons - reduced spacing before buttons
+    y_pos += 60; // Reduced from 80 to 60
+    GFAddButton(gump, 100, y_pos, 2128, 2129, GF_CLOSE_BTN, 100); // Okay button
+    GFAddButton(gump, 225, y_pos, 2119, 2120, GF_CLOSE_BTN, 666); // Cancel button
+    
+    // Send the gump and handle the response
+    var input := GFSendGump(who, gump);
+    return input;
+endfunction
+
+function ProcessGumpInput(who, spawner, input)
+    if (input[0] == 50) // Select first corner
+        SelectAreaCorner(who, spawner, 1);
+    elseif (input[0] == 51) // Select second corner
+        SelectAreaCorner(who, spawner, 2);
+    endif
+endfunction
+
+function SaveSpawnerConfig(who, spawner)
+    // Validate respawn times
+    if (form_data.min_respawn < 1)
+        form_data.min_respawn := 1;
+    endif
+    
+    if (form_data.max_respawn < form_data.min_respawn)
+        form_data.max_respawn := form_data.min_respawn;
+    endif
+    
+    // Create a config struct based on form_data
+    var cfg := struct{};
+    cfg.+spawner_name := form_data.spawner_name;
+    cfg.+description := form_data.description;
+    cfg.+mobslvl1 := form_data.mobslvl1;
+    cfg.+amtlvl1 := form_data.amtlvl1;
+    cfg.+mobslvl2 := form_data.mobslvl2;
+    cfg.+amtlvl2 := form_data.amtlvl2;
+    cfg.+mobslvl3 := form_data.mobslvl3;
+    cfg.+amtlvl3 := form_data.amtlvl3;
+    cfg.+rect := form_data.rect;
+    cfg.+location := form_data.location;
+    cfg.+min_respawn := form_data.min_respawn;
+    cfg.+max_respawn := form_data.max_respawn;
+    
+    // Save both the traditional config property and the form_data
+    SetObjProperty(spawner, "config", cfg);
+    SetObjProperty(spawner, "form_data", form_data);
+    
+    SendSysMessage(who, "Epic spawner configuration saved!", 66);
+    
+    // Restart the spawner if needed
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns)
+        globalSpawns := array{};
+    endif
+    
+    if (!(spawner.serial in globalSpawns))
+        globalSpawns.append(spawner.serial);
+        SetGlobalProperty("epicSpawns", globalSpawns);
+    endif
+    
+    EraseObjProperty(spawner, "spawned");
+    EraseObjProperty(spawner, "mobsBySerial");
+    
+    return 1;
+endfunction
+
+function SelectAreaCorner(who, spawner, corner)
+    SendSysMessage(who, "Select a location for corner " + corner + " of the spawn area.", color := 33);
+    var targ := TargetCoordinates(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Cancelled.", color := 33);
+        return 0;
+    endif
+    
+    var coords := array{};
+    if (form_data.rect != "")
+        coords := SplitWords(form_data.rect);
+        // Fill with zeros if not enough elements
+        while (coords.size() < 4)
+            coords.append(0);
+        endwhile
+    else
+        coords := array{0, 0, 0, 0};
+    endif
+    
+    if (corner == 1)
+        coords[1] := targ.x;
+        coords[2] := targ.y;
+    else
+        coords[3] := targ.x;
+        coords[4] := targ.y;
+    endif
+    
+    // Ensure x1,y1 is the top-left and x2,y2 is the bottom-right
+    if (coords[3] && coords[3] < coords[1])
+        var temp := coords[1];
+        coords[1] := coords[3];
+        coords[3] := temp;
+    endif
+    
+    if (coords[4] && coords[4] < coords[2])
+        var temp := coords[2];
+        coords[2] := coords[4];
+        coords[4] := temp;
+    endif
+    
+    form_data.rect := coords[1] + " " + coords[2] + " " + coords[3] + " " + coords[4];
+    
+    // Save immediately to prevent data loss when targeting
+    SetObjProperty(spawner, "form_data", form_data);
+    
+    SendSysMessage(who, "Corner " + corner + " set to: (" + targ.x + ", " + targ.y + ")", color := 66);
+    
+    return 1;
+endfunction
