@@ -170,7 +170,7 @@ function HandleAnimalLeftArea(opponent)
     ClearCombatState();
 
     // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleAnimalCombatEvent(mobile);
             return 1;
@@ -217,7 +217,7 @@ function AnimalIdle(wanders)
     endif
 
     // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleAnimalCombatEvent(mobile);
             return;

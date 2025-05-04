@@ -1061,7 +1061,7 @@ function AlertAllies(invasor, me)
         return 0;
     endif
     
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
@@ -1137,7 +1137,10 @@ endfunction
 
 function PursueTarget(opponent)
     var dist := Distance(me, opponent);
-    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
+    
+    if (!shouldKeepPursuing(opponent, dist)) 
+        return 0; 
+    endif
 
     if (dist >= 2 && dist <= 6)
         if (me.canSpitAcid())
@@ -1216,7 +1219,6 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
-
         else
             progress.no_progress_count := 0;
         endif
@@ -1227,6 +1229,7 @@ function PursueTarget(opponent)
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
     endif
+    
     // If we're not making progress after several checks, force a reposition
     if (progress.no_progress_count >= 1)
         EraseObjProperty(me, "path");
@@ -1271,7 +1274,9 @@ function PursueTarget(opponent)
                 if (Distance(me, opponent) <= min_distance)
                     break;
                 endif
-                if (!shouldKeepPursuing(opponent, dist)) break; endif
+                if (!shouldKeepPursuing(opponent, dist)) 
+                    break; 
+                endif
                 if (me.hidden || me.concealed)
                     WalkTowardLocation(coord.x, coord.y);
                 else
@@ -1585,7 +1590,7 @@ function AskForHealing(me)
         return 0;
     endif
 
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
                 SetObjProperty(mobile, "#healing_needed", me.serial);
