@@ -64,3 +64,6 @@ plugins/**/*.dll
 # Others
 *.dll
 ecompile
+
+# Web WWW Accounts
+/pkg/systems/accounts/config/settings.cfg
