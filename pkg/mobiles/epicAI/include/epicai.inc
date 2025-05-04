@@ -1103,6 +1103,15 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Grey NPCs (neutral alignment) should only fight back when attacked
+    if (attacker.alignment == 0)
+        // Only allow combat if the defender is already attacking this NPC
+        if (attacker.opponent == defender || defender.opponent == attacker)
+            return 1;
+        endif
+        return 0;
+    endif
+
     // If defender is a player, normal combat rules apply
     if (!defender.npctemplate)
         return 1;
