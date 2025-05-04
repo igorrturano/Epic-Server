@@ -1061,7 +1061,7 @@ function AlertAllies(invasor, me)
         return 0;
     endif
     
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
@@ -1103,6 +1103,15 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Grey NPCs (neutral alignment) should only fight back when attacked
+    if (attacker.alignment == 0)
+        // Only allow combat if the defender is already attacking this NPC
+        if (attacker.opponent == defender || defender.opponent == attacker)
+            return 1;
+        endif
+        return 0;
+    endif
+
     // If defender is a player, normal combat rules apply
     if (!defender.npctemplate)
         return 1;
@@ -1137,7 +1146,10 @@ endfunction
 
 function PursueTarget(opponent)
     var dist := Distance(me, opponent);
-    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
+    
+    if (!shouldKeepPursuing(opponent, dist)) 
+        return 0; 
+    endif
 
     if (dist >= 2 && dist <= 6)
         if (me.canSpitAcid())
@@ -1216,7 +1228,6 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
-
         else
             progress.no_progress_count := 0;
         endif
@@ -1227,6 +1238,7 @@ function PursueTarget(opponent)
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
     endif
+    
     // If we're not making progress after several checks, force a reposition
     if (progress.no_progress_count >= 1)
         EraseObjProperty(me, "path");
@@ -1271,7 +1283,9 @@ function PursueTarget(opponent)
                 if (Distance(me, opponent) <= min_distance)
                     break;
                 endif
-                if (!shouldKeepPursuing(opponent, dist)) break; endif
+                if (!shouldKeepPursuing(opponent, dist)) 
+                    break; 
+                endif
                 if (me.hidden || me.concealed)
                     WalkTowardLocation(coord.x, coord.y);
                 else
@@ -1585,7 +1599,7 @@ function AskForHealing(me)
         return 0;
     endif
 
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
                 SetObjProperty(mobile, "#healing_needed", me.serial);
