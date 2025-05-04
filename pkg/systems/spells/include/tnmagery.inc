@@ -238,7 +238,7 @@ function CastSpell(mobile, spellinfo, targ)
     if (GetCooldown(targ, "spellthief"))
         targ := mobile;
     endif
-        
+
 	if (spellinfo.script != error)
 		var e := Start_Script(spellinfo.script, {mobile, targ, spellinfo});
 		return;
