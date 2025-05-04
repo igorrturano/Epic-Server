@@ -71,7 +71,7 @@ function MonsterBrain()
                 EVID_FLEE:
                     FleeFrom(ev.source);
                 default:
-                    PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
