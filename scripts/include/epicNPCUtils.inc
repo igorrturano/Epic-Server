@@ -104,7 +104,7 @@ function HasPlayerNear(who)
 endfunction
 
 function HasPlayerNearLocation(x, y, realm := 0)
-	var mobs := ListMobilesNearLocationEx( x, y, LIST_IGNORE_Z, 15, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_PLAYERS_ONLY );
+	var mobs := ListMobilesNearLocationEx( x, y, LIST_IGNORE_Z, 15, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_PLAYERS_ONLY, realm );
 	foreach mob in mobs
 		if ( !mob.cmdlevel && !mob.concealed ) //se for player e priv de player
 			return 1;

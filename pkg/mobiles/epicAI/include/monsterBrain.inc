@@ -131,7 +131,7 @@ function HandleMonsterLeftArea(is_ranged)
     ClearCombatState();
     
     // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleMonsterCombatEvent(mobile, is_ranged);
             return 1;
@@ -141,7 +141,7 @@ function HandleMonsterLeftArea(is_ranged)
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE)
+    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
         if (item.IsA(POLCLASS_CORPSE))
             corpses.append(item);
         endif
@@ -242,7 +242,7 @@ function MonsterIdle(wanders, is_ranged)
     endif
 
     // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleMonsterCombatEvent(mobile, is_ranged);
             return;
