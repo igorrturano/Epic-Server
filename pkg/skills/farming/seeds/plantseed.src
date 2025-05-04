@@ -87,7 +87,7 @@ endprogram
 function selectflower(who)
 
 	var gump := GFCreateGump();
-        GFDisposable(gump, 0);
+	GFDisposable(gump, 0);
 	GFResizePic(gump, 0, 25, 3600, 320, 550);
 	GFResizePic(gump, 15, 40, 0x13BE, 290, 520);
 	GFTextLine(gump, 60, 50, 1153, "Escolha a flor dessa semente");

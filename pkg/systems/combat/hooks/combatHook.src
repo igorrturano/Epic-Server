@@ -262,8 +262,27 @@ function CalculateHitChance(attacker, defender)
 		hit_chance += 10;
 	endif
 
-	if (TemHabilidade(attacker, "Poder da Alianca"))
-		hit_chance += attacker.party.members.size() * 2;
+    var challenged_by := GetObjProperty(attacker, "#DuelChallenge");
+    if (challenged_by && attacker.acctname) // Only affects players
+        if (challenged_by.time < ReadGameClock()) // Challenge expired
+            EraseObjProperty(attacker, "#DuelChallenge");
+        else
+            var challenger := SystemFindObjectBySerial(challenged_by.challenger);
+            if (challenger && challenger.connected)
+                if (defender.serial != challenger.serial) // If attacking someone other than the challenger
+                    hit_chance -= 10;
+                    if (RandomInt(100) < 20) // 20% chance to remind
+                        SendSysMessageEx(attacker, "Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", SSM_FAIL);
+                    endif
+                endif
+            else
+                EraseObjProperty(attacker, "#DuelChallenge"); // Clean up if challenger disconnected
+            endif
+        endif
+    endif
+
+	if (TemHabilidade(attacker, "Aura de Fe"))
+		hit_chance += attacker.party.members.size()/*  * 2 */;
 	endif
 
 	if ( GetObjProperty(attacker, "armapreferida") == attacker.weapon.objtype )
@@ -366,15 +385,26 @@ function CalculateHitChance(attacker, defender)
         hit_chance := hit_chance - dancer_bonus;
     endif
 
-    var swash_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
     if (TemHabilidade(attacker, "Movimentacao Graciosa"))
+	    var swash_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
         hit_chance := hit_chance + swash_bonus;
     endif
 
     if (TemHabilidade(defender, "Movimentacao Graciosa"))
+		var swash_bonus := CInt(AP_GetSkill(defender, TACTICS) / 10);
         hit_chance := hit_chance - swash_bonus;
     endif
-    
+
+	if (TemHabilidade(attacker, "Mancha da Corrupcao"))
+		var demon_hunter_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 10);
+		hit_chance := hit_chance + demon_hunter_bonus;
+	endif
+
+	if (TemHabilidade(defender, "Mancha da Corrupcao"))
+		var demon_hunter_bonus := CInt(AP_GetSkill(defender, THEOLOGY) / 10);
+		hit_chance := hit_chance - demon_hunter_bonus;
+	endif
+
 	var witcher_bonus := Cint(AP_GetSkill(attacker, SCIENCE) / 5);
 	if (TemHabilidade(attacker, "Oleo do Cacador"))
 		hit_chance := hit_chance + witcher_bonus;
@@ -661,6 +691,8 @@ function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 			EraseObjProperty(defender, "#contraatacando");
 		endif
 	endif
+
+	paladinRebuke(attacker, defender);
 
 	return 1;
 endfunction
@@ -1083,4 +1115,11 @@ function HasLightNearby(defender)
 	endforeach
     
 	return 0;
+endfunction
+
+function paladinRebuke(attacker, defender)
+    if (GetObjProperty(defender, "#campeaodivino"))
+        // Apply divine retaliation
+        Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{defender, attacker});
+    endif
 endfunction

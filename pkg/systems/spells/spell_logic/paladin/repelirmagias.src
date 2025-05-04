@@ -1,0 +1,28 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":tn:cooldown";
+
+program SpellScript(params)
+    var who := params[1];
+    params := 0; // No longer needed
+    
+    // Visual and sound effects
+    PlaySoundEffect(who, SFX_SPELL_BLESS);
+    PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+    
+    var theology := AP_GetSkill(who, "Theology");
+    var duration := CInt(theology/5);
+    
+    // Set the repeal cooldown
+    SetCooldown(who, "repeal", duration);
+    
+    SendSysMessageEx(who, "Você está protegido contra magias diretas.", SSM_INFO);
+    
+    return 1;
+endprogram
