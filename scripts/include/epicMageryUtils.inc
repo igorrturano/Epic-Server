@@ -88,42 +88,6 @@ function graphicByAltar(altar)
    return graphic;
 endfunction
 
-function listAllMobilesNearbyButPetsAndParty(who, range, targ := 0)
-   if (targ == 0)
-	  targ := who;
-   endif
-
-   var mobiles := array{};
-   var allies := who.party;
-	var alreadydamaged := array{};
-
-   var party_members := who.party.members;
-	  if (who.party)
-	  foreach member in party_members
-		 if (member != who)
-			   var memberObj := SystemFindObjectBySerial(member.serial);
-			   var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
-			   foreach pet in allPetsAndSummonedPets
-				  mobiles.append(pet);
-			   endforeach
-		 endif
-	  endforeach
-   endif
-
-   var nearby := ListMobilesNearLocation( targ.x ,targ.y, targ.z, range, targ.realm);
-   foreach char in nearby
-	  var char_owner := GetObjProperty(char, "owner");
-	  if (!(char in (allies.members) || char == who))
-		 if (!(char.serial in alreadydamaged) && !(char in mobiles) && !(char in who.party.members) && !(char_owner == who.serial))
-			alreadydamaged.Append(char.serial);
-			mobiles.append(char);
-		 endif
-	  endif
-   endforeach
-
-   return mobiles;
-endfunction
-
 function distanceAllowedForSpells(who, mlore, school)
    var dist_allowed := 5 + mlore;
 
@@ -230,8 +194,8 @@ function checkForElementalWeapons(who, targ)
 endfunction
 
 function epicWisdomPathBonus(who)
-   var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
-   var mlore := Cint(AP_GetSkill(who, MAGICLORE) / 10); 
+	var int_bonus := Cint((AP_GetStat(who, INTELLIGENCE) - 50) / 10);
+	var mlore := Cint(HandleSpellSkill(who) / 10);
 
    return (int_bonus + mlore);
 endfunction
@@ -258,7 +222,7 @@ function ApplyElementalWeaponProperties( who, elemento )
   var jaEncantada := elementalPropAtual != error;
 
   var dmgdice := DefineElementalWeaponDice( who );
-  var cargas := Floor( AP_GetSkill( who, MAGICLORE ) / 4 );
+  var cargas := Floor( AP_GetSkill( who, ARCANA ) / 4 );
   cargas := cargas <= 0 ? 1 : cargas; // no minimo uma carga.
 
   var elementalWeapon := struct;
@@ -304,7 +268,7 @@ endfunction
 */
 function DefineElementalWeaponDice( who )
 
-  var faixaMLore := AP_GetSkill( who, MAGICLORE );
+  var faixaMLore := AP_GetSkill( who, ARCANA );
   var dmgdice := "0";
 
   if ( faixaMLore < 40 )
@@ -427,4 +391,14 @@ function ApplyChargesCalculation( weapon, dmg, chargesAmount )
   var cargasRetorno := ConsumeItemArcaneCharges( weapon, chargesAmount );
   var damage := Floor( dmg / cargasRetorno.divisor );
   return damage;
+endfunction
+
+function HandleSpellSkill (who)
+	var chardata := getobjProperty(who, "chardata");
+	var skill := Cint(AP_GetSkill(who, ARCANA));
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(who, "Sensibilidade Arcana")))
+		skill := Cint(AP_GetSkill(who, THEOLOGY));
+	endif
+
+	return skill;
 endfunction

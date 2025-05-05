@@ -198,7 +198,7 @@ function GetMaxSummons(who)
 	var maxpets := 1;
 
 	//Influência da skill na quantidade
-	var skill := cint(AP_GetSkill(who, MAGICLORE));
+	var skill := cint(AP_GetSkill(who, THEOLOGY));
 	if (skill >= 45 && skill < 75)
 		maxpets := maxpets + 1;
 	elseif (skill >= 75 && skill < 90)

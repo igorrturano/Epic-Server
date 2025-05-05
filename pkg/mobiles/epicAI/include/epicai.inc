@@ -36,6 +36,11 @@ function InitializeEpicNPC(mobile)
         Loot_Generate(mobile.backpack, loot);
     endif
 
+    var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
+    if (boss_struct)
+        HandleInitializationLoot(mobile, boss_struct);
+    endif
+
     var throwItem := CInt(npc_elem.throwItem);
     if (throwItem != error)
         SetObjProperty(mobile, "throwItem", throwItem);
@@ -100,6 +105,10 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     if (mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
+
+
+
+
 endfunction
 
 function SetupItemsForSpecificClasses(mobile, npc_elem)
@@ -362,7 +371,7 @@ endfunction
 
 function SetupWizardClass(mobile, npc_elem)
     // First try to get school from config
-    var spellschool := GetConfigString(npc_elem, "SpellSchool");
+    var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
     
     // If no school defined in config, check habs
@@ -479,6 +488,28 @@ function SetupNPCEquip(who, npc_elem)
         foreach str in GetConfigStringArray(group, "Weapon")
             lastc := EquipNPCItemString(who, str, lastc);
         endforeach
+    endif
+    if (GetObjProperty(who, "specific_weapon"))
+        var weapon := GetObjProperty(who, "specific_weapon");
+        if (weapon)
+            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
+            // First Unequip hands
+            if (who.weapon)
+                DestroyItem(who.weapon);
+            endif
+            EquipItem(who, item);
+        endif
+    endif
+    if (GetObjProperty(who, "specific_weapon"))
+        var weapon := GetObjProperty(who, "specific_weapon");
+        if (weapon)
+            var item := CreateItemAtLocation(who.x, who.y, who.z, weapon, 1);
+            // First Unequip hands
+            if (who.weapon)
+                DestroyItem(who.weapon);
+            endif
+            EquipItem(who, item);
+        endif
     endif
     
   var montaria := Getobjproperty(who, "Montaria");
@@ -921,19 +952,26 @@ function findAnotherPath()
 endfunction
 
 function CheckForIdealTarget()
-   // If we already have an opponent, stick with them most of the time
+   // Get the target priority
+   var target_priority := GetObjProperty(me, "target_priority");
+   var switch_chance := 70; // Default 10% chance to switch
+   case (target_priority)
+      "Aggressive": switch_chance := 50;  // 15% chance to switch
+      "Defensive":  switch_chance := 85;   // 5% chance to switch
+      "Focus":      switch_chance := 95;   // 2% chance to switch
+   endcase
+   
+   // If we already have an opponent, check if we should stick with them
    if (me.opponent && CanFight(me, me.opponent))
-      // Only 5% chance to even consider switching targets
-      if (RandomInt(100) < 95)
+      if (RandomInt(100) < switch_chance)
          return me.opponent;
       endif
    endif
 
-   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL);
+   var potential_opponents := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
    if (potential_opponents.size() < 1)
       return 0;
    endif
-
    var best_opponent := struct{
       "mobile" := 0,
       "priority" := -1
@@ -980,6 +1018,23 @@ function CheckForIdealTarget()
          priority += 1;
       endif
 
+      // Check for preferred target types
+      var preferred_target := GetObjProperty(me, "preferred_target");
+      if (preferred_target)
+          case (preferred_target)
+          "Ranged": if (opponent_is_ranged) priority += 4; endif
+          "Melee": if (!opponent_is_ranged) priority += 4; endif
+          "Guerreiro": if (opponent_class == GUERREIRO) priority += 4; endif
+          "Ladino": if (opponent_class == LADINO) priority += 4; endif
+          "Mago": if (opponent_class == SABIO) priority += 4; endif
+          "Pouca vida": 
+              var hp_percent := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS)) * 100;
+              if (hp_percent <= 50) 
+                  priority += 3;
+              endif
+          endcase
+      endif
+
       // Check if this is a better opponent
       if (priority > best_opponent.priority)
          best_opponent.mobile := opponent;
@@ -1006,7 +1061,7 @@ function AlertAllies(invasor, me)
         return 0;
     endif
     
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (isAlly(mobile))
                 SetObjProperty(mobile, "#taunt_opponent", invasor.serial);
@@ -1048,6 +1103,15 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Grey NPCs (neutral alignment) should only fight back when attacked
+    if (attacker.alignment == 0)
+        // Only allow combat if the defender is already attacking this NPC
+        if (attacker.opponent == defender || defender.opponent == attacker)
+            return 1;
+        endif
+        return 0;
+    endif
+
     // If defender is a player, normal combat rules apply
     if (!defender.npctemplate)
         return 1;
@@ -1082,7 +1146,10 @@ endfunction
 
 function PursueTarget(opponent)
     var dist := Distance(me, opponent);
-    if (!shouldKeepPursuing(opponent, dist)) return 0; endif
+    
+    if (!shouldKeepPursuing(opponent, dist)) 
+        return 0; 
+    endif
 
     if (dist >= 2 && dist <= 6)
         if (me.canSpitAcid())
@@ -1108,9 +1175,9 @@ function PursueTarget(opponent)
                 return 1;
             else
                 if (me.hidden || me.concealed)
-                    RunToward(opponent);
-                else
                     WalkToward(opponent);
+                else
+                    RunToward(opponent);
                 endif
             endif
         elseif (me.isSage() && me.weapon.objtype == FIST)
@@ -1119,24 +1186,24 @@ function PursueTarget(opponent)
                 return 1;
             else
                 if (me.hidden || me.concealed)
-                    RunToward(opponent);
-                else
                     WalkToward(opponent);
+                else
+                    RunToward(opponent);
                 endif
             endif
         else
             if (me.hidden || me.concealed)
-                RunToward(opponent);
-            else
                 WalkToward(opponent);
+            else
+                RunToward(opponent);
             endif
         endif
     else
         if (dist > 1)
             if (me.hidden || me.concealed)
-                RunToward(opponent);
-            else
                 WalkToward(opponent);
+            else
+                RunToward(opponent);
             endif
         endif
     endif
@@ -1161,7 +1228,6 @@ function PursueTarget(opponent)
         // No progress if we haven't moved OR haven't gotten closer in 2 seconds
         if (!moved || !got_closer)
             progress.no_progress_count += 1;
-
         else
             progress.no_progress_count := 0;
         endif
@@ -1172,6 +1238,7 @@ function PursueTarget(opponent)
         progress.last_pos.y := me.y;
         progress.last_check_time := ReadGameClock();
     endif
+    
     // If we're not making progress after several checks, force a reposition
     if (progress.no_progress_count >= 1)
         EraseObjProperty(me, "path");
@@ -1196,9 +1263,9 @@ function PursueTarget(opponent)
 
         if (Distance(me, opponent) > min_distance)
             if (me.hidden || me.concealed)
-                RunToward(opponent);
-            else
                 WalkToward(opponent);
+            else
+                RunToward(opponent);
             endif
         endif
         sleepms(100);
@@ -1216,11 +1283,13 @@ function PursueTarget(opponent)
                 if (Distance(me, opponent) <= min_distance)
                     break;
                 endif
-                if (!shouldKeepPursuing(opponent, dist)) break; endif
+                if (!shouldKeepPursuing(opponent, dist)) 
+                    break; 
+                endif
                 if (me.hidden || me.concealed)
-                    RunTowardLocation(coord.x, coord.y);
-                else
                     WalkTowardLocation(coord.x, coord.y);
+                else
+                    RunTowardLocation(coord.x, coord.y);
                 endif
                 sleepms(100);
             endforeach
@@ -1479,10 +1548,12 @@ function ShamanBehavior(shaman)
         return 1;
     endif
 
-    if (wounded_allies.size() > 0)
-        PerformHeal(shaman, wounded_allies, 1);
+    var most_wounded := FindMostWoundedAlly(wounded_allies);
+    if (most_wounded)
+        PerformHeal(shaman, most_wounded, 1);
+        SetCooldown(shaman, "heal_check", 15);
         return 1;
-    endif   
+    endif
 
     return 0;
 endfunction
@@ -1528,7 +1599,7 @@ function AskForHealing(me)
         return 0;
     endif
 
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12)
+    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12, me.realm)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
                 SetObjProperty(mobile, "#healing_needed", me.serial);
@@ -1908,4 +1979,93 @@ function TryToRunAway(opponent, chasing := 0)
     endif
 
     SetObjProperty(me, "#runaway_progress", progress);
+endfunction
+
+/*
+ * CheckHealthTeleport(mobile)
+ * Checks if mobile should teleport based on current health percentage
+ * Returns: 1 if teleported, 0 if not
+ */
+function CheckHealthTeleport(mobile)
+    var teleport_locations := GetObjProperty(mobile, "teleport_locations");
+    
+    if (!teleport_locations || teleport_locations.size() < 1)
+        return 0;
+    endif
+    
+    var max_hp := AP_GetVitalMaximumValue(mobile, HITS);
+    var current_hp_percent := CInt((CDbl(AP_GetVital(mobile, HITS)) / CDbl(max_hp)) * 100);
+    
+    // Find best matching location (highest hp_percent threshold that's <= current_hp_percent)
+    var best_location := 0;
+    var best_index := -1;
+    var i := 1;  // Start from 1 since POL arrays are 1-indexed
+    
+    foreach location in teleport_locations
+        if (current_hp_percent <= location.hp_percent)
+            if (!best_location || location.hp_percent > best_location.hp_percent)
+                best_location := location;
+                best_index := i;
+            endif
+        endif
+        i := i + 1;
+    endforeach
+    
+    if (best_index >= 0)
+        // Teleport the mobile to the best location
+        if (MoveObjectToLocation(mobile, best_location.x, best_location.y, best_location.z, best_location.realm, MOVEOBJECT_FORCELOCATION))
+            PlaySoundEffect(mobile, 0x1FE);
+            PlayObjectCenteredEffect(mobile, 0x3728, 7, 0x10);
+            
+            // Remove this location from the array so it won't be used again
+            teleport_locations.erase(best_index);
+            SetObjProperty(mobile, "teleport_locations", teleport_locations);
+            return 1;
+        else
+            return 0;
+        endif
+    endif
+    
+    return 0;
+endfunction
+
+function ShouldFlee(me)
+    // should flee when life is below X%
+    var flee_health := CInt(GetObjProperty(me, "flee_health"));
+    if (flee_health)
+        var max_hp := AP_GetVitalMaximumValue(me, HITS);
+        var current_hp_percent := CInt((CDbl(AP_GetVital(me, HITS)) / CDbl(max_hp)) * 100);
+        if (current_hp_percent <= flee_health)
+            return 1;
+        endif
+    endif
+    return 0;
+endfunction
+
+function HandleInitializationLoot(mobile, boss_struct)   
+    if (!boss_struct)
+        return 0;
+    endif
+    
+    if (!boss_struct.loot || boss_struct.loot.size() < 1)
+        return 0;
+    endif
+    
+    foreach loot_item in (boss_struct.loot)       
+        if (!loot_item.on_death) // Only process initialization items
+            var roll := RandomInt(100);
+            
+            if (roll < loot_item.drop_chance)
+                // Create item directly with the template
+                var item := CreateIteminBackpackFromTemplate(mobile, loot_item.template);
+                if (item)
+                    item.movable := 1;
+                endif
+            endif
+        endif
+
+        sleepms(2);
+    endforeach
+
+    return 1;
 endfunction

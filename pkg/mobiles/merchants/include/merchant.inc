@@ -1344,7 +1344,9 @@ function GetTooltipText(item_template, who)
 
 		var cond := GetConditionTemplate(item_template);
 		xDesc := xDesc + "Condição: " + GetConditionTemplate(item_template) + "<br>";
-		xDesc := xDesc + "Força Exigida: " + elem.strrequired + "<br>";
+		if(GetObjProperty(item_template, "atributos").STRRequired > 0)
+			xDesc := xDesc + "Força exigida: " + GetObjProperty(item_template, "atributos").STRRequired + "<br>";
+		endif
 
 		if(elem.TipoAtaque)
 			xDesc := xDesc + "Dano: " + GetDmgStringDesc(elem,  item_template) + "<br>";

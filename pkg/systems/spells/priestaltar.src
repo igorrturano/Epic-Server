@@ -41,7 +41,7 @@ program orderSpells(who, item)
       return;
    endif
 
-   var mlore := cint(AP_GetSkill(who, MAGICLORE));
+   var mlore := cint(AP_GetSkill(who, THEOLOGY));
    var cfg          := ReadConfigFile(":spells:config/priestspells");
    var priest_slots := Cint(mlore / 5);
 

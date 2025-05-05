@@ -11,7 +11,7 @@ const SPELL_BTN := 200;
 const GUMPID_CLERICSPELL := 0x00001C;
 
 program canalizadorDaSangria(player)
-    var mlore := Cint(AP_GetSkill(player, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(player, SCIENCE));
     var input;
     if (player.npctemplate)
         input[0] := randomIntMinMax(201, 203); 

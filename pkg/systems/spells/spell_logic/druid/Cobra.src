@@ -22,8 +22,8 @@ program SpellScript(params)
 
   var poisonInfo := struct;
   poisonInfo.+name := "defaultPoison";
-  poisonInfo.+level := cint(AP_GetSKill(who, MAGICLORE)/30);
-  poisonInfo.+skill := AP_GetSkill(who, MAGICLORE);
+  poisonInfo.+level := cint(AP_GetSKill(who, THEOLOGY)/30);
+  poisonInfo.+skill := AP_GetSkill(who, THEOLOGY);
   poisonInfo.+dosage := 5;
   poisonInfo.+acc := who.acctname;
   poisonInfo.+time := 40;

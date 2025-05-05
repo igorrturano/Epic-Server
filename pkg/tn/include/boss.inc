@@ -1,4 +1,3 @@
-
 use uo;
 use vitals;
 include "include/say";
@@ -398,7 +397,11 @@ function CreateBossStructGump( who, byref boss )
 	return;
   elseif ( input[0] == 500 )
 	var str1 := SmallRequestGump( who, "Descreva o item", 0 );
-	boss.descmod := str1;
+	// Only set the descmod property if user entered a description
+	Sendsysmessage( who, " " + str1 + " " );
+	if (str1 && str1 != "" && str1 != error)
+		boss.descmod := str1;
+	endif
 	CreateBossStructGump( who, boss );
 
   elseif ( input[0] == 10 || input[0] == 11 || input[0] == 12 || input[0] == 13 ||
@@ -570,7 +573,9 @@ function SetBoss(npc, boss, counter := 1)
     SetName(npc, GetObjProperty(npc, "Name" + counter));
     npc.color := boss.color;
     npc.truecolor := boss.color;
-    SetObjProperty(npc, "descmodboss", Cstr(boss.descmod));
+	if (boss.descmod)
+    	SetObjProperty(npc, "descmodboss", Cstr(boss.descmod));
+	endif
     SetObjProperty(npc, "dmgbonus", Cdbl(boss.dmg));
 
     if (boss.trueboss)
@@ -652,12 +657,12 @@ function SetBoss(npc, boss, counter := 1)
         endif
     endif
 
-    // Add special abilities 
-    if (boss.special)
-        foreach spec in (boss.special)
-            ConfigureSpecialAbility(npc, spec);
-        endforeach
-    endif
+    // // Add special abilities 
+    // if (boss.special)
+    //     foreach spec in (boss.special)
+    //         ConfigureSpecialAbility(npc, spec);
+    //     endforeach
+    // endif
 
     // Set custom AI if needed
     if (boss.customai)
@@ -668,45 +673,45 @@ function SetBoss(npc, boss, counter := 1)
     return npc;
 endfunction
 
-function ConfigureSpecialAbility(npc, spec)
-    case (spec.name)
-        "Ice Hit":
-            AddHitScript(npc, ":combat:weaponHitScripts/IceHit");
-        "Fire Hit": 
-            AddHitScript(npc, ":combat:weaponHitScripts/FireHit");
-        "Energy Hit":
-            AddHitScript(npc, ":combat:weaponHitScripts/LightningHit");
-        "Life Drain":
-            AddHitScript(npc, ":combat:weaponHitScripts/draintouch");
-        "Dmg Return":
-            AddArmorHitScript(npc, ":combat:armorHitScripts/dmgreturn");
-            SetObjProperty(npc, "dmgreturn", spec.amt);
-        "Custom Hitscript": 
-            SetObjProperty(npc, "generichit", spec.hitopt);
-            AddHitScript(npc, ":combat:weaponHitScripts/generic");
-        "Special AI":
-            npc.script := spec.ai;
-            restartscript(npc);
-    endcase
-endfunction
+// function ConfigureSpecialAbility(npc, spec)
+//     case (spec.name)
+//         "Ice Hit":
+//             AddHitScript(npc, ":combat:weaponHitScripts/IceHit");
+//         "Fire Hit": 
+//             AddHitScript(npc, ":combat:weaponHitScripts/FireHit");
+//         "Energy Hit":
+//             AddHitScript(npc, ":combat:weaponHitScripts/LightningHit");
+//         "Life Drain":
+//             AddHitScript(npc, ":combat:weaponHitScripts/draintouch");
+//         "Dmg Return":
+//             AddArmorHitScript(npc, ":combat:armorHitScripts/dmgreturn");
+//             SetObjProperty(npc, "dmgreturn", spec.amt);
+//         "Custom Hitscript": 
+//             SetObjProperty(npc, "generichit", spec.hitopt);
+//             AddHitScript(npc, ":combat:weaponHitScripts/generic");
+//         "Special AI":
+//             npc.script := spec.ai;
+//             restartscript(npc);
+//     endcase
+// endfunction
 
-function AddHitScript(npc, script)
-    var hit_scripts := GetObjProperty(npc, "HitScripts");
-    if (!hit_scripts)
-        hit_scripts := array{};
-    endif
-    hit_scripts.append(script);
-    SetObjProperty(npc, "HitScripts", hit_scripts);
-endfunction
+// function AddHitScript(npc, script)
+//     var hit_scripts := GetObjProperty(npc, "HitScripts");
+//     if (!hit_scripts)
+//         hit_scripts := array{};
+//     endif
+//     hit_scripts.append(script);
+//     SetObjProperty(npc, "HitScripts", hit_scripts);
+// endfunction
 
-function AddArmorHitScript(npc, script) 
-    var hit_scripts := GetObjProperty(npc, "ArmorHitScripts");
-    if (!hit_scripts)
-        hit_scripts := array{};
-    endif
-    hit_scripts.append(script);
-    SetObjProperty(npc, "ArmorHitScripts", hit_scripts);
-endfunction
+// function AddArmorHitScript(npc, script) 
+//     var hit_scripts := GetObjProperty(npc, "ArmorHitScripts");
+//     if (!hit_scripts)
+//         hit_scripts := array{};
+//     endif
+//     hit_scripts.append(script);
+//     SetObjProperty(npc, "ArmorHitScripts", hit_scripts);
+// endfunction
 
 // cria um boss
 function CreateBoss( boss, x, y, z, realm )

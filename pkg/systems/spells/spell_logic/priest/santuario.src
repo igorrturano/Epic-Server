@@ -6,7 +6,7 @@ include ":tn:cooldown";
 program sanctuary(params)
 	var who := params[1];
 
-    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 2);
+    var duration := Cint(AP_GetSkill(who, THEOLOGY) / 2);
     var i := 0;
     PLaySoundEffect(who, 0x216);
 	while (protected(who) && i < duration)

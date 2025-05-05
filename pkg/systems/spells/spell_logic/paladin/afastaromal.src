@@ -1,0 +1,55 @@
+use uo;
+use os;
+use npc; 
+
+include "include/say";
+include ":attributes:attributes";
+
+program SpellScript(params)
+    var who := params[1];
+    params := 0;
+    
+    SendSysMessageEx(who, "Iniciando Afastar o Mal...", SSM_INFO);
+    
+    var max_tier := CInt(AP_GetSkill(who, THEOLOGY) / 20);
+    
+    var range := 8;
+    var affected := 0;
+    var nearby := ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm);
+    
+    SendSysMessageEx(who, "Encontrados " + nearby.size() + " alvos próximos.", SSM_INFO);
+    
+    foreach mobile in nearby
+        if (mobile.npctemplate)
+            var elem := NPC_GetNPCConfig(mobile.npctemplate);
+            var category := lower(GetConfigString(elem, "Category"));
+            var tier := CInt(GetConfigString(elem, "Tier"));
+            var is_boss := GetObjProperty(mobile, "true_boss");
+            
+            if ((category == "undead" || category == "demons") && tier <= max_tier && !is_boss)
+                affected += 1;
+                PlayObjectCenteredEffect(mobile, 0x37C4, 10, 10);
+                PrintTextAbove(mobile, "*Afastando-se*", who);
+
+                var event := struct{
+                    "type":=EVID_FLEE,
+                    "source":=who
+                };
+                SendEvent(mobile, event);
+            elseif ((category == "undead" || category == "demons") && (tier > max_tier || is_boss))
+                PrintTextAbove(mobile, "*Resiste*");
+                SendSysMessageEx(who, "A criatura é poderosa demais para ser afetada!", SSM_FAIL);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    if (affected)
+        SendSysMessageEx(who, "Você afastou " + affected + " criaturas malignas!", SSM_INFO);
+    else
+        SendSysMessageEx(who, "Não há criaturas malignas por perto.", SSM_INFO);
+    endif
+    
+    PlaySoundEffect(who, 0x215);
+    return 1;
+endprogram

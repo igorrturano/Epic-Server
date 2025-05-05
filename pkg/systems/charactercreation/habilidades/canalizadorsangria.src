@@ -10,7 +10,7 @@ const SPELL_BTN := 200;
 const GUMPID_CLERICSPELL := 0x00001C;
 
 program canalizadorDaSangria(player)
-    var mlore := Cint(AP_GetSkill(player, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(player, ARCANA));
     if (player.npctemplate)
         open_npc_portal(player);
         return;
@@ -35,7 +35,7 @@ endprogram
 function create_portal_gump(player)
     var gump := GFCreateGump();
     var portals := GetObjProperty(player, "portals");
-    var amt := Cint(AP_GetSkill(player, MAGICLORE)/ 33);
+    var amt := Cint(AP_GetSkill(player, ARCANA)/ 33);
 
     if (!portals)
         portals := struct;

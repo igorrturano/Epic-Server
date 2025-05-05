@@ -20,25 +20,20 @@ function AnimalBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED: 
-                    PrintTextAbove(me, "ENGAGED");
                     AlertAllies(ev.source, me);
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_DAMAGED: 
-                    PrintTextAbove(me, "DAMAGED");
                     HandleAnimalCombatEvent(ev.source);
                 SYSEVENT_ENTEREDAREA:
-                    PrintTextAbove(me, "ENTERED AREA");
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
-                    PrintTextAbove(me, "LEFT AREA");
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
-                    PrintTextAbove(me, "ALERT ALLIES");
                     var opponent_serial := GetObjProperty(me, "#taunt_opponent");
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
@@ -48,19 +43,19 @@ function AnimalBrain()
                         endif
                     endif
                 EVID_TAUNT:
-                    PrintTextAbove(me, "TAUNT");
                     if (CanFight(me, ev.source))
                         HandleAnimalCombatEvent(ev.source);
                     endif
                 EVID_BUDDYATTACKED:
                     // Talvez nao precise usar
                 EVID_PEACEMADE:
-                    PrintTextAbove(me, "PEACEMADE");
                     SetWarMode( 0 );
                     SetOpponent( 0 );
                     sleep(1);
+                EVID_FLEE:
+                    FleeFrom(ev.source);
                 default:
-                    PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
@@ -112,6 +107,9 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    // Check for health-based teleport
+    CheckHealthTeleport(me);
+
     if (me.isSpider() && opponent.getRace() == DROW)
         var npc_elem := NPC_GetNPCConfig(me);
         var tier := CInt(npc_elem.Tier);
@@ -159,6 +157,11 @@ function HandleAnimalCombatEvent(opponent)
         frightenOpponent(me, opponent);
     endif
 
+    if (ShouldFlee(me))
+        FleeFrom(opponent);
+        return 1;
+    endif
+
     return 1;
 endfunction
 
@@ -167,7 +170,7 @@ function HandleAnimalLeftArea(opponent)
     ClearCombatState();
 
     // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleAnimalCombatEvent(mobile);
             return 1;
@@ -214,7 +217,7 @@ function AnimalIdle(wanders)
     endif
 
     // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleAnimalCombatEvent(mobile);
             return;

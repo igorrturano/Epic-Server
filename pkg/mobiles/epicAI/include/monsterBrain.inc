@@ -44,7 +44,7 @@ function MonsterBrain()
                     AskForHealing(me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
-                    HandleMonsterSpeech(ev.text, ev.source, is_ranged);
+                    // HandleMonsterSpeech(ev.text, ev.source, is_ranged);
                     if (!IsAlly(ev.source)) // Only process if it's a player
                         AlertAllies(ev.source, me);
                         CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
@@ -68,8 +68,10 @@ function MonsterBrain()
                     endif
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
+                EVID_FLEE:
+                    FleeFrom(ev.source);
                 default:
-                    PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
+                    // PrintTextAbove(me, "UNKNOWN EVENT: " + ev.type);
             endcase
         endif
 
@@ -129,7 +131,7 @@ function HandleMonsterLeftArea(is_ranged)
     ClearCombatState();
     
     // First look for new opponents
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleMonsterCombatEvent(mobile, is_ranged);
             return 1;
@@ -139,7 +141,7 @@ function HandleMonsterLeftArea(is_ranged)
 
     // If no opponents found, look for corpses to loot
     var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE)
+    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
         if (item.IsA(POLCLASS_CORPSE))
             corpses.append(item);
         endif
@@ -172,6 +174,9 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     if (z_diff > MAX_Z_DIFF)
         return 0;
     endif
+
+    // Check for health-based teleport
+    CheckHealthTeleport(me);
 
     SetOpponent(opponent);
     opponent := CheckForIdealTarget();
@@ -217,11 +222,16 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         CharmOpponent(me, opponent);
     endif
 
+    if (ShouldFlee(me))
+        FleeFrom(opponent);
+        return 1;
+    endif
+
     return 1;
 endfunction
 
 function MonsterIdle(wanders, is_ranged)
-   if (me.opponent)
+    if (me.opponent)
         return;
     endif
 
@@ -232,7 +242,7 @@ function MonsterIdle(wanders, is_ranged)
     endif
 
     // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL)
+    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
         if (CanFight(me, mobile))
             HandleMonsterCombatEvent(mobile, is_ranged);
             return;
@@ -247,6 +257,32 @@ function MonsterIdle(wanders, is_ranged)
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
      endif
+
+    // Check if NPC should patrol
+    var patrol_points := GetObjProperty(me, "patrol_points");
+    var current_patrol_point := GetObjProperty(me, "#current_patrol_point");
+    if (!current_patrol_point)
+        current_patrol_point := 1;
+    endif
+    
+    if (patrol_points && patrol_points.size() >= 2)
+        // Handle patrolling
+        var dest := patrol_points[current_patrol_point];
+        
+        // Check if we've reached the destination (within 1 tile)
+        if (CoordinateDistance(me.x, me.y, dest.x, dest.y) <= 1)
+            // Move to next patrol point
+            current_patrol_point += 1;
+            if (current_patrol_point > patrol_points.size())
+                current_patrol_point := 1; // Loop back to first point
+            endif
+            SetObjProperty(me, "#current_patrol_point", current_patrol_point);
+        endif
+        
+        // Walk toward destination
+        WalkTowardLocation(dest.x, dest.y);
+        return; // Skip regular wandering
+    endif
     
     // Random wandering when no targets
     if (RandomInt(100) < 30)
@@ -316,3 +352,4 @@ function handleMonsterInitialReaction(source)
         endif
     endif
 endfunction
+

@@ -32,7 +32,6 @@ program MainHitScript(params)
 	var rawdamage := params[6];
 	var waitAnim := params[7];
 	var elementalDamages;
-
 	// Garante dano mínimo de 1
 	if (rawdamage < 1)
 		rawdamage := 1;
@@ -75,7 +74,6 @@ program MainHitScript(params)
 			basedamage := 0;
 		endif
 	endif
-
 	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 
@@ -226,31 +224,8 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 		dmgList[encantada.type] := dmgList[encantada.type] + modphy;
 	endif
 
-	if( GetObjProperty(defender, "#chainofpain") != error )
-		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
-			var copmobs := GetObjProperty(defender, "#chainserials");
-			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
-			var copdefenders := array;
-			var lvl := cdbl(AP_GetSkill(mage, MAGICLORE)/200);
-
-			foreach serial in copmobs
-				copdefenders.append(SystemFindObjectBySerial(serial));
-			endforeach
-
-			foreach targ in copdefenders
-				defender := targ;
-				total := CalculateTotalDamage(defender, basedamage * lvl, attacker, dmgList);
-				if (total < 1)
-					total := 1;
-				endif
-				DamageFLS(defender, total, DMG_FORCED, mage);
-			endforeach
-			return 1;
-		endif
-	endif
-
 	total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);
-	var shaman_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
+	var shaman_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 5);
 	if (Getcooldown(attacker, "bloodlust") > 0)
 		PlayStationaryEffect(attacker.x, attacker.y, attacker.z, GFX_BLUE_SPARKLE_GROUND, 10, 20, 0, attacker.realm);
 		HealFLS(attacker, total * shaman_bonus/100);
@@ -288,7 +263,7 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 				foreach member in party_members
 					if (member != attacker)
 						var memberObj := SystemFindObjectBySerial(member.serial);
-						var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+						var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
 						foreach pet in allPetsAndSummonedPets
 							allPets.append(pet);
 						endforeach
@@ -516,7 +491,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 	if (GetCooldown(weapon, "ataqueelemental") )
 		EraseObjProperty(weapon, "#ataqueelemental");
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
-		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
 		dmg := ApplyChargesCalculation(weapon, dmg, 1);
 
 		if (elemental != error)
@@ -532,7 +507,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 
     var arcane_bows := array{0xFA6D, 0XF997};
 	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype in arcane_bows)
-		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
 		var arcane_damage := dmg*0.5;
 
 		if (TemHabilidade(attacker, "Tirothan"))
@@ -561,17 +536,10 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		start_script(":combat:weaponHitScripts/bleedingstrike", array{attacker, defender, weapon, armor, basedamage, dmg*2});
 	endif
 
-    //if (GetObjProperty(attacker, "#justicaderothen"))
-	//	var dmg := 1;
-    //    dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
-        
-    //    Run_Script_To_Completion(":combat:weaponHitScripts/smiteEvil", array{attacker, defender, weapon, armor, basedamage, dmg*2});
-	//endif
-
 	if ( GetCooldown(weapon, "circulodevas") )
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
-			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			var dmg  := AP_GetSkill(attacker, ARCANA)/10;
 			dmg := ApplyChargesCalculation(weapon, dmg, 2);
 			if(dmg < 3)
 				dmg := 3;
@@ -825,7 +793,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 			endif
             // Sempre que for mexer nesse timer, mexer também  no .arremessar ou criar funcao e chamar em ambos
 			if (poisonInfo.name == "paralyzePoison")
-                var duration := CInt(AP_GetSkill(attacker, ALCHEMY) / 20 );
+                var duration := CInt(AP_GetSkill(attacker, SCIENCE) / 20 );
                 if (duration < 2)
                     duration := 2;
                 endif
@@ -1261,7 +1229,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	endif
 	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
 
-	var can_crit := GetObjProperty(weapon, "Aprimoramentos")["Arma Elaborada"] || attacker.npctemplate || weapon == FIST;
+	var can_crit := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Elaborada"] || attacker.npctemplate || weapon == FIST;
 	if (weapon_scripts.size() > 0 && can_crit)
 		var critdelay := ReadGameClock()+180;
 		if (!GetObjProperty(weapon, "polida"))

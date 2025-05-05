@@ -12,8 +12,8 @@ program underwater(params)
     // Check if the player is in britannia_alt realm
     if (who.realm == "britannia_alt")
         // Set the underwater property if the player is below -80z
-        var z := GetWorldHeight(who.x, who.y, who.realm);
-        if (z < -80)
+        var z := /* GetWorldHeight(who.x, who.y, who.realm); */ who.z;  
+        if (z < -10)
             if (!GetObjProperty(who, "underwater"))
                 SetObjProperty(who, "underwater", 1);
                 SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
@@ -23,10 +23,10 @@ program underwater(params)
 
         // Main loop to check the player's position and apply effects
         while (1)
-            z := GetWorldHeight(who.x, who.y, who.realm);
+            z := /* GetWorldHeight(who.x, who.y, who.realm); */ who.z; 
             
             // If the player is below -80z, apply stamina/health effects
-            if (z < -80)
+            if (z < -10)
                 if (GetCooldown(who, "can_breath") > 0)
                     return;
                 endif

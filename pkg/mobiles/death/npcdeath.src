@@ -28,7 +28,6 @@ include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
 
-
 //include ":spawnnet:spawnnet";
 //include ":spawnregion:spawn";
 
@@ -80,6 +79,8 @@ program core_npcDeath(params)
         endif
     endforeach
 
+	HandleEpicBossLoot(corpse);
+	
 	if (getObjProperty(corpse, "owner")) //se for tamed, atualiza a prop tamedpets do master
         var lastDamage := GetObjProperty(corpse, "LastDamage");
         var region := GetRegionName(corpse);
@@ -127,31 +128,41 @@ program core_npcDeath(params)
 	endif
 
 	var pilot := GetObjProperty(corpse, "golem_maker");
-	if (pilot)
-		var who := SystemFindObjectBySerial(pilot);
-		EraseObjProperty(who, "golem_maker");
-        EraseObjProperty(who, "pilotando");
-        leaveGolem(who);
-		sleep(1);
-		printtextabove(corpse, "*EJETAR*");
-        who.concealed := 0;
-		sleep(1);
-		PushBackEX(who, 3, 300);
-		printtextabove(corpse, "*Iniciar auto destruição*");
-		var i := 1;
-		while (i <= 3)
+	if (pilot != error && pilot != 0)
+		var who := SystemFindObjectBySerial(CInt(pilot));
+		if (who)
+			// NPC-specific handling
+			if (who.npctemplate)
+				SetObjProperty(who, "anchor", array{ corpse.x , corpse.y , corpse.z });
+				MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
+			else
+				leaveGolem(who);
+			endif
+
+			EraseObjProperty(who, "golem_maker");
+			EraseObjProperty(who, "pilotando");
+			who.concealed := 0;
+			printtextabove(corpse, "*EJETAR*");
 			sleep(1);
-			printtextabove(corpse, Cstr(i));
-			i++;
-		endwhile
-		AP_SetTrueSkill(corpse, MAGICLORE, 100);
-		Run_Script(":spells:spell_logic:mage:fireball", {corpse, corpse});
-    endif
+			PushBackEX(who, 3, 300);
+			printtextabove(corpse, "*Iniciar auto destruição*");
+
+			var i := 1;
+			while (i <= 3)
+				sleep(1);
+				printtextabove(corpse, Cstr(i));
+				i++;
+			endwhile
+
+			AP_SetTrueSkill(corpse, ARCANA, 100);
+			Run_Script(":spells:spell_logic/mage/fireball", {corpse, corpse});
+		endif
+	endif
 
     if (GetObjProperty(corpse, "soulharvest"))
         var shamanserial := getobjProperty(corpse, "soulharvest");
         var shaman := SystemFindObjectBySerial(shamanserial);
-        var shaman_reap_bonus := Cint(AP_GetSkill(shaman, MAGICLORE));
+        var shaman_reap_bonus := Cint(AP_GetSkill(shaman, THEOLOGY));
 
         var shaman_souls := Cint(getobjProperty(shaman, "shaman_souls"));
         if (!shaman_souls)
@@ -189,7 +200,7 @@ program core_npcDeath(params)
 			endif
 		endif
         
-        var shaman_reap_bonus := Cint(AP_GetSkill(mob, MAGICLORE));
+        var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY));
 
         // HABILIDADES SHAMAN
         if (TemHabilidade(mob, "Sede de sangue"))
@@ -419,4 +430,35 @@ function PushBackEX(who, dist, delay, invert := 0)
 	endfor
 
    return 1;
+endfunction
+
+function HandleEpicBossLoot(corpse)
+    var boss_struct := GetObjProperty(corpse, "EpicBossStruct");
+    if (!boss_struct)
+        return 0;
+    endif
+    
+    if (!boss_struct.loot || boss_struct.loot.size() < 1)
+        return 0;
+    endif
+      
+    foreach loot_item in (boss_struct.loot)
+        if (!loot_item.on_death)
+            continue; // Skip non-death items
+        endif
+        
+        var roll := RandomInt(100);      
+        if (roll >= loot_item.drop_chance)
+            continue; // Failed drop roll
+        endif
+        
+        var item := CreateItemInContainerFromTemplate(corpse, loot_item.template);
+        if (!item)
+            continue;
+        endif
+        
+        item.movable := 1;
+    endforeach
+    
+    return 1;
 endfunction

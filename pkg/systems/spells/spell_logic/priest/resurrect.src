@@ -32,7 +32,7 @@ program SpellScript(params)
         SendSysMessage(who, "O corpo foi violado e voce nao podera ajuda-lo");
     endif
 
-    var mlore := Cint(AP_GetSkill(who, MAGICLORE));
+    var mlore := Cint(AP_GetSkill(who, THEOLOGY));
     if (GetCooldown(targ, "morto_recentemente") > 0 )   
         RessPlayer(targ);
         if (mlore <= 70) DecreaseDP(who); endif // Remove DP de clerigo secundario

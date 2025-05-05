@@ -21,10 +21,10 @@ program taunt(who)
 			PrintText(who, "*dá o bote*");
 			PlaySoundEffect( who, 0x62 );
 			PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
-			TS_StartTimer(targ, "bleed", AP_GetSkill(who, MAGICLORE) / 3);
+			TS_StartTimer(targ, "bleed", AP_GetSkill(who, THEOLOGY) / 3);
 		else
 			PrintText(who, "*faz um corte profundo*");
-			TS_StartTimer(targ, "bleed", AP_GetSkill(who, MAGICLORE) / 4);
+			TS_StartTimer(targ, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
 		endif
 
 	endif

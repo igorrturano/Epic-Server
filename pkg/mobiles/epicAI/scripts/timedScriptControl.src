@@ -1,0 +1,145 @@
+use uo;
+use os;
+use util;
+
+include ":timedscripts:timedScripts";
+include ":attributes:attributes";
+
+program timedScriptControl(params)
+    var npc := params[1];
+    
+    if (!npc || npc.dead)
+        return 0;
+    endif
+    
+    // Check if this is a boss
+    if (!GetObjProperty(npc, "IsBoss"))
+        print("DEBUG: Not a boss, exiting TimedScript control for " + npc.name);
+        return 0;
+    endif
+    
+    print("DEBUG: TimedScript control started for boss " + npc.name);
+    
+    // Process immediately once
+    ProcessTimedScripts(npc);
+    
+    // Then continue processing while the NPC is alive
+    while (npc && !npc.dead)
+        // Process any TimedScripts
+        ProcessTimedScripts(npc);
+        
+        // Sleep for a shorter time
+        sleep(3);
+    endwhile
+    
+    return 1;
+endprogram
+
+/*
+ * ProcessTimedScripts(npc)
+ * Purpose: Processes any TimedScripts configured for the NPC
+ * Parameters: npc - The NPC to process TimedScripts for
+ * Return: 1 if any scripts were processed, 0 if none
+ */
+function ProcessTimedScripts(npc)
+    // Get the TimedScripts property
+    var timedscripts := GetObjProperty(npc, "TimedScripts");
+    if (!timedscripts || !timedscripts.size())
+        print("DEBUG: No TimedScripts found for " + npc.name);
+        return 0;
+    endif
+    
+    print("DEBUG: Found " + timedscripts.size() + " TimedScripts for " + npc.name);
+    
+    // Check if we should run any TimedScripts - REMOVING THIS CHECK FOR NOW
+    // var next_check := GetObjProperty(npc, "NextTimedScriptCheck");
+    // if (next_check && next_check > ReadGameClock())
+    //     return 0; // Not time to check yet
+    // endif
+    
+    // Set next check time (random between 10-30 seconds)
+    // SetObjProperty(npc, "NextTimedScriptCheck", ReadGameClock() + RandomInt(10) + 20);
+    
+    var processed := 0;
+    
+    // Process each TimedScript
+    foreach script in timedscripts
+        // Always try to use the script for testing
+        print("DEBUG: Processing script " + script.name);
+        
+        var targets := array{};
+        
+        // Determine targets based on the script's target property
+        if (script.target == "Self")
+            targets.append(npc);
+            print("DEBUG: Target is Self");
+        elseif (script.target == "Opponent")
+            var opponent := npc.opponent;
+            if (opponent)
+                targets.append(opponent);
+                print("DEBUG: Target is Opponent: " + opponent.name);
+            else
+                print("DEBUG: No opponent found");
+            endif
+        elseif (script.target == "All Opponents")
+            targets := GetAllOpponents(npc);
+            print("DEBUG: Targets are All Opponents: " + targets.size() + " found");
+        else
+            print("DEBUG: Unknown target type: " + script.target);
+            // Default to self if target type is unknown
+            targets.append(npc);
+        endif
+        
+        // Apply the TimedScript to each target
+        foreach targ in targets
+            if (targ && !targ.dead)
+                // Make sure the script name is valid
+                print("DEBUG: Attempting to apply " + script.name + " to " + targ.name);
+                
+                // Force the script to run with explicit parameters
+                var duration := CInt(script.duration);
+                var level := CInt(script.level);
+                
+                if (duration <= 0) 
+                    duration := 30; // Default to 30 seconds
+                endif
+                
+                if (level <= 0)
+                    level := 1; // Default to level 1
+                endif
+                
+                // Try to start the timer and capture any error
+                var result := TS_StartTimer(targ, script.name, duration, level);
+                
+                if (TypeOf(result) == "Error")
+                    print("DEBUG: Error applying TimedScript: " + result.errortext);
+                else
+                    processed += 1;
+                    print("DEBUG: Successfully applied TimedScript " + script.name + " to " + targ.name + 
+                          " with duration " + duration + " and level " + level);
+                endif
+            endif
+        endforeach
+    endforeach
+    
+    return processed;
+endfunction
+
+/*
+ * GetAllOpponents(npc)
+ * Purpose: Gets all opponents (players) in combat with the NPC
+ * Parameters: npc - The NPC to get opponents for
+ * Return: Array of opponents
+ */
+function GetAllOpponents(npc)
+    var opponents := array{};
+    var range := 8; // Search range
+    
+    foreach mobile in ListMobilesNearLocation(npc.x, npc.y, npc.z, range, npc.realm)
+        if (mobile.IsA(POLCLASS_MOBILE) && !mobile.dead && mobile.opponent == npc)
+            opponents.append(mobile);
+        endif
+    endforeach
+    
+    return opponents;
+endfunction 

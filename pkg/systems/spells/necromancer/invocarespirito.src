@@ -73,7 +73,7 @@ program SpellScript(params)
 				
 	Run_Script_To_Completion(":death:npcdeath", {undead});
 
-	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, MAGICLORE)));
+	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)));
 
 	SendSysMessageEx(who, "Voce teve sucesso ao invocar um espirirto.", SSM_INFO);
 	Corromper(who, 75, "0");

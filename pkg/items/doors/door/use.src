@@ -21,6 +21,7 @@ program useScript(mobile, door)
 			if (polcore().systime > (locktime+time)) //se o tempo atual for maior 
 				door.locked := 1; //tranca a porta novamente
 				EraseObjProperty(door, "locktime");
+				EraseObjProperty(door, "fechadura_quebrada");
 			endif
 		endif
 	endif

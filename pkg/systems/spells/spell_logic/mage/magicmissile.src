@@ -27,7 +27,7 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
-    var mlore := cint(AP_GetSkill(who, MAGICLORE)/25);
+    var mlore := cint(AP_GetSkill(who, ARCANA)/25);
     mlore := mlore < 1? 1: mlore; //garante ao menos 1.
 
     if (TemHabilidade(who, "Evocator"))

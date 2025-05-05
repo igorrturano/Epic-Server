@@ -11,7 +11,7 @@ program SpellScript(params)
     var spell := params[3];
     var spell_school := params[4];
 
-    var duration := cint(AP_GetSkill(who, MAGICLORE)/20);
+    var duration := cint(AP_GetSkill(who, ARCANA)/20);
     if (TemHabilidade(who, "Valdruk"))
         duration := Cint(duration * 2);
     endif
