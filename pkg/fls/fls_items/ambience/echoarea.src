@@ -42,7 +42,7 @@ function CreateEcho(ev, rune, range)
     var text := ev.text;
     var mobile := ev.source;
     
-    var echo_anchor := CreateItemAtLocation(rune.x, rune.y, rune.z, 0x00C3, 1);
+    var echo_anchor := CreateItemAtLocation(rune.x, rune.y, rune.z, 0x00C3, 1, mobile.realm);
     echo_anchor.movable := 0;
     echo_anchor.invisible := 0;
 
@@ -64,7 +64,7 @@ function CreateEcho(ev, rune, range)
 
     // Se não for emote, processa como texto normal
     var speaker_language := GetObjProperty(mobile, "lingua_escolhida");
-    var nearby_players := ListMobilesNearLocationEx(rune.x, rune.y, rune.z, range, LISTEX_FLAG_NORMAL);
+    var nearby_players := ListMobilesNearLocationEx(rune.x, rune.y, rune.z, range, LISTEX_FLAG_NORMAL, mobile.realm);
     
     for i := 1 to 3
         foreach player in nearby_players
