@@ -6,11 +6,12 @@ include "include/sysEvent";
 include "include/say";
 include "include/epicUtils";
 
-function TranslateText(text, target_language)
+function TranslateText(text, target_language, original_language)
   var apiURL := "localhost:5000/epic-brain/translate";
   var jsonData := PackJSON(struct{
     "message" := text,
-    "target_language" := target_language
+    "target_language" := Lower(target_language),
+    "original_language" := Lower(original_language)
   });
 
   var apiResponse := HTTPRequest(
@@ -27,7 +28,7 @@ function TranslateText(text, target_language)
 
   if (apiResponse.status == 200)
     var unpackedJSON := UnpackJSON(apiResponse.body);
-    return unpackedJSON[1]["message"];
+    return unpackedJSON["message"];
   else
     return text; // Return original text if translation fails
   endif

@@ -24,7 +24,10 @@ exported function handleUCOutgoing( character, byref packet )
 
 	var length_of_text := ( packet.GetInt16(1) - 49 ) / 2;
 	var message_txt := packet.GetUnicodeString(48, length_of_text);
-
+	if(GetObjProperty(source, "original_language"))
+		message_txt := TranslateText(message_txt, "pt_BR", GetObjProperty(source, "original_language"));
+	endif
+	
 	var Object_Name;
 	if (source.IsA(POLCLASS_MOBILE))
 		//PREENCHE NOME DO MOBILE
@@ -213,6 +216,15 @@ exported function handleUCOutgoing( character, byref packet )
 endfunction
 
 exported function handleUCOrequest( character, byref packet )
+
+	var serial := packet.GetInt32(ITEM_ID);
+	var source := SystemFindObjectBySerial(serial);
+	var length_of_text := ( packet.GetInt16(1) - 49 ) / 2;
+	var message_txt := packet.GetUnicodeString(48, length_of_text);
+
+	if(GetObjProperty(source, "original_language"))
+		message_txt := TranslateText(message_txt, "pt_BR", "en_US");
+	endif
 
 	var type := packet.GetInt8(4);
 
