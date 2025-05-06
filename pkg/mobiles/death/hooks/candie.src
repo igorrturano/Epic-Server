@@ -10,14 +10,65 @@ exported function CanDie(mobile)
 	endif
 
 	if (GetObjProperty(mobile, "allowdeath") == 1)
+		print("TRACE: candie - NPC already processed for death, allowing death");
 		return 1;
 	endif
 
-	if (GetObjProperty(mobile, "DeathEvents") != error)
-		print("DEBUG: DeathEvents found on " + mobile.name + " [" + mobile.serial + "]");
-		start_script(":epicspawn:scripts/deathEventsControl", array{mobile});
-		SetObjProperty(mobile, "allowdeath", 1);
-		return 0;
+	var death_events := GetObjProperty(mobile, "DeathEvents");
+	if (death_events != error)
+		print("TRACE: candie - DeathEvents found on " + mobile.name + " [" + mobile.serial + "]");
+		
+		// Check if already processing to avoid duplicate calls
+		if (GetObjProperty(mobile, "ProcessingDeathEvents"))
+			print("TRACE: candie - Already processing death events, checking if it's a LastWords kill");
+			
+			// Special case: if the NPC is being killed from the speaklastwords script,
+			// we need to let it die even if death events are still processing
+			var last_words := GetObjProperty(mobile, "Ultimas Palavras");
+			if (!last_words)
+				// If Ultimas Palavras was set but is now gone, the NPC might be in the middle of speaking
+				// and about to die naturally
+				var call_stack := GetEnvironmentVariable("CALL_STACK");
+				if (call_stack && "speaklastwords" in call_stack)
+					print("TRACE: candie - Called from speaklastwords script, allowing death");
+					return 1;
+				endif
+				
+				var processed := GetObjProperty(mobile, "DeathEventsProcessed");
+				if (processed)
+					print("TRACE: candie - Death events have been processed, allowing death");
+					return 1;
+				endif
+			endif
+			
+			print("TRACE: candie - Still processing events, preventing death");
+			return 0;
+		endif
+		
+		// List all events for debugging
+		print("TRACE: candie - Found " + death_events.size() + " death events");
+		var i := 1;
+		foreach event in (death_events)
+			print("TRACE: candie - Event " + i + " Type: " + event.type);
+			i += 1;
+		endforeach
+
+		// Set processing flag to prevent duplicate processing
+		SetObjProperty(mobile, "ProcessingDeathEvents", 1);
+		
+		// Start the death events controller
+		print("TRACE: candie - Starting death events processing script");
+		var process := start_script(":epicspawn:scripts/deathEventsControl", array{mobile});
+		
+		if (process.errortext)
+			print("TRACE: candie - Error starting death events controller: " + process.errortext);
+			EraseObjProperty(mobile, "ProcessingDeathEvents");
+			SetObjProperty(mobile, "allowdeath", 1);
+			return 1; // Allow death anyway if script fails to start
+		else
+			print("TRACE: candie - Death events controller started with PID: " + process.pid);
+			return 0; // Prevent death until events are processed
+		endif
 	endif
 	
 	return 1;

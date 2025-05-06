@@ -205,15 +205,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "LootItems", loot_array);
     endif
     
-    // Set death events
-    if (boss.deathevent && boss.deathevent.size() > 0)
-        var death_events := array{};
-        foreach event in (boss.deathevent)
-            death_events.append(event);
-        endforeach
-        SetObjProperty(npc, "DeathEvents", death_events);
-    endif
-    
     // Set profile properties
     if (boss.url)
         SetObjProperty(npc, "url", boss.url);
@@ -281,6 +272,46 @@ function CreateEpicBoss(boss, x, y, z, realm)
     endif
     if (boss.class)
         SetObjProperty(npc, "subclass", boss.class);
+    endif
+
+    
+    if (boss.preferred_target)
+        SetObjProperty(npc, "preferred_target", boss.preferred_target);
+    endif
+
+    if (boss.target_priority)
+        SetObjProperty(npc, "target_priority", boss.target_priority);
+    endif
+
+    // Make sure this line exists when setting properties on the NPC
+    SetObjProperty(npc, "DeathEvents", boss.deathevents);
+   
+    // Set patrol points if they exist
+    if (boss.patrol_points && boss.patrol_points.size() > 0)
+        SetObjProperty(npc, "patrol_points", boss.patrol_points);
+        SetObjProperty(npc, "#current_patrol_point", 1);
+    endif
+    
+    // Add teleport locations to boss structure
+    if (boss.teleport_locations && boss.teleport_locations.size() > 0)
+        SetObjProperty(npc, "teleport_locations", boss.teleport_locations);
+    endif
+
+    // Add Equipment if selected
+    if (boss.specific_weapon)
+        var weapon := boss.specific_weapon;
+        if (weapon)
+            SetObjProperty(npc, "specific_weapon", weapon);
+        endif
+    endif
+
+    // And when creating the NPC:
+    if (boss.spell_school)
+        SetObjProperty(npc, "SpellSchool", boss.spell_school);
+    endif
+
+    if (boss.custom_abilities && boss.custom_abilities.size() > 0)
+        SetObjProperty(npc, "CustomAbilities", boss.custom_abilities);
     endif
 
     return npc;
