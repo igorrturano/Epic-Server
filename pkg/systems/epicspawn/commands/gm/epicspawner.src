@@ -19,7 +19,7 @@ program epicspawner(params)
         spawner := params[2];
     else
         who := params;
-        spawner := ListItemsNearLocationOfType(who.x, who.y, who.z, 8, 0x5000, who.realm)[1];
+        spawner := ListItemsNearLocationOfType(who.x, who.y, who.z, 3, 0x5000, who.realm)[1];
         if (!spawner)
             spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x5000, 1, who.realm);
         endif
