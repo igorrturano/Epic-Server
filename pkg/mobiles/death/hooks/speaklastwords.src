@@ -3,17 +3,46 @@ use os;
 
 include "include/say";
 
-
 program speak(mobile)
+	print("TRACE: LastWords - Beginning speak script for " + mobile.name + " [" + mobile.serial + "]");
 	mobile.frozen := 1;
-	var falas :=  GetObjProperty(mobile, "Ultimas Palavras");
+	
+	var falas := GetObjProperty(mobile, "Ultimas Palavras");
+	if (!falas || falas.size() < 1)
+		print("TRACE: LastWords - No speech found on mobile");
+		// Set explicit permission to die before killing
+		SetObjProperty(mobile, "allowdeath", 1);
+		// Clear any processing flags to prevent loops
+		EraseObjProperty(mobile, "ProcessingDeathEvents");
+		mobile.kill();
+		return;
+	endif
+	
+	print("TRACE: LastWords - Found " + falas.size() + " speech lines to process");
 	EraseObjProperty(mobile, "Ultimas Palavras");
+	
+	var line_count := 0;
 	foreach fala in falas
+		line_count += 1;
 		if (fala != error)
-			PrintText(mobile, ""+ fala);
+			print("TRACE: LastWords - Speaking line " + line_count + ": " + fala);
+			PrintText(mobile, fala);
 			sleepms(800);
+		else
+			print("TRACE: LastWords - Error in speech line " + line_count);
 		endif
 	endforeach
+	
+	print("TRACE: LastWords - Waiting 3 seconds before killing mobile");
 	sleep(3);
-	mobile.kill();		
+	
+	print("TRACE: LastWords - Setting allowdeath=1 to permit NPC to die");
+	// Set explicit permission to die before killing
+	SetObjProperty(mobile, "allowdeath", 1);
+	// Clear any processing flags to prevent loops
+	EraseObjProperty(mobile, "ProcessingDeathEvents");
+	SetObjProperty(mobile, "DeathEventsProcessed", 1);
+	
+	print("TRACE: LastWords - Killing mobile");
+	mobile.kill();
 endprogram
