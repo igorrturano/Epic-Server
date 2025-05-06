@@ -45,7 +45,7 @@ function DisplaySpawnersGump(who)
     var y_pos := 70;
     GFTextLine(gump, 30, y_pos, 66, "ID");
     GFTextLine(gump, 80, y_pos, 66, "Nome");
-    GFTextLine(gump, 175, y_pos, 66, "Tipos de Criaturas");
+    // GFTextLine(gump, 175, y_pos, 66, "Tipos de Criaturas");
     GFTextLine(gump, 400, y_pos, 66, "Ações");
     
     // Divisor
@@ -119,28 +119,28 @@ function DisplaySpawnersGump(who)
                 GFTextLine(gump, 80, y_pos, 1153, locationText);
             endif
             
-            // Tipos de Criaturas (abreviado com contagem)
-            var mobsText := "";
-            if (display_data.mobslvl1 && display_data.mobslvl1 != "")
-                var mobs := SplitWords(display_data.mobslvl1);
-                mobsText := "Nvl1: " + mobs.size() + " Qtd: (" + display_data.amtlvl1 + ")";
-            endif
-            if (display_data.mobslvl2 && display_data.mobslvl2 != "")
-                if (mobsText != "")
-                    mobsText += ", ";
-                endif
-                var mobs := SplitWords(display_data.mobslvl2);
-                mobsText += "Nvl2: " + mobs.size() + " Qtd: (" + display_data.amtlvl2 + ")";
-            endif
-            if (display_data.mobslvl3 && display_data.mobslvl3 != "")
-                if (mobsText != "")
-                    mobsText += ", ";
-                endif
-                var mobs := SplitWords(display_data.mobslvl3);
-                mobsText += "Nvl3: " + mobs.size() + " Qtd: (" + display_data.amtlvl3 + ")";
-            endif
+            // // Tipos de Criaturas (abreviado com contagem)
+            // var mobsText := "";
+            // if (display_data.mobslvl1 && display_data.mobslvl1 != "")
+            //     var mobs := SplitWords(display_data.mobslvl1);
+            //     mobsText := "Nvl1: " + mobs.size() + " Qtd: (" + display_data.amtlvl1 + ")";
+            // endif
+            // if (display_data.mobslvl2 && display_data.mobslvl2 != "")
+            //     if (mobsText != "")
+            //         mobsText += ", ";
+            //     endif
+            //     var mobs := SplitWords(display_data.mobslvl2);
+            //     mobsText += "Nvl2: " + mobs.size() + " Qtd: (" + display_data.amtlvl2 + ")";
+            // endif
+            // if (display_data.mobslvl3 && display_data.mobslvl3 != "")
+            //     if (mobsText != "")
+            //         mobsText += ", ";
+            //     endif
+            //     var mobs := SplitWords(display_data.mobslvl3);
+            //     mobsText += "Nvl3: " + mobs.size() + " Qtd: (" + display_data.amtlvl3 + ")";
+            // endif
             
-            GFTextLine(gump, 175, y_pos, 1153, mobsText);
+            // GFTextLine(gump, 175, y_pos, 1153, mobsText);
             
             // Botões de ação - Alterado botão de exclusão e adicionado botão de atualização
             GFAddButton(gump, 330, y_pos, 0x659, 0x65A, GF_CLOSE_BTN, 1000 + i);
