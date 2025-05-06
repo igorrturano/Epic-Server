@@ -5,10 +5,8 @@ include "include/say";
 
 
 program speak(mobile)
-	print("DEBUG: speaklastwords started for " + mobile.name + " [" + mobile.serial + "]");
 	mobile.frozen := 1;
 	var falas :=  GetObjProperty(mobile, "Ultimas Palavras");
-	print("DEBUG: falas: " + falas);
 	EraseObjProperty(mobile, "Ultimas Palavras");
 	foreach fala in falas
 		if (fala != error)
