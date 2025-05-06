@@ -1,0 +1,49 @@
+use uo;
+use os;
+
+program closePassage(params)
+    var passage := params[1];
+    var delay := CInt(params[2]);
+    
+    if (!passage)
+        print("TRACE: closePassage - Invalid passage object");
+        return 0;
+    endif
+    
+    print("TRACE: closePassage - Will close " + passage.desc + " [" + passage.serial + "] after " + delay + " seconds");
+    
+    // Wait for the specified delay
+    sleep(delay);
+    
+    // Check if the passage still exists before moving it back
+    passage := SystemFindObjectBySerial(passage.serial);
+    if (!passage)
+        print("TRACE: closePassage - Passage no longer exists, cannot close");
+        return 0;
+    endif
+    
+    // Get the original Z position
+    var original_z := GetObjProperty(passage, "OriginalZ");
+    if (original_z == error)
+        print("TRACE: closePassage - Original Z position not found, using current-20");
+        original_z := passage.z - 20;
+    endif
+    
+    // Move passage back to original position
+    print("TRACE: closePassage - Closing passage " + passage.desc + " [" + passage.serial + "]");
+    passage.movable := 1;
+    
+    // Move down by 20 units in z-coordinate
+    var result := MoveObjectToLocation(passage, passage.x, passage.y, original_z, passage.realm, MOVEOBJECT_FORCELOCATION);
+    
+    if (result)
+        print("TRACE: closePassage - Error closing passage: " + result);
+    else
+        print("TRACE: closePassage - Passage closed successfully");
+    endif
+    
+    passage.movable := 0;
+    EraseObjProperty(passage, "OriginalZ");
+    
+    return 1;
+endprogram

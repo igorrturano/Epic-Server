@@ -1,0 +1,74 @@
+use uo;
+use os;
+
+program animatePassage(params)
+    var passage := params[1];
+    var dist := CInt(params[2]);
+    var delay := CInt(params[3]);
+    
+    if (!passage)
+        print("TRACE: animatePassage - Invalid passage object");
+        return 0;
+    endif
+    
+    print("TRACE: animatePassage - Starting animation for " + passage.desc + " [" + passage.serial + "]");
+    print("TRACE: animatePassage - Will move up " + dist + " units, then close after " + delay + " seconds");
+    
+    // Get the original Z position
+    var original_z := GetObjProperty(passage, "OriginalZ");
+    if (original_z == error)
+        print("TRACE: animatePassage - Storing original Z position");
+        original_z := passage.z;
+        SetObjProperty(passage, "OriginalZ", original_z);
+    endif
+    
+    // Move the passage up gradually
+    passage.movable := 1;
+    for i := 1 to dist
+        print("TRACE: animatePassage - Moving passage up unit " + i + "/" + dist);
+        var e := MoveObjectToLocation(passage, passage.x, passage.y, original_z + i, passage.realm, MOVEOBJECT_FORCELOCATION);
+        if (e)
+            print("TRACE: animatePassage - Error in movement step " + i + ": " + e);
+        endif
+        sleepms(100); // Control animation speed
+    endfor
+    
+    // Lock in final position
+    passage.movable := 0;
+    print("TRACE: animatePassage - Passage has completed upward animation");
+    
+    // Wait for the specified delay
+    sleep(delay);
+    
+    // Check if the passage still exists before moving it back
+    passage := SystemFindObjectBySerial(passage.serial);
+    if (!passage)
+        print("TRACE: animatePassage - Passage no longer exists, cannot close");
+        return 0;
+    endif
+    
+    // Move passage back down gradually
+    print("TRACE: animatePassage - Beginning downward animation");
+    passage.movable := 1;
+    
+    // Move down gradually
+    for i := 0 to dist-1
+        var current_z := original_z + dist - i;
+        print("TRACE: animatePassage - Moving passage down unit " + (i+1) + "/" + dist);
+        var e := MoveObjectToLocation(passage, passage.x, passage.y, current_z, passage.realm, MOVEOBJECT_FORCELOCATION);
+        if (e)
+            print("TRACE: animatePassage - Error in movement step " + (i+1) + ": " + e);
+        endif
+        sleepms(100); // Control animation speed
+    endfor
+    
+    // Final move to ensure correct position
+    MoveObjectToLocation(passage, passage.x, passage.y, original_z, passage.realm, MOVEOBJECT_FORCELOCATION);
+    
+    // Lock in final position
+    passage.movable := 0;
+    EraseObjProperty(passage, "OriginalZ");
+    
+    print("TRACE: animatePassage - Passage has been returned to original position");
+    return 1;
+endprogram
