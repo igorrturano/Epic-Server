@@ -1,91 +1,505 @@
 use uo;
 use datafile;
 use cfgfile;
+use util;
+
 include ":gumps:gumps";
 include ":gumps:requestGump";
+include ":gumps:epicGumps";
+include ":gathering:mining";
 
-program configmining(who)
-
-	var gump := GFCreateGump();
-	GFDisposable(gump, 0);
-	GFResizePic(gump, 0, 25, 3600, 250, 430);
-	GFResizePic(gump, 15, 40, 0x13BE, 220, 400);
-	GFTextMid(gump, 20, 50, 250, 1153, "Controle das minas");
-
-	var y := 60;
-	GFTextLine(gump, 35, y, 1153, "Adicionar Nova");
-	GFAddButton(gump, 20, y+2, 2117, 2118, 1, 100);
-
-	var minasdf := opendatafile(":gathering:miningspots");
-	if (minasdf == error)
-		minasdf :=  createdatafile(":gathering:miningspots");
-	endif
-
-	var i := 1;
-	foreach mina in (minasdf.keys())
-		y := y+ 15;
-		GFTextLine(gump, 35, y, 1153, ""+mina);
-		GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
-		i := i + 1;
-	endforeach
-
-	var input := GFSendGump(who, gump);
-	input := input[0];
-
-	if (input == 100)
-
-		var  nome := RequestGump(who, "Escolha o nome da mina");
-		var ores := RequestGump(who, "Escreva os ores da mina");
-		var rarity := RequestGump(who, "Descreva a raridade para cada ore adicionado anteriormente  (de0 a 999)");
-		var rect :=  RequestGump(who, "Qual o rect da mina?");
-        var realm := RequestGump(who, "Qual o realm da mina?");
-
-		var mina := minasdf.createelement(""+nome);
-		mina.setprop("Name", nome);
-		mina.setprop("Ores", ores);
-		mina.setprop("Rarity", rarity);
-		mina.setprop("Rect", rect);
-        mina.setprop("Realm", realm);
-
-	elseif(input >= 400)
-
-		var index :=  input - 400;
-		var  elem := minasdf.FindElement(minasdf.keys()[index]);
-
-		var gump2 := GFCreateGump(220, 300);
-		GFResizePic(gump2, 0,  0, 3600, 220, 200);
-
-		GFTextLine(gump2, 45, 15, 2100, "Name: "+elem.getprop("Name"));
-		GFTextLine(gump2, 45, 35, 2100, "Ores: "+elem.getprop("Ores"));
-		GFTextLine(gump2, 45, 55, 2100, "Rariry: "+elem.getprop("Rarity"));
-		GFTextLine(gump2, 45, 70, 2100, "Rect: "+elem.getprop("Rect"));
-        GFTextLine(gump2, 45, 85, 2100, "Realm: "+elem.getprop("Realm"));
-		GFTextLine(gump2, 45,  100, 2100, "Deletar  Mina ");
-		GFAddButton(gump2, 20, 102, 2117, 2118, 1, 100);
-		GFTextLine(gump2, 45, 115, 2100, "Editar Mina ");
-		GFAddButton(gump2, 20, 1117, 2117, 2118, 1, 200);
-
-		var input2 := GFSendGump(who, gump2);
-		input2 := input2[0];
-
-		if (input2 == 100)
-			minasdf.deleteelement(minasdf.keys()[index]);
-			SendSysMessage(who, "Mina deletada.");
-		elseif (input2 == 200)
-			var  nome := RequestGump(who, "Escolha o nome da mina", "",elem.getprop("Name"));
-			var ores := RequestGump(who, "Escreva os ores da mina", "", elem.getprop("Ores"));
-			var rarity := RequestGump(who, "Descreva a raridade para cada ore adicionado anteriormente  (de0 a 999)", "", elem.getprop("Rarity"));
-			var rect :=  RequestGump(who, "Qual o rect da mina?","", elem.getprop("Rect"));
-            var realm :=  RequestGump(who, "Qual o realm da mina?","", elem.getprop("Realm"));
-
-			elem.setprop("Name", nome);
-			elem.setprop("Ores", ores);
-			elem.setprop("Rarity", rarity);
-			elem.setprop("Rect", rect);
-            elem.setprop("Realm", realm);
-		endif
-
-
-	endif
-
+program configminas(who)
+    // Abre o datafile de minas
+    var minasdf := opendatafile(":gathering:miningspots");
+    if (minasdf == error)
+        minasdf := createdatafile(":gathering:miningspots");
+    endif;
+    
+    // Exibe o gump principal
+    ShowMainGump(who, minasdf);
+    
+    return 1;
 endprogram
+
+function ShowMainGump(who, minasdf)
+    var gump := GFECreateGump("Controle das Minas", 500, 400);
+    
+    // Opção para adicionar nova mina
+    var y_pos := 70;
+    GFTextLine(gump, 35, y_pos, 1153, "Adicionar Nova Mina");
+    GFAddButton(gump, 20, y_pos+2, 2117, 2118, GF_CLOSE_BTN, 100);
+    
+    // Lista de minas existentes
+    y_pos += 20;
+    GFTextLine(gump, 35, y_pos, 1153, "Minas Existentes:");
+    y_pos += 20;
+    
+    var i := 1;
+    foreach mina in (minasdf.keys())
+        GFTextLine(gump, 35, y_pos, 1153, mina);
+        GFAddButton(gump, 20, y_pos+2, 2117, 2118, GF_CLOSE_BTN, 200+i);
+        y_pos += 15;
+        i += 1;
+    endforeach;
+    
+    // Envio do gump
+    var input := GFSendGump(who, gump);
+    var button := input[0];
+    
+    // Processa a entrada do usuário
+    if (button == 100)
+        // Cria uma nova mina
+        var form_data := struct{
+            "name" := "",
+            "selected_ores" := array{},
+            "rarities" := array{},
+            "rect" := "",
+            "realm" := "britannia"
+        };
+        
+        // Inicia o processo de edição para nova mina
+        EditMineProcess(who, minasdf, form_data);
+    elseif (button >= 200)
+        // Edita mina existente
+        var index := button - 200;
+        var mina_name := minasdf.keys()[index];
+        var elem := minasdf.FindElement(mina_name);
+        
+        // Carrega os dados da mina existente
+        var form_data := struct{
+            "name" := mina_name,
+            "selected_ores" := SplitWords(elem.getprop("Ores")),
+            "rarities" := SplitWords(elem.getprop("Rarity")),
+            "rect" := elem.getprop("Rect")
+        };
+        
+        // Carrega o realm - tratar caso em que realm não existe (minas antigas)
+        var realm := elem.getprop("Realm");
+        if (realm)
+            form_data.+realm := realm;
+        else
+            form_data.+realm := "britannia"; // Valor padrão
+        endif;
+        
+        // Inicia o processo de edição para mina existente
+        EditMineProcess(who, minasdf, form_data);
+    endif;
+endfunction;
+
+function EditMineProcess(who, minasdf, byref form_data)
+    var done := 0;
+    
+    // Guarda temporariamente os dados do formulário
+    SetObjProperty(who, "#FormData", form_data);
+    
+    while (!done)
+        var input := DisplayMineGump(who, form_data);
+        
+        if (input[0] == 0) // Fechou o gump com X
+            EraseObjProperty(who, "#FormData");
+            return 0;
+        endif;
+        
+        // Atualiza o nome da mina
+        if (input[1])
+            form_data.name := GFExtractData(input, 1);
+        endif;
+        
+        var button_id := input[0];
+        
+        if (button_id == 100) // Salvar mina
+            var result := SaveMineConfig(who, minasdf, form_data);
+            if (result)
+                done := 1;
+            endif;
+        elseif (button_id == 666) // Cancelar
+            EraseObjProperty(who, "#FormData");
+            SendSysMessage(who, "Operação cancelada.");
+            done := 1;
+        elseif (button_id == 50) // Selecionar primeiro canto
+            SelectAreaCorner(who, form_data, 1);
+            SetObjProperty(who, "#FormData", form_data);
+        elseif (button_id == 51) // Selecionar segundo canto
+            SelectAreaCorner(who, form_data, 2);
+            SetObjProperty(who, "#FormData", form_data);
+        elseif (button_id == 52) // Ir para o centro da área
+            GoToAreaCenter(who, form_data);
+        elseif (button_id == 60) // Selecionar realm Britannia
+            SendSysMessage(who, "Realm alterado para Britannia.", 66);
+            form_data.realm := "britannia";
+        elseif (button_id == 61) // Selecionar realm Britannia Alt
+            SendSysMessage(who, "Realm alterado para Britannia Alt.", 66);
+            form_data.realm := "britannia_alt";
+        elseif (button_id >= 1001 && button_id <= 1019) // Botões para adicionar ore
+            ProcessAddOre(who, form_data, button_id);
+        elseif (button_id >= 2001 && button_id <= 2005) // Botões para remover ore
+            ProcessRemoveOre(who, form_data, button_id);
+        elseif (button_id >= 4000 && button_id <= 4005) // Botões para editar raridade (OK) - novo range
+            ProcessEditRarity(who, form_data, button_id - 1000, input); // Ajuste para corresponder aos IDs 3000+i
+        endif;
+        
+        // Atualiza os dados temporários
+        SetObjProperty(who, "#FormData", form_data);
+    endwhile;
+    
+    // Limpa os dados temporários
+    EraseObjProperty(who, "#FormData");
+endfunction;
+
+function ProcessAddOre(who, byref form_data, button_id)
+    var ore_index := button_id - 1000;
+    var all_ores := GetAllOrePossibilities();
+    var ore := all_ores[ore_index];
+    
+    // Versão simplificada da verificação
+    var exists := 0;
+    
+    // Substituído o loop foreach para debugar
+    for i := 1 to form_data.selected_ores.size()
+        if (form_data.selected_ores[i] == ore)
+            exists := 1;
+        endif;
+    endfor;
+    
+    // Código normal após a verificação
+    if (!exists && form_data.selected_ores.size() < 5)
+        form_data.selected_ores.append(ore);
+        form_data.rarities.append("500"); // Valor padrão - incomum
+        SendSysMessage(who, "Minério '" + ore + "' adicionado.");
+    elseif (exists)
+        SendSysMessage(who, "Este minério já está selecionado.");
+    else
+        SendSysMessage(who, "Você já selecionou o máximo de 5 minérios.");
+    endif;
+endfunction;
+
+function ProcessRemoveOre(who, byref form_data, button_id)
+    var ore_slot := button_id - 2000;
+    
+    if (ore_slot <= form_data.selected_ores.size())
+        var removed_ore := form_data.selected_ores[ore_slot];
+        form_data.selected_ores.erase(ore_slot);
+        form_data.rarities.erase(ore_slot);
+        SendSysMessage(who, "Minério '" + removed_ore + "' removido.");
+    endif;
+endfunction;
+
+function ProcessEditRarity(who, byref form_data, button_id, input)
+    var rarity_slot := button_id - 3000;
+    
+    if (rarity_slot <= form_data.rarities.size())
+        var new_rarity := CInt(GFExtractData(input, 3000 + rarity_slot));
+        
+        // Limita entre 0 e 999
+        if (new_rarity < 0)
+            new_rarity := 0;
+        elseif (new_rarity > 999)
+            new_rarity := 999;
+        endif;
+        
+        form_data.rarities[rarity_slot] := CStr(new_rarity);
+        SendSysMessage(who, "Raridade do minério '" + form_data.selected_ores[rarity_slot] + "' atualizada para " + new_rarity + ".");
+    endif;
+endfunction;
+
+function GoToAreaCenter(who, byref form_data)
+    if (form_data.rect == "")
+        SendSysMessage(who, "A área da mina ainda não foi definida.", 33);
+        return 0;
+    endif;
+    
+    var coords := SplitWords(form_data.rect);
+    if (coords.size() < 4)
+        SendSysMessage(who, "Coordenadas da área incompletas.", 33);
+        return 0;
+    endif;
+    
+    // Calcula o centro da área
+    var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
+    var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+    
+    // Determina o realm correto para o teleporte
+    var target_realm := form_data.realm ? form_data.realm : "britannia";
+    
+    // Move o jogador para o centro
+    MoveObjectToLocation(who, center_x, center_y, GetWorldHeight(center_x, center_y), target_realm, MOVEOBJECT_FORCELOCATION);
+    
+    SendSysMessage(who, "Você foi teleportado para o centro da área da mina no realm " + target_realm + ".", 66);
+    return 1;
+endfunction;
+
+function DisplayMineGump(who, byref form_data)
+    // Usa o estilo de gump do Epic Shard com altura aumentada em 40 pixels
+    var gump := GFECreateGump("Configuração de Mina", 500, 690); // Aumentado de 650 para 690
+    
+    // Nome da Mina
+    var y_pos := 70;
+    GFTextLine(gump, 30, y_pos, 1153, "Nome da Mina:");
+    GFResizePic(gump, 150, y_pos, 9350, 300, 25);
+    GFTextEntry(gump, 155, y_pos, 290, 20, 1153, form_data.name, 1);
+    
+    // Divider
+    y_pos += 30;
+    GFResizePic(gump, 20, y_pos, 3000, 460, 2);
+    y_pos += 10;
+    
+    // Exibe minérios selecionados com opção de remover e definir raridade
+    GFTextLine(gump, 30, y_pos, 1153, "Minérios Selecionados (" + form_data.selected_ores.size() + "/5):");
+    y_pos += 20;
+    
+    if (form_data.selected_ores.size() > 0)
+        for i := 1 to form_data.selected_ores.size()
+            var ore := form_data.selected_ores[i];
+            var rarity := form_data.rarities[i];
+            
+            // Botão para remover
+            GFAddButton(gump, 30, y_pos, 2437, 2438, GF_CLOSE_BTN, 2000 + i);
+            
+            // Nome do minério
+            GFTextLine(gump, 50, y_pos, 1153, ore);
+            
+            // Campo de raridade
+            GFTextLine(gump, 180, y_pos, 1153, "Raridade:");
+            GFResizePic(gump, 240, y_pos-2, 9350, 60, 25);
+            GFTextEntry(gump, 245, y_pos-2, 50, 20, 1153, rarity, 3000 + i);
+            
+            // Descrição da raridade
+            GFTextLine(gump, 310, y_pos, 1153, GetOreRarityDesc(CInt(rarity)));
+            
+            // Botão OK para confirmar raridade - mudando para ID 4000+i
+            GFAddButton(gump, 400, y_pos, 2510, 2511, GF_CLOSE_BTN, 4000 + i);
+            GFTextLine(gump, 420, y_pos, 1153, "OK");
+            
+            y_pos += 25;
+        endfor;
+    else
+        GFTextLine(gump, 30, y_pos, 33, "Nenhum minério selecionado.");
+        y_pos += 25;
+    endif;
+    
+    // Divider
+    y_pos += 10;
+    GFResizePic(gump, 20, y_pos, 3000, 460, 2);
+    y_pos += 10;
+    
+    // Lista de minérios disponíveis para adicionar
+    GFTextLine(gump, 30, y_pos, 1153, "Adicionar Minérios (clique para adicionar):");
+    y_pos += 20;
+    
+    // Obtém a lista de todos os minérios
+    var all_ores := GetAllOrePossibilities();
+    
+    // Organiza em duas colunas
+    var col1_y := y_pos;
+    var col2_y := y_pos;
+    
+    for i := 1 to all_ores.size()
+        var ore := all_ores[i];
+        var cur_y := 0;
+        var x := 0;
+        
+        // Divide em duas colunas
+        if (i > all_ores.size() / 2)
+            x := 250;
+            cur_y := col2_y;
+            col2_y += 20;
+        else
+            x := 30;
+            cur_y := col1_y;
+            col1_y += 20;
+        endif;
+        
+        // Adiciona botão para adicionar minério
+        GFAddButton(gump, x, cur_y, 2117, 2118, GF_CLOSE_BTN, 1000 + i);
+        GFTextLine(gump, x + 20, cur_y, 1153, ore);
+    endfor;
+    
+    // Atualiza y_pos para a posição mais baixa das colunas
+    y_pos := (col1_y > col2_y) ? col1_y : col2_y;
+    
+    // Divider
+    y_pos += 10;
+    GFResizePic(gump, 20, y_pos, 3000, 460, 2);
+    y_pos += 10;
+    
+    // Área da Mina / Rect
+    GFTextLine(gump, 30, y_pos, 1153, "Área da Mina:");
+    
+    y_pos += 25;
+    if (form_data.rect == "")
+        GFTextLine(gump, 30, y_pos, 33, "Não definido - Selecione os cantos da área");
+    else
+        var coords := SplitWords(form_data.rect);
+        if (coords.size() >= 4)
+            GFTextLine(gump, 30, y_pos, 66, "Área: (" + coords[1] + "," + coords[2] + ") até (" + coords[3] + "," + coords[4] + ")");
+        endif;
+    endif;
+    
+    // Botões para selecionar a área
+    y_pos += 25;
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 50);
+    GFTextLine(gump, 60, y_pos, 1153, "Selecionar Primeiro Canto (X1,Y1)");
+    
+    y_pos += 25;
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 51);
+    GFTextLine(gump, 60, y_pos, 1153, "Selecionar Segundo Canto (X2,Y2)");
+    
+    // Botão para ir ao centro da área
+    y_pos += 25;
+    GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 52);
+    GFTextLine(gump, 60, y_pos, 1153, "Ir para o Centro da Área");
+    
+    // Seleção de Realm
+    y_pos += 30;
+    GFTextLine(gump, 30, y_pos, 1153, "Realm:");
+    
+    // Verificando explicitamente qual realm está selecionado
+    var is_britannia := (form_data.realm == "britannia" || !form_data.realm);
+    var is_britannia_alt := (form_data.realm == "britannia_alt");
+    
+    // Debug - mostra qual realm está atualmente definido
+    SendSysMessage(who, "Realm atual: " + form_data.realm, 66);
+    
+    // Radio buttons para realm
+    GFRadioButton(gump, 100, y_pos, 210, 211, is_britannia, 60);
+    GFTextLine(gump, 120, y_pos, 1153, "Britannia");
+    
+    GFRadioButton(gump, 250, y_pos, 210, 211, is_britannia_alt, 61);
+    GFTextLine(gump, 270, y_pos, 1153, "Britannia Alt");
+    
+    // Botões Salvar e Cancelar
+    y_pos += 40;
+    GFAddButton(gump, 100, y_pos, 2128, 2129, GF_CLOSE_BTN, 100); // Botão Salvar
+    GFAddButton(gump, 225, y_pos, 2119, 2120, GF_CLOSE_BTN, 666); // Botão Cancelar
+    
+    // Envia o gump e retorna a resposta
+    var input := GFSendGump(who, gump);
+    return input;
+endfunction;
+
+function SelectAreaCorner(who, byref form_data, corner)
+    SendSysMessage(who, "Selecione a localização para o canto " + corner + " da área da mina.", 33);
+    var targ := TargetCoordinates(who);
+    
+    if (!targ)
+        SendSysMessage(who, "Cancelado.", 33);
+        return 0;
+    endif;
+    
+    var coords := array{};
+    if (form_data.rect != "")
+        coords := SplitWords(form_data.rect);
+        // Preenche com zeros se não houver elementos suficientes
+        while (coords.size() < 4)
+            coords.append(0);
+        endwhile;
+    else
+        coords := array{0, 0, 0, 0};
+    endif;
+    
+    if (corner == 1)
+        coords[1] := targ.x;
+        coords[2] := targ.y;
+    else
+        coords[3] := targ.x;
+        coords[4] := targ.y;
+    endif;
+    
+    // Garante que x1,y1 é o canto superior esquerdo e x2,y2 é o canto inferior direito
+    if (coords[3] && coords[3] < coords[1])
+        var temp := coords[1];
+        coords[1] := coords[3];
+        coords[3] := temp;
+    endif;
+    
+    if (coords[4] && coords[4] < coords[2])
+        var temp := coords[2];
+        coords[2] := coords[4];
+        coords[4] := temp;
+    endif;
+    
+    form_data.rect := coords[1] + " " + coords[2] + " " + coords[3] + " " + coords[4];
+    
+    SendSysMessage(who, "Canto " + corner + " definido para: (" + targ.x + ", " + targ.y + ")", 66);
+    
+    return 1;
+endfunction;
+
+function SaveMineConfig(who, minasdf, byref form_data)
+    // Validações básicas
+    if (form_data.name == "")
+        SendSysMessage(who, "Você precisa especificar um nome para a mina.", 33);
+        return 0;
+    endif;
+    
+    if (form_data.selected_ores.size() == 0)
+        SendSysMessage(who, "Você precisa selecionar pelo menos um minério.", 33);
+        return 0;
+    endif;
+    
+    if (form_data.rect == "")
+        SendSysMessage(who, "Você precisa definir a área da mina.", 33);
+        return 0;
+    endif;
+    
+    // Prepara os dados para salvar
+    var ores_str := "";
+    var rarities_str := "";
+    
+    // Converte arrays para strings separadas por espaço
+    for i := 1 to form_data.selected_ores.size()
+        if (i > 1)
+            ores_str := ores_str + " ";
+            rarities_str := rarities_str + " ";
+        endif;
+        ores_str := ores_str + form_data.selected_ores[i];
+        rarities_str := rarities_str + form_data.rarities[i];
+    endfor;
+    
+    // Cria ou atualiza o elemento da mina
+    var mina := minasdf.FindElement(form_data.name);
+    if (mina == error)
+        mina := minasdf.CreateElement(form_data.name);
+    endif;
+    
+    // Define as propriedades
+    mina.SetProp("Name", form_data.name);
+    mina.SetProp("Ores", ores_str);
+    mina.SetProp("Rarity", rarities_str);
+    mina.SetProp("Rect", form_data.rect);
+    
+    // Salva o realm - garantindo que o valor seja persistido
+    var realm_value := form_data.realm ? form_data.realm : "britannia";
+    mina.SetProp("Realm", realm_value);
+    
+    // Mensagem com informações completas
+    SendSysMessage(who, "Mina '" + form_data.name + "' salva com sucesso no realm " + realm_value + "!", 66);
+    
+    return 1;
+endfunction;
+
+// Função para obter todas as possibilidades de minérios
+function GetAllOrePossibilities()
+    // Lista extraída da função GetResourceId em mining.inc
+    return array{
+        "areia",
+        "cobre",
+        "bronze",
+        "argila",
+        "ferro",
+        "litan",
+        "Fulmetium",
+        "Venetium",
+        "Ignium",
+        "ouro",
+        "galvorn",
+        "mithril",
+        "frigutium",
+        "illyra",
+        "prata",
+        "estanho",
+        "pedras",
+        "marmore",
+        "arenito"
+    };
+endfunction;
