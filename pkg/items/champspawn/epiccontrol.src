@@ -3,7 +3,7 @@ use os;
 use util;
 
 const TINY_WAIT := 2;
-const RESPAWN_DELAY := 120 * 3600; // 2 horas
+const DEFAULT_RESPAWN_DELAY := 120 * 60; // Default 2 hours in seconds
 
 include "champaltar";
 include ":tn:boss";
@@ -15,6 +15,17 @@ program control(altar)
         sleep(10);
     endwhile
 
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns)
+        globalSpawns := array{};
+    endif
+    
+    if (!(altar.serial in globalSpawns))
+        print(altar.serial);
+        globalSpawns.append(altar.serial);
+        SetGlobalProperty("epicSpawns", globalSpawns);
+    endif
+
     var mobsBySerial := dictionary{};
     var totalMobs := array{};
 
@@ -22,6 +33,32 @@ program control(altar)
     totalMobs[1] := cfg.amtlvl1;
     totalMobs[2] := cfg.amtlvl2;
     totalMobs[3] := cfg.amtlvl3;
+    
+    // Set default values for new properties if they don't exist
+    if (!cfg.min_respawn)
+        cfg.min_respawn := 60; // Default 60 minutes
+    endif
+    
+    if (!cfg.max_respawn)
+        cfg.max_respawn := 120; // Default 120 minutes
+    endif
+    
+    if (!cfg.min_spacing)
+        cfg.min_spacing := 2; // Default 2 tiles spacing
+    endif
+    
+    // Store locations for spawner tracking
+    if (!cfg.location)
+        cfg.location := struct{
+            "x" := altar.x,
+            "y" := altar.y,
+            "z" := altar.z,
+            "realm" := altar.realm
+        };
+    endif
+    
+    // Save updated config
+    SetObjProperty(altar, "config", cfg);
 
     if (!GetObjProperty(altar, "spawned"))
         mobsBySerial[1] := summonLevelMobs(altar, 1, mobsBySerial, totalMobs[1]);
@@ -29,13 +66,19 @@ program control(altar)
         mobsBySerial[3] := summonLevelMobs(altar, 3, mobsBySerial, totalMobs[3]);
 
         SetObjProperty(altar, "spawned", 1);
+        SetObjProperty(altar, "mobsBySerial", mobsBySerial);
     endif
-    SetObjProperty(altar, "mobsBySerial", mobsBySerial);
+
     while (altar)
-            var mobs := GetObjProperty(altar, "mobsBySerial");
+        var mobs := GetObjProperty(altar, "mobsBySerial");
+        
+        // Calculate a random respawn delay between min and max values
+        var min_delay := cfg.min_respawn * 60; // Convert to seconds
+        var max_delay := cfg.max_respawn * 60; // Convert to seconds
+        var respawn_delay := RandomInt(max_delay - min_delay + 1) + min_delay;
 
         validateAndResummonMobs(altar, mobs, totalMobs);
-        sleep(RESPAWN_DELAY);
+        sleep(respawn_delay);
     endwhile
 
     return 0;
@@ -50,11 +93,12 @@ function getEpicSpawnLocation(altar)
     var yMin := Cint(loc[2]);
     var xMax := Cint(loc[3]);
     var yMax := Cint(loc[4]);
-
+    
+    // Simply choose a random location within the defined area
     var x := RandomIntMinMax(xMin, xMax);
     var y := RandomIntMinMax(yMin, yMax);
     var z := GetMapInfo(x, y).z;
-
+    
     return {x, y, z};
 endfunction
 
@@ -62,14 +106,15 @@ function summonLevelMobs(altar, level, mobsBySerial, totalMobs)
     var amt := Cint(totalMobs);
     mobsBySerial := dictionary{};
     mobsBySerial[level] := array{};
-
+    
     while (amt > 0)
         var loc := getEpicSpawnLocation(altar);
+        
         var mobTemplate := getEpicSpawn(altar, level);
         var creature := CreateNPCFromTemplate(":epicAI:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
-		if (creature.errortext)
-			creature := CreateNPCFromTemplate(":brainai:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
-		endif
+        if (creature.errortext)
+            creature := CreateNPCFromTemplate(":brainai:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
+        endif
         customizeNpc(creature);
         if (creature && creature != error)
             mobsBySerial[level].append(creature.serial);
@@ -107,11 +152,12 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
             var i;
             for (i := 1; i <= missingCount; i++)
                 var loc := getEpicSpawnLocation(altar);
+                
                 var mobTemplate := getEpicSpawn(altar, level);
-				var creature := CreateNPCFromTemplate(":epicAI:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
-				if (creature.errortext)
-					creature := CreateNPCFromTemplate(":brainai:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
-				endif
+                var creature := CreateNPCFromTemplate(":epicAI:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
+                if (creature.errortext)
+                    creature := CreateNPCFromTemplate(":brainai:"+mobTemplate, loc[1], loc[2], loc[3], 0, altar.realm);
+                endif
                 customizeNpc(creature);
                 if (creature && creature != error)
                     currentMobs.append(creature.serial);
@@ -122,7 +168,6 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
 
         mobsBySerial[level] := currentMobs;
         SetObjProperty(altar, "mobsBySerial", mobsBySerial);
-        return;
     endforeach
 endfunction
 

@@ -10,6 +10,7 @@ include ":attributes:attributes";
 include ":tn:cooldown";
 include "include/epicConstants";
 include "include/meusProcessos";
+include "include/epicMageryUtils";
 
 program meditar(who, text)
     return  IniciaMeuProcesso(who,@meditarPrincipal,{who});
@@ -72,7 +73,7 @@ function meditarPrincipal(params)
     var current_mana := AP_GetVital(who, MANA);
     var start_hp := AP_GetVital(who, "Hits");
     var arcane_bows := array{0xFA6D, 0XF997};
-    var amt := Cint(AP_GetSkill(who, MAGICLORE)/20);
+    var amt := Cint(HandleSpellSkill (who)/20);
     var delay := 300;
     if (GetObjPRoperty(who, "chardata").raca == ELFO)
         amt *=2;
@@ -99,7 +100,7 @@ function meditarPrincipal(params)
             return 0;  // Meditation canceled due to mid-process condition failure
         endif
         PlaySoundEffect(who, 0x20C);
-        HealMana(who, Cint(AP_GetSkill(who, MAGICLORE)/20));
+        HealMana(who, amt);
         PlayObjectCenteredEffect(who, 0x375a, 10, 80);
         var evento := Wait_For_Event(5);
 

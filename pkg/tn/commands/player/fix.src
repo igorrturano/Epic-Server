@@ -3,6 +3,7 @@ use os;
 use basic;
 
 include "include/say";
+include ":destroyable:include/destroyItem";
 
 program fix(who, param)
 	if (param == "help")
@@ -36,10 +37,10 @@ program fix(who, param)
 	if(!param)
 		if(who.cmdlevel)
 			if (alvo.movable == 0)
-				alvo.movable := 1;
+				Fixar(alvo,false);
 				SendSysMEssage(who, "O item esta solto.");
 			else
-				alvo.movable := 0;
+				Fixar(alvo,true);
 				SendSysMessage(who, "O item esta imovel.");
 			endif
 			return 1;
@@ -61,7 +62,7 @@ program fix(who, param)
 				return 0;
 			endif
 			if (alvo.movable == 1)
-				alvo.movable := 0;
+				Fixar(alvo,true);
 				PrintTextAbove(alvo, who.name +" fixou "+alvo.name+".");
 				SendSysMessageEx(who, "O item esta protegido contra decay.", SSM_INFO);
 			else
@@ -72,7 +73,7 @@ program fix(who, param)
 					PrintTextAbove(who, who.name +" tenta desfixar "+alvo.name+".");
 				endif
 				Sleep(2);
-				alvo.movable := 1;
+				Fixar(alvo,false);
 				PrintTextAbove(alvo, who.name +" soltou "+alvo.name+".");
 			endif
 			return 1;
@@ -109,11 +110,11 @@ program fix(who, param)
 		if(who.cmdlevel)
 			if (alvo.movable == 0)
 				EraseObjProperty(alvo, "crafterserial");
-				alvo.movable := 1;
+				Fixar(alvo,false);
 				SendSysMEssage(who, "O item esta solto e so pode ser fixado pela staff.");
 			else
 				EraseObjProperty(alvo, "crafterserial");
-				alvo.movable := 0;
+				Fixar(alvo,true);
 				SendSysMessage(who, "O item esta imovel e so pode ser solto pela staff.");
 			endif
 		else
@@ -125,10 +126,10 @@ program fix(who, param)
 			SetObjProperty(alvo, "crafterserial",who.serial);
 			EraseObjProperty(alvo, "fixer");
 			if (alvo.movable == 0)
-				alvo.movable := 1;
+				Fixar(alvo,false);
 				SendSysMEssage(who, "O item esta solto e agora pode ser fixado por qualquer um.");
 			else
-				alvo.movable := 0;
+				Fixar(alvo,true);
 				SendSysMessage(who, "O item esta imovel e agora pode se solto por qualquer um.");
 			endif
 		else
@@ -161,4 +162,20 @@ function GetDeed(who, deed)
 		destroyitem( deed );
 	endif
 
+endfunction
+
+function Fixar(byref item,devefixar)
+	item.movable := !devefixar;
+
+	if(item.isA(POLCLASS_CONTAINER))
+		if(VerificaRegiaoSegura(item))
+			if(devefixar)
+				SetObjProperty(item,PROPNAME_INDESTRUTIVEL,1);
+			else
+				EraseObjProperty(item,PROPNAME_INDESTRUTIVEL);
+			endif
+		endif
+	endif
+	
+	return item.movable;
 endfunction

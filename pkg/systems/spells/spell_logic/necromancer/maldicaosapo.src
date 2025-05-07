@@ -57,11 +57,12 @@ program SpellScript(params)
 	targ.graphic := graphic;
 	sleepms(200);
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.5);
-	var time := Cint(AP_GetSkill(who, MAGICLORE)/10) + 10;
+	var amt := Cint(AP_GetSkill(who, ARCANA)*0.5);
+	var time := Cint(AP_GetSkill(who, ARCANA)/10) + 10;
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	if (CheckResist(targ, VONTADE, diff, -CInt(AP_GetSkill(who, MAGICLORE)/2.5))) // Muito mais Difícil de resistir
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, VONTADE, diff, -bonus))
 		time := time/2;
 	endif
 
@@ -71,15 +72,17 @@ program SpellScript(params)
 	TS_StartTimer(Targ, "desmontar", time, 0, who);
 	TS_StartTimer(targ, "polymorph", time, 81, who);
 
-	foreach equip in ListEquippedItems( targ )
-		if ( (equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) && (equip.layer != LAYER_MOUNT) )
-				MoveObjectToLocation( equip, targ.x, targ.y, targ.z, targ.realm );
-		endif
-	endforeach
+	if (targ.acctaname)
+		foreach equip in ListEquippedItems( targ )
+			if ( (equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) && (equip.layer != LAYER_MOUNT) )
+					MoveObjectToLocation( equip, targ.x, targ.y, targ.z, targ.realm );
+			endif
+		endforeach
+	endif
 
 	PlaySoundEffect(targ, 616); // som de sapo
 	
-	SendSysMessageEx(targ, "Voce esta com a maldicao do sapo!", SSM_FAIL);
+	SendSysMessageEx(targ, "Você esta com a maldicao do sapo!", SSM_FAIL);
 	Corromper(who, 4, targ);
 
 	return 1;

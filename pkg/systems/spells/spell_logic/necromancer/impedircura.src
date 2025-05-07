@@ -19,7 +19,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var duration := AP_GetSkill(who, MAGICLORE);
+	var duration := AP_GetSkill(who, ARCANA);
 	TS_StartTimer(targ, "nocure", duration, targ.color, who, 0);
 
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);

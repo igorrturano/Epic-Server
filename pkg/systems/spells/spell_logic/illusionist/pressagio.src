@@ -1,0 +1,113 @@
+use uo;
+use os;
+include ":datafile:datafile";
+include "include/sysEvent";
+include ":attributes:attributes";
+include ":commands:possess";
+include "include/say";
+
+program spell_Pressagio(params)
+    var who := params[1];
+    var targ := params[2];
+    var mlore := CInt(AP_GetSkill(who, ARCANA));
+    
+    // Duração baseada em Magic Lore
+    var duration := CInt(mlore / 10);
+    if (TemHabilidade(who, "Valdruk"))
+        duration := CInt(duration * 2);
+        SetObjProperty(who, "unattack", "sim");
+    endif
+    
+    // Cria uma cópia etérea do jogador
+    var ethereal := CreateEtherealCopy(who, targ);
+    if(!ethereal)
+        SendSysMessageEx(who, "Algo impediu sua projeção.");
+        return 0;
+    endif
+    
+    // Salva a posição original
+    var orig_x := who.x;
+    var orig_y := who.y;
+    var orig_z := who.z;
+    var orig_realm := who.realm;
+    
+    // Esconde o corpo original e "possui" a forma etérea
+    who.hidden := 1;
+    possess(who, ethereal);
+    
+    // Timer para retornar
+    var endtime := ReadGameClock() + duration;
+    while (ReadGameClock() < endtime)
+        if (GetVital(who, HITS) < GetVitalMaximumValue(who, HITS))
+            break; // Retorna se tomar dano
+        endif
+
+        if (who.warmode)
+            break; // Retorna se entrar em combate
+        endif
+        
+        sleep(1);
+    endwhile
+    
+    // Retorna ao corpo original
+    unpossess(who);
+    who.hidden := 0;
+    MoveObjectToLocation(who, orig_x, orig_y, orig_z, orig_realm, MOVEOBJECT_FORCELOCATION);
+    ApplyDamage(ethereal, 9999);
+
+    return 1;
+endprogram
+
+function CreateEtherealCopy(who, targ)
+    var template := ":brainai:humanmale";
+    if (who.gender == 1)
+        template := ":brainai:humanfemale";
+    endif
+    
+    var copy := CreateNPCFromTemplate(template, targ.x, targ.y, targ.z, 0, who.realm);
+    if(!copy)
+        return 0;
+    endif
+    
+    // Configura os atributos da forma etérea
+    SetObjProperty(copy, "NoCorpse", 1);
+    SetObjProperty(copy, "EtherealForm", 1);
+    SetObjProperty(copy, "Creator", who.serial);
+    
+    // Copia aparência e equipamentos
+    CopyAppearance(who, copy);
+    CopyEquipment(who, copy);
+    
+    // Configurações especiais da forma etérea
+    copy.name := "Forma Eterea de " + who.name;
+    copy.color := 30000; // Cor translúcida/etérea
+    copy.concealed := 0;
+
+    SetVital(copy, HITS,  CInt(GetVitalMaximumValue(copy, HITS)));
+
+    return copy;
+endfunction
+
+function CopyAppearance(source, dest)
+    dest.gender := source.gender;
+    dest.graphic := source.graphic;
+    dest.title_race := source.title_race;
+    dest.title_suffix := source.title_suffix;
+    dest.title_prefix := source.title_prefix;
+    dest.TrueColor := source.TrueColor;
+    dest.trueobjtype := source.trueobjtype;
+endfunction
+
+function CopyEquipment(source, dest)
+    var mypack := CreateItemAtLocation(20, 20, 0, 0xe75, 1, dest.realm);
+    
+    foreach item in ListEquippedItems(source)
+        var newItem := CreateItemCopyAtLocation(20, 20, 0, item);
+        if(newItem)
+            newItem.color := 30000; // Mantém tudo etéreo
+            EquipItem(dest, newItem);
+        endif
+    endforeach
+    
+    EquipItem(dest, mypack);
+endfunction

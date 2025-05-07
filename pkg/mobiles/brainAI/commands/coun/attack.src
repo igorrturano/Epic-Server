@@ -15,6 +15,7 @@ program textcmd_attack(who)
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	endif
+	SetObjProperty(targ, "#ForcedTarget", 1);
 	
 	SendSysMessage(who, "Select a mobile (defender).");
 	var targ2 := target(who);
@@ -22,7 +23,8 @@ program textcmd_attack(who)
 		SendSysMessage(who, "Cancelled");
 		return 0;
 	endif
-	
+	SetObjProperty(targ2, "#ForcedTarget", 1);
+
 	var event := struct{"type":=SYSEVENT_ENGAGED, "source":=targ2};
 	SendEvent(targ, event);
 	

@@ -9,6 +9,7 @@ include ":attributes:attributes";
 include "include/say";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
 
 program wall_of_stone( parms )
   	var caster := parms[1];
@@ -28,7 +29,7 @@ program wall_of_stone( parms )
 		return 0;
 	endif
 	
-	var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
+	var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
 	var dist := Distance(caster, cast_on);
     var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
@@ -44,8 +45,8 @@ program wall_of_stone( parms )
 		FIELD_SHAPE_VERTICAL: objtype := "wallofstone_NS"; break;
 	endcase
 
-	var duration := CInt(3 + AP_GetSkill(caster, MAGICLORE) * 0.4);
-	var area_size := CInt(AP_GetSkill(caster, MAGICLORE) / 10);
+	var duration := CInt(3 + AP_GetSkill(caster, ARCANA) * 0.4);
+	var area_size := CInt(AP_GetSkill(caster, ARCANA) / 10);
 
 	//Bonus de especialização
     if(Temhabilidade(caster, "Evocator"))
@@ -72,6 +73,7 @@ program wall_of_stone( parms )
 		endif
 
 		SetObjProperty(item, "SummonedField", caster.serial);
+		SetObjProperty(item, "PROPNAME_DISPENSAVEL_FLAG", 1);
 		item.SetOwner(caster);
 		item.SetDuration(duration);
 		SleepMS(2);

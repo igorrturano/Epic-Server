@@ -12,7 +12,7 @@ include ":ghaia:combatevents";
 include ":timedScripts:timedScripts";
 include "include/epicNPCUtils";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var idlesnd1;
 var idlesnd2;

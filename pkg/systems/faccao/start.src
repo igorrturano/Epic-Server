@@ -1,8 +1,46 @@
 use os;
+use datafile;
+use uo;
 
+// Inicia o controle de soldo
 var script := start_script("soldocontrol");
-if ( script.errortext )
-	SysLog(script.errortext);
+if (script.errortext)
+    SysLog(script.errortext);
 else
-	Print("Starting guild npc check script... ok.");
+    Print("Starting guild npc check script... ok.");
 endif
+
+// Definir o intervalo de ciclo em segundos (1 hora)
+const CYCLE_WAIT := 3600;
+
+// Inicia o controlador de recursos territoriais com controle de tempo
+function start_resource_controller()
+    var last_time := CInt(GetGlobalProperty("last_execution"));
+    
+    // Se a conversão retornar erro ou 0, definir como 0
+    if (last_time == error)
+        last_time := 0;
+    endif
+    
+    var current_time := polcore().systime;
+    var time_since_last := current_time - last_time;
+    var should_execute := (last_time == 0 || time_since_last >= CYCLE_WAIT);
+    
+    if (should_execute)
+        Print("Iniciando ResourceController imediatamente.");
+        var script := start_script("ResourceController");
+        if (script.errortext)
+            SysLog("Erro ao iniciar o sistema de recursos: " + script.errortext);
+        else
+            Print("Starting territory resource controller... ok.");
+            // Armazenar o tempo desta execução
+            SetGlobalProperty("last_execution", current_time);
+        endif
+    else
+        var wait_time := CYCLE_WAIT - time_since_last;
+        Print("Próxima execução do ResourceController em " + wait_time + " segundos.");
+    endif
+endfunction
+
+// Chamar a função para iniciar o controlador de recursos
+start_resource_controller();

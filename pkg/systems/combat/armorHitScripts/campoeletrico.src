@@ -16,7 +16,7 @@ program HitScript(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
-	var returnamount := cdbl( AP_GetSkill(defender, MAGICLORE)/110 );
+	var returnamount := cdbl( AP_GetSkill(defender, ARCANA)/110 );
 	if (returnamount < 0.1)
 		returnamount := 0.1;
 	endif

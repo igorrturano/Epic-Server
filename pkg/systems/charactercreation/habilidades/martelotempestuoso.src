@@ -15,6 +15,9 @@ program vacuodemana(params)
 	var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
     var defender := Target(attacker);
+    if (attacker.npctemplate)
+        defender := GetRandomNearbyHostile(attacker);
+    endif
     if (!defender)
         return;
     endif
@@ -25,7 +28,7 @@ program vacuodemana(params)
         return 1;
     endif
 
-    var dano_mlore := CInt(AP_GetSkill(attacker, MAGICLORE));
+    var dano_mlore := CInt(AP_GetSkill(attacker, THEOLOGY));
     var cfg := ReadConfigFile(":combat:itemdesc");
     var elem := FindConfigElem(cfg, attacker.weapon.objtype);
     
@@ -39,7 +42,7 @@ program vacuodemana(params)
     sleep(2);
     PlaymovingEffect(defender, attacker, 0x379f, 0, 40);
 
-    var duration := cint(AP_GetSkill(attacker, MAGICLORE)/10);
+    var duration := cint(AP_GetSkill(attacker, THEOLOGY)/10);
     TS_StartTimer(defender, "paralysis", duration);
 
 	var dmgList := dictionary;

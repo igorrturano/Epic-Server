@@ -15,6 +15,10 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
+	if (who.npctemplate)
+		targ := who;
+	endif
+
 	if (!targ)
 		return;
 	endif
@@ -24,7 +28,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	SetCooldown(targ, "repeal", AP_GetSkill(who, "MAGICLORE"));
+	SetCooldown(targ, "repeal", AP_GetSkill(who, THEOLOGY));
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);

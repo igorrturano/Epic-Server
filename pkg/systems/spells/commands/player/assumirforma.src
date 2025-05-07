@@ -163,7 +163,7 @@ function ApplyAttributeModifiers( who, form, duration )
   endif
 
   var bonusMagicLore := 0;
-  bonusMagicLore := CINT( AP_GetSkill( who, MAGICLORE ) / 10 );
+  bonusMagicLore := CINT( AP_GetSkill( who, THEOLOGY ) / 10 );
   if ( TemHabilidade( who, "Instinto de Sobrevivência" ) )
     skill_a_calc := CINT( skill_a_calc + bonusMagicLore );
     skill_d_calc := CINT( skill_d_calc + bonusMagicLore );
@@ -314,7 +314,7 @@ function CalculateDiceDamage( strength )
 endfunction
 
 function CalculateTransformationDuration( who )
-  var duration := 60 + 540 * AP_GetSkill( who, MAGICLORE ) / 100;
+  var duration := 60 + 540 * AP_GetSkill( who, THEOLOGY ) / 100;
   if ( TemHabilidade( who, "Treinamento Druídico" ) )
     duration := duration * 2;
   endif
@@ -349,19 +349,24 @@ function FailTransformation( who )
 endfunction
 
 function ValidateTransformation( who, formname )
+  var wildshape_forms := GetWildshapeForms( who );
+  var selected_form := FindFormByName( wildshape_forms, formname );
+
+  if (who.npctemplate)
+    return selected_form;
+  endif
+
   if ( IsPlayerInTransformation( who ) )
     SendSysMessageEx( who, "Você já está sob a forma de outra criatura. Primeiro, volte à sua forma normal.",
                       SSM_FAIL );
     return 0;
   endif
 
-  var wildshape_forms := GetWildshapeForms( who );
   if ( !wildshape_forms )
     SendSysMessageEx( who, "Você ainda não aprendeu nenhuma forma selvagem.", SSM_FAIL );
     return 0;
   endif
 
-  var selected_form := FindFormByName( wildshape_forms, formname );
   if ( !selected_form )
     SendSysMessageEx( who, "A forma " + formname + " não foi encontrada entre as suas formas.",
                       SSM_FAIL );

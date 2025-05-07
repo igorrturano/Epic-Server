@@ -1,17 +1,18 @@
 use util;
 
+include ":attributes:attributes";
 include ":equipsys:equipstats";
 include ":equipsys:props";
+include ":taming:taming";
 
-function customizeNpc(mob)
+function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
-
 	var classe := npc_elem.Classe;
-	var tier := CInt(npc_elem.Tier);
+	var tier := set_tier == "0" ? CInt(npc_elem.Tier) : CInt(set_tier);
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
-	
+	 
 	var mob_skill := 0;
 	if (tier == 1)
 		mob_skill += RandomIntMinMax(20, 40+1);
@@ -29,18 +30,24 @@ function customizeNpc(mob)
 
 	if (classe == SABIO)
 		AP_SetTrueSkill(mob, MAGERY, mob_skill);
-		AP_SetTrueSkill(mob, MAGICLORE, mob_skill);
+		AP_SetTrueSkill(mob, ARCANA, mob_skill);
 		skill_combat := MAGERY;
-		skill_support := MAGICLORE;
+		skill_support := ARCANA;
+	elseif(classe == LADINO || mob.isSpider())
+		AP_SetTrueSkill(mob, SNEAK, mob_skill);
+		AP_SetTrueSkill(mob, AWARENESS, mob_skill);
+		AP_SetTrueSkill(mob, PICKPOCKETING, mob_skill);
 	else
 		skill_combat := WRESTLING;
 		skill_support := TACTICS;
+		AP_SetTrueSkill(mob, SURVIVAL, mob_skill);
 	endif
 
 	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
 	AP_SetTrueSkill(mob, TACTICS, tactics);
 
     var calculate_level_hp := Cint(AP_GetSkill(mob, skill_combat) + AP_GetSkill(mob, skill_support)) - 80;
+	var npc_level := (calculate_level_hp / 6);
 
 	var hp := 0;
 	if (classe == SABIO)
@@ -55,9 +62,9 @@ function customizeNpc(mob)
 	if (!hitsmod)
 		hitsmod := 0;
 	endif
-    if ((calculate_level_hp / 6) >= 1 )
+    if (npc_level >= 1 )
         var new_hp := 0;
-        var multiplier := Cint((calculate_level_hp / 6));
+        var multiplier := Cint(npc_level);
         if (classe == GUERREIRO)
             new_hp := 10 * multiplier;
         elseif (classe == LADINO)
@@ -71,13 +78,13 @@ function customizeNpc(mob)
     endif
 
 	SetObjProperty(mob, "hitsmod", hitsmod + hp);
-
+	SetObjProperty(mob, "anchor", array{ mob.x, mob.y, mob.z+2 });
 	RecalcVitals(mob);
     HealDamage(mob, hitsmod + hp);
 endfunction
 
-function ReturnCharDataPlayerNear(me)
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+function ReturnCharDataPlayerNear(who)
+    var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
     foreach mobile in nearby
         if (mobile.acctname)
 			return mobile.acctname;
@@ -86,8 +93,8 @@ function ReturnCharDataPlayerNear(me)
     return 0;
 endfunction
 
-function HasPlayerNear(me)
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, me.realm);
+function HasPlayerNear(who)
+    var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
     foreach mobile in nearby
         if (mobile.acctname)
             return 1;
@@ -97,7 +104,7 @@ function HasPlayerNear(me)
 endfunction
 
 function HasPlayerNearLocation(x, y, realm := 0)
-	var mobs := ListMobilesNearLocationEx( x, y, LIST_IGNORE_Z, 15, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_PLAYERS_ONLY );
+	var mobs := ListMobilesNearLocationEx( x, y, LIST_IGNORE_Z, 15, LISTEX_FLAG_NORMAL|LISTEX_FLAG_HIDDEN|LISTEX_FLAG_PLAYERS_ONLY, realm );
 	foreach mob in mobs
 		if ( !mob.cmdlevel && !mob.concealed ) //se for player e priv de player
 			return 1;
@@ -207,7 +214,7 @@ function getNPCMainDamage(npc, type)
 
 		damage.+dice := getDamageByTier(damageTier);
 	else
-		setPropWeapon(npc.weapon);
+		if (!npc.weapon.getAttrBase()) npc.weapon.setAttrBase(0); endif
 		damage.+dice := npc.weapon.getMainDamageDice();
 	endif
 
@@ -294,4 +301,158 @@ function setPropNPCAttackType(npc, type)
 		endif
 	endif
 	npc.SetProp("atributos", prop);
+endfunction
+
+function controlNPC(who, targ)
+	if ( targ.IsA(POLCLASS_NPC) )
+		targ.SetMaster(who);
+				
+		SetObjProperty(targ, "owner", who.serial);
+		SetObjProperty(targ, "name", targ.name);
+
+		if ( !GetObjProperty(targ, "script") )
+			SetObjproperty(targ, "script", targ.Script);
+		endif
+		targ.script := ":ghaia:tamed";
+		RestartScript(targ);
+		
+		Run_Script_To_Completion(":death:npcdeath", {targ});
+	endif
+endfunction
+
+function endControlNPC(who)
+	ErasePet(who.master, who.serial);
+	who.SetMaster(0);
+
+	var orig_script := GetObjProperty(who, "script");
+
+	if ( !orig_script )
+
+		PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
+		SysLog(who.name+" doesnt have an original script to use now that taming is done?!");
+		orig_script := ":brainai:brain";
+
+	elseif ( orig_script["tamed"] )
+
+		PrintTextAbove(who, "*my original script was tamed.src ?!*");
+		SysLog(who.name+" my original script was tamed.src ?!");
+		orig_script := ":brainai:brain";
+
+	endif
+
+	who.script := orig_script;
+	SetName(who, GetObjProperty(who, "name"));
+	EraseObjProperty(who, "owner");
+	EraseObjProperty(who, "name");
+	EraseObjproperty(who, "script");
+	EraseObjProperty(who, "happiness");
+	RestartScript(who);
+
+	ErasePetMods(who);
+endfunction
+
+function isHurt(mobile)
+    if (AP_GetVital(mobile, HITS) / AP_GetVitalMaximumValue(mobile, HITS) < 0.70)
+        return 1;
+    endif
+    return 0;
+endfunction
+
+function StealCriticalFailure(mobile, targ)
+	if (mobile.hidden)
+		mobile.hidden := 0;
+	endif
+	SendSysMessageEx(mobile, "Voce chamou muita atencao!", SSM_FAIL);
+	if (TS_GetTimerInfo(targ, "sleep"))
+		SendSysMessageEx(mobile, "Voce acordou o alvo!", SSM_FAIL);
+		TS_LowerDuration(targ, "sleep", -1);
+	endif
+	var range := 25 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/5);
+
+	foreach player in ( ListMobilesInLineOfSight(targ, range) )
+		if ( player.npctemplate );
+		elseif ( player == mobile );
+		elseif ( player == targ );
+		elseif ( !IsBehind(player, targ.x, targ.y) )
+			SendSysMessageEx(player, "Voce nota "+mobile.name+" tentando roubar de "+targ.name+".", SSM_INFO);
+		endif
+		SleepMS(2);
+	endforeach
+
+	return 1;
+endfunction
+
+function getNpcResist()
+   // Get NPC configuration for spell difficulty
+   var npc_elem := NPC_GetNPCConfig(me);
+   var tier := CInt(npc_elem.Tier);
+   if (!tier)
+      tier := 1;
+   endif
+   
+   // Calculate spell difficulty based on tier
+   var diff := RESIST_EASY;
+   case (tier)
+      1: diff := RESIST_EASY;
+      2: diff := RESIST_MEDIUM;
+      3: diff := RESIST_HARD;
+      4: diff := RESIST_VERY_HARD;
+      5: diff := RESIST_EXTREMELY_HARD;
+   endcase
+
+    return diff;
+endfunction
+
+function GetRandomNearbyCoords(item, range := 2)
+    var coords := array{};
+    for i := -range to range
+        for j := -range to range
+            if (i == 0 && j == 0) continue; endif // Skip item's exact position
+            
+            var x := item.x + i;
+            var y := item.y + j;
+            var z := GetWorldHeight(x, y, item.realm);
+            
+            // Check if location is walkable
+            if (CheckLosAt(item, x, y, z))
+                coords.append(struct{
+                    "x" := x,
+                    "y" := y, 
+                    "z" := z
+                });
+            endif
+            sleepms(2);
+        endfor
+    endfor
+    
+    if (coords.size() > 0)
+        var random_pos := coords[RandomInt(coords.size())+1];
+        return random_pos;
+    endif
+    
+    // Fallback to item position if no valid spots found
+    return struct{
+        "x" := item.x,
+        "y" := item.y,
+        "z" := item.z
+    };
+endfunction
+
+function AlertNearbySpiders(mobile)
+    foreach spider in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 22)
+        if (spider.isSpider())
+            SendEvent(spider, struct{ "type" := EVID_ALERT_ALLIES, "source" := mobile });
+        endif
+        sleepms(2);
+    endforeach
+endfunction
+
+function GetRandomNearbyHostile(who)
+	var opponents := ListHostiles(who, 8);
+	var chosen_opponent := opponents[RandomIntMinMax(1, opponents.size())];
+	if (!chosen_opponent)
+		return who.opponent;
+	endif
+
+	return chosen_opponent;
 endfunction

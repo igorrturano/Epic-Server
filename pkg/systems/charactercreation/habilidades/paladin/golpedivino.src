@@ -1,0 +1,62 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":charactercreation:resists";
+include "include/epicConstants";
+include ":combat:damage";
+
+program habilidade(params)
+    var who := params[1];
+    var targ := params[2];
+
+    var chardata := GetObjProperty(who, "chardata");
+    var religiao := chardata.religion;
+    var theology_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 10);
+
+    PrintText(who, "*Canaliza energia divina*");
+    PlayObjectCenteredEffect(who, 0x376A, 1, 32);
+
+    case (religiao)
+        VENERATIO:
+            PlayObjectCenteredEffect(targ, 0xAFED, 7, 16);
+            PlaySoundEffect(targ, 0x358);
+            var danomana := (AP_GetVitalMaximumValue(targ, "mana") - AP_GetVital(targ, "mana")) * 1.2;
+            danomana += GetResist(who, VONTADE);
+            AP_ConsumeVital(targ, "mana", CInt(danomana));
+            SetCooldown(who, "corpofechado", theology_bonus);
+        
+        BOKK_BHARAZ:
+            PlayStationaryEffect(targ.x, targ.y, targ.z, 0x6C9B, 0, 10);
+            PlaySoundEffect(targ, 0x221);
+            TS_StartTimer(targ, "tombar", theology_bonus);
+            TS_StartTimer(targ, "lentidao", theology_bonus);
+        
+        HALLEUAD:
+            PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, theology_bonus * 3, 2, 2740);
+            PlaySoundEffect(targ, 0x1F8);
+            SetCooldown(targ, "blinded", theology_bonus);
+            PrintTextAbove(targ, "*cegueira*");
+        
+        ELUITHORTH:
+            PlayStationaryEffect(targ.x, targ.y, targ.z, 0x3789, 0x0A, 0x1E);
+            PlaySoundEffect(targ, 0x231);
+            SetCooldown(targ, "nightvision", 0);
+            SetCooldown(targ, "darkness", theology_bonus);
+            SetCooldown(targ, "blinded", theology_bonus);
+        
+        KAI:
+            PlayObjectCenteredEffect(targ, 0x37B9, 0x0A, 0x1E);
+            PlaySoundEffect(targ, 0x51D);
+            SetObjProperty(who, "#ignorardefesas", 1);
+    endcase
+
+    // Apply divine damage
+    DamageFLS(targ, theology_bonus, DMG_FORCED, who);
+    return 1;
+endprogram

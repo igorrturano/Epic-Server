@@ -21,7 +21,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	var lvl := Cint(AP_GetSkill(who, MAGICLORE)/33);
+	var lvl := Cint(AP_GetSkill(who, ARCANA)/33);
 	if (lvl < 1)
 		lvl := 1;
 	endif
@@ -34,7 +34,7 @@ program SpellScript(params)
 		return 1;
 	endif
 	if (!CheckResist(targ, VONTADE, diff, -bonus))
-		TS_StartTimer(targ, "dmgreduction", Cint(AP_GetSkill(who, MAGICLORE)), lvl, who, 1);
+		TS_StartTimer(targ, "dmgreduction", Cint(AP_GetSkill(who, ARCANA)), lvl, who, 1);
 		handleSilentMagic(who, targ, SFX_SPELL_PROTECTION);
 
 		printText(targ, "*apavorado*");

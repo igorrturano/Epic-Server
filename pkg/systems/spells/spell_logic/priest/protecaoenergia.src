@@ -24,13 +24,13 @@ program SpellScript(params)
         PlaySoundEffect(targ, SFX_BLESS);
         PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 16);
 
-	var level := (CInt(AP_GetSkill(who, MAGICLORE))/5)+5;
+	var level := (CInt(AP_GetSkill(who, THEOLOGY))/5)+5;
 	if ( temHabilidade(who, "Ultimo Milagre"))
 			if ( isBloodied(targ))
 				level := level + cint(level*0.5);
 			endif
 	endif
-	TS_StartTimer(targ, "enmod", AP_GetSkill(who,MAGICLORE), level); //20 min
+	TS_StartTimer(targ, "enmod", AP_GetSkill(who,THEOLOGY), level); //20 min
 
 	SendSysMessageEx(targ, "Voce esta protegido contra energia.", SSM_INFO);
 

@@ -31,7 +31,7 @@ program aura_of_hate(params)
     if (corrupcao < 1)
         corrupcao := 1;
     endif
-	var cast_points := CInt(AP_GetSkill(attacker, MAGICLORE)) + corrupcao;
+	var cast_points := CInt(AP_GetSkill(attacker, THEOLOGY)) + corrupcao;
 	cast_points := cast_points;
 	var final := cast_points;
 	if (final < 10)
@@ -80,7 +80,7 @@ program aura_of_hate(params)
 	DamageFLS(defender, total, DMG_FORCED, attacker);
 
     DamageFLS(defender, hate_dmg, DMG_PHYSICAL, attacker);
-    var curse_time := CInt(AP_GetSkill(attacker, MAGICLORE) / 3);
+    var curse_time := CInt(AP_GetSkill(attacker, THEOLOGY) / 3);
 
 	Sleep(curse_time);
     EraseObjProperty(defender, "#ClumsyMod");

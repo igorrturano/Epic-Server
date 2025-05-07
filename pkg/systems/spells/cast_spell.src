@@ -19,13 +19,13 @@ include ":spells:include/swordmage";
 include "include/facings";
 include ":tn:cooldown";
 include "include/meusProcessos";
+include "include/epicMageryUtils";
 
 program SpellStarter(params)
     var mobile := params[1]; // Caster
     var spellinfo := params[2]; // spellinfo
     var scroll := params[3]; // item que usou pra castar o spell (scroll, book, varinha ou nada)
     var targ := params[4];
-    
     if (!initializeSpellCasting(mobile, spellinfo, scroll))
         return 0;
     endif
@@ -44,6 +44,10 @@ program SpellStarter(params)
 
     targ := selectSpellTarget(mobile, spellinfo, targ);
     if (!targ)
+        return 0;
+    endif
+
+    if (!checkCastingSuccess(mobile, spellinfo, scroll))
         return 0;
     endif
 
@@ -100,7 +104,7 @@ function performPreCastingChecks(mobile, byref spellinfo)
     spellinfo.mana += CInt(spellinfo.mana * GetObjProperty(mobile, "#manapenalty") / 100);
 
     var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
-    var battlemageHabs := {"Concentracao Macabra", "Aura Mortis", "Dominatio Animae", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
+    var battlemageHabs := {"Concentracao Macabra", "Consagracao Divina", "Sigilo de Protecao", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana"};
     var tem_hab := 0;
     foreach hab in battlemageHabs
         if (TemHabilidade(mobile, hab))
@@ -124,6 +128,24 @@ function performPreCastingChecks(mobile, byref spellinfo)
         return 0;
     endif
 
+    var cast_time := CInt(GetObjProperty(mobile, "#cast_time"));
+    var free_cast := GetObjProperty(mobile, "#free_cast");
+    
+    if (cast_time != error)
+        if (ReadGameClock() > cast_time + 15)
+            if (free_cast != error)
+                SendSysMessageEx(mobile, "Você demorou demais para usar seu feitiço.", SSM_FAIL);
+                EraseObjProperty(mobile, "#free_cast");
+                EraseObjProperty(mobile, "#cast_time");
+                mobile.frozen := 0;
+                return 0;
+            endif
+            
+            // Always clean up expired cast_time even for normal casts
+            EraseObjProperty(mobile, "#cast_time");
+        endif
+    endif
+
     return 1;
 endfunction
 
@@ -131,7 +153,10 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
     var mana_cost := spellinfo.mana;
     var current_mana := AP_GetVital(mobile, MANA);
     var current_stamina := AP_GetVital(mobile, STAMINA);
-
+    if (GetObjProperty(mobile, "#free_cast"))
+        return 1;
+    endif
+    // TODO: Decidir se vou consumir mana dos humanoids 
     if (!mobile.npctemplate)
         if (TemHabilidade(mobile, "Determinacao Arcana"))
             if (current_mana >= mana_cost)
@@ -186,9 +211,9 @@ function performCastingProcess(mobile, spellinfo)
     SetObjProperty(mobile, "#Casting", 1);
     DistribuiEvento(mobile,EV_SPELLCAST);
 
-    if (!mobile.npctemplate)
-        performSpellVocalization(mobile, spellinfo);
-    endif
+    // if (!mobile.npctemplate)
+    performSpellVocalization(mobile, spellinfo);
+    // endif
 
     var orig_hp := AP_GetVital(mobile, "Hits");
     var delay := spellinfo.delay + CInt(GetObjProperty(mobile, "#delayspell"));
@@ -218,13 +243,13 @@ function performSpellVocalization(mobile, spellinfo)
     if (spellinfo.powerwords && GetObjProperty(mobile, "#magiasilenciosa") == error)
         PrintText(mobile, spellinfo.powerwords);
     endif
-    if (spellinfo.prayer[1] && GetObjProperty(mobile, "#magiasilenciosa") == error)
-        if (RandomInt(100) < 15)
-            var prayer := spellinfo.prayer[RandomInt(spellinfo.prayer.size()) + 1];
-            prayer := replaceAccentedCharacters(prayer);
-            PrintText(mobile, prayer);
-        endif
-    endif
+    // if (spellinfo.prayer[1] && GetObjProperty(mobile, "#magiasilenciosa") == error)
+    //     if (RandomInt(100) < 15)
+    //         var prayer := spellinfo.prayer[RandomInt(spellinfo.prayer.size()) + 1];
+    //         prayer := replaceAccentedCharacters(prayer);
+    //         PrintText(mobile, prayer);
+    //     endif
+    // endif
 endfunction
 
 function replaceAccentedCharacters(text)
@@ -244,7 +269,12 @@ function replaceAccentedCharacters(text)
 endfunction
 
 function performSpellCycles(mobile, spellinfo, orig_hp)
-    var cycles := Max(spellinfo.cycles, 1);
+    var cycles := Max(CInt(spellinfo.Cycles), 1);
+
+    if (GetObjProperty(mobile, "#free_cast"))
+        cycles := 1;
+        EraseObjProperty(mobile, "#free_cast");
+    endif
 
     while (cycles)
         if (!checkSpellInterruption(mobile, orig_hp))
@@ -382,29 +412,42 @@ function checkTargetValidity(mobile, targ, spellinfo)
         endif
     endif
 
+    if(Cint(GetObjProperty(mobile, "charmed_by")) == targ.serial)
+		PrintTextAbove(mobile, "*hipnotizado*");	
+		return 0;
+    endif
+
     return 1;
 endfunction
 
-function finalizeCasting(mobile, spellinfo, targ, scroll)
+function checkCastingSuccess(mobile, spellinfo, scroll)
     var attribute := MAGERY;
 	if (TemHabilidade(mobile, "Sensibilidade Arcana"))
-		attribute := MAGICLORE;
+		attribute := ARCANA;
 	endif
 
     var difficulty := CInt(spellinfo.Difficulty);
-
     var skill_check := SkillCheck(mobile, attribute, difficulty);
+
+    // Chance to also up magic lore on cast
+    SkillCheck(mobile, HandleSpellSkill (mobile), difficulty);
 
     if (skill_check > 0)
         if (scroll.isA(POLCLASS_ITEM))
             consumeScroll(mobile, scroll);
         endif
-
-        CastSpell(mobile, spellinfo, targ);
-    else
-        handleFailedSpell(mobile, spellinfo);
+        
+        return 1;
     endif
 
+    CancelTarget( mobile );
+    handleFailedSpell(mobile, spellinfo);
+
+    return 0;
+endfunction
+
+function finalizeCasting(mobile, spellinfo, targ, scroll)
+    CastSpell(mobile, spellinfo, targ);
     EraseObjProperty(mobile, "#Casting");
     EraseObjProperty(mobile, "#CustoDeterminacaoArcana");
     return 1;
@@ -416,7 +459,7 @@ function consumeScroll(mobile, scroll)
     else
 	    var attrib_value := MAGERY;
 		if (TemHabilidade(mobile, "Sensibilidade Arcana"))
-			attrib_value := MAGICLORE;
+			attrib_value := ARCANA;
 		endif
         var chance := RandomIntMinMax(0, 100);
         if (chance > attrib_value)

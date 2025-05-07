@@ -18,7 +18,7 @@ include ":gumps:epicGumps";
 const GUMP_WIDTH := 440;
 const GUMP_HEIGHT := 565;
 
-var skillList := array{"Alchemy", "Magic_Lore", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering", "Dual_Wield"};
+var skillList := array{"Alchemy", "Arcana", "Science", "Theology", "Magery", "Survival", "Handle_Animal", "Awareness", "Medicine", "Domestic_Work", "Sneak", "Mechanics", "Pickpocketing", "Wood_Working", "Metal_Working", "Ranged", "Two_Handed", "One_Handed", "Parry", "Tactics", "Gathering", "Dual_Wield"};
 
 program core_skillWin(who)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
@@ -128,20 +128,29 @@ function ShowHabilidadesPage(byref gump, who)
     var i;
     for(i := 0; i <= 20; i := i + 1)
         if (Cint(habs[i]) == 1)
-            GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
+            if (i%2 == 0)
+                GFTextLine(gump, x + 20, y, 1150, "Habilidade: ");
+            else
+                GFTextLine(gump, x + 20, y, 1150, "Atributo: ");
+            endif
+            
             if (i%2 == 1)
                 GFTextLine(gump, x + 90, y, 300, "Comprar Status");
                 GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
             else
-                // if(i == 0)
+                if(i == 0)
                     GFTextLine(gump, x + 90, y, 300, "Escolha a Habilidade");
                     GFAddButton(gump, x, y+5, 2103, 2104, 1, i+1001);
-                // else
-                    // GFTextLine(gump, x + 90, y, 300, "Procure o Pergaminho");
-                // endif
+                else
+                    GFTextLine(gump, x + 90, y, 300, "Procure o Pergaminho");
+                endif
             endif
         elseif (cint(habs[i]) == 2)
-            GFTextLine(gump, x + 20, y, 1150, "Nivel " + i + " : ");
+            if (i%2 == 0)
+                GFTextLine(gump, x + 20, y, 1150, "Habilidade: ");
+            else
+                GFTextLine(gump, x + 20, y, 1150, "Atributo: ");
+            endif
             if (i%2 == 1)
                 GFTextLine(gump, x + 90, y, 300, "Status Comprado");
             else
@@ -265,24 +274,6 @@ function Habilidades(who, nivel)
 			habs[nivel] := 2;
 			SetObjProperty(who, "buyhab", habs);
 			AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)+2);
-		endif
-		
-		if (habs[nivel] == 2)
-			var hp_up := 0;
-			if (chardata.classe == GUERREIRO)
-				hp_up := 10;
-			elseif (chardata.classe == LADINO)
-				hp_up := 8;
-			elseif (chardata.classe == SABIO)
-				hp_up := 6;
-			endif
-			var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
-			hitsmod := hitsmod + hp_up;
-			SetObjProperty(who, "hitsmod",  hitsmod);
-			RecalcVitals(who);
-			HealDamage(who, hp_up);
-		else
-			SendSysMessageEx(who, "Ocorreu algum erro na hora de comprar o status", SSM_FAIL);
 		endif
 	else
 		SendSysMessageEx(who, "Voce nao pode comprar esse status.");
@@ -447,7 +438,7 @@ function SkillEraser(who)
             skillAux := "ArmsLore";
         elseif ( skillAux == "Survival")
             skillAux := "Camping";
-        elseif (skillAux == "Magic_Lore")
+        elseif (skillAux == "Arcana")
             skillAux := "Inscription";
         endif
         var elem := AP_GetAttributeCfgElem(skillAux);
@@ -502,7 +493,7 @@ function SkillEraser(who)
             selectedSkill := "ArmsLore";
         elseif ( selectedSkill == "EvidanceGathering")
             selectedSkill := "EvaluatingIntelligence";
-        elseif ( selectedSkill == "Magic_Lore")
+        elseif ( selectedSkill == "Arcana")
             selectedSkill := "Inscription";
         endif
         var value := cdbl(RequestGump(who, "Quantos pontos vai abaixar da pericia " + selectedSkill + " ? " ));

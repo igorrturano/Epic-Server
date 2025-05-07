@@ -1,0 +1,101 @@
+use uo;
+use cfgfile;
+
+include ":gumps:yesNo";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":taming:taming";
+include ":attributes:attributes";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":gumps:epicGumps";
+
+program command_invocacoes(who)
+    var gump := GFECreateGump("Gerenciar Invocacoes", 400, 500);
+    GFTextMid(gump, 220, 40, 250, 1153, "Summons: "+GetNumSummons(who)+" / "+GetMaxSummons(who));
+
+    // Lista summons ativos
+    var y := 70;
+    var index := 1;
+    var pets := GetObjProperty(who, "SummonedPets");
+    if (pets)
+        GFTextLine(gump, 30, y, 0x84, "Invocacoes Ativas:");
+        y += 20;
+        
+        foreach serial in pets
+            var pet := SystemFindObjectBySerial(serial);
+            if (pet)
+                // Verifica o timer do summon
+                var timer := TS_GetTimerInfo(pet, "summon");
+                var time_left := 0;
+                
+                if (timer)
+                    time_left := CInt(timer.endtime - ReadGameClock());
+                endif
+                
+                var slot := GetObjProperty(pet, "slot");
+                if (slot)
+                    time_left := CInt(TS_GetTimerDuration(who, "summon_"+CStr(slot)));
+                endif
+
+                if (time_left <= 0)
+                    time_left := "Expirando...";
+                endif
+                
+                GFTextLine(gump, 50, y, 1153, pet.name);
+                GFTextLine(gump, 200, y, 1153, ""+time_left+" seg");
+                GFAddButton(gump, 32, y+3, 2117, 2118, GF_CLOSE_BTN, index);
+                
+                y += 20;
+            endif
+            index := index + 1;
+            sleepms(2);
+        endforeach
+    else
+        GFTextLine(gump, 50, y, 1153, "Nenhuma invocacao ativa");
+    endif
+
+    var input := GFSendGump(who, gump);
+    input := input[0];
+    
+    if (input > 0 && input <= index)
+        if (pets[input])
+            var pet := SystemFindObjectBySerial(pets[input]);
+            if (pet)
+                if (YesNo(who, "Deseja libertar esta invocacao?"))
+                    var slot := GetObjProperty(pet, "slot");
+                    if (slot)
+                        TS_LowerDuration(who, "summon_"+CStr(slot), -1);
+                        EraseObjProperty(who, "slot"+CStr(slot));
+                        EraseObjProperty(who, "summon_serial_"+CStr(slot));
+                    endif
+                    
+                    // Remove da lista de summons
+                    var new_pets := array;
+                    foreach serial in pets
+                        if (serial != pet.serial)
+                            new_pets.append(serial);
+                        endif
+                    endforeach
+                    SetObjProperty(who, "SummonedPets", new_pets);
+                    
+                    // Mata o summon imediatamente
+                    SendSysMessageEx(who, "Voce libertou sua invocacao.", SSM_INFO);
+                    PrintText(pet, "*sumindo pouco a pouco*");
+                    PlaySoundEffect(pet, SFX_SPELL_MANA_VAMPIRE);
+                    PlayStationaryEffect(pet.x, pet.y, pet.z, FX_SMOKE, 0xa, 0xa, 0, pet.realm);
+                    SetObjProperty(pet, "GuardKill", 1);
+                    
+                    // Força a morte instantânea
+                    pet.hidden := 1;
+                    ApplyRawDamage(pet, AP_GetVital(pet, "Hits") + 100);
+                    MoveObjectToLocation(pet, 6143, 0, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+                    pet.kill();
+                    
+                    // Recarrega o gump para mostrar a lista atualizada
+                    start_script(":commands:player/invocacoes", who);
+                endif
+            endif
+        endif
+    endif
+endprogram

@@ -9,7 +9,7 @@ function CalculateRawDamage(attacker, weapon)
 
 	if (attacker.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var dmg := cfg[npctemplate.template].AttackDamage;
 		// printtextabove(attacker, "dmg dice " + dmg);
 		return ( RandomDiceRoll(dmg) );

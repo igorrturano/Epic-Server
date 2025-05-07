@@ -10,11 +10,57 @@ use util;
 
 include ":thor:openai";
 
+function AICompletion(context, questions, temperatura:=0.7, top_p:=1.0, skipSafetyCheck:=1)
+    print("=== Starting AI Completion ===");
+    
+    // Validate questions parameter
+    if (!questions || TypeOf(questions) != "Array" || !questions.size())
+        print("Error: questions parameter is empty or not an array");
+        return "Error: Invalid questions format. Please provide a valid array of questions.";
+    endif
+    
+    // Check if each question has required fields
+    var hasValidQuestion := 0;
+    foreach question in questions
+        if (TypeOf(question) == "Struct" && (question.user || question.assistant))
+            hasValidQuestion := 1;
+            break;
+        endif
+    endforeach
+    
+    if (!hasValidQuestion)
+        print("Error: No valid questions found in the array");
+        return "Error: Each question must contain 'assistant' or 'user' field.";
+    endif
+    
+    // Try Claude first
+    var responseAI;
+    var success := 0;
+
+    // Make sure the context is passed as the system message
+
+    responseAI := ClaudeCompletion(context, questions, 0.7, 0.9, "claude-3-haiku-20240307", 1);
+    if (responseAI && responseAI != "Failed to get a response after multiple attempts. Please try again later.")
+      success := 1;
+      print("Claude Response: "+responseAI);
+   else
+      print("Claude API error, falling back to OpenAI");
+   endif
+    
+    // Fallback to OpenAI if Claude fails
+    if (!success)
+        print("Falling back to OpenAI");
+        responseAI := OpenAICompletion_Thor(context, questions, temperatura, top_p, skipSafetyCheck);
+    endif
+    
+    return responseAI;
+endfunction
+
 function handle_banker(playerinput)
 endfunction
 
 function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
-   var temperatura := 1.5;
+   var temperatura := 1.0; // Reduced from 1.5 for better reliability
    // print("Categoria Mob: "+CategoriaMob);
    var jsonData := PackJSON(struct{
       "npcs" := struct{
@@ -86,9 +132,10 @@ function handle_combat_ai(CategoriaMob, name_mob, playerinput, playerRaca)
 
    context := Cstr(context);
 
-   var responseAI := OpenAICompletion_Thor(context, playerinput, temperatura);
+   var questions := array{ struct{ "user" := playerinput } };
+   var responseAI := AICompletion(context, questions, temperatura);
    responseAI := StrReplace(responseAI, "\"", " "); // Substitui aspas por espaço
-   // print("responseAI: "+responseAI);
+   print("responseAI: "+responseAI);
    return responseAI;
 endfunction
 
@@ -123,7 +170,7 @@ function handle_doubleclick(npctype, playerinput)
       ";
 
       var questions := array{ struct{ "user" := playerinput } };
-      var result := OpenAICompletion_Thor(sysMsg, questions);
+      var result := AICompletion(sysMsg, questions);
       return result;
 
    elseif (npctype == "vendedor")
@@ -156,7 +203,7 @@ function handle_doubleclick(npctype, playerinput)
       ";
 
       var questions := array{ struct{ "user" := playerinput } };
-      var result := OpenAICompletion_Thor(sysMsg, questions);
+      var result := AICompletion(sysMsg, questions);
       return result;
 
    else
@@ -177,7 +224,7 @@ function handle_doubleclick(npctype, playerinput)
       context := Cstr(context);
 
       var questions := array{ struct{ "user" := playerinput } };
-      var result := OpenAICompletion_Thor(context, questions);
+      var result := AICompletion(context, questions);
       return result;
 
    endif
@@ -186,14 +233,14 @@ endfunction
 function handle_npc_talker_openai(frase, temperatura:=1.0, top_p:=1)
    var contexto := "Você é um fofoqueiro de RPG, o personagem que fala contigo traz algo. Faça a frase de maneira totalmente diferente, mudando palavras e ordens das palavras, seja criativo";
    var frase_struct := array{ struct{ "user" := frase } };
-   var result := OpenAICompletion_Thor(contexto, frase_struct, temperatura, top_p);
+   var result := AICompletion(contexto, frase_struct, temperatura, top_p);
    
    return result;
 endfunction
 
 function handle_npc_listen_openai(contexto, frase, temperatura:=0.7)
    var frase_struct := array{ struct{ "user" := frase } };
-   var result := OpenAICompletion_Thor(contexto, frase_struct, temperatura);
+   var result := AICompletion(contexto, frase_struct, temperatura);
    
    return result;
 endfunction
@@ -299,7 +346,8 @@ function handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt)
 
    context := Cstr(context);
 
-   var responseAI := OpenAICompletion_Thor(context, playerinput);
+   var questions := array{ struct{ "user" := playerinput } };
+   var responseAI := AICompletion(context, questions);
    responseAI := StrReplace(responseAI, "\"", " "); // Substitui aspas por espaço
    
    return responseAI;
@@ -364,10 +412,133 @@ function handle_open_ai_npc_speech_thor(npc, language, event, npcEvil, mood, gos
 
    // Define the questions array with the user input
    var questions := array{ struct{ "user" := PlayerInput } };
-   // Chama o OpenAI com as variaveis de contexto (systemMessage) e o input do char (questions)
+   // Chama o AICompletion com as variaveis de contexto (systemMessage) e o input do char (questions)
    
-   var responseText := OpenAICompletion_Thor(systemMessage, questions);
-   //var responseText := "teste";
+   var responseText := AICompletion(systemMessage, questions);
    return responseText;
 endfunction
 
+function handle_combat_speech(npc_name, player_input, playerRaca, npcState := "healthy")
+   if (player_input == error || !player_input || player_input == "")
+      player_input := "* looks at you aggressively *"; // Default value if empty
+   endif
+
+   var base_prompt := "
+         Você é um inimigo hostil no mundo de Eora, um mundo de fantasia medieval diverso de um RPG.
+
+         Como NPC antagonista, seu objetivo é desafiar o jogador com uma frase intimidadora antes do combate.
+
+         REGRAS DE COMPORTAMENTO:
+         - Use entre 20-50 caracteres - seja breve e ameaçador
+         - Expresse fúria extrema através de linguagem violenta e ameaças diretas
+         - Trate o jogador como um intruso desprezível em seu território
+         - Varie o tom entre ameaças físicas, promessas de tortura ou referências à sua superior habilidade em combate
+         - Evite clichês genéricos; seja específico e memorável
+
+         Exemplos de frases:
+         - Seus ossos serão triturados e seus gritos ecoarão por estas paredes!
+         - O cheiro do seu medo é delicioso. Vamos ver se seu sangue tem o mesmo gosto!
+         - Sua cabeça será um excelente troféu para minha coleção!
+
+      "+npcState;
+
+    var cfg := ReadConfigFile(":epicAI:config/npc_speech");
+    if (!cfg)
+        print("Could not open npc_speech.cfg");
+        return error{"errortext" := "Could not open npc_speech.cfg"};
+    endif
+
+    // Procura o elemento correto comparando o Name no config
+    var elem;
+    foreach entry in (GetConfigStringKeys(cfg))
+        var temp_elem := cfg[entry];
+        if (temp_elem.Name == npc_name)
+            print("Found NPC type ["+npc_name+"] in npc_speech.cfg");
+            elem := temp_elem;
+            break;
+        endif
+    endforeach
+
+    if (!elem)
+        print("NPC type ["+npc_name+"] not found in npc_speech.cfg");
+        return error{"errortext" := "NPC type ["+npc_name+"] not found in npc_speech.cfg"};
+    endif
+
+    // Build context
+    var context := base_prompt + "\n";
+    context += "# "+GetConfigString(elem, "Description")+"\n";
+    context += "# Tom: "+GetConfigString(elem, "Tone")+"\n\n";
+    
+    // Add examples based on state
+    context += "# Exemplos para seu estado atual:\n";
+    var responses := GetConfigStringArray(elem, npcState);
+    foreach response in responses
+        context += response + "\n";
+    endforeach
+
+    // Use Claude instead of OpenAI
+    var questions := array{ struct{ "user" := Cstr(player_input) } };
+    
+    // Try to use Claude first, with fallback to OpenAI if it fails
+    var responseAI;
+    var success := 0;
+    // Debug output
+   print("Questions array: " + questions);
+   print("First question: " + questions[1]);
+   print("User field: " + questions[1].user);
+    
+   // Skip safety check for combat speech
+   // Make sure the context is passed as the system message
+   var formattedQuestions := array{};
+   foreach question in questions
+       formattedQuestions.append(question);
+   endforeach
+   
+   responseAI := ClaudeCompletion(context, questions, 0.7, 0.9, "claude-3-haiku-20240307", 1);
+   if (responseAI && responseAI != "Failed to get a response after multiple attempts. Please try again later.")
+      success := 1;
+      print("Claude Response: "+responseAI);
+   else
+      print("Claude API error, falling back to OpenAI");
+   endif
+
+    // Fallback to OpenAI if Claude fails
+    if (!success)
+        print("Falling back to OpenAI for combat speech");
+        responseAI := OpenAICompletion_Thor(context, questions, 1.0, 0.7, 1);
+        print("OpenAI Response: "+responseAI);
+    endif
+    
+    // If both APIs fail, return a basic response
+    if (!responseAI || responseAI == "Failed to get a response after multiple attempts. Please try again later.")
+        return handle_error_combat_AI_speech();
+    endif
+    
+    return StrReplace(responseAI, "\"", " ");
+endfunction
+
+function getNPCState(npc)
+    var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
+
+    if (hp_percent <= 25)
+        return "dying";
+    elseif (hp_percent <= 50)
+        return "hurt";
+    elseif (hp_percent <= 75)
+        return "injured";
+    else
+        return "healthy";
+    endif
+endfunction
+
+function handle_error_combat_AI_speech()
+    var responses := array{
+        "*Grunhe*",
+        "*Rosna*",
+        "*Ignora*",
+        "*Olha fixamente*",
+        "*Range*",
+        "*Murmura*"
+    };
+    return responses[RandomInt(responses.size())+1];
+endfunction

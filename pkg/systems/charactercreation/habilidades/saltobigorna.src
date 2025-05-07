@@ -12,11 +12,14 @@ include ":combat:damage";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":taming:taming";
+include ":destroyable:include/destroyItem";
 
 program animateSword(params)
 	var who := params[1];
 	params := 0; // No longer needed
-
+   if (who.npctemplate)
+      sleep(1);
+   endif
    var world_z := GetStandingHeight( who.x, who.y, who.z+15, who.realm );
    var moved := 0;
     PerformAction(who, 12);
@@ -37,10 +40,10 @@ program animateSword(params)
 //   PlayStationaryEffect( x, y, z, effect, speed, loop := 0, explode := 0, realm := _DEFAULT_REALM )
    PLayStationaryEffect(who.x+2, who.y+2, who.z, 0x6C9B, 0, 10, 0, who.realm);
    PlaySoundEffect(who, 0x221);
-    var duration := cint(AP_GetSkill(who, MAGICLORE)/10);
+    var duration := cint(AP_GetSkill(who, THEOLOGY)/10);
     sleepms(500);
     var festa := who.party;
-    var dano_mlore := CInt(AP_GetSkill(who, MAGICLORE) / 2);
+    var dano_mlore := CInt(AP_GetSkill(who, THEOLOGY) / 2);
 
    var allPets := array{};
    var party_members := who.party.members;
@@ -49,7 +52,7 @@ program animateSword(params)
       foreach member in party_members
          if (member != who)
             var memberObj := SystemFindObjectBySerial(member.serial);
-            var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+            var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
             foreach pet in allPetsAndSummonedPets
                   allPets.append(pet);
             endforeach
@@ -58,6 +61,7 @@ program animateSword(params)
    endif
    
     var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 2 , who.realm );
+    DanificaObjetosProximos(who,who.x, who.y, who.z,who.realm,struct{dano := dano_mlore, desc := "Salto Bigorna." },2,0x6d67);
     foreach char in nearby
         var char_owner := GetObjProperty(char, "owner");
         if (!(char in (festa.members) || char == who))

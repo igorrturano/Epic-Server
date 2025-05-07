@@ -4,9 +4,9 @@
 
 use os;
 use cfgfile;
+use math;
 
 include "utils";
-include "props";
 include ":attributes:attributeConstants";
 
 /////////////
@@ -30,6 +30,15 @@ function getWeaponStats(weapon)
 
 	stats := addDamagePhysical(stats, weapon);
 	stats := addDamageElemental(stats, weapon);
+	stats := addCombatAttributes(stats, weapon);
+
+	stats := addDurability(stats, weapon);
+	stats := addWeight(stats, weapon);
+	stats := addSTRRequired(stats, weapon);
+
+	// TODO: Função para setar HP na prop
+	// TODO: Função para setar PESO na prop
+	// TODO: Função para setar STRRequired na prop
 
 	return stats;
 endfunction
@@ -38,44 +47,55 @@ function addDamagePhysical(stats, weapon)
 	var elem := getItemCfgElem(weapon);
 	var elemMainDamage := SplitWords(elem.EpicMainDamage);
 	var elemOffDamage := SplitWords(elem.EpicOffDamage);
-	var prop := getPropBase(weapon);
 
-	stats.+SlashMainDamage := !getDamageByTier(elemMainDamage[1]).errortext ? getDamageByTier(elemMainDamage[1]) : 0;
-	stats.+PiercingMainDamage := !getDamageByTier(elemMainDamage[2]).errortext ? getDamageByTier(elemMainDamage[2]) : 0;
-	stats.+BluntMainDamage := !getDamageByTier(elemMainDamage[3]).errortext ? getDamageByTier(elemMainDamage[3]) : 0;
+	stats.+SlashMainDamage := getDamageByTier(elemMainDamage[1]) ? getDamageByTier(elemMainDamage[1]) : 0;
+	stats.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]) ? getDamageByTier(elemMainDamage[2]) : 0;
+	stats.+BluntMainDamage := getDamageByTier(elemMainDamage[3]) ? getDamageByTier(elemMainDamage[3]) : 0;
 
-	if (Upper(elem.Attribute) == DUALWIELD.Upper())
-		stats.+SlashOffDamage := !getDamageByTier(elemOffDamage[1]).errortext ? getDamageByTier(elemOffDamage[1]) : 0;
-		stats.+PiercingOffDamage := !getDamageByTier(elemOffDamage[2]).errortext ? getDamageByTier(elemOffDamage[2]) : 0;
-		stats.+BluntOffDamage := !getDamageByTier(elemOffDamage[3]).errortext ? getDamageByTier(elemOffDamage[3]) : 0;
+	if (weapon.isDualWield())
+		stats.+SlashOffDamage := getDamageByTier(elemOffDamage[1]) ? getDamageByTier(elemOffDamage[1]) : 0;
+		stats.+PiercingOffDamage := getDamageByTier(elemOffDamage[2]) ? getDamageByTier(elemOffDamage[2]) : 0;
+		stats.+BluntOffDamage := getDamageByTier(elemOffDamage[3]) ? getDamageByTier(elemOffDamage[3]) : 0;
 	endif
-
-	stats.+AttackType := elem.TipoAtaque;
-	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeedTier);
-	stats.+CriticalChance := getCriticalChanceByTier(elem.CriticalChance);
 
 	return stats;
 endfunction
 
 function addDamageElemental(stats, weapon)
 	// Danos físicos são dados, danos elementais são puros
-	stats.+FireDamage := 0;
-	stats.+ColdDamage := 0;
-	stats.+PoisonDamage := 0;
-	stats.+EnergyDamage := 0;
-
-	stats := addDamageElementalByWeapon(stats, weapon);
+	stats.+FireDamage := getDamageElemental("FIRE", weapon);
+	stats.+ColdDamage := getDamageElemental("COLD", weapon);
+	stats.+PoisonDamage := getDamageElemental("POISON", weapon);
+	stats.+EnergyDamage := getDamageElemental("ENERGY", weapon);
 
 	return stats;
 endfunction
 
-function addDamageElementalByWeapon(stats, weapon)
-	var prop := getPropBase(weapon);
+function getDamageElemental(DMGTYPE, weapon)
+	case(DMGTYPE)
+		"FIRE":
+			return CInt(weapon.getAttrBase().FireDamage);
 
-	stats.FireDamage += CInt(prop.FireDamage);
-	stats.ColdDamage += CInt(prop.ColdDamage);
-	stats.PoisonDamage += CInt(prop.PoisonDamage);
-	stats.EnergyDamage += CInt(prop.EnergyDamage);
+		"COLD":
+			return CInt(weapon.getAttrBase().ColdDamage);
+
+		"POISON":
+			return CInt(weapon.getAttrBase().PoisonDamage);
+
+		"ENERGY":
+			return CInt(weapon.getAttrBase().EnergyDamage);
+
+		default:
+			return 0;	
+	endcase
+endfunction
+
+function addCombatAttributes(stats, weapon)
+	var elem := getItemCfgElem(weapon);
+
+	stats.+AttackType := elem.TipoAtaque;
+	stats.+AttackSpeed := getSpeedByTier(elem.EpicSpeed);
+	stats.+CriticalChance := getCriticalChanceByTier(elem.EpicCriticalChance);
 
 	return stats;
 endfunction
@@ -142,6 +162,11 @@ function getDamageByTier(tier)
 		CROSSBOW_LOW: return "1d6";
 		CROSSBOW_MID: return "1d8";
 		CROSSBOW_HIGH: return "1d10";
+
+		// THROWING
+		THROWING_LOW: return "1d4";
+		THROWING_MID: return "1d6";
+		THROWING_HIGH: return "1d8";
 			
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
@@ -183,7 +208,14 @@ function getArmorStats(armor)
 	if (armor.isShield())
 		stats := addShieldMods(stats, armor);
 	endif
-	// TODO: Calcular HP, durabilidade, Str required.
+
+	// TODO: Função para setar HP na prop
+	// TODO: Função para setar PESO na prop
+	// TODO: Função para setar STRRequired na prop
+
+	stats := addDurability(stats, armor);
+	stats := addWeight(stats, armor);
+	stats := addSTRRequired(stats, armor);
 
 	return stats;
 endfunction
@@ -192,6 +224,8 @@ function addResistsPhysical(stats, armor)
 	stats.+SlashResist := 0;
 	stats.+PiercingResist := 0;
 	stats.+BluntResist := 0;
+
+	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
 	
 	stats := addResistPhysicalBy("MATERIAL", stats, armor);
 	stats := addResistPhysicalBy("SLOT", stats, armor);
@@ -201,7 +235,7 @@ function addResistsPhysical(stats, armor)
 endfunction
 
 function addResistPhysicalBy(type, stats, armor)
-	var resists := array{};
+	var resists := dictionary{};
 	
 	case(Upper(type))
 		"MATERIAL":
@@ -217,68 +251,152 @@ function addResistPhysicalBy(type, stats, armor)
 			break;
 	endcase
 
-	stats.SlashResist += CInt(resists[1]);
-	stats.PiercingResist += CInt(resists[2]);
-	stats.BluntResist += CInt(resists[3]);
+	stats.SlashResist += CInt(resists["SlashResist"]);
+	stats.PiercingResist += CInt(resists["PiercingResist"]);
+	stats.BluntResist += CInt(resists["BluntResist"]);
 
 	return stats;
 endfunction
 
 function getResistPhysicalByProtection(armor)
+	var resists := array{};
+	
+	resists := getResistPhysicalByProtectionType(armor.getType());
+
+	return dictionary{
+		"SlashResist" -> resists[1],
+		"PiercingResist" -> resists[2],
+		"BluntResist" -> resists[3]
+	};
+endfunction
+
+function getResistPhysicalByProtectionType(type)
 	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
-	case(Upper(armor.getType())) // {SlashResist, PiercingResist, BluntResist}
+	case(Upper(type)) // {SlashResist, PiercingResist, BluntResist}
 		//TIER 1
-		ARMOR_LOWLOW: return {0,0,0};
-		ARMOR_LOWMID: return {1,1,1};
-		ARMOR_LOWHIGH: return {2,2,2};
+		ARMOR_LOWLOW: return {0,0,0}; break;
+		ARMOR_LOWMID: return {1,1,1}; break;
+		ARMOR_LOWHIGH: return {2,2,2}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: return {3,3,3};
-		ARMOR_MIDMID: return {4,4,4};
-		ARMOR_MIDHIGH: return {5,5,5};
+		ARMOR_MIDLOW: return {3,3,3}; break;
+		ARMOR_MIDMID: return {4,4,4}; break;
+		ARMOR_MIDHIGH: return {5,5,5}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: return {6,6,6};
-		ARMOR_HIGHMID: return {7,7,7};
-		ARMOR_HIGHHIGH: return {8,8,8};
+		ARMOR_HIGHLOW: return {6,6,6}; break;
+		ARMOR_HIGHMID: return {7,7,7}; break;
+		ARMOR_HIGHHIGH: return {8,8,8}; break;
 
 		// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos aqui.
-		default: return {0,0,0};
+		default: return {0,0,0}; break;
 	endcase
 endfunction
 
 function getResistPhysicalBySlot(armor)
+	var resists := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
-		case(Upper(armor.getSlot())) // {SlashResist, PiercingResist, BluntResist}
-			HEAD: return {2,2,2};
-			NECK: return {1,1,1};
-			BODY: return {4,4,4};
-			ARMS: return {2,2,2};
-			HANDS: return {1,1,1};
-			LEGS: return {3,3,3};
-			FEET: return {2,2,2};
-			
-			default: return {0,0,0};
-		endcase
+		resists := getResistPhysicalBySlotString(armor.getSlot());
 	endif
 
-	return {0,0,0};
+	return dictionary{
+		"SlashResist" -> resists[1],
+		"PiercingResist" -> resists[2],
+		"BluntResist" -> resists[3]
+	};
+endfunction
+
+function getResistPhysicalBySlotString(slot)
+	case(Upper(slot)) // {SlashResist, PiercingResist, BluntResist}
+			HEAD: return {2,2,2}; break;
+			NECK: return {1,1,1}; break;
+			BODY: return {4,4,4}; break;
+			ARMS: return {2,2,2}; break;
+			HANDS: return {1,1,1}; break;
+			LEGS: return {3,3,3}; break;
+			FEET: return {2,2,2}; break;
+			
+			default: return {0,0,0}; break;
+		endcase
 endfunction
 
 function getResistPhysicalByMaterial(armor)
-	case (Upper(armor.getMaterialName())) // {SlashResist, PiercingResist, BluntResist}
-		"COBRE": return {0,0,0};
+	// TODO: Pensar em transformar isso daqui em uma função que retorne TODAS as infos do material em um struct: Danos (Físicos e Elementais), Resists (Físicos e Elementais), mod de peso, mod de HP, etc.
+	var resists := array{};
+	
+	resists := getResistPhysicalByMaterialID(armor.getMaterialID());
 
-		"BRONZE": return {1,1,1};
-		"FERRO": return {1,1,1};
-		"FERROTEMPERADO": return {2,2,2};
+	return dictionary{
+		"SlashResist" -> resists[1],
+		"PiercingResist" -> resists[2],
+		"BluntResist" -> resists[3]
+	};
+endfunction
 
-		"ACO": "FULMETIUM": "VENETIUM": "IGNIUM": "FRIGUTIUM": return {3,3,3};
+function getResistPhysicalByMaterialID(ID)
+	// TODO: Falta couros, tecidos, ossos, madeira e demais materiais de defesa.
+	case (ID) // {SlashResist, PiercingResist, BluntResist}
+		// TECIDOS
+		0xf125: // Lã
+		0xdf9: // Algodão
+		0x1a94: // Seda
+		0x1a9C: // Linho
+		0xdfa: // Malva
+		0xdfb: // Sisal
+		0xdfc: // Denim
+		0xdfd: // Rami
+		0xdf6: // Flamel
+		0xdf7: // Rajal
+
+		// PELES
+		0xee55: // Cinza
+		0xee56: // Marrom
+		0xee57: // Bege
+		0xee58: // Polar
+
+		// COUROS
+		0xee45: // Curtido
+		0xef24: // Peludo
+		"COURO EFERVECIDO": // Efervecido
+		0xef26: // Polar
+		0xef20: // Escamoso 
+		0xed29: // Draconiano
+		0xef27: // Gigante
+		"COURO DAS PROFUNDEZAS": return {0,0,0}; break; // Profundezas
+
+		// METAIS
+		0x6991: return {-2,-3,-4}; break;// Estanho
+		0x6465: return {0,0,0}; break; // Cobre
+
+		0x6994: return {1,1,1}; break; // Bronze
+		0x62ff: return {1,1,1}; break; // Ferro
+		0x6309: return {2,2,2}; break; // Ferro Temperado
+
+		0x6995: // Aço
+		0x630b: // Fulmetium
+		0x630c: // Venetium
+		0x630d: // Ignium
+		0x6460: // Frigutium
+			return {3,3,3}; break;
 		
-		"ILLYRA": return {4,4,4};
-		"MITHRIL": return {5,5,5};
+		0x6315: // Illyra
+			return {4,4,4}; break;
 
-		default: return {0,0,0};
+		0x6311: // Mithril
+			return {5,5,5}; break;
+
+		// OSSOS
+		"OSSO":
+		"OSSO CINZA":
+		"OSSO VERMELHO":
+		"OSSO PRETO":
+		"OSSO DE LICH":
+		"OSSO REPITILIANO":
+		"OSSO DE GIGANTE":
+		"OSSO DE TERATHAN":
+		"OSSO DEMONIACO":
+
+		default: return {0,0,0}; break;
 	endcase
 endfunction
 
@@ -288,18 +406,20 @@ function addResistsElemental(stats, armor)
 	stats.+PoisonResist := 0;
 	stats.+EnergyResist := 0;
 
+	if (armor.isShield()) return stats; endif // Escudo não aplica resistências
+
 	stats := addResistElementalByArmor(stats, armor);
 
 	return stats;
 endfunction
 
 function addResistElementalByArmor(stats, armor)
-	var prop := getPropBase(armor);
+	var attr := armor.getAttrBase();
 
-	stats.FireResist += CInt(prop.FireResist);
-	stats.ColdResist += CInt(prop.ColdResist);
-	stats.PoisonResist += CInt(prop.PoisonResist);
-	stats.EnergyResist += CInt(prop.EnergyResist);
+	stats.FireResist += CInt(attr.FireResist);
+	stats.ColdResist += CInt(attr.ColdResist);
+	stats.PoisonResist += CInt(attr.PoisonResist);
+	stats.EnergyResist += CInt(attr.EnergyResist);
 
 	return stats;
 endfunction
@@ -318,7 +438,7 @@ function addPenalties(stats, armor)
 endfunction
 
 function addPenaltiesBy(type, stats, armor)
-	var penalties := array{};
+	var penalties := dictionary{};
 	
 	case(Upper(type))
 		"SLOT":
@@ -329,77 +449,242 @@ function addPenaltiesBy(type, stats, armor)
 			break;
 	endcase
 
-	stats.DexPen += CInt(penalties[1]);
-	stats.SneakPen += CInt(penalties[2]);
-	stats.MAPen += CInt(penalties[3]);
-	stats.MageryPen += CInt(penalties[4]);
-	stats.AwarenessPen += CInt(penalties[5]);
+	stats.DexPen += CInt(penalties["DexPen"]);
+	stats.SneakPen += CInt(penalties["SneakPen"]);
+	stats.MAPen += CInt(penalties["MAPen"]);
+	stats.MageryPen += CInt(penalties["MageryPen"]);
+	stats.AwarenessPen += CInt(penalties["AwarenessPen"]);
 
 	return stats;
 endfunction
 
 function getPenaltiesBySlot(armor)
+	var penalties := array{};
 	if (armor.getType() && Upper(armor.getType()) != ARMOR_LOWLOW) // Só adiciona penalidade de Slot se não for roupa de pano
 		case(Upper(armor.getSlot())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
-			HEAD: return {1,0,0,1,0};
-			NECK: return {1,0,0,1,0};
-			BODY: return {4,0,0,12,0};
-			ARMS: return {2,0,2,6,0};
-			HANDS: return {1,0,4,3,0};
-			LEGS: return {2,0,0,6,0};
-			FEET: return {2,0,0,0,0};
-			SHIELD: return {0,1,10,5,0};
+			HEAD: penalties := {1,0,0,1,0}; break;
+			NECK: penalties := {1,0,0,1,0}; break;
+			BODY: penalties := {4,0,0,12,0}; break;
+			ARMS: penalties := {2,0,2,6,0}; break;
+			HANDS: penalties := {1,0,4,3,0}; break;
+			LEGS: penalties := {2,0,0,6,0}; break;
+			FEET: penalties := {2,0,0,0,0}; break;
+			SHIELD: penalties := {0,1,10,5,0}; break;
 
-			default: return {0,0,0,0,0};
+			default: penalties := {0,0,0,0,0}; break;
 		endcase
 	endif
 
-	return {0,0,0,0,0};
+	return dictionary{
+		"DexPen" -> penalties[1],
+		"SneakPen" -> penalties[2],
+		"MAPen" -> penalties[3],
+		"MageryPen" -> penalties[4],
+		"AwarenessPen" -> penalties[5]
+	};
 endfunction
 
 function getPenaltiesByProtection(armor)
+	var penalties := array{};
 	case(Upper(armor.getType())) // {DexPen, SneakPen, MAPen, MageryPen, AwarenessPen}
 		//TIER 1
-		ARMOR_LOWLOW: return {0,0,0,0,0};
-		ARMOR_LOWMID: return {0,0,0,0,0};
-		ARMOR_LOWHIGH: return {0,0,0,0,0};
+		ARMOR_LOWLOW: penalties := {0,0,0,0,0}; break;
+		ARMOR_LOWMID: penalties := {0,0,0,0,0}; break;
+		ARMOR_LOWHIGH: penalties := {0,0,0,0,0}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: return {0,0,0,2,0};
-		ARMOR_MIDMID: return {1,0,0,4,0};
-		ARMOR_MIDHIGH: return {2,0,0,5,0};
+		ARMOR_MIDLOW: penalties := {0,0,0,2,0}; break;
+		ARMOR_MIDMID: penalties := {1,0,0,4,0}; break;
+		ARMOR_MIDHIGH: penalties := {2,0,0,5,0}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: return {3,0,0,8,0};
-		ARMOR_HIGHMID: return {4,0,0,12,0};
-		ARMOR_HIGHHIGH: return {5,0,0,24,0};
+		ARMOR_HIGHLOW: penalties := {3,0,0,8,0}; break;
+		ARMOR_HIGHMID: penalties := {4,0,0,12,0}; break;
+		ARMOR_HIGHHIGH: penalties := {5,0,0,24,0}; break;
 
 		// ESCUDOS
-		SHIELD_BUCKLER: return {0,0,0,0,0};
-		SHIELD_SMALL: return {4,0,0,0,0};
-		SHIELD_MEDIUM: return {8,0,0,6,0};
-		SHIELD_LARGE: return {12,0,0,12,0};
-		SHIELD_TOWER: return {16,0,0,24,0};
+		SHIELD_BUCKLER: penalties := {0,0,0,0,0}; break;
+		SHIELD_SMALL: penalties := {4,0,0,0,0}; break;
+		SHIELD_MEDIUM: penalties := {8,0,0,6,0}; break;
+		SHIELD_LARGE: penalties := {12,0,0,12,0}; break;
+		SHIELD_TOWER: penalties := {16,0,0,24,0}; break;
 
-		default: return {0,0,0,0,0};
+		default: penalties := {0,0,0,0,0}; break;
 	endcase
+
+	return dictionary{
+		"DexPen" -> penalties[1],
+		"SneakPen" -> penalties[2],
+		"MAPen" -> penalties[3],
+		"MageryPen" -> penalties[4],
+		"AwarenessPen" -> penalties[5]
+	};
 endfunction
 
 function addShieldMods(stats, shield)
-	var protection := shield.getType();
+	stats.+ParryDelay := 0;
+	stats.+BonusDelay := 0;
+
+	stats := addShieldModsBy("PROTECTION", stats, shield);
+
+	return stats;
+endfunction
+
+function addShieldModsBy(type, stats, shield)
+	var mods := dictionary{};
+
+	case(Upper(type))
+		"PROTECTION":
+			mods := getShieldModsByProtection(shield);
+			break;
+	endcase
+
+	stats.ParryDelay += CInt(mods["ParryDelay"]);
+	stats.ParryBonus += CInt(mods["ParryBonus"]);
+
+	return stats;
+endfunction
+
+function getShieldModsByProtection(shield)
 	var mods := array{}; // {ParryDelay, ParryBonus}
 
 	// TODO: Rever esses valores com o Igor, comparando com o .cfg (tá muito irregular lá)
-	case(Upper(protection))
+	case(Upper(shield.getType()))
 		SHIELD_BUCKLER: mods := {-1,0}; break;
 		SHIELD_SMALL: mods := {4,8}; break;
 		SHIELD_MEDIUM: mods := {5,10}; break;
 		SHIELD_LARGE: mods := {6,12}; break;
 		SHIELD_TOWER: mods := {7,14}; break;
+
+		default: mods := {0,0}; break;
 	endcase
 
-	stats.+ParryDelay := mods[1];
-	stats.+BonusDelay := mods[2];
+	return dictionary{
+		"ParryDelay" -> mods[1],
+		"ParryBonus" -> mods[2]
+	};
+endfunction
 
+function addDurability(stats, item)
+	stats.+MaxHP := 0;
+
+	stats.MaxHP += getDurabilityByType(item);
+	if (item.isA(POLCLASS_ARMOR))
+		stats.MaxHP += getDurabilityBySlot(item);
+	endif
+
+	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
+
+	return stats;
+endfunction
+
+function getDurabilityByType(item)
+	var maxhp := 0;
+	
+	if(item.isA(POLCLASS_WEAPON))
+		case (item.getType())
+			SLASHDAMAGE: maxhp := 45; break;
+			PIERCINGDAMAGE: maxhp := 60; break;
+			BLUNTDAMAGE: maxhp := 75; break;
+
+			default: maxhp := 0; break;
+		endcase
+	elseif (item.isA(POLCLASS_ARMOR))
+		if (item.isShield())
+			case (item.getType().Upper())
+				SHIELD_BUCKLER: maxhp := 40; break;
+				SHIELD_SMALL: maxhp := 60; break;
+				SHIELD_MEDIUM: maxhp := 80; break;
+				SHIELD_LARGE: maxhp := 100; break;
+				SHIELD_TOWER: maxhp := 120; break;
+
+				default: maxhp := 0; break;
+			endcase
+		else
+			var resists := getResistPhysicalByProtection(item);
+			maxhp := Max(array{resists["SlashResist"], resists["PiercingResist"], resists["BluntResist"]});
+		endif
+	endif
+
+	return maxhp;
+endfunction
+
+function getDurabilityBySlot(item)
+	return Max(getResistPhysicalBySlot(item));
+endfunction
+
+function getDurabilityModByMaterial(item)
+	var modifier := 0;
+
+	case (item.getMaterialID())
+		0x6309: modifier := 1; break; // Ferro
+
+		default: modifier := 0.5;
+	endcase
+
+	return CDbl(modifier);
+endfunction
+
+function addWeight(stats, item)
+	stats.+Weight := 0;
+
+	stats.Weight += getWeightByType(item);
+
+	stats.Weight := CInt(stats.Weight * getWeightModByMaterial(item));
+	if (item.weight == 1)
+		item.weight_multiplier_mod := stats.Weight;
+	endif
+	
+	return stats;
+endfunction
+
+function getWeightModByMaterial(item)
+var modifier := 0;
+
+	case (item.getMaterialID())
+		0x6994: modifier := 1.3; break; // Bronze
+		0x6309: modifier := 1.1; break; // Ferro
+		0x6995: modifier := 0.9; break; // Aço
+        0x6315: modifier := 0.8; break; // Illyra
+        0x6311: modifier := 0.7; break; // Mithril
+
+		default: modifier := 1;
+	endcase
+
+	return CDbl(modifier);
+endfunction
+
+function getWeightByType(item)
+	var weight;
+
+	if(item.isA(POLCLASS_WEAPON))
+		var maxMainDamage := item.getMainDamageMax();
+		maxMainDamage := Max(array{maxMainDamage.SlashDamage, maxMainDamage.PiercingDamage, maxMainDamage.BluntDamage});
+
+		var maxOffDamage := item.getOffDamageMax();
+		maxOffDamage := Max(array{maxOffDamage.SlashDamage, maxOffDamage.PiercingDamage, maxOffDamage.BluntDamage});
+
+		weight := CInt(maxMainDamage + maxOffDamage);
+	elseif (item.isA(POLCLASS_ARMOR))
+		if (item.isShield())
+			weight := item.getAttrBase().DexPen;
+		else
+			// Poderia ter sido feito direto no weight. Deixar assim pra caso precise de algum MOD futuramente.
+			var armorAttr := item.getAttrBase();
+			var maxResist := Max(array{armorAttr.SlashResist, armorAttr.PiercingResist, armorAttr.BluntResist});
+			maxResist += CInt(getDurabilityBySlot(item));
+			weight := maxResist;
+		endif
+	endif
+	return weight;
+endfunction
+
+function addSTRRequired(stats, item)
+	stats.+STRRequired := 0;
+
+	// stats.STRRequired += getSTRRequiredByType(item);
+
+	var weight := getWeightByType(item);
+	stats.STRRequired := CInt(weight * 7.5);
 	return stats;
 endfunction

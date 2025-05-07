@@ -42,17 +42,17 @@ program textcmd_acalmar(who)
 		return 0;
 	endif
 
-	var npccfgfile := ReadConfigFile(":brainai:npcdesc");
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
 	var creature_template := ParseTemplateName(creature.npctemplate).template;
 	var taxonomy := npccfgfile[creature_template].Taxonomy;	
 	var tameDifficulty := npccfgfile[creature_template].TameDifficulty;	
 
-	if( !taxonomy || tameDifficulty)
+	if( !taxonomy)
 			SendSysMessage(who, "Esse não pode ser um alvo válido.");
 			return 0;
 	endif
 
-	unloadConfigFile(":brainai:npcdesc");
+	unloadConfigFile(":*:npcdesc");
 
 	var category := lower(getnpccategory( creature_template ));
 	var valid_categories := { "animal", "evilanimal", "giantanimal", "mount", "snow", "desert", "underdark" };

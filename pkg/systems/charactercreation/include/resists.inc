@@ -84,13 +84,15 @@ function GetResist(who, resist)
 		if ((GetObjProperty(who, "chardata")).culture == ALURIEL)
 			valor := valor + 2;
 		endif
-
+		var paladin_bonus := Cint(AP_GetSkill(who, THEOLOGY) / 20);
 		if ( GetCooldown(who, "VontadeIndomavel"))
 			valor := valor + 5;
-		elseif (temHabilidade(who, "Dominatio Animae"))
+		elseif (temHabilidade(who, "Sigilo de Protecao"))
 			valor := valor + 5;
         elseif (TemHabilidade(who, "Campeao das Montanhas"))
             valor := valor + 2;
+		elseif (TemHabilidade(who, "Consagracao Divina"))
+			valor := valor + paladin_bonus;
 		endif
 	endif
 
@@ -124,7 +126,7 @@ function CheckResist(defender, resist_type, dif, mod := 0)
 
     if (dado == 1)
         SendSysMessageEx(defender, "Falha crítica no teste de resistência", SSM_FAIL);
-        return 0;
+        return -1;
     elseif (dado == 20)
         SendSysMessageEx(defender, "Sucesso crítico no teste de resistência", SSM_INFO);
         return 1;
@@ -147,6 +149,8 @@ function CheckResist(defender, resist_type, dif, mod := 0)
         SendSysMessageEx(defender, "Falhou no teste de resistência", SSM_INFO);
         return 0;
     endif
+
+	return 0;
 endfunction
 
 function ShouldGetSecondChance(defender, resist_type)

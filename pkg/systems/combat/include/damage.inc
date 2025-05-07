@@ -53,7 +53,7 @@ function getNewDamageList(attacker)
 
 	if (attacker.npctemplate)
 		var npctemplate := NPC_ParseTemplateName(attacker.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		list[DMG_PHYSICAL] := cfg[npctemplate.template].PhysicalDamage;
 		list[DMG_FIRE] := cfg[npctemplate.template].FireDamage;
 		list[DMG_COLD] := cfg[npctemplate.template].ColdDamage;
@@ -373,7 +373,28 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		defender.frozen := 0;
 	endif
 
+	// defender := defender;
 	return totaldamage;
+endfunction
+
+function hasAntiMountedWeapon(attacker, defender)
+	if (defender.warmode == 0)
+		return 0;
+	endif
+
+	var defenderHasAntiMountedWeapon := 0;
+	if (GetObjProperty(attacker, "charge_damage"))
+		var cfg := ReadConfigFile(":*:itemdesc");
+		var elem := FindConfigElem(cfg, defender.weapon.objtype);
+		var weapons_crits := GetconfigStringArray(elem, "HitScripts");
+		foreach crit in (weapons_crits)
+			if (crit == ":combat:weaponHitScripts/AntiMountedHit")
+				defenderHasAntiMountedWeapon := 1;
+			endif
+		endforeach
+	endif
+
+	return defenderHasAntiMountedWeapon;
 endfunction
 
 /**
@@ -460,36 +481,53 @@ endfunction
  *
  */
 function EpicCalculateDamage(attacker, defender, armor, damage, type)
-	var resistMod := 0;
-	var resist := 0;
-	var totaldamage := damage;
+    var resist := 0;
+    var totaldamage := damage;
+    var regiao := struct;
+	var zones := CS_GetArmorZone(armor);
 
-	if (defender.npctemplate)
-		resist := getResistNPCByType(defender, type, armor, attacker.weapon);
-	else
-		resist := getResistArmorByType(armor, type, attacker, defender);
-	endif
+    if (defender.npctemplate)
+        resist := getResistNPCByType(defender, type, armor, attacker.weapon);
+    else
+        if (!zones || zones.size() == 0)
+            zones := array{"Body"}; 
+        endif
+        
+        var zone_name := zones[1];
+        
+        if(zone_name == "Body" || zone_name == "Legs") 
+            var zone_info := GetArmorInZone(defender, zone_name, type);
+            foreach item in (zone_info.items)
+                WearDownArmor(defender, item, damage, attacker.weapon);
+                sleepms(2);
+            endforeach
+            
+            resist := zone_info.total_resist;
+        else
+            resist := getResistArmorByType(armor, type, attacker, defender);
+            WearDownArmor(defender, armor, damage, attacker.weapon);
+        endif
+    endif
 
-	var regiao := struct;
-	regiao.+zone := CS_GetArmorZone(armor);
-	if (!regiao.zone) regiao.zone := "Corpo"; endif
-	regiao.equip := armor.desc;
-	if (!regiao.equip) regiao.equip := "Corpo";	endif
+    regiao.+zone := zones;
+    if (!regiao.zone) regiao.zone := "Body"; endif
+    regiao.+equip := armor.desc;
+    if (!regiao.equip) regiao.equip := "Body"; endif
 
-	DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
-	DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
-	DebugMsg(attacker, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
-	DebugMsg(defender, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
-	DebugMsg(attacker, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
-	DebugMsg(defender, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
+    DebugMsg(attacker, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
+    DebugMsg(defender, DEBUG_DAMAGE, "Região atingida: " + regiao.zone);
+    DebugMsg(attacker, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
+    DebugMsg(defender, DEBUG_DAMAGE, "Equipamento atingido: " + regiao.equip);
+    DebugMsg(attacker, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
+    DebugMsg(defender, DEBUG_DAMAGE, $"Defesa {type}: {resist}");
 
-	damage := damage-resist;
-	damage := damage < 1 ? 1 : damage;
+    damage := damage-resist;
+    damage := damage < 1 ? 1 : damage;
 
-	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
-	DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
+    DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
+    DebugMsg(defender, DEBUG_DAMAGE, $"Dano Final {type}: {damage}({totaldamage} - {resist})");
 
-	return CInt(damage);
+    return CInt(damage);
 endfunction
 
 /**
@@ -513,7 +551,7 @@ function getWeaponDamageType(attacker, weapon)
 		// NPCRotateAttackType(attacker);
 		attackType := "CONTUSIVO";
 	else
-		attackType := getPropBase(weapon).AttackType.Upper();
+		attackType := weapon.getAttrBase().AttackType.Upper();
 	endif
 	
 	case (Upper(attackType))
@@ -565,7 +603,7 @@ function getResistNPCByType(npc, type, armor := 0, weapon := 0)
 			endcase
 		endif
 	else
-		setPropArmor(armor);
+		armor.setAttrBase(0);
 		resist := getResistArmorByType(armor, type);
 	endif
 
@@ -589,11 +627,15 @@ endfunction
  *
  */
 function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
-	var resist;
-	var armorResists := getPropBase(armor);
+	var resist := 0;
+	var armorResists := armor.getAttrBase();
+
+    if(!armor || armor == error)
+        return 0;
+    endif
 
 	case(type)
-		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod); break;
+		DMG_PHYSICAL: resist := CInt(armor.PhysicalResist) + CInt(armor.resist_physical_mod) + Cint(GetObjProperty(defender, "phMod")); break;
 		DMG_SLASH:
 			if (armorResists.SlashResist)
 				resist := CInt(armorResists.SlashResist) + CInt(armorResists.SlashResistMod);
@@ -610,7 +652,7 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_BLUNT:
+		DMG_BLUNT:  
 			if (armorResists.BluntResist)
 				resist := CInt(armorResists.BluntResist) + CInt(armorResists.BluntResistMod);
 			else
@@ -618,10 +660,10 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 			endif
 			break;
 
-		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod); break;
-		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod); break;
-		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod); break;
-		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod); break;
+		DMG_FIRE: resist := CInt(armorResists.FireResist) + CInt(armorResists.FireResistMod) + Cint(GetObjProperty(defender,"fire_protection")); break;
+		DMG_COLD: resist := CInt(armorResists.ColdResist) + CInt(armorResists.ColdResistMod) + Cint(GetObjProperty(defender, "cold_protection")); break;
+		DMG_ENERGY: resist := CInt(armorResists.EnergyResist) + CInt(armorResists.EnergyResistMod) + Cint(GetObjProperty(defender, "energy_protection" )); break;
+		DMG_POISON: resist := CInt(armorResists.PoisonResist) + CInt(armorResists.PoisonResistMod) + Cint(GetObjProperty(defender, "poison_protection")); break;
 	endcase
 
 	return CInt(resist);
@@ -680,9 +722,9 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
         elseif (TemHabilidade(defender, "Resiliência Bárbara"))
 			resist += RandomDiceRoll("1d4");
 		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, MAGICLORE)/20;
+			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
 			if (GetCooldown(defender, "armor_drain") > 0)
-				arcane_armor += AP_GetSkill(defender, MAGICLORE)/30;
+				arcane_armor += AP_GetSkill(defender, ARCANA)/30;
 				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
 			endif
 			if (resist < arcane_armor)
@@ -690,8 +732,36 @@ function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
 				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
 			endif
 		endif
+		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
+			EraseObjProperty(attacker, "backstab");
+			EraseObjProperty(attacker.weapon, "backstab");
+			EraseObjProperty(attacker, "#nextcritical");
+			if (TemHabilidade(defender, "Sempre Alerta"))
+				TS_StartTimer(attacker, "paralysis", 5);
+				PrintTextAbove(defender, "*Sempre Alerta*");
+			else
+				ataqueFurtivo(attacker,defender);
+			endif
+		endif
 	endif
-	
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		damage += Cint(GetObjProperty(attacker, "charge_damage"));
+
+		if (hasAntiMountedWeapon(attacker, defender))
+			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
+			defender := attacker;
+			var resisted := CheckResist(defender, FORTITUDE, RESIST_MEDIUM);
+			if (!resisted)
+				TS_StartTimer(defender, "desmontar", 10);
+				TS_StartTimer(defender, "tombar", 5);
+				TS_StartTimer(defender, "paralysis", 5);
+			endif
+		endif
+
+		EraseObjProperty(attacker, "charge_damage");
+	endif
+
 	var totaldamage := CInt(damage-resist); 
 	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
 endfunction
@@ -724,6 +794,43 @@ function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, ty
 
 	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
+	endif
+
+	if( GetObjProperty(defender, "#chainofpain") != error )
+		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
+			var copmobs := GetObjProperty(defender, "#chainserials");
+			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
+			var copdefenders := array;
+			
+			// Get the higher skill between ARCANA and THEOLOGY
+			var arcana_skill := AP_GetSkill(mage, ARCANA);
+			var theology_skill := AP_GetSkill(mage, THEOLOGY);
+			var skill_value := (arcana_skill > theology_skill) ? arcana_skill : theology_skill;
+			var lvl := cdbl(skill_value/200);
+			
+			var originalDefenderSerial := defender.serial;  // Store original defender's serial
+
+			foreach serial in copmobs
+				// Only add other targets, not the original defender
+				if (serial != originalDefenderSerial)
+					var targ := SystemFindObjectBySerial(serial);
+					if (targ)
+						copdefenders.append(targ);
+					endif
+				endif
+			endforeach
+			
+			// Apply damage to connected targets (excluding original)
+			foreach opponent in copdefenders
+				var total := Cint(damage * lvl);
+				if (total < 1)
+					total := 1;
+				endif
+				DamageFLS(opponent, total, DMG_FORCED, mage);
+			endforeach
+
+			return 1;
+		endif
 	endif
 endfunction
 
@@ -833,7 +940,7 @@ function CalcDamageStats(attacker, damage)
 	var elem := getItemCfgElem(attacker.weapon);
 
 	SkillCheck(attacker, TACTICS, -1);
-	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/20);
+	var tacticsmod := CInt(AP_GetSkill(attacker, TACTICS)/10);
 	damage += tacticsmod;
 
 	stat := STRENGTH;
@@ -848,7 +955,7 @@ function CalcDamageStats(attacker, damage)
 		statmod := CInt(AP_GetStat(attacker, stat));
 	endif
 
-	statmod := (statmod-50) / 10;
+	statmod := (statmod/* -50 */) / 10;
 	damage += statmod;
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de {stat}: {statmod}");
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Bônus de Tactics: {tacticsmod}");
@@ -863,7 +970,7 @@ function CalcDamageWeapon(attacker, damage)
 		damage += Cint(AP_GetSkill(attacker, TACTICS) / 25);
 	endif
 
-	var sharpened_weapon := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"];
+	var sharpened_weapon := Cint(GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Afiada"]);
 	if(sharpened_weapon)
 		damage += sharpened_weapon;
 	endif
@@ -891,7 +998,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (getCooldown(attacker, "faroporsangue"))
 		var bonus := AP_GetVital(defender, HITS) / AP_GetVitalMaximumValue(defender, HITS);
-        
+
 		if (bonus <= 0.25)
 			bonus := "1d12";
 		elseif (bonus <= 0.5)
@@ -911,7 +1018,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
 		endif
 	endif
 
@@ -924,7 +1031,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	endif
 
 	if (TemHabilidade(attacker, "Precisao Cirurgica"))
-		var damagemod := CInt(AP_GetSkill(attacker, ALCHEMY) / 20);
+		var damagemod := CInt(AP_GetSkill(attacker, SCIENCE) / 20);
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
@@ -965,7 +1072,7 @@ function CalcDamageHabs(attacker, defender, damage)
 						break;
 
 					"energy_arrow":
-						damagemod += Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+						damagemod += Cint(AP_GetSkill(attacker, ARCANA) / 20);
 						break;
 				endcase
 
@@ -980,7 +1087,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (TemHabilidade(attacker, "Inimigo Predileto"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "InimigoPredileto");
 
 		if (cfg[npctemplate.template].Category == inimigo)
@@ -988,22 +1095,32 @@ function CalcDamageHabs(attacker, defender, damage)
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + CInt(damagemod));
 		endif
-    elseif (TemHabilidade(attacker, "Exitium Maleficorum"))
+    elseif (TemHabilidade(attacker, "Consagracao Divina"))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
-		var inimigo := array{"Undead", "Demons"};
+		var cfg := ReadConfigFile(":*:npcdesc");
+		var inimigo := array{"Undead"};
 
 		if (cfg[npctemplate.template].Category in inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage := damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Exitium Maleficorum]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Consagracao Divina]: " + CInt(damagemod));
+		endif
+	elseif (TemHabilidade(attacker, "Sigilo de Protecao"))
+        var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
+		var cfg := ReadConfigFile(":*:npcdesc");
+		var inimigo := array{"Demon"}; 
+
+		if (cfg[npctemplate.template].Category in inimigo)
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
+			damage := damagemod;
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Sigilo de Protecao]: " + CInt(damagemod));
 		endif
 	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":brainai:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
 		if (cfg[npctemplate.template].Category == inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, ALCHEMY) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, SCIENCE) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + CInt(damagemod));
 		endif
@@ -1015,9 +1132,9 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
 	endif
 
-	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, MAGICLORE) / 2))
+	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
 		if (GetObjProperty(attacker, "metamorfose") != error)
-			var damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
@@ -1026,7 +1143,7 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (IsRaging(attacker))
 		var damagemod;
-		if (temHabilidade(attacker, "Nazg Khalug") || GetObjProperty(attacker, "NpcFuria"))
+		if (temHabilidade(attacker, "Nazg Khalug") || attacker.hasRage())
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
@@ -1034,7 +1151,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 		if (temHabilidade(attacker, "Furia Primitiva"))
 			if (GetObjProperty(attacker, "metamorfose") != error)
-				damagemod := Cint(AP_GetSkill(attacker, MAGICLORE) / 20);
+				damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 				damage += damagemod;
 				DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia Primitiva]: " + CInt(damagemod));
 			endif
@@ -1194,4 +1311,40 @@ function ApplyDamageHabElementalWeapon( attacker, defender, damageDice, elementa
   totalDamage := cint( Floor( totalDamage / divisor ) ); // Não tinha cargas suficiente, entao diminui a eficência do dano.
   DisplayDamage( defender, totalDamage, attacker );
   ApplyRawDamage( defender, totalDamage );
+endfunction
+
+function GetArmorInZone(mobile, zone_name, type)
+    var result := struct{
+        "items" := array{},
+        "total_resist" := 0
+    };
+    
+    var cfg_file := ReadConfigFile("::armrzone");
+    if(!cfg_file)
+        return result;
+    endif
+    
+    var zone_elem := cfg_file[zone_name];
+    if(!zone_elem)
+        return result;
+    endif
+    
+    var layers := GetConfigStringArray(zone_elem, "Layer");
+    var layer_numbers := array{};
+    foreach layer in layers
+        layer_numbers.append(CInt(layer));
+    endforeach
+    
+    var equipped_items := ListEquippedItems(mobile);
+    
+    foreach item in equipped_items
+        if(item.layer in layer_numbers)
+            result.items.append(item);
+            var item_resist := getResistArmorByType(item, type);
+            result.total_resist += item_resist;
+        endif
+        sleepms(2);
+    endforeach
+    
+    return result;
 endfunction

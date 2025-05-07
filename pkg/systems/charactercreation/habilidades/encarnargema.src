@@ -15,7 +15,7 @@ program manobra(who)
 	var element ;
 	element := 	GetObjProperty(who.weapon, "#elementalweapon");
 	element := element.type;
-	var duracao := AP_GetSkill(who, MAGICLORE);
+	var duracao := AP_GetSkill(who, ARCANA);
     duracao := duracao*2;
 	case(element)
 		"Fire":

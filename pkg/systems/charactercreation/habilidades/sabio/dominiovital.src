@@ -9,7 +9,9 @@ include "include/say";
 
 program doubleattack(who)
 	var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
-
+	if (who.npctemplate)
+		targ := GetRandomNearbyHostile(who);
+	endif
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return;
@@ -20,7 +22,7 @@ program doubleattack(who)
 	endif
 
     var dist := Distance(who, targ);
-    var total_distance := Cint(AP_GetSkill(who, MAGICLORE)/10);
+    var total_distance := Cint(AP_GetSkill(who, ARCANA)/10);
 
     PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 20, 0, 1);
     if (dist == 1)

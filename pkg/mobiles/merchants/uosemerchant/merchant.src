@@ -11,7 +11,7 @@ include ":uose:/include/character_utils";
 include ":uose:/include/craft_props";
 include ":uose:/include/merchant";
 include ":merchants:crafthelp";
-include ":uose:/include/item_template";
+include ":merchants:/include/item_template";
 include ":gumps:/include/gumps";
 include ":gumps:/include/gumps_ex";
 include ":gumps:/include/requestGump";

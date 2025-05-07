@@ -30,19 +30,11 @@ program vacuodemana(params)
 	var armor	:= params[4];
 	var basedamage	:= params[5];
 	var rawdamage	:= params[6];
-	params := 0; // Not needed anymore.
-
-	//PlayObjectCenteredEffect(defender, 0xAFED, 7, 16);
-	//PlaySoundEffect(defender, 0x358);
 	
-    var mlore := AP_GetSkill(attacker, MAGICLORE);
+    var mlore := Cint(AP_GetSkill(attacker, ARCANA));
 
-    //TODO colocar isso em uma funcao depois
-	var dmgList := dictionary;
-	dmgList := getNewDamageList(attacker);
-	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
-	DamageFLS(defender, total, DMG_FORCED, attacker);
-	DamageFLS(defender, mlore, DMG_FORCED, attacker);
+
+	DamageFLS(defender, Cint(mlore/2), DMG_FORCED, attacker);
     PlaySoundEffect(defender, 0X51d);
     MakeBleed(defender);
     sleep(1);
@@ -50,6 +42,6 @@ program vacuodemana(params)
     PlayObjectCenteredEffectHuefx(defender, 0x54b3, 10, 20, 1254, 1);
     PlaySoundEffect(defender, 0x1FB);
     
-    Setcooldown(defender, "silence", mlore/5);
+    SetCooldown(defender, "silence", Cint(mlore/5));
     return 1;
 endprogram 
