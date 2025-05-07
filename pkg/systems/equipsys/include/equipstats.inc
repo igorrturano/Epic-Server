@@ -127,7 +127,7 @@ function getSpeedByTier(tier)
 endfunction
 
 /**
- * getWeaponDamage(tier)
+ * getDamageByTier(tier)
  *
  * Purpose
  * Verificar o valor do dado do dano da arma baseado no seu Grupo de Dano.

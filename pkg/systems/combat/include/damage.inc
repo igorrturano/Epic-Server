@@ -919,21 +919,36 @@ endfunction
 function CalculateDamageElemental(attacker, defender, weapon, armor)
 	var damages := struct;
 
-	if (weapon.damage_fire_mod)
-		damages.+FireDamage := weapon.damage_fire_mod;
-	endif
-	if (weapon.damage_cold_mod)
-		damages.+ColdDamage := weapon.damage_cold_mod;
-	endif
-	if (weapon.damage_poison_mod)
-		damages.+PoisonDamage := weapon.damage_poison_mod;
-	endif
-	if (weapon.damage_energy_mod)
-		damages.+EnergyDamage := weapon.damage_energy_mod;
+	//TODO: Pensar no caso de NPC humanoide que usa arma...
+	if (attacker.npctemplate) // Se for NPC, o cálculo é pelo .cfg
+		damages := getNPCElemDamages(attacker);
+	else
+		if (weapon.damage_fire_mod)
+			damages.+FireDamage := weapon.damage_fire_mod;
+		endif
+		if (weapon.damage_cold_mod)
+			damages.+ColdDamage := weapon.damage_cold_mod;
+		endif
+		if (weapon.damage_poison_mod)
+			damages.+PoisonDamage := weapon.damage_poison_mod;
+		endif
+		if (weapon.damage_energy_mod)
+			damages.+EnergyDamage := weapon.damage_energy_mod;
+		endif
 	endif
 
 	return damages;
 endfunction
+
+// function getElementalDamageNPC(npc, type)
+// 	var damages := struct;
+// 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
+// 	var cfg := ReadConfigFile(":*:npcdesc");
+
+
+
+// 	return damages;
+// endfunction
 
 function CalcDamageStats(attacker, damage)
 	var stat;
