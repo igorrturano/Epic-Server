@@ -58,8 +58,8 @@ program SpellScript(params)
 	targ.graphic := graphic;
 	sleepms(200);
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.75);
-	var time := Cint(AP_GetSkill(who, MAGICLORE)/10) + 5;
+	var amt := Cint(AP_GetSkill(who, ARCANA)*0.75);
+	var time := Cint(AP_GetSkill(who, ARCANA)/10) + 5;
 
 	TS_StartTimer(targ, "weaken", time, amt, who, 0);
 	TS_StartTimer(targ, "desarmar", time, 0, who);

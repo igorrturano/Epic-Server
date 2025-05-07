@@ -14,6 +14,7 @@ const REALM_TEXT	:= 0xA001;
 const X_TEXT		:= 0xA002;
 const Y_TEXT		:= 0xA003;
 const Z_TEXT		:= 0xA004;
+const RACE_TEXT		:= 0xA005;
 
 const CANCEL_BTN	:= 0xB000;
 //const OKAY_BTN		:= 0xB001;
@@ -47,6 +48,10 @@ program useScript(who, tile)
 	GFResizePic(gump, 120, 184, GFCfgConst("Backgrounds", "GOLDTRIM"), 100, 30);
 	GFTextEntry(gump, 127, 189, 80, 20, 2100, CInt(dest.z), Z_TEXT);
 
+	GFTextLine(gump, 20, 212, 2100, "Race");
+	GFResizePic(gump, 120, 207, GFCfgConst("Backgrounds", "GOLDTRIM"), 100, 30);
+	GFTextEntry(gump, 127, 212, 80, 20, 2100, CStr(dest.race), RACE_TEXT);
+
 	GFAddButton(gump, 304, 135, 2076, 2075, GF_CLOSE_BTN, OKAY_BTN);
 	GFAddButton(gump, 300, 175, 2121, 2120, GF_CLOSE_BTN, CANCEL_BTN);
 
@@ -56,8 +61,9 @@ program useScript(who, tile)
 		dest.y := CInt(GFExtractData(input, Y_TEXT));
 		dest.z := CInt(GFExtractData(input, Z_TEXT));
 		dest.realm := CStr(GFExtractData(input, REALM_TEXT));
+		dest.race := CStr(GFExtractData(input, RACE_TEXT));
 
-		tile.SetDestination(dest.x, dest.y, dest.z, dest.realm);
+		tile.SetDestination(dest.x, dest.y, dest.z, dest.realm, dest.race);
 
 		SendSysMessage(who, "Done.");
 		return 1;

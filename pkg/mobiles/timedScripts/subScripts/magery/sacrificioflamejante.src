@@ -29,7 +29,7 @@ program TimedScript_sacrificio(params)
 			
 			ApplyRawDamage(who, dano);
 			
-			SetObjProperty(who, "#dmgbonus", dmgbonus + Cint(AP_GetSkill(who, MAGICLORE)/ 20));
+			SetObjProperty(who, "#dmgbonus", dmgbonus + Cint(AP_GetSkill(who, ARCANA)/ 20));
 			SetObjProperty(who, "#xsac", i);
 			PrintText(who, "*queimando com chamas da espada*");
 			sleep(5);

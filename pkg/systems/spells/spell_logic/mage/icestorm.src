@@ -15,6 +15,7 @@ include "include/say";
 include ":taming:taming";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
 
 program spell_iceStorm( parms )
     var caster := parms[1];
@@ -26,7 +27,7 @@ program spell_iceStorm( parms )
     SendSysMessage(caster, "Selecione o alvo.");
     var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
 
-    var mlore := cint(AP_GetSkill(caster, MAGICLORE)/20);	
+    var mlore := cint(AP_GetSkill(caster, ARCANA)/20);	
 	var dist := Distance(caster, targ);
     var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
 
@@ -34,6 +35,11 @@ program spell_iceStorm( parms )
         SendSysMessage(caster, "O alvo esta muito distante");
         return 0;
     endif
+
+    var dmg := epicSpellDamageRoll(caster, spell_circle);
+    dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+    DanificaObjetosProximos(caster,targ.x, targ.y, targ.z,targ.realm,struct{dano := dmg, desc := "Chuva de Gelo." },5,0x6DFF);
+
     foreach mobile in allMobiles
         SendSysMessageEx(mobile, "Voce olha para cima e ve uma chuva de gelo em sua direcao.", SSM_FAIL);
         PlaySoundEffect( mobile, 0x5c7 );

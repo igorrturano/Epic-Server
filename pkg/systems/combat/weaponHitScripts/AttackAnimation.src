@@ -20,8 +20,9 @@ function PlayAttackAnimation(who)
 
 	if (who.weapon)
 		attackAnim := getWeaponFX(WEAPON_FX_ANIM, who.weapon);
-	else
-		// TODO: Buscar animação nas props de postura do NPC, depois de implementar.
+	endif
+
+	if (!who.acctname)
 		attackAnim := 0x0c;
 	endif
 

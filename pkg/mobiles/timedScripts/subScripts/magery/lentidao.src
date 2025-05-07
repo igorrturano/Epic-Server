@@ -40,10 +40,10 @@ function Slowdown(who, byref info)
 	SendSysMessage(who, "Voce se move devagar.");
 
 	info.status := 1;
-	info.dexmod := AP_GetStat(who, DEXTERITY);
+	info.dexmod := AP_GetStatMod(who, DEXTERITY);
 	
 	AP_ModifyStatMod(who, DEXTERITY, 0-info.dexmod);
-	who.paralyzed := 1;
+	// who.paralyzed := 1;
 	
 	SetObjProperty(who, "#Slowness", info);
 endfunction
@@ -52,7 +52,7 @@ function Restore(who, byref info)
 	SendSysMessage(who, "Voce consegue se mover normalmente.");
 	
 	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);
-	who.paralyzed := 0;
+	// who.paralyzed := 0;
 	
 	info.status := 0;
 	info.dexmod := 0;

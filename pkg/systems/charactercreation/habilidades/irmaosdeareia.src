@@ -11,9 +11,20 @@ include "include/dungeons";
 program summonSkeletaSteed(params)
 	var who := params[1];
 	var targ := TargetCoordinates(who);
+    // if (who.npctemplate)
+    //     targ := who;
+    // endif
+    if (!targ)
+        if (who.npctemplate)
+            targ := who;
+        else
+            SendSysMessage(who, "Voce precisa selecionar um alvo.");
+            return;
+        endif       
+    endif
 
-	var template := ":brainai:MonstrodaPoeira";
-    var lvl := Cint(AP_GetSkill(who, MAGICLORE));
+	var template := ":epicai:MonstrodaPoeira";
+    var lvl := Cint(AP_GetSkill(who, THEOLOGY));
 
     if (template == error)
 		SendSysMessage(who, "erro ao ler o template" + template);
@@ -35,7 +46,7 @@ program summonSkeletaSteed(params)
     if (!shaman_souls)
         var shaman_souls := 1;
     endif
-	var duracao := 120 + (180 + shaman_souls) * AP_GetSkill(who, MAGICLORE)/ 100;
+	var duracao := 120 + (180 + shaman_souls) * AP_GetSkill(who, THEOLOGY)/ 100;
 
 	TS_StartTimer(mount, "summon", duracao ); //inicio do timedScripts no summon
 

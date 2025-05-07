@@ -10,11 +10,14 @@ include "include/sounds";
 program SpellScript(params)
 	var who := params[1];
 
-    var range := cint(AP_GetSkill(who, MAGICLORE)/10);
-    var points := (CInt(AP_GetSkill(who, MAGICLORE)) / 5) + RandomDiceRoll("6d8");
+    var range := cint(AP_GetSkill(who, THEOLOGY)/10);
+    var points := (CInt(AP_GetSkill(who, THEOLOGY)) / 5) + RandomDiceRoll("6d8");
     var hostiles := ListHostiles(who, range);
     foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
         if (!(mob in hostiles))
+            if (who.npctemplate && mob.acctname)
+                continue;
+            endif
             PlayObjectCenteredEffect(mob, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
             PlaySoundEffect(mob, SFX_HEAL);
             HealDamage(mob, points);

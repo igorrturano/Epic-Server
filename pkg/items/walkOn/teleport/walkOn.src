@@ -16,9 +16,22 @@ program walkOn(mobile, tile)
 
 	var pets := ListPetsNear(mobile, 4);
 	var hostiles := ListHostiles(mobile, 4);
+	var racesAllowed := GetObjProperty(tile, "Destination").race;
+	if (racesAllowed == "all")
+		racesAllowed := array{ANAO, DROW, ELFO, ORC, HUMANO, POLSKI};
+	else
+		racesAllowed := splitWords(racesAllowed);
+	endif
+	
+	var result;
+	if ( mobile.getRace() in racesAllowed )
+		result := tile.SendToDestination(mobile);
+	else
+		SendSysMessageEx(mobile, "Seu tamanho não é proporcional, logo você não conseguiu passar!", SSM_FAIL);
+		return 0;
+	endif
 
 	SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
-	var result := tile.SendToDestination(mobile);
 	if ( result.errortext )
 		SendSysMessage(mobile, "Error teleporting ->"+result.errortext);
 	endif
@@ -28,7 +41,7 @@ program walkOn(mobile, tile)
 		tile.SendToDestination(pet);
 	endforeach
 
-/*	if (hostiles[1])
+	if (hostiles[1])
 		foreach x in hostiles
 			if (!x.acctname)
 				SetObjProperty(x, "#Teleported", ReadMillisecondClock());
@@ -36,7 +49,7 @@ program walkOn(mobile, tile)
 			endif
 			sleepms(10);
 		endforeach
-	endif*/
+	endif
 
 	if (HaveReverseVision(mobile))
 		if (mobile.cmdlevel > 1)
@@ -45,6 +58,12 @@ program walkOn(mobile, tile)
 		ReverseLight(mobile);
 	endif
 	destroyIllyraOutsideDungeons(mobile);
+    var name := mobile.IsInTheDungeon();
+    if (name)
+        SendSysMessageEx(mobile, "Dungeon: "+name+". Seu feedback é importante para nós!( .feedback ou no Discord)", SSM_INFO);
+	else
+		SendSysMessage(mobile, "NAO ENTROU"+name);
+    endif
 	return 1;
 endprogram
 

@@ -8,12 +8,15 @@ include ":tn:cooldown";
 program manobra(who)
 
     var targ := Target(who);
+    if (who.npctemplate)
+        targ := who;
+    endif
     if (!targ || !targ.isA(POLCLASS_MOBILE))
         SendsysMessageEx(who, "Alvo invalido");
         return 0;
     endif
 
-    var duration := Cint(AP_GetSkill(who, MAGICLORE) / 10);
+    var duration := Cint(AP_GetSkill(who, THEOLOGY) / 10);
     var i := 0;
     PLaySoundEffect(who, 0x216);
     PlayObjectCenteredEffect(targ, 0x6C79, 0, 25);

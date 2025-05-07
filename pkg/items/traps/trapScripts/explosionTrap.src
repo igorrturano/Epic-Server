@@ -11,6 +11,8 @@ include ":combat:damage";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicConstants";
+include ":destroyable:include/destroyItem";
+
 program trapScript(params)
 	var mobile := params[1];
 	var object := params[2];
@@ -31,6 +33,16 @@ program trapScript(params)
 	range := range*3;
 
 	var mobiles := ListMobilesNearLocationEx(object.x, object.y, object.z, range, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
+	DanificaObjetosProximos(
+	mobile,
+	object.x,
+	object.y,
+	object.z,
+	object.realm,
+	struct{dano := dmgfinal, desc := "Armadilha Explosão." },
+	range,
+	GFX_EXPLODE_3,
+	object.serial);
 
 	PlaySoundEffect(object, 0x208);
 	foreach mobile in mobiles
@@ -57,6 +69,7 @@ program trapScript(params)
 			DamageFLS(mobile, dmgfinal);
 			mobile.hidden := 0;
 		endif
+		Sleepms(3);
 	endforeach
 	return 1;
 endprogram

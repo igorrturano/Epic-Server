@@ -24,11 +24,11 @@ program SpellScript(params)
 		return;
 	endif
 
-	var lvl := cint(AP_GetSkill(who, MAGICLORE)/20);
+	var lvl := cint(AP_GetSkill(who, ARCANA)/20);
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 	if (!CheckResist(targ, VONTADE, diff, -bonus))
-		TS_StartTimer(targ, "manaPoison", cint(AP_GetSkill(who, MAGICLORE)), lvl);
+		TS_StartTimer(targ, "manaPoison", cint(AP_GetSkill(who, ARCANA)), lvl);
 		Corromper(who, 23, targ);
 	else
 		SendSysMessageEx(who, "O alvo  resistiu a magia.", SSM_FAIL);

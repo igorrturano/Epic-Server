@@ -10,6 +10,7 @@ use os;
 
 include ":keys:key";
 include ":traps:traps";
+include ":destroyable:include/destroyItem";
 
 program useScript(mobile, door)
 
@@ -20,12 +21,18 @@ program useScript(mobile, door)
 			if (polcore().systime > (locktime+time)) //se o tempo atual for maior 
 				door.locked := 1; //tranca a porta novamente
 				EraseObjProperty(door, "locktime");
+				EraseObjProperty(door, "fechadura_quebrada");
 			endif
 		endif
 	endif
 
 	if ( GetObjProperty(door, "TrapList") != error)
 		RunTraps(door, mobile);
+		return 0;
+	endif
+
+	if (IsEmperrado(door))
+		PrintTextAbovePrivate(door,"*Emperrado*",mobile);
 		return 0;
 	endif
 

@@ -118,7 +118,13 @@ function ConversationPlayer(who, npc, conversation)
 				element.event.y := npc.y;
 				element.event.z := npc.z;
 			endif
+			SetObjProperty(npc, "currentEvent", element.event);
 			ExecuteEvent(element.event);
+			if (element.event.type == "Abrir Passagem" || element.event.type == "Abrir Porta")
+			TS_StartTimer(npc, "events", 8400);
+			else
+			    EraseObjProperty(npc, "currentEvent");
+			endif
 /*			var state := element.spawnmonster;
 	        var amt := 0;
 			while (amt < state.amount)

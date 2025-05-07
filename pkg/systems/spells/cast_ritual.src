@@ -46,7 +46,7 @@ program SpellStarter(params)
 			return 0;
 		endif
 	endif
-    var battlemageHabs := Array{"Concentracao Macabra", "Aura Mortis", "Dominatio Animae", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas"};
+    var battlemageHabs := Array{"Concentracao Macabra", "Consagracao Divina", "Dominatio Animae", "Vínculo Elemental", "Colheita de Almas", "Campeao das Montanhas"};
     var tem_hab := 0;
     foreach hab in battlemageHabs
         if (TemHabilidade(mobile, hab))

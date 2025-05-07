@@ -13,7 +13,7 @@ include ":tn:tngumps";
 include ":spells:tnmagery";
 include ":timedScripts:timedScripts";
 
-var npccfgfile := ReadConfigFile( ":brainai:npcdesc" );
+var npccfgfile := ReadConfigFile( ":*:npcdesc" );
 var me := self();
 var areasize;
 

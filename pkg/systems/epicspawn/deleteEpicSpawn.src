@@ -1,0 +1,11 @@
+use uo;
+use datafile;
+
+program deleteEpicSpawn(item)
+    var df := OpenDataFile(":epicspawn:epicbosses");
+    if (!df)
+        df := CreateDataFile(":epicspawn:epicbosses", DF_KEYTYPE_INTEGER);
+    endif
+    
+    df.DeleteElement(item.serial);
+endprogram 

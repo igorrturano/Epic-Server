@@ -15,7 +15,7 @@ program TimedScript_bard_inspirar_heroismo(params)
 			SetObjProperty(alvo, "#Bard_inspirar_heroismo", modificador);
 			modificador := modificador-teste;
 			AP_ModifySkillMod(alvo, MAGERY, modificador);
-			AP_ModifySkillMod(alvo, MAGICLORE, modificador);
+			AP_ModifySkillMod(alvo, ARCANA, modificador);
 			AP_ModifySkillMod(alvo, PARRY, modificador);
 			AP_ModifySkillMod(alvo, ONEHANDED, modificador);
 			AP_ModifySkillMod(alvo, TWOHANDED, modificador);
@@ -32,7 +32,7 @@ program TimedScript_bard_inspirar_heroismo(params)
 		Set_Critical(1);
 		SetObjProperty(alvo, "#Bard_inspirar_heroismo", modificador);
 		AP_ModifySkillMod(alvo, MAGERY, modificador);
-		AP_ModifySkillMod(alvo, MAGICLORE, modificador);
+		AP_ModifySkillMod(alvo, ARCANA, modificador);
 		AP_ModifySkillMod(alvo, PARRY, modificador);
 		AP_ModifySkillMod(alvo, ONEHANDED, modificador);
 		AP_ModifySkillMod(alvo, TWOHANDED, modificador);

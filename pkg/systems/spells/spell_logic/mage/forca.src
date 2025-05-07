@@ -12,10 +12,10 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	var amt :=  cint( AP_GetSkill(who, MAGICLORE)*0.4);
-	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, MAGICLORE))*2;
-	//printtextabove(who, "maic lore " + AP_GetSkill(who, MAGICLORE)); 
-	TS_StartTimer(info, "strength", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1 );
+	var amt :=  cint( AP_GetSkill(who, THEOLOGY)*0.4);
+	//var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, THEOLOGY))*2;
+	//printtextabove(who, "maic lore " + AP_GetSkill(who, THEOLOGY)); 
+	TS_StartTimer(info, "strength", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), amt, who, 1 );
 
 	PlaySoundEffect(info, SFX_SPELL_STRENGTH);
 	SendSysMessageEx(who, "Voce deixou o alvo mais forte.", SSM_INFO);

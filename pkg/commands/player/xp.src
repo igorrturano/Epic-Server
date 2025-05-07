@@ -1,0 +1,16 @@
+include ":expbar:expbar";
+
+program start_xpbar(who, xp_amt)
+   if (who.cmdlevel > 2)
+        var targ := Target(who);
+        if (!targ)
+            return 0;
+        endif
+
+        SendSysMessageEx(who, "Escolha quem receberá XP: ", SSM_REQUEST);
+        AddXP(targ, Cint(xp_amt));
+        return 1;
+    endif
+
+    UpdateXPBar(who);
+endprogram

@@ -1615,7 +1615,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 		SetObjProperty(who, "BardTargets",struct{"Buffs":=ALVO_BUFF_TODOS, "Debuffs":=ALVO_DEBUFF_TODOS});
 	endif
 
-	var Magic_Lore := AP_GetSkill(who, MAGICLORE);
+	var Magic_Lore := AP_GetSkill(who, ARCANA);
 
 	//Variaveis importantes para os efeitos
 	var modifier := 0;
@@ -2246,7 +2246,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			break;
 	endcase
 
-	SkillCheck(who, MAGICLORE, AP_GetSkill(who, MAGICLORE)); //Linha para upar Magic lore sempre que tocar
+	SkillCheck(who, ARCANA, AP_GetSkill(who, ARCANA)); //Linha para upar Magic lore sempre que tocar
 
 	return 0;
 endfunction

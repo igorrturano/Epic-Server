@@ -11,9 +11,14 @@ program manobra(who)
 	var mutante := GetObjProperty(who, "mutagenico");
 
 	recalcvitals(who);
-	
+	var opts := array{"Forca","Destreza", "Inteligencia"};	
 	if (mutante == error)
-		var prot := RadioGump(who, 200, 260, "Escolha o mutagenico", {"Forca","Destreza", "Inteligencia"});
+		var prot := "";
+		if (who.npctemplate)
+		   	prot := RadioGump(who, 200, 260, "Escolha o mutagenico", opts);
+		else
+			prot := opts[RandomIntMinMax(1, opts.size())];
+		endif
 		SendSysMessageEx(who, "Voce escolheu mutagenico de " + prot, SSM_INFO);
 		if (prot == "Forca")
 			SetObjProperty(who,"mutagenico", 1);

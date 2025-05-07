@@ -14,7 +14,7 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	var time :=  AP_GetSkill(who, MAGICLORE);
+	var time :=  AP_GetSkill(who, THEOLOGY);
 	
 	if (targ.isA(POLCLASS_WEAPON))
 		SetCooldown(targ, "blessweapon", time);

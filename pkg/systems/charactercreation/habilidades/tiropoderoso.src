@@ -1,4 +1,3 @@
-
 use uo;
 
 include "include/say";
@@ -9,6 +8,7 @@ include ":timedScripts:timedScripts";
 include "include/facings";
 include ":combat:damage";
 include ":combat:damage";
+include "include/epicCombatUtils";
 
 program tirodesfocado(who)
 	SendSysMessageEx(who, "Escolha a direcao que ira disparar a flecha", SSM_INFO);
@@ -80,26 +80,42 @@ program tirodesfocado(who)
 	var alreadydamaged := array{};
 	foreach pontos in distancia
 		var mobiles := ListMobilesNearLocation(pontos.x, pontos.y, who.z, 1, who.realm);
-		var allPets := array{};
-		var party_members := who.party.members;
-
-		if (who.party)
-			foreach member in party_members
-				if (member != who)
-					var memberObj := SystemFindObjectBySerial(member.serial);
-					var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
-					foreach pet in allPetsAndSummonedPets
-						allPets.append(pet);
+		var validTargets := array{};
+		
+		// Use the utility function to get only valid targets (excluding pets and party members)
+		foreach mobile in mobiles
+			if (!(mobile.serial in alreadydamaged))
+				var isValidTarget := 1;
+				
+				// Skip self
+				if (mobile == who)
+					isValidTarget := 0;
+				// Skip party members
+				elseif (who.party && mobile in who.party.members)
+					isValidTarget := 0;
+				// Skip own pets
+				elseif (GetObjProperty(mobile, "owner") == who.serial || CStr(GetObjProperty(mobile, "owner")) == CStr(who.serial))
+					isValidTarget := 0;
+				// Skip party members' pets
+				elseif (who.party)
+					foreach member in (who.party.members)
+						if (GetObjProperty(mobile, "owner") == member.serial || CStr(GetObjProperty(mobile, "owner")) == CStr(member.serial))
+							isValidTarget := 0;
+							break;
+						endif
 					endforeach
 				endif
-			endforeach
-		endif
-		foreach mobile in mobiles
-			if (!(mobile.serial in alreadydamaged) && (mobile != who) && !(mobile in who.party.members) && !(mobile in allPets ))
-				alreadydamaged.Append(mobile.serial);
-				var total := cint(CalculateTotalDamage(mobile, basedamage, who, dmgList));
-				DamageFLS(mobile, total*2, DMG_FORCED, who);
+				
+				if (isValidTarget)
+					validTargets.append(mobile);
+					alreadydamaged.Append(mobile.serial);
+				endif
 			endif
+		endforeach
+		
+		foreach mobile in validTargets
+			var total := cint(CalculateTotalDamage(mobile, basedamage, who, dmgList));
+			DamageFLS(mobile, total*2, DMG_FORCED, who);
 			sleepms(20);
 		endforeach
 		sleepms(20);

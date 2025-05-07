@@ -22,7 +22,7 @@ program vacuodemana(params)
         return;
     endif
 
-    var duration := CInt(AP_GetSkill(attacker, MAGICLORE) / 10);
+    var duration := CInt(AP_GetSkill(attacker, THEOLOGY) / 10);
     var shaman_souls := Cint(getobjProperty(attacker, "shaman_souls"));
     if (!shaman_souls)
         var shaman_souls := 0;
@@ -40,7 +40,7 @@ program vacuodemana(params)
 	dmgList := getNewDamageList(attacker);
 
 	var total := cint(CalculateTotalDamage(defender, basedamage, attacker, dmgList));
-    var dano_mlore := cint(AP_GetSkill(attacker, MAGICLORE) + (shaman_souls * 5));
+    var dano_mlore := cint(AP_GetSkill(attacker, THEOLOGY) + (shaman_souls * 5));
 	DamageFLS(defender, dano_mlore, DMG_POISON, attacker);
     SetObjProperty(attacker, "shaman_souls", 0);
     

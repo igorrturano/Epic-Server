@@ -12,8 +12,14 @@ include "include/client";
 include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
+include ":destroyable:include/destroyItem";
 
 program use_Bladed(who, tool)
+
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+	
 	if (who.weapon != tool)
 		SendSysMessage(who, "Voce deve estar com a arma em maos.");
 		return 0;
@@ -40,67 +46,13 @@ program use_Bladed(who, tool)
 endprogram
 
 function CarveItems(who, tool, item)
-    var quebravel := GetObjProperty(item, "quebravel");
     if ( item.IsA(POLCLASS_CORPSE) ) //Escalpela e esquarteja corpo
-        return start_script(":survival:skinning", {who, item, tool});
-    elseif (quebravel == "survival")
-        var mex := who.x;
-        var mey := who.y;
-        var durabilidade := CInt(GetObjProperty(item, "durabilidade")); // Mudamos hp para durabilidade
-        var gatherer := AP_GetSkill(who, SURVIVAL);
-        
-        PrintTextAbove(who, "*Rasgando Intensamente*");
-
-        var i := 3;
-        while((i <= 9) && (who.x == mex) && (who.y == mey))
-            if((who.x != mex) || (who.y != mey))
-                SendSysMessageEx(who,"Voce deve ficar parado enquanto trabalha", SSM_FAIL);
-                return;
-            endif
-
-            PerformAction(who, 0x0b);          
-            PlaySoundEffect(who, 0x538);       
-            sleep(1);
-            i := i + 1;
-        endwhile
-
-        // Reduzimos a durabilidade
-        durabilidade := durabilidade - gatherer;
-        if(durabilidade < 0)
-            durabilidade := 0;
-        endif
-
-        // Atualizamos a propriedade de durabilidade do item
-        SetObjProperty(item, "durabilidade", durabilidade);
-
-        // Verificamos se o item deve ser destruído
-        if (durabilidade <= 0)
-            PrintTextAbove(item, "*quebra*");
-            // Adiciona o som de reação baseado no gênero do personagem
-            if (who.gender == 1)  // Feminino
-                PlaySoundEffect(who, 0x30c);
-            else                  // Masculino
-                PlaySoundEffect(who, 0x41b);
-            endif
-    
-            sleep(2);
-
-            var itens := GetObjProperty(item,"itens");
-            if(itens)
-                foreach itemarray in itens
-                    var itemcriado := CreateItemAtLocation(item.x, item.y, item.z, itemarray, itemarray.amount, realm := _DEFAULT_REALM);
-                    SetName(itemcriado, itemarray.name);
-                endforeach
-            endif
-            
-            DestroyItem(item);
-            SendSysMessageEx(who, "O item foi completamente destruído.", SSM_INFO);
-        else
-            //SendSysMessageEx(who, "A durabilidade do item foi reduzida para " + durabilidade + ".", SSM_INFO);
-        endif
-    elseif ((quebravel == "gathering") || (quebravel == "domesticwork"))
-        SendSysMessageEx(who, "Voce deve usar outra ferramenta para este servico", SSM_FAIL);
-        return;
+		if (item.graphic == 0x10DA) //Escalpela
+			PrintTextAbove(item, "*Liberta o corpo das teias*");
+			SetObjProperty(item, "freed_from_web", 1);
+		else
+        	return start_script(":survival:skinning", {who, item, tool});
+		endif
     else
         case (item.objtype)
             0x97E:

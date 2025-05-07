@@ -13,7 +13,7 @@ program HitScript(who)
     if (!shaman_souls)
         var shaman_souls := 1;
     endif
-    var bonus_mlore := Cint(AP_GetSkill(who, MAGICLORE)/ 30);
+    var bonus_mlore := Cint(AP_GetSkill(who, THEOLOGY)/ 30);
     Setcooldown(who, "bloodlust", shaman_souls);
     HealFLS(who, shaman_souls * bonus_mlore);
     PlayStationaryEffect(who.x, who.y, who.z+2, 0x546C, 0, 30);

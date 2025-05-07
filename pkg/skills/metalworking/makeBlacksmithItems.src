@@ -10,11 +10,16 @@ include ":crafting:toolWear";
 include ":itemutils:canAccess";
 include ":fls_core:fls_crafting";
 include ":recipes:recipes";
+include ":destroyable:include/destroyItem";
 
 var item_config     := ReadConfigFile(":*:itemdesc");
 var craft_config    := ReadConfigFile(":metalworking:blacksmithy");
 
 program use_SmithTool(who, tool)
+
+	if(who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
 
 	if(!can_access(who, tool))
 		return 0;
@@ -59,8 +64,6 @@ program use_SmithTool(who, tool)
 endprogram
 
 function makeBlacksmithItems(who, what, amt, tool )
-
-
 	if(!what)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return 0;

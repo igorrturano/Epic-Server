@@ -7,6 +7,12 @@ include "include/epicConstants";
 
 program pergrad(who, item)
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
-
+    if (getObjProperty(item, "owner"))
+        if (getObjProperty(item, "owner") != who.serial)
+            SendSysMessage(who, "Esse é um conhecimento adquirido, não pode ser dado ou vendido.");
+            return 0;
+        endif
+    endif
+    
 	return comprarHabilidade(who, item, -1);
 endprogram

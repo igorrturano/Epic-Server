@@ -339,7 +339,7 @@ elseif ( text["todos andem"])
           return;
         endif
 
-		var cfg := ReadConfigFile(":brainAI:npcdesc");
+		var cfg := ReadConfigFile(":*:npcdesc");
 		var npctemplate := me.npctemplate;
 		npctemplate := npctemplate[10, len(npctemplate)-9];
 		cfg := cfg[npctemplate];
@@ -393,7 +393,7 @@ function TakeItem(ev)
 //cfgd
 	var cfgeat := ReadConfigFile(":*:itemdesc");
 	var cfg := ReadConfigFile("food");
-	var npccfg := ReadConfigFile(":brainai:npcdesc");
+	var npccfg := ReadConfigFile(":*:npcdesc");
 
 if (GetObjProperty(me, "summoned"))
 	SendSysMessageEX(ev.source, "Caso nao saiba, espiritos nao se alimentam!", SSM_FAIL);
@@ -886,7 +886,7 @@ if(GetObjProperty(me, "summoned") == 1)
 	return;
 endif
 
-var npccfgfile := ReadConfigFile(":brainAI:npcdesc");
+var npccfgfile := ReadConfigFile(":*:npcdesc");
 var orneriness := npccfgfile[me.npctemplate].PetSlot;
 	if (!orneriness)
 		orneriness := 1;

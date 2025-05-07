@@ -4,18 +4,18 @@
  */
 use uo;
 use os;
-use basic;
+// use basic;
 use cfgfile;
 
 include ":attributes:attributes";
-include ":brainai:npcUtil";
-include ":blood:blood";
+// include ":brainai:npcUtil";
+// include ":blood:blood";
 include ":combat:settings";
 include ":timedscripts:timedScripts";
-include "include/client";
+// include "include/client";
 include "include/facings";
 include ":combat:damage";
-include ":charactercreation:habilidades";
+// include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
 include "include/equipment";
@@ -32,7 +32,6 @@ program MainHitScript(params)
 	var rawdamage := params[6];
 	var waitAnim := params[7];
 	var elementalDamages;
-
 	// Garante dano mínimo de 1
 	if (rawdamage < 1)
 		rawdamage := 1;
@@ -75,7 +74,6 @@ program MainHitScript(params)
 			basedamage := 0;
 		endif
 	endif
-
 	WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 	ArmorHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage);
 
@@ -83,6 +81,8 @@ program MainHitScript(params)
 
 	// Se tiver feito um movimento, executa ele e retorna (nao causa o dano normal)
 	DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage);
+
+	ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdamage);
 
 	// Aplica o dano físico da arma abatendo a defesa do defensor
 	EpicApplyDamageBase(attacker, defender, weapon, armor, basedamage, dmgType);
@@ -143,30 +143,65 @@ function DoMovement(attacker, defender, weapon, armor, basedamage, rawdamage)
 	endif
 endfunction
 
+function SetLastHitInfo(mobile, damage, type, source)
+	// TODO: [REFACTOR] Conferir se está tudo correto mesmo
+
+	var weapon_scripts;
+	var lastHitInfo := struct{};
+	lastHitInfo.+amount := damage;
+	lastHitInfo.+attacker := source.serial;
+
+	if (source.npctemplate)
+		weapon_scripts := source.getProp("HitScripts");
+		if (weapon_scripts)
+			lastHitInfo.+hitscript := weapon_scripts;
+		endif
+	else
+		weapon_scripts := source.weapon.getProp("HitScripts");
+		if (weapon_scripts)
+			lastHitInfo.+hitscript := weapon_scripts;
+		endif
+	endif
+
+	mobile.setProp("lastHit", lastHitInfo);
+	if (mobile.getProp("NeverRelease") == 1)
+		var teste := AP_GetVital(mobile, "DP");
+		mobile.setProp("LastDP", teste);
+	endif
+
+	if (!mobile.npctemplate)
+		if (source.npctemplate)
+			mobile.setProp("lastNpcDmg", source.npctemplate);
+		endif
+	endif
+endfunction
+
 function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var total;
 	// if ( basedamage > 0 )
-	var lastHitInfo := struct;
-	lastHitInfo.+amount := basedamage;
-	lastHitInfo.+attacker := attacker.serial;
-	var weapon_scripts := GetObjProperty(weapon, "HitScripts");
-	if (weapon_scripts != error)
-		lastHitInfo.+hitscript :=  weapon_scripts;
-	endif
-	weapon_scripts := GetObjProperty(attacker, "HitScripts"); //nos nps eh neles e nao na arma
-	if (weapon_scripts != error)
-		lastHitInfo.+hitscript :=  weapon_scripts;
-	endif
-	SetObjProperty(defender, "lastHit", lastHitInfo);
-	if ((GetObjProperty(defender, "NeverRelease") == 1))
-		var teste := AP_GetVital(defender, "DP");
-		SetObjPRoperty(defender, "LastDP", teste);
-	endif
-	if (!defender.npctemplate)
-		if (attacker.npctemplate)
-			SetObjProperty(defender, "lastNpcDmg", attacker.npctemplate);
-		endif
-	endif
+
+	// MOVIDO PRA FUNÇÃO SetLastHitInfo()
+	// var lastHitInfo := struct;
+	// lastHitInfo.+amount := basedamage;
+	// lastHitInfo.+attacker := attacker.serial;
+	// var weapon_scripts := GetObjProperty(weapon, "HitScripts");
+	// if (weapon_scripts != error)
+	// 	lastHitInfo.+hitscript :=  weapon_scripts;
+	// endif
+	// weapon_scripts := GetObjProperty(attacker, "HitScripts"); //nos nps eh neles e nao na arma
+	// if (weapon_scripts != error)
+	// 	lastHitInfo.+hitscript :=  weapon_scripts;
+	// endif
+	// SetObjProperty(defender, "lastHit", lastHitInfo);
+	// if ((GetObjProperty(defender, "NeverRelease") == 1))
+	// 	var teste := AP_GetVital(defender, "DP");
+	// 	SetObjPRoperty(defender, "LastDP", teste);
+	// endif
+	// if (!defender.npctemplate)
+	// 	if (attacker.npctemplate)
+	// 		SetObjProperty(defender, "lastNpcDmg", attacker.npctemplate);
+	// 	endif
+	// endif
 
 	if (GetObjProperty(defender, "#alvomovel") == 1)
 		EraseObjProperty(defender, "#alvomovel");
@@ -189,31 +224,8 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 		dmgList[encantada.type] := dmgList[encantada.type] + modphy;
 	endif
 
-	if( GetObjProperty(defender, "#chainofpain") != error )
-		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
-			var copmobs := GetObjProperty(defender, "#chainserials");
-			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
-			var copdefenders := array;
-			var lvl := cdbl(AP_GetSkill(mage, MAGICLORE)/200);
-
-			foreach serial in copmobs
-				copdefenders.append(SystemFindObjectBySerial(serial));
-			endforeach
-
-			foreach targ in copdefenders
-				defender := targ;
-				total := CalculateTotalDamage(defender, basedamage * lvl, attacker, dmgList);
-				if (total < 1)
-					total := 1;
-				endif
-				DamageFLS(defender, total, DMG_FORCED, mage);
-			endforeach
-			return 1;
-		endif
-	endif
-
 	total := CalculateTotalDamage(defender, basedamage, attacker, dmgList);
-	var shaman_bonus := CInt(AP_GetSkill(attacker, MAGICLORE) / 5);
+	var shaman_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 5);
 	if (Getcooldown(attacker, "bloodlust") > 0)
 		PlayStationaryEffect(attacker.x, attacker.y, attacker.z, GFX_BLUE_SPARKLE_GROUND, 10, 20, 0, attacker.realm);
 		HealFLS(attacker, total * shaman_bonus/100);
@@ -251,7 +263,7 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 				foreach member in party_members
 					if (member != attacker)
 						var memberObj := SystemFindObjectBySerial(member.serial);
-						var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8 * 4);
+						var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
 						foreach pet in allPetsAndSummonedPets
 							allPets.append(pet);
 						endforeach
@@ -303,7 +315,7 @@ function CheckHabs(attacker, defender, weapon, armor, basedamage, rawdamage)
 	if (GetObjProperty(attacker, "surprise_attack") && attacker.hidden)
 		PerformAction(defender, 0x0e);
         PlaySoundEffect(defender, 0x3b4);
-
+		PrintTextAbove(defender, "*Ataque surpresa*");
 		TS_StartTimer(attacker, "paralysis", 5);
         sleep(2);
 	endif
@@ -479,7 +491,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 	if (GetCooldown(weapon, "ataqueelemental") )
 		EraseObjProperty(weapon, "#ataqueelemental");
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
-		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
 		dmg := ApplyChargesCalculation(weapon, dmg, 1);
 
 		if (elemental != error)
@@ -495,7 +507,7 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 
     var arcane_bows := array{0xFA6D, 0XF997};
 	if (GetCooldown(attacker, "arcane_bow") && weapon.objtype in arcane_bows)
-		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
+		var dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, ARCANA)/100));
 		var arcane_damage := dmg*0.5;
 
 		if (TemHabilidade(attacker, "Tirothan"))
@@ -524,17 +536,10 @@ function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdama
 		start_script(":combat:weaponHitScripts/bleedingstrike", array{attacker, defender, weapon, armor, basedamage, dmg*2});
 	endif
 
-    //if (GetObjProperty(attacker, "#justicaderothen"))
-	//	var dmg := 1;
-    //    dmg := basedamage + CInt(rawdamage*(AP_GetSkill(attacker, MAGICLORE)/100));
-        
-    //    Run_Script_To_Completion(":combat:weaponHitScripts/smiteEvil", array{attacker, defender, weapon, armor, basedamage, dmg*2});
-	//endif
-
 	if ( GetCooldown(weapon, "circulodevas") )
 		var elemental := GetObjProperty(weapon, "#elementalweapon");
 		if (elemental != error)
-			var dmg  := AP_GetSkill(attacker, MAGICLORE)/10;
+			var dmg  := AP_GetSkill(attacker, ARCANA)/10;
 			dmg := ApplyChargesCalculation(weapon, dmg, 2);
 			if(dmg < 3)
 				dmg := 3;
@@ -583,11 +588,11 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 
 	skillCriticalBonus := CInt(AP_GetSkill(attacker, TACTICS)/20);
 	
-	var weaponProp := getPropBase(weapon);
+	var weaponAttr := weapon.getAttrBase();
 	var chance := CInt(
 		// Weapon
-		CInt(weaponProp.CriticalChance) + // Crítico base da arma
-		CInt(weaponProp.CriticalChanceMod) + // Crítico extra da arma
+		CInt(weaponAttr.CriticalChance) + // Crítico base da arma
+		CInt(weaponAttr.CriticalChanceMod) + // Crítico extra da arma
 		// CInt(GetObjProperty(weapon, "CriticalChance")) + // Crítico extra da arma
 
 		// Char
@@ -652,48 +657,6 @@ function CriticalHitScripts(attacker, defender, weapon, armor, byref basedamage,
 		endif
 	endif
 
-	var weapon_scripts := array;
-	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
-	var pet_critic := GetObjProperty(attacker, "Critic");
-	var pet_txt := Cstr(GetConfigStringArray( taming_cfg[pet_critic], "Text" ));
-	var pet_selvagem := GetObjProperty(attacker, "Selvagem"); //verifica se é animal selvagem - nunca tamado, para dar dano critico
-	var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
-	var tem_critico := GetConfigStringArray( npcelem, "CriticalHitScripts" ); //Se tem critico no npcdesc definido
-	var can_crit := GetObjProperty(weapon, "Aprimoramentos")["Arma Elaborada"] && !attacker.npctemplate && weapon != FIST;
-	if ( !attacker.ip && weapon.IsA(POLCLASS_WEAPON) && !pet_instinto && !pet_selvagem )
-		if (tem_critico == {})
-			weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
-		else
-			weapon_scripts :=  GetConfigStringArray( npcelem, "CriticalHitScripts" );
-		endif
-	elseif (pet_instinto == 1 || pet_selvagem == 1)
-		weapon_scripts :=  GetConfigStringArray( taming_cfg[pet_critic], "CriticalHitScripts" );
-		sleepms(5);
-		printtextabove(attacker, ""+pet_txt);
-	else
-		weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
-	endif
-	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
-
-	//printtextabove(attacker, "critical hit scripts " + weapon_scripts);
-	if (weapon_scripts.size() > 0 && can_crit)
-		var critdelay := ReadGameClock()+180;
-		if (!GetObjProperty(weapon, "polida"))
-			SendSysMessageEx(attacker, "Sua arma está embotada!", SSM_FAIL);
-			critdelay := ReadGameClock()+240;
-		endif
-		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
-		SetObjProperty(attacker, "critdelay", ReadGameClock()+critdelay);
-		var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
-		if (GetCooldown(defender, "vitalidadeinabalavel") > 0 || isDwarverDefender)
-			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);
-			SendSysMessageEx(attacker, "O defensor ignorou o critico", SSM_FAIL);
-			return 1;
-		endif
-	elseif (!can_crit)
-		SendsysMessageEx(attacker, "Apenas armas elaboradas causam crítico", SSM_FAIL);
-		return 1;
-	endif
 
 	if (GetCooldown(defender, "VontadeIndomavel") || GetCooldown(defender, "vitalidadeinabalavel") > 0)
 		SendSysMessageEx(defender, "Você não leva o critico");
@@ -830,7 +793,7 @@ function PoisonChecks(attacker, defender, weapon, armor, basedamage, rawdamage)
 			endif
             // Sempre que for mexer nesse timer, mexer também  no .arremessar ou criar funcao e chamar em ambos
 			if (poisonInfo.name == "paralyzePoison")
-                var duration := CInt(AP_GetSkill(attacker, ALCHEMY) / 20 );
+                var duration := CInt(AP_GetSkill(attacker, SCIENCE) / 20 );
                 if (duration < 2)
                     duration := 2;
                 endif
@@ -911,6 +874,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	var usingWeapon := 0;
 	var parryBonus := 0;
 	var shield := defender.shield;
+	var shieldAttr := shield.getAttrBase();
 
 	var blocker;
 	//Verifica se o defensor está sob efeito da a hab esudo do martir
@@ -945,7 +909,12 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		parryBonus := 0;
 	endif
 	//Calcula o Bonus basico de parry do escudo, Bonus de parry específico da CProp do escudo, Bonus de parry especifico da CProp do personagem
-	parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
+	// parryBonus := CInt(parryBonus * (CInt((item_cfg[shield.objtype]).parrybonus) + CInt(GetObjProperty(shield, "parrybonus")))) + CInt(GetObjProperty(defender, "parrybonus"));
+	parryBonus := CInt(
+		CInt(shieldAttr.ParryBonus) + // Parry Bônus Básico do escudo
+		CInt(GetObjProperty(shield, "parrybonus")) + // Parry Bônus Extra do escudo
+		CInt(GetObjProperty(defender, "parrybonus")) // Parry Bônus Extra do defensor
+	);
 
 	//Calcula o Bonus temporário de parry, se houver
 	var tempParryBonus := CInt(getObjProperty(defender, "#tempparrybonus"));
@@ -961,7 +930,13 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
     endif
 
 	//Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
-	var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
+	// var parryDelay := CInt((item_cfg[shield.objtype]).parrydelay) - CInt(GetObjProperty(shield, "parrydelay_mod"))  - CInt(skill/20) + 8;
+	var parryDelay := CInt(
+		-(CInt(shieldAttr.ParryDelay)) + // Parry Delay Básico do escudo
+		-(CInt(GetObjProperty(shield, "parrydelay_mod"))) + // Parry Delay Extra do escudo
+		-(CInt(skill/20)) + // Parry Delay Bônus de acordo com a skill
+		8 // Fator de balanceamento
+	);
 
 	//Faz com que os bloqueios garantidos por cauda de habilidade resetem o delay de bloqueio
 	if (tempParryBonus == 100)
@@ -1010,7 +985,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		defendeu := 1;
 
 		//Pike desarma defensor que bloquear sem escudo
-		if ((attacker.weapon.graphic == 0xF985) && ( usingWeapon ))
+		if ((attacker.weapon.graphic == 0x26BE) && ( usingWeapon ))
 			var defweapon := defender.weapon;
 			if (defweapon.objtype != 0x1F020)
 				var x := defender.x + RandomInt(2)+1;
@@ -1049,7 +1024,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	endif
 
 	//Exibe o efeito visual do bloqueio
-	Performaction(defender,ANIM_TWIST_DODGE);
+	PerformAction(defender,ANIM_TWIST_DODGE);
 
 	if (blocker)
 		PerformAction(defender, 13);
@@ -1192,6 +1167,16 @@ endfunction
 function ataqueFurtivo(attacker, defender)
 	var weapon := attacker.weapon;
 	var weaponBow := 0;
+	var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
+
+	if (attacker.npctemplate)
+		var npc_elem := NPC_GetNPCConfig(attacker);
+		sneak_dmg := Cint(npc_elem.Tier * 15);
+		if (sneak_dmg < 15)
+			sneak_dmg := 15;
+		endif
+	endif
+
 	if (lower(weapon.attribute) == "rangedcombat")
 		weaponBow := 1;
 	endif
@@ -1211,10 +1196,66 @@ function ataqueFurtivo(attacker, defender)
         endif
     endif
 
-    var sneak_dmg := AP_GetSkill(attacker, SNEAK);
 	DamageFLS(defender, sneak_dmg, DMG_FORCED, attacker);
     PlaySoundEffect(defender, 0X510);
     MakeBleed(defender);
     RevokePrivilege(attacker, "hiddenattack");
     attacker.disable("hiddenattack");
+endfunction
+
+function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdamage)
+	if (getObjProperty(attacker, "critdelay") > ReadGameClock())
+		return 0;
+	endif
+	var weapon_scripts := array;
+	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
+	var pet_critic := GetObjProperty(attacker, "Critic");
+	var pet_txt := Cstr(GetConfigStringArray( taming_cfg[pet_critic], "Text" ));
+	var pet_selvagem := GetObjProperty(attacker, "Selvagem"); //verifica se é animal selvagem - nunca tamado, para dar dano critico
+	var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
+	var tem_critico := GetConfigStringArray( npcelem, "CriticalHitScripts" ); //Se tem critico no npcdesc definido
+	if ( !attacker.ip && weapon.IsA(POLCLASS_WEAPON) && !pet_instinto && !pet_selvagem )
+		if (tem_critico == {})
+			weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
+		else
+			weapon_scripts :=  GetConfigStringArray( npcelem, "CriticalHitScripts" );
+		endif
+	elseif (pet_instinto == 1 || pet_selvagem == 1)
+		weapon_scripts :=  GetConfigStringArray( taming_cfg[pet_critic], "CriticalHitScripts" );
+		sleepms(5);
+		printtextabove(attacker, ""+pet_txt);
+	else
+		weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
+	endif
+	//Possivel mudar o critico de npc's. Os npcs só tem uma arma, a Intrinsic Weapon, mesmo que alguma esteja equipada.
+
+	var can_crit := GetObjProperty(attacker.weapon, "Aprimoramentos")["Arma Elaborada"] || attacker.npctemplate || weapon == FIST;
+	if (weapon_scripts.size() > 0 && can_crit)
+		var critdelay := ReadGameClock()+180;
+		if (!GetObjProperty(weapon, "polida"))
+			SendSysMessageEx(attacker, "Sua arma está embotada!", SSM_FAIL);
+			critdelay := ReadGameClock()+240;
+		endif
+		PrintText(attacker, "*CRÍTICO*", _DEFAULT_TEXT_FONT, 2118);
+		SetObjProperty(attacker, "critdelay", ReadGameClock()+critdelay);
+		var isDwarverDefender := GetObjProperty(defender, "chardata").trait == "Defensor Anão";
+		if (GetCooldown(defender, "vitalidadeinabalavel") > 0 || isDwarverDefender)
+			SendSysMessageEx(defender, "Voce ignora o critico", SSM_INFO);
+			SendSysMessageEx(attacker, "O defensor ignorou o critico", SSM_FAIL);
+			return 1;
+		endif
+	elseif (!can_crit)
+		SendsysMessageEx(attacker, "Apenas armas elaboradas causam crítico", SSM_FAIL);
+		return 1;
+	endif
+
+	foreach hitscript in weapon_scripts
+		var script := start_script(hitscript, array{attacker, defender, weapon, armor, basedamage, rawdamage});
+		if ( !script || script.errortext )
+			SendSysMessage(attacker, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+			SendSysMessage(defender, "*Attacker* Weapon script error starting ["+hitscript+"] :" + script.errortext);
+		endif
+
+		sleepms(2);
+	endforeach
 endfunction

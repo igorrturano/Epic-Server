@@ -1,0 +1,105 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/facings";
+include "include/sounds";
+
+program flyprocess(who)
+    if (!who)
+        return 0;
+    endif
+    
+    // Altura do salto
+    var height_offset := 30;
+    
+    // Distância do salto
+    var jump_distance := 20;
+    
+    // Velocidade do movimento (delay entre cada tile)
+    var jump_speed := 50;
+    
+    // Efeito visual e sonoro ao iniciar o salto
+    PlaySoundEffect(who, 0x1F8); // Som de vento/ar
+    PlayObjectCenteredEffectEx(who, 0x3735, 1, 30, 0, 0, 0, 0); // Efeito de luz azul
+    
+    // Eleva o personagem
+    var world_z := GetStandingHeight(who.x, who.y, who.z+height_offset, who.realm);
+    var moved := 0;
+    
+    if (world_z.z <= who.z+1)
+        moved := 1;
+        MoveObjectToLocation(who, who.x, who.y, who.z+height_offset, who.realm, MOVEOBJECT_FORCELOCATION);
+    endif
+    
+    sleepms(100);
+    
+    // Usa PushBackEX para mover o personagem na direção em que está olhando
+    // O parâmetro invert=1 faz com que o movimento seja na direção em que o personagem está olhando
+    PlayStationaryEffect(who.x,who.y,who.z, 0x6d57, 1, 0, 0, who.realm);
+    PerformAction(who, ANIM_TWIST_DODGE);
+    PushBackEX(who, jump_distance, jump_speed, 1);
+    
+    sleepms(200);
+    
+    // Retorna o personagem ao solo
+    if (moved)
+        MoveObjectToLocation(who, who.x, who.y, who.z-height_offset, who.realm);
+    endif
+    
+    // Efeito visual e sonoro ao pousar
+    PlaySoundEffect(who, 0x208); // Som de pouso
+    PlayObjectCenteredEffectEx(who, 0x3728, 1, 30, 0, 0, 0, 0); // Efeito de poeira
+    
+    return 1;
+endprogram
+
+function PushBackEX(who, dist, delay, invert := 0)
+    var mod := GetModByFacing(who.facing);
+    var x := mod[1];
+    var y := mod[2];
+
+    if (!invert)
+        x := x * -1;
+        y := y * -1;
+    endif
+
+    var finalx := who.x + (dist*x);
+    var finaly := who.y + (dist*y);
+    var world_z := GetStandingHeight(finalx, finaly, who.z-15, who.realm);
+    
+    // Substituindo _ifElse por uma verificação condicional direta
+    var force;
+    if (world_z.z != error && world_z.z <= who.z)
+        force := MOVEOBJECT_FORCELOCATION;
+    else
+        force := MOVEOBJECT_NORMAL;
+    endif
+    
+    for i := 1 to dist
+        var finalx := (who.x + x);
+        var finaly := (who.y + y);
+        
+        if (!CheckLosAt(who, finalx, finaly, who.z))
+            return 0;
+        endif
+        
+        var world_z := GetStandingHeight(who.x, who.y, who.z, who.realm);
+        if (world_z.z > who.z)
+            return 0;
+        endif
+
+        var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
+        if (err == error)
+            // PrintText(who, "*bate no obstaculo*");
+            return 0;
+        endif
+        
+        // Exibe o efeito visual no personagem durante o movimento
+        PlayObjectCenteredEffectEx(who, 0x3735, 1, 10, 0, 0, 0, 0); // Efeito de luz azul
+        
+        sleepms(delay);
+    endfor
+
+    return 1;
+endfunction

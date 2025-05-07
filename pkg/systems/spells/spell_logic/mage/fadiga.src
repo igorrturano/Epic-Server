@@ -23,9 +23,9 @@ program SpellScript(params)
 		return;
 	endif
 
-	var dmg := ( Cint(AP_GetSkill(who, MAGICLORE)));
+	var dmg := ( Cint(AP_GetSkill(who, ARCANA)));
 
-//	if (SkillCheck(targ, RESISTING_SPELLS, AP_GetSkill(who, MAGICLORE) > 0))
+//	if (SkillCheck(targ, RESISTING_SPELLS, AP_GetSkill(who, ARCANA) > 0))
 //		dmg := dmg - Cint(AP_GetSkill(targ, RESISTING_SPELLS))/2;
 //		SendSysMessageEx(targ, "Voce consegue resistir a magia.", SSM_INFO); 
 //	endif

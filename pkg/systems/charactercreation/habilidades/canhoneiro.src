@@ -23,6 +23,7 @@ include ":timedScripts:timedScripts";
 include ":attributes:vitals";
 include ":charactercreation:resists";
 include "include/facings";
+include ":destroyable:include/destroyItem";
 
 program vacuodemana(params)
 	var who	:= params[1];
@@ -31,33 +32,47 @@ program vacuodemana(params)
     var has_powder := 0;
     var has_power_fixer := 0;
    // Verificar se tem cannon ball e pólvora
-var itemsinbag := EnumerateItemsInContainer(who.backpack);
-foreach item in itemsinbag
-    var container := item.container;
-    if (item.objtype == 0x4224 && !has_ammo) // cannon ball
-        has_ammo := 1;
-        subtractamount(item.objtype, 1);
-    endif
-    if (item.objtype == 0x9092 && !has_powder && (!container || container.objtype != 0xDE31))
-        has_powder := 1;
-        subtractamount(item.objtype, 5);
-    endif
-    if (item.objtype == 0xC611)
-        has_power_fixer := 1;
-    endif
-endforeach
+    if (who.acctname)
+        var itemsinbag := EnumerateItemsInContainer(who.backpack);
+        foreach item in itemsinbag
+            var container := item.container;
+            if (item.objtype == 0x4224 && !has_ammo) // cannon ball
+                has_ammo := 1;
+                subtractamount(item.objtype, 1);
+            endif
+            if (item.objtype == 0x9092 && !has_powder && (!container || container.objtype != 0xDE31))
+                has_powder := 1;
+                subtractamount(item.objtype, 5);
+            endif
+            if (item.objtype == 0xC611)
+                has_power_fixer := 1;
+            endif
+        endforeach
 
-    if (!has_ammo || !has_powder || !has_power_fixer)
-        SendSysMessage(who, "Que artilheiro despreparado! Voce nao tem os materiais necessarios!");
-        return 0;
+        if (!has_ammo)
+            SendSysMessageEx(who, "Você precisa de uma bala de canhão!");
+            return 0;
+        endif
+        if (!has_powder)
+            SendSysMessageEx(who, "Você precisa de 5 pólvoras!");
+            return 0;
+        endif
+        if (!has_power_fixer)
+            SendSysMessageEx(who, "Você precisa de um fixador de potência!");
+            return 0;
+        endif
+
     endif
 
     if (GetObjProperty(who, "molhado"))
-        SendSysMessage(who, "Molhado desse jeito, eh impossivel manipular canhoes e polvoras!");
+        SendSysMessageEx(who, "Molhado desse jeito, é impossível manipular canhões e polvoras!");
         return 0;
     endif
 
     var targ := Target(who);
+    if (who.npctemplate)
+        targ := GetRandomNearbyHostile(who);
+    endif
     if (!targ)
         SendSysMessageEx(who, "Cancelado");
         return 0;
@@ -90,12 +105,14 @@ endforeach
     var bs_damage := Cint(AP_GetSkill(who, METALWORKING)/10);
     var dmg_dice := RandomDiceRoll(cstr(bs_damage+"d12")) + Cint((AP_GetStat(who, DEXTERITY) - 50) / 10) + Cint(AP_GetSkill(who, METALWORKING) / 10);
     var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 3, targ.realm);
+    DanificaObjetosProximos(who,targ.x, targ.y, targ.z,targ.realm,struct{dano := dmg_dice, desc := "Bomba de Fragmentacao." },6,0x36cc);
+    
     foreach mob in nearby
         DamageFLS(mob, dmg_dice, DMG_FIRE, who);
         PLayStationaryEffect(mob.x, mob.y, mob.z, 0x36cc, 0, 10, 0, mob.realm);
         TS_StartTimer(mob, "tombar", 10);
     endforeach
-	destroycraft(targ, who);
+	//destroycraft(targ, who);
 
 
     PrintTextAbove(who, "*Desmonta o equipamento*");

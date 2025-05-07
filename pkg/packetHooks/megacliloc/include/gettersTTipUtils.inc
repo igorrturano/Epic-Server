@@ -4,7 +4,7 @@ use cfgfile;
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/toolTipUtils";
 include ":equipsys:props";
-
+include ":destroyable:include/destroyItem";
 
 
 function GetDmgStringDesc(elem, item)
@@ -84,7 +84,10 @@ endfunction
 function getCondition(item) //Durabilidade dos itens
 	// return CSTR(item.hp) + "/" + CSTR(item.maxhp);
 
-	var c := cdbl(item.hp) / cdbl(item.maxhp);
+	var c := 0.0;
+
+	var atributos := MontaAtributosItem(item);
+	c := cdbl(atributos.durabilidade) / cdbl(atributos.durabTotal);
 
 	if (c > 0.9)
 		return "Boa";
@@ -146,8 +149,8 @@ endfunction
 
 function getVelStringDesc(elem, item) //Velocidade da arma. Mostra diferença pra item base
 	var speedI := GetObjProperty(item,"attackspeedbonus");
-	var itemProp := getPropBase(item);
-	var speedE := CInt(itemProp.AttackSpeed);
+	var itemAttr := item.getAttrBase();
+	var speedE := CInt(itemAttr.AttackSpeed);
 	var speedDesc := "";
 	if (speedE >= 41)
 		speedDesc := "Muito Rápida";

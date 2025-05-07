@@ -330,7 +330,6 @@ function ComprarHabGump(who, habs, habsfac)
 endfunction
 
 function comprarHabilidade(who, item, nv:=-1)
-	SendSysMessage(who,"[Interno] Tentando comprar Hab Level "+nv);
 	var itemdesc := ReadConfigFile("::itemdesc");
 	var nivel;
 
@@ -402,13 +401,8 @@ function comprarHabilidade(who, item, nv:=-1)
             return 0;
 		endif
 
-		if(escolhida == "Valm Oloth" && cultura != HAROLOTH && religiao != ELUITHORTH && who.graphic != 1830)
+		if(escolhida == "Danca das Sombras" && cultura != HAROLOTH && religiao != ELUITHORTH)
 			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
-			return 0;
-		endif
-
-		if(escolhida == "Danca das Sombras" && cultura != HAROLOTH )
-			SendSysMessageEx(who, "Apenas drows Har'oloth podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
 

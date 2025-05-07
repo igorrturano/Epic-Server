@@ -1,0 +1,47 @@
+include "include/say";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include "include/epicNPCUtils";
+include ":charactercreation:resists";
+include ":tn:boss";
+include "include/sysEvent";
+
+program SpellScript(params)
+	var who := params[1];
+    var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+
+    var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+
+    if (CheckResist(targ, VONTADE, diff, -bonus) || isTrueBoss(targ))
+        SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
+        SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
+        return;
+    endif
+
+    var duration := cint(AP_GetSkill(who, ARCANA)/5);
+    if (TemHabilidade(who, "Valdruk"))
+        duration := Cint(duration * 2);
+        controlNPC(who, targ);
+    endif
+
+    handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
+    PlayStationaryEffectEx(targ.x, targ.y, targ.z+10, targ.realm, 0x6e0d, 5, duration * 2, 2, 2740);
+
+    SetObjProperty(targ, "charmed_by", who.serial);
+    SetCooldown(targ, "charmed", duration);
+    
+    SendSysMessageEx(targ, "Você foi hipnotizado por " + who.name + ".", SSM_INFO);
+    SendSysMessageEx(who, "Você hipnotizou " + targ.name + ".", SSM_INFO);
+
+    sleep(duration);
+    EraseObjProperty(targ, "charmed_by");
+
+    if (TemHabilidade(who, "Valdruk"))
+        endControlNPC(targ);
+        var event := struct{"type":=SYSEVENT_ENGAGED, "source":=who};
+        SendEvent(targ, event);  
+    endif
+endprogram

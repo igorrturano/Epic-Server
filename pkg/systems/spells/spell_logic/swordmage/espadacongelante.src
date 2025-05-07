@@ -21,7 +21,7 @@ program SpellScript( params )
 	return;
   endif
 
-  var time := AP_GetSkill( who, MAGICLORE ) * 10 + 180;
+  var time := AP_GetSkill( who, ARCANA ) * 10 + 180;
 
   if ( targ.isA( POLCLASS_WEAPON ) )
 

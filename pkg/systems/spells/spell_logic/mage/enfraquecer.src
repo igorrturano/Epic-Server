@@ -15,6 +15,9 @@ program SpellScript(params)
 
 	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
 	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
+	if (who.npctemplate)
+		targ := GetRandomNearbyHostile(who);
+	endif
 	if (!targ)
 		return;
 	endif
@@ -24,8 +27,8 @@ program SpellScript(params)
 		return;
 	endif
 
-	var amt := Cint(AP_GetSkill(who, MAGICLORE)*0.75);
-	TS_StartTimer(targ, "weaken", GetSpellDuration(AP_GetSkill(who, MAGICLORE)), amt, who, 1); //20 min
+	var amt := Cint(AP_GetSkill(who, THEOLOGY)*0.75);
+	TS_StartTimer(targ, "weaken", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), amt, who, 1); //20 min
 
 	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "Voce deixou o alvo mais fraco.", SSM_INFO);

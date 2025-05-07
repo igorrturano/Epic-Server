@@ -11,8 +11,14 @@ const SPELL_BTN := 200;
 const GUMPID_CLERICSPELL := 0x00001C;
 
 program canalizadorDaSangria(player)
-    var mlore := Cint(AP_GetSkill(player, MAGICLORE));
-    var input := create_portal_gump(player);
+    var mlore := Cint(AP_GetSkill(player, SCIENCE));
+    var input;
+    if (player.npctemplate)
+        input[0] := randomIntMinMax(201, 203); 
+    else
+        input := create_portal_gump(player);
+    endif
+
     if (input[0] == 201) // Mira
         if (GetObjProperty(player, "Cano Serrado"))
             EraseObjProperty(player, "Cano Serrado");

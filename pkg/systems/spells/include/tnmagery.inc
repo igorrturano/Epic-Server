@@ -234,54 +234,54 @@ function CalculateResearchTime(byref spellinfo)
 endfunction
 
 function CastSpell(mobile, spellinfo, targ)
-	//sendsysmessage(mobile, " " + spellinfo.script);
 	//se for um spell com script (ou seja o novo sistema) executa o script e retorna, caso o contrario executa o de magias custom
     if (GetCooldown(targ, "spellthief"))
         targ := mobile;
     endif
-        
+
 	if (spellinfo.script != error)
 		var e := Start_Script(spellinfo.script, {mobile, targ, spellinfo});
-		//sendsysmessage(mobile, " " );
 		return;
 	else
-		SendSysMessage(mobile, " " + spellinfo);
+		PrintTextAbove(mobile, " " + spellinfo);
 	endif
 
 	var alvos := array;
 
 	if (spellinfo.targ == "Unico")
-		SendSysMessage(mobile, "Escolha o alvo.");
+		SendSysMessageEx(mobile, "Escolha o alvo.");
 		var targ := Target(mobile, TGTOPT_CHECK_LOS);
 		if (!targ )
-			SendSysMessage(mobile, "Cancelado.");
+			SendSysMessageEx(mobile, "Cancelado.");
 			return;
 		endif
 		if (spellinfo.range == "Toque")
 			if (Distance(mobile, targ) > 1)
-				SendSysMessage(mobile, "O alvo esta muito distante e este encantamento precisa que voce o toque.");
+				SendSysMessageEx(mobile, "O alvo esta muito distante e este encantamento precisa que voce o toque.");
 				return;
 			endif
 		else
 			if (Distance(mobile, targ) > 8 )
-				SendSysMessage(mobile, "O alvo esta fora do alcance do encantamento.");
+				SendSysMessageEx(mobile, "O alvo esta fora do alcance do encantamento.");
 				return;
 			endif
 		endif
 
 		if ( (spellinfo.targtype == "Animados") && (!targ.isa(POLCLASS_MOBILE)) )
-			SendSysMessage(mobile, "Este encanto so afeta seres animados.");
+			SendSysMessageEx(mobile, "Este encanto so afeta seres animados.");
 			return;
 		elseif ( (spellinfo.targtype == "Inanimados") && (targ.isa(POLCLASS_MOBILE)) )
-			SendSysMessage(mobile, "Este encanto so afeta seres inanimados.");
+			SendSysMessageEx(mobile, "Este encanto so afeta seres inanimados.");
 			return;
 		endif
 		alvos.append(targ);
 	else
-		SendSysMessage(mobile, "Onde voce deseja invocar o encantamento?");
-		var targ := TargetCoordinates(mobile);
+		SendSysMessageEx(mobile, "Onde voce deseja invocar o encantamento?");
+		if (mobile.acctname)
+			var targ := TargetCoordinates(mobile);
+		endif
 		if (!CheckLosAt(mobile, targ.x, targ.y, targ.z))
-			SendSysMessage(mobile, "Voce nao enxerga o alvo.");
+			SendSysMessageEx(mobile, "Voce nao enxerga o alvo.");
 			return;
 		endif
 		if (spellinfo.targtype == "Animados")
