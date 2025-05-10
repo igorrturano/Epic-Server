@@ -133,6 +133,13 @@ enum TIERS
 	T5 := "T5",
 endenum
 
+enum ELEMDAMAGES
+	DAMAGE_NONE := "DAMAGE_NONE",
+	DAMAGE_LOW := "DAMAGE_LOW",
+	DAMAGE_MID := "DAMAGE_MID",
+	DAMAGE_HIGH := "DAMAGE_HIGH"
+endenum
+
 /**
  * getNPCDamages(npc)
  *
@@ -280,6 +287,46 @@ function getNPCResists(npc)
 	stats.+EnergyResist := elemElemResists[4];
 
 	return stats;
+endfunction
+
+function getNPCElemDamages(npc)
+	var elem := NPC_GetNPCConfig(npc);
+	var elemElementalDamages := GetConfigString(elem, "EpicElemDamage");
+
+	if (elemElementalDamages == error)
+		return error{"errortext" := "NPC doesnt have the new elemental damages defined!"};
+	endif
+
+	elemElementalDamages := SplitWords(elemElementalDamages);
+	var damages := struct;
+
+	foreach damage in elemElementalDamages
+		case (damage.Upper())
+			DAMAGE_LOW: damage := getElementalDamageByTier(DAMAGE_LOW); break;
+			DAMAGE_MID: damage := getElementalDamageByTier(DAMAGE_MID); break;
+			DAMAGE_HIGH: damage := getElementalDamageByTier(DAMAGE_HIGH); break;
+		endcase
+	endforeach
+
+	damages.+FireDamage := elemElementalDamages[1];
+	damages.+ColdDamage := elemElementalDamages[2];
+	damages.+PoisonDamage := elemElementalDamages[3];
+	damages.+EnergyDamage := elemElementalDamages[4];
+
+	return damages;
+endfunction
+
+function getElementalDamageByTier(tier)
+	case (tier.Upper())
+		DAMAGE_LOW:
+			return 1;
+		DAMAGE_MID:
+			return 3;
+		DAMAGE_HIGH:
+			return 5;
+
+		default: return error{ "errortext" := "Value not found for this Elemental Tier!"};
+	endcase
 endfunction
 
 function getPropNPCAttackType(npc)
