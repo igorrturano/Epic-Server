@@ -1821,6 +1821,10 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     if (form_data.target_priority)
         boss.target_priority := form_data.target_priority;
     endif
+
+    if (form_data.patrol_points && form_data.patrol_points.size() > 0)
+        boss.patrol_points := form_data.patrol_points;
+    endif
     
     // Save weapon type
     if (form_data.weapon_type)
@@ -2255,7 +2259,7 @@ function SelectPatrolArea(who, byref form_data)
         "x" := targ.x,
         "y" := targ.y,
         "z" := targ.z,
-        "realm" := targ.realm
+        "realm" := who.realm
     };
     
     form_data.patrol_points.append(patrol_point);
