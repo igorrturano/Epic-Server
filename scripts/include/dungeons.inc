@@ -28,7 +28,7 @@ function InDungeon(coord) // retorna 1 se tiver numa caverna
 	//endif
 	if ( coord.realm == "britannia")
 		return 1;
-    elseif ( coord.x >= 4390 && coord.y >= 0)
+    elseif ( coord.x >= 3399 && coord.y >= 0)
 		return 1;
 	else
 		return 0;
