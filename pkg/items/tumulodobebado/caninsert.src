@@ -1,0 +1,42 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+
+// De acordo com a documentação do POL, o script canInsert pode ter diferentes parâmetros dependendo da versão
+// Vamos modificar para funcionar com a sua versão
+program canInsert(who, container, movetype, inserttype, item, existing_stack, amount_to_add)
+    // Debug - ver o tipo do item
+ 
+    
+    // Lista de tipos de bebidas permitidas
+    var drinkTypes := array(
+        0xC876, 0xC877, 0xC878, 0xC879, 0xC960, 0xC961, 0xC962, 0xC963, 0xC964,
+        0x1f96, 0x1f98, 0x1f9a, 0x1f9c, 0x1f9e, 0x09ad,
+        0xC965, 0xC966, 0xC967, 0xC968, 0xC969, 0xC96A, 0xC96B
+    );
+    
+    // Verificação com debug detalhado
+    var encontrado := 0;
+
+    foreach bebida in drinkTypes
+
+        if (CInt(item.objtype) == CInt(bebida))
+            encontrado := 1;
+            Print("MATCH ENCONTRADO: 0x" + Hex(bebida));
+            break;
+        endif
+    endforeach
+    
+    if (encontrado)
+        SendSysMessage(who, "Bebida aceita!");
+        return 1;
+    endif
+    
+    // Versão alternativa que aceita qualquer item (temporário para teste)
+    // return 1;
+    
+    SendSysMessage(who, "Apenas bebidas podem ser ofertadas ao espírito deste túmulo!");
+    return 0;
+endprogram
