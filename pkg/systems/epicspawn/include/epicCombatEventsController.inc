@@ -10,11 +10,18 @@ use os;
 use util;
 use math;
 
-include ":damage:damage";
+include ":attributes:attributes";
 include ":epicspawn:epicBoss";
 /*
  * ExecuteCombatEvent(npc, event, actions)
- * Purpose: Executes a combat event with its actions
+ * Purpose:            // Apply damage
+            ApplyRawDamageEX(targ, damage_per_type, damage_type, "Combat Event");
+            success := 1;
+        endforeach
+    endforeach
+    
+    return success;
+endfunctiones a combat event with its actions
  * Parameters: npc - The NPC executing the event
  *             event - The event configuration
  *             actions - The actions to perform
@@ -231,14 +238,56 @@ function ExecuteDamageAction(targets, action)
     endif
     
     var damage := CInt(action.dmg);
-    var damage_type := action.dmgtype ? action.dmgtype : "Physical";
+    var damage_types := array{};
+    
+    // Handle both old and new format of damage types
+    if (action.dmgtypes && action.dmgtypes.size())
+        damage_types := action.dmgtypes;
+    elseif (action.dmgtype)
+        damage_types.append(action.dmgtype);
+    else
+        damage_types.append("Physical"); // Default
+    endif
+    
+    // Get the vitals to affect
+    var vitals := action.vitals;
+    if (!vitals || !vitals.size())
+        vitals := array{"Hits"}; // Default to Hits if not specified
+    endif
+    
     var success := 0;
     
     foreach targ in targets
-        print("DEBUG: Damaging " + targ.name + " for " + damage + " " + damage_type);
         
-        // Apply damage
-        ApplyRawDamageEX(targ, damage, damage_type, "Combat Event");
+        // Process each vital
+        foreach vital in vitals
+            if (vital == "Hits")
+                // For Hits, apply each damage type separately
+                foreach damage_type in damage_types
+                    print("DEBUG: Damaging " + targ.name + " Hits for " + damage + " " + damage_type);
+                    
+                    // Use DamageFLS for proper damage type handling
+                    var dmg_type;
+                    case (damage_type)
+                        "Physical": dmg_type := DMG_PHYSICAL; break;
+                        "Fire":     dmg_type := DMG_FIRE; break;
+                        "Cold":     dmg_type := DMG_COLD; break;
+                        "Poison":   dmg_type := DMG_POISON; break;
+                        "Energy":   dmg_type := DMG_ENERGY; break;
+                        default:    dmg_type := DMG_PHYSICAL;
+                    endcase
+                    
+                    DamageFLS(targ, damage, dmg_type);
+                endforeach
+            elseif (vital == "Mana")
+                print("DEBUG: Consuming " + targ.name + " Mana for " + damage);
+                AP_ConsumeVital(targ, MANA, damage);
+            elseif (vital == "Stam")
+                print("DEBUG: Consuming " + targ.name + " Stamina for " + damage);
+                AP_ConsumeVital(targ, STAMINA, damage);
+            endif
+        endforeach
+            
         success := 1;
     endforeach
     

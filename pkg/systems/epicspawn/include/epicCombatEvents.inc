@@ -351,15 +351,30 @@ function ConfigureActionProperties(who, action)
             
             GFTextLine(gump, 30, y_pos, 1153, "Damage Type:");
             
-            // Add radio buttons for damage types
+            // Initialize damage types array if it doesn't exist
+            if (!action.dmgtypes)
+                action.+dmgtypes := array{}; 
+                // Default to Physical if nothing selected
+                if (!action.dmgtypes.size())
+                    action.dmgtypes.append("Physical");
+                endif
+            endif
+            
+            // Convert legacy dmgtype string to array if needed
+            if (action.dmgtype && !action.dmgtypes.size())
+                action.dmgtypes.append(action.dmgtype);
+                action.dmgtype := 0; // Clear the old format
+            endif
+            
+            // Add checkboxes for damage types
             var dmg_types := array{"Physical", "Fire", "Cold", "Poison", "Energy"};
             var dmg_type_y := y_pos + 25;
             var dmg_type_x := 30;
             var btn_id := 2001;
             
             foreach type in dmg_types
-                GFRadioButton(gump, dmg_type_x, dmg_type_y, 210, 211, 
-                             (action.dmgtype ? action.dmgtype == type : type == "Physical"), btn_id);
+                GFCheckBox(gump, dmg_type_x, dmg_type_y, 2510, 2511, 
+                          (type in action.dmgtypes), btn_id);
                 GFTextLine(gump, dmg_type_x + 30, dmg_type_y, 1153, type);
                 dmg_type_x += 90;
                 btn_id += 1;
@@ -500,15 +515,27 @@ function ConfigureActionProperties(who, action)
         action.target := "All Opponents";
     endif
     
-    // Process damage type radio buttons
+    // Process damage type checkboxes
     if (action.type == "Dmg")
         var dmg_types := array{"Physical", "Fire", "Cold", "Poison", "Energy"};
+        
+        // Reset damage types array
+        action.dmgtypes := array{};
+        
+        // Process each damage type checkbox
         for i := 0 to 4
             if (result[2001 + i])
-                action.dmgtype := dmg_types[i+1];
-                break;
+                action.dmgtypes.append(dmg_types[i+1]);
             endif
         endfor
+        
+        // Make sure at least one damage type is selected
+        if (!action.dmgtypes.size())
+            action.dmgtypes.append("Physical"); // Default to Physical if nothing selected
+        endif
+        
+        // For backwards compatibility
+        action.dmgtype := action.dmgtypes[1];
         
         // Process vital checkboxes
         action.vitals := array{};

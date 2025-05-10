@@ -1,6 +1,6 @@
 use uo;
 
-include ":damage:damage";
+include ":combat:damage";
 include ":attributes:attributes";
 include ":epicspawn:epicCombatEventsController";
 
