@@ -23,6 +23,11 @@ const MENU_PAGE3 := 3;
 const MENU_PAGE4 := 4;
 const MENU_PAGE5 := 5;
 
+enum SPAWNER_STATES
+    INACTIVE := 0,
+    ACTIVE   := 1
+endenum
+
 // Track which button was last clicked
 var button_states := array{1, 0, 0, 0, 0};
 var last_clicked_button := BOTAO_PAGE1;
@@ -1917,6 +1922,7 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         SetObjProperty(npc, "epicspawner", spawner.serial);
         SetObjProperty(spawner, "ChildSerial", npc.serial);
         SetObjProperty(spawner, "SpawnQueue", "Active");
+        SetObjProperty(spawner, "SpawnerState", ACTIVE);
         
         spawner.invisible := 1;
         
