@@ -8,182 +8,188 @@ include ":combat:hitscripts";
 include "include/epicNPCUtils";
 include ":epicspawn:epicBoss";
 
+// Boss spawner states
+enum SPAWNER_STATES
+    INACTIVE := 0,
+    ACTIVE   := 1
+endenum
+
 program epicBossSpawnerControl(spawner)
-    var bossTemplate := GetObjProperty(spawner, "BossTemplate");
-    var bossStruct := GetObjProperty(spawner, "BossStruct");
-    var childSerial := GetObjProperty(spawner, "ChildSerial");
-    var spawnQueue := GetObjProperty(spawner, "SpawnQueue");
-    
-    // Initialize if not set
-    if (!bossTemplate || bossTemplate == "NONE")
-        // Wait until the boss template is set
-        while (!bossTemplate || bossTemplate == "NONE")
-            sleep(10);
-            bossTemplate := GetObjProperty(spawner, "BossTemplate");
-            bossStruct := GetObjProperty(spawner, "BossStruct");
-            
-            // If we have a boss structure, we don't need a template
-            if (bossStruct)
-                break;
-            endif
-        endwhile
+    if (!spawner)
+        print("ERROR: Invalid spawner reference");
+        return 0;
     endif
     
-    // Initialize spawn queue if not set
-    if (!spawnQueue)
-        spawnQueue := 0; // Start with 0 to spawn immediately
-        SetObjProperty(spawner, "SpawnQueue", spawnQueue);
-    endif
+    print("STARTING BOSS SPAWNER " + spawner.serial);
+    InitializeSpawner(spawner);
     
-    // Initialize child serial if not set
-    if (!childSerial)
-        childSerial := "Empty";
-        SetObjProperty(spawner, "ChildSerial", childSerial);
-    endif
-    
-    var resetMe;
-    
-    while (spawner)
-        resetMe := GetObjProperty(spawner, "ResetMe");
-        if (resetMe)
-            KillBoss(spawner);
-            ResetSpawnQueue(spawner);
-            EraseObjProperty(spawner, "ResetMe");
-        endif
-        
-        childSerial := GetObjProperty(spawner, "ChildSerial");
-        spawnQueue := GetObjProperty(spawner, "SpawnQueue");
-        
-        // Check if boss is dead or missing
-        if (childSerial != "Empty")
-            var boss := SystemFindObjectBySerial(childSerial);
-            if (!boss || boss.dead || boss.master)
-                childSerial := "Empty";
-                SetObjProperty(spawner, "ChildSerial", childSerial);
-                ResetSpawnQueue(spawner);
-            endif
-        endif
-        
-        // Spawn boss when timer reaches 0
-        if (childSerial == "Empty")
-            if (spawnQueue == 0)
-                // Check if players are nearby before spawning
-                while (HasPlayerNearSpawn(spawner.x, spawner.y, spawner.realm))
-                    sleep(60);
-                endwhile
-                
-                // Spawn the boss
-                var bossSerial := SpawnBoss(spawner);
-                if (bossSerial)
-                    childSerial := bossSerial;
-                    SetObjProperty(spawner, "ChildSerial", childSerial);
-                    spawnQueue := "Active";
-                    SetObjProperty(spawner, "SpawnQueue", spawnQueue);
-                endif
-            else
-                // Decrement the timer
-                spawnQueue := spawnQueue - 1;
-                SetObjProperty(spawner, "SpawnQueue", spawnQueue);
-            endif
-        endif
-        
-        sleep(60); // Check every minute
+    while (spawner && spawner.serial)
+        ProcessSpawnerState(spawner);
+        sleep(60);
     endwhile
+    
+    print("WARNING: Control script ended for " + spawner.serial);
 endprogram
 
-function hasplayernearSpawn(x, y, realm)
-    var num_player := ListMobilesNearLocation( x, y, 19, LISTEX_FLAG_PLAYERS_ONLY && LISTEX_FLAG_NORMAL, realm).size();
-    return num_player > 0;
+function InitializeSpawner(spawner)
+    // Initialize properties with defaults if needed
+    if (GetObjProperty(spawner, "SpawnerState") == error)
+        SetObjProperty(spawner, "SpawnerState", INACTIVE);
+    endif
+    
+    if (GetObjProperty(spawner, "SpawnQueue") == error)
+        SetObjProperty(spawner, "SpawnQueue", 0);
+    endif
+    
+    if (GetObjProperty(spawner, "ChildSerial") == error)
+        SetObjProperty(spawner, "ChildSerial", "Empty");
+    endif
+    
+    ValidateDelaySettings(spawner);
+endfunction
+
+function ValidateDelaySettings(spawner)
+    var minDelay := CInt(GetObjProperty(spawner, "MinDelay"));
+    var maxDelay := CInt(GetObjProperty(spawner, "MaxDelay"));
+    
+    // Set defaults if needed
+    if (!minDelay) 
+        minDelay := 60;
+        SetObjProperty(spawner, "MinDelay", minDelay);
+    endif
+    
+    if (!maxDelay) 
+        maxDelay := 120;
+        SetObjProperty(spawner, "MaxDelay", maxDelay);
+    endif
+    
+    // Enforce constraints (min ≥ 0, max ≥ min)
+    if (minDelay < 0)
+        minDelay := 0;
+        SetObjProperty(spawner, "MinDelay", minDelay);
+    endif
+    
+    if (maxDelay < minDelay)
+        maxDelay := minDelay;
+        SetObjProperty(spawner, "MaxDelay", maxDelay);
+    endif
+    
+    print("DEBUG: Delay settings - Min: " + minDelay + ", Max: " + maxDelay);
+endfunction
+
+function ProcessSpawnerState(spawner)
+    // Handle reset request
+    if (GetObjProperty(spawner, "ResetMe"))
+        KillBoss(spawner);
+        ResetSpawner(spawner);
+        EraseObjProperty(spawner, "ResetMe");
+    endif
+    
+    // Get current properties
+    var state := CInt(GetObjProperty(spawner, "SpawnerState"));
+    var childSerial := GetObjProperty(spawner, "ChildSerial");
+    var spawnQueue := CInt(GetObjProperty(spawner, "SpawnQueue"));
+    var bossData := GetObjProperty(spawner, "BossStruct") ? GetObjProperty(spawner, "BossStruct") : GetObjProperty(spawner, "form_data");
+    
+    // Check if active boss is still alive
+    if (state == ACTIVE && childSerial != "Empty")
+        var boss := SystemFindObjectBySerial(childSerial);
+        if (!boss || boss.dead)
+            print("DEBUG: Boss " + childSerial + " is dead/missing");
+            SetObjProperty(spawner, "ChildSerial", "Empty");
+            SetObjProperty(spawner, "SpawnerState", INACTIVE);
+            CalculateRespawnTime(spawner);
+        endif
+    endif
+    
+    // Handle inactive state
+    if (state == INACTIVE)
+        var respawnTime := CInt(GetObjProperty(spawner, "RespawnTime"));
+        
+        if (ReadGameClock() >= respawnTime)
+            AttemptBossSpawn(spawner, bossData);
+        else
+            // Update the queue count for display purposes
+            var minutesLeft := CInt((respawnTime - ReadGameClock()) / 60);
+            if (minutesLeft != spawnQueue)
+                SetObjProperty(spawner, "SpawnQueue", minutesLeft);
+            endif
+            
+            if (minutesLeft % 10 == 0 || minutesLeft <= 5)
+                print("DEBUG: Spawn countdown: " + minutesLeft + " minutes left");
+            endif
+        endif
+    endif
+endfunction
+
+function AttemptBossSpawn(spawner, bossData)
+    if (!bossData)
+        print("ERROR: No boss data found");
+        return;
+    endif
+    
+    print("DEBUG: Attempting spawn at X:" + spawner.x + " Y:" + spawner.y + " Z:" + spawner.z);
+    var boss := CreateEpicBoss(bossData, spawner.x, spawner.y, spawner.z, spawner.realm);
+    
+    if (boss && boss != error)
+        print("DEBUG: Boss spawned: " + boss.serial);
+        SetObjProperty(boss, "epicspawner", spawner.serial);
+        SetObjProperty(spawner, "ChildSerial", boss.serial);
+        SetObjProperty(spawner, "SpawnerState", ACTIVE);
+        SetObjProperty(spawner, "SpawnQueue", 0);
+    else
+        print("ERROR: Spawn failed: " + boss);
+        SetObjProperty(spawner, "SpawnQueue", 5);
+    endif
+endfunction
+
+function ResetSpawner(spawner)
+    SetObjProperty(spawner, "ChildSerial", "Empty");
+    SetObjProperty(spawner, "SpawnerState", INACTIVE);
+    CalculateRespawnTime(spawner);
 endfunction
 
 function KillBoss(spawner)
     var childSerial := GetObjProperty(spawner, "ChildSerial");
     if (childSerial && childSerial != "Empty")
         var boss := SystemFindObjectBySerial(childSerial);
-        if (boss && !boss.master)
-            SetObjProperty(boss, "summoned", 1);
-            SetObjProperty(boss, "spawnkill", 1);
-            RevokePrivilege(boss, "invul");
+        if (boss)
             ApplyRawDamage(boss, GetVital(boss, HITS) + 3);
         endif
     endif
-    
-    SetObjProperty(spawner, "ChildSerial", "Empty");
-    SetObjProperty(spawner, "SpawnQueue", 0);
 endfunction
 
-function ResetSpawnQueue(spawner)
-    var minDelay := GetObjProperty(spawner, "MinDelay");
-    var maxDelay := GetObjProperty(spawner, "MaxDelay");
+function CalculateRespawnTime(spawner)
+    var minDelay := CInt(GetObjProperty(spawner, "MinDelay"));
+    var maxDelay := CInt(GetObjProperty(spawner, "MaxDelay"));
     
-    minDelay := minDelay ? CInt(minDelay) : 60;  // Default to 60 minutes
-    maxDelay := maxDelay ? CInt(maxDelay) : 120; // Default to 120 minutes
-    
-    if (minDelay < 1)
-        minDelay := 1;
+    // Use defaults if missing
+    if (minDelay == error || !minDelay) 
+        minDelay := 60;
     endif
     
-    if (maxDelay < 1)
-        maxDelay := 1;
+    if (maxDelay == error || !maxDelay) 
+        maxDelay := 120;
     endif
     
+    // Ensure maxDelay is at least equal to minDelay
+    if (maxDelay < minDelay)
+        maxDelay := minDelay;
+    endif
+    
+    // Calculate random delay - FIX: adding +1 to include upper bound
     var delay;
     if (minDelay == maxDelay)
         delay := minDelay;
     else
-        delay := RandomInt(maxDelay - minDelay) + minDelay;
+        delay := RandomInt(maxDelay - minDelay + 1) + minDelay;
     endif
     
+    // Store both a respawn timestamp and the queue value
+    var respawnTime := ReadGameClock() + (delay * 60);
+    SetObjProperty(spawner, "RespawnTime", respawnTime);
     SetObjProperty(spawner, "SpawnQueue", delay);
-endfunction
-
-function SpawnBoss(spawner)
-    var bossTemplate := GetObjProperty(spawner, "BossTemplate");
-    var bossStruct := GetObjProperty(spawner, "BossStruct");
-    var range := GetObjProperty(spawner, "Range");
-    range := range ? CInt(range) : 5;
     
-    var x, y, z, success := 0;
-    var attempts := 0;
-    var boss;
-    
-    while (success == 0 && attempts < 10)
-        if (range == 0)
-            x := spawner.x;
-            y := spawner.y;
-            z := spawner.z;
-        else
-            x := spawner.x + RandomInt(2 * range) - range;
-            y := spawner.y + RandomInt(2 * range) - range;
-            z := GetWorldHeight(x, y, spawner.realm);
-        endif
-        
-        // Try to create the boss
-        if (bossStruct)
-            boss := CreateEpicBoss(bossStruct, x, y, z, spawner.realm);
-        else
-            boss := CreateNpcWithPrefix(bossTemplate, x, y, z, spawner.realm);
-        endif
-        
-        if (boss && boss != error)
-            SetObjProperty(boss, "epicspawner", spawner.serial);
-            return boss.serial;
-        endif
-        
-        attempts += 1;
-    endwhile
-    
-    // If all attempts fail, try at the exact spawner location
-    if (bossStruct)
-        boss := CreateEpicBoss(bossStruct, spawner.x, spawner.y, spawner.z, spawner.realm);
-    else
-        boss := CreateNpcWithPrefix(bossTemplate, spawner.x, spawner.y, spawner.z, spawner.realm);
-    endif
-    
-    if (boss && boss != error)
-        SetObjProperty(boss, "epicspawner", spawner.serial);
-        return boss.serial;
-    endif
-    
-    return 0;
+    print("DEBUG: Respawn timer: " + delay + " minutes (at timestamp " + respawnTime + ")");
+    return delay;
 endfunction
