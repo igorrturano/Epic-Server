@@ -26,18 +26,35 @@ const MENU_PAGE5 := 5;
 // Track which button was last clicked
 var button_states := array{1, 0, 0, 0, 0};
 var last_clicked_button := BOTAO_PAGE1;
-
-// Global storage for form data
 var form_data := struct{};
 
-program epicBOSS(who)
+program epicBOSS(params)
+    var who := params[1];
+    var spawner := params[2];
+    if (spawner == who)
+        spawner := 0;
+    endif
     // Create a gump with title "EPIC BOSS"
     var gump_width := 960; // Reduced from 1200 (20% reduction)
     var gump_height := 640; // Reduced from 800 (20% reduction)
-    var title := "EPIC BOSS";
-    
-    // Initialize form data
-    InitializeFormData();
+    var title := "EPIC! BOSS";
+
+    // Check if editing an existing spawner
+    var editing_existing := 0;
+    if (spawner)
+        editing_existing := 1;
+    endif
+    // Initialize form data based on whether we're editing or creating new
+    if (editing_existing && spawner)
+        var saved_form_data := GetObjProperty(spawner, "form_data");
+        if (saved_form_data)
+            form_data := saved_form_data;
+        else
+            InitializeFormData();
+        endif
+    else
+        InitializeFormData();
+    endif
     
     // Show the first page initially
     var input := ShowPage1(who, title, gump_width, gump_height);
@@ -69,7 +86,7 @@ program epicBOSS(who)
             // Save form data before creating the boss
             SendSysMessage(who, "DEBUG: Create Boss button was clicked");
             SendSysMessage(who, "Creating boss...");
-            CreateBossFromGump(who, form_data);
+            CreateBossFromGump(who, form_data, spawner); // Pass the spawner parameter
             break; // Exit after creating the boss
         endif
         
@@ -106,7 +123,10 @@ function InitializeFormData()
     form_data.special_ai := "";
     form_data.url := "";
     form_data.detailed_description := "";
-    
+    // Add default respawn time values
+    form_data.min_respawn := "60";  // Default 60 minutes
+    form_data.max_respawn := "120"; // Default 120 minutes
+
     // Attributes
     form_data.str := "0";
     form_data.dex := "0";
@@ -233,6 +253,18 @@ function ExtractPageData(input, page)
             if (detailed_description != error && detailed_description != "")
                 form_data.detailed_description := detailed_description;
             endif
+
+            // Extract respawn time values
+            var min_respawn := GFExtractData(input, 42);
+            if (min_respawn != error && min_respawn != "")
+                form_data.min_respawn := CInt(min_respawn);
+            endif
+            
+            var max_respawn := GFExtractData(input, 43);
+            if (max_respawn != error && max_respawn != "")
+                form_data.max_respawn := CInt(max_respawn);
+            endif
+            
             break;
             
         BOTAO_PAGE2:
@@ -476,6 +508,22 @@ function ShowPage1(who, title, gump_width, gump_height)
     GFTextLine(gump, 50, 380, 1153, "Special AI:");
     GFTextEntry(gump, 200, 380, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
     
+    // Add a divider line for Respawn Time Configuration
+    GFResizePic(gump, 650, 450, 3000, 2, 100);
+    
+    // Add Respawn Time Configuration
+    GFTextLine(gump, 670, 450, 1153, "Tempo de Respawn (minutos):");
+    
+    // Minimum respawn time
+    GFTextLine(gump, 670, 500, 1153, "Mínimo:");
+    GFResizePic(gump, 720, 500, 9350, 60, 25);
+    GFTextEntry(gump, 725, 505, 50, 20, 1153, form_data.min_respawn ? form_data.min_respawn : "60", 42);
+    
+    // Maximum respawn time - positioned beside minimum
+    GFTextLine(gump, 800, 500, 1153, "Máximo:");
+    GFResizePic(gump, 850, 500, 9350, 60, 25);
+    GFTextEntry(gump, 855, 505, 50, 20, 1153, form_data.max_respawn ? form_data.max_respawn : "120", 43);
+
     // Add a vertical divider
     GFResizePic(gump, 520, 160, 3000, 2, 230);
     
@@ -1501,7 +1549,7 @@ function ShowPage5(who, title, gump_width, gump_height)
 endfunction
 
 // Add a function to create the boss from form data
-function CreateBossFromGump(who, form_data)
+function CreateBossFromGump(who, form_data, existing_spawner := 0)
     // Create a boss structure
     var boss := struct{};
     
@@ -1524,6 +1572,10 @@ function CreateBossFromGump(who, form_data)
         // Default to 0 if no tier is specified
         SendSysMessage(who, "No tier specified, using NPC's default tier.");
     endif
+
+    // Add respawn time values to boss structure
+    boss.min_respawn := CInt(form_data.min_respawn);
+    boss.max_respawn := CInt(form_data.max_respawn);
 
     SendSysMessage(who, "DEBUG: Checking form_data combat events");
     if (form_data.combatevents && form_data.combatevents.size() > 0)
@@ -1785,6 +1837,65 @@ function CreateBossFromGump(who, form_data)
         boss.teleport_health := CInt(form_data.teleport_health);
     endif
 
+    if (form_data.patrol_points && form_data.patrol_points.size() > 0)
+        boss.patrol_points := form_data.patrol_points;
+    endif
+    
+    // Save weapon type
+    if (form_data.weapon_type)
+        boss.weapon_type := form_data.weapon_type;
+    endif
+    
+    // Save specific weapon
+    if (form_data.specific_weapon)
+        boss.specific_weapon := form_data.specific_weapon;
+    endif
+    
+    // Save behavior settings
+    if (form_data.teleport_health)
+        boss.teleport_health := CInt(form_data.teleport_health);
+    endif
+
+    // Check if we're updating an existing spawner or creating a new one
+    var spawner;
+    if (existing_spawner)
+        // Use the existing spawner
+        spawner := existing_spawner;
+        SendSysMessage(who, "Using existing spawner: " + spawner.serial);
+
+        // Check if there's a currently spawned boss linked to this spawner
+        var child_serial := Cint(GetObjProperty(spawner, "ChildSerial"));
+        if (child_serial)
+            var existing_boss := SystemFindObjectBySerial(child_serial);
+            print(existing_boss.name);
+            if (existing_boss)
+                // Kill the existing boss before spawning a new one
+                print("Killing existing boss before creating a new one...");
+                SetObjProperty(existing_boss, "allowdeath", 1);
+                existing_boss.Disable("invul");
+                SetObjProperty(existing_boss, "GuardKill", 1);	
+                ApplyRawDamage(existing_boss, CInt(AP_GetVitalMaximumValue(existing_boss, "Hits")));
+                        
+                // Give the game a moment to process the boss's death
+                SleepMS(500);
+            endif
+        endif
+    else
+        // FIX: Create spawner first with explicit error checking
+        SendSysMessage(who, "Creating new spawner at your location...");
+        spawner := CreateItemAtLocation(who.x, who.y, who.z, 0xA402, 1, who.realm);
+        
+        // Check if spawner creation succeeded
+        if (!spawner || spawner.errortext)
+            SendSysMessage(who, "ERROR: Failed to create spawner: " + spawner.errortext);
+            return 0;
+        endif
+        
+        // Move the spawner to the ground to ensure it's placed correctly
+        MoveObjectToLocation(spawner, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+        SendSysMessage(who, "Spawner created with serial: " + spawner.serial);
+    endif
+
     // Create a test boss to show the player
     var npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
     if (npc == error)
@@ -1792,15 +1903,14 @@ function CreateBossFromGump(who, form_data)
         return 0;
     endif
 
-    // Create a spawner for this boss
-    var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0xA402, 1, who.realm);
-    if (spawner)
+    if (spawner && spawner.IsA(POLCLASS_ITEM))
         // Set the boss structure in the spawner
         SetObjProperty(spawner, "BossStruct", boss);
-        
+        SetObjProperty(spawner, "form_data", form_data); // Save FULL form data
+
         // Set default spawn settings
-        SetObjProperty(spawner, "MinDelay", 60);  // 60 minutes
-        SetObjProperty(spawner, "MaxDelay", 120); // 120 minutes
+        SetObjProperty(spawner, "MinDelay", CInt(form_data.min_respawn));
+        SetObjProperty(spawner, "MaxDelay", CInt(form_data.max_respawn));
         SetObjProperty(spawner, "Range", 5);      // 5 tiles
         
         // Link the test boss to the spawner
@@ -1810,14 +1920,18 @@ function CreateBossFromGump(who, form_data)
         
         spawner.invisible := 1;
         
-        SendSysMessage(who, "Boss created successfully with spawner!");
-        SendSysMessage(who, "The boss will respawn between 60-120 minutes after death.");
+        if (existing_spawner)
+            SendSysMessage(who, "Boss spawner updated successfully!");
+        else
+            SendSysMessage(who, "Boss created successfully with spawner!");
+        endif
+        
+        SendSysMessage(who, "The boss will respawn between " + Cstr(form_data.min_respawn) + " and " + Cstr(form_data.max_respawn) + " minutes after death.");
         SendSysMessage(who, "Double-click the spawner (invisible at your feet) to configure.");
     else
         SendSysMessage(who, "Boss created successfully, but failed to create spawner!");
     endif
     
-
     return 1;
 endfunction
 
@@ -2160,7 +2274,7 @@ function SelectPatrolArea(who, byref form_data)
         "x" := targ.x,
         "y" := targ.y,
         "z" := targ.z,
-        "realm" := targ.realm
+        "realm" := who.realm
     };
     
     form_data.patrol_points.append(patrol_point);

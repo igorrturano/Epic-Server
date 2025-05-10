@@ -15,7 +15,7 @@ exported function CanDie(mobile)
 	endif
 
 	var death_events := GetObjProperty(mobile, "DeathEvents");
-	if (death_events != error)
+	if (death_events.size() > 0)
 		print("TRACE: candie - DeathEvents found on " + mobile.name + " [" + mobile.serial + "]");
 		
 		// Check if already processing to avoid duplicate calls
