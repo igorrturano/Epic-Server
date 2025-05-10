@@ -1,0 +1,59 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+
+program onInsert(who, container, movetype, inserttype, item, existing_stack, amount_to_add)
+    // Debug para verificar se o script está sendo executado
+
+    // Lista de tipos de bebidas
+    var drinkTypes := array(
+        0xC876, 0xC877, 0xC878, 0xC879, 0xC960, 0xC961, 0xC962, 0xC963, 0xC964,
+        0x1f96, 0x1f98, 0x1f9a, 0x1f9c, 0x1f9e, 0x09ad,
+        0xC965, 0xC966, 0xC967, 0xC968, 0xC969, 0xC96A, 0xC96B
+    );
+
+    // Verificar bebidas de forma mais simples
+    var bebibaEncontrada := 0;
+    foreach bebida in drinkTypes
+        if (CInt(item.objtype) == CInt(bebida))
+            bebibaEncontrada := 1;
+            break;
+        endif
+    endforeach
+    
+    if (bebibaEncontrada)
+        // Piadas do túmulo
+        var jokes := array(
+            "O espírito sussurra: 'A morte é apenas o começo... da ressaca eterna!'",
+            "Uma voz etérea grita: 'No além, o bar nunca fecha, mas também nunca reabastece!'",
+            "O fantasma murmura: 'Meu último pedido era uma dose... de eternidade!'",
+            "Um espectro ri: 'Morri de tanto beber, mas pelo menos cheguei bêbado!'",
+            "A sombra zomba: 'Na minha época, os túmulos tinham mini-bares!'",
+            "Uma presença gargalha: 'Meu fígado não aguenta nem no além-mundo!'",
+            "O espírito brinca: 'Prefiro estar bêbado aqui do que sóbrio ali!'",
+            "Uma voz misteriosa diz: 'Minha última rodada foi literalmente MORTAL!'",
+            "O fantasma divaga: 'Beber era meu esporte favorito... até não ser mais!'",
+            "Um sussurro fantasmagórico: 'A única coisa que me segura aqui é a última garrafa!'"
+        );
+
+        // Escolhe uma piada aleatória
+        var jokeIdx := RandomInt(jokes.size()) + 1;
+        var joke := jokes[jokeIdx];
+
+        // Apenas um método para exibir a piada
+        PrintTextAbove(container, joke);
+        
+        // Toca um som de fantasma
+        PlaySoundEffect(container, 0x1F3);
+        
+        // Consome a bebida
+        DestroyItem(item);
+        
+        // Debug
+
+    endif
+
+    return 1;
+endprogram
