@@ -52,11 +52,11 @@ function ShowCombatEventsList(who, byref combat_event)
     
     while (continue_editing)
         // Create a gump with standardized style
-        var gump := GFECreateGump("Combat Event Configuration", 600, 500);
+        var gump := GFECreateGump("Combat Event Configuration", 600, 450);
         
         // Basic event properties at the top
-        GFTextLine(gump, 30, 60, 1153, "Event Name:");
-        GFTextEntry(gump, 150, 60, 300, 20, 1153, combat_event.name, 1);
+        GFTextLine(gump, 30, 75, 1153, "Event Name:");
+        GFTextEntry(gump, 150, 75, 300, 20, 1153, combat_event.name, 1);
         
         GFTextLine(gump, 30, 90, 1153, "Cooldown (seconds):");
         GFTextEntry(gump, 150, 90, 100, 20, 1153, combat_event.cd, 2);
@@ -124,11 +124,8 @@ function ShowCombatEventsList(who, byref combat_event)
         endif
         
         // Add Save and Cancel buttons
-        GFAddButton(gump, 30, 430, 2128, 2129, GF_CLOSE_BTN, 999); // Save button
-        GFTextLine(gump, 70, 430, 1153, "Save Event");
-        
-        GFAddButton(gump, 200, 430, 2119, 2120, GF_CLOSE_BTN, 998); // Cancel button
-        GFTextLine(gump, 240, 430, 1153, "Cancel");
+        GFAddButton(gump, 30, 420, 2128, 2129, GF_CLOSE_BTN, 999); // Save button
+        GFAddButton(gump, 200, 420, 2119, 2120, GF_CLOSE_BTN, 998); // Cancel button
         
         var input := GFSendGump(who, gump);
         
@@ -192,11 +189,10 @@ endfunction
 // Function to configure a single combat action
 function ConfigureCombatAction(who, action := 0)
     // Create a gump with standardized style
-    var gump := GFECreateGump("Configure Combat Action", 500, 400);
+    var gump := GFECreateGump("Configure Combat Action", 350, 480);
     
     // List of available action types
     var action_types := array{
-        "Move",
         "Teleport",
         "Perform Action",
         "Text",
@@ -211,14 +207,14 @@ function ConfigureCombatAction(who, action := 0)
     
     // If editing an existing action, show its type at the top
     if (action)
-        GFTextLine(gump, 30, 60, 1153, "Action Type: " + action.type);
+        GFTextLine(gump, 30, 70, 1153, "Action Type: " + action.type);
         GFAddButton(gump, 30, 90, 2117, 2118, GF_CLOSE_BTN, 50); // Change type button
         GFTextLine(gump, 60, 90, 1153, "Change Action Type");
     else
         // If creating a new action, show the action type selection
-        GFTextLine(gump, 30, 60, 1153, "Select Action Type:");
-        
-        var y_pos := 90;
+        GFTextLine(gump, 30, 70, 1153, "Select Action Type:");
+
+        var y_pos := 100;
         var i := 1;
         
         foreach type in action_types
@@ -234,9 +230,8 @@ function ConfigureCombatAction(who, action := 0)
         endforeach
         
         // Add Cancel button
-        GFAddButton(gump, 30, 350, 2119, 2120, GF_CLOSE_BTN, 999);
-        GFTextLine(gump, 70, 350, 1153, "Cancel");
-        
+        GFAddButton(gump, 30, 400, 2119, 2120, GF_CLOSE_BTN, 999);
+
         var result := GFSendGump(who, gump);
         
         if (result[0] == 999 || result[0] == 0)
@@ -269,7 +264,7 @@ function ConfigureActionProperties(who, action)
     var title := "Configure " + action.type + " Action";
     var gump := GFECreateGump(title, 500, 450);
     
-    var y_pos := 60;
+    var y_pos := 80;
     
     // Common properties for many action types
     if (action.type in array{"Teleport", "Perform Action", "Text", "Graphic Effect", "Dmg"})
@@ -307,6 +302,13 @@ function ConfigureActionProperties(who, action)
         "Teleport":
             GFTextLine(gump, 30, y_pos, 1153, "This action will teleport the target to a specific location.");
             y_pos += 25;
+
+            // Display coordinates if they exist
+            if (action.x && action.y && action.z)
+                GFTextLine(gump, 30, y_pos, 1153, "Current Location: " + action.x + ", " + action.y + ", " + action.z);
+                y_pos += 25;
+            endif
+            
             GFTextLine(gump, 30, y_pos, 1153, "Click 'Target Location' to set the destination.");
             y_pos += 35;
             GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 100);
@@ -444,14 +446,11 @@ function ConfigureActionProperties(who, action)
             break;
     endcase
     
-    y_pos := 350; // Position for the bottom buttons
+    y_pos := 400; // Position for the bottom buttons
     
     // Add Save and Cancel buttons
     GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999); // Save button
-    GFTextLine(gump, 70, y_pos, 1153, "Save Action");
-    
     GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 998); // Cancel button
-    GFTextLine(gump, 240, y_pos, 1153, "Cancel");
     
     var result := GFSendGump(who, gump);
     
@@ -463,20 +462,36 @@ function ConfigureActionProperties(who, action)
     if (result[0] == 50) // Change action type
         return ConfigureCombatAction(who); // Start over with type selection
     elseif (result[0] == 100) // Target location
-        SendSysMessageEx(who, "Target the location for this action.");
-        var targ := TargetCoordinates(who);
-        if (!targ)
-            return ConfigureActionProperties(who, action); // Try again
+        // Update action.target based on the radio buttons' state from THIS gump submission
+        // This ensures the selection made by the user for target type is captured before targeting.
+        if (result[1001])
+            action.target := "Self";
+        elseif (result[1002])
+            action.target := "Opponent";
+        elseif (result[1003])
+            action.target := "All Opponents";
+        // If no radio button was selected (e.g. if somehow defaults were not set), 
+        // action.target would retain its previous value. The initialization of action.target
+        // at the start of ConfigureActionProperties and in ConfigureCombatAction ensures it has a sensible default.
         endif
         
-        action.+x := targ.x;
-        action.+y := targ.y;
-        action.+z := targ.z;
+        SendSysMessageEx(who, "Target the location for this action.");
+        var targ := TargetCoordinates(who);
         
-        return ConfigureActionProperties(who, action); // Refresh with new coordinates
+        // If targeting was successful, update coordinates.
+        // The 'action' struct now has the updated 'target' (from radio buttons above) 
+        // and potentially new x,y,z.
+        if (targ)
+            action.+x := targ.x;
+            action.+y := targ.y;
+            action.+z := targ.z;
+        endif
+        
+        // Refresh the gump with the updated action (which includes the correct target type and new coordinates if set).
+        return ConfigureActionProperties(who, action); 
     endif
     
-    // Process the common target radio buttons
+    // Process the common target radio buttons for other submissions (e.g., Save)
     if (result[1001])
         action.target := "Self";
     elseif (result[1002])

@@ -23,6 +23,7 @@ include ":epicspawn:epicBoss";
 function ExecuteCombatEvent(npc, event, actions)
     print("DEBUG: Starting combat event: " + event.name);
     
+    sleep(actions.cd ? CInt(actions.cd) : 0);
     // Process each action in sequence
     foreach action in actions
         if (!ExecuteCombatAction(npc, action))
@@ -55,10 +56,7 @@ function ExecuteCombatAction(npc, action)
     var targets := GetActionTargets(npc, action);
     
     // Execute the action based on its type
-    case (action.type)
-        "Move":
-            return ExecuteMoveAction(npc, action);
-            
+    case (action.type)           
         "Teleport":
             return ExecuteTeleportAction(npc, targets, action);
             
@@ -107,18 +105,15 @@ endfunction
 function GetActionTargets(npc, action)
     var targets := array{};
 
-    var target_type := action.targ;
-    if (!target_type && action.target)
-        target_type := action.target;
-    endif
+    var target_type := action.target;
     
     print("DEBUG: GetActionTargets - Target type: " + target_type);
     
-    // Determine targets based on the action's targ property
-    if (!action.targ || action.targ == "Self")
+    // Determine targets based on the target property
+    if (!target_type || target_type == "Self")
         targets.append(npc);
         print("DEBUG: Target set to Self (NPC)");
-    elseif (action.targ == "Opponent")
+    elseif (target_type == "Opponent")
         var opponent := npc.opponent;
         if (opponent)
             targets.append(opponent);
@@ -126,25 +121,12 @@ function GetActionTargets(npc, action)
         else
             print("DEBUG: No opponent found for NPC");
         endif
-    elseif (action.targ == "All Opponents")
-        targets := GetAllOpponents(npc);
+    elseif (target_type == "All Opponents")
+        targets := ListHostiles(npc, 8, LH_FLAG_LOS);
         print("DEBUG: Targets set to All Opponents: " + targets.size() + " found");
     endif
     
     return targets;
-endfunction
-
-/* 
- * Action Implementation Functions
- */
-
-function ExecuteMoveAction(npc, action)
-    if (!action.x || !action.y || !action.z)
-        return 0;
-    endif
-    
-    print("DEBUG: Moving to " + action.x + ", " + action.y + ", " + action.z);
-    return npc.WalkToLocation(action.x, action.y, action.z);
 endfunction
 
 function ExecuteTeleportAction(npc, targets, action)
