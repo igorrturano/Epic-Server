@@ -1,48 +1,44 @@
 function HandleAddCombatEvent(who, input, byref form_data)
-    // Initialize the combat events array if it doesn't exist
+    // Inicializa o array de eventos de combate se não existir
     if (!form_data.combatevents)
         form_data.+combatevents := array{};
     endif
     
-    // Create a new event structure with proper initialization
+    // Cria uma nova estrutura de evento com inicialização adequada
     var combat_event := struct{
-        name := "Combat Event " + (form_data.combatevents.size() + 1),
+        name := "Evento de Combate " + (form_data.combatevents.size() + 1),
         cd := 30,
         onlybloodied := 0,
         dist := 0,
         actions := array{},
-        steps := array{} // Keep this for backward compatibility
+        steps := array{} // Mantém isto para compatibilidade com versões anteriores
     };
     
-    // Show the events management screen
+    // Mostra a tela de gerenciamento de eventos
     var result := ShowCombatEventsList(who, combat_event);
     
-    // If the user completed the event configuration successfully
+    // Se o usuário completou a configuração do evento com sucesso
     if (result)
-        // Only add the event if it has at least one action
+        // Apenas adiciona o evento se tiver pelo menos uma ação
         if (combat_event.actions.size() < 1)
-            SendSysMessage(who, "Combat event must have at least one action. Event creation cancelled.");
+            SendSysMessage(who, "Evento de combate deve ter pelo menos uma ação. Criação de evento cancelada.");
             return 0;
         endif
         
-        // Copy actions to steps for compatibility (no need to check if steps exists, we created it above)
-        combat_event.steps.length := 0; // Clear the array first
+        // Copia ações para steps para compatibilidade (não precisa verificar se steps existe, nós o criamos acima)
+        combat_event.steps.length := 0; // Limpa o array primeiro
         foreach action in (combat_event.actions)
             combat_event.steps.append(action);
         endforeach
         
-        // Log for debugging
-        SendSysMessage(who, "DEBUG: Event has " + combat_event.actions.size() + " actions and " + 
-                      combat_event.steps.size() + " steps");
-        
-        // Add the event to form_data
+        // Adiciona o evento ao form_data
         form_data.combatevents.append(combat_event);
-        SendSysMessage(who, "Added combat event '" + combat_event.name + "' with " + 
-                      combat_event.actions.size() + " actions.");
+        SendSysMessage(who, "Adicionado evento de combate '" + combat_event.name + "' com " + 
+                      combat_event.actions.size() + " ações.");
         return 1;
     endif
     
-    SendSysMessage(who, "Combat event creation cancelled.");
+    SendSysMessage(who, "Criação de evento de combate cancelada.");
     return 0;
 endfunction
 
@@ -200,8 +196,8 @@ function ConfigureCombatAction(who, action := 0)
         "Heal",
         "Dmg",
         "Graphic Effect",
-        "Create Items",
         "Summon Npcs",
+        "Pushback",
         "Delay"
     };
     
@@ -478,18 +474,43 @@ function ConfigureActionProperties(who, action)
             GFTextEntry(gump, 260, y_pos, 100, 20, 1153, action.tempo ? action.tempo : "120", 4);
             y_pos += 35;
             
-            GFTextLine(gump, 30, y_pos, 1153, "Use custom spawn location?");
-            GFCheckBox(gump, 200, y_pos, 2510, 2511, (action.x != 6 && action.y != 6), 4001);
+            GFTextLine(gump, 30, y_pos, 1153, "NPCs will spawn around the boss");
+            break;
+
+        "Pushback":
+            // Add the common properties for pushback
+            if (!action.target)
+                action.+target := "Opponent"; // Default for Pushback
+            endif
+            
+            GFTextLine(gump, 30, y_pos, 1153, "Target:");
+            y_pos += 25;
+            
+            GFSetRadioGroup(gump, 1);
+            GFRadioButton(gump, 30, y_pos, 210, 211, action.target == "Self", 1001);
+            GFTextLine(gump, 60, y_pos, 1153, "Self");
+            
+            GFRadioButton(gump, 150, y_pos, 210, 211, action.target == "Opponent", 1002);
+            GFTextLine(gump, 180, y_pos, 1153, "Opponent");
+            
+            GFRadioButton(gump, 300, y_pos, 210, 211, action.target == "All Opponents", 1003);
+            GFTextLine(gump, 330, y_pos, 1153, "All Opponents");
+            
             y_pos += 35;
             
-            if (action.x == 6 && action.y == 6)
-                GFTextLine(gump, 30, y_pos, 1153, "Will spawn around the boss");
-            else
-                GFTextLine(gump, 30, y_pos, 1153, "Click to set spawn location:");
-                y_pos += 25;
-                GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 100);
-                GFTextLine(gump, 60, y_pos, 1153, "Target Spawn Location");
-            endif
+            // Distance setting
+            GFTextLine(gump, 30, y_pos, 1153, "Distance (tiles):");
+            GFTextEntry(gump, 150, y_pos, 100, 20, 1153, action.distance ? action.distance : "3", 2);
+            y_pos += 35;
+            
+            // Delay setting
+            GFTextLine(gump, 30, y_pos, 1153, "Delay (ms):");
+            GFTextEntry(gump, 150, y_pos, 100, 20, 1153, action.delay ? action.delay : "100", 3);
+            y_pos += 35;
+            
+            // Invert checkbox - controls direction of push
+            GFCheckBox(gump, 30, y_pos, 2510, 2511, action.invert ? 1 : 0, 4);
+            GFTextLine(gump, 60, y_pos, 1153, "Invert Direction (pull instead of push)");
             break;
     endcase
     
@@ -509,29 +530,43 @@ function ConfigureActionProperties(who, action)
     if (result[0] == 50) // Change action type
         return ConfigureCombatAction(who); // Start over with type selection
     elseif (result[0] == 100) // Target location
-        // Update action.target based on the radio buttons' state from THIS gump submission
-        // This ensures the selection made by the user for target type is captured before targeting.
-        if (result[1001])
-            action.target := "Self";
-        elseif (result[1002])
-            action.target := "Opponent";
-        elseif (result[1003])
-            action.target := "All Opponents";
-        // If no radio button was selected (e.g. if somehow defaults were not set), 
-        // action.target would retain its previous value. The initialization of action.target
-        // at the start of ConfigureActionProperties and in ConfigureCombatAction ensures it has a sensible default.
-        endif
-        
-        SendSysMessageEx(who, "Target the location for this action.");
-        var targ := TargetCoordinates(who);
-        
-        // If targeting was successful, update coordinates.
-        // The 'action' struct now has the updated 'target' (from radio buttons above) 
-        // and potentially new x,y,z.
-        if (targ)
-            action.+x := targ.x;
-            action.+y := targ.y;
-            action.+z := targ.z;
+        // Handle targeting based on action type
+        if (action.type == "Summon Npcs")
+            // Save form data first
+            action.npctemplate := GFExtractData(result, 1);
+            action.amount := CInt(GFExtractData(result, 2));
+            action.range := CInt(GFExtractData(result, 3));
+            action.tempo := CInt(GFExtractData(result, 4));
+            
+            // Always set default x, y, z for NPCs to spawn around the boss
+            action.+x := 6;
+            action.+y := 6;
+            action.+z := 6;
+        else
+            // Update action.target based on the radio buttons' state from THIS gump submission
+            // This ensures the selection made by the user for target type is captured before targeting.
+            if (result[1001])
+                action.target := "Self";
+            elseif (result[1002])
+                action.target := "Opponent";
+            elseif (result[1003])
+                action.target := "All Opponents";
+            // If no radio button was selected (e.g. if somehow defaults were not set), 
+            // action.target would retain its previous value. The initialization of action.target
+            // at the start of ConfigureActionProperties and in ConfigureCombatAction ensures it has a sensible default.
+            endif
+            
+            SendSysMessageEx(who, "Target the location for this action.");
+            var targ := TargetCoordinates(who);
+            
+            // If targeting was successful, update coordinates.
+            // The 'action' struct now has the updated 'target' (from radio buttons above) 
+            // and potentially new x,y,z.
+            if (targ)
+                action.+x := targ.x;
+                action.+y := targ.y;
+                action.+z := targ.z;
+            endif
         endif
         
         // Refresh the gump with the updated action (which includes the correct target type and new coordinates if set).
@@ -617,11 +652,10 @@ function ConfigureActionProperties(who, action)
     
     // Process summon NPC custom location checkbox
     if (action.type == "Summon Npcs")
-        if (!result[4001])
-            action.+x := 6;
-            action.+y := 6;
-            action.+z := 6;
-        endif
+        // Always set these to 6 to force spawning around the boss
+        action.+x := 6;
+        action.+y := 6;
+        action.+z := 6;
     endif
     
     // Process type-specific text entries
@@ -662,6 +696,12 @@ function ConfigureActionProperties(who, action)
             action.amount := CInt(GFExtractData(result, 2));
             action.range := CInt(GFExtractData(result, 3));
             action.tempo := CInt(GFExtractData(result, 4));
+            break;
+
+        "Pushback":
+            action.distance := CInt(GFExtractData(result, 2));
+            action.delay := CInt(GFExtractData(result, 3));
+            action.invert := result[4] ? 1 : 0;
             break;
     endcase
     
