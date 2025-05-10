@@ -3,6 +3,7 @@ use uo;
 include ":combat:damage";
 include ":attributes:attributes";
 include ":epicspawn:epicCombatEventsController";
+include "include/utils";
 
 program combatEventsControl(params)
     var npc := params[1];
