@@ -3,64 +3,183 @@ use os;
 use cfgfile;
 
 include "include/say";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":nature:nature";
 
 program sundial(who, sundial)
+    ShowSundialGump(who);
+endprogram
+
+function ShowSundialGump(who)
+    // Configurações de tempo
     var config := ReadConfigFile(":nature:config/daynight");
     config := config["settings"];
     var daylength := cint(config.daylength) * 60;
+    
+    // Informações de data e calendário
+    var date := getCurrentDate();
+    var current_year := getYear();
+    var day_number := getDay();
+    var season_num := getSeason();
+    
+    // Informações de hora
     var horanascer := cint(GetGlobalProperty("halfdaytime"));
     var currentTime := ReadGameClock();
     var timeSinceSunrise := (currentTime - horanascer) % daylength;
+    var is_day := GetGlobalProperty("dia");
     
-    var hour, minute, period;
-    var timeOfDay;
+    // Informações de clima e ambiente
+    var weather_type := GetGlobalProperty("weather");
+    var light_level := GetGlobalProperty("lightlevel");
     
+    // Calcula hora em formato de 12 horas
     if (timeSinceSunrise < 0)
         timeSinceSunrise += daylength;
     endif
     
-    // Convert game time to a 12-hour clock format
-    hour := (timeSinceSunrise / (daylength / 24)) % 24;
-    minute := (timeSinceSunrise % (daylength / 24)) * (60 / (daylength / 24));
-    print("hour: " + hour + " minute: " + minute);
-    if (hour < 6 || hour >= 18)
-        timeOfDay := "O sol não está visível. O relógio de sol não pode mostrar a hora.";
-    else
-        if (hour >= 12)
-            period := "PM";
-            if (hour > 12)
-                hour -= 12;
-            endif
-        else
-            period := "AM";
-            if (hour == 0)
-                hour := 12;
-            endif
+    var hour := (timeSinceSunrise / (daylength / 24)) % 24;
+    var minute := (timeSinceSunrise % (daylength / 24)) * (60 / (daylength / 24));
+    var period := "";
+    var timeOfDay := "";
+    
+    if (hour >= 12)
+        period := "PM";
+        if (hour > 12)
+            hour -= 12;
         endif
-        
-        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + FormatMinute(minute) + " " + period;
-        
-        // Add description based on sun position
-        if (hour < 9)
-            timeOfDay += ". O sol esta subindo no ceu da manha.";
-        elseif (hour < 12)
-            timeOfDay += ". O sol esta se aproximando do ponto mais alto no ceu.";
-        elseif (hour == 12)
-            timeOfDay += ". O sol esta no ponto mais alto do ceu.";
-        elseif (hour < 15)
-            timeOfDay += ". O sol comecou sua descida no ceu da tarde.";
-        else
-            timeOfDay += ". O sol esta se aproximando do horizonte.";
+    else
+        period := "AM";
+        if (hour == 0)
+            hour := 12;
         endif
     endif
     
-    SendSysMessageEx(who, timeOfDay, SSM_INFO);
-endprogram
+    // Determina a descrição do tempo
+    if (hour < 6 || hour >= 18)
+        timeOfDay := "O sol não está visível. O relógio de sol não pode mostrar a hora.";
+    else
+        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + FormatMinute(minute) + " " + period;
+    endif
+
+    // Criar o gump
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+
+    // Fundo principal
+    GFGumpPicTiled(gump, 13, 18, 753, 515, 39929); // Mesma imagem de fundo do RP item
+    
+    // Bordas
+    GFGumpPicTiled(gump, 0, 5, 35, 36, 39925);
+    GFGumpPicTiled(gump, 0, 40, 21, 490, 39928);
+    GFGumpPicTiled(gump, 762, 5, 34, 36, 39927);
+    GFGumpPicTiled(gump, 761, 36, 40, 492, 39930);
+    GFGumpPicTiled(gump, 0, 522, 37, 33, 39931);
+    GFGumpPicTiled(gump, 761, 522, 36, 33, 39933);
+    GFGumpPicTiled(gump, 35, 5, 727, 21, 39926);
+    GFGumpPicTiled(gump, 33, 522, 728, 34, 39932);
+    
+
+
+
+    // Título principal no topo
+    GFTextLine(gump, 350, 37, 53, "Relógio de Sol");
+    
+    // Barra decorativa sob o título
+    GFGumpPicTiled(gump, 200, 55, 420, 21, 39926);
+    
+    // Exibe a hora atual no topo
+    GFTextLine(gump, 210, 70, 2100, timeOfDay);
+    
+    // Adiciona a imagem do relógio de sol (estrutura quadrada com gnômon) no centro
+    GFGumpPic(gump, 220, 120, 14090, 0); // Ajustar ID para relógio de sol central
+    
+    // COLUNA ESQUERDA - Informações Ambientais
+    GFTextLine(gump, 40, 218, 53, "=== Informações Ambientais ===");
+    
+    // Estação
+    GFTextLine(gump, 45, 243, 2100, "Estação: " + GetSeasonName(season_num));
+    
+    // Clima atual
+    var weather_desc := "Céu limpo";
+    if (weather_type && weather_type != 255 && weather_type != error)
+        weather_desc := GetWeatherName(weather_type);
+    endif
+    GFTextLine(gump, 45, 268, 2100, "Clima atual: " + weather_desc);
+    
+    // Condições de luz
+    GFTextLine(gump, 45, 293, 2100, "Condições de luz: " + GetLightDescription(light_level));
+    
+    // COLUNA DIREITA - Informações do Calendário
+    GFTextLine(gump, 510, 218, 53, "=== Informações do Calendário ===");
+    
+    // Data
+    GFTextLine(gump, 515, 243, 2100, "Data: Dia " + date.day + " de " + date.month + ", Ano " + current_year + " E.A.");
+    
+    // Dia da semana
+    GFTextLine(gump, 515, 268, 2100, "Dia da semana: " + date.weekday);
+    
+    // Fase da lua
+    GFTextLine(gump, 515, 293, 2100, "Fase da Lua: " + date.moonPhase);
+    
+    // SEÇÃO INFERIOR - Informações Técnicas
+    GFTextLine(gump, 305, 442, 53, "=== Informações Técnicas ===");
+    
+    // Dia do ano
+    GFTextLine(gump, 310, 467, 2100, "Dia do ano: " + day_number + "/" + CalcDaysInYear());
+    
+    // Período
+    GFTextLine(gump, 310, 492, 2100, "Período: " + is_day);
+    
+    // Botão de fechar na parte inferior
+    GFAddButton(gump, 370, 525, 2130, 2129, GF_CLOSE_BTN, 0);
+    
+    GFSendGump(who, gump);
+endfunction
 
 function FormatMinute(minute)
     if (minute < 10)
         return "0" + minute;
     else
         return "" + minute;
+    endif
+endfunction
+
+function GetSeasonName(season_id)
+    case (season_id)
+        1: return "Verão";
+        2: return "Outono";
+        3: return "Inverno";
+        4: return "Primavera";
+        default: return "Desconhecida";
+    endcase
+endfunction
+
+function GetWeatherName(weather_id)
+    case (CInt(weather_id))
+        0: return "Chuva Leve";
+        1: return "Tempestade com Trovões";
+        2: return "Neve";
+        3: return "Tempestade se Aproximando";
+        default: return "Desconhecido (" + weather_id + ")";
+    endcase
+endfunction
+
+function GetLightDescription(level)
+    level := CInt(level);
+    
+    if (level == 0)
+        return "Claro (Dia Pleno)";
+    elseif (level < 10)
+        return "Bem Iluminado";
+    elseif (level < 16)
+        return "Iluminado";
+    elseif (level < 20)
+        return "Moderadamente Escuro";
+    elseif (level < 25)
+        return "Escuro";
+    else
+        return "Muito Escuro";
     endif
 endfunction
