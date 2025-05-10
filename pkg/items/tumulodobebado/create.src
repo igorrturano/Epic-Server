@@ -1,0 +1,53 @@
+use uo;
+use os;
+
+program create(tumulo)
+    // Configurar o túmulo como um container
+    SetObjProperty(tumulo, "creationDate", ReadGameClock());
+    SetObjProperty(tumulo, "creator", "Sistema de Bebidas");
+    
+    // Certifique-se de que está configurado corretamente
+    tumulo.movable := 0;
+    tumulo.decayAt := 0;
+    
+    // Determinar a posição à frente do túmulo
+    // Com base na imagem, o objeto adicional deve ficar na frente do túmulo
+    var x, y;
+    case (tumulo.facing)
+        0: // Norte - frente está ao sul
+            x := tumulo.x;
+            y := tumulo.y + 1;
+            break;
+        1: // Leste - frente está ao oeste
+            x := tumulo.x - 1;
+            y := tumulo.y;
+            break;
+        2: // Sul - frente está ao norte
+            x := tumulo.x;
+            y := tumulo.y - 1;
+            break;
+        3: // Oeste - frente está ao leste
+            x := tumulo.x + 1;
+            y := tumulo.y;
+            break;
+        default: // Se não tem facing definido, assume sul (frente para o norte)
+            x := tumulo.x;
+            y := tumulo.y - 1;
+            break;
+    endcase
+    
+    // Criar o objeto adicional (0x0ED3) na posição marcada pelo X
+    var objeto_adicional := CreateItemAtLocation(x, y, tumulo.z, 0x0ED3, 1, tumulo.realm);
+    
+    // Configurar propriedades do objeto adicional
+    objeto_adicional.movable := 0;
+    objeto_adicional.decayAt := 0;
+    
+    // Associar o objeto adicional ao túmulo
+    SetObjProperty(tumulo, "objeto_adicional", objeto_adicional.serial);
+    SetObjProperty(objeto_adicional, "tumulo_pai", tumulo.serial);
+    
+
+    
+    return 1;
+endprogram
