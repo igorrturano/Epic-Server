@@ -847,12 +847,15 @@ function ShowPage3(who, title, gump_width, gump_height)
     // Display existing combat events
     var y_posc := 190;
     if (form_data.combatevents && form_data.combatevents.size() > 0)
-        foreach event in (form_data.combatevents)
+        for i := 1 to form_data.combatevents.size()
+            var event := form_data.combatevents[i];
+            // Add delete button before the event name
+            GFAddButton(gump, 550, y_posc, 30008, 30009, GF_CLOSE_BTN, 44 + i); // Button ID will be 45 for first event
             GFTextLine(gump, 580, y_posc, 1153, "- " + event.name + 
                       " (Steps: " + event.steps.size() + 
                       ", CD: " + event.cd + "s)");
             y_posc += 20;
-        endforeach
+        endfor
     else
         GFTextLine(gump, 580, y_posc, 1153, "No combat events configured");
     endif
@@ -934,6 +937,17 @@ function ShowPage3(who, title, gump_width, gump_height)
     elseif (input[0] == 40) // Add Combat Event
         HandleAddCombatEvent(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+    elseif (input[0] >= 45 && input[0] < 45 + 20) // Support up to 20 events, adjust if needed
+        var event_idx := input[0] - 44; // Button 45 corresponds to index 1
+        if (event_idx >= 1 && event_idx <= form_data.combatevents.size())
+            var event_name := form_data.combatevents[event_idx].name;
+            SendSysMessage(who, "Removing combat event '" + event_name + "' (index " + event_idx + ")");
+            form_data.combatevents.Erase(event_idx);
+            if (form_data.combatevents.size() == 0)
+                form_data.combatevents := array{}; // Reset to empty array if last event was removed
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
     elseif (input[0] == 60) // Add Death Event
         HandleAddDeathEvent(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
