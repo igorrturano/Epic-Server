@@ -276,6 +276,7 @@ function ConfigureActionProperties(who, action)
             action.+target := "Self"; // Default
         endif
         
+        GFSetRadioGroup(gump, 1);
         GFRadioButton(gump, 30, y_pos, 210, 211, action.target == "Self", 1001);
         GFTextLine(gump, 60, y_pos, 1153, "Self");
         
@@ -403,17 +404,48 @@ function ConfigureActionProperties(who, action)
         "Graphic Effect":
             // This is a complex one, simplified for now
             GFTextLine(gump, 30, y_pos, 1153, "Effect Type:");
-            var effect_types := array{"Stationary", "Moving"};
             
-            if (!action.graphictype)
-                action.+graphictype := "Stationary"; // Default
+            // Initialize graphic effect types array if it doesn't exist
+            if (!action.graphictypes)
+                action.+graphictypes := array{};
+                // Default to Stationary if nothing selected
+                if (!action.graphictypes.size())
+                    action.graphictypes.append("Stationary");
+                endif
             endif
             
-            GFRadioButton(gump, 30, y_pos + 25, 210, 211, action.graphictype == "Stationary", 3001);
+            // Convert legacy graphictype string to array if needed
+            if (action.graphictype && !action.graphictypes.size())
+                action.graphictypes.append(action.graphictype);
+                action.graphictype := ""; // Clear the old format
+            endif
+            
+            // Add checkboxes for effect types
+            var effect_types := array{"Stationary", "Moving"};
+            var moving_checked := "Moving" in action.graphictypes;
+            
+            GFCheckBox(gump, 30, y_pos + 25, 2510, 2511, "Stationary" in action.graphictypes, 3001);
             GFTextLine(gump, 60, y_pos + 25, 1153, "Stationary");
             
-            GFRadioButton(gump, 200, y_pos + 25, 210, 211, action.graphictype == "Moving", 3002);
+            GFCheckBox(gump, 200, y_pos + 25, 2510, 2511, moving_checked, 3002);
             GFTextLine(gump, 230, y_pos + 25, 1153, "Moving");
+            
+            // Always show direction options so they're immediately visible when "Moving" is checked
+            y_pos += 65;
+            GFTextLine(gump, 30, y_pos, 1153, "Moving Effect Direction:");
+            
+            // Initialize effect direction if it doesn't exist
+            if (!action.effect_direction)
+                action.+effect_direction := "NpcToTarget"; // Default
+            endif
+            
+            y_pos += 35;
+            GFSetRadioGroup(gump, 3);
+            GFRadioButton(gump, 30, y_pos, 210, 211, action.effect_direction == "NpcToTarget", 3101);
+            GFTextLine(gump, 60, y_pos, 1153, "NPC → Target");
+            
+            GFRadioButton(gump, 200, y_pos, 210, 211, action.effect_direction == "TargetToNpc", 3102);
+            GFTextLine(gump, 230, y_pos, 1153, "Target → NPC");
             
             y_pos += 60;
             
@@ -550,13 +582,37 @@ function ConfigureActionProperties(who, action)
         endif
     endif
     
-    // Process graphic effect type radio buttons
+    // Process graphic effect type checkboxes
     if (action.type == "Graphic Effect")
+        // Reset graphic types array
+        action.graphictypes := array{};
+        
+        // Process each effect type checkbox
         if (result[3001])
-            action.graphictype := "Stationary";
-        elseif (result[3002])
-            action.graphictype := "Moving";
+            action.graphictypes.append("Stationary");
         endif
+        if (result[3002])
+            action.graphictypes.append("Moving");
+        endif
+        
+        // Make sure at least one effect type is selected
+        if (!action.graphictypes.size())
+            action.graphictypes.append("Stationary"); // Default to Stationary if nothing selected
+        endif
+        
+        // Always process direction radio buttons since the fields are always shown
+        // This ensures direction is saved even if Moving is newly checked
+        if (result[3101])
+            action.effect_direction := "NpcToTarget";
+        elseif (result[3102])
+            action.effect_direction := "TargetToNpc";
+        else
+            // Default if somehow nothing selected
+            action.effect_direction := "NpcToTarget";
+        endif
+        
+        // For backwards compatibility
+        action.graphictype := action.graphictypes[1];
     endif
     
     // Process summon NPC custom location checkbox

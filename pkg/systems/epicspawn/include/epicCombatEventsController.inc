@@ -306,19 +306,41 @@ function ExecuteGraphicEffectAction(npc, targets, action)
     
     print("DEBUG: Creating graphic effect " + fx_id);
     
-    if (action.graphictype == "Moving")
-        // Moving effect from NPC to targets
-        foreach targ in targets
-            PlayMovingEffect(npc, targ, fx_id, speed, loops);
-            success := 1;
-        endforeach
+    // Get effect types
+    var effect_types := array{};
+    
+    // Handle both old and new format of effect types
+    if (action.graphictypes && action.graphictypes.size())
+        effect_types := action.graphictypes;
+    elseif (action.graphictype)
+        effect_types.append(action.graphictype);
     else
-        // Stationary effect on each targ
-        foreach targ in targets
-            PlayObjectCenteredEffect(targ, fx_id, speed, loops);
+        effect_types.append("Stationary"); // Default
+    endif
+    
+    foreach targ in targets
+        foreach effect_type in effect_types
+            if (effect_type == "Moving")
+                // Get the direction (default to NPC -> Target if not specified)
+                var direction := action.effect_direction ? action.effect_direction : "NpcToTarget";
+                
+                if (direction == "NpcToTarget")
+                    // Moving effect from NPC to target
+                    print("DEBUG: Playing moving effect from NPC to " + targ.name);
+                    PlayMovingEffect(npc, targ, fx_id, speed, loops);
+                else // TargetToNpc
+                    // Moving effect from target to NPC
+                    print("DEBUG: Playing moving effect from " + targ.name + " to NPC");
+                    PlayMovingEffect(targ, npc, fx_id, speed, loops);
+                endif
+            else // Stationary
+                // Stationary effect on the target
+                print("DEBUG: Playing stationary effect on " + targ.name);
+                PlayObjectCenteredEffect(targ, fx_id, speed, loops);
+            endif
             success := 1;
         endforeach
-    endif
+    endforeach
     
     return success;
 endfunction
