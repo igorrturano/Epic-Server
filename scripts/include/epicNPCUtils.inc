@@ -8,7 +8,7 @@ include ":taming:taming";
 function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
 	var classe := npc_elem.Classe;
-	var tier := set_tier == "0" ? CInt(npc_elem.Tier) : CInt(set_tier);
+	var tier := set_tier == "0" ? CInt(mob.getTier()) : CInt(set_tier);
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
@@ -431,8 +431,7 @@ endfunction
 
 function getNpcResist()
    // Get NPC configuration for spell difficulty
-   var npc_elem := NPC_GetNPCConfig(me);
-   var tier := CInt(npc_elem.Tier);
+   var tier := me.getTier()
    if (!tier)
       tier := 1;
    endif

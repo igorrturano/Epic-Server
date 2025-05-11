@@ -1171,7 +1171,7 @@ function ataqueFurtivo(attacker, defender)
 
 	if (attacker.npctemplate)
 		var npc_elem := NPC_GetNPCConfig(attacker);
-		sneak_dmg := Cint(npc_elem.Tier * 15);
+		sneak_dmg := Cint(attacker.getTier() * 15);
 		if (sneak_dmg < 15)
 			sneak_dmg := 15;
 		endif
