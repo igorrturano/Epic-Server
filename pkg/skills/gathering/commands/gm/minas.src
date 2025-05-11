@@ -54,7 +54,7 @@ function ShowMainGump(who, minasdf)
             "selected_ores" := array{},
             "rarities" := array{},
             "rect" := "",
-            "realm" := "britannia"
+            "realm" := who.realm // Usa o realm atual do jogador
         };
         
         // Inicia o processo de edição para nova mina
@@ -124,12 +124,6 @@ function EditMineProcess(who, minasdf, byref form_data)
             SetObjProperty(who, "#FormData", form_data);
         elseif (button_id == 52) // Ir para o centro da área
             GoToAreaCenter(who, form_data);
-        elseif (button_id == 60) // Selecionar realm Britannia
-            SendSysMessage(who, "Realm alterado para Britannia.", 66);
-            form_data.realm := "britannia";
-        elseif (button_id == 61) // Selecionar realm Britannia Alt
-            SendSysMessage(who, "Realm alterado para Britannia Alt.", 66);
-            form_data.realm := "britannia_alt";
         elseif (button_id >= 1001 && button_id <= 1019) // Botões para adicionar ore
             ProcessAddOre(who, form_data, button_id);
         elseif (button_id >= 2001 && button_id <= 2005) // Botões para remover ore
@@ -149,23 +143,23 @@ endfunction;
 function ProcessAddOre(who, byref form_data, button_id)
     var ore_index := button_id - 1000;
     var all_ores := GetAllOrePossibilities();
-    var ore := all_ores[ore_index];
+    var ore_id := all_ores[ore_index];
     
     // Versão simplificada da verificação
     var exists := 0;
     
     // Substituído o loop foreach para debugar
     for i := 1 to form_data.selected_ores.size()
-        if (form_data.selected_ores[i] == ore)
+        if (form_data.selected_ores[i] == ore_id)
             exists := 1;
         endif;
     endfor;
     
     // Código normal após a verificação
     if (!exists && form_data.selected_ores.size() < 5)
-        form_data.selected_ores.append(ore);
+        form_data.selected_ores.append(ore_id);
         form_data.rarities.append("500"); // Valor padrão - incomum
-        SendSysMessage(who, "Minério '" + ore + "' adicionado.");
+        SendSysMessage(who, "Minério ID '" + ore_id + "' adicionado.");
     elseif (exists)
         SendSysMessage(who, "Este minério já está selecionado.");
     else
@@ -208,21 +202,63 @@ function GoToAreaCenter(who, byref form_data)
         return 0;
     endif;
     
+    // Debug: Mostra o rect bruto
+    SendSysMessage(who, "DEBUG: Rect bruto = " + form_data.rect, 66);
+    
     var coords := SplitWords(form_data.rect);
     if (coords.size() < 4)
         SendSysMessage(who, "Coordenadas da área incompletas.", 33);
         return 0;
     endif;
     
+    // Debug: Mostra coordenadas individuais
+    SendSysMessage(who, "DEBUG: Coordenadas: X1=" + coords[1] + " Y1=" + coords[2] + " X2=" + coords[3] + " Y2=" + coords[4], 66);
+    
     // Calcula o centro da área
     var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
     var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
     
-    // Determina o realm correto para o teleporte
-    var target_realm := form_data.realm ? form_data.realm : "britannia";
+    // Debug: Mostra coordenadas do centro
+    SendSysMessage(who, "DEBUG: Centro calculado: X=" + center_x + " Y=" + center_y, 66);
+    
+    var center_z := GetWorldHeight(center_x, center_y);
+    if (!center_z)
+        center_z := who.z; // Fallback para a altura atual do jogador se GetWorldHeight falhar
+    endif;
+    
+    // Debug: Mostra altura
+    SendSysMessage(who, "DEBUG: Altura calculada: Z=" + center_z, 66);
+    
+    // Debug: Mostra realm atual do jogador
+    SendSysMessage(who, "DEBUG: Realm atual do jogador = " + who.realm, 66);
+    
+    // Usa o realm salvo se existir, caso contrário usa o realm atual do jogador
+    var target_realm;
+    if (form_data.name != "") // Se tem nome, é uma mina existente
+        target_realm := form_data.realm;
+        SendSysMessage(who, "DEBUG: Usando realm da mina existente = " + target_realm, 66);
+    else // Se não tem nome, é uma nova mina
+        target_realm := who.realm;
+        form_data.realm := who.realm; // Salva o realm atual para uso futuro
+        SendSysMessage(who, "DEBUG: Usando realm do jogador = " + target_realm, 66);
+    endif;
+    
+    // Verifica se o realm é válido
+    if (!target_realm || target_realm == error)
+        SendSysMessage(who, "ERRO: Realm inválido!", 33);
+        return 0;
+    endif;
+    
+    // Debug: Mostra todas as informações antes do teleporte
+    SendSysMessage(who, "DEBUG: Tentando teleportar para: X=" + center_x + " Y=" + center_y + " Z=" + center_z + " Realm=" + target_realm, 66);
     
     // Move o jogador para o centro
-    MoveObjectToLocation(who, center_x, center_y, GetWorldHeight(center_x, center_y), target_realm, MOVEOBJECT_FORCELOCATION);
+    var move_result := MoveObjectToLocation(who, center_x, center_y, center_z, target_realm, MOVEOBJECT_FORCELOCATION);
+    
+    if (move_result == error)
+        SendSysMessage(who, "ERRO ao teleportar: " + move_result, 33);
+        return 0;
+    endif;
     
     SendSysMessage(who, "Você foi teleportado para o centro da área da mina no realm " + target_realm + ".", 66);
     return 1;
@@ -256,7 +292,7 @@ function DisplayMineGump(who, byref form_data)
             GFAddButton(gump, 30, y_pos, 2437, 2438, GF_CLOSE_BTN, 2000 + i);
             
             // Nome do minério
-            GFTextLine(gump, 50, y_pos, 1153, ore);
+            GFTextLine(gump, 50, y_pos, 1153, GetOreNameById(ore));
             
             // Campo de raridade
             GFTextLine(gump, 180, y_pos, 1153, "Raridade:");
@@ -311,7 +347,7 @@ function DisplayMineGump(who, byref form_data)
         
         // Adiciona botão para adicionar minério
         GFAddButton(gump, x, cur_y, 2117, 2118, GF_CLOSE_BTN, 1000 + i);
-        GFTextLine(gump, x + 20, cur_y, 1153, ore);
+        GFTextLine(gump, x + 20, cur_y, 1153, GetOreNameById(ore));
     endfor;
     
     // Atualiza y_pos para a posição mais baixa das colunas
@@ -348,24 +384,6 @@ function DisplayMineGump(who, byref form_data)
     y_pos += 25;
     GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 52);
     GFTextLine(gump, 60, y_pos, 1153, "Ir para o Centro da Área");
-    
-    // Seleção de Realm
-    y_pos += 30;
-    GFTextLine(gump, 30, y_pos, 1153, "Realm:");
-    
-    // Verificando explicitamente qual realm está selecionado
-    var is_britannia := (form_data.realm == "britannia" || !form_data.realm);
-    var is_britannia_alt := (form_data.realm == "britannia_alt");
-    
-    // Debug - mostra qual realm está atualmente definido
-    SendSysMessage(who, "Realm atual: " + form_data.realm, 66);
-    
-    // Radio buttons para realm
-    GFRadioButton(gump, 100, y_pos, 210, 211, is_britannia, 60);
-    GFTextLine(gump, 120, y_pos, 1153, "Britannia");
-    
-    GFRadioButton(gump, 250, y_pos, 210, 211, is_britannia_alt, 61);
-    GFTextLine(gump, 270, y_pos, 1153, "Britannia Alt");
     
     // Botões Salvar e Cancelar
     y_pos += 40;
@@ -468,38 +486,38 @@ function SaveMineConfig(who, minasdf, byref form_data)
     mina.SetProp("Rarity", rarities_str);
     mina.SetProp("Rect", form_data.rect);
     
-    // Salva o realm - garantindo que o valor seja persistido
-    var realm_value := form_data.realm ? form_data.realm : "britannia";
-    mina.SetProp("Realm", realm_value);
+    // Salva o realm do jogador
+    mina.SetProp("Realm", who.realm);
     
     // Mensagem com informações completas
-    SendSysMessage(who, "Mina '" + form_data.name + "' salva com sucesso no realm " + realm_value + "!", 66);
+    SendSysMessage(who, "Mina '" + form_data.name + "' salva com sucesso!", 66);
     
     return 1;
 endfunction;
 
 // Função para obter todas as possibilidades de minérios
 function GetAllOrePossibilities()
-    // Lista extraída da função GetResourceId em mining.inc
+    // Lista com IDs de objetos (objtype) ao invés de nomes
     return array{
-        "areia",
-        "cobre",
-        "bronze",
-        "argila",
-        "ferro",
-        "litan",
-        "Fulmetium",
-        "Venetium",
-        "Ignium",
-        "ouro",
-        "galvorn",
-        "mithril",
-        "frigutium",
-        "illyra",
-        "prata",
-        "estanho",
-        "pedras",
-        "marmore",
-        "arenito"
+        "0x6075", // areia
+        "0x6450", // cobre
+        "0x699c", // bronze
+        "0x6074", // argila
+        "0x6300", // ferro
+        "0x6301", // litan
+        "0x6302", // Fulmetium
+        "0x6303", // Venetium
+        "0x6304", // Ignium
+        "0x6305", // ouro
+        "0x6307", // galvorn
+        "0x6308", // mithril
+        "0x6451", // frigutium
+        "0x6314", // illyra
+        "0x6992", // prata
+        "0x6990", // estanho
+        "0xBD11", // pedras
+        "0x8850", // marmore
+        "0x8852"  // arenito
     };
 endfunction;
+

@@ -50,7 +50,7 @@ program mining(who)
 	var y := 80;
 	i := 1;
 	foreach x in possiveis
-		GFTextLine(gump, 35, y, 1153, x);
+		GFTextLine(gump, 35, y, 1153, GetOreNameById(x));
 		GFTextLine(gump, 120, y, 1153, GetOreRarityDesc(cint(raridade[i])));
 		GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
 		i := i + 1;
@@ -61,7 +61,7 @@ program mining(who)
 	input := input[0];
 	
 	if (input > 400)
-		SendsysMessage(who, "Voce vai procurar por " + possiveis[input-400]);
+		SendsysMessage(who, "Voce vai procurar por " + GetOreNameById(possiveis[input-400]));
 		SetObjProperty(who, "searchore", possiveis[input-400]);
 	endif
 
