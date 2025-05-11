@@ -26,7 +26,7 @@ program SpellScript(params)
 
     PerformAction(who, ANIM_CAST_AREA);
     foreach mobile in allMobiles
-        PlayStationaryEffect(mobile.x, mobile.y, mobile.z-5, 0X6D01 , 7, 40, 0, mobile.realm);
+        PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x38C8 , 10, 100, 0, mobile.realm);
         SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);
         TS_StartTimer(mobile, "paralysis", duration);
         sleep(5);
