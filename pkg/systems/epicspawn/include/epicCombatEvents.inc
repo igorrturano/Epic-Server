@@ -1,3 +1,21 @@
+var all_scripts := array{
+    "summon", "summon_1", "summon_2", "summon_3", "summon_4", "sumir", "encantar", "events", 
+    "defaultPoison", "hallucination", "paralysis", "congelamento", "alcohol", "clumsy", "feebleMind", 
+    "weaken", "nocure", "agility", "strength", "stamina", "berserk", "graspingroots", "intelligence", 
+    "invis", "vinganca", "velocidade", "lentidao", "dominioprofano", "mantogrinwald", "aparenciacadaverica", 
+    "metamorfosedruida", "PhysicalResist", "MagicResist", "bless", "curse", "phmod", "auraphmod", "fimod", 
+    "comod", "enmod", "aurafimod", "auracomod", "auraenmod", "aurahpregenmod", "aurastamregenmod", 
+    "auramanaregenmod", "aurahpsapmod", "aurastamsapmod", "auramanasapmod", "pomod", "coldward", "polymorph", 
+    "mantodaBesta", "apodrecer", "disfarce", "desmontar", "atrasarmagias", "fugademana", "strPoison", "dexPoison", 
+    "intPoison", "paralyzePoison", "staminaPoison", "manaPoison", "alchPoison", "ataquecerteiro", "heroismo", 
+    "ataquepoderoso", "precisao", "kitdisfarce", "finta", "evasao", "conceal", "irrefreavel", "ghost", "controlarbestas", 
+    "controlarmortovivo", "tiroemmovimento", "provocar", "bleedingstrike", "bleed", "chamasperpetuas", "invulnerabilidade", 
+    "prisaogelida", "regensombrio", "temor", "gloria", "desarmar", "desviarprojetil", "recuperacaosalvadora", "martir", 
+    "mantorothen", "dmgreduction", "spectralform", "sleep", "dmgreturn", "recuperacaoaligera", "sacrificioflamejante", 
+    "queimar", "bladedance", "hamelin", "firedance", "ensurdecer", "florescer", "kill", "delete", "stamconsume", 
+    "narguile", "cooldown", "mortedelay", "capmod", "dedodabesta", "cocarina", "areiaceleste", "fraturaexposta"
+};
+
 function HandleAddCombatEvent(who, input, byref form_data)
     // Inicializa o array de eventos de combate se não existir
     if (!form_data.combatevents)
@@ -102,6 +120,7 @@ function ShowCombatEventsList(who, byref combat_event)
                     "Dmg": details += ", Amount: " + action.dmg + ", Type: " + action.dmgtype; break;
                     "Graphic Effect": details += ", Effect: " + action.fxid; break;
                     "Summon Npcs": details += ", Template: " + action.npctemplate + ", Count: " + action.amount; break;
+                    "Timedscripts": details += ", Script: " + action.name + ", Duration: " + action.duration + ", Level: " + action.level; break;
                 endcase
                 
                 GFTooltipText(gump, details);
@@ -198,6 +217,7 @@ function ConfigureCombatAction(who, action := 0)
         "Graphic Effect",
         "Summon Npcs",
         "Pushback",
+        "Timedscripts",
         "Delay"
     };
     
@@ -258,7 +278,7 @@ function ConfigureActionProperties(who, action)
     
     // Create a gump with standardized style
     var title := "Configure " + action.type + " Action";
-    var gump := GFECreateGump(title, 500, 450);
+    var gump := GFECreateGump(title, 500, 600);
     
     var y_pos := 80;
     
@@ -512,9 +532,61 @@ function ConfigureActionProperties(who, action)
             GFCheckBox(gump, 30, y_pos, 2510, 2511, action.invert ? 1 : 0, 4);
             GFTextLine(gump, 60, y_pos, 1153, "Invert Direction (pull instead of push)");
             break;
+
+        "Timedscripts":
+            // Build the list of available TimedScripts (names from timedScripts.cfg)
+
+            var page_size := 10;
+            var total_pages := (all_scripts.size() + page_size - 1) / page_size;
+            if (!action.page) action.page := 1; endif
+            var page := action.page;
+            if (page < 1) page := 1; endif
+            if (page > total_pages) page := total_pages; endif
+            var start_idx := (page - 1) * page_size + 1;
+            var end_idx := start_idx + page_size - 1;
+            if (end_idx > all_scripts.size()) end_idx := all_scripts.size(); endif
+            GFTextLine(gump, 30, y_pos, 1153, "Select TimedScript:");
+            var y := y_pos + 25;
+            for i := start_idx to end_idx
+                var script_name := all_scripts[i];
+                var btn_id := 4000 + i;
+                GFAddButton(gump, 30, y, 2117, 2118, GF_CLOSE_BTN, btn_id);
+                GFTextLine(gump, 60, y, 1153, script_name + (action.name == script_name ? " (selected)" : ""));
+                y += 25;
+            endfor
+            // Pagination controls
+            if (page > 1)
+                GFAddButton(gump, 300, y, 9706, 9707, GF_CLOSE_BTN, 4100); // Prev
+                GFTextLine(gump, 330, y, 1153, "Previous");
+            endif
+            if (page < total_pages)
+                GFAddButton(gump, 400, y, 9702, 9703, GF_CLOSE_BTN, 4101); // Next
+                GFTextLine(gump, 430, y, 1153, "Next");
+            endif
+            y += 35;
+            // Duration and level
+            GFTextLine(gump, 30, y, 1153, "Duration (seconds):");
+            GFTextEntry(gump, 180, y, 100, 20, 1153, action.duration ? action.duration : "30", 2);
+            y += 35;
+            GFTextLine(gump, 30, y, 1153, "Level:");
+            GFTextEntry(gump, 180, y, 100, 20, 1153, action.level ? action.level : "1", 3);
+            y += 35;
+            // Target selection (reuse radio buttons)
+            if (!action.target)
+                action.+target := "Self";
+            endif
+            GFSetRadioGroup(gump, 1);
+            GFRadioButton(gump, 30, y, 210, 211, action.target == "Self", 1001);
+            GFTextLine(gump, 60, y, 1153, "Self");
+            GFRadioButton(gump, 150, y, 210, 211, action.target == "Opponent", 1002);
+            GFTextLine(gump, 180, y, 1153, "Opponent");
+            GFRadioButton(gump, 300, y, 210, 211, action.target == "All Opponents", 1003);
+            GFTextLine(gump, 330, y, 1153, "All Opponents");
+            y += 35;
+            break;
     endcase
     
-    y_pos := 400; // Position for the bottom buttons
+    y_pos := 550; // Position for the bottom buttons
     
     // Add Save and Cancel buttons
     GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999); // Save button
@@ -702,6 +774,25 @@ function ConfigureActionProperties(who, action)
             action.distance := CInt(GFExtractData(result, 2));
             action.delay := CInt(GFExtractData(result, 3));
             action.invert := result[4] ? 1 : 0;
+            break;
+
+        "Timedscripts":
+            // Handle script selection
+            for i := 1 to all_scripts.size()
+                if (result[4000 + i])
+                    action.name := all_scripts[i];
+                endif
+            endfor
+            // Handle pagination
+            if (result[4100])
+                action.page := (action.page ? action.page : 1) - 1;
+                return ConfigureActionProperties(who, action);
+            elseif (result[4101])
+                action.page := (action.page ? action.page : 1) + 1;
+                return ConfigureActionProperties(who, action);
+            endif
+            action.duration := CInt(GFExtractData(result, 2));
+            action.level := CInt(GFExtractData(result, 3));
             break;
     endcase
     
