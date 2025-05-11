@@ -125,7 +125,7 @@ endfunction
 function SetupCustomProps( spawnpoint, npc, counter )
 	var npc_elem := NPC_GetNPCConfig(npc);
   var prop_tier := GetObjProperty( spawnpoint, Cstr("Tier" + counter) );
-  var tier := prop_tier ? prop_tier : npc_elem.Tier || "0";
+  var tier := prop_tier ? prop_tier : npc.getTier() || "0";
   customizeNpc( npc, tier );
   var name := GetObjProperty( spawnpoint, Cstr( "Name" + counter ) );
   if ( name && name != "" )

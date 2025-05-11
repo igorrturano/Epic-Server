@@ -612,8 +612,8 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     endif
 
     if (class)
-        GFHTMLArea(gump, x+81, y+29, 192, 40, "<BASEFONT Size=55 Color=#999999 > Classe", 0, 0); //shadow
-        GFHTMLArea(gump, x+80, y+30, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Classe", 0, 0);
+        GFHTMLArea(gump, x+81, y+29, 192, 40, "<BASEFONT Size=55 Color=#999999 > Caminho", 0, 0); //shadow
+        GFHTMLArea(gump, x+80, y+30, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Caminho", 0, 0);
         GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, class), 1, 0);
     endif
 
