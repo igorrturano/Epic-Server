@@ -218,7 +218,6 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 endfunction
 
 function ExtraiStringEntradaOuVazio(entrada, id)
-	Print(entrada);
 	if(!find(entrada[id],":",1)) return ""; endif
 
 	var chave := CStr(id)+": ";

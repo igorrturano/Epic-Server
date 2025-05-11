@@ -994,7 +994,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	var definicaoItem := itemsConfig[objtype];
 	var definicaoFabricacao := receitasConfig[objtype];
 	var isComponente := GetConfigString(definicaoFabricacao, "encaixe");
-	var duracao := GetConfigInt(receitasConfig[objtype],"DuracaoFabricacao");
+	var duracao := GetConfigString(receitasConfig[objtype],"DuracaoFabricacao");
 
 	if(TypeOf(definicaoItem) != "ConfigElemRef")
 		definicaoItem := itemsConfig[("0x0"+(CStr(objtype) - "0x"))];
