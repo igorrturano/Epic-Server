@@ -20,8 +20,7 @@ const MAX_TRANSFORMATIONS := 10;  // Maximum number of wildshape_forms to store
 program wildshape(who)
     // Handle NPCs differently - automatic transformation
     if (who.npctemplate)
-        var npc_elem := NPC_GetNPCConfig(who);
-        var tier := CInt(npc_elem.Tier);
+        var tier := CInt(who.getTier());
         if (!tier)
             tier := 1;
         endif

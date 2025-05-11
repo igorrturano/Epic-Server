@@ -111,8 +111,7 @@ function HandleAnimalCombatEvent(opponent)
     CheckHealthTeleport(me);
 
     if (me.isSpider() && opponent.getRace() == DROW)
-        var npc_elem := NPC_GetNPCConfig(me);
-        var tier := CInt(npc_elem.Tier);
+        var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
         elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
