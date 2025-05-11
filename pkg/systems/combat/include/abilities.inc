@@ -3,6 +3,8 @@
  * Tanto as habilidades que possuem dano, como as que não.
  */
 
+include "damage";
+
 enum ABILITIES
 	ABILITY_TATICAS_ARCANAS,
 	ABILITY_POSTURA_DEFENSIVA,
@@ -254,6 +256,51 @@ enum ABILITIES
 	ABILITY_CONSTRUTOR_DE_GOLEMS
 endenum
 
-function ApplyHab_TiroPenetrante(attacker, defender, damage)
- 
+function ApplyHab(ability, attacker, defender, damage)
+	case ability
+		ABILITY_TATICAS_ARCANAS:
+			damage := ApplyHab_TaticasArcanas(attacker, defender, damage);
+			break;
+		ABILITY_POSTURA_DEFENSIVA:
+			damage := ApplyHab_PosturaDefensiva(attacker, defender, damage);
+			break;
+		ABILITY_POSTURA_OFENSIVA:
+			damage := ApplyHab_PosturaOfensiva(attacker, defender, damage);
+			break;
+		ABILITY_ESTILO_MAO_LIVRE:
+			damage := ApplyHab_EstiloMaoLivre(attacker, defender, damage);
+			break;
+		ABILITY_RECUPERAR_FLECHAS:
+			damage := ApplyHab_RecuperarFlechas(attacker, defender, damage);
+			break;
+		ABILITY_KANI_NO_SUTAIRU:
+			damage := ApplyHab_KaniNoSutairu(attacker, defender, damage);
+			break;
+		default:
+			damage := 0; // Habilidade não implementada
+			break;
+	endcase
+
+	return damage;
+endfunction
+
+function IsPhysicalDamage(type)
+	if (type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT) return 1;
+	else return 0;
+	endif
+endfunction
+
+
+
+function ApplyHab_KaniNoSutairu(attacker, defender, damage, damageType)
+	var resist := 0;
+	
+	if (IsPhysicalDamage(damageType))
+		if (TemHabilidade(defender, "Kani no Sutairu"))
+			resist += RandomDiceRoll("1d4");
+			DebugMsg(defender, DEBUG_DAMAGE, "Defesa de Habilidade[Kani No Sutairu]: " + CInt(resist));
+		endif
+	endif
+
+	return CInt(damage-resist);
 endfunction
