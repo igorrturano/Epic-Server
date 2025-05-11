@@ -106,53 +106,36 @@ function GetOreAmount(realm, x_pos, y_pos)
 endfunction
 
 function GetResourceId(oreToSearch)
+	// If the oreToSearch is already an objtype in string format (starts with 0x),
+	// just return the integer value of it
+	if (oreToSearch[1, 2] == "0x")
+		return CInt(oreToSearch);
+	endif
 
+	// For backward compatibility, keep the name-based mapping
 	case (oreToSearch)
-
 		"areia": return 0x6075;
-
 		"cobre": return 0x6450;
-
 		"bronze": return 0x699c;
-
 		"argila": return 0x6074;
-
 		"ferro": return 0x6300; //TN USED
-
 		"litan": return 0x6301;
-
-		"Fulmetium ": return 0x6302;
-
+		"Fulmetium": return 0x6302;
 		"Venetium": return 0x6303;
-
 		"Ignium": return 0x6304;
-
 		"ouro": return 0x6305;
-
 		//"durang": return 0x6306;
-
 		"galvorn": return 0x6307; //TN USED
-
 		"mithril": return 0x6308; //TN USED
-
 		"frigutium": return 0x6451; //TN USED
-
         "illyra": return 0x6314;
-
 		//"gromril": return 0x6452; //TN USED
-
 		"prata": return 0x6992; //TN USED
-
 		"estanho": return 0x6990; //TN USED
-
 		//"ario": return 0x6312;
-
 		"pedras": return 0x6666;
-
 		"marmore": return 0x8850;
-
 		"arenito": return 0x8852;
-
 	endcase
 
 endfunction
@@ -541,3 +524,29 @@ endenum
 enum INGOT
 	INGOT_CHARCOAL := "INGOT_CHARCOAL"
 endenum
+
+// Get ore name based on object ID for display purposes
+function GetOreNameById(ore_id)
+    case (ore_id)
+        "0x6075": return "Areia";
+        "0x6450": return "Cobre";
+        "0x699c": return "Bronze";
+        "0x6074": return "Argila";
+        "0x6300": return "Ferro";
+        "0x6301": return "Litan";
+        "0x6302": return "Fulmetium";
+        "0x6303": return "Venetium";
+        "0x6304": return "Ignium";
+        "0x6305": return "Ouro";
+        "0x6307": return "Galvorn";
+        "0x6308": return "Mithril";
+        "0x6451": return "Frigutium";
+        "0x6314": return "Illyra";
+        "0x6992": return "Prata";
+        "0x6990": return "Estanho";
+        "0xBD11": return "Pedras";
+        "0x8850": return "Mármore";
+        "0x8852": return "Arenito";
+        default: return "Desconhecido ("+ore_id+")";
+    endcase
+endfunction;
