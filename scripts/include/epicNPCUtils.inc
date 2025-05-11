@@ -431,7 +431,7 @@ endfunction
 
 function getNpcResist()
    // Get NPC configuration for spell difficulty
-   var tier := me.getTier()
+   var tier := me.getTier();
    if (!tier)
       tier := 1;
    endif
