@@ -62,7 +62,7 @@ program summontotem(params)
 	var slot3 := Getobjproperty(who, "slot3");
 	var slot4 := Getobjproperty(who, "slot4");
 	if (who.npctemplate)
-		var tier := NPC_GetNPCConfig(who).Tier;
+		var tier := who.getTier();
 		if (tier >= 1) Setobjproperty(who, "slot1", 1); endif
 		if (tier >= 2) Setobjproperty(who, "slot2", 2); endif
 		if (tier >= 3) Setobjproperty(who, "slot3", 3); endif

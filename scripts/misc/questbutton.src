@@ -163,7 +163,7 @@ if (chardata.culture)
 endif
 AddInfoLine(gump, y_pos, "Raca e Cultura", display_text);
     AddInfoLine(gump, y_pos, "Sexo", GetGenderString(targ.gender));
-    AddInfoLine(gump, y_pos, "Classe", GetCharDataValue(chardata, "classe"));
+    AddInfoLine(gump, y_pos, "Caminho", GetCharDataValue(chardata, "classe"));
     AddInfoLine(gump, y_pos, "Background", GetCharDataValue(chardata, "background"));
     AddInfoLine(gump, y_pos, "Caracteristica", GetCharDataValue(chardata, "trait"));
     

@@ -18,8 +18,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
     if (!npc || npc == error)
         return error{"errortext" := "Failed to create boss at x " + x + " y " + y + " z " + z + ": " + npc.errortext};
     endif
-    var npc_elem := NPC_GetNPCConfig(npc);
-    var tier := boss.tier != 0 ? boss.tier : npc_elem.Tier;
+    var tier := boss.tier != 0 ? boss.tier : npc.getTier();
     customizeNpc(npc, tier);
     // Set basic properties
     if (boss.name)
