@@ -290,7 +290,19 @@ function IsPhysicalDamage(type)
 	endif
 endfunction
 
+function ApplyHab_TaticasArcanas(attacker, defender, damage)
+	if (TemHabilidade(attacker, "Taticas Arcanas"))
+		var manaatual := AP_GetVital(attacker, "MANA");
+		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
+		if (manaatual >= manatotal / 2)
+			var damagemod := CInt(manaatual / 20);
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
+		endif
+	endif
 
+	return CInt(damage);
+endfunction
 
 function ApplyHab_KaniNoSutairu(attacker, defender, damage, damageType)
 	var resist := 0;
