@@ -9,6 +9,8 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include "include/utils";
 include ":tn:tngumps";
+include ":charactercreation:habilidades";
+include ":gumps:epicGumps";
 
 function UpdateXPBar(who)
    if (!GetObjProperty(who, "chardata")) 
@@ -159,17 +161,27 @@ endfunction
 
 // Handle level up effects and rewards
 function LevelUp(who)
+
+   
    var curr_level := CInt(GetObjProperty(who, "Level") + 1);
    SetObjProperty(who, "Level", curr_level);
+
    
    // Create scroll reward
    // if curr_level is even, give scroll, if is odd
    if (curr_level % 2 == 0)
+
       var scroll := CreateItemInBackpack(who, "pergaminho_"+curr_level);
-      SetObjProperty(scroll, "owner", who.serial);
-      scroll.color := 2117;
-      scroll.newbie := 1;
+      if (scroll)
+         SetObjProperty(scroll, "owner", who.serial);
+         scroll.color := 2117;
+         scroll.newbie := 1;
+
+      else
+
+      endif
    else
+
       var chardata := GetObjProperty(who, "chardata");
       var hp_up := 0;
       if (chardata.classe == GUERREIRO)
@@ -182,19 +194,92 @@ function LevelUp(who)
       var hitsmod := Cint(GetObjProperty(who, "hitsmod"));
       hitsmod := hitsmod + hp_up;
       SetObjProperty(who, "hitsmod",  hitsmod);
+    
       RecalcVitals(who);
    endif
 
    // Visual and audio effects
+
    PlaySoundEffect(who, 0x1F3);
    PlayObjectCenteredEffect(who, 0xB462, 10, 60);
    
    // Floating text
    PrintTextAbove(who, "*LEVEL UP!*", _DEFAULT_TEXT_FONT, 1152);
    AP_RefreshVitals(who);
+
    
    SendSysMessage(who, "Voce alcancou o nivel "+curr_level+"!");
    
+   // INCORPORANDO O GUMP DIRETAMENTE AQUI
+
+   
+   // Definir ID único para o gump
+   var gump_id := 0x1E7E1;
+    
+   // Fechar qualquer gump anterior com esse ID
+   CloseGump(who, gump_id);
+
+    
+   // Criar novo gump
+   var gump := GFCreateGump();
+   if (!gump)
+
+       return 1;
+   endif
+   
+   GFSetId(gump, gump_id);
+   GFClosable(gump, 1);
+   GFDisposable(gump, 0);
+   GFMovable(gump, 0);
+
+    
+   // Definir posição e tamanho
+   var width := 200;
+   var height := 100;
+   // Posição atualizada conforme solicitado
+   var x := 30;
+   var y := 40;
+    
+			// Adicionar imagens personalizadas
+			GFGumpPic(gump, x + 3, y + 7, 2520);
+			GFGumpPic(gump, x + 41, y + 6, 2521);
+			GFGumpPic(gump, x + 209, y + 6, 2522);
+			GFGumpPic(gump, x + 42, y + 42, 2527);
+			GFGumpPic(gump, x + 4, y + 41, 2526);
+			GFGumpPic(gump, x + 210, y + 42, 2528);
+			
+			// Adicionar texto
+			GFTextMid(gump, x + 45, y + 17, width, 1152, "LEVEL UP!");
+			GFTextMid(gump, x + 45, y + 37, width, 1152, "Clique para distribuir pontos");
+			
+    
+   // Adicionar botão que cobre toda a área
+   GFAddButton(gump, x + 30, y + 17, 2117, 2118, GF_CLOSE_BTN, 1);
+   
+   // Enviar gump para o jogador
+
+   var result := GFSendGump(who, gump);
+
+   
+   // Verificar se o botão foi clicado
+   if (result[0] == 1)
+
+       
+       // Definir constantes necessárias
+       var GUMP_WIDTH := 440;
+       var GUMP_HEIGHT := 565;
+       
+       // Criar o gump e mostrar a página de habilidades diretamente
+       var hab_gump := GFECreateGump("Menu de Habilidades", GUMP_WIDTH, GUMP_HEIGHT);
+       ShowHabilidadesPage(hab_gump, who);
+       AddNavigationBar(hab_gump, 2);
+       
+       // Enviar o gump para o jogador
+       var hab_result := GFSendGump(who, hab_gump);
+
+   endif
+   
+
    return 1;
 endfunction
 
