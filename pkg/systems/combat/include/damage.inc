@@ -669,11 +669,12 @@ function CheckDefenderHabsBeforeDamage(byref attacker, byref defender, damage, t
 	CheckHab_EspecialistaEscudos(attacker, defender, damage, type);
 	CheckHab_Furia(attacker, defender, damage, type);
 	CheckHab_ResilienciaBarbara(attacker, defender, damage, type);
+	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
 	CheckHab_VinculoElemental(attacker, defender, damage, type);
 	CheckHab_Backstab(attacker, defender, damage, type);
 	CheckHab_Charge(attacker, defender, damage, type);
 
-	resist := resist - damage; // Caso alguma hab precise saber quanto de dano foi reduzido.
+	
 
 	// var totaldamage := CInt(damage-resist); 
 	return damage < 1 ? 1 : damage; // Garante dano mínimo = 1.
