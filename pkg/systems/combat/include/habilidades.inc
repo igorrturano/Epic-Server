@@ -739,25 +739,47 @@ function CheckHab_Rebuke(byref attacker, byref defender, byref damage := 0, dama
 	return 0;
 endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
+		printtext(attacker, "*ataque infalivel*");
+		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+		armor := armor[ RandomInt( len( armor ) ) + 1];
+		PlayHitSounds(defender, attacker);
+		var dmg := CalculateRawDamage(attacker, attacker.weapon);
+		dmg := dmg*0.33;
+		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+		SkillChecks(attacker, defender, attacker.weapon, dmg);
 
-// 	return 0;
-// endfunction
+		return 1;
+	endif
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	return 0;
+endfunction
 
-// 	return 0;
-// endfunction
+function CheckHab_MestreDuelista(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (GetCooldown(attacker, "mestreduelista") > 0)
+		printtext(attacker, "*mestre duelista*");
+		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+		armor := armor[ RandomInt( len( armor ) ) + 1];
+		PlayHitSounds(defender, attacker);
+		var dmg := CalculateRawDamage(attacker, attacker.weapon);
+		dmg := dmg;
+		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+		SkillChecks(attacker, defender, attacker.weapon, dmg);
+		
+		return 1;
+	endif
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	return 0;
+endfunction
 
-// 	return 0;
-// endfunction
+function CheckHab_Insistencia(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (TemHabilidade(attacker, "Insistencia"))
+		SetObjProperty(attacker, "insistencia", 1);
+	endif
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
-
-// 	return 0;
-// endfunction
+	return 0;
+endfunction
 
 // function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
