@@ -504,7 +504,7 @@ endfunction
 // endfunction
 
 function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
-	SkillChecks( attacker, defender, wpn_a, 1 );
+	SkillChecks(attacker, defender, attacker.weapon, 1);
 
 	CheckHab_ArmaduraArcana(attacker, defender);
 	CheckHab_Ainalaith(attacker, defender);
@@ -544,37 +544,12 @@ function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
 	SkillChecks(attacker, defender, wpn_a, 1);
 	EraseObjProperty(attacker, "#shooting_effects");
 
-	if (TemHabilidade(attacker, "Insistencia"))
-		SetObjProperty(attacker, "insistencia", 1);
-	endif
+	CheckHab_AtaqueInfalivel(attacker, defender);
+	CheckHab_MestreDuelista(attacker, defender);
+	CheckHab_Insistencia(attacker, defender);
 
-	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
-		printtext(attacker, "*ataque infalivel*");
-		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-		armor := armor[ RandomInt( len( armor ) ) + 1];
-		PlayHitSounds(defender, attacker);
-		var dmg := CalculateRawDamage(attacker, attacker.weapon);
-		dmg := dmg*0.33;
-		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
-		SkillChecks(attacker, defender, wpn_a, dmg);
-	endif
+	ArrowRecovery(attacker, defender, wpn_a);
 
-	if (GetCooldown(attacker, "mestreduelista") > 0)
-		printtext(attacker, "*mestre duelista*");
-		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-		armor := armor[ RandomInt( len( armor ) ) + 1];
-		PlayHitSounds(defender, attacker);
-		var dmg := CalculateRawDamage(attacker, attacker.weapon);
-		dmg := dmg;
-		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
-		SkillChecks(attacker, defender, wpn_a, dmg);
-	endif
-
-	if ( wpn_a_elem.ProjectileType )
-		if(!attacker.npctemplate)
-			ArrowRecovery(attacker, defender, wpn_a);
-		endif
-	endif
 	EraseObjProperty(attacker, "movement");
 
 	if (GetObjProperty(attacker, "charge_damage"))
@@ -840,21 +815,25 @@ function CombatMsg(mobile, type, text, ssm_type := 0)
 endfunction
 
 function ArrowRecovery(attacker, defender, weapon)
-	var chance := 15;
-	if (TemHabilidade(attacker, "Recuperar Flechas"))
-		var chance := chance + 35;
-	endif
-	if ( RandomDiceRoll("1d100") <= chance )
-		var ammo := GetObjProperty(weapon, "ammo");
-		var y;
-		var x;
-		case (RandomInt(5))
-			1: y := RandomInt(3) * -1; x := RandomInt(3);
-			2: y := RandomInt(3); x := RandomInt(3) * -1;
-			3: y := RandomInt(3) * -1; x := RandomInt(3) * -1;
-			4: y := RandomInt(3); x := RandomInt(3);
-		endcase
-		CreateItemAtLocation(defender.x + x, defender.y + y, defender.z, GetObjType(ammo), 1, defender.realm);
+	if (wpn_a_elem.ProjectileType)
+		if(!attacker.npctemplate)
+			var chance := 15;
+			if (TemHabilidade(attacker, "Recuperar Flechas"))
+				var chance := chance + 35;
+			endif
+			if ( RandomDiceRoll("1d100") <= chance )
+				var ammo := GetObjProperty(weapon, "ammo");
+				var y;
+				var x;
+				case (RandomInt(5))
+					1: y := RandomInt(3) * -1; x := RandomInt(3);
+					2: y := RandomInt(3); x := RandomInt(3) * -1;
+					3: y := RandomInt(3) * -1; x := RandomInt(3) * -1;
+					4: y := RandomInt(3); x := RandomInt(3);
+				endcase
+				CreateItemAtLocation(defender.x + x, defender.y + y, defender.z, GetObjType(ammo), 1, defender.realm);
+			endif
+		endif
 	endif
 endfunction
 
