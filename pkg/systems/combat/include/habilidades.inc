@@ -1,7 +1,15 @@
-/* 
- * Este arquivo contém funções para gerenciar a aplicação das habilidades de combate.
+/***********************************
+ *
+ * habilidades.inc
+ *
+ * Created: 12/05/2025 13:15PM
+ * Updated: 12/05/2025 13:15PM
+ *
+ * Responsável por:
+ * Gerenciar a aplicar os cálculos das habilidades de combate.
  * Tanto as habilidades que possuem dano, como as que não.
- */
+ *
+ **********************************/
 
 // TODO: Ver futuramente se vai precisar criar um .inc para cada habilidade
 // TODO: Pensar se dá pra trocar o parâmetro damage := 0 por algo genérico, por exemplo: valRef (valor de referência para a habilidade)
@@ -10,6 +18,7 @@
 include "damage";
 include "hitchance";
 include "mainHitScript";
+include "include/epicMageryUtils"; // Remover isso daqui quando ajeitar a função cagada (magia) misturada com hab. Está aqui apenas pra poder compilar e testar
 
 enum HAB_TAGS
 	HAB_SUCCESS := "ATIVADA!",
@@ -76,6 +85,127 @@ function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, ty
 	CheckHab_RecuperacaoSalvadora(attacker, defender, damage, type);
 	CheckHab_Vinganca(attacker, defender, damage, type);
 	CheckHab_ChainOfPain(attacker, defender, damage, type);
+endfunction
+
+function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
+	SkillChecks(attacker, defender, attacker.weapon, 1);
+
+	CheckHab_ArmaduraArcana(attacker, defender);
+	CheckHab_Ainalaith(attacker, defender);
+	CheckHab_DeathDance(attacker, defender);
+	CheckHab_ConhecimentoSobreInimigo(attacker, defender);
+	CheckHab_DisparoMistico(attacker, defender);
+
+	// TODO: Refatorar para uma função de MAGIA (está misturado com habilidade)
+	var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
+	if ( elemental != error )
+		If(elemental.cargas >= 1)
+			var retorno := ConsumeArcaneCharges(attacker,1);
+			ApplyDamageHabElementalWeapon( attacker, defender, elemental.bonus, elemental.type , retorno.divisor);
+		endif
+	endif
+
+	return 1;
+endfunction
+
+function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
+	CheckHab_DesviarProjetil(attacker, defender);
+	CheckHab_DesviarDisparos(attacker, defender);
+	CheckHab_FerocidadeEnsanguentada(attacker, defender);
+	CheckHab_Evasao(attacker, defender);
+	CheckHab_ContraAtaque(attacker, defender);
+	CheckHab_Rebuke(attacker, defender);
+
+	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
+	if (GetObjProperty(defender, "#contraataquepoderoso"))
+		EraseObjProperty(defender, "#contraataquepoderoso");
+	endif
+
+	return 1;
+endfunction
+
+function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
+	SkillChecks(attacker, defender, attacker.weapon, 1);
+	EraseObjProperty(attacker, "#shooting_effects");
+
+	CheckHab_AtaqueInfalivel(attacker, defender);
+	CheckHab_MestreDuelista(attacker, defender);
+	CheckHab_Insistencia(attacker, defender);
+
+	ArrowRecovery(attacker, defender, attacker.weapon);
+
+	EraseObjProperty(attacker, "movement");
+
+	if (GetObjProperty(attacker, "charge_damage"))
+		EraseObjProperty(attacker, "charge_damage");
+	endif
+
+	return 1;
+endfunction
+
+function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
+	var oportunidade := 0;
+	if (GetObjProperty(defender, "#contraataquepoderoso"))
+		SetObjProperty(defender, "#contraataquepoderoso", (GetObjProperty(defender, "#contraataquepoderoso")+1) );
+	endif
+
+	if (TemHabilidade(defender, "Esquiva Acrobatica"))
+		SetObjProperty(defender, "#esquivaacrobatica", 1);
+	endif
+
+	if (GetObjProperty(defender, "maolivre") == 1)
+		EraseObjPRoperty(defender, "maolivre");
+		oportunidade := 1;
+	endif
+
+	if ( (GetCooldown(defender, "ataqueoportunidade") > 0) || oportunidade == 1)
+		if (Distance(attacker,defender)<=1 && defender.weapon.attributte != "Ranged")
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100)+1;
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, wpn_a, dmg);
+					oportunidade := 0;
+				endif
+
+				EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+
+		elseif(Distance(attacker,defender)>1 && defender.weapon.attributte == "Ranged")
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100)+1;
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, wpn_a, dmg);
+				endif
+
+				EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+		endif
+	endif
+
+
+	return 1;
 endfunction
 
 
