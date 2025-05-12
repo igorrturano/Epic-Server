@@ -15,7 +15,7 @@ include ":timedScripts:timedScripts";
 include ":commands:debugsystem";
 include ":combat:armorZones";
 include ":combat:combat";
-include ":combat:Habilidades/include/habilidades";
+include ":combat:habilidades";
 include ":equipsys:utils";
 include ":equipsys:props";
 include "include/epicNPCUtils";
@@ -308,8 +308,8 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 
 	// Mesmo sendo uma função VANILLA. Talvez esses CheckHab_ precisem ser trocados por CheckDefenderHabsBeforeDamage() e CheckDefenderHabsAfterDamage()
 	// Checa as habilidades antes do dano
-	totaldmg := CheckHab_Martir(0, defender, totaldmg, type);
-	totaldmg := CheckHab_MantoRothen(0, defender, totaldmg, type);
+	CheckHab_Martir(0, defender, totaldmg, type);
+	CheckHab_MantoRothen(0, defender, totaldmg, type);
 
 	// Aplica o dano
 	DisplayDamage(defender, totaldmg, source);
@@ -337,7 +337,7 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		totaldamage := CInt(EpicCalculateDamage(attacker, defender, armor, damage, type));
 	endif
 
-	totaldamage := CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
+	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
 
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
@@ -642,63 +642,6 @@ function getResistArmorByType(armor, type, attacker := 0x0, defender := 0x0)
 	endcase
 
 	return CInt(resist);
-endfunction
-
-/**
- * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * damage: Valor (em int) do dano.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsBeforeDamage(byref attacker, byref defender, damage, type)
-	var resist := damage;
-	
-	CheckHab_Martir(attacker, defender, damage, type);
-	CheckHab_MantoRothen(attacker, defender, damage, type);
-	CheckHab_KaniNoSutairu(attacker, defender, damage, type);
-	CheckHab_Exoesqueleto(attacker, defender, damage, type);
-	CheckHab_EspecialistaEscudos(attacker, defender, damage, type);
-	CheckHab_Furia(attacker, defender, damage, type);
-	CheckHab_ResilienciaBarbara(attacker, defender, damage, type);
-	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
-	CheckHab_VinculoElemental(attacker, defender, damage, type);
-	CheckHab_Backstab(attacker, defender, damage, type);
-	CheckHab_Charge(attacker, defender, damage, type);
-
-	
-
-	// var totaldamage := CInt(damage-resist); 
-	return damage < 1 ? 1 : damage; // Garante dano mínimo = 1.
-endfunction
-
-/**
- * CheckDefenderHabsAfterDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * damage: Valor (em int) do dano.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, type)
-	CheckHab_RecuperacaoSalvadora(attacker, defender, damage, type);
-	CheckHab_Vinganca(attacker, defender, damage, type);
-	CheckHab_ChainOfPain(attacker, defender, damage, type);
 endfunction
 
 function destroycraft(potion, who)
