@@ -5,8 +5,11 @@
 
 // TODO: Ver futuramente se vai precisar criar um .inc para cada habilidade
 // TODO: Pensar se dá pra trocar o parâmetro damage := 0 por algo genérico, por exemplo: valRef (valor de referência para a habilidade)
+	// TODO: Talvez seja melhor passar um struct como byRef. Dessa forma, cada função acessa o que lhe convém (e receber).
 
-include ":combat:damage";
+include "damage";
+include "hitchance";
+include "mainHitScript";
 
 enum HAB_TAGS
 	HAB_SUCCESS := "ATIVADA!",
@@ -112,8 +115,6 @@ function CheckHab_MantoRothen(byref attacker, byref defender, byref damage, dama
 
 	return 0;
 endfunction
-
-
 
 function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 	var HAB_NAME := "Recuperacao Salvadora";
@@ -572,6 +573,8 @@ function CheckHab_DisparoMistico(byref attacker, byref defender, byref damage :=
 endfunction
 
 function CheckHab_ContraAtaque(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	// TODO: Revisar se esse código realmente precisar calcular toda a estrutura do dano aqui...
+	
 	if (GetCooldown(defender, "contraataque") > 0)
 		if (GetObjProperty(defender, "#contraatacando") == error)
 			SetObjProperty(defender, "#contraatacando", 1);
@@ -587,9 +590,11 @@ function CheckHab_ContraAtaque(byref attacker, byref defender, byref damage := 0
 				var time := ReadGameClock();
 				var dmg := CalculateRawDamage(defender, defender.weapon);
 				var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-				SkillChecks(attacker, defender, wpn_a, dmg);
+				SkillChecks(attacker, defender, attacker.weapon, dmg);
 			endif
 			EraseObjProperty(defender, "#contraatacando");
+
+			return 1;
 		endif
 	endif
 	return 0;
@@ -633,6 +638,141 @@ function CheckHab_MaoLivre(byref attacker, byref defender, byref damage := 0, da
 
 	return 0;
 endfunction
+
+function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (GetCooldown(defender, "FerocidadeEnsanguentada"))
+		// if (IsRaging(defender))
+			if (GetObjProperty(defender, "#contraatacando") == error)
+				SetObjProperty(defender, "#contraatacando", 1);
+				PrintText(defender, "*contra ataque*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100);
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor := CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+				endif
+				EraseObjProperty(defender, "#contraatacando");
+
+				return 1;
+			endif
+		// endif
+	endif
+
+	return 0;
+endfunction
+
+function CheckHab_Evasao(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	// TODO: Passar rolldice e hitchance
+	// TODO: Talvez esse código não precise ser poluído desse jeito, calculando e executando toda a estrutura do ataque....
+		// TODO: Ver se dá pra executar o ataque através do Attack do combatHook...
+	// Os 2 valores estão 0 apenas pra poder compilar, mas a função tem que receber
+	var rolldice := 0;
+	var hitchance := 0;
+	
+	if (Cint(GetObjProperty(defender, "evasao")))
+		PrintText(defender, "*esquiva-se*");
+		EraseObjProperty(defender, "evasao");
+		if (TemHabilidade(defender, "Esquiva Oportunista"))
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100);
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, attacker.weapon, dmg);
+				endif
+
+			EraseObjProperty(defender, "#atacandooportunidade");
+			endif
+		endif
+
+		return 1;
+	elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((rolldice-hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
+		printtext(defender, "*esquiva com jogo de pés*");
+		if (TemHabilidade(defender, "Esquiva Oportunista"))
+			if (GetObjProperty(defender, "#atacandooportunidade") == error)
+				SetObjProperty(defender, "#atacandooportunidade", 1);
+				printtext(defender, "*ataque de oportunidade*");
+				//defender.attack_once(attacker);
+				var new_hit_chance := CalculateHitChance(defender, attacker);
+				var new_random := RandomInt(100);
+				PlayAttackAnimation(defender);
+				if ( new_random < new_hit_chance )
+					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+					armor := armor[ RandomInt( len( armor ) ) + 1];
+					PlayHitSounds(defender, attacker);
+					var time := ReadGameClock();
+					var dmg := CalculateRawDamage(defender, defender.weapon);
+					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+					SkillChecks(attacker, defender, attacker.weapon, dmg);
+				endif
+				EraseObjProperty(defender, "#atacandooportunidade");
+				return 1;
+			endif
+		endif
+	endif
+
+	return 0;
+endfunction
+
+function CheckHab_Rebuke(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (GetObjProperty(defender, "#campeaodivino"))
+        // Apply divine retaliation
+        Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{defender, attacker});
+		
+		return 1;
+    endif
+	return 0;
+endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
+
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+// 	return 0;
+// endfunction
 
 // function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 

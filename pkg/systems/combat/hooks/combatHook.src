@@ -527,108 +527,15 @@ endfunction
 function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 	CheckHab_DesviarProjetil(attacker, defender);
 	CheckHab_DesviarDisparos(attacker, defender);
+	CheckHab_FerocidadeEnsanguentada(attacker, defender);
+	CheckHab_Evasao(attacker, defender);
+	CheckHab_ContraAtaque(attacker, defender);
+	CheckHab_Rebuke(attacker, defender);
 
-	if (Cint(GetObjProperty(defender, "evasao")))
-		PrintText(defender, "*esquiva-se*");
-		EraseObjProperty(defender, "evasao");
-		if (TemHabilidade(defender, "Esquiva Oportunista"))
-			if (GetObjProperty(defender, "#atacandooportunidade") == error)
-				SetObjProperty(defender, "#atacandooportunidade", 1);
-				printtext(defender, "*ataque de oportunidade*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, wpn_a, dmg);
-				endif
-
-			EraseObjProperty(defender, "#atacandooportunidade");
-			endif
-		endif
-
-		return 0;
-	elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((rolldice-hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
-		printtext(defender, "*esquiva com jogo de pés*");
-		if (TemHabilidade(defender, "Esquiva Oportunista"))
-			if (GetObjProperty(defender, "#atacandooportunidade") == error)
-				SetObjProperty(defender, "#atacandooportunidade", 1);
-				printtext(defender, "*ataque de oportunidade*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, wpn_a, dmg);
-				endif
-				EraseObjProperty(defender, "#atacandooportunidade");
-			endif
-		endif
-	endif
-
-	
-
+	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
 	if (GetObjProperty(defender, "#contraataquepoderoso"))
 		EraseObjProperty(defender, "#contraataquepoderoso");
 	endif
-
-	if (GetCooldown(defender, "FerocidadeEnsanguentada"))
-		// if (IsRaging(defender))
-			if (GetObjProperty(defender, "#contraatacando") == error)
-				SetObjProperty(defender, "#contraatacando", 1);
-				PrintText(defender, "*contra ataque*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor := CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-				endif
-				EraseObjProperty(defender, "#contraatacando");
-			endif
-		// endif
-	endif
-
-	// CheckHab_ContraAtaque(attacker, defender);
-	if (GetCooldown(defender, "contraataque") > 0)
-		if (GetObjProperty(defender, "#contraatacando") == error)
-			SetObjProperty(defender, "#contraatacando", 1);
-			PrintTextAbove(defender, "*contra ataque*");
-			//defender.attack_once(attacker);
-			var new_hit_chance := CalculateHitChance(defender, attacker);
-			var new_random := RandomInt(100);
-			PlayAttackAnimation(defender);
-			if ( new_random < new_hit_chance )
-				var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-				armor := armor[ RandomInt( len( armor ) ) + 1];
-				PlayHitSounds(defender, attacker);
-				var time := ReadGameClock();
-				var dmg := CalculateRawDamage(defender, defender.weapon);
-				var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-				SkillChecks(attacker, defender, wpn_a, dmg);
-			endif
-			EraseObjProperty(defender, "#contraatacando");
-		endif
-	endif
-
-	paladinRebuke(attacker, defender);
 
 	return 1;
 endfunction
@@ -1054,10 +961,3 @@ endfunction
     
 // 	return 0;
 // endfunction
-
-function paladinRebuke(attacker, defender)
-    if (GetObjProperty(defender, "#campeaodivino"))
-        // Apply divine retaliation
-        Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{defender, attacker});
-    endif
-endfunction
