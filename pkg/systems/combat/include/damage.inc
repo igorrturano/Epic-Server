@@ -15,6 +15,7 @@ include ":timedScripts:timedScripts";
 include ":commands:debugsystem";
 include ":combat:armorZones";
 include ":combat:combat";
+include ":combat:Habilidades/include/habilidades";
 include ":equipsys:utils";
 include ":equipsys:props";
 include "include/epicNPCUtils";
@@ -305,44 +306,18 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 		SetScriptController(source);
 	endif
 
-	if (GetObjProperty(defender, "#martir"))
-		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
-		if (martir && !martir.dead)
-			defender := martir;
-		endif
-	endif
+	// Checa as habilidades antes do dano
+	totaldmg := CheckHab_Martir(0, defender, totaldmg, type);
+	totaldmg := CheckHab_MantoRothen(0, defender, totaldmg, type);
 
-	if (GetObjProperty(defender, "#mantorothen"))
-		var healed := cint(totaldmg*0.3);
-		totaldmg := totaldmg - healed;
-		var party := defender.party;
-		var amthealed := cint(healed/party.members.size());
-		if (amthealed < 1)
-			amthealed := 1;
-		endif
-		foreach member in (party.members)
-			HealDamage(member, amthealed);
-		endforeach
-	endif
-
+	// Aplica o dano
 	DisplayDamage(defender, totaldmg, source);
 	ApplyRawDamage(defender, totaldmg);
-
-	if (isBloodied(defender))
-		RecalcVitals(defender);
-		MakeBleed(defender);
-		if (getObjProperty(defender, "#recuperacaosalvadora"))
-			EraseObjProperty(defender, "#recuperacaosalvadora");
-			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
-			HealDamage(defender, CInt(GetPH(defender)/2));
-		endif
-	endif
-
 	SetLastDamageInfo(defender, totaldmg, type, source, spell);
 
-	if (GetObjProperty(defender, "#vinganca"))
-		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + totaldmg));
-	endif
+	// Checa as habilidades depois do dano
+	CheckHab_RecuperacaoSalvadora(0, defender, totaldmg, type);
+	CheckHab_Vinganca(0, defender, totaldmg, type);
 
 	if (defender.frozen)
 		defender.frozen := 0;
@@ -373,7 +348,6 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		defender.frozen := 0;
 	endif
 
-	// defender := defender;
 	return totaldamage;
 endfunction
 
@@ -684,86 +658,24 @@ endfunction
  * Return void
  *
  */
-function CheckDefenderHabsBeforeDamage(attacker, byref defender, damage, type)
-	var resist;
+function CheckDefenderHabsBeforeDamage(byref attacker, byref defender, damage, type)
+	var resist := damage;
 	
-	if (GetObjProperty(defender, "#martir"))
-		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
-		if (martir && !martir.dead)
-			defender := martir;
-		endif
-	endif
-	
-	if (GetObjProperty(defender, "#mantorothen"))
-		var healed := CInt(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
-		damage := damage - healed;
-		var party := defender.party;
-		var amthealed := CInt(healed/party.members.size());
-		if (amthealed < 1)
-			amthealed := 1;
-		endif
-		foreach member in (party.members)
-			HealDamage(member, amthealed);
-		endforeach
-	endif
+	CheckHab_Martir(attacker, defender, damage, type);
+	CheckHab_MantoRothen(attacker, defender, damage, type);
+	CheckHab_KaniNoSutairu(attacker, defender, damage, type);
+	CheckHab_Exoesqueleto(attacker, defender, damage, type);
+	CheckHab_EspecialistaEscudos(attacker, defender, damage, type);
+	CheckHab_Furia(attacker, defender, damage, type);
+	CheckHab_ResilienciaBarbara(attacker, defender, damage, type);
+	CheckHab_VinculoElemental(attacker, defender, damage, type);
+	CheckHab_Backstab(attacker, defender, damage, type);
+	CheckHab_Charge(attacker, defender, damage, type);
 
-	if (type == DMG_PHYSICAL || type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT)
-        if (TemHabilidade(defender, "Kani no Sutairu"))
-            resist += RandomDiceRoll("1d4");
-        endif
-		if (TemHabilidade(defender, "Exoesqueleto"))
-			resist += 2;
-		endif
-		if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
-			resist += RandomDiceRoll("1d4");
-		endif
-		if (GetCooldown(defender, "furia") && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
-			resist += RandomDiceRoll("1d4");
-        elseif (TemHabilidade(defender, "Resiliência Bárbara"))
-			resist += RandomDiceRoll("1d4");
-		elseif (TemHabilidade(defender, "Vínculo Elemental"))
-			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
-			if (GetCooldown(defender, "armor_drain") > 0)
-				arcane_armor += AP_GetSkill(defender, ARCANA)/30;
-				PlayObjectCenteredEffectEx(defender, 0x5454, 20, 20, 0);
-			endif
-			if (resist < arcane_armor)
-				resist := arcane_armor;
-				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
-			endif
-		endif
-		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
-			EraseObjProperty(attacker, "backstab");
-			EraseObjProperty(attacker.weapon, "backstab");
-			EraseObjProperty(attacker, "#nextcritical");
-			if (TemHabilidade(defender, "Sempre Alerta"))
-				TS_StartTimer(attacker, "paralysis", 5);
-				PrintTextAbove(defender, "*Sempre Alerta*");
-			else
-				ataqueFurtivo(attacker,defender);
-			endif
-		endif
-	endif
+	resist := resist - damage; // Caso alguma hab precise saber quanto de dano foi reduzido.
 
-	if (GetObjProperty(attacker, "charge_damage"))
-		damage += Cint(GetObjProperty(attacker, "charge_damage"));
-
-		if (hasAntiMountedWeapon(attacker, defender))
-			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
-			defender := attacker;
-			var resisted := CheckResist(defender, FORTITUDE, RESIST_MEDIUM);
-			if (!resisted)
-				TS_StartTimer(defender, "desmontar", 10);
-				TS_StartTimer(defender, "tombar", 5);
-				TS_StartTimer(defender, "paralysis", 5);
-			endif
-		endif
-
-		EraseObjProperty(attacker, "charge_damage");
-	endif
-
-	var totaldamage := CInt(damage-resist); 
-	return  totaldamage < 1? 1: totaldamage;//garante dano mínimo.
+	// var totaldamage := CInt(damage-resist); 
+	return damage < 1 ? 1 : damage; // Garante dano mínimo = 1.
 endfunction
 
 /**
@@ -782,56 +694,9 @@ endfunction
  *
  */
 function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, type)
-	if (isBloodied(defender))
-		RecalcVitals(defender);
-		MakeBleed(defender);
-		if (getObjProperty(defender, "#recuperacaosalvadora"))
-			EraseObjProperty(defender, "#recuperacaosalvadora");
-			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
-			HealDamage(defender, CInt(GetPH(defender)/2));
-		endif
-	endif
-
-	if (GetObjProperty(defender, "#vinganca"))
-		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
-	endif
-
-	if( GetObjProperty(defender, "#chainofpain") != error )
-		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
-			var copmobs := GetObjProperty(defender, "#chainserials");
-			var mage := SystemFindObjectBySerial( GetObjProperty(defender, "#mageserial"));
-			var copdefenders := array;
-			
-			// Get the higher skill between ARCANA and THEOLOGY
-			var arcana_skill := AP_GetSkill(mage, ARCANA);
-			var theology_skill := AP_GetSkill(mage, THEOLOGY);
-			var skill_value := (arcana_skill > theology_skill) ? arcana_skill : theology_skill;
-			var lvl := cdbl(skill_value/200);
-			
-			var originalDefenderSerial := defender.serial;  // Store original defender's serial
-
-			foreach serial in copmobs
-				// Only add other targets, not the original defender
-				if (serial != originalDefenderSerial)
-					var targ := SystemFindObjectBySerial(serial);
-					if (targ)
-						copdefenders.append(targ);
-					endif
-				endif
-			endforeach
-			
-			// Apply damage to connected targets (excluding original)
-			foreach opponent in copdefenders
-				var total := Cint(damage * lvl);
-				if (total < 1)
-					total := 1;
-				endif
-				DamageFLS(opponent, total, DMG_FORCED, mage);
-			endforeach
-
-			return 1;
-		endif
-	endif
+	CheckHab_RecuperacaoSalvadora(attacker, defender, damage, type);
+	CheckHab_Vinganca(attacker, defender, damage, type);
+	CheckHab_ChainOfPain(attacker, defender, damage, type);
 endfunction
 
 function destroycraft(potion, who)
