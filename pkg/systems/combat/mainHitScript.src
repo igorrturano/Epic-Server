@@ -973,7 +973,7 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 	endif
 
 	//Aplica o efeito da habilidade que deixa o defensor bloquear sempre
-	if (GetCooldown(defender, "barreiraindestrutivel"))
+	if (CheckHab_BarreiraIndestrutivel(attacker, defender))
 		parry_chance := 100;
 		parryDelay := 2;
 	endif
@@ -994,13 +994,14 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 			endif
 		endif
 
-		if (TemHabilidade(defender, "Ken no Tatsujin") && !defender.shield)
-			printtextabove(defender, "*Ken no Tatsujin*");
-			PlaySoundEffect(defender, 0x51f);
-			defender.attack_once(attacker);
-		elseif (TemHabilidade(defender, "Ken no Tatsujin") && defender.shield)
-			SendSysMessageEX(defender, "Você está usando escudo e falhou a habilidade", SSM_INFO);
-		endif
+		CheckHab_KenNoTatsujin(attacker, defender);
+		// if (TemHabilidade(defender, "Ken no Tatsujin") && !defender.shield)
+		// 	printtextabove(defender, "*Ken no Tatsujin*");
+		// 	PlaySoundEffect(defender, 0x51f);
+		// 	defender.attack_once(attacker);
+		// elseif (TemHabilidade(defender, "Ken no Tatsujin") && defender.shield)
+		// 	SendSysMessageEX(defender, "Você está usando escudo e falhou a habilidade", SSM_INFO);
+		// endif
 
 		//if (GetCooldown(defender, "defesarevigorante"))
 			//healdamage(defender, rawdamage);
@@ -1110,6 +1111,7 @@ function SacarRapido(who, shield := 0)
 
 endfunction
 
+// TODO: Migrar para habilidades.inc -> CheckHab_Trespassar()
 function Trespassar(attacker, defender)
 
 	if (GetObjProperty(attacker, "#trespassando") == 1)
@@ -1139,6 +1141,7 @@ function Trespassar(attacker, defender)
 
 endfunction
 
+// TODO: Migrar para habilidades.inc -> CheckHab_<NOMEDAHAB>()
 function disarmOpponent(attacker, defender)
 	if (TemHabilidade(defender, "Vínculo Elemental"))
 		if (GetObjProperty(defender.weapon, "#elementalweapon"))//seta com a arma
@@ -1164,6 +1167,7 @@ function disarmOpponent(attacker, defender)
 	endif
 endfunction
 
+// TODO: Migrar para habilidades.inc -> CheckHab_AtaqueFurtivo()
 function ataqueFurtivo(attacker, defender)
 	var weapon := attacker.weapon;
 	var weaponBow := 0;
