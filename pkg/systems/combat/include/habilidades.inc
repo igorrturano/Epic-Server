@@ -7,6 +7,7 @@
 // TODO: Pensar se dá pra trocar o parâmetro damage := 0 por algo genérico, por exemplo: valRef (valor de referência para a habilidade)
 
 include ":combat:damage";
+
 enum HAB_TAGS
 	HAB_SUCCESS := "ATIVADA!",
 	HAB_FAIL := "FALHOU!",
@@ -18,6 +19,62 @@ function IsPhysicalDamage(type)
 	else return 0;
 	endif
 endfunction
+
+/**
+ * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+ * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * damage: Valor (em int) do dano.
+ * 
+ * Return void
+ *
+ */
+function CheckDefenderHabsBeforeDamage(byref attacker, byref defender, damage, type)
+	var resist := damage;
+	
+	CheckHab_Martir(attacker, defender, damage, type);
+	CheckHab_MantoRothen(attacker, defender, damage, type);
+	CheckHab_KaniNoSutairu(attacker, defender, damage, type);
+	CheckHab_Exoesqueleto(attacker, defender, damage, type);
+	CheckHab_EspecialistaEscudos(attacker, defender, damage, type);
+	CheckHab_Furia(attacker, defender, damage, type);
+	CheckHab_ResilienciaBarbara(attacker, defender, damage, type);
+	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
+	CheckHab_VinculoElemental(attacker, defender, damage, type);
+	CheckHab_Backstab(attacker, defender, damage, type);
+	CheckHab_Charge(attacker, defender, damage, type);
+
+	// var totaldamage := CInt(damage-resist); 
+	return damage < 1 ? 1 : damage; // Garante dano mínimo = 1.
+endfunction
+
+/**
+ * CheckDefenderHabsAfterDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
+ * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * damage: Valor (em int) do dano.
+ * 
+ * Return void
+ *
+ */
+function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, type)
+	CheckHab_RecuperacaoSalvadora(attacker, defender, damage, type);
+	CheckHab_Vinganca(attacker, defender, damage, type);
+	CheckHab_ChainOfPain(attacker, defender, damage, type);
+endfunction
+
 
 function CheckHab_Martir(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 	var HAB_NAME := "Martir";
@@ -55,6 +112,8 @@ function CheckHab_MantoRothen(byref attacker, byref defender, byref damage, dama
 
 	return 0;
 endfunction
+
+
 
 function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 	var HAB_NAME := "Recuperacao Salvadora";
@@ -512,25 +571,68 @@ function CheckHab_DisparoMistico(byref attacker, byref defender, byref damage :=
 	return 0;
 endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_ContraAtaque(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (GetCooldown(defender, "contraataque") > 0)
+		if (GetObjProperty(defender, "#contraatacando") == error)
+			SetObjProperty(defender, "#contraatacando", 1);
+			PrintTextAbove(defender, "*contra ataque*");
+			//defender.attack_once(attacker);
+			var new_hit_chance := CalculateHitChance(defender, attacker);
+			var new_random := RandomInt(100);
+			PlayAttackAnimation(defender);
+			if ( new_random < new_hit_chance )
+				var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
+				armor := armor[ RandomInt( len( armor ) ) + 1];
+				PlayHitSounds(defender, attacker);
+				var time := ReadGameClock();
+				var dmg := CalculateRawDamage(defender, defender.weapon);
+				var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
+				SkillChecks(attacker, defender, wpn_a, dmg);
+			endif
+			EraseObjProperty(defender, "#contraatacando");
+		endif
+	endif
+	return 0;
+endfunction
 
-// 	return 0;
-// endfunction
+function CheckHab_DesviarProjetil(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (getObjProperty(defender, "#desviarprojetil"))
+		var item_cfg := ReadConfigFile(":combat:itemdesc");
+		if ((item_cfg[attacker.weapon.objtype]).Projectile)
+			PrintText(defender, "*esquiva-se*");
+			SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
+			SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
+			EraseObjProperty(defender, "#desviarprojetil");
+			return 1;
+		endif
+	endif
+	
+	return 0;
+endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_DesviarDisparos(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (getCooldown(defender, "desviardisparos") > 0)
+		var item_cfg := ReadConfigFile(":combat:itemdesc");
+		if ((item_cfg[attacker.weapon.objtype]).Projectile)
+			PrintText(defender, "*desvia o disparo*");
+			SendSysMessageEx(defender, "O projetil foi desviado para longe de voce.", SSM_INFO);
+			SendSysMessageEx(attacker, "Seu projetil foi desviado do alvo.", SSM_FAIL);
+			return 1;
+		endif
+	endif
 
-// 	return 0;
-// endfunction
+	return 0;
+endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_MaoLivre(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	if (GetObjProperty(defender, "maolivre") == 1)
+		EraseObjPRoperty(defender, "maolivre");
+		SetObjProperty(defender, "evasao", 1);
+		return 1;
+	endif
 
-// 	return 0;
-// endfunction
-
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
-
-// 	return 0;
-// endfunction
+	return 0;
+endfunction
 
 // function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
