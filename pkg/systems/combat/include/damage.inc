@@ -306,6 +306,7 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 		SetScriptController(source);
 	endif
 
+	// Mesmo sendo uma função VANILLA. Talvez esses CheckHab_ precisem ser trocados por CheckDefenderHabsBeforeDamage() e CheckDefenderHabsAfterDamage()
 	// Checa as habilidades antes do dano
 	totaldmg := CheckHab_Martir(0, defender, totaldmg, type);
 	totaldmg := CheckHab_MantoRothen(0, defender, totaldmg, type);
