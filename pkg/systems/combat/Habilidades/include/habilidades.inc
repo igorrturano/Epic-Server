@@ -4,8 +4,14 @@
  */
 
 // TODO: Ver futuramente se vai precisar criar um .inc para cada habilidade
+// TODO: Pensar se dá pra trocar o parâmetro damage := 0 por algo genérico, por exemplo: valRef (valor de referência para a habilidade)
 
 include ":combat:damage";
+enum HAB_TAGS
+	HAB_SUCCESS := "ATIVADA!",
+	HAB_FAIL := "FALHOU!",
+	HAB_COOLDOWN := "EM RECARGA!",
+endenum
 
 function IsPhysicalDamage(type)
 	if (type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT) return 1;
@@ -14,10 +20,13 @@ function IsPhysicalDamage(type)
 endfunction
 
 function CheckHab_Martir(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	var HAB_NAME := "Martir";
+	
 	if (GetObjProperty(defender, "#martir"))
 		var martir := SystemFindObjectBySerial(GetObjProperty(defender,"martirserial"));
 		if (martir && !martir.dead)
 			defender := martir;
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			return 1;
 		endif
 	endif
@@ -26,7 +35,10 @@ function CheckHab_Martir(byref attacker, byref defender, byref damage := 0, dama
 endfunction
 
 function CheckHab_MantoRothen(byref attacker, byref defender, byref damage, damageType := DMG_FORCED)
+	var HAB_NAME := "Manto de Rothen";
+	
 	if (GetObjProperty(defender, "#mantorothen"))
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 		var healed := CInt(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
 		damage := damage - healed;
 		var party := defender.party;
@@ -45,12 +57,15 @@ function CheckHab_MantoRothen(byref attacker, byref defender, byref damage, dama
 endfunction
 
 function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	var HAB_NAME := "Recuperacao Salvadora";
+	
 	if (isBloodied(defender))
 		RecalcVitals(defender);
 		MakeBleed(defender);
 		if (getObjProperty(defender, "#recuperacaosalvadora"))
 			EraseObjProperty(defender, "#recuperacaosalvadora");
 			SendSysMessageEx(defender, "Uma recuperacao salvadora salvou voce.", SSM_INFO);
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			HealDamage(defender, CInt(GetPH(defender)/2));
 			return 1;
 		endif
@@ -62,6 +77,7 @@ endfunction
 function CheckHab_Vinganca(byref attacker, defender, byref damage, damageType := DMG_FORCED)
 	if (GetObjProperty(defender, "#vinganca"))
 		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_SUCCESS}!");
 		return 1;
 	endif
 
@@ -110,13 +126,16 @@ function CheckHab_ChainOfPain(byref attacker, defender, byref damage, damageType
 endfunction
 
 function CheckHab_TaticasArcanas(byref attacker, byref defender, byref damage, damageType := DMG_FORCED)
-	if (TemHabilidade(attacker, "Taticas Arcanas"))
+	var HAB_NAME := "Taticas Arcanas";
+	
+	if (TemHabilidade(attacker, HAB_NAME))
 		var manaatual := AP_GetVital(attacker, "MANA");
 		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
 			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
+			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 			return 1;
 		endif
 	endif
@@ -125,10 +144,13 @@ function CheckHab_TaticasArcanas(byref attacker, byref defender, byref damage, d
 endfunction
 
 function CheckHab_BrigadorDeTaverna(byref attacker, defender, byref damage, damageType := DMG_FORCED)
-	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == 0x1F020)
+	var HAB_NAME := "Brigador de Taverna";
+	
+	if (TemHabilidade(attacker, HAB_NAME) && attacker.weapon.objtype == 0x1F020)
 		var damagemod := 2;
 		damage += damagemod;
-		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
+		DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+		DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 		return 1;
 	endif
 
@@ -136,11 +158,14 @@ function CheckHab_BrigadorDeTaverna(byref attacker, defender, byref damage, dama
 endfunction
 
 function CheckHab_KaniNoSutairu(byref attacker, defender, byref damage, damageType := DMG_FORCED)
+	var HAB_NAME := "Kani no Sutairu";
+	
 	if (IsPhysicalDamage(damageType))
-		if (TemHabilidade(defender, "Kani no Sutairu"))
+		if (TemHabilidade(defender, HAB_NAME))
 			var resist := RandomDiceRoll("1d4");
 			damage -= resist;
-			DebugMsg(defender, DEBUG_DAMAGE, "Defesa de Habilidade[Kani No Sutairu]: " + CInt(resist));
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
 	endif
@@ -149,11 +174,14 @@ function CheckHab_KaniNoSutairu(byref attacker, defender, byref damage, damageTy
 endfunction
 
 function CheckHab_Exoesqueleto(byref attacker, byref defender, byref damage, damageType)
+	var HAB_NAME := "Exoesqueleto";
+
 	if (IsPhysicalDamage(damageType))
-		if (TemHabilidade(defender, "Exoesqueleto"))
+		if (TemHabilidade(defender, HAB_NAME))
 			var resist := 2;
 			damage -= resist;
-			DebugMsg(defender, DEBUG_DAMAGE, "Defesa de Habilidade[Exoesqueleto]: " + CInt(resist));
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
 	endif
@@ -162,9 +190,14 @@ function CheckHab_Exoesqueleto(byref attacker, byref defender, byref damage, dam
 endfunction
 
 function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byref damage, damageType)
+	var HAB_NAME := "Especialista em Escudos";
+	
 	if (IsPhysicalDamage(damageType))
-		if (TemHabilidade(defender, "Especialista em Escudos") && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
-			damage -= RandomDiceRoll("1d4");
+		if (TemHabilidade(defender, HAB_NAME) && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
+			var resist := RandomDiceRoll("1d4");
+			damage -= resist;
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
 	endif
@@ -188,9 +221,14 @@ function CheckHab_Backstab(byref attacker, byref defender, byref damage, damageT
 endfunction
 
 function CheckHab_Furia(byref attacker, byref defender, byref damage := 0, damageType)
+	var HAB_NAME := "Furia";
+	
 	if (IsPhysicalDamage(damageType))
 		if (GetCooldown(attacker, "furia"))
-			damage += RandomDiceRoll("1d4");
+			var damagemod := RandomDiceRoll("1d4");
+			damage += damagemod;
+			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 			return 1;
 		endif
 	endif
@@ -199,11 +237,18 @@ function CheckHab_Furia(byref attacker, byref defender, byref damage := 0, damag
 endfunction
 
 function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byref damage := 0, damageType)
+	var HAB_NAME := "Resiliência Bárbara";
+	
 	if (IsPhysicalDamage(damageType))
-		if (CheckHab_Furia(defender, 0, 0, damageType) && TemHabilidade(defender, "Resiliência Bárbara")) // Antigo Pele de Rocha
-			damage -= RandomDiceRoll("1d4");
+		if (CheckHab_Furia(defender, 0, 0, damageType) && TemHabilidade(defender, HAB_NAME)) // Antigo Pele de Rocha
+			var resist := RandomDiceRoll("1d4");
+			damage -= resist;
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
 		endif
+	else
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_FAIL}!");
 	endif
 
 	return 0;
@@ -220,6 +265,8 @@ function CheckHab_SempreAlerta(byref attacker, byref defender, byref damage := 0
 endfunction
 
 function CheckHab_Charge(byref attacker, byref defender, byref damage := 0, damageType)
+	var HAB_NAME := "Charge";
+	
 	if (GetObjProperty(attacker, "charge_damage"))
 		damage += Cint(GetObjProperty(attacker, "charge_damage"));
 
@@ -241,8 +288,11 @@ function CheckHab_Charge(byref attacker, byref defender, byref damage := 0, dama
 endfunction
 
 function CheckHab_VinculoElemental(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	var HAB_NAME := "Vínculo Elemental";
+	
 	if (IsPhysicalDamage(damageType))
-		if (TemHabilidade(defender, "Vínculo Elemental"))
+		if (TemHabilidade(defender, HAB_NAME))
+			var resist := 0; // TODO: Rever se esse valor vai ser assim, ou se a função vai precisar receber um parâmetro com o valor resistido até agora.
 			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
 			if (GetCooldown(defender, "armor_drain") > 0)
 				arcane_armor += AP_GetSkill(defender, ARCANA)/30;
@@ -252,6 +302,11 @@ function CheckHab_VinculoElemental(byref attacker, byref defender, byref damage 
 				resist := arcane_armor;
 				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
 			endif
+
+			damage -= resist;
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
+
 			return 1;
 		endif
 	endif
@@ -260,15 +315,19 @@ function CheckHab_VinculoElemental(byref attacker, byref defender, byref damage 
 endfunction
 
 function CheckHab_KenNoTatsujin(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
-	if (TemHabilidade(defender, "Ken no Tatsujin"))
+	var HAB_NAME := "Ken no Tatsujin";
+	
+	if (TemHabilidade(defender, HAB_NAME))
 		if (!defender.shield)
-			printtextabove(defender, "*Ken no Tatsujin*");
+			printtextabove(defender, $"*{HAB_NAME}*");
 			PlaySoundEffect(defender, 0x51f);
 			defender.attack_once(attacker);
 
+			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
+
 			return 1;
 		else
-			SendSysMessageEX(defender, "Você está usando escudo e falhou a habilidade", SSM_INFO);
+			SendSysMessageEX(defender, $"Você está usando escudo e falhou {HAB_NAME}", SSM_INFO);
 		endif;
 	endif
 
@@ -353,22 +412,30 @@ function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byref damage := 
 endfunction
 
 function CheckHab_ArmaduraArcana(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+	var HAB_NAME := "Armadura Arcana";
+	var HAB_TYPE;
 	var dist := Distance( attacker, defender );
 	
 	if (GetCooldown(defender, "freeze_enemy") && dist == 1 )
+		var HAB_TYPE := "Congelamento";
 		PlaySoundEffect(attacker, 0x65b);
 		PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 60, GELO, 0);
 		TS_Starttimer(attacker, "congelamento", 5);
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
 		return 1;
 	elseif (GetCooldown(defender, "incinerate_enemy") && dist == 1)
+		var HAB_TYPE := "Incinerar";
 		PlaySoundEffect(attacker, 0x5D0);
 		PlayObjectCenteredEffect(attacker, 0x6d77, 7, 60);
 		TS_Starttimer(attacker, "queimar", 5, 1, defender);
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
 		return 1;
 	elseif (GetCooldown(defender, "move_speed")) // Raio é pra ser acertado por flecha e ir mais rapido até o arqueiro
+		var HAB_TYPE := "SEI LA QUE NOME E ESSE... PRINTA ISSO PRO GM AI!";
 		PlaySoundEffect(attacker, 0x5CF);
 		PlayObjectCenteredEffect(defender, 0xcdaf, 7, 30);
 		TS_StartTimer(defender, "velocidade", 5);
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
 		return 1;
 	endif
 
@@ -376,7 +443,10 @@ function CheckHab_ArmaduraArcana(byref attacker, byref defender, byref damage :=
 endfunction
 
 function CheckHab_Ainalaith(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
-	if ( TemHabilidade( attacker, "Ainalaith" ) )
+	var HAB_NAME := "Ainalaith";
+	var HAB_TYPE;
+	
+	if (TemHabilidade(attacker, HAB_NAME))
 		var arrow_effects := GetObjProperty( attacker, "#shooting_effects" );
 		if ( !arrow_effects )
 			arrow_effects := struct;
@@ -388,10 +458,13 @@ function CheckHab_Ainalaith(byref attacker, byref defender, byref damage := 0, d
 		var arrow_type := "";
 		if ( GetObjProperty( attacker.weapon, "fire_arrow" ) )
 			arrow_type := "fire_arrow";
+			HAB_TYPE := "Flecha de Fogo";
 		elseif ( GetObjProperty( attacker.weapon, "cold_arrow" ) )
 			arrow_type := "cold_arrow";
+			HAB_TYPE := "Flecha de Gelo";
 		elseif ( GetObjProperty( attacker.weapon, "energy_arrow" ) )
 			arrow_type := "energy_arrow";
+			HAB_TYPE := "Flecha de Energia";
 		endif
 
 		if ( arrow_type != "" )
@@ -401,6 +474,8 @@ function CheckHab_Ainalaith(byref attacker, byref defender, byref damage := 0, d
 
 			SetObjProperty( attacker, "#shooting_effects", arrow_effects );
 		endif
+
+		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME} ({HAB_TYPE})]: {HAB_SUCCESS}!");
 
 		return 1;
 	endif
@@ -437,38 +512,38 @@ function CheckHab_DisparoMistico(byref attacker, byref defender, byref damage :=
 	return 0;
 endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
-function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
 
-	return 0;
-endfunction
+// 	return 0;
+// endfunction
 
