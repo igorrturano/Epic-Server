@@ -9,6 +9,7 @@ include ":gumps:include/epicGumps";
 include ":epicspawn:epicBoss";
 include ":epicspawn:epicCombatEvents";
 include ":epicspawn:epicDeathEvents";
+include ":combat:damage";
 
 // Constants for button IDs and menu pages
 const BOTAO_PAGE1 := 1;
@@ -863,26 +864,45 @@ function ShowPage3(who, title, gump_width, gump_height)
     // Add a divider line
     GFResizePic(gump, 40, 340, 3000, gump_width - 80, 2);
     
-    // TimedScripts section
-    GFTextLine(gump, 50, 350, 1153, "TimedScripts:");
+    // Natural Properties section
+    GFTextLine(gump, 50, 350, 1153, "Natural Traits:");
     GFAddButton(gump, 250, 350, 2103, 2104, GF_CLOSE_BTN, 20);
-    GFTextLine(gump, 280, 350, 1153, "Add TimedScript");
+    GFTextLine(gump, 280, 350, 1153, "Add Natural Traits");
     
-    // Display chosen timedscripts
+    // Display existing natural traits
     y_pos := 380;
-    if (form_data.timedscripts && form_data.timedscripts.size() > 0)
-        foreach script in (form_data.timedscripts)
-            GFTextLine(gump, 80, y_pos, 1153, "- " + script.name + " (Target: " + script.target + 
-                      ", Duration: " + script.duration + "s, Level: " + script.level + ")");
+    if (form_data.natural_traits)
+        // Display immunities
+        if (form_data.natural_traits.immunities && form_data.natural_traits.immunities.size() > 0)
+            GFTextLine(gump, 80, y_pos, 33, "Immunities:");
             y_pos += 20;
-        endforeach
-    else
-        // List of available timedscripts examples
-        GFTextLine(gump, 80, 380, 1153, "- Poison");
-        GFTextLine(gump, 80, 400, 1153, "- Paralysis");
-        GFTextLine(gump, 80, 420, 1153, "- Clumsy");
-        GFTextLine(gump, 80, 440, 1153, "- Weaken");
-        GFTextLine(gump, 80, 460, 1153, "- Bleed");
+            foreach trait in (form_data.natural_traits.immunities)
+                GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
+                y_pos += 20;
+            endforeach
+            y_pos += 10; // Add some spacing between sections
+        endif
+        
+        // Display resistances
+        if (form_data.natural_traits.resistances && form_data.natural_traits.resistances.size() > 0)
+            GFTextLine(gump, 80, y_pos, 33, "Resistances:");
+            y_pos += 20;
+            foreach trait in (form_data.natural_traits.resistances)
+                GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
+                y_pos += 20;
+            endforeach
+            y_pos += 10; // Add some spacing between sections
+        endif
+        
+        // Display vulnerabilities
+        if (form_data.natural_traits.vulnerabilities && form_data.natural_traits.vulnerabilities.size() > 0)
+            GFTextLine(gump, 80, y_pos, 33, "Vulnerabilities:");
+            y_pos += 20;
+            foreach trait in (form_data.natural_traits.vulnerabilities)
+                GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
+                y_pos += 20;
+            endforeach
+        endif
     endif
     
     // Death Events section
@@ -930,8 +950,8 @@ function ShowPage3(who, title, gump_width, gump_height)
     elseif (input[0] == 11) // Add Armor Special Ability
         HandleAddArmorSpecialAbility(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
-    elseif (input[0] == 20) // Add TimedScript
-        HandleAddTimedScript(who, input, form_data);
+    elseif (input[0] == 20) // Add Resistances
+        HandleNaturalTraits(who, input, form_data);
         return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
     elseif (input[0] == 30) // Add Death Event
         HandleAddDeathEvent(who, input, form_data);
@@ -1874,6 +1894,10 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         boss.teleport_health := CInt(form_data.teleport_health);
     endif
 
+    if (form_data.natural_traits && form_data.natural_traits.size() > 0)
+        boss.natural_traits := form_data.natural_traits;
+    endif
+
     // Check if we're updating an existing spawner or creating a new one
     var spawner;
     if (existing_spawner)
@@ -1954,235 +1978,192 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     return 1;
 endfunction
 
-function HandleAddTimedScript(who, input, byref form_data)
-    var timedscripts := GetTimedScripts();
+function HandleNaturalTraits(who, input, byref form_data)
+    // Initialize traits if not exists
+    if (!form_data.natural_traits)
+        form_data.natural_traits := struct{
+            "immunities" := array{},
+            "resistances" := array{},
+            "vulnerabilities" := array{}
+        };
+    endif
     
-    // Create a gump with the same style as in the screenshot
+    var done := 0;
+    while (!done)
+        var gump := GFCreateGump();
+        GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700);
+        GFResizePic(gump, 15, 15, 9350, 470, 670);
+        
+        GFTextMid(gump, 0, 25, 500, 1153, "Natural Traits Configuration");
+        
+        // Display current traits
+        var y_pos := 60;
+        
+        // Show Immunities
+        GFTextLine(gump, 50, y_pos, 1153, "Current Immunities:");
+        y_pos += 20;
+        foreach immunity in (form_data.natural_traits.immunities)
+            GFTextLine(gump, 70, y_pos, 66, "- " + immunity);
+            // Add remove button
+            GFAddButton(gump, 50, y_pos, 30008, 30009, GF_CLOSE_BTN, 100 + _immunity_iter);
+            y_pos += 20;
+        endforeach
+        
+        y_pos += 20;
+        
+        // Show Resistances
+        GFTextLine(gump, 50, y_pos, 1153, "Current Resistances:");
+        y_pos += 20;
+        foreach resistance in (form_data.natural_traits.resistances)
+            GFTextLine(gump, 70, y_pos, 66, "- " + resistance);
+            // Add remove button
+            GFAddButton(gump, 50, y_pos, 30008, 30009, GF_CLOSE_BTN, 200 + _resistance_iter);
+            y_pos += 20;
+        endforeach
+        
+        y_pos += 20;
+        
+        // Show Vulnerabilities
+        GFTextLine(gump, 50, y_pos, 1153, "Current Vulnerabilities:");
+        y_pos += 20;
+        foreach vulnerability in (form_data.natural_traits.vulnerabilities)
+            GFTextLine(gump, 70, y_pos, 66, "- " + vulnerability);
+            // Add remove button
+            GFAddButton(gump, 50, y_pos, 30008, 30009, GF_CLOSE_BTN, 300 + _vulnerability_iter);
+            y_pos += 20;
+        endforeach
+        
+        y_pos += 40;
+        
+        // Add new trait buttons
+        GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, 80, y_pos, 1153, "Add Immunity");
+        
+        y_pos += 30;
+        GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, 2);
+        GFTextLine(gump, 80, y_pos, 1153, "Add Resistance");
+        
+        y_pos += 30;
+        GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, 3);
+        GFTextLine(gump, 80, y_pos, 1153, "Add Vulnerability");
+        
+        // Done and Cancel buttons
+        GFAddButton(gump, 50, 650, 2128, 2129, GF_CLOSE_BTN, 998);
+        GFAddButton(gump, 200, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+        
+        var result := GFSendGump(who, gump);
+        
+        case (result[0])
+            1: // Add Immunity
+                var trait := SelectTraitType(who, "Immunity", form_data);
+                if (trait)
+                    // Check if this trait already has a different type
+                    if (TraitExistsInOtherTypes(trait, "immunity", form_data))
+                        SendSysMessage(who, "This trait already exists as a different type!", color := 33);
+                    else
+                        form_data.natural_traits.immunities.append(trait);
+                    endif
+                endif
+            
+            2: // Add Resistance
+                var trait := SelectTraitType(who, "Resistance", form_data);
+                if (trait)
+                    if (TraitExistsInOtherTypes(trait, "resistance", form_data))
+                        SendSysMessage(who, "This trait already exists as a different type!", color := 33);
+                    else
+                        form_data.natural_traits.resistances.append(trait);
+                    endif
+                endif
+            
+            3: // Add Vulnerability
+                var trait := SelectTraitType(who, "Vulnerability", form_data);
+                if (trait)
+                    if (TraitExistsInOtherTypes(trait, "vulnerability", form_data))
+                        SendSysMessage(who, "This trait already exists as a different type!", color := 33);
+                    else
+                        form_data.natural_traits.vulnerabilities.append(trait);
+                    endif
+                endif
+            
+            998: // Done
+                done := 1;
+            
+            999: // Cancel
+                return 0;
+            
+            default:
+                if (result[0] >= 100 && result[0] < 200) // Remove immunity
+                    var idx := result[0] - 100;
+                    form_data.natural_traits.immunities.erase(idx);
+                elseif (result[0] >= 200 && result[0] < 300) // Remove resistance
+                    var idx := result[0] - 200;
+                    form_data.natural_traits.resistances.erase(idx);
+                elseif (result[0] >= 300 && result[0] < 400) // Remove vulnerability
+                    var idx := result[0] - 300;
+                    form_data.natural_traits.vulnerabilities.erase(idx);
+                endif
+        endcase
+    endwhile
+    
+    return 1;
+endfunction
+
+function SelectTraitType(who, trait_type, byref form_data)
     var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700); // Increased height further
-    GFResizePic(gump, 15, 15, 9350, 470, 670); // Increased height further
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700);
+    GFResizePic(gump, 15, 15, 9350, 470, 670);
     
-    GFTextMid(gump, 0, 25, 500, 1153, "Select TimedScript");
+    GFTextMid(gump, 0, 25, 500, 1153, "Select " + trait_type + " Type");
+    
+    var options := array{
+        "DMG_PHYSICAL",
+        "DMG_SLASH",
+        "DMG_PIERCING", 
+        "DMG_BLUNT",
+        "DMG_FIRE",
+        "DMG_COLD",
+        "DMG_POISON",
+        "DMG_ENERGY",
+        "Backstab",
+        "Spells"
+    };
     
     var y_pos := 60;
     var counter := 1;
     
-    // Create a dictionary of descriptions for each timedscript
-    var descriptions := GetTimedScriptDescriptions();
-    
-    foreach script in timedscripts
-        // Use blue gem buttons as shown in the screenshot
-        GFAddButton(gump, 30, y_pos, 2104, 2103, GF_CLOSE_BTN, counter);
-        GFTextLine(gump, 60, y_pos, 1153, script);
-        
-        // Add tooltip if description exists
-        if (descriptions.exists(script))
-            GFTooltipText(gump, descriptions[script]);
-        endif
-        
-        y_pos += 20;
+    foreach option in options
+        GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, counter);
+        GFTextLine(gump, 80, y_pos, 1153, option);
+        y_pos += 30;
         counter += 1;
     endforeach
     
-    // Add Cancel button at the bottom right
-    GFAddButton(gump, 400, 630, 4017, 4019, GF_CLOSE_BTN, 999);
+    // Add cancel button
+    GFAddButton(gump, 200, 650, 2119, 2120, GF_CLOSE_BTN, 0);
     
-    var result := GFSendGump(who, gump);
-       
-    // Check for the cancel button (result[0] == 999)
-    if (result[0] == 999)
-        SendSysMessage(who, "TimedScript selection cancelled.");
-        return 0; // User canceled
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 0)
+        return 0;
     endif
     
-    if (result[0] == 0)
-        SendSysMessage(who, "TimedScript selection cancelled.");
-        return 0; // User canceled
+    return options[input[0]];
+endfunction
+
+function TraitExistsInOtherTypes(trait, current_type, form_data)
+    if (current_type != "immunity" && trait in form_data.natural_traits.immunities)
+        return 1;
     endif
     
-    var selected_script := timedscripts[result[0]];
+    if (current_type != "resistance" && trait in form_data.natural_traits.resistances)
+        return 1;
+    endif
     
-    // Now display options for the selected script
-    var config_result := DisplayTimedScriptOptions(who, input, selected_script, form_data);
-    
-    // Only return success if the configuration was completed successfully
-    if (config_result)
+    if (current_type != "vulnerability" && trait in form_data.natural_traits.vulnerabilities)
         return 1;
     endif
     
     return 0;
-endfunction
-
-// Function to get descriptions for each timedscript
-function GetTimedScriptDescriptions()
-    var descriptions := dictionary{
-        "defaultPoison" -> "Applies poison damage over time",
-        "hallucination" -> "Causes visual hallucinations and confusion",
-        "paralysis" -> "Temporarily paralyzes the target",
-        "clumsy" -> "Reduces target's dexterity",
-        "feeblemind" -> "Reduces target's intelligence",
-        "weaken" -> "Reduces target's strength",
-        "atrasarmagias" -> "Delays spell casting",
-        "fugademana" -> "Drains mana over time",
-        "staminaPoison" -> "Drains stamina over time",
-        "manaPoison" -> "Drains mana over time",
-        "bleed" -> "Causes bleeding damage over time",
-        "darkborer" -> "Applies a powerful poison effect",
-        "agility" -> "Increases dexterity",
-        "strength" -> "Increases strength",
-        "invis" -> "Makes the target invisible",
-        "desviarprojetil" -> "Chance to avoid projectile attacks",
-        "dmgreduction" -> "Reduces incoming damage",
-        "evasao" -> "Increases chance to dodge attacks",
-        "precisao" -> "Increases hit chance",
-        "phmod" -> "Modifies physical resistance",
-        "fimod" -> "Modifies fire resistance",
-        "comod" -> "Modifies cold resistance",
-        "pomod" -> "Modifies poison resistance",
-        "enmod" -> "Modifies energy resistance"
-    };
-    
-    return descriptions;
-endfunction
-
-// Get all available timedscripts
-function GetTimedScripts()
-    return array{
-        "defaultPoison",
-        "hallucination",
-        "paralysis",
-        "clumsy",
-        "feeblemind",
-        "weaken",
-        "atrasarmagias",
-        "fugademana",
-        "staminaPoison",
-        "manaPoison",
-        "bleed",
-        "darkborer",
-        "agility",
-        "strength",
-        "invis",
-        "desviarprojetil",
-        "dmgreduction",
-        "evasao",
-        "precisao",
-        "phmod",
-        "fimod",
-        "comod",
-        "pomod",
-        "enmod"
-    };
-endfunction
-
-function DisplayTimedScriptOptions(who, input, script_name, byref form_data)
-    // Create a gump with the same style as in the screenshot
-    var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 550); // Increased height
-    GFResizePic(gump, 15, 15, 9350, 470, 520); // Increased height
-    
-    GFTextMid(gump, 0, 25, 500, 1153, "Configure " + script_name);
-    
-    var y_pos := 60;
-    
-    // Target selection
-    GFTextLine(gump, 30, y_pos, 1153, "Target:");
-    y_pos += 30;
-    
-    // Radio buttons for target selection - using proper radio buttons
-    // Default to "Self" selected
-    GFRadioButton(gump, 30, y_pos, 210, 211, 1, 1001);
-    GFTextLine(gump, 60, y_pos, 1153, "Self");
-    
-    GFRadioButton(gump, 150, y_pos, 210, 211, 0, 1002);
-    GFTextLine(gump, 180, y_pos, 1153, "Opponent");
-    
-    GFRadioButton(gump, 300, y_pos, 210, 211, 0, 1003);
-    GFTextLine(gump, 330, y_pos, 1153, "All Opponents");
-    
-    y_pos += 40;
-    
-    // Duration
-    GFTextLine(gump, 30, y_pos, 1153, "Duration (seconds, max 120):");
-    y_pos += 30;
-    GFTextEntry(gump, 30, y_pos, 100, 20, 1153, "30", 1004);
-    
-    y_pos += 40;
-    
-    // Level
-    GFTextLine(gump, 30, y_pos, 1153, "Level (1-5):");
-    y_pos += 30;
-    GFTextEntry(gump, 30, y_pos, 100, 20, 1153, "1", 1005);
-    
-    y_pos += 50;
-    
-    // Use the same button style as page 5
-    GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 10); // Confirm button - returns 10
-    GFTextLine(gump, 70, y_pos, 1153, "Confirm");
-    
-    // Cancel button
-    GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999); // Cancel button - returns 999
-    GFTextLine(gump, 240, y_pos, 1153, "Cancel");
-    
-    var result := GFSendGump(who, gump);
-   
-    // Check for the cancel button (result[0] == 999)
-    if (result[0] == 999)
-        SendSysMessage(who, "TimedScript configuration cancelled.");
-        return 0; // User canceled
-    endif
-    
-    // Only proceed if the confirm button was clicked (result[0] == 10)
-    if (result[0] != 10)
-        SendSysMessage(who, "Unexpected result: " + result[0]);
-        return 0;
-    endif
-    
-    // Determine which target was selected
-    var targ := "";
-    if (result[1001])
-        targ := "Self";
-    elseif (result[1002])
-        targ := "Opponent";
-    elseif (result[1003])
-        targ := "All Opponents";
-    else
-        SendSysMessage(who, "Error: No target selected.");
-        return 0;
-    endif
-    
-    // Extract duration and level
-    var duration := CInt(GFExtractData(result, 1004));
-    if (duration <= 0 || duration > 120)
-        SendSysMessage(who, "Error: Duration must be between 1 and 120 seconds.");
-        return 0;
-    endif
-    
-    var level := CInt(GFExtractData(result, 1005));
-    if (level <= 0 || level > 5)
-        SendSysMessage(who, "Error: Level must be between 1 and 5.");
-        return 0;
-    endif
-    
-    // Add the timedscript to the form_data structure
-    if (!form_data.timedscripts)
-        form_data.+timedscripts := array{};
-    endif
-    
-    var script_struct := struct{};
-    script_struct.+name := script_name;
-    script_struct.+target := targ;
-    script_struct.+duration := duration;
-    script_struct.+level := level;
-    
-    // Debug message to verify the structure
-    SendSysMessage(who, "DEBUG: Adding timedscript: " + script_name + " targeting " + targ + 
-                  " with duration " + duration + " and level " + level);
-    
-    form_data.timedscripts.append(script_struct);
-    SendSysMessage(who, "Added " + script_name + " to timedscripts.");
-    
-    return 1;
 endfunction
 
 function SelectTeleportLocations(who, byref form_data)
@@ -2298,6 +2279,72 @@ function SelectPatrolArea(who, byref form_data)
     
     form_data.patrol_points.append(patrol_point);
     SendSysMessage(who, "Patrol point added: " + targ.x + ", " + targ.y + ", " + targ.z);
+    
+    return 1;
+endfunction
+
+function SelectDamageType(who, nature_type, byref form_data)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700);
+    GFResizePic(gump, 15, 15, 9350, 470, 670);
+    
+    GFTextMid(gump, 0, 25, 500, 1153, "Selecione o Tipo de Dano para " + nature_type);
+    
+    var y_pos := 60;
+    var counter := 1;
+    
+    foreach damage_type in (array{DMG_PHYSICAL, DMG_SLASH, DMG_PIERCING, DMG_BLUNT, DMG_FIRE, DMG_COLD, DMG_POISON, DMG_ENERGY})
+        GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, counter);
+        GFTextLine(gump, 80, y_pos, 1153, damage_type);
+        y_pos += 30;
+        counter += 1;
+    endforeach
+    
+    // Add a cancel button
+    GFAddButton(gump, 200, 650, 2119, 2120, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 240, 650, 1153, "Cancelar");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (!input[0])
+        return 0;
+    endif
+    
+    var selected_damage_type;
+    case (input[0])
+        1: selected_damage_type := DMG_PHYSICAL;
+        2: selected_damage_type := DMG_SLASH;
+        3: selected_damage_type := DMG_PIERCING;
+        4: selected_damage_type := DMG_BLUNT;
+        5: selected_damage_type := DMG_FIRE;
+        6: selected_damage_type := DMG_COLD;
+        7: selected_damage_type := DMG_POISON;
+        8: selected_damage_type := DMG_ENERGY;
+    endcase
+    
+    // Add to form_data
+    if (!form_data.natural_traits)
+        form_data.natural_traits := array{};
+    endif
+    
+    form_data.natural_traits.append(struct{
+        "trait" := nature_type,
+        "damage" := selected_damage_type
+    });
+    
+    return 1;
+endfunction
+
+function AddSpecialNature(who, nature_type, byref form_data)
+    // Add the special trait directly
+    if (!form_data.natural_traits)
+        form_data.natural_traits := array{};
+    endif
+    
+    form_data.natural_traits.append(struct{
+        "trait" := nature_type,
+        "damage" := "Special"
+    });
     
     return 1;
 endfunction
