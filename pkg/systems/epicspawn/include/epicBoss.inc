@@ -250,24 +250,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
             PrintTextAbove(npc, "Combat Events script error: " + res.errortext);
         endif
     endif
-    
-    // Set timedscripts
-    if (boss.timedscripts && boss.timedscripts.size() > 0)
-        var timedscripts_array := array{};
-        foreach script in (boss.timedscripts)
-            var script_struct := struct{};
-            script_struct.+name := script.name;
-            script_struct.+target := script.target;
-            script_struct.+duration := script.duration;
-            script_struct.+level := script.level;
-            
-            timedscripts_array.append(script_struct);
-        endforeach
-        SetObjProperty(npc, "TimedScripts", timedscripts_array);
-        
-        // Start the TimedScript control process
-        start_script(":epicAI:scripts/timedScriptControl", array{npc});
-    endif
 
     if (boss.flee_health)
         SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
@@ -297,6 +279,10 @@ function CreateEpicBoss(boss, x, y, z, realm)
     // Add teleport locations to boss structure
     if (boss.teleport_locations && boss.teleport_locations.size() > 0)
         SetObjProperty(npc, "teleport_locations", boss.teleport_locations);
+    endif
+
+    if (boss.natural_traits && boss.natural_traits.size() > 0)
+        SetObjProperty(npc, "natural_traits", boss.natural_traits);
     endif
 
     // Add Equipment if selected
