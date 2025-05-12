@@ -5,7 +5,6 @@ include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
-include "include/timedScripts";
 
 var brain_type;
 var me := Self();
