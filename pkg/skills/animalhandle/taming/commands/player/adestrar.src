@@ -62,11 +62,10 @@ function taming(who)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":*:npcdesc");
-	var npctemplate := targ.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate)-9];
-	cfg := cfg[npctemplate];
-	if ( !cfg.TameDifficulty )
+	var npc_elem := NPC_GetNPCConfig(targ);
+	var tame_diff := npc_elem.TameDifficulty;
+
+	if ( !tame_diff )
 		SendSysMessageEx(who, "Voce nao pode adestrar "+targ.name+".", SSM_FAIL);
 		return;
 	endif
@@ -76,13 +75,11 @@ function taming(who)
 	info.+x := who.x;
 	info.+y := who.y;
 	info.+facing := who.facing;
-	info.+difficulty := cfg.TameDifficulty;
+	info.+difficulty := tame_diff;
 	if (info.difficulty > (skill + 15))
     	SendSysMessageEx(who, "A dificuldade para adestrar " + targ.name + " é muito alta (" + info.difficulty + ").", SSM_FAIL);
 		return 0;
 	endif
-
-	cfg := 0;
 
 	SetTamingCooldown(who);
 
