@@ -122,7 +122,7 @@ exported function Attack(attacker, defender)
 			EpicAttack(attacker, defender, DAMAGE_OFFHAND);
 
 		else
-			DebugMsg(attacker, DEBUG_HIT, "***FALHA!***");
+			DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
 			PlayMissSound(attacker);
 
 			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
