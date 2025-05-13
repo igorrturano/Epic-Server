@@ -87,6 +87,26 @@ function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, ty
 	CheckHab_ChainOfPain(attacker, defender, damage, type);
 endfunction
 
+
+/**
+ * CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
+ *
+ * Purpose
+ * Função responsável por verificar e aplicar as habilidades do atacante ao atingir um defensor.
+ * Executa verificações de habilidades específicas, como Armadura Arcana, Ainalaith, Death Dance,
+ * Conhecimento Sobre Inimigo e Disparo Místico. Também trata efeitos de armas elementais,
+ * consumindo cargas arcanas e aplicando dano adicional se aplicável.
+ *
+ * Parameters
+ * attacker: Entidade atacante (objeto ou identificador do atacante).
+ * defender: Entidade defensora (objeto ou identificador do defensor).
+ * hitchance: Chance de acerto do ataque.
+ * rolldice: Valor do dado rolado para determinar o sucesso do ataque.
+ *
+ * Return
+ * Retorna 1 após a execução das verificações e aplicações das habilidades.
+ *
+ */
 function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
 	SkillChecks(attacker, defender, attacker.weapon, 1);
 
@@ -108,6 +128,23 @@ function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
 	return 1;
 endfunction
 
+/**
+ * CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
+ *
+ * Purpose
+ * Verifica e aplica as habilidades defensivas do defensor quando atingido por um ataque.
+ * Chama funções específicas para cada habilidade defensiva relevante e limpa a propriedade
+ * "#contraataquepoderoso" do defensor, se estiver presente.
+ *
+ * Parameters
+ * attacker: Identificador do atacante.
+ * defender: Identificador do defensor.
+ * hitchance: Chance de acerto do ataque.
+ * rolldice: Valor do dado rolado para o ataque.
+ *
+ * Return
+ * Retorna 1 sempre que a função é executada.
+ */
 function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 	CheckHab_DesviarProjetil(attacker, defender);
 	CheckHab_DesviarDisparos(attacker, defender);
@@ -124,6 +161,21 @@ function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
 	return 1;
 endfunction
 
+/**
+ * CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
+ *
+ * Purpose
+ * Executa verificações e efeitos relacionados às habilidades do atacante quando um ataque falha.
+ *
+ * Parameters
+ * attacker: Objeto do atacante.
+ * defender: Objeto do defensor.
+ * hitchance: Chance de acerto do ataque.
+ * rolldice: Valor do dado rolado para o ataque.
+ *
+ * Return
+ * Retorna 1 após executar todas as verificações e efeitos.
+ */
 function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
 	SkillChecks(attacker, defender, attacker.weapon, 1);
 	EraseObjProperty(attacker, "#shooting_effects");
@@ -143,6 +195,24 @@ function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
 	return 1;
 endfunction
 
+/**
+ * CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
+ *
+ * Purpose
+ * Função responsável por verificar e aplicar habilidades defensivas do defensor quando um ataque falha (miss).
+ * Avalia condições como contra-ataque poderoso, esquiva acrobática e ataques de oportunidade, 
+ * além de manipular propriedades de objetos relacionadas a essas habilidades.
+ * Também executa o ataque de oportunidade caso os requisitos sejam atendidos.
+ *
+ * Parameters
+ * attacker: objeto ou id do atacante.
+ * defender: objeto ou id do defensor.
+ * hitchance: chance de acerto original do ataque.
+ * rolldice: valor do dado rolado para o ataque.
+ *
+ * Return
+ * Retorna 1 sempre ao final da execução.
+ */
 function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 	var oportunidade := 0;
 	if (GetObjProperty(defender, "#contraataquepoderoso"))
