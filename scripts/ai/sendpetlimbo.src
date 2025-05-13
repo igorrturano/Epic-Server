@@ -1,0 +1,36 @@
+use uo;
+use os;
+
+program SendPetToLimbo(params)
+    var pet := SystemFindObjectBySerial(CInt(params.pet_serial));
+    var owner := SystemFindObjectBySerial(CInt(params.owner_serial));
+
+    if (!pet || !owner)
+        return;
+    endif
+
+    // Armazena localização original
+    var original_location := array{
+        pet.x,
+        pet.y,
+        pet.z
+    };
+
+    // Move para local de esconderijo
+    MoveObjectToLocation(
+        pet, 
+        CInt(params.dest_x), 
+        CInt(params.dest_y), 
+        CInt(params.dest_z), 
+        pet.realm, 
+        MOVEOBJECT_FORCELOCATION
+    );
+
+    // Armazena localização original
+    SetObjProperty(pet, "previous_location", original_location);
+
+    // Esconde e congela
+    pet.hidden := 1;
+    pet.frozen := 1;
+    pet.invul := 1;
+endprogram
