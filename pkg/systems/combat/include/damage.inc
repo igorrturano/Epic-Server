@@ -1173,3 +1173,9 @@ function GetArmorInZone(mobile, zone_name, type)
     
     return result;
 endfunction
+
+function IsPhysicalDamage(type)
+	if (type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT) return 1;
+	else return 0;
+	endif
+endfunction
