@@ -26,12 +26,6 @@ enum HAB_TAGS
 	HAB_COOLDOWN := "EM RECARGA!",
 endenum
 
-function IsPhysicalDamage(type)
-	if (type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT) return 1;
-	else return 0;
-	endif
-endfunction
-
 /**
  * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
  *
@@ -86,7 +80,6 @@ function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, ty
 	CheckHab_Vinganca(attacker, defender, damage, type);
 	CheckHab_ChainOfPain(attacker, defender, damage, type);
 endfunction
-
 
 /**
  * CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
@@ -214,6 +207,8 @@ endfunction
  * Retorna 1 sempre ao final da execução.
  */
 function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
+	// TODO: Colocar essas habilidades em suas funções
+	
 	var oportunidade := 0;
 	if (GetObjProperty(defender, "#contraataquepoderoso"))
 		SetObjProperty(defender, "#contraataquepoderoso", (GetObjProperty(defender, "#contraataquepoderoso")+1) );
@@ -244,7 +239,7 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 					var time := ReadGameClock();
 					var dmg := CalculateRawDamage(defender, defender.weapon);
 					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, wpn_a, dmg);
+					SkillChecks(attacker, defender, attacker.weapon, dmg);
 					oportunidade := 0;
 				endif
 
@@ -266,7 +261,7 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 					var time := ReadGameClock();
 					var dmg := CalculateRawDamage(defender, defender.weapon);
 					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, wpn_a, dmg);
+					SkillChecks(attacker, defender, attacker.weapon, dmg);
 				endif
 
 				EraseObjProperty(defender, "#atacandooportunidade");
