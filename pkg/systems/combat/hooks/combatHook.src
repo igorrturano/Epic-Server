@@ -34,15 +34,15 @@ include ":combat:mainHitScript";
 include ":combat:combatFX";
 
 // Externos
-include ":attributes:attributes";
 include "include/packets";
 include "include/facings";
-include ":timedscripts:timedScripts";
 include "include/epicConstants";
-include ":commands:debugsystem";
 include "include/epicMageryUtils";
-include ":fls_magery:spellSounds";
 include "include/epicCombatUtils";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":commands:debugsystem";
+include ":fls_magery:spellSounds";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");

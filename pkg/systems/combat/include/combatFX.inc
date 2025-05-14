@@ -5,7 +5,6 @@
 include "include/client";
 include "include/epicConstants";
 include ":attributes:attributeConstants";
-// include ":equipsys:tags";
 include ":equipsys:utils";
 
 enum WEAPONFX
@@ -16,7 +15,7 @@ var MISS_FX := struct {
 	SFX := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B}
 };
 var UNARMED_FX := struct {
-	ANIM := array{0x9, 0xA},
+	ANIM := array{0xA, 0x1F}, // Ajeitar essa animação do 0xA, tá diferente do Fiddler e não estou achano o soco
 	SFX := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B},
 	ANIM_CRITICAL := array{},
 	SFX_CRITICAL := array{}
@@ -91,6 +90,7 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	if (weapon.objtype == FIST)
 		if (FX == WEAPON_FX_ANIM)
 			attackFX := getAnim(UNARMED_FX, isCriticalAttack);
+			print("ANIM"+Hex(attackFX));
 		else
 			attackFX := getSound(UNARMED_FX, isCriticalAttack);
 		endif
