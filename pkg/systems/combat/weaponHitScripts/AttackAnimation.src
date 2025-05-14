@@ -2,7 +2,7 @@ use uo;
 use os;
 use util;
 
-include ":combat:combatAnimation";
+include ":combat:combatFX";
 
 program AttackAnimation(params)
 	// Criado como .src apenas para a animção poder ser async.

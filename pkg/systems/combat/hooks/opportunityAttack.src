@@ -2,6 +2,7 @@ use os;
 include "include/say";
 include ":tn:cooldown";
 include ":combat:combat";
+include ":combat:combatFX";
 
 program attackOfOpportunity(params)
     var attacker := params[1];

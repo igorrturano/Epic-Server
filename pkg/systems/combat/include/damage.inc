@@ -419,7 +419,7 @@ endfunction
 function EpicApplyDamageElemental(attacker, defender, weapon, armor, damages)
 	SetScriptController(attacker);
 
-	if (damages.FireDamage)
+	if (damages.FireDamage > 0)
 		WearDownArmor(defender, armor, damages.FireDamage, weapon);
 		DamageEPIC(attacker, defender, weapon, armor, damages.FireDamage, DMG_FIRE);
 	endif

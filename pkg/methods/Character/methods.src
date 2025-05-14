@@ -4,7 +4,7 @@ use datafile;
 include ":merchants:include/cambio";
 include ":tn:cooldown";
 include ":gumps:epicGumps";
-include ":equipsys:tags";
+include ":equipsys:utils";
 
 program Install()
 	print("INSTALLING: Methods for Characters... OK!");
