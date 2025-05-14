@@ -31,6 +31,7 @@ include ":combat:habilidades";
 include ":combat:hitchance";
 include ":combat:damage";
 include ":combat:mainHitScript";
+include ":combat:combatFX";
 
 // Externos
 include ":attributes:attributes";

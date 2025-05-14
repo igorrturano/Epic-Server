@@ -1,0 +1,48 @@
+use uo;
+use os;
+use math;
+
+include ":combat:combatFX";
+
+program special_attack_garen(params)
+	var attacker	:= params[1];
+	var defender	:= params[2];
+
+	print("GAREN!");
+	defender := Target(attacker);
+
+	var moveTo_x := attacker.x;
+	var moveTo_y := attacker.y;
+
+	// Salta 10 tiles
+	MoveObjectToLocation(attacker, attacker.x, attacker.y, attacker.z + 15, defender.realm, MOVEOBJECT_FORCELOCATION);
+	PlayAttackAnimation(attacker);
+
+	// Move o atacante passo a passo até o defensor
+	while (moveTo_x != defender.x || moveTo_y != defender.y)
+		if (moveTo_x < defender.x)
+			moveTo_x++;
+		elseif (moveTo_x > defender.x)
+			moveTo_x--;
+		endif
+
+		if (moveTo_y < defender.y)
+			moveTo_y++;
+		elseif (moveTo_y > defender.y)
+			moveTo_y--;
+		endif
+
+		PlayAttackAnimation(attacker); // Re-executa a animação pra poder ficar travado na postura.
+		MoveObjectToLocation(attacker, moveTo_x, moveTo_y, attacker.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+		SleepMS(100);
+	endwhile
+
+	// Desce os 5 tiles que pulou
+	PlayAttackAnimation(attacker);
+	MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+	
+	attacker.facing(GetFacing(attacker.x, attacker.y, defender.x, defender.y));
+
+
+	return 1;
+endprogram
