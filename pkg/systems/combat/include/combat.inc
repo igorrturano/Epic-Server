@@ -81,27 +81,6 @@ function PlayMissSound(attacker)
 	PlaySoundEffect(attacker, getSound(MISS_FX));
 endfunction
 
-// function PlayAttackAnimation(attacker)
-// 	var attack_anim := 0x0c;
-// 	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-// 	if ( wpn_a_elem2.Anim )
-// 		var anim_list := GetConfigStringArray(wpn_a_elem2, "Anim");
-// 		if (anim_list.size() > 1)
-// 			attack_anim := anim_list[RandomIntMinMax(1, anim_list.size())];
-// 		else
-// 			attack_anim := anim_list[1];
-// 		endif
-// 	endif
-	
-// 	if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
-// 		attack_anim := 0x0c;
-// 	endif
-
-// 	PerformAction(attacker, CInt(attack_anim));
-
-// 	return attack_anim;
-// endfunction
-
 function GetRawDmg(attacker)
 
     if (attacker.npctemplate)

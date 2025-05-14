@@ -41,20 +41,24 @@ endenum
  * Return void
  *
  */
-function CheckDefenderHabsBeforeDamage(byref attacker, byref defender, damage, type)
-	var resist := damage;
+function CheckDefenderHabsBeforeDamage(attacker, defender, damage, type)
+	// var resist := damage;
+	var attackInfo := struct {
+		damage := damage,
+		damageType := type
+	};
 	
-	CheckHab_Martir(attacker, defender, damage, type);
-	CheckHab_MantoRothen(attacker, defender, damage, type);
-	CheckHab_KaniNoSutairu(attacker, defender, damage, type);
-	CheckHab_Exoesqueleto(attacker, defender, damage, type);
-	CheckHab_EspecialistaEscudos(attacker, defender, damage, type);
-	CheckHab_Furia(attacker, defender, damage, type);
-	CheckHab_ResilienciaBarbara(attacker, defender, damage, type);
+	CheckHab_Martir(attacker, defender, attackInfo);
+	CheckHab_MantoRothen(attacker, defender, attackInfo);
+	CheckHab_KaniNoSutairu(attacker, defender, attackInfo);
+	CheckHab_Exoesqueleto(attacker, defender, attackInfo);
+	CheckHab_EspecialistaEscudos(attacker, defender, attackInfo);
+	CheckHab_Furia(attacker, defender, attackInfo);
+	CheckHab_ResilienciaBarbara(attacker, defender, attackInfo);
 	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
-	CheckHab_VinculoElemental(attacker, defender, damage, type);
-	CheckHab_Backstab(attacker, defender, damage, type);
-	CheckHab_Charge(attacker, defender, damage, type);
+	CheckHab_VinculoElemental(attacker, defender, attackInfo);
+	CheckHab_Backstab(attacker, defender, attackInfo);
+	CheckHab_Charge(attacker, defender, attackInfo);
 
 	// var totaldamage := CInt(damage-resist); 
 	return damage < 1 ? 1 : damage; // Garante dano mínimo = 1.
@@ -75,10 +79,15 @@ endfunction
  * Return void
  *
  */
-function CheckDefenderHabsAfterDamage(byRef attacker, byRef defender, damage, type)
-	CheckHab_RecuperacaoSalvadora(attacker, defender, damage, type);
-	CheckHab_Vinganca(attacker, defender, damage, type);
-	CheckHab_ChainOfPain(attacker, defender, damage, type);
+function CheckDefenderHabsAfterDamage(attacker, defender, damage, type)
+	var attackInfo := struct {
+		damage := damage,
+		damageType := type
+	};
+	
+	CheckHab_RecuperacaoSalvadora(attacker, defender, attackInfo);
+	CheckHab_Vinganca(attacker, defender, attackInfo);
+	CheckHab_ChainOfPain(attacker, defender, attackInfo);
 endfunction
 
 /**
@@ -86,9 +95,6 @@ endfunction
  *
  * Purpose
  * Função responsável por verificar e aplicar as habilidades do atacante ao atingir um defensor.
- * Executa verificações de habilidades específicas, como Armadura Arcana, Ainalaith, Death Dance,
- * Conhecimento Sobre Inimigo e Disparo Místico. Também trata efeitos de armas elementais,
- * consumindo cargas arcanas e aplicando dano adicional se aplicável.
  *
  * Parameters
  * attacker: Entidade atacante (objeto ou identificador do atacante).
@@ -100,14 +106,19 @@ endfunction
  * Retorna 1 após a execução das verificações e aplicações das habilidades.
  *
  */
-function CheckAttackerHabsOnHit( attacker, defender, hitchance, rolldice )
+function CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
+	var attackInfo := struct {
+		hitchance := hitchance,
+		dice := rolldice
+	};
+	
 	SkillChecks(attacker, defender, attacker.weapon, 1);
 
-	CheckHab_ArmaduraArcana(attacker, defender);
-	CheckHab_Ainalaith(attacker, defender);
-	CheckHab_DeathDance(attacker, defender);
-	CheckHab_ConhecimentoSobreInimigo(attacker, defender);
-	CheckHab_DisparoMistico(attacker, defender);
+	CheckHab_ArmaduraArcana(attacker, defender, attackInfo);
+	CheckHab_Ainalaith(attacker, defender, attackInfo);
+	CheckHab_DeathDance(attacker, defender, attackInfo);
+	CheckHab_ConhecimentoSobreInimigo(attacker, defender, attackInfo);
+	CheckHab_DisparoMistico(attacker, defender, attackInfo);
 
 	// TODO: Refatorar para uma função de MAGIA (está misturado com habilidade)
 	var elemental := GetObjProperty(attacker.weapon, "#elementalweapon");
@@ -139,12 +150,16 @@ endfunction
  * Retorna 1 sempre que a função é executada.
  */
 function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
-	CheckHab_DesviarProjetil(attacker, defender);
-	CheckHab_DesviarDisparos(attacker, defender);
-	CheckHab_FerocidadeEnsanguentada(attacker, defender);
-	CheckHab_Evasao(attacker, defender);
-	CheckHab_ContraAtaque(attacker, defender);
-	CheckHab_Rebuke(attacker, defender);
+	var attackInfo := struct {
+		hitchance := hitchance,
+		dice := rolldice
+	};
+	CheckHab_DesviarProjetil(attacker, defender, attackInfo);
+	CheckHab_DesviarDisparos(attacker, defender, attackInfo);
+	CheckHab_FerocidadeEnsanguentada(attacker, defender, attackInfo);
+	CheckHab_Evasao(attacker, defender, attackInfo);
+	CheckHab_ContraAtaque(attacker, defender, attackInfo);
+	CheckHab_Rebuke(attacker, defender, attackInfo);
 
 	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
 	if (GetObjProperty(defender, "#contraataquepoderoso"))
@@ -170,17 +185,21 @@ endfunction
  * Retorna 1 após executar todas as verificações e efeitos.
  */
 function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
+	var attackInfo := struct {
+		hitchance := hitchance,
+		dice := rolldice
+	};
+	
 	SkillChecks(attacker, defender, attacker.weapon, 1);
 	EraseObjProperty(attacker, "#shooting_effects");
 
-	CheckHab_AtaqueInfalivel(attacker, defender);
-	CheckHab_MestreDuelista(attacker, defender);
-	CheckHab_Insistencia(attacker, defender);
-
-	ArrowRecovery(attacker, defender, attacker.weapon);
+	CheckHab_AtaqueInfalivel(attacker, defender, attackInfo);
+	CheckHab_MestreDuelista(attacker, defender, attackInfo);
+	CheckHab_Insistencia(attacker, defender, attackInfo);
 
 	EraseObjProperty(attacker, "movement");
 
+	// TODO: Ver pra quê que serve esse troço
 	if (GetObjProperty(attacker, "charge_damage"))
 		EraseObjProperty(attacker, "charge_damage");
 	endif
@@ -208,6 +227,10 @@ endfunction
  */
 function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 	// TODO: Colocar essas habilidades em suas funções
+	var attackInfo := struct {
+		hitchance := hitchance,
+		dice := rolldice
+	};
 	
 	var oportunidade := 0;
 	if (GetObjProperty(defender, "#contraataquepoderoso"))
@@ -274,7 +297,10 @@ function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
 endfunction
 
 
-function CheckHab_Martir(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+
+
+
+function CheckHab_Martir(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Martir";
 	
 	if (GetObjProperty(defender, "#martir"))
@@ -289,13 +315,13 @@ function CheckHab_Martir(byref attacker, byref defender, byref damage := 0, dama
 	return 0;
 endfunction
 
-function CheckHab_MantoRothen(byref attacker, byref defender, byref damage, damageType := DMG_FORCED)
+function CheckHab_MantoRothen(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Manto de Rothen";
 	
 	if (GetObjProperty(defender, "#mantorothen"))
 		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
-		var healed := CInt(damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
-		damage := damage - healed;
+		var healed := CInt(attackInfo.damage*0.3); // TODO: Ver se o valor curado será esse mesmo.
+		attackInfo.damage := attackInfo.damage - healed;
 		var party := defender.party;
 		var amthealed := CInt(healed/party.members.size());
 		if (amthealed < 1)
@@ -311,7 +337,7 @@ function CheckHab_MantoRothen(byref attacker, byref defender, byref damage, dama
 	return 0;
 endfunction
 
-function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Recuperacao Salvadora";
 	
 	if (isBloodied(defender))
@@ -329,9 +355,9 @@ function CheckHab_RecuperacaoSalvadora(byref attacker, byref defender, byref dam
 	return 0;
 endfunction
 
-function CheckHab_Vinganca(byref attacker, defender, byref damage, damageType := DMG_FORCED)
+function CheckHab_Vinganca(byref attacker, defender, byRef attackInfo := struct{})
 	if (GetObjProperty(defender, "#vinganca"))
-		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + damage));
+		SetObjProperty(defender, "#vinganca", (cint(GetObjProperty(defender, "#vinganca")) + attackInfo.damage));
 		DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[Vinganca]: {HAB_SUCCESS}!");
 		return 1;
 	endif
@@ -339,7 +365,7 @@ function CheckHab_Vinganca(byref attacker, defender, byref damage, damageType :=
 	return 0;
 endfunction
 
-function CheckHab_ChainOfPain(byref attacker, defender, byref damage, damageType := DMG_FORCED)
+function CheckHab_ChainOfPain(byref attacker, defender, byRef attackInfo := struct{})
 	if( GetObjProperty(defender, "#chainofpain") != error )
 		if ( CInt(GetObjProperty(defender, "#chainofpain")) > readgameclock())
 			var copmobs := GetObjProperty(defender, "#chainserials");
@@ -366,7 +392,7 @@ function CheckHab_ChainOfPain(byref attacker, defender, byref damage, damageType
 			
 			// Apply damage to connected targets (excluding original)
 			foreach opponent in copdefenders
-				var total := Cint(damage * lvl);
+				var total := Cint(attackInfo.damage * lvl);
 				if (total < 1)
 					total := 1;
 				endif
@@ -380,7 +406,7 @@ function CheckHab_ChainOfPain(byref attacker, defender, byref damage, damageType
 	return 0;
 endfunction
 
-function CheckHab_TaticasArcanas(byref attacker, byref defender, byref damage, damageType := DMG_FORCED)
+function CheckHab_TaticasArcanas(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Taticas Arcanas";
 	
 	if (TemHabilidade(attacker, HAB_NAME))
@@ -388,7 +414,7 @@ function CheckHab_TaticasArcanas(byref attacker, byref defender, byref damage, d
 		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
 		if (manaatual >= manatotal / 2)
 			var damagemod := CInt(manaatual / 20);
-			damage += damagemod;
+			attackInfo.damage += damagemod;
 			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 			return 1;
@@ -398,12 +424,12 @@ function CheckHab_TaticasArcanas(byref attacker, byref defender, byref damage, d
 	return 0;
 endfunction
 
-function CheckHab_BrigadorDeTaverna(byref attacker, defender, byref damage, damageType := DMG_FORCED)
+function CheckHab_BrigadorDeTaverna(byref attacker, defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Brigador de Taverna";
 	
 	if (TemHabilidade(attacker, HAB_NAME) && attacker.weapon.objtype == 0x1F020)
 		var damagemod := 2;
-		damage += damagemod;
+		attackInfo.damage += damagemod;
 		DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 		DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 		return 1;
@@ -412,13 +438,13 @@ function CheckHab_BrigadorDeTaverna(byref attacker, defender, byref damage, dama
 	return 0;
 endfunction
 
-function CheckHab_KaniNoSutairu(byref attacker, defender, byref damage, damageType := DMG_FORCED)
+function CheckHab_KaniNoSutairu(byref attacker, defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Kani no Sutairu";
 	
-	if (IsPhysicalDamage(damageType))
+	if (IsPhysicalDamage(attackInfo.damageType))
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := RandomDiceRoll("1d4");
-			damage -= resist;
+			attackInfo.damage -= resist;
 			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
@@ -428,13 +454,13 @@ function CheckHab_KaniNoSutairu(byref attacker, defender, byref damage, damageTy
 	return 0;
 endfunction
 
-function CheckHab_Exoesqueleto(byref attacker, byref defender, byref damage, damageType)
+function CheckHab_Exoesqueleto(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Exoesqueleto";
 
-	if (IsPhysicalDamage(damageType))
+	if (IsPhysicalDamage(attackInfo.damageType))
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := 2;
-			damage -= resist;
+			attackInfo.damage -= resist;
 			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
@@ -444,13 +470,13 @@ function CheckHab_Exoesqueleto(byref attacker, byref defender, byref damage, dam
 	return 0;
 endfunction
 
-function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byref damage, damageType)
+function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Especialista em Escudos";
 	
-	if (IsPhysicalDamage(damageType))
+	if (IsPhysicalDamage(attackInfo.damageType))
 		if (TemHabilidade(defender, HAB_NAME) && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
 			var resist := RandomDiceRoll("1d4");
-			damage -= resist;
+			attackInfo.damage -= resist;
 			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
@@ -460,13 +486,13 @@ function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byref dama
 	return 0;
 endfunction
 
-function CheckHab_Backstab(byref attacker, byref defender, byref damage, damageType)
-	if (IsPhysicalDamage(damageType))
+function CheckHab_Backstab(byref attacker, byref defender, byRef attackInfo := struct{})
+	if (IsPhysicalDamage(attackInfo.damageType))
 		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
 			EraseObjProperty(attacker, "backstab");
 			EraseObjProperty(attacker.weapon, "backstab");
 			EraseObjProperty(attacker, "#nextcritical");
-			if (!CheckHab_SempreAlerta(attacker, defender, damage, damageType))
+			if (!CheckHab_SempreAlerta(attacker, defender, attackInfo))
 				ataqueFurtivo(attacker, defender);
 			endif
 		endif
@@ -475,13 +501,13 @@ function CheckHab_Backstab(byref attacker, byref defender, byref damage, damageT
 	return 0;
 endfunction
 
-function CheckHab_Furia(byref attacker, byref defender, byref damage := 0, damageType)
+function CheckHab_Furia(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Furia";
 	
-	if (IsPhysicalDamage(damageType))
+	if (IsPhysicalDamage(attackInfo.damageType))
 		if (GetCooldown(attacker, "furia"))
 			var damagemod := RandomDiceRoll("1d4");
-			damage += damagemod;
+			attackInfo.damage += damagemod;
 			DebugMsg(attacker, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(attacker, DEBUG_DAMAGE, $"Dano de Habilidade[{HAB_NAME}]: " + CInt(damagemod));
 			return 1;
@@ -491,13 +517,13 @@ function CheckHab_Furia(byref attacker, byref defender, byref damage := 0, damag
 	return 0;
 endfunction
 
-function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byref damage := 0, damageType)
+function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Resiliência Bárbara";
 	
-	if (IsPhysicalDamage(damageType))
-		if (CheckHab_Furia(defender, 0, 0, damageType) && TemHabilidade(defender, HAB_NAME)) // Antigo Pele de Rocha
+	if (IsPhysicalDamage(attackInfo.damageType))
+		if (CheckHab_Furia(defender, 0, attackInfo) && TemHabilidade(defender, HAB_NAME)) // Antigo Pele de Rocha
 			var resist := RandomDiceRoll("1d4");
-			damage -= resist;
+			attackInfo.damage -= resist;
 			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 			return 1;
@@ -509,7 +535,7 @@ function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byref damag
 	return 0;
 endfunction
 
-function CheckHab_SempreAlerta(byref attacker, byref defender, byref damage := 0, damageType)
+function CheckHab_SempreAlerta(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(defender, "Sempre Alerta"))
 		TS_StartTimer(attacker, "paralysis", 5);
 		PrintTextAbove(defender, "*Sempre Alerta*");
@@ -519,11 +545,11 @@ function CheckHab_SempreAlerta(byref attacker, byref defender, byref damage := 0
 	return 0;
 endfunction
 
-function CheckHab_Charge(byref attacker, byref defender, byref damage := 0, damageType)
+function CheckHab_Charge(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Charge";
 	
 	if (GetObjProperty(attacker, "charge_damage"))
-		damage += Cint(GetObjProperty(attacker, "charge_damage"));
+		attackInfo.damage += Cint(GetObjProperty(attacker, "charge_damage"));
 
 		if (hasAntiMountedWeapon(attacker, defender))
 			SetObjProperty(attacker, "#ForcedTarget", attacker.serial);
@@ -542,10 +568,10 @@ function CheckHab_Charge(byref attacker, byref defender, byref damage := 0, dama
 	return 0;
 endfunction
 
-function CheckHab_VinculoElemental(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_VinculoElemental(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Vínculo Elemental";
 	
-	if (IsPhysicalDamage(damageType))
+	if (IsPhysicalDamage(attackInfo.damageType))
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := 0; // TODO: Rever se esse valor vai ser assim, ou se a função vai precisar receber um parâmetro com o valor resistido até agora.
 			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
@@ -558,7 +584,7 @@ function CheckHab_VinculoElemental(byref attacker, byref defender, byref damage 
 				PlayObjectCenteredEffectEx(defender, 0x5487, 1, 8, 0);
 			endif
 
-			damage -= resist;
+			attackInfo.damage -= resist;
 			DebugMsg(defender, DEBUG_HAB, $"Possui Habilidade[{HAB_NAME}]: {HAB_SUCCESS}!");
 			DebugMsg(defender, DEBUG_DAMAGE, $"Defesa de Habilidade[{HAB_NAME}]: " + CInt(resist));
 
@@ -569,7 +595,7 @@ function CheckHab_VinculoElemental(byref attacker, byref defender, byref damage 
 	return 0;
 endfunction
 
-function CheckHab_KenNoTatsujin(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_KenNoTatsujin(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Ken no Tatsujin";
 	
 	if (TemHabilidade(defender, HAB_NAME))
@@ -589,7 +615,7 @@ function CheckHab_KenNoTatsujin(byref attacker, byref defender, byref damage := 
 	return 0;
 endfunction
 
-function CheckHab_BarreiraIndestrutivel(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_BarreiraIndestrutivel(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(defender, "barreiraindestrutivel"))
 		return 1;
 	endif
@@ -598,7 +624,7 @@ function CheckHab_BarreiraIndestrutivel(byref attacker, byref defender, byref da
 endfunction
 
 // TODO: Preparar para migrar a função Trespassar que está no mainHitScript para cá.
-function CheckHab_Trespassar(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_Trespassar(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetObjProperty(attacker, "#trespassando") == 1)
 		return 0;
 	endif
@@ -627,7 +653,7 @@ function CheckHab_Trespassar(byref attacker, byref defender, byref damage := 0, 
 	return 1;
 endfunction
 
-function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byRef attackInfo := struct{})
 	var weapon := attacker.weapon;
 	var weaponBow := 0;
 	var sneak_dmg := Cint(AP_GetSkill(attacker, SNEAK));
@@ -666,7 +692,7 @@ function CheckHab_AtaqueFurtivo(byref attacker, byref defender, byref damage := 
     attacker.disable("hiddenattack");
 endfunction
 
-function CheckHab_ArmaduraArcana(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_ArmaduraArcana(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Armadura Arcana";
 	var HAB_TYPE;
 	var dist := Distance( attacker, defender );
@@ -697,7 +723,7 @@ function CheckHab_ArmaduraArcana(byref attacker, byref defender, byref damage :=
 	return 0;
 endfunction
 
-function CheckHab_Ainalaith(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_Ainalaith(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Ainalaith";
 	var HAB_TYPE;
 	
@@ -738,7 +764,7 @@ function CheckHab_Ainalaith(byref attacker, byref defender, byref damage := 0, d
 	return 0;
 endfunction
 
-function CheckHab_ConhecimentoSobreInimigo(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_ConhecimentoSobreInimigo(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(attacker, "Conhecimento Sobre o Inimigo"))
 		SetObjProperty(defender, "#attackbonus", -20);
 		return 1;
@@ -747,7 +773,7 @@ function CheckHab_ConhecimentoSobreInimigo(byref attacker, byref defender, byref
 	return 0;
 endfunction
 
-function CheckHab_DeathDance(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_DeathDance(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (getCooldown(attacker, "deathdance") > 0)
 		moveToBehind(attacker, defender);
 		return 1;
@@ -756,7 +782,7 @@ function CheckHab_DeathDance(byref attacker, byref defender, byref damage := 0, 
 	return 0;
 endfunction
 
-function CheckHab_DisparoMistico(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_DisparoMistico(byref attacker, byref defender, byRef attackInfo := struct{})
 	var trickster_bonus := CInt( AP_GetSkill( attacker, ARCANA ) / 20 );
 	if ( getCooldown( attacker, "disparomistico" ) )
 		PrintTextAbovePrivate( attacker, "*passo nebuloso*", attacker );
@@ -767,7 +793,7 @@ function CheckHab_DisparoMistico(byref attacker, byref defender, byref damage :=
 	return 0;
 endfunction
 
-function CheckHab_ContraAtaque(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_ContraAtaque(byref attacker, byref defender, byRef attackInfo := struct{})
 	// TODO: Revisar se esse código realmente precisar calcular toda a estrutura do dano aqui...
 	
 	if (GetCooldown(defender, "contraataque") > 0)
@@ -795,7 +821,7 @@ function CheckHab_ContraAtaque(byref attacker, byref defender, byref damage := 0
 	return 0;
 endfunction
 
-function CheckHab_DesviarProjetil(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_DesviarProjetil(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (getObjProperty(defender, "#desviarprojetil"))
 		var item_cfg := ReadConfigFile(":combat:itemdesc");
 		if ((item_cfg[attacker.weapon.objtype]).Projectile)
@@ -810,7 +836,7 @@ function CheckHab_DesviarProjetil(byref attacker, byref defender, byref damage :
 	return 0;
 endfunction
 
-function CheckHab_DesviarDisparos(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_DesviarDisparos(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (getCooldown(defender, "desviardisparos") > 0)
 		var item_cfg := ReadConfigFile(":combat:itemdesc");
 		if ((item_cfg[attacker.weapon.objtype]).Projectile)
@@ -824,7 +850,7 @@ function CheckHab_DesviarDisparos(byref attacker, byref defender, byref damage :
 	return 0;
 endfunction
 
-function CheckHab_MaoLivre(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_MaoLivre(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetObjProperty(defender, "maolivre") == 1)
 		EraseObjPRoperty(defender, "maolivre");
 		SetObjProperty(defender, "evasao", 1);
@@ -834,7 +860,7 @@ function CheckHab_MaoLivre(byref attacker, byref defender, byref damage := 0, da
 	return 0;
 endfunction
 
-function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(defender, "FerocidadeEnsanguentada"))
 		// if (IsRaging(defender))
 			if (GetObjProperty(defender, "#contraatacando") == error)
@@ -862,7 +888,7 @@ function CheckHab_FerocidadeEnsanguentada(byref attacker, byref defender, byref 
 	return 0;
 endfunction
 
-function CheckHab_Evasao(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo := struct{})
 	// TODO: Passar rolldice e hitchance
 	// TODO: Talvez esse código não precise ser poluído desse jeito, calculando e executando toda a estrutura do ataque....
 		// TODO: Ver se dá pra executar o ataque através do Attack do combatHook...
@@ -924,7 +950,7 @@ function CheckHab_Evasao(byref attacker, byref defender, byref damage := 0, dama
 	return 0;
 endfunction
 
-function CheckHab_Rebuke(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_Rebuke(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetObjProperty(defender, "#campeaodivino"))
         // Apply divine retaliation
         Start_Script(":charactercreation:habilidades/paladin/golpedivino", array{defender, attacker});
@@ -934,7 +960,7 @@ function CheckHab_Rebuke(byref attacker, byref defender, byref damage := 0, dama
 	return 0;
 endfunction
 
-function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
 		printtext(attacker, "*ataque infalivel*");
 		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
@@ -951,7 +977,7 @@ function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byref damage :
 	return 0;
 endfunction
 
-function CheckHab_MestreDuelista(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_MestreDuelista(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(attacker, "mestreduelista") > 0)
 		printtext(attacker, "*mestre duelista*");
 		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
@@ -968,7 +994,7 @@ function CheckHab_MestreDuelista(byref attacker, byref defender, byref damage :=
 	return 0;
 endfunction
 
-function CheckHab_Insistencia(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+function CheckHab_Insistencia(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(attacker, "Insistencia"))
 		SetObjProperty(attacker, "insistencia", 1);
 	endif
@@ -976,32 +1002,32 @@ function CheckHab_Insistencia(byref attacker, byref defender, byref damage := 0,
 	return 0;
 endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 
 // 	return 0;
 // endfunction
 
-// function CheckHab_(byref attacker, byref defender, byref damage := 0, damageType := DMG_FORCED)
+// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 
 // 	return 0;
 // endfunction

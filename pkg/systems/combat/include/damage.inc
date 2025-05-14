@@ -308,8 +308,13 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 
 	// Mesmo sendo uma função VANILLA. Talvez esses CheckHab_ precisem ser trocados por CheckDefenderHabsBeforeDamage() e CheckDefenderHabsAfterDamage()
 	// Checa as habilidades antes do dano
-	CheckHab_Martir(0, defender, totaldmg, type);
-	CheckHab_MantoRothen(0, defender, totaldmg, type);
+
+	var attackInfo := struct {
+		damage := dmg,
+		damageType := type
+	};
+	CheckHab_Martir(0, defender, attackInfo);
+	CheckHab_MantoRothen(0, defender, attackInfo);
 
 	// Aplica o dano
 	DisplayDamage(defender, totaldmg, source);
@@ -317,8 +322,8 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 	SetLastDamageInfo(defender, totaldmg, type, source, spell);
 
 	// Checa as habilidades depois do dano
-	CheckHab_RecuperacaoSalvadora(0, defender, totaldmg, type);
-	CheckHab_Vinganca(0, defender, totaldmg, type);
+	CheckHab_RecuperacaoSalvadora(0, defender, attackInfo);
+	CheckHab_Vinganca(0, defender, attackInfo);
 
 	if (defender.frozen)
 		defender.frozen := 0;
