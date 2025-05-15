@@ -1,3 +1,14 @@
+var event_types := array{
+    "Criar Itens",
+    "Abrir Porta",
+    "Abrir Passagem",
+    "Criar Npcs",
+    "Ultimas Palavras",
+    "Sem corpo",
+    "Efeito Grafico",
+    "Tocar Som"
+};
+
 function HandleAddDeathEvent(who, input, byref form_data)
     // Initialize the death events array if it doesn't exist
     if (!form_data.deathevents)
@@ -52,6 +63,24 @@ function HandleAddDeathEvent(who, input, byref form_data)
                     SendSysMessage(who, "Last Words event must have at least one text entry. Event creation cancelled.");
                     return 0;
                 endif
+                break;
+
+            "Efeito Grafico":
+                if (!death_event.fxid)
+                    SendSysMessage(who, "Graphic Effect event must have an effect ID. Event creation cancelled.");
+                    return 0;
+                endif
+                break;
+
+            "Tocar Som":
+                if (!death_event.soundid)
+                    SendSysMessage(who, "Sound event must have a sound ID. Event creation cancelled.");
+                    return 0;
+                endif
+                break;
+                
+            "Sem corpo": 
+                // No validation needed
                 break;
         endcase
         
@@ -210,17 +239,34 @@ function ShowDeathEventsList(who, byref death_event)
                         GFTextLine(gump, 30, list_y, 2100, "Nenhuma linha de texto adicionada ainda.");
                     endif
                     break;
+
+                "Sem corpo":
+                    GFTextLine(gump, 30, 140, 1153, "Este evento fará com que o NPC não deixe corpo ao morrer.");
+                    GFTextLine(gump, 30, 160, 2100, "Não há configurações adicionais necessárias.");
+                    break;
+        
+                "Efeito Grafico":
+                    // Effect ID
+                    GFTextLine(gump, 30, 140, 1153, "ID do Efeito:");
+                    GFTextEntry(gump, 150, 140, 100, 20, 1153, death_event.fxid ? death_event.fxid : "", 2);
+                    
+                    // Speed
+                    GFTextLine(gump, 30, 170, 1153, "Velocidade:");
+                    GFTextEntry(gump, 150, 170, 100, 20, 1153, death_event.speed ? death_event.speed : "7", 3);
+                    
+                    // Loops
+                    GFTextLine(gump, 30, 200, 1153, "Repetições:");
+                    GFTextEntry(gump, 150, 200, 100, 20, 1153, death_event.loops ? death_event.loops : "1", 4);
+                    break;
+                    
+                "Tocar Som":
+                    GFTextLine(gump, 30, 140, 1153, "ID do Som:");
+                    GFTextEntry(gump, 150, 140, 100, 20, 1153, death_event.soundid ? death_event.soundid : "", 2);
+                    break;
+
+
             endcase
-        else
-            // Show event type selection buttons
-            var event_types := array{
-                "Criar Itens",
-                "Abrir Porta",
-                "Abrir Passagem",
-                "Criar Npcs",
-                "Ultimas Palavras"
-            };
-            
+        else           
             var y_pos := 140;
             var i := 1;
             
@@ -285,6 +331,30 @@ function ShowDeathEventsList(who, byref death_event)
                         endif
                     endif
                     break;
+                    
+                "Efeito Grafico":
+                    var fxid := CInt(GFExtractData(input, 2));
+                    if (fxid)
+                        death_event.fxid := fxid;
+                    endif
+                    
+                    var speed := CInt(GFExtractData(input, 3));
+                    if (speed)
+                        death_event.speed := speed;
+                    endif
+                    
+                    var loops := CInt(GFExtractData(input, 4));
+                    if (loops)
+                        death_event.loops := loops;
+                    endif
+                    break;
+                    
+                "Tocar Som":
+                    var soundid := CInt(GFExtractData(input, 2));
+                    if (soundid)
+                        death_event.soundid := soundid;
+                    endif
+                    break;
             endcase
         endif
         
@@ -295,15 +365,8 @@ function ShowDeathEventsList(who, byref death_event)
         elseif (input[0] == 999)
             // Save button
             return 1;
-        elseif (input[0] >= 11 && input[0] <= 16)
+        elseif (input[0] >= 11 && input[0] <= 18)
             // Event type selection
-            var event_types := array{
-                "Criar Itens",
-                "Abrir Porta",
-                "Abrir Passagem",
-                "Criar Npcs",
-                "Ultimas Palavras"
-            };
             death_event.type := event_types[input[0] - 10];
         elseif (input[0] == 50)
             // Change type button
@@ -347,7 +410,7 @@ function ShowDeathEventsList(who, byref death_event)
             endif
         elseif (input[0] == 104)
             // Add text line button
-            SendSysMessage(who, "Digite a linha de texto. Use ~ para quebras de linha.");
+            SendSysMessage(who, "Digite a linha de texto. Cada frase será uma nova linha.");
             var text := RequestInput(who, who.backpack, "Digite o texto:");
             if (text)
                 death_event.text.append(text);
@@ -357,8 +420,8 @@ function ShowDeathEventsList(who, byref death_event)
             // Edit text line button
             var idx := input[0] - 200;
             if (idx <= death_event.text.size())
-                SendSysMessage(who, "Edite a linha de texto. Use ~ para quebras de linha.");
-                var text := RequestInput(who, who.backpack, "Editar texto:" + death_event.text[idx]);
+                SendSysMessage(who, "Edite a linha de texto.");
+                var text := RequestInput(who, who.backpack, "Editar texto: " + death_event.text[idx]);
                 if (text)
                     death_event.text[idx] := text;
                     SendSysMessage(who, "Linha de texto atualizada");

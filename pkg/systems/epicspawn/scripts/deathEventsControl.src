@@ -31,10 +31,29 @@ program DeathEventsControl(params)
     
     print("TRACE: Processing " + death_events.size() + " death events for " + npc.name);
     
-    // First process all events EXCEPT LastWords
     var event_count := 0;
     var success_count := 0;
     
+    // First check if there's a LastWords event and process it FIRST
+    var last_words_processed := 0;
+    foreach event in (death_events)
+        if (event.type == "Ultimas Palavras")
+            print("TRACE: Processing Ultimas Palavras event FIRST");
+            if (ProcessLastWordsEvent(npc, event))
+                print("TRACE: Ultimas Palavras executed successfully");
+                success_count += 1;
+                last_words_processed := 1;
+                
+                // Note that we DON'T return here so other death events will still process
+                // The speaklastwords script will handle the actual killing
+            else
+                print("TRACE: Ultimas Palavras failed to execute");
+            endif
+            break; // Only process the first LastWords event found
+        endif
+    endforeach
+    
+    // Debug print death events
     print("TRACE: Death Events Array Contents:");
     foreach event in (death_events)
         print("TRACE: Event " + event_count + " - Type: " + event.type);
@@ -49,10 +68,8 @@ program DeathEventsControl(params)
         event_count += 1;
     endforeach
     
-    // Reset counter for actual processing
+    // Then process all other events (except LastWords which was already processed)
     event_count := 0;
-    
-    // Process non-LastWords events first
     foreach event in (death_events)
         if (event.type != "Ultimas Palavras")
             event_count += 1;
@@ -76,6 +93,19 @@ program DeathEventsControl(params)
                     print("TRACE: Processing Abrir Passagem event");
                     result := ProcessOpenPassageEventNonBlocking(npc, event); 
                     break;
+                "Sem corpo":
+                    print("TRACE: Processing Sem corpo event");
+                    SetObjProperty(npc, "NoCorpse", 1);
+                    result := 1;
+                    break;
+                "Efeito Grafico":
+                    print("TRACE: Processing Graphic Effect event");
+                    result := ProcessGraphicEffectEvent(npc, event);
+                    break;
+                "Tocar Som":
+                    print("TRACE: Processing Sound event");
+                    result := ProcessSoundEvent(npc, event);
+                    break;
                 default: 
                     print("TRACE: Unknown event type: " + event.type); 
                     break;
@@ -93,32 +123,8 @@ program DeathEventsControl(params)
         endif
     endforeach
     
-    // Then process LastWords last - this will trigger death
-    var has_last_words := 0;
-    foreach event in (death_events)
-        if (event.type == "Ultimas Palavras")
-            has_last_words := 1;
-            print("TRACE: Processing Ultimas Palavras event");
-            if (ProcessLastWordsEvent(npc, event))
-                print("TRACE: Ultimas Palavras executed successfully");
-                success_count += 1;
-                
-                // Last words event handles death on its own
-                print("TRACE: Death will be handled by LastWords script");
-                return 1;
-            else
-                print("TRACE: Ultimas Palavras failed to execute");
-            endif
-            break;
-        endif
-    endforeach
-    
-    if (!has_last_words)
-        print("TRACE: No LastWords event found. All death events processed.");
-    endif
-    
     print("TRACE: Completed " + success_count + " of " + event_count + " total events" + 
-          (has_last_words ? " plus LastWords" : ""));
+          (last_words_processed ? " including LastWords" : ""));
     
     // Mark as processed for future reference
     SetObjProperty(npc, "DeathEventsProcessed", 1);
@@ -130,7 +136,7 @@ program DeathEventsControl(params)
     // Clear the processing flag
     EraseObjProperty(npc, "ProcessingDeathEvents");
     
-    if (!has_last_words)
+    if (!last_words_processed)
         print("TRACE: Killing NPC since no LastWords event handled it");
         npc.kill();
     endif
@@ -344,4 +350,34 @@ function ProcessLastWordsEvent(npc, event)
         print("TRACE: LastWords - Speak script started successfully");
         return 1;
     endif
+endfunction
+
+function ProcessGraphicEffectEvent(npc, event)
+    if (!event.fxid)
+        print("TRACE: GraphicEffect - No effect ID defined");
+        return 0;
+    endif
+    
+    var fx_id := CInt(event.fxid);
+    var speed := event.speed ? CInt(event.speed) : 7;
+    var loops := event.loops ? CInt(event.loops) : 1;
+    
+    print("TRACE: GraphicEffect - Playing effect " + fx_id + " with speed " + speed + " and loops " + loops);
+    
+    // Since this is a death event, we'll only use stationary effects at the NPC's location
+    // Moving effects could be problematic since the NPC might be dead
+    PlayObjectCenteredEffect(npc, fx_id, speed, loops);
+    
+    return 1;
+endfunction
+
+function ProcessSoundEvent(npc, event)
+    if (!event.soundid)
+        print("TRACE: Sound - No sound ID defined");
+        return 0;
+    endif
+    
+    print("TRACE: Sound - Playing sound " + event.soundid);
+    PlaySoundEffect(npc, CInt(event.soundid));
+    return 1;
 endfunction
