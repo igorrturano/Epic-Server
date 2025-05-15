@@ -1,6 +1,9 @@
-// use uo;
-// use util;
-// use cfgfile;
+/* $Id$
+ *
+ * Purpose
+ * Criado para tratar os efeitos (animação e som) do combate
+ *
+ */
 
 include "include/client";
 include "include/epicConstants";

@@ -1,10 +1,7 @@
-/*
- * Refatorado por EvilLink
- * Se der merda, pode reclamar comigo...
+/* $Id$
  *
- * Criado para organizar a lógica de cálculo de chance de acerto do combatHook
- * o cálculo precisa ser feito em alguns scripts fora do .src.
- * Portanto, foi separado pra cá.
+ * Purpose
+ * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
 
 // include "combat";
