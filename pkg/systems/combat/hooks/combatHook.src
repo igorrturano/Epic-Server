@@ -371,29 +371,6 @@ function CombatMsg(mobile, type, text, ssm_type := 0)
 	endif
 endfunction
 
-function ArrowRecovery(attacker, defender, weapon)
-	if (wpn_a_elem.ProjectileType)
-		if(!attacker.npctemplate)
-			var chance := 15;
-			if (TemHabilidade(attacker, "Recuperar Flechas"))
-				var chance := chance + 35;
-			endif
-			if ( RandomDiceRoll("1d100") <= chance )
-				var ammo := GetObjProperty(weapon, "ammo");
-				var y;
-				var x;
-				case (RandomInt(5))
-					1: y := RandomInt(3) * -1; x := RandomInt(3);
-					2: y := RandomInt(3); x := RandomInt(3) * -1;
-					3: y := RandomInt(3) * -1; x := RandomInt(3) * -1;
-					4: y := RandomInt(3); x := RandomInt(3);
-				endcase
-				CreateItemAtLocation(defender.x + x, defender.y + y, defender.z, GetObjType(ammo), 1, defender.realm);
-			endif
-		endif
-	endif
-endfunction
-
 function FacingChecks(attacker, defender)
 	var retval := 1;
 	if ( !IsFacing(attacker, defender.x, defender.y) )
