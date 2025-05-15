@@ -916,10 +916,13 @@ function CheckHab_Insistencia(byref attacker, byref defender, byRef attackInfo :
 	return 0;
 endfunction
 
-// function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
+function CheckHab_ArrowRecovery(byref attacker, byref defender, byRef attackInfo := struct{})
+	if (TemHabilidade(attacker, "Recuperar Flechas"))
+		return 1;
+	endif
 
-// 	return 0;
-// endfunction
+	return 0;
+endfunction
 
 // function CheckHab_(byref attacker, byref defender, byRef attackInfo := struct{})
 

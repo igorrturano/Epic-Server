@@ -413,18 +413,10 @@ function FacingChecks(attacker, defender)
 	return 1;
 endfunction
 
-function PlayWeaponSounds(attacker)
-	//Toca o som da arma do atacante
-	var hitsound := GetObjProperty(attacker.weapon, "HitSound");
-	if (hitsound)
-		PlaySoundEffect(defender, hitsound);
-	endif
-endfunction
-
 function ArrowRecovery(attacker, defender, weapon)
 	if ( defender.IsA(POLCLASS_NPC) && defender.backpack )
 		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
-		if (TemHabilidade(attacker, "Recuperar Flechas"))
+		if (CheckHab_ArrowRecovery(attacker, 0))
 			var chance := chance + 35;
 		endif
 		if ( RandomDiceRoll("1d100") <= chance )
