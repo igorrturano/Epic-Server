@@ -7,7 +7,7 @@
  * Portanto, foi separado pra cá.
  */
 
-include "combat";
+// include "combat";
 include "habilidades";
 
 function CalculateHitChance(attacker, defender)
@@ -336,6 +336,16 @@ function CalculateHitChance(attacker, defender)
 	endif
 
 	return hit_chance;
+endfunction
+
+function DualWieldPenalty(attacker)
+	var weaponElem := GetWpnCfgInfo(attacker, attacker.weapon);
+	var penalty := (100-AP_GetSkill(attacker, weaponElem.Attribute))/2;
+		if (penalty < 10)
+			penalty := 10;
+		endif
+	
+	return penalty;
 endfunction
 
 function DarknessHitModifier(attacker, defender, byref hit_chance)

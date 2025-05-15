@@ -157,6 +157,48 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	return attackFX;
 endfunction
 
+function PlayHitSounds(attacker, defender)
+	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
+	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
+
+	var attack_sound;
+	if ( wpn_a_elem2.HitSound )
+		attack_sound := wpn_a_elem2.HitSound;
+	else
+		//NPC intrinsic weapon
+		attack_sound := wpn_a_elem2.AttackHitSound;
+	endif
+
+	if (attacker.weapon)
+		attack_sound := getWeaponFX(WEAPON_FX_SOUND, attacker.weapon);
+	endif
+
+	PlaySoundEffect(attacker, attack_sound);
+
+	var damaged_sound;
+	if ( defender.npctemplate )
+		var npctemplate := defender.npctemplate;
+		npctemplate := npctemplate[10, len(npctemplate)-9];
+		damaged_sound := npc_cfg2[npctemplate].DamageSound;
+	else
+		var sounds;
+		if ( defender.gender == 0 )
+			// Male
+			sounds := array(341, 342, 343, 345, 346);
+		else
+			// Female
+			sounds := array(332, 333, 334, 335, 336);
+		endif
+		damaged_sound := sounds[RandomInt(sounds.size())+1];
+	endif
+
+	PlaySoundEffect(defender, damaged_sound);
+endfunction
+
+function PlayMissSound(attacker, defender)
+	PlaySoundEffect(attacker, getSound(MISS_FX));
+endfunction
+
 function getAnim(fxs, isCriticalAttack := 0)
 	return !isCriticalAttack ? fxs.ANIM[RandomInt(fxs.ANIM.Size())+1] : fxs.ANIM_CRITICAL[RandomInt(fxs.ANIM_CRITICAL.Size())+1];
 endfunction

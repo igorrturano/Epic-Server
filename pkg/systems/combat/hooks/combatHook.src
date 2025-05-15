@@ -98,22 +98,20 @@ exported function Attack(attacker, defender)
 		CheckAttackerHabsOnMiss(attacker, defender, attackInfo);
 		CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
 
-		PlayMissSound(attacker);
+		PlayMissSound(attacker, defender);
 	endif
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
 		Start_Script("weaponHitScripts/AttackAnimation", {attacker, 500});
 		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
-		var penalty := (100-AP_GetSkill(attacker, wpn_a_elem.Attribute))/2;
-		if (penalty < 10)
-			penalty := 10;
-		endif
-
-		attackInfo.hitchance -= penalty;
+		
+		var hitchancePenalty := DualWieldPenalty(attacker);
+		attackInfo.hitchance -= hitchancePenalty;
 		attackInfo.dice := RandomDiceRoll("1d100");
-		DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+attackInfo.hitchance);
+		DebugMsg(attacker, DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.hitchance}(-{hitchancePenalty})");
 		DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+attackInfo.dice);
 
+		// No segundo hit só checa novamente as habilidades do defensor
 		if ( attackInfo.dice < attackInfo.hitchance )
 			DebugMsg(attacker, DEBUG_HIT, "***SUCESSO!***");
 
@@ -125,7 +123,7 @@ exported function Attack(attacker, defender)
 
 			CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
 
-			PlayMissSound(attacker);
+			PlayMissSound(attacker, defender);
 		endif
 	endif
 

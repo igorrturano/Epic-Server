@@ -918,6 +918,7 @@ endfunction
 
 function CheckHab_ArrowRecovery(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(attacker, "Recuperar Flechas"))
+		attackInfo += 35;
 		return 1;
 	endif
 
