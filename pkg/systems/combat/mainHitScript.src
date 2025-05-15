@@ -995,18 +995,6 @@ function ParryCheck(attacker, defender, byref rawdamage, weapon)
 		endif
 
 		CheckHab_KenNoTatsujin(attacker, defender);
-		// if (TemHabilidade(defender, "Ken no Tatsujin") && !defender.shield)
-		// 	printtextabove(defender, "*Ken no Tatsujin*");
-		// 	PlaySoundEffect(defender, 0x51f);
-		// 	defender.attack_once(attacker);
-		// elseif (TemHabilidade(defender, "Ken no Tatsujin") && defender.shield)
-		// 	SendSysMessageEX(defender, "Você está usando escudo e falhou a habilidade", SSM_INFO);
-		// endif
-
-		//if (GetCooldown(defender, "defesarevigorante"))
-			//healdamage(defender, rawdamage);
-		//endif
-
 	endif
 
 	//sobe a skill

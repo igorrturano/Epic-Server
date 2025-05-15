@@ -63,7 +63,7 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-
+	var attackInfo := struct{};
 	wpn_a := attacker.weapon;
 	wpn_d := defender.weapon;
 	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
@@ -74,33 +74,31 @@ exported function Attack(attacker, defender)
 	endif
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
-
 	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
+
+	attackInfo.+hitchance := CInt(CalculateHitChance(attacker, defender));
+	attackInfo.+dice := RandomDiceRoll("1d100");
 	DebugMsg(attacker, DEBUG_HIT, "=================");
 	DebugMsg(attacker, DEBUG_HIT, "ATAQUE INICIADO!");
 	DebugMsg(attacker, DEBUG_HIT, "=================");
 	DebugMsg(attacker, DEBUG_HIT, "Mão -> MainHand");
-	var hitchance := CInt(CalculateHitChance(attacker, defender));
-	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+hitchance);
-	var rolldice := RandomDiceRoll("1d100");
-	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+rolldice);
-	if ( rolldice < hitchance )
-		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
-        if (defender.frozen)
-            defender.frozen := 0;
-        endif
+	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+attackInfo.hitchance);
+	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+attackInfo.dice);
 
-		CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
-		CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
+	if ( attackInfo.dice < attackInfo.hitchance )
+		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
+
+		CheckAttackerHabsOnHit(attacker, defender, attackInfo);
+		CheckDefenderHabsOnHit(attacker, defender, attackInfo);
 
 		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
-
 	else
 		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
-		PlayMissSound(attacker);
 		
-		CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
-		CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
+		CheckAttackerHabsOnMiss(attacker, defender, attackInfo);
+		CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
+
+		PlayMissSound(attacker);
 	endif
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
@@ -111,23 +109,23 @@ exported function Attack(attacker, defender)
 			penalty := 10;
 		endif
 
-		hitchance -= penalty;
-		DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+hitchance);
-		rolldice := RandomDiceRoll("1d100");
-		DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+rolldice);
-		if ( rolldice < hitchance )
+		attackInfo.hitchance -= penalty;
+		attackInfo.dice := RandomDiceRoll("1d100");
+		DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+attackInfo.hitchance);
+		DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+attackInfo.dice);
+
+		if ( attackInfo.dice < attackInfo.hitchance )
 			DebugMsg(attacker, DEBUG_HIT, "***SUCESSO!***");
-			// CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice);
-			CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice);
+
+			CheckDefenderHabsOnHit(attacker, defender, attackInfo);
 
 			EpicAttack(attacker, defender, DAMAGE_OFFHAND);
-
 		else
 			DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
-			PlayMissSound(attacker);
 
-			// CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice);
-			CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice);
+			CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
+
+			PlayMissSound(attacker);
 		endif
 	endif
 
@@ -180,6 +178,10 @@ function CanAttack(attacker, defender)
 endfunction
 
 function EpicAttack(attacker, defender, weaponHand)
+	if (defender.frozen)
+		defender.frozen := 0;
+	endif
+
 	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
 	armor := armor[RandomIntMinMax(1, Len(armor))];
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);

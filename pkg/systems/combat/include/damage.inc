@@ -295,6 +295,7 @@ endfunction
 
 function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") // Mantido, apesar de criar o CombatDamageEPIC(), para não dar conflito com os demais danos do shard após criar o novo sistema de danos por região
 	var totaldmg;
+	var attackInfo := struct{};
 
 	if (type == DMG_FORCED)
 		totaldmg := CInt(dmg);
@@ -307,12 +308,10 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "") 
 	endif
 
 	// Mesmo sendo uma função VANILLA. Talvez esses CheckHab_ precisem ser trocados por CheckDefenderHabsBeforeDamage() e CheckDefenderHabsAfterDamage()
+	attackInfo.+damage := dmg;
+	attackInfo.+type := type;
+	
 	// Checa as habilidades antes do dano
-
-	var attackInfo := struct {
-		damage := dmg,
-		damageType := type
-	};
 	CheckHab_Martir(0, defender, attackInfo);
 	CheckHab_MantoRothen(0, defender, attackInfo);
 
@@ -334,6 +333,7 @@ endfunction
 
 function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCED)
 	var totaldamage;
+	var attackInfo := struct{};
 	DebugMsg(attacker, DEBUG_DAMAGE, $"Dano Base {type}: {damage}");
 
 	if (type == DMG_FORCED)
@@ -342,13 +342,18 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 		totaldamage := CInt(EpicCalculateDamage(attacker, defender, armor, damage, type));
 	endif
 
-	CheckDefenderHabsBeforeDamage(attacker, defender, totaldamage, type);
+	attackInfo.+damage := totaldamage;
+	attackInfo.+type := type;
+
+	CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo);
+	CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo);
 
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
 
-	CheckDefenderHabsAfterDamage(attacker, defender, totaldamage, type);
+	CheckDefenderHabsAfterDamage(attacker, defender, attackInfo);
+	CheckAttackerHabsAfterDamage(attacker, defender, attackInfo);
 
 	if (defender.frozen)
 		defender.frozen := 0;

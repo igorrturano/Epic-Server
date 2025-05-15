@@ -26,68 +26,7 @@ enum HAB_TAGS
 	HAB_COOLDOWN := "EM RECARGA!",
 endenum
 
-/**
- * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * damage: Valor (em int) do dano.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsBeforeDamage(attacker, defender, damage, type)
-	// var resist := damage;
-	var attackInfo := struct {
-		damage := damage,
-		damageType := type
-	};
-	
-	CheckHab_Martir(attacker, defender, attackInfo);
-	CheckHab_MantoRothen(attacker, defender, attackInfo);
-	CheckHab_KaniNoSutairu(attacker, defender, attackInfo);
-	CheckHab_Exoesqueleto(attacker, defender, attackInfo);
-	CheckHab_EspecialistaEscudos(attacker, defender, attackInfo);
-	CheckHab_Furia(attacker, defender, attackInfo);
-	CheckHab_ResilienciaBarbara(attacker, defender, attackInfo);
-	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
-	CheckHab_VinculoElemental(attacker, defender, attackInfo);
-	CheckHab_Backstab(attacker, defender, attackInfo);
-	CheckHab_Charge(attacker, defender, attackInfo);
-
-	// var totaldamage := CInt(damage-resist); 
-	return damage < 1 ? 1 : damage; // Garante dano mínimo = 1.
-endfunction
-
-/**
- * CheckDefenderHabsAfterDamage(byref defender, byref damage)
- *
- * Purpose
- * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
- * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
- * 
- * Parameters
- * attacker: Ref do atacante.
- * defender: Ref do alvo que recebe o dano.
- * damage: Valor (em int) do dano.
- * 
- * Return void
- *
- */
-function CheckDefenderHabsAfterDamage(attacker, defender, damage, type)
-	var attackInfo := struct {
-		damage := damage,
-		damageType := type
-	};
-	
-	CheckHab_RecuperacaoSalvadora(attacker, defender, attackInfo);
-	CheckHab_Vinganca(attacker, defender, attackInfo);
-	CheckHab_ChainOfPain(attacker, defender, attackInfo);
+function CheckAttackerHabsBeforeDamage(attacker, defender, attackInfo)
 endfunction
 
 /**
@@ -99,18 +38,17 @@ endfunction
  * Parameters
  * attacker: Entidade atacante (objeto ou identificador do atacante).
  * defender: Entidade defensora (objeto ou identificador do defensor).
- * hitchance: Chance de acerto do ataque.
- * rolldice: Valor do dado rolado para determinar o sucesso do ataque.
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
  *
  * Return
  * Retorna 1 após a execução das verificações e aplicações das habilidades.
  *
  */
-function CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
-	var attackInfo := struct {
-		hitchance := hitchance,
-		dice := rolldice
-	};
+function CheckAttackerHabsOnHit(attacker, defender, attackInfo)
+	// var attackInfo := struct {
+	// 	hitchance := hitchance,
+	// 	dice := rolldice
+	// };
 	
 	SkillChecks(attacker, defender, attacker.weapon, 1);
 
@@ -132,41 +70,7 @@ function CheckAttackerHabsOnHit(attacker, defender, hitchance, rolldice)
 	return 1;
 endfunction
 
-/**
- * CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
- *
- * Purpose
- * Verifica e aplica as habilidades defensivas do defensor quando atingido por um ataque.
- * Chama funções específicas para cada habilidade defensiva relevante e limpa a propriedade
- * "#contraataquepoderoso" do defensor, se estiver presente.
- *
- * Parameters
- * attacker: Identificador do atacante.
- * defender: Identificador do defensor.
- * hitchance: Chance de acerto do ataque.
- * rolldice: Valor do dado rolado para o ataque.
- *
- * Return
- * Retorna 1 sempre que a função é executada.
- */
-function CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
-	var attackInfo := struct {
-		hitchance := hitchance,
-		dice := rolldice
-	};
-	CheckHab_DesviarProjetil(attacker, defender, attackInfo);
-	CheckHab_DesviarDisparos(attacker, defender, attackInfo);
-	CheckHab_FerocidadeEnsanguentada(attacker, defender, attackInfo);
-	CheckHab_Evasao(attacker, defender, attackInfo);
-	CheckHab_ContraAtaque(attacker, defender, attackInfo);
-	CheckHab_Rebuke(attacker, defender, attackInfo);
-
-	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
-	if (GetObjProperty(defender, "#contraataquepoderoso"))
-		EraseObjProperty(defender, "#contraataquepoderoso");
-	endif
-
-	return 1;
+function CheckAttackerHabsAfterDamage(attacker, defender, attackInfo)
 endfunction
 
 /**
@@ -178,18 +82,12 @@ endfunction
  * Parameters
  * attacker: Objeto do atacante.
  * defender: Objeto do defensor.
- * hitchance: Chance de acerto do ataque.
- * rolldice: Valor do dado rolado para o ataque.
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
  *
  * Return
  * Retorna 1 após executar todas as verificações e efeitos.
  */
-function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
-	var attackInfo := struct {
-		hitchance := hitchance,
-		dice := rolldice
-	};
-	
+function CheckAttackerHabsOnMiss(attacker, defender, attackInfo)
 	SkillChecks(attacker, defender, attacker.weapon, 1);
 	EraseObjProperty(attacker, "#shooting_effects");
 
@@ -208,90 +106,106 @@ function CheckAttackerHabsOnMiss(attacker, defender, hitchance, rolldice)
 endfunction
 
 /**
+ * CheckDefenderHabsBeforeDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas antes de o defensor tomar o dano;
+ * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
+ * 
+ * Return void
+ *
+ */
+function CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo)
+	CheckHab_Martir(attacker, defender, attackInfo);
+	CheckHab_MantoRothen(attacker, defender, attackInfo);
+	CheckHab_KaniNoSutairu(attacker, defender, attackInfo);
+	CheckHab_Exoesqueleto(attacker, defender, attackInfo);
+	CheckHab_EspecialistaEscudos(attacker, defender, attackInfo);
+	CheckHab_Furia(attacker, defender, attackInfo);
+	CheckHab_ResilienciaBarbara(attacker, defender, attackInfo);
+	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
+	CheckHab_VinculoElemental(attacker, defender, attackInfo);
+	CheckHab_Backstab(attacker, defender, attackInfo);
+	CheckHab_Charge(attacker, defender, attackInfo);
+
+	// var totaldamage := CInt(damage-resist); 
+	return attackInfo.damage < 1 ? 1 : attackInfo.damage; // Garante dano mínimo = 1.
+endfunction
+
+/**
+ * CheckDefenderHabsOnHit(attacker, defender, hitchance, rolldice)
+ *
+ * Purpose
+ * Verifica e aplica as habilidades defensivas do defensor quando atingido por um ataque.
+ * Chama funções específicas para cada habilidade defensiva relevante e limpa a propriedade
+ * "#contraataquepoderoso" do defensor, se estiver presente.
+ *
+ * Parameters
+ * attacker: Identificador do atacante.
+ * defender: Identificador do defensor.
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
+ *
+ * Return
+ * Retorna 1 sempre que a função é executada.
+ */
+function CheckDefenderHabsOnHit(attacker, defender, attackInfo)
+	CheckHab_DesviarProjetil(attacker, defender, attackInfo);
+	CheckHab_DesviarDisparos(attacker, defender, attackInfo);
+	CheckHab_FerocidadeEnsanguentada(attacker, defender, attackInfo);
+	CheckHab_Evasao(attacker, defender, attackInfo);
+	CheckHab_ContraAtaque(attacker, defender, attackInfo);
+	CheckHab_Rebuke(attacker, defender, attackInfo);
+
+	// Isso aqui estava perdido no meio do código.... Tem que ver para o que serve...
+	if (GetObjProperty(defender, "#contraataquepoderoso"))
+		EraseObjProperty(defender, "#contraataquepoderoso");
+	endif
+
+	return 1;
+endfunction
+
+/**
+ * CheckDefenderHabsAfterDamage(byref defender, byref damage)
+ *
+ * Purpose
+ * Checar as habilidades que são ativadas depois de o defensor tomar o dano;
+ * Criado com byRef pois algumas habilidades modificadam quem é o defensor, dano, dentro outras possibiliades.
+ * 
+ * Parameters
+ * attacker: Ref do atacante.
+ * defender: Ref do alvo que recebe o dano.
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
+ * 
+ * Return void
+ *
+ */
+function CheckDefenderHabsAfterDamage(attacker, defender, attackInfo)
+	CheckHab_RecuperacaoSalvadora(attacker, defender, attackInfo);
+	CheckHab_Vinganca(attacker, defender, attackInfo);
+	CheckHab_ChainOfPain(attacker, defender, attackInfo);
+endfunction
+
+/**
  * CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
  *
  * Purpose
  * Função responsável por verificar e aplicar habilidades defensivas do defensor quando um ataque falha (miss).
- * Avalia condições como contra-ataque poderoso, esquiva acrobática e ataques de oportunidade, 
- * além de manipular propriedades de objetos relacionadas a essas habilidades.
- * Também executa o ataque de oportunidade caso os requisitos sejam atendidos.
  *
  * Parameters
  * attacker: objeto ou id do atacante.
  * defender: objeto ou id do defensor.
- * hitchance: chance de acerto original do ataque.
- * rolldice: valor do dado rolado para o ataque.
+ * attackInfo: Struct contendo as informações necessárias que as habs precisam tratar.
  *
  * Return
  * Retorna 1 sempre ao final da execução.
  */
-function CheckDefenderHabsOnMiss(attacker, defender, hitchance, rolldice)
-	// TODO: Colocar essas habilidades em suas funções
-	var attackInfo := struct {
-		hitchance := hitchance,
-		dice := rolldice
-	};
-	
-	var oportunidade := 0;
-	if (GetObjProperty(defender, "#contraataquepoderoso"))
-		SetObjProperty(defender, "#contraataquepoderoso", (GetObjProperty(defender, "#contraataquepoderoso")+1) );
-	endif
-
-	if (TemHabilidade(defender, "Esquiva Acrobatica"))
-		SetObjProperty(defender, "#esquivaacrobatica", 1);
-	endif
-
-	if (GetObjProperty(defender, "maolivre") == 1)
-		EraseObjPRoperty(defender, "maolivre");
-		oportunidade := 1;
-	endif
-
-	if ( (GetCooldown(defender, "ataqueoportunidade") > 0) || oportunidade == 1)
-		if (Distance(attacker,defender)<=1 && defender.weapon.attributte != "Ranged")
-			if (GetObjProperty(defender, "#atacandooportunidade") == error)
-				SetObjProperty(defender, "#atacandooportunidade", 1);
-				printtext(defender, "*ataque de oportunidade*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100)+1;
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, attacker.weapon, dmg);
-					oportunidade := 0;
-				endif
-
-				EraseObjProperty(defender, "#atacandooportunidade");
-			endif
-
-		elseif(Distance(attacker,defender)>1 && defender.weapon.attributte == "Ranged")
-			if (GetObjProperty(defender, "#atacandooportunidade") == error)
-				SetObjProperty(defender, "#atacandooportunidade", 1);
-				printtext(defender, "*ataque de oportunidade*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100)+1;
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					var result := Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, attacker.weapon, dmg);
-				endif
-
-				EraseObjProperty(defender, "#atacandooportunidade");
-			endif
-		endif
-	endif
-
+function CheckDefenderHabsOnMiss(attacker, defender, attackInfo)
+	// TODO: Adicionar habilidades que serão 
 
 	return 1;
 endfunction
@@ -441,7 +355,7 @@ endfunction
 function CheckHab_KaniNoSutairu(byref attacker, defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Kani no Sutairu";
 	
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := RandomDiceRoll("1d4");
 			attackInfo.damage -= resist;
@@ -457,7 +371,7 @@ endfunction
 function CheckHab_Exoesqueleto(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Exoesqueleto";
 
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := 2;
 			attackInfo.damage -= resist;
@@ -473,7 +387,7 @@ endfunction
 function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Especialista em Escudos";
 	
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (TemHabilidade(defender, HAB_NAME) && (defender.shield).IsA(POLCLASS_ARMOR)) // Se tiver a hab e usar escudo
 			var resist := RandomDiceRoll("1d4");
 			attackInfo.damage -= resist;
@@ -487,7 +401,7 @@ function CheckHab_EspecialistaEscudos(byref attacker, byref defender, byRef atta
 endfunction
 
 function CheckHab_Backstab(byref attacker, byref defender, byRef attackInfo := struct{})
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (GetObjProperty(attacker,  "backstab") && GetObjProperty(attacker.weapon, "backstab"))
 			EraseObjProperty(attacker, "backstab");
 			EraseObjProperty(attacker.weapon, "backstab");
@@ -504,7 +418,7 @@ endfunction
 function CheckHab_Furia(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Furia";
 	
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (GetCooldown(attacker, "furia"))
 			var damagemod := RandomDiceRoll("1d4");
 			attackInfo.damage += damagemod;
@@ -520,7 +434,7 @@ endfunction
 function CheckHab_ResilienciaBarbara(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Resiliência Bárbara";
 	
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (CheckHab_Furia(defender, 0, attackInfo) && TemHabilidade(defender, HAB_NAME)) // Antigo Pele de Rocha
 			var resist := RandomDiceRoll("1d4");
 			attackInfo.damage -= resist;
@@ -571,7 +485,7 @@ endfunction
 function CheckHab_VinculoElemental(byref attacker, byref defender, byRef attackInfo := struct{})
 	var HAB_NAME := "Vínculo Elemental";
 	
-	if (IsPhysicalDamage(attackInfo.damageType))
+	if (IsPhysicalDamage(attackInfo.type))
 		if (TemHabilidade(defender, HAB_NAME))
 			var resist := 0; // TODO: Rever se esse valor vai ser assim, ou se a função vai precisar receber um parâmetro com o valor resistido até agora.
 			var arcane_armor := AP_GetSkill(defender, ARCANA)/20;
