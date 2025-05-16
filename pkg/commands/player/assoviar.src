@@ -28,6 +28,30 @@ program textcmd_Assoviar(character)
     if (pet_in_limbo_serial)
         success := CallPetBack(character, CInt(pet_in_limbo_serial));
     else
+        // Verifica se o jogador tem algum pet registrado em estábulo
+        var has_stabled_pet := 0;
+        var pets := ListMobilesNearLocation(
+            character.x, 
+            character.y, 
+            character.z, 
+            MAX_PET_SCAN_RANGE, 
+            character.realm
+        );
+        
+        foreach mob in pets
+            if (mob.IsA(POLCLASS_NPC) && 
+                mob.master == character &&
+                GetObjProperty(mob, "StablePostSerial"))
+                has_stabled_pet := 1;
+                break;
+            endif
+        endforeach
+        
+        if (!has_stabled_pet)
+            SendSysMessage(character, "Você precisa ter um pet registrado em um estábulo para usar este comando.");
+            return 0;
+        endif
+        
         success := SendPetAway(character);
     endif
 
@@ -44,6 +68,14 @@ function CallPetBack(character, pet_serial)
 
     if (!pet || pet.master != character || !GetObjProperty(pet, "EstaNoLimbo"))
         SendSysMessage(character, "Não foi possível chamar o pet.");
+        return 0;
+    endif
+    
+    // Verifica se o pet ainda está registrado em um estábulo
+    if (!GetObjProperty(pet, "StablePostSerial"))
+        SendSysMessage(character, "O registro do estábulo deste pet expirou.");
+        EraseObjProperty(character, "PlayerPetInLimboSerial");
+        EraseObjProperty(pet, "EstaNoLimbo");
         return 0;
     endif
 
@@ -100,6 +132,8 @@ function CallPetBack(character, pet_serial)
     EraseObjProperty(character, "PlayerPetInLimboSerial");
     EraseObjProperty(pet, "EstaNoLimbo");
     EraseObjProperty(pet, "OriginalLocation");
+    
+    // Não apaga a propriedade StablePostSerial para manter a associação com o estábulo
 
     SendSysMessage(character, pet.name + " voltou!");
     return 1;
@@ -118,13 +152,14 @@ function SendPetAway(character)
     foreach mob in pets
         if (mob.IsA(POLCLASS_NPC) && 
             mob.master == character && 
-            !GetObjProperty(mob, "EstaNoLimbo"))
+            !GetObjProperty(mob, "EstaNoLimbo") &&
+            GetObjProperty(mob, "StablePostSerial"))
             controllable_pets.Append(mob);
         endif
     endforeach
 
     if (controllable_pets.Size() == 0)
-        SendSysMessage(character, "Nenhum pet encontrado.");
+        SendSysMessage(character, "Nenhum pet registrado em estábulo encontrado.");
         return 0;
     endif
 
@@ -142,6 +177,12 @@ function SendPetAway(character)
     // Verifica se o pet já foi enviado
     if (GetObjProperty(target_pet, "EstaNoLimbo"))
         SendSysMessage(character, "Este pet já está em um local seguro.");
+        return 0;
+    endif
+    
+    // Verifica se o pet está registrado em um estábulo
+    if (!GetObjProperty(target_pet, "StablePostSerial"))
+        SendSysMessage(character, "Este pet precisa estar registrado em um estábulo para ser protegido.");
         return 0;
     endif
 

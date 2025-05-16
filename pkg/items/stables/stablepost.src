@@ -51,7 +51,7 @@ function GuardarAnimal(who, post)
     endif
 
     // 3. Calcular preço baseado em TameDifficulty
-var precoPorDia := ObterPrecoPorDia(target_pet);
+    var precoPorDia := ObterPrecoPorDia(target_pet);
 
     // 4. Confirmar guarda via Gump simples
     var gump := GFCreateGump();
@@ -79,7 +79,7 @@ var precoPorDia := ObterPrecoPorDia(target_pet);
 
     // 6. Guardar animal
     target_pet.hidden := 0;
-    target_pet.paralyzed := 1;
+    target_pet.setParalyzed(1);
     GrantPrivilege(target_pet, "invul");
     target_pet.enable("invul");
 
@@ -102,8 +102,14 @@ function ResgatarAnimal(who, post)
         return 0;
     endif
 
+    // Verifica se o pet está em limbo
+    if (GetObjProperty(animal, "EstaNoLimbo"))
+        SendSysMessage(who, "Seu pet está em limbo. Use o comando .assoviar para chamá-lo de volta primeiro.");
+        return 0;
+    endif
+
     // Restaura estado original
-    animal.paralyzed := 0;
+    animal.setParalyzed(0);
     RevokePrivilege(animal, "invul");
     animal.disable("invul");
 
