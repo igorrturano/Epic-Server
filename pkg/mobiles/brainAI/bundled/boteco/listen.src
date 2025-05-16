@@ -65,20 +65,20 @@ function SpeechEvent(npc, byref event)
 		var parms := array;
 		parms[0] := npc;
 		parms[1] := source;
-		start_script(":tax:alugar", parms);
+		start_script("alugar", parms);
 	elseif ( text["devolver"] )
 		AI_Speak(npc, "Vai devolver o imovel alugado?");
 		AI_Turn(npc, source, NETURN_TOWARD);
 		var parms := array;
 		parms[0] := npc;
 		parms[1] := source;
-		start_script(":tax:devolver", parms);
+		start_script("devolver", parms);
 	elseif ( text["configurar"] )
 		if (source.cmdlevel > 1)
 			var parms := array;
 			parms[0] := npc;
 			parms[1] := source;
-			start_script(":tax:configuraAluguel", parms);
+			start_script("configuraAluguel", parms);
 		endif
 	elseif ( text["bom dia"] || text["boa noite"] || text["boa tarde"] )
 		AI_Speak(npc, "Ola, em que posso ajuda-lo? Tenho imoveis pata *alugar*.");
