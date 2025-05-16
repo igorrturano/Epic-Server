@@ -47,23 +47,54 @@ function CallPetBack(character, pet_serial)
         return 0;
     endif
 
-    // Remove estados especiais
+    // Remove estados especiais que impedem o movimento
     pet.hidden := 0;
     pet.frozen := 0;
     pet.invul := 0;
-
  
     PlaySoundEffect(character, 0x448);
+    
+    // Define uma localização próxima ao jogador para o pet aparecer
+    var appear_loc := struct{
+        x := 0,
+        y := 0,
+        z := 0
+    };
 
-    // Retorna para perto do dono com pequeno deslocamento aleatório
+    // Encontrar uma localização válida a 5-8 tiles de distância do master
+    var dist := RandomInt(3) + 5; // 5-8 tiles
+    var angle := RandomInt(360); // direção aleatória
+    var radian := angle * (ConstPi() / 180);
+    
+    appear_loc.x := character.x + CInt(dist * Cos(radian));
+    appear_loc.y := character.y + CInt(dist * Sin(radian));
+    appear_loc.z := GetMapInfo(appear_loc.x, appear_loc.y).z;
+    
+    // Teletransporta o pet para o local de aparecimento
     MoveObjectToLocation(
         pet, 
-        character.x + RandomInt(3) - 1, 
-        character.y + RandomInt(3) - 1, 
-        character.z, 
+        appear_loc.x, 
+        appear_loc.y, 
+        appear_loc.z, 
         character.realm, 
         MOVEOBJECT_FORCELOCATION
     );
+    
+    // Faz o pet andar até o dono
+    PrintTextAbove(pet, "*voltando para " + character.name + "*");
+    
+    // Enviar um evento para o pet andar para o dono
+    var walk_event := struct{
+        "type" := 0xA008, // GO_LOC_CMD
+        "source" := character,
+        "targ" := struct{
+            "x" := character.x,
+            "y" := character.y,
+            "type" := "walk" // Tipo "walk" faz o pet andar até o destino
+        }
+    };
+    
+    SendEvent(pet, walk_event);
 
     // Limpa propriedades
     EraseObjProperty(character, "PlayerPetInLimboSerial");
@@ -129,14 +160,15 @@ function SendPetAway(character)
 
     // Adiciona emote antes de enviar
     PrintTextAbove(target_pet, "*correndo pro horizonte*");
-    sleepms(3000);  // Delay de 2 segundos
+    sleepms(300);  // Delay de 3 segundos
 
     var params := struct{
         pet_serial := target_pet.serial,
         dest_x := 0,
         dest_y := 0,
         dest_z := 0,
-        owner_serial := character.serial
+        owner_serial := character.serial,
+        run_away := 1  // Indica que o pet deve correr para longe antes de desaparecer
     };
 
     if (!start_script("ai/sendpetlimbo", params))

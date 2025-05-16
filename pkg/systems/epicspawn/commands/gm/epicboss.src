@@ -809,32 +809,42 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     var y_pos := 190;
     
-    // Display weapon special abilities
+    // Display weapon special abilities with delete buttons
     if (form_data.special && form_data.special.size() > 0)
-        foreach ability in (form_data.special)
-            GFTextLine(gump, 330, y_pos, 2100, ability.name);
-            if (ability.description)
-                GFTooltipText(gump, ability.description);
-            endif
-            y_pos += 20;
-        endforeach
-    endif
-    
-    // Display "..." if there are many abilities
-    if (form_data.special && form_data.special.size() > 4)
-        GFTextLine(gump, 330, y_pos, 2100, "...");
+        GFTextLine(gump, 330, y_pos, 33, "Weapon Abilities:");
         y_pos += 20;
-    endif
-    
-    // Display armor special abilities
-    if (form_data.armorspecial && form_data.armorspecial.size() > 0)
-        foreach ability in (form_data.armorspecial)
-            GFTextLine(gump, 330, y_pos, 2100, ability.name);
+        
+        // Button IDs for weapon special abilities: 140-149 (up to 10 abilities)
+        for i := 1 to form_data.special.size()
+            var ability := form_data.special[i];
+            // Add X button for deletion
+            GFAddButton(gump, 330, y_pos, 30008, 30009, GF_CLOSE_BTN, 139+i); // Button ID will be 140 for first ability
+            GFTextLine(gump, 350, y_pos, 2100, ability.name);
             if (ability.description)
                 GFTooltipText(gump, ability.description);
             endif
             y_pos += 20;
-        endforeach
+        endfor
+        
+        y_pos += 10; // Add some spacing between sections
+    endif
+    
+    // Display armor special abilities with delete buttons
+    if (form_data.armorspecial && form_data.armorspecial.size() > 0)
+        GFTextLine(gump, 330, y_pos, 33, "Armor Abilities:");
+        y_pos += 20;
+        
+        // Button IDs for armor special abilities: 150-159 (up to 10 abilities)
+        for i := 1 to form_data.armorspecial.size()
+            var ability := form_data.armorspecial[i];
+            // Add X button for deletion
+            GFAddButton(gump, 330, y_pos, 30008, 30009, GF_CLOSE_BTN, 149+i); // Button ID will be 150 for first ability
+            GFTextLine(gump, 350, y_pos, 2100, ability.name);
+            if (ability.description)
+                GFTooltipText(gump, ability.description);
+            endif
+            y_pos += 20;
+        endfor
     endif
     
     // Add a vertical divider
@@ -876,10 +886,14 @@ function ShowPage3(who, title, gump_width, gump_height)
         if (form_data.natural_traits.immunities && form_data.natural_traits.immunities.size() > 0)
             GFTextLine(gump, 80, y_pos, 33, "Immunities:");
             y_pos += 20;
-            foreach trait in (form_data.natural_traits.immunities)
+            // Button IDs for immunities: 110-119 (up to 10 immunities)
+            for i := 1 to form_data.natural_traits.immunities.size()
+                var trait := form_data.natural_traits.immunities[i];
+                // Add X button for deletion
+                GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 109+i); // Button ID will be 110 for first immunity
                 GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
                 y_pos += 20;
-            endforeach
+            endfor
             y_pos += 10; // Add some spacing between sections
         endif
         
@@ -887,10 +901,14 @@ function ShowPage3(who, title, gump_width, gump_height)
         if (form_data.natural_traits.resistances && form_data.natural_traits.resistances.size() > 0)
             GFTextLine(gump, 80, y_pos, 33, "Resistances:");
             y_pos += 20;
-            foreach trait in (form_data.natural_traits.resistances)
+            // Button IDs for resistances: 120-129 (up to 10 resistances)
+            for i := 1 to form_data.natural_traits.resistances.size()
+                var trait := form_data.natural_traits.resistances[i];
+                // Add X button for deletion
+                GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 119+i); // Button ID will be 120 for first resistance
                 GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
                 y_pos += 20;
-            endforeach
+            endfor
             y_pos += 10; // Add some spacing between sections
         endif
         
@@ -898,10 +916,14 @@ function ShowPage3(who, title, gump_width, gump_height)
         if (form_data.natural_traits.vulnerabilities && form_data.natural_traits.vulnerabilities.size() > 0)
             GFTextLine(gump, 80, y_pos, 33, "Vulnerabilities:");
             y_pos += 20;
-            foreach trait in (form_data.natural_traits.vulnerabilities)
+            // Button IDs for vulnerabilities: 130-139 (up to 10 vulnerabilities)
+            for i := 1 to form_data.natural_traits.vulnerabilities.size()
+                var trait := form_data.natural_traits.vulnerabilities[i];
+                // Add X button for deletion
+                GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 129+i); // Button ID will be 130 for first vulnerability
                 GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
                 y_pos += 20;
-            endforeach
+            endfor
         endif
     endif
     
@@ -916,11 +938,15 @@ function ShowPage3(who, title, gump_width, gump_height)
         GFTextLine(gump, 580, y_posd, 1153, "Death Events:");
         y_posd += 20;
         
-        foreach event in (form_data.deathevents)
+        // Display each death event with a delete button
+        for i := 1 to form_data.deathevents.size()
+            var event := form_data.deathevents[i];
+            // Add X button for deletion - Use button ID 55+i to distinguish from combat events
+            GFAddButton(gump, 550, y_posd, 30008, 30009, GF_CLOSE_BTN, 54+i); // Button ID will be 55 for first event
             GFTextLine(gump, 580, y_posd, 1153, "- " + event.name + 
                       " (Type: " + event.type + ")");
             y_posd += 20;
-        endforeach
+        endfor
     else
         GFTextLine(gump, 580, y_posd, 1153, "No death events configured");
     endif
@@ -967,6 +993,78 @@ function ShowPage3(who, title, gump_width, gump_height)
             form_data.combatevents.Erase(event_idx);
             if (form_data.combatevents.size() == 0)
                 form_data.combatevents := array{}; // Reset to empty array if last event was removed
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 55 && input[0] < 55 + 10) // Support up to 10 death events, adjust if needed
+        var event_idx := input[0] - 54; // Button 55 corresponds to index 1
+        SendSysMessage(who, "Death event button pressed: " + input[0] + ", calculated index: " + event_idx);
+        if (event_idx >= 1 && event_idx <= form_data.deathevents.size())
+            var event_name := form_data.deathevents[event_idx].name;
+            SendSysMessage(who, "Removing death event '" + event_name + "' (index " + event_idx + ")");
+            form_data.deathevents.Erase(event_idx);
+            if (form_data.deathevents.size() == 0)
+                form_data.deathevents := array{}; // Reset to empty array if no events left
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 110 && input[0] <= 119) // Handle immunity deletion (up to 10 immunities) - new range 110-119
+        var trait_idx := input[0] - 109; // Button ID 110 corresponds to index 1
+        SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: " + trait_idx);
+        if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.immunities.size())
+            var trait_name := form_data.natural_traits.immunities[trait_idx];
+            SendSysMessage(who, "Removing immunity '" + trait_name + "'");
+            form_data.natural_traits.immunities.Erase(trait_idx);
+            if (form_data.natural_traits.immunities.size() == 0)
+                form_data.natural_traits.immunities := array{}; // Reset to empty array if all immunities are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 120 && input[0] <= 129) // Handle resistance deletion (up to 10 resistances) - new range 120-129
+        var trait_idx := input[0] - 119; // Button ID 120 corresponds to index 1
+        SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: " + trait_idx);
+        if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.resistances.size())
+            var trait_name := form_data.natural_traits.resistances[trait_idx];
+            SendSysMessage(who, "Removing resistance '" + trait_name + "'");
+            form_data.natural_traits.resistances.Erase(trait_idx);
+            if (form_data.natural_traits.resistances.size() == 0)
+                form_data.natural_traits.resistances := array{}; // Reset to empty array if all resistances are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 130 && input[0] <= 139) // Handle vulnerability deletion (up to 10 vulnerabilities) - new range 130-139
+        var trait_idx := input[0] - 129; // Button ID 130 corresponds to index 1
+        SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: " + trait_idx);
+        if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.vulnerabilities.size())
+            var trait_name := form_data.natural_traits.vulnerabilities[trait_idx];
+            SendSysMessage(who, "Removing vulnerability '" + trait_name + "'");
+            form_data.natural_traits.vulnerabilities.Erase(trait_idx);
+            if (form_data.natural_traits.vulnerabilities.size() == 0)
+                form_data.natural_traits.vulnerabilities := array{}; // Reset to empty array if all vulnerabilities are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 140 && input[0] <= 149) // Handle weapon special ability deletion (up to 10 abilities) - range 140-149
+        var ability_idx := input[0] - 139; // Button ID 140 corresponds to index 1
+        SendSysMessage(who, "Weapon special ability button pressed: " + input[0] + ", calculated index: " + ability_idx);
+        if (ability_idx >= 1 && ability_idx <= form_data.special.size())
+            var ability_name := form_data.special[ability_idx].name;
+            SendSysMessage(who, "Removing weapon special ability '" + ability_name + "'");
+            form_data.special.Erase(ability_idx);
+            if (form_data.special.size() == 0)
+                form_data.special := array{}; // Reset to empty array if all abilities are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 150 && input[0] <= 159) // Handle armor special ability deletion (up to 10 abilities) - range 150-159
+        var ability_idx := input[0] - 149; // Button ID 150 corresponds to index 1
+        SendSysMessage(who, "Armor special ability button pressed: " + input[0] + ", calculated index: " + ability_idx);
+        if (ability_idx >= 1 && ability_idx <= form_data.armorspecial.size())
+            var ability_name := form_data.armorspecial[ability_idx].name;
+            SendSysMessage(who, "Removing armor special ability '" + ability_name + "'");
+            form_data.armorspecial.Erase(ability_idx);
+            if (form_data.armorspecial.size() == 0)
+                form_data.armorspecial := array{}; // Reset to empty array if all abilities are deleted
             endif
         endif
         return ShowPage3(who, title, gump_width, gump_height);
@@ -1596,6 +1694,7 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     boss.loot := form_data.loot;
     boss.deathevents := form_data.deathevents;
     boss.combatevents := form_data.combatevents;
+    boss.custom_abilities := form_data.custom_abilities;  // Add custom abilities to boss structure
 
     // Basic info
     boss.npctemplate := form_data.npctemplate;
