@@ -876,10 +876,14 @@ function ShowPage3(who, title, gump_width, gump_height)
         if (form_data.natural_traits.immunities && form_data.natural_traits.immunities.size() > 0)
             GFTextLine(gump, 80, y_pos, 33, "Immunities:");
             y_pos += 20;
-            foreach trait in (form_data.natural_traits.immunities)
+            // Button IDs for immunities: 110-119 (up to 10 immunities)
+            for i := 1 to form_data.natural_traits.immunities.size()
+                var trait := form_data.natural_traits.immunities[i];
+                // Add X button for deletion
+                GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 109+i); // Button ID will be 110 for first immunity
                 GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
                 y_pos += 20;
-            endforeach
+            endfor
             y_pos += 10; // Add some spacing between sections
         endif
         
@@ -887,10 +891,14 @@ function ShowPage3(who, title, gump_width, gump_height)
         if (form_data.natural_traits.resistances && form_data.natural_traits.resistances.size() > 0)
             GFTextLine(gump, 80, y_pos, 33, "Resistances:");
             y_pos += 20;
-            foreach trait in (form_data.natural_traits.resistances)
+            // Button IDs for resistances: 120-129 (up to 10 resistances)
+            for i := 1 to form_data.natural_traits.resistances.size()
+                var trait := form_data.natural_traits.resistances[i];
+                // Add X button for deletion
+                GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 119+i); // Button ID will be 120 for first resistance
                 GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
                 y_pos += 20;
-            endforeach
+            endfor
             y_pos += 10; // Add some spacing between sections
         endif
         
@@ -898,10 +906,14 @@ function ShowPage3(who, title, gump_width, gump_height)
         if (form_data.natural_traits.vulnerabilities && form_data.natural_traits.vulnerabilities.size() > 0)
             GFTextLine(gump, 80, y_pos, 33, "Vulnerabilities:");
             y_pos += 20;
-            foreach trait in (form_data.natural_traits.vulnerabilities)
+            // Button IDs for vulnerabilities: 130-139 (up to 10 vulnerabilities)
+            for i := 1 to form_data.natural_traits.vulnerabilities.size()
+                var trait := form_data.natural_traits.vulnerabilities[i];
+                // Add X button for deletion
+                GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 129+i); // Button ID will be 130 for first vulnerability
                 GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
                 y_pos += 20;
-            endforeach
+            endfor
         endif
     endif
     
@@ -983,6 +995,42 @@ function ShowPage3(who, title, gump_width, gump_height)
             form_data.deathevents.Erase(event_idx);
             if (form_data.deathevents.size() == 0)
                 form_data.deathevents := array{}; // Reset to empty array if no events left
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 110 && input[0] <= 119) // Handle immunity deletion (up to 10 immunities) - new range 110-119
+        var trait_idx := input[0] - 109; // Button ID 110 corresponds to index 1
+        SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: " + trait_idx);
+        if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.immunities.size())
+            var trait_name := form_data.natural_traits.immunities[trait_idx];
+            SendSysMessage(who, "Removing immunity '" + trait_name + "'");
+            form_data.natural_traits.immunities.Erase(trait_idx);
+            if (form_data.natural_traits.immunities.size() == 0)
+                form_data.natural_traits.immunities := array{}; // Reset to empty array if all immunities are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 120 && input[0] <= 129) // Handle resistance deletion (up to 10 resistances) - new range 120-129
+        var trait_idx := input[0] - 119; // Button ID 120 corresponds to index 1
+        SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: " + trait_idx);
+        if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.resistances.size())
+            var trait_name := form_data.natural_traits.resistances[trait_idx];
+            SendSysMessage(who, "Removing resistance '" + trait_name + "'");
+            form_data.natural_traits.resistances.Erase(trait_idx);
+            if (form_data.natural_traits.resistances.size() == 0)
+                form_data.natural_traits.resistances := array{}; // Reset to empty array if all resistances are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 130 && input[0] <= 139) // Handle vulnerability deletion (up to 10 vulnerabilities) - new range 130-139
+        var trait_idx := input[0] - 129; // Button ID 130 corresponds to index 1
+        SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: " + trait_idx);
+        if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.vulnerabilities.size())
+            var trait_name := form_data.natural_traits.vulnerabilities[trait_idx];
+            SendSysMessage(who, "Removing vulnerability '" + trait_name + "'");
+            form_data.natural_traits.vulnerabilities.Erase(trait_idx);
+            if (form_data.natural_traits.vulnerabilities.size() == 0)
+                form_data.natural_traits.vulnerabilities := array{}; // Reset to empty array if all vulnerabilities are deleted
             endif
         endif
         return ShowPage3(who, title, gump_width, gump_height);
