@@ -2069,3 +2069,39 @@ function HandleInitializationLoot(mobile, boss_struct)
 
     return 1;
 endfunction
+
+function startPatrolling(byref me, patrol_points, current_patrol_point)
+    var patrol_direction := GetObjProperty(me, "#patrol_direction");
+    if (patrol_direction == error)
+        patrol_direction := 1; // 1 = forward, -1 = backward
+        SetObjProperty(me, "#patrol_direction", patrol_direction);
+    endif
+    
+    var dest := patrol_points[current_patrol_point];
+    
+    // Check if we've reached the destination (within 1 tile)
+    if (CoordinateDistance(me.x, me.y, dest.x, dest.y) <= 1)
+        // Determine next patrol point based on direction
+        if (patrol_direction == 1)
+            current_patrol_point += 1;
+            // If reached the end, reverse direction
+            if (current_patrol_point > patrol_points.size())
+                current_patrol_point := patrol_points.size() - 1;
+                patrol_direction := -1;
+                SetObjProperty(me, "#patrol_direction", patrol_direction);
+            endif
+        else // patrol_direction == -1
+            current_patrol_point -= 1;
+            // If reached the beginning, reverse direction
+            if (current_patrol_point < 1)
+                current_patrol_point := 2;
+                patrol_direction := 1;
+                SetObjProperty(me, "#patrol_direction", patrol_direction);
+            endif
+        endif
+        SetObjProperty(me, "#current_patrol_point", current_patrol_point);
+    endif
+
+    // Walk toward destination
+    WalkTowardLocation(dest.x, dest.y);
+endfunction
