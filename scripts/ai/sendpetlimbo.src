@@ -1,12 +1,61 @@
 use uo;
 use os;
-
+use npc;
+use math;
+use util;
 program SendPetToLimbo(params)
     var pet := SystemFindObjectBySerial(CInt(params.pet_serial));
     var owner := SystemFindObjectBySerial(CInt(params.owner_serial));
 
     if (!pet || !owner)
         return;
+    endif
+
+    // Se o pet estiver próximo o suficiente do dono, fazê-lo correr para longe primeiro
+    if (params.run_away == 1)
+        // Encontrar uma direção para correr (oposta ao dono)
+        var dir_x := pet.x - owner.x;
+        var dir_y := pet.y - owner.y;
+        
+        // Normalizar e multiplicar pela distância desejada (8 tiles)
+        var dist := 8;
+        var size := Sqrt(dir_x*dir_x + dir_y*dir_y);
+        if (size > 0)
+            dir_x := CInt(dir_x / size * dist);
+            dir_y := CInt(dir_y / size * dist);
+        else
+            // Se estiver no mesmo tile, escolher uma direção aleatória
+            dir_x := RandomInt(dist) - RandomInt(dist);
+            dir_y := RandomInt(dist) - RandomInt(dist);
+        endif
+        
+        // Fazer o pet correr nessa direção
+        var run_to_x := pet.x + dir_x;
+        var run_to_y := pet.y + dir_y;
+        
+        // Enviar um evento para o pet correr para essa localização
+        var run_event := struct{
+            "type" := 0xA008, // GO_LOC_CMD
+            "source" := owner,
+            "targ" := struct{
+                "x" := run_to_x,
+                "y" := run_to_y,
+                "type" := "run"
+            }
+        };
+        
+        SendEvent(pet, run_event);
+        
+        // Esperar até que o pet chegue perto do destino ou timeout (5 segundos)
+        var start_time := ReadGameClock();
+        var timeout := 5;
+        
+        while (CoordinateDistance(pet.x, pet.y, run_to_x, run_to_y) > 2)
+            if (ReadGameClock() - start_time > timeout)
+                break;
+            endif
+            sleepms(500);
+        endwhile
     endif
 
     // Armazena localização original
