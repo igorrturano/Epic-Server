@@ -597,10 +597,8 @@ function ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons,
     
     // Add Cancel button
     GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
-    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
-    
+        
     var input := GFSendGump(who, gump);
-    
     // Handle pagination buttons
     if (input[0] == 900) // Previous page
         return ShowWeaponsWithPagination(who, title, gump_width, gump_height, weapons, weapon_type, page - 1);
@@ -659,7 +657,6 @@ function ShowClassAbilities(who, title, gump_width, gump_height, class_name)
     
     // Add Cancel button
     GFAddButton(gump, gump_width - 100, gump_height - 50, 2119, 2120, 1, 0);
-    GFTextLine(gump, gump_width - 70, gump_height - 50, 33, "CANCEL");
     
     var input := GFSendGump(who, gump);
     
@@ -757,7 +754,6 @@ function ShowMagicSchoolSelection(who, title, gump_width, gump_height)
     
     // Add Cancel button
     GFAddButton(gump, 200, 350, 2119, 2120, GF_CLOSE_BTN, 0);
-    GFTextLine(gump, 240, 350, 33, "Cancel");
     
     var input := GFSendGump(who, gump);
     
@@ -931,13 +927,9 @@ endfunction
 function HandleAddCustomAbility(who, byref form_data)
     var abilities := GetAvailableCustomAbilities();
     
-    var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450);
-    GFResizePic(gump, 15, 15, 9350, 470, 420);
+    var gump := GFECreateGump("Select Custom Behavior", 450, 600);
     
-    GFTextMid(gump, 0, 25, 500, 1153, "Select Custom Behavior");
-    
-    var y_pos := 60;
+    var y_pos := 80;
     var btn_id := 1;
     var ability_map := dictionary{}; // To track button-to-ability mapping
     
@@ -963,7 +955,6 @@ function HandleAddCustomAbility(who, byref form_data)
 
     // Add Cancel button
     GFAddButton(gump, 30, y_pos + 20, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 60, y_pos + 20, 33, "Cancel");
     
     var result := GFSendGump(who, gump);
     
