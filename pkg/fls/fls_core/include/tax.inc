@@ -8,7 +8,7 @@ const ALL_TAXES := 1;
 
 function CobrarImpostos()
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elems := df.keys();
 
 	var elem;
@@ -57,7 +57,7 @@ function getDivida(serial, city)
 
 	var valor := GetTaxValue(serial, city);
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	var pagamentos := CInt(elem.GetProp("pagamentos"));
@@ -76,7 +76,7 @@ endfunction
  */
 function GetPlayerTaxes(serial)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 	return	elem.GetProp("taxes");
 
@@ -88,7 +88,7 @@ endfunction
 function AddDevedor(serial, city)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -108,7 +108,7 @@ endfunction
 function getDevedores(city)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -124,7 +124,7 @@ endfunction
 function EraseDevedor(serial, city)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -142,7 +142,7 @@ endfunction
  */
 function payTaxes(serial, city, bankbox)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	var pagamentos := CInt(elem.GetProp("pagamentos"));
@@ -189,7 +189,7 @@ endfunction
 
 function hasAccount(serial, city)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	if (elem.GetProp("cidade") == city)
@@ -202,7 +202,7 @@ endfunction
 
 function getCitzenCity(serial)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	if (elem.GetProp("cidade") == error)
@@ -215,7 +215,7 @@ endfunction
 
 function getCitzenPayments(serial)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	if (elem.GetProp("cidade") == error)
@@ -228,7 +228,7 @@ endfunction
 
 function SetupPlayerAccount(serial, city)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	elem.SetProp("cidade", city);
@@ -241,7 +241,7 @@ function GetCitzens(city)
 
 	var citzens := array;
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elements := df.Keys();
 
 	var citzen;
@@ -263,7 +263,7 @@ endfunction
 function GetCityTaxes(city)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -285,7 +285,7 @@ endfunction
 function AddCityTax(city, tax, value)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -308,7 +308,7 @@ endfunction
  */
 function DeleteCityTax(city, tax)
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -352,7 +352,7 @@ endfunction
 function getCityGold(city)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -371,7 +371,7 @@ endfunction
 
 function getCities()
 
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	var cidades := df.Keys();
 	return cidades;
 
@@ -380,7 +380,7 @@ endfunction
 function setCityGold(city, value)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -393,7 +393,7 @@ endfunction
 function addRealmCash(city, total)
 
 	//procura o datafile que guarda o quanto cada cidade paga, se nao achar cria
-	var df := DFOpenDataFile(":tax:tax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("tax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//procura o elem com o nome da cidade, se nao achar cria
 	var elem := DFFindElement(df, city, DF_CREATE);
@@ -407,7 +407,7 @@ endfunction
 
 function GetPlayerCity(serial)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	return elem.GetProp("cidade");
@@ -416,7 +416,7 @@ endfunction
 
 function RemovePlayer(serial, city)
 
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	var elem := DFFindElement(df, CStr(serial), DF_CREATE);
 
 	elem.EraseProp("cidade");
@@ -431,7 +431,7 @@ endfunction
 function AddTaxToPlayer(playerSerial, tax)
 
 	//abre o datafile se nao tiver cria
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//pega o elem do char, se nao tiver cria.
 	var elem := DFFindElement(df, CStr(playerSerial), DF_CREATE);
@@ -456,7 +456,7 @@ endfunction
 function DeletePlayerTax(playerSerial, all := 0, taxname := "")
 
 	//abre o datafile se nao tiver cria
-	var df := DFOpenDataFile(":tax:playerTax", DF_CREATE, DF_KEYTYPE_STRING);
+	var df := DFOpenDataFile("playerTax", DF_CREATE, DF_KEYTYPE_STRING);
 	
 	//pega o elem do char, se nao tiver cria.
 	var elem := DFFindElement(df, CStr(playerSerial), DF_CREATE);
