@@ -1,0 +1,46 @@
+// This script animates a mimic (east or west facing) and destroys it after animation
+// East sequence: 0xCF89 to 0xCF92
+// West sequence: 0xCF94 to 0xCF9D
+
+use uo;
+use os;
+include ":combat:damage";
+
+program mimic_animation(who, item)
+    // First, determine direction based on current graphic
+    var graphics;
+    var is_east := 1; // Default to east-facing
+    
+    if (item.graphic >= 0xCF94 && item.graphic <= 0xCF9D)
+        // West-facing sequence
+        is_east := 0;
+        graphics := array{0xCF94, 0xCF95, 0xCF96, 0xCF97, 0xCF98, 0xCF99, 0xCF9A,/*  0xCF9B,  */0xCF9C, 0xCF9D};
+    else
+        // East-facing sequence (default if not matching west)
+        graphics := array{0xCF89, 0xCF8A, 0xCF8B, 0xCF8C, 0xCF8D, 0xCF8E, 0xCF8F, /* 0xCF90,  */0xCF91, 0xCF92};
+    endif
+    
+    // Determine starting position in sequence if item's current graphic is in the sequence
+    var start_idx := 1;
+    for i := 1 to graphics.size()
+        if (item.graphic == graphics[i])
+            start_idx := i;
+            break;
+        endif
+    endfor
+    
+    // Play animation sequence
+    for i := start_idx to graphics.size()
+        item.graphic := graphics[i];
+        sleepms(100); // 200ms delay between frames
+    endfor
+    PlaySoundEffect(who, 0x44F); // Play sound effect for mimic animation
+    DamageFLS(who, RandomInt(20));
+
+    // Leave the mimic in the final position for 2 seconds
+    sleep(1);
+    
+    // Destroy the item
+    DestroyItem(item);
+
+endprogram
