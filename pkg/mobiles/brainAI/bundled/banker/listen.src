@@ -175,8 +175,8 @@ function SpeechEvent(npc, byref event)
 					endif
 					var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_CREATE);	
 					SetupPlayerAccount(source.serial, bank_region);
-					//var taxes := GetCityTaxes(bank_region);
-					//AddTaxToPlayer(source.serial, taxes); 
+					var taxes := GetCityTaxes(bank_region);
+					AddTaxToPlayer(source.serial, taxes); 
 				else
 					AI_Speak(npc, "Voce ja possui uma conta aqui.");
 					AI_Speak(npc, "Se quiser pode *abandonar* do banco.");
@@ -215,8 +215,8 @@ function SpeechEvent(npc, byref event)
 				var npc_message := struct{ "assistant" := responseText };
 				conversation_history.append(npc_message);
 				SetGlobalProperty("conversation_history", conversation_history);
-				AI_Speak(npc, responseText); // usa a responsa do modelo
-				//AI_Speak(npc, "Aqui esta seu cofre.") ;
+				// AI_Speak(npc, responseText); // usa a responsa do modelo
+				AI_Speak(npc, "Aqui esta seu cofre.") ;
 				SendOpenSpecialContainer(source, bank_box);
 
 			endif
@@ -238,8 +238,8 @@ function SpeechEvent(npc, byref event)
 			endif
 			var bank_box := CP_GetStorageContainerForMobile(source, bank_region, CP_CREATE);	
 			SetupPlayerAccount(source.serial, bank_region);
-			//var taxes := GetCityTaxes(bank_region);
-			//AddTaxToPlayer(source.serial, taxes); 
+			var taxes := GetCityTaxes(bank_region);
+			AddTaxToPlayer(source.serial, taxes); 
 		else
 			AI_Speak(npc, "Voce ja possui uma conta aqui.");
 			AI_Speak(npc, "Se quiser pode *abandonar* do banco.");

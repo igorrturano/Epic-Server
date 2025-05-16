@@ -302,7 +302,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "CustomAbilities", boss.custom_abilities);
     endif
 
-    
     if (boss.preferred_target)
         SetObjProperty(npc, "preferred_target", boss.preferred_target);
     endif
