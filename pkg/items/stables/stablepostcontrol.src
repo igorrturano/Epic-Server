@@ -1,0 +1,86 @@
+use uo;
+use os;
+
+include ":datafile:datafile";
+include ":containers:storageAreas";
+
+const CYCLE_WAIT := 60 * 60; // Verifica a cada hora
+
+program GlobalStablePostControl()
+    while(1)
+        StablePostChecks();
+        sleep(CYCLE_WAIT);
+    endwhile
+endprogram
+
+function StablePostChecks()
+    var stable_posts := FindStablePosts();
+    
+    foreach post in stable_posts
+        var animal_serial := GetObjProperty(post, "StoredAnimal");
+        if (animal_serial)
+            var animal := SystemFindObjectBySerial(animal_serial);
+            
+            if (animal)
+                var valorDeposito := CInt(GetObjProperty(animal, "ValorDeposito"));
+                var precoPorDia := CInt(GetObjProperty(animal, "PrecoPorDia"));
+                var dataEntrada := CInt(GetObjProperty(animal, "DataEntrada"));
+                
+                var diasDecorridos := CInt((polcore().systime - dataEntrada) / 86400);
+                var custoTotal := diasDecorridos * precoPorDia;
+
+                if (custoTotal > valorDeposito)
+                    // Valor depositado acabou, libera o animal
+                    animal.frozen := 0;
+                    animal.invul := 0;
+                    
+                    EraseObjProperty(animal, "EstaNoEstabulo");
+                    EraseObjProperty(animal, "StablePostSerial");
+                    EraseObjProperty(animal, "DataEntrada");
+                    EraseObjProperty(animal, "ValorDeposito");
+                    EraseObjProperty(animal, "PrecoPorDia");
+                    
+                    EraseObjProperty(post, "StoredAnimal");
+                    
+                    // Opcional: Notificar o dono
+                    var owner := SystemFindObjectBySerial(animal.master);
+                    if (owner)
+                        SendSysMessage(owner, animal.name + " foi liberado do estábulo por falta de pagamento.");
+                    endif
+                endif
+            endif
+        endif
+    endforeach
+endfunction
+
+function FindStablePosts()
+    var stable_posts := GetGlobalProperty("StablePosts");
+    
+    if (!stable_posts || stable_posts.size() == 0)
+        stable_posts := array{};
+    endif
+
+    // Filtra posts que ainda existem
+    var valid_posts := array{};
+    foreach post_serial in stable_posts
+        var post := SystemFindObjectBySerial(post_serial);
+        if (post)
+            valid_posts.Append(post);
+        endif
+    endforeach
+
+    return valid_posts;
+endfunction
+
+// Ao criar um Stable Post, adicione:
+function RegisterStablePost(post)
+    var stable_posts := GetGlobalProperty("StablePosts");
+    if (!stable_posts)
+        stable_posts := array{};
+    endif
+    
+    if (!(post.serial in stable_posts))
+        stable_posts.Append(post.serial);
+        SetGlobalProperty("StablePosts", stable_posts);
+    endif
+endfunction
