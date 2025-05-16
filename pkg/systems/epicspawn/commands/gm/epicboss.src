@@ -1694,6 +1694,7 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     boss.loot := form_data.loot;
     boss.deathevents := form_data.deathevents;
     boss.combatevents := form_data.combatevents;
+    boss.custom_abilities := form_data.custom_abilities;  // Add custom abilities to boss structure
 
     // Basic info
     boss.npctemplate := form_data.npctemplate;
