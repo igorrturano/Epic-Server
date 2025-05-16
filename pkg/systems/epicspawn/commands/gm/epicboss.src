@@ -809,32 +809,42 @@ function ShowPage3(who, title, gump_width, gump_height)
     
     var y_pos := 190;
     
-    // Display weapon special abilities
+    // Display weapon special abilities with delete buttons
     if (form_data.special && form_data.special.size() > 0)
-        foreach ability in (form_data.special)
-            GFTextLine(gump, 330, y_pos, 2100, ability.name);
-            if (ability.description)
-                GFTooltipText(gump, ability.description);
-            endif
-            y_pos += 20;
-        endforeach
-    endif
-    
-    // Display "..." if there are many abilities
-    if (form_data.special && form_data.special.size() > 4)
-        GFTextLine(gump, 330, y_pos, 2100, "...");
+        GFTextLine(gump, 330, y_pos, 33, "Weapon Abilities:");
         y_pos += 20;
-    endif
-    
-    // Display armor special abilities
-    if (form_data.armorspecial && form_data.armorspecial.size() > 0)
-        foreach ability in (form_data.armorspecial)
-            GFTextLine(gump, 330, y_pos, 2100, ability.name);
+        
+        // Button IDs for weapon special abilities: 140-149 (up to 10 abilities)
+        for i := 1 to form_data.special.size()
+            var ability := form_data.special[i];
+            // Add X button for deletion
+            GFAddButton(gump, 330, y_pos, 30008, 30009, GF_CLOSE_BTN, 139+i); // Button ID will be 140 for first ability
+            GFTextLine(gump, 350, y_pos, 2100, ability.name);
             if (ability.description)
                 GFTooltipText(gump, ability.description);
             endif
             y_pos += 20;
-        endforeach
+        endfor
+        
+        y_pos += 10; // Add some spacing between sections
+    endif
+    
+    // Display armor special abilities with delete buttons
+    if (form_data.armorspecial && form_data.armorspecial.size() > 0)
+        GFTextLine(gump, 330, y_pos, 33, "Armor Abilities:");
+        y_pos += 20;
+        
+        // Button IDs for armor special abilities: 150-159 (up to 10 abilities)
+        for i := 1 to form_data.armorspecial.size()
+            var ability := form_data.armorspecial[i];
+            // Add X button for deletion
+            GFAddButton(gump, 330, y_pos, 30008, 30009, GF_CLOSE_BTN, 149+i); // Button ID will be 150 for first ability
+            GFTextLine(gump, 350, y_pos, 2100, ability.name);
+            if (ability.description)
+                GFTooltipText(gump, ability.description);
+            endif
+            y_pos += 20;
+        endfor
     endif
     
     // Add a vertical divider
@@ -1031,6 +1041,30 @@ function ShowPage3(who, title, gump_width, gump_height)
             form_data.natural_traits.vulnerabilities.Erase(trait_idx);
             if (form_data.natural_traits.vulnerabilities.size() == 0)
                 form_data.natural_traits.vulnerabilities := array{}; // Reset to empty array if all vulnerabilities are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 140 && input[0] <= 149) // Handle weapon special ability deletion (up to 10 abilities) - range 140-149
+        var ability_idx := input[0] - 139; // Button ID 140 corresponds to index 1
+        SendSysMessage(who, "Weapon special ability button pressed: " + input[0] + ", calculated index: " + ability_idx);
+        if (ability_idx >= 1 && ability_idx <= form_data.special.size())
+            var ability_name := form_data.special[ability_idx].name;
+            SendSysMessage(who, "Removing weapon special ability '" + ability_name + "'");
+            form_data.special.Erase(ability_idx);
+            if (form_data.special.size() == 0)
+                form_data.special := array{}; // Reset to empty array if all abilities are deleted
+            endif
+        endif
+        return ShowPage3(who, title, gump_width, gump_height);
+    elseif (input[0] >= 150 && input[0] <= 159) // Handle armor special ability deletion (up to 10 abilities) - range 150-159
+        var ability_idx := input[0] - 149; // Button ID 150 corresponds to index 1
+        SendSysMessage(who, "Armor special ability button pressed: " + input[0] + ", calculated index: " + ability_idx);
+        if (ability_idx >= 1 && ability_idx <= form_data.armorspecial.size())
+            var ability_name := form_data.armorspecial[ability_idx].name;
+            SendSysMessage(who, "Removing armor special ability '" + ability_name + "'");
+            form_data.armorspecial.Erase(ability_idx);
+            if (form_data.armorspecial.size() == 0)
+                form_data.armorspecial := array{}; // Reset to empty array if all abilities are deleted
             endif
         endif
         return ShowPage3(who, title, gump_width, gump_height);
