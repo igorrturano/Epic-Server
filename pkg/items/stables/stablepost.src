@@ -79,8 +79,9 @@ var precoPorDia := ObterPrecoPorDia(target_pet);
 
     // 6. Guardar animal
     target_pet.hidden := 0;
-    target_pet.frozen := 1;
-    target_pet.invul := 1;
+    target_pet.paralyzed := 1;
+    GrantPrivilege(target_pet, "invul");
+    target_pet.enable("invul");
 
     SetObjProperty(target_pet, "EstaNoEstabulo", 1);
     SetObjProperty(target_pet, "StablePostSerial", post.serial);
@@ -102,8 +103,9 @@ function ResgatarAnimal(who, post)
     endif
 
     // Restaura estado original
-    animal.frozen := 0;
-    animal.invul := 0;
+    animal.paralyzed := 0;
+    RevokePrivilege(animal, "invul");
+    animal.disable("invul");
 
     EraseObjProperty(animal, "EstaNoEstabulo");
     EraseObjProperty(animal, "StablePostSerial");
@@ -150,18 +152,17 @@ endfunction
 
 function PagarEstadia(who, valor)
     if (!TemBanco(who))
-        SendSysMessage(who, "Você não tem banco.");
         return 0;
     endif
 
-    var bank_region := GetObjProperty(who, "bank_region");
+    var bank_region := CP_DEFAULT_AREA;
     var bank_box := CP_GetStorageContainerForMobile(who, bank_region, CP_NOCREATE);
 
     Set_Critical(1);
     var recursosDisponiveis := CalculaRecursosDisponiveisBank(bank_box);
     
     if (recursosDisponiveis < valor)
-        SendSysMessage(who, "Você não tem moedas suficientes.");
+        SendSysMessage(who, "Você não tem moedas suficientes no banco.");
         Set_Critical(0);
         return 0;
     endif
@@ -180,7 +181,7 @@ function CalculaRecursosDisponiveisBank(bank_box)
             total_cobre += item.amount;
         endif
     endforeach
-    
+
     return total_cobre;
 endfunction
 
@@ -207,7 +208,6 @@ function PagarComMoedasCobre(who, bank_box, valor)
     return totalPago;
 endfunction
 
-
 function ObterPrecoPorDia(animal)
     var npc_cfg := ReadConfigFile(":npcs:npcdesc");
     var template := GetObjProperty(animal, "npctemplate");
@@ -224,11 +224,11 @@ function ObterPrecoPorDia(animal)
 endfunction
 
 function TemBanco(who)
-    var bank_region := GetObjProperty(who, "bank_region");
-    if (!bank_region)
-        bank_region := "Vesper"; // Região de banco padrão
-    endif
-    
+    var bank_region := CP_DEFAULT_AREA;
     var bank_box := CP_GetStorageContainerForMobile(who, bank_region, CP_NOCREATE);
-    return (bank_box != error);
+    if (!bank_box)
+        SendSysMessage(who, "Você não tem banco");
+        return 0;
+    endif
+    return 1;
 endfunction
