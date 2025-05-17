@@ -56,12 +56,14 @@ var wpn_a_elem, wpn_d_elem;
 enum DAMAGEHAND
 	DAMAGE_MAINHAND, DAMAGE_OFFHAND
 endenum
+const OFFHAND_DELAY := 500; // Delay da offhand weapon em ms
 
 program Install()
 	print("INSTALLING: AttackHook ... OK!");
 	print("");
 endprogram
 
+// TODO: A depender da necessidade das habs, talvez a melhor solução seja fazer essa função chamar outra função para fazer todo esse procedimento
 exported function Attack(attacker, defender)
 	var attackInfo := struct{};
 	wpn_a := attacker.weapon;
@@ -102,7 +104,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
-		Start_Script("weaponHitScripts/AttackAnimation", {attacker, 500});
+		Start_Script("weaponHitScripts/AttackAnimation", {attacker, OFFHAND_DELAY});
 		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
 		
 		var hitchancePenalty := DualWieldPenalty(attacker);
@@ -184,10 +186,10 @@ function EpicAttack(attacker, defender, weaponHand)
 	armor := armor[RandomIntMinMax(1, Len(armor))];
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
 
-	if (!weaponHand)
+	if (!DAMAGE_OFFHAND)
 		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
-	else
-		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, 500});
+	else // Se for ataque da segunda arma, tem delay
+		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, OFFHAND_DELAY});
 	endif
 endfunction
 
