@@ -1010,7 +1010,6 @@ function ShowTargetSelectionMenu(who, byref form_data)
     
     // Cancel button
     GFAddButton(gump, 150, 380, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 185, 380, 33, "Cancel");
     
     var input := GFSendGump(who, gump);
     
@@ -1051,7 +1050,6 @@ function ShowTargetPriorityMenu(who, byref form_data)
     
     // Cancel button
     GFAddButton(gump, 150, 240, 2119, 2120, GF_CLOSE_BTN, 999);
-    GFTextLine(gump, 185, 240, 33, "Cancel");
     
     var input := GFSendGump(who, gump);
     
