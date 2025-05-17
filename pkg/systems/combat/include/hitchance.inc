@@ -8,8 +8,8 @@
 include "habilidades";
 
 function CalculateHitChance(attacker, defender)
-	var skill_a; // Não sei quem teve essa ideia de merda de nomear assim...
-	var skill_d; // Vou deixar pra não ficar mais complexo o Refactor.
+	var skill_a;
+	var skill_d;
 
 	if ( !attacker.npctemplate )
 		skill_a := CDbl(AP_GetSkill(attacker, attacker.weapon.attribute));
@@ -178,18 +178,18 @@ function CalculateHitChance(attacker, defender)
 	if (GetCooldown(defender, "resistenciaheroica") > 0)
 		var hostiles := ListHostiles(defender, 3);
 		if ( hostiles.size() >= 5)
-			hit_chance := hit_chance  - 15;
+			hit_chance -= 15;
         elseif ( hostiles.size() >= 3)
-            hit_chance := hit_chance  - 10;
+            hit_chance -= 10;
         elseif ( hostiles.size() >= 1)
-            hit_chance := hit_chance  - 5;
+            hit_chance -= 5;
 		endif
 	endif
 
 	if (temhabilidade(attacker, "Lobo Solitario") )
 		var hostiles := ListHostiles(attacker, 3);
 		if ( hostiles.size() > 1)
-			hit_chance := hit_chance + 15;
+			hit_chance += 15;
 		endif
 	endif
 
@@ -201,48 +201,48 @@ function CalculateHitChance(attacker, defender)
 		else
 			SetObjProperty(attacker.weapon, "tirocerteiro", tiroCerteiro);
 		endif
-		hit_chance := hit_chance + 100.0;
+		hit_chance += 100.0;
 	endif
 
 	if (TemHabilidade(defender, "Budōka"))
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var tactics_bonus := CInt(AP_GetSkill(defender, TACTICS) / 5);
 		if ( defender.weapon.objtype in monk_weapons )
-			hit_chance := hit_chance - tactics_bonus;
+			hit_chance -= tactics_bonus;
 		endif
 	endif
 
     var dancer_bonus := CInt(AP_GetSkill(attacker, ARCANA) / 5);
     if (TemHabilidade(attacker, "Danca das Sombras"))
-        hit_chance := hit_chance + dancer_bonus;
+        hit_chance += dancer_bonus;
 	endif
     if (GetCooldown(defender, "shadowdancer_blur") > 0)
-        hit_chance := hit_chance - dancer_bonus;
+        hit_chance -= dancer_bonus;
     endif
 
     if (TemHabilidade(attacker, "Movimentacao Graciosa"))
 	    var swash_bonus := CInt(AP_GetSkill(attacker, TACTICS) / 10);
-        hit_chance := hit_chance + swash_bonus;
+        hit_chance += swash_bonus;
     endif
 
     if (TemHabilidade(defender, "Movimentacao Graciosa"))
 		var swash_bonus := CInt(AP_GetSkill(defender, TACTICS) / 10);
-        hit_chance := hit_chance - swash_bonus;
+        hit_chance -= swash_bonus;
     endif
 
 	if (TemHabilidade(attacker, "Mancha da Corrupcao"))
 		var demon_hunter_bonus := CInt(AP_GetSkill(attacker, THEOLOGY) / 10);
-		hit_chance := hit_chance + demon_hunter_bonus;
+		hit_chance += demon_hunter_bonus;
 	endif
 
 	if (TemHabilidade(defender, "Mancha da Corrupcao"))
 		var demon_hunter_bonus := CInt(AP_GetSkill(defender, THEOLOGY) / 10);
-		hit_chance := hit_chance - demon_hunter_bonus;
+		hit_chance -= demon_hunter_bonus;
 	endif
 
 	var witcher_bonus := Cint(AP_GetSkill(attacker, SCIENCE) / 5);
 	if (TemHabilidade(attacker, "Oleo do Cacador"))
-		hit_chance := hit_chance + witcher_bonus;
+		hit_chance += witcher_bonus;
 	endif
 
     var attacker_weapon := attacker.weapon.objtype;
@@ -286,7 +286,7 @@ function CalculateHitChance(attacker, defender)
 			var def := GetObjProperty(defender, "lastHit");
 			def := def.serial;
 			if (def.serial != attacker.serial)// se o defensor nao acertou o atacante
-				hit_chance := hit_chance + 50;
+				hit_chance += 50;
 				printtext(attacker, "*ataque inesperado*");
 			endif
 		endif
@@ -300,7 +300,7 @@ function CalculateHitChance(attacker, defender)
 		endif
 		if ( !(attacker.serial in attackers))
 			SendSysMessageEx(attacker, "Voce comecou bem.", SSM_INFO);
-			hit_chance := hit_chance + 50;
+			hit_chance += 50;
 			attackers.append(attacker.serial);
 			SetObjProperty(defender,  "#bomcomecoserials", attackers);
 		endif
@@ -348,7 +348,6 @@ endfunction
 function DarknessHitModifier(attacker, defender, byref hit_chance)
     var attacker_race := GetObjProperty(attacker, "chardata").raca;
     var in_darkness := InDarkness(attacker);
-	var darkness_intensity := "muita";
 	var metamorfose := GetObjProperty(attacker, "metamorfose");
 	if (metamorfose)
 		return;
@@ -357,20 +356,20 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
     if (in_darkness && attacker_race != DROW)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)
-            	hit_chance := hit_chance - 10;
+            	hit_chance -= 10;
             	SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
 			else
-				hit_chance := hit_chance - 20;
+				hit_chance -= 20;
 				SendSysMessageEx(attacker, "Você luta com muita dificuldade.", SSM_FAIL);
 			endif
         endif
     elseif (!in_darkness && attacker_race == DROW)
 		SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
 		if (GetCooldown(attacker, "lightvision") > 0)
-			hit_chance := hit_chance - 10;
+			hit_chance -= 10;
 			SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
 		else
-			hit_chance := hit_chance - 20;
+			hit_chance -= 20;
 			SendSysMessageEx(attacker, "Você luta com muita dificuldade.", SSM_FAIL);
 		endif
     endif

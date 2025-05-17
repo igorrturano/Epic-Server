@@ -14,6 +14,8 @@
 // TODO: Ver futuramente se vai precisar criar um .inc para cada habilidade
 // TODO: Pensar se dá pra trocar o parâmetro damage := 0 por algo genérico, por exemplo: valRef (valor de referência para a habilidade)
 	// TODO: Talvez seja melhor passar um struct como byRef. Dessa forma, cada função acessa o que lhe convém (e receber).
+// TODO: Usar o Copilot pra completar os CheckHab_ que faltando, passando o habilidades.cfg como leitura
+
 
 include "damage";
 include "hitchance";
@@ -128,12 +130,10 @@ function CheckDefenderHabsBeforeDamage(attacker, defender, attackInfo)
 	CheckHab_EspecialistaEscudos(attacker, defender, attackInfo);
 	CheckHab_Furia(attacker, defender, attackInfo);
 	CheckHab_ResilienciaBarbara(attacker, defender, attackInfo);
-	// resist := resist - damage; // Vínculo Elemental precisa saber quanto foi resistido até agora
 	CheckHab_VinculoElemental(attacker, defender, attackInfo);
 	CheckHab_Backstab(attacker, defender, attackInfo);
 	CheckHab_Charge(attacker, defender, attackInfo);
 
-	// var totaldamage := CInt(damage-resist); 
 	return attackInfo.damage < 1 ? 1 : attackInfo.damage; // Garante dano mínimo = 1.
 endfunction
 
