@@ -1626,9 +1626,9 @@ function ShowPage5(who, title, gump_width, gump_height)
     GFTextLine(gump, 80, 450, 1153, "Ladino");
     
     // Magic School (for mage)
-    GFTextLine(gump, 50, 480, 1153, "Magic School:");
-    GFAddButton(gump, 200, 480, 2117, 2118, 1, 88);
-    GFTextLine(gump, 230, 480, 1153, form_data.magic_school ? form_data.magic_school : "Select School");    
+    GFTextLine(gump, 50, 500, 1153, "Magic School:");
+    GFAddButton(gump, 200, 500, 2117, 2118, 1, 88);
+    GFTextLine(gump, 230, 500, 1153, form_data.magic_school ? form_data.magic_school : "Select School");    
 
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
