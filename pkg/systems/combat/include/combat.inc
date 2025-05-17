@@ -2,6 +2,7 @@
 use uo;
 include ":brainai:npcUtil";
 include ":combat:weaponInfo";
+include ":combat:combatFX";
 include ":faccao:faccao";
 include ":equipsys:props";
 
@@ -36,69 +37,6 @@ function GetWpnCfgInfo(mobile, weapon)
 		return item_cfg2[weapon.objtype];
 	endif
 
-endfunction
-
-function PlayHitSounds(attacker, defender)
-	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
-
-	var attack_sound;
-	if ( wpn_a_elem2.HitSound )
-		attack_sound := wpn_a_elem2.HitSound;
-	else
-		//NPC intrinsic weapon
-		attack_sound := wpn_a_elem2.AttackHitSound;
-	endif
-
-	if (attacker.weapon)
-		attack_sound := getWeaponFX(WEAPON_FX_SOUND, attacker.weapon);
-	endif
-
-	PlaySoundEffect(attacker, attack_sound);
-
-	var damaged_sound;
-	if ( defender.npctemplate )
-		var npctemplate := defender.npctemplate;
-		npctemplate := npctemplate[10, len(npctemplate)-9];
-		damaged_sound := npc_cfg2[npctemplate].DamageSound;
-	else
-		var sounds;
-		if ( defender.gender == 0 )
-			// Male
-			sounds := array(341, 342, 343, 345, 346);
-		else
-			// Female
-			sounds := array(332, 333, 334, 335, 336);
-		endif
-		damaged_sound := sounds[RandomInt(sounds.size())+1];
-	endif
-
-	PlaySoundEffect(defender, damaged_sound);
-endfunction
-
-function PlayMissSound(attacker)
-	PlaySoundEffect(attacker, getSound(MISS_FX));
-endfunction
-
-function PlayAttackAnimation(attacker)
-	var attack_anim := 0x0c;
-	var wpn_a_elem2 := GetWpnCfgInfo(attacker, attacker.weapon);
-	if ( wpn_a_elem2.Anim )
-		var anim_list := GetConfigStringArray(wpn_a_elem2, "Anim");
-		if (anim_list.size() > 1)
-			attack_anim := anim_list[RandomIntMinMax(1, anim_list.size())];
-		else
-			attack_anim := anim_list[1];
-		endif
-	endif
-	
-	if ( attacker.graphic != 400 && attacker.graphic != 401 && attacker.graphic != 1828 && attacker.graphic != 1829 && attacker.graphic != 1830 && attacker.graphic != 1831 && attacker.graphic != 1832 && attacker.graphic != 1833 && attacker.graphic != 1834 && attacker.graphic != 1835)
-		attack_anim := 0x0c;
-	endif
-
-	PerformAction(attacker, CInt(attack_anim));
-
-	return attack_anim;
 endfunction
 
 function GetRawDmg(attacker)
