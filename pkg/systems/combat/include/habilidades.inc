@@ -807,8 +807,8 @@ function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo := str
 	// TODO: Talvez esse código não precise ser poluído desse jeito, calculando e executando toda a estrutura do ataque....
 		// TODO: Ver se dá pra executar o ataque através do Attack do combatHook...
 	// Os 2 valores estão 0 apenas pra poder compilar, mas a função tem que receber
-	var rolldice := 0;
-	var hitchance := 0;
+	// var rolldice := 0;
+	// var hitchance := 0;
 	
 	if (Cint(GetObjProperty(defender, "evasao")))
 		PrintText(defender, "*esquiva-se*");
@@ -817,44 +817,27 @@ function CheckHab_Evasao(byref attacker, byref defender, byRef attackInfo := str
 			if (GetObjProperty(defender, "#atacandooportunidade") == error)
 				SetObjProperty(defender, "#atacandooportunidade", 1);
 				printtext(defender, "*ataque de oportunidade*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, attacker.weapon, dmg);
-				endif
+				
+				// TODO: Testar para ver se isso não vai explodir o combat:
+					// Possibilidade de erros:
+						// 1. Loop infinito
+						// 2. Chamar hab que não deveria
+					// Em caso de erro, pensar em uma forma de criar uma função pra realizar esse ataque sem chamar as habs
 
-			EraseObjProperty(defender, "#atacandooportunidade");
+				defender.attack_once(attacker);
+				EraseObjProperty(defender, "#atacandooportunidade");
 			endif
 		endif
 
 		return 1;
-	elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((rolldice-hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
+	elseif ((GetObjProperty(defender, "#mobilidade") == 1) && ((attackInfo.dice-attackInfo.hitchance) < 16)) //Esquivou por conta do jogo de pés da "Mobilidade em Combate"
 		printtext(defender, "*esquiva com jogo de pés*");
 		if (TemHabilidade(defender, "Esquiva Oportunista"))
 			if (GetObjProperty(defender, "#atacandooportunidade") == error)
 				SetObjProperty(defender, "#atacandooportunidade", 1);
 				printtext(defender, "*ataque de oportunidade*");
-				//defender.attack_once(attacker);
-				var new_hit_chance := CalculateHitChance(defender, attacker);
-				var new_random := RandomInt(100);
-				PlayAttackAnimation(defender);
-				if ( new_random < new_hit_chance )
-					var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-					armor := armor[ RandomInt( len( armor ) ) + 1];
-					PlayHitSounds(defender, attacker);
-					var time := ReadGameClock();
-					var dmg := CalculateRawDamage(defender, defender.weapon);
-					Run_Script_To_Completion(":combat:mainHitScript", array{defender, attacker, defender.weapon, armor, dmg, dmg});
-					SkillChecks(attacker, defender, attacker.weapon, dmg);
-				endif
+				// Mesma coisa de lá de cima
+				defender.attack_once(attacker);
 				EraseObjProperty(defender, "#atacandooportunidade");
 				return 1;
 			endif
