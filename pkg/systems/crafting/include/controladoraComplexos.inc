@@ -354,7 +354,7 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	endif
 
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
-	descriptor.color := esquema.cor;
+	descriptor.color := receita.corObrigatoria ? receita.corObrigatoria : esquema.cor;
 	descriptor.graphic := receita.graphic;
 	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
@@ -1015,6 +1015,9 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+graphic := definicaoItem.Graphic ? CInt(definicaoItem.Graphic) : CInt(objtype); //Normalmente o graphic do item é seu objtype, mas a preferência é do atributo graphic no itemdesc.
 	receita.+isVisualizada:= PegaNomeReceitaClassificada(receitaClassificada) in (propCraft[nomePericia]["visualizadas"].receitas);
 
+	if(definicaoFabricacao.color)
+		receita.+corObrigatoria := definicaoFabricacao.color;
+	endif
 	if(isComponente)
 		receita.+complexoComponente := MontaComplexoComponente(definicaoFabricacao); //o item é um complexo considerado componente também.
 	endif

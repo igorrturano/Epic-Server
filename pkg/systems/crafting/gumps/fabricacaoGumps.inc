@@ -572,7 +572,7 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 	var deslocamentoGraphicY;
 
 	if(receita.profissao == "Carpentry")
-		deslocamentoGraphicY := 15; //alguns graphics estão saindo da janela.
+		deslocamentoGraphicY := 15; //Fix - alguns graphics estão saindo da janela.
 	else
 		deslocamentoGraphicY := 0;
 	endif
@@ -622,7 +622,7 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		GFGumpPic(gump, x + 75, y + 15, 1655);
 	endif
 
-	GFTilePic(gump, x + 30,y + 50 - deslocamentoGraphicY, CInt(receita.graphic));//Graphic
+	GFTilePic(gump, x + 30,y + 50 - deslocamentoGraphicY, CInt(receita.graphic), receita.corObrigatoria ? receita.corObrigatoria : 0);//Graphic
 
 	GFAddButton(gump,x + 15, y + 120,4011,4012,GF_CLOSE_BTN,baseIdBotao + 1);
 	GFTooltipText(gump,"Selecionar Receita.");

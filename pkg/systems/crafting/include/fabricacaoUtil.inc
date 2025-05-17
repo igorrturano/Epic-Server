@@ -291,13 +291,15 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
 	endif
 
+	var corFinal :=  propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
+	
 	return CriaObjetoPropFabricado(
 							estado,
 							propFabricadoMontado.esquema.isCompletamenteComum,
 							propFabricadoMontado.esquema.qualidade,
 							propFabricadoMontado.esquema.modificadorHpTotal,
 							propFabricadoMontado.esquema.modificadorPesoTotal,
-							propFabricadoMontado.esquema.cor,
+							corFinal,
 							propFabricadoMontado.esquema.classe,
 							componentesRefatorado
 							);
