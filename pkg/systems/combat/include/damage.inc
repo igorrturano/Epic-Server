@@ -16,10 +16,9 @@ include ":commands:debugsystem";
 include ":combat:armorZones";
 include ":combat:combat";
 include ":combat:habilidades";
+include ":combat:weardown";
 include ":equipsys:utils";
-include ":equipsys:props";
 include "include/epicNPCUtils";
-include "weardown";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
