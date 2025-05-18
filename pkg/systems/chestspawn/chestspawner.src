@@ -14,7 +14,7 @@ program spawntesthet(item)
 	sleep(20+RandomInt(20)+RandomInt(80));
 
 	//RESETA OS BAUS CRIADOS
-	foreach thing in ListItemsNearLocation(cint(item.x), cint(item.y), LIST_IGNORE_Z, CInt(rng)*2,  item.realm)
+	foreach thing in ListItemsNearLocation(cint(item.x), cint(item.y), LIST_IGNORE_Z, CInt(rng),  item.realm)
 		if(GetObjProperty(thing,"level"))
 			if (thing.serial != item.serial) // se nao for o spawnpoint (pq ele tbm tem a prop level)
 				DestroyItem(thing);

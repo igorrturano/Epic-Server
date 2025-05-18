@@ -17,7 +17,6 @@ program EpicChestSpawner(spawner)
     var frq             := GetObjProperty(spawner, "duration"); // Standard spawner frequency
 
     if (!frq) frq := 7200; endif // Default to 2 hours if not set
-    if (frq < 7200) frq := 7200; endif
 
     // Initial delay
     sleep(1);
@@ -70,13 +69,14 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 
     var loot_name_prefix := "";
     case (chest_type)
-        "Warrior":  loot_name_prefix := "WarriorEpic"; break;
-        "Thief":    loot_name_prefix := "ThiefEpic";   break;
-        "Artifice": loot_name_prefix := "ArtificeEpic";break;
-        "Mage":     loot_name_prefix := "MageEpic";    break;
-        default:    loot_name_prefix := "GenericEpic"; break;
+        "Warrior":  loot_name_prefix := "Humano" + "Guerreiro"; break;
+        "Thief":    loot_name_prefix := "Humano" + "Ladino";   break;
+        "Artifice": loot_name_prefix := "Humano" + "Artifice"; break;
+        "Mage":     loot_name_prefix := "Humano" + "Sabio";    break;
+        default:    loot_name_prefix := "Humano" + "Guerreiro"; break;
     endcase
     var lootname := loot_name_prefix + "Chest" + level;
+    print("DEBUG::MakeEpicChests - Using loot table: " + lootname);
 
     var created_chests_this_cycle := array;
     var puzzle_chests_spawned_this_cycle := 0;
@@ -85,7 +85,7 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
         var new_x, new_y, new_z;
         var placement_tries := 0;
         var placed := 0;
-
+        
         while (placement_tries < 30 && !placed)
             new_x := CInt(spawner.x + RandomInt(range_val) - RandomInt(range_val));
             new_y := CInt(spawner.y + RandomInt(range_val) - RandomInt(range_val));
@@ -93,8 +93,8 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
             if (spawner.z > new_z + 5 || spawner.z < new_z - 5) new_z := spawner.z; endif
 
             if (len(ListItemsNearLocation(new_x, new_y, new_z, 0, spawner.realm)) == 0)
-                var objtype;
                 var new_chest;
+                var chests := array{};
                 
                 // Determine what type of chest to create
                 if (is_puzzle)
@@ -104,12 +104,21 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
                     endif
                     
                     if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
-                        objtype := 0xf022; // PuzzleChest objtype
-                        new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
+                        // Create puzzle chest with random appearance
+                        var type := RandomInt(4)+1;
+                        var gfx, material;
+                        case(type) // Same chest types as in treasurechest.inc
+                            1: gfx := 3650; material := 0x1bd7; // Wooden E
+                            2: gfx := 3651; material := 0x1bd7; // Wooden S
+                            3: gfx := 3703; material := 0x1bd7; // Barrel
+                            4: gfx := 3648; material := 0x6995; // Metal E
+                            5: gfx := 3708; material := 0x6995; // Metal S
+                        endcase
+                        
+                        new_chest := CreateItemAtLocation(new_x, new_y, new_z, 0xf022, 1, spawner.realm);
                         if (new_chest)
-                            if (RandomInt(2) == 0)
-                                new_chest.graphic := 0xE41; // West facing
-                            endif
+                            new_chest.graphic := gfx;
+                            SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
                             current_puzzle_count := current_puzzle_count + 1;
                             SetObjProperty(spawner, "current_puzzle_count", current_puzzle_count);
                             SetObjProperty(new_chest, "IsPuzzleChest", 1);
@@ -121,22 +130,26 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
                 if (!new_chest && is_mimic)
                     if (RandomInt(100) < mimic_chance)
                         // Randomly choose east or west facing mimic
-                        if (RandomInt(2))
-                            objtype := 0xCF89; // MimicEast
-                        else
+                        var objtype := 0xCF89; // MimicEast
+                        if (RandomInt(2) == 0)
                             objtype := 0xCF94; // MimicWest
                         endif
                         new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
                         if (new_chest)
+                            // Mimics also get material property for consistent naming
+                            var material := 0x1bd7;
+                            SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
                             SetObjProperty(new_chest, "IsMimic", 1);
                         endif
                     endif
                 endif
                 
-                // If not puzzle or mimic, create regular epic chest
+                // If not puzzle or mimic, create regular epic chest with loot
                 if (!new_chest)
-                    objtype := 0xE40; // Regular chest
-                    new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
+                    chests := CreateTreasureChests(level, 1, 1, new_x, new_y, new_z, spawner.realm, lootname);
+                    if (chests.size() > 0)
+                        new_chest := chests[1];
+                    endif
                 endif
                 
                 if (new_chest)
@@ -149,16 +162,20 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
                     SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
                     new_chest.movable := 0;
                     new_chest.locked := 1;
-                    SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
-                    created_chests_this_cycle.append(new_chest.serial);
                     
-                    // Start the script instead of just restarting it
-                    // var script := start_script(actual_script, new_chest);
-                    // if (script.errortext)
-                    //     print("Failed to start script for chest " + new_chest.serial + ": " + script.errortext);
-                    // else
-                    //     print("Successfully started script for chest " + new_chest.serial + " with " + actual_script);
-                    // endif
+                    var trap := RandomInt(3)+1;
+                    case(trap)
+                        1: AddTrap(new_chest, "Needle", level);
+                        2: AddTrap(new_chest, "Explosion", level);
+                        3: AddTrap(new_chest, "PoisonGas", level);
+                    endcase
+
+                    // Generate loot for puzzle chest
+                    if (GetObjProperty(new_chest, "IsPuzzleChest"))
+                        Loot_Generate(new_chest, lootname);
+                    endif
+                    
+                    created_chests_this_cycle.append(new_chest.serial);
                 else
                     print("Failed to create epic chest item at " + new_x + "," + new_y);
                 endif
