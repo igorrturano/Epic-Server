@@ -8,11 +8,6 @@ include ":gumps:epicGumps";
 program epicchest(who)
 
     var res := CreateEpicChestGump(who);
-    print("RES: " + res);
-    print("RES[0]: " + res[0]);
-    print("RES[99]: " + res[99]);
-    print("RES[12]: " + res[12]);
-    print("RES[1]: " + res[1]);
     if (res && res[99]) // Check if res is not empty and Create button (ID 99) was pressed
         var level := 1;
         if (res[12]) level := 2; elseif (res[13]) level := 3; elseif (res[14]) level := 4; elseif (res[15]) level := 5; endif
@@ -55,14 +50,6 @@ program epicchest(who)
 
         var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);
         if (spawner)
-            print("level: " + level);
-            print("amount: " + amount);
-            print("range_val: " + range_val);
-            print("chest_type: " + chest_type);
-            print("is_mimic: " + is_mimic);
-            print("mimic_chance: " + mimic_chance);
-            print("is_puzzle: " + is_puzzle);
-            print("puzzle_limit_count: " + puzzle_limit_count);
             SetObjProperty(spawner, "epic_level", level);
             SetObjProperty(spawner, "epic_amount", amount);
             SetObjProperty(spawner, "epic_range", range_val);
@@ -74,24 +61,29 @@ program epicchest(who)
             
             // Handle rest period (convert minutes to seconds)
             var rest_period := CInt(GFExtractData(res, 36));
-            if (!rest_period || rest_period < 1)
+            if (!rest_period || rest_period < 30) // Minimum 60 minutes
                 rest_period := 120; // Default to 120 minutes if invalid
+                SendSysMessageEx(who, "Período de descanso inválido ou muito curto. Usando o padrão de 120 minutos.");
+            endif
+            if (rest_period > 1440) // Cap at 24 hours
+                rest_period := 1440;
+                SendSysMessageEx(who, "Período de descanso muito longo. Limitando a 24 horas (1440 minutos).");
             endif
             SetObjProperty(spawner, "duration", rest_period * 60); // Convert minutes to seconds
             
             SetObjProperty(spawner, "script", ":chestspawn:epicchestspawner"); 
             spawner.invisible := 1;
-            SendSysMessage(who, "Epic Chest Spawner created successfully at " + spawner.x + " " + spawner.y + " " + spawner.z + ".");
+            SendSysMessageEx(who, "Gerador de Baú Épico criado com sucesso em " + spawner.x + " " + spawner.y + " " + spawner.z + ".");
         else
-            SendSysMessage(who, "Failed to create spawner item.");
+            SendSysMessageEx(who, "Falha ao criar o item gerador.");
         endif
     else
-        SendSysMessage(who, "Epic Chest Spawner creation cancelled.");
+        SendSysMessageEx(who, "Criação do Gerador de Baú Épico cancelada.");
     endif
 endprogram
 
 function CreateEpicChestGump(who)
-    var gump := GFECreateGump("Epic Chest Spawner Configuration", 480, 600); // Adjusted size
+    var gump := GFECreateGump("Epic! Configuração de Baús", 480, 600); // Adjusted size
     
     var y_pos := 80;
     var x_label := 30;
@@ -99,7 +91,7 @@ function CreateEpicChestGump(who)
     var radio_spacing := 28;
 
     // --- Chest Level (1-5) ---
-    GFTextLine(gump, x_label, y_pos, 1153, "Chest Level (1-5):");
+    GFTextLine(gump, x_label, y_pos, 1153, "Nível do Baú (1-5):");
     GFSetRadioGroup(gump, 1);
     GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 11); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
     GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 12); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "2");
@@ -109,7 +101,7 @@ function CreateEpicChestGump(who)
     y_pos += 30;
 
     // --- Chest Amount (1-5) ---
-    GFTextLine(gump, x_label, y_pos, 1153, "Chest Amount (1-5):");
+    GFTextLine(gump, x_label, y_pos, 1153, "Quantidade de Baús (1-5):");
     GFSetRadioGroup(gump, 2);
     GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 21); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
     GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 22); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "2");
@@ -119,7 +111,7 @@ function CreateEpicChestGump(who)
     y_pos += 30;
 
     // --- Spawn Radius (2-6 tiles) ---
-    GFTextLine(gump, x_label, y_pos, 1153, "Spawn Radius (2-6 tiles):");
+    GFTextLine(gump, x_label, y_pos, 1153, "Raio de Spawn (2-6 tiles):");
     GFSetRadioGroup(gump, 3);
     GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 31); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "2");
     GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 32); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "3");
@@ -129,24 +121,24 @@ function CreateEpicChestGump(who)
     y_pos += 30;
 
     // --- Rest Period ---
-    GFTextLine(gump, x_label, y_pos, 1153, "Rest Period (in minutes):");
-    GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, "120", 36); // ID 36 for rest period
+    GFTextLine(gump, x_label, y_pos, 1153, "Período de Descanso (em minutos):");
+    GFTextEntry(gump, x_options_start + 40, y_pos, 60, 20, 1153, "120", 36); // ID 36 for rest period
     y_pos += 30;
 
     GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
     y_pos += 20;
 
     // --- Chest Type ---
-    GFTextLine(gump, x_label, y_pos, 1153, "Chest Type:");
+    GFTextLine(gump, x_label, y_pos, 1153, "Tipo do Baú:");
     GFSetRadioGroup(gump, 4);
     y_pos += 25;
-    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 1, 41); GFTextLine(gump, x_label + 45, y_pos, 1153, "Warrior");
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 1, 41);    GFTextLine(gump, x_label + 45, y_pos, 1153, "Guerreiro");
     y_pos += 25;
-    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 42); GFTextLine(gump, x_label + 45, y_pos, 1153, "Thief");
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 42);    GFTextLine(gump, x_label + 45, y_pos, 1153, "Ladrão");
     y_pos += 25;
-    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 43); GFTextLine(gump, x_label + 45, y_pos, 1153, "Artifice");
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 43);    GFTextLine(gump, x_label + 45, y_pos, 1153, "Artífice");
     y_pos += 25;
-    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 44); GFTextLine(gump, x_label + 45, y_pos, 1153, "Mage");
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 44);    GFTextLine(gump, x_label + 45, y_pos, 1153, "Mago");
     y_pos += 30;
     
     GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
@@ -154,9 +146,9 @@ function CreateEpicChestGump(who)
 
     // --- Mimic Options ---
     GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 50);
-    GFTextLine(gump, x_label + 25, y_pos, 1153, "Spawn as Mimic?");
+    GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Mímico?");
     y_pos += 25;
-    GFTextLine(gump, x_label + 20, y_pos, 1153, "Mimic Chance (%):");
+    GFTextLine(gump, x_label + 20, y_pos, 1153, "Chance de Mímico (%):");
     GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, "10", 51); // ID 51 for text entry
     y_pos += 30;
 
@@ -165,10 +157,10 @@ function CreateEpicChestGump(who)
 
     // --- Puzzle Chest Options ---
     GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 60); // ID 60 for puzzle chest
-    GFTextLine(gump, x_label + 25, y_pos, 1153, "Spawn as Puzzle Chest?");
+    GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Baú de Quebra-Cabeça?");
     y_pos += 25;
-    GFTextLine(gump, x_label + 20, y_pos, 1153, "Max Puzzle Chests (blank for all):"); // Changed text
-    GFTextEntry(gump, x_options_start + 100, y_pos, 50, 20, 1153, "", 62); // New ID 62, default empty, adjusted x position
+    GFTextLine(gump, x_label + 20, y_pos, 1153, "Máx. Baús de Quebra-Cabeça (deixe vazio para todos):"); // Changed text
+    GFTextEntry(gump, x_options_start + 180, y_pos, 50, 20, 1153, "", 62); // New ID 62, default empty, adjusted x position
     y_pos += 30;
     
     GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
