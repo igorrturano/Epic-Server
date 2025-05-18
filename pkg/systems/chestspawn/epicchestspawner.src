@@ -1,0 +1,199 @@
+use uo;
+use os;
+
+include ":loot:lootParser";
+include ":traps:traps";
+include ":chestspawn:treasurechest"; // Assuming this contains CreateTreasureChests
+
+program EpicChestSpawner(spawner)
+    var level           := GetObjProperty(spawner, "epic_level");
+    var amount          := GetObjProperty(spawner, "epic_amount");
+    var range_val       := GetObjProperty(spawner, "epic_range");
+    var chest_type      := GetObjProperty(spawner, "epic_chest_type");
+    var is_mimic        := GetObjProperty(spawner, "epic_is_mimic");
+    var mimic_chance    := GetObjProperty(spawner, "epic_mimic_chance");
+    var is_puzzle       := GetObjProperty(spawner, "epic_is_puzzle");
+    var puzzle_limit_count := GetObjProperty(spawner, "epic_puzzle_limit_count"); // Renamed from limit_puzzle
+    var frq             := GetObjProperty(spawner, "duration"); // Standard spawner frequency
+
+    if (!frq) frq := 7200; endif // Default to 2 hours if not set
+    if (frq < 7200) frq := 7200; endif
+
+    // Initial delay
+    sleep(1);
+
+    // Clear existing spawned chests by this spawner
+    ClearMySpawnedChests(spawner);
+
+    if (!amount || !level || !range_val || !chest_type)
+        print("Epic Chest Spawner " + spawner.serial + " at: " + spawner.x + ", " + spawner.y + " is improperly configured");
+        return;
+    endif
+
+    while (spawner)
+        var hasPlayerNearMe := 0;
+        var nearby := ListMobilesNearLocationEx(spawner.x, spawner.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, spawner.realm);
+        foreach player in nearby
+            if (player.acctname)
+                hasPlayerNearMe++;
+            endif
+        endforeach
+
+        if (hasPlayerNearMe >= 1)
+            MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance, is_puzzle, puzzle_limit_count);
+        endif
+        sleep(frq); // Use the configured frequency for respawn
+    endwhile
+endprogram
+
+function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance, is_puzzle, puzzle_limit_count)
+    var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
+    if (!current_chests_serials) current_chests_serials := array; endif
+
+    // Filter out destroyed or invalid chests
+    var valid_chests := array;
+    foreach serial_val in current_chests_serials
+        var existing_chest := SystemFindObjectBySerial(CInt(serial_val));
+        if (existing_chest)
+            valid_chests.append(existing_chest.serial);
+        endif
+    endforeach
+    current_chests_serials := valid_chests;
+    SetObjProperty(spawner, "spawned_epic_chests", current_chests_serials);
+
+    var current_amount := current_chests_serials.size();
+    var new_amount_to_spawn := CInt(amount - current_amount);
+
+    if (new_amount_to_spawn <= 0)
+        return;
+    endif
+
+    var loot_name_prefix := "";
+    case (chest_type)
+        "Warrior":  loot_name_prefix := "WarriorEpic"; break;
+        "Thief":    loot_name_prefix := "ThiefEpic";   break;
+        "Artifice": loot_name_prefix := "ArtificeEpic";break;
+        "Mage":     loot_name_prefix := "MageEpic";    break;
+        default:    loot_name_prefix := "GenericEpic"; break;
+    endcase
+    var lootname := loot_name_prefix + "Chest" + level;
+
+    var created_chests_this_cycle := array;
+    var puzzle_chests_spawned_this_cycle := 0;
+
+    for i := 1 to new_amount_to_spawn
+        var new_x, new_y, new_z;
+        var placement_tries := 0;
+        var placed := 0;
+
+        while (placement_tries < 30 && !placed)
+            new_x := CInt(spawner.x + RandomInt(range_val) - RandomInt(range_val));
+            new_y := CInt(spawner.y + RandomInt(range_val) - RandomInt(range_val));
+            new_z := GetWorldHeight(new_x, new_y, spawner.realm);
+            if (spawner.z > new_z + 5 || spawner.z < new_z - 5) new_z := spawner.z; endif
+
+            if (len(ListItemsNearLocation(new_x, new_y, new_z, 0, spawner.realm)) == 0)
+                var chest_objid := 0xE40; // Default wooden chest, can be varied
+                var new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_objid, 1, spawner.realm);
+                if (new_chest)
+                    placed := 1;
+                    SetObjProperty(new_chest, "link", spawner.serial); // Link to spawner
+                    SetObjProperty(new_chest, "IsEpicChest", 1);
+                    SetObjProperty(new_chest, "level", level);
+                    SetObjProperty(new_chest, "chest_type", chest_type);
+                    SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
+                    SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, 1); // Make it destroyable
+                    new_chest.movable := 0;
+                    new_chest.locked := 1;
+
+                    var actual_script := "::treasurechest"; // Default script
+                    var made_into_puzzle_this_iteration := 0;
+
+                    if (is_puzzle)
+                        var can_be_puzzle := 0;
+                        if (puzzle_limit_count == -1) // -1 means blank input, so all can be puzzles
+                            can_be_puzzle := 1;
+                        elseif (puzzle_chests_spawned_this_cycle < puzzle_limit_count)
+                            can_be_puzzle := 1;
+                        endif
+
+                        if (can_be_puzzle)
+                            actual_script := ":mastermind:PuzzleChestOpen"; // From itemdesc.cfg
+                            SetObjProperty(new_chest, "IsPuzzleChest", 1);
+                            puzzle_chests_spawned_this_cycle += 1;
+                            made_into_puzzle_this_iteration := 1;
+                        endif
+                    endif
+                    
+                    // Mimic logic should not override a puzzle chest unless intended
+                    if (is_mimic && RandomInt(100) < mimic_chance && !made_into_puzzle_this_iteration)
+                        actual_script := ":custompizza:mimic"; // Mimic script
+                        SetObjProperty(new_chest, "IsMimic", 1);
+                        if (GetObjProperty(new_chest, "IsPuzzleChest")) // If it was somehow marked puzzle and then mimic
+                           EraseObjProperty(new_chest, "IsPuzzleChest");
+                        endif
+                        // Mimics might have different objids
+                        if (RandomInt(2) == 1) new_chest.graphic := 0xCF89; else new_chest.graphic := 0xCF94; endif
+                    endif
+
+                    new_chest.script := actual_script;
+
+                    // Add traps (similar to treasurechest.inc)
+                    var trap_type_roll := RandomInt(3)+1;
+                    case(trap_type_roll)
+                        1: AddTrap(new_chest, "Explosion", level);
+                        2: AddTrap(new_chest, "PoisonGas", level);
+                        3: AddTrap(new_chest, "ManaDrain", level);
+                    endcase
+
+                    Loot_Generate(new_chest, lootname);
+                    created_chests_this_cycle.append(new_chest.serial);
+                    print("Epic Chest spawned: " + new_chest.serial + " with script " + actual_script);
+                else
+                    print("Failed to create epic chest item at " + new_x + "," + new_y);
+                endif
+            endif
+            placement_tries += 1;
+            sleepms(10);
+        endwhile
+    endfor
+
+    if (created_chests_this_cycle.size() > 0)
+        foreach serial_val in created_chests_this_cycle
+            current_chests_serials.append(CInt(serial_val));
+        endforeach
+        SetObjProperty(spawner, "spawned_epic_chests", current_chests_serials);
+    endif
+endfunction
+
+function ClearMySpawnedChests(spawner)
+    var chest_serials := GetObjProperty(spawner, "spawned_epic_chests");
+    if (chest_serials)
+        foreach serial_val in chest_serials
+            var chest := SystemFindObjectBySerial(CInt(serial_val));
+            if (chest && GetObjProperty(chest, "link") == spawner.serial)
+                DestroyItem(chest);
+            endif
+            sleepms(5);
+        endforeach
+    endif
+    EraseObjProperty(spawner, "spawned_epic_chests");
+endfunction
+
+// Helper function - needs to be implemented based on how puzzle chests are tracked globally or per spawner.
+function CountPuzzleChests(realm_val)
+    var count := 0;
+    // This is a placeholder. You'll need to iterate through items or use a global counter.
+    // For example, if puzzle chests have a specific global property or are stored in a global array.
+    // foreach item_in_world in ListItemsInRealm(realm_val) // This would be very slow
+    //    if(GetObjProperty(item_in_world, "IsPuzzleChest") && GetObjProperty(item_in_world, "IsActivePuzzle"))
+    //        count++;
+    //    endif
+    // endforeach
+    // A better way is to have puzzle chests register/unregister themselves from a global list or increment/decrement a global counter.
+    var global_puzzle_list := GetGlobalProperty("ActivePuzzleChestsSerials");
+    if(global_puzzle_list.IsArray())
+        count := global_puzzle_list.size();
+    endif
+    return count; 
+endfunction
