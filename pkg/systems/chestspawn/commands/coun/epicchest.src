@@ -34,7 +34,7 @@ program epicchest(who)
         endif
 
         var is_puzzle := CInt(res[60]); // Checkbox value for puzzle chest (ID 60)
-        var puzzle_limit_count := -1; // Default to -1 (no specific limit, all can be puzzle if is_puzzle is true)
+        var puzzle_limit_count := 5; // Default to 5 (previously was -1)
         if (is_puzzle)
             // Read from new text entry ID 62 for the limit
             if (res[62] != "") // Check if the text entry is not empty
@@ -43,9 +43,7 @@ program epicchest(who)
                     puzzle_limit_count := 0; // Limit cannot be negative, 0 means no puzzle chests of this type.
                 endif
             endif
-            // If puzzle_limit_count remains -1, it means blank entry, so all can be puzzles.
-            // If puzzle_limit_count is >= amount, it also implies all can be puzzles.
-            // The spawner script will handle this logic.
+            // If text entry is empty, use default of 5
         endif
 
         var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);

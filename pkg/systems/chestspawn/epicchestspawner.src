@@ -24,9 +24,6 @@ program EpicChestSpawner(spawner)
     // Initial delay
     sleep(1);
 
-    // Clear existing spawned chests by this spawner
-    ClearMySpawnedChests(spawner);
-
     if (!amount || !level || !range_val || !chest_type)
         print("Epic Chest Spawner " + spawner.serial + " at: " + spawner.x + ", " + spawner.y + " is improperly configured");
         return;
@@ -35,9 +32,14 @@ program EpicChestSpawner(spawner)
     while (spawner)
         // Check current chests to see if we need to spawn
         var current_chests := GetObjProperty(spawner, "spawned_epic_chests");
-        var needs_respawn := 1; // Default to true
+        var needs_respawn := 0; // Default to false
+        var missing_chests := 0;
+        var opened_chests := 0;
         
-        if (current_chests)
+        if (!current_chests)
+            needs_respawn := 1; // No chests exist at all
+            missing_chests := amount; // Need to spawn all chests
+        else
             var active_chests := 0;
             var valid_chests := array{};
             foreach serial in current_chests
@@ -46,24 +48,32 @@ program EpicChestSpawner(spawner)
                     valid_chests.append(serial);
                     if (chest.locked) // If chest exists and hasn't been opened
                         active_chests += 1;
+                    else
+                        opened_chests += 1;
                     endif
+                else
+                    missing_chests += 1; // Chest was destroyed
                 endif
             endforeach
             
-            // Update the chest list if any were missing
-            if (valid_chests.size() < current_chests.size())
-                SetObjProperty(spawner, "spawned_epic_chests", valid_chests);
-                current_chests := valid_chests;
-            endif
+            // Update the chest list if any were missing or opened
+            SetObjProperty(spawner, "spawned_epic_chests", valid_chests);
+            current_chests := valid_chests;
             
-            if (active_chests >= amount) // If we still have all our chests and they're locked
-                needs_respawn := 0;
-                print("Still have " + active_chests + " active chests. Skipping spawn.");
+            // Need to respawn if we have any missing or opened chests
+            if (active_chests < amount)
+                needs_respawn := 1;
             endif
         endif
         
         if (needs_respawn)
-            print("Spawning new chests as " + (!current_chests ? "no chests exist" : "some chests were opened"));
+            if (missing_chests > 0)
+                print("Spawning " + missing_chests + " chests to replace destroyed ones");
+            endif
+            if (opened_chests > 0)
+                print("Spawning " + opened_chests + " chests to replace opened ones");
+            endif
+            ClearMySpawnedChests(spawner); // Clear opened chests before spawning new ones
             MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance, is_puzzle, puzzle_limit_count);
         endif
         
@@ -75,30 +85,29 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
     var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
     if (!current_chests_serials) current_chests_serials := array; endif
 
-    // Filter out and delete destroyed, invalid, or opened chests
+    // Count and clean up existing chests
     var valid_chests := array;
-    var locked_chest_count := 0;
+    var chest_count := 0;
     foreach serial_val in current_chests_serials
         var existing_chest := SystemFindObjectBySerial(CInt(serial_val));
         if (existing_chest)
-            if (existing_chest.locked)
-                valid_chests.append(existing_chest.serial);
-                locked_chest_count += 1;
-            else
-                // Delete unlocked (opened) chests
-                DestroyItem(existing_chest);
-            endif
+            valid_chests.append(serial_val);
+            chest_count += 1;
         endif
         sleepms(50); // Small delay to prevent server stress
     endforeach
+
+    // Update our tracking list
     current_chests_serials := valid_chests;
     SetObjProperty(spawner, "spawned_epic_chests", current_chests_serials);
 
-    var new_amount_to_spawn := CInt(amount - locked_chest_count); // Use locked count instead of total chests
-
-    if (new_amount_to_spawn <= 0)
+    // If we already have the requested amount of chests, don't spawn more
+    if (chest_count >= amount)
         return;
     endif
+
+    // Calculate how many new chests we need to spawn
+    var new_amount_to_spawn := amount - chest_count;
 
     var loot_name_prefix := "";
     case (chest_type)
@@ -229,16 +238,20 @@ endfunction
 function ClearMySpawnedChests(spawner)
     var chest_serials := GetObjProperty(spawner, "spawned_epic_chests");
     if (chest_serials)
+        var valid_chests := array{};
         foreach serial_val in chest_serials
             var chest := SystemFindObjectBySerial(CInt(serial_val));
             if (chest && GetObjProperty(chest, "link") == spawner.serial)
-                DestroyItem(chest);
+                if (!chest.locked) // Only remove if the chest is unlocked (opened)
+                    DestroyItem(chest);
+                else
+                    valid_chests.append(serial_val); // Keep track of locked chests
+                endif
             endif
             sleepms(5);
         endforeach
+        SetObjProperty(spawner, "spawned_epic_chests", valid_chests); // Update the list with only locked chests
     endif
-    EraseObjProperty(spawner, "spawned_epic_chests");
-    EraseObjProperty(spawner, "current_puzzle_count"); // Reset puzzle count when clearing
 endfunction
 
 // Helper function - needs to be implemented based on how puzzle chests are tracked globally or per spawner.
