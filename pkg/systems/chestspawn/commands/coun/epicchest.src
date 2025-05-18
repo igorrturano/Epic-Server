@@ -1,0 +1,162 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:epicGumps";
+
+program epicchest(who)
+
+    var res := CreateEpicChestGump(who);
+
+    if (res && res[99]) // Check if res is not empty and Create button (ID 99) was pressed
+        var level := 1;
+        if (res[12]) level := 2; elseif (res[13]) level := 3; elseif (res[14]) level := 4; elseif (res[15]) level := 5; endif
+
+        var amount := 1;
+        if (res[22]) amount := 2; elseif (res[23]) amount := 3; elseif (res[24]) amount := 4; elseif (res[25]) amount := 5; endif
+
+        var range_val := 1;
+        if (res[32]) range_val := 2; elseif (res[33]) range_val := 3; elseif (res[34]) range_val := 4; elseif (res[35]) range_val := 5; endif
+
+        var chest_type := "Warrior";
+        if (res[42]) chest_type := "Thief";
+        elseif (res[43]) chest_type := "Artifice";
+        elseif (res[44]) chest_type := "Mage";
+        endif
+        
+        var is_mimic := CInt(res[50]); // Checkbox value is 0 or 1
+        var mimic_chance := 0;
+        if (is_mimic)
+            mimic_chance := CInt(res[51]); // Text entry for mimic chance (ID 51)
+            if (mimic_chance < 0) mimic_chance := 0; endif
+            if (mimic_chance > 100) mimic_chance := 100; endif
+        endif
+
+        var is_puzzle := CInt(res[60]); // Checkbox value for puzzle chest (ID 60)
+        var puzzle_limit_count := -1; // Default to -1 (no specific limit, all can be puzzle if is_puzzle is true)
+        if (is_puzzle)
+            // Read from new text entry ID 62 for the limit
+            if (res[62] != "") // Check if the text entry is not empty
+                puzzle_limit_count := CInt(res[62]);
+                if (puzzle_limit_count < 0) 
+                    puzzle_limit_count := 0; // Limit cannot be negative, 0 means no puzzle chests of this type.
+                endif
+            endif
+            // If puzzle_limit_count remains -1, it means blank entry, so all can be puzzles.
+            // If puzzle_limit_count is >= amount, it also implies all can be puzzles.
+            // The spawner script will handle this logic.
+        endif
+
+        var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);
+        if (spawner)
+            SetObjProperty(spawner, "epic_level", level);
+            SetObjProperty(spawner, "epic_amount", amount);
+            SetObjProperty(spawner, "epic_range", range_val);
+            SetObjProperty(spawner, "epic_chest_type", chest_type);
+            SetObjProperty(spawner, "epic_is_mimic", is_mimic);
+            if (is_mimic)
+                SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
+            endif
+            SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
+            if (is_puzzle)
+                // Store the count, -1 if blank (meaning all possible or let spawner decide based on total amount)
+                SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
+            endif
+            
+            SetObjProperty(spawner, "script", ":chestspawn:epicchestspawner"); 
+            spawner.invisible := 1;
+            SendSysMessage(who, "Epic Chest Spawner created successfully at " + spawner.x + " " + spawner.y + " " + spawner.z + ".");
+        else
+            SendSysMessage(who, "Failed to create spawner item.");
+        endif
+    else
+        SendSysMessage(who, "Epic Chest Spawner creation cancelled.");
+    endif
+endprogram
+
+function CreateEpicChestGump(who)
+    var gump := GFECreateGump("Epic Chest Spawner Configuration", 480, 600); // Adjusted size
+    
+    var y_pos := 80;
+    var x_label := 30;
+    var x_options_start := 200;
+    var radio_spacing := 28;
+
+    // --- Chest Level (1-5) ---
+    GFTextLine(gump, x_label, y_pos, 1153, "Chest Level (1-5):");
+    GFSetRadioGroup(gump, 1);
+    GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 11); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
+    GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 12); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "2");
+    GFRadioButton(gump, x_options_start + radio_spacing*4, y_pos, 208, 209, 0, 13); GFTextLine(gump, x_options_start + radio_spacing*4 + 20, y_pos, 1153, "3");
+    GFRadioButton(gump, x_options_start + radio_spacing*6, y_pos, 208, 209, 0, 14); GFTextLine(gump, x_options_start + radio_spacing*6 + 20, y_pos, 1153, "4");
+    GFRadioButton(gump, x_options_start + radio_spacing*8, y_pos, 208, 209, 0, 15); GFTextLine(gump, x_options_start + radio_spacing*8 + 20, y_pos, 1153, "5");
+    y_pos += 30;
+
+    // --- Chest Amount (1-5) ---
+    GFTextLine(gump, x_label, y_pos, 1153, "Chest Amount (1-5):");
+    GFSetRadioGroup(gump, 2);
+    GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 21); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
+    GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 22); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "2");
+    GFRadioButton(gump, x_options_start + radio_spacing*4, y_pos, 208, 209, 0, 23); GFTextLine(gump, x_options_start + radio_spacing*4 + 20, y_pos, 1153, "3");
+    GFRadioButton(gump, x_options_start + radio_spacing*6, y_pos, 208, 209, 0, 24); GFTextLine(gump, x_options_start + radio_spacing*6 + 20, y_pos, 1153, "4");
+    GFRadioButton(gump, x_options_start + radio_spacing*8, y_pos, 208, 209, 0, 25); GFTextLine(gump, x_options_start + radio_spacing*8 + 20, y_pos, 1153, "5");
+    y_pos += 30;
+
+    // --- Spawn Radius (1-5 tiles) ---
+    GFTextLine(gump, x_label, y_pos, 1153, "Spawn Radius (1-5 tiles):");
+    GFSetRadioGroup(gump, 3);
+    GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 31); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
+    GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 32); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "2");
+    GFRadioButton(gump, x_options_start + radio_spacing*4, y_pos, 208, 209, 0, 33); GFTextLine(gump, x_options_start + radio_spacing*4 + 20, y_pos, 1153, "3");
+    GFRadioButton(gump, x_options_start + radio_spacing*6, y_pos, 208, 209, 0, 34); GFTextLine(gump, x_options_start + radio_spacing*6 + 20, y_pos, 1153, "4");
+    GFRadioButton(gump, x_options_start + radio_spacing*8, y_pos, 208, 209, 0, 35); GFTextLine(gump, x_options_start + radio_spacing*8 + 20, y_pos, 1153, "5");
+    y_pos += 30;
+
+    GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+    y_pos += 20;
+
+    // --- Chest Type ---
+    GFTextLine(gump, x_label, y_pos, 1153, "Chest Type:");
+    GFSetRadioGroup(gump, 4);
+    y_pos += 25;
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 1, 41); GFTextLine(gump, x_label + 45, y_pos, 1153, "Warrior");
+    y_pos += 25;
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 42); GFTextLine(gump, x_label + 45, y_pos, 1153, "Thief");
+    y_pos += 25;
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 43); GFTextLine(gump, x_label + 45, y_pos, 1153, "Artifice");
+    y_pos += 25;
+    GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 44); GFTextLine(gump, x_label + 45, y_pos, 1153, "Mage");
+    y_pos += 30;
+    
+    GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+    y_pos += 20;
+
+    // --- Mimic Options ---
+    GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 50);
+    GFTextLine(gump, x_label + 25, y_pos, 1153, "Spawn as Mimic?");
+    y_pos += 25;
+    GFTextLine(gump, x_label + 20, y_pos, 1153, "Mimic Chance (%):");
+    GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, "10", 51); // ID 51 for text entry
+    y_pos += 30;
+
+    GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+    y_pos += 20;
+
+    // --- Puzzle Chest Options ---
+    GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 60); // ID 60 for puzzle chest
+    GFTextLine(gump, x_label + 25, y_pos, 1153, "Spawn as Puzzle Chest?");
+    y_pos += 25;
+    GFTextLine(gump, x_label + 20, y_pos, 1153, "Max Puzzle Chests (blank for all):"); // Changed text
+    GFTextEntry(gump, x_options_start + 100, y_pos, 50, 20, 1153, "", 62); // New ID 62, default empty, adjusted x position
+    y_pos += 30;
+    
+    GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+    y_pos += 20;
+
+    // --- Buttons ---
+    GFAddButton(gump, x_label + 80, y_pos + 20, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99
+    GFAddButton(gump, x_label + 250, y_pos + 20, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0
+    
+    return GFSendGump(who, gump);
+endfunction
