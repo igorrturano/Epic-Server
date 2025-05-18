@@ -570,7 +570,7 @@ function addDurability(stats, item)
 
 	stats.MaxHP += getDurabilityByType(item);
 	if (item.isA(POLCLASS_ARMOR))
-		stats.MaxHP += getDurabilityBySlot(item);
+		stats.MaxHP += getDurabilityBySlot(item) * 2;
 	endif
 
 	stats.MaxHP := stats.MaxHP * getDurabilityModByMaterial(item); // Multiplica pelo MOD do material
