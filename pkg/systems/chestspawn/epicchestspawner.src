@@ -93,62 +93,72 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
             if (spawner.z > new_z + 5 || spawner.z < new_z - 5) new_z := spawner.z; endif
 
             if (len(ListItemsNearLocation(new_x, new_y, new_z, 0, spawner.realm)) == 0)
-                var chest_objid := 0xE40; // Default wooden chest, can be varied
-                var new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_objid, 1, spawner.realm);
+                var objtype;
+                var new_chest;
+                
+                // Determine what type of chest to create
+                if (is_puzzle)
+                    var current_puzzle_count := CInt(GetObjProperty(spawner, "current_puzzle_count"));
+                    if (!current_puzzle_count) 
+                        current_puzzle_count := 0; 
+                    endif
+                    
+                    if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
+                        objtype := 0xf022; // PuzzleChest objtype
+                        new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
+                        if (new_chest)
+                            if (RandomInt(2) == 0)
+                                new_chest.graphic := 0xE41; // West facing
+                            endif
+                            current_puzzle_count := current_puzzle_count + 1;
+                            SetObjProperty(spawner, "current_puzzle_count", current_puzzle_count);
+                            SetObjProperty(new_chest, "IsPuzzleChest", 1);
+                        endif
+                    endif
+                endif
+                
+                // If not a puzzle chest (or puzzle limit reached), check for mimic
+                if (!new_chest && is_mimic)
+                    if (RandomInt(100) < mimic_chance)
+                        // Randomly choose east or west facing mimic
+                        if (RandomInt(2))
+                            objtype := 0xCF89; // MimicEast
+                        else
+                            objtype := 0xCF94; // MimicWest
+                        endif
+                        new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
+                        if (new_chest)
+                            SetObjProperty(new_chest, "IsMimic", 1);
+                        endif
+                    endif
+                endif
+                
+                // If not puzzle or mimic, create regular epic chest
+                if (!new_chest)
+                    objtype := 0xE40; // Regular chest
+                    new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
+                endif
+                
                 if (new_chest)
                     placed := 1;
-                    SetObjProperty(new_chest, "link", spawner.serial); // Link to spawner
+                    SetObjProperty(new_chest, "link", spawner.serial);
                     SetObjProperty(new_chest, "IsEpicChest", 1);
                     SetObjProperty(new_chest, "level", level);
                     SetObjProperty(new_chest, "chest_type", chest_type);
+                    SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, 1);
                     SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
-                    SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, 1); // Make it destroyable
                     new_chest.movable := 0;
                     new_chest.locked := 1;
-
-                    var actual_script := "::treasurechest"; // Default script
-                    var made_into_puzzle_this_iteration := 0;
-
-                    if (is_puzzle)
-                        var can_be_puzzle := 0;
-                        if (puzzle_limit_count == -1) // -1 means blank input, so all can be puzzles
-                            can_be_puzzle := 1;
-                        elseif (puzzle_chests_spawned_this_cycle < puzzle_limit_count)
-                            can_be_puzzle := 1;
-                        endif
-
-                        if (can_be_puzzle)
-                            actual_script := ":mastermind:PuzzleChestOpen"; // From itemdesc.cfg
-                            SetObjProperty(new_chest, "IsPuzzleChest", 1);
-                            puzzle_chests_spawned_this_cycle += 1;
-                            made_into_puzzle_this_iteration := 1;
-                        endif
-                    endif
-                    
-                    // Mimic logic should not override a puzzle chest unless intended
-                    if (is_mimic && RandomInt(100) < mimic_chance && !made_into_puzzle_this_iteration)
-                        actual_script := ":custompizza:mimic"; // Mimic script
-                        SetObjProperty(new_chest, "IsMimic", 1);
-                        if (GetObjProperty(new_chest, "IsPuzzleChest")) // If it was somehow marked puzzle and then mimic
-                           EraseObjProperty(new_chest, "IsPuzzleChest");
-                        endif
-                        // Mimics might have different objids
-                        if (RandomInt(2) == 1) new_chest.graphic := 0xCF89; else new_chest.graphic := 0xCF94; endif
-                    endif
-
-                    new_chest.script := actual_script;
-
-                    // Add traps (similar to treasurechest.inc)
-                    var trap_type_roll := RandomInt(3)+1;
-                    case(trap_type_roll)
-                        1: AddTrap(new_chest, "Explosion", level);
-                        2: AddTrap(new_chest, "PoisonGas", level);
-                        3: AddTrap(new_chest, "ManaDrain", level);
-                    endcase
-
-                    Loot_Generate(new_chest, lootname);
+                    SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
                     created_chests_this_cycle.append(new_chest.serial);
-                    print("Epic Chest spawned: " + new_chest.serial + " with script " + actual_script);
+                    
+                    // Start the script instead of just restarting it
+                    // var script := start_script(actual_script, new_chest);
+                    // if (script.errortext)
+                    //     print("Failed to start script for chest " + new_chest.serial + ": " + script.errortext);
+                    // else
+                    //     print("Successfully started script for chest " + new_chest.serial + " with " + actual_script);
+                    // endif
                 else
                     print("Failed to create epic chest item at " + new_x + "," + new_y);
                 endif
@@ -178,6 +188,7 @@ function ClearMySpawnedChests(spawner)
         endforeach
     endif
     EraseObjProperty(spawner, "spawned_epic_chests");
+    EraseObjProperty(spawner, "current_puzzle_count"); // Reset puzzle count when clearing
 endfunction
 
 // Helper function - needs to be implemented based on how puzzle chests are tracked globally or per spawner.

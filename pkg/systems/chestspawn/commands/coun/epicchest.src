@@ -8,7 +8,11 @@ include ":gumps:epicGumps";
 program epicchest(who)
 
     var res := CreateEpicChestGump(who);
-
+    print("RES: " + res);
+    print("RES[0]: " + res[0]);
+    print("RES[99]: " + res[99]);
+    print("RES[12]: " + res[12]);
+    print("RES[1]: " + res[1]);
     if (res && res[99]) // Check if res is not empty and Create button (ID 99) was pressed
         var level := 1;
         if (res[12]) level := 2; elseif (res[13]) level := 3; elseif (res[14]) level := 4; elseif (res[15]) level := 5; endif
@@ -28,7 +32,8 @@ program epicchest(who)
         var is_mimic := CInt(res[50]); // Checkbox value is 0 or 1
         var mimic_chance := 0;
         if (is_mimic)
-            mimic_chance := CInt(res[51]); // Text entry for mimic chance (ID 51)
+            // Get the actual text value entered by the user
+            mimic_chance := CInt(GFExtractData(res, 51)); // Get text entry value for mimic chance
             if (mimic_chance < 0) mimic_chance := 0; endif
             if (mimic_chance > 100) mimic_chance := 100; endif
         endif
@@ -38,7 +43,7 @@ program epicchest(who)
         if (is_puzzle)
             // Read from new text entry ID 62 for the limit
             if (res[62] != "") // Check if the text entry is not empty
-                puzzle_limit_count := CInt(res[62]);
+                puzzle_limit_count := CInt(GFExtractData(res, 62));
                 if (puzzle_limit_count < 0) 
                     puzzle_limit_count := 0; // Limit cannot be negative, 0 means no puzzle chests of this type.
                 endif
@@ -50,19 +55,23 @@ program epicchest(who)
 
         var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);
         if (spawner)
+            print("level: " + level);
+            print("amount: " + amount);
+            print("range_val: " + range_val);
+            print("chest_type: " + chest_type);
+            print("is_mimic: " + is_mimic);
+            print("mimic_chance: " + mimic_chance);
+            print("is_puzzle: " + is_puzzle);
+            print("puzzle_limit_count: " + puzzle_limit_count);
             SetObjProperty(spawner, "epic_level", level);
             SetObjProperty(spawner, "epic_amount", amount);
             SetObjProperty(spawner, "epic_range", range_val);
             SetObjProperty(spawner, "epic_chest_type", chest_type);
             SetObjProperty(spawner, "epic_is_mimic", is_mimic);
-            if (is_mimic)
-                SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
-            endif
+            SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
             SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
-            if (is_puzzle)
-                // Store the count, -1 if blank (meaning all possible or let spawner decide based on total amount)
-                SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
-            endif
+            SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
+            SetObjProperty(spawner, "duration", 7200); // Default 2 hour respawn
             
             SetObjProperty(spawner, "script", ":chestspawn:epicchestspawner"); 
             spawner.invisible := 1;
