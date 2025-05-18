@@ -14,9 +14,12 @@ program EpicChestSpawner(spawner)
     var mimic_chance    := GetObjProperty(spawner, "epic_mimic_chance");
     var is_puzzle       := GetObjProperty(spawner, "epic_is_puzzle");
     var puzzle_limit_count := GetObjProperty(spawner, "epic_puzzle_limit_count"); // Renamed from limit_puzzle
-    var frq             := GetObjProperty(spawner, "duration"); // Standard spawner frequency
-
-    if (!frq) frq := 7200; endif // Default to 2 hours if not set
+    var frq := GetObjProperty(spawner, "duration"); // Duration in seconds
+    
+    if (!frq)
+        frq := 1800; // Default to 30 min if not set
+        SetObjProperty(spawner, "duration", frq);
+    endif
 
     // Initial delay
     sleep(1);
@@ -30,17 +33,40 @@ program EpicChestSpawner(spawner)
     endif
 
     while (spawner)
-        var hasPlayerNearMe := 0;
-        var nearby := ListMobilesNearLocationEx(spawner.x, spawner.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, spawner.realm);
-        foreach player in nearby
-            if (player.acctname)
-                hasPlayerNearMe++;
+        // Check current chests to see if we need to spawn
+        var current_chests := GetObjProperty(spawner, "spawned_epic_chests");
+        var needs_respawn := 1; // Default to true
+        
+        if (current_chests)
+            var active_chests := 0;
+            var valid_chests := array{};
+            foreach serial in current_chests
+                var chest := SystemFindObjectBySerial(CInt(serial));
+                if (chest)
+                    valid_chests.append(serial);
+                    if (chest.locked) // If chest exists and hasn't been opened
+                        active_chests += 1;
+                    endif
+                endif
+            endforeach
+            
+            // Update the chest list if any were missing
+            if (valid_chests.size() < current_chests.size())
+                SetObjProperty(spawner, "spawned_epic_chests", valid_chests);
+                current_chests := valid_chests;
             endif
-        endforeach
-
-        if (hasPlayerNearMe >= 1)
+            
+            if (active_chests >= amount) // If we still have all our chests and they're locked
+                needs_respawn := 0;
+                print("Still have " + active_chests + " active chests. Skipping spawn.");
+            endif
+        endif
+        
+        if (needs_respawn)
+            print("Spawning new chests as " + (!current_chests ? "no chests exist" : "some chests were opened"));
             MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance, is_puzzle, puzzle_limit_count);
         endif
+        
         sleep(frq); // Use the configured frequency for respawn
     endwhile
 endprogram
@@ -49,19 +75,26 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
     var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
     if (!current_chests_serials) current_chests_serials := array; endif
 
-    // Filter out destroyed or invalid chests
+    // Filter out and delete destroyed, invalid, or opened chests
     var valid_chests := array;
+    var locked_chest_count := 0;
     foreach serial_val in current_chests_serials
         var existing_chest := SystemFindObjectBySerial(CInt(serial_val));
         if (existing_chest)
-            valid_chests.append(existing_chest.serial);
+            if (existing_chest.locked)
+                valid_chests.append(existing_chest.serial);
+                locked_chest_count += 1;
+            else
+                // Delete unlocked (opened) chests
+                DestroyItem(existing_chest);
+            endif
         endif
+        sleepms(50); // Small delay to prevent server stress
     endforeach
     current_chests_serials := valid_chests;
     SetObjProperty(spawner, "spawned_epic_chests", current_chests_serials);
 
-    var current_amount := current_chests_serials.size();
-    var new_amount_to_spawn := CInt(amount - current_amount);
+    var new_amount_to_spawn := CInt(amount - locked_chest_count); // Use locked count instead of total chests
 
     if (new_amount_to_spawn <= 0)
         return;

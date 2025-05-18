@@ -98,6 +98,12 @@ endprogram
 
 function PickTreasureChest(me, lockpick, chest)
     var lvl := CInt(GetObjProperty(chest, "level"));
+
+    if (GetObjProperty(chest, "isMimic"))
+        UseItem(chest, me);
+        SendSysMessageEx(me, "Esse baú é um mímico!", SSM_FAIL);
+        return 0;
+    endif
     
     if (!chest.locked)
         SendSysMessageEx(me, "O alvo nao parece estar tracado.", SSM_INFO);
