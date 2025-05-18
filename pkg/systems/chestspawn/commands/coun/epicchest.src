@@ -20,8 +20,8 @@ program epicchest(who)
         var amount := 1;
         if (res[22]) amount := 2; elseif (res[23]) amount := 3; elseif (res[24]) amount := 4; elseif (res[25]) amount := 5; endif
 
-        var range_val := 1;
-        if (res[32]) range_val := 2; elseif (res[33]) range_val := 3; elseif (res[34]) range_val := 4; elseif (res[35]) range_val := 5; endif
+        var range_val := 2;
+        if (res[32]) range_val := 3; elseif (res[33]) range_val := 4; elseif (res[34]) range_val := 5; elseif (res[35]) range_val := 6; endif
 
         var chest_type := "Warrior";
         if (res[42]) chest_type := "Thief";
@@ -71,7 +71,13 @@ program epicchest(who)
             SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
             SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
             SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
-            SetObjProperty(spawner, "duration", 7200); // Default 2 hour respawn
+            
+            // Handle rest period (convert minutes to seconds)
+            var rest_period := CInt(GFExtractData(res, 36));
+            if (!rest_period || rest_period < 1)
+                rest_period := 120; // Default to 120 minutes if invalid
+            endif
+            SetObjProperty(spawner, "duration", rest_period * 60); // Convert minutes to seconds
             
             SetObjProperty(spawner, "script", ":chestspawn:epicchestspawner"); 
             spawner.invisible := 1;
@@ -112,14 +118,19 @@ function CreateEpicChestGump(who)
     GFRadioButton(gump, x_options_start + radio_spacing*8, y_pos, 208, 209, 0, 25); GFTextLine(gump, x_options_start + radio_spacing*8 + 20, y_pos, 1153, "5");
     y_pos += 30;
 
-    // --- Spawn Radius (1-5 tiles) ---
-    GFTextLine(gump, x_label, y_pos, 1153, "Spawn Radius (1-5 tiles):");
+    // --- Spawn Radius (2-6 tiles) ---
+    GFTextLine(gump, x_label, y_pos, 1153, "Spawn Radius (2-6 tiles):");
     GFSetRadioGroup(gump, 3);
-    GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 31); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
-    GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 32); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "2");
-    GFRadioButton(gump, x_options_start + radio_spacing*4, y_pos, 208, 209, 0, 33); GFTextLine(gump, x_options_start + radio_spacing*4 + 20, y_pos, 1153, "3");
-    GFRadioButton(gump, x_options_start + radio_spacing*6, y_pos, 208, 209, 0, 34); GFTextLine(gump, x_options_start + radio_spacing*6 + 20, y_pos, 1153, "4");
-    GFRadioButton(gump, x_options_start + radio_spacing*8, y_pos, 208, 209, 0, 35); GFTextLine(gump, x_options_start + radio_spacing*8 + 20, y_pos, 1153, "5");
+    GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 31); GFTextLine(gump, x_options_start + 20, y_pos, 1153, "2");
+    GFRadioButton(gump, x_options_start + radio_spacing*2, y_pos, 208, 209, 0, 32); GFTextLine(gump, x_options_start + radio_spacing*2 + 20, y_pos, 1153, "3");
+    GFRadioButton(gump, x_options_start + radio_spacing*4, y_pos, 208, 209, 0, 33); GFTextLine(gump, x_options_start + radio_spacing*4 + 20, y_pos, 1153, "4");
+    GFRadioButton(gump, x_options_start + radio_spacing*6, y_pos, 208, 209, 0, 34); GFTextLine(gump, x_options_start + radio_spacing*6 + 20, y_pos, 1153, "5");
+    GFRadioButton(gump, x_options_start + radio_spacing*8, y_pos, 208, 209, 0, 35); GFTextLine(gump, x_options_start + radio_spacing*8 + 20, y_pos, 1153, "6");
+    y_pos += 30;
+
+    // --- Rest Period ---
+    GFTextLine(gump, x_label, y_pos, 1153, "Rest Period (in minutes):");
+    GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, "120", 36); // ID 36 for rest period
     y_pos += 30;
 
     GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
