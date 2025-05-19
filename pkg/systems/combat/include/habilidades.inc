@@ -860,12 +860,9 @@ endfunction
 function CheckHab_AtaqueInfalivel(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(attacker, "ataqueinfalivel") > 0)
 		printtext(attacker, "*ataque infalivel*");
-		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-		armor := armor[ RandomInt( len( armor ) ) + 1];
-		PlayHitSounds(defender, attacker);
-		var dmg := CalculateRawDamage(attacker, attacker.weapon);
-		dmg := dmg*0.33;
-		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+		var armor := GetArmorToHit(defender);
+		var dmg := CalculateRawDamage(attacker, attacker.weapon)*0.33;
+		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg});
 		SkillChecks(attacker, defender, attacker.weapon, dmg);
 
 		return 1;
@@ -877,12 +874,9 @@ endfunction
 function CheckHab_MestreDuelista(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (GetCooldown(attacker, "mestreduelista") > 0)
 		printtext(attacker, "*mestre duelista*");
-		var armor :=  CS_GetEquipmentInArmorZone(attacker, CS_GetRandomArmorZone());
-		armor := armor[ RandomInt( len( armor ) ) + 1];
-		PlayHitSounds(defender, attacker);
+		var armor := GetArmorToHit(defender);
 		var dmg := CalculateRawDamage(attacker, attacker.weapon);
-		dmg := dmg;
-		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+		var result := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg});
 		SkillChecks(attacker, defender, attacker.weapon, dmg);
 		
 		return 1;
@@ -894,6 +888,7 @@ endfunction
 function CheckHab_Insistencia(byref attacker, byref defender, byRef attackInfo := struct{})
 	if (TemHabilidade(attacker, "Insistencia"))
 		SetObjProperty(attacker, "insistencia", 1);
+		return 1;
 	endif
 
 	return 0;

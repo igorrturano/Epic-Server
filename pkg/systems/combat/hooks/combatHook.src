@@ -182,8 +182,7 @@ function EpicAttack(attacker, defender, weaponHand)
 		defender.frozen := 0;
 	endif
 
-	var armor := CS_GetEquipmentInArmorZone(defender, CS_GetRandomArmorZone());
-	armor := armor[RandomIntMinMax(1, Len(armor))];
+	var armor := GetArmorToHit(defender);
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
 
 	if (!DAMAGE_OFFHAND)
