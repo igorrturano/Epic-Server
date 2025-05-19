@@ -391,15 +391,6 @@ function ArrowRecovery(attacker, defender, weapon)
 	endif
 endfunction
 
-function DamageInfo(attacker, defender, basedamage, rawdamage)
-	if ( attacker.cmdlevel )
-		PrintTextAbovePrivate(attacker, "Rawdamage:"+rawdamage+"  Base:"+basedamage, attacker);
-	endif
-	if ( defender.cmdlevel )
-		PrintTextAbovePrivate(attacker, "Rawdamage:"+rawdamage+"  Base:"+basedamage, defender);
-	endif
-endfunction
-
 function WeaponHitScripts(attacker, defender, weapon, armor, basedamage, rawdamage)
 	var weapon_scripts := array;
 	//if ( weapon.objtype == 0x1F020 ) //

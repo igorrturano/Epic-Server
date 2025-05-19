@@ -250,30 +250,30 @@ function CalculateHitChance(attacker, defender)
 
     if (GetCooldown(defender, "Desviar Disparos") > 0 && attacker_weapon in ranged_weapons)
         printtext(defender, "*desviar disparos*");
-        hit_chance := 0;
+        return 0.0;
     endif
 
-	if (defender.acctname  )
+	if (defender.acctname)
 		if (!defender.warmode)
-			hit_chance := 100;
+			return 100.0;
 		endif
 	endif
 
 	if (GetObjProperty(attacker, "#attackfail") == 1)
 		EraseObjProperty(attacker, "#attackfail");
-		hit_chance := 0;
+		return 0.0;
 	endif
 
 	if (GetObjProperty(defender, "#defensefail") == 1)
 		EraseObjProperty(defender, "#defensefail");
-		hit_chance := 100;
+		return 100.0;
 	endif
 
 	if (GetCooldown(attacker, "ataquetotal"))
-		hit_chance := 100;
+		return 100.0;
 	endif
 	if (GetCooldown(defender, "ataquetotal"))
-		hit_chance := 100;
+		return 100.0;
 	endif
 
 	// Verifica acerto na escuridão
