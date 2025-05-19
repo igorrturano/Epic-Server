@@ -1,6 +1,5 @@
 use uo;
 
-include ":equipsys:props";
 include "include/client";
 include "include/say";
 

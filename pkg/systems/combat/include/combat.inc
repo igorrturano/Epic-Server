@@ -4,7 +4,6 @@ include ":brainai:npcUtil";
 include ":combat:weaponInfo";
 include ":combat:combatFX";
 include ":faccao:faccao";
-include ":equipsys:props";
 
 function DistanceChecks(attacker, defender)
 	var cur_range := Distance(attacker, defender);

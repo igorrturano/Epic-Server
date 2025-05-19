@@ -3,7 +3,6 @@ use cfgfile;
 
 include ":megacliloc:/include/tradutores";
 include ":megacliloc:/include/toolTipUtils";
-include ":equipsys:props";
 include ":destroyable:include/destroyItem";
 
 

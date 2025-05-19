@@ -1,4 +1,4 @@
-include ":equipsys:tags";
+include ":equipsys:utils";
 include ":combat:armorZones";
 
 program Install()

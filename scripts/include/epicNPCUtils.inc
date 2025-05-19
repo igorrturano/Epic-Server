@@ -2,7 +2,6 @@ use util;
 
 include ":attributes:attributes";
 include ":equipsys:equipstats";
-include ":equipsys:props";
 include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")

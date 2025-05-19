@@ -4,6 +4,9 @@ use math;
 
 include ":combat:combatFX";
 
+
+// TODO: Fazer um único .src para essa habilidades de armas
+	// TODO: Criar um enum (ou ver se já existe em algum lugar) para categorizar quais armas são de quais efeito/habilidades
 program special_attack_garen(params)
 	var attacker	:= params[1];
 	var defender	:= params[2];
@@ -14,11 +17,11 @@ program special_attack_garen(params)
 	var moveTo_x := attacker.x;
 	var moveTo_y := attacker.y;
 
-	// Salta 10 tiles
+	// Salta 15 tiles
 	MoveObjectToLocation(attacker, attacker.x, attacker.y, attacker.z + 15, defender.realm, MOVEOBJECT_FORCELOCATION);
 	PlayAttackAnimation(attacker);
 
-	// Move o atacante passo a passo até o defensor
+	// Move o atacante step por step até o alvo
 	while (moveTo_x != defender.x || moveTo_y != defender.y)
 		if (moveTo_x < defender.x)
 			moveTo_x++;
@@ -41,8 +44,7 @@ program special_attack_garen(params)
 	PlayAttackAnimation(attacker);
 	MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
 	
-	attacker.facing(GetFacing(attacker.x, attacker.y, defender.x, defender.y));
-
+	attacker.facing(GetFacing(attacker.x, attacker.y, defender.x, defender.y)); // Vira o char para o alvo
 
 	return 1;
 endprogram
