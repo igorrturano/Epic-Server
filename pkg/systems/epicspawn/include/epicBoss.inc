@@ -29,6 +29,11 @@ function CreateEpicBoss(boss, x, y, z, realm)
         npc.color := CInt(boss.color);
         npc.truecolor := CInt(boss.color);
     endif
+
+    if (boss.description)
+        SetObjProperty(npc, "descmodboss", boss.description + "<br>");
+        updateToolTip(npc);
+    endif
     
     if (boss.trueboss)
         SetObjProperty(npc, "true_boss", 1);
