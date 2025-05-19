@@ -5,8 +5,6 @@
 
 use cfgfile;
 
-include ":equipsys:props";
-
 /*
  * CS_GetWeaponInfo(weapon, prop_name)
  *
