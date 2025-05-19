@@ -25,7 +25,6 @@ function DistanceChecks(attacker, defender)
 endfunction
 
 function GetWpnCfgInfo(mobile, weapon)
-
 	var npc_cfg2	:= ReadConfigFile(":*:npcdesc");
 	var item_cfg2	:= ReadConfigFile(":*:itemdesc");
 
