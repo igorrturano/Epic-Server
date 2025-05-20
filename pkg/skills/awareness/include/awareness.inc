@@ -182,6 +182,11 @@ function ExaminarArea(who)
 	endforeach
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
+		// Ignore spawners and other system items
+		if (item.name["spawnpoint"] || item.name["spawner"] || item.name["altar"] || item.objtype == 0x5000 || item.objtype == 0x5003 || item.objtype == 0x9F16 || item.objtype == 0xA401 || item.objtype == 0xA402 || item.objtype == 0xe807)
+			continue;
+		endif
+		
 		if ( item.invisible )
 			lvl := Cint(GetObjProperty(item, "level"));
 			case (lvl)

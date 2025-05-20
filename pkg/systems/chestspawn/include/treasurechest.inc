@@ -119,7 +119,7 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                     endif
                 endforeach
             endif
-            sleep(10);
+            sleep(1);
         endwhile
         
         if(chest)

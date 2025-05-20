@@ -259,12 +259,19 @@ endif
 endfunction
 
 function Loot_ChanceCheck(chance)
-	var rolado := RandomInt(100) + 1;
-
-	if ( rolado <= CInt(chance) )
-		return 1;
+	// Convert chance to a decimal for comparison
+	var decimal_chance := CDbl(chance);
+	
+	// For percentages >= 1, use regular 1-100 roll
+	if (decimal_chance >= 1)
+		var rolado := RandomInt(100) + 1;
+		return (rolado <= decimal_chance);
 	else
-		return 0;
+		// For chances < 1% (like 0.3%), use 1-1000 roll for more precision
+		var rolado := RandomInt(1000) + 1;
+		// Convert chance to per-thousand (0.3 becomes 3 in 1000)
+		var per_thousand := decimal_chance * 10;
+		return (rolado <= per_thousand);
 	endif
 endfunction
 

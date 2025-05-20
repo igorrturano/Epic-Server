@@ -1,0 +1,240 @@
+use uo;
+use os;
+
+include ":containers:storageAreas";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+const MOEDAS_COBRE     := 0xba63;
+const MOEDAS_PRATA     := 0xba64;
+const MOEDAS_OURO      := 0xba65;
+const GOLD_COIN        := 0xeed;
+
+program StablePost(who, post)
+    if (GetObjProperty(post, "StoredAnimal"))
+        // Se já tem um animal, tenta resgatar
+        return ResgatarAnimal(who, post);
+    else
+        // Se não tem animal, permite guardar
+        return GuardarAnimal(who, post);
+    endif
+endprogram
+
+function GuardarAnimal(who, post)
+    // 1. Verificar se o player tem um animal próximo
+    var animals := ListMobilesNearLocation(who.x, who.y, who.z, 3, who.realm);
+    var controllable_pets := array{};
+    
+    foreach animal in animals
+        if (animal.IsA(POLCLASS_NPC) && 
+            animal.master == who && 
+            !GetObjProperty(animal, "EstaNoEstabulo"))
+            controllable_pets.Append(animal);
+        endif
+    endforeach
+
+    if (controllable_pets.Size() == 0)
+        SendSysMessage(who, "Nenhum pet encontrado.");
+        return 0;
+    endif
+
+    // 2. Target para selecionar animal
+    SendSysMessage(who, "Selecione o pet para guardar.");
+    var target_pet := Target(who);
+
+    if (!target_pet || 
+        !target_pet.IsA(POLCLASS_NPC) || 
+        target_pet.master != who || 
+        target_pet.dead)
+        SendSysMessage(who, "Pet inválido.");
+        return 0;
+    endif
+
+    // 3. Calcular preço baseado em TameDifficulty
+    var precoPorDia := ObterPrecoPorDia(target_pet);
+
+    // 4. Confirmar guarda via Gump simples
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9270, 300, 200);
+    GFTextMid(gump, 10, 20, 280, 2100, "Deseja guardar " + target_pet.name + " no estábulo?");
+    GFTextMid(gump, 10, 50, 280, 2100, "Valor do estábulo por dia: " + precoPorDia + " moedas");
+    
+    GFAddButton(gump, 50, 100, 2117, 2118, 1, 1);
+    GFTextLine(gump, 80, 100, 2100, "Sim");
+    
+    GFAddButton(gump, 170, 100, 2117, 2118, 1, 0);
+    GFTextLine(gump, 200, 100, 2100, "Não");
+
+    var input := GFSendGump(who, gump);
+    
+    if (!input[0])
+        return 0;
+    endif  // <--- Adicionei este endif aqui
+
+    // 5. Verificar pagamento (agora sem pedir dias)
+    if (!PagarEstadia(who, precoPorDia))
+        SendSysMessage(who, "Pagamento não efetuado.");
+        return 0;
+    endif
+
+    // 6. Guardar animal
+    target_pet.hidden := 0;
+    target_pet.setParalyzed(1);
+    GrantPrivilege(target_pet, "invul");
+    target_pet.enable("invul");
+
+    SetObjProperty(target_pet, "EstaNoEstabulo", 1);
+    SetObjProperty(target_pet, "StablePostSerial", post.serial);
+    SetObjProperty(target_pet, "DataEntrada", polcore().systime);
+    SetObjProperty(target_pet, "PrecoPorDia", precoPorDia);
+    SetObjProperty(post, "StoredAnimal", target_pet.serial);
+
+    SendSysMessage(who, target_pet.name + " guardado com sucesso!");
+    return 1;
+endfunction
+
+function ResgatarAnimal(who, post)
+    var animal_serial := GetObjProperty(post, "StoredAnimal");
+    var animal := SystemFindObjectBySerial(animal_serial);
+
+    if (!animal || animal.master != who)
+        SendSysMessage(who, "Você não pode resgatar este animal.");
+        return 0;
+    endif
+
+    // Verifica se o pet está em limbo
+    if (GetObjProperty(animal, "EstaNoLimbo"))
+        SendSysMessage(who, "Seu pet está em limbo. Use o comando .assoviar para chamá-lo de volta primeiro.");
+        return 0;
+    endif
+
+    // Restaura estado original
+    animal.setParalyzed(0);
+    RevokePrivilege(animal, "invul");
+    animal.disable("invul");
+
+    EraseObjProperty(animal, "EstaNoEstabulo");
+    EraseObjProperty(animal, "StablePostSerial");
+    EraseObjProperty(animal, "DataEntrada");
+    EraseObjProperty(post, "StoredAnimal");
+
+    SendSysMessage(who, animal.name + " resgatado com sucesso!");
+    return 1;
+endfunction
+
+function RequestQuantidadeDias(who, precoPorDia)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9270, 300, 200);
+    GFTextMid(gump, 10, 20, 280, 2100, "Quantos dias deseja guardar?");
+    GFTextMid(gump, 10, 50, 280, 2100, "Preço por dia: " + precoPorDia + " moedas");
+    
+    var botoes := array{1, 3, 7, 15, 30};
+    var y := 80;
+    foreach dias in botoes
+        GFAddButton(gump, 50, y, 2117, 2118, 1, dias);
+        GFTextLine(gump, 80, y, 2100, dias + " dias [" + (dias * precoPorDia) + " moedas]");
+        y += 25;
+    endforeach
+
+    var input := GFSendGump(who, gump);
+    return input[0];
+endfunction
+
+function ConfirmarGuardaPet(who, pet, valor)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9270, 300, 200);
+    GFTextMid(gump, 10, 20, 280, 2100, "Confirma guardar " + pet.name + "?");
+    GFTextMid(gump, 10, 50, 280, 2100, "Valor: " + valor + " moedas");
+    
+    GFAddButton(gump, 50, 100, 2117, 2118, 1, 1);
+    GFTextLine(gump, 80, 100, 2100, "Sim");
+    
+    GFAddButton(gump, 170, 100, 2117, 2118, 1, 0);
+    GFTextLine(gump, 200, 100, 2100, "Não");
+
+    var input := GFSendGump(who, gump);
+    return input[0];
+endfunction
+
+function PagarEstadia(who, valor)
+    if (!TemBanco(who))
+        return 0;
+    endif
+
+    var bank_region := CP_DEFAULT_AREA;
+    var bank_box := CP_GetStorageContainerForMobile(who, bank_region, CP_NOCREATE);
+
+    Set_Critical(1);
+    var recursosDisponiveis := CalculaRecursosDisponiveisBank(bank_box);
+    
+    if (recursosDisponiveis < valor)
+        SendSysMessage(who, "Você não tem moedas suficientes no banco.");
+        Set_Critical(0);
+        return 0;
+    endif
+
+    var totalPago := PagarComMoedasCobre(who, bank_box, valor);
+    
+    Set_Critical(0);
+    return (totalPago >= valor);
+endfunction
+
+function CalculaRecursosDisponiveisBank(bank_box)
+    var total_cobre := 0;
+    
+    foreach item in EnumerateItemsInContainer(bank_box)
+        if (item.objtype == 0xba63) // Moeda de cobre
+            total_cobre += item.amount;
+        endif
+    endforeach
+
+    return total_cobre;
+endfunction
+
+function PagarComMoedasCobre(who, bank_box, valor)
+    var totalPago := 0;
+    var faltaPagar := valor;
+
+    foreach moeda in EnumerateItemsInContainer(bank_box)
+        if (moeda.objtype == 0xba63) // Moeda de cobre
+            var diferenca := faltaPagar - moeda.amount;
+            if (diferenca > 0)
+                totalPago += moeda.amount;
+                faltaPagar -= moeda.amount;
+                DestroyItem(moeda);
+            else
+                totalPago += faltaPagar;
+                SubtractAmount(moeda, faltaPagar);
+                faltaPagar := 0;
+                break;
+            endif
+        endif
+    endforeach
+
+    return totalPago;
+endfunction
+
+function ObterPrecoPorDia(animal)
+    var npc_cfg := ReadConfigFile(":npcs:npcdesc");
+    var template := GetObjProperty(animal, "npctemplate");
+    
+    var tame_difficulty := npc_cfg[template].TameDifficulty;
+    if (!tame_difficulty)
+        tame_difficulty := 4; // Valor padrão mínimo
+    endif
+    
+    var preco_por_dia := CInt(tame_difficulty / 4);
+    
+    // Garantir no mínimo 1 moeda de cobre por dia
+    return (preco_por_dia < 1) ? 1 : preco_por_dia;
+endfunction
+
+function TemBanco(who)
+    var bank_region := CP_DEFAULT_AREA;
+    var bank_box := CP_GetStorageContainerForMobile(who, bank_region, CP_NOCREATE);
+    if (!bank_box)
+        SendSysMessage(who, "Você não tem banco");
+        return 0;
+    endif
+    return 1;
+endfunction

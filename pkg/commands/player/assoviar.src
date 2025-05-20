@@ -1,0 +1,225 @@
+use uo;
+use os;
+use npc;
+use util;
+use math;
+
+const COOLDOWN_SECONDS := 20;
+const HIDE_MAX_DIST := 28;
+const MAX_PET_SCAN_RANGE := 18;
+
+program textcmd_Assoviar(character)
+    var current_time := ReadGameClock();
+    var last_use := GetObjProperty(character, "AssoviarCooldown");
+
+    // Adiciona emote de assovio
+    PrintTextAbove(character, "*assovia*");
+
+    // Cooldown mais rigoroso
+    if (last_use && current_time < CInt(last_use) + COOLDOWN_SECONDS)
+        var tempo_restante := CInt(last_use) + COOLDOWN_SECONDS - current_time;
+        SendSysMessage(character, "Aguarde " + tempo_restante + " segundos.");
+        return 0;
+    endif
+
+    var pet_in_limbo_serial := GetObjProperty(character, "PlayerPetInLimboSerial");
+    var success := 0;
+
+    if (pet_in_limbo_serial)
+        success := CallPetBack(character, CInt(pet_in_limbo_serial));
+    else
+        // Verifica se o jogador tem algum pet registrado em estábulo
+        var has_stabled_pet := 0;
+        var pets := ListMobilesNearLocation(
+            character.x, 
+            character.y, 
+            character.z, 
+            MAX_PET_SCAN_RANGE, 
+            character.realm
+        );
+        
+        foreach mob in pets
+            if (mob.IsA(POLCLASS_NPC) && 
+                mob.master == character &&
+                GetObjProperty(mob, "StablePostSerial"))
+                has_stabled_pet := 1;
+                break;
+            endif
+        endforeach
+        
+        if (!has_stabled_pet)
+            SendSysMessage(character, "Você precisa ter um pet registrado em um estábulo para usar este comando.");
+            return 0;
+        endif
+        
+        success := SendPetAway(character);
+    endif
+
+    // Só aplica cooldown se realmente teve sucesso
+    if (success)
+        SetObjProperty(character, "AssoviarCooldown", current_time);
+    endif
+
+    return success;
+endprogram
+
+function CallPetBack(character, pet_serial)
+    var pet := SystemFindObjectBySerial(pet_serial);
+
+    if (!pet || pet.master != character || !GetObjProperty(pet, "EstaNoLimbo"))
+        SendSysMessage(character, "Não foi possível chamar o pet.");
+        return 0;
+    endif
+    
+    // Verifica se o pet ainda está registrado em um estábulo
+    if (!GetObjProperty(pet, "StablePostSerial"))
+        SendSysMessage(character, "O registro do estábulo deste pet expirou.");
+        EraseObjProperty(character, "PlayerPetInLimboSerial");
+        EraseObjProperty(pet, "EstaNoLimbo");
+        return 0;
+    endif
+
+    // Remove estados especiais que impedem o movimento
+    pet.hidden := 0;
+    pet.frozen := 0;
+    pet.invul := 0;
+ 
+    PlaySoundEffect(character, 0x448);
+    
+    // Define uma localização próxima ao jogador para o pet aparecer
+    var appear_loc := struct{
+        x := 0,
+        y := 0,
+        z := 0
+    };
+
+    // Encontrar uma localização válida a 5-8 tiles de distância do master
+    var dist := RandomInt(3) + 5; // 5-8 tiles
+    var angle := RandomInt(360); // direção aleatória
+    var radian := angle * (ConstPi() / 180);
+    
+    appear_loc.x := character.x + CInt(dist * Cos(radian));
+    appear_loc.y := character.y + CInt(dist * Sin(radian));
+    appear_loc.z := GetMapInfo(appear_loc.x, appear_loc.y).z;
+    
+    // Teletransporta o pet para o local de aparecimento
+    MoveObjectToLocation(
+        pet, 
+        appear_loc.x, 
+        appear_loc.y, 
+        appear_loc.z, 
+        character.realm, 
+        MOVEOBJECT_FORCELOCATION
+    );
+    
+    // Faz o pet andar até o dono
+    PrintTextAbove(pet, "*voltando para " + character.name + "*");
+    
+    // Enviar um evento para o pet andar para o dono
+    var walk_event := struct{
+        "type" := 0xA008, // GO_LOC_CMD
+        "source" := character,
+        "targ" := struct{
+            "x" := character.x,
+            "y" := character.y,
+            "type" := "walk" // Tipo "walk" faz o pet andar até o destino
+        }
+    };
+    
+    SendEvent(pet, walk_event);
+
+    // Limpa propriedades
+    EraseObjProperty(character, "PlayerPetInLimboSerial");
+    EraseObjProperty(pet, "EstaNoLimbo");
+    EraseObjProperty(pet, "OriginalLocation");
+    
+    // Não apaga a propriedade StablePostSerial para manter a associação com o estábulo
+
+    SendSysMessage(character, pet.name + " voltou!");
+    return 1;
+endfunction
+
+function SendPetAway(character)
+    var pets := ListMobilesNearLocation(
+        character.x, 
+        character.y, 
+        character.z, 
+        MAX_PET_SCAN_RANGE, 
+        character.realm
+    );
+
+    var controllable_pets := array{};
+    foreach mob in pets
+        if (mob.IsA(POLCLASS_NPC) && 
+            mob.master == character && 
+            !GetObjProperty(mob, "EstaNoLimbo") &&
+            GetObjProperty(mob, "StablePostSerial"))
+            controllable_pets.Append(mob);
+        endif
+    endforeach
+
+    if (controllable_pets.Size() == 0)
+        SendSysMessage(character, "Nenhum pet registrado em estábulo encontrado.");
+        return 0;
+    endif
+
+    SendSysMessage(character, "Selecione o pet para enviar.");
+    var target_pet := Target(character);
+
+    if (!target_pet || 
+        !target_pet.IsA(POLCLASS_NPC) || 
+        target_pet.master != character || 
+        target_pet.dead)
+        SendSysMessage(character, "Pet inválido.");
+        return 0;
+    endif
+
+    // Verifica se o pet já foi enviado
+    if (GetObjProperty(target_pet, "EstaNoLimbo"))
+        SendSysMessage(character, "Este pet já está em um local seguro.");
+        return 0;
+    endif
+    
+    // Verifica se o pet está registrado em um estábulo
+    if (!GetObjProperty(target_pet, "StablePostSerial"))
+        SendSysMessage(character, "Este pet precisa estar registrado em um estábulo para ser protegido.");
+        return 0;
+    endif
+
+    // Prepara envio
+    SetObjProperty(character, "PlayerPetInLimboSerial", target_pet.serial);
+    SetObjProperty(target_pet, "EstaNoLimbo", 1);
+    SetObjProperty(target_pet, "OriginalLocation", struct{
+        x := target_pet.x,
+        y := target_pet.y, 
+        z := target_pet.z,
+        realm := target_pet.realm
+    });
+
+
+    PlaySoundEffect(character, 0x336);
+
+    // Adiciona emote antes de enviar
+    PrintTextAbove(target_pet, "*correndo pro horizonte*");
+    sleepms(300);  // Delay de 3 segundos
+
+    var params := struct{
+        pet_serial := target_pet.serial,
+        dest_x := 0,
+        dest_y := 0,
+        dest_z := 0,
+        owner_serial := character.serial,
+        run_away := 1  // Indica que o pet deve correr para longe antes de desaparecer
+    };
+
+    if (!start_script("ai/sendpetlimbo", params))
+        SendSysMessage(character, "Erro ao enviar pet.");
+        EraseObjProperty(character, "PlayerPetInLimboSerial");
+        EraseObjProperty(target_pet, "EstaNoLimbo");
+        EraseObjProperty(target_pet, "OriginalLocation");
+        return 0;
+    endif
+
+    SendSysMessage(character, target_pet.name + " foi para um local seguro.");
+    return 1;
+endfunction

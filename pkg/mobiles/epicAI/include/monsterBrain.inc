@@ -267,20 +267,7 @@ function MonsterIdle(wanders, is_ranged)
     
     if (patrol_points && patrol_points.size() >= 2)
         // Handle patrolling
-        var dest := patrol_points[current_patrol_point];
-        
-        // Check if we've reached the destination (within 1 tile)
-        if (CoordinateDistance(me.x, me.y, dest.x, dest.y) <= 1)
-            // Move to next patrol point
-            current_patrol_point += 1;
-            if (current_patrol_point > patrol_points.size())
-                current_patrol_point := 1; // Loop back to first point
-            endif
-            SetObjProperty(me, "#current_patrol_point", current_patrol_point);
-        endif
-        
-        // Walk toward destination
-        WalkTowardLocation(dest.x, dest.y);
+        startPatrolling(me, patrol_points, current_patrol_point);
         return; // Skip regular wandering
     endif
     

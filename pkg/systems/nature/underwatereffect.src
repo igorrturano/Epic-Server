@@ -46,11 +46,11 @@ program underwater(params)
                     underwaterMessageSent := 1;
                 endif
             else
-                // If the player is above -80z, remove the underwater property
                 if (GetObjProperty(who, "underwater"))
                     EraseObjProperty(who, "underwater");
                     SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
                     underwaterMessageSent := 0; // Reset the flag when the player leaves underwater
+                    break;
                 endif
             endif
 
