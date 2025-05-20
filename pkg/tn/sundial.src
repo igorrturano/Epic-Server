@@ -84,7 +84,7 @@ function ShowSundialGump(who)
     GFTextLine(gump, 210, 70, 2100, timeOfDay);
     
     // Adiciona a imagem do relógio de sol (estrutura quadrada com gnômon) no centro
-    GFGumpPic(gump, 220, 120, 14090, 0); // Ajustar ID para relógio de sol central
+    GFGumpPic(gump, 220, 120, 0x777E); // Ajustar ID para relógio de sol central
     
     // COLUNA ESQUERDA - Informações Ambientais
     GFTextLine(gump, 40, 218, 53, "=== Informações Ambientais ===");
