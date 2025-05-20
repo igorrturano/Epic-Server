@@ -11,6 +11,7 @@ include "include/utils";
 include ":tn:tngumps";
 include ":charactercreation:habilidades";
 include ":gumps:epicGumps";
+include ":masterysystem:utils";
 
 function UpdateXPBar(who)
    if (!GetObjProperty(who, "chardata")) 
@@ -127,6 +128,7 @@ function AwardXPFromKill(killers, corpse)
    xp_gain := CInt(xp_gain / killers.size());
    foreach killer in killers
    	AddXP(killer, xp_gain);
+	MasteryAdvance(killer, struct{ xp := xp_gain });
    endforeach
 
    return 1;
