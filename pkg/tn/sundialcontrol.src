@@ -42,24 +42,23 @@ function GetSundialGraphic()
     endif
     
     // Calculate current hour (0-23)
-    var hour := CInt((timeSinceSunrise / (daylength / 24)) % 24);
+    var hour := (CInt(timeSinceSunrise / (daylength / 24)) + 6) % 24; // Apply +6 offset and then modulo to keep 0-23
     
     // Determine appropriate sundial graphic
     if (is_day == "dia")
-        // Daytime (6:00-17:59) - use one of the 12 day graphics
-    var dayHour := CInt((hour * 12) / 24); // Maps 0-23 to 0-11
+        // Calculate the graphic offset based on the hour
+        // 6:00 should be 0x9BBE (offset 4 from base)
+        var offset := (hour - 6 + 5) % 12;
+        var sundial_graphic := 0x9BBA + offset;
         
-        // Map each hour to a specific graphic: 0x9BBA-0x9BC5
-        var sundial_graphic := 0x9BBA + dayHour;
-        
-        // Safety check (though dayHour should never exceed 11)
-        if (dayHour > 11)
+        // Safety check
+        if (offset >= 12)
             sundial_graphic := 0x9BC5;
         endif
         
         return sundial_graphic;
     else
-        // Nighttime (18:00-5:59) - use night graphic
+        // Nighttime - use night graphic
         return 0x9BC6;
     endif
 endfunction
