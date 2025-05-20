@@ -1,0 +1,69 @@
+use uo;
+use os;
+use util;
+use attributes;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":combat:combat";
+include ":combat:damage";
+
+program SpecialAttack_FirstBlade(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon   := params[3];
+	var info     := params[4]; // This usually contains cooldown and other info
+	
+	if (!weapon || !defender || !CheckWeaponType(weapon))
+		SendSysMessage(attacker, "Você precisa de uma lâmina curta para usar esse ataque especial.");
+		return 0;
+	endif
+	
+	SendSysMessage(attacker, "Você concentra-se para um golpe preciso...");
+	PerformAction(attacker, 0x0009); // Attack animation
+	
+	// Calculate extra damage bonus - adjust these values as needed for game balance
+	var skill := GetEffectiveSkill(attacker, FENCING);
+	var damage_bonus := CInt(skill / 10) + 5; // Example: 5 + 10% of skill
+	
+	// Apply damage with bonus
+	var base_damage := CalculateRawDamage(attacker, weapon);
+	var total_damage := base_damage + damage_bonus;
+	
+	// Visual effects
+	PlayMovingEffect(attacker, defender, 0x36E4, 10, 10, 0);
+	PlaySoundEffect(defender, 0x523);
+	
+	// Apply the damage
+	ApplyDamageEX(defender, total_damage, DMG_PHYSICAL, attacker);
+	
+	SendSysMessage(attacker, "Seu golpe inicial causou " + damage_bonus + " de dano extra!", 3, 70);
+	SendSysMessage(defender, "O primeiro golpe te atinge com força extra!", 3, 33);
+	
+	return 1;
+endprogram
+
+function CheckWeaponType(weapon)
+	if (!weapon)
+		return 0;
+	endif
+	
+	var cfg := ReadConfigFile(":weapons:itemdesc");
+	if (!cfg)
+		return 0;
+	endif
+	
+	var weapon_elem := FindConfigElem(cfg, weapon.objtype);
+	if (!weapon_elem)
+		return 0;
+	endif
+	
+	var weapon_type := GetConfigString(weapon_elem, "Attribute");
+	
+	// Check if the weapon is a short blade type
+	if (weapon_type == "Fencing" && weapon.graphic in {0x13B6, 0x13B5, 0x13F6, 0x13F7, 0xF51, 0xF52})
+		return 1;
+	endif
+	
+	return 0;
+endfunction
