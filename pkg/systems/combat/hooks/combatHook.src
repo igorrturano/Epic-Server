@@ -43,6 +43,7 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":commands:debugsystem";
 include ":fls_magery:spellSounds";
+include ":masterysystem:utils";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");
@@ -184,6 +185,8 @@ function EpicAttack(attacker, defender, weaponHand)
 
 	var armor := GetArmorToHit(defender);
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
+
+	MasteryAdvance(attacker, struct{ hits := 1 }); // Se ficar OP pra DUAL_WIELD, jogar essa função no if abaixo.
 
 	if (!DAMAGE_OFFHAND)
 		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
