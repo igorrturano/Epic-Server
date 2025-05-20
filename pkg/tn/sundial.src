@@ -41,8 +41,10 @@ function ShowSundialGump(who)
         timeSinceSunrise += daylength;
     endif
     
-    var hour := CInt((timeSinceSunrise / (daylength / 24)) % 24) + 6; // +6 pra exibir como 6h de manhã. O sol nasceu ha pouco, é 00h no sistema. Mas pro jogador fica confuso
-    var minute := CInt((timeSinceSunrise % (daylength / 24)) * (60 / (daylength / 24)));
+    var hour := (CInt(timeSinceSunrise / (daylength / 24)) + 6) % 24; // +5 pra exibir como 6h de manhã e aplicar módulo depois
+    var seconds_per_hour := CInt(daylength / 24);
+    var seconds_in_current_hour := timeSinceSunrise % seconds_per_hour;
+    var minute := CInt((seconds_in_current_hour * 60) / seconds_per_hour);
     var period := "";
     var timeOfDay := "";
     
