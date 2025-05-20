@@ -27,6 +27,9 @@ function ShowSundialGump(who)
     var horanascer := cint(GetGlobalProperty("halfdaytime"));
     var currentTime := ReadGameClock();
     var timeSinceSunrise := (currentTime - horanascer) % daylength;
+    if (timeSinceSunrise < 0)
+        timeSinceSunrise += daylength;
+    endif
     var is_day := GetGlobalProperty("dia");
     
     // Informações de clima e ambiente
@@ -38,28 +41,17 @@ function ShowSundialGump(who)
         timeSinceSunrise += daylength;
     endif
     
-    var hour := (timeSinceSunrise / (daylength / 24)) % 24;
-    var minute := (timeSinceSunrise % (daylength / 24)) * (60 / (daylength / 24));
+    var hour := CInt((timeSinceSunrise / (daylength / 24)) % 24) + 6; // +6 pra exibir como 6h de manhã. O sol nasceu ha pouco, é 00h no sistema. Mas pro jogador fica confuso
+    var minute := CInt((timeSinceSunrise % (daylength / 24)) * (60 / (daylength / 24)));
     var period := "";
     var timeOfDay := "";
     
-    if (hour >= 12)
-        period := "PM";
-        if (hour > 12)
-            hour -= 12;
-        endif
-    else
-        period := "AM";
-        if (hour == 0)
-            hour := 12;
-        endif
-    endif
-    
     // Determina a descrição do tempo
-    if (hour < 6 || hour >= 18)
+    if (is_day != "dia")
         timeOfDay := "O sol não está visível. O relógio de sol não pode mostrar a hora.";
     else
-        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + FormatMinute(minute) + " " + period;
+        // Durante o dia, mostramos a hora independente de ser antes das 6 ou depois das 18
+        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + FormatMinute(minute);
     endif
 
     // Criar o gump
@@ -80,9 +72,6 @@ function ShowSundialGump(who)
     GFGumpPicTiled(gump, 35, 5, 727, 21, 39926);
     GFGumpPicTiled(gump, 33, 522, 728, 34, 39932);
     
-
-
-
     // Título principal no topo
     GFTextLine(gump, 350, 37, 53, "Relógio de Sol");
     

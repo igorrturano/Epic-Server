@@ -1,0 +1,65 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":nature:nature";
+program sundialcontrol(sundial)
+    Print("Sundial control script started for object " + sundial.serial);
+    
+    // Check every 30 seconds instead of 60 for more responsive updates
+    while (sundial)
+        sleep(30);
+        
+        if (!sundial)
+            return 0;
+        endif
+        
+        // Update the sundial graphic based on current time
+        var new_graphic := GetSundialGraphic();
+        if (sundial.graphic != new_graphic)
+            sundial.graphic := new_graphic;
+            // Uncomment for debugging: 
+            Print("Updated sundial " + sundial.serial + " to graphic: 0x" + Hex(new_graphic));
+        endif
+    endwhile
+endprogram
+
+function GetSundialGraphic()
+    // Get time settings
+    var config := ReadConfigFile(":nature:config/daynight");
+    config := config["settings"];
+    var daylength := cint(config.daylength) * 60;
+    
+    // Get current time info
+    var horanascer := cint(GetGlobalProperty("halfdaytime"));
+    var currentTime := ReadGameClock();
+    var is_day := GetGlobalProperty("dia");
+    
+    // Calculate time since last sunrise/sunset
+    var timeSinceSunrise := (currentTime - horanascer) % daylength;
+    if (timeSinceSunrise < 0)
+        timeSinceSunrise += daylength;
+    endif
+    
+    // Calculate current hour (0-23)
+    var hour := CInt((timeSinceSunrise / (daylength / 24)) % 24);
+    
+    // Determine appropriate sundial graphic
+    if (is_day == "dia")
+        // Daytime (6:00-17:59) - use one of the 12 day graphics
+    var dayHour := CInt((hour * 12) / 24); // Maps 0-23 to 0-11
+        
+        // Map each hour to a specific graphic: 0x9BBA-0x9BC5
+        var sundial_graphic := 0x9BBA + dayHour;
+        
+        // Safety check (though dayHour should never exceed 11)
+        if (dayHour > 11)
+            sundial_graphic := 0x9BC5;
+        endif
+        
+        return sundial_graphic;
+    else
+        // Nighttime (18:00-5:59) - use night graphic
+        return 0x9BC6;
+    endif
+endfunction
