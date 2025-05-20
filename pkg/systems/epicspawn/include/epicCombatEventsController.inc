@@ -92,6 +92,9 @@ function ExecuteCombatAction(npc, action)
         "Pushback":
             return ExecutePushbackAction(npc, targets, action);
             
+        "Timedscripts":
+            return ExecuteTimedScriptAction(npc, targets, action);
+            
         default:
             return 0;
     endcase
@@ -415,6 +418,24 @@ function ExecutePushbackAction(npc, targets, action)
         endif
     endforeach
     
+    return success;
+endfunction
+
+function ExecuteTimedScriptAction(npc, targets, action)
+    if (!action.name)
+        return 0;
+    endif
+    var duration := action.duration ? CInt(action.duration) : 30;
+    var level := action.level ? CInt(action.level) : 1;
+    var success := 0;
+    foreach targ in targets
+        if (targ && !targ.dead)
+            var result := TS_StartTimer(targ, action.name, duration, level);
+            if (TypeOf(result) != "Error")
+                success := 1;
+            endif
+        endif
+    endforeach
     return success;
 endfunction
 
