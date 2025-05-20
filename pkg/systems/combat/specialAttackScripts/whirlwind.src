@@ -1,0 +1,83 @@
+/*
+ * Whirlwind.src - Special attack script for spears
+ * Rotates the weapon around, dealing damage to all opponents within 2 tiles
+ */
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":combat:combat";
+include "include/client";
+include "include/shapes";
+
+program WhirlwindAttack(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon   := params[3];
+	var armor    := params[4];
+	var basedamage := params[5];
+	var rawdamage  := params[6];
+	
+	// Check if the weapon is a spear
+	if (!IsSpear(weapon))
+		SendSysMessage(attacker, "This special attack requires a spear.");
+		return 0;
+	endif
+	
+	// Visual and sound effect for the whirlwind attack
+	PlaySoundEffect(attacker, 0x520); // Swoosh sound
+	PlayObjectCenteredEffect(attacker, 0x3728, 10, 30); // Spinning effect
+	
+	// Get all opponents within range
+	var targets_hit := 0;
+	var opponents := ListMobilesNearLocationEx(attacker.x, attacker.y, attacker.z, 2, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN);
+	
+	foreach mobile in opponents
+		// Skip if it's the attacker or not attackable
+		if (mobile == attacker || !CanAttack(attacker, mobile))
+			continue;
+		endif
+		
+		// Calculate damage for this target (slightly less than primary target)
+		var this_damage := CInt(rawdamage * 0.75);
+		
+		// Apply damage
+		ApplyRawDamage(mobile, this_damage);
+		
+		// Visual effect on hit
+		PlayObjectCenteredEffect(mobile, 0x3728, 7, 20);
+		
+		targets_hit += 1;
+	endforeach
+	
+	// Apply stamina cost based on number of targets hit
+	var stamina_cost := 15 + (5 * targets_hit);
+	if (!AP_ConsumeVital(attacker, STAMINA, stamina_cost))
+		SendSysMessage(attacker, "You're too tired to perform this special attack.");
+	endif
+	
+	// Return the original damage for the primary target
+	return rawdamage;
+endprogram
+
+// Function to check if a weapon is a spear
+function IsSpear(weapon)
+	if (!weapon)
+		return 0;
+	endif
+	
+	case (weapon.graphic)
+		0x0F62:  // Short Spear
+		0x0F63:  // Spear
+		0x1403:  // Short Spear
+		0x1404:  // War Fork
+		0x1405:  // Pike
+		0x26BE:  // Double Bladed Spear
+		0x26BF:  // Lance
+		0x26C0:  // Pitchfork
+			return 1;
+		default:
+			return 0;
+	endcase
+endfunction
