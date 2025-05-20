@@ -1,4 +1,3 @@
-include "include/props";
 include "include/equipstats";
 include "include/utils";
 include ":commands:debugsystem";
