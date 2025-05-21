@@ -35,9 +35,9 @@ program WhirlwindAttack(params)
 	
 	foreach mobile in opponents
 		// Skip if it's the attacker or not attackable
-		if (mobile == attacker || !CanAttack(attacker, mobile))
-			continue;
-		endif
+		// if (mobile == attacker || !CanAttack(attacker, mobile))
+		// 	continue;
+		// endif
 		
 		// Calculate damage for this target (slightly less than primary target)
 		var this_damage := CInt(rawdamage * 0.75);
