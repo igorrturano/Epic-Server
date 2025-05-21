@@ -77,7 +77,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
-	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
+	Start_Script(":combat:weaponHitScripts/AttackAnimation", {attacker});
 
 	attackInfo.+hitchance := CInt(CalculateHitChance(attacker, defender));
 	attackInfo.+dice := RandomDiceRoll("1d100");
@@ -87,6 +87,8 @@ exported function Attack(attacker, defender)
 	DebugMsg(attacker, DEBUG_HIT, "Mão -> MainHand");
 	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+attackInfo.hitchance);
 	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+attackInfo.dice);
+
+	SkillChecks(attacker, defender, attacker.weapon, 1);
 
 	if ( attackInfo.dice < attackInfo.hitchance )
 		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
@@ -105,7 +107,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
-		Start_Script("weaponHitScripts/AttackAnimation", {attacker, OFFHAND_DELAY});
+		Start_Script(":combat:weaponHitScripts/AttackAnimation", {attacker, OFFHAND_DELAY});
 		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
 		
 		var hitchancePenalty := DualWieldPenalty(attacker);
@@ -188,10 +190,10 @@ function EpicAttack(attacker, defender, weaponHand)
 
 	MasteryAdvance(attacker, struct{ hits := 1 }); // Se ficar OP pra DUAL_WIELD, jogar essa função no if abaixo.
 
-	if (!DAMAGE_OFFHAND)
-		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+	if (weaponHand != DAMAGE_OFFHAND)
+		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg});
 	else // Se for ataque da segunda arma, tem delay
-		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, OFFHAND_DELAY});
+		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg, OFFHAND_DELAY});
 	endif
 endfunction
 

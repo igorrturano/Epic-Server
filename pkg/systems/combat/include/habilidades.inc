@@ -52,7 +52,6 @@ function CheckAttackerHabsOnHit(attacker, defender, attackInfo)
 	// 	dice := rolldice
 	// };
 	
-	SkillChecks(attacker, defender, attacker.weapon, 1);
 
 	CheckHab_ArmaduraArcana(attacker, defender, attackInfo);
 	CheckHab_Ainalaith(attacker, defender, attackInfo);
