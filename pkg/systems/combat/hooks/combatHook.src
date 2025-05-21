@@ -88,10 +88,9 @@ exported function Attack(attacker, defender)
 	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: "+attackInfo.hitchance);
 	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: "+attackInfo.dice);
 
-	SkillChecks(attacker, defender, attacker.weapon, 1);
-
 	if ( attackInfo.dice < attackInfo.hitchance )
 		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
+		SkillChecks(attacker, defender, attacker.weapon, 1);
 
 		CheckAttackerHabsOnHit(attacker, defender, attackInfo);
 		CheckDefenderHabsOnHit(attacker, defender, attackInfo);
@@ -118,7 +117,8 @@ exported function Attack(attacker, defender)
 
 		// No segundo hit só checa novamente as habilidades do defensor
 		if ( attackInfo.dice < attackInfo.hitchance )
-			DebugMsg(attacker, DEBUG_HIT, "***SUCESSO!***");
+			DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
+			SkillChecks(attacker, defender, attacker.weapon, 1);
 
 			CheckDefenderHabsOnHit(attacker, defender, attackInfo);
 
