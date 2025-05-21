@@ -44,7 +44,7 @@ var daysInYear := CalcDaysInYear();
 const SUMMER := 1;
 const AUTUMN := 2;
 const WINTER := 3;
-const SPRING := 4;
+const SPRING := 5;
 
 function getSeason()
     return CInt(GetGlobalProperty("season"));
@@ -428,4 +428,199 @@ function wetPowder(who)
             SubtractAmount(item, RandomInt(5) + 1);
         endif
     endforeach
+endfunction
+
+function getCurrentHour()
+    var horanascersunset_timestamp := CInt(GetGlobalProperty("halfdaytime")); // Timestamp when the current period (day/night) started
+    var current_timestamp := ReadGameClock();
+    var is_day_str := GetGlobalProperty("dia"); // "dia" or "noite"
+
+    var actual_current_period_duration_seconds;
+    if (is_day_str == "dia")
+        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualDaySeconds"));
+    else // Assumed "noite" or if is_day_str is not "dia" (e.g. not set yet)
+        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualNightSeconds"));
+    endif
+
+    // Fallback if global properties are not yet set (e.g., on first script run)
+    if (!actual_current_period_duration_seconds)
+        var config_file_fallback := ReadConfigFile(":nature:config/daynight");
+        var settings_fallback := config_file_fallback["settings"];
+        if (is_day_str == "dia") 
+            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
+        elseif (is_day_str == "noite")
+            actual_current_period_duration_seconds := CInt(settings_fallback.nightlength) * 60;
+        else // "dia" global prop might not be set yet, default to daylength from config
+            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
+            print("Warning: getCurrentHour 'dia' global prop not set, using daylength fallback.");
+        endif
+        print("Warning: getCurrentHour using fallback period duration of " + actual_current_period_duration_seconds + "s. Globals not set.");
+    endif
+    
+    // Prevent division by zero or issues with invalid duration
+    if (actual_current_period_duration_seconds <= 0)
+        print("Error: getCurrentHour detected invalid actual_current_period_duration_seconds: " + actual_current_period_duration_seconds);
+        return 0; // Return a default/error hour
+    endif
+
+    // Calculate time elapsed since the current period (day/night) started
+    var time_elapsed_in_current_period := current_timestamp - horanascersunset_timestamp;
+
+    // Normalize time_elapsed_in_current_period to be non-negative
+    if (time_elapsed_in_current_period < 0)
+        time_elapsed_in_current_period := 0; 
+    endif
+    // Cap at duration to prevent issues if called slightly after period end before state change
+    time_elapsed_in_current_period := Min(time_elapsed_in_current_period, actual_current_period_duration_seconds);
+
+    // Calculate the fraction of the current period that has elapsed (0.0 to 1.0)
+    var fraction_of_period_elapsed := CDbl(time_elapsed_in_current_period) / CDbl(actual_current_period_duration_seconds);
+    fraction_of_period_elapsed := Min(1.0, Max(0.0, fraction_of_period_elapsed)); // Clamp fraction to [0.0, 1.0]
+
+    // Each period (day or night) is considered to span 12 game hours.
+    // Calculate an index from 0 to 11, representing which of the 12 hour-long slots we are in.
+    var hour_slot_index := CInt(fraction_of_period_elapsed * 12.0);
+    hour_slot_index := Min(hour_slot_index, 11); // Ensure index is strictly 0-11
+
+    var calculated_hour_int;
+    if (is_day_str == "dia")
+        // Day game hours are 6, 7, ..., 17
+        calculated_hour_int := 6 + hour_slot_index;
+    else // Night (or if is_day_str is not "dia", assume night for calculation logic)
+        // Night game hours are 18, 19, ..., 23, 0, 1, ..., 5
+        calculated_hour_int := 18 + hour_slot_index;
+        if (calculated_hour_int >= 24)
+            calculated_hour_int -= 24; // Wrap around for hours like 24 (midnight) -> 0
+        endif
+    endif
+    
+    return calculated_hour_int;
+endfunction
+
+// Gets the current minute (0-59)
+function getCurrentMinute()
+    var horanascersunset_timestamp := CInt(GetGlobalProperty("halfdaytime"));
+    var current_timestamp := ReadGameClock();
+    var is_day_str := GetGlobalProperty("dia");
+
+    var actual_current_period_duration_seconds;
+    if (is_day_str == "dia")
+        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualDaySeconds"));
+    else // Assumed "noite" or if is_day_str is not "dia" (e.g. not set yet)
+        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualNightSeconds"));
+    endif
+
+    // Fallback if global properties are not yet set
+    if (!actual_current_period_duration_seconds)
+        var config_file_fallback := ReadConfigFile(":nature:config/daynight");
+        var settings_fallback := config_file_fallback["settings"];
+        if (is_day_str == "dia")
+            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
+        elseif (is_day_str == "noite")
+            actual_current_period_duration_seconds := CInt(settings_fallback.nightlength) * 60;
+        else // "dia" global prop might not be set yet, default to daylength from config
+            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
+            print("Warning: getCurrentMinute 'dia' global prop not set, using daylength fallback.");
+        endif
+        print("Warning: getCurrentMinute using fallback period duration of " + actual_current_period_duration_seconds + "s. Globals not set.");
+    endif
+    
+    // Prevent division by zero or issues with invalid duration
+    if (actual_current_period_duration_seconds <= 0)
+        print("Error: getCurrentMinute detected invalid actual_current_period_duration_seconds: " + actual_current_period_duration_seconds);
+        return 0; // Return a default/error minute
+    endif
+
+    var time_elapsed_in_current_period := current_timestamp - horanascersunset_timestamp;
+
+    // Normalize time_elapsed_in_current_period to be non-negative
+    if (time_elapsed_in_current_period < 0)
+        time_elapsed_in_current_period := 0;
+    endif
+    // Cap at duration to prevent issues if called slightly after period end before state change
+    time_elapsed_in_current_period := Min(time_elapsed_in_current_period, actual_current_period_duration_seconds);
+
+    // Calculate the fraction of the current 12-game-hour period that has elapsed (0.0 to 1.0)
+    var fraction_of_period_elapsed := CDbl(time_elapsed_in_current_period) / CDbl(actual_current_period_duration_seconds);
+    fraction_of_period_elapsed := Min(1.0, Max(0.0, fraction_of_period_elapsed)); // Clamp fraction
+
+    // Total game minutes elapsed in this 12-game-hour period (0 to 719.99...)
+    // A 12-game-hour period has 12 * 60 = 720 game minutes.
+    var total_game_minutes_elapsed_this_period := fraction_of_period_elapsed * (12.0 * 60.0);
+    
+    // The current game minute (0-59) is the integer part of total game minutes elapsed, modulo 60.
+    var current_minute := CInt(total_game_minutes_elapsed_this_period) % 60;
+    
+    return current_minute;
+endfunction
+
+// Format minute to always show two digits (e.g., "05" instead of "5")
+function formatMinute(minute)
+    if (minute < 10)
+        return "0" + minute;
+    else
+        return "" + minute;
+    endif
+endfunction
+
+function isDaylight()
+    // Only check if the game system says it's day, don't rely on calculated hour
+    return (GetGlobalProperty("dia") == "dia");
+endfunction
+
+// Get descriptive text for sun position based on hour
+function getSunPosition(tempestade := 0)
+    var hour := getCurrentHour();
+    var is_day := GetGlobalProperty("dia");
+    
+    if (is_day != "dia")
+        return "O sol não está visível.";
+    endif
+    
+    if (hour >= 6 && hour < 9)
+        return "Parece ter nascido há pouco";
+    elseif (hour >= 9 && hour < 12)
+        return "Caminhando ao topo do céu";
+    elseif (hour >= 12 && hour < 16)
+        return "A Pino";
+    elseif (hour >= 16 && hour < 18)
+        return "Caminhando ao horizonte";
+    elseif (hour == 18)
+        return "Quase se pondo";
+    elseif ((tempestade == 0) || (tempestade == 1) || (tempestade == 2))
+        return "A tempestade atrapalha a visão do sol";
+    else
+        return "O sol não está visível.";
+    endif
+endfunction
+
+// Get the appropriate sundial graphic based on time of day
+function getSundialGraphic()
+    var is_day := GetGlobalProperty("dia");
+    var hour := getCurrentHour();
+    if (is_day == "dia")
+        // Day graphics - map 6:00-17:59 to graphics 0x9BBF-0x9BC4, 0x9BBA-0x9BBE
+        var offset := (hour - 6 + 5) % 12;
+        var sundial_graphic := 0x9BBA + offset;
+        
+        // Safety check
+        if (offset >= 12)
+            sundial_graphic := 0x9BC5;
+        endif
+        
+        return sundial_graphic;
+    else
+        // Nighttime - use night graphic (always 0x9BC6 during night)
+        return 0x9BC6;
+    endif
+endfunction
+
+function GetSeasonName(season_id)
+    case (season_id)
+        SUMMER: return "Verão";
+        AUTUMN: return "Outono";
+        WINTER: return "Inverno";
+        SPRING: return "Primavera";
+        default: return "Desconhecida";
+    endcase
 endfunction

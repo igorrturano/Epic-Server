@@ -4,7 +4,6 @@ use cfgfile;
 
 include "include/say";
 include ":gumps:gumps";
-include ":gumps:gumps_ex";
 include ":nature:nature";
 
 program sundial(who, sundial)
@@ -23,37 +22,23 @@ function ShowSundialGump(who)
     var day_number := getDay();
     var season_num := getSeason();
     
-    // Informações de hora
-    var horanascer := cint(GetGlobalProperty("halfdaytime"));
-    var currentTime := ReadGameClock();
-    var timeSinceSunrise := (currentTime - horanascer) % daylength;
-    if (timeSinceSunrise < 0)
-        timeSinceSunrise += daylength;
-    endif
+    // Usar as novas funções para obter hora e minuto
+    var hour := getCurrentHour();
+    print(" Hora atual: " + hour);
+    var minute := getCurrentMinute();
+    print(" Minuto atual: " + minute);
     var is_day := GetGlobalProperty("dia");
     
     // Informações de clima e ambiente
     var weather_type := GetGlobalProperty("weather");
     var light_level := GetGlobalProperty("lightlevel");
     
-    // Calcula hora em formato de 12 horas
-    if (timeSinceSunrise < 0)
-        timeSinceSunrise += daylength;
-    endif
-    
-    var hour := (CInt(timeSinceSunrise / (daylength / 24)) + 6) % 24; // +5 pra exibir como 6h de manhã e aplicar módulo depois
-    var seconds_per_hour := CInt(daylength / 24);
-    var seconds_in_current_hour := timeSinceSunrise % seconds_per_hour;
-    var minute := CInt((seconds_in_current_hour * 60) / seconds_per_hour);
-    var period := "";
-    var timeOfDay := "";
-    
-    // Determina a descrição do tempo
-    if (is_day != "dia")
+    // Determina a descrição do tempo usando a nova função
+    var timeOfDay;
+    if (!isDaylight())
         timeOfDay := "O sol não está visível. O relógio de sol não pode mostrar a hora.";
     else
-        // Durante o dia, mostramos a hora independente de ser antes das 6 ou depois das 18
-        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + FormatMinute(minute);
+        timeOfDay := "O relógio de sol mostra aproximadamente " + hour + ":" + formatMinute(minute);
     endif
 
     // Criar o gump
@@ -127,24 +112,6 @@ function ShowSundialGump(who)
     GFAddButton(gump, 370, 525, 2130, 2129, GF_CLOSE_BTN, 0);
     
     GFSendGump(who, gump);
-endfunction
-
-function FormatMinute(minute)
-    if (minute < 10)
-        return "0" + minute;
-    else
-        return "" + minute;
-    endif
-endfunction
-
-function GetSeasonName(season_id)
-    case (season_id)
-        1: return "Verão";
-        2: return "Outono";
-        3: return "Inverno";
-        4: return "Primavera";
-        default: return "Desconhecida";
-    endcase
 endfunction
 
 function GetWeatherName(weather_id)
