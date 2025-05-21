@@ -351,11 +351,12 @@ function teleporter(who, item, opts)
    SetObjProperty(item, "#inuse", 1);
    Detach();
  
-   		var x := GetObjProperty(item, "x_tp");
+      var x := GetObjProperty(item, "x_tp");
 		var y := GetObjProperty(item, "y_tp");
 		var z := GetObjProperty(item, "z_tp");
+      var realm := GetObjProperty(item, "realm_tp");
    
-   MoveObjectToLocation(who, Cint(x), Cint(y), Cint(z), item.realm, MOVEOBJECT_FORCELOCATION);
+   MoveObjectToLocation(who, Cint(x), Cint(y), Cint(z), realm, MOVEOBJECT_FORCELOCATION);
    //ChangeLeverStatus(opts.linked_to);
    EraseObjProperty(item, "#inuse");
 endfunction
