@@ -23,7 +23,7 @@ program SpecialAttack_FirstBlade(params)
 	PerformAction(attacker, 0x0009); // Attack animation
 	
 	// Calculate extra damage bonus - adjust these values as needed for game balance
-	var skill := GetEffectiveSkill(attacker, FENCING);
+	var skill := GetEffectiveSkill(attacker, attacker.weapon.Attribute);
 	var damage_bonus := CInt(skill / 10) + 5; // Example: 5 + 10% of skill
 	
 	// Apply damage with bonus
