@@ -41,19 +41,9 @@ program SpecialAttack_Cleave(params)
 		endif
 		
 		// Skip non-attackable targets
-		if (!CanAttack(attacker, mobile))
-			continue;
-		endif
-		
-		// Calculate angle to target
-		var dx := mobile.x - attacker.x;
-		var dy := mobile.y - attacker.y;
-		var angle := GetFacingAngle(dx, dy);
-		
-		// Check if target is within the 90-degree arc of attacker's facing
-		if (IsInFacingArc(facing, angle, 45))
-			hitTargets.append(mobile);
-		endif
+		// if (!CanAttack(attacker, mobile))
+		// 	continue;
+		// endif
 		
 		// Limit to max 3 targets total (including primary target)
 		if (hitTargets.size() >= 3)
@@ -86,45 +76,3 @@ program SpecialAttack_Cleave(params)
 	
 	return 1;
 endprogram
-
-function GetFacingAngle(dx, dy)
-	var angle := ATan2(dy, dx) * 57.2958; // Convert to degrees
-	if (angle < 0)
-		angle += 360;
-	endif
-	return angle;
-endfunction
-
-function IsInFacingArc(facing, targetAngle, arcSize)
-	var facingAngle := ConvertFacingToAngle(facing);
-	var minAngle := facingAngle - arcSize;
-	var maxAngle := facingAngle + arcSize;
-	
-	if (minAngle < 0)
-		minAngle += 360;
-	endif
-	
-	if (maxAngle >= 360)
-		maxAngle -= 360;
-	endif
-	
-	if (minAngle <= maxAngle)
-		return (targetAngle >= minAngle && targetAngle <= maxAngle);
-	else
-		return (targetAngle >= minAngle || targetAngle <= maxAngle);
-	endif
-endfunction
-
-function ConvertFacingToAngle(facing)
-	case (facing)
-		0: return 0;   // North
-		1: return 45;  // Northeast
-		2: return 90;  // East
-		3: return 135; // Southeast
-		4: return 180; // South
-		5: return 225; // Southwest
-		6: return 270; // West
-		7: return 315; // Northwest
-		default: return 0;
-	endcase
-endfunction
