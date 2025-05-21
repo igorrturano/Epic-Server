@@ -57,7 +57,6 @@ endfunction
 
 
 function spawnthisgroup(me, regionnum, spawnregion, groupname, groupdensity, groupamt, realm)
-
 	var coords := splitwords(spawnregion.rect);
 	var x1 := cint(coords[1]);
 	var y1 := cint(coords[2]);
