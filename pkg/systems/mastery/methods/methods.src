@@ -12,13 +12,6 @@ exported function GetMasteryProp(who)
 		prop := dictionary;
 	endif
 
-	if (!prop[who.weapon.objtype])
-		prop[who.weapon.objtype] := struct{
-			xp := 0,
-			level := 0,
-			hits := 0
-		};
-	endif
 
 	return prop;
 endfunction
