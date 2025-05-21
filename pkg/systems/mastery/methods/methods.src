@@ -1,0 +1,28 @@
+
+
+program Install()
+	print("INSTALLING: Methods for MasterySystem... OK!");
+	return 1;
+endprogram
+
+exported function GetMasteryProp(who)
+	var prop := who.GetProp("MasterySystem");
+
+	if (!prop) 
+		prop := dictionary;
+	endif
+
+	if (!prop[who.weapon.objtype])
+		prop[who.weapon.objtype] := struct{
+			xp := 0,
+			level := 0,
+			hits := 0
+		};
+	endif
+
+	return prop;
+endfunction
+
+exported function SetMasteryProp(who, prop)
+	who.SetProp("MasterySystem", prop);
+endfunction
