@@ -1,0 +1,85 @@
+use uo;
+use util;
+
+include "include/epicConstants";
+include "include/say";
+include "include/facings";
+include ":attributes:attributes";
+
+program warhorn(who, item)
+    var equipped := GetEquipmentByLayer(who, LAYER_HAND1);
+    if (!equipped || equipped.objtype != 0xFA55)
+        SendSysMessageEx(who, "Você não está segurando um berrante!", 2);
+        return;
+    endif
+
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata || !chardata.culture)
+        SendSysMessageEx(who, "Você não possui uma cultura definida para usar o berrante!", 2);
+        return;
+    endif
+
+    var sound_id;
+    case (chardata.culture)
+        AIGLANA:      sound_id := 0x696;
+        HAROLOTH:     sound_id := 0x692;
+        LESTE:        sound_id := 0x693;
+        BJORSKA:      sound_id := 0x690;
+        ALURIEL:      sound_id := 0x691;
+        BADURAN:      sound_id := 0x68F;
+        GULTHRAK:     sound_id := 0x695;
+        POLKINEA:     sound_id := 0x694;
+        default:
+            sound_id := 0x68F;
+    endcase
+
+    PerformAction(who, 0x22);
+    PlaySoundEffect(who, sound_id);
+    for i := 0 to 50
+        PerformAction(who, 0x22);
+        sleepms(100); // Pequeno delay para evitar sobrecarga de sons
+    endfor
+    SendSysMessageEx(who, "Você toca o berrante de sua cultura!", 1);
+
+    // Notificar pessoas próximas
+    var range := 30;
+    var listeners := ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm);
+    foreach mob in listeners
+        if (mob == who) continue; endif
+        
+        // Usa GetFacing para obter a direção precisa do som
+        var facing := GetFacing(mob.x, mob.y, who.x, who.y);
+        var direction := GetCardinalDirection(facing);
+        
+        SendSysMessageEx(mob, "Você ouve um berrante vindo " + direction + ".", 1);
+        PlaySoundEffect(mob, sound_id);
+        sleepms(20); // Pequeno delay para evitar sobrecarga de sons
+    endforeach
+endprogram
+
+/*
+ * GetCardinalDirection(facing)
+ * Retorna a descrição da direção em português baseado no facing (0-7)
+ * 
+ * Direções:
+ * 0 - Norte     4 - Sul
+ * 1 - Nordeste  5 - Sudoeste
+ * 2 - Leste     6 - Oeste
+ * 3 - Sudeste   7 - Noroeste
+ */
+function GetCardinalDirection(facing)
+    // Calculamos a distância relativa para determinar se usamos "do" ou "de"
+    var preposition := "do";
+    
+    case (facing)
+        0: return preposition + " norte";
+        1: return preposition + " nordeste";
+        2: return preposition + " leste";
+        3: return preposition + " sudeste";
+        4: return preposition + " sul";
+        5: return preposition + " sudoeste";
+        6: return preposition + " oeste";
+        7: return preposition + " noroeste";
+        default: return "de uma direção desconhecida";
+    endcase
+endfunction
