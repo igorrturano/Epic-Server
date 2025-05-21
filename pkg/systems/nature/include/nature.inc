@@ -430,127 +430,110 @@ function wetPowder(who)
     endforeach
 endfunction
 
-function getCurrentHour()
-    var horanascersunset_timestamp := CInt(GetGlobalProperty("halfdaytime")); // Timestamp when the current period (day/night) started
+// Calculate the game time using direct mapping
+function getGameTime()
     var current_timestamp := ReadGameClock();
-    var is_day_str := GetGlobalProperty("dia"); // "dia" or "noite"
+    var period_start_timestamp := CInt(GetGlobalProperty("halfdaytime"));
+    var is_day := GetGlobalProperty("dia") == "dia";
 
-    var actual_current_period_duration_seconds;
-    if (is_day_str == "dia")
-        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualDaySeconds"));
-    else // Assumed "noite" or if is_day_str is not "dia" (e.g. not set yet)
-        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualNightSeconds"));
-    endif
+    // Get the actual period durations from Global Properties
+    var day_seconds_prop := CInt(GetGlobalProperty("CurrentActualDaySeconds"));
+    var night_seconds_prop := CInt(GetGlobalProperty("CurrentActualNightSeconds"));
 
-    // Fallback if global properties are not yet set (e.g., on first script run)
-    if (!actual_current_period_duration_seconds)
-        var config_file_fallback := ReadConfigFile(":nature:config/daynight");
-        var settings_fallback := config_file_fallback["settings"];
-        if (is_day_str == "dia") 
-            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
-        elseif (is_day_str == "noite")
-            actual_current_period_duration_seconds := CInt(settings_fallback.nightlength) * 60;
-        else // "dia" global prop might not be set yet, default to daylength from config
-            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
-            print("Warning: getCurrentHour 'dia' global prop not set, using daylength fallback.");
+    var day_seconds_calc; // Will hold the value used for calculation
+    var night_seconds_calc; // Will hold the value used for calculation
+
+    // Determine if fallbacks are needed for the current period
+    if (is_day)
+        if (!day_seconds_prop)
+            print("Warning: getGameTime using fallback for DAY seconds.");
+            var config := ReadConfigFile(":nature:config/daynight");
+            day_seconds_calc := CInt(config.settings.daylength) * 60;
+        else
+            day_seconds_calc := day_seconds_prop;
         endif
-        print("Warning: getCurrentHour using fallback period duration of " + actual_current_period_duration_seconds + "s. Globals not set.");
+        // night_seconds_calc is not strictly needed for day period calculation logic below,
+        // but ensure it's initialized if used elsewhere within this scope.
+        night_seconds_calc := night_seconds_prop; // Or a fallback if it's also needed for some reason
+    else // is_night
+        if (!night_seconds_prop)
+            print("Warning: getGameTime using fallback for NIGHT seconds.");
+            var config := ReadConfigFile(":nature:config/daynight");
+            if (config.settings.exists("nightlength"))
+                night_seconds_calc := CInt(config.settings.nightlength) * 60;
+            else
+                // Fallback to daylength for night if nightlength is not specified in config
+                night_seconds_calc := CInt(config.settings.daylength) * 60;
+            endif
+        else
+            night_seconds_calc := night_seconds_prop;
+        endif
+        // day_seconds_calc is not strictly needed for night period calculation logic below.
+        day_seconds_calc := day_seconds_prop; // Or a fallback
     endif
     
-    // Prevent division by zero or issues with invalid duration
-    if (actual_current_period_duration_seconds <= 0)
-        print("Error: getCurrentHour detected invalid actual_current_period_duration_seconds: " + actual_current_period_duration_seconds);
-        return 0; // Return a default/error hour
-    endif
-
-    // Calculate time elapsed since the current period (day/night) started
-    var time_elapsed_in_current_period := current_timestamp - horanascersunset_timestamp;
-
-    // Normalize time_elapsed_in_current_period to be non-negative
-    if (time_elapsed_in_current_period < 0)
-        time_elapsed_in_current_period := 0; 
-    endif
-    // Cap at duration to prevent issues if called slightly after period end before state change
-    time_elapsed_in_current_period := Min(time_elapsed_in_current_period, actual_current_period_duration_seconds);
-
-    // Calculate the fraction of the current period that has elapsed (0.0 to 1.0)
-    var fraction_of_period_elapsed := CDbl(time_elapsed_in_current_period) / CDbl(actual_current_period_duration_seconds);
-    fraction_of_period_elapsed := Min(1.0, Max(0.0, fraction_of_period_elapsed)); // Clamp fraction to [0.0, 1.0]
-
-    // Each period (day or night) is considered to span 12 game hours.
-    // Calculate an index from 0 to 11, representing which of the 12 hour-long slots we are in.
-    var hour_slot_index := CInt(fraction_of_period_elapsed * 12.0);
-    hour_slot_index := Min(hour_slot_index, 11); // Ensure index is strictly 0-11
-
-    var calculated_hour_int;
-    if (is_day_str == "dia")
-        // Day game hours are 6, 7, ..., 17
-        calculated_hour_int := 6 + hour_slot_index;
-    else // Night (or if is_day_str is not "dia", assume night for calculation logic)
-        // Night game hours are 18, 19, ..., 23, 0, 1, ..., 5
-        calculated_hour_int := 18 + hour_slot_index;
-        if (calculated_hour_int >= 24)
-            calculated_hour_int -= 24; // Wrap around for hours like 24 (midnight) -> 0
-        endif
+    // Time elapsed since period started
+    var elapsed_seconds := current_timestamp - period_start_timestamp;
+    if (elapsed_seconds < 0) 
+        elapsed_seconds := 0; 
     endif
     
-    return calculated_hour_int;
+    // Each hour spans exactly 1/12 of the total period
+    var seconds_per_hour;
+    var start_hour;
+    
+    if (is_day)
+        // Day period: 6:00 to 18:00
+        // Ensure day_seconds_calc has a valid value (even if it's a fallback from above)
+        if (!day_seconds_calc) // Should ideally not happen if fallback worked
+            print("Critical Error: day_seconds_calc is zero during day in getGameTime!");
+            day_seconds_calc := 3600 * 12; // A long default to avoid division by zero
+        endif
+        seconds_per_hour := day_seconds_calc / 12.0;
+        start_hour := 6;
+    else // is_night
+        // Night period: 18:00 to 6:00
+        // Ensure night_seconds_calc has a valid value
+        if (!night_seconds_calc) // Should ideally not happen if fallback worked
+            print("Critical Error: night_seconds_calc is zero during night in getGameTime!");
+            night_seconds_calc := 3600*12; // A long default
+        endif
+        seconds_per_hour := night_seconds_calc / 12.0;
+        start_hour := 18;
+    endif
+    
+    // Calculate how many hours have passed since the period started
+    var hours_elapsed := 0.0; // Default to float
+    if (seconds_per_hour > 0) // Avoid division by zero
+        hours_elapsed := CDbl(elapsed_seconds) / seconds_per_hour;
+    else
+        print("Critical Error: seconds_per_hour is zero in getGameTime!");
+    endif
+    
+    // Calculate the current hour and minute
+    var total_hours := start_hour + CInt(hours_elapsed);
+    var hour_fraction := hours_elapsed - CInt(hours_elapsed);
+    var minute := CInt(hour_fraction * 60.0);
+    
+    // Handle wrapping past midnight for night period
+    if (total_hours >= 24)
+        total_hours := total_hours - 24;
+    endif
+    
+    return struct{
+        "hour" := total_hours,
+        "minute" := minute
+    };
 endfunction
 
-// Gets the current minute (0-59)
+function getCurrentHour()
+    var current_time := getGameTime();
+    return current_time.hour;
+endfunction
+
 function getCurrentMinute()
-    var horanascersunset_timestamp := CInt(GetGlobalProperty("halfdaytime"));
-    var current_timestamp := ReadGameClock();
-    var is_day_str := GetGlobalProperty("dia");
-
-    var actual_current_period_duration_seconds;
-    if (is_day_str == "dia")
-        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualDaySeconds"));
-    else // Assumed "noite" or if is_day_str is not "dia" (e.g. not set yet)
-        actual_current_period_duration_seconds := CInt(GetGlobalProperty("CurrentActualNightSeconds"));
-    endif
-
-    // Fallback if global properties are not yet set
-    if (!actual_current_period_duration_seconds)
-        var config_file_fallback := ReadConfigFile(":nature:config/daynight");
-        var settings_fallback := config_file_fallback["settings"];
-        if (is_day_str == "dia")
-            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
-        elseif (is_day_str == "noite")
-            actual_current_period_duration_seconds := CInt(settings_fallback.nightlength) * 60;
-        else // "dia" global prop might not be set yet, default to daylength from config
-            actual_current_period_duration_seconds := CInt(settings_fallback.daylength) * 60;
-            print("Warning: getCurrentMinute 'dia' global prop not set, using daylength fallback.");
-        endif
-        print("Warning: getCurrentMinute using fallback period duration of " + actual_current_period_duration_seconds + "s. Globals not set.");
-    endif
-    
-    // Prevent division by zero or issues with invalid duration
-    if (actual_current_period_duration_seconds <= 0)
-        print("Error: getCurrentMinute detected invalid actual_current_period_duration_seconds: " + actual_current_period_duration_seconds);
-        return 0; // Return a default/error minute
-    endif
-
-    var time_elapsed_in_current_period := current_timestamp - horanascersunset_timestamp;
-
-    // Normalize time_elapsed_in_current_period to be non-negative
-    if (time_elapsed_in_current_period < 0)
-        time_elapsed_in_current_period := 0;
-    endif
-    // Cap at duration to prevent issues if called slightly after period end before state change
-    time_elapsed_in_current_period := Min(time_elapsed_in_current_period, actual_current_period_duration_seconds);
-
-    // Calculate the fraction of the current 12-game-hour period that has elapsed (0.0 to 1.0)
-    var fraction_of_period_elapsed := CDbl(time_elapsed_in_current_period) / CDbl(actual_current_period_duration_seconds);
-    fraction_of_period_elapsed := Min(1.0, Max(0.0, fraction_of_period_elapsed)); // Clamp fraction
-
-    // Total game minutes elapsed in this 12-game-hour period (0 to 719.99...)
-    // A 12-game-hour period has 12 * 60 = 720 game minutes.
-    var total_game_minutes_elapsed_this_period := fraction_of_period_elapsed * (12.0 * 60.0);
-    
-    // The current game minute (0-59) is the integer part of total game minutes elapsed, modulo 60.
-    var current_minute := CInt(total_game_minutes_elapsed_this_period) % 60;
-    
+    var current_time := getGameTime();
+    var current_minute := current_time.minute;
     return current_minute;
 endfunction
 
