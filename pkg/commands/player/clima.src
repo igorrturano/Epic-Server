@@ -8,6 +8,7 @@ use cfgfile;
 include "include/client";
 include "include/say";
 include ":survival:fishingFunctions";
+include ":nature:nature";
 
 program clima(who)
 
@@ -31,12 +32,29 @@ var climamodtemp;
 	config := config["settings"];
 	var daylength := cint(config.daylength) * 60;
 	var horanascer := cint(getGlobalProperty("halfdaytime"));
-	if ((ReadGameClock() - horanascer) < (daylength / 5)) solpos := "Parece ter nascido a pouco"; 
-	elseif ((ReadGameClock() - horanascer) < ((2 * daylength) / 5)) solpos := "Caminhando ao topo do ceu";
-	elseif ((ReadGameClock() - horanascer) < ((3 * daylength) / 5)) solpos := "A Pino";
-	elseif ((ReadGameClock() - horanascer) < ((4 * daylength) / 5)) solpos := "Caminhando ao horizonte";
-	elseif ((tempestade == 0) || (tempestade == 1) || (tempestade == 2)) solpos := "A tempestade atrapalha a visao do sol";
-	else solpos := "Quase se pondo";
+	var currentTime := ReadGameClock();
+	var timeSinceSunrise := (currentTime - horanascer) % daylength;
+	if (timeSinceSunrise < 0)
+		timeSinceSunrise += daylength;
+	endif
+
+	// Calculate hour using same formula as sundial
+	var hour := getCurrentHour();
+
+	solpos := getSunPosition(tempestade);
+	// Apply your specified time ranges
+	if (hour >= 6 && hour < 9)
+		solpos := "Parece ter nascido há pouco"; 
+	elseif (hour >= 9 && hour < 12)
+		solpos := "Caminhando ao topo do céu";
+	elseif (hour >= 12 && hour < 15)
+		solpos := "A Pino";
+	elseif (hour >= 15 && hour < 18)
+		solpos := "Caminhando ao horizonte";
+	elseif (hour >= 18 && hour < 19)
+		solpos := "Quase se pondo";
+	elseif ((tempestade == 0) || (tempestade == 1) || (tempestade == 2))
+		solpos := "A tempestade atrapalha a visão do sol";
 	endif
 
 
@@ -48,36 +66,31 @@ var climamodtemp;
 	itemtempmod := CINT(VerificaItensAquecimento(who, who.x, who.y, who.z, who.realm));
 	
 	//Modificador de Clima A Noite
-      	if(diaounoite == "noite")
-	diamodtemp := -5;
-       endif
+	if(diaounoite == "noite")
+		diamodtemp := -5;
+	endif
 
 	//Modificar de Clima pela Condicao do Tempo
 	if ((tempestade == 0) || (tempestade == 1)) climamodtemp := -5 ;
 	elseif (tempestade == 2) climamodtemp := -9 ;
 	else climamodtemp := 0 ;
-       endif
+	endif
 
 	//Temperatura Base da Estacao + Mods
-       case(estacao)
-       1:
-       estacaonow:= "Verao";
-	basetemp := (RandomInt(15) + 25 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
-	colore := 48;
-	2:
-	estacaonow:= "Outono";
-	basetemp := (RandomInt(5) + 20 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
-	colore := 550;
-	3:
-	estacaonow:= "Inverno";
-	basetemp := (RandomInt(10) + 0 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
-	colore := 96;
-	5:
-	estacaonow:= "Primavera";
-	basetemp := (RandomInt(5) + 20 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
-	colore := 28;
+       case(getSeason())
+       SUMMER:
+		basetemp := (RandomInt(15) + 25 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+		colore := 48;
+		AUTUMN:
+		basetemp := (RandomInt(5) + 20 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+		colore := 550;
+		WINTER:
+		basetemp := (RandomInt(10) + 0 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+		colore := 96;
+		SPRING:
+		basetemp := (RandomInt(5) + 20 + regiontempmod + diamodtemp + itemtempmod + climamodtemp);
+		colore := 28;
 	endcase
-
 
 	//Especificando Faixa de Temperaturas
 	if (basetemp >= 40)  sensacao := "Extremamente Quente"; color := 38;  endif
@@ -88,18 +101,15 @@ var climamodtemp;
 	if ((basetemp < 5) && (basetemp >= -10))  sensacao := "Muito Frio"; color := 96; endif
 	if ((basetemp < -10)) sensacao := "Extremamente Frio"; color := 92; endif
 
-	
-
 	//Mensagens para o Usuario
-	SendSysMessageEx(who, "Estacao do Ano: " + estacaonow, colore);
-       if(diaounoite == "noite")
-	SendSysMessageEx(who, "Fase da Lua: " + fase, SSM_INFO);
-       endif
-       if(diaounoite == "dia")
-	SendSysMessageEx(who, "Posicao do Sol: " + solpos, SSM_INFO);
-       endif
-	SendSysMessageEx(who, "Sensacao Termica: " + sensacao, color);
-
+    SendSysMessageEx(who, "Estacao do Ano: " + GetSeasonName(getSeason()), colore);
+    if(diaounoite == "noite")
+        SendSysMessageEx(who, "Fase da Lua: " + fase, SSM_INFO);
+    endif
+    if(diaounoite == "dia")
+        SendSysMessageEx(who, "Posicao do Sol: " + solpos, SSM_INFO);
+    endif
+    SendSysMessageEx(who, "Sensacao Termica: " + sensacao, color);
 
 endprogram
 
@@ -118,7 +128,6 @@ function GetTempRegion(diaounoite, who, x, y)
 
 	var cfg := ReadConfigFile(":commands:config/tempregions");
 	var elems := GetconfigStringKeys(cfg);
-
 	
 	foreach elem in elems
 	

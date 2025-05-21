@@ -18,47 +18,6 @@ program sundialcontrol(sundial)
         var new_graphic := GetSundialGraphic();
         if (sundial.graphic != new_graphic)
             sundial.graphic := new_graphic;
-            // Uncomment for debugging: 
-            Print("Updated sundial " + sundial.serial + " to graphic: 0x" + Hex(new_graphic));
         endif
     endwhile
 endprogram
-
-function GetSundialGraphic()
-    // Get time settings
-    var config := ReadConfigFile(":nature:config/daynight");
-    config := config["settings"];
-    var daylength := cint(config.daylength) * 60;
-    
-    // Get current time info
-    var horanascer := cint(GetGlobalProperty("halfdaytime"));
-    var currentTime := ReadGameClock();
-    var is_day := GetGlobalProperty("dia");
-    
-    // Calculate time since last sunrise/sunset
-    var timeSinceSunrise := (currentTime - horanascer) % daylength;
-    if (timeSinceSunrise < 0)
-        timeSinceSunrise += daylength;
-    endif
-    
-    // Calculate current hour (0-23)
-    var hour := (CInt(timeSinceSunrise / (daylength / 24)) + 6) % 24; // Apply +6 offset and then modulo to keep 0-23
-    
-    // Determine appropriate sundial graphic
-    if (is_day == "dia")
-        // Calculate the graphic offset based on the hour
-        // 6:00 should be 0x9BBE (offset 4 from base)
-        var offset := (hour - 6 + 5) % 12;
-        var sundial_graphic := 0x9BBA + offset;
-        
-        // Safety check
-        if (offset >= 12)
-            sundial_graphic := 0x9BC5;
-        endif
-        
-        return sundial_graphic;
-    else
-        // Nighttime - use night graphic
-        return 0x9BC6;
-    endif
-endfunction
