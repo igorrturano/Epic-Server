@@ -10,16 +10,19 @@
 
 // O combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
 // Foi feito com struct pra evitar refatoramento e um monte de parametros.
+include ":commands:debugsystem";
 
 const MASTERY_PROPNAME := "MasterySystem";
 
 function MasteryAdvance(attacker, combatInfo)
 	var prop := GetMasteryProp(attacker);
-	var weapon := attacker.weapon;
 
-	prop[weapon.objtype].level := MasteryCheckLevel(attacker);
-	prop[weapon.objtype].xp += CInt(combatInfo.xp);
-	prop[weapon.objtype].hits += CInt(combatInfo.hits);
+	prop[attacker.weapon.objtype].level := MasteryCheckLevel(attacker);
+	prop[attacker.weapon.objtype].xp += CInt(combatInfo.xp);
+	prop[attacker.weapon.objtype].hits += CInt(combatInfo.hits);
+	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria ganho para a arma {attacker.weapon.desc} ({Hex(attacker.weapon.objtype)})");
+	DebugMsg(attacker, DEBUG_MASTERY, $"XP: {CInt(combatInfo.xp)} - Hits: {CInt(combatInfo.hits)}");
+	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (resultado) -> XP: {prop[attacker.weapon.objtype].xp} - Hits: {prop[attacker.weapon.objtype].hits}");
 
 	SetMasteryProp(attacker, prop);
 endfunction
@@ -27,8 +30,11 @@ endfunction
 function GetMasteryProp(attacker)
 	var prop := attacker.GetProp(MASTERY_PROPNAME);
 
-	if (!prop)
+	if (!prop) 
 		prop := dictionary;
+	endif
+
+	if (!prop[attacker.weapon.objtype])
 		prop[attacker.weapon.objtype] := struct{
 			xp := 0,
 			level := 0,
@@ -44,5 +50,5 @@ function SetMasteryProp(attacker, prop)
 endfunction
 
 function MasteryCheckLevel(attacker)
-
+	return 0;
 endfunction
