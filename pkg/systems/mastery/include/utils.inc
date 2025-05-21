@@ -15,16 +15,24 @@ include ":commands:debugsystem";
 function MasteryAdvance(attacker, combatInfo)
 	var prop := attacker.GetMasteryProp();
 
-	prop[attacker.weapon.objtype].level := MasteryCheckLevel(attacker);
+	if (!prop[attacker.weapon.objtype]) // Se ainda não tem pra arma em punho, cria o struct.
+		prop[attacker.weapon.objtype] := struct{
+			xp := 0,
+			level := 0,
+			hits := 0
+		};
+	endif
+
 	prop[attacker.weapon.objtype].xp += CInt(combatInfo.xp);
+	prop[attacker.weapon.objtype].level := MasteryCheckLevel(prop[attacker.weapon.objtype].xp);
 	prop[attacker.weapon.objtype].hits += CInt(combatInfo.hits);
-	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria ganho para a arma {attacker.weapon.desc} ({Hex(attacker.weapon.objtype)})");
+	DebugMsg(attacker, DEBUG_MASTERY, $"Ganho de maestria para a arma: {attacker.weapon.desc} ({Hex(attacker.weapon.objtype)})");
 	DebugMsg(attacker, DEBUG_MASTERY, $"XP: {CInt(combatInfo.xp)} - Hits: {CInt(combatInfo.hits)}");
-	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (resultado) -> XP: {prop[attacker.weapon.objtype].xp} - Hits: {prop[attacker.weapon.objtype].hits}");
+	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (resultado) -> XP: {prop[attacker.weapon.objtype].xp} - Level: {prop[attacker.weapon.objtype].level} - Hits: {prop[attacker.weapon.objtype].hits}");
 
 	attacker.SetMasteryProp(prop);
 endfunction
 
-function MasteryCheckLevel(attacker)
+function MasteryCheckLevel(xp)
 	return 0;
 endfunction
