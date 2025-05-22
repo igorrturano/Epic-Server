@@ -47,13 +47,6 @@ endfunction
  *
  */
 function CheckAttackerHabsOnHit(attacker, defender, attackInfo)
-	// var attackInfo := struct {
-	// 	hitchance := hitchance,
-	// 	dice := rolldice
-	// };
-	
-	SkillChecks(attacker, defender, attacker.weapon, 1);
-
 	CheckHab_ArmaduraArcana(attacker, defender, attackInfo);
 	CheckHab_Ainalaith(attacker, defender, attackInfo);
 	CheckHab_DeathDance(attacker, defender, attackInfo);
