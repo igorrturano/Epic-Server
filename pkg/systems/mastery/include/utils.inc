@@ -10,7 +10,7 @@
 
 // O combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
 // Foi feito com struct pra evitar refatoramento e um monte de parametros.
-include ":commands:debugsystem";
+include ":debugsystem:debugsystem";
 
 function MasteryAdvance(attacker, combatInfo)
 	var prop := attacker.GetMasteryProp();

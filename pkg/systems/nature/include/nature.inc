@@ -4,7 +4,7 @@ use util;
 use cfgfile;
 
 include ":combat:damage";
-include ":commands:debugsystem";
+include ":debugsystem:debugsystem";
 
 // Calendar constants
 var MONTHS := array{
