@@ -14,18 +14,6 @@ use uo;
 use os;
 use cfgfile;
 
-enum VITALS
-	HITS := "Hits",
-	MANA := "Mana",
-	STAMINA := "Stamina",
-	HUNGER := "Hunger",
-	DP := "DP",
-	SKILLCAP := "SkillCap",
-	VICIOSTR := "Viciostr",
-	VICIODEX := "Viciodex",
-	VICIOINT := "Vicioint"
-endenum
-
 /* AP_GetVitalsCfgFile()
  *
  * Purpose

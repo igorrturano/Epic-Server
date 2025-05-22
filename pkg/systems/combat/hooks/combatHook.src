@@ -41,7 +41,7 @@ include "include/epicMageryUtils";
 include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":commands:debugsystem";
+include ":debugsystem:debugsystem";
 include ":fls_magery:spellSounds";
 include ":masterysystem:utils";
 

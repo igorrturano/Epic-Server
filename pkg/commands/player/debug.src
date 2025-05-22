@@ -18,14 +18,10 @@
  *
  * var debugType := "clima";
  * DebugMsgEvent(debugType, "Está chovendo bastante!");
- *
- * É preciso certificar que o nome do debug esteja na var listDebugs deste arquivo aqui
- * o valor precisa ser um struct com name e level (cmdlevel) [ver uso abaixo]
- * Não fiz com ENUM pra evitar alguns conflitos de varredura.
  */
 use uo;
 
-include ":commands:debugsystem";
+include ":debugsystem:debugsystem";
 include "include/say";
 
 program CMD_debug(who, debugName)
@@ -41,11 +37,12 @@ program CMD_debug(who, debugName)
 	
 	foreach debug in listDebugs
         if (Lower(debugName) == Lower(debug.name))
-            if (checkLv(who, debug.level))
-                setDebug(who, debugName);
+            if (who.cmdlevel >= debug.level)
+                who.setDebugProp(debugName);
                 return;
             else
                 SendSysMessageEx(who, $"DEBUG {debugName}:  Nível insuficiente.");
+				return;
             endif
         endif
     endforeach
@@ -53,23 +50,3 @@ program CMD_debug(who, debugName)
     SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.");
 	SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list");
 endprogram
-
-function checkLv(who, level)
-    if (who.cmdlevel >= level)
-        return 1;
-    endif
-    return 0;
-endfunction
-
-function setDebug(who, debugName)
-    var propName := PROPTAG + debugName;
-    var prop := getDebugProp(who, debugName);
-
-    if (!prop)
-        SetObjProperty(who, propName, 1);
-        SendSysMessageEx(who, $"DEBUG {debugName}: ativado!");
-    else
-        EraseObjProperty(who, propName);
-        SendSysMessageEx(who, $"DEBUG {debugName}: desativado!");
-    endif
-endfunction
