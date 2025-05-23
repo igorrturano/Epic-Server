@@ -60,7 +60,6 @@ function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
     var is_arrow        := IsArrowProjectile(munition_objtype);
 
     if (!is_bolt && !is_arrow)
-        print("[" + CInt(ReadGameClock()) + "] GetGraphicForHit: Tipo de munição desconhecido (" + munition_objtype + "). Retornando error.");
         return error;
     endif
 
@@ -72,7 +71,7 @@ function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
                 "*Acertou o anel interno branco*":   return 0xFAA1; // ARROW_SUL_MIDDLE
                 "*Acertou o anel externo vermelho*": return 0xFAA2; // ARROW_SUL_OUTER
                 "*Errou o alvo*":                   return 0xFAA3; // ARROW_SUL_MISS
-                default:                            print("[" + CInt(ReadGameClock()) + "] GetGraphicForHit (SUL, ARROW): hit_text desconhecido '" + hit_text + "'. Retornando error."); return error;
+                default:                            return error;
             endcase
         elseif (is_bolt)
             case (hit_text)
@@ -81,7 +80,7 @@ function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
                 "*Acertou o anel interno branco*":   return 0xFAAE; // BOLT_SUL_MIDDLE
                 "*Acertou o anel externo vermelho*": return 0xFAAF; // BOLT_SUL_OUTER
                 "*Errou o alvo*":                   return 0xFAB0; // BOLT_SUL_MISS
-                default:                            print("[" + CInt(ReadGameClock()) + "] GetGraphicForHit (SUL, BOLT): hit_text desconhecido '" + hit_text + "'. Retornando error."); return error;
+                default:                            return error;
             endcase
         endif
     elseif (is_leste_facing)
@@ -92,7 +91,7 @@ function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
                 "*Acertou o anel interno branco*":   return 0xFAA7; // ARROW_LESTE_MIDDLE
                 "*Acertou o anel externo vermelho*": return 0xFAA8; // ARROW_LESTE_OUTER
                 "*Errou o alvo*":                   return 0xFAA9; // ARROW_LESTE_MISS
-                default:                            print("[" + CInt(ReadGameClock()) + "] GetGraphicForHit (LESTE, ARROW): hit_text desconhecido '" + hit_text + "'. Retornando error."); return error;
+                default:                            return error;
             endcase
         elseif (is_bolt)
             case (hit_text)
@@ -101,7 +100,7 @@ function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
                 "*Acertou o anel interno branco*":   return 0xFAB3; // BOLT_LESTE_MIDDLE
                 "*Acertou o anel externo vermelho*": return 0xFAB4; // BOLT_LESTE_OUTER
                 "*Errou o alvo*":                   return 0xFAB5; // BOLT_LESTE_MISS
-                default:                            print("[" + CInt(ReadGameClock()) + "] GetGraphicForHit (LESTE, BOLT): hit_text desconhecido '" + hit_text + "'. Retornando error."); return error;
+                default:                            return error;
             endcase
         endif
     endif
@@ -109,25 +108,18 @@ function GetGraphicForHit(hit_text, butte_original_objtype, munition_objtype)
 endfunction
 
 program ArcheryButte(who, butte)
-    print("--------------------------------------------------"); // Separador para facilitar a leitura dos logs
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte SCRIPT INICIADO. Jogador: " + who.name + " (" + who.serial + "), Alvo: " + butte.name + " (" + butte.serial + ", objtype: 0x" + Hex(butte.objtype) + ")");
-
 	var original_objtype := butte.objtype;
 
 	if ( butte.container )
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Alvo está em container. Saindo.");
 		return 0;
 	endif
     if ( !ReserveItem(butte) )
 		SendSysMessage(who, "O alvo esta sendo usado.");
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Alvo já reservado. Saindo.");
 		return 0;
 	endif
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Alvo reservado com sucesso.");
 
 	var weapon := who.weapon;
     if (!weapon)
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Jogador " + who.name + " sem arma equipada. Saindo.");
         SendSysMessage(who, "Voce precisa de uma arma."); // Mensagem mais genérica
         return 0;
     endif
@@ -138,30 +130,22 @@ program ArcheryButte(who, butte)
 	var projectile_anim := CInt(CS_GetWeaponInfo(weapon, "ProjectileAnim"));
 	var projectile_type := CInt(CS_GetWeaponInfo(weapon, "ProjectileType"));
 
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Infos da arma: attrib=" + weapon_attrib + ", anim=" + weapon_anim + ", miss_snd=" + miss_sound + ", hit_snd=" + hit_sound + ", proj_anim=" + projectile_anim + ", proj_type=0x" + Hex(projectile_type));
-
 	if ( Distance(who, butte) == 1 )
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Jogador adjacente ao alvo. Chamando RecoverAmmo.");
 		RecoverAmmo(who, butte, original_objtype);
 		return 0;
 	endif
     if ( !CS_GetWeaponInfo(weapon, "Projectile") )
 		SendSysMessage(who, "Voce precisa de uma arma de ataque a distancia.");
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Arma não é de projétil. Saindo.");
 		return 0;
 	endif
     if ( !TP_CheckRange(who, weapon, butte) )
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Falha no TP_CheckRange. Saindo.");
 		return 0; // TP_CheckRange provavelmente já envia mensagem
 	endif
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Verificações de distância e projétil OK.");
 
 	if ( !ConsumeSubstance(who.backpack, projectile_type, 1) )
 		SendSysMessage(who, "Voce nao tem municao para esta arma.");
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Falha ao consumir munição (Tipo: 0x" + Hex(projectile_type) + "). Saindo.");
 		return 0;
 	endif
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Munição consumida com sucesso.");
 
 	  start_Script(":combat:weaponHitScripts/AttackAnimation", {who});
 
@@ -177,7 +161,6 @@ program ArcheryButte(who, butte)
 		foreach mobile in ( ListMobilesNearLocationEX(point.x, point.y, z_pos, 0, LISTEX_FLAG_NORMAL+LISTEX_FLAG_HIDDEN) )
 			if ( mobile != who )
 				closest := mobile;
-                print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Obstrução encontrada! Novo alvo: " + closest.name + " (" + closest.serial + ")");
 				break;
 			endif
             SleepMS(2);
@@ -189,33 +172,24 @@ program ArcheryButte(who, butte)
 	endforeach
 
 	PlayMovingEffect(who, closest, projectile_anim, 10, 0, 0);
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: PlayMovingEffect executado para alvo: " + closest.name + " (" + closest.serial + ")");
 
 var effective_skill := AP_GetTrueSkill(who, weapon_attrib);
-print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Habilidade efetiva de " + weapon_attrib + ": " + effective_skill);
 
     var initial_skill_check_result := SkillCheck(who, weapon_attrib, -1, 0, 0);
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Resultado do SkillCheck inicial: " + initial_skill_check_result);
 
 	if ( initial_skill_check_result > 0 )
 		PlaySoundEffect(who, hit_sound);
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: SkillCheck inicial SUCESSO. Tocou som de acerto.");
 
 		if ( closest.IsA(POLCLASS_MOBILE) )
-            print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Alvo final é um MOBILE: " + closest.name);
 			PerformAction(closest, ANIM_HIT);
 			var projectile_damage := CS_GetWeaponInfo(weapon, "Damage");
 			ApplyDamageEX(closest, RandomDiceRoll(projectile_damage), DMG_PHYSICAL);
-            print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Dano aplicado ao mobile.");
             if (butte.graphic != original_objtype) // Reseta o alvo de arqueria se um mob foi atingido
-                print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Resetando gráfico do alvo de arqueria para 0x" + Hex(original_objtype) + " pois um mobile foi atingido.");
                 butte.graphic := original_objtype;
             endif
 		else // Acertou o 'butte' (alvo de arqueria)
-            print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Alvo final é o BUTTE (" + butte.serial + "). Chamando DetermineHit.");
 			var hit_text := DetermineHit(who, weapon_attrib); // DetermineHit já tem seus próprios logs
 
-            print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Retornou de DetermineHit. hit_text = '" + hit_text + "'. Chamando PrintTextAbove.");
 			PrintTextAbove(butte, hit_text);
 
 var hit_points := AwardPoints(hit_text);
@@ -228,34 +202,26 @@ endif
 
 PrintTextAbove(butte, "+" + hit_points.points, _DEFAULT_TEXT_FONT, color, JOURNAL_PRINT_NAME);
             
-print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Chamando GetGraphicForHit com hit_text='" + hit_text + "', original_objtype=0x" + Hex(original_objtype) + ", projectile_type=0x" + Hex(projectile_type));
 var new_graphic := GetGraphicForHit(hit_text, original_objtype, projectile_type);
-print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Retornou de GetGraphicForHit. new_graphic = 0x" + Hex(new_graphic) + " (Tipo: " + TypeOf(new_graphic) + ")");
 
 if (new_graphic != error && new_graphic != 0)
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: new_graphic (0x" + Hex(new_graphic) + ") é válido. Mudando butte.graphic.");
     butte.graphic := new_graphic;
 else
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: new_graphic (0x" + Hex(new_graphic) + ") NÃO é válido (error ou 0). Resetando para original se necessário.");
     if (butte.graphic != original_objtype)
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Gráfico do alvo era diferente (0x" + Hex(butte.graphic) + "). Resetando para original (0x" + Hex(original_objtype) + ").");
         butte.graphic := original_objtype;
     endif
 endif
 
 if (hit_text != "*Errou o alvo*" && (new_graphic != error && new_graphic != 0) && RandomInt(2) )
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Condições para guardar munição atendidas. Guardando munição.");
     Set_Critical(1); // Usar Set_Critical/Unset_Critical se for POL099+ para proteger Get/SetObjProperty
     var ammo := CInt(GetObjProperty(butte, "Ammo-"+projectile_type));
     ammo := ammo + 1;
     SetObjProperty(butte, "Ammo-"+projectile_type, ammo);
     Set_Critical(0);
 else
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Condições para guardar munição NÃO atendidas. hit_text='" + hit_text + "', new_graphic=0x" + Hex(new_graphic));
 endif
 		endif
 else
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte: SkillCheck inicial FALHA. Tocou som de erro.");
     PlaySoundEffect(who, miss_sound);
 
 // Frases realistas de erro
@@ -291,19 +257,16 @@ var realistic_fail_phrases := array{
         PrintTextAbove(butte, "+" + fail_points.points, _DEFAULT_TEXT_FONT, fail_color, JOURNAL_PRINT_NAME);
 
     if (butte.graphic != original_objtype)
-        print("[" + CInt(ReadGameClock()) + "] ArcheryButte: Resetando gráfico do alvo (0x" + Hex(butte.graphic) + ") para original (0x" + Hex(original_objtype) + ") devido a erro total.");
         butte.graphic := original_objtype;
     endif
 	endif  // <-- Adicionei este endif para fechar o bloco condicional
 	endif
 
-    print("[" + CInt(ReadGameClock()) + "] ArcheryButte SCRIPT FINALIZANDO.");
 	Sleep(3);
 endprogram
 
 function DetermineHit(who, weapon_attrib)
     var effective_skill := AP_GetTrueSkill(who, weapon_attrib);
-    print("[" + CInt(ReadGameClock()) + "] DetermineHit: Habilidade base de " + weapon_attrib + ": " + effective_skill);
     var result_text := "";
     var difficulty_roll_str := ""; 
 
@@ -339,17 +302,10 @@ function DetermineHit(who, weapon_attrib)
         difficulty_roll_str := "N/A (todos falharam)";
     endif
 
-    print("[" + CInt(ReadGameClock()) + "] DetermineHit: Jogador=" + who.name + 
-          ", Attrib=" + weapon_attrib + 
-          " (Skill=" + effective_skill + 
-          "), Dificuldade Testada Aprox.=" + difficulty_roll_str + 
-          " --> Retornando: '" + result_text + "'");
-
     return result_text;
 endfunction
 
 function RecoverAmmo(who, butte, original_objtype_param)
-    print("[" + CInt(ReadGameClock()) + "] RecoverAmmo: INICIADO para " + who.name + " no alvo " + butte.serial);
 	var prop_list := GetObjPropertyNames(butte);
     var recovered_something := 0;
 
@@ -359,7 +315,6 @@ function RecoverAmmo(who, butte, original_objtype_param)
 				var ammo_id_str := c_prop;
 				ammo_id_str["Ammo-"] := "";
                 var amount_recovered := CInt(GetObjProperty(butte, c_prop));
-                print("[" + CInt(ReadGameClock()) + "] RecoverAmmo: Recuperando " + amount_recovered + " de 0x" + Hex(CInt(ammo_id_str)) + " da prop " + c_prop);
 				CreateItemInBackPack(who, CInt(ammo_id_str), amount_recovered);
 				SendSysMessage(who, "Voce recuperou municao.");
                 recovered_something := 1;
@@ -370,17 +325,14 @@ function RecoverAmmo(who, butte, original_objtype_param)
 	endif
 
     if (butte.graphic != original_objtype_param)
-        print("[" + CInt(ReadGameClock()) + "] RecoverAmmo: Resetando gráfico do alvo (0x" + Hex(butte.graphic) + ") para original (0x" + Hex(original_objtype_param) + ").");
         butte.graphic := original_objtype_param;
         PrintTextAbove(butte, "*Limpo*");
     endif
 
 	if (recovered_something)
-        print("[" + CInt(ReadGameClock()) + "] RecoverAmmo: FINALIZADO. Algo foi recuperado.");
 		return 1;
     else
 		SendSysMessage(who, "Nao tem municao aqui.");
-        print("[" + CInt(ReadGameClock()) + "] RecoverAmmo: FINALIZADO. Nada para recuperar.");
 		return 0;
 	endif
 endfunction
