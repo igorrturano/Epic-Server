@@ -11,6 +11,9 @@ program Install()
 	return 1;
 endprogram
 
+include ":masterysystem:methods/methods";
+include ":debugsystem:methods/methods";
+
 exported function isUnderRoof(who)
     var hasStaticRoof := ListStaticsNearLocationWithFlag( who.x, who.y, LIST_IGNORE_Z, 1, TILEDATA_FLAG_ROOF, who.realm);
     if (hasStaticRoof != {}) return 1; endif

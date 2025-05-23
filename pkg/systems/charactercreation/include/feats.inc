@@ -21,7 +21,7 @@ function getFeatById(feat_id, get_class := 0)
    return struct{
       FeatID := GetConfigInt(elem, "FeatID"),
       Name := GetConfigString(elem, "Name"),
-      Class := _ifOr(GetConfigString(elem, "Class"), GetConfigString(elem, "God")),
+      Classe := _ifOr(GetConfigString(elem, "Class"), GetConfigString(elem, "God")),
       Description := GetConfigString(elem, "Description"),
       Mana := GetConfigInt(elem, "Mana"),
       God := GetConfigString(elem, "God"),
@@ -271,7 +271,7 @@ endfunction
 
 function BuildFeatToolTip(feat, return_points := 0, power := 0)
    var desc := "";
-   if (feat.Script) desc += "{}Habilidade Ativável<br>".format(ORANGE, feat.PointCost);
+   if (feat.Script) desc += "{}Habilidade Ativï¿½vel<br>".format(ORANGE, feat.PointCost);
    else desc += "{}Habilidade Passiva<br>".format(ORANGE, feat.PointCost); endif
    if (return_points && feat.PointCost) desc += "{}Custo: {} ponto(s)<br>".format(LIGHTGRAY, feat.PointCost); endif
    if (return_points && feat.Level) desc += "{}Level do Personagem: {}<br>".format(LIGHTGRAY, feat.Level); endif
@@ -346,11 +346,11 @@ function ChooseTarget(mobile, feat)
          elseif (GetCooldown(targ, "repeal") > 0)
             SendSysMessageEx(mobile, "O alvo esta invulneravel a habilidades.", SSM_FAIL);
          elseif (feat.Targ == "Mobile" && !targ.isA(POLCLASS_MOBILE))
-            SendSysMessageEx(mobile, "Você deve escolher uma criatura como alvo.", SSM_FAIL);
+            SendSysMessageEx(mobile, "Vocï¿½ deve escolher uma criatura como alvo.", SSM_FAIL);
          elseif (feat.Targ == "Item" && !targ.isA(POLCLASS_ITEM) && !targ.isA(POLCLASS_CONTAINER))
-            SendSysMessageEx(mobile, "Você deve escolher um objeto como alvo", SSM_FAIL);
+            SendSysMessageEx(mobile, "Vocï¿½ deve escolher um objeto como alvo", SSM_FAIL);
          elseif (!feat.NoLos && !CheckLineOfSight(mobile, targ));
-            SendSysMessageEx(mobile, "Você não tem visão do alvo.", SSM_FAIL);
+            SendSysMessageEx(mobile, "Vocï¿½ nï¿½o tem visï¿½o do alvo.", SSM_FAIL);
          elseif (!feat.Range)
             break;
          elseif (feat.Range && CoordinateDistance(mobile.x, mobile.y, targ.x, targ.y) > feat.Range)
@@ -373,7 +373,7 @@ function ChooseTarget(mobile, feat)
          TurnObjectToward(mobile, targ.x, targ.y);
 
          if (!feat.NoLos && !CheckLosAt( mobile, targ.x, targ.y, targ.z ));
-            SendSysMessageEx(mobile, "Você não tem visão da area escolhida.", SSM_FAIL);
+            SendSysMessageEx(mobile, "Vocï¿½ nï¿½o tem visï¿½o da area escolhida.", SSM_FAIL);
          elseif(!feat.Range)
             break;
          elseif (CoordinateDistance(mobile.x, mobile.y, targ.x, targ.y) > feat.Range)
@@ -393,11 +393,11 @@ function TriggerHabilitie(who, hab)
 	if ( TS_GetCooldown(who, "hab_{}".format(hab.FeatID)) != error)
 		return SendSystemReport(who, "'Habilidade em Cooldown!'", SSM_FAIL);
    elseif (hab.RequireMagicWeapon && !who.weapon.isMagicWeapon())
-		return SendSystemReport(who, "'Você precisa estar equipado com uma arma mágica para esta habilidade.'", SSM_FAIL);
+		return SendSystemReport(who, "'Vocï¿½ precisa estar equipado com uma arma mï¿½gica para esta habilidade.'", SSM_FAIL);
 	endif
    
    if (TS_GetCooldown(who, "dodge") || TS_GetCooldown(who, "block"))
-		return SendSysMessageEx(who, "'Você não pode usar habilidades quando estiver esquivando ou bloqueado.'", SSM_FAIL);
+		return SendSysMessageEx(who, "'Vocï¿½ nï¿½o pode usar habilidades quando estiver esquivando ou bloqueado.'", SSM_FAIL);
    endif
    SetObjProperty(who, "#Casting", 1);
    
@@ -406,7 +406,7 @@ function TriggerHabilitie(who, hab)
       if (!AP_ConsumeVital(who, MANA, mana))
          SendSystemReport(who, "'Mana Insuficiente!'", SSM_FAIL);
          EraseObjProperty(who, "#Casting");
-         return SendSysMessageEx(who, "Você não tem mana suficiente para executar esta habilidade.", SSM_FAIL);
+         return SendSysMessageEx(who, "Vocï¿½ nï¿½o tem mana suficiente para executar esta habilidade.", SSM_FAIL);
       endif
    endif
 
@@ -415,7 +415,7 @@ function TriggerHabilitie(who, hab)
       if (!AP_ConsumeVital(who, STAMINA, vigor))
          SendSystemReport(who, "'Vigor Insuficiente!'", SSM_FAIL);
          EraseObjProperty(who, "#Casting");
-         return SendSysMessageEx(who, "Você não tem vigor suficiente para executar esta habilidade.", SSM_FAIL);
+         return SendSysMessageEx(who, "Vocï¿½ nï¿½o tem vigor suficiente para executar esta habilidade.", SSM_FAIL);
       endif
    endif
    TS_StartCooldown(who, "HabUsed", 300);
@@ -428,7 +428,7 @@ function TriggerHabilitie(who, hab)
       var cycles := hab.CastTime;
       if (HaveGodFeat(who, 83) && Randomint(100) <= 20)
          cycles := 0;
-         SendSystemReport(who, "Conjuração Rápida", SSM_INFO);
+         SendSystemReport(who, "Conjuraï¿½ï¿½o Rï¿½pida", SSM_INFO);
       endif
       
       var moveCheck := Start_Script(":magery:moveCheck", array{who, Getpid()});
@@ -436,7 +436,7 @@ function TriggerHabilitie(who, hab)
       while (cycles)
          if ( Events_Waiting() || TS_GetTimerInfo(who, "tombar") || who.frozen || who.paralyzed )
             EraseObjProperty(who, "#Casting");
-            SendSysMessageEx(who, "Você não conseguiu se concentrar o suficiente para usar esta habilidade.", SSM_FAIL);
+            SendSysMessageEx(who, "Vocï¿½ nï¿½o conseguiu se concentrar o suficiente para usar esta habilidade.", SSM_FAIL);
             // FailSpell(who);
             return 0;
          endif
@@ -460,7 +460,7 @@ function TriggerHabilitie(who, hab)
    endif
 
    var targ := ChooseTarget(who, hab);
-   if (!targ) //verifica se o ponto ¿ v¿sivel
+   if (!targ) //verifica se o ponto ï¿½ vï¿½sivel
       SendsysMessageEx(who, "Habilidade cancelada", SSM_FAIL);
       FailFeat(who, hab);
       return;
@@ -493,7 +493,7 @@ function TriggerHabilitie(who, hab)
    var e := start_script(script, array{who, hab, targ, power, weapon});
    if (e == error)
       FailFeat(who, hab);
-      return SendSysMessageEx(who, "Script da Habilidade não encontrado.", SSM_FAIL);
+      return SendSysMessageEx(who, "Script da Habilidade nï¿½o encontrado.", SSM_FAIL);
    endif
 
    EraseObjProperty(who, "#magiasilenciosa");
