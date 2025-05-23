@@ -37,11 +37,11 @@ program Install()
 	return 1;
 endprogram
 
-exported function getTemplate(npc)
+exported function GetTemplate(npc)
     return NPC_ParseTemplateName(npc.npctemplate).template;
 endfunction
 
-exported function getCategory(npc)
+exported function GetCategory(npc)
     return ReadConfigFile(":*:npcdesc")[getTemplate(npc)].Category;
 endfunction
 
