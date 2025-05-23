@@ -1,6 +1,6 @@
 include "include/equipstats";
 include "include/utils";
-include ":commands:debugsystem";
+include ":debug:main";
 
 program EquipSys(params)
 	var who := params[1];

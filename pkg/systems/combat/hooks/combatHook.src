@@ -41,7 +41,7 @@ include "include/epicMageryUtils";
 include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":commands:debugsystem";
+include ":debug:main";
 include ":fls_magery:spellSounds";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
@@ -76,7 +76,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	start_script(":combat:hooks/opportunityAttack", {attacker, defender});
-	Start_Script("weaponHitScripts/AttackAnimation", {attacker});
+	Start_Script(":combat:weaponHitScripts/AttackAnimation", {attacker});
 
 	attackInfo.+hitchance := CInt(CalculateHitChance(attacker, defender));
 	attackInfo.+dice := RandomDiceRoll("1d100");
@@ -89,6 +89,7 @@ exported function Attack(attacker, defender)
 
 	if ( attackInfo.dice < attackInfo.hitchance )
 		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
+		SkillChecks(attacker, defender, attacker.weapon, 1);
 
 		CheckAttackerHabsOnHit(attacker, defender, attackInfo);
 		CheckDefenderHabsOnHit(attacker, defender, attackInfo);
@@ -104,7 +105,7 @@ exported function Attack(attacker, defender)
 	endif
 
 	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
-		Start_Script("weaponHitScripts/AttackAnimation", {attacker, OFFHAND_DELAY});
+		Start_Script(":combat:weaponHitScripts/AttackAnimation", {attacker, OFFHAND_DELAY});
 		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
 		
 		var hitchancePenalty := DualWieldPenalty(attacker);
@@ -115,7 +116,8 @@ exported function Attack(attacker, defender)
 
 		// No segundo hit só checa novamente as habilidades do defensor
 		if ( attackInfo.dice < attackInfo.hitchance )
-			DebugMsg(attacker, DEBUG_HIT, "***SUCESSO!***");
+			DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
+			SkillChecks(attacker, defender, attacker.weapon, 1);
 
 			CheckDefenderHabsOnHit(attacker, defender, attackInfo);
 
@@ -185,10 +187,10 @@ function EpicAttack(attacker, defender, weaponHand)
 	var armor := GetArmorToHit(defender);
 	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
 
-	if (!DAMAGE_OFFHAND)
-		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg});
+	if (weaponHand != DAMAGE_OFFHAND)
+		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg});
 	else // Se for ataque da segunda arma, tem delay
-		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, wpn_a, armor, dmg, dmg, OFFHAND_DELAY});
+		dmg := Start_Script(":combat:mainHitScript", array{attacker, defender, attacker.weapon, armor, dmg, dmg, OFFHAND_DELAY});
 	endif
 endfunction
 
