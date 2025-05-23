@@ -41,11 +41,7 @@ program textcmd_acalmar(who)
 		SendSysMessageEx(who, "Você está longe demais.");
 		return 0;
 	endif
-
-	var npccfgfile := ReadConfigFile(":*:npcdesc");
-	var creature_template := ParseTemplateName(creature.npctemplate).template;
-	var taxonomy := npccfgfile[creature_template].Taxonomy;	
-	var tameDifficulty := npccfgfile[creature_template].TameDifficulty;	
+	var tameDifficulty := targ.getTameDifficulty();
 
 	if( !taxonomy)
 			SendSysMessage(who, "Esse não pode ser um alvo válido.");

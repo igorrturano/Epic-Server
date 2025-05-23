@@ -65,14 +65,8 @@ program wildshape(who)
         return;  // Exit if target is invalid
     endif
 
-    // Read the NPC configuration to find TameDifficulty (like in adestrar.src)
-    var cfg := ReadConfigFile(":*:npcdesc");
-    var npctemplate := targ.npctemplate;
-    npctemplate := npctemplate[10, len(npctemplate)-9];
-    cfg := cfg[npctemplate];
-
     // Ensure the NPC has a valid TameDifficulty value
-    if (!cfg.TameDifficulty)
+    if (!targ.getTameDifficulty())
         SendSysMessageEx(who, "Voce nao pode estudar a forma de " + targ.name + ".", SSM_FAIL);
         return;
     endif
@@ -85,7 +79,7 @@ program wildshape(who)
     info.+x := who.x;
     info.+y := who.y;
     info.+facing := who.facing;
-    info.+difficulty := cfg.TameDifficulty;
+    info.+difficulty := Cint(targ.getTameDifficulty());
 
     // Check if the player's skill is high enough to study the creature
     if (info.difficulty > (skill*1.2 + 15))

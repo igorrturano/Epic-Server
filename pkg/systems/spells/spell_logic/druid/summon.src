@@ -35,15 +35,6 @@ program summontotem(params)
 		SendSysMessage(who, "erro ao ler o template" + template);
 		return;
 	endif
-	npctemplate := npctemplate[10, len(npctemplate)-9];
-
-	var cfg2 := ReadConfigFile(":*:npcdesc");
-	cfg2 := cfg2[npctemplate];
-
-	var petcost := 1; // Default pet cost
-	if (cfg2 && Cint(cfg2.petslot)) 
-		petcost := Cint(cfg2.petslot);
-	endif
 
 	if (GetMaxSummons(who) < GetNumSummons(who) + petcost )
 		SendSysMessageEx(who, "Voce tem " + GetNumSummons(who) + " invocacoes sob seu comando e o maximo sao : " + GetMaxSummons(who)  + "  . "  , SSM_FAIL);
@@ -55,6 +46,11 @@ program summontotem(params)
         SendSysMessageEx(who, "Você falhou em invocar a criatura.", SSM_FAIL);
         return;
     endif
+
+	var petcost := 1; // Default pet cost
+	if (Cint(espirito.getTier())) 
+		petcost := Cint(espirito.getTier());
+	endif
 
 	var slot;
 	var slot1 := Getobjproperty(who, "slot1");

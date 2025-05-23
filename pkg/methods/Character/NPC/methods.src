@@ -363,3 +363,8 @@ exported function isPriest(who)
 
     return 0;
 endfunction
+
+exported function getTameDifficulty(who)
+    if (!isAnimalBrain(who)) return error; endif
+    return Cint(AP_GetSkill(who, WRESTLING));
+endfunction

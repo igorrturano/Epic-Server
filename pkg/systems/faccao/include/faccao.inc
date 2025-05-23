@@ -401,7 +401,7 @@ function FormatAttack(npctemplate, new_attack, AttackDamage)
 		"DamageType" := attack[3],
 		"AttackAnim" := cint(attack[4]),
       "AttackDamage" := AttackDamage,
-		"Attribute"  := npctemplate.AttackAttribute,
+		"Attribute"  := WRESTLING,
 		"MaxRange"   := npctemplate.MaxRange,
 		"MinRange"   := npctemplate.MinRange
 	};
