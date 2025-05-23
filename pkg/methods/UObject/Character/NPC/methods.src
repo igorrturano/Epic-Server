@@ -25,7 +25,6 @@ Current Abilities:
 Remember to maintain alphabetical order in both the comment block and the dictionary.
 */
 
-
 use uo;
 include "include/NPCUtil";
 include ":tn:cooldown";
@@ -38,7 +37,17 @@ program Install()
 	return 1;
 endprogram
 
-function HasCustomAbility(who, method_name)
+exported function getTemplate(npc)
+    return NPC_ParseTemplateName(npc.npctemplate).template;
+endfunction
+
+exported function getCategory(npc)
+    return ReadConfigFile(":*:npcdesc")[getTemplate(npc)].Category;
+endfunction
+
+
+// Jogar essas funções abaixo no pacote de NPCs/habilidades/seilá
+exported function HasCustomAbility(who, method_name)
     var custom_abilities := GetObjProperty(who, "CustomAbilities");
     if (!custom_abilities)
         return 0;
