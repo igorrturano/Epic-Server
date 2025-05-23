@@ -11,9 +11,9 @@ program Install()
 	return 1;
 endprogram
 
-include ":mastery:methods/methods";
-include ":debug:methods/methods";
-include ":achievements:methods/methods";
+include ":mastery:methods/Character";
+include ":debug:methods/Character";
+include ":achievements:methods/Character";
 
 
 // TODO: Colocar essas funções abaixo nos pacotes delas, no modelo do Documentation (SOCORRO IGOOOOOOOOR)

@@ -1,6 +1,6 @@
 include ":debug:main";
 
-print("INSTALLING: Methods for Debug System... OK!");
+print("INSTALLING: Methods for Character -> Debug System... OK!");
 
 exported function getDebugProp(who, debugName)
     return who.GetProp(PROPTAG + debugName);

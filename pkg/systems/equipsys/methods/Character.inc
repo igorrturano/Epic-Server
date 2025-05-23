@@ -1,7 +1,7 @@
 include ":equipsys:utils";
 include ":combat:armorZones";
 
-print("INSTALLING: Methods for Equipment System... OK!");
+print("INSTALLING: Methods for Character -> Equipment System... OK!");
 
 exported function getMobileDefenses(who)
 	var armorSlot := struct{

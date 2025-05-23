@@ -1,6 +1,6 @@
-use uo;
-
 include ":equipsys:equipstats";
+
+print("INSTALLING: Methods for Item -> Equipment System... OK!");
 
 /**
  * Function(params)
