@@ -1,0 +1,39 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":attributes:attributes";
+include ":combat:combat";
+include ":damage:damage";
+
+program SpecialAttack_Cutthroat(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon   := params[3];
+	
+	if (!defender || defender.dead())
+		return 0;
+	endif
+	
+	// Check if defender has less than 5% health
+	var maxhp := AP_GetVitalMaximumValue(defender, HITS);
+	var currhp := AP_GetVital(defender, HITS);
+	
+	var hpPercent := CDbl(currhp) / CDbl(maxhp) * 100;
+	
+	if (hpPercent <= 5.0)
+		// Instakill effect
+		PlayAttackAnimation(attacker);
+		PlayHitSounds(attacker, defender);
+		
+		PrintText(attacker, "*Corta a garganta*");
+		PrintTextAbovePrivate(defender, "Voce foi executado!", defender);
+		PrintTextAbovePrivate(defender, "Voce executou seu alvo!", attacker);
+		
+		ApplyRawDamage(defender, 100000); // Dano absurdo pra garantir que matou
+		return 1;
+	endif
+	
+	return 0;
+endprogram

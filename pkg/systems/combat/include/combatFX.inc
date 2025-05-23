@@ -93,7 +93,6 @@ function getWeaponFX(FX, weapon, isCriticalAttack := 0)
 	if (weapon.objtype == FIST)
 		if (FX == WEAPON_FX_ANIM)
 			attackFX := getAnim(UNARMED_FX, isCriticalAttack);
-			print("ANIM"+Hex(attackFX));
 		else
 			attackFX := getSound(UNARMED_FX, isCriticalAttack);
 		endif

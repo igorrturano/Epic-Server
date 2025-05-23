@@ -1,0 +1,6 @@
+program Install()
+	print("INSTALLING: Methods for Armors... OK!");
+	return 1;
+endprogram
+
+include ":equipsys:methods/Armor";

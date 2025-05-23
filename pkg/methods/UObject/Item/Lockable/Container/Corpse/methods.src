@@ -1,0 +1,10 @@
+use uo;
+
+program Install()
+	print("INSTALLING: Methods for Corpse... OK!");
+	return 1;
+endprogram
+
+exported function GetNPCTemplate(who)
+	return GetObjProperty(who, "npctemplate");
+endfunction

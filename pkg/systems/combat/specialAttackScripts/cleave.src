@@ -1,0 +1,78 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+include ":attributes:attributes";
+include ":combat:combat";
+include ":damage:damage";
+
+program SpecialAttack_Cleave(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var weapon := params[3];
+	var damage := params[4];
+	
+	// Base damage multiplier for cleave
+	var damageMultiplier := 0.7;
+	
+	// Find all potential targets in range (within 1 tile)
+	var potentialTargets := ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, 1, attacker.realm);
+	var hitTargets := array{};
+	
+	// Calculate attacker's facing direction
+	var facing := attacker.facing;
+	
+	// Add the primary target
+	if (defender)
+		hitTargets.append(defender);
+	endif
+	
+	// Check each potential target to see if they're in the 90-degree arc
+	foreach mobile in potentialTargets
+		// Skip the attacker
+		if (mobile.serial == attacker.serial)
+			continue;
+		endif
+		
+		// Skip the primary target (already added)
+		if (defender && mobile.serial == defender.serial)
+			continue;
+		endif
+		
+		// Skip non-attackable targets
+		// if (!CanAttack(attacker, mobile))
+		// 	continue;
+		// endif
+		
+		// Limit to max 3 targets total (including primary target)
+		if (hitTargets.size() >= 3)
+			break;
+		endif
+	endforeach
+	
+	// Play effect on attacker
+	PlayObjectCenteredEffect(attacker, 0x3728, 10, 10);
+	PlaySoundEffect(attacker, 0x520);
+	
+	// Apply damage to all hit targets
+	foreach mobile in hitTargets
+		var targetDamage := damage * damageMultiplier;
+		
+		// Reduce damage for secondary targets
+		if (defender && mobile.serial != defender.serial)
+			targetDamage := targetDamage * 0.75;
+		endif
+		
+		ApplyRawDamage(mobile, CInt(targetDamage));
+		
+		// Show special effect on the target
+		PlayObjectCenteredEffect(mobile, 0x37B9, 10, 10);
+		
+		// Send hit message
+		SendSysMessage(attacker, "Your cleave strikes "+mobile.name+"!");
+		SendSysMessage(mobile, attacker.name+" cleaves you with a powerful strike!");
+	endforeach
+	
+	return 1;
+endprogram
