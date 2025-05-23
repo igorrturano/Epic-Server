@@ -1,8 +1,7 @@
-print("INSTALLING: Methods for MasterySystem... OK!");
+print("INSTALLING: Methods for Mastery System... OK!");
 
 exported function GetMasteryProp(who)
-	print("GetMasteryProp called");
-	var prop := who.GetProp("MasterySystem");
+	var prop := who.GetProp("Masteries");
 
 	if (!prop) 
 		prop := dictionary;
@@ -12,6 +11,5 @@ exported function GetMasteryProp(who)
 endfunction
 
 exported function SetMasteryProp(who, prop)
-	print("SetMasteryProp called");
-	who.SetProp("MasterySystem", prop);
+	who.SetProp("Masteries", prop);
 endfunction

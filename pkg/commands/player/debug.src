@@ -21,7 +21,7 @@
  */
 use uo;
 
-include ":debugsystem:debugsystem";
+include ":debug:main";
 include "include/say";
 
 program CMD_debug(who, debugName)

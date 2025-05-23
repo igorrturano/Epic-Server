@@ -11,7 +11,7 @@ include ":itemutils:objtype";
 include ":gathering:mining";
 include ":gathering:smelting/water";
 include ":gathering:smelting/smelt";
-include ":debugsystem:debugsystem";
+include ":debug:main";
 include ":gumps:epicGumps";
 
 const PROP_NAME := "Smelting";

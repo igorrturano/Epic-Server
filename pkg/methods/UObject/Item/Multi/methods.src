@@ -1,0 +1,4 @@
+program Install()
+	print("INSTALLING: Methods for Multi... OK!");
+	return 1;
+endprogram

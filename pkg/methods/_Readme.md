@@ -2,6 +2,8 @@
 
 Diretrizes para organizar o pacote de novos métodos.
 
+A explicação aqui é apenas para entender como funciona, pois já deixei todos os pacotes criados seguindo a herança correta.
+
 ## Pastas
 O script do método deve estar inserido na pasta de seu objeto com o nome methods.src. Ex.: Caso seja um item, estará na pasta ../methods/Items. Caso o objeto ainda não tenha pasta, criar uma com o nome do objeto (o mesmo que está no Documentation do POL).
 
@@ -10,16 +12,16 @@ Os objetos que forem herança de outro, deve seguir a mesma representação de h
 ### Estrutura:
 ```
 ../methods
-|
-|--- Item/
-|	 |--- Armor/
-|	 |    |--- methods.src
-|	 |--- Weapon/
-|	 |	  |--- methods.src
-|	 |--- methods.src
-|
-|--- [OBJETO]
-	 |--- methods.src
+|-- UObject/
+|	|-- Item/
+|	|	|-- Armor/
+|	|	|   |-- methods.src
+|	|	|-- Weapon/
+|	|	|	|-- methods.src
+|	|	|-- methods.src
+|	|
+|	|-- [OBJETO]
+|	|	|-- methods.src
 ```
 
 ## Funcionamento
