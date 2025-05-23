@@ -3,24 +3,22 @@
 Diretrizes para organizar o pacote de novos métodos.
 
 ## Pastas
-O script do método deve estar inserido na pasta de seu objeto com o nome methods.src. Ex.: Caso seja um item, estará na pasta ../methods/Items. Caso o objeto ainda não tenha pasta, criar uma (no plural).
+O script do método deve estar inserido na pasta de seu objeto com o nome methods.src. Ex.: Caso seja um item, estará na pasta ../methods/Items. Caso o objeto ainda não tenha pasta, criar uma com o nome do objeto (o mesmo que está no Documentation do POL).
 
-(Futuramente, ver se é melhor separar cada tipo de método para seu respectivo .src. Por enquanto temos poucos métodos criados, então estão todos no arquivo methods.src.)
+Os objetos que forem herança de outro, deve seguir a mesma representação de herança dos objetos em suas pastas. Ex.: Weapon herda de Equipment que herda de Item, portanto a pasta de Weapon será: ../Item/Equipment/Weapon/methods.src
 
 ### Estrutura:
 ```
 ../methods
 |
-|--- Armors/
+|--- Item/
+|	 |--- Armor/
+|	 |    |--- methods.src
+|	 |--- Weapon/
+|	 |	  |--- methods.src
 |	 |--- methods.src
 |
-|--- Items/
-|	 |--- methods.src
-|
-|--- Weapons/
-|	 |--- methods.src
-|
-|--- [Novo objeto no plural]
+|--- [OBJETO]
 	 |--- methods.src
 ```
 
@@ -40,7 +38,7 @@ SystemMethod
 
 	Armor :methods:armors/methods
 
-	[Novo objeto] :methods:[Novo objeto no plural]/methods
+	[OBJETO] :methods:[CAMINHO]/methods
 }
 ```
 
@@ -51,6 +49,20 @@ program Install()
 	print("INSTALLING: Methods for Items...");
 	return 1;
 endprogram
+```
+
+Devido a um bug grave no POL, na chamada de vários objetos e syshook.cfg, a estrutura de métodos estão concentrados neste pacote. Para adicionar novos métodos, crie a pasta methods\ dentro do pacote que você está trabalhando, adicione o arquivo methods.inc (não é .src) e dê include no methods.src (deste pacote) chamando o pacote que você está trabalhando.
+
+Exemplo do objeto Character:
+
+```
+program Install()
+	print("INSTALLING: Methods for Characters... OK!");
+	return 1;
+endprogram
+
+include ":[PACOTE]:methods/methods";
+include ":[PACOTE]:methods/methods";
 ```
 
 ### Function:
