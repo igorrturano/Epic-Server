@@ -31,19 +31,31 @@ function AchievementAdvance(attacker, defender, combatInfo)
 			xp := 0,
 			level := 0,
 			kills := 0,
-			hits := 0
+			hits := 0,
+			damage := 0
 		};
 	endif
+
+	UpdateProp(prop[npcCategory]); // Atualiza a prop caso algum atributo do struct ainda não exista.
 
 	prop[npcCategory].xp += CInt(combatInfo.xp);
 	prop[npcCategory].level := AchievementCheckLevel(prop[npcCategory].xp);
 	prop[npcCategory].kills += CInt(combatInfo.kills);
 	prop[npcCategory].hits += CInt(combatInfo.hits);
+	prop[npcCategory].damage += CInt(combatInfo.damage);
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {npcCategory}");
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)}");
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (acumulado) -> XP: {prop[npcCategory].xp} - Level: {prop[npcCategory].level} - Kills: {prop[npcCategory].kills} - Hits: {prop[npcCategory].hits}");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (acumulado) -> XP: {prop[npcCategory].xp} - Level: {prop[npcCategory].level} - Kills: {prop[npcCategory].kills} - Hits: {prop[npcCategory].hits} - Damage: {prop[npcCategory].damage}");
 
 	attacker.SetAchievementProp(prop);
+endfunction
+
+function UpdateProp(byRef prop)
+	prop.+xp := 0;
+	prop.+level := 0;
+	prop.+kills := 0;
+	prop.+hits := 0;
+	prop.+damage := 0;
 endfunction
 
 function AchievementCheckLevel(attacker)
