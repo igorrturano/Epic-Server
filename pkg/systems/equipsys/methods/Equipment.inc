@@ -13,7 +13,7 @@ print("INSTALLING: Methods for Item -> Equipment System... OK!");
  * Return value
  *
  */
-exported function getAttrBase(item)
+exported function GetAttrBase(item)
     return item.GetProp("atributos");
 endfunction
 
@@ -28,7 +28,7 @@ endfunction
  * Return value
  *
  */
-exported function getAttrExcp(item) 
+exported function GetAttrExcp(item) 
     return item.GetProp("atributos_excp");
 endfunction
 
@@ -43,7 +43,7 @@ endfunction
  * Return value
  *
  */
-exported function setAttrBase(item, prop) // SETA A PROP DE MODIFICADORES BASE
+exported function SetAttrBase(item, prop) // SETA A PROP DE MODIFICADORES BASE
 	if (item.isA(POLCLASS_WEAPON)) 
 		if (!prop) prop := getWeaponStats(item); endif
 		// var oldProp := item.getAttrBase();
@@ -70,7 +70,7 @@ endfunction
  * Return value
  *
  */
-exported function setAttrExcep(item, prop) // SETA A PROP DE MODIFICADORES EXCEPCIONAL
+exported function SetAttrExcep(item, prop) // SETA A PROP DE MODIFICADORES EXCEPCIONAL
     if (prop) item.SetProp("atributos_excp", prop); endif
 
 	return prop;

@@ -5,6 +5,6 @@ program Install()
 	return 1;
 endprogram
 
-exported function getNPCTemplate(who)
+exported function GetNPCTemplate(who)
 	return GetObjProperty(who, "npctemplate");
 endfunction

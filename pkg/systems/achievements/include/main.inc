@@ -17,14 +17,11 @@ include "include/NPCUtil";
 
 function AchievementAdvance(attacker, defender, combatInfo)
 	var prop := attacker.GetAchievementProp();
-	var npcCategory := defender.getCategory();
-	print("NPC Category: " + npcCategory);
+	var npcCategory := defender.GetCategory();
 
 	if (!npcCategory) // Se não tem categoria, ou é corpo, ou não é um npc válido.
 		npcCategory := NPC_GetNPCConfig(defender.getNPCTemplate()).Category; // Tenta ver se era corpo e tenta buscar pelo template.
-		print("NPC Category2: " + npcCategory);
 		if (!npcCategory) // Se ainda não tem categoria, não é um npc válido.
-			print("Nao e NPC valido!");
 			return;
 		endif
 	endif
