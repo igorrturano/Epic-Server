@@ -53,18 +53,33 @@ program Install()
 endprogram
 ```
 
-Devido a um bug grave no POL, na chamada de vários objetos e syshook.cfg, a estrutura de métodos estão concentrados neste pacote. Para adicionar novos métodos, crie a pasta methods\ dentro do pacote que você está trabalhando, adicione o arquivo methods.inc (não é .src) e dê include no methods.src (deste pacote) chamando o pacote que você está trabalhando.
+Devido a um bug grave no POL, na chamada de vários objetos e syshook.cfg, a estrutura de métodos estão concentrados neste pacote.
 
-Exemplo do objeto Character:
+Para adicionar novos métodos, crie a pasta methods\ dentro do pacote que você está trabalhando, crie um arquivo .inc (não é .src) com o nome do Objeto que os methods serão chamados e adicione um include no methods.src (deste pacote) chamando o pacote que você está trabalhando.
 
+Exemplo para o objeto Character:
 ```
 program Install()
 	print("INSTALLING: Methods for Characters... OK!");
 	return 1;
 endprogram
 
-include ":[PACOTE]:methods/methods";
-include ":[PACOTE]:methods/methods";
+include ":[PACOTE]:methods/Characters";
+include ":[PACOTE2]:methods/Characters";
+include ":[PACOTE3]:methods/Characters";
+```
+<br>
+
+Exemplo para o objeto Item:
+```
+program Install()
+	print("INSTALLING: Methods for Item... OK!");
+	return 1;
+endprogram
+
+include ":[PACOTE]:methods/Item";
+include ":[PACOTE2]:methods/Item";
+include ":[PACOTE3]:methods/Item";
 ```
 
 ### Function:
