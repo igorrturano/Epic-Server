@@ -9,6 +9,8 @@ use cfgfile;
 include ":combat:settings";
 include ":combat:damage";
 include ":charactercreation:resists";
+include ":mastery:main";
+include ":achievements:main";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
@@ -74,6 +76,9 @@ program MainHitScript(params)
 	EpicApplyDamageBase(attacker, defender, weapon, armor, basedamage, dmgType);
 	// Aplica cada dano elemental da arma, caso haja
 	EpicApplyDamageElemental(attacker, defender, weapon, armor, elementalDamages);
+
+	MasteryAdvance(attacker, struct{ hits := 1 });
+	AchievementAdvance(attacker, defender, struct{ hits := 1, damage := basedamage });
 
 	return 1;
 endprogram

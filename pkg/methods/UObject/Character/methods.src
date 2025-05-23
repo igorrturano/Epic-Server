@@ -1,0 +1,93 @@
+use uo;
+use datafile;
+
+include ":tn:cooldown";
+include ":gumps:epicGumps";
+include ":equipsys:utils";
+
+program Install()
+	print("INSTALLING: Methods for Characters... OK!");
+	return 1;
+endprogram
+
+include ":debug:methods/Character";
+include ":mastery:methods/Character";
+include ":achievements:methods/Character";
+
+
+// TODO: Colocar essas funções abaixo nos pacotes delas, no modelo do Documentation (SOCORRO IGOOOOOOOOR)
+exported function isUnderRoof(who)
+    var hasStaticRoof := ListStaticsNearLocationWithFlag( who.x, who.y, LIST_IGNORE_Z, 1, TILEDATA_FLAG_ROOF, who.realm);
+    if (hasStaticRoof != {}) return 1; endif
+
+    var hasItemRoof := ListItemsNearLocationWithFlag( who.x, who.y, LIST_IGNORE_Z, 1, TILEDATA_FLAG_ROOF, who.realm);
+    if (hasItemRoof != {}) return 1; endif
+
+    return 0;
+endfunction
+
+// A função tem alguns problemas de sintaxe e pode ser melhorada:
+exported function IsInTheDungeon(who)
+    // Boas práticas: declarar todas as variáveis no início
+    var who_x := who.x;
+    var who_y := who.y;
+    var who_z := who.z;
+    var who_realm := who.realm;
+    var coords := {who_x, who_y, who_z, who_realm};
+    var df := OpenDataFile(":tn:dungeons");
+    if (!df)
+        return 0;
+    endif
+    
+    foreach dungeon_name in (df.keys())
+        var dungeon_elem := df.FindElement(dungeon_name);
+        if (!dungeon_elem)
+            continue;
+        endif
+        
+        var dungeon_realm := dungeon_elem.GetProp("Realm");
+        
+        // Verificar os três possíveis retângulos (Rect1, Rect2, Rect3)
+        for i := 1 to 3
+            var rect_prop := "Rect" + i;
+            var rect := dungeon_elem.GetProp(rect_prop);
+            
+            // Se não existir esta propriedade de retângulo, continue para o próximo
+            if (!rect)
+                continue;
+            endif
+            
+            var rect_array := SplitWords(rect);
+            
+            // Validação melhorada do tamanho do array
+            if (rect_array.size() < 4)
+                PrintTextAbove(who, "Erro: Dados de retângulo inválidos para " + dungeon_name + " (" + rect_prop + ")");
+                continue;
+            endif
+            
+            // Conversão e validação das coordenadas
+            var x1 := CInt(rect_array[1]);
+            var y1 := CInt(rect_array[2]);
+            var x2 := CInt(rect_array[3]);
+            var y2 := CInt(rect_array[4]);
+            
+            // Cálculo dos limites
+            var min_x := Min(x1, x2);
+            var max_x := Max(x1, x2);
+            var min_y := Min(y1, y2);
+            var max_y := Max(y1, y2);
+            
+            // Verificação da localização
+            if (coords[4] == dungeon_realm)
+                if (coords[1] >= min_x && coords[1] <= max_x && 
+                    coords[2] >= min_y && coords[2] <= max_y)
+                    return dungeon_elem.GetProp("Name");
+                endif
+            endif
+            
+            sleepms(2);
+        endfor
+    endforeach
+    
+    return 0;
+endfunction

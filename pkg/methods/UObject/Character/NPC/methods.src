@@ -1,0 +1,374 @@
+/*
+ABILITY REGISTRY
+To add a new ability:
+1. Create the Can* function in methods.src
+2. Add the ability to GetAvailableCustomAbilities() in epicBoss.inc
+3. Add appropriate properties to the ability dictionary
+
+Current Abilities:
+- CanDoWebWrap
+- canSpitAcid
+- CanTongueGrab
+- canCharge
+- CanAmbush
+- canDoConfusion
+- CanShootWeb
+- CanPoisonBite
+- CanClimbWall
+- CanLayEggSac
+- CanCharm
+- canBite
+- canThrow
+- hasHiveMind
+- hasTunnelTactics
+- hasRage
+Remember to maintain alphabetical order in both the comment block and the dictionary.
+*/
+
+use uo;
+include "include/NPCUtil";
+include ":tn:cooldown";
+include "include/epicConstants";
+include "include/client";
+include ":charactercreation:habilidades";
+
+program Install()
+	print("INSTALLING: Methods for NPCs... OK!");
+	return 1;
+endprogram
+
+exported function GetTemplate(npc)
+    return NPC_ParseTemplateName(npc.npctemplate).template;
+endfunction
+
+exported function GetCategory(npc)
+    return ReadConfigFile(":*:npcdesc")[getTemplate(npc)].Category;
+endfunction
+
+
+// Jogar essas funções abaixo no pacote de NPCs/habilidades/seilá
+exported function HasCustomAbility(who, method_name)
+    var custom_abilities := GetObjProperty(who, "CustomAbilities");
+    if (!custom_abilities)
+        return 0;
+    endif
+    
+    foreach ability in custom_abilities
+        if (ability.method == method_name)
+            return 1;
+        endif
+    endforeach
+    
+    return 0;
+endfunction
+
+exported function canCharge(who)
+    // Don't allow charge if already charging
+    if (GetObjProperty(who, "#chargestart"))
+        return 0;
+    endif
+
+    // Don't allow charge if NPC is on cooldown
+    if (GetCooldown(who, "charge"))
+        return 0; 
+    endif
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "goblinrider") return 1; endif
+    if (template == "ratoide_barbaro") return 1; endif
+    if (template == "bugbear") return 1; endif
+    return HasCustomAbility(who, "canCharge");
+
+endfunction
+
+exported function isMyrkonid(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "homemcogumelo") return 1; endif
+    return 0;
+endfunction
+
+exported function isThief(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var classe := npc_elem.Classe;
+
+    if (classe == LADINO) return 1; endif
+    return 0;
+endfunction
+
+exported function isSage(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var classe := npc_elem.Classe;
+
+    if (classe == SABIO) return 1; endif
+    return 0;
+endfunction
+
+exported function isWarrior(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var classe := npc_elem.Classe;
+
+    if (classe == GUERREIRO) return 1; endif
+    return 0;
+endfunction
+
+exported function isFormian(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template == "formian") return 1; endif
+    if (template == "formian2") return 1; endif
+    return 0;
+endfunction
+
+exported function hasHiveMind(who)
+    if (isFormian(who)) return 1; endif
+    return HasCustomAbility(who, "hasHiveMind");
+endfunction
+
+exported function canSpitAcid(who)
+    if (isFormian(who)) return 1; endif
+    if (isAnkheg(who)) return 1; endif
+    return HasCustomAbility(who, "canSpitAcid");
+endfunction
+
+exported function hasTunnelTactics(who)
+    if (isFormian(who)) return 1; endif
+    if (isAnkheg(who)) return 1; endif
+    if (isUmberHulk(who)) return 1; endif
+    return HasCustomAbility(who, "hasTunnelTactics");
+endfunction
+
+exported function getTier(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+	var tier := npc_elem.Tier;
+
+    return tier;
+endfunction
+
+exported function isAnkheg(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+
+    if (template == "ankheg") return 1; endif
+    return 0;
+endfunction
+
+exported function isUmberHulk(who)
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+
+    if (template == "umberhulk") return 1; endif
+    return 0;
+endfunction
+
+exported function hasRage(who)
+    if (isReptoide(who)) return 1; endif
+    var templates := array{"ratoide_barbaro", "bugbear"};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "hasRage");
+
+endfunction
+
+exported function isLizardMan(who)
+    var templates := array{"lizardman1", "lizardman2", "lizardman3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+
+    return 0;
+endfunction
+
+exported function canThrow(who)
+    var templates := array{"swampmonster", "lizardman2"};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "canThrow");
+endfunction
+
+exported function canBite(who)
+    if (isLizardMan(who)) return 1; endif
+    if (isReptoide(who)) return 1; endif
+    return HasCustomAbility(who, "canBite");
+endfunction
+
+exported function isReptoide(who)
+    var templates := array{"reptoide1", "reptoide2", "reptoide3"};
+
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function CanAmbush(who)
+    var templates := array{"bocudo", "reptoide1", "swampsqualid"};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanAmbush");
+endfunction
+
+exported function CanTongueGrab(who)
+    var templates := array{"", "gianttoad", ""};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanTongueGrab");
+endfunction
+
+exported function isBloodless(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    var category := Lower(npc_elem.Category);
+
+    if (category == "undead") return 1; endif
+
+    return 0;
+endfunction
+
+exported function isMage(who)
+    var npc_elem := NPC_GetNPCConfig(who);
+    
+    // First check if it's a shaman - if so, definitely not a mage
+    if (isShaman(who))
+        return 0;
+    endif
+
+    // If already has SpellSchool defined, use that
+    if (npc_elem.SpellSchool != error)
+        return 1;
+    endif
+
+    // Store the school
+    if(GetObjProperty(who, "SpellSchool"))
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isShaman(who)
+    var templates := array{"ratoide_xama", "vulcanideomage", "varagxama"};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    // TODO:  Buscar se é xamã no cfg ou no EPIC BOSS
+    var habs := GetObjProperty(who, "myhabs");
+    if ("Sede de Sangue" in habs) return 1; endif
+
+    return 0;
+endfunction
+
+exported function canDoConfusion(who)
+    if (isUmberHulk(who)) return 1; endif
+    return HasCustomAbility(who, "canDoConfusion");
+endfunction
+
+exported function CanDoWebWrap(who)
+    var templates := array{"DreadGiantSpider", "HugeRedSpider", "BlackHugeSpider", "Tarantula"};
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanDoWebWrap");
+
+endfunction
+
+exported function CanShootWeb(who)
+    var templates := array{"DreadGiantSpider", "BlackGiantSpider", "BlackHugeSpider", "SkullSpider", "PhaseSpider"};
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanShootWeb");
+
+endfunction
+
+exported function CanPoisonBite(who)
+    var templates := array{"DreadGiantSpider", "spiderling", "HugeRedSpider", "BlackHugeSpider", "SkullSpider", "GiantSpider"};
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanPoisonBite");
+
+endfunction
+
+exported function CanClimbWall(who)
+    var templates := array{"DreadGiantSpider", "SkullSpider"};
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanClimbWall");
+endfunction
+
+exported function CanLayEggSac(who)
+    var templates := array{"DreadGiantSpider", "BlackGiantSpider", "BlackHugeSpider", "Tarantula"};
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanLayEggSac");
+endfunction
+
+exported function isSpider(who)
+    var templates := array{"DreadGiantSpider", "BlackGiantSpider", "HugeRedSpider", "BlackHugeSpider", "SkullSpider", "Tarantula", "GiantSpider"};
+
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    
+    return 0;
+endfunction
+
+exported function CanCharm(who)
+    var templates := array{"SuccubusVermelha"};
+    var template := (NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    return HasCustomAbility(who, "CanCharm");
+endfunction
+
+exported function isHumanoidBrain(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+    var brain_type := npc_elem.BrainType;
+
+    if (brain_type == "humanoid")
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isAnimalBrain(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+    var brain_type := npc_elem.BrainType;
+    
+    if (brain_type == "animal")
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isMonsterBrain(who)
+	var npc_elem := NPC_GetNPCConfig(who);
+    var brain_type := npc_elem.BrainType;
+    
+    if (brain_type == "monster")
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isShooter(who)
+    var fire_weapons := array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+
+    var equipped_weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+    if (!equipped_weapon)
+        equipped_weapon := GetEquipmentByLayer(who, LAYER_HAND2);
+    endif
+
+    if (equipped_weapon.objtype in fire_weapons)
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+exported function isPriest(who)
+    var templates := array{};
+    var template := Lower(NPC_ParseTemplateName(who.npctemplate).template);
+    if (template in templates) return 1; endif
+    // TODO:  Buscar se é priest no cfg ou no EPIC BOSS
+    var habs := GetObjProperty(who, "myhabs");
+    if ("Aura Mortis" in habs) return 1; endif
+    if ("Dominatio Animae" in habs) return 1; endif
+    if ("Visao verdadeira" in habs) return 1; endif
+    if ("Campeao das Montanhas" in habs) return 1; endif
+
+    return 0;
+endfunction
