@@ -1,7 +1,6 @@
 use uo;
 use datafile;
 
-include ":merchants:include/cambio";
 include ":tn:cooldown";
 include ":gumps:epicGumps";
 include ":equipsys:utils";
@@ -27,28 +26,7 @@ exported function isUnderRoof(who)
     return 0;
 endfunction
 
-exported function getRace(who)
-    return GetObjProperty(who, "chardata").raca;
-endfunction
-
-exported function spendgold( who , quantidade)
-	return EfetuaDebito(who, quantidade);
-endfunction
-
-exported function getClass(who)
-    return GetObjProperty(who, "chardata").classe;
-endfunction
-
-exported function getCulture(who)
-    return GetObjProperty(who, "chardata").culture;
-endfunction
-
-exported function getReligion(who)
-    return GetObjProperty(who, "chardata").religion;
-endfunction
-
 // A função tem alguns problemas de sintaxe e pode ser melhorada:
-
 exported function IsInTheDungeon(who)
     // Boas práticas: declarar todas as variáveis no início
     var who_x := who.x;
