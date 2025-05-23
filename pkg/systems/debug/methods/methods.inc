@@ -1,17 +1,12 @@
 include ":debugsystem:debugsystem";
 
-program Install()
-	print("INSTALLING: Methods for DebugSystem... OK!");
-	return 1;
-endprogram
+print("INSTALLING: Methods for DebugSystem... OK!");
 
 exported function getDebugProp(who, debugName)
-	print("getDebugProp");
     return who.GetProp(PROPTAG + debugName);
 endfunction
 
 exported function setDebugProp(who, debugName)
-    print("setDebugProp");
 	var propName := PROPTAG + debugName;
     var prop := who.GetProp(propName);
 
