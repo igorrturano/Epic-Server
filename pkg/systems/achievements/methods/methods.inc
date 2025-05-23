@@ -1,2 +1,2 @@
-print("INSTALLING: Methods for AchievementSystem... OK!");
+print("INSTALLING: Methods for Achievement System... OK!");
 

@@ -41,9 +41,9 @@ include "include/epicMageryUtils";
 include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":debugsystem:debugsystem";
+include ":debug:main";
 include ":fls_magery:spellSounds";
-include ":masterysystem:utils";
+include ":mastery:main";
 
 var item_cfg	:= ReadConfigFile(":combat:itemdesc");
 var strat_cfg	:= ReadConfigFile("combatlevel");

@@ -11,7 +11,7 @@ include "include/utils";
 include ":tn:tngumps";
 include ":charactercreation:habilidades";
 include ":gumps:epicGumps";
-include ":masterysystem:utils";
+include ":mastery:main";
 
 function UpdateXPBar(who)
    if (!GetObjProperty(who, "chardata")) 
