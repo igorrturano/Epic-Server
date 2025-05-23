@@ -62,8 +62,7 @@ function taming(who)
 		return 0;
 	endif
 
-	var npc_elem := NPC_GetNPCConfig(targ);
-	var tame_diff := npc_elem.TameDifficulty;
+	var tame_diff := targ.getTameDifficulty();
 
 	if ( !tame_diff )
 		SendSysMessageEx(who, "Voce nao pode adestrar "+targ.name+".", SSM_FAIL);
