@@ -10,16 +10,38 @@ include ":datafile:datafile";
 include "include/say";
 include ":faccao:include/shared_functions";
 
+use uo;
+use os;
+use cfgfile;
+use datafile;
+use guilds;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":datafile:datafile";
+include "include/say";
+include ":faccao:include/shared_functions";
+include ":faccao:include/permissions";
+
 program use_donation_chest(who, item)
     if (!who || !item)
         SendSysMessage(who, "Erro: who ou item é nulo");
         return 0;
     endif
 
-    if (!CanOpenChest(who, item))
+    // INÍCIO DEPURAÇÃO
+    LogDebug("bau", who.name + " está tentando abrir o baú " + item.desc);
+    
+    // MODIFICADO: Verificação de permissão usando CanAccessChest (que por sua vez chama a função unificada)
+    if (!CanAccessChest(who, item))
+        // MODIFICADO: Usar função unificada de log
+        LogPermissionCheck(who, item, "ABERTURA", 0);
         SendSysMessage(who, "Você não tem permissão para abrir o baú");
         return 0;
     endif
+    
+    // Registrar acesso bem-sucedido
+    LogPermissionCheck(who, item, "ABERTURA", 1);
 
     // Verificar o tipo de interface a ser aberta baseado nas propriedades
     var interface_type := GetObjProperty(item, "interface_type");
@@ -68,13 +90,13 @@ program use_donation_chest(who, item)
 endprogram
 
 function OpenChestAndGump(who, item)
-    var message := GetOpeningMessage(who);
+    var message := GetOpeningMessage(who, item);
     SendSysMessage(who, message);
     PrintText(who, "*Abriu "+item.desc+"*");
     SendViewContainer(who, item);
 endfunction
 
-function GetOpeningMessage(who)
+function GetOpeningMessage(who, chest := 0)
     var chardata := GetObjProperty(who, "chardata");
     if (!chardata)
         return "Você tem permissão para abrir o baú.";
@@ -83,19 +105,41 @@ function GetOpeningMessage(who)
     if (who.cmdlevel >= 3)
         return "Como GM, você tem acesso total ao baú.";
     endif
+    
+    // Verificar se o baú foi passado e tem facção
+    var chest_faction := "";
+    if (chest)
+        chest_faction := GetFactionOfChest(chest);
+    endif
+    
+    var player_faction := GetPlayerFaction(who);
+    
+    // Se tem título de nobreza mas não é da mesma facção (apenas se ambas as facções forem conhecidas)
+    if (chest_faction && player_faction && player_faction != chest_faction)
+        if (chardata && chardata.current_nobility_title && chardata.current_nobility_title in {"Rei", "Rainha"})
+            return "Vossa Majestade, como governante do Reino, tem acesso ao tesouro de " + chest_faction + ".";
+        elseif (chardata && chardata.current_professional_position == "Imperador")
+            return "Vossa Majestade Imperial, o tesouro de " + chest_faction + " está à sua disposição.";
+        elseif (chardata && chardata.current_professional_position == "Mão do Rei")
+            return "Mão do Rei, por sua autoridade sobre as facções, você tem acesso a este tesouro.";
+        endif
+    endif
 
-    case (chardata.current_nobility_title)
-        "Rei":
-            return "Meu Rei, o tesouro é de Vossa Majestade.";
-        "Rainha":
-            return "Minha Rainha, o tesouro é de Vossa Majestade.";
-        default:
-            if (chardata.current_professional_position == "Mão do Rei")
-                return " Mão do Rei, você tem acesso ao baú real.";
-            elseif (chardata.current_professional_position == "Imperador")
-                return "Vossa Majestade Imperial, o tesouro está à sua disposição.";
-            endif
-    endcase
+    // Mensagens padrão para membros da facção
+    if (chardata && chardata.current_nobility_title)
+        case (chardata.current_nobility_title)
+            "Rei": return "Meu Rei, o tesouro é de Vossa Majestade.";
+            "Rainha": return "Minha Rainha, o tesouro é de Vossa Majestade.";
+        endcase
+    endif
+
+    if (chardata && chardata.current_professional_position)
+        if (chardata.current_professional_position == "Mão do Rei")
+            return "Mão do Rei, você tem acesso ao baú.";
+        elseif (chardata.current_professional_position == "Imperador")
+            return "Vossa Majestade Imperial, o tesouro está à sua disposição.";
+        endif
+    endif
 
     return "Você tem permissão para abrir o baú.";
 endfunction
@@ -104,6 +148,7 @@ function ShowDoacoesGump(who, item)
     var gump := CreateDonationReportGump(item);
     GFSendGump(who, gump);
 endfunction
+
 
 function CreateDonationReportGump(container)
     var gump := GFCreateGump();
@@ -176,41 +221,3 @@ function ShowSelectionGump(who)
         return input[0];
     endif
 endfunction
-
-function CanOpenChest(who, item)
-    // GMs sempre podem abrir
-    if (who.cmdlevel >= 3)
-        return 1;
-    endif
-
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
-        return 0;
-    endif
-
-    // Verificar títulos de nobreza
-    if (chardata.current_nobility_title in {"Rei", "Rainha"} ||
-        chardata.current_professional_position in {"Mão do Rei", "Imperador"})
-        return 1;
-    endif
-    
-    // Verificar se é membro da facção que controla o baú
-    var bau_faction := GetFactionOfChest(item);
-    if (bau_faction && bau_faction != "Reino")
-        var player_guild := who.guild;
-        if (player_guild && player_guild.GetProp("name") == bau_faction)
-            // Verificar se o jogador tem um cargo na facção que permite acesso
-            var player_rank := GetObjProperty(who, "guild_rank");
-            if (player_rank in {"Líder", "Capitão", "Tenente"})
-                return 1;
-            endif
-        endif
-    endif
-
-    return 0;
-endfunction
-
-// Função movida para shared_functions.inc
-
-// Função movida para shared_functions.inc
-

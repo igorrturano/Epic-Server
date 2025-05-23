@@ -1,0 +1,150 @@
+use uo;
+use os;
+use guilds;
+
+include ":faccao:faccao_constants";
+include ":gumps:yesNo";  // Adicionar esta linha para a função YesNo
+
+program fix_guild_leadership(who, text)
+    var player;
+    
+    if (text == "")
+        SendSysMessage(who, "Selecione o jogador para verificar/corrigir liderança:");
+        player := Target(who);
+        
+        if (!player || !player.IsA(POLCLASS_MOBILE) || !player.acctname)
+            return SendSysMessage(who, "Alvo inválido.");
+        endif
+    else
+        // Manter suporte para serial como alternativa
+        var serial := CInt(text);
+        if (serial)
+            player := SystemFindObjectBySerial(serial);
+            if (!player)
+                return SendSysMessage(who, "Jogador com serial " + serial + " não encontrado.");
+            endif
+        else
+            // Se não for um número, pode ser um nome
+            foreach char in EnumerateOnlineCharacters()
+                if (Lower(char.name) == Lower(text))
+                    player := char;
+                    break;
+                endif
+                sleepms(2);
+            endforeach
+            
+            if (!player)
+                SendSysMessage(who, "Jogador '" + text + "' não encontrado. Selecione o alvo:");
+                player := Target(who);
+                if (!player || !player.IsA(POLCLASS_MOBILE) || !player.acctname)
+                    return SendSysMessage(who, "Alvo inválido.");
+                endif
+            endif
+        endif
+    endif
+    
+    // Removi a seção duplicada onde player é redefinido
+    
+    // Verificar informações da guilda
+    var guild := player.guild;
+    if (!guild)
+        SendSysMessage(who, "Este jogador não pertence a nenhuma guilda.");
+        return;
+    endif
+    
+    // Exibir informações atuais
+    SendSysMessage(who, "-- Informações atuais do jogador --");
+    SendSysMessage(who, "Nome: " + player.name + ", Serial: " + player.serial);
+    SendSysMessage(who, "Guilda: " + guild.guildname + ", ID: " + guild.guildid);
+    
+    var guild_leader := guild.leader;
+    SendSysMessage(who, "Lider da guilda (serial): " + guild_leader);
+    
+    var leadership_status := "";
+    if (guild_leader == player.serial)
+        leadership_status := "É o Lider da guilda";
+    else
+        leadership_status := "NÃO é o Lider da guilda";
+    endif
+    SendSysMessage(who, "Status de liderança: " + leadership_status);
+    
+    var player_rank := GetObjProperty(player, "guild_rank");
+    SendSysMessage(who, "Cargo na guilda (via propriedade): " + player_rank);
+    
+    // Verificar cargo nos registros oficiais da guilda
+    var official_rank := "Não encontrado";
+    foreach member in (guild.members)
+        if (member.serial == player.serial)
+            official_rank := member.guild_title;
+            break;
+        endif
+        sleepms(1);
+    endforeach
+    SendSysMessage(who, "Cargo na guilda (oficial): " + official_rank);
+    
+    // Verificar propriedade faction
+    var faction_prop := GetObjProperty(player, "faction");
+    SendSysMessage(who, "Propriedade 'faction': " + faction_prop);
+    
+    // Obter o nome correto da facção
+    var faction_name := guild.GetProp(FACTION_PROP_NAME);
+    if (!faction_name)
+        faction_name := guild.GetProp("name");
+    endif
+    if (!faction_name)
+        faction_name := guild.guildname;
+    endif
+    SendSysMessage(who, "Nome correto da facção: " + faction_name);
+    
+    // === Oferecer correções ===
+    
+    // 1. Corrigir a propriedade de facção
+    if (faction_prop != faction_name)
+        if (YesNo(who, "Corrigir propriedade 'faction' para '" + faction_name + "'?"))
+            SetObjProperty(player, "faction", faction_name);
+            SendSysMessage(who, "Propriedade 'faction' atualizada para: " + faction_name);
+        endif
+    endif
+    
+    // 2. Corrigir o cargo
+    var cargo_correto := official_rank;
+    if (!cargo_correto || cargo_correto == "Não encontrado")
+        if (guild_leader == player.serial)
+            cargo_correto := "Lider";
+        else
+            SendSysMessage(who, "Escolha o cargo correto:");
+            SendSysMessage(who, "1 - Lider");
+            SendSysMessage(who, "2 - Capitao");
+            SendSysMessage(who, "3 - Tenente");
+            SendSysMessage(who, "4 - Membro");
+            
+            var choice := CInt(RequestInput(who, who.backpack, ""));
+            case (choice)
+                1: cargo_correto := "Lider"; break;
+                2: cargo_correto := "Capitao"; break;
+                3: cargo_correto := "Tenente"; break;
+                4: cargo_correto := "Membro"; break;
+                default: cargo_correto := "Membro";
+            endcase
+        endif
+    endif
+    
+    if (YesNo(who, "Definir cargo como '" + cargo_correto + "'?"))
+        SetObjProperty(player, "guild_rank", cargo_correto);
+        SendSysMessage(who, "Cargo atualizado para: " + cargo_correto);
+    endif
+    
+    // 3. Forçar acesso temporário (para teste)
+    if (YesNo(who, "Conceder acesso temporário para todos os baús? (debug)"))
+        SetObjProperty(player, "AllowAllChestAccess", 1);
+        SendSysMessage(who, "Acesso temporário concedido. Use .remtempaccess para remover.");
+    endif
+    
+    // 4. Corrigir liderança da guilda
+    if (guild_leader != player.serial && YesNo(who, "Definir " + player.name + " como Lider da guilda?"))
+        guild.setleader(player);
+        SendSysMessage(who, player.name + " agora é o Lider da guilda.");
+    endif
+    
+    return 1;
+endprogram

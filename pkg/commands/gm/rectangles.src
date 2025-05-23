@@ -7,6 +7,9 @@ include ":gumps:requestGump";
 include ":gumps:yesNo";
 include ":gumps:epicGumps";
 include ":gumps:/include/epicGumps";
+include ":faccao:faccao_constants";
+include ":faccao:include/shared_functions";
+include ":faccao:include/territory_management";
 
 program rectangle_creator(who, params)
     if (!who.cmdlevel)
@@ -14,10 +17,32 @@ program rectangle_creator(who, params)
         return;
     endif
     
-    // Abrir ou criar datafile para armazenar os retângulos
-    var rect_df := OpenDataFile(":architect:areas");
+
+    
+    // Abrir datafile apenas uma vez
+    var rect_df := SafeOpenDataFile(":architect:areas");
+// Verificar de migração: converter propriedades "Faction" para "faction"
+if (rect_df)
+    foreach elem_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, elem_name);
+        if (!elem)
+            continue; // Elemento não encontrado, já logado pelo SafeFindElement
+        endif
+        
+        var old_faction := GetElementProp(elem, "Faction", "");
+        if (old_faction)
+            // Usar o helper para definir a nova propriedade
+            SetElementProp(elem, TERRITORY_FACTION_PROP, old_faction);
+            
+            // Ainda precisamos usar EraseProp diretamente pois não há helper para isso
+            elem.EraseProp("Faction");
+        endif
+    endforeach
+endif
+
+    // Depois reutilizar a mesma variável sem o "var"
     if (rect_df == error)
-        rect_df := CreateDataFile(":architect:areas");
+        rect_df := SafeOpenDataFile(":architect:areas", 1); // 1 = criar se não existir
         if (rect_df == error)
             SendSysMessage(who, "Erro ao criar arquivo de dados!");
             return;
@@ -86,7 +111,7 @@ program rectangle_creator(who, params)
     endif
     
     // Verificar se o nome já existe e confirmar sobrescrita
-    var elem := rect_df.FindElement(rect_name);
+    var elem := SafeFindElement(rect_df, rect_name);
     if (elem)
         var confirm := YesNo(who, $"Já existe um retângulo com o nome '{rect_name}'. Sobrescrever?");
         if (!confirm)
@@ -97,12 +122,17 @@ program rectangle_creator(who, params)
         elem := rect_df.CreateElement(rect_name);
     endif
     
-    // Salvar as informações do retângulo
-    elem.SetProp("Name", rect_name);
-    elem.SetProp("Rect", rect_str);
-    elem.SetProp("Realm", realm);
-    elem.SetProp("Faction", "Selvagem"); // Novo campo para indicar qual facção controla o território
+    // Gerar e salvar um ID único para o território
+var territory_id := CreateTerritoryID();
+SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
 
+    // Salvar as informações do retângulo
+    SetElementProp(elem, "Name", rect_name);
+   SetElementProp(elem, "Rect", rect_str);
+    SetElementProp(elem, "Realm", realm);
+    SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION); // Usar constante para facção padrão
+
+    
     // Configurar recursos e intervalos para o território
     SetupResourcesForTerritory(who, elem);
     
@@ -114,204 +144,481 @@ program rectangle_creator(who, params)
     endif
 endprogram
 
-// Nova função para configurar recursos para o território
 function SetupResourcesForTerritory(who, elem)
-    // Lista de conjuntos de recursos predefinidos
+    // Lista de recursos disponíveis (sem repetições)
     var resource_sets := array{
-        "IronOre, couroespesso, cogumelo",
-        "madeirapinheiro, glanduladearanha, caveiradeliche",
-        "madeirapinheiro, carvao, pelebranca",
-        "madeirateixo, prataIngot, escamasazuis",
-        "couropolar, madeirateixo, ossogigante",
-        "IronOre, ossodemoniaco, courodraconiano",
-        "acoIngot, vidro, carvao",
-        "couropolar, osso, couroescamoso"
+        "IronOre",
+        "couroespesso",
+        "cogumelo",
+        "madeirapinheiro",
+        "carvao",
+        "pelebranca",
+        "madeirateixo",
+        "prataIngot",
+        "escamasazuis",
+        "couropolar",
+        "ossogigante",
+        "ossodemoniaco",
+        "courodraconiano",
+        "acoIngot",
+        "vidro",
+        "osso",
+        "couroescamoso"
     };
     
-    var gump := GFCreateGump();
-    GFResizePic(gump, 0, 0, 9200, 500, 450);
-    GFResizePic(gump, 15, 15, 9350, 470, 420);
+    // Remover duplicatas da lista de recursos
+    var unique_resources := array{};
+    var resource_dict := dictionary{};
     
-    GFTextMid(gump, 250, 25, 470, 2100, "Configurar Recursos para: " + elem.GetProp("Name"));
+    foreach resource in resource_sets
+        // Converter para lowercase para comparação insensível a caso
+        var lower_res := Lower(resource);
+        if (!resource_dict.exists(lower_res))
+            resource_dict[lower_res] := 1;
+            unique_resources.append(resource);
+        endif
+    endforeach
     
-    var y := 60;
+    // Usar os recursos únicos daqui em diante
+    resource_sets := unique_resources;
     
-    // Alterar para intervalo em minutos em vez de horas
-    GFTextLine(gump, 30, y, 2100, "Intervalo de Geração (minutos):");
-    GFResizePic(gump, 230, y, 9350, 60, 25);
-    GFTextEntry(gump, 235, y, 50, 25, 1153, "60", 10); // Default: 60 minutos
-    y += 40;
+    // Recuperar valores atuais se existirem, usando os helpers para simplificar
+    var current_interval := GetElementProp(elem, "ResourceInterval", 1);
+    var current_amount := GetElementProp(elem, "ResourceAmount", 5);
+    var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
     
-    // Quantidade de recursos
-    GFTextLine(gump, 30, y, 2100, "Quantidade por Geração:");
-    GFResizePic(gump, 230, y, 9350, 60, 25);
-    GFTextEntry(gump, 235, y, 50, 25, 1153, "5", 20); // Default: 5 unidades
-    y += 40;
-    
-    // Instrução sobre limite de 3 recursos
-    GFTextLine(gump, 30, y, 38, "Selecione até 3 recursos para o território:");
-    y += 25;
-    
-    // Lista para armazenar as caixas de seleção
-    var checkboxes := array{};
-    
-    // Conjuntos de recursos predefinidos - com checkboxes individuais por recurso
-    for i := 1 to resource_sets.size()
-        var resources := SplitWords(resource_sets[i]);
+    // Processar recursos atuais, garantindo que não haja entradas vazias e limitando a 3
+    var current_resources := array{};
+    var resource_string := GetElementProp(elem, "Resources", "");
+
+    if (resource_string)
+        var raw_resources := SplitWords(resource_string, ",");
         
-        for j := 1 to resources.size()
-            var resource := resources[j];
-            // Verificar se o recurso já está na lista para evitar duplicatas
-            var is_duplicate := 0;
+        var count := 0;
+        foreach res in raw_resources
+            // Limpar espaços extras
+            res := TrimString(res);
+            
+            // Adicionar apenas recursos não vazios
+            if (res != "" && count < 3)
+                current_resources.append(res);
+                count += 1;
+            endif
+            
+            if (count >= 3)
+                break;
+            endif
+        endforeach
+    endif
+    
+    // Início do processo de seleção interativa
+    var selected_resources := array{};
+    
+    // Inicializar com recursos atuais, se houver
+    foreach res in current_resources
+        selected_resources.append(res);
+    endforeach
+    
+    var done := 0;
+    while (!done)
+        // Criar gump com as opções atuais
+        var gump_data := CreateResourceGumpForTerritory(elem, resource_sets, selected_resources, current_interval, current_amount);
+        var gump := gump_data.gump;
+        var checkboxes := gump_data.checkboxes;
+        
+        var input := GFSendGump(who, gump);
+        var button := input[0];
+        
+        // Se cancelou, encerrar sem salvar
+        if (button == 0)
+            return 0;
+        endif
+        
+        if (button == 100)
+            // Recuperar valores dos campos
+            var interval := CInt(GFExtractData(input, 10));
+            var amount := CInt(GFExtractData(input, 20));
+            
+            // Validar entradas
+            if (interval < 1)
+                interval := 1;
+            endif
+            
+            if (amount < 1)
+                amount := 1;
+            endif
+            
+            // Processar recursos selecionados e atualizar interface se necessário
+            var new_selections := array{};
+            
             foreach checkbox in checkboxes
-                if (checkbox.resource == resource)
-                    is_duplicate := 1;
-                    break;
+                if (input[checkbox.id])
+                    new_selections.append(checkbox.resource);
                 endif
             endforeach
             
-            if (!is_duplicate)
-                checkboxes.append(struct{
-                    "resource" := resource,
-                    "y" := y,
-                    "id" := 300 + checkboxes.size()
-                });
+            // Se mais de 3 seleções, mostrar mensagem e reabrir
+            if (new_selections.size() > 3)
+                SendSysMessage(who, "Você só pode selecionar até 3 recursos! Por favor, selecione novamente.");
+                // Manter as 3 primeiras seleções
+                selected_resources := array{};
+                for i := 1 to 3
+                    if (i <= new_selections.size())
+                        selected_resources.append(new_selections[i]);
+                    endif
+                endfor
+            else
+                // Se 3 ou menos, salvar e encerrar
+                // Converter lista de recursos em string
+                var resources_str := "";
+                for i := 1 to new_selections.size()
+                    if (i > 1)
+                        resources_str += ", ";
+                    endif
+                    resources_str += new_selections[i];
+                endfor
                 
-                GFCheckBox(gump, 30, y, 9792, 9793, 0, checkboxes[checkboxes.size()].id);
-                GFTextLine(gump, 50, y, 1153, resource);
-                y += 25;
-                
-                // Limitar número de recursos exibidos para não sobrecarregar o gump
-                if (checkboxes.size() >= 15)
-                    break;
+               // Salvar no elemento
+SetElementProp(elem, "ResourceInterval", interval);
+SetElementProp(elem, "ResourceAmount", amount);
+SetElementProp(elem, "Resources", resources_str);
+
+// Configurar próxima geração
+var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+SetElementProp(elem, "NextResourceTime", next_time);
+
+// Notificar o ResourceController sobre a atualização
+var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+var territory_name := GetElementProp(elem, "Name", "");
+
+// Log ANTES de tentar obter o PID
+LogDebug("EventoTerritorio", "Tentando obter PID para notificar sobre atualização de recursos do território " + territory_name + " (" + territory_id + ")");
+var controller_pid_prop := GetGlobalProperty("ResourceControllerPID");
+
+if (controller_pid_prop)
+    LogDebug("EventoTerritorio", "PID encontrado na GlobalProperty: " + controller_pid_prop + " (Tipo: " + TypeOf(controller_pid_prop) + ")");
+    var controller_pid := CInt(controller_pid_prop);
+
+    // Log ANTES de GetProcess
+    LogDebug("EventoTerritorio", "Tentando GetProcess(" + controller_pid + ")...");
+    var process := GetProcess(controller_pid);
+
+    if (process)
+        LogInfo("EventoTerritorio", "Processo encontrado! Enviando TerritoryChange (resources_updated) para PID " + controller_pid);
+        var ev := struct{
+            "type" := "TerritoryChange",
+            "territory_id" := territory_id ? territory_id : territory_name, // Usar ID ou nome
+            "change_type" := "resources_updated",
+            "change_data" := struct{
+                "resources" := resources_str,
+                "interval" := interval,
+                "amount" := amount,
+                "next_time" := next_time
+            },
+            "timestamp" := polcore().systime
+        };
+        var send_result := process.SendEvent(ev);
+        if (send_result == error)
+            LogError("EventoTerritorio", "Falha ao ENVIAR evento para PID " + controller_pid + ": " + send_result.errortext);
+        else
+            LogInfo("EventoTerritorio", "Evento enviado com sucesso para PID " + controller_pid + ".");
+        endif
+    else
+        LogError("EventoTerritorio", "FALHA CRÍTICA: GetProcess(" + controller_pid + ") falhou ao encontrar o processo do ResourceController.");
+        // Opcional: Listar processos ativos para diagnóstico
+        LogError("EventoTerritorio", "Tentando listar alguns processos ativos para diagnóstico...");
+        var found_processes := 0;
+        foreach process_id in (GetGlobalProperty("ActiveProcesses"))
+            if (found_processes < 5) // Limitar a 5 processos para não sobrecarregar
+                var proc := GetProcess(process_id);
+                if (proc)
+                    LogError("EventoTerritorio", "Processo ativo: PID=" + process_id + ", Nome=" + proc.name);
+                    found_processes += 1;
                 endif
             endif
-        endfor
+            sleepms(1);
+        endforeach
+    endif
+else
+    LogWarning("EventoTerritorio", "PID do ResourceController NÃO encontrado na GlobalProperty 'ResourceControllerPID'");
+endif
+
+// Usar TM_UpdateTerritoryResources DEPOIS de ter o territory_id e new_selections definidos
+if (territory_id)
+    TM_UpdateTerritoryResources(territory_id, new_selections, interval, amount);
+endif
+
+SendSysMessage(who, "Recursos configurados: " + resources_str);
+SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades");
+
+done := 1;
+            endif
+        endif
+    endwhile
+    
+    return 1;
+endfunction
+
+// Função separada para criar o gump de recursos
+function CreateResourceGumpForTerritory(elem, resource_sets, selected_checkboxes, current_interval, current_amount)
+    // Dimensões e configurações do gump
+    var width := 500;
+    var height := 470;
+    var title := "Configurar Recursos para: " + GetElementProp(elem, "Name", "");
+
+    
+    // Criar gump usando o estilo padronizado
+    var gump := GFECreateGump(title, width, height, array{BORDER_GOLDEN});
+    
+    // Definir posição inicial
+    var y := 70;
+    var x := 30;
+    
+    // Intervalo de geração
+    GFTextLine(gump, x, y, 2100, "Intervalo de Geração (minutos):");
+    GFResizePic(gump, x + 230, y-5, 9350, 60, 30);
+    GFTextEntry(gump, x + 235, y-3, 50, 25, 1153, current_interval, 10);
+    y += 35;
+    
+    // Quantidade por geração
+    GFTextLine(gump, x, y, 2100, "Quantidade por Geração:");
+    GFResizePic(gump, x + 230, y-5, 9350, 60, 30);
+    GFTextEntry(gump, x + 235, y-3, 50, 25, 1153, current_amount, 20);
+    y += 35;
+    
+    // Título da seção de recursos - destaque para limite de 3
+    GFTextLine(gump, x, y, 38, "Selecione até 3 recursos para o território:");
+    y += 25;
+    
+    // Array para armazenar IDs dos checkboxes
+    var checkboxes := array{};
+    
+    // Contador de recursos por coluna
+    var items_per_column := 12;
+    var current_column := 0;
+    var current_item := 0;
+    var base_y := y;
+    
+    // Adicionar recursos com checkboxes
+    foreach resource in resource_sets
+        // Verificar se o recurso está entre os selecionados
+        var is_selected := 0;
+        foreach selection in selected_checkboxes
+            if (Lower(selection) == Lower(resource))
+                is_selected := 1;
+                break;
+            endif
+        endforeach
         
-        if (checkboxes.size() >= 15)
+        // Calcular posição y baseada no item atual
+        var pos_y := base_y + (current_item % items_per_column) * 20;
+        
+        // Calcular posição x baseada na coluna atual
+        var pos_x := x + (current_column * 200);
+        
+        // ID do checkbox (300 + índice)
+        var checkbox_id := 300 + checkboxes.size() + 1;
+        
+        // Adicionar checkbox
+        GFCheckBox(gump, pos_x, pos_y, 9792, 9793, is_selected, checkbox_id);
+        
+        // Destacar os recursos selecionados com uma cor diferente
+        var text_color := 1153; // Padrão
+        if (is_selected)
+            text_color := 63; // Verde para recursos selecionados
+        endif
+        GFTextLine(gump, pos_x + 20, pos_y, text_color, resource);
+        
+        // Armazenar informações sobre o checkbox
+        checkboxes.append(struct{
+            "id" := checkbox_id,
+            "resource" := resource
+        });
+        
+        // Incrementar contadores
+        current_item += 1;
+        if (current_item % items_per_column == 0)
+            current_column += 1;
+        endif
+    endforeach
+    
+    // Posição y para os botões (abaixo de todas as colunas)
+    y := base_y + ((items_per_column - 1) * 20) + 40;
+    
+    // Adicionar texto indicando quantos recursos selecionados
+    var selection_count := selected_checkboxes.size();
+    var selection_text := selection_count + "/3 recursos selecionados";
+    GFTextLine(gump, width/2 - 80, y - 20, selection_count == 3 ? 63 : 38, selection_text);
+    
+    // Botões
+    GFAddButton(gump, width/2 - 100, y, 2130, 2129, GF_CLOSE_BTN, 100);
+    GFAddButton(gump, width/2 + 20, y, 0xF1, 0xF3, GF_CLOSE_BTN, 0);
+    
+    return struct{
+        "gump" := gump,
+        "checkboxes" := checkboxes
+    };
+endfunction
+
+function ShowRectangles(who, rect_df)
+    var width := 350;
+    var height := 480;
+    
+    // Cria um gump padronizado usando a função GFECreateGump
+    var gump := GFECreateGump("Gerenciador de Territórios", width, height, array{BORDER_GOLDEN});
+    
+    // Ajusta ponto inicial baseado na estrutura padrão do GFECreateGump
+    var y := 70; // Posição abaixo do título
+    var x := 30; // Margem interna
+    
+    // MODIFICAÇÃO: Posições fixas para "Territórios Registrados" e "Guilda"
+    // Texto "Territórios Registrados" na posição x = 30
+    GFTextLine(gump, 30, y, 53, "Territórios Registrados");
+    
+    // Texto "Guilda" na posição x = 280
+    GFTextLine(gump, 280, y, 53, "Guilda");
+    
+    y += 25;
+    
+    var i := 1;
+    
+    // Cria uma tabela simples de territórios
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        
+        // Tratamento seguro para obter a facção
+        var faction := "";
+        var faction_property := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+        
+        if (faction_property && faction_property != error)
+            // Verificar se não é um array ou struct
+            if (TypeOf(faction_property) == "String")
+                faction := faction_property;
+            else
+                // Tentar usar a propriedade legada
+                faction := GetElementProp(elem, "Faction", "");
+                if (!faction || faction == error)
+                    faction := DEFAULT_FACTION;
+                else
+                    // Atualizar para o formato padronizado
+                    SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
+                endif
+            endif
+        else
+            // Tentar usar a propriedade legada
+            faction := GetElementProp(elem, "Faction", "");
+            if (!faction || faction == error)
+                faction := DEFAULT_FACTION;
+            else
+                // Atualizar para o formato padronizado
+                SetElementProp(elem, TERRITORY_FACTION_PROP, faction);
+            endif
+        endif
+        
+        // Define a cor baseada na facção - territórios selvagens em vermelho
+        var color := 1153; // Padrão - azul claro
+        if (faction == DEFAULT_FACTION)
+            color := 38; // Vermelho
+        endif
+        
+        // Botão e nome do território
+        GFAddButton(gump, x, y+2, 2117, 2118, GF_CLOSE_BTN, 400+i);
+        GFTextLine(gump, x+25, y, color, rect_name);
+        
+        // Exibe a facção controladora à direita, alinhada com "Guilda"
+        GFTextLine(gump, 280, y, color, faction);
+        
+        y += 20;
+        i += 1;
+        
+        // Evita que o gump fique muito grande - limita a 18 entradas por página
+        if (i > 18)
+            GFAddButton(gump, width/2, height-40, 2706, 2707, GF_CLOSE_BTN, 999);
+            GFTextLine(gump, width/2+20, height-40, 1153, "Mais...");
             break;
         endif
-    endfor
+    endforeach
     
-    y += 10;
-    
-    // Botões de salvar e cancelar
-    GFAddButton(gump, 150, 400, 2128, 2129, 1, 100); // Salvar
-    GFTextLine(gump, 185, 400, 2100, "Salvar Configurações");
-    
-    GFAddButton(gump, 330, 400, 2119, 2120, 1, 0); // Cancelar
-    GFTextLine(gump, 365, 400, 2100, "Cancelar");
+    // Adiciona botão de criação para GMs - modificado para executar .rectangles 
+    if (who.cmdlevel >= 1)
+        GFAddButton(gump, width/2-70, height-40, 2361, 2361, GF_CLOSE_BTN, 300);
+        GFTextLine(gump, width/2-50, height-44, 63, "Criar Novo Território");
+    endif
     
     var input := GFSendGump(who, gump);
     var button := input[0];
     
-    // Se cancelou, deixar com valores padrão
-    if (button == 0)
-        elem.SetProp("ResourceInterval", 60); // 60 minutos
-        elem.SetProp("ResourceAmount", 5);    // 5 unidades
-        // Escolher 3 recursos do primeiro conjunto
-        var default_resources := SplitWords(resource_sets[1]);
-        var resource_str := "";
-        for i := 1 to 3
-            if (i <= default_resources.size())
-                if (i > 1)
-                    resource_str += ", ";
-                endif
-                resource_str += default_resources[i];
-            endif
-        endfor
-        elem.SetProp("Resources", resource_str);
-        return;
-    endif
-    
-    if (button == 100)
-        // Salvar configurações
-        var interval := CInt(GFExtractData(input, 10));
-        var amount := CInt(GFExtractData(input, 20));
+    if (button >= 400 && button < 999)
+        var index := button - 400;
+        var rect_name := rect_df.keys()[index];
+       var elem := SafeFindElement(rect_df, rect_name);
         
-        // Validar entradas
-        if (interval < 1)
-            interval := 1;
-        endif
-        
-        if (amount < 1)
-            amount := 1;
-        endif
-        
-        // Obter recursos selecionados (limitados a 3)
-        var selected_resources := array{};
-        foreach checkbox in checkboxes
-            if (input[checkbox.id])
-                selected_resources.append(checkbox.resource);
-                if (selected_resources.size() >= 3)
-                    break;
-                endif
-            endif
-        endforeach
-        
-        // Se nenhum recurso foi selecionado, usar padrão
-        if (selected_resources.size() == 0)
-            var default_resources := SplitWords(resource_sets[1]);
-            for i := 1 to 3
-                if (i <= default_resources.size())
-                    selected_resources.append(default_resources[i]);
-                endif
-            endfor
-        endif
-        
-        // Converter lista de recursos em string
-        var resources := "";
-        for i := 1 to selected_resources.size()
-            if (i > 1)
-                resources += ", ";
-            endif
-            resources += selected_resources[i];
-        endfor
-        
-        // Salvar no elemento
-        elem.SetProp("ResourceInterval", interval);
-        elem.SetProp("ResourceAmount", amount);
-        elem.SetProp("Resources", resources);
-        
-        // Configurar próxima geração
-        var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-        elem.SetProp("NextResourceTime", next_time);
-        
-        SendSysMessage(who, "Recursos configurados: " + resources);
-        SendSysMessage(who, "Intervalo: " + interval + " minutos, Quantidade: " + amount + " unidades por recurso");
+        DisplayRectangleDetails(who, elem);
+    elseif (button == 999)
+        // Implementação de paginação para mostrar mais territórios
+        ShowRectanglesPage2(who, rect_df, 19); // Começa do 19º item
+    elseif (button == 300)
+        // Modificado para executar o comando .rectangles
+        SendSysMessage(who, "Executando o comando de criar novo território...");
+        start_script(":commands:gm/rectangles", who);
     endif
 endfunction
 
-function ShowRectangles(who, rect_df)
-    // Usando a função GFECreateGump para criar o gump padronizado
-    // Usando os valores de largura e altura do sistema sem redefinir constantes
-    var rect_gump_width := 320;
-    var rect_gump_height := 480;
+// Função adicional para mostrar mais territórios (também com posições fixas)
+function ShowRectanglesPage2(who, rect_df, start_index)
+    var width := 350;
+    var height := 480;
     
-    var gump := GFECreateGump("Gerenciador de Retângulos", rect_gump_width, rect_gump_height, array{BORDER_GOLDEN});
+    var gump := GFECreateGump("Gerenciador de Territórios - Página 2", width, height, array{BORDER_GOLDEN});
     
-    var y := 41;
-    var i := 1;
+    var y := 70;
+    var x := 30;
     
-    GFTextMid(gump, rect_gump_width/2, y, rect_gump_width, 1153, "Retângulos Salvos");
-    y += 30;
+    // Títulos com posições fixas
+    GFTextLine(gump, 30, y, 53, "Territórios Registrados");
+    GFTextLine(gump, 280, y, 53, "Guilda");
+    y += 25;
     
-    // Adicionar linhas para cada retângulo
-    foreach rect_name in (rect_df.keys())
-        GFTextLine(gump, 35, y, 1153, rect_name);
-        GFAddButton(gump, 20, y+2, 2117, 2118, 1, 400+i);
-        i := i + 1;
-        y := y + 20;
-    endforeach
+    var keys := rect_df.keys();
+    var total := keys.size();
+    var i := start_index;
+    var displayed := 1;
+    
+    while (i <= total && displayed <= 18)
+        var rect_name := keys[i];
+       var elem := SafeFindElement(rect_df, rect_name);
+var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);        
+        var color := 1153;
+        if (faction == DEFAULT_FACTION)
+            color := 38;
+        endif
+        
+        // Elementos com posições ajustadas
+        GFAddButton(gump, x-10+10, y+2, 2117, 2118, GF_CLOSE_BTN, 400+i);
+        GFTextLine(gump, x+15+10, y, color, rect_name);
+        GFTextLine(gump, 280, y, color, faction);
+        
+        y += 20;
+        i += 1;
+        displayed += 1;
+    endwhile
+    
+    // Botão para voltar à primeira página
+    GFAddButton(gump, width/2-70, height-40, 2704, 2705, GF_CLOSE_BTN, 998);
+    GFTextLine(gump, width/2-50, height-40, 1153, "Página Anterior");
     
     var input := GFSendGump(who, gump);
-    input := input[0];
+    var button := input[0];
     
-    if (input >= 400)
-        var index := input - 400;
-        var elem := rect_df.FindElement(rect_df.keys()[index]);
+    if (button >= 400)
+        var index := button - 400;
+        var rect_name := keys[index];
+        var elem := SafeFindElement(rect_df, rect_name);
         
         DisplayRectangleDetails(who, elem);
+    elseif (button == 998)
+        // Voltar para a primeira página
+        ShowRectangles(who, rect_df);
     endif
 endfunction
 
@@ -323,27 +630,29 @@ function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "
             continue;
         endif
         
-        var rect_elem := rect_df.FindElement(rect_name);
-        var rect_realm := rect_elem.GetProp("Realm");
+        // Usar TM_GetTerritoryInfo para obter informações do território
+        var territory_info := TM_GetTerritoryInfo(rect_name);
+        if (!territory_info)
+            continue;
+        endif
+        
+        var rect_realm := territory_info.realm;
         
         // Se não estiver no mesmo realm, não há sobreposição
         if (rect_realm != realm)
             continue; 
         endif
         
-        var rect_coords := SplitWords(rect_elem.GetProp("Rect"));
-        if (rect_coords.size() < 4)
-            continue; // Dados inválidos, pular
+        var rect_str := territory_info.rect;
+        if (!rect_str)
+            continue;
         endif
         
-        var r_x1 := CInt(rect_coords[1]);
-        var r_y1 := CInt(rect_coords[2]);
-        var r_x2 := CInt(rect_coords[3]);
-        var r_y2 := CInt(rect_coords[4]);
+        // Usar TM_CheckRectangleOverlap para verificar sobreposição
+        var rect1 := array{x1, y1, x2, y2};
+        var rect2 := SplitWords(rect_str);
         
-        // Verificar se há sobreposição
-        // Dois retângulos não se sobrepõem se um está à esquerda, direita, acima ou abaixo do outro
-        if (!(x2 < r_x1 || x1 > r_x2 || y2 < r_y1 || y1 > r_y2))
+        if (TM_DoRectanglesOverlap(rect1, rect2, realm, rect_realm))
             return 1; // Há sobreposição
         endif
     endforeach
@@ -351,83 +660,286 @@ function CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, exclude_name := "
     return 0; // Não há sobreposição
 endfunction
 
+function DestruirObjetosTerritorio(territorio_id, faction)
+var tipos_objetos := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
+    var objetos_destruidos := 0;
+    LogDebug("territorio", $"Buscando objetos do território: {territorio_id} da facção: {faction}");
+    
+    // Usar TM_FindTerritoryObjects para localizar objetos
+    var objetos := TM_FindTerritoryObjects(territorio_id, faction);
+    
+    // Destruir os objetos encontrados
+    if (objetos.bau)
+        PrintTextAbove(objetos.bau, "*Este objeto será removido*");
+        objetos.bau.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.bau))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Baú destruído com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.bau, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    if (objetos.mesa)
+        PrintTextAbove(objetos.mesa, "*Este objeto será removido*");
+        objetos.mesa.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.mesa))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Mesa destruída com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.mesa, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    if (objetos.mural)
+        PrintTextAbove(objetos.mural, "*Este objeto será removido*");
+        objetos.mural.movable := 1;
+        Sleep(1);
+        if (DestroyItem(objetos.mural))
+            objetos_destruidos += 1;
+            LogDebug("territorio", "Mural destruído com sucesso");
+        else
+            // Tentar método alternativo
+            MoveObjectToLocation(objetos.mural, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+            objetos_destruidos += 1;
+        endif
+    endif
+    
+    // Buscar objetos adicionais no mundo (abordagem de fallback)
+    if (objetos_destruidos < 3)
+        foreach item in EnumerateItemsInContainer(1) // 1 = mundo
+            if (item.objtype in tipos_objetos)
+                var item_name := item.name;
+                var item_territory_id := GetObjProperty(item, TERRITORY_ID_PROP);
+                var item_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+                
+                // Verificar se o item pertence ao território por nome ou propriedade
+                if ((item_territory_id && item_territory_id == territorio_id) || 
+                    (item_name && item_name.find(territorio_id) != error) ||
+                    (item_faction && item_faction == faction))
+                    
+                    LogDebug("territorio", $"Encontrado objeto: {item.name} (Serial: {item.serial})");
+
+                    PrintTextAbove(item, "*Este objeto está sendo destruído*");
+                    
+                    // Tornar o item móvel para permitir a destruição
+                    item.movable := 1;
+                    Sleep(1); // Pausa para o servidor processar a mudança
+                    
+                    // Tentar destruir o item
+                    var destroy_result := DestroyItem(item);
+                    if (destroy_result)
+                        objetos_destruidos += 1;
+                        LogDebug("territorio", "Objeto destruído com sucesso");
+                    else
+                        LogError("territorio", $"Falha ao destruir objeto: {destroy_result}");
+                        
+                        // Se falhar, tentar método alternativo: mover para o void
+                        MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+                        objetos_destruidos += 1;
+                        LogWarning("territorio", "Objeto movido para o void como alternativa");
+                    endif
+                    
+                    Sleep(2); // Pausa entre destruições
+                endif
+            endif
+        endforeach
+    endif  // ADICIONADO: endif faltante
+    
+    return objetos_destruidos;
+endfunction
+
 function DisplayRectangleDetails(who, elem)
-    // Usando componentes padronizados para o gump de detalhes
-    var detail_gump_width := 300;
-    var detail_gump_height := 320; // Aumentado para acomodar os novos botões
+    var width := 400;
+    var height := 380;
+    var name := GetElementProp(elem, "Name", "");
+var rect := GetElementProp(elem, "Rect", "");
+var realm := GetElementProp(elem, "Realm", "");
+var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+var resources := GetElementProp(elem, "Resources", "Não definidos");
+var interval := GetElementProp(elem, "ResourceInterval", 0);
+var amount := GetElementProp(elem, "ResourceAmount", 0);
+var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+var is_capital := TM_IsTerritoryCapital(territory_id);
+
+    // Define a cor do título baseada na facção controladora
+    var title_color := 53; // Dourado padrão
+    if (faction == DEFAULT_FACTION)
+        title_color := 38; // Vermelho para territórios selvagens
+    endif
     
-    var gump := GFECreateGump("Detalhes do Retângulo", detail_gump_width, detail_gump_height, array{BORDER_GOLDEN});
-    var y := 60;
+    // Título customizado com o nome do território
+    var titulo := "Território: " + name;
+    var gump := GFECreateGump(titulo, width, height, array{BORDER_GOLDEN});
     
-    // Informações do retângulo
-    GFTextLine(gump, 30, y, 2100, "Nome:"); 
-    GFTextLine(gump, 140, y, 1153, elem.GetProp("Name"));
-    y += 20;
+    var y := 70;
+    var x := 30;
     
-    GFTextLine(gump, 30, y, 2100, "Coordenadas:");
-    GFTextLine(gump, 140, y, 1153, elem.GetProp("Rect"));
-    y += 20;
+    // Coordenadas do território
+    GFTextLine(gump, x, y, 2100, "Coordenadas:");
     
-    GFTextLine(gump, 30, y, 2100, "Realm:");
-    GFTextLine(gump, 140, y, 1153, elem.GetProp("Realm"));
-    y += 20;
+    // Extrai e formata as coordenadas
+    var coords := SplitWords(rect);
+    var coords_text := "";
+    if (coords.size() >= 4)
+        coords_text := "(" + coords[1] + "," + coords[2] + ") a (" + coords[3] + "," + coords[4] + ")";
+    else
+        coords_text := rect;
+    endif
     
-    GFTextLine(gump, 30, y, 2100, "Facção:");
-    GFTextLine(gump, 140, y, 1153, elem.GetProp("Faction") ? elem.GetProp("Faction") : "Selvagem");
-    y += 20;
-    
-    // Informações de recursos
-    var resources := elem.GetProp("Resources");
-    var interval := elem.GetProp("ResourceInterval");
-    var amount := elem.GetProp("ResourceAmount");
-    
-    GFTextLine(gump, 30, y, 2100, "Recursos:");
-    GFTextLine(gump, 140, y, resources ? 63 : 38, resources ? "Configurados" : "Não definidos");
+    GFTextLine(gump, x+110, y, 63, coords_text);
     y += 25;
     
-    // Botões de ação
-    // Adicionar botão para configurar recursos
-    GFAddButton(gump, 30, y, 2361, 2361, 1, 500);
-    GFTextLine(gump, 50, y-4, 40, "Configurar Recursos");
+    // Informações do realm
+    GFTextLine(gump, x, y, 2100, "Realm:");
+    GFTextLine(gump, x+110, y, 63, realm);
     y += 25;
     
-    // Adicionar botão para criar totem
-    if (who.cmdlevel >= 1) // Apenas para GMs
-        GFAddButton(gump, 30, y, 2361, 2361, 1, 400);
-        GFTextLine(gump, 50, y-4, 40, "Criar Totem");
+    // Facção controladora
+    GFTextLine(gump, x, y, 2100, "Controlado por:");
+    // Cor diferente dependendo se é selvagem ou controlado
+    var control_color := 63; // Verde normal
+    if (faction == DEFAULT_FACTION)
+        control_color := 38; // Vermelho para selvagem
+    endif
+    GFTextLine(gump, x+110, y, control_color, faction);
+    y += 25;
+    
+    // Linha de separação
+    GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
+    y += 10;
+    
+    // Recursos do território
+    GFTextLine(gump, x, y, 2100, "Recursos:");
+    y += 20;
+    
+    if (resources != "Não definidos")
+        // Limpar e processar a lista de recursos
+        var resource_list := SplitWords(resources, ",");
+        var clean_resources := array{};
+        
+        // Filtrar recursos vazios e limpar espaços extras
+        foreach resource in resource_list
+            // Remover espaços no início e fim
+            resource := RectTrimString(resource);
+            
+            // Adicionar apenas recursos não vazios
+            if (resource != "")
+                clean_resources.append(resource);
+            endif
+        endforeach
+        
+        // Exibir os recursos limpos
+        foreach resource in clean_resources
+            GFTextLine(gump, x+20, y, 63, "• " + resource);
+            y += 20;
+        endforeach
+        
+        // Se não houver recursos válidos após a limpeza
+        if (clean_resources.size() == 0)
+            GFTextLine(gump, x+20, y, 38, "Nenhum recurso configurado");
+            y += 25;
+        else
+            // Informações de geração
+            y += 5;
+            GFTextLine(gump, x, y, 2100, "Geração:");
+            GFTextLine(gump, x+110, y, 63, amount + " a cada " + interval + " minutos");
+            y += 20;
+            
+            // Verifica se tem informação de próxima geração
+            var next_time := GetElementProp(elem, "NextResourceTime", 0);
+            if (next_time)
+                var time_left := next_time - polcore().systime;
+                var minutes_left := CInt(time_left/60);
+                
+                if (minutes_left > 0)
+                    GFTextLine(gump, x, y, 2100, "Próxima geração em:");
+                    GFTextLine(gump, x+150, y, 63, minutes_left + " minutos");
+                else
+                    GFTextLine(gump, x, y, 2100, "Próxima geração:");
+                    GFTextLine(gump, x+150, y, 38, "PENDENTE");
+                endif
+                y += 25;
+            endif
+        endif
+    else
+        GFTextLine(gump, x+20, y, 38, "Nenhum recurso configurado");
         y += 25;
     endif
     
-    GFAddButton(gump, 30, y, 2361, 2361, 1, 100);
-    GFTextLine(gump, 50, y-4, 40, "Deletar Retângulo");
-    y += 25;
+    // Linha de separação
+    GFGumpPicTiled(gump, x, y, width-60, 2, 9101);
+    y += 15;
     
-    GFAddButton(gump, 30, y, 2361, 2361, 1, 200);
-    GFTextLine(gump, 50, y-4, 40, "Editar Retângulo");
-    y += 25;
+    // Botões de ações
+    // Criar grid de 2x2 para os botões
+    var btn_x := x + 20;
+    var btn_y := y;
+    var btn_spacing := 150;
     
-    GFAddButton(gump, 30, y, 2361, 2361, 1, 300);
-    GFTextLine(gump, 50, y-4, 40, "Ir para Retângulo");
+    // Botão Ir para Território
+    GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 300);
+    GFTextLine(gump, btn_x+20, btn_y-4, 1153, "Ir para Território");
+    
+    // Botão Configurar Recursos (somente para GMs)
+    if (who.cmdlevel >= 1)
+        GFAddButton(gump, btn_x+btn_spacing, btn_y, 2361, 2361, GF_CLOSE_BTN, 500);
+        GFTextLine(gump, btn_x+btn_spacing+20, btn_y-4, 1153, "Configurar Recursos");
+        
+        btn_y += 25;
+        
+        // Botão Editar Território
+        GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 200);
+        GFTextLine(gump, btn_x+20, btn_y-4, 1153, "Editar Território");
+        
+        // Botão Criar Totem
+        GFAddButton(gump, btn_x+btn_spacing, btn_y, 2361, 2361, GF_CLOSE_BTN, 400);
+        GFTextLine(gump, btn_x+btn_spacing+20, btn_y-4, 1153, "Criar Totem");
+        
+        btn_y += 25;
+        
+        // Botão Deletar (separado visualmente)
+        GFAddButton(gump, btn_x, btn_y, 2361, 2361, GF_CLOSE_BTN, 100);
+        GFTextLine(gump, btn_x+20, btn_y-4, 38, "Deletar Território");
+    endif
+    
+
     
     var input := GFSendGump(who, gump);
-    input := input[0];
+    var button := input[0];
     
-    if (input == 500) // Configurar Recursos
-        SetupResourcesForTerritory(who, elem);
-    elseif (input == 400) // Criar Totem
-        CreateTerritoryTotem(who, elem);
-    elseif (input == 100)
-        // Deletar retângulo
-        if (YesNo(who, "Tem certeza que deseja deletar o retângulo '" + elem.GetProp("Name") + "'?"))
-            var rect_df := OpenDataFile(":architect:areas");
-            rect_df.DeleteElement(elem.GetProp("Name"));
-            SendSysMessage(who, "Retângulo deletado com sucesso!");
-        endif
-    elseif (input == 200)
-        // Editar retângulo
-        SendSysMessage(who, "Selecione novos pontos para o retângulo");
+    if (button == 100) // Deletar
+    if (YesNo(who, "Tem certeza que deseja deletar o território '" + name + "'?"))
+        // Primeiro, destruir os objetos do território, se houver
+        var faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+if (!faction)
+    faction := GetElementProp(elem, "Faction", "");  // Compatibilidade legada
+endif
         
-        // Solicitar ao GM que selecione os dois pontos do retângulo
+        var territory_id := GetElementProp(elem, TERRITORY_ID_PROP, "");
+        if (territory_id && faction)
+            DestruirObjetosTerritorio(territory_id, faction);
+        endif
+        
+        // NOVA LINHA: Remover referências do território em todas as guildas
+        RemoveTerritoryFromGuilds(name, territory_id);
+        
+        // Agora deletar o território
+        var rect_df := SafeOpenDataFile(":architect:areas");
+       DeleteDatafileEntry(":architect:areas", name);
+        SendSysMessage(who, "Território deletado com sucesso!");
+    endif
+
+    elseif (button == 200) // Editar
+        // Implementação existente para editar território
+        SendSysMessage(who, "Selecione novos pontos para o território");
+        
         SendSysMessage(who, "Selecione o primeiro ponto (canto superior esquerdo)");
         var first_point := TargetCoordinates(who);
         if (!first_point)
@@ -461,26 +973,22 @@ function DisplayRectangleDetails(who, elem)
         endif
         
         var rect_str := $"{x1} {y1} {x2} {y2}";
-        var rect_name := elem.GetProp("Name");
         
-        // Verificar se o retângulo se sobrepõe a outro existente (exceto a si mesmo)
-        if (CheckRectangleOverlap(OpenDataFile(":architect:areas"), x1, y1, x2, y2, first_point.realm, rect_name))
-            SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
-            SendSysMessage(who, "Edição cancelada.");
-            return;
-        endif
+// Verificar sobreposição
+var areas_df := SafeOpenDataFile(":architect:areas");
+if (CheckRectangleOverlap(areas_df, x1, y1, x2, y2, first_point.realm, name))
+    SendSysMessage(who, "Este território se sobrepõe a outro já existente.");
+    SendSysMessage(who, "Edição cancelada.");
+    return;
+endif
         
-        // Atualizar o elemento existente
-        elem.SetProp("Rect", rect_str);
-        elem.SetProp("Realm", first_point.realm);
+        // Atualizar elemento
+        SetElementProp(elem, "Rect", rect_str);
+        SetElementProp(elem, "Realm", first_point.realm);
         
-        SendSysMessage(who, $"Retângulo '{rect_name}' atualizado!");
-    elseif (input == 300)
-        // Teleportar para o centro do retângulo
-        var rect := elem.GetProp("Rect");
-        var realm := elem.GetProp("Realm");
+        SendSysMessage(who, $"Território '{name}' atualizado!");
+    elseif (button == 300) // Ir para território
         var coords := SplitWords(rect);
-        
         if (coords.size() >= 4)
             var x1 := CInt(coords[1]);
             var y1 := CInt(coords[2]);
@@ -492,27 +1000,96 @@ function DisplayRectangleDetails(who, elem)
             var center_z := GetWorldHeight(center_x, center_y, realm);
             
             MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
-            SendSysMessage(who, "Teleportado para o centro do retângulo!");
+            SendSysMessage(who, "Teleportado para o centro do território!");
         else
-            SendSysMessage(who, "Erro ao analisar as coordenadas do retângulo!");
+            SendSysMessage(who, "Erro ao analisar as coordenadas do território!");
         endif
+    elseif (button == 400) // Criar Totem
+        CreateTerritoryTotem(who, elem);
+    elseif (button == 500) // Configurar Recursos
+        SetupResourcesForTerritory(who, elem);
     endif
 endfunction
 
 function CreateTerritoryTotem(who, elem)
-    var totem := CreateItemInBackpack(who, 0xA102, 1); // Usar o objtype do TotemDeAquisicao
+    var totem := CreateItemInBackpack(who, 0xA102, 1); // TotemDeAquisicao
     if (!totem)
         SendSysMessage(who, "Falha ao criar o totem. Verifique o espaço na sua mochila.");
         return 0;
     endif
     
+    // NOVO DEBUG
+    var territory_name_to_set := GetElementProp(elem, "Name", "ERRO_NOME");
+    var territory_id_to_set := GetElementProp(elem, TERRITORY_ID_PROP, "ERRO_ID");
+    LogDebug("rectangles_DEBUG", $"Preparando para configurar totem para Território '{territory_name_to_set}' com ID '{territory_id_to_set}'");
+    
+    // Obter informações do território usando TM_GetTerritoryInfo
+    var territory_name := territory_name_to_set;
+    var territory_info := TM_GetTerritoryInfo(territory_name);
+    
+    // Obter o ID do território ou criar um se não existir
+    var territory_id := territory_id_to_set;
+    if (!territory_id)
+        territory_id := "TER_" + polcore().systime + "_" + RandomInt(10000);
+        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+        LogDebug("rectangles_DEBUG", $"Gerado novo ID para território: {territory_id}");
+    endif
+    
     // Configurar propriedades do totem
-    SetObjProperty(totem, "RectName", elem.GetProp("Name"));
-    SetObjProperty(totem, "Rect", elem.GetProp("Rect"));
-    SetObjProperty(totem, "Realm", elem.GetProp("Realm"));
+    SetObjProperty(totem, TERRITORY_NAME_PROP, territory_name);
+    
+    // Corrigir o uso de ?.rect e ?.realm
+    var rect_prop := "";
+    var realm_prop := "";
+    if (territory_info)
+        if (territory_info.rect)
+            rect_prop := territory_info.rect;
+        endif
+        if (territory_info.realm)
+            realm_prop := territory_info.realm;
+        endif
+    endif
+    
+    SetObjProperty(totem, TERRITORY_RECT_PROP, rect_prop);
+    SetObjProperty(totem, TERRITORY_REALM_PROP, realm_prop);
+    SetObjProperty(totem, TERRITORY_ID_PROP, territory_id);
     SetObjProperty(totem, "CreatedBy", who.serial);
     SetObjProperty(totem, "CreationDate", polcore().systime);
     
-    SendSysMessage(who, "Um totem para o território '" + elem.GetProp("Name") + "' foi criado em sua mochila.");
+    // NOVO DEBUG
+    LogDebug("rectangles_DEBUG", $"Propriedades definidas no totem {totem.serial}: Name='{GetObjProperty(totem, TERRITORY_NAME_PROP)}', ID='{GetObjProperty(totem, TERRITORY_ID_PROP)}'");
+    
+    // Mensagem mais clara para o GM
+    SendSysMessage(who, "Um totem para o território '" + territory_name + "' (ID: " + territory_id + ") foi criado em sua mochila.");
     return 1;
+endfunction
+
+// Função TrimString consolidada (use apenas esta versão)
+function RectTrimString(str)
+    // Verificar se a string é vazia ou nula
+    if (!str || str == "")
+        return "";
+    endif
+    
+    // Remove espaços no início
+    while (str.length() > 0 && str[1] == " ")
+        str := str[2, str.length()];
+    endwhile
+    
+    // Remove espaços no fim
+    while (str.length() > 0 && str[str.length()] == " ")
+        str := str[1, str.length()-1];
+    endwhile
+    
+    return str;
+endfunction
+
+// Função para gerar um ID único para o território
+function CreateTerritoryID()
+    // Combinar o timestamp com um número aleatório para garantir unicidade
+    return "TER_" + polcore().systime + "_" + RandomInt(10000);
+endfunction
+
+function IsTerritoryCapital(territory_id)
+    return TM_IsTerritoryCapital(territory_id);
 endfunction

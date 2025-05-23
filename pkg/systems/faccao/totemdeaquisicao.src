@@ -3,73 +3,214 @@ use os;
 use datafile;
 
 include ":faccao:faccao";
-// Removida a inclusão problemática:
-// include ":architect:areas";
+include ":faccao:faccao_constants";
+include ":faccao:include/shared_functions";
+include ":faccao:include/faccao_resources";
+// Adicionamos o novo include
+include ":faccao:include/territory_management";
 
 program TotemDeAquisicao(who, totem)
+    LogDebug("faccao", "TotemDeAquisicao: Iniciando função com who=" + who.serial + ", totem=" + totem.serial);
+    
     if (!who || !totem)
+        LogError("faccao", "TotemDeAquisicao: Parâmetros inválidos");
         return 0;
     endif
     
-    var rect_name := GetObjProperty(totem, "RectName");
+    var rect_name := GetObjProperty(totem, TERRITORY_NAME_PROP);
+    LogDebug("faccao", "TotemDeAquisicao: Nome do território: " + rect_name);
+    
     if (!rect_name)
+        LogWarning("faccao", "TotemDeAquisicao: Totem inválido - nome do território não encontrado");
         SendSysMessage(who, "Totem inválido.");
         return 0;
     endif
     
+    var territory_id := GetObjProperty(totem, TERRITORY_ID_PROP);
+    LogDebug("faccao", "TotemDeAquisicao: ID do território: " + territory_id);
+    
+    // VERIFICAÇÃO DE CONSISTÊNCIA
+    if (territory_id)
+        var territory_info_from_id := TM_GetTerritoryInfo(territory_id);
+        if (territory_info_from_id && territory_info_from_id.name != rect_name)
+            LogError("faccao", "INCONSISTÊNCIA NO TOTEM! Nome no totem ('" + rect_name + "') não corresponde ao nome do território com ID '" + territory_id + "' ('" + territory_info_from_id.name + "'). Usando ID '" + territory_id + "'.");
+            
+            // Atualizar o nome do território para o correto
+            rect_name := territory_info_from_id.name;
+            
+            // Opcional: Notificar o jogador sobre a inconsistência
+            SendSysMessage(who, "Aviso: O nome do território no totem foi corrigido para '" + rect_name + "'");
+        endif
+    endif
+    
     // Verificar se o jogador é líder de uma facção
     var guild := who.guild;
+    LogDebug("faccao", "TotemDeAquisicao: Guild do jogador: " + (guild ? guild.guildid : "NULL"));
+    
     if (!guild)
+        LogWarning("faccao", "TotemDeAquisicao: Jogador não pertence a uma facção");
         SendSysMessage(who, "Você precisa pertencer a uma facção para reivindicar territórios.");
         return 0;
     endif
     
     var guild_obj := GetFaccao(guild);
+    LogDebug("faccao", "TotemDeAquisicao: Objeto de facção: " + (guild_obj ? "Obtido" : "NULL"));
+    
     if (!guild_obj || guild_obj.leader != who.serial)
+        LogWarning("faccao", "TotemDeAquisicao: Jogador não é líder da facção");
+        LogDebug("faccao", "TotemDeAquisicao: guild_obj=" + guild_obj + ", leader=" + 
+                (guild_obj ? guild_obj.leader : "NULL") + ", player serial=" + who.serial);
         SendSysMessage(who, "Apenas o líder da facção pode reivindicar territórios.");
         return 0;
     endif
     
-    // Abrir o datafile de áreas
-    var rect_df := OpenDataFile(":architect:areas");
-    if (!rect_df)
-        SendSysMessage(who, "Sistema de territórios indisponível no momento.");
-        return 0;
-    endif
+    // Usamos TM_FindTerritory no lugar de abrir o datafile diretamente
+    LogDebug("faccao", "TotemDeAquisicao: Buscando território: " + rect_name);
+    var territorio_elem := TM_FindTerritory(rect_name);
+    LogDebug("faccao", "TotemDeAquisicao: Elemento encontrado: " + (territorio_elem ? "Sim" : "Não"));
     
-    var elem := rect_df.FindElement(rect_name);
-    if (!elem)
+    if (!territorio_elem)
+        LogWarning("faccao", "TotemDeAquisicao: Território não encontrado: " + rect_name);
         SendSysMessage(who, "Território não encontrado: " + rect_name);
         return 0;
     endif
     
     // Verificar se o território já está reivindicado
-    var current_faction := elem.GetProp("Faction");
-    if (current_faction && current_faction != "Selvagem")
+    LogDebug("faccao", "TotemDeAquisicao: Obtendo informações do território");
+    var territorio_info := TM_GetTerritoryInfo(rect_name);
+    LogDebug("faccao", "TotemDeAquisicao: Info obtida: " + (territorio_info ? "Sim" : "Não"));
+    
+    var current_faction := territorio_info.faction;
+    LogDebug("faccao", "TotemDeAquisicao: Facção atual: " + current_faction);
+
+    if (current_faction && current_faction != DEFAULT_FACTION && current_faction != "Selvagem")
+        LogWarning("faccao", "TotemDeAquisicao: Território já reivindicado por: " + current_faction);
         SendSysMessage(who, "Este território já está reivindicado por: " + current_faction);
         return 0;
     endif
     
     // Reivindicar o território
-    elem.SetProp("Faction", guild_obj.name);
+    // Obter o nome da facção da propriedade padronizada
+    var faction_name;
+    if (guild)
+        LogDebug("faccao", "TotemDeAquisicao: Obtendo facção da guilda: " + guild.guildid);
+        
+        // Tenta obter diretamente da guilda principal
+        faction_name := guild.guildname;
+        LogDebug("faccao", "TotemDeAquisicao: guild.guildname: " + faction_name);
+        
+        if (!faction_name || faction_name == error)
+            faction_name := guild.GetProp("name");
+            LogDebug("faccao", "TotemDeAquisicao: guild.GetProp('name'): " + faction_name);
+            
+            if (!faction_name || faction_name == error)
+                faction_name := "Desconhecido";
+                LogWarning("faccao", "TotemDeAquisicao: Não conseguiu obter nome da facção, usando 'Desconhecido'");
+            endif
+        endif
+        
+        LogDebug("faccao", "TotemDeAquisicao: Facção obtida: " + faction_name);
+    else
+        faction_name := "Desconhecido";
+        LogWarning("faccao", "TotemDeAquisicao: Guild nula, usando 'Desconhecido'");
+    endif
     
-    // Adicionar o território à lista da facção
+    // Definir a facção do território
+    LogDebug("faccao", "TotemDeAquisicao: Definindo facção do território " + rect_name + " para " + faction_name);
+    var tf_result := TM_SetTerritoryFaction(rect_name, faction_name);
+    LogDebug("faccao", "TotemDeAquisicao: TM_SetTerritoryFaction concluído, resultado: " + tf_result);
+    
+    // Adicionar o território à lista da facção de forma robusta
+    LogDebug("faccao", "TotemDeAquisicao: Obtendo lista de territórios da guilda: " + guild.guildid);
     var territories := guild.GetProp("territories");
-    if (!territories)
+    if (!territories || territories == error || TypeOf(territories) != "Array")
+        territories := array{};
+    endif
+
+    // Garantir que seja um array limpo
+    var cleaned_territories := array{};
+    foreach terr in territories
+        // Apenas adicionar itens válidos
+        if (TypeOf(terr) == "String" && terr != "")
+            cleaned_territories.append(terr);
+        endif
+        sleepms(2);
+    endforeach
+    territories := cleaned_territories;
+    LogDebug("faccao", "TotemDeAquisicao: Lista de territórios: " + TypeOf(territories) + 
+              ", Size: " + (territories && territories != error ? territories.size() : "NULL/ERROR"));
+    
+    if (!territories || territories == error)
+        LogDebug("faccao", "TotemDeAquisicao: Criando novo array para lista de territórios");
         territories := array{};
     endif
     
-    if (!(rect_name in territories))
-        territories.append(rect_name);
-        guild.SetProp("territories", territories);
+    // Verificar se já existe na lista
+    var exists := 0;
+    LogDebug("faccao", "TotemDeAquisicao: Verificando se território já existe na lista");
+    foreach terr in territories
+        LogDebug("faccao", "TotemDeAquisicao: Território existente na lista: " + terr + ", Tipo: " + TypeOf(terr));
+        if (terr == rect_name || terr == territory_id)
+            exists := 1;
+            LogDebug("faccao", "TotemDeAquisicao: Território já existe na lista");
+            break;
+        endif
+        sleepms(2);
+    endforeach
+
+    if (!exists)
+        LogDebug("faccao", "TotemDeAquisicao: CRÍTICO - Adicionando território à lista");
+        LogDebug("faccao", "TotemDeAquisicao: território_id: " + territory_id);
+        LogDebug("faccao", "TotemDeAquisicao: Guild: " + guild.guildid + ", Nome: " + guild.guildname);
+        LogDebug("faccao", "TotemDeAquisicao: Territories antes: " + TypeOf(territories) + 
+                 ", Size: " + territories.size());
+        
+        territories.append(territory_id);
+        
+        LogDebug("faccao", "TotemDeAquisicao: Territories após append: Size: " + territories.size());
+        LogDebug("faccao", "TotemDeAquisicao: CRÍTICO - Prestes a executar guild.SetProp('territories', territories)");
+        
+        // Implementar retentativas para o SetProp
+        var max_retries := 3;
+        var retry_count := 0;
+        var success := 0;
+
+        while (!success && retry_count < max_retries)
+            retry_count += 1;
+            var result := guild.SetProp("territories", territories);
+            
+            LogDebug("faccao", "TotemDeAquisicao: SetProp('territories') tentativa #" + retry_count + ", resultado: " + result);
+            
+            if (result != error)
+                success := 1;
+                LogDebug("faccao", "TotemDeAquisicao: SetProp bem-sucedido na tentativa #" + retry_count);
+            else
+                LogWarning("faccao", "TotemDeAquisicao: Falha no SetProp, tentativa #" + retry_count + ": " + result);
+                sleep(1); // Esperar um segundo antes de tentar novamente
+            endif
+        endwhile
+
+        if (!success)
+            LogError("faccao", "TotemDeAquisicao: Todas as tentativas de SetProp falharam");
+        endif
+    else
+        LogDebug("faccao", "TotemDeAquisicao: Território já existe na lista, não é necessário atualizar");
     endif
     
     // Criar o monumento no centro do território
-    CreateTerritoryMonument(who, elem, rect_name);
+    LogDebug("faccao", "TotemDeAquisicao: Criando monumento no território");
+    var monument := CreateTerritoryMonument(who, territorio_elem, rect_name, territory_id, totem);
+    LogDebug("faccao", "TotemDeAquisicao: Monumento criado: " + (monument ? "Sim, serial=" + monument.serial : "Não"));
     
     // Configurar timer para geração de recursos
+    LogDebug("faccao", "TotemDeAquisicao: Configurando recursos para o território");
+    
     // Verificar se o território já tem recursos configurados
-    if (!elem.GetProp("Resources"))
+    var recursos_atuais := GetElementProp(territorio_elem, "Resources", "");
+    LogDebug("faccao", "TotemDeAquisicao: Recursos atuais: " + recursos_atuais);
+    
+    if (!recursos_atuais)
+        LogDebug("faccao", "TotemDeAquisicao: Nenhum recurso configurado, usando padrão");
         // Se não houver recursos configurados, usar um conjunto padrão (3 recursos)
         var default_resources := SplitWords("IronOre, couroespesso, cogumelo");
         var resource_str := "";
@@ -79,36 +220,55 @@ program TotemDeAquisicao(who, totem)
             endif
             resource_str += default_resources[i];
         endfor
-        elem.SetProp("Resources", resource_str);
+        
+        LogDebug("faccao", "TotemDeAquisicao: Configurando recursos padrão: " + resource_str);
+        
+        // Aqui utilizamos TM_UpdateTerritoryResources para configurar os recursos
+        var update_result := TM_UpdateTerritoryResources(rect_name, resource_str, 2, 5);
+        LogDebug("faccao", "TotemDeAquisicao: Resultado de TM_UpdateTerritoryResources: " + update_result);
+    else
+        LogDebug("faccao", "TotemDeAquisicao: Recursos existentes, atualizando apenas próxima geração");
+        // Atualizar apenas o próximo tempo de geração se já existem recursos
+        var interval := CInt(GetElementProp(territorio_elem, "ResourceInterval", 2));
+        var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
+        LogDebug("faccao", "TotemDeAquisicao: Próxima geração em " + interval + " minutos");
+        
+        var set_result := SetElementProp(territorio_elem, "NextResourceTime", next_time);
+        LogDebug("faccao", "TotemDeAquisicao: Resultado de definir NextResourceTime: " + set_result);
     endif
-    
-    if (!elem.GetProp("ResourceInterval"))
-        elem.SetProp("ResourceInterval", 1); // Default: 1 minuto para testes
-    endif
-    
-    if (!elem.GetProp("ResourceAmount"))
-        elem.SetProp("ResourceAmount", 5); // Default: 5 unidades por recurso
-    endif
-    
-    // Configurar próxima geração de recursos
-    var interval := CInt(elem.GetProp("ResourceInterval"));
-    var next_time := polcore().systime + (interval * 60); // Converter minutos para segundos
-    elem.SetProp("NextResourceTime", next_time);
     
     // Destruir o totem após uso
-    DestroyItem(totem);
+    LogDebug("faccao", "TotemDeAquisicao: Destruindo totem após uso");
+    var destroy_result := DestroyItem(totem);
+    LogDebug("faccao", "TotemDeAquisicao: Resultado de DestroyItem: " + destroy_result);
     
     SendSysMessage(who, "Sua facção reivindicou com sucesso o território: " + rect_name);
-    SendSysMessage(who, "O território começará a produzir recursos em " + interval + " minutos.");
-    PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + guild_obj.name + "*");
+    SendSysMessage(who, "O território começará a produzir recursos em breve.");
+    PrintTextAbove(who, "*" + who.name + " reivindica este território em nome de " + faction_name + "*");
     
+    LogInfo("faccao", "TotemDeAquisicao: Território " + rect_name + " reivindicado com sucesso por " + faction_name);
+    
+    
+LogInfo("faccao", "Notificando sistema de eventos sobre reivindicação do território: " + rect_name);
+TM_NotifyTerritoryChange(territory_id, "claimed", struct{ 
+    "name" := rect_name, 
+    "faction" := faction_name, 
+    "resources" := GetElementProp(territorio_elem, "Resources", "") 
+});
     return 1;
 endprogram
 
-function CreateTerritoryMonument(who, elem, rect_name)
-    var rect := elem.GetProp("Rect");
-    var realm := elem.GetProp("Realm");
+function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
+    var rect := GetElementProp(elem, TERRITORY_RECT_PROP, "");
+    var realm := GetElementProp(elem, TERRITORY_REALM_PROP, "");
     var coords := SplitWords(rect);
+    
+    // Obter o ID do território
+    if (!territory_id)
+        // Gerar um ID único para o território
+        territory_id := "TER_" + CStr(polcore().systime);
+        SetElementProp(elem, TERRITORY_ID_PROP, territory_id);
+    endif
     
     if (coords.size() >= 4)
         var x1 := CInt(coords[1]);
@@ -116,43 +276,102 @@ function CreateTerritoryMonument(who, elem, rect_name)
         var x2 := CInt(coords[3]);
         var y2 := CInt(coords[4]);
         
-        var center_x := CInt((x1 + x2) / 2);
-        var center_y := CInt((y1 + y2) / 2);
-        var center_z := GetWorldHeight(center_x, center_y, realm);
+        // Usar TM_GetTerritoryCenter para obter o centro do território
+        var center := TM_GetTerritoryCenter(rect_name);
+        var center_x := center.x;
+        var center_y := center.y;
+        var center_z := center.z;
         
-        var faction_name := who.guild.getProp("name");
+        var faction_name := who.guild.GetProp("name");
+        if (!faction_name || faction_name == error)
+            faction_name := who.guild.guildname;
+        endif
+        
+        // Datafile para armazenar seriais
+        var seriais_df := OpenDataFile(":faccao:seriais");
+        if (!seriais_df)
+            seriais_df := SafeOpenDataFile(":faccao:seriais", 1);
+        endif
         
         // Criar o mural de recrutamento à esquerda
         var monument := CreateItemAtLocation(center_x - 1, center_y, center_z, 0x46AE, 1, realm);
         if (monument)
-            SetObjProperty(monument, "RectName", rect_name);
-            SetObjProperty(monument, "Faction", faction_name);
-            monument.name := "Mural de Recrutamento [" + faction_name + "]";
+            // Configurar propriedades do mural
+            SetObjProperty(monument, TERRITORY_NAME_PROP, rect_name);
+            SetObjProperty(monument, TERRITORY_ID_PROP, territory_id);
+            SetObjProperty(monument, OBJ_FACTION_PROP, faction_name);
+            
+            // Novo ID único, usando a função TM_CreateUniqueItemID
+            var unique_id := TM_CreateUniqueItemID(faction_name, ITEM_TYPE_MURAL, territory_id);
+            SetObjProperty(monument, UNIQUE_ID_PROP, unique_id);
+            
+            monument.name := "Mural de Recrutamento [" + faction_name + "] - " + territory_id;
             SetObjProperty(monument, "CreatedBy", who.serial);
             SetObjProperty(monument, "CreationDate", polcore().systime);
             monument.movable := 0;
             
+            // Configurar script de uso
+            monument.usescript := ":faccao:faccao";
+            
+            // Registrar o serial do mural
+            seriais_df.SetProp("ultimo_mural", monument.serial);
+            
             // Criar o baú de doações específico para esta facção
             var donation_chest := CreateItemAtLocation(center_x, center_y, center_z, 0xff11, 1, realm);
             if (donation_chest)
-                donation_chest.name := "Baú de Doações [" + faction_name + "]";
-                // Importante: definir a propriedade faction corretamente
-                SetObjProperty(donation_chest, "faction", faction_name);
-                // Adicionar um ID exclusivo para este baú
-                SetObjProperty(donation_chest, "faction_chest_id", faction_name + "_" + polcore().systime);
+                // Configurar propriedades do baú
+                var unique_id_bau := TM_CreateUniqueItemID(faction_name, ITEM_TYPE_BAU, territory_id);
+                SetObjProperty(donation_chest, UNIQUE_ID_PROP, unique_id_bau);
+                
+                donation_chest.name := "Baú de Doações [" + faction_name + "] - " + territory_id;
+                SetObjProperty(donation_chest, OBJ_FACTION_PROP, faction_name);
+                SetObjProperty(donation_chest, TERRITORY_ID_PROP, territory_id);
+                SetObjProperty(donation_chest, CHEST_ID_PROP, faction_name + "_" + territory_id);
                 donation_chest.movable := 0;
                 
-                // Registrar o baú na facção - isto é crucial para vincular corretamente
+                // Configurar scripts do baú
+                donation_chest.usescript := ":faccao:baudoacao/use";
+                SetObjProperty(donation_chest, "OnInsertScript", ":faccao:baudoacao/onInsert");
+                SetObjProperty(donation_chest, "OnRemoveScript", ":faccao:baudoacao/onRemove");
+                SetObjProperty(donation_chest, "CanInsertScript", ":faccao:baudoacao/canInsert");
+                SetObjProperty(donation_chest, "CanRemoveScript", ":faccao:baudoacao/canRemoveDonation");
+                
+                // Registrar o serial do baú
+                seriais_df.SetProp("ultimo_bau", donation_chest.serial);
+                
+                // Registrar o baú na facção
                 var guild := who.guild;
-                guild.SetProp("donation_chest", donation_chest.serial);
+                guild.SetProp(GUILD_CHEST_PROP, donation_chest.serial);
                 
                 // Criar a mesa de gestão à direita
                 var interface_item := CreateItemAtLocation(center_x + 1, center_y, center_z, 0xFE5C, 1, realm);
                 if (interface_item)
-                    interface_item.name := "Mesa de Gestão [" + faction_name + "]";
-                    // Importante: definir a propriedade faction corretamente também na mesa
-                    SetObjProperty(interface_item, "faction", faction_name);
+                    // Configurar propriedades da mesa
+                    var unique_id_mesa := TM_CreateUniqueItemID(faction_name, ITEM_TYPE_MESA, territory_id);
+                    SetObjProperty(interface_item, UNIQUE_ID_PROP, unique_id_mesa);
+                    
+                    interface_item.name := "Mesa de Gestão [" + faction_name + "] - " + territory_id;
+                    SetObjProperty(interface_item, OBJ_FACTION_PROP, faction_name);
+                    SetObjProperty(interface_item, TERRITORY_ID_PROP, territory_id);
                     interface_item.movable := 0;
+                    
+                    // Configurar script da mesa
+                    interface_item.usescript := ":faccao:gestao_use";
+                    
+                    // Registrar o serial da mesa
+                    seriais_df.SetProp("ultima_mesa", interface_item.serial);
+                    
+                    // Registrar associação com território usando TM_RegisterTerritoryObjects
+                    var object_serials := struct{
+                        "bau" := donation_chest.serial,
+                        "mesa" := interface_item.serial,
+                        "mural" := monument.serial,
+                        "faction" := faction_name,
+                        "coords" := rect,
+                        "realm" := realm
+                    };
+                    
+                    TM_RegisterTerritoryObjects(territory_id, object_serials);
                     
                     SendSysMessage(who, "Monumento de território criado com sucesso. Recursos serão entregues no baú de doações.");
                 else

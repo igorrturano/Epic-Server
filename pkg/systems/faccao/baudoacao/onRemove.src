@@ -5,8 +5,14 @@ include "include/say";
 include ":faccao:include/shared_functions";
 
 program OnRemove(who, container, item, item_amount, movetype)
+    if (who == error || container == error || item == error)
+        LogError("recursos", "OnRemove chamado com parâmetros inválidos");
+        return 0;
+    endif
+    
     // Verificar se o item removido é um recurso do reino
-    var donation_types := array{
+    var donation_types;
+    donation_types := array{
         "IsKingdomDonationComida",
         "IsKingdomDonationMoedas",
         "IsKingdomDonationCouro",
@@ -17,41 +23,58 @@ program OnRemove(who, container, item, item_amount, movetype)
         "IsKingdomDonationJoias"
     };
     
-    var is_donation := 0;
-    foreach donation_type in donation_types
-        if (GetObjProperty(item, donation_type))
-            is_donation := 1;
-            break;
-        endif
-    endforeach
-    
-    if (is_donation)
-        // Registrar a remoção de recursos
-        if (!(who.concealed || who.hidden))
-            PrintText(who, "*Removeu " + item.desc + " do " + container.desc + "*", 6);
-        endif
-        
-        // Atualizar contadores de recursos após a remoção
-        var recursos_atualizados := ContarItensDoadosNoBau(container);
-        AtualizarRecursosNoDataFile(recursos_atualizados);
-        
-        var chardata := GetObjProperty(who, "chardata");
-        var titulo := "";
-        
-        if (chardata)
-            if (chardata.current_nobility_title)
-                titulo := chardata.current_nobility_title;
-            elseif (chardata.current_professional_position)
-                titulo := chardata.current_professional_position;
-            endif
-        endif
-        
-        if (titulo)
-            SendSysMessageEx(who, "Você, como " + titulo + ", removeu recursos do tesouro do reino.", SSM_INFO);
-        else
-            SendSysMessageEx(who, "Você removeu recursos do tesouro do reino.", SSM_INFO);
-        endif
+    if (donation_types == error)
+        LogError("recursos", "Erro ao criar array de donation_types");
+        return 0;
     endif
+
+var is_donation := 0;
+foreach donation_type in donation_types
+var prop_value := GetObjProperty(item, donation_type);
+if (prop_value != error && prop_value)
+    is_donation := 1;
+    break;
+endif
+
+endforeach
+
+if (is_donation)
+    // Registrar a remoção de recursos
+    if (!(who.concealed || who.hidden))
+        var item_desc := item.desc;
+var container_desc := container.desc;
+if (item_desc == error)
+    item_desc := "item";
+endif
+if (container_desc == error)
+    container_desc := "container";
+endif
+PrintText(who, "*Removeu " + item_desc + " do " + container_desc + "*", 6);
+    endif
+    
+    // Marcar recursos como modificados para atualização posterior
+    var result := MarcarRecursosModificados(container);
+if (result == error)
+    LogError("recursos", "Erro ao marcar recursos como modificados para container: " + container.serial);
+endif
+    
+    var chardata := GetObjProperty(who, "chardata");
+    var titulo := "";
+    
+if (chardata != error && chardata)
+    if (chardata.exists("current_nobility_title") && chardata["current_nobility_title"])
+        titulo := chardata["current_nobility_title"];
+    elseif (chardata.exists("current_professional_position") && chardata["current_professional_position"])
+        titulo := chardata["current_professional_position"];
+    endif
+endif
+    
+if (titulo != error && titulo != "")
+    SendSysMessageEx(who, "Você, como " + titulo + ", removeu recursos do tesouro.", SSM_INFO);
+else
+    SendSysMessageEx(who, "Você removeu recursos do tesouro.", SSM_INFO);
+endif
+endif
     
     return 1;
 endprogram

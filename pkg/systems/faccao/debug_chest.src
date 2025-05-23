@@ -1,0 +1,101 @@
+use uo;
+use os;
+
+include ":faccao:faccao_constants";
+include ":faccao:include/shared_functions";
+include ":faccao:include/permissions";
+
+program debug_chest(who)
+    SendSysMessage(who, "Selecione o baú para verificar permissões");
+    var chest := Target(who);
+    
+    if (!chest)
+        SendSysMessage(who, "Cancelado.");
+        return;
+    endif
+    
+    if (chest.objtype != 0xff11 && chest.objtype != 0xba63)
+        SendSysMessage(who, "Este objeto não é um baú.");
+        return;
+    endif
+    
+    SendSysMessage(who, "Analisando baú...");
+    
+    // Imprimir todas as propriedades
+    SendSysMessage(who, "PROPRIEDADES DO BAÚ:");
+    foreach prop_name in GetObjPropertyNames(chest)
+        var prop_value := GetObjProperty(chest, prop_name);
+        SendSysMessage(who, prop_name + ": " + prop_value);
+    endforeach
+    
+    // Testar o unique_id
+    var unique_id := GetObjProperty(chest, UNIQUE_ID_PROP);
+    if (unique_id)
+        SendSysMessage(who, "ID único: " + unique_id);
+        var parts := SplitWords(unique_id, ":");
+        if (parts.size() >= 3)
+            SendSysMessage(who, "Facção via ID único: " + parts[1]);
+            SendSysMessage(who, "Tipo via ID único: " + parts[2]);
+            SendSysMessage(who, "Território via ID único: " + parts[3]);
+        endif
+    else
+        SendSysMessage(who, "O baú não possui ID único.");
+    endif
+    
+    // Verificar a facção do baú
+    var chest_faction := GetFactionOfChest(chest);
+    SendSysMessage(who, "Facção do baú: " + chest_faction);
+    
+    // Verificar seus acessos
+    var can_access := CanAccessChest(who, chest);
+    if (can_access)
+        SendSysMessage(who, "Você TEM permissão para acessar este baú.");
+    else
+        SendSysMessage(who, "Você NÃO tem permissão para acessar este baú.");
+    endif
+    
+    // Informações do jogador
+    SendSysMessage(who, "SUAS INFORMAÇÕES:");
+    SendSysMessage(who, "Serial: " + who.serial);
+    SendSysMessage(who, "Nome: " + who.name);
+    
+    // Verificar informações da guilda
+    var player_guild := who.guild;
+    if (player_guild)
+        SendSysMessage(who, "Guilda ID: " + player_guild.guildid);
+        
+        var guild_name := player_guild.GetProp(FACTION_PROP_NAME);
+        if (!guild_name)
+            guild_name := player_guild.GetProp("name");
+        endif
+        if (!guild_name)
+            guild_name := player_guild.guildname;
+        endif
+        
+        SendSysMessage(who, "Nome da Guilda: " + guild_name);
+        
+        var guild_leader := player_guild.leader;
+        SendSysMessage(who, "Líder da Guilda (serial): " + guild_leader);
+        
+        if (guild_leader == who.serial)
+            SendSysMessage(who, "Você É o líder da guilda.");
+        else
+            SendSysMessage(who, "Você NÃO é o líder da guilda.");
+        endif
+    else
+        SendSysMessage(who, "Você não pertence a nenhuma guilda.");
+    endif
+    
+    // Verificar informações de chardata
+    var chardata := GetObjProperty(who, "chardata");
+    if (chardata)
+        SendSysMessage(who, "Título de Nobreza: " + chardata.current_nobility_title);
+        SendSysMessage(who, "Cargo: " + chardata.current_professional_position);
+    endif
+    
+    // Verificar cargo na guilda
+    var player_rank := GetObjProperty(who, "guild_rank");
+    SendSysMessage(who, "Cargo na Guilda: " + player_rank);
+    
+    return 1;
+endprogram

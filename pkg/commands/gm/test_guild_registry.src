@@ -1,0 +1,235 @@
+use uo;
+use os;
+use guilds;
+use datafile;
+
+include ":datafile:datafile";
+include ":faccao:faccao_constants";
+include ":faccao:include/shared_functions";
+
+/*
+ * test_guild_registry.src
+ *
+ * Utilitário para testar a busca de guildas.
+ * Este script é útil para GMs diagnosticarem problemas no sistema de registro.
+ */
+
+program test_guild_registry(params)
+    var who := params[1];
+    var guild_name := params[2];
+    
+    if (!who || !guild_name)
+        if (who)
+            SendSysMessage(who, "Uso: .run test_guild_registry <nome da guilda>");
+        endif
+        return;
+    endif
+    
+    SendSysMessage(who, "Iniciando teste de busca de guilds para: " + guild_name);
+    
+    // Método 1: Verificar pelo registro persistente
+    SendSysMessage(who, "Método 1: Busca pelo registro persistente");
+    var registry_pid := GetGlobalProperty("guild_registry_pid");
+    var registry_guild_id := 0;
+    
+    if (registry_pid)
+        var process := GetProcess(registry_pid);
+        if (process)
+            // Enviar solicitação para o registro
+            var ev := struct{
+                "type" := "lookup",
+                "name" := guild_name,
+                "process" := GetPid()
+            };
+            process.SendEvent(ev);
+            
+            // Aguardar resposta por até 2 segundos
+            SendSysMessage(who, "Aguardando resposta do processo de registro...");
+            ev := wait_for_event(2);
+            if (ev && ev.type == "lookup_result")
+                registry_guild_id := ev.guild_id;
+                SendSysMessage(who, "Resultado do registro persistente: " + registry_guild_id);
+            else
+                SendSysMessage(who, "Timeout ou erro na resposta do registro.");
+            endif
+        else
+            SendSysMessage(who, "Processo de registro não está em execução.");
+        endif
+    else
+        SendSysMessage(who, "Registro de guildas não inicializado (PID não encontrado).");
+    endif
+    
+    // Método 2: Verificar diretamente no datafile
+    SendSysMessage(who, "Método 2: Busca direta no datafile");
+    var df := DFOpenDataFile("guild_registry");
+    var datafile_guild_id := 0;
+    
+    if (df)
+        var elem := DFFindElement(df, "guilds");
+        if (elem)
+            var registry := GetElementProp(elem, "registry", dictionary{});
+
+            if (registry && typeof(registry) == "Dictionary")
+                // Verificar correspondência exata
+                if (registry.exists(guild_name))
+                    datafile_guild_id := registry[guild_name];
+                    SendSysMessage(who, "Encontrado por correspondência exata: " + datafile_guild_id);
+                else
+                    // Verificar case-insensitive
+                    var lower_name := Lower(guild_name);
+                    foreach key in (registry.keys())
+                        if (Lower(key) == lower_name)
+                            datafile_guild_id := registry[key];
+                            SendSysMessage(who, "Encontrado por case-insensitive: " + datafile_guild_id);
+                            break;
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+                
+                if (!datafile_guild_id)
+                    SendSysMessage(who, "Não encontrado no registro.");
+                endif
+            else
+                SendSysMessage(who, "Registro não encontrado ou inválido no datafile.");
+            endif
+        else
+            SendSysMessage(who, "Elemento 'guilds' não encontrado no datafile.");
+        endif
+    else
+        SendSysMessage(who, "Datafile de registro não encontrado.");
+    endif
+    
+    // Método 3: Usando a função FindGuildByName
+    SendSysMessage(who, "Método 3: Utilizando FindGuildByName()");
+    var find_guild_id := FindGuildByName(guild_name);
+    SendSysMessage(who, "Resultado do FindGuildByName(): " + find_guild_id);
+    
+    // Método 4: Busca manual com ListGuilds
+    SendSysMessage(who, "Método 4: Busca manual com ListGuilds()");
+    var manual_guild_id := 0;
+    var guilds := ListGuilds();
+    
+    if (guilds && guilds != error)
+        foreach guild in guilds
+            var guild_found := 0;
+            
+            var prop := guild.GetProp(FACTION_PROP_NAME);
+            if (prop != error && prop == guild_name)
+                manual_guild_id := guild.guildid;
+                guild_found := 1;
+            endif
+            
+            if (!guild_found)
+                prop := guild.GetProp("name");
+                if (prop != error && prop == guild_name)
+                    manual_guild_id := guild.guildid;
+                    guild_found := 1;
+                endif
+            endif
+            
+            if (!guild_found && guild.guildname == guild_name)
+                manual_guild_id := guild.guildid;
+                guild_found := 1;
+            endif
+            
+            if (guild_found)
+                SendSysMessage(who, "Encontrado manualmente via ListGuilds(): " + manual_guild_id);
+                break;
+            endif
+            
+            sleepms(2);
+        endforeach
+        
+        if (!manual_guild_id)
+            SendSysMessage(who, "Não encontrado manualmente via ListGuilds().");
+        endif
+    else
+        SendSysMessage(who, "ListGuilds() falhou.");
+    endif
+    
+    // Método 5: Busca por jogadores online
+    SendSysMessage(who, "Método 5: Busca por jogadores online");
+    var online_guild_id := 0;
+    
+    foreach player in (EnumerateOnlineCharacters())
+        var guild_found := 0;
+        
+        if (player.guildid && player.guild.GetProp(FACTION_PROP_NAME) == guild_name)
+            online_guild_id := player.guild.guildid;
+            guild_found := 1;
+        endif
+        
+        if (!guild_found && player.guildid && player.guild.GetProp("name") == guild_name)
+            online_guild_id := player.guild.guildid;
+            guild_found := 1;
+        endif
+        
+        if (!guild_found && player.guildid && player.guild.guildname == guild_name)
+            online_guild_id := player.guild.guildid;
+            guild_found := 1;
+        endif
+        
+        if (guild_found)
+            SendSysMessage(who, "Encontrado via jogador online: " + online_guild_id);
+            break;
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    if (!online_guild_id)
+        SendSysMessage(who, "Não encontrado via jogadores online.");
+    endif
+    
+    // Resumo
+    SendSysMessage(who, "-------- RESUMO --------");
+    SendSysMessage(who, "Nome da guilda buscada: " + guild_name);
+    SendSysMessage(who, "1. Via registro persistente: " + registry_guild_id);
+    SendSysMessage(who, "2. Via datafile direto: " + datafile_guild_id);
+    SendSysMessage(who, "3. Via FindGuildByName(): " + find_guild_id);
+    SendSysMessage(who, "4. Via ListGuilds() manual: " + manual_guild_id);
+    SendSysMessage(who, "5. Via jogadores online: " + online_guild_id);
+    
+    // Verificar guild encontrada
+    var result_guild_id := find_guild_id;
+    if (result_guild_id)
+        var guild := FindGuild(result_guild_id);
+        if (guild)
+            SendSysMessage(who, "Informações da guilda encontrada:");
+            SendSysMessage(who, "Nome: " + guild.GetProp("name"));
+            SendSysMessage(who, "GuildID: " + guild.guildid);
+            SendSysMessage(who, "Facção: " + guild.GetProp(FACTION_PROP_NAME));
+            SendSysMessage(who, "Líder: " + guild.GetProp("leader"));
+            
+            var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
+            if (territories && territories.size() > 0)
+                SendSysMessage(who, "Territórios: " + territories.size());
+                foreach territory in territories
+                    SendSysMessage(who, " - " + territory);
+                    sleepms(2);
+                endforeach
+            else
+                SendSysMessage(who, "Territórios: Nenhum");
+            endif
+        else
+            SendSysMessage(who, "Guilda encontrada mas não pôde ser acessada com FindGuild().");
+        endif
+    else
+        SendSysMessage(who, "Nenhuma guilda encontrada por nenhum método.");
+    endif
+endprogram

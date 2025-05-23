@@ -17,6 +17,10 @@ include ":gumps:yesNo";
 include ":merchants:item_template";
 include ":gumps:htmlGump";
 include ":keys:key";
+// Incluir o arquivo de constantes para resolver os erros
+include ":faccao:faccao_constants";
+include ":faccao:include/logging";
+include ":faccao:include/datafile_helpers";
 
 const BUTTON_BUY_UNIFORM := 0x2;
 const BUTTON_ADD_PLAYER := 0x3;
@@ -79,6 +83,17 @@ var law_list := struct{
 var guild_obj, aboveguild;
 
 program faccao(params)
+  // Se for acessado por um item (mural/mesa)
+    if (TypeOf(params) == "Array" && params.size() >= 2 && params[2].IsA(POLCLASS_ITEM))
+        var who := params[1];
+        var item := params[2];
+        
+        // Verificar se o jogador pode acessar este mural
+        if (!CanAccessMural(who, item))
+            SendSysMessage(who, "Você não tem permissão para acessar este mural.");
+            return 0;
+        endif
+    endif
    var who := params;
    var targ := params;
    var cmd;
@@ -108,12 +123,13 @@ program faccao(params)
    var members := guild.members;
    guild_obj := GetFaccao(guild);
    var guild_leader;
-   if (guild_obj.leader)
+   if (guild_obj && guild_obj.leader)
       guild_leader := SystemFindObjectBySerial(guild_obj.leader, SYSFIND_SEARCH_OFFLINE_MOBILES);
       if (!guild_leader)
          guild.SetProp("leader", 0x0);
+      else
+         members := RemoveFromArray(members, guild_leader);
       endif
-      members := RemoveFromArray(members, guild_leader);
    endif
    is_gm_or_leader := (who == guild_leader || who.cmdlevel || aboveguild);
    privilegies := guild.getProp(cstr(who.serial));
@@ -142,8 +158,8 @@ program faccao(params)
 
 
    // Botão para Territórios - Adicionar isso
-GFAddButton(gump, 67-10, 45, 5605, 5605, GF_CLOSE_BTN, BUTTON_TERRITORIES);
-GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
+   GFAddButton(gump, 67-10, 45, 5605, 5605, GF_CLOSE_BTN, BUTTON_TERRITORIES);
+   GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
 
    if (who.cmdlevel >= 2)
       GFAddButton(gump, 430-20, 42+2, 5605, 5605, GF_CLOSE_BTN, BUTTON_GM_OPTS);
@@ -153,39 +169,47 @@ GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
 	GFResizePic(gump, 48, 67, 9350, 172, 326); //members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-   var leader_name := guild_leader.name;
-   if (!leader_name)
-      leader_name := "";
-   elseif(who.cmdlevel || aboveguild)
-      GFAddButton(gump, 49, 91, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+guild_obj.leader);
+   var leader_name := "";
+   if (guild_leader)
+      leader_name := guild_leader.name;
+      if(who.cmdlevel || aboveguild)
+         GFAddButton(gump, 49, 91, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+guild_obj.leader);
+      endif
    endif
    GFTextLine(gump, 67, 89, 49, "{}".format(leader_name));
 
    var y := 107;
-   foreach mob in members
-      // mob := SystemFindObjectBySerial(mob.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
-      if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
-         GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+mob.serial);
-      endif
-      GFTextLine(gump, 67, y-2, 0, "{}".format(mob.name));
-      var permissions := guild.GetProp(cstr(mob.serial));
-      var permission_text := "";
-      foreach priv in (permissions.keys())
-         if (permissions[priv])
-            permission_text += "{}<br>".format(priv_list[priv]);
-         endif
-         sleepms(2);
-      endforeach
+   if (members && members.size() > 0)
+      foreach mob in members
+          if (!mob)
+              continue;
+          endif
+        // mob := SystemFindObjectBySerial(mob.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
+           GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER+mob.serial);
+        endif
+        GFTextLine(gump, 67, y-2, 0, "{}".format(mob.name));
+        var permissions := guild.GetProp(cstr(mob.serial));
+        var permission_text := "";
+        if (permissions)
+          foreach priv in (permissions.keys())
+              if (permissions[priv] && priv_list[priv])
+                  permission_text += "{}<br>".format(priv_list[priv]);
+              endif
+              sleepms(2);
+          endforeach
+        endif
 
-      if (!permission_text)
-         permission_text := "Nenhum privilegio";
-      endif
+        if (!permission_text)
+           permission_text := "Nenhum privilegio";
+        endif
 
-      GFToolTipText(gump, permission_text);
-      sleepms(2);
-      y  += 18;
-   endforeach
-   y  += 18;
+        GFToolTipText(gump, permission_text);
+        sleepms(2);
+        y  += 18;
+     endforeach
+     y  += 18;
+   endif
 
    if (is_gm_or_leader || privilegies.above_members)
       GFAddButton(gump, 67-10, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_ADD_PLAYER);
@@ -195,29 +219,38 @@ GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
    GFResizePic(gump, 228, 67, 9350, 172, 326); //leis background
    GFTextLine(gump, 268, 72, 0, "Leis em Vigor");
    y := 91;
-   foreach law in (guild_obj.laws)
-      if (is_gm_or_leader)
-         GFAddButton(gump, 246-18, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_LAW+_law_iter);
-      endif
-      var law_desc := "";
-      case (law.type)
-         "noitem": law_desc := "Item: {}".format(law.opt.name);
-         "norace": law_desc := "Raça: {}".format(law.opt);
-         //"noguild": law_desc := "Facção: {}".format(FindGuild(law.opt).getProp("name"));
-         "nofight": law_desc := "{}".format(law.opt);
-         "noweapon": law_desc := "{}".format(law.opt);
-        // "nooutsideron": law_desc := "{}".format(law.opt.name);
-        // "nolawon": law_desc := "{}".format(SystemFindObjectBySerial(law.opt, SYSFIND_SEARCH_OFFLINE_MOBILES).getName());
-         "userban": law_desc := "{}".format(law.opt);             //(SystemFindObjectBySerial(law.opt, SYSFIND_SEARCH_OFFLINE_MOBILES).getName());
-         "nohood" : law_desc := "{}".format(law.opt);
-         "nosneak" : law_desc := "{}".format(law.opt);
-
-      endcase
-      GFTextLine(gump, 246, y-2, 0, "{}".format(law_list[law.type]));
-      if (law_desc)  GFToolTipText(gump, law_desc); endif
-      sleepms(2);
-      y  += 18;
-   endforeach
+   if (guild_obj && guild_obj.laws)
+      foreach law in (guild_obj.laws)
+        if (is_gm_or_leader)
+           GFAddButton(gump, 246-18, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_LAW+_law_iter);
+        endif
+        var law_desc := "";
+        if (law && law.type)
+          case (law.type)
+              "noitem": 
+                  if (law.opt && law.opt.name)
+                      law_desc := "Item: {}".format(law.opt.name);
+                  endif
+              "norace": 
+                  if (law.opt)
+                      law_desc := "Raça: {}".format(law.opt);
+                  endif
+               //"noguild": law_desc := "Facção: {}".format(FindGuild(law.opt).getProp("name"));
+               "nofight": law_desc := "{}".format(law.opt);
+               "noweapon": law_desc := "{}".format(law.opt);
+              // "nooutsideron": law_desc := "{}".format(law.opt.name);
+              // "nolawon": law_desc := "{}".format(SystemFindObjectBySerial(law.opt, SYSFIND_SEARCH_OFFLINE_MOBILES).getName());
+               "userban": law_desc := "{}".format(law.opt);             //(SystemFindObjectBySerial(law.opt, SYSFIND_SEARCH_OFFLINE_MOBILES).getName());
+               "nohood" : law_desc := "{}".format(law.opt);
+               "nosneak" : law_desc := "{}".format(law.opt);
+          endcase
+        endif
+        GFTextLine(gump, 246, y-2, 0, "{}".format(law_list[law.type]));
+        if (law_desc)  GFToolTipText(gump, law_desc); endif
+        sleepms(2);
+        y  += 18;
+     endforeach
+   endif
 
    if (is_gm_or_leader)
       GFAddButton(gump, 246-10, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_ADD_LAW);
@@ -225,25 +258,35 @@ GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
    endif
 
    var total_soldo := 0;
-	GFResizePic(gump, 48+360, 67, 9350, 172, 326); //agents background
-	GFTextLine(gump, 430, 69, 0, "Agentes Contratados");
+   GFResizePic(gump, 48+360, 67, 9350, 172, 326); //agents background
+   GFTextLine(gump, 430, 69, 0, "Agentes Contratados");
    y := 91;
    var i := 0;
-   foreach npc in (guild_obj.npcs_active)
-      sleepms(2);
-      var mob := SystemFindObjectBySerial(npc.serial);
-      if (!mob)
-         DismissNPC(guild, _npc_iter-i);
-         i+=1;
-         continue;
-      endif
-      GFAddButton(gump, 426-18, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_DISMISS_NPC+_npc_iter-i);
-      GFTextLine(gump, 426, y-2, 0, "{}".format(mob.name));
-      var desc := "Soldo: {}<br>Tipo: {}".format(npc.price, npc.type);
-      total_soldo += npc.price;
-      GFToolTipText(gump, desc);
-      y  += 18;
-   endforeach
+
+   if (!guild_obj || !guild_obj.npcs_active)
+      GFTextLine(gump, 430, 91, 38, "Não há agentes contratados.");
+   else
+      foreach npc in (guild_obj.npcs_active)
+         sleepms(2);
+         if (!npc || !npc.serial)
+             continue;
+         endif
+         
+         var mob := SystemFindObjectBySerial(npc.serial);
+         if (!mob)
+             DismissNPC(guild, _npc_iter-i);
+             i+=1;
+             continue;
+         endif
+         
+         GFAddButton(gump, 426-18, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_DISMISS_NPC+_npc_iter-i);
+         GFTextLine(gump, 426, y-2, 0, "{}".format(mob.name));
+         var desc := "Soldo: {}<br>Tipo: {}".format(npc.price, npc.type);
+         total_soldo += npc.price;
+         GFToolTipText(gump, desc);
+         y  += 18;
+      endforeach
+   endif
 
    foreach item in ListItemsNearLocation(who.x, who.y, who.z, 2, who.realm)
       if (is_gm_or_leader || privilegies.contractnpc)
@@ -289,7 +332,8 @@ GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
       GFTextLine(gump, 240, 401, 0, "Portas");
    endif
 
-	var input := GFSendGump(who, gump);
+   // IMPORTANTE: Esta linha estava faltando, causando o erro - precisamos enviar o gump antes de processar os inputs
+   var input := GFSendGump(who, gump);
 
    if (input[0] >= BUTTON_BUY_UNIFORM && input[0] <= BUTTON_BAN_PLAYER)
       guildHandler(who, input[0]);
@@ -297,6 +341,10 @@ GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
       if (gmHandler(who) == 99)
          return;
       endif
+   elseif (input[0] == BUTTON_TERRITORIES)
+      // Nova condição para tratar o botão de territórios
+      ShowTerritoriesGump(who, guild);
+      return; // Importante retornar aqui para evitar reabrir o gump principal
    elseif (input[0] >= BUTTON_CHANGE_PLAYER)
       playerHandler(who, input[0]);
    elseif (input[0] >= BUTTON_ADD_NPC && input[0] <= BUTTON_ADD_NPC+0x50)
@@ -310,6 +358,7 @@ GFTextLine(gump, 67+10, 45-2, 49, "Territórios");
    else
       return;
    endif
+   
    start_script(":faccao:faccao", array{who, guild.guildid, "guild"});
 endprogram
 
@@ -456,12 +505,17 @@ function guildHandler(who, input)
          elseif (output["Transferir"])
             var guild_opts := struct{};
             var guilds := ListGuilds();
-            foreach guild_ref in guilds
-               if (guild_ref.guildid != guild.guildid)
-                  guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
-               endif
-               sleepms(2);
-            endforeach
+            if (guilds)
+                foreach guild_ref in guilds
+                    if (guild_ref && guild_ref.guildid != guild.guildid)
+                        var name := guild_ref.GetProp("name");
+                        if (name)
+                            guild_opts[name] := guild_ref.guildid;
+                        endif
+                    endif
+                    sleepms(2);
+                endforeach
+            endif
             guild_opts["Cancelar"] := 0;
             var guildenemy := RadioGump(who, 400, 0, "Escolha qual faccao recebera o dinheiro", guild_opts.keys(), 0, guild_opts.keys().size());
             if (guildenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
@@ -575,112 +629,6 @@ function guildHandler(who, input)
          return SendSysMessageEx(who, "Este local ja pertence a outra faccao");
       endif
    endif
-/*   elseif (input == BUTTON_BUY_UNIFORM)
-      var options := array{};
-      if (who.cmdlevel)
-         options.append("Novo Uniforme");
-      endif
-
-      foreach uniform in (guild_obj.uniforms)
-         var desc := "{}".format(uniform.name);
-         options.append(desc);
-         sleepms(2);
-      endforeach
-
-      options.append("Cancelar");
-
-      var output := RadioGump(who, 300, 0, "Escolha o uniforme que deseja criar a receita", options, 1, 1);
-
-      if (output == 1 && who.cmdlevel)
-         var pieces := array{};
-         while (who.connected)
-            SendSysMessageEx(who, "Escolha as pe�as do uniforme", SSM_REQUEST);
-            var targ := Target(who);
-
-            if (!targ)
-               break;
-            endif
-
-            var template := CreateItemTemplate(targ);
-            pieces.append(template);
-         endwhile
-
-         if (pieces.size() < 1) return SendSysMessageEx(who, "Cancelado"); endif
-
-         var questions := array{};
-         questions.append(struct{ "title" := "Qual o nome do Uniforme?", "marked" := ""} );
-         questions.append(struct{ "title" := "Qual craft pode fazer o uniforme?", "marked" := 1, "radio" := array{"Costura", "Ferraria", "Marcenaria"}} );
-         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := "", "helper" := "metal, madeira, vidro, couro, pano, pontaflecha"} );
-         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
-         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
-         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
-         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
-         questions.append(struct{ "title" := "Entre com o material: ID Quantidade", "marked" := ""} );
-
-         var form_output := QuestionsGump(who, questions);
-         if (!form_output || !form_output[1]) return SendSysMessageEx(who, "Cancelado"); endif
-         var materials := struct{};
-         for i := 3 to 8
-            if (!form_output[i]) break; endif
-            var prop := SplitWords(form_output[i]);
-            if (!prop || prop.size() < 2)
-               break;
-            elseif (!prop[1] || !prop[2])
-               break;
-            else
-               materials[prop[1]] := prop[2];
-            endif
-            sleepms(2);
-         endfor
-
-         var new_uniform := struct{
-            "name":= form_output[1],
-            "materials":= materials,
-            "pieces":= pieces,
-            "craft_skill" := form_output[2]
-         };
-         var uniform_list := guild.GetProp("uniforms");
-         uniform_list.append(new_uniform);
-         guild.SetProp("uniforms", uniform_list);
-
-         SendSysMessageEx(who, "Uniforme adicionado");
-      elseif (output == options.size())
-         return;
-      else
-         if (who.cmdlevel)
-            output -= 1;
-            if (!YesNo(who, "O que deseja fazer?", "Criar Uniforme", "Remover Uniforme"))
-               guild_obj.uniforms.Erase(output);
-               guild.SetProp("uniforms", guild_obj.uniforms);
-            endif
-         endif
-
-        if (!ConsumeSubstance(who.backpack, 0xE34, 1) && !who.cmdlevel)
-            SendSysMessageEx(who, "Voc� precisa de um pergaminho em branco.", SSM_FAIL);
-            return;
-         endif
-
-         var uniform := guild_obj.uniforms[output];
-         var props := struct{};
-         props.name := uniform.name;
-         props.difficulty  := 14;
-         props.colored     := 0;
-         props.mark        := 1;
-         props.exceptional := 1;
-         props.delay       := 2;
-         props.materials   := uniform.materials;
-         props.requires    := array{};
-         props.fastcraft   := 0;
-         props.RequireFeat := _ifElse(uniform.craft_skill["Costura"], 63, _ifElse(uniform.craft_skill["Ferraria"], 61, 62));
-         props.pieces := uniform.pieces;
-
-         var item := CreateItemInbackpack(who, 0x46AE);
-         foreach prop in (props.keys())
-            SetObjProperty(item, prop, props[prop]);
-            sleepms(2);
-         endforeach
-      endif
-   endif */
 endfunction
 
 function playerHandler(who, input)
@@ -739,7 +687,6 @@ function playerHandler(who, input)
          SendSysMessageEx(who, "{} removido da faccao".format(player.name), SSM_INFO);
       endif
    endif
-
 endfunction
 
 function gmHandler(who)
@@ -873,9 +820,6 @@ function npcHandler(who, input)
             npc_list[npc_choice].price := cint(output[3]);
             npc_list[npc_choice].name := output[2];;
             guild.SetProp("npcs", npc_list);
-        // elseif (opt_out["Boss"])
-        //    CreatebossStructGump(who, npc_list[npc_choice].bossStruct);
-        //    guild.SetProp("npcs", npc_list);
          elseif (opt_out["Equip"])
              npc_list[npc_choice].equipment := array{};
             while (who.connected)
@@ -896,9 +840,7 @@ function npcHandler(who, input)
             return;
          endif
       endif
-     /* if (!InGuildRect(guild, who) && !who.cmdlevel)
-         return SendSysMessageEx(who, "Voce nao pode contratar agentes estando fora da sua area de influencia.", SSM_FAIL);
-      endif */
+
       var g_money := cint(guild.getProp("money"));
       if (g_money < cint(agent.price))
          return SendSysMessageEx(who, "Moedas de cobre insuficientes", SSM_FAIL);
@@ -906,14 +848,17 @@ function npcHandler(who, input)
 
       guild.setProp("money", g_money - cint(agent.price));
 
-      ContractNPC(guild, npc_choice, who, who);
+      if (guild && npc_choice >= 1 && npc_choice <= guild_obj.npcs.size())
+         ContractNPC(guild, npc_choice, who, who);
+      else
+         SendSysMessageEx(who, "Não foi possível contratar o agente. Escolha inválida.", SSM_FAIL);
+      endif
    elseif (input == BUTTON_ADD_NPC)
       var questions := array{};
       questions.append(struct{ "title" := "Template do agente?", "marked" := ":brainai:"} );
       questions.append(struct{ "title" := "Nome (representativo) do agente?", "marked" := ""} );
       questions.append(struct{ "title" := "Preco do Soldo (em moedas)?", "marked" := "20"} );
-      //questions.append(struct{ "title" := "Adicionar modificadores de boss?", "marked" := 1, "radio" := array{"N�o", "Sim"}} );
-     var output := QuestionsGump(who, questions);
+      var output := QuestionsGump(who, questions);
       if (!output) return SendSysMessageEx(who, "Cancelado"); endif
 
       var npc_struct := struct{
@@ -922,11 +867,6 @@ function npcHandler(who, input)
          "name" := output[2],
          "equipment" := array{}
       };
-
-      //if (output[4] == "Sim")
-      //   npc_struct.bossStruct := struct{};
-      //   CreatebossStructGump(who, npc_struct.bossStruct);
-      //endif
 
       while (who.connected)
          SendSysMessageEx(who, "Escolha o equipamento. (esc para cancelar)", SSM_REQUEST);
@@ -940,18 +880,38 @@ function npcHandler(who, input)
          endif
       endwhile
 
-      if (AddNpc(guild, npc_struct))
-         SendSysMessageEx(who, "Agente adicionado");
+      if (guild && npc_struct && npc_struct.template && npc_struct.name)
+         if (AddNpc(guild, npc_struct))
+            SendSysMessageEx(who, "Agente adicionado");
+         else
+            SendSysMessageEx(who, "Agente deu errado");
+         endif
       else
-         SendSysMessageEx(who, "Agente deu errado");
+         SendSysMessageEx(who, "Dados do agente incompletos", SSM_FAIL);
       endif
    else
       input -= BUTTON_DISMISS_NPC;
       var npcs := guild.getProp("npcs_active");
+      if (!npcs || npcs == error || input < 1 || input > npcs.size())
+         return SendSysMessageEx(who, "Agente não encontrado.", SSM_FAIL);
+      endif
+   
       var npc_obj := npcs[input];
+      if (!npc_obj || !npc_obj.serial)
+         return SendSysMessageEx(who, "Dados do agente corrompidos.", SSM_FAIL);
+      endif
+   
       var mob := SystemFindObjectBySerial(npc_obj.serial);
-      if (YesNo(who, "Deseja encerrar o contrato com este agente ({})?".format(mob.name)))
-         DismissNPC(guild, input, mob);
+      if (!mob)
+         // Se não encontrar o mob, oferecer para limpar o registro
+         if (YesNo(who, "Este agente parece não existir mais. Deseja remover o registro?"))
+            DismissNPC(guild, input);
+            return;
+         endif
+      else
+         if (YesNo(who, "Deseja encerrar o contrato com este agente ({})?".format(mob.name)))
+            DismissNPC(guild, input, mob);
+         endif
       endif
    endif
 endfunction
@@ -987,21 +947,6 @@ function lawHandler(who, input)
          var racenemy := RadioGump(who, 400, 0, "Escolha qual raca sera considerada inimiga", raceopts, 0, raceopts.size());
          if (racenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
          new_law.opt := racenemy;
-
-   /*   elseif (new_law.type["noguild"])
-         var guild_opts := struct{};
-         var guilds := ListGuilds();
-         foreach guild_ref in guilds
-            if (guild_ref.guildid != guild.guildid)
-               guild_opts[guild_ref.GetProp("name")] := guild_ref.guildid;
-            endif
-            sleepms(2);
-         endforeach
-         guild_opts["Cancelar"] := 0;
-         var guildenemy := RadioGump(who, 400, 0, "Escolha qual faccao sera considerada inimiga", guild_opts.keys(), 0, guild_opts.keys().size());
-         if (guildenemy["Cancelar"]) return SendSysMessageEx(who, "Cancelado");  endif
-
-         new_law.opt := guild_opts[guildenemy]; */
       elseif (new_law.type["nolawon"] || new_law.type["userban"] )
          SendSysMessageEx(who, "Escolha o alvo para aplicar esta lei", SSM_FAIL);
          var targ := Target(who);
@@ -1010,9 +955,7 @@ function lawHandler(who, input)
          elseif (!targ.isA(POLCLASS_MOBILE) || targ.npctemplate)
             return SendSysMessageEx(who, "Esta lei so pode ser aplicada em jogadores", SSM_FAIL);
          endif
-// ALTEREI AQUI ///
          new_law.opt := targ.name;
-        // new_law.opt := struct{ "serial" := targ.serial, "name" := targ.name};
       elseif (new_law.type["nofight"] || new_law.type["noweapon"] || new_law.type["nohood"] || new_law.type["nosneak"])
          var forceonguild := YesNo(who, "Esta lei sera aplicada a membros da faccao?");
          if (!forceonguild)
@@ -1040,63 +983,118 @@ function lawHandler(who, input)
          new_law.opt.name := gname;
       endif
 
-      if (AddLaw(guild, new_law))
-         SendSysMessageEx(who, "Lei adicionada", SSM_INFO);
-         ResetAllNpcs();
+      if (guild && new_law && new_law.type)
+         if (AddLaw(guild, new_law))
+            SendSysMessageEx(who, "Lei adicionada", SSM_INFO);
+            ResetAllNpcs();
+         else
+            SendSysMessageEx(who, "Voce nao pode adicionar esta lei de novo", SSM_FAIL);
+         endif
       else
-         SendSysMessageEx(who, "Voce nao pode adicionar esta lei de novo", SSM_FAIL);
+         SendSysMessageEx(who, "Dados da lei incompletos", SSM_FAIL);
       endif
    else
       input -= BUTTON_CHANGE_LAW;
       var law_opts := array{"Remover", "Cancelar"};
       var output := RadioGump(who, 250, 0, "O que deseja fazer?", law_opts, 0, law_opts.size());
-      if (output["Remover"]);
+      if (output["Remover"])
          var laws := guild.getProp("laws");
-         laws.Erase(input);
-         guild.SetProp("laws", laws);
-         ResetAllNpcs();
+         if (laws && input+1 > 0 && input+1 <= laws.size())
+            laws.Erase(input);
+            guild.SetProp("laws", laws);
+            ResetAllNpcs();
+            SendSysMessageEx(who, "Lei removida com sucesso", SSM_INFO);
+         else
+            SendSysMessageEx(who, "Índice de lei inválido", SSM_FAIL);
+         endif
       endif
    endif
 endfunction
 
 function ResetAllNpcs()
    var npcs := guild.getProp("npcs_active");
+   if (!npcs || npcs == error)
+      return;
+   endif
+   
    foreach npc in npcs
-      npc := SystemFindObjectBySerial(npc.serial);
-      SendEvent(npc, struct{ "type" := 0x78457});
+      if (!npc || !npc.serial)
+         continue;
+      endif
+      
+      var npc_mob := SystemFindObjectBySerial(npc.serial);
+      if (npc_mob)
+         SendEvent(npc_mob, struct{ "type" := 0x78457});
+      endif
       sleepms(2);
    endforeach
 endfunction
 
-
 function territoryHandler(who, input)
     input := input - BUTTON_TERRITORY;
     var territories := guild.GetProp("territories");
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
     
     // Check if the index is valid
-    if (input < 0 || input >= territories.size())
-        return SendSysMessageEx(who, "Índice de território inválido.", SSM_FAIL);
+    if (!territories || input < 0 || input+1 > territories.size())
+        return SendSysMessageEx(who, "Índice de território inválido ou lista de territórios não existe.", SSM_FAIL);
     endif
     
-    var territory := territories[input];
+    if (!territories)
+        return SendSysMessageEx(who, "Esta facção não possui territórios registrados.", SSM_FAIL);
+    endif
+
+    if (input+1 < 1 || input+1 > territories.size())
+        return SendSysMessageEx(who, "Índice de território inválido.", SSM_FAIL);
+    endif
+
+    var territory := territories[input+1]; // Ajuste para indexação base-1 do POL
+ if (!territory)
+    if (input+1 <= territories.size()) // Verificação de segurança
+        territories.Erase(input+1);
+        guild.SetProp("territories", territories);
+    endif
+    return SendSysMessageEx(who, "Referência de território inválida, registro removido.", SSM_FAIL);
+endif
     
-    var rect_df := OpenDataFile(":architect:areas");
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (!rect_df)
         return SendSysMessageEx(who, "O sistema de territórios está indisponível no momento.", SSM_FAIL);
     endif
     
-    var elem := rect_df.FindElement(territory);
+    var elem := SafeFindElement(rect_df, territory);
     
     if (!elem)
         // If the territory doesn't exist, remove it from the faction's list
-        territories.Erase(input);
+        territories.Erase(input+1); // Ajustar para indexação base-1 do POL
         guild.SetProp("territories", territories);
         return SendSysMessageEx(who, "Este território não existe mais e foi removido da lista.", SSM_FAIL);
     endif
     
+   var faction := GetElementProp(elem, "Faction", "");
+    if (!faction || faction == error)
+        faction := GetElementProp(elem, TERRITORY_FACTION_PROP, "");
+        if (!faction || faction == error)
+            faction := DEFAULT_FACTION;
+        endif
+    endif
+    
     // Verifying that the territory still belongs to this faction
-    if (elem.GetProp("Faction") != guild_obj.name)
-        territories.Erase(input);
+    if (faction != guild_obj.name)
+        territories.Erase(input+1); // Ajustar para indexação base-1 do POL
         guild.SetProp("territories", territories);
         return SendSysMessageEx(who, "Este território não pertence mais à sua facção e foi removido da lista.", SSM_FAIL);
     endif
@@ -1114,8 +1112,8 @@ function territoryHandler(who, input)
         GFTextMid(detail_gump, 175, y, 320, 2100, "Território: " + territory);
         y += 30;
         
-        var rect := elem.GetProp("Rect");
-        var realm := elem.GetProp("Realm");
+        var rect := GetElementProp(elem, "Rect", "");
+        var realm := GetElementProp(elem, "Realm", ""); 
         
         GFTextLine(detail_gump, 30, y, 2100, "Coordenadas:");
         GFTextLine(detail_gump, 130, y, 1153, rect);
@@ -1126,7 +1124,7 @@ function territoryHandler(who, input)
         y += 20;
         
         GFTextLine(detail_gump, 30, y, 2100, "Facção:");
-        GFTextLine(detail_gump, 130, y, 1153, elem.GetProp("Faction"));
+        GFTextLine(detail_gump, 130, y, 1153, faction);
         
         GFAddButton(detail_gump, 150, 250, 2128, 2129, GF_CLOSE_BTN, 0);
         
@@ -1134,8 +1132,8 @@ function territoryHandler(who, input)
         
     elseif (output["Ir"])
         // Teleport to center of territory
-        var rect := elem.GetProp("Rect");
-        var realm := elem.GetProp("Realm");
+        var rect := GetElementProp(elem, "Rect", "");
+        var realm := GetElementProp(elem, "Realm", "");
         var coords := SplitWords(rect);
         
         if (coords.size() >= 4)
@@ -1157,20 +1155,23 @@ function territoryHandler(who, input)
     elseif (output["Abandonar"])
         if (is_gm_or_leader)
             if (YesNo(who, "Tem certeza que deseja abandonar o território '" + territory + "'?"))
-                elem.SetProp("Faction", "Selvagem");
-                territories.Erase(input);
+                // Atualizar AMBAS as propriedades para compatibilidade completa
+                SetElementProp(elem, "Faction", DEFAULT_FACTION);
+                SetElementProp(elem, TERRITORY_FACTION_PROP, DEFAULT_FACTION);
+                
+                territories.Erase(input+1); // Ajustar para indexação base-1 do POL
                 guild.SetProp("territories", territories);
                 SendSysMessageEx(who, "Território abandonado com sucesso!", SSM_INFO);
                 
                 // Remove monument if exists
-                var coords := SplitWords(elem.GetProp("Rect"));
+                var coords := SplitWords(GetElementProp(elem, "Rect", ""));
                 if (coords.size() >= 4)
                     var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
                     var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
-                    var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
+                    var center_z := GetWorldHeight(center_x, center_y, GetElementProp(elem, "Realm", ""));
                     
-                    foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, elem.GetProp("Realm"))
-                        if (item.objtype == 0x46AE && GetObjProperty(item, "RectName") == territory)
+                    foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, GetElementProp(elem, "Realm", ""))
+                        if (item.objtype == 0xA104 && GetObjProperty(item, "RectName") == territory)
                             DestroyItem(item);
                             break;
                         endif
@@ -1183,14 +1184,14 @@ function territoryHandler(who, input)
     endif
 endfunction
 
-
-// Adicionar esta função no arquivo faccao.src após as outras funções
-
 function ShowTerritoriesGump(who, guild)
     // Criar um gump dedicado para listar os territórios controlados pela facção
     var territories_gump_width := 350;
     var territories_gump_height := 450;
     var gump := GFCreateGump();
+    
+LogDebug("territorio", "Iniciando ShowTerritoriesGump para guild: " + guild);
+
     
     GFResizePic(gump, 0, 0, 39925, territories_gump_width, territories_gump_height);
     GFResizePic(gump, 15, 15, 9350, territories_gump_width-30, 30);
@@ -1202,24 +1203,69 @@ function ShowTerritoriesGump(who, guild)
     
     // Buscar territórios da facção
     var territories := guild.GetProp("territories");
-    if (!territories) 
+if (!territories || territories == error || TypeOf(territories) != "Array")
+    territories := array{};
+endif
+
+// Garantir que seja um array limpo
+var cleaned_territories := array{};
+foreach terr in territories
+    // Apenas adicionar itens válidos
+    if (TypeOf(terr) == "String" && terr != "")
+        cleaned_territories.append(terr);
+    endif
+    sleepms(2);
+endforeach
+territories := cleaned_territories;
+    if (!territories || territories == error) 
         territories := array{};
         guild.SetProp("territories", territories);
     endif
     
-    var rect_df := OpenDataFile(":architect:areas");
+    // Obter o nome da facção de forma segura
+    var guild_name := guild.GetProp("name");
+    if (!guild_name || guild_name == error)
+        guild_name := guild.guildname;
+    endif
+    
+    LogDebug("territorio", "Nome da facção: " + guild_name + ", Territórios: " + territories.size());
+
+    
+    var rect_df := SafeOpenDataFile(":architect:areas");
     if (rect_df)
-        foreach territory in territories
-            var rect_elem := rect_df.FindElement(territory);
-            
-            if (rect_elem && rect_elem.GetProp("Faction") == guild_obj.name)
-                valid_territories.append(territory);
-            endif
-            sleepms(2);
-        endforeach
+        if (territories && territories.size() > 0)
+            foreach territory in territories
+                if (!territory)
+                    continue;
+                endif
+                
+                var rect_elem := SafeFindElement(rect_df, territory);
+                if (!rect_elem)
+                    continue;
+                endif
+                
+            // Verificar AMBAS as formas da propriedade
+var faction := GetElementProp(rect_elem, "Faction", ""); // Corrigido: rect_elem em vez de elem
+if (!faction || faction == error)
+    faction := GetElementProp(rect_elem, TERRITORY_FACTION_PROP, ""); 
+    if (!faction || faction == error)
+        faction := DEFAULT_FACTION;
+    endif
+endif
+                    
+                LogDebug("territorio", "Território: " + territory + " Facção: " + faction);
+                    
+                if (faction && guild_name && faction == guild_name)
+                    valid_territories.append(territory);
+                endif
+                sleepms(2);
+            endforeach
+        endif
         
         // Update the faction's territory list if inconsistencies were found
         if (valid_territories.size() != territories.size())
+LogDebug("territorio", "Corrigindo inconsistências na lista de territórios: " + 
+          territories.size() + " -> " + valid_territories.size());
             guild.SetProp("territories", valid_territories);
             territories := valid_territories;
         endif
@@ -1251,4 +1297,33 @@ function ShowTerritoriesGump(who, guild)
     
     // Retornar ao gump principal da facção
     start_script(":faccao:faccao", array{who, guild.guildid, "guild"});
+endfunction
+
+function CanAccessMural(who, item)
+    // GMs sempre podem acessar
+    if (who.cmdlevel >= 3)
+        return 1;
+    endif
+    
+    // Verificar se é um mural específico de uma facção
+    var mural_faction := GetObjProperty(item, OBJ_FACTION_PROP);
+    if (mural_faction && mural_faction != "Reino")
+        // Obter facção do jogador
+        var player_guild := who.guild;
+        if (player_guild)
+            var guild_name := player_guild.GetProp(FACTION_PROP_NAME);
+            if (!guild_name)
+                guild_name := player_guild.GetProp("name");
+            endif
+            
+            // Verificação da facção
+            if (guild_name != mural_faction)
+                return 0; // Não é da mesma facção
+            endif
+        else
+            return 0; // Não tem guilda
+        endif
+    endif
+    
+    return 1; // Passou em todas as verificações
 endfunction

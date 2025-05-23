@@ -1,0 +1,28 @@
+use uo;
+use os;
+use datafile;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":faccao:include/territory_management";
+
+program transaction_check()
+    LogInfo("recursos", "Iniciando verificação de transações pendentes...");
+    
+    // Registrar PID para que outros scripts possam verificar se está rodando
+    SetGlobalProperty("transactions_check_pid", GetPid());
+    
+    // Loop principal
+    while (1)
+        var count := VerificarTransacoesPendentes();
+        
+        if (count > 0)
+            LogInfo("recursos", "Processadas " + count + " transações pendentes expiradas");
+        else
+            LogDebug("recursos", "Nenhuma transação pendente encontrada");
+        endif
+        
+        // Verificar a cada 30 minutos
+        Sleep(1800);
+    endwhile
+endprogram

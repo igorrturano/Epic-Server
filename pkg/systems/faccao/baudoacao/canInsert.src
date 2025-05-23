@@ -1,49 +1,49 @@
 use uo;
 use cfgfile;
 use guilds;
+use datafile;
 
 include "include/say";
 include ":faccao:include/shared_functions";
-
+include ":faccao:faccao_constants";
+include ":datafile:datafile";
+include ":faccao:include/faccao_resources";
+include ":faccao:include/permissions";
 
 program CanInsert(mobile, container, movetype, insert_type, adding_item, existing_stack, amt_to_add)
     // Debug intensivo
-    Print("DEBUG: canInsert sendo chamado para container: " + container.serial);
-    
-    if (adding_item)
-        Print("DEBUG: Item a adicionar: " + adding_item.desc + " (ObjType: " + Hex(adding_item.objtype) + ")");
-    endif
-
-    // Informações sobre o baú
-    Print("DEBUG: Propriedades do baú: Capacidade=" + container.max_capacity + ", Itens=" + container.item_count);
+    LogDebug("recursos", "canInsert sendo chamado para container: " + container.serial);
     
     // Permitir itens do sistema (quando mobile é null ou não inicializado)
     if (!mobile)
-        Print("DEBUG: Item sendo adicionado pelo sistema, permitindo");
+        LogDebug("recursos", "Item sendo adicionado pelo sistema, permitindo");
         return 1;
     endif
     
     // Verificar se tem nossa propriedade especial
     if (GetObjProperty(adding_item, "CreatedByResourceController"))
-        Print("DEBUG: Item criado pelo ResourceController, permitindo inserção");
+        LogDebug("recursos", "Item criado pelo ResourceController, permitindo inserção");
         return 1;
     endif
-    
+
     // Parâmetros que precisamos preservar mesmo que não usemos
     amt_to_add := amt_to_add;
     existing_stack := existing_stack;
     insert_type := insert_type;
     movetype := movetype;
-    container := container;
 
-    // Verificar se o usuário tem permissão para inserir itens
-    if (!CanInsertItems(mobile))
+    // Usar função padronizada CanInsertItems que chama UnifiedCheckInsertPermission internamente
+    var can_insert := CanInsertItems(mobile, container);
+    
+    // Logging padronizado
+    LogPermissionCheck(mobile, container, "INSERÇÃO", can_insert);
+    
+    if (!can_insert)
         SendSysMessage(mobile, "Você não tem permissão para inserir itens neste baú.");
         return 0;
     endif
 
-    SendSysMessage(mobile, "Tentando inserir item no container.");
-
+    // Verificar se o item é uma doação válida
     var donation_types := array{
         "IsKingdomDonationComida",
         "IsKingdomDonationMoedas",
@@ -72,16 +72,6 @@ program CanInsert(mobile, container, movetype, insert_type, adding_item, existin
         endif
     endforeach
 
-    SendSysMessage(mobile, "Isso não é uma doação válida para o reino.");
+    SendSysMessage(mobile, "Isso não é uma doação válida para o baú.");
     return 0;
 endprogram
-
-function CanInsertItems(who)
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
-        return 0;
-    endif
-
-    // Todos os jogadores podem inserir itens
-    return 1;
-endfunction
