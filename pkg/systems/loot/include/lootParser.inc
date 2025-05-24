@@ -6,6 +6,7 @@ use basic;
 
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
+include ":sysbook:include/sealedBooks";
 
 var itemdesc_cache := dictionary{};
 
@@ -54,7 +55,8 @@ function Loot_Generate(container, loot_index)
 		Loot_CreateMagic(container, line);
 		sleepms(2);
 	endforeach
-
+    
+     Loot_TryAddSealedBook(container);
 	return 1;
 endfunction
 
@@ -313,3 +315,22 @@ function Loot_ParseString(line)
     return result;
 endfunction
 
+function Loot_TryAddSealedBook(container)
+    // Decide a chance de aparecer um livro lacrado (exemplo: 10%)
+    var chance := 100;
+    if (RandomInt(100) + 1 > chance)
+        return 0;
+    endif
+
+    var serial := SealedBooks_GetRandomSerial();
+    if (!serial)
+        return 0;
+    endif
+
+    var book := SealedBooks_CloneToContainer(serial, container);
+    if (!book || book.errortext)
+        return 0;
+    endif
+
+    return 1;
+endfunction

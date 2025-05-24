@@ -1,0 +1,112 @@
+use uo;
+use os;
+use datafile;
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":sysbook:include/sealedBooks";
+
+
+program SealedBooks(mobile)
+    GumpListSealedBooks(mobile);
+endprogram
+
+function GumpListSealedBooks(mobile)
+    var df := OpenDataFile(SEALED_BOOKS_DATAFILE);
+    if (df == error)
+        SendSysMessage(mobile, "Erro ao abrir datafile de livros lacrados.");
+        return 0;
+    endif
+
+    var keys := df.Keys();
+    if (!keys || keys.size() == 0)
+        SendSysMessage(mobile, "Nenhum livro lacrado encontrado.");
+        return 0;
+    endif
+
+    var gump := GFCreateGump();
+    GFPage(gump, 0);
+    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 680, 480);
+    GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 660, 460);
+    var y_pos := 40;
+    var counter := 1;
+    var page_num := 1;
+    GFTextMid(gump, 10, 15, 660, 2100, "Livros lacrados no datafile");
+
+    GFPage(gump, 1);
+    foreach serial in (keys)
+        var elem := df.FindElement(serial);
+        var title := elem.GetProp("title");
+        var author := elem.GetProp("author");
+
+        // Botão para criar o livro (verde)
+        GFAddButton(gump, 15, (y_pos+3), 2117, 2118, GF_CLOSE_BTN, _serial_iter);
+        
+        // Informações do livro
+        GFTextLine(gump, 40, y_pos, 2100, "Serial: "+serial);
+        GFTextLine(gump, 200, y_pos, 2100, "Título: "+title);
+        GFTextLine(gump, 400, y_pos, 2100, "Autor: "+author);
+        
+        // Botão para deletar (X vermelho) - usando ID 1000 + índice
+GFAddButton(gump, 630, (y_pos+3), 25, 26, GF_CLOSE_BTN, 1000 + _serial_iter);
+        y_pos := y_pos+20;
+        counter := counter+1;
+
+        if ( counter > 20 )
+            counter := 1;
+            y_pos := 40;
+            GFAddButton(gump, 645, 445, 2648, 2649, GF_PAGE_BTN, page_num+1);
+            page_num := page_num+1;
+            GFPage(gump, page_num);
+            GFAddButton(gump, 645, 15, 2650, 2651, GF_PAGE_BTN, page_num-1);
+        endif
+        sleepms(2);
+    endforeach
+
+    var input := GFSendGump(mobile, gump);
+    input := input[0];
+    
+    if ( !input )
+        SendSysMessage(mobile, "Cancelado.");
+        return 0;
+    endif
+
+    // Verifica se é um botão de delete (ID >= 1000)
+    if (input >= 1000)
+        var delete_index := input - 1000;
+        if (delete_index <= keys.size())
+            var serial_to_delete := keys[delete_index];
+            
+            // Confirmação antes de deletar
+            if (YesNo(mobile, "Tem certeza que deseja APAGAR permanentemente o livro '" + 
+                       df.FindElement(serial_to_delete).GetProp("title") + "'?", "Sim", "Não"))
+                
+                // Deleta o elemento do datafile
+                var result := df.DeleteElement(serial_to_delete);
+                if (!result || result.errortext)
+                    SendSysMessage(mobile, "Erro ao deletar livro: " + 
+                                  (result.errortext ? result.errortext : "Erro desconhecido"), 3, 38);
+                else
+                    SendSysMessage(mobile, "Livro deletado com sucesso!", 3, 68);
+                endif
+            else
+                SendSysMessage(mobile, "Deleção cancelada.");
+            endif
+            
+            // Reabre o gump para mostrar a lista atualizada
+            return GumpListSealedBooks(mobile);
+        endif
+    else
+        // É um botão de criar livro
+        var book_serial := keys[input];
+        var book := SealedBooks_CloneToContainer(book_serial, mobile.backpack);
+        if (!book || book.errortext)
+            SendSysMessage(mobile, "Erro ao criar livro: "+(book ? book.errortext : "null"));
+            return 0;
+        endif
+
+        SendSysMessage(mobile, "Livro criado na sua mochila!");
+    endif
+    
+    return 1;
+endfunction
+

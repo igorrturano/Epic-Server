@@ -1,12 +1,16 @@
 // $Id: use.src 1178 2006-02-10 12:32:59Z austin $
 
 use uo;
+use datafile;
 include ":attributes:attributes";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 include ":gumps:yesNo";
+
 include ":charactercreation:habilidades";
+include ":sysbook:include/sealedBooks";
+
 
 program useBook(who,book)
 	if ( !ReserveItem(book) )
@@ -58,3 +62,40 @@ program useBook(who,book)
 		SendOpenBook(who, book);
 	endif
 endprogram
+
+
+function SealBook(book)
+    var serial := CStr(GetObjProperty(book, "serial"));
+    if (!serial)
+       serial := CStr(ReadGameClock()) + "_" + CStr(RandomInt(100000));
+
+        SetObjProperty(book, "serial", serial);
+    endif
+
+    var author := book.GetAuthor();
+    var title := book.GetTitle();
+    var contents := book.GetContents();
+
+    // Salva no datafile
+    var df := OpenDataFile(SEALED_BOOKS_DATAFILE);
+    if (df == error)
+        df := CreateDataFile(SEALED_BOOKS_DATAFILE, DF_KEYTYPE_STRING);
+        if (df == error)
+            return 0;
+        endif
+    else
+    endif
+
+    var elem := df.CreateElement(serial);
+    elem.SetProp("author", author);
+    elem.SetProp("title", title);
+    elem.SetProp("contents", contents);
+
+    // Torna o livro readonly/lacrado
+    book.ReadOnly(1);
+
+    // Opcional: marca como lacrado
+    SetObjProperty(book, "sealed_serial", serial);
+
+    return serial;
+endfunction
