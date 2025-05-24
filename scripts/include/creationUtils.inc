@@ -448,8 +448,8 @@ function ClassGump(who, culture_pic)
 		"Caminho do Subterfúgio",
 		"Caminho da Sabedoria"
     };
-    foreach class in (all_classes)
-        GFHTMLArea(gump, x, y+65, 192, 24, "<BASEFONT color=#000000>{}".format(class), 1, 0);
+    foreach classe in (all_classes)
+        GFHTMLArea(gump, x, y+65, 192, 24, "<BASEFONT color=#000000>{}".format(classe), 1, 0);
         GFRadioButton(gump, x+201, y+65, 0x9C4E, 0x9C4F, 0, 200+i);
 
         sleepms(2);
