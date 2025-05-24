@@ -317,7 +317,7 @@ endfunction
 
 function Loot_TryAddSealedBook(container)
     // Decide a chance de aparecer um livro lacrado (exemplo: 10%)
-    var chance := 100;
+    var chance := 30;
     if (RandomInt(100) + 1 > chance)
         return 0;
     endif
