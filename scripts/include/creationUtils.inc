@@ -595,7 +595,7 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     chardata.+Primarias;
     var race := chardata.raca;
     var color := "#FFD700";
-    var class := chardata.classe;
+    var classe := chardata.classe;
     var bg := chardata.background;
     var trait := chardata.trait;
     var skills := chardata.Skills;
@@ -611,10 +611,10 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
         GFGumpPic(gump, 298, 100, culture_pic);
     endif
 
-    if (class)
+    if (classe)
         GFHTMLArea(gump, x+81, y+29, 192, 40, "<BASEFONT Size=55 Color=#999999 > Caminho", 0, 0); //shadow
         GFHTMLArea(gump, x+80, y+30, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Caminho", 0, 0);
-        GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, class), 1, 0);
+        GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, classe), 1, 0);
     endif
 
     if (bg)
