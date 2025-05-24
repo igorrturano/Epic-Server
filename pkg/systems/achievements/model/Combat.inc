@@ -1,6 +1,6 @@
 include ":achievements:model/Achievement";
 
-const ACHIEVEMENT_COMBAT := "ACHIEVEMENT_COMBAT";
+const ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT";
 
 class Combat(Achievement)
 	var hits;
@@ -72,6 +72,6 @@ class Combat(Achievement)
 	endfunction
 	
 	function toString(this)
-		return $"Combat Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage})";
+		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage})";
 	endfunction
 endclass
