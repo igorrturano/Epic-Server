@@ -7,6 +7,7 @@ include "npcUtils";
 include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
+
 const MAX_Z_DIFF := 18;
 
 function InitializeEpicNPC(mobile)
@@ -106,9 +107,7 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         SetupWizardClass(mobile, npc_elem);
     endif
 
-
-
-
+    SetupNPCAppearence(mobile);
 endfunction
 
 function SetupItemsForSpecificClasses(mobile, npc_elem)
@@ -2104,4 +2103,77 @@ function startPatrolling(byref me, patrol_points, current_patrol_point)
 
     // Walk toward destination
     WalkTowardLocation(dest.x, dest.y);
+endfunction
+
+function SetupNPCAppearence(mobile)
+    // Get boss data to check for appearance settings
+    var boss := GetObjProperty(mobile, "EpicBossStruct");
+    print("Boss: " + boss);
+    print("Boss type: " + TypeOf(boss));
+    
+    if (!boss)
+        print("ERROR: No EpicBossStruct found on mobile");
+        return 0;
+    endif
+    
+    if (!boss.appearance)
+        print("ERROR: No appearance data in EpicBossStruct");
+        print("Boss keys: " + boss.keys());
+        return 0;
+    endif
+    
+    var appearance := boss.appearance;
+    print("Appearance: " + appearance);
+    print("Appearance type: " + TypeOf(appearance));
+    print("Appearance keys: " + appearance.keys());
+    // Setup hair if specified
+    if (appearance.hair_style && appearance.hair_style != 0)
+        print("Setting up hair");
+        // Check if hair color is specified
+        // Remove existing hair first
+        var existing_hair := GetEquipmentByLayer(mobile, LAYER_HAIR);
+        if (existing_hair)
+            DestroyItem(existing_hair);
+        endif
+        
+        // Create and equip new hair using proper objtype
+        var hair_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.hair_style), 1, mobile.realm);
+        print("Hair item: %d", hair_item);
+        if (hair_item)
+            if (appearance.hair_color)
+                hair_item.color := CInt(appearance.hair_color);
+            endif
+            if (!EquipItem(mobile, hair_item))
+                DestroyItem(hair_item);
+            endif
+        endif
+    endif
+    
+    // Setup beard if specified
+    if (appearance.beard_style && appearance.beard_style != 0)
+        // Remove existing beard first
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+        
+        // Create and equip new beard using proper objtype
+        var beard_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.beard_style), 1, mobile.realm);
+        if (beard_item)
+            if (appearance.beard_color)
+                beard_item.color := CInt(appearance.beard_color);
+            endif
+            if (!EquipItem(mobile, beard_item))
+                DestroyItem(beard_item);
+            endif
+        endif
+    endif
+    
+    // Setup skin color if specified
+    if (appearance.skin_color)
+        mobile.color := CInt(appearance.skin_color);
+        mobile.truecolor := CInt(appearance.skin_color);
+    endif
+    
+    return 1;
 endfunction

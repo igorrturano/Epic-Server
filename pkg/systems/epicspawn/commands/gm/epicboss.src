@@ -1632,6 +1632,11 @@ function ShowPage5(who, title, gump_width, gump_height)
 
     // Add a divider line before buttons
     GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
+
+    // Appearence Section
+    GFTextLine(gump, 550, 370, 1153, "Appearence:");
+    GFAddButton(gump, 750, 370, 2103, 2104, 1, 92);
+    GFTextLine(gump, 780, 370, 1153, "Edit Appearence");
     
     // Add Create Boss and Cancel buttons at the bottom
     // Create a background for the buttons
@@ -1679,9 +1684,511 @@ function ShowPage5(who, title, gump_width, gump_height)
         form_data.loot.erase(index);
         SendSysMessage(who, "Loot item removed.");
         return ShowPage5(who, title, gump_width, gump_height);
+    elseif (input[0] == 92) // Edit Appearence button
+        HandleEditAppearance(who, form_data);
+        return ShowPage5(who, title, gump_width, gump_height);
     endif
 
     return input;
+endfunction
+
+// Function to handle boss appearance editing
+function HandleEditAppearance(who, byref form_data)
+    // Main appearance category selection
+    var continue_editing := 1;
+    
+    while (continue_editing)
+        var gump := GFCreateGump();
+        GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+        
+        // Title
+        GFTextMid(gump, 0, 25, 500, 1153, "Boss Appearance Editor");
+        
+        // Current appearance summary
+        GFTextLine(gump, 30, 60, 1153, "Current Appearance Settings:");
+        var y_pos := 85;
+        
+        // Display current settings
+        if (form_data.appearance)
+            if (form_data.appearance.hair_style)
+                GFTextLine(gump, 50, y_pos, 2100, "Hair Style: " + form_data.appearance.hair_style);
+                y_pos += 20;
+            endif
+            if (form_data.appearance.hair_color)
+                GFTextLine(gump, 50, y_pos, form_data.appearance.hair_color, "Hair Color: Selected");
+                y_pos += 20;
+            endif
+            if (form_data.appearance.beard_style)
+                GFTextLine(gump, 50, y_pos, 2100, "Beard Style: " + form_data.appearance.beard_style);
+                y_pos += 20;
+            endif
+            if (form_data.appearance.beard_color)
+                GFTextLine(gump, 50, y_pos, form_data.appearance.beard_color, "Beard Color: Selected");
+                y_pos += 20;
+            endif
+            if (form_data.appearance.skin_color)
+                GFTextLine(gump, 50, y_pos, form_data.appearance.skin_color, "Skin Color: Selected");
+                y_pos += 20;
+            endif
+        else
+            GFTextLine(gump, 50, y_pos, 2100, "No appearance settings configured yet");
+            y_pos += 20;
+        endif
+        
+        y_pos += 30;
+        
+        // Category buttons
+        GFTextLine(gump, 30, y_pos, 1153, "Select Category to Edit:");
+        y_pos += 30;
+        
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 101);
+        GFTextLine(gump, 60, y_pos, 1153, "Hair Style");
+        y_pos += 30;
+        
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 102);
+        GFTextLine(gump, 60, y_pos, 1153, "Hair Color");
+        y_pos += 30;
+        
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 103);
+        GFTextLine(gump, 60, y_pos, 1153, "Beard Style");
+        y_pos += 30;
+        
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 104);
+        GFTextLine(gump, 60, y_pos, 1153, "Beard Color");
+        y_pos += 30;
+        
+        GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 105);
+        GFTextLine(gump, 60, y_pos, 1153, "Skin Color");
+        y_pos += 50;
+        
+        // Done and cancel buttons
+        GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
+        GFTextLine(gump, 60, y_pos, 1153, "Done");
+        
+        GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 998);
+        GFTextLine(gump, 230, y_pos, 1153, "Cancel");
+        
+        var input := GFSendGump(who, gump);
+        
+        if (input[0] == 998 || input[0] == 0)
+            // Cancel
+            continue_editing := 0;
+        elseif (input[0] == 999)
+            // Done
+            continue_editing := 0;
+        elseif (input[0] == 101)
+            // Hair Style
+            EditHairStyle(who, form_data);
+        elseif (input[0] == 102)
+            // Hair Color
+            EditHairColor(who, form_data);
+        elseif (input[0] == 103)
+            // Beard Style
+            EditBeardStyle(who, form_data);
+        elseif (input[0] == 104)
+            // Beard Color
+            EditBeardColor(who, form_data);
+        elseif (input[0] == 105)
+            // Skin Color
+            EditSkinColor(who, form_data);
+        endif
+    endwhile
+endfunction
+
+// Hair style selection
+function EditHairStyle(who, byref form_data)
+    if (!form_data.appearance)
+        form_data.+appearance := struct{};
+    endif
+    
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    if (!config)
+        SendSysMessage(who, "Error: Could not load hair types configuration.");
+        return;
+    endif
+    
+    var hair_config := config["todos"];
+    var hair_styles := GetConfigStringArray(hair_config, "Style");
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+    
+    GFTextMid(gump, 0, 25, 600, 1153, "Select Hair Style");
+    
+    var y_pos := 60;
+    var x_pos := 30;
+    var col := 0;
+    
+    // Add "No Hair" option
+    GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, x_pos + 30, y_pos, 1153, "No Hair (Bald)");
+    y_pos += 30;
+    
+    // Process each hair style
+    foreach style_line in hair_styles
+        var style_parts := SplitWords(style_line);
+        if (style_parts.size() >= 2)
+            var style_name := style_parts[1];
+            var style_id := CInt(style_parts[2]);
+            
+            // Replace underscores with spaces for display
+            while (style_name["_"])
+                style_name["_"] := " ";
+            endwhile
+            
+            GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, style_id);
+            GFTextLine(gump, x_pos + 30, y_pos, 1153, style_name);
+            
+            y_pos += 30;
+            if (y_pos > 600)
+                y_pos := 60;
+                x_pos += 280;
+            endif
+        endif
+    endforeach
+    
+    // Done button
+    GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 60, 650, 1153, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] != 999 && input[0] != 0)
+        form_data.appearance.hair_style := input[0];
+        if (input[0] == 0)
+            form_data.appearance.hair_style_name := "Bald";
+        else
+            // Find the style name
+            foreach style_line in hair_styles
+                var style_parts := SplitWords(style_line);
+                if (style_parts.size() >= 2 && CInt(style_parts[2]) == input[0])
+                    var style_name := style_parts[2];
+                    form_data.appearance.hair_style_name := style_name;
+                    break;
+                endif
+            endforeach
+        endif
+        SendSysMessage(who, "Hair style selected: " + form_data.appearance.hair_style_name);
+    endif
+endfunction
+
+// Hair color selection
+function EditHairColor(who, byref form_data)
+    if (!form_data.appearance)
+        form_data.+appearance := struct{};
+    endif
+    
+    var color_cfg := ReadConfigFile(":hair:config/hairColors");
+    if (!color_cfg)
+        SendSysMessage(who, "Error: Could not load hair color configuration.");
+        return;
+    endif
+    
+    var index_elem := color_cfg["Imperial"]; // Default to Imperial colors
+    var categories := GetConfigStringArray(index_elem, "Category");
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
+    
+    GFTextMid(gump, 0, 25, 700, 1153, "Select Hair Color");
+    
+    var y_pos := 60;
+    var x_pos := 30;
+    
+    GFSetRadioGroup(gump, 1);
+    
+    foreach category in categories
+        var color_elem := color_cfg[category];
+        var colors := GetConfigStringArray(color_elem, "Color");
+        
+        GFTextLine(gump, x_pos, y_pos, 1153, category + ":");
+        y_pos += 25;
+        
+        var color_x := x_pos + 20;
+        var colors_per_row := 8;
+        var color_count := 0;
+        
+        foreach color in colors
+            var color_val := CInt(color);
+            
+            GFRadioButton(gump, color_x, y_pos, 210, 211, 
+                         (form_data.appearance.hair_color == color_val), color_val);
+            GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
+            
+            color_count += 1;
+            if (color_count % colors_per_row == 0)
+                y_pos += 25;
+                color_x := x_pos + 20;
+            else
+                color_x += 80;
+            endif
+        endforeach
+        
+        if (color_count % colors_per_row != 0)
+            y_pos += 25;
+        endif
+        y_pos += 15;
+        
+        if (y_pos > 500)
+            y_pos := 60;
+            x_pos += 350;
+        endif
+    endforeach
+    
+    // Buttons
+    GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+    GFTextLine(gump, 60, 550, 1153, "Apply");
+    
+    GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 230, 550, 1153, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 998)
+        // Find selected color
+        foreach key in (input.keys)
+            if (key > 1000 && key != 998 && key != 999)
+                form_data.appearance.hair_color := key;
+                SendSysMessage(who, "Hair color selected: " + key);
+                break;
+            endif
+        endforeach
+    endif
+endfunction
+
+// Beard style selection
+function EditBeardStyle(who, byref form_data)
+    if (!form_data.appearance)
+        form_data.+appearance := struct{};
+    endif
+    
+    var config := ReadConfigFile(":fls_core:config/hairtypes");
+    if (!config)
+        SendSysMessage(who, "Error: Could not load hair types configuration.");
+        return;
+    endif
+    
+    var beard_config := config["beard"];
+    if (!beard_config)
+        beard_config := config["facialhair"];
+    endif
+    
+    var beard_styles := GetConfigStringArray(beard_config, "Style");
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+    
+    GFTextMid(gump, 0, 25, 600, 1153, "Select Beard Style");
+    
+    var y_pos := 60;
+    var x_pos := 30;
+    
+    // Add "No Beard" option
+    GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, x_pos + 30, y_pos, 1153, "No Beard");
+    y_pos += 30;
+    
+    // Process each beard style
+    foreach style_line in beard_styles
+        var style_parts := SplitWords(style_line);
+        if (style_parts.size() >= 2)
+            var style_name := style_parts[1];
+            var style_id := CInt(style_parts[2]);
+            
+            // Replace underscores with spaces for display
+            while (style_name["_"])
+                style_name["_"] := " ";
+            endwhile
+            
+            GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, style_id);
+            GFTextLine(gump, x_pos + 30, y_pos, 1153, style_name);
+            
+            y_pos += 30;
+            if (y_pos > 600)
+                y_pos := 60;
+                x_pos += 280;
+            endif
+        endif
+    endforeach
+    
+    // Done button
+    GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 60, 650, 1153, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] != 999 && input[0] != 0)
+        form_data.appearance.beard_style := input[0];
+        if (input[0] == 0)
+            form_data.appearance.beard_style_name := "No Beard";
+        else
+            // Find the style name
+            foreach style_line in beard_styles
+                var style_parts := SplitWords(style_line);
+                if (style_parts.size() >= 2 && CInt(style_parts[2]) == input[0])
+                    var style_name := style_parts[1];
+                    while (style_name["_"])
+                        style_name["_"] := " ";
+                    endwhile
+                    form_data.appearance.beard_style_name := style_name;
+                    break;
+                endif
+            endforeach
+        endif
+        SendSysMessage(who, "Beard style selected: " + form_data.appearance.beard_style_name);
+    endif
+endfunction
+
+// Beard color selection (reuses hair color logic)
+function EditBeardColor(who, byref form_data)
+    if (!form_data.appearance)
+        form_data.+appearance := struct{};
+    endif
+    
+    var color_cfg := ReadConfigFile(":hair:config/hairColors");
+    if (!color_cfg)
+        SendSysMessage(who, "Error: Could not load hair color configuration.");
+        return;
+    endif
+    
+    var index_elem := color_cfg["Imperial"]; // Default to Imperial colors
+    var categories := GetConfigStringArray(index_elem, "Category");
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
+    
+    GFTextMid(gump, 0, 25, 700, 1153, "Select Beard Color");
+    
+    var y_pos := 60;
+    var x_pos := 30;
+    
+    GFSetRadioGroup(gump, 1);
+    
+    foreach category in categories
+        var color_elem := color_cfg[category];
+        var colors := GetConfigStringArray(color_elem, "Color");
+        
+        GFTextLine(gump, x_pos, y_pos, 1153, category + ":");
+        y_pos += 25;
+        
+        var color_x := x_pos + 20;
+        var colors_per_row := 8;
+        var color_count := 0;
+        
+        foreach color in colors
+            var color_val := CInt(color);
+            
+            GFRadioButton(gump, color_x, y_pos, 210, 211, 
+                         (form_data.appearance.beard_color == color_val), color_val);
+            GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
+            
+            color_count += 1;
+            if (color_count % colors_per_row == 0)
+                y_pos += 25;
+                color_x := x_pos + 20;
+            else
+                color_x += 80;
+            endif
+        endforeach
+        
+        if (color_count % colors_per_row != 0)
+            y_pos += 25;
+        endif
+        y_pos += 15;
+        
+        if (y_pos > 500)
+            y_pos := 60;
+            x_pos += 350;
+        endif
+    endforeach
+    
+    // Buttons
+    GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+    GFTextLine(gump, 60, 550, 1153, "Apply");
+    
+    GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 230, 550, 1153, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 998)
+        // Find selected color
+        foreach key in (input.keys)
+            if (key > 1000 && key != 998 && key != 999)
+                form_data.appearance.beard_color := key;
+                SendSysMessage(who, "Beard color selected: " + key);
+                break;
+            endif
+        endforeach
+    endif
+endfunction
+
+// Skin color selection
+function EditSkinColor(who, byref form_data)
+    if (!form_data.appearance)
+        form_data.+appearance := struct{};
+    endif
+    
+    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+    if (!skin_cfg)
+        SendSysMessage(who, "Error: Could not load skin color configuration.");
+        return;
+    endif
+    
+    var skin_config := skin_cfg["list"];
+    var skin_colors := GetConfigStringArray(skin_config, "color");
+    
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 600);
+    
+    GFTextMid(gump, 0, 25, 600, 1153, "Select Skin Color");
+    
+    var y_pos := 60;
+    var x_pos := 30;
+    var colors_per_row := 6;
+    var color_count := 0;
+    
+    GFSetRadioGroup(gump, 1);
+    
+    foreach color in skin_colors
+        var color_val := CInt(color);
+        
+        GFRadioButton(gump, x_pos, y_pos, 210, 211, 
+                     (form_data.appearance.skin_color == color_val), color_val);
+        GFTextLine(gump, x_pos + 25, y_pos, color_val, "Skin");
+        
+        color_count += 1;
+        if (color_count % colors_per_row == 0)
+            y_pos += 30;
+            x_pos := 30;
+        else
+            x_pos += 90;
+        endif
+        
+        if (y_pos > 500)
+            break; // Prevent overflow
+        endif
+    endforeach
+    
+    // Buttons
+    GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+    GFTextLine(gump, 60, 550, 1153, "Apply");
+    
+    GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+    GFTextLine(gump, 230, 550, 1153, "Cancel");
+    
+    var input := GFSendGump(who, gump);
+    
+    if (input[0] == 998)
+        // Find selected color
+        foreach key in (input.keys)
+            if (key > 1000 && key != 998 && key != 999)
+                form_data.appearance.skin_color := key;
+                SendSysMessage(who, "Skin color selected: " + key);
+                break;
+            endif
+        endforeach
+    endif
 endfunction
 
 // Add a function to create the boss from form data
@@ -1708,6 +2215,12 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
         boss.tier := "0";
         // Default to 0 if no tier is specified
         SendSysMessage(who, "No tier specified, using NPC's default tier.");
+    endif
+
+    // Appearance data
+    if (form_data.appearance)
+        boss.appearance := form_data.appearance;
+        SendSysMessage(who, "DEBUG: Appearance data transferred to boss structure");
     endif
 
     // Add respawn time values to boss structure
