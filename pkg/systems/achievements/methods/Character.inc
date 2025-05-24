@@ -1,15 +1,19 @@
+include ":achievements:datafile";
+
 print("INSTALLING: Methods for Character -> Achievement System... OK!");
 
-exported function GetAchievementProp(who)
-	var prop := who.GetProp("Achievements");
+exported function GetAchievementProgress(who)
+	return Load(who);
+	// var prop := who.GetProp("Achievements");
 
-	if (!prop) 
-		prop := dictionary;
-	endif
+	// if (!prop) 
+	// 	prop := dictionary;
+	// endif
 
-	return prop;
+	// return prop;
 endfunction
 
-exported function SetAchievementProp(who, prop)
-	who.SetProp("Achievements", prop);
+exported function SetAchievementProgress(who, achiev)
+	Save(who, achiev);
+	// who.SetProp("Achievements", prop);
 endfunction
