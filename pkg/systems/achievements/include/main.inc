@@ -4,32 +4,43 @@
 use cfgfile;
 
 include ":achievements:model/Achievement";
+include ":achievements:model/Combat";
 include ":debug:main";
 include "include/NPCUtil";
 
-function AchievementAdvance(attacker, defender, combatInfo)
+function AchievementCombat_Advance(attacker, defender, combatInfo)
 	var achiev;
-	var npcCategory := defender.GetCategory();
+	var achievName := defender.GetCategory();
 
-	if (!npcCategory) // Se não tem categoria, ou é corpo, ou não é um npc válido.
-		npcCategory := NPC_GetNPCConfig(defender.getNPCTemplate()).Category; // Tenta ver se era corpo e tenta buscar pelo template.
-		if (!npcCategory) // Se ainda não tem categoria, não é um npc válido.
+	if (!achievName) // Se não tem categoria, ou é corpo, ou não é um npc válido.
+		achievName := NPC_GetNPCConfig(defender.getNPCTemplate()).Category; // Tenta ver se era corpo e tenta buscar pelo template.
+		if (!achievName) // Se ainda não tem categoria, não é um npc válido.
 			return;
 		endif
 	endif
 
-	achiev := attacker.GetAchievementProgress(npcCategory);
-	achiev.AddXP(combatInfo.xp);
-	achiev.AddKills(combatInfo.kills);
-	achiev.AddHits(combatInfo.hits);
-	achiev.AddDamage(combatInfo.damage);
-	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()}");
+	achiev := attacker.GetAchievementProgress(achievName);
+
+	if (!achiev)
+		achiev := Combat(achievName, 0, 0, 0, 0, 0); // Cria um novo achievement de combate.
+	endif
+
+	Advance(achiev, combatInfo);
+	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"XP: {CInt(combatInfo.xp)} - Kills: {CInt(combatInfo.kills)} - Hits: {CInt(combatInfo.hits)} - Damage: {CInt(combatInfo.damage)}");
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Achievement (acumulado) -> XP: {achiev.GetXP()} - Level: {achiev.GetLevel()} - Kills: {achiev.GetKills()} - Hits: {achiev.GetHits()} - Damage: {achiev.GetDamage()}");
 
 	attacker.SetAchievementProgress(achiev);
 endfunction
 
-function AchievementCheckLevel(attacker)
+function Advance(byRef achiev, combatInfo)
+	achiev.AddXP(combatInfo.xp);
+	achiev.AddKills(combatInfo.kills);
+	achiev.AddHits(combatInfo.hits);
+	achiev.AddDamage(combatInfo.damage);
+endfunction
+
+function CheckLevel()
 	return 0;
 endfunction
+

@@ -1,22 +1,25 @@
+const ACHIEVEMENT := "ACHIEVEMENT";
+
 class Achievement()
+	var type;
 	var name;
 	var xp;
 	var level;
-	var hits;
-	var kills;
-	var damage;
 
-	function Achievement(this, name, xp, level, hits, kills, damage)
+	function Achievement(this, name, xp, level)
+		this.type := ACHIEVEMENT;
+
 		this.name := CStr(name);
 		this.xp := CInt(xp);
 		this.level := CInt(level);
-		this.hits := CInt(hits);
-		this.kills := CInt(kills);
-		this.damage := CInt(damage);
 	endfunction
 
 	function getName(this)
 		return this.name;
+	endfunction
+
+	function getType(this)
+		return this.type;
 	endfunction
 
 	function getXp(this)
@@ -25,18 +28,6 @@ class Achievement()
 
 	function getLevel(this)
 		return this.level;
-	endfunction
-
-	function getHits(this)
-		return this.hits;
-	endfunction
-
-	function getKills(this)
-		return this.kills;
-	endfunction
-
-	function getDamage(this)
-		return this.damage;
 	endfunction
 
 	function setName(this, value)
@@ -51,32 +42,8 @@ class Achievement()
 		this.level := value;
 	endfunction
 
-	function setHits(this, value)
-		this.hits := value;
-	endfunction
-
-	function setKills(this, value)
-		this.kills := value;
-	endfunction
-
-	function setDamage(this, value)
-		this.damage := value;
-	endfunction
-
 	function AddXP(this, value)
 		this.xp += CInt(value);
-	endfunction
-	
-	function AddHits(this, value)
-		this.hits += CInt(value);
-	endfunction
-
-	function AddKills(this, value)
-		this.kills += CInt(value);
-	endfunction
-
-	function AddDamage(this, value)
-		this.damage += CInt(value);
 	endfunction
 	
 	function AddLevel(this, value)
@@ -86,10 +53,8 @@ class Achievement()
 	function Serialize(this)
 		return struct{
 			name := this.name,
+			type := this.type,
 			xp := this.xp,
-			level := this.level,
-			hits := this.hits,
-			kills := this.kills,
 			damage := this.damage
 		};
 	endfunction
@@ -100,14 +65,12 @@ class Achievement()
 		endif
 
 		this.name := data.name;
+		this.type := data.type;
 		this.xp := CInt(data.xp);
 		this.level := CInt(data.level);
-		this.hits := CInt(data.hits);
-		this.kills := CInt(data.kills);
-		this.damage := CInt(data.damage);
 	endfunction
 
 	function toString(this)
-		return $"Achievement para {this.name} (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage})";
+		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level})";
 	endfunction
 endclass
