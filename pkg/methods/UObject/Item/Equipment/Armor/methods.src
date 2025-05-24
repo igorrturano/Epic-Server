@@ -1,5 +1,5 @@
 program Install()
-	print("INSTALLING: Methods for Armors... OK!");
+	print("INSTALLING: Methods for Armor... OK!");
 	return 1;
 endprogram
 

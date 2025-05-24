@@ -6,7 +6,7 @@ include ":gumps:epicGumps";
 include ":equipsys:utils";
 
 program Install()
-	print("INSTALLING: Methods for Characters... OK!");
+	print("INSTALLING: Methods for Character... OK!");
 	return 1;
 endprogram
 

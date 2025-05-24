@@ -183,7 +183,7 @@ function InitializeFormData()
     // Equipment
     form_data.weapon_type := "";
     form_data.specific_weapon := "";
-    form_data.class := "";
+    form_data.classe := "";
     form_data.magic_school := "";
     form_data.drop_chance := "25";
     
@@ -199,7 +199,7 @@ function InitializeFormData()
     form_data.teleport_loc := struct{};
 
     // Add class-related fields
-    form_data.class := "";
+    form_data.classe := "";
 endfunction
 
 // Extract data from the current page
@@ -1663,11 +1663,11 @@ function ShowPage5(who, title, gump_width, gump_height)
     elseif (input[0] == 83)
         return RangedWeapons(who, title, gump_width, gump_height);
     elseif (input[0] == 85) // Guerreiro selected
-        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
+        form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
     elseif (input[0] == 86) // Sabio selected
-        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
+        form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
     elseif (input[0] == 87) // Ladino selected
-        form_data.class := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
+        form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
     elseif (input[0] == 88) // Magic School button
         var selected_school := ShowMagicSchoolSelection(who, title, gump_width, gump_height);
         if (selected_school != "")
@@ -2435,8 +2435,8 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     boss.flee_health := CInt(form_data.flee_health);
     SendSysMessage(who, "Creating boss...");
 
-    if (form_data.class && form_data.class != "")
-        boss.class := form_data.class;
+    if (form_data.classe && form_data.classee != "")
+        boss.classe := form_data.classe;
     endif
 
     if (form_data.loot && form_data.loot.size() > 0)
@@ -2455,8 +2455,8 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
     endif
 
     // Set class and abilities
-    if (form_data.class)
-        boss.class := form_data.class;
+    if (form_data.classe)
+        boss.classe := form_data.classe;
     endif   
     
     // In CreateBossFromGump function, add:

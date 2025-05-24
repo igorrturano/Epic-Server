@@ -33,7 +33,7 @@ include "include/client";
 include ":charactercreation:habilidades";
 
 program Install()
-	print("INSTALLING: Methods for NPCs... OK!");
+	print("INSTALLING: Methods for NPC... OK!");
 	return 1;
 endprogram
 
