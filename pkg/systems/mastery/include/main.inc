@@ -2,7 +2,6 @@
 // Foi feito com struct pra evitar refatoramento e um monte de parametros.
 include ":debug:main";
 
-
 function MasteryAdvance(attacker, combatInfo)
 	var prop := attacker.GetMasteryProp();
 

@@ -78,7 +78,7 @@ program MainHitScript(params)
 	EpicApplyDamageElemental(attacker, defender, weapon, armor, elementalDamages);
 
 	MasteryAdvance(attacker, struct{ hits := 1 });
-	AchievementAdvance(attacker, defender, struct{ hits := 1, damage := basedamage });
+	AchievementCombat_Advance(attacker, defender, struct{ hits := 1, damage := basedamage });
 
 	return 1;
 endprogram
