@@ -1,5 +1,5 @@
 program Install()
-	print("INSTALLING: Methods for Equipments... OK!");
+	print("INSTALLING: Methods for Equipment... OK!");
 	return 1;
 endprogram
 
