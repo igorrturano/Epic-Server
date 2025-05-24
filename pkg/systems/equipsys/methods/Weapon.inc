@@ -1,6 +1,6 @@
-use cfgfile;
-
 include ":equipsys:utils";
+
+print("INSTALLING: Methods for Weapon -> Equipment System... OK!");
 
 /**
  * getMainDamageDice(item)

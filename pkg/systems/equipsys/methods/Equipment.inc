@@ -1,6 +1,6 @@
 include ":equipsys:equipstats";
 
-print("INSTALLING: Methods for Item -> Equipment System... OK!");
+print("INSTALLING: Methods for Equipment -> Equipment System... OK!");
 
 /**
  * Function(params)
