@@ -7,7 +7,6 @@ class Achievement()
 	var damage;
 
 	function Achievement(this, name, xp, level, hits, kills, damage)
-		// Inicializa os atributos da conquista
 		this.name := CStr(name);
 		this.xp := CInt(xp);
 		this.level := CInt(level);
@@ -62,6 +61,26 @@ class Achievement()
 
 	function setDamage(this, value)
 		this.damage := value;
+	endfunction
+
+	function AddXP(this, value)
+		this.xp += CInt(value);
+	endfunction
+	
+	function AddHits(this, value)
+		this.hits += CInt(value);
+	endfunction
+
+	function AddKills(this, value)
+		this.kills += CInt(value);
+	endfunction
+
+	function AddDamage(this, value)
+		this.damage += CInt(value);
+	endfunction
+	
+	function AddLevel(this, value)
+		this.level += CInt(value);
 	endfunction
 
 	function Serialize(this)
