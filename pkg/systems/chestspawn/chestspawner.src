@@ -53,9 +53,9 @@ function makeChests(item, frq, amt, rng)
 	var current, newamt;
 	var lvl := GetObjProperty(item, "level");
 	var lootname;
-	var class := cstr(GetObjProperty(item, "class"));
+	var classe := cstr(GetObjProperty(item, "class"));
 	var race  := cstr(GetObjProperty(item, "race"));
-	lootname := race+class+"Chest"+lvl;
+	lootname := race+classe+"Chest"+lvl;
 	var chests;
 	while(item)
 		CleanArray(item);
