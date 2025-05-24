@@ -1,46 +1,24 @@
-include ":achievements:model/achievement";
+include ":achievements:model/Achievement";
 include ":datafile:datafile";
 
-const FILENAME := ":achievements:achievements.dat";
+const FILENAME := ":achievements:achievements";
 
 function Save(who, achievement)
-	var file := OpenDataFile(FILENAME);
-	if (file == error)
-		print("Error loading achievements data file: " + file.errortext);
-		return;
-	endif
-
-	var elem := file.FindElement(Hex(who.serial));
-	if (elem == error)
-		print("Error finding achievements element: " + elem.errortext);
-		return;
-	endif
-
+	var file := DFOpenDataFile(FILENAME, DF_CREATE);
+	var elem := DFFindElement(file, Hex(who.serial), DF_CREATE);
 	var achievData := achievement.Serialize();
-	foreach data in (achievData)
-		elem.SetProp(who, data);
-	endforeach
-	
-	file.Save();
-	print("Achievements saved for " + who);
 
+	elem.SetProp(achievement.GetName(), achievData);
 	return 1;
 endfunction
 
-function Load(who)
+function Load(who, name)
 	var file := OpenDataFile(FILENAME);
-	if (file == error)
-		print("Error opening achievements data file: " + file.errortext);
-		return;
-	endif
-
 	var elem := file.FindElement(Hex(who.serial));
-	if (elem == error)
-		print("Error finding achievements element: " + elem.errortext);
-		return;
-	endif
 
-	var achievement := Achievement(elem.GetProp("xp"), elem.GetProp("level"), elem.GetProp("hits"), elem.GetProp("kills"), elem.GetProp("damage"));
+	var achievData := elem.GetProp(name);
+	var achiev := Achievement(name, 0, 0, 0, 0, 0); // Cria um novo Achievement para receber os dados.
+	achiev.Deserialize(achievData);
 
-	return achievement;
+	return achiev;
 endfunction
