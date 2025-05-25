@@ -4,8 +4,8 @@ include ":achievements:model/Combat";
 
 print("INSTALLING: Methods for Character -> Achievement System... OK!");
 
-exported function GetAchievementProgress(who, name)
-	return LoadAchievement(who, name);
+exported function GetAchievementProgress(who, type, name)
+	return LoadAchievement(who, type, name);
 endfunction
 
 exported function SetAchievementProgress(who, object)
