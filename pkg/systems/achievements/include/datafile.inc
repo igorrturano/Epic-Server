@@ -20,6 +20,8 @@ function LoadAchievement(who, type, name)
 	var achievData := elem.GetProp(name);
 	var achiev;
 
+	if (!achievData) return error{ errortext := $"Achievement data not found for {name} ({type})" }; endif
+
 	case (type)
 		ACHIEVEMENT:
 			achiev := Achievement(name);
@@ -33,11 +35,7 @@ function LoadAchievement(who, type, name)
 			return error{ errortext := $"Invalid achievement type: {type}"};
 	endcase
 
-	if (!achievData)
-		return error{ errortext := $"Achievement data not found for {name} ({type})" };
-	else
-		achiev.Deserialize(achievData);
-	endif
+	achiev.Deserialize(achievData);
 
 	return achiev;
 endfunction
