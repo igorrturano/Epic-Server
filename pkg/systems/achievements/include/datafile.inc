@@ -23,17 +23,21 @@ function LoadAchievement(who, type, name)
 	case (type)
 		ACHIEVEMENT:
 			achiev := Achievement(name);
-			achiev.Deserialize(achievData);
 			break;
 
 		ACHIEVEMENT_COMBAT:
 			achiev := Combat(name);
-			achiev.Deserialize(achievData);
 			break;
 
 		default:
 			return error{ errortext := $"Invalid achievement type: {type}"};
 	endcase
+
+	if (!achievData)
+		return error{ errortext := $"Achievement data not found for {name} ({type})" };
+	else
+		achiev.Deserialize(achievData);
+	endif
 
 	return achiev;
 endfunction
