@@ -27,7 +27,7 @@ include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
-include ":achievements:main";
+include ":achievements:CombatController";
 
 //include ":spawnnet:spawnnet";
 //include ":spawnregion:spawn";
