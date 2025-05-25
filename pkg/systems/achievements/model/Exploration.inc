@@ -61,14 +61,7 @@ class Exploration(Achievement)
 	endfunction
 
 	function Deserialize(this, data)
-		var result := Achievement::Deserialize(this, data);
-		if (!data.locations || !data.discoveries || !data.distance)
-			result := error{ errortext := "Achievement data is missing required fields." };
-		endif
-		if (result == error)
-			return result;
-		endif
-
+		Achievement::Deserialize(this, data);
 		this.locations := CInt(data.locations);
 		this.discoveries := CInt(data.discoveries);
 		this.distance := CInt(data.distance);
