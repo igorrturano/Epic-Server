@@ -23,7 +23,7 @@ function AchievementCombat_Advance(attacker, defender, combatInfo)
 	// Se ainda não tem categoria, não é um npc válido.
 	if (!achievName) return; endif
 
-	achiev := attacker.GetAchievementProgress(achievName) ?: Combat(achievName, 0, 0, 0, 0, 0);
+	achiev := attacker.GetAchievementProgress(ACHIEVEMENT_COMBAT, achievName) ?: Combat(achievName);
 
 	Advance(achiev, combatInfo);
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
