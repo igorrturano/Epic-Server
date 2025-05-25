@@ -87,22 +87,41 @@ var listDebugs := array{
 	struct { name := DEBUG_ACHIEVEMENT, "level" := 0 }
 };
 
-// function CheckDebug(who, debugName)
-//     var prop := who.getDebugProp(debugName);
-
-//     if (!prop)
-//         return 0;
-//     endif
-
-//     return 1;
-// endfunction
-
+/**
+ * DebugMsg(who, debugName, msg)
+ *
+ * Envia uma mensagem de debug para um jogador se ele tiver a propriedade de debug habilitada.
+ * 
+ * A função verifica se o jogador possui a propriedade de debug específica ou a propriedade
+ * DEBUG_ALL habilitada. Se alguma das condições for verdadeira, envia uma mensagem formatada
+ * do sistema para o jogador.
+ * 
+ * @param who O jogador que receberá a mensagem de debug
+ * @param debugName O nome da categoria de debug a ser verificada
+ * @param msg A mensagem de debug a ser enviada
+ * 
+ * @returns Nenhum valor de retorno
+ */
 function DebugMsg(who, debugName, msg)
     if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
         SendSysMessageEx(who, $"DEBUG {debugName}: {msg}", SSM_INFO);
     endif
 endfunction
 
+/**
+ * DebugMsgEvent(debugName, msg)
+ *
+ * Envia uma mensagem de debug para todos os jogadores online que possuem
+ * a propriedade de debug específica ou a propriedade DEBUG_ALL ativada.
+ *
+ * @param debugName {string} Nome da categoria de debug a ser verificada
+ * @param msg {string} Mensagem de debug a ser enviada aos jogadores
+ *
+ * @description Esta função percorre todos os personagens online e verifica
+ * se eles possuem a propriedade de debug correspondente ao debugName ou
+ * a propriedade DEBUG_ALL. Se possuírem, a mensagem é enviada como uma
+ * mensagem do sistema com nível de informação.
+ */
 function DebugMsgEvent(debugName, msg) 
     foreach who in EnumerateOnlineCharacters()
         if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))

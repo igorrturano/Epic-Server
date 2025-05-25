@@ -10,7 +10,7 @@ include ":combat:settings";
 include ":combat:damage";
 include ":charactercreation:resists";
 include ":mastery:main";
-include ":achievements:main";
+include ":achievements:CombatController";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
@@ -78,7 +78,7 @@ program MainHitScript(params)
 	EpicApplyDamageElemental(attacker, defender, weapon, armor, elementalDamages);
 
 	MasteryAdvance(attacker, struct{ hits := 1 });
-	AchievementAdvance(attacker, defender, struct{ hits := 1, damage := basedamage });
+	AchievementCombat_Advance(attacker, defender, struct{ hits := 1, damage := basedamage });
 
 	return 1;
 endprogram
