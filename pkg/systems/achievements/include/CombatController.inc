@@ -18,20 +18,14 @@ include "include/NPCUtil";
  */
 function AchievementCombat_Advance(attacker, defender, combatInfo)
 	var achiev;
-	var achievName := defender.GetCategory();
+	var achievName := defender.GetCategory() ?: NPC_GetNPCConfig(defender.getNPCTemplate()).Category;
 
-	if (!achievName) // Se não tem categoria, ou é corpo, ou não é um npc válido.
-		achievName := NPC_GetNPCConfig(defender.getNPCTemplate()).Category; // Tenta ver se era corpo e tenta buscar pelo template.
-		if (!achievName) // Se ainda não tem categoria, não é um npc válido.
-			return;
-		endif
-	endif
+	// Se ainda não tem categoria, não é um npc válido.
+	if (!achievName) return; endif
 
-	achiev := attacker.GetAchievementProgress(achievName);
-
-	if (!achiev)
-		achiev := Combat(achievName, 0, 0, 0, 0, 0); // Cria um novo achievement de combate.
-	endif
+	// Verifica se o atacante já tem um achievement de combate para a categoria do defensor.
+	// Se não tiver, cria um novo achievement de combate.
+	achiev := attacker.GetAchievementProgress(achievName) ?: Combat(achievName, 0, 0, 0, 0, 0);
 
 	Advance(achiev, combatInfo);
 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, $"Ganho de achievement para a categoria: {achiev.GetName()} ({achiev.GetType()})");
