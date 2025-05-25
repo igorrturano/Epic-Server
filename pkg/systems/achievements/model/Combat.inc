@@ -76,14 +76,7 @@ class Combat(Achievement)
 	endfunction
 	
 	function Deserialize(this, data)
-		var result := Achievement::Deserialize(this, data);
-		if (!data.hits || !data.kills || !data.damage || !data.criticals)
-			result := error{ errortext := "Achievement data is missing required fields." };
-		endif
-		if (result == error)
-			return result;
-		endif
-
+		Achievement::Deserialize(this, data);
 		this.hits := CInt(data.hits);
 		this.kills := CInt(data.kills);
 		this.damage := CInt(data.damage);

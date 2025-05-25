@@ -60,10 +60,6 @@ class Achievement()
 	endfunction
 
 	function Deserialize(this, data)
-		if (!data.name || !data.type || !data.xp || !data.level)
-			return error{ errortext := "Achievement data is missing required fields." };
-		endif
-
 		this.name := data.name;
 		this.type := data.type;
 		this.xp := CInt(data.xp);

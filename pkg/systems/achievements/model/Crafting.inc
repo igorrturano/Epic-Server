@@ -39,14 +39,7 @@ class Crafting(Achievement)
     endfunction
 
     function Deserialize(this, data)
-		var result := Achievement::Deserialize(this, data);
-		if (!data.craftedNormal || !data.craftedExceptional)
-			result := error{ errortext := "Achievement data is missing required fields." };
-		endif
-		if (result == error)
-			return result;
-		endif
-
+		Achievement::Deserialize(this, data);
         this.craftedNormal := data.craftedNormal;
         this.craftedExceptional := data.craftedExceptional;
     endfunction

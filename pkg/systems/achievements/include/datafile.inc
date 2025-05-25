@@ -30,7 +30,7 @@ function LoadAchievement(who, type, name)
 			achiev := Combat(name);
 			achiev.Deserialize(achievData);
 			break;
-		
+
 		default:
 			return error{ errortext := $"Invalid achievement type: {type}"};
 	endcase
