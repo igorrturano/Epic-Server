@@ -236,18 +236,20 @@ if (clicked_button_id >= 1000 && clicked_button_id < 2000)
             endif
             
             var elem := df.FindElement(CStr(serial_to_publish)); // FORÇAR conversão para string
-            if (elem && !elem.errortext)
-                elem.SetProp("status", "publicado");
-                SendSysMessage(who, "Livro publicado com sucesso!", color := 66);
-                
-                // Preparar dados para mensagem
-                var book_title := livro_info_struct.col_titulo;
-                
-                // Mensagem de livro aprovado
-                var message := "**LIVRO APROVADO E COPIADO** -> Leiam o livro: **'" + book_title + "'**";
-                
-                // Enviar mensagem para o Discord
-                PresetDiscordMessage(message, "livros_log_rp");
+   if (elem && !elem.errortext)
+    elem.SetProp("status", "publicado");
+    SendSysMessage(who, "Livro publicado com sucesso!", color := 66);
+    
+    // Preparar dados para mensagem
+    var book_title := livro_info_struct.col_titulo;
+    var gm_account := who.acctname ? who.acctname : who.name;
+    
+    // Mensagem de livro aprovado com nome da conta do GM
+    var message := "**LIVRO APROVADO E COPIADO** - Aprovado por GM *" + gm_account + 
+                  "*. Leiam o livro: **'" + book_title + "'**";
+    
+    // Enviar mensagem para o Discord
+    PresetDiscordMessage(message, "livros_log_rp");
                 
                 Print("[SEALED_BOOKS_PUBLISHED] GM " + who.name + " publicou o livro '" + 
                       CStr(livro_info_struct.col_titulo) + "' de " + 
