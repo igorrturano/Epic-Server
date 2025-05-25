@@ -3,14 +3,15 @@
 include ":debug:main";
 
 function MasteryAdvance(attacker, combatInfo)
-	var prop := attacker.GetMasteryProp();
+	var prop := attacker.GetMastery() ?: struct{}; // Pega a prop de maestria do atacante, ou cria um struct vazio se não existir.
 
 	if (!prop[attacker.weapon.objtype]) // Se ainda não tem pra arma em punho, cria o struct.
 		prop[attacker.weapon.objtype] := struct{
 			xp := 0,
 			level := 0,
 			hits := 0,
-			kills := 0
+			kills := 0,
+			damage := 0
 		};
 	endif
 
