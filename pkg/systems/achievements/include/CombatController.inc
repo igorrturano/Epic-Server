@@ -23,8 +23,6 @@ function AchievementCombat_Advance(attacker, defender, combatInfo)
 	// Se ainda não tem categoria, não é um npc válido.
 	if (!achievName) return; endif
 
-	// Verifica se o atacante já tem um achievement de combate para a categoria do defensor.
-	// Se não tiver, cria um novo achievement de combate.
 	achiev := attacker.GetAchievementProgress(achievName) ?: Combat(achievName, 0, 0, 0, 0, 0);
 
 	Advance(achiev, combatInfo);

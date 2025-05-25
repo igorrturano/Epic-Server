@@ -59,6 +59,18 @@ class Mastery()
 		};
 	endfunction
 
+	function Deserialize(this, data)
+		if (!data)
+			return error{ errortext := "Achievement data is null or undefined." };
+		endif
+
+		this.name := data.name;
+		this.type := data.type;
+		this.xp := CInt(data.xp);
+		this.level := CInt(data.level);
+	endfunction
+	
+
 	function toString(this)
 		return $"Maestria {this.name} ({this.type}) (Level={this.level}, XP={this.xp})";
 	endfunction
