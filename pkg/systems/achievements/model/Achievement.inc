@@ -6,12 +6,12 @@ class Achievement()
 	var xp;
 	var level;
 
-	function Achievement(this, name, xp, level)
+	function Achievement(this, name)
 		this.type := ACHIEVEMENT;
 
 		this.name := CStr(name);
-		this.xp := CInt(xp);
-		this.level := CInt(level);
+		this.xp := 0;
+		this.level := 0;
 	endfunction
 
 	function getName(this)
@@ -60,8 +60,8 @@ class Achievement()
 	endfunction
 
 	function Deserialize(this, data)
-		if (!data)
-			return error{ errortext := "Achievement data is null or undefined." };
+		if (!data.name || !data.type || !data.xp || !data.level)
+			return error{ errortext := "Achievement data is missing required fields." };
 		endif
 
 		this.name := data.name;
