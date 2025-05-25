@@ -3,7 +3,7 @@ include ":achievements:model/Achievement";
 const ACHIEVEMENT_EXPLORATION := ACHIEVEMENT + "_EXPLORATION";
 
 class Exploration(Achievement)
-    var locations;
+    var locations := array;
     var discoveries;
     var distance;
 

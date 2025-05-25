@@ -1,13 +1,21 @@
-// Essa função deve ser chamada no npcdeath()
-// O combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
-// Foi feito com struct pra evitar refatoramento e um monte de parametros.
-use cfgfile;
-
+// O parâmetro combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
+// Feito com struct pra evitar refatoramento e um monte de parametros.
 include ":achievements:model/Achievement";
 include ":achievements:model/Combat";
 include ":debug:main";
 include "include/NPCUtil";
 
+
+/**
+ * AchievementCombat_Advance(attacker, defender, combatInfo)
+ *
+ * Avança o progresso de achievements de combate para o atacante, baseado nas informações do combate contra o defensor.
+ *
+ * Parameters
+ * attacker: Entidade que realizou o ataque (jogador ou NPC).
+ * defender: Entidade que foi atacada (jogador ou NPC).
+ * combatInfo: Struct contendo informações do combate (xp, kills, hits, damage, etc).
+ */
 function AchievementCombat_Advance(attacker, defender, combatInfo)
 	var achiev;
 	var achievName := defender.GetCategory();
@@ -33,6 +41,15 @@ function AchievementCombat_Advance(attacker, defender, combatInfo)
 	attacker.SetAchievementProgress(achiev);
 endfunction
 
+/**
+ * Advance(achiev, combatInfo)
+ *
+ * Avança o progresso do achievement de combate com base nas informações do combate.
+ *
+ * Parameters
+ * achiev: Achievement de combate a ser atualizado.
+ * combatInfo: Struct contendo informações do combate (xp, kills, hits, damage, etc).
+ */
 function Advance(byRef achiev, combatInfo)
 	achiev.AddXP(combatInfo.xp);
 	achiev.AddKills(combatInfo.kills);
