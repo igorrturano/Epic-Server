@@ -32,21 +32,22 @@ program GerenteTratamentoProduto(parametros)
 		Sleepms(2);
 		while(!DeveFinalizarTratamento(estadoGerenciamento))
 			evento :=  Wait_For_Event(60);
+			var eventoId := evento.id;
 			
 			foreach processo in processosGerenciados // Se algum dos processos gerênciados morrer, marca para sair do loop.
 				if(!processo.state)
-					estadoGerenciamento := FINALIZADO;
+					eventoId := EV_CANCELADO;
 					break;
 				endif
 				Sleepms(2);
 			endforeach
 
-			if(DeveFinalizarTratamento(estadoGerenciamento) && evento.id != EV_CANCELADO) // sai do loop imediatamente, a não ser que seja cancelamento.
+			if(DeveFinalizarTratamento(estadoGerenciamento) && eventoId != EV_CANCELADO) // sai do loop imediatamente, a não ser que seja cancelamento.
 				LimpaProcessosGerenciados(quem, processosGerenciados);
 				break;
 			endif
 
-			case (evento.id)
+			case (eventoId)
 				EV_FIM_CICLO:
 					CloseGump(quem,processosGerenciados[GUMP_INTERATIVO].pid,5);
 					estadoGerenciamento := CICLANDO;

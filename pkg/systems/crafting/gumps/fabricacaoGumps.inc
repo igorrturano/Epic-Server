@@ -605,15 +605,15 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 
 	case (receita.uso)
 		"One_Handed":
-			GFGumpPic(gump,x + 5 ,y + 5,137,0x6c1);
+			GFGumpPic(gump,x + 5 ,y + 5,137,0x6e9f);
 			break;
 		"Two_Handed":
 		"Dual_Wield":
-			GFGumpPic(gump,x + 5 ,y + 5,137,0x6c1);
-			GFGumpPic(gump,x + 28 ,y + 5,136,0x6c1);
+			GFGumpPic(gump,x + 5 ,y + 5,137,0x6e9f);
+			GFGumpPic(gump,x + 28 ,y + 5,136,0x6e9e);
 			break;
 		"Ranged":
-			GFGumpPic(gump,x + 5 ,y + 5,138,0x6c1);
+			GFGumpPic(gump,x + 5 ,y + 5,138,0x6ea0);
 			break;
 		default:
 	endcase

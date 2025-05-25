@@ -78,21 +78,6 @@ function EnviaItensComplexosGump(quem,profissao)
 	var sessao := InicializaSessaoComplexos(parametros.propCraft[parametros.pericia]);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
-	//TODO Fazer opção para reparar
-	//TODO criar botão para sair
-	//TODO Criar fluxo para itens stackaveis. [Já fiz,mas tem que testar.]
-	//TODO implementar componentes opcionais [já fiz os opcionais, tem que testar.] 
-	//*** POS MERGE DEVELOP***
-	//TODO Solucionar o problema das armaduras estarem sem informações.
-	//TODO Criar gumps de ajuda.
-	//TODO Criar API para gerar item fabricado.
-	//TODO Criar adicionais de dificuldade para estações de tipos diferentes na fabricação.
-	//TODO Criar e atribuir componentes a todos os itens.
-	//TODO aplicar efeitos do componente em suas respectivas ações.
-	//TODO Animações para todas as profissões. [Late]
-	//TODO Marcar sistema antigo como depreciado. [Late]
-	//TODO Embelezar gumps [Penultima fase]
-	//TODO Documentar tudo [Ultima fase]
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
