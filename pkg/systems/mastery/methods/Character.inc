@@ -1,11 +1,7 @@
 print("INSTALLING: Methods for Character -> Mastery System... OK!");
 
 exported function GetMasteryProp(who)
-	var prop := who.GetProp("Masteries");
-
-	if (!prop) 
-		prop := dictionary;
-	endif
+	var prop := who.GetProp("Masteries") ?: dictionary{};
 
 	return prop;
 endfunction
