@@ -12,7 +12,7 @@ include ":tn:tngumps";
 include ":charactercreation:habilidades";
 include ":gumps:epicGumps";
 include ":mastery:main";
-include ":achievements:main";
+include ":achievements:CombatController";
 
 function UpdateXPBar(who)
    if (!GetObjProperty(who, "chardata")) 
