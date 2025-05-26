@@ -1,15 +1,14 @@
-include ":datafile:datafile";
 include ":datafile:DFTools";
 include ":achievements:model/Achievement";
 include ":achievements:model/Combat";
+include ":achievements:model/Crafting";
+include ":achievements:model/Exploration";
 
 var DFController := DFTools(":achievements:achievements");
 
 function SaveAchievement(who, achievement)
 	var achievData := achievement.Serialize();
 	DFController.WriteValue(Hex(who.serial), achievement.GetName(), achievData);
-
-	// elem.SetProp(achievement.GetName(), achievData);
 
 	return true;
 endfunction
@@ -27,6 +26,14 @@ function LoadAchievement(who, type, name)
 
 		ACHIEVEMENT_COMBAT:
 			achiev := Combat(name);
+			break;
+
+		ACHIEVEMENT_CRAFTING:
+			achiev := Crafting(name);
+			break;
+		
+		ACHIEVEMENT_EXPLORATION:
+			achiev := Exploration(name);
 			break;
 
 		default:

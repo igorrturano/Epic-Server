@@ -4,21 +4,39 @@ const ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT";
 
 class Combat(Achievement)
 	var hits;
+	var blocked;
 	var kills;
 	var damage;
+	var damageTaken;
+	var damageMax;
+	var damageMaxTaken;
 	var criticals;
+	var criticalDamage;
+	var criticalDamageMax;
+	var manaSpent;
 
 	function Combat(this, name)
 		Super(name);
 		this.type := ACHIEVEMENT_COMBAT;
 		this.hits := 0;
+		this.blocked := 0;
 		this.kills := 0;
 		this.damage := 0;
+		this.damageTaken := 0;
+		this.damageMax := 0;
+		this.damageMaxTaken := 0;
 		this.criticals := 0;
+		this.criticalDamage := 0;
+		this.criticalDamageMax := 0;
+		this.manaSpent := 0;
 	endfunction
 
 	function getHits(this)
 		return this.hits;
+	endfunction
+
+	function getBlocked(this)
+		return this.blocked;
 	endfunction
 
 	function getKills(this)
@@ -33,38 +51,26 @@ class Combat(Achievement)
 		return this.criticals;
 	endfunction
 
-	function setHits(this, value)
-		this.hits := value;
+	function AddHits(this)
+		this.hits++;
 	endfunction
 
-	function setKills(this, value)
-		this.kills := value;
+	function AddBlocked(this)
+		this.blocked++;
 	endfunction
 
-	function setDamage(this, value)
-		this.damage := value;
-	endfunction
-
-	function setCriticals(this, value)
-		this.criticals := value;
-	endfunction
-
-	function AddHits(this, value)
-		this.hits += CInt(value);
-	endfunction
-
-	function AddKills(this, value)
-		this.kills += CInt(value);
+	function AddKills(this)
+		this.kills++;
 	endfunction
 
 	function AddDamage(this, value)
 		this.damage += CInt(value);
 	endfunction
 
-	function AddCriticals(this, value)
-		this.criticals += CInt(value);
+	function AddCriticals(this)
+		this.criticals++;
 	endfunction
-	
+
 	function Serialize(this)
 		var base_data := Achievement::Serialize(this);
 		base_data.+hits := this.hits;
