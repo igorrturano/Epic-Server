@@ -6,11 +6,11 @@ class Crafting(Achievement)
     var craftedNormal;
     var craftedExceptional;
 
-    function Crafting(this, name, xp, level, craftedNormal, craftedExceptional)
-        Super(name, xp, level);
+    function Crafting(this, name)
+        Super(name);
         this.type := ACHIEVEMENT_CRAFTING;
-        this.craftedNormal := craftedNormal;
-        this.craftedExceptional := craftedExceptional;
+        this.craftedNormal := 0;
+        this.craftedExceptional := 0;
     endfunction
 
     function getCraftedNormal(this)
@@ -39,7 +39,7 @@ class Crafting(Achievement)
     endfunction
 
     function Deserialize(this, data)
-        Achievement::Deserialize(this, data);
+		Achievement::Deserialize(this, data);
         this.craftedNormal := data.craftedNormal;
         this.craftedExceptional := data.craftedExceptional;
     endfunction

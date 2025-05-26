@@ -6,13 +6,15 @@ class Combat(Achievement)
 	var hits;
 	var kills;
 	var damage;
-	
-	function Combat(this, name, xp, level, hits, kills, damage)
-		Super(name, xp, level);
+	var criticals;
+
+	function Combat(this, name)
+		Super(name);
 		this.type := ACHIEVEMENT_COMBAT;
-		this.hits := CInt(hits);
-		this.kills := CInt(kills);
-		this.damage := CInt(damage);
+		this.hits := 0;
+		this.kills := 0;
+		this.damage := 0;
+		this.criticals := 0;
 	endfunction
 
 	function getHits(this)
@@ -27,6 +29,10 @@ class Combat(Achievement)
 		return this.damage;
 	endfunction
 
+	function getCriticals(this)
+		return this.criticals;
+	endfunction
+
 	function setHits(this, value)
 		this.hits := value;
 	endfunction
@@ -37,6 +43,10 @@ class Combat(Achievement)
 
 	function setDamage(this, value)
 		this.damage := value;
+	endfunction
+
+	function setCriticals(this, value)
+		this.criticals := value;
 	endfunction
 
 	function AddHits(this, value)
@@ -50,28 +60,30 @@ class Combat(Achievement)
 	function AddDamage(this, value)
 		this.damage += CInt(value);
 	endfunction
+
+	function AddCriticals(this, value)
+		this.criticals += CInt(value);
+	endfunction
 	
 	function Serialize(this)
 		var base_data := Achievement::Serialize(this);
 		base_data.+hits := this.hits;
 		base_data.+kills := this.kills;
 		base_data.+damage := this.damage;
+		base_data.+criticals := this.criticals;
 
 		return base_data;
 	endfunction
 	
 	function Deserialize(this, data)
-		var result := Achievement::Deserialize(this, data);
-		if (result == error)
-			return result;
-		endif
-
+		Achievement::Deserialize(this, data);
 		this.hits := CInt(data.hits);
 		this.kills := CInt(data.kills);
 		this.damage := CInt(data.damage);
+		this.criticals := CInt(data.criticals);
 	endfunction
 	
 	function toString(this)
-		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage})";
+		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage}, criticals={this.criticals})";
 	endfunction
 endclass

@@ -10,7 +10,7 @@ include ":combat:settings";
 include ":combat:damage";
 include ":charactercreation:resists";
 include ":mastery:main";
-include ":achievements:main";
+include ":achievements:CombatController";
 
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var taming_cfg := ReadConfigFile(":taming:taming");
