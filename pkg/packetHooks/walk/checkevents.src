@@ -1,11 +1,6 @@
-use uo;
-use math;
-use polsys;
-use file;
-use util;
 include "include/say";
 include ":charactercreation:habilidades";
-// include "include/packets";
+include ":achievements:ExplorationController";
 
 program checkeventsonwalk()
 	Print( "INSTALLING: checkeventsonwalk..." );
@@ -20,6 +15,8 @@ exported function CheckEventsWalk( who, byref packet )
 			SendSysMessage(who, "Ainda lhe restam "+passos+" passos.");
 		endif
 	endif
+
+	IncrementStepCounter(who);
 
 	// foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm)
 
