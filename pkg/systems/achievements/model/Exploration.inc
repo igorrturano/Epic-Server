@@ -2,6 +2,10 @@ include ":achievements:model/Achievement";
 
 const ACHIEVEMENT_EXPLORATION := ACHIEVEMENT + "_EXPLORATION";
 
+// TODO: Dungeons exploradas
+// TODO: Itens de lore encontrados
+// TODO: 
+
 class Exploration(Achievement)
 	var locations;
 	var discoveries;
