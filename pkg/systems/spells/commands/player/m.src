@@ -22,11 +22,11 @@ program magia( who, spellname )
   endif
 
   var spellBookInfo := FindSpellInSpellBooks( who, spellInfo.id );
-  if ( !spellBookInfo.found && spellInfo.circle != 0 && !( TemHabilidade( who, "Sensibilidade Arcana" )
-       ) )
-    SendSysMessageEx( who, "Voce nao possui a magia " + spellname + " nos seu grimorio.",
-                      SSM_FAIL );
-    return;
+  if (!who.cmdlevel)
+      if ( !spellBookInfo.found && spellInfo.circle != 0 && !( TemHabilidade( who, "Sensibilidade Arcana" )))
+        SendSysMessageEx( who, "Voce nao possui a magia " + spellname + " nos seu grimorio.", SSM_FAIL );
+        return;
+    endif
   endif
   var script := Start_Script( ":spells:cast_spell", { who, spellInfo, spellBookInfo.booktype });
   if ( script.errortext )
