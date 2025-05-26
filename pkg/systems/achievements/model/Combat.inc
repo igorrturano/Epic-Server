@@ -51,24 +51,24 @@ class Combat(Achievement)
 		return this.criticals;
 	endfunction
 
-	function AddHits(this)
-		this.hits++;
+	function AddHits(this, value)
+		this.hits += CInt(value);
 	endfunction
 
-	function AddBlocked(this)
-		this.blocked++;
+	function AddBlocked(this, value)
+		this.blocked += CInt(value);
 	endfunction
 
-	function AddKills(this)
-		this.kills++;
+	function AddKills(this, value)
+		this.kills += CInt(value);
 	endfunction
 
 	function AddDamage(this, value)
 		this.damage += CInt(value);
 	endfunction
 
-	function AddCriticals(this)
-		this.criticals++;
+	function AddCriticals(this, value)
+		this.criticals += CInt(value);
 	endfunction
 
 	function Serialize(this)
