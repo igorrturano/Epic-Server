@@ -1,0 +1,6 @@
+program Install()
+	print("INSTALLING: Methods for Equipment... OK!");
+	return 1;
+endprogram
+
+include ":equipsys:methods/Equipment";

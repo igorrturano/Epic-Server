@@ -117,9 +117,6 @@ endfunction
 
 // Função adicional para debug de criação de livros
 function Debug_CreateSealedBook(author, title, contents_param, original_player_name := "Desconhecido")
-    // Remova os Prints se quiser, eles eram para debug
-    // Print("[sealedBooks Debug_CreateSealedBook] Autor (livro): " + author + ", Titulo: " + title + ", Jogador Orig: " + original_player_name);
-    
     var df := OpenDataFile(SEALED_BOOKS_DATAFILE);
     if (df.errortext)
         df := CreateDataFile(SEALED_BOOKS_DATAFILE, DF_KEYTYPE_STRING);

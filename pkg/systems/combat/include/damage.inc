@@ -12,7 +12,7 @@ include ":fls_core:packets";
 include "include/epicCombatUtils";
 include "include/facings";
 include ":timedScripts:timedScripts";
-include ":commands:debugsystem";
+include ":debug:main";
 include ":combat:armorZones";
 include ":combat:combat";
 include ":combat:habilidades";
