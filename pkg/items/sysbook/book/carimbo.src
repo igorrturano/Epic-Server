@@ -101,15 +101,15 @@ program use_Carimbo(who, tool)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
-	SendSysMessageEx(who, "Selecione uma vela acesa para extrair a cera", SSM_REQUEST);
-	var vela := Target(who);
-	if (!vela)
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return;
-	elseif ((vela.objtype != 5171) && (vela.objtype != 0x0A0F) && (vela.objtype != 0x0A26) && (vela.objtype != 0x0A29) && (vela.objtype != 0x142C) && (vela.objtype != 0x1853) && (vela.objtype != 0x1854) && (vela.objtype != 0x1856) && (vela.objtype != 0x1C14))
-		SendSysMessageEx(who, "Isto nao e uma vela acesa.", SSM_FAIL);
-		return;
-	endif
+ SendSysMessageEx(who, "Selecione uma vela acesa para extrair a cera", SSM_REQUEST);
+    var vela := Target(who);
+    if (!vela)
+        SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+        return; // Remove the SetObjProperty here
+    elseif ((vela.objtype != 5171) && (vela.objtype != 0x0A0F) && (vela.objtype != 0x0A26) && (vela.objtype != 0x0A29) && (vela.objtype != 0x142C) && (vela.objtype != 0x1853) && (vela.objtype != 0x1854) && (vela.objtype != 0x1856) && (vela.objtype != 0x1C14))
+        SendSysMessageEx(who, "Isto nao e uma vela acesa.", SSM_FAIL);
+        return;
+    endif
 
 	SendSysMessageEx(who, "Selecione o item (livro ou carta) para selar.", SSM_REQUEST);
 	var targ := Target(who);
@@ -132,11 +132,11 @@ program use_Carimbo(who, tool)
         return;
     endif
 
-    var msg_confirmacao := "Deseja mesmo selar este item? Ele nao podera sofrer alteracoes depois disso.";
+    var msg_confirmacao := "Deseja selar este item? Ele nao podera sofrer alteracoes depois disso.";
     if (eh_livro_de_loot)
-        msg_confirmacao := "Deseja mesmo selar este livro? Ele nao podera sofrer alteracoes e seu conteudo sera arquivado para os tesouros do mundo.";
+        msg_confirmacao := "Deseja selar este livro? Ele nao podera sofrer alteracoes depois disso. Para arquiva-lo nos tesouros do mundo, leve-o ao bibliotecario.";
     elseif (eh_carta)
-         msg_confirmacao := "Deseja mesmo carimbar esta carta? Ela nao podera sofrer alteracoes depois disso.";
+         msg_confirmacao := "Deseja carimbar esta carta? Ela nao podera sofrer alteracoes depois disso.";
     endif
 
     var yes := YesNo(who, msg_confirmacao);
@@ -151,13 +151,14 @@ program use_Carimbo(who, tool)
     var readonly_op_result := targ.ReadOnly(1);
 
     if (!readonly_op_result)
-        SendSysMessageEx(who, "Erro ao tentar tornar o item somente leitura (chamada inicial falhou). A selagem falhou.", SSM_FAIL);
+        SendSysMessageEx(who, "Erro ao tentar tornar o item somente leitura. A selagem falhou.", SSM_FAIL);
         return;
     endif
     
-    
-    SetObjProperty(targ, "Selado", "sim");
+ SetObjProperty(targ, "Selado", "sim");
     SetObjProperty(targ, "description", nome_do_selo_para_item);
+    // Adicionar o nome da conta do jogador que selou
+    SetObjProperty(targ, "account_name_of_sealer", who.acctname);
     
     if (eh_carta)
          SetName(targ, nome_do_selo_para_item);
@@ -167,19 +168,10 @@ program use_Carimbo(who, tool)
     PlaySoundEffect(who, 0x4D4);
 
     if (eh_livro_de_loot)
-        SendSysMessage(who, "Arquivando o conteudo do livro...", SSM_INFO);
-        var sealed_datafile_serial := SealBookToDatafile(targ);
-        
-        if (sealed_datafile_serial)
-            SetObjProperty(targ, "MasterSealedSerial", sealed_datafile_serial);
-            SendSysMessageEx(who, "Livro selado e seu conteudo foi arquivado com sucesso para os tesouros do mundo!", SSM_INFO);
-        else
-            SendSysMessageEx(who, "Livro foi selado, mas ocorreu um erro ao tentar arquivar seu conteudo. Contate um Administrador.", SSM_FAIL);
-        endif
+        SendSysMessageEx(who, "Livro selado com sucesso. Leve-o ao bibliotecario se desejar arquiva-lo nos tesouros do mundo.", SSM_INFO);
     elseif (eh_carta)
         SendSysMessageEx(who, "Carta selada com sucesso.", SSM_INFO);
     endif
 
     return 1;
-
 endprogram
