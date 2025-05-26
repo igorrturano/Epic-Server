@@ -2,7 +2,7 @@ include ":achievements:model/Achievement";
 
 const ACHIEVEMENT_COMBAT := ACHIEVEMENT + "_COMBAT";
 
-class Combat(Achievement)
+class AchievementCombat(Achievement)
 	var hits;
 	var blocked;
 	var kills;
@@ -15,7 +15,7 @@ class Combat(Achievement)
 	var criticalDamageMax;
 	var manaSpent;
 
-	function Combat(this, name)
+	function AchievementCombat(this, name)
 		Super(name);
 		this.type := ACHIEVEMENT_COMBAT;
 		this.hits := 0;

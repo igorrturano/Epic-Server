@@ -6,12 +6,12 @@ const ACHIEVEMENT_EXPLORATION := ACHIEVEMENT + "_EXPLORATION";
 // TODO: Itens de lore encontrados
 // TODO: 
 
-class Exploration(Achievement)
+class AchievementExploration(Achievement)
 	var locations;
 	var discoveries;
 	var distance;
 
-	function Exploration(this, name)
+	function AchievementExploration(this, name)
 		Super(name);
 		this.type := ACHIEVEMENT_EXPLORATION;
 		this.locations := array{};
