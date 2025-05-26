@@ -191,7 +191,6 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 						if(!interrompido)
 							break;
 						endif
-
 						Sleep(2);
 						ProduzComponentes(quem,
 							configRecursos,
@@ -199,9 +198,9 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 							sessao.materiaisEncontrados,
 							materiaisEscolhidos,
 							i == lotes && resto > 0 ? resto : quantidadePorLote,
-							pericia,
 							sessao.componenteSelecionado.encaixe,
-							sessao.picoPericia);
+							sessao.picoPericia,
+							Cint(configComponentes[sessao.componenteSelecionado.selecione.objtype].lote));
 					endfor
 				endif
 
@@ -236,10 +235,9 @@ function AtualizaPesquisaComponentes(configComponentes,byref sessao)
 	sessao.componenteSelecionado := 0;
 endfunction
 
-function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, pericia, encaixe, picoPericia)
+function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos,quantidade, encaixe, picoPericia, lote)
 
 	var chaveMaterialPrincipal; //objtype do material que irá decidir a cor e atributos principais do componente.
-
 	var quantidadeAFazer := CalculaQuantidadePossivel(quantidade,materiaisEscolhidos,materiaisEncontrados);
 	
 	if(quantidadeAFazer <= 0)
@@ -249,7 +247,8 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 
 	ConsomeMateriais(chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
 
-	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer,picoPericia);
+	lote := lote ? lote : 1;
+	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer * lote,picoPericia);
 	
 	foreach qualidade in (qualidades.keys())
 		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
@@ -258,7 +257,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 		Sleepms(2);
 	endforeach
 
-	SendSysMessageEX(quem,"{} componete(s) criado(s).".format(quantidadeAFazer),SSM_INFO);
+	SendSysMessageEX(quem,"{} componete(s) criado(s).".format(quantidadeAFazer * lote),SSM_INFO);
 endfunction
 
 function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEncontrados)
@@ -266,12 +265,12 @@ function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEnco
 	if(!materiaisEscolhidos || materiaisEscolhidos.size() == 0 )
 		return 0;
 	endif
-	
-	var quantidadeAFazer := CInt(quantidade);
+
+	var quantidadeAFazer := quantidade;
 	
 	foreach materialEscolhido in materiaisEscolhidos
 
-		var qtdPossivel := cInt(materiaisEncontrados[materialEscolhido.tipoMaterial][materialEscolhido.objtype].quantidadeTotal / materialEscolhido.quantidadeNecessaria);
+		var qtdPossivel := cInt(materiaisEncontrados[materialEscolhido.tipoMaterial][materialEscolhido.objtype].quantidadeTotal / materialEscolhido.quantidadeNecessaria );
 		qtdPossivel := qtdPossivel >= quantidade? cInt(quantidade) : qtdPossivel;
 		
 		if(qtdPossivel < quantidadeAFazer) // a menor quantidade possivel determina a quantidade final.
