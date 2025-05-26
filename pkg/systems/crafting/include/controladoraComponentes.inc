@@ -77,6 +77,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 		sessao.filtros.encaixe := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_ENCAIXE);
 		sessao.filtros.nome := ExtraiStringEntradaOuVazio(retorno,COMPONENTES_INPT_FILTRO_NOME);
 
+		Print("retorno[0] " + retorno[0]);
 		case (ClassificaRetornoComponentes(retorno[0], gerenciador))
 			RT_ESCOLHA_DROPDOWN:
 				var indice := retorno[0] - gerenciador.adicionalIdDropDown;

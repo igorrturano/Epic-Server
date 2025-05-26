@@ -265,7 +265,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 
 	var opcoesTabela := dictionary{ 
 							MAX_PAGINAS -> 30,
-							QTD_LINHA_LIMITE -> 20,
+							QTD_LINHA_LIMITE -> 17,
 							TITULO_TABELA  -> "Componentes",
 							GUMPIC_FUNDO -> 3000,
 							BOTAO_APERTADO -> 2103,
@@ -274,12 +274,11 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 							};
 
 	//TODO Lidar com Paginação.
-	CriaTabelaGump(G_MARGEM_ESQUERDA + G_ESPACAMENTO,
+	CriaTabelaGumpPaginada(G_MARGEM_ESQUERDA + G_ESPACAMENTO,
 					alturaPainelEntrada + G_ESPACAMENTO + alturaCelula/2,
 					larguraPainelComponentes,
 					sessao.componentes,
 					gump,
-					0,
 					opcoesTabela,
 					parametros.configColunas,
 					COMPONENTES_TABELA_INICIAL);

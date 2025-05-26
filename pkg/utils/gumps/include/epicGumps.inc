@@ -371,26 +371,29 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 		endforeach
 
 		//aqui começa a tabela em si
+		y += ALTURA_LINHA;
 		var indice := paginaTabela * opt_qtd_limite_linha + 1;
-		var indiceLinha := 1;
+		var indiceLinha := 0;
 
 		for linha := indice to  indice + (opt_qtd_limite_linha - 1 )
 			if(linha > dados.size())
 				break;
 			endif
 			larguraUtilizada := 0;
+			var quantidadeBotoesColuna := 0;
 			foreach coluna in colunas
 				if(opt_is_mostrar_fundo)
 					GFResizePic(gump,cInt( x + larguraUtilizada),cInt( y + ALTURA_LINHA * indiceLinha), opt_gumpic_fundo, larguraGrid * coluna.largura, ALTURA_LINHA);
 				endif
 				var valorCelula :=  dados[linha][coluna.chaveReal];
-				var valorBotao := valorCelula.valor ? valorCelula.valor: indiceLinha + indiceBtnInicial;
+				var valorBotao := valorCelula.valor ? valorCelula.valor: indice + indiceLinha + indiceBtnInicial + quantidadeBotoesColuna;
 				if(valorCelula.isColunaBotao)
 					GFAddButton( gump,
 								cInt(x + larguraUtilizada + CentralizaEixoX(larguraGrid,0,coluna.largura) + opt_recuo_eixox_btn), 
 								cInt(y + ALTURA_LINHA * indiceLinha + opt_recuo_eixoy_btn), opt_botao_solto, opt_botao_apertado, 
 								GF_CLOSE_BTN, 
 								valorBotao);
+					quantidadeBotoesColuna += 1;
 
 				elseif(valorCelula.isColunaCheckBox)
 					GFCheckBox( gump,
@@ -400,6 +403,7 @@ function CriaTabelaGump(x,y,larguraTotal,dados,byref gump,paginaTabela := 0,opco
 							opt_checkbox_apertado,
 							valorCelula.valor,
 							valorBotao);
+					quantidadeBotoesColuna += 1;
 				else
 					GFTextLine(gump, cInt(x + larguraUtilizada + 5), cInt(y + ALTURA_LINHA * indiceLinha),opt_cor_dado, valorCelula);
 				endif;
@@ -462,8 +466,8 @@ function CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela :
 	var opt_qtd_limite_linha :=  DeterminaOpcaoTabela(opcoesTabela,QTD_LINHA_LIMITE,20);
 
 	var pagina;
-	var algo := CDbl(dados.size()) / opt_qtd_limite_linha;
-	for( pagina := 0; (pagina + 1) - algo < 1; pagina := pagina + 1)
+	var qtdPaginas := CDbl(dados.size()) / opt_qtd_limite_linha;
+	for( pagina := 0; (pagina + 1) - qtdPaginas < 1; pagina := pagina + 1)
 		if(pagina + 1 > opt_max_pagina)
 			break;
 		endif
@@ -479,7 +483,7 @@ function CriaTabelaGumpPaginada(x,y,larguraTotal,dados,byref gump,opcoesTabela :
 		if(!pagina == 0)
 			GFAddButton( gump, (x + larguraTotal) / 2 - 40, y + (opt_qtd_limite_linha + linhaAdicional) * ALTURA_LINHA, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1 );
 		endif
-		if((pagina + 2) - algo < 1)
+		if((pagina + 2) - qtdPaginas < 1)
 			GFAddButton( gump, (x + larguraTotal) / 2  + 40, y + (opt_qtd_limite_linha + linhaAdicional) * ALTURA_LINHA, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1 );
 		endif
 	endfor
