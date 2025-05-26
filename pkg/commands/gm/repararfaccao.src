@@ -1,0 +1,625 @@
+use uo;
+use os;
+use datafile;
+use guilds;
+
+include ":faccao:include/shared_functions";
+include ":faccao:include/logging";
+include ":faccao:include/datafile_helpers";
+include ":faccao:include/territory_management";
+include ":faccao:include/faccao_resources";
+include ":faccao:faccao";
+include ":gumps:yesNo";
+
+/*
+ * Comando: .repairfaction
+ * 
+ * Repara problemas no sistema de facções
+ * Uso: .repairfaction [nome_da_faccao] [--force]
+ */
+
+program repairfaction(who, params)
+    if (who.cmdlevel < 2)
+        return SendSysMessage(who, "Este comando é exclusivo para GMs.");
+    endif
+    
+    var specific_faction := "";
+    var force_repair := 0;
+    
+    // Processar parâmetros
+    if (params && params != "")
+        var param_parts := SplitWords(params);
+        
+        foreach part in param_parts
+            if (part == "--force")
+                force_repair := 1;
+            else
+                specific_faction := part;
+            endif
+            sleepms(2);
+        endforeach
+    endif
+    
+    SendSysMessage(who, "=== REPARO DO SISTEMA DE FACÇÕES ===");
+    
+    if (specific_faction != "")
+        SendSysMessage(who, "Alvo: Facção '" + specific_faction + "'");
+    else
+        SendSysMessage(who, "Alvo: TODAS as facções do sistema");
+    endif
+    
+    // Confirmação de segurança
+    if (!force_repair)
+        var warning_msg := "ATENÇÃO: Este processo pode alterar dados permanentemente!";
+        if (specific_faction != "")
+            warning_msg += "\nSerá reparada apenas a facção: " + specific_faction;
+        else
+            warning_msg += "\nSerão reparadas TODAS as facções do sistema!";
+        endif
+        
+        warning_msg += "\n\nDeseja continuar?";
+        
+        if (!YesNo(who, warning_msg))
+            return SendSysMessage(who, "Operação cancelada pelo usuário.");
+        endif
+    endif
+    
+    SendSysMessage(who, "Iniciando reparos automáticos...");
+    SendSysMessage(who, "");
+    
+    var total_reparos := 0;
+    
+    // 1. Consolidar guildas duplicadas
+    total_reparos += ConsolidarGuildasDuplicadas(who, specific_faction);
+    
+    // 2. Corrigir inconsistências de territórios
+    total_reparos += CorrigirInconsistenciasTerritorios(who, specific_faction);
+    
+    // 3. Resolver múltiplas capitais
+    total_reparos += ResolverMultiplasCapitais(who, specific_faction);
+    
+    // 4. Limpar objetos órfãos
+    total_reparos += LimparObjetosOrfaos(who, specific_faction);
+    
+    // 5. Reparar datafiles críticos
+    total_reparos += RepararDatafilesCriticos(who);
+    
+    // 6. Sincronizar dados
+    total_reparos += SincronizarDadosFaccoes(who, specific_faction);
+    
+    // Relatório final
+    SendSysMessage(who, "");
+    SendSysMessage(who, "=== REPAROS CONCLUÍDOS ===");
+    SendSysMessage(who, "Total de correções aplicadas: " + total_reparos);
+    
+    if (total_reparos > 0)
+        SendSysMessage(who, "✅ Sistema reparado com sucesso!");
+        SendSysMessage(who, "");
+        SendSysMessage(who, "💡 RECOMENDAÇÕES:");
+        SendSysMessage(who, "  • Execute .diagfaction para verificar o resultado");
+        SendSysMessage(who, "  • Considere reiniciar o servidor para garantir estabilidade");
+        SendSysMessage(who, "  • Monitore os logs por possíveis efeitos colaterais");
+    else
+        SendSysMessage(who, "ℹ️ Nenhum reparo foi necessário - sistema já estava íntegro!");
+    endif
+    
+    return 1;
+endprogram
+
+function ConsolidarGuildasDuplicadas(who, specific_faction)
+    SendSysMessage(who, ">> Consolidando guildas duplicadas...");
+    
+    var guilds := ListGuilds();
+    var guild_names := dictionary{};
+    var consolidacoes := 0;
+    
+    // Primeiro passo: mapear guildas por nome
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (!guild) continue; endif
+        
+        var name := guild.GetProp("name");
+        if (!name) name := guild.guildname; endif
+        
+        // Filtrar por facção específica se solicitado
+        if (specific_faction != "" && Lower(name) != Lower(specific_faction))
+            continue;
+        endif
+        
+        if (!guild_names.exists(name))
+            guild_names[name] := array{};
+        endif
+        
+        guild_names[name].append(struct{
+            "id" := guild_id,
+            "guild" := guild,
+            "members" := guild.members.size()
+        });
+        
+        sleepms(2);
+    endforeach
+    
+    // Segundo passo: consolidar duplicatas
+    foreach name in (guild_names.keys())
+        var guild_list := guild_names[name];
+        
+        if (guild_list.size() > 1)
+            SendSysMessage(who, "   • Consolidando '" + name + "' (" + guild_list.size() + " duplicatas)");
+            
+            // Encontrar a guilda "principal" (com mais membros)
+            var main_guild := guild_list[1];
+            for i := 2 to guild_list.size()
+                if (guild_list[i].members > main_guild.members)
+                    main_guild := guild_list[i];
+                endif
+            endfor
+            
+            // Migrar dados das outras guildas para a principal
+            foreach guild_info in guild_list
+                if (guild_info.id == main_guild.id) continue; endif
+                
+                var duplicate_guild := guild_info.guild;
+                
+                // Migrar membros
+                var members_to_migrate := array{};
+                foreach member in (duplicate_guild.members)
+                    if (member.guildid == guild_info.id)
+                        members_to_migrate.append(member);
+                    endif
+                    sleepms(2);
+                endforeach
+                
+                // Migrar cada membro
+                foreach member in members_to_migrate
+                    // Remover da guilda duplicada
+                    if (member.guild)
+                        member.guild := 0;
+                        member.guildid := 0;
+                    endif
+                    
+                    // Adicionar à guilda principal
+                    member.guild := main_guild.guild;
+                    member.guildid := main_guild.id;
+                    
+                    SendSysMessage(who, "     ✓ Migrado membro: " + member.name);
+                    sleepms(5);
+                endforeach
+                
+                // Migrar territórios
+                var territories := duplicate_guild.GetProp("territories");
+                if (territories && TypeOf(territories) == "Array")
+                    var main_territories := main_guild.guild.GetProp("territories");
+                    if (!main_territories) main_territories := array{}; endif
+                    
+                    foreach territory in territories
+                        if (!(territory in main_territories))
+                            main_territories.append(territory);
+                        endif
+                        sleepms(2);
+                    endforeach
+                    
+                    main_guild.guild.SetProp("territories", main_territories);
+                endif
+                
+                // Migrar recursos
+                var recursos := duplicate_guild.GetProp("recursos");
+                if (recursos)
+                    var main_recursos := main_guild.guild.GetProp("recursos");
+                    if (!main_recursos)
+                        main_guild.guild.SetProp("recursos", recursos);
+                    endif
+                endif
+                
+                // Remover guilda duplicada
+                duplicate_guild.Disband();
+                consolidacoes += 1;
+                
+                SendSysMessage(who, "     ✓ Removida duplicata (ID: " + guild_info.id + ")");
+                
+                sleepms(10);
+            endforeach
+            
+            SendSysMessage(who, "     ✓ Mantida guilda principal (ID: " + main_guild.id + ")");
+        endif
+        
+        sleepms(5);
+    endforeach
+    
+    if (consolidacoes > 0)
+        SendSysMessage(who, "   ✅ " + consolidacoes + " guildas duplicadas consolidadas");
+    else
+        SendSysMessage(who, "   ℹ️ Nenhuma guilda duplicada encontrada");
+    endif
+    
+    return consolidacoes;
+endfunction
+
+function CorrigirInconsistenciasTerritorios(who, specific_faction)
+    SendSysMessage(who, ">> Corrigindo inconsistências de territórios...");
+    
+    var territories_df := SafeOpenDataFile(":architect:areas");
+    if (!territories_df)
+        SendSysMessage(who, "   ❌ Erro: Datafile de territórios inacessível");
+        return 0;
+    endif
+    
+    var correcoes := 0;
+    
+    foreach territory_name in (territories_df.keys())
+        var elem := SafeFindElement(territories_df, territory_name);
+        if (!elem) continue; endif
+        
+        var faction := GetElementProp(elem, "faction", "");
+        if (!faction) faction := GetElementProp(elem, "Faction", ""); endif
+        
+        // Filtrar por facção específica se solicitado
+        if (specific_faction != "" && faction && Lower(faction) != Lower(specific_faction))
+            continue;
+        endif
+        
+        var alteracoes_locais := 0;
+        
+        // 1. Gerar ID único se não existir
+        var territory_id := GetElementProp(elem, "territory_id", "");
+        if (!territory_id)
+            territory_id := "TER_" + territory_name + "_" + polcore().systime;
+            SetElementProp(elem, "territory_id", territory_id);
+            alteracoes_locais += 1;
+        endif
+        
+        // 2. Padronizar propriedade de facção
+        var faction_old := GetElementProp(elem, "Faction", "");
+        var faction_new := GetElementProp(elem, "faction", "");
+        
+        if (faction_old && !faction_new)
+            SetElementProp(elem, "faction", faction_old);
+            alteracoes_locais += 1;
+        elseif (faction_new && faction_old && faction_old != faction_new)
+            // Conflito - usar a propriedade nova
+            elem.EraseProp("Faction");
+            alteracoes_locais += 1;
+        endif
+        
+        // 3. Corrigir coordenadas se ausentes
+        var rect := GetElementProp(elem, "Rect", "");
+        if (!rect)
+            // Definir coordenadas padrão se não existirem
+            SetElementProp(elem, "Rect", "1000 1000 1100 1100");
+            SetElementProp(elem, "Realm", "britannia");
+            alteracoes_locais += 1;
+        endif
+        
+        // 4. Limpar recursos de territórios selvagens
+        var resources := GetElementProp(elem, "Resources", "");
+        var current_faction := GetElementProp(elem, "faction", "");
+        
+        if (resources && (!current_faction || current_faction == "Selvagem"))
+            elem.EraseProp("Resources");
+            elem.EraseProp("ResourceInterval");
+            elem.EraseProp("ResourceAmount");
+            elem.EraseProp("NextResourceTime");
+            alteracoes_locais += 1;
+        endif
+        
+        // 5. Configurar recursos padrão para territórios controlados sem recursos
+        if (current_faction && current_faction != "Selvagem" && !resources)
+            SetElementProp(elem, "Resources", "ironore, couroespesso, cogumelo");
+            SetElementProp(elem, "ResourceInterval", 120); // 2 horas
+            SetElementProp(elem, "ResourceAmount", 10);
+            SetElementProp(elem, "NextResourceTime", polcore().systime + 7200);
+            alteracoes_locais += 1;
+        endif
+        
+        if (alteracoes_locais > 0)
+            correcoes += 1;
+            SendSysMessage(who, "   ✓ " + territory_name + " (" + alteracoes_locais + " correções)");
+        endif
+        
+        sleepms(5);
+    endforeach
+    
+    if (correcoes > 0)
+        SendSysMessage(who, "   ✅ " + correcoes + " territórios corrigidos");
+    else
+        SendSysMessage(who, "   ℹ️ Nenhuma inconsistência encontrada nos territórios");
+    endif
+    
+    return correcoes;
+endfunction
+
+function ResolverMultiplasCapitais(who, specific_faction)
+    SendSysMessage(who, ">> Resolvendo múltiplas capitais...");
+    
+    var territories_df := SafeOpenDataFile(":architect:areas");
+    if (!territories_df) return 0; endif
+    
+    var capitals_by_faction := dictionary{};
+    var resolucoes := 0;
+    
+    // Coletar capitais por facção
+    foreach territory_name in (territories_df.keys())
+        var elem := SafeFindElement(territories_df, territory_name);
+        if (!elem) continue; endif
+        
+        var faction := GetElementProp(elem, "faction", "");
+        if (!faction) faction := GetElementProp(elem, "Faction", ""); endif
+        
+        var is_capital := GetElementProp(elem, "is_capital", 0);
+        
+        if (is_capital && faction && faction != "Selvagem")
+            // Filtrar por facção específica se solicitado
+            if (specific_faction != "" && Lower(faction) != Lower(specific_faction))
+                continue;
+            endif
+            
+            if (!capitals_by_faction.exists(faction))
+                capitals_by_faction[faction] := array{};
+            endif
+            
+            capitals_by_faction[faction].append(struct{
+                "name" := territory_name,
+                "elem" := elem
+            });
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    // Resolver conflitos
+    foreach faction in (capitals_by_faction.keys())
+        var capitals := capitals_by_faction[faction];
+        
+        if (capitals.size() > 1)
+            SendSysMessage(who, "   • " + faction + ": " + capitals.size() + " capitais encontradas");
+            
+            // Manter apenas a primeira como capital
+            for i := 2 to capitals.size()
+                var capital := capitals[i];
+                capital.elem.EraseProp("is_capital");
+                SendSysMessage(who, "     ✓ " + capital.name + " não é mais capital");
+                sleepms(2);
+            endfor
+            
+            SendSysMessage(who, "     ✅ " + capitals[1].name + " mantida como capital");
+            resolucoes += 1;
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    if (resolucoes > 0)
+        SendSysMessage(who, "   ✅ " + resolucoes + " conflitos de capital resolvidos");
+    else
+        SendSysMessage(who, "   ℹ️ Nenhuma facção com múltiplas capitais encontrada");
+    endif
+    
+    return resolucoes;
+endfunction
+
+function LimparObjetosOrfaos(who, specific_faction)
+    SendSysMessage(who, ">> Limpando objetos órfãos...");
+    
+    var tipos_territorio := array{0xFF11, 0xFE5C, 0x46AE}; // Baú, Mesa, Mural
+    var removidos := 0;
+    var objetos_verificados := 0;
+    
+    foreach item in EnumerateItemsInContainer(0)
+        if (item.objtype in tipos_territorio)
+            var faction := GetObjProperty(item, "faction");
+            var territory_id := GetObjProperty(item, "territory_id");
+            
+            if (faction)
+                objetos_verificados += 1;
+                
+                // Filtrar por facção específica se solicitado
+                if (specific_faction != "" && Lower(faction) != Lower(specific_faction))
+                    continue;
+                endif
+                
+                if (territory_id)
+                    // Verificar se o território ainda existe
+                    var territory_exists := TM_FindTerritory(territory_id) ? 1 : 0;
+                    
+                    if (!territory_exists)
+                        // Objeto órfão encontrado
+                        var obj_type := "";
+                        case (item.objtype)
+                            0xFF11: obj_type := "Baú";
+                            0xFE5C: obj_type := "Mesa";
+                            0x46AE: obj_type := "Mural";
+                        endcase
+                        
+                        SendSysMessage(who, "   • Removendo " + obj_type + " órfão: " + item.name);
+                        PrintTextAbove(item, "*Objeto órfão sendo removido*");
+                        
+                        // Tentar destruir o item
+                        item.movable := 1;
+                        sleep(1);
+                        
+                        if (DestroyItem(item))
+                            removidos += 1;
+                        else
+                            // Se falhar, mover para o void
+                            MoveObjectToLocation(item, 6000, 6000, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+                            removidos += 1;
+                        endif
+                    endif
+                endif
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    
+    if (removidos > 0)
+        SendSysMessage(who, "   ✅ " + removidos + " objetos órfãos removidos (de " + objetos_verificados + " verificados)");
+    else
+        SendSysMessage(who, "   ℹ️ Nenhum objeto órfão encontrado");
+    endif
+    
+    return removidos;
+endfunction
+
+function RepararDatafilesCriticos(who)
+    SendSysMessage(who, ">> Reparando datafiles críticos...");
+    
+    var datafiles_criticos := array{
+        struct{"name" := ":architect:areas", "desc" := "Territórios"},
+        struct{"name" := ":faccao:seriais", "desc" := "Seriais de objetos"},
+        struct{"name" := "guild_registry", "desc" := "Registro de guildas"},
+        struct{"name" := "kingdom_resources", "desc" := "Recursos do reino"}
+    };
+    
+    var reparos := 0;
+    
+    foreach df_info in datafiles_criticos
+        var df := SafeOpenDataFile(df_info.name, 1); // Criar se não existir
+        
+        if (df)
+            SendSysMessage(who, "   ✓ " + df_info.desc + " - OK");
+        else
+            SendSysMessage(who, "   ❌ " + df_info.desc + " - Falha ao acessar");
+            continue;
+        endif
+        
+        // Verificações específicas por datafile
+        case (df_info.name)
+            ":architect:areas":
+                // Verificar se tem estrutura básica
+                var keys := df.keys();
+                if (keys.size() == 0)
+                    SendSysMessage(who, "     ⚠ Datafile vazio - estrutura pode precisar ser recriada");
+                endif
+                
+            ":faccao:seriais":
+                // Criar elemento de territórios se não existir
+                var elem := SafeFindElement(df, "territorios", 1);
+                if (elem)
+                    reparos += 1;
+                endif
+                
+            "guild_registry":
+                // Criar elemento de guildas se não existir
+                var elem := SafeFindElement(df, "guilds", 1);
+                if (elem)
+                    reparos += 1;
+                endif
+                
+            "kingdom_resources":
+                // Criar elemento de recursos se não existir
+                var elem := SafeFindElement(df, "resources", 1);
+                if (elem)
+                    var recursos := GetElementProp(elem, "recursos");
+                    if (!recursos)
+                        SetElementProp(elem, "recursos", CreateEmptyResourceStruct());
+                        reparos += 1;
+                    endif
+                endif
+        endcase
+        
+        sleepms(2);
+    endforeach
+    
+    if (reparos > 0)
+        SendSysMessage(who, "   ✅ " + reparos + " estruturas de datafile reparadas");
+    else
+        SendSysMessage(who, "   ℹ️ Todos os datafiles já estavam íntegros");
+    endif
+    
+    return reparos;
+endfunction
+
+function SincronizarDadosFaccoes(who, specific_faction)
+    SendSysMessage(who, ">> Sincronizando dados entre guildas e territórios...");
+    
+    var sincronizacoes := 0;
+    var guilds := ListGuilds();
+    
+    foreach guild_id in guilds
+        var guild := FindGuild(guild_id);
+        if (!guild) continue; endif
+        
+        var guild_name := guild.GetProp("name");
+        if (!guild_name) guild_name := guild.guildname; endif
+        
+        // Filtrar por facção específica se solicitado
+        if (specific_faction != "" && Lower(guild_name) != Lower(specific_faction))
+            continue;
+        endif
+        
+        var alteracoes_locais := 0;
+        
+        // 1. Verificar propriedade faction padrão
+        var faction_prop := guild.GetProp(FACTION_PROP_NAME);
+        if (!faction_prop)
+            guild.SetProp(FACTION_PROP_NAME, guild_name);
+            alteracoes_locais += 1;
+        endif
+        
+        // 2. Verificar lista de territórios
+        var territories := guild.GetProp("territories");
+        if (!territories || TypeOf(territories) != "Array")
+            territories := array{};
+            guild.SetProp("territories", territories);
+            alteracoes_locais += 1;
+        else
+            // Limpar territórios inválidos
+            var territories_validos := array{};
+            var territories_df := SafeOpenDataFile(":architect:areas");
+            
+            if (territories_df)
+                foreach territory in territories
+                    if (TypeOf(territory) == "String" && territory != "")
+                        var elem := SafeFindElement(territories_df, territory);
+                        if (elem)
+                            territories_validos.append(territory);
+                        endif
+                    endif
+                    sleepms(2);
+                endforeach
+                
+                if (territories_validos.size() != territories.size())
+                    guild.SetProp("territories", territories_validos);
+                    alteracoes_locais += 1;
+                endif
+            endif
+        endif
+        
+        // 3. Verificar recursos da facção
+        var recursos := guild.GetProp("recursos");
+        if (!recursos)
+            recursos := CreateEmptyResourceStruct();
+            guild.SetProp("recursos", recursos);
+            alteracoes_locais += 1;
+        endif
+        
+        // 4. Sincronizar com datafile de recursos
+        var df := SafeOpenDataFile("kingdom_resources", 1);
+        if (df)
+            var faction_elem_name := "faction_" + Lower(guild_name);
+            var faction_elem := SafeFindElement(df, faction_elem_name, 1);
+            
+            if (faction_elem)
+                var df_recursos := GetElementProp(faction_elem, "recursos");
+                if (!df_recursos)
+                    SetElementProp(faction_elem, "recursos", recursos);
+                    alteracoes_locais += 1;
+                endif
+            endif
+        endif
+        
+        if (alteracoes_locais > 0)
+            sincronizacoes += 1;
+            SendSysMessage(who, "   ✓ " + guild_name + " (" + alteracoes_locais + " sincronizações)");
+        endif
+        
+        sleepms(5);
+    endforeach
+    
+    if (sincronizacoes > 0)
+        SendSysMessage(who, "   ✅ " + sincronizacoes + " facções sincronizadas");
+    else
+        SendSysMessage(who, "   ℹ️ Todos os dados já estavam sincronizados");
+    endif
+    
+    return sincronizacoes;
+endfunction

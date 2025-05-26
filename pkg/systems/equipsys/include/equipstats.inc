@@ -356,7 +356,7 @@ function getResistPhysicalByMaterial(armor)
 		0x630b: // Fulmetium
 		0x630c: // Venetium
 		0x630d: // Ignium
-		0x6460: // Frigutium
+		0x6460: // frigutiumingot
 			resists := {3,3,3}; break;
 		
 		0x6315: // Illyra

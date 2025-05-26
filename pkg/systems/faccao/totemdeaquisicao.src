@@ -212,7 +212,7 @@ program TotemDeAquisicao(who, totem)
     if (!recursos_atuais)
         LogDebug("faccao", "TotemDeAquisicao: Nenhum recurso configurado, usando padrão");
         // Se não houver recursos configurados, usar um conjunto padrão (3 recursos)
-        var default_resources := SplitWords("IronOre, couroespesso, cogumelo");
+        var default_resources := SplitWords("ironore, couroespesso, cogumelo");
         var resource_str := "";
         for i := 1 to 3
             if (i > 1)
@@ -237,6 +237,21 @@ program TotemDeAquisicao(who, totem)
         LogDebug("faccao", "TotemDeAquisicao: Resultado de definir NextResourceTime: " + set_result);
     endif
     
+    // ======================================
+    // REINICIALIZAR O RESOURCECONTROLLER AUTOMATICAMENTE
+    // ======================================
+    LogInfo("faccao", "TotemDeAquisicao: Iniciando reinicialização automática do ResourceController");
+    SendSysMessage(who, "Configurando sistema de recursos...");
+    
+    var restart_result := RestartResourceController();
+    if (restart_result)
+        LogInfo("faccao", "TotemDeAquisicao: ResourceController reiniciado com sucesso");
+        SendSysMessage(who, "Sistema de recursos configurado com sucesso!");
+    else
+        LogError("faccao", "TotemDeAquisicao: Falha ao reiniciar ResourceController");
+        SendSysMessage(who, "Aviso: Sistema de recursos pode demorar alguns minutos para detectar o novo território.");
+    endif
+    
     // Destruir o totem após uso
     LogDebug("faccao", "TotemDeAquisicao: Destruindo totem após uso");
     var destroy_result := DestroyItem(totem);
@@ -248,15 +263,101 @@ program TotemDeAquisicao(who, totem)
     
     LogInfo("faccao", "TotemDeAquisicao: Território " + rect_name + " reivindicado com sucesso por " + faction_name);
     
+    LogInfo("faccao", "Notificando sistema de eventos sobre reivindicação do território: " + rect_name);
+    TM_NotifyTerritoryChange(territory_id, "claimed", struct{ 
+        "name" := rect_name, 
+        "faction" := faction_name, 
+        "resources" := GetElementProp(territorio_elem, "Resources", "") 
+    });
     
-LogInfo("faccao", "Notificando sistema de eventos sobre reivindicação do território: " + rect_name);
-TM_NotifyTerritoryChange(territory_id, "claimed", struct{ 
-    "name" := rect_name, 
-    "faction" := faction_name, 
-    "resources" := GetElementProp(territorio_elem, "Resources", "") 
-});
     return 1;
 endprogram
+
+// ======================================
+// FUNÇÃO PARA REINICIAR O RESOURCECONTROLLER
+// ======================================
+function RestartResourceController()
+    LogDebug("faccao", "RestartResourceController: Iniciando processo de reinicialização");
+    
+    var current_pid_info := GetGlobalProperty("ResourceController_PID"); // Guardar para evitar múltiplas chamadas
+    var current_pid_val := 0;
+    if (current_pid_info && current_pid_info != error)
+        current_pid_val := CInt(current_pid_info);
+    endif
+    LogDebug("faccao", "RestartResourceController: PID atual (da GProp): " + current_pid_val);
+    
+    if (current_pid_val) // Verifica se current_pid_val não é 0
+        LogDebug("faccao", "RestartResourceController: Tentando finalizar processo atual (PID: " + current_pid_val + ")");
+        
+        var process := GetProcess(current_pid_val);
+        if (process)
+            LogDebug("faccao", "RestartResourceController: Processo encontrado, finalizando...");
+            var kill_result := process.kill();
+            LogDebug("faccao", "RestartResourceController: Resultado do kill: " + kill_result);
+            sleep(2); // Aguardar finalização
+        else
+            LogDebug("faccao", "RestartResourceController: Processo " + current_pid_val + " não encontrado ou já finalizado");
+        endif
+        
+        EraseGlobalProperty("ResourceController_PID");
+        LogDebug("faccao", "RestartResourceController: PID removido da GlobalProperty");
+    endif
+    
+    LogDebug("faccao", "RestartResourceController: Iniciando novo ResourceController");
+    var new_process;
+    
+    // =====================================================================
+    // INÍCIO DA MODIFICAÇÃO: Caminho do script corrigido
+    // =====================================================================
+    // O caminho correto, conforme a estrutura de pacotes do POL e o local do arquivo,
+    // seria relativo à raiz do pacote 'faccao' ou ao diretório 'scripts'.
+    // Se ResourceController.src está em pkg/systems/faccao/ResourceController.src:
+    var script_to_start := ":faccao:ResourceController"; 
+    // Se estiver em pkg/systems/faccao/recursos/ResourceController.src:
+    // var script_to_start := ":faccao:recursos/ResourceController";
+    // Se o erro "Script pkg/systems/faccao/pkg/systems/faccao/recursos/ResourceController.ecl does not exist."
+    // indica que start_script() está prefixando com "pkg/systems/faccao/",
+    // então o caminho relativo DENTRO do pacote seria apenas "ResourceController" ou "recursos/ResourceController".
+    // Dada a sua indicação de C:\Users\manur\OneDrive\Documentos\GitHub\Epic-Server\pkg\systems\faccao\ResourceController.ecl
+    // e que o pacote 'faccao' está em pkg/systems/faccao, o caminho :faccao:ResourceController é o mais provável.
+    // A mensagem de erro `Script pkg/systems/faccao/recursos/ResourceController.ecl does not exist.` para o path `:faccao:recursos/ResourceController`
+    // sugere que o `pkg.cfg` do pacote `faccao` pode estar definindo um alias que já inclui `recursos/` ou que o ecompile está resolvendo de forma inesperada.
+    // Vamos tentar o mais direto e o que foi indicado como correto nos logs:
+    // O log `[AVISO] [faccao] RestartResourceController: Falha ao iniciar script: :faccao:recursos/ResourceController (Erro: error{ errortext = "Script pkg/systems/faccao/recursos/ResourceController.ecl does not exist." })`
+    // Significa que `:faccao:recursos/ResourceController` está sendo resolvido para `pkg/systems/faccao/recursos/ResourceController.src`.
+    // Se o arquivo está em `pkg/systems/faccao/ResourceController.src` (sem o `recursos/`), então o caminho deve ser `:faccao:ResourceController`.
+    
+    // Ajuste baseado na sua informação do caminho correto:
+    // C:\Users\manur\OneDrive\Documentos\GitHub\Epic-Server\pkg\systems\faccao\ResourceController.ecl
+    // O nome do pacote é "faccao" e o script está na raiz desse pacote.
+    script_to_start := ":faccao:ResourceController";
+    // =====================================================================
+    // FIM DA MODIFICAÇÃO
+    // =====================================================================
+
+    LogDebug("faccao", "RestartResourceController: Tentando iniciar script: " + script_to_start);
+    new_process := start_script(script_to_start);
+    
+    if (new_process && new_process != error)
+        LogInfo("faccao", "RestartResourceController: Novo processo iniciado com sucesso! PID: " + new_process.pid + " (Script: " + script_to_start + ")");
+        SetGlobalProperty("ResourceController_PID", new_process.pid);
+        LogDebug("faccao", "RestartResourceController: Novo PID salvo: " + new_process.pid);
+        return 1; // Sucesso
+    else
+        LogError("faccao", "RestartResourceController: Falha ao iniciar script '" + script_to_start + "'. Erro: " + (new_process.errortext ? new_process.errortext : CStr(new_process)));
+        
+        // Fallback para broadcast se o start_script falhar
+        LogDebug("faccao", "RestartResourceController: Tentando método alternativo via broadcast para reload_territories");
+        var event_struct := struct{
+            "type" := "territory_change", // Tipo de evento genérico
+            "action" := "reload_territories",
+            "timestamp" := polcore().systime
+        };
+        broadcast(event_struct); // broadcast não retorna valor de sucesso/falha diretamente
+        LogInfo("faccao", "RestartResourceController: Evento de reload_territories enviado via broadcast.");
+        return 0; // Indica que o restart direto falhou, mas tentou método alternativo
+    endif
+endfunction
 
 function CreateTerritoryMonument(who, elem, rect_name, territory_id, totem)
     var rect := GetElementProp(elem, TERRITORY_RECT_PROP, "");

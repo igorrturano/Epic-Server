@@ -432,13 +432,13 @@ function SaoRecursosIguais(recursos1, recursos2)
     endif
     
     return (recursos1.comida == recursos2.comida &&
-            recursos1.moedas == recursos2.moedas &&
+            recursos1.moedas == recursos2.moedas &&     // OK
             recursos1.couro == recursos2.couro &&
             recursos1.metal == recursos2.metal &&
             recursos1.madeira == recursos2.madeira &&
             recursos1.pano == recursos2.pano &&
-            recursos1.pedras == recursos2.pedras &&
-            recursos1.joias == recursos2.joias);
+            recursos1.pedras == recursos2.pedras &&     // OK
+            recursos1.joias == recursos2.joias);    // OK
 endfunction
 
 // Função para salvar estatísticas de processamento

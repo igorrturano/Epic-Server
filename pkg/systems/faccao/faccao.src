@@ -20,6 +20,7 @@ include ":keys:key";
 // Incluir o arquivo de constantes para resolver os erros
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
+include ":datafile:datafile";
 include ":faccao:include/datafile_helpers";
 
 const BUTTON_BUY_UNIFORM := 0x2;

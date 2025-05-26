@@ -147,22 +147,22 @@ endprogram
 function SetupResourcesForTerritory(who, elem)
     // Lista de recursos disponíveis (sem repetições)
     var resource_sets := array{
-        "IronOre",
+        "ironore",
         "couroespesso",
         "cogumelo",
         "madeirapinheiro",
         "carvao",
         "pelebranca",
         "madeirateixo",
-        "prataIngot",
+        "prataingot",
         "escamasazuis",
         "couropolar",
         "ossogigante",
         "ossodemoniaco",
         "courodraconiano",
-        "acoIngot",
-        "vidro",
-        "osso",
+        "frigutiumingot",
+        "glass",
+        "ossocinza",
         "couroescamoso"
     };
     

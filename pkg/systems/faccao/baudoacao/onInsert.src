@@ -34,18 +34,14 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
       LogDebug("onInsert_DEBUG", "Character: SYSTEM");
    endif
 
-   // Verifica se o item foi gerado pelo ResourceController
+   // ==========================================
+   // CORREÇÃO CRÍTICA H3A: Verificar se o item foi gerado pelo ResourceController
+   // ==========================================
    var is_system_item := 0;
    if (adding_item)
       is_system_item := GetObjProperty(adding_item, "CreatedByResourceController");
-   endif
-   
-   if (is_system_item)
-      LogInfo("onInsert_DEBUG", "Item " + adding_item.serial + " foi gerado pelo ResourceController.");
-      // Marcar recursos mesmo para itens do sistema para manter a contagem atualizada
-      LogDebug("onInsert_DEBUG", "Marcando recursos como modificados para item do sistema.");
-      if (container)
-         MarcarRecursosModificados(container);
+      if (is_system_item)
+         LogInfo("onInsert_DEBUG", "*** ITEM DO SISTEMA DETECTADO *** Serial: " + adding_item.serial);
       endif
    endif
 
@@ -70,13 +66,16 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
          if (prop_value)
             is_donation := 1; // Marca que é uma doação
 
-            // --- ALTERAÇÃO CRÍTICA: Marcar/Notificar APENAS se NÃO for item do sistema ---
+            // ==========================================
+            // CORREÇÃO CRÍTICA: APENAS PROCESSAR SE NÃO FOR ITEM DO SISTEMA
+            // ==========================================
             if (!is_system_item)
-               LogDebug("onInsert_DEBUG", "Item " + adding_item.serial + " é doação de jogador. Chamando MarcarRecursosModificados e notificando.");
+               LogDebug("onInsert_DEBUG", "Item " + adding_item.serial + " é doação de JOGADOR. Processando normalmente.");
 
                // Marcar recursos como modificados para atualização posterior
                var result := 0;
                if (container)
+                  LogDebug("onInsert_DEBUG", "Chamando MarcarRecursosModificados para container " + container.serial);
                   result := MarcarRecursosModificados(container);
                endif
                
@@ -102,14 +101,20 @@ program onInsert(character, container, movetype, inserttype, adding_item, existi
                   // Log caso a mensagem seja suprimida (inserção pelo sistema ou jogador inválido)
                   LogInfo("onInsert_DEBUG", "Inserção por sistema ou jogador inválido. Mensagem de sucesso de doação suprimida.");
                endif
-               // --- FIM DA ALTERAÇÃO CRÍTICA ---
             else
-               // Log informando que é item do sistema e a notificação foi suprimida
+               // ==========================================
+               // NOVO: Log informativo para itens do sistema (MAS NÃO CHAMA MarcarRecursosModificados)
+               // ==========================================
                var resource_type := "";
                if (donation_type && donation_type[18, len(donation_type)])
                   resource_type := Lower(donation_type[18, len(donation_type)]);
                endif
-               LogInfo("onInsert_DEBUG", "Item do sistema " + adding_item.serial + " (tipo: " + resource_type + ") inserido. MarcarRecursos foi chamado, mas notificação/mensagem de doação suprimida.");
+               LogInfo("onInsert_DEBUG", "*** ITEM DO SISTEMA IGNORADO *** Serial: " + adding_item.serial + " (Tipo: " + resource_type + ")");
+               LogInfo("onInsert_DEBUG", "MarcarRecursosModificados e notificação de jogador SUPRIMIDOS para evitar loops de concorrência.");
+               
+               // IMPORTANTE: ResourceController.src > GenerateResourcesForTerritory já deve atualizar 
+               // o cache via UpdateResourceCache que chama AgendarAtualizacaoBau
+               // Portanto, onInsert NÃO precisa fazer isso para itens do sistema.
             endif
             break; // Sai do loop foreach assim que encontrar o tipo de doação
          endif

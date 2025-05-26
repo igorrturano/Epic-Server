@@ -4,6 +4,7 @@ use uo;
 
 include ":faccao:include/permissions";
 include ":faccao:include/logging";
+include ":faccao:include/datafile_helpers";
 
 // Inicia o controle de soldo
 var script := start_script("soldocontrol");
@@ -13,8 +14,8 @@ else
     LogDebug("sistema", "Starting guild npc check script... ok.");
 endif
 
-// Definir o intervalo de ciclo em segundos (1 hora)
-const CYCLE_WAIT := 3600;
+// MUDANÇA PRINCIPAL: Reduzir drasticamente o intervalo de verificação
+const CYCLE_WAIT := 120; // 2 MINUTOS ao invés de 1 HORA
 
 // Iniciar o processador de atualizações de recursos
 var update_script := start_script(":faccao:process_recursos_updates");
@@ -40,7 +41,53 @@ else
     LogDebug("sistema", "Starting guild registry system... ok.");
 endif
 
-// Inicia o controlador de recursos territoriais com controle de tempo
+// NOVA FUNÇÃO: Verificar se há territórios com intervalos menores
+function GetMinimumTerritoryInterval()
+    var rect_df := SafeOpenDataFile(":architect:areas");
+    if (!rect_df)
+        return 3600; // Fallback para 1 hora se não conseguir acessar
+    endif
+    
+    var min_interval := 3600; // Começar com 1 hora
+    
+    foreach rect_name in (rect_df.keys())
+        var elem := SafeFindElement(rect_df, rect_name);
+        if (!elem)
+            continue;
+        endif
+        
+        // Verificar se o território é controlado (não selvagem)
+        var faction := GetElementProp(elem, "faction");
+        if (!faction)
+            faction := GetElementProp(elem, "Faction"); // Compatibilidade legada
+        endif
+        
+        if (faction && faction != "Selvagem" && faction != "")
+            var territory_interval := CInt(GetElementProp(elem, "ResourceInterval", 60));
+            
+            // Converter minutos para segundos
+            var interval_seconds := territory_interval * 60;
+            
+            if (interval_seconds < min_interval)
+                min_interval := interval_seconds;
+            endif
+        endif
+        
+        sleepms(2);
+    endforeach
+    
+    LogDebug("start_DEBUG", "Menor intervalo encontrado nos territórios: " + min_interval + " segundos (" + (min_interval/60) + " minutos)");
+    
+    // Garantir que o intervalo não seja menor que 60 segundos
+    if (min_interval < 60)
+        min_interval := 60;
+    endif
+    
+    // Usar metade do menor intervalo para garantir que não percamos gerações
+    return CInt(min_interval / 2);
+endfunction
+
+// Função melhorada para iniciar o controlador de recursos
 function start_resource_controller()
     var last_time := CInt(GetGlobalProperty("last_execution"));
     if (last_time == error)
@@ -49,27 +96,83 @@ function start_resource_controller()
     
     var current_time := polcore().systime;
     var time_since_last := current_time - last_time;
-    var should_execute := (last_time == 0 || time_since_last >= CYCLE_WAIT);
     
-    // Adicionar log detalhado
-    LogDebug("start_DEBUG", "Verificando ResourceController: CurrentTime=" + current_time + ", LastTime=" + last_time + ", TimeSinceLast=" + time_since_last + ", ShouldExecute=" + should_execute);
+    // NOVA LÓGICA: Calcular intervalo baseado nos territórios configurados
+    var dynamic_interval := GetMinimumTerritoryInterval();
+    
+    // Usar o menor valor entre CYCLE_WAIT e o intervalo dinâmico
+    var effective_interval := (dynamic_interval < CYCLE_WAIT) ? dynamic_interval : CYCLE_WAIT;
+    
+    var should_execute := (last_time == 0 || time_since_last >= effective_interval);
+    
+    // Log detalhado melhorado
+    LogDebug("start_DEBUG", "Verificando ResourceController:");
+    LogDebug("start_DEBUG", "  - CurrentTime: " + current_time);
+    LogDebug("start_DEBUG", "  - LastTime: " + last_time);
+    LogDebug("start_DEBUG", "  - TimeSinceLast: " + time_since_last + " segundos");
+    LogDebug("start_DEBUG", "  - StaticInterval: " + CYCLE_WAIT + " segundos");
+    LogDebug("start_DEBUG", "  - DynamicInterval: " + dynamic_interval + " segundos");
+    LogDebug("start_DEBUG", "  - EffectiveInterval: " + effective_interval + " segundos");
+    LogDebug("start_DEBUG", "  - ShouldExecute: " + should_execute);
     
     if (should_execute)
         LogInfo("start_DEBUG", "- DECISÃO: INICIAR ResourceController agora (PID: " + GetPid() + ")");
+        LogInfo("start_DEBUG", "  Motivo: " + (last_time == 0 ? "Primeira execução" : "Intervalo de " + effective_interval + "s atingido"));
+        
         var resource_script := start_script("ResourceController");
         if (resource_script.errortext)
             LogError("recursos", "Erro ao iniciar o sistema de recursos: " + resource_script.errortext);
         else
-            LogInfo("start_DEBUG", "- ResourceController iniciado com sucesso. Novo PID (reportado): " + resource_script.pid);
+            LogInfo("start_DEBUG", "- ResourceController iniciado com sucesso. Novo PID: " + resource_script.pid);
             LogDebug("sistema", "Starting territory resource controller... ok.");
             SetGlobalProperty("last_execution", current_time);
         endif
     else
-        var wait_time := CYCLE_WAIT - time_since_last;
-        LogInfo("start_DEBUG", "- DECISÃO: AGUARDAR. Próxima execução do ResourceController em " + wait_time + " segundos.");
+        var wait_time := effective_interval - time_since_last;
+        LogInfo("start_DEBUG", "- DECISÃO: AGUARDAR. Próxima execução do ResourceController em " + wait_time + " segundos (" + CInt(wait_time/60) + " minutos).");
         LogDebug("recursos", "Próxima execução do ResourceController em " + wait_time + " segundos.");
     endif
 endfunction
 
+// NOVA FUNÇÃO: Loop contínuo para monitorar e reiniciar o ResourceController
+function ResourceControllerManager()
+    LogInfo("start_DEBUG", "Iniciando ResourceController Manager...");
+    
+    while(1)
+        // Verificar se o ResourceController ainda está rodando
+        var controller_pid := GetGlobalProperty("ResourceControllerPID");
+        var controller_running := 0;
+        
+        if (controller_pid)
+            var process := GetProcess(controller_pid);
+            if (process)
+                controller_running := 1;
+            endif
+        endif
+        
+        if (!controller_running)
+            LogWarning("start_DEBUG", "ResourceController não está rodando, tentando reiniciar...");
+            start_resource_controller();
+        endif
+        
+        // Calcular próximo intervalo de verificação
+        var check_interval := GetMinimumTerritoryInterval();
+        if (check_interval > 300) // Máximo de 5 minutos entre verificações
+            check_interval := 300;
+        endif
+        
+        LogDebug("start_DEBUG", "ResourceController Manager aguardando " + check_interval + " segundos...");
+        Sleep(check_interval);
+    endwhile
+endfunction
+
 // Chamar a função para iniciar o controlador de recursos
 start_resource_controller();
+
+// OPCIONAL: Iniciar o manager em background (descomente se quiser monitoramento contínuo)
+// var manager_script := start_script(ResourceControllerManager);
+// if (manager_script.errortext)
+//     LogError("sistema", "Erro ao iniciar ResourceController Manager: " + manager_script.errortext);
+// else
+//     LogInfo("sistema", "ResourceController Manager iniciado com sucesso.");
+// endif

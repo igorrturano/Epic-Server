@@ -3,6 +3,8 @@ use os;
 
 // Incluir o arquivo de constantes
 include ":faccao:faccao_constants";
+include ":faccao:include/datafile_helpers"; // <--- ADD THIS LINE
+
 
 // ###########################################
 // #

@@ -60,13 +60,13 @@ const DONATION_PREFIX := "IsKingdomDonation";
 
 // Tipos de recursos
 const RESOURCE_TYPE_COMIDA := "Comida";
-const RESOURCE_TYPE_MOEDAS := "Moedas";
+const RESOURCE_TYPE_MOEDAS := "Moedas"; // <<< VERIFIQUE ESTA
 const RESOURCE_TYPE_COURO := "Couro";
 const RESOURCE_TYPE_METAL := "Metal";
 const RESOURCE_TYPE_MADEIRA := "Madeira";
 const RESOURCE_TYPE_PANO := "Pano";
 const RESOURCE_TYPE_PEDRA := "Pedra";
-const RESOURCE_TYPE_JOIAS := "Joias";
+const RESOURCE_TYPE_JOIAS := "Joias";   // <<< E ESTA
 
 // =======================================
 // Valores padrão

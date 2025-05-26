@@ -15,6 +15,7 @@ use os;
 use datafile;
 use guilds;
 use math; // Adicionado para usar a função Abs
+use util;
 
 include ":faccao:include/faccao_constants";
 include ":faccao:include/shared_functions";
@@ -24,6 +25,9 @@ include ":faccao:include/permissions";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
 include ":faccao:include/territory_management";
 include ":faccao:include/process_registry";  // ADICIONADO: include do process_registry
+include "include/client";
+include ":attributes:attributes";
+
 
 // Constantes de configuração
 const VERIFY_INTERVAL := 3600;         // 1 hora entre verificações completas
@@ -213,32 +217,49 @@ function ExecutarVerificacaoCompleta()
 endfunction
 
 function VerificarControladorRecursos()
-    // Verificar via registro de processos (mais confiável)
+    // NOVA ABORDAGEM: APENAS VERIFICAR, NÃO INICIAR
+    // O start.src é o único responsável por iniciar o ResourceController
+    
+    LogInfo("recursos", "Verificando status do ResourceController...");
+    
+    // Método 1: Verificar via registro de processos
     var controller_running := IsProcessRunning("ResourceController");
-
+    
     if (controller_running == 1)
-        LogInfo("recursos", "ResourceController está rodando (verificação via registro de processos)");
+        LogInfo("recursos", "ResourceController está rodando normalmente (via registro de processos)");
         return 1;
-    elseif (controller_running == error)
-        LogError("recursos", "Erro ao verificar o estado do ResourceController via registro.");
-        controller_running := 0;
     endif
-
-    // Apenas iniciar se NÃO estiver rodando (retorno 0 ou error)
-    if (!controller_running)
-        LogWarning("recursos", "ResourceController não está rodando ou houve erro na verificação, reiniciando...");
-        var script := start_script("ResourceController"); // Ou :faccao:ResourceController se necessário
-        if (script.errortext)
-            LogError("recursos", "Falha ao reiniciar ResourceController: " + script.errortext);
-            return 0; // Falhou ao reiniciar
+    
+    // Método 2: Verificar via GlobalProperty como backup
+    var controller_pid := GetGlobalProperty("ResourceControllerPID");
+    if (controller_pid && controller_pid != error)
+        var process := GetProcess(CInt(controller_pid));
+        if (process && process != error)
+            LogInfo("recursos", "ResourceController detectado via GlobalProperty (PID: " + controller_pid + ")");
+            // OPCIONAL: Atualizar o registro se necessário
+            if (controller_running != 1)
+                RegisterProcess("ResourceController", controller_pid);
+            endif
+            return 1;
         else
-            LogInfo("recursos", "ResourceController reiniciado com sucesso (PID: " + script.pid + ")");
-            return 1; // Iniciado com sucesso
+            LogWarning("recursos", "PID registrado (" + controller_pid + ") não corresponde a processo ativo");
+            EraseGlobalProperty("ResourceControllerPID");
         endif
     endif
-
-    // Caso inesperado
-    return 0;
+    
+    // Se chegou aqui, o ResourceController realmente não está rodando
+    LogWarning("recursos", "ResourceController NÃO está rodando!");
+    LogWarning("recursos", "ATENÇÃO: O ResourceController deve ser iniciado manualmente ou pelo start.src");
+    LogWarning("recursos", "Este verificador NÃO irá iniciar automaticamente para evitar duplicação de processos");
+    
+    // OPCIONAL: Notificar administradores
+    foreach player in EnumerateOnlineCharacters()
+        if (player.cmdlevel >= 3)
+            SendSysMessageEx(player, "AVISO: ResourceController não está rodando! Verifique o sistema.", SSM_INFO);
+        endif
+    endforeach
+    
+    return 0; // Retorna 0 mas NÃO inicia nova instância
 endfunction
 
 // Função para executar verificação parcial
@@ -676,84 +697,88 @@ function VerificarConsistenciaGlobalBausDatafile()
     LogInfo("recursos", "Verificação de consistência global concluída. Inconsistências encontradas: " + inconsistencias);
     return inconsistencias;
 endfunction
+// Dentro de process_recursos_updates.src
+// Função VerificarConsistenciaFaccaoOptimizada
+
 function VerificarConsistenciaFaccaoOptimizada(faction_name, df)
     if (!faction_name || !df)
         return 0;
     endif
     
-    // Obter recursos do datafile
     var nome_normalizado := NormalizarNomeElementoFaccao(faction_name);
     if (nome_normalizado == error) 
-        return 0;
+        Return 0; 
     endif
     
     var faction_elem := SafeFindElement(df, nome_normalizado, 1);
     var recursos_datafile := GetElementProp(faction_elem, "recursos", CreateEmptyResourceStruct());
     
-    if (!recursos_datafile)
-        recursos_datafile := CreateEmptyResourceStruct();
-        SetElementProp(faction_elem, "recursos", recursos_datafile);
-    endif
-    
-    // Somar caches dos baús da facção
+    // Garante que todos os campos existem em recursos_datafile
+    var chaves_padrao := CreateEmptyResourceStruct().keys();
+    foreach chave in chaves_padrao
+        if (!recursos_datafile.exists(chave))
+            recursos_datafile[chave] := 0;
+        endif
+    endforeach
+
     var recursos_cache_total := CreateEmptyResourceStruct();
     var baus_encontrados := 0;
-    var baus_sem_cache := 0;
+    var baus_sem_cache_ou_sujos := 0; // Renomeado para clareza
     
-    foreach item in EnumerateItemsInContainer(0)
-        if (item.objtype == 0xFF11 && GetObjProperty(item, OBJ_FACTION_PROP) == faction_name)
+    foreach item_bau in EnumerateItemsInContainer(0) // Renomeado 'item' para 'item_bau' para evitar conflito de nome
+        if (item_bau.objtype == 0xFF11 && GetObjProperty(item_bau, OBJ_FACTION_PROP) == faction_name)
             baus_encontrados += 1;
             
-            // Tentar usar o cache
-            var bau_recursos := GetObjProperty(item, CACHE_PROP_NAME);
-            
-            // Se não tem cache ou está marcado como sujo, contar
-            if (!bau_recursos || GetObjProperty(item, CACHE_DIRTY_FLAG))
-                baus_sem_cache += 1;
-                bau_recursos := ContarRecursosReais(item);
+            var bau_recursos_do_cache := GetObjProperty(item_bau, CACHE_PROP_NAME);
+            var bau_recursos_a_usar; // Variável que será usada para a soma
+
+            if (!bau_recursos_do_cache || GetObjProperty(item_bau, CACHE_DIRTY_FLAG))
+                baus_sem_cache_ou_sujos += 1;
+                bau_recursos_a_usar := ContarRecursosReais(item_bau); 
                 
-                // Atualizar o cache
-                SetObjProperty(item, CACHE_PROP_NAME, bau_recursos);
-                SetObjProperty(item, CACHE_UPDATE_PROP, polcore().systime);
-                EraseObjProperty(item, CACHE_DIRTY_FLAG);
+                SetObjProperty(item_bau, CACHE_PROP_NAME, bau_recursos_a_usar); 
+                SetObjProperty(item_bau, CACHE_UPDATE_PROP, polcore().systime);
+                EraseObjProperty(item_bau, CACHE_DIRTY_FLAG);
+            else
+                bau_recursos_a_usar := bau_recursos_do_cache; 
             endif
             
-            // Somar recursos
-            if (bau_recursos)
-                recursos_cache_total.comida += bau_recursos.comida;
-                recursos_cache_total.moedas += bau_recursos.moedas;
-                recursos_cache_total.couro += bau_recursos.couro;
-                recursos_cache_total.metal += bau_recursos.metal;
-                recursos_cache_total.madeira += bau_recursos.madeira;
-                recursos_cache_total.pano += bau_recursos.pano;
-                recursos_cache_total.pedras += bau_recursos.pedras;
-                recursos_cache_total.joias += bau_recursos.joias;
+            // Agora 'bau_recursos_a_usar' deve ser um struct válido
+            if (bau_recursos_a_usar && TypeOf(bau_recursos_a_usar) == "Struct") 
+                recursos_cache_total.comida += (bau_recursos_a_usar.comida ?: 0);
+                recursos_cache_total.moedas += (bau_recursos_a_usar.moedas ?: 0); 
+                recursos_cache_total.couro += (bau_recursos_a_usar.couro ?: 0);
+                recursos_cache_total.metal += (bau_recursos_a_usar.metal ?: 0);
+                recursos_cache_total.madeira += (bau_recursos_a_usar.madeira ?: 0);
+                recursos_cache_total.pano += (bau_recursos_a_usar.pano ?: 0);
+                recursos_cache_total.pedras += (bau_recursos_a_usar.pedras ?: 0);
+                recursos_cache_total.joias += (bau_recursos_a_usar.joias ?: 0);
+            else
+                LogWarning("recursos", "Struct bau_recursos_a_usar inválido ou não definido para baú " + item_bau.serial);
             endif
         endif
         sleepms(1);
     endforeach
     
-    // Verificar se há diferença significativa
     var inconsistencias := 0;
-    var tolerancia := 10; // Tolerância menor para facções específicas
+    var tolerancia := 10;
     
-    if (Abs(recursos_cache_total.comida - recursos_datafile.comida) > tolerancia ||
-        Abs(recursos_cache_total.moedas - recursos_datafile.moedas) > tolerancia ||
-        Abs(recursos_cache_total.couro - recursos_datafile.couro) > tolerancia ||
-        Abs(recursos_cache_total.metal - recursos_datafile.metal) > tolerancia ||
-        Abs(recursos_cache_total.madeira - recursos_datafile.madeira) > tolerancia ||
-        Abs(recursos_cache_total.pano - recursos_datafile.pano) > tolerancia ||
-        Abs(recursos_cache_total.pedras - recursos_datafile.pedras) > tolerancia ||
-        Abs(recursos_cache_total.joias - recursos_datafile.joias) > tolerancia)
-        
-        // Atualizar o datafile com os recursos do cache
+    // Condição IF corrigida e completa
+    if (Abs(recursos_cache_total.comida - (recursos_datafile.comida ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.moedas - (recursos_datafile.moedas ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.couro - (recursos_datafile.couro ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.metal - (recursos_datafile.metal ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.madeira - (recursos_datafile.madeira ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.pano - (recursos_datafile.pano ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.pedras - (recursos_datafile.pedras ?: 0)) > tolerancia ||
+        Abs(recursos_cache_total.joias - (recursos_datafile.joias ?: 0)) > tolerancia)
+    
         SetElementProp(faction_elem, "recursos", recursos_cache_total);
         inconsistencias += 1;
         
-        LogWarning("recursos", "Inconsistência corrigida para facção: " + faction_name);
-        LogInfo("recursos", "  - Baús encontrados: " + baus_encontrados + ", sem cache: " + baus_sem_cache);
+        LogWarning("recursos", "Inconsistência corrigida para facção (verify_faction_resources): " + faction_name);
+        LogInfo("recursos", "  - Baús encontrados: " + baus_encontrados + ", sem cache/sujos: " + baus_sem_cache_ou_sujos);
         
-        // Atualizar também na guilda
         var guild_id := FindGuildByName(faction_name);
         if (guild_id)
             var guild := FindGuild(guild_id);
@@ -935,7 +960,7 @@ function VerificarTerritoriosEFaccoes()
         if (!elem_arch.GetProp("Resources") && elem_arch.GetProp(TERRITORY_FACTION_PROP) && 
             elem_arch.GetProp(TERRITORY_FACTION_PROP) != DEFAULT_FACTION)
             // Se for território controlado mas sem recursos, configurar padrão
-            SetElementProp(elem_arch, "Resources", "IronOre, couroespesso, cogumelo");
+            SetElementProp(elem_arch, "Resources", "ironore, couroespesso, ");
             SetElementProp(elem_arch, "ResourceInterval", 120); // 2 horas
             SetElementProp(elem_arch, "ResourceAmount", 10);
             SetElementProp(elem_arch, "NextResourceTime", polcore().systime + 7200); // 2 horas

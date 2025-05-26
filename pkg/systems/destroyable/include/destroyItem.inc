@@ -33,7 +33,7 @@ enum TIPO_MATERIAIS
 	MARMORE := "marmore",
 	ARENITO := "arenito",
 	OSSOS := "ossos",
-	VIDRO := "Glass",
+	VIDRO := "glass",
 	MADEIRA := "Wood",
 	PANO := "Cloth",
 	METAL := "Metal",
