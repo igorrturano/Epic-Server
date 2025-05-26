@@ -14,6 +14,7 @@ include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
 const NR_MAXIMO_ESQUEMAS := 6;
+const NR_MAXIMO_RECEITAS_POR_PAGINA := 8;
 const OBJTYPE_ITEM_MONTADO := 0xe72;
 const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
@@ -21,8 +22,10 @@ function InicializaSessaoComplexos(profissaoCraftProp)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
+	sessao.+categoriaAnterior := "";
 	NovoObjetoReceitaSelecionada(sessao);
 	sessao.+gumpAtual := COMPLEXOS;
+	sessao.+paginaAtual := 0;
 	sessao.+acao := ADICIONAR;
 	sessao.+quantidade := 1;
 	sessao.+deveAtrasarAtualizacao := false;
@@ -93,9 +96,11 @@ function EnviaItensComplexosGump(quem,profissao)
 
 		retorno := GFSendGump(quem,gump);
 
+		/*
 		if(sessao.deveAtrasarAtualizacao)//booleano para atrasar atualizacao de alguma parte do gump por 1 ciclo. [visualizados, por exemplo]
 			sessao.deveAtrasarAtualizacao := false;
 		endif
+		*/
 
 		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
 			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
@@ -112,8 +117,12 @@ function EnviaItensComplexosGump(quem,profissao)
 		case(ClassificaRetornoComplexos(retorno,sessao))
 			RT_CATEGORIAS:
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_CATEGORIAS);
+				sessao.categoriaAnterior := sessao.categoriaSelecionada;
 				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retornoMapeado.indice];
-				MarcaCategoriaVisualizada(sessao,parametros);
+				Print("sessao.categoriaSelecionada : " + sessao.categoriaSelecionada );
+				Print("sessao.categoriaAnterior : " + sessao.categoriaAnterior );
+				sessao.paginaAtual := 0;
+				MarcaCategoriaVisualizada(sessao,parametros);// marca a categoria anterior como visualizada.
 				NovoObjetoReceitaSelecionada(sessao);
 				break;
 
@@ -229,6 +238,18 @@ function EnviaItensComplexosGump(quem,profissao)
 				endcase
 				break;
 
+			RT_RCT_PROX_PAGINA:
+				if(sessao.paginaAtual + 1 < (parametros.visaoReceitas[sessao.categoriaSelecionada] / parametros.receitasPorPagina))
+					sessao.paginaAtual += 1;
+				endif
+				break;
+
+			RT_RCT_ANT_PAGINA:
+				if(sessao.paginaAtual - 1 <= 0)
+					sessao.paginaAtual -= 1;
+				endif
+				break;
+
 			RT_CANCELADO_ESQUEMA_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
 				FechaTodosDropdowns(quem,gerenciador.dropDowns);
@@ -236,6 +257,9 @@ function EnviaItensComplexosGump(quem,profissao)
 				break;
 
 			RT_CANCELADO_COMPLX:
+				sessao.categoriaAnterior := sessao.categoriaSelecionada;
+				MarcaCategoriaVisualizada(sessao,parametros);
+
 				var propCraft := GetObjProperty(quem, "Craft");
 				propCraft[parametros.pericia]["visualizadas"] := sessao.visualizadas;
 				SetObjProperty(quem, "Craft", propCraft);
@@ -246,20 +270,22 @@ function EnviaItensComplexosGump(quem,profissao)
 	endwhile
 endfunction
 
-function MarcaCategoriaVisualizada(byref sessao,parametros)
-	
-	if(!(sessao.categoriaSelecionada in (sessao.visualizadas.categorias)))
-		sessao.visualizadas.categorias.append(sessao.categoriaSelecionada);
-		if(!sessao.deveAtrasarAtualizacao)
-			foreach receita in (parametros.visaoReceitas[sessao.categoriaSelecionada])
-				Sleepms(2);
-				var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
-				if(!(nomeClassificado in sessao.visualizadas.receitas))
-					sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
-				endif
-			endforeach
+function MarcaCategoriaVisualizada(byref sessao,byref parametros)
+	if(sessao.categoriaAnterior != "")
+		if(!(sessao.categoriaAnterior in (sessao.visualizadas.categorias)))
+			sessao.visualizadas.categorias.append(sessao.categoriaAnterior);
+			//if(!sessao.deveAtrasarAtualizacao)	
+				foreach receita in (parametros.visaoReceitas[sessao.categoriaAnterior])
+					Sleepms(2);
+					var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
+					if(!(nomeClassificado in sessao.visualizadas.receitas))
+						receita.isVisualizada := true;
+						sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
+					endif
+				endforeach
+			//endif
+			//sessao.deveAtrasarAtualizacao := true;
 		endif
-		sessao.deveAtrasarAtualizacao := true;
 	endif
 endfunction
 
@@ -882,6 +908,7 @@ function PreparaItensComplexosGump(quem, profissao)
 	endif
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
+	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
 	parametrosGump.+profissao := profissao;
 	parametrosGump.+propCraft := propCraft;
 	parametrosGump.+receitasConfig := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
@@ -959,7 +986,7 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 							nomeProfissao))
 
 				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao, receitaClassificada);
-				if(!receitaItem.isVisualizada)
+				if(!receitaItem.isVisualizada) //Tenho que apagar a categoria das visualizadas, porque apareceu uma receita nova.
 					var index := categoria in propCraft[nomePericia]["visualizadas"].categorias;
 					propCraft[nomePericia]["visualizadas"].categorias.erase(index);
 				endif
@@ -1044,7 +1071,11 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 		desc +=  "<br>";
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Encaixes de Componente </BASEFONT><br>";
 		foreach componente in componentes
-			desc +=  cint(componente.qtdNecessaria) * lote+ " " + componente.encaixeDesc  + "<br>";
+			var descTemp := cint(componente.qtdNecessaria) * lote+ " " + componente.encaixeDesc;
+			if(componente.isOpcional)
+				descTemp := "[" + descTemp + "]";
+			endif
+			desc +=  descTemp  + "<br>";
 			Sleepms(2);
 		endforeach
 	endif
@@ -1132,6 +1163,10 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_ESQUEMAS_SALVAR;
 	elseif(valorRetorno == COMPLEXOS_BTN_AJUDA)
 		return RT_AJUDA_CPX;
+	elseif(valorRetorno == COMPLEXOS_BTN_RCT_PROX_PAGINA)
+		return RT_RCT_PROX_PAGINA;
+	elseif(valorRetorno == COMPLEXOS_BTN_RCT_ANT_PAGINA)
+		return RT_RCT_ANT_PAGINA;
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
 	elseif(valorRetorno == 1)

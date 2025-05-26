@@ -10,21 +10,6 @@ const G_MARGEM_ESQUERDA := 10;
 const G_MARGEM_SUPERIOR := 10;
 const G_ESPACAMENTO := 10;
 
-/*
-código de html aceito:
-
-<code>
-	&lt;B&gt;&lt;/B&gt; &lt;BIG&gt;&lt;/BIG&gt; &lt;SMALL&gt;&lt;/SMALL&gt; &lt;EM&gt;&lt;/EM&gt; &lt;I&gt;&lt;/I&gt;	&lt;U&gt;&lt;/U&gt;<br>
-	&lt;H1&gt;&lt;/H1&gt; &lt;H2&gt;&lt;/H2&gt; &lt;H3&gt;&lt;/H3&gt; 
-	&lt;H4&gt;&lt;/H4&gt; &lt;H5&gt;&lt;/H5&gt; &lt;H6&gt;&lt;/H6&gt;
-	&lt;a href=""&gt;&lt;/a&gt;<br>
-	&lt;div align=&quot;right&quot;&gt;&lt;div align=&quot;left&quot;&gt;&lt;/DIV&gt;
-	&lt;left&gt;&lt;/left&gt; &lt;P&gt;
-	&lt;CENTER&gt;&lt;/CENTER&gt; &lt;BR&gt;&lt;/BR&gt;
-	&lt;BASEFONT color=#ffffff size=1-7&gt;&lt;/BASEFONT&gt;
-</code>
-*/
-
 enum FAIXA_BTN_IDS // Valor inicial para os ids de botões de cada painel.
 	COMPLEXOS_CATEGORIAS := 20,
 	COMPLEXOS_RECEITAS := 100,
@@ -52,7 +37,9 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPLEXOS_ESQUEMAS_INPT_NOME := 2,
 	COMPLEXOS_ESQUEMAS_BTN_SALVAR:= 3,
 	COMPLEXOS_BTN_AJUDA := 4,
-	COMPLEXOS_INPT_QTD := 5
+	COMPLEXOS_INPT_QTD := 5,
+	COMPLEXOS_BTN_RCT_PROX_PAGINA := 6,
+	COMPLEXOS_BTN_RCT_ANT_PAGINA := 7
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -65,6 +52,8 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_CANCELADO_COMPLX,
 	RT_ESCOLHA_DROPDOWN_CPX,
 	RT_ESCOLHA_DD_OPCOES_CPX,
+	RT_RCT_PROX_PAGINA,
+	RT_RCT_ANT_PAGINA,
 	RT_AJUDA_CPX
 endenum
 
@@ -129,7 +118,6 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	var larguraPainelRodape := DefineLarguraPainel(12);
 	var alturaPainelRodape := DefineAlturaPainel(1);
 
-
 	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO, G_MARGEM_SUPERIOR + G_ESPACAMENTO, 83, larguraPainelCategoria, alturaPainelCategoria); // Painel Categorias.
 	
 	PreencheCategorias(gump,larguraPainelCategoria,parametros, sessao);
@@ -141,7 +129,7 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 	
 	GFHTMLArea(gump,painelReceitasX + larguraPainelEsquema / 2 - 35,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 15,70,20,"<basefont size=55 color=#ffffff><center>Esquemas</center>");
 	
-	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada], sessao);
+	PreencheReceitas(gump , painelReceitasX, 45, painelReceitasY, 55,larguraPainelReceita,alturaPainelReceita,parametros.visaoReceitas[sessao.categoriaSelecionada], sessao, parametros.receitasPorPagina);
 	PreencheEsquemas (gump,painelReceitasX + 15,painelReceitasY + alturaPainelReceita + espacamentoAplicado + 40,sessao);
 	
 	GFGumpPic(gump,painelReceitasX + larguraPainelReceita / 2 - 102,20,1764); //Placa Titulo Receitas.
@@ -500,38 +488,46 @@ function GeraSetas(byref gump,x,y, valor)
 	endfor
 endfunction
 
-function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas,sessao)
+function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,altura,receitas,sessao, receitasPorPagina)
 	//TODO Implementar uma forma de lembrar onde estava da ultima vez que abriu o gump. Talvez usando a CProp legado "Craft".
 	var page := 1;
 	var colunasLinha := 4;
-	GFPage(gump,page);
-	if(receitas != error && receitas.size() > 0)
-		var linha := 0;
-		foreach receita in receitas
-			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (_receita_iter - 1) % colunasLinha,receita,_receita_iter,sessao);
 
-			//Controle de Paginação.
-			if(_receita_iter % (colunasLinha * 2) == 0 && _receita_iter != receitas.size())
-				page += 1;
-				GFAddButton(gump,x + largura - 45, y + altura / 2,4005,4006,GF_PAGE_BTN,gump.cur_page + 1);
-				GFPage(gump,page);
-				GFAddButton(gump,x + 13, y + altura / 2 ,4014,4015,GF_PAGE_BTN,gump.cur_page - 1);
-				linha := 0;
-			else
-				if(_receita_iter % colunasLinha == 0)
+	//GFPage(gump,page);
+	if(receitas != error && receitas.size() > 0)
+		var indiceReceitasPaginaAtual := (sessao.paginaAtual * receitasPorPagina) + 1;
+		var indiceReceitasPaginaSeguinte := ((1 + sessao.paginaAtual) * receitasPorPagina) + 1;
+		var indiceReceitasPaginaAnterior := ((1 - sessao.paginaAtual) * receitasPorPagina) + 1;
+		var receitasPaginaAtual := sessao.paginaAtual * receitasPorPagina;
+		var linha := 0;
+
+		for indice := indiceReceitasPaginaAtual to (indiceReceitasPaginaSeguinte - 1)
+			if(indice > receitas.size())
+				break;
+			endif
+			
+			var receita :=  receitas[indice];
+			
+			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (indice - 1) % colunasLinha,receita,indice,sessao);
+
+			if(receitas.size() > indiceReceitasPaginaSeguinte)
+				GFAddButton(gump,x + largura - 45, y + altura / 2,4005,4006,GF_CLOSE_BTN,COMPLEXOS_BTN_RCT_PROX_PAGINA);
+			endif
+			if(1 >= indiceReceitasPaginaAnterior)
+				GFAddButton(gump,x + 13, y + altura / 2 ,4014,4015,GF_CLOSE_BTN,COMPLEXOS_BTN_RCT_ANT_PAGINA);
+			endif
+
+			if(indice % colunasLinha == 0)
 					linha += 1;
-				endif
 			endif
 			Sleepms(2);
-		endforeach
+		endfor
 	else
 		GFHTMLArea(gump,x + largura / 2 - 102,y + altura / 2,205,20,"<basefont size=55 color=#ffffff><center>Vazio</center>"); //TODO alterar para algo mais bonitinho.
 	endif
-	GFPage(gump,0);
 endfunction
 
 function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessao)
-	//TODO fazer um highlight para a categoria selecionada.
 	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
 	var margemSuperiorLocal := G_MARGEM_SUPERIOR + G_ESPACAMENTO + 25;
 	var alturaIniciocategorias := margemSuperiorLocal + 80;
@@ -543,7 +539,7 @@ function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessa
 	foreach categoria in (parametros.visaoReceitas.keys())
 		var posX := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 45;
 		GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10,  alturaIniciocategorias + (30 * _categoria_iter) ,4005,4006,GF_CLOSE_BTN, COMPLEXOS_CATEGORIAS + _categoria_iter);
-		if(!(categoria in (sessao.visualizadas.categorias)))
+		if(!(categoria in (sessao.visualizadas.categorias) || parametros.visaoReceitas[categoria].size() <= 0))
 			GFGumpPic(gump, posX, alturaIniciocategorias + (30 * _categoria_iter), 1655);
 			posX += 20; 
 		endif
@@ -618,7 +614,7 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		default:
 	endcase
 	
-	if (!isReceitaVisualizada(sessao, receita))//icone de visualizacao
+	if (!isReceitaVisualizada(receita))//icone de visualizacao
 		GFGumpPic(gump, x + 75, y + 15, 1655);
 	endif
 
@@ -632,8 +628,8 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 	GFTooltipText(gump,"Montar usando melhores opções de componentes.");
 endfunction
 
-function isReceitaVisualizada(sessao, receita)
-	return receita.isVisualizada || !sessao.deveAtrasarAtualizacao;
+function isReceitaVisualizada( receita)
+	return receita.isVisualizada;
 endfunction
 
 function AvaliaEsforço(sessao)
