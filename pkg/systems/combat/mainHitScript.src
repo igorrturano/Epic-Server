@@ -1153,7 +1153,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	var weapon_scripts := array;
 	var pet_instinto :=	GetObjProperty(attacker, "Group_savage");//animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
 	var pet_critic := GetObjProperty(attacker, "Critic");
-	var pet_txt := Cstr(GetConfigStringArray( taming_cfg[pet_critic], "Text" ));
+	var pet_txt := GetConfigStringArray( taming_cfg[pet_critic], "Text" );
 	var pet_selvagem := GetObjProperty(attacker, "Selvagem"); //verifica se é animal selvagem - nunca tamado, para dar dano critico
 	var npcelem := NPC_GetNPCConfig(attacker.npctemplate);
 	var tem_critico := GetConfigStringArray( npcelem, "CriticalHitScripts" ); //Se tem critico no npcdesc definido
@@ -1166,7 +1166,7 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 	elseif (pet_instinto == 1 || pet_selvagem == 1)
 		weapon_scripts :=  GetConfigStringArray( taming_cfg[pet_critic], "CriticalHitScripts" );
 		sleepms(5);
-		printtextabove(attacker, ""+pet_txt);
+		printtextabove(attacker, ""+pet_txt[1]);
 	else
 		weapon_scripts :=  GetConfigStringArray( item_cfg[weapon.objtype], "CriticalHitScripts" );
 	endif
