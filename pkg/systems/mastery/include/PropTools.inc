@@ -5,11 +5,11 @@ function LoadMastery(who, key)
 	var prop := who.GetProp("Masteries") ?: dictionary{};
 	data := prop[key];
 
-	if (!data) return error{ errortext := $"No mastery found for key: {key}" }; endif
-	
+	if (!data) return error{ errortext := $"Mastery not found for key: {key}" }; endif
+
 	case (data.type)
 		MASTERY_COMBAT:
-			mastery := MasteryCombat(data.name);
+			mastery := MasteryCombat(key);
 			break;
 		
 		default:
