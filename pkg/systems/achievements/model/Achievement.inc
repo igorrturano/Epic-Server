@@ -60,6 +60,7 @@ class Achievement()
 	endfunction
 
 	function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		this.name := data.name;
 		this.type := data.type;
 		this.xp := CInt(data.xp);

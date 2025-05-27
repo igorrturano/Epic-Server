@@ -39,6 +39,7 @@ class AchievementCrafting(Achievement)
     endfunction
 
     function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
         this.craftedNormal := data.craftedNormal;
         this.craftedExceptional := data.craftedExceptional;
