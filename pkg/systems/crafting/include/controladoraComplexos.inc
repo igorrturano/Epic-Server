@@ -831,7 +831,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 	return retorno;
 endfunction
 
-function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quantidadeComponentesNecessaria ,configRecursos := 0)
+function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto ,quantidadeComponentesNecessaria ,configRecursos := 0)
 
 	if(!configRecursos)
 		configRecursos := ReadConfigFile(":crafting:config/resourceList");
@@ -843,9 +843,9 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
 	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
-	var efeitoEscolhido := efeitosMaterial[propriedades.caracteristica];
-	var subEfeitos;
-	var valorEfeito := 0;
+	var efeitosMaterialString := efeitosMaterial[propriedades.caracteristica];
+	var subEfeitosMaterial;
+	var valorEfeitoMaterial := 0;
 	
 	if(modificadorHp)
 		propriedades.+modificadorHp := modificadorHp;
@@ -859,16 +859,16 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 	endif
 
 	
-	if(efeitoEscolhido)
-		subEfeitos := SplitWords(efeitoEscolhido);
-		valorEfeito := CInt(subEfeitos[subEfeitos.size()]);
+	if(efeitosMaterialString)
+		subEfeitosMaterial := SplitWords(efeitosMaterialString);
+		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
 
-		if(subEfeitos.size() > 1)
-			subEfeitos.shrink(subEfeitos.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
+		if(subEfeitosMaterial.size() > 1)
+			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
 			var subefeitosDict := dictionary{};
 
-			for indice := 1 to subEfeitos.size()
-				subefeitosDict.insert( subEfeitos[indice], Cint(subEfeitos[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+			for indice := 1 to subEfeitosMaterial.size()
+				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
 				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
 				Sleepms(2);
 			endfor
@@ -878,7 +878,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tier ,quanti
 	endif
 	
 	if(Upper(caracteristica) != "VAZIO")
-		propriedades.+valorPrincipal := valorEfeito + Cint(tier.valor);
+		propriedades.+valorPrincipal := valorEfeitoMaterial + Cint(tierProduto.valor);
 	endif
 	
 	return propriedades; 

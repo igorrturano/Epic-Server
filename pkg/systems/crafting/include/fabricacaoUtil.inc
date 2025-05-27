@@ -2,6 +2,7 @@
 
 use uo;
 use os;
+use basic;
 use Math;
 use cfgfile;
 
@@ -232,6 +233,18 @@ function CriaItemFabricado(quem, produto, quantidade := 1)
 	AplicaFechadura(quem, item);
 
 	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
+
+endfunction
+
+function ResolveEfeitoCaracteristica(valorEfeito)
+	var isFormatoTier := Find(valorEfeito,"t-",1);
+	
+	if(isFormatoTier)
+		var tier := Cint(SubStr(valorEfeito,isFormatoTier + 2, 1));
+		return PegaComponenteTierDesc(tier).valor;
+	else
+		return Cint(valorEfeito);
+	endif
 
 endfunction
 
