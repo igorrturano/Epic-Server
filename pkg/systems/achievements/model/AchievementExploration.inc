@@ -65,6 +65,7 @@ class AchievementExploration(Achievement)
 	endfunction
 
 	function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
 		this.locations := CInt(data.locations);
 		this.discoveries := CInt(data.discoveries);

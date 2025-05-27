@@ -18,6 +18,7 @@ class AchievementCombat(Achievement)
 	function AchievementCombat(this, name)
 		Super(name);
 		this.type := ACHIEVEMENT_COMBAT;
+
 		this.hits := 0;
 		this.blocked := 0;
 		this.kills := 0;
@@ -82,6 +83,7 @@ class AchievementCombat(Achievement)
 	endfunction
 	
 	function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
 		this.hits := CInt(data.hits);
 		this.kills := CInt(data.kills);
