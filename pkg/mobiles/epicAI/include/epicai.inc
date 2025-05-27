@@ -89,18 +89,26 @@ endfunction
 
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
+    var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+    var race := GetObjProperty(mobile, "myrace");
+
     if (has_colors)
         setupNPCColor(mobile, has_colors);
     endif
 
-    setupNPCGender(mobile);
     SetupHumanoidHabs(mobile);
     SetupItemsForSpecificClasses(mobile, npc_elem);
-    var race := GetObjProperty(mobile, "myrace");
-    if (!race)
+
+    SetupNPCEquip(mobile, npc_elem);
+    setupNPCGender(mobile, Cint(isBoss.gender));
+
+    if (isBoss)
+        race := isBoss.race;
+        makeRace(mobile, race);
+    else
         makeRace(mobile);
     endif
-    SetupNPCEquip(mobile, npc_elem);
+
     SetupBaseLanguages(mobile);
 
     if (mobile.isSage())
@@ -599,10 +607,10 @@ function setupNPCColor(who, colors)
     who.truecolor := color;
 endfunction
 
-function setupNPCGender(mobile)
+function setupNPCGender(mobile, bossFemale := 0)
   var female := GetObjProperty(mobile, "female");
 
-  if (female)
+  if (female || bossFemale)
     case (mobile.graphic)
         400: mobile.graphic := 401;
         1830: mobile.graphic := 1831;
@@ -2108,27 +2116,24 @@ endfunction
 function SetupNPCAppearence(mobile)
     // Get boss data to check for appearance settings
     var boss := GetObjProperty(mobile, "EpicBossStruct");
-    print("Boss: " + boss);
-    print("Boss type: " + TypeOf(boss));
+    if (mobile.gender == 1)
+        var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
+        if (existing_beard)
+            DestroyItem(existing_beard);
+        endif
+    endif
     
     if (!boss)
-        print("ERROR: No EpicBossStruct found on mobile");
         return 0;
     endif
     
     if (!boss.appearance)
-        print("ERROR: No appearance data in EpicBossStruct");
-        print("Boss keys: " + boss.keys());
         return 0;
     endif
     
     var appearance := boss.appearance;
-    print("Appearance: " + appearance);
-    print("Appearance type: " + TypeOf(appearance));
-    print("Appearance keys: " + appearance.keys());
     // Setup hair if specified
     if (appearance.hair_style && appearance.hair_style != 0)
-        print("Setting up hair");
         // Check if hair color is specified
         // Remove existing hair first
         var existing_hair := GetEquipmentByLayer(mobile, LAYER_HAIR);
@@ -2138,7 +2143,6 @@ function SetupNPCAppearence(mobile)
         
         // Create and equip new hair using proper objtype
         var hair_item := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, CInt(appearance.hair_style), 1, mobile.realm);
-        print("Hair item: %d", hair_item);
         if (hair_item)
             if (appearance.hair_color)
                 hair_item.color := CInt(appearance.hair_color);
