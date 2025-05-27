@@ -7,8 +7,8 @@ class MasteryCombat(Mastery)
 	var kills;
 	var damage;
 
-	function MasteryCombat(this, name)
-		Super(name);
+	function MasteryCombat(this, key)
+		Super(key);
 		this.type := MASTERY_COMBAT;
 
 		this.hits := 0;
@@ -79,6 +79,6 @@ class MasteryCombat(Mastery)
 	endfunction
 
 	function toString(this)
-		return $"Maestria de Combate para {this.name} ({this.type}) (Level={this.level}, XP={this.xp}, Hits={this.hits}, Kills={this.kills}, Damage={this.damage})";
+		return $"Maestria de Combate {this.key} (Name={this.name}, Type={this.type}, Level={this.level}, XP={this.xp}, Hits={this.hits}, Kills={this.kills}, Damage={this.damage})";
 	endfunction
 endclass
