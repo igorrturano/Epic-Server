@@ -39,3 +39,18 @@
 // OTHERS
 // TODO: Peixes pescados
 // TODO: Peixes pescados com isca
+// TODO: Quantas magias castadas 
+// TODO: Qual magia mais castada
+// TODO: Quanto recurso recolhido
+// TODO: Quantos corpos abertos
+// TODO: Quantos mobs rastreados
+// TODO: Quantos mobs descobertos com awareness
+// TODO: Quantos boss mortos
+// TODO: Qual tier mais alto voce ja matou/ajudou a matar
+// TODO: Top ganho de XP num dia
+// TODO: Quantas vezes ja se disfarçou
+// TODO: Quantos golpes acertados consecutivos sem errar em criaturas red
+// TODO: Quantos aliados voce ja curou
+// TODO: Quanto voce ja curou seus aliados
+// TODO: Quantas vezes utilizou suas habilidades
+// TODO: Qual habilidade mais utilizada
