@@ -9,18 +9,6 @@ include ":gumps:gumps_ex";
 include ":datafile:datafile";
 include "include/say";
 include ":faccao:include/shared_functions";
-
-use uo;
-use os;
-use cfgfile;
-use datafile;
-use guilds;
-
-include ":gumps:gumps";
-include ":gumps:gumps_ex";
-include ":datafile:datafile";
-include "include/say";
-include ":faccao:include/shared_functions";
 include ":faccao:include/permissions";
 
 program use_donation_chest(who, item)

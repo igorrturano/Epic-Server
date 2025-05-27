@@ -8,7 +8,6 @@ include "include/say"; // Para PrintText
 include ":datafile:datafile"; // Mantenha se for usado por algum include
 include ":faccao:include/shared_functions"; // Para MarcarRecursosModificados
 include ":faccao:include/faccao_constants"; // Para constantes de tipo de doação
-include ":faccao:include/faccao_resources"; // Para GetObjProperty
 include ":faccao:include/logging"; // Para LogDebug, LogInfo, LogError
 
 program onInsert(character, container, movetype, inserttype, adding_item, existing_stack, amount_to_add)

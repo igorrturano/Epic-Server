@@ -19,7 +19,6 @@ use util;
 
 include ":faccao:include/faccao_constants";
 include ":faccao:include/shared_functions";
-include ":faccao:include/faccao_resources";
 include ":faccao:include/logging";
 include ":faccao:include/permissions";
 include ":faccao:include/datafile_helpers";  // Nova inclusão

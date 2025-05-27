@@ -16,7 +16,6 @@ use datafile;
 use math; // Adicionado para usar a função Abs
 
 include ":faccao:include/shared_functions";
-include ":faccao:include/faccao_resources";
 include ":faccao:faccao_constants";
 include ":faccao:include/logging";
 include ":faccao:include/datafile_helpers";  // Nova inclusão
@@ -29,142 +28,164 @@ const PRIORITY_THRESHOLD := 1800;      // Tempo (segundos) para considerar prior
 const MAX_PROCESSING_TIME := 60;       // Tempo máximo (segundos) para processar um baú
 
 program ProcessRecursosUpdates()
-    LogInfo("recursos", "Iniciando processador de atualizações de recursos (Versão Simplificada)...");
-    
-    // Registrar PID para que outros scripts possam verificar se está rodando
+    LogInfo("recursos", "Iniciando processador de atualizações de recursos...");
     SetGlobalProperty("recursos_update_processor_pid", GetPid());
-    
-    // Loop principal simplificado
+
     while (1)
-        // Obter lista de atualizações pendentes
-        var updates_pending := GetGlobalProperty("recursos_updates_pending");
-        
-        // Verificar se há atualizações pendentes
-        if (updates_pending && updates_pending.keys().size() > 0)
-            ProcessarAtualizacoesPendentes(updates_pending);
-            
-            // Atualizar a propriedade global
-            SetGlobalProperty("recursos_updates_pending", updates_pending);
-        endif
-        
-        // Verificar novamente após um tempo
-        Sleep(60); // 1 minuto entre ciclos
+        var updates_pending_dict := GetGlobalProperty("recursos_updates_pending");
+        // REMOVIDAS CHAVES DO IF
+        if (updates_pending_dict && TypeOf(updates_pending_dict) == "Dictionary" && updates_pending_dict.keys().size() > 0)
+            var faccao_a_processar := "";
+            var serial_bau_exemplo := 0;
+            var dict_copy := dictionary;
+
+            foreach key_serial_str in (updates_pending_dict.keys())
+                dict_copy[key_serial_str] := updates_pending_dict[key_serial_str];
+            endforeach
+
+            foreach serial_str in (dict_copy.keys())
+                var bau_pendente := SystemFindObjectBySerial(CInt(serial_str));
+                if (bau_pendente && bau_pendente.isA(POLCLASS_CONTAINER))
+                    var temp_faction := GetFactionOfChest(bau_pendente);
+                    if (temp_faction && temp_faction != error)
+                        faccao_a_processar := temp_faction;
+                        serial_bau_exemplo := bau_pendente.serial;
+                        break; 
+                    endif
+                else
+                    updates_pending_dict.erase(serial_str);
+                    LogWarning("recursos", "Baú pendente #"+ serial_str + " não encontrado ou inválido. Removido da fila.");
+                endif
+            endforeach // FIM DO foreach serial_str
+
+            if (faccao_a_processar != "")
+                LogInfo("recursos", "Processando atualizações para a facção: '" + faccao_a_processar + "' (acionado pelo baú #" + serial_bau_exemplo + ")");
+                var sucesso_processamento_faccao := ProcessarRecursosDeUmaFaccao(faccao_a_processar, updates_pending_dict);
+
+                if (sucesso_processamento_faccao)
+                    var chaves_para_remover := array;
+                    foreach key_serial_str_rem in (updates_pending_dict.keys())
+                        var bau_para_remover_check := SystemFindObjectBySerial(CInt(key_serial_str_rem));
+                        if (bau_para_remover_check)
+                            if (GetFactionOfChest(bau_para_remover_check) == faccao_a_processar)
+                                chaves_para_remover.append(key_serial_str_rem);
+                            endif
+                        else
+                             chaves_para_remover.append(key_serial_str_rem);
+                        endif
+                    endforeach // FIM DO foreach key_serial_str_rem
+                    foreach chave_rem in chaves_para_remover
+                        updates_pending_dict.erase(chave_rem);
+                        LogDebug("recursos", "Baú #" + chave_rem + " da facção '" + faccao_a_processar + "' removido da fila após processamento agregado.");
+                    endforeach // FIM DO foreach chave_rem
+                endif // FIM DO if (sucesso_processamento_faccao)
+            endif // FIM DO if (faccao_a_processar != "")
+            SetGlobalProperty("recursos_updates_pending", updates_pending_dict);
+        endif // FIM DO if (updates_pending_dict ...)
+
+        Sleep(CYCLE_WAIT_TIME);
     endwhile
 endprogram
 
-
-// Função simplificada para processar baú individual
-function ProcessarBau(bau)
-    // Verificar se é válido
-    if (!bau || !bau.isA(POLCLASS_CONTAINER))
+/*
+ * ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref)
+ *
+ * Calcula o total de recursos para TODOS os baús de uma facção específica
+ * e sincroniza esse total com o datafile e CProps da guilda.
+ * Também atualiza o cache individual de cada baú processado da facção.
+ */
+function ProcessarRecursosDeUmaFaccao(faction_name, byref updates_pending_dict_ref)
+    if (!faction_name || faction_name == error)
+        LogError("recursos", "ProcessarRecursosDeUmaFaccao: Nome da facção inválido.");
         return 0;
     endif
-    
-    // Verificar se o baú está sendo usado no momento
-    if (GetObjProperty(bau, "being_processed"))
-        return 0;
-    endif
-    
-    // Marcar como em processamento
-    SetObjProperty(bau, "being_processed", polcore().systime);
-    
-    // Processar o baú
-    var success := 0;
-    
-    // Contar recursos no baú
-    var recursos_reais := ContarRecursosReais(bau);
-    
-    // Atualizar o cache
-    SetObjProperty(bau, CACHE_PROP_NAME, recursos_reais);
-    SetObjProperty(bau, CACHE_UPDATE_PROP, polcore().systime);
-    EraseObjProperty(bau, CACHE_DIRTY_FLAG);
-    
-    // Sincronizar com datafile
-    var faction_name := GetObjProperty(bau, OBJ_FACTION_PROP);
-    if (faction_name)
-        success := SincronizarComDataFile(bau, recursos_reais);
-    endif
-    
-    // Limpar flag de processamento
-    EraseObjProperty(bau, "being_processed");
-    
-    return success;
-endfunction
 
-// Função principal para processar atualizações pendentes
-function ProcessarAtualizacoesPendentes(byref updates_pending)
-    LogInfo("recursos", "Iniciando processador centralizado de atualizações de recursos...");
-    
-    // Rastrear métricas para logging
-    var total_processado := 0;
-    var total_erro := 0;
-    var tempo_inicio := polcore().systime;
-    
-    // Organizar por prioridade
-    var sorted_serials := OrganizarAtualizacoesPorPrioridade(updates_pending);
-    
-    // Processar baús (limitado por ciclo)
-    var items_processed := 0;
-    var current_time := polcore().systime;
-    
-    foreach serial in sorted_serials
-        var bau := SystemFindObjectBySerial(CInt(serial));
-        
-        if (bau)
-            var tempo_enfileirado := current_time - updates_pending[serial];
-            
-            LogInfo("recursos", "Processando baú #" + serial + " (Tempo em fila: " + tempo_enfileirado + "s)");
-            
-            // Definir tempo limite para processamento
-            var start_time := polcore().systime;
-            var result := ProcessarBauComTimeout(bau, MAX_PROCESSING_TIME);
-            var processing_time := polcore().systime - start_time;
-            
-            if (result)
-                total_processado += 1;
-                LogInfo("recursos", "Baú #" + serial + " processado com sucesso em " + processing_time + "s");
-            else
-                total_erro += 1;
-                LogError("recursos", "Falha ao processar baú #" + serial + " após " + processing_time + "s");
-                
-                // Se falhou por timeout, reagendar com baixa prioridade
-                if (processing_time >= MAX_PROCESSING_TIME)
-                    updates_pending[serial] := current_time - (PRIORITY_THRESHOLD / 2);
-                    LogWarning("recursos", "Baú #" + serial + " reagendado devido a timeout");
-                    continue; // Não remover da lista
-                endif
+    LogInfo("recursos", "ProcessarRecursosDeUmaFaccao: Iniciando para facção '" + faction_name + "'.");
+    var total_recursos_da_faccao := CreateEmptyResourceStruct();
+    var baus_da_faccao_processados := 0;
+    var current_processing_time := polcore().systime;
+    var todos_os_baus_conhecidos_da_faccao := array;
+
+    foreach serial_str_pendente in (updates_pending_dict_ref.keys())
+        var bau_obj_pendente := SystemFindObjectBySerial(CInt(serial_str_pendente));
+        if (bau_obj_pendente && GetFactionOfChest(bau_obj_pendente) == faction_name)
+            if (!(bau_obj_pendente in todos_os_baus_conhecidos_da_faccao))
+                todos_os_baus_conhecidos_da_faccao.append(bau_obj_pendente);
             endif
-        else
-           LogError("recursos", "Baú #" + serial + " não encontrado");
-            total_erro += 1;
         endif
-        
-        // Remover da lista de pendências
-        updates_pending.erase(serial);
-        
-        // Controle de quantidade por ciclo
-        items_processed += 1;
-        if (items_processed >= MAX_ITEMS_PER_CYCLE)
-            LogInfo("recursos", "Limite de " + MAX_ITEMS_PER_CYCLE + " itens por ciclo atingido. Continuando no próximo ciclo.");
+    endforeach
+
+    var max_items_to_scan_world := 10000;
+    var items_scanned_world := 0;
+    foreach item_no_mundo in EnumerateItemsInContainer(0)
+        items_scanned_world +=1;
+        if (items_scanned_world > max_items_to_scan_world)
+            LogWarning("recursos", "ProcessarRecursosDeUmaFaccao: Limite de scan no mundo atingido para facção " + faction_name);
             break;
         endif
-        
-        Sleep(2); // Breve pausa entre atualizações para não sobrecarregar
+        if (item_no_mundo.objtype == 0xFF11 && GetFactionOfChest(item_no_mundo) == faction_name)
+            if (!(item_no_mundo in todos_os_baus_conhecidos_da_faccao))
+                todos_os_baus_conhecidos_da_faccao.append(item_no_mundo);
+            endif
+        endif
+        if (items_scanned_world % 1000 == 0) sleepms(1); endif
     endforeach
-    
-    // Atualizar a lista global
-    SetGlobalProperty("recursos_updates_pending", updates_pending);
-    
-    // Registrar métricas
-    var tempo_total := polcore().systime - tempo_inicio;
-    LogInfo("recursos", "Processamento de ciclo concluído em " + tempo_total + "s. Processados: " + 
-           total_processado + ", Erros: " + total_erro + ", Restantes: " + updates_pending.keys().size());
-    
-    // Salvar estatísticas
-    SalvarEstatisticasProcessamento(total_processado, total_erro, tempo_total, updates_pending.keys().size());
-    
-    return total_processado;
+
+    if (todos_os_baus_conhecidos_da_faccao.size() == 0)
+        LogInfo("recursos", "ProcessarRecursosDeUmaFaccao: Nenhum baú encontrado para a facção '" + faction_name + "'. Sincronizando com zero.");
+        AtualizarDatafileRecursos(faction_name, total_recursos_da_faccao);
+        AtualizarPropriedadesGuildaRecursos(faction_name, total_recursos_da_faccao);
+        return 1;
+    endif
+
+    LogInfo("recursos", "ProcessarRecursosDeUmaFaccao: Encontrados " + todos_os_baus_conhecidos_da_faccao.size() + " baús para a facção '" + faction_name + "'.");
+
+    foreach bau_individual in todos_os_baus_conhecidos_da_faccao
+        if (bau_individual && bau_individual.isA(POLCLASS_CONTAINER))
+            if (GetObjProperty(bau_individual, "being_processed"))
+                LogWarning("recursos", "ProcessarRecursosDeUmaFaccao: Baú #" + bau_individual.serial + " já está 'being_processed'. Pulando contagem e cache.");
+                var cache_bau_individual := GetObjProperty(bau_individual, CACHE_PROP_NAME);
+                var cache_sujo := GetObjProperty(bau_individual, CACHE_DIRTY_FLAG);
+                if (cache_bau_individual && TypeOf(cache_bau_individual) == "Struct" && !cache_sujo)
+                    foreach key_recurso_cache in (cache_bau_individual.keys())
+                        if (total_recursos_da_faccao.exists(key_recurso_cache))
+                            total_recursos_da_faccao[key_recurso_cache] := total_recursos_da_faccao[key_recurso_cache] + CInt(cache_bau_individual[key_recurso_cache]);
+                        endif
+                    endforeach
+                    baus_da_faccao_processados += 1;
+                endif
+                continue; 
+            endif
+
+            SetObjProperty(bau_individual, "being_processed", current_processing_time);
+            var recursos_deste_bau := ContarRecursosReais(bau_individual);
+            baus_da_faccao_processados += 1;
+            SetObjProperty(bau_individual, CACHE_PROP_NAME, recursos_deste_bau);
+            SetObjProperty(bau_individual, CACHE_UPDATE_PROP, current_processing_time);
+            EraseObjProperty(bau_individual, CACHE_DIRTY_FLAG);
+
+            foreach key_recurso in (recursos_deste_bau.keys())
+                if (total_recursos_da_faccao.exists(key_recurso))
+                    total_recursos_da_faccao[key_recurso] := total_recursos_da_faccao[key_recurso] + CInt(recursos_deste_bau[key_recurso]);
+                endif
+            endforeach
+            EraseObjProperty(bau_individual, "being_processed");
+        endif
+        Sleepms(50); 
+    endforeach
+
+    LogInfo("recursos", "ProcessarRecursosDeUmaFaccao: Contagem agregada para '" + faction_name + "' concluída. Baús processados: " + baus_da_faccao_processados + ". Total de moedas agregado: " + total_recursos_da_faccao.moedas);
+    var sucesso_sincronizacao := SincronizarComDataFile(faction_name, total_recursos_da_faccao);
+
+    if (sucesso_sincronizacao)
+        LogInfo("recursos", "ProcessarRecursosDeUmaFaccao: Sincronização do total para facção '" + faction_name + "' realizada com sucesso.");
+    else
+        LogError("recursos", "ProcessarRecursosDeUmaFaccao: FALHA na sincronização do total para facção '" + faction_name + "'.");
+    endif
+    return sucesso_sincronizacao;
 endfunction
+
+
 
 // Função para organizar atualizações por prioridade
 function OrganizarAtualizacoesPorPrioridade(updates_pending)
@@ -207,55 +228,6 @@ function OrganizarAtualizacoesPorPrioridade(updates_pending)
     endif
     
     return sorted_serials;
-endfunction
-
-// Função para processar um baú com timeout
-function ProcessarBauComTimeout(bau, timeout_seconds)
-    var start_time := polcore().systime;
-    
-    // Verificar periperties básicas para determinar se é válido
-    if (!bau || !bau.isA(POLCLASS_CONTAINER) || bau.objtype != 0xFF11)
-        return 0;
-    endif
-    
-    // Verificar se o baú está sendo usado no momento
-    if (GetObjProperty(bau, "being_processed"))
-        LogWarning("recursos", "Baú #" + bau.serial + " já está sendo processado, pulando");
-        return 0;
-    endif
-    
-    // Marcar como em processamento
-    SetObjProperty(bau, "being_processed", polcore().systime);
-    
-    // Processar o baú
-    var success := 0;
-    
-    // Primeira etapa: Corrigir inconsistências
-    var inconsistencias := VerificarEResolverInconsistencias(bau);
-    
-    // Segunda etapa: Forçar sincronização se necessário
-    if (inconsistencias > 0)
-        LogWarning("recursos", "Encontradas " + inconsistencias + " inconsistências no baú #" + bau.serial);
-        success := ForcarSincronizacaoBau(bau);
-    else
-        // Se não há inconsistências, apenas verificar se precisa sincronizar
-        var last_sync := GetObjProperty(bau, DATAFILE_SYNC_PROP);
-        var current_time := polcore().systime;
-        
-        if (!last_sync || (current_time - last_sync > DATAFILE_UPDATE_INTERVAL))
-            LogInfo("recursos", "Baú #" + bau.serial + " precisa sincronização periódica");
-            success := ForcarSincronizacaoBau(bau);
-        else
-            // Não precisa sincronizar agora
-            LogInfo("recursos", "Baú #" + bau.serial + " verificado, não precisa sincronização");
-            success := 1;
-        endif
-    endif
-    
-    // Limpar flag de processamento
-    EraseObjProperty(bau, "being_processed");
-    
-    return success;
 endfunction
 
 // Função para executar um ciclo de emergência (verificação geral)

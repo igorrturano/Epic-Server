@@ -14,7 +14,6 @@ include "include/arrays";
 include ":tn:tngumps";
 include ":faccao:include/shared_functions";
 include ":faccao:faccao_constants";
-include ":faccao:include/faccao_resources";
 include ":faccao:include/permissions";
 include ":faccao:include/logging";
 include ":faccao:include/territory_management";
@@ -375,97 +374,98 @@ function DoacoesGump(byref gump, item_mesa_gestao)
     var faction_name_da_mesa := GetObjProperty(item_mesa_gestao, OBJ_FACTION_PROP);
     var titulo_gump := "";
     var recursos_a_exibir := CreateEmptyResourceStruct();
+    var log_message := ""; // Variável para construir a mensagem de log
 
     if (faction_name_da_mesa && faction_name_da_mesa != KINGDOM_FACTION && faction_name_da_mesa != "Reino")
         titulo_gump := "Recursos de " + faction_name_da_mesa;
-        LogDebug("gestao_use", "DoacoesGump: Carregando recursos para facção específica: " + faction_name_da_mesa);
-        
+        var nome_elemento_debug := NormalizarNomeElementoFaccao(faction_name_da_mesa);
+        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Nome do Elemento Normalizado: '" + nome_elemento_debug + "'";
+        LogCritical("gestao_use_GUMP_DEBUG", log_message);
+
         var df_main := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
         if (df_main)
-            var nome_elem_faccao := NormalizarNomeElementoFaccao(faction_name_da_mesa);
-            if (nome_elem_faccao != error && nome_elem_faccao != 0)
-                var elem_faccao := SafeFindElement(df_main, nome_elem_faccao);
+            if (nome_elemento_debug != error && nome_elemento_debug != "")
+                var elem_faccao := SafeFindElement(df_main, nome_elemento_debug);
                 if (elem_faccao)
+                    log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Elemento '" + nome_elemento_debug + "' ENCONTRADO no datafile.";
+                    LogCritical("gestao_use_GUMP_DEBUG", log_message);
                     var temp_recursos := GetElementProp(elem_faccao, "recursos");
                     if (temp_recursos && TypeOf(temp_recursos) == "Struct")
+                        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): temp_recursos É um struct. Moedas em temp_recursos: " + temp_recursos.moedas;
+                        LogCritical("gestao_use_GUMP_DEBUG", log_message);
                         recursos_a_exibir := temp_recursos;
+
                         foreach key_padrao in (CreateEmptyResourceStruct().keys())
                             if (!recursos_a_exibir.exists(key_padrao))
                                 recursos_a_exibir[key_padrao] := 0;
+                                log_message := "DoacoesGump: Chave '" + key_padrao + "' não existia em temp_recursos para '" + faction_name_da_mesa + "', adicionada com 0.";
+                                LogWarning("gestao_use", log_message);
                             endif
-                        endforeach; // Adicionado ponto e vírgula
+                        endforeach
+                        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Moedas em recursos_a_exibir (APÓS PREENCHIMENTO): " + recursos_a_exibir.moedas;
+                        LogCritical("gestao_use_GUMP_DEBUG", log_message);
                     else
-                        LogWarning("gestao_use", "Struct de recursos não encontrado ou inválido (Tipo: " + TypeOf(temp_recursos) + ") para facção '" + faction_name_da_mesa + "' no datafile. Usando struct vazio.");
-                    endif; // Adicionado ponto e vírgula
-                else 
-                     LogWarning("gestao_use", "Elemento '" + nome_elem_faccao + "' para facção '" + faction_name_da_mesa + "' não encontrado no datafile.");
-                endif; // Adicionado ponto e vírgula
+                        log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Propriedade 'recursos' não é um struct ou não encontrada no elemento '" + nome_elemento_debug + "'. Tipo: " + TypeOf(temp_recursos) + ". Usando struct vazio.";
+                        LogWarning("gestao_use", log_message);
+                    endif
+                else
+                     log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Elemento '" + nome_elemento_debug + "' NÃO encontrado no datafile '" + KINGDOM_RESOURCE_DATAFILE + "'.";
+                     LogWarning("gestao_use", log_message);
+                endif
             else
-                LogError("gestao_use", "Falha ao normalizar nome de elemento para facção '" + faction_name_da_mesa + "'.");
-            endif; // Adicionado ponto e vírgula
+                log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Falha ao normalizar nome de elemento ou nome resultou inválido: '" + nome_elemento_debug + "'.";
+                LogError("gestao_use", log_message);
+            endif
         else
-             LogWarning("gestao_use", "Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "' para facção '" + faction_name_da_mesa + "'.");
-        endif; // Adicionado ponto e vírgula
-    else
+             log_message := "DoacoesGump (FACÇÃO '" + faction_name_da_mesa + "'): Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "'.";
+             LogWarning("gestao_use", log_message);
+        endif
+    else // Lógica para o REINO
         titulo_gump := "Recursos do Reino";
-        LogDebug("gestao_use", "DoacoesGump: Carregando recursos do REINO.");
+        LogCritical("gestao_use_GUMP_DEBUG", "DoacoesGump (REINO): Carregando recursos do REINO.");
         var df_main := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE);
         if (df_main)
             var elem_reino := SafeFindElement(df_main, KINGDOM_RESOURCE_ELEM);
             if (elem_reino)
-                var temp_recursos := GetElementProp(elem_reino, "recursos"); 
+                log_message := "DoacoesGump (REINO): Elemento '" + KINGDOM_RESOURCE_ELEM + "' ENCONTRADO.";
+                LogCritical("gestao_use_GUMP_DEBUG", log_message);
+                var temp_recursos := GetElementProp(elem_reino, "recursos");
                 if (temp_recursos && TypeOf(temp_recursos) == "Struct")
+                    log_message := "DoacoesGump (REINO): temp_recursos É um struct. Moedas em temp_recursos: " + temp_recursos.moedas;
+                    LogCritical("gestao_use_GUMP_DEBUG", log_message);
                     recursos_a_exibir := temp_recursos;
                     foreach key_padrao in (CreateEmptyResourceStruct().keys())
                         if (!recursos_a_exibir.exists(key_padrao))
                             recursos_a_exibir[key_padrao] := 0;
+                            log_message := "DoacoesGump (REINO): Chave '" + key_padrao + "' não existia em temp_recursos, adicionada com 0.";
+                            LogWarning("gestao_use", log_message);
                         endif
-                    endforeach; // Adicionado ponto e vírgula
-                    LogDebug("gestao_use", "Recursos do Reino carregados do struct 'recursos'. Comida: " + recursos_a_exibir.comida);
+                    endforeach
+                    log_message := "DoacoesGump (REINO): Moedas em recursos_a_exibir (APÓS PREENCHIMENTO): " + recursos_a_exibir.moedas;
+                    LogCritical("gestao_use_GUMP_DEBUG", log_message);
                 else
-                    LogWarning("gestao_use", "Struct de recursos do Reino (propriedade 'recursos') não encontrado ou inválido (Tipo: " + TypeOf(temp_recursos) + ") no elemento '" + KINGDOM_RESOURCE_ELEM + "'. Tentando fallback para props individuais.");
-                    var fallback_recursos := CreateEmptyResourceStruct();
-                    fallback_recursos.comida  := CInt(GetElementProp(elem_reino, "comida", 0));
-                    fallback_recursos.moedas  := CInt(GetElementProp(elem_reino, "moedas", 0));
-                    fallback_recursos.couro   := CInt(GetElementProp(elem_reino, "couro", 0));
-                    fallback_recursos.metal   := CInt(GetElementProp(elem_reino, "metal", 0));
-                    fallback_recursos.madeira := CInt(GetElementProp(elem_reino, "madeira", 0));
-                    fallback_recursos.pano    := CInt(GetElementProp(elem_reino, "pano", 0));
-                    fallback_recursos.pedras  := CInt(GetElementProp(elem_reino, "pedras", 0));
-                    fallback_recursos.joias   := CInt(GetElementProp(elem_reino, "joias", 0));
-                    
-                    var struct_principal_vazio := 1;
-                    foreach val_principal in (recursos_a_exibir.values())
-                        if (CInt(val_principal) != 0) struct_principal_vazio := 0; break; endif
-                    endforeach; // Adicionado ponto e vírgula
-                    var fallback_tem_dados := 0;
-                    foreach val_fallback in (fallback_recursos.values())
-                        if (CInt(val_fallback) != 0) fallback_tem_dados := 1; break; endif
-                    endforeach; // Adicionado ponto e vírgula
-
-                    if (struct_principal_vazio && fallback_tem_dados)
-                        LogInfo("gestao_use", "Fallback para propriedades individuais do Reino utilizado pois struct 'recursos' estava vazio/inválido e props individuais continham dados.");
-                        recursos_a_exibir := fallback_recursos;
-                    elseif (!struct_principal_vazio)
-                        LogDebug("gestao_use", "Struct 'recursos' do Reino continha dados, não usando fallback de props individuais.");
-                    else
-                        LogDebug("gestao_use", "Nem struct 'recursos' nem props individuais do Reino continham dados significativos.");
-                    endif; // Adicionado ponto e vírgula
-                endif; // Adicionado ponto e vírgula
+                    log_message := "DoacoesGump (REINO): Propriedade 'recursos' não é um struct ou não encontrada no elemento '" + KINGDOM_RESOURCE_ELEM + "'. Tipo: " + TypeOf(temp_recursos) + ". Usando struct vazio.";
+                    LogWarning("gestao_use", log_message);
+                endif
             else
-                LogWarning("gestao_use", "Elemento '" + KINGDOM_RESOURCE_ELEM + "' não encontrado para o Reino.");
-            endif; // Adicionado ponto e vírgula
+                log_message := "DoacoesGump (REINO): Elemento '" + KINGDOM_RESOURCE_ELEM + "' NÃO encontrado.";
+                LogWarning("gestao_use", log_message);
+            endif
         else
-            LogWarning("gestao_use", "Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "' para o Reino.");
-        endif; // Adicionado ponto e vírgula
-    endif; // Adicionado ponto e vírgula
-    
-    GFGumpPicTiled(gump, 466, 60, 263, 21, 9354); 
-    GFTextMid(gump, 466, 60, 263, 53, titulo_gump); 
+            log_message := "DoacoesGump (REINO): Não foi possível abrir o datafile '" + KINGDOM_RESOURCE_DATAFILE + "'.";
+            LogWarning("gestao_use", log_message);
+        endif
+    endif
+
+    GFGumpPicTiled(gump, 466, 60, 263, 21, 9354);
+    GFTextMid(gump, 466, 60, 263, 53, titulo_gump);
 
     AdicionarQuadradosRecursos(gump);
     AdicionarIconesItens(gump);
     AdicionarTextosTiposDoacao(gump);
+
+    log_message := "DoacoesGump: VALOR DE MOEDAS EM recursos_a_exibir (ANTES DE AdicionarValoresRecursos): " + recursos_a_exibir.moedas + " (Facção: " + faction_name_da_mesa + ")";
+    LogCritical("gestao_use_GUMP_DEBUG", log_message);
     AdicionarValoresRecursos(gump, recursos_a_exibir);
 endfunction
 
@@ -550,21 +550,29 @@ endforeach
 endfunction
 
 function AdicionarValoresRecursos(byref gump, byref recursos_struct)
-    if (!gump) return 0;
-    endif; // Adicionado ponto e vírgula
+    if (!gump)
+        return 0;
+    endif;
+
+    var log_message := ""; // Variável para construir a mensagem de log
 
     if (!recursos_struct || TypeOf(recursos_struct) != "Struct")
-        LogWarning("gestao_use", "AdicionarValoresRecursos: struct de recursos inválido ou nulo (Tipo: " + TypeOf(recursos_struct) + "). Usando valores zerados.");
+        log_message := "AdicionarValoresRecursos: struct de recursos inválido ou nulo (Tipo: " + TypeOf(recursos_struct) + "). Usando valores zerados.";
+        LogWarning("gestao_use", log_message);
         recursos_struct := CreateEmptyResourceStruct();
-    endif; // Adicionado ponto e vírgula
+    endif
+    log_message := "AdicionarValoresRecursos: MOEDAS recebidas no struct: " + recursos_struct.moedas;
+    LogCritical("gestao_use_GUMP_DEBUG", log_message);
+
 
     var chaves_padrao := array{"comida", "moedas", "couro", "metal", "madeira", "pano", "pedras", "joias"};
     foreach chave_esperada in chaves_padrao
         if (!recursos_struct.exists(chave_esperada))
-            LogWarning("gestao_use", "AdicionarValoresRecursos: Chave '" + chave_esperada + "' faltando no struct de recursos. Adicionando com valor 0.");
+            log_message := "AdicionarValoresRecursos: Chave '" + chave_esperada + "' faltando no struct de recursos. Adicionando com valor 0.";
+            LogWarning("gestao_use", log_message);
             recursos_struct[chave_esperada] := 0;
-        endif;
-    endforeach; // Adicionado ponto e vírgula
+        endif
+    endforeach
 
     var posicoes := array{
         struct{ "x" := 503, "y" := 184, "chave" := "comida" },
@@ -579,10 +587,13 @@ function AdicionarValoresRecursos(byref gump, byref recursos_struct)
 
     foreach pos in (posicoes)
         var valor_numerico := CInt(recursos_struct[pos.chave]);
-        var valor_texto := CStr(valor_numerico); 
+        var valor_texto := CStr(valor_numerico);
+        if (pos.chave == "moedas")
+            log_message := "AdicionarValoresRecursos: MOEDAS a serem EXIBIDAS no GUMP: " + valor_texto;
+            LogCritical("gestao_use_GUMP_DEBUG", log_message);
+        endif
         GFTextLine(gump, pos.x, pos.y, 53, valor_texto);
-    endforeach; // Adicionado ponto e vírgula
-
+    endforeach
     return 1;
 endfunction
 

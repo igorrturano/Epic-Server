@@ -9,7 +9,6 @@
     include "include/say";
     include ":faccao:include/shared_functions";
     include ":architect:include/systemclock";
-    include ":faccao:include/faccao_resources";
     include ":faccao:include/logging";
     include ":faccao:include/datafile_helpers";
     include ":faccao:include/process_registry";
@@ -427,93 +426,100 @@ function RescheduleTerritoryWithPenalty(territory_id, byref elem, current_time, 
     endif
 endfunction
 
-
-    function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
-        LogDebug("ProcessTerritory_DEBUG", "Iniciando VerificarValidadeDosDados...");
+function VerificarValidadeDosDados(elem, faction, resources, resource_amount)
+    LogDebug("ProcessTerritory_DEBUG", "Iniciando VerificarValidadeDosDados...");
+    
+    var validade := struct{
+        "valido" := 1,
+        "mensagem" := ""
+    };
+    
+    if (!elem)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Elemento inválido");
+        validade.valido := 0;
+        validade.mensagem := "Elemento inválido";
+        return validade;
+    endif
+    
+    if (!faction)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Facção não encontrada");
+        validade.valido := 0;
+        validade.mensagem := "Facção não encontrada";
+        return validade;
+    endif
+    
+    if (faction == "Selvagem" || faction == DEFAULT_FACTION)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Território selvagem (" + faction + ")");
+        validade.valido := 0;
+        validade.mensagem := "Facção inválida ou território selvagem: " + faction;
+        return validade;
+    endif
+    
+    if (!resources)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Array de recursos é NULL");
+        validade.valido := 0;
+        validade.mensagem := "Nenhum recurso configurado";
+        return validade;
+    endif
+    
+    if (TypeOf(resources) != "Array")
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Resources não é um Array (Tipo: " + TypeOf(resources) + ")");
+        validade.valido := 0;
+        validade.mensagem := "Formato de recursos inválido";
+        return validade;
+    endif
+    
+    if (!resources.size())
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Array de recursos está vazio");
+        validade.valido := 0;
+        validade.mensagem := "Nenhum recurso válido configurado";
+        return validade;
+    endif
+    
+    if (resource_amount <= 0)
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Quantidade de recursos inválida (" + resource_amount + ")");
+        validade.valido := 0;
+        validade.mensagem := "Quantidade de recursos inválida: " + resource_amount;
+        return validade;
+    endif
+    
+    // Verificação adicional: verificar se cada recurso na lista é mapeável
+    var recursos_invalidos := array{};
+    foreach resource_name_to_check in resources // Renomeado 'resource' para evitar conflito com possível nome de função
+        // A CHAMADA DIRETA PARA MapearRecurso É O CORRETO AQUI.
+        // O POL irá procurar a função MapearRecurso nos arquivos incluídos.
+        // Se shared_functions.inc está corretamente incluído no topo do
+        // ResourceController.src (direta ou indiretamente), e contém
+        // a definição de MapearRecurso, ela será usada.
+        var objtype := MapearRecurso(resource_name_to_check); 
         
-        var validade := struct{
-            "valido" := 1,
-            "mensagem" := ""
-        };
-        
-        if (!elem)
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Elemento inválido");
-            validade.valido := 0;
-            validade.mensagem := "Elemento inválido";
-            return validade;
+        if (!objtype) // Se MapearRecurso retornar 0 (ou seja, não encontrou o recurso)
+            recursos_invalidos.append(resource_name_to_check);
         endif
-        
-        if (!faction)
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Facção não encontrada");
-            validade.valido := 0;
-            validade.mensagem := "Facção não encontrada";
-            return validade;
-        endif
-        
-        if (faction == "Selvagem" || faction == DEFAULT_FACTION)
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Território selvagem (" + faction + ")");
-            validade.valido := 0;
-            validade.mensagem := "Facção inválida ou território selvagem: " + faction;
-            return validade;
-        endif
-        
-        if (!resources)
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Array de recursos é NULL");
-            validade.valido := 0;
-            validade.mensagem := "Nenhum recurso configurado";
-            return validade;
-        endif
-        
-        if (TypeOf(resources) != "Array")
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Resources não é um Array (Tipo: " + TypeOf(resources) + ")");
-            validade.valido := 0;
-            validade.mensagem := "Formato de recursos inválido";
-            return validade;
-        endif
-        
-        if (!resources.size())
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Array de recursos está vazio");
-            validade.valido := 0;
-            validade.mensagem := "Nenhum recurso válido configurado";
-            return validade;
-        endif
-        
-        if (resource_amount <= 0)
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Quantidade de recursos inválida (" + resource_amount + ")");
-            validade.valido := 0;
-            validade.mensagem := "Quantidade de recursos inválida: " + resource_amount;
-            return validade;
-        endif
-        
-        // Verificação adicional: verificar se cada recurso na lista é mapeável
-        var recursos_invalidos := array{};
-        foreach resource in resources
-            var objtype := MapearRecurso(resource);
-            if (!objtype)
-                recursos_invalidos.append(resource);
+        sleepms(1); // Mantido se você acha necessário para evitar picos de CPU
+    endforeach
+    
+    if (recursos_invalidos.size() > 0)
+        var msg_recursos := "";
+        foreach r_invalid in recursos_invalidos // Renomeado 'r'
+            if (msg_recursos != "") 
+                msg_recursos += ", ";
             endif
-            sleepms(1);
+            msg_recursos += r_invalid;
+            sleepms(1); // Mantido
         endforeach
         
-        if (recursos_invalidos.size() > 0)
-            var msg_recursos := "";
-            foreach r in recursos_invalidos
-                if (msg_recursos != "") 
-                    msg_recursos += ", ";
-                endif
-                msg_recursos += r;
-                sleepms(1);
-            endforeach
-            
-            LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Recursos não mapeáveis: " + msg_recursos);
-            validade.valido := 0;
-            validade.mensagem := "Recursos não reconhecidos: " + msg_recursos;
-            return validade;
-        endif
-        
-        LogDebug("ProcessTerritory_DEBUG", "Validação SUCESSO: Todos os dados são válidos");
+        // Este LogError é importante, pois indicará quais recursos nominais
+        // não foram encontrados pela função MapearRecurso.
+        LogError("ProcessTerritory_DEBUG", "Validação FALHOU: Recursos não mapeáveis encontrados em VerificarValidadeDosDados: " + msg_recursos);
+        validade.valido := 0;
+        validade.mensagem := "Recursos não reconhecidos: " + msg_recursos;
         return validade;
-    endfunction
+    endif
+    
+    LogDebug("ProcessTerritory_DEBUG", "Validação SUCESSO: Todos os dados são válidos");
+    return validade;
+endfunction
 
     // Função de tentativa de criação de baú de emergência
     function TentarCriarBauEmergencia(faction_name, territory_name)
@@ -554,9 +560,9 @@ endfunction
 
    function GenerateResourcesForTerritory(elem, faction_name, resource_amount)
     // DECLARAR VARIÁVEIS NO INÍCIO DA FUNÇÃO
-    var donation_chest := 0;  // <-- ADICIONAR ESTA LINHA
-    var log_entries := array{};  // <-- ADICIONAR ESTA LINHA
-    var current_time := polcore().systime;  // <-- ADICIONAR ESTA LINHA
+    var donation_chest := 0;
+    var log_entries := array{};  // PRIMEIRA E ÚNICA DECLARAÇÃO DE log_entries
+    var current_time := polcore().systime; 
     
     if (!elem || !faction_name || resource_amount <= 0)
         LogError("recursos", "Parâmetros inválidos para geração de recursos");
@@ -676,65 +682,59 @@ endfunction
     LogDebug("GenerateResources_DEBUG", "Iniciando loop de criação de recursos no baú " + donation_chest.serial);
     LogDebug("recursos", "Iniciando adição de recursos ao baú " + donation_chest.serial);
     
-    var success_count := 0;
+     var success_count := 0;
+    // A linha "var log_entries := array{};" que estava aqui foi REMOVIDA.
 
-    foreach resource in (resources)
+ foreach resource in (resources)
         LogDebug("GenerateResources_DEBUG", "-- Processando Recurso: " + resource + " --");
        
-        // var objtype := MapearRecurso(resource); // REMOVIDO - Duplicado
-        // if (!objtype)
-        //     LogError("recursos", "Tipo de objeto não encontrado para recurso: " + resource);
-        //     continue;
-        // endif
-        // LogDebug("GenerateResources_DEBUG", "Objtype mapeado: 0x" + Hex(objtype)); // REMOVIDO - Duplicado
-        
-        var objtype := MapearRecurso(resource); // Esta é a chamada correta e única para MapearRecurso
-        if (!objtype) // Se MapearRecurso retornar 0 ou error
+        var objtype := MapearRecurso(resource);
+        if (!objtype) 
             LogError("recursos", "Tipo de objeto não encontrado para recurso: '" + resource + "' em GenerateResourcesForTerritory. Pulando este recurso.");
-            log_entries.append("Falha ao mapear recurso: " + resource); // Adiciona ao log da geração
-            continue; // Pula para o próximo recurso no loop foreach
-        endif; // Adicionado ponto e vírgula
+            log_entries.append("Falha ao mapear recurso: " + resource); 
+            continue; 
+        endif;
         
-        LogDebug("GenerateResources_DEBUG", "Objtype mapeado para '" + resource + "': 0x" + Hex(objtype));
-        
-        var categoria_final := ClassificarRecurso(objtype); // Passa o objtype (Integer) para obter a categoria final
+        // LOG DE VERIFICAÇÃO CRÍTICO AQUI:
+        LogCritical("ResourceController_ObjtypeCheck", "Para recurso '" + resource + "':");
+        LogCritical("ResourceController_ObjtypeCheck", "  - Valor de 'objtype' ANTES de ClassificarRecurso: " + objtype);
+        LogCritical("ResourceController_ObjtypeCheck", "  - Tipo de 'objtype' ANTES de ClassificarRecurso: " + TypeOf(objtype));
+        LogCritical("ResourceController_ObjtypeCheck", "  - Representação Hex de 'objtype': 0x" + Hex(CInt(objtype))); // Garantir que é inteiro para Hex()
 
-        if (categoria_final == "desconhecido" || !categoria_final) // Verifica se é "desconhecido" ou nulo/erro
+        LogDebug("GenerateResources_DEBUG", "Objtype mapeado para '" + resource + "': 0x" + Hex(CInt(objtype))); // Use CInt para segurança
+        
+        var categoria_final := ClassificarRecurso(objtype); // 'objtype' deve ser um inteiro aqui
+
+        if (categoria_final == "desconhecido" || !categoria_final) 
             LogWarning("recursos", "Categoria NÃO DETERMINADA para recurso: '" + resource + "' (Objtype: 0x" + Hex(objtype) + ") usando ClassificarRecurso(objtype). Recurso não será marcado como doação específica.");
-            // Decide o que fazer:
-            // Opção 1: Não adicionar CProp de doação (o item ainda será criado, mas sem a flag IsKingdomDonation<Categoria>)
-            // Opção 2: Adicionar uma CProp genérica como "IsKingdomDonationDesconhecido" (requer ajuste em ContarRecursosReais)
-            // Opção 3: Pular a criação deste recurso (adicione 'continue;' aqui)
-            // Por enquanto, vamos permitir a criação, mas sem a CProp de doação específica se for desconhecido
         else
              LogDebug("GenerateResources_DEBUG", "Categoria final determinada para CProp: " + categoria_final);
         endif;
         
         var properties := dictionary{};
-        // Só adiciona a propriedade de doação se a categoria for conhecida
         if (categoria_final != "desconhecido" && categoria_final)
-            properties["IsKingdomDonation" + categoria_final] := 1; // Usa a categoria_final
+            properties["IsKingdomDonation" + categoria_final] := 1; 
         endif;
         properties["GeneratedForTerritory"] := territory_name;
-        properties["GeneratedTime"] := polcore().systime;
+        properties["GeneratedTime"] := polcore().systime; // Usar current_time se preferir o timestamp do início da função
         properties["GeneratedByFaction"] := faction_name;
         properties["CreatedByResourceController"] := 1;
-        properties["faction"] := faction_name; // Para consistência com outros sistemas
-        properties["territory_id"] := territory_id; // Para rastreamento
+        properties["faction"] := faction_name; 
+        properties["territory_id"] := territory_id; 
 
         // O restante do seu código para SafeCreateItemInContainer_Refactored e fallback está bom.
         // Apenas certifique-se que os logs reflitam corretamente.
 
-        LogDebug("PROP_CHECK", "--> Propriedades para SafeCreateItemInContainer_Refactored:");
-        if (TypeOf(properties) == "Dictionary") 
-            foreach prop_key in (properties.keys())
-                LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
-                Sleepms(1); // sleepms é opcional aqui, pode ser removido se causar lentidão excessiva no log
-            endforeach;
-        else 
-            LogDebug("PROP_CHECK", "    'properties' NÃO é Dictionary! Tipo: " + TypeOf(properties)); 
-        endif;
-        LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
+LogDebug("PROP_CHECK", "--> Propriedades para SafeCreateItemInContainer_Refactored:");
+if (TypeOf(properties) == "Dictionary") 
+    foreach prop_key in (properties.keys())
+        LogDebug("PROP_CHECK", "    '"+ CStr(prop_key) +"' = " + CStr(properties[prop_key]) + " (Tipo: " + TypeOf(properties[prop_key]) + ")");
+        // Sleepms(1); // Removido para performance, descomente para debug extremo
+    endforeach;
+else 
+    LogDebug("PROP_CHECK", "    'properties' NÃO é Dictionary! Tipo: " + TypeOf(properties)); 
+endif;
+LogDebug("PROP_CHECK", "--> Chamando SafeCreate...");
         
         var result := SafeCreateItemInContainer_Refactored(donation_chest, objtype, resource_amount, properties);
         
@@ -850,12 +850,12 @@ endfunction
 
         // Verificação adicional - Force uma contagem dos recursos e compare com o cache
         LogDebug("GenerateResources_DEBUG", "Realizando verificação de consistência de recursos...");
-        var recursos_reais := ContarRecursosReais(donation_chest);
+        var recursos_reais := ContarRecursosReais(donation_chest); // Esta contagem é APENAS DESTE BAÚ
         var recursos_cache := GetObjProperty(donation_chest, CACHE_PROP_NAME);
 
         if (recursos_cache)
             var inconsistencias := VerificarInconsistencias(donation_chest, recursos_reais, "local");
-            if (inconsistencias && inconsistencias.size() > 0)
+            if (inconsistencias && inconsistencias.size() > 0) // Verificar se inconsistencias é um array e tem tamanho
                 LogWarning("GenerateResources_DEBUG", "Detectadas " + inconsistencias.size() + " inconsistências entre recursos reais e cache");
             else
                 LogInfo("GenerateResources_DEBUG", "Recursos consistentes entre contagem real e cache");
@@ -865,64 +865,66 @@ endfunction
         endif
 
         // Forçar sincronização dos dados do datafile
-        var sync_result := SincronizarComDataFile(donation_chest, recursos_reais);
-        if (sync_result)
-            LogInfo("GenerateResources_DEBUG", "Sincronização com datafile realizada com sucesso");
-        else
-            LogWarning("GenerateResources_DEBUG", "Falha na sincronização com datafile");
-        endif
-
+      //  var sync_result := SincronizarComDataFile(donation_chest, recursos_reais);
+      //  if (sync_result)
+     //       LogInfo("GenerateResources_DEBUG", "Sincronização com datafile realizada com sucesso");
+     //   else
+      //      LogWarning("GenerateResources_DEBUG", "Falha na sincronização com datafile");
+//endif
+//
         // Adicionar um sleep curto antes de retornar para garantir que todas as operações sejam concluídas
         Sleep(1);
         
-        // Registrar resultados
-      if (success_count > 0)
-        SetElementProp(elem, "LastGeneration", current_time);
+// Registrar resultados
+        if (success_count > 0)
+            SetElementProp(elem, "LastGeneration", current_time); // current_time foi definido no início da função
+
+            var validated_interval := GetValidatedResourceInterval(elem);
+            var next_generation := current_time + (validated_interval * 60);
+            SetElementProp(elem, "NextResourceTime", next_generation);
+
+            LogInfo("GenerateResources", "Próxima geração agendada para: " + FormatTimeA(next_generation));
+            LogInfo("GenerateResources", "Intervalo usado: " + validated_interval + " minutos");
+
+            // A CHAMADA CORRETA A SER MANTIDA:
+            // UpdateResourceCache agenda a atualização do baú, que será pega
+            // pelo process_recursos_updates.src. Este último fará a contagem
+            // AGREGADA e chamará SincronizarComDataFile com o TOTAL CORRETO.
+            UpdateResourceCache(donation_chest);
         
-        var validated_interval := GetValidatedResourceInterval(elem);
+            var history := GetElementProp(elem, "ResourceHistory");
+            if (!history)
+                history := array{};
+            endif
         
-        var next_generation := current_time + (validated_interval * 60);
-        SetElementProp(elem, "NextResourceTime", next_generation);
+            history.append(struct{
+                "time" := current_time,
+                "resources" := resources,
+                "amount" := resource_amount,
+                "success" := success_count,
+                "details" := log_entries,
+                "chest_serial" := donation_chest ? donation_chest.serial : 0,
+                "chest_name" := donation_chest ? donation_chest.name : "N/A"
+            });
         
-        LogInfo("GenerateResources", "Próxima geração agendada para: " + FormatTimeA(next_generation));
-        LogInfo("GenerateResources", "Intervalo usado: " + validated_interval + " minutos");
+            while (history.size() > 10)
+                history.erase(1);
+            endwhile
         
-        UpdateResourceCache(donation_chest);
-        
-        var history := GetElementProp(elem, "ResourceHistory");
-        if (!history)
-            history := array{};
+            SetElementProp(elem, "ResourceHistory", history);
+
+            NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, resource_amount, success_count);
         endif
-        
- history.append(struct{
-        "time" := current_time,
-        "resources" := resources,
-        "amount" := resource_amount,
-        "success" := success_count,
-        "details" := log_entries,
-        "chest_serial" := donation_chest ? donation_chest.serial : 0,
-        "chest_name" := donation_chest ? donation_chest.name : "N/A"
-    });
 
-        
-        while (history.size() > 10)
-            history.erase(1);
-        endwhile
-        
-        SetElementProp(elem, "ResourceHistory", history);
-        
-        NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, resource_amount, success_count);
-    endif
+        LogInfo("GenerateResources", "=== GERAÇÃO FINALIZADA ===");
+        LogInfo("GenerateResources", "Resultado: " + success_count + "/" + resources.size() + " recursos criados");
+        LogInfo("GenerateResources", "Total de itens adicionados: " + (success_count * resource_amount));
 
-    LogInfo("GenerateResources", "=== GERAÇÃO FINALIZADA ===");
-    LogInfo("GenerateResources", "Resultado: " + success_count + "/" + resources.size() + " recursos criados");
-    LogInfo("GenerateResources", "Total de itens adicionados: " + (success_count * resource_amount));
-
-    var final_interval := GetValidatedResourceInterval(elem);
-    LogInfo("GenerateResources", "Próxima geração em: " + final_interval + " minutos");
+        var final_interval := GetValidatedResourceInterval(elem);
+        LogInfo("GenerateResources", "Próxima geração em: " + final_interval + " minutos");
     
-    return success_count;
-endfunction
+        return success_count;
+    endfunction
 
     // Função para notificar líderes sobre geração de recursos
     function NotifyFactionLeadersOfResourceGeneration(faction_name, territory_name, resources, amount, success_count)
@@ -1124,7 +1126,7 @@ endfunction
         var ultima_sync := GetObjProperty(bau, "recursos_ultima_sync");
         if (!ultima_sync || (current_time - ultima_sync > 1800) || force_update)
             // Se passou mais de 30 minutos da última sincronização ou estamos forçando
-            SincronizarComDataFileLocal(bau, recursos);
+            SincronizarComDataFile(bau, recursos);
             SetObjProperty(bau, "recursos_ultima_sync", current_time);
             LogDebug("recursos", "Datafile global atualizado");
         else
@@ -1136,38 +1138,7 @@ endfunction
         return recursos;
     endfunction
 
-    // Sincronizar dados com o datafile global
-    function SincronizarComDataFileLocal(container, recursos)
-        var faction_name := GetObjProperty(container, OBJ_FACTION_PROP);
-        
-        if (!faction_name)
-            LogError("recursos", "Nome da facção não fornecido para busca de baú");
-            return 0;
-        endif
-        
-        if (faction_name == KINGDOM_FACTION || faction_name == "Reino")
-            // Atualizar recursos do reino no datafile principal
-            var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
-            var elem := SafeFindElement(df, KINGDOM_RESOURCE_ELEM, 1);
-            SetElementProp(elem, "recursos", recursos);
-        else
-            // Atualizar recursos da facção em seu próprio elemento no datafile
-            var df := SafeOpenDataFile(KINGDOM_RESOURCE_DATAFILE, 1);
-            var elem := SafeFindElement(df, "faction_" + faction_name, 1);
-            SetElementProp(elem, "recursos", recursos);
-            
-            // Atualizar também nas propriedades da guilda
-            var guild := FindGuildByName(faction_name);
-            if (guild)
-                var guild_obj := FindGuild(guild);
-                if (guild_obj)
-                    guild_obj.SetProp("recursos", recursos);
-                endif
-            endif
-        endif
-        
-        return 1;
-    endfunction
+ 
 
 
     // Registrar falha de criação
