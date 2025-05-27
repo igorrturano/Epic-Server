@@ -55,7 +55,7 @@ CONST EQUIP_BOTHGENDER	:= 0x3; // Cross-dresser
  */
 function NPC_SetupBackPack(mobile)
 	if ( !mobile.backpack )
-		var backpack := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, "BackPack", 1);
+		var backpack := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, "BackPack", 1, mobile.realm);
 		var result := EquipItem(mobile, backpack);
 		if ( !result )
 			DestroyItem(backpack);
