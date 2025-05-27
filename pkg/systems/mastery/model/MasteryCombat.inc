@@ -79,10 +79,6 @@ class MasteryCombat(Mastery)
 	endfunction
 
 	function toString(this)
-<<<<<<< HEAD:pkg/systems/achievements/model/Combat.inc
-		return $"Achievement para {this.name} ({this.type}) (xp={this.xp}, level={this.level}, hits={this.hits}, kills={this.kills}, damage={this.damage}, criticals={this.criticals})";
-=======
-		return $"Combat para {this.name} ({this.type}) (Level={this.level}, XP={this.xp}, Hits={this.hits}, Kills={this.kills}, Damage={this.damage})";
->>>>>>> 46062fc2b49c3141dbc0d4c15d368bc03f132839:pkg/systems/mastery/model/MasteryCombat.inc
+		return $"Maestria de Combate para {this.name} ({this.type}) (Level={this.level}, XP={this.xp}, Hits={this.hits}, Kills={this.kills}, Damage={this.damage})";
 	endfunction
 endclass
