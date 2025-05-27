@@ -4,16 +4,11 @@ function ShowMasteryGump(byRef gump, who)
 	var prop := who.GetProp("Masteries");
 
 	if (!prop || !prop.size())
-		GFTextMid(gump, 50, 120, 300, 1153, "Nenhuma maestria disponível");
+		GFTextMid(gump, 25, 120, 380, COLOR_RED, "Nenhuma maestria disponível!");
 		return;
 	endif
-	
-	var x := 30;
-	var y := 120;
-	var count := 1;
 
-	var tabela := array;
-
+	var tabela := array{};
 	foreach mastery in (prop)
 		tabela.append(struct{
 			maestria := mastery.name,
