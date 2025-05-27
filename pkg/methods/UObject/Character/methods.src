@@ -13,7 +13,7 @@ endprogram
 include ":debug:methods/Character";
 include ":mastery:methods/Character";
 include ":achievements:methods/Character";
-
+include ":charactercreation:methods/Character";
 
 // TODO: Colocar essas funções abaixo nos pacotes delas, no modelo do Documentation (SOCORRO IGOOOOOOOOR)
 exported function isUnderRoof(who)
