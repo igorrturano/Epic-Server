@@ -2,18 +2,18 @@ include ":mastery:model/Mastery";
 
 const MASTERY_COMBAT := MASTERY + "_COMBAT";
 
-class Combat(Mastery)
+class MasteryCombat(Mastery)
 	var hits;
 	var kills;
 	var damage;
 
-	function Combat(this, name, level, xp, hits, kills, damage)
-		this.Mastery(name, level, xp);
+	function MasteryCombat(this, name)
+		this.Mastery(name);
 		this.type := MASTERY_COMBAT;
 
-		this.hits := CInt(hits);
-		this.kills := CInt(kills);
-		this.damage := CInt(damage);
+		this.hits := 0;
+		this.kills := 0;
+		this.damage := 0;
 	endfunction
 
 	function getHits(this)
