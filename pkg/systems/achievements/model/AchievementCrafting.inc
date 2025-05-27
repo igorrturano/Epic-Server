@@ -6,15 +6,7 @@ class AchievementCrafting(Achievement)
     var craftedNormal;
     var craftedExceptional;
 
-<<<<<<< HEAD
-<<<<<<< HEAD:pkg/systems/achievements/model/Crafting.inc
-    function Crafting(this, name)
-=======
     function AchievementCrafting(this, name)
->>>>>>> 46062fc2b49c3141dbc0d4c15d368bc03f132839:pkg/systems/achievements/model/AchievementCrafting.inc
-=======
-    function AchievementCrafting(this, name)
->>>>>>> 71fc06ceda549ac7eb6accde57299b54c4787c95
         Super(name);
         this.type := ACHIEVEMENT_CRAFTING;
         this.craftedNormal := 0;
