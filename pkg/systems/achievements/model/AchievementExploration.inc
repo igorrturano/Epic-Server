@@ -11,8 +11,8 @@ class AchievementExploration(Achievement)
 	var discoveries;
 	var distance;
 
-	function AchievementExploration(this, name)
-		Super(name);
+	function AchievementExploration(this, key)
+		Super(key);
 		this.type := ACHIEVEMENT_EXPLORATION;
 		this.locations := array{};
 		this.discoveries := 0;
@@ -65,6 +65,7 @@ class AchievementExploration(Achievement)
 	endfunction
 
 	function Deserialize(this, data)
+		if (!data) return error{ errortext := "Invalid data for Achievement deserialization." }; endif
 		Achievement::Deserialize(this, data);
 		this.locations := CInt(data.locations);
 		this.discoveries := CInt(data.discoveries);

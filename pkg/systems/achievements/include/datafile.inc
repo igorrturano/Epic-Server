@@ -41,3 +41,18 @@ function LoadAchievement(who, type, name)
 
 	return achiev;
 endfunction
+
+function LoadAllAchievements(who)
+	var achievements := array{};
+	var propNames := DFController.GetElementPropNames(Hex(who.serial));
+
+	if (!propNames) return error{ errortext := "No achievements found for this character." }; endif
+	foreach propName in (propNames)
+		var achievData := DFController.LoadValue(Hex(who.serial), propName);
+		var achievement := LoadAchievement(who, achievData.type, propName);
+
+		achievements.append(achievement);
+	endforeach;
+
+	return achievements;
+endfunction
