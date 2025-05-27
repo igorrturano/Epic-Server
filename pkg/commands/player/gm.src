@@ -16,11 +16,11 @@ program textcmd_CmdToggle(who)
 	if ( who.cmdlevel )
 		SetObjProperty(who, "cmdlevel", who.cmdlevel);
 		who.cmdlevel := 0;
-		SendSysMessage(who, "Off");
+		SendSysMessage(who, "Gm: Off");
 	else
 		who.cmdlevel := CInt(GetObjProperty(who, "cmdlevel"));
 		EraseObjProperty(who, "cmdlevel");
-		SendSysMessage(who, "On");
+		SendSysMessage(who, "Gm: On");
 	endif
 
 	return 1;

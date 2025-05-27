@@ -2,11 +2,15 @@ include ":achievements:model/Achievement";
 
 const ACHIEVEMENT_CRAFTING := ACHIEVEMENT + "_CRAFTING";
 
-class Crafting(Achievement)
+class AchievementCrafting(Achievement)
     var craftedNormal;
     var craftedExceptional;
 
+<<<<<<< HEAD:pkg/systems/achievements/model/Crafting.inc
     function Crafting(this, name)
+=======
+    function AchievementCrafting(this, name)
+>>>>>>> 46062fc2b49c3141dbc0d4c15d368bc03f132839:pkg/systems/achievements/model/AchievementCrafting.inc
         Super(name);
         this.type := ACHIEVEMENT_CRAFTING;
         this.craftedNormal := 0;

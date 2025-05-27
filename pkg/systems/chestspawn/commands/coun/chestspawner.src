@@ -108,7 +108,7 @@ program chestspawner(who)
     var level;
     var range;
     var race;
-    var class;
+    var classe;
     foreach thing in (res.keys)
       if((thing >= 10) && (thing < 20))
         level := thing - 10;
@@ -119,7 +119,7 @@ program chestspawner(who)
       elseif((thing >= 40) && (thing < 50))
         race := thing - 40;
       elseif((thing >= 50) && (thing < 60))
-        class := thing - 50;
+        classe := thing - 50;
       endif
     endforeach
    // var targ := TargetCoordinates(who);
@@ -149,7 +149,7 @@ program chestspawner(who)
     endcase*/
     SetObjProperty(item, "race", racestring);
     var classstring;
-    case (cint(class))
+    case (cint(classe))
        1: classstring := "Guerreiro";
        2: classstring := "Ladino";
        3: classstring := "Sabio";

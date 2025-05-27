@@ -979,14 +979,15 @@ function LayEggSac(spider)
 //       return 0;
 //    endif
 
-   var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1);
+   var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1, spider.realm);
    if (egg)
       PrintTextAbove(spider, "*deposita ovos*");
       SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
       SetCooldown(spider, "egg_sac", 60);
+
+      egg.decayAt := ReadGameClock() + (60 * 15);
       return 1;
    endif
-   egg.decayAt := ReadGameClock() + (60 * 15);
 
    return 0;
 endfunction
